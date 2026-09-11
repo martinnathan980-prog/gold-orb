@@ -1,0 +1,1088 @@
+const URL_CATALOGUE = "https://docs.google.com/spreadsheets/d/13ve9O3AqEzBbaR1PO1JG07hRY13Ao
+wZH6TRLQ-KWsCA/edit";
+function doGet() {
+  return HtmlService.createTemplateFromFile('Index')
+    .evaluate()
+    .setTitle('NEXUS PLM - Ingénierie')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+function initialiserBaseDeDonnees() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const structure = {
+    "1_BOITES": ["Fonction", "PN Global", "DS/VCI Associé", "Porteur", "Statut", "Niveau de qualification", "Image",
+"Commentaires libres"],
+    "2_NOMENCLATURE": ["ID_Ligne", "PN Global", "Type", "PN du type", "Montage", "Nombre de pas", "Dim Long
+(mm)", "Dim Larg (mm)", "Masse (g)", "HL", "DAL", "Qualification Brouillard salin", "Qualification Vibration",
+"Qualification Explosion", "Composant STD", "Image", "Commentaires libres"]
+  };
+  for (const [sheetName, headers] of Object.entries(structure)) {
+    let sheet = ss.getSheetByName(sheetName);
+    if (!sheet) { sheet = ss.insertSheet(sheetName); } else { sheet.clear(); sheet.clearFormats(); }
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    let headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setFontWeight("bold").setFontColor("#ffffff").setBackground("#0f172a");
+    headerRange.setHorizontalAlignment("center").setVerticalAlignment("middle");
+    sheet.setFrozenRows(1);
+    let bodyRange = sheet.getRange(2, 1, 1000, headers.length);
+    bodyRange.setHorizontalAlignment("center").setVerticalAlignment("middle").setWrapStrategy(
+SpreadsheetApp.WrapStrategy.CLIP);
+    sheet.getRange(1, 1, 100, headers.length).applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY);
+    sheet.setRowHeights(2, 1000, 35);
+    for(let i = 1; i <= headers.length; i++) { sheet.setColumnWidth(i, 150); }
+  }
+ 
+  const dataBoites = [
+    ["APU", "332P20001", "332P20051", "Super Puma", "Validé", "Qualified to H225", "", ""],
+    ["EOS", "332P94101", "332P94051", "Multi", "En étude", "Qualified to H225", "", ""],
+    ["APU", "U880A240101", "U880A240051", "H160", "Obsolète", "Qualified to H160", "", ""],
+    ["NAV", "332N10001", "332N10051", "Super Puma", "Validé", "Qualified to H225", "", ""],
+    ["COM", "332C50001", "332C50051", "Multi", "En étude", "Qualified to H160", "", ""],
+    ["RADAR", "U880R30001", "U880R30051", "H160", "Validé", "Qualified to H160", "", ""],
+    ["FLIGHT", "332F40001", "332F40051", "Super Puma", "Validé", "Qualified to H225", "", ""],
+    ["POWER", "U880P50001", "U880P50051", "H160", "En étude", "Qualified to H160", "", ""],
+    ["SENSOR", "332S60001", "332S60051", "Multi", "Obsolète", "Qualified to H225", "", ""],
+    ["DISPLAY", "U880D70001", "U880D70051", "H160", "Validé", "Qualified to H160", "", ""]
+  ];
+  ss.getSheetByName("1_BOITES").getRange(2, 1, dataBoites.length, dataBoites[0].length).setValues(dataBoites);
+  const dataNom = [
+    ["L-01", "332P20001", "Structure Boite", "332P20001.01", "Console STD", "1", "500", "140", "500", "A", "A", "Cat.
+S", "Qual. H225", "Case 1", "", "", ""],
+    ["L-02", "332P20001", "Harnais", "332P20001.03", "Console STD", "1", "-", "-", "126.5", "A", "A", "Cat. F", "Qual.
+H225", "Case 3", "Bouton poussoir | Push button (ECS 7251)\nBouton poussoir | Push button (ECS 0763)", "", ""],
+    ["L-03", "332P94101", "Structure Boite", "332P94101.01", "Hors console", "5", "400", "200", "400", "B", "C", "Cat.
+T", "Qual. H225", "", "", "", ""],
+    ["L-04", "332P94101", "Plaquette éclairante", "332P94101.02", "Hors console", "5", "400", "200", "180", "D", "D",
+"Cat. T", "Qual. H225", "", "", "", ""],
+    ["L-05", "U880A240101", "Harnais", "U880A240401", "Console STD", "2", "-", "-", "115", "A", "A", "Cat. S", "Qual.
+H160", "", "Bouton poussoir | Pushrod (ASNE 0239)", "", ""],
+    ["L-06", "332N10001", "Structure Boite", "332N10001.01", "Rack", "2", "300", "200", "800", "B", "B", "Cat. S",
+"Qual. H225", "", "", "", ""],
+    ["L-07", "332C50001", "Harnais", "332C50001.02", "Rack", "3", "-", "-", "250", "C", "C", "Cat. T", "Qual. H160", "",
+"Bouton poussoir | Push button (ECS 0780)", "", ""],
+    ["L-08", "U880R30001", "Structure Boite", "U880R30001.01", "Nez", "1", "600", "400", "1500", "A", "A", "Cat. S",
+"Qual. H160", "Case 1", "", "", ""],
+    ["L-09", "332F40001", "Plaquette éclairante", "332F40001.02", "Console STD", "1", "100", "50", "50", "A", "A",
+"Cat. S", "Qual. H225", "", "Switch | Switch (ASNE 0567)", "", ""],
+    ["L-10", "U880P50001", "Harnais", "U880P50001.03", "Soute", "4", "-", "-", "800", "B", "B", "Cat. F", "Qual.
+H160", "", "Double command | FRF 772-034 (IG)", "", ""]
+  ];
+  ss.getSheetByName("2_NOMENCLATURE").getRange(2, 1, dataNom.length, dataNom[0].length).setValues(
+dataNom);
+  ss.toast("
+ Base NEXUS PLM déployée !", "Système Opérationnel");
+}
+function getToutLeContenu() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sBoites = ss.getSheetByName("1_BOITES");
+  const sNom = ss.getSheetByName("2_NOMENCLATURE");
+  if (!sBoites || !sNom) return { erreur: "Exécutez initialiserBaseDeDonnees() depuis l'éditeur." };
+  const lireSheet = (sheet) => {
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return [];
+    const headers = data[0].map(h => String(h).trim());
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].every(c => String(c).trim() === '')) continue;
+      let obj = { _rowIndex: i + 1 };
+      headers.forEach((h, j) => { obj[h] = data[i][j]; });
+      result.push(obj);
+    }
+    return result;
+  };
+  return { boites: lireSheet(sBoites), nomenclature: lireSheet(sNom), headersBoites: sBoites.getRange(1,1,1,
+sBoites.getLastColumn()).getValues()[0].map(h => String(h).trim()), headersNom: sNom.getRange(1,1,1,sNom.
+getLastColumn()).getValues()[0].map(h => String(h).trim()) };
+}
+function saveLigne(sheetName, rowIndex, modifications) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+  for (const [key, value] of Object.entries(modifications)) {
+    let colIndex = headers.indexOf(key);
+    if (colIndex !== -1) sheet.getRange(rowIndex, colIndex + 1).setValue(value);
+  }
+  return getToutLeContenu();
+}
+function deleteLigne(sheetName, rowIndex) {
+  SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName).deleteRow(rowIndex);
+  return getToutLeContenu();
+}
+function deleteBoiteEntiere(pnGlobal, rowIndexBoite) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  ss.getSheetByName("1_BOITES").deleteRow(rowIndexBoite);
+  const sNom = ss.getSheetByName("2_NOMENCLATURE");
+  const dataNom = sNom.getDataRange().getValues();
+  for (let i = dataNom.length - 1; i > 0; i--) {
+    if (dataNom[i][1] === pnGlobal) sNom.deleteRow(i + 1);
+  }
+  return getToutLeContenu();
+}
+function addBoiteLibre(pnGlobal, fonction, dsVci) {
+   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("1_BOITES");
+   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+   let newRow = new Array(headers.length).fill('');
+   headers.forEach((h, idx) => { if(h==="PN Global") newRow[idx]=pnGlobal; if(h==="Fonction")
+newRow[idx]=fonction; if(h==="DS/VCI Associé") newRow[idx]=dsVci; if(h==="Statut") newRow[idx]="En étude";});
+   sheet.appendRow(newRow); return getToutLeContenu();
+}
+function addSousEnsembleLibre(pnGlobal, type, pnType) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("2_NOMENCLATURE");
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+  let newRow = new Array(headers.length).fill('');
+  headers.forEach((h, idx) => {
+    if(h==="ID_Ligne") newRow[idx]="L-"+new Date().getTime(); if(h==="PN Global") newRow[idx]=pnGlobal;
+    if(h==="Type") newRow[idx]=type; if(h==="PN du type") newRow[idx]=pnType;
+  });
+  sheet.appendRow(newRow); return getToutLeContenu();
+}
+function dupliquerBoite(pnSource, nouveauPn) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sBoites = ss.getSheetByName("1_BOITES");
+  const sNom = ss.getSheetByName("2_NOMENCLATURE");
+  const dataBoites = sBoites.getDataRange().getValues();
+  let rowBoite = dataBoites.find(r => r[1] === pnSource);
+  if(rowBoite) {
+    let newRowB = [...rowBoite]; newRowB[1] = nouveauPn; newRowB[4] = "En étude";
+    sBoites.appendRow(newRowB);
+  }
+  const dataNom = sNom.getDataRange().getValues();
+  for(let i=1; i<dataNom.length; i++) {
+    if(dataNom[i][1] === pnSource) {
+      let newRowN = [...dataNom[i]]; newRowN[0] = "L-" + new Date().getTime() + Math.floor(Math.random()*1000);
+newRowN[1] = nouveauPn;
+      sNom.appendRow(newRowN);
+    }
+  }
+  return getToutLeContenu();
+}
+function getCatalogueComposants() {
+  try {
+    const ss = SpreadsheetApp.openByUrl(URL_CATALOGUE);
+    const data = ss.getSheets()[0].getDataRange().getValues();
+    const headers = data[0].map(h => String(h).trim());
+    const composants = [];
+    for(let i=1; i<data.length; i++) {
+      if(data[i].every(c => String(c).trim() === '')) continue;
+      let obj = {}; headers.forEach((h, j) => { if(h) obj[h] = data[i][j]; }); composants.push(obj);
+    }
+    return composants;
+  } catch(e) { return { error: "Erreur lecture catalogue" }; }
+}
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      /* DESIGN SYSTEM INGENIERIE PRO (SOMBRE/AVIATION) */
+      body { background-color: #f5f5f7; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-
+serif; color: #1c1c1e; -webkit-font-smoothing: antialiased; }
+     
+      .hero-panel { background: linear-gradient(135deg, #0b132b 0%, #1c2541 100%); padding: 50px 0 40px; color:
+white; border-bottom: 4px solid #0071e3;}
+      .page-title { font-size: 38px; font-weight: 900; letter-spacing: -1px; margin-bottom: 5px; text-shadow: 0 2px
+10px rgba(0,0,0,0.3); color: #ffffff;}
+      .page-subtitle { font-size: 13px; font-weight: 700; color: #8cb0d9; text-transform: uppercase; letter-spacing:
+2px;}
+      /* METRICS KPI */
+      .kpi-row { display: flex; gap: 20px; margin-top: 30px; justify-content: center; flex-wrap: wrap;}
+      .kpi-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
+padding: 15px 25px; text-align: center; min-width: 220px; backdrop-filter: blur(10px);}
+      .kpi-val { font-size: 36px; font-weight: 800; color: #fff; line-height: 1;}
+      .kpi-label { font-size: 11px; font-weight: 700; color: #8cb0d9; text-transform: uppercase; margin-top: 6px; letter-
+spacing: 0.5px;}
+      /* BARRE DE RECHERCHE */
+      .control-container { margin-top: -25px; margin-bottom: 30px; }
+      .control-bar { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 16px; padding:
+10px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #e5e5ea; display: flex; align-items: center;}
+      .apple-input { background-color: transparent; border: none; padding: 12px 20px; font-size: 15px; width: 100%;
+outline: none; font-weight: 500;}
+      /* ONGLETS (TABS) */
+      .function-tabs { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px; margin-bottom: 20px;}
+      .function-tabs::-webkit-scrollbar { height: 4px; }
+      .function-tabs::-webkit-scrollbar-thumb { background: #d1d1d6; border-radius: 4px; }
+      .tab-pill { background: #fff; border: 1px solid #d1d1d6; color: #86868b; font-size: 14px; font-weight: 700;
+padding: 8px 20px; border-radius: 20px; cursor: pointer; transition: 0.2s; white-space: nowrap;}
+      .tab-pill:hover { background: #f0f0f5; }
+      .tab-pill.active { background: #0b132b; color: #fff; border-color: #0b132b; }
+      .tab-count { font-size: 11px; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px; margin-left:
+6px; color: inherit;}
+      /* TUILE PRODUIT */
+      .product-card { background: #ffffff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 15px
+rgba(0,0,0,0.02); height: 100%; display: flex; flex-direction: column; transition: 0.2s; border: 1px solid #e5e5ea;}
+      .product-card:hover { transform: translateY(-4px); box-shadow: 0 16px 30px rgba(0,0,0,0.06); border-color:
+#d1d1d6;}
+      .pn-title { font-size: 22px; font-weight: 800; color: #0071e3; margin: 0; letter-spacing:-0.5px;}
+      .status-badge { font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 4px 8px; border-radius:
+6px; display: inline-block; margin-top: 8px; margin-bottom: 15px;}
+      .status-valide { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9;}
+      .status-etude { background: #fff8e1; color: #f57f17; border: 1px solid #ffecb3;}
+      .status-obsolete { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2;}
+      /* LISTE HOMOGENE POUR LES TUILES */
+      .internal-list-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-
+bottom: 1px solid #f0f0f2; }
+      .internal-list-row:last-child { border-bottom: none; }
+      .internal-type { font-size: 13px; font-weight: 700; color: #1c1c1e; }
+      .internal-pn { font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; font-weight: 600; color:
+#86868b; text-align: right;}
+      .btn-primary-apple { background: #0b132b; color: white; border-radius: 10px; font-size: 13px; font-weight: 600;
+border: none; padding: 10px 16px; width: 100%; margin-top: auto; transition: 0.2s;}
+      .btn-primary-apple:hover { background: #1c2541; }
+      .btn-compare { background: #f0f4f8; color: #0071e3; border-radius: 10px; font-size: 13px; font-weight: 700;
+border: none; padding: 10px 16px; width: 100%; margin-top: 8px;}
+      /* SLIDE-OVER */
+      .offcanvas { width: 650px !important; border-radius: 20px 0 0 20px; background-color: #f5f5f7; border-left: 1px
+solid #e5e5ea;}
+      .component-block { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0
+2px 10px rgba(0,0,0,0.02); border: 1px solid #e5e5ea;}
+     
+      /* LIGNES D'EDITION PARFAITEMENT ALIGNEES (100% GAUCHE) */
+      .detail-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f9f9f9; }
+      .detail-key { font-size: 12px; color: #86868b; font-weight: 600; width: 35%; flex-shrink: 0; margin: 0;}
+      .detail-value { font-size: 13px; color: #1c1c1e; font-weight: 600; text-align: left; flex-grow: 1; word-break: break-
+word;}
+      .edit-input { background: #f0f4f8; border: 1px solid #cce4fc; padding: 8px 12px; border-radius: 8px; font-size:
+13px; width: 100%; text-align: left; font-weight: 600; color: #1c1c1e; flex-grow: 1; margin: 0; box-sizing: border-box;}
+     
+      .btn-action-sm { font-size: 11px; font-weight: 700; padding: 6px 12px; border-radius: 8px; border: none; margin-
+left: 6px;}
+      .btn-edit { background: #f5f5f7; color: #1c1c1e; }
+      .btn-save { background: #34c759; color: white; }
+      .btn-delete { background: #ff3b30; color: white; }
+      .btn-compare-sm { background: #e8f4fd; color: #0071e3; border: 1px solid #bce0fd;}
+     
+      .std-chip { display: inline-flex; align-items: center; background: #f0f4f8; border: 1px solid #cce4fc; padding: 4px
+10px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #0071e3; margin-right: 6px; margin-bottom: 6px;}
+      .std-del { margin-left: 8px; cursor: pointer; color: #86868b; font-size: 14px; font-weight: bold;}
+      .std-del:hover { color: #ff3b30; }
+      .btn-new-boite { position: fixed; bottom: 30px; right: 30px; background: #0071e3; color: #fff; width: 56px;
+height: 56px; border-radius: 28px; font-size: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border: none; z-index:
+1000;}
+      .mini-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.1); border-radius:
+50%; border-top-color: #0071e3; animation: spin 1s ease-in-out infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      /* COMPARATEUR ICONS */
+      .analyze-row { font-size: 13px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;}
+      .analyze-icon { font-size: 14px; margin-top: 2px; }
+      .analyze-content { flex-grow: 1; }
+      /* MULTI SEARCH PILLS */
+      .multi-search-pill { display: inline-flex; align-items: center; background: #fff; border: 1px solid #e5e5ea; padding:
+6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; margin: 4px; box-shadow: 0 2px 5px
+rgba(0,0,0,0.02);}
+      .multi-search-pill .del { margin-left: 10px; cursor: pointer; color: #ff3b30; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <!-- DATALISTS POUR LES MENUS DEROULANTS -->
+    <datalist id="list-Porteur">
+      <option value="H160"><option value="H225"><option value="Super Puma"><option value="NH90"><option
+value="Tigre"><option value="Multi">
+    </datalist>
+    <datalist id="list-Qualif">
+      <option value="Qual. H160"><option value="Qual. H225"><option value="Cat. S"><option value="Cat. F">
+<option value="Cat. T">
+    </datalist>
+    <button class="btn-new-boite" onclick="ouvrirModalNouvelleBoite()" title="Nouvel Assemblage">+</button>
+    <!-- HEADER & KPI -->
+    <div class="hero-panel">
+      <div class="container-fluid max-width-xl text-center">
+        <h1 class="page-title">NEXUS PLM</h1>
+        <div class="page-subtitle">Product Lifecycle Management</div>
+       
+        <div class="kpi-row" id="kpiDashboard">
+          <div class="kpi-card"><div class="kpi-val" id="kpiBoites">-</div><div class="kpi-label">Nombre de
+Boîtes</div></div>
+          <div class="kpi-card"><div class="kpi-val" id="kpiNoms">-</div><div class="kpi-label">Références Uniques
+(PN)</div></div>
+          <div class="kpi-card"><div class="kpi-val text-success" id="kpiVal">-</div><div class="kpi-label">Boîtes
+Validées</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid px-4 pb-5 max-width-xl">
+      <!-- BARRE DE RECHERCHE -->
+      <div class="row justify-content-center control-container">
+        <div class="col-12 col-md-10">
+          <div class="control-bar">
+            <span style="font-size: 20px; padding-left: 10px;">
+</span>
+            <input type="text" id="searchBar" class="apple-input" placeholder="Recherche globale (PN, Fonction, ...)">
+            <button class="btn btn-outline-dark fw-bold px-4" style="border-radius:10px; white-space:nowrap;"
+onclick="ouvrirMultiRecherche()">Recherche par composants</button>
+          </div>
+        </div>
+      </div>
+      <div id="loading" class="text-center my-5"><div class="spinner-border text-primary"></div></div>
+     
+      <!-- ONGLETS -->
+      <div id="functionTabs" class="function-tabs"></div>
+     
+      <!-- GRILLE DES TUILES -->
+      <div class="row g-4 mb-5" id="mainContainer"></div>
+    </div>
+    <!-- PANNEAU LATERAL : FICHE COMPLETE -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="detailsSlideOver">
+      <div class="offcanvas-header bg-white shadow-sm" style="z-index:10;">
+        <h5 class="offcanvas-title fw-bold" id="slideOverTitle">Fiche Complète</h5>
+        <div>
+          <button class="btn btn-sm btn-outline-dark fw-bold me-2" onclick="exporterBOM()">
+ Exporter
+Nomenclature (CSV)</button>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+        </div>
+      </div>
+      <div class="offcanvas-body" id="slideOverBody"></div>
+    </div>
+    <!-- MODAL MULTI-RECHERCHE (LISTE DEROULANTE + LIBRE) -->
+    <div class="modal fade" id="multiSearchModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered
+modal-lg"><div class="modal-content" style="border-radius: 16px;"><div class="modal-header"><h5
+class="modal-title fw-bold">Recherche par Composants Embarqués</h5><button class="btn-close" data-bs-
+dismiss="modal"></button></div><div class="modal-body">
+      <p class="text-muted" style="font-size:13px;">Sélectionnez ou tapez manuellement les composants que la
+boîte doit contenir :</p>
+     
+      <div class="d-flex gap-2 mb-3">
+        <input class="form-control" list="datalistStds" id="multiSearchInputSelect" placeholder="Rechercher un
+composant ou le saisir librement...">
+        <datalist id="datalistStds"></datalist>
+        <button class="btn btn-dark fw-bold" onclick="ajouterChipMultiRecherche()">Ajouter</button>
+      </div>
+      <div id="multiSearchPillsContainer" class="mb-4 bg-light p-3 rounded border" style="min-height: 60px;">
+</div>
+      <button class="btn-primary-apple" onclick="lancerMultiRecherche()">Trouver les assemblages</button>
+    </div></div></div></div>
+    <!-- MODAL COMPARAISON GLOBALE ET SOUS-ENSEMBLE -->
+    <div class="modal fade" id="compareModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered
+modal-lg modal-dialog-scrollable"><div class="modal-content" style="border-radius: 16px;"><div class="modal-
+header"><h5 class="modal-title fw-bold" id="compareTitle">Analyse d'Équivalences</h5><button class="btn-
+close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="compareResult"></div></div>
+</div></div>
+   
+    <!-- AUTRES MODALES -->
+    <div class="modal fade" id="catalogueModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered
+modal-lg modal-dialog-scrollable"><div class="modal-content" style="border-radius: 16px;"><div class="modal-
+header"><h5 class="modal-title fw-bold">Catalogue de Composants</h5><button class="btn-close" data-bs-
+dismiss="modal"></button></div><div class="modal-body"><input type="text" id="catSearch" class="form-control
+mb-3" placeholder="Rechercher par Type, Sous-type ou Norme..." onkeyup="filtrerCatalogue()"><div
+id="catalogueList"></div></div></div></div></div>
+    <div class="modal fade" id="newBoiteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered">
+<div class="modal-content" style="border-radius: 16px;"><div class="modal-header"><h5 class="modal-title fw-
+bold">Nouvel Assemblage</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div
+class="modal-body"><input type="text" id="newBoitePn" class="form-control mb-2" placeholder="PN Global">
+<input type="text" id="newBoiteFonction" class="form-control mb-2" placeholder="Fonction"><input type="text"
+id="newBoiteDs" class="form-control mb-3" placeholder="DS/VCI Associé"><button class="btn-primary-apple"
+onclick="creerBoite()">Créer l'assemblage</button></div></div></div></div>
+    <div class="modal fade" id="newSousEnsModal" tabindex="-1"><div class="modal-dialog modal-dialog-
+centered"><div class="modal-content" style="border-radius: 16px;"><div class="modal-header"><h5
+class="modal-title fw-bold">Nouveau Sous-Ensemble</h5><button class="btn-close" data-bs-dismiss="modal"></
+button></div><div class="modal-body"><input type="text" id="newEnsType" class="form-control mb-2"
+placeholder="Type (ex: Harnais)"><input type="text" id="newEnsPn" class="form-control mb-3" placeholder="PN
+du sous-ensemble"><button class="btn-primary-apple" onclick="creerSousEnsemble()">Ajouter à la
+boîte</button></div></div></div></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      let dataGlobale = {}; let catalogueComposants = []; let currentBoiteIndex = null; let currentNomRowIndex = null;
+      let multiSearchChips = new Set();
+      let activeTab = 'Toutes';
+      let isEditingBoite = false;
+      let isEditingNom = {};
+      document.addEventListener("DOMContentLoaded", function() { refreshData(); google.script.run.
+withSuccessHandler(r => catalogueComposants=r).getCatalogueComposants(); document.getElementById('
+searchBar').addEventListener('input', () => filtrerInterface()); });
+      function refreshData(silent = false) {
+        if(!silent) document.getElementById('loading').style.display = 'block';
+        google.script.run.withSuccessHandler((r) => preparerData(r, silent)).getToutLeContenu();
+      }
+      function preparerData(reponse, silent) {
+        if(reponse.erreur) return;
+        dataGlobale = reponse;
+        dataGlobale.boites.forEach(b => { b.nomenclature = dataGlobale.nomenclature.filter(n => n['PN Global'] ===
+b['PN Global']); });
+       
+        document.getElementById('loading').style.display = 'none';
+        if(silent && currentBoiteIndex !== null) {
+          const currPn = document.getElementById('slideOverTitle').innerText;
+          currentBoiteIndex = dataGlobale.boites.findIndex(b => b['PN Global'] === currPn);
+          genererContenuSlideOver(currentBoiteIndex);
+        }
+        filtrerInterface();
+      }
+      // ==========================================
+      // KPI DASHBOARD (DYNAMIQUE)
+      // ==========================================
+      function genererKPIDashboard(listeBoites) {
+        if (!listeBoites) return;
+        let nbBoites = listeBoites.length;
+       
+        let refsUniques = new Set();
+        listeBoites.forEach(b => {
+          if(b['PN Global']) refsUniques.add(b['PN Global']);
+          if(b.nomenclature) {
+            b.nomenclature.forEach(n => { if(n['PN du type']) refsUniques.add(n['PN du type']); });
+          }
+        });
+        let nbValides = listeBoites.filter(b => String(b['Statut']).toLowerCase().includes('valid')).length;
+        let pValides = nbBoites > 0 ? Math.round((nbValides / nbBoites) * 100) : 0;
+        document.getElementById('kpiBoites').innerText = nbBoites;
+        document.getElementById('kpiNoms').innerText = refsUniques.size;
+        document.getElementById('kpiVal').innerText = pValides + '%';
+      }
+      // ==========================================
+      // ONGLETS & AFFICHAGE GRILLE HOMOGÈNE
+      // ==========================================
+      function filtrerInterface(boxesForcees = null) {
+        const query = document.getElementById('searchBar').value.toLowerCase();
+        let mapFonctions = new Map();
+        let boitesAFitrer = boxesForcees ? boxesForcees : dataGlobale.boites;
+        boitesAFitrer.forEach(boite => {
+          if(!boxesForcees && !JSON.stringify(boite).toLowerCase().includes(query)) return;
+          const f = boite['Fonction'] || 'NON CLASSE';
+          if(!mapFonctions.has(f)) mapFonctions.set(f, []);
+          mapFonctions.get(f).push(boite);
+        });
+        let tabHtml = `<div class="tab-pill ${activeTab === 'Toutes' ? 'active' : ''}" onclick="changerTab('Toutes')"
+>Toutes <span class="tab-count">${boitesAFitrer.length}</span></div>`;
+        Array.from(mapFonctions.keys()).sort().forEach(fonction => {
+          let count = mapFonctions.get(fonction).length;
+          tabHtml += `<div class="tab-pill ${activeTab === fonction ? 'active' : ''}" onclick="changerTab('${
+fonction}')">${fonction} <span class="tab-count">${count}</span></div>`;
+        });
+        document.getElementById('functionTabs').innerHTML = tabHtml;
+        let boitesAAfficher = activeTab === 'Toutes' ? boitesAFitrer.filter(b => boxesForcees ||
+JSON.stringify(b).toLowerCase().includes(query)) : (mapFonctions.get(activeTab) || []);
+        let html = boitesAAfficher.map(boite => {
+          let idx = dataGlobale.boites.indexOf(boite);
+         
+          let st = String(boite['Statut'] || ''); let stClass = 'status-etude';
+          if(st.toLowerCase().includes('valid')) stClass = 'status-valide'; else if(st.toLowerCase().includes('obs')) stClass
+= 'status-obsolete';
+          let badgeHtml = st ? `<span class="status-badge ${stClass}">${st}</span>` : '';
+          // *** TRANSFORMATION MINIATURE INTEGRÉE DIRECTEMENT ICI ***
+          let imgUrl = boite['Image'];
+          if(imgUrl && String(imgUrl).includes("drive.google.com")) {
+              let m = String(imgUrl).match(/[-\w]{25,}/);
+              if(m) imgUrl = "https://drive.google.com/thumbnail?id=" + m[0] + "&sz=w1000";
+          }
+          let imgHtml = (boite['Image'] && String(boite['Image']).startsWith('http')) ? `<img src="${imgUrl}"
+style="width:100%; height:180px; object-fit:contain; background-color:#f5f5f7; border-radius:12px; margin-
+bottom:15px; border:1px solid #e5e5ea;">` : '';
+          let listeInterneHtml = boite.nomenclature.map(l => `<div class="internal-list-row"><span class="internal-
+type">${l['Type'] || '-'}</span><span class="internal-pn">${l['PN du type'] || '-'}</span></div>`).join('');
+          let detailsGloHtml = `
+            <div class="internal-list-row mt-2" style="border-top: 1px dashed #e5e5ea;"><span class="internal-type
+text-muted">DS/VCI Associé</span><span class="internal-pn text-muted">${boite['DS/VCI Associé']||'-'}</span>
+</div>
+            <div class="internal-list-row" style="border-bottom:none;"><span class="internal-type text-
+muted">Porteur</span><span class="internal-pn text-muted">${String(boite['Porteur']).replace(/\n/g, ', ')||'-'}
+</span></div>
+          `;
+          return `
+            <div class="col-sm-6 col-lg-4">
+              <div class="product-card">
+                ${imgHtml}
+                <div class="d-flex justify-content-between align-items-start"><h4 class="pn-title">${boite['PN Global']}
+</h4>${badgeHtml}</div>
+               
+                <div class="mb-4 mt-3">
+                  ${listeInterneHtml || '<span class="text-muted" style="font-size:12px;">Assemblage vide</span>'}
+                  ${detailsGloHtml}
+                </div>
+               
+                <button class="btn-primary-apple" onclick="ouvrirSlideOver(${idx})">Fiche complète</button>
+                <button class="btn-compare" onclick="comparerBoite('${boite['PN Global']}')">
+Équivalences</button>
+              </div>
+            </div>`;
+        }).join('');
+       
+        document.getElementById('mainContainer').innerHTML = html || '<div class="col-12 text-center text-muted py-
+5">Aucun assemblage dans cette catégorie.</div>';
+       
+        genererKPIDashboard(boitesAAfficher);
+      }
+      function changerTab(nomTab) { activeTab = nomTab; filtrerInterface(); }
+      // ==========================================
+      // FICHE COMPLETE (EDITION ALIGNEE GAUCHE 100%)
+      // ==========================================
+      function ouvrirSlideOver(boiteIndex) {
+        currentBoiteIndex = boiteIndex;
+        isEditingBoite = false;
+        isEditingNom = {};
+        document.getElementById('slideOverTitle').innerText = dataGlobale.boites[boiteIndex]['PN Global'];
+        genererContenuSlideOver(boiteIndex);
+       
+        const offcanvasEl = document.getElementById('detailsSlideOver');
+        let offcanvasInst = bootstrap.Offcanvas.getInstance(offcanvasEl);
+        if(!offcanvasInst) offcanvasInst = new bootstrap.Offcanvas(offcanvasEl);
+        offcanvasInst.show();
+      }
+      function genererContenuSlideOver(boiteIndex) {
+        const boite = dataGlobale.boites[boiteIndex];
+        let html = `
+          <div class="component-block">
+            <div class="d-flex justify-content-between border-bottom pb-2 mb-3">
+              <h5 class="fw-bold text-primary m-0">Général</h5>
+              <div>
+                <span id="spin-boite" class="me-2"></span>
+                <button class="btn-action-sm btn-edit" id="btn-edit-boite" onclick="toggleEditBoite()">
+Éditer</button>
+                <button class="btn-action-sm btn-save d-none" id="btn-save-boite" onclick="saveBoite(${boiteIndex})">
+ Sauver</button>
+                <button class="btn-action-sm btn-delete d-none" id="btn-del-boite" onclick="supprimerBoiteEntiere(${
+boiteIndex})">
+ Supprimer</button>
+              </div>
+            </div>
+        `;
+        dataGlobale.headersBoites.forEach(header => {
+          let val = boite[header] || '';
+          // GESTION DU PORTEUR MULTI-CHOIX
+          if(header === "Porteur") {
+              let items = val.toString().split(/[\n,]/).map(x=>x.trim()).filter(x=>x!=='');
+              let chipsHtml = items.map(c => `<span class="std-chip">${c} <span class="std-del d-none edit-boite-
+multi" onclick="supprimerMultiBoite('${header}', '${c.replace(/'/g, "\\'")}')">×</span></span>`).join('');
+             
+              let addHtml = `<div class="d-none edit-boite-multi mt-2 d-flex gap-2"><input class="form-control form-
+control-sm" list="list-Porteur" id="add-boite-${header}" placeholder="Ajouter un porteur..."><button class="btn
+btn-sm btn-dark fw-bold" onclick="ajouterMultiBoite('${header}')">+</button></div>`;
+             
+              html += `
+              <div class="detail-row flex-column align-items-start py-2">
+                  <span class="detail-key w-100 mb-1">${header}</span>
+                  <div class="w-100">${chipsHtml || '<span class="text-muted" style="font-size:12px;">Aucun</span>'}
+</div>
+                  ${addHtml}
+                  <textarea id="input-boite-${header}" class="d-none">${items.join('\n')}</textarea>
+              </div>`;
+              return;
+          }
+          let isText = header.toLowerCase().includes("comment");
+          let isImage = header.toLowerCase().includes("image");
+         
+          let displayHeader = isImage ? "Image (URL)" : header;
+         
+          let inputHtml = `<input type="text" id="input-boite-${header}" class="edit-input d-none" value="${val}">`;
+          if(isText) inputHtml = `<textarea id="input-boite-${header}" class="edit-input d-none" rows="2">${val}
+</textarea>`;
+          // *** TRANSFORMATION MINIATURE INTEGRÉE DIRECTEMENT ICI (Boite) ***
+          let previewUrl = val;
+          if(isImage && previewUrl && String(previewUrl).includes("drive.google.com")) {
+              let m = String(previewUrl).match(/[-\w]{25,}/);
+              if(m) previewUrl = "https://drive.google.com/thumbnail?id=" + m[0] + "&sz=w1000";
+          }
+          let imgPreview = (isImage && String(val).startsWith('http')) ? `<br><img src="${previewUrl}" style="max-
+width:100px; border-radius:8px; margin-top:5px;">` : '';
+          html += `
+            <div class="detail-row">
+              <span class="detail-key">${displayHeader}</span>
+              <div id="val-boite-${header}" class="detail-value">${val.toString().replace(/\n/g, '<br>') || '-
+'}${imgPreview}</div>
+              ${inputHtml}
+            </div>`;
+        });
+        html += `<div class="mt-3 text-end"><button class="btn btn-sm btn-outline-dark fw-bold"
+onclick="dupliquer(${boiteIndex})">
+ Dupliquer cet assemblage</button></div></div>`;
+        boite.nomenclature.forEach(nom => {
+          html += `
+            <div class="component-block">
+              <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                <h5 class="fw-bold m-0" style="color:#1c1c1e;">${nom['Type'] || 'Sous-Ensemble'} <span class="text-
+primary fs-6 ms-2">${nom['PN du type']||''}</span></h5>
+                <div>
+                  <span id="spin-nom-${nom._rowIndex}" class="me-2"></span>
+                  <button class="btn-action-sm btn-compare-sm fw-bold" onclick="comparerSousEnsemble(
+${nom._rowIndex})">
+ Équiv.</button>
+                  <button class="btn-action-sm btn-edit" id="btn-edit-nom-${nom._rowIndex}"
+onclick="toggleEditNom(${nom._rowIndex})">
+ Éditer</button>
+                  <button class="btn-action-sm btn-save d-none" id="btn-save-nom-${nom._rowIndex}"
+onclick="saveNom(${nom._rowIndex})">
+</button>
+                  <button class="btn-action-sm btn-delete d-none" id="btn-del-nom-${nom._rowIndex}"
+onclick="deleteNom(${nom._rowIndex})">
+</button>
+                </div>
+              </div>
+          `;
+          dataGlobale.headersNom.forEach(header => {
+            if(header === "ID_Ligne" || header === "PN Global") return;
+            let val = nom[header] || '';
+            // GESTION DES QUALIFICATIONS MULTI-CHOIX POUR LA NOMENCLATURE
+            if (["Qualification Brouillard salin", "Qualification Vibration", "Qualification Explosion"].includes(header)) {
+                let items = val.toString().split(/[\n,]/).map(x=>x.trim()).filter(x=>x!=='');
+                let chipsHtml = items.map(c => `<span class="std-chip">${c} <span class="std-del d-none edit-nom-
+multi-${nom._rowIndex}" onclick="supprimerMultiNom(${nom._rowIndex}, '${header}', '${c.replace(/'/g,
+"\\'")}')">×</span></span>`).join('');
+               
+                let addHtml = `<div class="d-none edit-nom-multi-${nom._rowIndex} mt-2 d-flex gap-2"><input
+class="form-control form-control-sm" list="list-Qualif" id="add-nom-${nom._rowIndex}-${header}"
+placeholder="Ajouter une qualification..."><button class="btn btn-sm btn-dark fw-bold"
+onclick="ajouterMultiNom(${nom._rowIndex}, '${header}')">+</button></div>`;
+               
+                html += `
+                <div class="detail-row flex-column align-items-start py-2">
+                    <span class="detail-key w-100 mb-1">${header}</span>
+                    <div class="w-100">${chipsHtml || '<span class="text-muted" style="font-size:12px;">Aucune</span>'}
+</div>
+                    ${addHtml}
+                    <textarea id="input-nom-${nom._rowIndex}-${header}" class="d-none">${items.join('\n')}</textarea>
+                </div>`;
+                return;
+            }
+            if(header === "Composant STD") {
+              let comps = val.split('\n').filter(c => c.trim() !== '');
+              let chipsHtml = comps.map(c => `<span class="std-chip">${c} <span class="std-del"
+onclick="supprimerStd(${nom._rowIndex}, '${c.replace(/'/g, "\\'")}')" title="Retirer">×</span></span>`).join('');
+             
+              html += `
+                <div class="detail-row flex-column align-items-start border-top pt-3 mt-2" style="background:#fafafa;
+border-radius:12px; padding:15px;">
+                  <span class="detail-key mb-2" style="font-size:13px; color:#1c1c1e; width:100%;">Composants STD
+Intégrés</span>
+                  <div class="w-100 mb-2">${chipsHtml || '<span class="text-muted" style="font-size:12px;">Aucun
+composant rattaché</span>'}</div>
+                  <button class="btn btn-sm btn-outline-dark" style="font-size:11px; font-weight:700; border-radius:8px;"
+onclick="ouvrirCataloguePourNomenclature(${nom._rowIndex})">+ Ajouter composant dans ce(tte) ${nom['Type']}
+</button>
+                  <textarea id="input-nom-${nom._rowIndex}-${header}" class="d-none">${val}</textarea>
+                </div>`;
+              return;
+            }
+            let isText = header.toLowerCase().includes("comment");
+            let isImage = header.toLowerCase().includes("image");
+            let displayHeader = isImage ? "Image (URL)" : header;
+           
+            let inputHtml = `<input type="text" id="input-nom-${nom._rowIndex}-${header}" class="edit-input d-none"
+value="${val}">`;
+            if(isText) inputHtml = `<textarea id="input-nom-${nom._rowIndex}-${header}" class="edit-input d-none"
+rows="2">${val}</textarea>`;
+            // *** TRANSFORMATION MINIATURE INTEGRÉE DIRECTEMENT ICI (Nomenclature) ***
+            let previewUrlNom = val;
+            if(isImage && previewUrlNom && String(previewUrlNom).includes("drive.google.com")) {
+                let m = String(previewUrlNom).match(/[-\w]{25,}/);
+                if(m) previewUrlNom = "https://drive.google.com/thumbnail?id=" + m[0] + "&sz=w1000";
+            }
+            let imgPreview = (isImage && String(val).startsWith('http')) ? `<br><img src="${previewUrlNom}"
+style="max-width:100px; border-radius:8px; margin-top:5px;">` : '';
+            html += `
+              <div class="detail-row">
+                <span class="detail-key">${displayHeader}</span>
+                <div id="val-nom-${nom._rowIndex}-${header}" class="detail-value">${val.toString().replace(/\n/g,
+'<br>') || '-'}${imgPreview}</div>
+                ${inputHtml}
+              </div>`;
+          });
+          html += `</div>`;
+        });
+       
+        html += `<div class="text-center mt-4"><button class="btn btn-dark fw-bold px-4 py-2" style="border-
+radius:12px;" onclick="ouvrirModalSousEnsemble()">+ Ajouter Structure, Plaquette, ou Harnais</button></div><br>
+<br>`;
+        document.getElementById('slideOverBody').innerHTML = html;
+        if(isEditingBoite) toggleEditBoite();
+        Object.keys(isEditingNom).forEach(r => { if(isEditingNom[r]) toggleEditNom(r); });
+      }
+      // ==========================================
+      // EXPORT BOM ET ACTIONS GLOBALES
+      // ==========================================
+      function exporterBOM() {
+        const boite = dataGlobale.boites[currentBoiteIndex];
+        let csvContent = "data:text/csv;charset=utf-8,Type,PN du type,Composants STD,Masse (g),DAL,HL\n";
+        boite.nomenclature.forEach(nom => {
+            let std = (nom['Composant STD']||'').replace(/\n/g, ' / ');
+            csvContent += `"${nom['Type']||''}","${nom['PN du type']||''}","${std}","${nom['Masse
+(g)']||''}","${nom['DAL']||''}","${nom['HL']||''}"\n`;
+        });
+        const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent));
+link.setAttribute("download", `BOM_${boite['PN Global']}.csv`); document.body.appendChild(link); link.click();
+document.body.removeChild(link);
+      }
+      function dupliquer(boiteIndex) {
+        let boite = dataGlobale.boites[boiteIndex];
+        let newPn = prompt("Entrez le PN Global pour la nouvelle boîte dupliquée :", boite['PN Global'] + "_COPY");
+        if(newPn && newPn.trim() !== '') {
+          document.getElementById(`spin-boite`).innerHTML = `<span class="mini-spinner"></span>`;
+          google.script.run.withSuccessHandler((r) => { bootstrap.Offcanvas.getInstance(document.getElementById('
+detailsSlideOver')).hide(); preparerData(r, false); }).dupliquerBoite(boite['PN Global'], newPn.trim());
+        }
+      }
+      function supprimerBoiteEntiere(boiteIndex) {
+        if(confirm("ATTENTION : Vous allez supprimer définitivement cet assemblage ET toutes ses pièces associées.
+Continuer ?")) {
+          document.getElementById(`spin-boite`).innerHTML = `<span class="mini-spinner"></span>`;
+          google.script.run.withSuccessHandler((r) => { bootstrap.Offcanvas.getInstance(document.getElementById('
+detailsSlideOver')).hide(); preparerData(r, false); }).deleteBoiteEntiere(dataGlobale.boites[boiteIndex]['PN Global'],
+dataGlobale.boites[boiteIndex]._rowIndex);
+        }
+      }
+      // ==========================================
+      // CRUD & EDITION SILENCIEUSE
+      // ==========================================
+      function toggleEditBoite() {
+        isEditingBoite = true;
+        document.getElementById(`btn-edit-boite`).classList.add('d-none');
+        document.getElementById(`btn-save-boite`).classList.remove('d-none');
+        document.getElementById(`btn-del-boite`).classList.remove('d-none');
+        dataGlobale.headersBoites.forEach(h => {
+          if(h === "Porteur") return;
+          document.getElementById(`val-boite-${h}`).classList.add('d-none');
+          document.getElementById(`input-boite-${h}`).classList.remove('d-none');
+        });
+        document.querySelectorAll('.edit-boite-multi').forEach(el => el.classList.remove('d-none'));
+      }
+     
+      function saveBoite(boiteIndex, forced = false) {
+        if(!forced) isEditingBoite = false;
+        document.getElementById(`spin-boite`).innerHTML = `<span class="mini-spinner"></span>`;
+        let modifs = {};
+        dataGlobale.headersBoites.forEach(h => { modifs[h] = document.getElementById(`input-boite-${h}`).value; });
+        google.script.run.withSuccessHandler((r) => preparerData(r, true)).saveLigne("1_BOITES",
+dataGlobale.boites[boiteIndex]._rowIndex, modifs);
+      }
+      function supprimerMultiBoite(header, valToRemove) {
+        document.getElementById(`spin-boite`).innerHTML = `<span class="mini-spinner"></span>`;
+        let input = document.getElementById(`input-boite-${header}`);
+        let arr = input.value.split('\n').filter(x => x !== valToRemove);
+        input.value = arr.join('\n');
+        saveBoite(currentBoiteIndex, true);
+      }
+      function ajouterMultiBoite(header) {
+        let inputEl = document.getElementById(`add-boite-${header}`);
+        let val = inputEl.value.trim();
+        if(!val) return;
+        document.getElementById(`spin-boite`).innerHTML = `<span class="mini-spinner"></span>`;
+        let hiddenInput = document.getElementById(`input-boite-${header}`);
+        let current = hiddenInput.value ? hiddenInput.value.split('\n') : [];
+        if(!current.includes(val)) { current.push(val); hiddenInput.value = current.join('\n'); }
+        saveBoite(currentBoiteIndex, true);
+      }
+     
+      function toggleEditNom(r) {
+        isEditingNom[r] = true;
+        document.getElementById(`btn-edit-nom-${r}`).classList.add('d-none');
+        document.getElementById(`btn-save-nom-${r}`).classList.remove('d-none');
+        document.getElementById(`btn-del-nom-${r}`).classList.remove('d-none');
+        dataGlobale.headersNom.forEach(h => {
+            if(h==="ID_Ligne"||h==="PN Global"||h==="Composant STD"||["Qualification Brouillard salin", "Qualification
+Vibration", "Qualification Explosion"].includes(h)) return;
+            document.getElementById(`val-nom-${r}-${h}`).classList.add('d-none');
+            document.getElementById(`input-nom-${r}-${h}`).classList.remove('d-none');
+        });
+        document.querySelectorAll(`.edit-nom-multi-${r}`).forEach(el => el.classList.remove('d-none'));
+      }
+     
+      function saveNom(r, forced = false) {
+        if(!forced) isEditingNom[r] = false;
+        document.getElementById(`spin-nom-${r}`).innerHTML = `<span class="mini-spinner"></span>`;
+        let modifs = {};
+        dataGlobale.headersNom.forEach(h => { if(h!=="ID_Ligne"&&h!=="PN Global") modifs[h] =
+document.getElementById(`input-nom-${r}-${h}`).value; });
+        google.script.run.withSuccessHandler((r) => preparerData(r, true)).saveLigne("2_NOMENCLATURE", r, modifs);
+      }
+     
+      function deleteNom(r) { if(confirm("Supprimer définitivement ce sous-ensemble de l'assemblage ?")) {
+document.getElementById(`spin-nom-${r}`).innerHTML = `<span class="mini-spinner"></span>`;
+google.script.run.withSuccessHandler((r) => preparerData(r, true)).deleteLigne("2_NOMENCLATURE", r); } }
+      function supprimerStd(rowIndex, compToRemove) { document.getElementById(`spin-nom-
+${rowIndex}`).innerHTML = `<span class="mini-spinner"></span>`; let hiddenInput = document.getElementById(`
+input-nom-${rowIndex}-Composant STD`); let newArray = hiddenInput.value.split('\n').filter(c => c.trim() !== '' && c
+!== compToRemove); hiddenInput.value = newArray.join('\n'); saveNom(rowIndex, true); }
+      function supprimerMultiNom(r, header, valToRemove) {
+        document.getElementById(`spin-nom-${r}`).innerHTML = `<span class="mini-spinner"></span>`;
+        let input = document.getElementById(`input-nom-${r}-${header}`);
+        let arr = input.value.split('\n').filter(x => x !== valToRemove);
+        input.value = arr.join('\n');
+        saveNom(r, true);
+      }
+     
+      function ajouterMultiNom(r, header) {
+        let inputEl = document.getElementById(`add-nom-${r}-${header}`);
+        let val = inputEl.value.trim();
+        if(!val) return;
+        document.getElementById(`spin-nom-${r}`).innerHTML = `<span class="mini-spinner"></span>`;
+        let hiddenInput = document.getElementById(`input-nom-${r}-${header}`);
+        let current = hiddenInput.value ? hiddenInput.value.split('\n') : [];
+        if(!current.includes(val)) { current.push(val); hiddenInput.value = current.join('\n'); }
+        saveNom(r, true);
+      }
+      function ouvrirCataloguePourNomenclature(rowIndex) { currentNomRowIndex = rowIndex; filtrerCatalogue(); new
+bootstrap.Modal(document.getElementById('catalogueModal')).show(); }
+      function filtrerCatalogue() { const query = document.getElementById('catSearch').value.toLowerCase(); const
+res = catalogueComposants.filter(c => JSON.stringify(c).toLowerCase().includes(query)).slice(0, 30);
+document.getElementById('catalogueList').innerHTML = res.map((c, i) => { let type = c['Type'] || ''; let sousType =
+c['Sous Type/Désignation'] || ''; let norm = c['Norm'] || c['Standard number'] || c['Ref'] || ''; let titre = `${type}
+${sousType ? ' | '+sousType : ''}`; return `<div class="d-flex justify-content-between align-items-center p-2 border-
+bottom" onclick="ajouterCatalogue(${i})" style="cursor:pointer;"><div><b>${titre}</b><br><span class="text-
+muted" style="font-size:11px;">Norme/Réf: ${norm}</span></div><button class="btn btn-sm btn-outline-success
+fw-bold">+</button></div>`; }).join(''); }
+      function ajouterCatalogue(idx) { let cat = catalogueComposants[idx]; let type = cat['Type'] || ''; let sousType =
+cat['Sous Type/Désignation'] || ''; let norm = cat['Norm'] || cat['Standard number'] || cat['Ref'] || ''; let compFormat =
+`${type} ${sousType ? '| '+sousType : ''} ${norm ? '('+norm+')' : ''}`.trim(); if(compFormat === '') compFormat =
+"Composant Inconnu"; bootstrap.Modal.getInstance(document.getElementById('catalogueModal')).hide();
+document.getElementById(`spin-nom-${currentNomRowIndex}`).innerHTML = `<span class="mini-spinner">
+</span>`; let hiddenInput = document.getElementById(`input-nom-${currentNomRowIndex}-Composant STD`);
+if(hiddenInput.value.trim() === '') hiddenInput.value = compFormat; else hiddenInput.value += '\n' + compFormat;
+saveNom(currentNomRowIndex, true); }
+      function ouvrirModalNouvelleBoite() { new bootstrap.Modal(document.getElementById('newBoiteModal'
+)).show(); }
+      function creerBoite() { const pn = document.getElementById('newBoitePn').value; const f =
+document.getElementById('newBoiteFonction').value; const ds = document.getElementById('newBoiteDs').value;
+if(!pn) return; bootstrap.Modal.getInstance(document.getElementById('newBoiteModal')).hide();
+document.getElementById('loading').style.display='block'; google.script.run.withSuccessHandler((r) =>
+preparerData(r, false)).addBoiteLibre(pn, f, ds); }
+      function ouvrirModalSousEnsemble() { new bootstrap.Modal(document.getElementById('
+newSousEnsModal')).show(); }
+      function creerSousEnsemble() { const type = document.getElementById('newEnsType').value; const pn =
+document.getElementById('newEnsPn').value; bootstrap.Modal.getInstance(document.getElementById('
+newSousEnsModal')).hide(); document.getElementById('loading').style.display='block'; google.script.run.
+withSuccessHandler((r) => preparerData(r, true)).addSousEnsembleLibre(dataGlobale.boites[currentBoiteIndex]
+['PN Global'], type, pn); }
+      // ==========================================
+      // MULTI-RECHERCHE HYBRIDE
+      // ==========================================
+      function ouvrirMultiRecherche() {
+        let tousLesStds = new Set();
+        catalogueComposants.forEach(c => { let cf = `${c['Type']||''} ${c['Sous Type/Désignation'] ? '| '+c['Sous
+Type/Désignation'] : ''} ${c['Norm']||c['Standard number']||c['Ref'] ? '('+(c['Norm']||c['Standard
+number']||c['Ref'])+')' : ''}`.trim(); if(cf) tousLesStds.add(cf); });
+        dataGlobale.nomenclature.forEach(n => { let stds = (n['Composant STD']||'').split('\n').filter(x=>x.trim()!=='');
+stds.forEach(s => tousLesStds.add(s.trim())); });
+       
+        let datalistHtml = ''; Array.from(tousLesStds).sort().forEach(std => { datalistHtml += `<option
+value="${std.replace(/"/g, '&quot;')}">`; });
+        document.getElementById('datalistStds').innerHTML = datalistHtml;
+        renderMultiSearchChips();
+        new bootstrap.Modal(document.getElementById('multiSearchModal')).show();
+      }
+      function ajouterChipMultiRecherche() { let val = document.getElementById('multiSearchInputSelect').
+value.trim(); if(val !== '') { multiSearchChips.add(val); document.getElementById('multiSearchInputSelect').value = '';
+renderMultiSearchChips(); } }
+      function retirerChipMultiRecherche(val) { multiSearchChips.delete(val); renderMultiSearchChips(); }
+      function renderMultiSearchChips() { let container = document.getElementById('multiSearchPillsContainer');
+if(multiSearchChips.size === 0) { container.innerHTML = "<p class='text-muted' style='font-size:12px;
+margin:0;'>Aucun composant sélectionné.</p>"; return; } container.innerHTML = Array.from(multiSearchChips).
+map(c => `<span class="multi-search-pill">${c} <span class="del" onclick="retirerChipMultiRecherche('${
+c.replace(/'/g, "\\'")}')">×</span></span>`).join(''); }
+      function lancerMultiRecherche() { bootstrap.Modal.getInstance(document.getElementById('
+multiSearchModal')).hide(); if(multiSearchChips.size === 0) { activeTab = 'Toutes'; return filtrerInterface(); } let
+termesArray = Array.from(multiSearchChips); const boitesGagnantes = dataGlobale.boites.filter(boite => { const
+boiteText = JSON.stringify(boite).toLowerCase(); return termesArray.every(terme => boiteText.includes(terme.
+toLowerCase())); }); document.getElementById('searchBar').value = ''; activeTab = 'Toutes'; filtrerInterface(
+boitesGagnantes); }
+      // ==========================================
+      // COMPARATEUR GLOBAL (BOITE ENTIERE + STD COMBINES)
+      // ==========================================
+      function comparerBoite(pnSource) {
+        const source = dataGlobale.boites.find(b => b['PN Global'] === pnSource);
+        let resultats = [];
+        dataGlobale.boites.forEach(cible => {
+          if(cible['PN Global'] === pnSource) return;
+          let score = 0; let tot = 0; let raisonsHTML = [];
+          if(source['Fonction']) { tot+=15; if(cible['Fonction'] === source['Fonction']) { score+=15;
+raisonsHTML.push(`<div class="analyze-row"><span class="analyze-icon">
+</span><div class="analyze-
+content"><b>Même Fonction:</b> ${source['Fonction']}</div></div>`); } else { raisonsHTML.push(`<div
+class="analyze-row"><span class="analyze-icon text-danger">
+</span><div class="analyze-content"><b>
+Fonction:</b> ${source['Fonction']} vs ${cible['Fonction']}</div></div>`); } }
+          if(source['Niveau de qualification']) { tot+=10; if(cible['Niveau de qualification'] === source['Niveau de
+qualification']) { score+=10; raisonsHTML.push(`<div class="analyze-row"><span class="analyze-icon">
+</span>
+<div class="analyze-content"><b>Même Niveau Qualif:</b> ${source['Niveau de qualification']}</div></div>`); }
+else { raisonsHTML.push(`<div class="analyze-row"><span class="analyze-icon text-danger">
+</span><div
+class="analyze-content"><b>Qualif. différente:</b> ${source['Niveau de qualification']} vs ${cible['Niveau de
+qualification']||'-'}</div></div>`); } }
+          let srcTypes = source.nomenclature.map(l=>l['Type']).filter(t=>t); let cibTypes = cible.nomenclature.map(l=>l['
+Type']).filter(t=>t);
+          if(srcTypes.length > 0) { tot+=25; let missing = srcTypes.filter(t => !cibTypes.includes(t)); if(missing.length
+=== 0) { score+=25; raisonsHTML.push(`<div class="analyze-row"><span class="analyze-icon">
+</span><div
+class="analyze-content"><b>Architecture complète</b> (Possède tous les S/Ensembles requis)</div></div>`); }
+else { raisonsHTML.push(`<div class="analyze-row"><span class="analyze-icon text-danger">
+</span><div
+class="analyze-content"><b>S/Ensembles manquants:</b> ${missing.join(', ')}</div></div>`); } }
+          // ANALYSE DES COMPOSANTS STD GLOBAUX
+          let srcStd = [...new Set(source.nomenclature.map(l=>l['Composant STD']).filter(t=>t).flatMap(s =>
+s.split('\n').map(x=>x.trim())))];
+          let cibStd = [...new Set(cible.nomenclature.map(l=>l['Composant STD']).filter(t=>t).flatMap(s =>
+s.split('\n').map(x=>x.trim())))];
+         
+          if(srcStd.length > 0 || cibStd.length > 0) {
+            tot+=50;
+            let shared = srcStd.filter(t => cibStd.includes(t));
+            let missingInCible = srcStd.filter(t => !cibStd.includes(t));
+            let extraInCible = cibStd.filter(t => !srcStd.includes(t));
+            if(srcStd.length > 0) { score += (50 * (shared.length/srcStd.length)); }
+            let stdHtmlBlock = `<div class="mt-3">`;
+            if(shared.length > 0) stdHtmlBlock += `<div class="p-2 mb-2 rounded" style="background:#f0fdf4;
+border:1px solid #bbf7d0;"><div class="fw-bold text-success mb-1" style="font-size:11px; text-
+transform:uppercase;">
+ En commun (${shared.length})</div><div style="font-size:12px;
+color:#166534;">${[...new Set(shared)].join('<br>')}</div></div>`;
+            if(missingInCible.length > 0) stdHtmlBlock += `<div class="p-2 mb-2 rounded" style="background:#fffbeb;
+border:1px solid #fef08a;"><div class="fw-bold mb-1" style="font-size:11px; text-transform:uppercase;
+color:#b45309;">
+ Absents de cet assemblage (${missingInCible.length})</div><div style="font-size:12px;
+color:#92400e;">${[...new Set(missingInCible)].join('<br>')}</div></div>`;
+            if(extraInCible.length > 0) stdHtmlBlock += `<div class="p-2 rounded" style="background:#f8fafc;
+border:1px solid #e2e8f0;"><div class="fw-bold text-secondary mb-1" style="font-size:11px; text-
+transform:uppercase;">
+ Présents en plus (${extraInCible.length})</div><div style="font-size:12px;
+color:#475569;">${[...new Set(extraInCible)].join('<br>')}</div></div>`;
+            stdHtmlBlock += `</div>`;
+            raisonsHTML.push(stdHtmlBlock);
+          }
+          let finalScore = tot > 0 ? Math.round((score/tot)*100) : 0;
+          if(finalScore >= 15) resultats.push({ boite: cible, score: finalScore, html: raisonsHTML.join('') });
+        });
+        resultats.sort((a,b) => b.score - a.score);
+        let finalHtml = resultats.length === 0 ? `<p class="text-center py-4">Aucune équivalence technique trouvée.
+</p>` : resultats.map(res => `
+          <div class="component-block">
+            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+              <div><h5 class="fw-bold text-primary m-0">${res.boite['PN Global']}</h5><div class="text-muted mt-1"
+style="font-size:12px;">Fonction : <b>${res.boite['Fonction']}</b></div></div>
+              <div class="fw-bold px-3 py-1" style="background:#f0f4f8; border-radius:8px;
+color:#0071e3;">${res.score}% Match</div>
+            </div>
+            <div>${res.html}</div>
+          </div>`).join('');
+        document.getElementById('compareTitle').innerText = `Équivalences Globales : ${pnSource}`;
+document.getElementById('compareResult').innerHTML = finalHtml; new bootstrap.Modal(document.
+getElementById('compareModal')).show();
+      }
+      // ==========================================
+      // COMPARATEUR SOUS-ENSEMBLE (ULTRA DETAILLE AVEC BLOCS COULEURS)
+      // ==========================================
+      function comparerSousEnsemble(rowIndex) {
+        const sourceNom = dataGlobale.nomenclature.find(n => n._rowIndex === rowIndex);
+        let resultats = [];
+        dataGlobale.nomenclature.forEach(cible => {
+          if(cible._rowIndex === rowIndex || cible['Type'] !== sourceNom['Type']) return;
+         
+          let points = 0; let totalPts = 0; let raisonsHTML = [];
+          let sMontage = sourceNom['Montage']; let cMontage = cible['Montage'];
+          if(sMontage) { totalPts+=10; if(sMontage === cMontage) { points+=10; raisonsHTML.push(`<div
+class="analyze-row"><span class="analyze-icon">
+</span><div class="analyze-content"><b>Même Montage:
+</b> ${sMontage}</div></div>`); } else { raisonsHTML.push(`<div class="analyze-row"><span class="analyze-icon
+text-danger">
+</span><div class="analyze-content"><b>Montage diff:</b> ${sMontage} vs ${cMontage||'-'}
+</div></div>`); } }
+          let sPas = parseFloat(sourceNom['Nombre de pas']); let cPas = parseFloat(cible['Nombre de pas']);
+          if(!isNaN(sPas)) { totalPts+=10; if(sPas === cPas) { points+=10; raisonsHTML.push(`<div class="analyze-
+row"><span class="analyze-icon">
+</span><div class="analyze-content"><b>Même Hauteur:</b> ${sPas} pas
+(~${(sPas*9.525).toFixed(1)}mm)</div></div>`); } else { raisonsHTML.push(`<div class="analyze-row"><span
+class="analyze-icon text-warning">
+</span><div class="analyze-content"><b>Hauteur diff:</b> ${sPas} pas vs
+${isNaN(cPas)?'-':cPas} pas</div></div>`); } }
+          let sL = parseFloat(sourceNom['Dim Long (mm)']); let sl = parseFloat(sourceNom['Dim Larg (mm)']); let cL =
+parseFloat(cible['Dim Long (mm)']); let cl = parseFloat(cible['Dim Larg (mm)']);
+          if(!isNaN(sL) && !isNaN(sl)) { totalPts+=10; if(sL===cL && sl===cl) { points+=10; raisonsHTML.push(`<div
+class="analyze-row"><span class="analyze-icon">
+</span><div class="analyze-content"><b>Dimensions
+identiques:</b> ${sL}x${sl} mm</div></div>`); } else if(!isNaN(cL)) { raisonsHTML.push(`<div class="analyze-row">
+<span class="analyze-icon text-warning">
+</span><div class="analyze-content"><b>Dimensions diff:</b>
+${sL}x${sl} vs ${cL}x${cl} mm</div></div>`); } }
+          let sM = parseFloat(sourceNom['Masse (g)']); let cM = parseFloat(cible['Masse (g)']);
+          if(!isNaN(sM)) { totalPts+=10; if(!isNaN(cM)) { if(Math.abs(sM-cM)/sM <= 0.05) { points+=10;
+raisonsHTML.push(`<div class="analyze-row"><span class="analyze-icon">
+</span><div class="analyze-
+content"><b>Masse similaire (±5%):</b> ~${cM}g</div></div>`); } else { raisonsHTML.push(`<div class="analyze-
+row"><span class="analyze-icon text-warning">
+</span><div class="analyze-content"><b>Masse:</b> ${sM}g
+vs ${cM}g</div></div>`); } } }
+          if(sourceNom['DAL']) { totalPts+=5; if(sourceNom['DAL']===cible['DAL']) { points+=5;
+raisonsHTML.push(`<div class="analyze-row"><span class="analyze-icon">
+</span><div class="analyze-
+content"><b>Même DAL:</b> ${sourceNom['DAL']}</div></div>`); } else { raisonsHTML.push(`<div
+class="analyze-row"><span class="analyze-icon text-danger">
+</span><div class="analyze-content"><b>DAL
+différent:</b> ${cible['DAL']||'-'}</div></div>`); } }
+          if(sourceNom['HL']) { totalPts+=5; if(sourceNom['HL']===cible['HL']) { points+=5; raisonsHTML.push(`<div
+class="analyze-row"><span class="analyze-icon">
+</span><div class="analyze-content"><b>Même HL:</b>
+${sourceNom['HL']}</div></div>`); } else { raisonsHTML.push(`<div class="analyze-row"><span class="analyze-
+icon text-danger">
+</span><div class="analyze-content"><b>HL différent:</b> ${cible['HL']||'-'}</div></div>`); }
+}
+          let quals = ['Qualification Brouillard salin', 'Qualification Vibration', 'Qualification Explosion'];
+          let sQuals = quals.map(q => sourceNom[q]).filter(q=>q); let cQuals = quals.map(q => cible[q]).filter(q=>q);
+          if(sQuals.length > 0) { totalPts+=15; let com = sQuals.filter(q => cQuals.includes(q));
+if(com.length===sQuals.length) { points+=15; raisonsHTML.push(`<div class="analyze-row"><span class="analyze-
+icon">
+</span><div class="analyze-content"><b>Toutes Qualif. identiques</b></div></div>`); } else
+if(com.length>0) { points+=7; raisonsHTML.push(`<div class="analyze-row"><span class="analyze-icon text-
+warning">
+</span><div class="analyze-content"><b>Qualifs partielles:</b> ${com.join(', ')}</div></div>`); } else
+{ raisonsHTML.push(`<div class="analyze-row"><span class="analyze-icon text-danger">
+</span><div
+class="analyze-content"><b>Aucune qualif. en commun</b></div></div>`); } }
+          // ANALYSE DETAILLEE DES COMPOSANTS STD (NOUVEAU DESIGN)
+          let sStd = (sourceNom['Composant STD']||'').split('\n').map(x=>x.trim()).filter(t=>t);
+          let cStd = (cible['Composant STD']||'').split('\n').map(x=>x.trim()).filter(t=>t);
+         
+          if(sStd.length > 0 || cStd.length > 0) {
+            totalPts+=35;
+            let shared = sStd.filter(t => cStd.includes(t));
+            let missingInCible = sStd.filter(t => !cStd.includes(t));
+            let extraInCible = cStd.filter(t => !sStd.includes(t));
+            if(sStd.length > 0) { points += (35*(shared.length/sStd.length)); }
+            let stdHtmlBlock = `<div class="mt-3">`;
+            if(shared.length > 0) stdHtmlBlock += `<div class="p-2 mb-2 rounded" style="background:#f0fdf4;
+border:1px solid #bbf7d0;"><div class="fw-bold text-success mb-1" style="font-size:11px; text-
+transform:uppercase;">
+ En commun (${shared.length})</div><div style="font-size:12px;
+color:#166534;">${[...new Set(shared)].join('<br>')}</div></div>`;
+            if(missingInCible.length > 0) stdHtmlBlock += `<div class="p-2 mb-2 rounded" style="background:#fffbeb;
+border:1px solid #fef08a;"><div class="fw-bold mb-1" style="font-size:11px; text-transform:uppercase;
+color:#b45309;">
+ Absents de cette pièce (${missingInCible.length})</div><div style="font-size:12px;
+color:#92400e;">${[...new Set(missingInCible)].join('<br>')}</div></div>`;
+            if(extraInCible.length > 0) stdHtmlBlock += `<div class="p-2 rounded" style="background:#f8fafc;
+border:1px solid #e2e8f0;"><div class="fw-bold text-secondary mb-1" style="font-size:11px; text-
+transform:uppercase;">
+ Présents en supplément (${extraInCible.length})</div><div style="font-size:12px;
+color:#475569;">${[...new Set(extraInCible)].join('<br>')}</div></div>`;
+            stdHtmlBlock += `</div>`;
+            raisonsHTML.push(stdHtmlBlock);
+          }
+          if(totalPts===0) totalPts=1; let finalScore = Math.round((points/totalPts)*100);
+         
+          if(finalScore >= 15) {
+             const parentBox = dataGlobale.boites.find(b => b['PN Global'] === cible['PN Global']);
+             const fonctionTarget = parentBox ? parentBox['Fonction'] : 'Inconnue';
+             resultats.push({ cible: cible, score: finalScore, fonction: fonctionTarget, html: raisonsHTML.join('') });
+          }
+        });
+        resultats.sort((a,b) => b.score - a.score);
+        let finalHtml = resultats.length === 0 ? `<p class="text-center py-4">Aucune pièce similaire trouvée (seuil
+15%).</p>` : resultats.map(res => `
+          <div class="component-block">
+            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+              <div>
+                <h5 class="fw-bold m-0 text-primary">${res.cible['PN du type']}</h5>
+                <div class="text-muted mt-1" style="font-size:12px;">Dans : <b>${res.cible['PN Global']}</b> (Fonction :
+${res.fonction})</div>
+              </div>
+              <div class="fw-bold px-3 py-1" style="background:#f0f4f8; border-radius:8px;
+color:#0071e3;">${res.score}% Match</div>
+            </div>
+            <div>${res.html}</div>
+          </div>
+        `).join('');
+       
+        document.getElementById('compareTitle').innerText = `Équivalences : ${sourceNom['Type']}
+(${sourceNom['PN du type']})`;
+        document.getElementById('compareResult').innerHTML = finalHtml;
+        new bootstrap.Modal(document.getElementById('compareModal')).show();
+      }
+    </script>
+  </body>
+</html>
