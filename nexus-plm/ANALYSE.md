@@ -105,7 +105,7 @@ que personne ne s'en aperçoive.
 
 **B2 — Aucun `withFailureHandler` dans toute l'application.** *(critique — perte de données silencieuse)*
 
-Les 10 appels `google.script.run` déclarent un `withSuccessHandler`, jamais de
+Les 9 appels `google.script.run` déclarent un `withSuccessHandler`, jamais de
 `withFailureHandler`. Si le serveur lève (quota, droits, ligne supprimée entre-temps,
 coupure réseau), **il ne se passe rien** : le spinner tourne indéfiniment, aucun message.
 
@@ -412,7 +412,7 @@ Mais avec une condition, et c'est le point d'architecture important :
 
 > **`google.script.run` ne doit plus apparaître que dans un seul fichier.**
 
-Aujourd'hui il est appelé directement à 10 endroits, au milieu de fonctions d'interface.
+Aujourd'hui il est appelé directement à 9 endroits, au milieu de fonctions d'interface.
 On le met derrière un module `Api` qui renvoie des `Promise`. Ce qu'on gagne :
 
 1. Le `withFailureHandler` manquant est écrit **une fois** (B2 réglé partout).
@@ -475,15 +475,15 @@ Deux règles qui portent l'essentiel du gain :
 
 ### Ordre d'exécution proposé
 
-| # | Lot | Contenu | Risque |
-|---|---|---|---|
-| 1 | Filet de sécurité | `clasp` + dépôt git, source authentique commitée | nul |
-| 2 | Bugs critiques | B1, B2, B3, B4, B5, B6 — correctifs ciblés, sans restructurer | faible |
-| 3 | Socle | `Config`, `Repository` (écriture par lot), `Api` (Promise + erreurs) | moyen |
-| 4 | Rendu | `esc()` + délégation d'événements → F1 éliminé | moyen |
-| 5 | Métier | extraction du scoring pur + correction des 2 bugs de pondération | moyen |
-| 6 | Perf | retours différentiels, index de recherche, anti-rebond, cache catalogue | faible |
-| 7 | Robustesse | `ID_Ligne` comme clé, `LockService`, journal des modifications | moyen |
+| # | Lot | Contenu | Risque | État |
+|---|---|---|---|---|
+| 1 | Filet de sécurité | `clasp` + dépôt git, source authentique commitée | nul | à faire |
+| 2 | Bugs critiques | B1, B2, B3, B4, B5, B6 — correctifs ciblés, sans restructurer | faible | ✅ `correctifs/` |
+| 3 | Socle | `Config`, `Repository` (écriture par lot), `Api` (Promise + erreurs) | moyen | à faire |
+| 4 | Rendu | `esc()` + délégation d'événements → F1 éliminé | moyen | à faire |
+| 5 | Métier | extraction du scoring pur + correction des 2 bugs de pondération | moyen | à faire |
+| 6 | Perf | retours différentiels, index de recherche, anti-rebond, cache catalogue | faible | à faire |
+| 7 | Robustesse | `ID_Ligne` comme clé, `LockService`, journal des modifications | moyen | à faire |
 
 Le lot 2 est indépendant : il peut partir en production tout de suite, avant toute
 restructuration. **Les 14 fonctions serveur et les ~30 fonctions client sont toutes
