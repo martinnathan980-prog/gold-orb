@@ -8,8 +8,27 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `test/` — 158 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test
+npm test                 # 158 tests : logique client + serveur
+npm run demo             # construit build/demo.html
+npm run test:navigateur  # 68 tests dans un vrai Chromium
 ```
+
+## Démonstration navigable
+
+`build/build-demo.js` assemble une version qui tourne hors de Google. Elle
+résout les `<?!= include() ?>`, inline Bootstrap (la politique de sécurité des
+Artifacts interdit les feuilles de style externes) et insère
+`demo/FauxServeur.html`, qui fournit un `google.script.run` factice adossé à
+des données en mémoire.
+
+**Aucun fichier de `src/` n'est modifié pour la démo.** C'est la démonstration
+concrète du découpage : `Api.html` appelle `google.script.run` exactement comme
+en production, seul le transport change. C'est aussi ce qui permet de tester
+l'interface dans un navigateur sans Google (`test/test-navigateur.js`).
+
+La démo ajoute un interrupteur « simuler une panne serveur » : il sert à voir
+le comportement d'échec, qui était totalement muet dans la version d'origine.
+L'aperçu du CSV remplace le téléchargement, bloqué par le bac à sable.
 
 ## Structure
 

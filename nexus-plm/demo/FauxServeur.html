@@ -1,0 +1,270 @@
+<script>
+// ============================================================
+// DÉMONSTRATION — faux serveur en mémoire.
+//
+// Ce fichier ne fait PARTIE D'AUCUNE LIVRAISON. Il n'existe que pour faire
+// tourner l'application hors de Google : il fournit un google.script.run
+// factice, avec la même forme que le vrai.
+//
+// Conséquence directe du découpage : AUCUN fichier de src/client n'est
+// modifié pour cette démo. Api.html appelle google.script.run exactement
+// comme en production ; seul le transport est simulé.
+// ============================================================
+
+const LATENCE_MS = 220;          // rend les indicateurs de chargement visibles
+window.SIMULER_PANNE = false;    // basculé par la barre de démo
+
+const EN_TETES_BOITES = ['Fonction', 'PN Global', 'DS/VCI Associé', 'Porteur', 'Statut',
+                         'Niveau de qualification', 'Image', 'Commentaires libres'];
+const EN_TETES_NOM = ['ID_Ligne', 'PN Global', 'Type', 'PN du type', 'Montage',
+                      'Nombre de pas', 'Dim Long (mm)', 'Dim Larg (mm)', 'Masse (g)',
+                      'HL', 'DAL', 'Qualification Brouillard salin',
+                      'Qualification Vibration', 'Qualification Explosion',
+                      'Composant STD', 'Image', 'Commentaires libres'];
+
+const STATUTS_VALIDES = ['En étude', 'Validé', 'Obsolète'];
+const STATUT_DEFAUT = 'En étude';
+
+function objet(enTetes, valeurs) {
+  const o = {};
+  enTetes.forEach(function (h, i) { o[h] = valeurs[i] !== undefined ? valeurs[i] : ''; });
+  return o;
+}
+
+let compteurId = 0;
+function nouvelId() { return 'L-demo-' + (++compteurId).toString(36) + '-' + Date.now().toString(36); }
+
+// --- Jeu de données : celui de Setup.gs ---------------------------------
+const BASE = {
+  boites: [
+    ['APU',     '332P20001',   '332P20051',   'Super Puma', 'Validé',   'Qualified to H225', '', ''],
+    ['EOS',     '332P94101',   '332P94051',   'Multi',      'En étude', 'Qualified to H225', '', ''],
+    ['APU',     'U880A240101', 'U880A240051', 'H160',       'Obsolète', 'Qualified to H160', '', ''],
+    ['NAV',     '332N10001',   '332N10051',   'Super Puma', 'Validé',   'Qualified to H225', '', ''],
+    ['COM',     '332C50001',   '332C50051',   'Multi',      'En étude', 'Qualified to H160', '', ''],
+    ['RADAR',   'U880R30001',  'U880R30051',  'H160',       'Validé',   'Qualified to H160', '', ''],
+    ['FLIGHT',  '332F40001',   '332F40051',   'Super Puma', 'Validé',   'Qualified to H225', '', ''],
+    ['POWER',   'U880P50001',  'U880P50051',  'H160',       'En étude', 'Qualified to H160', '', ''],
+    ['SENSOR',  '332S60001',   '332S60051',   'Multi',      'Obsolète', 'Qualified to H225', '', ''],
+    ['DISPLAY', 'U880D70001',  'U880D70051',  'H160',       'Validé',   'Qualified to H160', '', '']
+  ].map(function (l) { return objet(EN_TETES_BOITES, l); }),
+
+  nomenclature: [
+    ['332P20001',   'Structure Boite',      '332P20001.01',  'Console STD',  '1', '500', '140', '500',   'A', 'A', 'Cat. S', 'Qual. H225', 'Case 1', ''],
+    ['332P20001',   'Harnais',              '332P20001.03',  'Console STD',  '1', '-',   '-',   '126.5', 'A', 'A', 'Cat. F', 'Qual. H225', 'Case 3', 'Bouton poussoir | Push button (ECS 7251)\nBouton poussoir | Push button (ECS 0763)'],
+    ['332P94101',   'Structure Boite',      '332P94101.01',  'Hors console', '5', '400', '200', '400',   'B', 'C', 'Cat. T', 'Qual. H225', '', ''],
+    ['332P94101',   'Plaquette éclairante', '332P94101.02',  'Hors console', '5', '400', '200', '180',   'D', 'D', 'Cat. T', 'Qual. H225', '', ''],
+    ['U880A240101', 'Harnais',              'U880A240401',   'Console STD',  '2', '-',   '-',   '115',   'A', 'A', 'Cat. S', 'Qual. H160', '', 'Bouton poussoir | Pushrod (ASNE 0239)'],
+    ['332N10001',   'Structure Boite',      '332N10001.01',  'Rack',         '2', '300', '200', '800',   'B', 'B', 'Cat. S', 'Qual. H225', '', ''],
+    ['332C50001',   'Harnais',              '332C50001.02',  'Rack',         '3', '-',   '-',   '250',   'C', 'C', 'Cat. T', 'Qual. H160', '', 'Bouton poussoir | Push button (ECS 0780)\nBouton poussoir | Push button (ECS 7251)'],
+    ['U880R30001',  'Structure Boite',      'U880R30001.01', 'Nez',          '1', '600', '400', '1500',  'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', ''],
+    ['332F40001',   'Plaquette éclairante', '332F40001.02',  'Console STD',  '1', '100', '50',  '50',    'A', 'A', 'Cat. S', 'Qual. H225', '', 'Switch | Switch (ASNE 0567)'],
+    ['U880P50001',  'Harnais',              'U880P50001.03', 'Soute',        '4', '-',   '-',   '800',   'B', 'B', 'Cat. F', 'Qual. H160', '', 'Double command | FRF 772-034 (IG)'],
+    ['332P20001',   'Plaquette éclairante', '332P20001.05',  'Console STD',  '1', '100', '50',  '52',    'A', 'A', 'Cat. S', 'Qual. H225', '', 'Switch | Switch (ASNE 0567)']
+  ].map(function (l) { return objet(EN_TETES_NOM, [nouvelId()].concat(l)); }),
+
+  catalogue: [
+    { Type: 'Bouton poussoir', 'Sous Type/Désignation': 'Push button', Norm: 'ECS 7251' },
+    { Type: 'Bouton poussoir', 'Sous Type/Désignation': 'Push button', Norm: 'ECS 0763' },
+    { Type: 'Bouton poussoir', 'Sous Type/Désignation': 'Push button', Norm: 'ECS 0780' },
+    { Type: 'Bouton poussoir', 'Sous Type/Désignation': 'Pushrod',     Norm: 'ASNE 0239' },
+    { Type: 'Switch',          'Sous Type/Désignation': 'Switch',      Norm: 'ASNE 0567' },
+    { Type: 'Switch',          'Sous Type/Désignation': 'Toggle',      Norm: 'ASNE 0571' },
+    { Type: 'Double command',  'Sous Type/Désignation': 'FRF 772-034', Norm: 'IG' },
+    { Type: 'Relais',          'Sous Type/Désignation': 'Relay 28V',   Norm: 'ECS 1120' },
+    { Type: 'Connecteur',      'Sous Type/Désignation': 'Circulaire',  Norm: 'EN 3645' },
+    { Type: 'Connecteur',      'Sous Type/Désignation': 'Rectangulaire', Norm: 'EN 4165' },
+    { Type: 'Diode',           'Sous Type/Désignation': 'Diode 1N4007', Norm: 'ASNE 0910' },
+    { Type: 'Fusible',         'Sous Type/Désignation': 'Fusible 5A',  Norm: 'NSA 9350' },
+    { Type: 'Voyant',          'Sous Type/Désignation': 'LED verte',   Norm: 'ECS 4410' },
+    { Type: 'Voyant',          'Sous Type/Désignation': 'LED rouge',   Norm: 'ECS 4411' },
+    { Type: 'Résistance',      'Sous Type/Désignation': 'Shunt 50 mΩ', Norm: 'NSA 5512' },
+    { Type: 'Cosse',           'Sous Type/Désignation': 'Cosse à sertir', Norm: 'EN 2491' }
+  ]
+};
+
+let DONNEES = JSON.parse(JSON.stringify(BASE));
+function reinitialiserDemo() { DONNEES = JSON.parse(JSON.stringify(BASE)); compteurId = 0; }
+
+// --- Helpers, alignés sur Api.gs ---------------------------------------
+function trouverBoite(pn) {
+  return DONNEES.boites.find(function (b) {
+    return String(b['PN Global']).trim() === String(pn).trim();
+  }) || null;
+}
+function trouverNom(id) {
+  return DONNEES.nomenclature.find(function (n) {
+    return String(n['ID_Ligne']).trim() === String(id).trim();
+  }) || null;
+}
+function exigerTexte(v, libelle) {
+  const s = String(v === null || v === undefined ? '' : v).trim();
+  if (!s) throw new Error(libelle + ' est obligatoire.');
+  return s;
+}
+function exigerPnLibre(pn) {
+  if (trouverBoite(pn)) throw new Error('Le PN Global "' + pn + '" existe déjà.');
+}
+function validerStatut(s) {
+  const p = String(s || '').trim();
+  if (!p) return STATUT_DEFAUT;
+  const t = STATUTS_VALIDES.find(function (x) { return x.toLowerCase() === p.toLowerCase(); });
+  if (!t) throw new Error('Statut invalide : "' + p + '". Attendu : ' + STATUTS_VALIDES.join(', ') + '.');
+  return t;
+}
+function copie(o) { return JSON.parse(JSON.stringify(o)); }
+
+// --- Implémentation des fonctions exposées -----------------------------
+const SERVEUR = {
+  getToutLeContenu: function () {
+    return {
+      boites: copie(DONNEES.boites),
+      nomenclature: copie(DONNEES.nomenclature),
+      headersBoites: EN_TETES_BOITES.slice(),
+      headersNom: EN_TETES_NOM.slice(),
+      config: {
+        multiBoite: ['Porteur'],
+        multiNom: ['Qualification Brouillard salin', 'Qualification Vibration',
+                   'Qualification Explosion'],
+        lectureSeuleNom: ['ID_Ligne', 'PN Global'],
+        statuts: STATUTS_VALIDES,
+        colonneStd: 'Composant STD'
+      }
+    };
+  },
+
+  getCatalogueComposants: function () { return copie(DONNEES.catalogue); },
+
+  saveBoite: function (pn, modifications) {
+    const boite = trouverBoite(pn);
+    if (!boite) throw new Error('Élément introuvable (PN Global = ' + pn + '). Rechargez la page.');
+    const modifs = Object.assign({}, modifications);
+
+    const nouveauPn = modifs['PN Global'] !== undefined ? String(modifs['PN Global']).trim() : null;
+    const renomme = nouveauPn !== null && nouveauPn !== String(pn).trim();
+    if (renomme) { exigerTexte(nouveauPn, 'Le PN Global'); exigerPnLibre(nouveauPn); }
+
+    if (modifs['Statut'] !== undefined) {
+      const voulu = String(modifs['Statut']).trim();
+      if (voulu !== String(boite['Statut']).trim()) modifs['Statut'] = validerStatut(voulu);
+      else delete modifs['Statut'];
+    }
+
+    Object.keys(modifs).forEach(function (k) {
+      if (EN_TETES_BOITES.indexOf(k) !== -1) boite[k] = modifs[k];
+    });
+
+    if (renomme) {
+      DONNEES.nomenclature.forEach(function (n) {
+        if (String(n['PN Global']).trim() === String(pn).trim()) n['PN Global'] = nouveauPn;
+      });
+    }
+    return { ok: true, boite: copie(boite), pnPrecedent: pn };
+  },
+
+  addBoite: function (pn, fonction, dsVci) {
+    const propre = exigerTexte(pn, 'Le PN Global');
+    exigerPnLibre(propre);
+    const b = objet(EN_TETES_BOITES, []);
+    b['PN Global'] = propre;
+    b['Fonction'] = String(fonction || '').trim();
+    b['DS/VCI Associé'] = String(dsVci || '').trim();
+    b['Statut'] = STATUT_DEFAUT;
+    DONNEES.boites.push(b);
+    return { ok: true, boite: copie(b) };
+  },
+
+  deleteBoiteEntiere: function (pn) {
+    const boite = trouverBoite(pn);
+    if (!boite) throw new Error('Assemblage introuvable : ' + pn);
+    const avant = DONNEES.nomenclature.length;
+    DONNEES.nomenclature = DONNEES.nomenclature.filter(function (n) {
+      return String(n['PN Global']).trim() !== String(pn).trim();
+    });
+    DONNEES.boites = DONNEES.boites.filter(function (b) { return b !== boite; });
+    return { ok: true, pnSupprime: pn, nbNomenclature: avant - DONNEES.nomenclature.length };
+  },
+
+  dupliquerBoite: function (pnSource, nouveauPn) {
+    const propre = exigerTexte(nouveauPn, 'Le nouveau PN Global');
+    exigerPnLibre(propre);
+    const source = trouverBoite(pnSource);
+    if (!source) throw new Error('Assemblage source introuvable : ' + pnSource);
+
+    const nouvelle = copie(source);
+    nouvelle['PN Global'] = propre;
+    nouvelle['Statut'] = STATUT_DEFAUT;
+    DONNEES.boites.push(nouvelle);
+
+    const copies = DONNEES.nomenclature
+      .filter(function (n) { return String(n['PN Global']).trim() === String(pnSource).trim(); })
+      .map(function (n) {
+        const c = copie(n);
+        c['ID_Ligne'] = nouvelId();
+        c['PN Global'] = propre;
+        return c;
+      });
+    copies.forEach(function (c) { DONNEES.nomenclature.push(c); });
+    return { ok: true, boite: copie(nouvelle), nomenclature: copie(copies) };
+  },
+
+  saveNomenclature: function (id, modifications) {
+    const ligne = trouverNom(id);
+    if (!ligne) throw new Error('Élément introuvable (ID_Ligne = ' + id + '). Rechargez la page.');
+    Object.keys(modifications).forEach(function (k) {
+      if (k === 'ID_Ligne' || k === 'PN Global') return;
+      if (EN_TETES_NOM.indexOf(k) !== -1) ligne[k] = modifications[k];
+    });
+    return { ok: true, ligne: copie(ligne) };
+  },
+
+  addSousEnsemble: function (pn, type, pnType) {
+    if (!trouverBoite(pn)) throw new Error('Assemblage introuvable : ' + pn);
+    const l = objet(EN_TETES_NOM, []);
+    l['ID_Ligne'] = nouvelId();
+    l['PN Global'] = pn;
+    l['Type'] = String(type || '').trim();
+    l['PN du type'] = String(pnType || '').trim();
+    DONNEES.nomenclature.push(l);
+    return { ok: true, ligne: copie(l) };
+  },
+
+  deleteNomenclature: function (id) {
+    const ligne = trouverNom(id);
+    if (!ligne) throw new Error('Élément introuvable (ID_Ligne = ' + id + ').');
+    DONNEES.nomenclature = DONNEES.nomenclature.filter(function (n) { return n !== ligne; });
+    return { ok: true, idSupprime: id };
+  }
+};
+
+// --- Faux google.script.run --------------------------------------------
+// Même forme que le vrai : chaînage des handlers, appel asynchrone.
+window.google = {
+  script: {
+    run: (function construire(succes, echec) {
+      const runner = {
+        withSuccessHandler: function (f) { return construire(f, echec); },
+        withFailureHandler: function (f) { return construire(succes, f); }
+      };
+      Object.keys(SERVEUR).forEach(function (nom) {
+        runner[nom] = function () {
+          const args = Array.prototype.slice.call(arguments);
+          setTimeout(function () {
+            try {
+              if (window.SIMULER_PANNE) {
+                throw new Error('Panne simulée : le serveur est injoignable.');
+              }
+              const r = SERVEUR[nom].apply(null, args);
+              if (succes) succes(r);
+            } catch (e) {
+              if (echec) echec(e);
+              else console.error('Aucun gestionnaire d\'échec pour ' + nom, e);
+            }
+          }, LATENCE_MS);
+        };
+      });
+      return runner;
+    })(null, null)
+  }
+};
+</script>

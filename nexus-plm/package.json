@@ -4,6 +4,8 @@
   "private": true,
   "description": "Gestion de nomenclatures d'assemblages — Google Apps Script + Sheets",
   "scripts": {
-    "test": "node test/test.js && node test/test-serveur.js"
+    "test": "node test/test.js && node test/test-serveur.js",
+    "demo": "node build/build-demo.js",
+    "test:navigateur": "node build/build-demo.js && node test/test-navigateur.js"
   }
 }
