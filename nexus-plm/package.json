@@ -1,0 +1,9 @@
+{
+  "name": "nexus-plm",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Gestion de nomenclatures d'assemblages — Google Apps Script + Sheets",
+  "scripts": {
+    "test": "node test/test.js && node test/test-serveur.js"
+  }
+}

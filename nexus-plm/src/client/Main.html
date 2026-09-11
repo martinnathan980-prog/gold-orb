@@ -1,0 +1,367 @@
+<script>
+// ============================================================
+// NEXUS PLM — contrôleur.
+// Toutes les actions déclenchables depuis l'interface sont déclarées ici,
+// et atteintes par délégation (data-action). Plus aucun onclick en ligne,
+// donc plus aucune donnée injectée dans du code.
+// ============================================================
+
+function indicateurBoite() {
+  const el = parId('spin-boite');
+  if (el) el.innerHTML = '<span class="mini-spinner"></span>';
+}
+function indicateurNom(id) {
+  const el = parId('spin-nom-' + id);
+  if (el) el.innerHTML = '<span class="mini-spinner"></span>';
+}
+
+function ouvrirModal(id) {
+  const el = parId(id);
+  if (!el) return null;
+  const modal = bootstrap.Modal.getOrCreateInstance(el);
+  modal.show();
+  return modal;
+}
+function fermerModal(id) {
+  const el = parId(id);
+  if (!el) return;
+  const modal = bootstrap.Modal.getInstance(el);
+  if (modal) modal.hide();
+}
+function ouvrirPanneau() {
+  bootstrap.Offcanvas.getOrCreateInstance(parId('detailsSlideOver')).show();
+}
+function fermerPanneau() {
+  const inst = bootstrap.Offcanvas.getInstance(parId('detailsSlideOver'));
+  if (inst) inst.hide();
+}
+
+/** Rafraîchit ce qui est visible après une modification locale du Store. */
+function rafraichir() {
+  rendreInterface();
+  if (Store.pnCourant) rendreFiche();
+}
+
+// ------------------------------------------------------------
+// Chargement
+// ------------------------------------------------------------
+function chargerTout() {
+  const chargement = parId('loading');
+  if (chargement) chargement.style.display = 'block';
+
+  return Api.chargerTout()
+    .then(function (reponse) {
+      if (!reponse || reponse.erreur) {
+        throw new Error(reponse && reponse.erreur ? reponse.erreur : 'Réponse vide du serveur.');
+      }
+      chargerDonnees(reponse);
+      rafraichir();
+    })
+    .catch(function (e) { signalerErreur(e, 'chargement des données'); });
+}
+
+function chargerCatalogue() {
+  return Api.chargerCatalogue()
+    .then(function (r) {
+      // Le serveur pouvait renvoyer {error:...} : catalogueComposants devenait
+      // un objet et le .forEach suivant plantait.
+      Store.catalogue = Array.isArray(r) ? r : [];
+      if (!Array.isArray(r)) throw new Error((r && r.error) || 'Catalogue illisible.');
+    })
+    .catch(function (e) { signalerErreur(e, 'chargement du catalogue'); });
+}
+
+// ------------------------------------------------------------
+// Écritures
+// ------------------------------------------------------------
+function sauverBoite(modifs) {
+  indicateurBoite();
+  return Api.sauverBoite(Store.pnCourant, modifs)
+    .then(function (r) {
+      appliquerBoite(r.boite, r.pnPrecedent);
+      Store.enEditionBoite = false;
+      rafraichir();
+    })
+    .catch(function (e) { signalerErreur(e, "sauvegarde de l'assemblage"); rafraichir(); });
+}
+
+function sauverNom(id, modifs) {
+  indicateurNom(id);
+  return Api.sauverNom(id, modifs)
+    .then(function (r) {
+      appliquerNom(r.ligne);
+      Store.enEditionNom[id] = false;
+      rafraichir();
+    })
+    .catch(function (e) { signalerErreur(e, 'sauvegarde du sous-ensemble'); rafraichir(); });
+}
+
+/** Modifie un champ multi-valeurs d'une boîte sans passer par le mode édition. */
+function majMultiBoite(champ, transformation) {
+  const boite = boiteCourante();
+  if (!boite) return;
+  const modifs = {};
+  modifs[champ] = transformation(valeursMulti(boite[champ])).join('\n');
+  sauverBoite(modifs);
+}
+
+function majMultiNom(id, champ, transformation) {
+  const ligne = nomParId(id);
+  if (!ligne) return;
+  const modifs = {};
+  modifs[champ] = transformation(valeursMulti(ligne[champ])).join('\n');
+  sauverNom(id, modifs);
+}
+
+// ------------------------------------------------------------
+// Actions
+// ------------------------------------------------------------
+enregistrerActions({
+  'changer-onglet': function (d) { Store.ongletActif = d.onglet; rendreInterface(); },
+
+  'ouvrir-fiche': function (d) {
+    Store.pnCourant = d.pn;
+    Store.enEditionBoite = false;
+    Store.enEditionNom = {};
+    rendreFiche();
+    ouvrirPanneau();
+  },
+
+  'editer-boite':  function () { Store.enEditionBoite = true;  rendreFiche(); },
+  'annuler-boite': function () { Store.enEditionBoite = false; rendreFiche(); },
+  'sauver-boite':  function () { sauverBoite(lireChamps('champ-boite')); },
+
+  'supprimer-boite': function (d) {
+    if (!confirm('Supprimer définitivement l\'assemblage ' + d.pn +
+                 ' ET tous ses sous-ensembles ?')) return;
+    indicateurBoite();
+    Api.supprimerBoite(d.pn)
+      .then(function (r) {
+        retirerBoite(r.pnSupprime);
+        fermerPanneau();
+        rendreInterface();
+        confirmerSucces('Assemblage ' + r.pnSupprime + ' supprimé (' +
+                        r.nbNomenclature + ' sous-ensemble(s)).');
+      })
+      .catch(function (e) { signalerErreur(e, "suppression de l'assemblage"); });
+  },
+
+  'dupliquer-boite': function (d) {
+    const nouveau = prompt('PN Global du nouvel assemblage :', d.pn + '_COPY');
+    if (!nouveau || !nouveau.trim()) return;
+    indicateurBoite();
+    Api.dupliquerBoite(d.pn, nouveau.trim())
+      .then(function (r) {
+        appliquerBoite(r.boite);
+        (r.nomenclature || []).forEach(appliquerNom);
+        Store.pnCourant = r.boite[CLE_PN()];
+        Store.enEditionBoite = false;
+        rafraichir();
+        confirmerSucces('Assemblage dupliqué : ' + r.boite[CLE_PN()] + '.');
+      })
+      .catch(function (e) { signalerErreur(e, "duplication de l'assemblage"); });
+  },
+
+  'ajouter-multi-boite': function (d) {
+    const valeur = lireSaisieMulti(d.champ);
+    if (!valeur) return;
+    majMultiBoite(d.champ, function (liste) {
+      return liste.indexOf(valeur) === -1 ? liste.concat([valeur]) : liste;
+    });
+  },
+  'supprimer-multi-boite': function (d) {
+    majMultiBoite(d.champ, function (liste) {
+      return liste.filter(function (v) { return v !== d.valeur; });
+    });
+  },
+
+  'editer-nom':  function (d) { Store.enEditionNom[d.id] = true;  rendreFiche(); },
+  'annuler-nom': function (d) { Store.enEditionNom[d.id] = false; rendreFiche(); },
+  'sauver-nom':  function (d) { sauverNom(d.id, lireChamps('champ-nom', d.id)); },
+
+  'supprimer-nom': function (d) {
+    if (!confirm('Supprimer définitivement ce sous-ensemble ?')) return;
+    indicateurNom(d.id);
+    Api.supprimerNom(d.id)
+      .then(function (r) { retirerNom(r.idSupprime); rafraichir(); })
+      .catch(function (e) { signalerErreur(e, 'suppression du sous-ensemble'); });
+  },
+
+  'ajouter-multi-nom': function (d) {
+    const valeur = lireSaisieMulti(d.champ, d.id);
+    if (!valeur) return;
+    majMultiNom(d.id, d.champ, function (liste) {
+      return liste.indexOf(valeur) === -1 ? liste.concat([valeur]) : liste;
+    });
+  },
+  'supprimer-multi-nom': function (d) {
+    majMultiNom(d.id, d.champ, function (liste) {
+      return liste.filter(function (v) { return v !== d.valeur; });
+    });
+  },
+  'supprimer-std': function (d) {
+    majMultiNom(d.id, Store.config.colonneStd, function (liste) {
+      return liste.filter(function (v) { return v !== d.valeur; });
+    });
+  },
+
+  'comparer-boite': function (d) { afficherEquivalencesBoite(d.pn); },
+  'comparer-nom':   function (d) { afficherEquivalencesNom(d.id); },
+
+  // --- catalogue ---
+  'ouvrir-catalogue': function (d) {
+    Store.idNomCourant = d.id;
+    const recherche = parId('catSearch');
+    if (recherche) recherche.value = '';
+    rendreCatalogue();
+    ouvrirModal('catalogueModal');
+  },
+  'ajouter-catalogue': function (d) {
+    // d.index est l'index dans le catalogue COMPLET : l'ancienne version
+    // passait celui de la liste filtrée et ajoutait un autre composant.
+    const composant = Store.catalogue[Number(d.index)];
+    const id = Store.idNomCourant;
+    if (!composant || !id) return;
+    const formate = formaterComposant(composant) || 'Composant inconnu';
+    fermerModal('catalogueModal');
+    majMultiNom(id, Store.config.colonneStd, function (liste) {
+      return liste.indexOf(formate) === -1 ? liste.concat([formate]) : liste;
+    });
+  },
+
+  // --- création ---
+  'nouvelle-boite': function () { ouvrirModal('newBoiteModal'); },
+  'creer-boite': function () {
+    const pn = parId('newBoitePn').value.trim();
+    if (!pn) { afficherBandeau('Le PN Global est obligatoire.', 'erreur'); return; }
+    fermerModal('newBoiteModal');
+    Api.creerBoite(pn, parId('newBoiteFonction').value, parId('newBoiteDs').value)
+      .then(function (r) {
+        appliquerBoite(r.boite);
+        ['newBoitePn', 'newBoiteFonction', 'newBoiteDs'].forEach(function (i) { parId(i).value = ''; });
+        rendreInterface();
+        confirmerSucces('Assemblage ' + r.boite[CLE_PN()] + ' créé.');
+      })
+      .catch(function (e) { signalerErreur(e, "création de l'assemblage"); });
+  },
+
+  'nouveau-sous-ensemble': function () { ouvrirModal('newSousEnsModal'); },
+  'creer-sous-ensemble': function () {
+    const type = parId('newEnsType').value.trim();
+    if (!type) { afficherBandeau('Le type est obligatoire.', 'erreur'); return; }
+    fermerModal('newSousEnsModal');
+    Api.creerNom(Store.pnCourant, type, parId('newEnsPn').value)
+      .then(function (r) {
+        appliquerNom(r.ligne);
+        ['newEnsType', 'newEnsPn'].forEach(function (i) { parId(i).value = ''; });
+        rafraichir();
+      })
+      .catch(function (e) { signalerErreur(e, 'ajout du sous-ensemble'); });
+  },
+
+  // --- recherche par composants ---
+  'ouvrir-multi-recherche': function () {
+    definirHtml('datalistStds', tousLesComposants().map(function (s) {
+      return '<option value="' + esc(s) + '">';
+    }).join(''));
+    rendreChoixComposants();
+    ouvrirModal('multiSearchModal');
+  },
+  'ajouter-chip': function () {
+    const champ = parId('multiSearchInputSelect');
+    const valeur = champ.value.trim();
+    if (!valeur || Store.filtreComposants.indexOf(valeur) !== -1) { champ.value = ''; return; }
+    Store.filtreComposants = Store.filtreComposants.concat([valeur]);
+    champ.value = '';
+    rendreChoixComposants();
+  },
+  'retirer-chip': function (d) {
+    Store.filtreComposants = Store.filtreComposants.filter(function (v) { return v !== d.valeur; });
+    rendreChoixComposants();
+  },
+  'lancer-multi-recherche': function () {
+    fermerModal('multiSearchModal');
+    Store.ongletActif = 'Toutes';
+    rendreInterface();
+  },
+  'retirer-filtre': function (d) {
+    Store.filtreComposants = Store.filtreComposants.filter(function (v) { return v !== d.valeur; });
+    rendreInterface();
+  },
+  'vider-filtre': function () { Store.filtreComposants = []; rendreInterface(); },
+
+  'exporter-bom': function () {
+    const boite = boiteCourante();
+    if (!boite) return;
+    const lignes = [['Type', 'PN du type', 'Composants STD', 'Masse (g)', 'DAL', 'HL']];
+    (boite.nomenclature || []).forEach(function (n) {
+      lignes.push([n['Type'], n['PN du type'], n[Store.config.colonneStd],
+                   n['Masse (g)'], n['DAL'], n['HL']]);
+    });
+    telecharger(construireCsv(lignes), 'BOM_' + boite[CLE_PN()] + '.csv',
+                'text/csv;charset=utf-8');
+  }
+});
+
+// ------------------------------------------------------------
+// Rendus secondaires
+// ------------------------------------------------------------
+function rendreCatalogue() {
+  const requete = parId('catSearch') ? parId('catSearch').value : '';
+  const resultat = filtrerCatalogue(requete);
+
+  definirHtml('catalogueList', resultat.affiches.map(function (e) {
+    return '<div class="ligne-catalogue"' +
+             dataAttrs({ action: 'ajouter-catalogue', index: e.index }) + ' role="button">' +
+             '<div><b>' + esc(formaterComposant(e.composant)) + '</b></div>' +
+             '<button type="button" class="btn btn-sm btn-outline-success fw-bold">+</button>' +
+           '</div>';
+  }).join('') || '<p class="text-muted small m-0">Aucun composant ne correspond.</p>');
+
+  // Le .slice(30) était muet : on croyait que le composant n'existait pas.
+  definirTexte('catalogueInfo', resultat.total > resultat.affiches.length
+    ? resultat.affiches.length + ' résultats affichés sur ' + resultat.total +
+      ' — affinez la recherche.'
+    : resultat.total + ' résultat' + (resultat.total > 1 ? 's' : ''));
+}
+
+function rendreChoixComposants() {
+  definirHtml('multiSearchPillsContainer', Store.filtreComposants.length
+    ? Store.filtreComposants.map(function (c) {
+        return '<span class="multi-search-pill">' + esc(c) +
+               '<span class="del" role="button" aria-label="Retirer"' +
+               dataAttrs({ action: 'retirer-chip', valeur: c }) + '>&times;</span></span>';
+      }).join('')
+    : '<p class="text-muted small m-0">Aucun composant sélectionné.</p>');
+}
+
+// ------------------------------------------------------------
+// Démarrage
+// ------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', function () {
+  installerDelegation();
+
+  const recherche = parId('searchBar');
+  if (recherche) {
+    // Anti-rebond : l'ancienne version reconstruisait toute la grille à chaque
+    // frappe, avec deux JSON.stringify sur l'ensemble des données.
+    recherche.addEventListener('input', antiRebond(function () {
+      Store.recherche = recherche.value;
+      rendreInterface();
+    }, 180));
+  }
+
+  const catalogue = parId('catSearch');
+  if (catalogue) catalogue.addEventListener('input', antiRebond(rendreCatalogue, 180));
+
+  const champMultiRecherche = parId('multiSearchInputSelect');
+  if (champMultiRecherche) {
+    champMultiRecherche.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); ACTIONS['ajouter-chip'](); }
+    });
+  }
+
+  chargerTout();
+  chargerCatalogue();
+});
+</script>

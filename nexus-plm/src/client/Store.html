@@ -1,0 +1,267 @@
+<script>
+// ============================================================
+// NEXUS PLM — état de l'application.
+//
+// Aucun accès au DOM ici. L'ancienne version gardait huit variables globales
+// couplées implicitement, et retrouvait la boîte courante en relisant le titre
+// affiché dans le DOM. On adresse désormais par clé métier (PN Global pour les
+// boîtes, ID_Ligne pour la nomenclature), jamais par position de tableau.
+// ============================================================
+
+const Store = {
+  boites: [],
+  nomenclature: [],
+  headersBoites: [],
+  headersNom: [],
+  config: { multiBoite: [], multiNom: [], lectureSeuleNom: [], statuts: [], colonneStd: 'Composant STD' },
+  catalogue: [],
+
+  pnCourant: null,          // remplace currentBoiteIndex (un index se périme)
+  idNomCourant: null,
+  ongletActif: 'Toutes',
+  recherche: '',
+  filtreComposants: [],     // recherche par composants embarqués
+  enEditionBoite: false,
+  enEditionNom: {},
+
+  _texteRecherche: new Map()
+};
+
+function CLE_NOM() { return 'ID_Ligne'; }
+function CLE_PN()  { return 'PN Global'; }
+
+// ------------------------------------------------------------
+// Chargement et rattachement
+// ------------------------------------------------------------
+function chargerDonnees(reponse) {
+  Store.boites = reponse.boites || [];
+  Store.nomenclature = reponse.nomenclature || [];
+  Store.headersBoites = reponse.headersBoites || [];
+  Store.headersNom = reponse.headersNom || [];
+  if (reponse.config) Store.config = reponse.config;
+  reconstruireLiens();
+}
+
+function reconstruireLiens() {
+  const parPn = new Map();
+  Store.boites.forEach(function (b) {
+    b.nomenclature = [];
+    parPn.set(String(b[CLE_PN()]).trim(), b);
+  });
+  Store.nomenclature.forEach(function (n) {
+    const parent = parPn.get(String(n[CLE_PN()]).trim());
+    if (parent) parent.nomenclature.push(n);
+  });
+  Store._texteRecherche.clear();
+}
+
+// ------------------------------------------------------------
+// Mises à jour ciblées
+//
+// L'ancien code relisait les DEUX feuilles entières après chaque écriture,
+// y compris pour l'ajout d'une puce. Le serveur ne renvoie plus que ce qui
+// a changé, et on l'applique ici.
+// ------------------------------------------------------------
+function appliquerBoite(boite, pnPrecedent) {
+  if (!boite) return;
+  const ancien = String(pnPrecedent || boite[CLE_PN()]).trim();
+  const idx = Store.boites.findIndex(function (b) {
+    return String(b[CLE_PN()]).trim() === ancien;
+  });
+  if (idx === -1) Store.boites.push(boite);
+  else Store.boites[idx] = boite;
+
+  if (pnPrecedent && String(pnPrecedent).trim() !== String(boite[CLE_PN()]).trim()) {
+    // Renommage : la clé étrangère des lignes de nomenclature a suivi côté serveur.
+    Store.nomenclature.forEach(function (n) {
+      if (String(n[CLE_PN()]).trim() === ancien) n[CLE_PN()] = boite[CLE_PN()];
+    });
+    if (Store.pnCourant === pnPrecedent) Store.pnCourant = boite[CLE_PN()];
+  }
+  reconstruireLiens();
+}
+
+function appliquerNom(ligne) {
+  if (!ligne) return;
+  const id = String(ligne[CLE_NOM()]).trim();
+  const idx = Store.nomenclature.findIndex(function (n) {
+    return String(n[CLE_NOM()]).trim() === id;
+  });
+  if (idx === -1) Store.nomenclature.push(ligne);
+  else Store.nomenclature[idx] = ligne;
+  reconstruireLiens();
+}
+
+function retirerNom(id) {
+  const cible = String(id).trim();
+  Store.nomenclature = Store.nomenclature.filter(function (n) {
+    return String(n[CLE_NOM()]).trim() !== cible;
+  });
+  delete Store.enEditionNom[cible];
+  reconstruireLiens();
+}
+
+function retirerBoite(pn) {
+  const cible = String(pn).trim();
+  Store.boites = Store.boites.filter(function (b) {
+    return String(b[CLE_PN()]).trim() !== cible;
+  });
+  Store.nomenclature = Store.nomenclature.filter(function (n) {
+    return String(n[CLE_PN()]).trim() !== cible;
+  });
+  if (Store.pnCourant === pn) Store.pnCourant = null;
+  reconstruireLiens();
+}
+
+// ------------------------------------------------------------
+// Accès
+// ------------------------------------------------------------
+function boiteParPn(pn) {
+  const cible = String(pn).trim();
+  return Store.boites.find(function (b) {
+    return String(b[CLE_PN()]).trim() === cible;
+  }) || null;
+}
+
+function nomParId(id) {
+  const cible = String(id).trim();
+  return Store.nomenclature.find(function (n) {
+    return String(n[CLE_NOM()]).trim() === cible;
+  }) || null;
+}
+
+function boiteCourante() { return boiteParPn(Store.pnCourant); }
+
+// ------------------------------------------------------------
+// Recherche
+//
+// L'ancienne version faisait JSON.stringify(boite).includes(query) : elle
+// cherchait aussi dans les NOMS DE COLONNES et dans _rowIndex, si bien que
+// "image", "commentaires" ou "2" ramenaient toutes les boîtes. On n'indexe
+// plus que les valeurs, une seule fois, en cache.
+// ------------------------------------------------------------
+function texteRecherche(boite) {
+  const cle = String(boite[CLE_PN()]).trim();
+  if (Store._texteRecherche.has(cle)) return Store._texteRecherche.get(cle);
+
+  const morceaux = [];
+  const ajouter = function (objet) {
+    Object.keys(objet).forEach(function (k) {
+      if (k === 'nomenclature' || k.charAt(0) === '_') return;
+      const v = objet[k];
+      if (v !== null && v !== undefined && v !== '') morceaux.push(String(v));
+    });
+  };
+  ajouter(boite);
+  (boite.nomenclature || []).forEach(ajouter);
+
+  const texte = morceaux.join(' \n ').toLowerCase();
+  Store._texteRecherche.set(cle, texte);
+  return texte;
+}
+
+function correspond(boite, requete) {
+  const q = String(requete || '').trim().toLowerCase();
+  if (!q) return true;
+  const texte = texteRecherche(boite);
+  // Tous les mots doivent être présents : "harnais 332" trouve la bonne boîte
+  // au lieu d'exiger la sous-chaîne exacte "harnais 332".
+  return q.split(/\s+/).every(function (mot) { return texte.indexOf(mot) !== -1; });
+}
+
+function contientTousComposants(boite, composants) {
+  if (!composants.length) return true;
+  const stds = [];
+  (boite.nomenclature || []).forEach(function (n) {
+    valeursMulti(n[Store.config.colonneStd]).forEach(function (c) {
+      stds.push(c.toLowerCase());
+    });
+  });
+  return composants.every(function (terme) {
+    const t = String(terme).trim().toLowerCase();
+    return stds.some(function (s) { return s.indexOf(t) !== -1; });
+  });
+}
+
+// ------------------------------------------------------------
+// Vue courante : un seul filtrage dont tout dérive.
+// L'ancienne version comptait l'onglet "Toutes" sur la liste NON filtrée
+// pendant que les autres onglets utilisaient la liste filtrée.
+// ------------------------------------------------------------
+function calculerVue() {
+  const visibles = Store.boites.filter(function (b) {
+    return contientTousComposants(b, Store.filtreComposants) && correspond(b, Store.recherche);
+  });
+
+  const parFonction = new Map();
+  visibles.forEach(function (b) {
+    const f = txt(b['Fonction'], 'NON CLASSÉ');
+    if (!parFonction.has(f)) parFonction.set(f, []);
+    parFonction.get(f).push(b);
+  });
+
+  // Onglet devenu orphelin : on ne laisse pas l'utilisateur bloqué sur
+  // « Aucun assemblage » alors que des résultats existent ailleurs.
+  const onglet = (Store.ongletActif !== 'Toutes' && !parFonction.has(Store.ongletActif))
+                 ? 'Toutes' : Store.ongletActif;
+  Store.ongletActif = onglet;
+
+  return {
+    visibles: visibles,
+    parFonction: parFonction,
+    onglet: onglet,
+    aAfficher: onglet === 'Toutes' ? visibles : (parFonction.get(onglet) || [])
+  };
+}
+
+function calculerKpi(liste) {
+  const refs = new Set();
+  liste.forEach(function (b) {
+    if (b[CLE_PN()]) refs.add(String(b[CLE_PN()]).trim());
+    (b.nomenclature || []).forEach(function (n) {
+      if (n['PN du type']) refs.add(String(n['PN du type']).trim());
+    });
+  });
+  const valides = liste.filter(function (b) { return estValide(b['Statut']); }).length;
+  return {
+    nbBoites: liste.length,
+    refsUniques: refs.size,
+    nbValides: valides,
+    pctValides: liste.length ? Math.round((valides / liste.length) * 100) : 0
+  };
+}
+
+/** Tous les composants STD connus, catalogue + nomenclature, dédupliqués. */
+function tousLesComposants() {
+  const ensemble = new Set();
+  Store.catalogue.forEach(function (c) {
+    const f = formaterComposant(c);
+    if (f) ensemble.add(f);
+  });
+  Store.nomenclature.forEach(function (n) {
+    valeursMulti(n[Store.config.colonneStd]).forEach(function (s) { ensemble.add(s); });
+  });
+  return Array.from(ensemble).sort();
+}
+
+function formaterComposant(composant) {
+  const type = composant['Type'] || '';
+  const sousType = composant['Sous Type/Désignation'] || '';
+  const norme = composant['Norm'] || composant['Standard number'] || composant['Ref'] || '';
+  return (type + (sousType ? ' | ' + sousType : '') + (norme ? ' (' + norme + ')' : '')).trim();
+}
+
+const CATALOGUE_MAX = 30;
+
+/** Conserve l'index RÉEL : c'est lui qui est passé au clic. */
+function filtrerCatalogue(requete) {
+  const q = String(requete || '').trim().toLowerCase();
+  const tous = Store.catalogue
+    .map(function (c, index) { return { composant: c, index: index }; })
+    .filter(function (e) {
+      if (!q) return true;
+      return formaterComposant(e.composant).toLowerCase().indexOf(q) !== -1;
+    });
+  return { affiches: tous.slice(0, CATALOGUE_MAX), total: tous.length };
+}
+</script>

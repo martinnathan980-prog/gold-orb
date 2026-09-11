@@ -1,0 +1,105 @@
+<script>
+// ============================================================
+// NEXUS PLM — affichage des équivalences.
+// Ne fait que mettre en forme ce que Compare.html a calculé.
+// ============================================================
+
+const ICONE_ETAT = {
+  identique:    { signe: '✓', classe: 'etat-ok' },
+  partiel:      { signe: '≈', classe: 'etat-partiel' },
+  different:    { signe: '✗', classe: 'etat-diff' },
+  indisponible: { signe: '–', classe: 'etat-inconnu' }
+};
+
+function listeEnsembleHtml(titre, valeurs, classe) {
+  if (!valeurs || !valeurs.length) return '';
+  return '<div class="bloc-ensemble ' + classe + '">' +
+           '<div class="bloc-ensemble-titre">' + esc(titre) + ' (' + valeurs.length + ')</div>' +
+           '<div class="bloc-ensemble-corps">' +
+             valeurs.map(function (v) { return esc(v); }).join('<br>') +
+           '</div>' +
+         '</div>';
+}
+
+function critereHtml(critere) {
+  const icone = ICONE_ETAT[critere.etat] || ICONE_ETAT.indisponible;
+
+  let corps = '<b>' + esc(critere.libelle) + '</b>';
+  if (critere.message) corps += ' : ' + esc(critere.message);
+
+  // Un critère non mesurable est désormais AFFICHÉ comme tel. L'ancienne
+  // version retirait des points sans jamais dire pourquoi.
+  if (critere.etat === ETAT.INDISPONIBLE) {
+    corps += ' <span class="text-muted">(hors calcul)</span>';
+  }
+
+  let html = '<div class="analyze-row">' +
+               '<span class="analyze-icon ' + icone.classe + '">' + icone.signe + '</span>' +
+               '<div class="analyze-content">' + corps + '</div>' +
+             '</div>';
+
+  if (critere.ensembles) {
+    html += '<div class="ensembles">' +
+      listeEnsembleHtml('En commun', critere.ensembles.communs, 'ensemble-ok') +
+      listeEnsembleHtml('Absents de la cible', critere.ensembles.manquants, 'ensemble-manquant') +
+      listeEnsembleHtml('Présents en plus', critere.ensembles.enPlus, 'ensemble-plus') +
+    '</div>';
+  }
+  return html;
+}
+
+function enteteResultatHtml(titre, sousTitre, score, couverture) {
+  const alerte = couverture < 60
+    ? '<div class="couverture-alerte">Score calculé sur ' + couverture +
+      ' % des critères seulement — données incomplètes.</div>'
+    : '';
+  return '<div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2 gap-3">' +
+           '<div>' +
+             '<h5 class="fw-bold text-primary m-0">' + esc(titre) + '</h5>' +
+             '<div class="text-muted mt-1 small">' + sousTitre + '</div>' +
+           '</div>' +
+           '<div class="score-pastille">' + score + ' %<span>couverture ' + couverture + ' %</span></div>' +
+         '</div>' + alerte;
+}
+
+function resultatsHtml(resultats, construireEntete) {
+  if (!resultats.length) {
+    return '<p class="text-center py-4 text-muted">Aucune équivalence au-dessus de ' +
+           SEUIL_AFFICHAGE + ' %.</p>';
+  }
+  return resultats.map(function (r) {
+    return '<div class="component-block">' +
+             construireEntete(r) +
+             '<div>' + r.criteres.map(critereHtml).join('') + '</div>' +
+           '</div>';
+  }).join('');
+}
+
+function afficherEquivalencesBoite(pn) {
+  const resultats = equivalencesBoite(pn);
+  definirTexte('compareTitle', 'Équivalences globales : ' + txt(pn));
+  definirHtml('compareResult', resultatsHtml(resultats, function (r) {
+    return enteteResultatHtml(
+      txt(r.cible[CLE_PN()]),
+      'Fonction : <b>' + esc(txt(r.cible['Fonction'])) + '</b>',
+      r.score, r.couverture);
+  }));
+  ouvrirModal('compareModal');
+}
+
+function afficherEquivalencesNom(id) {
+  const source = nomParId(id);
+  if (!source) return;
+  const resultats = equivalencesSousEnsemble(id);
+  definirTexte('compareTitle',
+               'Équivalences : ' + txt(source['Type']) + ' (' + txt(source['PN du type']) + ')');
+  definirHtml('compareResult', resultatsHtml(resultats, function (r) {
+    return enteteResultatHtml(
+      txt(r.cible['PN du type']),
+      'Dans : <b>' + esc(txt(r.cible[CLE_PN()])) + '</b> (Fonction : ' +
+        esc(r.fonctionParent) + ')',
+      r.score, r.couverture);
+  }));
+  ouvrirModal('compareModal');
+}
+</script>

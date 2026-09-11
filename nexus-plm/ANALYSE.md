@@ -20,7 +20,7 @@ adossé à Google Sheets.
 
 Plus un **catalogue de composants** externe, lu en lecture seule dans un 3ᵉ classeur.
 
-**Fonctions couvertes** (14 côté serveur, ~30 côté client) :
+**Fonctions couvertes** (10 côté serveur, ~34 côté client) :
 
 - Initialisation / réinitialisation de la base avec jeu de démo
 - Lecture globale, CRUD boîte, CRUD sous-ensemble, duplication d'assemblage
@@ -486,7 +486,7 @@ Deux règles qui portent l'essentiel du gain :
 | 7 | Robustesse | `ID_Ligne` comme clé, `LockService`, journal des modifications | moyen | à faire |
 
 Le lot 2 est indépendant : il peut partir en production tout de suite, avant toute
-restructuration. **Les 14 fonctions serveur et les ~30 fonctions client sont toutes
+restructuration. **Les 10 fonctions serveur et les ~34 fonctions client sont toutes
 conservées** — à périmètre fonctionnel strictement identique.
 
 ---

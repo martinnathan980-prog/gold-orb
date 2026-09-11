@@ -1,0 +1,117 @@
+<script>
+// ============================================================
+// NEXUS PLM — grille, onglets, indicateurs.
+// Les fonctions *Html construisent une chaîne et ne touchent pas au DOM :
+// c'est ce qui les rend testables, échappement compris.
+// ============================================================
+
+function badgeStatutHtml(statut) {
+  const s = txt(statut, '');
+  if (!s) return '';
+  return '<span class="status-badge ' + classeStatut(s) + '">' + esc(s) + '</span>';
+}
+
+function imageHtml(valeur, classe) {
+  const url = urlMiniature(valeur);
+  if (!url) return '';
+  return '<img class="' + classe + '" src="' + esc(url) + '" alt="" loading="lazy">';
+}
+
+function ongletsHtml(vue) {
+  let html = '<button type="button" class="tab-pill' +
+             (vue.onglet === 'Toutes' ? ' active' : '') + '"' +
+             dataAttrs({ action: 'changer-onglet', onglet: 'Toutes' }) +
+             '>Toutes <span class="tab-count">' + vue.visibles.length + '</span></button>';
+
+  Array.from(vue.parFonction.keys()).sort().forEach(function (fonction) {
+    html += '<button type="button" class="tab-pill' +
+            (vue.onglet === fonction ? ' active' : '') + '"' +
+            dataAttrs({ action: 'changer-onglet', onglet: fonction }) + '>' +
+            esc(fonction) + ' <span class="tab-count">' +
+            vue.parFonction.get(fonction).length + '</span></button>';
+  });
+  return html;
+}
+
+function carteHtml(boite) {
+  const pn = boite[CLE_PN()];
+
+  const sousEnsembles = (boite.nomenclature || []).map(function (l) {
+    return '<div class="internal-list-row">' +
+             '<span class="internal-type">' + esc(txt(l['Type'])) + '</span>' +
+             '<span class="internal-pn">' + esc(txt(l['PN du type'])) + '</span>' +
+           '</div>';
+  }).join('');
+
+  const meta =
+    '<div class="internal-list-row meta-top">' +
+      '<span class="internal-type text-muted">DS/VCI Associé</span>' +
+      '<span class="internal-pn text-muted">' + esc(txt(boite['DS/VCI Associé'])) + '</span>' +
+    '</div>' +
+    '<div class="internal-list-row meta-last">' +
+      '<span class="internal-type text-muted">Porteur</span>' +
+      // txt() APRÈS la mise en forme : String(undefined) vaut "undefined",
+      // qui est truthy, et l'ancien ||'-' ne se déclenchait jamais.
+      '<span class="internal-pn text-muted">' +
+        esc(txt(valeursMulti(boite['Porteur']).join(', '))) + '</span>' +
+    '</div>';
+
+  return '<div class="col-sm-6 col-lg-4">' +
+    '<div class="product-card">' +
+      imageHtml(boite['Image'], 'card-image') +
+      '<div class="d-flex justify-content-between align-items-start gap-2">' +
+        '<h4 class="pn-title">' + esc(txt(pn)) + '</h4>' + badgeStatutHtml(boite['Statut']) +
+      '</div>' +
+      '<div class="mb-4 mt-3">' +
+        (sousEnsembles || '<span class="text-muted small">Assemblage vide</span>') +
+        meta +
+      '</div>' +
+      '<button type="button" class="btn-primary-apple"' +
+        dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>Fiche complète</button>' +
+      '<button type="button" class="btn-compare"' +
+        dataAttrs({ action: 'comparer-boite', pn: pn }) + '>Équivalences</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function grilleHtml(boites) {
+  if (!boites.length) {
+    return '<div class="col-12 text-center text-muted py-5">' +
+           'Aucun assemblage ne correspond à cette sélection.</div>';
+  }
+  return boites.map(carteHtml).join('');
+}
+
+function rendreInterface() {
+  const vue = calculerVue();
+  definirHtml('functionTabs', ongletsHtml(vue));
+  definirHtml('mainContainer', grilleHtml(vue.aAfficher));
+  rendreKpi(calculerKpi(vue.aAfficher));
+  rendreFiltreComposants();
+  const chargement = parId('loading');
+  if (chargement) chargement.style.display = 'none';
+}
+
+function rendreKpi(kpi) {
+  definirTexte('kpiBoites', String(kpi.nbBoites));
+  definirTexte('kpiNoms', String(kpi.refsUniques));
+  // Le libellé annonce « Boîtes validées » : on affiche le nombre ET le taux,
+  // l'ancienne version n'affichait qu'un pourcentage sous ce libellé.
+  definirTexte('kpiVal', kpi.nbValides + ' (' + kpi.pctValides + ' %)');
+}
+
+function rendreFiltreComposants() {
+  const zone = parId('filtreActif');
+  if (!zone) return;
+  if (!Store.filtreComposants.length) { zone.innerHTML = ''; return; }
+
+  zone.innerHTML = '<span class="text-muted small me-2">Filtre composants :</span>' +
+    Store.filtreComposants.map(function (c) {
+      return '<span class="multi-search-pill">' + esc(c) +
+             '<span class="del"' + dataAttrs({ action: 'retirer-filtre', valeur: c }) +
+             ' role="button" aria-label="Retirer">&times;</span></span>';
+    }).join('') +
+    '<button type="button" class="btn btn-sm btn-link"' +
+    dataAttrs({ action: 'vider-filtre' }) + '>Tout effacer</button>';
+}
+</script>

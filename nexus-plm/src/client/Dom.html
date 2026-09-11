@@ -1,0 +1,161 @@
+<script>
+// ============================================================
+// NEXUS PLM — utilitaires d'affichage et délégation d'événements
+//
+// Règle unique de ce fichier : AUCUNE donnée ne rentre dans une chaîne de code.
+// L'ancienne version écrivait onclick="comparerBoite('${pn}')" et
+// value="${val}" — une apostrophe tuait le bouton, un guillemet fermait
+// l'attribut et la saisie était perdue à la sauvegarde. Tout passe désormais
+// par esc() et par des attributs data-*.
+// ============================================================
+
+function esc(valeur) {
+  return String(valeur === null || valeur === undefined ? '' : valeur)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Valeur affichable, avec repli. String(undefined) vaut "undefined" : piège. */
+function txt(valeur, defaut) {
+  if (defaut === undefined) defaut = '-';
+  if (valeur === null || valeur === undefined) return defaut;
+  const s = String(valeur).trim();
+  return s === '' ? defaut : s;
+}
+
+/** Valeur multi-lignes -> liste propre. */
+function valeursMulti(valeur) {
+  if (valeur === null || valeur === undefined) return [];
+  return String(valeur).split(/[\n,]/)
+    .map(function (x) { return x.trim(); })
+    .filter(function (x) { return x !== ''; });
+}
+
+function estUrl(valeur) {
+  return /^https?:\/\//i.test(String(valeur === null || valeur === undefined ? '' : valeur).trim());
+}
+
+/**
+ * Lien Drive -> miniature affichable.
+ * Ce bloc était copié-collé à trois endroits dans l'ancien Index.html.
+ * L'identifiant Drive est isolé sur le segment d'URL, et non par un
+ * /[-\w]{25,}/ lâché sur toute la chaîne.
+ */
+function urlMiniature(valeur) {
+  const brut = String(valeur === null || valeur === undefined ? '' : valeur).trim();
+  if (!estUrl(brut)) return '';
+  if (brut.indexOf('drive.google.com') === -1) return brut;
+
+  const parId = brut.match(/[?&]id=([-\w]{20,})/);
+  const parChemin = brut.match(/\/d\/([-\w]{20,})/);
+  const id = (parId && parId[1]) || (parChemin && parChemin[1]);
+  return id ? 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1000' : brut;
+}
+
+// ------------------------------------------------------------
+// Statuts — includes('valid') attrapait aussi "Invalidé" et "Non validé"
+// ------------------------------------------------------------
+const STATUTS = {
+  VALIDE:   ['validé', 'valide'],
+  OBSOLETE: ['obsolète', 'obsolete']
+};
+
+function normaliserStatut(statut) {
+  return String(statut === null || statut === undefined ? '' : statut).trim().toLowerCase();
+}
+
+function estValide(statut) {
+  return STATUTS.VALIDE.indexOf(normaliserStatut(statut)) !== -1;
+}
+
+function classeStatut(statut) {
+  const s = normaliserStatut(statut);
+  if (STATUTS.VALIDE.indexOf(s) !== -1) return 'status-valide';
+  if (STATUTS.OBSOLETE.indexOf(s) !== -1) return 'status-obsolete';
+  return 'status-etude';
+}
+
+// ------------------------------------------------------------
+// CSV
+// ------------------------------------------------------------
+// Séparateur ';' : Excel en locale FR n'ouvre pas les ',' en colonnes.
+const CSV_SEPARATEUR = ';';
+
+function champCsv(valeur) {
+  const s = String(valeur === null || valeur === undefined ? '' : valeur)
+              .replace(/\r?\n/g, ' / ');
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+
+function construireCsv(lignes) {
+  return '﻿' + lignes.map(function (ligne) {   // BOM : sinon Excel FR casse les accents
+    return ligne.map(champCsv).join(CSV_SEPARATEUR);
+  }).join('\r\n');
+}
+
+// ------------------------------------------------------------
+// Délégation d'événements
+// ------------------------------------------------------------
+const ACTIONS = {};
+
+function enregistrerActions(table) {
+  Object.keys(table).forEach(function (nom) { ACTIONS[nom] = table[nom]; });
+}
+
+function installerDelegation() {
+  document.addEventListener('click', function (evenement) {
+    const noeud = evenement.target.closest('[data-action]');
+    if (!noeud) return;
+    const action = ACTIONS[noeud.dataset.action];
+    if (!action) return;
+    evenement.preventDefault();
+    action(noeud.dataset, noeud, evenement);
+  });
+}
+
+/** Construit une suite d'attributs data-* correctement échappés. */
+function dataAttrs(objet) {
+  return Object.keys(objet)
+    .filter(function (k) { return objet[k] !== undefined && objet[k] !== null; })
+    .map(function (k) { return ' data-' + k + '="' + esc(objet[k]) + '"'; })
+    .join('');
+}
+
+function parId(id) { return document.getElementById(id); }
+
+function definirHtml(id, html) {
+  const noeud = parId(id);
+  if (noeud) noeud.innerHTML = html;
+}
+
+function definirTexte(id, texte) {
+  const noeud = parId(id);
+  if (noeud) noeud.textContent = texte;
+}
+
+function telecharger(contenu, nomFichier, type) {
+  // Blob et non data: + encodeURI — encodeURI n'encode pas '#' et tronquait
+  // le fichier au premier dièse rencontré.
+  const blob = new Blob([contenu], { type: type });
+  const url = URL.createObjectURL(blob);
+  const lien = document.createElement('a');
+  lien.href = url;
+  lien.download = nomFichier;
+  document.body.appendChild(lien);
+  lien.click();
+  document.body.removeChild(lien);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+
+function antiRebond(fonction, delai) {
+  let minuteur = null;
+  return function () {
+    const args = arguments, contexte = this;
+    clearTimeout(minuteur);
+    minuteur = setTimeout(function () { fonction.apply(contexte, args); }, delai);
+  };
+}
+</script>

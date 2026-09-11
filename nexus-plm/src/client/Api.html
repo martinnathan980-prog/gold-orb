@@ -1,0 +1,75 @@
+<script>
+// ============================================================
+// NEXUS PLM — frontière unique avec le serveur.
+//
+// google.script.run n'apparaît QUE dans ce fichier. C'est ce qui permet
+// d'écrire une seule fois le withFailureHandler qui manquait aux 9 points
+// d'appel, et ce qui rend une migration future possible à coût marginal :
+// il n'y aurait que ce fichier à réécrire.
+// ============================================================
+
+function appelerServeur(nomFonction) {
+  const args = Array.prototype.slice.call(arguments, 1);
+  return new Promise(function (resoudre, rejeter) {
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+      rejeter(new Error('Connexion au serveur indisponible.'));
+      return;
+    }
+    // On conserve la référence au runner : ses méthodes s'appuient sur leur
+    // `this`, un .apply(null, ...) les casserait.
+    const runner = google.script.run
+      .withSuccessHandler(resoudre)
+      .withFailureHandler(rejeter);
+    runner[nomFonction].apply(runner, args);
+  });
+}
+
+const Api = {
+  chargerTout:        function ()                 { return appelerServeur('getToutLeContenu'); },
+  chargerCatalogue:   function ()                 { return appelerServeur('getCatalogueComposants'); },
+  sauverBoite:        function (pn, modifs)       { return appelerServeur('saveBoite', pn, modifs); },
+  creerBoite:         function (pn, f, ds)        { return appelerServeur('addBoite', pn, f, ds); },
+  supprimerBoite:     function (pn)               { return appelerServeur('deleteBoiteEntiere', pn); },
+  dupliquerBoite:     function (src, cible)       { return appelerServeur('dupliquerBoite', src, cible); },
+  sauverNom:          function (id, modifs)       { return appelerServeur('saveNomenclature', id, modifs); },
+  creerNom:           function (pn, type, pnType) { return appelerServeur('addSousEnsemble', pn, type, pnType); },
+  supprimerNom:       function (id)               { return appelerServeur('deleteNomenclature', id); }
+};
+
+// ------------------------------------------------------------
+// Retour visuel : sans lui, une erreur serveur restait totalement muette et
+// l'utilisateur croyait avoir enregistré.
+// ------------------------------------------------------------
+function arreterIndicateurs() {
+  document.querySelectorAll('.mini-spinner').forEach(function (el) { el.remove(); });
+  const chargement = parId('loading');
+  if (chargement) chargement.style.display = 'none';
+}
+
+function afficherBandeau(message, type) {
+  let el = parId('bandeauMessage');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'bandeauMessage';
+    document.body.appendChild(el);
+  }
+  el.className = 'bandeau bandeau-' + (type || 'info');
+  el.textContent = message;            // textContent, jamais innerHTML
+  el.style.display = 'block';
+  clearTimeout(el._minuteur);
+  el._minuteur = setTimeout(function () { el.style.display = 'none'; }, 8000);
+}
+
+function signalerErreur(erreur, contexte) {
+  arreterIndicateurs();
+  console.error(contexte, erreur);
+  const detail = (erreur && erreur.message) ? ' ' + erreur.message : '';
+  afficherBandeau('Échec : ' + contexte + '.' + detail +
+                  " — votre modification n'a PAS été enregistrée.", 'erreur');
+}
+
+function confirmerSucces(message) {
+  arreterIndicateurs();
+  afficherBandeau(message, 'succes');
+}
+</script>

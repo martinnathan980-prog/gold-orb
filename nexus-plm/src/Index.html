@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <?!= include('client/Styles'); ?>
+  </head>
+
+  <body>
+    <!-- Listes de suggestion -->
+    <datalist id="list-Porteur">
+      <option value="H160"></option><option value="H225"></option>
+      <option value="Super Puma"></option><option value="NH90"></option>
+      <option value="Tigre"></option><option value="Multi"></option>
+    </datalist>
+    <datalist id="list-Qualif">
+      <option value="Qual. H160"></option><option value="Qual. H225"></option>
+      <option value="Cat. S"></option><option value="Cat. F"></option><option value="Cat. T"></option>
+    </datalist>
+    <datalist id="list-Statut">
+      <option value="En étude"></option><option value="Validé"></option><option value="Obsolète"></option>
+    </datalist>
+
+    <button type="button" class="btn-new-boite" data-action="nouvelle-boite"
+            title="Nouvel assemblage" aria-label="Nouvel assemblage">+</button>
+
+    <header class="hero-panel">
+      <div class="container-fluid max-width-xl text-center">
+        <h1 class="page-title">NEXUS PLM</h1>
+        <div class="page-subtitle">Product Lifecycle Management</div>
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-val" id="kpiBoites">–</div>
+            <div class="kpi-label">Nombre de boîtes</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="kpiNoms">–</div>
+            <div class="kpi-label">Références uniques (PN)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="kpiVal">–</div>
+            <div class="kpi-label">Boîtes validées</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="container-fluid px-4 pb-5 max-width-xl">
+      <div class="row justify-content-center control-container">
+        <div class="col-12 col-md-10">
+          <div class="control-bar">
+            <input type="text" id="searchBar" class="apple-input"
+                   placeholder="Recherche globale (PN, fonction, composant…)"
+                   aria-label="Recherche globale">
+            <button type="button" class="btn btn-outline-dark fw-bold px-4"
+                    style="border-radius:10px; white-space:nowrap;"
+                    data-action="ouvrir-multi-recherche">Recherche par composants</button>
+          </div>
+          <div id="filtreActif" class="mt-2 text-center"></div>
+        </div>
+      </div>
+
+      <div id="loading" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Chargement…</span>
+        </div>
+      </div>
+
+      <nav id="functionTabs" class="function-tabs" aria-label="Filtrer par fonction"></nav>
+      <div class="row g-4 mb-5" id="mainContainer"></div>
+    </main>
+
+    <!-- Fiche complète -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="detailsSlideOver"
+         aria-labelledby="slideOverTitle">
+      <div class="offcanvas-header bg-white shadow-sm" style="z-index:10;">
+        <h5 class="offcanvas-title fw-bold" id="slideOverTitle">Fiche complète</h5>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-sm btn-outline-dark fw-bold"
+                  data-action="exporter-bom">Exporter la nomenclature (CSV)</button>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas"
+                  aria-label="Fermer"></button>
+        </div>
+      </div>
+      <div class="offcanvas-body" id="slideOverBody"></div>
+    </div>
+
+    <!-- Recherche par composants -->
+    <div class="modal fade" id="multiSearchModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius:16px;">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Recherche par composants embarqués</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small">Sélectionnez ou saisissez les composants que l'assemblage doit contenir :</p>
+            <div class="d-flex gap-2 mb-3">
+              <input class="form-control" list="datalistStds" id="multiSearchInputSelect"
+                     placeholder="Rechercher un composant ou le saisir librement…"
+                     aria-label="Composant">
+              <datalist id="datalistStds"></datalist>
+              <button type="button" class="btn btn-dark fw-bold" data-action="ajouter-chip">Ajouter</button>
+            </div>
+            <div id="multiSearchPillsContainer" class="mb-4 bg-light p-3 rounded border"
+                 style="min-height:60px;"></div>
+            <button type="button" class="btn-primary-apple"
+                    data-action="lancer-multi-recherche">Trouver les assemblages</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Équivalences -->
+    <div class="modal fade" id="compareModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius:16px;">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="compareTitle">Analyse d'équivalences</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+          </div>
+          <div class="modal-body" id="compareResult"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Catalogue -->
+    <div class="modal fade" id="catalogueModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius:16px;">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Catalogue de composants</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+          </div>
+          <div class="modal-body">
+            <input type="text" id="catSearch" class="form-control mb-2"
+                   placeholder="Rechercher par type, sous-type ou norme…" aria-label="Rechercher un composant">
+            <div id="catalogueInfo" class="text-muted small mb-2"></div>
+            <div id="catalogueList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nouvel assemblage -->
+    <div class="modal fade" id="newBoiteModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Nouvel assemblage</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+          </div>
+          <div class="modal-body">
+            <input type="text" id="newBoitePn" class="form-control mb-2" placeholder="PN Global (obligatoire)">
+            <input type="text" id="newBoiteFonction" class="form-control mb-2" placeholder="Fonction">
+            <input type="text" id="newBoiteDs" class="form-control mb-3" placeholder="DS/VCI associé">
+            <button type="button" class="btn-primary-apple" data-action="creer-boite">Créer l'assemblage</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nouveau sous-ensemble -->
+    <div class="modal fade" id="newSousEnsModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Nouveau sous-ensemble</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+          </div>
+          <div class="modal-body">
+            <input type="text" id="newEnsType" class="form-control mb-2" placeholder="Type (ex. Harnais)">
+            <input type="text" id="newEnsPn" class="form-control mb-3" placeholder="PN du sous-ensemble">
+            <button type="button" class="btn-primary-apple" data-action="creer-sous-ensemble">Ajouter à la boîte</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <?!= include('client/Dom'); ?>
+    <?!= include('client/Api'); ?>
+    <?!= include('client/Store'); ?>
+    <?!= include('client/Compare'); ?>
+    <?!= include('client/ViewGrid'); ?>
+    <?!= include('client/ViewFiche'); ?>
+    <?!= include('client/ViewCompare'); ?>
+    <?!= include('client/Main'); ?>
+  </body>
+</html>
