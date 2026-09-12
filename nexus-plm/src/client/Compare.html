@@ -2,155 +2,226 @@
 // ============================================================
 // NEXUS PLM — moteur d'équivalences.
 //
-// Ce fichier ne produit AUCUN HTML : il renvoie des données, que ViewCompare
-// affiche. L'ancienne version mêlait le calcul et le balisage dans la même
-// expression, ce qui rendait les pondérations illisibles et cachait deux bugs :
+// Ne produit aucun HTML : renvoie des données, que ViewCompare affiche.
+// Entièrement piloté par le registre de Types.html et par les pondérations
+// vivantes du Store — changer un curseur de réglage recalcule sans rien
+// reconstruire.
 //
-//   1. Dénominateur gonflé : +50 au total dès que l'une des deux boîtes avait
-//      des composants STD, mais des points ajoutés seulement si la SOURCE en
-//      avait. Source sans composant face à une cible qui en a = 0/50, et deux
-//      boîtes par ailleurs identiques plafonnaient à un score bas.
-//   2. Pénalité silencieuse : une masse absente côté cible retirait 10 points
-//      du total SANS afficher la moindre ligne d'explication.
-//
-// Correction de fond : un critère non comparable ne compte plus dans le
-// dénominateur, et il est RESTITUÉ comme tel. Le taux de couverture dit sur
-// quelle part des critères le score a réellement été calculé.
+// Deux règles de fond :
+//   - un critère NON MESURABLE (donnée absente d'un côté) sort du
+//     dénominateur et est restitué comme tel, au lieu de retirer des points
+//     en silence ;
+//   - un taux de couverture dit sur quelle part des critères le score a
+//     réellement été calculé, pour qu'un 100 % obtenu sur deux critères ne
+//     se lise pas comme un 100 % obtenu sur huit.
 // ============================================================
 
-const POIDS = {
-  BOITE: { fonction: 15, qualification: 10, architecture: 25, composants: 50 },
-  NOM:   { montage: 10, pas: 10, dimensions: 10, masse: 10, dal: 5, hl: 5,
-           qualifications: 15, composants: 35 }
-};
-
-const SEUIL_AFFICHAGE = 15;       // % en deçà duquel on n'affiche pas le résultat
-const TOLERANCE_MASSE = 0.05;     // ±5 %
+const SEUIL_DEFAUT = 15;
 const MM_PAR_PAS = 9.525;
 
 const ETAT = {
-  IDENTIQUE:     'identique',
-  PARTIEL:       'partiel',
-  DIFFERENT:     'different',
-  INDISPONIBLE:  'indisponible'   // hors dénominateur
+  IDENTIQUE: 'identique', PARTIEL: 'partiel',
+  DIFFERENT: 'different', INDISPONIBLE: 'indisponible'
 };
 
-function critere(cle, libelle, etat, poids, obtenu, message, ensembles) {
-  return { cle: cle, libelle: libelle, etat: etat, poids: poids, obtenu: obtenu,
-           message: message || null,      // texte court affiché sur la ligne
-           ensembles: ensembles || null };// { communs, manquants, enPlus }
+function critere(def, etat, poids, obtenu, message, ensembles) {
+  return {
+    cle: def.cle, libelle: def.libelle, mode: def.mode,
+    etat: etat, poids: poids, obtenu: obtenu,
+    message: message || null, ensembles: ensembles || null
+  };
 }
 
-function vide(valeur) {
-  return valeur === null || valeur === undefined || String(valeur).trim() === '' ||
-         String(valeur).trim() === '-';
+function vide(v) {
+  const s = String(v === null || v === undefined ? '' : v).trim();
+  return s === '' || s === '-';
 }
 
-/** Critère d'égalité simple sur deux valeurs texte. */
-function comparerValeur(cle, libelle, source, cible, poids) {
-  if (vide(source) || vide(cible)) {
-    return critere(cle, libelle, ETAT.INDISPONIBLE, poids, 0,
-                   vide(source) ? 'non renseigné sur la source'
-                                : 'non renseigné sur la cible');
+/** Poids courant d'un critère : réglage utilisateur, sinon valeur du registre. */
+function poidsDe(portee, def) {
+  const regle = Store.poids && Store.poids[portee] && Store.poids[portee][def.cle];
+  return (regle === undefined || regle === null) ? def.poids : Number(regle);
+}
+
+// ------------------------------------------------------------
+// Évaluateurs, un par mode
+// ------------------------------------------------------------
+function evalEgalite(def, poids, source, cible) {
+  const s = source[def.champ], c = cible[def.champ];
+  if (vide(s) || vide(c)) {
+    return critere(def, ETAT.INDISPONIBLE, poids, 0,
+                   vide(s) ? 'non renseigné sur la source' : 'non renseigné sur la cible');
   }
-  const egal = String(source).trim().toLowerCase() === String(cible).trim().toLowerCase();
-  return critere(cle, libelle, egal ? ETAT.IDENTIQUE : ETAT.DIFFERENT, poids,
-                 egal ? poids : 0,
-                 egal ? String(source).trim()
-                      : String(source).trim() + ' vs ' + String(cible).trim());
+  const egal = normaliserTexte(s) === normaliserTexte(c);
+  return critere(def, egal ? ETAT.IDENTIQUE : ETAT.DIFFERENT, poids, egal ? poids : 0,
+                 egal ? String(s).trim()
+                      : String(s).trim() + ' vs ' + String(c).trim());
 }
 
-function comparerNombre(cle, libelle, source, cible, poids, tolerance, unite) {
-  const s = parseFloat(source), c = parseFloat(cible);
+function evalNombre(def, poids, source, cible) {
+  const s = parseFloat(source[def.champ]), c = parseFloat(cible[def.champ]);
   if (isNaN(s) || isNaN(c)) {
-    return critere(cle, libelle, ETAT.INDISPONIBLE, poids, 0,
+    return critere(def, ETAT.INDISPONIBLE, poids, 0,
                    isNaN(s) ? 'non renseigné sur la source' : 'non renseigné sur la cible');
   }
   const ecart = s === 0 ? Math.abs(c) : Math.abs(s - c) / Math.abs(s);
-  const proche = ecart <= (tolerance || 0);
-  return critere(cle, libelle, proche ? ETAT.IDENTIQUE : ETAT.DIFFERENT, poids,
-                 proche ? poids : 0,
-                 proche ? s + (unite || '')
-                        : s + (unite || '') + ' vs ' + c + (unite || ''));
+  const tol = def.tolerance || 0;
+  const proche = ecart <= tol;
+  const u = def.unite || '';
+  let message = proche ? s + u : s + u + ' vs ' + c + u;
+  if (def.champ === 'Nombre de pas' && proche) {
+    message = s + ' pas (~' + (s * MM_PAR_PAS).toFixed(1) + ' mm)';
+  }
+  if (!proche && tol > 0) message += ' (écart ' + Math.round(ecart * 100) + ' %)';
+  return critere(def, proche ? ETAT.IDENTIQUE : ETAT.DIFFERENT, poids, proche ? poids : 0, message);
 }
 
-/** Comparaison d'ensembles : commun / manquant / en trop. */
-function comparerEnsembles(cle, libelle, listeSource, listeCible, poids) {
+function evalDimensions(def, poids, source, cible) {
+  const s = def.champs.map(function (c) { return parseFloat(source[c]); });
+  const c = def.champs.map(function (x) { return parseFloat(cible[x]); });
+  if (s.some(isNaN) || c.some(isNaN)) {
+    return critere(def, ETAT.INDISPONIBLE, poids, 0,
+                   s.some(isNaN) ? 'dimensions incomplètes sur la source'
+                                 : 'dimensions incomplètes sur la cible');
+  }
+  const tol = def.tolerance || 0;
+  const proche = s.every(function (v, i) {
+    return v === 0 ? c[i] === 0 : Math.abs(v - c[i]) / Math.abs(v) <= tol;
+  });
+  const fmt = function (t) { return t.join(' × ') + ' mm'; };
+  return critere(def, proche ? ETAT.IDENTIQUE : ETAT.DIFFERENT, poids, proche ? poids : 0,
+                 proche ? fmt(s) : fmt(s) + ' vs ' + fmt(c));
+}
+
+/** Recouvrement de deux listes : commun / manquant / en trop. */
+function comparerListes(def, poids, listeSource, listeCible, etiquette) {
   const src = Array.from(new Set(listeSource));
   const cib = Array.from(new Set(listeCible));
 
   if (!src.length) {
-    // Correction du bug 1 : sans référence côté source, le critère n'est pas
-    // mesurable. Il sort du dénominateur au lieu de plomber le score.
-    return critere(cle, libelle, ETAT.INDISPONIBLE, poids, 0,
-                   cib.length ? 'aucun sur la source ; ' + cib.length + ' sur la cible'
+    // Sans référence côté source, le critère n'est pas mesurable : il sort du
+    // dénominateur au lieu de plomber le score (c'était le bug d'origine).
+    return critere(def, ETAT.INDISPONIBLE, poids, 0,
+                   cib.length ? 'aucun sur la source, ' + cib.length + ' sur la cible'
                               : 'aucun de part et d\'autre',
                    { communs: [], manquants: [], enPlus: cib });
   }
 
-  const communs   = src.filter(function (x) { return cib.indexOf(x) !== -1; });
-  const manquants = src.filter(function (x) { return cib.indexOf(x) === -1; });
-  const enPlus    = cib.filter(function (x) { return src.indexOf(x) === -1; });
-  const ratio = communs.length / src.length;
+  const cle = function (x) { return normaliserTexte(x); };
+  const indexCible = new Set(cib.map(cle));
+  const indexSource = new Set(src.map(cle));
+  const communs = src.filter(function (x) { return indexCible.has(cle(x)); });
+  const manquants = src.filter(function (x) { return !indexCible.has(cle(x)); });
+  const enPlus = cib.filter(function (x) { return !indexSource.has(cle(x)); });
 
-  return critere(cle, libelle,
-                 ratio === 1 ? ETAT.IDENTIQUE : (ratio > 0 ? ETAT.PARTIEL : ETAT.DIFFERENT),
-                 poids, Math.round(poids * ratio * 100) / 100,
-                 communs.length + ' / ' + src.length + ' en commun',
+  const ratio = communs.length / src.length;
+  const etat = ratio === 1 ? ETAT.IDENTIQUE : (ratio > 0 ? ETAT.PARTIEL : ETAT.DIFFERENT);
+  return critere(def, etat, poids, Math.round(poids * ratio * 100) / 100,
+                 communs.length + ' / ' + src.length + ' ' + (etiquette || 'en commun'),
                  { communs: communs, manquants: manquants, enPlus: enPlus });
 }
 
-function composantsDe(lignes) {
-  const tous = [];
-  (lignes || []).forEach(function (l) {
-    valeursMulti(l[Store.config.colonneStd]).forEach(function (s) { tous.push(s); });
+function valeursDe(objet, champs) {
+  const sortie = [];
+  (champs || []).forEach(function (c) {
+    valeursMulti(objet[c]).forEach(function (v) { sortie.push(v); });
   });
-  return tous;
+  return sortie;
 }
 
-function agreger(criteres) {
+function evalEnsemble(def, poids, source, cible, contexte) {
+  if (def.source === 'typesEnfants') {
+    return comparerListes(def, poids,
+      (source.nomenclature || []).map(function (l) { return typeDe(l).libelle; }),
+      (cible.nomenclature || []).map(function (l) { return typeDe(l).libelle; }),
+      'en commun');
+  }
+  if (def.source === 'composantsEnfants') {
+    const ramasser = function (b) {
+      const t = [];
+      (b.nomenclature || []).forEach(function (l) {
+        valeursMulti(l[Store.config.colonneStd]).forEach(function (c) { t.push(c); });
+      });
+      return t;
+    };
+    return comparerListes(def, poids, ramasser(source), ramasser(cible), 'en commun');
+  }
+  return comparerListes(def, poids, valeursDe(source, def.champs), valeursDe(cible, def.champs),
+                        'en commun');
+}
+
+function evalMotsCles(def, poids, source, cible) {
+  const src = [], cib = [];
+  (def.champs || []).forEach(function (c) {
+    motsCles(source[c]).forEach(function (m) { src.push(m); });
+    motsCles(cible[c]).forEach(function (m) { cib.push(m); });
+  });
+  return comparerListes(def, poids, src, cib, 'mots-clés partagés');
+}
+
+const EVALUATEURS = {};
+EVALUATEURS[MODE.EGALITE] = evalEgalite;
+EVALUATEURS[MODE.NOMBRE] = evalNombre;
+EVALUATEURS[MODE.DIMENSIONS] = evalDimensions;
+EVALUATEURS[MODE.ENSEMBLE] = evalEnsemble;
+EVALUATEURS[MODE.MOTS_CLES] = evalMotsCles;
+
+// ------------------------------------------------------------
+// Agrégation
+// ------------------------------------------------------------
+function evaluer(portee, definitions, source, cible) {
+  const criteres = definitions.map(function (def) {
+    const poids = poidsDe(portee, def);
+    if (poids <= 0) {
+      // Poids nul : le critère est explicitement ignoré par l'utilisateur.
+      const c = critere(def, ETAT.INDISPONIBLE, 0, 0, 'ignoré par les réglages');
+      c.ignore = true;
+      return c;
+    }
+    return (EVALUATEURS[def.mode] || evalEgalite)(def, poids, source, cible);
+  });
+
   let obtenu = 0, max = 0, maxTheorique = 0;
   criteres.forEach(function (c) {
     maxTheorique += c.poids;
     if (c.etat !== ETAT.INDISPONIBLE) { max += c.poids; obtenu += c.obtenu; }
   });
+
+  // Part de chaque critère dans le score final : c'est ce qui rend le
+  // résultat lisible, et ce qui rend le réglage des poids compréhensible.
+  criteres.forEach(function (c) {
+    c.part = max > 0 && c.etat !== ETAT.INDISPONIBLE ? Math.round((c.poids / max) * 100) : 0;
+    c.rendement = c.poids > 0 ? c.obtenu / c.poids : 0;
+  });
+
   return {
     criteres: criteres,
     score: max > 0 ? Math.round((obtenu / max) * 100) : 0,
-    // Dit sur quelle part des critères le score a été calculé : un 100 %
-    // obtenu sur deux critères sur huit ne vaut pas un 100 % sur huit.
     couverture: maxTheorique > 0 ? Math.round((max / maxTheorique) * 100) : 0,
     mesurable: max > 0
   };
 }
 
-// ------------------------------------------------------------
-// Comparaison de deux assemblages
-// ------------------------------------------------------------
 function comparerBoites(source, cible) {
-  const p = POIDS.BOITE;
-  const criteres = [
-    comparerValeur('fonction', 'Fonction', source['Fonction'], cible['Fonction'], p.fonction),
-    comparerValeur('qualification', 'Niveau de qualification',
-                   source['Niveau de qualification'], cible['Niveau de qualification'],
-                   p.qualification),
-    comparerEnsembles('architecture', 'Sous-ensembles',
-                      (source.nomenclature || []).map(function (l) { return l['Type']; })
-                        .filter(function (t) { return !vide(t); }),
-                      (cible.nomenclature || []).map(function (l) { return l['Type']; })
-                        .filter(function (t) { return !vide(t); }),
-                      p.architecture),
-    comparerEnsembles('composants', 'Composants STD',
-                      composantsDe(source.nomenclature),
-                      composantsDe(cible.nomenclature),
-                      p.composants)
-  ];
-  return agreger(criteres);
+  return evaluer('boite', CRITERES_BOITE, source, cible);
+}
+
+function comparerSousEnsembles(source, cible) {
+  const type = typeDe(source);
+  return evaluer(type.cle, type.criteres, source, cible);
+}
+
+// ------------------------------------------------------------
+// Recherches d'équivalences
+// ------------------------------------------------------------
+function seuil() {
+  return Store.seuilEquivalence === undefined ? SEUIL_DEFAUT : Store.seuilEquivalence;
 }
 
 function equivalencesBoite(pnSource) {
   const source = boiteParPn(pnSource);
   if (!source) return [];
+  const s = seuil();
   return Store.boites
     .filter(function (b) { return String(b[CLE_PN()]).trim() !== String(pnSource).trim(); })
     .map(function (cible) {
@@ -158,84 +229,30 @@ function equivalencesBoite(pnSource) {
       return { cible: cible, score: r.score, couverture: r.couverture,
                mesurable: r.mesurable, criteres: r.criteres };
     })
-    .filter(function (r) { return r.mesurable && r.score >= SEUIL_AFFICHAGE; })
+    .filter(function (r) { return r.mesurable && r.score >= s; })
     .sort(function (a, b) { return b.score - a.score || b.couverture - a.couverture; });
-}
-
-// ------------------------------------------------------------
-// Comparaison de deux sous-ensembles
-// ------------------------------------------------------------
-function comparerSousEnsembles(source, cible) {
-  const p = POIDS.NOM;
-  const quals = Store.config.multiNom || [];
-
-  const dimSource = [source['Dim Long (mm)'], source['Dim Larg (mm)']];
-  const dimCible  = [cible['Dim Long (mm)'], cible['Dim Larg (mm)']];
-  const dimComparable = dimSource.every(function (v) { return !isNaN(parseFloat(v)); }) &&
-                        dimCible.every(function (v) { return !isNaN(parseFloat(v)); });
-
-  const criteres = [
-    comparerValeur('montage', 'Montage', source['Montage'], cible['Montage'], p.montage),
-
-    (function () {
-      const c = comparerNombre('pas', 'Nombre de pas', source['Nombre de pas'],
-                               cible['Nombre de pas'], p.pas, 0, ' pas');
-      const s = parseFloat(source['Nombre de pas']);
-      if (c.etat === ETAT.IDENTIQUE && !isNaN(s)) {
-        c.message = s + ' pas (~' + (s * MM_PAR_PAS).toFixed(1) + ' mm)';
-      }
-      return c;
-    })(),
-
-    dimComparable
-      ? (function () {
-          const egal = parseFloat(dimSource[0]) === parseFloat(dimCible[0]) &&
-                       parseFloat(dimSource[1]) === parseFloat(dimCible[1]);
-          return critere('dimensions', 'Dimensions',
-                         egal ? ETAT.IDENTIQUE : ETAT.DIFFERENT, p.dimensions,
-                         egal ? p.dimensions : 0,
-                         egal ? dimSource[0] + ' x ' + dimSource[1] + ' mm'
-                              : dimSource[0] + ' x ' + dimSource[1] + ' mm vs ' +
-                                dimCible[0] + ' x ' + dimCible[1] + ' mm');
-        })()
-      : critere('dimensions', 'Dimensions', ETAT.INDISPONIBLE, p.dimensions, 0,
-                'dimensions incomplètes'),
-
-    comparerNombre('masse', 'Masse (±5 %)', source['Masse (g)'], cible['Masse (g)'],
-                   p.masse, TOLERANCE_MASSE, ' g'),
-    comparerValeur('dal', 'DAL', source['DAL'], cible['DAL'], p.dal),
-    comparerValeur('hl', 'HL', source['HL'], cible['HL'], p.hl),
-
-    comparerEnsembles('qualifications', 'Qualifications',
-      quals.reduce(function (acc, q) { return acc.concat(valeursMulti(source[q])); }, []),
-      quals.reduce(function (acc, q) { return acc.concat(valeursMulti(cible[q])); }, []),
-      p.qualifications),
-
-    comparerEnsembles('composants', 'Composants STD',
-                      valeursMulti(source[Store.config.colonneStd]),
-                      valeursMulti(cible[Store.config.colonneStd]),
-                      p.composants)
-  ];
-  return agreger(criteres);
 }
 
 function equivalencesSousEnsemble(idLigne) {
   const source = nomParId(idLigne);
   if (!source) return [];
+  const type = typeDe(source);
+  const s = seuil();
+  // On ne compare qu'entre sous-ensembles du MÊME type : une plaquette et un
+  // harnais n'ont pas les mêmes critères, les confronter n'a pas de sens.
   return Store.nomenclature
     .filter(function (n) {
       return String(n[CLE_NOM()]).trim() !== String(idLigne).trim() &&
-             String(n['Type'] || '').trim().toLowerCase() ===
-             String(source['Type'] || '').trim().toLowerCase();
+             typeDe(n).cle === type.cle;
     })
     .map(function (cible) {
       const r = comparerSousEnsembles(source, cible);
       const parent = boiteParPn(cible[CLE_PN()]);
       return { cible: cible, score: r.score, couverture: r.couverture,
-               mesurable: r.mesurable, criteres: r.criteres,
+               mesurable: r.mesurable, criteres: r.criteres, type: type,
                fonctionParent: parent ? txt(parent['Fonction'], 'Inconnue') : 'Inconnue' };
     })
-    .filter(function (r) { return r.mesurable && r.score >= SEUIL_AFFICHAGE; })
+    .filter(function (r) { return r.mesurable && r.score >= s; })
     .sort(function (a, b) { return b.score - a.score || b.couverture - a.couverture; });
 }
 </script>

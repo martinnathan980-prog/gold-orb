@@ -52,10 +52,12 @@ page = page.replace(
   '<script>\n' + lire('build/bootstrap.bundle.min.js') + '\n</script>');
 if (/cdn\.jsdelivr/.test(page)) throw new Error('Une référence CDN subsiste');
 
-// 3. Faux serveur, inséré avant les scripts client
+// 3. Couche de démonstration, insérée avant les scripts client.
+//    Illustrations d'abord : FauxServeur s'en sert dès son chargement.
 const marqueur = '<script>\n// ============================================================\n// NEXUS PLM — utilitaires d\'affichage';
-if (page.indexOf(marqueur) === -1) throw new Error('Point d\'insertion du faux serveur introuvable');
-page = page.replace(marqueur, lire('demo/FauxServeur.html') + '\n' + marqueur);
+if (page.indexOf(marqueur) === -1) throw new Error('Point d\'insertion de la couche démo introuvable');
+page = page.replace(marqueur,
+  lire('demo/Illustrations.html') + '\n' + lire('demo/FauxServeur.html') + '\n' + marqueur);
 
 // 4. Barre de démonstration
 const BARRE_SCRIPT = `
@@ -116,8 +118,8 @@ const BARRE_BALISAGE = `
 </div>
 <div id="barreDemo">
   <div class="demo-texte">
-    <b>Démonstration</b> — données en mémoire, rien n'est enregistré.
-    Le code client est celui de <code>src/client/</code>, sans modification.
+    <b>Démonstration</b><span class="demo-texte-long"> — données en mémoire, rien n'est
+    enregistré. Le code client est celui de <code>src/client/</code>, sans modification.</span>
   </div>
   <div class="demo-controles">
     <label class="demo-bascule">
@@ -143,18 +145,43 @@ const BARRE_BALISAGE = `
   .demo-btn { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.25);
     border-radius: 8px; padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
   .demo-btn:hover { background: rgba(255,255,255,.22); }
-  @media (max-width: 520px) { .demo-texte { flex: 1 1 100%; } }
+  /* En mobile la barre mangeait 96 px de haut et recouvrait l'en-tête au
+     défilement : on ne garde que les commandes. */
+  @media (max-width: 620px) {
+    #barreDemo { padding: 6px 12px; }
+    .demo-texte { font-size: 11.5px; }
+    .demo-texte b::after { content: " — données en mémoire"; font-weight: 400; }
+    .demo-texte-long { display: none; }
+    .demo-bascule { font-size: 11.5px; }
+  }
 </style>
 `;
+
+/**
+ * Insère la barre de démonstration juste avant l'en-tête de l'application.
+ * On vérifie que l'ancre existe : un point d'insertion silencieusement absent
+ * ferait passer une démo amputée sans que rien ne le signale.
+ */
+function injecterBarre(corps) {
+  const ancre = '<header class="entete">';
+  if (corps.indexOf(ancre) === -1) {
+    throw new Error("Ancre d'insertion de la barre de démo introuvable : " + ancre);
+  }
+  return corps.replace(ancre, BARRE_BALISAGE + ancre);
+}
 
 // 5. Retrait de l'enveloppe HTML : l'hôte Artifact fournit doctype/head/body
 const corps = page.match(/<body>([\s\S]*)<\/body>/)[1];
 const styles = page.match(/<style>[\s\S]*?<\/style>/g).join('\n');
 
-const sortie = '<title>NEXUS PLM</title>\n' + styles + '\n' +
-               corps.replace(/<style>[\s\S]*?<\/style>/g, '')
-                    .replace('<button type="button" class="btn-new-boite"',
-                             BARRE_BALISAGE + '<button type="button" class="btn-new-boite"') +
+// Les <link> de polices vivent dans le <head>, que l'enveloppe Artifact
+// fournit : on les réinjecte en tête de fichier (valide en HTML5, et
+// fonts.googleapis.com est le seul hébergeur de styles autorisé).
+const polices = (page.match(/<link[^>]*fonts\.(googleapis|gstatic)\.com[^>]*>/g) || []).join('\n');
+if (!polices) throw new Error('Lien de polices introuvable');
+
+const sortie = '<title>NEXUS PLM</title>\n' + polices + '\n' + styles + '\n' +
+               injecterBarre(corps.replace(/<style>[\s\S]*?<\/style>/g, '')) +
                BARRE_SCRIPT;
 
 const cible = path.join(RACINE, 'build', 'demo.html');

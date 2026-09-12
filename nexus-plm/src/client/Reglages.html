@@ -1,0 +1,205 @@
+<script>
+// ============================================================
+// NEXUS PLM — réglage des pondérations d'équivalence.
+//
+// Entièrement généré à partir du registre de Types.html : ajouter un critère
+// le fait apparaître ici sans une ligne de code supplémentaire.
+//
+// Deux partis pris :
+//   - on affiche la PART de chaque critère (sa fraction du total), pas son
+//     poids brut : c'est la part qui détermine réellement le score, un poids
+//     de 30 ne veut rien dire seul ;
+//   - l'aperçu se recalcule à chaque mouvement de curseur, sur des données
+//     réelles, pour qu'on voie l'effet du réglage au lieu de le supposer.
+// ============================================================
+
+const PRESETS = {
+  equilibre: {
+    libelle: 'Équilibré',
+    aide: 'Les valeurs d\'origine du métier.',
+    appliquer: function () { return poidsParDefaut(); }
+  },
+  composants: {
+    libelle: 'Priorité composants',
+    aide: 'Ce qui est monté dedans prime sur la géométrie.',
+    appliquer: function () {
+      const p = poidsParDefaut();
+      PORTEES.forEach(function (portee) {
+        portee.criteres.forEach(function (c) {
+          if (c.cle === 'composants') p[portee.cle][c.cle] = Math.max(60, c.poids);
+          else if (c.cle === 'dimensions' || c.cle === 'masse' || c.cle === 'pas') {
+            p[portee.cle][c.cle] = Math.round(c.poids / 2);
+          }
+        });
+      });
+      return p;
+    }
+  },
+  geometrie: {
+    libelle: 'Priorité géométrie',
+    aide: 'Interchangeabilité physique avant tout.',
+    appliquer: function () {
+      const p = poidsParDefaut();
+      PORTEES.forEach(function (portee) {
+        portee.criteres.forEach(function (c) {
+          if (['dimensions', 'masse', 'pas', 'montage'].indexOf(c.cle) !== -1) {
+            p[portee.cle][c.cle] = Math.max(30, c.poids);
+          } else if (c.cle === 'composants') p[portee.cle][c.cle] = Math.round(c.poids / 2);
+        });
+      });
+      return p;
+    }
+  },
+  qualification: {
+    libelle: 'Priorité qualification',
+    aide: 'Pour chercher un report de qualification.',
+    appliquer: function () {
+      const p = poidsParDefaut();
+      PORTEES.forEach(function (portee) {
+        portee.criteres.forEach(function (c) {
+          if (['qualifications', 'qualification', 'dal', 'hl'].indexOf(c.cle) !== -1) {
+            p[portee.cle][c.cle] = Math.max(35, c.poids);
+          }
+        });
+      });
+      return p;
+    }
+  }
+};
+
+let porteeReglee = 'boite';
+
+function porteeCourante() {
+  return PORTEES.find(function (p) { return p.cle === porteeReglee; }) || PORTEES[0];
+}
+
+function totalPoids(portee) {
+  return portee.criteres.reduce(function (s, c) {
+    return s + Math.max(0, Number(Store.poids[portee.cle][c.cle]));
+  }, 0);
+}
+
+// ------------------------------------------------------------
+// Rendu
+// ------------------------------------------------------------
+function ongletsReglagesHtml() {
+  return PORTEES.map(function (p) {
+    return '<button type="button" class="onglet-reglage' +
+           (p.cle === porteeReglee ? ' actif' : '') + '"' +
+           dataAttrs({ action: 'regler-portee', portee: p.cle }) + '>' +
+           '<span aria-hidden="true">' + p.icone + '</span> ' + esc(p.libelle) + '</button>';
+  }).join('');
+}
+
+function curseursHtml() {
+  const portee = porteeCourante();
+  const total = totalPoids(portee);
+
+  return portee.criteres.map(function (c) {
+    const valeur = Math.max(0, Number(Store.poids[portee.cle][c.cle]));
+    const part = total > 0 ? Math.round((valeur / total) * 100) : 0;
+    const ignore = valeur === 0;
+
+    return '<div class="reglage' + (ignore ? ' reglage-ignore' : '') + '">' +
+      '<div class="reglage-tete">' +
+        '<label for="poids-' + esc(portee.cle) + '-' + esc(c.cle) + '">' + esc(c.libelle) + '</label>' +
+        '<span class="reglage-part">' + (ignore ? 'ignoré' : part + ' % du score') + '</span>' +
+      '</div>' +
+      '<div class="reglage-corps">' +
+        '<input type="range" min="0" max="100" step="5" value="' + valeur + '"' +
+          ' id="poids-' + esc(portee.cle) + '-' + esc(c.cle) + '"' +
+          ' class="curseur" data-portee="' + esc(portee.cle) + '" data-critere="' + esc(c.cle) + '"' +
+          ' aria-label="Poids de ' + esc(c.libelle) + '">' +
+        '<output class="reglage-valeur">' + valeur + '</output>' +
+      '</div>' +
+      '<div class="reglage-jauge"><span style="width:' + part + '%"></span></div>' +
+    '</div>';
+  }).join('');
+}
+
+/** Aperçu en direct : les meilleures équivalences avec les réglages courants. */
+function apercuReglagesHtml() {
+  const portee = porteeCourante();
+
+  if (portee.cle === 'boite') {
+    const source = boiteCourante() || Store.boites[0];
+    if (!source) return '<p class="vide">Aucun assemblage à comparer.</p>';
+    const resultats = equivalencesBoite(source[CLE_PN()]).slice(0, 4);
+    return enteteApercu('Assemblage de référence', txt(source[CLE_PN()])) +
+           listeApercu(resultats, function (r) { return txt(r.cible[CLE_PN()]); });
+  }
+
+  const source = (Store.idNomCourant && nomParId(Store.idNomCourant) &&
+                  typeDe(nomParId(Store.idNomCourant)).cle === portee.cle)
+    ? nomParId(Store.idNomCourant)
+    : Store.nomenclature.find(function (n) { return typeDe(n).cle === portee.cle; });
+
+  if (!source) {
+    return '<p class="vide">Aucun sous-ensemble de ce type dans la base.</p>';
+  }
+  const resultats = equivalencesSousEnsemble(source[CLE_NOM()]).slice(0, 4);
+  return enteteApercu('Pièce de référence',
+                      txt(source['PN du type'], txt(source[CLE_NOM()]))) +
+         listeApercu(resultats, function (r) { return txt(r.cible['PN du type']); });
+}
+
+function enteteApercu(libelle, valeur) {
+  return '<div class="apercu-tete"><span>' + esc(libelle) + '</span><b>' + esc(valeur) + '</b></div>';
+}
+
+function listeApercu(resultats, nommer) {
+  if (!resultats.length) {
+    return '<p class="vide">Aucune équivalence au-dessus de ' + seuil() + ' % ' +
+           'avec ces réglages.</p>';
+  }
+  return '<ol class="apercu-liste">' + resultats.map(function (r) {
+    return '<li>' +
+      '<span class="apercu-nom">' + esc(nommer(r)) + '</span>' +
+      '<span class="apercu-barre"><span style="width:' + r.score + '%"></span></span>' +
+      '<span class="apercu-score">' + r.score + ' %</span>' +
+    '</li>';
+  }).join('') + '</ol>';
+}
+
+function presetsHtml() {
+  return Object.keys(PRESETS).map(function (k) {
+    return '<button type="button" class="btn-preset"' +
+           dataAttrs({ action: 'appliquer-preset', preset: k }) +
+           ' title="' + esc(PRESETS[k].aide) + '">' + esc(PRESETS[k].libelle) + '</button>';
+  }).join('');
+}
+
+function rendreReglages() {
+  definirHtml('reglagesOnglets', ongletsReglagesHtml());
+  definirHtml('reglagesCurseurs', curseursHtml());
+  definirHtml('reglagesApercu', apercuReglagesHtml());
+  definirHtml('reglagesPresets', presetsHtml());
+  definirTexte('seuilValeur', seuil() + ' %');
+  const s = parId('seuilCurseur');
+  if (s) s.value = seuil();
+  const avert = parId('reglagesModifies');
+  if (avert) avert.hidden = !poidsModifies();
+}
+
+/** Ne redessine que ce qui bouge : garder le curseur sous le doigt. */
+function rafraichirApercu() {
+  const portee = porteeCourante();
+  const total = totalPoids(portee);
+  document.querySelectorAll('.reglage').forEach(function (bloc, i) {
+    const def = portee.criteres[i];
+    if (!def) return;
+    const valeur = Math.max(0, Number(Store.poids[portee.cle][def.cle]));
+    const part = total > 0 ? Math.round((valeur / total) * 100) : 0;
+    bloc.classList.toggle('reglage-ignore', valeur === 0);
+    const sortie = bloc.querySelector('.reglage-valeur');
+    if (sortie) sortie.textContent = valeur;
+    const part_ = bloc.querySelector('.reglage-part');
+    if (part_) part_.textContent = valeur === 0 ? 'ignoré' : part + ' % du score';
+    const jauge = bloc.querySelector('.reglage-jauge span');
+    if (jauge) jauge.style.width = part + '%';
+  });
+  definirHtml('reglagesApercu', apercuReglagesHtml());
+  const avert = parId('reglagesModifies');
+  if (avert) avert.hidden = !poidsModifies();
+}
+</script>

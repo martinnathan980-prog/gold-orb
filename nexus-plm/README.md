@@ -5,12 +5,12 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 158 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 299 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 158 tests : logique client + serveur
+npm test                 # 208 tests : logique client + serveur
 npm run demo             # construit build/demo.html
-npm run test:navigateur  # 68 tests dans un vrai Chromium
+npm run test:navigateur  # 91 tests dans un vrai Chromium
 ```
 
 ## Démonstration navigable
@@ -44,16 +44,65 @@ src/
     Setup.gs               création de structure, jeu de démo, menu
 
   client/
-    Styles.html            CSS, couleurs en variables
+    Styles.html            design system : jetons, thèmes clair et sombre
+    Types.html             REGISTRE DES TYPES : champs + critères par type
     Dom.html               esc(), formats, délégation d'événements
     Api.html               google.script.run -> Promise   <-- frontière unique
-    Store.html             état + recherche indexée, zéro DOM
-    Compare.html           scoring PUR, aucun HTML produit
-    ViewGrid.html          tuiles, onglets, indicateurs
-    ViewFiche.html         panneau latéral
+    Store.html             état, recherche indexée, pondérations, journal
+    Compare.html           scoring PUR, piloté par le registre, aucun HTML
+    ViewGrid.html          cartes, onglets, filtres par type, indicateurs
+    ViewFiche.html         panneau latéral, champs selon le type
     ViewCompare.html       rendu des équivalences
+    Reglages.html          pondérations réglables, aperçu en direct
+    Historique.html        journal de bord et annulation
     Main.html              contrôleur : actions et démarrage
 ```
+
+## Types de sous-ensembles
+
+`client/Types.html` est la pièce maîtresse : un seul endroit décrit, pour chaque
+type, **les champs qu'il porte** et **les critères qui servent à l'équivalence**.
+L'affichage de la fiche, le moteur de scoring et l'écran de réglages en sont
+tous générés. Ajouter un type ou un critère ne demande de toucher à aucun autre
+fichier.
+
+| Type | Champs propres | Critères d'équivalence |
+|---|---|---|
+| **Structure boîte** | montage, nombre de pas, longueur, largeur, masse, HL, DAL | montage, pas, dimensions, masse, DAL, HL, qualifications, composants |
+| **Harnais** | PN, référence — **ni dimensions ni masse** | référence, qualifications, composants |
+| **Plaquette éclairante** | numéro, **mots-clés**, dimensions | mots-clés, numéro, dimensions, qualifications |
+| **Autre** | référence, masse | référence, masse, qualifications, composants |
+
+Une pièce n'est comparée qu'aux pièces du **même type** : confronter une
+plaquette et un harnais n'a pas de sens, ils n'ont pas les mêmes critères.
+
+Les mots-clés sont comparés en recouvrement de vocabulaire, insensible aux
+accents et à la casse, doublons écartés : « mission SAR » et « Mission Sar »
+sont le même terme.
+
+## Pondération
+
+Chaque critère porte un poids, réglable depuis le panneau **Pondération**.
+Trois partis pris :
+
+- On affiche la **part** de chaque critère (sa fraction du total), pas son poids
+  brut : c'est la part qui détermine le score, un poids de 30 ne veut rien dire seul.
+- L'**aperçu se recalcule à chaque mouvement de curseur**, sur des données
+  réelles. Le panneau est sans voile : ouvert par-dessus une comparaison, on voit
+  le classement se recomposer derrière.
+- Un poids mis à **0** sort le critère du calcul, et la comparaison l'annonce
+  (« ignoré par vos réglages ») au lieu de le passer sous silence.
+
+Quatre réglages rapides sont fournis (Équilibré, Priorité composants, Priorité
+géométrie, Priorité qualification). Les réglages sont mémorisés sur le poste.
+
+## Traçabilité
+
+- **Journal de bord** : chaque action est horodatée et consultable.
+- **Annulation** : une suppression reste rattrapable deux minutes. L'élément est
+  recréé — avec un identifiant neuf, ce que l'interface annonce plutôt que de
+  laisser croire à un retour en arrière exact.
+- Côté serveur, la feuille `9_JOURNAL` enregistre qui a modifié quoi et quand.
 
 Deux règles portent l'essentiel :
 

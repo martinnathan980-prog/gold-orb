@@ -1,0 +1,245 @@
+<script>
+// ============================================================
+// NEXUS PLM — registre des types de sous-ensembles.
+//
+// Pièce maîtresse : un seul endroit décrit, pour chaque type, les champs qu'il
+// porte ET les critères qui servent à l'équivalence. L'affichage de la fiche,
+// le moteur de scoring et l'écran de réglages sont tous générés à partir d'ici.
+// Ajouter un type ou un critère ne demande de toucher à aucun autre fichier.
+//
+// Les types ne partagent PAS la même fiche : une structure boîte porte toute
+// la géométrie, un harnais n'a qu'un PN et une référence, une plaquette
+// éclairante se compare sur son numéro et ses mots-clés.
+// ============================================================
+
+const GENRE = {
+  TEXTE: 'texte', NOMBRE: 'nombre', LISTE: 'liste',
+  MULTI: 'multi', MOTS_CLES: 'motsCles', IMAGE: 'image', LONG: 'long'
+};
+
+const MODE = {
+  EGALITE: 'egalite',       // deux valeurs texte identiques
+  NOMBRE: 'nombre',         // proximité numérique, avec tolérance
+  DIMENSIONS: 'dimensions', // couple longueur x largeur
+  ENSEMBLE: 'ensemble',     // recouvrement de deux listes
+  MOTS_CLES: 'motsCles'     // recouvrement de vocabulaire, insensible aux accents
+};
+
+// ------------------------------------------------------------
+// Champs communs à tous les types
+// ------------------------------------------------------------
+const CHAMPS_COMMUNS = [
+  { cle: 'Image', libelle: 'Image', genre: GENRE.IMAGE },
+  { cle: 'Commentaires libres', libelle: 'Commentaires', genre: GENRE.LONG }
+];
+
+const CHAMPS_QUALIF = [
+  { cle: 'Qualification Brouillard salin', libelle: 'Qualif. brouillard salin', genre: GENRE.MULTI, liste: 'list-Qualif' },
+  { cle: 'Qualification Vibration', libelle: 'Qualif. vibration', genre: GENRE.MULTI, liste: 'list-Qualif' },
+  { cle: 'Qualification Explosion', libelle: 'Qualif. explosion', genre: GENRE.MULTI, liste: 'list-Qualif' }
+];
+
+const CLES_QUALIF = CHAMPS_QUALIF.map(function (c) { return c.cle; });
+
+// ------------------------------------------------------------
+// Les types
+// ------------------------------------------------------------
+const TYPES = {
+  structure: {
+    cle: 'structure',
+    libelle: 'Structure boîte',
+    icone: '▤',
+    teinte: 'type-structure',
+    alias: ['structure boite', 'structure boîte', 'structure', 'boitier', 'boîtier'],
+    resume: ['Montage', 'Dim Long (mm)', 'Masse (g)'],
+    champs: [
+      { cle: 'PN du type', libelle: 'PN du type', genre: GENRE.TEXTE, requis: true },
+      { cle: 'Montage', libelle: 'Montage', genre: GENRE.LISTE, liste: 'list-Montage' },
+      { cle: 'Nombre de pas', libelle: 'Nombre de pas', genre: GENRE.NOMBRE,
+        aide: '1 pas ≈ 9,525 mm' },
+      { cle: 'Dim Long (mm)', libelle: 'Longueur (mm)', genre: GENRE.NOMBRE },
+      { cle: 'Dim Larg (mm)', libelle: 'Largeur (mm)', genre: GENRE.NOMBRE },
+      { cle: 'Masse (g)', libelle: 'Masse (g)', genre: GENRE.NOMBRE },
+      { cle: 'HL', libelle: 'HL', genre: GENRE.LISTE, liste: 'list-Niveau' },
+      { cle: 'DAL', libelle: 'DAL', genre: GENRE.LISTE, liste: 'list-Niveau' }
+    ].concat(CHAMPS_QUALIF, [
+      { cle: 'Composant STD', libelle: 'Composants STD', genre: GENRE.MULTI, catalogue: true }
+    ], CHAMPS_COMMUNS),
+    criteres: [
+      { cle: 'montage', libelle: 'Montage', mode: MODE.EGALITE, champ: 'Montage', poids: 10 },
+      { cle: 'pas', libelle: 'Nombre de pas', mode: MODE.NOMBRE, champ: 'Nombre de pas',
+        tolerance: 0, unite: ' pas', poids: 10 },
+      { cle: 'dimensions', libelle: 'Dimensions', mode: MODE.DIMENSIONS,
+        champs: ['Dim Long (mm)', 'Dim Larg (mm)'], tolerance: 0.02, poids: 15 },
+      { cle: 'masse', libelle: 'Masse', mode: MODE.NOMBRE, champ: 'Masse (g)',
+        tolerance: 0.05, unite: ' g', poids: 10 },
+      { cle: 'dal', libelle: 'DAL', mode: MODE.EGALITE, champ: 'DAL', poids: 5 },
+      { cle: 'hl', libelle: 'HL', mode: MODE.EGALITE, champ: 'HL', poids: 5 },
+      { cle: 'qualifications', libelle: 'Qualifications', mode: MODE.ENSEMBLE,
+        champs: CLES_QUALIF, poids: 15 },
+      { cle: 'composants', libelle: 'Composants STD', mode: MODE.ENSEMBLE,
+        champs: ['Composant STD'], poids: 30 }
+    ]
+  },
+
+  harnais: {
+    cle: 'harnais',
+    libelle: 'Harnais',
+    icone: '⌇',
+    teinte: 'type-harnais',
+    alias: ['harnais', 'harness', 'cablage', 'câblage', 'faisceau'],
+    resume: ['Référence', 'Composant STD'],
+    // Un harnais ne porte ni dimensions ni masse : rien ne sert de les afficher.
+    champs: [
+      { cle: 'PN du type', libelle: 'PN du harnais', genre: GENRE.TEXTE, requis: true },
+      { cle: 'Référence', libelle: 'Référence', genre: GENRE.TEXTE,
+        aide: 'Référence de définition du harnais' }
+    ].concat(CHAMPS_QUALIF, [
+      { cle: 'Composant STD', libelle: 'Composants STD', genre: GENRE.MULTI, catalogue: true }
+    ], CHAMPS_COMMUNS),
+    criteres: [
+      { cle: 'reference', libelle: 'Référence', mode: MODE.EGALITE, champ: 'Référence', poids: 35 },
+      { cle: 'qualifications', libelle: 'Qualifications', mode: MODE.ENSEMBLE,
+        champs: CLES_QUALIF, poids: 15 },
+      { cle: 'composants', libelle: 'Composants STD', mode: MODE.ENSEMBLE,
+        champs: ['Composant STD'], poids: 50 }
+    ]
+  },
+
+  plaquette: {
+    cle: 'plaquette',
+    libelle: 'Plaquette éclairante',
+    icone: '▣',
+    teinte: 'type-plaquette',
+    alias: ['plaquette eclairante', 'plaquette éclairante', 'plaquette', 'plaque'],
+    resume: ['Numéro', 'Mots-clés'],
+    // Une plaquette se retrouve par son numéro et surtout par son vocabulaire :
+    // les mots-clés de mission portent l'essentiel de l'équivalence.
+    champs: [
+      { cle: 'PN du type', libelle: 'PN de la plaquette', genre: GENRE.TEXTE, requis: true },
+      { cle: 'Numéro', libelle: 'Numéro', genre: GENRE.TEXTE,
+        aide: 'Numéro de plaquette au plan' },
+      { cle: 'Mots-clés', libelle: 'Mots-clés', genre: GENRE.MOTS_CLES, liste: 'list-MotsCles',
+        aide: 'Mission, fonction, libellés sérigraphiés' },
+      { cle: 'Dim Long (mm)', libelle: 'Longueur (mm)', genre: GENRE.NOMBRE },
+      { cle: 'Dim Larg (mm)', libelle: 'Largeur (mm)', genre: GENRE.NOMBRE }
+    ].concat(CHAMPS_QUALIF, CHAMPS_COMMUNS),
+    criteres: [
+      { cle: 'motsCles', libelle: 'Mots-clés', mode: MODE.MOTS_CLES, champs: ['Mots-clés'], poids: 50 },
+      { cle: 'numero', libelle: 'Numéro', mode: MODE.EGALITE, champ: 'Numéro', poids: 20 },
+      { cle: 'dimensions', libelle: 'Dimensions', mode: MODE.DIMENSIONS,
+        champs: ['Dim Long (mm)', 'Dim Larg (mm)'], tolerance: 0.02, poids: 15 },
+      { cle: 'qualifications', libelle: 'Qualifications', mode: MODE.ENSEMBLE,
+        champs: CLES_QUALIF, poids: 15 }
+    ]
+  },
+
+  autre: {
+    cle: 'autre',
+    libelle: 'Autre sous-ensemble',
+    icone: '◇',
+    teinte: 'type-autre',
+    alias: [],
+    resume: ['PN du type'],
+    champs: [
+      { cle: 'PN du type', libelle: 'PN du type', genre: GENRE.TEXTE, requis: true },
+      { cle: 'Référence', libelle: 'Référence', genre: GENRE.TEXTE },
+      { cle: 'Masse (g)', libelle: 'Masse (g)', genre: GENRE.NOMBRE }
+    ].concat(CHAMPS_QUALIF, [
+      { cle: 'Composant STD', libelle: 'Composants STD', genre: GENRE.MULTI, catalogue: true }
+    ], CHAMPS_COMMUNS),
+    criteres: [
+      { cle: 'reference', libelle: 'Référence', mode: MODE.EGALITE, champ: 'Référence', poids: 25 },
+      { cle: 'masse', libelle: 'Masse', mode: MODE.NOMBRE, champ: 'Masse (g)',
+        tolerance: 0.05, unite: ' g', poids: 20 },
+      { cle: 'qualifications', libelle: 'Qualifications', mode: MODE.ENSEMBLE,
+        champs: CLES_QUALIF, poids: 20 },
+      { cle: 'composants', libelle: 'Composants STD', mode: MODE.ENSEMBLE,
+        champs: ['Composant STD'], poids: 35 }
+    ]
+  }
+};
+
+// ------------------------------------------------------------
+// Critères au niveau de l'assemblage
+// ------------------------------------------------------------
+const CRITERES_BOITE = [
+  { cle: 'fonction', libelle: 'Fonction', mode: MODE.EGALITE, champ: 'Fonction', poids: 15 },
+  { cle: 'qualification', libelle: 'Niveau de qualification', mode: MODE.EGALITE,
+    champ: 'Niveau de qualification', poids: 10 },
+  { cle: 'porteur', libelle: 'Porteur', mode: MODE.ENSEMBLE, champs: ['Porteur'], poids: 10 },
+  { cle: 'architecture', libelle: 'Sous-ensembles', mode: MODE.ENSEMBLE,
+    source: 'typesEnfants', poids: 25 },
+  { cle: 'composants', libelle: 'Composants STD', mode: MODE.ENSEMBLE,
+    source: 'composantsEnfants', poids: 40 }
+];
+
+const PORTEES = [{ cle: 'boite', libelle: 'Assemblage', icone: '◼', criteres: CRITERES_BOITE }]
+  .concat(Object.keys(TYPES).map(function (k) {
+    return { cle: TYPES[k].cle, libelle: TYPES[k].libelle,
+             icone: TYPES[k].icone, criteres: TYPES[k].criteres };
+  }));
+
+// ------------------------------------------------------------
+// Résolution d'un libellé de type saisi librement
+// ------------------------------------------------------------
+function normaliserTexte(valeur) {
+  return String(valeur === null || valeur === undefined ? '' : valeur)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')   // accents
+    .toLowerCase().trim();
+}
+
+function typeDe(ligne) {
+  const brut = normaliserTexte(ligne && ligne['Type']);
+  if (!brut) return TYPES.autre;
+  const cles = Object.keys(TYPES);
+  for (let i = 0; i < cles.length; i++) {
+    const t = TYPES[cles[i]];
+    if (t.alias.some(function (a) { return normaliserTexte(a) === brut; })) return t;
+  }
+  for (let i = 0; i < cles.length; i++) {
+    const t = TYPES[cles[i]];
+    if (t.alias.some(function (a) { return brut.indexOf(normaliserTexte(a)) !== -1; })) return t;
+  }
+  return TYPES.autre;
+}
+
+function typeParCle(cle) { return TYPES[cle] || TYPES.autre; }
+
+/** Libellé officiel à écrire dans la feuille pour un type choisi. */
+function libelleType(cle) { return typeParCle(cle).libelle; }
+
+/** Les colonnes réellement utilisées par un type (pour l'affichage). */
+function champsDuType(type) { return type.champs; }
+
+/** Toutes les colonnes possibles, tous types confondus. */
+function toutesLesColonnesNom() {
+  const vues = new Set(['ID_Ligne', 'PN Global', 'Type']);
+  Object.keys(TYPES).forEach(function (k) {
+    TYPES[k].champs.forEach(function (c) { vues.add(c.cle); });
+  });
+  return Array.from(vues);
+}
+
+// ------------------------------------------------------------
+// Mots-clés
+// ------------------------------------------------------------
+/** Découpe un champ de mots-clés en jetons normalisés et dédupliqués. */
+function motsCles(valeur) {
+  const jetons = String(valeur === null || valeur === undefined ? '' : valeur)
+    .split(/[\n,;|/]+/)
+    .map(function (m) { return m.trim(); })
+    .filter(function (m) { return m !== ''; });
+  const vus = new Set();
+  const sortie = [];
+  jetons.forEach(function (m) {
+    const n = normaliserTexte(m);
+    if (n && !vus.has(n)) { vus.add(n); sortie.push(m); }
+  });
+  return sortie;
+}
+
+function clesNormalisees(valeur) {
+  return motsCles(valeur).map(normaliserTexte);
+}
+</script>

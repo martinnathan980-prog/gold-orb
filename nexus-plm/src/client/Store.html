@@ -1,34 +1,112 @@
 <script>
 // ============================================================
-// NEXUS PLM — état de l'application.
+// NEXUS PLM — état de l'application. Aucun accès au DOM.
 //
-// Aucun accès au DOM ici. L'ancienne version gardait huit variables globales
-// couplées implicitement, et retrouvait la boîte courante en relisant le titre
-// affiché dans le DOM. On adresse désormais par clé métier (PN Global pour les
-// boîtes, ID_Ligne pour la nomenclature), jamais par position de tableau.
+// Adressage par clé métier (PN Global, ID_Ligne), jamais par position de
+// tableau : un index se périme dès qu'une ligne est supprimée ailleurs.
 // ============================================================
+
+const CLE_REGLAGES = 'nexus-plm.reglages.v1';
 
 const Store = {
   boites: [],
   nomenclature: [],
   headersBoites: [],
   headersNom: [],
-  config: { multiBoite: [], multiNom: [], lectureSeuleNom: [], statuts: [], colonneStd: 'Composant STD' },
+  config: { multiBoite: [], multiNom: [], lectureSeuleNom: [], statuts: [],
+            colonneStd: 'Composant STD' },
   catalogue: [],
 
-  pnCourant: null,          // remplace currentBoiteIndex (un index se périme)
+  pnCourant: null,
   idNomCourant: null,
   ongletActif: 'Toutes',
   recherche: '',
-  filtreComposants: [],     // recherche par composants embarqués
+  filtreComposants: [],
+  filtreTypes: [],
+  tri: 'pn',
   enEditionBoite: false,
   enEditionNom: {},
+
+  // Réglages d'équivalence, modifiables en direct depuis l'écran Réglages.
+  poids: {},
+  seuilEquivalence: 15,
+
+  // Journal de bord : chaque action laisse une trace consultable.
+  historique: [],
+  derniereSuppression: null,
 
   _texteRecherche: new Map()
 };
 
 function CLE_NOM() { return 'ID_Ligne'; }
 function CLE_PN()  { return 'PN Global'; }
+
+// ------------------------------------------------------------
+// Réglages : par défaut ceux du registre, puis ce que l'utilisateur a choisi
+// ------------------------------------------------------------
+function poidsParDefaut() {
+  const tout = {};
+  PORTEES.forEach(function (p) {
+    tout[p.cle] = {};
+    p.criteres.forEach(function (c) { tout[p.cle][c.cle] = c.poids; });
+  });
+  return tout;
+}
+
+function reinitialiserPoids() {
+  Store.poids = poidsParDefaut();
+  Store.seuilEquivalence = 15;
+  enregistrerReglages();
+}
+
+function enregistrerReglages() {
+  try {
+    localStorage.setItem(CLE_REGLAGES, JSON.stringify({
+      poids: Store.poids, seuil: Store.seuilEquivalence, tri: Store.tri
+    }));
+  } catch (e) { /* navigation privée, stockage refusé : sans gravité */ }
+}
+
+function chargerReglages() {
+  Store.poids = poidsParDefaut();
+  try {
+    const brut = localStorage.getItem(CLE_REGLAGES);
+    if (!brut) return;
+    const lu = JSON.parse(brut);
+    if (lu && lu.poids) {
+      // Fusion et non remplacement : un critère ajouté depuis garde sa valeur
+      // par défaut au lieu de disparaître.
+      Object.keys(Store.poids).forEach(function (portee) {
+        if (!lu.poids[portee]) return;
+        Object.keys(Store.poids[portee]).forEach(function (c) {
+          const v = lu.poids[portee][c];
+          if (typeof v === 'number' && isFinite(v) && v >= 0) Store.poids[portee][c] = v;
+        });
+      });
+    }
+    if (typeof lu.seuil === 'number') Store.seuilEquivalence = lu.seuil;
+    if (typeof lu.tri === 'string') Store.tri = lu.tri;
+  } catch (e) { /* réglages illisibles : on repart des valeurs par défaut */ }
+}
+
+function poidsModifies() {
+  const defaut = poidsParDefaut();
+  return Object.keys(defaut).some(function (p) {
+    return Object.keys(defaut[p]).some(function (c) {
+      return Number(Store.poids[p][c]) !== Number(defaut[p][c]);
+    });
+  }) || Store.seuilEquivalence !== 15;
+}
+
+// ------------------------------------------------------------
+// Journal de bord
+// ------------------------------------------------------------
+function noter(action, cible, detail) {
+  Store.historique.unshift({
+    heure: new Date(), action: action, cible: cible, detail: detail || ''
+  });
+  if (Store.historique.length > 200) Store.historique.pop();
+}
 
 // ------------------------------------------------------------
 // Chargement et rattachement
@@ -49,6 +127,7 @@ function reconstruireLiens() {
     parPn.set(String(b[CLE_PN()]).trim(), b);
   });
   Store.nomenclature.forEach(function (n) {
+    n._type = typeDe(n);                       // résolu une fois, pas à chaque rendu
     const parent = parPn.get(String(n[CLE_PN()]).trim());
     if (parent) parent.nomenclature.push(n);
   });
@@ -56,11 +135,7 @@ function reconstruireLiens() {
 }
 
 // ------------------------------------------------------------
-// Mises à jour ciblées
-//
-// L'ancien code relisait les DEUX feuilles entières après chaque écriture,
-// y compris pour l'ajout d'une puce. Le serveur ne renvoie plus que ce qui
-// a changé, et on l'applique ici.
+// Mises à jour ciblées : le serveur ne renvoie que ce qui a changé
 // ------------------------------------------------------------
 function appliquerBoite(boite, pnPrecedent) {
   if (!boite) return;
@@ -68,11 +143,9 @@ function appliquerBoite(boite, pnPrecedent) {
   const idx = Store.boites.findIndex(function (b) {
     return String(b[CLE_PN()]).trim() === ancien;
   });
-  if (idx === -1) Store.boites.push(boite);
-  else Store.boites[idx] = boite;
+  if (idx === -1) Store.boites.push(boite); else Store.boites[idx] = boite;
 
   if (pnPrecedent && String(pnPrecedent).trim() !== String(boite[CLE_PN()]).trim()) {
-    // Renommage : la clé étrangère des lignes de nomenclature a suivi côté serveur.
     Store.nomenclature.forEach(function (n) {
       if (String(n[CLE_PN()]).trim() === ancien) n[CLE_PN()] = boite[CLE_PN()];
     });
@@ -87,8 +160,7 @@ function appliquerNom(ligne) {
   const idx = Store.nomenclature.findIndex(function (n) {
     return String(n[CLE_NOM()]).trim() === id;
   });
-  if (idx === -1) Store.nomenclature.push(ligne);
-  else Store.nomenclature[idx] = ligne;
+  if (idx === -1) Store.nomenclature.push(ligne); else Store.nomenclature[idx] = ligne;
   reconstruireLiens();
 }
 
@@ -133,12 +205,9 @@ function nomParId(id) {
 function boiteCourante() { return boiteParPn(Store.pnCourant); }
 
 // ------------------------------------------------------------
-// Recherche
-//
-// L'ancienne version faisait JSON.stringify(boite).includes(query) : elle
-// cherchait aussi dans les NOMS DE COLONNES et dans _rowIndex, si bien que
-// "image", "commentaires" ou "2" ramenaient toutes les boîtes. On n'indexe
-// plus que les valeurs, une seule fois, en cache.
+// Recherche : index sur les VALEURS seules.
+// L'ancienne version cherchait dans la sérialisation JSON, donc aussi dans
+// les noms de colonnes : « image » ou « commentaires » ramenaient tout.
 // ------------------------------------------------------------
 function texteRecherche(boite) {
   const cle = String(boite[CLE_PN()]).trim();
@@ -153,19 +222,20 @@ function texteRecherche(boite) {
     });
   };
   ajouter(boite);
-  (boite.nomenclature || []).forEach(ajouter);
+  (boite.nomenclature || []).forEach(function (l) {
+    ajouter(l);
+    morceaux.push(typeDe(l).libelle);          // le type résolu est cherchable
+  });
 
-  const texte = morceaux.join(' \n ').toLowerCase();
+  const texte = normaliserTexte(morceaux.join(' \n '));
   Store._texteRecherche.set(cle, texte);
   return texte;
 }
 
 function correspond(boite, requete) {
-  const q = String(requete || '').trim().toLowerCase();
+  const q = normaliserTexte(requete);
   if (!q) return true;
   const texte = texteRecherche(boite);
-  // Tous les mots doivent être présents : "harnais 332" trouve la bonne boîte
-  // au lieu d'exiger la sous-chaîne exacte "harnais 332".
   return q.split(/\s+/).every(function (mot) { return texte.indexOf(mot) !== -1; });
 }
 
@@ -174,24 +244,47 @@ function contientTousComposants(boite, composants) {
   const stds = [];
   (boite.nomenclature || []).forEach(function (n) {
     valeursMulti(n[Store.config.colonneStd]).forEach(function (c) {
-      stds.push(c.toLowerCase());
+      stds.push(normaliserTexte(c));
     });
   });
   return composants.every(function (terme) {
-    const t = String(terme).trim().toLowerCase();
+    const t = normaliserTexte(terme);
     return stds.some(function (s) { return s.indexOf(t) !== -1; });
   });
 }
 
+function contientTypes(boite, types) {
+  if (!types.length) return true;
+  const presents = new Set((boite.nomenclature || []).map(function (n) { return typeDe(n).cle; }));
+  return types.every(function (t) { return presents.has(t); });
+}
+
 // ------------------------------------------------------------
-// Vue courante : un seul filtrage dont tout dérive.
-// L'ancienne version comptait l'onglet "Toutes" sur la liste NON filtrée
-// pendant que les autres onglets utilisaient la liste filtrée.
+// Tri
+// ------------------------------------------------------------
+const TRIS = {
+  pn:       { libelle: 'PN croissant',        fn: function (a, b) { return String(a[CLE_PN()]).localeCompare(String(b[CLE_PN()]), 'fr', { numeric: true }); } },
+  fonction: { libelle: 'Fonction',            fn: function (a, b) { return String(a['Fonction']).localeCompare(String(b['Fonction']), 'fr') || String(a[CLE_PN()]).localeCompare(String(b[CLE_PN()]), 'fr'); } },
+  statut:   { libelle: 'Statut',              fn: function (a, b) { return rangStatut(a['Statut']) - rangStatut(b['Statut']) || String(a[CLE_PN()]).localeCompare(String(b[CLE_PN()]), 'fr'); } },
+  taille:   { libelle: 'Nb de sous-ensembles', fn: function (a, b) { return (b.nomenclature || []).length - (a.nomenclature || []).length; } }
+};
+
+function rangStatut(s) {
+  const n = normaliserTexte(s);
+  if (n === 'valide') return 0;
+  if (n === 'en etude') return 1;
+  return 2;
+}
+
+// ------------------------------------------------------------
+// Vue courante : un seul filtrage dont tout dérive
 // ------------------------------------------------------------
 function calculerVue() {
   const visibles = Store.boites.filter(function (b) {
-    return contientTousComposants(b, Store.filtreComposants) && correspond(b, Store.recherche);
-  });
+    return contientTousComposants(b, Store.filtreComposants) &&
+           contientTypes(b, Store.filtreTypes) &&
+           correspond(b, Store.recherche);
+  }).sort((TRIS[Store.tri] || TRIS.pn).fn);
 
   const parFonction = new Map();
   visibles.forEach(function (b) {
@@ -201,37 +294,51 @@ function calculerVue() {
   });
 
   // Onglet devenu orphelin : on ne laisse pas l'utilisateur bloqué sur
-  // « Aucun assemblage » alors que des résultats existent ailleurs.
+  // « aucun assemblage » alors que des résultats existent ailleurs.
   const onglet = (Store.ongletActif !== 'Toutes' && !parFonction.has(Store.ongletActif))
                  ? 'Toutes' : Store.ongletActif;
   Store.ongletActif = onglet;
 
   return {
-    visibles: visibles,
-    parFonction: parFonction,
-    onglet: onglet,
-    aAfficher: onglet === 'Toutes' ? visibles : (parFonction.get(onglet) || [])
+    visibles: visibles, parFonction: parFonction, onglet: onglet,
+    aAfficher: onglet === 'Toutes' ? visibles : (parFonction.get(onglet) || []),
+    filtre: !!(Store.recherche || Store.filtreComposants.length || Store.filtreTypes.length)
   };
 }
 
 function calculerKpi(liste) {
   const refs = new Set();
+  let nbLignes = 0;
   liste.forEach(function (b) {
     if (b[CLE_PN()]) refs.add(String(b[CLE_PN()]).trim());
     (b.nomenclature || []).forEach(function (n) {
+      nbLignes++;
       if (n['PN du type']) refs.add(String(n['PN du type']).trim());
     });
   });
   const valides = liste.filter(function (b) { return estValide(b['Statut']); }).length;
   return {
-    nbBoites: liste.length,
-    refsUniques: refs.size,
+    nbBoites: liste.length, refsUniques: refs.size, nbLignes: nbLignes,
     nbValides: valides,
     pctValides: liste.length ? Math.round((valides / liste.length) * 100) : 0
   };
 }
 
-/** Tous les composants STD connus, catalogue + nomenclature, dédupliqués. */
+/** Répartition des sous-ensembles par type, pour la barre de filtres. */
+function repartitionTypes() {
+  const compte = new Map();
+  Store.nomenclature.forEach(function (n) {
+    const t = typeDe(n);
+    compte.set(t.cle, (compte.get(t.cle) || 0) + 1);
+  });
+  return Object.keys(TYPES)
+    .map(function (k) { return { type: TYPES[k], nombre: compte.get(k) || 0 }; })
+    .filter(function (e) { return e.nombre > 0; });
+}
+
+// ------------------------------------------------------------
+// Catalogue et composants
+// ------------------------------------------------------------
 function tousLesComposants() {
   const ensemble = new Set();
   Store.catalogue.forEach(function (c) {
@@ -242,6 +349,15 @@ function tousLesComposants() {
     valeursMulti(n[Store.config.colonneStd]).forEach(function (s) { ensemble.add(s); });
   });
   return Array.from(ensemble).sort();
+}
+
+/** Vocabulaire de mots-clés déjà employé, pour l'autocomplétion. */
+function tousLesMotsCles() {
+  const ensemble = new Set();
+  Store.nomenclature.forEach(function (n) {
+    motsCles(n['Mots-clés']).forEach(function (m) { ensemble.add(m); });
+  });
+  return Array.from(ensemble).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
 }
 
 function formaterComposant(composant) {
@@ -255,12 +371,12 @@ const CATALOGUE_MAX = 30;
 
 /** Conserve l'index RÉEL : c'est lui qui est passé au clic. */
 function filtrerCatalogue(requete) {
-  const q = String(requete || '').trim().toLowerCase();
+  const q = normaliserTexte(requete);
   const tous = Store.catalogue
     .map(function (c, index) { return { composant: c, index: index }; })
     .filter(function (e) {
       if (!q) return true;
-      return formaterComposant(e.composant).toLowerCase().indexOf(q) !== -1;
+      return normaliserTexte(formaterComposant(e.composant)).indexOf(q) !== -1;
     });
   return { affiches: tous.slice(0, CATALOGUE_MAX), total: tous.length };
 }

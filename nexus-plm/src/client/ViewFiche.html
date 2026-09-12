@@ -2,210 +2,266 @@
 // ============================================================
 // NEXUS PLM — fiche complète (panneau latéral).
 //
-// L'édition ne se fait plus en masquant/affichant des paires valeur+champ avec
-// des identifiants construits à partir des noms de colonnes (espaces et accents
-// compris). On rend soit la valeur, soit le champ, et les champs sont relus par
-// data-champ : plus aucun identifiant fragile.
+// Chaque sous-ensemble n'affiche que les champs de SON type : une structure
+// boîte montre sa géométrie, un harnais son PN et sa référence, une plaquette
+// son numéro et ses mots-clés. Rien n'est rendu « au cas où ».
+//
+// Les champs d'édition sont relus par data-champ / data-ligne : aucun
+// identifiant construit à partir d'une donnée, donc aucun nom de colonne
+// ou d'ID ne peut casser un sélecteur.
 // ============================================================
 
 function estMultiBoite(champ) { return (Store.config.multiBoite || []).indexOf(champ) !== -1; }
-function estMultiNom(champ)   { return (Store.config.multiNom || []).indexOf(champ) !== -1; }
-function estStd(champ)        { return champ === Store.config.colonneStd; }
-function estCommentaire(champ){ return champ.toLowerCase().indexOf('comment') !== -1; }
-function estImage(champ)      { return champ.toLowerCase().indexOf('image') !== -1; }
 
-function pucesHtml(valeurs, actionSuppr, donnees, editable) {
-  if (!valeurs.length) {
-    return '<span class="text-muted small">Aucun</span>';
-  }
+// ------------------------------------------------------------
+// Briques d'affichage
+// ------------------------------------------------------------
+function pucesHtml(valeurs, actionSuppr, donnees, editable, classe) {
+  if (!valeurs.length) return '<span class="vide">Aucun</span>';
   return valeurs.map(function (v) {
     const suppr = editable
-      ? '<span class="std-del" role="button" aria-label="Retirer"' +
-        dataAttrs(Object.assign({ action: actionSuppr, valeur: v }, donnees)) + '>&times;</span>'
+      ? '<button type="button" class="puce-suppr" aria-label="Retirer ' + esc(v) + '"' +
+        dataAttrs(Object.assign({ action: actionSuppr, valeur: v }, donnees)) + '>&times;</button>'
       : '';
-    return '<span class="std-chip">' + esc(v) + suppr + '</span>';
+    return '<span class="puce ' + (classe || '') + '">' + esc(v) + suppr + '</span>';
   }).join('');
 }
 
-function champSaisieHtml(classe, champ, valeur, listeId, ligneId) {
-  const attrs = ' class="edit-input ' + classe + '" data-champ="' + esc(champ) + '"' +
-                (ligneId ? ' data-ligne="' + esc(ligneId) + '"' : '');
-  if (estCommentaire(champ)) {
-    return '<textarea' + attrs + ' rows="2">' + esc(valeur) + '</textarea>';
-  }
-  return '<input type="text"' + attrs +
-         (listeId ? ' list="' + esc(listeId) + '"' : '') +
-         ' value="' + esc(valeur) + '">';
+function apercuImageHtml(valeur, classe) {
+  const url = urlMiniature(valeur);
+  if (!url) return '';
+  return '<button type="button" class="vignette ' + (classe || '') + '"' +
+         dataAttrs({ action: 'agrandir-image', url: url }) +
+         ' aria-label="Agrandir l\'image"><img src="' + esc(url) + '" alt="" loading="lazy"></button>';
 }
 
-function ligneDetailHtml(libelle, contenuHtml) {
-  return '<div class="detail-row">' +
-           '<span class="detail-key">' + esc(libelle) + '</span>' +
-           '<div class="detail-value">' + contenuHtml + '</div>' +
+function ligneHtml(libelle, contenu, aide) {
+  return '<div class="ligne">' +
+           '<div class="ligne-cle">' + esc(libelle) +
+             (aide ? '<span class="ligne-aide">' + esc(aide) + '</span>' : '') + '</div>' +
+           '<div class="ligne-val">' + contenu + '</div>' +
          '</div>';
 }
 
-function blocMultiHtml(libelle, valeurs, editable, actionAjout, actionSuppr, donnees, listeId) {
+function saisieHtml(champ, valeur, classe, ligneId) {
+  const base = ' class="saisie ' + classe + '" data-champ="' + esc(champ.cle) + '"' +
+               (ligneId ? ' data-ligne="' + esc(ligneId) + '"' : '');
+  if (champ.genre === GENRE.LONG) {
+    return '<textarea' + base + ' rows="3">' + esc(valeur) + '</textarea>';
+  }
+  if (champ.genre === GENRE.NOMBRE) {
+    return '<input type="text" inputmode="decimal"' + base + ' value="' + esc(valeur) + '">';
+  }
+  return '<input type="text"' + base +
+         (champ.liste ? ' list="' + esc(champ.liste) + '"' : '') +
+         ' value="' + esc(valeur) + '">';
+}
+
+/** Bloc d'un champ à valeurs multiples : puces + ajout, sans passer en édition. */
+function blocMultiHtml(champ, valeurs, editable, actionAjout, actionSuppr, donnees, classe) {
   const ajout = editable
-    ? '<div class="mt-2 d-flex gap-2">' +
-        '<input type="text" class="form-control form-control-sm saisie-multi"' +
-          (listeId ? ' list="' + esc(listeId) + '"' : '') +
-          dataAttrs(donnees) + ' placeholder="Ajouter…">' +
-        '<button type="button" class="btn btn-sm btn-dark fw-bold"' +
-          dataAttrs(Object.assign({ action: actionAjout }, donnees)) + '>+</button>' +
+    ? '<div class="ajout-multi">' +
+        '<input type="text" class="saisie-multi"' +
+          (champ.liste ? ' list="' + esc(champ.liste) + '"' : '') +
+          dataAttrs(donnees) + ' placeholder="Ajouter…" aria-label="Ajouter à ' + esc(champ.libelle) + '">' +
+        '<button type="button" class="btn-mini"' +
+          dataAttrs(Object.assign({ action: actionAjout }, donnees)) + '>Ajouter</button>' +
       '</div>'
     : '';
-
-  return '<div class="detail-row flex-column align-items-start py-2">' +
-           '<span class="detail-key w-100 mb-1">' + esc(libelle) + '</span>' +
-           '<div class="w-100">' + pucesHtml(valeurs, actionSuppr, donnees, editable) + '</div>' +
-           ajout +
+  return '<div class="ligne ligne-bloc">' +
+           '<div class="ligne-cle">' + esc(champ.libelle) +
+             (champ.aide ? '<span class="ligne-aide">' + esc(champ.aide) + '</span>' : '') + '</div>' +
+           '<div class="ligne-val">' +
+             '<div class="puces">' + pucesHtml(valeurs, actionSuppr, donnees, editable, classe) + '</div>' +
+             ajout +
+           '</div>' +
          '</div>';
 }
 
 // ------------------------------------------------------------
-// Bloc « Général »
+// Bloc « Général » de l'assemblage
 // ------------------------------------------------------------
 function blocBoiteHtml(boite) {
   const edition = Store.enEditionBoite;
   const pn = boite[CLE_PN()];
 
-  const boutons = edition
-    ? '<button type="button" class="btn-action-sm btn-save"' +
-        dataAttrs({ action: 'sauver-boite' }) + '>Sauver</button>' +
-      '<button type="button" class="btn-action-sm btn-edit"' +
-        dataAttrs({ action: 'annuler-boite' }) + '>Annuler</button>' +
-      '<button type="button" class="btn-action-sm btn-delete"' +
-        dataAttrs({ action: 'supprimer-boite', pn: pn }) + '>Supprimer</button>'
-    : '<button type="button" class="btn-action-sm btn-edit"' +
-        dataAttrs({ action: 'editer-boite' }) + '>Éditer</button>';
+  const actions = edition
+    ? boutonHtml('sauver-boite', {}, 'Enregistrer', 'btn-valider') +
+      boutonHtml('annuler-boite', {}, 'Annuler', 'btn-neutre') +
+      boutonHtml('supprimer-boite', { pn: pn }, 'Supprimer', 'btn-danger')
+    : boutonHtml('editer-boite', {}, 'Éditer', 'btn-neutre') +
+      boutonHtml('dupliquer-boite', { pn: pn }, 'Dupliquer', 'btn-neutre');
 
-  let html = '<div class="component-block">' +
-    '<div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">' +
-      '<h5 class="fw-bold text-primary m-0">Général</h5>' +
-      '<div class="d-flex align-items-center gap-1"><span id="spin-boite"></span>' + boutons + '</div>' +
-    '</div>';
+  let html = '<section class="bloc bloc-general">' +
+    '<header class="bloc-tete">' +
+      '<h3>Assemblage</h3>' +
+      '<div class="bloc-actions"><span id="spin-boite" class="zone-spin"></span>' + actions + '</div>' +
+    '</header>';
 
-  Store.headersBoites.forEach(function (champ) {
-    const valeur = boite[champ];
+  if (!edition) html += apercuImageHtml(boite['Image'], 'vignette-large');
 
-    if (estMultiBoite(champ)) {
-      html += blocMultiHtml(champ, valeursMulti(valeur), edition,
-                            'ajouter-multi-boite', 'supprimer-multi-boite',
-                            { champ: champ }, 'list-Porteur');
+  Store.headersBoites.forEach(function (cle) {
+    const valeur = boite[cle];
+
+    if (estMultiBoite(cle)) {
+      html += blocMultiHtml({ cle: cle, libelle: cle, liste: 'list-Porteur' },
+                            valeursMulti(valeur), edition,
+                            'ajouter-multi-boite', 'supprimer-multi-boite', { champ: cle });
       return;
     }
 
-    if (edition) {
-      const liste = (champ === 'Statut') ? 'list-Statut' : null;
-      html += ligneDetailHtml(estImage(champ) ? 'Image (URL)' : champ,
-                              champSaisieHtml('champ-boite', champ, valeur, liste));
-      return;
-    }
+    const estImage = cle.toLowerCase().indexOf('image') !== -1;
+    const estLong = cle.toLowerCase().indexOf('comment') !== -1;
+    const champ = { cle: cle, libelle: estImage ? 'Image (URL)' : cle,
+                    genre: estLong ? GENRE.LONG : GENRE.TEXTE,
+                    liste: cle === 'Statut' ? 'list-Statut' : null };
 
-    let affichage = esc(txt(valeur)).replace(/\n/g, '<br>');
-    if (estImage(champ)) affichage += imageHtml(valeur, 'apercu-image');
-    html += ligneDetailHtml(estImage(champ) ? 'Image (URL)' : champ, affichage);
+    if (edition) { html += ligneHtml(champ.libelle, saisieHtml(champ, valeur, 'champ-boite')); return; }
+    if (estImage) return;                      // déjà présentée en vignette
+    html += ligneHtml(champ.libelle, valeurLisibleHtml(valeur));
   });
 
-  html += '<div class="mt-3 text-end">' +
-            '<button type="button" class="btn btn-sm btn-outline-dark fw-bold"' +
-            dataAttrs({ action: 'dupliquer-boite', pn: pn }) + '>Dupliquer cet assemblage</button>' +
-          '</div></div>';
-  return html;
+  return html + '</section>';
+}
+
+function valeurLisibleHtml(valeur) {
+  const t = txt(valeur);
+  return t === '-' ? '<span class="vide">—</span>' : esc(t).replace(/\n/g, '<br>');
+}
+
+function boutonHtml(action, donnees, libelle, classe) {
+  return '<button type="button" class="btn-action ' + (classe || '') + '"' +
+         dataAttrs(Object.assign({ action: action }, donnees)) + '>' + esc(libelle) + '</button>';
 }
 
 // ------------------------------------------------------------
-// Bloc d'un sous-ensemble
+// Bloc d'un sous-ensemble — piloté par son type
 // ------------------------------------------------------------
 function blocNomHtml(ligne) {
   const id = ligne[CLE_NOM()];
+  const type = typeDe(ligne);
   const edition = !!Store.enEditionNom[id];
 
-  const boutons = edition
-    ? '<button type="button" class="btn-action-sm btn-save"' +
-        dataAttrs({ action: 'sauver-nom', id: id }) + '>Sauver</button>' +
-      '<button type="button" class="btn-action-sm btn-edit"' +
-        dataAttrs({ action: 'annuler-nom', id: id }) + '>Annuler</button>' +
-      '<button type="button" class="btn-action-sm btn-delete"' +
-        dataAttrs({ action: 'supprimer-nom', id: id }) + '>Supprimer</button>'
-    : '<button type="button" class="btn-action-sm btn-compare-sm fw-bold"' +
-        dataAttrs({ action: 'comparer-nom', id: id }) + '>Équiv.</button>' +
-      '<button type="button" class="btn-action-sm btn-edit"' +
-        dataAttrs({ action: 'editer-nom', id: id }) + '>Éditer</button>';
+  const actions = edition
+    ? boutonHtml('sauver-nom', { id: id }, 'Enregistrer', 'btn-valider') +
+      boutonHtml('annuler-nom', { id: id }, 'Annuler', 'btn-neutre') +
+      boutonHtml('supprimer-nom', { id: id }, 'Supprimer', 'btn-danger')
+    : boutonHtml('comparer-nom', { id: id }, 'Équivalences', 'btn-accent') +
+      boutonHtml('editer-nom', { id: id }, 'Éditer', 'btn-neutre');
 
-  let html = '<div class="component-block">' +
-    '<div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3 gap-2">' +
-      '<h5 class="fw-bold m-0 bloc-titre">' + esc(txt(ligne['Type'], 'Sous-ensemble')) +
-        ' <span class="text-primary fs-6 ms-2">' + esc(txt(ligne['PN du type'], '')) + '</span></h5>' +
-      '<div class="d-flex align-items-center gap-1"><span id="spin-nom-' + esc(id) + '"></span>' +
-        boutons + '</div>' +
-    '</div>';
+  let html = '<section class="bloc bloc-' + type.teinte + '">' +
+    '<header class="bloc-tete">' +
+      '<div class="bloc-identite">' +
+        '<span class="pastille-type ' + type.teinte + '">' + type.icone + '</span>' +
+        '<div>' +
+          '<h3>' + esc(type.libelle) + '</h3>' +
+          '<p class="bloc-pn">' + esc(txt(ligne['PN du type'], 'sans PN')) + '</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="bloc-actions"><span id="spin-nom-' + esc(id) + '" class="zone-spin"></span>' +
+        actions + '</div>' +
+    '</header>';
 
-  Store.headersNom.forEach(function (champ) {
-    if ((Store.config.lectureSeuleNom || []).indexOf(champ) !== -1) return;
-    const valeur = ligne[champ];
+  if (edition) {
+    html += ligneHtml('Type', saisieHtml({ cle: 'Type', genre: GENRE.TEXTE, liste: 'list-Type' },
+                                         ligne['Type'], 'champ-nom', id),
+                      'change la fiche affichée');
+  }
 
-    if (estMultiNom(champ)) {
-      html += blocMultiHtml(champ, valeursMulti(valeur), edition,
+  if (!edition) html += apercuImageHtml(ligne['Image'], '');
+
+  // Seuls les champs du type : c'est tout l'intérêt du registre.
+  champsDuType(type).forEach(function (champ) {
+    const valeur = ligne[champ.cle];
+
+    if (champ.genre === GENRE.MULTI) {
+      html += blocMultiHtml(champ, valeursMulti(valeur), true,
                             'ajouter-multi-nom', 'supprimer-multi-nom',
-                            { id: id, champ: champ }, 'list-Qualif');
+                            { id: id, champ: champ.cle });
+      if (champ.catalogue) {
+        html += '<div class="ligne ligne-appoint"><div class="ligne-cle"></div><div class="ligne-val">' +
+                boutonHtml('ouvrir-catalogue', { id: id },
+                           '+ Choisir dans le catalogue', 'btn-neutre') +
+                '</div></div>';
+      }
       return;
     }
 
-    if (estStd(champ)) {
-      html += '<div class="detail-row flex-column align-items-start bloc-std">' +
-                '<span class="detail-key mb-2 w-100">Composants STD intégrés</span>' +
-                '<div class="w-100 mb-2">' +
-                  pucesHtml(valeursMulti(valeur), 'supprimer-std', { id: id }, true) +
-                '</div>' +
-                '<button type="button" class="btn btn-sm btn-outline-dark btn-ajout-std"' +
-                  dataAttrs({ action: 'ouvrir-catalogue', id: id }) +
-                  '>+ Ajouter un composant dans ce ' + esc(txt(ligne['Type'], 'sous-ensemble')) +
-                '</button>' +
-              '</div>';
+    if (champ.genre === GENRE.MOTS_CLES) {
+      html += blocMultiHtml(champ, motsCles(valeur), true,
+                            'ajouter-multi-nom', 'supprimer-multi-nom',
+                            { id: id, champ: champ.cle }, 'puce-motcle');
+      return;
+    }
+
+    if (champ.genre === GENRE.IMAGE) {
+      if (edition) html += ligneHtml('Image (URL)', saisieHtml(champ, valeur, 'champ-nom', id));
       return;
     }
 
     if (edition) {
-      html += ligneDetailHtml(estImage(champ) ? 'Image (URL)' : champ,
-                              champSaisieHtml('champ-nom', champ, valeur, null, id));
+      html += ligneHtml(champ.libelle, saisieHtml(champ, valeur, 'champ-nom', id), champ.aide);
       return;
     }
-
-    let affichage = esc(txt(valeur)).replace(/\n/g, '<br>');
-    if (estImage(champ)) affichage += imageHtml(valeur, 'apercu-image');
-    html += ligneDetailHtml(estImage(champ) ? 'Image (URL)' : champ, affichage);
+    html += ligneHtml(champ.libelle, valeurLisibleHtml(valeur), champ.aide);
   });
 
-  return html + '</div>';
+  return html + '</section>';
 }
 
+// ------------------------------------------------------------
+// Assemblage complet
+// ------------------------------------------------------------
 function ficheHtml(boite) {
   if (!boite) {
-    return '<p class="text-center text-muted py-5">Cet assemblage n\'existe plus. ' +
-           'Fermez le panneau et rechargez.</p>';
+    return '<div class="etat-vide">' +
+             '<p>Cet assemblage n\'existe plus.</p>' +
+             '<p class="etat-vide-aide">Fermez le panneau : la liste est à jour.</p>' +
+           '</div>';
   }
-  return blocBoiteHtml(boite) +
-         (boite.nomenclature || []).map(blocNomHtml).join('') +
-         '<div class="text-center mt-4 mb-5">' +
-           '<button type="button" class="btn btn-dark fw-bold px-4 py-2 btn-ajout-se"' +
-           dataAttrs({ action: 'nouveau-sous-ensemble' }) +
-           '>+ Ajouter Structure, Plaquette ou Harnais</button>' +
+
+  const lignes = boite.nomenclature || [];
+  const parType = new Map();
+  lignes.forEach(function (l) {
+    const t = typeDe(l);
+    if (!parType.has(t.cle)) parType.set(t.cle, []);
+    parType.get(t.cle).push(l);
+  });
+
+  const sommaire = parType.size
+    ? '<nav class="sommaire" aria-label="Composition">' +
+        Array.from(parType.entries()).map(function (e) {
+          const t = typeParCle(e[0]);
+          return '<span class="sommaire-item ' + t.teinte + '">' + t.icone + ' ' +
+                 esc(t.libelle) + ' <b>' + e[1].length + '</b></span>';
+        }).join('') +
+      '</nav>'
+    : '';
+
+  return sommaire +
+         blocBoiteHtml(boite) +
+         lignes.map(blocNomHtml).join('') +
+         '<div class="fiche-pied">' +
+           boutonHtml('nouveau-sous-ensemble', {}, '+ Ajouter un sous-ensemble', 'btn-principal') +
          '</div>';
 }
 
 function rendreFiche() {
   const boite = boiteCourante();
   definirTexte('slideOverTitle', boite ? txt(boite[CLE_PN()]) : 'Fiche');
+  const sous = parId('slideOverSousTitre');
+  if (sous) {
+    sous.textContent = boite
+      ? txt(boite['Fonction'], 'sans fonction') + ' · ' +
+        (boite.nomenclature || []).length + ' sous-ensemble(s)'
+      : '';
+  }
   definirHtml('slideOverBody', ficheHtml(boite));
 }
 
-/**
- * Relit les champs d'édition. On filtre sur dataset plutôt que de construire
- * un sélecteur CSS à partir d'une donnée : un ID ou un nom de colonne
- * inattendu ne peut plus casser la lecture.
- */
+// ------------------------------------------------------------
+// Lecture des champs d'édition
+// ------------------------------------------------------------
 function lireChamps(classe, ligneId) {
   const modifs = {};
   document.querySelectorAll('.' + classe).forEach(function (el) {
@@ -215,7 +271,6 @@ function lireChamps(classe, ligneId) {
   return modifs;
 }
 
-/** Même principe pour les champs d'ajout de valeur multiple. */
 function lireSaisieMulti(champ, ligneId) {
   let trouve = null;
   document.querySelectorAll('.saisie-multi').forEach(function (el) {

@@ -43,21 +43,28 @@ const Api = {
 function arreterIndicateurs() {
   document.querySelectorAll('.mini-spinner').forEach(function (el) { el.remove(); });
   const chargement = parId('loading');
-  if (chargement) chargement.style.display = 'none';
+  if (chargement) chargement.hidden = true;
 }
 
-function afficherBandeau(message, type) {
+function zoneBandeau() {
   let el = parId('bandeauMessage');
   if (!el) {
     el = document.createElement('div');
     el.id = 'bandeauMessage';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
     document.body.appendChild(el);
   }
+  return el;
+}
+
+function afficherBandeau(message, type) {
+  const el = zoneBandeau();
   el.className = 'bandeau bandeau-' + (type || 'info');
   el.textContent = message;            // textContent, jamais innerHTML
-  el.style.display = 'block';
+  el.hidden = false;
   clearTimeout(el._minuteur);
-  el._minuteur = setTimeout(function () { el.style.display = 'none'; }, 8000);
+  el._minuteur = setTimeout(function () { el.hidden = true; }, 8000);
 }
 
 function signalerErreur(erreur, contexte) {
@@ -71,5 +78,28 @@ function signalerErreur(erreur, contexte) {
 function confirmerSucces(message) {
   arreterIndicateurs();
   afficherBandeau(message, 'succes');
+}
+
+/**
+ * Bandeau porteur d'un recours immédiat. C'est la contrepartie d'une
+ * suppression : on agit sans friction, et on rattrape dans la foulée.
+ */
+function afficherBandeauAction(message, libelleAction, action) {
+  arreterIndicateurs();
+  const el = zoneBandeau();
+  el.className = 'bandeau bandeau-action';
+  el.textContent = '';
+  const texte = document.createElement('span');
+  texte.textContent = message;                 // textContent : jamais innerHTML
+  const bouton = document.createElement('button');
+  bouton.type = 'button';
+  bouton.className = 'bandeau-btn';
+  bouton.textContent = libelleAction;
+  bouton.setAttribute('data-action', action);
+  el.appendChild(texte);
+  el.appendChild(bouton);
+  el.hidden = false;
+  clearTimeout(el._minuteur);
+  el._minuteur = setTimeout(function () { el.hidden = true; }, 12000);
 }
 </script>

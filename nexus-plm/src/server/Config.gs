@@ -27,10 +27,15 @@ const CFG = {
   EN_TETES: {
     BOITES: ['Fonction', 'PN Global', 'DS/VCI Associé', 'Porteur', 'Statut',
              'Niveau de qualification', 'Image', 'Commentaires libres'],
-    NOMENCLATURE: ['ID_Ligne', 'PN Global', 'Type', 'PN du type', 'Montage',
-                   'Nombre de pas', 'Dim Long (mm)', 'Dim Larg (mm)', 'Masse (g)',
-                   'HL', 'DAL', 'Qualification Brouillard salin',
-                   'Qualification Vibration', 'Qualification Explosion',
+    // Superset de toutes les colonnes, tous types confondus : la feuille reste
+    // lisible à l'oeil, et chaque type n'utilise que les siennes (voir
+    // client/Types.html, qui pilote l'affichage et l'équivalence).
+    NOMENCLATURE: ['ID_Ligne', 'PN Global', 'Type', 'PN du type',
+                   'Référence', 'Numéro', 'Mots-clés',
+                   'Montage', 'Nombre de pas', 'Dim Long (mm)', 'Dim Larg (mm)',
+                   'Masse (g)', 'HL', 'DAL',
+                   'Qualification Brouillard salin', 'Qualification Vibration',
+                   'Qualification Explosion',
                    'Composant STD', 'Image', 'Commentaires libres'],
     JOURNAL: ['Horodatage', 'Utilisateur', 'Action', 'Cible', 'Détail']
   },
@@ -38,7 +43,11 @@ const CFG = {
   // Champs à valeurs multiples (rendus sous forme de puces).
   MULTI_BOITE: ['Porteur'],
   MULTI_NOM: ['Qualification Brouillard salin', 'Qualification Vibration',
-              'Qualification Explosion'],
+              'Qualification Explosion', 'Mots-clés'],
+
+  // Types connus. Le libellé écrit dans la feuille ; le client reconnaît
+  // aussi les variantes courantes (accents, synonymes).
+  TYPES: ['Structure boîte', 'Harnais', 'Plaquette éclairante', 'Autre sous-ensemble'],
 
   // Colonnes non éditables depuis la fiche.
   LECTURE_SEULE_NOM: ['ID_Ligne', 'PN Global'],

@@ -28,8 +28,15 @@ function faussesGlobales() {
     addEventListener: function () {}, querySelectorAll: function () { return []; },
     closest: function () { return null; }
   };
+  // localStorage simulé : les réglages y sont mémorisés.
+  const memoire = {};
   return {
     console: console,
+    localStorage: {
+      getItem: function (k) { return Object.prototype.hasOwnProperty.call(memoire, k) ? memoire[k] : null; },
+      setItem: function (k, v) { memoire[k] = String(v); },
+      removeItem: function (k) { delete memoire[k]; }
+    },
     document: {
       getElementById: function () { return Object.assign({}, noeud); },
       querySelector: function () { return null; },
@@ -51,9 +58,11 @@ function faussesGlobales() {
 // Les liaisons `const` de premier niveau existent dans la portée lexicale du
 // contexte mais ne sont pas des propriétés de globalThis : on les y recopie
 // pour que les tests puissent les lire.
-const LIAISONS = ['Store', 'STATUTS', 'CSV_SEPARATEUR', 'ACTIONS', 'POIDS',
-                  'ETAT', 'SEUIL_AFFICHAGE', 'TOLERANCE_MASSE', 'MM_PAR_PAS',
-                  'CATALOGUE_MAX', 'ICONE_ETAT', 'Api'];
+const LIAISONS = ['Store', 'STATUTS', 'CSV_SEPARATEUR', 'ACTIONS', 'Api',
+                  'ETAT', 'SEUIL_DEFAUT', 'MM_PAR_PAS', 'CATALOGUE_MAX',
+                  'TYPES', 'MODE', 'GENRE', 'CRITERES_BOITE', 'PORTEES',
+                  'CHAMPS_QUALIF', 'CLES_QUALIF', 'TRIS', 'PRESETS',
+                  'SIGNE_ETAT', 'LIBELLES_ACTION', 'CLE_REGLAGES'];
 
 function chargerClient(fichiers) {
   const contexte = vm.createContext(faussesGlobales());

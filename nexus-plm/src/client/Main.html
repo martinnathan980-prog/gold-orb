@@ -1,9 +1,9 @@
 <script>
 // ============================================================
 // NEXUS PLM — contrôleur.
-// Toutes les actions déclenchables depuis l'interface sont déclarées ici,
-// et atteintes par délégation (data-action). Plus aucun onclick en ligne,
-// donc plus aucune donnée injectée dans du code.
+// Toutes les actions déclenchables sont déclarées ici et atteintes par
+// délégation (data-action). Aucun gestionnaire en ligne, donc aucune donnée
+// injectée dans du code.
 // ============================================================
 
 function indicateurBoite() {
@@ -18,28 +18,26 @@ function indicateurNom(id) {
 function ouvrirModal(id) {
   const el = parId(id);
   if (!el) return null;
-  const modal = bootstrap.Modal.getOrCreateInstance(el);
-  modal.show();
-  return modal;
+  const m = bootstrap.Modal.getOrCreateInstance(el);
+  m.show();
+  return m;
 }
 function fermerModal(id) {
   const el = parId(id);
   if (!el) return;
-  const modal = bootstrap.Modal.getInstance(el);
-  if (modal) modal.hide();
+  const m = bootstrap.Modal.getInstance(el);
+  if (m) m.hide();
 }
-function ouvrirPanneau() {
-  bootstrap.Offcanvas.getOrCreateInstance(parId('detailsSlideOver')).show();
-}
+function ouvrirPanneau() { bootstrap.Offcanvas.getOrCreateInstance(parId('detailsSlideOver')).show(); }
 function fermerPanneau() {
-  const inst = bootstrap.Offcanvas.getInstance(parId('detailsSlideOver'));
-  if (inst) inst.hide();
+  const i = bootstrap.Offcanvas.getInstance(parId('detailsSlideOver'));
+  if (i) i.hide();
 }
 
-/** Rafraîchit ce qui est visible après une modification locale du Store. */
 function rafraichir() {
   rendreInterface();
   if (Store.pnCourant) rendreFiche();
+  rendreHistorique();
 }
 
 // ------------------------------------------------------------
@@ -47,15 +45,15 @@ function rafraichir() {
 // ------------------------------------------------------------
 function chargerTout() {
   const chargement = parId('loading');
-  if (chargement) chargement.style.display = 'block';
-
+  if (chargement) chargement.hidden = false;
   return Api.chargerTout()
-    .then(function (reponse) {
-      if (!reponse || reponse.erreur) {
-        throw new Error(reponse && reponse.erreur ? reponse.erreur : 'Réponse vide du serveur.');
+    .then(function (r) {
+      if (!r || r.erreur) {
+        throw new Error(r && r.erreur ? r.erreur : 'Réponse vide du serveur.');
       }
-      chargerDonnees(reponse);
+      chargerDonnees(r);
       rafraichir();
+      remplirListesDeSuggestion();
     })
     .catch(function (e) { signalerErreur(e, 'chargement des données'); });
 }
@@ -63,61 +61,117 @@ function chargerTout() {
 function chargerCatalogue() {
   return Api.chargerCatalogue()
     .then(function (r) {
-      // Le serveur pouvait renvoyer {error:...} : catalogueComposants devenait
-      // un objet et le .forEach suivant plantait.
       Store.catalogue = Array.isArray(r) ? r : [];
       if (!Array.isArray(r)) throw new Error((r && r.error) || 'Catalogue illisible.');
+      remplirListesDeSuggestion();
     })
     .catch(function (e) { signalerErreur(e, 'chargement du catalogue'); });
+}
+
+function remplirListesDeSuggestion() {
+  definirHtml('datalistStds', tousLesComposants().map(function (s) {
+    return '<option value="' + esc(s) + '"></option>';
+  }).join(''));
+  definirHtml('list-MotsCles', tousLesMotsCles().map(function (m) {
+    return '<option value="' + esc(m) + '"></option>';
+  }).join(''));
+  definirHtml('list-Type', Object.keys(TYPES).map(function (k) {
+    return '<option value="' + esc(TYPES[k].libelle) + '"></option>';
+  }).join(''));
 }
 
 // ------------------------------------------------------------
 // Écritures
 // ------------------------------------------------------------
-function sauverBoite(modifs) {
+function sauverBoite(modifs, silencieux) {
   indicateurBoite();
   return Api.sauverBoite(Store.pnCourant, modifs)
     .then(function (r) {
       appliquerBoite(r.boite, r.pnPrecedent);
       Store.enEditionBoite = false;
+      if (!silencieux) noter('modification', txt(r.boite[CLE_PN()]), Object.keys(modifs).join(', '));
       rafraichir();
     })
-    .catch(function (e) { signalerErreur(e, "sauvegarde de l'assemblage"); rafraichir(); });
+    .catch(function (e) {
+      noter('echec', txt(Store.pnCourant), e.message);
+      signalerErreur(e, "sauvegarde de l'assemblage");
+      rafraichir();
+    });
 }
 
-function sauverNom(id, modifs) {
+function sauverNom(id, modifs, silencieux) {
   indicateurNom(id);
   return Api.sauverNom(id, modifs)
     .then(function (r) {
       appliquerNom(r.ligne);
       Store.enEditionNom[id] = false;
+      if (!silencieux) {
+        noter('modification', txt(r.ligne['PN du type'], typeDe(r.ligne).libelle),
+              Object.keys(modifs).join(', '));
+      }
       rafraichir();
+      remplirListesDeSuggestion();
     })
-    .catch(function (e) { signalerErreur(e, 'sauvegarde du sous-ensemble'); rafraichir(); });
+    .catch(function (e) {
+      noter('echec', txt(id), e.message);
+      signalerErreur(e, 'sauvegarde du sous-ensemble');
+      rafraichir();
+    });
 }
 
-/** Modifie un champ multi-valeurs d'une boîte sans passer par le mode édition. */
 function majMultiBoite(champ, transformation) {
   const boite = boiteCourante();
   if (!boite) return;
   const modifs = {};
   modifs[champ] = transformation(valeursMulti(boite[champ])).join('\n');
-  sauverBoite(modifs);
+  sauverBoite(modifs, true);
 }
 
 function majMultiNom(id, champ, transformation) {
   const ligne = nomParId(id);
   if (!ligne) return;
+  const decouper = champ === 'Mots-clés' ? motsCles : valeursMulti;
   const modifs = {};
-  modifs[champ] = transformation(valeursMulti(ligne[champ])).join('\n');
-  sauverNom(id, modifs);
+  modifs[champ] = transformation(decouper(ligne[champ])).join('\n');
+  sauverNom(id, modifs, true);
 }
+
+const ajouterA = function (valeur) {
+  return function (liste) {
+    const existe = liste.some(function (v) { return normaliserTexte(v) === normaliserTexte(valeur); });
+    return existe ? liste : liste.concat([valeur]);
+  };
+};
+const retirerDe = function (valeur) {
+  return function (liste) {
+    return liste.filter(function (v) { return v !== valeur; });
+  };
+};
 
 // ------------------------------------------------------------
 // Actions
 // ------------------------------------------------------------
 enregistrerActions({
+  // --- navigation ---
   'changer-onglet': function (d) { Store.ongletActif = d.onglet; rendreInterface(); },
+  'basculer-type': function (d) {
+    const i = Store.filtreTypes.indexOf(d.type);
+    Store.filtreTypes = i === -1
+      ? Store.filtreTypes.concat([d.type])
+      : Store.filtreTypes.filter(function (t) { return t !== d.type; });
+    rendreInterface();
+  },
+  'effacer-recherche': function () {
+    Store.recherche = '';
+    const c = parId('searchBar'); if (c) c.value = '';
+    rendreInterface();
+  },
+  'tout-effacer': function () {
+    Store.recherche = ''; Store.filtreComposants = []; Store.filtreTypes = [];
+    Store.ongletActif = 'Toutes';
+    const c = parId('searchBar'); if (c) c.value = '';
+    rendreInterface();
+  },
 
   'ouvrir-fiche': function (d) {
     Store.pnCourant = d.pn;
@@ -126,28 +180,50 @@ enregistrerActions({
     rendreFiche();
     ouvrirPanneau();
   },
+  'ouvrir-fiche-depuis-compare': function (d) {
+    fermerModal('compareModal');
+    Store.pnCourant = d.pn;
+    Store.enEditionBoite = false;
+    Store.enEditionNom = {};
+    rendreFiche();
+    ouvrirPanneau();
+  },
 
+  // --- assemblage ---
   'editer-boite':  function () { Store.enEditionBoite = true;  rendreFiche(); },
   'annuler-boite': function () { Store.enEditionBoite = false; rendreFiche(); },
   'sauver-boite':  function () { sauverBoite(lireChamps('champ-boite')); },
 
   'supprimer-boite': function (d) {
-    if (!confirm('Supprimer définitivement l\'assemblage ' + d.pn +
-                 ' ET tous ses sous-ensembles ?')) return;
+    const boite = boiteParPn(d.pn);
+    if (!boite) return;
+    const nb = (boite.nomenclature || []).length;
+    if (!confirm('Supprimer l\'assemblage ' + d.pn + ' et ses ' + nb +
+                 ' sous-ensemble(s) ?\n\nVous pourrez annuler juste après.')) return;
+    // Capture AVANT suppression : c'est ce qui rend l'annulation possible.
+    memoriserSuppression('boite', {
+      boite: JSON.parse(JSON.stringify(boite)),
+      lignes: JSON.parse(JSON.stringify(boite.nomenclature || []))
+    });
     indicateurBoite();
     Api.supprimerBoite(d.pn)
       .then(function (r) {
         retirerBoite(r.pnSupprime);
         fermerPanneau();
-        rendreInterface();
-        confirmerSucces('Assemblage ' + r.pnSupprime + ' supprimé (' +
-                        r.nbNomenclature + ' sous-ensemble(s)).');
+        noter('suppression', txt(r.pnSupprime), r.nbNomenclature + ' sous-ensemble(s)');
+        rafraichir();
+        afficherBandeauAction('Assemblage ' + r.pnSupprime + ' supprimé.',
+                              'Annuler', 'annuler-suppression');
       })
-      .catch(function (e) { signalerErreur(e, "suppression de l'assemblage"); });
+      .catch(function (e) {
+        Store.derniereSuppression = null;
+        noter('echec', txt(d.pn), e.message);
+        signalerErreur(e, "suppression de l'assemblage");
+      });
   },
 
   'dupliquer-boite': function (d) {
-    const nouveau = prompt('PN Global du nouvel assemblage :', d.pn + '_COPY');
+    const nouveau = prompt('PN Global du nouvel assemblage :', d.pn + '-B');
     if (!nouveau || !nouveau.trim()) return;
     indicateurBoite();
     Api.dupliquerBoite(d.pn, nouveau.trim())
@@ -156,6 +232,7 @@ enregistrerActions({
         (r.nomenclature || []).forEach(appliquerNom);
         Store.pnCourant = r.boite[CLE_PN()];
         Store.enEditionBoite = false;
+        noter('duplication', txt(r.boite[CLE_PN()]), 'depuis ' + d.pn);
         rafraichir();
         confirmerSucces('Assemblage dupliqué : ' + r.boite[CLE_PN()] + '.');
       })
@@ -163,70 +240,64 @@ enregistrerActions({
   },
 
   'ajouter-multi-boite': function (d) {
-    const valeur = lireSaisieMulti(d.champ);
-    if (!valeur) return;
-    majMultiBoite(d.champ, function (liste) {
-      return liste.indexOf(valeur) === -1 ? liste.concat([valeur]) : liste;
-    });
+    const v = lireSaisieMulti(d.champ);
+    if (v) majMultiBoite(d.champ, ajouterA(v));
   },
-  'supprimer-multi-boite': function (d) {
-    majMultiBoite(d.champ, function (liste) {
-      return liste.filter(function (v) { return v !== d.valeur; });
-    });
-  },
+  'supprimer-multi-boite': function (d) { majMultiBoite(d.champ, retirerDe(d.valeur)); },
 
+  // --- sous-ensembles ---
   'editer-nom':  function (d) { Store.enEditionNom[d.id] = true;  rendreFiche(); },
   'annuler-nom': function (d) { Store.enEditionNom[d.id] = false; rendreFiche(); },
   'sauver-nom':  function (d) { sauverNom(d.id, lireChamps('champ-nom', d.id)); },
 
   'supprimer-nom': function (d) {
-    if (!confirm('Supprimer définitivement ce sous-ensemble ?')) return;
+    const ligne = nomParId(d.id);
+    if (!ligne) return;
+    if (!confirm('Supprimer « ' + txt(ligne['PN du type'], typeDe(ligne).libelle) +
+                 ' » ?\n\nVous pourrez annuler juste après.')) return;
+    memoriserSuppression('nomenclature', JSON.parse(JSON.stringify(ligne)));
     indicateurNom(d.id);
     Api.supprimerNom(d.id)
-      .then(function (r) { retirerNom(r.idSupprime); rafraichir(); })
-      .catch(function (e) { signalerErreur(e, 'suppression du sous-ensemble'); });
+      .then(function (r) {
+        const nom = txt(ligne['PN du type'], typeDe(ligne).libelle);
+        retirerNom(r.idSupprime);
+        noter('suppression', nom, typeDe(ligne).libelle);
+        rafraichir();
+        afficherBandeauAction('« ' + nom + ' » supprimé.', 'Annuler', 'annuler-suppression');
+      })
+      .catch(function (e) {
+        Store.derniereSuppression = null;
+        signalerErreur(e, 'suppression du sous-ensemble');
+      });
   },
+
+  'annuler-suppression': function () { restaurer(); },
 
   'ajouter-multi-nom': function (d) {
-    const valeur = lireSaisieMulti(d.champ, d.id);
-    if (!valeur) return;
-    majMultiNom(d.id, d.champ, function (liste) {
-      return liste.indexOf(valeur) === -1 ? liste.concat([valeur]) : liste;
-    });
+    const v = lireSaisieMulti(d.champ, d.id);
+    if (v) majMultiNom(d.id, d.champ, ajouterA(v));
   },
-  'supprimer-multi-nom': function (d) {
-    majMultiNom(d.id, d.champ, function (liste) {
-      return liste.filter(function (v) { return v !== d.valeur; });
-    });
-  },
-  'supprimer-std': function (d) {
-    majMultiNom(d.id, Store.config.colonneStd, function (liste) {
-      return liste.filter(function (v) { return v !== d.valeur; });
-    });
-  },
+  'supprimer-multi-nom': function (d) { majMultiNom(d.id, d.champ, retirerDe(d.valeur)); },
 
+  // --- équivalences ---
   'comparer-boite': function (d) { afficherEquivalencesBoite(d.pn); },
   'comparer-nom':   function (d) { afficherEquivalencesNom(d.id); },
 
   // --- catalogue ---
   'ouvrir-catalogue': function (d) {
     Store.idNomCourant = d.id;
-    const recherche = parId('catSearch');
-    if (recherche) recherche.value = '';
+    const r = parId('catSearch'); if (r) r.value = '';
     rendreCatalogue();
     ouvrirModal('catalogueModal');
   },
   'ajouter-catalogue': function (d) {
-    // d.index est l'index dans le catalogue COMPLET : l'ancienne version
-    // passait celui de la liste filtrée et ajoutait un autre composant.
     const composant = Store.catalogue[Number(d.index)];
     const id = Store.idNomCourant;
     if (!composant || !id) return;
     const formate = formaterComposant(composant) || 'Composant inconnu';
     fermerModal('catalogueModal');
-    majMultiNom(id, Store.config.colonneStd, function (liste) {
-      return liste.indexOf(formate) === -1 ? liste.concat([formate]) : liste;
-    });
+    noter('composant', formate, 'ajouté');
+    majMultiNom(id, Store.config.colonneStd, ajouterA(formate));
   },
 
   // --- création ---
@@ -239,39 +310,51 @@ enregistrerActions({
       .then(function (r) {
         appliquerBoite(r.boite);
         ['newBoitePn', 'newBoiteFonction', 'newBoiteDs'].forEach(function (i) { parId(i).value = ''; });
-        rendreInterface();
-        confirmerSucces('Assemblage ' + r.boite[CLE_PN()] + ' créé.');
+        Store.pnCourant = r.boite[CLE_PN()];
+        noter('creation', txt(r.boite[CLE_PN()]), 'assemblage');
+        rafraichir();
+        rendreFiche();
+        ouvrirPanneau();
       })
       .catch(function (e) { signalerErreur(e, "création de l'assemblage"); });
   },
 
-  'nouveau-sous-ensemble': function () { ouvrirModal('newSousEnsModal'); },
+  'nouveau-sous-ensemble': function () {
+    definirHtml('choixType', Object.keys(TYPES).map(function (k, i) {
+      const t = TYPES[k];
+      return '<label class="choix-type ' + t.teinte + '">' +
+        '<input type="radio" name="typeNouveau" value="' + esc(t.cle) + '"' +
+          (i === 0 ? ' checked' : '') + '>' +
+        '<span class="choix-icone" aria-hidden="true">' + t.icone + '</span>' +
+        '<span class="choix-libelle">' + esc(t.libelle) + '</span>' +
+        '<span class="choix-aide">' + esc(t.champs.length) + ' champs</span>' +
+      '</label>';
+    }).join(''));
+    ouvrirModal('newSousEnsModal');
+  },
   'creer-sous-ensemble': function () {
-    const type = parId('newEnsType').value.trim();
-    if (!type) { afficherBandeau('Le type est obligatoire.', 'erreur'); return; }
+    const choisi = document.querySelector('input[name="typeNouveau"]:checked');
+    if (!choisi) return;
+    const pn = parId('newEnsPn').value.trim();
     fermerModal('newSousEnsModal');
-    Api.creerNom(Store.pnCourant, type, parId('newEnsPn').value)
+    Api.creerNom(Store.pnCourant, libelleType(choisi.value), pn)
       .then(function (r) {
         appliquerNom(r.ligne);
-        ['newEnsType', 'newEnsPn'].forEach(function (i) { parId(i).value = ''; });
+        parId('newEnsPn').value = '';
+        Store.enEditionNom[r.ligne[CLE_NOM()]] = true;   // ouvert en saisie directe
+        noter('creation', txt(pn, typeDe(r.ligne).libelle), typeDe(r.ligne).libelle);
         rafraichir();
       })
       .catch(function (e) { signalerErreur(e, 'ajout du sous-ensemble'); });
   },
 
   // --- recherche par composants ---
-  'ouvrir-multi-recherche': function () {
-    definirHtml('datalistStds', tousLesComposants().map(function (s) {
-      return '<option value="' + esc(s) + '">';
-    }).join(''));
-    rendreChoixComposants();
-    ouvrirModal('multiSearchModal');
-  },
+  'ouvrir-multi-recherche': function () { rendreChoixComposants(); ouvrirModal('multiSearchModal'); },
   'ajouter-chip': function () {
     const champ = parId('multiSearchInputSelect');
-    const valeur = champ.value.trim();
-    if (!valeur || Store.filtreComposants.indexOf(valeur) !== -1) { champ.value = ''; return; }
-    Store.filtreComposants = Store.filtreComposants.concat([valeur]);
+    const v = champ.value.trim();
+    if (!v || Store.filtreComposants.indexOf(v) !== -1) { champ.value = ''; return; }
+    Store.filtreComposants = Store.filtreComposants.concat([v]);
     champ.value = '';
     rendreChoixComposants();
   },
@@ -288,18 +371,58 @@ enregistrerActions({
     Store.filtreComposants = Store.filtreComposants.filter(function (v) { return v !== d.valeur; });
     rendreInterface();
   },
-  'vider-filtre': function () { Store.filtreComposants = []; rendreInterface(); },
+
+  // --- réglages ---
+  'ouvrir-reglages': function (d) {
+    if (d && d.portee) porteeReglee = d.portee;
+    rendreReglages();
+    // Panneau sans voile : la comparaison ouverte derrière reste visible et
+    // se recompose à chaque mouvement de curseur.
+    bootstrap.Offcanvas.getOrCreateInstance(parId('reglagesModal')).show();
+  },
+  'regler-portee': function (d) { porteeReglee = d.portee; rendreReglages(); },
+  'appliquer-preset': function (d) {
+    const p = PRESETS[d.preset];
+    if (!p) return;
+    Store.poids = p.appliquer();
+    enregistrerReglages();
+    noter('reglage', p.libelle, 'pondération appliquée');
+    rendreReglages();
+    rafraichirComparaison();
+    rendreHistorique();
+  },
+  'reinitialiser-reglages': function () {
+    reinitialiserPoids();
+    noter('reglage', 'Valeurs par défaut', 'pondération réinitialisée');
+    rendreReglages();
+    rafraichirComparaison();
+    rendreHistorique();
+  },
+
+  // --- journal ---
+  'ouvrir-journal': function () { rendreHistorique(); ouvrirModal('journalModal'); },
+
+  // --- divers ---
+  'agrandir-image': function (d) {
+    definirHtml('loupeCorps', '<img src="' + esc(d.url) + '" alt="">');
+    ouvrirModal('loupeModal');
+  },
 
   'exporter-bom': function () {
     const boite = boiteCourante();
     if (!boite) return;
-    const lignes = [['Type', 'PN du type', 'Composants STD', 'Masse (g)', 'DAL', 'HL']];
+    const lignes = [['Type', 'PN du type', 'Référence', 'Numéro', 'Mots-clés',
+                     'Montage', 'Long (mm)', 'Larg (mm)', 'Masse (g)', 'DAL', 'HL',
+                     'Composants STD']];
     (boite.nomenclature || []).forEach(function (n) {
-      lignes.push([n['Type'], n['PN du type'], n[Store.config.colonneStd],
-                   n['Masse (g)'], n['DAL'], n['HL']]);
+      lignes.push([typeDe(n).libelle, n['PN du type'], n['Référence'], n['Numéro'],
+                   n['Mots-clés'], n['Montage'], n['Dim Long (mm)'], n['Dim Larg (mm)'],
+                   n['Masse (g)'], n['DAL'], n['HL'], n[Store.config.colonneStd]]);
     });
     telecharger(construireCsv(lignes), 'BOM_' + boite[CLE_PN()] + '.csv',
                 'text/csv;charset=utf-8');
+    noter('creation', 'BOM_' + boite[CLE_PN()] + '.csv', 'export CSV');
+    rendreHistorique();
   }
 });
 
@@ -308,58 +431,88 @@ enregistrerActions({
 // ------------------------------------------------------------
 function rendreCatalogue() {
   const requete = parId('catSearch') ? parId('catSearch').value : '';
-  const resultat = filtrerCatalogue(requete);
-
-  definirHtml('catalogueList', resultat.affiches.map(function (e) {
-    return '<div class="ligne-catalogue"' +
-             dataAttrs({ action: 'ajouter-catalogue', index: e.index }) + ' role="button">' +
-             '<div><b>' + esc(formaterComposant(e.composant)) + '</b></div>' +
-             '<button type="button" class="btn btn-sm btn-outline-success fw-bold">+</button>' +
-           '</div>';
-  }).join('') || '<p class="text-muted small m-0">Aucun composant ne correspond.</p>');
-
-  // Le .slice(30) était muet : on croyait que le composant n'existait pas.
-  definirTexte('catalogueInfo', resultat.total > resultat.affiches.length
-    ? resultat.affiches.length + ' résultats affichés sur ' + resultat.total +
-      ' — affinez la recherche.'
-    : resultat.total + ' résultat' + (resultat.total > 1 ? 's' : ''));
+  const r = filtrerCatalogue(requete);
+  definirHtml('catalogueList', r.affiches.map(function (e) {
+    return '<button type="button" class="ligne-catalogue"' +
+             dataAttrs({ action: 'ajouter-catalogue', index: e.index }) + '>' +
+             '<span>' + esc(formaterComposant(e.composant)) + '</span>' +
+             '<span class="ligne-catalogue-plus" aria-hidden="true">+</span>' +
+           '</button>';
+  }).join('') || '<p class="vide">Aucun composant ne correspond.</p>');
+  definirTexte('catalogueInfo', r.total > r.affiches.length
+    ? r.affiches.length + ' résultats affichés sur ' + r.total + ' — affinez la recherche.'
+    : r.total + ' résultat' + (r.total > 1 ? 's' : ''));
 }
 
 function rendreChoixComposants() {
   definirHtml('multiSearchPillsContainer', Store.filtreComposants.length
     ? Store.filtreComposants.map(function (c) {
-        return '<span class="multi-search-pill">' + esc(c) +
-               '<span class="del" role="button" aria-label="Retirer"' +
-               dataAttrs({ action: 'retirer-chip', valeur: c }) + '>&times;</span></span>';
+        return '<span class="puce">' + esc(c) +
+               '<button type="button" class="puce-suppr" aria-label="Retirer"' +
+               dataAttrs({ action: 'retirer-chip', valeur: c }) + '>&times;</button></span>';
       }).join('')
-    : '<p class="text-muted small m-0">Aucun composant sélectionné.</p>');
+    : '<p class="vide">Aucun composant sélectionné.</p>');
 }
 
 // ------------------------------------------------------------
 // Démarrage
 // ------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', function () {
+  chargerReglages();
   installerDelegation();
 
   const recherche = parId('searchBar');
   if (recherche) {
-    // Anti-rebond : l'ancienne version reconstruisait toute la grille à chaque
-    // frappe, avec deux JSON.stringify sur l'ensemble des données.
     recherche.addEventListener('input', antiRebond(function () {
       Store.recherche = recherche.value;
       rendreInterface();
     }, 180));
   }
 
-  const catalogue = parId('catSearch');
-  if (catalogue) catalogue.addEventListener('input', antiRebond(rendreCatalogue, 180));
+  const cat = parId('catSearch');
+  if (cat) cat.addEventListener('input', antiRebond(rendreCatalogue, 180));
 
-  const champMultiRecherche = parId('multiSearchInputSelect');
-  if (champMultiRecherche) {
-    champMultiRecherche.addEventListener('keydown', function (e) {
+  const multi = parId('multiSearchInputSelect');
+  if (multi) {
+    multi.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); ACTIONS['ajouter-chip'](); }
     });
   }
+
+  // Curseurs de pondération : recalcul immédiat, c'est tout l'intérêt.
+  document.addEventListener('input', function (e) {
+    if (e.target.classList && e.target.classList.contains('curseur')) {
+      Store.poids[e.target.dataset.portee][e.target.dataset.critere] = Number(e.target.value);
+      enregistrerReglages();
+      rafraichirApercu();
+      rafraichirComparaison();
+      return;
+    }
+    if (e.target.id === 'seuilCurseur') {
+      Store.seuilEquivalence = Number(e.target.value);
+      enregistrerReglages();
+      definirTexte('seuilValeur', Store.seuilEquivalence + ' %');
+      rafraichirApercu();
+      rafraichirComparaison();
+    }
+  });
+
+  document.addEventListener('change', function (e) {
+    if (e.target.id === 'triSelect') {
+      Store.tri = e.target.value;
+      enregistrerReglages();
+      rendreInterface();
+    }
+  });
+
+  // Raccourcis : « / » pour chercher, Échap pour refermer.
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement &&
+        ['INPUT', 'TEXTAREA', 'SELECT'].indexOf(document.activeElement.tagName) === -1) {
+      e.preventDefault();
+      const c = parId('searchBar'); if (c) c.focus();
+    }
+  });
 
   chargerTout();
   chargerCatalogue();

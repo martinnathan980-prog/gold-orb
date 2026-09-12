@@ -107,17 +107,29 @@ function reinitialiserAvecDemo() {
   ss.getSheetByName(CFG.FEUILLES.BOITES)
     .getRange(2, 1, boites.length, boites[0].length).setValues(boites);
 
+  // Colonnes : PN Global, Type, PN du type, Référence, Numéro, Mots-clés,
+  //            Montage, Nb pas, Long, Larg, Masse, HL, DAL,
+  //            Qualif. brouillard, Qualif. vibration, Qualif. explosion,
+  //            Composant STD, Image, Commentaires
+  // Chaque type ne renseigne que ce qui le concerne : un harnais n'a ni
+  // dimensions ni masse, une plaquette porte des mots-clés de mission.
   const nom = [
-    ['332P20001',   'Structure Boite',      '332P20001.01',  'Console STD', '1', '500', '140', '500',   'A', 'A', 'Cat. S', 'Qual. H225', 'Case 1', '', '', ''],
-    ['332P20001',   'Harnais',              '332P20001.03',  'Console STD', '1', '-',   '-',   '126.5', 'A', 'A', 'Cat. F', 'Qual. H225', 'Case 3', 'Bouton poussoir | Push button (ECS 7251)\nBouton poussoir | Push button (ECS 0763)', '', ''],
-    ['332P94101',   'Structure Boite',      '332P94101.01',  'Hors console', '5', '400', '200', '400',  'B', 'C', 'Cat. T', 'Qual. H225', '', '', '', ''],
-    ['332P94101',   'Plaquette éclairante', '332P94101.02',  'Hors console', '5', '400', '200', '180',  'D', 'D', 'Cat. T', 'Qual. H225', '', '', '', ''],
-    ['U880A240101', 'Harnais',              'U880A240401',   'Console STD', '2', '-',   '-',   '115',   'A', 'A', 'Cat. S', 'Qual. H160', '', 'Bouton poussoir | Pushrod (ASNE 0239)', '', ''],
-    ['332N10001',   'Structure Boite',      '332N10001.01',  'Rack',        '2', '300', '200', '800',   'B', 'B', 'Cat. S', 'Qual. H225', '', '', '', ''],
-    ['332C50001',   'Harnais',              '332C50001.02',  'Rack',        '3', '-',   '-',   '250',   'C', 'C', 'Cat. T', 'Qual. H160', '', 'Bouton poussoir | Push button (ECS 0780)', '', ''],
-    ['U880R30001',  'Structure Boite',      'U880R30001.01', 'Nez',         '1', '600', '400', '1500',  'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', '', '', ''],
-    ['332F40001',   'Plaquette éclairante', '332F40001.02',  'Console STD', '1', '100', '50',  '50',    'A', 'A', 'Cat. S', 'Qual. H225', '', 'Switch | Switch (ASNE 0567)', '', ''],
-    ['U880P50001',  'Harnais',              'U880P50001.03', 'Soute',       '4', '-',   '-',   '800',   'B', 'B', 'Cat. F', 'Qual. H160', '', 'Double command | FRF 772-034 (IG)', '', '']
+    ['332P20001', 'Structure boîte', '332P20001.01', '', '', '', 'Console STD', '1', '500', '140', '500', 'A', 'A', 'Cat. S', 'Qual. H225', 'Case 1', '', '', ''],
+    ['332P20001', 'Harnais', '332P20001.03', 'HRN-2251-A', '', '', '', '', '', '', '', 'A', 'A', 'Cat. F', 'Qual. H225', 'Case 3', 'Bouton poussoir | Push button (ECS 7251)\nBouton poussoir | Push button (ECS 0763)', '', ''],
+    ['332P20001', 'Plaquette éclairante', '332P20001.05', '', 'PL-1042', 'APU, démarrage, mission SAR', '', '', '100', '50', '', 'A', 'A', 'Cat. S', 'Qual. H225', '', '', '', ''],
+    ['332P94101', 'Structure boîte', '332P94101.01', '', '', '', 'Hors console', '5', '400', '200', '400', 'B', 'C', 'Cat. T', 'Qual. H225', '', '', '', ''],
+    ['332P94101', 'Plaquette éclairante', '332P94101.02', '', 'PL-2210', 'EOS, optronique, mission SAR', '', '', '400', '200', '', 'D', 'D', 'Cat. T', 'Qual. H225', '', '', '', ''],
+    ['U880A240101', 'Harnais', 'U880A240401', 'HRN-1601-C', '', '', '', '', '', '', '', 'A', 'A', 'Cat. S', 'Qual. H160', '', 'Bouton poussoir | Pushrod (ASNE 0239)', '', ''],
+    ['U880A240101', 'Structure boîte', 'U880A240101.01', '', '', '', 'Console STD', '2', '480', '140', '520', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', '', '', ''],
+    ['332N10001', 'Structure boîte', '332N10001.01', '', '', '', 'Rack', '2', '300', '200', '800', 'B', 'B', 'Cat. S', 'Qual. H225', '', '', '', ''],
+    ['332N10001', 'Plaquette éclairante', '332N10001.03', '', 'PL-3301', 'NAV, navigation, mission transport', '', '', '120', '60', '', 'B', 'B', 'Cat. S', 'Qual. H225', '', '', '', ''],
+    ['332C50001', 'Harnais', '332C50001.02', 'HRN-2251-A', '', '', '', '', '', '', '', 'C', 'C', 'Cat. T', 'Qual. H160', '', 'Bouton poussoir | Push button (ECS 0780)\nBouton poussoir | Push button (ECS 7251)', '', ''],
+    ['U880R30001', 'Structure boîte', 'U880R30001.01', '', '', '', 'Nez', '1', '600', '400', '1500', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', '', '', ''],
+    ['332F40001', 'Plaquette éclairante', '332F40001.02', '', 'PL-1042', 'FLIGHT, pilotage, mission SAR', '', '', '100', '50', '', 'A', 'A', 'Cat. S', 'Qual. H225', '', '', '', ''],
+    ['332F40001', 'Structure boîte', '332F40001.01', '', '', '', 'Console STD', '1', '500', '140', '495', 'A', 'A', 'Cat. S', 'Qual. H225', 'Case 1', '', '', ''],
+    ['U880P50001', 'Harnais', 'U880P50001.03', 'HRN-1601-C', '', '', '', '', '', '', '', 'B', 'B', 'Cat. F', 'Qual. H160', '', 'Double command | FRF 772-034 (IG)', '', ''],
+    ['332S60001', 'Plaquette éclairante', '332S60001.01', '', 'PL-2210', 'SENSOR, détection, mission SAR', '', '', '400', '200', '', 'C', 'C', 'Cat. T', 'Qual. H225', '', '', '', ''],
+    ['U880D70001', 'Structure boîte', 'U880D70001.01', '', '', '', 'Console STD', '1', '500', '145', '510', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', '', '', '']
   ].map(function (l) { return [nouvelId_('L')].concat(l); });   // ID unique par ligne
 
   ss.getSheetByName(CFG.FEUILLES.NOMENCLATURE)

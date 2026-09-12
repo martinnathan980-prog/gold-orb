@@ -1,6 +1,6 @@
 <script>
 // ============================================================
-// NEXUS PLM — grille, onglets, indicateurs.
+// NEXUS PLM — grille, onglets, filtres, indicateurs.
 // Les fonctions *Html construisent une chaîne et ne touchent pas au DOM :
 // c'est ce qui les rend testables, échappement compris.
 // ============================================================
@@ -8,110 +8,158 @@
 function badgeStatutHtml(statut) {
   const s = txt(statut, '');
   if (!s) return '';
-  return '<span class="status-badge ' + classeStatut(s) + '">' + esc(s) + '</span>';
-}
-
-function imageHtml(valeur, classe) {
-  const url = urlMiniature(valeur);
-  if (!url) return '';
-  return '<img class="' + classe + '" src="' + esc(url) + '" alt="" loading="lazy">';
+  return '<span class="statut ' + classeStatut(s) + '">' + esc(s) + '</span>';
 }
 
 function ongletsHtml(vue) {
-  let html = '<button type="button" class="tab-pill' +
-             (vue.onglet === 'Toutes' ? ' active' : '') + '"' +
+  let html = '<button type="button" class="onglet' + (vue.onglet === 'Toutes' ? ' actif' : '') + '"' +
              dataAttrs({ action: 'changer-onglet', onglet: 'Toutes' }) +
-             '>Toutes <span class="tab-count">' + vue.visibles.length + '</span></button>';
-
-  Array.from(vue.parFonction.keys()).sort().forEach(function (fonction) {
-    html += '<button type="button" class="tab-pill' +
-            (vue.onglet === fonction ? ' active' : '') + '"' +
-            dataAttrs({ action: 'changer-onglet', onglet: fonction }) + '>' +
-            esc(fonction) + ' <span class="tab-count">' +
-            vue.parFonction.get(fonction).length + '</span></button>';
-  });
+             '>Toutes <span class="onglet-compte">' + vue.visibles.length + '</span></button>';
+  Array.from(vue.parFonction.keys()).sort(function (a, b) { return a.localeCompare(b, 'fr'); })
+    .forEach(function (fonction) {
+      html += '<button type="button" class="onglet' +
+              (vue.onglet === fonction ? ' actif' : '') + '"' +
+              dataAttrs({ action: 'changer-onglet', onglet: fonction }) + '>' +
+              esc(fonction) + ' <span class="onglet-compte">' +
+              vue.parFonction.get(fonction).length + '</span></button>';
+    });
   return html;
+}
+
+/** Filtres par type de sous-ensemble : « montre-moi les boîtes qui ont un harnais ». */
+function filtresTypeHtml() {
+  const repartition = repartitionTypes();
+  if (!repartition.length) return '';
+  return '<div class="filtres-type" role="group" aria-label="Filtrer par type de sous-ensemble">' +
+    repartition.map(function (e) {
+      const actif = Store.filtreTypes.indexOf(e.type.cle) !== -1;
+      return '<button type="button" class="jeton ' + e.type.teinte + (actif ? ' actif' : '') + '"' +
+             dataAttrs({ action: 'basculer-type', type: e.type.cle }) +
+             ' aria-pressed="' + actif + '">' +
+             '<span aria-hidden="true">' + e.type.icone + '</span> ' + esc(e.type.libelle) +
+             ' <span class="jeton-compte">' + e.nombre + '</span></button>';
+    }).join('') +
+  '</div>';
+}
+
+function triHtml() {
+  return '<label class="tri"><span>Trier par</span><select id="triSelect" class="tri-select">' +
+    Object.keys(TRIS).map(function (k) {
+      return '<option value="' + k + '"' + (Store.tri === k ? ' selected' : '') + '>' +
+             esc(TRIS[k].libelle) + '</option>';
+    }).join('') +
+  '</select></label>';
+}
+
+/** Composition d'un assemblage : une puce par type présent, avec son compte. */
+function compositionHtml(boite) {
+  const compte = new Map();
+  (boite.nomenclature || []).forEach(function (l) {
+    const t = typeDe(l);
+    compte.set(t.cle, (compte.get(t.cle) || 0) + 1);
+  });
+  if (!compte.size) return '<p class="carte-vide">Assemblage vide</p>';
+  return '<ul class="composition">' + Array.from(compte.entries()).map(function (e) {
+    const t = typeParCle(e[0]);
+    return '<li class="' + t.teinte + '"><span aria-hidden="true">' + t.icone + '</span>' +
+           esc(t.libelle) + '<b>' + e[1] + '</b></li>';
+  }).join('') + '</ul>';
 }
 
 function carteHtml(boite) {
   const pn = boite[CLE_PN()];
+  const url = urlMiniature(boite['Image']);
 
-  const sousEnsembles = (boite.nomenclature || []).map(function (l) {
-    return '<div class="internal-list-row">' +
-             '<span class="internal-type">' + esc(txt(l['Type'])) + '</span>' +
-             '<span class="internal-pn">' + esc(txt(l['PN du type'])) + '</span>' +
-           '</div>';
-  }).join('');
+  const visuel = url
+    ? '<img class="carte-image" src="' + esc(url) + '" alt="" loading="lazy">'
+    : '<div class="carte-image carte-image-absente" aria-hidden="true">' +
+      esc(txt(boite['Fonction'], '?').slice(0, 3).toUpperCase()) + '</div>';
 
-  const meta =
-    '<div class="internal-list-row meta-top">' +
-      '<span class="internal-type text-muted">DS/VCI Associé</span>' +
-      '<span class="internal-pn text-muted">' + esc(txt(boite['DS/VCI Associé'])) + '</span>' +
-    '</div>' +
-    '<div class="internal-list-row meta-last">' +
-      '<span class="internal-type text-muted">Porteur</span>' +
-      // txt() APRÈS la mise en forme : String(undefined) vaut "undefined",
-      // qui est truthy, et l'ancien ||'-' ne se déclenchait jamais.
-      '<span class="internal-pn text-muted">' +
-        esc(txt(valeursMulti(boite['Porteur']).join(', '))) + '</span>' +
-    '</div>';
-
-  return '<div class="col-sm-6 col-lg-4">' +
-    '<div class="product-card">' +
-      imageHtml(boite['Image'], 'card-image') +
-      '<div class="d-flex justify-content-between align-items-start gap-2">' +
-        '<h4 class="pn-title">' + esc(txt(pn)) + '</h4>' + badgeStatutHtml(boite['Statut']) +
+  return '<article class="carte">' +
+    '<button type="button" class="carte-visuel"' +
+      dataAttrs({ action: 'ouvrir-fiche', pn: pn }) +
+      ' aria-label="Ouvrir la fiche de ' + esc(txt(pn)) + '">' + visuel + '</button>' +
+    '<div class="carte-corps">' +
+      '<div class="carte-tete">' +
+        '<h3 class="carte-pn">' + esc(txt(pn)) + '</h3>' + badgeStatutHtml(boite['Statut']) +
       '</div>' +
-      '<div class="mb-4 mt-3">' +
-        (sousEnsembles || '<span class="text-muted small">Assemblage vide</span>') +
-        meta +
+      '<p class="carte-fonction">' + esc(txt(boite['Fonction'], 'Non classé')) + '</p>' +
+      compositionHtml(boite) +
+      '<dl class="carte-meta">' +
+        '<dt>DS/VCI</dt><dd>' + esc(txt(boite['DS/VCI Associé'])) + '</dd>' +
+        '<dt>Porteur</dt><dd>' + esc(txt(valeursMulti(boite['Porteur']).join(', '))) + '</dd>' +
+      '</dl>' +
+      '<div class="carte-actions">' +
+        '<button type="button" class="btn-principal"' +
+          dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>Fiche complète</button>' +
+        '<button type="button" class="btn-accent"' +
+          dataAttrs({ action: 'comparer-boite', pn: pn }) + '>Équivalences</button>' +
       '</div>' +
-      '<button type="button" class="btn-primary-apple"' +
-        dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>Fiche complète</button>' +
-      '<button type="button" class="btn-compare"' +
-        dataAttrs({ action: 'comparer-boite', pn: pn }) + '>Équivalences</button>' +
     '</div>' +
-  '</div>';
+  '</article>';
 }
 
-function grilleHtml(boites) {
-  if (!boites.length) {
-    return '<div class="col-12 text-center text-muted py-5">' +
-           'Aucun assemblage ne correspond à cette sélection.</div>';
-  }
-  return boites.map(carteHtml).join('');
+function grilleHtml(vue) {
+  if (vue.aAfficher.length) return vue.aAfficher.map(carteHtml).join('');
+  return '<div class="etat-vide etat-vide-grille">' +
+    '<p>' + (vue.filtre ? 'Aucun assemblage ne correspond à cette recherche.'
+                        : 'Aucun assemblage enregistré.') + '</p>' +
+    (vue.filtre
+      ? '<button type="button" class="btn-mini" data-action="tout-effacer">Effacer les filtres</button>'
+      : '<button type="button" class="btn-principal" data-action="nouvelle-boite">' +
+        'Créer le premier assemblage</button>') +
+  '</div>';
 }
 
 function rendreInterface() {
   const vue = calculerVue();
   definirHtml('functionTabs', ongletsHtml(vue));
-  definirHtml('mainContainer', grilleHtml(vue.aAfficher));
-  rendreKpi(calculerKpi(vue.aAfficher));
-  rendreFiltreComposants();
+  definirHtml('filtresType', filtresTypeHtml());
+  definirHtml('zoneTri', triHtml());
+  definirHtml('mainContainer', grilleHtml(vue));
+  rendreKpi(calculerKpi(vue.aAfficher), vue);
+  rendreFiltreActif(vue);
   const chargement = parId('loading');
-  if (chargement) chargement.style.display = 'none';
+  if (chargement) chargement.hidden = true;
 }
 
-function rendreKpi(kpi) {
+function rendreKpi(kpi, vue) {
   definirTexte('kpiBoites', String(kpi.nbBoites));
+  definirTexte('kpiLignes', String(kpi.nbLignes));
   definirTexte('kpiNoms', String(kpi.refsUniques));
-  // Le libellé annonce « Boîtes validées » : on affiche le nombre ET le taux,
-  // l'ancienne version n'affichait qu'un pourcentage sous ce libellé.
-  definirTexte('kpiVal', kpi.nbValides + ' (' + kpi.pctValides + ' %)');
+  definirTexte('kpiVal', kpi.nbValides + ' / ' + kpi.nbBoites);
+  definirTexte('kpiValDetail', kpi.pctValides + ' %');
+  const portee = parId('kpiPortee');
+  if (portee) {
+    portee.textContent = vue && vue.filtre ? 'sur la sélection courante' : 'sur toute la base';
+  }
 }
 
-function rendreFiltreComposants() {
+function rendreFiltreActif(vue) {
   const zone = parId('filtreActif');
   if (!zone) return;
-  if (!Store.filtreComposants.length) { zone.innerHTML = ''; return; }
+  const morceaux = [];
 
-  zone.innerHTML = '<span class="text-muted small me-2">Filtre composants :</span>' +
-    Store.filtreComposants.map(function (c) {
-      return '<span class="multi-search-pill">' + esc(c) +
-             '<span class="del"' + dataAttrs({ action: 'retirer-filtre', valeur: c }) +
-             ' role="button" aria-label="Retirer">&times;</span></span>';
-    }).join('') +
-    '<button type="button" class="btn btn-sm btn-link"' +
-    dataAttrs({ action: 'vider-filtre' }) + '>Tout effacer</button>';
+  Store.filtreComposants.forEach(function (c) {
+    morceaux.push('<span class="filtre-jeton">Composant : ' + esc(c) +
+      '<button type="button" aria-label="Retirer"' +
+      dataAttrs({ action: 'retirer-filtre', valeur: c }) + '>&times;</button></span>');
+  });
+  Store.filtreTypes.forEach(function (t) {
+    morceaux.push('<span class="filtre-jeton">Contient : ' + esc(typeParCle(t).libelle) +
+      '<button type="button" aria-label="Retirer"' +
+      dataAttrs({ action: 'basculer-type', type: t }) + '>&times;</button></span>');
+  });
+  if (Store.recherche) {
+    morceaux.push('<span class="filtre-jeton">« ' + esc(Store.recherche) + ' »' +
+      '<button type="button" aria-label="Effacer la recherche"' +
+      dataAttrs({ action: 'effacer-recherche' }) + '>&times;</button></span>');
+  }
+
+  zone.innerHTML = morceaux.length
+    ? morceaux.join('') +
+      '<button type="button" class="btn-lien" data-action="tout-effacer">Tout effacer</button>' +
+      '<span class="filtre-bilan">' + vue.visibles.length + ' résultat(s)</span>'
+    : '';
 }
 </script>

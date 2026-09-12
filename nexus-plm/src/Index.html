@@ -5,6 +5,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
     <?!= include('client/Styles'); ?>
   </head>
 
@@ -18,107 +21,180 @@
     <datalist id="list-Qualif">
       <option value="Qual. H160"></option><option value="Qual. H225"></option>
       <option value="Cat. S"></option><option value="Cat. F"></option><option value="Cat. T"></option>
+      <option value="Case 1"></option><option value="Case 3"></option>
     </datalist>
     <datalist id="list-Statut">
       <option value="En étude"></option><option value="Validé"></option><option value="Obsolète"></option>
     </datalist>
+    <datalist id="list-Montage">
+      <option value="Console STD"></option><option value="Hors console"></option>
+      <option value="Rack"></option><option value="Nez"></option><option value="Soute"></option>
+    </datalist>
+    <datalist id="list-Niveau">
+      <option value="A"></option><option value="B"></option>
+      <option value="C"></option><option value="D"></option>
+    </datalist>
+    <datalist id="list-Type"></datalist>
+    <datalist id="list-MotsCles"></datalist>
+    <datalist id="datalistStds"></datalist>
 
-    <button type="button" class="btn-new-boite" data-action="nouvelle-boite"
-            title="Nouvel assemblage" aria-label="Nouvel assemblage">+</button>
-
-    <header class="hero-panel">
-      <div class="container-fluid max-width-xl text-center">
-        <h1 class="page-title">NEXUS PLM</h1>
-        <div class="page-subtitle">Product Lifecycle Management</div>
-        <div class="kpi-row">
-          <div class="kpi-card">
-            <div class="kpi-val" id="kpiBoites">–</div>
-            <div class="kpi-label">Nombre de boîtes</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-val" id="kpiNoms">–</div>
-            <div class="kpi-label">Références uniques (PN)</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-val" id="kpiVal">–</div>
-            <div class="kpi-label">Boîtes validées</div>
+    <header class="entete">
+      <div class="enveloppe entete-corps">
+        <div class="marque">
+          <span class="marque-sigle" aria-hidden="true">◆</span>
+          <div>
+            <h1>NEXUS PLM</h1>
+            <p>Nomenclatures d'assemblages</p>
           </div>
         </div>
+
+        <div class="entete-outils">
+          <button type="button" class="btn-entete" data-action="ouvrir-reglages">
+            <span aria-hidden="true">⚙</span> Pondération
+          </button>
+          <button type="button" class="btn-entete" data-action="ouvrir-journal">
+            <span aria-hidden="true">◷</span> Journal
+            <span class="badge-compte" id="journalCompteur">0</span>
+          </button>
+          <button type="button" class="btn-entete btn-entete-fort" data-action="nouvelle-boite">
+            + Assemblage
+          </button>
+        </div>
+      </div>
+
+      <div class="enveloppe">
+        <dl class="indicateurs">
+          <div class="indicateur">
+            <dt>Assemblages</dt><dd id="kpiBoites">–</dd>
+          </div>
+          <div class="indicateur">
+            <dt>Sous-ensembles</dt><dd id="kpiLignes">–</dd>
+          </div>
+          <div class="indicateur">
+            <dt>Références uniques</dt><dd id="kpiNoms">–</dd>
+          </div>
+          <div class="indicateur indicateur-valide">
+            <dt>Validés</dt>
+            <dd id="kpiVal">–</dd>
+            <span class="indicateur-detail" id="kpiValDetail"></span>
+          </div>
+          <p class="indicateurs-portee" id="kpiPortee">sur toute la base</p>
+        </dl>
       </div>
     </header>
 
-    <main class="container-fluid px-4 pb-5 max-width-xl">
-      <div class="row justify-content-center control-container">
-        <div class="col-12 col-md-10">
-          <div class="control-bar">
-            <input type="text" id="searchBar" class="apple-input"
-                   placeholder="Recherche globale (PN, fonction, composant…)"
-                   aria-label="Recherche globale">
-            <button type="button" class="btn btn-outline-dark fw-bold px-4"
-                    style="border-radius:10px; white-space:nowrap;"
-                    data-action="ouvrir-multi-recherche">Recherche par composants</button>
-          </div>
-          <div id="filtreActif" class="mt-2 text-center"></div>
-        </div>
+    <main class="enveloppe contenu">
+      <div class="barre-recherche">
+        <label class="champ-recherche">
+          <span class="champ-recherche-icone" aria-hidden="true">⌕</span>
+          <input type="text" id="searchBar" placeholder="Rechercher un PN, une fonction, un composant, un mot-clé…"
+                 aria-label="Recherche globale" autocomplete="off">
+          <kbd class="raccourci" aria-hidden="true">/</kbd>
+        </label>
+        <button type="button" class="btn-neutre" data-action="ouvrir-multi-recherche">
+          Recherche par composants
+        </button>
       </div>
 
-      <div id="loading" class="text-center my-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Chargement…</span>
-        </div>
+      <div id="filtresType"></div>
+      <div id="filtreActif" class="filtres-actifs"></div>
+
+      <div class="barre-liste">
+        <nav id="functionTabs" class="onglets" aria-label="Filtrer par fonction"></nav>
+        <div id="zoneTri"></div>
       </div>
 
-      <nav id="functionTabs" class="function-tabs" aria-label="Filtrer par fonction"></nav>
-      <div class="row g-4 mb-5" id="mainContainer"></div>
+      <div id="loading" class="chargement">
+        <span class="spinner-border text-primary" role="status"></span>
+        <span>Chargement…</span>
+      </div>
+
+      <div id="mainContainer" class="grille"></div>
     </main>
 
-    <!-- Fiche complète -->
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="detailsSlideOver"
+    <!-- ------------------------------------------------ Fiche -->
+    <div class="offcanvas offcanvas-end panneau" tabindex="-1" id="detailsSlideOver"
          aria-labelledby="slideOverTitle">
-      <div class="offcanvas-header bg-white shadow-sm" style="z-index:10;">
-        <h5 class="offcanvas-title fw-bold" id="slideOverTitle">Fiche complète</h5>
-        <div class="d-flex align-items-center gap-2">
-          <button type="button" class="btn btn-sm btn-outline-dark fw-bold"
-                  data-action="exporter-bom">Exporter la nomenclature (CSV)</button>
-          <button type="button" class="btn-close" data-bs-dismiss="offcanvas"
-                  aria-label="Fermer"></button>
+      <div class="offcanvas-header panneau-tete">
+        <div>
+          <h2 class="offcanvas-title" id="slideOverTitle">Fiche</h2>
+          <p class="panneau-sous" id="slideOverSousTitre"></p>
+        </div>
+        <div class="panneau-actions">
+          <button type="button" class="btn-neutre" data-action="exporter-bom">Exporter (CSV)</button>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
         </div>
       </div>
       <div class="offcanvas-body" id="slideOverBody"></div>
     </div>
 
-    <!-- Recherche par composants -->
-    <div class="modal fade" id="multiSearchModal" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content" style="border-radius:16px;">
-          <div class="modal-header">
-            <h5 class="modal-title fw-bold">Recherche par composants embarqués</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-          </div>
-          <div class="modal-body">
-            <p class="text-muted small">Sélectionnez ou saisissez les composants que l'assemblage doit contenir :</p>
-            <div class="d-flex gap-2 mb-3">
-              <input class="form-control" list="datalistStds" id="multiSearchInputSelect"
-                     placeholder="Rechercher un composant ou le saisir librement…"
-                     aria-label="Composant">
-              <datalist id="datalistStds"></datalist>
-              <button type="button" class="btn btn-dark fw-bold" data-action="ajouter-chip">Ajouter</button>
+    <!-- ------------------------------------------------ Pondération -->
+    <!-- Panneau et non modale, et sans voile : on règle les critères tout en
+         voyant le classement se recomposer derrière. -->
+    <div class="offcanvas offcanvas-start panneau-reglages" tabindex="-1" id="reglagesModal"
+         data-bs-backdrop="false" data-bs-scroll="true" aria-labelledby="reglagesTitre">
+      <div class="offcanvas-header panneau-tete">
+        <div>
+          <h2 class="offcanvas-title" id="reglagesTitre">Pondération</h2>
+          <p class="panneau-sous">Chaque critère pèse une part du score. L'aperçu suit.</p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
+      </div>
+      <div class="offcanvas-body">
+        <nav id="reglagesOnglets" class="onglets-reglage" aria-label="Portée du réglage"></nav>
+
+        <div class="reglages-grille">
+          <section class="reglages-colonne">
+            <div id="reglagesCurseurs"></div>
+            <div class="seuil">
+              <label for="seuilCurseur">Seuil d'affichage</label>
+              <input type="range" id="seuilCurseur" min="0" max="90" step="5" value="15" class="curseur-seuil">
+              <output id="seuilValeur">15 %</output>
+              <p class="seuil-aide">En dessous de ce score, une équivalence n'est pas proposée.</p>
             </div>
-            <div id="multiSearchPillsContainer" class="mb-4 bg-light p-3 rounded border"
-                 style="min-height:60px;"></div>
-            <button type="button" class="btn-primary-apple"
-                    data-action="lancer-multi-recherche">Trouver les assemblages</button>
-          </div>
+          </section>
+
+          <aside class="reglages-colonne reglages-apercu">
+            <h3>Aperçu en direct</h3>
+            <div id="reglagesApercu"></div>
+            <h3 class="apercu-titre-2">Réglages rapides</h3>
+            <div id="reglagesPresets" class="presets"></div>
+            <p id="reglagesModifies" class="avertissement" hidden>
+              Pondération personnalisée, mémorisée sur ce poste.
+            </p>
+            <button type="button" class="btn-lien" data-action="reinitialiser-reglages">
+              Rétablir les valeurs d'origine
+            </button>
+          </aside>
         </div>
       </div>
     </div>
 
-    <!-- Équivalences -->
-    <div class="modal fade" id="compareModal" tabindex="-1">
+    <!-- ------------------------------------------------ Journal -->
+    <div class="modal fade" id="journalModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content" style="border-radius:16px;">
+        <div class="modal-content boite-modale">
           <div class="modal-header">
-            <h5 class="modal-title fw-bold" id="compareTitle">Analyse d'équivalences</h5>
+            <div>
+              <h2 class="modal-title">Journal de bord</h2>
+              <p class="modale-sous">Tout ce qui a été fait depuis l'ouverture de la page.</p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+          </div>
+          <div class="modal-body" id="journalCorps"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------ Équivalences -->
+    <div class="modal fade" id="compareModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content boite-modale">
+          <div class="modal-header">
+            <div>
+              <h2 class="modal-title" id="compareTitle">Équivalences</h2>
+              <p class="modale-sous" id="compareSousTitre"></p>
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
           </div>
           <div class="modal-body" id="compareResult"></div>
@@ -126,67 +202,116 @@
       </div>
     </div>
 
-    <!-- Catalogue -->
+    <!-- ------------------------------------------------ Recherche par composants -->
+    <div class="modal fade" id="multiSearchModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content boite-modale">
+          <div class="modal-header">
+            <h2 class="modal-title">Recherche par composants embarqués</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+          </div>
+          <div class="modal-body">
+            <p class="modale-sous">Ne garder que les assemblages contenant tous ces composants.</p>
+            <div class="ligne-saisie">
+              <input type="text" list="datalistStds" id="multiSearchInputSelect"
+                     placeholder="Composant…" aria-label="Composant">
+              <button type="button" class="btn-neutre" data-action="ajouter-chip">Ajouter</button>
+            </div>
+            <div id="multiSearchPillsContainer" class="zone-puces"></div>
+            <button type="button" class="btn-principal" data-action="lancer-multi-recherche">
+              Filtrer les assemblages
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------ Catalogue -->
     <div class="modal fade" id="catalogueModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content" style="border-radius:16px;">
+        <div class="modal-content boite-modale">
           <div class="modal-header">
-            <h5 class="modal-title fw-bold">Catalogue de composants</h5>
+            <h2 class="modal-title">Catalogue de composants</h2>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
           </div>
           <div class="modal-body">
-            <input type="text" id="catSearch" class="form-control mb-2"
-                   placeholder="Rechercher par type, sous-type ou norme…" aria-label="Rechercher un composant">
-            <div id="catalogueInfo" class="text-muted small mb-2"></div>
-            <div id="catalogueList"></div>
+            <input type="text" id="catSearch" class="saisie-pleine"
+                   placeholder="Type, sous-type ou norme…" aria-label="Rechercher un composant">
+            <p id="catalogueInfo" class="modale-sous"></p>
+            <div id="catalogueList" class="liste-catalogue"></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Nouvel assemblage -->
+    <!-- ------------------------------------------------ Nouvel assemblage -->
     <div class="modal fade" id="newBoiteModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius:16px;">
+        <div class="modal-content boite-modale">
           <div class="modal-header">
-            <h5 class="modal-title fw-bold">Nouvel assemblage</h5>
+            <h2 class="modal-title">Nouvel assemblage</h2>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
           </div>
           <div class="modal-body">
-            <input type="text" id="newBoitePn" class="form-control mb-2" placeholder="PN Global (obligatoire)">
-            <input type="text" id="newBoiteFonction" class="form-control mb-2" placeholder="Fonction">
-            <input type="text" id="newBoiteDs" class="form-control mb-3" placeholder="DS/VCI associé">
-            <button type="button" class="btn-primary-apple" data-action="creer-boite">Créer l'assemblage</button>
+            <label class="champ-libelle" for="newBoitePn">PN Global <span>obligatoire</span></label>
+            <input type="text" id="newBoitePn" class="saisie-pleine" placeholder="ex. 332P20001">
+            <label class="champ-libelle" for="newBoiteFonction">Fonction</label>
+            <input type="text" id="newBoiteFonction" class="saisie-pleine" placeholder="ex. APU">
+            <label class="champ-libelle" for="newBoiteDs">DS/VCI associé</label>
+            <input type="text" id="newBoiteDs" class="saisie-pleine" placeholder="ex. 332P20051">
+            <button type="button" class="btn-principal" data-action="creer-boite">Créer</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Nouveau sous-ensemble -->
+    <!-- ------------------------------------------------ Nouveau sous-ensemble -->
     <div class="modal fade" id="newSousEnsModal" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius:16px;">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content boite-modale">
           <div class="modal-header">
-            <h5 class="modal-title fw-bold">Nouveau sous-ensemble</h5>
+            <div>
+              <h2 class="modal-title">Nouveau sous-ensemble</h2>
+              <p class="modale-sous">Le type détermine les champs de la fiche et les critères d'équivalence.</p>
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
           </div>
           <div class="modal-body">
-            <input type="text" id="newEnsType" class="form-control mb-2" placeholder="Type (ex. Harnais)">
-            <input type="text" id="newEnsPn" class="form-control mb-3" placeholder="PN du sous-ensemble">
-            <button type="button" class="btn-primary-apple" data-action="creer-sous-ensemble">Ajouter à la boîte</button>
+            <div id="choixType" class="choix-types"></div>
+            <label class="champ-libelle" for="newEnsPn">PN du sous-ensemble</label>
+            <input type="text" id="newEnsPn" class="saisie-pleine" placeholder="ex. 332P20001.01">
+            <button type="button" class="btn-principal" data-action="creer-sous-ensemble">
+              Ajouter à l'assemblage
+            </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------ Loupe -->
+    <div class="modal fade" id="loupeModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content boite-modale">
+          <div class="modal-header">
+            <h2 class="modal-title">Image</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+          </div>
+          <div class="modal-body loupe" id="loupeCorps"></div>
         </div>
       </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <?!= include('client/Dom'); ?>
+    <?!= include('client/Types'); ?>
     <?!= include('client/Api'); ?>
     <?!= include('client/Store'); ?>
     <?!= include('client/Compare'); ?>
     <?!= include('client/ViewGrid'); ?>
     <?!= include('client/ViewFiche'); ?>
     <?!= include('client/ViewCompare'); ?>
+    <?!= include('client/Reglages'); ?>
+    <?!= include('client/Historique'); ?>
     <?!= include('client/Main'); ?>
   </body>
 </html>

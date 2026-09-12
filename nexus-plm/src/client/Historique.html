@@ -1,0 +1,140 @@
+<script>
+// ============================================================
+// NEXUS PLM — journal de bord et annulation.
+//
+// « Suivre chaque étape, ne rien perdre » : toute action laisse une trace
+// consultable, et une suppression reste rattrapable le temps de s'apercevoir
+// de l'erreur — il n'y avait auparavant aucun recours.
+// ============================================================
+
+const LIBELLES_ACTION = {
+  creation: 'Création', modification: 'Modification', suppression: 'Suppression',
+  duplication: 'Duplication', restauration: 'Restauration', composant: 'Composant',
+  echec: 'Échec', reglage: 'Réglage'
+};
+
+function heureCourte(date) {
+  return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function historiqueHtml() {
+  if (!Store.historique.length) {
+    return '<div class="etat-vide">' +
+             '<p>Aucune action pour l\'instant.</p>' +
+             '<p class="etat-vide-aide">Tout ce que vous ferez s\'inscrira ici.</p>' +
+           '</div>';
+  }
+  return '<ol class="journal">' + Store.historique.map(function (e) {
+    return '<li class="journal-ligne journal-' + esc(e.action) + '">' +
+             '<time>' + esc(heureCourte(e.heure)) + '</time>' +
+             '<span class="journal-action">' +
+               esc(LIBELLES_ACTION[e.action] || e.action) + '</span>' +
+             '<span class="journal-cible">' + esc(e.cible) + '</span>' +
+             (e.detail ? '<span class="journal-detail">' + esc(e.detail) + '</span>' : '') +
+           '</li>';
+  }).join('') + '</ol>';
+}
+
+function rendreHistorique() {
+  definirHtml('journalCorps', historiqueHtml());
+  const compteur = parId('journalCompteur');
+  if (compteur) compteur.textContent = Store.historique.length;
+}
+
+// ------------------------------------------------------------
+// Annulation d'une suppression
+// ------------------------------------------------------------
+/**
+ * On conserve la charge utile supprimée le temps d'une annulation. La
+ * restauration recrée l'élément : il repart avec un identifiant neuf, ce que
+ * l'interface annonce explicitement plutôt que de laisser croire à un retour
+ * en arrière exact.
+ */
+function memoriserSuppression(sorte, charge) {
+  Store.derniereSuppression = { sorte: sorte, charge: charge, heure: Date.now() };
+}
+
+function peutAnnuler() {
+  return !!Store.derniereSuppression &&
+         (Date.now() - Store.derniereSuppression.heure) < 120000;
+}
+
+function restaurer() {
+  if (!peutAnnuler()) {
+    afficherBandeau('Plus rien à restaurer.', 'info');
+    return Promise.resolve();
+  }
+  const sauvegarde = Store.derniereSuppression;
+  Store.derniereSuppression = null;
+
+  if (sauvegarde.sorte === 'nomenclature') {
+    const l = sauvegarde.charge;
+    return Api.creerNom(l[CLE_PN()], l['Type'], l['PN du type'])
+      .then(function (r) {
+        appliquerNom(r.ligne);
+        // On réinjecte les champs que la création ne porte pas.
+        const modifs = {};
+        Object.keys(l).forEach(function (k) {
+          if (k === CLE_NOM() || k === CLE_PN() || k === 'Type' || k === 'PN du type') return;
+          if (k.charAt(0) === '_') return;
+          if (l[k] !== '' && l[k] !== null && l[k] !== undefined) modifs[k] = l[k];
+        });
+        if (!Object.keys(modifs).length) return r;
+        return Api.sauverNom(r.ligne[CLE_NOM()], modifs).then(function (r2) {
+          appliquerNom(r2.ligne); return r2;
+        });
+      })
+      .then(function () {
+        noter('restauration', txt(l['PN du type'], 'sous-ensemble'), 'nouvel identifiant');
+        rafraichir();
+        confirmerSucces('Sous-ensemble restauré.');
+      })
+      .catch(function (e) { signalerErreur(e, 'restauration du sous-ensemble'); });
+  }
+
+  const b = sauvegarde.charge.boite;
+  const lignes = sauvegarde.charge.lignes || [];
+  return Api.creerBoite(b[CLE_PN()], b['Fonction'], b['DS/VCI Associé'])
+    .then(function (r) {
+      appliquerBoite(r.boite);
+      const modifs = {};
+      Object.keys(b).forEach(function (k) {
+        if (k === CLE_PN() || k === 'Fonction' || k === 'DS/VCI Associé') return;
+        if (k === 'nomenclature' || k.charAt(0) === '_') return;
+        if (b[k] !== '' && b[k] !== null && b[k] !== undefined) modifs[k] = b[k];
+      });
+      return Object.keys(modifs).length
+        ? Api.sauverBoite(r.boite[CLE_PN()], modifs).then(function (r2) {
+            appliquerBoite(r2.boite, r2.pnPrecedent); return r2.boite;
+          })
+        : r.boite;
+    })
+    .then(function (boite) {
+      // Les sous-ensembles sont recréés un par un, en série.
+      return lignes.reduce(function (chaine, l) {
+        return chaine.then(function () {
+          return Api.creerNom(boite[CLE_PN()], l['Type'], l['PN du type'])
+            .then(function (r) {
+              appliquerNom(r.ligne);
+              const modifs = {};
+              Object.keys(l).forEach(function (k) {
+                if (k === CLE_NOM() || k === CLE_PN() || k === 'Type' || k === 'PN du type') return;
+                if (k.charAt(0) === '_') return;
+                if (l[k] !== '' && l[k] !== null && l[k] !== undefined) modifs[k] = l[k];
+              });
+              if (!Object.keys(modifs).length) return;
+              return Api.sauverNom(r.ligne[CLE_NOM()], modifs)
+                        .then(function (r2) { appliquerNom(r2.ligne); });
+            });
+        });
+      }, Promise.resolve()).then(function () { return boite; });
+    })
+    .then(function (boite) {
+      noter('restauration', txt(boite[CLE_PN()]),
+            lignes.length + ' sous-ensemble(s), nouveaux identifiants');
+      rafraichir();
+      confirmerSucces('Assemblage ' + txt(boite[CLE_PN()]) + ' restauré.');
+    })
+    .catch(function (e) { signalerErreur(e, "restauration de l'assemblage"); });
+}
+</script>

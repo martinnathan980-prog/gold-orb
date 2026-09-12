@@ -35,7 +35,10 @@ function valeursMulti(valeur) {
 }
 
 function estUrl(valeur) {
-  return /^https?:\/\//i.test(String(valeur === null || valeur === undefined ? '' : valeur).trim());
+  const v = String(valeur === null || valeur === undefined ? '' : valeur).trim();
+  // data:image est accepté : une illustration peut être embarquée dans la
+  // donnée elle-même, sans dépendre d'un hébergeur.
+  return /^https?:\/\//i.test(v) || /^data:image\//i.test(v);
 }
 
 /**
@@ -47,7 +50,7 @@ function estUrl(valeur) {
 function urlMiniature(valeur) {
   const brut = String(valeur === null || valeur === undefined ? '' : valeur).trim();
   if (!estUrl(brut)) return '';
-  if (brut.indexOf('drive.google.com') === -1) return brut;
+  if (brut.indexOf('drive.google.com') === -1) return brut;   // data: et URL directes
 
   const parId = brut.match(/[?&]id=([-\w]{20,})/);
   const parChemin = brut.match(/\/d\/([-\w]{20,})/);
