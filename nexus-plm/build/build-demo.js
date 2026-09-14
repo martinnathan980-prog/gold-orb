@@ -70,6 +70,7 @@ const BARRE_SCRIPT = `
     window.SIMULER_PANNE = false;
     Store.pnCourant = null; Store.ongletActif = 'Toutes';
     Store.recherche = ''; Store.filtreComposants = []; Store.filtreTypes = [];
+    Store.filtreStatut = null; Store.filtreReutilise = false;
     var champ = document.getElementById('searchBar');
     if (champ) champ.value = '';
     chargerTout().then(function () { afficherBandeau('Données de démonstration réinitialisées.', 'info'); });
@@ -132,7 +133,23 @@ const sortie = '<title>NEXUS</title>\n' + polices + '\n' + styles + '\n' +
 const cible = path.join(RACINE, 'build', 'demo.html');
 fs.writeFileSync(cible, sortie);
 
-console.log('demo.html écrit : ' + (sortie.length / 1024).toFixed(0) + ' Ko');
+// 6. Version autonome : un document complet, à ouvrir d'un double-clic,
+//    sans serveur ni réseau (les polices ont une pile de repli).
+const autonome = '<!doctype html>\n<html lang="fr">\n<head>\n' +
+  '<meta charset="utf-8">\n' +
+  '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+  '<title>NEXUS — démonstration</title>\n' +
+  polices + '\n' + styles + '\n' +
+  '<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>\n' +
+  '</head>\n<body>\n' +
+  injecterBarre(corps.replace(/<style>[\s\S]*?<\/style>/g, '')) +
+  BARRE_SCRIPT +
+  '</body>\n</html>\n';
+const cibleAutonome = path.join(RACINE, 'build', 'nexus-demo.html');
+fs.writeFileSync(cibleAutonome, autonome);
+
+console.log('demo.html écrit : ' + (sortie.length / 1024).toFixed(0) + ' Ko (fragment pour l\'aperçu)');
+console.log('nexus-demo.html écrit : ' + (autonome.length / 1024).toFixed(0) + ' Ko (document complet, double-clic)');
 console.log('  includes résolus, CDN inlinés, faux serveur inséré');
 
 }

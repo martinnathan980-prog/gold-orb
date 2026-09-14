@@ -6,9 +6,10 @@
 const H = require('./harness.js');
 
 const C = H.chargerClient([
-  'client/Dom.html', 'client/Types.html', 'client/Api.html', 'client/Store.html',
-  'client/Compare.html', 'client/ViewGrid.html', 'client/ViewFiche.html',
-  'client/ViewCompare.html', 'client/Reglages.html', 'client/Annulation.html'
+  'client/Dom.html', 'client/Composants.html', 'client/Types.html', 'client/Api.html',
+  'client/Store.html', 'client/Compare.html', 'client/ViewGrid.html', 'client/ViewFiche.html',
+  'client/ViewCompare.html', 'client/Reglages.html', 'client/Annulation.html',
+  'client/Dialogues.html'
 ]);
 
 let ok = 0, ko = 0;
@@ -66,10 +67,10 @@ C.reglerPoids('structure', 'montage', 50);
 eq('somme après passage à 50', somme('structure'), 100);
 eq('le critère posé garde exactement sa valeur', C.Store.poids.structure.montage, 50);
 vrai('les autres ont diminué',
-     C.Store.poids.structure.composants < avant.composants);
+     C.Store.poids.structure.mecanique < avant.mecanique);
 vrai('mais restent proportionnels entre eux',
-     Math.abs((C.Store.poids.structure.composants / C.Store.poids.structure.dimensions) -
-              (avant.composants / avant.dimensions)) < 0.35);
+     Math.abs((C.Store.poids.structure.mecanique / C.Store.poids.structure.dimensions) -
+              (avant.mecanique / avant.dimensions)) < 0.35);
 
 C.reinitialiserPoids();
 C.reglerPoids('structure', 'montage', 0);
@@ -78,11 +79,11 @@ eq('et vaut bien 0', C.Store.poids.structure.montage, 0);
 
 // Descendre un critère doit faire REMONTER les autres.
 C.reinitialiserPoids();
-const compAvant = C.Store.poids.structure.composants;
-C.reglerPoids('structure', 'composants', 5);
+const compAvant = C.Store.poids.structure.mecanique;
+C.reglerPoids('structure', 'mecanique', 5);
 vrai('baisser un critère remonte les autres', C.Store.poids.structure.montage > 10);
 eq('somme toujours 100', somme('structure'), 100);
-vrai('le critère baissé a bien baissé', C.Store.poids.structure.composants < compAvant);
+vrai('le critère baissé a bien baissé', C.Store.poids.structure.mecanique < compAvant);
 
 // =====================================================================
 bloc('Aucune dérive après des dizaines de mouvements');
@@ -113,14 +114,14 @@ C.reinitialiserPoids();
 bloc('Choisir les critères');
 // =====================================================================
 C.reinitialiserPoids();
-eq('8 critères pour la structure', C.criteresActifs('structure').length, 8);
+eq('9 critères pour la structure', C.criteresActifs('structure').length, 9);
 C.desactiverCritere('structure', 'masse');
-eq('7 après retrait', C.criteresActifs('structure').length, 7);
+eq('8 après retrait', C.criteresActifs('structure').length, 8);
 eq('la somme reste 100', somme('structure'), 100);
 faux('le critère retiré n\'est plus actif', C.critereEstActif('structure', 'masse'));
 
 C.activerCritere('structure', 'masse');
-eq('8 après réajout', C.criteresActifs('structure').length, 8);
+eq('9 après réajout', C.criteresActifs('structure').length, 9);
 eq('somme toujours 100', somme('structure'), 100);
 vrai('le critère réajouté a une part non nulle', C.Store.poids.structure.masse > 0);
 
@@ -146,7 +147,7 @@ C.chargerDonnees({
   ],
   headersBoites: ['PN Global'], headersNom: C.toutesLesColonnesNom(),
   config: { multiBoite: [], multiNom: [], lectureSeuleNom: ['ID_Ligne', 'PN Global'],
-            statuts: [], colonneStd: 'Composant STD' }
+            statuts: [], porteurs: [] }
 });
 C.Store.seuilEquivalence = 0;
 const avecMontage = C.equivalencesSousEnsemble('S1')[0];

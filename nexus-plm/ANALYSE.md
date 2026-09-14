@@ -16,7 +16,7 @@ adossé à Google Sheets.
 | Onglet | Rôle | Colonnes |
 |---|---|---|
 | `1_BOITES` | l'assemblage | Fonction, PN Global, DS/VCI Associé, Porteur, Statut, Niveau de qualification, Image, Commentaires |
-| `2_NOMENCLATURE` | les sous-ensembles | ID_Ligne, PN Global, Type, PN du type, Montage, Nombre de pas, Dim Long/Larg, Masse, HL, DAL, 3× Qualification, Composant STD, Image, Commentaires |
+| `2_NOMENCLATURE` | les sous-ensembles | ID_Ligne, PN Global, Type, PN du type, Montage, Nombre de pas, Dim Long/Larg, Masse, HL, DAL, 3× Qualification, Composant STD (devenu Structure mécanique + Composants électriques dans la réécriture), Image, Commentaires |
 
 Plus un **catalogue de composants** externe, lu en lecture seule dans un 3ᵉ classeur.
 

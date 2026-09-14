@@ -15,14 +15,15 @@ const LATENCE_MS = 220;          // rend les indicateurs de chargement visibles
 window.SIMULER_PANNE = false;    // basculé par la barre de démo
 
 const EN_TETES_BOITES = ['Fonction', 'PN Global', 'DS/VCI Associé', 'Porteur', 'Statut',
-                         'Niveau de qualification', 'Image', 'Commentaires libres'];
+                         'Niveau de qualification', 'Composants', 'Image', 'Commentaires libres'];
 const EN_TETES_NOM = ['ID_Ligne', 'PN Global', 'Type', 'PN du type',
-                      'Référence', 'Numéro', 'Mots-clés',
+                      'Référence', 'Mots-clés',
                       'Montage', 'Nombre de pas', 'Dim Long (mm)', 'Dim Larg (mm)',
                       'Masse (g)', 'HL', 'DAL',
                       'Qualification Brouillard salin', 'Qualification Vibration',
                       'Qualification Explosion',
-                      'Composant STD', 'Image', 'Commentaires libres'];
+                      'Structure mécanique', 'Composants électriques',
+                      'Image', 'Commentaires libres'];
 
 const STATUTS_VALIDES = ['En étude', 'Validé', 'Obsolète'];
 const STATUT_DEFAUT = 'En étude';
@@ -42,38 +43,38 @@ function nouvelId() { return 'L-demo-' + (++compteurId).toString(36) + '-' + Dat
 // Composant STD, Image, Commentaires.
 // Chaque type ne renseigne que ce qui le concerne.
 const LIGNES_NOM = [
-  ['332P20001', 'Structure boîte', '332P20001.01', '', '', '', 'Console STD', '1', '500', '140', '500', 'A', 'A', 'Cat. S', 'Qual. H225', 'Case 1', 'Bouton poussoir | Push button (ECS 7251)\nBouton poussoir | Push button (ECS 0763)', '', ''],
-  ['332P20001', 'Harnais', '332P20001.03', 'HRN-2251-A', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-  ['332P20001', 'Plaquette éclairante', '332P20001.05', '', '', 'APU, démarrage, mission SAR', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-  ['332P94101', 'Structure boîte', '332P94101.01', '', '', '', 'Hors console', '5', '400', '200', '400', 'B', 'C', 'Cat. T', 'Qual. H225', '', 'Switch | Switch (ASNE 0567)', '', ''],
-  ['332P94101', 'Plaquette éclairante', '332P94101.02', '', '', 'EOS, optronique, mission SAR', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-  ['U880A240101', 'Harnais', 'U880A240401', 'HRN-1601-C', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-  ['U880A240101', 'Structure boîte', 'U880A240101.01', '', '', '', 'Console STD', '2', '480', '140', '520', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', 'Bouton poussoir | Push button (ECS 7251)', '', ''],
-  ['332N10001', 'Structure boîte', '332N10001.01', '', '', '', 'Rack', '2', '300', '200', '800', 'B', 'B', 'Cat. S', 'Qual. H225', '', 'Relais | Relay 28V (ECS 1120)', '', ''],
-  ['332N10001', 'Plaquette éclairante', '332N10001.03', '', '', 'NAV, navigation, mission transport', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-  ['332C50001', 'Harnais', '332P20001.03', 'HRN-2251-A', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-  ['U880R30001', 'Structure boîte', 'U880R30001.01', '', '', '', 'Nez', '1', '600', '400', '1500', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', 'Connecteur | Circulaire (EN 3645)', '', ''],
-  ['332F40001', 'Plaquette éclairante', '332F40001.02', '', '', 'FLIGHT, pilotage, mission SAR', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-  ['332F40001', 'Structure boîte', '332F40001.01', '', '', '', 'Console STD', '1', '500', '140', '495', 'A', 'A', 'Cat. S', 'Qual. H225', 'Case 1', 'Bouton poussoir | Push button (ECS 7251)\nBouton poussoir | Push button (ECS 0763)', '', ''],
-  ['332F40001', 'Harnais', '332P20001.03', 'HRN-2251-A', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-  ['U880P50001', 'Harnais', 'U880P50001.03', 'HRN-1601-C', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-  ['332S60001', 'Plaquette éclairante', '332P94101.02', '', '', 'EOS, optronique, mission SAR', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-  ['U880D70001', 'Structure boîte', 'U880D70001.01', '', '', '', 'Console STD', '1', '500', '145', '510', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', 'Bouton poussoir | Push button (ECS 7251)', '', ''],
-  ['U880D70001', 'Plaquette éclairante', 'U880D70001.04', '', '', 'DISPLAY, affichage, mission transport', '', '', '', '', '', '', '', '', '', '', '', '', '']
+  ['332P20001',   'Structure boîte',      '332P20001.01',   '', '', 'Console STD',  '1', '500', '140', '500',  'A', 'A', 'Cat. S', 'Qual. H225', 'Case 1', 'Colonnette | NSA 5512 | COL-M4-20\nÉquerre | EN 2491 | EQ-90-A', 'Collier | NSA 8420 | CT-120\nEmbase | ECS 2210 | EMB-4', '', ''],
+  ['332P20001',   'Harnais',              '332P20001.03',   'HRN-2251-A', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['332P20001',   'Plaquette éclairante', '332P20001.05',   '', 'APU, démarrage, mission SAR', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['332P94101',   'Structure boîte',      '332P94101.01',   '', '', 'Hors console', '5', '400', '200', '400',  'B', 'C', 'Cat. T', 'Qual. H225', '', 'Colonnette | NSA 5512 | COL-M4-30\nInsert | NSA 5591 | INS-M4', 'Collier | NSA 8420 | CT-120\nPasse-fil | ECS 2230 | PF-8', '', ''],
+  ['332P94101',   'Plaquette éclairante', '332P94101.02',   '', 'EOS, optronique, mission SAR', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['U880A240101', 'Harnais',              'U880A240401',    'HRN-1601-C', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['U880A240101', 'Structure boîte',      'U880A240101.01', '', '', 'Console STD',  '2', '480', '140', '520',  'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', 'Colonnette | NSA 5512 | COL-M4-20\nÉquerre | EN 2491 | EQ-90-B', 'Collier | NSA 8420 | CT-120\nEmbase | ECS 2210 | EMB-4', '', ''],
+  ['332N10001',   'Structure boîte',      '332N10001.01',   '', '', 'Rack',         '2', '300', '200', '800',  'B', 'B', 'Cat. S', 'Qual. H225', '', 'Colonnette | NSA 5512 | COL-M5-25\nEntretoise | NSA 5520 | ENT-10', 'Collier | NSA 8421 | CT-200\nEmbase | ECS 2210 | EMB-6', '', ''],
+  ['332N10001',   'Plaquette éclairante', '332N10001.03',   '', 'NAV, navigation, mission transport', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['332C50001',   'Harnais',              '332P20001.03',   'HRN-2251-A', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['U880R30001',  'Structure boîte',      'U880R30001.01',  '', '', 'Nez',          '1', '600', '400', '1500', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', 'Colonnette | NSA 5512 | COL-M6-40\nÉquerre | EN 2491 | EQ-90-A\nInsert | NSA 5591 | INS-M6', 'Collier | NSA 8421 | CT-200\nPasse-fil | ECS 2230 | PF-12', '', ''],
+  ['332F40001',   'Plaquette éclairante', '332F40001.02',   '', 'FLIGHT, pilotage, mission SAR', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['332F40001',   'Structure boîte',      '332F40001.01',   '', '', 'Console STD',  '1', '500', '140', '495',  'A', 'A', 'Cat. S', 'Qual. H225', 'Case 1', 'Colonnette | NSA 5512 | COL-M4-20\nÉquerre | EN 2491 | EQ-90-A', 'Collier | NSA 8420 | CT-120\nEmbase | ECS 2210 | EMB-4', '', ''],
+  ['332F40001',   'Harnais',              '332P20001.03',   'HRN-2251-A', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['U880P50001',  'Harnais',              'U880P50001.03',  'HRN-1601-C', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['332S60001',   'Plaquette éclairante', '332P94101.02',   '', 'EOS, optronique, mission SAR', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['U880D70001',  'Structure boîte',      'U880D70001.01',  '', '', 'Console STD',  '1', '500', '145', '510',  'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', 'Colonnette | NSA 5512 | COL-M4-22\nÉquerre | EN 2491 | EQ-90-A', 'Collier | NSA 8420 | CT-120\nEmbase | ECS 2210 | EMB-4', '', ''],
+  ['U880D70001',  'Plaquette éclairante', 'U880D70001.04',  '', 'DISPLAY, affichage, mission transport', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
 ];
 
 const BASE = {
   boites: [
-    ['APU',     '332P20001',   '332P20051',   'Super Puma', 'Validé',   'Qualified to H225', '', ''],
-    ['EOS',     '332P94101',   '332P94051',   'Multi\nH225', 'En étude', 'Qualified to H225', '', ''],
-    ['APU',     'U880A240101', 'U880A240051', 'H160',       'Obsolète', 'Qualified to H160', '', ''],
-    ['NAV',     '332N10001',   '332N10051',   'Super Puma', 'Validé',   'Qualified to H225', '', ''],
-    ['COM',     '332C50001',   '332C50051',   'Multi',      'En étude', 'Qualified to H160', '', ''],
-    ['RADAR',   'U880R30001',  'U880R30051',  'H160',       'Validé',   'Qualified to H160', '', ''],
-    ['FLIGHT',  '332F40001',   '332F40051',   'Super Puma', 'Validé',   'Qualified to H225', '', ''],
-    ['POWER',   'U880P50001',  'U880P50051',  'H160',       'En étude', 'Qualified to H160', '', ''],
-    ['SENSOR',  '332S60001',   '332S60051',   'Multi',      'Obsolète', 'Qualified to H225', '', ''],
-    ['DISPLAY', 'U880D70001',  'U880D70051',  'H160',       'Validé',   'Qualified to H160', '', '']
+    ['APU',     '332P20001',   '332P20051',   'H225',        'Validé',   'Qualified to H225', 'Bouton poussoir | ECS 7251 | MS24523-22\nBouton poussoir | ECS 0763 | MS24523-31\nVoyant | ECS 4410 | LED-G-28', '', ''],
+    ['EOS',     '332P94101',   '332P94051',   'H225\nH215',  'En étude', 'Qualified to H225', 'Interrupteur | ASNE 0567 | 8500K12\nVoyant | ECS 4411 | LED-R-28', '', ''],
+    ['APU',     'U880A240101', 'U880A240051', 'H160',        'Obsolète', 'Qualified to H160', 'Bouton poussoir | ECS 7251 | MS24523-22\nVoyant | ECS 4410 | LED-G-05', '', ''],
+    ['NAV',     '332N10001',   '332N10051',   'H225',        'Validé',   'Qualified to H225', 'Relais | ECS 1120 | RLY-28-2C\nInterrupteur | ASNE 0571 | TGL-2P', '', ''],
+    ['COM',     '332C50001',   '332C50051',   'H145\nH145M', 'En étude', 'Qualified to H160', 'Bouton poussoir | ECS 0780 | MS24523-40\nBouton poussoir | ECS 7251 | MS24523-22', '', ''],
+    ['RADAR',   'U880R30001',  'U880R30051',  'H160',        'Validé',   'Qualified to H160', 'Voyant | ECS 4410 | LED-G-28\nFusible | NSA 9350 | F5A', '', ''],
+    ['FLIGHT',  '332F40001',   '332F40051',   'H225',        'Validé',   'Qualified to H225', 'Interrupteur | ASNE 0567 | 8500K12\nBouton poussoir | ECS 7251 | MS24523-22', '', ''],
+    ['POWER',   'U880P50001',  'U880P50051',  'H160\nH160M', 'En étude', 'Qualified to H160', 'Double commande | FRF 772-034 | DC-IG-2\nFusible | NSA 9350 | F5A', '', ''],
+    ['SENSOR',  '332S60001',   '332S60051',   'H175',        'Obsolète', 'Qualified to H225', 'Voyant | ECS 4411 | LED-R-05', '', ''],
+    ['DISPLAY', 'U880D70001',  'U880D70051',  'H160',        'Validé',   'Qualified to H160', 'Bouton poussoir | ECS 7251 | MS24523-22\nVoyant | ECS 4410 | LED-G-28\nRelais | ECS 1120 | RLY-28-2C', '', '']
   ].map(function (l) {
     const b = objet(EN_TETES_BOITES, l);
     b['Image'] = photoBoitier(b['PN Global'], b['Fonction']);
@@ -87,22 +88,42 @@ const BASE = {
   }),
 
   catalogue: [
-    { Type: 'Bouton poussoir', 'Sous Type/Désignation': 'Push button', Norm: 'ECS 7251' },
-    { Type: 'Bouton poussoir', 'Sous Type/Désignation': 'Push button', Norm: 'ECS 0763' },
-    { Type: 'Bouton poussoir', 'Sous Type/Désignation': 'Push button', Norm: 'ECS 0780' },
-    { Type: 'Bouton poussoir', 'Sous Type/Désignation': 'Pushrod',     Norm: 'ASNE 0239' },
-    { Type: 'Switch',          'Sous Type/Désignation': 'Switch',      Norm: 'ASNE 0567' },
-    { Type: 'Switch',          'Sous Type/Désignation': 'Toggle',      Norm: 'ASNE 0571' },
-    { Type: 'Double command',  'Sous Type/Désignation': 'FRF 772-034', Norm: 'IG' },
-    { Type: 'Relais',          'Sous Type/Désignation': 'Relay 28V',   Norm: 'ECS 1120' },
-    { Type: 'Connecteur',      'Sous Type/Désignation': 'Circulaire',  Norm: 'EN 3645' },
-    { Type: 'Connecteur',      'Sous Type/Désignation': 'Rectangulaire', Norm: 'EN 4165' },
-    { Type: 'Diode',           'Sous Type/Désignation': 'Diode 1N4007', Norm: 'ASNE 0910' },
-    { Type: 'Fusible',         'Sous Type/Désignation': 'Fusible 5A',  Norm: 'NSA 9350' },
-    { Type: 'Voyant',          'Sous Type/Désignation': 'LED verte',   Norm: 'ECS 4410' },
-    { Type: 'Voyant',          'Sous Type/Désignation': 'LED rouge',   Norm: 'ECS 4411' },
-    { Type: 'Résistance',      'Sous Type/Désignation': 'Shunt 50 mΩ', Norm: 'NSA 5512' },
-    { Type: 'Cosse',           'Sous Type/Désignation': 'Cosse à sertir', Norm: 'EN 2491' }
+    // Composants de BOÎTE : boutons, voyants, interrupteurs, relais
+    { Catégorie: 'composant',  Fonction: 'Bouton poussoir', Norme: 'ECS 7251',    Référence: 'MS24523-22', Désignation: 'Push button, 1 contact' },
+    { Catégorie: 'composant',  Fonction: 'Bouton poussoir', Norme: 'ECS 7251',    Référence: 'MS24523-23', Désignation: 'Push button, 2 contacts' },
+    { Catégorie: 'composant',  Fonction: 'Bouton poussoir', Norme: 'ECS 0763',    Référence: 'MS24523-31', Désignation: 'Push button, lumineux' },
+    { Catégorie: 'composant',  Fonction: 'Bouton poussoir', Norme: 'ECS 0780',    Référence: 'MS24523-40', Désignation: 'Push button, protégé' },
+    { Catégorie: 'composant',  Fonction: 'Interrupteur',    Norme: 'ASNE 0567',   Référence: '8500K12',    Désignation: 'Switch, 2 positions' },
+    { Catégorie: 'composant',  Fonction: 'Interrupteur',    Norme: 'ASNE 0571',   Référence: 'TGL-2P',     Désignation: 'Toggle, 3 positions' },
+    { Catégorie: 'composant',  Fonction: 'Double commande', Norme: 'FRF 772-034', Référence: 'DC-IG-2',    Désignation: 'Double commande IG' },
+    { Catégorie: 'composant',  Fonction: 'Relais',          Norme: 'ECS 1120',    Référence: 'RLY-28-2C',  Désignation: 'Relais 28 V, 2 contacts' },
+    { Catégorie: 'composant',  Fonction: 'Voyant',          Norme: 'ECS 4410',    Référence: 'LED-G-28',   Désignation: 'LED verte 28 V' },
+    { Catégorie: 'composant',  Fonction: 'Voyant',          Norme: 'ECS 4410',    Référence: 'LED-G-05',   Désignation: 'LED verte 5 V' },
+    { Catégorie: 'composant',  Fonction: 'Voyant',          Norme: 'ECS 4411',    Référence: 'LED-R-28',   Désignation: 'LED rouge 28 V' },
+    { Catégorie: 'composant',  Fonction: 'Voyant',          Norme: 'ECS 4411',    Référence: 'LED-R-05',   Désignation: 'LED rouge 5 V' },
+    { Catégorie: 'composant',  Fonction: 'Fusible',         Norme: 'NSA 9350',    Référence: 'F5A',        Désignation: 'Fusible 5 A' },
+    { Catégorie: 'composant',  Fonction: 'Fusible',         Norme: 'NSA 9350',    Référence: 'F10A',       Désignation: 'Fusible 10 A' },
+    { Catégorie: 'composant',  Fonction: 'Connecteur',      Norme: 'EN 3645',     Référence: 'CN-3645-12', Désignation: 'Circulaire 12 voies' },
+    { Catégorie: 'composant',  Fonction: 'Connecteur',      Norme: 'EN 4165',     Référence: 'CN-4165-2',  Désignation: 'Rectangulaire 2 modules' },
+    // STRUCTURE MÉCANIQUE : ce qui est dur
+    { Catégorie: 'mecanique',  Fonction: 'Colonnette',      Norme: 'NSA 5512',    Référence: 'COL-M4-20',  Désignation: 'M4, 20 mm' },
+    { Catégorie: 'mecanique',  Fonction: 'Colonnette',      Norme: 'NSA 5512',    Référence: 'COL-M4-22',  Désignation: 'M4, 22 mm' },
+    { Catégorie: 'mecanique',  Fonction: 'Colonnette',      Norme: 'NSA 5512',    Référence: 'COL-M4-30',  Désignation: 'M4, 30 mm' },
+    { Catégorie: 'mecanique',  Fonction: 'Colonnette',      Norme: 'NSA 5512',    Référence: 'COL-M5-25',  Désignation: 'M5, 25 mm' },
+    { Catégorie: 'mecanique',  Fonction: 'Colonnette',      Norme: 'NSA 5512',    Référence: 'COL-M6-40',  Désignation: 'M6, 40 mm' },
+    { Catégorie: 'mecanique',  Fonction: 'Entretoise',      Norme: 'NSA 5520',    Référence: 'ENT-10',     Désignation: '10 mm' },
+    { Catégorie: 'mecanique',  Fonction: 'Équerre',         Norme: 'EN 2491',     Référence: 'EQ-90-A',    Désignation: '90°, type A' },
+    { Catégorie: 'mecanique',  Fonction: 'Équerre',         Norme: 'EN 2491',     Référence: 'EQ-90-B',    Désignation: '90°, type B' },
+    { Catégorie: 'mecanique',  Fonction: 'Insert',          Norme: 'NSA 5591',    Référence: 'INS-M4',     Désignation: 'Insert fileté M4' },
+    { Catégorie: 'mecanique',  Fonction: 'Insert',          Norme: 'NSA 5591',    Référence: 'INS-M6',     Désignation: 'Insert fileté M6' },
+    // COMPOSANTS ÉLECTRIQUES : ce qui tient les câbles
+    { Catégorie: 'electrique', Fonction: 'Collier',         Norme: 'NSA 8420',    Référence: 'CT-120',     Désignation: 'Collier 120 mm' },
+    { Catégorie: 'electrique', Fonction: 'Collier',         Norme: 'NSA 8421',    Référence: 'CT-200',     Désignation: 'Collier 200 mm' },
+    { Catégorie: 'electrique', Fonction: 'Embase',          Norme: 'ECS 2210',    Référence: 'EMB-4',      Désignation: 'Embase 4 mm' },
+    { Catégorie: 'electrique', Fonction: 'Embase',          Norme: 'ECS 2210',    Référence: 'EMB-6',      Désignation: 'Embase 6 mm' },
+    { Catégorie: 'electrique', Fonction: 'Passe-fil',       Norme: 'ECS 2230',    Référence: 'PF-8',       Désignation: 'Ø 8 mm' },
+    { Catégorie: 'electrique', Fonction: 'Passe-fil',       Norme: 'ECS 2230',    Référence: 'PF-12',      Désignation: 'Ø 12 mm' },
+    { Catégorie: 'electrique', Fonction: 'Cosse',           Norme: 'EN 2491',     Référence: 'CS-4',       Désignation: 'Cosse à sertir 4 mm²' }
   ]
 };
 
@@ -146,12 +167,15 @@ const SERVEUR = {
       headersBoites: EN_TETES_BOITES.slice(),
       headersNom: EN_TETES_NOM.slice(),
       config: {
-        multiBoite: ['Porteur'],
+        multiBoite: ['Porteur', 'Composants'],
         multiNom: ['Qualification Brouillard salin', 'Qualification Vibration',
-                   'Qualification Explosion', 'Mots-clés'],
+                   'Qualification Explosion', 'Mots-clés',
+                   'Structure mécanique', 'Composants électriques'],
         lectureSeuleNom: ['ID_Ligne', 'PN Global'],
         statuts: STATUTS_VALIDES,
-        colonneStd: 'Composant STD'
+        porteurs: ['H125', 'H130', 'H135', 'H145', 'H145M', 'H155', 'H160', 'H160M',
+                   'H175', 'H175M', 'H215', 'H215M', 'H225', 'H225M', 'NH90', 'Tigre',
+                   'UH-72 Lakota']
       }
     };
   },

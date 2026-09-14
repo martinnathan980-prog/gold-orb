@@ -151,20 +151,36 @@ function rendreInterface() {
 }
 
 function rendreKpi(kpi, vue) {
+  const filtre = !!(vue && vue.filtre);
   definirTexte('kpiBoites', String(kpi.nbBoites));
+  definirTexte('kpiBoitesDetail', filtre ? 'cliquer pour tout revoir' : 'toute la base');
   definirTexte('kpiVal', kpi.nbValides + ' / ' + kpi.nbBoites);
-  definirTexte('kpiValDetail', kpi.pctValides + ' %');
+  definirTexte('kpiValDetail', kpi.pctValides + ' % validées');
   definirTexte('kpiNoms', String(kpi.refsUniques));
+  definirTexte('kpiNomsDetail', kpi.nbPieces + ' pièces distinctes');
   definirTexte('kpiReutil', String(kpi.reutilisees));
   definirTexte('kpiReutilDetail', kpi.pctReutilisees + ' % des pièces');
+
+  const jaugeVal = parId('kpiValJauge');
+  if (jaugeVal) jaugeVal.style.width = kpi.pctValides + '%';
+  const jaugeReutil = parId('kpiReutilJauge');
+  if (jaugeReutil) jaugeReutil.style.width = kpi.pctReutilisees + '%';
+
+  // L'indicateur dit s'il filtre en ce moment.
+  const marquer = function (id, actif) {
+    const el = parId(id);
+    if (!el) return;
+    el.classList.toggle('actif', !!actif);
+    if (el.tagName === 'BUTTON') el.setAttribute('aria-pressed', String(!!actif));
+  };
+  marquer('indValidees', Store.filtreStatut && normaliserStatut(Store.filtreStatut) === 'validé');
+  marquer('indReutil', Store.filtreReutilise);
 
   const doublons = compterDoublonsProbables(vue ? vue.aAfficher : Store.boites);
   definirTexte('kpiDoublons', doublons.nombre === null ? '—' : String(doublons.nombre));
 
   const portee = parId('kpiPortee');
-  if (portee) {
-    portee.textContent = vue && vue.filtre ? 'sur la sélection courante' : 'sur toute la base';
-  }
+  if (portee) portee.textContent = filtre ? 'sur la sélection courante' : 'sur toute la base';
 }
 
 function rendreFiltreActif(vue) {
@@ -182,6 +198,16 @@ function rendreFiltreActif(vue) {
       '<button type="button" aria-label="Retirer"' +
       dataAttrs({ action: 'basculer-type', type: t }) + '>&times;</button></span>');
   });
+  if (Store.filtreStatut) {
+    morceaux.push('<span class="filtre-jeton">Statut : ' + esc(Store.filtreStatut) +
+      '<button type="button" aria-label="Retirer"' +
+      dataAttrs({ action: 'filtrer-statut', statut: Store.filtreStatut }) + '>&times;</button></span>');
+  }
+  if (Store.filtreReutilise) {
+    morceaux.push('<span class="filtre-jeton">Boîtes partageant une pièce' +
+      '<button type="button" aria-label="Retirer"' +
+      dataAttrs({ action: 'filtrer-reutilise' }) + '>&times;</button></span>');
+  }
   if (Store.recherche) {
     morceaux.push('<span class="filtre-jeton">« ' + esc(Store.recherche) + ' »' +
       '<button type="button" aria-label="Effacer la recherche"' +

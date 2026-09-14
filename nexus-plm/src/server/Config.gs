@@ -20,30 +20,42 @@ const CFG = {
     PORTEUR: 'Porteur',
     NOM_ID: 'ID_Ligne',
     NOM_TYPE: 'Type',
-    NOM_PN_TYPE: 'PN du type',
-    NOM_STD: 'Composant STD'
+    NOM_PN_TYPE: 'PN du type'
   },
 
   EN_TETES: {
+    // « Composants » : boutons, voyants, interrupteurs — ce qui se voit et
+    // se manipule. Une ligne par composant : Fonction | Norme | Référence.
     BOITES: ['Fonction', 'PN Global', 'DS/VCI Associé', 'Porteur', 'Statut',
-             'Niveau de qualification', 'Image', 'Commentaires libres'],
+             'Niveau de qualification', 'Composants', 'Image', 'Commentaires libres'],
     // Superset de toutes les colonnes, tous types confondus : la feuille reste
     // lisible à l'oeil, et chaque type n'utilise que les siennes (voir
     // client/Types.html, qui pilote l'affichage et l'équivalence).
+    // Sur la structure, deux familles de composants distinctes :
+    //   « Structure mécanique »      : colonnettes, entretoises, ce qui est dur
+    //   « Composants électriques »   : colliers, embases, ce qui tient les câbles
+    // Même format : Fonction | Norme | Référence, une ligne par composant.
     NOMENCLATURE: ['ID_Ligne', 'PN Global', 'Type', 'PN du type',
-                   'Référence', 'Numéro', 'Mots-clés',
+                   'Référence', 'Mots-clés',
                    'Montage', 'Nombre de pas', 'Dim Long (mm)', 'Dim Larg (mm)',
                    'Masse (g)', 'HL', 'DAL',
                    'Qualification Brouillard salin', 'Qualification Vibration',
                    'Qualification Explosion',
-                   'Composant STD', 'Image', 'Commentaires libres'],
+                   'Structure mécanique', 'Composants électriques',
+                   'Image', 'Commentaires libres'],
     JOURNAL: ['Horodatage', 'Utilisateur', 'Action', 'Cible', 'Détail']
   },
 
   // Champs à valeurs multiples (rendus sous forme de puces).
-  MULTI_BOITE: ['Porteur'],
+  MULTI_BOITE: ['Porteur', 'Composants'],
   MULTI_NOM: ['Qualification Brouillard salin', 'Qualification Vibration',
-              'Qualification Explosion', 'Mots-clés'],
+              'Qualification Explosion', 'Mots-clés',
+              'Structure mécanique', 'Composants électriques'],
+
+  // Tous les porteurs Airbus Helicopters, et rien d'autre.
+  PORTEURS: ['H125', 'H130', 'H135', 'H145', 'H145M', 'H155', 'H160', 'H160M',
+             'H175', 'H175M', 'H215', 'H215M', 'H225', 'H225M', 'NH90', 'Tigre',
+             'UH-72 Lakota'],
 
   // Types connus. Le libellé écrit dans la feuille ; le client reconnaît
   // aussi les variantes courantes (accents, synonymes).

@@ -3,8 +3,9 @@
 // NEXUS PLM — fiche complète (panneau latéral).
 //
 // Chaque sous-ensemble n'affiche que les champs de SON type : une structure
-// boîte montre sa géométrie, un harnais son PN et sa référence, une plaquette
-// son numéro et ses mots-clés. Rien n'est rendu « au cas où ».
+// boîte montre sa géométrie et ses deux familles de composants, un harnais
+// son PN et sa référence, une plaquette ses mots-clés. Rien n'est rendu
+// « au cas où ». La boîte, elle, porte ses boutons, voyants, interrupteurs.
 //
 // Les champs d'édition sont relus par data-champ / data-ligne : aucun
 // identifiant construit à partir d'une donnée, donc aucun nom de colonne
@@ -57,17 +58,36 @@ function saisieHtml(champ, valeur, classe, ligneId) {
          ' value="' + esc(valeur) + '">';
 }
 
-/** Bloc d'un champ à valeurs multiples : puces + ajout, sans passer en édition. */
+/**
+ * Bloc d'un champ à valeurs multiples : puces + ajout, sans passer en édition.
+ * Une liste FERMÉE (champ.options) se choisit dans un menu, on ne tape pas.
+ */
 function blocMultiHtml(champ, valeurs, editable, actionAjout, actionSuppr, donnees, classe) {
-  const ajout = editable
-    ? '<div class="ajout-multi">' +
+  let ajout = '';
+  if (editable && champ.options) {
+    const restantes = champ.options.filter(function (o) {
+      return !valeurs.some(function (v) { return normaliserTexte(v) === normaliserTexte(o); });
+    });
+    ajout = restantes.length
+      ? '<div class="ajout-multi">' +
+          '<select class="saisie-multi"' + dataAttrs(donnees) +
+            ' aria-label="Ajouter à ' + esc(champ.libelle) + '">' +
+            '<option value="">Ajouter…</option>' +
+            restantes.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('') +
+          '</select>' +
+          '<button type="button" class="btn-mini"' +
+            dataAttrs(Object.assign({ action: actionAjout }, donnees)) + '>Ajouter</button>' +
+        '</div>'
+      : '';
+  } else if (editable) {
+    ajout = '<div class="ajout-multi">' +
         '<input type="text" class="saisie-multi"' +
           (champ.liste ? ' list="' + esc(champ.liste) + '"' : '') +
           dataAttrs(donnees) + ' placeholder="Ajouter…" aria-label="Ajouter à ' + esc(champ.libelle) + '">' +
         '<button type="button" class="btn-mini"' +
           dataAttrs(Object.assign({ action: actionAjout }, donnees)) + '>Ajouter</button>' +
-      '</div>'
-    : '';
+      '</div>';
+  }
   return '<div class="ligne ligne-bloc">' +
            '<div class="ligne-cle">' + esc(champ.libelle) +
              (champ.aide ? '<span class="ligne-aide">' + esc(champ.aide) + '</span>' : '') + '</div>' +
@@ -76,6 +96,60 @@ function blocMultiHtml(champ, valeurs, editable, actionAjout, actionSuppr, donne
              ajout +
            '</div>' +
          '</div>';
+}
+
+/**
+ * Composants à trois niveaux, en colonnes : fonction, norme, référence.
+ * Toujours éditable, comme toute liste : on ajoute et on retire sans passer
+ * la fiche en mode édition.
+ */
+function blocComposantsHtml(champ, valeur, cible) {
+  const composants = listeComposants(valeur);
+  const categorie = champ.categorie || 'composant';
+  const donnees = { portee: cible.portee, id: cible.id, champ: champ.cle };
+
+  const lignes = composants.length
+    ? composants.map(function (c) {
+        const cellule = function (niveau, texte) {
+          return texte
+            ? '<span class="niveau-' + niveau + '">' + esc(texte) + '</span>'
+            : '<span class="niveau-' + niveau + ' niveau-vide">non précisé</span>';
+        };
+        return '<div class="composant">' +
+          cellule('fonction', c.fonction) + cellule('norme', c.norme) + cellule('reference', c.reference) +
+          '<button type="button" class="puce-suppr" aria-label="Retirer ' + esc(libelleComposant(c)) + '"' +
+            dataAttrs(Object.assign({ action: 'supprimer-composant', valeur: c.brut }, donnees)) +
+          '>&times;</button>' +
+        '</div>';
+      }).join('')
+    : '<p class="composants-vide">Aucun composant. Ajoutez-en un ci-dessous, ou depuis le catalogue.</p>';
+
+  const saisie = function (niveau, texte) {
+    return '<input type="text" class="saisie-composant" data-niveau="' + niveau + '"' +
+           dataAttrs(donnees) + ' list="list-' + niveau + '-' + esc(categorie) + '"' +
+           ' placeholder="' + esc(texte) + '" aria-label="' + esc(texte) + '">';
+  };
+
+  return '<div class="ligne ligne-bloc">' +
+    '<div class="ligne-cle">' + esc(champ.libelle) +
+      (champ.aide ? '<span class="ligne-aide">' + esc(champ.aide) + '</span>' : '') + '</div>' +
+    '<div class="ligne-val">' +
+      '<div class="composants">' +
+        '<div class="composants-entete"><span>Fonction</span><span>Norme</span><span>Référence</span><span></span></div>' +
+        lignes +
+      '</div>' +
+      '<div class="ajout-composant">' +
+        saisie('fonction', 'Fonction') + saisie('norme', 'Norme') + saisie('reference', 'Référence') +
+        '<button type="button" class="btn-mini"' +
+          dataAttrs(Object.assign({ action: 'ajouter-composant' }, donnees)) + '>Ajouter</button>' +
+      '</div>' +
+      '<div class="composants-outils">' +
+        '<button type="button" class="btn-lien"' +
+          dataAttrs(Object.assign({ action: 'ouvrir-catalogue', categorie: categorie }, donnees)) +
+          '>Choisir dans le catalogue</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
 }
 
 // ------------------------------------------------------------
@@ -102,22 +176,33 @@ function blocBoiteHtml(boite) {
 
   Store.headersBoites.forEach(function (cle) {
     const valeur = boite[cle];
+    const regle = CHAMPS_BOITE[cle] || {};
+    const genre = regle.genre ||
+      (cle.toLowerCase().indexOf('image') !== -1 ? GENRE.IMAGE :
+       cle.toLowerCase().indexOf('comment') !== -1 ? GENRE.LONG :
+       estMultiBoite(cle) ? GENRE.MULTI : GENRE.TEXTE);
 
-    if (estMultiBoite(cle)) {
-      html += blocMultiHtml({ cle: cle, libelle: cle, liste: 'list-Porteur' },
-                            valeursMulti(valeur), edition,
-                            'ajouter-multi-boite', 'supprimer-multi-boite', { champ: cle });
+    if (genre === GENRE.COMPOSANTS) {
+      html += blocComposantsHtml({ cle: cle, libelle: cle, categorie: regle.categorie, aide: regle.aide },
+                                 valeur, { portee: 'boite', id: null });
+      return;
+    }
+    if (genre === GENRE.MULTI) {
+      // Le porteur se choisit dans la liste fermée des porteurs Airbus Helicopters.
+      const champ = { cle: cle, libelle: cle, liste: regle.liste || null,
+                      options: regle.ferme ? porteursConnus() : null };
+      html += blocMultiHtml(champ, valeursMulti(valeur), true,
+                            'ajouter-multi-boite', 'supprimer-multi-boite', { champ: cle },
+                            regle.ferme ? 'puce-porteur' : '');
       return;
     }
 
-    const estImage = cle.toLowerCase().indexOf('image') !== -1;
-    const estLong = cle.toLowerCase().indexOf('comment') !== -1;
-    const champ = { cle: cle, libelle: estImage ? 'Image (URL)' : cle,
-                    genre: estLong ? GENRE.LONG : GENRE.TEXTE,
-                    liste: cle === 'Statut' ? 'list-Statut' : null };
+    const champ = { cle: cle, libelle: genre === GENRE.IMAGE ? 'Image (URL)' : cle,
+                    genre: genre === GENRE.LONG ? GENRE.LONG : GENRE.TEXTE,
+                    liste: regle.liste || null };
 
     if (edition) { html += ligneHtml(champ.libelle, saisieHtml(champ, valeur, 'champ-boite')); return; }
-    if (estImage) return;                      // déjà présentée en vignette
+    if (genre === GENRE.IMAGE) return;         // déjà présentée en vignette
     html += ligneHtml(champ.libelle, valeurLisibleHtml(valeur));
   });
 
@@ -187,16 +272,15 @@ function blocNomHtml(ligne) {
   champsDuType(type).forEach(function (champ) {
     const valeur = ligne[champ.cle];
 
+    if (champ.genre === GENRE.COMPOSANTS) {
+      html += blocComposantsHtml(champ, valeur, { portee: 'nom', id: id });
+      return;
+    }
+
     if (champ.genre === GENRE.MULTI) {
       html += blocMultiHtml(champ, valeursMulti(valeur), true,
                             'ajouter-multi-nom', 'supprimer-multi-nom',
                             { id: id, champ: champ.cle });
-      if (champ.catalogue) {
-        html += '<div class="ligne ligne-appoint"><div class="ligne-cle"></div><div class="ligne-val">' +
-                boutonHtml('ouvrir-catalogue', { id: id },
-                           '+ Choisir dans le catalogue', 'btn-neutre') +
-                '</div></div>';
-      }
       return;
     }
 
@@ -296,5 +380,21 @@ function lireSaisieMulti(champ, ligneId) {
   const valeur = trouve.value.trim();
   trouve.value = '';
   return valeur;
+}
+
+/** Les trois champs d'un composant en cours de saisie -> { fonction, norme, reference } | null. */
+function lireSaisieComposant(champ, ligneId) {
+  const c = { fonction: '', norme: '', reference: '' };
+  const trouves = [];
+  document.querySelectorAll('.saisie-composant').forEach(function (el) {
+    if (el.dataset.champ !== champ) return;
+    if (ligneId !== undefined && ligneId !== null && el.dataset.id !== String(ligneId)) return;
+    if (!ligneId && el.dataset.id) return;
+    c[el.dataset.niveau] = el.value.trim();
+    trouves.push(el);
+  });
+  if (!c.fonction) return null;
+  trouves.forEach(function (el) { el.value = ''; });
+  return c;
 }
 </script>

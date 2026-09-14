@@ -40,7 +40,7 @@ function getToutLeContenu() {
       multiNom: CFG.MULTI_NOM,
       lectureSeuleNom: CFG.LECTURE_SEULE_NOM,
       statuts: CFG.STATUTS,
-      colonneStd: CFG.COL.NOM_STD
+      porteurs: CFG.PORTEURS
     }
   };
 }

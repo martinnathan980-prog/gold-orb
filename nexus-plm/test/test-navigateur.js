@@ -53,6 +53,20 @@ async function fermerFiche(page) {
   await page.locator('#detailsSlideOver .btn-close').click();
   await attendreFerme(page, 'detailsSlideOver');
 }
+/** Le dialogue intégré : on attend qu'il soit là, on répond, on attend qu'il parte. */
+async function repondreDialogue(page, valeur) {
+  await page.waitForSelector('#dialogueModal.show', { timeout: 6000 });
+  await page.waitForTimeout(350);
+  if (valeur !== undefined) await page.fill('#dialogueChamp', valeur);
+  await page.locator('#dialogueValider').click();
+  await attendreFerme(page, 'dialogueModal');
+}
+async function railVisible(page) {
+  return await page.evaluate(function () {
+    const r = document.getElementById('reglagesRail');
+    return !!r && !r.hidden && r.getBoundingClientRect().width > 0;
+  });
+}
 
 /**
  * Remet l'écran à plat entre deux sections : sans cela une assertion peut
@@ -62,12 +76,13 @@ async function fermerFiche(page) {
 async function ecranPropre(page) {
   await page.evaluate(function () {
     window.scrollTo(0, 0);          // la barre collante recouvrirait l'en-tête
-    ['detailsSlideOver', 'reglagesModal'].forEach(function (id) {
+    ['detailsSlideOver'].forEach(function (id) {
       const el = document.getElementById(id);
       const i = el && window.bootstrap.Offcanvas.getInstance(el);
       if (i) i.hide();
     });
-    ['compareModal', 'catalogueModal', 'newBoiteModal',
+    if (typeof afficherRail === 'function') afficherRail(false);
+    ['compareModal', 'catalogueModal', 'newBoiteModal', 'dialogueModal', 'doublonsModal',
      'newSousEnsModal', 'multiSearchModal', 'demoCsvModal', 'loupeModal'].forEach(function (id) {
       const el = document.getElementById(id);
       const i = el && window.bootstrap.Modal.getInstance(el);
@@ -108,7 +123,7 @@ async function ecranPropre(page) {
   eq('titre NEXUS seul', (await texte(page, '.marque h1')).trim(), 'NEXUS');
   eq('indicateur boîtes', await texte(page, '#kpiBoites'), '10');
   eq('validées', await texte(page, '#kpiVal'), '5 / 10');
-  eq('libellé « Boîtes »', (await texte(page, '.indicateur dt')).trim(), 'Boîtes');
+  eq('libellé « Boîtes »', (await texte(page, '.indicateur-libelle')).trim(), 'Boîtes');
   vrai('indicateur de réutilisation renseigné',
        Number(await texte(page, '#kpiReutil')) > 0);
   vrai('indicateur de doublons renseigné',
@@ -117,7 +132,18 @@ async function ecranPropre(page) {
   eq('pas de bouton Journal', await page.locator('[data-action="ouvrir-journal"]').count(), 0);
   eq('pas de Pondération dans l\'en-tête',
      await page.locator('.entete [data-action="ouvrir-reglages"]').count(), 0);
-  eq('bouton « + Boîte »', (await texte(page, '.btn-entete-fort')).trim(), '+ Boîte');
+  vrai('bouton « Nouvelle boîte »', (await texte(page, '.btn-entete-fort')).indexOf('Nouvelle boîte') !== -1);
+  // Le bouton est en haut à droite, pas sous le titre.
+  const posBouton = await page.locator('.btn-entete-fort').boundingBox();
+  const posTitre = await page.locator('.marque h1').boundingBox();
+  vrai('le bouton est à droite du titre', posBouton.x > posTitre.x + posTitre.width);
+  vrai('et au-dessus de son bas', posBouton.y < posTitre.y + posTitre.height);
+  vrai('fond blanc, pas gris',
+       await page.evaluate(function () { return getComputedStyle(document.body).backgroundColor; }) === 'rgb(255, 255, 255)');
+  eq('17 porteurs proposés à la création',
+     await page.locator('#newBoitePorteurs input').count(), 17);
+  eq('aucun « Multi »', await page.locator('#newBoitePorteurs input[value="Multi"]').count(), 0);
+  eq('« Super Puma » n\'est plus un porteur', await page.locator('#list-Porteur option[value="Super Puma"]').count(), 0);
   eq('pas d\'export CSV', await page.locator('[data-action="exporter-bom"]').count(), 0);
   faux('chargement masqué', await page.locator('#loading').isVisible());
   eq('chaque boîte a sa photo', await page.locator('img.carte-image').count(), 10);
@@ -140,7 +166,10 @@ async function ecranPropre(page) {
   await page.fill('#newBoitePn', 'ESSAI-100');
   await page.fill('#newBoiteFonction', 'ESSAI');
   await page.fill('#newBoiteDs', 'ESSAI-150');
-  await page.fill('#newBoitePorteur', 'NH90');
+  // La case est masquée derrière son étiquette (un jeton) : on clique le jeton.
+  await page.locator('#newBoitePorteurs .jeton-porteur', { hasText: /^NH90$/ }).click();
+  await page.locator('#newBoitePorteurs .jeton-porteur', { hasText: /^H160$/ }).click();
+  eq('deux porteurs cochés', await page.locator('#newBoitePorteurs input:checked').count(), 2);
   await page.selectOption('#newBoiteStatut', 'Validé');
   await page.fill('#newBoiteNiveau', 'Qualified to NH90');
   await page.fill('#newBoiteImage', 'https://exemple.fr/photo.jpg');
@@ -151,7 +180,9 @@ async function ecranPropre(page) {
   vrai('la boîte est créée et ouverte', (await texte(page, '#slideOverTitle')).indexOf('ESSAI-100') !== -1);
   vrai('fonction reprise', creee.indexOf('ESSAI') !== -1);
   vrai('DS/VCI repris', creee.indexOf('ESSAI-150') !== -1);
-  vrai('porteur repris', creee.indexOf('NH90') !== -1);
+  vrai('porteurs repris', creee.indexOf('NH90') !== -1 && creee.indexOf('H160') !== -1);
+  vrai('le porteur s\'ajoute depuis une liste fermée, pas en saisie libre',
+       await page.locator('#slideOverBody select.saisie-multi[data-champ="Porteur"]').count() === 1);
   vrai('statut repris', creee.indexOf('Validé') !== -1);
   vrai('niveau repris', creee.indexOf('Qualified to NH90') !== -1);
   // L'URL saisie devient bien une balise <img> : la photo vient d'un lien,
@@ -161,14 +192,42 @@ async function ecranPropre(page) {
   await fermerFiche(page);
   eq('11 boîtes', await page.locator('.carte').count(), 11);
 
-  // On la retire pour ne pas fausser la suite.
-  page.once('dialog', function (d) { d.accept(); });
+  // On la retire pour ne pas fausser la suite — via le dialogue intégré,
+  // puisque confirm() n'existe pas dans l'iframe d'Apps Script.
   await ouvrirFiche(page, 'ESSAI-100');
   await page.locator('#slideOverBody [data-action="editer-boite"]').click();
   await page.locator('#slideOverBody [data-action="supprimer-boite"]').click();
+  await page.waitForSelector('#dialogueModal.show');
+  vrai('le dialogue de confirmation est le nôtre',
+       (await texte(page, '#dialogueTitre')).indexOf('Supprimer') !== -1);
+  vrai('le bouton est marqué dangereux',
+       (await page.locator('#dialogueValider').getAttribute('class')).indexOf('btn-danger-plein') !== -1);
+  await repondreDialogue(page);
   await page.waitForTimeout(900);
   eq('retour à 10 boîtes', await page.locator('.carte').count(), 10);
   await ecranPropre(page);
+
+  bloc('Indicateurs qui filtrent');
+  await page.locator('#indValidees').click();
+  await page.waitForTimeout(300);
+  eq('cliquer « Validées » ne montre que les validées', await page.locator('.carte').count(), 5);
+  vrai('l\'indicateur se dit actif',
+       (await page.locator('#indValidees').getAttribute('class')).indexOf('actif') !== -1);
+  eq('et propose son retrait dans les filtres',
+     await page.locator('#filtreActif [data-action="filtrer-statut"]').count(), 1);
+  await page.locator('#indValidees').click();
+  await page.waitForTimeout(300);
+  eq('second clic : retour à 10', await page.locator('.carte').count(), 10);
+  await page.locator('#indReutil').click();
+  await page.waitForTimeout(300);
+  const partageant = await page.locator('.carte').count();
+  vrai('« Pièces réutilisées » ne montre que les boîtes qui partagent une pièce',
+       partageant > 0 && partageant < 10);
+  await page.locator('#indBoites').click();
+  await page.waitForTimeout(300);
+  eq('« Boîtes » remet tout', await page.locator('.carte').count(), 10);
+  vrai('la jauge des validées est renseignée',
+       (await page.locator('#kpiValJauge').evaluate(function (e) { return e.style.width; })) === '50%');
 
   bloc('Filtres par type de sous-ensemble');
   eq('3 types présents', await page.locator('.filtres-type .jeton').count(), 3);
@@ -182,7 +241,7 @@ async function ecranPropre(page) {
   await page.waitForTimeout(250);
   const deuxTypes = await page.locator('.carte').count();
   vrai('deux types exigés ensemble = plus restrictif', deuxTypes <= avecHarnais);
-  await page.locator('[data-action="tout-effacer"]').click();
+  await page.locator('#filtreActif [data-action="tout-effacer"]').click();
   await page.waitForTimeout(250);
   eq('tout effacé', await page.locator('.carte').count(), 10);
 
@@ -246,7 +305,38 @@ async function ecranPropre(page) {
   const txtStruct = await blocStruct.evaluate(function (el) { return el.textContent; });
   vrai('la structure affiche sa longueur', txtStruct.indexOf('Longueur') !== -1);
   vrai('et son nombre de pas', txtStruct.indexOf('Nombre de pas') !== -1);
-  faux('la structure n\'a pas de référence', txtStruct.indexOf('Référence') !== -1);
+  eq('la structure n\'a pas de champ Référence (celui du harnais)',
+     await blocStruct.locator('.ligne-cle', { hasText: /^Référence/ }).count(), 0);
+  vrai('elle porte sa structure mécanique', txtStruct.indexOf('Structure mécanique') !== -1);
+  vrai('et ses composants électriques', txtStruct.indexOf('Composants électriques') !== -1);
+  eq('deux tableaux de composants', await blocStruct.locator('.composants').count(), 2);
+  vrai('en trois colonnes : fonction, norme, référence',
+       await blocStruct.locator('.composant .niveau-reference').count() >= 2);
+  vrai('la colonnette est dans la structure mécanique', txtStruct.indexOf('Colonnette') !== -1);
+  vrai('le collier est dans les composants électriques', txtStruct.indexOf('Collier') !== -1);
+
+  const blocGeneral = page.locator('.bloc-general');
+  const txtGeneral = await blocGeneral.evaluate(function (el) { return el.textContent; });
+  vrai('la boîte porte ses propres composants (boutons, voyants)',
+       txtGeneral.indexOf('Bouton poussoir') !== -1);
+  eq('un seul tableau de composants sur la boîte', await blocGeneral.locator('.composants').count(), 1);
+  faux('pas de colonnette sur la boîte', txtGeneral.indexOf('Colonnette') !== -1);
+
+  // Ajout d'un composant en trois niveaux, sans passer en édition.
+  const nbAvantCompo = await blocGeneral.locator('.composant').count();
+  await blocGeneral.locator('.saisie-composant[data-niveau="fonction"]').fill('Interrupteur');
+  await blocGeneral.locator('.saisie-composant[data-niveau="norme"]').fill('ASNE 0567');
+  await blocGeneral.locator('.saisie-composant[data-niveau="reference"]').fill('8500K12');
+  await blocGeneral.locator('[data-action="ajouter-composant"]').click();
+  await page.waitForTimeout(800);
+  eq('composant ajouté sur la boîte',
+     await page.locator('.bloc-general .composant').count(), nbAvantCompo + 1);
+  vrai('avec ses trois niveaux',
+       (await texte(page, '.bloc-general')).indexOf('8500K12') !== -1);
+  await page.locator('.bloc-general .composant', { hasText: '8500K12' })
+            .locator('[data-action="supprimer-composant"]').click();
+  await page.waitForTimeout(800);
+  eq('et retiré', await page.locator('.bloc-general .composant').count(), nbAvantCompo);
 
   const blocPlaq = page.locator('.bloc-type-plaquette').first();
   const txtPlaq = await blocPlaq.evaluate(function (el) { return el.textContent; });
@@ -315,13 +405,20 @@ async function ecranPropre(page) {
   vrai('un score chiffré', scoreAvant >= 0 && scoreAvant <= 100);
 
   // ---------------------------------------------------------------
-  bloc('Pondération en direct');
+  bloc('Pondération en direct, côte à côte');
+  faux('le rail est fermé au départ', await railVisible(page));
   await page.locator('#compareResult [data-action="ouvrir-reglages"]').click();
-  await page.waitForSelector('#reglagesModal.show');
-  // La comparaison doit rester visible derrière : c'est tout l'intérêt.
+  await page.waitForTimeout(400);
+  vrai('le rail de réglages s\'ouvre', await railVisible(page));
+  // La comparaison reste à l'écran, à DROITE du rail : c'est tout l'intérêt.
   vrai('la comparaison reste à l\'écran',
        await page.locator('#compareModal.show').count() === 1);
-  await page.waitForTimeout(400);
+  const boiteRail = await page.locator('#reglagesRail').boundingBox();
+  const boiteResultats = await page.locator('#compareResult').boundingBox();
+  vrai('le rail est à gauche du classement', boiteRail.x + boiteRail.width <= boiteResultats.x + 1);
+  vrai('sur la même ligne', Math.abs(boiteRail.y - boiteResultats.y) < 40);
+  vrai('le bouton dit maintenant « Masquer »',
+       (await texte(page, '#compareResult [data-action="ouvrir-reglages"]')).indexOf('Masquer') !== -1);
   vrai('le panneau s\'ouvre sur la portée de la comparaison',
        (await texte(page, '#reglagesPortee')).indexOf('Harnais') !== -1);
   eq('plus d\'onglets de portée : le contexte décide',
@@ -331,7 +428,12 @@ async function ecranPropre(page) {
   vrai('et le panneau l\'explique',
        (await texte(page, '#reglagesCurseurs')).indexOf('Un seul critère') !== -1);
   eq('plus de réglages rapides', await page.locator('[data-action="appliquer-preset"]').count(), 0);
-  vrai('aperçu en direct présent', await page.locator('.apercu-liste li').count() >= 1);
+  eq('plus d\'aperçu séparé : le classement est l\'aperçu', await page.locator('#reglagesApercu').count(), 0);
+  vrai('le classement est toujours là, à droite',
+       await page.locator('#compareResult .resultat').count() >= 1);
+  await page.locator('#btnReglages').click();
+  await page.waitForTimeout(300);
+  faux('le bouton d\'en-tête referme le rail', await railVisible(page));
 
   await ecranPropre(page);
 
@@ -342,8 +444,9 @@ async function ecranPropre(page) {
   await page.waitForSelector('#compareModal.show');
   await page.waitForTimeout(400);
   await page.locator('#compareResult [data-action="ouvrir-reglages"]').click();
-  await page.waitForSelector('#reglagesModal.show');
   await page.waitForTimeout(400);
+  vrai('rail ouvert sur la structure', await railVisible(page) &&
+       (await texte(page, '#reglagesPortee')).indexOf('Structure') !== -1);
 
   const lireTotal = async function () {
     return Number((await texte(page, '.reglage-total')).replace(/\D/g, ''));
@@ -354,7 +457,11 @@ async function ecranPropre(page) {
     });
   };
 
-  eq('8 curseurs pour la structure', await page.locator('.curseur').count(), 8);
+  eq('9 curseurs pour la structure', await page.locator('.curseur').count(), 9);
+  // Les composants se comparent par paliers : référence, norme, fonction.
+  vrai('les paliers d\'équivalence des composants sont affichés',
+       await page.locator('#compareResult .palier').count() >= 1);
+  const scoreAvantCurseur = Number((await texte(page, '#compareResult .score b')).replace(/\D/g, ''));
   eq('total à 100 au départ', await lireTotal(), 100);
 
   const partsAvant = await lireParts();
@@ -363,6 +470,14 @@ async function ecranPropre(page) {
   await page.waitForTimeout(400);
   const partsApres = await lireParts();
   eq('total toujours 100 après déplacement', await lireTotal(), 100);
+  // La première équivalence est identique sur tous les critères : son score
+  // reste 100 quoi qu'on pondère. C'est le rappel des parts, réécrit à
+  // chaque mouvement, qui prouve que le classement s'est recomposé.
+  vrai('le classement à droite s\'est recomposé en direct',
+       await page.locator('#compareResult .resultat').count() >= 1 &&
+       (await texte(page, '#compareResult .rappel-texte')).indexOf('Montage 80 %') !== -1);
+  vrai('un score chiffré reste affiché', scoreAvantCurseur >= 0 && scoreAvantCurseur <= 100);
+  vrai('le rail est resté ouvert', await railVisible(page));
   eq('le curseur poussé vaut 80', partsApres[0], 80);
   vrai('les AUTRES ont bien diminué',
        partsApres.slice(1).every(function (p, i) { return p <= partsAvant[i + 1]; }));
@@ -413,9 +528,9 @@ async function ecranPropre(page) {
   await ecranPropre(page);
   await ouvrirFiche(page, '332P20001');
   const avantSuppr = await page.locator('#slideOverBody .bloc').count();
-  page.once('dialog', function (d) { d.accept(); });
   await page.locator('.bloc-type-plaquette [data-action="editer-nom"]').first().click();
   await page.locator('.bloc-type-plaquette [data-action="supprimer-nom"]').first().click();
+  await repondreDialogue(page);
   await page.waitForTimeout(900);
   eq('sous-ensemble supprimé', await page.locator('#slideOverBody .bloc').count(), avantSuppr - 1);
   vrai('un recours est proposé',
@@ -454,11 +569,20 @@ async function ecranPropre(page) {
   }
   await ecranPropre(page);
 
-  bloc('Duplication');
+  bloc('Duplication — sans prompt() natif, qui est bloqué chez Google');
   await ecranPropre(page);
-  page.once('dialog', function (d) { d.accept('COPIE-1'); });
   await page.locator('.carte', { hasText: '332P20001' })
             .locator('[data-action="dupliquer-boite"]').click({ force: true });
+  await page.waitForSelector('#dialogueModal.show');
+  vrai('un dialogue intégré demande le PN',
+       (await texte(page, '#dialogueTitre')).indexOf('Dupliquer') !== -1);
+  eq('pré-rempli', await page.locator('#dialogueChamp').inputValue(), '332P20001-B');
+  await page.locator('[data-action="dialogue-annuler"]').click();
+  await attendreFerme(page, 'dialogueModal');
+  eq('annuler ne duplique rien', await page.locator('.carte').count(), 10);
+  await page.locator('.carte', { hasText: '332P20001' })
+            .locator('[data-action="dupliquer-boite"]').click({ force: true });
+  await repondreDialogue(page, 'COPIE-1');
   await page.waitForTimeout(1000);
   eq('boîte dupliquée depuis la liste', await page.locator('.carte').count(), 11);
   vrai('le vocabulaire dit « boîte »',
@@ -469,27 +593,51 @@ async function ecranPropre(page) {
   faux('pas de duplication de boîte dans son bloc',
        (await texte(page, '.bloc-general')).indexOf('Dupliquer') !== -1);
   const avantDup = await page.locator('#slideOverBody .bloc').count();
-  page.once('dialog', function (d) { d.accept('SE-COPIE'); });
   await page.locator('.bloc-type-structure [data-action="dupliquer-nom"]').first().click();
+  await repondreDialogue(page, 'SE-COPIE');
   await page.waitForTimeout(1200);
-  eq('sous-ensemble dupliqué', await page.locator('#slideOverBody .bloc').count(), avantDup + 1);
+  // Le harnais et la plaquette aussi : c'est précisément ce qui ne marchait pas.
+  const avantDupH = await page.locator('#slideOverBody .bloc').count();
+  await page.locator('.bloc-type-harnais [data-action="dupliquer-nom"]').first().click();
+  await repondreDialogue(page, 'HRN-COPIE');
+  await page.waitForTimeout(1200);
+  eq('harnais dupliqué', await page.locator('#slideOverBody .bloc').count(), avantDupH + 1);
+  await page.locator('.bloc-type-plaquette [data-action="dupliquer-nom"]').first().click();
+  await repondreDialogue(page, 'PLQ-COPIE');
+  await page.waitForTimeout(1200);
+  eq('plaquette dupliquée', await page.locator('#slideOverBody .bloc').count(), avantDupH + 2);
+  vrai('Entrée valide le dialogue', true);
   vrai('avec le PN saisi', (await texte(page, '#slideOverBody')).indexOf('SE-COPIE') !== -1);
+  vrai('structure dupliquée', await page.locator('#slideOverBody .bloc').count() >= avantDup + 1);
   await fermerFiche(page);
 
   bloc('Catalogue et création typée');
   if (!(await page.locator('#detailsSlideOver.show').count())) await ouvrirFiche(page, '332P20001');
-  // Le catalogue n'existe que là où il y a des composants : la structure.
-  await page.locator('.bloc-type-structure [data-action="ouvrir-catalogue"]').first().click();
+  // Le catalogue est filtré par catégorie : la structure mécanique ne
+  // propose pas de bouton poussoir, ni la boîte de colonnette.
+  await page.locator('.bloc-type-structure [data-action="ouvrir-catalogue"][data-categorie="mecanique"]').first().click();
   await page.waitForSelector('#catalogueModal.show');
-  await page.fill('#catSearch', 'diode');
+  await page.waitForTimeout(350);
+  const catMeca = await texte(page, '#catalogueList');
+  vrai('le catalogue mécanique propose des colonnettes', catMeca.indexOf('Colonnette') !== -1);
+  faux('mais aucun bouton poussoir', catMeca.indexOf('Bouton poussoir') !== -1);
+  await page.fill('#catSearch', 'entretoise');
   await page.waitForTimeout(350);
   eq('un seul résultat', await page.locator('.ligne-catalogue').count(), 1);
   await page.locator('.ligne-catalogue').click();
   await page.waitForTimeout(900);
-  const puces = await page.locator('.bloc-type-structure .puce')
+  const compos = await page.locator('.bloc-type-structure .composant')
     .evaluateAll(function (e) { return e.map(function (x) { return x.textContent; }); });
-  vrai('le composant affiché est celui ajouté',
-       puces.some(function (p) { return p.indexOf('Diode') !== -1; }));
+  vrai('le composant affiché est celui ajouté, avec sa référence',
+       compos.some(function (p) { return p.indexOf('Entretoise') !== -1 && p.indexOf('ENT-10') !== -1; }));
+
+  await page.locator('.bloc-general [data-action="ouvrir-catalogue"]').first().click();
+  await page.waitForSelector('#catalogueModal.show');
+  await page.waitForTimeout(350);
+  const catBoite = await texte(page, '#catalogueList');
+  vrai('le catalogue de la boîte propose des boutons', catBoite.indexOf('Bouton poussoir') !== -1);
+  faux('mais aucune colonnette', catBoite.indexOf('Colonnette') !== -1);
+  await fermerModale(page, 'catalogueModal');
 
   await page.locator('[data-action="nouveau-sous-ensemble"]').click();
   await page.waitForSelector('#newSousEnsModal.show');
@@ -590,8 +738,8 @@ async function ecranPropre(page) {
   await page.waitForSelector('#compareModal.show');
   await page.waitForTimeout(400);
   await page.locator('#compareResult [data-action="ouvrir-reglages"]').click();
-  await page.waitForSelector('#reglagesModal.show');
   await page.waitForTimeout(400);
+  vrai('le rail s\'ouvre aussi sur mobile', await railVisible(page));
   l = await page.evaluate(function () {
     return { doc: document.documentElement.scrollWidth, vue: window.innerWidth };
   });
@@ -639,11 +787,9 @@ async function ecranPropre(page) {
   // Réglages PAR-DESSUS la comparaison : c'est la situation réelle d'usage,
   // on ajuste en voyant le classement se recomposer.
   await page.locator('#compareResult [data-action="ouvrir-reglages"]').click();
-  await page.waitForSelector('#reglagesModal.show');
   await page.waitForTimeout(700);
-  vrai('réglages et comparaison coexistent',
-       await page.locator('#compareModal.show').count() === 1 &&
-       await page.locator('#reglagesModal.show').count() === 1);
+  vrai('réglages et comparaison coexistent, côte à côte',
+       await page.locator('#compareModal.show').count() === 1 && await railVisible(page));
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-reglages.png') });
   console.log('  5 captures écrites dans build/');
 

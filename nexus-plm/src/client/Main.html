@@ -4,6 +4,9 @@
 // Toutes les actions déclenchables sont déclarées ici et atteintes par
 // délégation (data-action). Aucun gestionnaire en ligne, donc aucune donnée
 // injectée dans du code.
+//
+// Aucun prompt() ni confirm() : ils sont bloqués dans l'iframe d'Apps Script
+// et le bouton restait muet. Les questions passent par Dialogues.html.
 // ============================================================
 
 function indicateurBoite() {
@@ -67,15 +70,54 @@ function chargerCatalogue() {
     .catch(function (e) { signalerErreur(e, 'chargement du catalogue'); });
 }
 
+function optionsHtml(valeurs) {
+  return valeurs.map(function (v) { return '<option value="' + esc(v) + '"></option>'; }).join('');
+}
+
 function remplirListesDeSuggestion() {
-  definirHtml('datalistStds', tousLesComposants().map(function (s) {
-    return '<option value="' + esc(s) + '"></option>';
+  definirHtml('datalistStds', optionsHtml(tousLesComposants()));
+  definirHtml('list-MotsCles', optionsHtml(tousLesMotsCles()));
+  definirHtml('list-Type', optionsHtml(typesProposes().map(function (t) { return t.libelle; })));
+
+  // Porteurs : la liste fermée du registre, sans « Multi » ni saisie libre.
+  const porteurs = porteursConnus();
+  definirHtml('list-Porteur', optionsHtml(porteurs));
+  definirHtml('newBoitePorteurs', porteurs.map(function (p) {
+    return '<label class="jeton-porteur"><input type="checkbox" name="nouveauPorteur" value="' +
+           esc(p) + '">' + esc(p) + '</label>';
   }).join(''));
-  definirHtml('list-MotsCles', tousLesMotsCles().map(function (m) {
-    return '<option value="' + esc(m) + '"></option>';
-  }).join(''));
-  definirHtml('list-Type', typesProposes().map(function (t) {
-    return '<option value="' + esc(t.libelle) + '"></option>';
+
+  // Suggestions par niveau et par catégorie de composant : ce que le
+  // catalogue connaît, plus ce qui est déjà saisi dans la base.
+  const parCategorie = {};
+  Object.keys(CATEGORIES_COMPOSANT).forEach(function (cat) {
+    parCategorie[cat] = { fonction: new Set(), norme: new Set(), reference: new Set() };
+  });
+  Store.catalogue.forEach(function (entree) {
+    const c = composantDepuisCatalogue(entree);
+    const cible = parCategorie[c.categorie] || parCategorie.composant;
+    if (c.fonction) cible.fonction.add(c.fonction);
+    if (c.norme) cible.norme.add(c.norme);
+    if (c.reference) cible.reference.add(c.reference);
+  });
+  champsComposants().forEach(function (ch) {
+    const cible = parCategorie[ch.categorie] || parCategorie.composant;
+    const objets = ch.portee === 'boite'
+      ? Store.boites
+      : Store.nomenclature.filter(function (n) { return typeDe(n).cle === ch.portee; });
+    objets.forEach(function (o) {
+      listeComposants(o[ch.cle]).forEach(function (c) {
+        if (c.fonction) cible.fonction.add(c.fonction);
+        if (c.norme) cible.norme.add(c.norme);
+        if (c.reference) cible.reference.add(c.reference);
+      });
+    });
+  });
+  definirHtml('listesComposants', Object.keys(parCategorie).map(function (cat) {
+    return ['fonction', 'norme', 'reference'].map(function (niveau) {
+      return '<datalist id="list-' + niveau + '-' + cat + '">' +
+             optionsHtml(Array.from(parCategorie[cat][niveau]).sort()) + '</datalist>';
+    }).join('');
   }).join(''));
 }
 
@@ -89,6 +131,7 @@ function sauverBoite(modifs) {
       appliquerBoite(r.boite, r.pnPrecedent);
       Store.enEditionBoite = false;
       rafraichir();
+      remplirListesDeSuggestion();
     })
     .catch(function (e) {
       signalerErreur(e, "sauvegarde de la boîte");
@@ -128,6 +171,12 @@ function majMultiNom(id, champ, transformation) {
   sauverNom(id, modifs);
 }
 
+/** Selon la cible (boîte ou sous-ensemble), la bonne écriture. */
+function majMultiCible(cible, transformation) {
+  if (cible.portee === 'boite') majMultiBoite(cible.champ, transformation);
+  else majMultiNom(cible.id, cible.champ, transformation);
+}
+
 const ajouterA = function (valeur) {
   return function (liste) {
     const existe = liste.some(function (v) { return normaliserTexte(v) === normaliserTexte(valeur); });
@@ -163,6 +212,16 @@ enregistrerActions({
   'choisir-tri': function (d) {
     Store.tri = d.tri;
     enregistrerReglages();
+    rendreInterface();
+  },
+
+  // --- indicateurs : chacun est un filtre ---
+  'filtrer-statut': function (d) {
+    Store.filtreStatut = Store.filtreStatut === d.statut ? null : d.statut;
+    rendreInterface();
+  },
+  'filtrer-reutilise': function () {
+    Store.filtreReutilise = !Store.filtreReutilise;
     rendreInterface();
   },
 
@@ -210,6 +269,7 @@ enregistrerActions({
   },
   'tout-effacer': function () {
     Store.recherche = ''; Store.filtreComposants = []; Store.filtreTypes = [];
+    Store.filtreStatut = null; Store.filtreReutilise = false;
     Store.ongletActif = 'Toutes';
     const c = parId('searchBar'); if (c) c.value = '';
     rendreInterface();
@@ -240,42 +300,54 @@ enregistrerActions({
     const boite = boiteParPn(d.pn);
     if (!boite) return;
     const nb = (boite.nomenclature || []).length;
-    if (!confirm('Supprimer la boîte ' + d.pn + ' et ses ' + nb +
-                 ' sous-ensemble(s) ?\n\nVous pourrez annuler juste après.')) return;
-    // Capture AVANT suppression : c'est ce qui rend l'annulation possible.
-    memoriserSuppression('boite', {
-      boite: JSON.parse(JSON.stringify(boite)),
-      lignes: JSON.parse(JSON.stringify(boite.nomenclature || []))
-    });
-    indicateurBoite();
-    Api.supprimerBoite(d.pn)
-      .then(function (r) {
-        retirerBoite(r.pnSupprime);
-        fermerPanneau();
-        rafraichir();
-        afficherBandeauAction('Boîte ' + r.pnSupprime + ' supprimée.',
-                              'Annuler', 'annuler-suppression');
-      })
-      .catch(function (e) {
-        Store.derniereSuppression = null;
-        signalerErreur(e, "suppression de la boîte");
+    confirmer({
+      titre: 'Supprimer la boîte ' + d.pn,
+      message: 'Ses ' + nb + ' sous-ensemble(s) seront supprimés avec elle.\n' +
+               'Vous pourrez annuler juste après.',
+      bouton: 'Supprimer', danger: true
+    }).then(function (oui) {
+      if (!oui) return;
+      // Capture AVANT suppression : c'est ce qui rend l'annulation possible.
+      memoriserSuppression('boite', {
+        boite: JSON.parse(JSON.stringify(boite)),
+        lignes: JSON.parse(JSON.stringify(boite.nomenclature || []))
       });
+      indicateurBoite();
+      return Api.supprimerBoite(d.pn)
+        .then(function (r) {
+          retirerBoite(r.pnSupprime);
+          fermerPanneau();
+          rafraichir();
+          afficherBandeauAction('Boîte ' + r.pnSupprime + ' supprimée.',
+                                'Annuler', 'annuler-suppression');
+        })
+        .catch(function (e) {
+          Store.derniereSuppression = null;
+          signalerErreur(e, "suppression de la boîte");
+        });
+    });
   },
 
   // Depuis la LISTE, pas depuis la fiche : dupliquer une boîte est une
   // opération de la page principale.
   'dupliquer-boite': function (d) {
-    const nouveau = prompt('PN Global de la nouvelle boîte :', d.pn + '-B');
-    if (!nouveau || !nouveau.trim()) return;
-    indicateurBoite();
-    Api.dupliquerBoite(d.pn, nouveau.trim())
-      .then(function (r) {
-        appliquerBoite(r.boite);
-        (r.nomenclature || []).forEach(appliquerNom);
-        rendreInterface();
-        confirmerSucces('Boîte dupliquée : ' + r.boite[CLE_PN()] + '.');
-      })
-      .catch(function (e) { signalerErreur(e, "duplication de la boîte"); });
+    demander({
+      titre: 'Dupliquer la boîte ' + d.pn,
+      message: 'PN Global de la nouvelle boîte. Ses sous-ensembles sont recopiés.',
+      valeur: d.pn + '-B', placeholder: 'ex. ' + d.pn + '-B', bouton: 'Dupliquer'
+    }).then(function (nouveau) {
+      if (nouveau === null) return;
+      if (!nouveau) { afficherBandeau('Le PN Global est obligatoire.', 'erreur'); return; }
+      indicateurBoite();
+      return Api.dupliquerBoite(d.pn, nouveau)
+        .then(function (r) {
+          appliquerBoite(r.boite);
+          (r.nomenclature || []).forEach(appliquerNom);
+          rendreInterface();
+          confirmerSucces('Boîte dupliquée : ' + r.boite[CLE_PN()] + '.');
+        })
+        .catch(function (e) { signalerErreur(e, "duplication de la boîte"); });
+    });
   },
 
   'ajouter-multi-boite': function (d) {
@@ -292,21 +364,26 @@ enregistrerActions({
   'supprimer-nom': function (d) {
     const ligne = nomParId(d.id);
     if (!ligne) return;
-    if (!confirm('Supprimer « ' + txt(ligne['PN du type'], typeDe(ligne).libelle) +
-                 ' » ?\n\nVous pourrez annuler juste après.')) return;
-    memoriserSuppression('nomenclature', JSON.parse(JSON.stringify(ligne)));
-    indicateurNom(d.id);
-    Api.supprimerNom(d.id)
-      .then(function (r) {
-        const nom = txt(ligne['PN du type'], typeDe(ligne).libelle);
-        retirerNom(r.idSupprime);
-        rafraichir();
-        afficherBandeauAction('« ' + nom + ' » supprimé.', 'Annuler', 'annuler-suppression');
-      })
-      .catch(function (e) {
-        Store.derniereSuppression = null;
-        signalerErreur(e, 'suppression du sous-ensemble');
-      });
+    const nom = txt(ligne['PN du type'], typeDe(ligne).libelle);
+    confirmer({
+      titre: 'Supprimer « ' + nom + ' »',
+      message: 'Le sous-ensemble est retiré de la boîte.\nVous pourrez annuler juste après.',
+      bouton: 'Supprimer', danger: true
+    }).then(function (oui) {
+      if (!oui) return;
+      memoriserSuppression('nomenclature', JSON.parse(JSON.stringify(ligne)));
+      indicateurNom(d.id);
+      return Api.supprimerNom(d.id)
+        .then(function (r) {
+          retirerNom(r.idSupprime);
+          rafraichir();
+          afficherBandeauAction('« ' + nom + ' » supprimé.', 'Annuler', 'annuler-suppression');
+        })
+        .catch(function (e) {
+          Store.derniereSuppression = null;
+          signalerErreur(e, 'suppression du sous-ensemble');
+        });
+    });
   },
 
   'annuler-suppression': function () { restaurer(); },
@@ -315,25 +392,29 @@ enregistrerActions({
     const source = nomParId(d.id);
     if (!source) return;
     const type = typeDe(source);
-    const nouveauPn = prompt('PN du ' + type.libelle.toLowerCase() + ' dupliqué :',
-                             txt(source['PN du type'], '') + '-B');
-    if (nouveauPn === null) return;
-    indicateurNom(d.id);
-    Api.creerNom(source[CLE_PN()], source['Type'], nouveauPn.trim())
-      .then(function (r) {
-        appliquerNom(r.ligne);
-        // Recopie des champs du type, identifiants exclus.
-        const modifs = {};
-        champsDuType(type).forEach(function (c) {
-          if (c.cle === 'PN du type') return;
-          if (source[c.cle] !== undefined && source[c.cle] !== '') modifs[c.cle] = source[c.cle];
-        });
-        if (!Object.keys(modifs).length) return r;
-        return Api.sauverNom(r.ligne[CLE_NOM()], modifs)
-                  .then(function (r2) { appliquerNom(r2.ligne); return r2; });
-      })
-      .then(function () { rafraichir(); confirmerSucces('Sous-ensemble dupliqué.'); })
-      .catch(function (e) { signalerErreur(e, 'duplication du sous-ensemble'); });
+    demander({
+      titre: 'Dupliquer ce ' + type.libelle.toLowerCase(),
+      message: 'PN de la copie. Tous ses champs sont recopiés.',
+      valeur: txt(source['PN du type'], '') + '-B', bouton: 'Dupliquer'
+    }).then(function (nouveauPn) {
+      if (nouveauPn === null) return;
+      indicateurNom(d.id);
+      return Api.creerNom(source[CLE_PN()], source['Type'], nouveauPn)
+        .then(function (r) {
+          appliquerNom(r.ligne);
+          // Recopie des champs du type, identifiants exclus.
+          const modifs = {};
+          champsDuType(type).forEach(function (c) {
+            if (c.cle === 'PN du type') return;
+            if (source[c.cle] !== undefined && source[c.cle] !== '') modifs[c.cle] = source[c.cle];
+          });
+          if (!Object.keys(modifs).length) return r;
+          return Api.sauverNom(r.ligne[CLE_NOM()], modifs)
+                    .then(function (r2) { appliquerNom(r2.ligne); return r2; });
+        })
+        .then(function () { rafraichir(); confirmerSucces('Sous-ensemble dupliqué.'); })
+        .catch(function (e) { signalerErreur(e, 'duplication du sous-ensemble'); });
+    });
   },
 
   'ajouter-multi-nom': function (d) {
@@ -342,24 +423,40 @@ enregistrerActions({
   },
   'supprimer-multi-nom': function (d) { majMultiNom(d.id, d.champ, retirerDe(d.valeur)); },
 
+  // --- composants à trois niveaux ---
+  'ajouter-composant': function (d) {
+    const c = lireSaisieComposant(d.champ, d.id);
+    if (!c) { afficherBandeau('Indiquez au moins la fonction du composant.', 'erreur'); return; }
+    majMultiCible({ portee: d.portee, id: d.id, champ: d.champ },
+                  ajouterA(formaterComposantStructure(c)));
+  },
+  'supprimer-composant': function (d) {
+    majMultiCible({ portee: d.portee, id: d.id, champ: d.champ }, retirerDe(d.valeur));
+  },
+
   // --- équivalences ---
   'comparer-boite': function (d) { afficherEquivalencesBoite(d.pn); },
   'comparer-nom':   function (d) { afficherEquivalencesNom(d.id); },
 
   // --- catalogue ---
   'ouvrir-catalogue': function (d) {
-    Store.idNomCourant = d.id;
+    Store.cibleCatalogue = { portee: d.portee || 'nom', id: d.id || null,
+                             champ: d.champ, categorie: d.categorie || 'composant' };
+    Store.idNomCourant = d.id || Store.idNomCourant;
     const r = parId('catSearch'); if (r) r.value = '';
+    const cat = CATEGORIES_COMPOSANT[Store.cibleCatalogue.categorie] || CATEGORIES_COMPOSANT.composant;
+    definirTexte('catalogueSous', cat.libelle + ' — ' + cat.aide);
     rendreCatalogue();
     ouvrirModal('catalogueModal');
   },
   'ajouter-catalogue': function (d) {
-    const composant = Store.catalogue[Number(d.index)];
-    const id = Store.idNomCourant;
-    if (!composant || !id) return;
-    const formate = formaterComposant(composant) || 'Composant inconnu';
+    const entree = Store.catalogue[Number(d.index)];
+    const cible = Store.cibleCatalogue;
+    if (!entree || !cible) return;
+    const formate = formaterComposantStructure(composantDepuisCatalogue(entree));
+    if (!formate) return;
     fermerModal('catalogueModal');
-    majMultiNom(id, Store.config.colonneStd, ajouterA(formate));
+    majMultiCible(cible, ajouterA(formate));
   },
 
   // --- création ---
@@ -370,8 +467,10 @@ enregistrerActions({
     fermerModal('newBoiteModal');
     // La boîte naît complète : on renseigne tout ce qui la caractérise en une
     // fois, les sous-ensembles viennent ensuite.
+    const porteurs = Array.prototype.slice.call(
+      document.querySelectorAll('#newBoitePorteurs input:checked')).map(function (i) { return i.value; });
     const complement = {
-      'Porteur': parId('newBoitePorteur').value.trim(),
+      'Porteur': porteurs.join('\n'),
       'Statut': parId('newBoiteStatut').value.trim(),
       'Niveau de qualification': parId('newBoiteNiveau').value.trim(),
       'Image': parId('newBoiteImage').value.trim()
@@ -390,9 +489,10 @@ enregistrerActions({
         });
       })
       .then(function (boite) {
-        ['newBoitePn', 'newBoiteFonction', 'newBoiteDs', 'newBoitePorteur',
+        ['newBoitePn', 'newBoiteFonction', 'newBoiteDs',
          'newBoiteNiveau', 'newBoiteImage'].forEach(function (i) { parId(i).value = ''; });
         parId('newBoiteStatut').value = 'En étude';
+        document.querySelectorAll('#newBoitePorteurs input').forEach(function (i) { i.checked = false; });
         Store.pnCourant = boite[CLE_PN()];
         rafraichir();
         rendreFiche();
@@ -452,14 +552,16 @@ enregistrerActions({
     rendreInterface();
   },
 
-  // --- réglages ---
+  // --- réglages : un rail à gauche du classement ---
   'ouvrir-reglages': function (d) {
-    if (d && d.portee) porteeReglee = d.portee;   // toujours fournie par la comparaison
-    rendreReglages();
-    // Panneau sans voile : la comparaison ouverte derrière reste visible et
-    // se recompose à chaque mouvement de curseur.
-    bootstrap.Offcanvas.getOrCreateInstance(parId('reglagesModal')).show();
+    if (d && d.portee) porteeReglee = d.portee;
+    else if (Store.comparaison) porteeReglee = Store.comparaison.portee;
+    const ouvrir = !railOuvert();
+    if (ouvrir) rendreReglages();
+    afficherRail(ouvrir);
+    rafraichirComparaison();      // le bouton du rappel change de libellé
   },
+  'fermer-reglages': function () { afficherRail(false); rafraichirComparaison(); },
   'regler-portee': function (d) { porteeReglee = d.portee; rendreReglages(); },
   'ajouter-critere': function (d) {
     activerCritere(porteeReglee, d.critere);
@@ -492,14 +594,22 @@ enregistrerActions({
 // ------------------------------------------------------------
 function rendreCatalogue() {
   const requete = parId('catSearch') ? parId('catSearch').value : '';
-  const r = filtrerCatalogue(requete);
-  definirHtml('catalogueList', r.affiches.map(function (e) {
-    return '<button type="button" class="ligne-catalogue"' +
-             dataAttrs({ action: 'ajouter-catalogue', index: e.index }) + '>' +
-             '<span>' + esc(formaterComposant(e.composant)) + '</span>' +
-             '<span class="ligne-catalogue-plus" aria-hidden="true">+</span>' +
-           '</button>';
-  }).join('') || '<p class="vide">Aucun composant ne correspond.</p>');
+  const categorie = Store.cibleCatalogue ? Store.cibleCatalogue.categorie : null;
+  const r = filtrerCatalogue(requete, categorie);
+  definirHtml('catalogueList', r.affiches.length
+    ? '<div class="catalogue-entete"><span>Fonction</span><span>Norme</span><span>Référence</span><span></span></div>' +
+      r.affiches.map(function (e) {
+        const c = e.structure;
+        return '<button type="button" class="ligne-catalogue"' +
+                 dataAttrs({ action: 'ajouter-catalogue', index: e.index }) + '>' +
+                 '<span class="niveau-fonction">' + esc(c.fonction) +
+                   (c.designation ? '<small>' + esc(c.designation) + '</small>' : '') + '</span>' +
+                 '<span class="niveau-norme">' + esc(c.norme || '—') + '</span>' +
+                 '<span class="niveau-reference">' + esc(c.reference || '—') + '</span>' +
+                 '<span class="ligne-catalogue-plus" aria-hidden="true">+</span>' +
+               '</button>';
+      }).join('')
+    : '<p class="vide">Aucun composant ne correspond.</p>');
   definirTexte('catalogueInfo', r.total > r.affiches.length
     ? r.affiches.length + ' résultats affichés sur ' + r.total + ' — affinez la recherche.'
     : r.total + ' résultat' + (r.total > 1 ? 's' : ''));
@@ -540,13 +650,22 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // Entrée dans un champ de composant : on ajoute, sans chercher le bouton.
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || !e.target.classList || !e.target.classList.contains('saisie-composant')) return;
+    e.preventDefault();
+    const bloc = e.target.closest('.ajout-composant');
+    const bouton = bloc && bloc.querySelector('[data-action="ajouter-composant"]');
+    if (bouton) bouton.click();
+  });
+
   // Curseurs de pondération : recalcul immédiat, c'est tout l'intérêt.
   document.addEventListener('input', function (e) {
     if (e.target.classList && e.target.classList.contains('curseur')) {
       // Poser une part redistribue les autres : le total reste à 100 %.
       reglerPoids(e.target.dataset.portee, e.target.dataset.critere, e.target.value);
       enregistrerReglages();
-      rafraichirApercu(e.target.dataset.critere);
+      rafraichirCurseurs(e.target.dataset.critere);
       rafraichirComparaison();
       return;
     }
@@ -554,7 +673,7 @@ document.addEventListener('DOMContentLoaded', function () {
       Store.seuilEquivalence = Number(e.target.value);
       enregistrerReglages();
       definirTexte('seuilValeur', Store.seuilEquivalence + ' %');
-      rafraichirApercu(null);
+      rafraichirCurseurs(null);
       rafraichirComparaison();
     }
   });
@@ -569,7 +688,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bouton) bouton.setAttribute('aria-expanded', 'false');
   });
 
-  // Raccourcis : « / » pour chercher, Échap pour refermer.
+  // Raccourcis : « / » pour chercher.
   document.addEventListener('keydown', function (e) {
     if (e.key === '/' && document.activeElement &&
         ['INPUT', 'TEXTAREA', 'SELECT'].indexOf(document.activeElement.tagName) === -1) {

@@ -4,8 +4,8 @@
 // Ne fait que mettre en forme ce que Compare.html a calculé.
 //
 // Chaque critère montre sa PART dans le score : c'est ce qui rend le
-// résultat interprétable, et ce qui relie visiblement l'écran de réglages
-// au classement obtenu.
+// résultat interprétable, et ce qui relie visiblement le rail de réglages
+// (à gauche) au classement obtenu (à droite).
 // ============================================================
 
 const SIGNE_ETAT = {
@@ -23,6 +23,58 @@ function listeEnsembleHtml(titre, valeurs, classe) {
              valeurs.map(function (v) { return '<li>' + esc(v) + '</li>'; }).join('') +
            '</ul>' +
          '</div>';
+}
+
+// ------------------------------------------------------------
+// Composants : les trois paliers d'équivalence
+// ------------------------------------------------------------
+function composantCourtHtml(c) {
+  return '<span class="compo">' + esc(c.fonction || '?') + '</span>' +
+         (c.norme ? '<span class="compo-norme">' + esc(c.norme) + '</span>' : '') +
+         (c.reference ? '<span class="compo-ref">' + esc(c.reference) + '</span>' : '');
+}
+
+function palierHtml(classe, titre, sousTitre, lignes) {
+  if (!lignes.length) return '';
+  return '<div class="palier ' + classe + '">' +
+    '<div class="palier-titre"><span>' + esc(titre) + ' (' + lignes.length + ')</span>' +
+      '<small>' + esc(sousTitre) + '</small></div>' +
+    '<ul class="palier-liste">' + lignes.join('') + '</ul>' +
+  '</div>';
+}
+
+/**
+ * Le détail d'un critère de composants : combien de composants trouvent
+ * leur référence exacte, combien seulement leur norme, combien seulement
+ * leur fonction, et lesquels n'ont rien trouvé.
+ */
+function paliersHtml(critere) {
+  const p = critere.paliers;
+  const vers = '<span class="vers" aria-hidden="true">→</span>';
+
+  const reference = p.reference.map(function (a) {
+    return '<li>' + composantCourtHtml(a.source) + '</li>';
+  });
+  const norme = p.norme.map(function (a) {
+    return '<li>' + composantCourtHtml(a.source) + vers +
+           '<span class="compo-ref">' + esc(a.cible.reference || 'référence non précisée') + '</span></li>';
+  });
+  const fonction = p.fonction.map(function (a) {
+    return '<li>' + composantCourtHtml(a.source) + vers +
+           '<span class="compo-norme">' + esc(a.cible.norme || 'norme non précisée') + '</span>' +
+           (a.cible.reference ? '<span class="compo-ref">' + esc(a.cible.reference) + '</span>' : '') +
+           '</li>';
+  });
+  const aucun = p.aucun.map(function (c) { return '<li>' + composantCourtHtml(c) + '</li>'; });
+  const enPlus = (critere.enPlus || []).map(function (c) { return '<li>' + composantCourtHtml(c) + '</li>'; });
+
+  return '<div class="paliers">' +
+    palierHtml('palier-reference', 'Référence exacte', 'même modèle', reference) +
+    palierHtml('palier-norme', 'Même norme', 'autre référence, interchangeable sous réserve', norme) +
+    palierHtml('palier-fonction', 'Même fonction', 'norme différente, à requalifier', fonction) +
+    palierHtml('palier-aucun', 'Sans équivalent', 'absent de la cible', aucun) +
+    palierHtml('palier-plus', 'Présents en plus sur la cible', 'sans contrepartie', enPlus) +
+  '</div>';
 }
 
 function critereHtml(critere) {
@@ -49,7 +101,8 @@ function critereHtml(critere) {
     '</div>' +
   '</div>';
 
-  if (critere.ensembles) {
+  if (critere.paliers) html += paliersHtml(critere);
+  else if (critere.ensembles) {
     html += '<div class="ensembles">' +
       listeEnsembleHtml('En commun', critere.ensembles.communs, 'ensemble-ok') +
       listeEnsembleHtml('Absents de la cible', critere.ensembles.manquants, 'ensemble-manquant') +
@@ -86,8 +139,8 @@ function resultatHtml(titre, sousTitreHtml, r, actions) {
 }
 
 /**
- * La pondération se règle ici, au contact du classement qu'elle produit —
- * et non depuis un écran de paramètres séparé.
+ * Le rappel de la pondération en tête du classement. Le bouton ouvre le
+ * rail de réglages à gauche — et le referme.
  */
 function barreReglageHtml(portee, libellePortee) {
   const p = porteeParCle(portee);
@@ -96,6 +149,7 @@ function barreReglageHtml(portee, libellePortee) {
         return esc(c.libelle) + ' ' + (Number(Store.poids[portee][c.cle]) || 0) + ' %';
       }).join(' · ')
     : 'critère unique : ' + esc(p.criteres.length ? p.criteres[0].libelle : '—');
+  const ouvert = typeof railOuvert === 'function' && railOuvert();
 
   return '<div class="rappel-reglages">' +
     '<div class="rappel-texte">' +
@@ -103,23 +157,26 @@ function barreReglageHtml(portee, libellePortee) {
       '<span>' + detail + '</span>' +
     '</div>' +
     '<button type="button" class="btn-accent btn-reglage"' +
-      dataAttrs({ action: 'ouvrir-reglages', portee: portee }) +
-      '><span aria-hidden="true">⚙</span> Régler les critères</button>' +
+      dataAttrs({ action: 'ouvrir-reglages', portee: portee }) + '>' +
+      '<span aria-hidden="true">⚙</span> ' +
+      (ouvert ? 'Masquer les réglages' : 'Régler les critères') + '</button>' +
   '</div>';
 }
 
-function aucunResultatHtml(quoi) {
+function aucunResultatHtml(quoi, portee) {
   return '<div class="etat-vide">' +
     '<p>Aucune équivalence au-dessus de ' + seuil() + ' %.</p>' +
     '<p class="etat-vide-aide">' + esc(quoi) + '</p>' +
     '<button type="button" class="btn-mini"' +
-      dataAttrs({ action: 'ouvrir-reglages', portee: 'boite' }) +
+      dataAttrs({ action: 'ouvrir-reglages', portee: portee }) +
       '>Baisser le seuil ou ajuster les critères</button>' +
   '</div>';
 }
 
-function afficherEquivalencesBoite(pn) {
-  Store.comparaison = { sorte: 'boite', cle: pn };
+// ------------------------------------------------------------
+// Rendu du classement (sans ouvrir la modale)
+// ------------------------------------------------------------
+function rendreEquivalencesBoite(pn) {
   const resultats = equivalencesBoite(pn);
   definirTexte('compareTitle', 'Équivalences de ' + txt(pn));
   definirTexte('compareSousTitre', resultats.length + ' boîte(s) au-dessus du seuil');
@@ -134,15 +191,12 @@ function afficherEquivalencesBoite(pn) {
               dataAttrs({ action: 'ouvrir-fiche-depuis-compare', pn: r.cible[CLE_PN()] }) +
               '>Ouvrir cette fiche</button></div>');
         }).join('')
-      : aucunResultatHtml('Essayez une autre boîte, ou assouplissez la pondération.')));
-  ouvrirModal('compareModal');
+      : aucunResultatHtml('Essayez une autre boîte, ou assouplissez la pondération.', 'boite')));
 }
 
-function afficherEquivalencesNom(id) {
+function rendreEquivalencesNom(id) {
   const source = nomParId(id);
   if (!source) return;
-  Store.idNomCourant = id;
-  Store.comparaison = { sorte: 'nom', cle: id };
   const type = typeDe(source);
   const resultats = equivalencesSousEnsemble(id);
 
@@ -161,7 +215,33 @@ function afficherEquivalencesNom(id) {
               '>Ouvrir la boîte</button></div>');
         }).join('')
       : aucunResultatHtml('Seules les pièces du même type sont comparées : ' +
-                          type.libelle.toLowerCase() + '.')));
+                          type.libelle.toLowerCase() + '.', type.cle)));
+}
+
+// ------------------------------------------------------------
+// Ouverture
+// ------------------------------------------------------------
+/** Le rail suit la portée de la comparaison affichée, s'il est ouvert. */
+function alignerRail(portee) {
+  if (typeof railOuvert !== 'function' || !railOuvert()) return;
+  if (porteeReglee !== portee) { porteeReglee = portee; rendreReglages(); }
+}
+
+function afficherEquivalencesBoite(pn) {
+  Store.comparaison = { sorte: 'boite', cle: pn, portee: 'boite' };
+  alignerRail('boite');
+  rendreEquivalencesBoite(pn);
+  ouvrirModal('compareModal');
+}
+
+function afficherEquivalencesNom(id) {
+  const source = nomParId(id);
+  if (!source) return;
+  Store.idNomCourant = id;
+  const type = typeDe(source);
+  Store.comparaison = { sorte: 'nom', cle: id, portee: type.cle };
+  alignerRail(type.cle);
+  rendreEquivalencesNom(id);
   ouvrirModal('compareModal');
 }
 
@@ -171,7 +251,7 @@ function rafraichirComparaison() {
   const c = Store.comparaison;
   const ouvert = parId('compareModal') && parId('compareModal').classList.contains('show');
   if (!ouvert) return;   // rien à recalculer si la comparaison n'est pas à l'écran
-  if (c.sorte === 'boite') afficherEquivalencesBoite(c.cle);
-  else afficherEquivalencesNom(c.cle);
+  if (c.sorte === 'boite') rendreEquivalencesBoite(c.cle);
+  else rendreEquivalencesNom(c.cle);
 }
 </script>

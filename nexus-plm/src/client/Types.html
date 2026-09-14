@@ -14,7 +14,8 @@
 
 const GENRE = {
   TEXTE: 'texte', NOMBRE: 'nombre', LISTE: 'liste',
-  MULTI: 'multi', MOTS_CLES: 'motsCles', IMAGE: 'image', LONG: 'long'
+  MULTI: 'multi', MOTS_CLES: 'motsCles', IMAGE: 'image', LONG: 'long',
+  COMPOSANTS: 'composants'  // liste de composants à trois niveaux, avec catalogue
 };
 
 const MODE = {
@@ -22,7 +23,23 @@ const MODE = {
   NOMBRE: 'nombre',         // proximité numérique, avec tolérance
   DIMENSIONS: 'dimensions', // couple longueur x largeur
   ENSEMBLE: 'ensemble',     // recouvrement de deux listes
-  MOTS_CLES: 'motsCles'     // recouvrement de vocabulaire, insensible aux accents
+  MOTS_CLES: 'motsCles',    // recouvrement de vocabulaire, insensible aux accents
+  COMPOSANTS: 'composants'  // appariement fonction -> norme -> référence
+};
+
+// Tous les porteurs Airbus Helicopters, et rien d'autre.
+const PORTEURS = ['H125', 'H130', 'H135', 'H145', 'H145M', 'H155', 'H160', 'H160M',
+                  'H175', 'H175M', 'H215', 'H215M', 'H225', 'H225M', 'NH90', 'Tigre',
+                  'UH-72 Lakota'];
+
+// Champs particuliers de la BOÎTE (le reste de ses colonnes est générique).
+const CHAMPS_BOITE = {
+  'Porteur':    { genre: GENRE.MULTI, liste: 'list-Porteur', ferme: true },
+  'Statut':     { genre: GENRE.LISTE, liste: 'list-Statut' },
+  'Composants': { genre: GENRE.COMPOSANTS, categorie: 'composant',
+                  aide: 'boutons, voyants, interrupteurs — ce qui se voit et se manipule' },
+  'Image':      { genre: GENRE.IMAGE },
+  'Commentaires libres': { genre: GENRE.LONG }
 };
 
 // ------------------------------------------------------------
@@ -63,22 +80,29 @@ const TYPES = {
       { cle: 'HL', libelle: 'HL', genre: GENRE.LISTE, liste: 'list-Niveau' },
       { cle: 'DAL', libelle: 'DAL', genre: GENRE.LISTE, liste: 'list-Niveau' }
     ].concat(CHAMPS_QUALIF, [
-      { cle: 'Composant STD', libelle: 'Composants STD', genre: GENRE.MULTI, catalogue: true }
+      // Deux familles distinctes, comparées séparément : ce qui est dur, et
+      // ce qui tient les câbles. Les boutons et voyants, eux, sont sur la boîte.
+      { cle: 'Structure mécanique', libelle: 'Structure mécanique', genre: GENRE.COMPOSANTS,
+        categorie: 'mecanique', aide: CATEGORIES_COMPOSANT.mecanique.aide },
+      { cle: 'Composants électriques', libelle: 'Composants électriques', genre: GENRE.COMPOSANTS,
+        categorie: 'electrique', aide: CATEGORIES_COMPOSANT.electrique.aide }
     ], CHAMPS_COMMUNS),
     criteres: [
       { cle: 'montage', libelle: 'Montage', mode: MODE.EGALITE, champ: 'Montage', poids: 10 },
       { cle: 'pas', libelle: 'Nombre de pas', mode: MODE.NOMBRE, champ: 'Nombre de pas',
-        tolerance: 0, unite: ' pas', poids: 10 },
+        tolerance: 0, unite: ' pas', poids: 8 },
       { cle: 'dimensions', libelle: 'Dimensions', mode: MODE.DIMENSIONS,
-        champs: ['Dim Long (mm)', 'Dim Larg (mm)'], tolerance: 0.02, poids: 15 },
+        champs: ['Dim Long (mm)', 'Dim Larg (mm)'], tolerance: 0.02, poids: 12 },
       { cle: 'masse', libelle: 'Masse', mode: MODE.NOMBRE, champ: 'Masse (g)',
-        tolerance: 0.05, unite: ' g', poids: 10 },
-      { cle: 'dal', libelle: 'DAL', mode: MODE.EGALITE, champ: 'DAL', poids: 5 },
-      { cle: 'hl', libelle: 'HL', mode: MODE.EGALITE, champ: 'HL', poids: 5 },
+        tolerance: 0.05, unite: ' g', poids: 8 },
+      { cle: 'dal', libelle: 'DAL', mode: MODE.EGALITE, champ: 'DAL', poids: 4 },
+      { cle: 'hl', libelle: 'HL', mode: MODE.EGALITE, champ: 'HL', poids: 4 },
       { cle: 'qualifications', libelle: 'Qualifications', mode: MODE.ENSEMBLE,
-        champs: CLES_QUALIF, poids: 15 },
-      { cle: 'composants', libelle: 'Composants STD', mode: MODE.ENSEMBLE,
-        champs: ['Composant STD'], poids: 30 }
+        champs: CLES_QUALIF, poids: 14 },
+      { cle: 'mecanique', libelle: 'Structure mécanique', mode: MODE.COMPOSANTS,
+        champ: 'Structure mécanique', poids: 20 },
+      { cle: 'electrique', libelle: 'Composants électriques', mode: MODE.COMPOSANTS,
+        champ: 'Composants électriques', poids: 20 }
     ]
   },
 
@@ -147,9 +171,20 @@ const CRITERES_BOITE = [
   { cle: 'porteur', libelle: 'Porteur', mode: MODE.ENSEMBLE, champs: ['Porteur'], poids: 10 },
   { cle: 'architecture', libelle: 'Sous-ensembles', mode: MODE.ENSEMBLE,
     source: 'typesEnfants', poids: 25 },
-  { cle: 'composants', libelle: 'Composants STD', mode: MODE.ENSEMBLE,
-    source: 'composantsEnfants', poids: 40 }
+  { cle: 'composants', libelle: 'Composants', mode: MODE.COMPOSANTS,
+    champ: 'Composants', poids: 40 }
 ];
+
+/** Tous les champs de composants, tous types confondus, avec leur catégorie. */
+function champsComposants() {
+  const liste = [{ portee: 'boite', cle: 'Composants', categorie: 'composant' }];
+  typesProposes().forEach(function (t) {
+    t.champs.forEach(function (c) {
+      if (c.genre === GENRE.COMPOSANTS) liste.push({ portee: t.cle, cle: c.cle, categorie: c.categorie });
+    });
+  });
+  return liste;
+}
 
 /** Types réellement proposés à la saisie (le repli technique est exclu). */
 function typesProposes() {

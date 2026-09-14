@@ -2,8 +2,10 @@
 // ============================================================
 // NEXUS — réglage des pondérations d'équivalence.
 //
-// Généré à partir du registre de Types.html. Le panneau ne s'ouvre que depuis
-// une comparaison, et sur la portée de cette comparaison.
+// Généré à partir du registre de Types.html. Le rail de réglages s'ouvre
+// DANS la comparaison, à gauche du classement : on bouge un curseur, le
+// classement se recompose à droite. Il n'y a donc plus d'« aperçu » séparé,
+// le résultat lui-même est l'aperçu.
 //
 // Deux partis pris :
 //   - les parts totalisent TOUJOURS 100 %. Monter un critère fait
@@ -80,58 +82,12 @@ function critereDisponiblesHtml(portee) {
   '</div>';
 }
 
-/** Aperçu en direct : les meilleures équivalences avec les réglages courants. */
-function apercuReglagesHtml() {
-  const portee = porteeCourante();
-
-  if (portee.cle === 'boite') {
-    const source = boiteCourante() || Store.boites[0];
-    if (!source) return '<p class="vide">Aucune boîte à comparer.</p>';
-    return enteteApercu('Boîte de référence', txt(source[CLE_PN()])) +
-           listeApercu(equivalencesBoite(source[CLE_PN()]).slice(0, 4),
-                       function (r) { return txt(r.cible[CLE_PN()]); });
-  }
-
-  const courante = Store.idNomCourant && nomParId(Store.idNomCourant);
-  const source = (courante && typeDe(courante).cle === portee.cle)
-    ? courante
-    : Store.nomenclature.find(function (n) { return typeDe(n).cle === portee.cle; });
-
-  if (!source) return '<p class="vide">Aucun sous-ensemble de ce type dans la base.</p>';
-  // Une même pièce peut être montée dans plusieurs boîtes : on nomme la boîte,
-  // sinon deux lignes identiques se suivent sans qu'on sache les distinguer.
-  return enteteApercu('Pièce de référence', txt(source['PN du type'], txt(source[CLE_NOM()]))) +
-         listeApercu(equivalencesSousEnsemble(source[CLE_NOM()]).slice(0, 4),
-                     function (r) {
-                       return txt(r.cible['PN du type']) + ' · ' + txt(r.cible[CLE_PN()]);
-                     });
-}
-
-function enteteApercu(libelle, valeur) {
-  return '<div class="apercu-tete"><span>' + esc(libelle) + '</span><b>' + esc(valeur) + '</b></div>';
-}
-
-function listeApercu(resultats, nommer) {
-  if (!resultats.length) {
-    return '<p class="vide">Aucune équivalence au-dessus de ' + seuil() + ' % ' +
-           'avec ces réglages.</p>';
-  }
-  return '<ol class="apercu-liste">' + resultats.map(function (r) {
-    return '<li>' +
-      '<span class="apercu-nom">' + esc(nommer(r)) + '</span>' +
-      '<span class="apercu-barre"><span style="width:' + r.score + '%"></span></span>' +
-      '<span class="apercu-score">' + r.score + ' %</span>' +
-    '</li>';
-  }).join('') + '</ol>';
-}
-
 function rendreReglages() {
   const portee = porteeCourante();
   definirTexte('reglagesPortee', porteeArbitrable(portee)
     ? portee.libelle + ' — ' + criteresActifs(portee.cle).length + ' critère(s) retenu(s)'
     : portee.libelle);
   definirHtml('reglagesCurseurs', curseursHtml());
-  definirHtml('reglagesApercu', apercuReglagesHtml());
   definirTexte('seuilValeur', seuil() + ' %');
   const s = parId('seuilCurseur');
   if (s) s.value = seuil();
@@ -144,7 +100,7 @@ function rendreReglages() {
  * l'utilisateur tient sous le doigt, mais les AUTRES doivent suivre puisqu'ils
  * viennent d'être redistribués.
  */
-function rafraichirApercu(cleTenue) {
+function rafraichirCurseurs(cleTenue) {
   const portee = porteeCourante();
   document.querySelectorAll('.reglage').forEach(function (bloc) {
     const curseur = bloc.querySelector('.curseur');
@@ -164,8 +120,28 @@ function rafraichirApercu(cleTenue) {
     total.textContent = 'Total ' + somme + ' %';
     total.classList.toggle('reglage-total-faux', somme !== 100);
   }
-  definirHtml('reglagesApercu', apercuReglagesHtml());
   const avert = parId('reglagesModifies');
   if (avert) avert.hidden = !poidsModifies();
+}
+
+// ------------------------------------------------------------
+// Le rail : ouvert ou fermé, à côté du classement
+// ------------------------------------------------------------
+function railOuvert() {
+  const rail = parId('reglagesRail');
+  return !!rail && !rail.hidden;
+}
+
+function afficherRail(ouvert) {
+  const rail = parId('reglagesRail');
+  if (!rail) return;
+  rail.hidden = !ouvert;
+  const corps = parId('compareCorps');
+  if (corps) corps.classList.toggle('avec-reglages', ouvert);
+  const bouton = parId('btnReglages');
+  if (bouton) {
+    bouton.setAttribute('aria-expanded', String(ouvert));
+    bouton.classList.toggle('actif', ouvert);
+  }
 }
 </script>

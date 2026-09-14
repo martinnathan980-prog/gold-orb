@@ -1,0 +1,129 @@
+<script>
+// ============================================================
+// NEXUS — composants à trois niveaux.
+//
+// Un composant n'est plus une chaîne libre : il se décrit en trois niveaux
+// de précision croissante, et l'équivalence les parcourt dans l'ordre.
+//
+//   1. FONCTION   — ce que c'est : bouton poussoir, interrupteur, colonnette
+//   2. NORME      — la norme qui le définit : ECS 7251, ASNE 0567, NSA 5512
+//   3. RÉFÉRENCE  — le modèle exact chez le fabricant
+//
+// Dans la feuille, une cellule porte une ligne par composant, au format
+//   Fonction | Norme | Référence
+// Les anciennes écritures « Type | Sous-type (Norme) » restent lisibles.
+//
+// Trois catégories, selon l'endroit :
+//   - COMPOSANT   : boutons, voyants, interrupteurs — au niveau de la BOÎTE
+//   - MECANIQUE   : colonnettes, entretoises, tout ce qui est dur — STRUCTURE
+//   - ELECTRIQUE  : colliers, embases, ce qui tient les câbles — STRUCTURE
+// ============================================================
+
+const CATEGORIES_COMPOSANT = {
+  composant:  { cle: 'composant',  libelle: 'Composants',             aide: 'boutons, voyants, interrupteurs, relais' },
+  mecanique:  { cle: 'mecanique',  libelle: 'Structure mécanique',    aide: 'colonnettes, entretoises, équerres, inserts' },
+  electrique: { cle: 'electrique', libelle: 'Composants électriques', aide: 'colliers, embases, passe-fils, tenue des câbles' }
+};
+
+const NIVEAUX = [
+  { cle: 'reference', libelle: 'Référence exacte', valeur: 1,    classe: 'niveau-reference' },
+  { cle: 'norme',     libelle: 'Même norme',       valeur: 0.66, classe: 'niveau-norme' },
+  { cle: 'fonction',  libelle: 'Même fonction',    valeur: 0.33, classe: 'niveau-fonction' }
+];
+
+/** Une ligne de cellule -> { fonction, norme, reference }. Tolérant à l'ancien format. */
+function analyserComposant(texte) {
+  const brut = String(texte === null || texte === undefined ? '' : texte).trim();
+  if (!brut) return null;
+
+  const parts = brut.split('|').map(function (p) { return p.trim(); });
+  let fonction = parts[0] || '', norme = '', reference = '';
+
+  if (parts.length >= 3) {
+    norme = parts[1]; reference = parts.slice(2).join(' | ');
+  } else if (parts.length === 2) {
+    // Ancien format : « Type | Sous-type (Norme) » — la norme est entre parenthèses.
+    const m = parts[1].match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+    if (m) { norme = m[2].trim(); if (m[1].trim()) fonction = fonction + ' ' + m[1].trim(); }
+    else norme = parts[1];
+  } else {
+    const m = fonction.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+    if (m) { fonction = m[1].trim(); norme = m[2].trim(); }
+  }
+  return { fonction: fonction.trim(), norme: norme.trim(), reference: reference.trim(), brut: brut };
+}
+
+/** { fonction, norme, reference } -> la ligne à écrire dans la cellule. */
+function formaterComposantStructure(c) {
+  return [c.fonction || '', c.norme || '', c.reference || '']
+    .map(function (x) { return String(x).trim(); })
+    .join(' | ')
+    .replace(/(\s\|\s)+$/, '');          // pas de « | | » traînants
+}
+
+/** Libellé lisible : la partie la plus précise en avant, le reste en retrait. */
+function libelleComposant(c) {
+  if (!c) return '';
+  const morceaux = [c.fonction];
+  if (c.norme) morceaux.push(c.norme);
+  if (c.reference) morceaux.push(c.reference);
+  return morceaux.filter(Boolean).join(' · ');
+}
+
+function listeComposants(valeur) {
+  return valeursMulti(valeur).map(analyserComposant).filter(Boolean);
+}
+
+/** Depuis une ligne de catalogue. */
+function composantDepuisCatalogue(entree) {
+  return {
+    fonction:  String(entree['Fonction'] || entree['Type'] || '').trim(),
+    norme:     String(entree['Norme'] || entree['Norm'] || entree['Standard number'] || '').trim(),
+    reference: String(entree['Référence'] || entree['Ref'] || entree['Reference'] || '').trim(),
+    categorie: normaliserTexte(entree['Catégorie'] || entree['Categorie'] || '') || 'composant',
+    designation: String(entree['Désignation'] || entree['Sous Type/Désignation'] || '').trim()
+  };
+}
+
+// ------------------------------------------------------------
+// Équivalence à trois niveaux
+// ------------------------------------------------------------
+/**
+ * Pour chaque composant de la source, on cherche dans la cible le meilleur
+ * appariement : référence exacte, sinon même norme, sinon même fonction.
+ * Le score est la moyenne des appariements ; le détail dit combien de
+ * composants tombent dans chaque niveau, et lesquels n'ont rien trouvé.
+ */
+function apparierComposants(listeSource, listeCible) {
+  const source = listeSource.slice(), cible = listeCible.slice();
+  const disponibles = cible.slice();
+  const paliers = { reference: [], norme: [], fonction: [], aucun: [] };
+  let total = 0;
+
+  source.forEach(function (s) {
+    let meilleur = null, niveau = null;
+    for (let n = 0; n < NIVEAUX.length && !meilleur; n++) {
+      const cle = NIVEAUX[n].cle;
+      for (let i = 0; i < disponibles.length; i++) {
+        const c = disponibles[i];
+        if (!s[cle] || !c[cle]) continue;
+        // Une référence identique doit aussi partager la fonction : on ne
+        // confond pas deux fabricants dont les codes se recoupent par hasard.
+        if (normaliserTexte(s[cle]) !== normaliserTexte(c[cle])) continue;
+        if (cle !== 'fonction' && s.fonction && c.fonction &&
+            normaliserTexte(s.fonction) !== normaliserTexte(c.fonction)) continue;
+        meilleur = c; niveau = NIVEAUX[n]; disponibles.splice(i, 1); break;
+      }
+    }
+    if (meilleur) { paliers[niveau.cle].push({ source: s, cible: meilleur }); total += niveau.valeur; }
+    else paliers.aucun.push(s);
+  });
+
+  return {
+    ratio: source.length ? total / source.length : 0,
+    paliers: paliers,
+    enPlus: disponibles,          // présents sur la cible, sans contrepartie
+    nbSource: source.length
+  };
+}
+</script>

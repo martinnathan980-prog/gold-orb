@@ -5,13 +5,56 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 451 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 591 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 310 tests : logique, pondération, serveur
-npm run demo             # construit build/demo.html
-npm run test:navigateur  # 141 tests dans un vrai Chromium
+npm test                 # 398 tests : logique, pondération, serveur
+npm run demo             # construit build/demo.html et build/nexus-demo.html
+npm run test:navigateur  # 193 tests dans un vrai Chromium
 ```
+
+## Où est la base de données ?
+
+**Dans un Google Sheet, et nulle part ailleurs.** L'application n'a pas de
+base à elle : le classeur *est* la base, et chaque onglet est une table.
+
+| Onglet | Rôle | Une ligne = |
+|---|---|---|
+| `1_BOITES` | les boîtes | une boîte : Fonction, PN Global, DS/VCI, Porteur, Statut, Niveau de qualification, **Composants** (boutons, voyants…), Image, Commentaires |
+| `2_NOMENCLATURE` | les sous-ensembles | un sous-ensemble rattaché à sa boîte par `PN Global` : Type, PN du type, puis les colonnes de son type (référence, mots-clés, cotes, **Structure mécanique**, **Composants électriques**…) |
+| `9_JOURNAL` | la trace | qui a modifié quoi, et quand |
+| *catalogue* (classeur séparé) | les composants connus | Catégorie, Fonction, Norme, Référence, Désignation |
+
+Concrètement : on ouvre le Sheet, on voit les données ; on les modifie dans
+l'application, la cellule change dans le Sheet ; on peut aussi corriger une
+cellule à la main, l'application la relira. `Config.gs` liste les en-têtes
+attendus, et `Setup.gs` crée les onglets manquants (menu **NEXUS PLM** dans le
+Sheet). Ajouter une colonne au Sheet suffit à la faire apparaître dans la
+fiche, sauf pour les champs typés du registre.
+
+Une cellule à valeurs multiples porte **une valeur par ligne** (Alt+Entrée
+dans le Sheet) : c'est le cas des porteurs, des qualifications et des
+composants.
+
+Les composants s'écrivent **`Fonction | Norme | Référence`**, une ligne par
+composant : `Bouton poussoir | ECS 7251 | MS24523-22`. L'ancienne écriture
+`Type | Sous-type (Norme)` reste lue.
+
+**La démonstration**, elle, n'a pas de Sheet : `demo/FauxServeur.html` garde
+les mêmes tables en mémoire, dans l'onglet du navigateur. Rien n'y est
+enregistré, tout repart à zéro au rechargement — c'est fait pour montrer, pas
+pour travailler.
+
+## Montrer l'application sans Google
+
+`npm run demo` produit **`build/nexus-demo.html`** : un fichier unique, à
+ouvrir d'un double-clic dans n'importe quel navigateur, sans serveur ni
+réseau. Il contient l'application complète (le vrai code de `src/`), Bootstrap
+inliné, des photos d'exemple et le faux serveur en mémoire. C'est le fichier à
+envoyer à un collègue.
+
+(`build/demo.html` est la même chose sous forme de fragment, pour l'aperçu
+hébergé.)
 
 ## Démonstration navigable
 
@@ -44,7 +87,8 @@ src/
     Setup.gs               création de structure, jeu de démo, menu
 
   client/
-    Styles.html            design system : la couleur ne sert qu'à signifier
+    Styles.html            design system : fond blanc, une teinte de marque, la couleur signifie
+    Composants.html        composants à trois niveaux : fonction > norme > référence
     Types.html             REGISTRE DES TYPES : champs + critères par type
     Dom.html               esc(), formats, délégation d'événements
     Api.html               google.script.run -> Promise   <-- frontière unique
@@ -53,8 +97,9 @@ src/
     ViewGrid.html          cartes, onglets, filtres par type, indicateurs
     ViewFiche.html         panneau latéral, champs selon le type
     ViewCompare.html       rendu des équivalences
-    Reglages.html          choix et pondération des critères, aperçu en direct
+    Reglages.html          rail de pondération, à gauche du classement
     Annulation.html        rattrapage d'une suppression
+    Dialogues.html         demander() / confirmer() — prompt() et confirm() sont bloqués chez Google
     Main.html              contrôleur : actions et démarrage
 ```
 
@@ -68,7 +113,7 @@ fichier.
 
 | Type | Champs propres | Critères d'équivalence |
 |---|---|---|
-| **Structure boîte** | montage, nombre de pas, longueur, largeur, masse, HL, DAL | montage, pas, dimensions, masse, DAL, HL, qualifications, composants |
+| **Structure boîte** | montage, nombre de pas, longueur, largeur, masse, HL, DAL, **structure mécanique**, **composants électriques** | montage, pas, dimensions, masse, DAL, HL, qualifications, structure mécanique, composants électriques |
 | **Harnais** | PN, référence | **référence, et rien d'autre** |
 | **Plaquette éclairante** | PN, **mots-clés** | **mots-clés, et rien d'autre** |
 
@@ -82,10 +127,42 @@ Les mots-clés sont comparés en recouvrement de vocabulaire, insensible aux
 accents et à la casse, doublons écartés : « mission SAR » et « Mission Sar »
 sont le même terme.
 
+### Trois familles de composants
+
+Les composants ne sont pas au même endroit selon ce qu'ils sont :
+
+| Famille | Où | Exemples |
+|---|---|---|
+| **Composants** | sur la **boîte** | boutons poussoirs, voyants, interrupteurs, relais — ce qui se voit et se manipule |
+| **Structure mécanique** | sur la **structure boîte** | colonnettes, entretoises, équerres, inserts — ce qui est dur |
+| **Composants électriques** | sur la **structure boîte** | colliers, embases, passe-fils — ce qui tient les câbles |
+
+Chaque famille a sa colonne, son catalogue (filtré par catégorie) et son
+critère d'équivalence, pondéré séparément.
+
+### Équivalence à trois niveaux
+
+Un composant se décrit en trois niveaux de précision croissante, et
+l'équivalence les parcourt dans l'ordre :
+
+1. **Fonction** — ce que c'est : bouton poussoir, colonnette
+2. **Norme** — ce qui le définit : ECS 7251, NSA 5512
+3. **Référence** — le modèle exact
+
+Pour chaque composant de la pièce de référence, on cherche dans la cible le
+meilleur appariement : **référence exacte** (vaut 1), sinon **même norme**
+(vaut 0,66), sinon **même fonction** (vaut 0,33), sinon rien. Un composant de
+la cible n'est apparié qu'une fois, et une référence identique doit aussi
+partager la fonction. Le résultat s'affiche par paliers : *Référence exacte*,
+*Même norme*, *Même fonction*, *Sans équivalent*, *Présents en plus sur la
+cible*.
+
 ## Pondération
 
-La pondération se règle **depuis la comparaison elle-même** : le panneau s'ouvre
-sur la portée de ce qu'on regarde et nulle part ailleurs.
+La pondération se règle **depuis la comparaison elle-même**, dans un rail à
+gauche du classement : on bouge un curseur, le classement à droite se
+recompose. Le rail s'ouvre sur la portée de ce qu'on regarde et nulle part
+ailleurs.
 
 - Les parts **totalisent toujours 100 %**. Monter un critère fait mécaniquement
   descendre les autres, proportionnellement : c'est un arbitrage, pas une série
@@ -95,8 +172,8 @@ sur la portée de ce qu'on regarde et nulle part ailleurs.
   critère ne peut pas être retiré.
 - **Harnais et plaquette n'ont qu'un critère** : le panneau le dit et n'affiche
   aucun curseur — il n'y a rien à arbitrer.
-- L'**aperçu se recalcule à chaque mouvement**, sur des données réelles. Le
-  panneau est sans voile : le classement se recompose derrière.
+- Le **classement se recalcule à chaque mouvement** : il n'y a pas d'aperçu à
+  part, le résultat est l'aperçu.
 
 Les réglages sont mémorisés sur le poste. « Rétablir les valeurs d'origine »
 remet parts, critères et seuil à leur état initial.
@@ -119,6 +196,19 @@ score : « Non comparé, faute de donnée : Masse. Le score porte sur le reste. 
 - Une **boîte** se duplique depuis sa carte, dans la liste — pas depuis sa fiche.
 - Un **sous-ensemble** se duplique depuis la fiche, avec tous les champs de son
   type recopiés.
+
+Le PN de la copie est demandé par un **dialogue intégré** (`Dialogues.html`).
+Les fenêtres natives `prompt()` et `confirm()` sont bloquées dans l'iframe
+sandboxée d'Apps Script : c'est pour cela que « Dupliquer » et « Supprimer »
+ne faisaient rien, sans le moindre message. Plus aucun appel natif ne subsiste.
+
+## Porteurs
+
+La liste des porteurs est **fermée** : tous les porteurs Airbus Helicopters,
+définis une fois dans `Config.gs` (serveur) et `Types.html` (repli client), et
+rien d'autre — plus de « Multi ». Une boîte porte autant de porteurs qu'il en
+faut, cochés à la création ou ajoutés depuis la fiche.
+
 
 ## Parti pris visuel
 
@@ -157,6 +247,11 @@ réutilisation :
 
 Et sur chaque sous-ensemble, la fiche répond à la question du réemploi :
 **« aussi montée dans »**, avec un lien direct vers les autres boîtes.
+
+Chaque indicateur est aussi un **filtre** : « Validées » ne montre que les
+boîtes validées, « Pièces réutilisées » les boîtes qui partagent une pièce,
+« Doublons probables » ouvre la liste, « Boîtes » revient à tout. Un
+indicateur actif se signale, et son filtre se retire d'un clic.
 
 Deux règles portent l'essentiel :
 

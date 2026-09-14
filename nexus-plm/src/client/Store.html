@@ -13,9 +13,12 @@ const Store = {
   nomenclature: [],
   headersBoites: [],
   headersNom: [],
-  config: { multiBoite: [], multiNom: [], lectureSeuleNom: [], statuts: [],
-            colonneStd: 'Composant STD' },
+  config: { multiBoite: [], multiNom: [], lectureSeuleNom: [], statuts: [], porteurs: [] },
   catalogue: [],
+  // Cible du catalogue ouvert : où ranger le composant choisi.
+  cibleCatalogue: null,
+  // Comparaison affichée : { sorte, cle, portee }.
+  comparaison: null,
 
   pnCourant: null,
   idNomCourant: null,
@@ -23,6 +26,8 @@ const Store = {
   recherche: '',
   filtreComposants: [],
   filtreTypes: [],
+  filtreStatut: null,        // un statut, ou rien
+  filtreReutilise: false,    // seulement les boîtes qui partagent une pièce
   tri: 'pn',
   enEditionBoite: false,
   enEditionNom: {},
@@ -42,6 +47,12 @@ const Store = {
 
 function CLE_NOM() { return 'ID_Ligne'; }
 function CLE_PN()  { return 'PN Global'; }
+
+/** Les porteurs proposés : ceux du serveur, sinon ceux du registre. */
+function porteursConnus() {
+  const liste = Store.config && Array.isArray(Store.config.porteurs) ? Store.config.porteurs : [];
+  return liste.length ? liste.slice() : PORTEURS.slice();
+}
 
 // ------------------------------------------------------------
 // Réglages : par défaut ceux du registre, puis ce que l'utilisateur a choisi
@@ -359,17 +370,28 @@ function correspond(boite, requete) {
   return q.split(/\s+/).every(function (mot) { return texte.indexOf(mot) !== -1; });
 }
 
+/** Tous les composants d'une boîte, ceux de la boîte et ceux de ses structures. */
+function composantsDeBoite(boite) {
+  const tous = [];
+  champsComposants().forEach(function (ch) {
+    if (ch.portee === 'boite') {
+      listeComposants(boite[ch.cle]).forEach(function (c) { tous.push(c); });
+    } else {
+      (boite.nomenclature || []).forEach(function (n) {
+        if (typeDe(n).cle !== ch.portee) return;
+        listeComposants(n[ch.cle]).forEach(function (c) { tous.push(c); });
+      });
+    }
+  });
+  return tous;
+}
+
 function contientTousComposants(boite, composants) {
   if (!composants.length) return true;
-  const stds = [];
-  (boite.nomenclature || []).forEach(function (n) {
-    valeursMulti(n[Store.config.colonneStd]).forEach(function (c) {
-      stds.push(normaliserTexte(c));
-    });
-  });
+  const presents = composantsDeBoite(boite).map(function (c) { return normaliserTexte(libelleComposant(c)); });
   return composants.every(function (terme) {
     const t = normaliserTexte(terme);
-    return stds.some(function (s) { return s.indexOf(t) !== -1; });
+    return presents.some(function (s) { return s.indexOf(t) !== -1; });
   });
 }
 
@@ -377,6 +399,31 @@ function contientTypes(boite, types) {
   if (!types.length) return true;
   const presents = new Set((boite.nomenclature || []).map(function (n) { return typeDe(n).cle; }));
   return types.every(function (t) { return presents.has(t); });
+}
+
+function aLeStatut(boite, statut) {
+  if (!statut) return true;
+  return normaliserStatut(boite['Statut']) === normaliserStatut(statut);
+}
+
+/** PN des pièces montées dans plus d'une boîte. */
+function piecesReutilisees() {
+  const boitesParPiece = new Map();
+  Store.nomenclature.forEach(function (n) {
+    const piece = normaliserTexte(n['PN du type']);
+    if (!piece) return;
+    if (!boitesParPiece.has(piece)) boitesParPiece.set(piece, new Set());
+    boitesParPiece.get(piece).add(String(n[CLE_PN()]).trim());
+  });
+  const partagees = new Set();
+  boitesParPiece.forEach(function (boites, piece) { if (boites.size > 1) partagees.add(piece); });
+  return partagees;
+}
+
+function partageUnePiece(boite, partagees) {
+  return (boite.nomenclature || []).some(function (n) {
+    return partagees.has(normaliserTexte(n['PN du type']));
+  });
 }
 
 // ------------------------------------------------------------
@@ -400,9 +447,12 @@ function rangStatut(s) {
 // Vue courante : un seul filtrage dont tout dérive
 // ------------------------------------------------------------
 function calculerVue() {
+  const partagees = Store.filtreReutilise ? piecesReutilisees() : null;
   const visibles = Store.boites.filter(function (b) {
     return contientTousComposants(b, Store.filtreComposants) &&
            contientTypes(b, Store.filtreTypes) &&
+           aLeStatut(b, Store.filtreStatut) &&
+           (!partagees || partageUnePiece(b, partagees)) &&
            correspond(b, Store.recherche);
   }).sort((TRIS[Store.tri] || TRIS.pn).fn);
 
@@ -422,7 +472,8 @@ function calculerVue() {
   return {
     visibles: visibles, parFonction: parFonction, onglet: onglet,
     aAfficher: onglet === 'Toutes' ? visibles : (parFonction.get(onglet) || []),
-    filtre: !!(Store.recherche || Store.filtreComposants.length || Store.filtreTypes.length)
+    filtre: !!(Store.recherche || Store.filtreComposants.length || Store.filtreTypes.length ||
+               Store.filtreStatut || Store.filtreReutilise)
   };
 }
 
@@ -543,11 +594,11 @@ function repartitionTypes() {
 function tousLesComposants() {
   const ensemble = new Set();
   Store.catalogue.forEach(function (c) {
-    const f = formaterComposant(c);
+    const f = libelleComposant(composantDepuisCatalogue(c));
     if (f) ensemble.add(f);
   });
-  Store.nomenclature.forEach(function (n) {
-    valeursMulti(n[Store.config.colonneStd]).forEach(function (s) { ensemble.add(s); });
+  Store.boites.forEach(function (b) {
+    composantsDeBoite(b).forEach(function (c) { ensemble.add(libelleComposant(c)); });
   });
   return Array.from(ensemble).sort();
 }
@@ -561,23 +612,26 @@ function tousLesMotsCles() {
   return Array.from(ensemble).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
 }
 
-function formaterComposant(composant) {
-  const type = composant['Type'] || '';
-  const sousType = composant['Sous Type/Désignation'] || '';
-  const norme = composant['Norm'] || composant['Standard number'] || composant['Ref'] || '';
-  return (type + (sousType ? ' | ' + sousType : '') + (norme ? ' (' + norme + ')' : '')).trim();
+function formaterComposant(entree) {
+  return libelleComposant(composantDepuisCatalogue(entree));
 }
 
 const CATALOGUE_MAX = 30;
 
-/** Conserve l'index RÉEL : c'est lui qui est passé au clic. */
-function filtrerCatalogue(requete) {
+/**
+ * Conserve l'index RÉEL : c'est lui qui est passé au clic.
+ * Filtré par catégorie : on ne propose pas une colonnette pour une boîte,
+ * ni un bouton poussoir pour une structure.
+ */
+function filtrerCatalogue(requete, categorie) {
   const q = normaliserTexte(requete);
   const tous = Store.catalogue
-    .map(function (c, index) { return { composant: c, index: index }; })
+    .map(function (c, index) { return { composant: c, index: index, structure: composantDepuisCatalogue(c) }; })
     .filter(function (e) {
+      if (categorie && e.structure.categorie !== categorie) return false;
       if (!q) return true;
-      return normaliserTexte(formaterComposant(e.composant)).indexOf(q) !== -1;
+      const cible = normaliserTexte(libelleComposant(e.structure) + ' ' + e.structure.designation);
+      return cible.indexOf(q) !== -1;
     });
   return { affiches: tous.slice(0, CATALOGUE_MAX), total: tous.length };
 }
