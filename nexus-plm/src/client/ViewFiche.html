@@ -169,6 +169,18 @@ function blocNomHtml(ligne) {
                       'change la fiche affichée');
   }
 
+  // Réemploi : la même pièce est-elle montée ailleurs ?
+  const ailleurs = boitesUtilisant(ligne['PN du type'], ligne[CLE_PN()]);
+  if (ailleurs.length) {
+    html += '<div class="usages">' +
+      '<span class="usages-titre">Aussi montée dans</span>' +
+      ailleurs.map(function (pn) {
+        return '<button type="button" class="usage-lien"' +
+               dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
+      }).join('') +
+    '</div>';
+  }
+
   if (!edition) html += apercuImageHtml(ligne['Image'], '');
 
   // Seuls les champs du type : c'est tout l'intérêt du registre.

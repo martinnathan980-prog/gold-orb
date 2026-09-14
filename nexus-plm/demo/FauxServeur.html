@@ -74,10 +74,16 @@ const BASE = {
     ['POWER',   'U880P50001',  'U880P50051',  'H160',       'En étude', 'Qualified to H160', '', ''],
     ['SENSOR',  '332S60001',   '332S60051',   'Multi',      'Obsolète', 'Qualified to H225', '', ''],
     ['DISPLAY', 'U880D70001',  'U880D70051',  'H160',       'Validé',   'Qualified to H160', '', '']
-  ].map(function (l) { return objet(EN_TETES_BOITES, l); }),
+  ].map(function (l) {
+    const b = objet(EN_TETES_BOITES, l);
+    b['Image'] = photoBoitier(b['PN Global'], b['Fonction']);
+    return b;
+  }),
 
   nomenclature: LIGNES_NOM.map(function (l) {
-    return objet(EN_TETES_NOM, [nouvelId()].concat(l));
+    const n = objet(EN_TETES_NOM, [nouvelId()].concat(l));
+    n['Image'] = photoPourLigne(n);
+    return n;
   }),
 
   catalogue: [
@@ -187,6 +193,7 @@ const SERVEUR = {
     b['Fonction'] = String(fonction || '').trim();
     b['DS/VCI Associé'] = String(dsVci || '').trim();
     b['Statut'] = STATUT_DEFAUT;
+    if (!b['Image']) b['Image'] = photoBoitier(propre, b['Fonction']);
     DONNEES.boites.push(b);
     return { ok: true, boite: copie(b) };
   },
@@ -242,6 +249,7 @@ const SERVEUR = {
     l['PN Global'] = pn;
     l['Type'] = String(type || '').trim();
     l['PN du type'] = String(pnType || '').trim();
+    l['Image'] = photoPourLigne(l);      // démo : une photo d'exemple par défaut
     DONNEES.nomenclature.push(l);
     return { ok: true, ligne: copie(l) };
   },

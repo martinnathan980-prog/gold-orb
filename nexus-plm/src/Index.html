@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=IBM+Plex+Mono:wght@500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap">
     <?!= include('client/Styles'); ?>
   </head>
 
@@ -41,18 +41,14 @@
     <header class="entete">
       <div class="enveloppe entete-corps">
         <div class="marque">
-          <span class="marque-sigle" aria-hidden="true">◆</span>
           <h1>NEXUS</h1>
         </div>
-
         <div class="entete-outils">
           <button type="button" class="btn-entete btn-entete-fort" data-action="nouvelle-boite">
             + Boîte
           </button>
         </div>
-      </div>
 
-      <div class="enveloppe">
         <dl class="indicateurs">
           <div class="indicateur">
             <dt>Boîtes</dt><dd id="kpiBoites">–</dd>
@@ -64,14 +60,15 @@
           <div class="indicateur">
             <dt>Références uniques</dt><dd id="kpiNoms">–</dd>
           </div>
-          <div class="indicateur" title="Pièces dont le PN apparaît dans au moins deux boîtes">
+          <div class="indicateur">
             <dt>Pièces réutilisées</dt><dd id="kpiReutil">–</dd>
             <span class="indicateur-detail" id="kpiReutilDetail"></span>
           </div>
-          <div class="indicateur indicateur-alerte"
-               title="Pièces de même type, PN différents, très proches selon vos critères">
-            <dt>Doublons probables</dt><dd id="kpiDoublons">–</dd>
-            <span class="indicateur-detail">à consolider</span>
+          <div class="indicateur indicateur-alerte">
+            <button type="button" class="indicateur-clic" data-action="ouvrir-doublons">
+              <dt>Doublons probables</dt><dd id="kpiDoublons">–</dd>
+              <span class="indicateur-detail">voir la liste</span>
+            </button>
           </div>
           <p class="indicateurs-portee" id="kpiPortee">sur toute la base</p>
         </dl>
@@ -82,22 +79,26 @@
       <div class="barre-recherche">
         <label class="champ-recherche">
           <span class="champ-recherche-icone" aria-hidden="true">⌕</span>
-          <input type="text" id="searchBar" placeholder="Rechercher un PN, une fonction, un composant, un mot-clé…"
-                 aria-label="Recherche globale" autocomplete="off">
+          <input type="text" id="searchBar" autocomplete="off"
+                 placeholder="Rechercher un PN, une fonction, une référence, un mot-clé…"
+                 aria-label="Recherche globale">
           <kbd class="raccourci" aria-hidden="true">/</kbd>
+          <button type="button" class="btn-dans-champ" id="btnComposant"
+                  data-action="ouvrir-multi-recherche">Par composant</button>
         </label>
-        <button type="button" class="btn-neutre" data-action="ouvrir-multi-recherche">
-          Recherche par composants
-        </button>
       </div>
 
-      <div id="filtresType"></div>
       <div id="filtreActif" class="filtres-actifs"></div>
 
-      <div class="barre-liste">
-        <nav id="functionTabs" class="onglets" aria-label="Filtrer par fonction"></nav>
-        <div id="zoneTri"></div>
+      <div class="outils">
+        <div class="outils-gauche"><div id="filtresType"></div></div>
+        <div class="outils-droite">
+          <span class="outils-bilan" id="bilanResultats"></span>
+          <div id="zoneTri"></div>
+        </div>
       </div>
+
+      <nav id="functionTabs" class="onglets" aria-label="Filtrer par fonction"></nav>
 
       <div id="loading" class="chargement">
         <span class="spinner-border text-primary" role="status"></span>
@@ -172,6 +173,22 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
           </div>
           <div class="modal-body" id="compareResult"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------ Doublons probables -->
+    <div class="modal fade" id="doublonsModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content boite-modale">
+          <div class="modal-header">
+            <div>
+              <h2 class="modal-title">Doublons probables</h2>
+              <p class="modale-sous" id="doublonsSous"></p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+          </div>
+          <div class="modal-body" id="doublonsCorps"></div>
         </div>
       </div>
     </div>

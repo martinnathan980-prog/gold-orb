@@ -1,0 +1,191 @@
+<script>
+// ============================================================
+// DÉMONSTRATION — photos d'exemple.
+//
+// Ne fait partie d'AUCUNE livraison. Dans l'application, le champ Image
+// attend l'URL d'une vraie photo. Ici on fabrique des visuels de catalogue
+// — objet sur fond de studio, ombre portée, reflets, grain — parce que la
+// politique de sécurité de l'aperçu interdit toute image externe.
+// ============================================================
+
+function svgVersDataUri(svg) {
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace(/\s+/g, ' ').trim());
+}
+
+function graine(texte) {
+  let h = 2166136261;
+  for (let i = 0; i < String(texte).length; i++) {
+    h ^= String(texte).charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h);
+}
+
+/** Décor commun : fond de studio, grain, ombre de contact. */
+function studio(id, contenu, teinteFond) {
+  const f = teinteFond || ['#e9e7e3', '#cfccc7'];
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">' +
+    '<defs>' +
+      '<linearGradient id="fond' + id + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0" stop-color="' + f[0] + '"/>' +
+        '<stop offset="1" stop-color="' + f[1] + '"/>' +
+      '</linearGradient>' +
+      '<radialGradient id="vig' + id + '" cx="50%" cy="38%" r="72%">' +
+        '<stop offset="0" stop-color="#fff" stop-opacity=".55"/>' +
+        '<stop offset="1" stop-color="#000" stop-opacity=".18"/>' +
+      '</radialGradient>' +
+      '<filter id="flou' + id + '"><feGaussianBlur stdDeviation="9"/></filter>' +
+      '<filter id="grain' + id + '">' +
+        '<feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" result="b"/>' +
+        '<feColorMatrix in="b" type="saturate" values="0"/>' +
+        '<feComponentTransfer><feFuncA type="linear" slope="0.055"/></feComponentTransfer>' +
+      '</filter>' +
+    '</defs>' +
+    '<rect width="400" height="300" fill="url(#fond' + id + ')"/>' +
+    '<rect width="400" height="300" fill="url(#vig' + id + ')"/>' +
+    contenu +
+    '<rect width="400" height="300" filter="url(#grain' + id + ')" opacity=".55"/>' +
+  '</svg>';
+}
+
+/** Boîtier : coffret anodisé, connecteurs en façade, vis aux angles. */
+function photoBoitier(cle, fonction) {
+  const g = graine(cle);
+  const id = 'b' + (g % 9999);
+  const teintes = [['#b9bcc2', '#7e838c', '#5d626b'], ['#c3bcae', '#8d8577', '#6a6459'],
+                   ['#b6bec0', '#7b8587', '#5a6365'], ['#c0b8bd', '#898086', '#645c61']];
+  const t = teintes[g % teintes.length];
+  const nbConn = 2 + (g % 3);
+  const L = 252, H = 152, x = 200 - L / 2, y = 150 - H / 2;
+
+  let connecteurs = '';
+  for (let i = 0; i < nbConn; i++) {
+    const cx = x + 44 + i * ((L - 88) / Math.max(1, nbConn - 1 || 1));
+    const cy = y + H / 2 + 8;
+    connecteurs +=
+      '<ellipse cx="' + cx.toFixed(1) + '" cy="' + cy + '" rx="21" ry="21" fill="#2c2f34"/>' +
+      '<ellipse cx="' + cx.toFixed(1) + '" cy="' + cy + '" rx="17" ry="17" fill="none" stroke="#8e939b" stroke-width="2.5"/>' +
+      '<ellipse cx="' + cx.toFixed(1) + '" cy="' + (cy - 2) + '" rx="11" ry="11" fill="#1a1c20"/>' +
+      '<ellipse cx="' + (cx - 4).toFixed(1) + '" cy="' + (cy - 7) + '" rx="4" ry="3" fill="#fff" opacity=".22"/>';
+  }
+
+  let vis = '';
+  [[x + 14, y + 14], [x + L - 14, y + 14], [x + 14, y + H - 14], [x + L - 14, y + H - 14]]
+    .forEach(function (p) {
+      vis += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="5.5" fill="#6d7178"/>' +
+             '<circle cx="' + p[0] + '" cy="' + (p[1] - 1) + '" r="4" fill="#9ba0a7"/>' +
+             '<path d="M' + (p[0] - 2.5) + ' ' + (p[1] - 1) + 'h5" stroke="#5a5e65" stroke-width="1.4"/>';
+    });
+
+  return svgVersDataUri(studio(id,
+    '<defs>' +
+      '<linearGradient id="met' + id + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0" stop-color="' + t[0] + '"/>' +
+        '<stop offset=".45" stop-color="' + t[1] + '"/>' +
+        '<stop offset="1" stop-color="' + t[2] + '"/>' +
+      '</linearGradient>' +
+    '</defs>' +
+    '<ellipse cx="200" cy="' + (y + H + 16) + '" rx="' + (L / 2 + 4) + '" ry="14" fill="#000" opacity=".32" filter="url(#flou' + id + ')"/>' +
+    '<rect x="' + x + '" y="' + y + '" width="' + L + '" height="' + H + '" rx="9" fill="url(#met' + id + ')"/>' +
+    '<rect x="' + x + '" y="' + y + '" width="' + L + '" height="' + H + '" rx="9" fill="none" stroke="#4b4f56" stroke-width="1.2"/>' +
+    '<path d="M' + (x + 9) + ' ' + (y + 2.5) + 'h' + (L - 18) + '" stroke="#fff" stroke-width="2" opacity=".45"/>' +
+    '<rect x="' + (x + 26) + '" y="' + (y + 26) + '" width="' + (L - 52) + '" height="' + (H - 52) + '" rx="5" fill="#3a3d43"/>' +
+    '<rect x="' + (x + 26) + '" y="' + (y + 26) + '" width="' + (L - 52) + '" height="' + (H - 52) + '" rx="5" fill="none" stroke="#25272b" stroke-width="1"/>' +
+    connecteurs + vis +
+    '<rect x="' + (x + 30) + '" y="' + (y + 30) + '" width="62" height="15" rx="2.5" fill="#d9d4c6"/>' +
+    '<text x="' + (x + 36) + '" y="' + (y + 41) + '" font-family="monospace" font-size="9" fill="#33363b" letter-spacing="1">' +
+      String(fonction || '').toUpperCase().slice(0, 7) + '</text>',
+    ['#eceae6', '#d2cfc9']));
+}
+
+/** Harnais : faisceau lové, connecteurs aux extrémités, colliers. */
+function photoHarnais(cle, reference) {
+  const g = graine(cle);
+  const id = 'h' + (g % 9999);
+  const gaines = [['#3a3d42', '#23262a'], ['#4a3f38', '#2c2520'], ['#33404a', '#1e262c']];
+  const t = gaines[g % gaines.length];
+  const dy = (g % 24) - 12;
+  const chemin = 'M80 ' + (150 + dy) + ' C142 ' + (74 + dy) + ', 262 ' + (214 - dy) + ', 322 ' + (146 - dy);
+
+  const connecteur = function (cx, cy, sens) {
+    return '<g transform="translate(' + cx + ',' + cy + ') scale(' + sens + ',1)">' +
+      '<ellipse cx="6" cy="0" rx="9" ry="22" fill="#15171a"/>' +
+      '<rect x="-26" y="-22" width="32" height="44" rx="5" fill="#2b2e33"/>' +
+      '<rect x="-26" y="-22" width="32" height="44" rx="5" fill="none" stroke="#585d64" stroke-width="1.4"/>' +
+      '<path d="M-22 -14h22M-22 -4h22M-22 6h22M-22 16h22" stroke="#7e848c" stroke-width="1.6"/>' +
+      '<path d="M-24 -20h28" stroke="#fff" stroke-width="1.6" opacity=".3"/>' +
+    '</g>';
+  };
+
+  return svgVersDataUri(studio(id,
+    '<defs>' +
+      '<linearGradient id="gaine' + id + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0" stop-color="' + t[0] + '"/>' +
+        '<stop offset="1" stop-color="' + t[1] + '"/>' +
+      '</linearGradient>' +
+    '</defs>' +
+    '<path d="' + chemin + '" fill="none" stroke="#000" stroke-width="30" stroke-linecap="round" opacity=".25" filter="url(#flou' + id + ')" transform="translate(0,16)"/>' +
+    '<path d="' + chemin + '" fill="none" stroke="url(#gaine' + id + ')" stroke-width="26" stroke-linecap="round"/>' +
+    // Tressage : des traits obliques le long du cheminement, écrêtés par la gaine.
+    '<path d="' + chemin + '" fill="none" stroke="#7d848d" stroke-width="22" stroke-linecap="round"' +
+      ' stroke-dasharray="2 7" opacity=".30"/>' +
+    '<path d="' + chemin + '" fill="none" stroke="#000" stroke-width="22" stroke-linecap="round"' +
+      ' stroke-dasharray="2 7" stroke-dashoffset="4" opacity=".22"/>' +
+    '<path d="' + chemin + '" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".16" transform="translate(0,-6)"/>' +
+    '<path d="' + chemin + '" fill="none" stroke="#000" stroke-width="6" stroke-linecap="round" opacity=".2" transform="translate(0,8)"/>' +
+    '<g stroke="#0d0f12" stroke-width="6.5" opacity=".9">' +
+      '<path d="M150 ' + (104 + dy) + 'l5 20M204 ' + 146 + 'l-4 21M266 ' + (168 - dy) + 'l5 -21"/>' +
+    '</g>' +
+    connecteur(80, 150 + dy, -1) + connecteur(322, 146 - dy, 1) +
+    '<rect x="156" y="243" width="96" height="18" rx="3" fill="#ddd8ca" opacity=".95"/>' +
+    '<text x="204" y="256" text-anchor="middle" font-family="monospace" font-size="9" fill="#33363b">' +
+      String(reference || 'HARNAIS').slice(0, 14) + '</text>',
+    ['#e4e2de', '#c8c5c0']));
+}
+
+/** Plaquette : sérigraphie rétroéclairée, halo, biseau. */
+function photoPlaquette(cle, mots) {
+  const g = graine(cle);
+  const id = 'p' + (g % 9999);
+  const libelles = String(mots || '').split(/[,;|]/).map(function (m) { return m.trim().toUpperCase(); })
+                     .filter(Boolean).slice(0, 2);
+  const L = 262, H = 112, x = 200 - L / 2, y = 150 - H / 2;
+
+  let textes = '';
+  libelles.forEach(function (m, i) {
+    textes += '<text x="200" y="' + (y + 46 + i * 34) + '" text-anchor="middle" ' +
+      'font-family="monospace" font-size="' + (i === 0 ? 21 : 15) + '" font-weight="bold" ' +
+      'fill="#ffd77a" letter-spacing="3" filter="url(#halo' + id + ')">' + m.slice(0, 18) + '</text>';
+  });
+
+  return svgVersDataUri(studio(id,
+    '<defs>' +
+      '<filter id="halo' + id + '" x="-30%" y="-60%" width="160%" height="260%">' +
+        '<feGaussianBlur stdDeviation="3.2" result="f"/>' +
+        '<feMerge><feMergeNode in="f"/><feMergeNode in="f"/><feMergeNode in="SourceGraphic"/></feMerge>' +
+      '</filter>' +
+      '<linearGradient id="verre' + id + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0" stop-color="#2b3038"/>' +
+        '<stop offset=".5" stop-color="#14171c"/>' +
+        '<stop offset="1" stop-color="#1e2229"/>' +
+      '</linearGradient>' +
+    '</defs>' +
+    '<ellipse cx="200" cy="' + (y + H + 14) + '" rx="' + (L / 2) + '" ry="13" fill="#000" opacity=".32" filter="url(#flou' + id + ')"/>' +
+    '<rect x="' + (x - 7) + '" y="' + (y - 7) + '" width="' + (L + 14) + '" height="' + (H + 14) + '" rx="10" fill="#9ea3aa"/>' +
+    '<rect x="' + (x - 7) + '" y="' + (y - 7) + '" width="' + (L + 14) + '" height="' + (H + 14) + '" rx="10" fill="none" stroke="#6e737a" stroke-width="1.2"/>' +
+    '<path d="M' + (x - 1) + ' ' + (y - 5.5) + 'h' + (L + 2) + '" stroke="#fff" stroke-width="1.8" opacity=".5"/>' +
+    '<rect x="' + x + '" y="' + y + '" width="' + L + '" height="' + H + '" rx="5" fill="url(#verre' + id + ')"/>' +
+    '<rect x="' + (x + 5) + '" y="' + (y + 5) + '" width="' + (L - 10) + '" height="' + (H - 10) + '" rx="3" fill="none" stroke="#ffd77a" stroke-width=".8" opacity=".3"/>' +
+    textes +
+    '<path d="M' + x + ' ' + (y + 3) + 'h' + L + 'v18c-90 14 -170 6 -' + L + ' -4z" fill="#fff" opacity=".07"/>',
+    ['#dedbd6', '#bcb9b4']));
+}
+
+function photoPourLigne(ligne) {
+  const type = String(ligne['Type'] || '').toLowerCase();
+  if (type.indexOf('harnais') !== -1) return photoHarnais(ligne['PN du type'], ligne['Référence']);
+  if (type.indexOf('plaquette') !== -1) return photoPlaquette(ligne['PN du type'], ligne['Mots-clés']);
+  if (type.indexOf('structure') !== -1) return photoBoitier(ligne['PN du type'], 'STRUCT');
+  return '';
+}
+</script>

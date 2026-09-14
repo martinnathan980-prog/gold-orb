@@ -120,13 +120,13 @@ async function ecranPropre(page) {
   eq('bouton « + Boîte »', (await texte(page, '.btn-entete-fort')).trim(), '+ Boîte');
   eq('pas d\'export CSV', await page.locator('[data-action="exporter-bom"]').count(), 0);
   faux('chargement masqué', await page.locator('#loading').isVisible());
-  // Aucune image fabriquée : le champ attend une URL de photo.
-  eq('aucun dessin généré', await page.locator('img.carte-image').count(), 0);
-  eq('un état « pas de photo » assumé',
-     await page.locator('.carte-image-absente').count(), 10);
+  eq('chaque boîte a sa photo', await page.locator('img.carte-image').count(), 10);
+  eq('le statut se lit sur la photo', await page.locator('.carte-statut').count(), 10);
+  vrai('la composition est une barre empilée',
+       await page.locator('.compo-barre').count() >= 8);
   // Une entrée par type présent et par carte, pas une par sous-ensemble.
   const compositions = await page.locator('.composition li').count();
-  vrai('la composition par type est affichée', compositions >= 10);
+  vrai('la composition par type est affichée', compositions >= 8);
   vrai('les trois types apparaissent en composition',
        (await texte(page, '#mainContainer')).indexOf('Harnais') !== -1 &&
        (await texte(page, '#mainContainer')).indexOf('Plaquette') !== -1 &&
@@ -203,12 +203,25 @@ async function ecranPropre(page) {
   eq('somme des onglets = compteur « Toutes »',
      compteurs.slice(1).reduce(function (s, n) { return s + n; }, 0), compteurs[0]);
 
-  await page.selectOption('#triSelect', 'statut');
-  await page.waitForTimeout(250);
+  // Le tri est un menu discret, plus un <select> planté dans la page.
+  eq('pas de select de tri', await page.locator('#triSelect').count(), 0);
+  await page.locator('#triBouton').click();
+  await page.waitForTimeout(200);
+  faux('le menu s\'ouvre', await page.locator('#triMenu').isHidden());
+  await page.locator('.tri-option', { hasText: 'Statut' }).click();
+  await page.waitForTimeout(300);
   vrai('tri par statut : un validé en tête',
        (await texte(page, '.carte')).indexOf('Validé') !== -1);
-  await page.selectOption('#triSelect', 'pn');
-  await page.waitForTimeout(250);
+  vrai('le bouton reflète le tri courant',
+       (await texte(page, '#triBouton')).indexOf('Statut') !== -1);
+  await page.locator('#triBouton').click();
+  await page.waitForTimeout(150);
+  await page.locator('.tri-option', { hasText: 'PN croissant' }).click();
+  await page.waitForTimeout(300);
+  await page.mouse.click(5, 5);
+  await page.waitForTimeout(200);
+  vrai('le menu se referme quand on clique ailleurs',
+       await page.locator('#triMenu').isHidden());
 
   // ---------------------------------------------------------------
   bloc('Fiche : des champs différents selon le type');
@@ -413,6 +426,34 @@ async function ecranPropre(page) {
 
 
   // ---------------------------------------------------------------
+  bloc('Réemploi et doublons');
+  await ecranPropre(page);
+  // Une pièce montée dans plusieurs boîtes doit le dire, avec un lien.
+  await ouvrirFiche(page, '332P20001');
+  vrai('le réemploi est signalé',
+       await page.locator('#slideOverBody .usages').count() >= 1);
+  const lienUsage = page.locator('#slideOverBody .usage-lien').first();
+  const pnLie = (await lienUsage.evaluate(function (el) { return el.textContent; })).trim();
+  await lienUsage.click();
+  await page.waitForTimeout(700);
+  eq('le lien mène à l\'autre boîte', (await texte(page, '#slideOverTitle')).trim(), pnLie);
+  await ecranPropre(page);
+
+  await page.locator('[data-action="ouvrir-doublons"]').click();
+  await page.waitForSelector('#doublonsModal.show');
+  await page.waitForTimeout(400);
+  const nbDoublons = await page.locator('.doublon').count();
+  vrai('la liste des doublons s\'ouvre depuis l\'indicateur',
+       nbDoublons >= 1 || (await texte(page, '#doublonsCorps')).indexOf('Aucun doublon') !== -1);
+  if (nbDoublons) {
+    vrai('chaque paire montre son score',
+         await page.locator('.doublon .score').count() === nbDoublons);
+    await page.locator('.doublon .doublon-boite').first().click();
+    await page.waitForTimeout(700);
+    vrai('on rebondit sur la fiche', await page.locator('#detailsSlideOver.show').count() === 1);
+  }
+  await ecranPropre(page);
+
   bloc('Duplication');
   await ecranPropre(page);
   page.once('dialog', function (d) { d.accept('COPIE-1'); });
@@ -565,11 +606,22 @@ async function ecranPropre(page) {
   await page.waitForTimeout(1200);
   eq('réinitialisation de la démo', await page.locator('.carte').count(), 10);
   await page.evaluate(function () {
-    window.scrollTo(0, 0);
+    // Bootstrap rend le focus au déclencheur en fermant un panneau, ce qui
+    // refait défiler la page : on le retire avant de remonter.
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    document.body.style.overflow = '';
+    document.body.classList.remove('modal-open', 'offcanvas-open');
     const b = document.getElementById('bandeauMessage');
     if (b) b.hidden = true;
   });
   await page.waitForTimeout(400);
+  // La page se recompose après la réinitialisation ; on insiste jusqu'à ce
+  // que le défilement tienne vraiment à zéro.
+  await page.waitForFunction(function () {
+    window.scrollTo(0, 0);
+    return window.scrollY === 0;
+  }, null, { timeout: 5000 });
+  eq('la page est bien en haut', await page.evaluate(function () { return window.scrollY; }), 0);
   vrai('en-tête visible en haut de page', await page.locator('.entete').isVisible());
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-grille.png') });
   await ouvrirFiche(page, '332P20001');

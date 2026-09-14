@@ -486,10 +486,11 @@ function compterDoublonsProbables(liste) {
     parType.get(cle).push(n);
   });
 
-  let paires = 0, total = 0, tronque = false;
+  let total = 0;
   parType.forEach(function (lignes) { total += (lignes.length * (lignes.length - 1)) / 2; });
-  if (total > PLAFOND_PAIRES) return { nombre: null, tronque: true };
+  if (total > PLAFOND_PAIRES) return { nombre: null, paires: [], tronque: true };
 
+  const paires = [];
   parType.forEach(function (lignes) {
     for (let i = 0; i < lignes.length; i++) {
       for (let j = i + 1; j < lignes.length; j++) {
@@ -497,11 +498,31 @@ function compterDoublonsProbables(liste) {
         const b = String(lignes[j]['PN du type'] || '').trim();
         if (!a || !b || normaliserTexte(a) === normaliserTexte(b)) continue;
         const r = comparerSousEnsembles(lignes[i], lignes[j]);
-        if (r.mesurable && r.score >= SEUIL_DOUBLON) paires++;
+        if (r.mesurable && r.score >= SEUIL_DOUBLON) {
+          paires.push({ a: lignes[i], b: lignes[j], score: r.score, type: typeDe(lignes[i]) });
+        }
       }
     }
   });
-  return { nombre: paires, tronque: tronque };
+  paires.sort(function (x, y) { return y.score - x.score; });
+  return { nombre: paires.length, paires: paires, tronque: false };
+}
+
+/**
+ * Où une pièce est-elle montée ? C'est la question que pose un outil de
+ * réemploi, et elle n'avait pas de réponse directe.
+ */
+function boitesUtilisant(pnPiece, saufBoite) {
+  const cible = normaliserTexte(pnPiece);
+  if (!cible) return [];
+  const vues = new Set();
+  Store.nomenclature.forEach(function (n) {
+    if (normaliserTexte(n['PN du type']) !== cible) return;
+    const b = String(n[CLE_PN()]).trim();
+    if (saufBoite && b === String(saufBoite).trim()) return;
+    vues.add(b);
+  });
+  return Array.from(vues).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
 }
 
 /** Répartition des sous-ensembles par type, pour la barre de filtres. */

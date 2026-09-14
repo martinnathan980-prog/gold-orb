@@ -386,6 +386,79 @@ C.Store.derniereSuppression.heure = Date.now() - 300000;
 faux('mais pas indéfiniment', C.peutAnnuler());
 
 // =====================================================================
+bloc('Réemploi : où une pièce est-elle montée ?');
+// =====================================================================
+charger([{ 'PN Global': 'B1', 'Fonction': 'A' }, { 'PN Global': 'B2', 'Fonction': 'A' },
+         { 'PN Global': 'B3', 'Fonction': 'B' }],
+  [{ 'ID_Ligne': 'H1', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'HP-1', 'Référence': 'R' },
+   { 'ID_Ligne': 'H2', 'PN Global': 'B2', 'Type': 'Harnais', 'PN du type': 'HP-1', 'Référence': 'R' },
+   { 'ID_Ligne': 'H3', 'PN Global': 'B3', 'Type': 'Harnais', 'PN du type': 'HP-9', 'Référence': 'R' }]);
+eq('la pièce partagée est vue dans les deux boîtes', C.boitesUtilisant('HP-1'), ['B1', 'B2']);
+eq('en excluant la boîte courante', C.boitesUtilisant('HP-1', 'B1'), ['B2']);
+eq('une pièce unique n\'est montée nulle part ailleurs', C.boitesUtilisant('HP-9', 'B3'), []);
+eq('PN inconnu', C.boitesUtilisant('ZZZ'), []);
+eq('PN vide', C.boitesUtilisant(''), []);
+eq('insensible aux accents et à la casse', C.boitesUtilisant('hp-1'), ['B1', 'B2']);
+
+C.Store.pnCourant = 'B1';
+vrai('la fiche annonce le réemploi',
+     C.blocNomHtml(C.nomParId('H1')).indexOf('Aussi montée dans') !== -1);
+vrai('avec un lien vers l\'autre boîte',
+     C.blocNomHtml(C.nomParId('H1')).indexOf('B2') !== -1);
+faux('rien à signaler pour une pièce unique',
+     C.blocNomHtml(C.nomParId('H3')).indexOf('Aussi montée dans') !== -1);
+
+const kpiReemploi = C.calculerKpi(C.Store.boites);
+eq('une pièce réutilisée', kpiReemploi.reutilisees, 1);
+eq('sur deux pièces distinctes', kpiReemploi.nbPieces, 2);
+eq('soit 50 %', kpiReemploi.pctReutilisees, 50);
+
+// =====================================================================
+bloc('Doublons probables');
+// =====================================================================
+charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }, { 'PN Global': 'B3' }],
+  [{ 'ID_Ligne': 'H1', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'A-1', 'Référence': 'REF-X' },
+   { 'ID_Ligne': 'H2', 'PN Global': 'B2', 'Type': 'Harnais', 'PN du type': 'A-2', 'Référence': 'REF-X' },
+   { 'ID_Ligne': 'H3', 'PN Global': 'B3', 'Type': 'Harnais', 'PN du type': 'A-3', 'Référence': 'REF-Y' }]);
+const dbl = C.compterDoublonsProbables(C.Store.boites);
+eq('une paire détectée', dbl.nombre, 1);
+eq('ce sont bien A-1 et A-2',
+   [dbl.paires[0].a['PN du type'], dbl.paires[0].b['PN du type']].sort(), ['A-1', 'A-2']);
+eq('à 100 %', dbl.paires[0].score, 100);
+faux('pas tronqué sur ce volume', dbl.tronque);
+
+// Même PN : ce n'est pas un doublon, c'est la même pièce réutilisée.
+charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],
+  [{ 'ID_Ligne': 'H1', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'MEME', 'Référence': 'R' },
+   { 'ID_Ligne': 'H2', 'PN Global': 'B2', 'Type': 'Harnais', 'PN du type': 'MEME', 'Référence': 'R' }]);
+eq('un PN identique n\'est pas un doublon', C.compterDoublonsProbables(C.Store.boites).nombre, 0);
+
+// Types différents : jamais comparés entre eux.
+charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],
+  [{ 'ID_Ligne': 'H1', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'X-1', 'Référence': 'R' },
+   { 'ID_Ligne': 'P1', 'PN Global': 'B2', 'Type': 'Plaquette éclairante', 'PN du type': 'X-2',
+     'Mots-clés': 'R' }]);
+eq('deux types différents ne font pas un doublon',
+   C.compterDoublonsProbables(C.Store.boites).nombre, 0);
+
+// La pondération pilote l'indicateur : deux structures de même montage mais
+// de cotes et de masse différentes. Sur tous les critères elles restent sous
+// le seuil ; sur le seul montage, elles deviennent un doublon probable.
+charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],
+  [ligneS('S1', 'B1', 500, 140, 500),
+   ligneS('S2', 'B2', 300, 90, 900)]);
+eq('sur tous les critères, aucun doublon',
+   C.compterDoublonsProbables(C.Store.boites).nombre, 0);
+
+C.criteresActifs('structure').forEach(function (c) {
+  if (c.cle !== 'montage') C.desactiverCritere('structure', c.cle);
+});
+eq('sur le seul montage, elles deviennent un doublon probable',
+   C.compterDoublonsProbables(C.Store.boites).nombre, 1);
+C.reinitialiserPoids();
+eq('retour aux critères d\'origine', C.compterDoublonsProbables(C.Store.boites).nombre, 0);
+
+// =====================================================================
 bloc('Serveur — syntaxe et cohérence');
 // =====================================================================
 ['server/Config.gs', 'server/Repository.gs', 'server/Api.gs', 'server/Setup.gs']
@@ -465,6 +538,14 @@ vrai('le niveau de qualification', srcIndex.indexOf('newBoiteNiveau') !== -1);
 vrai('et l\'URL de la photo', srcIndex.indexOf('newBoiteImage') !== -1);
 vrai('indicateur de réutilisation', srcIndex.indexOf('kpiReutil') !== -1);
 vrai('indicateur de doublons probables', srcIndex.indexOf('kpiDoublons') !== -1);
+vrai('les doublons sont consultables', declarees.has('ouvrir-doublons'));
+vrai('le tri est un menu, plus un select', declarees.has('choisir-tri'));
+faux('plus de <select> de tri', /id="triSelect"/.test(srcIndex));
+vrai('la recherche par composant est dans le champ',
+     /class="btn-dans-champ"[^>]*id="btnComposant"/.test(srcIndex));
+faux('plus de bandeau de démonstration dans la source livrée',
+     /barreDemo/.test(srcIndex));
+
 faux('plus de sous-titre sous le titre', /Nomenclatures d'assemblages/.test(srcIndex));
 vrai('indicateur « Boîtes »', srcIndex.indexOf('<dt>Boîtes</dt>') !== -1);
 faux('plus d\'indicateur « Sous-ensembles »', /<dt>Sous-ensembles<\/dt>/.test(srcIndex));
@@ -488,6 +569,13 @@ eq('tous les jetons CSS sont définis dans le :root de base',
    Array.from(jetons).filter(function (j) { return !definis.has(j); }), []);
 vrai('le thème sombre redéfinit les jetons', srcCss.indexOf('[data-theme="dark"]') !== -1);
 vrai('body peint son fond explicitement', /body \{[\s\S]*?background: var\(--sol\)/.test(srcCss));
+// La couleur ne doit servir qu'à porter une information.
+const teintesInterface = (srcCss.match(/--encre[0-9-]*:|--trait[a-z-]*:|--sol[0-9-]*:|--surface[0-9-]*:/g) || []).length;
+vrai('des jetons neutres pour toute la chrome', teintesInterface >= 8);
+faux('plus de marine ni de bleu d\'accent dans les jetons',
+     /--marine|--accent:/.test(srcCss));
+vrai('les couleurs de type subsistent', /--t-structure:|--t-harnais:|--t-plaquette:/.test(srcCss));
+vrai('les couleurs de statut subsistent', /--vert:|--ambre:|--rouge:/.test(srcCss));
 
 console.log('\n' + (ko === 0 ? V : R) + ok + ' OK, ' + ko + ' KO' + Z +
             G + '  (' + declarees.size + ' actions)' + Z);

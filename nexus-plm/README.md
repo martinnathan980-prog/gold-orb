@@ -5,12 +5,12 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 410 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 451 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 280 tests : logique, pondération, serveur
+npm test                 # 310 tests : logique, pondération, serveur
 npm run demo             # construit build/demo.html
-npm run test:navigateur  # 130 tests dans un vrai Chromium
+npm run test:navigateur  # 141 tests dans un vrai Chromium
 ```
 
 ## Démonstration navigable
@@ -44,7 +44,7 @@ src/
     Setup.gs               création de structure, jeu de démo, menu
 
   client/
-    Styles.html            design system : jetons, thèmes clair et sombre
+    Styles.html            design system : la couleur ne sert qu'à signifier
     Types.html             REGISTRE DES TYPES : champs + critères par type
     Dom.html               esc(), formats, délégation d'événements
     Api.html               google.script.run -> Promise   <-- frontière unique
@@ -120,6 +120,22 @@ score : « Non comparé, faute de donnée : Masse. Le score porte sur le reste. 
 - Un **sous-ensemble** se duplique depuis la fiche, avec tous les champs de son
   type recopiés.
 
+## Parti pris visuel
+
+**La couleur ne sert qu'à porter une information.** Trois teintes de type
+(structure, harnais, plaquette), trois teintes de statut, et rien d'autre : la
+chrome est en gris chauds et en encre, les boutons primaires sont noirs, l'état
+actif est un aplat d'encre. Une interface d'atelier, pas une interface bleue.
+
+Typographie ancrée dans le sujet : **Archivo** très tracké pour le titre, à la
+manière d'une plaque d'aéronef ; **IBM Plex Mono** pour les PN, qui sont de la
+donnée et s'alignent en colonne ; **Instrument Sans** pour le reste.
+
+Les commandes secondaires ne sont plus des boutons posés à côté : la recherche
+par composant vit **dans** le champ de recherche, le tri est un menu discret
+aligné avec le nombre de résultats, les filtres de type sont des jetons colorés
+par le type qu'ils désignent.
+
 ## Images
 
 Le champ Image attend une **URL de photo** (lien direct ou lien Drive, converti
@@ -137,7 +153,10 @@ réutilisation :
 | Boîtes · Validées | l'avancement |
 | Références uniques | l'ampleur du référentiel |
 | **Pièces réutilisées** | pièces dont le PN apparaît dans au moins deux boîtes |
-| **Doublons probables** | pièces de même type, PN différents, très proches **selon vos critères courants** — l'indicateur suit la pondération |
+| **Doublons probables** | pièces de même type, PN différents, très proches **selon vos critères courants** — l'indicateur suit la pondération, et s'ouvre sur la liste des paires |
+
+Et sur chaque sous-ensemble, la fiche répond à la question du réemploi :
+**« aussi montée dans »**, avec un lien direct vers les autres boîtes.
 
 Deux règles portent l'essentiel :
 

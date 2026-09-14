@@ -153,6 +153,56 @@ enregistrerActions({
       : Store.filtreTypes.filter(function (t) { return t !== d.type; });
     rendreInterface();
   },
+  'basculer-tri': function () {
+    const menu = parId('triMenu'), bouton = parId('triBouton');
+    if (!menu) return;
+    const ouvert = !menu.hidden;
+    menu.hidden = ouvert;
+    if (bouton) bouton.setAttribute('aria-expanded', String(!ouvert));
+  },
+  'choisir-tri': function (d) {
+    Store.tri = d.tri;
+    enregistrerReglages();
+    rendreInterface();
+  },
+
+  'ouvrir-doublons': function () {
+    const vue = calculerVue();
+    const r = compterDoublonsProbables(vue.aAfficher);
+    definirTexte('doublonsSous', r.nombre === null
+      ? 'Trop de pièces pour un balayage complet.'
+      : r.nombre + ' paire(s) au-dessus de ' + SEUIL_DOUBLON + ' %, selon vos critères courants.');
+
+    definirHtml('doublonsCorps', (r.paires && r.paires.length)
+      ? r.paires.map(function (p) {
+          return '<div class="doublon">' +
+            '<div class="doublon-piece">' +
+              '<div class="doublon-pn">' + esc(txt(p.a['PN du type'])) + '</div>' +
+              '<button type="button" class="doublon-boite btn-lien"' +
+                dataAttrs({ action: 'ouvrir-fiche-depuis-doublons', pn: p.a[CLE_PN()] }) + '>' +
+                esc(txt(p.a[CLE_PN()])) + '</button>' +
+            '</div>' +
+            '<span class="doublon-lien" aria-hidden="true">↔</span>' +
+            '<div class="doublon-piece">' +
+              '<div class="doublon-pn">' + esc(txt(p.b['PN du type'])) + '</div>' +
+              '<button type="button" class="doublon-boite btn-lien"' +
+                dataAttrs({ action: 'ouvrir-fiche-depuis-doublons', pn: p.b[CLE_PN()] }) + '>' +
+                esc(txt(p.b[CLE_PN()])) + '</button>' +
+            '</div>' +
+            '<span class="score ' + (p.score >= 95 ? 'score-fort' : 'score-moyen') + '">' +
+              '<b>' + p.score + '<small>%</small></b></span>' +
+          '</div>';
+        }).join('')
+      : '<div class="etat-vide"><p>Aucun doublon probable.</p>' +
+        '<p class="etat-vide-aide">Deux pièces de même type, de PN différents, ' +
+        'doivent dépasser ' + SEUIL_DOUBLON + ' % pour apparaître ici.</p></div>');
+    ouvrirModal('doublonsModal');
+  },
+  'ouvrir-fiche-depuis-doublons': function (d) {
+    fermerModal('doublonsModal');
+    ACTIONS['ouvrir-fiche'](d);
+  },
+
   'effacer-recherche': function () {
     Store.recherche = '';
     const c = parId('searchBar'); if (c) c.value = '';
@@ -509,12 +559,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  document.addEventListener('change', function (e) {
-    if (e.target.id === 'triSelect') {
-      Store.tri = e.target.value;
-      enregistrerReglages();
-      rendreInterface();
-    }
+  // Le menu de tri se referme quand on clique ailleurs.
+  document.addEventListener('click', function (e) {
+    const menu = parId('triMenu');
+    if (!menu || menu.hidden) return;
+    if (e.target.closest && e.target.closest('.tri')) return;
+    menu.hidden = true;
+    const bouton = parId('triBouton');
+    if (bouton) bouton.setAttribute('aria-expanded', 'false');
   });
 
   // Raccourcis : « / » pour chercher, Échap pour refermer.

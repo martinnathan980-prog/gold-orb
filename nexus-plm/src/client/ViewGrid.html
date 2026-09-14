@@ -5,10 +5,10 @@
 // c'est ce qui les rend testables, échappement compris.
 // ============================================================
 
-function badgeStatutHtml(statut) {
-  const s = txt(statut, '');
-  if (!s) return '';
-  return '<span class="statut ' + classeStatut(s) + '">' + esc(s) + '</span>';
+function statutSurPhotoHtml(statut) {
+  const t = txt(statut, '');
+  if (!t) return '';
+  return '<span class="carte-statut ' + classeStatut(t) + '">' + esc(t) + '</span>';
 }
 
 function ongletsHtml(vue) {
@@ -26,7 +26,6 @@ function ongletsHtml(vue) {
   return html;
 }
 
-/** Filtres par type de sous-ensemble : « montre-moi les boîtes qui ont un harnais ». */
 function filtresTypeHtml() {
   const repartition = repartitionTypes();
   if (!repartition.length) return '';
@@ -35,45 +34,61 @@ function filtresTypeHtml() {
       const actif = Store.filtreTypes.indexOf(e.type.cle) !== -1;
       return '<button type="button" class="jeton ' + e.type.teinte + (actif ? ' actif' : '') + '"' +
              dataAttrs({ action: 'basculer-type', type: e.type.cle }) +
-             ' aria-pressed="' + actif + '">' +
-             '<span aria-hidden="true">' + e.type.icone + '</span> ' + esc(e.type.libelle) +
+             ' aria-pressed="' + actif + '">' + esc(e.type.libelle) +
              ' <span class="jeton-compte">' + e.nombre + '</span></button>';
     }).join('') +
   '</div>';
 }
 
+/** Le tri : un menu discret, pas un <select> planté au milieu de la page. */
 function triHtml() {
-  return '<label class="tri"><span>Trier par</span><select id="triSelect" class="tri-select">' +
-    Object.keys(TRIS).map(function (k) {
-      return '<option value="' + k + '"' + (Store.tri === k ? ' selected' : '') + '>' +
-             esc(TRIS[k].libelle) + '</option>';
-    }).join('') +
-  '</select></label>';
+  const courant = TRIS[Store.tri] || TRIS.pn;
+  return '<div class="tri">' +
+    '<button type="button" class="tri-bouton" id="triBouton" aria-haspopup="true"' +
+      ' aria-expanded="false"' + dataAttrs({ action: 'basculer-tri' }) + '>' +
+      esc(courant.libelle) + ' <span aria-hidden="true">▾</span></button>' +
+    '<div class="tri-menu" id="triMenu" hidden role="menu">' +
+      Object.keys(TRIS).map(function (k) {
+        return '<button type="button" class="tri-option' + (Store.tri === k ? ' actif' : '') + '"' +
+               ' role="menuitem"' + dataAttrs({ action: 'choisir-tri', tri: k }) + '>' +
+               esc(TRIS[k].libelle) + '</button>';
+      }).join('') +
+    '</div>' +
+  '</div>';
 }
 
-/** Composition d'une boîte : une puce par type présent, avec son compte. */
+/** Composition : une barre empilée aux couleurs des types, puis la légende. */
 function compositionHtml(boite) {
+  const lignes = boite.nomenclature || [];
+  if (!lignes.length) return '<p class="carte-vide">Boîte vide</p>';
+
   const compte = new Map();
-  (boite.nomenclature || []).forEach(function (l) {
+  lignes.forEach(function (l) {
     const t = typeDe(l);
     compte.set(t.cle, (compte.get(t.cle) || 0) + 1);
   });
-  if (!compte.size) return '<p class="carte-vide">Boîte vide</p>';
-  return '<ul class="composition">' + Array.from(compte.entries()).map(function (e) {
+
+  const barre = Array.from(compte.entries()).map(function (e) {
+    const part = (e[1] / lignes.length) * 100;
+    return '<span class="compo-' + e[0] + '" style="width:' + part.toFixed(1) + '%"></span>';
+  }).join('');
+
+  const legende = Array.from(compte.entries()).map(function (e) {
     const t = typeParCle(e[0]);
-    return '<li class="' + t.teinte + '"><span aria-hidden="true">' + t.icone + '</span>' +
-           esc(t.libelle) + '<b>' + e[1] + '</b></li>';
-  }).join('') + '</ul>';
+    return '<li class="' + t.teinte + '">' + esc(t.libelle) + ' <b>' + e[1] + '</b></li>';
+  }).join('');
+
+  return '<div class="compo-barre" role="img" aria-label="' + lignes.length +
+         ' sous-ensembles">' + barre + '</div>' +
+         '<ul class="composition">' + legende + '</ul>';
 }
 
 function carteHtml(boite) {
   const pn = boite[CLE_PN()];
   const url = urlMiniature(boite['Image']);
 
-  // Pas d'illustration fabriquée : une photo ou rien, et si rien, on le dit.
   const visuel = url
-    ? '<img class="carte-image" src="' + esc(url) + '" alt="Photo de ' + esc(txt(pn)) + '"' +
-      ' loading="lazy">'
+    ? '<img class="carte-image" src="' + esc(url) + '" alt="Photo de ' + esc(txt(pn)) + '" loading="lazy">'
     : '<div class="carte-image carte-image-absente">' +
         '<span class="absente-icone" aria-hidden="true">⌷</span>' +
         '<span class="absente-texte">Pas de photo</span>' +
@@ -84,16 +99,16 @@ function carteHtml(boite) {
       '<button type="button" class="carte-visuel"' +
         dataAttrs({ action: 'ouvrir-fiche', pn: pn }) +
         ' aria-label="Ouvrir la fiche de ' + esc(txt(pn)) + '">' + visuel + '</button>' +
-      // Dupliquer une boîte se fait depuis la liste, pas depuis sa fiche.
+      statutSurPhotoHtml(boite['Statut']) +
       '<button type="button" class="btn-sur-image"' +
         ' aria-label="Dupliquer la boîte ' + esc(txt(pn)) + '"' +
         dataAttrs({ action: 'dupliquer-boite', pn: pn }) + '>Dupliquer</button>' +
     '</div>' +
     '<div class="carte-corps">' +
       '<div class="carte-tete">' +
-        '<h3 class="carte-pn">' + esc(txt(pn)) + '</h3>' + badgeStatutHtml(boite['Statut']) +
+        '<h3 class="carte-pn">' + esc(txt(pn)) + '</h3>' +
+        '<span class="carte-fonction">' + esc(txt(boite['Fonction'], 'Non classé')) + '</span>' +
       '</div>' +
-      '<p class="carte-fonction">' + esc(txt(boite['Fonction'], 'Non classé')) + '</p>' +
       compositionHtml(boite) +
       '<dl class="carte-meta">' +
         '<dt>DS/VCI</dt><dd>' + esc(txt(boite['DS/VCI Associé'])) + '</dd>' +
@@ -111,7 +126,7 @@ function carteHtml(boite) {
 
 function grilleHtml(vue) {
   if (vue.aAfficher.length) return vue.aAfficher.map(carteHtml).join('');
-  return '<div class="etat-vide etat-vide-grille">' +
+  return '<div class="etat-vide">' +
     '<p>' + (vue.filtre ? 'Aucune boîte ne correspond à cette recherche.'
                         : 'Aucune boîte enregistrée.') + '</p>' +
     (vue.filtre
@@ -127,6 +142,8 @@ function rendreInterface() {
   definirHtml('filtresType', filtresTypeHtml());
   definirHtml('zoneTri', triHtml());
   definirHtml('mainContainer', grilleHtml(vue));
+  definirTexte('bilanResultats', vue.aAfficher.length +
+               (vue.aAfficher.length > 1 ? ' boîtes' : ' boîte'));
   rendreKpi(calculerKpi(vue.aAfficher), vue);
   rendreFiltreActif(vue);
   const chargement = parId('loading');
@@ -173,8 +190,7 @@ function rendreFiltreActif(vue) {
 
   zone.innerHTML = morceaux.length
     ? morceaux.join('') +
-      '<button type="button" class="btn-lien" data-action="tout-effacer">Tout effacer</button>' +
-      '<span class="filtre-bilan">' + vue.visibles.length + ' résultat(s)</span>'
+      '<button type="button" class="btn-lien" data-action="tout-effacer">Tout effacer</button>'
     : '';
 }
 </script>
