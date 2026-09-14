@@ -5,13 +5,39 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 591 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 641 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 398 tests : logique, pondération, serveur
+npm test                 # 448 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
+npm run appsscript       # construit build/appsscript/ (version à coller)
 npm run test:navigateur  # 193 tests dans un vrai Chromium
 ```
+
+## Mise en service — deux chemins
+
+**Montrer l'application, sans rien installer.** `build/nexus-demo.html` :
+double-clic, ça s'ouvre dans le navigateur. Données en mémoire, rien n'est
+enregistré. C'est le fichier à envoyer à un collègue.
+
+**La mettre en service pour de vrai**, sur un Sheet : il faut copier le code
+dans un projet Apps Script. Deux façons, au choix.
+
+| | `clasp push` | Copier-coller |
+|---|---|---|
+| Ce qu'il faut | Node + `npm install -g @google/clasp` | un navigateur, rien d'autre |
+| Ce qu'on colle | rien, `clasp` envoie `src/` | 2 fichiers, depuis `build/appsscript/` |
+| Dans l'éditeur | les 20 fichiers, découpés | `Code.gs` + `Index.html` |
+| Pour qui | mises à jour régulières | première mise en service, poste verrouillé |
+
+Le copier-coller n'est pas une version dégradée : `npm run appsscript`
+concatène les 4 fichiers serveur en un `Code.gs` et résout les
+`<?!= include() ?>` dans un `Index.html`. C'est le même code, en deux
+fichiers au lieu de vingt. `build/appsscript/catalogue.csv` accompagne le
+tout : c'est le classeur catalogue, prêt à importer.
+
+Un test (`test/test-bundle.js`) vérifie que cette version reste identique à
+`src/` — aucun fichier perdu, aucun include oublié.
 
 ## Où est la base de données ?
 
@@ -274,12 +300,30 @@ clasp push
 Apps Script accepte le `/` dans les noms de fichiers : `client/Dom.html` apparaît
 comme un dossier dans l'éditeur, et `include('client/Dom')` le résout.
 
-Ensuite, **une fois** :
+### Sans clasp, depuis le navigateur
 
-1. Paramètres du projet → Propriétés du script → ajouter `URL_CATALOGUE`
-   (l'URL du classeur catalogue). Elle n'est plus en dur dans le source.
-2. Recharger le Sheet → menu **NEXUS PLM** → *Créer / compléter la structure*.
-3. Déployer en application web.
+1. Nouveau Google Sheet → **Extensions › Apps Script**.
+2. Renommer `Code.gs` si besoin, et y coller `build/appsscript/Code.gs`
+   (tout remplacer).
+3. **+ › HTML**, nommer le fichier `Index` (sans `.html`, l'éditeur l'ajoute),
+   y coller `build/appsscript/Index.html`.
+4. Enregistrer. Il ne doit y avoir que ces deux fichiers.
+
+### Ensuite, **une fois**, quelle que soit la méthode
+
+1. Importer `build/appsscript/catalogue.csv` dans un **nouveau** classeur
+   (Fichier › Importer › Importer les données), et copier son URL.
+2. Éditeur Apps Script → ⚙ Paramètres du projet → Propriétés du script →
+   ajouter `URL_CATALOGUE` = l'URL de ce classeur. Elle n'est plus en dur
+   dans le source.
+3. Recharger le Sheet → menu **NEXUS PLM** → *Créer / compléter la structure*.
+   (Puis *Réinitialiser avec le jeu de démo…* pour avoir de quoi regarder.)
+4. Déployer › Nouveau déploiement › **Application web**. Autoriser les accès
+   à la première exécution.
+
+Si l'application se charge mais qu'aucune fenêtre ne s'ouvre, c'est que le
+réseau bloque `cdn.jsdelivr.net` : Bootstrap n'est pas chargé. Dans ce cas,
+inliner Bootstrap dans `Index.html` comme le fait `build/build-demo.js`.
 
 Le manifeste fixe `access: "DOMAIN"` : l'application n'est accessible qu'aux
 comptes du domaine. À adapter si besoin, mais pas à élargir sans raison.
