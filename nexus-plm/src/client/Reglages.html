@@ -5,6 +5,10 @@
 // Entièrement généré à partir du registre de Types.html : ajouter un critère
 // le fait apparaître ici sans une ligne de code supplémentaire.
 //
+// Le panneau ne s'ouvre QUE depuis une comparaison, et sur la portée de cette
+// comparaison : on règle les critères d'un harnais en regardant des harnais,
+// pas depuis un écran de paramètres détaché du travail en cours.
+//
 // Deux partis pris :
 //   - on affiche la PART de chaque critère (sa fraction du total), pas son
 //     poids brut : c'est la part qui détermine réellement le score, un poids
@@ -82,15 +86,6 @@ function totalPoids(portee) {
 // ------------------------------------------------------------
 // Rendu
 // ------------------------------------------------------------
-function ongletsReglagesHtml() {
-  return PORTEES.map(function (p) {
-    return '<button type="button" class="onglet-reglage' +
-           (p.cle === porteeReglee ? ' actif' : '') + '"' +
-           dataAttrs({ action: 'regler-portee', portee: p.cle }) + '>' +
-           '<span aria-hidden="true">' + p.icone + '</span> ' + esc(p.libelle) + '</button>';
-  }).join('');
-}
-
 function curseursHtml() {
   const portee = porteeCourante();
   const total = totalPoids(portee);
@@ -123,9 +118,9 @@ function apercuReglagesHtml() {
 
   if (portee.cle === 'boite') {
     const source = boiteCourante() || Store.boites[0];
-    if (!source) return '<p class="vide">Aucun assemblage à comparer.</p>';
+    if (!source) return '<p class="vide">Aucune boîte à comparer.</p>';
     const resultats = equivalencesBoite(source[CLE_PN()]).slice(0, 4);
-    return enteteApercu('Assemblage de référence', txt(source[CLE_PN()])) +
+    return enteteApercu('Boîte de référence', txt(source[CLE_PN()])) +
            listeApercu(resultats, function (r) { return txt(r.cible[CLE_PN()]); });
   }
 
@@ -170,7 +165,9 @@ function presetsHtml() {
 }
 
 function rendreReglages() {
-  definirHtml('reglagesOnglets', ongletsReglagesHtml());
+  const portee = porteeCourante();
+  definirTexte('reglagesPortee', portee.libelle + ' — ' +
+               portee.criteres.length + ' critère(s)');
   definirHtml('reglagesCurseurs', curseursHtml());
   definirHtml('reglagesApercu', apercuReglagesHtml());
   definirHtml('reglagesPresets', presetsHtml());

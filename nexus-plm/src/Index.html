@@ -42,22 +42,12 @@
       <div class="enveloppe entete-corps">
         <div class="marque">
           <span class="marque-sigle" aria-hidden="true">◆</span>
-          <div>
-            <h1>NEXUS PLM</h1>
-            <p>Nomenclatures d'assemblages</p>
-          </div>
+          <h1>NEXUS PLM</h1>
         </div>
 
         <div class="entete-outils">
-          <button type="button" class="btn-entete" data-action="ouvrir-reglages">
-            <span aria-hidden="true">⚙</span> Pondération
-          </button>
-          <button type="button" class="btn-entete" data-action="ouvrir-journal">
-            <span aria-hidden="true">◷</span> Journal
-            <span class="badge-compte" id="journalCompteur">0</span>
-          </button>
           <button type="button" class="btn-entete btn-entete-fort" data-action="nouvelle-boite">
-            + Assemblage
+            + Boîte
           </button>
         </div>
       </div>
@@ -65,10 +55,7 @@
       <div class="enveloppe">
         <dl class="indicateurs">
           <div class="indicateur">
-            <dt>Assemblages</dt><dd id="kpiBoites">–</dd>
-          </div>
-          <div class="indicateur">
-            <dt>Sous-ensembles</dt><dd id="kpiLignes">–</dd>
+            <dt>Boîtes</dt><dd id="kpiBoites">–</dd>
           </div>
           <div class="indicateur">
             <dt>Références uniques</dt><dd id="kpiNoms">–</dd>
@@ -136,13 +123,11 @@
       <div class="offcanvas-header panneau-tete">
         <div>
           <h2 class="offcanvas-title" id="reglagesTitre">Pondération</h2>
-          <p class="panneau-sous">Chaque critère pèse une part du score. L'aperçu suit.</p>
+          <p class="panneau-sous" id="reglagesPortee"></p>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
       </div>
       <div class="offcanvas-body">
-        <nav id="reglagesOnglets" class="onglets-reglage" aria-label="Portée du réglage"></nav>
-
         <div class="reglages-grille">
           <section class="reglages-colonne">
             <div id="reglagesCurseurs"></div>
@@ -166,22 +151,6 @@
               Rétablir les valeurs d'origine
             </button>
           </aside>
-        </div>
-      </div>
-    </div>
-
-    <!-- ------------------------------------------------ Journal -->
-    <div class="modal fade" id="journalModal" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content boite-modale">
-          <div class="modal-header">
-            <div>
-              <h2 class="modal-title">Journal de bord</h2>
-              <p class="modale-sous">Tout ce qui a été fait depuis l'ouverture de la page.</p>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-          </div>
-          <div class="modal-body" id="journalCorps"></div>
         </div>
       </div>
     </div>
@@ -211,7 +180,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
           </div>
           <div class="modal-body">
-            <p class="modale-sous">Ne garder que les assemblages contenant tous ces composants.</p>
+            <p class="modale-sous">Ne garder que les boîtes contenant tous ces composants.</p>
             <div class="ligne-saisie">
               <input type="text" list="datalistStds" id="multiSearchInputSelect"
                      placeholder="Composant…" aria-label="Composant">
@@ -219,7 +188,7 @@
             </div>
             <div id="multiSearchPillsContainer" class="zone-puces"></div>
             <button type="button" class="btn-principal" data-action="lancer-multi-recherche">
-              Filtrer les assemblages
+              Filtrer les boîtes
             </button>
           </div>
         </div>
@@ -244,12 +213,12 @@
       </div>
     </div>
 
-    <!-- ------------------------------------------------ Nouvel assemblage -->
+    <!-- ------------------------------------------------ Nouvelle boîte -->
     <div class="modal fade" id="newBoiteModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content boite-modale">
           <div class="modal-header">
-            <h2 class="modal-title">Nouvel assemblage</h2>
+            <h2 class="modal-title">Nouvelle boîte</h2>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
           </div>
           <div class="modal-body">
@@ -281,7 +250,7 @@
             <label class="champ-libelle" for="newEnsPn">PN du sous-ensemble</label>
             <input type="text" id="newEnsPn" class="saisie-pleine" placeholder="ex. 332P20001.01">
             <button type="button" class="btn-principal" data-action="creer-sous-ensemble">
-              Ajouter à l'assemblage
+              Ajouter à la boîte
             </button>
           </div>
         </div>
@@ -311,7 +280,7 @@
     <?!= include('client/ViewFiche'); ?>
     <?!= include('client/ViewCompare'); ?>
     <?!= include('client/Reglages'); ?>
-    <?!= include('client/Historique'); ?>
+    <?!= include('client/Annulation'); ?>
     <?!= include('client/Main'); ?>
   </body>
 </html>

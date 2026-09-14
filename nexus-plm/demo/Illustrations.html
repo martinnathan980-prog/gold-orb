@@ -90,7 +90,7 @@ function imageHarnais(pn, reference) {
 }
 
 /** Plaquette éclairante : sérigraphie rétroéclairée, mots-clés au plan. */
-function imagePlaquette(pn, numero, mots) {
+function imagePlaquette(pn, mots) {
   const libelles = String(mots || '').split(/[,;|]/).map(function (m) { return m.trim().toUpperCase(); })
                      .filter(Boolean).slice(0, 3);
   const L = 200, H = 76, x = 60, y = 58;
@@ -109,7 +109,7 @@ function imagePlaquette(pn, numero, mots) {
     '<rect x="' + (x + 4) + '" y="' + (y + 4) + '" width="' + (L - 8) + '" height="' + (H - 8) + '" rx="3" fill="none" stroke="#f6e27a" stroke-width=".6" opacity=".4"/>' +
     textes +
     '<text x="' + (x + L - 6) + '" y="' + (y + H - 7) + '" text-anchor="end" font-family="monospace" font-size="8" fill="#f6e27a" opacity=".65">' +
-      (numero || '') + '</text>',
+      (pn || '') + '</text>',
     pn));
 }
 
@@ -143,7 +143,7 @@ function illustrationPourLigne(ligne) {
     return imageHarnais(ligne['PN du type'], ligne['Référence']);
   }
   if (type.indexOf('plaquette') !== -1) {
-    return imagePlaquette(ligne['PN du type'], ligne['Numéro'], ligne['Mots-clés']);
+    return imagePlaquette(ligne['PN du type'], ligne['Mots-clés']);
   }
   if (type.indexOf('structure') !== -1) {
     return imageStructure(ligne['PN du type'], ligne['Dim Long (mm)'],

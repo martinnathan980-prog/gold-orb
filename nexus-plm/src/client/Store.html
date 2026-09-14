@@ -31,8 +31,7 @@ const Store = {
   poids: {},
   seuilEquivalence: 15,
 
-  // Journal de bord : chaque action laisse une trace consultable.
-  historique: [],
+  // Charge utile de la dernière suppression, conservée pour l'annulation.
   derniereSuppression: null,
 
   _texteRecherche: new Map()
@@ -96,16 +95,6 @@ function poidsModifies() {
       return Number(Store.poids[p][c]) !== Number(defaut[p][c]);
     });
   }) || Store.seuilEquivalence !== 15;
-}
-
-// ------------------------------------------------------------
-// Journal de bord
-// ------------------------------------------------------------
-function noter(action, cible, detail) {
-  Store.historique.unshift({
-    heure: new Date(), action: action, cible: cible, detail: detail || ''
-  });
-  if (Store.historique.length > 200) Store.historique.pop();
 }
 
 // ------------------------------------------------------------
@@ -294,7 +283,7 @@ function calculerVue() {
   });
 
   // Onglet devenu orphelin : on ne laisse pas l'utilisateur bloqué sur
-  // « aucun assemblage » alors que des résultats existent ailleurs.
+  // « aucune boîte » alors que des résultats existent ailleurs.
   const onglet = (Store.ongletActif !== 'Toutes' && !parFonction.has(Store.ongletActif))
                  ? 'Toutes' : Store.ongletActif;
   Store.ongletActif = onglet;

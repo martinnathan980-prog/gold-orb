@@ -5,12 +5,12 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 299 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 326 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 208 tests : logique client + serveur
+npm test                 # 222 tests : logique client + serveur
 npm run demo             # construit build/demo.html
-npm run test:navigateur  # 91 tests dans un vrai Chromium
+npm run test:navigateur  # 104 tests dans un vrai Chromium
 ```
 
 ## Démonstration navigable
@@ -54,7 +54,7 @@ src/
     ViewFiche.html         panneau latéral, champs selon le type
     ViewCompare.html       rendu des équivalences
     Reglages.html          pondérations réglables, aperçu en direct
-    Historique.html        journal de bord et annulation
+    Annulation.html        rattrapage d'une suppression
     Main.html              contrôleur : actions et démarrage
 ```
 
@@ -69,8 +69,8 @@ fichier.
 | Type | Champs propres | Critères d'équivalence |
 |---|---|---|
 | **Structure boîte** | montage, nombre de pas, longueur, largeur, masse, HL, DAL | montage, pas, dimensions, masse, DAL, HL, qualifications, composants |
-| **Harnais** | PN, référence — **ni dimensions ni masse** | référence, qualifications, composants |
-| **Plaquette éclairante** | numéro, **mots-clés**, dimensions | mots-clés, numéro, dimensions, qualifications |
+| **Harnais** | PN, référence — **ni cotes, ni masse, ni qualification** | référence, composants |
+| **Plaquette éclairante** | PN, **mots-clés** — ni numéro, ni cotes, ni qualification | mots-clés, composants |
 | **Autre** | référence, masse | référence, masse, qualifications, composants |
 
 Une pièce n'est comparée qu'aux pièces du **même type** : confronter une
@@ -82,7 +82,11 @@ sont le même terme.
 
 ## Pondération
 
-Chaque critère porte un poids, réglable depuis le panneau **Pondération**.
+Chaque critère porte un poids, réglé **depuis la comparaison elle-même** : le
+panneau s'ouvre sur la portée de ce qu'on regarde (harnais, plaquette, structure
+ou boîte) et nulle part ailleurs. On ne règle pas des critères dans un écran de
+paramètres détaché du travail en cours.
+
 Trois partis pris :
 
 - On affiche la **part** de chaque critère (sa fraction du total), pas son poids
@@ -96,13 +100,18 @@ Trois partis pris :
 Quatre réglages rapides sont fournis (Équilibré, Priorité composants, Priorité
 géométrie, Priorité qualification). Les réglages sont mémorisés sur le poste.
 
-## Traçabilité
+## Ne rien perdre
 
-- **Journal de bord** : chaque action est horodatée et consultable.
 - **Annulation** : une suppression reste rattrapable deux minutes. L'élément est
   recréé — avec un identifiant neuf, ce que l'interface annonce plutôt que de
   laisser croire à un retour en arrière exact.
 - Côté serveur, la feuille `9_JOURNAL` enregistre qui a modifié quoi et quand.
+
+## Duplication
+
+- Une **boîte** se duplique depuis sa carte, dans la liste — pas depuis sa fiche.
+- Un **sous-ensemble** se duplique depuis la fiche, avec tous les champs de son
+  type recopiés.
 
 Deux règles portent l'essentiel :
 

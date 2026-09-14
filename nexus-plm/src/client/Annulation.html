@@ -1,45 +1,10 @@
 <script>
 // ============================================================
-// NEXUS PLM — journal de bord et annulation.
+// NEXUS PLM — annulation d'une suppression.
 //
-// « Suivre chaque étape, ne rien perdre » : toute action laisse une trace
-// consultable, et une suppression reste rattrapable le temps de s'apercevoir
-// de l'erreur — il n'y avait auparavant aucun recours.
+// « Ne rien perdre » : une suppression reste rattrapable le temps de
+// s'apercevoir de l'erreur. Il n'y avait auparavant aucun recours.
 // ============================================================
-
-const LIBELLES_ACTION = {
-  creation: 'Création', modification: 'Modification', suppression: 'Suppression',
-  duplication: 'Duplication', restauration: 'Restauration', composant: 'Composant',
-  echec: 'Échec', reglage: 'Réglage'
-};
-
-function heureCourte(date) {
-  return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
-function historiqueHtml() {
-  if (!Store.historique.length) {
-    return '<div class="etat-vide">' +
-             '<p>Aucune action pour l\'instant.</p>' +
-             '<p class="etat-vide-aide">Tout ce que vous ferez s\'inscrira ici.</p>' +
-           '</div>';
-  }
-  return '<ol class="journal">' + Store.historique.map(function (e) {
-    return '<li class="journal-ligne journal-' + esc(e.action) + '">' +
-             '<time>' + esc(heureCourte(e.heure)) + '</time>' +
-             '<span class="journal-action">' +
-               esc(LIBELLES_ACTION[e.action] || e.action) + '</span>' +
-             '<span class="journal-cible">' + esc(e.cible) + '</span>' +
-             (e.detail ? '<span class="journal-detail">' + esc(e.detail) + '</span>' : '') +
-           '</li>';
-  }).join('') + '</ol>';
-}
-
-function rendreHistorique() {
-  definirHtml('journalCorps', historiqueHtml());
-  const compteur = parId('journalCompteur');
-  if (compteur) compteur.textContent = Store.historique.length;
-}
 
 // ------------------------------------------------------------
 // Annulation d'une suppression
@@ -85,7 +50,6 @@ function restaurer() {
         });
       })
       .then(function () {
-        noter('restauration', txt(l['PN du type'], 'sous-ensemble'), 'nouvel identifiant');
         rafraichir();
         confirmerSucces('Sous-ensemble restauré.');
       })
@@ -130,11 +94,9 @@ function restaurer() {
       }, Promise.resolve()).then(function () { return boite; });
     })
     .then(function (boite) {
-      noter('restauration', txt(boite[CLE_PN()]),
-            lignes.length + ' sous-ensemble(s), nouveaux identifiants');
       rafraichir();
-      confirmerSucces('Assemblage ' + txt(boite[CLE_PN()]) + ' restauré.');
+      confirmerSucces('Boîte ' + txt(boite[CLE_PN()]) + ' restaurée.');
     })
-    .catch(function (e) { signalerErreur(e, "restauration de l'assemblage"); });
+    .catch(function (e) { signalerErreur(e, "restauration de la boîte"); });
 }
 </script>

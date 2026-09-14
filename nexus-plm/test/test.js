@@ -9,7 +9,7 @@ const path = require('path');
 const C = H.chargerClient([
   'client/Dom.html', 'client/Types.html', 'client/Api.html', 'client/Store.html',
   'client/Compare.html', 'client/ViewGrid.html', 'client/ViewFiche.html',
-  'client/ViewCompare.html', 'client/Reglages.html', 'client/Historique.html'
+  'client/ViewCompare.html', 'client/Reglages.html', 'client/Annulation.html'
 ]);
 
 let ok = 0, ko = 0;
@@ -79,9 +79,16 @@ vrai('la structure porte ses cotes', champs('structure').indexOf('Dim Long (mm)'
 faux('le harnais n\'a PAS de longueur', champs('harnais').indexOf('Dim Long (mm)') !== -1);
 faux('le harnais n\'a PAS de masse', champs('harnais').indexOf('Masse (g)') !== -1);
 vrai('le harnais a une référence', champs('harnais').indexOf('Référence') !== -1);
-vrai('la plaquette a un numéro', champs('plaquette').indexOf('Numéro') !== -1);
+faux('le harnais n\'a PAS de qualification',
+     champs('harnais').some(function (c) { return c.indexOf('Qualification') === 0; }));
 vrai('la plaquette a des mots-clés', champs('plaquette').indexOf('Mots-clés') !== -1);
+faux('la plaquette n\'a PAS de numéro', champs('plaquette').indexOf('Numéro') !== -1);
+faux('la plaquette n\'a PAS de cotes', champs('plaquette').indexOf('Dim Long (mm)') !== -1);
+faux('la plaquette n\'a PAS de qualification',
+     champs('plaquette').some(function (c) { return c.indexOf('Qualification') === 0; }));
 faux('la structure n\'a pas de mots-clés', champs('structure').indexOf('Mots-clés') !== -1);
+vrai('la structure garde ses qualifications',
+     champs('structure').some(function (c) { return c.indexOf('Qualification') === 0; }));
 vrai('toutes les colonnes couvrent les 4 types',
      C.toutesLesColonnesNom().length >= 18);
 
@@ -137,7 +144,7 @@ charger(
    { 'ID_Ligne': 'S1', 'PN Global': 'B1', 'Type': 'Structure boîte', 'PN du type': 'SS',
      'Dim Long (mm)': '500', 'Dim Larg (mm)': '140', 'Masse (g)': '500', 'Montage': 'Rack' },
    { 'ID_Ligne': 'P1', 'PN Global': 'B1', 'Type': 'Plaquette éclairante', 'PN du type': 'PP',
-     'Numéro': 'PL-1', 'Mots-clés': 'mission SAR, APU' }]);
+     'Numéro': 'PL-1', 'Dim Long (mm)': '777', 'Mots-clés': 'mission SAR, APU' }]);
 C.Store.pnCourant = 'B1';
 
 const blocH = C.blocNomHtml(C.nomParId('H1'));
@@ -151,9 +158,13 @@ vrai('et son montage', blocS.indexOf('Rack') !== -1);
 faux('la structure n\'affiche pas de référence', blocS.indexOf('Référence') !== -1);
 
 const blocP = C.blocNomHtml(C.nomParId('P1'));
-vrai('la plaquette affiche son numéro', blocP.indexOf('PL-1') !== -1);
-vrai('et ses mots-clés en puces', blocP.indexOf('mission SAR') !== -1);
+vrai('la plaquette affiche ses mots-clés', blocP.indexOf('mission SAR') !== -1);
 vrai('avec le style dédié', blocP.indexOf('puce-motcle') !== -1);
+faux('la plaquette n\'affiche PAS son numéro (même renseigné)', blocP.indexOf('PL-1') !== -1);
+faux('ni ses cotes', blocP.indexOf('777') !== -1);
+
+const blocH2 = C.blocNomHtml(C.nomParId('H1'));
+faux('le harnais n\'affiche pas de qualification', blocH2.indexOf('Qualif') !== -1);
 
 const fiche3 = C.ficheHtml(C.boiteParPn('B1'));
 vrai('le sommaire liste les 3 types', fiche3.indexOf('Structure boîte') !== -1 &&
@@ -166,9 +177,10 @@ function ligneH(id, pn, ref, stds) {
   return { 'ID_Ligne': id, 'PN Global': pn, 'Type': 'Harnais', 'PN du type': 'h' + id,
            'Référence': ref, 'Composant STD': (stds || []).join('\n') };
 }
-function ligneP(id, pn, numero, mots) {
+function ligneP(id, pn, mots, stds) {
   return { 'ID_Ligne': id, 'PN Global': pn, 'Type': 'Plaquette éclairante',
-           'PN du type': 'p' + id, 'Numéro': numero, 'Mots-clés': mots };
+           'PN du type': 'p' + id, 'Mots-clés': mots,
+           'Composant STD': (stds || []).join('\n') };
 }
 function ligneS(id, pn, L, l, masse) {
   return { 'ID_Ligne': id, 'PN Global': pn, 'Type': 'Structure boîte', 'PN du type': 's' + id,
@@ -180,8 +192,8 @@ charger([{ 'PN Global': 'B1', 'Fonction': 'APU' }, { 'PN Global': 'B2', 'Fonctio
   [ligneH('H1', 'B1', 'HRN-A', ['Vis', 'Écrou']),
    ligneH('H2', 'B2', 'HRN-A', ['Vis', 'Écrou']),
    ligneH('H3', 'B2', 'HRN-B', ['Boulon']),
-   ligneP('P1', 'B1', 'PL-1', 'APU, mission SAR, démarrage'),
-   ligneP('P2', 'B2', 'PL-1', 'APU, mission SAR, arrêt'),
+   ligneP('P1', 'B1', 'APU, mission SAR, démarrage'),
+   ligneP('P2', 'B2', 'APU, mission SAR, arrêt'),
    ligneS('S1', 'B1', 500, 140, 500),
    ligneS('S2', 'B2', 500, 140, 510)]);
 
@@ -200,11 +212,14 @@ faux('aucune plaquette ni structure dans le lot',
      eqHTous.some(function (r) { return C.typeDe(r.cible).cle !== 'harnais'; }));
 C.Store.seuilEquivalence = 15;
 const critH = eqH[0].criteres.map(function (c) { return c.cle; });
-eq('critères du harnais', critH, ['reference', 'qualifications', 'composants']);
-faux('pas de critère dimensions pour un harnais', critH.indexOf('dimensions') !== -1);
+eq('critères du harnais', critH, ['reference', 'composants']);
+faux('ni dimensions ni qualifications pour un harnais',
+     critH.indexOf('dimensions') !== -1 || critH.indexOf('qualifications') !== -1);
 
 const eqP = C.equivalencesSousEnsemble('P1');
 eq('une plaquette n\'est comparée qu\'aux plaquettes', eqP.length, 1);
+eq('critères de la plaquette', eqP[0].criteres.map(function (c) { return c.cle; }),
+   ['motsCles', 'composants']);
 const critMots = eqP[0].criteres.find(function (c) { return c.cle === 'motsCles'; });
 vrai('les mots-clés sont bien un critère', !!critMots);
 eq('2 mots-clés sur 3 en commun', critMots.ensembles.communs.length, 2);
@@ -262,6 +277,7 @@ C.Store.seuilEquivalence = 15;
 const defauts = C.poidsParDefaut();
 eq('une entrée par portée', Object.keys(defauts).length, C.PORTEES.length);
 eq('poids par défaut de la structure', defauts.structure.dimensions, 15);
+eq('les mots-clés dominent la plaquette', defauts.plaquette.motsCles, 75);
 faux('aucune modification au départ', C.poidsModifies());
 C.Store.poids.structure.dimensions = 99;
 vrai('modification détectée', C.poidsModifies());
@@ -316,7 +332,7 @@ charger(
    { 'PN Global': '332P20002', 'Fonction': 'APU', 'Statut': 'Invalidé' },
    { 'PN Global': '999X1', 'Fonction': 'NAV', 'Statut': 'Validé' }],
   [ligneH('H1', '332P20001', 'HRN-A', ['Vis']),
-   ligneP('P1', '999X1', 'PL-9', 'navigation, mission transport')]);
+   ligneP('P1', '999X1', 'navigation, mission transport')]);
 
 const b0 = C.boiteParPn('332P20001');
 faux('« rowindex » ne matche plus', C.correspond(b0, 'rowindex'));
@@ -373,7 +389,7 @@ bloc('Statuts et indicateurs');
 });
 const kpi = C.calculerKpi(C.Store.boites);
 eq('« Invalidé » non compté', kpi.nbValides, 2);
-eq('sous-ensembles comptés', kpi.nbLignes, 2);
+eq('sous-ensembles toujours comptés (non affichés)', kpi.nbLignes, 2);
 eq('pourcentage', kpi.pctValides, 67);
 
 // =====================================================================
@@ -408,7 +424,7 @@ faux('aucun « undefined » sur une carte sans porteur',
      C.carteHtml(C.Store.boites[0]).indexOf('undefined') !== -1);
 
 // =====================================================================
-bloc('Store — mises à jour ciblées et journal');
+bloc('Store — mises à jour ciblées et annulation');
 // =====================================================================
 charger([{ 'PN Global': 'B1', 'Fonction': 'APU' }],
         [ligneH('H1', 'B1', 'R1', ['Vis'])]);
@@ -425,16 +441,6 @@ eq('rattachement reconstruit', C.boiteParPn('B9').nomenclature.length, 1);
 C.retirerNom('H1');
 eq('ligne retirée', C.nomParId('H1'), null);
 eq('lien parent recalculé', C.boiteParPn('B9').nomenclature.length, 0);
-
-C.Store.historique = [];
-C.noter('creation', 'B1', 'assemblage');
-C.noter('suppression', 'H1', 'harnais');
-eq('journal alimenté', C.Store.historique.length, 2);
-eq('le plus récent en tête', C.Store.historique[0].action, 'suppression');
-vrai('rendu du journal', C.historiqueHtml().indexOf('Suppression') !== -1);
-faux('pas d\'injection dans le journal',
-     (function () { C.noter('creation', '<img src=x>', ''); 
-                    return C.historiqueHtml().indexOf('<img src=x>') !== -1; })());
 
 C.memoriserSuppression('nomenclature', { 'ID_Ligne': 'X' });
 vrai('annulation possible juste après', C.peutAnnuler());
@@ -470,7 +476,7 @@ vrai('journalisation serveur', srcApi.indexOf('journaliser_') !== -1);
 
 // google.script.run ne doit exister que dans client/Api.html
 ['Dom', 'Types', 'Store', 'Compare', 'ViewGrid', 'ViewFiche', 'ViewCompare',
- 'Reglages', 'Historique', 'Main'].forEach(function (f) {
+ 'Reglages', 'Annulation', 'Main'].forEach(function (f) {
   const s = sansCommentaires(
     fs.readFileSync(path.join(H.RACINE, 'client/' + f + '.html'), 'utf8'));
   faux('google.script.run absent de ' + f + '.html', s.indexOf('google.script.run') !== -1);
@@ -489,7 +495,7 @@ const declarees = new Set();
   declarees.add(l.match(/'([a-z-]+)'/)[1]);
 });
 const utilisees = new Set();
-['ViewGrid', 'ViewFiche', 'ViewCompare', 'Reglages', 'Historique'].forEach(function (f) {
+['ViewGrid', 'ViewFiche', 'ViewCompare', 'Reglages', 'Annulation'].forEach(function (f) {
   const s = fs.readFileSync(path.join(H.RACINE, 'client/' + f + '.html'), 'utf8');
   (s.match(/action:\s*'([a-z-]+)'/g) || []).forEach(function (m) {
     utilisees.add(m.match(/'([a-z-]+)'/)[1]);
@@ -500,6 +506,25 @@ const utilisees = new Set();
 });
 eq('aucune action référencée sans implémentation',
    Array.from(utilisees).filter(function (a) { return !declarees.has(a); }), []);
+faux('plus aucune action de journal', declarees.has('ouvrir-journal'));
+faux('pas de bouton Pondération dans l\'en-tête',
+     /data-action="ouvrir-reglages"/.test(srcIndex));
+vrai('la pondération est atteinte depuis la comparaison',
+     fs.readFileSync(path.join(H.RACINE, 'client/ViewCompare.html'), 'utf8')
+       .indexOf("action: 'ouvrir-reglages'") !== -1);
+vrai('« + Boîte » et non « + Assemblage »', srcIndex.indexOf('+ Boîte') !== -1);
+faux('plus de sous-titre sous le titre', /Nomenclatures d'assemblages/.test(srcIndex));
+vrai('indicateur « Boîtes »', srcIndex.indexOf('<dt>Boîtes</dt>') !== -1);
+faux('plus d\'indicateur « Sous-ensembles »', /<dt>Sous-ensembles<\/dt>/.test(srcIndex));
+vrai('duplication d\'une boîte depuis la carte',
+     fs.readFileSync(path.join(H.RACINE, 'client/ViewGrid.html'), 'utf8')
+       .indexOf("action: 'dupliquer-boite'") !== -1);
+faux('plus de duplication de boîte dans la fiche',
+     sansCommentaires(fs.readFileSync(path.join(H.RACINE, 'client/ViewFiche.html'), 'utf8'))
+       .indexOf("'dupliquer-boite'") !== -1);
+vrai('duplication d\'un sous-ensemble depuis la fiche',
+     fs.readFileSync(path.join(H.RACINE, 'client/ViewFiche.html'), 'utf8')
+       .indexOf("'dupliquer-nom'") !== -1);
 
 // Tous les jetons CSS utilisés sont définis en clair
 const srcCss = fs.readFileSync(path.join(H.RACINE, 'client/Styles.html'), 'utf8');

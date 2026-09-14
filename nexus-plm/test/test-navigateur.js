@@ -67,7 +67,7 @@ async function ecranPropre(page) {
       const i = el && window.bootstrap.Offcanvas.getInstance(el);
       if (i) i.hide();
     });
-    ['compareModal', 'journalModal', 'catalogueModal', 'newBoiteModal',
+    ['compareModal', 'catalogueModal', 'newBoiteModal',
      'newSousEnsModal', 'multiSearchModal', 'demoCsvModal', 'loupeModal'].forEach(function (id) {
       const el = document.getElementById(id);
       const i = el && window.bootstrap.Modal.getInstance(el);
@@ -104,10 +104,18 @@ async function ecranPropre(page) {
 
   // ---------------------------------------------------------------
   bloc('Chargement');
-  eq('10 assemblages', await page.locator('.carte').count(), 10);
-  eq('indicateur assemblages', await texte(page, '#kpiBoites'), '10');
-  eq('indicateur sous-ensembles', await texte(page, '#kpiLignes'), '18');
+  eq('10 boîtes', await page.locator('.carte').count(), 10);
+  eq('indicateur boîtes', await texte(page, '#kpiBoites'), '10');
   eq('validés', await texte(page, '#kpiVal'), '5 / 10');
+  eq('libellé « Boîtes »', (await texte(page, '.indicateur dt')).trim(), 'Boîtes');
+  eq('pas de compteur de sous-ensembles', await page.locator('#kpiLignes').count(), 0);
+  eq('pas de bouton Journal',
+     await page.locator('[data-action="ouvrir-journal"]').count(), 0);
+  eq('pas de bouton Pondération dans l\'en-tête',
+     await page.locator('.entete [data-action="ouvrir-reglages"]').count(), 0);
+  eq('bouton « + Boîte »', (await texte(page, '.btn-entete-fort')).trim(), '+ Boîte');
+  faux('plus de sous-titre',
+       (await texte(page, '.entete')).indexOf("Nomenclatures d'assemblages") !== -1);
   faux('chargement masqué', await page.locator('#loading').isVisible());
   eq('toutes les cartes ont une illustration', await page.locator('.carte-image').count(), 10);
   vrai('les illustrations sont des images réelles',
@@ -167,12 +175,15 @@ async function ecranPropre(page) {
   eq('titre', await texte(page, '#slideOverTitle'), '332P20001');
   vrai('sommaire des types', await page.locator('.sommaire-item').count() >= 3);
   eq('1 bloc général + 3 sous-ensembles', await page.locator('#slideOverBody .bloc').count(), 4);
+  eq('le bloc général s\'appelle « Boîte »',
+     (await texte(page, '#slideOverBody .bloc-general h3')).trim(), 'Boîte');
 
   const blocHarnais = page.locator('.bloc-type-harnais').first();
   const txtHarnais = await blocHarnais.evaluate(function (el) { return el.textContent; });
   vrai('le harnais affiche sa référence', txtHarnais.indexOf('HRN-2251-A') !== -1);
   faux('le harnais n\'affiche pas de longueur', txtHarnais.indexOf('Longueur') !== -1);
   faux('ni de masse', txtHarnais.indexOf('Masse') !== -1);
+  faux('ni de qualification', txtHarnais.indexOf('Qualif') !== -1);
 
   const blocStruct = page.locator('.bloc-type-structure').first();
   const txtStruct = await blocStruct.evaluate(function (el) { return el.textContent; });
@@ -182,8 +193,10 @@ async function ecranPropre(page) {
 
   const blocPlaq = page.locator('.bloc-type-plaquette').first();
   const txtPlaq = await blocPlaq.evaluate(function (el) { return el.textContent; });
-  vrai('la plaquette affiche son numéro', txtPlaq.indexOf('PL-1042') !== -1);
-  vrai('et ses mots-clés', txtPlaq.indexOf('mission SAR') !== -1);
+  vrai('la plaquette affiche ses mots-clés', txtPlaq.indexOf('mission SAR') !== -1);
+  faux('pas de numéro', txtPlaq.indexOf('Numéro') !== -1);
+  faux('pas de cotes', txtPlaq.indexOf('Longueur') !== -1);
+  faux('pas de qualification', txtPlaq.indexOf('Qualif') !== -1);
   vrai('en puces dédiées', await blocPlaq.locator('.puce-motcle').count() >= 2);
   vrai('chaque sous-ensemble a son illustration',
        await page.locator('#slideOverBody .vignette').count() >= 3);
@@ -250,10 +263,13 @@ async function ecranPropre(page) {
   vrai('la comparaison reste à l\'écran',
        await page.locator('#compareModal.show').count() === 1);
   await page.waitForTimeout(400);
-  vrai('la portée Harnais est pré-sélectionnée',
-       (await texte(page, '.onglet-reglage.actif')).indexOf('Harnais') !== -1);
-  const nbCurseurs = await page.locator('.curseur').count();
-  eq('un curseur par critère du harnais', nbCurseurs, 3);
+  vrai('le panneau s\'ouvre sur la portée de la comparaison',
+       (await texte(page, '#reglagesPortee')).indexOf('Harnais') !== -1);
+  eq('plus d\'onglets de portée : le contexte décide',
+     await page.locator('.onglet-reglage').count(), 0);
+  eq('un curseur par critère du harnais', await page.locator('.curseur').count(), 2);
+  eq('la portée est rappelée dans le panneau',
+     (await texte(page, '#reglagesPortee')).indexOf('Harnais'), 0);
   vrai('aperçu en direct présent', await page.locator('.apercu-liste li').count() >= 1);
 
   const partAvant = await texte(page, '.reglage .reglage-part');
@@ -274,14 +290,6 @@ async function ecranPropre(page) {
 
   await page.locator('[data-action="appliquer-preset"]').first().click();
   await page.waitForTimeout(350);
-  await page.locator('.onglet-reglage', { hasText: 'Plaquette' }).click();
-  await page.waitForTimeout(300);
-  vrai('les critères de la plaquette apparaissent',
-       (await texte(page, '#reglagesCurseurs')).indexOf('Mots-clés') !== -1);
-  await page.locator('.onglet-reglage', { hasText: 'Structure' }).click();
-  await page.waitForTimeout(300);
-  vrai('ceux de la structure aussi',
-       (await texte(page, '#reglagesCurseurs')).indexOf('Dimensions') !== -1);
 
   await page.locator('#seuilCurseur').fill('60');
   await page.waitForTimeout(300);
@@ -303,15 +311,8 @@ async function ecranPropre(page) {
   await fermerModale(page, 'compareModal');
 
   // ---------------------------------------------------------------
-  bloc('Journal et annulation');
-  await fermerFiche(page);                       // l'en-tête doit être atteignable
-  await page.locator('[data-action="ouvrir-journal"]').click();
-  await page.waitForSelector('#journalModal.show');
-  await page.waitForTimeout(300);
-  vrai('des actions sont tracées', await page.locator('.journal-ligne').count() >= 3);
-  vrai('le compteur suit', Number(await texte(page, '#journalCompteur')) >= 3);
-  await fermerModale(page, 'journalModal');
-
+  bloc('Annulation d\'une suppression');
+  await ecranPropre(page);
   await ouvrirFiche(page, '332P20001');
   const avantSuppr = await page.locator('#slideOverBody .bloc').count();
   page.once('dialog', function (d) { d.accept(); });
@@ -324,11 +325,31 @@ async function ecranPropre(page) {
   await page.locator('[data-action="annuler-suppression"]').click();
   await page.waitForTimeout(1600);
   eq('restauré', await page.locator('#slideOverBody .bloc').count(), avantSuppr);
-  vrai('la restauration est tracée',
-       (await page.locator('.journal-ligne').first().evaluate(function (el) { return el.textContent; }) ||
-        (await texte(page, '#journalCorps'))).length > 0);
+
 
   // ---------------------------------------------------------------
+  bloc('Duplication');
+  await ecranPropre(page);
+  page.once('dialog', function (d) { d.accept('COPIE-1'); });
+  await page.locator('.carte', { hasText: '332P20001' })
+            .locator('[data-action="dupliquer-boite"]').click({ force: true });
+  await page.waitForTimeout(1000);
+  eq('boîte dupliquée depuis la liste', await page.locator('.carte').count(), 11);
+  vrai('le vocabulaire dit « boîte »',
+       (await texte(page, '#bandeauMessage')).indexOf('Boîte dupliquée') !== -1);
+  vrai('la copie apparaît', await page.locator('.carte', { hasText: 'COPIE-1' }).count() === 1);
+
+  await ouvrirFiche(page, 'COPIE-1');
+  faux('pas de duplication de boîte dans la fiche',
+       (await texte(page, '#slideOverBody')).indexOf('Dupliquer') !== -1);
+  const avantDup = await page.locator('#slideOverBody .bloc').count();
+  page.once('dialog', function (d) { d.accept('SE-COPIE'); });
+  await page.locator('.bloc-type-structure [data-action="dupliquer-nom"]').first().click();
+  await page.waitForTimeout(1200);
+  eq('sous-ensemble dupliqué', await page.locator('#slideOverBody .bloc').count(), avantDup + 1);
+  vrai('avec le PN saisi', (await texte(page, '#slideOverBody')).indexOf('SE-COPIE') !== -1);
+  await fermerFiche(page);
+
   bloc('Catalogue et création typée');
   if (!(await page.locator('#detailsSlideOver.show').count())) await ouvrirFiche(page, '332P20001');
   await page.locator('.bloc-type-harnais [data-action="ouvrir-catalogue"]').first().click();
@@ -408,7 +429,7 @@ async function ecranPropre(page) {
   }, null, { timeout: 8000 });
   vrai('PN en double refusé', true);
   await ecranPropre(page);
-  eq('aucun assemblage créé', await page.locator('.carte').count(), 10);
+  eq('aucune boîte créée', await page.locator('.carte').count(), 11);
 
   // ---------------------------------------------------------------
   bloc('Thème sombre');
@@ -447,22 +468,27 @@ async function ecranPropre(page) {
   vrai('le panneau tient dans l\'écran', l.panneau <= l.vue);
   await fermerFiche(page);
   await ecranPropre(page);
-  await page.locator('.btn-entete', { hasText: 'Pondération' }).click();
+  // Le panneau ne s'ouvre plus que depuis une comparaison.
+  await page.locator('.carte').first()
+            .getByRole('button', { name: 'Équivalences' }).click();
+  await page.waitForSelector('#compareModal.show');
+  await page.waitForTimeout(400);
+  await page.locator('#compareResult [data-action="ouvrir-reglages"]').click();
   await page.waitForSelector('#reglagesModal.show');
   await page.waitForTimeout(400);
   l = await page.evaluate(function () {
     return { doc: document.documentElement.scrollWidth, vue: window.innerWidth };
   });
   vrai('pas de défilement horizontal (réglages)', l.doc <= l.vue + 1);
-  await page.locator('#reglagesModal .btn-close').click();
-  await attendreFerme(page, 'reglagesModal');
+  await ecranPropre(page);
   await page.setViewportSize({ width: 1400, height: 950 });
 
   // ---------------------------------------------------------------
   bloc('Captures');
   await ecranPropre(page);
   await page.locator('#demoReset').click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(1200);
+  eq('réinitialisation de la démo', await page.locator('.carte').count(), 10);
   await page.evaluate(function () {
     window.scrollTo(0, 0);
     const b = document.getElementById('bandeauMessage');

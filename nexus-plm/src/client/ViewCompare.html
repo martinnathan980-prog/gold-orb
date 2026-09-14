@@ -87,13 +87,20 @@ function resultatHtml(titre, sousTitreHtml, r, actions) {
   '</article>';
 }
 
+/**
+ * La pondération se règle ici, au contact du classement qu'elle produit —
+ * et non depuis un écran de paramètres séparé.
+ */
 function barreReglageHtml(portee, libellePortee) {
   return '<div class="rappel-reglages">' +
-    '<span>Pondération : <b>' + esc(libellePortee) + '</b>' +
-      (poidsModifies() ? ' <em>(personnalisée)</em>' : '') + '</span>' +
-    '<button type="button" class="btn-mini"' +
+    '<div class="rappel-texte">' +
+      '<b>Pondération ' + esc(libellePortee) + '</b>' +
+      '<span>' + (poidsModifies() ? 'personnalisée sur ce poste'
+                                  : 'valeurs d\'origine') + '</span>' +
+    '</div>' +
+    '<button type="button" class="btn-accent btn-reglage"' +
       dataAttrs({ action: 'ouvrir-reglages', portee: portee }) +
-      '>Ajuster les critères</button>' +
+      '><span aria-hidden="true">⚙</span> Régler les critères</button>' +
   '</div>';
 }
 
@@ -111,9 +118,9 @@ function afficherEquivalencesBoite(pn) {
   Store.comparaison = { sorte: 'boite', cle: pn };
   const resultats = equivalencesBoite(pn);
   definirTexte('compareTitle', 'Équivalences de ' + txt(pn));
-  definirTexte('compareSousTitre', resultats.length + ' assemblage(s) au-dessus du seuil');
+  definirTexte('compareSousTitre', resultats.length + ' boîte(s) au-dessus du seuil');
   definirHtml('compareResult',
-    barreReglageHtml('boite', 'Assemblage') +
+    barreReglageHtml('boite', 'Boîte') +
     (resultats.length
       ? resultats.map(function (r) {
           return resultatHtml(txt(r.cible[CLE_PN()]),
@@ -123,7 +130,7 @@ function afficherEquivalencesBoite(pn) {
               dataAttrs({ action: 'ouvrir-fiche-depuis-compare', pn: r.cible[CLE_PN()] }) +
               '>Ouvrir cette fiche</button></div>');
         }).join('')
-      : aucunResultatHtml('Essayez un autre assemblage, ou assouplissez la pondération.')));
+      : aucunResultatHtml('Essayez une autre boîte, ou assouplissez la pondération.')));
   ouvrirModal('compareModal');
 }
 
@@ -147,7 +154,7 @@ function afficherEquivalencesNom(id) {
             '<div class="resultat-actions">' +
               '<button type="button" class="btn-mini"' +
               dataAttrs({ action: 'ouvrir-fiche-depuis-compare', pn: r.cible[CLE_PN()] }) +
-              '>Ouvrir l\'assemblage</button></div>');
+              '>Ouvrir la boîte</button></div>');
         }).join('')
       : aucunResultatHtml('Seules les pièces du même type sont comparées : ' +
                           type.libelle.toLowerCase() + '.')));

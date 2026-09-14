@@ -51,14 +51,14 @@ function triHtml() {
   '</select></label>';
 }
 
-/** Composition d'un assemblage : une puce par type présent, avec son compte. */
+/** Composition d'une boîte : une puce par type présent, avec son compte. */
 function compositionHtml(boite) {
   const compte = new Map();
   (boite.nomenclature || []).forEach(function (l) {
     const t = typeDe(l);
     compte.set(t.cle, (compte.get(t.cle) || 0) + 1);
   });
-  if (!compte.size) return '<p class="carte-vide">Assemblage vide</p>';
+  if (!compte.size) return '<p class="carte-vide">Boîte vide</p>';
   return '<ul class="composition">' + Array.from(compte.entries()).map(function (e) {
     const t = typeParCle(e[0]);
     return '<li class="' + t.teinte + '"><span aria-hidden="true">' + t.icone + '</span>' +
@@ -76,9 +76,15 @@ function carteHtml(boite) {
       esc(txt(boite['Fonction'], '?').slice(0, 3).toUpperCase()) + '</div>';
 
   return '<article class="carte">' +
-    '<button type="button" class="carte-visuel"' +
-      dataAttrs({ action: 'ouvrir-fiche', pn: pn }) +
-      ' aria-label="Ouvrir la fiche de ' + esc(txt(pn)) + '">' + visuel + '</button>' +
+    '<div class="carte-media">' +
+      '<button type="button" class="carte-visuel"' +
+        dataAttrs({ action: 'ouvrir-fiche', pn: pn }) +
+        ' aria-label="Ouvrir la fiche de ' + esc(txt(pn)) + '">' + visuel + '</button>' +
+      // Dupliquer une boîte se fait depuis la liste, pas depuis sa fiche.
+      '<button type="button" class="btn-sur-image" title="Dupliquer cette boîte"' +
+        ' aria-label="Dupliquer ' + esc(txt(pn)) + '"' +
+        dataAttrs({ action: 'dupliquer-boite', pn: pn }) + '>⧉</button>' +
+    '</div>' +
     '<div class="carte-corps">' +
       '<div class="carte-tete">' +
         '<h3 class="carte-pn">' + esc(txt(pn)) + '</h3>' + badgeStatutHtml(boite['Statut']) +
@@ -102,12 +108,12 @@ function carteHtml(boite) {
 function grilleHtml(vue) {
   if (vue.aAfficher.length) return vue.aAfficher.map(carteHtml).join('');
   return '<div class="etat-vide etat-vide-grille">' +
-    '<p>' + (vue.filtre ? 'Aucun assemblage ne correspond à cette recherche.'
-                        : 'Aucun assemblage enregistré.') + '</p>' +
+    '<p>' + (vue.filtre ? 'Aucune boîte ne correspond à cette recherche.'
+                        : 'Aucune boîte enregistrée.') + '</p>' +
     (vue.filtre
       ? '<button type="button" class="btn-mini" data-action="tout-effacer">Effacer les filtres</button>'
       : '<button type="button" class="btn-principal" data-action="nouvelle-boite">' +
-        'Créer le premier assemblage</button>') +
+        'Créer la première boîte</button>') +
   '</div>';
 }
 
@@ -125,7 +131,6 @@ function rendreInterface() {
 
 function rendreKpi(kpi, vue) {
   definirTexte('kpiBoites', String(kpi.nbBoites));
-  definirTexte('kpiLignes', String(kpi.nbLignes));
   definirTexte('kpiNoms', String(kpi.refsUniques));
   definirTexte('kpiVal', kpi.nbValides + ' / ' + kpi.nbBoites);
   definirTexte('kpiValDetail', kpi.pctValides + ' %');

@@ -79,22 +79,22 @@ function blocMultiHtml(champ, valeurs, editable, actionAjout, actionSuppr, donne
 }
 
 // ------------------------------------------------------------
-// Bloc « Général » de l'assemblage
+// Bloc « Général » de la boîte
 // ------------------------------------------------------------
 function blocBoiteHtml(boite) {
   const edition = Store.enEditionBoite;
   const pn = boite[CLE_PN()];
 
+  // Pas de duplication ici : une boîte se duplique depuis la liste.
   const actions = edition
     ? boutonHtml('sauver-boite', {}, 'Enregistrer', 'btn-valider') +
       boutonHtml('annuler-boite', {}, 'Annuler', 'btn-neutre') +
       boutonHtml('supprimer-boite', { pn: pn }, 'Supprimer', 'btn-danger')
-    : boutonHtml('editer-boite', {}, 'Éditer', 'btn-neutre') +
-      boutonHtml('dupliquer-boite', { pn: pn }, 'Dupliquer', 'btn-neutre');
+    : boutonHtml('editer-boite', {}, 'Éditer', 'btn-neutre');
 
   let html = '<section class="bloc bloc-general">' +
     '<header class="bloc-tete">' +
-      '<h3>Assemblage</h3>' +
+      '<h3>Boîte</h3>' +
       '<div class="bloc-actions"><span id="spin-boite" class="zone-spin"></span>' + actions + '</div>' +
     '</header>';
 
@@ -147,7 +147,8 @@ function blocNomHtml(ligne) {
       boutonHtml('annuler-nom', { id: id }, 'Annuler', 'btn-neutre') +
       boutonHtml('supprimer-nom', { id: id }, 'Supprimer', 'btn-danger')
     : boutonHtml('comparer-nom', { id: id }, 'Équivalences', 'btn-accent') +
-      boutonHtml('editer-nom', { id: id }, 'Éditer', 'btn-neutre');
+      boutonHtml('editer-nom', { id: id }, 'Éditer', 'btn-neutre') +
+      boutonHtml('dupliquer-nom', { id: id }, '⧉', 'btn-icone');
 
   let html = '<section class="bloc bloc-' + type.teinte + '">' +
     '<header class="bloc-tete">' +
@@ -210,12 +211,12 @@ function blocNomHtml(ligne) {
 }
 
 // ------------------------------------------------------------
-// Assemblage complet
+// Boîte complète
 // ------------------------------------------------------------
 function ficheHtml(boite) {
   if (!boite) {
     return '<div class="etat-vide">' +
-             '<p>Cet assemblage n\'existe plus.</p>' +
+             '<p>Cette boîte n\'existe plus.</p>' +
              '<p class="etat-vide-aide">Fermez le panneau : la liste est à jour.</p>' +
            '</div>';
   }

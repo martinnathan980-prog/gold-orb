@@ -183,11 +183,6 @@ button { font: inherit; cursor: pointer; }
 .btn-entete:hover { background: rgba(255,255,255,.18); }
 .btn-entete-fort { background: var(--accent); border-color: transparent; font-weight: 600; }
 .btn-entete-fort:hover { background: #0a4fae; }
-.badge-compte {
-  background: rgba(255,255,255,.2); border-radius: 20px;
-  padding: 0 6px; font-size: 11px; font-variant-numeric: tabular-nums;
-}
-
 /* ---------------- indicateurs ---------------- */
 .indicateurs {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -309,7 +304,19 @@ button { font: inherit; cursor: pointer; }
 .carte:hover { box-shadow: var(--ombre-2); border-color: var(--trait-fort); transform: translateY(-2px); }
 @media (prefers-reduced-motion: reduce) { .carte { transition: none; } .carte:hover { transform: none; } }
 
+.carte-media { position: relative; }
 .carte-visuel { display: block; border: 0; padding: 0; background: none; width: 100%; }
+.btn-sur-image {
+  position: absolute; top: 8px; right: 8px;
+  width: 32px; height: 32px; border-radius: var(--r-s);
+  background: var(--surface); color: var(--encre-2);
+  border: 1px solid var(--trait); box-shadow: var(--ombre-1);
+  font-size: 14px; line-height: 1; opacity: 0; transition: opacity .15s, color .15s;
+}
+.carte:hover .btn-sur-image, .btn-sur-image:focus-visible { opacity: 1; }
+.btn-sur-image:hover { color: var(--accent); border-color: var(--accent-trait); }
+/* Sans survol possible, l'action doit rester visible. */
+@media (hover: none) { .btn-sur-image { opacity: 1; } }
 .carte-image {
   display: block; width: 100%; aspect-ratio: 16 / 9; max-width: 100%;
   object-fit: contain; background: var(--surface-3);
@@ -356,7 +363,7 @@ button { font: inherit; cursor: pointer; }
 .carte-meta dt { color: var(--encre-3); }
 .carte-meta dd { margin: 0; text-align: right; font-family: var(--police-data); font-size: 12px; color: var(--encre-2); word-break: break-word; }
 .carte-actions { display: flex; gap: var(--e-2); margin-top: auto; padding-top: var(--e-2); }
-.carte-actions > * { flex: 1; }
+.carte-actions > * { flex: 1; white-space: nowrap; padding-inline: 10px; }
 
 /* ---------------- boutons ---------------- */
 .btn-principal, .btn-neutre, .btn-accent, .btn-mini, .btn-lien, .btn-action {
@@ -373,6 +380,11 @@ button { font: inherit; cursor: pointer; }
 .btn-mini:hover { background: var(--trait); }
 .btn-lien { background: none; border: 0; color: var(--accent); padding: 4px 6px; font-size: 12.5px; text-decoration: underline; }
 .btn-action { padding: 5px 11px; font-size: 12px; }
+.btn-icone {
+  background: var(--surface); color: var(--encre-2); border-color: var(--trait);
+  padding: 5px 10px; font-size: 14px; line-height: 1;
+}
+.btn-icone:hover { background: var(--surface-3); color: var(--accent); border-color: var(--accent-trait); }
 .btn-valider { background: var(--vert); color: #fff; }
 .btn-danger  { background: var(--rouge-voile); color: var(--rouge); border-color: var(--rouge-trait); }
 .btn-danger:hover { background: var(--rouge); color: #fff; }
@@ -539,14 +551,6 @@ button { font: inherit; cursor: pointer; }
 }
 .panneau-reglages .offcanvas-body { padding: var(--e-4); }
 
-.onglets-reglage { display: flex; gap: var(--e-2); flex-wrap: wrap; margin-bottom: var(--e-4); }
-.onglet-reglage {
-  background: var(--surface-2); border: 1px solid var(--trait); border-radius: var(--r-s);
-  padding: 7px 13px; font-size: 13px; font-weight: 500; color: var(--encre-2);
-}
-.onglet-reglage:hover { border-color: var(--trait-fort); }
-.onglet-reglage.actif { background: var(--marine); border-color: var(--marine); color: #fff; }
-
 .reglages-grille { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: var(--e-5); }
 .reglages-colonne { min-width: 0; display: flex; flex-direction: column; gap: var(--e-3); }
 .reglages-apercu {
@@ -600,10 +604,13 @@ button { font: inherit; cursor: pointer; }
 /* ---------------- équivalences ---------------- */
 .rappel-reglages {
   display: flex; align-items: center; justify-content: space-between; gap: var(--e-3);
-  background: var(--surface-2); border: 1px solid var(--trait); border-radius: var(--r-s);
-  padding: 8px 12px; margin-bottom: var(--e-4); font-size: 12.5px; flex-wrap: wrap;
+  background: var(--accent-voile); border: 1px solid var(--accent-trait);
+  border-radius: var(--r-m); padding: 10px 14px; margin-bottom: var(--e-4); flex-wrap: wrap;
 }
-.rappel-reglages em { color: var(--ambre); font-style: normal; }
+.rappel-texte { display: flex; flex-direction: column; }
+.rappel-texte b { font-size: 13px; color: var(--accent-encre); }
+.rappel-texte span { font-size: 11.5px; color: var(--encre-3); }
+.btn-reglage { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 
 .resultat { background: var(--surface-2); border: 1px solid var(--trait); border-radius: var(--r-m); padding: var(--e-4); margin-bottom: var(--e-3); }
 .resultat-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--e-3); padding-bottom: var(--e-3); margin-bottom: var(--e-3); border-bottom: 1px solid var(--trait); }
@@ -650,22 +657,6 @@ button { font: inherit; cursor: pointer; }
 .ensemble-ok { background: var(--vert-voile); border-color: var(--vert-trait); color: var(--vert); }
 .ensemble-manquant { background: var(--ambre-voile); border-color: var(--ambre-trait); color: var(--ambre); }
 .ensemble-plus { background: var(--surface-3); border-color: var(--trait); color: var(--encre-2); }
-
-/* ---------------- journal ---------------- */
-.journal { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.journal-ligne {
-  display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: var(--e-3);
-  align-items: baseline; padding: 9px 4px; border-bottom: 1px solid var(--trait); font-size: 13px;
-}
-.journal-ligne time { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
-.journal-action { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 4px; background: var(--surface-3); color: var(--encre-2); white-space: nowrap; }
-.journal-creation .journal-action    { background: var(--vert-voile);  color: var(--vert); }
-.journal-suppression .journal-action { background: var(--rouge-voile); color: var(--rouge); }
-.journal-echec .journal-action       { background: var(--rouge); color: #fff; }
-.journal-restauration .journal-action{ background: var(--accent-voile); color: var(--accent-encre); }
-.journal-reglage .journal-action     { background: var(--t-autre-voile); color: var(--t-autre); }
-.journal-cible { font-family: var(--police-data); font-size: 12.5px; word-break: break-all; }
-.journal-detail { font-size: 11.5px; color: var(--encre-3); text-align: right; }
 
 /* ---------------- états vides ---------------- */
 .etat-vide {

@@ -89,20 +89,18 @@ const TYPES = {
     teinte: 'type-harnais',
     alias: ['harnais', 'harness', 'cablage', 'câblage', 'faisceau'],
     resume: ['Référence', 'Composant STD'],
-    // Un harnais ne porte ni dimensions ni masse : rien ne sert de les afficher.
+    // Un harnais ne porte ni cotes, ni masse, ni qualification : un PN, une
+    // référence, et ce qui est monté dessus. Rien d'autre n'est affiché.
     champs: [
       { cle: 'PN du type', libelle: 'PN du harnais', genre: GENRE.TEXTE, requis: true },
       { cle: 'Référence', libelle: 'Référence', genre: GENRE.TEXTE,
-        aide: 'Référence de définition du harnais' }
-    ].concat(CHAMPS_QUALIF, [
+        aide: 'Référence de définition du harnais' },
       { cle: 'Composant STD', libelle: 'Composants STD', genre: GENRE.MULTI, catalogue: true }
-    ], CHAMPS_COMMUNS),
+    ].concat(CHAMPS_COMMUNS),
     criteres: [
-      { cle: 'reference', libelle: 'Référence', mode: MODE.EGALITE, champ: 'Référence', poids: 35 },
-      { cle: 'qualifications', libelle: 'Qualifications', mode: MODE.ENSEMBLE,
-        champs: CLES_QUALIF, poids: 15 },
+      { cle: 'reference', libelle: 'Référence', mode: MODE.EGALITE, champ: 'Référence', poids: 45 },
       { cle: 'composants', libelle: 'Composants STD', mode: MODE.ENSEMBLE,
-        champs: ['Composant STD'], poids: 50 }
+        champs: ['Composant STD'], poids: 55 }
     ]
   },
 
@@ -112,25 +110,19 @@ const TYPES = {
     icone: '▣',
     teinte: 'type-plaquette',
     alias: ['plaquette eclairante', 'plaquette éclairante', 'plaquette', 'plaque'],
-    resume: ['Numéro', 'Mots-clés'],
-    // Une plaquette se retrouve par son numéro et surtout par son vocabulaire :
-    // les mots-clés de mission portent l'essentiel de l'équivalence.
+    resume: ['Mots-clés'],
+    // Une plaquette se retrouve par son vocabulaire : ni numéro, ni cotes, ni
+    // qualification. Les mots-clés de mission portent toute l'équivalence.
     champs: [
       { cle: 'PN du type', libelle: 'PN de la plaquette', genre: GENRE.TEXTE, requis: true },
-      { cle: 'Numéro', libelle: 'Numéro', genre: GENRE.TEXTE,
-        aide: 'Numéro de plaquette au plan' },
       { cle: 'Mots-clés', libelle: 'Mots-clés', genre: GENRE.MOTS_CLES, liste: 'list-MotsCles',
         aide: 'Mission, fonction, libellés sérigraphiés' },
-      { cle: 'Dim Long (mm)', libelle: 'Longueur (mm)', genre: GENRE.NOMBRE },
-      { cle: 'Dim Larg (mm)', libelle: 'Largeur (mm)', genre: GENRE.NOMBRE }
-    ].concat(CHAMPS_QUALIF, CHAMPS_COMMUNS),
+      { cle: 'Composant STD', libelle: 'Composants STD', genre: GENRE.MULTI, catalogue: true }
+    ].concat(CHAMPS_COMMUNS),
     criteres: [
-      { cle: 'motsCles', libelle: 'Mots-clés', mode: MODE.MOTS_CLES, champs: ['Mots-clés'], poids: 50 },
-      { cle: 'numero', libelle: 'Numéro', mode: MODE.EGALITE, champ: 'Numéro', poids: 20 },
-      { cle: 'dimensions', libelle: 'Dimensions', mode: MODE.DIMENSIONS,
-        champs: ['Dim Long (mm)', 'Dim Larg (mm)'], tolerance: 0.02, poids: 15 },
-      { cle: 'qualifications', libelle: 'Qualifications', mode: MODE.ENSEMBLE,
-        champs: CLES_QUALIF, poids: 15 }
+      { cle: 'motsCles', libelle: 'Mots-clés', mode: MODE.MOTS_CLES, champs: ['Mots-clés'], poids: 75 },
+      { cle: 'composants', libelle: 'Composants STD', mode: MODE.ENSEMBLE,
+        champs: ['Composant STD'], poids: 25 }
     ]
   },
 
@@ -161,7 +153,7 @@ const TYPES = {
 };
 
 // ------------------------------------------------------------
-// Critères au niveau de l'assemblage
+// Critères au niveau de la boîte
 // ------------------------------------------------------------
 const CRITERES_BOITE = [
   { cle: 'fonction', libelle: 'Fonction', mode: MODE.EGALITE, champ: 'Fonction', poids: 15 },
@@ -174,7 +166,7 @@ const CRITERES_BOITE = [
     source: 'composantsEnfants', poids: 40 }
 ];
 
-const PORTEES = [{ cle: 'boite', libelle: 'Assemblage', icone: '◼', criteres: CRITERES_BOITE }]
+const PORTEES = [{ cle: 'boite', libelle: 'Boîte', icone: '◼', criteres: CRITERES_BOITE }]
   .concat(Object.keys(TYPES).map(function (k) {
     return { cle: TYPES[k].cle, libelle: TYPES[k].libelle,
              icone: TYPES[k].icone, criteres: TYPES[k].criteres };
