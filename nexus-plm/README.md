@@ -5,12 +5,12 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 326 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 410 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 222 tests : logique client + serveur
+npm test                 # 280 tests : logique, pondération, serveur
 npm run demo             # construit build/demo.html
-npm run test:navigateur  # 104 tests dans un vrai Chromium
+npm run test:navigateur  # 130 tests dans un vrai Chromium
 ```
 
 ## Démonstration navigable
@@ -53,7 +53,7 @@ src/
     ViewGrid.html          cartes, onglets, filtres par type, indicateurs
     ViewFiche.html         panneau latéral, champs selon le type
     ViewCompare.html       rendu des équivalences
-    Reglages.html          pondérations réglables, aperçu en direct
+    Reglages.html          choix et pondération des critères, aperçu en direct
     Annulation.html        rattrapage d'une suppression
     Main.html              contrôleur : actions et démarrage
 ```
@@ -69,9 +69,11 @@ fichier.
 | Type | Champs propres | Critères d'équivalence |
 |---|---|---|
 | **Structure boîte** | montage, nombre de pas, longueur, largeur, masse, HL, DAL | montage, pas, dimensions, masse, DAL, HL, qualifications, composants |
-| **Harnais** | PN, référence — **ni cotes, ni masse, ni qualification** | référence, composants |
-| **Plaquette éclairante** | PN, **mots-clés** — ni numéro, ni cotes, ni qualification | mots-clés, composants |
-| **Autre** | référence, masse | référence, masse, qualifications, composants |
+| **Harnais** | PN, référence | **référence, et rien d'autre** |
+| **Plaquette éclairante** | PN, **mots-clés** | **mots-clés, et rien d'autre** |
+
+Il n'y a que ces trois types. Un `Type` non reconnu dans la feuille reste
+affichable (repli technique) mais n'est jamais proposé à la saisie.
 
 Une pièce n'est comparée qu'aux pièces du **même type** : confronter une
 plaquette et un harnais n'a pas de sens, ils n'ont pas les mêmes critères.
@@ -82,23 +84,28 @@ sont le même terme.
 
 ## Pondération
 
-Chaque critère porte un poids, réglé **depuis la comparaison elle-même** : le
-panneau s'ouvre sur la portée de ce qu'on regarde (harnais, plaquette, structure
-ou boîte) et nulle part ailleurs. On ne règle pas des critères dans un écran de
-paramètres détaché du travail en cours.
+La pondération se règle **depuis la comparaison elle-même** : le panneau s'ouvre
+sur la portée de ce qu'on regarde et nulle part ailleurs.
 
-Trois partis pris :
+- Les parts **totalisent toujours 100 %**. Monter un critère fait mécaniquement
+  descendre les autres, proportionnellement : c'est un arbitrage, pas une série
+  de curseurs indépendants. Un total à 250 % ne voudrait rien dire.
+- On **choisit les critères** : `−` écarte un critère, il disparaît alors du
+  résultat au lieu d'y figurer barré ; il se réintègre d'un clic. Le dernier
+  critère ne peut pas être retiré.
+- **Harnais et plaquette n'ont qu'un critère** : le panneau le dit et n'affiche
+  aucun curseur — il n'y a rien à arbitrer.
+- L'**aperçu se recalcule à chaque mouvement**, sur des données réelles. Le
+  panneau est sans voile : le classement se recompose derrière.
 
-- On affiche la **part** de chaque critère (sa fraction du total), pas son poids
-  brut : c'est la part qui détermine le score, un poids de 30 ne veut rien dire seul.
-- L'**aperçu se recalcule à chaque mouvement de curseur**, sur des données
-  réelles. Le panneau est sans voile : ouvert par-dessus une comparaison, on voit
-  le classement se recomposer derrière.
-- Un poids mis à **0** sort le critère du calcul, et la comparaison l'annonce
-  (« ignoré par vos réglages ») au lieu de le passer sous silence.
+Les réglages sont mémorisés sur le poste. « Rétablir les valeurs d'origine »
+remet parts, critères et seuil à leur état initial.
 
-Quatre réglages rapides sont fournis (Équilibré, Priorité composants, Priorité
-géométrie, Priorité qualification). Les réglages sont mémorisés sur le poste.
+## Ce qu'on ne dit plus
+
+L'ancien « taux de couverture » en pourcentage était incompréhensible. À la
+place, les critères qu'on n'a **pas pu** comparer sont **nommés** sous le
+score : « Non comparé, faute de donnée : Masse. Le score porte sur le reste. »
 
 ## Ne rien perdre
 
@@ -112,6 +119,25 @@ géométrie, Priorité qualification). Les réglages sont mémorisés sur le pos
 - Une **boîte** se duplique depuis sa carte, dans la liste — pas depuis sa fiche.
 - Un **sous-ensemble** se duplique depuis la fiche, avec tous les champs de son
   type recopiés.
+
+## Images
+
+Le champ Image attend une **URL de photo** (lien direct ou lien Drive, converti
+en miniature). Rien n'est dessiné : sans URL, la carte affiche « Pas de photo ».
+L'aperçu Artifact bloque les images externes ; elles s'affichent dans
+l'application.
+
+## Indicateurs
+
+Au-delà du comptage, ils répondent à la question que pose l'outil — la
+réutilisation :
+
+| Indicateur | Ce qu'il dit |
+|---|---|
+| Boîtes · Validées | l'avancement |
+| Références uniques | l'ampleur du référentiel |
+| **Pièces réutilisées** | pièces dont le PN apparaît dans au moins deux boîtes |
+| **Doublons probables** | pièces de même type, PN différents, très proches **selon vos critères courants** — l'indicateur suit la pondération |
 
 Deux règles portent l'essentiel :
 

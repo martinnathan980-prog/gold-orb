@@ -105,21 +105,25 @@ async function ecranPropre(page) {
   // ---------------------------------------------------------------
   bloc('Chargement');
   eq('10 boîtes', await page.locator('.carte').count(), 10);
+  eq('titre NEXUS seul', (await texte(page, '.marque h1')).trim(), 'NEXUS');
   eq('indicateur boîtes', await texte(page, '#kpiBoites'), '10');
-  eq('validés', await texte(page, '#kpiVal'), '5 / 10');
+  eq('validées', await texte(page, '#kpiVal'), '5 / 10');
   eq('libellé « Boîtes »', (await texte(page, '.indicateur dt')).trim(), 'Boîtes');
+  vrai('indicateur de réutilisation renseigné',
+       Number(await texte(page, '#kpiReutil')) > 0);
+  vrai('indicateur de doublons renseigné',
+       (await texte(page, '#kpiDoublons')).trim().length > 0);
   eq('pas de compteur de sous-ensembles', await page.locator('#kpiLignes').count(), 0);
-  eq('pas de bouton Journal',
-     await page.locator('[data-action="ouvrir-journal"]').count(), 0);
-  eq('pas de bouton Pondération dans l\'en-tête',
+  eq('pas de bouton Journal', await page.locator('[data-action="ouvrir-journal"]').count(), 0);
+  eq('pas de Pondération dans l\'en-tête',
      await page.locator('.entete [data-action="ouvrir-reglages"]').count(), 0);
   eq('bouton « + Boîte »', (await texte(page, '.btn-entete-fort')).trim(), '+ Boîte');
-  faux('plus de sous-titre',
-       (await texte(page, '.entete')).indexOf("Nomenclatures d'assemblages") !== -1);
+  eq('pas d\'export CSV', await page.locator('[data-action="exporter-bom"]').count(), 0);
   faux('chargement masqué', await page.locator('#loading').isVisible());
-  eq('toutes les cartes ont une illustration', await page.locator('.carte-image').count(), 10);
-  vrai('les illustrations sont des images réelles',
-       await page.locator('img.carte-image').count() === 10);
+  // Aucune image fabriquée : le champ attend une URL de photo.
+  eq('aucun dessin généré', await page.locator('img.carte-image').count(), 0);
+  eq('un état « pas de photo » assumé',
+     await page.locator('.carte-image-absente').count(), 10);
   // Une entrée par type présent et par carte, pas une par sous-ensemble.
   const compositions = await page.locator('.composition li').count();
   vrai('la composition par type est affichée', compositions >= 10);
@@ -129,6 +133,43 @@ async function ecranPropre(page) {
        (await texte(page, '#mainContainer')).indexOf('Structure') !== -1);
 
   // ---------------------------------------------------------------
+  bloc('Créer une boîte complète');
+  await page.locator('.btn-entete-fort').click();
+  await page.waitForSelector('#newBoiteModal.show');
+  await page.waitForTimeout(300);
+  await page.fill('#newBoitePn', 'ESSAI-100');
+  await page.fill('#newBoiteFonction', 'ESSAI');
+  await page.fill('#newBoiteDs', 'ESSAI-150');
+  await page.fill('#newBoitePorteur', 'NH90');
+  await page.selectOption('#newBoiteStatut', 'Validé');
+  await page.fill('#newBoiteNiveau', 'Qualified to NH90');
+  await page.fill('#newBoiteImage', 'https://exemple.fr/photo.jpg');
+  await page.locator('[data-action="creer-boite"]').click();
+  await page.waitForSelector('#detailsSlideOver.show');
+  await page.waitForTimeout(900);
+  const creee = await texte(page, '#slideOverBody');
+  vrai('la boîte est créée et ouverte', (await texte(page, '#slideOverTitle')).indexOf('ESSAI-100') !== -1);
+  vrai('fonction reprise', creee.indexOf('ESSAI') !== -1);
+  vrai('DS/VCI repris', creee.indexOf('ESSAI-150') !== -1);
+  vrai('porteur repris', creee.indexOf('NH90') !== -1);
+  vrai('statut repris', creee.indexOf('Validé') !== -1);
+  vrai('niveau repris', creee.indexOf('Qualified to NH90') !== -1);
+  // L'URL saisie devient bien une balise <img> : la photo vient d'un lien,
+  // pas d'un dessin fabriqué. (Elle ne se charge pas ici : domaine fictif.)
+  eq('la photo est rendue depuis l\'URL saisie',
+     await page.locator('#slideOverBody img[src="https://exemple.fr/photo.jpg"]').count(), 1);
+  await fermerFiche(page);
+  eq('11 boîtes', await page.locator('.carte').count(), 11);
+
+  // On la retire pour ne pas fausser la suite.
+  page.once('dialog', function (d) { d.accept(); });
+  await ouvrirFiche(page, 'ESSAI-100');
+  await page.locator('#slideOverBody [data-action="editer-boite"]').click();
+  await page.locator('#slideOverBody [data-action="supprimer-boite"]').click();
+  await page.waitForTimeout(900);
+  eq('retour à 10 boîtes', await page.locator('.carte').count(), 10);
+  await ecranPropre(page);
+
   bloc('Filtres par type de sous-ensemble');
   eq('3 types présents', await page.locator('.filtres-type .jeton').count(), 3);
   await page.locator('.jeton', { hasText: 'Harnais' }).click();
@@ -184,6 +225,9 @@ async function ecranPropre(page) {
   faux('le harnais n\'affiche pas de longueur', txtHarnais.indexOf('Longueur') !== -1);
   faux('ni de masse', txtHarnais.indexOf('Masse') !== -1);
   faux('ni de qualification', txtHarnais.indexOf('Qualif') !== -1);
+  faux('ni de composants', txtHarnais.indexOf('Composants STD') !== -1);
+  vrai('le harnais propose la duplication',
+       await blocHarnais.locator('[data-action="dupliquer-nom"]').count() === 1);
 
   const blocStruct = page.locator('.bloc-type-structure').first();
   const txtStruct = await blocStruct.evaluate(function (el) { return el.textContent; });
@@ -197,9 +241,10 @@ async function ecranPropre(page) {
   faux('pas de numéro', txtPlaq.indexOf('Numéro') !== -1);
   faux('pas de cotes', txtPlaq.indexOf('Longueur') !== -1);
   faux('pas de qualification', txtPlaq.indexOf('Qualif') !== -1);
+  faux('pas de composants', txtPlaq.indexOf('Composants STD') !== -1);
   vrai('en puces dédiées', await blocPlaq.locator('.puce-motcle').count() >= 2);
-  vrai('chaque sous-ensemble a son illustration',
-       await page.locator('#slideOverBody .vignette').count() >= 3);
+  faux('plus de duplication de boîte dans la fiche',
+       (await texte(page, '.bloc-general')).indexOf('Dupliquer') !== -1);
 
   // ---------------------------------------------------------------
   bloc('Édition');
@@ -246,12 +291,13 @@ async function ecranPropre(page) {
   const corpsCompare = await texte(page, '#compareResult');
   vrai('des critères de harnais', corpsCompare.indexOf('Référence') !== -1);
   faux('aucun critère de dimensions', corpsCompare.indexOf('Dimensions') !== -1);
-  vrai('la couverture est affichée', /couverture/i.test(corpsCompare));
-  vrai('la part de chaque critère est affichée', /% du score/.test(corpsCompare));
+  faux('plus de « couverture » en pourcentage', /couverture/i.test(corpsCompare));
+  vrai('le rappel de pondération est affiché', corpsCompare.indexOf('Pondération') !== -1);
   vrai('chaque critère montre sa jauge',
        await page.locator('#compareResult .critere-jauge').count() >= 2);
-  vrai('les blocs commun / manquant / en plus',
-       await page.locator('#compareResult .ensemble').count() >= 1);
+  // Un harnais se compare sur une égalité : pas d'ensembles à détailler.
+  eq('aucun bloc d\'ensembles pour un harnais',
+     await page.locator('#compareResult .ensemble').count(), 0);
   const scoreAvant = Number((await texte(page, '#compareResult .score b')).replace(/\D/g, ''));
   vrai('un score chiffré', scoreAvant >= 0 && scoreAvant <= 100);
 
@@ -267,48 +313,87 @@ async function ecranPropre(page) {
        (await texte(page, '#reglagesPortee')).indexOf('Harnais') !== -1);
   eq('plus d\'onglets de portée : le contexte décide',
      await page.locator('.onglet-reglage').count(), 0);
-  eq('un curseur par critère du harnais', await page.locator('.curseur').count(), 2);
-  eq('la portée est rappelée dans le panneau',
-     (await texte(page, '#reglagesPortee')).indexOf('Harnais'), 0);
+  eq('aucun curseur : le harnais n\'a qu\'un critère',
+     await page.locator('.curseur').count(), 0);
+  vrai('et le panneau l\'explique',
+       (await texte(page, '#reglagesCurseurs')).indexOf('Un seul critère') !== -1);
+  eq('plus de réglages rapides', await page.locator('[data-action="appliquer-preset"]').count(), 0);
   vrai('aperçu en direct présent', await page.locator('.apercu-liste li').count() >= 1);
 
-  const partAvant = await texte(page, '.reglage .reglage-part');
-  await page.locator('.curseur').first().fill('100');
-  await page.waitForTimeout(350);
-  const partApres = await texte(page, '.reglage .reglage-part');
-  vrai('la part affichée change avec le curseur', partAvant !== partApres);
+  await ecranPropre(page);
+
+  // La structure, elle, s'arbitre : c'est là que les curseurs vivent.
+  bloc('Pondération : le total reste à 100 %');
+  await ouvrirFiche(page, '332P20001');
+  await page.locator('.bloc-type-structure [data-action="comparer-nom"]').first().click();
+  await page.waitForSelector('#compareModal.show');
+  await page.waitForTimeout(400);
+  await page.locator('#compareResult [data-action="ouvrir-reglages"]').click();
+  await page.waitForSelector('#reglagesModal.show');
+  await page.waitForTimeout(400);
+
+  const lireTotal = async function () {
+    return Number((await texte(page, '.reglage-total')).replace(/\D/g, ''));
+  };
+  const lireParts = async function () {
+    return await page.locator('.reglage-part').evaluateAll(function (els) {
+      return els.map(function (e) { return Number(e.textContent.replace(/\D/g, '')); });
+    });
+  };
+
+  eq('8 curseurs pour la structure', await page.locator('.curseur').count(), 8);
+  eq('total à 100 au départ', await lireTotal(), 100);
+
+  const partsAvant = await lireParts();
+  await page.locator('.curseur').first().fill('80');
+  await page.dispatchEvent('.curseur', 'input');
+  await page.waitForTimeout(400);
+  const partsApres = await lireParts();
+  eq('total toujours 100 après déplacement', await lireTotal(), 100);
+  eq('le curseur poussé vaut 80', partsApres[0], 80);
+  vrai('les AUTRES ont bien diminué',
+       partsApres.slice(1).every(function (p, i) { return p <= partsAvant[i + 1]; }));
+  vrai('et au moins un a vraiment bougé',
+       partsApres.slice(1).some(function (p, i) { return p < partsAvant[i + 1]; }));
+
+  await page.locator('.curseur').first().fill('10');
+  await page.dispatchEvent('.curseur', 'input');
+  await page.waitForTimeout(400);
+  const partsBasses = await lireParts();
+  eq('total encore 100', await lireTotal(), 100);
+  vrai('en redescendant, les autres remontent',
+       partsBasses.slice(1).some(function (p, i) { return p > partsApres[i + 1]; }));
+
+  bloc('Pondération : choisir les critères');
+  const avantRetrait = await page.locator('.curseur').count();
+  await page.locator('.reglage-retirer').first().click();
+  await page.waitForTimeout(400);
+  eq('un critère de moins', await page.locator('.curseur').count(), avantRetrait - 1);
+  eq('total toujours 100', await lireTotal(), 100);
+  eq('le critère écarté est proposé au rajout',
+     await page.locator('.btn-ajout-critere').count(), 1);
+
+  await page.locator('.btn-ajout-critere').first().click();
+  await page.waitForTimeout(400);
+  eq('critère réintégré', await page.locator('.curseur').count(), avantRetrait);
+  eq('total toujours 100', await lireTotal(), 100);
+  eq('plus rien dans les écartés', await page.locator('.btn-ajout-critere').count(), 0);
+
   vrai('la pondération personnalisée est signalée',
        await page.locator('#reglagesModifies').isVisible());
 
-  await page.locator('.curseur').first().fill('0');
-  await page.waitForTimeout(350);
-  vrai('un critère à 0 est marqué ignoré',
-       (await texte(page, '.reglage')).indexOf('ignoré') !== -1);
-  // Et le classement derrière le dit aussi : c'est le lien réglage -> résultat.
-  vrai('la comparaison affiche « ignoré par vos réglages »',
-       (await texte(page, '#compareResult')).indexOf('ignoré par vos réglages') !== -1);
-
-  await page.locator('[data-action="appliquer-preset"]').first().click();
-  await page.waitForTimeout(350);
-
   await page.locator('#seuilCurseur').fill('60');
+  await page.dispatchEvent('#seuilCurseur', 'input');
   await page.waitForTimeout(300);
   eq('seuil mis à jour', (await texte(page, '#seuilValeur')).trim(), '60 %');
-  await page.locator('#seuilCurseur').fill('15');
-  await page.waitForTimeout(300);
 
   await page.locator('[data-action="reinitialiser-reglages"]').click();
-  await page.waitForTimeout(350);
+  await page.waitForTimeout(400);
   faux('plus de pondération personnalisée',
        await page.locator('#reglagesModifies').isVisible());
-  await page.locator('#reglagesModal .btn-close').click();
-  await attendreFerme(page, 'reglagesModal');
-
-  // Le score recalculé doit correspondre aux réglages remis à zéro
-  await page.waitForTimeout(300);
-  const scoreApres = Number((await texte(page, '#compareResult .score b')).replace(/\D/g, ''));
-  eq('score revenu à sa valeur d\'origine', scoreApres, scoreAvant);
-  await fermerModale(page, 'compareModal');
+  eq('total rétabli à 100', await lireTotal(), 100);
+  eq('seuil rétabli', (await texte(page, '#seuilValeur')).trim(), '15 %');
+  await ecranPropre(page);
 
   // ---------------------------------------------------------------
   bloc('Annulation d\'une suppression');
@@ -340,8 +425,8 @@ async function ecranPropre(page) {
   vrai('la copie apparaît', await page.locator('.carte', { hasText: 'COPIE-1' }).count() === 1);
 
   await ouvrirFiche(page, 'COPIE-1');
-  faux('pas de duplication de boîte dans la fiche',
-       (await texte(page, '#slideOverBody')).indexOf('Dupliquer') !== -1);
+  faux('pas de duplication de boîte dans son bloc',
+       (await texte(page, '.bloc-general')).indexOf('Dupliquer') !== -1);
   const avantDup = await page.locator('#slideOverBody .bloc').count();
   page.once('dialog', function (d) { d.accept('SE-COPIE'); });
   await page.locator('.bloc-type-structure [data-action="dupliquer-nom"]').first().click();
@@ -352,14 +437,15 @@ async function ecranPropre(page) {
 
   bloc('Catalogue et création typée');
   if (!(await page.locator('#detailsSlideOver.show').count())) await ouvrirFiche(page, '332P20001');
-  await page.locator('.bloc-type-harnais [data-action="ouvrir-catalogue"]').first().click();
+  // Le catalogue n'existe que là où il y a des composants : la structure.
+  await page.locator('.bloc-type-structure [data-action="ouvrir-catalogue"]').first().click();
   await page.waitForSelector('#catalogueModal.show');
   await page.fill('#catSearch', 'diode');
   await page.waitForTimeout(350);
   eq('un seul résultat', await page.locator('.ligne-catalogue').count(), 1);
   await page.locator('.ligne-catalogue').click();
   await page.waitForTimeout(900);
-  const puces = await page.locator('.bloc-type-harnais .puce')
+  const puces = await page.locator('.bloc-type-structure .puce')
     .evaluateAll(function (e) { return e.map(function (x) { return x.textContent; }); });
   vrai('le composant affiché est celui ajouté',
        puces.some(function (p) { return p.indexOf('Diode') !== -1; }));
@@ -367,7 +453,9 @@ async function ecranPropre(page) {
   await page.locator('[data-action="nouveau-sous-ensemble"]').click();
   await page.waitForSelector('#newSousEnsModal.show');
   await page.waitForTimeout(300);
-  eq('4 types proposés', await page.locator('.choix-type').count(), 4);
+  eq('3 types proposés, sans « Autre »', await page.locator('.choix-type').count(), 3);
+  faux('« Autre sous-ensemble » a disparu',
+       (await texte(page, '#choixType')).indexOf('Autre') !== -1);
   await page.locator('.choix-type', { hasText: 'Plaquette' }).click();
   await page.fill('#newEnsPn', 'PLQ-TEST');
   await page.locator('[data-action="creer-sous-ensemble"]').click();
@@ -376,19 +464,6 @@ async function ecranPropre(page) {
        (await texte(page, '#slideOverBody')).indexOf('PLQ-TEST') !== -1);
   vrai('et ouvert directement en saisie',
        await page.locator('.champ-nom').count() > 0);
-
-  // ---------------------------------------------------------------
-  bloc('Export CSV');
-  await page.locator('[data-action="exporter-bom"]').click();
-  await page.waitForSelector('#demoCsvModal.show');
-  await page.waitForTimeout(300);
-  const meta = await texte(page, '#demoCsvMeta');
-  const csv = await texte(page, '#demoCsvContenu');
-  vrai('BOM UTF-8', meta.indexOf('BOM UTF-8 présent') !== -1);
-  vrai('colonnes des trois types', csv.indexOf('"Référence"') !== -1 &&
-       csv.indexOf('"Mots-clés"') !== -1);
-  vrai('accents intacts', /é/.test(csv));
-  await fermerModale(page, 'demoCsvModal');
 
   // ---------------------------------------------------------------
   bloc('Panne serveur');
@@ -503,6 +578,11 @@ async function ecranPropre(page) {
   await page.waitForSelector('#compareModal.show');
   await page.waitForTimeout(500);
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-equivalences.png') });
+  await fermerModale(page, 'compareModal');
+  // La structure : c'est elle qui porte les curseurs.
+  await page.locator('.bloc-type-structure [data-action="comparer-nom"]').first().click();
+  await page.waitForSelector('#compareModal.show');
+  await page.waitForTimeout(400);
 
   // Réglages PAR-DESSUS la comparaison : c'est la situation réelle d'usage,
   // on ajuste en voyant le classement se recomposer.
@@ -519,10 +599,14 @@ async function ecranPropre(page) {
   vrai('les échecs provoqués ont été journalisés', diagnostics.length >= 2);
   // Aucune ressource ne doit manquer, hors polices : elles ont une pile de
   // repli déclarée, et le bac à sable de test n'a pas accès au réseau.
-  const horsPolices = requetesEchouees.filter(function (u) {
-    return u.indexOf('fonts.googleapis.com') === -1 && u.indexOf('fonts.gstatic.com') === -1;
+  // Hors polices (pas de réseau ici) et hors l'URL fictive que le test injecte
+  // lui-même pour vérifier que le champ Image est bien câblé.
+  const inattendues = requetesEchouees.filter(function (u) {
+    return u.indexOf('fonts.googleapis.com') === -1 &&
+           u.indexOf('fonts.gstatic.com') === -1 &&
+           u.indexOf('exemple.fr') === -1;
   });
-  eq('aucune ressource manquante hors polices', horsPolices, []);
+  eq('aucune ressource manquante inattendue', inattendues, []);
   if (reseau.length) {
     console.log('  ' + '\x1b[90m' + 'note : ' + reseau.length +
                 ' chargement(s) réseau bloqué(s) par le bac à sable (polices)' + '\x1b[0m');

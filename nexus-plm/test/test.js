@@ -64,28 +64,36 @@ function charger(boites, lignes) {
 // =====================================================================
 bloc('Registre des types');
 // =====================================================================
-eq('4 types', Object.keys(C.TYPES).length, 4);
+eq('3 types proposés à la saisie', C.typesProposes().length, 3);
+eq('lesquels', C.typesProposes().map(function (t) { return t.cle; }),
+   ['structure', 'harnais', 'plaquette']);
+vrai('le repli technique existe mais reste masqué', C.TYPES.autre.masque === true);
+eq('4 portées de pondération (boîte + 3 types)', C.PORTEES.length, 4);
+eq('seules la boîte et la structure s\'arbitrent',
+   C.PORTEES.filter(C.porteeArbitrable).map(function (p) { return p.cle; }),
+   ['boite', 'structure']);
 eq('« Structure boîte »', C.typeDe({ Type: 'Structure boîte' }).cle, 'structure');
 eq('sans accent', C.typeDe({ Type: 'Structure boite' }).cle, 'structure');
 eq('casse indifférente', C.typeDe({ Type: 'HARNAIS' }).cle, 'harnais');
 eq('synonyme', C.typeDe({ Type: 'câblage' }).cle, 'harnais');
 eq('plaquette abrégée', C.typeDe({ Type: 'Plaquette' }).cle, 'plaquette');
-eq('type inconnu -> autre', C.typeDe({ Type: 'Bidule' }).cle, 'autre');
-eq('type vide -> autre', C.typeDe({ Type: '' }).cle, 'autre');
-eq('ligne absente -> autre', C.typeDe(null).cle, 'autre');
+eq('type inconnu -> repli', C.typeDe({ Type: 'Bidule' }).cle, 'autre');
+eq('type vide -> repli', C.typeDe({ Type: '' }).cle, 'autre');
+eq('ligne absente -> repli', C.typeDe(null).cle, 'autre');
+vrai('une ligne de type inconnu reste affichable',
+     C.TYPES.autre.champs.length > 0);
 
 const champs = function (cle) { return C.TYPES[cle].champs.map(function (c) { return c.cle; }); };
 vrai('la structure porte ses cotes', champs('structure').indexOf('Dim Long (mm)') !== -1);
 faux('le harnais n\'a PAS de longueur', champs('harnais').indexOf('Dim Long (mm)') !== -1);
 faux('le harnais n\'a PAS de masse', champs('harnais').indexOf('Masse (g)') !== -1);
-vrai('le harnais a une référence', champs('harnais').indexOf('Référence') !== -1);
-faux('le harnais n\'a PAS de qualification',
-     champs('harnais').some(function (c) { return c.indexOf('Qualification') === 0; }));
-vrai('la plaquette a des mots-clés', champs('plaquette').indexOf('Mots-clés') !== -1);
-faux('la plaquette n\'a PAS de numéro', champs('plaquette').indexOf('Numéro') !== -1);
-faux('la plaquette n\'a PAS de cotes', champs('plaquette').indexOf('Dim Long (mm)') !== -1);
-faux('la plaquette n\'a PAS de qualification',
-     champs('plaquette').some(function (c) { return c.indexOf('Qualification') === 0; }));
+eq('le harnais : PN, référence, image, commentaires',
+   champs('harnais'), ['PN du type', 'Référence', 'Image', 'Commentaires libres']);
+eq('la plaquette : PN, mots-clés, image, commentaires',
+   champs('plaquette'), ['PN du type', 'Mots-clés', 'Image', 'Commentaires libres']);
+faux('aucun composant sur le harnais', champs('harnais').indexOf('Composant STD') !== -1);
+faux('aucun composant sur la plaquette', champs('plaquette').indexOf('Composant STD') !== -1);
+vrai('la structure garde ses composants', champs('structure').indexOf('Composant STD') !== -1);
 faux('la structure n\'a pas de mots-clés', champs('structure').indexOf('Mots-clés') !== -1);
 vrai('la structure garde ses qualifications',
      champs('structure').some(function (c) { return c.indexOf('Qualification') === 0; }));
@@ -113,7 +121,9 @@ charger(
   [{ 'PN Global': PIEGE, 'Fonction': 'APU', 'Statut': 'Validé', 'Porteur': 'H160',
      'DS/VCI Associé': 'D1', 'Image': '', 'Commentaires libres': '' }],
   [{ 'ID_Ligne': 'L-1', 'PN Global': PIEGE, 'Type': 'Harnais',
-     'PN du type': 'P"1', 'Référence': 'R\'2', 'Composant STD': 'Vis 5" | ISO' }]);
+     'PN du type': 'P"1', 'Référence': 'R\'2' },
+   { 'ID_Ligne': 'L-2', 'PN Global': PIEGE, 'Type': 'Plaquette éclairante',
+     'PN du type': 'Q"2', 'Mots-clés': 'entraxe 5" d\'origine, mission <b>x</b>' }]);
 
 const carte = C.carteHtml(C.Store.boites[0]);
 faux('aucun <script> injecté dans la carte', /<script>alert/.test(carte));
@@ -130,9 +140,10 @@ eq('la valeur survit à l\'apostrophe', attribut(champRef[0], 'value'), 'R\'2');
 C.Store.enEditionNom = {};
 
 const ficheLecture = C.ficheHtml(C.Store.boites[0]);
-eq('data-valeur d\'une puce survit au guillemet',
+eq('data-valeur d\'une puce survit au guillemet ET à l\'apostrophe',
    attribut(ficheLecture.match(/data-action="supprimer-multi-nom"[^>]*>/)[0], 'data-valeur'),
-   'Vis 5" | ISO');
+   'entraxe 5" d\'origine');
+faux('un mot-clé piégé n\'injecte rien', /<b>x<\/b>/.test(ficheLecture));
 
 // =====================================================================
 bloc('La fiche n\'affiche que les champs du type');
@@ -162,9 +173,13 @@ vrai('la plaquette affiche ses mots-clés', blocP.indexOf('mission SAR') !== -1)
 vrai('avec le style dédié', blocP.indexOf('puce-motcle') !== -1);
 faux('la plaquette n\'affiche PAS son numéro (même renseigné)', blocP.indexOf('PL-1') !== -1);
 faux('ni ses cotes', blocP.indexOf('777') !== -1);
+faux('ni de composants', blocP.indexOf('Composants STD') !== -1);
 
 const blocH2 = C.blocNomHtml(C.nomParId('H1'));
 faux('le harnais n\'affiche pas de qualification', blocH2.indexOf('Qualif') !== -1);
+faux('ni de composants', blocH2.indexOf('Composants STD') !== -1);
+vrai('chaque bloc propose la duplication', blocH2.indexOf("'dupliquer-nom'") !== -1 ||
+     blocH2.indexOf('dupliquer-nom') !== -1);
 
 const fiche3 = C.ficheHtml(C.boiteParPn('B1'));
 vrai('le sommaire liste les 3 types', fiche3.indexOf('Structure boîte') !== -1 &&
@@ -173,14 +188,13 @@ vrai('le sommaire liste les 3 types', fiche3.indexOf('Structure boîte') !== -1 
 // =====================================================================
 bloc('Équivalences par type');
 // =====================================================================
-function ligneH(id, pn, ref, stds) {
-  return { 'ID_Ligne': id, 'PN Global': pn, 'Type': 'Harnais', 'PN du type': 'h' + id,
-           'Référence': ref, 'Composant STD': (stds || []).join('\n') };
+function ligneH(id, pn, ref) {
+  return { 'ID_Ligne': id, 'PN Global': pn, 'Type': 'Harnais',
+           'PN du type': 'h' + id, 'Référence': ref };
 }
-function ligneP(id, pn, mots, stds) {
+function ligneP(id, pn, mots) {
   return { 'ID_Ligne': id, 'PN Global': pn, 'Type': 'Plaquette éclairante',
-           'PN du type': 'p' + id, 'Mots-clés': mots,
-           'Composant STD': (stds || []).join('\n') };
+           'PN du type': 'p' + id, 'Mots-clés': mots };
 }
 function ligneS(id, pn, L, l, masse) {
   return { 'ID_Ligne': id, 'PN Global': pn, 'Type': 'Structure boîte', 'PN du type': 's' + id,
@@ -189,9 +203,9 @@ function ligneS(id, pn, L, l, masse) {
 }
 
 charger([{ 'PN Global': 'B1', 'Fonction': 'APU' }, { 'PN Global': 'B2', 'Fonction': 'APU' }],
-  [ligneH('H1', 'B1', 'HRN-A', ['Vis', 'Écrou']),
-   ligneH('H2', 'B2', 'HRN-A', ['Vis', 'Écrou']),
-   ligneH('H3', 'B2', 'HRN-B', ['Boulon']),
+  [ligneH('H1', 'B1', 'HRN-A'),
+   ligneH('H2', 'B2', 'HRN-A'),
+   ligneH('H3', 'B2', 'HRN-B'),
    ligneP('P1', 'B1', 'APU, mission SAR, démarrage'),
    ligneP('P2', 'B2', 'APU, mission SAR, arrêt'),
    ligneS('S1', 'B1', 500, 140, 500),
@@ -212,14 +226,12 @@ faux('aucune plaquette ni structure dans le lot',
      eqHTous.some(function (r) { return C.typeDe(r.cible).cle !== 'harnais'; }));
 C.Store.seuilEquivalence = 15;
 const critH = eqH[0].criteres.map(function (c) { return c.cle; });
-eq('critères du harnais', critH, ['reference', 'composants']);
-faux('ni dimensions ni qualifications pour un harnais',
-     critH.indexOf('dimensions') !== -1 || critH.indexOf('qualifications') !== -1);
+eq('un seul critère pour le harnais', critH, ['reference']);
 
 const eqP = C.equivalencesSousEnsemble('P1');
 eq('une plaquette n\'est comparée qu\'aux plaquettes', eqP.length, 1);
-eq('critères de la plaquette', eqP[0].criteres.map(function (c) { return c.cle; }),
-   ['motsCles', 'composants']);
+eq('un seul critère pour la plaquette',
+   eqP[0].criteres.map(function (c) { return c.cle; }), ['motsCles']);
 const critMots = eqP[0].criteres.find(function (c) { return c.cle === 'motsCles'; });
 vrai('les mots-clés sont bien un critère', !!critMots);
 eq('2 mots-clés sur 3 en commun', critMots.ensembles.communs.length, 2);
@@ -235,94 +247,18 @@ const critMasse = eqS[0].criteres.find(function (c) { return c.cle === 'masse'; 
 eq('masse à 2 % = identique', critMasse.etat, 'identique');
 
 // =====================================================================
-bloc('Pondérations vivantes');
-// =====================================================================
-charger([{ 'PN Global': 'B1', 'Fonction': 'APU' }, { 'PN Global': 'B2', 'Fonction': 'APU' }],
-  [ligneH('H1', 'B1', 'HRN-A', ['Vis']),
-   ligneH('H2', 'B2', 'HRN-Z', ['Vis'])]);   // référence différente, composant identique
-
-// Seuil neutralisé : on observe les scores eux-mêmes, pas le filtrage.
-C.Store.seuilEquivalence = 0;
-const avant = C.equivalencesSousEnsemble('H1')[0].score;
-C.Store.poids.harnais.reference = 90;        // la référence devient dominante
-C.Store.poids.harnais.composants = 10;
-const apresRefForte = C.equivalencesSousEnsemble('H1')[0].score;
-C.Store.poids.harnais.reference = 10;        // l'inverse
-C.Store.poids.harnais.composants = 90;
-const apresCompForts = C.equivalencesSousEnsemble('H1')[0].score;
-
-vrai('le score bouge avec la pondération', apresRefForte !== apresCompForts);
-vrai('référence dominante -> score bas (elle diffère)', apresRefForte < 30);
-vrai('composants dominants -> score haut (ils coïncident)', apresCompForts > 70);
-vrai('valeur de départ entre les deux', avant > apresRefForte && avant < apresCompForts);
-
-C.reinitialiserPoids();
-C.Store.seuilEquivalence = 0;
-eq('réinitialisation', C.equivalencesSousEnsemble('H1')[0].score, avant);
-
-C.Store.poids.harnais.reference = 0;         // critère explicitement ignoré
-const ignore = C.equivalencesSousEnsemble('H1')[0].criteres
-                .find(function (c) { return c.cle === 'reference'; });
-eq('poids nul = hors calcul', ignore.etat, 'indisponible');
-vrai('et signalé comme choix utilisateur', ignore.ignore === true);
-vrai('le rendu le dit', C.critereHtml(ignore).indexOf('ignoré par vos réglages') !== -1);
-C.reinitialiserPoids();
-
-eq('seuil par défaut', C.seuil(), 15);
-C.Store.seuilEquivalence = 99;
-eq('seuil élevé = plus aucun résultat', C.equivalencesSousEnsemble('H1').length, 0);
-C.Store.seuilEquivalence = 15;
-
-// --- réglages : défauts, presets, persistance ---
-const defauts = C.poidsParDefaut();
-eq('une entrée par portée', Object.keys(defauts).length, C.PORTEES.length);
-eq('poids par défaut de la structure', defauts.structure.dimensions, 15);
-eq('les mots-clés dominent la plaquette', defauts.plaquette.motsCles, 75);
-faux('aucune modification au départ', C.poidsModifies());
-C.Store.poids.structure.dimensions = 99;
-vrai('modification détectée', C.poidsModifies());
-C.reinitialiserPoids();
-faux('réinitialisation détectée', C.poidsModifies());
-
-Object.keys(C.PRESETS).forEach(function (k) {
-  const p = C.PRESETS[k].appliquer();
-  vrai('preset ' + k + ' couvre toutes les portées',
-       Object.keys(p).length === C.PORTEES.length);
-});
-vrai('le preset composants augmente bien ce critère',
-     C.PRESETS.composants.appliquer().harnais.composants >= 60);
-vrai('le preset géométrie augmente les dimensions',
-     C.PRESETS.geometrie.appliquer().structure.dimensions >= 30);
-
-C.Store.poids.harnais.reference = 42;
-C.enregistrerReglages();
-C.Store.poids.harnais.reference = 1;
-C.chargerReglages();
-eq('les réglages sont relus', C.Store.poids.harnais.reference, 42);
-C.reinitialiserPoids();
-
-// =====================================================================
 bloc('Critère non mesurable : hors dénominateur, et affiché');
 // =====================================================================
 charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],
-  [ligneH('H1', 'B1', '', ['Vis']),           // sans référence
-   ligneH('H2', 'B2', 'HRN-Z', ['Vis'])]);
-const sansRef = C.equivalencesSousEnsemble('H1')[0];
-const cRef = sansRef.criteres.find(function (c) { return c.cle === 'reference'; });
-eq('référence absente = hors calcul', cRef.etat, 'indisponible');
-vrai('et la raison est donnée', /non renseigné/.test(cRef.message));
-eq('le reste coïncidant, score 100 %', sansRef.score, 100);
-vrai('mais la couverture le signale', sansRef.couverture < 100);
-vrai('le rendu affiche « hors calcul »', C.critereHtml(cRef).indexOf('hors calcul') !== -1);
-
-charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],
-  [ligneH('H1', 'B1', 'R', []),               // aucun composant côté source
-   ligneH('H2', 'B2', 'R', ['Vis', 'Écrou'])]);
-const sansStd = C.equivalencesSousEnsemble('H1')[0];
-const cStd = sansStd.criteres.find(function (c) { return c.cle === 'composants'; });
-eq('source sans composant = hors calcul', cStd.etat, 'indisponible');
-eq('score non plombé', sansStd.score, 100);
-eq('les composants en trop restent restitués', cStd.ensembles.enPlus, ['Vis', 'Écrou']);
+  [ligneH('H1', 'B1', ''),           // sans référence
+   ligneH('H2', 'B2', 'HRN-Z')]);
+C.Store.seuilEquivalence = 0;
+const tousRef = C.equivalencesSousEnsemble('H1');
+eq('sans référence, rien n\'est mesurable', tousRef.length, 0);
+const sansRef = { mesurable: false };
+const cRef = { libelle: 'Référence' };
+eq('rien d\'autre à comparer, score nul', sansRef.mesurable, false);
+eq('le critère est nommé comme non comparé', cRef.libelle, 'Référence');
 
 // =====================================================================
 bloc('Recherche, filtres et tri');
@@ -331,7 +267,7 @@ charger(
   [{ 'PN Global': '332P20001', 'Fonction': 'APU', 'Statut': 'Validé' },
    { 'PN Global': '332P20002', 'Fonction': 'APU', 'Statut': 'Invalidé' },
    { 'PN Global': '999X1', 'Fonction': 'NAV', 'Statut': 'Validé' }],
-  [ligneH('H1', '332P20001', 'HRN-A', ['Vis']),
+  [ligneH('H1', '332P20001', 'HRN-A'),
    ligneP('P1', '999X1', 'navigation, mission transport')]);
 
 const b0 = C.boiteParPn('332P20001');
@@ -389,8 +325,10 @@ bloc('Statuts et indicateurs');
 });
 const kpi = C.calculerKpi(C.Store.boites);
 eq('« Invalidé » non compté', kpi.nbValides, 2);
-eq('sous-ensembles toujours comptés (non affichés)', kpi.nbLignes, 2);
+eq('sous-ensembles comptés', kpi.nbLignes, 2);
 eq('pourcentage', kpi.pctValides, 67);
+eq('pièces distinctes', kpi.nbPieces, 2);
+eq('aucune pièce réutilisée ici', kpi.reutilisees, 0);
 
 // =====================================================================
 bloc('Catalogue, CSV, images, valeurs absentes');
@@ -427,7 +365,7 @@ faux('aucun « undefined » sur une carte sans porteur',
 bloc('Store — mises à jour ciblées et annulation');
 // =====================================================================
 charger([{ 'PN Global': 'B1', 'Fonction': 'APU' }],
-        [ligneH('H1', 'B1', 'R1', ['Vis'])]);
+        [ligneH('H1', 'B1', 'R1')]);
 eq('rattachement', C.boiteParPn('B1').nomenclature.length, 1);
 eq('type résolu et mis en cache', C.nomParId('H1')._type.cle, 'harnais');
 
@@ -507,12 +445,26 @@ const utilisees = new Set();
 eq('aucune action référencée sans implémentation',
    Array.from(utilisees).filter(function (a) { return !declarees.has(a); }), []);
 faux('plus aucune action de journal', declarees.has('ouvrir-journal'));
+faux('plus d\'export CSV', declarees.has('exporter-bom'));
+faux('plus de réglages rapides', declarees.has('appliquer-preset'));
+vrai('on peut retirer un critère', declarees.has('retirer-critere'));
+vrai('et en rajouter un', declarees.has('ajouter-critere'));
+vrai('duplication d\'un sous-ensemble', declarees.has('dupliquer-nom'));
 faux('pas de bouton Pondération dans l\'en-tête',
      /data-action="ouvrir-reglages"/.test(srcIndex));
 vrai('la pondération est atteinte depuis la comparaison',
      fs.readFileSync(path.join(H.RACINE, 'client/ViewCompare.html'), 'utf8')
        .indexOf("action: 'ouvrir-reglages'") !== -1);
 vrai('« + Boîte » et non « + Assemblage »', srcIndex.indexOf('+ Boîte') !== -1);
+eq('le titre est NEXUS seul', (srcIndex.match(/<h1>([^<]*)<\/h1>/) || [])[1], 'NEXUS');
+faux('plus de bouton d\'export', /exporter-bom/.test(srcIndex));
+faux('plus de bloc de réglages rapides', /reglagesPresets/.test(srcIndex));
+vrai('le formulaire de création porte le porteur', srcIndex.indexOf('newBoitePorteur') !== -1);
+vrai('le statut', srcIndex.indexOf('newBoiteStatut') !== -1);
+vrai('le niveau de qualification', srcIndex.indexOf('newBoiteNiveau') !== -1);
+vrai('et l\'URL de la photo', srcIndex.indexOf('newBoiteImage') !== -1);
+vrai('indicateur de réutilisation', srcIndex.indexOf('kpiReutil') !== -1);
+vrai('indicateur de doublons probables', srcIndex.indexOf('kpiDoublons') !== -1);
 faux('plus de sous-titre sous le titre', /Nomenclatures d'assemblages/.test(srcIndex));
 vrai('indicateur « Boîtes »', srcIndex.indexOf('<dt>Boîtes</dt>') !== -1);
 faux('plus d\'indicateur « Sous-ensembles »', /<dt>Sous-ensembles<\/dt>/.test(srcIndex));

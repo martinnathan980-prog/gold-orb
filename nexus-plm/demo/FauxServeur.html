@@ -42,23 +42,23 @@ function nouvelId() { return 'L-demo-' + (++compteurId).toString(36) + '-' + Dat
 // Composant STD, Image, Commentaires.
 // Chaque type ne renseigne que ce qui le concerne.
 const LIGNES_NOM = [
-  ['332P20001', 'Structure boîte', '332P20001.01', '', '', '', 'Console STD', '1', '500', '140', '500', 'A', 'A', 'Cat. S', 'Qual. H225', 'Case 1', '', '', ''],
-  ['332P20001', 'Harnais', '332P20001.03', 'HRN-2251-A', '', '', '', '', '', '', '', '', '', '', '', '', 'Bouton poussoir | Push button (ECS 7251)\nBouton poussoir | Push button (ECS 0763)', '', ''],
-  ['332P20001', 'Plaquette éclairante', '332P20001.05', '', '', 'APU, démarrage, mission SAR', '', '', '', '', '', '', '', '', '', '', 'Switch | Switch (ASNE 0567)', '', ''],
-  ['332P94101', 'Structure boîte', '332P94101.01', '', '', '', 'Hors console', '5', '400', '200', '400', 'B', 'C', 'Cat. T', 'Qual. H225', '', '', '', ''],
+  ['332P20001', 'Structure boîte', '332P20001.01', '', '', '', 'Console STD', '1', '500', '140', '500', 'A', 'A', 'Cat. S', 'Qual. H225', 'Case 1', 'Bouton poussoir | Push button (ECS 7251)\nBouton poussoir | Push button (ECS 0763)', '', ''],
+  ['332P20001', 'Harnais', '332P20001.03', 'HRN-2251-A', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['332P20001', 'Plaquette éclairante', '332P20001.05', '', '', 'APU, démarrage, mission SAR', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['332P94101', 'Structure boîte', '332P94101.01', '', '', '', 'Hors console', '5', '400', '200', '400', 'B', 'C', 'Cat. T', 'Qual. H225', '', 'Switch | Switch (ASNE 0567)', '', ''],
   ['332P94101', 'Plaquette éclairante', '332P94101.02', '', '', 'EOS, optronique, mission SAR', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-  ['U880A240101', 'Harnais', 'U880A240401', 'HRN-1601-C', '', '', '', '', '', '', '', '', '', '', '', '', 'Bouton poussoir | Pushrod (ASNE 0239)', '', ''],
-  ['U880A240101', 'Structure boîte', 'U880A240101.01', '', '', '', 'Console STD', '2', '480', '140', '520', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', '', '', ''],
-  ['332N10001', 'Structure boîte', '332N10001.01', '', '', '', 'Rack', '2', '300', '200', '800', 'B', 'B', 'Cat. S', 'Qual. H225', '', '', '', ''],
+  ['U880A240101', 'Harnais', 'U880A240401', 'HRN-1601-C', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['U880A240101', 'Structure boîte', 'U880A240101.01', '', '', '', 'Console STD', '2', '480', '140', '520', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', 'Bouton poussoir | Push button (ECS 7251)', '', ''],
+  ['332N10001', 'Structure boîte', '332N10001.01', '', '', '', 'Rack', '2', '300', '200', '800', 'B', 'B', 'Cat. S', 'Qual. H225', '', 'Relais | Relay 28V (ECS 1120)', '', ''],
   ['332N10001', 'Plaquette éclairante', '332N10001.03', '', '', 'NAV, navigation, mission transport', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-  ['332C50001', 'Harnais', '332C50001.02', 'HRN-2251-A', '', '', '', '', '', '', '', '', '', '', '', '', 'Bouton poussoir | Push button (ECS 0780)\nBouton poussoir | Push button (ECS 7251)', '', ''],
-  ['U880R30001', 'Structure boîte', 'U880R30001.01', '', '', '', 'Nez', '1', '600', '400', '1500', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', '', '', ''],
-  ['332F40001', 'Plaquette éclairante', '332F40001.02', '', '', 'FLIGHT, pilotage, mission SAR', '', '', '', '', '', '', '', '', '', '', 'Switch | Switch (ASNE 0567)', '', ''],
-  ['332F40001', 'Structure boîte', '332F40001.01', '', '', '', 'Console STD', '1', '500', '140', '495', 'A', 'A', 'Cat. S', 'Qual. H225', 'Case 1', '', '', ''],
-  ['332F40001', 'Harnais', '332F40001.03', 'HRN-2251-A', '', '', '', '', '', '', '', '', '', '', '', '', 'Switch | Switch (ASNE 0567)\nBouton poussoir | Push button (ECS 7251)', '', ''],
-  ['U880P50001', 'Harnais', 'U880P50001.03', 'HRN-1601-C', '', '', '', '', '', '', '', '', '', '', '', '', 'Double command | FRF 772-034 (IG)', '', ''],
-  ['332S60001', 'Plaquette éclairante', '332S60001.01', '', '', 'SENSOR, détection, mission SAR', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-  ['U880D70001', 'Structure boîte', 'U880D70001.01', '', '', '', 'Console STD', '1', '500', '145', '510', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', '', '', ''],
+  ['332C50001', 'Harnais', '332P20001.03', 'HRN-2251-A', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['U880R30001', 'Structure boîte', 'U880R30001.01', '', '', '', 'Nez', '1', '600', '400', '1500', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', 'Connecteur | Circulaire (EN 3645)', '', ''],
+  ['332F40001', 'Plaquette éclairante', '332F40001.02', '', '', 'FLIGHT, pilotage, mission SAR', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['332F40001', 'Structure boîte', '332F40001.01', '', '', '', 'Console STD', '1', '500', '140', '495', 'A', 'A', 'Cat. S', 'Qual. H225', 'Case 1', 'Bouton poussoir | Push button (ECS 7251)\nBouton poussoir | Push button (ECS 0763)', '', ''],
+  ['332F40001', 'Harnais', '332P20001.03', 'HRN-2251-A', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['U880P50001', 'Harnais', 'U880P50001.03', 'HRN-1601-C', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['332S60001', 'Plaquette éclairante', '332P94101.02', '', '', 'EOS, optronique, mission SAR', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ['U880D70001', 'Structure boîte', 'U880D70001.01', '', '', '', 'Console STD', '1', '500', '145', '510', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', 'Bouton poussoir | Push button (ECS 7251)', '', ''],
   ['U880D70001', 'Plaquette éclairante', 'U880D70001.04', '', '', 'DISPLAY, affichage, mission transport', '', '', '', '', '', '', '', '', '', '', '', '', '']
 ];
 
@@ -74,16 +74,10 @@ const BASE = {
     ['POWER',   'U880P50001',  'U880P50051',  'H160',       'En étude', 'Qualified to H160', '', ''],
     ['SENSOR',  '332S60001',   '332S60051',   'Multi',      'Obsolète', 'Qualified to H225', '', ''],
     ['DISPLAY', 'U880D70001',  'U880D70051',  'H160',       'Validé',   'Qualified to H160', '', '']
-  ].map(function (l) {
-    const b = objet(EN_TETES_BOITES, l);
-    b['Image'] = imageAssemblage(b['PN Global'], b['Fonction']);
-    return b;
-  }),
+  ].map(function (l) { return objet(EN_TETES_BOITES, l); }),
 
   nomenclature: LIGNES_NOM.map(function (l) {
-    const n = objet(EN_TETES_NOM, [nouvelId()].concat(l));
-    n['Image'] = illustrationPourLigne(n);
-    return n;
+    return objet(EN_TETES_NOM, [nouvelId()].concat(l));
   }),
 
   catalogue: [
@@ -193,7 +187,6 @@ const SERVEUR = {
     b['Fonction'] = String(fonction || '').trim();
     b['DS/VCI Associé'] = String(dsVci || '').trim();
     b['Statut'] = STATUT_DEFAUT;
-    b['Image'] = imageAssemblage(propre, b['Fonction']);
     DONNEES.boites.push(b);
     return { ok: true, boite: copie(b) };
   },
@@ -218,7 +211,6 @@ const SERVEUR = {
     const nouvelle = copie(source);
     nouvelle['PN Global'] = propre;
     nouvelle['Statut'] = STATUT_DEFAUT;
-    nouvelle['Image'] = imageAssemblage(propre, nouvelle['Fonction']);
     DONNEES.boites.push(nouvelle);
 
     const copies = DONNEES.nomenclature
@@ -240,8 +232,6 @@ const SERVEUR = {
       if (k === 'ID_Ligne' || k === 'PN Global') return;
       if (EN_TETES_NOM.indexOf(k) !== -1) ligne[k] = modifications[k];
     });
-    // Démo seulement : l'illustration suit le type et les cotes.
-    if (!modifications['Image']) ligne['Image'] = illustrationPourLigne(ligne);
     return { ok: true, ligne: copie(ligne) };
   },
 
@@ -252,7 +242,6 @@ const SERVEUR = {
     l['PN Global'] = pn;
     l['Type'] = String(type || '').trim();
     l['PN du type'] = String(pnType || '').trim();
-    l['Image'] = illustrationPourLigne(l);
     DONNEES.nomenclature.push(l);
     return { ok: true, ligne: copie(l) };
   },

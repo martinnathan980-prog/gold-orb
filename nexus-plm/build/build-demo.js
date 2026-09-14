@@ -53,11 +53,9 @@ page = page.replace(
 if (/cdn\.jsdelivr/.test(page)) throw new Error('Une référence CDN subsiste');
 
 // 3. Couche de démonstration, insérée avant les scripts client.
-//    Illustrations d'abord : FauxServeur s'en sert dès son chargement.
 const marqueur = '<script>\n// ============================================================\n// NEXUS PLM — utilitaires d\'affichage';
 if (page.indexOf(marqueur) === -1) throw new Error('Point d\'insertion de la couche démo introuvable');
-page = page.replace(marqueur,
-  lire('demo/Illustrations.html') + '\n' + lire('demo/FauxServeur.html') + '\n' + marqueur);
+page = page.replace(marqueur, lire('demo/FauxServeur.html') + '\n' + marqueur);
 
 // 4. Barre de démonstration
 const BARRE_SCRIPT = `
@@ -119,7 +117,8 @@ const BARRE_BALISAGE = `
 <div id="barreDemo">
   <div class="demo-texte">
     <b>Démonstration</b><span class="demo-texte-long"> — données en mémoire, rien n'est
-    enregistré. Le code client est celui de <code>src/client/</code>, sans modification.</span>
+    enregistré. Les champs Image attendent une URL de photo : cet aperçu bloque les
+    images externes, elles s'afficheront dans l'application.</span>
   </div>
   <div class="demo-controles">
     <label class="demo-bascule">

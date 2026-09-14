@@ -27,8 +27,11 @@ const Store = {
   enEditionBoite: false,
   enEditionNom: {},
 
-  // Réglages d'équivalence, modifiables en direct depuis l'écran Réglages.
+  // Réglages d'équivalence, modifiables en direct depuis la comparaison.
+  // Les poids sont des PARTS : leur somme vaut toujours 100 sur les critères
+  // actifs. Bouger un curseur redistribue les autres.
   poids: {},
+  criteresActifs: {},
   seuilEquivalence: 15,
 
   // Charge utile de la dernière suppression, conservée pour l'annulation.
@@ -52,49 +55,177 @@ function poidsParDefaut() {
   return tout;
 }
 
+function actifsParDefaut() {
+  const tout = {};
+  PORTEES.forEach(function (p) {
+    tout[p.cle] = p.criteres.map(function (c) { return c.cle; });
+  });
+  return tout;
+}
+
+function porteeParCle(cle) {
+  return PORTEES.find(function (p) { return p.cle === cle; }) || PORTEES[0];
+}
+
+function criteresActifs(portee) {
+  const liste = Store.criteresActifs[portee] || [];
+  // On respecte l'ordre du registre, pas celui des clics.
+  return porteeParCle(portee).criteres.filter(function (c) {
+    return liste.indexOf(c.cle) !== -1;
+  });
+}
+
+function critereEstActif(portee, cle) {
+  return (Store.criteresActifs[portee] || []).indexOf(cle) !== -1;
+}
+
+/**
+ * Ramène la somme des parts actives à exactement 100.
+ * L'écart d'arrondi est absorbé par la part la plus grande, pour qu'aucun
+ * total affiché ne fasse 99 ou 101 %.
+ */
+function normaliserPoids(portee) {
+  const actifs = criteresActifs(portee);
+  const table = Store.poids[portee];
+  if (!actifs.length) return;
+  if (actifs.length === 1) { table[actifs[0].cle] = 100; return; }
+
+  let somme = actifs.reduce(function (t, c) { return t + Math.max(0, Number(table[c.cle]) || 0); }, 0);
+  if (somme <= 0) {
+    const part = Math.floor(100 / actifs.length);
+    actifs.forEach(function (c) { table[c.cle] = part; });
+  } else {
+    actifs.forEach(function (c) {
+      table[c.cle] = Math.round((Math.max(0, Number(table[c.cle]) || 0) / somme) * 100);
+    });
+  }
+  const total = actifs.reduce(function (t, c) { return t + table[c.cle]; }, 0);
+  if (total !== 100) {
+    const plusGrand = actifs.reduce(function (a, b) {
+      return table[a.cle] >= table[b.cle] ? a : b;
+    });
+    table[plusGrand.cle] += 100 - total;
+  }
+}
+
+/**
+ * Fixe la part d'un critère et redistribue le reste sur les autres,
+ * proportionnellement à ce qu'ils valaient. Le total reste à 100.
+ */
+function reglerPoids(portee, cle, valeur) {
+  const actifs = criteresActifs(portee);
+  const table = Store.poids[portee];
+  const voulue = Math.max(0, Math.min(100, Math.round(Number(valeur) || 0)));
+
+  if (actifs.length <= 1) { if (actifs.length) table[actifs[0].cle] = 100; return; }
+
+  const autres = actifs.filter(function (c) { return c.cle !== cle; });
+  const resteAvant = autres.reduce(function (t, c) { return t + Math.max(0, Number(table[c.cle]) || 0); }, 0);
+  const resteApres = 100 - voulue;
+
+  if (resteAvant > 0) {
+    autres.forEach(function (c) {
+      table[c.cle] = (Math.max(0, Number(table[c.cle]) || 0) / resteAvant) * resteApres;
+    });
+  } else {
+    autres.forEach(function (c) { table[c.cle] = resteApres / autres.length; });
+  }
+  table[cle] = voulue;
+
+  // Arrondis : on répartit sans toucher à la valeur que l'utilisateur vient
+  // de poser, sinon le curseur « glisserait » sous le doigt.
+  autres.forEach(function (c) { table[c.cle] = Math.round(table[c.cle]); });
+  const total = actifs.reduce(function (t, c) { return t + table[c.cle]; }, 0);
+  if (total !== 100 && autres.length) {
+    const plusGrand = autres.reduce(function (a, b) {
+      return table[a.cle] >= table[b.cle] ? a : b;
+    });
+    table[plusGrand.cle] = Math.max(0, table[plusGrand.cle] + (100 - total));
+  }
+}
+
+function activerCritere(portee, cle) {
+  if (critereEstActif(portee, cle)) return;
+  Store.criteresActifs[portee] = (Store.criteresActifs[portee] || []).concat([cle]);
+  // Le nouveau critère prend une part équitable, prise sur les autres.
+  const actifs = criteresActifs(portee);
+  reglerPoids(portee, cle, Math.round(100 / actifs.length));
+  enregistrerReglages();
+}
+
+function desactiverCritere(portee, cle) {
+  const restants = (Store.criteresActifs[portee] || []).filter(function (c) { return c !== cle; });
+  if (!restants.length) return false;          // on ne retire pas le dernier
+  Store.criteresActifs[portee] = restants;
+  Store.poids[portee][cle] = 0;
+  normaliserPoids(portee);
+  enregistrerReglages();
+  return true;
+}
+
 function reinitialiserPoids() {
   Store.poids = poidsParDefaut();
+  Store.criteresActifs = actifsParDefaut();
   Store.seuilEquivalence = 15;
+  PORTEES.forEach(function (p) { normaliserPoids(p.cle); });
   enregistrerReglages();
 }
 
 function enregistrerReglages() {
   try {
     localStorage.setItem(CLE_REGLAGES, JSON.stringify({
-      poids: Store.poids, seuil: Store.seuilEquivalence, tri: Store.tri
+      poids: Store.poids, actifs: Store.criteresActifs,
+      seuil: Store.seuilEquivalence, tri: Store.tri
     }));
   } catch (e) { /* navigation privée, stockage refusé : sans gravité */ }
 }
 
 function chargerReglages() {
   Store.poids = poidsParDefaut();
+  Store.criteresActifs = actifsParDefaut();
   try {
     const brut = localStorage.getItem(CLE_REGLAGES);
-    if (!brut) return;
-    const lu = JSON.parse(brut);
-    if (lu && lu.poids) {
+    if (brut) {
+      const lu = JSON.parse(brut);
       // Fusion et non remplacement : un critère ajouté depuis garde sa valeur
       // par défaut au lieu de disparaître.
-      Object.keys(Store.poids).forEach(function (portee) {
-        if (!lu.poids[portee]) return;
-        Object.keys(Store.poids[portee]).forEach(function (c) {
-          const v = lu.poids[portee][c];
-          if (typeof v === 'number' && isFinite(v) && v >= 0) Store.poids[portee][c] = v;
+      if (lu && lu.poids) {
+        Object.keys(Store.poids).forEach(function (portee) {
+          if (!lu.poids[portee]) return;
+          Object.keys(Store.poids[portee]).forEach(function (c) {
+            const v = lu.poids[portee][c];
+            if (typeof v === 'number' && isFinite(v) && v >= 0) Store.poids[portee][c] = v;
+          });
         });
-      });
+      }
+      if (lu && lu.actifs) {
+        Object.keys(Store.criteresActifs).forEach(function (portee) {
+          const liste = lu.actifs[portee];
+          if (!Array.isArray(liste) || !liste.length) return;
+          const connus = porteeParCle(portee).criteres.map(function (c) { return c.cle; });
+          const filtre = liste.filter(function (c) { return connus.indexOf(c) !== -1; });
+          if (filtre.length) Store.criteresActifs[portee] = filtre;
+        });
+      }
+      if (typeof lu.seuil === 'number') Store.seuilEquivalence = lu.seuil;
+      if (typeof lu.tri === 'string') Store.tri = lu.tri;
     }
-    if (typeof lu.seuil === 'number') Store.seuilEquivalence = lu.seuil;
-    if (typeof lu.tri === 'string') Store.tri = lu.tri;
   } catch (e) { /* réglages illisibles : on repart des valeurs par défaut */ }
+  PORTEES.forEach(function (p) { normaliserPoids(p.cle); });
 }
 
 function poidsModifies() {
-  const defaut = poidsParDefaut();
-  return Object.keys(defaut).some(function (p) {
-    return Object.keys(defaut[p]).some(function (c) {
-      return Number(Store.poids[p][c]) !== Number(defaut[p][c]);
+  const defautPoids = poidsParDefaut();
+  const defautActifs = actifsParDefaut();
+  const changeActifs = Object.keys(defautActifs).some(function (p) {
+    return defautActifs[p].length !== (Store.criteresActifs[p] || []).length;
+  });
+  const changePoids = Object.keys(defautPoids).some(function (p) {
+    return Object.keys(defautPoids[p]).some(function (c) {
+      return Number(Store.poids[p][c]) !== Number(defautPoids[p][c]);
     });
-  }) || Store.seuilEquivalence !== 15;
+  });
+  return changeActifs || changePoids || Store.seuilEquivalence !== 15;
 }
 
 // ------------------------------------------------------------
@@ -295,22 +426,82 @@ function calculerVue() {
   };
 }
 
+const SEUIL_DOUBLON = 85;      // au-delà, deux PN distincts méritent un examen
+const PLAFOND_PAIRES = 400;    // au-delà, on ne balaie pas toutes les paires
+
+/**
+ * Indicateurs orientés RÉUTILISATION : c'est la question que pose l'outil.
+ * Compter les lignes n'apprend rien ; savoir combien de pièces servent déjà
+ * dans plusieurs boîtes, et combien de PN distincts désignent visiblement la
+ * même chose, dit où il y a du travail.
+ */
 function calculerKpi(liste) {
   const refs = new Set();
+  const boitesParPiece = new Map();
   let nbLignes = 0;
+
   liste.forEach(function (b) {
-    if (b[CLE_PN()]) refs.add(String(b[CLE_PN()]).trim());
+    const pn = String(b[CLE_PN()]).trim();
+    if (pn) refs.add(pn);
     (b.nomenclature || []).forEach(function (n) {
       nbLignes++;
-      if (n['PN du type']) refs.add(String(n['PN du type']).trim());
+      const piece = String(n['PN du type'] || '').trim();
+      if (!piece) return;
+      refs.add(piece);
+      if (!boitesParPiece.has(piece)) boitesParPiece.set(piece, new Set());
+      boitesParPiece.get(piece).add(pn);
     });
   });
+
+  let reutilisees = 0;
+  boitesParPiece.forEach(function (boites) { if (boites.size > 1) reutilisees++; });
+
   const valides = liste.filter(function (b) { return estValide(b['Statut']); }).length;
   return {
-    nbBoites: liste.length, refsUniques: refs.size, nbLignes: nbLignes,
+    nbBoites: liste.length,
+    refsUniques: refs.size,
+    nbLignes: nbLignes,
+    nbPieces: boitesParPiece.size,
+    reutilisees: reutilisees,
+    pctReutilisees: boitesParPiece.size
+      ? Math.round((reutilisees / boitesParPiece.size) * 100) : 0,
     nbValides: valides,
     pctValides: liste.length ? Math.round((valides / liste.length) * 100) : 0
   };
+}
+
+/**
+ * Paires de pièces de même type, de PN différents, que les critères courants
+ * jugent très proches. Recalculé quand la pondération change : l'indicateur
+ * suit les réglages, il ne vit pas sa vie.
+ */
+function compterDoublonsProbables(liste) {
+  const pnVisibles = new Set(liste.map(function (b) { return String(b[CLE_PN()]).trim(); }));
+  const parType = new Map();
+
+  Store.nomenclature.forEach(function (n) {
+    if (!pnVisibles.has(String(n[CLE_PN()]).trim())) return;
+    const cle = typeDe(n).cle;
+    if (!parType.has(cle)) parType.set(cle, []);
+    parType.get(cle).push(n);
+  });
+
+  let paires = 0, total = 0, tronque = false;
+  parType.forEach(function (lignes) { total += (lignes.length * (lignes.length - 1)) / 2; });
+  if (total > PLAFOND_PAIRES) return { nombre: null, tronque: true };
+
+  parType.forEach(function (lignes) {
+    for (let i = 0; i < lignes.length; i++) {
+      for (let j = i + 1; j < lignes.length; j++) {
+        const a = String(lignes[i]['PN du type'] || '').trim();
+        const b = String(lignes[j]['PN du type'] || '').trim();
+        if (!a || !b || normaliserTexte(a) === normaliserTexte(b)) continue;
+        const r = comparerSousEnsembles(lignes[i], lignes[j]);
+        if (r.mesurable && r.score >= SEUIL_DOUBLON) paires++;
+      }
+    }
+  });
+  return { nombre: paires, tronque: tronque };
 }
 
 /** Répartition des sous-ensembles par type, pour la barre de filtres. */

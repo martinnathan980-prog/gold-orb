@@ -70,10 +70,14 @@ function carteHtml(boite) {
   const pn = boite[CLE_PN()];
   const url = urlMiniature(boite['Image']);
 
+  // Pas d'illustration fabriquée : une photo ou rien, et si rien, on le dit.
   const visuel = url
-    ? '<img class="carte-image" src="' + esc(url) + '" alt="" loading="lazy">'
-    : '<div class="carte-image carte-image-absente" aria-hidden="true">' +
-      esc(txt(boite['Fonction'], '?').slice(0, 3).toUpperCase()) + '</div>';
+    ? '<img class="carte-image" src="' + esc(url) + '" alt="Photo de ' + esc(txt(pn)) + '"' +
+      ' loading="lazy">'
+    : '<div class="carte-image carte-image-absente">' +
+        '<span class="absente-icone" aria-hidden="true">⌷</span>' +
+        '<span class="absente-texte">Pas de photo</span>' +
+      '</div>';
 
   return '<article class="carte">' +
     '<div class="carte-media">' +
@@ -81,9 +85,9 @@ function carteHtml(boite) {
         dataAttrs({ action: 'ouvrir-fiche', pn: pn }) +
         ' aria-label="Ouvrir la fiche de ' + esc(txt(pn)) + '">' + visuel + '</button>' +
       // Dupliquer une boîte se fait depuis la liste, pas depuis sa fiche.
-      '<button type="button" class="btn-sur-image" title="Dupliquer cette boîte"' +
-        ' aria-label="Dupliquer ' + esc(txt(pn)) + '"' +
-        dataAttrs({ action: 'dupliquer-boite', pn: pn }) + '>⧉</button>' +
+      '<button type="button" class="btn-sur-image"' +
+        ' aria-label="Dupliquer la boîte ' + esc(txt(pn)) + '"' +
+        dataAttrs({ action: 'dupliquer-boite', pn: pn }) + '>Dupliquer</button>' +
     '</div>' +
     '<div class="carte-corps">' +
       '<div class="carte-tete">' +
@@ -131,9 +135,15 @@ function rendreInterface() {
 
 function rendreKpi(kpi, vue) {
   definirTexte('kpiBoites', String(kpi.nbBoites));
-  definirTexte('kpiNoms', String(kpi.refsUniques));
   definirTexte('kpiVal', kpi.nbValides + ' / ' + kpi.nbBoites);
   definirTexte('kpiValDetail', kpi.pctValides + ' %');
+  definirTexte('kpiNoms', String(kpi.refsUniques));
+  definirTexte('kpiReutil', String(kpi.reutilisees));
+  definirTexte('kpiReutilDetail', kpi.pctReutilisees + ' % des pièces');
+
+  const doublons = compterDoublonsProbables(vue ? vue.aAfficher : Store.boites);
+  definirTexte('kpiDoublons', doublons.nombre === null ? '—' : String(doublons.nombre));
+
   const portee = parId('kpiPortee');
   if (portee) {
     portee.textContent = vue && vue.filtre ? 'sur la sélection courante' : 'sur toute la base';

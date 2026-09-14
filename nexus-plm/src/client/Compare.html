@@ -11,9 +11,9 @@
 //   - un critère NON MESURABLE (donnée absente d'un côté) sort du
 //     dénominateur et est restitué comme tel, au lieu de retirer des points
 //     en silence ;
-//   - un taux de couverture dit sur quelle part des critères le score a
-//     réellement été calculé, pour qu'un 100 % obtenu sur deux critères ne
-//     se lise pas comme un 100 % obtenu sur huit.
+//   - les critères non comparés sont NOMMÉS sous le résultat, pour qu'un
+//     100 % obtenu sur deux critères ne se lise pas comme un 100 % obtenu
+//     sur huit.
 // ============================================================
 
 const SEUIL_DEFAUT = 15;
@@ -37,7 +37,7 @@ function vide(v) {
   return s === '' || s === '-';
 }
 
-/** Poids courant d'un critère : réglage utilisateur, sinon valeur du registre. */
+/** Part courante d'un critère, en pourcentage du score total. */
 function poidsDe(portee, def) {
   const regle = Store.poids && Store.poids[portee] && Store.poids[portee][def.cle];
   return (regle === undefined || regle === null) ? def.poids : Number(regle);
@@ -170,34 +170,36 @@ EVALUATEURS[MODE.MOTS_CLES] = evalMotsCles;
 // Agrégation
 // ------------------------------------------------------------
 function evaluer(portee, definitions, source, cible) {
-  const criteres = definitions.map(function (def) {
-    const poids = poidsDe(portee, def);
-    if (poids <= 0) {
-      // Poids nul : le critère est explicitement ignoré par l'utilisateur.
-      const c = critere(def, ETAT.INDISPONIBLE, 0, 0, 'ignoré par les réglages');
-      c.ignore = true;
-      return c;
-    }
-    return (EVALUATEURS[def.mode] || evalEgalite)(def, poids, source, cible);
+  // Seuls les critères retenus par l'utilisateur sont évalués : un critère
+  // écarté ne figure pas dans le résultat, il n'y apparaît pas « ignoré ».
+  const retenus = (typeof critereEstActif === 'function')
+    ? definitions.filter(function (def) { return critereEstActif(portee, def.cle); })
+    : definitions;
+
+  const criteres = retenus.map(function (def) {
+    return (EVALUATEURS[def.mode] || evalEgalite)(def, poidsDe(portee, def), source, cible);
   });
 
-  let obtenu = 0, max = 0, maxTheorique = 0;
+  let obtenu = 0, max = 0;
   criteres.forEach(function (c) {
-    maxTheorique += c.poids;
     if (c.etat !== ETAT.INDISPONIBLE) { max += c.poids; obtenu += c.obtenu; }
   });
 
-  // Part de chaque critère dans le score final : c'est ce qui rend le
-  // résultat lisible, et ce qui rend le réglage des poids compréhensible.
+  // Part de chaque critère dans le score effectivement calculé.
   criteres.forEach(function (c) {
     c.part = max > 0 && c.etat !== ETAT.INDISPONIBLE ? Math.round((c.poids / max) * 100) : 0;
     c.rendement = c.poids > 0 ? c.obtenu / c.poids : 0;
   });
 
+  // On ne parle plus de « couverture » en pourcentage — personne ne sait ce
+  // que vaut « 73 % d'une couverture de 100 % ». On compte simplement les
+  // critères qu'on n'a PAS pu comparer, et on les nomme.
+  const nonComparables = criteres.filter(function (c) { return c.etat === ETAT.INDISPONIBLE; });
+
   return {
     criteres: criteres,
     score: max > 0 ? Math.round((obtenu / max) * 100) : 0,
-    couverture: maxTheorique > 0 ? Math.round((max / maxTheorique) * 100) : 0,
+    nonComparables: nonComparables.map(function (c) { return c.libelle; }),
     mesurable: max > 0
   };
 }
@@ -226,11 +228,11 @@ function equivalencesBoite(pnSource) {
     .filter(function (b) { return String(b[CLE_PN()]).trim() !== String(pnSource).trim(); })
     .map(function (cible) {
       const r = comparerBoites(source, cible);
-      return { cible: cible, score: r.score, couverture: r.couverture,
+      return { cible: cible, score: r.score, nonComparables: r.nonComparables,
                mesurable: r.mesurable, criteres: r.criteres };
     })
     .filter(function (r) { return r.mesurable && r.score >= s; })
-    .sort(function (a, b) { return b.score - a.score || b.couverture - a.couverture; });
+    .sort(function (a, b) { return b.score - a.score || a.nonComparables.length - b.nonComparables.length; });
 }
 
 function equivalencesSousEnsemble(idLigne) {
@@ -248,11 +250,11 @@ function equivalencesSousEnsemble(idLigne) {
     .map(function (cible) {
       const r = comparerSousEnsembles(source, cible);
       const parent = boiteParPn(cible[CLE_PN()]);
-      return { cible: cible, score: r.score, couverture: r.couverture,
+      return { cible: cible, score: r.score, nonComparables: r.nonComparables,
                mesurable: r.mesurable, criteres: r.criteres, type: type,
                fonctionParent: parent ? txt(parent['Fonction'], 'Inconnue') : 'Inconnue' };
     })
     .filter(function (r) { return r.mesurable && r.score >= s; })
-    .sort(function (a, b) { return b.score - a.score || b.couverture - a.couverture; });
+    .sort(function (a, b) { return b.score - a.score || a.nonComparables.length - b.nonComparables.length; });
 }
 </script>

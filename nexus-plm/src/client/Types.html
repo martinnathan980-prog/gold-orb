@@ -88,19 +88,16 @@ const TYPES = {
     icone: '⌇',
     teinte: 'type-harnais',
     alias: ['harnais', 'harness', 'cablage', 'câblage', 'faisceau'],
-    resume: ['Référence', 'Composant STD'],
-    // Un harnais ne porte ni cotes, ni masse, ni qualification : un PN, une
-    // référence, et ce qui est monté dessus. Rien d'autre n'est affiché.
+    resume: ['Référence'],
+    // Un harnais, c'est un PN et une référence. Rien d'autre n'est suivi.
     champs: [
       { cle: 'PN du type', libelle: 'PN du harnais', genre: GENRE.TEXTE, requis: true },
       { cle: 'Référence', libelle: 'Référence', genre: GENRE.TEXTE,
-        aide: 'Référence de définition du harnais' },
-      { cle: 'Composant STD', libelle: 'Composants STD', genre: GENRE.MULTI, catalogue: true }
+        aide: 'Référence de définition du harnais' }
     ].concat(CHAMPS_COMMUNS),
+    // Un seul critère : l'écran de pondération le dit et n'affiche pas de curseur.
     criteres: [
-      { cle: 'reference', libelle: 'Référence', mode: MODE.EGALITE, champ: 'Référence', poids: 45 },
-      { cle: 'composants', libelle: 'Composants STD', mode: MODE.ENSEMBLE,
-        champs: ['Composant STD'], poids: 55 }
+      { cle: 'reference', libelle: 'Référence', mode: MODE.EGALITE, champ: 'Référence', poids: 100 }
     ]
   },
 
@@ -111,44 +108,32 @@ const TYPES = {
     teinte: 'type-plaquette',
     alias: ['plaquette eclairante', 'plaquette éclairante', 'plaquette', 'plaque'],
     resume: ['Mots-clés'],
-    // Une plaquette se retrouve par son vocabulaire : ni numéro, ni cotes, ni
-    // qualification. Les mots-clés de mission portent toute l'équivalence.
+    // Une plaquette se retrouve par son vocabulaire, et par lui seul.
     champs: [
       { cle: 'PN du type', libelle: 'PN de la plaquette', genre: GENRE.TEXTE, requis: true },
       { cle: 'Mots-clés', libelle: 'Mots-clés', genre: GENRE.MOTS_CLES, liste: 'list-MotsCles',
-        aide: 'Mission, fonction, libellés sérigraphiés' },
-      { cle: 'Composant STD', libelle: 'Composants STD', genre: GENRE.MULTI, catalogue: true }
+        aide: 'Mission, fonction, libellés sérigraphiés' }
     ].concat(CHAMPS_COMMUNS),
     criteres: [
-      { cle: 'motsCles', libelle: 'Mots-clés', mode: MODE.MOTS_CLES, champs: ['Mots-clés'], poids: 75 },
-      { cle: 'composants', libelle: 'Composants STD', mode: MODE.ENSEMBLE,
-        champs: ['Composant STD'], poids: 25 }
+      { cle: 'motsCles', libelle: 'Mots-clés', mode: MODE.MOTS_CLES, champs: ['Mots-clés'], poids: 100 }
     ]
   },
 
+  // Repli technique : une ligne dont le type n'est pas reconnu doit rester
+  // lisible plutôt que de faire planter la fiche. Jamais proposé à la saisie
+  // (masque: true), jamais une portée de pondération.
   autre: {
     cle: 'autre',
-    libelle: 'Autre sous-ensemble',
+    libelle: 'Type non reconnu',
     icone: '◇',
     teinte: 'type-autre',
+    masque: true,
     alias: [],
     resume: ['PN du type'],
     champs: [
-      { cle: 'PN du type', libelle: 'PN du type', genre: GENRE.TEXTE, requis: true },
-      { cle: 'Référence', libelle: 'Référence', genre: GENRE.TEXTE },
-      { cle: 'Masse (g)', libelle: 'Masse (g)', genre: GENRE.NOMBRE }
-    ].concat(CHAMPS_QUALIF, [
-      { cle: 'Composant STD', libelle: 'Composants STD', genre: GENRE.MULTI, catalogue: true }
-    ], CHAMPS_COMMUNS),
-    criteres: [
-      { cle: 'reference', libelle: 'Référence', mode: MODE.EGALITE, champ: 'Référence', poids: 25 },
-      { cle: 'masse', libelle: 'Masse', mode: MODE.NOMBRE, champ: 'Masse (g)',
-        tolerance: 0.05, unite: ' g', poids: 20 },
-      { cle: 'qualifications', libelle: 'Qualifications', mode: MODE.ENSEMBLE,
-        champs: CLES_QUALIF, poids: 20 },
-      { cle: 'composants', libelle: 'Composants STD', mode: MODE.ENSEMBLE,
-        champs: ['Composant STD'], poids: 35 }
-    ]
+      { cle: 'PN du type', libelle: 'PN du type', genre: GENRE.TEXTE, requis: true }
+    ].concat(CHAMPS_COMMUNS),
+    criteres: []
   }
 };
 
@@ -166,10 +151,15 @@ const CRITERES_BOITE = [
     source: 'composantsEnfants', poids: 40 }
 ];
 
+/** Types réellement proposés à la saisie (le repli technique est exclu). */
+function typesProposes() {
+  return Object.keys(TYPES).map(function (k) { return TYPES[k]; })
+    .filter(function (t) { return !t.masque; });
+}
+
 const PORTEES = [{ cle: 'boite', libelle: 'Boîte', icone: '◼', criteres: CRITERES_BOITE }]
-  .concat(Object.keys(TYPES).map(function (k) {
-    return { cle: TYPES[k].cle, libelle: TYPES[k].libelle,
-             icone: TYPES[k].icone, criteres: TYPES[k].criteres };
+  .concat(typesProposes().map(function (t) {
+    return { cle: t.cle, libelle: t.libelle, icone: t.icone, criteres: t.criteres };
   }));
 
 // ------------------------------------------------------------
@@ -211,6 +201,11 @@ function toutesLesColonnesNom() {
     TYPES[k].champs.forEach(function (c) { vues.add(c.cle); });
   });
   return Array.from(vues);
+}
+
+/** Un type à un seul critère ne se pondère pas : il n'y a rien à arbitrer. */
+function porteeArbitrable(portee) {
+  return portee && portee.criteres.length > 1;
 }
 
 // ------------------------------------------------------------

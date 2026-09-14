@@ -74,8 +74,8 @@ function remplirListesDeSuggestion() {
   definirHtml('list-MotsCles', tousLesMotsCles().map(function (m) {
     return '<option value="' + esc(m) + '"></option>';
   }).join(''));
-  definirHtml('list-Type', Object.keys(TYPES).map(function (k) {
-    return '<option value="' + esc(TYPES[k].libelle) + '"></option>';
+  definirHtml('list-Type', typesProposes().map(function (t) {
+    return '<option value="' + esc(t.libelle) + '"></option>';
   }).join(''));
 }
 
@@ -318,11 +318,32 @@ enregistrerActions({
     const pn = parId('newBoitePn').value.trim();
     if (!pn) { afficherBandeau('Le PN Global est obligatoire.', 'erreur'); return; }
     fermerModal('newBoiteModal');
+    // La boîte naît complète : on renseigne tout ce qui la caractérise en une
+    // fois, les sous-ensembles viennent ensuite.
+    const complement = {
+      'Porteur': parId('newBoitePorteur').value.trim(),
+      'Statut': parId('newBoiteStatut').value.trim(),
+      'Niveau de qualification': parId('newBoiteNiveau').value.trim(),
+      'Image': parId('newBoiteImage').value.trim()
+    };
     Api.creerBoite(pn, parId('newBoiteFonction').value, parId('newBoiteDs').value)
       .then(function (r) {
         appliquerBoite(r.boite);
-        ['newBoitePn', 'newBoiteFonction', 'newBoiteDs'].forEach(function (i) { parId(i).value = ''; });
-        Store.pnCourant = r.boite[CLE_PN()];
+        const aEcrire = {};
+        Object.keys(complement).forEach(function (k) {
+          if (complement[k]) aEcrire[k] = complement[k];
+        });
+        if (!Object.keys(aEcrire).length) return r.boite;
+        return Api.sauverBoite(r.boite[CLE_PN()], aEcrire).then(function (r2) {
+          appliquerBoite(r2.boite, r2.pnPrecedent);
+          return r2.boite;
+        });
+      })
+      .then(function (boite) {
+        ['newBoitePn', 'newBoiteFonction', 'newBoiteDs', 'newBoitePorteur',
+         'newBoiteNiveau', 'newBoiteImage'].forEach(function (i) { parId(i).value = ''; });
+        parId('newBoiteStatut').value = 'En étude';
+        Store.pnCourant = boite[CLE_PN()];
         rafraichir();
         rendreFiche();
         ouvrirPanneau();
@@ -331,8 +352,7 @@ enregistrerActions({
   },
 
   'nouveau-sous-ensemble': function () {
-    definirHtml('choixType', Object.keys(TYPES).map(function (k, i) {
-      const t = TYPES[k];
+    definirHtml('choixType', typesProposes().map(function (t, i) {
       return '<label class="choix-type ' + t.teinte + '">' +
         '<input type="radio" name="typeNouveau" value="' + esc(t.cle) + '"' +
           (i === 0 ? ' checked' : '') + '>' +
@@ -391,11 +411,16 @@ enregistrerActions({
     bootstrap.Offcanvas.getOrCreateInstance(parId('reglagesModal')).show();
   },
   'regler-portee': function (d) { porteeReglee = d.portee; rendreReglages(); },
-  'appliquer-preset': function (d) {
-    const p = PRESETS[d.preset];
-    if (!p) return;
-    Store.poids = p.appliquer();
-    enregistrerReglages();
+  'ajouter-critere': function (d) {
+    activerCritere(porteeReglee, d.critere);
+    rendreReglages();
+    rafraichirComparaison();
+  },
+  'retirer-critere': function (d) {
+    if (!desactiverCritere(porteeReglee, d.critere)) {
+      afficherBandeau('Il faut garder au moins un critère.', 'erreur');
+      return;
+    }
     rendreReglages();
     rafraichirComparaison();
   },
@@ -409,21 +434,6 @@ enregistrerActions({
   'agrandir-image': function (d) {
     definirHtml('loupeCorps', '<img src="' + esc(d.url) + '" alt="">');
     ouvrirModal('loupeModal');
-  },
-
-  'exporter-bom': function () {
-    const boite = boiteCourante();
-    if (!boite) return;
-    const lignes = [['Type', 'PN du type', 'Référence', 'Numéro', 'Mots-clés',
-                     'Montage', 'Long (mm)', 'Larg (mm)', 'Masse (g)', 'DAL', 'HL',
-                     'Composants STD']];
-    (boite.nomenclature || []).forEach(function (n) {
-      lignes.push([typeDe(n).libelle, n['PN du type'], n['Référence'], n['Numéro'],
-                   n['Mots-clés'], n['Montage'], n['Dim Long (mm)'], n['Dim Larg (mm)'],
-                   n['Masse (g)'], n['DAL'], n['HL'], n[Store.config.colonneStd]]);
-    });
-    telecharger(construireCsv(lignes), 'BOM_' + boite[CLE_PN()] + '.csv',
-                'text/csv;charset=utf-8');
   }
 });
 
@@ -483,9 +493,10 @@ document.addEventListener('DOMContentLoaded', function () {
   // Curseurs de pondération : recalcul immédiat, c'est tout l'intérêt.
   document.addEventListener('input', function (e) {
     if (e.target.classList && e.target.classList.contains('curseur')) {
-      Store.poids[e.target.dataset.portee][e.target.dataset.critere] = Number(e.target.value);
+      // Poser une part redistribue les autres : le total reste à 100 %.
+      reglerPoids(e.target.dataset.portee, e.target.dataset.critere, e.target.value);
       enregistrerReglages();
-      rafraichirApercu();
+      rafraichirApercu(e.target.dataset.critere);
       rafraichirComparaison();
       return;
     }
@@ -493,7 +504,7 @@ document.addEventListener('DOMContentLoaded', function () {
       Store.seuilEquivalence = Number(e.target.value);
       enregistrerReglages();
       definirTexte('seuilValeur', Store.seuilEquivalence + ' %');
-      rafraichirApercu();
+      rafraichirApercu(null);
       rafraichirComparaison();
     }
   });

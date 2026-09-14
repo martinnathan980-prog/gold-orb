@@ -42,7 +42,7 @@
       <div class="enveloppe entete-corps">
         <div class="marque">
           <span class="marque-sigle" aria-hidden="true">◆</span>
-          <h1>NEXUS PLM</h1>
+          <h1>NEXUS</h1>
         </div>
 
         <div class="entete-outils">
@@ -57,13 +57,21 @@
           <div class="indicateur">
             <dt>Boîtes</dt><dd id="kpiBoites">–</dd>
           </div>
+          <div class="indicateur indicateur-valide">
+            <dt>Validées</dt><dd id="kpiVal">–</dd>
+            <span class="indicateur-detail" id="kpiValDetail"></span>
+          </div>
           <div class="indicateur">
             <dt>Références uniques</dt><dd id="kpiNoms">–</dd>
           </div>
-          <div class="indicateur indicateur-valide">
-            <dt>Validés</dt>
-            <dd id="kpiVal">–</dd>
-            <span class="indicateur-detail" id="kpiValDetail"></span>
+          <div class="indicateur" title="Pièces dont le PN apparaît dans au moins deux boîtes">
+            <dt>Pièces réutilisées</dt><dd id="kpiReutil">–</dd>
+            <span class="indicateur-detail" id="kpiReutilDetail"></span>
+          </div>
+          <div class="indicateur indicateur-alerte"
+               title="Pièces de même type, PN différents, très proches selon vos critères">
+            <dt>Doublons probables</dt><dd id="kpiDoublons">–</dd>
+            <span class="indicateur-detail">à consolider</span>
           </div>
           <p class="indicateurs-portee" id="kpiPortee">sur toute la base</p>
         </dl>
@@ -108,7 +116,6 @@
           <p class="panneau-sous" id="slideOverSousTitre"></p>
         </div>
         <div class="panneau-actions">
-          <button type="button" class="btn-neutre" data-action="exporter-bom">Exporter (CSV)</button>
           <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
         </div>
       </div>
@@ -142,8 +149,6 @@
           <aside class="reglages-colonne reglages-apercu">
             <h3>Aperçu en direct</h3>
             <div id="reglagesApercu"></div>
-            <h3 class="apercu-titre-2">Réglages rapides</h3>
-            <div id="reglagesPresets" class="presets"></div>
             <p id="reglagesModifies" class="avertissement" hidden>
               Pondération personnalisée, mémorisée sur ce poste.
             </p>
@@ -228,7 +233,26 @@
             <input type="text" id="newBoiteFonction" class="saisie-pleine" placeholder="ex. APU">
             <label class="champ-libelle" for="newBoiteDs">DS/VCI associé</label>
             <input type="text" id="newBoiteDs" class="saisie-pleine" placeholder="ex. 332P20051">
-            <button type="button" class="btn-principal" data-action="creer-boite">Créer</button>
+            <label class="champ-libelle" for="newBoitePorteur">Porteur</label>
+            <input type="text" id="newBoitePorteur" class="saisie-pleine" list="list-Porteur"
+                   placeholder="ex. Super Puma">
+            <div class="champ-paire">
+              <div>
+                <label class="champ-libelle" for="newBoiteStatut">Statut</label>
+                <select id="newBoiteStatut" class="saisie-pleine">
+                  <option>En étude</option><option>Validé</option><option>Obsolète</option>
+                </select>
+              </div>
+              <div>
+                <label class="champ-libelle" for="newBoiteNiveau">Niveau de qualification</label>
+                <input type="text" id="newBoiteNiveau" class="saisie-pleine"
+                       placeholder="ex. Qualified to H225">
+              </div>
+            </div>
+            <label class="champ-libelle" for="newBoiteImage">Image (URL de la photo)</label>
+            <input type="url" id="newBoiteImage" class="saisie-pleine"
+                   placeholder="https://… ou lien Drive de la photo">
+            <button type="button" class="btn-principal" data-action="creer-boite">Créer la boîte</button>
           </div>
         </div>
       </div>
