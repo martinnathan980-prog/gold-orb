@@ -8,3 +8,7 @@ node_modules/
 
 # Fichiers trop volumineux pour GitHub (voir ticks.sh)
 download/trop-gros/
+
+# Relevés produits par le script d'import
+gates-analytics/import/donnees/
+__pycache__/
