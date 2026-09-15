@@ -941,9 +941,13 @@ vrai('les pièces partagées se repèrent', /\.piece-partagee \{/.test(srcCss));
 vrai('le sélecteur de vue aussi', /\.onglet-vue \{/.test(srcCss));
 vrai('les niveaux d\'un composant ont leur pastille', /\.niveau-egal\s+\{/.test(srcCss));
 vrai('la sous-pondération a son bloc', /\.sous-reglage \{/.test(srcCss));
-vrai('le bloc des niveaux est collé en bas du rail',
+// C'est l'en-tête du rail qui reste fixe, pas le bas : on descend pour
+// parcourir toutes les pondérations, dans l'ordre.
+vrai('l\'en-tête du rail reste fixe en haut',
+     /\.rail-tete \{[\s\S]*?position: sticky;\s*top:/.test(srcCss));
+faux('le bloc des niveaux n\'est plus épinglé en bas',
      /\.sous-reglage \{[\s\S]*?position: sticky/.test(srcCss));
-vrai('et signalé par un filet marine',
+vrai('il reste repérable au défilement par son aplat marine',
      /\.sous-reglage \{[\s\S]*?border-top: 2px solid var\(--marque\)/.test(srcCss));
 vrai('le rail règle les niveaux quand la portée compare des composants',
      fs.readFileSync(path.join(H.RACINE, 'client/Reglages.html'), 'utf8')

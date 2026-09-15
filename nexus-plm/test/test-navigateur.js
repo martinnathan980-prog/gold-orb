@@ -604,14 +604,24 @@ async function ecranPropre(page) {
   eq('les niveaux ont leur propre bloc', await page.locator('.sous-reglage').count(), 1);
   vrai('l\'en-tête du rail annonce leur présence',
        (await texte(page, '#reglagesPortee')).indexOf('niveaux de composant') !== -1);
-  // Neuf critères poussaient ce bloc hors de l'écran : il est désormais
-  // collé au bas du rail, donc visible sans défiler.
+  // Le rail se lit de haut en bas : son en-tête reste fixe, le reste défile.
   const cadreRail = await page.locator('#reglagesRail').boundingBox();
+  const teteAvant = await page.locator('.rail-tete').boundingBox();
+  const premierCritere = await page.locator('.reglage').first().boundingBox();
+  vrai('l\'en-tête coiffe les critères', teteAvant.y < premierCritere.y);
+
+  await page.locator('#reglagesRail').evaluate(function (e) { e.scrollTo(0, e.scrollHeight); });
+  await page.waitForTimeout(400);
+  const teteApres = await page.locator('.rail-tete').boundingBox();
+  vrai('il reste en place quand on descend',
+       Math.abs(teteApres.y - teteAvant.y) < 3);
+  vrai('et on sait toujours quelle portée on règle',
+       (await texte(page, '.rail-tete')).indexOf('Structure') !== -1);
   const cadreNiveaux = await page.locator('.sous-reglage').boundingBox();
-  vrai('le bloc des niveaux est visible sans défiler le rail',
-       cadreNiveaux.y < cadreRail.y + cadreRail.height);
-  vrai('il est collé en bas',
-       cadreNiveaux.y + cadreNiveaux.height >= cadreRail.y + cadreRail.height - 4);
+  vrai('on atteint les niveaux de composant en descendant',
+       cadreNiveaux.y > cadreRail.y && cadreNiveaux.y < cadreRail.y + cadreRail.height);
+  await page.locator('#reglagesRail').evaluate(function (e) { e.scrollTo(0, 0); });
+  await page.waitForTimeout(300);
   eq('et leur propre total', await page.locator('.reglage-total').count(), 2);
   eq('les trois niveaux sont nommés',
      await page.locator('.sous-reglage .reglage-tete label')

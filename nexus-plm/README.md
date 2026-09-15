@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 796 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 799 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 555 tests : logique, pondération, serveur, bundle
+npm test                 # 556 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 241 tests dans un vrai Chromium
+npm run test:navigateur  # 243 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -188,10 +188,10 @@ alors le maximum.
 
 Ces trois parts **se règlent**, dans le rail de pondération, dès que la portée
 comparée manipule des composants : sur la boîte comme sur la structure boîte.
-Le bloc est **collé au bas du rail** et reste visible pendant qu'on fait
-défiler les critères — sur une structure, ses neuf critères le repoussaient
-600 px sous la ligne de flottaison et on ne pouvait pas deviner qu'il
-existait. Une pondération dans la pondération : elle
+Le rail se lit de haut en bas, son en-tête reste fixe pendant qu'on descend,
+et il annonce ce qui vient : « 9 critères retenus, plus les 3 niveaux de
+composant ». Le bloc des niveaux ferme la liste, repérable à son aplat
+marine. Une pondération dans la pondération : elle
 dit ce que vaut une fonction partagée face à une référence exacte. Elle est
 commune à la boîte et à la structure, puisque les trois niveaux veulent dire
 la même chose des deux côtés.

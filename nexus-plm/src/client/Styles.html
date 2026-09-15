@@ -627,6 +627,12 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
   padding: var(--e-4); max-height: calc(100vh - 220px); overflow: auto;
 }
 .reglages-rail[hidden] { display: none; }
+.rail-tete {
+  position: sticky; top: calc(var(--e-4) * -1); z-index: 2;
+  margin: calc(var(--e-4) * -1) calc(var(--e-4) * -1) 0;
+  padding: var(--e-4) var(--e-4) var(--e-2);
+  background: var(--surface-2); border-bottom: 1px solid var(--trait);
+}
 .rail-tete h3 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--encre-3); }
 .btn-reglage { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 
@@ -741,12 +747,12 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 }
 
 /* La pondération dans la pondération : les niveaux d'un composant.
-   Collée au bas du rail. Sur une structure, neuf critères la repoussaient
-   600 px sous la ligne de flottaison : elle existait sans se voir. */
+   Dans le fil, à la suite des critères : on descend pour la trouver, et
+   l'en-tête du rail annonce sa présence. Un aplat marine la rend
+   repérable au défilement. */
 .sous-reglage {
-  position: sticky; bottom: calc(var(--e-4) * -1);
-  margin: var(--e-3) calc(var(--e-4) * -1) calc(var(--e-4) * -1);
-  padding: var(--e-3) var(--e-4) var(--e-4);
+  margin: var(--e-3) calc(var(--e-4) * -1) 0;
+  padding: var(--e-3) var(--e-4);
   background: var(--marque-voile); border-top: 2px solid var(--marque);
 }
 .sous-reglage h4 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--marque); font-weight: 700; }
@@ -757,7 +763,7 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .sous-reglage .reglage-jauge { display: none; }
 .sous-reglage .reglage-total { margin-top: 0; }
 .reglage-aide { font-size: 10.5px; color: var(--encre-3); margin-top: 0; }
-@media (max-width: 860px) { .sous-reglage { position: static; } }
+@media (max-width: 860px) { .rail-tete { position: static; margin: 0; padding: 0 0 var(--e-2); } }
 .palier-plus { background: var(--surface); border-color: var(--trait); border-style: dashed; color: var(--encre-3); }
 
 /* ---------------- doublons ---------------- */
