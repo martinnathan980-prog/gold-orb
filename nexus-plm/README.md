@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 783 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 796 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 549 tests : logique, pondération, serveur, bundle
+npm test                 # 555 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 234 tests dans un vrai Chromium
+npm run test:navigateur  # 241 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -187,7 +187,11 @@ alors le maximum.
 | Fonctions différentes | rien |
 
 Ces trois parts **se règlent**, dans le rail de pondération, dès que la portée
-comparée manipule des composants. Une pondération dans la pondération : elle
+comparée manipule des composants : sur la boîte comme sur la structure boîte.
+Le bloc est **collé au bas du rail** et reste visible pendant qu'on fait
+défiler les critères — sur une structure, ses neuf critères le repoussaient
+600 px sous la ligne de flottaison et on ne pouvait pas deviner qu'il
+existait. Une pondération dans la pondération : elle
 dit ce que vaut une fonction partagée face à une référence exacte. Elle est
 commune à la boîte et à la structure, puisque les trois niveaux veulent dire
 la même chose des deux côtés.
@@ -244,16 +248,25 @@ score : « Non comparé, faute de donnée : Masse. Le score porte sur le reste. 
 
 ## Deux lectures de la même base
 
-Un sélecteur bascule entre **Boîtes** et **Pièces**.
+Un sélecteur bascule entre **Boîtes** et **Sous-ensembles**.
 
 - **Boîtes** : la grille de cartes. Répond à « que contient cette boîte ».
-- **Pièces** : l'inventaire. Une ligne par PN de pièce, son type, le nombre de
-  boîtes qui la montent et lesquelles. Répond à « où sert cette pièce », qui
-  est la question d'un outil de réemploi prise par l'autre bout.
+- **Sous-ensembles** : l'inventaire. Une ligne par PN de sous-ensemble, son
+  type, le nombre de boîtes qui le montent et lesquelles. Répond à « où sert
+  ce sous-ensemble », la question du réemploi prise par l'autre bout.
 
-Les pièces les plus réutilisées arrivent en tête, marquées d'un filet marine.
-L'inventaire suit les filtres en cours : une recherche ou un filtre de statut
-le restreint comme il restreint la grille. Un clic sur une boîte ouvre sa fiche.
+L'application manipule **trois** niveaux de granularité, à ne pas confondre :
+
+| Niveau | Exemples | Où |
+|---|---|---|
+| Boîte | 332P20001 | vue « Boîtes » |
+| Sous-ensemble | un harnais, une structure boîte, une plaquette | vue « Sous-ensembles » |
+| Composant | bouton poussoir, colonnette, collier | fiche et équivalences |
+
+Les sous-ensembles les plus réutilisés arrivent en tête, marqués d'un filet
+marine. L'inventaire suit les filtres en cours : une recherche ou un filtre de
+statut le restreint comme il restreint la grille. Un clic sur une boîte ouvre
+sa fiche.
 
 ## Pas de duplication
 

@@ -46,7 +46,7 @@ function filtresTypeHtml() {
  */
 function selecteurVueHtml() {
   return '<div class="choix-vue" role="group" aria-label="Mode d\'affichage">' +
-    [['boites', 'Boîtes'], ['pieces', 'Pièces']].map(function (v) {
+    [['boites', 'Boîtes'], ['pieces', 'Sous-ensembles']].map(function (v) {
       const actif = Store.vueMode === v[0];
       return '<button type="button" class="onglet-vue' + (actif ? ' actif' : '') + '"' +
              dataAttrs({ action: 'changer-vue', vue: v[0] }) +
@@ -55,19 +55,19 @@ function selecteurVueHtml() {
   '</div>';
 }
 
-/** L'inventaire des pièces : une ligne par PN, les boîtes qui la montent. */
+/** L'inventaire des sous-ensembles : une ligne par PN, les boîtes qui le montent. */
 function piecesHtml(vue) {
   const pieces = inventairePieces(vue.aAfficher);
   if (!pieces.length) {
     return '<div class="etat-vide">' +
-      '<p>Aucune pièce à inventorier.</p>' +
-      '<p class="etat-vide-aide">Les pièces sans PN ne sont pas suivies.</p>' +
+      '<p>Aucun sous-ensemble à inventorier.</p>' +
+      '<p class="etat-vide-aide">Les sous-ensembles sans PN ne sont pas suivis.</p>' +
     '</div>';
   }
 
   return '<div class="inventaire">' +
     '<div class="inventaire-entete">' +
-      '<span>Pièce</span><span>Type</span><span>Réemploi</span><span>Montée dans</span>' +
+      '<span>Sous-ensemble</span><span>Type</span><span>Réemploi</span><span>Monté dans</span>' +
     '</div>' +
     pieces.map(function (p) {
       const partagee = p.nombre > 1;
@@ -195,7 +195,8 @@ function rendreInterface() {
 
   if (pieces) {
     const n = inventairePieces(vue.aAfficher).length;
-    definirTexte('bilanResultats', n + (n > 1 ? ' pièces distinctes' : ' pièce'));
+    definirTexte('bilanResultats',
+                 n + (n > 1 ? ' sous-ensembles distincts' : ' sous-ensemble'));
   } else {
     definirTexte('bilanResultats', vue.aAfficher.length +
                  (vue.aAfficher.length > 1 ? ' boîtes' : ' boîte'));

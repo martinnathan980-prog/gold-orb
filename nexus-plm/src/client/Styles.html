@@ -740,11 +740,24 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
   .niveaux { grid-column: 1 / -1; }
 }
 
-/* La pondération dans la pondération : les niveaux d'un composant. */
-.sous-reglage { border-top: 1px dashed var(--trait-fort); margin-top: var(--e-3); padding-top: var(--e-3); }
-.sous-reglage h4 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--encre-3); font-weight: 700; }
-.sous-reglage-aide { font-size: 11px; color: var(--encre-3); margin: 4px 0 var(--e-2); }
-.reglage-aide { font-size: 11px; color: var(--encre-3); margin-top: 1px; }
+/* La pondération dans la pondération : les niveaux d'un composant.
+   Collée au bas du rail. Sur une structure, neuf critères la repoussaient
+   600 px sous la ligne de flottaison : elle existait sans se voir. */
+.sous-reglage {
+  position: sticky; bottom: calc(var(--e-4) * -1);
+  margin: var(--e-3) calc(var(--e-4) * -1) calc(var(--e-4) * -1);
+  padding: var(--e-3) var(--e-4) var(--e-4);
+  background: var(--marque-voile); border-top: 2px solid var(--marque);
+}
+.sous-reglage h4 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--marque); font-weight: 700; }
+.sous-reglage-aide { font-size: 11px; color: var(--encre-2); margin: 4px 0 var(--e-2); }
+/* Compact : ce bloc reste affiché en permanence, il ne doit pas manger le rail. */
+.sous-reglage .reglage { padding: 5px 9px; margin-bottom: 4px; }
+.sous-reglage .curseur { margin-top: 2px; }
+.sous-reglage .reglage-jauge { display: none; }
+.sous-reglage .reglage-total { margin-top: 0; }
+.reglage-aide { font-size: 10.5px; color: var(--encre-3); margin-top: 0; }
+@media (max-width: 860px) { .sous-reglage { position: static; } }
 .palier-plus { background: var(--surface); border-color: var(--trait); border-style: dashed; color: var(--encre-3); }
 
 /* ---------------- doublons ---------------- */

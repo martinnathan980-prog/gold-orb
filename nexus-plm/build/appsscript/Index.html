@@ -751,11 +751,24 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
   .niveaux { grid-column: 1 / -1; }
 }
 
-/* La pondération dans la pondération : les niveaux d'un composant. */
-.sous-reglage { border-top: 1px dashed var(--trait-fort); margin-top: var(--e-3); padding-top: var(--e-3); }
-.sous-reglage h4 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--encre-3); font-weight: 700; }
-.sous-reglage-aide { font-size: 11px; color: var(--encre-3); margin: 4px 0 var(--e-2); }
-.reglage-aide { font-size: 11px; color: var(--encre-3); margin-top: 1px; }
+/* La pondération dans la pondération : les niveaux d'un composant.
+   Collée au bas du rail. Sur une structure, neuf critères la repoussaient
+   600 px sous la ligne de flottaison : elle existait sans se voir. */
+.sous-reglage {
+  position: sticky; bottom: calc(var(--e-4) * -1);
+  margin: var(--e-3) calc(var(--e-4) * -1) calc(var(--e-4) * -1);
+  padding: var(--e-3) var(--e-4) var(--e-4);
+  background: var(--marque-voile); border-top: 2px solid var(--marque);
+}
+.sous-reglage h4 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--marque); font-weight: 700; }
+.sous-reglage-aide { font-size: 11px; color: var(--encre-2); margin: 4px 0 var(--e-2); }
+/* Compact : ce bloc reste affiché en permanence, il ne doit pas manger le rail. */
+.sous-reglage .reglage { padding: 5px 9px; margin-bottom: 4px; }
+.sous-reglage .curseur { margin-top: 2px; }
+.sous-reglage .reglage-jauge { display: none; }
+.sous-reglage .reglage-total { margin-top: 0; }
+.reglage-aide { font-size: 10.5px; color: var(--encre-3); margin-top: 0; }
+@media (max-width: 860px) { .sous-reglage { position: static; } }
 .palier-plus { background: var(--surface); border-color: var(--trait); border-style: dashed; color: var(--encre-3); }
 
 /* ---------------- doublons ---------------- */
@@ -2927,7 +2940,7 @@ function filtresTypeHtml() {
  */
 function selecteurVueHtml() {
   return '<div class="choix-vue" role="group" aria-label="Mode d\'affichage">' +
-    [['boites', 'Boîtes'], ['pieces', 'Pièces']].map(function (v) {
+    [['boites', 'Boîtes'], ['pieces', 'Sous-ensembles']].map(function (v) {
       const actif = Store.vueMode === v[0];
       return '<button type="button" class="onglet-vue' + (actif ? ' actif' : '') + '"' +
              dataAttrs({ action: 'changer-vue', vue: v[0] }) +
@@ -2936,19 +2949,19 @@ function selecteurVueHtml() {
   '</div>';
 }
 
-/** L'inventaire des pièces : une ligne par PN, les boîtes qui la montent. */
+/** L'inventaire des sous-ensembles : une ligne par PN, les boîtes qui le montent. */
 function piecesHtml(vue) {
   const pieces = inventairePieces(vue.aAfficher);
   if (!pieces.length) {
     return '<div class="etat-vide">' +
-      '<p>Aucune pièce à inventorier.</p>' +
-      '<p class="etat-vide-aide">Les pièces sans PN ne sont pas suivies.</p>' +
+      '<p>Aucun sous-ensemble à inventorier.</p>' +
+      '<p class="etat-vide-aide">Les sous-ensembles sans PN ne sont pas suivis.</p>' +
     '</div>';
   }
 
   return '<div class="inventaire">' +
     '<div class="inventaire-entete">' +
-      '<span>Pièce</span><span>Type</span><span>Réemploi</span><span>Montée dans</span>' +
+      '<span>Sous-ensemble</span><span>Type</span><span>Réemploi</span><span>Monté dans</span>' +
     '</div>' +
     pieces.map(function (p) {
       const partagee = p.nombre > 1;
@@ -3076,7 +3089,8 @@ function rendreInterface() {
 
   if (pieces) {
     const n = inventairePieces(vue.aAfficher).length;
-    definirTexte('bilanResultats', n + (n > 1 ? ' pièces distinctes' : ' pièce'));
+    definirTexte('bilanResultats',
+                 n + (n > 1 ? ' sous-ensembles distincts' : ' sous-ensemble'));
   } else {
     definirTexte('bilanResultats', vue.aAfficher.length +
                  (vue.aAfficher.length > 1 ? ' boîtes' : ' boîte'));
@@ -3939,9 +3953,13 @@ function critereDisponiblesHtml(portee) {
 
 function rendreReglages() {
   const portee = porteeCourante();
-  definirTexte('reglagesPortee', porteeArbitrable(portee)
+  let sous = porteeArbitrable(portee)
     ? portee.libelle + ' — ' + criteresActifs(portee.cle).length + ' critère(s) retenu(s)'
-    : portee.libelle);
+    : portee.libelle;
+  if (porteeAvecComposants(portee)) {
+    sous += ', plus les ' + criteresActifs('composant').length + ' niveaux de composant';
+  }
+  definirTexte('reglagesPortee', sous);
   definirHtml('reglagesCurseurs', curseursHtml());
   definirTexte('seuilValeur', seuil() + ' %');
   const s = parId('seuilCurseur');

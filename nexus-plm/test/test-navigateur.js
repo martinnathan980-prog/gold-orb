@@ -302,17 +302,26 @@ async function ecranPropre(page) {
   eq('deux vues proposées', await page.locator('.onglet-vue').count(), 2);
   vrai('« Boîtes » est la vue par défaut',
        (await texte(page, '.onglet-vue.actif')).trim() === 'Boîtes');
+  eq('la seconde vue s\'appelle « Sous-ensembles », pas « Pièces »',
+     (await page.locator('.onglet-vue').nth(1).evaluate(function (e) { return e.textContent; })).trim(),
+     'Sous-ensembles');
   eq('la grille est affichée', await page.locator('#mainContainer.grille').count(), 1);
 
-  await page.locator('.onglet-vue', { hasText: 'Pièces' }).click();
+  await page.locator('.onglet-vue', { hasText: 'Sous-ensembles' }).click();
   await page.waitForTimeout(350);
   vrai('l\'inventaire s\'affiche', await page.locator('.inventaire').count() === 1);
+  vrai('il annonce des sous-ensembles, pas des composants',
+       (await texte(page, '.inventaire-entete')).indexOf('Sous-ensemble') !== -1);
+  vrai('et liste bien des types de sous-ensemble',
+       /Harnais|Structure boîte|Plaquette/.test(await texte(page, '.inventaire')));
+  faux('aucun composant n\'y figure',
+       /Bouton poussoir|Colonnette|Collier/.test(await texte(page, '.inventaire')));
   eq('la grille laisse la place', await page.locator('#mainContainer.grille').count(), 0);
   eq('plus de cartes', await page.locator('.carte').count(), 0);
   const nbPieces = await page.locator('.piece').count();
-  vrai('des pièces sont listées', nbPieces >= 10);
-  vrai('le bilan compte des pièces',
-       (await texte(page, '#bilanResultats')).indexOf('pièces') !== -1);
+  vrai('des sous-ensembles sont listés', nbPieces >= 10);
+  vrai('le bilan les compte comme tels',
+       (await texte(page, '#bilanResultats')).indexOf('sous-ensembles') !== -1);
   eq('le tri disparaît : l\'inventaire a son propre ordre',
      await page.locator('#triBouton').count(), 0);
 
@@ -593,6 +602,16 @@ async function ecranPropre(page) {
   eq('9 critères de structure + 3 niveaux de composant',
      await page.locator('.curseur').count(), 12);
   eq('les niveaux ont leur propre bloc', await page.locator('.sous-reglage').count(), 1);
+  vrai('l\'en-tête du rail annonce leur présence',
+       (await texte(page, '#reglagesPortee')).indexOf('niveaux de composant') !== -1);
+  // Neuf critères poussaient ce bloc hors de l'écran : il est désormais
+  // collé au bas du rail, donc visible sans défiler.
+  const cadreRail = await page.locator('#reglagesRail').boundingBox();
+  const cadreNiveaux = await page.locator('.sous-reglage').boundingBox();
+  vrai('le bloc des niveaux est visible sans défiler le rail',
+       cadreNiveaux.y < cadreRail.y + cadreRail.height);
+  vrai('il est collé en bas',
+       cadreNiveaux.y + cadreNiveaux.height >= cadreRail.y + cadreRail.height - 4);
   eq('et leur propre total', await page.locator('.reglage-total').count(), 2);
   eq('les trois niveaux sont nommés',
      await page.locator('.sous-reglage .reglage-tete label')
@@ -903,7 +922,7 @@ async function ecranPropre(page) {
   eq('la page est bien en haut', await page.evaluate(function () { return window.scrollY; }), 0);
   vrai('en-tête visible en haut de page', await page.locator('.entete').isVisible());
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-grille.png') });
-  await page.locator('.onglet-vue', { hasText: 'Pièces' }).click();
+  await page.locator('.onglet-vue', { hasText: 'Sous-ensembles' }).click();
   await page.waitForTimeout(500);
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-pieces.png') });
   await page.locator('.onglet-vue', { hasText: 'Boîtes' }).click();

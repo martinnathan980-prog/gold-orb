@@ -897,7 +897,16 @@ vrai('et l\'URL de la photo', srcIndex.indexOf('newBoiteImage') !== -1);
 vrai('indicateur de réutilisation', srcIndex.indexOf('kpiReutil') !== -1);
 vrai('indicateur de doublons probables', srcIndex.indexOf('kpiDoublons') !== -1);
 vrai('les doublons sont consultables', declarees.has('ouvrir-doublons'));
-vrai('on bascule entre boîtes et pièces', declarees.has('changer-vue'));
+vrai('on bascule entre boîtes et sous-ensembles', declarees.has('changer-vue'));
+const srcGrille = fs.readFileSync(path.join(H.RACINE, 'client/ViewGrid.html'), 'utf8');
+vrai('la seconde vue s\'appelle « Sous-ensembles »',
+     srcGrille.indexOf("'Sous-ensembles'") !== -1);
+faux('« Pièces » a disparu de l\'étiquette', /'pieces', 'Pièces'/.test(srcGrille));
+vrai('l\'inventaire nomme sa colonne « Sous-ensemble »',
+     srcGrille.indexOf('<span>Sous-ensemble</span>') !== -1);
+vrai('l\'en-tête du rail annonce les niveaux',
+     fs.readFileSync(path.join(H.RACINE, 'client/Reglages.html'), 'utf8')
+       .indexOf('niveaux de composant') !== -1);
 vrai('la page réserve une place au sélecteur de vue', srcIndex.indexOf('id="zoneVue"') !== -1);
 vrai('le tri est un menu, plus un select', declarees.has('choisir-tri'));
 faux('plus de <select> de tri', /id="triSelect"/.test(srcIndex));
@@ -932,6 +941,10 @@ vrai('les pièces partagées se repèrent', /\.piece-partagee \{/.test(srcCss));
 vrai('le sélecteur de vue aussi', /\.onglet-vue \{/.test(srcCss));
 vrai('les niveaux d\'un composant ont leur pastille', /\.niveau-egal\s+\{/.test(srcCss));
 vrai('la sous-pondération a son bloc', /\.sous-reglage \{/.test(srcCss));
+vrai('le bloc des niveaux est collé en bas du rail',
+     /\.sous-reglage \{[\s\S]*?position: sticky/.test(srcCss));
+vrai('et signalé par un filet marine',
+     /\.sous-reglage \{[\s\S]*?border-top: 2px solid var\(--marque\)/.test(srcCss));
 vrai('le rail règle les niveaux quand la portée compare des composants',
      fs.readFileSync(path.join(H.RACINE, 'client/Reglages.html'), 'utf8')
        .indexOf('porteeAvecComposants') !== -1);

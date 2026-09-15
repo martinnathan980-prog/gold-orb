@@ -106,9 +106,13 @@ function critereDisponiblesHtml(portee) {
 
 function rendreReglages() {
   const portee = porteeCourante();
-  definirTexte('reglagesPortee', porteeArbitrable(portee)
+  let sous = porteeArbitrable(portee)
     ? portee.libelle + ' — ' + criteresActifs(portee.cle).length + ' critère(s) retenu(s)'
-    : portee.libelle);
+    : portee.libelle;
+  if (porteeAvecComposants(portee)) {
+    sous += ', plus les ' + criteresActifs('composant').length + ' niveaux de composant';
+  }
+  definirTexte('reglagesPortee', sous);
   definirHtml('reglagesCurseurs', curseursHtml());
   definirTexte('seuilValeur', seuil() + ' %');
   const s = parId('seuilCurseur');
