@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recherche documentaire — ETII Hub</title>
+  <meta name="description" content="Moteur de recherche du fonds documentaire ETII : recherche instantanée, facettes combinables, navigation entièrement au clavier.">
+  <meta name="color-scheme" content="light dark">
+
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+
+  <!-- =======================================================================
+       Styles propres à cette page UNIQUEMENT.
+
+       Deux catégories, et rien d'autre :
+
+       A. Agencement spécifique à la recherche documentaire (colonne de
+          facettes, tuiles d'accueil, carte de résultat) : aucun composant
+          existant ne couvre ces cas.
+       B. Pont entre le contrat de classes de ui.js et la feuille de
+          composants. `ui.js` fabrique `.modale / .modale__boite / .toast…`
+          (cf. son en-tête de fichier) alors que components.css stylise
+          `.modale-fond / .modale / .notification…`. Sans ces règles, la
+          modale « Proposer un document » et les notifications de copie
+          s'afficheraient sans mise en forme. Le socle n'est pas modifié :
+          le pont vit ici, dans la page qui en a besoin.
+
+       Aucune valeur brute : uniquement des var(--…) de tokens.css, ou des
+       calculs dérivés de ces jetons.
+       ======================================================================= -->
+  <style>
+    /* ---------------------------------------------------------------------
+       A1. Agencement général : barre de recherche, puis filtres + résultats
+       --------------------------------------------------------------------- */
+
+    /* La zone de saisie reste au-dessus du contenu défilant : on la garde
+       collée sous l'en-tête pour qu'elle demeure atteignable à la souris
+       comme au clavier, même après avoir parcouru cinquante résultats. */
+    .ds-barre-recherche {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding-block: var(--e-4);
+      background-color: var(--fond);
+    }
+
+    .ds-agencement {
+      display: grid;
+      gap: var(--e-8);
+      align-items: start;
+    }
+
+    /* `[hidden]` doit l'emporter sur les `display` posés par .grille et
+       .rangee, dont la spécificité est identique à celle de la règle du
+       navigateur. Une règle ciblée suffit : pas de !important. */
+    .ds-agencement [hidden],
+    #ds-propositions[hidden] {
+      display: none;
+    }
+
+    @media (min-width: 60rem) {
+      .ds-agencement {
+        grid-template-columns: minmax(0, calc(var(--e-16) * 4)) minmax(0, 1fr);
+        gap: var(--e-10);
+      }
+
+      /* La colonne de filtres suit le défilement : les compteurs restent
+         visibles pendant qu'on parcourt les résultats. */
+      .ds-filtres {
+        position: sticky;
+        top: calc(var(--e-16) + var(--e-4));
+        max-height: calc(100dvh - var(--e-16) - var(--e-8));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+      }
+    }
+
+    /* Intitulé d'un groupe de facettes : discret, mais bien un titre. */
+    .ds-titre-facette {
+      margin: 0;
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-forte);
+      text-transform: uppercase;
+      color: var(--texte-doux);
+    }
+
+    /* ---------------------------------------------------------------------
+       A2. Carte de résultat
+       --------------------------------------------------------------------- */
+
+    /* Chaque carte est une option de la liste : le pointeur doit le dire. */
+    .ds-carte {
+      cursor: pointer;
+      scroll-margin-block: calc(var(--e-16) + var(--e-8));
+    }
+
+    .ds-carte__titre {
+      font-size: var(--texte-lg);
+      font-weight: var(--graisse-forte);
+      line-height: var(--interligne-serre);
+      color: var(--texte);
+      margin: 0;
+    }
+
+    /* Résumé borné à trois lignes : les cartes d'une même rangée gardent
+       des hauteurs comparables sans qu'aucune information ne soit perdue
+       (le texte complet reste dans le DOM, donc lisible par un lecteur
+       d'écran et retrouvable par la recherche du navigateur). */
+    .ds-carte__resume {
+      margin: 0;
+      color: var(--texte-doux);
+      font-size: var(--texte-sm);
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      overflow: hidden;
+    }
+
+    /* Les actions de la carte sont repoussées à droite du pied. */
+    .ds-carte__actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--e-2);
+      margin-inline-start: auto;
+    }
+
+    /* Mention des six documents sans lien : une information, pas un bouton
+       mort. Le ton reste neutre, la cible tactile n'est pas requise. */
+    .ds-sans-lien {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--e-2);
+      margin: 0;
+      color: var(--texte-doux);
+      font-size: var(--texte-xs);
+      font-style: italic;
+    }
+
+    /* ---------------------------------------------------------------------
+       A3. Accueil de la page : grandes tuiles d'accès par type
+       --------------------------------------------------------------------- */
+
+    .ds-tuile {
+      inline-size: 100%;
+      block-size: 100%;
+      align-items: flex-start;
+      gap: var(--e-2);
+      text-align: start;
+      font-family: var(--police);
+      font-size: var(--texte-md);
+      min-height: calc(var(--e-16) * 2.5);
+    }
+
+    .ds-tuile__glyphe {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      inline-size: var(--e-10);
+      block-size: var(--e-10);
+      background-color: var(--accent-doux);
+      color: var(--texte-accent);
+      border-radius: var(--rayon-md);
+      font-size: var(--texte-xl);
+      line-height: 1;
+    }
+
+    .ds-tuile__nom {
+      font-size: var(--texte-lg);
+      font-weight: var(--graisse-forte);
+      color: var(--texte);
+    }
+
+    .ds-tuile__compte {
+      margin-top: auto;
+      color: var(--texte-doux);
+      font-size: var(--texte-sm);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---------------------------------------------------------------------
+       A4. Divers
+       --------------------------------------------------------------------- */
+
+    /* Compteur de résultats : chiffres de largeur fixe, aucun tressautement
+       de la barre pendant la frappe. */
+    .ds-compteur {
+      margin: 0;
+      font-size: var(--texte-sm);
+      font-weight: var(--graisse-moyenne);
+      color: var(--texte-doux);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Gabarit de carte pendant le chargement. */
+    .ds-squelette {
+      min-height: calc(var(--e-16) * 3);
+      justify-content: space-between;
+    }
+
+    /* ---------------------------------------------------------------------
+       B1. Pont ui.js -> design system : modale
+       `ui.js` produit .modale (le voile) > .modale__boite (la boîte).
+       components.css attend .modale-fond > .modale : on réaffecte donc ici
+       les rôles, sans toucher au socle.
+       --------------------------------------------------------------------- */
+
+    .modale {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      padding: var(--e-4);
+
+      background-color: var(--fond-inverse);
+      background-color: color-mix(in srgb, var(--fond-inverse) 62%, transparent);
+
+      overflow-y: auto;
+      overscroll-behavior: contain;
+
+      /* Neutralisation des propriétés que components.css destine à la boîte. */
+      max-block-size: none;
+      inline-size: auto;
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      animation: none;
+    }
+
+    .modale__boite {
+      display: flex;
+      flex-direction: column;
+      max-block-size: calc(100dvh - var(--e-12));
+      inline-size: min(100%, calc(var(--e-16) * 11));
+      margin: auto;
+
+      background-color: var(--fond-eleve);
+      color: var(--texte);
+      border: 1px solid var(--bordure);
+      border-radius: var(--rayon-lg);
+      box-shadow: var(--ombre-lg);
+      overflow: hidden;
+    }
+
+    /* La variante étroite de components.css vise `.modale` ; ici c'est la
+       boîte qui porte la largeur, on la rebranche donc explicitement. */
+    .modale__boite.modale--etroite {
+      inline-size: min(100%, calc(var(--e-16) * 7));
+    }
+
+    .modale__boite:focus {
+      outline: none;
+    }
+
+    .modale__entete {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--e-4);
+      padding: var(--e-5) var(--e-6);
+      border-bottom: 1px solid var(--bordure-douce);
+    }
+
+    .modale__titre {
+      flex: 1 1 auto;
+      min-width: 0;
+      margin: 0;
+      font-size: var(--texte-xl);
+      font-weight: var(--graisse-forte);
+      line-height: var(--interligne-serre);
+    }
+
+    .modale__fermeture,
+    .toast__fermeture {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-inline-size: var(--cible-tactile);
+      min-block-size: var(--cible-tactile);
+      padding: 0;
+
+      background-color: transparent;
+      color: var(--texte-doux);
+      border: 1px solid transparent;
+      border-radius: var(--rayon-md);
+      font-size: var(--texte-xl);
+      line-height: 1;
+    }
+
+    .modale__fermeture:hover,
+    .toast__fermeture:hover {
+      background-color: var(--fond-enfonce);
+      color: var(--texte);
+    }
+
+    .modale__corps {
+      flex: 1 1 auto;
+      padding: var(--e-6);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-4);
+    }
+
+    .modale__actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--e-3);
+      padding: var(--e-4) var(--e-6);
+      background-color: var(--fond-enfonce);
+      border-top: 1px solid var(--bordure-douce);
+    }
+
+    /* États transitoires posés par ui.js via data-etat. */
+    .modale[data-etat="entree"],
+    .modale[data-etat="sortie"] { opacity: 0; }
+    .modale[data-etat="ouvert"] { opacity: 1; }
+
+    /* Le fond ne défile pas derrière la modale. Sans !important, et levé
+       dès la fermeture : le défilement natif n'est jamais confisqué. */
+    :root[data-modale-ouverte] { overflow: hidden; }
+
+    @media (max-width: 640px) {
+      .modale__entete,
+      .modale__corps,
+      .modale__actions { padding: var(--e-4); }
+
+      .modale__actions .bouton { flex: 1 1 auto; }
+    }
+
+    /* ---------------------------------------------------------------------
+       B2. Pont ui.js -> design system : notifications éphémères
+       --------------------------------------------------------------------- */
+
+    .toasts {
+      position: fixed;
+      inset-block-end: var(--e-6);
+      inset-inline-end: var(--e-6);
+      z-index: 300;
+
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--e-3);
+
+      inline-size: min(100% - var(--e-8), calc(var(--e-16) * 6));
+      pointer-events: none;
+    }
+
+    .toast {
+      --ds-toast-teinte: var(--texte-doux);
+
+      display: flex;
+      align-items: flex-start;
+      gap: var(--e-3);
+      padding: var(--e-2) var(--e-2) var(--e-2) var(--e-4);
+
+      background-color: var(--fond-eleve);
+      color: var(--texte);
+      border: 1px solid var(--bordure);
+      border-inline-start: var(--e-1) solid var(--ds-toast-teinte);
+      border-radius: var(--rayon-md);
+      box-shadow: var(--ombre-lg);
+
+      font-size: var(--texte-sm);
+      pointer-events: auto;
+    }
+
+    .toast--succes   { --ds-toast-teinte: var(--statut-succes); }
+    .toast--info     { --ds-toast-teinte: var(--statut-info); }
+    .toast--alerte   { --ds-toast-teinte: var(--statut-alerte); }
+    .toast--critique { --ds-toast-teinte: var(--statut-critique); }
+
+    .toast__texte {
+      flex: 1 1 auto;
+      min-width: 0;
+      align-self: center;
+      line-height: var(--interligne);
+    }
+
+    .toast[data-etat="entree"],
+    .toast[data-etat="sortie"] { opacity: 0; }
+    .toast[data-etat="visible"] { opacity: 1; }
+
+    @media (max-width: 640px) {
+      .toasts {
+        inset-inline: var(--e-4);
+        inset-block-end: var(--e-4);
+        inline-size: auto;
+      }
+    }
+
+    /* ---------------------------------------------------------------------
+       Mouvement : toute transition de cette page est ici, et nulle part
+       ailleurs. base.css neutralise déjà l'ensemble sous
+       prefers-reduced-motion: reduce.
+       --------------------------------------------------------------------- */
+
+    @media (prefers-reduced-motion: no-preference) {
+      .modale,
+      .toast {
+        transition: opacity var(--duree) var(--courbe);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="lien-evitement" href="#contenu">Aller au contenu</a>
+
+  <header class="site-entete">
+    <div class="site-entete__interieur">
+      <a class="site-logo" href="index.html">ETII <span>HUB</span></a>
+
+      <nav class="site-nav" aria-label="Navigation principale">
+        <ul class="site-nav__liste">
+          <li><a href="index.html">Accueil</a></li>
+          <li><a href="communication.html">Communication</a></li>
+          <li><a href="reunions.html">Réunions</a></li>
+          <li><a href="organigramme.html">Organigramme</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="docsearch.html" aria-current="page">Recherche</a></li>
+        </ul>
+      </nav>
+
+      <button class="bascule-theme" type="button" data-bascule-theme aria-pressed="false">
+        <span class="bascule-theme__icone bascule-theme__icone--clair" aria-hidden="true">☾</span>
+        <span class="bascule-theme__icone bascule-theme__icone--sombre" aria-hidden="true">☀</span>
+        <span class="bascule-theme__libelle">Thème sombre</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="contenu" tabindex="-1">
+    <div class="conteneur pile pile--lache">
+
+      <!-- ============================================================
+           Titre + champ de recherche
+           ============================================================ -->
+      <div class="pile">
+        <div class="pile pile--serree">
+          <h1>Recherche documentaire</h1>
+          <p class="texte-doux mesure sans-marge">
+            Le fonds documentaire du service, interrogeable au fil de la
+            frappe. Insensible à la casse, aux accents et aux fautes de
+            frappe.
+          </p>
+        </div>
+
+        <div class="ds-barre-recherche" role="search">
+          <label class="visuellement-cache" for="ds-champ">
+            Rechercher un document
+          </label>
+
+          <div class="recherche recherche--proeminente">
+            <span class="recherche__icone" aria-hidden="true">⌕</span>
+
+            <input
+              class="recherche__champ"
+              id="ds-champ"
+              name="q"
+              type="search"
+              placeholder="Titre, référence, mot-clé, métier…"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              enterkeyhint="search"
+              role="combobox"
+              aria-expanded="false"
+              aria-controls="ds-resultats"
+              aria-autocomplete="list"
+              aria-describedby="ds-aide">
+
+            <kbd class="recherche__raccourci" aria-hidden="true">/</kbd>
+
+            <button
+              class="bouton bouton--discret bouton--icone bouton--rond recherche__effacer"
+              type="button"
+              data-action="effacer-requete"
+              aria-label="Effacer la recherche">
+              <span aria-hidden="true">×</span>
+            </button>
+          </div>
+
+          <p class="texte-xs texte-faible sans-marge" id="ds-aide">
+            <kbd>/</kbd> pour revenir au champ,
+            <kbd>↑</kbd> <kbd>↓</kbd> pour parcourir les résultats,
+            <kbd>Entrée</kbd> pour ouvrir, <kbd>Échap</kbd> pour effacer.
+          </p>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           Zone pilotée par avecEtat() : chargement, erreur, ou
+           l'interface complète (facettes + résultats).
+           ============================================================ -->
+      <div id="ds-zone"></div>
+
+      <!-- ============================================================
+           Propositions enregistrées localement (aucun envoi réseau).
+           Masquée tant qu'il n'y en a aucune.
+           ============================================================ -->
+      <section class="pile" id="ds-propositions" aria-labelledby="ds-propositions-titre" hidden>
+        <div class="pile pile--serree">
+          <h2 id="ds-propositions-titre">Vos propositions</h2>
+          <p class="texte-doux texte-sm mesure sans-marge">
+            Ces propositions sont conservées dans ce navigateur uniquement.
+            Rien n'est envoyé : elles vous servent de pense-bête avant d'en
+            parler au porteur concerné.
+          </p>
+        </div>
+        <div class="grille grille--compacte" id="ds-propositions-liste"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="site-pied">
+    <div class="site-pied__interieur">
+      <p>ETII Hub — portail de démonstration, sans aucune dépendance externe.</p>
+      <p class="site-pied__mention">
+        <span aria-hidden="true">●</span>
+        Toutes les données de ce site sont fictives
+      </p>
+    </div>
+  </footer>
+
+  <!-- Région unique des notifications et des annonces (contrat de ui.js). -->
+  <div class="toasts" data-toasts role="status" aria-live="polite" aria-atomic="false"></div>
+
+  <script type="module" src="assets/js/docsearch.js"></script>
+</body>
+</html>

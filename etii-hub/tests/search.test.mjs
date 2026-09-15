@@ -106,5 +106,36 @@ for (let k=0;k<50;k++) for (const q of reqs) rechercher(gi, q, {limite:30});
 const moy = Number(process.hrtime.bigint()-t1)/1e6/(50*reqs.length);
 t(`${moy.toFixed(3)} ms par recherche sur ${gros.length} documents`, moy < 10);
 
+
+// --- Régressions issues de la relecture adverse -------------------------
+// Le moteur plafonnait l'expansion de préfixe à 64 termes, ce qui faisait
+// disparaître silencieusement des documents pertinents, et les requêtes
+// très courtes rescannaient presque tout le corpus.
+
+console.log(`\n== Pire cas : frappe très courte sur 4000 documents ==`);
+const gros4k = [];
+for (let k = 0; gros4k.length < 4000; k++)
+  for (const d of docs) { if (gros4k.length >= 4000) break; gros4k.push({...d, id:`${d.id}-${k}`}); }
+const i4k = creerIndex(gros4k, CHAMPS);
+for (const q of ['p', 'e', 'a', 'pr']) {
+  const td = process.hrtime.bigint();
+  rechercher(i4k, q, {limite:30});
+  const ms = Number(process.hrtime.bigint()-td)/1e6;
+  t(`requête "${q}" en ${ms.toFixed(2)} ms`, ms < 50);
+}
+
+console.log(`\n== Expansion de préfixe : aucun document perdu ==`);
+// 140 termes distincts partagent le préfixe "electro", dans 280 documents.
+const piege = [];
+for (let i = 0; i < 140; i++) {
+  piege.push({id:`e${i}a`, titre:`electro${i.toString(36)}zz Note`,  description:'x', maj:'2026-01-01'});
+  piege.push({id:`e${i}b`, titre:`electro${i.toString(36)}zz Fiche`, description:'x', maj:'2026-01-02'});
+}
+const ip = creerIndex(piege, [{nom:'titre',poids:10},{nom:'description',poids:1}]);
+const rp = rechercher(ip, 'electro', {limite:1000});
+t(`les 280 documents en "electro" sont tous retrouvés`, rp.length === 280, `(${rp.length}/280)`);
+const rp2 = rechercher(ip, 'electro fiche', {limite:5});
+t(`le bonus « tous les termes » survit à l'expansion`, /Fiche/.test(rp2[0]?.doc.titre || ''));
+
 console.log(`\n${'='.repeat(46)}\n  ${ok} réussis, ${ko} échoués\n${'='.repeat(46)}`);
 process.exit(ko ? 1 : 0);

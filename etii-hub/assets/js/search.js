@@ -16,9 +16,11 @@
      index de préfixes, index de bigrammes) ; une requête ne parcourt
      jamais le corpus entier, elle part des listes d'affichage (postings)
      et ne score que les documents candidats.
-   - Les structures chaudes sont des Map/Set, jamais des objets littéraux :
-     pas de collision avec la chaîne de prototypes, insertions et lectures
-     en temps constant.
+   - Les dictionnaires chauds sont des Map, jamais des objets indexés par
+     clé de texte : pas de collision avec la chaîne de prototypes, insertions
+     et lectures en temps constant. Les ensembles de champs, eux, sont des
+     masques de bits entiers : un champ = un bit, aucun conteneur alloué par
+     paire (terme, document) ni par document candidat.
    - Le classement est totalement déterministe : deux appels identiques
      renvoient exactement le même ordre, l'ordre d'insertion n'est jamais
      un critère.
@@ -37,8 +39,13 @@ const MARQUEUR_INDEX = 'etii-index-v1';
 /** Longueur maximale des clés de l'index de préfixes (borne la mémoire). */
 const PREFIXE_MAX = 10;
 
-/** Nombre maximal de termes retenus lors d'une expansion par préfixe. */
-const EXPANSION_PREFIXE_MAX = 64;
+/*
+   Plafond d'une expansion par préfixe. Il porte sur le VOLUME d'entrées de
+   postings parcourues, jamais sur le nombre de termes : c'est le volume qui
+   fait le coût d'une frappe, et un plafond en nombre de termes laisse passer
+   les listes les plus longues tout en écartant des documents pertinents.
+*/
+const BUDGET_PREFIXE_POSTINGS = 2000;
 
 /** Nombre maximal de termes retenus lors d'une expansion approximative. */
 const EXPANSION_APPROX_MAX = 16;
@@ -293,21 +300,17 @@ function indexerChamp(index, id, doc, champ) {
     if (!postings) {
       postings = new Map();
       index.inverse.set(terme, postings);
-      index.frequences.set(terme, 0);
       enregistrerPrefixes(index, terme);
       enregistrerBigrammes(index, terme);
     }
-    if (!postings.has(id)) {
-      index.frequences.set(terme, index.frequences.get(terme) + 1);
-    }
-    postings.set(id, (postings.get(id) || 0) + poids);
-
-    // Champs touchés, pour restituer « où » le terme a été trouvé.
-    let parDoc = index.champsParTerme.get(terme);
-    if (!parDoc) { parDoc = new Map(); index.champsParTerme.set(terme, parDoc); }
-    let ensemble = parDoc.get(id);
-    if (!ensemble) { ensemble = new Set(); parDoc.set(id, ensemble); }
-    ensemble.add(champ.nom);
+    // Une seule entrée par paire (terme, document) : le poids cumulé et le
+    // masque des champs touchés. Pas de Set de noms de champs, pas d'index
+    // parallèle — c'était l'essentiel du coût de construction et de la
+    // pression mémoire.
+    let entree = postings.get(id);
+    if (!entree) { entree = { poids: 0, champs: 0 }; postings.set(id, entree); }
+    entree.poids += poids;
+    entree.champs |= champ.bit;
   }
 }
 
@@ -324,10 +327,16 @@ export function creerIndex(documents, champs) {
   const liste = Array.isArray(documents) ? documents : [];
   const declares = (Array.isArray(champs) ? champs : [])
     .filter((c) => c && typeof c === 'object' && typeof c.nom === 'string' && c.nom)
-    .map((c) => ({
+    .map((c, i) => ({
       nom: c.nom,
       poids: (typeof c.poids === 'number' && Number.isFinite(c.poids) && c.poids > 0)
-        ? c.poids : 1
+        ? c.poids : 1,
+      // Un bit par champ : les champs touchés tiennent dans un entier au lieu
+      // d'un Set par paire (terme, document). Au-delà de 31 champs déclarés
+      // — cas qui ne se présente pas ici, le corpus en compte 8 — le bit vaut
+      // 0 : le champ reste indexé et scoré, il n'apparaît simplement plus
+      // dans « champsTouches ».
+      bit: i < 31 ? (1 << i) : 0
     }));
 
   const index = {
@@ -336,11 +345,11 @@ export function creerIndex(documents, champs) {
     ordreChamps: new Map(),   // nom de champ -> rang d'affichage
     champPrincipal: null,     // champ de poids le plus fort (le titre)
     meta: new Map(),          // id -> { doc, cle, maj }
-    inverse: new Map(),       // terme -> Map(id -> poids cumulé)
-    champsParTerme: new Map(),// terme -> Map(id -> Set(nom de champ))
+    // terme -> Map(id -> { poids cumulé, masque des champs touchés })
+    // La taille de cette Map est aussi la fréquence documentaire du terme.
+    inverse: new Map(),
     prefixes: new Map(),      // préfixe -> Set(terme)
     bigrammes: new Map(),     // bigramme -> Set(terme)
-    frequences: new Map(),    // terme -> nombre de documents
     ordreBase: [],            // ids pré-triés par le critère de départage
     documents: []
   };
@@ -421,9 +430,19 @@ function arrondir(valeur) {
 
 /**
  * Termes du vocabulaire commençant par le terme donné.
- * Triés par fréquence décroissante puis alphabétiquement : le plafond
- * d'expansion garde les termes les plus porteurs, et le résultat ne dépend
- * jamais de l'ordre d'insertion.
+ *
+ * Tri par longueur croissante — donc par proximité au terme saisi — puis
+ * alphabétique. La fréquence globale serait ici le critère exactement
+ * anti-pertinent : les complétions les plus fréquentes sont les moins
+ * discriminantes, et les couper par le bas fait disparaître des documents
+ * dont le mot commence pourtant littéralement par ce qui a été tapé.
+ * Le terme saisi lui-même, s'il existe au vocabulaire, est la complétion la
+ * plus courte : il est toujours en tête.
+ *
+ * La coupe se fait sur le budget de postings, pas sur le nombre de termes :
+ * un préfixe rare n'est jamais tronqué (aucun document perdu au fil de la
+ * frappe), un préfixe très commun s'arrête dès le budget atteint, ce qui
+ * garantit qu'une requête ne parcourt jamais le corpus entier.
  */
 function termesParPrefixe(index, terme) {
   const cle = terme.slice(0, PREFIXE_MAX);
@@ -434,15 +453,17 @@ function termesParPrefixe(index, terme) {
   if (terme.length > PREFIXE_MAX) {
     liste = liste.filter((t) => t.startsWith(terme));
   }
-  liste.sort((x, y) => {
-    const fx = index.frequences.get(x) || 0;
-    const fy = index.frequences.get(y) || 0;
-    if (fx !== fy) return fy - fx;
-    return x < y ? -1 : (x > y ? 1 : 0);
-  });
-  return liste.length > EXPANSION_PREFIXE_MAX
-    ? liste.slice(0, EXPANSION_PREFIXE_MAX)
-    : liste;
+  liste.sort((x, y) => (x.length - y.length) || (x < y ? -1 : (x > y ? 1 : 0)));
+
+  let budget = BUDGET_PREFIXE_POSTINGS;
+  const retenus = [];
+  for (const autre of liste) {
+    retenus.push(autre);
+    const postings = index.inverse.get(autre);
+    budget -= postings ? postings.size : 0;
+    if (budget <= 0) break;
+  }
+  return retenus;
 }
 
 /**
@@ -474,14 +495,21 @@ function termesApproches(index, terme, seuil, exclus) {
   for (const [autre, n] of partages) {
     if (n < minimum) continue;
     const d = distanceBornee(terme, autre, seuil);
-    if (d <= seuil) retenus.push({ terme: autre, distance: d });
+    // La fréquence documentaire est la taille de la liste de postings :
+    // elle est relevée ici une fois, pas à chaque comparaison du tri.
+    if (d <= seuil) {
+      const postings = index.inverse.get(autre);
+      retenus.push({
+        terme: autre,
+        distance: d,
+        frequence: postings ? postings.size : 0
+      });
+    }
   }
 
   retenus.sort((x, y) => {
     if (x.distance !== y.distance) return x.distance - y.distance;
-    const fx = index.frequences.get(x.terme) || 0;
-    const fy = index.frequences.get(y.terme) || 0;
-    if (fx !== fy) return fy - fx;
+    if (x.frequence !== y.frequence) return y.frequence - x.frequence;
     return x.terme < y.terme ? -1 : 1;
   });
   return retenus.length > EXPANSION_APPROX_MAX
@@ -543,37 +571,62 @@ export function rechercher(index, requete, options) {
   }
 
   // --- Accumulation, terme par terme -------------------------------------
-  const cumul = new Map();   // id -> { id, score, champs:Set, termes:number }
+  // id -> { id, score, champs:masque de bits, termes:number }
+  const cumul = new Map();
 
   for (const terme of termes) {
     // Contributions du terme courant, séparées par nature : on doit
     // pouvoir écarter l'approximatif si une correspondance exacte existe.
+    // Trois accumulateurs scalaires et deux masques de bits : aucune
+    // allocation de conteneur par document candidat, et une forme d'objet
+    // unique donc monomorphe.
     const partiel = new Map();
     const entree = (id) => {
       let e = partiel.get(id);
       if (!e) {
-        e = { exact: 0, prefixe: 0, approx: 0, champs: new Set(), champsApprox: new Set() };
+        e = { exact: 0, prefixe: 0, approx: 0, champs: 0, champsApprox: 0 };
         partiel.set(id, e);
       }
       return e;
     };
 
-    const verser = (termeIndexe, facteur, nature) => {
+    // Trois versements distincts plutôt qu'un accès dynamique e[nature] par
+    // clé chaîne dans la boucle la plus chaude du moteur.
+    const verserExact = (termeIndexe) => {
       const postings = index.inverse.get(termeIndexe);
       if (!postings) return;
-      const parDoc = index.champsParTerme.get(termeIndexe);
-      for (const [id, poids] of postings) {
+      for (const [id, p] of postings) {
         if (!accepte(id)) continue;
         const e = entree(id);
-        e[nature] += poids * facteur;
-        const cible = nature === 'approx' ? e.champsApprox : e.champs;
-        const champs = parDoc && parDoc.get(id);
-        if (champs) for (const nom of champs) cible.add(nom);
+        e.exact += p.poids;
+        e.champs |= p.champs;
+      }
+    };
+
+    const verserPrefixe = (termeIndexe, facteur) => {
+      const postings = index.inverse.get(termeIndexe);
+      if (!postings) return;
+      for (const [id, p] of postings) {
+        if (!accepte(id)) continue;
+        const e = entree(id);
+        e.prefixe += p.poids * facteur;
+        e.champs |= p.champs;
+      }
+    };
+
+    const verserApprox = (termeIndexe, facteur) => {
+      const postings = index.inverse.get(termeIndexe);
+      if (!postings) return;
+      for (const [id, p] of postings) {
+        if (!accepte(id)) continue;
+        const e = entree(id);
+        e.approx += p.poids * facteur;
+        e.champsApprox |= p.champs;
       }
     };
 
     // (a) correspondance exacte : poids plein
-    verser(terme, 1, 'exact');
+    verserExact(terme);
 
     // (b) correspondance par préfixe : fraction du poids plein, d'autant
     //     plus forte que le terme indexé est proche en longueur.
@@ -584,7 +637,7 @@ export function rechercher(index, requete, options) {
       const rapport = terme.length / autre.length;
       const facteur = POIDS_PREFIXE
         * (PREFIXE_PART_FIXE + (1 - PREFIXE_PART_FIXE) * rapport);
-      verser(autre, facteur, 'prefixe');
+      verserPrefixe(autre, facteur);
     }
 
     // (c) correspondance approximative : fraction faible, dégressive avec
@@ -592,7 +645,7 @@ export function rechercher(index, requete, options) {
     const seuil = seuilEdition(terme);
     if (seuil > 0) {
       for (const { terme: autre, distance } of termesApproches(index, terme, seuil, utilises)) {
-        verser(autre, POIDS_APPROX / (1 + distance), 'approx');
+        verserApprox(autre, POIDS_APPROX / (1 + distance));
       }
     }
 
@@ -605,11 +658,11 @@ export function rechercher(index, requete, options) {
       if (apport <= 0) continue;
 
       let c = cumul.get(id);
-      if (!c) { c = { id, score: 0, champs: new Set(), termes: 0 }; cumul.set(id, c); }
+      if (!c) { c = { id, score: 0, champs: 0, termes: 0 }; cumul.set(id, c); }
       c.score += apport;
       c.termes += 1;
-      for (const nom of e.champs) c.champs.add(nom);
-      if (approxRetenu) for (const nom of e.champsApprox) c.champs.add(nom);
+      c.champs |= e.champs;
+      if (approxRetenu) c.champs |= e.champsApprox;
     }
   }
 
@@ -637,15 +690,27 @@ export function rechercher(index, requete, options) {
   });
 
   const retenus = (limite < resultats.length) ? resultats.slice(0, limite) : resultats;
-  const rang = index.ordreChamps;
+  // Le masque de bits n'est reconverti en noms de champs que pour les seuls
+  // résultats effectivement renvoyés, jamais pour tous les candidats.
   return retenus.map((c) => ({
     doc: index.meta.get(c.id).doc,
     score: c.score,
-    // Champs touchés listés dans l'ordre de déclaration : stable, lisible.
-    champsTouches: Array.from(c.champs).sort(
-      (x, y) => (rang.get(x) ?? Number.MAX_SAFE_INTEGER) - (rang.get(y) ?? Number.MAX_SAFE_INTEGER)
-    )
+    champsTouches: nomsDeMasque(index, c.champs)
   }));
+}
+
+/**
+ * Convertit un masque de champs en noms, dans l'ordre de déclaration :
+ * stable, lisible, et indépendant de tout ordre d'insertion.
+ */
+function nomsDeMasque(index, masque) {
+  const sortie = [];
+  if (!masque) return sortie;
+  const champs = index.champs;
+  for (let i = 0; i < champs.length; i++) {
+    if (masque & champs[i].bit) sortie.push(champs[i].nom);
+  }
+  return sortie;
 }
 
 /* -------------------------------------------------------------------------
@@ -798,10 +863,19 @@ function meilleurVoisin(index, terme) {
  * proche (distance d'édition, puis fréquence, puis ordre alphabétique :
  * la suggestion est donc déterministe).
  *
+ * CONTRAT D'APPEL : à n'appeler que lorsque la recherche de l'appelant a
+ * renvoyé zéro résultat. C'est l'appelant, et lui seul, qui sait avec quelles
+ * facettes la recherche affichée a été faite ; relancer ici une recherche
+ * interne reviendrait à en refaire une AUTRE, non filtrée, dix fois plus
+ * coûteuse que celle de la page, à chaque frappe, pour n'en tirer aucune
+ * information utile. Les termes déjà présents au vocabulaire sont de toute
+ * façon renvoyés inchangés, donc une requête parfaitement orthographiée ne
+ * produit jamais de suggestion.
+ *
  * @param {object} index
  * @param {string} requete
  * @returns {string|null} la requête corrigée, ou null s'il n'y a rien à
- *          proposer (ou si la requête donne déjà des résultats).
+ *          proposer.
  */
 export function suggerer(index, requete) {
   if (!estIndex(index)) return null;
@@ -809,9 +883,6 @@ export function suggerer(index, requete) {
   const requeteNormalisee = normaliser(requete);
   const termes = decouper(requeteNormalisee);
   if (termes.length === 0) return null;
-
-  // Par contrat : pas de suggestion tant que la requête donne un résultat.
-  if (rechercher(index, requeteNormalisee, { limite: 1 }).length > 0) return null;
 
   const corriges = [];
   let modifie = false;

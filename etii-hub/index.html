@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Accueil — ETII Hub, portail du service d'ingénierie</title>
+  <meta name="description" content="Point d'entrée du portail ETII : recherche documentaire, pôles ETIIA, ETIIE et ETIII, dernières annonces et prochain point.">
+
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+
+  <!-- =====================================================================
+       Styles propres à la page d'accueil.
+       Uniquement ce qu'aucune classe de base.css ou components.css ne
+       couvre : la pastille d'icône, la disposition du bandeau d'accès et
+       les deux grilles qui doivent basculer en colonne sous 900 px.
+       Aucune valeur brute : toutes les dimensions viennent de tokens.css.
+       Seuls les points de rupture sont des pixels, comme dans base.css —
+       une media query ne peut pas lire une variable CSS.
+       ===================================================================== -->
+  <style>
+    /* Accroche d'introduction : un cran au-dessus du texte courant. */
+    .accroche {
+      max-width: var(--largeur-texte);
+      font-size: var(--texte-lg);
+      color: var(--texte-doux);
+    }
+
+    /* Pastille d'icône. Le tracé est en currentColor : il suit la couleur
+       du texte, donc le thème, sans une seule déclaration de couleur. */
+    .icone-bloc {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+
+      inline-size: var(--e-12);
+      block-size: var(--e-12);
+
+      background-color: var(--accent-doux);
+      color: var(--texte-accent);
+      border: 1px solid var(--bordure-douce);
+      border-radius: var(--rayon-md);
+    }
+
+    .icone-bloc svg {
+      inline-size: var(--e-6);
+      block-size: var(--e-6);
+    }
+
+    .icone-bloc--grande {
+      inline-size: var(--e-16);
+      block-size: var(--e-16);
+      border-radius: var(--rayon-lg);
+    }
+
+    .icone-bloc--grande svg {
+      inline-size: var(--e-8);
+      block-size: var(--e-8);
+    }
+
+    /* --- Accès à la recherche documentaire : le bandeau principal ------- */
+
+    .acces {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--e-5) var(--e-6);
+    }
+
+    .acces__texte {
+      /* Base large : le bandeau se replie en colonne dès qu'il manque de
+         place, sans aucune media query supplémentaire. */
+      flex: 1 1 calc(var(--e-16) * 5);
+      min-inline-size: 0;
+
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-2);
+    }
+
+    .acces__titre {
+      font-size: var(--texte-2xl);
+      font-weight: var(--graisse-extra);
+    }
+
+    /* --- Les trois pôles : côte à côte, en colonne sous 900 px ---------- */
+
+    .poles {
+      display: grid;
+      gap: var(--e-6);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    /* Le pied de carte est plaqué en bas : les trois cartes alignent leur
+       mention d'état même si les descriptions n'ont pas la même longueur. */
+    .pole__pied {
+      margin-block-start: auto;
+    }
+
+    /* Un lien inerte ne promet pas une navigation : le curseur de lien
+       disparaît. Comme la zone cliquable de la carte est le pseudo-élément
+       du lien lui-même, la carte entière suit cette règle. */
+    a[aria-disabled="true"] {
+      cursor: default;
+    }
+
+    /* --- Aperçu : deux colonnes, en colonne sous 900 px ----------------- */
+
+    .apercu {
+      display: grid;
+      gap: var(--e-6);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+
+    .apercu__bloc {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-4);
+    }
+
+    @media (max-width: 900px) {
+      .poles,
+      .apercu {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="lien-evitement" href="#contenu">Aller au contenu</a>
+
+  <header class="site-entete">
+    <div class="site-entete__interieur">
+      <a class="site-logo" href="index.html">ETII <span>HUB</span></a>
+
+      <nav class="site-nav" aria-label="Navigation principale">
+        <ul class="site-nav__liste">
+          <li><a href="index.html" aria-current="page">Accueil</a></li>
+          <li><a href="communication.html">Communication</a></li>
+          <li><a href="reunions.html">Réunions</a></li>
+          <li><a href="organigramme.html">Organigramme</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="docsearch.html">Recherche</a></li>
+        </ul>
+      </nav>
+
+      <button class="bascule-theme" type="button" data-bascule-theme
+              aria-pressed="false">
+        <span class="bascule-theme__icone bascule-theme__icone--clair"
+              aria-hidden="true">☾</span>
+        <span class="bascule-theme__icone bascule-theme__icone--sombre"
+              aria-hidden="true">☀</span>
+        <span class="bascule-theme__libelle">Thème sombre</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="contenu" tabindex="-1">
+    <div class="conteneur pile pile--section">
+
+      <!-- ============================================================
+           Titre et accroche
+           ============================================================ -->
+      <div class="pile pile--serree">
+        <h1>ETII Hub</h1>
+        <p class="accroche">
+          Le portail du service : une seule porte d'entrée vers la
+          documentation, les annonces, les réunions et l'organisation des
+          trois pôles.
+        </p>
+      </div>
+
+      <!-- ============================================================
+           Accès principal : la recherche documentaire
+           Carte entièrement cliquable — le libellé est porté par le lien,
+           l'extension de la zone cliquable par le pseudo-élément
+           .carte__lien::after de components.css. Aucun gestionnaire n'est
+           posé sur la carte.
+           ============================================================ -->
+      <section aria-labelledby="titre-recherche">
+        <article class="carte carte--ample carte--mise-en-avant carte--cliquable acces">
+          <span class="icone-bloc icone-bloc--grande" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.75" stroke-linecap="round"
+                 stroke-linejoin="round" focusable="false">
+              <circle cx="10.5" cy="10.5" r="6.5"></circle>
+              <path d="M15.4 15.4 L21 21"></path>
+              <path d="M7.6 8.9 h5.8 M7.6 12 h3.6"></path>
+            </svg>
+          </span>
+
+          <div class="acces__texte">
+            <h2 class="carte__titre acces__titre" id="titre-recherche">
+              <a class="carte__lien" href="docsearch.html">Recherche documentaire</a>
+            </h2>
+            <p class="texte-doux sans-marge">
+              Le point d'entrée principal du site. Recherche instantanée,
+              tolérante aux fautes de frappe, filtrable par type, métier,
+              porteur et périmètre — et entièrement utilisable au clavier.
+            </p>
+          </div>
+
+          <!-- Affordance visuelle seule : la cible réelle est le lien
+               ci-dessus, étiré à toute la carte. Masquée aux lecteurs
+               d'écran pour ne pas annoncer deux fois la même action. -->
+          <span class="bouton bouton--principal" aria-hidden="true">
+            Ouvrir la recherche
+          </span>
+        </article>
+      </section>
+
+      <!-- ============================================================
+           Les trois pôles
+           Les pages de destination n'existent pas encore : les liens
+           pointent vers « # » et portent aria-disabled="true". index.js
+           neutralise leur activation et annonce la raison.
+           ============================================================ -->
+      <section class="pile" aria-labelledby="titre-poles">
+        <div class="pile pile--serree">
+          <h2 id="titre-poles">Les trois pôles</h2>
+          <p class="mesure texte-doux sans-marge">
+            Trois métiers complémentaires, de la règle d'architecture
+            jusqu'à son intégration dans la maquette numérique.
+          </p>
+        </div>
+
+        <div class="poles">
+
+          <!-- ETIIA -->
+          <article class="carte carte--cliquable">
+            <span class="icone-bloc" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round"
+                   stroke-linejoin="round" focusable="false">
+                <path d="M12 3 v18"></path>
+                <path d="M5 6 h14 M5 12 h14 M5 18 h14"></path>
+                <circle cx="5" cy="6" r="1.6"></circle>
+                <circle cx="19" cy="12" r="1.6"></circle>
+                <circle cx="5" cy="18" r="1.6"></circle>
+              </svg>
+            </span>
+
+            <div class="carte__entete">
+              <h3 class="carte__titre">
+                <a class="carte__lien" href="#" aria-disabled="true"
+                   aria-describedby="etat-etiia" data-pole="ETIIA">ETIIA</a>
+              </h3>
+              <p class="carte__sous-titre">Squelette &amp; ADN</p>
+            </div>
+
+            <div class="carte__corps">
+              <p>
+                Définition de la logique et des règles d'architecture :
+                découpage fonctionnel, conventions de nommage et principes
+                que tous les autres travaux appliquent ensuite.
+              </p>
+            </div>
+
+            <p class="carte__pied pole__pied">
+              <span class="badge badge--neutre" id="etat-etiia">
+                Page pas encore raccordée
+              </span>
+            </p>
+          </article>
+
+          <!-- ETIIE -->
+          <article class="carte carte--cliquable">
+            <span class="icone-bloc" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round"
+                   stroke-linejoin="round" focusable="false">
+                <path d="M4 6 h5 a3 3 0 0 1 3 3 v6 a3 3 0 0 0 3 3 h5"></path>
+                <path d="M12 12 h8"></path>
+                <circle cx="4" cy="6" r="1.6"></circle>
+                <circle cx="20" cy="12" r="1.6"></circle>
+                <circle cx="20" cy="18" r="1.6"></circle>
+              </svg>
+            </span>
+
+            <div class="carte__entete">
+              <h3 class="carte__titre">
+                <a class="carte__lien" href="#" aria-disabled="true"
+                   aria-describedby="etat-etiie" data-pole="ETIIE">ETIIE</a>
+              </h3>
+              <p class="carte__sous-titre">Système nerveux</p>
+            </div>
+
+            <div class="carte__corps">
+              <p>
+                Schémas électriques et communication entre systèmes :
+                signaux, interfaces et cohérence des échanges d'un bout à
+                l'autre de la définition.
+              </p>
+            </div>
+
+            <p class="carte__pied pole__pied">
+              <span class="badge badge--neutre" id="etat-etiie">
+                Page pas encore raccordée
+              </span>
+            </p>
+          </article>
+
+          <!-- ETIII -->
+          <article class="carte carte--cliquable">
+            <span class="icone-bloc" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round"
+                   stroke-linejoin="round" focusable="false">
+                <rect x="3" y="4" width="18" height="16" rx="2.5"></rect>
+                <path d="M3 14 c3.5 0 4.5-6 9-6 s5.5 6 9 6"></path>
+                <circle cx="8.6" cy="9.6" r="1.3"></circle>
+                <circle cx="15.4" cy="9.6" r="1.3"></circle>
+              </svg>
+            </span>
+
+            <div class="carte__entete">
+              <h3 class="carte__titre">
+                <a class="carte__lien" href="#" aria-disabled="true"
+                   aria-describedby="etat-etiii" data-pole="ETIII">ETIII</a>
+              </h3>
+              <p class="carte__sous-titre">Structure &amp; harnais</p>
+            </div>
+
+            <div class="carte__corps">
+              <p>
+                Intégration physique et routage dans la maquette numérique :
+                cheminements, fixations et vérification des interférences
+                avant fabrication.
+              </p>
+            </div>
+
+            <p class="carte__pied pole__pied">
+              <span class="badge badge--neutre" id="etat-etiii">
+                Page pas encore raccordée
+              </span>
+            </p>
+          </article>
+
+        </div>
+      </section>
+
+      <!-- ============================================================
+           Aperçu vivant — bonus, jamais un prérequis
+           Les deux blocs sont alimentés par index.js. Si les données
+           manquent, chacun affiche son propre état et la page reste
+           entièrement utilisable.
+           ============================================================ -->
+      <section class="pile" aria-labelledby="titre-apercu">
+        <h2 id="titre-apercu">Aperçu du service</h2>
+
+        <div class="apercu">
+
+          <section class="apercu__bloc" aria-labelledby="titre-annonces">
+            <div class="rangee rangee--entre">
+              <h3 id="titre-annonces" class="sans-marge">Dernières annonces</h3>
+              <a class="bouton bouton--discret bouton--compact"
+                 href="communication.html">
+                Toutes les annonces
+              </a>
+            </div>
+            <div id="apercu-annonces"></div>
+          </section>
+
+          <section class="apercu__bloc" aria-labelledby="titre-prochain">
+            <div class="rangee rangee--entre">
+              <h3 id="titre-prochain" class="sans-marge">Prochain point</h3>
+              <a class="bouton bouton--discret bouton--compact"
+                 href="reunions.html">
+                Toutes les réunions
+              </a>
+            </div>
+            <div id="apercu-reunion"></div>
+          </section>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="site-pied">
+    <div class="site-pied__interieur">
+      <p>ETII Hub — portail de démonstration, sans aucune dépendance externe.</p>
+      <p class="site-pied__mention">
+        <span aria-hidden="true">●</span>
+        Toutes les données de ce site sont fictives
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="assets/js/index.js"></script>
+</body>
+</html>

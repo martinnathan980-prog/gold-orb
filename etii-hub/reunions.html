@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Réunions — comptes-rendus et prochains points — ETII Hub</title>
+  <meta name="description" content="Comptes-rendus de réunion et prochains points du service ETII : synthèse, sujets, actions et décisions, avec recherche et impression.">
+
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+
+  <!-- =====================================================================
+       Styles propres à la page Réunions.
+       Uniquement ce qu'aucune classe de base.css ou components.css ne
+       couvre : la barre d'outils, la disposition en deux volets, l'état
+       sélectionné d'une option de liste, la mise en forme du lecteur, et
+       les blocs « Actions » / « Décisions » qui doivent se détacher
+       nettement du corps du texte (SPEC §6.3).
+       Aucune valeur brute : tout vient de tokens.css. Seuls les points de
+       rupture sont exprimés en pixels, comme dans base.css — une media
+       query ne peut pas lire une variable CSS.
+       ===================================================================== -->
+  <style>
+    /* ===================================================================
+       1. Barre d'outils : recherche à gauche, impression à droite
+       =================================================================== */
+
+    .barre-outils {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--e-3) var(--e-4);
+    }
+
+    /* Base large : la recherche occupe la ligne entière dès qu'il manque
+       de place, et le bouton passe dessous. Aucune media query requise. */
+    .barre-outils__recherche {
+      flex: 1 1 calc(var(--e-16) * 5);
+      min-inline-size: 0;
+    }
+
+    /* ===================================================================
+       2. Disposition en deux volets, à l'intérieur de chaque panneau
+       Liste à gauche, lecteur à droite. Sous 900 px les deux volets
+       s'empilent, et l'ordre du document donne directement l'ordre voulu.
+       =================================================================== */
+
+    .reunions {
+      display: grid;
+      gap: var(--e-6);
+      grid-template-columns: minmax(0, calc(var(--e-16) * 5)) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .reunions__volet {
+      min-inline-size: 0;
+    }
+
+    /* Le volet de liste reste visible pendant la lecture d'un compte-rendu
+       long. Le décalage supérieur dégage l'en-tête collant du site. */
+    @media (min-width: 901px) {
+      .reunions__liste {
+        position: sticky;
+        top: var(--e-16);
+        max-block-size: calc(100svh - var(--e-16) - var(--e-6));
+        overflow-y: auto;
+        /* La cible d'un défilement clavier ne colle pas au bord haut. */
+        scroll-padding-block: var(--e-2);
+        /* Laisse respirer l'anneau de focus d'une option en bord de zone. */
+        padding: var(--focus-epaisseur);
+        margin: calc(var(--focus-epaisseur) * -1);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .reunions {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* ===================================================================
+       3. Options de la liste de réunions
+       Ce sont de vraies options de listbox : l'état est porté par
+       aria-selected, jamais par une classe posée en JavaScript.
+       =================================================================== */
+
+    .reunions__options {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-3);
+      margin: 0;
+    }
+
+    .reunion-option {
+      cursor: pointer;
+    }
+
+    .reunion-option:hover {
+      border-color: var(--bordure-forte);
+      box-shadow: var(--ombre-md);
+    }
+
+    .reunion-option[aria-selected="true"] {
+      border-color: var(--accent);
+      background-color: var(--accent-doux);
+      box-shadow: var(--ombre-md);
+    }
+
+    .reunion-option[aria-selected="true"] .carte__titre {
+      color: var(--texte-accent);
+    }
+
+    /* Le titre d'une option reste au calibre du texte courant : la liste
+       est dense, ce n'est pas une suite de titres de niveau carte. */
+    .reunion-option .carte__titre {
+      font-size: var(--texte-md);
+      font-weight: var(--graisse-moyenne);
+    }
+
+    .reunion-option__extrait {
+      margin: 0;
+      font-size: var(--texte-sm);
+      color: var(--texte-doux);
+    }
+
+    /* Décompte affiché sous le titre de liste, mis à jour à chaque frappe. */
+    .reunions__compteur {
+      font-size: var(--texte-xs);
+      color: var(--texte-faible);
+      margin: 0;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .reunion-option {
+        transition: border-color var(--duree-rapide) var(--courbe),
+                    background-color var(--duree-rapide) var(--courbe),
+                    box-shadow var(--duree-rapide) var(--courbe);
+      }
+    }
+
+    /* ===================================================================
+       4. Lecteur de réunion
+       =================================================================== */
+
+    .lecteur:focus {
+      outline: none;
+    }
+
+    .lecteur:focus-visible {
+      outline: var(--focus-epaisseur) solid var(--focus-couleur);
+      outline-offset: var(--focus-decalage);
+    }
+
+    /* Fondu discret à chaque changement de réunion. Opacité seule : aucun
+       déplacement, aucune machine à écrire (SPEC §2). */
+    @keyframes reunion-apparition {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .lecteur__contenu {
+        animation: reunion-apparition var(--duree) var(--courbe);
+      }
+    }
+
+    .lecteur__titre-section {
+      margin: 0;
+      font-size: var(--texte-md);
+      font-weight: var(--graisse-forte);
+      color: var(--texte);
+    }
+
+    /* --- Sujets : titre + notes ---------------------------------------- */
+
+    ul.sujets {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-4);
+      margin: 0;
+    }
+
+    .sujet {
+      padding-inline-start: var(--e-4);
+      border-inline-start: var(--e-1) solid var(--bordure);
+    }
+
+    .sujet__titre {
+      margin: 0;
+      font-size: var(--texte-md);
+      font-weight: var(--graisse-moyenne);
+      color: var(--texte);
+    }
+
+    .sujet__notes {
+      margin: 0;
+      max-width: var(--largeur-texte);
+      color: var(--texte-doux);
+    }
+
+    /* ===================================================================
+       5. Blocs « Actions » et « Décisions »
+       Ils doivent se distinguer nettement du corps du texte : surface
+       propre, liseré teinté, étiquette explicite et liste numérotée.
+       La teinte du texte d'étiquette est rapprochée de la couleur de texte
+       du thème courant — technique documentée en tête de components.css,
+       qui garantit le contraste AA en clair comme en sombre.
+       =================================================================== */
+
+    .bloc-cle {
+      --bloc-teinte: var(--texte-doux);
+      --bloc-fond: var(--fond-enfonce);
+
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-3);
+
+      padding: var(--e-4) var(--e-5);
+
+      background-color: var(--bloc-fond);
+      border: 1px solid var(--bloc-teinte);
+      border-inline-start-width: var(--e-1);
+      border-radius: var(--rayon-md);
+    }
+
+    .bloc-cle--actions {
+      --bloc-teinte: var(--statut-alerte);
+      --bloc-fond: var(--statut-alerte-fond);
+    }
+
+    .bloc-cle--decisions {
+      --bloc-teinte: var(--statut-succes);
+      --bloc-fond: var(--statut-succes-fond);
+    }
+
+    .bloc-cle__entete {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--e-2) var(--e-3);
+    }
+
+    .bloc-cle__titre {
+      margin: 0;
+      font-size: var(--texte-sm);
+      font-weight: var(--graisse-extra);
+      letter-spacing: calc(var(--e-1) / 2);
+      text-transform: uppercase;
+
+      color: var(--bloc-teinte);
+      color: color-mix(in srgb, var(--bloc-teinte) 72%, var(--texte));
+    }
+
+    /* L'icône est purement décorative : le sens est porté par l'étiquette
+       textuelle qui la suit, jamais par la seule couleur ni le seul glyphe. */
+    .bloc-cle__icone {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      inline-size: var(--e-6);
+      block-size: var(--e-6);
+
+      background-color: var(--fond-eleve);
+      border: 1px solid var(--bloc-teinte);
+      border-radius: var(--rayon-plein);
+
+      color: var(--bloc-teinte);
+      color: color-mix(in srgb, var(--bloc-teinte) 72%, var(--texte));
+
+      font-size: var(--texte-sm);
+      line-height: 1;
+    }
+
+    /* Vraies listes numérotées : le lecteur d'écran annonce « liste de N
+       éléments ». La sélection d'attribut de base.css (`ol[class]`) a la
+       même spécificité ; c'est l'ordre de cascade — cette feuille venant
+       après — qui rétablit le marqueur. */
+    ol.bloc-cle__liste {
+      margin: 0;
+      padding-inline-start: var(--e-6);
+      list-style: decimal;
+      color: var(--texte);
+    }
+
+    ol.bloc-cle__liste li + li {
+      margin-block-start: var(--e-2);
+    }
+
+    ol.bloc-cle__liste li::marker {
+      color: var(--bloc-teinte);
+      color: color-mix(in srgb, var(--bloc-teinte) 72%, var(--texte));
+      font-weight: var(--graisse-forte);
+    }
+
+    /* ===================================================================
+       6. Impression : uniquement la réunion affichée
+       components.css déplie les panneaux d'onglets masqués pour les pages
+       qui veulent tout imprimer ; ici c'est l'inverse qui est demandé —
+       seule la réunion ouverte part à l'impression. On rétablit donc le
+       masquage, et on retire tout le reste : liste latérale, barre
+       d'outils, boutons. L'en-tête, la navigation, le pied de page et le
+       dépliage des liens externes sont déjà traités par base.css.
+       =================================================================== */
+
+    @media print {
+      /* Priorité sur la règle de dépliage de components.css. */
+      .onglets__panneau[hidden] {
+        display: none !important;
+      }
+
+      .barre-outils,
+      .reunions__liste {
+        display: none !important;
+      }
+
+      .reunions {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+      }
+
+      /* Plus de colonne collante ni de hauteur contrainte sur le papier. */
+      .reunions__volet {
+        position: static;
+        max-block-size: none;
+        overflow: visible;
+      }
+
+      .lecteur {
+        border: 0;
+        padding: 0;
+      }
+
+      .bloc-cle {
+        border: 1px solid var(--gris-400);
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="lien-evitement" href="#contenu">Aller au contenu</a>
+
+  <header class="site-entete">
+    <div class="site-entete__interieur">
+      <a class="site-logo" href="index.html">ETII <span>HUB</span></a>
+
+      <nav class="site-nav" aria-label="Navigation principale">
+        <ul class="site-nav__liste">
+          <li><a href="index.html">Accueil</a></li>
+          <li><a href="communication.html">Communication</a></li>
+          <li><a href="reunions.html" aria-current="page">Réunions</a></li>
+          <li><a href="organigramme.html">Organigramme</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="docsearch.html">Recherche</a></li>
+        </ul>
+      </nav>
+
+      <button class="bascule-theme" type="button" data-bascule-theme
+              aria-pressed="false">
+        <span class="bascule-theme__icone bascule-theme__icone--clair"
+              aria-hidden="true">☾</span>
+        <span class="bascule-theme__icone bascule-theme__icone--sombre"
+              aria-hidden="true">☀</span>
+        <span class="bascule-theme__libelle">Thème sombre</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="contenu" tabindex="-1">
+    <div class="conteneur pile pile--lache">
+
+      <!-- ==============================================================
+           Titre et accroche
+           ============================================================== -->
+      <div class="pile pile--serree">
+        <h1>Réunions</h1>
+        <p class="mesure texte-doux">
+          Les comptes-rendus passés et les points à venir du service.
+          Choisissez un onglet, puis une réunion dans la liste pour en lire
+          la synthèse, les sujets, les actions et les décisions. Les
+          onglets se parcourent aux flèches gauche et droite, la liste aux
+          flèches haut et bas.
+        </p>
+      </div>
+
+      <!-- ==============================================================
+           Zone alimentée par assets/data/reunions.json.
+           Les trois états — chargement, erreur, vide — sont pris en
+           charge par avecEtat() dans assets/js/reunions.js.
+           ============================================================== -->
+      <div id="zone-reunions" class="pile pile--lache"></div>
+
+    </div>
+  </main>
+
+  <footer class="site-pied">
+    <div class="site-pied__interieur">
+      <p>ETII Hub — portail de démonstration, sans aucune dépendance externe.</p>
+      <p class="site-pied__mention">
+        <span aria-hidden="true">●</span>
+        Toutes les données de ce site sont fictives
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="assets/js/reunions.js"></script>
+</body>
+</html>
