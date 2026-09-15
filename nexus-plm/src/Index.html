@@ -34,7 +34,6 @@
     <datalist id="list-Type"></datalist>
     <datalist id="list-MotsCles"></datalist>
     <datalist id="datalistStds"></datalist>
-    <div id="listesComposants" hidden></div>
 
     <header class="entete">
       <div class="enveloppe entete-corps">
@@ -56,11 +55,13 @@
             <span class="indicateur-valeur" id="kpiVal">–</span>
             <span class="indicateur-detail" id="kpiValDetail"></span>
           </button>
-          <div class="indicateur indicateur-fixe" id="indRefs">
-            <span class="indicateur-libelle">Références uniques</span>
-            <span class="indicateur-valeur" id="kpiNoms">–</span>
-            <span class="indicateur-detail" id="kpiNomsDetail">boîtes et pièces</span>
-          </div>
+          <button type="button" class="indicateur indicateur-standard" id="indStandard"
+                  data-action="voir-standardisation"
+                  title="Voir les familles de composants servies par plusieurs références">
+            <span class="indicateur-libelle">À standardiser</span>
+            <span class="indicateur-valeur" id="kpiStandard">–</span>
+            <span class="indicateur-detail" id="kpiStandardDetail"></span>
+          </button>
           <button type="button" class="indicateur indicateur-reemploi" id="indReutil"
                   data-action="filtrer-reutilise" aria-pressed="false"
                   title="Ne montrer que les boîtes qui partagent une pièce">

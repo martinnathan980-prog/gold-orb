@@ -234,7 +234,9 @@ function porteeAvecComposants(portee) {
 function normaliserTexte(valeur) {
   return String(valeur === null || valeur === undefined ? '' : valeur)
     .normalize('NFD').replace(/[̀-ͯ]/g, '')   // accents
-    .toLowerCase().trim();
+    .toLowerCase()
+    .replace(/\s+/g, ' ')                   // « Bouton  poussoir » = « Bouton poussoir »
+    .trim();
 }
 
 function typeDe(ligne) {

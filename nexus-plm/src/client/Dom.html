@@ -134,6 +134,11 @@ function definirHtml(id, html) {
   if (noeud) noeud.innerHTML = html;
 }
 
+/** Les <option> d'une liste de suggestion. */
+function optionsHtml(valeurs) {
+  return valeurs.map(function (v) { return '<option value="' + esc(v) + '"></option>'; }).join('');
+}
+
 function definirTexte(id, texte) {
   const noeud = parId(id);
   if (noeud) noeud.textContent = texte;

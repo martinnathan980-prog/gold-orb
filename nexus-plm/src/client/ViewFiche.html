@@ -107,6 +107,8 @@ function blocMultiHtml(champ, valeurs, editable, actionAjout, actionSuppr, donne
  * Toujours éditable, comme toute liste : on ajoute et on retire sans passer
  * la fiche en mode édition.
  */
+let compteurBlocComposants = 0;
+
 function blocComposantsHtml(champ, valeur, cible) {
   const composants = listeComposants(valeur);
   const categorie = champ.categorie || 'composant';
@@ -128,11 +130,21 @@ function blocComposantsHtml(champ, valeur, cible) {
       }).join('')
     : '<p class="composants-vide">Aucun composant. Ajoutez-en un ci-dessous, ou depuis le catalogue.</p>';
 
+  // Chaque bloc porte ses propres listes de suggestion : elles se resserrent
+  // au fur et a mesure de la saisie, et deux blocs ouverts ne se genent pas.
+  const uid = 'cmp' + (++compteurBlocComposants);
   const saisie = function (niveau, texte) {
     return '<input type="text" class="saisie-composant" data-niveau="' + niveau + '"' +
-           dataAttrs(donnees) + ' list="list-' + niveau + '-' + esc(categorie) + '"' +
+           dataAttrs(Object.assign({ bloc: uid, categorie: categorie }, donnees)) +
+           ' list="' + uid + '-' + niveau + '"' +
            ' placeholder="' + esc(texte) + '" aria-label="' + esc(texte) + '">';
   };
+  const sug = suggestionsComposant(categorie, '', '');
+  const listes = '<span class="listes-bloc" data-bloc="' + uid + '">' +
+    '<datalist id="' + uid + '-fonction">' + optionsHtml(sug.fonctions) + '</datalist>' +
+    '<datalist id="' + uid + '-norme">' + optionsHtml(sug.normes) + '</datalist>' +
+    '<datalist id="' + uid + '-reference">' + optionsHtml(sug.references) + '</datalist>' +
+  '</span>';
 
   return '<div class="ligne ligne-bloc">' +
     '<div class="ligne-cle">' + esc(champ.libelle) +
@@ -142,7 +154,7 @@ function blocComposantsHtml(champ, valeur, cible) {
         '<div class="composants-entete"><span>Fonction</span><span>Norme</span><span>Référence</span><span></span></div>' +
         lignes +
       '</div>' +
-      '<div class="ajout-composant">' +
+      '<div class="ajout-composant">' + listes +
         saisie('fonction', 'Fonction') + saisie('norme', 'Norme') + saisie('reference', 'Référence') +
         '<button type="button" class="btn-mini"' +
           dataAttrs(Object.assign({ action: 'ajouter-composant' }, donnees)) + '>Ajouter</button>' +
@@ -167,7 +179,8 @@ function blocBoiteHtml(boite) {
   const actions = edition
     ? boutonHtml('sauver-boite', {}, 'Enregistrer', 'btn-valider') +
       boutonHtml('annuler-boite', {}, 'Annuler', 'btn-neutre')
-    : boutonHtml('editer-boite', {}, 'Éditer', 'btn-neutre') +
+    : boutonHtml('comparer-boite', { pn: pn }, 'Équivalences', 'btn-accent') +
+      boutonHtml('editer-boite', {}, 'Éditer', 'btn-neutre') +
       boutonHtml('supprimer-boite', { pn: pn }, 'Supprimer', 'btn-danger');
 
   let html = '<section class="bloc bloc-general">' +

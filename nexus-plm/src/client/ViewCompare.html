@@ -271,4 +271,67 @@ function rafraichirComparaison() {
   if (c.sorte === 'boite') rendreEquivalencesBoite(c.cle);
   else rendreEquivalencesNom(c.cle);
 }
+/**
+ * Une paire de doublons probables, avec CE QUI LES SÉPARE. Le PN et un score
+ * ne disent pas s'il faut agir : ce qui décide, c'est de voir que tout
+ * concorde sauf la longueur, ou au contraire que rien ne les distingue.
+ */
+function doublonHtml(p) {
+  const detail = comparerSousEnsembles(p.a, p.b);
+  const cote = function (n) {
+    return '<div class="doublon-piece">' +
+      '<div class="doublon-pn">' + esc(txt(n['PN du type'])) + '</div>' +
+      '<button type="button" class="doublon-boite btn-lien"' +
+        dataAttrs({ action: 'ouvrir-fiche-depuis-doublons', pn: n[CLE_PN()] }) + '>' +
+        esc(txt(n[CLE_PN()])) + '</button>' +
+    '</div>';
+  };
+
+  const ligne = function (c) {
+    const etat = c.etat === ETAT.IDENTIQUE ? 'egal'
+               : c.etat === ETAT.PARTIEL ? 'partiel'
+               : c.etat === ETAT.INDISPONIBLE ? 'absent' : 'different';
+    return '<div class="doublon-critere doublon-' + etat + '">' +
+      '<span class="doublon-crit-nom">' + esc(c.libelle) + '</span>' +
+      '<span class="doublon-crit-val">' + esc(c.message || '—') + '</span>' +
+    '</div>';
+  };
+
+  const separent = detail.criteres.filter(function (c) {
+    return c.etat === ETAT.DIFFERENT || c.etat === ETAT.PARTIEL;
+  });
+  const concordent = detail.criteres.filter(function (c) { return c.etat === ETAT.IDENTIQUE; });
+  const muets = detail.criteres.filter(function (c) { return c.etat === ETAT.INDISPONIBLE; });
+
+  return '<div class="doublon">' +
+    '<div class="doublon-tete">' +
+      cote(p.a) +
+      '<span class="doublon-lien" aria-hidden="true">↔</span>' +
+      cote(p.b) +
+      '<span class="score ' + (p.score >= 95 ? 'score-fort' : 'score-moyen') + '">' +
+        '<b>' + p.score + '<small>%</small></b></span>' +
+    '</div>' +
+    '<div class="doublon-detail">' +
+      (separent.length
+        ? '<div class="doublon-groupe"><span class="doublon-groupe-titre">Ce qui les sépare</span>' +
+            separent.map(ligne).join('') + '</div>'
+        : '<div class="doublon-groupe"><span class="doublon-groupe-titre doublon-rien">' +
+            'Rien ne les sépare sur les critères retenus</span></div>') +
+      (concordent.length
+        ? '<div class="doublon-groupe"><span class="doublon-groupe-titre">Ce qui concorde</span>' +
+            concordent.map(ligne).join('') + '</div>'
+        : '') +
+      (muets.length
+        ? '<p class="doublon-muets">Non comparé, faute de donnée : ' +
+            esc(muets.map(function (c) { return c.libelle; }).join(', ')) + '</p>'
+        : '') +
+    '</div>' +
+    '<div class="doublon-actions">' +
+      '<button type="button" class="btn-lien"' +
+        dataAttrs({ action: 'comparer-depuis-doublons', id: p.a[CLE_NOM()] }) +
+        '>Comparer en détail, avec la pondération</button>' +
+    '</div>' +
+  '</div>';
+}
+
 </script>

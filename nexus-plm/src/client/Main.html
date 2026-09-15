@@ -70,10 +70,6 @@ function chargerCatalogue() {
     .catch(function (e) { signalerErreur(e, 'chargement du catalogue'); });
 }
 
-function optionsHtml(valeurs) {
-  return valeurs.map(function (v) { return '<option value="' + esc(v) + '"></option>'; }).join('');
-}
-
 function remplirListesDeSuggestion() {
   definirHtml('datalistStds', optionsHtml(tousLesComposants()));
   definirHtml('list-MotsCles', optionsHtml(tousLesMotsCles()));
@@ -87,38 +83,9 @@ function remplirListesDeSuggestion() {
            esc(p) + '">' + esc(p) + '</label>';
   }).join(''));
 
-  // Suggestions par niveau et par catégorie de composant : ce que le
-  // catalogue connaît, plus ce qui est déjà saisi dans la base.
-  const parCategorie = {};
-  Object.keys(CATEGORIES_COMPOSANT).forEach(function (cat) {
-    parCategorie[cat] = { fonction: new Set(), norme: new Set(), reference: new Set() };
-  });
-  Store.catalogue.forEach(function (entree) {
-    const c = composantDepuisCatalogue(entree);
-    const cible = parCategorie[c.categorie] || parCategorie.composant;
-    if (c.fonction) cible.fonction.add(c.fonction);
-    if (c.norme) cible.norme.add(c.norme);
-    if (c.reference) cible.reference.add(c.reference);
-  });
-  champsComposants().forEach(function (ch) {
-    const cible = parCategorie[ch.categorie] || parCategorie.composant;
-    const objets = ch.portee === 'boite'
-      ? Store.boites
-      : Store.nomenclature.filter(function (n) { return typeDe(n).cle === ch.portee; });
-    objets.forEach(function (o) {
-      listeComposants(o[ch.cle]).forEach(function (c) {
-        if (c.fonction) cible.fonction.add(c.fonction);
-        if (c.norme) cible.norme.add(c.norme);
-        if (c.reference) cible.reference.add(c.reference);
-      });
-    });
-  });
-  definirHtml('listesComposants', Object.keys(parCategorie).map(function (cat) {
-    return ['fonction', 'norme', 'reference'].map(function (niveau) {
-      return '<datalist id="list-' + niveau + '-' + cat + '">' +
-             optionsHtml(Array.from(parCategorie[cat][niveau]).sort()) + '</datalist>';
-    }).join('');
-  }).join(''));
+  // Ce qui va avec quoi : une norme de colonnette n'a rien à proposer sous
+  // un bouton poussoir. L'index est reconstruit à chaque rafraîchissement.
+  construireIndexComposants();
 }
 
 // ------------------------------------------------------------
@@ -260,37 +227,31 @@ enregistrerActions({
     rendreInterface();
   },
 
+  'voir-standardisation': function () {
+    Store.vueMode = Store.vueMode === 'standardisation' ? 'boites' : 'standardisation';
+    enregistrerReglages();
+    rendreInterface();
+  },
+
   'ouvrir-doublons': function () {
     const vue = calculerVue();
     const r = compterDoublonsProbables(vue.aAfficher);
     definirTexte('doublonsSous', r.nombre === null
       ? 'Trop de pièces pour un balayage complet.'
-      : r.nombre + ' paire(s) au-dessus de ' + SEUIL_DOUBLON + ' %, selon vos critères courants.');
+      : r.nombre + ' paire(s) au-dessus de ' + SEUIL_DOUBLON + ' %, selon vos critères courants. ' +
+        'Deux PN différents pour la même chose, c\'est deux pièces à approvisionner, ' +
+        'qualifier et stocker au lieu d\'une.');
 
     definirHtml('doublonsCorps', (r.paires && r.paires.length)
-      ? r.paires.map(function (p) {
-          return '<div class="doublon">' +
-            '<div class="doublon-piece">' +
-              '<div class="doublon-pn">' + esc(txt(p.a['PN du type'])) + '</div>' +
-              '<button type="button" class="doublon-boite btn-lien"' +
-                dataAttrs({ action: 'ouvrir-fiche-depuis-doublons', pn: p.a[CLE_PN()] }) + '>' +
-                esc(txt(p.a[CLE_PN()])) + '</button>' +
-            '</div>' +
-            '<span class="doublon-lien" aria-hidden="true">↔</span>' +
-            '<div class="doublon-piece">' +
-              '<div class="doublon-pn">' + esc(txt(p.b['PN du type'])) + '</div>' +
-              '<button type="button" class="doublon-boite btn-lien"' +
-                dataAttrs({ action: 'ouvrir-fiche-depuis-doublons', pn: p.b[CLE_PN()] }) + '>' +
-                esc(txt(p.b[CLE_PN()])) + '</button>' +
-            '</div>' +
-            '<span class="score ' + (p.score >= 95 ? 'score-fort' : 'score-moyen') + '">' +
-              '<b>' + p.score + '<small>%</small></b></span>' +
-          '</div>';
-        }).join('')
+      ? r.paires.map(doublonHtml).join('')
       : '<div class="etat-vide"><p>Aucun doublon probable.</p>' +
         '<p class="etat-vide-aide">Deux pièces de même type, de PN différents, ' +
         'doivent dépasser ' + SEUIL_DOUBLON + ' % pour apparaître ici.</p></div>');
     ouvrirModal('doublonsModal');
+  },
+  'comparer-depuis-doublons': function (d) {
+    fermerModal('doublonsModal');
+    afficherEquivalencesNom(d.id);
   },
   'ouvrir-fiche-depuis-doublons': function (d) {
     fermerModal('doublonsModal');
@@ -690,6 +651,16 @@ document.addEventListener('DOMContentLoaded', function () {
       const bouton = bloc && bloc.querySelector('[data-action="ajouter-composant"]');
       if (bouton) bouton.click();
     }
+  });
+
+  // Les trois niveaux d'un composant se resserrent l'un l'autre : choisir
+  // « Bouton poussoir » doit retirer de la liste Norme celles qui n'en sont
+  // pas. Sans cela on propose des normes de colonnette sous un bouton.
+  document.addEventListener('input', function (e) {
+    const el = e.target;
+    if (!el.classList || !el.classList.contains('saisie-composant')) return;
+    if (el.dataset.niveau === 'reference') return;     // rien en aval
+    resserrerBloc(el.closest('.ajout-composant'), el.dataset.categorie, el.dataset.bloc);
   });
 
   // Curseurs de pondération : recalcul immédiat, c'est tout l'intérêt.

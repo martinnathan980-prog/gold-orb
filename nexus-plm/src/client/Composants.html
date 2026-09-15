@@ -187,4 +187,98 @@ function apparierComposants(listeSource, listeCible) {
     nbSource: listeSource.length
   };
 }
+/**
+ * Ce qui va avec quoi, par catégorie : fonction → normes → références.
+ * Rempli par remplirListesDeSuggestion(), lu par les champs de saisie pour
+ * ne proposer sous « Bouton poussoir » que les normes de boutons poussoirs.
+ */
+const INDEX_COMPOSANTS = {};
+
+/**
+ * Les trois listes à proposer dans un bloc de saisie, compte tenu de ce qui
+ * est déjà tapé : sous « Bouton poussoir », on ne propose que les normes de
+ * boutons poussoirs, et sous une norme donnée, que ses références.
+ * Une fonction encore inconnue ne restreint rien : on n'empêche pas de saisir
+ * un composant qui n'existe pas encore dans la base.
+ */
+function suggestionsComposant(categorie, fonction, norme) {
+  const par = INDEX_COMPOSANTS[categorie] || INDEX_COMPOSANTS.composant || new Map();
+  const fonctions = new Set(), normes = new Set(), references = new Set();
+
+  const cleF = normaliserTexte(fonction);
+  const cleN = normaliserTexte(norme);
+  const fonctionConnue = !!cleF && par.has(cleF);
+
+  par.forEach(function (bloc, cle) {
+    fonctions.add(bloc.libelle);
+    if (fonctionConnue && cle !== cleF) return;
+    const normeConnue = !!cleN && bloc.normes.has(cleN);
+    bloc.normes.forEach(function (n, cleNorme) {
+      if (n.norme) normes.add(n.norme);
+      if (normeConnue && cleNorme !== cleN) return;
+      n.references.forEach(function (r) { references.add(r); });
+    });
+  });
+
+  return { fonctions: trierFr(fonctions), normes: trierFr(normes),
+           references: trierFr(references), restreint: fonctionConnue };
+}
+
+/**
+ * Réécrit les listes Norme et Référence d'un bloc d'après ce qui y est déjà
+ * tapé. Une valeur devenue impossible n'est pas effacée : on ne reprend pas
+ * la main sur une saisie en cours, on cesse seulement de la suggérer.
+ */
+function resserrerBloc(bloc, categorie, uid) {
+  if (!bloc || !uid) return;
+  const lire = function (niveau) {
+    const c = bloc.querySelector('.saisie-composant[data-niveau="' + niveau + '"]');
+    return c ? c.value.trim() : '';
+  };
+  const sug = suggestionsComposant(categorie || 'composant', lire('fonction'), lire('norme'));
+  definirHtml(uid + '-norme', optionsHtml(sug.normes));
+  definirHtml(uid + '-reference', optionsHtml(sug.references));
+}
+
+function trierFr(ensemble) {
+  return Array.from(ensemble).sort(function (a, b) { return String(a).localeCompare(String(b), 'fr'); });
+}
+
+/**
+ * (Re)construit l'index depuis le catalogue et tout ce qui est déjà saisi.
+ * Le catalogue d'abord : il porte les libellés de référence.
+ */
+function construireIndexComposants() {
+  Object.keys(INDEX_COMPOSANTS).forEach(function (k) { delete INDEX_COMPOSANTS[k]; });
+  Object.keys(CATEGORIES_COMPOSANT).forEach(function (cat) {
+    INDEX_COMPOSANTS[cat] = new Map();
+  });
+
+  const relier = function (cat, c) {
+    if (!c.fonction) return;
+    const par = INDEX_COMPOSANTS[cat] || INDEX_COMPOSANTS.composant;
+    const cle = normaliserTexte(c.fonction);
+    if (!par.has(cle)) par.set(cle, { libelle: c.fonction, normes: new Map() });
+    const normes = par.get(cle).normes;
+    const cleNorme = normaliserTexte(c.norme);
+    if (!normes.has(cleNorme)) normes.set(cleNorme, { norme: c.norme || '', references: new Set() });
+    if (c.reference) normes.get(cleNorme).references.add(c.reference);
+  };
+
+  (Store.catalogue || []).forEach(function (entree) {
+    const c = composantDepuisCatalogue(entree);
+    relier(INDEX_COMPOSANTS[c.categorie] ? c.categorie : 'composant', c);
+  });
+  champsComposants().forEach(function (ch) {
+    const cat = INDEX_COMPOSANTS[ch.categorie] ? ch.categorie : 'composant';
+    const objets = ch.portee === 'boite'
+      ? Store.boites
+      : (Store.nomenclature || []).filter(function (n) { return typeDe(n).cle === ch.portee; });
+    objets.forEach(function (o) {
+      listeComposants(o[ch.cle]).forEach(function (c) { relier(cat, c); });
+    });
+  });
+  return INDEX_COMPOSANTS;
+}
+
 </script>

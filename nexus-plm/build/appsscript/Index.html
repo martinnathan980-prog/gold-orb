@@ -172,7 +172,6 @@ button { font: inherit; cursor: pointer; }
 }
 button.indicateur:hover { background: var(--sol-2); }
 button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-underline-offset: 4px; }
-.indicateur-fixe { cursor: default; }
 .indicateur.actif { background: var(--marque-voile); }
 .indicateur.actif .indicateur-libelle { color: var(--marque); }
 .indicateur-libelle {
@@ -186,6 +185,9 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .indicateur-detail { font-size: 11.5px; color: var(--encre-3); text-align: center; }
 .indicateur-valide .indicateur-valeur { color: var(--vert); }
 .indicateur-alerte .indicateur-valeur { color: var(--ambre); }
+.indicateur-standard .indicateur-valeur { color: var(--marque); }
+.indicateur[aria-pressed="true"] { background: var(--marque-voile); }
+.indicateur[aria-pressed="true"] .indicateur-libelle { color: var(--marque); }
 .indicateurs-portee {
   text-align: center; font-size: 10.5px; color: var(--encre-3);
   letter-spacing: .08em; text-transform: uppercase; margin-top: var(--e-2);
@@ -851,14 +853,35 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .palier-plus { background: var(--surface); border-color: var(--trait); border-style: dashed; color: var(--encre-3); }
 
 /* ---------------- doublons ---------------- */
-.doublon { display: grid; grid-template-columns: 1fr auto 1fr auto; gap: var(--e-3); align-items: center;
-  background: var(--surface); border: 1px solid var(--trait); border-radius: var(--r-m);
-  padding: var(--e-3) var(--e-4); margin-bottom: var(--e-2); }
+.doublon { background: var(--surface); border: 1px solid var(--trait); border-radius: var(--r-m);
+  padding: var(--e-3) var(--e-4); margin-bottom: var(--e-3); }
+.doublon-tete { display: grid; grid-template-columns: 1fr auto 1fr auto; gap: var(--e-3);
+  align-items: center; }
 .doublon-piece { min-width: 0; }
 .doublon-pn { font-family: var(--police-data); font-size: 13px; font-weight: 600; word-break: break-all; }
 .doublon-boite { font-size: 11.5px; color: var(--encre-3); }
 .doublon-lien { color: var(--encre-3); font-size: 16px; }
-@media (max-width: 620px) { .doublon { grid-template-columns: 1fr; } .doublon-lien { display: none; } }
+
+/* Le score dit qu'il faut regarder ; le detail dit quoi regarder. */
+.doublon-detail { margin-top: var(--e-3); padding-top: var(--e-3);
+  border-top: 1px solid var(--trait); display: flex; flex-wrap: wrap; gap: var(--e-2) var(--e-5); }
+.doublon-groupe { flex: 1 1 240px; min-width: 0; }
+.doublon-groupe-titre { display: block; font-size: 10px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--encre-3); font-weight: 600; margin-bottom: 3px; }
+.doublon-rien { color: var(--vert); }
+.doublon-critere { display: flex; align-items: baseline; gap: var(--e-2);
+  font-size: 12px; padding: 1px 0; }
+.doublon-crit-nom { color: var(--encre-2); flex: none; }
+.doublon-crit-nom::before { content: ""; display: inline-block; width: 6px; height: 6px;
+  border-radius: 50%; margin-right: 6px; background: var(--trait-fort); vertical-align: middle; }
+.doublon-egal .doublon-crit-nom::before { background: var(--vert); }
+.doublon-partiel .doublon-crit-nom::before { background: var(--ambre); }
+.doublon-different .doublon-crit-nom::before { background: var(--rouge); }
+.doublon-crit-val { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-3);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.doublon-muets { flex: 1 1 100%; font-size: 11.5px; color: var(--encre-3); margin: 0; }
+.doublon-actions { margin-top: var(--e-2); }
+@media (max-width: 620px) { .doublon-tete { grid-template-columns: 1fr; } .doublon-lien { display: none; } }
 
 /* ---------------- états vides ---------------- */
 .etat-vide { grid-column: 1 / -1; text-align: center; padding: var(--e-6) var(--e-4);
@@ -947,7 +970,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
     <datalist id="list-Type"></datalist>
     <datalist id="list-MotsCles"></datalist>
     <datalist id="datalistStds"></datalist>
-    <div id="listesComposants" hidden></div>
 
     <header class="entete">
       <div class="enveloppe entete-corps">
@@ -969,11 +991,13 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
             <span class="indicateur-valeur" id="kpiVal">–</span>
             <span class="indicateur-detail" id="kpiValDetail"></span>
           </button>
-          <div class="indicateur indicateur-fixe" id="indRefs">
-            <span class="indicateur-libelle">Références uniques</span>
-            <span class="indicateur-valeur" id="kpiNoms">–</span>
-            <span class="indicateur-detail" id="kpiNomsDetail">boîtes et pièces</span>
-          </div>
+          <button type="button" class="indicateur indicateur-standard" id="indStandard"
+                  data-action="voir-standardisation"
+                  title="Voir les familles de composants servies par plusieurs références">
+            <span class="indicateur-libelle">À standardiser</span>
+            <span class="indicateur-valeur" id="kpiStandard">–</span>
+            <span class="indicateur-detail" id="kpiStandardDetail"></span>
+          </button>
           <button type="button" class="indicateur indicateur-reemploi" id="indReutil"
                   data-action="filtrer-reutilise" aria-pressed="false"
                   title="Ne montrer que les boîtes qui partagent une pièce">
@@ -1391,6 +1415,11 @@ function definirHtml(id, html) {
   if (noeud) noeud.innerHTML = html;
 }
 
+/** Les <option> d'une liste de suggestion. */
+function optionsHtml(valeurs) {
+  return valeurs.map(function (v) { return '<option value="' + esc(v) + '"></option>'; }).join('');
+}
+
 function definirTexte(id, texte) {
   const noeud = parId(id);
   if (noeud) noeud.textContent = texte;
@@ -1596,6 +1625,100 @@ function apparierComposants(listeSource, listeCible) {
     nbSource: listeSource.length
   };
 }
+/**
+ * Ce qui va avec quoi, par catégorie : fonction → normes → références.
+ * Rempli par remplirListesDeSuggestion(), lu par les champs de saisie pour
+ * ne proposer sous « Bouton poussoir » que les normes de boutons poussoirs.
+ */
+const INDEX_COMPOSANTS = {};
+
+/**
+ * Les trois listes à proposer dans un bloc de saisie, compte tenu de ce qui
+ * est déjà tapé : sous « Bouton poussoir », on ne propose que les normes de
+ * boutons poussoirs, et sous une norme donnée, que ses références.
+ * Une fonction encore inconnue ne restreint rien : on n'empêche pas de saisir
+ * un composant qui n'existe pas encore dans la base.
+ */
+function suggestionsComposant(categorie, fonction, norme) {
+  const par = INDEX_COMPOSANTS[categorie] || INDEX_COMPOSANTS.composant || new Map();
+  const fonctions = new Set(), normes = new Set(), references = new Set();
+
+  const cleF = normaliserTexte(fonction);
+  const cleN = normaliserTexte(norme);
+  const fonctionConnue = !!cleF && par.has(cleF);
+
+  par.forEach(function (bloc, cle) {
+    fonctions.add(bloc.libelle);
+    if (fonctionConnue && cle !== cleF) return;
+    const normeConnue = !!cleN && bloc.normes.has(cleN);
+    bloc.normes.forEach(function (n, cleNorme) {
+      if (n.norme) normes.add(n.norme);
+      if (normeConnue && cleNorme !== cleN) return;
+      n.references.forEach(function (r) { references.add(r); });
+    });
+  });
+
+  return { fonctions: trierFr(fonctions), normes: trierFr(normes),
+           references: trierFr(references), restreint: fonctionConnue };
+}
+
+/**
+ * Réécrit les listes Norme et Référence d'un bloc d'après ce qui y est déjà
+ * tapé. Une valeur devenue impossible n'est pas effacée : on ne reprend pas
+ * la main sur une saisie en cours, on cesse seulement de la suggérer.
+ */
+function resserrerBloc(bloc, categorie, uid) {
+  if (!bloc || !uid) return;
+  const lire = function (niveau) {
+    const c = bloc.querySelector('.saisie-composant[data-niveau="' + niveau + '"]');
+    return c ? c.value.trim() : '';
+  };
+  const sug = suggestionsComposant(categorie || 'composant', lire('fonction'), lire('norme'));
+  definirHtml(uid + '-norme', optionsHtml(sug.normes));
+  definirHtml(uid + '-reference', optionsHtml(sug.references));
+}
+
+function trierFr(ensemble) {
+  return Array.from(ensemble).sort(function (a, b) { return String(a).localeCompare(String(b), 'fr'); });
+}
+
+/**
+ * (Re)construit l'index depuis le catalogue et tout ce qui est déjà saisi.
+ * Le catalogue d'abord : il porte les libellés de référence.
+ */
+function construireIndexComposants() {
+  Object.keys(INDEX_COMPOSANTS).forEach(function (k) { delete INDEX_COMPOSANTS[k]; });
+  Object.keys(CATEGORIES_COMPOSANT).forEach(function (cat) {
+    INDEX_COMPOSANTS[cat] = new Map();
+  });
+
+  const relier = function (cat, c) {
+    if (!c.fonction) return;
+    const par = INDEX_COMPOSANTS[cat] || INDEX_COMPOSANTS.composant;
+    const cle = normaliserTexte(c.fonction);
+    if (!par.has(cle)) par.set(cle, { libelle: c.fonction, normes: new Map() });
+    const normes = par.get(cle).normes;
+    const cleNorme = normaliserTexte(c.norme);
+    if (!normes.has(cleNorme)) normes.set(cleNorme, { norme: c.norme || '', references: new Set() });
+    if (c.reference) normes.get(cleNorme).references.add(c.reference);
+  };
+
+  (Store.catalogue || []).forEach(function (entree) {
+    const c = composantDepuisCatalogue(entree);
+    relier(INDEX_COMPOSANTS[c.categorie] ? c.categorie : 'composant', c);
+  });
+  champsComposants().forEach(function (ch) {
+    const cat = INDEX_COMPOSANTS[ch.categorie] ? ch.categorie : 'composant';
+    const objets = ch.portee === 'boite'
+      ? Store.boites
+      : (Store.nomenclature || []).filter(function (n) { return typeDe(n).cle === ch.portee; });
+    objets.forEach(function (o) {
+      listeComposants(o[ch.cle]).forEach(function (c) { relier(cat, c); });
+    });
+  });
+  return INDEX_COMPOSANTS;
+}
+
 </script>
 
     <!-- client/Types.html -->
@@ -1835,7 +1958,9 @@ function porteeAvecComposants(portee) {
 function normaliserTexte(valeur) {
   return String(valeur === null || valeur === undefined ? '' : valeur)
     .normalize('NFD').replace(/[̀-ͯ]/g, '')   // accents
-    .toLowerCase().trim();
+    .toLowerCase()
+    .replace(/\s+/g, ' ')                   // « Bouton  poussoir » = « Bouton poussoir »
+    .trim();
 }
 
 function typeDe(ligne) {
@@ -3393,10 +3518,20 @@ function rendreKpi(kpi, vue) {
   definirTexte('kpiBoitesDetail', filtre ? 'cliquer pour tout revoir' : 'toute la base');
   definirTexte('kpiVal', kpi.nbValides + ' / ' + kpi.nbBoites);
   definirTexte('kpiValDetail', kpi.pctValides + ' % validées');
-  definirTexte('kpiNoms', String(kpi.refsUniques));
-  definirTexte('kpiNomsDetail', kpi.nbPieces + ' pièces distinctes');
+  // Compter des PN n'apprenait rien, et melangeait deux niveaux dans un seul
+  // nombre. Ce qui compte, c'est ce qu'il reste a ranger.
+  const dispersees = opportunitesStandardisation(vue ? vue.aAfficher : []);
+  definirTexte('kpiStandard', String(dispersees.length));
+  definirTexte('kpiStandardDetail', dispersees.length
+    ? 'familles à plusieurs références'
+    : 'une norme, une référence partout');
+  const ind = parId('indStandard');
+  if (ind) ind.setAttribute('aria-pressed', String(Store.vueMode === 'standardisation'));
+
   definirTexte('kpiReutil', String(kpi.reutilisees));
-  definirTexte('kpiReutilDetail', kpi.pctReutilisees + ' % des pièces');
+  definirTexte('kpiReutilDetail', kpi.reutilisees
+    ? 'montées dans plusieurs boîtes'
+    : 'aucune pièce partagée');
 
   // L'indicateur dit s'il filtre en ce moment.
   const marquer = function (id, actif) {
@@ -3563,6 +3698,8 @@ function blocMultiHtml(champ, valeurs, editable, actionAjout, actionSuppr, donne
  * Toujours éditable, comme toute liste : on ajoute et on retire sans passer
  * la fiche en mode édition.
  */
+let compteurBlocComposants = 0;
+
 function blocComposantsHtml(champ, valeur, cible) {
   const composants = listeComposants(valeur);
   const categorie = champ.categorie || 'composant';
@@ -3584,11 +3721,21 @@ function blocComposantsHtml(champ, valeur, cible) {
       }).join('')
     : '<p class="composants-vide">Aucun composant. Ajoutez-en un ci-dessous, ou depuis le catalogue.</p>';
 
+  // Chaque bloc porte ses propres listes de suggestion : elles se resserrent
+  // au fur et a mesure de la saisie, et deux blocs ouverts ne se genent pas.
+  const uid = 'cmp' + (++compteurBlocComposants);
   const saisie = function (niveau, texte) {
     return '<input type="text" class="saisie-composant" data-niveau="' + niveau + '"' +
-           dataAttrs(donnees) + ' list="list-' + niveau + '-' + esc(categorie) + '"' +
+           dataAttrs(Object.assign({ bloc: uid, categorie: categorie }, donnees)) +
+           ' list="' + uid + '-' + niveau + '"' +
            ' placeholder="' + esc(texte) + '" aria-label="' + esc(texte) + '">';
   };
+  const sug = suggestionsComposant(categorie, '', '');
+  const listes = '<span class="listes-bloc" data-bloc="' + uid + '">' +
+    '<datalist id="' + uid + '-fonction">' + optionsHtml(sug.fonctions) + '</datalist>' +
+    '<datalist id="' + uid + '-norme">' + optionsHtml(sug.normes) + '</datalist>' +
+    '<datalist id="' + uid + '-reference">' + optionsHtml(sug.references) + '</datalist>' +
+  '</span>';
 
   return '<div class="ligne ligne-bloc">' +
     '<div class="ligne-cle">' + esc(champ.libelle) +
@@ -3598,7 +3745,7 @@ function blocComposantsHtml(champ, valeur, cible) {
         '<div class="composants-entete"><span>Fonction</span><span>Norme</span><span>Référence</span><span></span></div>' +
         lignes +
       '</div>' +
-      '<div class="ajout-composant">' +
+      '<div class="ajout-composant">' + listes +
         saisie('fonction', 'Fonction') + saisie('norme', 'Norme') + saisie('reference', 'Référence') +
         '<button type="button" class="btn-mini"' +
           dataAttrs(Object.assign({ action: 'ajouter-composant' }, donnees)) + '>Ajouter</button>' +
@@ -3623,7 +3770,8 @@ function blocBoiteHtml(boite) {
   const actions = edition
     ? boutonHtml('sauver-boite', {}, 'Enregistrer', 'btn-valider') +
       boutonHtml('annuler-boite', {}, 'Annuler', 'btn-neutre')
-    : boutonHtml('editer-boite', {}, 'Éditer', 'btn-neutre') +
+    : boutonHtml('comparer-boite', { pn: pn }, 'Équivalences', 'btn-accent') +
+      boutonHtml('editer-boite', {}, 'Éditer', 'btn-neutre') +
       boutonHtml('supprimer-boite', { pn: pn }, 'Supprimer', 'btn-danger');
 
   let html = '<section class="bloc bloc-general">' +
@@ -4132,6 +4280,69 @@ function rafraichirComparaison() {
   if (c.sorte === 'boite') rendreEquivalencesBoite(c.cle);
   else rendreEquivalencesNom(c.cle);
 }
+/**
+ * Une paire de doublons probables, avec CE QUI LES SÉPARE. Le PN et un score
+ * ne disent pas s'il faut agir : ce qui décide, c'est de voir que tout
+ * concorde sauf la longueur, ou au contraire que rien ne les distingue.
+ */
+function doublonHtml(p) {
+  const detail = comparerSousEnsembles(p.a, p.b);
+  const cote = function (n) {
+    return '<div class="doublon-piece">' +
+      '<div class="doublon-pn">' + esc(txt(n['PN du type'])) + '</div>' +
+      '<button type="button" class="doublon-boite btn-lien"' +
+        dataAttrs({ action: 'ouvrir-fiche-depuis-doublons', pn: n[CLE_PN()] }) + '>' +
+        esc(txt(n[CLE_PN()])) + '</button>' +
+    '</div>';
+  };
+
+  const ligne = function (c) {
+    const etat = c.etat === ETAT.IDENTIQUE ? 'egal'
+               : c.etat === ETAT.PARTIEL ? 'partiel'
+               : c.etat === ETAT.INDISPONIBLE ? 'absent' : 'different';
+    return '<div class="doublon-critere doublon-' + etat + '">' +
+      '<span class="doublon-crit-nom">' + esc(c.libelle) + '</span>' +
+      '<span class="doublon-crit-val">' + esc(c.message || '—') + '</span>' +
+    '</div>';
+  };
+
+  const separent = detail.criteres.filter(function (c) {
+    return c.etat === ETAT.DIFFERENT || c.etat === ETAT.PARTIEL;
+  });
+  const concordent = detail.criteres.filter(function (c) { return c.etat === ETAT.IDENTIQUE; });
+  const muets = detail.criteres.filter(function (c) { return c.etat === ETAT.INDISPONIBLE; });
+
+  return '<div class="doublon">' +
+    '<div class="doublon-tete">' +
+      cote(p.a) +
+      '<span class="doublon-lien" aria-hidden="true">↔</span>' +
+      cote(p.b) +
+      '<span class="score ' + (p.score >= 95 ? 'score-fort' : 'score-moyen') + '">' +
+        '<b>' + p.score + '<small>%</small></b></span>' +
+    '</div>' +
+    '<div class="doublon-detail">' +
+      (separent.length
+        ? '<div class="doublon-groupe"><span class="doublon-groupe-titre">Ce qui les sépare</span>' +
+            separent.map(ligne).join('') + '</div>'
+        : '<div class="doublon-groupe"><span class="doublon-groupe-titre doublon-rien">' +
+            'Rien ne les sépare sur les critères retenus</span></div>') +
+      (concordent.length
+        ? '<div class="doublon-groupe"><span class="doublon-groupe-titre">Ce qui concorde</span>' +
+            concordent.map(ligne).join('') + '</div>'
+        : '') +
+      (muets.length
+        ? '<p class="doublon-muets">Non comparé, faute de donnée : ' +
+            esc(muets.map(function (c) { return c.libelle; }).join(', ')) + '</p>'
+        : '') +
+    '</div>' +
+    '<div class="doublon-actions">' +
+      '<button type="button" class="btn-lien"' +
+        dataAttrs({ action: 'comparer-depuis-doublons', id: p.a[CLE_NOM()] }) +
+        '>Comparer en détail, avec la pondération</button>' +
+    '</div>' +
+  '</div>';
+}
+
 </script>
 
     <!-- client/Reglages.html -->
@@ -4563,10 +4774,6 @@ function chargerCatalogue() {
     .catch(function (e) { signalerErreur(e, 'chargement du catalogue'); });
 }
 
-function optionsHtml(valeurs) {
-  return valeurs.map(function (v) { return '<option value="' + esc(v) + '"></option>'; }).join('');
-}
-
 function remplirListesDeSuggestion() {
   definirHtml('datalistStds', optionsHtml(tousLesComposants()));
   definirHtml('list-MotsCles', optionsHtml(tousLesMotsCles()));
@@ -4580,38 +4787,9 @@ function remplirListesDeSuggestion() {
            esc(p) + '">' + esc(p) + '</label>';
   }).join(''));
 
-  // Suggestions par niveau et par catégorie de composant : ce que le
-  // catalogue connaît, plus ce qui est déjà saisi dans la base.
-  const parCategorie = {};
-  Object.keys(CATEGORIES_COMPOSANT).forEach(function (cat) {
-    parCategorie[cat] = { fonction: new Set(), norme: new Set(), reference: new Set() };
-  });
-  Store.catalogue.forEach(function (entree) {
-    const c = composantDepuisCatalogue(entree);
-    const cible = parCategorie[c.categorie] || parCategorie.composant;
-    if (c.fonction) cible.fonction.add(c.fonction);
-    if (c.norme) cible.norme.add(c.norme);
-    if (c.reference) cible.reference.add(c.reference);
-  });
-  champsComposants().forEach(function (ch) {
-    const cible = parCategorie[ch.categorie] || parCategorie.composant;
-    const objets = ch.portee === 'boite'
-      ? Store.boites
-      : Store.nomenclature.filter(function (n) { return typeDe(n).cle === ch.portee; });
-    objets.forEach(function (o) {
-      listeComposants(o[ch.cle]).forEach(function (c) {
-        if (c.fonction) cible.fonction.add(c.fonction);
-        if (c.norme) cible.norme.add(c.norme);
-        if (c.reference) cible.reference.add(c.reference);
-      });
-    });
-  });
-  definirHtml('listesComposants', Object.keys(parCategorie).map(function (cat) {
-    return ['fonction', 'norme', 'reference'].map(function (niveau) {
-      return '<datalist id="list-' + niveau + '-' + cat + '">' +
-             optionsHtml(Array.from(parCategorie[cat][niveau]).sort()) + '</datalist>';
-    }).join('');
-  }).join(''));
+  // Ce qui va avec quoi : une norme de colonnette n'a rien à proposer sous
+  // un bouton poussoir. L'index est reconstruit à chaque rafraîchissement.
+  construireIndexComposants();
 }
 
 // ------------------------------------------------------------
@@ -4753,37 +4931,31 @@ enregistrerActions({
     rendreInterface();
   },
 
+  'voir-standardisation': function () {
+    Store.vueMode = Store.vueMode === 'standardisation' ? 'boites' : 'standardisation';
+    enregistrerReglages();
+    rendreInterface();
+  },
+
   'ouvrir-doublons': function () {
     const vue = calculerVue();
     const r = compterDoublonsProbables(vue.aAfficher);
     definirTexte('doublonsSous', r.nombre === null
       ? 'Trop de pièces pour un balayage complet.'
-      : r.nombre + ' paire(s) au-dessus de ' + SEUIL_DOUBLON + ' %, selon vos critères courants.');
+      : r.nombre + ' paire(s) au-dessus de ' + SEUIL_DOUBLON + ' %, selon vos critères courants. ' +
+        'Deux PN différents pour la même chose, c\'est deux pièces à approvisionner, ' +
+        'qualifier et stocker au lieu d\'une.');
 
     definirHtml('doublonsCorps', (r.paires && r.paires.length)
-      ? r.paires.map(function (p) {
-          return '<div class="doublon">' +
-            '<div class="doublon-piece">' +
-              '<div class="doublon-pn">' + esc(txt(p.a['PN du type'])) + '</div>' +
-              '<button type="button" class="doublon-boite btn-lien"' +
-                dataAttrs({ action: 'ouvrir-fiche-depuis-doublons', pn: p.a[CLE_PN()] }) + '>' +
-                esc(txt(p.a[CLE_PN()])) + '</button>' +
-            '</div>' +
-            '<span class="doublon-lien" aria-hidden="true">↔</span>' +
-            '<div class="doublon-piece">' +
-              '<div class="doublon-pn">' + esc(txt(p.b['PN du type'])) + '</div>' +
-              '<button type="button" class="doublon-boite btn-lien"' +
-                dataAttrs({ action: 'ouvrir-fiche-depuis-doublons', pn: p.b[CLE_PN()] }) + '>' +
-                esc(txt(p.b[CLE_PN()])) + '</button>' +
-            '</div>' +
-            '<span class="score ' + (p.score >= 95 ? 'score-fort' : 'score-moyen') + '">' +
-              '<b>' + p.score + '<small>%</small></b></span>' +
-          '</div>';
-        }).join('')
+      ? r.paires.map(doublonHtml).join('')
       : '<div class="etat-vide"><p>Aucun doublon probable.</p>' +
         '<p class="etat-vide-aide">Deux pièces de même type, de PN différents, ' +
         'doivent dépasser ' + SEUIL_DOUBLON + ' % pour apparaître ici.</p></div>');
     ouvrirModal('doublonsModal');
+  },
+  'comparer-depuis-doublons': function (d) {
+    fermerModal('doublonsModal');
+    afficherEquivalencesNom(d.id);
   },
   'ouvrir-fiche-depuis-doublons': function (d) {
     fermerModal('doublonsModal');
@@ -5183,6 +5355,16 @@ document.addEventListener('DOMContentLoaded', function () {
       const bouton = bloc && bloc.querySelector('[data-action="ajouter-composant"]');
       if (bouton) bouton.click();
     }
+  });
+
+  // Les trois niveaux d'un composant se resserrent l'un l'autre : choisir
+  // « Bouton poussoir » doit retirer de la liste Norme celles qui n'en sont
+  // pas. Sans cela on propose des normes de colonnette sous un bouton.
+  document.addEventListener('input', function (e) {
+    const el = e.target;
+    if (!el.classList || !el.classList.contains('saisie-composant')) return;
+    if (el.dataset.niveau === 'reference') return;     // rien en aval
+    resserrerBloc(el.closest('.ajout-composant'), el.dataset.categorie, el.dataset.bloc);
   });
 
   // Curseurs de pondération : recalcul immédiat, c'est tout l'intérêt.

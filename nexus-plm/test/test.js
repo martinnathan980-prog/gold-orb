@@ -1056,6 +1056,55 @@ vrai('le statut', srcIndex.indexOf('newBoiteStatut') !== -1);
 vrai('le niveau de qualification', srcIndex.indexOf('newBoiteNiveau') !== -1);
 vrai('et l\'URL de la photo', srcIndex.indexOf('newBoiteImage') !== -1);
 vrai('indicateur de réutilisation', srcIndex.indexOf('kpiReutil') !== -1);
+// « Références uniques » additionnait des PN de boîtes et des PN de
+// sous-ensembles, et n'était même pas cliquable : remplacé par ce qu'il
+// reste à ranger, qui mène à la vue correspondante.
+faux('plus d\'indicateur « Références uniques »', /Références uniques/.test(srcIndex));
+faux('ni le compteur qui l\'alimentait', /kpiNoms/.test(srcIndex));
+const lireSrc = function (f) { return fs.readFileSync(path.join(H.RACINE, f), 'utf8'); };
+const grilleSrc = lireSrc('client/ViewGrid.html');
+const ficheSrc = lireSrc('client/ViewFiche.html');
+const cssSrc = lireSrc('client/Styles.html');
+faux('ni dans le rendu', grilleSrc.indexOf('kpiNoms') !== -1);
+faux('plus d\'indicateur inerte au milieu des boutons', /indicateur-fixe/.test(srcIndex));
+vrai('un indicateur « À standardiser » le remplace', srcIndex.indexOf('kpiStandard') !== -1);
+vrai('et il est cliquable', declarees.has('voir-standardisation'));
+vrai('il mène à la troisième vue',
+     /'voir-standardisation':[\s\S]{0,200}: 'standardisation'/
+       .test(sansCommentaires(lireSrc('client/Main.html'))));
+eq('les cinq indicateurs sont tous des boutons',
+   (srcIndex.match(/<button[^>]*class="indicateur[ "]/g) || []).length, 5);
+faux('aucun n\'est un bloc inerte', /<div[^>]*class="indicateur[ "]/.test(srcIndex));
+// Le nombre de pièces réutilisées se lisait « 13 % des pièces » : un
+// pourcentage dont personne ne savait de quoi il était le pourcentage.
+faux('plus de pourcentage obscur sous la réutilisation',
+     grilleSrc.indexOf('pctReutilisees') !== -1);
+vrai('on dit ce que c\'est', grilleSrc.indexOf('montées dans plusieurs boîtes') !== -1);
+
+// Les équivalences se lancent depuis la fiche de la boîte, comme pour un
+// sous-ensemble : il fallait refermer la fiche et retrouver la carte.
+vrai('« Équivalences » existe dans la fiche de la boîte',
+     /boutonHtml\('comparer-boite'[\s\S]{0,80}Équivalences/.test(ficheSrc));
+vrai('et toujours sur la carte', grilleSrc.indexOf("action: 'comparer-boite'") !== -1);
+
+// Un doublon probable se compare pour de bon, pondération comprise.
+vrai('on peut ouvrir la comparaison depuis la liste des doublons',
+     declarees.has('comparer-depuis-doublons'));
+vrai('le détail d\'une paire est rendu par la vue de comparaison',
+     fs.readFileSync(path.join(H.RACINE, 'client/ViewCompare.html'), 'utf8')
+       .indexOf('function doublonHtml') !== -1);
+vrai('le style du détail existe', /\.doublon-detail \{/.test(cssSrc));
+vrai('les écarts se repèrent à la pastille', /\.doublon-different .doublon-crit-nom::before/.test(cssSrc));
+
+// Les listes de suggestion vivent dans le bloc de saisie, et se resserrent.
+faux('plus de listes globales par catégorie', /listesComposants/.test(srcIndex));
+faux('ni dans le contrôleur', sansCommentaires(lireSrc('client/Main.html')).indexOf('listesComposants') !== -1);
+vrai('chaque bloc porte les siennes', ficheSrc.indexOf('listes-bloc') !== -1);
+vrai('et elles se resserrent à la frappe',
+     /addEventListener\('input'[\s\S]{0,300}resserrerBloc/.test(sansCommentaires(lireSrc('client/Main.html'))));
+vrai('l\'index est construit côté logique, pas côté DOM',
+     fs.readFileSync(path.join(H.RACINE, 'client/Composants.html'), 'utf8')
+       .indexOf('function construireIndexComposants') !== -1);
 vrai('indicateur de doublons probables', srcIndex.indexOf('kpiDoublons') !== -1);
 vrai('les doublons sont consultables', declarees.has('ouvrir-doublons'));
 vrai('on bascule entre boîtes et sous-ensembles', declarees.has('changer-vue'));
@@ -1090,6 +1139,132 @@ faux('plus de duplication de boîte dans la fiche',
 faux('aucun reste de duplication dans la fiche',
      fs.readFileSync(path.join(H.RACINE, 'client/ViewFiche.html'), 'utf8')
        .indexOf('dupliquer-nom') !== -1);
+
+// =====================================================================
+bloc('Une double espace ne fait pas deux composants');
+// =====================================================================
+eq('les espaces internes sont ramenes a un seul',
+   C.normaliserTexte('Bouton  poussoir'), 'bouton poussoir');
+eq('tabulations et retours compris', C.normaliserTexte('Bouton\tpoussoir'), 'bouton poussoir');
+eq('les accents partent toujours', C.normaliserTexte('Équerre'), 'equerre');
+eq('et la casse aussi', C.normaliserTexte('  ÉQUERRE  '), 'equerre');
+
+// Consequence concrete : une saisie relachee ne scinde plus une famille en deux.
+charger(
+  [{ 'PN Global': 'B1', 'Composants': 'Bouton poussoir | ECS 7251 | MS-1' },
+   { 'PN Global': 'B2', 'Composants': 'Bouton  poussoir | ECS 7251 | MS-2' }], []);
+eq('une seule famille, malgre la double espace',
+   C.famillesComposants(C.Store.boites).size, 1);
+eq('et elle est bien vue comme dispersee',
+   C.opportunitesStandardisation(C.Store.boites).length, 1);
+
+// Et deux composants ainsi ecrits se comparent toujours a 100 %.
+const cA = C.listeComposants('Bouton poussoir | ECS 7251 | MS-1')[0];
+const cB = C.listeComposants('Bouton  poussoir | ECS 7251 | MS-1')[0];
+eq('la comparaison ne les separe pas', C.comparerComposants(cA, cB).ratio, 1);
+
+// =====================================================================
+bloc('Saisie guidee : les trois niveaux se resserrent');
+// =====================================================================
+// Sous « Bouton poussoir », proposer une norme de colonnette n'a pas de sens.
+charger(
+  [{ 'PN Global': 'B1',
+     'Composants': 'Bouton poussoir | ECS 7251 | MS24523-22\n' +
+                   'Bouton poussoir | ECS 0763 | MS24523-31\n' +
+                   'Voyant | ECS 4410 | LED-1' }],
+  [structureAvec('S1', 'B1', 'Colonnette | NSA 5512 | COL-M4-20')]);
+C.Store.catalogue = [];
+C.construireIndexComposants();
+
+let sug = C.suggestionsComposant('composant', '', '');
+eq('sans fonction, toutes les fonctions sont proposees',
+   sug.fonctions, ['Bouton poussoir', 'Voyant']);
+eq('et toutes les normes de la categorie', sug.normes, ['ECS 0763', 'ECS 4410', 'ECS 7251']);
+faux('rien n\'est encore restreint', sug.restreint);
+
+sug = C.suggestionsComposant('composant', 'Bouton poussoir', '');
+vrai('une fonction connue restreint', sug.restreint);
+eq('seules ses normes restent', sug.normes, ['ECS 0763', 'ECS 7251']);
+eq('et seules ses references', sug.references, ['MS24523-22', 'MS24523-31']);
+
+sug = C.suggestionsComposant('composant', 'Bouton poussoir', 'ECS 7251');
+eq('la norme choisie ne laisse que sa reference', sug.references, ['MS24523-22']);
+eq('les normes de la fonction restent visibles', sug.normes, ['ECS 0763', 'ECS 7251']);
+
+sug = C.suggestionsComposant('composant', 'BOUTON  POUSSOIR', '');
+eq('la casse et les espaces n\'empechent pas la reconnaissance',
+   sug.normes, ['ECS 0763', 'ECS 7251']);
+
+sug = C.suggestionsComposant('composant', 'Fonction jamais vue', '');
+faux('une fonction inconnue ne restreint rien', sug.restreint);
+eq('tout reste proposable : on n\'empeche pas de saisir du neuf',
+   sug.normes, ['ECS 0763', 'ECS 4410', 'ECS 7251']);
+
+sug = C.suggestionsComposant('composant', 'Bouton poussoir', 'NORME INEDITE');
+eq('une norme inconnue sous une fonction connue ne vide pas les references',
+   sug.references, ['MS24523-22', 'MS24523-31']);
+
+// Les categories ne se melangent pas : la mecanique a son propre index.
+eq('la colonnette est indexee en mecanique',
+   C.suggestionsComposant('mecanique', 'Colonnette', '').normes, ['NSA 5512']);
+eq('et pas dans la categorie electrique de la boite',
+   C.suggestionsComposant('composant', '', '').normes.indexOf('NSA 5512'), -1);
+
+// Le catalogue nourrit l'index au meme titre que la base.
+C.Store.catalogue = [{ 'Catégorie': 'mecanique', 'Fonction': 'Colonnette',
+                       'Norme': 'NSA 5520', 'Référence': 'COL-M6-40' }];
+C.construireIndexComposants();
+eq('une norme venue du catalogue est proposee',
+   C.suggestionsComposant('mecanique', 'Colonnette', '').normes, ['NSA 5512', 'NSA 5520']);
+C.Store.catalogue = [];
+C.construireIndexComposants();
+
+// Un composant sans fonction n'entre pas dans l'index : il ne se rattache a rien.
+charger([{ 'PN Global': 'B1', 'Composants': ' | ECS 9999 | REF-X' }], []);
+C.construireIndexComposants();
+eq('un composant sans fonction n\'est pas indexe',
+   C.suggestionsComposant('composant', '', '').normes, []);
+
+// =====================================================================
+bloc('Doublons : ce qui les separe, pas seulement leur score');
+// =====================================================================
+// Une structure porte plusieurs criteres : c'est la qu'un ecart se voit.
+const structDetaillee = function (id, pn, modifs) {
+  return Object.assign({ 'ID_Ligne': id, 'PN Global': pn, 'Type': 'Structure boîte',
+    'PN du type': pn + '.01', 'Montage': 'Console STD', 'Dim Long (mm)': '500',
+    'Dim Larg (mm)': '140', 'Masse (g)': '500', 'HL': 'A', 'DAL': 'A' }, modifs || {});
+};
+charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],
+  [structDetaillee('S1', 'B1'), structDetaillee('S2', 'B2', { 'DAL': 'B' })]);
+const paire = C.compterDoublonsProbables(C.Store.boites).paires[0];
+vrai('une paire est bien detectee', !!paire);
+const dOut = C.doublonHtml(paire);
+vrai('les deux PN sont montres', dOut.indexOf('B1.01') !== -1 && dOut.indexOf('B2.01') !== -1);
+vrai('les boites d\'origine aussi', dOut.indexOf('>B1<') !== -1 && dOut.indexOf('>B2<') !== -1);
+vrai('ce qui les separe est nomme', dOut.indexOf('Ce qui les sépare') !== -1);
+vrai('avec le critere en cause', dOut.indexOf('DAL') !== -1);
+vrai('et les deux valeurs', dOut.indexOf('A vs B') !== -1);
+vrai('ce qui concorde est nomme aussi', dOut.indexOf('Ce qui concorde') !== -1);
+vrai('avec un critere identique', dOut.indexOf('Console STD') !== -1);
+vrai('on peut ouvrir la comparaison complete',
+     dOut.indexOf('data-action="comparer-depuis-doublons"') !== -1);
+vrai('sur l\'identifiant de ligne, pas sur le PN', dOut.indexOf('data-id="S1"') !== -1);
+vrai('ce qui n\'a pas pu etre compare est dit',
+     dOut.indexOf('Non comparé, faute de donnée') !== -1);
+
+// Deux pieces que rien ne separe : on le dit, au lieu d'une section vide.
+charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],
+  [structDetaillee('S1', 'B1'), structDetaillee('S2', 'B2')]);
+const jumelles = C.doublonHtml(C.compterDoublonsProbables(C.Store.boites).paires[0]);
+vrai('rien ne les separe, et c\'est ecrit',
+     jumelles.indexOf('Rien ne les sépare') !== -1);
+
+// Un PN piege ne sort pas de son attribut.
+charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],
+  [structDetaillee('S1', 'B1', { 'PN du type': '<img src=x onerror=alert(1)>' }),
+   structDetaillee('S2', 'B2')]);
+faux('un PN piege n\'injecte rien',
+     /<img src=x/.test(C.doublonHtml(C.compterDoublonsProbables(C.Store.boites).paires[0])));
 
 // =====================================================================
 bloc('Frictions levées — un geste de moins partout');

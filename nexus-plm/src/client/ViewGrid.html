@@ -321,10 +321,20 @@ function rendreKpi(kpi, vue) {
   definirTexte('kpiBoitesDetail', filtre ? 'cliquer pour tout revoir' : 'toute la base');
   definirTexte('kpiVal', kpi.nbValides + ' / ' + kpi.nbBoites);
   definirTexte('kpiValDetail', kpi.pctValides + ' % validées');
-  definirTexte('kpiNoms', String(kpi.refsUniques));
-  definirTexte('kpiNomsDetail', kpi.nbPieces + ' pièces distinctes');
+  // Compter des PN n'apprenait rien, et melangeait deux niveaux dans un seul
+  // nombre. Ce qui compte, c'est ce qu'il reste a ranger.
+  const dispersees = opportunitesStandardisation(vue ? vue.aAfficher : []);
+  definirTexte('kpiStandard', String(dispersees.length));
+  definirTexte('kpiStandardDetail', dispersees.length
+    ? 'familles à plusieurs références'
+    : 'une norme, une référence partout');
+  const ind = parId('indStandard');
+  if (ind) ind.setAttribute('aria-pressed', String(Store.vueMode === 'standardisation'));
+
   definirTexte('kpiReutil', String(kpi.reutilisees));
-  definirTexte('kpiReutilDetail', kpi.pctReutilisees + ' % des pièces');
+  definirTexte('kpiReutilDetail', kpi.reutilisees
+    ? 'montées dans plusieurs boîtes'
+    : 'aucune pièce partagée');
 
   // L'indicateur dit s'il filtre en ce moment.
   const marquer = function (id, actif) {

@@ -546,6 +546,108 @@ async function ecranPropre(page) {
   await fermerFiche(page);
   await ecranPropre(page);
 
+  // ---------------------------------------------------------------
+  bloc('Saisie guidee : la norme suit la fonction');
+  await ecranPropre(page);
+  await ouvrirFiche(page, '332P20001');
+  const blocBoite = '.bloc-general .ajout-composant';
+  const listeDe = function (niveau) {
+    return page.evaluate(function (n) {
+      const el = document.querySelector('.bloc-general .saisie-composant[data-niveau="' + n + '"]');
+      const dl = el && document.getElementById(el.getAttribute('list'));
+      return dl ? Array.from(dl.options).map(function (o) { return o.value; }) : null;
+    }, niveau);
+  };
+  const normesToutes = await listeDe('norme');
+  vrai('au depart, toutes les normes de la categorie', normesToutes.length > 3);
+  await page.locator(blocBoite + ' .saisie-composant[data-niveau="fonction"]').fill('Bouton poussoir');
+  await page.waitForTimeout(300);
+  const normesBP = await listeDe('norme');
+  vrai('la liste Norme se resserre sur la fonction', normesBP.length < normesToutes.length);
+  faux('une norme de colonnette n\'y figure plus', normesBP.indexOf('NSA 5512') !== -1);
+  vrai('mais la sienne, oui', normesBP.indexOf('ECS 7251') !== -1);
+  const refsBP = await listeDe('reference');
+  vrai('les references suivent aussi',
+       refsBP.length > 0 && refsBP.every(function (r) { return r.indexOf('MS24523') === 0; }));
+  await page.locator(blocBoite + ' .saisie-composant[data-niveau="norme"]').fill('ECS 7251');
+  await page.waitForTimeout(300);
+  const refsNorme = await listeDe('reference');
+  vrai('et se resserrent encore sur la norme', refsNorme.length < refsBP.length);
+  await page.locator(blocBoite + ' .saisie-composant[data-niveau="fonction"]').fill('Fonction inedite');
+  await page.waitForTimeout(300);
+  eq('une fonction inconnue ne bloque rien', (await listeDe('norme')).length, normesToutes.length);
+
+  // Le bloc mecanique de la structure a ses propres listes : les deux
+  // n'interferent pas.
+  await page.locator('.bloc-type-structure .saisie-composant[data-niveau="fonction"]').first().fill('Colonnette');
+  await page.waitForTimeout(300);
+  const normesMeca = await page.evaluate(function () {
+    const el = document.querySelector('.bloc-type-structure .saisie-composant[data-niveau="norme"]');
+    return Array.from(document.getElementById(el.getAttribute('list')).options).map(function (o) { return o.value; });
+  });
+  vrai('la colonnette ne propose que sa norme', normesMeca.indexOf('NSA 5512') !== -1);
+  faux('et pas celles des boutons', normesMeca.indexOf('ECS 7251') !== -1);
+  eq('le bloc de la boite n\'a pas bouge', (await listeDe('norme')).length, normesToutes.length);
+
+  bloc('Equivalences depuis la fiche de la boite');
+  eq('le bouton y est', await page.locator('#slideOverBody [data-action="comparer-boite"]').count(), 1);
+  await page.locator('#slideOverBody [data-action="comparer-boite"]').first().click();
+  await page.waitForSelector('#compareModal.show'); await page.waitForTimeout(800);
+  vrai('le classement s\'ouvre sans refermer la fiche',
+       await page.locator('#compareResult .resultat').count() > 0);
+  await fermerModale(page, 'compareModal');
+  await fermerFiche(page);
+  await ecranPropre(page);
+
+  // ---------------------------------------------------------------
+  bloc('Doublons : ce qui les separe, et la comparaison complete');
+  await page.locator('#indDoublons').click();
+  await page.waitForSelector('#doublonsModal.show'); await page.waitForTimeout(400);
+  const premierDoublon = page.locator('.doublon').first();
+  vrai('chaque paire montre son detail', await premierDoublon.locator('.doublon-detail').count() === 1);
+  const texteDoublon = await premierDoublon.innerText();
+  vrai('on nomme ce qui concorde ou ce qui separe',
+       /ce qui concorde|ce qui les s/i.test(texteDoublon));
+  vrai('le critere porte une valeur lisible',
+       await premierDoublon.locator('.doublon-crit-val').count() > 0);
+  vrai('et l\'interet est rappele en tete',
+       (await texte(page, '#doublonsSous')).indexOf('approvisionner') !== -1);
+  await premierDoublon.locator('[data-action="comparer-depuis-doublons"]').click();
+  await page.waitForTimeout(900);
+  eq('la liste se referme', await page.locator('#doublonsModal.show').count(), 0);
+  eq('la comparaison ponderee s\'ouvre', await page.locator('#compareModal.show').count(), 1);
+  await fermerModale(page, 'compareModal');
+  await ecranPropre(page);
+
+  // ---------------------------------------------------------------
+  bloc('Indicateur « A standardiser »');
+  eq('il a remplace « References uniques »',
+     await page.locator('#indRefs').count(), 0);
+  eq('et c\'est un bouton', await page.locator('button#indStandard').count(), 1);
+  vrai('il annonce un nombre de familles',
+       Number(await texte(page, '#kpiStandard')) >= 0);
+  vrai('et dit de quoi il s\'agit',
+       (await texte(page, '#kpiStandardDetail')).indexOf('référence') !== -1);
+  await page.locator('#indStandard').click();
+  await page.waitForTimeout(450);
+  eq('un clic mene a la vue Standardisation', await page.locator('.carte').count(), 0);
+  vrai('des familles y sont listees', await page.locator('.famille').count() > 0);
+  eq('l\'indicateur se marque', await page.locator('#indStandard').getAttribute('aria-pressed'), 'true');
+  await page.locator('#indStandard').click();
+  await page.waitForTimeout(450);
+  eq('un second clic ramene aux cartes', await page.locator('.carte').count(), 10);
+
+  bloc('Pieces reutilisees : on dit ce que c\'est');
+  vrai('le detail est explicite',
+       (await texte(page, '#kpiReutilDetail')).indexOf('plusieurs boîtes') !== -1);
+  const avantReutil = await page.locator('.carte').count();
+  await page.locator('#indReutil').click(); await page.waitForTimeout(450);
+  vrai('le clic filtre vraiment', await page.locator('.carte').count() < avantReutil);
+  vrai('et le filtre actif le nomme',
+       (await texte(page, '#filtreActif')).indexOf('partageant') !== -1);
+  await page.locator('#indReutil').click(); await page.waitForTimeout(450);
+  await ecranPropre(page);
+
   bloc('Filtres par type de sous-ensemble');
   eq('3 types présents', await page.locator('.filtres-type .jeton').count(), 3);
   await page.locator('.jeton', { hasText: 'Harnais' }).click();

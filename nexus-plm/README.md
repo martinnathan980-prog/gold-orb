@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 921 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 1 008 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 628 tests : logique, pondération, serveur, bundle
+npm test                 # 686 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 293 tests dans un vrai Chromium
+npm run test:navigateur  # 322 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -301,6 +301,43 @@ bloquées dans l'iframe sandboxée d'Apps Script : c'est pour cela que
 « Supprimer » ne faisait rien, sans le moindre message. Plus aucun appel
 natif ne subsiste.
 
+## Saisie guidée : les trois niveaux se resserrent
+
+Un composant s'écrit `Fonction | Norme | Référence`. Les trois champs étaient
+indépendants : sous « Bouton poussoir », la liste Norme proposait `NSA 5512`,
+qui est une norme de colonnette. On suggérait donc des combinaisons qui
+n'existent pas.
+
+Un index `fonction → normes → références` est construit à chaque
+rafraîchissement, à partir du catalogue **et** de tout ce qui est déjà saisi.
+Écrire « Bouton poussoir » restreint la liste Norme à ses trois normes ;
+choisir l'une d'elles restreint la liste Référence aux siennes. Chaque bloc de
+saisie porte ses propres listes : le bloc de la boîte et celui de la structure
+ne se gênent pas.
+
+Une fonction **encore inconnue** ne restreint rien. On guide la saisie, on ne
+l'enferme pas : un composant qui n'existe pas encore dans la base doit pouvoir
+s'écrire.
+
+## Une double espace ne fait pas deux composants
+
+`normaliserTexte()` ramène les espaces internes à un seul. Sans cela,
+« Bouton  poussoir » et « Bouton poussoir » étaient deux fonctions distinctes :
+deux familles dans la vue Standardisation, un score de 0 à la comparaison, et
+deux entrées dans les suggestions. Une frappe de trop ne doit pas scinder une
+famille.
+
+## Doublons : ce qui les sépare
+
+Un PN, un autre PN, un score : cela disait qu'il fallait regarder, pas quoi
+regarder. Chaque paire montre désormais **ce qui les sépare** et **ce qui
+concorde**, critère par critère, avec les deux valeurs en regard — et nomme ce
+qui n'a pas pu être comparé faute de donnée. Un bouton ouvre la comparaison
+complète, pondération comprise.
+
+L'intérêt est rappelé en tête : deux PN pour la même chose, c'est deux pièces à
+approvisionner, qualifier et stocker au lieu d'une.
+
 ## Un geste de moins, partout
 
 Une liste fermée s'ajoute **au choix** : choisir un porteur, c'est le vouloir,
@@ -370,32 +407,22 @@ l'application.
 
 ## Indicateurs
 
-Au-delà du comptage, ils répondent à la question que pose l'outil — la
-réutilisation :
+Cinq mesures, toutes cliquables, toutes agissant sur la grille :
 
-| Indicateur | Ce qu'il dit |
-|---|---|
-| Boîtes · Validées | l'avancement |
-| Références uniques | l'ampleur du référentiel |
-| **Pièces réutilisées** | pièces dont le PN apparaît dans au moins deux boîtes |
-| **Doublons probables** | pièces de même type, PN différents, très proches **selon vos critères courants** — l'indicateur suit la pondération, et s'ouvre sur la liste des paires |
+| Indicateur | Ce qu'il compte | Au clic |
+|---|---|---|
+| Boîtes | la base, ou la sélection courante | tout réafficher |
+| Validées | celles dont le statut est `Validé` | ne montrer qu'elles |
+| À standardiser | les familles de composants servies par plusieurs références | la vue Standardisation |
+| Pièces réutilisées | les sous-ensembles montés dans plusieurs boîtes | ne montrer que ces boîtes |
+| Doublons probables | les paires au-dessus de 85 % | la liste, avec le détail |
 
-Et sur chaque sous-ensemble, la fiche répond à la question du réemploi :
-**« aussi montée dans »**, avec un lien direct vers les autres boîtes.
-
-Chaque indicateur est aussi un **filtre** : « Validées » ne montre que les
-boîtes validées, « Pièces réutilisées » les boîtes qui partagent une pièce,
-« Doublons probables » ouvre la liste, « Boîtes » revient à tout. Un
-indicateur actif se signale, et son filtre se retire d'un clic.
-
-Deux règles portent l'essentiel :
-
-1. **Aucune donnée n'entre dans une chaîne de code.** `esc()` systématique et
-   `data-action` plutôt que `onclick="…('${valeur}')"`. Un PN contenant `"` ou
-   `'` ne peut plus casser l'interface ni faire perdre une saisie.
-2. **`google.script.run` n'existe que dans `client/Api.html`.** Le
-   `withFailureHandler` est écrit une fois pour les 9 appels. Une migration
-   future ne coûterait que ce fichier.
+« Références uniques » a disparu. Le nombre additionnait des PN de boîtes et
+des PN de sous-ensembles — deux niveaux dans un seul total, qui ne répondait à
+aucune question — et c'était le seul bloc inerte au milieu de quatre boutons
+identiques : on cliquait, rien ne bougeait. « Pièces réutilisées » annonçait
+« 13 % des pièces », un pourcentage dont personne ne savait de quoi il était le
+pourcentage ; il dit maintenant « montées dans plusieurs boîtes ».
 
 ## Déploiement
 
