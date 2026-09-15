@@ -1,0 +1,34 @@
+﻿Catégorie;Fonction;Norme;Référence;Désignation
+composant;Bouton poussoir;ECS 7251;MS24523-22;Push button, 1 contact
+composant;Bouton poussoir;ECS 7251;MS24523-23;Push button, 2 contacts
+composant;Bouton poussoir;ECS 0763;MS24523-31;Push button, lumineux
+composant;Bouton poussoir;ECS 0780;MS24523-40;Push button, protégé
+composant;Interrupteur;ASNE 0567;8500K12;Switch, 2 positions
+composant;Interrupteur;ASNE 0571;TGL-2P;Toggle, 3 positions
+composant;Double commande;FRF 772-034;DC-IG-2;Double commande IG
+composant;Relais;ECS 1120;RLY-28-2C;Relais 28 V, 2 contacts
+composant;Voyant;ECS 4410;LED-G-28;LED verte 28 V
+composant;Voyant;ECS 4410;LED-G-05;LED verte 5 V
+composant;Voyant;ECS 4411;LED-R-28;LED rouge 28 V
+composant;Voyant;ECS 4411;LED-R-05;LED rouge 5 V
+composant;Fusible;NSA 9350;F5A;Fusible 5 A
+composant;Fusible;NSA 9350;F10A;Fusible 10 A
+composant;Connecteur;EN 3645;CN-3645-12;Circulaire 12 voies
+composant;Connecteur;EN 4165;CN-4165-2;Rectangulaire 2 modules
+mecanique;Colonnette;NSA 5512;COL-M4-20;M4, 20 mm
+mecanique;Colonnette;NSA 5512;COL-M4-22;M4, 22 mm
+mecanique;Colonnette;NSA 5512;COL-M4-30;M4, 30 mm
+mecanique;Colonnette;NSA 5512;COL-M5-25;M5, 25 mm
+mecanique;Colonnette;NSA 5512;COL-M6-40;M6, 40 mm
+mecanique;Entretoise;NSA 5520;ENT-10;10 mm
+mecanique;Équerre;EN 2491;EQ-90-A;90°, type A
+mecanique;Équerre;EN 2491;EQ-90-B;90°, type B
+mecanique;Insert;NSA 5591;INS-M4;Insert fileté M4
+mecanique;Insert;NSA 5591;INS-M6;Insert fileté M6
+electrique;Collier;NSA 8420;CT-120;Collier 120 mm
+electrique;Collier;NSA 8421;CT-200;Collier 200 mm
+electrique;Embase;ECS 2210;EMB-4;Embase 4 mm
+electrique;Embase;ECS 2210;EMB-6;Embase 6 mm
+electrique;Passe-fil;ECS 2230;PF-8;Ø 8 mm
+electrique;Passe-fil;ECS 2230;PF-12;Ø 12 mm
+electrique;Cosse;EN 2491;CS-4;Cosse à sertir 4 mm²

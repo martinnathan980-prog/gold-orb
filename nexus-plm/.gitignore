@@ -2,7 +2,6 @@ node_modules/
 # Générés par build/build-demo.js
 build/demo.html
 build/nexus-demo.html
-build/appsscript/
 build/bootstrap.min.css
 build/bootstrap.bundle.min.js
 build/*.png
