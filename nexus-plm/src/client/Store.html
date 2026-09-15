@@ -28,6 +28,7 @@ const Store = {
   filtreTypes: [],
   filtreStatut: null,        // un statut, ou rien
   filtreReutilise: false,    // seulement les boîtes qui partagent une pièce
+  vueMode: 'boites',         // 'boites' ou 'pieces'
   tri: 'pn',
   enEditionBoite: false,
   enEditionNom: {},
@@ -186,7 +187,7 @@ function enregistrerReglages() {
   try {
     localStorage.setItem(CLE_REGLAGES, JSON.stringify({
       poids: Store.poids, actifs: Store.criteresActifs,
-      seuil: Store.seuilEquivalence, tri: Store.tri
+      seuil: Store.seuilEquivalence, tri: Store.tri, vue: Store.vueMode
     }));
   } catch (e) { /* navigation privée, stockage refusé : sans gravité */ }
 }
@@ -220,6 +221,7 @@ function chargerReglages() {
       }
       if (typeof lu.seuil === 'number') Store.seuilEquivalence = lu.seuil;
       if (typeof lu.tri === 'string') Store.tri = lu.tri;
+      if (lu.vue === 'boites' || lu.vue === 'pieces') Store.vueMode = lu.vue;
     }
   } catch (e) { /* réglages illisibles : on repart des valeurs par défaut */ }
   PORTEES.forEach(function (p) { normaliserPoids(p.cle); });
@@ -574,6 +576,43 @@ function boitesUtilisant(pnPiece, saufBoite) {
     vues.add(b);
   });
   return Array.from(vues).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+}
+
+/**
+ * L'inventaire des PIÈCES vu depuis les boîtes affichées : un PN de pièce,
+ * son type, et toutes les boîtes qui la montent. C'est la question que pose
+ * un outil de réemploi, prise par l'autre bout — la grille répond « que
+ * contient cette boîte », celle-ci répond « où sert cette pièce ».
+ */
+function inventairePieces(liste) {
+  const parPiece = new Map();
+  liste.forEach(function (b) {
+    const pnBoite = String(b[CLE_PN()]).trim();
+    (b.nomenclature || []).forEach(function (n) {
+      const pn = String(n['PN du type'] || '').trim();
+      if (!pn) return;                       // une pièce sans PN n'est pas suivie
+      const cle = normaliserTexte(pn) + '|' + typeDe(n).cle;
+      if (!parPiece.has(cle)) {
+        parPiece.set(cle, { pn: pn, type: typeDe(n), boites: [], lignes: [] });
+      }
+      const e = parPiece.get(cle);
+      e.lignes.push(n);
+      if (e.boites.indexOf(pnBoite) === -1) e.boites.push(pnBoite);
+    });
+  });
+
+  return Array.from(parPiece.values())
+    .map(function (e) {
+      e.boites.sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); });
+      e.nombre = e.boites.length;
+      return e;
+    })
+    // Les plus réutilisées d'abord : c'est l'information qu'on vient chercher.
+    .sort(function (a, b) {
+      return b.nombre - a.nombre ||
+             a.type.libelle.localeCompare(b.type.libelle, 'fr') ||
+             a.pn.localeCompare(b.pn, 'fr', { numeric: true });
+    });
 }
 
 /** Répartition des sous-ensembles par type, pour la barre de filtres. */

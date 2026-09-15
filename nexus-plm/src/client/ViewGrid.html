@@ -40,6 +40,54 @@ function filtresTypeHtml() {
   '</div>';
 }
 
+/**
+ * Boîtes ou pièces : deux façons de lire la même base. La grille répond
+ * « que contient cette boîte », l'inventaire « où sert cette pièce ».
+ */
+function selecteurVueHtml() {
+  return '<div class="choix-vue" role="group" aria-label="Mode d\'affichage">' +
+    [['boites', 'Boîtes'], ['pieces', 'Pièces']].map(function (v) {
+      const actif = Store.vueMode === v[0];
+      return '<button type="button" class="onglet-vue' + (actif ? ' actif' : '') + '"' +
+             dataAttrs({ action: 'changer-vue', vue: v[0] }) +
+             ' aria-pressed="' + actif + '">' + esc(v[1]) + '</button>';
+    }).join('') +
+  '</div>';
+}
+
+/** L'inventaire des pièces : une ligne par PN, les boîtes qui la montent. */
+function piecesHtml(vue) {
+  const pieces = inventairePieces(vue.aAfficher);
+  if (!pieces.length) {
+    return '<div class="etat-vide">' +
+      '<p>Aucune pièce à inventorier.</p>' +
+      '<p class="etat-vide-aide">Les pièces sans PN ne sont pas suivies.</p>' +
+    '</div>';
+  }
+
+  return '<div class="inventaire">' +
+    '<div class="inventaire-entete">' +
+      '<span>Pièce</span><span>Type</span><span>Réemploi</span><span>Montée dans</span>' +
+    '</div>' +
+    pieces.map(function (p) {
+      const partagee = p.nombre > 1;
+      return '<div class="piece' + (partagee ? ' piece-partagee' : '') + '">' +
+        '<span class="piece-pn">' + esc(p.pn) + '</span>' +
+        '<span class="piece-type ' + p.type.teinte + '">' +
+          '<span aria-hidden="true">' + p.type.icone + '</span> ' + esc(p.type.libelle) + '</span>' +
+        '<span class="piece-compte' + (partagee ? ' piece-compte-fort' : '') + '">' +
+          (partagee ? p.nombre + ' boîtes' : '1 boîte') + '</span>' +
+        '<span class="piece-boites">' +
+          p.boites.map(function (pn) {
+            return '<button type="button" class="usage-lien"' +
+                   dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
+          }).join('') +
+        '</span>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
 /** Le tri : un menu discret, pas un <select> planté au milieu de la page. */
 function triHtml() {
   const courant = TRIS[Store.tri] || TRIS.pn;
@@ -138,12 +186,23 @@ function grilleHtml(vue) {
 
 function rendreInterface() {
   const vue = calculerVue();
+  const pieces = Store.vueMode === 'pieces';
   definirHtml('functionTabs', ongletsHtml(vue));
   definirHtml('filtresType', filtresTypeHtml());
-  definirHtml('zoneTri', triHtml());
-  definirHtml('mainContainer', grilleHtml(vue));
-  definirTexte('bilanResultats', vue.aAfficher.length +
-               (vue.aAfficher.length > 1 ? ' boîtes' : ' boîte'));
+  definirHtml('zoneVue', selecteurVueHtml());
+  definirHtml('zoneTri', pieces ? '' : triHtml());
+
+  const contenant = parId('mainContainer');
+  if (contenant) contenant.classList.toggle('grille', !pieces);
+  definirHtml('mainContainer', pieces ? piecesHtml(vue) : grilleHtml(vue));
+
+  if (pieces) {
+    const n = inventairePieces(vue.aAfficher).length;
+    definirTexte('bilanResultats', n + (n > 1 ? ' pièces distinctes' : ' pièce'));
+  } else {
+    definirTexte('bilanResultats', vue.aAfficher.length +
+                 (vue.aAfficher.length > 1 ? ' boîtes' : ' boîte'));
+  }
   rendreKpi(calculerKpi(vue.aAfficher), vue);
   rendreFiltreActif(vue);
   const chargement = parId('loading');

@@ -132,14 +132,51 @@ async function ecranPropre(page) {
   eq('pas de bouton Journal', await page.locator('[data-action="ouvrir-journal"]').count(), 0);
   eq('pas de Pondération dans l\'en-tête',
      await page.locator('.entete [data-action="ouvrir-reglages"]').count(), 0);
-  vrai('bouton « Nouvelle boîte »', (await texte(page, '.btn-entete-fort')).indexOf('Nouvelle boîte') !== -1);
-  // Le bouton est en haut à droite, pas sous le titre.
-  const posBouton = await page.locator('.btn-entete-fort').boundingBox();
+  vrai('bouton « Nouvelle boîte »', (await texte(page, '.btn-creer')).indexOf('Nouvelle boîte') !== -1);
+
+  // Le bouton a quitté le voisinage du titre : il vit dans la barre d'action,
+  // sous l'en-tête, avec la recherche.
+  const posBouton = await page.locator('.btn-creer').boundingBox();
   const posTitre = await page.locator('.marque h1').boundingBox();
-  vrai('le bouton est à droite du titre', posBouton.x > posTitre.x + posTitre.width);
-  vrai('et au-dessus de son bas', posBouton.y < posTitre.y + posTitre.height);
-  vrai('fond blanc, pas gris',
-       await page.evaluate(function () { return getComputedStyle(document.body).backgroundColor; }) === 'rgb(255, 255, 255)');
+  const posEntete = await page.locator('.entete').boundingBox();
+  const posBande = await page.locator('.bande-action').boundingBox();
+  const posRecherche = await page.locator('.champ-recherche').boundingBox();
+  vrai('le bouton est SOUS le titre, plus à côté', posBouton.y > posTitre.y + posTitre.height);
+  vrai('et hors de l\'en-tête', posBouton.y >= posEntete.y + posEntete.height - 2);
+  vrai('il est dans la barre d\'action', posBouton.y >= posBande.y - 1 &&
+       posBouton.y + posBouton.height <= posBande.y + posBande.height + 1);
+  vrai('la recherche est sur la même ligne', Math.abs(posRecherche.y - posBouton.y) < 40);
+  vrai('le bouton est à droite de la recherche',
+       posBouton.x > posRecherche.x + posRecherche.width - 1);
+  eq('plus aucun bouton dans l\'en-tête',
+     await page.locator('.entete [data-action="nouvelle-boite"]').count(), 0);
+
+  // « Tout est blanc » : le sol est teinté, les cartes aussi, la barre plus encore.
+  const teintes = await page.evaluate(function () {
+    const lire = function (sel, prop) {
+      const el = document.querySelector(sel);
+      return el ? getComputedStyle(el)[prop || 'backgroundColor'] : null;
+    };
+    return {
+      sol: getComputedStyle(document.body).backgroundColor,
+      carte: lire('.carte'),
+      bande: lire('.bande-action', 'backgroundImage'),
+      filet: lire('.bande-action', 'borderTopColor'),
+      champ: lire('.champ-recherche')
+    };
+  });
+  const rgb = function (c) { return (c.match(/\d+/g) || []).map(Number); };
+  faux('le sol n\'est plus blanc', teintes.sol === 'rgb(255, 255, 255)');
+  faux('les cartes ne sont plus blanches', teintes.carte === 'rgb(255, 255, 255)');
+  vrai('le sol est bleuté', rgb(teintes.sol)[2] > rgb(teintes.sol)[0]);
+  vrai('les cartes aussi', rgb(teintes.carte)[2] > rgb(teintes.carte)[0]);
+  vrai('les cartes se détachent du sol, plus claires',
+       rgb(teintes.carte).reduce(function (a, b) { return a + b; }, 0) >
+       rgb(teintes.sol).reduce(function (a, b) { return a + b; }, 0));
+  vrai('la barre d\'action porte un dégradé', /gradient/.test(teintes.bande));
+  vrai('soulignée d\'un filet marine', teintes.filet === 'rgb(0, 32, 91)');
+  eq('le champ de recherche reste blanc : c\'est là qu\'on écrit',
+     teintes.champ, 'rgb(255, 255, 255)');
   eq('17 porteurs proposés à la création',
      await page.locator('#newBoitePorteurs input').count(), 17);
   eq('aucun « Multi »', await page.locator('#newBoitePorteurs input[value="Multi"]').count(), 0);
@@ -160,7 +197,7 @@ async function ecranPropre(page) {
 
   // ---------------------------------------------------------------
   bloc('Créer une boîte complète');
-  await page.locator('.btn-entete-fort').click();
+  await page.locator('.btn-creer').click();
   await page.waitForSelector('#newBoiteModal.show');
   await page.waitForTimeout(300);
   await page.fill('#newBoitePn', 'ESSAI-100');
@@ -228,6 +265,66 @@ async function ecranPropre(page) {
   eq('« Boîtes » remet tout', await page.locator('.carte').count(), 10);
   vrai('la jauge des validées est renseignée',
        (await page.locator('#kpiValJauge').evaluate(function (e) { return e.style.width; })) === '50%');
+
+  // ---------------------------------------------------------------
+  bloc('Vue Pièces : où sert chaque référence');
+  await ecranPropre(page);
+  eq('deux vues proposées', await page.locator('.onglet-vue').count(), 2);
+  vrai('« Boîtes » est la vue par défaut',
+       (await texte(page, '.onglet-vue.actif')).trim() === 'Boîtes');
+  eq('la grille est affichée', await page.locator('#mainContainer.grille').count(), 1);
+
+  await page.locator('.onglet-vue', { hasText: 'Pièces' }).click();
+  await page.waitForTimeout(350);
+  vrai('l\'inventaire s\'affiche', await page.locator('.inventaire').count() === 1);
+  eq('la grille laisse la place', await page.locator('#mainContainer.grille').count(), 0);
+  eq('plus de cartes', await page.locator('.carte').count(), 0);
+  const nbPieces = await page.locator('.piece').count();
+  vrai('des pièces sont listées', nbPieces >= 10);
+  vrai('le bilan compte des pièces',
+       (await texte(page, '#bilanResultats')).indexOf('pièces') !== -1);
+  eq('le tri disparaît : l\'inventaire a son propre ordre',
+     await page.locator('#triBouton').count(), 0);
+
+  // Les pièces partagées portent le filet marine, et sont en tête.
+  const partagees = await page.locator('.piece-partagee').count();
+  vrai('au moins une pièce partagée est signalée', partagees >= 1);
+  const premiere = page.locator('.piece').first();
+  vrai('la plus réutilisée est en tête',
+       (await premiere.getAttribute('class')).indexOf('piece-partagee') !== -1);
+  const compte = await premiere.locator('.piece-compte').evaluate(function (e) { return e.textContent; });
+  vrai('elle annonce son nombre de boîtes', /\d+ boîtes/.test(compte));
+  vrai('et les nomme', await premiere.locator('.usage-lien').count() >= 2);
+
+  // Un clic sur une boîte ouvre sa fiche : l'inventaire est un point de départ.
+  const cible = (await premiere.locator('.usage-lien').first()
+                   .evaluate(function (e) { return e.textContent; })).trim();
+  await premiere.locator('.usage-lien').first().click();
+  await page.waitForSelector('#detailsSlideOver.show');
+  await page.waitForTimeout(400);
+  eq('la fiche de la boîte s\'ouvre', (await texte(page, '#slideOverTitle')).trim(), cible);
+  await fermerFiche(page);
+
+  // L'inventaire suit les filtres en cours.
+  await page.fill('#searchBar', 'mission SAR');
+  await page.waitForTimeout(400);
+  const piecesFiltrees = await page.locator('.piece').count();
+  vrai('la recherche restreint l\'inventaire', piecesFiltrees > 0 && piecesFiltrees < nbPieces);
+  await page.fill('#searchBar', '');
+  await page.waitForTimeout(400);
+  eq('et le rend quand on efface', await page.locator('.piece').count(), nbPieces);
+
+  // Pas de débordement horizontal, c'est un tableau.
+  const largeurs = await page.evaluate(function () {
+    return { doc: document.documentElement.scrollWidth, vue: window.innerWidth };
+  });
+  vrai('pas de défilement horizontal (inventaire)', largeurs.doc <= largeurs.vue + 1);
+
+  await page.locator('.onglet-vue', { hasText: 'Boîtes' }).click();
+  await page.waitForTimeout(350);
+  eq('retour à la grille', await page.locator('#mainContainer.grille').count(), 1);
+  eq('les cartes reviennent', await page.locator('.carte').count(), 10);
+  eq('et le tri aussi', await page.locator('#triBouton').count(), 1);
 
   bloc('Filtres par type de sous-ensemble');
   eq('3 types présents', await page.locator('.filtres-type .jeton').count(), 3);
@@ -298,8 +395,12 @@ async function ecranPropre(page) {
   faux('ni de masse', txtHarnais.indexOf('Masse') !== -1);
   faux('ni de qualification', txtHarnais.indexOf('Qualif') !== -1);
   faux('ni de composants', txtHarnais.indexOf('Composants STD') !== -1);
-  vrai('le harnais propose la duplication',
-       await blocHarnais.locator('[data-action="dupliquer-nom"]').count() === 1);
+  eq('le harnais ne propose plus de duplication',
+     await blocHarnais.locator('[data-action="dupliquer-nom"]').count(), 0);
+  eq('aucun sous-ensemble ne la propose',
+     await page.locator('#slideOverBody [data-action="dupliquer-nom"]').count(), 0);
+  vrai('mais il reste éditable',
+       await blocHarnais.locator('[data-action="editer-nom"]').count() === 1);
 
   const blocStruct = page.locator('.bloc-type-structure').first();
   const txtStruct = await blocStruct.evaluate(function (el) { return el.textContent; });
@@ -592,23 +693,14 @@ async function ecranPropre(page) {
   await ouvrirFiche(page, 'COPIE-1');
   faux('pas de duplication de boîte dans son bloc',
        (await texte(page, '.bloc-general')).indexOf('Dupliquer') !== -1);
-  const avantDup = await page.locator('#slideOverBody .bloc').count();
-  await page.locator('.bloc-type-structure [data-action="dupliquer-nom"]').first().click();
-  await repondreDialogue(page, 'SE-COPIE');
-  await page.waitForTimeout(1200);
-  // Le harnais et la plaquette aussi : c'est précisément ce qui ne marchait pas.
-  const avantDupH = await page.locator('#slideOverBody .bloc').count();
-  await page.locator('.bloc-type-harnais [data-action="dupliquer-nom"]').first().click();
-  await repondreDialogue(page, 'HRN-COPIE');
-  await page.waitForTimeout(1200);
-  eq('harnais dupliqué', await page.locator('#slideOverBody .bloc').count(), avantDupH + 1);
-  await page.locator('.bloc-type-plaquette [data-action="dupliquer-nom"]').first().click();
-  await repondreDialogue(page, 'PLQ-COPIE');
-  await page.waitForTimeout(1200);
-  eq('plaquette dupliquée', await page.locator('#slideOverBody .bloc').count(), avantDupH + 2);
-  vrai('Entrée valide le dialogue', true);
-  vrai('avec le PN saisi', (await texte(page, '#slideOverBody')).indexOf('SE-COPIE') !== -1);
-  vrai('structure dupliquée', await page.locator('#slideOverBody .bloc').count() >= avantDup + 1);
+  // La duplication d'un SOUS-ENSEMBLE a été retirée : on en ajoute un, on ne
+  // le recopie pas. Celle d'une boîte, elle, reste et vient d'être vérifiée.
+  eq('aucune duplication de sous-ensemble dans la copie',
+     await page.locator('#slideOverBody [data-action="dupliquer-nom"]').count(), 0);
+  vrai('la copie a bien repris les sous-ensembles de la source',
+       await page.locator('#slideOverBody .bloc').count() >= 4);
+  vrai('on ajoute un sous-ensemble plutôt que de le dupliquer',
+       await page.locator('[data-action="nouveau-sous-ensemble"]').count() === 1);
   await fermerFiche(page);
 
   bloc('Catalogue et création typée');
@@ -680,7 +772,7 @@ async function ecranPropre(page) {
   // ---------------------------------------------------------------
   bloc('Validation serveur');
   await ecranPropre(page);
-  await page.locator('.btn-entete-fort').click();
+  await page.locator('.btn-creer').click();
   await page.waitForSelector('#newBoiteModal.show');
   await page.locator('[data-action="creer-boite"]').click();
   await page.waitForTimeout(400);
@@ -772,6 +864,11 @@ async function ecranPropre(page) {
   eq('la page est bien en haut', await page.evaluate(function () { return window.scrollY; }), 0);
   vrai('en-tête visible en haut de page', await page.locator('.entete').isVisible());
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-grille.png') });
+  await page.locator('.onglet-vue', { hasText: 'Pièces' }).click();
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: path.join(RACINE, 'build/apercu-pieces.png') });
+  await page.locator('.onglet-vue', { hasText: 'Boîtes' }).click();
+  await page.waitForTimeout(400);
   await ouvrirFiche(page, '332P20001');
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-fiche.png') });
   await page.locator('.bloc-type-plaquette [data-action="comparer-nom"]').first().click();
@@ -791,7 +888,7 @@ async function ecranPropre(page) {
   vrai('réglages et comparaison coexistent, côte à côte',
        await page.locator('#compareModal.show').count() === 1 && await railVisible(page));
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-reglages.png') });
-  console.log('  5 captures écrites dans build/');
+  console.log('  6 captures écrites dans build/');
 
   eq('aucune exception JavaScript non rattrapée', exceptions, []);
   vrai('les échecs provoqués ont été journalisés', diagnostics.length >= 2);

@@ -232,8 +232,7 @@ function blocNomHtml(ligne) {
       boutonHtml('annuler-nom', { id: id }, 'Annuler', 'btn-neutre') +
       boutonHtml('supprimer-nom', { id: id }, 'Supprimer', 'btn-danger')
     : boutonHtml('comparer-nom', { id: id }, 'Équivalences', 'btn-accent') +
-      boutonHtml('editer-nom', { id: id }, 'Éditer', 'btn-neutre') +
-      boutonHtml('dupliquer-nom', { id: id }, 'Dupliquer', 'btn-neutre');
+      boutonHtml('editer-nom', { id: id }, 'Éditer', 'btn-neutre');
 
   let html = '<section class="bloc bloc-' + type.teinte + '">' +
     '<header class="bloc-tete">' +

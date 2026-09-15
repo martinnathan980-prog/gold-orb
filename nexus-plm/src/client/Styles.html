@@ -16,22 +16,29 @@
 :root {
   color-scheme: light;
 
-  /* Sol blanc, gris très légers et froids : propre, jamais terne. */
-  --sol: #ffffff;
-  --sol-2: #f7f8fa;
-  --surface: #ffffff;
-  --surface-2: #f7f8fa;
-  --surface-3: #eef0f4;
-  --encre: #101a2e;
-  --encre-2: #4a5470;
-  --encre-3: #7f889c;
-  --trait: #e5e8ee;
-  --trait-fort: #c8cfdb;
+  /* Les neutres portent un voile bleu-gris, celui des panneaux d'aéronef et
+     des plans : rien n'est blanc pur, sauf ce qui se saisit. Le sol est plus
+     soutenu que les cartes, qui s'y détachent comme des plaques posées. */
+  --sol: #e3ebf6;
+  --sol-2: #dae5f2;
+  --surface: #f6f9fd;
+  --surface-2: #ffffff;
+  --surface-3: #dde6f2;
+  --encre: #0f1929;
+  --encre-2: #465268;
+  --encre-3: #78859b;
+  --trait: #d2dcec;
+  --trait-fort: #b3c2d9;
+
+  /* La barre d'action, au milieu de la page : la seule zone franchement
+     teintée, elle sépare l'en-tête du catalogue et porte les deux entrées. */
+  --bande: #d2e0f2;
+  --bande-2: #c6d7ed;
 
   /* La marque : un marine, pour les actions principales seulement. */
   --marque: #00205b;
   --marque-2: #0b2f7a;
-  --marque-voile: #eef2f9;
+  --marque-voile: #dbe6f7;
   --sur-marque: #ffffff;
 
   /* Types de sous-ensembles — sémantiques */
@@ -61,11 +68,12 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --sol: #111418; --sol-2: #161a20;
-    --surface: #1a1e25; --surface-2: #1f242c; --surface-3: #262c36;
-    --encre: #e8e9ec; --encre-2: #b3b9c4; --encre-3: #858d9b;
-    --trait: #2b313b; --trait-fort: #3b424e;
-    --marque: #8fb0f0; --marque-2: #a8c2f5; --marque-voile: #1b2437; --sur-marque: #0f1522;
+    --sol: #0e131b; --sol-2: #121924;
+    --surface: #18202c; --surface-2: #202937; --surface-3: #26303f;
+    --encre: #e8ebf1; --encre-2: #aeb8c8; --encre-3: #7f8b9d;
+    --trait: #29333f; --trait-fort: #394656;
+    --bande: #16202f; --bande-2: #1a2637;
+    --marque: #8fb0f0; --marque-2: #a8c2f5; --marque-voile: #1b2740; --sur-marque: #0f1522;
 
     --t-structure: #8fabd6; --t-structure-voile: #1b2436; --t-structure-trait: #35476b;
     --t-harnais:   #d9a06a; --t-harnais-voile:   #2c2118; --t-harnais-trait:   #5d4327;
@@ -84,11 +92,12 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --sol: #111418; --sol-2: #161a20;
-  --surface: #1a1e25; --surface-2: #1f242c; --surface-3: #262c36;
-  --encre: #e8e9ec; --encre-2: #b3b9c4; --encre-3: #858d9b;
-  --trait: #2b313b; --trait-fort: #3b424e;
-  --marque: #8fb0f0; --marque-2: #a8c2f5; --marque-voile: #1b2437; --sur-marque: #0f1522;
+  --sol: #0e131b; --sol-2: #121924;
+  --surface: #18202c; --surface-2: #202937; --surface-3: #26303f;
+  --encre: #e8ebf1; --encre-2: #aeb8c8; --encre-3: #7f8b9d;
+  --trait: #29333f; --trait-fort: #394656;
+  --bande: #16202f; --bande-2: #1a2637;
+  --marque: #8fb0f0; --marque-2: #a8c2f5; --marque-voile: #1b2740; --sur-marque: #0f1522;
 
   --t-structure: #8fabd6; --t-structure-voile: #1b2436; --t-structure-trait: #35476b;
   --t-harnais:   #d9a06a; --t-harnais-voile:   #2c2118; --t-harnais-trait:   #5d4327;
@@ -120,7 +129,7 @@ button { font: inherit; cursor: pointer; }
 
 /* ---------------- bandeau de titre ---------------- */
 .entete { background: var(--surface); border-bottom: 1px solid var(--trait); padding-block: var(--e-6) var(--e-5); }
-.entete-corps { position: relative; text-align: center; }
+.entete-corps { text-align: center; }
 .marque { display: flex; flex-direction: column; align-items: center; gap: var(--e-2); }
 .marque h1 {
   font-family: var(--police-titre); font-weight: 800;
@@ -130,7 +139,6 @@ button { font: inherit; cursor: pointer; }
 }
 /* Un filet marine sous le titre : une plaque, pas un logo. */
 .marque::after { content: ""; width: 56px; height: 3px; background: var(--marque); border-radius: 2px; margin-top: var(--e-2); }
-.entete-outils { position: absolute; top: 0; right: 0; }
 
 /* ---------------- indicateurs ---------------- */
 /* Chaque indicateur est aussi un filtre : cliquer « Validées » ne montre que
@@ -174,12 +182,25 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
   letter-spacing: .08em; text-transform: uppercase; margin-top: var(--e-3);
 }
 
-/* ---------------- recherche ---------------- */
+/* ---------------- barre d'action ---------------- */
+/* Pleine largeur, teintée, filet marine au-dessus : elle coupe la page en
+   deux et réunit les deux façons d'entrer dans les données, chercher ou
+   créer. Le bouton de création n'a rien à faire à côté du titre. */
+.bande-action {
+  background: linear-gradient(180deg, var(--bande), var(--bande-2));
+  border-top: 3px solid var(--marque);
+  border-bottom: 1px solid var(--trait-fort);
+}
+.bande-corps {
+  display: flex; align-items: center; gap: var(--e-3);
+  padding-block: var(--e-4);
+}
+.btn-creer { flex-shrink: 0; white-space: nowrap; box-shadow: var(--ombre-1); }
+
 .contenu { padding-block: var(--e-5) var(--e-7); }
-.barre-recherche { display: flex; justify-content: center; margin-bottom: var(--e-4); }
 .champ-recherche {
   display: flex; align-items: center; gap: var(--e-2);
-  width: min(760px, 100%); background: var(--surface);
+  flex: 1; min-width: 0; background: var(--surface-2);
   border: 1px solid var(--trait-fort); border-radius: 999px;
   padding: 2px 6px 2px var(--e-4); box-shadow: var(--ombre-1); transition: box-shadow .15s, border-color .15s;
 }
@@ -199,7 +220,7 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
    chercher, pas une fonction annexe posée à côté. */
 .btn-dans-champ {
   display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-  background: var(--surface-3); color: var(--encre-2); border: 1px solid var(--trait);
+  background: var(--sol); color: var(--encre-2); border: 1px solid var(--trait);
   border-radius: 999px; padding: 8px 15px; font-size: 12.5px; font-weight: 600;
 }
 .btn-dans-champ:hover, .btn-dans-champ.actif { background: var(--marque); color: var(--sur-marque); border-color: var(--marque); }
@@ -211,6 +232,9 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
   padding-bottom: var(--e-3); border-bottom: 1px solid var(--trait);
 }
 .outils-gauche, .outils-droite { display: flex; align-items: center; gap: var(--e-2); flex-wrap: wrap; }
+/* Le sélecteur de vue n'est pas un filtre : on l'en sépare à l'oeil. */
+.outils-gauche > #zoneVue { margin-right: var(--e-3); padding-right: var(--e-3); border-right: 1px solid var(--trait); }
+@media (max-width: 620px) { .outils-gauche > #zoneVue { border-right: 0; margin-right: 0; padding-right: 0; } }
 .outils-bilan { font-size: 12.5px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
 
 .filtres-type { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -285,6 +309,53 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
 .chargement {
   display: flex; align-items: center; justify-content: center; gap: var(--e-3);
   padding: var(--e-7) 0; color: var(--encre-3);
+}
+
+/* ---------------- choix de la vue ---------------- */
+/* Un segmenté court : deux lectures de la même base, pas un menu. */
+.choix-vue { display: inline-flex; background: var(--surface-3); border: 1px solid var(--trait); border-radius: 999px; padding: 2px; }
+.onglet-vue {
+  background: none; border: 0; border-radius: 999px; padding: 5px 14px;
+  font-size: 12.5px; font-weight: 600; color: var(--encre-3); transition: .14s;
+}
+.onglet-vue:hover { color: var(--encre); }
+.onglet-vue.actif { background: var(--marque); color: var(--sur-marque); box-shadow: var(--ombre-1); }
+
+/* ---------------- inventaire des pièces ---------------- */
+/* Une nomenclature lue par l'autre bout : la pièce d'abord, les boîtes après.
+   Les pièces partagées portent un filet marine : c'est ce qu'on cherche. */
+.inventaire { display: flex; flex-direction: column; border: 1px solid var(--trait); border-radius: var(--r-m); overflow: hidden; background: var(--surface); }
+.inventaire-entete, .piece {
+  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr) 108px minmax(0, 1.6fr);
+  gap: var(--e-3); align-items: center; padding: 10px var(--e-4);
+}
+.inventaire-entete {
+  background: var(--surface-3); border-bottom: 1px solid var(--trait);
+  font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--encre-3); font-weight: 700;
+}
+.piece { border-bottom: 1px solid var(--surface-3); border-left: 3px solid transparent; }
+.piece:last-child { border-bottom: 0; }
+.piece:hover { background: var(--sol-2); }
+.piece-partagee { border-left-color: var(--marque); }
+.piece-pn { font-family: var(--police-data); font-size: 13px; font-weight: 600; color: var(--encre); overflow-wrap: anywhere; }
+.piece-type { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; }
+.piece-type.type-structure { color: var(--t-structure); }
+.piece-type.type-harnais   { color: var(--t-harnais); }
+.piece-type.type-plaquette { color: var(--t-plaquette); }
+.piece-type.type-autre     { color: var(--t-autre); }
+.piece-compte {
+  font-size: 12px; font-weight: 600; color: var(--encre-3);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+  background: var(--surface-3); border-radius: 999px; padding: 3px 10px; text-align: center;
+}
+.piece-compte-fort { background: var(--marque-voile); color: var(--marque); }
+.piece-boites { display: flex; flex-wrap: wrap; gap: 5px; }
+
+@media (max-width: 860px) {
+  .inventaire-entete { display: none; }
+  .piece { grid-template-columns: 1fr; gap: 6px; padding: var(--e-3) var(--e-4); }
+  .piece-compte { justify-self: start; }
 }
 
 /* ---------------- cartes ---------------- */
@@ -686,7 +757,8 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
   .reglages-rail { position: static; max-height: none; }
 }
 @media (max-width: 720px) {
-  .entete-outils { position: static; margin-top: var(--e-4); }
+  .bande-corps { flex-direction: column; align-items: stretch; }
+  .btn-creer { width: 100%; }
 }
 @media (max-width: 620px) {
   .entete { padding-block: var(--e-5) var(--e-4); }

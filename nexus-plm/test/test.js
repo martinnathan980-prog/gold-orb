@@ -270,8 +270,10 @@ faux('ni de composants', /Structure mécanique|Composants électriques/.test(blo
 const blocH2 = C.blocNomHtml(C.nomParId('H1'));
 faux('le harnais n\'affiche pas de qualification', blocH2.indexOf('Qualif') !== -1);
 faux('ni de composants', /Structure mécanique|Composants électriques/.test(blocH2));
-vrai('chaque bloc propose la duplication', blocH2.indexOf("'dupliquer-nom'") !== -1 ||
+faux('plus de duplication d\'un sous-ensemble : on en ajoute un, on ne le recopie pas',
      blocH2.indexOf('dupliquer-nom') !== -1);
+vrai('mais on peut toujours l\'éditer', blocH2.indexOf('editer-nom') !== -1);
+vrai('et chercher ses équivalences', blocH2.indexOf('comparer-nom') !== -1);
 
 const fiche3 = C.ficheHtml(C.boiteParPn('B1'));
 vrai('le sommaire liste les 3 types', fiche3.indexOf('Structure boîte') !== -1 &&
@@ -540,6 +542,103 @@ eq('sur deux pièces distinctes', kpiReemploi.nbPieces, 2);
 eq('soit 50 %', kpiReemploi.pctReutilisees, 50);
 
 // =====================================================================
+bloc('Inventaire des pièces : où sert quoi');
+// =====================================================================
+charger(
+  [{ 'PN Global': 'B1', 'Fonction': 'APU' },
+   { 'PN Global': 'B2', 'Fonction': 'APU' },
+   { 'PN Global': 'B3', 'Fonction': 'NAV' }],
+  [{ 'ID_Ligne': '1', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'HRN-1' },
+   { 'ID_Ligne': '2', 'PN Global': 'B2', 'Type': 'Harnais', 'PN du type': 'HRN-1' },
+   { 'ID_Ligne': '3', 'PN Global': 'B3', 'Type': 'Harnais', 'PN du type': 'HRN-1' },
+   { 'ID_Ligne': '4', 'PN Global': 'B1', 'Type': 'Structure boîte', 'PN du type': 'STR-9' },
+   { 'ID_Ligne': '5', 'PN Global': 'B2', 'Type': 'Structure boîte', 'PN du type': 'STR-9' },
+   { 'ID_Ligne': '6', 'PN Global': 'B3', 'Type': 'Plaquette éclairante', 'PN du type': 'PLQ-7' },
+   { 'ID_Ligne': '7', 'PN Global': 'B3', 'Type': 'Harnais', 'PN du type': '' }]);
+
+const inv = C.inventairePieces(C.Store.boites);
+eq('3 pièces distinctes, la pièce sans PN écartée', inv.length, 3);
+eq('la plus réutilisée en tête', inv[0].pn, 'HRN-1');
+eq('elle est dans 3 boîtes', inv[0].nombre, 3);
+eq('et on sait lesquelles', inv[0].boites, ['B1', 'B2', 'B3']);
+eq('puis celle dans 2 boîtes', [inv[1].pn, inv[1].nombre], ['STR-9', 2]);
+eq('la pièce unique ferme la marche', [inv[2].pn, inv[2].nombre], ['PLQ-7', 1]);
+eq('le type est résolu', inv[0].type.cle, 'harnais');
+faux('une pièce sans PN n\'est jamais listée',
+     inv.some(function (p) { return !p.pn; }));
+
+// Deux pièces de MÊME PN mais de types différents restent distinctes : ce
+// n'est pas la même chose, et on ne les compte pas ensemble.
+charger(
+  [{ 'PN Global': 'B1' }],
+  [{ 'ID_Ligne': '1', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'X-1' },
+   { 'ID_Ligne': '2', 'PN Global': 'B1', 'Type': 'Structure boîte', 'PN du type': 'X-1' }]);
+eq('même PN, deux types : deux entrées', C.inventairePieces(C.Store.boites).length, 2);
+
+// La même pièce montée DEUX FOIS dans la même boîte ne fait pas deux boîtes.
+charger(
+  [{ 'PN Global': 'B1' }],
+  [{ 'ID_Ligne': '1', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'Y-1' },
+   { 'ID_Ligne': '2', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'Y-1' }]);
+const doubleMontage = C.inventairePieces(C.Store.boites);
+eq('une seule entrée', doubleMontage.length, 1);
+eq('une seule boîte', doubleMontage[0].nombre, 1);
+eq('mais les deux lignes sont gardées', doubleMontage[0].lignes.length, 2);
+
+// Casse et accents : « Colonnette » et « COLONNETTE » sont la même pièce.
+charger(
+  [{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],
+  [{ 'ID_Ligne': '1', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'Réf-1' },
+   { 'ID_Ligne': '2', 'PN Global': 'B2', 'Type': 'Harnais', 'PN du type': 'REF-1' }]);
+eq('accents et casse regroupés', C.inventairePieces(C.Store.boites).length, 1);
+eq('et comptés comme réutilisés', C.inventairePieces(C.Store.boites)[0].nombre, 2);
+
+eq('base vide, inventaire vide', C.inventairePieces([]), []);
+charger([{ 'PN Global': 'B1' }], []);
+eq('boîte sans nomenclature', C.inventairePieces(C.Store.boites), []);
+
+// L'inventaire suit les filtres : il porte sur ce qui est affiché.
+charger(
+  [{ 'PN Global': 'B1', 'Statut': 'Validé' }, { 'PN Global': 'B2', 'Statut': 'En étude' }],
+  [{ 'ID_Ligne': '1', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'Z-1' },
+   { 'ID_Ligne': '2', 'PN Global': 'B2', 'Type': 'Harnais', 'PN du type': 'Z-1' }]);
+eq('sans filtre, la pièce est dans 2 boîtes',
+   C.inventairePieces(C.calculerVue().aAfficher)[0].nombre, 2);
+C.Store.filtreStatut = 'Validé';
+eq('filtré sur les validées, elle n\'est plus que dans 1',
+   C.inventairePieces(C.calculerVue().aAfficher)[0].nombre, 1);
+C.Store.filtreStatut = null;
+
+// Le rendu : échappement compris, puisque des PN piégés existent.
+charger(
+  [{ 'PN Global': 'B"1' }],
+  [{ 'ID_Ligne': '1', 'PN Global': 'B"1', 'Type': 'Harnais', 'PN du type': '<b>P</b>' }]);
+const htmlPieces = C.piecesHtml(C.calculerVue());
+faux('un PN piégé n\'injecte rien', /<b>P<\/b>/.test(htmlPieces));
+vrai('le PN piégé est affiché échappé', htmlPieces.indexOf('&lt;b&gt;P&lt;/b&gt;') !== -1);
+eq('le lien vers la boîte porte le PN intact',
+   attribut(htmlPieces.match(/data-action="ouvrir-fiche"[^>]*>/)[0], 'data-pn'), 'B"1');
+vrai('une pièce montée une seule fois n\'est pas marquée partagée',
+     htmlPieces.indexOf('piece-partagee') === -1);
+charger(
+  [{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],
+  [{ 'ID_Ligne': '1', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'W-1' },
+   { 'ID_Ligne': '2', 'PN Global': 'B2', 'Type': 'Harnais', 'PN du type': 'W-1' }]);
+vrai('une pièce partagée l\'est', C.piecesHtml(C.calculerVue()).indexOf('piece-partagee') !== -1);
+vrai('avec le compte en clair', C.piecesHtml(C.calculerVue()).indexOf('2 boîtes') !== -1);
+charger([{ 'PN Global': 'B1' }], []);
+vrai('inventaire vide : on le dit', C.piecesHtml(C.calculerVue()).indexOf('etat-vide') !== -1);
+
+// Le mode de vue se mémorise, et refuse une valeur inventée.
+C.Store.vueMode = 'pieces';
+C.enregistrerReglages();
+C.Store.vueMode = 'boites';
+C.chargerReglages();
+eq('le mode est relu', C.Store.vueMode, 'pieces');
+C.Store.vueMode = 'boites';
+C.enregistrerReglages();
+
+// =====================================================================
 bloc('Doublons probables');
 // =====================================================================
 charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }, { 'PN Global': 'B3' }],
@@ -649,7 +748,8 @@ faux('plus d\'export CSV', declarees.has('exporter-bom'));
 faux('plus de réglages rapides', declarees.has('appliquer-preset'));
 vrai('on peut retirer un critère', declarees.has('retirer-critere'));
 vrai('et en rajouter un', declarees.has('ajouter-critere'));
-vrai('duplication d\'un sous-ensemble', declarees.has('dupliquer-nom'));
+faux('plus d\'action de duplication de sous-ensemble', declarees.has('dupliquer-nom'));
+vrai('la duplication d\'une BOÎTE, elle, reste', declarees.has('dupliquer-boite'));
 const enTeteIndex = srcIndex.slice(srcIndex.indexOf('<header class="entete">'), srcIndex.indexOf('</header>'));
 faux('pas de bouton Pondération dans l\'en-tête', /data-action="ouvrir-reglages"/.test(enTeteIndex));
 vrai('le rail de réglages vit DANS la comparaison',
@@ -672,9 +772,24 @@ vrai('la pondération est atteinte depuis la comparaison',
      fs.readFileSync(path.join(H.RACINE, 'client/ViewCompare.html'), 'utf8')
        .indexOf("action: 'ouvrir-reglages'") !== -1);
 vrai('« Nouvelle boîte » et non « Assemblage »', srcIndex.indexOf('Nouvelle boîte') !== -1);
-vrai('la création est dans les outils d\'en-tête, pas sous le titre',
-     /class="entete-outils">[\s\S]*?data-action="nouvelle-boite"/.test(srcIndex) &&
-     !/class="marque">[\s\S]*?data-action="nouvelle-boite"[\s\S]*?<\/div>\s*<div class="entete-outils"/.test(srcIndex));
+
+// Le bouton de création ne doit plus côtoyer le nom du site : il vit dans la
+// barre d'action, avec la recherche, entre l'en-tête et le catalogue.
+const enTeteComplet = srcIndex.slice(srcIndex.indexOf('<header class="entete">'),
+                                     srcIndex.indexOf('</header>'));
+faux('la création n\'est plus dans l\'en-tête',
+     enTeteComplet.indexOf('nouvelle-boite') !== -1);
+faux('plus de zone d\'outils accolée au titre', /entete-outils/.test(srcIndex));
+const bande = srcIndex.slice(srcIndex.indexOf('<div class="bande-action">'),
+                             srcIndex.indexOf('<main class="enveloppe contenu">'));
+vrai('la barre d\'action existe', bande.length > 100);
+vrai('elle porte la recherche', bande.indexOf('id="searchBar"') !== -1);
+vrai('et le bouton de création', bande.indexOf('data-action="nouvelle-boite"') !== -1);
+vrai('la recherche a quitté le corps de page',
+     srcIndex.slice(srcIndex.indexOf('<main class="enveloppe contenu">'))
+             .indexOf('id="searchBar"') === -1);
+vrai('le titre reste seul dans sa marque',
+     /<div class="marque">\s*<h1>NEXUS<\/h1>\s*<\/div>/.test(srcIndex));
 eq('le titre est NEXUS seul', (srcIndex.match(/<h1>([^<]*)<\/h1>/) || [])[1], 'NEXUS');
 faux('plus de bouton d\'export', /exporter-bom/.test(srcIndex));
 faux('plus de bloc de réglages rapides', /reglagesPresets/.test(srcIndex));
@@ -685,6 +800,8 @@ vrai('et l\'URL de la photo', srcIndex.indexOf('newBoiteImage') !== -1);
 vrai('indicateur de réutilisation', srcIndex.indexOf('kpiReutil') !== -1);
 vrai('indicateur de doublons probables', srcIndex.indexOf('kpiDoublons') !== -1);
 vrai('les doublons sont consultables', declarees.has('ouvrir-doublons'));
+vrai('on bascule entre boîtes et pièces', declarees.has('changer-vue'));
+vrai('la page réserve une place au sélecteur de vue', srcIndex.indexOf('id="zoneVue"') !== -1);
 vrai('le tri est un menu, plus un select', declarees.has('choisir-tri'));
 faux('plus de <select> de tri', /id="triSelect"/.test(srcIndex));
 vrai('la recherche par composant est dans le champ',
@@ -701,9 +818,9 @@ vrai('duplication d\'une boîte depuis la carte',
 faux('plus de duplication de boîte dans la fiche',
      sansCommentaires(fs.readFileSync(path.join(H.RACINE, 'client/ViewFiche.html'), 'utf8'))
        .indexOf("'dupliquer-boite'") !== -1);
-vrai('duplication d\'un sous-ensemble depuis la fiche',
+faux('aucun reste de duplication dans la fiche',
      fs.readFileSync(path.join(H.RACINE, 'client/ViewFiche.html'), 'utf8')
-       .indexOf("'dupliquer-nom'") !== -1);
+       .indexOf('dupliquer-nom') !== -1);
 
 // Tous les jetons CSS utilisés sont définis en clair
 const srcCss = fs.readFileSync(path.join(H.RACINE, 'client/Styles.html'), 'utf8');
@@ -713,6 +830,9 @@ const jetons = new Set((srcCss.match(/var\(--[a-z0-9-]+\)/g) || [])
                         .map(function (v) { return v.slice(4, -1); }));
 eq('tous les jetons CSS sont définis dans le :root de base',
    Array.from(jetons).filter(function (j) { return !definis.has(j); }), []);
+vrai('l\'inventaire a son style', /\.inventaire \{/.test(srcCss));
+vrai('les pièces partagées se repèrent', /\.piece-partagee \{/.test(srcCss));
+vrai('le sélecteur de vue aussi', /\.onglet-vue \{/.test(srcCss));
 vrai('le thème sombre redéfinit les jetons', srcCss.indexOf('[data-theme="dark"]') !== -1);
 vrai('body peint son fond explicitement', /body \{[\s\S]*?background: var\(--sol\)/.test(srcCss));
 // La couleur ne doit servir qu'à porter une information.
@@ -720,7 +840,37 @@ const teintesInterface = (srcCss.match(/--encre[0-9-]*:|--trait[a-z-]*:|--sol[0-
 vrai('des jetons neutres pour toute la chrome', teintesInterface >= 8);
 vrai('une seule teinte de marque, réservée aux actions', /--marque:/.test(srcCss));
 faux('pas de second accent', /--accent:/.test(srcCss));
-vrai('le sol est blanc', /--sol: #ffffff/.test(srcCss));
+// « Tout est blanc » : ce n'est plus vrai nulle part, sauf dans les champs
+// de saisie, où le blanc sert à dire « ici on écrit ».
+const jeton = function (nom) {
+  const m = srcCss.match(new RegExp('--' + nom + ': (#[0-9a-f]{6})'));
+  return m ? m[1] : null;
+};
+faux('le sol n\'est plus blanc', jeton('sol') === '#ffffff');
+faux('les cartes ne sont plus blanches', jeton('surface') === '#ffffff');
+eq('le blanc est réservé à la saisie', jeton('surface-2'), '#ffffff');
+vrai('la barre d\'action a sa teinte', !!jeton('bande'));
+// Les neutres portent un voile bleu : le bleu doit dominer le rouge.
+const bleute = function (hex) {
+  return parseInt(hex.slice(5, 7), 16) > parseInt(hex.slice(1, 3), 16);
+};
+['sol', 'sol-2', 'surface', 'surface-3', 'bande', 'trait', 'trait-fort'].forEach(function (n) {
+  vrai('--' + n + ' est bleuté, pas gris neutre', bleute(jeton(n)));
+});
+// Le sol doit rester PLUS SOMBRE que les cartes, sinon elles ne se détachent pas.
+const clarte = function (hex) {
+  return parseInt(hex.slice(1, 3), 16) + parseInt(hex.slice(3, 5), 16) + parseInt(hex.slice(5, 7), 16);
+};
+vrai('les cartes se détachent du sol', clarte(jeton('surface')) > clarte(jeton('sol')));
+vrai('la barre d\'action est la zone la plus teintée du haut de page',
+     clarte(jeton('bande')) < clarte(jeton('sol')));
+vrai('la barre est soulignée par un filet marine',
+     /\.bande-action \{[\s\S]*?border-top: 3px solid var\(--marque\)/.test(srcCss));
+vrai('elle tient sur une ligne, recherche puis bouton',
+     /\.bande-corps \{[\s\S]*?display: flex/.test(srcCss));
+vrai('et passe en colonne sur petit écran',
+     /\.bande-corps \{ flex-direction: column/.test(srcCss));
+faux('plus de style pour les outils d\'en-tête', /\.entete-outils/.test(srcCss));
 vrai('le rail et le classement sont côte à côte', /\.compare-corps\.avec-reglages \{ grid-template-columns: 300px/.test(srcCss));
 vrai('les couleurs de type subsistent', /--t-structure:|--t-harnais:|--t-plaquette:/.test(srcCss));
 vrai('les couleurs de statut subsistent', /--vert:|--ambre:|--rouge:/.test(srcCss));

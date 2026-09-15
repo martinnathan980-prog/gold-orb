@@ -41,13 +41,6 @@
         <div class="marque">
           <h1>NEXUS</h1>
         </div>
-        <!-- L'action de création vit en haut à droite, à l'écart du titre. -->
-        <div class="entete-outils">
-          <button type="button" class="btn-entete btn-entete-fort" data-action="nouvelle-boite">
-            <span aria-hidden="true">+</span> Nouvelle boîte
-          </button>
-        </div>
-
         <!-- Indicateurs : chacun est aussi un filtre. -->
         <div class="indicateurs" role="group" aria-label="Indicateurs">
           <button type="button" class="indicateur" id="indBoites" data-action="tout-effacer"
@@ -88,8 +81,10 @@
       </div>
     </header>
 
-    <main class="enveloppe contenu">
-      <div class="barre-recherche">
+    <!-- ------------------------------------------------ Barre d'action -->
+    <!-- Les deux façons d'entrer dans les données : chercher, ou créer. -->
+    <div class="bande-action">
+      <div class="enveloppe bande-corps">
         <label class="champ-recherche">
           <span class="champ-recherche-icone" aria-hidden="true">⌕</span>
           <input type="text" id="searchBar" autocomplete="off"
@@ -99,12 +94,20 @@
           <button type="button" class="btn-dans-champ" id="btnComposant"
                   data-action="ouvrir-multi-recherche">Par composant</button>
         </label>
+        <button type="button" class="btn-principal btn-creer" data-action="nouvelle-boite">
+          <span aria-hidden="true">+</span> Nouvelle boîte
+        </button>
       </div>
+    </div>
 
+    <main class="enveloppe contenu">
       <div id="filtreActif" class="filtres-actifs"></div>
 
       <div class="outils">
-        <div class="outils-gauche"><div id="filtresType"></div></div>
+        <div class="outils-gauche">
+          <div id="zoneVue"></div>
+          <div id="filtresType"></div>
+        </div>
         <div class="outils-droite">
           <span class="outils-bilan" id="bilanResultats"></span>
           <div id="zoneTri"></div>

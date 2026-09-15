@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 641 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 728 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 448 tests : logique, pondération, serveur, bundle
+npm test                 # 504 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 193 tests dans un vrai Chromium
+npm run test:navigateur  # 224 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -217,11 +217,26 @@ score : « Non comparé, faute de donnée : Masse. Le score porte sur le reste. 
   laisser croire à un retour en arrière exact.
 - Côté serveur, la feuille `9_JOURNAL` enregistre qui a modifié quoi et quand.
 
+## Deux lectures de la même base
+
+Un sélecteur bascule entre **Boîtes** et **Pièces**.
+
+- **Boîtes** : la grille de cartes. Répond à « que contient cette boîte ».
+- **Pièces** : l'inventaire. Une ligne par PN de pièce, son type, le nombre de
+  boîtes qui la montent et lesquelles. Répond à « où sert cette pièce », qui
+  est la question d'un outil de réemploi prise par l'autre bout.
+
+Les pièces les plus réutilisées arrivent en tête, marquées d'un filet marine.
+L'inventaire suit les filtres en cours : une recherche ou un filtre de statut
+le restreint comme il restreint la grille. Un clic sur une boîte ouvre sa fiche.
+
 ## Duplication
 
-- Une **boîte** se duplique depuis sa carte, dans la liste — pas depuis sa fiche.
-- Un **sous-ensemble** se duplique depuis la fiche, avec tous les champs de son
-  type recopiés.
+Une **boîte** se duplique depuis sa carte, dans la liste, pas depuis sa fiche.
+
+Un **sous-ensemble** ne se duplique pas : on en ajoute un. Recopier une pièce
+pour en changer le PN derrière n'était un raccourci pour personne, et le bouton
+occupait la place à côté d'« Éditer ».
 
 Le PN de la copie est demandé par un **dialogue intégré** (`Dialogues.html`).
 Les fenêtres natives `prompt()` et `confirm()` sont bloquées dans l'iframe
@@ -238,10 +253,20 @@ faut, cochés à la création ou ajoutés depuis la fiche.
 
 ## Parti pris visuel
 
-**La couleur ne sert qu'à porter une information.** Trois teintes de type
-(structure, harnais, plaquette), trois teintes de statut, et rien d'autre : la
-chrome est en gris chauds et en encre, les boutons primaires sont noirs, l'état
-actif est un aplat d'encre. Une interface d'atelier, pas une interface bleue.
+**La couleur porte une information, ou elle structure la page.** Trois teintes
+de type (structure, harnais, plaquette), trois teintes de statut, trois niveaux
+d'équivalence : c'est la couleur qui signifie. À côté, une seule teinte de
+marque, un marine, réservée aux actions principales et aux états actifs.
+
+**Rien n'est blanc pur, sauf ce qui se saisit.** Les neutres portent un voile
+bleu-gris, celui des panneaux d'aéronef et des plans. Le sol est plus soutenu
+que les cartes, qui s'y détachent comme des plaques posées ; le blanc est
+gardé pour les champs de saisie, où il dit « ici on écrit ».
+
+**Une barre d'action coupe la page en deux.** Pleine largeur, teintée, filet
+marine au-dessus, elle sépare l'en-tête du catalogue et réunit les deux façons
+d'entrer dans les données : chercher, ou créer. Le bouton de création vit là,
+et non à côté du titre, où il n'avait rien à faire.
 
 Typographie ancrée dans le sujet : **Archivo** très tracké pour le titre, à la
 manière d'une plaque d'aéronef ; **IBM Plex Mono** pour les PN, qui sont de la

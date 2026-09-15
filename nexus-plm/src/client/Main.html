@@ -202,6 +202,13 @@ enregistrerActions({
       : Store.filtreTypes.filter(function (t) { return t !== d.type; });
     rendreInterface();
   },
+  'changer-vue': function (d) {
+    if (d.vue !== 'boites' && d.vue !== 'pieces') return;
+    Store.vueMode = d.vue;
+    enregistrerReglages();
+    rendreInterface();
+  },
+
   'basculer-tri': function () {
     const menu = parId('triMenu'), bouton = parId('triBouton');
     if (!menu) return;
@@ -387,35 +394,6 @@ enregistrerActions({
   },
 
   'annuler-suppression': function () { restaurer(); },
-
-  'dupliquer-nom': function (d) {
-    const source = nomParId(d.id);
-    if (!source) return;
-    const type = typeDe(source);
-    demander({
-      titre: 'Dupliquer ce ' + type.libelle.toLowerCase(),
-      message: 'PN de la copie. Tous ses champs sont recopiés.',
-      valeur: txt(source['PN du type'], '') + '-B', bouton: 'Dupliquer'
-    }).then(function (nouveauPn) {
-      if (nouveauPn === null) return;
-      indicateurNom(d.id);
-      return Api.creerNom(source[CLE_PN()], source['Type'], nouveauPn)
-        .then(function (r) {
-          appliquerNom(r.ligne);
-          // Recopie des champs du type, identifiants exclus.
-          const modifs = {};
-          champsDuType(type).forEach(function (c) {
-            if (c.cle === 'PN du type') return;
-            if (source[c.cle] !== undefined && source[c.cle] !== '') modifs[c.cle] = source[c.cle];
-          });
-          if (!Object.keys(modifs).length) return r;
-          return Api.sauverNom(r.ligne[CLE_NOM()], modifs)
-                    .then(function (r2) { appliquerNom(r2.ligne); return r2; });
-        })
-        .then(function () { rafraichir(); confirmerSucces('Sous-ensemble dupliqué.'); })
-        .catch(function (e) { signalerErreur(e, 'duplication du sous-ensemble'); });
-    });
-  },
 
   'ajouter-multi-nom': function (d) {
     const v = lireSaisieMulti(d.champ, d.id);

@@ -27,22 +27,29 @@
 :root {
   color-scheme: light;
 
-  /* Sol blanc, gris très légers et froids : propre, jamais terne. */
-  --sol: #ffffff;
-  --sol-2: #f7f8fa;
-  --surface: #ffffff;
-  --surface-2: #f7f8fa;
-  --surface-3: #eef0f4;
-  --encre: #101a2e;
-  --encre-2: #4a5470;
-  --encre-3: #7f889c;
-  --trait: #e5e8ee;
-  --trait-fort: #c8cfdb;
+  /* Les neutres portent un voile bleu-gris, celui des panneaux d'aéronef et
+     des plans : rien n'est blanc pur, sauf ce qui se saisit. Le sol est plus
+     soutenu que les cartes, qui s'y détachent comme des plaques posées. */
+  --sol: #e3ebf6;
+  --sol-2: #dae5f2;
+  --surface: #f6f9fd;
+  --surface-2: #ffffff;
+  --surface-3: #dde6f2;
+  --encre: #0f1929;
+  --encre-2: #465268;
+  --encre-3: #78859b;
+  --trait: #d2dcec;
+  --trait-fort: #b3c2d9;
+
+  /* La barre d'action, au milieu de la page : la seule zone franchement
+     teintée, elle sépare l'en-tête du catalogue et porte les deux entrées. */
+  --bande: #d2e0f2;
+  --bande-2: #c6d7ed;
 
   /* La marque : un marine, pour les actions principales seulement. */
   --marque: #00205b;
   --marque-2: #0b2f7a;
-  --marque-voile: #eef2f9;
+  --marque-voile: #dbe6f7;
   --sur-marque: #ffffff;
 
   /* Types de sous-ensembles — sémantiques */
@@ -72,11 +79,12 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --sol: #111418; --sol-2: #161a20;
-    --surface: #1a1e25; --surface-2: #1f242c; --surface-3: #262c36;
-    --encre: #e8e9ec; --encre-2: #b3b9c4; --encre-3: #858d9b;
-    --trait: #2b313b; --trait-fort: #3b424e;
-    --marque: #8fb0f0; --marque-2: #a8c2f5; --marque-voile: #1b2437; --sur-marque: #0f1522;
+    --sol: #0e131b; --sol-2: #121924;
+    --surface: #18202c; --surface-2: #202937; --surface-3: #26303f;
+    --encre: #e8ebf1; --encre-2: #aeb8c8; --encre-3: #7f8b9d;
+    --trait: #29333f; --trait-fort: #394656;
+    --bande: #16202f; --bande-2: #1a2637;
+    --marque: #8fb0f0; --marque-2: #a8c2f5; --marque-voile: #1b2740; --sur-marque: #0f1522;
 
     --t-structure: #8fabd6; --t-structure-voile: #1b2436; --t-structure-trait: #35476b;
     --t-harnais:   #d9a06a; --t-harnais-voile:   #2c2118; --t-harnais-trait:   #5d4327;
@@ -95,11 +103,12 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --sol: #111418; --sol-2: #161a20;
-  --surface: #1a1e25; --surface-2: #1f242c; --surface-3: #262c36;
-  --encre: #e8e9ec; --encre-2: #b3b9c4; --encre-3: #858d9b;
-  --trait: #2b313b; --trait-fort: #3b424e;
-  --marque: #8fb0f0; --marque-2: #a8c2f5; --marque-voile: #1b2437; --sur-marque: #0f1522;
+  --sol: #0e131b; --sol-2: #121924;
+  --surface: #18202c; --surface-2: #202937; --surface-3: #26303f;
+  --encre: #e8ebf1; --encre-2: #aeb8c8; --encre-3: #7f8b9d;
+  --trait: #29333f; --trait-fort: #394656;
+  --bande: #16202f; --bande-2: #1a2637;
+  --marque: #8fb0f0; --marque-2: #a8c2f5; --marque-voile: #1b2740; --sur-marque: #0f1522;
 
   --t-structure: #8fabd6; --t-structure-voile: #1b2436; --t-structure-trait: #35476b;
   --t-harnais:   #d9a06a; --t-harnais-voile:   #2c2118; --t-harnais-trait:   #5d4327;
@@ -131,7 +140,7 @@ button { font: inherit; cursor: pointer; }
 
 /* ---------------- bandeau de titre ---------------- */
 .entete { background: var(--surface); border-bottom: 1px solid var(--trait); padding-block: var(--e-6) var(--e-5); }
-.entete-corps { position: relative; text-align: center; }
+.entete-corps { text-align: center; }
 .marque { display: flex; flex-direction: column; align-items: center; gap: var(--e-2); }
 .marque h1 {
   font-family: var(--police-titre); font-weight: 800;
@@ -141,7 +150,6 @@ button { font: inherit; cursor: pointer; }
 }
 /* Un filet marine sous le titre : une plaque, pas un logo. */
 .marque::after { content: ""; width: 56px; height: 3px; background: var(--marque); border-radius: 2px; margin-top: var(--e-2); }
-.entete-outils { position: absolute; top: 0; right: 0; }
 
 /* ---------------- indicateurs ---------------- */
 /* Chaque indicateur est aussi un filtre : cliquer « Validées » ne montre que
@@ -185,12 +193,25 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
   letter-spacing: .08em; text-transform: uppercase; margin-top: var(--e-3);
 }
 
-/* ---------------- recherche ---------------- */
+/* ---------------- barre d'action ---------------- */
+/* Pleine largeur, teintée, filet marine au-dessus : elle coupe la page en
+   deux et réunit les deux façons d'entrer dans les données, chercher ou
+   créer. Le bouton de création n'a rien à faire à côté du titre. */
+.bande-action {
+  background: linear-gradient(180deg, var(--bande), var(--bande-2));
+  border-top: 3px solid var(--marque);
+  border-bottom: 1px solid var(--trait-fort);
+}
+.bande-corps {
+  display: flex; align-items: center; gap: var(--e-3);
+  padding-block: var(--e-4);
+}
+.btn-creer { flex-shrink: 0; white-space: nowrap; box-shadow: var(--ombre-1); }
+
 .contenu { padding-block: var(--e-5) var(--e-7); }
-.barre-recherche { display: flex; justify-content: center; margin-bottom: var(--e-4); }
 .champ-recherche {
   display: flex; align-items: center; gap: var(--e-2);
-  width: min(760px, 100%); background: var(--surface);
+  flex: 1; min-width: 0; background: var(--surface-2);
   border: 1px solid var(--trait-fort); border-radius: 999px;
   padding: 2px 6px 2px var(--e-4); box-shadow: var(--ombre-1); transition: box-shadow .15s, border-color .15s;
 }
@@ -210,7 +231,7 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
    chercher, pas une fonction annexe posée à côté. */
 .btn-dans-champ {
   display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-  background: var(--surface-3); color: var(--encre-2); border: 1px solid var(--trait);
+  background: var(--sol); color: var(--encre-2); border: 1px solid var(--trait);
   border-radius: 999px; padding: 8px 15px; font-size: 12.5px; font-weight: 600;
 }
 .btn-dans-champ:hover, .btn-dans-champ.actif { background: var(--marque); color: var(--sur-marque); border-color: var(--marque); }
@@ -222,6 +243,9 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
   padding-bottom: var(--e-3); border-bottom: 1px solid var(--trait);
 }
 .outils-gauche, .outils-droite { display: flex; align-items: center; gap: var(--e-2); flex-wrap: wrap; }
+/* Le sélecteur de vue n'est pas un filtre : on l'en sépare à l'oeil. */
+.outils-gauche > #zoneVue { margin-right: var(--e-3); padding-right: var(--e-3); border-right: 1px solid var(--trait); }
+@media (max-width: 620px) { .outils-gauche > #zoneVue { border-right: 0; margin-right: 0; padding-right: 0; } }
 .outils-bilan { font-size: 12.5px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
 
 .filtres-type { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -296,6 +320,53 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
 .chargement {
   display: flex; align-items: center; justify-content: center; gap: var(--e-3);
   padding: var(--e-7) 0; color: var(--encre-3);
+}
+
+/* ---------------- choix de la vue ---------------- */
+/* Un segmenté court : deux lectures de la même base, pas un menu. */
+.choix-vue { display: inline-flex; background: var(--surface-3); border: 1px solid var(--trait); border-radius: 999px; padding: 2px; }
+.onglet-vue {
+  background: none; border: 0; border-radius: 999px; padding: 5px 14px;
+  font-size: 12.5px; font-weight: 600; color: var(--encre-3); transition: .14s;
+}
+.onglet-vue:hover { color: var(--encre); }
+.onglet-vue.actif { background: var(--marque); color: var(--sur-marque); box-shadow: var(--ombre-1); }
+
+/* ---------------- inventaire des pièces ---------------- */
+/* Une nomenclature lue par l'autre bout : la pièce d'abord, les boîtes après.
+   Les pièces partagées portent un filet marine : c'est ce qu'on cherche. */
+.inventaire { display: flex; flex-direction: column; border: 1px solid var(--trait); border-radius: var(--r-m); overflow: hidden; background: var(--surface); }
+.inventaire-entete, .piece {
+  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr) 108px minmax(0, 1.6fr);
+  gap: var(--e-3); align-items: center; padding: 10px var(--e-4);
+}
+.inventaire-entete {
+  background: var(--surface-3); border-bottom: 1px solid var(--trait);
+  font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--encre-3); font-weight: 700;
+}
+.piece { border-bottom: 1px solid var(--surface-3); border-left: 3px solid transparent; }
+.piece:last-child { border-bottom: 0; }
+.piece:hover { background: var(--sol-2); }
+.piece-partagee { border-left-color: var(--marque); }
+.piece-pn { font-family: var(--police-data); font-size: 13px; font-weight: 600; color: var(--encre); overflow-wrap: anywhere; }
+.piece-type { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; }
+.piece-type.type-structure { color: var(--t-structure); }
+.piece-type.type-harnais   { color: var(--t-harnais); }
+.piece-type.type-plaquette { color: var(--t-plaquette); }
+.piece-type.type-autre     { color: var(--t-autre); }
+.piece-compte {
+  font-size: 12px; font-weight: 600; color: var(--encre-3);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+  background: var(--surface-3); border-radius: 999px; padding: 3px 10px; text-align: center;
+}
+.piece-compte-fort { background: var(--marque-voile); color: var(--marque); }
+.piece-boites { display: flex; flex-wrap: wrap; gap: 5px; }
+
+@media (max-width: 860px) {
+  .inventaire-entete { display: none; }
+  .piece { grid-template-columns: 1fr; gap: 6px; padding: var(--e-3) var(--e-4); }
+  .piece-compte { justify-self: start; }
 }
 
 /* ---------------- cartes ---------------- */
@@ -697,7 +768,8 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
   .reglages-rail { position: static; max-height: none; }
 }
 @media (max-width: 720px) {
-  .entete-outils { position: static; margin-top: var(--e-4); }
+  .bande-corps { flex-direction: column; align-items: stretch; }
+  .btn-creer { width: 100%; }
 }
 @media (max-width: 620px) {
   .entete { padding-block: var(--e-5) var(--e-4); }
@@ -747,13 +819,6 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
         <div class="marque">
           <h1>NEXUS</h1>
         </div>
-        <!-- L'action de création vit en haut à droite, à l'écart du titre. -->
-        <div class="entete-outils">
-          <button type="button" class="btn-entete btn-entete-fort" data-action="nouvelle-boite">
-            <span aria-hidden="true">+</span> Nouvelle boîte
-          </button>
-        </div>
-
         <!-- Indicateurs : chacun est aussi un filtre. -->
         <div class="indicateurs" role="group" aria-label="Indicateurs">
           <button type="button" class="indicateur" id="indBoites" data-action="tout-effacer"
@@ -794,8 +859,10 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
       </div>
     </header>
 
-    <main class="enveloppe contenu">
-      <div class="barre-recherche">
+    <!-- ------------------------------------------------ Barre d'action -->
+    <!-- Les deux façons d'entrer dans les données : chercher, ou créer. -->
+    <div class="bande-action">
+      <div class="enveloppe bande-corps">
         <label class="champ-recherche">
           <span class="champ-recherche-icone" aria-hidden="true">⌕</span>
           <input type="text" id="searchBar" autocomplete="off"
@@ -805,12 +872,20 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
           <button type="button" class="btn-dans-champ" id="btnComposant"
                   data-action="ouvrir-multi-recherche">Par composant</button>
         </label>
+        <button type="button" class="btn-principal btn-creer" data-action="nouvelle-boite">
+          <span aria-hidden="true">+</span> Nouvelle boîte
+        </button>
       </div>
+    </div>
 
+    <main class="enveloppe contenu">
       <div id="filtreActif" class="filtres-actifs"></div>
 
       <div class="outils">
-        <div class="outils-gauche"><div id="filtresType"></div></div>
+        <div class="outils-gauche">
+          <div id="zoneVue"></div>
+          <div id="filtresType"></div>
+        </div>
         <div class="outils-droite">
           <span class="outils-bilan" id="bilanResultats"></span>
           <div id="zoneTri"></div>
@@ -1750,6 +1825,7 @@ const Store = {
   filtreTypes: [],
   filtreStatut: null,        // un statut, ou rien
   filtreReutilise: false,    // seulement les boîtes qui partagent une pièce
+  vueMode: 'boites',         // 'boites' ou 'pieces'
   tri: 'pn',
   enEditionBoite: false,
   enEditionNom: {},
@@ -1908,7 +1984,7 @@ function enregistrerReglages() {
   try {
     localStorage.setItem(CLE_REGLAGES, JSON.stringify({
       poids: Store.poids, actifs: Store.criteresActifs,
-      seuil: Store.seuilEquivalence, tri: Store.tri
+      seuil: Store.seuilEquivalence, tri: Store.tri, vue: Store.vueMode
     }));
   } catch (e) { /* navigation privée, stockage refusé : sans gravité */ }
 }
@@ -1942,6 +2018,7 @@ function chargerReglages() {
       }
       if (typeof lu.seuil === 'number') Store.seuilEquivalence = lu.seuil;
       if (typeof lu.tri === 'string') Store.tri = lu.tri;
+      if (lu.vue === 'boites' || lu.vue === 'pieces') Store.vueMode = lu.vue;
     }
   } catch (e) { /* réglages illisibles : on repart des valeurs par défaut */ }
   PORTEES.forEach(function (p) { normaliserPoids(p.cle); });
@@ -2296,6 +2373,43 @@ function boitesUtilisant(pnPiece, saufBoite) {
     vues.add(b);
   });
   return Array.from(vues).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+}
+
+/**
+ * L'inventaire des PIÈCES vu depuis les boîtes affichées : un PN de pièce,
+ * son type, et toutes les boîtes qui la montent. C'est la question que pose
+ * un outil de réemploi, prise par l'autre bout — la grille répond « que
+ * contient cette boîte », celle-ci répond « où sert cette pièce ».
+ */
+function inventairePieces(liste) {
+  const parPiece = new Map();
+  liste.forEach(function (b) {
+    const pnBoite = String(b[CLE_PN()]).trim();
+    (b.nomenclature || []).forEach(function (n) {
+      const pn = String(n['PN du type'] || '').trim();
+      if (!pn) return;                       // une pièce sans PN n'est pas suivie
+      const cle = normaliserTexte(pn) + '|' + typeDe(n).cle;
+      if (!parPiece.has(cle)) {
+        parPiece.set(cle, { pn: pn, type: typeDe(n), boites: [], lignes: [] });
+      }
+      const e = parPiece.get(cle);
+      e.lignes.push(n);
+      if (e.boites.indexOf(pnBoite) === -1) e.boites.push(pnBoite);
+    });
+  });
+
+  return Array.from(parPiece.values())
+    .map(function (e) {
+      e.boites.sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); });
+      e.nombre = e.boites.length;
+      return e;
+    })
+    // Les plus réutilisées d'abord : c'est l'information qu'on vient chercher.
+    .sort(function (a, b) {
+      return b.nombre - a.nombre ||
+             a.type.libelle.localeCompare(b.type.libelle, 'fr') ||
+             a.pn.localeCompare(b.pn, 'fr', { numeric: true });
+    });
 }
 
 /** Répartition des sous-ensembles par type, pour la barre de filtres. */
@@ -2674,6 +2788,54 @@ function filtresTypeHtml() {
   '</div>';
 }
 
+/**
+ * Boîtes ou pièces : deux façons de lire la même base. La grille répond
+ * « que contient cette boîte », l'inventaire « où sert cette pièce ».
+ */
+function selecteurVueHtml() {
+  return '<div class="choix-vue" role="group" aria-label="Mode d\'affichage">' +
+    [['boites', 'Boîtes'], ['pieces', 'Pièces']].map(function (v) {
+      const actif = Store.vueMode === v[0];
+      return '<button type="button" class="onglet-vue' + (actif ? ' actif' : '') + '"' +
+             dataAttrs({ action: 'changer-vue', vue: v[0] }) +
+             ' aria-pressed="' + actif + '">' + esc(v[1]) + '</button>';
+    }).join('') +
+  '</div>';
+}
+
+/** L'inventaire des pièces : une ligne par PN, les boîtes qui la montent. */
+function piecesHtml(vue) {
+  const pieces = inventairePieces(vue.aAfficher);
+  if (!pieces.length) {
+    return '<div class="etat-vide">' +
+      '<p>Aucune pièce à inventorier.</p>' +
+      '<p class="etat-vide-aide">Les pièces sans PN ne sont pas suivies.</p>' +
+    '</div>';
+  }
+
+  return '<div class="inventaire">' +
+    '<div class="inventaire-entete">' +
+      '<span>Pièce</span><span>Type</span><span>Réemploi</span><span>Montée dans</span>' +
+    '</div>' +
+    pieces.map(function (p) {
+      const partagee = p.nombre > 1;
+      return '<div class="piece' + (partagee ? ' piece-partagee' : '') + '">' +
+        '<span class="piece-pn">' + esc(p.pn) + '</span>' +
+        '<span class="piece-type ' + p.type.teinte + '">' +
+          '<span aria-hidden="true">' + p.type.icone + '</span> ' + esc(p.type.libelle) + '</span>' +
+        '<span class="piece-compte' + (partagee ? ' piece-compte-fort' : '') + '">' +
+          (partagee ? p.nombre + ' boîtes' : '1 boîte') + '</span>' +
+        '<span class="piece-boites">' +
+          p.boites.map(function (pn) {
+            return '<button type="button" class="usage-lien"' +
+                   dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
+          }).join('') +
+        '</span>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
 /** Le tri : un menu discret, pas un <select> planté au milieu de la page. */
 function triHtml() {
   const courant = TRIS[Store.tri] || TRIS.pn;
@@ -2772,12 +2934,23 @@ function grilleHtml(vue) {
 
 function rendreInterface() {
   const vue = calculerVue();
+  const pieces = Store.vueMode === 'pieces';
   definirHtml('functionTabs', ongletsHtml(vue));
   definirHtml('filtresType', filtresTypeHtml());
-  definirHtml('zoneTri', triHtml());
-  definirHtml('mainContainer', grilleHtml(vue));
-  definirTexte('bilanResultats', vue.aAfficher.length +
-               (vue.aAfficher.length > 1 ? ' boîtes' : ' boîte'));
+  definirHtml('zoneVue', selecteurVueHtml());
+  definirHtml('zoneTri', pieces ? '' : triHtml());
+
+  const contenant = parId('mainContainer');
+  if (contenant) contenant.classList.toggle('grille', !pieces);
+  definirHtml('mainContainer', pieces ? piecesHtml(vue) : grilleHtml(vue));
+
+  if (pieces) {
+    const n = inventairePieces(vue.aAfficher).length;
+    definirTexte('bilanResultats', n + (n > 1 ? ' pièces distinctes' : ' pièce'));
+  } else {
+    definirTexte('bilanResultats', vue.aAfficher.length +
+                 (vue.aAfficher.length > 1 ? ' boîtes' : ' boîte'));
+  }
   rendreKpi(calculerKpi(vue.aAfficher), vue);
   rendreFiltreActif(vue);
   const chargement = parId('loading');
@@ -3090,8 +3263,7 @@ function blocNomHtml(ligne) {
       boutonHtml('annuler-nom', { id: id }, 'Annuler', 'btn-neutre') +
       boutonHtml('supprimer-nom', { id: id }, 'Supprimer', 'btn-danger')
     : boutonHtml('comparer-nom', { id: id }, 'Équivalences', 'btn-accent') +
-      boutonHtml('editer-nom', { id: id }, 'Éditer', 'btn-neutre') +
-      boutonHtml('dupliquer-nom', { id: id }, 'Dupliquer', 'btn-neutre');
+      boutonHtml('editer-nom', { id: id }, 'Éditer', 'btn-neutre');
 
   let html = '<section class="bloc bloc-' + type.teinte + '">' +
     '<header class="bloc-tete">' +
@@ -4048,6 +4220,13 @@ enregistrerActions({
       : Store.filtreTypes.filter(function (t) { return t !== d.type; });
     rendreInterface();
   },
+  'changer-vue': function (d) {
+    if (d.vue !== 'boites' && d.vue !== 'pieces') return;
+    Store.vueMode = d.vue;
+    enregistrerReglages();
+    rendreInterface();
+  },
+
   'basculer-tri': function () {
     const menu = parId('triMenu'), bouton = parId('triBouton');
     if (!menu) return;
@@ -4233,35 +4412,6 @@ enregistrerActions({
   },
 
   'annuler-suppression': function () { restaurer(); },
-
-  'dupliquer-nom': function (d) {
-    const source = nomParId(d.id);
-    if (!source) return;
-    const type = typeDe(source);
-    demander({
-      titre: 'Dupliquer ce ' + type.libelle.toLowerCase(),
-      message: 'PN de la copie. Tous ses champs sont recopiés.',
-      valeur: txt(source['PN du type'], '') + '-B', bouton: 'Dupliquer'
-    }).then(function (nouveauPn) {
-      if (nouveauPn === null) return;
-      indicateurNom(d.id);
-      return Api.creerNom(source[CLE_PN()], source['Type'], nouveauPn)
-        .then(function (r) {
-          appliquerNom(r.ligne);
-          // Recopie des champs du type, identifiants exclus.
-          const modifs = {};
-          champsDuType(type).forEach(function (c) {
-            if (c.cle === 'PN du type') return;
-            if (source[c.cle] !== undefined && source[c.cle] !== '') modifs[c.cle] = source[c.cle];
-          });
-          if (!Object.keys(modifs).length) return r;
-          return Api.sauverNom(r.ligne[CLE_NOM()], modifs)
-                    .then(function (r2) { appliquerNom(r2.ligne); return r2; });
-        })
-        .then(function () { rafraichir(); confirmerSucces('Sous-ensemble dupliqué.'); })
-        .catch(function (e) { signalerErreur(e, 'duplication du sous-ensemble'); });
-    });
-  },
 
   'ajouter-multi-nom': function (d) {
     const v = lireSaisieMulti(d.champ, d.id);
