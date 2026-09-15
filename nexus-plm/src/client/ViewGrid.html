@@ -148,9 +148,6 @@ function carteHtml(boite) {
         dataAttrs({ action: 'ouvrir-fiche', pn: pn }) +
         ' aria-label="Ouvrir la fiche de ' + esc(txt(pn)) + '">' + visuel + '</button>' +
       statutSurPhotoHtml(boite['Statut']) +
-      '<button type="button" class="btn-sur-image"' +
-        ' aria-label="Dupliquer la boîte ' + esc(txt(pn)) + '"' +
-        dataAttrs({ action: 'dupliquer-boite', pn: pn }) + '>Dupliquer</button>' +
     '</div>' +
     '<div class="carte-corps">' +
       '<div class="carte-tete">' +
@@ -219,11 +216,6 @@ function rendreKpi(kpi, vue) {
   definirTexte('kpiNomsDetail', kpi.nbPieces + ' pièces distinctes');
   definirTexte('kpiReutil', String(kpi.reutilisees));
   definirTexte('kpiReutilDetail', kpi.pctReutilisees + ' % des pièces');
-
-  const jaugeVal = parId('kpiValJauge');
-  if (jaugeVal) jaugeVal.style.width = kpi.pctValides + '%';
-  const jaugeReutil = parId('kpiReutilJauge');
-  if (jaugeReutil) jaugeReutil.style.width = kpi.pctReutilisees + '%';
 
   // L'indicateur dit s'il filtre en ce moment.
   const marquer = function (id, actif) {

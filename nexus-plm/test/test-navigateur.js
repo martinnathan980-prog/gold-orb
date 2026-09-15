@@ -151,7 +151,7 @@ async function ecranPropre(page) {
   eq('plus aucun bouton dans l\'en-tête',
      await page.locator('.entete [data-action="nouvelle-boite"]').count(), 0);
 
-  // « Tout est blanc » : le sol est teinté, les cartes aussi, la barre plus encore.
+  // Le sol est blanc, et ce sont les OBJETS posés dessus qui portent la couleur.
   const teintes = await page.evaluate(function () {
     const lire = function (sel, prop) {
       const el = document.querySelector(sel);
@@ -166,13 +166,45 @@ async function ecranPropre(page) {
     };
   });
   const rgb = function (c) { return (c.match(/\d+/g) || []).map(Number); };
-  faux('le sol n\'est plus blanc', teintes.sol === 'rgb(255, 255, 255)');
-  faux('les cartes ne sont plus blanches', teintes.carte === 'rgb(255, 255, 255)');
-  vrai('le sol est bleuté', rgb(teintes.sol)[2] > rgb(teintes.sol)[0]);
-  vrai('les cartes aussi', rgb(teintes.carte)[2] > rgb(teintes.carte)[0]);
-  vrai('les cartes se détachent du sol, plus claires',
-       rgb(teintes.carte).reduce(function (a, b) { return a + b; }, 0) >
+  eq('le sol est blanc', teintes.sol, 'rgb(255, 255, 255)');
+  faux('les cartes, elles, ne sont pas blanches', teintes.carte === 'rgb(255, 255, 255)');
+  vrai('les cartes sont bleutées', rgb(teintes.carte)[2] > rgb(teintes.carte)[0]);
+  vrai('elles se détachent du blanc par leur teinte',
+       rgb(teintes.carte).reduce(function (a, b) { return a + b; }, 0) <
        rgb(teintes.sol).reduce(function (a, b) { return a + b; }, 0));
+  eq('l\'en-tête est blanc, sous NEXUS',
+     await page.locator('.entete').evaluate(function (e) { return getComputedStyle(e).backgroundColor; }),
+     'rgb(255, 255, 255)');
+  // Il est en pilule, pas en bouton de formulaire : l'arrondi doit valoir au
+  // moins la moitié de sa hauteur.
+  const rondeur = await page.locator('.btn-creer').evaluate(function (e) {
+    return { rayon: parseFloat(getComputedStyle(e).borderTopLeftRadius),
+             hauteur: e.getBoundingClientRect().height };
+  });
+  vrai('le bouton de création est en pilule', rondeur.rayon >= rondeur.hauteur / 2);
+
+  // Les indicateurs : une ligne cadrée de filets, plus une rangée de cartes.
+  const mesures = await page.evaluate(function () {
+    const liste = Array.prototype.slice.call(document.querySelectorAll('.indicateur'));
+    const conteneur = document.querySelector('.indicateurs');
+    return {
+      nombre: liste.length,
+      alignes: liste.every(function (e) {
+        return Math.abs(e.getBoundingClientRect().top - liste[0].getBoundingClientRect().top) < 2;
+      }),
+      fondTransparent: getComputedStyle(liste[0]).backgroundColor,
+      sansBordure: getComputedStyle(liste[0]).borderTopWidth,
+      cadre: getComputedStyle(conteneur).borderTopWidth,
+      disposition: getComputedStyle(conteneur).display
+    };
+  });
+  eq('cinq mesures', mesures.nombre, 5);
+  vrai('toutes sur la même ligne', mesures.alignes);
+  eq('sans fond propre : ce ne sont pas des cartes', mesures.fondTransparent, 'rgba(0, 0, 0, 0)');
+  eq('ni bordure propre', mesures.sansBordure, '0px');
+  eq('la ligne, elle, est cadrée', mesures.cadre, '1px');
+  eq('et disposée en ligne', mesures.disposition, 'flex');
+  eq('plus de jauge sous les chiffres', await page.locator('.indicateur-jauge').count(), 0);
   vrai('la barre d\'action porte un dégradé', /gradient/.test(teintes.bande));
   vrai('soulignée d\'un filet marine', teintes.filet === 'rgb(0, 32, 91)');
   eq('le champ de recherche reste blanc : c\'est là qu\'on écrit',
@@ -263,8 +295,6 @@ async function ecranPropre(page) {
   await page.locator('#indBoites').click();
   await page.waitForTimeout(300);
   eq('« Boîtes » remet tout', await page.locator('.carte').count(), 10);
-  vrai('la jauge des validées est renseignée',
-       (await page.locator('#kpiValJauge').evaluate(function (e) { return e.style.width; })) === '50%');
 
   // ---------------------------------------------------------------
   bloc('Vue Pièces : où sert chaque référence');
@@ -558,7 +588,35 @@ async function ecranPropre(page) {
     });
   };
 
-  eq('9 curseurs pour la structure', await page.locator('.curseur').count(), 9);
+  // 9 critères de structure, plus les 3 niveaux de composant qui se règlent
+  // dans le même rail dès que la portée compare des composants.
+  eq('9 critères de structure + 3 niveaux de composant',
+     await page.locator('.curseur').count(), 12);
+  eq('les niveaux ont leur propre bloc', await page.locator('.sous-reglage').count(), 1);
+  eq('et leur propre total', await page.locator('.reglage-total').count(), 2);
+  eq('les trois niveaux sont nommés',
+     await page.locator('.sous-reglage .reglage-tete label')
+               .evaluateAll(function (els) { return els.map(function (e) { return e.textContent; }); }),
+     ['Fonction', 'Norme', 'Référence']);
+  const totalNiveaux = Number((await page.locator('.reglage-total[data-portee="composant"]')
+    .evaluate(function (e) { return e.textContent; })).replace(/\D/g, ''));
+  eq('les niveaux totalisent 100 %', totalNiveaux, 100);
+
+  // Bouger un niveau recompose le classement, comme n'importe quelle part.
+  const scoreAvantNiveau = await texte(page, '#compareResult .score b');
+  await page.locator('.sous-reglage .curseur').first().fill('90');
+  await page.dispatchEvent('.sous-reglage .curseur', 'input');
+  await page.waitForTimeout(450);
+  const totalApres = Number((await page.locator('.reglage-total[data-portee="composant"]')
+    .evaluate(function (e) { return e.textContent; })).replace(/\D/g, ''));
+  eq('ils totalisent toujours 100 %', totalApres, 100);
+  vrai('la pondération des niveaux est bien mémorisée comme les autres',
+       await page.locator('#reglagesModifies').isVisible());
+  vrai('un score reste affiché', (await texte(page, '#compareResult .score b')).length > 0);
+  vrai('le score de structure a suivi ou tenu bon',
+       typeof scoreAvantNiveau === 'string');
+  await page.locator('[data-action="reinitialiser-reglages"]').click();
+  await page.waitForTimeout(400);
   // Les composants se comparent par paliers : référence, norme, fonction.
   vrai('les paliers d\'équivalence des composants sont affichés',
        await page.locator('#compareResult .palier').count() >= 1);
@@ -670,35 +728,16 @@ async function ecranPropre(page) {
   }
   await ecranPropre(page);
 
-  bloc('Duplication — sans prompt() natif, qui est bloqué chez Google');
+  bloc('Plus de duplication : ni la boîte, ni ses sous-ensembles');
   await ecranPropre(page);
-  await page.locator('.carte', { hasText: '332P20001' })
-            .locator('[data-action="dupliquer-boite"]').click({ force: true });
-  await page.waitForSelector('#dialogueModal.show');
-  vrai('un dialogue intégré demande le PN',
-       (await texte(page, '#dialogueTitre')).indexOf('Dupliquer') !== -1);
-  eq('pré-rempli', await page.locator('#dialogueChamp').inputValue(), '332P20001-B');
-  await page.locator('[data-action="dialogue-annuler"]').click();
-  await attendreFerme(page, 'dialogueModal');
-  eq('annuler ne duplique rien', await page.locator('.carte').count(), 10);
-  await page.locator('.carte', { hasText: '332P20001' })
-            .locator('[data-action="dupliquer-boite"]').click({ force: true });
-  await repondreDialogue(page, 'COPIE-1');
-  await page.waitForTimeout(1000);
-  eq('boîte dupliquée depuis la liste', await page.locator('.carte').count(), 11);
-  vrai('le vocabulaire dit « boîte »',
-       (await texte(page, '#bandeauMessage')).indexOf('Boîte dupliquée') !== -1);
-  vrai('la copie apparaît', await page.locator('.carte', { hasText: 'COPIE-1' }).count() === 1);
-
-  await ouvrirFiche(page, 'COPIE-1');
-  faux('pas de duplication de boîte dans son bloc',
-       (await texte(page, '.bloc-general')).indexOf('Dupliquer') !== -1);
-  // La duplication d'un SOUS-ENSEMBLE a été retirée : on en ajoute un, on ne
-  // le recopie pas. Celle d'une boîte, elle, reste et vient d'être vérifiée.
-  eq('aucune duplication de sous-ensemble dans la copie',
-     await page.locator('#slideOverBody [data-action="dupliquer-nom"]').count(), 0);
-  vrai('la copie a bien repris les sous-ensembles de la source',
-       await page.locator('#slideOverBody .bloc').count() >= 4);
+  eq('aucun bouton Dupliquer sur les cartes',
+     await page.locator('.carte [data-action="dupliquer-boite"]').count(), 0);
+  eq('aucun dans toute la page',
+     await page.locator('[data-action="dupliquer-boite"]').count(), 0);
+  await ouvrirFiche(page, '332P20001');
+  eq('ni dans la fiche', await page.locator('#slideOverBody [data-action*="dupliquer"]').count(), 0);
+  faux('le mot n\'apparaît plus dans la fiche',
+       (await texte(page, '#slideOverBody')).indexOf('Dupliquer') !== -1);
   vrai('on ajoute un sous-ensemble plutôt que de le dupliquer',
        await page.locator('[data-action="nouveau-sous-ensemble"]').count() === 1);
   await fermerFiche(page);
@@ -785,7 +824,7 @@ async function ecranPropre(page) {
   }, null, { timeout: 8000 });
   vrai('PN en double refusé', true);
   await ecranPropre(page);
-  eq('aucune boîte créée', await page.locator('.carte').count(), 11);
+  eq('aucune boîte créée', await page.locator('.carte').count(), 10);
 
   // ---------------------------------------------------------------
   bloc('Thème sombre');

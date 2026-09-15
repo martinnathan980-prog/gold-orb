@@ -335,28 +335,6 @@ enregistrerActions({
     });
   },
 
-  // Depuis la LISTE, pas depuis la fiche : dupliquer une boîte est une
-  // opération de la page principale.
-  'dupliquer-boite': function (d) {
-    demander({
-      titre: 'Dupliquer la boîte ' + d.pn,
-      message: 'PN Global de la nouvelle boîte. Ses sous-ensembles sont recopiés.',
-      valeur: d.pn + '-B', placeholder: 'ex. ' + d.pn + '-B', bouton: 'Dupliquer'
-    }).then(function (nouveau) {
-      if (nouveau === null) return;
-      if (!nouveau) { afficherBandeau('Le PN Global est obligatoire.', 'erreur'); return; }
-      indicateurBoite();
-      return Api.dupliquerBoite(d.pn, nouveau)
-        .then(function (r) {
-          appliquerBoite(r.boite);
-          (r.nomenclature || []).forEach(appliquerNom);
-          rendreInterface();
-          confirmerSucces('Boîte dupliquée : ' + r.boite[CLE_PN()] + '.');
-        })
-        .catch(function (e) { signalerErreur(e, "duplication de la boîte"); });
-    });
-  },
-
   'ajouter-multi-boite': function (d) {
     const v = lireSaisieMulti(d.champ);
     if (v) majMultiBoite(d.champ, ajouterA(v));
@@ -542,12 +520,12 @@ enregistrerActions({
   'fermer-reglages': function () { afficherRail(false); rafraichirComparaison(); },
   'regler-portee': function (d) { porteeReglee = d.portee; rendreReglages(); },
   'ajouter-critere': function (d) {
-    activerCritere(porteeReglee, d.critere);
+    activerCritere(d.portee || porteeReglee, d.critere);
     rendreReglages();
     rafraichirComparaison();
   },
   'retirer-critere': function (d) {
-    if (!desactiverCritere(porteeReglee, d.critere)) {
+    if (!desactiverCritere(d.portee || porteeReglee, d.critere)) {
       afficherBandeau('Il faut garder au moins un critère.', 'erreur');
       return;
     }

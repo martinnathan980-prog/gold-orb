@@ -43,10 +43,11 @@ catch (e) { ko++; console.log('  ' + R + 'KO' + Z + '   syntaxe : ' + e.message)
 vrai('CFG est défini avant tout le reste',
      code.indexOf('const CFG') < code.indexOf('function doGet'));
 vrai('les fonctions exposées au client sont là',
-     ['getToutLeContenu', 'saveBoite', 'addBoite', 'deleteBoiteEntiere', 'dupliquerBoite',
+     ['getToutLeContenu', 'saveBoite', 'addBoite', 'deleteBoiteEntiere',
       'saveNomenclature', 'addSousEnsemble', 'deleteNomenclature', 'getCatalogueComposants']
        .every(function (f) { return code.indexOf('function ' + f) !== -1; }));
 vrai('le menu du Sheet aussi', code.indexOf('function onOpen') !== -1);
+faux('plus de duplication de boîte côté serveur', code.indexOf('dupliquerBoite') !== -1);
 
 bloc('Index.html — les 14 fichiers client, includes résolus');
 const idx = lireSortie('Index.html');

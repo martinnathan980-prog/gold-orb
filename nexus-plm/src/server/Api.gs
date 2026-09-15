@@ -190,40 +190,6 @@ function deleteBoiteEntiere(pn) {
   });
 }
 
-function dupliquerBoite(pnSource, nouveauPn) {
-  return avecVerrou_(function () {
-    const propre = exigerTexte_(nouveauPn, 'Le nouveau PN Global');
-    exigerPnLibre_(propre);
-
-    const boites = lireFeuille_(CFG.FEUILLES.BOITES);
-    const source = boites.lignes.find(function (b) {
-      return String(b[CFG.COL.PN]).trim() === String(pnSource).trim();
-    });
-    if (!source) throw new Error('Assemblage source introuvable : ' + pnSource);
-
-    // Copie par nom de colonne : l'ancien code écrivait newRowB[1] et
-    // newRowB[4] en dur alors que tout le reste travaillait par en-têtes.
-    const copie = nettoyer_(source);
-    copie[CFG.COL.PN] = propre;
-    copie[CFG.COL.STATUT] = CFG.STATUT_DEFAUT;
-    ajouterLigne_(CFG.FEUILLES.BOITES, copie);
-
-    const nomenclature = lireFeuille_(CFG.FEUILLES.NOMENCLATURE);
-    const copies = nomenclature.lignes
-      .filter(function (l) { return String(l[CFG.COL.PN]).trim() === String(pnSource).trim(); })
-      .map(function (l) {
-        const c = nettoyer_(l);
-        c[CFG.COL.NOM_ID] = nouvelId_('L');
-        c[CFG.COL.PN] = propre;
-        return c;
-      });
-    ajouterLignes_(CFG.FEUILLES.NOMENCLATURE, copies);   // un seul appel, pas N
-
-    journaliser_('DUPLICATION', propre, 'depuis ' + pnSource + ', ' + copies.length + ' ligne(s)');
-    return { ok: true, boite: relireBoite_(propre), nomenclature: copies };
-  });
-}
-
 // ============================================================
 // Écriture — nomenclature
 // ============================================================

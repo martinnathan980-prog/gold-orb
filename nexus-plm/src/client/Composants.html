@@ -25,11 +25,29 @@ const CATEGORIES_COMPOSANT = {
   electrique: { cle: 'electrique', libelle: 'Composants électriques', aide: 'colliers, embases, passe-fils, tenue des câbles' }
 };
 
+// Les trois niveaux, du plus large au plus précis. Leurs parts se règlent
+// dans la pondération : elles totalisent toujours 100 %.
 const NIVEAUX = [
-  { cle: 'reference', libelle: 'Référence exacte', valeur: 1,    classe: 'niveau-reference' },
-  { cle: 'norme',     libelle: 'Même norme',       valeur: 0.66, classe: 'niveau-norme' },
-  { cle: 'fonction',  libelle: 'Même fonction',    valeur: 0.33, classe: 'niveau-fonction' }
+  { cle: 'fonction',  libelle: 'Fonction',  poids: 20, aide: 'ce que c\'est',
+    classe: 'niveau-fonction' },
+  { cle: 'norme',     libelle: 'Norme',     poids: 30, aide: 'ce qui le définit',
+    classe: 'niveau-norme' },
+  { cle: 'reference', libelle: 'Référence', poids: 50, aide: 'le modèle exact',
+    classe: 'niveau-reference' }
 ];
+
+const NIVEAUX_DEFAUT = {};
+NIVEAUX.forEach(function (n) { NIVEAUX_DEFAUT[n.cle] = n.poids; });
+
+/** Part courante d'un niveau. Un niveau écarté ne vaut plus rien. */
+function poidsNiveau(cle) {
+  if (typeof Store === 'undefined' || !Store.poids || !Store.poids.composant) {
+    return NIVEAUX_DEFAUT[cle];
+  }
+  if (typeof critereEstActif === 'function' && !critereEstActif('composant', cle)) return 0;
+  const v = Number(Store.poids.composant[cle]);
+  return (isFinite(v) && v >= 0) ? v : NIVEAUX_DEFAUT[cle];
+}
 
 /** Une ligne de cellule -> { fonction, norme, reference }. Tolérant à l'ancien format. */
 function analyserComposant(texte) {
@@ -86,44 +104,87 @@ function composantDepuisCatalogue(entree) {
 }
 
 // ------------------------------------------------------------
-// Équivalence à trois niveaux
+// Équivalence : les niveaux s'ADDITIONNENT, ils ne s'excluent pas
 // ------------------------------------------------------------
 /**
- * Pour chaque composant de la source, on cherche dans la cible le meilleur
- * appariement : référence exacte, sinon même norme, sinon même fonction.
- * Le score est la moyenne des appariements ; le détail dit combien de
- * composants tombent dans chaque niveau, et lesquels n'ont rien trouvé.
+ * On ne choisit pas UN niveau, on les parcourt tous et chacun rapporte sa
+ * part. Même fonction : on prend la part de la fonction. Même norme en plus :
+ * on ajoute la part de la norme. Même référence en plus : on ajoute la
+ * sienne, et le composant vaut alors le maximum.
+ *
+ * Ce qui n'est PAS renseigné sur la source sort du dénominateur. Un composant
+ * décrit par sa seule fonction ne peut pas être pénalisé pour une norme qu'on
+ * ne lui connaît pas : s'il trouve la même fonction, il vaut 100 % de ce
+ * qu'on savait de lui. C'est la même règle que pour les critères non
+ * mesurables, appliquée à l'intérieur d'un composant.
+ */
+function comparerComposants(source, cible) {
+  let obtenu = 0, max = 0;
+
+  const niveaux = NIVEAUX.map(function (n) {
+    const s = String(source[n.cle] === undefined ? '' : source[n.cle]).trim();
+    const c = String(cible[n.cle] === undefined ? '' : cible[n.cle]).trim();
+    const poids = poidsNiveau(n.cle);
+
+    if (!s) {
+      return { cle: n.cle, libelle: n.libelle, etat: 'absent', poids: poids, source: s, cible: c };
+    }
+    if (!poids) {
+      return { cle: n.cle, libelle: n.libelle, etat: 'ecarte', poids: 0, source: s, cible: c };
+    }
+    max += poids;
+    const egal = !!c && normaliserTexte(s) === normaliserTexte(c);
+    if (egal) obtenu += poids;
+    return { cle: n.cle, libelle: n.libelle, etat: egal ? 'egal' : 'different',
+             poids: poids, source: s, cible: c };
+  });
+
+  // La fonction est la PORTE D'ENTRÉE, pas un critère parmi d'autres : un
+  // bouton poussoir n'est pas un voyant, même s'ils partagent une norme ou
+  // une référence par accident. Fonctions différentes, rien n'est acquis.
+  const fonction = niveaux[0];
+  const incompatible = fonction.etat === 'different';
+  if (incompatible) obtenu = 0;
+
+  return { niveaux: niveaux, obtenu: obtenu, max: max,
+           compatible: !incompatible,
+           ratio: (!incompatible && max > 0) ? obtenu / max : 0 };
+}
+
+/**
+ * Apparie chaque composant de la source au meilleur candidat de la cible.
+ * On classe TOUTES les paires possibles par score décroissant avant de
+ * servir : le résultat ne dépend donc pas de l'ordre de saisie, ce qu'un
+ * appariement glouton naïf ne garantit pas.
  */
 function apparierComposants(listeSource, listeCible) {
-  const source = listeSource.slice(), cible = listeCible.slice();
-  const disponibles = cible.slice();
-  const paliers = { reference: [], norme: [], fonction: [], aucun: [] };
-  let total = 0;
+  const paires = [];
+  listeSource.forEach(function (s, i) {
+    listeCible.forEach(function (c, j) {
+      const detail = comparerComposants(s, c);
+      if (detail.ratio > 0) paires.push({ i: i, j: j, detail: detail });
+    });
+  });
+  paires.sort(function (a, b) {
+    return b.detail.ratio - a.detail.ratio || a.i - b.i || a.j - b.j;
+  });
 
-  source.forEach(function (s) {
-    let meilleur = null, niveau = null;
-    for (let n = 0; n < NIVEAUX.length && !meilleur; n++) {
-      const cle = NIVEAUX[n].cle;
-      for (let i = 0; i < disponibles.length; i++) {
-        const c = disponibles[i];
-        if (!s[cle] || !c[cle]) continue;
-        // Une référence identique doit aussi partager la fonction : on ne
-        // confond pas deux fabricants dont les codes se recoupent par hasard.
-        if (normaliserTexte(s[cle]) !== normaliserTexte(c[cle])) continue;
-        if (cle !== 'fonction' && s.fonction && c.fonction &&
-            normaliserTexte(s.fonction) !== normaliserTexte(c.fonction)) continue;
-        meilleur = c; niveau = NIVEAUX[n]; disponibles.splice(i, 1); break;
-      }
-    }
-    if (meilleur) { paliers[niveau.cle].push({ source: s, cible: meilleur }); total += niveau.valeur; }
-    else paliers.aucun.push(s);
+  const sourcePrise = {}, ciblePrise = {}, appariements = [];
+  let total = 0;
+  paires.forEach(function (p) {
+    if (sourcePrise[p.i] || ciblePrise[p.j]) return;
+    sourcePrise[p.i] = true;
+    ciblePrise[p.j] = true;
+    appariements.push({ source: listeSource[p.i], cible: listeCible[p.j], detail: p.detail });
+    total += p.detail.ratio;
   });
 
   return {
-    ratio: source.length ? total / source.length : 0,
-    paliers: paliers,
-    enPlus: disponibles,          // présents sur la cible, sans contrepartie
-    nbSource: source.length
+    ratio: listeSource.length ? total / listeSource.length : 0,
+    appariements: appariements,
+    aucun: listeSource.filter(function (_, i) { return !sourcePrise[i]; }),
+    enPlus: listeCible.filter(function (_, j) { return !ciblePrise[j]; }),
+    nbSource: listeSource.length
   };
 }
 </script>

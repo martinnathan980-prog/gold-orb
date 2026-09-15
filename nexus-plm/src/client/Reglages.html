@@ -22,17 +22,8 @@ function porteeCourante() { return porteeParCle(porteeReglee); }
 // ------------------------------------------------------------
 // Rendu
 // ------------------------------------------------------------
-function curseursHtml() {
-  const portee = porteeCourante();
-
-  // Un seul critère possible : il n'y a rien à arbitrer, on le dit.
-  if (!porteeArbitrable(portee)) {
-    const seul = portee.criteres[0];
-    return '<p class="reglage-unique">Un seul critère pour ce type : ' +
-           '<b>' + esc(seul ? seul.libelle : '—') + '</b>. ' +
-           'Le score en dépend entièrement, il n\'y a pas d\'arbitrage à faire.</p>';
-  }
-
+/** Un groupe de curseurs pour une portée donnée. Les parts y font 100 %. */
+function groupeReglageHtml(portee) {
   const actifs = criteresActifs(portee.cle);
 
   const lignes = actifs.map(function (c) {
@@ -40,16 +31,17 @@ function curseursHtml() {
     const seul = actifs.length === 1;
     return '<div class="reglage">' +
       '<div class="reglage-tete">' +
-        '<label for="poids-' + esc(c.cle) + '">' + esc(c.libelle) + '</label>' +
+        '<label for="poids-' + esc(portee.cle) + '-' + esc(c.cle) + '">' + esc(c.libelle) + '</label>' +
         '<span class="reglage-part">' + part + ' %</span>' +
         '<button type="button" class="reglage-retirer"' +
-          dataAttrs({ action: 'retirer-critere', critere: c.cle }) +
+          dataAttrs({ action: 'retirer-critere', critere: c.cle, portee: portee.cle }) +
           (seul ? ' disabled title="Il faut garder au moins un critère"'
                 : ' title="Retirer ce critère de la comparaison"') +
           ' aria-label="Retirer ' + esc(c.libelle) + '">−</button>' +
       '</div>' +
+      (c.aide ? '<p class="reglage-aide">' + esc(c.aide) + '</p>' : '') +
       '<input type="range" min="0" max="100" step="1" value="' + part + '"' +
-        ' id="poids-' + esc(c.cle) + '" class="curseur"' +
+        ' id="poids-' + esc(portee.cle) + '-' + esc(c.cle) + '" class="curseur"' +
         ' data-portee="' + esc(portee.cle) + '" data-critere="' + esc(c.cle) + '"' +
         ' aria-label="Part de ' + esc(c.libelle) + '">' +
       '<div class="reglage-jauge"><span style="width:' + part + '%"></span></div>' +
@@ -59,12 +51,42 @@ function curseursHtml() {
   return lignes + totalHtml(portee) + critereDisponiblesHtml(portee);
 }
 
+function curseursHtml() {
+  const portee = porteeCourante();
+
+  // Un seul critère possible : il n'y a rien à arbitrer, on le dit.
+  let html;
+  if (!porteeArbitrable(portee)) {
+    const seul = portee.criteres[0];
+    html = '<p class="reglage-unique">Un seul critère pour ce type : ' +
+           '<b>' + esc(seul ? seul.libelle : '—') + '</b>. ' +
+           'Le score en dépend entièrement, il n\'y a pas d\'arbitrage à faire.</p>';
+  } else {
+    html = groupeReglageHtml(portee);
+  }
+
+  // Quand la portée compare des composants, on règle AUSSI la répartition
+  // entre leurs trois niveaux. C'est une pondération dans la pondération :
+  // elle dit ce que vaut une fonction partagée face à une référence exacte.
+  if (porteeAvecComposants(portee)) {
+    const niveaux = porteeParCle('composant');
+    html += '<div class="sous-reglage">' +
+      '<h4>Niveaux de composant</h4>' +
+      '<p class="sous-reglage-aide">Les niveaux s\'additionnent : même fonction, ' +
+        'puis même norme en plus, puis même référence en plus. Ce qui n\'est pas ' +
+        'renseigné ne compte pas.</p>' +
+      groupeReglageHtml(niveaux) +
+    '</div>';
+  }
+  return html;
+}
+
 function totalHtml(portee) {
   const total = criteresActifs(portee.cle).reduce(function (t, c) {
     return t + (Number(Store.poids[portee.cle][c.cle]) || 0);
   }, 0);
-  return '<p class="reglage-total' + (total === 100 ? '' : ' reglage-total-faux') + '">' +
-         'Total ' + total + ' %</p>';
+  return '<p class="reglage-total' + (total === 100 ? '' : ' reglage-total-faux') + '"' +
+         ' data-portee="' + esc(portee.cle) + '">Total ' + total + ' %</p>';
 }
 
 function critereDisponiblesHtml(portee) {
@@ -76,7 +98,7 @@ function critereDisponiblesHtml(portee) {
     '<h4>Critères écartés</h4>' +
     inactifs.map(function (c) {
       return '<button type="button" class="btn-ajout-critere"' +
-             dataAttrs({ action: 'ajouter-critere', critere: c.cle }) + '>' +
+             dataAttrs({ action: 'ajouter-critere', critere: c.cle, portee: portee.cle }) + '>' +
              '<span aria-hidden="true">+</span> ' + esc(c.libelle) + '</button>';
     }).join('') +
   '</div>';
@@ -101,25 +123,28 @@ function rendreReglages() {
  * viennent d'être redistribués.
  */
 function rafraichirCurseurs(cleTenue) {
-  const portee = porteeCourante();
   document.querySelectorAll('.reglage').forEach(function (bloc) {
     const curseur = bloc.querySelector('.curseur');
     if (!curseur) return;
-    const part = Math.max(0, Number(Store.poids[portee.cle][curseur.dataset.critere]) || 0);
+    const table = Store.poids[curseur.dataset.portee] || {};
+    const part = Math.max(0, Number(table[curseur.dataset.critere]) || 0);
+    // On ne touche pas au curseur que l'utilisateur tient sous le doigt.
     if (curseur.dataset.critere !== cleTenue) curseur.value = part;
     const etiquette = bloc.querySelector('.reglage-part');
     if (etiquette) etiquette.textContent = part + ' %';
     const jauge = bloc.querySelector('.reglage-jauge span');
     if (jauge) jauge.style.width = part + '%';
   });
-  const total = parId('reglagesCurseurs') && parId('reglagesCurseurs').querySelector('.reglage-total');
-  if (total) {
-    const somme = criteresActifs(portee.cle).reduce(function (t, c) {
-      return t + (Number(Store.poids[portee.cle][c.cle]) || 0);
+
+  document.querySelectorAll('.reglage-total').forEach(function (total) {
+    const cle = total.dataset.portee;
+    const somme = criteresActifs(cle).reduce(function (t, c) {
+      return t + (Number(Store.poids[cle][c.cle]) || 0);
     }, 0);
     total.textContent = 'Total ' + somme + ' %';
     total.classList.toggle('reglage-total-faux', somme !== 100);
-  }
+  });
+
   const avert = parId('reglagesModifies');
   if (avert) avert.hidden = !poidsModifies();
 }

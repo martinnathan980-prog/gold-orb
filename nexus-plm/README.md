@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 728 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 783 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 504 tests : logique, pondération, serveur, bundle
+npm test                 # 549 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 224 tests dans un vrai Chromium
+npm run test:navigateur  # 234 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -166,22 +166,47 @@ Les composants ne sont pas au même endroit selon ce qu'ils sont :
 Chaque famille a sa colonne, son catalogue (filtré par catégorie) et son
 critère d'équivalence, pondéré séparément.
 
-### Équivalence à trois niveaux
+### Équivalence d'un composant : trois niveaux qui s'additionnent
 
-Un composant se décrit en trois niveaux de précision croissante, et
-l'équivalence les parcourt dans l'ordre :
+Un composant se décrit en trois niveaux de précision croissante :
 
 1. **Fonction** — ce que c'est : bouton poussoir, colonnette
 2. **Norme** — ce qui le définit : ECS 7251, NSA 5512
 3. **Référence** — le modèle exact
 
-Pour chaque composant de la pièce de référence, on cherche dans la cible le
-meilleur appariement : **référence exacte** (vaut 1), sinon **même norme**
-(vaut 0,66), sinon **même fonction** (vaut 0,33), sinon rien. Un composant de
-la cible n'est apparié qu'une fois, et une référence identique doit aussi
-partager la fonction. Le résultat s'affiche par paliers : *Référence exacte*,
-*Même norme*, *Même fonction*, *Sans équivalent*, *Présents en plus sur la
-cible*.
+Les niveaux ne s'excluent pas, ils **s'additionnent**. Même fonction : on
+prend la part de la fonction. Même norme en plus : on ajoute la part de la
+norme. Même référence en plus : on ajoute la sienne, et le composant vaut
+alors le maximum.
+
+| Ce qui est partagé | Ce que le composant rapporte |
+|---|---|
+| Fonction seule | 20 % |
+| Fonction et norme | 50 % |
+| Les trois | 100 % |
+| Fonctions différentes | rien |
+
+Ces trois parts **se règlent**, dans le rail de pondération, dès que la portée
+comparée manipule des composants. Une pondération dans la pondération : elle
+dit ce que vaut une fonction partagée face à une référence exacte. Elle est
+commune à la boîte et à la structure, puisque les trois niveaux veulent dire
+la même chose des deux côtés.
+
+**Ce qui n'est pas renseigné ne peut pas être exigé.** Un composant décrit par
+sa seule fonction, s'il retrouve la même fonction, vaut 100 % de ce qu'on
+savait de lui : la norme et la référence qu'on ne lui connaît pas sortent du
+dénominateur. C'est la règle des critères non mesurables, appliquée à
+l'intérieur d'un composant.
+
+**La fonction est la porte d'entrée.** Deux composants de fonctions
+différentes ne sont jamais appariés, même s'ils partagent une référence par
+accident : un bouton poussoir n'est pas un voyant.
+
+L'appariement classe **toutes** les paires possibles par score décroissant
+avant de servir. Le résultat ne dépend donc pas de l'ordre de saisie, et le
+meilleur candidat est pris plutôt que le premier rencontré. Chaque composant
+de la cible ne sert qu'une fois. Le détail affiche, par composant, quels
+niveaux sont partagés et ce que cela rapporte.
 
 ## Pondération
 
@@ -230,18 +255,18 @@ Les pièces les plus réutilisées arrivent en tête, marquées d'un filet marin
 L'inventaire suit les filtres en cours : une recherche ou un filtre de statut
 le restreint comme il restreint la grille. Un clic sur une boîte ouvre sa fiche.
 
-## Duplication
+## Pas de duplication
 
-Une **boîte** se duplique depuis sa carte, dans la liste, pas depuis sa fiche.
+Ni pour une boîte, ni pour un sous-ensemble. Recopier un élément pour en
+changer le PN derrière n'était un raccourci pour personne : on crée, on
+remplit. Les boutons ont été retirés, ainsi que l'action client, la liaison
+et la fonction serveur, qui n'avaient plus d'appelant.
 
-Un **sous-ensemble** ne se duplique pas : on en ajoute un. Recopier une pièce
-pour en changer le PN derrière n'était un raccourci pour personne, et le bouton
-occupait la place à côté d'« Éditer ».
-
-Le PN de la copie est demandé par un **dialogue intégré** (`Dialogues.html`).
-Les fenêtres natives `prompt()` et `confirm()` sont bloquées dans l'iframe
-sandboxée d'Apps Script : c'est pour cela que « Dupliquer » et « Supprimer »
-ne faisaient rien, sans le moindre message. Plus aucun appel natif ne subsiste.
+Les **suppressions**, elles, passent par un **dialogue intégré**
+(`Dialogues.html`). Les fenêtres natives `prompt()` et `confirm()` sont
+bloquées dans l'iframe sandboxée d'Apps Script : c'est pour cela que
+« Supprimer » ne faisait rien, sans le moindre message. Plus aucun appel
+natif ne subsiste.
 
 ## Porteurs
 
@@ -258,10 +283,15 @@ de type (structure, harnais, plaquette), trois teintes de statut, trois niveaux
 d'équivalence : c'est la couleur qui signifie. À côté, une seule teinte de
 marque, un marine, réservée aux actions principales et aux états actifs.
 
-**Rien n'est blanc pur, sauf ce qui se saisit.** Les neutres portent un voile
-bleu-gris, celui des panneaux d'aéronef et des plans. Le sol est plus soutenu
-que les cartes, qui s'y détachent comme des plaques posées ; le blanc est
-gardé pour les champs de saisie, où il dit « ici on écrit ».
+**Le sol est blanc.** C'est lui qui donne l'impression de propreté, et il le
+reste sous le titre comme dans le corps de page. La couleur est portée par les
+**objets** posés dessus : les cartes prennent un voile bleu-gris, celui des
+panneaux d'aéronef et des plans, et la barre d'action une teinte plus
+soutenue. Rien ne colore le fond.
+
+**Les indicateurs sont une ligne, pas une rangée de cartes.** Cadrée de deux
+filets, chaque mesure séparée de la suivante par un trait fin : les chiffres
+se lisent d'une traite, comme une plaque de relevés. Chacun reste un filtre.
 
 **Une barre d'action coupe la page en deux.** Pleine largeur, teintée, filet
 marine au-dessus, elle sépare l'en-tête du catalogue et réunit les deux façons

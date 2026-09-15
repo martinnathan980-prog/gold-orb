@@ -192,10 +192,41 @@ function typesProposes() {
     .filter(function (t) { return !t.masque; });
 }
 
+/**
+ * Portée INTERNE : la répartition des points entre les trois niveaux d'un
+ * composant. Elle ne se compare à rien toute seule — on ne cherche pas
+ * « les équivalences d'un niveau » — mais elle se pondère, et elle sert
+ * partout où des composants sont comparés : sur la boîte comme sur la
+ * structure. Une seule pondération pour les deux : la fonction, la norme et
+ * la référence veulent dire la même chose des deux côtés.
+ */
+const PORTEE_COMPOSANT = {
+  cle: 'composant',
+  libelle: 'Niveaux de composant',
+  icone: '◈',
+  interne: true,
+  criteres: NIVEAUX.map(function (n) {
+    return { cle: n.cle, libelle: n.libelle, mode: MODE.EGALITE,
+             poids: n.poids, aide: n.aide };
+  })
+};
+
 const PORTEES = [{ cle: 'boite', libelle: 'Boîte', icone: '◼', criteres: CRITERES_BOITE }]
   .concat(typesProposes().map(function (t) {
     return { cle: t.cle, libelle: t.libelle, icone: t.icone, criteres: t.criteres };
-  }));
+  }))
+  .concat([PORTEE_COMPOSANT]);
+
+/** Les portées qu'on peut réellement comparer : l'interne n'en est pas une. */
+function porteesComparables() {
+  return PORTEES.filter(function (p) { return !p.interne; });
+}
+
+/** Cette portée compare-t-elle des composants ? Si oui, les niveaux se règlent. */
+function porteeAvecComposants(portee) {
+  return !!portee && !portee.interne &&
+         portee.criteres.some(function (c) { return c.mode === MODE.COMPOSANTS; });
+}
 
 // ------------------------------------------------------------
 // Résolution d'un libellé de type saisi librement

@@ -30,7 +30,6 @@ const Api = {
   sauverBoite:        function (pn, modifs)       { return appelerServeur('saveBoite', pn, modifs); },
   creerBoite:         function (pn, f, ds)        { return appelerServeur('addBoite', pn, f, ds); },
   supprimerBoite:     function (pn)               { return appelerServeur('deleteBoiteEntiere', pn); },
-  dupliquerBoite:     function (src, cible)       { return appelerServeur('dupliquerBoite', src, cible); },
   sauverNom:          function (id, modifs)       { return appelerServeur('saveNomenclature', id, modifs); },
   creerNom:           function (pn, type, pnType) { return appelerServeur('addSousEnsemble', pn, type, pnType); },
   supprimerNom:       function (id)               { return appelerServeur('deleteNomenclature', id); }

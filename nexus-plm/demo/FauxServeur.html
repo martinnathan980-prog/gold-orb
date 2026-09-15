@@ -233,29 +233,6 @@ const SERVEUR = {
     return { ok: true, pnSupprime: pn, nbNomenclature: avant - DONNEES.nomenclature.length };
   },
 
-  dupliquerBoite: function (pnSource, nouveauPn) {
-    const propre = exigerTexte(nouveauPn, 'Le nouveau PN Global');
-    exigerPnLibre(propre);
-    const source = trouverBoite(pnSource);
-    if (!source) throw new Error('Assemblage source introuvable : ' + pnSource);
-
-    const nouvelle = copie(source);
-    nouvelle['PN Global'] = propre;
-    nouvelle['Statut'] = STATUT_DEFAUT;
-    DONNEES.boites.push(nouvelle);
-
-    const copies = DONNEES.nomenclature
-      .filter(function (n) { return String(n['PN Global']).trim() === String(pnSource).trim(); })
-      .map(function (n) {
-        const c = copie(n);
-        c['ID_Ligne'] = nouvelId();
-        c['PN Global'] = propre;
-        return c;
-      });
-    copies.forEach(function (c) { DONNEES.nomenclature.push(c); });
-    return { ok: true, boite: copie(nouvelle), nomenclature: copie(copies) };
-  },
-
   saveNomenclature: function (id, modifications) {
     const ligne = trouverNom(id);
     if (!ligne) throw new Error('Élément introuvable (ID_Ligne = ' + id + '). Rechargez la page.');

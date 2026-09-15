@@ -16,14 +16,14 @@
 :root {
   color-scheme: light;
 
-  /* Les neutres portent un voile bleu-gris, celui des panneaux d'aéronef et
-     des plans : rien n'est blanc pur, sauf ce qui se saisit. Le sol est plus
-     soutenu que les cartes, qui s'y détachent comme des plaques posées. */
-  --sol: #e3ebf6;
-  --sol-2: #dae5f2;
-  --surface: #f6f9fd;
-  --surface-2: #ffffff;
-  --surface-3: #dde6f2;
+  /* Le sol est blanc : c'est ce qui donne l'impression de propreté. La
+     couleur est portée par les OBJETS posés dessus — les cartes, la barre
+     d'action — et non par le fond. */
+  --sol: #ffffff;
+  --sol-2: #f5f8fc;
+  --surface: #edf3fb;        /* les cartes, teintées */
+  --surface-2: #ffffff;      /* ce qui se saisit reste blanc */
+  --surface-3: #dde6f3;
   --encre: #0f1929;
   --encre-2: #465268;
   --encre-3: #78859b;
@@ -128,7 +128,7 @@ button { font: inherit; cursor: pointer; }
 .vide { color: var(--encre-3); font-size: 13px; }
 
 /* ---------------- bandeau de titre ---------------- */
-.entete { background: var(--surface); border-bottom: 1px solid var(--trait); padding-block: var(--e-6) var(--e-5); }
+.entete { background: var(--sol); border-bottom: 1px solid var(--trait); padding-block: var(--e-6) var(--e-5); }
 .entete-corps { text-align: center; }
 .marque { display: flex; flex-direction: column; align-items: center; gap: var(--e-2); }
 .marque h1 {
@@ -141,45 +141,43 @@ button { font: inherit; cursor: pointer; }
 .marque::after { content: ""; width: 56px; height: 3px; background: var(--marque); border-radius: 2px; margin-top: var(--e-2); }
 
 /* ---------------- indicateurs ---------------- */
-/* Chaque indicateur est aussi un filtre : cliquer « Validées » ne montre que
-   les boîtes validées, cliquer « Boîtes » revient à tout. */
+/* Une ligne continue, cadrée par deux filets, chaque mesure séparée de la
+   suivante par un trait fin. Pas de cartes : les chiffres se lisent d'une
+   traite, comme une plaque de relevés. Chacun reste un filtre. */
 .indicateurs {
-  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--e-3);
-  margin-top: var(--e-6); text-align: left;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 0;
+  margin-top: var(--e-6);
+  border-top: 1px solid var(--trait); border-bottom: 1px solid var(--trait);
 }
 .indicateur {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-  background: var(--surface); border: 1px solid var(--trait); border-radius: var(--r-m);
-  padding: 14px 16px 12px; position: relative; overflow: hidden; color: var(--encre);
-  transition: border-color .18s, box-shadow .18s, transform .18s;
+  flex: 1 1 150px; min-width: 130px; padding: var(--e-3) var(--e-4);
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  background: none; border: 0; color: var(--encre); position: relative;
+  transition: background .15s;
 }
-button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2); transform: translateY(-2px); }
+.indicateur + .indicateur::before {
+  content: ""; position: absolute; left: 0; top: 22%; bottom: 22%;
+  width: 1px; background: var(--trait);
+}
+button.indicateur:hover { background: var(--sol-2); }
+button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-underline-offset: 4px; }
 .indicateur-fixe { cursor: default; }
-.indicateur.actif { border-color: var(--marque); box-shadow: inset 0 0 0 1px var(--marque); background: var(--marque-voile); }
-.indicateur.actif::after {
-  content: "filtre actif"; position: absolute; top: 10px; right: 12px;
-  font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700;
-  color: var(--marque);
-}
+.indicateur.actif { background: var(--marque-voile); }
+.indicateur.actif .indicateur-libelle { color: var(--marque); }
 .indicateur-libelle {
   font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase;
-  color: var(--encre-3); font-weight: 600;
+  color: var(--encre-3); font-weight: 600; text-align: center;
 }
 .indicateur-valeur {
-  font-family: var(--police-titre); font-size: 30px; font-weight: 700;
-  line-height: 1.05; font-variant-numeric: tabular-nums; margin-top: 2px;
+  font-family: var(--police-titre); font-size: 28px; font-weight: 700;
+  line-height: 1.05; font-variant-numeric: tabular-nums;
 }
-.indicateur-detail { font-size: 11.5px; color: var(--encre-3); }
-.indicateur-jauge { display: block; width: 100%; height: 3px; background: var(--surface-3); border-radius: 2px; margin-top: 8px; overflow: hidden; }
-.indicateur-jauge span { display: block; height: 100%; width: 0; background: currentColor; border-radius: 2px; transition: width .5s cubic-bezier(.2,.7,.3,1); }
-.indicateur-valide { color: var(--vert); }
+.indicateur-detail { font-size: 11.5px; color: var(--encre-3); text-align: center; }
 .indicateur-valide .indicateur-valeur { color: var(--vert); }
-.indicateur-reemploi { color: var(--marque); }
-.indicateur-reemploi .indicateur-valeur { color: var(--encre); }
 .indicateur-alerte .indicateur-valeur { color: var(--ambre); }
 .indicateurs-portee {
   text-align: center; font-size: 10.5px; color: var(--encre-3);
-  letter-spacing: .08em; text-transform: uppercase; margin-top: var(--e-3);
+  letter-spacing: .08em; text-transform: uppercase; margin-top: var(--e-2);
 }
 
 /* ---------------- barre d'action ---------------- */
@@ -195,7 +193,17 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
   display: flex; align-items: center; gap: var(--e-3);
   padding-block: var(--e-4);
 }
-.btn-creer { flex-shrink: 0; white-space: nowrap; box-shadow: var(--ombre-1); }
+/* Arrondi, comme il l'était : c'est une invitation, pas un bouton de
+   formulaire. Seule sa place a changé.
+   Qualifié par .bande-corps : à spécificité égale, .btn-principal, déclarée
+   plus bas, l'emportait et rendait le bouton carré. */
+.bande-corps .btn-creer {
+  flex-shrink: 0; white-space: nowrap; display: inline-flex; align-items: center; gap: 7px;
+  background: var(--marque); color: var(--sur-marque); border: 1px solid var(--marque);
+  border-radius: 999px; padding: 11px 22px; font-size: 13px; font-weight: 600;
+  box-shadow: var(--ombre-1); transition: background .15s;
+}
+.bande-corps .btn-creer:hover { background: var(--marque-2); }
 
 .contenu { padding-block: var(--e-5) var(--e-7); }
 .champ-recherche {
@@ -697,10 +705,46 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
 .palier-liste .compo-norme { opacity: .85; }
 .palier-liste .compo-ref { font-family: var(--police-data); font-size: 11.5px; }
 .palier-liste .vers { opacity: .6; }
-.palier-reference { background: var(--vert-voile); border-color: var(--vert-trait); color: var(--vert); }
-.palier-norme { background: var(--ambre-voile); border-color: var(--ambre-trait); color: var(--ambre); }
-.palier-fonction { background: var(--surface-3); border-color: var(--trait-fort); color: var(--encre-2); }
+.palier-apparies { background: var(--surface-2); border-color: var(--trait); color: var(--encre-2); }
 .palier-aucun { background: var(--rouge-voile); border-color: var(--rouge-trait); color: var(--rouge); }
+
+/* Un appariement : le composant, les trois niveaux, ce que ça rapporte. */
+.appariements { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.appariement {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 46px; gap: var(--e-2);
+  align-items: center; padding: 5px 0; border-top: 1px solid var(--trait);
+}
+.appariement:first-child { border-top: 0; }
+.appariement-compo { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; min-width: 0; }
+.niveaux { display: flex; gap: 4px; flex-wrap: wrap; }
+.niveau-etat {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid; cursor: help;
+}
+.niveau-etat b { font-size: 11px; line-height: 1; }
+.niveau-egal      { background: var(--vert-voile);  border-color: var(--vert-trait);  color: var(--vert); }
+.niveau-different { background: var(--rouge-voile); border-color: var(--rouge-trait); color: var(--rouge); }
+.niveau-absent    { background: var(--surface-3);   border-color: var(--trait);       color: var(--encre-3); }
+.niveau-ecarte    { background: none;               border-color: var(--trait);       color: var(--encre-3); opacity: .7; }
+.appariement-score {
+  font-family: var(--police-data); font-size: 12px; font-weight: 700;
+  font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap;
+}
+.appariement-score small { font-size: 9px; font-weight: 600; }
+.appariement-plein  { color: var(--vert); }
+.appariement-moyen  { color: var(--ambre); }
+.appariement-faible { color: var(--encre-3); }
+@media (max-width: 620px) {
+  .appariement { grid-template-columns: minmax(0, 1fr) auto; }
+  .niveaux { grid-column: 1 / -1; }
+}
+
+/* La pondération dans la pondération : les niveaux d'un composant. */
+.sous-reglage { border-top: 1px dashed var(--trait-fort); margin-top: var(--e-3); padding-top: var(--e-3); }
+.sous-reglage h4 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--encre-3); font-weight: 700; }
+.sous-reglage-aide { font-size: 11px; color: var(--encre-3); margin: 4px 0 var(--e-2); }
+.reglage-aide { font-size: 11px; color: var(--encre-3); margin-top: 1px; }
 .palier-plus { background: var(--surface); border-color: var(--trait); border-style: dashed; color: var(--encre-3); }
 
 /* ---------------- doublons ---------------- */
@@ -745,13 +789,12 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
 
 @media (prefers-reduced-motion: reduce) {
   .mini-spinner { animation: none; }
-  .carte, .carte-image, .btn-sur-image, .indicateur, .indicateur-jauge span { transition: none; }
+  .carte, .carte-image, .btn-sur-image, .indicateur { transition: none; }
   .carte:hover, button.indicateur:hover { transform: none; }
   .carte:hover .carte-image { transform: none; }
 }
 
 /* ---------------- petits écrans ---------------- */
-@media (max-width: 980px) { .indicateurs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 860px) {
   .compare-corps.avec-reglages { grid-template-columns: 1fr; }
   .reglages-rail { position: static; max-height: none; }
@@ -762,8 +805,8 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
 }
 @media (max-width: 620px) {
   .entete { padding-block: var(--e-5) var(--e-4); }
-  .indicateurs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--e-2); }
-  .indicateur { padding: 10px 12px; }
+  .indicateur { flex-basis: 45%; padding: 10px 12px; }
+  .indicateur:nth-child(odd)::before { display: none; }
   .indicateur-valeur { font-size: 24px; }
   .grille { grid-template-columns: 1fr; }
   .ligne { flex-direction: column; gap: 3px; }

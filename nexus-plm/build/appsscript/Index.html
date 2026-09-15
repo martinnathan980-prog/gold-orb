@@ -27,14 +27,14 @@
 :root {
   color-scheme: light;
 
-  /* Les neutres portent un voile bleu-gris, celui des panneaux d'aéronef et
-     des plans : rien n'est blanc pur, sauf ce qui se saisit. Le sol est plus
-     soutenu que les cartes, qui s'y détachent comme des plaques posées. */
-  --sol: #e3ebf6;
-  --sol-2: #dae5f2;
-  --surface: #f6f9fd;
-  --surface-2: #ffffff;
-  --surface-3: #dde6f2;
+  /* Le sol est blanc : c'est ce qui donne l'impression de propreté. La
+     couleur est portée par les OBJETS posés dessus — les cartes, la barre
+     d'action — et non par le fond. */
+  --sol: #ffffff;
+  --sol-2: #f5f8fc;
+  --surface: #edf3fb;        /* les cartes, teintées */
+  --surface-2: #ffffff;      /* ce qui se saisit reste blanc */
+  --surface-3: #dde6f3;
   --encre: #0f1929;
   --encre-2: #465268;
   --encre-3: #78859b;
@@ -139,7 +139,7 @@ button { font: inherit; cursor: pointer; }
 .vide { color: var(--encre-3); font-size: 13px; }
 
 /* ---------------- bandeau de titre ---------------- */
-.entete { background: var(--surface); border-bottom: 1px solid var(--trait); padding-block: var(--e-6) var(--e-5); }
+.entete { background: var(--sol); border-bottom: 1px solid var(--trait); padding-block: var(--e-6) var(--e-5); }
 .entete-corps { text-align: center; }
 .marque { display: flex; flex-direction: column; align-items: center; gap: var(--e-2); }
 .marque h1 {
@@ -152,45 +152,43 @@ button { font: inherit; cursor: pointer; }
 .marque::after { content: ""; width: 56px; height: 3px; background: var(--marque); border-radius: 2px; margin-top: var(--e-2); }
 
 /* ---------------- indicateurs ---------------- */
-/* Chaque indicateur est aussi un filtre : cliquer « Validées » ne montre que
-   les boîtes validées, cliquer « Boîtes » revient à tout. */
+/* Une ligne continue, cadrée par deux filets, chaque mesure séparée de la
+   suivante par un trait fin. Pas de cartes : les chiffres se lisent d'une
+   traite, comme une plaque de relevés. Chacun reste un filtre. */
 .indicateurs {
-  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--e-3);
-  margin-top: var(--e-6); text-align: left;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 0;
+  margin-top: var(--e-6);
+  border-top: 1px solid var(--trait); border-bottom: 1px solid var(--trait);
 }
 .indicateur {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-  background: var(--surface); border: 1px solid var(--trait); border-radius: var(--r-m);
-  padding: 14px 16px 12px; position: relative; overflow: hidden; color: var(--encre);
-  transition: border-color .18s, box-shadow .18s, transform .18s;
+  flex: 1 1 150px; min-width: 130px; padding: var(--e-3) var(--e-4);
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  background: none; border: 0; color: var(--encre); position: relative;
+  transition: background .15s;
 }
-button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2); transform: translateY(-2px); }
+.indicateur + .indicateur::before {
+  content: ""; position: absolute; left: 0; top: 22%; bottom: 22%;
+  width: 1px; background: var(--trait);
+}
+button.indicateur:hover { background: var(--sol-2); }
+button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-underline-offset: 4px; }
 .indicateur-fixe { cursor: default; }
-.indicateur.actif { border-color: var(--marque); box-shadow: inset 0 0 0 1px var(--marque); background: var(--marque-voile); }
-.indicateur.actif::after {
-  content: "filtre actif"; position: absolute; top: 10px; right: 12px;
-  font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700;
-  color: var(--marque);
-}
+.indicateur.actif { background: var(--marque-voile); }
+.indicateur.actif .indicateur-libelle { color: var(--marque); }
 .indicateur-libelle {
   font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase;
-  color: var(--encre-3); font-weight: 600;
+  color: var(--encre-3); font-weight: 600; text-align: center;
 }
 .indicateur-valeur {
-  font-family: var(--police-titre); font-size: 30px; font-weight: 700;
-  line-height: 1.05; font-variant-numeric: tabular-nums; margin-top: 2px;
+  font-family: var(--police-titre); font-size: 28px; font-weight: 700;
+  line-height: 1.05; font-variant-numeric: tabular-nums;
 }
-.indicateur-detail { font-size: 11.5px; color: var(--encre-3); }
-.indicateur-jauge { display: block; width: 100%; height: 3px; background: var(--surface-3); border-radius: 2px; margin-top: 8px; overflow: hidden; }
-.indicateur-jauge span { display: block; height: 100%; width: 0; background: currentColor; border-radius: 2px; transition: width .5s cubic-bezier(.2,.7,.3,1); }
-.indicateur-valide { color: var(--vert); }
+.indicateur-detail { font-size: 11.5px; color: var(--encre-3); text-align: center; }
 .indicateur-valide .indicateur-valeur { color: var(--vert); }
-.indicateur-reemploi { color: var(--marque); }
-.indicateur-reemploi .indicateur-valeur { color: var(--encre); }
 .indicateur-alerte .indicateur-valeur { color: var(--ambre); }
 .indicateurs-portee {
   text-align: center; font-size: 10.5px; color: var(--encre-3);
-  letter-spacing: .08em; text-transform: uppercase; margin-top: var(--e-3);
+  letter-spacing: .08em; text-transform: uppercase; margin-top: var(--e-2);
 }
 
 /* ---------------- barre d'action ---------------- */
@@ -206,7 +204,17 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
   display: flex; align-items: center; gap: var(--e-3);
   padding-block: var(--e-4);
 }
-.btn-creer { flex-shrink: 0; white-space: nowrap; box-shadow: var(--ombre-1); }
+/* Arrondi, comme il l'était : c'est une invitation, pas un bouton de
+   formulaire. Seule sa place a changé.
+   Qualifié par .bande-corps : à spécificité égale, .btn-principal, déclarée
+   plus bas, l'emportait et rendait le bouton carré. */
+.bande-corps .btn-creer {
+  flex-shrink: 0; white-space: nowrap; display: inline-flex; align-items: center; gap: 7px;
+  background: var(--marque); color: var(--sur-marque); border: 1px solid var(--marque);
+  border-radius: 999px; padding: 11px 22px; font-size: 13px; font-weight: 600;
+  box-shadow: var(--ombre-1); transition: background .15s;
+}
+.bande-corps .btn-creer:hover { background: var(--marque-2); }
 
 .contenu { padding-block: var(--e-5) var(--e-7); }
 .champ-recherche {
@@ -708,10 +716,46 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
 .palier-liste .compo-norme { opacity: .85; }
 .palier-liste .compo-ref { font-family: var(--police-data); font-size: 11.5px; }
 .palier-liste .vers { opacity: .6; }
-.palier-reference { background: var(--vert-voile); border-color: var(--vert-trait); color: var(--vert); }
-.palier-norme { background: var(--ambre-voile); border-color: var(--ambre-trait); color: var(--ambre); }
-.palier-fonction { background: var(--surface-3); border-color: var(--trait-fort); color: var(--encre-2); }
+.palier-apparies { background: var(--surface-2); border-color: var(--trait); color: var(--encre-2); }
 .palier-aucun { background: var(--rouge-voile); border-color: var(--rouge-trait); color: var(--rouge); }
+
+/* Un appariement : le composant, les trois niveaux, ce que ça rapporte. */
+.appariements { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.appariement {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 46px; gap: var(--e-2);
+  align-items: center; padding: 5px 0; border-top: 1px solid var(--trait);
+}
+.appariement:first-child { border-top: 0; }
+.appariement-compo { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; min-width: 0; }
+.niveaux { display: flex; gap: 4px; flex-wrap: wrap; }
+.niveau-etat {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid; cursor: help;
+}
+.niveau-etat b { font-size: 11px; line-height: 1; }
+.niveau-egal      { background: var(--vert-voile);  border-color: var(--vert-trait);  color: var(--vert); }
+.niveau-different { background: var(--rouge-voile); border-color: var(--rouge-trait); color: var(--rouge); }
+.niveau-absent    { background: var(--surface-3);   border-color: var(--trait);       color: var(--encre-3); }
+.niveau-ecarte    { background: none;               border-color: var(--trait);       color: var(--encre-3); opacity: .7; }
+.appariement-score {
+  font-family: var(--police-data); font-size: 12px; font-weight: 700;
+  font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap;
+}
+.appariement-score small { font-size: 9px; font-weight: 600; }
+.appariement-plein  { color: var(--vert); }
+.appariement-moyen  { color: var(--ambre); }
+.appariement-faible { color: var(--encre-3); }
+@media (max-width: 620px) {
+  .appariement { grid-template-columns: minmax(0, 1fr) auto; }
+  .niveaux { grid-column: 1 / -1; }
+}
+
+/* La pondération dans la pondération : les niveaux d'un composant. */
+.sous-reglage { border-top: 1px dashed var(--trait-fort); margin-top: var(--e-3); padding-top: var(--e-3); }
+.sous-reglage h4 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--encre-3); font-weight: 700; }
+.sous-reglage-aide { font-size: 11px; color: var(--encre-3); margin: 4px 0 var(--e-2); }
+.reglage-aide { font-size: 11px; color: var(--encre-3); margin-top: 1px; }
 .palier-plus { background: var(--surface); border-color: var(--trait); border-style: dashed; color: var(--encre-3); }
 
 /* ---------------- doublons ---------------- */
@@ -756,13 +800,12 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
 
 @media (prefers-reduced-motion: reduce) {
   .mini-spinner { animation: none; }
-  .carte, .carte-image, .btn-sur-image, .indicateur, .indicateur-jauge span { transition: none; }
+  .carte, .carte-image, .btn-sur-image, .indicateur { transition: none; }
   .carte:hover, button.indicateur:hover { transform: none; }
   .carte:hover .carte-image { transform: none; }
 }
 
 /* ---------------- petits écrans ---------------- */
-@media (max-width: 980px) { .indicateurs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 860px) {
   .compare-corps.avec-reglages { grid-template-columns: 1fr; }
   .reglages-rail { position: static; max-height: none; }
@@ -773,8 +816,8 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
 }
 @media (max-width: 620px) {
   .entete { padding-block: var(--e-5) var(--e-4); }
-  .indicateurs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--e-2); }
-  .indicateur { padding: 10px 12px; }
+  .indicateur { flex-basis: 45%; padding: 10px 12px; }
+  .indicateur:nth-child(odd)::before { display: none; }
   .indicateur-valeur { font-size: 24px; }
   .grille { grid-template-columns: 1fr; }
   .ligne { flex-direction: column; gap: 3px; }
@@ -833,7 +876,6 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
             <span class="indicateur-libelle">Validées</span>
             <span class="indicateur-valeur" id="kpiVal">–</span>
             <span class="indicateur-detail" id="kpiValDetail"></span>
-            <span class="indicateur-jauge" aria-hidden="true"><span id="kpiValJauge"></span></span>
           </button>
           <div class="indicateur indicateur-fixe" id="indRefs">
             <span class="indicateur-libelle">Références uniques</span>
@@ -846,7 +888,6 @@ button.indicateur:hover { border-color: var(--marque); box-shadow: var(--ombre-2
             <span class="indicateur-libelle">Pièces réutilisées</span>
             <span class="indicateur-valeur" id="kpiReutil">–</span>
             <span class="indicateur-detail" id="kpiReutilDetail"></span>
-            <span class="indicateur-jauge" aria-hidden="true"><span id="kpiReutilJauge"></span></span>
           </button>
           <button type="button" class="indicateur indicateur-alerte" id="indDoublons"
                   data-action="ouvrir-doublons" title="Voir les paires de pièces très proches">
@@ -1315,11 +1356,29 @@ const CATEGORIES_COMPOSANT = {
   electrique: { cle: 'electrique', libelle: 'Composants électriques', aide: 'colliers, embases, passe-fils, tenue des câbles' }
 };
 
+// Les trois niveaux, du plus large au plus précis. Leurs parts se règlent
+// dans la pondération : elles totalisent toujours 100 %.
 const NIVEAUX = [
-  { cle: 'reference', libelle: 'Référence exacte', valeur: 1,    classe: 'niveau-reference' },
-  { cle: 'norme',     libelle: 'Même norme',       valeur: 0.66, classe: 'niveau-norme' },
-  { cle: 'fonction',  libelle: 'Même fonction',    valeur: 0.33, classe: 'niveau-fonction' }
+  { cle: 'fonction',  libelle: 'Fonction',  poids: 20, aide: 'ce que c\'est',
+    classe: 'niveau-fonction' },
+  { cle: 'norme',     libelle: 'Norme',     poids: 30, aide: 'ce qui le définit',
+    classe: 'niveau-norme' },
+  { cle: 'reference', libelle: 'Référence', poids: 50, aide: 'le modèle exact',
+    classe: 'niveau-reference' }
 ];
+
+const NIVEAUX_DEFAUT = {};
+NIVEAUX.forEach(function (n) { NIVEAUX_DEFAUT[n.cle] = n.poids; });
+
+/** Part courante d'un niveau. Un niveau écarté ne vaut plus rien. */
+function poidsNiveau(cle) {
+  if (typeof Store === 'undefined' || !Store.poids || !Store.poids.composant) {
+    return NIVEAUX_DEFAUT[cle];
+  }
+  if (typeof critereEstActif === 'function' && !critereEstActif('composant', cle)) return 0;
+  const v = Number(Store.poids.composant[cle]);
+  return (isFinite(v) && v >= 0) ? v : NIVEAUX_DEFAUT[cle];
+}
 
 /** Une ligne de cellule -> { fonction, norme, reference }. Tolérant à l'ancien format. */
 function analyserComposant(texte) {
@@ -1376,44 +1435,87 @@ function composantDepuisCatalogue(entree) {
 }
 
 // ------------------------------------------------------------
-// Équivalence à trois niveaux
+// Équivalence : les niveaux s'ADDITIONNENT, ils ne s'excluent pas
 // ------------------------------------------------------------
 /**
- * Pour chaque composant de la source, on cherche dans la cible le meilleur
- * appariement : référence exacte, sinon même norme, sinon même fonction.
- * Le score est la moyenne des appariements ; le détail dit combien de
- * composants tombent dans chaque niveau, et lesquels n'ont rien trouvé.
+ * On ne choisit pas UN niveau, on les parcourt tous et chacun rapporte sa
+ * part. Même fonction : on prend la part de la fonction. Même norme en plus :
+ * on ajoute la part de la norme. Même référence en plus : on ajoute la
+ * sienne, et le composant vaut alors le maximum.
+ *
+ * Ce qui n'est PAS renseigné sur la source sort du dénominateur. Un composant
+ * décrit par sa seule fonction ne peut pas être pénalisé pour une norme qu'on
+ * ne lui connaît pas : s'il trouve la même fonction, il vaut 100 % de ce
+ * qu'on savait de lui. C'est la même règle que pour les critères non
+ * mesurables, appliquée à l'intérieur d'un composant.
+ */
+function comparerComposants(source, cible) {
+  let obtenu = 0, max = 0;
+
+  const niveaux = NIVEAUX.map(function (n) {
+    const s = String(source[n.cle] === undefined ? '' : source[n.cle]).trim();
+    const c = String(cible[n.cle] === undefined ? '' : cible[n.cle]).trim();
+    const poids = poidsNiveau(n.cle);
+
+    if (!s) {
+      return { cle: n.cle, libelle: n.libelle, etat: 'absent', poids: poids, source: s, cible: c };
+    }
+    if (!poids) {
+      return { cle: n.cle, libelle: n.libelle, etat: 'ecarte', poids: 0, source: s, cible: c };
+    }
+    max += poids;
+    const egal = !!c && normaliserTexte(s) === normaliserTexte(c);
+    if (egal) obtenu += poids;
+    return { cle: n.cle, libelle: n.libelle, etat: egal ? 'egal' : 'different',
+             poids: poids, source: s, cible: c };
+  });
+
+  // La fonction est la PORTE D'ENTRÉE, pas un critère parmi d'autres : un
+  // bouton poussoir n'est pas un voyant, même s'ils partagent une norme ou
+  // une référence par accident. Fonctions différentes, rien n'est acquis.
+  const fonction = niveaux[0];
+  const incompatible = fonction.etat === 'different';
+  if (incompatible) obtenu = 0;
+
+  return { niveaux: niveaux, obtenu: obtenu, max: max,
+           compatible: !incompatible,
+           ratio: (!incompatible && max > 0) ? obtenu / max : 0 };
+}
+
+/**
+ * Apparie chaque composant de la source au meilleur candidat de la cible.
+ * On classe TOUTES les paires possibles par score décroissant avant de
+ * servir : le résultat ne dépend donc pas de l'ordre de saisie, ce qu'un
+ * appariement glouton naïf ne garantit pas.
  */
 function apparierComposants(listeSource, listeCible) {
-  const source = listeSource.slice(), cible = listeCible.slice();
-  const disponibles = cible.slice();
-  const paliers = { reference: [], norme: [], fonction: [], aucun: [] };
-  let total = 0;
+  const paires = [];
+  listeSource.forEach(function (s, i) {
+    listeCible.forEach(function (c, j) {
+      const detail = comparerComposants(s, c);
+      if (detail.ratio > 0) paires.push({ i: i, j: j, detail: detail });
+    });
+  });
+  paires.sort(function (a, b) {
+    return b.detail.ratio - a.detail.ratio || a.i - b.i || a.j - b.j;
+  });
 
-  source.forEach(function (s) {
-    let meilleur = null, niveau = null;
-    for (let n = 0; n < NIVEAUX.length && !meilleur; n++) {
-      const cle = NIVEAUX[n].cle;
-      for (let i = 0; i < disponibles.length; i++) {
-        const c = disponibles[i];
-        if (!s[cle] || !c[cle]) continue;
-        // Une référence identique doit aussi partager la fonction : on ne
-        // confond pas deux fabricants dont les codes se recoupent par hasard.
-        if (normaliserTexte(s[cle]) !== normaliserTexte(c[cle])) continue;
-        if (cle !== 'fonction' && s.fonction && c.fonction &&
-            normaliserTexte(s.fonction) !== normaliserTexte(c.fonction)) continue;
-        meilleur = c; niveau = NIVEAUX[n]; disponibles.splice(i, 1); break;
-      }
-    }
-    if (meilleur) { paliers[niveau.cle].push({ source: s, cible: meilleur }); total += niveau.valeur; }
-    else paliers.aucun.push(s);
+  const sourcePrise = {}, ciblePrise = {}, appariements = [];
+  let total = 0;
+  paires.forEach(function (p) {
+    if (sourcePrise[p.i] || ciblePrise[p.j]) return;
+    sourcePrise[p.i] = true;
+    ciblePrise[p.j] = true;
+    appariements.push({ source: listeSource[p.i], cible: listeCible[p.j], detail: p.detail });
+    total += p.detail.ratio;
   });
 
   return {
-    ratio: source.length ? total / source.length : 0,
-    paliers: paliers,
-    enPlus: disponibles,          // présents sur la cible, sans contrepartie
-    nbSource: source.length
+    ratio: listeSource.length ? total / listeSource.length : 0,
+    appariements: appariements,
+    aucun: listeSource.filter(function (_, i) { return !sourcePrise[i]; }),
+    enPlus: listeCible.filter(function (_, j) { return !ciblePrise[j]; }),
+    nbSource: listeSource.length
   };
 }
 </script>
@@ -1613,10 +1715,41 @@ function typesProposes() {
     .filter(function (t) { return !t.masque; });
 }
 
+/**
+ * Portée INTERNE : la répartition des points entre les trois niveaux d'un
+ * composant. Elle ne se compare à rien toute seule — on ne cherche pas
+ * « les équivalences d'un niveau » — mais elle se pondère, et elle sert
+ * partout où des composants sont comparés : sur la boîte comme sur la
+ * structure. Une seule pondération pour les deux : la fonction, la norme et
+ * la référence veulent dire la même chose des deux côtés.
+ */
+const PORTEE_COMPOSANT = {
+  cle: 'composant',
+  libelle: 'Niveaux de composant',
+  icone: '◈',
+  interne: true,
+  criteres: NIVEAUX.map(function (n) {
+    return { cle: n.cle, libelle: n.libelle, mode: MODE.EGALITE,
+             poids: n.poids, aide: n.aide };
+  })
+};
+
 const PORTEES = [{ cle: 'boite', libelle: 'Boîte', icone: '◼', criteres: CRITERES_BOITE }]
   .concat(typesProposes().map(function (t) {
     return { cle: t.cle, libelle: t.libelle, icone: t.icone, criteres: t.criteres };
-  }));
+  }))
+  .concat([PORTEE_COMPOSANT]);
+
+/** Les portées qu'on peut réellement comparer : l'interne n'en est pas une. */
+function porteesComparables() {
+  return PORTEES.filter(function (p) { return !p.interne; });
+}
+
+/** Cette portée compare-t-elle des composants ? Si oui, les niveaux se règlent. */
+function porteeAvecComposants(portee) {
+  return !!portee && !portee.interne &&
+         portee.criteres.some(function (c) { return c.mode === MODE.COMPOSANTS; });
+}
 
 // ------------------------------------------------------------
 // Résolution d'un libellé de type saisi librement
@@ -1720,7 +1853,6 @@ const Api = {
   sauverBoite:        function (pn, modifs)       { return appelerServeur('saveBoite', pn, modifs); },
   creerBoite:         function (pn, f, ds)        { return appelerServeur('addBoite', pn, f, ds); },
   supprimerBoite:     function (pn)               { return appelerServeur('deleteBoiteEntiere', pn); },
-  dupliquerBoite:     function (src, cible)       { return appelerServeur('dupliquerBoite', src, cible); },
   sauverNom:          function (id, modifs)       { return appelerServeur('saveNomenclature', id, modifs); },
   creerNom:           function (pn, type, pnType) { return appelerServeur('addSousEnsemble', pn, type, pnType); },
   supprimerNom:       function (id)               { return appelerServeur('deleteNomenclature', id); }
@@ -2636,10 +2768,11 @@ function evalComposants(def, poids, source, cible) {
   }
   const r = apparierComposants(src, cib);
   const etat = r.ratio >= 0.999 ? ETAT.IDENTIQUE : (r.ratio > 0 ? ETAT.PARTIEL : ETAT.DIFFERENT);
-  const nbApparies = src.length - r.paliers.aucun.length;
+  const nbApparies = r.appariements.length;
   const c = critere(def, etat, poids, Math.round(poids * r.ratio * 100) / 100,
                     nbApparies + ' / ' + src.length + ' apparié(s)');
-  c.paliers = r.paliers;     // détail par niveau, pour l'affichage
+  c.appariements = r.appariements;   // détail niveau par niveau, pour l'affichage
+  c.aucun = r.aucun;
   c.enPlus = r.enPlus;
   return c;
 }
@@ -2896,9 +3029,6 @@ function carteHtml(boite) {
         dataAttrs({ action: 'ouvrir-fiche', pn: pn }) +
         ' aria-label="Ouvrir la fiche de ' + esc(txt(pn)) + '">' + visuel + '</button>' +
       statutSurPhotoHtml(boite['Statut']) +
-      '<button type="button" class="btn-sur-image"' +
-        ' aria-label="Dupliquer la boîte ' + esc(txt(pn)) + '"' +
-        dataAttrs({ action: 'dupliquer-boite', pn: pn }) + '>Dupliquer</button>' +
     '</div>' +
     '<div class="carte-corps">' +
       '<div class="carte-tete">' +
@@ -2967,11 +3097,6 @@ function rendreKpi(kpi, vue) {
   definirTexte('kpiNomsDetail', kpi.nbPieces + ' pièces distinctes');
   definirTexte('kpiReutil', String(kpi.reutilisees));
   definirTexte('kpiReutilDetail', kpi.pctReutilisees + ' % des pièces');
-
-  const jaugeVal = parId('kpiValJauge');
-  if (jaugeVal) jaugeVal.style.width = kpi.pctValides + '%';
-  const jaugeReutil = parId('kpiReutilJauge');
-  if (jaugeReutil) jaugeReutil.style.width = kpi.pctReutilisees + '%';
 
   // L'indicateur dit s'il filtre en ce moment.
   const marquer = function (id, actif) {
@@ -3466,46 +3591,63 @@ function composantCourtHtml(c) {
          (c.reference ? '<span class="compo-ref">' + esc(c.reference) + '</span>' : '');
 }
 
-function palierHtml(classe, titre, sousTitre, lignes) {
-  if (!lignes.length) return '';
+function listeComposantsHtml(classe, titre, sousTitre, composants) {
+  if (!composants.length) return '';
   return '<div class="palier ' + classe + '">' +
-    '<div class="palier-titre"><span>' + esc(titre) + ' (' + lignes.length + ')</span>' +
+    '<div class="palier-titre"><span>' + esc(titre) + ' (' + composants.length + ')</span>' +
       '<small>' + esc(sousTitre) + '</small></div>' +
-    '<ul class="palier-liste">' + lignes.join('') + '</ul>' +
+    '<ul class="palier-liste">' +
+      composants.map(function (c) { return '<li>' + composantCourtHtml(c) + '</li>'; }).join('') +
+    '</ul>' +
   '</div>';
 }
 
-/**
- * Le détail d'un critère de composants : combien de composants trouvent
- * leur référence exacte, combien seulement leur norme, combien seulement
- * leur fonction, et lesquels n'ont rien trouvé.
- */
-function paliersHtml(critere) {
-  const p = critere.paliers;
-  const vers = '<span class="vers" aria-hidden="true">→</span>';
+const SIGNE_NIVEAU = { egal: '✓', different: '✗', absent: '–', ecarte: '·' };
 
-  const reference = p.reference.map(function (a) {
-    return '<li>' + composantCourtHtml(a.source) + '</li>';
+/** Les trois niveaux d'un appariement, chacun avec ce qu'il a rapporté. */
+function niveauxHtml(detail) {
+  return '<span class="niveaux">' + detail.niveaux.map(function (n) {
+    const explication =
+      n.etat === 'egal'      ? n.libelle + ' identique : ' + n.source + ' (+' + n.poids + ' points)' :
+      n.etat === 'different' ? n.libelle + ' : ' + n.source + ' contre ' + (n.cible || 'rien') :
+      n.etat === 'ecarte'    ? n.libelle + ' écartée de la pondération' :
+                               n.libelle + ' non renseignée : ne compte pas';
+    return '<span class="niveau-etat niveau-' + n.etat + '" title="' + esc(explication) + '">' +
+      '<b aria-hidden="true">' + SIGNE_NIVEAU[n.etat] + '</b> ' + esc(n.libelle) +
+    '</span>';
+  }).join('') + '</span>';
+}
+
+/**
+ * Le détail d'un critère de composants. Une ligne par composant de la source :
+ * ce qu'il est, quels niveaux il partage avec son homologue, et ce que cela
+ * lui rapporte. Les niveaux s'additionnent, donc on montre l'addition.
+ */
+function appariementsHtml(critere) {
+  const lignes = critere.appariements.map(function (a) {
+    const pct = Math.round(a.detail.ratio * 100);
+    const teinte = pct >= 100 ? 'appariement-plein'
+                 : (pct >= 50 ? 'appariement-moyen' : 'appariement-faible');
+    return '<li class="appariement">' +
+      '<span class="appariement-compo">' + composantCourtHtml(a.source) + '</span>' +
+      niveauxHtml(a.detail) +
+      '<span class="appariement-score ' + teinte + '">' + pct + '<small>%</small></span>' +
+    '</li>';
   });
-  const norme = p.norme.map(function (a) {
-    return '<li>' + composantCourtHtml(a.source) + vers +
-           '<span class="compo-ref">' + esc(a.cible.reference || 'référence non précisée') + '</span></li>';
-  });
-  const fonction = p.fonction.map(function (a) {
-    return '<li>' + composantCourtHtml(a.source) + vers +
-           '<span class="compo-norme">' + esc(a.cible.norme || 'norme non précisée') + '</span>' +
-           (a.cible.reference ? '<span class="compo-ref">' + esc(a.cible.reference) + '</span>' : '') +
-           '</li>';
-  });
-  const aucun = p.aucun.map(function (c) { return '<li>' + composantCourtHtml(c) + '</li>'; });
-  const enPlus = (critere.enPlus || []).map(function (c) { return '<li>' + composantCourtHtml(c) + '</li>'; });
+
+  const apparies = lignes.length
+    ? '<div class="palier palier-apparies">' +
+        '<div class="palier-titre"><span>Appariés (' + lignes.length + ')</span>' +
+          '<small>chaque niveau partagé ajoute sa part</small></div>' +
+        '<ul class="appariements">' + lignes.join('') + '</ul>' +
+      '</div>'
+    : '';
 
   return '<div class="paliers">' +
-    palierHtml('palier-reference', 'Référence exacte', 'même modèle', reference) +
-    palierHtml('palier-norme', 'Même norme', 'autre référence, interchangeable sous réserve', norme) +
-    palierHtml('palier-fonction', 'Même fonction', 'norme différente, à requalifier', fonction) +
-    palierHtml('palier-aucun', 'Sans équivalent', 'absent de la cible', aucun) +
-    palierHtml('palier-plus', 'Présents en plus sur la cible', 'sans contrepartie', enPlus) +
+    apparies +
+    listeComposantsHtml('palier-aucun', 'Sans équivalent', 'absent de la cible', critere.aucun || []) +
+    listeComposantsHtml('palier-plus', 'Présents en plus sur la cible', 'sans contrepartie',
+                        critere.enPlus || []) +
   '</div>';
 }
 
@@ -3533,7 +3675,7 @@ function critereHtml(critere) {
     '</div>' +
   '</div>';
 
-  if (critere.paliers) html += paliersHtml(critere);
+  if (critere.appariements) html += appariementsHtml(critere);
   else if (critere.ensembles) {
     html += '<div class="ensembles">' +
       listeEnsembleHtml('En commun', critere.ensembles.communs, 'ensemble-ok') +
@@ -3713,17 +3855,8 @@ function porteeCourante() { return porteeParCle(porteeReglee); }
 // ------------------------------------------------------------
 // Rendu
 // ------------------------------------------------------------
-function curseursHtml() {
-  const portee = porteeCourante();
-
-  // Un seul critère possible : il n'y a rien à arbitrer, on le dit.
-  if (!porteeArbitrable(portee)) {
-    const seul = portee.criteres[0];
-    return '<p class="reglage-unique">Un seul critère pour ce type : ' +
-           '<b>' + esc(seul ? seul.libelle : '—') + '</b>. ' +
-           'Le score en dépend entièrement, il n\'y a pas d\'arbitrage à faire.</p>';
-  }
-
+/** Un groupe de curseurs pour une portée donnée. Les parts y font 100 %. */
+function groupeReglageHtml(portee) {
   const actifs = criteresActifs(portee.cle);
 
   const lignes = actifs.map(function (c) {
@@ -3731,16 +3864,17 @@ function curseursHtml() {
     const seul = actifs.length === 1;
     return '<div class="reglage">' +
       '<div class="reglage-tete">' +
-        '<label for="poids-' + esc(c.cle) + '">' + esc(c.libelle) + '</label>' +
+        '<label for="poids-' + esc(portee.cle) + '-' + esc(c.cle) + '">' + esc(c.libelle) + '</label>' +
         '<span class="reglage-part">' + part + ' %</span>' +
         '<button type="button" class="reglage-retirer"' +
-          dataAttrs({ action: 'retirer-critere', critere: c.cle }) +
+          dataAttrs({ action: 'retirer-critere', critere: c.cle, portee: portee.cle }) +
           (seul ? ' disabled title="Il faut garder au moins un critère"'
                 : ' title="Retirer ce critère de la comparaison"') +
           ' aria-label="Retirer ' + esc(c.libelle) + '">−</button>' +
       '</div>' +
+      (c.aide ? '<p class="reglage-aide">' + esc(c.aide) + '</p>' : '') +
       '<input type="range" min="0" max="100" step="1" value="' + part + '"' +
-        ' id="poids-' + esc(c.cle) + '" class="curseur"' +
+        ' id="poids-' + esc(portee.cle) + '-' + esc(c.cle) + '" class="curseur"' +
         ' data-portee="' + esc(portee.cle) + '" data-critere="' + esc(c.cle) + '"' +
         ' aria-label="Part de ' + esc(c.libelle) + '">' +
       '<div class="reglage-jauge"><span style="width:' + part + '%"></span></div>' +
@@ -3750,12 +3884,42 @@ function curseursHtml() {
   return lignes + totalHtml(portee) + critereDisponiblesHtml(portee);
 }
 
+function curseursHtml() {
+  const portee = porteeCourante();
+
+  // Un seul critère possible : il n'y a rien à arbitrer, on le dit.
+  let html;
+  if (!porteeArbitrable(portee)) {
+    const seul = portee.criteres[0];
+    html = '<p class="reglage-unique">Un seul critère pour ce type : ' +
+           '<b>' + esc(seul ? seul.libelle : '—') + '</b>. ' +
+           'Le score en dépend entièrement, il n\'y a pas d\'arbitrage à faire.</p>';
+  } else {
+    html = groupeReglageHtml(portee);
+  }
+
+  // Quand la portée compare des composants, on règle AUSSI la répartition
+  // entre leurs trois niveaux. C'est une pondération dans la pondération :
+  // elle dit ce que vaut une fonction partagée face à une référence exacte.
+  if (porteeAvecComposants(portee)) {
+    const niveaux = porteeParCle('composant');
+    html += '<div class="sous-reglage">' +
+      '<h4>Niveaux de composant</h4>' +
+      '<p class="sous-reglage-aide">Les niveaux s\'additionnent : même fonction, ' +
+        'puis même norme en plus, puis même référence en plus. Ce qui n\'est pas ' +
+        'renseigné ne compte pas.</p>' +
+      groupeReglageHtml(niveaux) +
+    '</div>';
+  }
+  return html;
+}
+
 function totalHtml(portee) {
   const total = criteresActifs(portee.cle).reduce(function (t, c) {
     return t + (Number(Store.poids[portee.cle][c.cle]) || 0);
   }, 0);
-  return '<p class="reglage-total' + (total === 100 ? '' : ' reglage-total-faux') + '">' +
-         'Total ' + total + ' %</p>';
+  return '<p class="reglage-total' + (total === 100 ? '' : ' reglage-total-faux') + '"' +
+         ' data-portee="' + esc(portee.cle) + '">Total ' + total + ' %</p>';
 }
 
 function critereDisponiblesHtml(portee) {
@@ -3767,7 +3931,7 @@ function critereDisponiblesHtml(portee) {
     '<h4>Critères écartés</h4>' +
     inactifs.map(function (c) {
       return '<button type="button" class="btn-ajout-critere"' +
-             dataAttrs({ action: 'ajouter-critere', critere: c.cle }) + '>' +
+             dataAttrs({ action: 'ajouter-critere', critere: c.cle, portee: portee.cle }) + '>' +
              '<span aria-hidden="true">+</span> ' + esc(c.libelle) + '</button>';
     }).join('') +
   '</div>';
@@ -3792,25 +3956,28 @@ function rendreReglages() {
  * viennent d'être redistribués.
  */
 function rafraichirCurseurs(cleTenue) {
-  const portee = porteeCourante();
   document.querySelectorAll('.reglage').forEach(function (bloc) {
     const curseur = bloc.querySelector('.curseur');
     if (!curseur) return;
-    const part = Math.max(0, Number(Store.poids[portee.cle][curseur.dataset.critere]) || 0);
+    const table = Store.poids[curseur.dataset.portee] || {};
+    const part = Math.max(0, Number(table[curseur.dataset.critere]) || 0);
+    // On ne touche pas au curseur que l'utilisateur tient sous le doigt.
     if (curseur.dataset.critere !== cleTenue) curseur.value = part;
     const etiquette = bloc.querySelector('.reglage-part');
     if (etiquette) etiquette.textContent = part + ' %';
     const jauge = bloc.querySelector('.reglage-jauge span');
     if (jauge) jauge.style.width = part + '%';
   });
-  const total = parId('reglagesCurseurs') && parId('reglagesCurseurs').querySelector('.reglage-total');
-  if (total) {
-    const somme = criteresActifs(portee.cle).reduce(function (t, c) {
-      return t + (Number(Store.poids[portee.cle][c.cle]) || 0);
+
+  document.querySelectorAll('.reglage-total').forEach(function (total) {
+    const cle = total.dataset.portee;
+    const somme = criteresActifs(cle).reduce(function (t, c) {
+      return t + (Number(Store.poids[cle][c.cle]) || 0);
     }, 0);
     total.textContent = 'Total ' + somme + ' %';
     total.classList.toggle('reglage-total-faux', somme !== 100);
-  }
+  });
+
   const avert = parId('reglagesModifies');
   if (avert) avert.hidden = !poidsModifies();
 }
@@ -4353,28 +4520,6 @@ enregistrerActions({
     });
   },
 
-  // Depuis la LISTE, pas depuis la fiche : dupliquer une boîte est une
-  // opération de la page principale.
-  'dupliquer-boite': function (d) {
-    demander({
-      titre: 'Dupliquer la boîte ' + d.pn,
-      message: 'PN Global de la nouvelle boîte. Ses sous-ensembles sont recopiés.',
-      valeur: d.pn + '-B', placeholder: 'ex. ' + d.pn + '-B', bouton: 'Dupliquer'
-    }).then(function (nouveau) {
-      if (nouveau === null) return;
-      if (!nouveau) { afficherBandeau('Le PN Global est obligatoire.', 'erreur'); return; }
-      indicateurBoite();
-      return Api.dupliquerBoite(d.pn, nouveau)
-        .then(function (r) {
-          appliquerBoite(r.boite);
-          (r.nomenclature || []).forEach(appliquerNom);
-          rendreInterface();
-          confirmerSucces('Boîte dupliquée : ' + r.boite[CLE_PN()] + '.');
-        })
-        .catch(function (e) { signalerErreur(e, "duplication de la boîte"); });
-    });
-  },
-
   'ajouter-multi-boite': function (d) {
     const v = lireSaisieMulti(d.champ);
     if (v) majMultiBoite(d.champ, ajouterA(v));
@@ -4560,12 +4705,12 @@ enregistrerActions({
   'fermer-reglages': function () { afficherRail(false); rafraichirComparaison(); },
   'regler-portee': function (d) { porteeReglee = d.portee; rendreReglages(); },
   'ajouter-critere': function (d) {
-    activerCritere(porteeReglee, d.critere);
+    activerCritere(d.portee || porteeReglee, d.critere);
     rendreReglages();
     rafraichirComparaison();
   },
   'retirer-critere': function (d) {
-    if (!desactiverCritere(porteeReglee, d.critere)) {
+    if (!desactiverCritere(d.portee || porteeReglee, d.critere)) {
       afficherBandeau('Il faut garder au moins un critère.', 'erreur');
       return;
     }

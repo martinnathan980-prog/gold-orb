@@ -34,46 +34,63 @@ function composantCourtHtml(c) {
          (c.reference ? '<span class="compo-ref">' + esc(c.reference) + '</span>' : '');
 }
 
-function palierHtml(classe, titre, sousTitre, lignes) {
-  if (!lignes.length) return '';
+function listeComposantsHtml(classe, titre, sousTitre, composants) {
+  if (!composants.length) return '';
   return '<div class="palier ' + classe + '">' +
-    '<div class="palier-titre"><span>' + esc(titre) + ' (' + lignes.length + ')</span>' +
+    '<div class="palier-titre"><span>' + esc(titre) + ' (' + composants.length + ')</span>' +
       '<small>' + esc(sousTitre) + '</small></div>' +
-    '<ul class="palier-liste">' + lignes.join('') + '</ul>' +
+    '<ul class="palier-liste">' +
+      composants.map(function (c) { return '<li>' + composantCourtHtml(c) + '</li>'; }).join('') +
+    '</ul>' +
   '</div>';
 }
 
-/**
- * Le détail d'un critère de composants : combien de composants trouvent
- * leur référence exacte, combien seulement leur norme, combien seulement
- * leur fonction, et lesquels n'ont rien trouvé.
- */
-function paliersHtml(critere) {
-  const p = critere.paliers;
-  const vers = '<span class="vers" aria-hidden="true">→</span>';
+const SIGNE_NIVEAU = { egal: '✓', different: '✗', absent: '–', ecarte: '·' };
 
-  const reference = p.reference.map(function (a) {
-    return '<li>' + composantCourtHtml(a.source) + '</li>';
+/** Les trois niveaux d'un appariement, chacun avec ce qu'il a rapporté. */
+function niveauxHtml(detail) {
+  return '<span class="niveaux">' + detail.niveaux.map(function (n) {
+    const explication =
+      n.etat === 'egal'      ? n.libelle + ' identique : ' + n.source + ' (+' + n.poids + ' points)' :
+      n.etat === 'different' ? n.libelle + ' : ' + n.source + ' contre ' + (n.cible || 'rien') :
+      n.etat === 'ecarte'    ? n.libelle + ' écartée de la pondération' :
+                               n.libelle + ' non renseignée : ne compte pas';
+    return '<span class="niveau-etat niveau-' + n.etat + '" title="' + esc(explication) + '">' +
+      '<b aria-hidden="true">' + SIGNE_NIVEAU[n.etat] + '</b> ' + esc(n.libelle) +
+    '</span>';
+  }).join('') + '</span>';
+}
+
+/**
+ * Le détail d'un critère de composants. Une ligne par composant de la source :
+ * ce qu'il est, quels niveaux il partage avec son homologue, et ce que cela
+ * lui rapporte. Les niveaux s'additionnent, donc on montre l'addition.
+ */
+function appariementsHtml(critere) {
+  const lignes = critere.appariements.map(function (a) {
+    const pct = Math.round(a.detail.ratio * 100);
+    const teinte = pct >= 100 ? 'appariement-plein'
+                 : (pct >= 50 ? 'appariement-moyen' : 'appariement-faible');
+    return '<li class="appariement">' +
+      '<span class="appariement-compo">' + composantCourtHtml(a.source) + '</span>' +
+      niveauxHtml(a.detail) +
+      '<span class="appariement-score ' + teinte + '">' + pct + '<small>%</small></span>' +
+    '</li>';
   });
-  const norme = p.norme.map(function (a) {
-    return '<li>' + composantCourtHtml(a.source) + vers +
-           '<span class="compo-ref">' + esc(a.cible.reference || 'référence non précisée') + '</span></li>';
-  });
-  const fonction = p.fonction.map(function (a) {
-    return '<li>' + composantCourtHtml(a.source) + vers +
-           '<span class="compo-norme">' + esc(a.cible.norme || 'norme non précisée') + '</span>' +
-           (a.cible.reference ? '<span class="compo-ref">' + esc(a.cible.reference) + '</span>' : '') +
-           '</li>';
-  });
-  const aucun = p.aucun.map(function (c) { return '<li>' + composantCourtHtml(c) + '</li>'; });
-  const enPlus = (critere.enPlus || []).map(function (c) { return '<li>' + composantCourtHtml(c) + '</li>'; });
+
+  const apparies = lignes.length
+    ? '<div class="palier palier-apparies">' +
+        '<div class="palier-titre"><span>Appariés (' + lignes.length + ')</span>' +
+          '<small>chaque niveau partagé ajoute sa part</small></div>' +
+        '<ul class="appariements">' + lignes.join('') + '</ul>' +
+      '</div>'
+    : '';
 
   return '<div class="paliers">' +
-    palierHtml('palier-reference', 'Référence exacte', 'même modèle', reference) +
-    palierHtml('palier-norme', 'Même norme', 'autre référence, interchangeable sous réserve', norme) +
-    palierHtml('palier-fonction', 'Même fonction', 'norme différente, à requalifier', fonction) +
-    palierHtml('palier-aucun', 'Sans équivalent', 'absent de la cible', aucun) +
-    palierHtml('palier-plus', 'Présents en plus sur la cible', 'sans contrepartie', enPlus) +
+    apparies +
+    listeComposantsHtml('palier-aucun', 'Sans équivalent', 'absent de la cible', critere.aucun || []) +
+    listeComposantsHtml('palier-plus', 'Présents en plus sur la cible', 'sans contrepartie',
+                        critere.enPlus || []) +
   '</div>';
 }
 
@@ -101,7 +118,7 @@ function critereHtml(critere) {
     '</div>' +
   '</div>';
 
-  if (critere.paliers) html += paliersHtml(critere);
+  if (critere.appariements) html += appariementsHtml(critere);
   else if (critere.ensembles) {
     html += '<div class="ensembles">' +
       listeEnsembleHtml('En commun', critere.ensembles.communs, 'ensemble-ok') +

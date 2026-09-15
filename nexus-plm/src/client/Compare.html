@@ -160,10 +160,11 @@ function evalComposants(def, poids, source, cible) {
   }
   const r = apparierComposants(src, cib);
   const etat = r.ratio >= 0.999 ? ETAT.IDENTIQUE : (r.ratio > 0 ? ETAT.PARTIEL : ETAT.DIFFERENT);
-  const nbApparies = src.length - r.paliers.aucun.length;
+  const nbApparies = r.appariements.length;
   const c = critere(def, etat, poids, Math.round(poids * r.ratio * 100) / 100,
                     nbApparies + ' / ' + src.length + ' apparié(s)');
-  c.paliers = r.paliers;     // détail par niveau, pour l'affichage
+  c.appariements = r.appariements;   // détail niveau par niveau, pour l'affichage
+  c.aucun = r.aucun;
   c.enPlus = r.enPlus;
   return c;
 }

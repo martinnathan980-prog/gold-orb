@@ -69,10 +69,21 @@ eq('3 types proposés à la saisie', C.typesProposes().length, 3);
 eq('lesquels', C.typesProposes().map(function (t) { return t.cle; }),
    ['structure', 'harnais', 'plaquette']);
 vrai('le repli technique existe mais reste masqué', C.TYPES.autre.masque === true);
-eq('4 portées de pondération (boîte + 3 types)', C.PORTEES.length, 4);
-eq('seules la boîte et la structure s\'arbitrent',
+eq('4 portées comparables (boîte + 3 types)', C.porteesComparables().length, 4);
+eq('plus une portée interne : les niveaux de composant', C.PORTEES.length, 5);
+eq('elle est marquée interne', C.porteeParCle('composant').interne, true);
+faux('et n\'apparaît pas parmi les comparables',
+     C.porteesComparables().some(function (p) { return p.cle === 'composant'; }));
+eq('s\'arbitrent : la boîte, la structure, et les niveaux de composant',
    C.PORTEES.filter(C.porteeArbitrable).map(function (p) { return p.cle; }),
-   ['boite', 'structure']);
+   ['boite', 'structure', 'composant']);
+eq('les niveaux, du plus large au plus précis',
+   C.NIVEAUX.map(function (n) { return n.cle; }), ['fonction', 'norme', 'reference']);
+vrai('la boîte règle ses niveaux de composant',
+     C.porteeAvecComposants(C.porteeParCle('boite')));
+vrai('la structure aussi', C.porteeAvecComposants(C.porteeParCle('structure')));
+faux('le harnais non, il n\'a pas de composants',
+     C.porteeAvecComposants(C.porteeParCle('harnais')));
 eq('« Structure boîte »', C.typeDe({ Type: 'Structure boîte' }).cle, 'structure');
 eq('sans accent', C.typeDe({ Type: 'Structure boite' }).cle, 'structure');
 eq('casse indifférente', C.typeDe({ Type: 'HARNAIS' }).cle, 'harnais');
@@ -155,30 +166,110 @@ eq('depuis le catalogue (anciennes colonnes)',
    C.composantDepuisCatalogue({ 'Type': 'Diode', 'Norm': 'ASNE 0239', 'Sous Type/Désignation': 'Diode' }).norme, 'ASNE 0239');
 eq('catégorie par défaut : composant', C.composantDepuisCatalogue({ 'Type': 'Diode' }).categorie, 'composant');
 
-const S = [C.analyserComposant('Bouton poussoir | ECS 7251 | MS24523-22'),
-           C.analyserComposant('Voyant | ECS 4410 | LED-G-28'),
-           C.analyserComposant('Relais | ECS 1120 | RLY-28-2C'),
-           C.analyserComposant('Fusible | NSA 9350 | F5A')];
-const T = [C.analyserComposant('Bouton poussoir | ECS 7251 | MS24523-22'),   // référence exacte
-           C.analyserComposant('Voyant | ECS 4410 | LED-G-05'),              // même norme
-           C.analyserComposant('Relais | ECS 1121 | RLY-28-4C'),             // même fonction
-           C.analyserComposant('Connecteur | EN 3645 | CN-3645-12')];        // en plus
-const ap = C.apparierComposants(S, T);
-eq('1 référence exacte', ap.paliers.reference.length, 1);
-eq('1 même norme', ap.paliers.norme.length, 1);
-eq('1 même fonction', ap.paliers.fonction.length, 1);
-eq('1 sans équivalent', ap.paliers.aucun.map(function (c) { return c.fonction; }), ['Fusible']);
-eq('1 en plus sur la cible', ap.enPlus.map(function (c) { return c.fonction; }), ['Connecteur']);
-eq('ratio = (1 + 0,66 + 0,33) / 4', Math.round(ap.ratio * 1000) / 1000, Math.round(((1 + 0.66 + 0.33) / 4) * 1000) / 1000);
-eq('référence identique -> 100 %', C.apparierComposants(S.slice(0, 1), T.slice(0, 1)).ratio, 1);
-eq('un composant n\'est apparié qu\'une fois',
-   C.apparierComposants([S[0], S[0]], [T[0]]).paliers.aucun.length, 1);
-eq('même référence mais autre fonction : pas apparié sur la référence',
-   C.apparierComposants([C.analyserComposant('Relais | X | ABC')], [C.analyserComposant('Voyant | Y | ABC')]).paliers.aucun.length, 1);
-eq('source vide -> ratio 0', C.apparierComposants([], T).ratio, 0);
+// --- Le calcul, niveau par niveau -----------------------------------
+// Parts par défaut : fonction 20, norme 30, référence 50. Elles
+// S'ADDITIONNENT. Ce qui n'est pas renseigné sort du dénominateur.
+C.reinitialiserPoids();
+const comp = function (t) { return C.analyserComposant(t); };
+const ratio = function (a, b) {
+  return Math.round(C.comparerComposants(comp(a), comp(b)).ratio * 1000) / 1000;
+};
+
+eq('tout identique : le maximum',
+   ratio('Bouton poussoir | ECS 7251 | MS24523-22', 'Bouton poussoir | ECS 7251 | MS24523-22'), 1);
+eq('fonction et norme partagées, référence différente : 20 + 30 sur 100',
+   ratio('Bouton poussoir | ECS 7251 | MS24523-22', 'Bouton poussoir | ECS 7251 | MS24523-23'), 0.5);
+eq('fonction seule partagée : 20 sur 100',
+   ratio('Bouton poussoir | ECS 7251 | MS24523-22', 'Bouton poussoir | ECS 0763 | MS24523-31'), 0.2);
+eq('fonctions différentes : rien',
+   ratio('Bouton poussoir | ECS 7251 | MS24523-22', 'Voyant | ECS 7251 | MS24523-22'), 0);
+
+// Ce qui n'est pas renseigné ne peut pas être exigé.
+eq('source décrite par sa seule fonction, retrouvée : tous ses points',
+   ratio('Colonnette', 'Colonnette | NSA 5512 | COL-M4-20'), 1);
+eq('fonction + norme renseignées et partagées : tous ses points',
+   ratio('Colonnette | NSA 5512', 'Colonnette | NSA 5512 | COL-M4-20'), 1);
+eq('fonction + norme renseignées, norme différente : 20 sur 50',
+   ratio('Colonnette | NSA 5512', 'Colonnette | NSA 5599 | COL-X'), 0.4);
+eq('cible muette sur un niveau que la source renseigne : le niveau est perdu',
+   ratio('Colonnette | NSA 5512 | COL-M4-20', 'Colonnette'), 0.2);
 eq('casse et accents indifférents',
-   C.apparierComposants([C.analyserComposant('Équerre | en 2491 | eq-90-a')],
-                        [C.analyserComposant('equerre | EN 2491 | EQ-90-A')]).paliers.reference.length, 1);
+   ratio('Équerre | en 2491 | eq-90-a', 'equerre | EN 2491 | EQ-90-A'), 1);
+
+const detail = C.comparerComposants(comp('Bouton poussoir | ECS 7251 | MS24523-22'),
+                                    comp('Bouton poussoir | ECS 7251 | MS24523-23'));
+eq('le détail nomme les trois niveaux',
+   detail.niveaux.map(function (n) { return n.cle; }), ['fonction', 'norme', 'reference']);
+eq('et leur état', detail.niveaux.map(function (n) { return n.etat; }),
+   ['egal', 'egal', 'different']);
+eq('les points obtenus', detail.obtenu, 50);
+eq('sur le maximum atteignable', detail.max, 100);
+const detailPartiel = C.comparerComposants(comp('Colonnette'), comp('Colonnette | NSA 5512 | X'));
+eq('un niveau non renseigné est marqué absent',
+   detailPartiel.niveaux.map(function (n) { return n.etat; }), ['egal', 'absent', 'absent']);
+eq('et ne gonfle pas le dénominateur', detailPartiel.max, 20);
+
+// --- Les parts sont réglables ---------------------------------------
+C.reglerPoids('composant', 'reference', 90);
+eq('la somme des niveaux reste 100',
+   C.criteresActifs('composant').reduce(function (t, c) {
+     return t + C.Store.poids.composant[c.cle]; }, 0), 100);
+vrai('référence à 90 : partager la seule fonction ne vaut presque plus rien',
+     ratio('Bouton poussoir | ECS 7251 | MS24523-22', 'Bouton poussoir | ECS 0763 | X') < 0.1);
+C.reglerPoids('composant', 'reference', 0);
+eq('référence à 0 : fonction et norme font tout le score',
+   ratio('Bouton poussoir | ECS 7251 | MS24523-22', 'Bouton poussoir | ECS 7251 | AUTRE'), 1);
+C.reinitialiserPoids();
+
+// Un niveau écarté sort du calcul, il ne vaut pas 0 point sur 100.
+C.desactiverCritere('composant', 'norme');
+eq('la norme écartée ne compte plus du tout',
+   ratio('Bouton poussoir | ECS 7251 | MS24523-22', 'Bouton poussoir | ECS 9999 | MS24523-22'), 1);
+eq('elle est signalée comme écartée',
+   C.comparerComposants(comp('A | B | C'), comp('A | B | C'))
+    .niveaux.filter(function (n) { return n.etat === 'ecarte'; }).length, 1);
+C.reinitialiserPoids();
+
+// --- L'appariement ---------------------------------------------------
+const S = [comp('Bouton poussoir | ECS 7251 | MS24523-22'),
+           comp('Voyant | ECS 4410 | LED-G-28'),
+           comp('Relais | ECS 1120 | RLY-28-2C'),
+           comp('Fusible | NSA 9350 | F5A')];
+const T = [comp('Bouton poussoir | ECS 7251 | MS24523-22'),   // les trois niveaux
+           comp('Voyant | ECS 4410 | LED-G-05'),              // fonction + norme
+           comp('Relais | ECS 1121 | RLY-28-4C'),             // fonction seule
+           comp('Connecteur | EN 3645 | CN-3645-12')];        // en plus
+const ap = C.apparierComposants(S, T);
+eq('3 composants appariés', ap.appariements.length, 3);
+eq('1 sans équivalent', ap.aucun.map(function (c) { return c.fonction; }), ['Fusible']);
+eq('1 en plus sur la cible', ap.enPlus.map(function (c) { return c.fonction; }), ['Connecteur']);
+eq('le meilleur appariement en tête', ap.appariements[0].source.fonction, 'Bouton poussoir');
+eq('les scores, du plus fort au plus faible',
+   ap.appariements.map(function (a) { return Math.round(a.detail.ratio * 100); }), [100, 50, 20]);
+eq('le score du critère est la moyenne sur la SOURCE, manquants compris',
+   Math.round(ap.ratio * 1000) / 1000, Math.round(((1 + 0.5 + 0.2) / 4) * 1000) / 1000);
+
+eq('une fonction différente n\'est jamais appariée, même référence identique',
+   C.apparierComposants([comp('Relais | X | ABC')], [comp('Voyant | X | ABC')]).appariements.length, 0);
+eq('un composant de la cible ne sert qu\'une fois',
+   C.apparierComposants([comp('A | B | C'), comp('A | B | C')], [comp('A | B | C')]).aucun.length, 1);
+eq('source vide : ratio 0', C.apparierComposants([], T).ratio, 0);
+eq('cible vide : rien n\'est apparié', C.apparierComposants(S, []).appariements.length, 0);
+eq('et tout est sans équivalent', C.apparierComposants(S, []).aucun.length, 4);
+
+// L'ordre de saisie ne doit rien changer : on classe les paires avant de servir.
+const melange = function (t) { return t.slice().reverse(); };
+eq('le score ne dépend pas de l\'ordre des listes',
+   Math.round(C.apparierComposants(melange(S), melange(T)).ratio * 1000) / 1000,
+   Math.round(ap.ratio * 1000) / 1000);
+
+// Le meilleur candidat est pris, pas le premier rencontré.
+const gourmand = C.apparierComposants(
+  [comp('Colonnette | NSA 5512 | COL-M4-20')],
+  [comp('Colonnette | NSA 9999 | AUTRE'), comp('Colonnette | NSA 5512 | COL-M4-20')]);
+eq('le candidat parfait est préféré au médiocre',
+   gourmand.appariements[0].cible.reference, 'COL-M4-20');
+eq('et le médiocre reste « en plus »', gourmand.enPlus[0].norme, 'NSA 9999');
 
 faux('la structure n\'a pas de mots-clés', champs('structure').indexOf('Mots-clés') !== -1);
 vrai('la structure garde ses qualifications',
@@ -749,7 +840,12 @@ faux('plus de réglages rapides', declarees.has('appliquer-preset'));
 vrai('on peut retirer un critère', declarees.has('retirer-critere'));
 vrai('et en rajouter un', declarees.has('ajouter-critere'));
 faux('plus d\'action de duplication de sous-ensemble', declarees.has('dupliquer-nom'));
-vrai('la duplication d\'une BOÎTE, elle, reste', declarees.has('dupliquer-boite'));
+faux('ni de duplication de boîte : elle ne servait pas non plus',
+     declarees.has('dupliquer-boite'));
+faux('la liaison client a disparu aussi',
+     fs.readFileSync(path.join(H.RACINE, 'client/Api.html'), 'utf8').indexOf('dupliquerBoite') !== -1);
+faux('et la fonction serveur, qui n\'avait plus d\'appelant',
+     srcApi.indexOf('dupliquerBoite') !== -1);
 const enTeteIndex = srcIndex.slice(srcIndex.indexOf('<header class="entete">'), srcIndex.indexOf('</header>'));
 faux('pas de bouton Pondération dans l\'en-tête', /data-action="ouvrir-reglages"/.test(enTeteIndex));
 vrai('le rail de réglages vit DANS la comparaison',
@@ -760,8 +856,9 @@ vrai('un dialogue intégré remplace prompt() et confirm()', /id="dialogueModal"
 const srcMainSeul = sansCommentaires(fs.readFileSync(path.join(H.RACINE, 'client/Main.html'), 'utf8'));
 faux('plus aucun prompt() natif', /\bprompt\(/.test(srcMainSeul));
 faux('plus aucun confirm() natif', /\bconfirm\(/.test(srcMainSeul));
-vrai('la duplication passe par le dialogue intégré', /demander\(/.test(srcMainSeul));
-vrai('la suppression aussi', /confirmer\(/.test(srcMainSeul));
+vrai('les suppressions passent par le dialogue intégré', /confirmer\(/.test(srcMainSeul));
+eq('deux suppressions confirmées : la boîte et le sous-ensemble',
+   (srcMainSeul.match(/confirmer\(\{/g) || []).length, 2);
 vrai('demander() existe', typeof C.demander === 'function');
 vrai('confirmer() existe', typeof C.confirmer === 'function');
 vrai('les indicateurs filtrent', declarees.has('filtrer-statut') && declarees.has('filtrer-reutilise'));
@@ -812,9 +909,9 @@ faux('plus de bandeau de démonstration dans la source livrée',
 faux('plus de sous-titre sous le titre', /Nomenclatures d'assemblages/.test(srcIndex));
 vrai('indicateur « Boîtes »', /indicateur-libelle">Boîtes</.test(srcIndex));
 faux('plus d\'indicateur « Sous-ensembles »', /indicateur-libelle">Sous-ensembles</.test(srcIndex));
-vrai('duplication d\'une boîte depuis la carte',
+faux('plus de duplication de boîte sur la carte',
      fs.readFileSync(path.join(H.RACINE, 'client/ViewGrid.html'), 'utf8')
-       .indexOf("action: 'dupliquer-boite'") !== -1);
+       .indexOf('dupliquer-boite') !== -1);
 faux('plus de duplication de boîte dans la fiche',
      sansCommentaires(fs.readFileSync(path.join(H.RACINE, 'client/ViewFiche.html'), 'utf8'))
        .indexOf("'dupliquer-boite'") !== -1);
@@ -833,6 +930,14 @@ eq('tous les jetons CSS sont définis dans le :root de base',
 vrai('l\'inventaire a son style', /\.inventaire \{/.test(srcCss));
 vrai('les pièces partagées se repèrent', /\.piece-partagee \{/.test(srcCss));
 vrai('le sélecteur de vue aussi', /\.onglet-vue \{/.test(srcCss));
+vrai('les niveaux d\'un composant ont leur pastille', /\.niveau-egal\s+\{/.test(srcCss));
+vrai('la sous-pondération a son bloc', /\.sous-reglage \{/.test(srcCss));
+vrai('le rail règle les niveaux quand la portée compare des composants',
+     fs.readFileSync(path.join(H.RACINE, 'client/Reglages.html'), 'utf8')
+       .indexOf('porteeAvecComposants') !== -1);
+vrai('chaque curseur porte sa portée',
+     /data-portee="' \+ esc\(portee\.cle\)/.test(
+       fs.readFileSync(path.join(H.RACINE, 'client/Reglages.html'), 'utf8')));
 vrai('le thème sombre redéfinit les jetons', srcCss.indexOf('[data-theme="dark"]') !== -1);
 vrai('body peint son fond explicitement', /body \{[\s\S]*?background: var\(--sol\)/.test(srcCss));
 // La couleur ne doit servir qu'à porter une information.
@@ -840,30 +945,42 @@ const teintesInterface = (srcCss.match(/--encre[0-9-]*:|--trait[a-z-]*:|--sol[0-
 vrai('des jetons neutres pour toute la chrome', teintesInterface >= 8);
 vrai('une seule teinte de marque, réservée aux actions', /--marque:/.test(srcCss));
 faux('pas de second accent', /--accent:/.test(srcCss));
-// « Tout est blanc » : ce n'est plus vrai nulle part, sauf dans les champs
-// de saisie, où le blanc sert à dire « ici on écrit ».
+// Le sol est BLANC : c'est lui qui donne l'impression de propreté. La
+// couleur est portée par les objets posés dessus, pas par le fond.
 const jeton = function (nom) {
   const m = srcCss.match(new RegExp('--' + nom + ': (#[0-9a-f]{6})'));
   return m ? m[1] : null;
 };
-faux('le sol n\'est plus blanc', jeton('sol') === '#ffffff');
-faux('les cartes ne sont plus blanches', jeton('surface') === '#ffffff');
-eq('le blanc est réservé à la saisie', jeton('surface-2'), '#ffffff');
+eq('le sol est blanc', jeton('sol'), '#ffffff');
+vrai('l\'en-tête l\'est aussi, sous NEXUS',
+     /\.entete \{ background: var\(--sol\)/.test(srcCss));
+faux('les cartes, elles, ne sont pas blanches', jeton('surface') === '#ffffff');
+eq('ce qui se saisit reste blanc', jeton('surface-2'), '#ffffff');
 vrai('la barre d\'action a sa teinte', !!jeton('bande'));
-// Les neutres portent un voile bleu : le bleu doit dominer le rouge.
+// Les teintes portent un voile bleu : le bleu doit dominer le rouge.
 const bleute = function (hex) {
   return parseInt(hex.slice(5, 7), 16) > parseInt(hex.slice(1, 3), 16);
 };
-['sol', 'sol-2', 'surface', 'surface-3', 'bande', 'trait', 'trait-fort'].forEach(function (n) {
+['sol-2', 'surface', 'surface-3', 'bande', 'trait', 'trait-fort'].forEach(function (n) {
   vrai('--' + n + ' est bleuté, pas gris neutre', bleute(jeton(n)));
 });
-// Le sol doit rester PLUS SOMBRE que les cartes, sinon elles ne se détachent pas.
 const clarte = function (hex) {
   return parseInt(hex.slice(1, 3), 16) + parseInt(hex.slice(3, 5), 16) + parseInt(hex.slice(5, 7), 16);
 };
-vrai('les cartes se détachent du sol', clarte(jeton('surface')) > clarte(jeton('sol')));
-vrai('la barre d\'action est la zone la plus teintée du haut de page',
-     clarte(jeton('bande')) < clarte(jeton('sol')));
+vrai('les cartes se détachent du sol blanc par leur teinte',
+     clarte(jeton('surface')) < clarte(jeton('sol')));
+vrai('la barre d\'action est plus soutenue que les cartes',
+     clarte(jeton('bande')) < clarte(jeton('surface')));
+// Les indicateurs sont une ligne cadrée de filets, pas une rangée de cartes.
+vrai('les indicateurs forment une ligne continue',
+     /\.indicateurs \{[\s\S]*?display: flex/.test(srcCss));
+vrai('cadrée en haut et en bas', /\.indicateurs \{[\s\S]*?border-top: 1px solid var\(--trait\)/.test(srcCss));
+vrai('avec un filet entre chaque mesure',
+     /\.indicateur \+ \.indicateur::before/.test(srcCss));
+faux('plus de jauge sous les chiffres', /indicateur-jauge/.test(srcCss));
+faux('ni dans la page', /kpiValJauge/.test(srcIndex));
+vrai('le bouton de création est arrondi',
+     /\.btn-creer \{[\s\S]*?border-radius: 999px/.test(srcCss));
 vrai('la barre est soulignée par un filet marine',
      /\.bande-action \{[\s\S]*?border-top: 3px solid var\(--marque\)/.test(srcCss));
 vrai('elle tient sur une ligne, recherche puis bouton',
