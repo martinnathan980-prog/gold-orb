@@ -1,0 +1,9 @@
+{
+  "name": "gates-analytics",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Tableau de bord de suivi des plans d'intégration électrique (Google Apps Script)",
+  "scripts": {
+    "test": "node tests/run-tests.js"
+  }
+}

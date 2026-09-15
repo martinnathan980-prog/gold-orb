@@ -1,0 +1,281 @@
+<style>
+  :root {
+    --ah-blue: #003366;
+    --ah-blue-clair: #00a9e0;
+    --ah-yellow: #f2a900;
+    --saas-border: #e2e8f0;
+    --vert: #10b981;
+    --orange: #f59e0b;
+    --gris: #94a3b8;
+  }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #334155;
+    background-color: #f0f4f8;
+  }
+
+  /* ---------- NAVBAR : ciel étoilé + easter egg ---------- */
+  .navbar-custom {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(to bottom, #000c1f, #001f4d);
+    color: #fff !important;
+    padding: 15px 24px;
+    border-bottom: 4px solid var(--ah-yellow);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, .2);
+    min-height: 80px;
+  }
+  .navbar-custom::before,
+  .navbar-custom::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-repeat: repeat;
+    z-index: 0;
+  }
+  .navbar-custom::before {
+    background-image:
+      radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,.8), rgba(0,0,0,0)),
+      radial-gradient(1.5px 1.5px at 80px 70px, rgba(255,255,255,1), rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 150px 20px, rgba(255,255,255,.6), rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 250px 60px, rgba(255,255,255,.4), rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 320px 40px, rgba(255,255,255,.9), rgba(0,0,0,0));
+    background-size: 400px 100px;
+    animation: twinkle 4s infinite alternate;
+  }
+  .navbar-custom::after {
+    background-image:
+      radial-gradient(1px 1px at 50px 80px, rgba(255,255,255,.5), rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 190px 30px, rgba(255,255,255,.7), rgba(0,0,0,0));
+    background-size: 300px 150px;
+    animation: driftStars 60s linear infinite;
+  }
+  .easter-egg-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    z-index: 2;
+    pointer-events: none;
+    font-weight: 900;
+    font-size: 1.8rem;
+    letter-spacing: 4px;
+    color: #fff;
+    text-shadow: 0 0 10px var(--ah-yellow), 0 0 20px var(--ah-yellow), 0 0 40px var(--ah-yellow);
+    opacity: .85;
+  }
+  @keyframes twinkle   { 0% { opacity: .7; } 100% { opacity: 1; } }
+  @keyframes driftStars { from { background-position: 0 0; } to { background-position: -600px 0; } }
+
+  /* Respecte le réglage système « animations réduites ». */
+  @media (prefers-reduced-motion: reduce) {
+    .navbar-custom::before,
+    .navbar-custom::after,
+    .progress-bar-animated { animation: none !important; }
+  }
+
+  .navbar-brand, .navbar-meta {
+    position: relative;
+    z-index: 3;
+    color: #fff !important;
+  }
+  .navbar-brand {
+    font-weight: 800;
+    font-size: 1.6rem;
+    letter-spacing: .5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,.8);
+  }
+  .navbar-brand .fa-helicopter { color: var(--ah-yellow); margin-right: 10px; }
+  .navbar-meta { font-size: .8rem; opacity: .9; }
+
+  @media (max-width: 767.98px) {
+    /* L'easter egg se superposait au titre sur écran étroit. */
+    .easter-egg-text { display: none; }
+    .navbar-brand { font-size: 1.2rem; }
+    .navbar-meta { font-size: .72rem; }
+  }
+
+  /* ---------- PANNEAUX ---------- */
+  .panel-ah {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid var(--saas-border);
+    box-shadow: 0 4px 10px rgba(0,0,0,.03);
+    margin-bottom: 20px;
+  }
+  .control-panel { padding: 20px; }
+  .titre-panneau { margin: 0; font-weight: 700; color: var(--ah-blue); font-size: 1.05rem; }
+  .libelle-section { font-size: .8rem; text-transform: uppercase; font-weight: 700; color: #64748b; }
+  .pourcentage-fort { font-weight: 900; color: var(--ah-blue-clair); font-size: 1.5rem; line-height: 1; }
+
+  .search-box { position: relative; max-width: 800px; margin: 0 auto; }
+  .search-box i { position: absolute; left: 20px; top: 16px; color: var(--gris); font-size: 1.2rem; }
+  .search-box input {
+    padding-left: 55px;
+    height: 52px;
+    border-radius: 26px;
+    border: 2px solid var(--saas-border);
+    width: 100%;
+    font-size: 1.05rem;
+    outline: none;
+    transition: .2s;
+    background-color: #f8fafc;
+  }
+  .search-box input:focus {
+    border-color: var(--ah-blue-clair);
+    background-color: #fff;
+    box-shadow: 0 0 0 4px rgba(0,169,224,.15);
+  }
+
+  /* ---------- KPI ---------- */
+  .kpi-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    height: 100%;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--saas-border);
+    background-color: #f8fafc;
+    border-left: 5px solid var(--ah-yellow);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,.05); }
+  .kpi-card h3 { font-size: 24px; color: var(--ah-blue); margin: 0; font-weight: 900; }
+  .kpi-card p  { margin: 0 0 2px; font-size: .7rem; color: #64748b; font-weight: 700; text-transform: uppercase; }
+  .kpi-card i  { opacity: .5; }
+  .progress { height: 15px; border-radius: 10px; background-color: var(--saas-border); }
+  .progress-bar { background-color: var(--ah-blue-clair); }
+
+  /* ---------- GRAPHIQUES ---------- */
+  .chart-wrapper { position: relative; flex-grow: 1; min-height: 260px; width: 100%; min-width: 0; }
+
+  /*
+   * Un enfant flex a min-width:auto par défaut : le <select> de l'analyse, dimensionné
+   * sur son option la plus longue, élargissait tout le panneau et faisait déborder la
+   * page horizontalement sur mobile.
+   */
+  .panel-ah,
+  .panel-ah .d-flex { min-width: 0; }
+  #selectKpiGraphique { max-width: 100%; }
+  @media (min-width: 576px) { #selectKpiGraphique { max-width: 45vw; } }
+
+  /*
+   * Chart.js fixe la largeur du canvas en style inline. Sans min-width:0 sur le
+   * panneau ni max-width sur le canvas, la largeur du conteneur dépend de celle du
+   * canvas qui dépend du conteneur : le panneau restait figé à sa taille « bureau »
+   * après un passage en écran étroit.
+   */
+  .chart-wrapper canvas { max-width: 100%; }
+
+  @media (max-width: 575.98px) {
+    .kpi-card { padding: 8px 10px; }
+    .kpi-card i { display: none; }
+    .kpi-card h3 { font-size: 20px; }
+    .kpi-card p { font-size: .62rem; }
+  }
+  .message-vide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    color: #64748b;
+    background: rgba(248,250,252,.92);
+    border-radius: 8px;
+    font-size: .9rem;
+  }
+
+  /* ---------- TABLEAU ---------- */
+  .table-responsive { max-height: 60vh; overflow: auto; position: relative; }
+  .table { margin-bottom: 0; border-collapse: separate; border-spacing: 0; }
+  .table thead th { position: sticky; z-index: 3; }
+  .table thead tr.group-row th {
+    top: 0;
+    background-color: #001f4d;
+    color: #fff;
+    font-size: .85rem;
+    padding: 6px 15px;
+    text-align: center;
+    border-right: 1px solid rgba(255,255,255,.2);
+    z-index: 4;
+  }
+  .table thead tr.title-row th {
+    background-color: var(--ah-blue);
+    color: #fff;
+    font-weight: 600;
+    padding: 12px 15px;
+    white-space: nowrap;
+    border-bottom: none;
+    cursor: grab;
+    user-select: none;
+    border-right: 1px solid rgba(255,255,255,.1);
+  }
+  .table thead tr.title-row th:active { cursor: grabbing; }
+  .table thead tr.title-row th.drag-over { border-left: 4px solid var(--ah-yellow); background-color: #004080; }
+  .table thead tr.filter-row th {
+    background-color: #f1f5f9;
+    padding: 8px;
+    border-bottom: 2px solid #cbd5e1;
+    z-index: 2;
+  }
+  .column-filter {
+    width: 100%;
+    min-width: 130px;
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: .85rem;
+    outline: none;
+  }
+  .column-filter:focus { border-color: var(--ah-blue-clair); box-shadow: 0 0 0 3px rgba(0,169,224,.15); }
+
+  .table td {
+    white-space: nowrap;
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--saas-border);
+  }
+  .table td:hover {
+    white-space: normal;
+    word-break: break-word;
+    position: relative;
+    z-index: 10;
+    background-color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    border-radius: 4px;
+  }
+  /* Première colonne figée horizontalement. */
+  .table thead tr.group-row  th:first-child { left: 0; z-index: 6; }
+  .table thead tr.title-row  th:first-child { left: 0; z-index: 5; }
+  .table thead tr.filter-row th:first-child { left: 0; z-index: 4; }
+  .table tbody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: #fff;
+    font-weight: 700;
+    color: var(--ah-blue);
+    border-right: 2px solid var(--saas-border);
+  }
+  .table-striped tbody tr:nth-of-type(odd) td:first-child { background-color: #f8fafc; }
+  .table tbody tr:hover td:first-child { background-color: #f1f5f9; }
+
+  .badge-statut { padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: .75rem; display: inline-block; }
+  .bg-encours { background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .bg-termine { background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .bg-afaire  { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+  .hide-col-btn { margin-left: 8px; cursor: pointer; opacity: .5; transition: .2s; }
+  .hide-col-btn:hover { opacity: 1; color: var(--ah-yellow); }
+  .tri-icone { margin-left: 6px; color: var(--ah-blue-clair); }
+</style>

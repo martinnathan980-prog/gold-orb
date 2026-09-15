@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          crossorigin="anonymous" referrerpolicy="no-referrer">
+    <?!= include('Styles'); ?>
+  </head>
+
+  <body>
+    <nav class="navbar navbar-custom">
+      <div class="easter-egg-text" aria-hidden="true">MARJO TIENT UN TIGRE</div>
+      <div class="container-fluid d-flex justify-content-between align-items-center">
+        <span class="navbar-brand mb-0">
+          <i class="fa-solid fa-helicopter" aria-hidden="true"></i> GATES <span>Analytics</span>
+        </span>
+        <div class="navbar-meta">
+          <span id="infoSource" class="me-3"></span>
+          <button class="btn btn-sm btn-outline-light" id="btnRafraichir" type="button" title="Recharger les données">
+            <i class="fa-solid fa-rotate" aria-hidden="true"></i> Actualiser
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Bandeau d'erreur serveur -->
+    <div class="container-fluid mt-3">
+      <div id="banniereErreur" class="alert alert-danger d-none" role="alert"></div>
+    </div>
+
+    <div class="container-fluid mt-3">
+
+      <!-- Recherche globale -->
+      <div class="panel-ah control-panel">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          <label class="visually-hidden" for="barreRechercheGlobale">Recherche globale</label>
+          <input type="search" id="barreRechercheGlobale" autocomplete="off"
+                 placeholder="Recherche (Réf., ATA, ECP, commentaire…)">
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <!-- GAUCHE : évolution FWD -->
+        <div class="col-lg-6 d-flex">
+          <div class="panel-ah p-4 flex-fill d-flex flex-column">
+
+            <div class="row g-3 mb-3">
+              <div class="col-4">
+                <div class="kpi-card" style="border-left-color:#f59e0b;">
+                  <div><p>Fwd en cours</p><h3 id="kpi-encours">—</h3></div>
+                  <i class="fa-solid fa-person-digging fa-2x" style="color:#f59e0b;" aria-hidden="true"></i>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="kpi-card" style="border-left-color:#10b981;">
+                  <div><p>Fwd achevés</p><h3 id="kpi-termines">—</h3></div>
+                  <i class="fa-solid fa-check-double fa-2x" style="color:#10b981;" aria-hidden="true"></i>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="kpi-card" style="border-left-color:#94a3b8;">
+                  <div><p>Sans statut</p><h3 id="kpi-vides">—</h3></div>
+                  <i class="fa-solid fa-circle-question fa-2x" style="color:#94a3b8;" aria-hidden="true"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-end mb-2">
+                <span class="libelle-section">Avancement global FWD</span>
+                <span id="kpi-pourcentage-text" class="pourcentage-fort">—</span>
+              </div>
+              <div class="progress" role="progressbar" aria-label="Avancement global FWD"
+                   aria-valuemin="0" aria-valuemax="100" id="kpi-progress">
+                <div id="kpi-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+                     style="width:0%;"></div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3 gap-2 flex-wrap">
+              <h5 class="titre-panneau">
+                <i class="fa-solid fa-chart-column me-2" style="color:#f2a900;" aria-hidden="true"></i>Évolution hebdomadaire FWD
+              </h5>
+              <button class="btn btn-sm btn-outline-danger fw-bold" type="button"
+                      data-bs-toggle="modal" data-bs-target="#modalJalons">
+                <i class="fa-solid fa-flag me-1" aria-hidden="true"></i> Gérer les jalons
+              </button>
+            </div>
+
+            <div class="chart-wrapper">
+              <canvas id="chartEvolutionFWD" aria-label="Évolution hebdomadaire de l'avancement FWD"></canvas>
+              <div id="messageHistorique" class="message-vide d-none"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DROITE : analyse par colonne -->
+        <div class="col-lg-6 d-flex">
+          <div class="panel-ah p-4 flex-fill d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3 gap-3 flex-wrap">
+              <div>
+                <h5 class="titre-panneau">
+                  <i class="fa-solid fa-chart-pie me-2" style="color:#00a9e0;" aria-hidden="true"></i>Analyse des données
+                </h5>
+                <span class="badge bg-secondary mt-1" id="total-plans-text">—</span>
+              </div>
+              <div>
+                <label class="visually-hidden" for="selectKpiGraphique">Colonne analysée</label>
+                <select id="selectKpiGraphique" class="form-select w-auto fw-bold"></select>
+              </div>
+            </div>
+            <div class="chart-wrapper mt-2">
+              <canvas id="chartDynamique" aria-label="Répartition par colonne"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLEAU -->
+      <div class="panel-ah overflow-hidden mt-4">
+        <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light flex-wrap gap-2">
+          <h6 class="mb-0 fw-bold text-muted">
+            <i class="fa-solid fa-table" aria-hidden="true"></i> Détail des plans
+            <span id="compteurFiltres" class="badge bg-info ms-2 d-none"></span>
+          </h6>
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-outline-warning btn-sm fw-bold" id="btnFiltreVides" type="button">
+              <i class="fa-solid fa-triangle-exclamation me-1" aria-hidden="true"></i> Voir les avancements FWD vides
+            </button>
+            <button class="btn btn-outline-dark btn-sm" id="btnReinitFiltres" type="button">
+              <i class="fa-solid fa-eraser me-1" aria-hidden="true"></i> Réinitialiser
+            </button>
+            <button class="btn btn-outline-success btn-sm" id="btnExportCsv" type="button">
+              <i class="fa-solid fa-file-csv me-1" aria-hidden="true"></i> Exporter (CSV)
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" type="button"
+                    data-bs-toggle="offcanvas" data-bs-target="#offcanvasColonnes">
+              <i class="fa-solid fa-list-check me-1" aria-hidden="true"></i> Colonnes
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive" id="zoneTableau">
+          <table class="table table-striped align-middle">
+            <thead id="enTetesTableau"></thead>
+            <tbody id="corpsTableau">
+              <tr><td class="text-center p-5">
+                <h5 class="text-muted"><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Chargement des données…</h5>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="p-2 text-center border-top bg-light" id="zonePagination"></div>
+      </div>
+    </div>
+
+    <!-- Gestion des colonnes -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasColonnes" aria-labelledby="titreOffcanvasColonnes">
+      <div class="offcanvas-header bg-light">
+        <h5 class="offcanvas-title" id="titreOffcanvasColonnes">
+          <i class="fa-solid fa-eye me-2" aria-hidden="true"></i>Colonnes affichées
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
+      </div>
+      <div class="offcanvas-body">
+        <div class="d-flex gap-2 mb-3">
+          <button class="btn btn-primary btn-sm flex-fill" id="btnToutAfficher" type="button">Tout réafficher</button>
+          <button class="btn btn-outline-secondary btn-sm flex-fill" id="btnResetDisposition" type="button">Ordre d'origine</button>
+        </div>
+        <div id="listeCheckboxesColonnes"></div>
+      </div>
+    </div>
+
+    <!-- Jalons -->
+    <div class="modal fade" id="modalJalons" tabindex="-1" aria-labelledby="titreModalJalons" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-light">
+            <h5 class="modal-title text-danger fw-bold" id="titreModalJalons">
+              <i class="fa-solid fa-flag me-2" aria-hidden="true"></i>Gestion des jalons
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+          </div>
+          <div class="modal-body">
+            <h6 class="fw-bold mb-2">Ajouter un jalon</h6>
+            <form id="formJalon" class="input-group mb-2" autocomplete="off">
+              <input type="text" id="inputJalonSemaine" class="form-control" placeholder="Semaine (ex. 2026-S38)"
+                     pattern="\d{4}-?[sS]\d{1,2}" required>
+              <input type="text" id="inputJalonTexte" class="form-control" placeholder="Description courte" maxlength="60">
+              <button class="btn btn-danger" type="submit" id="btnAjouterJalon">Ajouter</button>
+            </form>
+            <div id="erreurJalon" class="text-danger small mb-3 d-none"></div>
+
+            <h6 class="fw-bold mb-2 border-top pt-3">Jalons actifs</h6>
+            <ul class="list-group" id="listeJalonsUI"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="zoneToasts" class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js" crossorigin="anonymous"></script>
+    <?!= include('Javascript'); ?>
+  </body>
+</html>

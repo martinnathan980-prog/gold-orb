@@ -1,0 +1,1082 @@
+<script>
+/**
+ * GATES Analytics — logique client.
+ *
+ * Principes :
+ *  - un seul état applicatif (`etat`) ;
+ *  - aucune donnée de la feuille n'est injectée en HTML sans échappement ;
+ *  - les rendus coûteux (tableau, graphiques) sont débattus et incrémentaux ;
+ *  - le graphique d'évolution ne dépend pas des filtres : il n'est pas redessiné à chaque frappe.
+ */
+(function () {
+  'use strict';
+
+  // ===================================================================
+  //  ÉTAT
+  // ===================================================================
+  var etat = {
+    groupes: [],
+    entetes: [],
+    lignes: [],
+    historique: [],
+    jalons: [],
+    indexFWD: -1,
+    feuille: '',
+    genereLe: null,
+
+    lignesFiltrees: [],
+    ordreColonnes: [],
+    colonnesCachees: {},          // { indexOrigine: true }
+    filtres: {},                  // { indexOrigine: "texte saisi" }
+    rechercheGlobale: '',
+    tri: { index: -1, asc: true },
+    filtreFWDVide: false,
+    lignesRendues: 0
+  };
+
+  var TAILLE_PAGE = 200;
+  var DEBOUNCE_MS = 180;
+  var MAX_CATEGORIES = 15;
+  var MAX_PERIODES = 24;
+
+  var COULEURS = ['#005587', '#00a9e0', '#f2a900', '#10b981', '#f59e0b',
+                  '#8b5cf6', '#ef4444', '#06b6d4', '#84cc16', '#64748b'];
+
+  var graphiqueDynamique = null;
+  var graphiqueEvolution = null;
+  var signatureEvolution = '';
+
+  // ===================================================================
+  //  OUTILS
+  // ===================================================================
+  function $(id) { return document.getElementById(id); }
+
+  function normaliser(texte) {
+    if (texte === null || texte === undefined) return '';
+    return texte.toString().toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  /** Échappement HTML — indispensable : le contenu vient d'une feuille éditée par des humains. */
+  function echapper(valeur) {
+    if (valeur === null || valeur === undefined) return '';
+    return valeur.toString()
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function valeurNumerique(valeur) {
+    if (valeur === null || valeur === undefined) return NaN;
+    var texte = valeur.toString().replace(/[\s  ]/g, '').replace(/%$/, '').replace(',', '.');
+    if (texte === '' || !/^[-+]?\d*\.?\d+$/.test(texte)) return NaN;
+    return parseFloat(texte);
+  }
+
+  /**
+   * Classement d'un avancement FWD.
+   * ⚠ Doit rester identique à classerFWD() dans Code.gs.
+   */
+  function classerFWD(valeur) {
+    var s = normaliser(valeur);
+    if (s === '' || s === '-' || s === 'na' || s === 'n/a' ||
+        s.indexOf('non renseigne') !== -1 || s.indexOf('a faire') !== -1) return 'vide';
+    var n = valeurNumerique(s);
+    if (!isNaN(n)) {
+      if (n >= 100) return 'termine';
+      if (n <= 0) return 'vide';
+      return 'encours';
+    }
+    if (/(termine|acheve|cloture|clos|fini|valide|done|complete|ok)/.test(s)) return 'termine';
+    return 'encours';
+  }
+
+  function debounce(fn, delai) {
+    var minuteur = null;
+    return function () {
+      var args = arguments, ctx = this;
+      clearTimeout(minuteur);
+      minuteur = setTimeout(function () { fn.apply(ctx, args); }, delai);
+    };
+  }
+
+  function formaterNombre(n) {
+    try { return Number(n).toLocaleString('fr-FR'); } catch (e) { return String(n); }
+  }
+
+  function toast(message, type) {
+    var zone = $('zoneToasts');
+    var el = document.createElement('div');
+    el.className = 'toast align-items-center text-bg-' + (type || 'secondary') + ' border-0';
+    el.setAttribute('role', 'alert');
+    el.innerHTML = '<div class="d-flex"><div class="toast-body">' + echapper(message) +
+                   '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" ' +
+                   'data-bs-dismiss="toast" aria-label="Fermer"></button></div>';
+    zone.appendChild(el);
+    el.addEventListener('hidden.bs.toast', function () { el.remove(); });
+    if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+      new bootstrap.Toast(el, { delay: 4000 }).show();
+    } else {
+      el.classList.add('show');
+      setTimeout(function () { el.remove(); }, 4000);
+    }
+  }
+
+  /**
+   * Chart.js est chargé depuis un CDN public : sur un réseau d'entreprise qui le
+   * bloque, la page doit rester utilisable (KPI, filtres, tableau, export) au lieu
+   * de planter sur `new Chart(...)`.
+   */
+  var avertissementGraphiques = false;
+  function graphiquesDisponibles() {
+    if (typeof Chart !== 'undefined') return true;
+    if (!avertissementGraphiques) {
+      avertissementGraphiques = true;
+      document.querySelectorAll('.chart-wrapper').forEach(function (zone) {
+        var message = document.createElement('div');
+        message.className = 'message-vide';
+        message.textContent = 'Graphiques indisponibles : la bibliothèque Chart.js n\'a pas pu être chargée ' +
+          '(CDN bloqué ou hors ligne). Les chiffres et le tableau restent à jour.';
+        zone.appendChild(message);
+      });
+    }
+    return false;
+  }
+
+  function afficherErreur(message) {
+    var el = $('banniereErreur');
+    if (!message) { el.classList.add('d-none'); return; }
+    el.textContent = message;
+    el.classList.remove('d-none');
+  }
+
+  // ===================================================================
+  //  PRÉFÉRENCES D'AFFICHAGE (locales à l'utilisateur)
+  // ===================================================================
+  function cleDisposition() { return 'gates:disposition:' + (etat.feuille || 'defaut'); }
+
+  function sauverDisposition() {
+    try {
+      localStorage.setItem(cleDisposition(), JSON.stringify({
+        ordre: etat.ordreColonnes,
+        cachees: Object.keys(etat.colonnesCachees).map(Number)
+      }));
+    } catch (e) { /* mode privé ou stockage bloqué : sans conséquence */ }
+  }
+
+  function chargerDisposition(ordreParDefaut) {
+    try {
+      var brut = localStorage.getItem(cleDisposition());
+      if (!brut) return null;
+      var pref = JSON.parse(brut);
+      if (!pref || !Array.isArray(pref.ordre)) return null;
+      // On ne garde que les colonnes qui existent encore, et on ajoute les nouvelles.
+      var valides = pref.ordre.filter(function (i) { return ordreParDefaut.indexOf(i) !== -1; });
+      ordreParDefaut.forEach(function (i) { if (valides.indexOf(i) === -1) valides.push(i); });
+      var cachees = {};
+      (pref.cachees || []).forEach(function (i) { if (i !== 0) cachees[i] = true; });
+      return { ordre: valides, cachees: cachees };
+    } catch (e) { return null; }
+  }
+
+  // ===================================================================
+  //  COLONNES
+  // ===================================================================
+  function estColonneVerrouillee(idx) {
+    return idx === 0 || normaliser(etat.entetes[idx]).indexOf('reference ud') !== -1;
+  }
+
+  function nomPropre(idx) {
+    var brut = (etat.entetes[idx] || '')
+      .replace('Informations principales - ', '')
+      .replace('Définition du plan - ', '')
+      .replace('Definition du plan - ', '');
+    return idx === etat.indexFWD ? 'Avancement FWD' : brut;
+  }
+
+  function colonnesVisibles() {
+    return etat.ordreColonnes.filter(function (idx) { return !etat.colonnesCachees[idx]; });
+  }
+
+  // ===================================================================
+  //  CHARGEMENT
+  // ===================================================================
+  function charger() {
+    afficherErreur('');
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+      afficherErreur("Cette page doit être ouverte depuis le déploiement Apps Script (URL /exec).");
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(initialiser)
+      .withFailureHandler(function (err) {
+        afficherErreur('Échec du chargement : ' + (err && err.message ? err.message : err));
+        $('corpsTableau').innerHTML =
+          '<tr><td class="text-center p-5 text-danger">Impossible de charger les données.</td></tr>';
+      })
+      .getDonneesPlans();
+  }
+
+  function initialiser(donnees) {
+    if (!donnees) { afficherErreur('Réponse vide du serveur.'); return; }
+
+    etat.groupes = donnees.groupes || [];
+    etat.entetes = donnees.entetes || [];
+    etat.lignes = donnees.lignes || [];
+    etat.historique = donnees.historique || [];
+    etat.jalons = donnees.jalons || [];
+    etat.indexFWD = typeof donnees.indexFWD === 'number' ? donnees.indexFWD : -1;
+    etat.feuille = donnees.feuille || '';
+    etat.genereLe = donnees.genereLe ? new Date(donnees.genereLe) : new Date();
+
+    if (!donnees.ok) afficherErreur(donnees.message || 'Données indisponibles.');
+
+    var ordreDefaut = [];
+    etat.entetes.forEach(function (col, idx) { if (col !== '') ordreDefaut.push(idx); });
+
+    var pref = chargerDisposition(ordreDefaut);
+    etat.ordreColonnes = pref ? pref.ordre : ordreDefaut;
+    etat.colonnesCachees = pref ? pref.cachees : {};
+
+    majInfoSource();
+    remplirSelecteurGraphique();
+    majMenuColonnes();
+    construireEntetes();
+    appliquerFiltres();
+    dessinerEvolution();
+    afficherJalons();
+  }
+
+  function majInfoSource() {
+    var heure = etat.genereLe
+      ? etat.genereLe.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      : '—';
+    $('infoSource').textContent = (etat.feuille ? etat.feuille + ' · ' : '') +
+      formaterNombre(etat.lignes.length) + ' plans · maj ' + heure;
+  }
+
+  // ===================================================================
+  //  EN-TÊTES DU TABLEAU
+  // ===================================================================
+  function construireEntetes() {
+    var visibles = colonnesVisibles();
+    if (visibles.length === 0) {
+      $('enTetesTableau').innerHTML = '';
+      return;
+    }
+
+    // Ligne des groupes (fusion des colonnes contiguës d'un même groupe).
+    var htmlGroupes = '<tr class="group-row">';
+    var groupeCourant = etat.groupes[visibles[0]] || '';
+    var span = 1;
+    function cellGroupe(nom, largeur) {
+      var bouton = nom
+        ? '<i class="fa-solid fa-eye-slash hide-col-btn js-cacher-groupe" role="button" tabindex="0" ' +
+          'title="Masquer ce groupe" data-groupe="' + echapper(nom) + '"></i>'
+        : '';
+      return '<th colspan="' + largeur + '">' + echapper(nom) + ' ' + bouton + '</th>';
+    }
+    for (var i = 1; i < visibles.length; i++) {
+      var g = etat.groupes[visibles[i]] || '';
+      if (g === groupeCourant) { span++; continue; }
+      htmlGroupes += cellGroupe(groupeCourant, span);
+      groupeCourant = g;
+      span = 1;
+    }
+    htmlGroupes += cellGroupe(groupeCourant, span) + '</tr>';
+
+    // Lignes titres + filtres.
+    var htmlTitres = '<tr class="title-row">';
+    var htmlFiltres = '<tr class="filter-row">';
+    visibles.forEach(function (idx) {
+      var icone = etat.tri.index === idx
+        ? ' <i class="fa-solid fa-arrow-' + (etat.tri.asc ? 'up' : 'down') + ' tri-icone"></i>'
+        : '';
+      var boutonMasquer = estColonneVerrouillee(idx)
+        ? ''
+        : '<i class="fa-solid fa-eye-slash hide-col-btn float-end js-cacher-colonne" role="button" ' +
+          'tabindex="0" title="Masquer" data-index="' + idx + '"></i>';
+
+      htmlTitres +=
+        '<th draggable="true" data-index="' + idx + '" scope="col" ' +
+        'title="Cliquer pour trier, glisser pour déplacer">' +
+        '<i class="fa-solid fa-grip-vertical me-2" style="opacity:.3;"></i>' +
+        echapper(nomPropre(idx)) + icone + boutonMasquer + '</th>';
+
+      // La valeur saisie est restaurée : trier ou masquer une colonne
+      // ne doit pas effacer les filtres en cours.
+      htmlFiltres +=
+        '<th><input type="text" class="column-filter" data-index="' + idx + '" ' +
+        'placeholder="Filtrer…" aria-label="Filtrer ' + echapper(nomPropre(idx)) + '" ' +
+        'value="' + echapper(etat.filtres[idx] || '') + '"></th>';
+    });
+    htmlTitres += '</tr>';
+    htmlFiltres += '</tr>';
+
+    $('enTetesTableau').innerHTML = htmlGroupes + htmlTitres + htmlFiltres;
+    ajusterHauteursEnTetes();
+  }
+
+  /**
+   * Décale les lignes d'en-tête collantes.
+   * Appelé après un rendu ou un redimensionnement — plus à chaque événement
+   * de défilement, où il n'avait aucun effet utile mais créait un timer par pixel.
+   */
+  function ajusterHauteursEnTetes() {
+    requestAnimationFrame(function () {
+      var groupRow = document.querySelector('.group-row');
+      var titleRow = document.querySelector('.title-row');
+      var filterRow = document.querySelector('.filter-row');
+      if (!groupRow || !titleRow || !filterRow) return;
+      var h1 = groupRow.getBoundingClientRect().height;
+      var h2 = titleRow.getBoundingClientRect().height;
+      titleRow.querySelectorAll('th').forEach(function (th) { th.style.top = h1 + 'px'; });
+      filterRow.querySelectorAll('th').forEach(function (th) { th.style.top = (h1 + h2 - 1) + 'px'; });
+    });
+  }
+
+  // ===================================================================
+  //  FILTRES / TRI
+  // ===================================================================
+  function comparer(a, b) {
+    var idx = etat.tri.index;
+    var va = a[idx] === undefined || a[idx] === null ? '' : String(a[idx]).trim();
+    var vb = b[idx] === undefined || b[idx] === null ? '' : String(b[idx]).trim();
+
+    // Les cellules vides finissent toujours en bas, quel que soit le sens du tri.
+    if (va === '' && vb === '') return 0;
+    if (va === '') return 1;
+    if (vb === '') return -1;
+
+    var na = valeurNumerique(va), nb = valeurNumerique(vb);
+    if (!isNaN(na) && !isNaN(nb)) return etat.tri.asc ? na - nb : nb - na;
+
+    var res = va.localeCompare(vb, 'fr', { numeric: true, sensitivity: 'base' });
+    return etat.tri.asc ? res : -res;
+  }
+
+  function appliquerFiltres() {
+    var recherche = etat.rechercheGlobale;
+    var actifs = [];
+    Object.keys(etat.filtres).forEach(function (k) {
+      if (etat.filtres[k]) actifs.push({ idx: Number(k), val: normaliser(etat.filtres[k]) });
+    });
+
+    etat.lignesFiltrees = etat.lignes.filter(function (ligne) {
+      if (recherche && normaliser(ligne.join(' ')).indexOf(recherche) === -1) return false;
+      for (var i = 0; i < actifs.length; i++) {
+        if (normaliser(ligne[actifs[i].idx] || '').indexOf(actifs[i].val) === -1) return false;
+      }
+      if (etat.filtreFWDVide) {
+        if (etat.indexFWD === -1) return false;
+        if (classerFWD(ligne[etat.indexFWD]) !== 'vide') return false;
+      }
+      return true;
+    });
+
+    if (etat.tri.index > -1) etat.lignesFiltrees.sort(comparer);
+
+    var nbFiltres = actifs.length + (recherche ? 1 : 0) + (etat.filtreFWDVide ? 1 : 0);
+    var badge = $('compteurFiltres');
+    badge.textContent = nbFiltres + (nbFiltres > 1 ? ' filtres actifs' : ' filtre actif');
+    badge.classList.toggle('d-none', nbFiltres === 0);
+
+    calculerKPIs();
+    rendreCorps(true);
+    dessinerGraphiqueDynamique();
+  }
+
+  var appliquerFiltresDebounce = debounce(appliquerFiltres, DEBOUNCE_MS);
+
+  // ===================================================================
+  //  CORPS DU TABLEAU (rendu incrémental)
+  // ===================================================================
+  function colonnesStatut() {
+    var set = {};
+    if (etat.indexFWD > -1) set[etat.indexFWD] = true;
+    etat.entetes.forEach(function (e, i) {
+      if (normaliser(e).indexOf('statut') !== -1) set[i] = true;
+    });
+    return set;
+  }
+
+  function classeBadge(valeur) {
+    var c = classerFWD(valeur);
+    return c === 'termine' ? 'bg-termine' : (c === 'encours' ? 'bg-encours' : 'bg-afaire');
+  }
+
+  function rendreCorps(reinitialiser) {
+    var visibles = colonnesVisibles();
+    var statuts = colonnesStatut();
+    var corps = $('corpsTableau');
+
+    if (reinitialiser) {
+      etat.lignesRendues = 0;
+      corps.innerHTML = '';
+      $('zoneTableau').scrollTop = 0;
+    }
+
+    if (etat.lignesFiltrees.length === 0) {
+      corps.innerHTML = '<tr><td colspan="' + Math.max(visibles.length, 1) +
+        '" class="text-center p-5 text-muted">Aucun plan ne correspond aux filtres.</td></tr>';
+      majPagination();
+      return;
+    }
+
+    var debut = etat.lignesRendues;
+    var fin = Math.min(debut + TAILLE_PAGE, etat.lignesFiltrees.length);
+    var morceaux = [];
+
+    for (var r = debut; r < fin; r++) {
+      var ligne = etat.lignesFiltrees[r];
+      morceaux.push('<tr>');
+      for (var c = 0; c < visibles.length; c++) {
+        var idx = visibles[c];
+        var valeur = ligne[idx] === undefined || ligne[idx] === null ? '' : String(ligne[idx]).trim();
+        if (statuts[idx] && valeur !== '') {
+          morceaux.push('<td><span class="badge-statut ' + classeBadge(valeur) + '">' +
+                        echapper(valeur) + '</span></td>');
+        } else {
+          morceaux.push('<td title="' + echapper(valeur) + '">' + echapper(valeur) + '</td>');
+        }
+      }
+      morceaux.push('</tr>');
+    }
+
+    corps.insertAdjacentHTML('beforeend', morceaux.join(''));
+    etat.lignesRendues = fin;
+    majPagination();
+    if (reinitialiser) ajusterHauteursEnTetes();
+  }
+
+  function majPagination() {
+    var zone = $('zonePagination');
+    var total = etat.lignesFiltrees.length;
+    if (etat.lignesRendues >= total) {
+      zone.innerHTML = total === 0 ? '' :
+        '<span class="text-muted small">' + formaterNombre(total) + ' ligne(s) affichée(s)</span>';
+      return;
+    }
+    zone.innerHTML =
+      '<button class="btn btn-sm btn-outline-primary" id="btnPlusDeLignes" type="button">' +
+      'Afficher ' + Math.min(TAILLE_PAGE, total - etat.lignesRendues) + ' lignes de plus</button>' +
+      '<div class="text-muted small mt-1">' + formaterNombre(etat.lignesRendues) + ' / ' +
+      formaterNombre(total) + '</div>';
+    $('btnPlusDeLignes').addEventListener('click', function () { rendreCorps(false); });
+  }
+
+  // ===================================================================
+  //  KPI
+  // ===================================================================
+  function calculerKPIs() {
+    var termine = 0, encours = 0, vide = 0;
+    if (etat.indexFWD > -1) {
+      for (var i = 0; i < etat.lignesFiltrees.length; i++) {
+        var classe = classerFWD(etat.lignesFiltrees[i][etat.indexFWD]);
+        if (classe === 'termine') termine++;
+        else if (classe === 'encours') encours++;
+        else vide++;
+      }
+    } else {
+      vide = etat.lignesFiltrees.length;
+    }
+
+    var total = etat.lignesFiltrees.length;
+    var pct = total === 0 ? 0 : Math.round((termine / total) * 100);
+
+    $('kpi-termines').textContent = formaterNombre(termine);
+    $('kpi-encours').textContent = formaterNombre(encours);
+    $('kpi-vides').textContent = formaterNombre(vide);
+    $('kpi-pourcentage-text').textContent = pct + ' %';
+    $('kpi-progress-bar').style.width = pct + '%';
+    $('kpi-progress').setAttribute('aria-valuenow', pct);
+    $('total-plans-text').textContent = formaterNombre(total) + ' plan(s) affiché(s)' +
+      (total !== etat.lignes.length ? ' sur ' + formaterNombre(etat.lignes.length) : '');
+  }
+
+  // ===================================================================
+  //  GRAPHIQUE DYNAMIQUE
+  // ===================================================================
+  function remplirSelecteurGraphique() {
+    var sel = $('selectKpiGraphique');
+    var precedent = sel.value;
+    var html = '';
+    var groupeCourant = null;
+
+    etat.entetes.forEach(function (col, idx) {
+      if (col === '') return;
+      var groupe = etat.groupes[idx] || 'Général';
+      if (groupe !== groupeCourant) {
+        if (groupeCourant !== null) html += '</optgroup>';
+        html += '<optgroup label="' + echapper(groupe) + '">';
+        groupeCourant = groupe;
+      }
+      html += '<option value="' + idx + '">' + echapper(nomPropre(idx)) + '</option>';
+    });
+    if (groupeCourant !== null) html += '</optgroup>';
+    sel.innerHTML = html;
+
+    if (precedent && sel.querySelector('option[value="' + precedent + '"]')) sel.value = precedent;
+    else if (etat.indexFWD > -1) sel.value = String(etat.indexFWD);
+  }
+
+  function agreger(idx) {
+    var comptes = Object.create(null);
+    var nomNorm = normaliser(etat.entetes[idx]);
+    var estDate = nomNorm.indexOf('date') !== -1;
+
+    for (var i = 0; i < etat.lignesFiltrees.length; i++) {
+      var brut = etat.lignesFiltrees[i][idx];
+      var v = brut === undefined || brut === null ? '' : String(brut).trim();
+      if (v === '') v = 'Non renseigné';
+      else if (estDate) {
+        var m = v.match(/(\d{4})[-/.](\d{2})/);         // 2026-03-…
+        if (m) v = m[1] + '-' + m[2];
+        else {
+          var f = v.match(/(\d{2})[-/.](\d{2})[-/.](\d{4})/); // 12/03/2026
+          v = f ? f[3] + '-' + f[2] : v.substring(0, 10);
+        }
+      }
+      comptes[v] = (comptes[v] || 0) + 1;
+    }
+
+    var entrees = Object.keys(comptes).map(function (k) { return [k, comptes[k]]; });
+
+    if (estDate) {
+      // Correction : on trie d'abord chronologiquement, puis on garde les périodes
+      // les plus récentes. L'ancienne version gardait les 20 périodes les plus
+      // *fréquentes* avant de les trier — la courbe sautait des mois.
+      entrees.sort(function (a, b) { return a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0); });
+      if (entrees.length > MAX_PERIODES) entrees = entrees.slice(entrees.length - MAX_PERIODES);
+      return { entrees: entrees, estDate: true };
+    }
+
+    entrees.sort(function (a, b) { return b[1] - a[1]; });
+    if (entrees.length > MAX_CATEGORIES) {
+      var reste = entrees.slice(MAX_CATEGORIES)
+        .reduce(function (somme, e) { return somme + e[1]; }, 0);
+      entrees = entrees.slice(0, MAX_CATEGORIES);
+      entrees.push(['Autres (' + (Object.keys(comptes).length - MAX_CATEGORIES) + ' valeurs)', reste]);
+    }
+    return { entrees: entrees, estDate: false };
+  }
+
+  /**
+   * Couleur d'une part de statut.
+   * On s'appuie sur classerFWD() pour que les couleurs du graphique correspondent
+   * exactement aux compteurs des cartes KPI : auparavant « 50% » recevait une couleur
+   * de secours arbitraire alors qu'il est compté « en cours ».
+   * Les parts voisines de même classe restent distinctes grâce au liseré blanc.
+   */
+  function couleurStatut(libelle) {
+    var l = normaliser(libelle);
+    if (l.indexOf('controler') !== -1) return '#a855f7';
+    if (l === '' || l.indexOf('non renseigne') !== -1) return '#94a3b8';
+    var classe = classerFWD(libelle);
+    if (classe === 'termine') return '#10b981';
+    if (classe === 'encours') return '#f59e0b';
+    return '#38bdf8';
+  }
+
+  function dessinerGraphiqueDynamique() {
+    if (!graphiquesDisponibles()) return;
+    var sel = $('selectKpiGraphique');
+    var idx = parseInt(sel.value, 10);
+    if (isNaN(idx)) return;
+
+    var agr = agreger(idx);
+    var labels = agr.entrees.map(function (e) {
+      return e[0].length > 40 ? e[0].substring(0, 40) + '…' : e[0];
+    });
+    var donnees = agr.entrees.map(function (e) { return e[1]; });
+
+    var nomNorm = normaliser(etat.entetes[idx]);
+    var type = 'bar';
+    var couleurs = COULEURS.slice(0, labels.length);
+    var legende = false;
+    var indexAxis = 'x';
+
+    if (agr.estDate) {
+      type = 'line';
+      couleurs = '#00a9e0';
+    } else if (idx === etat.indexFWD || nomNorm.indexOf('statut') !== -1 ||
+               nomNorm.indexOf('fwd') !== -1 || nomNorm.indexOf('avancement') !== -1) {
+      type = 'doughnut';
+      legende = true;
+      couleurs = labels.map(couleurStatut);
+    } else if (nomNorm.indexOf('ata') !== -1 || nomNorm.indexOf('chapitre') !== -1) {
+      type = 'polarArea';
+      legende = true;
+    } else {
+      // Libellés longs : barres horizontales, bien plus lisibles.
+      var libelleLong = labels.some(function (l) { return l.length > 14; });
+      if (libelleLong) indexAxis = 'y';
+    }
+
+    var config = {
+      type: type,
+      data: {
+        labels: labels,
+        datasets: [{
+          label: nomPropre(idx),
+          data: donnees,
+          backgroundColor: couleurs,
+          borderColor: type === 'line' ? '#00a9e0' : '#ffffff',
+          borderWidth: type === 'line' ? 3 : (type === 'doughnut' ? 2 : 0),
+          fill: type === 'line',
+          tension: .3,
+          borderRadius: type === 'bar' ? 4 : 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: indexAxis,
+        animation: { duration: 250 },
+        plugins: {
+          legend: { display: legende, position: 'right' },
+          tooltip: { callbacks: { label: function (c) { return ' ' + formaterNombre(c.parsed.y ?? c.parsed) + ' plan(s)'; } } }
+        },
+        scales: (type === 'doughnut' || type === 'polarArea') ? {} : {
+          x: { ticks: { autoSkip: true, maxRotation: 45 } },
+          y: { beginAtZero: true, grid: { color: '#e2e8f0' } }
+        }
+      }
+    };
+
+    // On ne détruit le graphique que si son type change : sinon on met à jour
+    // les données, ce qui évite un flash à chaque frappe dans un filtre.
+    if (graphiqueDynamique && graphiqueDynamique.config.type === type) {
+      graphiqueDynamique.data = config.data;
+      graphiqueDynamique.options = config.options;
+      graphiqueDynamique.update();
+      return;
+    }
+    if (graphiqueDynamique) graphiqueDynamique.destroy();
+    graphiqueDynamique = new Chart($('chartDynamique').getContext('2d'), config);
+  }
+
+  // ===================================================================
+  //  GRAPHIQUE D'ÉVOLUTION (historique réel + jalons)
+  // ===================================================================
+  function dessinerEvolution() {
+    if (!graphiquesDisponibles()) return;
+    var message = $('messageHistorique');
+
+    if (!etat.historique || etat.historique.length === 0) {
+      message.textContent = "Aucun instantané enregistré pour l'instant. " +
+        "Menu « GATES Analytics ▸ Enregistrer un instantané » pour démarrer le suivi.";
+      message.classList.remove('d-none');
+      if (graphiqueEvolution) { graphiqueEvolution.destroy(); graphiqueEvolution = null; }
+      signatureEvolution = '';
+      return;
+    }
+    message.classList.toggle('d-none', etat.historique.length > 1);
+    if (etat.historique.length === 1) {
+      message.textContent = "Un seul point d'historique : la courbe se construira semaine après semaine.";
+      message.classList.remove('d-none');
+    }
+
+    // Le graphique ne dépend ni des filtres ni du tri : on ne le redessine
+    // que si l'historique ou les jalons ont réellement changé.
+    var signature = JSON.stringify([etat.historique, etat.jalons]);
+    if (signature === signatureEvolution && graphiqueEvolution) return;
+    signatureEvolution = signature;
+
+    var labels = etat.historique.map(function (r) { return r[0]; });
+    var termines = etat.historique.map(function (r) { return r[1]; });
+    var encours = etat.historique.map(function (r) { return r[2]; });
+    var vides = etat.historique.map(function (r) { return r[3]; });
+    var pourcentages = etat.historique.map(function (r) {
+      var total = (r[1] || 0) + (r[2] || 0) + (r[3] || 0);
+      return total === 0 ? 0 : Math.round((r[1] / total) * 100);
+    });
+
+    var annotations = {};
+    etat.jalons.forEach(function (jalon, i) {
+      if (labels.indexOf(jalon.semaine) === -1) return;  // un jalon hors plage casserait l'échelle
+      annotations['jalon' + i] = {
+        type: 'line',
+        xMin: jalon.semaine, xMax: jalon.semaine,
+        borderColor: '#dc2626', borderWidth: 2, borderDash: [6, 6],
+        label: {
+          display: true, content: jalon.texte, position: 'start',
+          backgroundColor: 'rgba(220,38,38,.9)', color: '#fff', font: { weight: 'bold' }
+        }
+      };
+    });
+
+    if (graphiqueEvolution) graphiqueEvolution.destroy();
+    graphiqueEvolution = new Chart($('chartEvolutionFWD').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Terminés', data: termines, backgroundColor: '#10b981', stack: 'plans', order: 2 },
+          { label: 'En cours', data: encours, backgroundColor: '#f59e0b', stack: 'plans', order: 2 },
+          { label: 'Sans statut', data: vides, backgroundColor: '#cbd5e1', stack: 'plans', order: 2 },
+          {
+            label: '% avancement', data: pourcentages, type: 'line', yAxisID: 'y1', order: 1,
+            borderColor: '#003366', backgroundColor: '#003366', borderWidth: 2,
+            tension: .3, pointRadius: 3, fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top' }, annotation: { annotations: annotations } },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true, grid: { color: '#e2e8f0' }, title: { display: true, text: 'Plans' } },
+          y1: {
+            position: 'right', beginAtZero: true, max: 100, grid: { drawOnChartArea: false },
+            ticks: { callback: function (v) { return v + ' %'; } }
+          }
+        }
+      }
+    });
+  }
+
+  // ===================================================================
+  //  JALONS
+  // ===================================================================
+  function afficherJalons() {
+    var ul = $('listeJalonsUI');
+    if (!etat.jalons.length) {
+      ul.innerHTML = '<li class="list-group-item text-muted text-center py-3">Aucun jalon défini</li>';
+      return;
+    }
+    ul.innerHTML = etat.jalons.map(function (j) {
+      return '<li class="list-group-item d-flex justify-content-between align-items-center">' +
+        '<div><span class="badge bg-secondary me-2">' + echapper(j.semaine) + '</span>' +
+        '<b>' + echapper(j.texte) + '</b></div>' +
+        '<button class="btn btn-sm btn-outline-danger js-supprimer-jalon" type="button" ' +
+        'data-id="' + echapper(j.id) + '" aria-label="Supprimer le jalon">' +
+        '<i class="fa-solid fa-trash"></i></button></li>';
+    }).join('');
+  }
+
+  function majJalons(liste) {
+    etat.jalons = liste || [];
+    afficherJalons();
+    dessinerEvolution();
+  }
+
+  function erreurJalon(message) {
+    var el = $('erreurJalon');
+    if (!message) { el.classList.add('d-none'); return; }
+    el.textContent = message;
+    el.classList.remove('d-none');
+  }
+
+  // ===================================================================
+  //  EXPORT CSV
+  // ===================================================================
+  function exporterCSV() {
+    if (!etat.lignesFiltrees.length) { toast('Rien à exporter.', 'warning'); return; }
+    var visibles = colonnesVisibles();
+
+    function cellule(v) {
+      var s = v === undefined || v === null ? '' : String(v);
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+
+    var lignes = [visibles.map(function (i) { return cellule(nomPropre(i)); }).join(';')];
+    etat.lignesFiltrees.forEach(function (l) {
+      lignes.push(visibles.map(function (i) { return cellule(l[i]); }).join(';'));
+    });
+
+    // BOM UTF-8 + séparateur « ; » pour qu'Excel en français ouvre le fichier correctement.
+    var blob = new Blob(['﻿' + lignes.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var lien = document.createElement('a');
+    lien.href = url;
+    lien.download = 'gates-analytics-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(lien);
+    lien.click();
+    document.body.removeChild(lien);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    toast(formaterNombre(etat.lignesFiltrees.length) + ' ligne(s) exportée(s).', 'success');
+  }
+
+  // ===================================================================
+  //  MENU DES COLONNES
+  // ===================================================================
+  function majMenuColonnes() {
+    var html = '';
+    var groupeCourant = null;
+    etat.ordreColonnes.forEach(function (idx) {
+      var groupe = etat.groupes[idx] || 'Général';
+      if (groupe !== groupeCourant) {
+        html += '<hr class="my-2"><h6 class="text-primary mt-2">' + echapper(groupe) + '</h6>';
+        groupeCourant = groupe;
+      }
+      var visible = !etat.colonnesCachees[idx];
+      var bloque = estColonneVerrouillee(idx) ? ' disabled' : '';
+      html += '<div class="form-check form-switch mb-1">' +
+        '<input class="form-check-input js-toggle-colonne" type="checkbox" id="chkCol' + idx + '" ' +
+        'data-index="' + idx + '"' + (visible ? ' checked' : '') + bloque + '>' +
+        '<label class="form-check-label" for="chkCol' + idx + '">' + echapper(nomPropre(idx)) + '</label></div>';
+    });
+    $('listeCheckboxesColonnes').innerHTML = html;
+  }
+
+  function cacherColonne(idx) {
+    if (estColonneVerrouillee(idx)) return;
+    etat.colonnesCachees[idx] = true;
+    sauverDisposition();
+    majMenuColonnes();
+    construireEntetes();
+    rendreCorps(true);
+  }
+
+  function cacherGroupe(nomGroupe) {
+    etat.ordreColonnes.forEach(function (idx) {
+      if (etat.groupes[idx] === nomGroupe && !estColonneVerrouillee(idx)) etat.colonnesCachees[idx] = true;
+    });
+    sauverDisposition();
+    majMenuColonnes();
+    construireEntetes();
+    rendreCorps(true);
+  }
+
+  /**
+   * Réordonne `liste` en plaçant `idxSource` juste avant ou juste après `idxCible`
+   * selon le sens du déplacement. Fonction pure, couverte par les tests.
+   *
+   * L'ancienne version calculait l'index cible AVANT de retirer la colonne source,
+   * si bien qu'un déplacement vers la droite atterrissait un cran trop à gauche.
+   */
+  function reordonner(liste, idxSource, idxCible) {
+    var depuis = liste.indexOf(idxSource);
+    var vers = liste.indexOf(idxCible);
+    if (depuis === -1 || vers === -1 || depuis === vers) return liste;
+
+    var copie = liste.slice();
+    var colonne = copie.splice(depuis, 1)[0];
+    var position = copie.indexOf(idxCible);
+    copie.splice(depuis < vers ? position + 1 : position, 0, colonne);
+    return copie;
+  }
+
+  function deplacerColonne(idxSource, idxCible) {
+    var nouvelOrdre = reordonner(etat.ordreColonnes, idxSource, idxCible);
+    if (nouvelOrdre === etat.ordreColonnes) return;
+    etat.ordreColonnes = nouvelOrdre;
+
+    sauverDisposition();
+    majMenuColonnes();
+    construireEntetes();
+    rendreCorps(true);
+  }
+
+  // ===================================================================
+  //  ÉVÉNEMENTS
+  // ===================================================================
+  var indexDrag = null;
+
+  function brancherEvenements() {
+    $('barreRechercheGlobale').addEventListener('input', function (e) {
+      etat.rechercheGlobale = normaliser(e.target.value);
+      appliquerFiltresDebounce();
+    });
+
+    $('selectKpiGraphique').addEventListener('change', dessinerGraphiqueDynamique);
+    $('btnRafraichir').addEventListener('click', charger);
+    $('btnExportCsv').addEventListener('click', exporterCSV);
+
+    $('btnToutAfficher').addEventListener('click', function () {
+      etat.colonnesCachees = {};
+      sauverDisposition();
+      majMenuColonnes();
+      construireEntetes();
+      rendreCorps(true);
+    });
+
+    $('btnResetDisposition').addEventListener('click', function () {
+      etat.colonnesCachees = {};
+      etat.ordreColonnes = [];
+      etat.entetes.forEach(function (col, idx) { if (col !== '') etat.ordreColonnes.push(idx); });
+      sauverDisposition();
+      majMenuColonnes();
+      construireEntetes();
+      rendreCorps(true);
+    });
+
+    $('btnReinitFiltres').addEventListener('click', function () {
+      etat.filtres = {};
+      etat.rechercheGlobale = '';
+      etat.tri = { index: -1, asc: true };
+      $('barreRechercheGlobale').value = '';
+      if (etat.filtreFWDVide) basculerFiltreVides();
+      construireEntetes();
+      appliquerFiltres();
+    });
+
+    $('btnFiltreVides').addEventListener('click', basculerFiltreVides);
+
+    // --- Délégation sur les en-têtes : tri, masquage, glisser-déposer ---
+    var thead = $('enTetesTableau');
+
+    thead.addEventListener('click', function (e) {
+      var masquerCol = e.target.closest('.js-cacher-colonne');
+      if (masquerCol) { e.stopPropagation(); cacherColonne(Number(masquerCol.dataset.index)); return; }
+
+      var masquerGrp = e.target.closest('.js-cacher-groupe');
+      if (masquerGrp) { e.stopPropagation(); cacherGroupe(masquerGrp.dataset.groupe); return; }
+
+      var th = e.target.closest('tr.title-row th');
+      if (!th) return;
+      var idx = Number(th.dataset.index);
+      if (etat.tri.index === idx) etat.tri.asc = !etat.tri.asc;
+      else etat.tri = { index: idx, asc: true };
+      construireEntetes();
+      appliquerFiltres();
+    });
+
+    thead.addEventListener('input', function (e) {
+      if (!e.target.classList.contains('column-filter')) return;
+      var idx = e.target.dataset.index;
+      if (e.target.value) etat.filtres[idx] = e.target.value;
+      else delete etat.filtres[idx];
+      appliquerFiltresDebounce();
+    });
+
+    thead.addEventListener('dragstart', function (e) {
+      var th = e.target.closest('tr.title-row th');
+      if (!th) return;
+      indexDrag = Number(th.dataset.index);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(indexDrag));   // requis par Firefox
+    });
+    thead.addEventListener('dragover', function (e) {
+      var th = e.target.closest('tr.title-row th');
+      if (!th || indexDrag === null) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      th.classList.add('drag-over');
+    });
+    thead.addEventListener('dragleave', function (e) {
+      var th = e.target.closest('tr.title-row th');
+      if (th) th.classList.remove('drag-over');
+    });
+    thead.addEventListener('drop', function (e) {
+      var th = e.target.closest('tr.title-row th');
+      if (!th) return;
+      e.preventDefault();
+      th.classList.remove('drag-over');
+      var cible = Number(th.dataset.index);
+      if (indexDrag !== null && indexDrag !== cible) deplacerColonne(indexDrag, cible);
+      indexDrag = null;
+    });
+    thead.addEventListener('dragend', function () {
+      indexDrag = null;
+      thead.querySelectorAll('.drag-over').forEach(function (el) { el.classList.remove('drag-over'); });
+    });
+
+    // --- Menu des colonnes ---
+    $('listeCheckboxesColonnes').addEventListener('change', function (e) {
+      if (!e.target.classList.contains('js-toggle-colonne')) return;
+      var idx = Number(e.target.dataset.index);
+      if (e.target.checked) delete etat.colonnesCachees[idx];
+      else etat.colonnesCachees[idx] = true;
+      sauverDisposition();
+      construireEntetes();
+      rendreCorps(true);
+    });
+
+    // --- Jalons ---
+    $('formJalon').addEventListener('submit', function (e) {
+      e.preventDefault();
+      erreurJalon('');
+      var bouton = $('btnAjouterJalon');
+      bouton.disabled = true;
+      google.script.run
+        .withSuccessHandler(function (liste) {
+          bouton.disabled = false;
+          $('inputJalonSemaine').value = '';
+          $('inputJalonTexte').value = '';
+          majJalons(liste);
+          toast('Jalon ajouté.', 'success');
+        })
+        .withFailureHandler(function (err) {
+          bouton.disabled = false;
+          erreurJalon(err && err.message ? err.message : 'Ajout impossible.');
+        })
+        .ajouterJalon($('inputJalonSemaine').value, $('inputJalonTexte').value);
+    });
+
+    $('listeJalonsUI').addEventListener('click', function (e) {
+      var bouton = e.target.closest('.js-supprimer-jalon');
+      if (!bouton) return;
+      bouton.disabled = true;
+      google.script.run
+        .withSuccessHandler(function (liste) { majJalons(liste); toast('Jalon supprimé.'); })
+        .withFailureHandler(function (err) {
+          bouton.disabled = false;
+          toast((err && err.message) || 'Suppression impossible.', 'danger');
+        })
+        .supprimerJalon(bouton.dataset.id);
+    });
+
+    // --- Chargement progressif au défilement ---
+    var zone = $('zoneTableau');
+    var chargementEnCours = false;
+    zone.addEventListener('scroll', function () {
+      if (chargementEnCours) return;
+      if (etat.lignesRendues >= etat.lignesFiltrees.length) return;
+      if (zone.scrollTop + zone.clientHeight < zone.scrollHeight - 200) return;
+      chargementEnCours = true;
+      requestAnimationFrame(function () { rendreCorps(false); chargementEnCours = false; });
+    }, { passive: true });
+
+    window.addEventListener('resize', debounce(function () {
+      ajusterHauteursEnTetes();
+      if (graphiqueDynamique) graphiqueDynamique.resize();
+      if (graphiqueEvolution) graphiqueEvolution.resize();
+    }, 150));
+  }
+
+  function basculerFiltreVides() {
+    etat.filtreFWDVide = !etat.filtreFWDVide;
+    var btn = $('btnFiltreVides');
+    if (etat.filtreFWDVide) {
+      btn.classList.replace('btn-outline-warning', 'btn-warning');
+      btn.innerHTML = '<i class="fa-solid fa-xmark me-1"></i> Désactiver le filtre « vides »';
+    } else {
+      btn.classList.replace('btn-warning', 'btn-outline-warning');
+      btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Voir les avancements FWD vides';
+    }
+    appliquerFiltres();
+  }
+
+  // ===================================================================
+  //  DÉMARRAGE
+  // ===================================================================
+  if (window.Chart && window['chartjs-plugin-annotation']) {
+    Chart.register(window['chartjs-plugin-annotation']);
+    Chart.defaults.font.family = "'Segoe UI', Tahoma, sans-serif";
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    brancherEvenements();
+    charger();
+  });
+
+  // Exposé uniquement pour les tests Node (`typeof module` est indéfini dans le navigateur).
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      etat: etat,
+      echapper: echapper,
+      normaliser: normaliser,
+      valeurNumerique: valeurNumerique,
+      classerFWD: classerFWD,
+      comparer: comparer,
+      reordonner: reordonner,
+      agreger: agreger
+    };
+  }
+})();
+</script>

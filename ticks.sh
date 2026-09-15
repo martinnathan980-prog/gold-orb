@@ -1,112 +1,102 @@
-#!/bin/bash
-# ============================================
-#  TICKS XAUUSD — tout en une commande
-#  Usage :  bash ticks.sh
-# ============================================
-set -e
+#!/usr/bin/env bash
+#
+# Télécharge les ticks XAUUSD mois par mois, les compresse et vérifie
+# qu'ils passent la limite de 100 Mo par fichier de GitHub.
+#
+# Usage :
+#   bash ticks.sh                      # 2025-06 à 2025-12
+#   bash ticks.sh 2025-01 2025-05      # plage explicite
+#   POUSSER=1 bash ticks.sh            # commit + push à la fin
+#
+# Le script ne commite rien par défaut : il ne touche à l'historique git
+# que si POUSSER=1 est demandé explicitement.
+set -euo pipefail
 cd "$(dirname "$0")"
 
-echo "=== 1/5  Nettoyage ==="
-git reset --mixed origin/main 2>/dev/null || true
-rm -f download/xauusd-tick-2025-06-01-2026-01-01.csv.gz
-rm -f download/*tick*.csv download/*tick*.csv.gz
-echo "    fait"
+MOIS_DEBUT="${1:-2025-06}"
+MOIS_FIN="${2:-2025-12}"
+LIMITE_OCTETS=99000000
+mkdir -p download download/trop-gros
 
+# --- 1/4  Liste des mois à traiter ---------------------------------------
+mois_courant="$MOIS_DEBUT"
+mois=()
+while [[ "$mois_courant" < "$MOIS_FIN" || "$mois_courant" == "$MOIS_FIN" ]]; do
+  mois+=("$mois_courant")
+  mois_courant=$(date -u -d "${mois_courant}-01 +1 month" +%Y-%m)
+done
+echo "=== 1/4  ${#mois[@]} mois à traiter : ${mois[*]} ==="
+
+# --- 2/4  Téléchargement --------------------------------------------------
 echo ""
-echo "=== 2/5  Telechargement des ticks, mois par mois ==="
-for m in 06 07 08 09 10 11 12; do
-  echo "--- mois 2025-$m ---"
-  npx --yes dukascopy-node -i xauusd -from 2025-$m-01 -to 2025-$m-28 -t tick -f csv \
-    || echo "    (echec sur $m, on continue)"
+echo "=== 2/4  Téléchargement des ticks ==="
+for m in "${mois[@]}"; do
+  # Borne de fin exclusive = premier jour du mois suivant.
+  # L'ancienne version s'arrêtait au 28 et perdait les 2 à 3 derniers jours de chaque mois.
+  debut="${m}-01"
+  fin=$(date -u -d "${debut} +1 month" +%Y-%m-%d)
+
+  if compgen -G "download/xauusd-tick-${debut}-*" > /dev/null; then
+    # Les fichiers produits par l'ancienne version s'arrêtaient au 28 du mois :
+    # on les signale, ils sont incomplets.
+    if compgen -G "download/xauusd-tick-${debut}-${m}-28.*" > /dev/null; then
+      echo "--- ${m} : fichier partiel (arrêté au 28) — supprimez-le pour retélécharger le mois complet"
+    else
+      echo "--- ${m} : déjà présent, ignoré"
+    fi
+    continue
+  fi
+
+  echo "--- ${m} : ${debut} → ${fin}"
+  npx --yes dukascopy-node -i xauusd -from "$debut" -to "$fin" -t tick -f csv \
+    || echo "    échec sur ${m}, on continue"
 done
 
+# --- 3/4  Compression -----------------------------------------------------
 echo ""
-echo "=== 3/5  Compression ==="
-gzip -9 -f download/*tick*.csv 2>/dev/null || true
-ls -lhS download/ | grep tick || echo "    aucun fichier tick"
+echo "=== 3/4  Compression ==="
+if compgen -G "download/*tick*.csv" > /dev/null; then
+  gzip -9 -f download/*tick*.csv
+  echo "    fait"
+else
+  echo "    rien à compresser"
+fi
 
+# --- 4/4  Contrôle de taille ---------------------------------------------
 echo ""
-echo "=== 4/5  Verification des tailles (limite GitHub : 100 Mo) ==="
-TROP=0
+echo "=== 4/4  Vérification des tailles (limite GitHub : 100 Mo) ==="
+trop_gros=0
 for f in download/*tick*.gz; do
   [ -e "$f" ] || continue
-  SZ=$(stat -c%s "$f")
-  MB=$((SZ/1000000))
-  if [ "$SZ" -gt 99000000 ]; then
-    echo "    TROP GROS : $f  ($MB Mo)  -> supprime"
-    rm -f "$f"; TROP=1
+  taille=$(wc -c < "$f")
+  mo=$((taille / 1000000))
+  if [ "$taille" -gt "$LIMITE_OCTETS" ]; then
+    # On déplace au lieu de supprimer : perdre des données téléchargées
+    # pendant des heures pour une limite d'hébergement serait absurde.
+    echo "    TROP GROS : $(basename "$f") (${mo} Mo) → download/trop-gros/"
+    mv "$f" download/trop-gros/
+    trop_gros=1
   else
-    echo "    OK : $(basename $f)  ($MB Mo)"
+    echo "    OK : $(basename "$f") (${mo} Mo)"
   fi
 done
 
-echo ""
-echo "=== 5/5  Envoi sur GitHub ==="
-git add -A
-git commit -m "ticks xauusd 2025" || echo "    rien a commiter"
-git push
-
-echo ""
-echo "============================================"
-echo " TERMINE."
-if [ "$TROP" = "1" ]; then
-  echo " Attention : certains mois etaient trop gros et ont ete retires."
+# --- Envoi optionnel sur GitHub ------------------------------------------
+if [ "${POUSSER:-0}" = "1" ]; then
+  echo ""
+  echo "=== Envoi sur GitHub ==="
+  branche=$(git rev-parse --abbrev-ref HEAD)
+  git add -A download
+  git commit -m "ticks xauusd ${MOIS_DEBUT} → ${MOIS_FIN}" || echo "    rien à commiter"
+  git push -u origin "$branche"
 fi
-echo " Dis a Claude : 'ticks pousses'"
-echo "============================================"
-#!/bin/bash
-# ============================================
-#  TICKS XAUUSD — tout en une commande
-#  Usage :  bash ticks.sh
-# ============================================
-set -e
-cd "$(dirname "$0")"
-
-echo "=== 1/5  Nettoyage ==="
-git reset --mixed origin/main 2>/dev/null || true
-rm -f download/xauusd-tick-2025-06-01-2026-01-01.csv.gz
-rm -f download/*tick*.csv download/*tick*.csv.gz
-echo "    fait"
-
-echo ""
-echo "=== 2/5  Telechargement des ticks, mois par mois ==="
-for m in 06 07 08 09 10 11 12; do
-  echo "--- mois 2025-$m ---"
-  npx --yes dukascopy-node -i xauusd -from 2025-$m-01 -to 2025-$m-28 -t tick -f csv \
-    || echo "    (echec sur $m, on continue)"
-done
-
-echo ""
-echo "=== 3/5  Compression ==="
-gzip -9 -f download/*tick*.csv 2>/dev/null || true
-ls -lhS download/ | grep tick || echo "    aucun fichier tick"
-
-echo ""
-echo "=== 4/5  Verification des tailles (limite GitHub : 100 Mo) ==="
-TROP=0
-for f in download/*tick*.gz; do
-  [ -e "$f" ] || continue
-  SZ=$(stat -c%s "$f")
-  MB=$((SZ/1000000))
-  if [ "$SZ" -gt 99000000 ]; then
-    echo "    TROP GROS : $f  ($MB Mo)  -> supprime"
-    rm -f "$f"; TROP=1
-  else
-    echo "    OK : $(basename $f)  ($MB Mo)"
-  fi
-done
-
-echo ""
-echo "=== 5/5  Envoi sur GitHub ==="
-git add -A
-git commit -m "ticks xauusd 2025" || echo "    rien a commiter"
-git push
 
 echo ""
 echo "============================================"
-echo " TERMINE."
-if [ "$TROP" = "1" ]; then
-  echo " Attention : certains mois etaient trop gros et ont ete retires."
+echo " Terminé."
+if [ "$trop_gros" = "1" ]; then
+  echo " Attention : des fichiers dépassent 100 Mo, ils sont dans download/trop-gros/"
+  echo " (à découper, ou à publier via git-lfs / une release GitHub)."
 fi
-echo " Dis a Claude : 'ticks pousses'"
+[ "${POUSSER:-0}" = "1" ] || echo " Rien n'a été commité. Relancer avec POUSSER=1 pour publier."
 echo "============================================"
