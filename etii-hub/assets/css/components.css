@@ -1,0 +1,1855 @@
+/* =========================================================================
+   ETII Hub — Bibliothèque de composants
+   -------------------------------------------------------------------------
+   Dépend de tokens.css puis de base.css, qui DOIVENT être chargés avant.
+   Ordre de chargement : tokens.css → base.css → components.css
+
+   Règle absolue : aucune valeur brute de couleur, d'espacement, de rayon,
+   d'ombre ou de durée. Uniquement des var(--…) de tokens.css, ou des
+   combinaisons calculées à partir de celles-ci (calc(), color-mix()).
+
+   Convention de nommage : tout en français, en BEM.
+       .bloc            le composant
+       .bloc__element   une partie du composant
+       .bloc--variante  une déclinaison du composant
+
+   Les états sont portés par les attributs ARIA quand ils existent
+   (aria-pressed, aria-selected, aria-invalid, aria-current, disabled) :
+   l'information visuelle et l'information accessible ont ainsi une seule
+   et même source de vérité. Aucune classe d'état posée en JavaScript en
+   doublon d'un attribut.
+
+   -------------------------------------------------------------------------
+   TEINTE DE STATUT LISIBLE — technique employée partout dans ce fichier
+
+   Les couleurs de statut brutes (--statut-info, --statut-critique, …) ne
+   passent pas le contraste AA en texte sur leur propre fond, ni en thème
+   clair ni en thème sombre. On les rapproche donc de la couleur de texte
+   du thème courant :
+
+       color-mix(in srgb, var(--statut-x) 72%, var(--texte))
+
+   En thème clair --texte est foncé : la teinte fonce. En thème sombre
+   --texte est clair : la teinte s'éclaircit. Le même calcul donne un
+   contraste correct dans les deux thèmes, sans une seule valeur brute.
+   La déclaration non mixée qui la précède sert de repli aux navigateurs
+   sans color-mix().
+
+   -------------------------------------------------------------------------
+   Contrat de balisage attendu par les six pages :
+
+     <article class="carte carte--cliquable">
+       <div class="carte__entete">
+         <h3 class="carte__titre"><a class="carte__lien" href="#">…</a></h3>
+         <p class="carte__sous-titre">…</p>
+       </div>
+       <div class="carte__corps">…</div>
+       <div class="carte__pied">…</div>
+     </article>
+
+     <button class="bouton bouton--principal" type="button">…</button>
+     <button class="bouton bouton--icone" type="button" aria-label="Fermer">
+       <span aria-hidden="true">×</span>
+     </button>
+
+     <p class="champ">
+       <label class="champ__etiquette" for="x">Libellé</label>
+       <input class="champ__controle" id="x" type="text"
+              aria-describedby="x-aide">
+       <span class="champ__aide" id="x-aide">Texte d'aide</span>
+     </p>
+
+     <div class="recherche recherche--proeminente">
+       <span class="recherche__icone" aria-hidden="true">⌕</span>
+       <input class="recherche__champ" type="search" placeholder="Rechercher…">
+       <kbd class="recherche__raccourci">/</kbd>
+     </div>
+
+     <span class="badge badge--succes">Publié</span>
+     <button class="facette" type="button" aria-pressed="false">
+       Procédure <span class="facette__compteur">12</span>
+     </button>
+
+     <div class="onglets">
+       <div class="onglets__liste" role="tablist"> <button role="tab" …> </div>
+       <div class="onglets__panneau" role="tabpanel" tabindex="0">…</div>
+     </div>
+   ========================================================================= */
+
+/* =========================================================================
+   1. Cartes
+   Surface élevée du site : tout bloc de contenu autonome est une carte.
+   ========================================================================= */
+
+.carte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--carte-espace, var(--e-4));
+
+  padding: var(--carte-marge, var(--e-5));
+
+  background-color: var(--fond-eleve);
+  color: var(--texte);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
+}
+
+/* Densités. Le portail est un outil, pas une page d'accueil marketing :
+   la variante compacte est la plus employée dans les listes. */
+.carte--compacte {
+  --carte-marge: var(--e-4);
+  --carte-espace: var(--e-3);
+  border-radius: var(--rayon-md);
+}
+
+.carte--ample {
+  --carte-marge: var(--e-8);
+  --carte-espace: var(--e-6);
+}
+
+/* Variante sans relief, pour les cartes imbriquées dans une autre surface. */
+.carte--plate {
+  background-color: var(--fond-enfonce);
+  border-color: var(--bordure-douce);
+  box-shadow: none;
+}
+
+/* --- Parties ----------------------------------------------------------- */
+
+.carte__entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--e-2) var(--e-4);
+}
+
+/* Le titre occupe la place restante : les badges d'en-tête se rangent
+   d'eux-mêmes à droite sans classe utilitaire supplémentaire. */
+.carte__titre {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--texte-lg);
+  font-weight: var(--graisse-forte);
+  line-height: var(--interligne-serre);
+  color: var(--texte);
+}
+
+.carte__sous-titre {
+  flex: 1 0 100%;
+  margin: 0;
+  font-size: var(--texte-sm);
+  color: var(--texte-doux);
+}
+
+.carte__corps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  margin: 0;
+  color: var(--texte-doux);
+}
+
+.carte__corps > p {
+  margin: 0;
+}
+
+.carte__pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-4);
+  padding-top: var(--e-4);
+  border-top: 1px solid var(--bordure-douce);
+  font-size: var(--texte-sm);
+  color: var(--texte-faible);
+}
+
+/* Bandeau discret de métadonnées (date, référence, auteur…). */
+.carte__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-4);
+  font-size: var(--texte-xs);
+  color: var(--texte-faible);
+}
+
+/* --- Variante cliquable ------------------------------------------------ */
+
+/* Une seule zone cliquable par carte : le lien de titre est étiré à toute
+   la surface par un pseudo-élément. Aucun gestionnaire d'événement sur la
+   carte elle-même, donc aucune cible d'un clic accidentel sur du texte
+   sélectionnable. */
+.carte--cliquable {
+  cursor: pointer;
+}
+
+.carte__lien {
+  color: inherit;
+  text-decoration: none;
+  /* La cible tactile couvre la carte entière, jamais le seul texte. */
+  outline-offset: var(--focus-decalage);
+}
+
+.carte__lien::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+/* L'anneau de focus est porté par la carte, pas par le texte du lien :
+   le lien étiré n'a pas de boîte propre à entourer. */
+.carte--cliquable:focus-within {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}
+
+.carte__lien:focus,
+.carte__lien:focus-visible {
+  outline: none;
+}
+
+.carte--cliquable:hover {
+  border-color: var(--bordure-forte);
+  box-shadow: var(--ombre-md);
+}
+
+.carte--cliquable:hover .carte__titre,
+.carte--cliquable:focus-within .carte__titre {
+  color: var(--texte-accent);
+}
+
+.carte--cliquable:active {
+  box-shadow: var(--ombre-sm);
+}
+
+/* --- Variante mise en avant -------------------------------------------- */
+
+/* Liseré d'accent en haut de la carte. Posé en pseudo-élément et non en
+   bordure épaisse : aucun décalage de mise en page entre les variantes. */
+.carte--mise-en-avant {
+  border-color: var(--accent);
+  box-shadow: var(--ombre-md);
+}
+
+.carte--mise-en-avant::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: var(--e-1);
+  background-color: var(--accent);
+  border-start-start-radius: inherit;
+  border-start-end-radius: inherit;
+}
+
+.carte--mise-en-avant .carte__titre {
+  color: var(--texte-accent);
+}
+
+/* Mise en avant par statut : le liseré reprend la couleur du statut. */
+.carte--statut-info     { border-color: var(--statut-info); }
+.carte--statut-succes   { border-color: var(--statut-succes); }
+.carte--statut-alerte   { border-color: var(--statut-alerte); }
+.carte--statut-critique { border-color: var(--statut-critique); }
+
+.carte--statut-info::before,
+.carte--statut-succes::before,
+.carte--statut-alerte::before,
+.carte--statut-critique::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: var(--e-1);
+  border-start-start-radius: inherit;
+  border-start-end-radius: inherit;
+}
+
+.carte--statut-info::before     { background-color: var(--statut-info); }
+.carte--statut-succes::before   { background-color: var(--statut-succes); }
+.carte--statut-alerte::before   { background-color: var(--statut-alerte); }
+.carte--statut-critique::before { background-color: var(--statut-critique); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .carte--cliquable {
+    transition: transform var(--duree-rapide) var(--courbe),
+                box-shadow var(--duree-rapide) var(--courbe),
+                border-color var(--duree-rapide) var(--courbe);
+  }
+
+  .carte--cliquable:hover {
+    /* Relief léger : un quart de pas de la grille d'espacement, pas plus. */
+    transform: translateY(calc(var(--e-1) * -1));
+  }
+
+  .carte--cliquable:active {
+    transform: translateY(0);
+  }
+
+  .carte__titre {
+    transition: color var(--duree-rapide) var(--courbe);
+  }
+}
+
+/* =========================================================================
+   2. Boutons
+   Une seule base, cinq variantes, deux densités.
+   La hauteur minimale reste var(--cible-tactile) dans TOUS les cas, y
+   compris en densité compacte : la compacité se gagne sur les marges
+   latérales et la taille de texte, jamais sur la cible tactile.
+   ========================================================================= */
+
+.bouton {
+  /* Variables locales : chaque variante n'a qu'à les redéfinir. */
+  --bouton-fond: transparent;
+  --bouton-contenu: var(--texte);
+  --bouton-bordure: transparent;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-2);
+
+  min-height: var(--cible-tactile);
+  padding-inline: var(--e-5);
+
+  background-color: var(--bouton-fond);
+  color: var(--bouton-contenu);
+  border: 1px solid var(--bouton-bordure);
+  border-radius: var(--rayon-md);
+
+  font-family: var(--police);
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
+  line-height: var(--interligne-serre);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Un <a class="bouton"> ne doit pas hériter du soulignement des liens. */
+a.bouton:hover {
+  text-decoration: none;
+}
+
+/* Les icônes accompagnant un libellé ne doivent ni grossir ni se comprimer. */
+.bouton__icone {
+  flex: none;
+  display: inline-flex;
+  font-size: var(--texte-md);
+  line-height: 1;
+}
+
+/* --- Variante principale ----------------------------------------------- */
+
+.bouton--principal {
+  --bouton-fond: var(--accent);
+  --bouton-contenu: var(--accent-contenu);
+  --bouton-bordure: var(--accent);
+  box-shadow: var(--ombre-sm);
+}
+
+.bouton--principal:hover:not(:disabled) {
+  /* Repli sans color-mix : l'élévation suffit à signaler le survol. */
+  background-color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 85%, var(--texte));
+  border-color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 85%, var(--texte));
+  box-shadow: var(--ombre-md);
+}
+
+.bouton--principal:active:not(:disabled) {
+  background-color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 72%, var(--texte));
+  box-shadow: var(--ombre-sm);
+}
+
+/* --- Variante secondaire ----------------------------------------------- */
+
+.bouton--secondaire {
+  --bouton-fond: var(--fond-eleve);
+  --bouton-contenu: var(--texte);
+  --bouton-bordure: var(--bordure);
+}
+
+.bouton--secondaire:hover:not(:disabled) {
+  --bouton-fond: var(--fond-enfonce);
+  --bouton-bordure: var(--bordure-forte);
+}
+
+.bouton--secondaire:active:not(:disabled) {
+  --bouton-fond: var(--fond-enfonce);
+  --bouton-contenu: var(--texte-accent);
+  --bouton-bordure: var(--accent);
+}
+
+/* --- Variante discrète -------------------------------------------------- */
+
+.bouton--discret {
+  --bouton-fond: transparent;
+  --bouton-contenu: var(--texte-doux);
+  --bouton-bordure: transparent;
+}
+
+.bouton--discret:hover:not(:disabled) {
+  --bouton-fond: var(--fond-enfonce);
+  --bouton-contenu: var(--texte);
+}
+
+.bouton--discret:active:not(:disabled) {
+  --bouton-contenu: var(--texte-accent);
+}
+
+/* --- Variante danger ---------------------------------------------------- */
+
+/* Le texte utilise --gris-50 et non --texte-inverse : les jetons neutres
+   ne sont jamais redéfinis par le thème, le contraste sur le rouge reste
+   donc identique en clair et en sombre. */
+.bouton--danger {
+  --bouton-fond: var(--statut-critique);
+  --bouton-contenu: var(--gris-50);
+  --bouton-bordure: var(--statut-critique);
+  box-shadow: var(--ombre-sm);
+}
+
+.bouton--danger:hover:not(:disabled) {
+  background-color: var(--statut-critique);
+  background-color: color-mix(in srgb, var(--statut-critique) 82%, var(--gris-900));
+  border-color: var(--statut-critique);
+  border-color: color-mix(in srgb, var(--statut-critique) 82%, var(--gris-900));
+  box-shadow: var(--ombre-md);
+}
+
+.bouton--danger:active:not(:disabled) {
+  background-color: var(--statut-critique);
+  background-color: color-mix(in srgb, var(--statut-critique) 70%, var(--gris-900));
+  box-shadow: var(--ombre-sm);
+}
+
+/* Danger en retrait : pour une action destructrice secondaire, qui ne doit
+   pas attirer l'œil avant d'être cherchée. */
+.bouton--danger-discret {
+  --bouton-fond: transparent;
+  --bouton-bordure: transparent;
+  color: var(--statut-critique);
+  color: color-mix(in srgb, var(--statut-critique) 72%, var(--texte));
+}
+
+.bouton--danger-discret:hover:not(:disabled) {
+  --bouton-fond: var(--statut-critique-fond);
+  --bouton-bordure: var(--statut-critique);
+}
+
+/* --- Bouton-icône ------------------------------------------------------- */
+
+.bouton--icone {
+  min-width: var(--cible-tactile);
+  padding-inline: 0;
+  gap: 0;
+  font-size: var(--texte-lg);
+  line-height: 1;
+}
+
+.bouton--icone.bouton--rond {
+  border-radius: var(--rayon-plein);
+}
+
+/* --- Densité compacte ---------------------------------------------------- */
+
+.bouton--compact {
+  padding-inline: var(--e-3);
+  font-size: var(--texte-xs);
+  border-radius: var(--rayon-sm);
+}
+
+.bouton--compact.bouton--icone {
+  padding-inline: 0;
+  font-size: var(--texte-md);
+}
+
+/* --- Pleine largeur (barres d'action, modales étroites) ------------------ */
+
+.bouton--bloc {
+  display: flex;
+  width: 100%;
+}
+
+/* --- États transverses --------------------------------------------------- */
+
+.bouton:disabled,
+.bouton[aria-disabled="true"] {
+  opacity: 0.55;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+/* Bouton d'un groupe exclusif déjà sélectionné (barre d'affichage, tri…). */
+.bouton[aria-pressed="true"] {
+  --bouton-fond: var(--accent-doux);
+  --bouton-contenu: var(--texte-accent);
+  --bouton-bordure: var(--accent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bouton {
+    transition: background-color var(--duree-rapide) var(--courbe),
+                border-color var(--duree-rapide) var(--courbe),
+                color var(--duree-rapide) var(--courbe),
+                box-shadow var(--duree-rapide) var(--courbe);
+  }
+}
+
+/* =========================================================================
+   3. Champs de formulaire
+   Texte, zone de texte, select, case à cocher.
+   Étiquette, texte d'aide, erreur — et un focus identique partout.
+   ========================================================================= */
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  margin: 0;
+}
+
+.champ--horizontal {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-3);
+}
+
+.champ__etiquette {
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
+  color: var(--texte);
+  line-height: var(--interligne-serre);
+}
+
+/* Marqueur de champ requis : redondant avec l'attribut `required`, donc
+   masqué aux lecteurs d'écran côté HTML (aria-hidden="true"). */
+.champ__requis {
+  color: var(--statut-critique);
+  color: color-mix(in srgb, var(--statut-critique) 72%, var(--texte));
+  font-weight: var(--graisse-forte);
+}
+
+/* --- Contrôle : input, textarea et select partagent la même boîte ------- */
+
+.champ__controle {
+  width: 100%;
+  min-height: var(--cible-tactile);
+  padding: var(--e-2) var(--e-3);
+
+  background-color: var(--fond-eleve);
+  color: var(--texte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-md);
+
+  font-family: var(--police);
+  /* Taille pleine et non réduite : sous 16px, iOS zoome à la prise de
+     focus et casse la mise en page. La densité se gagne sur les marges. */
+  font-size: var(--texte-md);
+  line-height: var(--interligne);
+}
+
+.champ__controle::placeholder {
+  /* --texte-faible ne passerait pas AA en thème sombre : on reste sur doux. */
+  color: var(--texte-doux);
+  opacity: 1;
+}
+
+.champ__controle:hover:not(:disabled):not([readonly]) {
+  border-color: var(--bordure-forte);
+}
+
+.champ__controle:focus,
+.champ__controle:focus-visible {
+  border-color: var(--accent);
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}
+
+.champ__controle:disabled {
+  background-color: var(--fond-enfonce);
+  color: var(--texte-faible);
+  border-color: var(--bordure-douce);
+}
+
+.champ__controle[readonly] {
+  background-color: var(--fond-enfonce);
+  color: var(--texte-doux);
+}
+
+/* Zone de texte : trois cibles tactiles de haut, redimensionnable en
+   vertical seulement (règle posée dans base.css). */
+textarea.champ__controle {
+  min-height: calc(var(--cible-tactile) * 3);
+  padding: var(--e-3);
+}
+
+/* Variante monospace pour les références et identifiants documentaires. */
+.champ__controle--mono {
+  font-family: var(--police-mono);
+  font-size: var(--texte-sm);
+}
+
+/* --- Select : flèche dessinée en CSS, jamais une image ------------------ */
+
+/* Aucune image de fond encodée : un chevron en bordures, donc aucune
+   couleur en dur et aucune requête réseau. */
+.champ__select {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+select.champ__controle {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: var(--e-8);
+  cursor: pointer;
+}
+
+.champ__select::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: var(--e-4);
+  inset-block-start: 50%;
+  inline-size: var(--e-2);
+  block-size: var(--e-2);
+  border-inline-end: calc(var(--e-1) / 2) solid currentColor;
+  border-block-end: calc(var(--e-1) / 2) solid currentColor;
+  transform: translateY(-75%) rotate(45deg);
+  color: var(--texte-doux);
+  pointer-events: none;
+}
+
+.champ__select:has(select:disabled)::after {
+  color: var(--texte-faible);
+}
+
+/* --- Case à cocher : contrôle natif, coloré par accent-color ------------ */
+
+/* Le contrôle natif est conservé : état indéterminé, lecteurs d'écran et
+   raccourcis clavier fonctionnent sans une ligne de JavaScript. */
+.case {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  min-height: var(--cible-tactile);
+  padding-block: var(--e-1);
+  cursor: pointer;
+}
+
+.case__controle {
+  flex: none;
+  inline-size: var(--e-5);
+  block-size: var(--e-5);
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.case__texte {
+  font-size: var(--texte-sm);
+  line-height: var(--interligne-serre);
+  color: var(--texte);
+}
+
+.case__texte-aide {
+  display: block;
+  font-size: var(--texte-xs);
+  color: var(--texte-doux);
+}
+
+.case:hover .case__texte {
+  color: var(--texte-accent);
+}
+
+.case--desactivee,
+.case:has(.case__controle:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.case--desactivee .case__controle,
+.case:has(.case__controle:disabled) .case__texte {
+  cursor: not-allowed;
+}
+
+/* Groupe de cases : un <fieldset> sans l'habillage natif du navigateur. */
+.groupe-champs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.groupe-champs__legende {
+  padding: 0;
+  margin-block-end: var(--e-1);
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
+  color: var(--texte);
+}
+
+/* --- Aide et erreur ------------------------------------------------------ */
+
+.champ__aide {
+  font-size: var(--texte-xs);
+  line-height: var(--interligne);
+  color: var(--texte-doux);
+}
+
+/* Le message d'erreur est rendu visible par le retrait de [hidden] côté
+   HTML ; il reste lié au contrôle par aria-describedby et annoncé par
+   role="alert". */
+.champ__erreur {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e-2);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  line-height: var(--interligne);
+  color: var(--statut-critique);
+  color: color-mix(in srgb, var(--statut-critique) 72%, var(--texte));
+}
+
+.champ__erreur[hidden] {
+  display: none;
+}
+
+/* État d'erreur : piloté par aria-invalid, la classe n'est qu'un repli
+   pour les cas où le contrôle n'est pas un élément de formulaire. */
+.champ__controle[aria-invalid="true"],
+.champ--erreur .champ__controle {
+  border-color: var(--statut-critique);
+  background-color: var(--statut-critique-fond);
+}
+
+.champ__controle[aria-invalid="true"]:focus,
+.champ__controle[aria-invalid="true"]:focus-visible,
+.champ--erreur .champ__controle:focus,
+.champ--erreur .champ__controle:focus-visible {
+  border-color: var(--statut-critique);
+}
+
+/* Barre d'actions d'un formulaire. */
+.champ-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-3);
+  padding-top: var(--e-2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .champ__controle {
+    transition: border-color var(--duree-rapide) var(--courbe),
+                background-color var(--duree-rapide) var(--courbe);
+  }
+
+  .case__texte {
+    transition: color var(--duree-rapide) var(--courbe);
+  }
+}
+
+/* =========================================================================
+   4. Champ de recherche
+   Coquille unique : icône à gauche, saisie au centre, raccourci clavier
+   (puis bouton d'effacement) à droite.
+   ========================================================================= */
+
+.recherche {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+
+  width: 100%;
+  min-height: var(--cible-tactile);
+  padding-inline: var(--e-3);
+
+  background-color: var(--fond-eleve);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-md);
+}
+
+.recherche:hover {
+  border-color: var(--bordure-forte);
+}
+
+/* Le champ intérieur n'a pas de boîte propre : l'anneau de focus est donc
+   porté par la coquille, pour rester visible et englober l'ensemble. */
+.recherche:focus-within {
+  border-color: var(--accent);
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}
+
+.recherche__champ:focus,
+.recherche__champ:focus-visible {
+  outline: none;
+}
+
+.recherche__icone {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--e-5);
+  color: var(--texte-doux);
+  font-size: var(--texte-lg);
+  line-height: 1;
+}
+
+.recherche:focus-within .recherche__icone {
+  color: var(--texte-accent);
+}
+
+.recherche__champ {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--cible-tactile);
+  padding: 0;
+
+  background-color: transparent;
+  color: var(--texte);
+  border: 0;
+
+  font-family: var(--police);
+  font-size: var(--texte-md);
+  line-height: var(--interligne);
+}
+
+.recherche__champ::placeholder {
+  color: var(--texte-doux);
+  opacity: 1;
+}
+
+/* La croix native de <input type="search"> est retirée : elle n'existe que
+   sur WebKit, n'est pas atteignable au clavier et double le bouton maison. */
+.recherche__champ::-webkit-search-cancel-button,
+.recherche__champ::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* --- Raccourci clavier affiché ------------------------------------------ */
+
+.recherche__raccourci {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-inline-size: var(--e-6);
+  padding-inline: var(--e-2);
+
+  background-color: var(--fond-enfonce);
+  color: var(--texte-doux);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-sm);
+
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  line-height: var(--interligne-serre);
+}
+
+/* Le raccourci ne sert plus à rien une fois le champ actif ou rempli.
+   `visibility` plutôt que `display` : la largeur de la coquille ne bouge
+   pas, donc aucun sursaut de mise en page à la frappe.
+   (Requiert un attribut `placeholder` sur le champ.) */
+.recherche:focus-within .recherche__raccourci,
+.recherche__champ:not(:placeholder-shown) ~ .recherche__raccourci {
+  visibility: hidden;
+}
+
+/* --- Effacement --------------------------------------------------------- */
+
+/* Le bouton n'apparaît qu'une fois du texte saisi — sans JavaScript. */
+.recherche__effacer {
+  display: none;
+  flex: none;
+}
+
+.recherche__champ:not(:placeholder-shown) ~ .recherche__effacer {
+  display: inline-flex;
+}
+
+/* --- Variante proéminente (accueil, recherche documentaire) -------------- */
+
+.recherche--proeminente {
+  min-height: calc(var(--cible-tactile) + var(--e-4));
+  padding-inline: var(--e-4);
+  gap: var(--e-3);
+  border-radius: var(--rayon-xl);
+  border-color: var(--bordure-forte);
+  box-shadow: var(--ombre-md);
+}
+
+.recherche--proeminente .recherche__champ {
+  min-height: calc(var(--cible-tactile) + var(--e-4));
+  font-size: var(--texte-lg);
+}
+
+.recherche--proeminente .recherche__icone {
+  inline-size: var(--e-6);
+  font-size: var(--texte-xl);
+}
+
+.recherche--proeminente:focus-within {
+  box-shadow: var(--ombre-lg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .recherche {
+    transition: border-color var(--duree-rapide) var(--courbe),
+                box-shadow var(--duree-rapide) var(--courbe);
+  }
+
+  .recherche__icone {
+    transition: color var(--duree-rapide) var(--courbe);
+  }
+}
+
+/* =========================================================================
+   5. Badges et pastilles de statut
+   Fond doux + teinte de statut lisible (cf. en-tête du fichier).
+   ========================================================================= */
+
+.badge {
+  --badge-fond: var(--fond-enfonce);
+  --badge-teinte: var(--texte-doux);
+  --badge-bordure: var(--bordure-douce);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+
+  padding: var(--e-1) var(--e-3);
+
+  background-color: var(--badge-fond);
+  border: 1px solid var(--badge-bordure);
+  border-radius: var(--rayon-plein);
+
+  color: var(--badge-teinte);
+  color: color-mix(in srgb, var(--badge-teinte) 72%, var(--texte));
+
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  line-height: var(--interligne-serre);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.badge--info {
+  --badge-fond: var(--statut-info-fond);
+  --badge-teinte: var(--statut-info);
+  --badge-bordure: var(--statut-info);
+}
+
+.badge--succes {
+  --badge-fond: var(--statut-succes-fond);
+  --badge-teinte: var(--statut-succes);
+  --badge-bordure: var(--statut-succes);
+}
+
+.badge--alerte {
+  --badge-fond: var(--statut-alerte-fond);
+  --badge-teinte: var(--statut-alerte);
+  --badge-bordure: var(--statut-alerte);
+}
+
+.badge--critique {
+  --badge-fond: var(--statut-critique-fond);
+  --badge-teinte: var(--statut-critique);
+  --badge-bordure: var(--statut-critique);
+}
+
+.badge--neutre {
+  --badge-fond: var(--fond-enfonce);
+  --badge-teinte: var(--texte-doux);
+  --badge-bordure: var(--bordure);
+}
+
+.badge--accent {
+  --badge-fond: var(--accent-doux);
+  --badge-teinte: var(--accent);
+  --badge-bordure: var(--accent);
+}
+
+/* Variante sans fond, pour les listes denses où les pastilles se répètent. */
+.badge--contour {
+  --badge-fond: transparent;
+}
+
+/* Variante carrée : identifiants, références documentaires. */
+.badge--carre {
+  border-radius: var(--rayon-sm);
+  font-family: var(--police-mono);
+  text-transform: none;
+}
+
+/* Point de statut : la couleur PURE est ici décorative (aucun texte dessus),
+   elle peut donc rester telle quelle. Le sens est toujours porté par le
+   libellé qui l'accompagne, jamais par la seule couleur. */
+.badge__point {
+  flex: none;
+  inline-size: var(--e-2);
+  block-size: var(--e-2);
+  border-radius: var(--rayon-plein);
+  background-color: var(--badge-teinte);
+}
+
+/* Pastille de compteur autonome (nombre de résultats, d'actions…). */
+.pastille {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--e-5);
+  padding-inline: var(--e-2);
+
+  background-color: var(--accent-doux);
+  color: var(--texte-accent);
+  border-radius: var(--rayon-plein);
+
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-forte);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--interligne-serre);
+}
+
+/* =========================================================================
+   6. Puces de facette (filtres)
+   Ce sont des <button aria-pressed>, jamais des <div> : l'état est donc
+   annoncé aux lecteurs d'écran et la puce est actionnable au clavier.
+   ========================================================================= */
+
+.facettes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.facette {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+
+  min-height: var(--cible-tactile);
+  padding-inline: var(--e-4);
+
+  background-color: var(--fond-eleve);
+  color: var(--texte-doux);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-plein);
+
+  font-family: var(--police);
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
+  line-height: var(--interligne-serre);
+  white-space: nowrap;
+}
+
+.facette:hover:not(:disabled) {
+  background-color: var(--fond-enfonce);
+  border-color: var(--bordure-forte);
+  color: var(--texte);
+}
+
+/* État actif : lu sur aria-pressed, source unique de vérité. Le contraste
+   est doublé d'une bordure d'accent : l'information n'est pas portée par
+   la seule couleur de fond. */
+.facette[aria-pressed="true"] {
+  background-color: var(--accent-doux);
+  border-color: var(--accent);
+  color: var(--texte-accent);
+}
+
+.facette[aria-pressed="true"]:hover:not(:disabled) {
+  background-color: var(--accent-doux);
+  border-color: var(--accent);
+  color: var(--texte-accent);
+}
+
+/* Coche de la facette active, purement décorative. */
+.facette__marque {
+  display: none;
+  flex: none;
+  font-size: var(--texte-xs);
+  line-height: 1;
+}
+
+.facette[aria-pressed="true"] .facette__marque {
+  display: inline-flex;
+}
+
+/* --- Compteur ------------------------------------------------------------ */
+
+.facette__compteur {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--e-5);
+  padding-inline: var(--e-1);
+
+  background-color: var(--fond-enfonce);
+  color: var(--texte-faible);
+  border-radius: var(--rayon-plein);
+
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-forte);
+  /* Chiffres de largeur fixe : les puces ne tressautent pas quand les
+     compteurs se recalculent à chaque frappe. */
+  font-variant-numeric: tabular-nums;
+}
+
+.facette[aria-pressed="true"] .facette__compteur {
+  background-color: var(--fond-eleve);
+  color: var(--texte-accent);
+}
+
+/* Facette sans résultat : désactivée, mais toujours lisible et annoncée. */
+.facette:disabled,
+.facette[aria-disabled="true"] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.facette--compacte {
+  padding-inline: var(--e-3);
+  font-size: var(--texte-xs);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .facette {
+    transition: background-color var(--duree-rapide) var(--courbe),
+                border-color var(--duree-rapide) var(--courbe),
+                color var(--duree-rapide) var(--courbe);
+  }
+}
+
+/* =========================================================================
+   7. Onglets
+   Balisage attendu : role="tablist" / role="tab" / role="tabpanel",
+   aria-selected, aria-controls, et tabindex glissant géré en JavaScript.
+   ========================================================================= */
+
+.onglets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-6);
+}
+
+.onglets__liste {
+  display: flex;
+  align-items: stretch;
+  gap: var(--e-1);
+
+  /* Sur écran étroit la barre défile : les onglets ne sont ni masqués ni
+     empilés, et la barre de défilement reste visible (SPEC §2). */
+  overflow-x: auto;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.onglets__onglet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-2);
+
+  min-height: var(--cible-tactile);
+  padding-inline: var(--e-4);
+
+  background-color: transparent;
+  color: var(--texte-doux);
+  border: 0;
+  /* Le soulignement est réservé dès l'état inactif : aucun décalage
+     vertical au changement d'onglet. */
+  border-bottom: var(--e-1) solid transparent;
+  border-radius: var(--rayon-sm) var(--rayon-sm) 0 0;
+
+  font-family: var(--police);
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
+  line-height: var(--interligne-serre);
+  white-space: nowrap;
+}
+
+.onglets__onglet:hover {
+  background-color: var(--fond-enfonce);
+  color: var(--texte);
+}
+
+.onglets__onglet[aria-selected="true"] {
+  color: var(--texte-accent);
+  border-bottom-color: var(--accent);
+  font-weight: var(--graisse-forte);
+}
+
+.onglets__onglet:disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.onglets__onglet .pastille {
+  font-size: var(--texte-xs);
+}
+
+/* Le panneau porte tabindex="0" : son contenu défilant reste atteignable
+   au clavier même lorsqu'il ne contient aucun élément focalisable. */
+.onglets__panneau {
+  display: block;
+}
+
+.onglets__panneau[hidden] {
+  display: none;
+}
+
+.onglets__panneau:focus {
+  outline: none;
+}
+
+.onglets__panneau:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+  border-radius: var(--rayon-md);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .onglets__onglet {
+    transition: background-color var(--duree-rapide) var(--courbe),
+                border-color var(--duree-rapide) var(--courbe),
+                color var(--duree-rapide) var(--courbe);
+  }
+}
+
+/* =========================================================================
+   8. Modale
+   Fonctionne sous deux formes :
+     a) <dialog class="modale"> natif — .modale::backdrop habille le fond ;
+     b) <div class="modale-fond"><div class="modale" role="dialog"> — pour
+        une implémentation maison avec piège de focus (ui.js).
+   ========================================================================= */
+
+/* Superposition de la forme (b). */
+.modale-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--e-4);
+
+  /* Repli opaque puis voile translucide : `transparent` est un mot-clé,
+     pas une couleur en dur. */
+  background-color: var(--fond-inverse);
+  background-color: color-mix(in srgb, var(--fond-inverse) 62%, transparent);
+
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.modale-fond[hidden] {
+  display: none;
+}
+
+/* Voile de la forme (a). */
+.modale::backdrop {
+  background-color: var(--fond-inverse);
+  background-color: color-mix(in srgb, var(--fond-inverse) 62%, transparent);
+}
+
+.modale {
+  display: flex;
+  flex-direction: column;
+  /* Marge de sécurité verticale pour ne jamais coller aux bords. */
+  max-block-size: calc(100dvh - var(--e-12));
+  inline-size: min(100%, calc(var(--e-16) * 10));
+  margin: auto;
+  padding: 0;
+
+  background-color: var(--fond-eleve);
+  color: var(--texte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-lg);
+  overflow: hidden;
+}
+
+/* Sans cette règle, le `display: flex` ci-dessus rendrait visible un
+   <dialog> fermé, que le navigateur masque normalement lui-même. */
+dialog.modale:not([open]) {
+  display: none;
+}
+
+.modale--etroite { inline-size: min(100%, calc(var(--e-16) * 7)); }
+.modale--large   { inline-size: min(100%, calc(var(--e-16) * 15)); }
+
+.modale:focus {
+  outline: none;
+}
+
+/* --- Parties ------------------------------------------------------------- */
+
+.modale__entete {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e-4);
+
+  padding: var(--e-5) var(--e-6);
+  border-bottom: 1px solid var(--bordure-douce);
+}
+
+.modale__titre {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--texte-xl);
+  font-weight: var(--graisse-forte);
+  line-height: var(--interligne-serre);
+}
+
+.modale__sous-titre {
+  flex: 1 0 100%;
+  margin: 0;
+  font-size: var(--texte-sm);
+  color: var(--texte-doux);
+}
+
+.modale__fermer {
+  flex: none;
+  /* Décalage négatif d'un pas : le bouton respecte sa cible tactile sans
+     creuser l'en-tête. */
+  margin: calc(var(--e-2) * -1) calc(var(--e-2) * -1) 0 0;
+}
+
+.modale__corps {
+  flex: 1 1 auto;
+  padding: var(--e-6);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-4);
+}
+
+.modale__corps > p {
+  margin: 0;
+  max-width: var(--largeur-texte);
+  color: var(--texte-doux);
+}
+
+.modale__pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--e-3);
+
+  padding: var(--e-4) var(--e-6);
+  background-color: var(--fond-enfonce);
+  border-top: 1px solid var(--bordure-douce);
+}
+
+/* Action placée à l'opposé des boutons de validation (« Annuler », aide…). */
+.modale__pied-debut {
+  margin-inline-end: auto;
+}
+
+/* --- Animation d'entrée -------------------------------------------------- */
+
+@keyframes modale-apparition {
+  from {
+    opacity: 0;
+    transform: translateY(var(--e-3));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes voile-apparition {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .modale {
+    animation: modale-apparition var(--duree) var(--courbe);
+  }
+
+  .modale-fond,
+  .modale::backdrop {
+    animation: voile-apparition var(--duree-rapide) var(--courbe);
+  }
+}
+
+/* Sous mouvement réduit : apparition immédiate, aucune translation. */
+@media (prefers-reduced-motion: reduce) {
+  .modale,
+  .modale-fond,
+  .modale::backdrop {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .modale__entete { padding: var(--e-4); }
+  .modale__corps  { padding: var(--e-4); }
+  .modale__pied   { padding: var(--e-4); }
+
+  /* Les actions passent en pleine largeur : plus faciles à viser au doigt. */
+  .modale__pied .bouton {
+    flex: 1 1 auto;
+  }
+}
+
+/* =========================================================================
+   9. Notifications éphémères (toasts)
+   Le conteneur est une région live (role="status" / aria-live="polite")
+   posée une fois par page ; ui.js n'y ajoute que des éléments.
+   ========================================================================= */
+
+.notifications {
+  position: fixed;
+  inset-block-end: var(--e-6);
+  inset-inline-end: var(--e-6);
+  z-index: 300;
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--e-3);
+
+  inline-size: min(100% - var(--e-8), calc(var(--e-16) * 6));
+
+  /* Le conteneur ne doit jamais intercepter un clic : seules les
+     notifications elles-mêmes sont interactives. */
+  pointer-events: none;
+}
+
+.notification {
+  --notif-teinte: var(--texte-doux);
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e-3);
+
+  padding: var(--e-3) var(--e-4);
+
+  background-color: var(--fond-eleve);
+  color: var(--texte);
+  border: 1px solid var(--bordure);
+  /* Liseré de couleur au bord de départ : le statut reste lisible même
+     pour une personne qui ne distingue pas les teintes. */
+  border-inline-start: var(--e-1) solid var(--notif-teinte);
+  border-radius: var(--rayon-md);
+  box-shadow: var(--ombre-lg);
+
+  font-size: var(--texte-sm);
+  pointer-events: auto;
+}
+
+.notification--succes { --notif-teinte: var(--statut-succes); }
+.notification--info   { --notif-teinte: var(--statut-info); }
+.notification--erreur { --notif-teinte: var(--statut-critique); }
+
+.notification__icone {
+  flex: none;
+  display: inline-flex;
+  line-height: var(--interligne);
+  color: var(--notif-teinte);
+  color: color-mix(in srgb, var(--notif-teinte) 72%, var(--texte));
+}
+
+.notification__contenu {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+}
+
+.notification__titre {
+  margin: 0;
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-forte);
+  line-height: var(--interligne-serre);
+}
+
+.notification__texte {
+  margin: 0;
+  color: var(--texte-doux);
+  line-height: var(--interligne);
+}
+
+.notification__fermer {
+  flex: none;
+  margin: calc(var(--e-2) * -1) calc(var(--e-2) * -1) 0 0;
+}
+
+@keyframes notification-apparition {
+  from {
+    opacity: 0;
+    transform: translateY(var(--e-3));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .notification {
+    animation: notification-apparition var(--duree) var(--courbe);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .notifications {
+    inset-inline: var(--e-4);
+    inset-block-end: var(--e-4);
+    inline-size: auto;
+  }
+}
+
+/* =========================================================================
+   10. États vides
+   Un état vide n'est jamais un écran blanc : titre, explication, action.
+   L'illustration est textuelle (glyphe fourni par le HTML, aria-hidden) —
+   aucune image, aucune requête réseau.
+   ========================================================================= */
+
+.etat-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e-4);
+
+  padding: var(--e-12) var(--e-6);
+  text-align: center;
+}
+
+.etat-vide__illustration {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  inline-size: calc(var(--e-16) + var(--e-4));
+  block-size: calc(var(--e-16) + var(--e-4));
+
+  background-color: var(--fond-enfonce);
+  color: var(--texte-faible);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-plein);
+
+  font-size: var(--texte-2xl);
+  line-height: 1;
+}
+
+.etat-vide__titre {
+  margin: 0;
+  font-size: var(--texte-lg);
+  font-weight: var(--graisse-forte);
+  color: var(--texte);
+}
+
+.etat-vide__texte {
+  margin: 0;
+  max-width: var(--largeur-texte);
+  color: var(--texte-doux);
+  font-size: var(--texte-sm);
+}
+
+.etat-vide__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-3);
+  padding-top: var(--e-2);
+}
+
+/* Variante compacte : dans un panneau latéral ou une colonne de facettes. */
+.etat-vide--compact {
+  padding: var(--e-6) var(--e-4);
+  gap: var(--e-3);
+}
+
+.etat-vide--compact .etat-vide__illustration {
+  inline-size: var(--e-12);
+  block-size: var(--e-12);
+  font-size: var(--texte-lg);
+}
+
+/* Variante erreur : JSON absent ou invalide (SPEC §3, contrat de données). */
+.etat-vide--erreur .etat-vide__illustration {
+  background-color: var(--statut-critique-fond);
+  border-color: var(--statut-critique);
+  color: var(--statut-critique);
+  color: color-mix(in srgb, var(--statut-critique) 72%, var(--texte));
+}
+
+/* Variante cadrée : l'état vide occupe la place d'une carte de résultat. */
+.etat-vide--encadre {
+  background-color: var(--fond-eleve);
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon-lg);
+}
+
+/* =========================================================================
+   11. Squelettes de chargement
+   Pulsation sobre, une seule animation d'opacité (aucun reflow, aucun
+   dégradé animé qui ferait travailler le GPU en continu).
+   ========================================================================= */
+
+.squelette {
+  display: block;
+  background-color: var(--fond-enfonce);
+  border-radius: var(--rayon-sm);
+  /* Le squelette peut contenir du texte de gabarit : il reste invisible et
+     non sélectionnable. Il porte aria-hidden="true" côté HTML. */
+  color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+.squelette--ligne  { block-size: var(--e-4); }
+.squelette--titre  { block-size: var(--e-6); inline-size: 60%; }
+.squelette--court  { inline-size: 40%; }
+.squelette--moyen  { inline-size: 75%; }
+
+.squelette--avatar {
+  inline-size: var(--e-10);
+  block-size: var(--e-10);
+  border-radius: var(--rayon-plein);
+}
+
+.squelette--bloc {
+  block-size: calc(var(--e-16) * 2);
+  border-radius: var(--rayon-lg);
+}
+
+/* Groupe de lignes : le gabarit d'une carte de résultat en chargement. */
+.squelette-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+}
+
+@keyframes squelette-pulsation {
+  from { opacity: 1; }
+  to   { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .squelette {
+    /* Durée dérivée d'un jeton : une pulsation lente, jamais nerveuse. */
+    animation: squelette-pulsation calc(var(--duree-lente) * 3)
+               var(--courbe) infinite alternate;
+  }
+}
+
+/* Sous mouvement réduit, le squelette reste une surface grise statique :
+   l'information « ça charge » passe par le texte d'état, pas par la
+   pulsation. */
+@media (prefers-reduced-motion: reduce) {
+  .squelette {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* =========================================================================
+   12. Surlignage des résultats de recherche
+   `mark` reçoit déjà un style dans base.css ; la classe le renforce pour
+   les résultats du moteur, où plusieurs termes peuvent se suivre.
+   ========================================================================= */
+
+.surlignage {
+  background-color: var(--surlignage);
+  /* Couleur imposée : le surlignage apparaît souvent dans un extrait en
+     --texte-doux, dont le contraste sur le jaune serait insuffisant. */
+  color: var(--texte);
+  border-radius: var(--rayon-sm);
+  padding-inline: var(--e-1);
+  font-weight: var(--graisse-moyenne);
+  /* Deux termes surlignés collés restent distinguables. */
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Surlignage du résultat actif lors du parcours au clavier (↑ / ↓). */
+.surlignage--actif {
+  background-color: var(--accent-doux);
+  color: var(--texte-accent);
+}
+
+/* Ligne de résultat survolée ou parcourue au clavier. L'état est porté par
+   aria-selected sur l'option : une seule source de vérité. */
+.resultat--actif,
+[role="option"][aria-selected="true"] {
+  background-color: var(--accent-doux);
+  border-color: var(--accent);
+}
+
+/* =========================================================================
+   13. Fil d'Ariane et séparateurs
+   ========================================================================= */
+
+.fil-ariane {
+  font-size: var(--texte-sm);
+}
+
+.fil-ariane__liste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-1) var(--e-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fil-ariane__element {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  color: var(--texte-faible);
+}
+
+/* Séparateur généré en CSS, avec texte alternatif vide : il est décoratif
+   et ne doit pas être énoncé par les lecteurs d'écran qui gèrent la
+   syntaxe `content: "…" / ""`. */
+.fil-ariane__element + .fil-ariane__element::before {
+  content: "/" / "";
+  color: var(--bordure-forte);
+  font-size: var(--texte-sm);
+}
+
+.fil-ariane__element a {
+  color: var(--texte-doux);
+  text-decoration: none;
+  border-radius: var(--rayon-sm);
+}
+
+.fil-ariane__element a:hover {
+  color: var(--texte-accent);
+  text-decoration: underline;
+}
+
+/* Élément courant : porté par aria-current, jamais par une classe. */
+.fil-ariane__element [aria-current="page"] {
+  color: var(--texte);
+  font-weight: var(--graisse-moyenne);
+  text-decoration: none;
+}
+
+/* --- Séparateurs --------------------------------------------------------- */
+
+/* Filet horizontal discret. Pour un séparateur porteur de sens, utiliser
+   <hr>, déjà stylé dans base.css. Celui-ci est purement visuel et doit
+   porter aria-hidden="true". */
+.separateur {
+  flex: none;
+  align-self: stretch;
+  background-color: var(--bordure-douce);
+  border: 0;
+  block-size: 1px;
+  inline-size: 100%;
+}
+
+/* Filet vertical, pour séparer deux groupes dans une barre d'outils. */
+.separateur--vertical {
+  block-size: auto;
+  inline-size: 1px;
+  min-block-size: var(--e-6);
+}
+
+/* Séparateur portant une étiquette (« ou », « 12 résultats »…). */
+.separateur-titre {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  color: var(--texte-faible);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  text-transform: uppercase;
+  /* Un quart de pas de la grille : l'interlettrage des capitales reste
+     discret, et la valeur reste dérivée d'un jeton. */
+  letter-spacing: calc(var(--e-1) / 4);
+}
+
+.separateur-titre::before,
+.separateur-titre::after {
+  content: "";
+  flex: 1 1 auto;
+  block-size: 1px;
+  background-color: var(--bordure-douce);
+}
+
+/* =========================================================================
+   14. Impression
+   base.css neutralise déjà le chrome du site et les ombres. On retire ici
+   les composants qui n'ont aucun sens sur papier, et on déplie les
+   panneaux d'onglets pour que le document imprimé soit complet.
+   ========================================================================= */
+
+@media print {
+  .notifications,
+  .modale-fond,
+  .recherche,
+  .facettes,
+  .squelette,
+  .squelette-groupe {
+    display: none !important;
+  }
+
+  .carte {
+    border: 1px solid var(--gris-400);
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Les deux onglets de la page Réunions doivent figurer sur le papier :
+     le panneau masqué à l'écran est déplié à l'impression. */
+  .onglets__liste {
+    display: none;
+  }
+
+  .onglets__panneau[hidden] {
+    display: block;
+  }
+
+  .surlignage {
+    background-color: var(--gris-200);
+    color: var(--gris-900);
+  }
+}
