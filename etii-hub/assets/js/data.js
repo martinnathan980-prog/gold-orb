@@ -631,7 +631,9 @@ export function avecEtat(conteneur, source, rendu, options) {
  */
 function resoudreConteneur(conteneur) {
   if (typeof conteneur === 'string') {
-    return document.querySelector(conteneur);
+    return typeof document !== 'undefined'
+      ? document.querySelector(conteneur)
+      : null;
   }
   return conteneur && conteneur.nodeType === 1 ? conteneur : null;
 }
