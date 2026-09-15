@@ -128,6 +128,39 @@ for (const p of pages) {
   verifier(`${p} : structure`, soucis.length ? soucis.join(' ; ') : null);
 }
 
+
+// --- 6b. Cohérence de la navigation --------------------------------------
+// Neuf pages doivent porter exactement le même en-tête. Une divergence ne
+// casse rien visiblement, mais déplace un lien d'une page à l'autre.
+console.log('\n== Navigation partagée ==');
+if (pages.length) {
+  const signature = (h) => {
+    const nav = h.match(/<nav class="site-nav"[\s\S]*?<\/nav>/);
+    if (!nav) return null;
+    return [...nav[0].matchAll(/<a[^>]+href="([^"]+)"[^>]*>([^<]*)<\/a>/g)]
+      .map(m => `${m[1]}|${m[2].trim()}`).join(' · ');
+  };
+  const refPage = pages.includes('index.html') ? 'index.html' : pages[0];
+  const ref = signature(lire(refPage));
+  verifier(`${refPage} : navigation présente`, ref ? null : '<nav class="site-nav"> introuvable');
+  if (ref) {
+    const divergentes = pages.filter(p => p !== refPage && signature(lire(p)) !== ref);
+    verifier(`les ${pages.length} pages partagent la même navigation`,
+      divergentes.length
+        ? `divergent de ${refPage} : ${divergentes.join(', ')}`
+        : null);
+    verifier('la navigation couvre le service et les trois pôles',
+      ['index.html','etiia.html','etiie.html','etiii.html','docsearch.html']
+        .every(c => ref.includes(c + '|'))
+        ? null : `liens attendus manquants dans : ${ref}`);
+  }
+  // Chaque page marque exactement une entrée courante.
+  for (const p of pages) {
+    const n = (lire(p).match(/aria-current="page"/g) || []).length;
+    if (n !== 1) verifier(`${p} : une seule entrée courante`, `${n} aria-current="page"`);
+  }
+}
+
 // --- 7. Références de fichiers ------------------------------------------
 console.log('\n== Références ==');
 for (const p of pages) {
