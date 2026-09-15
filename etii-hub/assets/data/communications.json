@@ -1,0 +1,154 @@
+{
+  "alertes": [
+    "Maintenance planifiée de la plateforme documentaire mercredi soir.",
+    "Rappel : revue de configuration trimestrielle la semaine prochaine."
+  ],
+  "annonces": [
+    {
+      "id": "c01",
+      "date": "2026-09-12",
+      "statut": "succes",
+      "categorie": "H160",
+      "titre": "Validation du jalon de définition",
+      "resume": "L'architecture électrique du lot 3 est validée.",
+      "corps": [
+        {
+          "type": "titre",
+          "texte": "Périmètre de la revue"
+        },
+        {
+          "type": "puce",
+          "texte": "Revue documentaire complète des schémas du lot 3."
+        },
+        {
+          "type": "puce",
+          "texte": "Vérification croisée avec la maquette numérique."
+        },
+        {
+          "type": "vide",
+          "texte": ""
+        },
+        {
+          "type": "valide",
+          "texte": "Conclusion : passage en fabrication autorisé."
+        }
+      ]
+    },
+    {
+      "id": "c02",
+      "date": "2026-09-08",
+      "statut": "urgent",
+      "categorie": "Outils",
+      "titre": "Migration de la plateforme documentaire",
+      "resume": "Interruption de service prévue mercredi de 19h45 à 23h00.",
+      "corps": [
+        {
+          "type": "titre",
+          "texte": "Ce qui change"
+        },
+        {
+          "type": "puce",
+          "texte": "Nouvelle arborescence des espaces de travail."
+        },
+        {
+          "type": "puce",
+          "texte": "Les liens existants sont redirigés automatiquement."
+        },
+        {
+          "type": "vide",
+          "texte": ""
+        },
+        {
+          "type": "alerte",
+          "texte": "Sauvegardez vos travaux en cours avant 19h30."
+        },
+        {
+          "type": "valide",
+          "texte": "Aucune action requise après la bascule."
+        }
+      ]
+    },
+    {
+      "id": "c03",
+      "date": "2026-09-02",
+      "statut": "info",
+      "categorie": "H175",
+      "titre": "Nouvelle procédure de revue par les pairs",
+      "resume": "Deux relecteurs sont désormais requis avant diffusion.",
+      "corps": [
+        {
+          "type": "titre",
+          "texte": "Principe"
+        },
+        {
+          "type": "puce",
+          "texte": "Tout livrable passe par deux relectures indépendantes."
+        },
+        {
+          "type": "puce",
+          "texte": "Les relecteurs sont désignés par le lead technique."
+        },
+        {
+          "type": "vide",
+          "texte": ""
+        },
+        {
+          "type": "titre",
+          "texte": "Entrée en vigueur"
+        },
+        {
+          "type": "puce",
+          "texte": "Applicable aux livrables émis à partir du mois prochain."
+        }
+      ]
+    },
+    {
+      "id": "c04",
+      "date": "2026-08-26",
+      "statut": "info",
+      "categorie": "Transverse",
+      "titre": "Ouverture du portail de recherche documentaire",
+      "resume": "Un point d'entrée unique pour retrouver les documents du service.",
+      "corps": [
+        {
+          "type": "titre",
+          "texte": "Ce que vous y trouvez"
+        },
+        {
+          "type": "puce",
+          "texte": "Outils, documents techniques, processus, normes et formations."
+        },
+        {
+          "type": "puce",
+          "texte": "Recherche tolérante aux fautes de frappe et filtres combinables."
+        },
+        {
+          "type": "vide",
+          "texte": ""
+        },
+        {
+          "type": "valide",
+          "texte": "Accessible depuis la page d'accueil du hub."
+        }
+      ]
+    },
+    {
+      "id": "c05",
+      "date": "2026-08-19",
+      "statut": "succes",
+      "categorie": "H160",
+      "titre": "Clôture de la campagne d'essais",
+      "resume": "L'ensemble des points ouverts est soldé.",
+      "corps": [
+        {
+          "type": "puce",
+          "texte": "Campagne menée sur six semaines."
+        },
+        {
+          "type": "valide",
+          "texte": "Tous les écarts relevés ont été traités."
+        }
+      ]
+    }
+  ]
+}

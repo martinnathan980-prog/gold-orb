@@ -1,0 +1,119 @@
+{
+  "comptesRendus": [
+    {
+      "id": "cr01",
+      "titre": "Revue technique du lot 3",
+      "date": "2026-09-10",
+      "lieu": "Salle A",
+      "synthese": "Passage en revue des schémas du lot 3 et des écarts ouverts.",
+      "sujets": [
+        {
+          "titre": "Bilan de masse",
+          "notes": "L'écart constaté reste dans la tolérance annoncée. Pas d'action corrective nécessaire."
+        },
+        {
+          "titre": "Écarts de définition",
+          "notes": "Trois écarts mineurs relevés sur le cheminement. Deux sont déjà corrigés."
+        }
+      ],
+      "actions": [
+        "Mettre à jour le schéma de cheminement",
+        "Diffuser la note de synthèse aux relecteurs"
+      ],
+      "decisions": [
+        "Passage en fabrication validé pour le lot 3",
+        "Le troisième écart est traité dans le lot 4"
+      ]
+    },
+    {
+      "id": "cr02",
+      "titre": "Point d'avancement mensuel",
+      "date": "2026-09-03",
+      "lieu": "Visioconférence",
+      "synthese": "Avancement des squads et charge prévisionnelle du trimestre.",
+      "sujets": [
+        {
+          "titre": "Charge prévisionnelle",
+          "notes": "La charge du trimestre est couverte. Un renfort est envisagé sur la squad 3."
+        },
+        {
+          "titre": "Outillage",
+          "notes": "Le portail de recherche documentaire est ouvert à tout le service."
+        }
+      ],
+      "actions": [
+        "Consolider le plan de charge du trimestre suivant",
+        "Recenser les besoins de formation"
+      ],
+      "decisions": [
+        "Renfort validé sur la squad 3 à compter du mois prochain"
+      ]
+    },
+    {
+      "id": "cr03",
+      "titre": "Retour d'expérience campagne d'essais",
+      "date": "2026-08-21",
+      "lieu": "Salle B",
+      "synthese": "Bilan de la campagne et enseignements pour la suivante.",
+      "sujets": [
+        {
+          "titre": "Déroulé",
+          "notes": "Six semaines d'essais, aucun incident bloquant."
+        },
+        {
+          "titre": "Enseignements",
+          "notes": "La préparation documentaire en amont a fait gagner une semaine."
+        }
+      ],
+      "actions": [
+        "Formaliser la trame de préparation documentaire"
+      ],
+      "decisions": [
+        "La trame devient le standard pour les prochaines campagnes"
+      ]
+    }
+  ],
+  "prochainsPoints": [
+    {
+      "id": "pp01",
+      "titre": "Revue de configuration trimestrielle",
+      "date": "2026-09-24",
+      "lieu": "Salle A",
+      "objectif": "Vérifier la cohérence de la configuration documentaire du trimestre.",
+      "sujets": [
+        {
+          "titre": "État de la configuration",
+          "notes": "Revue des livrables émis depuis juillet."
+        },
+        {
+          "titre": "Points ouverts",
+          "notes": "Passage en revue des écarts non soldés."
+        }
+      ],
+      "actions": [
+        "Préparer l'export de la configuration",
+        "Lister les écarts non soldés avant la veille"
+      ]
+    },
+    {
+      "id": "pp02",
+      "titre": "Atelier harmonisation des pratiques",
+      "date": "2026-10-02",
+      "lieu": "Salle C",
+      "objectif": "Aligner les pratiques de définition entre les quatre squads.",
+      "sujets": [
+        {
+          "titre": "Pratiques actuelles",
+          "notes": "Chaque squad présente sa méthode en dix minutes."
+        },
+        {
+          "titre": "Convergence",
+          "notes": "Identifier les écarts de pratique et proposer un socle commun."
+        }
+      ],
+      "actions": [
+        "Chaque lead prépare une présentation de dix minutes"
+      ]
+    }
+  ]
+}

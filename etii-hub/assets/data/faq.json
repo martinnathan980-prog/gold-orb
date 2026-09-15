@@ -1,0 +1,100 @@
+{
+  "questions": [
+    {
+      "id": "f01",
+      "question": "Comment fonctionne le phénomène de couple galvanique ?",
+      "categorie": "Technique",
+      "reponse": "Un couple galvanique apparaît lorsque deux métaux de potentiels électrochimiques différents sont mis en contact en présence d'un électrolyte. Le métal le moins noble se corrode préférentiellement. La parade consiste à isoler les deux métaux ou à choisir des couples compatibles.",
+      "motsCles": [
+        "corrosion",
+        "métaux",
+        "galvanique",
+        "potentiel"
+      ]
+    },
+    {
+      "id": "f02",
+      "question": "Où trouver la dernière version d'un document ?",
+      "categorie": "Outils",
+      "reponse": "Utilisez la recherche documentaire du hub. Chaque fiche affiche sa date de mise à jour. En cas de doute, le porteur indiqué sur la fiche fait autorité.",
+      "motsCles": [
+        "version",
+        "document",
+        "recherche",
+        "porteur"
+      ]
+    },
+    {
+      "id": "f03",
+      "question": "Qui valide un livrable avant diffusion ?",
+      "categorie": "Processus",
+      "reponse": "Depuis la nouvelle procédure, deux relecteurs indépendants sont requis. Ils sont désignés par le lead technique de la squad émettrice.",
+      "motsCles": [
+        "validation",
+        "relecture",
+        "livrable",
+        "diffusion"
+      ]
+    },
+    {
+      "id": "f04",
+      "question": "Comment demander l'ajout d'un document au portail ?",
+      "categorie": "Outils",
+      "reponse": "Depuis la page de recherche documentaire, utilisez le bouton « Proposer un document ». La proposition est enregistrée et revue par l'équipe qui administre le portail.",
+      "motsCles": [
+        "ajout",
+        "proposition",
+        "portail",
+        "document"
+      ]
+    },
+    {
+      "id": "f05",
+      "question": "Quelle est la différence entre ETIIA, ETIIE et ETIII ?",
+      "categorie": "Organisation",
+      "reponse": "ETIIA définit la logique et les règles d'architecture. ETIIE conçoit les schémas électriques et la communication entre systèmes. ETIII assure l'intégration physique et le routage dans la maquette numérique.",
+      "motsCles": [
+        "organisation",
+        "équipes",
+        "périmètre",
+        "architecture"
+      ]
+    },
+    {
+      "id": "f06",
+      "question": "Comment est calculée la tolérance de cheminement ?",
+      "categorie": "Technique",
+      "reponse": "La tolérance cumule les incertitudes de fabrication, de montage et de déformation en service. Elle est définie par la norme de routage applicable au programme concerné.",
+      "motsCles": [
+        "tolérance",
+        "cheminement",
+        "routage",
+        "norme"
+      ]
+    },
+    {
+      "id": "f07",
+      "question": "À quelle fréquence a lieu la revue de configuration ?",
+      "categorie": "Processus",
+      "reponse": "La revue de configuration est trimestrielle. Elle porte sur l'ensemble des livrables émis depuis la revue précédente.",
+      "motsCles": [
+        "revue",
+        "configuration",
+        "trimestre",
+        "fréquence"
+      ]
+    },
+    {
+      "id": "f08",
+      "question": "Comment signaler un écart de définition ?",
+      "categorie": "Processus",
+      "reponse": "Un écart se signale au lead technique de la squad concernée, qui l'enregistre et décide de son traitement : correction immédiate ou report sur un lot ultérieur.",
+      "motsCles": [
+        "écart",
+        "signalement",
+        "définition",
+        "correction"
+      ]
+    }
+  ]
+}

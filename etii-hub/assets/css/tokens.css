@@ -1,0 +1,190 @@
+/* =========================================================================
+   ETII Hub — Jetons de conception
+   Source unique de vérité. Aucune valeur brute (couleur, espacement, durée)
+   ne doit apparaître ailleurs que dans ce fichier.
+   ========================================================================= */
+
+:root {
+  color-scheme: light dark;
+
+  /* --- Marque ---------------------------------------------------------- */
+  --marque-bleu:        #00205b;
+  --marque-bleu-fonce:  #001233;
+  --marque-cyan:        #00a0d2;
+  --marque-ambre:       #ffb100;
+
+  /* --- Statuts --------------------------------------------------------- */
+  --statut-info:      #0284c7;
+  --statut-succes:    #16a34a;
+  --statut-alerte:    #ea580c;
+  --statut-critique:  #dc2626;
+
+  --statut-info-fond:     #e0f2fe;
+  --statut-succes-fond:   #dcfce7;
+  --statut-alerte-fond:   #ffedd5;
+  --statut-critique-fond: #fee2e2;
+
+  /* --- Neutres --------------------------------------------------------- */
+  --gris-50:  #f8fafc;
+  --gris-100: #f1f5f9;
+  --gris-200: #e2e8f0;
+  --gris-300: #cbd5e1;
+  --gris-400: #94a3b8;
+  --gris-500: #64748b;
+  --gris-600: #475569;
+  --gris-700: #334155;
+  --gris-800: #1e293b;
+  --gris-900: #0f172a;
+
+  /* --- Rôles sémantiques (thème clair) --------------------------------- */
+  --fond:            var(--gris-100);
+  --fond-eleve:      #ffffff;
+  --fond-enfonce:    var(--gris-200);
+  --fond-inverse:    var(--marque-bleu-fonce);
+
+  --texte:           var(--gris-900);
+  --texte-doux:      var(--gris-600);
+  --texte-faible:    var(--gris-500);
+  --texte-inverse:   #ffffff;
+  --texte-accent:    var(--marque-bleu);
+
+  --bordure:         var(--gris-300);
+  --bordure-douce:   var(--gris-200);
+  --bordure-forte:   var(--gris-400);
+
+  --accent:          var(--marque-bleu);
+  --accent-contenu:  #ffffff;
+  --accent-doux:     var(--statut-info-fond);
+  --surlignage:      #fde68a;
+
+  /* --- Typographie ----------------------------------------------------- */
+  --police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+            Arial, sans-serif;
+  --police-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+                 monospace;
+
+  --texte-xs:  0.75rem;
+  --texte-sm:  0.875rem;
+  --texte-md:  1rem;
+  --texte-lg:  clamp(1.0625rem, 0.4vw + 0.97rem, 1.1875rem);
+  --texte-xl:  clamp(1.25rem,  0.8vw + 1.1rem,  1.5rem);
+  --texte-2xl: clamp(1.5rem,   1.4vw + 1.2rem,  2rem);
+  --texte-3xl: clamp(1.875rem, 2.4vw + 1.35rem, 2.75rem);
+
+  --graisse-normale: 400;
+  --graisse-moyenne: 600;
+  --graisse-forte:   700;
+  --graisse-extra:   800;
+
+  --interligne-serre: 1.2;
+  --interligne:       1.6;
+
+  /* --- Espacement (échelle de 4 px) ------------------------------------ */
+  --e-1:  0.25rem;
+  --e-2:  0.5rem;
+  --e-3:  0.75rem;
+  --e-4:  1rem;
+  --e-5:  1.25rem;
+  --e-6:  1.5rem;
+  --e-8:  2rem;
+  --e-10: 2.5rem;
+  --e-12: 3rem;
+  --e-16: 4rem;
+
+  /* --- Formes ---------------------------------------------------------- */
+  --rayon-sm:   6px;
+  --rayon-md:   10px;
+  --rayon-lg:   16px;
+  --rayon-xl:   24px;
+  --rayon-plein: 999px;
+
+  /* --- Profondeur ------------------------------------------------------ */
+  --ombre-sm: 0 1px 2px rgb(15 23 42 / 0.06),
+              0 1px 3px rgb(15 23 42 / 0.08);
+  --ombre-md: 0 2px 4px rgb(15 23 42 / 0.05),
+              0 4px 12px rgb(15 23 42 / 0.09);
+  --ombre-lg: 0 4px 8px rgb(15 23 42 / 0.05),
+              0 12px 28px rgb(15 23 42 / 0.12);
+
+  /* --- Mouvement ------------------------------------------------------- */
+  --duree-rapide: 120ms;
+  --duree:        220ms;
+  --duree-lente:  400ms;
+  --courbe: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* --- Mise en page ---------------------------------------------------- */
+  --largeur-contenu: 76rem;
+  --largeur-texte:   65ch;
+  --cible-tactile:   44px;
+
+  /* --- Anneau de focus ------------------------------------------------- */
+  --focus-couleur: var(--marque-cyan);
+  --focus-epaisseur: 3px;
+  --focus-decalage: 2px;
+}
+
+/* --- Thème sombre : automatique, sauf choix manuel explicite ----------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="clair"]) {
+    --fond:         var(--gris-900);
+    --fond-eleve:   var(--gris-800);
+    --fond-enfonce: #0a1020;
+    --fond-inverse: #000814;
+
+    --texte:         var(--gris-100);
+    --texte-doux:    var(--gris-400);
+    --texte-faible:  var(--gris-500);
+    --texte-inverse: var(--gris-900);
+    --texte-accent:  var(--marque-cyan);
+
+    --bordure:       #2b3a52;
+    --bordure-douce: #223048;
+    --bordure-forte: var(--gris-600);
+
+    --accent:         var(--marque-cyan);
+    --accent-contenu: var(--gris-900);
+    --accent-doux:    #0c2d3f;
+    --surlignage:     #7c5c00;
+
+    --statut-info-fond:     #0c2d3f;
+    --statut-succes-fond:   #0d2a1a;
+    --statut-alerte-fond:   #3a1f0b;
+    --statut-critique-fond: #3b1113;
+
+    --ombre-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --ombre-md: 0 4px 12px rgb(0 0 0 / 0.45);
+    --ombre-lg: 0 12px 28px rgb(0 0 0 / 0.55);
+  }
+}
+
+/* --- Thème sombre forcé manuellement ---------------------------------- */
+:root[data-theme="sombre"] {
+  --fond:         var(--gris-900);
+  --fond-eleve:   var(--gris-800);
+  --fond-enfonce: #0a1020;
+  --fond-inverse: #000814;
+
+  --texte:         var(--gris-100);
+  --texte-doux:    var(--gris-400);
+  --texte-faible:  var(--gris-500);
+  --texte-inverse: var(--gris-900);
+  --texte-accent:  var(--marque-cyan);
+
+  --bordure:       #2b3a52;
+  --bordure-douce: #223048;
+  --bordure-forte: var(--gris-600);
+
+  --accent:         var(--marque-cyan);
+  --accent-contenu: var(--gris-900);
+  --accent-doux:    #0c2d3f;
+  --surlignage:     #7c5c00;
+
+  --statut-info-fond:     #0c2d3f;
+  --statut-succes-fond:   #0d2a1a;
+  --statut-alerte-fond:   #3a1f0b;
+  --statut-critique-fond: #3b1113;
+
+  --ombre-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --ombre-md: 0 4px 12px rgb(0 0 0 / 0.45);
+  --ombre-lg: 0 12px 28px rgb(0 0 0 / 0.55);
+}

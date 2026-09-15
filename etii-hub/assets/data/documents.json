@@ -1,0 +1,1591 @@
+{
+  "facettes": {
+    "types": [
+      "Outil",
+      "Technique",
+      "Processus",
+      "Norme",
+      "Formation"
+    ],
+    "metiers": [
+      "Architecture",
+      "Schématique",
+      "Harnais",
+      "Intégration 3D",
+      "Essais",
+      "Qualité",
+      "Configuration",
+      "Méthodes"
+    ],
+    "perimetres": [
+      "H160",
+      "H175",
+      "Transverse"
+    ]
+  },
+  "documents": [
+    {
+      "id": "d001",
+      "titre": "Guide de routage des harnais",
+      "reference": "ETII-TEC-001",
+      "type": "Technique",
+      "metier": [
+        "Harnais",
+        "Intégration 3D"
+      ],
+      "porteur": "Personne 08",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/technique/001",
+      "description": "Règles de cheminement, rayons de courbure minimaux et distances de séparation entre faisceaux.",
+      "motsCles": [
+        "routage",
+        "cheminement",
+        "faisceau",
+        "courbure",
+        "séparation"
+      ],
+      "maj": "2026-02-02"
+    },
+    {
+      "id": "d002",
+      "titre": "Catalogue des connecteurs standard",
+      "reference": "ETII-OUT-002",
+      "type": "Outil",
+      "metier": [
+        "Harnais",
+        "Schématique"
+      ],
+      "porteur": "Personne 15",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/002",
+      "description": "Référentiel des connecteurs qualifiés avec leurs caractéristiques et conditions d'emploi.",
+      "motsCles": [
+        "connecteur",
+        "catalogue",
+        "référentiel",
+        "qualification"
+      ],
+      "maj": "2026-03-03"
+    },
+    {
+      "id": "d003",
+      "titre": "Procédure de revue de configuration",
+      "reference": "ETII-PRO-003",
+      "type": "Processus",
+      "metier": [
+        "Configuration",
+        "Qualité"
+      ],
+      "porteur": "Personne 22",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/processus/003",
+      "description": "Déroulé de la revue trimestrielle, rôles, livrables attendus et critères de sortie.",
+      "motsCles": [
+        "revue",
+        "configuration",
+        "trimestre",
+        "critères"
+      ],
+      "maj": "2026-04-04"
+    },
+    {
+      "id": "d004",
+      "titre": "Norme de séparation des circuits",
+      "reference": "ETII-NOR-004",
+      "type": "Norme",
+      "metier": [
+        "Architecture",
+        "Harnais"
+      ],
+      "porteur": "Personne 29",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/norme/004",
+      "description": "Distances minimales entre circuits selon leur criticité et leur nature.",
+      "motsCles": [
+        "séparation",
+        "circuit",
+        "criticité",
+        "distance"
+      ],
+      "maj": "2026-05-05"
+    },
+    {
+      "id": "d005",
+      "titre": "Formation à la maquette numérique",
+      "reference": "ETII-FOR-005",
+      "type": "Formation",
+      "metier": [
+        "Intégration 3D"
+      ],
+      "porteur": "Personne 36",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/formation/005",
+      "description": "Parcours d'initiation à la navigation et à l'annotation dans la maquette numérique.",
+      "motsCles": [
+        "maquette",
+        "numérique",
+        "formation",
+        "initiation"
+      ],
+      "maj": "2026-06-06"
+    },
+    {
+      "id": "d006",
+      "titre": "Bilan de masse électrique",
+      "reference": "ETII-TEC-006",
+      "type": "Technique",
+      "metier": [
+        "Architecture",
+        "Essais"
+      ],
+      "porteur": "Personne 43",
+      "perimetre": "H160",
+      "lien": "https://example.invalid/etii/technique/006",
+      "description": "Méthode de calcul et de suivi du bilan de masse du système électrique.",
+      "motsCles": [
+        "masse",
+        "bilan",
+        "calcul",
+        "suivi"
+      ],
+      "maj": "2026-07-07"
+    },
+    {
+      "id": "d007",
+      "titre": "Outil de génération de schémas",
+      "reference": "ETII-OUT-007",
+      "type": "Outil",
+      "metier": [
+        "Schématique"
+      ],
+      "porteur": "Personne 50",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/007",
+      "description": "Générateur de schémas à partir du référentiel de définition.",
+      "motsCles": [
+        "schéma",
+        "génération",
+        "automatisation"
+      ],
+      "maj": "2026-08-08"
+    },
+    {
+      "id": "d008",
+      "titre": "Règles de nommage des repères",
+      "reference": "ETII-NOR-008",
+      "type": "Norme",
+      "metier": [
+        "Schématique",
+        "Configuration"
+      ],
+      "porteur": "Personne 57",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/norme/008",
+      "description": "Convention de nommage des repères de fils, connecteurs et équipements.",
+      "motsCles": [
+        "nommage",
+        "repère",
+        "convention",
+        "identification"
+      ],
+      "maj": "2026-09-09"
+    },
+    {
+      "id": "d009",
+      "titre": "Procédure d'essai de continuité",
+      "reference": "ETII-PRO-009",
+      "type": "Processus",
+      "metier": [
+        "Essais"
+      ],
+      "porteur": "Personne 64",
+      "perimetre": "H160",
+      "lien": "https://example.invalid/etii/processus/009",
+      "description": "Protocole de vérification de la continuité électrique après montage.",
+      "motsCles": [
+        "essai",
+        "continuité",
+        "protocole",
+        "vérification"
+      ],
+      "maj": "2026-01-10"
+    },
+    {
+      "id": "d010",
+      "titre": "Traitement de la corrosion galvanique",
+      "reference": "ETII-TEC-010",
+      "type": "Technique",
+      "metier": [
+        "Harnais",
+        "Qualité"
+      ],
+      "porteur": "Personne 06",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/technique/010",
+      "description": "Identification des couples galvaniques à risque et moyens de protection.",
+      "motsCles": [
+        "corrosion",
+        "galvanique",
+        "protection",
+        "métaux"
+      ],
+      "maj": "2026-02-11"
+    },
+    {
+      "id": "d011",
+      "titre": "Checklist de revue par les pairs",
+      "reference": "ETII-OUT-011",
+      "type": "Outil",
+      "metier": [
+        "Qualité"
+      ],
+      "porteur": "Personne 13",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/011",
+      "description": "Points de contrôle à dérouler avant diffusion d'un livrable.",
+      "motsCles": [
+        "checklist",
+        "revue",
+        "pairs",
+        "contrôle"
+      ],
+      "maj": "2026-03-12"
+    },
+    {
+      "id": "d012",
+      "titre": "Architecture de distribution électrique",
+      "reference": "ETII-TEC-012",
+      "type": "Technique",
+      "metier": [
+        "Architecture"
+      ],
+      "porteur": "Personne 20",
+      "perimetre": "H175",
+      "lien": "https://example.invalid/etii/technique/012",
+      "description": "Principes de distribution, redondance et ségrégation des sources.",
+      "motsCles": [
+        "distribution",
+        "redondance",
+        "ségrégation",
+        "source"
+      ],
+      "maj": "2026-04-13"
+    },
+    {
+      "id": "d013",
+      "titre": "Formation à la lecture de schémas",
+      "reference": "ETII-FOR-013",
+      "type": "Formation",
+      "metier": [
+        "Schématique"
+      ],
+      "porteur": "Personne 27",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/formation/013",
+      "description": "Bases de la symbolique et de la lecture des schémas électriques.",
+      "motsCles": [
+        "schéma",
+        "lecture",
+        "symbolique",
+        "formation"
+      ],
+      "maj": "2026-05-14"
+    },
+    {
+      "id": "d014",
+      "titre": "Gestion des écarts de définition",
+      "reference": "ETII-PRO-014",
+      "type": "Processus",
+      "metier": [
+        "Configuration",
+        "Qualité"
+      ],
+      "porteur": "Personne 34",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/processus/014",
+      "description": "Circuit de signalement, d'analyse et de traitement des écarts.",
+      "motsCles": [
+        "écart",
+        "signalement",
+        "analyse",
+        "traitement"
+      ],
+      "maj": "2026-06-15"
+    },
+    {
+      "id": "d015",
+      "titre": "Norme de protection contre la foudre",
+      "reference": "ETII-NOR-015",
+      "type": "Norme",
+      "metier": [
+        "Architecture",
+        "Essais"
+      ],
+      "porteur": "Personne 41",
+      "perimetre": "H175",
+      "lien": "https://example.invalid/etii/norme/015",
+      "description": "Exigences de protection et méthodes de vérification associées.",
+      "motsCles": [
+        "foudre",
+        "protection",
+        "exigence",
+        "vérification"
+      ],
+      "maj": "2026-07-16"
+    },
+    {
+      "id": "d016",
+      "titre": "Outil de calcul de chute de tension",
+      "reference": "ETII-OUT-016",
+      "type": "Outil",
+      "metier": [
+        "Architecture",
+        "Schématique"
+      ],
+      "porteur": "Personne 48",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/016",
+      "description": "Calculateur de chute de tension en fonction de la section et de la longueur.",
+      "motsCles": [
+        "tension",
+        "chute",
+        "section",
+        "calcul"
+      ],
+      "maj": "2026-08-17"
+    },
+    {
+      "id": "d017",
+      "titre": "Méthode de reprise de masse",
+      "reference": "ETII-TEC-017",
+      "type": "Technique",
+      "metier": [
+        "Harnais",
+        "Intégration 3D"
+      ],
+      "porteur": "Personne 55",
+      "perimetre": "H160",
+      "lien": "https://example.invalid/etii/technique/017",
+      "description": "Choix et implantation des points de reprise de masse.",
+      "motsCles": [
+        "masse",
+        "reprise",
+        "implantation",
+        "point"
+      ],
+      "maj": "2026-09-18"
+    },
+    {
+      "id": "d018",
+      "titre": "Procédure de qualification fournisseur",
+      "reference": "ETII-PRO-018",
+      "type": "Processus",
+      "metier": [
+        "Qualité",
+        "Méthodes"
+      ],
+      "porteur": "Personne 62",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/processus/018",
+      "description": "Étapes de qualification d'un nouveau fournisseur de composants.",
+      "motsCles": [
+        "fournisseur",
+        "qualification",
+        "composant",
+        "audit"
+      ],
+      "maj": "2026-01-19"
+    },
+    {
+      "id": "d019",
+      "titre": "Formation à la sertissage",
+      "reference": "ETII-FOR-019",
+      "type": "Formation",
+      "metier": [
+        "Harnais"
+      ],
+      "porteur": "Personne 04",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/formation/019",
+      "description": "Gestes, outillage et contrôle qualité du sertissage.",
+      "motsCles": [
+        "sertissage",
+        "outillage",
+        "contrôle",
+        "geste"
+      ],
+      "maj": "2026-02-20"
+    },
+    {
+      "id": "d020",
+      "titre": "Référentiel des sections de câble",
+      "reference": "ETII-NOR-020",
+      "type": "Norme",
+      "metier": [
+        "Harnais",
+        "Architecture"
+      ],
+      "porteur": "Personne 11",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/norme/020",
+      "description": "Sections normalisées et courants admissibles associés.",
+      "motsCles": [
+        "câble",
+        "section",
+        "courant",
+        "norme"
+      ],
+      "maj": "2026-03-21"
+    },
+    {
+      "id": "d021",
+      "titre": "Plan de validation système",
+      "reference": "ETII-PRO-021",
+      "type": "Processus",
+      "metier": [
+        "Essais",
+        "Architecture"
+      ],
+      "porteur": "Personne 18",
+      "perimetre": "H160",
+      "lien": "https://example.invalid/etii/processus/021",
+      "description": "Structure du plan de validation et couverture des exigences.",
+      "motsCles": [
+        "validation",
+        "plan",
+        "exigence",
+        "couverture"
+      ],
+      "maj": "2026-04-22"
+    },
+    {
+      "id": "d022",
+      "titre": "Outil de suivi des modifications",
+      "reference": "ETII-OUT-022",
+      "type": "Outil",
+      "metier": [
+        "Configuration"
+      ],
+      "porteur": "Personne 25",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/022",
+      "description": "Journal des modifications de définition avec traçabilité complète.",
+      "motsCles": [
+        "modification",
+        "suivi",
+        "traçabilité",
+        "journal"
+      ],
+      "maj": "2026-05-23"
+    },
+    {
+      "id": "d023",
+      "titre": "Guide d'implantation des équipements",
+      "reference": "ETII-TEC-023",
+      "type": "Technique",
+      "metier": [
+        "Intégration 3D"
+      ],
+      "porteur": "Personne 32",
+      "perimetre": "H175",
+      "lien": "https://example.invalid/etii/technique/023",
+      "description": "Contraintes d'accessibilité, de maintenance et de dégagement.",
+      "motsCles": [
+        "implantation",
+        "accessibilité",
+        "maintenance",
+        "dégagement"
+      ],
+      "maj": "2026-06-24"
+    },
+    {
+      "id": "d024",
+      "titre": "Méthode d'analyse de criticité",
+      "reference": "ETII-TEC-024",
+      "type": "Technique",
+      "metier": [
+        "Architecture",
+        "Qualité"
+      ],
+      "porteur": "Personne 39",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/technique/024",
+      "description": "Classification des fonctions selon leur criticité opérationnelle.",
+      "motsCles": [
+        "criticité",
+        "analyse",
+        "classification",
+        "fonction"
+      ],
+      "maj": "2026-07-25"
+    },
+    {
+      "id": "d025",
+      "titre": "Formation aux outils de configuration",
+      "reference": "ETII-FOR-025",
+      "type": "Formation",
+      "metier": [
+        "Configuration",
+        "Méthodes"
+      ],
+      "porteur": "Personne 46",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/formation/025",
+      "description": "Prise en main des outils de gestion de configuration du service.",
+      "motsCles": [
+        "configuration",
+        "outil",
+        "formation",
+        "gestion"
+      ],
+      "maj": "2026-08-26"
+    },
+    {
+      "id": "d026",
+      "titre": "Procédure de diffusion documentaire",
+      "reference": "ETII-PRO-026",
+      "type": "Processus",
+      "metier": [
+        "Qualité",
+        "Configuration"
+      ],
+      "porteur": "Personne 53",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/processus/026",
+      "description": "Circuit de validation et de diffusion des documents du service.",
+      "motsCles": [
+        "diffusion",
+        "document",
+        "validation",
+        "circuit"
+      ],
+      "maj": "2026-09-27"
+    },
+    {
+      "id": "d027",
+      "titre": "Norme de marquage des câbles",
+      "reference": "ETII-NOR-027",
+      "type": "Norme",
+      "metier": [
+        "Harnais"
+      ],
+      "porteur": "Personne 60",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/norme/027",
+      "description": "Règles de marquage, durabilité et lisibilité des repères.",
+      "motsCles": [
+        "marquage",
+        "câble",
+        "repère",
+        "durabilité"
+      ],
+      "maj": "2026-01-01"
+    },
+    {
+      "id": "d028",
+      "titre": "Outil d'extraction de nomenclature",
+      "reference": "ETII-OUT-028",
+      "type": "Outil",
+      "metier": [
+        "Méthodes",
+        "Configuration"
+      ],
+      "porteur": "Personne 02",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/028",
+      "description": "Extraction automatique de la nomenclature depuis la définition.",
+      "motsCles": [
+        "nomenclature",
+        "extraction",
+        "automatisation"
+      ],
+      "maj": "2026-02-02"
+    },
+    {
+      "id": "d029",
+      "titre": "Guide de tolérancement des cheminements",
+      "reference": "ETII-TEC-029",
+      "type": "Technique",
+      "metier": [
+        "Intégration 3D",
+        "Harnais"
+      ],
+      "porteur": "Personne 09",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/technique/029",
+      "description": "Calcul et application des tolérances de cheminement.",
+      "motsCles": [
+        "tolérance",
+        "cheminement",
+        "calcul",
+        "application"
+      ],
+      "maj": "2026-03-03"
+    },
+    {
+      "id": "d030",
+      "titre": "Plan de charge prévisionnel",
+      "reference": "ETII-OUT-030",
+      "type": "Outil",
+      "metier": [
+        "Méthodes"
+      ],
+      "porteur": "Personne 16",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/030",
+      "description": "Modèle de consolidation de la charge par squad et par trimestre.",
+      "motsCles": [
+        "charge",
+        "prévision",
+        "squad",
+        "trimestre"
+      ],
+      "maj": "2026-04-04"
+    },
+    {
+      "id": "d031",
+      "titre": "Guide de routage des harnais — indice B",
+      "reference": "ETII-TEC-031",
+      "type": "Technique",
+      "metier": [
+        "Harnais",
+        "Intégration 3D"
+      ],
+      "porteur": "Personne 17",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/technique/031",
+      "description": "Règles de cheminement, rayons de courbure minimaux et distances de séparation entre faisceaux. Révision B.",
+      "motsCles": [
+        "routage",
+        "cheminement",
+        "faisceau",
+        "courbure",
+        "séparation",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-05-05"
+    },
+    {
+      "id": "d032",
+      "titre": "Guide de routage des harnais — indice C",
+      "reference": "ETII-TEC-032",
+      "type": "Technique",
+      "metier": [
+        "Harnais",
+        "Intégration 3D"
+      ],
+      "porteur": "Personne 28",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/technique/032",
+      "description": "Règles de cheminement, rayons de courbure minimaux et distances de séparation entre faisceaux. Révision C.",
+      "motsCles": [
+        "routage",
+        "cheminement",
+        "faisceau",
+        "courbure",
+        "séparation",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-06-06"
+    },
+    {
+      "id": "d033",
+      "titre": "Catalogue des connecteurs standard — indice B",
+      "reference": "ETII-OUT-033",
+      "type": "Outil",
+      "metier": [
+        "Harnais",
+        "Schématique"
+      ],
+      "porteur": "Personne 39",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/033",
+      "description": "Référentiel des connecteurs qualifiés avec leurs caractéristiques et conditions d'emploi. Révision B.",
+      "motsCles": [
+        "connecteur",
+        "catalogue",
+        "référentiel",
+        "qualification",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-07-07"
+    },
+    {
+      "id": "d034",
+      "titre": "Catalogue des connecteurs standard — indice C",
+      "reference": "ETII-OUT-034",
+      "type": "Outil",
+      "metier": [
+        "Harnais",
+        "Schématique"
+      ],
+      "porteur": "Personne 50",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/034",
+      "description": "Référentiel des connecteurs qualifiés avec leurs caractéristiques et conditions d'emploi. Révision C.",
+      "motsCles": [
+        "connecteur",
+        "catalogue",
+        "référentiel",
+        "qualification",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-08-08"
+    },
+    {
+      "id": "d035",
+      "titre": "Procédure de revue de configuration — indice B",
+      "reference": "ETII-PRO-035",
+      "type": "Processus",
+      "metier": [
+        "Configuration",
+        "Qualité"
+      ],
+      "porteur": "Personne 61",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/processus/035",
+      "description": "Déroulé de la revue trimestrielle, rôles, livrables attendus et critères de sortie. Révision B.",
+      "motsCles": [
+        "revue",
+        "configuration",
+        "trimestre",
+        "critères",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-09-09"
+    },
+    {
+      "id": "d036",
+      "titre": "Procédure de revue de configuration — indice C",
+      "reference": "ETII-PRO-036",
+      "type": "Processus",
+      "metier": [
+        "Configuration",
+        "Qualité"
+      ],
+      "porteur": "Personne 07",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/processus/036",
+      "description": "Déroulé de la revue trimestrielle, rôles, livrables attendus et critères de sortie. Révision C.",
+      "motsCles": [
+        "revue",
+        "configuration",
+        "trimestre",
+        "critères",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-01-10"
+    },
+    {
+      "id": "d037",
+      "titre": "Norme de séparation des circuits — indice B",
+      "reference": "ETII-NOR-037",
+      "type": "Norme",
+      "metier": [
+        "Architecture",
+        "Harnais"
+      ],
+      "porteur": "Personne 18",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/norme/037",
+      "description": "Distances minimales entre circuits selon leur criticité et leur nature. Révision B.",
+      "motsCles": [
+        "séparation",
+        "circuit",
+        "criticité",
+        "distance",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-02-11"
+    },
+    {
+      "id": "d038",
+      "titre": "Norme de séparation des circuits — indice C",
+      "reference": "ETII-NOR-038",
+      "type": "Norme",
+      "metier": [
+        "Architecture",
+        "Harnais"
+      ],
+      "porteur": "Personne 29",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/norme/038",
+      "description": "Distances minimales entre circuits selon leur criticité et leur nature. Révision C.",
+      "motsCles": [
+        "séparation",
+        "circuit",
+        "criticité",
+        "distance",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-03-12"
+    },
+    {
+      "id": "d039",
+      "titre": "Formation à la maquette numérique — indice B",
+      "reference": "ETII-FOR-039",
+      "type": "Formation",
+      "metier": [
+        "Intégration 3D"
+      ],
+      "porteur": "Personne 40",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/formation/039",
+      "description": "Parcours d'initiation à la navigation et à l'annotation dans la maquette numérique. Révision B.",
+      "motsCles": [
+        "maquette",
+        "numérique",
+        "formation",
+        "initiation",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-04-13"
+    },
+    {
+      "id": "d040",
+      "titre": "Formation à la maquette numérique — indice C",
+      "reference": "ETII-FOR-040",
+      "type": "Formation",
+      "metier": [
+        "Intégration 3D"
+      ],
+      "porteur": "Personne 51",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/formation/040",
+      "description": "Parcours d'initiation à la navigation et à l'annotation dans la maquette numérique. Révision C.",
+      "motsCles": [
+        "maquette",
+        "numérique",
+        "formation",
+        "initiation",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-05-14"
+    },
+    {
+      "id": "d041",
+      "titre": "Bilan de masse électrique — indice B",
+      "reference": "ETII-TEC-041",
+      "type": "Technique",
+      "metier": [
+        "Architecture",
+        "Essais"
+      ],
+      "porteur": "Personne 62",
+      "perimetre": "H160",
+      "lien": "https://example.invalid/etii/technique/041",
+      "description": "Méthode de calcul et de suivi du bilan de masse du système électrique. Révision B.",
+      "motsCles": [
+        "masse",
+        "bilan",
+        "calcul",
+        "suivi",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-06-15"
+    },
+    {
+      "id": "d042",
+      "titre": "Bilan de masse électrique — indice C",
+      "reference": "ETII-TEC-042",
+      "type": "Technique",
+      "metier": [
+        "Architecture",
+        "Essais"
+      ],
+      "porteur": "Personne 08",
+      "perimetre": "H160",
+      "lien": "https://example.invalid/etii/technique/042",
+      "description": "Méthode de calcul et de suivi du bilan de masse du système électrique. Révision C.",
+      "motsCles": [
+        "masse",
+        "bilan",
+        "calcul",
+        "suivi",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-07-16"
+    },
+    {
+      "id": "d043",
+      "titre": "Outil de génération de schémas — indice B",
+      "reference": "ETII-OUT-043",
+      "type": "Outil",
+      "metier": [
+        "Schématique"
+      ],
+      "porteur": "Personne 19",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/043",
+      "description": "Générateur de schémas à partir du référentiel de définition. Révision B.",
+      "motsCles": [
+        "schéma",
+        "génération",
+        "automatisation",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-08-17"
+    },
+    {
+      "id": "d044",
+      "titre": "Outil de génération de schémas — indice C",
+      "reference": "ETII-OUT-044",
+      "type": "Outil",
+      "metier": [
+        "Schématique"
+      ],
+      "porteur": "Personne 30",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/044",
+      "description": "Générateur de schémas à partir du référentiel de définition. Révision C.",
+      "motsCles": [
+        "schéma",
+        "génération",
+        "automatisation",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-09-18"
+    },
+    {
+      "id": "d045",
+      "titre": "Règles de nommage des repères — indice B",
+      "reference": "ETII-NOR-045",
+      "type": "Norme",
+      "metier": [
+        "Schématique",
+        "Configuration"
+      ],
+      "porteur": "Personne 41",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/norme/045",
+      "description": "Convention de nommage des repères de fils, connecteurs et équipements. Révision B.",
+      "motsCles": [
+        "nommage",
+        "repère",
+        "convention",
+        "identification",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-01-19"
+    },
+    {
+      "id": "d046",
+      "titre": "Règles de nommage des repères — indice C",
+      "reference": "ETII-NOR-046",
+      "type": "Norme",
+      "metier": [
+        "Schématique",
+        "Configuration"
+      ],
+      "porteur": "Personne 52",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/norme/046",
+      "description": "Convention de nommage des repères de fils, connecteurs et équipements. Révision C.",
+      "motsCles": [
+        "nommage",
+        "repère",
+        "convention",
+        "identification",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-02-20"
+    },
+    {
+      "id": "d047",
+      "titre": "Procédure d'essai de continuité — indice B",
+      "reference": "ETII-PRO-047",
+      "type": "Processus",
+      "metier": [
+        "Essais"
+      ],
+      "porteur": "Personne 63",
+      "perimetre": "H160",
+      "lien": "https://example.invalid/etii/processus/047",
+      "description": "Protocole de vérification de la continuité électrique après montage. Révision B.",
+      "motsCles": [
+        "essai",
+        "continuité",
+        "protocole",
+        "vérification",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-03-21"
+    },
+    {
+      "id": "d048",
+      "titre": "Procédure d'essai de continuité — indice C",
+      "reference": "ETII-PRO-048",
+      "type": "Processus",
+      "metier": [
+        "Essais"
+      ],
+      "porteur": "Personne 09",
+      "perimetre": "H160",
+      "lien": "https://example.invalid/etii/processus/048",
+      "description": "Protocole de vérification de la continuité électrique après montage. Révision C.",
+      "motsCles": [
+        "essai",
+        "continuité",
+        "protocole",
+        "vérification",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-04-22"
+    },
+    {
+      "id": "d049",
+      "titre": "Traitement de la corrosion galvanique — indice B",
+      "reference": "ETII-TEC-049",
+      "type": "Technique",
+      "metier": [
+        "Harnais",
+        "Qualité"
+      ],
+      "porteur": "Personne 20",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/technique/049",
+      "description": "Identification des couples galvaniques à risque et moyens de protection. Révision B.",
+      "motsCles": [
+        "corrosion",
+        "galvanique",
+        "protection",
+        "métaux",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-05-23"
+    },
+    {
+      "id": "d050",
+      "titre": "Traitement de la corrosion galvanique — indice C",
+      "reference": "ETII-TEC-050",
+      "type": "Technique",
+      "metier": [
+        "Harnais",
+        "Qualité"
+      ],
+      "porteur": "Personne 31",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/technique/050",
+      "description": "Identification des couples galvaniques à risque et moyens de protection. Révision C.",
+      "motsCles": [
+        "corrosion",
+        "galvanique",
+        "protection",
+        "métaux",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-06-24"
+    },
+    {
+      "id": "d051",
+      "titre": "Checklist de revue par les pairs — indice B",
+      "reference": "ETII-OUT-051",
+      "type": "Outil",
+      "metier": [
+        "Qualité"
+      ],
+      "porteur": "Personne 42",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/051",
+      "description": "Points de contrôle à dérouler avant diffusion d'un livrable. Révision B.",
+      "motsCles": [
+        "checklist",
+        "revue",
+        "pairs",
+        "contrôle",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-07-25"
+    },
+    {
+      "id": "d052",
+      "titre": "Checklist de revue par les pairs — indice C",
+      "reference": "ETII-OUT-052",
+      "type": "Outil",
+      "metier": [
+        "Qualité"
+      ],
+      "porteur": "Personne 53",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/052",
+      "description": "Points de contrôle à dérouler avant diffusion d'un livrable. Révision C.",
+      "motsCles": [
+        "checklist",
+        "revue",
+        "pairs",
+        "contrôle",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-08-26"
+    },
+    {
+      "id": "d053",
+      "titre": "Architecture de distribution électrique — indice B",
+      "reference": "ETII-TEC-053",
+      "type": "Technique",
+      "metier": [
+        "Architecture"
+      ],
+      "porteur": "Personne 64",
+      "perimetre": "H175",
+      "lien": "https://example.invalid/etii/technique/053",
+      "description": "Principes de distribution, redondance et ségrégation des sources. Révision B.",
+      "motsCles": [
+        "distribution",
+        "redondance",
+        "ségrégation",
+        "source",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-09-27"
+    },
+    {
+      "id": "d054",
+      "titre": "Architecture de distribution électrique — indice C",
+      "reference": "ETII-TEC-054",
+      "type": "Technique",
+      "metier": [
+        "Architecture"
+      ],
+      "porteur": "Personne 10",
+      "perimetre": "H175",
+      "lien": "https://example.invalid/etii/technique/054",
+      "description": "Principes de distribution, redondance et ségrégation des sources. Révision C.",
+      "motsCles": [
+        "distribution",
+        "redondance",
+        "ségrégation",
+        "source",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-01-01"
+    },
+    {
+      "id": "d055",
+      "titre": "Formation à la lecture de schémas — indice B",
+      "reference": "ETII-FOR-055",
+      "type": "Formation",
+      "metier": [
+        "Schématique"
+      ],
+      "porteur": "Personne 21",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/formation/055",
+      "description": "Bases de la symbolique et de la lecture des schémas électriques. Révision B.",
+      "motsCles": [
+        "schéma",
+        "lecture",
+        "symbolique",
+        "formation",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-02-02"
+    },
+    {
+      "id": "d056",
+      "titre": "Formation à la lecture de schémas — indice C",
+      "reference": "ETII-FOR-056",
+      "type": "Formation",
+      "metier": [
+        "Schématique"
+      ],
+      "porteur": "Personne 32",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/formation/056",
+      "description": "Bases de la symbolique et de la lecture des schémas électriques. Révision C.",
+      "motsCles": [
+        "schéma",
+        "lecture",
+        "symbolique",
+        "formation",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-03-03"
+    },
+    {
+      "id": "d057",
+      "titre": "Gestion des écarts de définition — indice B",
+      "reference": "ETII-PRO-057",
+      "type": "Processus",
+      "metier": [
+        "Configuration",
+        "Qualité"
+      ],
+      "porteur": "Personne 43",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/processus/057",
+      "description": "Circuit de signalement, d'analyse et de traitement des écarts. Révision B.",
+      "motsCles": [
+        "écart",
+        "signalement",
+        "analyse",
+        "traitement",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-04-04"
+    },
+    {
+      "id": "d058",
+      "titre": "Gestion des écarts de définition — indice C",
+      "reference": "ETII-PRO-058",
+      "type": "Processus",
+      "metier": [
+        "Configuration",
+        "Qualité"
+      ],
+      "porteur": "Personne 54",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/processus/058",
+      "description": "Circuit de signalement, d'analyse et de traitement des écarts. Révision C.",
+      "motsCles": [
+        "écart",
+        "signalement",
+        "analyse",
+        "traitement",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-05-05"
+    },
+    {
+      "id": "d059",
+      "titre": "Norme de protection contre la foudre — indice B",
+      "reference": "ETII-NOR-059",
+      "type": "Norme",
+      "metier": [
+        "Architecture",
+        "Essais"
+      ],
+      "porteur": "Personne 65",
+      "perimetre": "H175",
+      "lien": "https://example.invalid/etii/norme/059",
+      "description": "Exigences de protection et méthodes de vérification associées. Révision B.",
+      "motsCles": [
+        "foudre",
+        "protection",
+        "exigence",
+        "vérification",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-06-06"
+    },
+    {
+      "id": "d060",
+      "titre": "Norme de protection contre la foudre — indice C",
+      "reference": "ETII-NOR-060",
+      "type": "Norme",
+      "metier": [
+        "Architecture",
+        "Essais"
+      ],
+      "porteur": "Personne 11",
+      "perimetre": "H175",
+      "lien": "https://example.invalid/etii/norme/060",
+      "description": "Exigences de protection et méthodes de vérification associées. Révision C.",
+      "motsCles": [
+        "foudre",
+        "protection",
+        "exigence",
+        "vérification",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-07-07"
+    },
+    {
+      "id": "d061",
+      "titre": "Outil de calcul de chute de tension — indice B",
+      "reference": "ETII-OUT-061",
+      "type": "Outil",
+      "metier": [
+        "Architecture",
+        "Schématique"
+      ],
+      "porteur": "Personne 22",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/061",
+      "description": "Calculateur de chute de tension en fonction de la section et de la longueur. Révision B.",
+      "motsCles": [
+        "tension",
+        "chute",
+        "section",
+        "calcul",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-08-08"
+    },
+    {
+      "id": "d062",
+      "titre": "Outil de calcul de chute de tension — indice C",
+      "reference": "ETII-OUT-062",
+      "type": "Outil",
+      "metier": [
+        "Architecture",
+        "Schématique"
+      ],
+      "porteur": "Personne 33",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/outil/062",
+      "description": "Calculateur de chute de tension en fonction de la section et de la longueur. Révision C.",
+      "motsCles": [
+        "tension",
+        "chute",
+        "section",
+        "calcul",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-09-09"
+    },
+    {
+      "id": "d063",
+      "titre": "Méthode de reprise de masse — indice B",
+      "reference": "ETII-TEC-063",
+      "type": "Technique",
+      "metier": [
+        "Harnais",
+        "Intégration 3D"
+      ],
+      "porteur": "Personne 44",
+      "perimetre": "H160",
+      "lien": "https://example.invalid/etii/technique/063",
+      "description": "Choix et implantation des points de reprise de masse. Révision B.",
+      "motsCles": [
+        "masse",
+        "reprise",
+        "implantation",
+        "point",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-01-10"
+    },
+    {
+      "id": "d064",
+      "titre": "Méthode de reprise de masse — indice C",
+      "reference": "ETII-TEC-064",
+      "type": "Technique",
+      "metier": [
+        "Harnais",
+        "Intégration 3D"
+      ],
+      "porteur": "Personne 55",
+      "perimetre": "H160",
+      "lien": "https://example.invalid/etii/technique/064",
+      "description": "Choix et implantation des points de reprise de masse. Révision C.",
+      "motsCles": [
+        "masse",
+        "reprise",
+        "implantation",
+        "point",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-02-11"
+    },
+    {
+      "id": "d065",
+      "titre": "Procédure de qualification fournisseur — indice B",
+      "reference": "ETII-PRO-065",
+      "type": "Processus",
+      "metier": [
+        "Qualité",
+        "Méthodes"
+      ],
+      "porteur": "Personne 01",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/processus/065",
+      "description": "Étapes de qualification d'un nouveau fournisseur de composants. Révision B.",
+      "motsCles": [
+        "fournisseur",
+        "qualification",
+        "composant",
+        "audit",
+        "révision",
+        "indice b"
+      ],
+      "maj": "2026-03-12"
+    },
+    {
+      "id": "d066",
+      "titre": "Procédure de qualification fournisseur — indice C",
+      "reference": "ETII-PRO-066",
+      "type": "Processus",
+      "metier": [
+        "Qualité",
+        "Méthodes"
+      ],
+      "porteur": "Personne 12",
+      "perimetre": "Transverse",
+      "lien": "https://example.invalid/etii/processus/066",
+      "description": "Étapes de qualification d'un nouveau fournisseur de composants. Révision C.",
+      "motsCles": [
+        "fournisseur",
+        "qualification",
+        "composant",
+        "audit",
+        "révision",
+        "indice c"
+      ],
+      "maj": "2026-04-13"
+    },
+    {
+      "id": "d067",
+      "titre": "Formation à la sertissage (sur demande)",
+      "reference": "ETII-FOR-067",
+      "type": "Formation",
+      "metier": [
+        "Harnais"
+      ],
+      "porteur": "Personne 27",
+      "perimetre": "Transverse",
+      "lien": "",
+      "description": "Gestes, outillage et contrôle qualité du sertissage. Document communiqué sur demande auprès du porteur.",
+      "motsCles": [
+        "sertissage",
+        "outillage",
+        "contrôle",
+        "geste",
+        "sur demande"
+      ],
+      "maj": "2026-05-14"
+    },
+    {
+      "id": "d068",
+      "titre": "Référentiel des sections de câble (sur demande)",
+      "reference": "ETII-NOR-068",
+      "type": "Norme",
+      "metier": [
+        "Harnais",
+        "Architecture"
+      ],
+      "porteur": "Personne 40",
+      "perimetre": "Transverse",
+      "lien": "",
+      "description": "Sections normalisées et courants admissibles associés. Document communiqué sur demande auprès du porteur.",
+      "motsCles": [
+        "câble",
+        "section",
+        "courant",
+        "norme",
+        "sur demande"
+      ],
+      "maj": "2026-06-15"
+    },
+    {
+      "id": "d069",
+      "titre": "Plan de validation système (sur demande)",
+      "reference": "ETII-PRO-069",
+      "type": "Processus",
+      "metier": [
+        "Essais",
+        "Architecture"
+      ],
+      "porteur": "Personne 53",
+      "perimetre": "H160",
+      "lien": "",
+      "description": "Structure du plan de validation et couverture des exigences. Document communiqué sur demande auprès du porteur.",
+      "motsCles": [
+        "validation",
+        "plan",
+        "exigence",
+        "couverture",
+        "sur demande"
+      ],
+      "maj": "2026-07-16"
+    },
+    {
+      "id": "d070",
+      "titre": "Outil de suivi des modifications (sur demande)",
+      "reference": "ETII-OUT-070",
+      "type": "Outil",
+      "metier": [
+        "Configuration"
+      ],
+      "porteur": "Personne 01",
+      "perimetre": "Transverse",
+      "lien": "",
+      "description": "Journal des modifications de définition avec traçabilité complète. Document communiqué sur demande auprès du porteur.",
+      "motsCles": [
+        "modification",
+        "suivi",
+        "traçabilité",
+        "journal",
+        "sur demande"
+      ],
+      "maj": "2026-08-17"
+    },
+    {
+      "id": "d071",
+      "titre": "Guide d'implantation des équipements (sur demande)",
+      "reference": "ETII-TEC-071",
+      "type": "Technique",
+      "metier": [
+        "Intégration 3D"
+      ],
+      "porteur": "Personne 14",
+      "perimetre": "H175",
+      "lien": "",
+      "description": "Contraintes d'accessibilité, de maintenance et de dégagement. Document communiqué sur demande auprès du porteur.",
+      "motsCles": [
+        "implantation",
+        "accessibilité",
+        "maintenance",
+        "dégagement",
+        "sur demande"
+      ],
+      "maj": "2026-09-18"
+    },
+    {
+      "id": "d072",
+      "titre": "Méthode d'analyse de criticité (sur demande)",
+      "reference": "ETII-TEC-072",
+      "type": "Technique",
+      "metier": [
+        "Architecture",
+        "Qualité"
+      ],
+      "porteur": "Personne 27",
+      "perimetre": "Transverse",
+      "lien": "",
+      "description": "Classification des fonctions selon leur criticité opérationnelle. Document communiqué sur demande auprès du porteur.",
+      "motsCles": [
+        "criticité",
+        "analyse",
+        "classification",
+        "fonction",
+        "sur demande"
+      ],
+      "maj": "2026-01-19"
+    }
+  ]
+}
