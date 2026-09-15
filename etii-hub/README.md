@@ -125,3 +125,30 @@ leur forme. Rien d'autre n'est à modifier.
   mémorisé.
 - Toute animation est neutralisée sous `prefers-reduced-motion: reduce`.
 - Cibles tactiles d'au moins 44 px.
+
+## Version autonome, en un seul fichier
+
+```bash
+node tools/build-artifact.mjs   # -> dist/etii-hub.html
+```
+
+Le fichier produit contient le site entier : les six pages, les feuilles de
+style, les modules et les données. Il n'a **aucune dépendance et aucun
+chemin relatif**, donc il s'ouvre par double-clic — sans serveur — et se
+publie tel quel sur n'importe quel hébergeur.
+
+Le site multi-pages de la racine reste la source de vérité ; le script
+assemble, il ne modifie rien.
+
+Trois détails que l'assemblage doit gérer, et qui sont testés :
+
+- les pages contiennent des `</script>`, qui fermeraient la balise
+  englobante si la sérialisation ne les échappait pas ;
+- deux modules utilisent `await` au niveau racine, licite dans un module ES
+  mais pas dans une fonction ordinaire ;
+- deux modules utilisent `import()` dynamique, résolu vers le registre
+  interne plutôt que vers le réseau.
+
+Le script analyse chaque script assemblé avec `node --check` avant de
+sceller le fichier : une erreur de syntaxe échoue à la construction, pas
+dans le navigateur.
