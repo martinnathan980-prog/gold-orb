@@ -76,15 +76,6 @@ const BARRE_SCRIPT = `
     chargerTout().then(function () { afficherBandeau('Données de démonstration réinitialisées.', 'info'); });
   });
 
-  // Les téléchargements sont bloqués dans le bac à sable de l'aperçu ; il n'y
-  // a plus d'export dans l'application, ce filet ne sert que si l'on en
-  // rajoutait un.
-  if (typeof telecharger === 'function') {
-    telecharger = function (contenu, nomFichier) {
-      afficherBandeau('Aperçu : le téléchargement de ' + nomFichier + ' est bloqué ici.', 'info');
-    };
-  }
-
   // Filet : si les scripts s'exécutent après le chargement du document,
   // l'écouteur DOMContentLoaded de Main.html ne se déclencherait jamais.
   if (document.readyState === 'complete') {

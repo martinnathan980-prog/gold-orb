@@ -139,20 +139,6 @@ function definirTexte(id, texte) {
   if (noeud) noeud.textContent = texte;
 }
 
-function telecharger(contenu, nomFichier, type) {
-  // Blob et non data: + encodeURI — encodeURI n'encode pas '#' et tronquait
-  // le fichier au premier dièse rencontré.
-  const blob = new Blob([contenu], { type: type });
-  const url = URL.createObjectURL(blob);
-  const lien = document.createElement('a');
-  lien.href = url;
-  lien.download = nomFichier;
-  document.body.appendChild(lien);
-  lien.click();
-  document.body.removeChild(lien);
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-}
-
 function antiRebond(fonction, delai) {
   let minuteur = null;
   return function () {

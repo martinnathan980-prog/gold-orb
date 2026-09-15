@@ -5,10 +5,10 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 919 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 921 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 626 tests : logique, pondération, serveur, bundle
+npm test                 # 628 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
 npm run test:navigateur  # 293 tests dans un vrai Chromium

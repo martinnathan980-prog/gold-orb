@@ -1043,6 +1043,13 @@ vrai('le titre reste seul dans sa marque',
      /<div class="marque">\s*<h1>NEXUS<\/h1>\s*<\/div>/.test(srcIndex));
 eq('le titre est NEXUS seul', (srcIndex.match(/<h1>([^<]*)<\/h1>/) || [])[1], 'NEXUS');
 faux('plus de bouton d\'export', /exporter-bom/.test(srcIndex));
+// L'export retire, le helper de telechargement n'avait plus d'appelant.
+faux('plus de helper de telechargement',
+     fs.readFileSync(path.join(H.RACINE, 'client/Dom.html'), 'utf8')
+       .indexOf('function telecharger') !== -1);
+faux('ni de lien de sauvegarde fabrique a la volee',
+     fs.readFileSync(path.join(H.RACINE, 'client/Dom.html'), 'utf8')
+       .indexOf('createObjectURL') !== -1);
 faux('plus de bloc de réglages rapides', /reglagesPresets/.test(srcIndex));
 vrai('le formulaire de création porte les porteurs', srcIndex.indexOf('newBoitePorteurs') !== -1);
 vrai('le statut', srcIndex.indexOf('newBoiteStatut') !== -1);
