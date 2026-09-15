@@ -264,7 +264,10 @@ async function ecranPropre(page) {
   // On la retire pour ne pas fausser la suite — via le dialogue intégré,
   // puisque confirm() n'existe pas dans l'iframe d'Apps Script.
   await ouvrirFiche(page, 'ESSAI-100');
-  await page.locator('#slideOverBody [data-action="editer-boite"]').click();
+  // Supprimer se voit sans passer en edition : c'est une action sur la
+  // fiche, pas un champ de formulaire.
+  eq('Supprimer est offert sans passer en edition',
+     await page.locator('#slideOverBody [data-action="supprimer-boite"]').count(), 1);
   await page.locator('#slideOverBody [data-action="supprimer-boite"]').click();
   await page.waitForSelector('#dialogueModal.show');
   vrai('le dialogue de confirmation est le nôtre',
@@ -405,6 +408,52 @@ async function ecranPropre(page) {
   await page.waitForTimeout(400);
   eq('et la rend quand on efface', await page.locator('.famille').count(), nbFamilles);
 
+  // Les familles DEJA rangees sont montrees aussi : une norme, une reference,
+  // c'est la cible, et on doit pouvoir la constater.
+  vrai('les familles rangees ont leur section',
+       await page.locator('.standard-propres').count() === 1);
+  const nbPropres = await page.locator('.propre').count();
+  vrai('il y en a au moins une', nbPropres >= 1);
+  eq('leur nombre est annonce',
+     (await texte(page, '.standard-compte')).trim(), String(nbPropres));
+  const propre = page.locator('.propre').first();
+  vrai('chacune montre sa fonction', (await propre.locator('.propre-fonction')
+       .evaluate(function (e) { return e.textContent.trim(); })).length > 0);
+  vrai('sa norme', await propre.locator('.propre-norme').count() === 1);
+  vrai('et sa reference unique', await propre.locator('.ref-pn').count() === 1);
+
+  // Cliquer une reference nomme les boites ou elle sert, et y mene.
+  const refPliee = page.locator('.famille .ref').first();
+  eq('les boites sont repliees au depart',
+     await refPliee.getAttribute('aria-expanded'), 'false');
+  const boitesCachees = refPliee.locator('xpath=following-sibling::span[@class="ref-boites"]');
+  faux('et vraiment masquees', await boitesCachees.isVisible());
+  await refPliee.click();
+  await page.waitForTimeout(250);
+  eq('un clic les deplie', await refPliee.getAttribute('aria-expanded'), 'true');
+  vrai('les boites sont nommees', await boitesCachees.locator('.usage-lien').count() >= 1);
+  const nomBoite = await boitesCachees.locator('.usage-lien').first()
+    .evaluate(function (e) { return e.textContent.trim(); });
+  vrai('avec un PN lisible', nomBoite.length > 0);
+  await refPliee.click();
+  await page.waitForTimeout(250);
+  eq('un second clic les replie', await refPliee.getAttribute('aria-expanded'), 'false');
+
+  // Et de la, on ouvre la fiche de la boite citee.
+  await refPliee.click();
+  await page.waitForTimeout(250);
+  await boitesCachees.locator('.usage-lien').first().click();
+  await page.waitForSelector('#detailsSlideOver.show');
+  await page.waitForTimeout(350);
+  vrai('la boite citee s\'ouvre depuis la reference',
+       (await texte(page, '#slideOverTitle')).indexOf(nomBoite) !== -1);
+  await fermerFiche(page);
+
+  // La reference la plus utilisee d'une famille dispersee est signalee : c'est
+  // celle vers laquelle converger.
+  vrai('une reference majoritaire est signalee',
+       await page.locator('.famille .ref-majoritaire').count() >= 1);
+
   const largeurStd = await page.evaluate(function () {
     return { doc: document.documentElement.scrollWidth, vue: window.innerWidth };
   });
@@ -414,6 +463,88 @@ async function ecranPropre(page) {
   await page.locator('.onglet-vue', { hasText: 'Boîtes' }).click();
   await page.waitForTimeout(350);
   eq('retour à la grille', await page.locator('.carte').count(), 10);
+
+  // ---------------------------------------------------------------
+  bloc('Recherche par composants : plus de bouton a viser');
+  await ecranPropre(page);
+  await page.locator('#btnComposant').click();
+  await page.waitForSelector('#multiSearchModal.show');
+  await page.waitForTimeout(350);
+  eq('plus de bouton Ajouter',
+     await page.locator('#multiSearchModal [data-action="ajouter-chip"]').count(), 0);
+  eq('un bouton Fermer, en revanche',
+     await page.locator('#multiSearchModal [data-action="fermer-multi-recherche"]').count(), 1);
+
+  // Choisir une suggestion suffit : l'input recoit la valeur, le filtre part.
+  const suggestion = await page.locator('#datalistStds option').first()
+    .evaluate(function (e) { return e.value; });
+  vrai('des suggestions sont proposees', suggestion.length > 0);
+  await page.fill('#multiSearchInputSelect', suggestion);
+  await page.waitForTimeout(400);
+  eq('la valeur choisie devient une puce, sans clic de plus',
+     await page.locator('#multiSearchPillsContainer .puce').count(), 1);
+  eq('et le champ est vide, pret pour la suivante',
+     await page.locator('#multiSearchInputSelect').inputValue(), '');
+
+  // Le filtre s'applique DERRIERE la modale restee ouverte.
+  vrai('la modale est restee ouverte',
+       await page.locator('#multiSearchModal.show').count() === 1);
+  const filtrees = await page.locator('.carte').count();
+  vrai('la grille derriere est deja filtree', filtrees > 0 && filtrees < 10);
+  eq('le filtre actif le dit',
+     await page.locator('#filtreActif .filtre-jeton').count(), 1);
+
+  // Entree ajoute aussi, pour une valeur libre.
+  await page.fill('#multiSearchInputSelect', 'NSA 5512');
+  await page.locator('#multiSearchInputSelect').press('Enter');
+  await page.waitForTimeout(400);
+  eq('Entree ajoute une seconde puce',
+     await page.locator('#multiSearchPillsContainer .puce').count(), 2);
+
+  // Retirer une puce relache le filtre, toujours sans fermer.
+  await page.locator('#multiSearchPillsContainer .puce-suppr').first().click();
+  await page.waitForTimeout(400);
+  eq('une puce de moins', await page.locator('#multiSearchPillsContainer .puce').count(), 1);
+  vrai('la modale est toujours la',
+       await page.locator('#multiSearchModal.show').count() === 1);
+  await page.locator('#multiSearchModal [data-action="fermer-multi-recherche"]').click();
+  await attendreFerme(page, 'multiSearchModal');
+  await page.locator('#filtreActif .filtre-jeton button').first().click();
+  await page.waitForTimeout(400);
+  eq('filtre relache, toutes les boites reviennent',
+     await page.locator('.carte').count(), 10);
+
+  // ---------------------------------------------------------------
+  bloc('Ajouter sans viser : listes fermees, Entree, et le focus rendu');
+  await ecranPropre(page);
+  await ouvrirFiche(page, '332P20001');
+  // Liste fermee (les porteurs) : choisir, c'est ajouter.
+  const porteurs = page.locator('#slideOverBody select.saisie-multi[data-champ="Porteur"]');
+  eq('le porteur est une liste fermee, sans bouton', await porteurs.count(), 1);
+  const avantPorteurs = await page.locator('#slideOverBody .puce-porteur').count();
+  const offert = await porteurs.locator('option:not([value=""])').first()
+    .evaluate(function (e) { return e.value; });
+  await porteurs.selectOption(offert);
+  await page.waitForTimeout(900);
+  eq('un porteur de plus, sans confirmer',
+     await page.locator('#slideOverBody .puce-porteur').count(), avantPorteurs + 1);
+
+  // Champ libre : Entree ajoute, et le focus revient dans le champ.
+  const libre = page.locator('#slideOverBody input.saisie-multi[data-champ="Mots-clés"]').first();
+  if (await libre.count()) {
+    await libre.fill('ESSAI-ENTREE');
+    await libre.press('Enter');
+    await page.waitForTimeout(900);
+    vrai('Entree ajoute le mot-cle',
+         (await texte(page, '#slideOverBody')).indexOf('ESSAI-ENTREE') !== -1);
+    eq('et le focus revient dans le champ, pour enchainer',
+       await page.evaluate(function () {
+         const a = document.activeElement;
+         return a ? (a.dataset && a.dataset.champ) || a.tagName : null;
+       }), 'Mots-clés');
+  }
+  await fermerFiche(page);
+  await ecranPropre(page);
 
   bloc('Filtres par type de sous-ensemble');
   eq('3 types présents', await page.locator('.filtres-type .jeton').count(), 3);
@@ -766,7 +897,9 @@ async function ecranPropre(page) {
   await ecranPropre(page);
   await ouvrirFiche(page, '332P20001');
   const avantSuppr = await page.locator('#slideOverBody .bloc').count();
-  await page.locator('.bloc-type-plaquette [data-action="editer-nom"]').first().click();
+  // Meme regle pour un sous-ensemble : Supprimer est la, tout de suite.
+  vrai('Supprimer un sous-ensemble ne demande pas le mode edition',
+       await page.locator('.bloc-type-plaquette [data-action="supprimer-nom"]').count() >= 1);
   await page.locator('.bloc-type-plaquette [data-action="supprimer-nom"]').first().click();
   await repondreDialogue(page);
   await page.waitForTimeout(900);
@@ -840,6 +973,23 @@ async function ecranPropre(page) {
     .evaluateAll(function (e) { return e.map(function (x) { return x.textContent; }); });
   vrai('le composant affiché est celui ajouté, avec sa référence',
        compos.some(function (p) { return p.indexOf('Entretoise') !== -1 && p.indexOf('ENT-10') !== -1; }));
+
+  // Poser trois colonnettes ne doit pas demander d'ouvrir le catalogue trois
+  // fois : il reste ouvert, et la liste se rafraichit sur place.
+  vrai('le catalogue reste ouvert apres un ajout',
+       await page.locator('#catalogueModal.show').count() === 1);
+  await page.fill('#catSearch', 'colonnette');
+  await page.waitForTimeout(350);
+  vrai('on peut y enchainer un second choix',
+       await page.locator('.ligne-catalogue').count() >= 1);
+  await page.locator('.ligne-catalogue').first().click();
+  await page.waitForTimeout(900);
+  const compos2 = await page.locator('.bloc-type-structure .composant')
+    .evaluateAll(function (e) { return e.map(function (x) { return x.textContent; }); });
+  vrai('le second composant est pose lui aussi',
+       compos2.some(function (p) { return p.indexOf('Colonnette') !== -1; }));
+  await fermerModale(page, 'catalogueModal');
+  await page.waitForTimeout(300);
 
   await page.locator('.bloc-general [data-action="ouvrir-catalogue"]').first().click();
   await page.waitForSelector('#catalogueModal.show');

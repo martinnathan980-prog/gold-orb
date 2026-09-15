@@ -703,6 +703,31 @@ function opportunitesStandardisation(liste) {
   });
 }
 
+/**
+ * Les familles déjà rangées : une seule norme, une seule référence. C'est
+ * l'état visé, et il faut le voir aussi — sinon l'écran ne montre que ce qui
+ * va mal et on ne sait pas où on en est.
+ */
+function famillesStandardisees(liste) {
+  const sorties = [];
+  famillesComposants(liste).forEach(function (f) {
+    const normes = Array.from(f.normes.values());
+    if (normes.length !== 1 || normes[0].references.size !== 1) return;
+    const ref = Array.from(normes[0].references.values())[0];
+    sorties.push({
+      categorie: f.categorie, fonction: f.fonction,
+      norme: normes[0].norme, reference: ref.reference,
+      nbBoites: ref.boites.size,
+      boites: Array.from(ref.boites).sort(function (a, b) {
+        return a.localeCompare(b, 'fr', { numeric: true });
+      })
+    });
+  });
+  return sorties.sort(function (a, b) {
+    return b.nbBoites - a.nbBoites || a.fonction.localeCompare(b.fonction, 'fr');
+  });
+}
+
 /** Répartition des sous-ensembles par type, pour la barre de filtres. */
 function repartitionTypes() {
   const compte = new Map();

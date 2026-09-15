@@ -825,8 +825,54 @@ const htmlStd = C.standardisationHtml(C.calculerVue());
 faux('une fonction piégée n\'injecte rien', /<b>V<\/b>/.test(htmlStd));
 vrai('elle est affichée échappée', htmlStd.indexOf('&lt;b&gt;V&lt;/b&gt;') !== -1);
 vrai('le compte de références est affiché', htmlStd.indexOf('2</b> références') !== -1);
+// Sans dispersion, la famille propre est montree : c'est la cible atteinte.
 charger([{ 'PN Global': 'B1', 'Composants': 'Voyant | N1 | R1' }], []);
-vrai('sans dispersion, on le dit', C.standardisationHtml(C.calculerVue()).indexOf('etat-vide') !== -1);
+const htmlPropre = C.standardisationHtml(C.calculerVue());
+vrai('sans dispersion, la famille rangee est affichee',
+     htmlPropre.indexOf('standard-propres') !== -1);
+faux('et ce n\'est pas un etat vide', htmlPropre.indexOf('etat-vide') !== -1);
+vrai('avec sa reference depliable',
+     htmlPropre.indexOf('data-action="deplier-reference"') !== -1);
+vrai('et la boite ou elle sert', htmlPropre.indexOf('>B1</button>') !== -1);
+
+// Sans aucun composant, en revanche, il n'y a rien a analyser.
+charger([{ 'PN Global': 'B1' }], []);
+vrai('sans composant, on le dit',
+     C.standardisationHtml(C.calculerVue()).indexOf('etat-vide') !== -1);
+
+// Les familles rangees, en detail.
+charger(
+  [{ 'PN Global': 'B1', 'Composants': 'Voyant | N1 | R1\nRelais | N2 | R2' },
+   { 'PN Global': 'B2', 'Composants': 'Voyant | N1 | R1\nRelais | N2 | R9' }], []);
+const propres = C.famillesStandardisees(C.Store.boites);
+eq('une seule famille est rangee', propres.length, 1);
+eq('c\'est le voyant', propres[0].fonction, 'Voyant');
+eq('avec sa norme unique', propres[0].norme, 'N1');
+eq('et sa reference unique', propres[0].reference, 'R1');
+eq('servie par deux boites', propres[0].nbBoites, 2);
+eq('nommees', propres[0].boites, ['B1', 'B2']);
+eq('le relais, lui, reste disperse',
+   C.opportunitesStandardisation(C.Store.boites).map(function (f) { return f.fonction; }),
+   ['Relais']);
+
+// Le classement met en tete la famille la plus repandue.
+charger(
+  [{ 'PN Global': 'B1', 'Composants': 'Voyant | N1 | R1\nEcrou | N3 | R3' },
+   { 'PN Global': 'B2', 'Composants': 'Voyant | N1 | R1' }], []);
+eq('la plus servie passe devant',
+   C.famillesStandardisees(C.Store.boites).map(function (f) { return f.fonction; }),
+   ['Voyant', 'Ecrou']);
+
+// La reference la plus utilisee d'une famille dispersee est signalee.
+charger(
+  [{ 'PN Global': 'B1', 'Composants': 'Voyant | N1 | R1' },
+   { 'PN Global': 'B2', 'Composants': 'Voyant | N1 | R1' },
+   { 'PN Global': 'B3', 'Composants': 'Voyant | N1 | R2' }], []);
+const htmlMaj = C.standardisationHtml(C.calculerVue());
+eq('une seule reference majoritaire',
+   (htmlMaj.match(/ref-majoritaire/g) || []).length, 1);
+vrai('et c\'est la plus utilisee',
+     htmlMaj.indexOf('ref-majoritaire') < htmlMaj.indexOf('R2'));
 
 // Le mode de vue accepte la troisième lecture, et refuse ce qui n'existe pas.
 C.Store.vueMode = 'standardisation';
@@ -1037,6 +1083,90 @@ faux('plus de duplication de boîte dans la fiche',
 faux('aucun reste de duplication dans la fiche',
      fs.readFileSync(path.join(H.RACINE, 'client/ViewFiche.html'), 'utf8')
        .indexOf('dupliquer-nom') !== -1);
+
+// =====================================================================
+bloc('Frictions levées — un geste de moins partout');
+// =====================================================================
+const srcFiche = fs.readFileSync(path.join(H.RACINE, 'client/ViewFiche.html'), 'utf8');
+const modale = srcIndex.slice(srcIndex.indexOf('id="multiSearchModal"'),
+                              srcIndex.indexOf('id="catalogueModal"'));
+
+// F1 — la recherche par composants n'a plus de bouton « Ajouter » : choisir
+// dans la liste, ou taper Entrée, suffit.
+faux('plus de bouton Ajouter dans la recherche par composants',
+     /data-action="ajouter-chip"/.test(modale));
+vrai('la modale se ferme par un bouton explicite',
+     modale.indexOf('data-action="fermer-multi-recherche"') !== -1);
+vrai('fermer-multi-recherche est implémentée', declarees.has('fermer-multi-recherche'));
+faux('lancer-multi-recherche a disparu', declarees.has('lancer-multi-recherche'));
+vrai('choisir une suggestion ajoute directement',
+     /multi\.addEventListener\('input'[\s\S]{0,200}ajouter-chip/.test(srcMainSeul));
+vrai('Entrée aussi', /multi\.addEventListener\('keydown'[\s\S]{0,200}ajouter-chip/.test(srcMainSeul));
+vrai('optionConnue() compare aux suggestions offertes',
+     /function optionConnue\(idListe, valeur\)/.test(srcMainSeul));
+
+// F2 — le filtre par composants s'applique sans fermer la modale.
+vrai('ajouter une puce rafraîchit la liste derrière',
+     /'ajouter-chip':[\s\S]{0,400}rendreInterface\(\)/.test(srcMainSeul));
+vrai('en retirer une aussi',
+     /'retirer-chip':[\s\S]{0,300}rendreInterface\(\)/.test(srcMainSeul));
+
+// F3 — une liste fermée s'ajoute au choix, sans bouton de confirmation.
+vrai('les listes fermées sont un select seul',
+     srcFiche.indexOf('saisie-multi saisie-multi-seule') !== -1);
+const blocFerme = srcFiche.slice(srcFiche.indexOf('if (editable && champ.options)'),
+                                 srcFiche.indexOf('} else if (editable)'));
+faux('sans bouton Ajouter à côté', /btn-mini/.test(blocFerme));
+vrai('un change sur une liste fermée déclenche l\'ajout',
+     /addEventListener\('change'[\s\S]{0,400}dataset\.ajout/.test(srcMainSeul));
+
+// F4 — Entrée valide partout : champ libre et composant à trois niveaux.
+vrai('Entrée ajoute dans un champ multi',
+     /saisie-multi'\)[\s\S]{0,200}dataset\.ajout/.test(srcMainSeul));
+vrai('Entrée ajoute aussi un composant',
+     /saisie-composant'\)[\s\S]{0,300}ajouter-composant/.test(srcMainSeul));
+
+// F5 — le focus revient sur le champ qu'on utilisait, la fiche ayant été
+// recomposée entre-temps.
+vrai('redonnerFocus() existe', /function redonnerFocus\(classe, criteres\)/.test(srcMainSeul));
+eq('trois rendus lui rendent la main',
+   (srcMainSeul.match(/redonnerFocus\(/g) || []).length - 1, 3);
+vrai('les écritures multiples rendent une promesse',
+     /function majMultiBoite[\s\S]{0,400}return /.test(srcMainSeul));
+
+// F6 — le catalogue reste ouvert : trois colonnettes, trois clics, pas neuf.
+faux('ajouter depuis le catalogue ne referme plus',
+     /'ajouter-catalogue':[\s\S]{0,500}fermerModal/.test(srcMainSeul));
+vrai('et la liste se rafraîchit sur place',
+     /'ajouter-catalogue':[\s\S]{0,500}rendreCatalogue\(\)/.test(srcMainSeul));
+
+// Supprimer se voit sans passer en édition : c'est une action sur la fiche,
+// pas sur un formulaire.
+const actionsBoite = srcFiche.slice(srcFiche.indexOf('function blocBoiteHtml'),
+                                    srcFiche.indexOf('function blocNomHtml'));
+vrai('Supprimer la boîte vit hors du mode édition',
+     actionsBoite.indexOf("boutonHtml('supprimer-boite'") >
+     actionsBoite.indexOf("boutonHtml('editer-boite'"));
+const editionBoite = actionsBoite.slice(actionsBoite.indexOf('? boutonHtml('),
+                                        actionsBoite.indexOf(': boutonHtml('));
+faux('et non dans la branche d\'édition', editionBoite.indexOf('supprimer-boite') !== -1);
+const actionsNom = srcFiche.slice(srcFiche.indexOf('function blocNomHtml'),
+                                  srcFiche.indexOf('function blocNomHtml') + 1400);
+vrai('idem pour le sous-ensemble',
+     actionsNom.indexOf("boutonHtml('supprimer-nom'") >
+     actionsNom.indexOf("boutonHtml('editer-nom'"));
+
+// Standardisation : on déplie une référence pour voir où elle sert.
+vrai('deplier-reference est implémentée', declarees.has('deplier-reference'));
+vrai('la référence est un bouton dépliable', /data-action="deplier-reference"/.test(
+     C.standardisationHtml({ aAfficher: [{ 'PN Global': 'B1', 'Composants': 'V | N | R' }] })));
+vrai('l\'état d\'ouverture est annoncé', /aria-expanded/.test(srcGrille));
+vrai('les boîtes citées ouvrent leur fiche',
+     /usage-lien[\s\S]{0,120}ouvrir-fiche/.test(srcGrille));
+vrai('les familles rangées ont leur style', /\.standard-propres \{/.test(
+     fs.readFileSync(path.join(H.RACINE, 'client/Styles.html'), 'utf8')));
+vrai('la référence majoritaire se repère', /\.ref-majoritaire \{/.test(
+     fs.readFileSync(path.join(H.RACINE, 'client/Styles.html'), 'utf8')));
 
 // Tous les jetons CSS utilisés sont définis en clair
 const srcCss = fs.readFileSync(path.join(H.RACINE, 'client/Styles.html'), 'utf8');

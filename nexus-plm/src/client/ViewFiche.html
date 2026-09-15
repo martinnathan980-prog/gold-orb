@@ -65,25 +65,29 @@ function saisieHtml(champ, valeur, classe, ligneId) {
 function blocMultiHtml(champ, valeurs, editable, actionAjout, actionSuppr, donnees, classe) {
   let ajout = '';
   if (editable && champ.options) {
+    // Liste fermée : choisir, c'est vouloir. L'ajout se fait au choix, il n'y
+    // a rien à confirmer derrière.
     const restantes = champ.options.filter(function (o) {
       return !valeurs.some(function (v) { return normaliserTexte(v) === normaliserTexte(o); });
     });
     ajout = restantes.length
       ? '<div class="ajout-multi">' +
-          '<select class="saisie-multi"' + dataAttrs(donnees) +
+          '<select class="saisie-multi saisie-multi-seule"' +
+            dataAttrs(Object.assign({ ajout: actionAjout }, donnees)) +
             ' aria-label="Ajouter à ' + esc(champ.libelle) + '">' +
-            '<option value="">Ajouter…</option>' +
+            '<option value="">Ajouter ' + esc(champ.libelle.toLowerCase()) + '…</option>' +
             restantes.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('') +
           '</select>' +
-          '<button type="button" class="btn-mini"' +
-            dataAttrs(Object.assign({ action: actionAjout }, donnees)) + '>Ajouter</button>' +
         '</div>'
       : '';
   } else if (editable) {
+    // Champ libre : le bouton reste, mais Entrée suffit, et choisir une
+    // suggestion de la liste ajoute directement.
     ajout = '<div class="ajout-multi">' +
         '<input type="text" class="saisie-multi"' +
           (champ.liste ? ' list="' + esc(champ.liste) + '"' : '') +
-          dataAttrs(donnees) + ' placeholder="Ajouter…" aria-label="Ajouter à ' + esc(champ.libelle) + '">' +
+          dataAttrs(Object.assign({ ajout: actionAjout }, donnees)) +
+          ' placeholder="Ajouter…" aria-label="Ajouter à ' + esc(champ.libelle) + '">' +
         '<button type="button" class="btn-mini"' +
           dataAttrs(Object.assign({ action: actionAjout }, donnees)) + '>Ajouter</button>' +
       '</div>';
@@ -162,9 +166,9 @@ function blocBoiteHtml(boite) {
   // Pas de duplication ici : une boîte se duplique depuis la liste.
   const actions = edition
     ? boutonHtml('sauver-boite', {}, 'Enregistrer', 'btn-valider') +
-      boutonHtml('annuler-boite', {}, 'Annuler', 'btn-neutre') +
-      boutonHtml('supprimer-boite', { pn: pn }, 'Supprimer', 'btn-danger')
-    : boutonHtml('editer-boite', {}, 'Éditer', 'btn-neutre');
+      boutonHtml('annuler-boite', {}, 'Annuler', 'btn-neutre')
+    : boutonHtml('editer-boite', {}, 'Éditer', 'btn-neutre') +
+      boutonHtml('supprimer-boite', { pn: pn }, 'Supprimer', 'btn-danger');
 
   let html = '<section class="bloc bloc-general">' +
     '<header class="bloc-tete">' +
@@ -229,10 +233,10 @@ function blocNomHtml(ligne) {
 
   const actions = edition
     ? boutonHtml('sauver-nom', { id: id }, 'Enregistrer', 'btn-valider') +
-      boutonHtml('annuler-nom', { id: id }, 'Annuler', 'btn-neutre') +
-      boutonHtml('supprimer-nom', { id: id }, 'Supprimer', 'btn-danger')
+      boutonHtml('annuler-nom', { id: id }, 'Annuler', 'btn-neutre')
     : boutonHtml('comparer-nom', { id: id }, 'Équivalences', 'btn-accent') +
-      boutonHtml('editer-nom', { id: id }, 'Éditer', 'btn-neutre');
+      boutonHtml('editer-nom', { id: id }, 'Éditer', 'btn-neutre') +
+      boutonHtml('supprimer-nom', { id: id }, 'Supprimer', 'btn-danger');
 
   let html = '<section class="bloc bloc-' + type.teinte + '">' +
     '<header class="bloc-tete">' +

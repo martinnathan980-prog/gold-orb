@@ -407,13 +407,45 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .famille-norme:last-child { border-bottom: 0; }
 .norme-nom { font-size: 12.5px; font-weight: 600; color: var(--encre-2); overflow-wrap: anywhere; }
 .norme-refs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ref-bloc { display: inline-flex; flex-direction: column; gap: 4px; align-items: flex-start; }
 .ref {
   display: inline-flex; align-items: baseline; gap: 7px;
   background: var(--surface-2); border: 1px solid var(--trait);
-  border-radius: var(--r-s); padding: 3px 9px; cursor: help;
+  border-radius: var(--r-s); padding: 3px 9px; transition: .14s;
 }
+.ref:hover { border-color: var(--marque); }
+.ref.actif { background: var(--marque-voile); border-color: var(--marque); }
+/* La plus répandue : le candidat naturel si l'on doit n'en garder qu'une. */
+.ref-majoritaire { border-color: var(--vert-trait); background: var(--vert-voile); }
+.ref-majoritaire .ref-pn { color: var(--vert); }
 .ref-pn { font-family: var(--police-data); font-size: 11.5px; color: var(--encre); }
 .ref-usage { font-size: 10.5px; color: var(--encre-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ref-boites { display: flex; flex-wrap: wrap; gap: 4px; padding-left: 2px; }
+.ref-boites[hidden] { display: none; }
+
+/* Les familles déjà rangées : une ligne chacune, en retrait. */
+.standard-propres { margin-top: var(--e-5); }
+.standard-titre {
+  display: flex; align-items: center; gap: var(--e-2);
+  font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--encre-3); padding-bottom: 6px; border-bottom: 1px solid var(--trait);
+}
+.standard-compte {
+  font-family: var(--police-data); font-size: 11px; font-weight: 600;
+  background: var(--vert-voile); color: var(--vert); border-radius: 999px; padding: 1px 9px;
+}
+.propres { display: flex; flex-direction: column; }
+.propre {
+  display: grid; grid-template-columns: minmax(0, 1fr) 120px 120px auto; gap: var(--e-3);
+  align-items: center; padding: 7px 2px; border-bottom: 1px solid var(--surface-3);
+}
+.propre:last-child { border-bottom: 0; }
+.propre-fonction { font-size: 13px; font-weight: 600; }
+.propre-cat { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3); }
+.propre-norme { font-size: 12px; color: var(--encre-2); }
+@media (max-width: 720px) {
+  .propre { grid-template-columns: 1fr; gap: 3px; }
+}
 @media (max-width: 620px) {
   .famille-norme { grid-template-columns: 1fr; gap: 4px; }
 }
@@ -1086,19 +1118,19 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
           <div class="modal-header">
             <div>
               <h2 class="modal-title">Recherche par composants</h2>
-              <p class="modale-sous">Les boîtes qui contiennent TOUS les composants choisis.</p>
+              <p class="modale-sous">Les boîtes qui contiennent TOUS les composants
+                choisis. Le filtre s'applique à mesure.</p>
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
           </div>
           <div class="modal-body">
             <div class="ligne-saisie">
               <input type="text" list="datalistStds" id="multiSearchInputSelect"
-                     placeholder="Fonction, norme ou référence…" aria-label="Composant à ajouter">
-              <button type="button" class="btn-neutre" data-action="ajouter-chip">Ajouter</button>
+                     placeholder="Fonction, norme ou référence…" aria-label="Composant à chercher">
             </div>
             <div id="multiSearchPillsContainer" class="zone-puces"></div>
-            <button type="button" class="btn-principal" data-action="lancer-multi-recherche">
-              Rechercher
+            <button type="button" class="btn-principal" data-action="fermer-multi-recherche">
+              Fermer
             </button>
           </div>
         </div>
@@ -2692,6 +2724,31 @@ function opportunitesStandardisation(liste) {
   });
 }
 
+/**
+ * Les familles déjà rangées : une seule norme, une seule référence. C'est
+ * l'état visé, et il faut le voir aussi — sinon l'écran ne montre que ce qui
+ * va mal et on ne sait pas où on en est.
+ */
+function famillesStandardisees(liste) {
+  const sorties = [];
+  famillesComposants(liste).forEach(function (f) {
+    const normes = Array.from(f.normes.values());
+    if (normes.length !== 1 || normes[0].references.size !== 1) return;
+    const ref = Array.from(normes[0].references.values())[0];
+    sorties.push({
+      categorie: f.categorie, fonction: f.fonction,
+      norme: normes[0].norme, reference: ref.reference,
+      nbBoites: ref.boites.size,
+      boites: Array.from(ref.boites).sort(function (a, b) {
+        return a.localeCompare(b, 'fr', { numeric: true });
+      })
+    });
+  });
+  return sorties.sort(function (a, b) {
+    return b.nbBoites - a.nbBoites || a.fonction.localeCompare(b.fonction, 'fr');
+  });
+}
+
 /** Répartition des sous-ensembles par type, pour la barre de filtres. */
 function repartitionTypes() {
   const compte = new Map();
@@ -3125,48 +3182,98 @@ function piecesHtml(vue) {
  */
 function standardisationHtml(vue) {
   const familles = opportunitesStandardisation(vue.aAfficher);
-  if (!familles.length) {
+  const propres = famillesStandardisees(vue.aAfficher);
+
+  if (!familles.length && !propres.length) {
     return '<div class="etat-vide">' +
-      '<p>Aucune dispersion à signaler.</p>' +
-      '<p class="etat-vide-aide">Chaque fonction n\'est servie que par une norme ' +
-      'et une référence. Rien à rationaliser ici.</p>' +
+      '<p>Aucun composant à analyser.</p>' +
+      '<p class="etat-vide-aide">Renseignez les composants des boîtes et des ' +
+      'structures pour voir apparaître les familles.</p>' +
     '</div>';
   }
 
-  return '<p class="standard-intro">' + familles.length +
-      ' famille(s) de composants servies par plusieurs références. ' +
-      'Les plus dispersées d\'abord : ce sont elles qui coûtent le plus à faire vivre.' +
-    '</p>' +
-    '<div class="familles">' + familles.map(function (f) {
-      const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
-      return '<article class="famille">' +
-        '<header class="famille-tete">' +
-          '<div class="famille-identite">' +
-            '<h3 class="famille-nom">' + esc(f.fonction) + '</h3>' +
-            '<span class="famille-cat">' + esc(cat.libelle) + '</span>' +
-          '</div>' +
-          '<div class="famille-compte">' +
-            '<span class="famille-chiffre' + (f.nbNormes > 1 ? ' famille-disperse' : '') + '">' +
-              '<b>' + f.nbNormes + '</b> norme' + (f.nbNormes > 1 ? 's' : '') + '</span>' +
-            '<span class="famille-chiffre famille-disperse">' +
-              '<b>' + f.nbReferences + '</b> références</span>' +
-          '</div>' +
-        '</header>' +
-        '<ul class="famille-normes">' + f.normes.map(function (n) {
-          return '<li class="famille-norme">' +
-            '<span class="norme-nom">' + esc(n.norme || 'norme non précisée') + '</span>' +
-            '<span class="norme-refs">' + n.references.map(function (r) {
-              return '<span class="ref" title="' +
-                esc(r.boites.join(', ')) + '">' +
-                '<span class="ref-pn">' + esc(r.reference || 'référence non précisée') + '</span>' +
-                '<span class="ref-usage">' + r.nbBoites +
-                  (r.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span>' +
-              '</span>';
-            }).join('') + '</span>' +
-          '</li>';
-        }).join('') + '</ul>' +
-      '</article>';
-    }).join('') + '</div>';
+  let html = '';
+
+  if (familles.length) {
+    html += '<p class="standard-intro">' + familles.length +
+        ' famille(s) servies par plusieurs références. Les plus dispersées ' +
+        'd\'abord : ce sont elles qui coûtent le plus à faire vivre. ' +
+        'Cliquez une référence pour voir où elle sert.' +
+      '</p>' +
+      '<div class="familles">' + familles.map(familleHtml).join('') + '</div>';
+  }
+
+  // L'état visé : une fonction, une norme, une référence.
+  if (propres.length) {
+    html += '<div class="standard-propres">' +
+      '<h3 class="standard-titre">Déjà rangées' +
+        '<span class="standard-compte">' + propres.length + '</span></h3>' +
+      '<p class="standard-intro">Une seule norme, une seule référence. ' +
+        'Rien à faire, c\'est la cible.</p>' +
+      '<div class="propres">' + propres.map(function (f) {
+        const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
+        return '<div class="propre">' +
+          '<span class="propre-fonction">' + esc(f.fonction) + '</span>' +
+          '<span class="propre-cat">' + esc(cat.libelle) + '</span>' +
+          '<span class="propre-norme">' + esc(f.norme || '—') + '</span>' +
+          referenceHtml({ reference: f.reference, nbBoites: f.nbBoites, boites: f.boites }, false) +
+        '</div>';
+      }).join('') + '</div>' +
+    '</div>';
+  }
+  return html;
+}
+
+/** Une référence, dépliable sur la liste des boîtes où elle sert. */
+function referenceHtml(r, majoritaire) {
+  return '<span class="ref-bloc">' +
+    '<button type="button" class="ref' + (majoritaire ? ' ref-majoritaire' : '') + '"' +
+      dataAttrs({ action: 'deplier-reference' }) + ' aria-expanded="false"' +
+      ' title="Voir les boîtes concernées">' +
+      '<span class="ref-pn">' + esc(r.reference || 'référence non précisée') + '</span>' +
+      '<span class="ref-usage">' + r.nbBoites + (r.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span>' +
+    '</button>' +
+    '<span class="ref-boites" hidden>' +
+      r.boites.map(function (pn) {
+        return '<button type="button" class="usage-lien"' +
+               dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
+      }).join('') +
+    '</span>' +
+  '</span>';
+}
+
+function familleHtml(f) {
+  const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
+  // La référence la plus répandue est le candidat naturel à la cible.
+  let meilleure = null;
+  f.normes.forEach(function (n) {
+    n.references.forEach(function (r) {
+      if (!meilleure || r.nbBoites > meilleure.nbBoites) meilleure = r;
+    });
+  });
+
+  return '<article class="famille">' +
+    '<header class="famille-tete">' +
+      '<div class="famille-identite">' +
+        '<h3 class="famille-nom">' + esc(f.fonction) + '</h3>' +
+        '<span class="famille-cat">' + esc(cat.libelle) + '</span>' +
+      '</div>' +
+      '<div class="famille-compte">' +
+        '<span class="famille-chiffre' + (f.nbNormes > 1 ? ' famille-disperse' : '') + '">' +
+          '<b>' + f.nbNormes + '</b> norme' + (f.nbNormes > 1 ? 's' : '') + '</span>' +
+        '<span class="famille-chiffre famille-disperse">' +
+          '<b>' + f.nbReferences + '</b> références</span>' +
+      '</div>' +
+    '</header>' +
+    '<ul class="famille-normes">' + f.normes.map(function (n) {
+      return '<li class="famille-norme">' +
+        '<span class="norme-nom">' + esc(n.norme || 'norme non précisée') + '</span>' +
+        '<span class="norme-refs">' + n.references.map(function (r) {
+          return referenceHtml(r, meilleure && r === meilleure && f.nbReferences > 1);
+        }).join('') + '</span>' +
+      '</li>';
+    }).join('') + '</ul>' +
+  '</article>';
 }
 
 /** Le tri : un menu discret, pas un <select> planté au milieu de la page. */
@@ -3428,25 +3535,29 @@ function saisieHtml(champ, valeur, classe, ligneId) {
 function blocMultiHtml(champ, valeurs, editable, actionAjout, actionSuppr, donnees, classe) {
   let ajout = '';
   if (editable && champ.options) {
+    // Liste fermée : choisir, c'est vouloir. L'ajout se fait au choix, il n'y
+    // a rien à confirmer derrière.
     const restantes = champ.options.filter(function (o) {
       return !valeurs.some(function (v) { return normaliserTexte(v) === normaliserTexte(o); });
     });
     ajout = restantes.length
       ? '<div class="ajout-multi">' +
-          '<select class="saisie-multi"' + dataAttrs(donnees) +
+          '<select class="saisie-multi saisie-multi-seule"' +
+            dataAttrs(Object.assign({ ajout: actionAjout }, donnees)) +
             ' aria-label="Ajouter à ' + esc(champ.libelle) + '">' +
-            '<option value="">Ajouter…</option>' +
+            '<option value="">Ajouter ' + esc(champ.libelle.toLowerCase()) + '…</option>' +
             restantes.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('') +
           '</select>' +
-          '<button type="button" class="btn-mini"' +
-            dataAttrs(Object.assign({ action: actionAjout }, donnees)) + '>Ajouter</button>' +
         '</div>'
       : '';
   } else if (editable) {
+    // Champ libre : le bouton reste, mais Entrée suffit, et choisir une
+    // suggestion de la liste ajoute directement.
     ajout = '<div class="ajout-multi">' +
         '<input type="text" class="saisie-multi"' +
           (champ.liste ? ' list="' + esc(champ.liste) + '"' : '') +
-          dataAttrs(donnees) + ' placeholder="Ajouter…" aria-label="Ajouter à ' + esc(champ.libelle) + '">' +
+          dataAttrs(Object.assign({ ajout: actionAjout }, donnees)) +
+          ' placeholder="Ajouter…" aria-label="Ajouter à ' + esc(champ.libelle) + '">' +
         '<button type="button" class="btn-mini"' +
           dataAttrs(Object.assign({ action: actionAjout }, donnees)) + '>Ajouter</button>' +
       '</div>';
@@ -3525,9 +3636,9 @@ function blocBoiteHtml(boite) {
   // Pas de duplication ici : une boîte se duplique depuis la liste.
   const actions = edition
     ? boutonHtml('sauver-boite', {}, 'Enregistrer', 'btn-valider') +
-      boutonHtml('annuler-boite', {}, 'Annuler', 'btn-neutre') +
-      boutonHtml('supprimer-boite', { pn: pn }, 'Supprimer', 'btn-danger')
-    : boutonHtml('editer-boite', {}, 'Éditer', 'btn-neutre');
+      boutonHtml('annuler-boite', {}, 'Annuler', 'btn-neutre')
+    : boutonHtml('editer-boite', {}, 'Éditer', 'btn-neutre') +
+      boutonHtml('supprimer-boite', { pn: pn }, 'Supprimer', 'btn-danger');
 
   let html = '<section class="bloc bloc-general">' +
     '<header class="bloc-tete">' +
@@ -3592,10 +3703,10 @@ function blocNomHtml(ligne) {
 
   const actions = edition
     ? boutonHtml('sauver-nom', { id: id }, 'Enregistrer', 'btn-valider') +
-      boutonHtml('annuler-nom', { id: id }, 'Annuler', 'btn-neutre') +
-      boutonHtml('supprimer-nom', { id: id }, 'Supprimer', 'btn-danger')
+      boutonHtml('annuler-nom', { id: id }, 'Annuler', 'btn-neutre')
     : boutonHtml('comparer-nom', { id: id }, 'Équivalences', 'btn-accent') +
-      boutonHtml('editer-nom', { id: id }, 'Éditer', 'btn-neutre');
+      boutonHtml('editer-nom', { id: id }, 'Éditer', 'btn-neutre') +
+      boutonHtml('supprimer-nom', { id: id }, 'Supprimer', 'btn-danger');
 
   let html = '<section class="bloc bloc-' + type.teinte + '">' +
     '<header class="bloc-tete">' +
@@ -4552,25 +4663,53 @@ function sauverNom(id, modifs) {
 
 function majMultiBoite(champ, transformation) {
   const boite = boiteCourante();
-  if (!boite) return;
+  if (!boite) return Promise.resolve();
   const modifs = {};
   modifs[champ] = transformation(valeursMulti(boite[champ])).join('\n');
-  sauverBoite(modifs);
+  return sauverBoite(modifs);
 }
 
 function majMultiNom(id, champ, transformation) {
   const ligne = nomParId(id);
-  if (!ligne) return;
+  if (!ligne) return Promise.resolve();
   const decouper = champ === 'Mots-clés' ? motsCles : valeursMulti;
   const modifs = {};
   modifs[champ] = transformation(decouper(ligne[champ])).join('\n');
-  sauverNom(id, modifs);
+  return sauverNom(id, modifs);
 }
 
 /** Selon la cible (boîte ou sous-ensemble), la bonne écriture. */
 function majMultiCible(cible, transformation) {
-  if (cible.portee === 'boite') majMultiBoite(cible.champ, transformation);
-  else majMultiNom(cible.id, cible.champ, transformation);
+  return cible.portee === 'boite'
+    ? majMultiBoite(cible.champ, transformation)
+    : majMultiNom(cible.id, cible.champ, transformation);
+}
+
+/**
+ * La fiche se recompose après chaque écriture : le champ qu'on utilisait est
+ * détruit et recréé, et le focus retombe sur la page. On le lui rend, sinon
+ * saisir cinq composants d'affilée veut dire cliquer cinq fois.
+ */
+function redonnerFocus(classe, criteres) {
+  let cible = null;
+  document.querySelectorAll('.' + classe).forEach(function (el) {
+    if (cible) return;
+    if (criteres.champ && el.dataset.champ !== criteres.champ) return;
+    if (criteres.niveau && el.dataset.niveau !== criteres.niveau) return;
+    const idVoulu = criteres.id ? String(criteres.id) : '';
+    if ((el.dataset.id || '') !== idVoulu) return;
+    cible = el;
+  });
+  if (cible && typeof cible.focus === 'function') cible.focus();
+}
+
+/** Une valeur figure-t-elle telle quelle dans une liste de suggestions ? */
+function optionConnue(idListe, valeur) {
+  const liste = parId(idListe);
+  if (!liste || !valeur) return false;
+  return Array.prototype.some.call(liste.options || [], function (o) {
+    return normaliserTexte(o.value) === normaliserTexte(valeur);
+  });
 }
 
 const ajouterA = function (valeur) {
@@ -4733,7 +4872,10 @@ enregistrerActions({
 
   'ajouter-multi-boite': function (d) {
     const v = lireSaisieMulti(d.champ);
-    if (v) majMultiBoite(d.champ, ajouterA(v));
+    if (!v) return;
+    majMultiBoite(d.champ, ajouterA(v)).then(function () {
+      redonnerFocus('saisie-multi', { champ: d.champ });
+    });
   },
   'supprimer-multi-boite': function (d) { majMultiBoite(d.champ, retirerDe(d.valeur)); },
 
@@ -4771,7 +4913,10 @@ enregistrerActions({
 
   'ajouter-multi-nom': function (d) {
     const v = lireSaisieMulti(d.champ, d.id);
-    if (v) majMultiNom(d.id, d.champ, ajouterA(v));
+    if (!v) return;
+    majMultiNom(d.id, d.champ, ajouterA(v)).then(function () {
+      redonnerFocus('saisie-multi', { champ: d.champ, id: d.id });
+    });
   },
   'supprimer-multi-nom': function (d) { majMultiNom(d.id, d.champ, retirerDe(d.valeur)); },
 
@@ -4780,7 +4925,10 @@ enregistrerActions({
     const c = lireSaisieComposant(d.champ, d.id);
     if (!c) { afficherBandeau('Indiquez au moins la fonction du composant.', 'erreur'); return; }
     majMultiCible({ portee: d.portee, id: d.id, champ: d.champ },
-                  ajouterA(formaterComposantStructure(c)));
+                  ajouterA(formaterComposantStructure(c)))
+      .then(function () {
+        redonnerFocus('saisie-composant', { champ: d.champ, id: d.id, niveau: 'fonction' });
+      });
   },
   'supprimer-composant': function (d) {
     majMultiCible({ portee: d.portee, id: d.id, champ: d.champ }, retirerDe(d.valeur));
@@ -4805,10 +4953,15 @@ enregistrerActions({
     const entree = Store.catalogue[Number(d.index)];
     const cible = Store.cibleCatalogue;
     if (!entree || !cible) return;
-    const formate = formaterComposantStructure(composantDepuisCatalogue(entree));
+    const composant = composantDepuisCatalogue(entree);
+    const formate = formaterComposantStructure(composant);
     if (!formate) return;
-    fermerModal('catalogueModal');
-    majMultiCible(cible, ajouterA(formate));
+    // On ne referme pas : poser trois colonnettes ne doit pas demander
+    // d'ouvrir le catalogue trois fois.
+    majMultiCible(cible, ajouterA(formate)).then(function () {
+      confirmerSucces(libelleComposant(composant) + ' ajouté.');
+      rendreCatalogue();
+    });
   },
 
   // --- création ---
@@ -4885,20 +5038,20 @@ enregistrerActions({
   'ajouter-chip': function () {
     const champ = parId('multiSearchInputSelect');
     const v = champ.value.trim();
-    if (!v || Store.filtreComposants.indexOf(v) !== -1) { champ.value = ''; return; }
-    Store.filtreComposants = Store.filtreComposants.concat([v]);
     champ.value = '';
+    if (!v || Store.filtreComposants.indexOf(v) !== -1) return;
+    Store.filtreComposants = Store.filtreComposants.concat([v]);
+    Store.ongletActif = 'Toutes';
     rendreChoixComposants();
+    rendreInterface();          // le filtre s'applique tout de suite
+    champ.focus();
   },
   'retirer-chip': function (d) {
     Store.filtreComposants = Store.filtreComposants.filter(function (v) { return v !== d.valeur; });
     rendreChoixComposants();
-  },
-  'lancer-multi-recherche': function () {
-    fermerModal('multiSearchModal');
-    Store.ongletActif = 'Toutes';
     rendreInterface();
   },
+  'fermer-multi-recherche': function () { fermerModal('multiSearchModal'); },
   'retirer-filtre': function (d) {
     Store.filtreComposants = Store.filtreComposants.filter(function (v) { return v !== d.valeur; });
     rendreInterface();
@@ -4932,6 +5085,16 @@ enregistrerActions({
     reinitialiserPoids();
     rendreReglages();
     rafraichirComparaison();
+  },
+
+  // --- standardisation ---
+  'deplier-reference': function (d, noeud) {
+    const bloc = noeud.parentNode && noeud.parentNode.querySelector('.ref-boites');
+    if (!bloc) return;
+    const ouvert = !bloc.hidden;
+    bloc.hidden = ouvert;
+    noeud.setAttribute('aria-expanded', String(!ouvert));
+    noeud.classList.toggle('actif', !ouvert);
   },
 
   // --- divers ---
@@ -5000,15 +5163,40 @@ document.addEventListener('DOMContentLoaded', function () {
     multi.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); ACTIONS['ajouter-chip'](); }
     });
+    // Choisir un composant dans la liste, c'est vouloir le chercher. On
+    // n'attend pas un second clic. Les valeurs y sont longues et composées,
+    // personne ne les tape par accident.
+    multi.addEventListener('input', function () {
+      if (optionConnue('datalistStds', multi.value.trim())) ACTIONS['ajouter-chip']();
+    });
   }
 
-  // Entrée dans un champ de composant : on ajoute, sans chercher le bouton.
+  // Une liste FERMÉE s'ajoute au choix : il n'y a rien à confirmer.
+  document.addEventListener('change', function (e) {
+    const el = e.target;
+    if (!el.classList || !el.classList.contains('saisie-multi')) return;
+    if (el.tagName !== 'SELECT' || !el.value || !el.dataset.ajout) return;
+    const action = ACTIONS[el.dataset.ajout];
+    if (action) action(el.dataset);
+  });
+
+  // Entrée ajoute, dans un champ libre comme dans un composant : viser un
+  // bouton à la souris pour valider un mot-clé n'a jamais fait gagner personne.
   document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Enter' || !e.target.classList || !e.target.classList.contains('saisie-composant')) return;
-    e.preventDefault();
-    const bloc = e.target.closest('.ajout-composant');
-    const bouton = bloc && bloc.querySelector('[data-action="ajouter-composant"]');
-    if (bouton) bouton.click();
+    if (e.key !== 'Enter' || !e.target.classList) return;
+
+    if (e.target.classList.contains('saisie-multi') && e.target.dataset.ajout) {
+      e.preventDefault();
+      const action = ACTIONS[e.target.dataset.ajout];
+      if (action) action(e.target.dataset);
+      return;
+    }
+    if (e.target.classList.contains('saisie-composant')) {
+      e.preventDefault();
+      const bloc = e.target.closest('.ajout-composant');
+      const bouton = bloc && bloc.querySelector('[data-action="ajouter-composant"]');
+      if (bouton) bouton.click();
+    }
   });
 
   // Curseurs de pondération : recalcul immédiat, c'est tout l'intérêt.

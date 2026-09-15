@@ -96,48 +96,98 @@ function piecesHtml(vue) {
  */
 function standardisationHtml(vue) {
   const familles = opportunitesStandardisation(vue.aAfficher);
-  if (!familles.length) {
+  const propres = famillesStandardisees(vue.aAfficher);
+
+  if (!familles.length && !propres.length) {
     return '<div class="etat-vide">' +
-      '<p>Aucune dispersion à signaler.</p>' +
-      '<p class="etat-vide-aide">Chaque fonction n\'est servie que par une norme ' +
-      'et une référence. Rien à rationaliser ici.</p>' +
+      '<p>Aucun composant à analyser.</p>' +
+      '<p class="etat-vide-aide">Renseignez les composants des boîtes et des ' +
+      'structures pour voir apparaître les familles.</p>' +
     '</div>';
   }
 
-  return '<p class="standard-intro">' + familles.length +
-      ' famille(s) de composants servies par plusieurs références. ' +
-      'Les plus dispersées d\'abord : ce sont elles qui coûtent le plus à faire vivre.' +
-    '</p>' +
-    '<div class="familles">' + familles.map(function (f) {
-      const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
-      return '<article class="famille">' +
-        '<header class="famille-tete">' +
-          '<div class="famille-identite">' +
-            '<h3 class="famille-nom">' + esc(f.fonction) + '</h3>' +
-            '<span class="famille-cat">' + esc(cat.libelle) + '</span>' +
-          '</div>' +
-          '<div class="famille-compte">' +
-            '<span class="famille-chiffre' + (f.nbNormes > 1 ? ' famille-disperse' : '') + '">' +
-              '<b>' + f.nbNormes + '</b> norme' + (f.nbNormes > 1 ? 's' : '') + '</span>' +
-            '<span class="famille-chiffre famille-disperse">' +
-              '<b>' + f.nbReferences + '</b> références</span>' +
-          '</div>' +
-        '</header>' +
-        '<ul class="famille-normes">' + f.normes.map(function (n) {
-          return '<li class="famille-norme">' +
-            '<span class="norme-nom">' + esc(n.norme || 'norme non précisée') + '</span>' +
-            '<span class="norme-refs">' + n.references.map(function (r) {
-              return '<span class="ref" title="' +
-                esc(r.boites.join(', ')) + '">' +
-                '<span class="ref-pn">' + esc(r.reference || 'référence non précisée') + '</span>' +
-                '<span class="ref-usage">' + r.nbBoites +
-                  (r.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span>' +
-              '</span>';
-            }).join('') + '</span>' +
-          '</li>';
-        }).join('') + '</ul>' +
-      '</article>';
-    }).join('') + '</div>';
+  let html = '';
+
+  if (familles.length) {
+    html += '<p class="standard-intro">' + familles.length +
+        ' famille(s) servies par plusieurs références. Les plus dispersées ' +
+        'd\'abord : ce sont elles qui coûtent le plus à faire vivre. ' +
+        'Cliquez une référence pour voir où elle sert.' +
+      '</p>' +
+      '<div class="familles">' + familles.map(familleHtml).join('') + '</div>';
+  }
+
+  // L'état visé : une fonction, une norme, une référence.
+  if (propres.length) {
+    html += '<div class="standard-propres">' +
+      '<h3 class="standard-titre">Déjà rangées' +
+        '<span class="standard-compte">' + propres.length + '</span></h3>' +
+      '<p class="standard-intro">Une seule norme, une seule référence. ' +
+        'Rien à faire, c\'est la cible.</p>' +
+      '<div class="propres">' + propres.map(function (f) {
+        const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
+        return '<div class="propre">' +
+          '<span class="propre-fonction">' + esc(f.fonction) + '</span>' +
+          '<span class="propre-cat">' + esc(cat.libelle) + '</span>' +
+          '<span class="propre-norme">' + esc(f.norme || '—') + '</span>' +
+          referenceHtml({ reference: f.reference, nbBoites: f.nbBoites, boites: f.boites }, false) +
+        '</div>';
+      }).join('') + '</div>' +
+    '</div>';
+  }
+  return html;
+}
+
+/** Une référence, dépliable sur la liste des boîtes où elle sert. */
+function referenceHtml(r, majoritaire) {
+  return '<span class="ref-bloc">' +
+    '<button type="button" class="ref' + (majoritaire ? ' ref-majoritaire' : '') + '"' +
+      dataAttrs({ action: 'deplier-reference' }) + ' aria-expanded="false"' +
+      ' title="Voir les boîtes concernées">' +
+      '<span class="ref-pn">' + esc(r.reference || 'référence non précisée') + '</span>' +
+      '<span class="ref-usage">' + r.nbBoites + (r.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span>' +
+    '</button>' +
+    '<span class="ref-boites" hidden>' +
+      r.boites.map(function (pn) {
+        return '<button type="button" class="usage-lien"' +
+               dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
+      }).join('') +
+    '</span>' +
+  '</span>';
+}
+
+function familleHtml(f) {
+  const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
+  // La référence la plus répandue est le candidat naturel à la cible.
+  let meilleure = null;
+  f.normes.forEach(function (n) {
+    n.references.forEach(function (r) {
+      if (!meilleure || r.nbBoites > meilleure.nbBoites) meilleure = r;
+    });
+  });
+
+  return '<article class="famille">' +
+    '<header class="famille-tete">' +
+      '<div class="famille-identite">' +
+        '<h3 class="famille-nom">' + esc(f.fonction) + '</h3>' +
+        '<span class="famille-cat">' + esc(cat.libelle) + '</span>' +
+      '</div>' +
+      '<div class="famille-compte">' +
+        '<span class="famille-chiffre' + (f.nbNormes > 1 ? ' famille-disperse' : '') + '">' +
+          '<b>' + f.nbNormes + '</b> norme' + (f.nbNormes > 1 ? 's' : '') + '</span>' +
+        '<span class="famille-chiffre famille-disperse">' +
+          '<b>' + f.nbReferences + '</b> références</span>' +
+      '</div>' +
+    '</header>' +
+    '<ul class="famille-normes">' + f.normes.map(function (n) {
+      return '<li class="famille-norme">' +
+        '<span class="norme-nom">' + esc(n.norme || 'norme non précisée') + '</span>' +
+        '<span class="norme-refs">' + n.references.map(function (r) {
+          return referenceHtml(r, meilleure && r === meilleure && f.nbReferences > 1);
+        }).join('') + '</span>' +
+      '</li>';
+    }).join('') + '</ul>' +
+  '</article>';
 }
 
 /** Le tri : un menu discret, pas un <select> planté au milieu de la page. */

@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 842 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 919 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 584 tests : logique, pondération, serveur, bundle
+npm test                 # 626 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 258 tests dans un vrai Chromium
+npm run test:navigateur  # 293 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -264,6 +264,17 @@ Sur le jeu de démonstration, la colonnette sort en tête : une seule norme,
 `NSA 5512`, mais cinq références. C'est une liste d'actions de rationalisation
 directement exploitable, calculée sans rien saisir de plus.
 
+La vue montre aussi, sous les dispersées, les familles **déjà rangées** : une
+norme, une référence, rien à faire. C'est la cible, et la voir permet de
+mesurer le chemin parcouru autant que celui qui reste. Dans chaque famille
+dispersée, la référence la plus montée est marquée : c'est le point de
+convergence naturel, celui qui coûte le moins à généraliser.
+
+Toute référence, rangée ou non, se déplie d'un clic sur **les boîtes qui la
+montent**, nommées ; un clic de plus ouvre la fiche de la boîte. On passe du
+constat (« cinq références pour une colonnette ») au terrain (« lesquelles, et
+où ») sans quitter la vue.
+
 L'application manipule **trois** niveaux de granularité, à ne pas confondre :
 
 | Niveau | Exemples | Où |
@@ -289,6 +300,27 @@ Les **suppressions**, elles, passent par un **dialogue intégré**
 bloquées dans l'iframe sandboxée d'Apps Script : c'est pour cela que
 « Supprimer » ne faisait rien, sans le moindre message. Plus aucun appel
 natif ne subsiste.
+
+## Un geste de moins, partout
+
+Une liste fermée s'ajoute **au choix** : choisir un porteur, c'est le vouloir,
+il n'y a rien à confirmer derrière. Le bouton « Ajouter » ne subsiste que sur
+les champs libres, où taper **Entrée** fait la même chose — et où choisir une
+suggestion de la liste ajoute directement.
+
+La recherche par composants n'a plus de bouton du tout : on choisit ou on
+tape Entrée, la puce se pose, **le filtre s'applique derrière la fenêtre
+restée ouverte**. Empiler trois critères ne demande plus d'ouvrir et fermer
+trois fois.
+
+Le catalogue ne se referme plus après un ajout : poser trois colonnettes,
+c'est trois clics, pas neuf. Et après chaque écriture, la fiche étant
+recomposée, **le focus revient dans le champ qu'on utilisait** : saisir cinq
+composants d'affilée ne demande plus cinq clics de replacement.
+
+« Supprimer » a quitté le mode édition, pour la boîte comme pour le
+sous-ensemble : c'est une action **sur la fiche**, pas un champ de
+formulaire. On ne passe plus en édition pour effacer.
 
 ## Porteurs
 
