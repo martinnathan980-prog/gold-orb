@@ -117,6 +117,12 @@ const optionsParId = new Map();
 /** Questions posées localement, les plus récentes en tête. */
 let enAttente = [];
 
+/** Empreinte du volet de réponse déjà peint (sélection + surlignage). */
+let detailPeint = null;
+
+/** Identifiant de la question déjà peinte, pour ne pas rejouer le fondu. */
+let detailIdPeint = null;
+
 /* -------------------------------------------------------------------------
    3. Démarrage
    ------------------------------------------------------------------------- */
@@ -245,6 +251,8 @@ function rendre(donnees, conteneur) {
 
   optionsParId.clear();
   refs.facettes.clear();
+  detailPeint = null;
+  detailIdPeint = null;
 
   monter(conteneur,
     construireBarre(),
@@ -393,15 +401,16 @@ function construireAgencement() {
     onKeyDown: surClavierListe
   });
 
-  /* Région annoncée poliment : à chaque changement de sélection, la réponse
-     est relue sans interrompre la personne. `tabindex="-1"` la rend
-     focalisable par programme seulement — la touche Entrée y emmène depuis
-     la liste, mais elle reste hors de l'ordre de tabulation. */
+  /* Région nommée, focalisable par programme seulement : la touche Entrée
+     y emmène depuis la liste, mais elle reste hors de l'ordre de
+     tabulation. Volontairement PAS de aria-live : le contenu se réécrit à
+     chaque frappe (le surlignage suit la requête), et une région vivante
+     ferait relire la réponse entière à chaque fois. Le parcours de la
+     listbox énonce déjà l'intitulé de chaque option. */
   refs.detail = el('section', {
     class: 'faq__volet faq__detail carte carte--ample',
     id: 'faq-detail',
     tabindex: '-1',
-    'aria-live': 'polite',
     'aria-label': 'Réponse à la question sélectionnée'
   });
 
@@ -530,9 +539,23 @@ function rendreListe() {
   monter(refs.liste, options);
 }
 
-/** Peint le volet de droite à partir de la sélection courante. */
+/**
+ * Peint le volet de droite à partir de la sélection courante.
+ *
+ * Deux garde-fous évitent de retravailler le DOM pour rien à la frappe :
+ * on ne repeint que si la sélection OU le surlignage ont réellement
+ * changé, et le fondu n'est rejoué que lorsque la question change — sinon
+ * il clignoterait à chaque caractère saisi.
+ */
 function rendreDetail() {
   const question = corpus.questions.find((item) => item.id === etat.idSelection);
+  const signature = (etat.idSelection || '') + ' ' + etat.requete;
+
+  if (signature === detailPeint) return;
+
+  const changeDeQuestion = etat.idSelection !== detailIdPeint;
+  detailPeint = signature;
+  detailIdPeint = etat.idSelection;
 
   if (!question) {
     monter(refs.detail, el('p', { class: 'texte-faible texte-sm' },
@@ -540,7 +563,7 @@ function rendreDetail() {
     return;
   }
 
-  monter(refs.detail, contenuDetail(question));
+  monter(refs.detail, contenuDetail(question, changeDeQuestion));
 }
 
 /**
@@ -548,15 +571,19 @@ function rendreDetail() {
  * transformés en rebonds de recherche.
  *
  * @param {object} question
+ * @param {boolean} anime  rejouer le fondu (changement de question)
  * @returns {DocumentFragment}
  */
-function contenuDetail(question) {
+function contenuDetail(question, anime) {
   const motsCles = Array.isArray(question.motsCles)
     ? question.motsCles.map(texteSimple).filter((mot) => mot !== '')
     : [];
 
   return frag(
-    el('div', { class: 'faq__contenu pile' },
+    el('div', {
+      class: 'faq__contenu pile',
+      dataset: { anime: anime ? '' : null }
+    },
 
       question.categorie
         ? el('p', { class: 'carte__meta' },
