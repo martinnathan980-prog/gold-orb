@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Réunions — comptes-rendus et prochains points — ETII Hub</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Comptes-rendus de réunion et prochains points du service ETII : synthèse, sujets, actions et décisions, avec recherche et impression.">
+  <meta name="description" content="Comptes-rendus de réunion et prochains points du service ETII et de ses trois pôles : synthèse, objectif, sujets, actions et décisions, avec sélecteur de pôle, recherche et impression.">
+  <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
@@ -13,18 +14,63 @@
 
   <!-- =====================================================================
        Styles propres à la page Réunions.
-       Uniquement ce qu'aucune classe de base.css ou components.css ne
-       couvre : la barre d'outils, la disposition en deux volets, l'état
+
+       Uniquement ce qu'aucune classe de base.css, components.css ou
+       skin.css ne couvre : le rattachement d'un code de pôle à son jeton
+       de couleur, la barre d'outils, la disposition en deux volets, l'état
        sélectionné d'une option de liste, la mise en forme du lecteur, et
        les blocs « Actions » / « Décisions » qui doivent se détacher
        nettement du corps du texte (SPEC §6.3).
+
        Aucune valeur brute : tout vient de tokens.css. Seuls les points de
        rupture sont exprimés en pixels, comme dans base.css — une media
        query ne peut pas lire une variable CSS.
        ===================================================================== -->
   <style>
     /* ===================================================================
-       1. Barre d'outils : recherche à gauche, impression à droite
+       1. Couleurs de pôle
+       La palette catégorielle vit dans tokens.css ; ici on se contente de
+       rattacher un code de pôle à son jeton. La couleur n'est JAMAIS
+       seule porteuse de sens : toute pastille teintée est accompagnée du
+       code du pôle en toutes lettres.
+       =================================================================== */
+
+    [data-pole="ETII"]  { --pole-teinte: var(--pole-etii); }
+    [data-pole="ETIIA"] { --pole-teinte: var(--pole-etiia); }
+    [data-pole="ETIIE"] { --pole-teinte: var(--pole-etiie); }
+    [data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
+
+    /* Point de couleur d'une puce de pôle. Purement décoratif : le
+       libellé qui le suit porte seul l'information. */
+    .pole-point {
+      flex: none;
+      inline-size: var(--e-2);
+      block-size: var(--e-2);
+      border-radius: var(--rayon-plein);
+      background-color: var(--pole-teinte, var(--texte-doux));
+    }
+
+    /* Pastille ÉTIQUETÉE du pôle d'une réunion : un point teinté et,
+       toujours, le code du pôle écrit. Elle reprend le composant .badge ;
+       seules ses trois variables de teinte sont réaffectées, donc le
+       contraste AA reste celui garanti par components.css. */
+    .badge--pole {
+      --badge-fond: transparent;
+      --badge-teinte: var(--pole-teinte, var(--texte-doux));
+      --badge-bordure: var(--pole-teinte, var(--bordure));
+    }
+
+    /* Intitulé de section discret (sélecteur de pôle, titre de liste). */
+    .reunions__titre-section {
+      margin: 0;
+      font-size: var(--texte-sm);
+      font-weight: var(--graisse-forte);
+      text-transform: uppercase;
+      color: var(--texte-doux);
+    }
+
+    /* ===================================================================
+       2. Barre d'outils : recherche à gauche, impression à droite
        =================================================================== */
 
     .barre-outils {
@@ -42,7 +88,7 @@
     }
 
     /* ===================================================================
-       2. Disposition en deux volets, à l'intérieur de chaque panneau
+       3. Disposition en deux volets, à l'intérieur de chaque panneau
        Liste à gauche, lecteur à droite. Sous 900 px les deux volets
        s'empilent, et l'ordre du document donne directement l'ordre voulu.
        =================================================================== */
@@ -80,8 +126,16 @@
       }
     }
 
+    /* `[hidden]` doit l'emporter sur le `display` posé par les primitives
+       de base.css, dont la spécificité est identique à celle de la règle
+       du navigateur. Un sélecteur ciblé suffit : pas de !important. */
+    .pile[hidden],
+    .rangee[hidden] {
+      display: none;
+    }
+
     /* ===================================================================
-       3. Options de la liste de réunions
+       4. Options de la liste de réunions
        Ce sont de vraies options de listbox : l'état est porté par
        aria-selected, jamais par une classe posée en JavaScript.
        =================================================================== */
@@ -141,7 +195,7 @@
     }
 
     /* ===================================================================
-       4. Lecteur de réunion
+       5. Lecteur de réunion
        =================================================================== */
 
     .lecteur:focus {
@@ -201,7 +255,7 @@
     }
 
     /* ===================================================================
-       5. Blocs « Actions » et « Décisions »
+       6. Blocs « Actions » et « Décisions »
        Ils doivent se distinguer nettement du corps du texte : surface
        propre, liseré teinté, étiquette explicite et liste numérotée.
        La teinte du texte d'étiquette est rapprochée de la couleur de texte
@@ -297,13 +351,14 @@
     }
 
     /* ===================================================================
-       6. Impression : uniquement la réunion affichée
+       7. Impression : uniquement la réunion affichée
        components.css déplie les panneaux d'onglets masqués pour les pages
        qui veulent tout imprimer ; ici c'est l'inverse qui est demandé —
        seule la réunion ouverte part à l'impression. On rétablit donc le
        masquage, et on retire tout le reste : liste latérale, barre
-       d'outils, boutons. L'en-tête, la navigation, le pied de page et le
-       dépliage des liens externes sont déjà traités par base.css.
+       d'outils, sélecteur de pôle, boutons. L'en-tête, la navigation, le
+       pied de page, le dépliage des liens externes et tout ce qui porte
+       `sans-impression` sont déjà traités par base.css.
        =================================================================== */
 
     @media print {
@@ -312,6 +367,9 @@
         display: none !important;
       }
 
+      /* La barre d'onglets elle-même n'a pas de sens sur le papier : le
+         lecteur imprimé porte déjà la nature de la réunion en badge. */
+      .onglets__liste,
       .barre-outils,
       .reunions__liste {
         display: none !important;
@@ -349,24 +407,19 @@
   <header class="site-entete">
     <div class="site-entete__interieur">
       <a class="site-logo" href="index.html">ETII <span>HUB</span></a>
-
       <nav class="site-nav" aria-label="Navigation principale">
         <ul class="site-nav__liste">
-          <li><a href="index.html">Accueil</a></li>
-          <li><a href="communication.html">Communication</a></li>
-          <li><a href="reunions.html" aria-current="page">Réunions</a></li>
-          <li><a href="organigramme.html">Organigramme</a></li>
-          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="index.html" aria-current="page">Tableau de bord</a></li>
+          <li><a href="etiia.html" data-pole="ETIIA">ETIIA</a></li>
+          <li><a href="etiie.html" data-pole="ETIIE">ETIIE</a></li>
+          <li><a href="etiii.html" data-pole="ETIII">ETIII</a></li>
           <li><a href="docsearch.html">Recherche</a></li>
         </ul>
       </nav>
-
       <button class="bascule-theme" type="button" data-bascule-theme
               aria-pressed="false">
-        <span class="bascule-theme__icone bascule-theme__icone--clair"
-              aria-hidden="true">☾</span>
-        <span class="bascule-theme__icone bascule-theme__icone--sombre"
-              aria-hidden="true">☀</span>
+        <span class="bascule-theme__icone bascule-theme__icone--clair" aria-hidden="true">☾</span>
+        <span class="bascule-theme__icone bascule-theme__icone--sombre" aria-hidden="true">☀</span>
         <span class="bascule-theme__libelle">Thème sombre</span>
       </button>
     </div>
@@ -380,14 +433,25 @@
            ============================================================== -->
       <div class="pile pile--serree">
         <h1>Réunions</h1>
-        <p class="mesure texte-doux">
-          Les comptes-rendus passés et les points à venir du service.
-          Choisissez un onglet, puis une réunion dans la liste pour en lire
-          la synthèse, les sujets, les actions et les décisions. Les
-          onglets se parcourent aux flèches gauche et droite, la liste aux
-          flèches haut et bas.
+        <p class="mesure texte-doux sans-marge">
+          Les comptes-rendus passés et les points à venir, pour le service
+          entier ou pour un seul pôle. Choisissez le périmètre, puis un
+          onglet, puis une réunion dans la liste pour en lire la synthèse,
+          les sujets, les actions et les décisions. Les onglets se
+          parcourent aux flèches gauche et droite, la liste aux flèches
+          haut et bas.
         </p>
       </div>
+
+      <!-- ==============================================================
+           Sous-navigation vers les autres pages transverses. Chaque lien
+           porte le pôle actif dans son hash : reunions.js la construit,
+           car elle dépend du pôle lu dans l'URL. Elle vit hors de la zone
+           de données pour rester utilisable même si le fichier de
+           réunions est introuvable.
+           ============================================================== -->
+      <nav id="reunions-sous-nav" class="sans-impression"
+           aria-label="Pages du périmètre affiché"></nav>
 
       <!-- ==============================================================
            Zone alimentée par assets/data/reunions.json.

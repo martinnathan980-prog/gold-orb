@@ -23,7 +23,6 @@ const lire = (p) => readFileSync(join(RACINE, p), 'utf8');
 const PAGES = ['index', 'etiia', 'etiie', 'etiii',
                'communication', 'reunions', 'organigramme', 'faq', 'docsearch'];
 const CSS = ['tokens', 'base', 'components', 'skin'];
-const MODULES_SOCLE = ['ui', 'search', 'data'];   // ordre de dépendance
 const DONNEES = ['communications', 'reunions', 'organigramme', 'faq',
                  'documents', 'indicateurs'];
 
@@ -113,8 +112,24 @@ const cssAssemble = CSS.map(n =>
 const donneesAssemblees = Object.fromEntries(
   DONNEES.map(n => [n, JSON.parse(lire(`assets/data/${n}.json`))]));
 
-const socleAssemble = MODULES_SOCLE
-  .map(n => bloc(n, lire(`assets/js/${n}.js`))).join('\n');
+/* Résolution TRANSITIVE des dépendances.
+   Une liste de modules écrite en dur se périme au premier module partagé
+   ajouté au projet — et l'échec est silencieux à la construction, visible
+   seulement à l'exécution. On part donc du module de la page et on suit
+   ses imports, en profondeur d'abord, pour obtenir un ordre topologique. */
+function dependances(nom, vues = new Set(), ordre = []) {
+  if (vues.has(nom)) return ordre;
+  vues.add(nom);
+  const source = lire(`assets/js/${nom}.js`);
+  const cibles = new Set();
+  for (const m of source.matchAll(/^import\s*\{[\s\S]*?\}\s*from\s*['"]\.\/([A-Za-z0-9_-]+)\.js['"]/gm))
+    cibles.add(m[1]);
+  for (const m of source.matchAll(/\bimport\s*\(\s*['"]\.\/([A-Za-z0-9_-]+)\.js['"]\s*\)/g))
+    cibles.add(m[1]);
+  for (const cible of cibles) dependances(cible, vues, ordre);
+  ordre.push(nom);
+  return ordre;
+}
 
 // Les trois espaces de pôle partagent pole.js : le module à intégrer n'est
 // donc pas déduit du nom de la page mais lu dans sa balise <script>.
@@ -145,12 +160,17 @@ function construirePage(nom) {
 }
 
 function bles(nom) {
+  // Le module de la page vient en dernier ; ses dépendances le précèdent,
+  // chacune une seule fois, dans l'ordre où elles doivent être évaluées.
+  const chaine = dependances(nom);
+  const socle = chaine.slice(0, -1)
+    .map(n => bloc(n, lire(`assets/js/${n}.js`))).join('\n');
   return `const __M = {};
 // Les données sont intégrées : aucun fetch, donc aucune contrainte file://
 // ni d'URL de base. chargerDonnees est remplacée par une lecture directe.
 const __DONNEES = ${json(donneesAssemblees)};
 
-${socleAssemble}
+${socle}
 
 __M["data"].chargerDonnees = function (nomJeu) {
   const jeu = __DONNEES[nomJeu];

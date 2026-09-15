@@ -1,7 +1,14 @@
 /* =========================================================================
-   ETII Hub — Module de la page Réunions (SPEC.md §4.3)
+   ETII Hub — Module de la page Réunions (SPEC.md §4.3 et §1bis)
 
-   Ce module corrige les deux bugs de l'ancienne version (SPEC.md §6) :
+   C'est une page TRANSVERSE : un seul gabarit, partagé par le service et
+   par ses trois pôles, filtré par le pôle actif. Le pôle voyage dans le
+   hash de l'URL — `reunions.html#pole=ETIIA` — et « ETII » désigne le
+   niveau service, tous pôles confondus. Toute autre valeur retombe sur
+   « ETII » sans erreur.
+
+   Ce module corrige par ailleurs les deux bugs de l'ancienne version
+   (SPEC.md §6), et ces correctifs sont conservés intacts :
 
      BUG 4 — la page ne rendait que les comptes-rendus ; les prochains
              points étaient chargés puis jamais affichés. Ici, DEUX onglets
@@ -18,16 +25,33 @@
              distincts du corps du texte, et étiquetés en toutes lettres.
 
    Responsabilités :
-     1. Démarrer le thème et marquer la page courante dans la navigation.
+     1. Démarrer le thème et marquer, dans la navigation principale, le
+        lien du PÔLE ACTIF (celui du tableau de bord si le pôle est ETII).
      2. Charger reunions.json et en rendre les trois états — chargement,
         erreur, vide — via avecEtat() de data.js.
-     3. Construire les onglets accessibles (tablist / tab / tabpanel,
+     3. Offrir un sélecteur de pôle à quatre puces, chacune avec son
+        nombre de réunions, et un état vide explicite quand un pôle n'a
+        rien inscrit.
+     4. Construire les onglets accessibles (tablist / tab / tabpanel,
         flèches, Origine/Fin, une seule tabulation) et les deux volets.
-     4. Filtrer la liste de l'onglet courant avec le moteur de search.js
+     5. Filtrer la liste de l'onglet courant avec le moteur de search.js
         (creerIndex + rechercher), en surlignant les correspondances.
-     5. Refléter l'onglet actif, la réunion ouverte et la requête dans le
-        hash de l'URL, et les restaurer au chargement comme au retour
-        arrière du navigateur.
+     6. Refléter dans le hash À LA FOIS le pôle, l'onglet actif, la réunion
+        affichée et la requête, et les restaurer au chargement comme au
+        retour arrière du navigateur.
+
+   Points de conception notables :
+
+   - Le pôle n'est jamais signalé par la couleur seule : chaque réunion
+     porte une pastille ÉTIQUETÉE, où le code du pôle est écrit à côté du
+     point teinté, et chaque puce du sélecteur nomme son périmètre.
+
+   - L'index de recherche d'un onglet est construit UNE fois, sur toutes
+     ses réunions, et n'est jamais reconstruit : changer de pôle ne fait
+     que filtrer les résultats, jamais réindexer.
+
+   - L'impression ne laisse passer que la réunion affichée, par les seuls
+     styles @media print de la page : aucune bibliothèque PDF (SPEC §4.3).
 
    Tout le DOM produit ici passe par el() / frag() / monter() : le texte est
    inséré en textContent, jamais en innerHTML, et aucun gestionnaire n'est
@@ -44,7 +68,46 @@ import { chargerDonnees, avecEtat, verifierForme } from './data.js';
 import { creerIndex, rechercher, surligner } from './search.js';
 
 /* -------------------------------------------------------------------------
-   Constantes d'affichage
+   1. La structure du service
+   ------------------------------------------------------------------------- */
+
+/*
+   Les quatre périmètres de l'accord d'équipe, dans l'ordre : le service
+   puis ses trois pôles. Le libellé et la métaphore sont de la matière
+   éditoriale, pas de la donnée — ils vivent ici, pas dans un JSON. La
+   couleur, elle, est un jeton de tokens.css, rattaché au code du pôle par
+   le <style> de la page : jamais une valeur brute écrite en JavaScript.
+*/
+const POLES = [
+  { cle: 'ETII',  libelle: 'Tout le service', metaphore: 'Les quatre périmètres réunis' },
+  { cle: 'ETIIA', libelle: 'ETIIA', metaphore: 'Squelette & ADN' },
+  { cle: 'ETIIE', libelle: 'ETIIE', metaphore: 'Système nerveux' },
+  { cle: 'ETIII', libelle: 'ETIII', metaphore: 'Structure & harnais' }
+];
+
+/** Les seuls codes admis dans le hash. Toute autre valeur retombe sur ETII. */
+const CODES_POLE = POLES.map((pole) => pole.cle);
+
+/** Le niveau service : « tout le service », et le repli de toute erreur. */
+const POLE_SERVICE = 'ETII';
+
+/** Page d'espace correspondant à chaque pôle, pour marquer la navigation. */
+const PAGE_DE_POLE = {
+  ETII: 'index.html',
+  ETIIA: 'etiia.html',
+  ETIIE: 'etiie.html',
+  ETIII: 'etiii.html'
+};
+
+/** Les trois autres pages transverses, pour la sous-navigation. */
+const PAGES_TRANSVERSES = [
+  { page: 'communication.html', libelle: 'Communication' },
+  { page: 'organigramme.html', libelle: 'Organigramme' },
+  { page: 'faq.html', libelle: 'FAQ' }
+];
+
+/* -------------------------------------------------------------------------
+   2. Constantes d'affichage
    ------------------------------------------------------------------------- */
 
 /*
@@ -55,12 +118,13 @@ import { creerIndex, rechercher, surligner } from './search.js';
      cle        identifiant court, celui qui part dans le hash de l'URL
      source     clé du tableau correspondant dans reunions.json
      libelle    texte de l'onglet
-     resume     nom du champ de synthèse, et son étiquette affichée
+     champResume nom du champ de synthèse, et son étiquette affichée
      badge      libellé de nature, affiché sur chaque entrée
-     actions    étiquette du bloc d'actions (elle diffère selon l'onglet)
-     decisions  true si l'onglet porte aussi un bloc de décisions
+     etiquetteActions étiquette du bloc d'actions (elle diffère par onglet)
+     avecDecisions true si l'onglet porte aussi un bloc de décisions
      ordre      'recent' (du plus récent au plus ancien) ou 'proche'
                 (du plus proche au plus lointain)
+     nom / noms nom de l'entrée au singulier et au pluriel
 */
 const ONGLETS = [
   {
@@ -74,6 +138,8 @@ const ONGLETS = [
     avecDecisions: true,
     ordre: 'recent',
     titreListe: 'Comptes-rendus disponibles',
+    nom: 'compte-rendu',
+    noms: 'comptes-rendus',
     videTitre: 'Aucun compte-rendu',
     videTexte: 'Aucune réunion passée n’a encore été publiée. Cet onglet '
       + 'se remplira dès le premier compte-rendu diffusé.'
@@ -89,6 +155,8 @@ const ONGLETS = [
     avecDecisions: false,
     ordre: 'proche',
     titreListe: 'Points à venir',
+    nom: 'point à venir',
+    noms: 'points à venir',
     videTitre: 'Aucun point programmé',
     videTexte: 'Aucune réunion à venir n’est inscrite à l’ordre du jour. '
       + 'Cet onglet se remplira dès le prochain point planifié.'
@@ -114,6 +182,7 @@ const CHAMPS_INDEXES = [
 ];
 
 /** Clés sous lesquelles l'état de la page est écrit dans le hash. */
+const CLE_POLE = 'pole';
 const CLE_ONGLET = 'onglet';
 const CLE_REUNION = 'reunion';
 const CLE_REQUETE = 'q';
@@ -125,7 +194,7 @@ const SQUELETTES_LISTE = 4;
 const DELAI_FRAPPE = 120;
 
 /* -------------------------------------------------------------------------
-   État du module
+   3. État du module
    ------------------------------------------------------------------------- */
 
 /**
@@ -141,18 +210,37 @@ const vues = new Map();
 /** Clé de l'onglet actuellement actif. */
 let ongletActif = ONGLETS[0].cle;
 
+/** Le pôle actif, toujours l'un des quatre codes admis. */
+let poleActif = POLE_SERVICE;
+
 /** Requête de recherche courante, telle que saisie. */
 let requete = '';
 
 /** Le champ de recherche, conservé pour la restauration depuis l'URL. */
 let champRecherche = null;
 
+/** Nœuds durables de la page, hors des vues d'onglet. */
+const refs = {
+  zone: null,
+  sousNav: null,
+  /** Code de pôle -> { bouton, compteur } du sélecteur. */
+  facettes: new Map()
+};
+
 /* -------------------------------------------------------------------------
-   1. Démarrage
+   4. Démarrage
    ------------------------------------------------------------------------- */
 
 initTheme();
-initNav('reunions');
+
+refs.zone = document.getElementById('zone-reunions');
+refs.sousNav = document.getElementById('reunions-sous-nav');
+
+/* Le pôle est connu avant même les données : la navigation et la
+   sous-navigation sont donc justes dès la première image, y compris si le
+   fichier de réunions est introuvable. */
+poleActif = poleDepuisEtat(etatUrl.lire());
+majNavigation();
 
 /* Enregistré UNE seule fois, hors du rendu : un clic sur « Réessayer »
    relance le rendu, il ne doit pas empiler les écouteurs. `replaceState`
@@ -186,7 +274,7 @@ demarrer();
  */
 function demarrer() {
   avecEtat(
-    document.getElementById('zone-reunions'),
+    refs.zone,
 
     /* Fabrique de promesse, et non promesse : le bouton « Réessayer » de
        l'état d'erreur peut ainsi relancer un vrai chargement. */
@@ -211,8 +299,9 @@ function demarrer() {
       texteVide: 'Ni compte-rendu, ni point à venir pour l’instant. '
         + 'Cette page se remplira dès la première réunion publiée.',
 
-      /* La page n'est vide que si les DEUX onglets le sont : un seul
-         compte-rendu, ou un seul point à venir, suffit à l'afficher. */
+      /* Vacuité du FICHIER, tous pôles et tous onglets confondus. Un pôle
+         sans réunion n'est pas un fichier vide : il a son propre état
+         vide, qui sait proposer le retour à tout le service. */
       estVide: (brut) => reunionsValides(brut, 'comptesRendus').length === 0
         && reunionsValides(brut, 'prochainsPoints').length === 0
     }
@@ -220,11 +309,11 @@ function demarrer() {
 }
 
 /* -------------------------------------------------------------------------
-   2. État de chargement
+   5. État de chargement
    ------------------------------------------------------------------------- */
 
 /**
- * Gabarit gris reprenant la disposition finale — barre d'outils, onglets,
+ * Gabarit gris reprenant la disposition finale — sélecteur, barre d'outils,
  * deux volets : la page ne saute pas au moment où les vraies données
  * arrivent. Purement décoratif, donc entièrement masqué aux lecteurs
  * d'écran — avecEtat() ajoute par ailleurs un texte de statut annoncé, et
@@ -246,6 +335,7 @@ function squeletteDeuxVolets(conteneur) {
 
   monter(conteneur,
     el('div', { class: 'pile pile--lache', 'aria-hidden': 'true' },
+      el('span', { class: 'squelette squelette--ligne squelette--court' }),
       el('span', { class: 'squelette squelette--ligne squelette--moyen' }),
       el('div', { class: 'reunions' },
         el('div', { class: 'reunions__volet pile pile--serree' }, options),
@@ -260,32 +350,38 @@ function squeletteDeuxVolets(conteneur) {
 }
 
 /* -------------------------------------------------------------------------
-   3. Rendu principal
+   6. Rendu principal
    ------------------------------------------------------------------------- */
 
 /**
- * Construit la barre d'outils, les deux onglets et leurs panneaux, puis
- * applique l'état demandé par l'URL.
+ * Construit le sélecteur de pôle, la barre d'outils, les deux onglets et
+ * leurs panneaux, puis applique l'état demandé par l'URL.
  *
  * @param {object} donnees    contenu de reunions.json
  * @param {Element} conteneur zone de page, déjà vidée par avecEtat()
  */
 function rendre(donnees, conteneur) {
   vues.clear();
+  refs.facettes.clear();
 
   /* Chaque onglet reçoit sa vue complète : données triées, index de
      recherche prêt, et tous ses nœuds construits. Rien n'est recalculé à
-     la frappe hormis le filtrage lui-même. */
+     la frappe ni au changement de pôle hormis le filtrage lui-même. */
   for (const definition of ONGLETS) {
     vues.set(definition.cle, creerVue(definition, donnees));
   }
 
-  /* État initial lu dans le hash. Un lien du type `#reunion=cr02` venu
-     d'une autre page suffit à ouvrir le bon onglet sur la bonne réunion. */
+  /* État initial lu dans le hash. Il peut avoir changé entre le démarrage
+     et l'arrivée des données — un lien collé, par exemple : on le relit.
+     Un lien du type `#reunion=cr02` venu d'une autre page suffit à ouvrir
+     le bon onglet sur la bonne réunion. */
   const demande = etatUrl.lire();
+  poleActif = poleDepuisEtat(demande);
   requete = texteSimple(demande[CLE_REQUETE]);
   ongletActif = resoudreOngletInitial(demande);
+  majNavigation();
 
+  const selecteur = construireSelecteurPoles();
   const barre = construireBarreOutils();
   const onglets = construireOnglets();
 
@@ -293,36 +389,32 @@ function rendre(donnees, conteneur) {
      lecteur est une région live, et une région remplie hors du document
      n'énonce rien. On évite ainsi de faire lire toute une réunion au
      chargement de la page — seuls les changements ultérieurs sont annoncés. */
-  const reunionDemandee = texteSimple(demande[CLE_REUNION]);
-  for (const vue of vues.values()) {
-    const initiale = vue.parId.has(reunionDemandee) ? reunionDemandee : null;
-    rafraichirVue(vue, initiale);
-  }
+  appliquerPole(texteSimple(demande[CLE_REUNION]), false);
 
-  peindreOnglets(false);
-
-  monter(conteneur, barre, onglets);
-
-  /* Le hash est normalisé même quand il était absent ou approximatif :
-     l'URL devient partageable telle quelle. */
-  ecrireUrl();
+  monter(conteneur, selecteur, barre, onglets);
 
   const vue = vueActive();
-  annoncer(vue.affichees.length + ' ' + (vue.affichees.length > 1
-    ? 'réunions chargées dans l’onglet ' : 'réunion chargée dans l’onglet ')
-    + vue.definition.libelle + '.');
+  const n = vue.affichees.length;
+  annoncer(libellePole(poleActif) + ' : ' + n + ' '
+    + pluriel(n, 'réunion chargée', 'réunions chargées')
+    + ' dans l’onglet ' + vue.definition.libelle + '.');
 }
 
 /**
  * Prépare la vue d'un onglet : filtrage des entrées exploitables, tri,
  * index de recherche et conteneurs DOM.
  *
+ * L'index couvre TOUTES les réunions de l'onglet, tous pôles confondus :
+ * il est construit une fois pour toutes, et le filtrage par pôle s'applique
+ * ensuite à ses résultats — jamais une réindexation à chaque changement de
+ * périmètre.
+ *
  * @param {object} definition  entrée de ONGLETS
  * @param {object} donnees     contenu de reunions.json
  * @returns {object} la vue
  */
 function creerVue(definition, donnees) {
-  const reunions = reunionsValides(donnees, definition.source)
+  const toutes = reunionsValides(donnees, definition.source)
     .sort(function (a, b) {
       /* Tri explicite et déterministe : jamais l'ordre d'insertion.
          Les comptes-rendus vont du plus récent au plus ancien, les points
@@ -335,17 +427,22 @@ function creerVue(definition, donnees) {
     });
 
   const parId = new Map();
-  for (const reunion of reunions) parId.set(String(reunion.id), reunion);
+  for (const reunion of toutes) parId.set(String(reunion.id), reunion);
 
-  const vue = {
+  return {
     definition,
-    reunions,
+
+    /** Toutes les réunions de l'onglet, tous pôles confondus. */
+    toutes,
     parId,
 
     /* L'index est construit ICI, une fois pour toutes : jamais à la frappe. */
-    index: creerIndex(reunions.map(documentIndexable), CHAMPS_INDEXES),
+    index: creerIndex(toutes.map(documentIndexable), CHAMPS_INDEXES),
 
-    /** Réunions actuellement visibles, après filtrage. */
+    /** Les réunions du pôle actif — le corpus que la recherche filtre. */
+    reunions: [],
+
+    /** Réunions actuellement visibles, après pôle puis recherche. */
     affichees: [],
 
     /** Identifiant de réunion -> élément <li role="option">. */
@@ -362,12 +459,150 @@ function creerVue(definition, donnees) {
     conteneurListe: null,
     lecteur: null
   };
-
-  return vue;
 }
 
 /* -------------------------------------------------------------------------
-   4. Barre d'outils : recherche et impression
+   7. Sélecteur de pôle
+   ------------------------------------------------------------------------- */
+
+/**
+ * Les quatre puces de facette « Tout le service / ETIIA / ETIIE / ETIII »,
+ * chacune avec le nombre de réunions correspondantes, comptes-rendus et
+ * points à venir confondus.
+ *
+ * Ce sont des <button aria-pressed>, jamais des <div> : l'état est donc
+ * annoncé aux lecteurs d'écran, et la puce est actionnable au clavier
+ * comme à la souris, sans un seul gestionnaire en attribut HTML. Aucune
+ * puce n'est jamais désactivée : un pôle à zéro réunion reste sélectionnable
+ * et affiche alors son état vide, qui sait proposer le retour au service.
+ *
+ * @returns {HTMLElement}
+ */
+function construireSelecteurPoles() {
+  const puces = POLES.map((pole) => {
+    const compteur = el('span', { class: 'facette__compteur' }, '0');
+
+    const bouton = el('button', {
+      class: 'facette',
+      type: 'button',
+      'aria-pressed': 'false',
+      dataset: { pole: pole.cle },
+      onClick: () => changerPole(pole.cle)
+    },
+      el('span', { class: 'facette__marque', 'aria-hidden': 'true' }, '✓'),
+      /* Point teinté DÉCORATIF : le libellé qui suit porte seul le sens. */
+      el('span', { class: 'pole-point', 'aria-hidden': 'true' }),
+      el('span', null, pole.libelle),
+      compteur
+    );
+
+    refs.facettes.set(pole.cle, { bouton: bouton, compteur: compteur });
+    return el('li', null, bouton);
+  });
+
+  return el('section', {
+    class: 'pile pile--serree sans-impression',
+    'aria-labelledby': 'reunions-titre-poles'
+  },
+    el('h2', { class: 'reunions__titre-section', id: 'reunions-titre-poles' },
+      'Périmètre affiché'),
+    el('ul', { class: 'facettes' }, puces)
+  );
+}
+
+/**
+ * Met les compteurs, l'état pressé et les libellés accessibles des quatre
+ * puces en accord avec les données et le pôle actif.
+ */
+function majCompteursPoles() {
+  for (const [code, puce] of refs.facettes) {
+    const nombre = compterPole(code);
+    const actif = code === poleActif;
+
+    if (puce.compteur.textContent !== String(nombre)) {
+      puce.compteur.textContent = String(nombre);
+    }
+
+    puce.bouton.setAttribute('aria-pressed', actif ? 'true' : 'false');
+    puce.bouton.setAttribute('aria-label',
+      libellePole(code) + ', ' + nombre + ' '
+      + pluriel(nombre, 'réunion', 'réunions')
+      + ', comptes-rendus et points à venir confondus');
+  }
+}
+
+/**
+ * Nombre de réunions d'un périmètre, les deux onglets réunis. « Tout le
+ * service » compte tout ; un pôle ne compte que ses propres entrées.
+ *
+ * @param {string} code
+ * @returns {number}
+ */
+function compterPole(code) {
+  let total = 0;
+  for (const vue of vues.values()) {
+    total += code === POLE_SERVICE
+      ? vue.toutes.length
+      : vue.toutes.filter((reunion) => poleDe(reunion) === code).length;
+  }
+  return total;
+}
+
+/**
+ * Change le pôle actif : navigation, sous-navigation, listes, lecteurs et
+ * URL. Le focus reste sur la puce cliquée — elle n'est jamais reconstruite.
+ *
+ * @param {string} code
+ */
+function changerPole(code) {
+  const cible = normaliserPole(code);
+  if (cible === poleActif) return;
+
+  poleActif = cible;
+  majNavigation();
+  appliquerPole(null, true);
+}
+
+/**
+ * Applique le pôle actif aux deux onglets : chaque vue refiltre son corpus,
+ * repeint sa liste et son lecteur, et les compteurs se remettent à jour.
+ *
+ * @param {string|null} prefere     identifiant à ouvrir dans l'onglet actif
+ * @param {boolean} avecAnnonce     énoncer le résultat aux lecteurs d'écran
+ */
+function appliquerPole(prefere, avecAnnonce) {
+  for (const vue of vues.values()) {
+    vue.reunions = poleActif === POLE_SERVICE
+      ? vue.toutes.slice()
+      : vue.toutes.filter((reunion) => poleDe(reunion) === poleActif);
+
+    rafraichirVue(vue, vue.definition.cle === ongletActif ? prefere : null);
+  }
+
+  majCompteursPoles();
+  peindreOnglets(false);
+
+  /* Le hash est normalisé même quand il était absent ou approximatif :
+     l'URL porte désormais le pôle, l'onglet, la réunion et la requête, et
+     devient partageable telle quelle. */
+  ecrireUrl();
+
+  if (!avecAnnonce) return;
+
+  const vue = vueActive();
+  const n = vue.affichees.length;
+
+  annoncer(n === 0
+    ? 'Aucune réunion pour ' + libellePole(poleActif) + ' dans l’onglet '
+      + vue.definition.libelle + '. Revenez à tout le service pour voir '
+      + 'les autres réunions.'
+    : libellePole(poleActif) + ' : ' + n + ' '
+      + pluriel(n, 'réunion', 'réunions') + ' dans l’onglet '
+      + vue.definition.libelle + '.');
+}
+
+/* -------------------------------------------------------------------------
+   8. Barre d'outils : recherche et impression
    ------------------------------------------------------------------------- */
 
 /**
@@ -438,7 +673,8 @@ function construireBarreOutils() {
         class: 'champ__aide',
         id: 'recherche-reunions-aide'
       }, 'La recherche porte sur le titre, le lieu, les sujets, les actions '
-        + 'et les décisions, et ne filtre que l’onglet affiché.')
+        + 'et les décisions, et ne filtre que l’onglet affiché, dans le '
+        + 'périmètre choisi.')
     ),
 
     el('button', {
@@ -468,7 +704,8 @@ function effacerRecherche() {
 /**
  * Lance l'impression du navigateur. Les styles @media print de la page ne
  * laissent passer que la réunion affichée : ni en-tête, ni navigation, ni
- * liste latérale, ni boutons. Aucune bibliothèque PDF (SPEC §4.3).
+ * sélecteur de pôle, ni liste latérale, ni boutons. Aucune bibliothèque
+ * PDF (SPEC §4.3).
  */
 function imprimer() {
   try {
@@ -482,7 +719,7 @@ function imprimer() {
 }
 
 /* -------------------------------------------------------------------------
-   5. Onglets accessibles
+   9. Onglets accessibles
    ------------------------------------------------------------------------- */
 
 /**
@@ -573,7 +810,7 @@ function construirePanneau(vue) {
       el('div', { class: 'reunions__volet reunions__liste pile pile--serree' },
         el('div', { class: 'pile pile--serree' },
           el('h2', {
-            class: 'texte-sm texte-doux gras sans-marge',
+            class: 'reunions__titre-section',
             id: 'titre-liste-' + cle
           }, vue.definition.titreListe),
           vue.compteur
@@ -606,7 +843,8 @@ function peindreOnglets(focaliser) {
     const n = vue.affichees.length;
     vue.pastille.textContent = String(n);
     vue.onglet.setAttribute('aria-label',
-      vue.definition.libelle + ' — ' + n + ' ' + (n > 1 ? 'réunions' : 'réunion'));
+      vue.definition.libelle + ' — ' + n + ' '
+      + pluriel(n, 'réunion', 'réunions'));
   }
 
   if (focaliser) vueActive().onglet.focus();
@@ -683,12 +921,13 @@ function surClavierOnglets(evt) {
 }
 
 /* -------------------------------------------------------------------------
-   6. Volet de gauche : la liste filtrée
+   10. Volet de gauche : la liste filtrée
    ------------------------------------------------------------------------- */
 
 /**
- * Recalcule la liste d'un onglet selon la requête courante, puis repeint
- * le lecteur. Appelé au rendu initial, à chaque frappe et à l'effacement.
+ * Recalcule la liste d'un onglet selon le pôle actif et la requête
+ * courante, puis repeint le lecteur. Appelé au rendu initial, à chaque
+ * changement de pôle, à chaque frappe et à l'effacement.
  *
  * @param {object} vue
  * @param {string|null} prefere  identifiant à sélectionner s'il est visible
@@ -699,21 +938,16 @@ function rafraichirVue(vue, prefere) {
 
   const n = vue.affichees.length;
   vue.compteur.textContent = requete.trim() === ''
-    ? n + ' ' + (n > 1 ? 'réunions' : 'réunion')
-    : n + ' ' + (n > 1 ? 'réunions trouvées' : 'réunion trouvée')
-      + ' sur ' + vue.reunions.length;
+    ? n + ' ' + pluriel(n, 'réunion', 'réunions')
+      + ' — ' + libellePole(poleActif)
+    : n + ' ' + pluriel(n, 'réunion trouvée', 'réunions trouvées')
+      + ' sur ' + vue.reunions.length + ' — ' + libellePole(poleActif);
 
   if (n === 0) {
     /* Aucun résultat : un état vide explicite, jamais une colonne blanche.
-       La variante change de discours selon la cause — corpus vide, ou
-       recherche infructueuse. */
-    const vide = requete.trim() === ''
-      ? etatVide(vue.definition.videTitre, vue.definition.videTexte, '📄')
-      : etatVide('Aucune réunion trouvée',
-        'Aucune réunion de cet onglet ne correspond à « ' + requete.trim()
-        + ' ». Essayez un autre terme, ou effacez la recherche.', '⌕');
-
-    monter(vue.conteneurListe, vide);
+       Le discours change selon la cause — corpus vide, pôle sans réunion,
+       ou recherche infructueuse. */
+    monter(vue.conteneurListe, etatVideListe(vue));
     vue.selection = null;
     peindreLecteur(vue);
     return;
@@ -748,12 +982,14 @@ function rafraichirVue(vue, prefere) {
 }
 
 /**
- * Applique la requête courante à un onglet.
+ * Applique le pôle actif puis la requête courante à un onglet.
  *
- * Le filtrage est délégué à search.js — insensible à la casse et aux
- * accents, tolérant aux fautes de frappe, classé par pertinence : pas de
- * filtre maison (SPEC §5). Requête vide : l'ordre chronologique choisi
- * pour l'onglet est conservé.
+ * Le pôle filtre le corpus ; la recherche est ensuite déléguée à search.js
+ * — insensible à la casse et aux accents, tolérante aux fautes de frappe,
+ * classée par pertinence : pas de filtre maison (SPEC §5). L'index couvre
+ * tous les pôles, ses résultats sont donc restreints au périmètre après
+ * coup, ce qui préserve à la fois l'index et le classement. Requête vide :
+ * l'ordre chronologique choisi pour l'onglet est conservé.
  *
  * @param {object} vue
  * @returns {Array<object>} les réunions à afficher, dans l'ordre d'affichage
@@ -765,15 +1001,64 @@ function filtrer(vue) {
   const sortie = [];
   for (const resultat of rechercher(vue.index, q)) {
     const reunion = vue.parId.get(String(resultat.doc.id));
-    if (reunion) sortie.push(reunion);
+    if (!reunion) continue;
+    if (poleActif !== POLE_SERVICE && poleDe(reunion) !== poleActif) continue;
+    sortie.push(reunion);
   }
   return sortie;
 }
 
 /**
- * Une option de la liste : date, lieu, titre et extrait de synthèse. Aucun
- * élément interactif à l'intérieur — une option de listbox ne contient
- * jamais de lien ni de bouton.
+ * L'état vide de la liste d'un onglet, dans sa variante juste :
+ *   - recherche infructueuse : on propose d'élargir la requête ;
+ *   - pôle sans réunion : on propose de revenir à tout le service ;
+ *   - onglet vide pour tout le service : le corpus est simplement vide.
+ *
+ * @param {object} vue
+ * @returns {HTMLElement}
+ */
+function etatVideListe(vue) {
+  const definition = vue.definition;
+
+  if (requete.trim() !== '') {
+    return etatVide('Aucune réunion trouvée',
+      'Aucun ' + definition.nom + ' de ' + libellePole(poleActif)
+      + ' ne correspond à « ' + requete.trim()
+      + ' ». Essayez un autre terme, ou effacez la recherche.', '⌕');
+  }
+
+  if (poleActif !== POLE_SERVICE) {
+    const total = vue.toutes.length;
+
+    return etatVide(
+      'Aucun ' + definition.nom + ' pour ' + poleActif,
+      'Le pôle ' + poleActif + ' — ' + metaphorePole(poleActif)
+      + ' — n’a aucun ' + definition.nom + ' enregistré. Le service en '
+      + 'compte par ailleurs ' + total + ' au total.',
+      '∅',
+      el('div', { class: 'etat-vide__actions' },
+        el('button', {
+          class: 'bouton bouton--principal',
+          type: 'button',
+          onClick: function () {
+            changerPole(POLE_SERVICE);
+            /* Le bouton cliqué vient d'être détruit : le focus est rendu à
+               la puce correspondante, jamais laissé sur le <body>. */
+            const puce = refs.facettes.get(POLE_SERVICE);
+            if (puce) puce.bouton.focus();
+          }
+        }, 'Voir tout le service')
+      )
+    );
+  }
+
+  return etatVide(definition.videTitre, definition.videTexte, '📄');
+}
+
+/**
+ * Une option de la liste : date, lieu, pôle, titre et extrait de synthèse.
+ * Aucun élément interactif à l'intérieur — une option de listbox ne
+ * contient jamais de lien ni de bouton.
  *
  * @param {object} vue
  * @param {object} reunion
@@ -795,7 +1080,8 @@ function construireOption(vue, reunion) {
       el('time', { datetime: reunion.date }, formaterDate(reunion.date)),
       reunion.lieu
         ? el('span', null, surligne(texteSimple(reunion.lieu)))
-        : null
+        : null,
+      pastillePole(reunion)
     ),
 
     el('p', { class: 'carte__titre' }, surligne(texteSimple(reunion.titre))),
@@ -809,18 +1095,38 @@ function construireOption(vue, reunion) {
     el('p', { class: 'carte__meta' },
       el('span', { class: 'badge badge--neutre' },
         compte(reunion.actions) + ' '
-        + (compte(reunion.actions) > 1 ? 'actions' : 'action')),
+        + pluriel(compte(reunion.actions), 'action', 'actions')),
       vue.definition.avecDecisions
         ? el('span', { class: 'badge badge--neutre' },
           compte(reunion.decisions) + ' '
-          + (compte(reunion.decisions) > 1 ? 'décisions' : 'décision'))
+          + pluriel(compte(reunion.decisions), 'décision', 'décisions'))
         : null
     )
   );
 }
 
+/**
+ * Pastille ÉTIQUETÉE du pôle d'une réunion : le point teinté n'est que
+ * décoratif, le code du pôle est toujours écrit à côté. La couleur ne
+ * porte donc jamais seule l'information (SPEC §1bis).
+ *
+ * @param {object} reunion
+ * @returns {HTMLElement}
+ */
+function pastillePole(reunion) {
+  const code = poleDe(reunion);
+
+  return el('span', {
+    class: 'badge badge--pole',
+    dataset: { pole: code }
+  },
+    el('span', { class: 'badge__point', 'aria-hidden': 'true' }),
+    (code === POLE_SERVICE ? 'Service ' : 'Pôle ') + code
+  );
+}
+
 /* -------------------------------------------------------------------------
-   7. Volet de droite : le lecteur
+   11. Volet de droite : le lecteur
    ------------------------------------------------------------------------- */
 
 /**
@@ -905,7 +1211,7 @@ function contenuLecteur(vue, reunion) {
   return frag(
     el('div', { class: 'lecteur__contenu pile pile--lache' },
 
-      /* --- Entête : date, lieu, nature --------------------------------- */
+      /* --- Entête : date, lieu, pôle, nature --------------------------- */
       el('div', { class: 'pile pile--serree' },
         el('p', { class: 'carte__meta' },
           el('time', { datetime: reunion.date }, formaterDate(reunion.date)),
@@ -914,6 +1220,7 @@ function contenuLecteur(vue, reunion) {
               el('span', { class: 'visuellement-cache' }, 'Lieu : '),
               surligne(texteSimple(reunion.lieu)))
             : null,
+          pastillePole(reunion),
           el('span', { class: 'badge badge--accent' }, definition.badge)
         ),
         el('h2', { class: 'sans-marge' }, surligne(texteSimple(reunion.titre)))
@@ -1022,7 +1329,7 @@ function blocCle(variante, etiquette, icone, aide, entrees, texteVide) {
 }
 
 /* -------------------------------------------------------------------------
-   8. Navigation au clavier dans la liste
+   12. Navigation au clavier dans la liste
    ------------------------------------------------------------------------- */
 
 /**
@@ -1083,17 +1390,66 @@ function surClavierListe(evt, vue) {
 }
 
 /* -------------------------------------------------------------------------
-   9. État reflété dans l'URL
+   13. Navigation et sous-navigation
    ------------------------------------------------------------------------- */
 
 /**
- * Écrit l'onglet actif, la réunion ouverte et la requête dans le hash.
- * etatUrl.ecrire() remplace l'entrée d'historique courante et omet les
- * valeurs vides : l'URL reste courte, lisible et partageable telle quelle.
+ * Reporte le pôle actif sur la navigation principale et la
+ * sous-navigation.
+ *
+ * Sur une page transverse, c'est le lien du PÔLE ACTIF qui porte
+ * `aria-current="page"` — celui du tableau de bord quand le pôle est
+ * « ETII ». initNav() se charge de poser l'attribut sur ce seul lien et de
+ * le retirer partout ailleurs : il n'y en a jamais deux.
+ */
+function majNavigation() {
+  initNav(PAGE_DE_POLE[poleActif] || 'index.html');
+  rendreSousNav();
+}
+
+/**
+ * Sous-navigation vers les trois autres pages transverses, chaque lien
+ * portant le pôle actif dans son hash : on change de page sans perdre son
+ * périmètre.
+ */
+function rendreSousNav() {
+  if (!refs.sousNav) return;
+
+  refs.sousNav.setAttribute('aria-label',
+    'Autres pages — ' + libellePole(poleActif));
+
+  monter(refs.sousNav,
+    el('ul', { class: 'rangee rangee--serree' },
+      PAGES_TRANSVERSES.map((entree) => el('li', null,
+        el('a', {
+          class: 'bouton bouton--secondaire bouton--compact',
+          href: entree.page + '#' + CLE_POLE + '=' + encodeURIComponent(poleActif)
+        }, entree.libelle))),
+      el('li', null,
+        el('a', {
+          class: 'bouton bouton--discret bouton--compact',
+          href: PAGE_DE_POLE[poleActif] || 'index.html'
+        }, poleActif === POLE_SERVICE
+          ? 'Tableau de bord ETII'
+          : 'Espace ' + poleActif))
+    )
+  );
+}
+
+/* -------------------------------------------------------------------------
+   14. État reflété dans l'URL
+   ------------------------------------------------------------------------- */
+
+/**
+ * Écrit le pôle, l'onglet actif, la réunion ouverte et la requête dans le
+ * hash. etatUrl.ecrire() remplace l'entrée d'historique courante et omet
+ * les valeurs vides : l'URL reste courte, lisible et partageable telle
+ * quelle.
  */
 function ecrireUrl() {
   const vue = vueActive();
   etatUrl.ecrire({
+    [CLE_POLE]: poleActif,
     [CLE_ONGLET]: ongletActif,
     [CLE_REUNION]: vue ? vue.selection : null,
     [CLE_REQUETE]: requete.trim()
@@ -1103,12 +1459,24 @@ function ecrireUrl() {
 /**
  * Restaure l'état depuis le hash après une vraie navigation (retour
  * arrière, lien collé). `replaceState` ne déclenche pas hashchange : seules
- * les navigations de l'utilisateur arrivent ici.
+ * les navigations de l'utilisateur arrivent ici, aucune boucle de
+ * rétroaction n'est donc possible avec ecrireUrl().
  *
  * @param {object} etat  résultat de etatUrl.lire()
  */
 function appliquerEtatUrl(etat) {
-  if (vues.size === 0) return;   // données pas encore chargées
+  const pole = poleDepuisEtat(etat);
+
+  if (vues.size === 0) {
+    /* Données pas encore chargées — ou état d'erreur affiché : il n'y a
+       rien à repeindre, mais la navigation, elle, doit déjà suivre le
+       pôle demandé. rendre() relira le hash au moment voulu. */
+    if (pole !== poleActif) {
+      poleActif = pole;
+      majNavigation();
+    }
+    return;
+  }
 
   const nouvelleRequete = texteSimple(etat[CLE_REQUETE]);
   const changementRequete = nouvelleRequete.trim() !== requete.trim();
@@ -1120,6 +1488,17 @@ function appliquerEtatUrl(etat) {
 
   const cible = resoudreOngletInitial(etat);
   const reunion = texteSimple(etat[CLE_REUNION]);
+
+  ongletActif = cible;
+
+  if (pole !== poleActif) {
+    /* Le pôle refiltre tout : inutile de rafraîchir deux fois,
+       appliquerPole() repeint les deux onglets et réécrit l'URL. */
+    poleActif = pole;
+    majNavigation();
+    appliquerPole(reunion || null, false);
+    return;
+  }
 
   if (changementRequete) {
     for (const vue of vues.values()) {
@@ -1133,7 +1512,6 @@ function appliquerEtatUrl(etat) {
     }
   }
 
-  ongletActif = cible;
   peindreOnglets(false);
 }
 
@@ -1161,8 +1539,55 @@ function resoudreOngletInitial(etat) {
   return ONGLETS[0].cle;
 }
 
+/**
+ * Pôle lu dans l'état d'URL. Toute valeur absente ou inconnue retombe sur
+ * « ETII », le niveau service, sans erreur ni message (SPEC §1bis).
+ *
+ * @param {object} etat
+ * @returns {string}
+ */
+function poleDepuisEtat(etat) {
+  if (!etat || typeof etat !== 'object') return POLE_SERVICE;
+  const brut = Array.isArray(etat[CLE_POLE]) ? etat[CLE_POLE][0] : etat[CLE_POLE];
+  return normaliserPole(brut);
+}
+
+/**
+ * Ramène n'importe quelle valeur à l'un des quatre codes admis.
+ *
+ * @param {*} valeur
+ * @returns {string}
+ */
+function normaliserPole(valeur) {
+  const code = typeof valeur === 'string' ? valeur.trim().toUpperCase() : '';
+  return CODES_POLE.includes(code) ? code : POLE_SERVICE;
+}
+
+/**
+ * Pôle d'une réunion. Une réunion sans pôle, ou dont le pôle est inconnu,
+ * appartient au niveau service.
+ *
+ * @param {object} reunion
+ * @returns {string}
+ */
+function poleDe(reunion) {
+  return normaliserPole(reunion ? reunion.pole : null);
+}
+
+/** Libellé lisible d'un périmètre, pour les compteurs et les aria-label. */
+function libellePole(code) {
+  const pole = POLES.find((item) => item.cle === code);
+  return pole ? pole.libelle : POLE_SERVICE;
+}
+
+/** Métaphore d'un pôle, matière éditoriale de l'accord d'équipe. */
+function metaphorePole(code) {
+  const pole = POLES.find((item) => item.cle === code);
+  return pole ? pole.metaphore : '';
+}
+
 /* -------------------------------------------------------------------------
-   10. Petits utilitaires
+   15. Petits utilitaires
    ------------------------------------------------------------------------- */
 
 /** La vue de l'onglet actif. */
@@ -1239,13 +1664,15 @@ function surligne(texte) {
  * @param {string} titre
  * @param {string} texte
  * @param {string} glyphe
+ * @param {*} [actions]  bloc d'actions facultatif
  * @returns {HTMLElement}
  */
-function etatVide(titre, texte, glyphe) {
+function etatVide(titre, texte, glyphe, actions) {
   return el('div', { class: 'etat-vide etat-vide--compact etat-vide--encadre' },
     el('span', { class: 'etat-vide__illustration', 'aria-hidden': 'true' }, glyphe),
     el('p', { class: 'etat-vide__titre' }, titre),
-    el('p', { class: 'etat-vide__texte' }, texte)
+    el('p', { class: 'etat-vide__texte' }, texte),
+    actions || null
   );
 }
 
@@ -1259,16 +1686,18 @@ const annoncerResultats = debounce(function () {
   if (!vue) return;
 
   const n = vue.affichees.length;
+  const perimetre = ' dans l’onglet ' + vue.definition.libelle
+    + ' pour ' + libellePole(poleActif) + '.';
+
   if (requete.trim() === '') {
     annoncer('Recherche effacée. ' + n + ' '
-      + (n > 1 ? 'réunions affichées.' : 'réunion affichée.'));
+      + pluriel(n, 'réunion affichée', 'réunions affichées') + perimetre);
     return;
   }
 
   annoncer(n === 0
-    ? 'Aucune réunion trouvée dans l’onglet ' + vue.definition.libelle + '.'
-    : n + ' ' + (n > 1 ? 'réunions trouvées' : 'réunion trouvée')
-      + ' dans l’onglet ' + vue.definition.libelle + '.');
+    ? 'Aucune réunion trouvée' + perimetre
+    : n + ' ' + pluriel(n, 'réunion trouvée', 'réunions trouvées') + perimetre);
 }, DELAI_FRAPPE * 4);
 
 /**
@@ -1279,6 +1708,11 @@ const annoncerResultats = debounce(function () {
  */
 function compte(valeur) {
   return Array.isArray(valeur) ? valeur.length : 0;
+}
+
+/** Accord au pluriel, sans bibliothèque ni table. */
+function pluriel(nombre, singulier, pluriels) {
+  return nombre > 1 ? pluriels : singulier;
 }
 
 /**

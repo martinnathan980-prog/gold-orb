@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Base de connaissances — ETII Hub</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Questions fréquentes du service ETII : recherche classée par pertinence, filtre par catégorie, et enregistrement local des questions sans réponse.">
+  <meta name="description" content="Questions fréquentes du service ETII et de ses trois pôles : recherche classée par pertinence, filtres combinables par pôle et par catégorie, et enregistrement local des questions sans réponse.">
   <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
@@ -34,6 +34,39 @@
        variable CSS.
        ======================================================================= -->
   <style>
+    /* ---------------------------------------------------------------------
+       A0. Couleurs de pôle
+       La palette catégorielle vit dans tokens.css ; ici on se contente de
+       rattacher un code de pôle à son jeton. La couleur n'est JAMAIS seule
+       porteuse de sens : toute pastille teintée est accompagnée du code du
+       pôle en toutes lettres.
+       --------------------------------------------------------------------- */
+
+    [data-pole="ETII"]  { --pole-teinte: var(--pole-etii); }
+    [data-pole="ETIIA"] { --pole-teinte: var(--pole-etiia); }
+    [data-pole="ETIIE"] { --pole-teinte: var(--pole-etiie); }
+    [data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
+
+    /* Point de couleur d'une puce de pôle. Purement décoratif : le libellé
+       qui le suit porte seul l'information. */
+    .pole-point {
+      flex: none;
+      inline-size: var(--e-2);
+      block-size: var(--e-2);
+      border-radius: var(--rayon-plein);
+      background-color: var(--pole-teinte, var(--texte-doux));
+    }
+
+    /* Pastille ÉTIQUETÉE du pôle d'origine d'une question : un point teinté
+       et, toujours, le code du pôle écrit. Elle reprend le composant
+       .badge ; seules ses trois variables de teinte sont réaffectées, donc
+       le contraste AA reste celui garanti par components.css. */
+    .badge--pole {
+      --badge-fond: transparent;
+      --badge-teinte: var(--pole-teinte, var(--texte-doux));
+      --badge-bordure: var(--pole-teinte, var(--bordure));
+    }
+
     /* ---------------------------------------------------------------------
        A1. Agencement en deux volets
        Liste des questions à gauche, réponse à droite. Sous 900 px les deux
@@ -454,24 +487,19 @@
   <header class="site-entete">
     <div class="site-entete__interieur">
       <a class="site-logo" href="index.html">ETII <span>HUB</span></a>
-
       <nav class="site-nav" aria-label="Navigation principale">
         <ul class="site-nav__liste">
-          <li><a href="index.html">Accueil</a></li>
-          <li><a href="communication.html">Communication</a></li>
-          <li><a href="reunions.html">Réunions</a></li>
-          <li><a href="organigramme.html">Organigramme</a></li>
-          <li><a href="faq.html" aria-current="page">FAQ</a></li>
+          <li><a href="index.html" aria-current="page">Tableau de bord</a></li>
+          <li><a href="etiia.html" data-pole="ETIIA">ETIIA</a></li>
+          <li><a href="etiie.html" data-pole="ETIIE">ETIIE</a></li>
+          <li><a href="etiii.html" data-pole="ETIII">ETIII</a></li>
           <li><a href="docsearch.html">Recherche</a></li>
         </ul>
       </nav>
-
       <button class="bascule-theme" type="button" data-bascule-theme
               aria-pressed="false">
-        <span class="bascule-theme__icone bascule-theme__icone--clair"
-              aria-hidden="true">☾</span>
-        <span class="bascule-theme__icone bascule-theme__icone--sombre"
-              aria-hidden="true">☀</span>
+        <span class="bascule-theme__icone bascule-theme__icone--clair" aria-hidden="true">☾</span>
+        <span class="bascule-theme__icone bascule-theme__icone--sombre" aria-hidden="true">☀</span>
         <span class="bascule-theme__libelle">Thème sombre</span>
       </button>
     </div>
@@ -486,13 +514,24 @@
       <div class="pile pile--serree">
         <h1>Base de connaissances</h1>
         <p class="mesure texte-doux">
-          Les questions fréquentes du service, classées par pertinence.
-          Tapez votre recherche, filtrez par catégorie, puis choisissez une
-          question pour lire la réponse. La liste se parcourt aussi aux
-          flèches du clavier, et la touche <kbd>/</kbd> place le curseur
-          dans le champ de recherche.
+          Les questions fréquentes du service et de ses trois pôles,
+          classées par pertinence. Choisissez un périmètre, tapez votre
+          recherche, affinez par catégorie, puis choisissez une question
+          pour lire la réponse. La liste se parcourt aussi aux flèches du
+          clavier, et la touche <kbd>/</kbd> place le curseur dans le champ
+          de recherche.
         </p>
       </div>
+
+      <!-- ==============================================================
+           Sous-navigation vers les autres pages transverses. Chaque lien
+           porte le pôle actif dans son hash : faq.js la construit, car
+           elle dépend du pôle lu dans l'URL. Elle vit hors de la zone de
+           données pour rester utilisable même si faq.json est
+           introuvable.
+           ============================================================== -->
+      <nav id="faq-sous-nav" class="sans-impression"
+           aria-label="Pages du périmètre affiché"></nav>
 
       <!-- ==============================================================
            Zone alimentée par assets/data/faq.json.

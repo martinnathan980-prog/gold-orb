@@ -207,6 +207,13 @@ async function avecEtatLocal(cible, source, rendu, options) {
    Pondération de l'index (SPEC §4.6 et §5). Le champ de poids le plus
    fort fait office de « titre » pour le moteur : c'est lui qui porte les
    bonus « la requête commence le titre » et « la requête est le titre ».
+
+   Le champ `pole` est délibérément ABSENT de cet index. Les trois codes
+   ETIIA / ETIIE / ETIII sont à une seule substitution les uns des autres :
+   indexés, la tolérance aux fautes de frappe (Levenshtein ≤ 1 sur 4 à 7
+   caractères, SPEC §5) ferait remonter les documents d'un pôle quand on
+   tape le code d'un autre. Le pôle se choisit donc à la facette, qui est
+   exacte, et se lit sur la carte — jamais au petit bonheur du classement.
 */
 const CHAMPS_INDEXES = [
   { nom: 'titre',       poids: 10 },  // fort
@@ -220,14 +227,27 @@ const CHAMPS_INDEXES = [
 ];
 
 /*
-   Les quatre dimensions de facettes exigées par la SPEC §4.6. `filtrable`
-   marque les dimensions à forte cardinalité (le porteur : une cinquantaine
-   de valeurs) : leur liste reçoit un champ de filtrage et un repli
-   « afficher tout », sans quoi la colonne deviendrait impraticable.
+   Les dimensions de facettes : les quatre exigées par la SPEC §4.6, plus
+   le pôle, qui est l'axe structurel du service (SPEC §1bis). Le pôle vient
+   en tête parce que c'est la première question que l'on se pose devant le
+   fonds : « qu'est-ce qui relève de chez moi ? ».
+
+   `champ` peut désigner une chaîne ou un TABLEAU dans le document : un
+   document relève parfois de deux pôles, exactement comme il relève
+   parfois de deux métiers. `valeursDoc()` normalise les deux formes, et
+   tout le reste de la mécanique — compteurs croisés, désactivation à zéro,
+   hash, « Tout effacer » — est écrit une fois pour toutes les dimensions.
+
+   `filtrable` marque les dimensions à forte cardinalité (le porteur : une
+   cinquantaine de valeurs) : leur liste reçoit un champ de filtrage et un
+   repli « afficher tout », sans quoi la colonne deviendrait impraticable.
+   `teinte` marque les dimensions dont les valeurs ont une couleur propre.
    `documents.json` ne déclare pas de clé « porteurs » : `preparerCorpus()`
    déduit alors les valeurs du corpus, comme pour toute source absente.
 */
 const DIMENSIONS = [
+  { cle: 'pole',      champ: 'pole',      libelle: 'Pôle',      source: 'poles',
+    teinte: true },
   { cle: 'type',      champ: 'type',      libelle: 'Type',      source: 'types' },
   { cle: 'metier',    champ: 'metier',    libelle: 'Métier',    source: 'metiers' },
   { cle: 'porteur',   champ: 'porteur',   libelle: 'Porteur',   source: 'porteurs',
@@ -235,7 +255,10 @@ const DIMENSIONS = [
   { cle: 'perimetre', champ: 'perimetre', libelle: 'Périmètre', source: 'perimetres' }
 ];
 
-/** Raccourci vers la dimension « métier », la seule qui soit une liste. */
+/** Raccourci vers la dimension « pôle », affichée sur chaque carte. */
+const DIMENSION_POLE = DIMENSIONS.find((dimension) => dimension.cle === 'pole');
+
+/** Raccourci vers la dimension « métier », multivaluée comme le pôle. */
 const DIMENSION_METIER = DIMENSIONS.find((dimension) => dimension.cle === 'metier');
 
 /** Nombre de valeurs montrées d'emblée dans une facette filtrable. */
@@ -279,13 +302,25 @@ const FORMAT_DATE = new Intl.DateTimeFormat('fr-FR', {
    2. État de la page
    ------------------------------------------------------------------------- */
 
+/**
+ * Fabrique un objet portant une entrée par dimension. Dérivé de
+ * DIMENSIONS plutôt qu'écrit à la main : ajouter une facette ne laisse
+ * plus la possibilité d'oublier l'une des trois tables.
+ *
+ * @param {() => *} fabrique valeur initiale d'une entrée
+ * @returns {Object<string, *>}
+ */
+function parDimension(fabrique) {
+  const objet = {};
+  for (const dimension of DIMENSIONS) objet[dimension.cle] = fabrique();
+  return objet;
+}
+
 const etat = {
   /** Texte saisi, tel quel. */
   requete: '',
   /** Valeurs actives par dimension : une entrée par clé de DIMENSIONS. */
-  facettes: {
-    type: new Set(), metier: new Set(), porteur: new Set(), perimetre: new Set()
-  },
+  facettes: parDimension(() => new Set()),
   /** Mode « parcourir tout le fonds », sans requête ni filtre. */
   tout: false,
   /** Index du résultat courant dans la liste affichée, -1 si aucun. */
@@ -298,10 +333,8 @@ const etat = {
 const corpus = {
   documents: [],
   index: null,
-  valeurs: { type: [], metier: [], porteur: [], perimetre: [] },
-  connues: {
-    type: new Set(), metier: new Set(), porteur: new Set(), perimetre: new Set()
-  },
+  valeurs: parDimension(() => []),
+  connues: parDimension(() => new Set()),
   comptesType: new Map()
 };
 
@@ -514,9 +547,19 @@ function construireInterface(donnees, cible) {
         type: 'button',
         class: 'facette',
         ariaPressed: 'false',
-        dataset: { dimension: dimension.cle, valeur }
+        // `data-pole` n'est posé que sur les dimensions teintées : c'est
+        // lui qui résout --pole-teinte en CSS. Le point qui en découle est
+        // décoratif, le code du pôle est écrit juste à côté.
+        dataset: {
+          dimension: dimension.cle,
+          valeur,
+          pole: dimension.teinte ? valeur : null
+        }
       },
       el('span', { class: 'facette__marque', ariaHidden: 'true' }, '✓'),
+      dimension.teinte
+        ? el('span', { class: 'pole-point', ariaHidden: 'true' })
+        : null,
       el('span', {}, valeur),
       compteur);
 
@@ -1012,6 +1055,16 @@ function obtenirFiche(doc) {
   const reference = el('span', { class: 'badge badge--carre badge--contour' });
   const resume = el('p', { class: 'ds-carte__resume' });
 
+  /* Le ou les pôles dont relève le document. Une pastille ÉTIQUETÉE : le
+     point teinté est décoratif, c'est « Pôle ETIIA » écrit à côté qui
+     porte l'information. La couleur ne signale donc jamais seule le pôle
+     (SPEC §1bis), et la carte reste lisible en niveaux de gris. */
+  const poles = valeursDoc(doc, DIMENSION_POLE).map(
+    (code) => el('li', {},
+      el('span', { class: 'badge badge--pole', dataset: { pole: code } },
+        el('span', { class: 'pole-point', ariaHidden: 'true' }),
+        'Pôle ' + code)));
+
   const metiers = valeursDoc(doc, DIMENSION_METIER).map(
     (metier) => el('li', {}, el('span', { class: 'badge badge--contour' }, metier)));
 
@@ -1067,7 +1120,7 @@ function obtenirFiche(doc) {
     reference),
   titre,
   resume,
-  el('ul', { class: 'facettes' }, metiers, perimetre),
+  el('ul', { class: 'facettes' }, poles, metiers, perimetre),
   el('div', { class: 'carte__pied' },
     el('span', {}, 'Porteur : ' + (doc.porteur || '—')),
     maj ? el('span', {}, 'Mis à jour le ',

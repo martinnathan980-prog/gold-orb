@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Communication Center — ETII Hub</title>
+  <title>Communication — ETII Hub</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Annonces du service ETII : liste chronologique, détail de l'annonce sélectionnée et bandeau des alertes en cours.">
+  <meta name="description" content="Communication du service ETII et de ses trois pôles : liste chronologique filtrable par pôle, détail de l'annonce sélectionnée et bandeau des alertes en cours.">
+  <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
@@ -13,17 +14,53 @@
 
   <!-- =====================================================================
        Styles propres au Communication Center.
-       Uniquement ce qu'aucune classe de base.css ou components.css ne
-       couvre : la disposition en deux volets, l'état sélectionné d'une
+
+       Uniquement ce qu'aucune classe de base.css, components.css ou
+       skin.css ne couvre : le rattachement d'un code de pôle à son jeton
+       de couleur, la disposition en deux volets, l'état sélectionné d'une
        option de liste, les lignes typées du corps d'annonce et le bandeau
        d'alertes défilant.
+
        Aucune valeur brute : tout vient de tokens.css. Seuls les points de
        rupture sont exprimés en pixels, comme dans base.css — une media
        query ne peut pas lire une variable CSS.
        ===================================================================== -->
   <style>
     /* ===================================================================
-       1. Disposition en deux volets
+       1. Couleurs de pôle
+       La palette catégorielle vit dans tokens.css ; ici on se contente de
+       rattacher un code de pôle à son jeton. La couleur n'est JAMAIS
+       seule porteuse de sens : toute pastille teintée est accompagnée du
+       code du pôle en toutes lettres.
+       =================================================================== */
+
+    [data-pole="ETII"]  { --pole-teinte: var(--pole-etii); }
+    [data-pole="ETIIA"] { --pole-teinte: var(--pole-etiia); }
+    [data-pole="ETIIE"] { --pole-teinte: var(--pole-etiie); }
+    [data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
+
+    /* Point de couleur d'une puce de pôle. Purement décoratif : le
+       libellé qui le suit porte seul l'information. */
+    .pole-point {
+      flex: none;
+      inline-size: var(--e-2);
+      block-size: var(--e-2);
+      border-radius: var(--rayon-plein);
+      background-color: var(--pole-teinte, var(--texte-doux));
+    }
+
+    /* Pastille ÉTIQUETÉE du pôle d'origine d'une annonce : un point teinté
+       et, toujours, le code du pôle écrit. Elle reprend le composant
+       .badge ; seules ses trois variables de teinte sont réaffectées, donc
+       le contraste AA reste celui garanti par components.css. */
+    .badge--pole {
+      --badge-fond: transparent;
+      --badge-teinte: var(--pole-teinte, var(--texte-doux));
+      --badge-bordure: var(--pole-teinte, var(--bordure));
+    }
+
+    /* ===================================================================
+       2. Disposition en deux volets
        Liste à gauche, détail à droite. Sous 900 px les deux volets
        s'empilent, et l'ordre du document — liste puis détail — donne
        directement l'ordre demandé, sans aucune réécriture d'ordre.
@@ -62,8 +99,25 @@
       }
     }
 
+    /* `[hidden]` doit l'emporter sur le `display` posé par les primitives
+       de base.css, dont la spécificité est identique à celle de la règle
+       du navigateur. Un sélecteur ciblé suffit : pas de !important. */
+    .pile[hidden],
+    .rangee[hidden] {
+      display: none;
+    }
+
+    /* Intitulé de section discret (sélecteur de pôle, liste d'annonces). */
+    .comm__titre-section {
+      margin: 0;
+      font-size: var(--texte-sm);
+      font-weight: var(--graisse-forte);
+      text-transform: uppercase;
+      color: var(--texte-doux);
+    }
+
     /* ===================================================================
-       2. Options de la liste d'annonces
+       3. Options de la liste d'annonces
        Ce sont de vraies options de listbox : l'état est porté par
        aria-selected, jamais par une classe posée en JavaScript.
        =================================================================== */
@@ -109,7 +163,7 @@
     }
 
     /* ===================================================================
-       3. Corps de l'annonce : une présentation par type de ligne
+       4. Corps de l'annonce : une présentation par type de ligne
        =================================================================== */
 
     .comm__detail:focus {
@@ -199,7 +253,7 @@
     }
 
     /* ===================================================================
-       4. Bandeau d'alertes défilant
+       5. Bandeau d'alertes défilant
        CSS pur : aucun minuteur, aucun requestAnimationFrame. La piste
        contient deux exemplaires identiques de la liste, et se translate
        d'exactement la moitié de sa largeur — la boucle est donc continue
@@ -295,7 +349,7 @@
     }
 
     /* ===================================================================
-       5. Impression : le détail seul a du sens sur papier
+       6. Impression : le détail seul a du sens sur papier
        =================================================================== */
 
     @media print {
@@ -317,24 +371,19 @@
   <header class="site-entete">
     <div class="site-entete__interieur">
       <a class="site-logo" href="index.html">ETII <span>HUB</span></a>
-
       <nav class="site-nav" aria-label="Navigation principale">
         <ul class="site-nav__liste">
-          <li><a href="index.html">Accueil</a></li>
-          <li><a href="communication.html" aria-current="page">Communication</a></li>
-          <li><a href="reunions.html">Réunions</a></li>
-          <li><a href="organigramme.html">Organigramme</a></li>
-          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="index.html" aria-current="page">Tableau de bord</a></li>
+          <li><a href="etiia.html" data-pole="ETIIA">ETIIA</a></li>
+          <li><a href="etiie.html" data-pole="ETIIE">ETIIE</a></li>
+          <li><a href="etiii.html" data-pole="ETIII">ETIII</a></li>
           <li><a href="docsearch.html">Recherche</a></li>
         </ul>
       </nav>
-
       <button class="bascule-theme" type="button" data-bascule-theme
               aria-pressed="false">
-        <span class="bascule-theme__icone bascule-theme__icone--clair"
-              aria-hidden="true">☾</span>
-        <span class="bascule-theme__icone bascule-theme__icone--sombre"
-              aria-hidden="true">☀</span>
+        <span class="bascule-theme__icone bascule-theme__icone--clair" aria-hidden="true">☾</span>
+        <span class="bascule-theme__icone bascule-theme__icone--sombre" aria-hidden="true">☀</span>
         <span class="bascule-theme__libelle">Thème sombre</span>
       </button>
     </div>
@@ -347,13 +396,24 @@
            Titre et accroche
            ============================================================== -->
       <div class="pile pile--serree">
-        <h1>Communication Center</h1>
-        <p class="mesure texte-doux">
-          Les annonces du service, de la plus récente à la plus ancienne.
-          Choisissez une annonce dans la liste pour en lire le détail ;
-          la liste se parcourt aussi aux flèches du clavier.
+        <h1>Communication</h1>
+        <p class="mesure texte-doux sans-marge">
+          Les annonces du service et de ses trois pôles, de la plus récente
+          à la plus ancienne. Choisissez le périmètre à afficher, puis une
+          annonce dans la liste pour en lire le détail ; la liste se
+          parcourt aussi aux flèches du clavier.
         </p>
       </div>
+
+      <!-- ==============================================================
+           Sous-navigation vers les autres pages transverses. Chaque lien
+           porte le pôle actif dans son hash : communication.js la
+           construit, car elle dépend du pôle lu dans l'URL. Elle vit hors
+           de la zone de données pour rester utilisable même si le fichier
+           d'annonces est introuvable.
+           ============================================================== -->
+      <nav id="comm-sous-nav" class="sans-impression"
+           aria-label="Pages du périmètre affiché"></nav>
 
       <!-- ==============================================================
            Zone alimentée par assets/data/communications.json.

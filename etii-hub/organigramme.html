@@ -3,40 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Organigramme — ETII Hub, équipes et rôles du service</title>
+  <title>Organigramme — ETII Hub</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Organisation du service ETII : direction, squads, leaders et membres. Réorganisation par glisser-déposer ou au clavier, recherche filtrante et zoom.">
-  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Organigramme du service ETII : direction, responsables de pôle, squads et membres, filtrable par pôle, réorganisable à la souris comme au clavier.">
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/skin.css">
 
-  <!-- =======================================================================
-       Styles propres à cette page UNIQUEMENT.
+  <!-- =====================================================================
+       Styles propres à la page Organigramme.
 
-       Trois catégories, et rien d'autre :
+       Uniquement ce qu'aucune classe de base.css, components.css ou
+       skin.css ne couvre : la barre d'outils, le rail d'arborescence qui
+       rend la profondeur visible, la carte de personne, l'avatar généré,
+       les zones de dépôt, et le pont entre le balisage produit par ui.js
+       (modale, notifications) et le design system.
 
-       A. Agencement de l'organigramme : barre d'outils, bloc de squad,
-          zone de dépôt, carte de personne, avatar généré. Aucun composant
-          de components.css ne couvre ces cas ; tout le reste (cartes,
-          boutons, champs, badges, états vides) est réutilisé tel quel.
-       B. Zoom : une seule variable, --org-echelle, multiplie les jetons
-          d'espacement et de typographie de la grille. C'est un VRAI
-          redimensionnement qui reflue — jamais un transform: scale() sur
-          la page, formellement banni par la SPEC §2.
-       C. Pont entre le contrat de classes de ui.js et la feuille de
-          composants. `ui.js` fabrique `.modale / .modale__boite / .toast…`
-          alors que components.css stylise `.modale-fond / .modale /
-          .notification…`. Sans ces règles, la modale « Déplacer… » et les
-          notifications s'afficheraient sans mise en forme. Le socle n'est
-          pas modifié : le pont vit ici, comme dans docsearch.html.
-
-       Aucune valeur brute : uniquement des var(--…) de tokens.css, ou des
-       calculs dérivés de ces jetons. Les seuls nombres sans unité sont des
-       facteurs (échelle de zoom, opacité d'atténuation), déclarés en tant
-       que variables locales juste en dessous.
-       ======================================================================= -->
+       Aucune valeur de couleur brute : tout vient de tokens.css. Seuls les
+       points de rupture sont en pixels, comme dans base.css — une media
+       query ne peut pas lire une variable CSS.
+       ===================================================================== -->
   <style>
     /* ---------------------------------------------------------------------
        A0. Variables locales de la page
@@ -44,21 +31,83 @@
 
     .organigramme {
       /* Facteur de zoom, piloté par les boutons et le curseur. La valeur
-         est posée en JavaScript sur cet élément : tout ce qui suit s'y
-         réfère, donc rien d'autre n'a besoin d'être recalculé. */
+         est posée par organigramme.js sur cet élément : tout ce qui suit
+         s'y réfère, donc rien d'autre n'a besoin d'être recalculé. */
       --org-echelle: 1;
 
-      /* Largeur minimale d'une carte de personne, avant application du zoom. */
+      /* Largeur minimale d'une carte de personne, avant zoom. */
       --org-carte-min: calc(var(--e-16) * 4);
 
-      /* Opacité des cartes qui ne correspondent pas à la recherche : mises
-         en retrait, jamais retirées du flux ni de l'ordre de tabulation. */
+      /* Opacité des cartes hors recherche : mises en retrait, jamais
+         retirées du flux ni de l'ordre de tabulation. */
       --org-retrait: 0.34;
+
+      /* Épaisseur du rail d'arborescence. */
+      --org-rail: calc(var(--e-1) / 2);
+
+      /* Teinte du niveau courant. Redéfinie par pôle ci-dessous ; au
+         niveau du service elle reste neutre, car « ETII » n'est pas un
+         pôle et n'a donc pas de couleur de série. */
+      --org-teinte: var(--texte-doux);
     }
 
     /* ---------------------------------------------------------------------
-       A1. Barre d'outils : recherche, zoom, actions
-       Elle reste accessible pendant le défilement d'une longue liste.
+       A1. Couleurs de pôle
+       La palette catégorielle vit dans tokens.css ; ici on se contente de
+       rattacher un code de pôle à son jeton. La couleur n'est JAMAIS seule
+       porteuse de sens : chaque élément teinté est accompagné du code du
+       pôle en toutes lettres.
+       --------------------------------------------------------------------- */
+
+    [data-pole="ETIIA"] { --org-teinte: var(--pole-etiia); }
+    [data-pole="ETIIE"] { --org-teinte: var(--pole-etiie); }
+    [data-pole="ETIII"] { --org-teinte: var(--pole-etiii); }
+    [data-pole="ETII"]  { --org-teinte: var(--pole-etii); }
+
+    /* Pastille de couleur des puces de facette et des en-têtes. Elle est
+       toujours suivie d'une étiquette textuelle. */
+    .org-puce {
+      flex: none;
+      display: inline-block;
+      inline-size: var(--e-3);
+      block-size: var(--e-3);
+      border-radius: var(--rayon-plein);
+      background-color: var(--org-teinte);
+      /* Cerclage : la pastille reste visible même si sa teinte s'approche
+         du fond de la puce sur laquelle elle est posée. */
+      box-shadow: 0 0 0 1px var(--bordure-forte);
+    }
+
+    /* ---------------------------------------------------------------------
+       A2. Sélecteur de pôle
+       --------------------------------------------------------------------- */
+
+    .org-selecteur {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-3);
+    }
+
+    .org-selecteur__titre {
+      margin: 0;
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-forte);
+      letter-spacing: var(--lettrage-etiquette);
+      text-transform: uppercase;
+      color: var(--texte-doux);
+    }
+
+    /* Ligne de situation : « Périmètre affiché : ETIIA — 20 personnes ».
+       Elle est recalculée à chaque déplacement, y compris entre pôles. */
+    .org-contexte {
+      margin: 0;
+      font-size: var(--texte-sm);
+      color: var(--texte-doux);
+    }
+
+    /* ---------------------------------------------------------------------
+       A3. Barre d'outils : recherche, zoom, réinitialisation
+       Elle reste atteignable pendant le défilement d'une longue liste.
        --------------------------------------------------------------------- */
 
     .org-barre {
@@ -78,8 +127,6 @@
       box-shadow: var(--ombre-sm);
     }
 
-    /* Le champ de recherche prend la place restante, mais se replie seul
-       sous la barre dès qu'il descend sous sa base. */
     .org-barre__recherche {
       flex: 1 1 calc(var(--e-16) * 4);
       min-inline-size: 0;
@@ -121,20 +168,127 @@
       color: var(--texte-doux);
     }
 
+    /* Résumé de la recherche filtrante. */
+    .org-resume {
+      margin: 0;
+      font-size: var(--texte-sm);
+      color: var(--texte-doux);
+    }
+
+    .org-resume[hidden] { display: none; }
+
     /* ---------------------------------------------------------------------
-       A2. Bloc de squad
+       A4. Arborescence : le rail qui rend la profondeur visible
+       Chaque descente d'un niveau décale le contenu et trace un rail
+       vertical teinté ; un tiret horizontal relie le rail à chaque nœud.
+       La profondeur se lit donc à l'œil, sans dépendre d'une couleur : le
+       décalage et les intertitres la portent tout autant.
        --------------------------------------------------------------------- */
 
-    .org-groupe {
+    /* Niveau 0 : le service. La direction, puis le rail des trois pôles. */
+    .org-service {
+      --pile-espace: var(--e-5);
+    }
+
+    .org-branche {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-5);
+
+      margin-inline-start: var(--e-4);
+      padding-inline-start: var(--e-6);
+      border-inline-start: var(--org-rail) solid var(--org-teinte);
+    }
+
+    .org-noeud {
+      position: relative;
+    }
+
+    /* Tiret de liaison entre le rail du parent et le nœud. Décoratif :
+       l'appartenance est déjà écrite dans le balisage et dans les
+       intertitres. */
+    .org-noeud::before {
+      content: "";
+      position: absolute;
+      inset-inline-start: calc(var(--e-6) * -1);
+      inset-block-start: var(--e-6);
+      inline-size: var(--e-5);
+      border-block-start: var(--org-rail) solid var(--org-teinte);
+      pointer-events: none;
+    }
+
+    /* Intertitre non hiérarchique (« Responsable de pôle », « Membres »).
+       Ce n'est volontairement pas un <h…> : soixante-cinq titres de plus
+       encombreraient le plan du document sans rien apprendre. */
+    .org-etiquette {
+      margin: 0;
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-forte);
+      letter-spacing: var(--lettrage-etiquette);
+      text-transform: uppercase;
+      color: var(--texte-doux);
+    }
+
+    /* ---------------------------------------------------------------------
+       A5. Bloc de pôle
+       --------------------------------------------------------------------- */
+
+    .org-pole {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-5);
+
+      padding: var(--e-5);
+      background-color: var(--fond-eleve);
+      border: 1px solid var(--bordure-douce);
+      border-inline-start: var(--e-1) solid var(--org-teinte);
+      border-radius: var(--rayon-lg);
+      box-shadow: var(--ombre-sm);
+    }
+
+    .org-pole__entete {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--e-2) var(--e-4);
+    }
+
+    .org-pole__identite {
+      flex: 1 1 auto;
+      min-inline-size: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-1);
+    }
+
+    .org-pole__titre {
+      display: flex;
+      align-items: center;
+      gap: var(--e-3);
+      margin: 0;
+      font-size: var(--texte-xl);
+      line-height: var(--interligne-serre);
+      overflow-wrap: anywhere;
+    }
+
+    .org-pole__sous-titre {
+      margin: 0;
+      font-size: var(--texte-sm);
+      color: var(--texte-doux);
+      overflow-wrap: anywhere;
+    }
+
+    /* ---------------------------------------------------------------------
+       A6. Bloc de squad
+       --------------------------------------------------------------------- */
+
+    .org-squad {
       --carte-espace: var(--e-4);
       padding: 0;
       overflow: hidden;
     }
 
-    /* L'en-tête est AUSSI une zone de dépôt : y déposer une personne la
-       promeut leader. Le repère visuel est donc permanent (fond enfoncé),
-       et renforcé au survol d'un glissement. */
-    .org-groupe__entete {
+    .org-squad__entete {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -142,71 +296,81 @@
 
       padding: var(--e-4) var(--e-5);
       background-color: var(--fond-enfonce);
-      border-bottom: 1px solid var(--bordure-douce);
+      border-block-end: 1px solid var(--bordure-douce);
     }
 
-    .org-groupe__titre {
+    .org-squad__titre {
       flex: 1 1 auto;
       min-inline-size: 0;
       margin: 0;
-      font-size: var(--texte-xl);
+      font-size: var(--texte-lg);
+      line-height: var(--interligne-serre);
       /* Un nom de squad peut être long et contenir n'importe quel
          caractère : il se coupe plutôt que de déborder. */
       overflow-wrap: anywhere;
     }
 
-    .org-groupe__corps {
+    .org-squad__corps {
       display: flex;
       flex-direction: column;
       gap: var(--e-4);
       padding: var(--e-5);
     }
 
-    /* Intertitre non hiérarchique (« Leader », « Membres »). Ce n'est pas
-       un <h…> : 65 titres supplémentaires pollueraient le plan du document
-       sans rien apprendre à un lecteur d'écran. */
-    .org-etiquette {
-      margin: 0;
-      font-size: var(--texte-xs);
-      font-weight: var(--graisse-forte);
-      letter-spacing: var(--e-1);
-      text-transform: uppercase;
-      color: var(--texte-doux);
+    .org-squad__section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-2);
     }
 
-    /* Indice n'apparaissant que pendant un glissement : inutile le reste
-       du temps, et il prendrait la place d'une information utile. */
+    /* Indice n'apparaissant que pendant un glissement. */
     .org-indice {
       display: none;
-      flex: 0 0 100%;
       margin: 0;
       font-size: var(--texte-xs);
       font-weight: var(--graisse-moyenne);
       color: var(--texte-accent);
     }
 
-    :root[data-org-glisse] .org-indice {
-      display: block;
-    }
+    :root[data-org-glisse] .org-indice { display: block; }
 
     /* ---------------------------------------------------------------------
-       A3. Zones de dépôt
+       A7. Zones de dépôt
        --------------------------------------------------------------------- */
 
     .org-depot {
+      padding: var(--e-2);
+      border: var(--org-rail) dashed transparent;
       border-radius: var(--rayon-md);
     }
 
-    /* Retour visuel du survol pendant un glissement. Le trait est en
-       pointillés : l'information ne repose pas sur la seule couleur. */
+    /* Repère permanent pendant un glissement : sans lui, on ne sait pas où
+       l'on a le droit de lâcher. */
+    :root[data-org-glisse] .org-depot {
+      border-color: var(--bordure);
+    }
+
+    /* Survol : le trait reste en pointillés, donc l'information ne repose
+       jamais sur la seule couleur. */
     .org-depot[data-survol] {
       background-color: var(--accent-doux);
-      outline: var(--focus-epaisseur) dashed var(--accent);
-      outline-offset: calc(var(--focus-decalage) * -1);
+      border-color: var(--accent);
+    }
+
+    /* La zone « leader » est une case unique, pas une grille. */
+    .org-depot--leader {
+      min-block-size: calc(var(--e-16) * var(--org-echelle));
+    }
+
+    .org-depot__vide {
+      margin: 0;
+      padding: var(--e-3);
+      font-size: var(--texte-sm);
+      color: var(--texte-faible);
     }
 
     /* ---------------------------------------------------------------------
-       A4. Grille de personnes — vrai responsive, piloté par le zoom
+       A8. Grille de personnes — vrai responsive, piloté par le zoom
        --------------------------------------------------------------------- */
 
     .org-grille {
@@ -223,7 +387,7 @@
     }
 
     /* ---------------------------------------------------------------------
-       A5. Carte de personne
+       A9. Carte de personne
        --------------------------------------------------------------------- */
 
     .personne {
@@ -231,12 +395,10 @@
       --carte-espace: calc(var(--e-3) * var(--org-echelle));
 
       block-size: 100%;
-      cursor: grab;
     }
 
-    .personne:active {
-      cursor: grabbing;
-    }
+    .personne[draggable="true"] { cursor: grab; }
+    .personne[draggable="true"]:active { cursor: grabbing; }
 
     /* Carte en cours de glissement : elle reste visible à sa place
        d'origine, en retrait, pour garder le repère de départ. */
@@ -279,27 +441,25 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      justify-content: space-between;
       gap: var(--e-2);
       margin-block-start: auto;
     }
 
-    /* Mise en retrait des cartes hors filtre : elles gardent leur place,
-       restent focalisables et lisibles par un lecteur d'écran. */
-    .personne[data-hors-filtre] {
-      opacity: var(--org-retrait);
-    }
+    /* Le bouton de déplacement est poussé en fin de pied. */
+    .personne__deplacer { margin-inline-start: auto; }
+
+    /* Mise en retrait des cartes hors recherche : elles gardent leur
+       place, restent focalisables et lisibles par un lecteur d'écran. */
+    .personne[data-hors-filtre] { opacity: var(--org-retrait); }
 
     /* Dès qu'une carte en retrait reçoit le focus ou le survol, elle
        redevient pleinement lisible : le clavier n'emmène jamais vers
        quelque chose d'illisible. */
     .personne[data-hors-filtre]:hover,
-    .personne[data-hors-filtre]:focus-within {
-      opacity: 1;
-    }
+    .personne[data-hors-filtre]:focus-within { opacity: 1; }
 
     /* ---------------------------------------------------------------------
-       A6. Avatar généré localement (SPEC §4.4)
+       A10. Avatar généré localement (SPEC §4.4)
        Le SVG est fabriqué par organigramme.js : un disque dont la TEINTE
        est dérivée de l'identifiant, et les initiales par-dessus. Le module
        ne transmet qu'un NOMBRE (--avatar-teinte) ; la seule formule de
@@ -311,9 +471,9 @@
        --------------------------------------------------------------------- */
 
     .avatar {
-      /* Valeur de repli : organigramme.js pose la teinte réelle, dérivée de
-         l'identifiant, sur chaque avatar. Déclarée ici pour que la variable
-         existe toujours, même si le module ne s'exécute pas. */
+      /* Repli : organigramme.js pose la teinte réelle sur chaque avatar.
+         Déclarée ici pour que la variable existe toujours, même si le
+         module ne s'exécute pas. */
       --avatar-teinte: 0;
 
       flex: none;
@@ -325,9 +485,7 @@
       box-shadow: 0 0 0 1px var(--bordure);
     }
 
-    .avatar__fond {
-      fill: hsl(var(--avatar-teinte) 55% 28%);
-    }
+    .avatar__fond { fill: hsl(var(--avatar-teinte) 55% 28%); }
 
     /* Pas de letter-spacing : avec text-anchor: middle, l'espace ajouté
        après la dernière lettre décentrerait les initiales dans le disque. */
@@ -337,17 +495,19 @@
     }
 
     /* ---------------------------------------------------------------------
-       A7. Résumé de filtrage
+       A11. Modale de déplacement : la liste des destinations
        --------------------------------------------------------------------- */
 
-    .org-resume {
+    .org-destination {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-4);
+    }
+
+    .org-destination__actuelle {
       margin: 0;
       font-size: var(--texte-sm);
       color: var(--texte-doux);
-    }
-
-    .org-resume[hidden] {
-      display: none;
     }
 
     /* ---------------------------------------------------------------------
@@ -399,16 +559,14 @@
       overflow: hidden;
     }
 
-    .modale__boite:focus {
-      outline: none;
-    }
+    .modale__boite:focus { outline: none; }
 
     .modale__entete {
       display: flex;
       align-items: flex-start;
       gap: var(--e-4);
       padding: var(--e-5) var(--e-6);
-      border-bottom: 1px solid var(--bordure-douce);
+      border-block-end: 1px solid var(--bordure-douce);
     }
 
     .modale__titre {
@@ -464,7 +622,7 @@
       gap: var(--e-3);
       padding: var(--e-4) var(--e-6);
       background-color: var(--fond-enfonce);
-      border-top: 1px solid var(--bordure-douce);
+      border-block-start: 1px solid var(--bordure-douce);
     }
 
     /* États transitoires posés par ui.js via data-etat. */
@@ -566,6 +724,44 @@
                     border-color var(--duree-rapide) var(--courbe);
       }
     }
+
+    /* ---------------------------------------------------------------------
+       Impression : l'organigramme seul, à plat.
+       --------------------------------------------------------------------- */
+
+    @media print {
+      /* base.css masque déjà .sans-impression ; ici on retire ce qui n'a
+         aucun sens sur le papier : les outils et les boutons d'action. */
+      .org-barre,
+      .org-selecteur,
+      .personne__deplacer { display: none !important; }
+
+      .org-pole,
+      .org-squad,
+      .personne {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        box-shadow: none;
+      }
+    }
+
+    /* Sur petit écran, le rail mangerait la largeur utile : on le réduit
+       sans le supprimer — la profondeur doit rester visible. */
+    @media (max-width: 640px) {
+      .org-branche {
+        margin-inline-start: var(--e-2);
+        padding-inline-start: var(--e-4);
+      }
+
+      .org-noeud::before {
+        inset-inline-start: calc(var(--e-4) * -1);
+        inline-size: var(--e-3);
+      }
+
+      .org-pole,
+      .org-squad__corps,
+      .org-squad__entete { padding: var(--e-4); }
+    }
   </style>
 </head>
 
@@ -575,24 +771,19 @@
   <header class="site-entete">
     <div class="site-entete__interieur">
       <a class="site-logo" href="index.html">ETII <span>HUB</span></a>
-
       <nav class="site-nav" aria-label="Navigation principale">
         <ul class="site-nav__liste">
-          <li><a href="index.html">Accueil</a></li>
-          <li><a href="communication.html">Communication</a></li>
-          <li><a href="reunions.html">Réunions</a></li>
-          <li><a href="organigramme.html" aria-current="page">Organigramme</a></li>
-          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="index.html" aria-current="page">Tableau de bord</a></li>
+          <li><a href="etiia.html" data-pole="ETIIA">ETIIA</a></li>
+          <li><a href="etiie.html" data-pole="ETIIE">ETIIE</a></li>
+          <li><a href="etiii.html" data-pole="ETIII">ETIII</a></li>
           <li><a href="docsearch.html">Recherche</a></li>
         </ul>
       </nav>
-
       <button class="bascule-theme" type="button" data-bascule-theme
               aria-pressed="false">
-        <span class="bascule-theme__icone bascule-theme__icone--clair"
-              aria-hidden="true">☾</span>
-        <span class="bascule-theme__icone bascule-theme__icone--sombre"
-              aria-hidden="true">☀</span>
+        <span class="bascule-theme__icone bascule-theme__icone--clair" aria-hidden="true">☾</span>
+        <span class="bascule-theme__icone bascule-theme__icone--sombre" aria-hidden="true">☀</span>
         <span class="bascule-theme__libelle">Thème sombre</span>
       </button>
     </div>
@@ -607,17 +798,33 @@
       <div class="pile pile--serree">
         <h1>Organigramme</h1>
         <p class="mesure texte-doux sans-marge">
-          La direction, puis les squads du service. Chaque personne peut
-          changer de squad et prendre le rôle de leader : faites-la glisser
-          vers une autre squad, ou utilisez le bouton
-          <strong>Déplacer…</strong> de sa carte, qui fait exactement la
-          même chose au clavier. Les changements restent sur ce poste et
-          n'affectent personne d'autre.
+          Le service ETII, puis chacun de ses trois pôles : un responsable
+          et deux squads. Choisissez le périmètre à afficher, puis
+          réorganisez librement : faites glisser une personne vers une
+          autre squad — y compris dans un autre pôle — ou utilisez le
+          bouton <strong>Déplacer…</strong> de sa carte, qui fait
+          exactement la même chose au clavier. Les changements restent sur
+          ce poste et n'affectent personne d'autre.
         </p>
       </div>
 
       <!-- ==============================================================
-           Barre d'outils
+           Sélecteur de pôle.
+           Les quatre puces et leurs effectifs sont construits par
+           organigramme.js à partir des données : la section reste masquée
+           tant qu'il n'y a rien de fiable à proposer.
+           ============================================================== -->
+      <section class="org-selecteur sans-impression" id="org-selecteur"
+               aria-labelledby="org-selecteur-titre" hidden>
+        <h2 class="org-selecteur__titre" id="org-selecteur-titre">
+          Périmètre affiché
+        </h2>
+        <ul class="facettes" id="org-poles"></ul>
+        <p class="org-contexte" id="org-contexte"></p>
+      </section>
+
+      <!-- ==============================================================
+           Barre d'outils.
            Tous les contrôles sont désactivés tant que les données ne sont
            pas chargées : organigramme.js les réactive à l'état « succès ».
            ============================================================== -->
@@ -665,10 +872,6 @@
         </div>
 
         <div class="org-barre__actions">
-          <button class="bouton bouton--secondaire bouton--compact"
-                  id="org-nouvelle-squad" type="button" disabled>
-            Nouvelle squad
-          </button>
           <button class="bouton bouton--danger-discret bouton--compact"
                   id="org-reinitialiser" type="button" disabled>
             Réinitialiser
@@ -676,7 +879,7 @@
         </div>
       </section>
 
-      <!-- Résumé du filtrage. Vide et masqué tant qu'aucune recherche
+      <!-- Résumé de la recherche. Vide et masqué tant qu'aucune recherche
            n'est en cours ; relié au champ par aria-describedby. -->
       <p class="org-resume" id="org-resume" hidden></p>
 

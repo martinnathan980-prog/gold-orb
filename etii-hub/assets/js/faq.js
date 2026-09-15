@@ -1,18 +1,30 @@
 /* =========================================================================
    ETII Hub — Module de la base de connaissances (SPEC.md §4.5)
 
-   Cinq responsabilités, et rien d'autre :
+   C'est une page TRANSVERSE : un seul gabarit, partagé par le service et
+   par ses trois pôles, filtré par le pôle actif. Le pôle voyage dans le
+   hash de l'URL — `faq.html#pole=ETIIA` — et « ETII » désigne le niveau
+   service, tous pôles confondus.
 
-     1. Démarrer le thème et marquer la page courante dans la navigation.
+   Six responsabilités, et rien d'autre :
+
+     1. Démarrer le thème et marquer, dans la navigation principale, le
+        lien du PÔLE ACTIF (celui du tableau de bord si le pôle est ETII).
      2. Charger faq.json et en rendre les trois états — chargement, erreur,
         vide — via avecEtat() de data.js.
      3. Classer les questions par pertinence avec le moteur commun
         (search.js) : question en poids fort, mots-clés et catégorie en
         poids moyen, réponse en poids faible. Les correspondances sont
         surlignées via surligner() + surlignerVers().
-     4. Filtrer par catégorie, en puces de facette avec compteur, le
-        compteur étant calculé en ignorant la dimension qu'il chiffre.
-     5. Recueillir les questions sans réponse : la modale « Poser la
+     4. Filtrer par PÔLE et par CATÉGORIE, en puces de facette avec
+        compteur. Les deux filtres se combinent, et chaque compteur est
+        calculé en ignorant la dimension qu'il chiffre mais en tenant
+        compte de l'autre : les deux séries de compteurs se recalculent
+        donc l'une en fonction de l'autre.
+     5. Afficher, pour chaque question, son pôle d'origine par une
+        pastille ÉTIQUETÉE — jamais par la seule couleur — et proposer un
+        état vide explicite quand un pôle n'a aucune question.
+     6. Recueillir les questions sans réponse : la modale « Poser la
         question » les enregistre LOCALEMENT (stockage de ui.js) et les
         affiche dans « Vos questions en attente », avec suppression.
 
@@ -54,7 +66,43 @@ const CHAMPS_INDEXES = [
   { nom: 'reponse',   poids: 1 }    // faible
 ];
 
+/*
+   Les quatre périmètres de l'accord d'équipe, dans l'ordre : le service
+   puis ses trois pôles. Le libellé et la métaphore sont de la matière
+   éditoriale, pas de la donnée — ils vivent ici, pas dans un JSON. La
+   couleur, elle, est un jeton de tokens.css, rattaché au code du pôle par
+   le <style> de la page : jamais une valeur brute écrite en JavaScript.
+*/
+const POLES = [
+  { cle: 'ETII',  libelle: 'Tout le service', metaphore: 'Les quatre périmètres réunis' },
+  { cle: 'ETIIA', libelle: 'ETIIA', metaphore: 'Squelette & ADN' },
+  { cle: 'ETIIE', libelle: 'ETIIE', metaphore: 'Système nerveux' },
+  { cle: 'ETIII', libelle: 'ETIII', metaphore: 'Structure & harnais' }
+];
+
+/** Les seuls codes admis dans le hash. Toute autre valeur retombe sur ETII. */
+const CODES_POLE = POLES.map((pole) => pole.cle);
+
+/** Le niveau service : « tout le service », et le repli de toute erreur. */
+const POLE_SERVICE = 'ETII';
+
+/** Page d'espace correspondant à chaque pôle, pour marquer la navigation. */
+const PAGE_DE_POLE = {
+  ETII: 'index.html',
+  ETIIA: 'etiia.html',
+  ETIIE: 'etiie.html',
+  ETIII: 'etiii.html'
+};
+
+/** Les trois autres pages transverses, pour la sous-navigation. */
+const PAGES_TRANSVERSES = [
+  { page: 'communication.html', libelle: 'Communication' },
+  { page: 'reunions.html', libelle: 'Réunions' },
+  { page: 'organigramme.html', libelle: 'Organigramme' }
+];
+
 /** Clés sous lesquelles l'état est écrit dans le hash de l'URL. */
+const CLE_POLE = 'pole';
 const CLE_REQUETE = 'q';
 const CLE_CATEGORIE = 'cat';
 const CLE_QUESTION = 'question';
@@ -90,6 +138,8 @@ const corpus = {
 
 /** État courant de l'interface, reflété dans le hash de l'URL. */
 const etat = {
+  /** Pôle actif, toujours l'un des quatre codes admis. */
+  pole: POLE_SERVICE,
   requete: '',
   categories: new Set(),
   idSelection: null,
@@ -100,12 +150,14 @@ const etat = {
 /** Références vers les nœuds durables de la page. */
 const refs = {
   zone: null,
+  sousNav: null,
   champ: null,
   compteur: null,
   agencement: null,
   liste: null,
   detail: null,
   messages: null,
+  poles: new Map(),         // code de pôle -> { bouton, compteur }
   facettes: new Map(),      // catégorie -> { bouton, compteur }
   attenteSection: null,
   attenteListe: null
@@ -139,11 +191,17 @@ let detailIdPeint = null;
 /** Amorce la page : thème, navigation, questions locales, écouteurs. */
 function demarrerPage() {
   initTheme();
-  initNav('faq');
 
   refs.zone = document.getElementById('zone-faq');
+  refs.sousNav = document.getElementById('faq-sous-nav');
   refs.attenteSection = document.getElementById('faq-attente');
   refs.attenteListe = document.getElementById('faq-attente-liste');
+
+  /* Le pôle est connu avant même les données : la navigation principale et
+     la sous-navigation sont donc justes dès la première image, y compris
+     si faq.json est introuvable. */
+  etat.pole = poleDepuisEtat(etatUrl.lire());
+  majNavigation();
 
   /* Les questions locales sont indépendantes de faq.json : elles
      s'affichent même si le fichier de données est introuvable ou
@@ -261,13 +319,18 @@ function rendre(donnees, conteneur) {
   /* L'état vient de l'URL : un lien collé restitue requête, filtres et
      question sélectionnée. */
   lireUrl();
+  majNavigation();
 
   optionsParId.clear();
+  refs.poles.clear();
   refs.facettes.clear();
   detailPeint = null;
   detailIdPeint = null;
 
   monter(conteneur,
+    /* Le sélecteur de pôle est en tête : c'est lui qui fixe le périmètre
+       dans lequel la recherche et les catégories travaillent ensuite. */
+    construireSelecteurPoles(),
     construireBarre(),
     corpus.categories.length > 0 ? construireFacettes() : null,
     construireMessages(),
@@ -275,6 +338,49 @@ function rendre(donnees, conteneur) {
   );
 
   appliquer();
+}
+
+/**
+ * Les quatre puces de facette « Tout le service / ETIIA / ETIIE / ETIII »,
+ * chacune avec le nombre de questions correspondantes.
+ *
+ * Ce sont des <button aria-pressed>, jamais des <div> : l'état est donc
+ * annoncé aux lecteurs d'écran, et la puce est actionnable au clavier
+ * comme à la souris. Aucune puce n'est jamais désactivée : un pôle à zéro
+ * question reste sélectionnable et affiche alors son état vide, qui sait
+ * proposer le retour à tout le service.
+ *
+ * @returns {HTMLElement}
+ */
+function construireSelecteurPoles() {
+  const puces = POLES.map((pole) => {
+    const compteur = el('span', { class: 'facette__compteur' }, '0');
+
+    const bouton = el('button', {
+      class: 'facette',
+      type: 'button',
+      'aria-pressed': 'false',
+      dataset: { pole: pole.cle }
+    },
+      el('span', { class: 'facette__marque', 'aria-hidden': 'true' }, '✓'),
+      /* Point teinté DÉCORATIF : le libellé qui suit porte seul le sens. */
+      el('span', { class: 'pole-point', 'aria-hidden': 'true' }),
+      el('span', null, pole.libelle),
+      compteur
+    );
+
+    refs.poles.set(pole.cle, { bouton: bouton, compteur: compteur });
+    return el('li', null, bouton);
+  });
+
+  return el('section', {
+    class: 'pile pile--serree sans-impression',
+    'aria-labelledby': 'faq-titre-poles'
+  },
+    el('h2', { class: 'faq__titre-section', id: 'faq-titre-poles' },
+      'Périmètre affiché'),
+    el('ul', { class: 'facettes' }, puces)
+  );
 }
 
 /**
@@ -451,14 +557,22 @@ function construireAgencement() {
 function appliquer() {
   if (!corpus.index) return;
 
-  /* Classement complet, AVANT filtrage par catégorie : c'est ce résultat
-     qui sert de base aux compteurs de facettes. */
+  /* Classement complet, AVANT tout filtrage : c'est ce résultat qui sert
+     de base aux deux séries de compteurs. */
   const base = rechercher(corpus.index, etat.requete);
 
-  majCompteursFacettes(base);
+  /* Chaque compteur ignore la dimension qu'il chiffre, mais tient compte
+     de l'autre : les puces de pôle se recalculent selon les catégories
+     actives, les puces de catégorie selon le pôle actif. C'est ce qui fait
+     que les deux filtres se combinent honnêtement — un compteur affiché
+     est toujours le nombre de questions que la puce donnerait réellement
+     si on la pressait. */
+  majCompteursPoles(base.filter((resultat) => correspondCategories(resultat.doc)));
+  majCompteursFacettes(base.filter((resultat) => correspondPole(resultat.doc)));
 
   etat.affichees = base
-    .filter((resultat) => correspondCategories(resultat.doc))
+    .filter((resultat) => correspondPole(resultat.doc)
+      && correspondCategories(resultat.doc))
     .map((resultat) => resultat.doc);
 
   /* La sélection survit tant qu'elle reste affichée ; sinon on retombe sur
@@ -476,12 +590,43 @@ function appliquer() {
 }
 
 /**
- * Compteur d'une facette : nombre de résultats qu'elle donnerait si elle
- * était la seule catégorie active. Il est donc calculé en IGNORANT la
- * dimension « catégorie » elle-même, comme dans toute recherche à facettes
- * digne de ce nom.
+ * Compteurs des quatre puces de pôle : nombre de questions que chacune
+ * donnerait si on la pressait, les catégories actives restant en place.
+ * « Tout le service » montre tout ; un pôle ne montre que ses entrées.
  *
- * @param {Array<{doc:object}>} base résultats classés, non filtrés
+ * @param {Array<{doc:object}>} base résultats classés, filtrés par
+ *        catégorie mais PAS par pôle
+ */
+function majCompteursPoles(base) {
+  const comptes = new Map();
+  for (const resultat of base) {
+    const code = poleDe(resultat.doc);
+    comptes.set(code, (comptes.get(code) || 0) + 1);
+  }
+
+  for (const [code, puce] of refs.poles) {
+    const nombre = code === POLE_SERVICE ? base.length : (comptes.get(code) || 0);
+    const actif = code === etat.pole;
+
+    if (puce.compteur.textContent !== String(nombre)) {
+      puce.compteur.textContent = String(nombre);
+    }
+
+    puce.bouton.setAttribute('aria-pressed', actif ? 'true' : 'false');
+    puce.bouton.setAttribute('aria-label',
+      libellePole(code) + ', ' + nombre + ' '
+      + pluriel(nombre, 'question', 'questions'));
+  }
+}
+
+/**
+ * Compteur d'une facette de catégorie : nombre de résultats qu'elle
+ * donnerait si elle était la seule catégorie active, à pôle inchangé. Il
+ * est donc calculé en IGNORANT la dimension « catégorie » elle-même, comme
+ * dans toute recherche à facettes digne de ce nom.
+ *
+ * @param {Array<{doc:object}>} base résultats classés, filtrés par pôle
+ *        mais PAS par catégorie
  */
 function majCompteursFacettes(base) {
   const comptes = new Map();
@@ -517,6 +662,18 @@ function correspondCategories(question) {
 }
 
 /**
+ * La question appartient-elle au périmètre actif ? Au niveau service, tout
+ * passe ; sur un pôle, seules ses propres entrées.
+ *
+ * @param {object} question
+ * @returns {boolean}
+ */
+function correspondPole(question) {
+  if (etat.pole === POLE_SERVICE) return true;
+  return poleDe(question) === etat.pole;
+}
+
+/**
  * Reconstruit la liste d'options. Chaque option est une vraie option de
  * listbox à tabulation glissante : une seule est dans l'ordre de
  * tabulation, les flèches déplacent le focus et la sélection.
@@ -536,10 +693,12 @@ function rendreListe() {
       dataset: { id: question.id },
       onClick: () => selectionner(question.id, true)
     },
-      question.categorie
-        ? el('p', { class: 'carte__meta' },
-          el('span', { class: 'badge badge--neutre' }, question.categorie))
-        : null,
+      el('p', { class: 'carte__meta' },
+        pastillePole(question),
+        question.categorie
+          ? el('span', { class: 'badge badge--neutre' }, question.categorie)
+          : null
+      ),
 
       el('p', { class: 'faq__intitule' },
         surlignerVers(surligner(question.question, etat.requete)))
@@ -600,10 +759,12 @@ function contenuDetail(question, anime) {
       dataset: { anime: anime ? '' : null }
     },
 
-      question.categorie
-        ? el('p', { class: 'carte__meta' },
-          el('span', { class: 'badge badge--accent' }, question.categorie))
-        : null,
+      el('p', { class: 'carte__meta' },
+        pastillePole(question),
+        question.categorie
+          ? el('span', { class: 'badge badge--accent' }, question.categorie)
+          : null
+      ),
 
       el('h2', null, surlignerVers(surligner(question.question, etat.requete))),
 
@@ -638,6 +799,28 @@ function contenuDetail(question, anime) {
 }
 
 /**
+ * Pastille ÉTIQUETÉE du pôle d'origine d'une question.
+ *
+ * Le point coloré est décoratif ; l'information est portée par le texte
+ * qui l'accompagne — « Pôle ETIIA », ou « Service ETII » au niveau
+ * service. La couleur ne signale donc jamais seule le pôle (SPEC §1bis).
+ *
+ * @param {object} question
+ * @returns {HTMLElement}
+ */
+function pastillePole(question) {
+  const code = poleDe(question);
+
+  return el('span', {
+    class: 'badge badge--pole',
+    dataset: { pole: code }
+  },
+    el('span', { class: 'badge__point', 'aria-hidden': 'true' }),
+    (code === POLE_SERVICE ? 'Service ' : 'Pôle ') + code
+  );
+}
+
+/**
  * Compteur, masquage des volets, et état vide de recherche. Les trois
  * états de la page — chargement, erreur, vide — sont pris en charge par
  * avecEtat() ; celui-ci est le quatrième, propre à la recherche : « la
@@ -662,6 +845,14 @@ function rendreEtatRecherche() {
  * @returns {HTMLElement}
  */
 function blocAucunResultat() {
+  /* Cas particulier, et le plus fréquent d'un lien collé : le pôle
+     demandé n'a AUCUNE question, quoi que l'on cherche. Le dire
+     franchement vaut mieux que de laisser croire à une recherche
+     infructueuse, et la seule action utile est de revenir au service. */
+  if (etat.pole !== POLE_SERVICE && comptePole(etat.pole) === 0) {
+    return blocPoleVide();
+  }
+
   const bloc = el('div', { class: 'etat-vide etat-vide--encadre' },
     el('span', { class: 'etat-vide__illustration', 'aria-hidden': 'true' }, '∅'),
     el('p', { class: 'etat-vide__titre' }, 'Aucune question ne correspond'),
@@ -685,29 +876,51 @@ function blocAucunResultat() {
       ' ?'));
   }
 
-  /* Rappel des catégories actives, retirables une à une : sans lui, un
-     filtre oublié ressemble à une base vide. */
-  if (etat.categories.size > 0) {
-    const actifs = Array.from(etat.categories).map((categorie) =>
-      el('li', null,
-        el('button', {
-          class: 'facette facette--compacte',
-          type: 'button',
-          dataset: { action: 'retirer-categorie', valeur: categorie },
-          'aria-label': 'Retirer le filtre de catégorie ' + categorie
-        },
-          el('span', null, 'Catégorie : ' + categorie),
-          el('span', { 'aria-hidden': 'true' }, '×')
-        )));
+  /* Rappel des filtres actifs — pôle compris — retirables un à un : sans
+     lui, un filtre oublié ressemble à une base vide. */
+  const actifs = [];
 
+  if (etat.pole !== POLE_SERVICE) {
+    actifs.push(el('li', null,
+      el('button', {
+        class: 'facette facette--compacte',
+        type: 'button',
+        dataset: { action: 'retirer-pole' },
+        'aria-label': 'Revenir à tout le service, en quittant le pôle '
+          + etat.pole
+      },
+        el('span', { class: 'pole-point', 'aria-hidden': 'true' }),
+        el('span', null, 'Pôle : ' + etat.pole),
+        el('span', { 'aria-hidden': 'true' }, '×')
+      )));
+  }
+
+  for (const categorie of etat.categories) {
+    actifs.push(el('li', null,
+      el('button', {
+        class: 'facette facette--compacte',
+        type: 'button',
+        dataset: { action: 'retirer-categorie', valeur: categorie },
+        'aria-label': 'Retirer le filtre de catégorie ' + categorie
+      },
+        el('span', null, 'Catégorie : ' + categorie),
+        el('span', { 'aria-hidden': 'true' }, '×')
+      )));
+  }
+
+  if (actifs.length > 0) {
     bloc.append(
       el('p', { class: 'texte-sm texte-doux sans-marge' }, 'Filtres actifs :'),
-      el('ul', { class: 'facettes' }, actifs));
+      el('ul', {
+        class: 'facettes',
+        dataset: { pole: etat.pole }
+      }, actifs));
   }
 
   const actions = el('div', { class: 'etat-vide__actions' });
 
-  if (etat.requete !== '' || etat.categories.size > 0) {
+  if (etat.requete !== '' || etat.categories.size > 0
+      || etat.pole !== POLE_SERVICE) {
     actions.append(el('button', {
       class: 'bouton bouton--secondaire',
       type: 'button',
@@ -725,20 +938,72 @@ function blocAucunResultat() {
   return bloc;
 }
 
+/**
+ * État vide d'un pôle qui n'a aucune question, quelle que soit la
+ * recherche. Explicite, et actionnable : il propose de revenir à tout le
+ * service, là où les questions existent.
+ *
+ * @returns {HTMLElement}
+ */
+function blocPoleVide() {
+  const total = corpus.questions.length;
+
+  return el('div', { class: 'etat-vide etat-vide--encadre' },
+    el('span', { class: 'etat-vide__illustration', 'aria-hidden': 'true' }, '∅'),
+    el('p', { class: 'etat-vide__titre' },
+      'Aucune question pour ' + libellePole(etat.pole)),
+    el('p', { class: 'etat-vide__texte' },
+      'Le pôle ' + etat.pole + ' — ' + metaphorePole(etat.pole)
+      + ' — n’a encore aucune question dans la base. Le service en compte '
+      + 'par ailleurs ' + total + ' au total.'),
+    el('div', { class: 'etat-vide__actions' },
+      el('button', {
+        class: 'bouton bouton--principal',
+        type: 'button',
+        dataset: { action: 'retirer-pole' }
+      }, 'Voir tout le service'),
+      el('button', {
+        class: 'bouton bouton--secondaire',
+        type: 'button',
+        dataset: { action: 'poser' }
+      }, 'Poser la question')
+    )
+  );
+}
+
+/**
+ * Nombre de questions d'un périmètre, toutes recherches et catégories
+ * confondues.
+ *
+ * @param {string} code
+ * @returns {number}
+ */
+function comptePole(code) {
+  if (code === POLE_SERVICE) return corpus.questions.length;
+  return corpus.questions.filter((question) => poleDe(question) === code).length;
+}
+
 /** Phrase expliquant pourquoi rien ne s'affiche. */
 function texteAucunResultat() {
   const avecRequete = etat.requete.trim() !== '';
   const avecFiltre = etat.categories.size > 0;
+  const dans = etat.pole === POLE_SERVICE
+    ? ''
+    : ' pour le pôle ' + etat.pole;
 
   if (avecRequete && avecFiltre) {
     return 'Aucune question ne correspond à « ' + etat.requete.trim()
-      + ' » dans les catégories sélectionnées.';
+      + ' » dans les catégories sélectionnées' + dans + '.';
   }
   if (avecRequete) {
-    return 'Aucune question ne correspond à « ' + etat.requete.trim() + ' ».';
+    return 'Aucune question ne correspond à « ' + etat.requete.trim() + ' »'
+      + dans + '.';
   }
   if (avecFiltre) {
-    return 'Aucune question dans les catégories sélectionnées.';
+    return 'Aucune question dans les catégories sélectionnées' + dans + '.';
+  }
+  if (dans !== '') {
+    return 'Aucune question à afficher' + dans + '.';
   }
   return 'La base de connaissances ne contient aucune question à afficher.';
 }
@@ -913,6 +1178,13 @@ function estSaisie(element) {
  */
 function brancherDelegations() {
   if (refs.zone) {
+    /* Les deux sélecteurs sont disjoints : une puce de pôle porte
+       data-pole, une puce de catégorie data-categorie. Aucune ne porte les
+       deux, donc aucun clic n'est traité deux fois. */
+    deleguer(refs.zone, '.facette[data-pole]', 'click', (evt, bouton) => {
+      changerPole(bouton.dataset.pole);
+    });
+
     deleguer(refs.zone, '.facette[data-categorie]', 'click', (evt, bouton) => {
       basculerCategorie(bouton.dataset.categorie);
     });
@@ -965,10 +1237,24 @@ function executerAction(action, bouton) {
       break;
     }
 
+    case 'retirer-pole': {
+      /* Le bouton qui portait le focus disparaît avec l'état vide : on le
+         rend à la puce « Tout le service », jamais au document nu. */
+      changerPole(POLE_SERVICE);
+      const puce = refs.poles.get(POLE_SERVICE);
+      if (puce) puce.bouton.focus();
+      else if (refs.champ) refs.champ.focus();
+      break;
+    }
+
     case 'tout-effacer':
+      /* Tout, c'est aussi le périmètre : on revient au service entier,
+         sans quoi « Tout effacer » laisserait un filtre en place. */
+      etat.pole = POLE_SERVICE;
       etat.requete = '';
       etat.categories.clear();
       if (refs.champ) refs.champ.value = '';
+      majNavigation();
       appliquer();
       if (refs.champ) refs.champ.focus();
       break;
@@ -999,6 +1285,23 @@ function effacerRecherche() {
     refs.champ.value = '';
     refs.champ.focus();
   }
+  appliquer();
+}
+
+/**
+ * Change le périmètre affiché. Les catégories actives survivent au
+ * changement de pôle : les deux filtres se combinent, l'un ne chasse pas
+ * l'autre. Une catégorie devenue introuvable dans le nouveau pôle voit
+ * simplement son compteur tomber à zéro — et l'état vide l'explique.
+ *
+ * @param {string} code
+ */
+function changerPole(code) {
+  const cible = normaliserPole(code);
+  if (cible === etat.pole) return;
+
+  etat.pole = cible;
+  majNavigation();
   appliquer();
 }
 
@@ -1231,10 +1534,11 @@ function identifiantLocal() {
    11. État dans l'URL
    ------------------------------------------------------------------------- */
 
-/** Lit requête, catégories et question sélectionnée depuis le hash. */
+/** Lit pôle, requête, catégories et question sélectionnée depuis le hash. */
 function lireUrl() {
   const lu = etatUrl.lire();
 
+  etat.pole = poleDepuisEtat(lu);
   etat.requete = texteSimple(lu[CLE_REQUETE]);
 
   const brut = lu[CLE_CATEGORIE];
@@ -1255,6 +1559,9 @@ function lireUrl() {
    ne sert d'écrire l'URL à chaque frappe. */
 const ecrireUrl = debounce(() => {
   etatUrl.ecrire({
+    /* Le pôle est toujours écrit, même au niveau service : l'URL dit alors
+       explicitement « tout le service », et reste partageable telle quelle. */
+    [CLE_POLE]: etat.pole,
     [CLE_REQUETE]: etat.requete,
     [CLE_CATEGORIE]: Array.from(etat.categories),
     [CLE_QUESTION]: etat.idSelection
@@ -1274,14 +1581,63 @@ function surNavigationHash() {
   if (signatureEtat() === avant) return;
 
   if (refs.champ) refs.champ.value = etat.requete;
+  majNavigation();
   appliquer();
 }
 
 /** Empreinte compacte de l'état, pour détecter un changement réel. */
 function signatureEtat() {
-  return etat.requete
+  return etat.pole
+    + '|' + etat.requete
     + '|' + Array.from(etat.categories).sort().join(',')
     + '|' + (etat.idSelection || '');
+}
+
+/* -------------------------------------------------------------------------
+   11bis. Navigation et sous-navigation
+   ------------------------------------------------------------------------- */
+
+/**
+ * Reporte le pôle actif sur la navigation principale et la
+ * sous-navigation.
+ *
+ * Sur une page transverse, c'est le lien du PÔLE ACTIF qui porte
+ * `aria-current="page"` — celui du tableau de bord quand le pôle est
+ * « ETII ». initNav() se charge de poser l'attribut sur ce seul lien et de
+ * le retirer partout ailleurs : il n'y en a jamais deux.
+ */
+function majNavigation() {
+  initNav(PAGE_DE_POLE[etat.pole] || 'index.html');
+  rendreSousNav();
+}
+
+/**
+ * Sous-navigation vers les trois autres pages transverses, chaque lien
+ * portant le pôle actif dans son hash : on change de page sans perdre son
+ * périmètre.
+ */
+function rendreSousNav() {
+  if (!refs.sousNav) return;
+
+  refs.sousNav.setAttribute('aria-label',
+    'Autres pages — ' + libellePole(etat.pole));
+
+  monter(refs.sousNav,
+    el('ul', { class: 'rangee rangee--serree' },
+      PAGES_TRANSVERSES.map((entree) => el('li', null,
+        el('a', {
+          class: 'bouton bouton--secondaire bouton--compact',
+          href: entree.page + '#' + CLE_POLE + '=' + encodeURIComponent(etat.pole)
+        }, entree.libelle))),
+      el('li', null,
+        el('a', {
+          class: 'bouton bouton--discret bouton--compact',
+          href: PAGE_DE_POLE[etat.pole] || 'index.html'
+        }, etat.pole === POLE_SERVICE
+          ? 'Tableau de bord ETII'
+          : 'Espace ' + etat.pole))
+    )
+  );
 }
 
 /* -------------------------------------------------------------------------
@@ -1292,13 +1648,20 @@ function signatureEtat() {
 const annoncerResultats = debounce(() => {
   const nombre = etat.affichees.length;
 
+  const perimetre = etat.pole === POLE_SERVICE
+    ? ''
+    : ' pour le pôle ' + etat.pole;
+
   if (nombre === 0) {
-    annoncer('Aucune question ne correspond. '
-      + 'Vous pouvez poser votre question.');
+    annoncer('Aucune question ne correspond' + perimetre + '. '
+      + (etat.pole === POLE_SERVICE
+        ? 'Vous pouvez poser votre question.'
+        : 'Revenez à tout le service, ou posez votre question.'));
     return;
   }
 
   annoncer(nombre + ' ' + pluriel(nombre, 'question trouvée', 'questions trouvées')
+    + perimetre
     + '. Utilisez les flèches haut et bas pour parcourir la liste.');
 }, DELAI_ANNONCE);
 
@@ -1321,6 +1684,52 @@ function estQuestion(question) {
     && typeof question.reponse === 'string';
 }
 
+/**
+ * Pôle lu dans l'état d'URL. Toute valeur absente ou inconnue retombe sur
+ * « ETII », le niveau service, sans erreur ni message (SPEC §1bis).
+ *
+ * @param {object} lu  résultat de etatUrl.lire()
+ * @returns {string}
+ */
+function poleDepuisEtat(lu) {
+  if (!lu || typeof lu !== 'object') return POLE_SERVICE;
+  const brut = Array.isArray(lu[CLE_POLE]) ? lu[CLE_POLE][0] : lu[CLE_POLE];
+  return normaliserPole(brut);
+}
+
+/**
+ * Pôle d'origine d'une question. Une question sans pôle, ou dont le pôle
+ * est inconnu, appartient au niveau service.
+ *
+ * @param {object} question
+ * @returns {string}
+ */
+function poleDe(question) {
+  return normaliserPole(question ? question.pole : null);
+}
+
+/**
+ * Ramène n'importe quelle valeur à l'un des quatre codes admis.
+ * @param {*} valeur
+ * @returns {string}
+ */
+function normaliserPole(valeur) {
+  const code = typeof valeur === 'string' ? valeur.trim().toUpperCase() : '';
+  return CODES_POLE.includes(code) ? code : POLE_SERVICE;
+}
+
+/** Libellé lisible d'un périmètre, pour les annonces et les aria-label. */
+function libellePole(code) {
+  const pole = POLES.find((item) => item.cle === code);
+  return pole ? pole.libelle : POLE_SERVICE;
+}
+
+/** Métaphore d'un pôle, matière éditoriale de l'accord d'équipe. */
+function metaphorePole(code) {
+  const pole = POLES.find((item) => item.cle === code);
+  return pole ? pole.metaphore : '';
+}
+
 /** Chaîne nettoyée, quelle que soit la valeur reçue. */
 function texteSimple(valeur) {
   return typeof valeur === 'string' ? valeur.trim() : '';
@@ -1331,11 +1740,16 @@ function pluriel(nombre, singulier, pluriels) {
   return nombre > 1 ? pluriels : singulier;
 }
 
-/** Libellé du compteur de résultats. */
+/** Libellé du compteur de résultats, périmètre compris. */
 function texteCompteur(nombre) {
-  if (nombre === 0) return 'Aucune question';
+  const perimetre = etat.pole === POLE_SERVICE
+    ? ''
+    : ' — pôle ' + etat.pole;
+
+  if (nombre === 0) return 'Aucune question' + perimetre;
   return nombre + ' ' + pluriel(nombre, 'question', 'questions')
-    + (etat.requete.trim() !== '' ? ', classées par pertinence' : '');
+    + (etat.requete.trim() !== '' ? ', classées par pertinence' : '')
+    + perimetre;
 }
 
 /** Formateur de date en français, construit une seule fois. */

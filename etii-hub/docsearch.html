@@ -33,6 +33,47 @@
        ======================================================================= -->
   <style>
     /* ---------------------------------------------------------------------
+       A0. Couleurs de pôle
+       La palette catégorielle validée vit dans tokens.css ; ici on se
+       contente de rattacher un code de pôle à son jeton. La couleur n'est
+       JAMAIS seule porteuse de sens : toute pastille teintée est
+       accompagnée du code du pôle écrit en toutes lettres (SPEC §1bis).
+       Même mécanique que faq.html, pour que les deux pages parlent de la
+       même façon des mêmes pôles.
+       --------------------------------------------------------------------- */
+
+    [data-pole="ETII"]  { --pole-teinte: var(--pole-etii); }
+    [data-pole="ETIIA"] { --pole-teinte: var(--pole-etiia); }
+    [data-pole="ETIIE"] { --pole-teinte: var(--pole-etiie); }
+    [data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
+
+    /* Point de couleur d'une puce de pôle (carte ou facette). Purement
+       décoratif : le libellé qui le suit porte seul l'information, et il
+       reste lisible sans lui. */
+    .pole-point {
+      flex: none;
+      inline-size: var(--e-2);
+      block-size: var(--e-2);
+      border-radius: var(--rayon-plein);
+      background-color: var(--pole-teinte, var(--texte-doux));
+    }
+
+    /* Pastille ÉTIQUETÉE du ou des pôles d'un document. Elle reprend le
+       composant .badge ; seules ses trois variables de teinte sont
+       réaffectées, donc le mélange de contraste garanti par
+       components.css (72 % de teinte, 28 % de couleur de texte) continue
+       de s'appliquer et le niveau AA est préservé dans les deux thèmes. */
+    .badge--pole {
+      --badge-fond: transparent;
+      --badge-teinte: var(--pole-teinte, var(--texte-doux));
+      --badge-bordure: var(--pole-teinte, var(--bordure));
+      /* skin.css repose la bordure du badge en transparent : on la
+         rebranche ici, atténuée, pour ne pas crier plus fort que le texte. */
+      border-color: color-mix(in srgb,
+        var(--pole-teinte, var(--bordure)) 38%, transparent);
+    }
+
+    /* ---------------------------------------------------------------------
        A1. Agencement général : barre de recherche, puis filtres + résultats
        --------------------------------------------------------------------- */
 
@@ -451,19 +492,17 @@
   <header class="site-entete">
     <div class="site-entete__interieur">
       <a class="site-logo" href="index.html">ETII <span>HUB</span></a>
-
       <nav class="site-nav" aria-label="Navigation principale">
         <ul class="site-nav__liste">
-          <li><a href="index.html">Accueil</a></li>
-          <li><a href="communication.html">Communication</a></li>
-          <li><a href="reunions.html">Réunions</a></li>
-          <li><a href="organigramme.html">Organigramme</a></li>
-          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="index.html">Tableau de bord</a></li>
+          <li><a href="etiia.html" data-pole="ETIIA">ETIIA</a></li>
+          <li><a href="etiie.html" data-pole="ETIIE">ETIIE</a></li>
+          <li><a href="etiii.html" data-pole="ETIII">ETIII</a></li>
           <li><a href="docsearch.html" aria-current="page">Recherche</a></li>
         </ul>
       </nav>
-
-      <button class="bascule-theme" type="button" data-bascule-theme aria-pressed="false">
+      <button class="bascule-theme" type="button" data-bascule-theme
+              aria-pressed="false">
         <span class="bascule-theme__icone bascule-theme__icone--clair" aria-hidden="true">☾</span>
         <span class="bascule-theme__icone bascule-theme__icone--sombre" aria-hidden="true">☀</span>
         <span class="bascule-theme__libelle">Thème sombre</span>

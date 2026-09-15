@@ -730,7 +730,7 @@ function carteReunion(reunion, code, nature) {
 function carteReunionAbsente(nature, explication) {
   return el('article', { class: 'carte carte--plate carte--compacte' },
     el('div', { class: 'carte__entete' },
-      el('h3', { class: 'carte__titre texte-lg' }, nature),
+      el('h3', { class: 'carte__titre' }, nature),
       el('span', { class: 'badge badge--neutre' }, 'Aucun')),
     el('p', { class: 'sans-marge texte-doux texte-sm' }, explication));
 }
@@ -834,7 +834,7 @@ function rendreEntete(pole) {
   if (titre) {
     monter(titre,
       el('span', { class: 'pole-titre__pastille', 'aria-hidden': 'true' }),
-      el('span', { class: 'pole-titre__code' }, pole.cle),
+      el('span', null, pole.cle),
       el('span', { class: 'pole-titre__metaphore' }, pole.metaphore));
   }
 
