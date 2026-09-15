@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Espace de pôle — ETII Hub</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Espace d’un pôle du service ETII : indicateurs comparés à la moyenne des pôles, organigramme en résumé, communication, réunions et questions fréquentes.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/skin.css">
+
+  <!-- =====================================================================
+       Styles du gabarit d'espace de pôle.
+
+       Les trois pages etiia / etiie / etiii partagent ce fichier au
+       caractère près : seuls changent l'attribut data-pole de <body> et le
+       lien de navigation marqué comme courant. Une correction se fait donc
+       une fois, pas trois.
+
+       On ne déclare ici que ce qu'aucune classe de base.css,
+       components.css ou skin.css ne couvre : le filet et le titre colorés
+       de l'en-tête, et le contrat de classes de assets/js/indicateurs.js.
+       Toutes les valeurs viennent de tokens.css — aucune couleur, aucune
+       dimension en dur.
+       ===================================================================== -->
+  <style>
+    /* --- Le paramètre de page, en CSS -----------------------------------
+       data-pole est le seul paramètre de ces trois pages. Il fixe ici la
+       couleur du pôle : le filet et la pastille sont donc déjà justes
+       avant le premier octet de JavaScript, et le restent s'il ne vient
+       jamais. La valeur de repli est le gris de niveau service. */
+    body { --couleur-pole: var(--pole-etii); }
+    body[data-pole="ETIIA"] { --couleur-pole: var(--pole-etiia); }
+    body[data-pole="ETIIE"] { --couleur-pole: var(--pole-etiie); }
+    body[data-pole="ETIII"] { --couleur-pole: var(--pole-etiii); }
+
+    /* --- En-tête de l'espace --------------------------------------------
+       Un filet dans la couleur du pôle. La couleur ne dit jamais rien à
+       elle seule : le code du pôle est écrit juste en dessous, à côté de
+       la pastille. */
+    .pole-entete {
+      padding-block-start: var(--e-5);
+      border-block-start: calc(var(--e-1) / 2) solid var(--couleur-pole);
+    }
+
+    .pole-titre {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: var(--e-2) var(--e-4);
+    }
+
+    /* Pastille décorative : elle confirme le pôle, elle ne l'annonce pas. */
+    .pole-titre__pastille {
+      flex: none;
+      align-self: center;
+      inline-size: var(--e-4);
+      block-size: var(--e-4);
+      border-radius: var(--rayon-plein);
+      background-color: var(--couleur-pole);
+    }
+
+    /* La métaphore est un sous-titre : même ligne, autre poids. */
+    .pole-titre__metaphore {
+      font-size: var(--texte-xl);
+      font-weight: var(--graisse-normale);
+      letter-spacing: normal;
+      color: var(--texte-doux);
+    }
+
+    /* Apparition unique de l'en-tête, jamais d'animation permanente.
+       Suivant la convention du projet, elle n'existe que si le mouvement
+       est accepté (SPEC §7). */
+    @media (prefers-reduced-motion: no-preference) {
+      .pole-entete {
+        animation: pole-apparition var(--duree) var(--courbe) both;
+      }
+
+      @keyframes pole-apparition {
+        from { opacity: 0; transform: translateY(calc(var(--e-2) * -1)); }
+        to   { opacity: 1; transform: none; }
+      }
+    }
+
+    /* --- Sélecteur d'indicateur -----------------------------------------
+       .champ__controle s'étire sur toute la largeur : dans une rangée, la
+       liste déroulante doit au contraire rester à sa taille propre. */
+    /* La rangée « Indicateur affiché » doit pouvoir rétrécir : sans
+       min-inline-size, un libellé d'option un peu long imposerait sa
+       largeur à toute la page sur un écran étroit. */
+    .pole-choix {
+      flex: 1 1 auto;
+      min-inline-size: 0;
+      max-inline-size: 100%;
+    }
+
+    .choix-indicateur {
+      inline-size: auto;
+      min-inline-size: min(calc(var(--e-16) * 4), 100%);
+      max-inline-size: 100%;
+    }
+
+    /* --- Contrat de classes de assets/js/indicateurs.js ------------------
+       Le module de visualisation ne pose que des classes et des attributs :
+       leur habillage appartient à la page hôte. Rien ici n'est décoratif au
+       point d'être indispensable — sans ces règles, tuiles, figures et
+       tableaux restent lisibles. */
+
+    .ind-tuile {
+      --carte-espace: var(--e-3);
+    }
+
+    .ind-tuile__valeur {
+      font-size: var(--texte-2xl);
+      font-weight: var(--graisse-max);
+      line-height: var(--interligne-serre);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ind-tuile__unite {
+      font-size: var(--texte-md);
+      font-weight: var(--graisse-moyenne);
+    }
+
+    .ind-tuile__mesures {
+      margin: 0;
+    }
+
+    .ind-tuile__spark,
+    .ind-spark {
+      display: block;
+      flex: none;
+    }
+
+    .ind-graphique {
+      margin: 0;
+    }
+
+    .ind-graphique__titre {
+      font-size: var(--texte-lg);
+    }
+
+    .ind-legende {
+      margin: 0;
+    }
+
+    /* Le tracé est redessiné à la largeur réelle : il ne doit jamais
+       imposer sa taille à la grille qui le contient. */
+    .ind-graphique__trace {
+      min-inline-size: 0;
+    }
+
+    .ind-graphique__svg {
+      display: block;
+      max-inline-size: 100%;
+    }
+
+    /* Le tracé est atteignable au clavier : son anneau de focus doit se
+       voir autant que celui d'un bouton. */
+    .ind-graphique__svg:focus-visible {
+      outline: var(--focus-epaisseur) solid var(--focus-couleur);
+      outline-offset: var(--focus-decalage);
+      border-radius: var(--rayon-sm);
+    }
+
+    /* --- Tableau de valeurs replié sous chaque figure ------------------- */
+
+    .ind-donnees {
+      border: 1px solid var(--bordure-douce);
+      border-radius: var(--rayon-md);
+      background-color: var(--fond-enfonce);
+    }
+
+    .ind-donnees__resume {
+      display: flex;
+      align-items: center;
+      min-block-size: var(--cible-tactile);
+      padding: var(--e-2) var(--e-4);
+      font-size: var(--texte-sm);
+      font-weight: var(--graisse-moyenne);
+      color: var(--texte-doux);
+      border-radius: var(--rayon-md);
+    }
+
+    .ind-donnees__resume:focus-visible {
+      outline: var(--focus-epaisseur) solid var(--focus-couleur);
+      outline-offset: calc(var(--focus-decalage) * -1);
+    }
+
+    /* Sur écran étroit le tableau déborde : la zone défile plutôt que de
+       forcer un défilement horizontal de toute la page. */
+    .ind-donnees__defilement {
+      overflow-x: auto;
+      padding: 0 var(--e-4) var(--e-4);
+    }
+
+    .ind-tableau {
+      width: 100%;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ind-tableau caption {
+      padding-block-end: var(--e-3);
+      text-align: start;
+    }
+
+    .ind-tableau th,
+    .ind-tableau td {
+      padding: var(--e-2) var(--e-3);
+      text-align: end;
+      white-space: nowrap;
+      border-block-end: 1px solid var(--bordure-douce);
+    }
+
+    .ind-tableau thead th {
+      color: var(--texte-doux);
+      font-weight: var(--graisse-forte);
+    }
+
+    /* L'en-tête de colonne porte une pastille de série : elle s'aligne sur
+       les chiffres de la colonne, pas contre le bord opposé. */
+    .ind-tableau thead th > .rangee {
+      justify-content: flex-end;
+    }
+
+    .ind-tableau th[scope="row"] {
+      text-align: start;
+      font-weight: var(--graisse-moyenne);
+      color: var(--texte-doux);
+    }
+  </style>
+</head>
+
+<!-- Le SEUL paramètre de cette page. assets/js/pole.js le lit, refuse
+     proprement toute valeur inconnue, et construit l'espace correspondant. -->
+<body data-pole="ETIII">
+  <a class="lien-evitement" href="#contenu">Aller au contenu</a>
+
+  <header class="site-entete">
+    <div class="site-entete__interieur">
+      <a class="site-logo" href="index.html">ETII <span>HUB</span></a>
+      <nav class="site-nav" aria-label="Navigation principale">
+        <ul class="site-nav__liste">
+          <li><a href="index.html">Tableau de bord</a></li>
+          <li><a href="etiia.html" data-pole="ETIIA">ETIIA</a></li>
+          <li><a href="etiie.html" data-pole="ETIIE">ETIIE</a></li>
+          <li><a href="etiii.html" data-pole="ETIII" aria-current="page">ETIII</a></li>
+          <li><a href="docsearch.html">Recherche</a></li>
+        </ul>
+      </nav>
+      <button class="bascule-theme" type="button" data-bascule-theme
+              aria-pressed="false">
+        <span class="bascule-theme__icone bascule-theme__icone--clair" aria-hidden="true">☾</span>
+        <span class="bascule-theme__icone bascule-theme__icone--sombre" aria-hidden="true">☀</span>
+        <span class="bascule-theme__libelle">Thème sombre</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="contenu" tabindex="-1">
+    <div class="conteneur pile pile--section">
+
+      <!-- ================================================================
+           En-tête de l'espace.
+
+           Le titre de premier niveau est écrit ici, et non construit
+           en JavaScript : la page en porte donc exactement un, avec ou
+           sans script. pole.js ne fait que le préciser, avec le code du
+           pôle et sa métaphore.
+           ================================================================ -->
+      <div class="pile">
+        <div class="pile pile--serree pole-entete">
+          <h1 class="pole-titre" id="pole-titre">Espace de pôle</h1>
+          <p class="mesure texte-doux sans-marge" id="pole-description">
+            Cet espace rassemble les indicateurs, l’organigramme, la
+            communication, les réunions et les questions fréquentes du pôle.
+          </p>
+        </div>
+
+        <!-- Sous-navigation vers les quatre pages transverses. Chaque lien
+             porte le pôle actif dans son hash : pole.js la construit, car
+             elle dépend du paramètre de la page. -->
+        <nav class="pole-sous-nav" id="pole-sous-nav" aria-label="Pages du pôle"></nav>
+
+        <!-- Refus d'un paramètre inconnu. Vide et masqué le reste du temps. -->
+        <div id="pole-alerte" hidden></div>
+      </div>
+
+      <!-- ================================================================
+           1. Indicateurs du pôle
+           ================================================================ -->
+      <section class="pile" data-section-pole aria-labelledby="titre-indicateurs">
+        <div class="pile pile--serree">
+          <h2 class="sans-marge" id="titre-indicateurs">Indicateurs</h2>
+          <p class="mesure texte-doux texte-sm sans-marge">
+            Les quatre indicateurs suivis par le pôle, et leur évolution sur
+            douze mois comparée à la moyenne des trois pôles du service.
+          </p>
+        </div>
+        <div class="pile" id="zone-indicateurs"></div>
+      </section>
+
+      <!-- ================================================================
+           2. Organigramme en résumé
+           ================================================================ -->
+      <section class="pile" data-section-pole aria-labelledby="titre-organigramme">
+        <div class="pile pile--serree">
+          <h2 class="sans-marge" id="titre-organigramme">Organigramme</h2>
+          <p class="mesure texte-doux texte-sm sans-marge">
+            Le responsable de pôle, ses squads et leur effectif. La vue
+            complète, avec les rôles et les périmètres de chacun, est sur la
+            page dédiée.
+          </p>
+        </div>
+        <div class="pile" id="zone-organigramme"></div>
+      </section>
+
+      <!-- ================================================================
+           3. Communication du pôle
+           ================================================================ -->
+      <section class="pile" data-section-pole aria-labelledby="titre-communication">
+        <div class="pile pile--serree">
+          <h2 class="sans-marge" id="titre-communication">Communication</h2>
+          <p class="mesure texte-doux texte-sm sans-marge">
+            Les annonces publiées par le pôle. Celles du service restent sur
+            le tableau de bord ETII.
+          </p>
+        </div>
+        <div class="pile" id="zone-communication"></div>
+      </section>
+
+      <!-- ================================================================
+           4. Réunions du pôle
+           ================================================================ -->
+      <section class="pile" data-section-pole aria-labelledby="titre-reunions">
+        <div class="pile pile--serree">
+          <h2 class="sans-marge" id="titre-reunions">Réunions</h2>
+          <p class="mesure texte-doux texte-sm sans-marge">
+            Le prochain point programmé et le dernier compte-rendu publié.
+          </p>
+        </div>
+        <div class="pile" id="zone-reunions"></div>
+      </section>
+
+      <!-- ================================================================
+           5. FAQ du pôle
+           ================================================================ -->
+      <section class="pile" data-section-pole aria-labelledby="titre-faq">
+        <div class="pile pile--serree">
+          <h2 class="sans-marge" id="titre-faq">Questions fréquentes</h2>
+          <p class="mesure texte-doux texte-sm sans-marge">
+            Les premières questions de la base de connaissances rattachées à
+            ce pôle.
+          </p>
+        </div>
+        <div class="pile" id="zone-faq"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="site-pied">
+    <div class="site-pied__interieur">
+      <p>ETII Hub — portail de démonstration, sans aucune dépendance externe.</p>
+      <p class="site-pied__mention">
+        <span aria-hidden="true">●</span>
+        Toutes les données de ce site sont fictives
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="assets/js/pole.js"></script>
+</body>
+</html>
