@@ -203,7 +203,7 @@ enregistrerActions({
     rendreInterface();
   },
   'changer-vue': function (d) {
-    if (d.vue !== 'boites' && d.vue !== 'pieces') return;
+    if (['boites', 'pieces', 'standardisation'].indexOf(d.vue) === -1) return;
     Store.vueMode = d.vue;
     enregistrerReglages();
     rendreInterface();

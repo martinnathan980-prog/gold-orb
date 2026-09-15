@@ -299,7 +299,7 @@ async function ecranPropre(page) {
   // ---------------------------------------------------------------
   bloc('Vue Pièces : où sert chaque référence');
   await ecranPropre(page);
-  eq('deux vues proposées', await page.locator('.onglet-vue').count(), 2);
+  eq('trois vues proposées', await page.locator('.onglet-vue').count(), 3);
   vrai('« Boîtes » est la vue par défaut',
        (await texte(page, '.onglet-vue.actif')).trim() === 'Boîtes');
   eq('la seconde vue s\'appelle « Sous-ensembles », pas « Pièces »',
@@ -364,6 +364,56 @@ async function ecranPropre(page) {
   eq('retour à la grille', await page.locator('#mainContainer.grille').count(), 1);
   eq('les cartes reviennent', await page.locator('.carte').count(), 10);
   eq('et le tri aussi', await page.locator('#triBouton').count(), 1);
+
+  // ---------------------------------------------------------------
+  bloc('Vue Standardisation : où la base se disperse');
+  await ecranPropre(page);
+  eq('trois vues proposées', await page.locator('.onglet-vue').count(), 3);
+  await page.locator('.onglet-vue', { hasText: 'Standardisation' }).click();
+  await page.waitForTimeout(400);
+  const nbFamilles = await page.locator('.famille').count();
+  vrai('des familles dispersées sont listées', nbFamilles >= 3);
+  vrai('le bilan les compte',
+       (await texte(page, '#bilanResultats')).indexOf('famille') !== -1);
+  eq('plus de cartes', await page.locator('.carte').count(), 0);
+  eq('ni d\'inventaire', await page.locator('.inventaire').count(), 0);
+
+  // La colonnette du jeu de démonstration : une norme, cinq références.
+  const colonnette = page.locator('.famille', { hasText: 'Colonnette' }).first();
+  eq('la colonnette est repérée', await colonnette.count(), 1);
+  const compteColonnette = await colonnette.locator('.famille-chiffre')
+    .evaluateAll(function (els) { return els.map(function (e) { return e.textContent.trim(); }); });
+  vrai('elle annonce une seule norme', compteColonnette[0].indexOf('1 norme') === 0);
+  vrai('mais plusieurs références', /[2-9] références/.test(compteColonnette[1]));
+  vrai('et les nomme', await colonnette.locator('.ref-pn').count() >= 2);
+  vrai('avec leur nombre de boîtes',
+       /\d+ boîte/.test(await colonnette.locator('.ref-usage').first()
+         .evaluate(function (e) { return e.textContent; })));
+
+  // La plus dispersée arrive en tête.
+  const premiereFamille = page.locator('.famille').first();
+  const refsPremiere = await premiereFamille.locator('.ref-pn').count();
+  const refsDerniere = await page.locator('.famille').last().locator('.ref-pn').count();
+  vrai('la plus dispersée est en tête', refsPremiere >= refsDerniere);
+
+  // L'analyse suit les filtres.
+  await page.fill('#searchBar', 'APU');
+  await page.waitForTimeout(400);
+  const apresFiltre = await page.locator('.famille').count();
+  vrai('la recherche restreint l\'analyse', apresFiltre <= nbFamilles);
+  await page.fill('#searchBar', '');
+  await page.waitForTimeout(400);
+  eq('et la rend quand on efface', await page.locator('.famille').count(), nbFamilles);
+
+  const largeurStd = await page.evaluate(function () {
+    return { doc: document.documentElement.scrollWidth, vue: window.innerWidth };
+  });
+  vrai('pas de défilement horizontal (standardisation)', largeurStd.doc <= largeurStd.vue + 1);
+  await page.screenshot({ path: path.join(RACINE, 'build/apercu-standardisation.png') });
+
+  await page.locator('.onglet-vue', { hasText: 'Boîtes' }).click();
+  await page.waitForTimeout(350);
+  eq('retour à la grille', await page.locator('.carte').count(), 10);
 
   bloc('Filtres par type de sous-ensemble');
   eq('3 types présents', await page.locator('.filtres-type .jeton').count(), 3);

@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 799 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 842 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 556 tests : logique, pondération, serveur, bundle
+npm test                 # 584 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 243 tests dans un vrai Chromium
+npm run test:navigateur  # 258 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -246,14 +246,23 @@ score : « Non comparé, faute de donnée : Masse. Le score porte sur le reste. 
   laisser croire à un retour en arrière exact.
 - Côté serveur, la feuille `9_JOURNAL` enregistre qui a modifié quoi et quand.
 
-## Deux lectures de la même base
+## Trois lectures de la même base
 
-Un sélecteur bascule entre **Boîtes** et **Sous-ensembles**.
+Un sélecteur bascule entre **Boîtes**, **Sous-ensembles** et
+**Standardisation**.
 
 - **Boîtes** : la grille de cartes. Répond à « que contient cette boîte ».
 - **Sous-ensembles** : l'inventaire. Une ligne par PN de sous-ensemble, son
   type, le nombre de boîtes qui le montent et lesquelles. Répond à « où sert
   ce sous-ensemble », la question du réemploi prise par l'autre bout.
+- **Standardisation** : les familles de composants qui se dispersent. Une
+  famille est une catégorie et une fonction. Quand elle porte plusieurs
+  normes, ou plusieurs références sous une même norme, c'est autant de pièces
+  à faire vivre pour le même service. Les plus dispersées d'abord.
+
+Sur le jeu de démonstration, la colonnette sort en tête : une seule norme,
+`NSA 5512`, mais cinq références. C'est une liste d'actions de rationalisation
+directement exploitable, calculée sans rien saisir de plus.
 
 L'application manipule **trois** niveaux de granularité, à ne pas confondre :
 

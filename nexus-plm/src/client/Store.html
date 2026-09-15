@@ -221,7 +221,7 @@ function chargerReglages() {
       }
       if (typeof lu.seuil === 'number') Store.seuilEquivalence = lu.seuil;
       if (typeof lu.tri === 'string') Store.tri = lu.tri;
-      if (lu.vue === 'boites' || lu.vue === 'pieces') Store.vueMode = lu.vue;
+      if (['boites', 'pieces', 'standardisation'].indexOf(lu.vue) !== -1) Store.vueMode = lu.vue;
     }
   } catch (e) { /* réglages illisibles : on repart des valeurs par défaut */ }
   PORTEES.forEach(function (p) { normaliserPoids(p.cle); });
@@ -613,6 +613,94 @@ function inventairePieces(liste) {
              a.type.libelle.localeCompare(b.type.libelle, 'fr') ||
              a.pn.localeCompare(b.pn, 'fr', { numeric: true });
     });
+}
+
+/**
+ * Toutes les familles de composants de la base affichée, regroupées par
+ * catégorie et fonction, puis par norme, puis par référence.
+ *
+ * C'est la question du réemploi posée un cran plus bas que les pièces :
+ * combien de références différentes fait-on vivre pour la même chose ?
+ */
+function famillesComposants(liste) {
+  const familles = new Map();
+
+  liste.forEach(function (b) {
+    const pnBoite = String(b[CLE_PN()]).trim();
+    champsComposants().forEach(function (ch) {
+      const porteurs = ch.portee === 'boite'
+        ? [b]
+        : (b.nomenclature || []).filter(function (n) { return typeDe(n).cle === ch.portee; });
+
+      porteurs.forEach(function (o) {
+        listeComposants(o[ch.cle]).forEach(function (c) {
+          if (!c.fonction) return;            // sans fonction, pas de famille
+
+          const cleF = ch.categorie + '|' + normaliserTexte(c.fonction);
+          if (!familles.has(cleF)) {
+            familles.set(cleF, { categorie: ch.categorie, fonction: c.fonction, normes: new Map() });
+          }
+          const f = familles.get(cleF);
+
+          const cleN = normaliserTexte(c.norme);
+          if (!f.normes.has(cleN)) f.normes.set(cleN, { norme: c.norme, references: new Map() });
+          const n = f.normes.get(cleN);
+
+          const cleR = normaliserTexte(c.reference);
+          if (!n.references.has(cleR)) n.references.set(cleR, { reference: c.reference, boites: new Set() });
+          n.references.get(cleR).boites.add(pnBoite);
+        });
+      });
+    });
+  });
+
+  return familles;
+}
+
+/**
+ * Les familles qui se DISPERSENT : plusieurs normes pour une même fonction,
+ * ou plusieurs références pour une même norme. Chacune est une rationalisation
+ * possible. Les plus dispersées d'abord, ce sont elles qui coûtent le plus.
+ */
+function opportunitesStandardisation(liste) {
+  const sorties = [];
+
+  famillesComposants(liste).forEach(function (f) {
+    const normes = Array.from(f.normes.values()).map(function (n) {
+      return {
+        norme: n.norme,
+        references: Array.from(n.references.values()).map(function (r) {
+          return { reference: r.reference, nbBoites: r.boites.size,
+                   boites: Array.from(r.boites).sort(function (a, b) {
+                     return a.localeCompare(b, 'fr', { numeric: true });
+                   }) };
+        }).sort(function (a, b) {
+          return b.nbBoites - a.nbBoites ||
+                 String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+        })
+      };
+    }).sort(function (a, b) {
+      return b.references.length - a.references.length ||
+             String(a.norme).localeCompare(String(b.norme), 'fr', { numeric: true });
+    });
+
+    const nbReferences = normes.reduce(function (t, n) { return t + n.references.length; }, 0);
+    // Une seule norme et une seule référence : rien à rationaliser.
+    if (normes.length <= 1 && nbReferences <= 1) return;
+
+    sorties.push({
+      categorie: f.categorie, fonction: f.fonction, normes: normes,
+      nbNormes: normes.length, nbReferences: nbReferences,
+      nbBoites: normes.reduce(function (t, n) {
+        return t + n.references.reduce(function (u, r) { return u + r.nbBoites; }, 0);
+      }, 0)
+    });
+  });
+
+  return sorties.sort(function (a, b) {
+    return b.nbReferences - a.nbReferences || b.nbNormes - a.nbNormes ||
+           a.fonction.localeCompare(b.fonction, 'fr');
+  });
 }
 
 /** Répartition des sous-ensembles par type, pour la barre de filtres. */

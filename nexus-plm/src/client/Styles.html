@@ -366,6 +366,47 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
   .piece-compte { justify-self: start; }
 }
 
+/* ---------------- standardisation ---------------- */
+/* Une famille par bloc : la fonction, puis ses normes, puis les références
+   sous chacune. Ce qui se disperse est chiffré en tête. */
+.standard-intro { font-size: 13px; color: var(--encre-2); margin-bottom: var(--e-3); max-width: 70ch; }
+.familles { display: flex; flex-direction: column; gap: var(--e-2); }
+.famille { background: var(--surface); border: 1px solid var(--trait); border-radius: var(--r-m); overflow: hidden; }
+.famille-tete {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--e-3);
+  flex-wrap: wrap; padding: 10px var(--e-4);
+  background: var(--surface-3); border-bottom: 1px solid var(--trait);
+}
+.famille-identite { display: flex; align-items: baseline; gap: var(--e-2); flex-wrap: wrap; min-width: 0; }
+.famille-nom { font-size: 14px; font-weight: 700; }
+.famille-cat { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--encre-3); font-weight: 600; }
+.famille-compte { display: flex; gap: 6px; flex-shrink: 0; }
+.famille-chiffre {
+  font-size: 11.5px; color: var(--encre-2); background: var(--surface-2);
+  border: 1px solid var(--trait); border-radius: 999px; padding: 2px 10px;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.famille-chiffre b { font-weight: 700; }
+.famille-disperse { background: var(--ambre-voile); border-color: var(--ambre-trait); color: var(--ambre); }
+.famille-normes { list-style: none; margin: 0; padding: 0; }
+.famille-norme {
+  display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: var(--e-3);
+  align-items: baseline; padding: 8px var(--e-4); border-bottom: 1px solid var(--surface-3);
+}
+.famille-norme:last-child { border-bottom: 0; }
+.norme-nom { font-size: 12.5px; font-weight: 600; color: var(--encre-2); overflow-wrap: anywhere; }
+.norme-refs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ref {
+  display: inline-flex; align-items: baseline; gap: 7px;
+  background: var(--surface-2); border: 1px solid var(--trait);
+  border-radius: var(--r-s); padding: 3px 9px; cursor: help;
+}
+.ref-pn { font-family: var(--police-data); font-size: 11.5px; color: var(--encre); }
+.ref-usage { font-size: 10.5px; color: var(--encre-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 620px) {
+  .famille-norme { grid-template-columns: 1fr; gap: 4px; }
+}
+
 /* ---------------- cartes ---------------- */
 .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(296px, 1fr)); gap: var(--e-4); }
 .carte {

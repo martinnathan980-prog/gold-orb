@@ -730,6 +730,114 @@ C.Store.vueMode = 'boites';
 C.enregistrerReglages();
 
 // =====================================================================
+bloc('Standardisation : où la base se disperse');
+// =====================================================================
+const boiteAvec = function (pn, composants) {
+  return { 'PN Global': pn, 'Composants': composants };
+};
+const structureAvec = function (id, pn, meca) {
+  return { 'ID_Ligne': id, 'PN Global': pn, 'Type': 'Structure boîte',
+           'PN du type': pn + '.01', 'Structure mécanique': meca };
+};
+
+// Cinq références sous une seule norme : le cas d'école.
+charger(
+  [boiteAvec('B1', 'Bouton poussoir | ECS 7251 | MS24523-22'),
+   boiteAvec('B2', 'Bouton poussoir | ECS 7251 | MS24523-23'),
+   boiteAvec('B3', 'Bouton poussoir | ECS 7251 | MS24523-24')], []);
+let op = C.opportunitesStandardisation(C.Store.boites);
+eq('une famille dispersée', op.length, 1);
+eq('la fonction', op[0].fonction, 'Bouton poussoir');
+eq('une seule norme', op[0].nbNormes, 1);
+eq('mais trois références', op[0].nbReferences, 3);
+eq('la catégorie est celle du champ', op[0].categorie, 'composant');
+eq('chaque référence sait où elle sert',
+   op[0].normes[0].references.map(function (r) { return r.nbBoites; }), [1, 1, 1]);
+
+// Une seule référence partout : rien à rationaliser.
+charger(
+  [boiteAvec('B1', 'Bouton poussoir | ECS 7251 | MS24523-22'),
+   boiteAvec('B2', 'Bouton poussoir | ECS 7251 | MS24523-22')], []);
+eq('la même référence partout n\'est pas une dispersion',
+   C.opportunitesStandardisation(C.Store.boites).length, 0);
+eq('mais on sait qu\'elle sert dans deux boîtes',
+   Array.from(C.famillesComposants(C.Store.boites).values())[0]
+     .normes.get('ecs 7251').references.get('ms24523-22').boites.size, 2);
+
+// Plusieurs normes pour une même fonction : dispersion aussi.
+charger(
+  [boiteAvec('B1', 'Voyant | ECS 4410 | LED-G-28'),
+   boiteAvec('B2', 'Voyant | ECS 4411 | LED-R-28')], []);
+op = C.opportunitesStandardisation(C.Store.boites);
+eq('deux normes pour la même fonction', op[0].nbNormes, 2);
+eq('et deux références', op[0].nbReferences, 2);
+
+// Le classement : la famille la plus dispersée en tête.
+charger(
+  [boiteAvec('B1', 'Voyant | ECS 4410 | LED-1\nRelais | ECS 1120 | RLY-1'),
+   boiteAvec('B2', 'Voyant | ECS 4410 | LED-2\nRelais | ECS 1120 | RLY-2'),
+   boiteAvec('B3', 'Voyant | ECS 4410 | LED-3')], []);
+op = C.opportunitesStandardisation(C.Store.boites);
+eq('la plus dispersée en tête', op[0].fonction, 'Voyant');
+eq('avec ses trois références', op[0].nbReferences, 3);
+eq('puis le relais', [op[1].fonction, op[1].nbReferences], ['Relais', 2]);
+
+// Une même fonction dans deux CATÉGORIES différentes reste deux familles :
+// une cosse électrique n'est pas une cosse mécanique.
+charger(
+  [{ 'PN Global': 'B1', 'Composants': 'Cosse | EN 2491 | CS-1' }],
+  [structureAvec('S1', 'B1', 'Cosse | EN 2491 | CS-2')]);
+const famillesMixtes = C.famillesComposants(C.Store.boites);
+eq('deux familles, une par catégorie', famillesMixtes.size, 2);
+eq('aucune n\'est dispersée toute seule',
+   C.opportunitesStandardisation(C.Store.boites).length, 0);
+
+// Les composants de structure sont bien parcourus.
+charger(
+  [{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],
+  [structureAvec('S1', 'B1', 'Colonnette | NSA 5512 | COL-M4-20'),
+   structureAvec('S2', 'B2', 'Colonnette | NSA 5512 | COL-M6-40')]);
+op = C.opportunitesStandardisation(C.Store.boites);
+eq('la structure mécanique compte aussi', op.length, 1);
+eq('dans sa catégorie', op[0].categorie, 'mecanique');
+eq('deux références de colonnette', op[0].nbReferences, 2);
+
+// Un composant sans fonction n'a pas de famille.
+charger([{ 'PN Global': 'B1', 'Composants': ' | ECS 7251 | MS24523-22' }], []);
+eq('sans fonction, pas de famille', C.famillesComposants(C.Store.boites).size, 0);
+
+// L'analyse suit les filtres, comme les deux autres vues.
+charger(
+  [{ 'PN Global': 'B1', 'Statut': 'Validé', 'Composants': 'Voyant | ECS 4410 | LED-1' },
+   { 'PN Global': 'B2', 'Statut': 'En étude', 'Composants': 'Voyant | ECS 4410 | LED-2' }], []);
+eq('sans filtre, la dispersion est visible',
+   C.opportunitesStandardisation(C.calculerVue().aAfficher).length, 1);
+C.Store.filtreStatut = 'Validé';
+eq('filtré sur une seule boîte, plus de dispersion',
+   C.opportunitesStandardisation(C.calculerVue().aAfficher).length, 0);
+C.Store.filtreStatut = null;
+
+eq('base vide', C.opportunitesStandardisation([]), []);
+
+// Le rendu, échappement compris.
+charger([{ 'PN Global': 'B"1', 'Composants': '<b>V</b> | N1 | R1\n<b>V</b> | N1 | R2' }], []);
+const htmlStd = C.standardisationHtml(C.calculerVue());
+faux('une fonction piégée n\'injecte rien', /<b>V<\/b>/.test(htmlStd));
+vrai('elle est affichée échappée', htmlStd.indexOf('&lt;b&gt;V&lt;/b&gt;') !== -1);
+vrai('le compte de références est affiché', htmlStd.indexOf('2</b> références') !== -1);
+charger([{ 'PN Global': 'B1', 'Composants': 'Voyant | N1 | R1' }], []);
+vrai('sans dispersion, on le dit', C.standardisationHtml(C.calculerVue()).indexOf('etat-vide') !== -1);
+
+// Le mode de vue accepte la troisième lecture, et refuse ce qui n'existe pas.
+C.Store.vueMode = 'standardisation';
+C.enregistrerReglages();
+C.Store.vueMode = 'boites';
+C.chargerReglages();
+eq('le mode standardisation est relu', C.Store.vueMode, 'standardisation');
+C.Store.vueMode = 'boites';
+C.enregistrerReglages();
+
+// =====================================================================
 bloc('Doublons probables');
 // =====================================================================
 charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }, { 'PN Global': 'B3' }],
@@ -898,6 +1006,8 @@ vrai('indicateur de réutilisation', srcIndex.indexOf('kpiReutil') !== -1);
 vrai('indicateur de doublons probables', srcIndex.indexOf('kpiDoublons') !== -1);
 vrai('les doublons sont consultables', declarees.has('ouvrir-doublons'));
 vrai('on bascule entre boîtes et sous-ensembles', declarees.has('changer-vue'));
+vrai('trois lectures de la base', /\['standardisation', 'Standardisation'\]/.test(
+     fs.readFileSync(path.join(H.RACINE, 'client/ViewGrid.html'), 'utf8')));
 const srcGrille = fs.readFileSync(path.join(H.RACINE, 'client/ViewGrid.html'), 'utf8');
 vrai('la seconde vue s\'appelle « Sous-ensembles »',
      srcGrille.indexOf("'Sous-ensembles'") !== -1);
