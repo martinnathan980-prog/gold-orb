@@ -207,10 +207,15 @@
       margin: 0;
     }
 
+    /* Même rôle que .carte__titre dans un .carte__entete : occuper la place
+       restante pour que le badge se range de lui-même à droite. Le texte
+       est celui saisi par la personne : les retours à la ligne comptent. */
     .faq__attente-texte {
+      flex: 1 1 auto;
+      min-width: 0;
       margin: 0;
       white-space: pre-wrap;
-      color: var(--texte-doux);
+      color: var(--texte);
     }
 
     /* ---------------------------------------------------------------------

@@ -549,7 +549,9 @@ function rendreListe() {
  */
 function rendreDetail() {
   const question = corpus.questions.find((item) => item.id === etat.idSelection);
-  const signature = (etat.idSelection || '') + ' ' + etat.requete;
+  /* JSON.stringify sépare sans ambiguïté : aucun séparateur choisi à la
+     main ne peut être confondu avec un caractère de la requête. */
+  const signature = JSON.stringify([etat.idSelection, etat.requete]);
 
   if (signature === detailPeint) return;
 
@@ -1158,9 +1160,11 @@ function rendreEnAttente() {
         el('span', { class: 'badge badge--neutre' }, 'En attente')
       ),
       el('div', { class: 'carte__pied' },
-        el('span', { class: 'texte-sm texte-doux' },
-          'Posée le ',
-          el('time', { datetime: question.cree }, formaterDate(question.cree))),
+        question.cree
+          ? el('span', { class: 'texte-sm texte-doux' },
+            'Posée le ',
+            el('time', { datetime: question.cree }, formaterDate(question.cree)))
+          : el('span', { class: 'texte-sm texte-doux' }, 'Question locale'),
         el('button', {
           class: 'bouton bouton--danger-discret bouton--compact pousse',
           type: 'button',
