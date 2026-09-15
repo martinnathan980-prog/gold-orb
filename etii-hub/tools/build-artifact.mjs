@@ -20,10 +20,12 @@ import { fileURLToPath } from 'node:url';
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (p) => readFileSync(join(RACINE, p), 'utf8');
 
-const PAGES = ['index', 'communication', 'reunions', 'organigramme', 'faq', 'docsearch'];
+const PAGES = ['index', 'etiia', 'etiie', 'etiii',
+               'communication', 'reunions', 'organigramme', 'faq', 'docsearch'];
 const CSS = ['tokens', 'base', 'components', 'skin'];
 const MODULES_SOCLE = ['ui', 'search', 'data'];   // ordre de dépendance
-const DONNEES = ['communications', 'reunions', 'organigramme', 'faq', 'documents'];
+const DONNEES = ['communications', 'reunions', 'organigramme', 'faq',
+                 'documents', 'indicateurs'];
 
 /* ---------------------------------------------------------------------
    1. Mini-assembleur de modules ES
@@ -114,6 +116,14 @@ const donneesAssemblees = Object.fromEntries(
 const socleAssemble = MODULES_SOCLE
   .map(n => bloc(n, lire(`assets/js/${n}.js`))).join('\n');
 
+// Les trois espaces de pôle partagent pole.js : le module à intégrer n'est
+// donc pas déduit du nom de la page mais lu dans sa balise <script>.
+function moduleDeLaPage(nom, html) {
+  const m = html.match(/<script type="module" src="assets\/js\/([a-z0-9-]+)\.js"><\/script>/);
+  if (!m) throw new Error(`${nom}.html : aucun module <script type="module" src="assets/js/…"> trouvé`);
+  return m[1];
+}
+
 function construirePage(nom) {
   let html = lire(`${nom}.html`);
 
@@ -124,7 +134,7 @@ function construirePage(nom) {
     `$1\n  <style>\n${cssAssemble}\n  </style>`);
 
   // Le module de page devient un script intégré, dépendances comprises.
-  const moduleDePage = bles(nom);
+  const moduleDePage = bles(moduleDeLaPage(nom, html));
   html = html.replace(
     /[ \t]*<script type="module" src="assets\/js\/[a-z-]+\.js"><\/script>/,
     `  <script type="module">\n${moduleDePage}\n  </script>`);

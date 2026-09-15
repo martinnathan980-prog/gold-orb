@@ -10,7 +10,8 @@
         "métaux",
         "galvanique",
         "potentiel"
-      ]
+      ],
+      "pole": "ETII"
     },
     {
       "id": "f02",
@@ -22,7 +23,8 @@
         "document",
         "recherche",
         "porteur"
-      ]
+      ],
+      "pole": "ETIIE"
     },
     {
       "id": "f03",
@@ -34,7 +36,8 @@
         "relecture",
         "livrable",
         "diffusion"
-      ]
+      ],
+      "pole": "ETIIA"
     },
     {
       "id": "f04",
@@ -46,7 +49,8 @@
         "proposition",
         "portail",
         "document"
-      ]
+      ],
+      "pole": "ETIII"
     },
     {
       "id": "f05",
@@ -58,7 +62,8 @@
         "équipes",
         "périmètre",
         "architecture"
-      ]
+      ],
+      "pole": "ETII"
     },
     {
       "id": "f06",
@@ -70,7 +75,8 @@
         "cheminement",
         "routage",
         "norme"
-      ]
+      ],
+      "pole": "ETIII"
     },
     {
       "id": "f07",
@@ -82,7 +88,8 @@
         "configuration",
         "trimestre",
         "fréquence"
-      ]
+      ],
+      "pole": "ETIIA"
     },
     {
       "id": "f08",
@@ -94,7 +101,8 @@
         "signalement",
         "définition",
         "correction"
-      ]
+      ],
+      "pole": "ETIIE"
     }
   ]
 }

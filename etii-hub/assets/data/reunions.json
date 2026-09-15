@@ -23,7 +23,8 @@
       "decisions": [
         "Passage en fabrication validé pour le lot 3",
         "Le troisième écart est traité dans le lot 4"
-      ]
+      ],
+      "pole": "ETIIE"
     },
     {
       "id": "cr02",
@@ -47,7 +48,8 @@
       ],
       "decisions": [
         "Renfort validé sur la squad 3 à compter du mois prochain"
-      ]
+      ],
+      "pole": "ETII"
     },
     {
       "id": "cr03",
@@ -70,7 +72,8 @@
       ],
       "decisions": [
         "La trame devient le standard pour les prochaines campagnes"
-      ]
+      ],
+      "pole": "ETIIA"
     }
   ],
   "prochainsPoints": [
@@ -93,7 +96,8 @@
       "actions": [
         "Préparer l'export de la configuration",
         "Lister les écarts non soldés avant la veille"
-      ]
+      ],
+      "pole": "ETIIE"
     },
     {
       "id": "pp02",
@@ -113,7 +117,8 @@
       ],
       "actions": [
         "Chaque lead prépare une présentation de dix minutes"
-      ]
+      ],
+      "pole": "ETII"
     }
   ]
 }

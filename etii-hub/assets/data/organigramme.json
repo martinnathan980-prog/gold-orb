@@ -1,544 +1,503 @@
 {
-  "direction": [
+  "service": "ETII",
+  "direction": {
+    "id": "p01",
+    "nom": "Personne 01",
+    "poste": "Direction de service",
+    "role": "direction",
+    "perimetre": "H160"
+  },
+  "poles": [
     {
-      "id": "p01",
-      "nom": "Personne 01",
-      "poste": "Direction de service",
-      "role": "leader",
-      "squad": "Direction",
-      "perimetre": "Transverse"
-    }
-  ],
-  "squads": [
-    {
-      "nom": "Squad 1",
-      "membres": [
+      "pole": "ETIIA",
+      "responsable": {
+        "id": "p02",
+        "nom": "Personne 02",
+        "poste": "Responsable de pôle",
+        "role": "responsable",
+        "perimetre": "H160"
+      },
+      "squads": [
         {
-          "id": "p02",
-          "nom": "Personne 02",
-          "poste": "Lead technique",
-          "role": "leader",
-          "squad": "Squad 1",
-          "perimetre": "H160"
+          "nom": "Squad 1",
+          "membres": [
+            {
+              "id": "p03",
+              "nom": "Personne 03",
+              "poste": "Lead technique",
+              "role": "leader",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p04",
+              "nom": "Personne 04",
+              "poste": "Ingénieur intégration",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p05",
+              "nom": "Personne 05",
+              "poste": "Ingénieur systèmes",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p06",
+              "nom": "Personne 06",
+              "poste": "Ingénieur harnais",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p07",
+              "nom": "Personne 07",
+              "poste": "Ingénieur essais",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p08",
+              "nom": "Personne 08",
+              "poste": "Architecte électrique",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p09",
+              "nom": "Personne 09",
+              "poste": "Chargé de configuration",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p10",
+              "nom": "Personne 10",
+              "poste": "Ingénieur qualité",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p11",
+              "nom": "Personne 11",
+              "poste": "Ingénieur méthodes",
+              "role": "membre",
+              "perimetre": "Transverse"
+            }
+          ]
         },
         {
-          "id": "p03",
-          "nom": "Personne 03",
-          "poste": "Ingénieur définition",
-          "role": "membre",
-          "squad": "Squad 1",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p04",
-          "nom": "Personne 04",
-          "poste": "Ingénieur intégration",
-          "role": "membre",
-          "squad": "Squad 1",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p05",
-          "nom": "Personne 05",
-          "poste": "Ingénieur systèmes",
-          "role": "membre",
-          "squad": "Squad 1",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p06",
-          "nom": "Personne 06",
-          "poste": "Ingénieur harnais",
-          "role": "membre",
-          "squad": "Squad 1",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p07",
-          "nom": "Personne 07",
-          "poste": "Ingénieur essais",
-          "role": "membre",
-          "squad": "Squad 1",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p08",
-          "nom": "Personne 08",
-          "poste": "Architecte électrique",
-          "role": "membre",
-          "squad": "Squad 1",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p09",
-          "nom": "Personne 09",
-          "poste": "Chargé de configuration",
-          "role": "membre",
-          "squad": "Squad 1",
-          "perimetre": "H160"
+          "nom": "Squad 2",
+          "membres": [
+            {
+              "id": "p12",
+              "nom": "Personne 12",
+              "poste": "Lead technique",
+              "role": "leader",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p13",
+              "nom": "Personne 13",
+              "poste": "Ingénieur systèmes",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p14",
+              "nom": "Personne 14",
+              "poste": "Ingénieur harnais",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p15",
+              "nom": "Personne 15",
+              "poste": "Ingénieur essais",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p16",
+              "nom": "Personne 16",
+              "poste": "Architecte électrique",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p17",
+              "nom": "Personne 17",
+              "poste": "Chargé de configuration",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p18",
+              "nom": "Personne 18",
+              "poste": "Ingénieur qualité",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p19",
+              "nom": "Personne 19",
+              "poste": "Ingénieur méthodes",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p20",
+              "nom": "Personne 20",
+              "poste": "Ingénieur calcul",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p21",
+              "nom": "Personne 21",
+              "poste": "Ingénieur définition",
+              "role": "membre",
+              "perimetre": "H175"
+            }
+          ]
         }
       ]
     },
     {
-      "nom": "Squad 2",
-      "membres": [
+      "pole": "ETIIE",
+      "responsable": {
+        "id": "p22",
+        "nom": "Personne 22",
+        "poste": "Responsable de pôle",
+        "role": "responsable",
+        "perimetre": "H160"
+      },
+      "squads": [
         {
-          "id": "p10",
-          "nom": "Personne 10",
-          "poste": "Lead technique",
-          "role": "leader",
-          "squad": "Squad 2",
-          "perimetre": "H175"
+          "nom": "Squad 1",
+          "membres": [
+            {
+              "id": "p23",
+              "nom": "Personne 23",
+              "poste": "Lead technique",
+              "role": "leader",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p24",
+              "nom": "Personne 24",
+              "poste": "Ingénieur intégration",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p25",
+              "nom": "Personne 25",
+              "poste": "Ingénieur systèmes",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p26",
+              "nom": "Personne 26",
+              "poste": "Ingénieur harnais",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p27",
+              "nom": "Personne 27",
+              "poste": "Ingénieur essais",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p28",
+              "nom": "Personne 28",
+              "poste": "Architecte électrique",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p29",
+              "nom": "Personne 29",
+              "poste": "Chargé de configuration",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p30",
+              "nom": "Personne 30",
+              "poste": "Ingénieur qualité",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p31",
+              "nom": "Personne 31",
+              "poste": "Ingénieur méthodes",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p32",
+              "nom": "Personne 32",
+              "poste": "Ingénieur calcul",
+              "role": "membre",
+              "perimetre": "H160"
+            }
+          ]
         },
         {
-          "id": "p11",
-          "nom": "Personne 11",
-          "poste": "Ingénieur intégration",
-          "role": "membre",
-          "squad": "Squad 2",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p12",
-          "nom": "Personne 12",
-          "poste": "Ingénieur systèmes",
-          "role": "membre",
-          "squad": "Squad 2",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p13",
-          "nom": "Personne 13",
-          "poste": "Ingénieur harnais",
-          "role": "membre",
-          "squad": "Squad 2",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p14",
-          "nom": "Personne 14",
-          "poste": "Ingénieur essais",
-          "role": "membre",
-          "squad": "Squad 2",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p15",
-          "nom": "Personne 15",
-          "poste": "Architecte électrique",
-          "role": "membre",
-          "squad": "Squad 2",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p16",
-          "nom": "Personne 16",
-          "poste": "Chargé de configuration",
-          "role": "membre",
-          "squad": "Squad 2",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p17",
-          "nom": "Personne 17",
-          "poste": "Ingénieur qualité",
-          "role": "membre",
-          "squad": "Squad 2",
-          "perimetre": "H175"
+          "nom": "Squad 2",
+          "membres": [
+            {
+              "id": "p33",
+              "nom": "Personne 33",
+              "poste": "Lead technique",
+              "role": "leader",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p34",
+              "nom": "Personne 34",
+              "poste": "Ingénieur systèmes",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p35",
+              "nom": "Personne 35",
+              "poste": "Ingénieur harnais",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p36",
+              "nom": "Personne 36",
+              "poste": "Ingénieur essais",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p37",
+              "nom": "Personne 37",
+              "poste": "Architecte électrique",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p38",
+              "nom": "Personne 38",
+              "poste": "Chargé de configuration",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p39",
+              "nom": "Personne 39",
+              "poste": "Ingénieur qualité",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p40",
+              "nom": "Personne 40",
+              "poste": "Ingénieur méthodes",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p41",
+              "nom": "Personne 41",
+              "poste": "Ingénieur calcul",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p42",
+              "nom": "Personne 42",
+              "poste": "Ingénieur définition",
+              "role": "membre",
+              "perimetre": "H175"
+            }
+          ]
         }
       ]
     },
     {
-      "nom": "Squad 3",
-      "membres": [
+      "pole": "ETIII",
+      "responsable": {
+        "id": "p43",
+        "nom": "Personne 43",
+        "poste": "Responsable de pôle",
+        "role": "responsable",
+        "perimetre": "H160"
+      },
+      "squads": [
         {
-          "id": "p18",
-          "nom": "Personne 18",
-          "poste": "Lead technique",
-          "role": "leader",
-          "squad": "Squad 3",
-          "perimetre": "Transverse"
+          "nom": "Squad 1",
+          "membres": [
+            {
+              "id": "p44",
+              "nom": "Personne 44",
+              "poste": "Lead technique",
+              "role": "leader",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p45",
+              "nom": "Personne 45",
+              "poste": "Ingénieur intégration",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p46",
+              "nom": "Personne 46",
+              "poste": "Ingénieur systèmes",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p47",
+              "nom": "Personne 47",
+              "poste": "Ingénieur harnais",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p48",
+              "nom": "Personne 48",
+              "poste": "Ingénieur essais",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p49",
+              "nom": "Personne 49",
+              "poste": "Architecte électrique",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p50",
+              "nom": "Personne 50",
+              "poste": "Chargé de configuration",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p51",
+              "nom": "Personne 51",
+              "poste": "Ingénieur qualité",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p52",
+              "nom": "Personne 52",
+              "poste": "Ingénieur méthodes",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p53",
+              "nom": "Personne 53",
+              "poste": "Ingénieur calcul",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p54",
+              "nom": "Personne 54",
+              "poste": "Ingénieur définition",
+              "role": "membre",
+              "perimetre": "H175"
+            }
+          ]
         },
         {
-          "id": "p19",
-          "nom": "Personne 19",
-          "poste": "Ingénieur systèmes",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p20",
-          "nom": "Personne 20",
-          "poste": "Ingénieur harnais",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p21",
-          "nom": "Personne 21",
-          "poste": "Ingénieur essais",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p22",
-          "nom": "Personne 22",
-          "poste": "Architecte électrique",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p23",
-          "nom": "Personne 23",
-          "poste": "Chargé de configuration",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p24",
-          "nom": "Personne 24",
-          "poste": "Ingénieur qualité",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p25",
-          "nom": "Personne 25",
-          "poste": "Ingénieur méthodes",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p26",
-          "nom": "Personne 26",
-          "poste": "Ingénieur calcul",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p27",
-          "nom": "Personne 27",
-          "poste": "Ingénieur définition",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p28",
-          "nom": "Personne 28",
-          "poste": "Ingénieur intégration",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p29",
-          "nom": "Personne 29",
-          "poste": "Ingénieur systèmes",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p30",
-          "nom": "Personne 30",
-          "poste": "Ingénieur harnais",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p31",
-          "nom": "Personne 31",
-          "poste": "Ingénieur essais",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p32",
-          "nom": "Personne 32",
-          "poste": "Architecte électrique",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p33",
-          "nom": "Personne 33",
-          "poste": "Chargé de configuration",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p34",
-          "nom": "Personne 34",
-          "poste": "Ingénieur qualité",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p35",
-          "nom": "Personne 35",
-          "poste": "Ingénieur méthodes",
-          "role": "membre",
-          "squad": "Squad 3",
-          "perimetre": "H160"
-        }
-      ]
-    },
-    {
-      "nom": "Squad 4",
-      "membres": [
-        {
-          "id": "p36",
-          "nom": "Personne 36",
-          "poste": "Lead technique",
-          "role": "leader",
-          "squad": "Squad 4",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p37",
-          "nom": "Personne 37",
-          "poste": "Ingénieur harnais",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p38",
-          "nom": "Personne 38",
-          "poste": "Ingénieur essais",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p39",
-          "nom": "Personne 39",
-          "poste": "Architecte électrique",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p40",
-          "nom": "Personne 40",
-          "poste": "Chargé de configuration",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p41",
-          "nom": "Personne 41",
-          "poste": "Ingénieur qualité",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p42",
-          "nom": "Personne 42",
-          "poste": "Ingénieur méthodes",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p43",
-          "nom": "Personne 43",
-          "poste": "Ingénieur calcul",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p44",
-          "nom": "Personne 44",
-          "poste": "Ingénieur définition",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p45",
-          "nom": "Personne 45",
-          "poste": "Ingénieur intégration",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p46",
-          "nom": "Personne 46",
-          "poste": "Ingénieur systèmes",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p47",
-          "nom": "Personne 47",
-          "poste": "Ingénieur harnais",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p48",
-          "nom": "Personne 48",
-          "poste": "Ingénieur essais",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p49",
-          "nom": "Personne 49",
-          "poste": "Architecte électrique",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p50",
-          "nom": "Personne 50",
-          "poste": "Chargé de configuration",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p51",
-          "nom": "Personne 51",
-          "poste": "Ingénieur qualité",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p52",
-          "nom": "Personne 52",
-          "poste": "Ingénieur méthodes",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p53",
-          "nom": "Personne 53",
-          "poste": "Ingénieur calcul",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p54",
-          "nom": "Personne 54",
-          "poste": "Ingénieur définition",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p55",
-          "nom": "Personne 55",
-          "poste": "Ingénieur intégration",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p56",
-          "nom": "Personne 56",
-          "poste": "Ingénieur systèmes",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p57",
-          "nom": "Personne 57",
-          "poste": "Ingénieur harnais",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p58",
-          "nom": "Personne 58",
-          "poste": "Ingénieur essais",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p59",
-          "nom": "Personne 59",
-          "poste": "Architecte électrique",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p60",
-          "nom": "Personne 60",
-          "poste": "Chargé de configuration",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p61",
-          "nom": "Personne 61",
-          "poste": "Ingénieur qualité",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p62",
-          "nom": "Personne 62",
-          "poste": "Ingénieur méthodes",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H175"
-        },
-        {
-          "id": "p63",
-          "nom": "Personne 63",
-          "poste": "Ingénieur calcul",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "Transverse"
-        },
-        {
-          "id": "p64",
-          "nom": "Personne 64",
-          "poste": "Ingénieur définition",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H160"
-        },
-        {
-          "id": "p65",
-          "nom": "Personne 65",
-          "poste": "Ingénieur intégration",
-          "role": "membre",
-          "squad": "Squad 4",
-          "perimetre": "H175"
+          "nom": "Squad 2",
+          "membres": [
+            {
+              "id": "p55",
+              "nom": "Personne 55",
+              "poste": "Lead technique",
+              "role": "leader",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p56",
+              "nom": "Personne 56",
+              "poste": "Ingénieur systèmes",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p57",
+              "nom": "Personne 57",
+              "poste": "Ingénieur harnais",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p58",
+              "nom": "Personne 58",
+              "poste": "Ingénieur essais",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p59",
+              "nom": "Personne 59",
+              "poste": "Architecte électrique",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p60",
+              "nom": "Personne 60",
+              "poste": "Chargé de configuration",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p61",
+              "nom": "Personne 61",
+              "poste": "Ingénieur qualité",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p62",
+              "nom": "Personne 62",
+              "poste": "Ingénieur méthodes",
+              "role": "membre",
+              "perimetre": "Transverse"
+            },
+            {
+              "id": "p63",
+              "nom": "Personne 63",
+              "poste": "Ingénieur calcul",
+              "role": "membre",
+              "perimetre": "H160"
+            },
+            {
+              "id": "p64",
+              "nom": "Personne 64",
+              "poste": "Ingénieur définition",
+              "role": "membre",
+              "perimetre": "H175"
+            },
+            {
+              "id": "p65",
+              "nom": "Personne 65",
+              "poste": "Ingénieur intégration",
+              "role": "membre",
+              "perimetre": "Transverse"
+            }
+          ]
         }
       ]
     }

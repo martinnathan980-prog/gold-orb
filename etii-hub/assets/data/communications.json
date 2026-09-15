@@ -32,7 +32,8 @@
           "type": "valide",
           "texte": "Conclusion : passage en fabrication autorisé."
         }
-      ]
+      ],
+      "pole": "ETII"
     },
     {
       "id": "c02",
@@ -66,7 +67,8 @@
           "type": "valide",
           "texte": "Aucune action requise après la bascule."
         }
-      ]
+      ],
+      "pole": "ETIIE"
     },
     {
       "id": "c03",
@@ -100,7 +102,8 @@
           "type": "puce",
           "texte": "Applicable aux livrables émis à partir du mois prochain."
         }
-      ]
+      ],
+      "pole": "ETII"
     },
     {
       "id": "c04",
@@ -130,7 +133,8 @@
           "type": "valide",
           "texte": "Accessible depuis la page d'accueil du hub."
         }
-      ]
+      ],
+      "pole": "ETIIA"
     },
     {
       "id": "c05",
@@ -148,7 +152,8 @@
           "type": "valide",
           "texte": "Tous les écarts relevés ont été traités."
         }
-      ]
+      ],
+      "pole": "ETIII"
     }
   ]
 }

@@ -33,6 +33,56 @@ Toute donnée est **fictive et illustrative**.
 4. **Corriger.** Les bugs fonctionnels de l'ancienne version (§6).
 5. **Rendre accessible.** Clavier, lecteurs d'écran, contrastes, motion.
 
+## 1bis. Structure du service (accord d'équipe — ne se discute pas)
+
+Le hub n'est pas plat. Il suit la hiérarchie réelle du service :
+
+    ETII  ............... le service, niveau le plus haut
+     ├── ETIIA .......... Squelette & ADN — logique et règles d'architecture
+     ├── ETIIE .......... Système nerveux — schémas électriques, communication
+     ├── ETIII .......... Structure & harnais — intégration physique, routage
+     └── Recherche documentaire, transverse aux trois pôles
+
+- Le **tableau de bord ETII** porte la communication de service et les
+  indicateurs : OTQ, OTD, écarts ouverts, charge.
+- Chaque **pôle** a son espace, avec sa communication, son organigramme,
+  ses réunions et sa FAQ.
+- Dans l'ancien site, les trois pages de pôle étaient des duplicatas. Ici,
+  un **gabarit unique paramétré** (`pole.js` + `data-pole`) : une correction
+  se fait une fois, pas trois.
+- Les quatre pages transverses (communication, réunions, organigramme, FAQ)
+  sont **partagées et filtrées** par le pôle actif, porté dans le hash :
+  `communication.html#pole=ETIIA`. La valeur `ETII` signifie « tout le
+  service ». Toute valeur inconnue retombe sur `ETII` sans erreur.
+
+### Couleurs de pôle
+
+Palette catégorielle **validée** (bande de clarté, plancher de chroma,
+séparation en vision daltonienne et en vision normale, contraste sur la
+surface), avec des pas propres à chaque thème :
+
+| Pôle  | Sombre    | Clair     | Jeton              |
+|-------|-----------|-----------|--------------------|
+| ETIIA | `#8b5cf6` | `#7c3aed` | `--pole-etiia`     |
+| ETIIE | `#0ea5c9` | `#0e8aa8` | `--pole-etiie`     |
+| ETIII | `#c47a0c` | `#b45309` | `--pole-etiii`     |
+
+Délibérément distinctes de l'accent émeraude de l'interface : une même
+teinte ne doit pas désigner à la fois « action » et « pôle ».
+
+Le pôle n'est **jamais** signalé par la couleur seule : toujours une
+pastille étiquetée ou un libellé.
+
+### Règles de visualisation des indicateurs
+
+- Jamais deux axes verticaux. Deux mesures d'échelles différentes : deux
+  graphiques, ou une base commune.
+- La couleur suit l'entité, jamais son rang. Masquer une série ne repeint
+  pas les autres.
+- Les couleurs de statut sont réservées à l'état, jamais série n°4.
+- Légende dès deux séries ; étiquetage direct jusqu'à quatre séries.
+- Une vue tabulaire accompagne toujours un graphique.
+
 ## 2. Ce qu'il faut supprimer de l'ancienne implémentation
 
 Ces patterns sont la cause de la lourdeur. Ils sont **interdits** dans la
@@ -56,7 +106,10 @@ Site statique. Aucune étape de build. Ouvrable par double-clic ou
 servable par n'importe quel serveur de fichiers.
 
     etii-hub/
-      index.html              Dispatcher (accueil)
+      index.html              Tableau de bord ETII (indicateurs, OTQ)
+      etiia.html              Espace du pôle ETIIA  ─┐
+      etiie.html              Espace du pôle ETIIE   ├─ même gabarit
+      etiii.html              Espace du pôle ETIII  ─┘  (pole.js)
       communication.html      Communication Center
       reunions.html           Comptes-rendus + points à venir
       organigramme.html       Équipes et rôles
@@ -71,6 +124,8 @@ servable par n'importe quel serveur de fichiers.
           data.js             Chargement JSON + cache + erreurs
           search.js           Moteur de recherche (§5)
           ui.js               Helpers DOM sûrs, modale, toast, focus trap
+          indicateurs.js      Graphiques : tuiles, lignes, barres
+          pole.js             Gabarit partagé des trois espaces
           <page>.js           Un module par page
         data/
           communications.json
@@ -78,6 +133,7 @@ servable par n'importe quel serveur de fichiers.
           organigramme.json
           faq.json
           documents.json      Corpus du moteur de recherche
+          indicateurs.json    OTQ, OTD, écarts, charge — 12 mois
       SPEC.md
       README.md
 
