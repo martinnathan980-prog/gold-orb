@@ -303,7 +303,10 @@ function creer(ns, balise, props, enfants) {
       const valeur = props[cle];
       const minuscule = cle.toLowerCase();
 
-      if (minuscule === 'class' || minuscule === 'classname' || minuscule === 'classes') {
+      // Les clés sont acceptées en anglais et en français : le projet est
+      // rédigé en français et les deux orthographes coexistent dans le code.
+      if (minuscule === 'class' || minuscule === 'classname' || minuscule === 'classes'
+          || minuscule === 'classe') {
         poserClasses(noeud, valeur);
       } else if (minuscule === 'dataset') {
         if (valeur && typeof valeur === 'object' && noeud.dataset) {
@@ -317,7 +320,7 @@ function creer(ns, balise, props, enfants) {
         }
       } else if (minuscule === 'style') {
         poserStyle(noeud, valeur);
-      } else if (minuscule === 'text') {
+      } else if (minuscule === 'text' || minuscule === 'texte') {
         noeud.textContent = (valeur === null || valeur === undefined) ? '' : String(valeur);
       } else if (minuscule === 'ref') {
         if (typeof valeur === 'function') { try { valeur(noeud); } catch (_e) { /* ignoré */ } }

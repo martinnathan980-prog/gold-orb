@@ -27,14 +27,14 @@
      reste du site.
 
    Dépendance : uniquement ./ui.js, dont on n'utilise que deux helpers —
-     creerElement(balise, { classe, texte })  -> Element
+     el(balise, { classe, texte })  -> Element  (importé sous le nom creerElement)
      vider(noeud)                             -> void
    Tout le reste (attributs, enfants) est posé ici avec les API DOM
    natives. Aucun innerHTML : l'injection HTML est structurellement
    impossible (SPEC §8).
    ========================================================================= */
 
-import { creerElement, vider } from './ui.js';
+import { el as creerElement, vider } from './ui.js';
 
 /* -------------------------------------------------------------------------
    Constantes de réglage

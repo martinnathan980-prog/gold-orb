@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Organigramme — ETII Hub, équipes et rôles du service</title>
+  <meta name="description" content="Organisation du service ETII : direction, squads, leaders et membres. Réorganisation par glisser-déposer ou au clavier, recherche filtrante et zoom.">
+  <meta name="color-scheme" content="light dark">
+
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+
+  <!-- =======================================================================
+       Styles propres à cette page UNIQUEMENT.
+
+       Trois catégories, et rien d'autre :
+
+       A. Agencement de l'organigramme : barre d'outils, bloc de squad,
+          zone de dépôt, carte de personne, avatar généré. Aucun composant
+          de components.css ne couvre ces cas ; tout le reste (cartes,
+          boutons, champs, badges, états vides) est réutilisé tel quel.
+       B. Zoom : une seule variable, --org-echelle, multiplie les jetons
+          d'espacement et de typographie de la grille. C'est un VRAI
+          redimensionnement qui reflue — jamais un transform: scale() sur
+          la page, formellement banni par la SPEC §2.
+       C. Pont entre le contrat de classes de ui.js et la feuille de
+          composants. `ui.js` fabrique `.modale / .modale__boite / .toast…`
+          alors que components.css stylise `.modale-fond / .modale /
+          .notification…`. Sans ces règles, la modale « Déplacer… » et les
+          notifications s'afficheraient sans mise en forme. Le socle n'est
+          pas modifié : le pont vit ici, comme dans docsearch.html.
+
+       Aucune valeur brute : uniquement des var(--…) de tokens.css, ou des
+       calculs dérivés de ces jetons. Les seuls nombres sans unité sont des
+       facteurs (échelle de zoom, opacité d'atténuation), déclarés en tant
+       que variables locales juste en dessous.
+       ======================================================================= -->
+  <style>
+    /* ---------------------------------------------------------------------
+       A0. Variables locales de la page
+       --------------------------------------------------------------------- */
+
+    .organigramme {
+      /* Facteur de zoom, piloté par les boutons et le curseur. La valeur
+         est posée en JavaScript sur cet élément : tout ce qui suit s'y
+         réfère, donc rien d'autre n'a besoin d'être recalculé. */
+      --org-echelle: 1;
+
+      /* Largeur minimale d'une carte de personne, avant application du zoom. */
+      --org-carte-min: calc(var(--e-16) * 4);
+
+      /* Opacité des cartes qui ne correspondent pas à la recherche : mises
+         en retrait, jamais retirées du flux ni de l'ordre de tabulation. */
+      --org-retrait: 0.34;
+    }
+
+    /* ---------------------------------------------------------------------
+       A1. Barre d'outils : recherche, zoom, actions
+       Elle reste accessible pendant le défilement d'une longue liste.
+       --------------------------------------------------------------------- */
+
+    .org-barre {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--e-3) var(--e-4);
+
+      padding: var(--e-3) var(--e-4);
+      background-color: var(--fond-eleve);
+      border: 1px solid var(--bordure-douce);
+      border-radius: var(--rayon-lg);
+      box-shadow: var(--ombre-sm);
+    }
+
+    /* Le champ de recherche prend la place restante, mais se replie seul
+       sous la barre dès qu'il descend sous sa base. */
+    .org-barre__recherche {
+      flex: 1 1 calc(var(--e-16) * 4);
+      min-inline-size: 0;
+    }
+
+    .org-barre__actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--e-2);
+    }
+
+    /* --- Zoom : deux boutons encadrant un curseur ----------------------- */
+
+    .org-zoom {
+      display: flex;
+      align-items: center;
+      gap: var(--e-2);
+
+      padding-inline: var(--e-2);
+      border: 1px solid var(--bordure);
+      border-radius: var(--rayon-plein);
+      background-color: var(--fond-enfonce);
+    }
+
+    .org-zoom__curseur {
+      inline-size: calc(var(--e-16) * 1.5);
+      min-block-size: var(--cible-tactile);
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .org-zoom__valeur {
+      min-inline-size: calc(var(--e-10) + var(--e-2));
+      text-align: end;
+      font-variant-numeric: tabular-nums;
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-moyenne);
+      color: var(--texte-doux);
+    }
+
+    /* ---------------------------------------------------------------------
+       A2. Bloc de squad
+       --------------------------------------------------------------------- */
+
+    .org-groupe {
+      --carte-espace: var(--e-4);
+      padding: 0;
+      overflow: hidden;
+    }
+
+    /* L'en-tête est AUSSI une zone de dépôt : y déposer une personne la
+       promeut leader. Le repère visuel est donc permanent (fond enfoncé),
+       et renforcé au survol d'un glissement. */
+    .org-groupe__entete {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--e-2) var(--e-4);
+
+      padding: var(--e-4) var(--e-5);
+      background-color: var(--fond-enfonce);
+      border-bottom: 1px solid var(--bordure-douce);
+    }
+
+    .org-groupe__titre {
+      flex: 1 1 auto;
+      min-inline-size: 0;
+      margin: 0;
+      font-size: var(--texte-xl);
+      /* Un nom de squad peut être long et contenir n'importe quel
+         caractère : il se coupe plutôt que de déborder. */
+      overflow-wrap: anywhere;
+    }
+
+    .org-groupe__corps {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-4);
+      padding: var(--e-5);
+    }
+
+    /* Intertitre non hiérarchique (« Leader », « Membres »). Ce n'est pas
+       un <h…> : 65 titres supplémentaires pollueraient le plan du document
+       sans rien apprendre à un lecteur d'écran. */
+    .org-etiquette {
+      margin: 0;
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-forte);
+      letter-spacing: var(--e-1);
+      text-transform: uppercase;
+      color: var(--texte-doux);
+    }
+
+    /* Indice n'apparaissant que pendant un glissement : inutile le reste
+       du temps, et il prendrait la place d'une information utile. */
+    .org-indice {
+      display: none;
+      flex: 0 0 100%;
+      margin: 0;
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-moyenne);
+      color: var(--texte-accent);
+    }
+
+    :root[data-org-glisse] .org-indice {
+      display: block;
+    }
+
+    /* ---------------------------------------------------------------------
+       A3. Zones de dépôt
+       --------------------------------------------------------------------- */
+
+    .org-depot {
+      border-radius: var(--rayon-md);
+    }
+
+    /* Retour visuel du survol pendant un glissement. Le trait est en
+       pointillés : l'information ne repose pas sur la seule couleur. */
+    .org-depot[data-survol] {
+      background-color: var(--accent-doux);
+      outline: var(--focus-epaisseur) dashed var(--accent);
+      outline-offset: calc(var(--focus-decalage) * -1);
+    }
+
+    /* ---------------------------------------------------------------------
+       A4. Grille de personnes — vrai responsive, piloté par le zoom
+       --------------------------------------------------------------------- */
+
+    .org-grille {
+      display: grid;
+      gap: calc(var(--e-4) * var(--org-echelle));
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(min(100%, calc(var(--org-carte-min) * var(--org-echelle))), 1fr)
+      );
+
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    /* ---------------------------------------------------------------------
+       A5. Carte de personne
+       --------------------------------------------------------------------- */
+
+    .personne {
+      --carte-marge: calc(var(--e-4) * var(--org-echelle));
+      --carte-espace: calc(var(--e-3) * var(--org-echelle));
+
+      block-size: 100%;
+      cursor: grab;
+    }
+
+    .personne:active {
+      cursor: grabbing;
+    }
+
+    /* Carte en cours de glissement : elle reste visible à sa place
+       d'origine, en retrait, pour garder le repère de départ. */
+    .personne[data-glisse] {
+      opacity: var(--org-retrait);
+      border-color: var(--accent);
+    }
+
+    .personne__tete {
+      display: flex;
+      align-items: center;
+      gap: calc(var(--e-3) * var(--org-echelle));
+      min-inline-size: 0;
+    }
+
+    .personne__identite {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-1);
+      min-inline-size: 0;
+    }
+
+    .personne__nom {
+      margin: 0;
+      font-size: calc(var(--texte-md) * var(--org-echelle));
+      font-weight: var(--graisse-forte);
+      line-height: var(--interligne-serre);
+      overflow-wrap: anywhere;
+    }
+
+    .personne__poste {
+      margin: 0;
+      font-size: calc(var(--texte-sm) * var(--org-echelle));
+      line-height: var(--interligne-serre);
+      color: var(--texte-doux);
+      overflow-wrap: anywhere;
+    }
+
+    .personne__pied {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--e-2);
+      margin-block-start: auto;
+    }
+
+    /* Mise en retrait des cartes hors filtre : elles gardent leur place,
+       restent focalisables et lisibles par un lecteur d'écran. */
+    .personne[data-hors-filtre] {
+      opacity: var(--org-retrait);
+    }
+
+    /* Dès qu'une carte en retrait reçoit le focus ou le survol, elle
+       redevient pleinement lisible : le clavier n'emmène jamais vers
+       quelque chose d'illisible. */
+    .personne[data-hors-filtre]:hover,
+    .personne[data-hors-filtre]:focus-within {
+      opacity: 1;
+    }
+
+    /* ---------------------------------------------------------------------
+       A6. Avatar généré localement (SPEC §4.4)
+       Le SVG est fabriqué par organigramme.js : un disque dont la TEINTE
+       est dérivée de l'identifiant, et les initiales par-dessus. Le module
+       ne transmet qu'un NOMBRE (--avatar-teinte) ; la seule formule de
+       couleur du projet hors tokens.css est celle-ci, et elle n'existe que
+       parce qu'une couleur par personne ne peut pas être un jeton.
+       Saturation et clarté sont fixes : les initiales (--gris-50, jeton
+       jamais redéfini par le thème) gardent ainsi un contraste supérieur
+       à 4,5:1 sur toutes les teintes, en thème clair comme en sombre.
+       --------------------------------------------------------------------- */
+
+    .avatar {
+      /* Valeur de repli : organigramme.js pose la teinte réelle, dérivée de
+         l'identifiant, sur chaque avatar. Déclarée ici pour que la variable
+         existe toujours, même si le module ne s'exécute pas. */
+      --avatar-teinte: 0;
+
+      flex: none;
+      inline-size: calc(var(--e-10) * var(--org-echelle));
+      block-size: calc(var(--e-10) * var(--org-echelle));
+      border-radius: var(--rayon-plein);
+      /* Cerclage discret : détache le disque du fond de carte en thème
+         sombre, où les deux peuvent être proches. */
+      box-shadow: 0 0 0 1px var(--bordure);
+    }
+
+    .avatar__fond {
+      fill: hsl(var(--avatar-teinte) 55% 28%);
+    }
+
+    /* Pas de letter-spacing : avec text-anchor: middle, l'espace ajouté
+       après la dernière lettre décentrerait les initiales dans le disque. */
+    .avatar__initiales {
+      fill: var(--gris-50);
+      font-family: var(--police);
+    }
+
+    /* ---------------------------------------------------------------------
+       A7. Résumé de filtrage
+       --------------------------------------------------------------------- */
+
+    .org-resume {
+      margin: 0;
+      font-size: var(--texte-sm);
+      color: var(--texte-doux);
+    }
+
+    .org-resume[hidden] {
+      display: none;
+    }
+
+    /* ---------------------------------------------------------------------
+       C1. Pont ui.js -> design system : modale
+       `ui.js` produit .modale (le voile) > .modale__boite (la boîte).
+       components.css attend .modale-fond > .modale : on réaffecte donc ici
+       les rôles, sans toucher au socle.
+       --------------------------------------------------------------------- */
+
+    .modale {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      padding: var(--e-4);
+
+      background-color: var(--fond-inverse);
+      background-color: color-mix(in srgb, var(--fond-inverse) 62%, transparent);
+
+      overflow-y: auto;
+      overscroll-behavior: contain;
+
+      /* Neutralisation des propriétés que components.css destine à la boîte. */
+      max-block-size: none;
+      inline-size: auto;
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      animation: none;
+    }
+
+    .modale__boite {
+      display: flex;
+      flex-direction: column;
+      max-block-size: calc(100dvh - var(--e-12));
+      inline-size: min(100%, calc(var(--e-16) * 9));
+      margin: auto;
+
+      background-color: var(--fond-eleve);
+      color: var(--texte);
+      border: 1px solid var(--bordure);
+      border-radius: var(--rayon-lg);
+      box-shadow: var(--ombre-lg);
+      overflow: hidden;
+    }
+
+    .modale__boite:focus {
+      outline: none;
+    }
+
+    .modale__entete {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--e-4);
+      padding: var(--e-5) var(--e-6);
+      border-bottom: 1px solid var(--bordure-douce);
+    }
+
+    .modale__titre {
+      flex: 1 1 auto;
+      min-width: 0;
+      margin: 0;
+      font-size: var(--texte-xl);
+      font-weight: var(--graisse-forte);
+      line-height: var(--interligne-serre);
+      overflow-wrap: anywhere;
+    }
+
+    .modale__fermeture,
+    .toast__fermeture {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-inline-size: var(--cible-tactile);
+      min-block-size: var(--cible-tactile);
+      padding: 0;
+
+      background-color: transparent;
+      color: var(--texte-doux);
+      border: 1px solid transparent;
+      border-radius: var(--rayon-md);
+      font-size: var(--texte-xl);
+      line-height: 1;
+    }
+
+    .modale__fermeture:hover,
+    .toast__fermeture:hover {
+      background-color: var(--fond-enfonce);
+      color: var(--texte);
+    }
+
+    .modale__corps {
+      flex: 1 1 auto;
+      padding: var(--e-6);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-4);
+    }
+
+    .modale__actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--e-3);
+      padding: var(--e-4) var(--e-6);
+      background-color: var(--fond-enfonce);
+      border-top: 1px solid var(--bordure-douce);
+    }
+
+    /* États transitoires posés par ui.js via data-etat. */
+    .modale[data-etat="entree"],
+    .modale[data-etat="sortie"] { opacity: 0; }
+    .modale[data-etat="ouvert"] { opacity: 1; }
+
+    /* Le fond ne défile pas derrière la modale. Sans !important, et levé
+       dès la fermeture : le défilement natif n'est jamais confisqué. */
+    :root[data-modale-ouverte] { overflow: hidden; }
+
+    @media (max-width: 640px) {
+      .modale__entete,
+      .modale__corps,
+      .modale__actions { padding: var(--e-4); }
+
+      .modale__actions .bouton { flex: 1 1 auto; }
+    }
+
+    /* ---------------------------------------------------------------------
+       C2. Pont ui.js -> design system : notifications éphémères
+       --------------------------------------------------------------------- */
+
+    .toasts {
+      position: fixed;
+      inset-block-end: var(--e-6);
+      inset-inline-end: var(--e-6);
+      z-index: 300;
+
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--e-3);
+
+      inline-size: min(100% - var(--e-8), calc(var(--e-16) * 6));
+      pointer-events: none;
+    }
+
+    .toast {
+      --org-toast-teinte: var(--texte-doux);
+
+      display: flex;
+      align-items: flex-start;
+      gap: var(--e-3);
+      padding: var(--e-2) var(--e-2) var(--e-2) var(--e-4);
+
+      background-color: var(--fond-eleve);
+      color: var(--texte);
+      border: 1px solid var(--bordure);
+      border-inline-start: var(--e-1) solid var(--org-toast-teinte);
+      border-radius: var(--rayon-md);
+      box-shadow: var(--ombre-lg);
+
+      font-size: var(--texte-sm);
+      pointer-events: auto;
+    }
+
+    .toast--succes   { --org-toast-teinte: var(--statut-succes); }
+    .toast--info     { --org-toast-teinte: var(--statut-info); }
+    .toast--alerte   { --org-toast-teinte: var(--statut-alerte); }
+    .toast--critique { --org-toast-teinte: var(--statut-critique); }
+
+    .toast__texte {
+      flex: 1 1 auto;
+      min-width: 0;
+      align-self: center;
+      line-height: var(--interligne);
+      overflow-wrap: anywhere;
+    }
+
+    .toast[data-etat="entree"],
+    .toast[data-etat="sortie"] { opacity: 0; }
+    .toast[data-etat="visible"] { opacity: 1; }
+
+    @media (max-width: 640px) {
+      .toasts {
+        inset-inline: var(--e-4);
+        inset-block-end: var(--e-4);
+        inline-size: auto;
+      }
+    }
+
+    /* ---------------------------------------------------------------------
+       Mouvement : toute transition de cette page est ici, et nulle part
+       ailleurs. base.css neutralise déjà l'ensemble sous
+       prefers-reduced-motion: reduce.
+       --------------------------------------------------------------------- */
+
+    @media (prefers-reduced-motion: no-preference) {
+      .modale,
+      .toast {
+        transition: opacity var(--duree) var(--courbe);
+      }
+
+      .personne,
+      .org-depot {
+        transition: opacity var(--duree-rapide) var(--courbe),
+                    background-color var(--duree-rapide) var(--courbe),
+                    border-color var(--duree-rapide) var(--courbe);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="lien-evitement" href="#contenu">Aller au contenu</a>
+
+  <header class="site-entete">
+    <div class="site-entete__interieur">
+      <a class="site-logo" href="index.html">ETII <span>HUB</span></a>
+
+      <nav class="site-nav" aria-label="Navigation principale">
+        <ul class="site-nav__liste">
+          <li><a href="index.html">Accueil</a></li>
+          <li><a href="communication.html">Communication</a></li>
+          <li><a href="reunions.html">Réunions</a></li>
+          <li><a href="organigramme.html" aria-current="page">Organigramme</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="docsearch.html">Recherche</a></li>
+        </ul>
+      </nav>
+
+      <button class="bascule-theme" type="button" data-bascule-theme
+              aria-pressed="false">
+        <span class="bascule-theme__icone bascule-theme__icone--clair"
+              aria-hidden="true">☾</span>
+        <span class="bascule-theme__icone bascule-theme__icone--sombre"
+              aria-hidden="true">☀</span>
+        <span class="bascule-theme__libelle">Thème sombre</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="contenu" tabindex="-1">
+    <div class="conteneur pile pile--lache organigramme">
+
+      <!-- ==============================================================
+           Titre et mode d'emploi
+           ============================================================== -->
+      <div class="pile pile--serree">
+        <h1>Organigramme</h1>
+        <p class="mesure texte-doux sans-marge">
+          La direction, puis les squads du service. Chaque personne peut
+          changer de squad et prendre le rôle de leader : faites-la glisser
+          vers une autre squad, ou utilisez le bouton
+          <strong>Déplacer…</strong> de sa carte, qui fait exactement la
+          même chose au clavier. Les changements restent sur ce poste et
+          n'affectent personne d'autre.
+        </p>
+      </div>
+
+      <!-- ==============================================================
+           Barre d'outils
+           Tous les contrôles sont désactivés tant que les données ne sont
+           pas chargées : organigramme.js les réactive à l'état « succès ».
+           ============================================================== -->
+      <section class="org-barre sans-impression" aria-label="Outils de l'organigramme">
+
+        <div class="org-barre__recherche">
+          <div class="recherche">
+            <span class="recherche__icone" aria-hidden="true">⌕</span>
+            <label class="visuellement-cache" for="org-recherche">
+              Rechercher une personne, un poste ou un périmètre
+            </label>
+            <input class="recherche__champ" id="org-recherche" type="search"
+                   placeholder="Rechercher une personne, un poste, un périmètre…"
+                   autocomplete="off" spellcheck="false"
+                   aria-describedby="org-resume" disabled>
+            <button class="bouton bouton--discret bouton--compact bouton--icone recherche__effacer"
+                    id="org-effacer" type="button" aria-label="Effacer la recherche">
+              <span aria-hidden="true">×</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="org-zoom" role="group" aria-label="Taille des cartes">
+          <button class="bouton bouton--discret bouton--compact bouton--icone"
+                  id="org-zoom-moins" type="button"
+                  aria-label="Réduire la taille des cartes" disabled>
+            <span aria-hidden="true">−</span>
+          </button>
+
+          <label class="visuellement-cache" for="org-zoom">
+            Taille des cartes, en pourcentage
+          </label>
+          <input class="org-zoom__curseur" id="org-zoom" type="range"
+                 min="80" max="160" step="10" value="100"
+                 aria-describedby="org-zoom-valeur" disabled>
+
+          <button class="bouton bouton--discret bouton--compact bouton--icone"
+                  id="org-zoom-plus" type="button"
+                  aria-label="Agrandir la taille des cartes" disabled>
+            <span aria-hidden="true">+</span>
+          </button>
+
+          <output class="org-zoom__valeur" id="org-zoom-valeur"
+                  for="org-zoom">100 %</output>
+        </div>
+
+        <div class="org-barre__actions">
+          <button class="bouton bouton--secondaire bouton--compact"
+                  id="org-nouvelle-squad" type="button" disabled>
+            Nouvelle squad
+          </button>
+          <button class="bouton bouton--danger-discret bouton--compact"
+                  id="org-reinitialiser" type="button" disabled>
+            Réinitialiser
+          </button>
+        </div>
+      </section>
+
+      <!-- Résumé du filtrage. Vide et masqué tant qu'aucune recherche
+           n'est en cours ; relié au champ par aria-describedby. -->
+      <p class="org-resume" id="org-resume" hidden></p>
+
+      <!-- ==============================================================
+           L'organigramme lui-même.
+           Rempli par organigramme.js via avecEtat() : chargement, erreur
+           et vide sont rendus ici, dans ce même conteneur.
+           ============================================================== -->
+      <div class="pile pile--lache" id="organigramme"></div>
+
+    </div>
+  </main>
+
+  <footer class="site-pied">
+    <div class="site-pied__interieur">
+      <p>ETII Hub — portail de démonstration, sans aucune dépendance externe.</p>
+      <p class="site-pied__mention">
+        <span aria-hidden="true">●</span>
+        Toutes les données de ce site sont fictives
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="assets/js/organigramme.js"></script>
+</body>
+</html>

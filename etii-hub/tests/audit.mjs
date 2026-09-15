@@ -143,6 +143,37 @@ for (const j of jsFiles) {
   verifier(`${j} : ${imports.length} import(s)`, morts.length ? `introuvables : ${morts.join(', ')}` : null);
 }
 
+
+// --- 7b. Symboles importés -----------------------------------------------
+// Vérifier que le FICHIER importé existe ne suffit pas : un import portant
+// sur un symbole que le module n'exporte pas casse la page entière au
+// chargement, sans que rien d'autre ne le signale.
+console.log('\n== Symboles importés ==');
+const exportsPar = new Map();
+for (const j of jsFiles) {
+  const noms = new Set();
+  const src = lireSansCommentaires(j);
+  for (const m of src.matchAll(/export\s+(?:async\s+)?(?:function\*?|const|let|var|class)\s+([A-Za-z0-9_$]+)/g))
+    noms.add(m[1]);
+  for (const m of src.matchAll(/export\s*\{([^}]*)\}/g))
+    for (const part of m[1].split(','))
+      { const n = part.trim().split(/\s+as\s+/).pop().trim(); if (n) noms.add(n); }
+  exportsPar.set(j.replace('assets/js/',''), noms);
+}
+for (const j of jsFiles) {
+  const manquants = [];
+  for (const m of lireSansCommentaires(j).matchAll(/import\s*\{([^}]*)\}\s*from\s*["']\.\/([^"']+)["']/g)) {
+    const cible = m[2];
+    const dispo = exportsPar.get(cible);
+    if (!dispo) { manquants.push(`module ${cible} introuvable`); continue; }
+    for (const part of m[1].split(',')) {
+      const nom = part.trim().split(/\s+as\s+/)[0].trim();
+      if (nom && !dispo.has(nom)) manquants.push(`${nom} absent de ${cible}`);
+    }
+  }
+  verifier(`${j} : symboles importés résolus`, manquants.length ? manquants.join(' ; ') : null);
+}
+
 // --- 8. Données ---------------------------------------------------------
 console.log('\n== Données ==');
 for (const j of jsonFiles) {

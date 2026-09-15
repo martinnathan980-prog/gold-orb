@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Base de connaissances — ETII Hub</title>
+  <meta name="description" content="Questions fréquentes du service ETII : recherche classée par pertinence, filtre par catégorie, et enregistrement local des questions sans réponse.">
+  <meta name="color-scheme" content="light dark">
+
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+
+  <!-- =======================================================================
+       Styles propres à cette page UNIQUEMENT.
+
+       Deux catégories, et rien d'autre :
+
+       A. L'agencement en deux volets (liste de questions / réponse), les
+          options de la liste et la section « Vos questions en attente ».
+          Aucun composant de components.css ne couvre ces cas.
+       B. Le pont entre le contrat de classes de `ui.js` et la feuille de
+          composants : `ui.js` fabrique `.modale / .modale__boite / .toast…`
+          alors que components.css stylise `.modale-fond / .modale /
+          .notification…`. Sans ces règles, la modale « Poser la question »
+          et les notifications s'afficheraient sans mise en forme. Le socle
+          n'est pas modifié : le pont vit ici, dans la page qui en a besoin
+          (même approche que docsearch.html).
+
+       Aucune valeur brute : uniquement des var(--…) de tokens.css, ou des
+       calculs dérivés de ces jetons. Seuls les points de rupture sont en
+       pixels, comme dans base.css — une media query ne peut pas lire une
+       variable CSS.
+       ======================================================================= -->
+  <style>
+    /* ---------------------------------------------------------------------
+       A1. Agencement en deux volets
+       Liste des questions à gauche, réponse à droite. Sous 900 px les deux
+       volets s'empilent ; l'ordre du document — liste puis réponse — donne
+       directement l'ordre voulu, sans aucune réécriture d'ordre.
+       --------------------------------------------------------------------- */
+
+    .faq {
+      display: grid;
+      gap: var(--e-6);
+      grid-template-columns: minmax(0, calc(var(--e-16) * 5)) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .faq__volet {
+      min-inline-size: 0;
+    }
+
+    /* Le volet de liste reste visible pendant la lecture d'une réponse
+       longue. Le décalage supérieur dégage l'en-tête collant du site. */
+    @media (min-width: 901px) {
+      .faq__liste {
+        position: sticky;
+        top: var(--e-16);
+        max-block-size: calc(100svh - var(--e-16) - var(--e-6));
+        overflow-y: auto;
+        /* La cible d'un défilement clavier ne colle pas au bord haut. */
+        scroll-padding-block: var(--e-2);
+        /* Laisse respirer l'anneau de focus d'une option en bord de zone. */
+        padding: var(--focus-epaisseur);
+        margin: calc(var(--focus-epaisseur) * -1);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .faq {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* `[hidden]` doit l'emporter sur le `display` posé par les primitives
+       de base.css, dont la spécificité est identique à celle de la règle
+       du navigateur. Des sélecteurs ciblés suffisent : pas de !important. */
+    .faq[hidden],
+    .faq__attente[hidden],
+    .pile[hidden],
+    .rangee[hidden],
+    .grille[hidden],
+    .facettes[hidden] {
+      display: none;
+    }
+
+    /* ---------------------------------------------------------------------
+       A2. Options de la liste de questions
+       Ce sont de vraies options de listbox : l'état est porté par
+       aria-selected, jamais par une classe posée en JavaScript.
+       --------------------------------------------------------------------- */
+
+    .faq__options {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-3);
+      margin: 0;
+    }
+
+    .faq__option {
+      cursor: pointer;
+    }
+
+    .faq__option:hover {
+      border-color: var(--bordure-forte);
+      box-shadow: var(--ombre-md);
+    }
+
+    .faq__option[aria-selected="true"] {
+      border-color: var(--accent);
+      background-color: var(--accent-doux);
+      box-shadow: var(--ombre-md);
+    }
+
+    .faq__option[aria-selected="true"] .faq__intitule {
+      color: var(--texte-accent);
+    }
+
+    /* L'intitulé d'une option : du texte, pas un titre de section — la
+       hiérarchie des titres appartient au volet de droite. */
+    .faq__intitule {
+      margin: 0;
+      font-weight: var(--graisse-moyenne);
+      line-height: var(--interligne);
+      color: var(--texte);
+    }
+
+    .faq__extrait {
+      margin: 0;
+      font-size: var(--texte-sm);
+      color: var(--texte-doux);
+    }
+
+    /* ---------------------------------------------------------------------
+       A3. Volet de droite : la réponse
+       --------------------------------------------------------------------- */
+
+    .faq__detail:focus {
+      outline: none;
+    }
+
+    .faq__detail:focus-visible {
+      outline: var(--focus-epaisseur) solid var(--focus-couleur);
+      outline-offset: var(--focus-decalage);
+    }
+
+    .faq__reponse {
+      margin: 0;
+      max-width: var(--largeur-texte);
+      font-size: var(--texte-lg);
+      line-height: var(--interligne);
+      color: var(--texte-doux);
+    }
+
+    /* Fondu discret à chaque changement de question. Opacité seule : aucun
+       déplacement, aucune machine à écrire (SPEC §2). */
+    @keyframes faq-apparition {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .faq__contenu {
+        animation: faq-apparition var(--duree) var(--courbe);
+      }
+
+      .faq__option {
+        transition: border-color var(--duree-rapide) var(--courbe),
+                    background-color var(--duree-rapide) var(--courbe),
+                    box-shadow var(--duree-rapide) var(--courbe);
+      }
+    }
+
+    /* ---------------------------------------------------------------------
+       A4. Intitulés de section discrets (catégories, liste, en attente)
+       --------------------------------------------------------------------- */
+
+    .faq__titre-section {
+      margin: 0;
+      font-size: var(--texte-sm);
+      font-weight: var(--graisse-forte);
+      text-transform: uppercase;
+      color: var(--texte-doux);
+    }
+
+    /* La barre de recherche reste atteignable après avoir parcouru la
+       liste, à la souris comme au clavier. */
+    .faq__barre {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding-block: var(--e-4);
+      background-color: var(--fond);
+    }
+
+    /* ---------------------------------------------------------------------
+       A5. Section « Vos questions en attente »
+       --------------------------------------------------------------------- */
+
+    .faq__attente {
+      display: grid;
+      gap: var(--e-3);
+      margin: 0;
+    }
+
+    .faq__attente-texte {
+      margin: 0;
+      white-space: pre-wrap;
+      color: var(--texte-doux);
+    }
+
+    /* ---------------------------------------------------------------------
+       B1. Pont ui.js -> design system : modale
+       `ui.js` produit .modale (le voile) > .modale__boite (la boîte).
+       components.css attend .modale-fond > .modale : on réaffecte donc ici
+       les rôles, sans toucher au socle.
+       --------------------------------------------------------------------- */
+
+    .modale {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--e-4);
+
+      background-color: var(--fond-inverse);
+      background-color: color-mix(in srgb, var(--fond-inverse) 62%, transparent);
+
+      overflow-y: auto;
+      overscroll-behavior: contain;
+
+      /* Neutralisation des propriétés que components.css destine à la boîte. */
+      max-block-size: none;
+      inline-size: auto;
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      animation: none;
+    }
+
+    .modale__boite {
+      display: flex;
+      flex-direction: column;
+      max-block-size: calc(100dvh - var(--e-12));
+      inline-size: min(100%, calc(var(--e-16) * 10));
+      margin: auto;
+
+      background-color: var(--fond-eleve);
+      color: var(--texte);
+      border: 1px solid var(--bordure);
+      border-radius: var(--rayon-lg);
+      box-shadow: var(--ombre-lg);
+      overflow: hidden;
+    }
+
+    /* Les variantes de largeur de components.css visent `.modale` ; ici
+       c'est la boîte qui porte la largeur, on les rebranche donc. */
+    .modale__boite.modale--etroite {
+      inline-size: min(100%, calc(var(--e-16) * 7));
+    }
+
+    .modale__boite:focus {
+      outline: none;
+    }
+
+    .modale__entete {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--e-4);
+      padding: var(--e-5) var(--e-6);
+      border-bottom: 1px solid var(--bordure-douce);
+    }
+
+    .modale__titre {
+      flex: 1 1 auto;
+      min-width: 0;
+      margin: 0;
+      font-size: var(--texte-xl);
+      font-weight: var(--graisse-forte);
+      line-height: var(--interligne-serre);
+    }
+
+    .modale__fermeture,
+    .toast__fermeture {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-inline-size: var(--cible-tactile);
+      min-block-size: var(--cible-tactile);
+      padding: 0;
+
+      background-color: transparent;
+      color: var(--texte-doux);
+      border: 1px solid transparent;
+      border-radius: var(--rayon-md);
+      font-size: var(--texte-xl);
+      line-height: 1;
+    }
+
+    .modale__fermeture:hover,
+    .toast__fermeture:hover {
+      background-color: var(--fond-enfonce);
+      color: var(--texte);
+    }
+
+    .modale__corps {
+      flex: 1 1 auto;
+      padding: var(--e-6);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-4);
+    }
+
+    .modale__actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--e-3);
+      padding: var(--e-4) var(--e-6);
+      background-color: var(--fond-enfonce);
+      border-top: 1px solid var(--bordure-douce);
+    }
+
+    /* États transitoires posés par ui.js via data-etat. */
+    .modale[data-etat="entree"],
+    .modale[data-etat="sortie"] { opacity: 0; }
+    .modale[data-etat="ouvert"] { opacity: 1; }
+
+    /* Le fond ne défile pas derrière la modale. Sans !important, et levé
+       dès la fermeture : le défilement natif n'est jamais confisqué. */
+    :root[data-modale-ouverte] { overflow: hidden; }
+
+    @media (max-width: 640px) {
+      .modale__entete,
+      .modale__corps,
+      .modale__actions { padding: var(--e-4); }
+
+      .modale__actions .bouton { flex: 1 1 auto; }
+    }
+
+    /* ---------------------------------------------------------------------
+       B2. Pont ui.js -> design system : notifications éphémères
+       --------------------------------------------------------------------- */
+
+    .toasts {
+      position: fixed;
+      inset-block-end: var(--e-6);
+      inset-inline-end: var(--e-6);
+      z-index: 300;
+
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--e-3);
+
+      inline-size: min(100% - var(--e-8), calc(var(--e-16) * 6));
+      pointer-events: none;
+    }
+
+    .toast {
+      --faq-toast-teinte: var(--texte-doux);
+
+      display: flex;
+      align-items: flex-start;
+      gap: var(--e-3);
+      padding: var(--e-2) var(--e-2) var(--e-2) var(--e-4);
+
+      background-color: var(--fond-eleve);
+      color: var(--texte);
+      border: 1px solid var(--bordure);
+      border-inline-start: var(--e-1) solid var(--faq-toast-teinte);
+      border-radius: var(--rayon-md);
+      box-shadow: var(--ombre-lg);
+
+      font-size: var(--texte-sm);
+      pointer-events: auto;
+    }
+
+    .toast--succes   { --faq-toast-teinte: var(--statut-succes); }
+    .toast--info     { --faq-toast-teinte: var(--statut-info); }
+    .toast--alerte   { --faq-toast-teinte: var(--statut-alerte); }
+    .toast--critique { --faq-toast-teinte: var(--statut-critique); }
+
+    .toast__texte {
+      flex: 1 1 auto;
+      min-width: 0;
+      align-self: center;
+      line-height: var(--interligne);
+    }
+
+    .toast[data-etat="entree"],
+    .toast[data-etat="sortie"] { opacity: 0; }
+    .toast[data-etat="visible"] { opacity: 1; }
+
+    @media (max-width: 640px) {
+      .toasts {
+        inset-inline: var(--e-4);
+        inset-block-end: var(--e-4);
+        inline-size: auto;
+      }
+    }
+
+    /* ---------------------------------------------------------------------
+       Mouvement : toute transition de cette page est déclarée ici.
+       base.css neutralise déjà l'ensemble sous
+       prefers-reduced-motion: reduce.
+       --------------------------------------------------------------------- */
+
+    @media (prefers-reduced-motion: no-preference) {
+      .modale,
+      .toast {
+        transition: opacity var(--duree) var(--courbe);
+      }
+    }
+
+    /* ---------------------------------------------------------------------
+       Impression : seule la réponse affichée a du sens sur papier.
+       --------------------------------------------------------------------- */
+
+    @media print {
+      .faq {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .faq__liste,
+      .faq__barre {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="lien-evitement" href="#contenu">Aller au contenu</a>
+
+  <header class="site-entete">
+    <div class="site-entete__interieur">
+      <a class="site-logo" href="index.html">ETII <span>HUB</span></a>
+
+      <nav class="site-nav" aria-label="Navigation principale">
+        <ul class="site-nav__liste">
+          <li><a href="index.html">Accueil</a></li>
+          <li><a href="communication.html">Communication</a></li>
+          <li><a href="reunions.html">Réunions</a></li>
+          <li><a href="organigramme.html">Organigramme</a></li>
+          <li><a href="faq.html" aria-current="page">FAQ</a></li>
+          <li><a href="docsearch.html">Recherche</a></li>
+        </ul>
+      </nav>
+
+      <button class="bascule-theme" type="button" data-bascule-theme
+              aria-pressed="false">
+        <span class="bascule-theme__icone bascule-theme__icone--clair"
+              aria-hidden="true">☾</span>
+        <span class="bascule-theme__icone bascule-theme__icone--sombre"
+              aria-hidden="true">☀</span>
+        <span class="bascule-theme__libelle">Thème sombre</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="contenu" tabindex="-1">
+    <div class="conteneur pile pile--lache">
+
+      <!-- ==============================================================
+           Titre et accroche
+           ============================================================== -->
+      <div class="pile pile--serree">
+        <h1>Base de connaissances</h1>
+        <p class="mesure texte-doux">
+          Les questions fréquentes du service, classées par pertinence.
+          Tapez votre recherche, filtrez par catégorie, puis choisissez une
+          question pour lire la réponse. La liste se parcourt aussi aux
+          flèches du clavier, et la touche <kbd>/</kbd> place le curseur
+          dans le champ de recherche.
+        </p>
+      </div>
+
+      <!-- ==============================================================
+           Zone alimentée par assets/data/faq.json.
+           Les trois états — chargement, erreur, vide — sont pris en
+           charge par avecEtat() dans assets/js/faq.js.
+           ============================================================== -->
+      <div id="zone-faq" class="pile pile--lache"></div>
+
+      <!-- ==============================================================
+           Questions posées et enregistrées LOCALEMENT.
+           Cette section vit hors de la zone de données : elle reste
+           consultable même si faq.json est introuvable ou invalide.
+           Aucun envoi réseau, aucune adresse e-mail (SPEC §0 et §4.5).
+           ============================================================== -->
+      <section id="faq-attente" class="pile" aria-labelledby="faq-attente-titre"
+               hidden>
+        <div class="pile pile--serree">
+          <h2 id="faq-attente-titre">Vos questions en attente</h2>
+          <p class="mesure texte-doux texte-sm" id="faq-attente-aide">
+            Ces questions sont conservées dans ce navigateur, sur cet
+            appareil seulement. Rien n’est envoyé : ni message, ni courriel,
+            ni requête vers un serveur. Vous pouvez les supprimer à tout
+            moment.
+          </p>
+        </div>
+        <ul class="faq__attente" id="faq-attente-liste"
+            aria-labelledby="faq-attente-titre"></ul>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="site-pied">
+    <div class="site-pied__interieur">
+      <p>ETII Hub — portail de démonstration, sans aucune dépendance externe.</p>
+      <p class="site-pied__mention">
+        <span aria-hidden="true">●</span>
+        Toutes les données de ce site sont fictives
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="assets/js/faq.js"></script>
+</body>
+</html>
