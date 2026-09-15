@@ -4,6 +4,8 @@ Tableau de bord de suivi des plans d'intégration électrique, construit sur
 Google Apps Script + Google Sheets.
 
 ```
+PROCEDURE.md      Le geste hebdomadaire, en deux étapes
+import/           Script Python : archiver un export hors Google Sheets
 Code.gs           Serveur : lecture de la feuille, historique, jalons
 Index.html        Structure de la page
 Styles.html       Feuille de style
@@ -34,14 +36,17 @@ Tout se règle dans l'objet `CONFIG` en haut de `Code.gs` :
 | `FEUILLE_HISTORIQUE` | Onglet des instantanés (`Historique_FWD`). |
 | `MOTS_CLES_ENTETE` | Mots-clés qui identifient la ligne d'en-têtes. |
 | `AUTORISER_INTEGRATION_EXTERNE` | `true` pour embarquer la page dans Google Sites. |
-| `DONNEES_DEMO_SI_HISTORIQUE_VIDE` | `true` pour réafficher la courbe de démonstration. |
+| `FENETRE_RYTHME` | Nombre de semaines sur lesquelles se mesure le rythme (6 par défaut). |
 
 ## Fonctionnement
 
-**Historique.** `enregistrerInstantaneHebdo()` écrit une ligne par semaine ISO
-dans `Historique_FWD` (`Semaine, Terminés, En cours, Sans statut, Total, %, Horodatage`).
-L'opération est idempotente : relancée dans la même semaine, elle met la ligne à jour.
-Le graphique d'évolution lit cet onglet — plus aucune donnée fictive.
+**Historique.** L'export GATES ne contient que l'état du jour : on ne sait pas
+quand un plan est passé à 100 %. L'historique ne peut donc pas être reconstitué,
+seulement **accumulé**. `enregistrerInstantaneHebdo()` écrit une ligne par semaine
+ISO dans `Historique_FWD` — comptes globaux, comptes par ATA, et avancement plan
+par plan sur les deux derniers relevés (pour le comparatif entre imports).
+L'opération est idempotente : plusieurs imports la même semaine ne font qu'une
+ligne, la dernière. Voir [`PROCEDURE.md`](PROCEDURE.md) pour le geste hebdomadaire.
 
 **Classement de l'avancement.** `classerFWD()` applique d'abord une règle
 numérique (`>= 100` terminé, `<= 0` vide), puis des mots-clés. La fonction est

@@ -41,16 +41,20 @@ const CONFIG = {
    */
   AUTORISER_INTEGRATION_EXTERNE: false,
 
-  /**
-   * true = si l'historique réel est vide, renvoie une courbe de démonstration.
-   * À laisser sur false en production : un outil de suivi ne doit pas afficher de faux chiffres.
-   */
-  DONNEES_DEMO_SI_HISTORIQUE_VIDE: false
+  /** Nombre de semaines sur lesquelles se mesure le rythme d'avancement. */
+  FENETRE_RYTHME: 6
 };
 
 const ENTETES_HISTORIQUE = [
-  'Semaine', 'Terminés', 'En cours', 'Sans statut', 'Total', 'Avancement %', 'Horodatage'
+  'Semaine', 'Date', 'Total', 'Terminés', 'En cours', 'À faire', 'Non renseignés',
+  'Par ATA', 'Plans'
 ];
+
+/**
+ * Nombre de relevés pour lesquels on conserve l'avancement plan par plan.
+ * Deux suffisent au comparatif ; au-delà le classeur gonflerait pour rien.
+ */
+const RELEVES_AVEC_DETAIL = 2;
 
 // =====================================================================
 //  POINT D'ENTRÉE WEB
@@ -78,6 +82,8 @@ function onOpen() {
     .addItem('Enregistrer un instantané maintenant', 'enregistrerInstantaneHebdo')
     .addItem('Activer le suivi hebdomadaire automatique', 'installerSuiviHebdomadaire')
     .addItem('Désactiver le suivi automatique', 'desinstallerSuiviHebdomadaire')
+    .addSeparator()
+    .addItem('Supprimer le dernier relevé', 'supprimerDernierReleve')
     .addToUi();
 }
 
@@ -303,7 +309,10 @@ function paquetVide(nomFeuille, message) {
 }
 
 // =====================================================================
-//  HISTORIQUE HEBDOMADAIRE
+//  HISTORIQUE
+//  L'export ne contient que l'état du jour : on ne sait pas quand un plan est
+//  passé à 100 %. L'historique ne peut donc pas être reconstitué, seulement
+//  accumulé — un relevé par semaine ISO, écrit à chaque import.
 // =====================================================================
 
 function getFeuilleHistorique(classeur, creerSiAbsente) {
@@ -318,67 +327,91 @@ function getFeuilleHistorique(classeur, creerSiAbsente) {
   return feuille;
 }
 
-/**
- * Historique réel, dédoublonné (dernière valeur gagnante) et trié par semaine.
- * Format renvoyé : [semaine, terminés, en cours, sans statut].
- */
+/** Lit l'onglet Historique : un objet par relevé, trié par semaine. */
 function getHistorique(classeur) {
   const feuille = getFeuilleHistorique(classeur, false);
-  if (!feuille || feuille.getLastRow() < 2) {
-    return CONFIG.DONNEES_DEMO_SI_HISTORIQUE_VIDE ? historiqueDemo() : [];
-  }
+  if (!feuille || feuille.getLastRow() < 2) return [];
 
-  const valeurs = feuille.getRange(2, 1, feuille.getLastRow() - 1, 4).getValues();
+  const valeurs = feuille.getRange(2, 1, feuille.getLastRow() - 1, ENTETES_HISTORIQUE.length).getValues();
   const parSemaine = {};
-  for (let i = 0; i < valeurs.length; i++) {
-    const semaine = normaliserSemaine(valeurs[i][0]);
-    if (!semaine) continue;
-    parSemaine[semaine] = [
-      semaine,
-      Number(valeurs[i][1]) || 0,
-      Number(valeurs[i][2]) || 0,
-      Number(valeurs[i][3]) || 0
-    ];
-  }
+
+  valeurs.forEach(function (ligne) {
+    const semaine = normaliserSemaine(ligne[0]);
+    if (!semaine) return;
+    parSemaine[semaine] = {          // le dernier relevé d'une semaine l'emporte
+      semaine: semaine,
+      date: ligne[1] instanceof Date ? ligne[1].toISOString().slice(0, 10) : String(ligne[1] || ''),
+      total: Number(ligne[2]) || 0,
+      termine: Number(ligne[3]) || 0,
+      encours: Number(ligne[4]) || 0,
+      afaire: Number(ligne[5]) || 0,
+      vide: Number(ligne[6]) || 0,
+      parAta: analyserJson(ligne[7]),
+      plans: analyserJson(ligne[8])
+    };
+  });
 
   return Object.keys(parSemaine).sort().map(function (s) { return parSemaine[s]; });
 }
 
-/** Compte les avancements FWD de la feuille de données. */
+function analyserJson(valeur) {
+  if (!valeur) return null;
+  try { return JSON.parse(valeur); } catch (err) { return null; }
+}
+
+/** Compte l'état du jour, globalement et par ATA, et relève chaque plan. */
 function compterAvancements() {
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const feuille = getFeuilleDonnees(classeur);
   const donnees = feuille.getDataRange().getDisplayValues();
-  if (donnees.length === 0) return { termine: 0, encours: 0, vide: 0, total: 0 };
+  const vide = { total: 0, termine: 0, encours: 0, afaire: 0, vide: 0, parAta: {}, plans: {} };
+  if (donnees.length === 0) return vide;
 
   const indexEntete = detecterLigneEntete(donnees);
   const entetes = donnees[indexEntete];
   const groupes = propagerGroupes(indexEntete > 0 ? donnees[indexEntete - 1] : [], entetes.length);
   const indexFWD = trouverIndexFWD(entetes, groupes);
+  const indexRef = entetes.findIndex(function (e) { return normaliser(e).indexOf('reference') !== -1; });
+  const indexAta = entetes.findIndex(function (e) {
+    const n = normaliser(e);
+    return n === 'ata' || n.indexOf('chapitre') !== -1;
+  });
   const lignes = donnees.slice(indexEntete + 1).filter(ligneNonVide);
 
-  const compte = { termine: 0, encours: 0, vide: 0, total: lignes.length };
-  if (indexFWD === -1) {
-    compte.vide = lignes.length;
-    return compte;
-  }
-  for (let i = 0; i < lignes.length; i++) {
-    compte[classerFWD(lignes[i][indexFWD])]++;
-  }
+  const compte = { total: lignes.length, termine: 0, encours: 0, afaire: 0, vide: 0, parAta: {}, plans: {} };
+
+  lignes.forEach(function (ligne, n) {
+    const brut = indexFWD === -1 ? '' : ligne[indexFWD];
+    const etat = classerFWD(brut);
+    compte[etat]++;
+
+    const reference = indexRef === -1 ? 'ligne-' + (n + 1) : String(ligne[indexRef]).trim();
+    if (reference) compte.plans[reference] = String(brut).trim();
+
+    const ata = indexAta === -1 ? '—' : (String(ligne[indexAta]).trim() || '—');
+    if (!compte.parAta[ata]) compte.parAta[ata] = { total: 0, termine: 0 };
+    compte.parAta[ata].total++;
+    if (etat === 'termine') compte.parAta[ata].termine++;
+  });
+
   return compte;
 }
 
 /**
- * Écrit (ou met à jour) l'instantané de la semaine courante.
- * Idempotent : relancer plusieurs fois dans la même semaine met la ligne à jour.
- * À déclencher via le menu ou le déclencheur hebdomadaire.
+ * Archive le relevé de la semaine courante.
+ * Idempotent : réimporter dans la même semaine met la ligne à jour au lieu
+ * d'en empiler une seconde.
  */
 function enregistrerInstantaneHebdo() {
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
   const compte = compterAvancements();
   const semaine = numeroSemaineISO(new Date());
-  const pct = compte.total === 0 ? 0 : Math.round((compte.termine / compte.total) * 100);
-  const ligne = [semaine, compte.termine, compte.encours, compte.vide, compte.total, pct, new Date()];
+  const ligne = [
+    semaine, new Date(), compte.total, compte.termine, compte.encours,
+    compte.afaire, compte.vide,
+    JSON.stringify(compte.parAta),
+    JSON.stringify(compte.plans)
+  ];
 
   const feuille = getFeuilleHistorique(classeur, true);
   const derniere = feuille.getLastRow();
@@ -395,7 +428,43 @@ function enregistrerInstantaneHebdo() {
   } else {
     feuille.getRange(indexLigne, 1, 1, ligne.length).setValues([ligne]);
   }
-  return { ok: true, semaine: semaine, compte: compte, pourcentage: pct };
+
+  elaguerDetailPlans(feuille);
+  return { ok: true, semaine: semaine, compte: compte };
+}
+
+/**
+ * Le détail plan par plan ne sert qu'au comparatif entre les deux derniers
+ * relevés. On l'efface au-delà, sinon le classeur enfle à chaque semaine.
+ */
+function elaguerDetailPlans(feuille) {
+  const derniere = feuille.getLastRow();
+  const aGarder = RELEVES_AVEC_DETAIL;
+  if (derniere - 1 <= aGarder) return;
+  const nb = derniere - 1 - aGarder;
+  const colonne = ENTETES_HISTORIQUE.indexOf('Plans') + 1;
+  feuille.getRange(2, colonne, nb, 1).clearContent();
+}
+
+/** Retire le relevé de la semaine courante — pour rattraper un mauvais export. */
+function supprimerDernierReleve() {
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const feuille = getFeuilleHistorique(classeur, false);
+  const ui = SpreadsheetApp.getUi();
+  if (!feuille || feuille.getLastRow() < 2) {
+    ui.alert('Aucun relevé à supprimer.');
+    return;
+  }
+  const semaine = numeroSemaineISO(new Date());
+  const semaines = feuille.getRange(2, 1, feuille.getLastRow() - 1, 1).getValues();
+  for (let i = semaines.length - 1; i >= 0; i--) {
+    if (normaliserSemaine(semaines[i][0]) === semaine) {
+      feuille.deleteRow(i + 2);
+      ui.alert('Relevé ' + semaine + ' supprimé. Recollez le bon export puis relancez l\'archivage.');
+      return;
+    }
+  }
+  ui.alert('Aucun relevé pour la semaine ' + semaine + '.');
 }
 
 function installerSuiviHebdomadaire() {
@@ -411,17 +480,6 @@ function desinstallerSuiviHebdomadaire() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'enregistrerInstantaneHebdo') ScriptApp.deleteTrigger(t);
   });
-}
-
-/** Courbe de démonstration — utilisée uniquement si CONFIG.DONNEES_DEMO_SI_HISTORIQUE_VIDE. */
-function historiqueDemo() {
-  return [
-    ['2026-S25', 5, 20, 200], ['2026-S26', 12, 35, 185], ['2026-S27', 15, 50, 160],
-    ['2026-S28', 22, 60, 145], ['2026-S29', 25, 75, 130], ['2026-S30', 30, 85, 115],
-    ['2026-S31', 35, 100, 95], ['2026-S32', 40, 110, 85], ['2026-S33', 45, 120, 80],
-    ['2026-S34', 80, 150, 60], ['2026-S35', 140, 110, 40], ['2026-S36', 210, 90, 20],
-    ['2026-S37', 290, 50, 10]
-  ];
 }
 
 // =====================================================================
