@@ -51,7 +51,7 @@ console.log('\n== Recherche au fil de la frappe ==');
 const champ = page.locator('input[type="search"], input[role="combobox"], #recherche').first();
 await champ.fill('harnais');
 await page.waitForTimeout(400);
-const nRes = await page.locator('[role="option"]').count();
+const nRes = await page.locator('#ds-resultats > *').count();
 t('"harnais" donne des résultats', nRes>0, `(${nRes})`);
 const surlignes = await page.locator('mark').count();
 t('les termes sont surlignés', surlignes>0, `(${surlignes} <mark>)`);
@@ -59,7 +59,7 @@ t('les termes sont surlignés', surlignes>0, `(${surlignes} <mark>)`);
 console.log('\n== Tolérance aux fautes dans la page ==');
 await champ.fill('conecteur');
 await page.waitForTimeout(400);
-const nFaute = await page.locator('[role="option"]').count();
+const nFaute = await page.locator('#ds-resultats > *').count();
 t('"conecteur" trouve quand même', nFaute>0, `(${nFaute})`);
 
 console.log('\n== Aucun résultat ==');
@@ -71,12 +71,42 @@ t('état "aucun résultat" affiché', /aucun|rien|pas de r/i.test(corps));
 console.log('\n== Navigation clavier ==');
 await champ.fill('norme');
 await page.waitForTimeout(400);
+// Deux mécanismes sont acceptables pour parcourir des résultats au clavier :
+// déplacer le focus réel (roving tabindex) ou pointer aria-activedescendant.
+// Le test porte sur le comportement, pas sur le mécanisme retenu.
+const positionActive = () => page.evaluate(() => {
+  const champ = document.getElementById('ds-champ');
+  const parAttribut = champ && champ.getAttribute('aria-activedescendant');
+  if (parAttribut) return 'add:' + parAttribut;
+  const focalise = document.activeElement;
+  if (focalise && focalise.closest && focalise.closest('#ds-resultats')) return 'focus:' + focalise.id;
+  return null;
+});
+const avantFleche = await positionActive();
 await champ.press('ArrowDown');
-await page.waitForTimeout(150);
-const actif = await champ.getAttribute('aria-activedescendant');
-t('ArrowDown pose aria-activedescendant', !!actif, `(${actif})`);
-if (actif) t('la cible de aria-activedescendant existe',
-  await page.evaluate(id => !!document.getElementById(id), actif));
+await page.waitForTimeout(200);
+const apres1 = await positionActive();
+t('ArrowDown sélectionne un résultat', !!apres1 && apres1 !== avantFleche, `(${avantFleche} -> ${apres1})`);
+await page.keyboard.press('ArrowDown');
+await page.waitForTimeout(200);
+const apres2 = await positionActive();
+t('ArrowDown déplace la sélection au suivant', !!apres2 && apres2 !== apres1, `(${apres1} -> ${apres2})`);
+const idActif = (apres2 || '').split(':')[1];
+if (idActif) t('l\'élément sélectionné existe dans la liste',
+  await page.evaluate(id => { const e = document.getElementById(id);
+    return !!e && !!e.closest('#ds-resultats'); }, idActif));
+
+console.log('\n== Annonce aux lecteurs d\'écran ==');
+await champ.fill('harnais');
+await page.waitForTimeout(2200);   // l'annonce est volontairement différée
+const annonce = await page.evaluate(() =>
+  [...document.querySelectorAll('[aria-live]')].map(r => r.textContent.trim()).join(' '));
+t('le nombre de résultats est annoncé', /\d+\s+résultats?/.test(annonce), `("${annonce}")`);
+await champ.fill('zzzzqqqq');
+await page.waitForTimeout(2200);
+const annonce2 = await page.evaluate(() =>
+  [...document.querySelectorAll('[aria-live]')].map(r => r.textContent.trim()).join(' '));
+t('l\'absence de résultat est annoncée', /aucun/i.test(annonce2), `("${annonce2}")`);
 
 console.log('\n== URL partageable ==');
 await champ.fill('essai');

@@ -91,10 +91,28 @@
        A2. Carte de résultat
        --------------------------------------------------------------------- */
 
-    /* Chaque carte est une option de la liste : le pointeur doit le dire. */
+    /* La grille de résultats est une vraie liste : les cartes sont des
+       <li>, pas des options de listbox. Les marqueurs de liste n'ont rien
+       à faire ici. */
+    .ds-liste {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    /* Cliquer une carte la désigne comme résultat courant : le pointeur
+       doit le dire. */
     .ds-carte {
       cursor: pointer;
       scroll-margin-block: calc(var(--e-16) + var(--e-8));
+    }
+
+    /* Résultat courant du parcours ↑/↓. L'état est porté par aria-current,
+       source unique de vérité — c'est la règle que components.css applique
+       à [role="option"][aria-selected="true"], transposée à cette liste. */
+    .ds-carte[aria-current="true"] {
+      background-color: var(--accent-doux);
+      border-color: var(--accent);
     }
 
     .ds-carte__titre {
@@ -200,6 +218,15 @@
     .ds-squelette {
       min-height: calc(var(--e-16) * 3);
       justify-content: space-between;
+    }
+
+    /* Contraste AA (SPEC §7) : --texte-faible ne dépasse pas 4,5:1 sur
+       --fond-enfonce (3,86:1 en clair, 3,98:1 en sombre). Le compteur
+       porte un chiffre, donc une information : il passe à --texte-doux
+       (6,15:1 en clair, 7,39:1 en sombre). La règle plus spécifique de
+       components.css pour la facette active reste prioritaire. */
+    .facette__compteur {
+      color: var(--texte-doux);
     }
 
     /* ---------------------------------------------------------------------
@@ -478,10 +505,6 @@
               autocapitalize="none"
               spellcheck="false"
               enterkeyhint="search"
-              role="combobox"
-              aria-expanded="false"
-              aria-controls="ds-resultats"
-              aria-autocomplete="list"
               aria-describedby="ds-aide">
 
             <kbd class="recherche__raccourci" aria-hidden="true">/</kbd>
@@ -495,7 +518,7 @@
             </button>
           </div>
 
-          <p class="texte-xs texte-faible sans-marge" id="ds-aide">
+          <p class="texte-xs texte-doux sans-marge" id="ds-aide">
             <kbd>/</kbd> pour revenir au champ,
             <kbd>↑</kbd> <kbd>↓</kbd> pour parcourir les résultats,
             <kbd>Entrée</kbd> pour ouvrir, <kbd>Échap</kbd> pour effacer.

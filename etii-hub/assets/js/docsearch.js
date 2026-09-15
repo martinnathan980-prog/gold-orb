@@ -26,7 +26,7 @@ import {
   debounce, etatUrl, stockage, initTheme, initNav
 } from './ui.js';
 
-import { creerIndex, rechercher, surligner, suggerer } from './search.js';
+import { creerIndex, rechercher, surligner, suggerer, normaliser } from './search.js';
 
 /* -------------------------------------------------------------------------
    0. Accès aux données
@@ -220,17 +220,26 @@ const CHAMPS_INDEXES = [
 ];
 
 /*
-   Les trois dimensions de facettes. `multiple` indique si le champ du
-   document contient une liste de valeurs (métier) ou une valeur unique.
+   Les quatre dimensions de facettes exigées par la SPEC §4.6. `filtrable`
+   marque les dimensions à forte cardinalité (le porteur : une cinquantaine
+   de valeurs) : leur liste reçoit un champ de filtrage et un repli
+   « afficher tout », sans quoi la colonne deviendrait impraticable.
+   `documents.json` ne déclare pas de clé « porteurs » : `preparerCorpus()`
+   déduit alors les valeurs du corpus, comme pour toute source absente.
 */
 const DIMENSIONS = [
   { cle: 'type',      champ: 'type',      libelle: 'Type',      source: 'types' },
   { cle: 'metier',    champ: 'metier',    libelle: 'Métier',    source: 'metiers' },
+  { cle: 'porteur',   champ: 'porteur',   libelle: 'Porteur',   source: 'porteurs',
+    filtrable: true, pluriel: 'porteurs' },
   { cle: 'perimetre', champ: 'perimetre', libelle: 'Périmètre', source: 'perimetres' }
 ];
 
 /** Raccourci vers la dimension « métier », la seule qui soit une liste. */
-const DIMENSION_METIER = DIMENSIONS[1];
+const DIMENSION_METIER = DIMENSIONS.find((dimension) => dimension.cle === 'metier');
+
+/** Nombre de valeurs montrées d'emblée dans une facette filtrable. */
+const VALEURS_FACETTE_VISIBLES = 12;
 
 /*
    Habillage des types documentaires. Purement décoratif : le sens est
@@ -273,8 +282,10 @@ const FORMAT_DATE = new Intl.DateTimeFormat('fr-FR', {
 const etat = {
   /** Texte saisi, tel quel. */
   requete: '',
-  /** Valeurs actives par dimension : { type: Set, metier: Set, perimetre: Set }. */
-  facettes: { type: new Set(), metier: new Set(), perimetre: new Set() },
+  /** Valeurs actives par dimension : une entrée par clé de DIMENSIONS. */
+  facettes: {
+    type: new Set(), metier: new Set(), porteur: new Set(), perimetre: new Set()
+  },
   /** Mode « parcourir tout le fonds », sans requête ni filtre. */
   tout: false,
   /** Index du résultat courant dans la liste affichée, -1 si aucun. */
@@ -287,8 +298,10 @@ const etat = {
 const corpus = {
   documents: [],
   index: null,
-  valeurs: { type: [], metier: [], perimetre: [] },
-  connues: { type: new Set(), metier: new Set(), perimetre: new Set() },
+  valeurs: { type: [], metier: [], porteur: [], perimetre: [] },
+  connues: {
+    type: new Set(), metier: new Set(), porteur: new Set(), perimetre: new Set()
+  },
   comptesType: new Map()
 };
 
@@ -301,7 +314,8 @@ const refs = {
   resultats: null,
   messages: null,
   effacerTout: null,
-  facettes: new Map(),     // 'dim|valeur' -> bouton
+  facettes: new Map(),        // 'dim|valeur' -> bouton
+  outilsFacette: new Map(),   // clé de dimension filtrable -> { champ, bouton… }
   propositionsSection: null,
   propositionsListe: null
 };
@@ -309,7 +323,7 @@ const refs = {
 /** Cartes déjà construites : id de document -> fiche réutilisable. */
 const fiches = new Map();
 
-/** Carte portant aria-selected. Conservée par référence : une carte sortie
+/** Carte portant aria-current. Conservée par référence : une carte sortie
     de la grille doit être nettoyée même si elle n'y est plus. */
 let carteActive = null;
 
@@ -418,14 +432,16 @@ function appliquerUrl(brut) {
   etat.tout = String(source.tout || '') === '1';
 }
 
+/** Clés que cette page reconnaît dans le fragment d'URL. */
+const CLES_URL = ['q', 'tout'].concat(DIMENSIONS.map((dimension) => dimension.cle));
+
 const ecrireUrl = debounce(() => {
-  etatUrl.ecrire({
-    q: etat.requete.trim(),
-    type: Array.from(etat.facettes.type),
-    metier: Array.from(etat.facettes.metier),
-    perimetre: Array.from(etat.facettes.perimetre),
-    tout: etat.tout ? '1' : ''
-  });
+  // Construit depuis DIMENSIONS : ajouter une facette ne demande rien ici.
+  const sortie = { q: etat.requete.trim(), tout: etat.tout ? '1' : '' };
+  for (const dimension of DIMENSIONS) {
+    sortie[dimension.cle] = Array.from(etat.facettes[dimension.cle]);
+  }
+  etatUrl.ecrire(sortie);
 }, DELAI_URL);
 
 /* -------------------------------------------------------------------------
@@ -478,6 +494,7 @@ function construireInterface(donnees, cible) {
   /* --- Colonne de gauche : les facettes -------------------------------- */
 
   refs.facettes.clear();
+  refs.outilsFacette.clear();
 
   refs.effacerTout = el('button', {
     type: 'button',
@@ -503,14 +520,23 @@ function construireInterface(donnees, cible) {
       el('span', {}, valeur),
       compteur);
 
+      const element = el('li', {}, bouton);
       bouton.compteurNoeud = compteur;
+      bouton.elementListe = element;
+      bouton.nombreCourant = 0;
       refs.facettes.set(dimension.cle + '|' + valeur, bouton);
-      return el('li', {}, bouton);
+      return element;
     }));
+
+    // Dimension à forte cardinalité : champ de filtrage + repli d'affichage.
+    const outils = dimension.filtrable ? outilsFacette(dimension, idTitre) : null;
 
     return el('section', { class: 'pile pile--serree' },
       el('h3', { class: 'ds-titre-facette', id: idTitre }, dimension.libelle),
-      liste);
+      outils ? outils.champBloc : null,
+      liste,
+      outils ? outils.vide : null,
+      outils ? outils.bouton : null);
   });
 
   const filtres = el('aside', {
@@ -534,10 +560,13 @@ function construireInterface(donnees, cible) {
       onClick: (evt) => ouvrirModaleProposition(evt.currentTarget)
     }, 'Proposer un document'));
 
-  refs.resultats = el('div', {
-    class: 'grille grille--ample',
+  // Une liste de cartes actionnables, pas un listbox : les options ARIA
+  // imposent « Children Presentational: True », ce qui effacerait les
+  // boutons « Ouvrir » et « Copier le lien » de l'arbre d'accessibilité.
+  refs.resultats = el('ul', {
+    class: 'grille grille--ample ds-liste',
     id: 'ds-resultats',
-    role: 'listbox',
+    role: 'list',
     ariaLabel: 'Résultats de la recherche'
   });
 
@@ -560,17 +589,120 @@ function construireInterface(donnees, cible) {
 
   // Un clic dans une carte (hors bouton) la désigne comme résultat courant :
   // souris et clavier partagent ainsi la même notion de « courant ».
-  deleguer(refs.resultats, '[role="option"]', 'click', (evt, carte) => {
+  deleguer(refs.resultats, '.ds-carte', 'click', (evt, carte) => {
     if (evt.target.closest('[data-action]')) return;
     const position = etat.affiches.findIndex((doc) => String(doc.id) === carte.dataset.id);
     if (position !== -1) definirActif(position, false);
   });
+
+  // Une fois le focus posé sur une carte, le parcours continue au clavier.
+  refs.resultats.addEventListener('keydown', surToucheResultats);
 
   deleguer(refs.messages, '[data-action]', 'click', (evt, bouton) => {
     surActionMessage(evt, bouton);
   });
 
   pretARendre = true;
+}
+
+/**
+ * Outils d'une facette à forte cardinalité : un champ pour filtrer les
+ * valeurs, un bouton pour déplier le reste, un mot quand rien ne
+ * correspond. Sans cela, les 51 porteurs du fonds rendraient la colonne
+ * de filtres inutilisable.
+ *
+ * @param {object} dimension entrée de DIMENSIONS
+ * @param {string} idTitre   identifiant du titre du groupe
+ * @returns {object} accès conservés dans refs.outilsFacette
+ */
+function outilsFacette(dimension, idTitre) {
+  const idChamp = idTitre + '-filtre';
+  const nom = dimension.pluriel || dimension.libelle.toLowerCase();
+
+  const champ = el('input', {
+    class: 'champ__controle',
+    id: idChamp,
+    type: 'search',
+    autocomplete: 'off',
+    autocapitalize: 'none',
+    spellcheck: 'false',
+    placeholder: 'Filtrer les ' + nom + '…',
+    onInput: () => {
+      outils.etendu = false;
+      majVisibiliteValeurs(dimension);
+    }
+  });
+
+  const champBloc = el('div', { class: 'champ' },
+    el('label', { class: 'visuellement-cache', for: idChamp },
+      'Restreindre la liste des ' + nom),
+    champ);
+
+  const vide = el('p', {
+    class: 'texte-xs texte-doux sans-marge',
+    hidden: true
+  }, 'Aucune valeur ne correspond.');
+
+  const bouton = el('button', {
+    type: 'button',
+    class: 'bouton bouton--discret bouton--compact',
+    hidden: true,
+    onClick: () => {
+      outils.etendu = !outils.etendu;
+      majVisibiliteValeurs(dimension);
+      // Le bouton survit au basculement : le focus n'est jamais perdu.
+      bouton.focus();
+    }
+  }, '');
+
+  const outils = { champ, champBloc, vide, bouton, etendu: false };
+  refs.outilsFacette.set(dimension.cle, outils);
+  return outils;
+}
+
+/**
+ * Applique le filtre textuel et le repli d'affichage à une facette
+ * filtrable. Une valeur active reste toujours visible : il faut pouvoir
+ * la relâcher, même si elle ne correspond plus au filtre saisi.
+ *
+ * @param {object} dimension entrée de DIMENSIONS
+ */
+function majVisibiliteValeurs(dimension) {
+  const outils = refs.outilsFacette.get(dimension.cle);
+  if (!outils) return;
+
+  const filtre = normaliser(outils.champ.value || '');
+  const actives = etat.facettes[dimension.cle];
+  const candidats = [];
+
+  for (const valeur of corpus.valeurs[dimension.cle]) {
+    const bouton = refs.facettes.get(dimension.cle + '|' + valeur);
+    if (!bouton || !bouton.elementListe) continue;
+
+    const active = actives.has(valeur);
+    const correspond = filtre === '' || normaliser(valeur).indexOf(filtre) !== -1;
+
+    if (active) {
+      bouton.elementListe.hidden = false;
+    } else if (bouton.nombreCourant > 0 && correspond) {
+      candidats.push(bouton.elementListe);
+    } else {
+      bouton.elementListe.hidden = true;
+    }
+  }
+
+  const limite = outils.etendu ? candidats.length : VALEURS_FACETTE_VISIBLES;
+  candidats.forEach((element, position) => { element.hidden = position >= limite; });
+
+  const reste = candidats.length - VALEURS_FACETTE_VISIBLES;
+  outils.bouton.hidden = reste <= 0;
+  if (!outils.bouton.hidden) {
+    outils.bouton.textContent = outils.etendu
+      ? 'Réduire la liste'
+      : 'Afficher ' + reste + ' ' + pluriel(reste, 'valeur de plus', 'valeurs de plus');
+  }
+
+  outils.vide.hidden = candidats.length > 0 || actives.size > 0;
 }
 
 /** Prépare corpus, index et valeurs de facettes. Appelé une seule fois. */
@@ -628,9 +760,13 @@ function rendre() {
   majCompteursFacettes(base);
 
   const filtres = base.filter((resultat) => correspondFacettes(resultat.doc));
-  etat.affiches = filtres.map((resultat) => resultat.doc);
 
   const accueil = etat.requete.trim() === '' && !auMoinsUneFacette() && !etat.tout;
+
+  // L'accueil ne rend aucune liste : `affiches` doit donc rester vide, sinon
+  // ↑/↓ désigneraient des cartes détachées du DOM et Entrée ouvrirait un
+  // document que la page n'affiche nulle part.
+  etat.affiches = accueil ? [] : filtres.map((resultat) => resultat.doc);
 
   refs.effacerTout.disabled = !auMoinsUneFacette() && etat.requete === '' && !etat.tout;
 
@@ -667,6 +803,7 @@ function majCompteursFacettes(base) {
       const nombre = comptes.get(valeur) || 0;
       const active = actives.has(valeur);
 
+      bouton.nombreCourant = nombre;
       if (bouton.compteurNoeud.textContent !== String(nombre)) {
         bouton.compteurNoeud.textContent = String(nombre);
       }
@@ -679,6 +816,10 @@ function majCompteursFacettes(base) {
       // elle est active : il faut toujours pouvoir la relâcher.
       bouton.disabled = nombre === 0 && !active;
     }
+
+    // Les dimensions à forte cardinalité ne montrent qu'une part de leurs
+    // valeurs : la sélection dépend des compteurs qu'on vient de poser.
+    if (dimension.filtrable) majVisibiliteValeurs(dimension);
   }
 }
 
@@ -703,12 +844,11 @@ function afficherResultats() {
 
   vider(refs.messages);
   if (tronque) {
-    monter(refs.messages, el('p', { class: 'texte-sm texte-faible texte-centre' },
+    monter(refs.messages, el('p', { class: 'texte-sm texte-doux texte-centre' },
       'Seuls les ' + LIMITE_AFFICHAGE + ' documents les plus pertinents sont '
       + 'affichés. Affinez la recherche pour voir les suivants.'));
   }
 
-  refs.champ.setAttribute('aria-expanded', 'true');
   definirActif(-1, false);
 }
 
@@ -717,7 +857,6 @@ function afficherAccueil() {
   vider(refs.resultats);
   refs.resultats.hidden = true;
   refs.barre.hidden = true;
-  refs.champ.setAttribute('aria-expanded', 'false');
   definirActif(-1, false);
 
   const total = corpus.documents.length;
@@ -767,7 +906,6 @@ function afficherAucunResultat() {
   refs.resultats.hidden = true;
   refs.barre.hidden = false;
   refs.compteur.textContent = texteCompteur(0);
-  refs.champ.setAttribute('aria-expanded', 'false');
   definirActif(-1, false);
 
   const bloc = el('div', { class: 'etat-vide etat-vide--encadre' },
@@ -870,7 +1008,7 @@ function obtenirFiche(doc) {
 
   const habillage = styleType(doc.type);
 
-  const titre = el('p', { class: 'ds-carte__titre' });
+  const titre = el('h3', { class: 'ds-carte__titre' });
   const reference = el('span', { class: 'badge badge--carre badge--contour' });
   const resume = el('p', { class: 'ds-carte__resume' });
 
@@ -912,12 +1050,15 @@ function obtenirFiche(doc) {
 
   const maj = typeof doc.maj === 'string' ? doc.maj : '';
 
-  const carte = el('article', {
+  // Un élément de liste, focalisable par programme seulement : le parcours
+  // ↑/↓ y déplace un tabindex glissant, sans imposer d'arrêt de tabulation
+  // supplémentaire. Aucun aria-label global : il masquerait le résumé, les
+  // métiers et la date de mise à jour.
+  const carte = el('li', {
     class: 'carte carte--compacte ds-carte',
     id: 'ds-option-' + id,
-    role: 'option',
     dataset: { id },
-    ariaLabel: [doc.titre, doc.type, doc.reference].filter(Boolean).join(', ')
+    tabIndex: -1
   },
   el('div', { class: 'carte__meta' },
     el('span', { class: 'badge ' + habillage.badge },
@@ -1003,6 +1144,9 @@ function surActionMessage(evt, bouton) {
   if (action === 'parcourir-tout') {
     etat.tout = true;
     rendre();
+    // `rendre()` remplace le contenu de refs.messages : le bouton cliqué
+    // n'existe plus, le focus doit être replacé explicitement.
+    refs.champ.focus();
     return;
   }
   if (action === 'appliquer-suggestion') {
@@ -1011,8 +1155,20 @@ function surActionMessage(evt, bouton) {
     return;
   }
   if (action === 'retirer-facette') {
-    etat.facettes[bouton.dataset.dimension].delete(bouton.dataset.valeur);
+    const dimension = bouton.dataset.dimension;
+    const valeur = bouton.dataset.valeur;
+    const actives = etat.facettes[dimension];
+    if (!actives) return;
+    actives.delete(valeur);
     rendre();
+
+    // Le bouton cliqué vient d'être détruit par le rendu. On vise la puce
+    // de facette correspondante, qui lui survit ; à défaut, le champ.
+    const equivalent = refs.facettes.get(dimension + '|' + valeur);
+    const visible = equivalent && !equivalent.disabled && equivalent.isConnected
+      && !(equivalent.elementListe && equivalent.elementListe.hidden);
+    if (visible) equivalent.focus();
+    else refs.champ.focus();
     return;
   }
   if (action === 'tout-effacer') {
@@ -1072,34 +1228,46 @@ function definirRequete(texte) {
    ------------------------------------------------------------------------- */
 
 /**
- * Désigne le résultat courant.
+ * Désigne le résultat courant : aria-current et tabindex glissant.
  *
  * @param {number} position index dans `etat.affiches`, -1 pour aucun
  * @param {boolean} [defiler=true] amener le résultat dans le champ de vision
+ * @param {boolean} [prendreFocus=false] y déplacer aussi le focus clavier
  */
-function definirActif(position, defiler) {
+function definirActif(position, defiler, prendreFocus) {
   const nombre = Math.min(etat.affiches.length, LIMITE_AFFICHAGE);
 
-  // Nettoyage de l'ancien : une seule option porte aria-selected.
-  if (carteActive) carteActive.removeAttribute('aria-selected');
+  // Nettoyage de l'ancien : une seule carte est courante, et une seule est
+  // atteignable à la tabulation.
+  if (carteActive) {
+    carteActive.removeAttribute('aria-current');
+    carteActive.tabIndex = -1;
+  }
   carteActive = null;
 
   if (position < -1) position = -1;
   if (position >= nombre) position = nombre - 1;
   etat.actif = nombre === 0 ? -1 : position;
 
-  if (etat.actif < 0) {
-    refs.champ.removeAttribute('aria-activedescendant');
+  if (etat.actif < 0) return;
+
+  const doc = etat.affiches[etat.actif];
+  const fiche = doc ? fiches.get(String(doc.id)) : null;
+
+  // Garde-fou : une carte absente de la grille ne peut être ni désignée
+  // ni ouverte, quoi qu'ait pu laisser `etat.affiches`.
+  if (!fiche || !fiche.carte.isConnected) {
+    etat.actif = -1;
     return;
   }
 
-  const doc = etat.affiches[etat.actif];
-  const fiche = fiches.get(String(doc.id));
-  if (!fiche) return;
-
-  fiche.carte.setAttribute('aria-selected', 'true');
+  fiche.carte.setAttribute('aria-current', 'true');
+  fiche.carte.tabIndex = 0;
   carteActive = fiche.carte;
-  refs.champ.setAttribute('aria-activedescendant', fiche.carte.id);
+
+  if (prendreFocus) {
+    try { fiche.carte.focus(); } catch (_e) { /* moteur sans focus() : ignoré */ }
+  }
 
   if (defiler !== false) {
     // 'auto' et non 'smooth' : base.css active le défilement doux au niveau
@@ -1132,21 +1300,23 @@ function surToucheChamp(evt) {
   switch (evt.key) {
     case 'ArrowDown':
       evt.preventDefault();
-      definirActif(etat.actif + 1);
+      // Le focus suit la carte courante : c'est lui qui porte désormais
+      // l'information, faute de motif combobox.
+      definirActif(etat.actif + 1, true, true);
       break;
     case 'ArrowUp':
       evt.preventDefault();
-      definirActif(etat.actif - 1);
+      definirActif(etat.actif - 1, true, true);
       break;
     case 'Home':
       if (etat.actif < 0) return;      // sinon on empêche le retour au début du texte
       evt.preventDefault();
-      definirActif(0);
+      definirActif(0, true, true);
       break;
     case 'End':
       if (etat.actif < 0) return;
       evt.preventDefault();
-      definirActif(Math.min(etat.affiches.length, LIMITE_AFFICHAGE) - 1);
+      definirActif(Math.min(etat.affiches.length, LIMITE_AFFICHAGE) - 1, true, true);
       break;
     case 'Enter':
       evt.preventDefault();
@@ -1165,9 +1335,73 @@ function surToucheChamp(evt) {
   }
 }
 
+/**
+ * Touches gérées une fois le focus posé sur une carte de résultat.
+ * Les touches d'un bouton ou d'un lien de la carte ne sont pas captées :
+ * Entrée doit continuer d'activer « Ouvrir » ou « Copier le lien ».
+ */
+function surToucheResultats(evt) {
+  if (evt.altKey || evt.ctrlKey || evt.metaKey) return;
+
+  const carte = (evt.target && typeof evt.target.closest === 'function')
+    ? evt.target.closest('.ds-carte')
+    : null;
+  if (!carte || evt.target !== carte) return;
+
+  const dernier = Math.min(etat.affiches.length, LIMITE_AFFICHAGE) - 1;
+
+  switch (evt.key) {
+    case 'ArrowDown':
+      evt.preventDefault();
+      definirActif(etat.actif + 1, true, true);
+      break;
+    case 'ArrowUp':
+      evt.preventDefault();
+      // Remonter au-dessus du premier résultat rend la main au champ.
+      if (etat.actif <= 0) {
+        definirActif(-1, false);
+        refs.champ.focus();
+      } else {
+        definirActif(etat.actif - 1, true, true);
+      }
+      break;
+    case 'Home':
+      evt.preventDefault();
+      definirActif(0, true, true);
+      break;
+    case 'End':
+      evt.preventDefault();
+      definirActif(dernier, true, true);
+      break;
+    case 'Enter':
+      evt.preventDefault();
+      ouvrirCourant();
+      break;
+    case 'Escape':
+      evt.preventDefault();
+      definirActif(-1, false);
+      refs.champ.focus();
+      break;
+    default:
+      // Reprendre la frappe depuis une carte ramène au champ : personne ne
+      // doit taper dans le vide après avoir parcouru les résultats.
+      if (evt.key.length === 1 || evt.key === 'Backspace') {
+        definirActif(-1, false);
+        refs.champ.focus();
+      }
+      break;
+  }
+}
+
 /** Raccourcis disponibles depuis n'importe où dans la page. */
 function surToucheDocument(evt) {
   if (evt.altKey || evt.ctrlKey || evt.metaKey) return;
+
+  // Une modale ouverte capte le clavier. Sans ce garde-fou, « / »
+  // donnerait le focus au champ situé derrière le voile, et le rattrapage
+  // de focus de ui.js renverrait ensuite l'utilisateur au bouton de
+  // fermeture. (ui.js pose `data-modale` sur le voile.)
+  if (document.querySelector('[data-modale]')) return;
 
   const cible = evt.target;
   const dansUneSaisie = cible && (
@@ -1181,9 +1415,10 @@ function surToucheDocument(evt) {
     return;
   }
 
-  // Échap hors du champ : on efface et on rend la main au champ. Une
-  // modale ouverte intercepte Échap en amont (ui.js), donc rien à craindre.
-  if (evt.key === 'Escape' && cible !== refs.champ && !dansUneSaisie) {
+  // Échap hors du champ : on efface et on rend la main au champ. Le
+  // parcours des résultats gère Échap avant d'arriver ici.
+  if (evt.key === 'Escape' && cible !== refs.champ && !dansUneSaisie
+      && !(cible && typeof cible.closest === 'function' && cible.closest('.ds-carte'))) {
     if (etat.requete === '' && !auMoinsUneFacette() && !etat.tout) return;
     evt.preventDefault();
     toutEffacer();
@@ -1541,6 +1776,11 @@ function demarrer() {
   // Navigation « Précédent » / « Suivant » et liens partagés.
   etatUrl.ecouter((brut) => {
     if (!pretARendre) return;
+    // Une ancre de page (le lien d'évitement « #contenu », par exemple) ne
+    // porte aucune de nos clés : ce n'est pas notre état, et l'appliquer
+    // effacerait la recherche en cours. `etatUrl.ecrire` n'empilant jamais
+    // d'historique, aucun retour arrière légitime n'arrive sans ces clés.
+    if (!CLES_URL.some((cle) => cle in brut)) return;
     appliquerUrl(brut);
     refs.champ.value = etat.requete;
     rendre();

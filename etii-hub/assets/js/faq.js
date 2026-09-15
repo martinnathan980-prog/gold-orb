@@ -127,28 +127,41 @@ let detailIdPeint = null;
    3. Démarrage
    ------------------------------------------------------------------------- */
 
-initTheme();
-initNav('faq');
+/*
+   Le démarrage est une FONCTION, appelée à la toute fin du module et non
+   ici : les `const` déclarés plus bas (ecrireUrl, annoncerResultats,
+   FORMAT_DATE) ne sont initialisés qu'à leur ligne de déclaration, et
+   rendreEnAttente() les atteint dès le premier affichage. Exécuter le
+   démarrage en tête du fichier les prendrait dans leur zone morte
+   temporelle et casserait la page au chargement.
+*/
 
-refs.zone = document.getElementById('zone-faq');
-refs.attenteSection = document.getElementById('faq-attente');
-refs.attenteListe = document.getElementById('faq-attente-liste');
+/** Amorce la page : thème, navigation, questions locales, écouteurs. */
+function demarrerPage() {
+  initTheme();
+  initNav('faq');
 
-/* Les questions locales sont indépendantes de faq.json : elles s'affichent
-   même si le fichier de données est introuvable ou invalide. */
-enAttente = lireEnAttente();
-rendreEnAttente();
+  refs.zone = document.getElementById('zone-faq');
+  refs.attenteSection = document.getElementById('faq-attente');
+  refs.attenteListe = document.getElementById('faq-attente-liste');
 
-brancherDelegations();
-brancherRaccourciGlobal();
+  /* Les questions locales sont indépendantes de faq.json : elles
+     s'affichent même si le fichier de données est introuvable ou
+     invalide. */
+  enAttente = lireEnAttente();
+  rendreEnAttente();
 
-/* Enregistré UNE seule fois, hors du rendu : un clic sur « Réessayer »
-   relance le rendu, il ne doit pas empiler les écouteurs. `replaceState`
-   ne déclenche pas hashchange, donc seules les vraies navigations —
-   retour arrière, lien collé — arrivent ici. */
-etatUrl.ecouter(surNavigationHash);
+  brancherDelegations();
+  brancherRaccourciGlobal();
 
-demarrer();
+  /* Enregistré UNE seule fois, hors du rendu : un clic sur « Réessayer »
+     relance le rendu, il ne doit pas empiler les écouteurs.
+     `replaceState` ne déclenche pas hashchange, donc seules les vraies
+     navigations — retour arrière, lien collé — arrivent ici. */
+  etatUrl.ecouter(surNavigationHash);
+
+  demarrer();
+}
 
 /**
  * Lance le cycle chargement -> succès | vide | erreur sur la zone de page.
@@ -1356,3 +1369,10 @@ function formaterDate(iso) {
     return iso;
   }
 }
+
+/* -------------------------------------------------------------------------
+   14. Amorçage
+   Dernière ligne du module : tout ce qui précède est déclaré et initialisé.
+   ------------------------------------------------------------------------- */
+
+demarrerPage();
