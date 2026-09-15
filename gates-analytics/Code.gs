@@ -41,20 +41,18 @@ const CONFIG = {
    */
   AUTORISER_INTEGRATION_EXTERNE: false,
 
-  /** Nombre de semaines sur lesquelles se mesure le rythme d'avancement. */
-  FENETRE_RYTHME: 6
+  /**
+   * Le rythme se mesure sur TOUS les intervalles observés depuis le premier
+   * relevé, pas sur une fenêtre fixe : la saisie est irrégulière (une semaine
+   * un lot entier, la suivante rien), et une moyenne glissante mesurerait
+   * surtout la date du dernier lot.
+   */
 };
 
 const ENTETES_HISTORIQUE = [
   'Semaine', 'Date', 'Total', 'Terminés', 'En cours', 'À faire', 'Non renseignés',
   'Par ATA', 'Plans'
 ];
-
-/**
- * Nombre de relevés pour lesquels on conserve l'avancement plan par plan.
- * Deux suffisent au comparatif ; au-delà le classeur gonflerait pour rien.
- */
-const RELEVES_AVEC_DETAIL = 2;
 
 // =====================================================================
 //  POINT D'ENTRÉE WEB
@@ -429,21 +427,7 @@ function enregistrerInstantaneHebdo() {
     feuille.getRange(indexLigne, 1, 1, ligne.length).setValues([ligne]);
   }
 
-  elaguerDetailPlans(feuille);
   return { ok: true, semaine: semaine, compte: compte };
-}
-
-/**
- * Le détail plan par plan ne sert qu'au comparatif entre les deux derniers
- * relevés. On l'efface au-delà, sinon le classeur enfle à chaque semaine.
- */
-function elaguerDetailPlans(feuille) {
-  const derniere = feuille.getLastRow();
-  const aGarder = RELEVES_AVEC_DETAIL;
-  if (derniere - 1 <= aGarder) return;
-  const nb = derniere - 1 - aGarder;
-  const colonne = ENTETES_HISTORIQUE.indexOf('Plans') + 1;
-  feuille.getRange(2, colonne, nb, 1).clearContent();
 }
 
 /** Retire le relevé de la semaine courante — pour rattraper un mauvais export. */

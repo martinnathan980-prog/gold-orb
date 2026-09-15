@@ -32,9 +32,10 @@ s'adapte à ce qu'elle y trouve. Vous n'avez rien à réorganiser.
 | 2026-S38 | 15/09/2026 | 186 | 63 | 69 | 33 | 21 | `{…}` | `{…}` |
 
 - `Par ATA` sert aux projections par groupe.
-- `Plans` garde l'avancement plan par plan, uniquement sur les **deux dernières
-  lignes** — c'est ce qui permet de dire « 2 passés en terminé, 6 en recul ».
-  Au-delà, il est effacé pour ne pas faire gonfler le classeur.
+- `Plans` garde l'avancement plan par plan. **Rien n'est jamais effacé** : tout
+  l'historique est conservé, y compris le détail. C'est ce qui permet de dire
+  « 2 passés en terminé, 5 nouveaux » — et ce qui permettra demain des analyses
+  qu'on n'a pas encore imaginées.
 
 ## Plusieurs imports dans la même semaine
 
