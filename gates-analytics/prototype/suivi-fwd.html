@@ -1408,8 +1408,15 @@ table.plans thead .col-fige { z-index: 6; }
       e.preventDefault();
       glisse = { type: 'jalon', idx: Number(poignee.dataset.jalon), x0: e.clientX, i0: jalons[Number(poignee.dataset.jalon)].i, bouge: false };
       cadreGraphe.dataset.glisseJalon = 'true';
-    } else if (e.target.closest && e.target.closest('.zone-clic')) {
-      glisse = { type: 'pan', x0: e.clientX, debut0: vue.fen.debut, bouge: false, i: indexSousCurseur(e.clientX) };
+    } else if (!(e.target.closest && e.target.closest('#saisie-jalon'))) {
+      /* Le glissement part de n'importe quel point du cadre. Le limiter aux
+         bandes cliquables laissait mortes la frise des jalons en haut et la
+         marge du bas, alors que le curseur y promettait deja la main. */
+      var surGraphe = !!(e.target.closest && e.target.closest('svg'));
+      glisse = {
+        type: 'pan', x0: e.clientX, debut0: vue.fen.debut, bouge: false,
+        i: surGraphe ? indexSousCurseur(e.clientX) : null
+      };
     } else return;
     cadreGraphe.setPointerCapture(e.pointerId);
   });

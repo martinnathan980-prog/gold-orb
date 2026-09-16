@@ -268,6 +268,61 @@ async function reinitialiser(pg) {
   await p.click('.segmente button[data-span="26"]'); await p.waitForTimeout(300);
 
   // =================================================================
+  section('Glisser le graphique depuis n\'importe quel point');
+  /* Le curseur promet la main sur tout le cadre : le glissement doit donc
+     partir de partout, y compris de la frise des jalons et de la marge basse. */
+  const cadre = await (await p.$('#cadre-graphe')).boundingBox();
+  const derniereSemaine = () => p.evaluate(() =>
+    [...document.querySelectorAll('svg.graphe .grad')].map(t => t.textContent).slice(-1)[0]);
+  async function balayer(fracY, sens) {
+    const y = cadre.y + cadre.height * fracY;
+    const depart = cadre.x + cadre.width * (sens < 0 ? 0.75 : 0.25);
+    const avant = await derniereSemaine();
+    await p.mouse.move(depart, y);
+    await p.mouse.down();
+    for (let i = 1; i <= 8; i++) await p.mouse.move(depart + sens * i * 30, y);
+    await p.mouse.up(); await p.waitForTimeout(300);
+    return { avant, apres: await derniereSemaine() };
+  }
+  for (const fracY of [0.04, 0.12, 0.35, 0.6, 0.88]) {
+    const r = await balayer(fracY, -1);
+    verifier(`glisser vers la gauche depuis ${Math.round(fracY * 100)} % de la hauteur`,
+      r.avant !== r.apres, r.avant + ' → ' + r.apres);
+  }
+  const retour = await balayer(0.5, +1);
+  verifier('glisser vers la droite ramène en arrière', retour.avant !== retour.apres,
+    retour.avant + ' → ' + retour.apres);
+  const curseur = await p.evaluate(() => getComputedStyle(document.getElementById('cadre-graphe')).cursor);
+  verifier('le cadre annonce bien la main', curseur === 'grab', curseur);
+  verifier('le cadre ne reste pas bloqué en « glissement »',
+    await p.evaluate(() => document.getElementById('cadre-graphe').dataset.glisse !== 'true'));
+  await p.mouse.move(cadre.x + cadre.width * 0.5, cadre.y + cadre.height * 0.5);
+  await p.waitForTimeout(300);
+  verifier('l\'infobulle revient après un glissement',
+    await p.evaluate(() => document.getElementById('bulle').dataset.visible === 'true'));
+  // Un simple clic dans la frise du haut doit poser un jalon, pas glisser.
+  await p.mouse.click(cadre.x + cadre.width * 0.75, cadre.y + cadre.height * 0.05);
+  await p.waitForTimeout(350);
+  verifier('un clic net dans la frise ouvre quand même la saisie de jalon',
+    await p.evaluate(() => document.getElementById('saisie-jalon').dataset.ouvert === 'true'));
+  await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+  verifier('Échap referme la saisie',
+    await p.evaluate(() => document.getElementById('saisie-jalon').dataset.ouvert === 'false'));
+  // Un glissement parti d'une poignée déplace le jalon, jamais la fenêtre.
+  const avantPoignee = await derniereSemaine();
+  const poigneeEl = await p.$('.jalon-poignee');
+  if (poigneeEl) {
+    const bp = await poigneeEl.boundingBox();
+    await p.mouse.move(bp.x + bp.width / 2, bp.y + bp.height / 2);
+    await p.mouse.down();
+    for (let i = 1; i <= 6; i++) await p.mouse.move(bp.x + bp.width / 2 + i * 12, bp.y + bp.height / 2);
+    await p.mouse.up(); await p.waitForTimeout(400);
+  }
+  verifier('glisser une poignée de jalon ne déplace pas la fenêtre',
+    (await derniereSemaine()) === avantPoignee);
+  await p.click('.segmente button[data-span="26"]'); await p.waitForTimeout(300);
+
+  // =================================================================
   section('Jalons : ajout, doublon, texte hostile, suppression');
   const j0 = await p.evaluate(() => document.querySelectorAll('.jalon-supp').length);
   verifier('des jalons sont présents au départ', j0 >= 1, j0 + ' jalon(s)');
