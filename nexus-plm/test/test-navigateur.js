@@ -311,7 +311,7 @@ async function ecranPropre(page) {
   // ---------------------------------------------------------------
   bloc('Vue Pièces : où sert chaque référence');
   await ecranPropre(page);
-  eq('quatre vues proposées', await page.locator('.onglet-vue').count(), 4);
+  eq('trois lectures de la base des boîtes', await page.locator('.onglet-vue').count(), 3);
   vrai('« Boîtes » est la vue par défaut',
        (await texte(page, '.onglet-vue.actif')).trim() === 'Boîtes');
   eq('la seconde vue s\'appelle « Sous-ensembles », pas « Pièces »',
@@ -380,7 +380,7 @@ async function ecranPropre(page) {
   // ---------------------------------------------------------------
   bloc('Vue Standardisation : où la base se disperse');
   await ecranPropre(page);
-  eq('quatre vues proposées', await page.locator('.onglet-vue').count(), 4);
+  eq('trois lectures de la base des boîtes', await page.locator('.onglet-vue').count(), 3);
   await page.locator('.onglet-vue', { hasText: 'Standardisation' }).click();
   await page.waitForTimeout(400);
   const nbFamilles = await page.locator('.famille').count();
@@ -726,44 +726,121 @@ async function ecranPropre(page) {
   await ecranPropre(page);
 
   // ---------------------------------------------------------------
-  bloc('Vue Composants : ce qu\'on monte, et combien de fois');
+  bloc('Espace Composants : une base a part, pas une lecture de plus');
   await ecranPropre(page);
-  await page.locator('.onglet-vue', { hasText: 'Composants' }).click();
-  await page.waitForTimeout(500);
-  const nbCompo = await page.locator('.compo-ligne').count();
-  vrai('des composants sont listes', nbCompo > 10);
+  eq('deux espaces sont offerts', await page.locator('.espace').count(), 2);
+  eq('« Boîtes » est l\'espace par defaut',
+     await page.locator('.espace.actif').innerText().then(function (t) { return t.split('\n')[1]; }),
+     'Boîtes');
+  eq('les trois lectures sont la', await page.locator('.onglet-vue').count(), 3);
+
+  await page.locator('.espace', { hasText: 'Composants' }).click();
+  await page.waitForTimeout(700);
+  eq('les lectures des boites disparaissent', await page.locator('.onglet-vue').count(), 0);
+  eq('les filtres par type aussi', await page.locator('.filtres-type .jeton').count(), 0);
+  eq('les onglets de fonction aussi', await page.locator('#functionTabs .onglet').count(), 0);
   eq('plus de cartes', await page.locator('.carte').count(), 0);
-  eq('ni d\'inventaire de sous-ensembles', await page.locator('.piece').count(), 0);
-  vrai('le bilan les compte',
-       (await texte(page, '#bilanResultats')).indexOf('composant') !== -1);
 
-  const enTeteCompo = await texte(page, '.compo-bilan');
-  ['références distinctes', 'fonctions', 'normes', 'montages'].forEach(function (mot) {
-    vrai('l\'en-tete annonce « ' + mot + ' »', enTeteCompo.indexOf(mot) !== -1);
+  // La bande de tete dit ce que contient la base, et ce qui y cloche.
+  const bande = await texte(page, '.compo-bande');
+  ['références', 'fonctions', 'normes', 'montages', 'hors catalogue', 'jamais montées']
+    .forEach(function (mot) {
+      vrai('la bande annonce « ' + mot + ' »', bande.indexOf(mot) !== -1);
+    });
+
+  // Le rail : les trois familles, avec leur compte.
+  eq('trois familles au rail', await page.locator('.cf-famille').count(), 3);
+  const famillesRail = await page.locator('.cf-nom').allTextContents();
+  ['Composants de boîte', 'Composants mécaniques', 'Composants routing'].forEach(function (f) {
+    vrai('« ' + f + '  » est proposee', famillesRail.indexOf(f) !== -1);
   });
 
-  const premier = page.locator('.compo-ligne').first();
-  vrai('chaque ligne porte sa fonction',
-       (await premier.locator('.compo-fonction').innerText()).trim().length > 0);
-  vrai('sa norme', await premier.locator('.compo-norme').count() === 1);
-  vrai('sa reference', await premier.locator('.compo-reference').count() === 1);
-  vrai('sa famille', await premier.locator('.compo-famille').count() === 1);
-  vrai('une jauge d\'emploi', await premier.locator('.compo-jauge').count() === 1);
-  vrai('et les porteurs concernes',
-       await premier.locator('.compo-porteurs .puce-porteur').count() >= 1);
+  // L'arbre : famille, puis fonction, puis norme, puis reference.
+  const nbFonctions = await page.locator('.cfo-bloc').count();
+  vrai('des fonctions sont listees', nbFonctions > 5);
+  vrai('chacune sous une famille', await page.locator('.cfa-bloc').count() >= 1);
+  // Seules les fonctions ouvertes rendent leurs normes : c'est voulu.
+  vrai('des normes sous les fonctions ouvertes', await page.locator('.cn-bloc').count() >= 1);
+  vrai('et des references sous les normes', await page.locator('.cr-ligne').count() >= 1);
+  // Tout deplier les rend toutes.
+  await page.locator('.compo-barre-btn').click(); await page.waitForTimeout(500);
+  const nbRefs = await page.locator('.cr-ligne').count();
+  vrai('deplie, la base entiere se lit', nbRefs > 20);
+  vrai('chaque fonction a au moins une norme',
+       await page.locator('.cn-bloc').count() >= nbFonctions);
 
-  // Les plus montes d'abord : c'est l'information qu'on vient chercher.
-  const comptes = await page.locator('.compo-compte').evaluateAll(function (els) {
-    return els.map(function (e) { return parseInt(e.textContent, 10) || 0; });
-  });
-  vrai('les plus montes sont en tete', comptes[0] >= comptes[comptes.length - 1]);
+  // Ni mur ni page vide : les premieres fonctions — les plus montees — sont
+  // ouvertes, la traine est repliee, et un bouton fait basculer l'ensemble.
+  const etatArbre = async function () {
+    return page.evaluate(function () {
+      return { total: document.querySelectorAll('.cfo-bloc').length,
+               ouvertes: document.querySelectorAll('.cfo-bloc:not(.replie)').length,
+               hauteur: document.documentElement.scrollHeight };
+    });
+  };
+  // On repart de l'etat par defaut : le bloc precedent a tout deplie.
+  await page.evaluate(function () { Store.compo.deplies = {}; rendreInterface(); });
+  await page.waitForTimeout(500);
+  const repos = await etatArbre();
+  vrai('une partie des fonctions est ouverte au repos', repos.ouvertes > 0);
+  vrai('mais pas toutes', repos.ouvertes < repos.total);
+  vrai('des references sont donc visibles sans rien cliquer',
+       await page.locator('.cr-ligne').count() > 0);
+
+  await page.locator('.compo-barre-btn').click(); await page.waitForTimeout(500);
+  const tout = await etatArbre();
+  eq('« Tout déplier » les ouvre toutes', tout.ouvertes, tout.total);
+  vrai('et la page s\'allonge', tout.hauteur > repos.hauteur);
+  await page.locator('.compo-barre-btn').click(); await page.waitForTimeout(500);
+  const rien = await etatArbre();
+  eq('« Tout replier » les ferme toutes', rien.ouvertes, 0);
+  vrai('et la page se raccourcit', rien.hauteur < tout.hauteur);
+  await page.locator('.compo-barre-btn').click(); await page.waitForTimeout(500);
+
+  // Une fonction se replie une par une.
+  const f1 = page.locator('.cfo-tete').first();
+  eq('la premiere fonction est ouverte', await f1.getAttribute('aria-expanded'), 'true');
+  await f1.click(); await page.waitForTimeout(350);
+  eq('un clic la replie', await f1.getAttribute('aria-expanded'), 'false');
+  await f1.click(); await page.waitForTimeout(350);
+  eq('un second la rouvre', await f1.getAttribute('aria-expanded'), 'true');
+
+  // Le filtre par famille.
+  const avantFamille = await page.locator('.cr-ligne').count();
+  await page.locator('.cf-famille', { hasText: 'routing' }).click();
+  await page.waitForTimeout(500);
+  vrai('filtrer par famille restreint', await page.locator('.cr-ligne').count() < avantFamille);
+  eq('une seule famille reste affichee', await page.locator('.cfa-bloc').count(), 1);
+  eq('le rail marque la famille posee', await page.locator('.cf-famille.actif').count(), 1);
+  await page.locator('.cf-effacer').click(); await page.waitForTimeout(500);
+  eq('tout revient', await page.locator('.cr-ligne').count(), avantFamille);
+
+  // Le cas le plus utile : une piece montee que le catalogue ne connait pas.
+  vrai('des pieces hors catalogue sont signalees',
+       await page.locator('.cr-hors').count() >= 1);
+  await page.locator('.cb-mesure', { hasText: 'hors catalogue' }).click();
+  await page.waitForTimeout(500);
+  const horsCat = await page.locator('.cr-ligne').count();
+  vrai('le filtre ne garde qu\'elles', horsCat >= 1 && horsCat < avantFamille);
+  eq('toutes portent la marque', await page.locator('.cr-hors').count(), horsCat);
+  await page.locator('.cb-mesure', { hasText: 'hors catalogue' }).click();
+  await page.waitForTimeout(500);
+
+  // Et l'inverse : au catalogue, montee nulle part.
+  await page.locator('.cb-mesure', { hasText: 'jamais montées' }).click();
+  await page.waitForTimeout(500);
+  vrai('les references dormantes se filtrent aussi',
+       await page.locator('.cr-dormant').count() >= 1);
+  eq('aucune n\'est montee', await page.locator('.cr-compte').count(), 0);
+  await page.locator('.cb-mesure', { hasText: 'jamais montées' }).click();
+  await page.waitForTimeout(500);
 
   // Un clic nomme les boites, un clic de plus ouvre la fiche.
-  const compte1 = page.locator('.compo-compte').first();
-  eq('les boites sont repliees au depart', await compte1.getAttribute('aria-expanded'), 'false');
-  await compte1.click(); await page.waitForTimeout(250);
+  const compte1 = page.locator('.cr-compte').first();
+  eq('les boites sont repliees', await compte1.getAttribute('aria-expanded'), 'false');
+  await compte1.click(); await page.waitForTimeout(300);
   eq('un clic les deplie', await compte1.getAttribute('aria-expanded'), 'true');
-  const boites1 = page.locator('.compo-ligne').first().locator('.compo-boites .usage-lien');
+  const boites1 = page.locator('.cr-ligne').first().locator('.cr-boites .usage-lien');
   vrai('les boites sont nommees', await boites1.count() >= 1);
   const pnCite = (await boites1.first().innerText()).trim();
   await boites1.first().click();
@@ -772,27 +849,32 @@ async function ecranPropre(page) {
        (await texte(page, '#slideOverTitle')).indexOf(pnCite) !== -1);
   await fermerFiche(page);
 
-  // Un composant monte une seule fois est signale : c'est un candidat au
-  // regroupement, ou un risque d'appro isole.
-  vrai('les composants isoles se reperent',
-       await page.locator('.compo-seul').count() >= 1);
-
-  // L'inventaire suit les filtres, comme les trois autres vues.
-  await page.fill('#searchBar', 'APU');
-  await page.waitForTimeout(450);
-  vrai('la recherche restreint l\'inventaire',
-       await page.locator('.compo-ligne').count() < nbCompo);
-  await page.fill('#searchBar', ''); await page.waitForTimeout(450);
-  eq('et le rend quand on efface', await page.locator('.compo-ligne').count(), nbCompo);
+  // La recherche de l'espace lui appartient : revenir aux boites ne l'herite pas.
+  await page.fill('#searchBar', 'collier');
+  await page.waitForTimeout(500);
+  const apresRecherche = await page.locator('.cr-ligne').count();
+  vrai('la recherche restreint la base', apresRecherche > 0 && apresRecherche < avantFamille);
+  await page.locator('.espace', { hasText: 'Boîtes' }).click();
+  await page.waitForTimeout(600);
+  eq('l\'espace boites n\'herite pas du mot-cle', await page.locator('.carte').count(), 13);
+  eq('et son champ est bien vide', await page.locator('#searchBar').inputValue(), '');
+  await page.locator('.espace', { hasText: 'Composants' }).click();
+  await page.waitForTimeout(600);
+  eq('en revenant, la recherche des composants est retrouvee',
+     await page.locator('#searchBar').inputValue(), 'collier');
+  eq('et son resultat aussi', await page.locator('.cr-ligne').count(), apresRecherche);
+  await page.locator('.cf-effacer').click(); await page.waitForTimeout(500);
 
   const largeurCompo = await page.evaluate(function () {
     return { doc: document.documentElement.scrollWidth, vue: window.innerWidth };
   });
   vrai('pas de defilement horizontal (composants)', largeurCompo.doc <= largeurCompo.vue + 1);
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-composants.png') });
-  await page.locator('.onglet-vue', { hasText: 'Boîtes' }).click();
-  await page.waitForTimeout(400);
+
+  await page.locator('.espace', { hasText: 'Boîtes' }).click();
+  await page.waitForTimeout(500);
   eq('retour a la grille', await page.locator('.carte').count(), 13);
+  await ecranPropre(page);
 
   // ---------------------------------------------------------------
   bloc('Favoris de ponderation : une intention posee d\'un coup');

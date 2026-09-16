@@ -63,7 +63,8 @@ const LIAISONS = ['Store', 'STATUTS', 'CSV_SEPARATEUR', 'ACTIONS', 'Api',
                   'TYPES', 'MODE', 'GENRE', 'CRITERES_BOITE', 'PORTEES',
                   'CHAMPS_QUALIF', 'CLES_QUALIF', 'TRIS', 'SEUIL_DOUBLON', 'PLAFOND_PAIRES',
                   'SIGNE_ETAT', 'CLE_REGLAGES', 'porteeReglee', 'PORTEURS', 'CHAMPS_BOITE',
-                  'CATEGORIES_COMPOSANT', 'NIVEAUX', 'INDEX_COMPOSANTS'];
+                  'CATEGORIES_COMPOSANT', 'NIVEAUX', 'INDEX_COMPOSANTS',
+                  'ETAT_COMPOSANT', 'FAVORIS'];
 
 function chargerClient(fichiers) {
   const contexte = vm.createContext(faussesGlobales());

@@ -150,6 +150,12 @@ function majMultiCible(cible, transformation) {
  * détruit et recréé, et le focus retombe sur la page. On le lui rend, sinon
  * saisir cinq composants d'affilée veut dire cliquer cinq fois.
  */
+/** Rendre la main au champ de recherche : c'est par là qu'on entre. */
+function redonnerFocusRecherche() {
+  const champ = parId('searchBar');
+  if (champ && typeof champ.focus === 'function') champ.focus();
+}
+
 function redonnerFocus(classe, criteres) {
   let cible = null;
   document.querySelectorAll('.' + classe).forEach(function (el) {
@@ -197,8 +203,54 @@ enregistrerActions({
       : Store.filtreTypes.filter(function (t) { return t !== d.type; });
     rendreInterface();
   },
+  'changer-espace': function (d) {
+    if (['boites', 'composants'].indexOf(d.espace) === -1) return;
+    if (Store.espace === d.espace) return;
+    Store.espace = d.espace;
+    enregistrerReglages();
+    rendreInterface();
+    // Le champ de recherche sert les deux espaces : on lui rend la main,
+    // c'est par là qu'on entre dans une base.
+    redonnerFocusRecherche();
+  },
+
+  'filtrer-composants': function (d) {
+    const champ = d.champ;
+    if (['famille', 'fonction', 'norme', 'etat', 'emploi'].indexOf(champ) === -1) return;
+    Store.compo[champ] = d.valeur ? d.valeur : null;
+    rendreInterface();
+  },
+
+  'effacer-filtres-composants': function () {
+    Store.compo.recherche = '';
+    ['famille', 'fonction', 'norme', 'etat', 'emploi'].forEach(function (c) {
+      Store.compo[c] = null;
+    });
+    const champ = parId('searchBar');
+    if (champ) champ.value = '';
+    rendreInterface();
+  },
+
+  'deplier-tout-composants': function (d) {
+    const ouvrir = d.ouvrir === 'true';
+    Store.compo.deplies = {};
+    const vue = calculerVue();
+    arbreComposants(composantsFiltres(vue.aAfficher)).forEach(function (f) {
+      f.fonctions.forEach(function (fo) {
+        Store.compo.deplies[f.cle + '::' + normaliserTexte(fo.libelle)] = ouvrir;
+      });
+    });
+    rendreInterface();
+  },
+
+  'basculer-fonction': function (d) {
+    const id = d.fonction;
+    Store.compo.deplies[id] = Store.compo.deplies[id] === false;
+    rendreInterface();
+  },
+
   'changer-vue': function (d) {
-    if (['boites', 'pieces', 'composants', 'standardisation'].indexOf(d.vue) === -1) return;
+    if (['boites', 'pieces', 'standardisation'].indexOf(d.vue) === -1) return;
     Store.vueMode = d.vue;
     enregistrerReglages();
     rendreInterface();
@@ -256,7 +308,8 @@ enregistrerActions({
   },
 
   'effacer-recherche': function () {
-    Store.recherche = '';
+    if (Store.espace === 'composants') Store.compo.recherche = '';
+    else Store.recherche = '';
     const c = parId('searchBar'); if (c) c.value = '';
     rendreInterface();
   },
@@ -545,7 +598,7 @@ enregistrerActions({
 
   // --- standardisation ---
   'deplier-composant': function (d, noeud) {
-    const bloc = noeud.parentNode && noeud.parentNode.querySelector('.compo-boites');
+    const bloc = noeud.parentNode && noeud.parentNode.querySelector('.cr-boites');
     if (!bloc) return;
     const ouvert = !bloc.hidden;
     bloc.hidden = ouvert;
@@ -615,7 +668,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const recherche = parId('searchBar');
   if (recherche) {
     recherche.addEventListener('input', antiRebond(function () {
-      Store.recherche = recherche.value;
+      // Chaque espace a sa recherche : revenir aux boîtes ne doit pas hériter
+      // du mot-clé tapé dans les composants.
+      if (Store.espace === 'composants') Store.compo.recherche = recherche.value;
+      else Store.recherche = recherche.value;
       rendreInterface();
     }, 180));
   }

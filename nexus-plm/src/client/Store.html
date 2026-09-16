@@ -27,7 +27,12 @@ const Store = {
   filtreComposants: [],
   filtreTypes: [],
   filtreStatut: null,        // un statut, ou rien
-  vueMode: 'boites',         // 'boites', 'pieces', 'composants' ou 'standardisation'
+  // Deux espaces, deux bases. L'espace « boîtes » et ses trois lectures ;
+  // l'espace « composants », qui a ses propres filtres et ne partage rien.
+  espace: 'boites',          // 'boites' ou 'composants'
+  vueMode: 'boites',         // dans l'espace boîtes : 'boites', 'pieces', 'standardisation'
+  compo: { recherche: '', famille: null, fonction: null, norme: null,
+           etat: null, emploi: null, deplies: {} },
   tri: 'pn',
   enEditionBoite: false,
   enEditionNom: {},
@@ -259,7 +264,8 @@ function enregistrerReglages() {
   try {
     localStorage.setItem(CLE_REGLAGES, JSON.stringify({
       poids: Store.poids, actifs: Store.criteresActifs,
-      seuil: Store.seuilEquivalence, tri: Store.tri, vue: Store.vueMode
+      seuil: Store.seuilEquivalence, tri: Store.tri, vue: Store.vueMode,
+      espace: Store.espace
     }));
   } catch (e) { /* navigation privée, stockage refusé : sans gravité */ }
 }
@@ -293,7 +299,8 @@ function chargerReglages() {
       }
       if (typeof lu.seuil === 'number') Store.seuilEquivalence = lu.seuil;
       if (typeof lu.tri === 'string') Store.tri = lu.tri;
-      if (['boites', 'pieces', 'composants', 'standardisation'].indexOf(lu.vue) !== -1) Store.vueMode = lu.vue;
+      if (['boites', 'pieces', 'standardisation'].indexOf(lu.vue) !== -1) Store.vueMode = lu.vue;
+      if (['boites', 'composants'].indexOf(lu.espace) !== -1) Store.espace = lu.espace;
     }
   } catch (e) { /* réglages illisibles : on repart des valeurs par défaut */ }
   PORTEES.forEach(function (p) { normaliserPoids(p.cle); });
@@ -529,7 +536,7 @@ function calculerVue() {
   };
 }
 
-const SEUIL_DOUBLON = 85;      // au-delà, deux PN distincts méritent un examen
+const SEUIL_DOUBLON = 95;      // en deçà, deux PN proches ne sont pas un doublon
 // Le balayage est quadratique : il faut un plafond. L'ancien, 400 paires,
 // correspondait à 29 sous-ensembles du même type — toute base réelle passait
 // dessous et l'indicateur restait muet. Mesuré : 21 000 paires ≈ 0,6 s, ce qui
@@ -634,86 +641,212 @@ function boitesUtilisant(pnPiece, saufBoite) {
 }
 
 /**
- * L'inventaire des COMPOSANTS : une ligne par composant distinct, où qu'il
- * soit monté — dans une boîte, dans une structure, dans n'importe quel champ
- * de composants d'un type. Un composant est identifié par sa catégorie et
- * ses trois niveaux : deux références différentes sont deux composants.
+ * LA BASE DE COMPOSANTS
  *
- * C'est la quatrième lecture de la même base. Les trois autres répondent à
- * « que contient cette boîte », « où sert ce sous-ensemble » et « où la base
- * se disperse ». Celle-ci répond à « qu'est-ce qu'on monte, et combien de
- * fois » — la question de l'approvisionnement et du stock.
+ * C'est une base à part entière, pas une lecture de la base des boîtes. Elle
+ * réunit DEUX sources qui ne se recouvrent pas :
+ *   — le catalogue : ce qu'on a le droit de monter ;
+ *   — les montages réels : ce qu'on monte effectivement.
+ *
+ * Leur différence est l'information la plus utile de la page. Un composant
+ * monté mais absent du catalogue est une pièce non maîtrisée ; un composant
+ * au catalogue que personne ne monte est un référencement qui dort.
+ *
+ * Un composant est identifié par sa catégorie et ses trois niveaux : deux
+ * références différentes sont deux composants.
  */
-function inventaireComposants(liste) {
-  const parComposant = new Map();
+const ETAT_COMPOSANT = {
+  COURANT:   'courant',    // au catalogue, et monté
+  DORMANT:   'dormant',    // au catalogue, jamais monté
+  HORS:      'hors'        // monté, absent du catalogue
+};
 
-  const recenser = function (categorie, texte, pnBoite, porteurLigne) {
+function cleComposant(categorie, c) {
+  return categorie + '|' + normaliserTexte(c.fonction) + '|' +
+         normaliserTexte(c.norme) + '|' + normaliserTexte(c.reference);
+}
+
+function baseComposants(liste) {
+  const base = new Map();
+
+  const entree = function (categorie, c) {
+    const cle = cleComposant(categorie, c);
+    if (!base.has(cle)) {
+      base.set(cle, {
+        cle: cle, categorie: categorie,
+        fonction: c.fonction || '', norme: c.norme || '', reference: c.reference || '',
+        designation: '', auCatalogue: false,
+        montages: 0, boites: [], porteurs: new Set(), portees: new Set()
+      });
+    }
+    return base.get(cle);
+  };
+
+  // 1. Le catalogue : le référentiel de ce qu'on a le droit de monter.
+  (Store.catalogue || []).forEach(function (ligne) {
+    const c = composantDepuisCatalogue(ligne);
+    if (!c.fonction && !c.norme && !c.reference) return;
+    const e = entree(CATEGORIES_COMPOSANT[c.categorie] ? c.categorie : 'composant', c);
+    e.auCatalogue = true;
+    if (c.designation) e.designation = c.designation;
+  });
+
+  // 2. Les montages réels, dans les boîtes et dans leurs sous-ensembles.
+  const recenser = function (categorie, texte, pnBoite, porteurs, portee) {
     listeComposants(texte).forEach(function (c) {
       if (!c.fonction && !c.norme && !c.reference) return;
-      const cle = categorie + '|' + normaliserTexte(c.fonction) + '|' +
-                  normaliserTexte(c.norme) + '|' + normaliserTexte(c.reference);
-      if (!parComposant.has(cle)) {
-        parComposant.set(cle, {
-          cle: cle, categorie: categorie, fonction: c.fonction,
-          norme: c.norme, reference: c.reference,
-          boites: [], porteurs: new Set(), montages: 0
-        });
-      }
-      const e = parComposant.get(cle);
+      const e = entree(categorie, c);
       e.montages++;
+      e.portees.add(portee);
       if (e.boites.indexOf(pnBoite) === -1) e.boites.push(pnBoite);
-      valeursMulti(porteurLigne).forEach(function (p) { e.porteurs.add(p); });
+      valeursMulti(porteurs).forEach(function (p) { e.porteurs.add(p); });
     });
   };
 
-  liste.forEach(function (b) {
+  (liste || []).forEach(function (b) {
     const pnBoite = String(b[CLE_PN()]).trim();
     const porteurs = b['Porteur'];
 
-    // Les champs de composants de la BOÎTE.
     Object.keys(CHAMPS_BOITE).forEach(function (cle) {
       const regle = CHAMPS_BOITE[cle];
       if (regle.genre !== GENRE.COMPOSANTS) return;
-      recenser(regle.categorie || 'composant', b[cle], pnBoite, porteurs);
+      recenser(regle.categorie || 'composant', b[cle], pnBoite, porteurs, 'Boîte');
     });
 
-    // Puis ceux de chacun de ses sous-ensembles, selon leur type.
     (b.nomenclature || []).forEach(function (n) {
-      champsDuType(typeDe(n)).forEach(function (champ) {
+      const type = typeDe(n);
+      champsDuType(type).forEach(function (champ) {
         if (champ.genre !== GENRE.COMPOSANTS) return;
-        recenser(champ.categorie || 'composant', n[champ.cle], pnBoite, porteurs);
+        recenser(champ.categorie || 'composant', n[champ.cle], pnBoite, porteurs, type.libelle);
       });
     });
   });
 
-  return Array.from(parComposant.values())
-    .map(function (e) {
-      e.boites.sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); });
-      e.nbBoites = e.boites.length;
-      e.porteurs = Array.from(e.porteurs).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
-      return e;
+  return Array.from(base.values()).map(function (e) {
+    e.boites.sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); });
+    e.nbBoites = e.boites.length;
+    e.porteurs = Array.from(e.porteurs).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+    e.portees = Array.from(e.portees).sort();
+    e.etat = !e.auCatalogue ? ETAT_COMPOSANT.HORS
+           : e.nbBoites === 0 ? ETAT_COMPOSANT.DORMANT
+           : ETAT_COMPOSANT.COURANT;
+    return e;
+  });
+}
+
+/**
+ * L'arbre de la base : famille → fonction → norme → références.
+ * C'est l'ordre dans lequel on cherche une pièce — on sait ce qu'on veut
+ * faire avant de savoir sous quelle norme le chercher.
+ */
+function arbreComposants(composants) {
+  const familles = new Map();
+
+  composants.forEach(function (c) {
+    if (!familles.has(c.categorie)) {
+      familles.set(c.categorie, {
+        cle: c.categorie,
+        libelle: (CATEGORIES_COMPOSANT[c.categorie] || CATEGORIES_COMPOSANT.composant).libelle,
+        aide: (CATEGORIES_COMPOSANT[c.categorie] || CATEGORIES_COMPOSANT.composant).aide,
+        fonctions: new Map(), references: 0, montages: 0, boites: new Set()
+      });
+    }
+    const f = familles.get(c.categorie);
+    f.references++; f.montages += c.montages;
+    c.boites.forEach(function (b) { f.boites.add(b); });
+
+    const cleF = normaliserTexte(c.fonction) || '\u0000';
+    if (!f.fonctions.has(cleF)) {
+      f.fonctions.set(cleF, {
+        libelle: c.fonction || 'Fonction non précisée',
+        normes: new Map(), references: 0, montages: 0, boites: new Set()
+      });
+    }
+    const fo = f.fonctions.get(cleF);
+    fo.references++; fo.montages += c.montages;
+    c.boites.forEach(function (b) { fo.boites.add(b); });
+
+    const cleN = normaliserTexte(c.norme) || '\u0000';
+    if (!fo.normes.has(cleN)) {
+      fo.normes.set(cleN, { libelle: c.norme || 'sans norme', lignes: [], montages: 0 });
+    }
+    const no = fo.normes.get(cleN);
+    no.lignes.push(c);
+    no.montages += c.montages;
+  });
+
+  const parEmploi = function (a, b) { return b.montages - a.montages; };
+  const parNom = function (a, b) { return a.libelle.localeCompare(b.libelle, 'fr'); };
+
+  return Array.from(familles.values())
+    .map(function (f) {
+      f.nbBoites = f.boites.size;
+      f.fonctions = Array.from(f.fonctions.values()).map(function (fo) {
+        fo.nbBoites = fo.boites.size;
+        fo.normes = Array.from(fo.normes.values()).map(function (no) {
+          no.lignes.sort(function (a, b) {
+            return b.nbBoites - a.nbBoites ||
+                   String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+          });
+          // Une norme servie par plusieurs références, c'est de la dispersion.
+          no.dispersee = no.lignes.filter(function (l) { return l.nbBoites > 0; }).length > 1;
+          return no;
+        }).sort(parEmploi);
+        // Plusieurs normes pour une fonction : dispersion d'un cran au-dessus.
+        fo.dispersee = fo.normes.length > 1 ||
+                       fo.normes.some(function (n) { return n.dispersee; });
+        return fo;
+      }).sort(function (a, b) { return parEmploi(a, b) || parNom(a, b); });
+      return f;
     })
-    // Le plus monté d'abord : c'est celui dont une rupture coûte le plus cher.
+    // L'ordre du registre : composants de boîte, mécanique, routing.
     .sort(function (a, b) {
-      return b.nbBoites - a.nbBoites || b.montages - a.montages ||
-             String(a.fonction).localeCompare(String(b.fonction), 'fr') ||
-             String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+      const ordre = Object.keys(CATEGORIES_COMPOSANT);
+      return ordre.indexOf(a.cle) - ordre.indexOf(b.cle);
     });
 }
 
-/** Le bilan de l'inventaire, pour la ligne de tête de la vue. */
+/** Le bilan de la base, pour la bande de tête de l'espace. */
 function bilanComposants(composants) {
   const normes = new Set(), fonctions = new Set();
-  let montages = 0, uniques = 0;
+  let montages = 0, isoles = 0, dormants = 0, hors = 0, montes = 0;
   composants.forEach(function (c) {
     if (c.norme) normes.add(normaliserTexte(c.norme));
     if (c.fonction) fonctions.add(normaliserTexte(c.fonction));
     montages += c.montages;
-    if (c.nbBoites === 1) uniques++;
+    if (c.nbBoites > 0) montes++;
+    if (c.nbBoites === 1) isoles++;
+    if (c.etat === ETAT_COMPOSANT.DORMANT) dormants++;
+    if (c.etat === ETAT_COMPOSANT.HORS) hors++;
   });
-  return { references: composants.length, normes: normes.size,
-           fonctions: fonctions.size, montages: montages, uniques: uniques };
+  return { references: composants.length, normes: normes.size, fonctions: fonctions.size,
+           montages: montages, isoles: isoles, dormants: dormants, hors: hors, montes: montes };
 }
+
+/**
+ * Le filtrage propre à l'espace Composants. Il ne partage rien avec celui
+ * des boîtes : on n'y cherche pas la même chose.
+ */
+function composantsFiltres(liste) {
+  const f = Store.compo;
+  const q = normaliserTexte(f.recherche);
+  return baseComposants(liste).filter(function (c) {
+    if (f.famille && c.categorie !== f.famille) return false;
+    if (f.fonction && normaliserTexte(c.fonction) !== normaliserTexte(f.fonction)) return false;
+    if (f.norme && normaliserTexte(c.norme) !== normaliserTexte(f.norme)) return false;
+    if (f.etat && c.etat !== f.etat) return false;
+    if (f.emploi === 'isole' && c.nbBoites !== 1) return false;
+    if (f.emploi === 'partage' && c.nbBoites < 2) return false;
+    if (!q) return true;
+    return normaliserTexte([c.fonction, c.norme, c.reference, c.designation].join(' ')).indexOf(q) !== -1;
+  });
+}
+
+function filtreComposantActif() {
+  const f = Store.compo;
+  return !!(f.recherche || f.famille || f.fonction || f.norme || f.etat || f.emploi);
+}
+
 
 /**
  * L'inventaire des PIÈCES vu depuis les boîtes affichées : un PN de pièce,

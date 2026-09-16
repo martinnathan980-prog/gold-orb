@@ -238,6 +238,9 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .btn-dans-champ:hover, .btn-dans-champ.actif { background: var(--marque); color: var(--sur-marque); border-color: var(--marque); }
 
 /* ---------------- barre d'outils ---------------- */
+/* Dans l'espace composants, la bande de tete dit tout ce que cette barre
+   disait : on ne repete pas le meme compte a deux endroits. */
+body.espace-composants .outils { display: none; }
 .outils {
   display: flex; align-items: center; justify-content: space-between;
   gap: var(--e-3); flex-wrap: wrap; margin-bottom: var(--e-3);
@@ -431,66 +434,197 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
   .famille-norme { grid-template-columns: 1fr; gap: 4px; }
 }
 
-/* ---------------- inventaire des composants ---------------- */
-/* Quatrieme lecture de la base : ce qu'on monte, et combien de fois. */
-.compo-bilan {
-  display: flex; flex-wrap: wrap; gap: var(--e-2) var(--e-5);
-  padding: 0 2px var(--e-3); margin-bottom: var(--e-3);
-  border-bottom: 1px solid var(--trait);
-  font-size: 12.5px; color: var(--encre-3);
-}
-.compo-bilan b { font-family: var(--police-data); font-size: 14px; color: var(--encre); font-weight: 700; }
-.compo-bilan-seul { color: var(--ambre); }
-.compo-bilan-seul b { color: var(--ambre); }
+/* ================= ESPACE COMPOSANTS =================
+   Une base a part, pas une lecture de plus : elle a son propre selecteur,
+   sa propre bande de tete, son rail de familles et son arbre. */
 
-.inventaire-compo .inventaire-entete,
-.compo-ligne {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) minmax(0, 1.15fr) 150px 190px minmax(0, 1fr);
+/* Le selecteur d'espace : plus fort que les onglets de lecture, parce que
+   c'est un changement de base, pas un changement de point de vue. */
+.choix-espace {
+  display: flex; gap: var(--e-2); margin-bottom: var(--e-4);
+  border-bottom: 1px solid var(--trait); padding-bottom: var(--e-3);
+}
+.espace {
+  display: flex; align-items: center; gap: var(--e-3); text-align: left;
+  padding: 9px 16px 9px 13px; border: 1px solid var(--trait);
+  border-radius: var(--r-m); background: var(--surface); color: var(--encre-2);
+  min-width: 0; flex: 0 1 auto; transition: background .15s, border-color .15s, color .15s;
+}
+.espace:hover { background: var(--surface-3); border-color: var(--trait-fort); color: var(--encre); }
+.espace.actif {
+  background: var(--marque); border-color: var(--marque); color: var(--sur-marque);
+  box-shadow: var(--ombre-1);
+}
+.espace-icone { font-size: 17px; line-height: 1; flex: none; }
+.espace-texte { display: flex; flex-direction: column; min-width: 0; }
+.espace-nom { font-size: 14px; font-weight: 700; letter-spacing: .01em; }
+.espace-aide { font-size: 11px; color: var(--encre-3); line-height: 1.35; }
+.espace.actif .espace-aide { color: var(--sur-marque); opacity: .78; }
+@media (max-width: 620px) {
+  .choix-espace { flex-direction: column; }
+  .espace { width: 100%; }
+}
+
+/* La bande de tete : ce que contient la base, et ce qui y cloche. */
+.compo-bande {
+  display: flex; flex-wrap: wrap; align-items: stretch;
+  border: 1px solid var(--trait); border-radius: var(--r-m); overflow: hidden;
+  background: var(--surface); margin-bottom: var(--e-4);
+}
+.cb-mesure {
+  flex: 1 1 128px; min-width: 112px; padding: 11px 14px 12px;
+  display: flex; flex-direction: column; gap: 1px; text-align: left;
+  border: 0; border-left: 1px solid var(--trait); background: none; color: var(--encre);
+}
+.cb-mesure:first-child { border-left: 0; }
+.cb-cliquable { transition: background .15s; }
+.cb-cliquable:hover { background: var(--sol-2); }
+.cb-cliquable.actif { background: var(--marque-voile); box-shadow: inset 0 -2px 0 var(--marque); }
+.cb-n {
+  font-family: var(--police-titre); font-size: 24px; font-weight: 700; line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.cb-libelle { font-size: 11.5px; font-weight: 600; color: var(--encre-2); }
+.cb-aide { font-size: 10.5px; color: var(--encre-3); line-height: 1.35; }
+.cb-total .cb-n { color: var(--marque); }
+.cb-ambre .cb-n { color: var(--ambre); }
+.cb-rouge .cb-n { color: var(--rouge); }
+.cb-doux .cb-n { color: var(--encre-3); }
+
+/* Le corps : rail des familles a gauche, arbre a droite. */
+.compo-corps { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: var(--e-4); align-items: start; }
+@media (max-width: 860px) { .compo-corps { grid-template-columns: 1fr; } }
+
+.compo-rail {
+  position: sticky; top: var(--e-3);
+  border: 1px solid var(--trait); border-radius: var(--r-m);
+  background: var(--surface); padding: var(--e-3);
+}
+@media (max-width: 860px) { .compo-rail { position: static; } }
+.compo-rail-titre {
+  margin: 0 0 var(--e-2); font-size: 10.5px; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--encre-3); font-weight: 700;
+}
+.cf-liste { display: flex; flex-direction: column; gap: 3px; }
+.cf-famille {
+  display: flex; align-items: center; gap: 9px; text-align: left; width: 100%;
+  padding: 7px 9px; border: 1px solid transparent; border-radius: var(--r-s);
+  background: none; color: var(--encre); transition: background .13s, border-color .13s;
+}
+.cf-famille:hover { background: var(--surface-3); }
+.cf-famille.actif { background: var(--marque-voile); border-color: var(--marque); }
+.cf-pastille { width: 9px; height: 9px; border-radius: 2px; flex: none; background: var(--trait-fort); }
+.cf-composant  { background: var(--t-plaquette); }
+.cf-mecanique  { background: var(--t-structure); }
+.cf-electrique { background: var(--t-harnais); }
+.cf-texte { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.cf-nom { font-size: 12.5px; font-weight: 600; }
+.cf-aide { font-size: 10.5px; color: var(--encre-3); line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis; }
+.cf-n { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-3);
+  font-variant-numeric: tabular-nums; flex: none; }
+.cf-famille.actif .cf-n { color: var(--marque); font-weight: 600; }
+.cf-effacer {
+  margin-top: var(--e-3); width: 100%; padding: 6px; font-size: 12px;
+  border: 1px dashed var(--trait-fort); border-radius: var(--r-s);
+  background: none; color: var(--encre-2);
+}
+.cf-effacer:hover { background: var(--surface-3); color: var(--encre); }
+
+/* L'arbre : famille, fonction, norme, reference. */
+.compo-arbre { display: flex; flex-direction: column; gap: var(--e-4); min-width: 0; }
+.compo-barre {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--e-3); flex-wrap: wrap;
+  padding-bottom: var(--e-2); border-bottom: 1px solid var(--trait);
+}
+.compo-barre-compte { font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.compo-barre-btn {
+  font-size: 12px; padding: 5px 12px; border: 1px solid var(--trait-fort);
+  border-radius: 999px; background: var(--surface); color: var(--encre-2);
+}
+.compo-barre-btn:hover { background: var(--surface-3); color: var(--encre); }
+.cfa-bloc { display: flex; flex-direction: column; gap: var(--e-2); min-width: 0; }
+.cfa-tete { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap;
+  padding-bottom: 6px; border-bottom: 2px solid var(--encre); }
+.cfa-tete .cf-pastille { align-self: center; }
+.cfa-nom { margin: 0; font-family: var(--police-titre); font-size: 17px; font-weight: 700; }
+.cfa-chiffres { font-size: 11.5px; color: var(--encre-3); font-variant-numeric: tabular-nums;
+  margin-left: auto; }
+
+.cfo-bloc { border: 1px solid var(--trait); border-radius: var(--r-m);
+  background: var(--surface); overflow: hidden; }
+.cfo-tete {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  padding: 10px 13px; border: 0; background: none; color: var(--encre);
+  border-bottom: 1px solid var(--trait);
+}
+.cfo-bloc.replie .cfo-tete { border-bottom: 0; }
+.cfo-tete:hover { background: var(--surface-3); }
+.cfo-chevron { color: var(--encre-3); font-size: 11px; flex: none; width: 10px; }
+.cfo-nom { font-size: 14px; font-weight: 700; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cfo-chiffres { font-size: 11.5px; color: var(--encre-3); margin-left: auto;
+  font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cfo-chiffres b { font-family: var(--police-data); color: var(--encre-2); font-weight: 600; }
+.cfo-alerte, .cn-alerte {
+  font-size: 10px; letter-spacing: .07em; text-transform: uppercase; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap; flex: none;
+  background: var(--ambre-voile); color: var(--ambre); border: 1px solid var(--ambre-trait);
+}
+.cfo-corps { display: flex; flex-direction: column; }
+
+.cn-bloc { border-top: 1px solid var(--surface-3); }
+.cn-bloc:first-child { border-top: 0; }
+.cn-tete { display: flex; align-items: center; gap: 9px; padding: 8px 13px 6px; flex-wrap: wrap; }
+.cn-nom { font-family: var(--police-data); font-size: 12px; font-weight: 600; color: var(--marque); }
+.cn-compte { font-size: 11px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.cn-dispersee { box-shadow: inset 3px 0 0 var(--ambre); }
+.cn-dispersee .cn-nom { color: var(--ambre); }
+.cn-references { padding: 0 13px 10px; }
+
+.cr-entete, .cr-ligne {
+  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.25fr) 172px minmax(0, .85fr);
   gap: var(--e-3); align-items: center;
 }
-.compo-ligne { padding: 9px var(--e-2); border-bottom: 1px solid var(--surface-3); }
-.compo-ligne:last-child { border-bottom: 0; }
-.compo-ligne:hover { background: var(--surface-2); }
-.compo-seul { box-shadow: inset 3px 0 0 var(--ambre-trait); }
-
-.compo-fonction { font-size: 13px; font-weight: 600; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.compo-norme { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-2); }
-.compo-reference { font-family: var(--police-data); font-size: 12px; color: var(--encre);
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.compo-famille {
-  font-size: 10px; letter-spacing: .07em; text-transform: uppercase; font-weight: 600;
-  padding: 2px 8px; border-radius: 999px; border: 1px solid var(--trait);
-  background: var(--surface-3); color: var(--encre-3); white-space: nowrap;
-  justify-self: start;
+.cr-entete {
+  font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--encre-3);
+  font-weight: 600; padding-bottom: 4px; border-bottom: 1px solid var(--trait);
 }
-.compo-fam-composant  { background: var(--t-plaquette-voile); color: var(--t-plaquette); border-color: var(--t-plaquette-trait); }
-.compo-fam-mecanique  { background: var(--t-structure-voile); color: var(--t-structure); border-color: var(--t-structure-trait); }
-.compo-fam-electrique { background: var(--t-harnais-voile);   color: var(--t-harnais);   border-color: var(--t-harnais-trait); }
-
-.compo-emploi { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-/* La jauge rend le classement lisible d'un coup d'oeil, sans lire les chiffres. */
-.compo-jauge { display: block; height: 4px; background: var(--surface-3);
-  border-radius: 2px; overflow: hidden; }
-.compo-jauge span { display: block; height: 100%; background: var(--marque); border-radius: 2px; }
-.compo-seul .compo-jauge span { background: var(--ambre-trait); }
-.compo-compte {
+.cr-ligne { padding: 7px 0; border-bottom: 1px solid var(--surface-3); }
+.cr-ligne:last-child { border-bottom: 0; }
+.cr-isole { box-shadow: inset 3px 0 0 var(--ambre-trait); padding-left: 7px; }
+.cr-ref { font-family: var(--police-data); font-size: 12px; font-weight: 600;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.cr-designation { font-size: 12px; color: var(--encre-2); min-width: 0;
+  display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
+.cr-etat {
+  font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
+  padding: 1px 7px; border-radius: 999px; white-space: nowrap;
+}
+.cr-hors { background: var(--rouge-voile); color: var(--rouge); border: 1px solid var(--rouge-trait); }
+.cr-dormant { background: var(--surface-3); color: var(--encre-3); border: 1px solid var(--trait); }
+.cr-emploi { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cr-jauge { display: block; height: 4px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
+.cr-jauge span { display: block; height: 100%; background: var(--marque); border-radius: 2px; }
+.cr-isole .cr-jauge span { background: var(--ambre-trait); }
+.cr-compte {
   border: 0; background: none; padding: 0; text-align: left;
-  font-family: var(--police-data); font-size: 11.5px; color: var(--encre-2);
+  font-family: var(--police-data); font-size: 11px; color: var(--encre-2);
   font-variant-numeric: tabular-nums; text-decoration: underline;
   text-decoration-style: dotted; text-underline-offset: 3px;
 }
-.compo-compte:hover, .compo-compte.actif { color: var(--marque); }
-.compo-boites { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 2px; }
-.compo-boites[hidden] { display: none; }
-.compo-porteurs { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
-.puce-porteur-mini { font-size: 10.5px; padding: 1px 7px; }
+.cr-compte:hover, .cr-compte.actif { color: var(--marque); }
+.cr-jamais { font-size: 11px; color: var(--encre-3); font-style: italic; }
+.cr-boites { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 2px; }
+.cr-boites[hidden] { display: none; }
+.cr-porteurs { display: flex; flex-wrap: wrap; gap: 3px; min-width: 0; }
+.puce-porteur-mini { font-size: 10px; padding: 1px 6px; }
 
-@media (max-width: 900px) {
-  .inventaire-compo .inventaire-entete { display: none; }
-  .compo-ligne { grid-template-columns: 1fr 1fr; gap: 4px var(--e-3); padding: var(--e-3) var(--e-2); }
-  .compo-fonction, .compo-emploi, .compo-porteurs { grid-column: 1 / -1; }
+@media (max-width: 760px) {
+  .cr-entete { display: none; }
+  .cr-ligne { grid-template-columns: 1fr; gap: 4px; padding: 10px 0; }
+  .cfo-chiffres { margin-left: 0; width: 100%; }
 }
 
 /* ---------------- cartes ---------------- */
@@ -1085,6 +1219,7 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
     </div>
 
     <main class="enveloppe contenu">
+      <div id="zoneEspace"></div>
       <div id="filtreActif" class="filtres-actifs"></div>
 
       <div class="outils">
@@ -1489,7 +1624,7 @@ function antiRebond(fonction, delai) {
 // ============================================================
 
 const CATEGORIES_COMPOSANT = {
-  composant:  { cle: 'composant',  libelle: 'Composants',             aide: 'boutons, voyants, interrupteurs, relais' },
+  composant:  { cle: 'composant',  libelle: 'Composants de boîte',    aide: 'boutons, voyants, interrupteurs, relais' },
   mecanique:  { cle: 'mecanique',  libelle: 'Composants mécaniques',    aide: 'colonnettes, entretoises, équerres, inserts, visserie' },
   electrique: { cle: 'electrique', libelle: 'Composants routing', aide: 'colliers, embases, passe-fils, gaines — la tenue du câblage' }
 };
@@ -2257,7 +2392,12 @@ const Store = {
   filtreComposants: [],
   filtreTypes: [],
   filtreStatut: null,        // un statut, ou rien
-  vueMode: 'boites',         // 'boites', 'pieces', 'composants' ou 'standardisation'
+  // Deux espaces, deux bases. L'espace « boîtes » et ses trois lectures ;
+  // l'espace « composants », qui a ses propres filtres et ne partage rien.
+  espace: 'boites',          // 'boites' ou 'composants'
+  vueMode: 'boites',         // dans l'espace boîtes : 'boites', 'pieces', 'standardisation'
+  compo: { recherche: '', famille: null, fonction: null, norme: null,
+           etat: null, emploi: null, deplies: {} },
   tri: 'pn',
   enEditionBoite: false,
   enEditionNom: {},
@@ -2489,7 +2629,8 @@ function enregistrerReglages() {
   try {
     localStorage.setItem(CLE_REGLAGES, JSON.stringify({
       poids: Store.poids, actifs: Store.criteresActifs,
-      seuil: Store.seuilEquivalence, tri: Store.tri, vue: Store.vueMode
+      seuil: Store.seuilEquivalence, tri: Store.tri, vue: Store.vueMode,
+      espace: Store.espace
     }));
   } catch (e) { /* navigation privée, stockage refusé : sans gravité */ }
 }
@@ -2523,7 +2664,8 @@ function chargerReglages() {
       }
       if (typeof lu.seuil === 'number') Store.seuilEquivalence = lu.seuil;
       if (typeof lu.tri === 'string') Store.tri = lu.tri;
-      if (['boites', 'pieces', 'composants', 'standardisation'].indexOf(lu.vue) !== -1) Store.vueMode = lu.vue;
+      if (['boites', 'pieces', 'standardisation'].indexOf(lu.vue) !== -1) Store.vueMode = lu.vue;
+      if (['boites', 'composants'].indexOf(lu.espace) !== -1) Store.espace = lu.espace;
     }
   } catch (e) { /* réglages illisibles : on repart des valeurs par défaut */ }
   PORTEES.forEach(function (p) { normaliserPoids(p.cle); });
@@ -2759,7 +2901,7 @@ function calculerVue() {
   };
 }
 
-const SEUIL_DOUBLON = 85;      // au-delà, deux PN distincts méritent un examen
+const SEUIL_DOUBLON = 95;      // en deçà, deux PN proches ne sont pas un doublon
 // Le balayage est quadratique : il faut un plafond. L'ancien, 400 paires,
 // correspondait à 29 sous-ensembles du même type — toute base réelle passait
 // dessous et l'indicateur restait muet. Mesuré : 21 000 paires ≈ 0,6 s, ce qui
@@ -2864,86 +3006,212 @@ function boitesUtilisant(pnPiece, saufBoite) {
 }
 
 /**
- * L'inventaire des COMPOSANTS : une ligne par composant distinct, où qu'il
- * soit monté — dans une boîte, dans une structure, dans n'importe quel champ
- * de composants d'un type. Un composant est identifié par sa catégorie et
- * ses trois niveaux : deux références différentes sont deux composants.
+ * LA BASE DE COMPOSANTS
  *
- * C'est la quatrième lecture de la même base. Les trois autres répondent à
- * « que contient cette boîte », « où sert ce sous-ensemble » et « où la base
- * se disperse ». Celle-ci répond à « qu'est-ce qu'on monte, et combien de
- * fois » — la question de l'approvisionnement et du stock.
+ * C'est une base à part entière, pas une lecture de la base des boîtes. Elle
+ * réunit DEUX sources qui ne se recouvrent pas :
+ *   — le catalogue : ce qu'on a le droit de monter ;
+ *   — les montages réels : ce qu'on monte effectivement.
+ *
+ * Leur différence est l'information la plus utile de la page. Un composant
+ * monté mais absent du catalogue est une pièce non maîtrisée ; un composant
+ * au catalogue que personne ne monte est un référencement qui dort.
+ *
+ * Un composant est identifié par sa catégorie et ses trois niveaux : deux
+ * références différentes sont deux composants.
  */
-function inventaireComposants(liste) {
-  const parComposant = new Map();
+const ETAT_COMPOSANT = {
+  COURANT:   'courant',    // au catalogue, et monté
+  DORMANT:   'dormant',    // au catalogue, jamais monté
+  HORS:      'hors'        // monté, absent du catalogue
+};
 
-  const recenser = function (categorie, texte, pnBoite, porteurLigne) {
+function cleComposant(categorie, c) {
+  return categorie + '|' + normaliserTexte(c.fonction) + '|' +
+         normaliserTexte(c.norme) + '|' + normaliserTexte(c.reference);
+}
+
+function baseComposants(liste) {
+  const base = new Map();
+
+  const entree = function (categorie, c) {
+    const cle = cleComposant(categorie, c);
+    if (!base.has(cle)) {
+      base.set(cle, {
+        cle: cle, categorie: categorie,
+        fonction: c.fonction || '', norme: c.norme || '', reference: c.reference || '',
+        designation: '', auCatalogue: false,
+        montages: 0, boites: [], porteurs: new Set(), portees: new Set()
+      });
+    }
+    return base.get(cle);
+  };
+
+  // 1. Le catalogue : le référentiel de ce qu'on a le droit de monter.
+  (Store.catalogue || []).forEach(function (ligne) {
+    const c = composantDepuisCatalogue(ligne);
+    if (!c.fonction && !c.norme && !c.reference) return;
+    const e = entree(CATEGORIES_COMPOSANT[c.categorie] ? c.categorie : 'composant', c);
+    e.auCatalogue = true;
+    if (c.designation) e.designation = c.designation;
+  });
+
+  // 2. Les montages réels, dans les boîtes et dans leurs sous-ensembles.
+  const recenser = function (categorie, texte, pnBoite, porteurs, portee) {
     listeComposants(texte).forEach(function (c) {
       if (!c.fonction && !c.norme && !c.reference) return;
-      const cle = categorie + '|' + normaliserTexte(c.fonction) + '|' +
-                  normaliserTexte(c.norme) + '|' + normaliserTexte(c.reference);
-      if (!parComposant.has(cle)) {
-        parComposant.set(cle, {
-          cle: cle, categorie: categorie, fonction: c.fonction,
-          norme: c.norme, reference: c.reference,
-          boites: [], porteurs: new Set(), montages: 0
-        });
-      }
-      const e = parComposant.get(cle);
+      const e = entree(categorie, c);
       e.montages++;
+      e.portees.add(portee);
       if (e.boites.indexOf(pnBoite) === -1) e.boites.push(pnBoite);
-      valeursMulti(porteurLigne).forEach(function (p) { e.porteurs.add(p); });
+      valeursMulti(porteurs).forEach(function (p) { e.porteurs.add(p); });
     });
   };
 
-  liste.forEach(function (b) {
+  (liste || []).forEach(function (b) {
     const pnBoite = String(b[CLE_PN()]).trim();
     const porteurs = b['Porteur'];
 
-    // Les champs de composants de la BOÎTE.
     Object.keys(CHAMPS_BOITE).forEach(function (cle) {
       const regle = CHAMPS_BOITE[cle];
       if (regle.genre !== GENRE.COMPOSANTS) return;
-      recenser(regle.categorie || 'composant', b[cle], pnBoite, porteurs);
+      recenser(regle.categorie || 'composant', b[cle], pnBoite, porteurs, 'Boîte');
     });
 
-    // Puis ceux de chacun de ses sous-ensembles, selon leur type.
     (b.nomenclature || []).forEach(function (n) {
-      champsDuType(typeDe(n)).forEach(function (champ) {
+      const type = typeDe(n);
+      champsDuType(type).forEach(function (champ) {
         if (champ.genre !== GENRE.COMPOSANTS) return;
-        recenser(champ.categorie || 'composant', n[champ.cle], pnBoite, porteurs);
+        recenser(champ.categorie || 'composant', n[champ.cle], pnBoite, porteurs, type.libelle);
       });
     });
   });
 
-  return Array.from(parComposant.values())
-    .map(function (e) {
-      e.boites.sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); });
-      e.nbBoites = e.boites.length;
-      e.porteurs = Array.from(e.porteurs).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
-      return e;
+  return Array.from(base.values()).map(function (e) {
+    e.boites.sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); });
+    e.nbBoites = e.boites.length;
+    e.porteurs = Array.from(e.porteurs).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+    e.portees = Array.from(e.portees).sort();
+    e.etat = !e.auCatalogue ? ETAT_COMPOSANT.HORS
+           : e.nbBoites === 0 ? ETAT_COMPOSANT.DORMANT
+           : ETAT_COMPOSANT.COURANT;
+    return e;
+  });
+}
+
+/**
+ * L'arbre de la base : famille → fonction → norme → références.
+ * C'est l'ordre dans lequel on cherche une pièce — on sait ce qu'on veut
+ * faire avant de savoir sous quelle norme le chercher.
+ */
+function arbreComposants(composants) {
+  const familles = new Map();
+
+  composants.forEach(function (c) {
+    if (!familles.has(c.categorie)) {
+      familles.set(c.categorie, {
+        cle: c.categorie,
+        libelle: (CATEGORIES_COMPOSANT[c.categorie] || CATEGORIES_COMPOSANT.composant).libelle,
+        aide: (CATEGORIES_COMPOSANT[c.categorie] || CATEGORIES_COMPOSANT.composant).aide,
+        fonctions: new Map(), references: 0, montages: 0, boites: new Set()
+      });
+    }
+    const f = familles.get(c.categorie);
+    f.references++; f.montages += c.montages;
+    c.boites.forEach(function (b) { f.boites.add(b); });
+
+    const cleF = normaliserTexte(c.fonction) || '\u0000';
+    if (!f.fonctions.has(cleF)) {
+      f.fonctions.set(cleF, {
+        libelle: c.fonction || 'Fonction non précisée',
+        normes: new Map(), references: 0, montages: 0, boites: new Set()
+      });
+    }
+    const fo = f.fonctions.get(cleF);
+    fo.references++; fo.montages += c.montages;
+    c.boites.forEach(function (b) { fo.boites.add(b); });
+
+    const cleN = normaliserTexte(c.norme) || '\u0000';
+    if (!fo.normes.has(cleN)) {
+      fo.normes.set(cleN, { libelle: c.norme || 'sans norme', lignes: [], montages: 0 });
+    }
+    const no = fo.normes.get(cleN);
+    no.lignes.push(c);
+    no.montages += c.montages;
+  });
+
+  const parEmploi = function (a, b) { return b.montages - a.montages; };
+  const parNom = function (a, b) { return a.libelle.localeCompare(b.libelle, 'fr'); };
+
+  return Array.from(familles.values())
+    .map(function (f) {
+      f.nbBoites = f.boites.size;
+      f.fonctions = Array.from(f.fonctions.values()).map(function (fo) {
+        fo.nbBoites = fo.boites.size;
+        fo.normes = Array.from(fo.normes.values()).map(function (no) {
+          no.lignes.sort(function (a, b) {
+            return b.nbBoites - a.nbBoites ||
+                   String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+          });
+          // Une norme servie par plusieurs références, c'est de la dispersion.
+          no.dispersee = no.lignes.filter(function (l) { return l.nbBoites > 0; }).length > 1;
+          return no;
+        }).sort(parEmploi);
+        // Plusieurs normes pour une fonction : dispersion d'un cran au-dessus.
+        fo.dispersee = fo.normes.length > 1 ||
+                       fo.normes.some(function (n) { return n.dispersee; });
+        return fo;
+      }).sort(function (a, b) { return parEmploi(a, b) || parNom(a, b); });
+      return f;
     })
-    // Le plus monté d'abord : c'est celui dont une rupture coûte le plus cher.
+    // L'ordre du registre : composants de boîte, mécanique, routing.
     .sort(function (a, b) {
-      return b.nbBoites - a.nbBoites || b.montages - a.montages ||
-             String(a.fonction).localeCompare(String(b.fonction), 'fr') ||
-             String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+      const ordre = Object.keys(CATEGORIES_COMPOSANT);
+      return ordre.indexOf(a.cle) - ordre.indexOf(b.cle);
     });
 }
 
-/** Le bilan de l'inventaire, pour la ligne de tête de la vue. */
+/** Le bilan de la base, pour la bande de tête de l'espace. */
 function bilanComposants(composants) {
   const normes = new Set(), fonctions = new Set();
-  let montages = 0, uniques = 0;
+  let montages = 0, isoles = 0, dormants = 0, hors = 0, montes = 0;
   composants.forEach(function (c) {
     if (c.norme) normes.add(normaliserTexte(c.norme));
     if (c.fonction) fonctions.add(normaliserTexte(c.fonction));
     montages += c.montages;
-    if (c.nbBoites === 1) uniques++;
+    if (c.nbBoites > 0) montes++;
+    if (c.nbBoites === 1) isoles++;
+    if (c.etat === ETAT_COMPOSANT.DORMANT) dormants++;
+    if (c.etat === ETAT_COMPOSANT.HORS) hors++;
   });
-  return { references: composants.length, normes: normes.size,
-           fonctions: fonctions.size, montages: montages, uniques: uniques };
+  return { references: composants.length, normes: normes.size, fonctions: fonctions.size,
+           montages: montages, isoles: isoles, dormants: dormants, hors: hors, montes: montes };
 }
+
+/**
+ * Le filtrage propre à l'espace Composants. Il ne partage rien avec celui
+ * des boîtes : on n'y cherche pas la même chose.
+ */
+function composantsFiltres(liste) {
+  const f = Store.compo;
+  const q = normaliserTexte(f.recherche);
+  return baseComposants(liste).filter(function (c) {
+    if (f.famille && c.categorie !== f.famille) return false;
+    if (f.fonction && normaliserTexte(c.fonction) !== normaliserTexte(f.fonction)) return false;
+    if (f.norme && normaliserTexte(c.norme) !== normaliserTexte(f.norme)) return false;
+    if (f.etat && c.etat !== f.etat) return false;
+    if (f.emploi === 'isole' && c.nbBoites !== 1) return false;
+    if (f.emploi === 'partage' && c.nbBoites < 2) return false;
+    if (!q) return true;
+    return normaliserTexte([c.fonction, c.norme, c.reference, c.designation].join(' ')).indexOf(q) !== -1;
+  });
+}
+
+function filtreComposantActif() {
+  const f = Store.compo;
+  return !!(f.recherche || f.famille || f.fonction || f.norme || f.etat || f.emploi);
+}
+
 
 /**
  * L'inventaire des PIÈCES vu depuis les boîtes affichées : un PN de pièce,
@@ -3448,13 +3716,43 @@ function filtresTypeHtml() {
  * « que contient cette boîte », l'inventaire « où sert cette pièce ».
  */
 function selecteurVueHtml() {
-  return '<div class="choix-vue" role="group" aria-label="Mode d\'affichage">' +
+  if (Store.espace !== 'boites') return '';
+  return '<div class="choix-vue" role="group" aria-label="Lecture de la base">' +
     [['boites', 'Boîtes'], ['pieces', 'Sous-ensembles'],
-     ['composants', 'Composants'], ['standardisation', 'Standardisation']].map(function (v) {
+     ['standardisation', 'Standardisation']].map(function (v) {
       const actif = Store.vueMode === v[0];
       return '<button type="button" class="onglet-vue' + (actif ? ' actif' : '') + '"' +
              dataAttrs({ action: 'changer-vue', vue: v[0] }) +
              ' aria-pressed="' + actif + '">' + esc(v[1]) + '</button>';
+    }).join('') +
+  '</div>';
+}
+
+/**
+ * LE SÉLECTEUR D'ESPACE
+ * Deux bases, pas deux vues : les boîtes d'un côté, les composants de
+ * l'autre. Elles ne se filtrent pas pareil et ne répondent pas aux mêmes
+ * questions — il faut que ça se voie avant de cliquer.
+ */
+function selecteurEspaceHtml() {
+  const espaces = [
+    { cle: 'boites', libelle: 'Boîtes', icone: '◼',
+      aide: 'assemblages, sous-ensembles, standardisation' },
+    { cle: 'composants', libelle: 'Composants', icone: '⬡',
+      aide: 'le référentiel des pièces montées' }
+  ];
+  return '<div class="choix-espace" role="tablist" aria-label="Base consultée">' +
+    espaces.map(function (e) {
+      const actif = Store.espace === e.cle;
+      return '<button type="button" role="tab" class="espace' + (actif ? ' actif' : '') + '"' +
+        dataAttrs({ action: 'changer-espace', espace: e.cle }) +
+        ' aria-selected="' + actif + '">' +
+        '<span class="espace-icone" aria-hidden="true">' + e.icone + '</span>' +
+        '<span class="espace-texte">' +
+          '<span class="espace-nom">' + esc(e.libelle) + '</span>' +
+          '<span class="espace-aide">' + esc(e.aide) + '</span>' +
+        '</span>' +
+      '</button>';
     }).join('') +
   '</div>';
 }
@@ -3492,71 +3790,100 @@ function piecesHtml(vue) {
   '</div>';
 }
 
-/**
- * L'inventaire des COMPOSANTS : une ligne par composant distinct, avec ce
- * qu'il faut pour décider — sa catégorie, ses trois niveaux, sur combien de
- * boîtes il est monté, et sur quels porteurs. Les plus montés d'abord :
- * ce sont ceux dont une rupture d'approvisionnement coûte le plus cher.
- */
-function composantsHtml(vue) {
-  const composants = inventaireComposants(vue.aAfficher);
-  if (!composants.length) {
-    return '<div class="etat-vide">' +
-      '<p>Aucun composant à inventorier.</p>' +
-      '<p class="etat-vide-aide">Renseignez les composants des boîtes et de ' +
-      'leurs sous-ensembles pour les voir apparaître ici.</p>' +
-    '</div>';
-  }
+// ============================================================
+// ESPACE COMPOSANTS — une base à part, avec ses propres filtres
+// ============================================================
 
-  const bilan = bilanComposants(composants);
-  const maxi = composants[0].nbBoites || 1;
+/** La bande de tête : ce que contient la base, et ce qui y cloche. */
+function bandeComposantsHtml(bilan, total) {
+  const mesure = function (n, libelle, aide, classe, action, valeur) {
+    const actif = action && Store.compo[action.champ] === valeur;
+    const corps =
+      '<span class="cb-n">' + n + '</span>' +
+      '<span class="cb-libelle">' + esc(libelle) + '</span>' +
+      (aide ? '<span class="cb-aide">' + esc(aide) + '</span>' : '');
+    if (!action) return '<div class="cb-mesure ' + (classe || '') + '">' + corps + '</div>';
+    return '<button type="button" class="cb-mesure cb-cliquable ' + (classe || '') +
+      (actif ? ' actif' : '') + '"' +
+      dataAttrs({ action: 'filtrer-composants', champ: action.champ, valeur: actif ? '' : valeur }) +
+      ' aria-pressed="' + actif + '">' + corps + '</button>';
+  };
 
-  return '<div class="compo-bilan">' +
-      '<span><b>' + bilan.references + '</b> références distinctes</span>' +
-      '<span><b>' + bilan.fonctions + '</b> fonctions</span>' +
-      '<span><b>' + bilan.normes + '</b> normes</span>' +
-      '<span><b>' + bilan.montages + '</b> montages au total</span>' +
-      (bilan.uniques
-        ? '<span class="compo-bilan-seul"><b>' + bilan.uniques +
-          '</b> montée' + (bilan.uniques > 1 ? 's' : '') + ' dans une seule boîte</span>'
-        : '') +
-    '</div>' +
-    '<div class="inventaire inventaire-compo">' +
-      '<div class="inventaire-entete">' +
-        '<span>Composant</span><span>Norme</span><span>Référence</span>' +
-        '<span>Famille</span><span>Emploi</span><span>Porteurs</span>' +
-      '</div>' +
-      composants.map(function (c) { return ligneComposantHtml(c, maxi); }).join('') +
-    '</div>';
+  return '<div class="compo-bande">' +
+    mesure(bilan.references, 'références', total !== bilan.references
+             ? 'sur ' + total + ' au total' : 'dans la base', 'cb-total') +
+    mesure(bilan.fonctions, 'fonctions', 'services rendus') +
+    mesure(bilan.normes, 'normes', 'référentiels cités') +
+    mesure(bilan.montages, 'montages', 'occurrences réelles') +
+    mesure(bilan.isoles, 'montée une fois', 'appro isolé', 'cb-ambre',
+           { champ: 'emploi' }, 'isole') +
+    mesure(bilan.hors, 'hors catalogue', 'non maîtrisées', 'cb-rouge',
+           { champ: 'etat' }, ETAT_COMPOSANT.HORS) +
+    mesure(bilan.dormants, 'jamais montées', 'au catalogue seul', 'cb-doux',
+           { champ: 'etat' }, ETAT_COMPOSANT.DORMANT) +
+  '</div>';
 }
 
-function ligneComposantHtml(c, maxi) {
-  const cat = CATEGORIES_COMPOSANT[c.categorie] || CATEGORIES_COMPOSANT.composant;
-  const seul = c.nbBoites <= 1;
-  const part = Math.max(4, Math.round((c.nbBoites / (maxi || 1)) * 100));
+/** Le rail de gauche : les familles, puis les filtres posés. */
+function railComposantsHtml(toutes) {
+  const parFamille = {};
+  toutes.forEach(function (c) { parFamille[c.categorie] = (parFamille[c.categorie] || 0) + 1; });
 
-  return '<div class="compo-ligne' + (seul ? ' compo-seul' : '') + '">' +
-    '<span class="compo-fonction">' + esc(txt(c.fonction, 'fonction non précisée')) + '</span>' +
-    '<span class="compo-norme">' + esc(txt(c.norme, '—')) + '</span>' +
-    '<span class="compo-reference">' + esc(txt(c.reference, '—')) + '</span>' +
-    '<span class="compo-famille compo-fam-' + esc(c.categorie) + '">' + esc(cat.libelle) + '</span>' +
-    '<span class="compo-emploi">' +
-      '<span class="compo-jauge" aria-hidden="true">' +
-        '<span style="width:' + part + '%"></span></span>' +
-      '<button type="button" class="compo-compte"' +
-        dataAttrs({ action: 'deplier-composant' }) + ' aria-expanded="false"' +
-        ' title="Voir les boîtes qui le montent">' +
-        c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte') +
-        (c.montages > c.nbBoites ? ' · ' + c.montages + ' montages' : '') +
-      '</button>' +
-      '<span class="compo-boites" hidden>' +
-        c.boites.map(function (pn) {
-          return '<button type="button" class="usage-lien"' +
-                 dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
-        }).join('') +
+  const familles = Object.keys(CATEGORIES_COMPOSANT).map(function (cle) {
+    const cat = CATEGORIES_COMPOSANT[cle];
+    const actif = Store.compo.famille === cle;
+    return '<button type="button" class="cf-famille' + (actif ? ' actif' : '') + '"' +
+      dataAttrs({ action: 'filtrer-composants', champ: 'famille', valeur: actif ? '' : cle }) +
+      ' aria-pressed="' + actif + '">' +
+      '<span class="cf-pastille cf-' + esc(cle) + '" aria-hidden="true"></span>' +
+      '<span class="cf-texte">' +
+        '<span class="cf-nom">' + esc(cat.libelle) + '</span>' +
+        '<span class="cf-aide">' + esc(cat.aide) + '</span>' +
       '</span>' +
+      '<span class="cf-n">' + (parFamille[cle] || 0) + '</span>' +
+    '</button>';
+  }).join('');
+
+  return '<aside class="compo-rail" aria-label="Familles de composants">' +
+    '<h3 class="compo-rail-titre">Familles</h3>' +
+    '<div class="cf-liste">' + familles + '</div>' +
+    (filtreComposantActif()
+      ? '<button type="button" class="cf-effacer"' +
+        dataAttrs({ action: 'effacer-filtres-composants' }) + '>Tout réafficher</button>'
+      : '') +
+  '</aside>';
+}
+
+/** Une référence : la ligne la plus fine de la base. */
+function ligneReferenceHtml(c, maxi) {
+  const part = c.nbBoites ? Math.max(5, Math.round((c.nbBoites / (maxi || 1)) * 100)) : 0;
+  const etat = c.etat === ETAT_COMPOSANT.HORS
+    ? '<span class="cr-etat cr-hors" title="Monté mais absent du catalogue">hors catalogue</span>'
+    : c.etat === ETAT_COMPOSANT.DORMANT
+      ? '<span class="cr-etat cr-dormant" title="Au catalogue, monté nulle part">jamais montée</span>'
+      : '';
+
+  return '<div class="cr-ligne' + (c.nbBoites === 1 ? ' cr-isole' : '') + '">' +
+    '<span class="cr-ref">' + esc(txt(c.reference, 'sans référence')) + '</span>' +
+    '<span class="cr-designation">' + (c.designation ? esc(c.designation) : '<span class="vide">—</span>') + etat + '</span>' +
+    '<span class="cr-emploi">' +
+      (c.nbBoites
+        ? '<span class="cr-jauge" aria-hidden="true"><span style="width:' + part + '%"></span></span>' +
+          '<button type="button" class="cr-compte"' +
+            dataAttrs({ action: 'deplier-composant' }) + ' aria-expanded="false"' +
+            ' title="Voir les boîtes qui la montent">' +
+            c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte') +
+            (c.montages > c.nbBoites ? ' · ' + c.montages + ' montages' : '') +
+          '</button>' +
+          '<span class="cr-boites" hidden>' +
+            c.boites.map(function (pn) {
+              return '<button type="button" class="usage-lien"' +
+                     dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
+            }).join('') +
+          '</span>'
+        : '<span class="cr-jamais">non montée</span>') +
     '</span>' +
-    '<span class="compo-porteurs">' +
+    '<span class="cr-porteurs">' +
       (c.porteurs.length
         ? c.porteurs.map(function (p) {
             return '<span class="puce-porteur puce-porteur-mini">' + esc(p) + '</span>';
@@ -3564,6 +3891,136 @@ function ligneComposantHtml(c, maxi) {
         : '<span class="vide">—</span>') +
     '</span>' +
   '</div>';
+}
+
+/** Une norme et ses références. */
+function blocNormeHtml(norme, maxi) {
+  const n = norme.lignes.length;
+  return '<div class="cn-bloc' + (norme.dispersee ? ' cn-dispersee' : '') + '">' +
+    '<div class="cn-tete">' +
+      '<span class="cn-nom">' + esc(norme.libelle) + '</span>' +
+      '<span class="cn-compte">' + n + (n > 1 ? ' références' : ' référence') + '</span>' +
+      (norme.dispersee
+        ? '<span class="cn-alerte" title="Plusieurs références montées sous la même norme">' +
+          'dispersée</span>'
+        : '') +
+    '</div>' +
+    '<div class="cn-references">' +
+      '<div class="cr-entete"><span>Référence</span><span>Désignation</span>' +
+        '<span>Emploi</span><span>Porteurs</span></div>' +
+      norme.lignes.map(function (l) { return ligneReferenceHtml(l, maxi); }).join('') +
+    '</div>' +
+  '</div>';
+}
+
+/** Une fonction et ses normes. C'est le niveau auquel on cherche. */
+// Tout ouvrir fait un mur ; tout replier ouvre sur une page vide. On ouvre
+// donc les premières — ce sont les plus montées, elles sont triées ainsi — et
+// on replie la traîne, qu'on déplie quand on la cherche.
+const FONCTIONS_OUVERTES = 5;
+
+function blocFonctionHtml(fonction, maxi, cleFamille, replieParDefaut) {
+  const id = cleFamille + '::' + normaliserTexte(fonction.libelle);
+  const choisi = Store.compo.deplies[id];
+  const ouvert = choisi === undefined ? !replieParDefaut : choisi !== false;
+
+  return '<section class="cfo-bloc' + (ouvert ? '' : ' replie') + '">' +
+    '<button type="button" class="cfo-tete"' +
+      dataAttrs({ action: 'basculer-fonction', fonction: id }) +
+      ' aria-expanded="' + ouvert + '">' +
+      '<span class="cfo-chevron" aria-hidden="true">' + (ouvert ? '▾' : '▸') + '</span>' +
+      '<span class="cfo-nom">' + esc(fonction.libelle) + '</span>' +
+      '<span class="cfo-chiffres">' +
+        '<b>' + fonction.references + '</b> réf.' +
+        ' · <b>' + fonction.normes.length + '</b> norme' + (fonction.normes.length > 1 ? 's' : '') +
+        ' · <b>' + fonction.nbBoites + '</b> boîte' + (fonction.nbBoites > 1 ? 's' : '') +
+      '</span>' +
+      (fonction.dispersee
+        ? '<span class="cfo-alerte" title="Plusieurs références pour le même service">à ranger</span>'
+        : '') +
+    '</button>' +
+    (ouvert
+      ? '<div class="cfo-corps">' +
+          fonction.normes.map(function (n) { return blocNormeHtml(n, maxi); }).join('') +
+        '</div>'
+      : '') +
+  '</section>';
+}
+
+/** L'espace Composants au complet. */
+function composantsHtml(vue) {
+  const toutes = baseComposants(vue.aAfficher);
+  const retenues = composantsFiltres(vue.aAfficher);
+  const bilan = bilanComposants(retenues);
+  const arbre = arbreComposants(retenues);
+  const maxi = retenues.reduce(function (m, c) { return Math.max(m, c.nbBoites); }, 1);
+
+  const nbFonctions = arbre.reduce(function (t, f) { return t + f.fonctions.length; }, 0);
+
+  // Le rang d'une fonction dans l'arbre décide de son état par défaut. Quand
+  // un filtre a déjà réduit la liste, on ouvre tout : on l'a demandée.
+  const rangs = {};
+  let rang = 0;
+  arbre.forEach(function (f) {
+    f.fonctions.forEach(function (fo) {
+      rangs[f.cle + '::' + normaliserTexte(fo.libelle)] = rang++;
+    });
+  });
+  const replieParRang = function (id) {
+    return nbFonctions > FONCTIONS_OUVERTES && rangs[id] >= FONCTIONS_OUVERTES;
+  };
+  const estOuverte = function (id) {
+    const choisi = Store.compo.deplies[id];
+    return choisi === undefined ? !replieParRang(id) : choisi !== false;
+  };
+  const ouvertes = Object.keys(rangs).filter(estOuverte).length;
+
+  const barre = arbre.length
+    ? '<div class="compo-barre">' +
+        '<span class="compo-barre-compte">' +
+          nbFonctions + ' fonction' + (nbFonctions > 1 ? 's' : '') +
+          ' · ' + retenues.length + ' référence' + (retenues.length > 1 ? 's' : '') +
+        '</span>' +
+        '<button type="button" class="compo-barre-btn"' +
+          dataAttrs({ action: 'deplier-tout-composants',
+                      ouvrir: String(ouvertes < nbFonctions) }) + '>' +
+          (ouvertes < nbFonctions ? 'Tout déplier' : 'Tout replier') +
+        '</button>' +
+      '</div>'
+    : '';
+
+  const corps = arbre.length
+    ? arbre.map(function (f) {
+        return '<section class="cfa-bloc">' +
+          '<header class="cfa-tete">' +
+            '<span class="cf-pastille cf-' + esc(f.cle) + '" aria-hidden="true"></span>' +
+            '<h2 class="cfa-nom">' + esc(f.libelle) + '</h2>' +
+            '<span class="cfa-chiffres">' +
+              f.references + ' référence' + (f.references > 1 ? 's' : '') +
+              ' · ' + f.fonctions.length + ' fonction' + (f.fonctions.length > 1 ? 's' : '') +
+              ' · ' + f.montages + ' montage' + (f.montages > 1 ? 's' : '') +
+            '</span>' +
+          '</header>' +
+          f.fonctions.map(function (fo) {
+            const id = f.cle + '::' + normaliserTexte(fo.libelle);
+            return blocFonctionHtml(fo, maxi, f.cle, replieParRang(id));
+          }).join('') +
+        '</section>';
+      }).join('')
+    : '<div class="etat-vide">' +
+        '<p>Aucun composant ne correspond.</p>' +
+        '<p class="etat-vide-aide">' +
+        (filtreComposantActif()
+          ? 'Relâchez un filtre, ou réaffichez tout.'
+          : 'Renseignez le catalogue et les composants des boîtes.') +
+        '</p>' +
+      '</div>';
+
+  return bandeComposantsHtml(bilan, toutes.length) +
+    '<div class="compo-corps">' +
+      railComposantsHtml(toutes) +
+      '<div class="compo-arbre">' + barre + corps + '</div>' +
+    '</div>';
 }
 
 /**
@@ -3737,27 +4194,43 @@ function grilleHtml(vue) {
 
 function rendreInterface() {
   const vue = calculerVue();
-  const mode = Store.vueMode;
-  definirHtml('functionTabs', ongletsHtml(vue));
-  definirHtml('filtresType', filtresTypeHtml());
+  const composants = Store.espace === 'composants';
+  const mode = composants ? 'composants' : Store.vueMode;
+
+  definirHtml('zoneEspace', selecteurEspaceHtml());
+  document.body.classList.toggle('espace-composants', composants);
+
+  // L'espace Composants a ses propres filtres : ceux des boîtes ne s'y
+  // appliquent pas, et les afficher laisserait croire le contraire.
+  definirHtml('functionTabs', composants ? '' : ongletsHtml(vue));
+  definirHtml('filtresType', composants ? '' : filtresTypeHtml());
   definirHtml('zoneVue', selecteurVueHtml());
-  definirHtml('zoneTri', mode === 'boites' ? triHtml() : '');
+  definirHtml('zoneTri', (!composants && mode === 'boites') ? triHtml() : '');
+
+  const recherche = parId('searchBar');
+  if (recherche) {
+    recherche.placeholder = composants
+      ? 'Rechercher une fonction, une norme, une référence…'
+      : 'Rechercher un PN, une fonction, une référence, un mot-clé…';
+    const attendue = composants ? Store.compo.recherche : Store.recherche;
+    if (recherche.value !== attendue) recherche.value = attendue;
+  }
 
   const contenant = parId('mainContainer');
-  if (contenant) contenant.classList.toggle('grille', mode === 'boites');
+  if (contenant) contenant.classList.toggle('grille', !composants && mode === 'boites');
   definirHtml('mainContainer',
+    composants ? composantsHtml(vue) :
     mode === 'pieces' ? piecesHtml(vue) :
-    mode === 'composants' ? composantsHtml(vue) :
     mode === 'standardisation' ? standardisationHtml(vue) : grilleHtml(vue));
 
-  if (mode === 'pieces') {
+  if (composants) {
+    const n = composantsFiltres(vue.aAfficher).length;
+    definirTexte('bilanResultats',
+                 n + (n > 1 ? ' références' : ' référence'));
+  } else if (mode === 'pieces') {
     const n = inventairePieces(vue.aAfficher).length;
     definirTexte('bilanResultats',
                  n + (n > 1 ? ' sous-ensembles distincts' : ' sous-ensemble'));
-  } else if (mode === 'composants') {
-    const n = inventaireComposants(vue.aAfficher).length;
-    definirTexte('bilanResultats',
-                 n + (n > 1 ? ' composants distincts' : ' composant'));
   } else if (mode === 'standardisation') {
     const n = opportunitesStandardisation(vue.aAfficher).length;
     definirTexte('bilanResultats',
@@ -5189,6 +5662,12 @@ function majMultiCible(cible, transformation) {
  * détruit et recréé, et le focus retombe sur la page. On le lui rend, sinon
  * saisir cinq composants d'affilée veut dire cliquer cinq fois.
  */
+/** Rendre la main au champ de recherche : c'est par là qu'on entre. */
+function redonnerFocusRecherche() {
+  const champ = parId('searchBar');
+  if (champ && typeof champ.focus === 'function') champ.focus();
+}
+
 function redonnerFocus(classe, criteres) {
   let cible = null;
   document.querySelectorAll('.' + classe).forEach(function (el) {
@@ -5236,8 +5715,54 @@ enregistrerActions({
       : Store.filtreTypes.filter(function (t) { return t !== d.type; });
     rendreInterface();
   },
+  'changer-espace': function (d) {
+    if (['boites', 'composants'].indexOf(d.espace) === -1) return;
+    if (Store.espace === d.espace) return;
+    Store.espace = d.espace;
+    enregistrerReglages();
+    rendreInterface();
+    // Le champ de recherche sert les deux espaces : on lui rend la main,
+    // c'est par là qu'on entre dans une base.
+    redonnerFocusRecherche();
+  },
+
+  'filtrer-composants': function (d) {
+    const champ = d.champ;
+    if (['famille', 'fonction', 'norme', 'etat', 'emploi'].indexOf(champ) === -1) return;
+    Store.compo[champ] = d.valeur ? d.valeur : null;
+    rendreInterface();
+  },
+
+  'effacer-filtres-composants': function () {
+    Store.compo.recherche = '';
+    ['famille', 'fonction', 'norme', 'etat', 'emploi'].forEach(function (c) {
+      Store.compo[c] = null;
+    });
+    const champ = parId('searchBar');
+    if (champ) champ.value = '';
+    rendreInterface();
+  },
+
+  'deplier-tout-composants': function (d) {
+    const ouvrir = d.ouvrir === 'true';
+    Store.compo.deplies = {};
+    const vue = calculerVue();
+    arbreComposants(composantsFiltres(vue.aAfficher)).forEach(function (f) {
+      f.fonctions.forEach(function (fo) {
+        Store.compo.deplies[f.cle + '::' + normaliserTexte(fo.libelle)] = ouvrir;
+      });
+    });
+    rendreInterface();
+  },
+
+  'basculer-fonction': function (d) {
+    const id = d.fonction;
+    Store.compo.deplies[id] = Store.compo.deplies[id] === false;
+    rendreInterface();
+  },
+
   'changer-vue': function (d) {
-    if (['boites', 'pieces', 'composants', 'standardisation'].indexOf(d.vue) === -1) return;
+    if (['boites', 'pieces', 'standardisation'].indexOf(d.vue) === -1) return;
     Store.vueMode = d.vue;
     enregistrerReglages();
     rendreInterface();
@@ -5295,7 +5820,8 @@ enregistrerActions({
   },
 
   'effacer-recherche': function () {
-    Store.recherche = '';
+    if (Store.espace === 'composants') Store.compo.recherche = '';
+    else Store.recherche = '';
     const c = parId('searchBar'); if (c) c.value = '';
     rendreInterface();
   },
@@ -5584,7 +6110,7 @@ enregistrerActions({
 
   // --- standardisation ---
   'deplier-composant': function (d, noeud) {
-    const bloc = noeud.parentNode && noeud.parentNode.querySelector('.compo-boites');
+    const bloc = noeud.parentNode && noeud.parentNode.querySelector('.cr-boites');
     if (!bloc) return;
     const ouvert = !bloc.hidden;
     bloc.hidden = ouvert;
@@ -5654,7 +6180,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const recherche = parId('searchBar');
   if (recherche) {
     recherche.addEventListener('input', antiRebond(function () {
-      Store.recherche = recherche.value;
+      // Chaque espace a sa recherche : revenir aux boîtes ne doit pas hériter
+      // du mot-clé tapé dans les composants.
+      if (Store.espace === 'composants') Store.compo.recherche = recherche.value;
+      else Store.recherche = recherche.value;
       rendreInterface();
     }, 180));
   }

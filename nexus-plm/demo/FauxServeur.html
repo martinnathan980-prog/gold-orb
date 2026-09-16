@@ -76,7 +76,7 @@ const LIGNES_NOM = [
   ['U880A240101', 'Harnais',              'HRN-U88-1601-C', 'EN3645-001-12-05', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
 
   // --- U880R30001 · RADAR H160 ---
-  ['U880R30001',  'Structure boîte',      'U880R30001.01',  '', '', 'Nez',           '1', '600', '400', '1500', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', 'Colonnette | NAS43 | NAS43DD5-40\nÉquerre | AND10133 | AND10133-0606\nInsert | MS21209 | MS21209F4-15', 'Support de câble | MS21919 | MS21919WDG16\nGaine | EN 6049 | EN6049-006-25-2\nCollier | MS3367 | MS3367-7-9', '', ''],
+  ['U880R30001',  'Structure boîte',      'U880R30001.01',  '', '', 'Nez',           '1', '600', '400', '1500', 'A', 'A', 'Cat. S', 'Qual. H160', 'Case 1', 'Colonnette | NAS43 | NAS43DD5-40\nÉquerre | AND10133 | AND10133-0606\nInsert | MS21209 | MS21209F4-15', 'Support de câble | MS21919 | MS21919WDG16\nGaine | EN 6049 | EN6049-006-32-2\nCollier | MS3367 | MS3367-7-9', '', ''],
 
   // --- U880P50001 · POWER H160 ---
   ['U880P50001',  'Harnais',              'HRN-U88-1601-C', 'EN3645-001-12-05', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
@@ -110,7 +110,8 @@ const BASE = {
     // Meme fonction que 332P20001, sur un autre porteur : c'est le candidat
     // au reemploi que la comparaison fait ressortir.
     ['APU',     'U880A240101', 'U880A240051', 'H160',            'Validé',   'Qualified to H160',   'Bouton poussoir | MS24523 | MS24523-22\nVoyant | MS25041 | MS25041-3\nDisjoncteur | MS3320 | MS3320-5', '', ''],
-    ['RADAR',   'U880R30001',  'U880R30051',  'H160',            'Validé',   'Qualified to H160',   'Voyant | MS25041 | MS25041-3\nDisjoncteur | MS3320 | MS3320-10\nConnecteur | MIL-DTL-38999 | D38999/26WD19PN', '', ''],
+    // Ce connecteur n'est PAS au catalogue : monte, mais non maitrise.
+    ['RADAR',   'U880R30001',  'U880R30051',  'H160',            'Validé',   'Qualified to H160',   'Voyant | MS25041 | MS25041-3\nDisjoncteur | MS3320 | MS3320-10\nConnecteur | MIL-DTL-38999 | D38999/26WJ35PN', '', ''],
     ['POWER',   'U880P50001',  'U880P50051',  'H160\nH160M',     'En étude', 'Qualified to H160',   'Disjoncteur | MS3320 | MS3320-10\nRelais | MS27401 | MS27401-1', '', ''],
     ['DISPLAY', 'U880D70001',  'U880D70051',  'H160',            'Validé',   'Qualified to H160',   'Bouton poussoir | MS24523 | MS24523-22\nVoyant | MS25041 | MS25041-3\nRelais | MS27401 | MS27401-1', '', ''],
     ['LIGHT',   '332L90001',   '332L90051',   'Dauphin',         'Validé',   'Qualified to Dauphin','Interrupteur | MS24523 | MS24523-30\nVoyant | MS25041 | MS25041-7', '', ''],

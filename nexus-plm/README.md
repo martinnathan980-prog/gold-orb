@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 1 165 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 1 214 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 792 tests : logique, pondération, serveur, bundle
+npm test                 # 812 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 373 tests dans un vrai Chromium
+npm run test:navigateur  # 402 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -267,26 +267,44 @@ score : « Non comparé, faute de donnée : Masse. Le score porte sur le reste. 
   laisser croire à un retour en arrière exact.
 - Côté serveur, la feuille `9_JOURNAL` enregistre qui a modifié quoi et quand.
 
-## Quatre lectures de la même base
+## Deux espaces, deux bases
 
-Un sélecteur bascule entre **Boîtes**, **Sous-ensembles**, **Composants** et
-**Standardisation**. Une seule base, quatre questions.
+Le sélecteur du haut ne change pas de point de vue : il change de base. Elles
+ne se filtrent pas pareil et ne répondent pas aux mêmes questions.
+
+**Espace Boîtes** — trois lectures de la base des assemblages :
 
 - **Boîtes** : la grille de cartes. « Que contient cette boîte ? »
-- **Sous-ensembles** : une ligne par PN de sous-ensemble, son type, le nombre
-  de boîtes qui le montent et lesquelles. « Où sert ce sous-ensemble ? » —
-  le réemploi pris par l'autre bout.
-- **Composants** : une ligne par composant distinct, où qu'il soit monté —
-  dans une boîte ou dans n'importe quel champ de composants d'un
-  sous-ensemble. Sa famille, sur combien de boîtes il est monté, sur quels
-  porteurs. « Qu'est-ce qu'on monte, et combien de fois ? » — la question de
-  l'approvisionnement. Les plus montés d'abord : ce sont ceux dont une
-  rupture coûte le plus cher. Ceux montés **une seule fois** portent un filet
-  ambre : candidats au regroupement, ou risque d'appro isolé.
-- **Standardisation** : les familles de composants qui se dispersent. Une
-  famille est une catégorie et une fonction. Quand elle porte plusieurs
-  normes, ou plusieurs références sous une même norme, c'est autant de pièces
-  à faire vivre pour le même service. Les plus dispersées d'abord.
+- **Sous-ensembles** : une ligne par PN, son type, les boîtes qui le montent.
+  « Où sert ce sous-ensemble ? » — le réemploi pris par l'autre bout.
+- **Standardisation** : les familles de composants qui se dispersent. « Où la
+  base coûte-t-elle plus qu'elle ne devrait ? »
+
+**Espace Composants** — le référentiel des pièces, avec ses propres filtres,
+sa propre recherche et sa propre bande d'indicateurs. Rien n'est partagé avec
+l'espace Boîtes : revenir aux boîtes n'hérite pas du mot-clé tapé ici.
+
+## L'espace Composants
+
+Il réunit **deux sources qui ne se recouvrent pas** : le catalogue — ce qu'on
+a le droit de monter — et les montages réels — ce qu'on monte effectivement.
+Leur différence est l'information la plus utile de la page.
+
+| État | Ce que ça veut dire |
+|---|---|
+| courant | au catalogue, et monté |
+| **hors catalogue** | monté, mais absent du catalogue : une pièce non maîtrisée |
+| jamais montée | au catalogue, montée nulle part : un référencement qui dort |
+
+L'arbre suit l'ordre dans lequel on cherche une pièce : **famille → fonction →
+norme → référence**. On sait ce qu'on veut faire avant de savoir sous quelle
+norme le chercher. Chaque niveau porte ses comptes, et une norme servie par
+plusieurs références montées est marquée « dispersée ».
+
+Le rail de gauche filtre par famille ; la bande de tête filtre par état — les
+tuiles « montée une fois », « hors catalogue » et « jamais montées » sont des
+boutons. Les premières fonctions, les plus montées, sont ouvertes ; la traîne
+est repliée, et un bouton fait basculer l'ensemble. Ni mur, ni page vide.
 
 ## Pas de duplication
 

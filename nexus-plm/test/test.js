@@ -1181,86 +1181,147 @@ const cB = C.listeComposants('Bouton  poussoir | ECS 7251 | MS-1')[0];
 eq('la comparaison ne les separe pas', C.comparerComposants(cA, cB).ratio, 1);
 
 // =====================================================================
-bloc('Quatrieme lecture : l\'inventaire des composants');
+bloc('La base de composants : catalogue et montages reunis');
 // =====================================================================
+// Ce n'est pas une lecture de la base des boites : c'est une base a part,
+// qui reunit ce qu'on a le DROIT de monter et ce qu'on monte VRAIMENT.
+C.Store.catalogue = [
+  { 'Catégorie': 'composant', 'Fonction': 'Voyant', 'Norme': 'MS25041',
+    'Référence': 'MS25041-3', 'Désignation': 'Indicator light, vert' },
+  { 'Catégorie': 'composant', 'Fonction': 'Voyant', 'Norme': 'MS25041',
+    'Référence': 'MS25041-5', 'Désignation': 'Indicator light, rouge' },
+  { 'Catégorie': 'mecanique', 'Fonction': 'Colonnette', 'Norme': 'NAS43',
+    'Référence': 'NAS43DD3-20', 'Désignation': 'Entretoise 20 mm' }
+];
 charger(
   [{ 'PN Global': 'B1', 'Porteur': 'H225', 'Composants': 'Voyant | MS25041 | MS25041-3' },
    { 'PN Global': 'B2', 'Porteur': 'H160\nH160M', 'Composants': 'Voyant | MS25041 | MS25041-3' },
-   { 'PN Global': 'B3', 'Porteur': 'H225', 'Composants': 'Voyant | MS25041 | MS25041-5' }],
-  [structureAvec('S1', 'B1', 'Colonnette | NAS43 | NAS43DD3-20'),
-   structureAvec('S2', 'B3', 'Colonnette | NAS43 | NAS43DD3-20')]);
+   { 'PN Global': 'B3', 'Porteur': 'H225', 'Composants': 'Connecteur | EN 3645 | CN-INCONNU' }],
+  [structureAvec('S1', 'B1', 'Colonnette | NAS43 | NAS43DD3-20')]);
 
-let invC = C.inventaireComposants(C.Store.boites);
-eq('trois composants distincts', invC.length, 3);
-const voyant = invC.find(function (c) { return c.reference === 'MS25041-3'; });
-vrai('le voyant est recense', !!voyant);
-eq('sur deux boites', voyant.nbBoites, 2);
-eq('nommees', voyant.boites, ['B1', 'B2']);
-eq('et leurs porteurs sont cumules', voyant.porteurs, ['H160', 'H160M', 'H225']);
-eq('la categorie est retenue', voyant.categorie, 'composant');
-// Le classement met en tete le plus monte ; a egalite, l'ordre est stable.
-vrai('les plus montes sont en tete', invC[0].nbBoites >= invC[invC.length - 1].nbBoites);
+let baseC = C.baseComposants(C.Store.boites);
+eq('catalogue et montages sont reunis', baseC.length, 4);
 
-const colonnette = invC.find(function (c) { return c.fonction === 'Colonnette'; });
-vrai('les composants des SOUS-ENSEMBLES comptent aussi', !!colonnette);
-eq('avec leur propre categorie', colonnette.categorie, 'mecanique');
-eq('sur deux boites', colonnette.nbBoites, 2);
+const voyantVert = baseC.find(function (c) { return c.reference === 'MS25041-3'; });
+eq('le voyant monte est courant', voyantVert.etat, C.ETAT_COMPOSANT.COURANT);
+eq('sur deux boites', voyantVert.nbBoites, 2);
+eq('nommees', voyantVert.boites, ['B1', 'B2']);
+eq('porteurs cumules', voyantVert.porteurs, ['H160', 'H160M', 'H225']);
+eq('la designation vient du catalogue', voyantVert.designation, 'Indicator light, vert');
+eq('et on sait d\'ou il est monte', voyantVert.portees, ['Boîte']);
 
-// Deux references differentes sont deux composants, pas un.
-const rouge = invC.find(function (c) { return c.reference === 'MS25041-5'; });
-vrai('une autre reference est une autre ligne', !!rouge);
-eq('montee une seule fois', rouge.nbBoites, 1);
+const voyantRouge = baseC.find(function (c) { return c.reference === 'MS25041-5'; });
+eq('une reference au catalogue que personne ne monte est DORMANTE',
+   voyantRouge.etat, C.ETAT_COMPOSANT.DORMANT);
+eq('sans aucune boite', voyantRouge.nbBoites, 0);
 
-// Le meme composant pose deux fois dans la meme boite : une boite, deux montages.
-charger([{ 'PN Global': 'B1',
-           'Composants': 'Voyant | MS25041 | MS25041-3\nVoyant | MS25041 | MS25041-3' }], []);
-invC = C.inventaireComposants(C.Store.boites);
-eq('une seule ligne', invC.length, 1);
-eq('une seule boite', invC[0].nbBoites, 1);
+// Le cas le plus utile : une piece montee que le catalogue ne connait pas.
+const inconnu = baseC.find(function (c) { return c.reference === 'CN-INCONNU'; });
+eq('un composant monte hors catalogue est signale', inconnu.etat, C.ETAT_COMPOSANT.HORS);
+faux('il n\'est pas au catalogue', inconnu.auCatalogue);
+eq('mais il est bien monte', inconnu.nbBoites, 1);
 
-// L'inventaire suit les filtres, comme les trois autres vues.
+const colonnette = baseC.find(function (c) { return c.reference === 'NAS43DD3-20'; });
+eq('les composants des sous-ensembles comptent', colonnette.nbBoites, 1);
+eq('avec leur categorie', colonnette.categorie, 'mecanique');
+eq('et la portee d\'ou ils viennent', colonnette.portees, ['Structure boîte']);
+
+// Le bilan.
+const bil = C.bilanComposants(baseC);
+eq('quatre references', bil.references, 4);
+eq('trois montees', bil.montes, 3);
+eq('deux montees une seule fois', bil.isoles, 2);
+eq('une dormante', bil.dormants, 1);
+eq('une hors catalogue', bil.hors, 1);
+
+// L'arbre : famille -> fonction -> norme -> references.
+const arbre = C.arbreComposants(baseC);
+eq('deux familles', arbre.length, 2);
+eq('les composants de boite d\'abord', arbre[0].cle, 'composant');
+eq('puis la mecanique', arbre[1].cle, 'mecanique');
+const fVoyant = arbre[0].fonctions.find(function (f) { return f.libelle === 'Voyant'; });
+eq('le voyant porte deux references', fVoyant.references, 2);
+eq('sous une seule norme', fVoyant.normes.length, 1);
+// Une seule des deux est montee : ce n'est PAS de la dispersion.
+faux('une seule reference montee ne disperse rien', fVoyant.normes[0].dispersee);
+
+// Deux references montees sous la meme norme, la : c'est disperse.
 charger(
-  [{ 'PN Global': 'B1', 'Statut': 'Validé',   'Composants': 'Voyant | MS25041 | MS25041-3' },
-   { 'PN Global': 'B2', 'Statut': 'En étude', 'Composants': 'Relais | MS27401 | MS27401-1' }], []);
-eq('sans filtre, deux composants',
-   C.inventaireComposants(C.calculerVue().aAfficher).length, 2);
-C.Store.filtreStatut = 'Validé';
-eq('filtre sur les validees, un seul',
-   C.inventaireComposants(C.calculerVue().aAfficher).length, 1);
-C.Store.filtreStatut = null;
+  [{ 'PN Global': 'B1', 'Composants': 'Voyant | MS25041 | MS25041-3' },
+   { 'PN Global': 'B2', 'Composants': 'Voyant | MS25041 | MS25041-5' }], []);
+const arbre2 = C.arbreComposants(C.baseComposants(C.Store.boites));
+vrai('deux references montees sous une norme, c\'est disperse',
+     arbre2[0].fonctions[0].normes[0].dispersee);
+vrai('et la fonction est signalee', arbre2[0].fonctions[0].dispersee);
 
-eq('base vide', C.inventaireComposants([]), []);
-
-// Le bilan de tete.
+// Les filtres de l'espace, qui ne partagent rien avec ceux des boites.
+C.Store.catalogue = [];
 charger(
-  [{ 'PN Global': 'B1', 'Composants': 'Voyant | MS25041 | MS25041-3\nRelais | MS27401 | MS27401-1' },
-   { 'PN Global': 'B2', 'Composants': 'Voyant | MS25041 | MS25041-3' }], []);
-const bilan = C.bilanComposants(C.inventaireComposants(C.Store.boites));
-eq('deux references', bilan.references, 2);
-eq('deux fonctions', bilan.fonctions, 2);
-eq('deux normes', bilan.normes, 2);
-eq('trois montages', bilan.montages, 3);
-eq('un seul composant monte dans une seule boite', bilan.uniques, 1);
+  [{ 'PN Global': 'B1', 'Statut': 'Validé',
+     'Composants': 'Voyant | MS25041 | MS25041-3\nRelais | MS27401 | MS27401-1' },
+   { 'PN Global': 'B2', 'Statut': 'En étude', 'Composants': 'Voyant | MS25041 | MS25041-3' }],
+  [structureAvec('S1', 'B1', 'Colonnette | NAS43 | NAS43DD3-20')]);
+const remettre = function () {
+  ['famille', 'fonction', 'norme', 'etat', 'emploi'].forEach(function (c) { C.Store.compo[c] = null; });
+  C.Store.compo.recherche = '';
+};
+remettre();
+eq('sans filtre, tout', C.composantsFiltres(C.Store.boites).length, 3);
+faux('et aucun filtre actif', C.filtreComposantActif());
 
-// Le rendu, echappement compris.
+C.Store.compo.famille = 'mecanique';
+eq('filtre par famille', C.composantsFiltres(C.Store.boites).length, 1);
+vrai('le filtre se sait actif', C.filtreComposantActif());
+remettre();
+
+C.Store.compo.emploi = 'partage';
+eq('seuls les partages', C.composantsFiltres(C.Store.boites).map(function (c) { return c.reference; }),
+   ['MS25041-3']);
+C.Store.compo.emploi = 'isole';
+eq('seuls les isoles', C.composantsFiltres(C.Store.boites).length, 2);
+remettre();
+
+C.Store.compo.recherche = 'relais';
+eq('la recherche porte sur les quatre champs',
+   C.composantsFiltres(C.Store.boites).map(function (c) { return c.reference; }), ['MS27401-1']);
+C.Store.compo.recherche = 'NAS43';
+eq('la norme aussi', C.composantsFiltres(C.Store.boites).length, 1);
+remettre();
+
+// La recherche des composants ne touche PAS celle des boites.
+C.Store.compo.recherche = 'relais';
+C.Store.recherche = '';
+eq('les deux recherches sont independantes', C.calculerVue().aAfficher.length, 2);
+remettre();
+
+// Le rendu.
 charger([{ 'PN Global': 'B"1', 'Composants': '<b>V</b> | <i>N</i> | <u>R</u>' }], []);
-const htmlCompo = C.composantsHtml(C.calculerVue());
-faux('un composant piege n\'injecte rien', /<b>V<\/b>|<i>N<\/i>/.test(htmlCompo));
-vrai('il est affiche echappe', htmlCompo.indexOf('&lt;b&gt;V&lt;/b&gt;') !== -1);
-vrai('la boite est depliable', htmlCompo.indexOf('data-action="deplier-composant"') !== -1);
-vrai('et menе a sa fiche', htmlCompo.indexOf('data-action="ouvrir-fiche"') !== -1);
+const htmlBase = C.composantsHtml(C.calculerVue());
+faux('un composant piege n\'injecte rien', /<b>V<\/b>|<i>N<\/i>/.test(htmlBase));
+vrai('il est affiche echappe', htmlBase.indexOf('&lt;b&gt;V&lt;/b&gt;') !== -1);
+vrai('la reference est depliable', htmlBase.indexOf('data-action="deplier-composant"') !== -1);
+vrai('la famille se filtre', htmlBase.indexOf('data-champ="famille"') !== -1);
+vrai('et la fonction se replie', htmlBase.indexOf('data-action="basculer-fonction"') !== -1);
 charger([{ 'PN Global': 'B1' }], []);
-vrai('sans composant, on le dit',
-     C.composantsHtml(C.calculerVue()).indexOf('etat-vide') !== -1);
+C.Store.catalogue = [];
+vrai('baseC vide, on le dit', C.composantsHtml(C.calculerVue()).indexOf('etat-vide') !== -1);
 
-// Le mode de vue accepte la quatrieme lecture.
+// L'espace est memorise, et « composants » n'est plus une lecture.
+C.Store.espace = 'composants';
+C.enregistrerReglages();
+C.Store.espace = 'boites';
+C.chargerReglages();
+eq('l\'espace est relu', C.Store.espace, 'composants');
+C.Store.espace = 'boites';
 C.Store.vueMode = 'composants';
 C.enregistrerReglages();
 C.Store.vueMode = 'boites';
 C.chargerReglages();
-eq('le mode composants est relu', C.Store.vueMode, 'composants');
-C.Store.vueMode = 'boites';
+eq('« composants » n\'est plus une lecture de l\'espace boites', C.Store.vueMode, 'boites');
 C.enregistrerReglages();
+
+// Le seuil de doublon monte a 95 % : en deca, deux PN proches n'en sont pas.
+eq('le seuil de doublon est a 95 %', C.SEUIL_DOUBLON, 95);
 
 // =====================================================================
 bloc('Favoris de ponderation');
@@ -1531,10 +1592,17 @@ eq('un composant sans fonction n\'est pas indexe',
 bloc('Doublons : ce qui les separe, pas seulement leur score');
 // =====================================================================
 // Une structure porte plusieurs criteres : c'est la qu'un ecart se voit.
+// Une structure COMPLETE : le seuil etant a 95 %, il faut que tous les
+// criteres soient renseignes pour qu'un ecart pese son vrai poids.
 const structDetaillee = function (id, pn, modifs) {
   return Object.assign({ 'ID_Ligne': id, 'PN Global': pn, 'Type': 'Structure boîte',
-    'PN du type': pn + '.01', 'Montage': 'Console STD', 'Dim Long (mm)': '500',
-    'Dim Larg (mm)': '140', 'Masse (g)': '500', 'HL': 'A', 'DAL': 'A' }, modifs || {});
+    'PN du type': pn + '.01', 'Montage': 'Console STD', 'Nombre de pas': '1',
+    'Dim Long (mm)': '500', 'Dim Larg (mm)': '140', 'Masse (g)': '500',
+    'HL': 'A', 'DAL': 'A',
+    'Qualification Brouillard salin': 'Cat. S', 'Qualification Vibration': 'Qual. H225',
+    'Qualification Explosion': 'Case 1',
+    'Composants mécaniques': 'Colonnette | NAS43 | NAS43DD3-20',
+    'Composants routing': 'Collier | MS3367 | MS3367-4-9' }, modifs || {});
 };
 charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],
   [structDetaillee('S1', 'B1'), structDetaillee('S2', 'B2', { 'DAL': 'B' })]);
@@ -1551,8 +1619,16 @@ vrai('avec un critere identique', dOut.indexOf('Console STD') !== -1);
 vrai('on peut ouvrir la comparaison complete',
      dOut.indexOf('data-action="comparer-depuis-doublons"') !== -1);
 vrai('sur l\'identifiant de ligne, pas sur le PN', dOut.indexOf('data-id="S1"') !== -1);
-vrai('ce qui n\'a pas pu etre compare est dit',
-     dOut.indexOf('Non comparé, faute de donnée') !== -1);
+// Tout est renseigne sur cette paire : il n'y a rien d'incomparable a dire.
+faux('rien n\'est laisse de cote', dOut.indexOf('Non comparé, faute de donnée') !== -1);
+// Mais quand une donnee manque, on le nomme plutot que de l'ignorer.
+charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],
+  [structDetaillee('S1', 'B1', { 'Nombre de pas': '' }),
+   structDetaillee('S2', 'B2', { 'Nombre de pas': '', 'DAL': 'B' })]);
+const paireTrouee = C.compterDoublonsProbables(C.Store.boites).paires[0];
+vrai('la paire tient quand meme', !!paireTrouee);
+vrai('et ce qui manque est nomme',
+     C.doublonHtml(paireTrouee).indexOf('Non comparé, faute de donnée') !== -1);
 
 // Deux pieces que rien ne separe : on le dit, au lieu d'une section vide.
 charger([{ 'PN Global': 'B1' }, { 'PN Global': 'B2' }],

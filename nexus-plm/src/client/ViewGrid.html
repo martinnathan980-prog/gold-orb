@@ -45,13 +45,43 @@ function filtresTypeHtml() {
  * « que contient cette boîte », l'inventaire « où sert cette pièce ».
  */
 function selecteurVueHtml() {
-  return '<div class="choix-vue" role="group" aria-label="Mode d\'affichage">' +
+  if (Store.espace !== 'boites') return '';
+  return '<div class="choix-vue" role="group" aria-label="Lecture de la base">' +
     [['boites', 'Boîtes'], ['pieces', 'Sous-ensembles'],
-     ['composants', 'Composants'], ['standardisation', 'Standardisation']].map(function (v) {
+     ['standardisation', 'Standardisation']].map(function (v) {
       const actif = Store.vueMode === v[0];
       return '<button type="button" class="onglet-vue' + (actif ? ' actif' : '') + '"' +
              dataAttrs({ action: 'changer-vue', vue: v[0] }) +
              ' aria-pressed="' + actif + '">' + esc(v[1]) + '</button>';
+    }).join('') +
+  '</div>';
+}
+
+/**
+ * LE SÉLECTEUR D'ESPACE
+ * Deux bases, pas deux vues : les boîtes d'un côté, les composants de
+ * l'autre. Elles ne se filtrent pas pareil et ne répondent pas aux mêmes
+ * questions — il faut que ça se voie avant de cliquer.
+ */
+function selecteurEspaceHtml() {
+  const espaces = [
+    { cle: 'boites', libelle: 'Boîtes', icone: '◼',
+      aide: 'assemblages, sous-ensembles, standardisation' },
+    { cle: 'composants', libelle: 'Composants', icone: '⬡',
+      aide: 'le référentiel des pièces montées' }
+  ];
+  return '<div class="choix-espace" role="tablist" aria-label="Base consultée">' +
+    espaces.map(function (e) {
+      const actif = Store.espace === e.cle;
+      return '<button type="button" role="tab" class="espace' + (actif ? ' actif' : '') + '"' +
+        dataAttrs({ action: 'changer-espace', espace: e.cle }) +
+        ' aria-selected="' + actif + '">' +
+        '<span class="espace-icone" aria-hidden="true">' + e.icone + '</span>' +
+        '<span class="espace-texte">' +
+          '<span class="espace-nom">' + esc(e.libelle) + '</span>' +
+          '<span class="espace-aide">' + esc(e.aide) + '</span>' +
+        '</span>' +
+      '</button>';
     }).join('') +
   '</div>';
 }
@@ -89,71 +119,100 @@ function piecesHtml(vue) {
   '</div>';
 }
 
-/**
- * L'inventaire des COMPOSANTS : une ligne par composant distinct, avec ce
- * qu'il faut pour décider — sa catégorie, ses trois niveaux, sur combien de
- * boîtes il est monté, et sur quels porteurs. Les plus montés d'abord :
- * ce sont ceux dont une rupture d'approvisionnement coûte le plus cher.
- */
-function composantsHtml(vue) {
-  const composants = inventaireComposants(vue.aAfficher);
-  if (!composants.length) {
-    return '<div class="etat-vide">' +
-      '<p>Aucun composant à inventorier.</p>' +
-      '<p class="etat-vide-aide">Renseignez les composants des boîtes et de ' +
-      'leurs sous-ensembles pour les voir apparaître ici.</p>' +
-    '</div>';
-  }
+// ============================================================
+// ESPACE COMPOSANTS — une base à part, avec ses propres filtres
+// ============================================================
 
-  const bilan = bilanComposants(composants);
-  const maxi = composants[0].nbBoites || 1;
+/** La bande de tête : ce que contient la base, et ce qui y cloche. */
+function bandeComposantsHtml(bilan, total) {
+  const mesure = function (n, libelle, aide, classe, action, valeur) {
+    const actif = action && Store.compo[action.champ] === valeur;
+    const corps =
+      '<span class="cb-n">' + n + '</span>' +
+      '<span class="cb-libelle">' + esc(libelle) + '</span>' +
+      (aide ? '<span class="cb-aide">' + esc(aide) + '</span>' : '');
+    if (!action) return '<div class="cb-mesure ' + (classe || '') + '">' + corps + '</div>';
+    return '<button type="button" class="cb-mesure cb-cliquable ' + (classe || '') +
+      (actif ? ' actif' : '') + '"' +
+      dataAttrs({ action: 'filtrer-composants', champ: action.champ, valeur: actif ? '' : valeur }) +
+      ' aria-pressed="' + actif + '">' + corps + '</button>';
+  };
 
-  return '<div class="compo-bilan">' +
-      '<span><b>' + bilan.references + '</b> références distinctes</span>' +
-      '<span><b>' + bilan.fonctions + '</b> fonctions</span>' +
-      '<span><b>' + bilan.normes + '</b> normes</span>' +
-      '<span><b>' + bilan.montages + '</b> montages au total</span>' +
-      (bilan.uniques
-        ? '<span class="compo-bilan-seul"><b>' + bilan.uniques +
-          '</b> montée' + (bilan.uniques > 1 ? 's' : '') + ' dans une seule boîte</span>'
-        : '') +
-    '</div>' +
-    '<div class="inventaire inventaire-compo">' +
-      '<div class="inventaire-entete">' +
-        '<span>Composant</span><span>Norme</span><span>Référence</span>' +
-        '<span>Famille</span><span>Emploi</span><span>Porteurs</span>' +
-      '</div>' +
-      composants.map(function (c) { return ligneComposantHtml(c, maxi); }).join('') +
-    '</div>';
+  return '<div class="compo-bande">' +
+    mesure(bilan.references, 'références', total !== bilan.references
+             ? 'sur ' + total + ' au total' : 'dans la base', 'cb-total') +
+    mesure(bilan.fonctions, 'fonctions', 'services rendus') +
+    mesure(bilan.normes, 'normes', 'référentiels cités') +
+    mesure(bilan.montages, 'montages', 'occurrences réelles') +
+    mesure(bilan.isoles, 'montée une fois', 'appro isolé', 'cb-ambre',
+           { champ: 'emploi' }, 'isole') +
+    mesure(bilan.hors, 'hors catalogue', 'non maîtrisées', 'cb-rouge',
+           { champ: 'etat' }, ETAT_COMPOSANT.HORS) +
+    mesure(bilan.dormants, 'jamais montées', 'au catalogue seul', 'cb-doux',
+           { champ: 'etat' }, ETAT_COMPOSANT.DORMANT) +
+  '</div>';
 }
 
-function ligneComposantHtml(c, maxi) {
-  const cat = CATEGORIES_COMPOSANT[c.categorie] || CATEGORIES_COMPOSANT.composant;
-  const seul = c.nbBoites <= 1;
-  const part = Math.max(4, Math.round((c.nbBoites / (maxi || 1)) * 100));
+/** Le rail de gauche : les familles, puis les filtres posés. */
+function railComposantsHtml(toutes) {
+  const parFamille = {};
+  toutes.forEach(function (c) { parFamille[c.categorie] = (parFamille[c.categorie] || 0) + 1; });
 
-  return '<div class="compo-ligne' + (seul ? ' compo-seul' : '') + '">' +
-    '<span class="compo-fonction">' + esc(txt(c.fonction, 'fonction non précisée')) + '</span>' +
-    '<span class="compo-norme">' + esc(txt(c.norme, '—')) + '</span>' +
-    '<span class="compo-reference">' + esc(txt(c.reference, '—')) + '</span>' +
-    '<span class="compo-famille compo-fam-' + esc(c.categorie) + '">' + esc(cat.libelle) + '</span>' +
-    '<span class="compo-emploi">' +
-      '<span class="compo-jauge" aria-hidden="true">' +
-        '<span style="width:' + part + '%"></span></span>' +
-      '<button type="button" class="compo-compte"' +
-        dataAttrs({ action: 'deplier-composant' }) + ' aria-expanded="false"' +
-        ' title="Voir les boîtes qui le montent">' +
-        c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte') +
-        (c.montages > c.nbBoites ? ' · ' + c.montages + ' montages' : '') +
-      '</button>' +
-      '<span class="compo-boites" hidden>' +
-        c.boites.map(function (pn) {
-          return '<button type="button" class="usage-lien"' +
-                 dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
-        }).join('') +
+  const familles = Object.keys(CATEGORIES_COMPOSANT).map(function (cle) {
+    const cat = CATEGORIES_COMPOSANT[cle];
+    const actif = Store.compo.famille === cle;
+    return '<button type="button" class="cf-famille' + (actif ? ' actif' : '') + '"' +
+      dataAttrs({ action: 'filtrer-composants', champ: 'famille', valeur: actif ? '' : cle }) +
+      ' aria-pressed="' + actif + '">' +
+      '<span class="cf-pastille cf-' + esc(cle) + '" aria-hidden="true"></span>' +
+      '<span class="cf-texte">' +
+        '<span class="cf-nom">' + esc(cat.libelle) + '</span>' +
+        '<span class="cf-aide">' + esc(cat.aide) + '</span>' +
       '</span>' +
+      '<span class="cf-n">' + (parFamille[cle] || 0) + '</span>' +
+    '</button>';
+  }).join('');
+
+  return '<aside class="compo-rail" aria-label="Familles de composants">' +
+    '<h3 class="compo-rail-titre">Familles</h3>' +
+    '<div class="cf-liste">' + familles + '</div>' +
+    (filtreComposantActif()
+      ? '<button type="button" class="cf-effacer"' +
+        dataAttrs({ action: 'effacer-filtres-composants' }) + '>Tout réafficher</button>'
+      : '') +
+  '</aside>';
+}
+
+/** Une référence : la ligne la plus fine de la base. */
+function ligneReferenceHtml(c, maxi) {
+  const part = c.nbBoites ? Math.max(5, Math.round((c.nbBoites / (maxi || 1)) * 100)) : 0;
+  const etat = c.etat === ETAT_COMPOSANT.HORS
+    ? '<span class="cr-etat cr-hors" title="Monté mais absent du catalogue">hors catalogue</span>'
+    : c.etat === ETAT_COMPOSANT.DORMANT
+      ? '<span class="cr-etat cr-dormant" title="Au catalogue, monté nulle part">jamais montée</span>'
+      : '';
+
+  return '<div class="cr-ligne' + (c.nbBoites === 1 ? ' cr-isole' : '') + '">' +
+    '<span class="cr-ref">' + esc(txt(c.reference, 'sans référence')) + '</span>' +
+    '<span class="cr-designation">' + (c.designation ? esc(c.designation) : '<span class="vide">—</span>') + etat + '</span>' +
+    '<span class="cr-emploi">' +
+      (c.nbBoites
+        ? '<span class="cr-jauge" aria-hidden="true"><span style="width:' + part + '%"></span></span>' +
+          '<button type="button" class="cr-compte"' +
+            dataAttrs({ action: 'deplier-composant' }) + ' aria-expanded="false"' +
+            ' title="Voir les boîtes qui la montent">' +
+            c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte') +
+            (c.montages > c.nbBoites ? ' · ' + c.montages + ' montages' : '') +
+          '</button>' +
+          '<span class="cr-boites" hidden>' +
+            c.boites.map(function (pn) {
+              return '<button type="button" class="usage-lien"' +
+                     dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
+            }).join('') +
+          '</span>'
+        : '<span class="cr-jamais">non montée</span>') +
     '</span>' +
-    '<span class="compo-porteurs">' +
+    '<span class="cr-porteurs">' +
       (c.porteurs.length
         ? c.porteurs.map(function (p) {
             return '<span class="puce-porteur puce-porteur-mini">' + esc(p) + '</span>';
@@ -161,6 +220,136 @@ function ligneComposantHtml(c, maxi) {
         : '<span class="vide">—</span>') +
     '</span>' +
   '</div>';
+}
+
+/** Une norme et ses références. */
+function blocNormeHtml(norme, maxi) {
+  const n = norme.lignes.length;
+  return '<div class="cn-bloc' + (norme.dispersee ? ' cn-dispersee' : '') + '">' +
+    '<div class="cn-tete">' +
+      '<span class="cn-nom">' + esc(norme.libelle) + '</span>' +
+      '<span class="cn-compte">' + n + (n > 1 ? ' références' : ' référence') + '</span>' +
+      (norme.dispersee
+        ? '<span class="cn-alerte" title="Plusieurs références montées sous la même norme">' +
+          'dispersée</span>'
+        : '') +
+    '</div>' +
+    '<div class="cn-references">' +
+      '<div class="cr-entete"><span>Référence</span><span>Désignation</span>' +
+        '<span>Emploi</span><span>Porteurs</span></div>' +
+      norme.lignes.map(function (l) { return ligneReferenceHtml(l, maxi); }).join('') +
+    '</div>' +
+  '</div>';
+}
+
+/** Une fonction et ses normes. C'est le niveau auquel on cherche. */
+// Tout ouvrir fait un mur ; tout replier ouvre sur une page vide. On ouvre
+// donc les premières — ce sont les plus montées, elles sont triées ainsi — et
+// on replie la traîne, qu'on déplie quand on la cherche.
+const FONCTIONS_OUVERTES = 5;
+
+function blocFonctionHtml(fonction, maxi, cleFamille, replieParDefaut) {
+  const id = cleFamille + '::' + normaliserTexte(fonction.libelle);
+  const choisi = Store.compo.deplies[id];
+  const ouvert = choisi === undefined ? !replieParDefaut : choisi !== false;
+
+  return '<section class="cfo-bloc' + (ouvert ? '' : ' replie') + '">' +
+    '<button type="button" class="cfo-tete"' +
+      dataAttrs({ action: 'basculer-fonction', fonction: id }) +
+      ' aria-expanded="' + ouvert + '">' +
+      '<span class="cfo-chevron" aria-hidden="true">' + (ouvert ? '▾' : '▸') + '</span>' +
+      '<span class="cfo-nom">' + esc(fonction.libelle) + '</span>' +
+      '<span class="cfo-chiffres">' +
+        '<b>' + fonction.references + '</b> réf.' +
+        ' · <b>' + fonction.normes.length + '</b> norme' + (fonction.normes.length > 1 ? 's' : '') +
+        ' · <b>' + fonction.nbBoites + '</b> boîte' + (fonction.nbBoites > 1 ? 's' : '') +
+      '</span>' +
+      (fonction.dispersee
+        ? '<span class="cfo-alerte" title="Plusieurs références pour le même service">à ranger</span>'
+        : '') +
+    '</button>' +
+    (ouvert
+      ? '<div class="cfo-corps">' +
+          fonction.normes.map(function (n) { return blocNormeHtml(n, maxi); }).join('') +
+        '</div>'
+      : '') +
+  '</section>';
+}
+
+/** L'espace Composants au complet. */
+function composantsHtml(vue) {
+  const toutes = baseComposants(vue.aAfficher);
+  const retenues = composantsFiltres(vue.aAfficher);
+  const bilan = bilanComposants(retenues);
+  const arbre = arbreComposants(retenues);
+  const maxi = retenues.reduce(function (m, c) { return Math.max(m, c.nbBoites); }, 1);
+
+  const nbFonctions = arbre.reduce(function (t, f) { return t + f.fonctions.length; }, 0);
+
+  // Le rang d'une fonction dans l'arbre décide de son état par défaut. Quand
+  // un filtre a déjà réduit la liste, on ouvre tout : on l'a demandée.
+  const rangs = {};
+  let rang = 0;
+  arbre.forEach(function (f) {
+    f.fonctions.forEach(function (fo) {
+      rangs[f.cle + '::' + normaliserTexte(fo.libelle)] = rang++;
+    });
+  });
+  const replieParRang = function (id) {
+    return nbFonctions > FONCTIONS_OUVERTES && rangs[id] >= FONCTIONS_OUVERTES;
+  };
+  const estOuverte = function (id) {
+    const choisi = Store.compo.deplies[id];
+    return choisi === undefined ? !replieParRang(id) : choisi !== false;
+  };
+  const ouvertes = Object.keys(rangs).filter(estOuverte).length;
+
+  const barre = arbre.length
+    ? '<div class="compo-barre">' +
+        '<span class="compo-barre-compte">' +
+          nbFonctions + ' fonction' + (nbFonctions > 1 ? 's' : '') +
+          ' · ' + retenues.length + ' référence' + (retenues.length > 1 ? 's' : '') +
+        '</span>' +
+        '<button type="button" class="compo-barre-btn"' +
+          dataAttrs({ action: 'deplier-tout-composants',
+                      ouvrir: String(ouvertes < nbFonctions) }) + '>' +
+          (ouvertes < nbFonctions ? 'Tout déplier' : 'Tout replier') +
+        '</button>' +
+      '</div>'
+    : '';
+
+  const corps = arbre.length
+    ? arbre.map(function (f) {
+        return '<section class="cfa-bloc">' +
+          '<header class="cfa-tete">' +
+            '<span class="cf-pastille cf-' + esc(f.cle) + '" aria-hidden="true"></span>' +
+            '<h2 class="cfa-nom">' + esc(f.libelle) + '</h2>' +
+            '<span class="cfa-chiffres">' +
+              f.references + ' référence' + (f.references > 1 ? 's' : '') +
+              ' · ' + f.fonctions.length + ' fonction' + (f.fonctions.length > 1 ? 's' : '') +
+              ' · ' + f.montages + ' montage' + (f.montages > 1 ? 's' : '') +
+            '</span>' +
+          '</header>' +
+          f.fonctions.map(function (fo) {
+            const id = f.cle + '::' + normaliserTexte(fo.libelle);
+            return blocFonctionHtml(fo, maxi, f.cle, replieParRang(id));
+          }).join('') +
+        '</section>';
+      }).join('')
+    : '<div class="etat-vide">' +
+        '<p>Aucun composant ne correspond.</p>' +
+        '<p class="etat-vide-aide">' +
+        (filtreComposantActif()
+          ? 'Relâchez un filtre, ou réaffichez tout.'
+          : 'Renseignez le catalogue et les composants des boîtes.') +
+        '</p>' +
+      '</div>';
+
+  return bandeComposantsHtml(bilan, toutes.length) +
+    '<div class="compo-corps">' +
+      railComposantsHtml(toutes) +
+      '<div class="compo-arbre">' + barre + corps + '</div>' +
+    '</div>';
 }
 
 /**
@@ -334,27 +523,43 @@ function grilleHtml(vue) {
 
 function rendreInterface() {
   const vue = calculerVue();
-  const mode = Store.vueMode;
-  definirHtml('functionTabs', ongletsHtml(vue));
-  definirHtml('filtresType', filtresTypeHtml());
+  const composants = Store.espace === 'composants';
+  const mode = composants ? 'composants' : Store.vueMode;
+
+  definirHtml('zoneEspace', selecteurEspaceHtml());
+  document.body.classList.toggle('espace-composants', composants);
+
+  // L'espace Composants a ses propres filtres : ceux des boîtes ne s'y
+  // appliquent pas, et les afficher laisserait croire le contraire.
+  definirHtml('functionTabs', composants ? '' : ongletsHtml(vue));
+  definirHtml('filtresType', composants ? '' : filtresTypeHtml());
   definirHtml('zoneVue', selecteurVueHtml());
-  definirHtml('zoneTri', mode === 'boites' ? triHtml() : '');
+  definirHtml('zoneTri', (!composants && mode === 'boites') ? triHtml() : '');
+
+  const recherche = parId('searchBar');
+  if (recherche) {
+    recherche.placeholder = composants
+      ? 'Rechercher une fonction, une norme, une référence…'
+      : 'Rechercher un PN, une fonction, une référence, un mot-clé…';
+    const attendue = composants ? Store.compo.recherche : Store.recherche;
+    if (recherche.value !== attendue) recherche.value = attendue;
+  }
 
   const contenant = parId('mainContainer');
-  if (contenant) contenant.classList.toggle('grille', mode === 'boites');
+  if (contenant) contenant.classList.toggle('grille', !composants && mode === 'boites');
   definirHtml('mainContainer',
+    composants ? composantsHtml(vue) :
     mode === 'pieces' ? piecesHtml(vue) :
-    mode === 'composants' ? composantsHtml(vue) :
     mode === 'standardisation' ? standardisationHtml(vue) : grilleHtml(vue));
 
-  if (mode === 'pieces') {
+  if (composants) {
+    const n = composantsFiltres(vue.aAfficher).length;
+    definirTexte('bilanResultats',
+                 n + (n > 1 ? ' références' : ' référence'));
+  } else if (mode === 'pieces') {
     const n = inventairePieces(vue.aAfficher).length;
     definirTexte('bilanResultats',
                  n + (n > 1 ? ' sous-ensembles distincts' : ' sous-ensemble'));
-  } else if (mode === 'composants') {
-    const n = inventaireComposants(vue.aAfficher).length;
-    definirTexte('bilanResultats',
-                 n + (n > 1 ? ' composants distincts' : ' composant'));
   } else if (mode === 'standardisation') {
     const n = opportunitesStandardisation(vue.aAfficher).length;
     definirTexte('bilanResultats',

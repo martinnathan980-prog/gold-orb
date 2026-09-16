@@ -227,6 +227,9 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .btn-dans-champ:hover, .btn-dans-champ.actif { background: var(--marque); color: var(--sur-marque); border-color: var(--marque); }
 
 /* ---------------- barre d'outils ---------------- */
+/* Dans l'espace composants, la bande de tete dit tout ce que cette barre
+   disait : on ne repete pas le meme compte a deux endroits. */
+body.espace-composants .outils { display: none; }
 .outils {
   display: flex; align-items: center; justify-content: space-between;
   gap: var(--e-3); flex-wrap: wrap; margin-bottom: var(--e-3);
@@ -420,66 +423,197 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
   .famille-norme { grid-template-columns: 1fr; gap: 4px; }
 }
 
-/* ---------------- inventaire des composants ---------------- */
-/* Quatrieme lecture de la base : ce qu'on monte, et combien de fois. */
-.compo-bilan {
-  display: flex; flex-wrap: wrap; gap: var(--e-2) var(--e-5);
-  padding: 0 2px var(--e-3); margin-bottom: var(--e-3);
-  border-bottom: 1px solid var(--trait);
-  font-size: 12.5px; color: var(--encre-3);
-}
-.compo-bilan b { font-family: var(--police-data); font-size: 14px; color: var(--encre); font-weight: 700; }
-.compo-bilan-seul { color: var(--ambre); }
-.compo-bilan-seul b { color: var(--ambre); }
+/* ================= ESPACE COMPOSANTS =================
+   Une base a part, pas une lecture de plus : elle a son propre selecteur,
+   sa propre bande de tete, son rail de familles et son arbre. */
 
-.inventaire-compo .inventaire-entete,
-.compo-ligne {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) minmax(0, 1.15fr) 150px 190px minmax(0, 1fr);
+/* Le selecteur d'espace : plus fort que les onglets de lecture, parce que
+   c'est un changement de base, pas un changement de point de vue. */
+.choix-espace {
+  display: flex; gap: var(--e-2); margin-bottom: var(--e-4);
+  border-bottom: 1px solid var(--trait); padding-bottom: var(--e-3);
+}
+.espace {
+  display: flex; align-items: center; gap: var(--e-3); text-align: left;
+  padding: 9px 16px 9px 13px; border: 1px solid var(--trait);
+  border-radius: var(--r-m); background: var(--surface); color: var(--encre-2);
+  min-width: 0; flex: 0 1 auto; transition: background .15s, border-color .15s, color .15s;
+}
+.espace:hover { background: var(--surface-3); border-color: var(--trait-fort); color: var(--encre); }
+.espace.actif {
+  background: var(--marque); border-color: var(--marque); color: var(--sur-marque);
+  box-shadow: var(--ombre-1);
+}
+.espace-icone { font-size: 17px; line-height: 1; flex: none; }
+.espace-texte { display: flex; flex-direction: column; min-width: 0; }
+.espace-nom { font-size: 14px; font-weight: 700; letter-spacing: .01em; }
+.espace-aide { font-size: 11px; color: var(--encre-3); line-height: 1.35; }
+.espace.actif .espace-aide { color: var(--sur-marque); opacity: .78; }
+@media (max-width: 620px) {
+  .choix-espace { flex-direction: column; }
+  .espace { width: 100%; }
+}
+
+/* La bande de tete : ce que contient la base, et ce qui y cloche. */
+.compo-bande {
+  display: flex; flex-wrap: wrap; align-items: stretch;
+  border: 1px solid var(--trait); border-radius: var(--r-m); overflow: hidden;
+  background: var(--surface); margin-bottom: var(--e-4);
+}
+.cb-mesure {
+  flex: 1 1 128px; min-width: 112px; padding: 11px 14px 12px;
+  display: flex; flex-direction: column; gap: 1px; text-align: left;
+  border: 0; border-left: 1px solid var(--trait); background: none; color: var(--encre);
+}
+.cb-mesure:first-child { border-left: 0; }
+.cb-cliquable { transition: background .15s; }
+.cb-cliquable:hover { background: var(--sol-2); }
+.cb-cliquable.actif { background: var(--marque-voile); box-shadow: inset 0 -2px 0 var(--marque); }
+.cb-n {
+  font-family: var(--police-titre); font-size: 24px; font-weight: 700; line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.cb-libelle { font-size: 11.5px; font-weight: 600; color: var(--encre-2); }
+.cb-aide { font-size: 10.5px; color: var(--encre-3); line-height: 1.35; }
+.cb-total .cb-n { color: var(--marque); }
+.cb-ambre .cb-n { color: var(--ambre); }
+.cb-rouge .cb-n { color: var(--rouge); }
+.cb-doux .cb-n { color: var(--encre-3); }
+
+/* Le corps : rail des familles a gauche, arbre a droite. */
+.compo-corps { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: var(--e-4); align-items: start; }
+@media (max-width: 860px) { .compo-corps { grid-template-columns: 1fr; } }
+
+.compo-rail {
+  position: sticky; top: var(--e-3);
+  border: 1px solid var(--trait); border-radius: var(--r-m);
+  background: var(--surface); padding: var(--e-3);
+}
+@media (max-width: 860px) { .compo-rail { position: static; } }
+.compo-rail-titre {
+  margin: 0 0 var(--e-2); font-size: 10.5px; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--encre-3); font-weight: 700;
+}
+.cf-liste { display: flex; flex-direction: column; gap: 3px; }
+.cf-famille {
+  display: flex; align-items: center; gap: 9px; text-align: left; width: 100%;
+  padding: 7px 9px; border: 1px solid transparent; border-radius: var(--r-s);
+  background: none; color: var(--encre); transition: background .13s, border-color .13s;
+}
+.cf-famille:hover { background: var(--surface-3); }
+.cf-famille.actif { background: var(--marque-voile); border-color: var(--marque); }
+.cf-pastille { width: 9px; height: 9px; border-radius: 2px; flex: none; background: var(--trait-fort); }
+.cf-composant  { background: var(--t-plaquette); }
+.cf-mecanique  { background: var(--t-structure); }
+.cf-electrique { background: var(--t-harnais); }
+.cf-texte { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.cf-nom { font-size: 12.5px; font-weight: 600; }
+.cf-aide { font-size: 10.5px; color: var(--encre-3); line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis; }
+.cf-n { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-3);
+  font-variant-numeric: tabular-nums; flex: none; }
+.cf-famille.actif .cf-n { color: var(--marque); font-weight: 600; }
+.cf-effacer {
+  margin-top: var(--e-3); width: 100%; padding: 6px; font-size: 12px;
+  border: 1px dashed var(--trait-fort); border-radius: var(--r-s);
+  background: none; color: var(--encre-2);
+}
+.cf-effacer:hover { background: var(--surface-3); color: var(--encre); }
+
+/* L'arbre : famille, fonction, norme, reference. */
+.compo-arbre { display: flex; flex-direction: column; gap: var(--e-4); min-width: 0; }
+.compo-barre {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--e-3); flex-wrap: wrap;
+  padding-bottom: var(--e-2); border-bottom: 1px solid var(--trait);
+}
+.compo-barre-compte { font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.compo-barre-btn {
+  font-size: 12px; padding: 5px 12px; border: 1px solid var(--trait-fort);
+  border-radius: 999px; background: var(--surface); color: var(--encre-2);
+}
+.compo-barre-btn:hover { background: var(--surface-3); color: var(--encre); }
+.cfa-bloc { display: flex; flex-direction: column; gap: var(--e-2); min-width: 0; }
+.cfa-tete { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap;
+  padding-bottom: 6px; border-bottom: 2px solid var(--encre); }
+.cfa-tete .cf-pastille { align-self: center; }
+.cfa-nom { margin: 0; font-family: var(--police-titre); font-size: 17px; font-weight: 700; }
+.cfa-chiffres { font-size: 11.5px; color: var(--encre-3); font-variant-numeric: tabular-nums;
+  margin-left: auto; }
+
+.cfo-bloc { border: 1px solid var(--trait); border-radius: var(--r-m);
+  background: var(--surface); overflow: hidden; }
+.cfo-tete {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  padding: 10px 13px; border: 0; background: none; color: var(--encre);
+  border-bottom: 1px solid var(--trait);
+}
+.cfo-bloc.replie .cfo-tete { border-bottom: 0; }
+.cfo-tete:hover { background: var(--surface-3); }
+.cfo-chevron { color: var(--encre-3); font-size: 11px; flex: none; width: 10px; }
+.cfo-nom { font-size: 14px; font-weight: 700; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cfo-chiffres { font-size: 11.5px; color: var(--encre-3); margin-left: auto;
+  font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cfo-chiffres b { font-family: var(--police-data); color: var(--encre-2); font-weight: 600; }
+.cfo-alerte, .cn-alerte {
+  font-size: 10px; letter-spacing: .07em; text-transform: uppercase; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap; flex: none;
+  background: var(--ambre-voile); color: var(--ambre); border: 1px solid var(--ambre-trait);
+}
+.cfo-corps { display: flex; flex-direction: column; }
+
+.cn-bloc { border-top: 1px solid var(--surface-3); }
+.cn-bloc:first-child { border-top: 0; }
+.cn-tete { display: flex; align-items: center; gap: 9px; padding: 8px 13px 6px; flex-wrap: wrap; }
+.cn-nom { font-family: var(--police-data); font-size: 12px; font-weight: 600; color: var(--marque); }
+.cn-compte { font-size: 11px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.cn-dispersee { box-shadow: inset 3px 0 0 var(--ambre); }
+.cn-dispersee .cn-nom { color: var(--ambre); }
+.cn-references { padding: 0 13px 10px; }
+
+.cr-entete, .cr-ligne {
+  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.25fr) 172px minmax(0, .85fr);
   gap: var(--e-3); align-items: center;
 }
-.compo-ligne { padding: 9px var(--e-2); border-bottom: 1px solid var(--surface-3); }
-.compo-ligne:last-child { border-bottom: 0; }
-.compo-ligne:hover { background: var(--surface-2); }
-.compo-seul { box-shadow: inset 3px 0 0 var(--ambre-trait); }
-
-.compo-fonction { font-size: 13px; font-weight: 600; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.compo-norme { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-2); }
-.compo-reference { font-family: var(--police-data); font-size: 12px; color: var(--encre);
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.compo-famille {
-  font-size: 10px; letter-spacing: .07em; text-transform: uppercase; font-weight: 600;
-  padding: 2px 8px; border-radius: 999px; border: 1px solid var(--trait);
-  background: var(--surface-3); color: var(--encre-3); white-space: nowrap;
-  justify-self: start;
+.cr-entete {
+  font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--encre-3);
+  font-weight: 600; padding-bottom: 4px; border-bottom: 1px solid var(--trait);
 }
-.compo-fam-composant  { background: var(--t-plaquette-voile); color: var(--t-plaquette); border-color: var(--t-plaquette-trait); }
-.compo-fam-mecanique  { background: var(--t-structure-voile); color: var(--t-structure); border-color: var(--t-structure-trait); }
-.compo-fam-electrique { background: var(--t-harnais-voile);   color: var(--t-harnais);   border-color: var(--t-harnais-trait); }
-
-.compo-emploi { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-/* La jauge rend le classement lisible d'un coup d'oeil, sans lire les chiffres. */
-.compo-jauge { display: block; height: 4px; background: var(--surface-3);
-  border-radius: 2px; overflow: hidden; }
-.compo-jauge span { display: block; height: 100%; background: var(--marque); border-radius: 2px; }
-.compo-seul .compo-jauge span { background: var(--ambre-trait); }
-.compo-compte {
+.cr-ligne { padding: 7px 0; border-bottom: 1px solid var(--surface-3); }
+.cr-ligne:last-child { border-bottom: 0; }
+.cr-isole { box-shadow: inset 3px 0 0 var(--ambre-trait); padding-left: 7px; }
+.cr-ref { font-family: var(--police-data); font-size: 12px; font-weight: 600;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.cr-designation { font-size: 12px; color: var(--encre-2); min-width: 0;
+  display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
+.cr-etat {
+  font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
+  padding: 1px 7px; border-radius: 999px; white-space: nowrap;
+}
+.cr-hors { background: var(--rouge-voile); color: var(--rouge); border: 1px solid var(--rouge-trait); }
+.cr-dormant { background: var(--surface-3); color: var(--encre-3); border: 1px solid var(--trait); }
+.cr-emploi { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cr-jauge { display: block; height: 4px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
+.cr-jauge span { display: block; height: 100%; background: var(--marque); border-radius: 2px; }
+.cr-isole .cr-jauge span { background: var(--ambre-trait); }
+.cr-compte {
   border: 0; background: none; padding: 0; text-align: left;
-  font-family: var(--police-data); font-size: 11.5px; color: var(--encre-2);
+  font-family: var(--police-data); font-size: 11px; color: var(--encre-2);
   font-variant-numeric: tabular-nums; text-decoration: underline;
   text-decoration-style: dotted; text-underline-offset: 3px;
 }
-.compo-compte:hover, .compo-compte.actif { color: var(--marque); }
-.compo-boites { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 2px; }
-.compo-boites[hidden] { display: none; }
-.compo-porteurs { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
-.puce-porteur-mini { font-size: 10.5px; padding: 1px 7px; }
+.cr-compte:hover, .cr-compte.actif { color: var(--marque); }
+.cr-jamais { font-size: 11px; color: var(--encre-3); font-style: italic; }
+.cr-boites { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 2px; }
+.cr-boites[hidden] { display: none; }
+.cr-porteurs { display: flex; flex-wrap: wrap; gap: 3px; min-width: 0; }
+.puce-porteur-mini { font-size: 10px; padding: 1px 6px; }
 
-@media (max-width: 900px) {
-  .inventaire-compo .inventaire-entete { display: none; }
-  .compo-ligne { grid-template-columns: 1fr 1fr; gap: 4px var(--e-3); padding: var(--e-3) var(--e-2); }
-  .compo-fonction, .compo-emploi, .compo-porteurs { grid-column: 1 / -1; }
+@media (max-width: 760px) {
+  .cr-entete { display: none; }
+  .cr-ligne { grid-template-columns: 1fr; gap: 4px; padding: 10px 0; }
+  .cfo-chiffres { margin-left: 0; width: 100%; }
 }
 
 /* ---------------- cartes ---------------- */
