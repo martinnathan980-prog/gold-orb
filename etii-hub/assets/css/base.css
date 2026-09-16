@@ -32,6 +32,18 @@
    deux rangées et la liste de liens se répartit en grille fluide.
    ========================================================================= */
 
+
+/* L'attribut [hidden] doit l'emporter sur toute mise en page.
+   Sa valeur par défaut, display:none, est une simple règle de la feuille
+   du navigateur : la moindre classe posant display:flex ou display:grid la
+   bat en spécificité, et l'élément reste visible alors que le code le croit
+   masqué. Le projet masque 34 éléments par cet attribut — plusieurs
+   composants avaient déjà contourné le problème localement. On le règle
+   ici, une fois. */
+[hidden] {
+  display: none !important;
+}
+
 /* =========================================================================
    1. Remise à zéro moderne et sobre
    ========================================================================= */
