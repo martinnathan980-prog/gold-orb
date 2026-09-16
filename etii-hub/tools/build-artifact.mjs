@@ -24,7 +24,7 @@ const PAGES = ['index', 'etiia', 'etiie', 'etiii',
                'communication', 'reunions', 'organigramme', 'faq', 'docsearch'];
 const CSS = ['tokens', 'base', 'components', 'skin'];
 const DONNEES = ['communications', 'reunions', 'organigramme', 'faq',
-                 'documents', 'indicateurs'];
+                 'documents', 'indicateurs', 'flotte'];
 
 /* ---------------------------------------------------------------------
    1. Mini-assembleur de modules ES

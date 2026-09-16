@@ -1,4 +1,24 @@
 {
+  "motDuChef": {
+    "auteur": "Personne 01",
+    "fonction": "Direction du service ETII",
+    "date": "2026-09-15",
+    "titre": "Un trimestre qui se tient",
+    "corps": [
+      {
+        "type": "texte",
+        "texte": "L'OTQ du service progresse depuis trois mois et la campagne d'essais s'est close sans point bloquant. C'est le résultat d'un travail de préparation documentaire fait en amont, et ça se voit."
+      },
+      {
+        "type": "texte",
+        "texte": "Deux points d'attention. La charge reste tendue sur ETIII, où le renfort arrive le mois prochain. Et la revue de configuration trimestrielle approche : les écarts non soldés doivent être remontés avant la veille, pas le matin même."
+      },
+      {
+        "type": "texte",
+        "texte": "Merci à chacun pour la rigueur tenue sur le lot 3."
+      }
+    ]
+  },
   "alertes": [
     "Maintenance planifiée de la plateforme documentaire mercredi soir.",
     "Rappel : revue de configuration trimestrielle la semaine prochaine."

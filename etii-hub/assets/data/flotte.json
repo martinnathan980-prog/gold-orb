@@ -1,0 +1,129 @@
+{
+  "avertissement": "Désignations et segments issus de la gamme civile publique. Charges, jalons et avancements sont fictifs, comme tout le jeu de démonstration.",
+  "flotte": [
+    {
+      "code": "H125",
+      "segment": "Monomoteur léger",
+      "silhouette": "patins-monoturbine",
+      "usages": [
+        "Travail aérien",
+        "Montagne",
+        "Secours"
+      ],
+      "poles": [
+        "ETIIE",
+        "ETIII"
+      ],
+      "charge": 14,
+      "jalon": "Revue de définition du faisceau cabine",
+      "avancement": 72,
+      "echeance": "2026-11"
+    },
+    {
+      "code": "H130",
+      "segment": "Monomoteur léger",
+      "silhouette": "patins-fenestron",
+      "usages": [
+        "Transport passagers",
+        "Tourisme aérien"
+      ],
+      "poles": [
+        "ETIIE"
+      ],
+      "charge": 9,
+      "jalon": "Mise à jour des schémas de distribution",
+      "avancement": 48,
+      "echeance": "2027-02"
+    },
+    {
+      "code": "H135",
+      "segment": "Bimoteur léger",
+      "silhouette": "patins-fenestron-bi",
+      "usages": [
+        "Secours médicalisé",
+        "Sécurité civile",
+        "Formation"
+      ],
+      "poles": [
+        "ETIIA",
+        "ETIIE"
+      ],
+      "charge": 18,
+      "jalon": "Harmonisation des conventions de nommage",
+      "avancement": 86,
+      "echeance": "2026-10"
+    },
+    {
+      "code": "H145",
+      "segment": "Bimoteur léger",
+      "silhouette": "patins-fenestron-bi",
+      "usages": [
+        "Secours médicalisé",
+        "Missions publiques",
+        "Transport"
+      ],
+      "poles": [
+        "ETIIA",
+        "ETIIE",
+        "ETIII"
+      ],
+      "charge": 23,
+      "jalon": "Intégration du lot avionique",
+      "avancement": 61,
+      "echeance": "2027-01"
+    },
+    {
+      "code": "H160",
+      "segment": "Bimoteur moyen",
+      "silhouette": "roues-fenestron-bi",
+      "usages": [
+        "Offshore",
+        "Transport privé",
+        "Secours"
+      ],
+      "poles": [
+        "ETIIA",
+        "ETIIE",
+        "ETIII"
+      ],
+      "charge": 31,
+      "jalon": "Validation du jalon de définition, lot 3",
+      "avancement": 94,
+      "echeance": "2026-09"
+    },
+    {
+      "code": "H175",
+      "segment": "Bimoteur super-moyen",
+      "silhouette": "roues-bi",
+      "usages": [
+        "Offshore",
+        "Transport longue distance"
+      ],
+      "poles": [
+        "ETIIE",
+        "ETIII"
+      ],
+      "charge": 27,
+      "jalon": "Revue de cheminement des harnais",
+      "avancement": 55,
+      "echeance": "2027-03"
+    },
+    {
+      "code": "H225",
+      "segment": "Bimoteur lourd",
+      "silhouette": "roues-bi-lourd",
+      "usages": [
+        "Transport lourd",
+        "Missions publiques",
+        "Offshore"
+      ],
+      "poles": [
+        "ETIII"
+      ],
+      "charge": 16,
+      "jalon": "Reprise des reprises de masse",
+      "avancement": 38,
+      "echeance": "2027-05"
+    }
+  ]
+}
