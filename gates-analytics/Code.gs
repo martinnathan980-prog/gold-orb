@@ -56,7 +56,27 @@ const CONFIG = {
    *   dans l'ordre voulu. Même syntaxe « Groupe > Colonne » en cas de doublon.
    */
   COLONNE_FWD: '',
-  DIMENSIONS: [],
+
+  /*
+   * Les colonnes proposées dans « Avancement FWD par… », dans l'ordre du
+   * sélecteur. Relevées sur l'export réel : le découpage métier (ATA,
+   * Séquence, Chapitre), les deux pré-requis amont du FWD (définition
+   * électrique validée, statut iBG), l'état du cycle (Étape), la variante
+   * (Produit) et la charge cachée (Redraw). L'ancienneté s'ajoute d'elle-même
+   * à partir de la date de création.
+   *
+   * Vider cette liste rend la main à la détection automatique.
+   */
+  DIMENSIONS: [
+    'ATA',
+    'Séquence',
+    'Validation Définition Electrique',
+    'Statut iBG',
+    'Etape',
+    'Produit',
+    'Chapitre',
+    'Réalisation FWD > Redraw'
+  ],
 
   /**
    * Groupes de colonnes masqués à la première ouverture. L'export GATES répète
@@ -615,6 +635,7 @@ function getDonneesPourClient() {
       genereLe: new Date().toISOString(),
       colonnes: modele.colonnes,
       cleDate: modele.cleDate,
+      clesDim: modele.clesDim,
       dimParDefaut: modele.dimParDefaut,
       lignesIgnorees: modele.lignesIgnorees,
       plans: modele.plans,
@@ -627,7 +648,7 @@ function getDonneesPourClient() {
       message: err && err.message ? err.message : String(err),
       feuille: '',
       genereLe: new Date().toISOString(),
-      colonnes: [], cleDate: null, dimParDefaut: '', plans: [], releves: [], jalons: []
+      colonnes: [], cleDate: null, clesDim: [], dimParDefaut: '', plans: [], releves: [], jalons: []
     };
   }
 }

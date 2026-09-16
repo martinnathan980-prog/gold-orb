@@ -305,10 +305,25 @@
 
   /* Les dimensions du bloc « Avancement FWD par… » : les colonnes que le
      serveur a jugées catégorielles, plus l'ancienneté s'il a trouvé une date. */
-  var CLES_DIM = COLONNES.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; })
+  /* L'ordre vient de la source quand elle le donne : une liste fixée à la main
+     doit s'afficher dans l'ordre demandé, pas dans celui des colonnes. */
+  var CLES_DIM = (SRC.clesDim && SRC.clesDim.length
+      ? SRC.clesDim.filter(function (c) { return PAR_CLE[c]; })
+      : COLONNES.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; }))
     .concat(CLE_DATE ? ['_anciennete'] : []);
   function valeurDim(p, cle) {
     return cle === '_anciennete' ? ancienneteDepuis(p[CLE_DATE], dateDe(AUJ)) : p[cle];
+  }
+
+  /* Plusieurs colonnes de l'export sont des booléens écrits « true » / « false ».
+     Le tableau les montre telles quelles — c'est l'extract. Dans le bloc
+     d'analyse, où la valeur devient un nom de groupe lu par tout le monde, on
+     les dit en français. Le filtrage continue de porter sur la valeur brute. */
+  function libelleGroupe(v) {
+    var n = norm(v);
+    if (n === 'true' || n === 'vrai') return 'Oui';
+    if (n === 'false' || n === 'faux') return 'Non';
+    return v;
   }
 
   /* ============================================================
@@ -1261,7 +1276,7 @@
       '" aria-controls="panneau-fin" title="Comment cette date est calculée">?</button>';
 
     var html = '<div class="critique-tete">' +
-      entete('nom', TITRE_DIM[dim].replace(/ \(.*\)$/, ''), '') + '</span>' +
+      entete('nom', TITRE_DIM[dim].replace(/ \(.*\)$/, ''), TITRE_DIM[dim]) + '</span>' +
       entete('total', 'plans', 'Nombre de plans du groupe dans la sélection courante.') + '</span>' +
       entete('pct', 'répartition FWD', 'Trier par part de plans terminés.', 'a-gauche') + '</span>' +
       (prochain
@@ -1330,7 +1345,7 @@
       return '<button class="critique-ligne" type="button" data-groupe="' + ech(r.nom) + '" aria-pressed="' + !!actif +
         '" title="' + r.termine + ' terminés, ' + r.encours + ' en cours, ' + r.afaire + ' à faire, ' +
         r.vide + ' non renseignés — cliquez pour filtrer le tableau et le graphique">' +
-        '<span class="critique-nom">' + ech(r.nom) + '</span>' +
+        '<span class="critique-nom">' + ech(libelleGroupe(r.nom)) + '</span>' +
         '<span class="critique-total" data-libelle="plans">' + r.total + '</span>' +
         '<span class="critique-barre">' + barre + '</span>' +
         col1 + col2 + col3 + '</button>';
@@ -1343,7 +1358,11 @@
 
   }
 
-  var DIMENSIONS = COLONNES.filter(function (c) { return c.dim; })
+  /* L'ordre du sélecteur est celui que donne la source : quand la liste est
+     fixée à la main, c'est l'ordre demandé qui compte, pas celui de la feuille. */
+  var DIMENSIONS = CLES_DIM
+    .filter(function (c) { return c !== '_anciennete' && PAR_CLE[c]; })
+    .map(function (c) { return PAR_CLE[c]; })
     .concat(CLE_DATE ? [{ cle: '_anciennete', titre: 'Ancienneté (' + PAR_CLE[CLE_DATE].titre.toLowerCase() + ')' }] : []);
   var TITRE_DIM = {};
   DIMENSIONS.forEach(function (d) { TITRE_DIM[d.cle] = d.titre; });

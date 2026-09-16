@@ -26,8 +26,7 @@ function construire(options) {
   if (opts.gates) {
     // La vraie structure d'export : 137 colonnes, groupes fusionnés, blocs répétés.
     const g = feuilleGates(opts.lignes || 186);
-    donnees = new Feuille('Données', g.valeurs, false,
-      g.fusions.map(function (f) { return { ligne: 2, col: f.col, larg: f.larg }; }));
+    donnees = new Feuille('Données', g.valeurs, false, g.fusions);
   } else {
     donnees = new Feuille('Données', feuilleExemple(opts.lignes || 186));
   }

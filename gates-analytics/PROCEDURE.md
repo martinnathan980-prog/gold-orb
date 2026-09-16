@@ -87,33 +87,72 @@ ré-archiver suffit.
 
 ## 6. Sur l'export GATES réel
 
-L'export compte **137 colonnes**, dont 91 sont treize répétitions du même bloc
-de sept, une par variante HDK AA. Trois conséquences :
+Relevé sur `export_48.xlsx` : **138 colonnes**, en-tête en **ligne 2**, ligne de
+groupes fusionnés en ligne 1, données à partir de la ligne 3.
 
-- **La colonne d'avancement FWD est « Avancement », sous le groupe
-  « Réalisation FWD ».** Vingt-sept colonnes ont un intitulé qui contient
-  « avancement » (« Avancement Définition Electrique », « Avancement Concept
-  Harnais », treize fois chacune) : c'est le groupe fusionné au-dessus qui
-  départage, et le script lit les vraies fusions de la feuille.
-- **Les 91 colonnes des blocs HDK AA s'ouvrent repliées.** Rien n'est
-  supprimé : « Colonnes → tout afficher » les ramène en un clic, et le choix de
-  chacun est ensuite retenu. Sans ça, le tableau s'ouvrirait sur 137 colonnes.
-- **Les lignes sans référence sont écartées.** L'export intercale des lignes de
-  service sous l'en-tête ; sans ce filtre elles compteraient comme des plans.
+| | |
+|---|---|
+| Colonnes | 138, dont **91** sont 13 répétitions du même bloc de 7 (une par variante HDK AA) |
+| Groupes | 16 plages fusionnées + 2 cellules isolées (`Concept Harnais`, colonnes 40 et 41) |
+| Sans intitulé | colonnes 1, 4 et 5 — nommées « Colonne 1 », « Colonne 4 », « Colonne 5 » |
+| Référence figée | `Référence UD`, colonne **2** (pas la 1) |
+| **Avancement FWD** | `Avancement`, colonne **42**, groupe `Réalisation FWD` |
 
-### Si la détection se trompe
+**Vingt-sept colonnes ont un intitulé contenant « avancement ».** Une seule est
+celle du FWD ; les autres sont `Avancement Définition Electrique` et
+`Avancement Concept Harnais`, treize fois chacune. C'est le groupe fusionné
+au-dessus qui départage, et le script lit les **vraies fusions** de la feuille.
 
-En haut de `Code.gs`, trois réglages. Vides, tout est déduit ; à remplir
-seulement si le diagnostic montre une erreur.
+Autres points tenus par le code :
+
+- **Les lignes sans référence sont écartées.** L'export en intercale sous
+  l'en-tête.
+- **Les dates sont au format `2017-05-02T22:00:00.000Z`**, reconnues comme
+  telles pour l'ancienneté.
+- **Les booléens valent `true` / `false`.** Le tableau les montre tels quels —
+  c'est l'extract. Dans le bloc d'analyse, où la valeur devient un nom de
+  groupe lu par tout le monde, ils s'écrivent **Oui** / **Non**.
+- **Les 91 colonnes des blocs HDK AA s'ouvrent repliées** : 47 colonnes à la
+  première ouverture au lieu de 138. Rien n'est supprimé, « Colonnes → tout
+  afficher » les ramène, et le choix de chacun est retenu.
+
+### Les colonnes analysées
+
+Dans « Avancement FWD par… », dans cet ordre :
+
+| Colonne | Pourquoi |
+|---|---|
+| **ATA** | le découpage attendu, ouvert par défaut |
+| **Séquence** | découpage de montage |
+| **Validation Définition Electrique** | pré-requis amont : un FWD non commencé sans définition validée est normal, avec définition validée il ne l'est pas |
+| **Statut iBG** | l'autre pré-requis amont |
+| **Etape** | état du cycle (`AVAILABLE`, `IN WORK`…) |
+| **Produit** | variante |
+| **Chapitre** | découpage documentaire |
+| **Redraw** | charge cachée, dans le groupe `Réalisation FWD` |
+| **Ancienneté** | ajoutée d'elle-même à partir de `Date création` |
+
+Écartées volontairement : `Libellé`, `Nom Installation`, `Désignation GATES`,
+`Raison de la création` et les seize `Commentaire` — du texte libre ne fait pas
+une catégorie. `Référence UD` et `ECP` sont des identifiants. Les intitulés qui
+reviennent treize fois (`Validité`, `A traiter par`…) seraient impossibles à
+désigner.
+
+Pour en échanger une, une ligne en haut de `Code.gs` :
 
 ```js
-COLONNE_FWD: 'Réalisation FWD > Avancement',
-DIMENSIONS: ['ATA', 'Séquence', 'Statut iBG', 'Chapitre'],
-GROUPES_MASQUES_AU_DEPART: ['HDK AA'],
+DIMENSIONS: ['ATA', 'Séquence', 'Groupage', 'Réalisation FWD > Redraw'],
 ```
 
 La syntaxe `Groupe > Colonne` sert quand plusieurs colonnes portent le même
-intitulé. `DIMENSIONS` fixe aussi l'ordre du sélecteur.
+intitulé. Liste vidée, la détection automatique reprend la main.
+
+Les deux autres réglages du même bloc :
+
+```js
+COLONNE_FWD: 'Réalisation FWD > Avancement',
+GROUPES_MASQUES_AU_DEPART: ['HDK AA'],
+```
 
 ## 7. Les quatre états
 

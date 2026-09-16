@@ -1,128 +1,133 @@
-/* La vraie structure d'export GATES : 137 colonnes, dont 91 sont 13 répétitions
-   du même bloc de 7 (une par variante HDK AA), une ligne de groupes fusionnés,
-   une ligne parasite entre l'en-tête et les données, et 27 colonnes dont
-   l'intitulé contient « avancement » alors qu'une seule est celle du FWD. */
+/* La structure exacte de l'export GATES, relevée sur le fichier réel
+   (export_48.xlsx) : 138 colonnes, en-tête en ligne 2, une ligne de groupes
+   faite de seize plages fusionnées et de deux cellules isolées, trois colonnes
+   sans intitulé, et treize répétitions du même bloc de sept colonnes — une par
+   variante HDK AA. Vingt-sept colonnes ont un intitulé contenant
+   « avancement » ; une seule est celle du FWD. */
 
-const BLOC_HDK = ['Validité', 'Quantité', 'Configuration officielle',
-                  'Avancement Définition Electrique', 'A traiter par', 'Commentaire',
-                  'Avancement Concept Harnais'];
+const ENTETES = ["", "Référence UD", "RPT", "", "", "Propa.", "Libellé", "Domaine", "Type", "Date création", "Nom Installation", "Chapitre", "Sous-chapitre", "Etape", "Produit", "Raison de la création", "Commentaire", "Version", "Groupage", "Installation GATES", "Désignation GATES", "Type", "BTE/BTR/CDR/PLT", "PWD", "CC", "ATA", "Séquence", "Commentaire", "ECP", "Statut iBG", "RPTs liés", "Validation Définition Electrique", "XPWD", "DDI", "Logiciel Archivage", "Eclairage", "Patchboard", "Tableau d'alarmes", "Panier à cartes 16WW", "Commentaire", "GEOMETRICAL HARNESS", "Avancement", "Date de départ", "Date de retour", "Redraw", "Classif. SAP (BETA)", "Classif. calculée (BETA)", "Validité", "Quantité", "Configuration officielle", "Avancement Définition Electrique", "A traiter par", "Commentaire", "Avancement Concept Harnais", "Validité", "Quantité", "Configuration officielle", "Avancement Définition Electrique", "A traiter par", "Commentaire", "Avancement Concept Harnais", "Validité", "Quantité", "Configuration officielle", "Avancement Définition Electrique", "A traiter par", "Commentaire", "Avancement Concept Harnais", "Validité", "Quantité", "Configuration officielle", "Avancement Définition Electrique", "A traiter par", "Commentaire", "Avancement Concept Harnais", "Validité", "Quantité", "Configuration officielle", "Avancement Définition Electrique", "A traiter par", "Commentaire", "Avancement Concept Harnais", "Validité", "Quantité", "Configuration officielle", "Avancement Définition Electrique", "A traiter par", "Commentaire", "Avancement Concept Harnais", "Validité", "Quantité", "Configuration officielle", "Avancement Définition Electrique", "A traiter par", "Commentaire", "Avancement Concept Harnais", "Validité", "Quantité", "Configuration officielle", "Avancement Définition Electrique", "A traiter par", "Commentaire", "Avancement Concept Harnais", "Validité", "Quantité", "Configuration officielle", "Avancement Définition Electrique", "A traiter par", "Commentaire", "Avancement Concept Harnais", "Validité", "Quantité", "Configuration officielle", "Avancement Définition Electrique", "A traiter par", "Commentaire", "Avancement Concept Harnais", "Validité", "Quantité", "Configuration officielle", "Avancement Définition Electrique", "A traiter par", "Commentaire", "Avancement Concept Harnais", "Validité", "Quantité", "Configuration officielle", "Avancement Définition Electrique", "A traiter par", "Commentaire", "Avancement Concept Harnais", "Validité", "Quantité", "Configuration officielle", "Avancement Définition Electrique", "A traiter par", "Commentaire", "Avancement Concept Harnais"];
 
-const VARIANTES = ['HDK AA', 'HDK AA 011', 'HDK AA 012', 'HDK AA 002', 'HDK AA 001',
-                   'HDK AA 004', 'HDK AA 006', 'HDK AA 010', 'HDK AA 005', 'HDK AA 003',
-                   'HDK AA 007', 'HDK AA 008', 'HDK AA 009'];
+/* Ligne 1 : { col (1-based), larg, texte }. Les deux « Concept Harnais » ne
+   sont pas fusionnés — ce sont deux cellules isolées, et le code doit les
+   traiter comme telles. */
+const GROUPES_FUSIONNES = [{"col": 2, "larg": 16, "texte": "Informations principales"}, {"col": 18, "larg": 22, "texte": "Définition du plan"}, {"col": 42, "larg": 4, "texte": "Réalisation FWD"}, {"col": 48, "larg": 7, "texte": "HDK AA"}, {"col": 55, "larg": 7, "texte": "HDK AA 011"}, {"col": 62, "larg": 7, "texte": "HDK AA 012"}, {"col": 69, "larg": 7, "texte": "HDK AA 002"}, {"col": 76, "larg": 7, "texte": "HDK AA 001"}, {"col": 83, "larg": 7, "texte": "HDK AA 004"}, {"col": 90, "larg": 7, "texte": "HDK AA 006"}, {"col": 97, "larg": 7, "texte": "HDK AA 010"}, {"col": 104, "larg": 7, "texte": "HDK AA 005"}, {"col": 111, "larg": 7, "texte": "HDK AA 003"}, {"col": 118, "larg": 7, "texte": "HDK AA 007"}, {"col": 125, "larg": 7, "texte": "HDK AA 008"}, {"col": 132, "larg": 7, "texte": "HDK AA 009"}];
+const GROUPES_SEULS = [{"col": 40, "texte": "Concept Harnais"}, {"col": 41, "texte": "Concept Harnais"}];
 
-const TETE = [
-  'Référence UD', 'RPT', '', '', 'Propa.', 'Libellé', 'Domaine', 'Type', 'Date création',
-  'Nom Installation', 'Chapitre', 'Sous-chapitre', 'Etape', 'Produit', 'Raison de la création',
-  'Commentaire', 'Version', 'Groupage', 'Installation GATES', 'Désignation GATES', 'Type',
-  'BTE/BTR/CDR/PLT', 'PWD', 'CC', 'ATA', 'Séquence', 'Commentaire', 'ECP', 'Statut iBG',
-  'RPTs liés', 'Validation Définition Electrique', 'XPWD', 'DDI', 'Logiciel Archivage',
-  'Eclairage', 'Patchboard', 'Tableau d\'alarmes', 'Panier à cartes 16WW', 'Commentaire',
-  'GEOMETRICAL HARNESS', 'Avancement', 'Date de départ', 'Date de retour', 'Redraw',
-  'Classif. SAP (BETA)', 'Classif. calculée (BETA)'
-];
+const NB = ENTETES.length;
 
-/* Les fusions de la ligne de groupes, telles qu'elles existent dans la feuille :
-   {colonne de départ (1-based), largeur, libellé}. */
-const FUSIONS = [
-  { col: 1,  larg: 20, texte: 'Informations principales' },
-  { col: 21, larg: 10, texte: 'Définition du plan' },
-  { col: 31, larg: 5,  texte: 'Concept Harnais' },
-  { col: 36, larg: 5,  texte: 'Concept Harnais' },
-  { col: 41, larg: 4,  texte: 'Réalisation FWD' }
-  // 45 et 46 hors groupe ; à partir de 47, un groupe par variante (ci-dessous)
-];
-VARIANTES.forEach(function (v, k) {
-  FUSIONS.push({ col: 47 + k * 7, larg: 7, texte: v });
-});
-
-function entetes() {
-  let h = TETE.slice();
-  VARIANTES.forEach(function () { h = h.concat(BLOC_HDK); });
-  return h;
+/** Indices 0-based de quelques colonnes repères, retrouvées par leur intitulé. */
+function colonne(titre, groupe) {
+  for (let i = 0; i < NB; i++) {
+    if (ENTETES[i] !== titre) continue;
+    if (groupe === undefined || groupeDe(i) === groupe) return i;
+  }
+  return -1;
 }
 
-/** La ligne de groupes telle que getDisplayValues la renvoie : seule la première
-    cellule d'une fusion porte le texte, les suivantes sont vides. */
-function ligneGroupes(nbColonnes) {
-  const l = new Array(nbColonnes).fill('');
-  FUSIONS.forEach(function (f) { l[f.col - 1] = f.texte; });
+function groupeDe(i) {
+  for (let k = 0; k < GROUPES_FUSIONNES.length; k++) {
+    const f = GROUPES_FUSIONNES[k];
+    if (i + 1 >= f.col && i + 1 < f.col + f.larg) return f.texte;
+  }
+  for (let k = 0; k < GROUPES_SEULS.length; k++) {
+    if (GROUPES_SEULS[k].col === i + 1) return GROUPES_SEULS[k].texte;
+  }
+  return '';
+}
+
+/** La ligne de groupes telle que getDisplayValues la renvoie : une fusion ne
+    porte son texte que dans sa première cellule. */
+function ligneGroupes() {
+  const l = new Array(NB).fill('');
+  GROUPES_FUSIONNES.forEach(function (f) { l[f.col - 1] = f.texte; });
+  GROUPES_SEULS.forEach(function (s) { l[s.col - 1] = s.texte; });
   return l;
 }
 
+/** Les plages fusionnées à déclarer au faux classeur. */
+function fusions() {
+  return GROUPES_FUSIONNES.map(function (f) { return { ligne: 1, col: f.col, larg: f.larg }; });
+}
+
+/**
+ * Une feuille plausible : mêmes colonnes, mêmes groupes, mêmes types de
+ * valeurs que l'export (booléens en toutes lettres, dates ISO avec heure,
+ * avancements de toutes les formes), plus une ligne de service sans référence.
+ */
 function feuilleGates(nbLignes) {
   const n = nbLignes || 186;
-  const h = entetes();
-  const nb = h.length;
-  const vide = function () { return new Array(nb).fill(''); };
+  const vide = function () { return new Array(NB).fill(''); };
+  const valeurs = [ligneGroupes(), ENTETES.slice()];
 
-  const titre = vide(); titre[0] = 'Export GATES — Programme H225';
-  const groupes = ligneGroupes(nb);
-  const parasite = vide(); parasite[3] = 'xxxx';   // ligne polluée sous l'en-tête
+  const parasite = vide();
+  parasite[3] = 'Modification de design en cours';   // ligne sans référence
+  valeurs.push(parasite);
 
-  const valeurs = [titre, groupes, h, parasite];
+  const iRef   = colonne('Référence UD');
+  const iDate  = colonne('Date création');
+  const iAta   = colonne('ATA');
+  const iSeq   = colonne('Séquence');
+  const iEtape = colonne('Etape');
+  const iProd  = colonne('Produit');
+  const iDom   = colonne('Domaine');
+  const iChap  = colonne('Chapitre');
+  const iSChap = colonne('Sous-chapitre');
+  const iGrp   = colonne('Groupage');
+  const iIBG   = colonne('Statut iBG');
+  const iVDE   = colonne('Validation Définition Electrique');
+  const iFWD   = colonne('Avancement', 'Réalisation FWD');
+  const iRedr  = colonne('Redraw', 'Réalisation FWD');
+  const iLib   = colonne('Libellé');
+  const iNom   = colonne('Nom Installation');
+  const iECP   = colonne('ECP');
+  const iComm  = colonne('Commentaire', 'Informations principales');
 
   const ATA = ['21', '24', '25', '31', '33', '34', '39', '46', '53', '92'];
   const AVANCE = ['100%', '100 %', 'Terminé', '75 %', '50%', '30%', 'En cours',
                   'À faire', 'à faire', '', '', '-'];
-  let graine = 20260917;
+  let graine = 20260918;
   function alea() { graine = (graine * 1103515245 + 12345) % 2147483648; return graine / 2147483648; }
   function tire(l) { return l[Math.floor(alea() * l.length)]; }
 
   for (let i = 0; i < n; i++) {
     const l = vide();
     const ata = tire(ATA);
-    l[0]  = 'UD-' + ata + '-' + String(1000 + i * 7).slice(-4);   // Référence UD
-    l[1]  = tire(['TRUE', 'FALSE']);                              // RPT
-    l[4]  = tire(['BASE/OPTION', 'BASE', 'OPTION']);              // Propa.
-    l[5]  = 'Faisceau ' + (i + 1) + ' — cheminement complet vers la console centrale'; // Libellé
-    l[6]  = 'ELEC';                                               // Domaine
-    l[7]  = tire(['STD', 'SPEC', 'TEST']);                        // Type
-    l[8]  = '2026-' + String(1 + Math.floor(alea() * 8)).padStart(2, '0') +
-            '-' + String(1 + Math.floor(alea() * 27)).padStart(2, '0');  // Date création
-    l[9]  = 'Installation ' + (i + 1);                            // Nom Installation
-    l[10] = tire(['A', 'B', 'C', 'D']);                           // Chapitre
-    l[11] = tire(['A1', 'A2', 'B1', 'B2', 'C1']);                 // Sous-chapitre
-    l[12] = tire(['AVAILABLE', 'IN WORK', 'FROZEN']);             // Etape
-    l[13] = tire(['MK2', 'MK3']);                                 // Produit
-    l[14] = 'Création suite à évolution de définition';           // Raison de la création
-    l[15] = alea() < 0.2 ? 'Voir note interne' : '';              // Commentaire
-    l[16] = String(1 + Math.floor(alea() * 4));                   // Version
-    l[17] = tire(['G1', 'G2', 'G3']);                             // Groupage
-    l[18] = 'GATES-' + (5000 + i);                                // Installation GATES
-    l[19] = 'Désignation longue du plan numéro ' + (i + 1);       // Désignation GATES
-    l[20] = tire(['PM', 'PS']);                                   // Type (2)
-    l[21] = tire(['BTE', 'BTR', 'CDR', 'PLT']);                   // BTE/BTR/CDR/PLT
-    l[22] = String(600 + Math.floor(alea() * 3));                 // PWD
-    l[23] = String(30000 + Math.floor(alea() * 2000));            // CC
-    l[24] = ata;                                                  // ATA
-    l[25] = 'S' + (1 + Math.floor(alea() * 5));                   // Séquence
-    l[26] = '';                                                   // Commentaire (2)
-    l[27] = alea() < 0.85 ? 'ECP-' + (2100 + Math.floor(alea() * 800)) : '';  // ECP
-    l[28] = tire(['Validé', 'En revue', 'Non lancé', 'À contrôler']);         // Statut iBG
-    l[29] = alea() < 0.3 ? 'RPT-' + (100 + i) : '';               // RPTs liés
-    l[30] = tire(['Validée', 'En attente', 'Sans objet']);        // Validation Définition Electrique
-    l[31] = tire(['XPWD1', 'XPWD2']);                             // XPWD
-    l[32] = tire(['DDI-A', 'DDI-B']);                             // DDI
-    l[33] = tire(['Oui', 'Non']);                                 // Logiciel Archivage
-    l[40] = tire(AVANCE);                                         // Avancement  ← LE FWD
-    l[41] = alea() < 0.5 ? '2026-06-01' : '';                     // Date de départ
-    l[42] = alea() < 0.3 ? '2026-07-15' : '';                     // Date de retour
-    l[43] = tire(['TRUE', 'FALSE']);                              // Redraw
-    // Les 13 blocs HDK AA : mêmes intitulés, valeurs sans rapport avec le FWD.
-    for (let b = 0; b < VARIANTES.length; b++) {
-      const base = 46 + b * 7;
-      l[base]     = tire(['V', 'NV']);
-      l[base + 1] = '1';
-      l[base + 2] = tire(['EMPTY', '()']);
-      l[base + 3] = tire(['100%', '0%', '']);       // Avancement Définition Electrique
-      l[base + 4] = tire(['MR', 'AB', 'CM']);       // A traiter par
-      l[base + 5] = '';
-      l[base + 6] = tire(['V', 'EMPTY']);           // Avancement Concept Harnais
-    }
+    l[iRef]   = 'UD-' + ata + '-' + String(1000 + i * 7).slice(-4);
+    l[iDate]  = '20' + (17 + Math.floor(alea() * 9)) + '-' +
+                String(1 + Math.floor(alea() * 12)).padStart(2, '0') + '-' +
+                String(1 + Math.floor(alea() * 27)).padStart(2, '0') + 'T22:00:00.000Z';
+    l[iAta]   = ata;
+    l[iSeq]   = 'S' + (1 + Math.floor(alea() * 5));
+    l[iEtape] = tire(['AVAILABLE', 'IN WORK', 'FROZEN']);
+    l[iProd]  = tire(['SUPER PUMA', 'MK2', 'MK3']);
+    l[iDom]   = 'ELEC';
+    l[iChap]  = tire(['A', 'B', 'C', 'D']);
+    l[iSChap] = tire(['A1', 'A2', 'B1', 'B2', 'C1']);
+    l[iGrp]   = tire(['G1', 'G2', 'G3']);
+    l[iIBG]   = tire(['true', 'false']);
+    l[iVDE]   = tire(['true', 'false']);
+    l[iRedr]  = tire(['true', 'false']);
+    l[iFWD]   = tire(AVANCE);
+    l[iLib]   = 'Faisceau ' + (i + 1) + ' — cheminement complet vers la console centrale';
+    l[iNom]   = 'Installation ' + (i + 1);
+    l[iECP]   = alea() < 0.85 ? 'ECP-' + (2100 + Math.floor(alea() * 800)) : '';
+    l[iComm]  = alea() < 0.2 ? 'Voir note interne' : '';
+    // Les treize blocs répétés : mêmes intitulés partout, valeurs sans rapport.
+    GROUPES_FUSIONNES.filter(function (f) { return f.texte.indexOf('HDK AA') === 0; })
+      .forEach(function (f) {
+        const b = f.col - 1;
+        l[b]     = tire(['V', 'NV', '-']);
+        l[b + 1] = tire(['1', '-']);
+        l[b + 2] = tire(['1', 'EMPTY', '-']);
+        l[b + 3] = tire(['EMPTY', '100%', '-']);   // Avancement Définition Electrique
+        l[b + 4] = tire(['()', 'MR', '-']);        // A traiter par
+        l[b + 5] = tire(['V', '-']);
+        l[b + 6] = tire(['EMPTY', 'V', '-']);      // Avancement Concept Harnais
+      });
     valeurs.push(l);
   }
-  return { valeurs: valeurs, fusions: FUSIONS, nbColonnes: nb };
+  return { valeurs: valeurs, fusions: fusions(), nbColonnes: NB };
 }
 
-module.exports = { feuilleGates, entetes, FUSIONS, VARIANTES, BLOC_HDK };
+module.exports = { feuilleGates, entetes: function () { return ENTETES.slice(); },
+                   groupeDe: groupeDe, colonne: colonne, NB: NB };

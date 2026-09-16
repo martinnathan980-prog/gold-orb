@@ -8,7 +8,7 @@ const vm = require('vm');
 const { construire, chargerServeur } = require('./build-addon');
 const { Feuille, Classeur } = require('./faux-classeur');
 const { feuilleExemple } = require('./feuille-exemple');
-const { feuilleGates, entetes: entetesGates } = require('./feuille-gates');
+const { feuilleGates, entetes: entetesGates, colonne: colonneGates } = require('./feuille-gates');
 
 let reussis = 0;
 const echecs = [];
@@ -63,8 +63,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
      qu\'une seule est celle du FWD. */
   function serveurGates(nbLignes, config) {
     const g = feuilleGates(nbLignes || 186);
-    const feuille = new Feuille('Données', g.valeurs, false,
-      g.fusions.map(f => ({ ligne: 2, col: f.col, larg: f.larg })));
+    const feuille = new Feuille('Données', g.valeurs, false, g.fusions);
     const classeur = new Classeur([feuille], 'Suivi FWD H225');
     const ctx = chargerServeur(classeur, {});
     // CONFIG est déclaré en const : il n'apparaît pas sur l'objet de contexte.
@@ -78,7 +77,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const gates = serveurGates();
   const mGates = gates.contexte.construireModele();
   const hGates = entetesGates();
-  verifier('les 137 colonnes sont lues', mGates.colonnes.length === 137, String(mGates.colonnes.length));
+  verifier('les 138 colonnes de l\'export sont lues', mGates.colonnes.length === 138, String(mGates.colonnes.length));
   verifier('vingt-sept colonnes contiennent « avancement »',
     hGates.filter(t => /avancement/i.test(t)).length === 27,
     String(hGates.filter(t => /avancement/i.test(t)).length));
@@ -92,15 +91,27 @@ function serveurSur(valeurs, proprietes, fichiers) {
     colFwd && !/Définition|Concept/.test(colFwd.titre));
 
   verifier('les groupes fusionnés couvrent leur vraie largeur',
-    mGates.colonnes[24].groupe === 'Définition du plan' &&
-    mGates.colonnes[40].groupe === 'Réalisation FWD' &&
-    mGates.colonnes[46].groupe === 'HDK AA' &&
-    mGates.colonnes[136].groupe === 'HDK AA 009',
-    JSON.stringify([mGates.colonnes[24].groupe, mGates.colonnes[40].groupe,
-                    mGates.colonnes[46].groupe, mGates.colonnes[136].groupe]));
-  verifier('un groupe ne déborde pas sur ce qui le suit',
-    mGates.colonnes[44].groupe === '' && mGates.colonnes[45].groupe === '',
-    JSON.stringify([mGates.colonnes[44].groupe, mGates.colonnes[45].groupe]));
+    mGates.colonnes[1].groupe === 'Informations principales' &&   // col 2
+    mGates.colonnes[25].groupe === 'Définition du plan' &&        // col 26, ATA
+    mGates.colonnes[41].groupe === 'Réalisation FWD' &&           // col 42, Avancement
+    mGates.colonnes[47].groupe === 'HDK AA' &&                    // col 48
+    mGates.colonnes[137].groupe === 'HDK AA 009',                 // col 138
+    JSON.stringify([mGates.colonnes[1].groupe, mGates.colonnes[25].groupe,
+                    mGates.colonnes[41].groupe, mGates.colonnes[47].groupe,
+                    mGates.colonnes[137].groupe]));
+  verifier('les deux « Concept Harnais » isolés ne sont pas étalés',
+    mGates.colonnes[39].groupe === 'Concept Harnais' &&
+    mGates.colonnes[40].groupe === 'Concept Harnais' &&
+    mGates.colonnes[41].groupe === 'Réalisation FWD',
+    JSON.stringify([mGates.colonnes[39].groupe, mGates.colonnes[40].groupe, mGates.colonnes[41].groupe]));
+  verifier('un groupe ne déborde ni avant ni après sa plage',
+    mGates.colonnes[0].groupe === '' &&      // col 1, hors groupe
+    mGates.colonnes[45].groupe === '' &&     // col 46, Classif. SAP
+    mGates.colonnes[46].groupe === '',       // col 47, Classif. calculée
+    JSON.stringify([mGates.colonnes[0].groupe, mGates.colonnes[45].groupe, mGates.colonnes[46].groupe]));
+  verifier('les colonnes sans intitulé reçoivent un nom lisible',
+    mGates.colonnes[0].titre === 'Colonne 1' && mGates.colonnes[3].titre === 'Colonne 4',
+    JSON.stringify([mGates.colonnes[0].titre, mGates.colonnes[3].titre]));
 
   verifier('la ligne de service sous l\'en-tête est écartée',
     mGates.plans.length === 186 && mGates.lignesIgnorees === 1,
@@ -110,12 +121,17 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('la date de création est trouvée malgré les autres dates',
     mGates.cleDate === 'date_creation', String(mGates.cleDate));
 
-  const titresDim = mGates.colonnes.filter(c => c.dim).map(c => c.titre);
-  verifier('l\'ATA figure dans les dimensions malgré sa 25ᵉ position',
-    titresDim.indexOf('ATA') !== -1, JSON.stringify(titresDim));
+  const titresDim = mGates.clesDim.map(c => mGates.colonnes.find(x => x.cle === c).titre);
+  verifier('les huit colonnes d\'analyse sont celles prévues, dans l\'ordre',
+    JSON.stringify(titresDim) === JSON.stringify(['ATA', 'Séquence',
+      'Validation Définition Electrique', 'Statut iBG', 'Etape', 'Produit',
+      'Chapitre', 'Redraw']), JSON.stringify(titresDim));
   verifier('l\'ATA est ouvert par défaut', mGates.dimParDefaut === 'ata', mGates.dimParDefaut);
-  verifier('la Séquence et le Statut iBG aussi',
-    titresDim.indexOf('Séquence') !== -1 && titresDim.indexOf('Statut iBG') !== -1);
+  verifier('le « Redraw » retenu est celui du groupe FWD',
+    mGates.colonnes.find(c => c.cle === mGates.clesDim[7]).groupe === 'Réalisation FWD');
+  verifier('l\'ancienneté s\'ajoute grâce à la date de création',
+    mGates.cleDate && mGates.colonnes.find(c => c.cle === mGates.cleDate).titre === 'Date création',
+    String(mGates.cleDate));
   verifier('aucune colonne de texte libre n\'est une dimension',
     !titresDim.some(t => /Commentaire|Libellé|Raison|Désignation/i.test(t)), JSON.stringify(titresDim));
   verifier('aucun intitulé répété n\'est une dimension',
@@ -126,9 +142,26 @@ function serveurSur(valeurs, proprietes, fichiers) {
     !titresDim.some(t => ['Référence UD', 'Avancement', 'Date création'].indexOf(t) !== -1));
   verifier('le nombre de dimensions reste tenable', titresDim.length <= 8, String(titresDim.length));
 
+  /* Liste vidée : la détection automatique doit retomber sur des colonnes
+     sensées, l'ATA compris, alors qu'il est en vingt-sixième position. */
+  const auto = serveurGates(186, { DIMENSIONS: [] });
+  const mAuto = auto.contexte.construireModele();
+  const titresAuto = mAuto.colonnes.filter(c => c.dim).map(c => c.titre);
+  verifier('sans liste, la détection trouve quand même l\'ATA',
+    titresAuto.indexOf('ATA') !== -1 && mAuto.dimParDefaut === 'ata', JSON.stringify(titresAuto));
+  verifier('et n\'y met ni texte libre ni intitulé répété',
+    !titresAuto.some(t => /Commentaire|Libellé|Désignation|Raison/i.test(t)) &&
+    !titresAuto.some(t => ['Validité', 'Quantité', 'A traiter par', 'Type'].indexOf(t) !== -1),
+    JSON.stringify(titresAuto));
+
   verifier('les 91 colonnes des blocs répétés s\'ouvrent repliées',
     mGates.colonnes.filter(c => c.masqueeAuDepart).length === 91,
     String(mGates.colonnes.filter(c => c.masqueeAuDepart).length));
+  verifier('la ligne sans référence est bien celle du parasite',
+    mGates.plans.every(p => /^UD-/.test(p.reference)),
+    JSON.stringify(mGates.plans.filter(p => !/^UD-/.test(p.reference)).map(p => p.reference).slice(0, 3)));
+  verifier('les dates ISO avec heure sont reconnues comme dates',
+    mGates.plans.every(p => /^\d{4}-\d{2}-\d{2}T/.test(p[mGates.cleDate])));
   verifier('aucune colonne utile n\'est repliée',
     !mGates.colonnes.filter(c => c.masqueeAuDepart)
       .some(c => ['reference', 'avancement'].indexOf(c.cle) !== -1));
@@ -476,7 +509,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
       .reduce((s, t) => s + (+t.textContent), 0) === 186));
 
   // =================================================================
-  section('La page sur les 137 colonnes réelles');
+  section('La page sur les 138 colonnes réelles');
   construire({ gates: true, sortie: 'apercu-gates.html' });
   /* Contexte neuf : les deux aperçus sont servis depuis file://, donc ils
      partagent le même localStorage. Sans isolation, la page hériterait des
@@ -499,9 +532,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     totaux: [...document.querySelectorAll('.critique-total')].reduce((s, t) => s + (+t.textContent), 0),
     colFWD: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()).indexOf('Avancement')
   }));
-  verifier('les 186 plans sont là malgré les 137 colonnes', vg.lignes === 186, String(vg.lignes));
+  verifier('les 186 plans sont là malgré les 138 colonnes', vg.lignes === 186, String(vg.lignes));
   verifier('les quatre états totalisent 186', vg.etats.reduce((a, b) => a + b, 0) === 186, JSON.stringify(vg.etats));
-  verifier('le tableau s\'ouvre sur 46 colonnes, pas 137', vg.visibles === 46, String(vg.visibles));
+  verifier('le tableau s\'ouvre sur 47 colonnes, pas 138', vg.visibles === 47, String(vg.visibles));
   verifier('la colonne « Avancement » est visible au départ', vg.colFWD !== -1, String(vg.colFWD));
   verifier('pas de débordement horizontal de la page', vg.debord <= 2, vg.debord + ' px');
   verifier('l\'ATA est ouvert par défaut', vg.dimActive === 'ata' && /par ATA/.test(vg.titre), vg.titre);
@@ -512,8 +545,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
     await pg.click('#bascule-colonnes'); await pg.waitForTimeout(250); await pg.click('#tout-colonnes');
   });
   await pg.waitForTimeout(600);
-  verifier('« tout afficher » ramène les 137 colonnes',
-    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === 137,
+  verifier('« tout afficher » ramène les 138 colonnes',
+    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === 138,
     String(await pg.evaluate(() => document.querySelectorAll('tr.titres th').length)));
   verifier('et la page tient toujours', await pg.evaluate(() =>
     document.documentElement.scrollWidth - window.innerWidth <= 2 &&
