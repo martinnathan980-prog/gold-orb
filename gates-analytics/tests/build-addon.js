@@ -7,6 +7,7 @@ const path = require('path');
 const vm = require('vm');
 const { Feuille, Classeur, poserEnvironnement } = require('./faux-classeur');
 const { feuilleExemple } = require('./feuille-exemple');
+const { feuilleGates } = require('./feuille-gates');
 
 const racine = path.join(__dirname, '..');
 
@@ -21,8 +22,16 @@ function chargerServeur(classeur, proprietes, fichiers) {
 
 function construire(options) {
   const opts = options || {};
-  const donnees = new Feuille('Données', feuilleExemple(opts.lignes || 186));
-  const classeur = new Classeur([donnees]);
+  let donnees;
+  if (opts.gates) {
+    // La vraie structure d'export : 137 colonnes, groupes fusionnés, blocs répétés.
+    const g = feuilleGates(opts.lignes || 186);
+    donnees = new Feuille('Données', g.valeurs, false,
+      g.fusions.map(function (f) { return { ligne: 2, col: f.col, larg: f.larg }; }));
+  } else {
+    donnees = new Feuille('Données', feuilleExemple(opts.lignes || 186));
+  }
+  const classeur = new Classeur([donnees], 'Suivi FWD H225');
   const contexte = chargerServeur(classeur, opts.proprietes || {});
 
   // Deux relevés archivés, à deux semaines d'écart, pour que la page ait une pente.
@@ -79,13 +88,15 @@ function construire(options) {
                           '<link rel="stylesheet" href="prototype/fonts/local.css">');
   }
 
-  fs.writeFileSync(path.join(racine, 'apercu-addon.html'), index);
+  fs.writeFileSync(path.join(racine, opts.sortie || 'apercu-addon.html'), index);
   return { paquet: paquet, contexte: contexte, classeur: classeur };
 }
 
 if (require.main === module) {
-  const r = construire();
-  console.log('apercu-addon.html écrit — ' + r.paquet.plans.length + ' plans, ' +
-    r.paquet.colonnes.length + ' colonnes, ' + r.paquet.releves.length + ' relevés');
+  [{}, { gates: true, sortie: 'apercu-gates.html' }].forEach(function (opts) {
+    const r = construire(opts);
+    console.log((opts.sortie || 'apercu-addon.html') + ' écrit — ' + r.paquet.plans.length +
+      ' plans, ' + r.paquet.colonnes.length + ' colonnes, ' + r.paquet.releves.length + ' relevés');
+  });
 }
 module.exports = { construire, chargerServeur };

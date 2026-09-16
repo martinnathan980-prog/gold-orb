@@ -8,6 +8,7 @@ const vm = require('vm');
 const { construire, chargerServeur } = require('./build-addon');
 const { Feuille, Classeur } = require('./faux-classeur');
 const { feuilleExemple } = require('./feuille-exemple');
+const { feuilleGates, entetes: entetesGates } = require('./feuille-gates');
 
 let reussis = 0;
 const echecs = [];
@@ -53,6 +54,127 @@ function serveurSur(valeurs, proprietes, fichiers) {
     !paquet.colonnes.find(c => c.cle === 'reference').dim);
   verifier('les libellés accentués sont conservés',
     paquet.colonnes.some(c => c.titre === 'Validation définition électrique'));
+
+  // =================================================================
+  section('Structure réelle de l\'export GATES');
+  /* 137 colonnes, dont 91 sont treize répétitions du même bloc de sept ;
+     une ligne de groupes fusionnés ; une ligne de service sous l\'en-tête ;
+     et vingt-sept colonnes dont l\'intitulé contient « avancement », alors
+     qu\'une seule est celle du FWD. */
+  function serveurGates(nbLignes, config) {
+    const g = feuilleGates(nbLignes || 186);
+    const feuille = new Feuille('Données', g.valeurs, false,
+      g.fusions.map(f => ({ ligne: 2, col: f.col, larg: f.larg })));
+    const classeur = new Classeur([feuille], 'Suivi FWD H225');
+    const ctx = chargerServeur(classeur, {});
+    // CONFIG est déclaré en const : il n'apparaît pas sur l'objet de contexte.
+    if (config) {
+      const cfg = vm.runInContext('CONFIG', ctx);
+      Object.keys(config).forEach(k => { cfg[k] = config[k]; });
+    }
+    return { contexte: ctx, classeur: classeur };
+  }
+
+  const gates = serveurGates();
+  const mGates = gates.contexte.construireModele();
+  const hGates = entetesGates();
+  verifier('les 137 colonnes sont lues', mGates.colonnes.length === 137, String(mGates.colonnes.length));
+  verifier('vingt-sept colonnes contiennent « avancement »',
+    hGates.filter(t => /avancement/i.test(t)).length === 27,
+    String(hGates.filter(t => /avancement/i.test(t)).length));
+
+  const colFwd = mGates.colonnes.find(c => c.cle === 'avancement');
+  verifier('la bonne colonne d\'avancement est retenue',
+    colFwd && colFwd.titre === 'Avancement', colFwd && colFwd.titre);
+  verifier('elle est bien celle du groupe « Réalisation FWD »',
+    colFwd && colFwd.groupe === 'Réalisation FWD', colFwd && colFwd.groupe);
+  verifier('ni « Avancement Définition Electrique » ni « Avancement Concept Harnais »',
+    colFwd && !/Définition|Concept/.test(colFwd.titre));
+
+  verifier('les groupes fusionnés couvrent leur vraie largeur',
+    mGates.colonnes[24].groupe === 'Définition du plan' &&
+    mGates.colonnes[40].groupe === 'Réalisation FWD' &&
+    mGates.colonnes[46].groupe === 'HDK AA' &&
+    mGates.colonnes[136].groupe === 'HDK AA 009',
+    JSON.stringify([mGates.colonnes[24].groupe, mGates.colonnes[40].groupe,
+                    mGates.colonnes[46].groupe, mGates.colonnes[136].groupe]));
+  verifier('un groupe ne déborde pas sur ce qui le suit',
+    mGates.colonnes[44].groupe === '' && mGates.colonnes[45].groupe === '',
+    JSON.stringify([mGates.colonnes[44].groupe, mGates.colonnes[45].groupe]));
+
+  verifier('la ligne de service sous l\'en-tête est écartée',
+    mGates.plans.length === 186 && mGates.lignesIgnorees === 1,
+    mGates.plans.length + ' plans, ' + mGates.lignesIgnorees + ' ignorée(s)');
+  verifier('la référence figée est « Référence UD »',
+    mGates.colonnes.find(c => c.fige).titre === 'Référence UD');
+  verifier('la date de création est trouvée malgré les autres dates',
+    mGates.cleDate === 'date_creation', String(mGates.cleDate));
+
+  const titresDim = mGates.colonnes.filter(c => c.dim).map(c => c.titre);
+  verifier('l\'ATA figure dans les dimensions malgré sa 25ᵉ position',
+    titresDim.indexOf('ATA') !== -1, JSON.stringify(titresDim));
+  verifier('l\'ATA est ouvert par défaut', mGates.dimParDefaut === 'ata', mGates.dimParDefaut);
+  verifier('la Séquence et le Statut iBG aussi',
+    titresDim.indexOf('Séquence') !== -1 && titresDim.indexOf('Statut iBG') !== -1);
+  verifier('aucune colonne de texte libre n\'est une dimension',
+    !titresDim.some(t => /Commentaire|Libellé|Raison|Désignation/i.test(t)), JSON.stringify(titresDim));
+  verifier('aucun intitulé répété n\'est une dimension',
+    !titresDim.some(t => ['Validité', 'Quantité', 'A traiter par', 'Configuration officielle',
+                          'Avancement Définition Electrique', 'Avancement Concept Harnais',
+                          'Type'].indexOf(t) !== -1), JSON.stringify(titresDim));
+  verifier('ni la référence, ni le FWD, ni la date',
+    !titresDim.some(t => ['Référence UD', 'Avancement', 'Date création'].indexOf(t) !== -1));
+  verifier('le nombre de dimensions reste tenable', titresDim.length <= 8, String(titresDim.length));
+
+  verifier('les 91 colonnes des blocs répétés s\'ouvrent repliées',
+    mGates.colonnes.filter(c => c.masqueeAuDepart).length === 91,
+    String(mGates.colonnes.filter(c => c.masqueeAuDepart).length));
+  verifier('aucune colonne utile n\'est repliée',
+    !mGates.colonnes.filter(c => c.masqueeAuDepart)
+      .some(c => ['reference', 'avancement'].indexOf(c.cle) !== -1));
+
+  // Les forçages doivent l'emporter sur la détection.
+  const force = serveurGates(40, {
+    COLONNE_FWD: 'HDK AA > Avancement Concept Harnais',
+    DIMENSIONS: ['Groupage', 'ATA']
+  });
+  const mForce = force.contexte.construireModele();
+  verifier('CONFIG.COLONNE_FWD impose la colonne, groupe compris',
+    mForce.colonnes.find(c => c.cle === 'avancement').titre === 'Avancement Concept Harnais' &&
+    mForce.colonnes.find(c => c.cle === 'avancement').groupe === 'HDK AA',
+    mForce.colonnes.find(c => c.cle === 'avancement').groupe);
+  verifier('CONFIG.DIMENSIONS impose la liste et son ordre',
+    JSON.stringify(mForce.clesDim) === JSON.stringify(['groupage', 'ata']),
+    JSON.stringify(mForce.clesDim));
+
+  verifier('aucune autre colonne ne s\'empare des clés réservées',
+    mForce.colonnes.filter(c => c.cle === 'avancement').length === 1 &&
+    mForce.colonnes.filter(c => c.cle === 'reference').length === 1,
+    JSON.stringify(mForce.colonnes.filter(c => /^(avancement|reference)/.test(c.cle)).map(c => c.cle + ':' + c.titre)));
+
+  const forceInconnu = serveurGates(20, { COLONNE_FWD: 'Colonne qui n\'existe pas' });
+  verifier('un forçage qui ne tombe sur rien retombe sur la détection',
+    forceInconnu.contexte.construireModele().colonnes.find(c => c.cle === 'avancement').titre === 'Avancement');
+
+  // L'archivage doit tenir sur 137 colonnes et treize blocs répétés.
+  gates.contexte.enregistrerInstantaneHebdo();
+  const hg = gates.contexte.getHistorique(gates.classeur);
+  verifier('le relevé s\'archive sur la structure réelle',
+    hg.length === 1 && hg[0].total === 186 &&
+    hg[0].termine + hg[0].encours + hg[0].afaire + hg[0].vide === 186);
+  verifier('les comptes par ATA sont archivés',
+    hg[0].groupes.ata && Object.keys(hg[0].groupes.ata).length >= 5,
+    JSON.stringify(Object.keys(hg[0].groupes.ata || {})));
+
+  const rapportGates = gates.contexte.diagnostic();
+  verifier('le diagnostic nomme la colonne FWD et son groupe',
+    /Avancement FWD : colonne « Avancement », groupe « Réalisation FWD »/.test(rapportGates),
+    rapportGates.split('\n').find(l => /Avancement FWD/.test(l)));
+  verifier('il liste les colonnes d\'analyse en clair',
+    /Analyse par : .*ATA/.test(rapportGates), rapportGates.split('\n').find(l => /Analyse par/.test(l)));
+  verifier('il signale les lignes ignorées et les colonnes repliées',
+    /1 ligne\(s\) sans référence ignorée/.test(rapportGates) &&
+    /91 colonnes repliées/.test(rapportGates));
 
   // =================================================================
   section('Classement des quatre états, côté serveur');
@@ -353,6 +475,51 @@ function serveurSur(valeurs, proprietes, fichiers) {
     await p.evaluate(() => [...document.querySelectorAll('.critique-total')]
       .reduce((s, t) => s + (+t.textContent), 0) === 186));
 
+  // =================================================================
+  section('La page sur les 137 colonnes réelles');
+  construire({ gates: true, sortie: 'apercu-gates.html' });
+  /* Contexte neuf : les deux aperçus sont servis depuis file://, donc ils
+     partagent le même localStorage. Sans isolation, la page hériterait des
+     colonnes et de la dimension choisies par les tests précédents. */
+  const ctxGates = await nav.newContext({ viewport: { width: 1280, height: 1000 } });
+  const pg = await ctxGates.newPage();
+  pg.on('pageerror', e => erreursJS.push('gates : ' + e.message));
+  pg.on('console', m => { if (m.type() === 'error' && !m.text().includes('ERR_FILE')) erreursJS.push('gates : ' + m.text()); });
+  await pg.goto('file://' + path.join(__dirname, '..', 'apercu-gates.html'));
+  await pg.waitForTimeout(1800);
+
+  const vg = await pg.evaluate(() => ({
+    etats: [...document.querySelectorAll('.etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
+    visibles: document.querySelectorAll('tr.titres th').length,
+    lignes: document.querySelectorAll('#corps-tableau tr').length,
+    debord: document.documentElement.scrollWidth - window.innerWidth,
+    dimActive: document.getElementById('dim-critique').value,
+    titre: document.getElementById('titre-groupe').textContent,
+    groupes: document.querySelectorAll('.critique-ligne').length,
+    totaux: [...document.querySelectorAll('.critique-total')].reduce((s, t) => s + (+t.textContent), 0),
+    colFWD: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()).indexOf('Avancement')
+  }));
+  verifier('les 186 plans sont là malgré les 137 colonnes', vg.lignes === 186, String(vg.lignes));
+  verifier('les quatre états totalisent 186', vg.etats.reduce((a, b) => a + b, 0) === 186, JSON.stringify(vg.etats));
+  verifier('le tableau s\'ouvre sur 46 colonnes, pas 137', vg.visibles === 46, String(vg.visibles));
+  verifier('la colonne « Avancement » est visible au départ', vg.colFWD !== -1, String(vg.colFWD));
+  verifier('pas de débordement horizontal de la page', vg.debord <= 2, vg.debord + ' px');
+  verifier('l\'ATA est ouvert par défaut', vg.dimActive === 'ata' && /par ATA/.test(vg.titre), vg.titre);
+  verifier('tous les ATA sont comptés', vg.totaux === 186 && vg.groupes >= 5,
+    vg.groupes + ' groupes, ' + vg.totaux + ' plans');
+
+  await pg.click('#tout-colonnes').catch(async () => {
+    await pg.click('#bascule-colonnes'); await pg.waitForTimeout(250); await pg.click('#tout-colonnes');
+  });
+  await pg.waitForTimeout(600);
+  verifier('« tout afficher » ramène les 137 colonnes',
+    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === 137,
+    String(await pg.evaluate(() => document.querySelectorAll('tr.titres th').length)));
+  verifier('et la page tient toujours', await pg.evaluate(() =>
+    document.documentElement.scrollWidth - window.innerWidth <= 2 &&
+    document.querySelectorAll('#corps-tableau tr').length === 186));
+
+  await ctxGates.close();
   await ctx.close();
   await nav.close();
 

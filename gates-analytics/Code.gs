@@ -46,6 +46,31 @@ const CONFIG = {
   MAX_DIMENSIONS: 8,
 
   /**
+   * Forçages. Vides, tout est déduit de l'en-tête — ce qui suffit dans la
+   * plupart des cas. À remplir seulement si la détection se trompe.
+   *
+   * COLONNE_FWD : intitulé exact de la colonne d'avancement FWD. Si deux
+   *   colonnes portent le même intitulé, préfixer par le groupe :
+   *   'Réalisation FWD > Avancement'.
+   * DIMENSIONS : intitulés des colonnes proposées dans « Avancement FWD par… »,
+   *   dans l'ordre voulu. Même syntaxe « Groupe > Colonne » en cas de doublon.
+   */
+  COLONNE_FWD: '',
+  DIMENSIONS: [],
+
+  /**
+   * Groupes de colonnes masqués à la première ouverture. L'export GATES répète
+   * un bloc de sept colonnes par variante, soit une centaine de colonnes qui
+   * noieraient le tableau. Rien n'est supprimé : « Colonnes → tout afficher »
+   * les ramène, et le choix de chacun est retenu.
+   */
+  GROUPES_MASQUES_AU_DEPART: ['HDK AA'],
+
+  /** Intitulés de texte libre : jamais des catégories, quoi qu'en dise le contenu. */
+  MOTS_TEXTE_LIBRE: ['commentaire', 'libelle', 'raison', 'designation', 'remarque',
+                     'note', 'description', 'observation'],
+
+  /**
    * true = la page peut être embarquée dans n'importe quel site (Google Sites).
    * false = protection anti-clickjacking (recommandé si l'appli est ouverte directement).
    */
@@ -221,25 +246,96 @@ function detecterLigneEntete(donnees) {
   return 0;
 }
 
-/** Propage les groupes fusionnés (la ligne au-dessus de l'en-tête) vers la droite. */
-function propagerGroupes(groupes, nbColonnes) {
-  const resultat = new Array(nbColonnes);
+/**
+ * Le groupe de chaque colonne, d'après la ligne au-dessus de l'en-tête.
+ *
+ * Cette ligne est faite de cellules fusionnées : « Réalisation FWD » couvre
+ * quatre colonnes, chaque variante HDK AA en couvre sept. On lit donc les
+ * fusions réelles de la feuille. Propager le dernier libellé vers la droite,
+ * comme on le faisait, étalait un groupe sur tout ce qui le suivait — et
+ * l'export GATES compte vingt-sept colonnes dont l'intitulé contient
+ * « avancement » : sans le bon groupe, impossible de désigner la bonne.
+ */
+function groupesParColonne(feuille, ligneGroupes, nbColonnes) {
+  const resultat = new Array(nbColonnes).fill('');
+  let fusions = [];
+  try {
+    fusions = feuille.getRange(ligneGroupes, 1, 1, nbColonnes).getMergedRanges();
+  } catch (err) {
+    fusions = [];
+  }
+
+  if (fusions.length) {
+    const valeurs = feuille.getRange(ligneGroupes, 1, 1, nbColonnes).getDisplayValues()[0];
+    // Une cellule seule porte son propre libellé ; une fusion le porte sur toute sa largeur.
+    for (let i = 0; i < nbColonnes; i++) {
+      resultat[i] = valeurs[i] ? String(valeurs[i]).trim() : '';
+    }
+    fusions.forEach(function (plage) {
+      const debut = plage.getColumn();
+      const largeur = plage.getNumColumns();
+      const texte = String(valeurs[debut - 1] || '').trim();
+      for (let i = debut - 1; i < debut - 1 + largeur && i < nbColonnes; i++) resultat[i] = texte;
+    });
+    return resultat;
+  }
+
+  /* Pas de fusion lisible (feuille copiée, export brut) : on retombe sur la
+     propagation vers la droite, en s'arrêtant sur les cellules vides s'il y en
+     a autant que de colonnes — signe que la ligne est déjà complète. */
+  const brut = ligneGroupes >= 1 ? feuille.getRange(ligneGroupes, 1, 1, nbColonnes).getDisplayValues()[0] : [];
   let dernier = '';
   for (let i = 0; i < nbColonnes; i++) {
-    const valeur = groupes && groupes[i] ? String(groupes[i]).trim() : '';
+    const valeur = brut && brut[i] ? String(brut[i]).trim() : '';
     if (valeur !== '') dernier = valeur;
     resultat[i] = dernier;
   }
   return resultat;
 }
 
-/** Index de la colonne d'avancement FWD, du critère le plus précis au plus large. */
+/**
+ * Désigne une colonne par son intitulé, ou par « Groupe > Colonne » quand
+ * l'intitulé seul est ambigu. Renvoie -1 si la désignation ne tombe sur rien.
+ */
+function indexParDesignation(designation, entetes, groupes) {
+  const voulu = normaliser(designation);
+  if (!voulu) return -1;
+  const coupe = voulu.split('>');
+  if (coupe.length === 2) {
+    const g = coupe[0].trim(), c = coupe[1].trim();
+    for (let i = 0; i < entetes.length; i++) {
+      if (normaliser(entetes[i]) === c && normaliser(groupes[i] || '') === g) return i;
+    }
+    return -1;
+  }
+  for (let i = 0; i < entetes.length; i++) {
+    if (normaliser(entetes[i]) === voulu) return i;
+  }
+  return -1;
+}
+
+/**
+ * Index de la colonne d'avancement FWD.
+ *
+ * L'export GATES compte vingt-sept colonnes dont l'intitulé contient
+ * « avancement » : une seule est le FWD (« Avancement », sous le groupe
+ * « Réalisation FWD »), les autres appartiennent aux blocs répétés par
+ * variante (« Avancement Définition Electrique », « Avancement Concept
+ * Harnais »). Le groupe est donc le critère décisif, et les intitulés qui
+ * nomment explicitement un autre sujet sont écartés d'office.
+ */
 function trouverIndexFWD(entetes, groupes) {
+  const force = indexParDesignation(CONFIG.COLONNE_FWD, entetes, groupes);
+  if (force !== -1) return force;
+
+  const autreSujet = /(definition|concept|harnais|electrique|ibg|documentaire)/;
   const criteres = [
-    function (col, grp) { return col.indexOf('avancement') !== -1 && (grp.indexOf('fwd') !== -1 || col.indexOf('fwd') !== -1); },
+    function (col, grp) { return col === 'avancement' && grp.indexOf('fwd') !== -1; },
+    function (col, grp) { return col.indexOf('avancement') !== -1 && grp.indexOf('fwd') !== -1 && !autreSujet.test(col); },
+    function (col) { return col.indexOf('avancement') !== -1 && col.indexOf('fwd') !== -1; },
     function (col, grp) { return col.indexOf('realisation') !== -1 && (grp.indexOf('fwd') !== -1 || col.indexOf('fwd') !== -1); },
-    function (col) { return col.indexOf('fwd') !== -1; },
-    function (col) { return col.indexOf('avancement') !== -1; }
+    function (col, grp) { return col.indexOf('avancement') !== -1 && !autreSujet.test(col) && grp.indexOf('concept') === -1; },
+    function (col) { return col.indexOf('fwd') !== -1; }
   ];
   for (let c = 0; c < criteres.length; c++) {
     for (let i = 0; i < entetes.length; i++) {
@@ -309,12 +405,25 @@ function construireModele() {
   const indexEntete = detecterLigneEntete(donnees);
   const entetes = donnees[indexEntete].map(function (e) { return String(e).trim(); });
   const nbColonnes = entetes.length;
-  const groupes = propagerGroupes(indexEntete > 0 ? donnees[indexEntete - 1] : [], nbColonnes);
-  const lignes = donnees.slice(indexEntete + 1).filter(ligneNonVide);
+  const groupes = indexEntete > 0
+    ? groupesParColonne(feuille, indexEntete, nbColonnes)   // 1-based : la ligne au-dessus
+    : new Array(nbColonnes).fill('');
 
   const iFWD = trouverIndexFWD(entetes, groupes);
   const iRef = trouverIndexReference(entetes);
-  const iDate = trouverIndexDate(entetes, lignes);
+  const lignesBrutes = donnees.slice(indexEntete + 1);
+  const iDate = trouverIndexDate(entetes, lignesBrutes);
+
+  /* Une ligne est un plan si elle porte une référence. L'export intercale des
+     lignes de service sous l'en-tête ; sans ce filtre elles compteraient comme
+     des plans et fausseraient tous les totaux. */
+  let lignes = lignesBrutes.filter(function (l) {
+    return String(l[iRef] === undefined ? '' : l[iRef]).trim() !== '';
+  });
+  if (lignes.length === 0) {
+    // Aucune référence nulle part : on retombe sur « la ligne dit quelque chose ».
+    lignes = lignesBrutes.filter(ligneNonVide);
+  }
 
   // Statistiques par colonne : longueur moyenne et nombre de valeurs distinctes.
   const stats = [];
@@ -335,18 +444,29 @@ function construireModele() {
     });
   }
 
-  const deja = {};
+  // Un intitulé qui revient à l'identique ne peut pas nommer une dimension :
+  // « A traiter par » apparaît treize fois, personne ne saurait laquelle c'est.
+  const occurrences = {};
+  entetes.forEach(function (t) {
+    const n = normaliser(t);
+    occurrences[n] = (occurrences[n] || 0) + 1;
+  });
+
+  /* « reference » et « avancement » sont réservées d'emblée : sinon une colonne
+     intitulée « Avancement » située avant celle du FWD s'emparerait de la clé,
+     et le reste du code désignerait la mauvaise. L'export GATES en compte une
+     par variante. */
+  const deja = { reference: true, avancement: true };
   const colonnes = [];
-  let cleFWD = null, cleRef = null, cleDate = null;
-  let nbDims = 0;
+  let cleFWD = null;
+  let cleDate = null;
 
   for (let i = 0; i < nbColonnes; i++) {
     const titre = entetes[i] || ('Colonne ' + (i + 1));
     const cle = (i === iRef) ? 'reference'
               : (i === iFWD) ? 'avancement'
               : cleDepuisEntete(titre, deja);
-    if (i === iRef) { deja.reference = true; cleRef = cle; }
-    if (i === iFWD) { deja.avancement = true; cleFWD = cle; }
+    if (i === iFWD) cleFWD = cle;
     if (i === iDate) cleDate = cle;
 
     const s = stats[i];
@@ -355,21 +475,40 @@ function construireModele() {
     else if (s.longueurMoyenne > 28) classe = 'large';
     else if (s.longueurMoyenne <= 12) classe = 'num';
 
-    /* Une colonne est une « dimension » si elle se comporte comme une
-       catégorie : assez de valeurs pour distinguer, assez peu pour regrouper. */
-    const categorielle = i !== iRef && i !== iFWD && i !== iDate &&
-      s.distinctes >= 2 &&
-      s.distinctes <= CONFIG.MAX_VALEURS_DIMENSION &&
-      s.distinctes <= Math.max(2, lignes.length / 2) &&
-      s.longueurMoyenne <= 28 &&
-      nbDims < CONFIG.MAX_DIMENSIONS;
-    if (categorielle) nbDims++;
-
     const col = { cle: cle, groupe: groupes[i] || '', titre: titre, classe: classe };
     if (i === iRef) col.fige = true;
-    if (categorielle) col.dim = true;
+    if (estMasqueAuDepart(col.groupe)) col.masqueeAuDepart = true;
+    col.__i = i;
+    col.__score = scoreDimension(i, titre, s, lignes.length, occurrences, iRef, iFWD, iDate);
     colonnes.push(col);
   }
+
+  /* Les dimensions sont choisies par pertinence, pas par position. Prendre les
+     premières de gauche épuiserait le quota bien avant d'atteindre l'ATA, qui
+     est en vingt-cinquième colonne. */
+  const forcees = CONFIG.DIMENSIONS && CONFIG.DIMENSIONS.length
+    ? CONFIG.DIMENSIONS
+        .map(function (d) { return indexParDesignation(d, entetes, groupes); })
+        .filter(function (i) { return i !== -1; })
+    : null;
+
+  if (forcees) {
+    forcees.forEach(function (i) { colonnes[i].dim = true; });
+  } else {
+    colonnes.slice()
+      .filter(function (c) { return c.__score > 0; })
+      .sort(function (a, b) { return b.__score - a.__score || a.__i - b.__i; })
+      .slice(0, CONFIG.MAX_DIMENSIONS)
+      .forEach(function (c) { c.dim = true; });
+  }
+
+  /* Ordre du sélecteur : celui de la feuille, pour qu'on s'y retrouve —
+     sauf si la liste a été forcée, auquel cas c'est l'ordre demandé. */
+  const clesDim = forcees
+    ? forcees.map(function (i) { return colonnes[i].cle; })
+    : colonnes.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; });
+
+  colonnes.forEach(function (c) { delete c.__score; delete c.__i; });
 
   const plans = lignes.map(function (ligne, n) {
     const p = {};
@@ -384,8 +523,6 @@ function construireModele() {
     return p;
   });
 
-  const clesDim = colonnes.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; });
-
   return {
     feuille: feuille.getName(),
     colonnes: colonnes,
@@ -395,8 +532,55 @@ function construireModele() {
     dimParDefaut: choisirDimensionParDefaut(colonnes, clesDim),
     avertissement: cleFWD === null
       ? 'Aucune colonne d\'avancement FWD n\'a été reconnue dans l\'en-tête.'
-      : ''
+      : '',
+    lignesIgnorees: lignesBrutes.length - lignes.length
   };
+}
+
+/** Un groupe dont le nom commence par un préfixe listé s'ouvre replié. */
+function estMasqueAuDepart(groupe) {
+  const g = normaliser(groupe);
+  if (!g) return false;
+  return CONFIG.GROUPES_MASQUES_AU_DEPART.some(function (prefixe) {
+    return g.indexOf(normaliser(prefixe)) === 0;
+  });
+}
+
+/**
+ * Note de « catégoricité » d'une colonne : 0 = jamais une dimension.
+ *
+ * Une bonne dimension découpe la population en quelques paquets comparables.
+ * Deux valeurs, c'est déjà un découpage ; deux cents, c'est un identifiant.
+ * Une colonne de texte libre n'en est jamais une, même si l'export n'en a
+ * rempli que trois cases.
+ */
+function scoreDimension(index, titre, stats, nbLignes, occurrences, iRef, iFWD, iDate) {
+  if (index === iRef || index === iFWD || index === iDate) return 0;
+  if (!titre) return 0;
+
+  const n = normaliser(titre);
+  if (occurrences[n] > 1) return 0;                       // intitulé ambigu
+  for (let m = 0; m < CONFIG.MOTS_TEXTE_LIBRE.length; m++) {
+    if (n.indexOf(CONFIG.MOTS_TEXTE_LIBRE[m]) !== -1) return 0;
+  }
+  if (stats.distinctes < 2) return 0;                     // une seule valeur : rien à découper
+  if (stats.distinctes > CONFIG.MAX_VALEURS_DIMENSION) return 0;
+  if (stats.distinctes > Math.max(2, nbLignes / 2)) return 0;
+  if (stats.longueurMoyenne > 28) return 0;
+  if (stats.remplies < nbLignes * 0.5) return 0;          // trop de trous pour trancher
+
+  /* On préfère ce qui parle au métier, puis ce qui se lit d'un coup d'œil :
+     une dizaine de paquets, des valeurs courtes, une colonne bien remplie. */
+  const metier = ['ata', 'sequence', 'chapitre', 'statut', 'validation', 'etape',
+                  'produit', 'domaine', 'groupage', 'zone', 'lot', 'type'];
+  let score = 10;
+  for (let k = 0; k < metier.length; k++) {
+    if (n.indexOf(metier[k]) !== -1) { score += 100 - k * 4; break; }
+  }
+  score += Math.max(0, 30 - Math.abs(stats.distinctes - 10) * 2);
+  score += Math.max(0, 20 - stats.longueurMoyenne);
+  score += (stats.remplies / Math.max(1, nbLignes)) * 20;
+  return score;
 }
 
 /**
@@ -432,6 +616,7 @@ function getDonneesPourClient() {
       colonnes: modele.colonnes,
       cleDate: modele.cleDate,
       dimParDefaut: modele.dimParDefaut,
+      lignesIgnorees: modele.lignesIgnorees,
       plans: modele.plans,
       releves: getHistorique(classeur),
       jalons: getJalons()
@@ -534,7 +719,8 @@ function diagnostic() {
       dire('✗ ' + modele.avertissement);
       dire('   → la page s\'affichera, mais tout sera « non renseigné ».');
     } else {
-      dire('✓ Avancement FWD : colonne « ' + colFWD.titre + ' »');
+      dire('✓ Avancement FWD : colonne « ' + colFWD.titre + ' »' +
+           (colFWD.groupe ? ', groupe « ' + colFWD.groupe + ' »' : ''));
       const compte = { termine: 0, encours: 0, afaire: 0, vide: 0 };
       modele.plans.forEach(function (p) { compte[classerFWD(p.avancement)]++; });
       dire('  ' + compte.termine + ' terminés, ' + compte.encours + ' en cours, ' +
@@ -543,10 +729,19 @@ function diagnostic() {
 
     const colRef = modele.colonnes.filter(function (c) { return c.fige; })[0];
     dire('✓ Référence figée : colonne « ' + (colRef ? colRef.titre : '?') + ' »');
-    dire('✓ Dimensions proposées : ' +
-         (modele.clesDim.length ? modele.clesDim.join(', ') : 'aucune') +
-         (modele.cleDate ? ', ancienneté' : ''));
+    if (modele.lignesIgnorees > 0) {
+      dire('  ' + modele.lignesIgnorees + ' ligne(s) sans référence ignorée(s)');
+    }
+    const titresDim = modele.colonnes
+      .filter(function (c) { return c.dim; })
+      .map(function (c) { return c.titre; });
+    dire('✓ Analyse par : ' + (titresDim.length ? titresDim.join(' · ') : 'aucune colonne')
+         + (modele.cleDate ? ' · ancienneté' : ''));
     dire('  Ouverte par défaut : ' + (modele.dimParDefaut || 'aucune'));
+    const masquees = modele.colonnes.filter(function (c) { return c.masqueeAuDepart; }).length;
+    if (masquees) {
+      dire('  ' + masquees + ' colonnes repliées au départ (« Colonnes → tout afficher » les ramène)');
+    }
 
     const histo = getHistorique(classeur);
     dire('✓ Relevés archivés : ' + histo.length);

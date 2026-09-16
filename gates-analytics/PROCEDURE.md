@@ -85,7 +85,37 @@ Aucun nom de colonne n'est écrit en dur.
 Si les colonnes de l'export changent, il n'y a rien à modifier : recoller et
 ré-archiver suffit.
 
-## 6. Les quatre états
+## 6. Sur l'export GATES réel
+
+L'export compte **137 colonnes**, dont 91 sont treize répétitions du même bloc
+de sept, une par variante HDK AA. Trois conséquences :
+
+- **La colonne d'avancement FWD est « Avancement », sous le groupe
+  « Réalisation FWD ».** Vingt-sept colonnes ont un intitulé qui contient
+  « avancement » (« Avancement Définition Electrique », « Avancement Concept
+  Harnais », treize fois chacune) : c'est le groupe fusionné au-dessus qui
+  départage, et le script lit les vraies fusions de la feuille.
+- **Les 91 colonnes des blocs HDK AA s'ouvrent repliées.** Rien n'est
+  supprimé : « Colonnes → tout afficher » les ramène en un clic, et le choix de
+  chacun est ensuite retenu. Sans ça, le tableau s'ouvrirait sur 137 colonnes.
+- **Les lignes sans référence sont écartées.** L'export intercale des lignes de
+  service sous l'en-tête ; sans ce filtre elles compteraient comme des plans.
+
+### Si la détection se trompe
+
+En haut de `Code.gs`, trois réglages. Vides, tout est déduit ; à remplir
+seulement si le diagnostic montre une erreur.
+
+```js
+COLONNE_FWD: 'Réalisation FWD > Avancement',
+DIMENSIONS: ['ATA', 'Séquence', 'Statut iBG', 'Chapitre'],
+GROUPES_MASQUES_AU_DEPART: ['HDK AA'],
+```
+
+La syntaxe `Groupe > Colonne` sert quand plusieurs colonnes portent le même
+intitulé. `DIMENSIONS` fixe aussi l'ordre du sélecteur.
+
+## 7. Les quatre états
 
 | État | Ce qui le déclenche |
 |---|---|
@@ -98,7 +128,7 @@ ré-archiver suffit.
 saisie*. Les confondre masquerait le second, qui est précisément ce qu'on
 cherche à voir : le bouton « non renseignés » sous la barre sort la liste.
 
-## 7. Les jalons
+## 8. Les jalons
 
 Se posent en cliquant une semaine sur le graphique, se déplacent à la souris ou
 aux flèches du clavier, se retirent par la croix. Ils sont **partagés** : ils
@@ -109,7 +139,7 @@ Le jalon à venir le plus proche pilote les colonnes « à solder/sem. » et
 « effort demandé » du bloc par ATA. Sans jalon, ces colonnes laissent la place
 au rythme actuel.
 
-## 8. Ce qui reste local à chaque personne
+## 9. Ce qui reste local à chaque personne
 
 L'ordre des colonnes, celles qui sont masquées, le tri et le cadrage du
 graphique sont retenus dans le navigateur de chacun. Personne n'impose sa mise

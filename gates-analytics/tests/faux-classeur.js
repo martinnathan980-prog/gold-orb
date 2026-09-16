@@ -2,10 +2,14 @@
    Il permet de faire tourner le code serveur dans Node, donc de tester pour de
    vrai la détection des colonnes et l'aller-retour de l'historique. */
 
-function Feuille(nom, valeurs, cachee) {
+function Feuille(nom, valeurs, cachee, fusions) {
   this.nom = nom;
   this.valeurs = valeurs;          // tableau de tableaux de chaînes
   this.cachee = !!cachee;
+  /* Les plages fusionnées, en 1-based : { ligne, col, larg }. La ligne de
+     groupes d'un export GATES en est faite, et c'est elle qui dit à quelle
+     famille appartient chaque colonne. */
+  this.fusions = fusions || [];
 }
 Feuille.prototype.getName = function () { return this.nom; };
 Feuille.prototype.isSheetHidden = function () { return this.cachee; };
@@ -26,7 +30,28 @@ Feuille.prototype.getDataRange = function () {
 };
 Feuille.prototype.getRange = function (ligne, colonne, nbLignes, nbColonnes) {
   const self = this;
+  function fusionsDansLaPlage() {
+    return self.fusions
+      .filter(function (f) {
+        return f.ligne >= ligne && f.ligne < ligne + nbLignes &&
+               f.col >= colonne && f.col < colonne + nbColonnes;
+      })
+      .map(function (f) {
+        return {
+          getColumn: function () { return f.col; },
+          getNumColumns: function () { return f.larg; },
+          getRow: function () { return f.ligne; },
+          getNumRows: function () { return 1; }
+        };
+      });
+  }
   return {
+    getMergedRanges: fusionsDansLaPlage,
+    getDisplayValues: function () {
+      return this.getValues().map(function (l) {
+        return l.map(function (v) { return v === null || v === undefined ? '' : String(v); });
+      });
+    },
     getValues: function () {
       const out = [];
       for (let i = 0; i < nbLignes; i++) {

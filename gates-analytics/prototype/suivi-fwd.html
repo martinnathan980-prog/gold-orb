@@ -980,7 +980,15 @@ table.plans thead .col-fige { z-index: 6; }
   var vue = {
     recherche: '', etat: '', filtres: {},
     ordre: COLONNES.map(function (c) { return c.cle; }),
-    cachees: {},
+    /* Certains exports répètent un bloc de colonnes par variante : une centaine
+       de colonnes qui noieraient le tableau à la première ouverture. Elles
+       s'ouvrent repliées — rien n'est supprimé, « tout afficher » les ramène,
+       et le choix de chacun est ensuite retenu. */
+    cachees: (function () {
+      var c = {};
+      COLONNES.forEach(function (col) { if (col.masqueeAuDepart) c[col.cle] = true; });
+      return c;
+    })(),
     tri: { cle: 'reference', asc: true },
     dimCritique: (SRC.dimParDefaut && CLES_DIM.indexOf(SRC.dimParDefaut) !== -1) ? SRC.dimParDefaut : (CLES_DIM[0] || ''),
     triGroupe: { cle: null, asc: false },
