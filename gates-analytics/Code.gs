@@ -95,14 +95,6 @@ const CONFIG = {
    */
   COLONNE_DOMAINE: 'Domaine',
 
-  /**
-   * Groupes de colonnes masqués à la première ouverture. L'export GATES répète
-   * un bloc de sept colonnes par variante, soit une centaine de colonnes qui
-   * noieraient le tableau. Rien n'est supprimé : « Colonnes → tout afficher »
-   * les ramène, et le choix de chacun est retenu.
-   */
-  GROUPES_MASQUES_AU_DEPART: ['HDK AA'],
-
   /** Intitulés de texte libre : jamais des catégories, quoi qu'en dise le contenu. */
   MOTS_TEXTE_LIBRE: ['commentaire', 'libelle', 'raison', 'designation', 'remarque',
                      'note', 'description', 'observation'],
@@ -416,10 +408,18 @@ function trouverIndexDate(entetes, lignes) {
   return -1;
 }
 
+/* La feuille est lue en `getDisplayValues()` : on reçoit ce que la cellule
+   MONTRE, donc toujours du texte, déjà mis en forme par le classeur. Une date
+   arrive telle qu'elle s'affiche — `16/07/2020` sur une feuille française,
+   `2020-07-16` ailleurs — et c'est la page qui sait lire les deux ordres. */
+function valeurCellule(v) {
+  return v === undefined || v === null ? '' : String(v).trim();
+}
+
 function colonneRessembleAUneDate(lignes, index) {
   let vues = 0, dates = 0;
   for (let i = 0; i < lignes.length && vues < 40; i++) {
-    const v = String(lignes[i][index] || '').trim();
+    const v = valeurCellule(lignes[i][index]);
     if (!v) continue;
     vues++;
     if (/\d{4}[-\/.]\d{1,2}|\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4}/.test(v)) dates++;
@@ -466,7 +466,7 @@ function construireModele() {
      lignes de service sous l'en-tête ; sans ce filtre elles compteraient comme
      des plans et fausseraient tous les totaux. */
   let lignes = lignesBrutes.filter(function (l) {
-    return String(l[iRef] === undefined ? '' : l[iRef]).trim() !== '';
+    return valeurCellule(l[iRef]) !== '';
   });
   if (lignes.length === 0) {
     // Aucune référence nulle part : on retombe sur « la ligne dit quelque chose ».
@@ -479,7 +479,7 @@ function construireModele() {
     const distinctes = {};
     let nDistinctes = 0, somme = 0, remplies = 0;
     for (let l = 0; l < lignes.length; l++) {
-      const v = String(lignes[l][c] === undefined ? '' : lignes[l][c]).trim();
+      const v = valeurCellule(lignes[l][c]);
       if (!v) continue;
       remplies++;
       somme += v.length;
@@ -525,7 +525,6 @@ function construireModele() {
 
     const col = { cle: cle, groupe: groupes[i] || '', titre: titre, classe: classe };
     if (i === iRef) col.fige = true;
-    if (estMasqueAuDepart(col.groupe)) col.masqueeAuDepart = true;
     col.__i = i;
     col.__score = scoreDimension(i, titre, s, lignes.length, occurrences, iRef, iFWD, iDate);
     colonnes.push(col);
@@ -561,7 +560,7 @@ function construireModele() {
   const plans = lignes.map(function (ligne, n) {
     const p = {};
     for (let i = 0; i < nbColonnes; i++) {
-      p[colonnes[i].cle] = String(ligne[i] === undefined ? '' : ligne[i]).trim();
+      p[colonnes[i].cle] = valeurCellule(ligne[i]);
     }
     // Une référence vide rendrait le comparatif faux : on en fabrique une stable.
     if (!p.reference) p.reference = 'ligne-' + (n + 1);
@@ -587,15 +586,6 @@ function construireModele() {
       : '',
     lignesIgnorees: lignesBrutes.length - lignes.length
   };
-}
-
-/** Un groupe dont le nom commence par un préfixe listé s'ouvre replié. */
-function estMasqueAuDepart(groupe) {
-  const g = normaliser(groupe);
-  if (!g) return false;
-  return CONFIG.GROUPES_MASQUES_AU_DEPART.some(function (prefixe) {
-    return g.indexOf(normaliser(prefixe)) === 0;
-  });
 }
 
 /**
@@ -814,10 +804,8 @@ function diagnostic() {
     dire('✓ Analyse par : ' + (titresDim.length ? titresDim.join(' · ') : 'aucune colonne')
          + (modele.cleDate ? ' · ancienneté' : ''));
     dire('  Ouverte par défaut : ' + (modele.dimParDefaut || 'aucune'));
-    const masquees = modele.colonnes.filter(function (c) { return c.masqueeAuDepart; }).length;
-    if (masquees) {
-      dire('  ' + masquees + ' colonnes repliées au départ (« Colonnes → tout afficher » les ramène)');
-    }
+    dire('  Tableau ouvert sur les ' + modele.colonnes.length +
+         ' colonnes de la feuille, dans son ordre');
 
     const histo = getHistorique(classeur);
     dire('✓ Relevés archivés : ' + histo.length);

@@ -93,9 +93,12 @@ function feuilleGates(nbLignes) {
     const l = vide();
     const ata = tire(ATA);
     l[iRef]   = 'UD-' + ata + '-' + String(1000 + i * 7).slice(-4);
-    l[iDate]  = '20' + (17 + Math.floor(alea() * 9)) + '-' +
-                String(1 + Math.floor(alea() * 12)).padStart(2, '0') + '-' +
-                String(1 + Math.floor(alea() * 27)).padStart(2, '0') + 'T22:00:00.000Z';
+    /* `getDisplayValues()` rend ce que la cellule MONTRE : sur une feuille
+       francaise, une date s'ecrit jour d'abord. Le jeu d'exemple de la page,
+       lui, la donne en ISO — les deux ordres sont donc couverts. */
+    l[iDate]  = String(1 + Math.floor(alea() * 27)).padStart(2, '0') + '/' +
+                String(1 + Math.floor(alea() * 12)).padStart(2, '0') + '/' +
+                (2017 + Math.floor(alea() * 9));
     l[iAta]   = ata;
     l[iSeq]   = 'S' + (1 + Math.floor(alea() * 5));
     l[iEtape] = tire(['AVAILABLE', 'IN WORK', 'FROZEN']);

@@ -164,17 +164,19 @@ function serveurSur(valeurs, proprietes, fichiers) {
     !titresAuto.some(t => ['Validité', 'Quantité', 'A traiter par', 'Type'].indexOf(t) !== -1),
     JSON.stringify(titresAuto));
 
-  verifier('les 91 colonnes des blocs répétés s\'ouvrent repliées',
-    mGates.colonnes.filter(c => c.masqueeAuDepart).length === 91,
-    String(mGates.colonnes.filter(c => c.masqueeAuDepart).length));
+  verifier('aucune colonne n\'est écartée du modèle : l\'extract passe entier',
+    mGates.colonnes.length === 138, String(mGates.colonnes.length));
   verifier('la ligne sans référence est bien celle du parasite',
     mGates.plans.every(p => /^UD-/.test(p.reference)),
     JSON.stringify(mGates.plans.filter(p => !/^UD-/.test(p.reference)).map(p => p.reference).slice(0, 3)));
-  verifier('les dates ISO avec heure sont reconnues comme dates',
-    mGates.plans.every(p => /^\d{4}-\d{2}-\d{2}T/.test(p[mGates.cleDate])));
-  verifier('aucune colonne utile n\'est repliée',
-    !mGates.colonnes.filter(c => c.masqueeAuDepart)
-      .some(c => ['reference', 'avancement'].indexOf(c.cle) !== -1));
+  /* La feuille est lue en `getDisplayValues()` : la date arrive telle qu'elle
+     s'affiche. Sur une feuille française, c'est le jour d'abord — et la
+     colonne doit quand même être reconnue comme une date. */
+  verifier('une date à la française traverse le modèle telle quelle',
+    mGates.plans.every(p => /^\d{2}\/\d{2}\/\d{4}$/.test(p[mGates.cleDate])),
+    JSON.stringify(mGates.plans.slice(0, 2).map(p => p[mGates.cleDate])));
+  verifier('et la colonne de date est repérée malgré l\'ordre jour-mois',
+    mGates.cleDate === 'date_creation', String(mGates.cleDate));
 
   // Les forçages doivent l'emporter sur la détection.
   const force = serveurGates(40, {
@@ -215,9 +217,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
     rapportGates.split('\n').find(l => /Avancement FWD/.test(l)));
   verifier('il liste les colonnes d\'analyse en clair',
     /Analyse par : .*ATA/.test(rapportGates), rapportGates.split('\n').find(l => /Analyse par/.test(l)));
-  verifier('il signale les lignes ignorées et les colonnes repliées',
+  verifier('il signale les lignes ignorées et annonce l\'extract entier',
     /1 ligne\(s\) sans référence ignorée/.test(rapportGates) &&
-    /91 colonnes repliées/.test(rapportGates));
+    /Tableau ouvert sur les 138 colonnes de la feuille, dans son ordre/.test(rapportGates),
+    rapportGates.split('\n').find(l => /Tableau ouvert/.test(l)));
 
   // =================================================================
   section('Classement des quatre états, côté serveur');
@@ -542,18 +545,80 @@ function serveurSur(valeurs, proprietes, fichiers) {
     titre: document.getElementById('titre-groupe').textContent,
     groupes: document.querySelectorAll('.critique-ligne').length,
     totaux: [...document.querySelectorAll('.critique-total')].reduce((s, t) => s + (+t.textContent), 0),
-    colFWD: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()).indexOf('Avancement')
+    colFWD: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()).indexOf('Avancement'),
+    ordre: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim())
   }));
   verifier('les 186 plans sont là malgré les 138 colonnes', vg.lignes === 186, String(vg.lignes));
   verifier('les quatre états totalisent 186', vg.etats.reduce((a, b) => a + b, 0) === 186, JSON.stringify(vg.etats));
-  verifier('le tableau s\'ouvre sur 47 colonnes, pas 138', vg.visibles === 47, String(vg.visibles));
+  /* La consigne est explicite : le tableau du bas EST l'extract. Toutes les
+     colonnes, les mêmes intitulés, l'ordre de la feuille — c'est ce qui fait
+     que tout le monde parle de la même chose. */
+  verifier('le tableau s\'ouvre sur les 138 colonnes de la feuille',
+    vg.visibles === 138, String(vg.visibles));
   verifier('la colonne « Avancement » est visible au départ', vg.colFWD !== -1, String(vg.colFWD));
-  verifier('la référence figée ouvre le tableau, malgré la colonne vide n° 1',
-    await pg.evaluate(() => {
-      const th = document.querySelector('tr.titres th');
-      return th.textContent.trim() === 'Référence UD' && th.classList.contains('col-fige');
-    }));
+  verifier('et dans l\'ordre exact de la feuille, sans exception',
+    JSON.stringify(vg.ordre) === JSON.stringify(mGates.colonnes.map(c => c.titre)),
+    vg.ordre.slice(0, 6).join(' | '));
   verifier('pas de débordement horizontal de la page', vg.debord <= 2, vg.debord + ' px');
+
+  /* Dans l'ordre de la feuille, la référence est en deuxième position. Le bloc
+     figé doit donc tenir sur plusieurs colonnes posées les unes après les
+     autres — sinon la référence vient recouvrir ce qui la précède. */
+  const fige = await pg.evaluate(() => {
+    const th = [...document.querySelectorAll('tr.titres th')];
+    const n = th.findIndex(t => t.textContent.trim() === 'Référence UD');
+    return {
+      rang: n,
+      figees: th.filter(t => t.classList.contains('col-fige')).map(t => t.textContent.trim()),
+      gauches: th.filter(t => t.classList.contains('col-fige')).map(t => parseFloat(t.style.left)),
+      fin: th[n] && th[n].classList.contains('fige-fin'),
+      corpsFigees: [...document.querySelectorAll('#corps-tableau tr:first-child td')]
+        .filter(td => td.classList.contains('col-fige')).length,
+      groupesFiges: [...document.querySelectorAll('.groupes th.col-fige')]
+        .map(t => ({ debut: +t.dataset.debut, span: t.colSpan, gauche: parseFloat(t.style.left) }))
+    };
+  });
+  verifier('le bloc figé couvre tout ce qui précède la référence, elle comprise',
+    fige.figees.length === fige.rang + 1 && fige.figees[fige.rang] === 'Référence UD',
+    JSON.stringify(fige.figees));
+  verifier('chaque colonne figée se pose après la précédente, jamais dessus',
+    fige.gauches[0] === 0 && fige.gauches.every((g, i) => i === 0 || g > fige.gauches[i - 1]),
+    JSON.stringify(fige.gauches));
+  verifier('la dernière colonne figée porte le trait de séparation', fige.fin === true);
+  verifier('le corps fige exactement les mêmes colonnes que l\'en-tête',
+    fige.corpsFigees === fige.figees.length,
+    fige.corpsFigees + ' vs ' + fige.figees.length);
+  verifier('la bande de groupes est coupée à la limite du bloc figé',
+    fige.groupesFiges.length > 0 &&
+    fige.groupesFiges[fige.groupesFiges.length - 1].debut +
+      fige.groupesFiges[fige.groupesFiges.length - 1].span === fige.figees.length,
+    JSON.stringify(fige.groupesFiges));
+
+  /* Un en-tête figé qui passe SOUS les colonnes qui défilent est invisible :
+     la position est bonne mais on lit le mauvais titre. */
+  await pg.evaluate(() => { document.getElementById('defile').scrollLeft = 1200; });
+  await pg.waitForTimeout(350);
+  const apresScroll = await pg.evaluate(() => {
+    const cadre = document.getElementById('defile').getBoundingClientRect();
+    const th = document.querySelector('tr.titres th.col-fige');
+    const dernier = [...document.querySelectorAll('tr.titres th.col-fige')].pop();
+    const suivant = dernier.nextElementSibling;
+    return {
+      x: Math.round(th.getBoundingClientRect().left - cadre.left),
+      zFige: +getComputedStyle(dernier).zIndex,
+      zLibre: +getComputedStyle(suivant).zIndex || 0,
+      titreVisible: document.elementFromPoint(
+        cadre.left + 10, dernier.getBoundingClientRect().top + 8)
+    };
+  });
+  verifier('l\'en-tête figé reste collé à gauche après défilement',
+    Math.abs(apresScroll.x) <= 2, apresScroll.x + ' px');
+  verifier('et il passe au-dessus des colonnes qui défilent',
+    apresScroll.zFige > apresScroll.zLibre,
+    apresScroll.zFige + ' vs ' + apresScroll.zLibre);
+  await pg.evaluate(() => { document.getElementById('defile').scrollLeft = 0; });
+  await pg.waitForTimeout(250);
+
   verifier('l\'ATA est ouvert par défaut', vg.dimActive === 'ata' && /par ATA/.test(vg.titre), vg.titre);
   verifier('tous les ATA sont comptés', vg.totaux === 186 && vg.groupes >= 5,
     vg.groupes + ' groupes, ' + vg.totaux + ' plans');
@@ -619,94 +684,74 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('cliquer un plan du journal réduit le tableau à ce plan',
     await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === 1,
     String(await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length)));
+  /* La référence n'est plus la première cellule : dans l'ordre de la feuille
+     une colonne sans intitulé la précède. On la cherche par son en-tête. */
   verifier('et c\'est bien le bon plan',
-    await pg.evaluate(r => document.querySelector('#corps-tableau td').textContent.trim() === r, refCliquee));
+    await pg.evaluate(r => {
+      const i = [...document.querySelectorAll('tr.titres th')]
+        .findIndex(t => t.textContent.trim() === 'Référence UD');
+      const tr = document.querySelector('#corps-tableau tr');
+      return i !== -1 && tr.children[i].textContent.trim() === r;
+    }, refCliquee));
   await pg.click('.journal-ligne >> nth=0'); await pg.waitForTimeout(600);
   verifier('re-cliquer rend les 186 plans',
     await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === 186);
 
   // =================================================================
-  section('Filtres rapides : domaine et reconduits');
-  const rap = await pg.evaluate(() => ({
-    puces: [...document.querySelectorAll('.puce-rapide')].map(b => b.textContent.trim()),
-    domaines: [...document.querySelectorAll('.puce-rapide[data-domaine]')].map(b => b.dataset.domaine)
+  /* Deux vues, et rien entre les deux : l'extract complet dans l'ordre de la
+     feuille, ou la poignee de colonnes qu'on regarde vraiment. */
+  section('Les deux vues du tableau');
+  const vueDepart = await pg.evaluate(() => ({
+    presse: [...document.querySelectorAll('#vue-tableau button')]
+      .map(b => b.dataset.vue + ':' + b.getAttribute('aria-pressed')),
+    n: document.querySelectorAll('tr.titres th').length
   }));
-  verifier('le domaine propose ses valeurs réelles',
-    rap.domaines.indexOf('PERSO') !== -1 && rap.domaines.indexOf('BASE/OPTION') !== -1,
-    JSON.stringify(rap.domaines));
-  verifier('et un « Tous » pour revenir', rap.domaines.indexOf('') !== -1);
-  verifier('les terminés reconduits sont comptés',
-    rap.puces.some(t => /Terminésreconduits\d+/.test(t.replace(/\s/g, ''))), JSON.stringify(rap.puces));
+  verifier('la vue « toutes les colonnes » est celle de depart',
+    vueDepart.presse.join(' ') === 'toutes:true essentielle:false' && vueDepart.n === 138,
+    JSON.stringify(vueDepart));
 
-  await pg.click('.puce-rapide[data-domaine="PERSO"]'); await pg.waitForTimeout(500);
-  const nPerso = await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length);
-  verifier('filtrer sur un domaine réduit le tableau', nPerso > 0 && nPerso < 186, String(nPerso));
-  verifier('et le tableau ne contient que ce domaine',
-    await pg.evaluate(() => {
-      const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.textContent.trim() === 'Domaine');
-      return i !== -1 && [...document.querySelectorAll('#corps-tableau tr')]
-        .every(tr => tr.children[i].textContent.trim() === 'PERSO');
-    }));
-  await pg.click('.puce-rapide[data-domaine="PERSO"]'); await pg.waitForTimeout(450);
-  verifier('re-cliquer lève le filtre',
-    await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === 186);
-
-  await pg.click('.puce-rapide[data-reconduits]'); await pg.waitForTimeout(500);
-  verifier('les reconduits ne sont que des plans terminés et vieux',
-    await pg.evaluate(() => {
-      const ths = [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim());
-      const iA = ths.indexOf('Avancement'), iD = ths.indexOf('Date création');
-      if (iA === -1 || iD === -1) return false;
-      const lignes = [...document.querySelectorAll('#corps-tableau tr')];
-      if (!lignes.length) return false;
-      return lignes.every(tr => {
-        const a = tr.children[iA].textContent.trim().toLowerCase();
-        const an = Number((tr.children[iD].textContent.match(/^(\d{4})/) || [])[1]);
-        return (/^100|termin/.test(a)) && an <= 2025;
-      });
-    }));
-  await pg.click('.puce-rapide[data-reconduits]'); await pg.waitForTimeout(450);
-
-  // =================================================================
-  section('Vue essentielle du tableau');
-  const toutes = await pg.evaluate(() => document.querySelectorAll('tr.titres th').length);
-  await pg.click('#bascule-essentielles'); await pg.waitForTimeout(600);
+  await pg.click('#vue-tableau button[data-vue="essentielle"]'); await pg.waitForTimeout(600);
   const ess = await pg.evaluate(() => ({
     titres: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()),
-    presse: document.getElementById('bascule-essentielles').getAttribute('aria-pressed'),
-    lignes: document.querySelectorAll('#corps-tableau tr').length
+    presse: [...document.querySelectorAll('#vue-tableau button')]
+      .map(b => b.dataset.vue + ':' + b.getAttribute('aria-pressed')),
+    lignes: document.querySelectorAll('#corps-tableau tr').length,
+    figees: document.querySelectorAll('tr.titres th.col-fige').length
   }));
-  verifier('la vue essentielle ne garde que les colonnes utiles',
-    ess.titres.length >= 5 && ess.titres.length <= 10, String(ess.titres.length));
-  verifier('la référence ouvre le tableau et l\'avancement y est',
-    ess.titres[0] === 'Référence UD' && ess.titres.indexOf('Avancement') !== -1,
-    JSON.stringify(ess.titres));
-  verifier('la vue essentielle est exactement celle demandée',
+  verifier('la vue essentielle est exactement celle demandee',
     JSON.stringify(ess.titres) === JSON.stringify(['Référence UD', 'Nom Installation', 'ECP',
       'ATA', 'Séquence', 'Validation Définition Electrique', 'Date création', 'Avancement']),
     JSON.stringify(ess.titres));
-  verifier('ni Statut iBG ni les blocs répétés n\'y entrent',
+  verifier('ni Statut iBG ni les blocs repetes n\'y entrent',
     ess.titres.indexOf('Statut iBG') === -1 && ess.titres.indexOf('Validité') === -1);
   verifier('aucun plan n\'est perdu au passage', ess.lignes === 186, String(ess.lignes));
-  verifier('le bouton dit qu\'il est enfoncé', ess.presse === 'true');
-  await pg.click('#bascule-essentielles'); await pg.waitForTimeout(600);
-  verifier('le relâcher remet exactement la disposition d\'avant',
-    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === toutes,
-    toutes + ' → ' + (await pg.evaluate(() => document.querySelectorAll('tr.titres th').length)));
+  verifier('la reference ouvre la vue essentielle et reste seule figee',
+    ess.titres[0] === 'Référence UD' && ess.figees === 1, String(ess.figees));
+  verifier('l\'interrupteur dit laquelle des deux est active',
+    ess.presse.join(' ') === 'toutes:false essentielle:true', JSON.stringify(ess.presse));
 
-  // Une disposition personnalisée doit survivre à l'aller-retour.
-  await pg.click('#bascule-colonnes'); await pg.waitForTimeout(250);
-  await pg.click('#panneau-colonnes input[data-col="ata"]'); await pg.waitForTimeout(350);
-  await pg.click('body', { position: { x: 5, y: 5 } }); await pg.waitForTimeout(250);
-  const sansAta = await pg.evaluate(() => document.querySelectorAll('tr.titres th').length);
-  await pg.click('#bascule-essentielles'); await pg.waitForTimeout(500);
-  await pg.click('#bascule-essentielles'); await pg.waitForTimeout(500);
-  verifier('une colonne masquée à la main le reste après l\'aller-retour',
-    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === sansAta,
-    sansAta + ' → ' + (await pg.evaluate(() => document.querySelectorAll('tr.titres th').length)));
-  await pg.click('#bascule-colonnes'); await pg.waitForTimeout(250);
-  await pg.click('#tout-colonnes'); await pg.waitForTimeout(400);
-  await pg.click('body', { position: { x: 5, y: 5 } }); await pg.waitForTimeout(250);
+  await pg.click('#vue-tableau button[data-vue="toutes"]'); await pg.waitForTimeout(600);
+  const retour = await pg.evaluate(() => ({
+    titres: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()),
+    figees: document.querySelectorAll('tr.titres th.col-fige').length
+  }));
+  verifier('revenir rend l\'extract entier dans l\'ordre de la feuille',
+    JSON.stringify(retour.titres) === JSON.stringify(vg.ordre), String(retour.titres.length));
+  verifier('et le bloc fige reprend ses deux colonnes', retour.figees === 2, String(retour.figees));
+
+  // Un aller-retour repete ne doit rien laisser derriere lui.
+  for (let i = 0; i < 4; i++) {
+    await pg.click('#vue-tableau button[data-vue="essentielle"]'); await pg.waitForTimeout(140);
+    await pg.click('#vue-tableau button[data-vue="toutes"]'); await pg.waitForTimeout(140);
+  }
+  await pg.waitForTimeout(500);
+  verifier('quatre allers-retours rapides ne derangent rien',
+    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === 138 &&
+    await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === 186);
+  // Re-cliquer la vue deja active ne doit pas la casser non plus.
+  await pg.click('#vue-tableau button[data-vue="toutes"]'); await pg.waitForTimeout(400);
+  verifier('re-cliquer la vue active la laisse en place',
+    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === 138);
 
   // =================================================================
   section('Bandeau des filtres actifs');
@@ -716,7 +761,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     await pg.evaluate(() => document.getElementById('filtres-actifs').hidden));
 
   await pg.click('.etat-btn[data-etat="encours"]'); await pg.waitForTimeout(350);
-  await pg.click('.puce-rapide[data-domaine="PERSO"]'); await pg.waitForTimeout(350);
+  /* Le filtre par colonne est la seule porte d'entrée depuis que les puces
+     « domaine » et « reconduits » ont été retirées : personne ne les lisait. */
+  await pg.fill('input[data-filtre="domaine"]', 'PERSO'); await pg.waitForTimeout(400);
   await pg.fill('#recherche', 'UD-24'); await pg.waitForTimeout(400);
   const jetons = await pg.evaluate(() => [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()));
   verifier('chaque filtre posé devient un jeton nommé', jetons.length === 3, JSON.stringify(jetons));
@@ -783,7 +830,11 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('cliquer une référence réduit le tableau à ce plan',
     await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === 1);
   verifier('et c\'est la bonne',
-    await pg.evaluate(r => document.querySelector('#corps-tableau td').textContent.trim() === r, refUD));
+    await pg.evaluate(r => {
+      const i = [...document.querySelectorAll('tr.titres th')]
+        .findIndex(t => t.dataset.cle === 'reference');
+      return i !== -1 && document.querySelector('#corps-tableau tr').children[i].textContent.trim() === r;
+    }, refUD));
   await pg.click('#tout-effacer'); await pg.waitForTimeout(450);
 
   // =================================================================
@@ -849,41 +900,91 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pp.goto('file://' + path.join(__dirname, '..', 'apercu-premier.html'));
   await pp.waitForTimeout(1600);
 
-  verifier('avec un seul relevé, le bouton d\'aperçu est proposé',
-    await pp.evaluate(() => !document.getElementById('bascule-exemple').hidden));
-  verifier('le bandeau n\'est pas là tant qu\'on n\'a rien demandé',
-    await pp.evaluate(() => document.getElementById('bandeau-exemple').hidden));
+  /* L'interrupteur vit en haut de page et porte sur tout : il n'y a plus un
+     bouton par bloc, et on ne peut pas se retrouver a moitie en exemple. */
+  const depart = await pp.evaluate(() => ({
+    present: !!document.getElementById('mode-donnees'),
+    haut: Math.round(document.getElementById('bandeau-mode').getBoundingClientRect().top) <
+          Math.round(document.querySelector('.masthead').getBoundingClientRect().top),
+    presse: [...document.querySelectorAll('#mode-donnees button')]
+      .map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')),
+    mot: document.getElementById('mot-mode').textContent.trim(),
+    marque: document.body.dataset.exemple
+  }));
+  verifier('l\'interrupteur est propose, tout en haut de la page',
+    depart.present && depart.haut, JSON.stringify(depart));
+  verifier('il demarre sur les donnees reelles, sans un mot de trop',
+    depart.presse.join(' ') === 'reel:true exemple:false' && depart.mot === '' &&
+    depart.marque === 'false', JSON.stringify(depart));
   verifier('le journal explique pourquoi il est vide',
     await pp.evaluate(() => /deuxième archivage/.test(document.getElementById('zone-journal').textContent)));
 
   const avantEx = await pp.evaluate(() => document.querySelectorAll('.zone-clic').length);
-  await pp.click('#bascule-exemple'); await pp.waitForTimeout(800);
+  await pp.click('#mode-donnees button[data-mode="exemple"]'); await pp.waitForTimeout(900);
   const ex = await pp.evaluate(() => ({
-    bandeau: !document.getElementById('bandeau-exemple').hidden,
-    texteBandeau: document.getElementById('bandeau-exemple').textContent,
+    mot: document.getElementById('mot-mode').textContent,
+    marque: document.body.dataset.exemple,
+    encadre: getComputedStyle(document.getElementById('bandeau-mode')).borderStyle,
     zones: document.querySelectorAll('.zone-clic').length,
     points: document.querySelectorAll('svg.graphe circle').length,
-    presse: document.getElementById('bascule-exemple').getAttribute('aria-pressed'),
+    presse: [...document.querySelectorAll('#mode-donnees button')]
+      .map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')),
     plans: document.querySelectorAll('#corps-tableau tr').length,
+    journal: document.getElementById('zone-journal').textContent,
     phrase: document.getElementById('phrase').textContent
   }));
-  verifier('l\'aperçu trace une vraie courbe', ex.points >= 5, String(ex.points));
-  verifier('le bandeau dit que c\'est un exemple',
-    ex.bandeau && /exemple/i.test(ex.texteBandeau) && /réel/i.test(ex.texteBandeau));
-  verifier('le bouton se marque enfoncé', ex.presse === 'true');
-  verifier('le tableau, lui, reste sur les vraies données',
+  verifier('l\'apercu trace une vraie courbe', ex.points >= 5, String(ex.points));
+  verifier('et remplit aussi le journal des changements',
+    /UD-/.test(ex.journal) && !/deuxième archivage/.test(ex.journal), ex.journal.slice(0, 90));
+  verifier('la page se marque en exemple, cadre compris',
+    ex.marque === 'true' && /dashed/.test(ex.encadre), ex.marque + ' / ' + ex.encadre);
+  verifier('l\'interrupteur montre ou l\'on est',
+    ex.presse.join(' ') === 'reel:false exemple:true', JSON.stringify(ex.presse));
+  /* La phrase doit dire exactement ce qui est fabrique. Elle annoncait
+     « tout est fabrique » alors que les plans, eux, restent les vrais : une
+     phrase qui exagere se fait prendre en defaut. */
+  verifier('et il dit ce qui est fabrique : l\'historique, pas les plans',
+    /historique/i.test(ex.mot) && !/tout ce qui est affich/i.test(ex.mot), ex.mot);
+  verifier('les plans affiches restent ceux de la feuille',
     ex.plans === 186 && /186 plans/.test(ex.phrase), ex.phrase);
-  await pp.click('#fermer-exemple'); await pp.waitForTimeout(700);
-  verifier('« revenir au réel » remet tout en place',
-    await pp.evaluate(() => document.getElementById('bandeau-exemple').hidden &&
-      document.getElementById('bascule-exemple').getAttribute('aria-pressed') === 'false'));
-  verifier('et le graphique retrouve son cadrage',
-    await pp.evaluate(() => document.querySelectorAll('.zone-clic').length) === avantEx,
-    avantEx + ' → ' + (await pp.evaluate(() => document.querySelectorAll('.zone-clic').length)));
-  /* Le bouton reste proposé même avec de l'historique : il sert aussi à
-     montrer la page à quelqu'un, pas seulement à combler un vide. */
-  verifier('le bouton d\'aperçu reste proposé même avec de l\'historique',
-    await pg.evaluate(() => !document.getElementById('bascule-exemple').hidden));
+
+  await pp.click('#mode-donnees button[data-mode="reel"]'); await pp.waitForTimeout(800);
+  const revenu = await pp.evaluate(() => ({
+    mot: document.getElementById('mot-mode').textContent.trim(),
+    marque: document.body.dataset.exemple,
+    presse: [...document.querySelectorAll('#mode-donnees button')]
+      .map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')),
+    journal: document.getElementById('zone-journal').textContent,
+    zones: document.querySelectorAll('.zone-clic').length
+  }));
+  verifier('revenir au reel remet tout en place',
+    revenu.marque === 'false' && revenu.mot === '' &&
+    revenu.presse.join(' ') === 'reel:true exemple:false', JSON.stringify(revenu));
+  verifier('le journal redit qu\'il attend un deuxieme archivage',
+    /deuxième archivage/.test(revenu.journal));
+  verifier('et le graphique retrouve son cadrage', revenu.zones === avantEx,
+    avantEx + ' → ' + revenu.zones);
+
+  // Dix bascules d'affilee : ni fuite, ni etat coince.
+  for (let i = 0; i < 5; i++) {
+    await pp.click('#mode-donnees button[data-mode="exemple"]'); await pp.waitForTimeout(160);
+    await pp.click('#mode-donnees button[data-mode="reel"]'); await pp.waitForTimeout(160);
+  }
+  await pp.waitForTimeout(700);
+  verifier('dix bascules d\'affilee laissent la page intacte',
+    await pp.evaluate(() => document.body.dataset.exemple === 'false' &&
+      document.querySelectorAll('#corps-tableau tr').length === 186 &&
+      document.querySelectorAll('.zone-clic').length > 0));
+  // Re-cliquer le mode deja actif ne doit rien recalculer de travers.
+  await pp.click('#mode-donnees button[data-mode="reel"]'); await pp.waitForTimeout(500);
+  verifier('re-cliquer le mode actif ne change rien',
+    await pp.evaluate(() => document.body.dataset.exemple === 'false' &&
+      document.querySelectorAll('#corps-tableau tr').length === 186));
+
+  /* L'interrupteur reste propose meme avec de l'historique : il sert aussi a
+     montrer la page a quelqu'un, pas seulement a combler un vide. */
+  verifier('l\'interrupteur reste propose meme avec de l\'historique',
+    await pg.evaluate(() => !!document.querySelector('#mode-donnees button[data-mode="exemple"]')));
   await ctxPremier.close();
 
   await ctxGates.close();

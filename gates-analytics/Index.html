@@ -32,6 +32,14 @@
 
   <div class="filtres-actifs" id="filtres-actifs" hidden></div>
 
+  <div class="bandeau-mode" id="bandeau-mode">
+    <span class="segmente" id="mode-donnees" role="group" aria-label="Source des données">
+      <button type="button" data-mode="reel" aria-pressed="true">Données réelles</button>
+      <button type="button" data-mode="exemple" aria-pressed="false">Exemple</button>
+    </span>
+    <span class="mot-mode" id="mot-mode"></span>
+  </div>
+
   <header class="masthead">
     <h1>Suivi FWD</h1>
     <div class="semaine">
@@ -55,7 +63,6 @@
     <div class="section-tete">
       <h2>Avancement dans le temps</h2>
       <div class="commandes-graphe">
-        <button class="lien-doux" id="bascule-exemple" type="button" aria-pressed="false" hidden>voir un exemple</button>
         <span class="indice">Glissez pour vous déplacer · cliquez une semaine pour y poser un jalon</span>
         <span class="segmente" role="group" aria-label="Période affichée">
           <button type="button" data-span="13">3 mois</button>
@@ -64,10 +71,6 @@
           <button type="button" data-span="0">Tout</button>
         </span>
       </div>
-    </div>
-    <div class="bandeau-exemple" id="bandeau-exemple" hidden>
-      <span><b>Ceci est un exemple.</b> Le graphique et le journal ci-dessous sont fabriqués pour la démonstration. Vos relevés réels s’y afficheront, un point par semaine, à partir du premier archivage.</span>
-      <button class="lien-doux" id="fermer-exemple" type="button">revenir au réel</button>
     </div>
     <div class="feuille">
       <div class="cadre-graphe" id="cadre-graphe">
@@ -118,24 +121,25 @@
       <span class="compte" id="compte">—</span>
     </div>
 
-    <div class="rapides" id="rapides"></div>
-
     <div class="outils">
       <div class="recherche">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.5"/>
-          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
         <label class="masque" for="recherche">Rechercher dans toutes les colonnes</label>
-        <input id="recherche" type="search" placeholder="Rechercher partout" autocomplete="off">
+        <input id="recherche" type="search" placeholder="Rechercher dans toutes les colonnes…" autocomplete="off">
       </div>
+      <span class="segmente" id="vue-tableau" role="group" aria-label="Colonnes affichées">
+        <button type="button" data-vue="toutes" aria-pressed="true">Toutes les colonnes</button>
+        <button type="button" data-vue="essentielle" aria-pressed="false">Vue essentielle</button>
+      </span>
       <div class="zone-relative">
         <button class="bascule" id="bascule-colonnes" type="button" aria-expanded="false">
-          Colonnes <span class="compteur" id="compteur-colonnes"></span>
+          Choisir <span class="compteur" id="compteur-colonnes"></span>
         </button>
         <div class="panneau-colonnes" id="panneau-colonnes" hidden></div>
       </div>
-      <button class="bascule" id="bascule-essentielles" type="button" aria-pressed="false" hidden>Vue essentielle</button>
       <button class="lien-doux" id="reinit" type="button" hidden>tout réinitialiser</button>
     </div>
     <div class="incomplets" id="incomplets"></div>

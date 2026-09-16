@@ -59,11 +59,110 @@ async function reinitialiser(pg) {
   /* Le jeu d'exemple peut changer de taille : on relève le total une fois et
      tout le reste s'y réfère. */
   const TOTAL = await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length);
-  /* Le nombre total de colonnes de l'export, y compris celles que la page
-     ouvre repliées : c'est ce que « tout afficher » doit rendre. */
+  /* Le nombre total de colonnes de l'export : le tableau les ouvre toutes,
+     c'est la consigne, et c'est aussi ce que « tout afficher » doit rendre. */
   const COLONNES_TOTAL = await p.evaluate(() =>
     document.querySelectorAll('#panneau-colonnes input[data-col]').length);
   console.log('  (jeu d\'exemple : ' + TOTAL + ' plans, ' + COLONNES_TOTAL + ' colonnes)');
+
+  // =================================================================
+  /* Le tableau du bas EST l'extract : toutes les colonnes, les memes
+     intitules, l'ordre de la feuille. C'est la condition pour que tout le
+     monde regarde la meme chose. */
+  section('Le tableau ouvre sur l\'extract entier');
+  const extrait = await p.evaluate(() => ({
+    affichees: document.querySelectorAll('tr.titres th').length,
+    ordre: [...document.querySelectorAll('tr.titres th')].map(t => t.dataset.cle),
+    source: window.__ORDRE_SOURCE || null,
+    figees: [...document.querySelectorAll('tr.titres th.col-fige')].map(t => t.dataset.cle),
+    gauches: [...document.querySelectorAll('tr.titres th.col-fige')].map(t => parseFloat(t.style.left))
+  }));
+  verifier('aucune colonne n\'est cachee au depart',
+    extrait.affichees === COLONNES_TOTAL, extrait.affichees + ' / ' + COLONNES_TOTAL);
+  verifier('la reference est figee, et tout ce qui la precede avec elle',
+    extrait.figees.length >= 1 &&
+    extrait.figees[extrait.figees.length - 1] === 'reference' &&
+    extrait.figees.join(',') === extrait.ordre.slice(0, extrait.figees.length).join(','),
+    JSON.stringify(extrait.figees));
+  verifier('les colonnes figees se posent l\'une apres l\'autre',
+    extrait.gauches[0] === 0 &&
+    extrait.gauches.every((g, i) => i === 0 || g > extrait.gauches[i - 1]),
+    JSON.stringify(extrait.gauches));
+
+  // =================================================================
+  section('Les deux vues du tableau');
+  const vTout = await p.evaluate(() => [...document.querySelectorAll('#vue-tableau button')]
+    .map(b => b.dataset.vue + ':' + b.getAttribute('aria-pressed')).join(' '));
+  verifier('on demarre sur « toutes les colonnes »',
+    vTout === 'toutes:false essentielle:false' || vTout === 'toutes:true essentielle:false', vTout);
+  await p.click('#vue-tableau button[data-vue="essentielle"]'); await p.waitForTimeout(600);
+  const vEss = await p.evaluate(() => ({
+    n: document.querySelectorAll('tr.titres th').length,
+    premiere: (document.querySelector('tr.titres th') || {}).dataset,
+    figees: document.querySelectorAll('tr.titres th.col-fige').length,
+    lignes: document.querySelectorAll('#corps-tableau tr').length,
+    presse: [...document.querySelectorAll('#vue-tableau button')]
+      .map(b => b.dataset.vue + ':' + b.getAttribute('aria-pressed')).join(' ')
+  }));
+  verifier('la vue essentielle reduit vraiment le tableau',
+    vEss.n > 1 && vEss.n < COLONNES_TOTAL, vEss.n + ' colonnes');
+  verifier('la reference l\'ouvre et reste seule figee',
+    vEss.premiere.cle === 'reference' && vEss.figees === 1, JSON.stringify(vEss));
+  verifier('et aucun plan n\'est perdu', vEss.lignes === TOTAL, String(vEss.lignes));
+  verifier('l\'interrupteur dit laquelle est active',
+    vEss.presse === 'toutes:false essentielle:true', vEss.presse);
+  await p.click('#vue-tableau button[data-vue="toutes"]'); await p.waitForTimeout(600);
+  verifier('revenir rend l\'extract entier, dans le meme ordre',
+    await p.evaluate(o => [...document.querySelectorAll('tr.titres th')]
+      .map(t => t.dataset.cle).join(',') === o.join(','), extrait.ordre));
+  for (let i = 0; i < 4; i++) {
+    await p.click('#vue-tableau button[data-vue="essentielle"]'); await p.waitForTimeout(130);
+    await p.click('#vue-tableau button[data-vue="toutes"]'); await p.waitForTimeout(130);
+  }
+  await p.waitForTimeout(500);
+  verifier('quatre allers-retours rapides ne derangent rien',
+    await p.evaluate(t => document.querySelectorAll('tr.titres th').length === t.c &&
+      document.querySelectorAll('#corps-tableau tr').length === t.n,
+      { c: COLONNES_TOTAL, n: TOTAL }));
+
+  // =================================================================
+  section('L\'interrupteur exemple / reel');
+  const modeDepart = await p.evaluate(() => ({
+    haut: document.getElementById('bandeau-mode').getBoundingClientRect().top <
+          document.querySelector('.masthead').getBoundingClientRect().top,
+    presse: [...document.querySelectorAll('#mode-donnees button')]
+      .map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')).join(' '),
+    marque: document.body.dataset.exemple
+  }));
+  verifier('il est tout en haut, avant le titre', modeDepart.haut, JSON.stringify(modeDepart));
+  verifier('et il demarre sur le reel',
+    modeDepart.presse === 'reel:true exemple:false' && modeDepart.marque === 'false',
+    JSON.stringify(modeDepart));
+  await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(900);
+  const modeEx = await p.evaluate(() => ({
+    marque: document.body.dataset.exemple,
+    bord: getComputedStyle(document.getElementById('bandeau-mode')).borderStyle,
+    mot: document.getElementById('mot-mode').textContent,
+    points: document.querySelectorAll('svg.graphe circle').length,
+    lignes: document.querySelectorAll('#corps-tableau tr').length
+  }));
+  verifier('la page entiere se marque en exemple',
+    modeEx.marque === 'true' && /dashed/.test(modeEx.bord), JSON.stringify(modeEx).slice(0, 120));
+  verifier('et elle dit ce qui est fabrique', /historique/i.test(modeEx.mot), modeEx.mot);
+  verifier('le graphique se remplit sans perdre de plan',
+    modeEx.points >= 5 && modeEx.lignes === TOTAL, JSON.stringify(modeEx));
+  await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(800);
+  verifier('revenir au reel efface la marque et la phrase',
+    await p.evaluate(() => document.body.dataset.exemple === 'false' &&
+      document.getElementById('mot-mode').textContent.trim() === ''));
+  for (let i = 0; i < 5; i++) {
+    await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(150);
+    await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(150);
+  }
+  await p.waitForTimeout(700);
+  verifier('dix bascules d\'affilee laissent la page intacte',
+    await p.evaluate(t => document.body.dataset.exemple === 'false' &&
+      document.querySelectorAll('#corps-tableau tr').length === t, TOTAL));
 
   // =================================================================
   section('Chargement et cohérence des chiffres');
@@ -149,8 +248,77 @@ async function reinitialiser(pg) {
   await reinitialiser(p);
 
   // =================================================================
+  /* Le classeur rend la date telle qu'il l'affiche : jour d'abord sur une
+     feuille francaise, annee d'abord ailleurs. Lire un seul ordre laisserait
+     l'anciennete vide sur la moitie des exports, sans rien signaler. */
+  section('Lecture des dates, dans les deux ordres');
+  const dates = await p.evaluate(() => {
+    const f = window.__anneeEtMois;
+    if (!f) return null;
+    const dit = v => { const r = f(v); return r ? r.annee + '/' + r.mois : null; };
+    return {
+      iso:        dit('2020-07-16'),
+      isoHeure:   dit('2020-07-16T22:00:00.000Z'),
+      isoPoints:  dit('2020.07.16'),
+      fr:         dit('16/07/2020'),
+      frTirets:   dit('16-07-2020'),
+      frCourt:    dit('16/07/20'),
+      ambigu:     dit('05/07/2020'),
+      jourGrand:  dit('25/07/2020'),
+      moisGrand:  dit('07/25/2020'),
+      vide:       dit(''),
+      nul:        dit(null),
+      texte:      dit('sans date'),
+      moisFaux:   dit('2020-13-16'),
+      presqueUne: dit('12345678')
+    };
+  });
+  verifier('la fonction de lecture des dates est accessible au test', !!dates);
+  if (dates) {
+    verifier('l\'ordre ISO est lu, avec ou sans heure',
+      dates.iso === '2020/7' && dates.isoHeure === '2020/7' && dates.isoPoints === '2020/7',
+      JSON.stringify(dates));
+    verifier('l\'ordre francais est lu aussi',
+      dates.fr === '2020/7' && dates.frTirets === '2020/7' && dates.frCourt === '2020/7',
+      JSON.stringify(dates));
+    verifier('deux nombres sous treize : on tranche a la francaise',
+      dates.ambigu === '2020/7', String(dates.ambigu));
+    verifier('un nombre au-dessus de douze est forcement le jour',
+      dates.jourGrand === '2020/7' && dates.moisGrand === '2020/7',
+      dates.jourGrand + ' / ' + dates.moisGrand);
+    verifier('ce qui n\'est pas une date ne fait pas semblant d\'en etre une',
+      [dates.vide, dates.nul, dates.texte, dates.moisFaux, dates.presqueUne]
+        .every(v => v === null), JSON.stringify(dates));
+  }
+  /* L'anciennete et le regroupement par mois en dependent : si la lecture
+     echoue, ils se taisent au lieu de se tromper, et personne ne le voit. */
+  const dimAvant = await p.evaluate(() => document.getElementById('dim-critique').value);
+  const aMois = await p.evaluate(() =>
+    [...document.getElementById('dim-critique').options].some(o => o.value === '_mois'));
+  if (aMois) {
+    await p.selectOption('#dim-critique', '_mois');
+    await p.waitForTimeout(600);
+    verifier('le regroupement par mois nomme de vrais mois, pas des tirets',
+      await p.evaluate(() => {
+        const noms = [...document.querySelectorAll('.critique-ligne')].map(l => l.dataset.groupe);
+        if (!noms.length) return false;
+        return noms.filter(n => n === '\u2014' || n === '-').length / noms.length < 0.5;
+      }),
+      await p.evaluate(() => [...document.querySelectorAll('.critique-ligne')]
+        .slice(0, 4).map(l => l.dataset.groupe).join(' | ')));
+    await p.selectOption('#dim-critique', dimAvant);
+    await p.waitForTimeout(500);
+  }
+  await reinitialiser(p);
+
+  // =================================================================
   section('Recherche — entrées hostiles');
-  const premiereRef = await p.evaluate(() => document.querySelector('#corps-tableau td').textContent.trim());
+  /* La reference n'est plus la premiere cellule : dans l'ordre de la feuille
+     une colonne sans intitule la precede. On la cherche par son en-tete. */
+  const premiereRef = await p.evaluate(() => {
+    const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'reference');
+    return document.querySelector('#corps-tableau tr').children[i].textContent.trim();
+  });
   const entrees = [
     { q: premiereRef, attendu: n => n === 1, nom: 'une référence exacte' },
     { q: premiereRef.toLowerCase(), attendu: n => n === 1, nom: 'la même en minuscules' },

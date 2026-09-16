@@ -139,17 +139,20 @@ body {
   .etat-haut { justify-content: flex-start; }
 }
 
-/* ---------------------------------------------------- Filtres rapides */
-.rapides { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.rapides:empty { display: none; }
-.rapides .titre-rapide { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--encre-3); }
-.puce-rapide {
-  border: 1px solid var(--filet-fort); background: none; color: var(--encre-2);
-  border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 12.5px; cursor: pointer;
+/* ---------------------------------------------------- Mode des données */
+/* Un seul interrupteur, tout en haut : la page entière est réelle, ou elle est
+   un exemple. Pas de demi-mesure au milieu de l'écran. */
+.bandeau-mode {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 0 0;
 }
-.puce-rapide:hover { border-color: var(--encre-3); color: var(--encre); }
-.puce-rapide[aria-pressed="true"] { background: var(--encre); border-color: var(--encre); color: var(--papier); }
-.puce-rapide .n { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; opacity: .7; margin-left: 6px; }
+.bandeau-mode .mot-mode { font-size: 12.5px; color: var(--encre-3); }
+.bandeau-mode .mot-mode b { color: var(--cours); font-weight: 500; }
+body[data-exemple="true"] .bandeau-mode {
+  border: 1px dashed var(--cours); background: var(--creux);
+  padding: 10px 13px; margin-top: 12px;
+}
+
 
 /* ---------------------------------------------------- Filtres actifs */
 /* Un bandeau qui suit la page : quoi qu'on ait cliqué, la sortie est visible. */
@@ -185,6 +188,7 @@ body {
 /* Deux listes qui peuvent s'allonger sans fin : on leur donne une hauteur et
    un défilement, plutôt que de laisser la page grandir jusqu'à l'illisible. */
 .defile-liste { max-height: 430px; overflow-y: auto; overscroll-behavior: contain; }
+#zone-journal.defile-liste { max-height: 330px; }
 .defile-liste::-webkit-scrollbar { width: 9px; }
 .defile-liste::-webkit-scrollbar-thumb { background: var(--filet-fort); border-radius: 5px; }
 .defile-liste::-webkit-scrollbar-track { background: transparent; }
@@ -283,15 +287,6 @@ body {
   cursor: pointer; padding: 5px 2px; text-decoration: underline; text-underline-offset: 3px;
 }
 .journal-plus:hover { color: var(--encre); }
-
-/* Bandeau « ceci n'est qu'un exemple » : impossible à confondre avec du réel. */
-.bandeau-exemple {
-  display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
-  margin-bottom: 12px; padding: 9px 13px;
-  border: 1px dashed var(--cours); background: var(--creux);
-  font-size: 12.5px; color: var(--encre-2);
-}
-.bandeau-exemple b { color: var(--encre); font-weight: 500; }
 
 /* ---------------------------------------------------- Sections */
 .bloc { margin-top: 34px; }
@@ -511,14 +506,17 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 
 /* ---------------------------------------------------- Tableau */
 .outils { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding-bottom: 12px; }
-.recherche { position: relative; flex: 1 1 240px; min-width: 180px; }
+.recherche { position: relative; flex: 1 1 320px; min-width: 200px; }
 .recherche input {
-  width: 100%; border: none; border-bottom: 1px solid var(--filet-fort); background: none;
-  color: var(--encre); font: inherit; padding: 4px 0 5px 22px;
+  width: 100%; border: 1px solid var(--filet-fort); border-radius: 4px;
+  background: var(--surface); color: var(--encre); font: inherit; font-size: 14px;
+  padding: 9px 12px 9px 36px;
 }
 .recherche input::placeholder { color: var(--encre-3); }
-.recherche input:focus { outline: none; border-bottom-color: var(--encre); }
-.recherche svg { position: absolute; left: 0; top: 7px; color: var(--encre-3); }
+.recherche input:hover { border-color: var(--encre-3); }
+.recherche input:focus { outline: none; border-color: var(--encre); box-shadow: 0 0 0 3px var(--creux); }
+.recherche svg { position: absolute; left: 12px; top: 50%; margin-top: -8px; color: var(--encre-3); }
+.recherche input:focus + svg, .recherche input:not(:placeholder-shown) + svg { color: var(--encre); }
 
 .bascule {
   border: none; background: none; padding: 3px 0; font: inherit; cursor: pointer;
@@ -599,9 +597,15 @@ table.plans thead .titres:hover .poignee, table.plans thead .titres:focus-within
 
 table.plans tbody td { padding: 8px 14px; border-bottom: 1px solid var(--filet); vertical-align: middle; white-space: nowrap; }
 table.plans tbody tr:hover td { background: var(--creux); }
+/* Le decalage gauche est mesure au rendu : dans l'ordre de la feuille la
+   reference n'est pas la premiere colonne, et tout ce qui la precede reste
+   colle avec elle plutot que de passer dessous. */
 .col-fige { position: sticky; left: 0; background: var(--surface); z-index: 2; }
 table.plans tbody tr:hover .col-fige { background: var(--creux); }
-table.plans thead .col-fige { z-index: 6; }
+/* La specificite de `.titres th` ecrasait ce z-index : les entetes figees
+   passaient sous les colonnes qui defilent. Un selecteur plus precis. */
+table.plans thead tr th.col-fige { z-index: 6; }
+.fige-fin { box-shadow: inset -1px 0 0 var(--filet-fort); }
 
 .ref { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
 .large { max-width: 230px; overflow: hidden; text-overflow: ellipsis; }

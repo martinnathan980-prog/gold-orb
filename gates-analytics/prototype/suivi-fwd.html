@@ -142,17 +142,20 @@ body {
   .etat-haut { justify-content: flex-start; }
 }
 
-/* ---------------------------------------------------- Filtres rapides */
-.rapides { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.rapides:empty { display: none; }
-.rapides .titre-rapide { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--encre-3); }
-.puce-rapide {
-  border: 1px solid var(--filet-fort); background: none; color: var(--encre-2);
-  border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 12.5px; cursor: pointer;
+/* ---------------------------------------------------- Mode des données */
+/* Un seul interrupteur, tout en haut : la page entière est réelle, ou elle est
+   un exemple. Pas de demi-mesure au milieu de l'écran. */
+.bandeau-mode {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 0 0;
 }
-.puce-rapide:hover { border-color: var(--encre-3); color: var(--encre); }
-.puce-rapide[aria-pressed="true"] { background: var(--encre); border-color: var(--encre); color: var(--papier); }
-.puce-rapide .n { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; opacity: .7; margin-left: 6px; }
+.bandeau-mode .mot-mode { font-size: 12.5px; color: var(--encre-3); }
+.bandeau-mode .mot-mode b { color: var(--cours); font-weight: 500; }
+body[data-exemple="true"] .bandeau-mode {
+  border: 1px dashed var(--cours); background: var(--creux);
+  padding: 10px 13px; margin-top: 12px;
+}
+
 
 /* ---------------------------------------------------- Filtres actifs */
 /* Un bandeau qui suit la page : quoi qu'on ait cliqué, la sortie est visible. */
@@ -188,6 +191,7 @@ body {
 /* Deux listes qui peuvent s'allonger sans fin : on leur donne une hauteur et
    un défilement, plutôt que de laisser la page grandir jusqu'à l'illisible. */
 .defile-liste { max-height: 430px; overflow-y: auto; overscroll-behavior: contain; }
+#zone-journal.defile-liste { max-height: 330px; }
 .defile-liste::-webkit-scrollbar { width: 9px; }
 .defile-liste::-webkit-scrollbar-thumb { background: var(--filet-fort); border-radius: 5px; }
 .defile-liste::-webkit-scrollbar-track { background: transparent; }
@@ -286,15 +290,6 @@ body {
   cursor: pointer; padding: 5px 2px; text-decoration: underline; text-underline-offset: 3px;
 }
 .journal-plus:hover { color: var(--encre); }
-
-/* Bandeau « ceci n'est qu'un exemple » : impossible à confondre avec du réel. */
-.bandeau-exemple {
-  display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
-  margin-bottom: 12px; padding: 9px 13px;
-  border: 1px dashed var(--cours); background: var(--creux);
-  font-size: 12.5px; color: var(--encre-2);
-}
-.bandeau-exemple b { color: var(--encre); font-weight: 500; }
 
 /* ---------------------------------------------------- Sections */
 .bloc { margin-top: 34px; }
@@ -514,14 +509,17 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 
 /* ---------------------------------------------------- Tableau */
 .outils { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding-bottom: 12px; }
-.recherche { position: relative; flex: 1 1 240px; min-width: 180px; }
+.recherche { position: relative; flex: 1 1 320px; min-width: 200px; }
 .recherche input {
-  width: 100%; border: none; border-bottom: 1px solid var(--filet-fort); background: none;
-  color: var(--encre); font: inherit; padding: 4px 0 5px 22px;
+  width: 100%; border: 1px solid var(--filet-fort); border-radius: 4px;
+  background: var(--surface); color: var(--encre); font: inherit; font-size: 14px;
+  padding: 9px 12px 9px 36px;
 }
 .recherche input::placeholder { color: var(--encre-3); }
-.recherche input:focus { outline: none; border-bottom-color: var(--encre); }
-.recherche svg { position: absolute; left: 0; top: 7px; color: var(--encre-3); }
+.recherche input:hover { border-color: var(--encre-3); }
+.recherche input:focus { outline: none; border-color: var(--encre); box-shadow: 0 0 0 3px var(--creux); }
+.recherche svg { position: absolute; left: 12px; top: 50%; margin-top: -8px; color: var(--encre-3); }
+.recherche input:focus + svg, .recherche input:not(:placeholder-shown) + svg { color: var(--encre); }
 
 .bascule {
   border: none; background: none; padding: 3px 0; font: inherit; cursor: pointer;
@@ -602,9 +600,15 @@ table.plans thead .titres:hover .poignee, table.plans thead .titres:focus-within
 
 table.plans tbody td { padding: 8px 14px; border-bottom: 1px solid var(--filet); vertical-align: middle; white-space: nowrap; }
 table.plans tbody tr:hover td { background: var(--creux); }
+/* Le decalage gauche est mesure au rendu : dans l'ordre de la feuille la
+   reference n'est pas la premiere colonne, et tout ce qui la precede reste
+   colle avec elle plutot que de passer dessous. */
 .col-fige { position: sticky; left: 0; background: var(--surface); z-index: 2; }
 table.plans tbody tr:hover .col-fige { background: var(--creux); }
-table.plans thead .col-fige { z-index: 6; }
+/* La specificite de `.titres th` ecrasait ce z-index : les entetes figees
+   passaient sous les colonnes qui defilent. Un selecteur plus precis. */
+table.plans thead tr th.col-fige { z-index: 6; }
+.fige-fin { box-shadow: inset -1px 0 0 var(--filet-fort); }
 
 .ref { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
 .large { max-width: 230px; overflow: hidden; text-overflow: ellipsis; }
@@ -621,6 +625,14 @@ table.plans thead .col-fige { z-index: 6; }
 <div class="page">
 
   <div class="filtres-actifs" id="filtres-actifs" hidden></div>
+
+  <div class="bandeau-mode" id="bandeau-mode">
+    <span class="segmente" id="mode-donnees" role="group" aria-label="Source des données">
+      <button type="button" data-mode="reel" aria-pressed="true">Données réelles</button>
+      <button type="button" data-mode="exemple" aria-pressed="false">Exemple</button>
+    </span>
+    <span class="mot-mode" id="mot-mode"></span>
+  </div>
 
   <header class="masthead">
     <h1>Suivi FWD</h1>
@@ -645,7 +657,6 @@ table.plans thead .col-fige { z-index: 6; }
     <div class="section-tete">
       <h2>Avancement dans le temps</h2>
       <div class="commandes-graphe">
-        <button class="lien-doux" id="bascule-exemple" type="button" aria-pressed="false" hidden>voir un exemple</button>
         <span class="indice">Glissez pour vous déplacer · cliquez une semaine pour y poser un jalon</span>
         <span class="segmente" role="group" aria-label="Période affichée">
           <button type="button" data-span="13">3 mois</button>
@@ -654,10 +665,6 @@ table.plans thead .col-fige { z-index: 6; }
           <button type="button" data-span="0">Tout</button>
         </span>
       </div>
-    </div>
-    <div class="bandeau-exemple" id="bandeau-exemple" hidden>
-      <span><b>Ceci est un exemple.</b> Le graphique et le journal ci-dessous sont fabriqués pour la démonstration. Vos relevés réels s’y afficheront, un point par semaine, à partir du premier archivage.</span>
-      <button class="lien-doux" id="fermer-exemple" type="button">revenir au réel</button>
     </div>
     <div class="feuille">
       <div class="cadre-graphe" id="cadre-graphe">
@@ -708,24 +715,25 @@ table.plans thead .col-fige { z-index: 6; }
       <span class="compte" id="compte">—</span>
     </div>
 
-    <div class="rapides" id="rapides"></div>
-
     <div class="outils">
       <div class="recherche">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.5"/>
-          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
         <label class="masque" for="recherche">Rechercher dans toutes les colonnes</label>
-        <input id="recherche" type="search" placeholder="Rechercher partout" autocomplete="off">
+        <input id="recherche" type="search" placeholder="Rechercher dans toutes les colonnes…" autocomplete="off">
       </div>
+      <span class="segmente" id="vue-tableau" role="group" aria-label="Colonnes affichées">
+        <button type="button" data-vue="toutes" aria-pressed="true">Toutes les colonnes</button>
+        <button type="button" data-vue="essentielle" aria-pressed="false">Vue essentielle</button>
+      </span>
       <div class="zone-relative">
         <button class="bascule" id="bascule-colonnes" type="button" aria-expanded="false">
-          Colonnes <span class="compteur" id="compteur-colonnes"></span>
+          Choisir <span class="compteur" id="compteur-colonnes"></span>
         </button>
         <div class="panneau-colonnes" id="panneau-colonnes" hidden></div>
       </div>
-      <button class="bascule" id="bascule-essentielles" type="button" aria-pressed="false" hidden>Vue essentielle</button>
       <button class="lien-doux" id="reinit" type="button" hidden>tout réinitialiser</button>
     </div>
     <div class="incomplets" id="incomplets"></div>
@@ -845,9 +853,41 @@ table.plans thead .col-fige { z-index: 6; }
                     'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   /* Une date de création brute ferait autant de groupes que de jours : on
      regroupe au mois, ce qui se lit et se compare. */
+  /* Une date arrive telle que le classeur l'affiche : « 16/07/2020 » sur une
+     feuille française, « 2020-07-16 » (avec ou sans heure) ailleurs. Ne lire
+     qu'un seul des deux ordres reviendrait à ne jamais trouver l'ancienneté
+     sur la moitié des exports — sans que rien ne le signale. */
+  function anneeEtMois(valeur) {
+    var t = String(valeur == null ? '' : valeur).trim();
+    var iso = /^(\d{4})[-\/.](\d{1,2})/.exec(t);
+    if (iso) {
+      var mi = Number(iso[2]);
+      return mi >= 1 && mi <= 12 ? { annee: Number(iso[1]), mois: mi } : null;
+    }
+    var fr = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/.exec(t);
+    if (!fr) return null;
+    var an = Number(fr[3]);
+    if (an < 100) an += an < 70 ? 2000 : 1900;
+    /* Jour puis mois, comme en France — sauf si le premier nombre dépasse
+       douze : il est alors forcément le jour, et l'autre le mois. */
+    var a = Number(fr[1]), b = Number(fr[2]);
+    var mois = a > 12 ? b : (b > 12 ? a : b);
+    return mois >= 1 && mois <= 12 ? { annee: an, mois: mois } : null;
+  }
+  /* Écart en mois entre une date de cellule et une date de référence.
+     `null` quand la cellule ne porte pas de date lisible. */
+  function moisEntre(valeur, reference) {
+    var v = anneeEtMois(valeur);
+    if (!v) return null;
+    return (reference.getUTCFullYear() - v.annee) * 12 +
+           (reference.getUTCMonth() + 1 - v.mois);
+  }
+  /* Exposée pour la batterie : une fonction pure se vérifie directement, cas
+     par cas, plutôt que devinée à travers l'interface. */
+  window.__anneeEtMois = anneeEtMois;
   function moisDe(valeur) {
-    var m = /(\d{4})[-\/.](\d{1,2})/.exec(String(valeur || ''));
-    return m ? MOIS_COURT[Number(m[2]) - 1] + ' ' + m[1] : '\u2014';
+    var v = anneeEtMois(valeur);
+    return v ? MOIS_COURT[v.mois - 1] + ' ' + v.annee : '\u2014';
   }
   function rangMois(nom) {
     if (nom === '\u2014') return -1;
@@ -857,10 +897,8 @@ table.plans thead .col-fige { z-index: 6; }
 
   var ORDRE_ANCIENNETE = ['moins d’un mois', '1 à 3 mois', '3 à 6 mois', 'plus de 6 mois'];
   function ancienneteDepuis(valeur, reference) {
-    var m = /(\d{4})[-\/.](\d{1,2})/.exec(String(valeur || ''));
-    if (!m) return '—';
-    var mois = (reference.getUTCFullYear() - Number(m[1])) * 12 +
-               (reference.getUTCMonth() + 1 - Number(m[2]));
+    var mois = moisEntre(valeur, reference);
+    if (mois === null) return '—';
     if (mois >= 6) return 'plus de 6 mois';
     if (mois >= 3) return '3 à 6 mois';
     if (mois >= 1) return '1 à 3 mois';
@@ -1059,7 +1097,6 @@ table.plans thead .col-fige { z-index: 6; }
       if (c.cle === 'reference') { col.fige = true; col.classe = 'ref'; }
       else if (/^(nom_installation|libelle|designation_gates|raison_de_la_creation|classif_calculee_beta)/.test(c.cle)) col.classe = 'large';
       else col.classe = 'num';
-      if (c.groupe.indexOf('HDK AA') === 0) col.masqueeAuDepart = true;
       return col;
     });
 
@@ -1095,7 +1132,7 @@ table.plans thead .col-fige { z-index: 6; }
       p.domaine = alea() < 0.68 ? 'BASE/OPTION' : 'PERSO';
       p.type = tire(['STD', 'SPEC']);
       p.date_creation = annee + '-' + String(ent(1, 12)).padStart(2, '0') +
-                        '-' + String(ent(1, 28)).padStart(2, '0') + 'T22:00:00.000Z';
+                        '-' + String(ent(1, 28)).padStart(2, '0');
       p.nom_installation = tire(INSTALLATIONS);
       p.chapitre = tire(['A', 'B', 'C', 'D']);
       p.sous_chapitre = tire(['A1', 'A2', 'B1', 'B2', 'C1']);
@@ -1267,8 +1304,8 @@ table.plans thead .col-fige { z-index: 6; }
 
   var CLE_DOMAINE = (SRC.cleDomaine && PAR_CLE[SRC.cleDomaine]) ? SRC.cleDomaine : null;
   var CLES_ESSENTIELLES = (SRC.clesEssentielles || []).filter(function (c) { return PAR_CLE[c]; });
-  /* Le bouton ne s'affiche que s'il y a une vue essentielle qui tienne debout :
-     sur un export de dix colonnes, tout masquer n'apporte rien. */
+  /* Sur un export de dix colonnes, une « vue essentielle » n'apporte rien :
+     le choix ne s'affiche que s'il y a vraiment deux vues distinctes. */
   var VAUT_ESSENTIELLES = CLES_ESSENTIELLES.length >= 2 &&
                           CLES_ESSENTIELLES.length < COLONNES.length - 3;
   /* Le libellé d'un plan : la première colonne de texte long, pour que le
@@ -1399,24 +1436,14 @@ table.plans thead .col-fige { z-index: 6; }
 
   var vue = {
     recherche: '', etat: '', filtres: {},
-    /* L'ordre de la feuille, à une exception près : la colonne figée passe en
-       tête. Elle est verrouillée à gauche de l'écran ; si une autre la
-       précédait — l'export commence par une colonne sans intitulé — le
-       verrouillage se ferait sur du vide. */
-    ordre: (function () {
-      var figee = COLONNES.filter(function (c) { return c.fige; }).map(function (c) { return c.cle; });
-      return figee.concat(COLONNES.filter(function (c) { return !c.fige; })
-        .map(function (c) { return c.cle; }));
-    })(),
-    /* Certains exports répètent un bloc de colonnes par variante : une centaine
-       de colonnes qui noieraient le tableau à la première ouverture. Elles
-       s'ouvrent repliées — rien n'est supprimé, « tout afficher » les ramène,
-       et le choix de chacun est ensuite retenu. */
-    cachees: (function () {
-      var c = {};
-      COLONNES.forEach(function (col) { if (col.masqueeAuDepart) c[col.cle] = true; });
-      return c;
-    })(),
+    /* L'ordre de la feuille, sans exception : tout le monde doit voir le même
+       tableau que l'export. Le verrouillage à gauche s'adapte à cet ordre
+       plutôt que l'inverse. */
+    ordre: COLONNES.map(function (c) { return c.cle; }),
+    /* Le tableau s'ouvre complet : c'est l'extract, et c'est ce que tout le
+       monde doit avoir sous les yeux. La vue essentielle est là pour l'autre
+       besoin. */
+    cachees: {},
     tri: { cle: 'reference', asc: true },
     dimCritique: (SRC.dimParDefaut && CLES_DIM.indexOf(SRC.dimParDefaut) !== -1) ? SRC.dimParDefaut : (CLES_DIM[0] || ''),
     triGroupe: { cle: null, asc: false },
@@ -1425,7 +1452,9 @@ table.plans thead .col-fige { z-index: 6; }
     vides: {},
     domaine: '',
     reconduits: false,
-    essentielles: false,
+    /* Deux vues du tableau, et rien entre les deux : « toutes » montre l'export
+       tel quel, dans son ordre ; « essentielle » ne garde que ce qu'on regarde. */
+    vueTable: 'toutes',
     journal: '',
     journalOuverts: {},
     groupesTout: false,
@@ -1514,15 +1543,9 @@ table.plans thead .col-fige { z-index: 6; }
      ne vient pas de cette campagne. On ne l'a pas soldé, on en a hérité — et il
      gonfle le pourcentage d'avancement sans rien dire de l'effort réel. */
   var MOIS_RECONDUIT = 12;
-  function moisDepuis(valeur, reference) {
-    var m = /(\d{4})[-\/.](\d{1,2})/.exec(String(valeur || ''));
-    if (!m) return null;
-    return (reference.getUTCFullYear() - Number(m[1])) * 12 +
-           (reference.getUTCMonth() + 1 - Number(m[2]));
-  }
   function estReconduit(p) {
     if (p._etat !== 'termine' || !CLE_DATE) return false;
-    var mois = moisDepuis(p[CLE_DATE], dateDe(AUJ));
+    var mois = moisEntre(p[CLE_DATE], dateDe(AUJ));
     return mois !== null && mois >= MOIS_RECONDUIT;
   }
 
@@ -2466,16 +2489,36 @@ table.plans thead .col-fige { z-index: 6; }
   function visibles() {
     return vue.ordre.filter(function (k) { return !vue.cachees[k]; }).map(function (k) { return PAR_CLE[k]; });
   }
+  /* Combien de colonnes restent collees a gauche : tout ce qui precede la
+     reference, plus elle. Dans l'ordre de la feuille la reference arrive en
+     deuxieme ; en vue essentielle elle ouvre le tableau. Le calcul suit
+     l'ordre affiche au lieu de le supposer. */
+  function nbFigees(cols) {
+    for (var i = 0; i < cols.length; i++) if (cols[i].fige) return i + 1;
+    return 0;
+  }
+  function classeFige(i, n) {
+    if (i >= n) return '';
+    return i === n - 1 ? 'col-fige fige-fin' : 'col-fige';
+  }
   function rendreEntetes() {
     var cols = visibles();
+    var nFige = nbFigees(cols);
+    /* Un groupe a cheval sur la limite du bloc fige est coupe en deux : la
+       moitie collee garde le libelle, la suite le laisse vide pour que la
+       bande se lise d'un trait. */
     var groupes = [];
-    cols.forEach(function (c) {
+    cols.forEach(function (c, i) {
+      var colle = i < nFige;
       var d = groupes[groupes.length - 1];
-      if (d && d.nom === c.groupe) d.n++; else groupes.push({ nom: c.groupe, n: 1, fige: c.fige });
+      if (d && d.nom === c.groupe && d.fige === colle) d.n++;
+      else groupes.push({ nom: c.groupe, n: 1, fige: colle, debut: i, suite: !!(d && d.nom === c.groupe) });
     });
     var html = '<tr class="groupes">' + groupes.map(function (g) {
-      return '<th colspan="' + g.n + '"' + (g.fige ? ' class="col-fige"' : '') + '>' + ech(g.nom) + '</th>';
-    }).join('') + '</tr><tr class="titres">' + cols.map(function (c) {
+      var cl = g.fige ? (g.debut + g.n === nFige ? 'col-fige fige-fin' : 'col-fige') : '';
+      return '<th colspan="' + g.n + '" data-debut="' + g.debut + '"' + (cl ? ' class="' + cl + '"' : '') +
+        '>' + ech(g.suite ? '' : g.nom) + '</th>';
+    }).join('') + '</tr><tr class="titres">' + cols.map(function (c, i) {
       var actif = vue.tri.cle === c.cle;
       var fleche = actif ? '<svg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="' +
         (vue.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
@@ -2483,12 +2526,15 @@ table.plans thead .col-fige { z-index: 6; }
       var poignee = c.fige ? '' : '<span class="poignee" aria-hidden="true"><svg width="7" height="12" viewBox="0 0 7 12" fill="currentColor">' +
         '<circle cx="1.6" cy="2" r="1.1"/><circle cx="5.4" cy="2" r="1.1"/><circle cx="1.6" cy="6" r="1.1"/>' +
         '<circle cx="5.4" cy="6" r="1.1"/><circle cx="1.6" cy="10" r="1.1"/><circle cx="5.4" cy="10" r="1.1"/></svg></span>';
-      return '<th scope="col" data-cle="' + c.cle + '"' + (c.fige ? ' class="col-fige"' : ' draggable="true"') +
+      var cl = classeFige(i, nFige);
+      return '<th scope="col" data-cle="' + c.cle + '"' + (cl ? ' class="' + cl + '"' : '') +
+        (c.fige ? '' : ' draggable="true"') +
         ' aria-sort="' + (actif ? (vue.tri.asc ? 'ascending' : 'descending') : 'none') + '">' +
         poignee + '<button type="button" data-tri="' + c.cle + '">' + ech(c.titre) + fleche + '</button></th>';
-    }).join('') + '</tr><tr class="filtres">' + cols.map(function (c) {
+    }).join('') + '</tr><tr class="filtres">' + cols.map(function (c, i) {
       var val = vue.filtres[c.cle] || '';
-      return '<th' + (c.fige ? ' class="col-fige"' : '') + '><input type="text" data-filtre="' + c.cle + '" value="' + ech(val) +
+      var cl = classeFige(i, nFige);
+      return '<th' + (cl ? ' class="' + cl + '"' : '') + '><input type="text" data-filtre="' + c.cle + '" value="' + ech(val) +
         '" placeholder="filtrer" data-actif="' + (!!val) + '" aria-label="Filtrer ' + ech(c.titre) + '"></th>';
     }).join('') + '</tr>';
     $('tete-tableau').innerHTML = html;
@@ -2502,6 +2548,29 @@ table.plans thead .col-fige { z-index: 6; }
       var ht = t.getBoundingClientRect().height;
       t.querySelectorAll('th').forEach(function (th) { th.style.top = hg + 'px'; });
       f.querySelectorAll('th').forEach(function (th) { th.style.top = (hg + ht) + 'px'; });
+
+      /* On mesure les colonnes collees et on les pose les unes apres les
+         autres. Sans ce cumul, la deuxieme viendrait recouvrir la premiere. */
+      var tetes = t.querySelectorAll('th');
+      var gauche = [], cumul = 0;
+      for (var i = 0; i < tetes.length; i++) {
+        if (!tetes[i].classList.contains('col-fige')) break;
+        gauche.push(cumul);
+        cumul += tetes[i].getBoundingClientRect().width;
+      }
+      if (!gauche.length) return;
+      g.querySelectorAll('th.col-fige').forEach(function (th) {
+        var d = parseInt(th.dataset.debut, 10) || 0;
+        th.style.left = (gauche[d] || 0) + 'px';
+      });
+      var lignes = [t, f].concat(Array.prototype.slice.call(document.querySelectorAll('#corps-tableau tr')));
+      lignes.forEach(function (ligne) {
+        var n = 0;
+        ligne.querySelectorAll('.col-fige').forEach(function (c) {
+          c.style.left = (gauche[n] == null ? 0 : gauche[n]) + 'px';
+          n++;
+        });
+      });
     });
   }
   function rendreCorps(liste) {
@@ -2523,19 +2592,20 @@ table.plans thead .col-fige { z-index: 6; }
       return;
     }
 
+    var nFige = nbFigees(cols);
     $('corps-tableau').innerHTML = rangs.map(function (p) {
-      return '<tr>' + cols.map(function (c) {
-        var fige = c.fige ? ' col-fige' : '';
+      return '<tr>' + cols.map(function (c, i) {
+        var fige = classeFige(i, nFige);
         if (c.cle === 'avancement') {
           var e = ETAT_PAR_CLE[p._etat];
           var past = e.hachure ? '<span class="pastille hachure"></span>'
             : '<span class="pastille" style="background:' + e.couleur + '"></span>';
-          return '<td class="' + fige.trim() + '"><span class="etat-cellule">' + past +
+          return '<td class="' + fige + '"><span class="etat-cellule">' + past +
             (p.avancement ? '<span class="num">' + ech(p.avancement) + '</span>' : '<span class="doux">non renseigné</span>') +
             '</span></td>';
         }
         var val = p[c.cle];
-        var classes = (c.classe + fige).trim();
+        var classes = (c.classe + ' ' + fige).trim();
         if (val === '' || val == null) return '<td class="' + classes + ' doux">-</td>';
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         return '<td class="' + classes + '"' + titre + '>' + ech(val) + '</td>';
@@ -2544,6 +2614,7 @@ table.plans thead .col-fige { z-index: 6; }
 
     $('compte').textContent = nb(rangs.length) + (rangs.length > 1 ? ' plans' : ' plan') +
       (rangs.length !== PLANS.length ? ' sur ' + nb(PLANS.length) : '');
+    ajusterSticky();
     majOmbre();
   }
   function rendrePanneauColonnes() {
@@ -2804,99 +2875,60 @@ table.plans thead .col-fige { z-index: 6; }
     }
     DERNIER = RELEVES[RELEVES.length - 1];
     recalculerJournal();
-    $('bandeau-exemple').hidden = !actif;
-    $('bascule-exemple').setAttribute('aria-pressed', String(actif));
-    $('bascule-exemple').textContent = actif ? 'masquer l’exemple' : 'voir un exemple';
+    document.body.dataset.exemple = String(actif);
+    document.querySelectorAll('#mode-donnees button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String((b.dataset.mode === 'exemple') === actif));
+    });
+    /* Dire exactement ce qui est fabrique : l'historique, pas les plans. Une
+       phrase qui exagere se fait prendre en defaut et on ne croit plus rien. */
+    $('mot-mode').innerHTML = actif
+      ? '<b>Historique fabriqué</b> — un aperçu de ce que la page montrera quand les relevés se seront accumulés.'
+      : '';
     rendre();
   }
 
-  /* Le bouton n'a de sens que tant que l'historique est trop mince pour
-     dessiner quoi que ce soit. */
-  if (VAUT_ESSENTIELLES) {
-    $('bascule-essentielles').hidden = false;
-    $('bascule-essentielles').title = 'N\u2019afficher que les colonnes utiles au suivi \u2014 un second clic remet tout';
-  }
 
-  /* Le bouton est toujours là : au premier import il montre ce que la page
-     dira plus tard, et plus tard il sert encore à l'expliquer à quelqu'un.
-     Il remplit d'un coup le graphique ET le journal. */
-  (function proposerExemple() {
-    $('bascule-exemple').hidden = false;
-    $('bascule-exemple').title = RELEVES_REELS.length < 3
-      ? 'Montrer, sur des données fictives, ce que cette page dira une fois quelques relevés archivés'
-      : 'Remplacer le graphique et le journal par un exemple, le temps de montrer comment ça marche';
-  })();
+  /* L'interrupteur vit en haut de page : il porte sur tout, pas sur un bloc.
+     Au premier import il montre ce que la page dira plus tard ; après, il sert
+     encore à l'expliquer à quelqu'un. */
+  document.querySelector('#mode-donnees').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-mode]');
+    if (!b) return;
+    var veutExemple = b.dataset.mode === 'exemple';
+    if (veutExemple !== vue.exemple) basculerExemple(veutExemple);
+  });
+  document.body.dataset.exemple = 'false';
+
 
   /* ============================================================
-     FILTRES RAPIDES
-     Le domaine (perso ou base/option) et les plans reconduits : deux
-     questions posées chaque semaine, deux boutons plutôt qu'un détour par
-     les filtres de colonne.
+     LES DEUX VUES DU TABLEAU
+
+     « Toutes les colonnes » : l'export tel quel, toutes les colonnes, dans
+     l'ordre de la feuille. C'est la vue de référence — celle sur laquelle tout
+     le monde parle de la même chose.
+
+     « Vue essentielle » : la poignée de colonnes qu'on regarde vraiment, dans
+     l'ordre voulu.
+
+     Rien entre les deux, et chacune se retrouve à l'identique en revenant.
      ============================================================ */
-  function rendreRapides() {
-    var zone = $('rapides');
-    var morceaux = [];
+  var ORDRE_FEUILLE = COLONNES.map(function (c) { return c.cle; });
 
-    if (CLE_DOMAINE) {
-      var parDomaine = {};
-      PLANS.forEach(function (p) {
-        var v = String(p[CLE_DOMAINE] || '').trim();
-        if (v) parDomaine[v] = (parDomaine[v] || 0) + 1;
-      });
-      var valeurs = Object.keys(parDomaine).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
-      if (valeurs.length > 1 && valeurs.length <= 8) {
-        morceaux.push('<span class="titre-rapide">' + ech(PAR_CLE[CLE_DOMAINE].titre) + '</span>');
-        morceaux.push('<button class="puce-rapide" type="button" data-domaine="" aria-pressed="' +
-          (!vue.domaine) + '">Tous</button>');
-        valeurs.forEach(function (v) {
-          morceaux.push('<button class="puce-rapide" type="button" data-domaine="' + ech(v) +
-            '" aria-pressed="' + (vue.domaine === v) + '">' + ech(v) +
-            '<span class="n">' + nb(parDomaine[v]) + '</span></button>');
-        });
-      }
-    }
-
-    var nReconduits = 0;
-    PLANS.forEach(function (p) { if (estReconduit(p)) nReconduits++; });
-    if (nReconduits) {
-      morceaux.push('<button class="puce-rapide" type="button" data-reconduits="1" aria-pressed="' +
-        vue.reconduits + '" title="Plans déjà terminés dont la date de création remonte à plus de ' +
-        MOIS_RECONDUIT + ' mois : ils viennent d’avant, ils n’ont pas été soldés ici.">' +
-        'Terminés reconduits<span class="n">' + nb(nReconduits) + '</span></button>');
-    }
-
-    zone.innerHTML = morceaux.join('');
-  }
-
-  /* ============================================================
-     VUE ESSENTIELLE
-     Cent trente-huit colonnes, c'est l'extract ; sept, c'est ce qu'on regarde.
-     Le bouton bascule de l'un à l'autre sans rien perdre : la disposition
-     d'avant est remise telle quelle au retour.
-     ============================================================ */
-  var avantEssentielles = null;
-  function appliquerEssentielles() {
-    if (vue.essentielles) {
-      if (avantEssentielles === null) {
-        avantEssentielles = {
-          cachees: JSON.parse(JSON.stringify(vue.cachees)),
-          ordre: vue.ordre.slice()
-        };
-      }
+  function appliquerVueTable() {
+    if (vue.vueTable === 'essentielle') {
       var garder = {};
       CLES_ESSENTIELLES.forEach(function (c) { garder[c] = true; });
       vue.cachees = {};
-      COLONNES.forEach(function (c) { if (!garder[c.cle] && !c.fige) vue.cachees[c.cle] = true; });
-      /* La vue essentielle range aussi : l'ordre voulu est celui de la liste,
-         pas celui de la feuille. Les colonnes masquées gardent le leur, pour
-         que le retour ne dérange rien. */
+      COLONNES.forEach(function (c) { if (!garder[c.cle]) vue.cachees[c.cle] = true; });
       vue.ordre = CLES_ESSENTIELLES.slice()
-        .concat(vue.ordre.filter(function (c) { return CLES_ESSENTIELLES.indexOf(c) === -1; }));
-    } else if (avantEssentielles !== null) {
-      vue.cachees = avantEssentielles.cachees;
-      vue.ordre = avantEssentielles.ordre;
-      avantEssentielles = null;
+        .concat(ORDRE_FEUILLE.filter(function (c) { return CLES_ESSENTIELLES.indexOf(c) === -1; }));
+    } else {
+      vue.cachees = {};
+      vue.ordre = ORDRE_FEUILLE.slice();
     }
+    document.querySelectorAll('#vue-tableau button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.vue === vue.vueTable));
+    });
   }
 
   /* ============================================================
@@ -2994,7 +3026,6 @@ table.plans thead .col-fige { z-index: 6; }
     rendrePanneauColonnes();
     rendreComparatif();
     rendreIncomplets();
-    rendreRapides();
     rendreFiltresActifs();
     $('reinit').hidden = !filtreActif();
     planifierSauvegarde();
@@ -3159,28 +3190,11 @@ table.plans thead .col-fige { z-index: 6; }
     if (x) { retirerFiltre(x.dataset.retirer); rendre(); }
   });
 
-  $('rapides').addEventListener('click', function (e) {
-    var d = e.target.closest('button[data-domaine]');
-    if (d) {
-      vue.domaine = (vue.domaine === d.dataset.domaine) ? '' : d.dataset.domaine;
-      rendre();
-      return;
-    }
-    if (e.target.closest('button[data-reconduits]')) {
-      vue.reconduits = !vue.reconduits;
-      rendre();
-    }
-  });
-
-  $('bascule-exemple').addEventListener('click', function () {
-    basculerExemple(!vue.exemple);
-  });
-  $('fermer-exemple').addEventListener('click', function () { basculerExemple(false); });
-
-  $('bascule-essentielles').addEventListener('click', function () {
-    vue.essentielles = !vue.essentielles;
-    $('bascule-essentielles').setAttribute('aria-pressed', String(vue.essentielles));
-    appliquerEssentielles();
+  document.querySelector('#vue-tableau').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-vue]');
+    if (!b || b.dataset.vue === vue.vueTable) return;
+    vue.vueTable = b.dataset.vue;
+    appliquerVueTable();
     rendre();
   });
 

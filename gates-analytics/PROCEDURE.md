@@ -107,14 +107,17 @@ Autres points tenus par le code :
 
 - **Les lignes sans référence sont écartées.** L'export en intercale sous
   l'en-tête.
-- **Les dates sont au format `2017-05-02T22:00:00.000Z`**, reconnues comme
-  telles pour l'ancienneté.
+- **Une cellule de date arrive en objet `Date`**, pas en texte. Elle est ramenée
+  au jour (`2017-05-02`) : sinon elle s'écrirait
+  `Wed May 03 2017 00:00:00 GMT+0200 (…)`, déborderait de sa colonne, se
+  trierait de travers et ne serait même pas reconnue comme une date.
 - **Les booléens valent `true` / `false`.** Le tableau les montre tels quels —
   c'est l'extract. Dans le bloc d'analyse, où la valeur devient un nom de
   groupe lu par tout le monde, ils s'écrivent **Oui** / **Non**.
-- **Les 91 colonnes des blocs HDK AA s'ouvrent repliées** : 47 colonnes à la
-  première ouverture au lieu de 138. Rien n'est supprimé, « Colonnes → tout
-  afficher » les ramène, et le choix de chacun est retenu.
+- **Les 138 colonnes sont là dès l'ouverture**, dans l'ordre de la feuille, y
+  compris les 91 des blocs HDK AA répétés et les colonnes sans intitulé
+  (nommées « Colonne 1 », « Colonne 4 »…). C'est la condition pour que
+  tout le monde regarde le même tableau que l'export.
 
 ### Les colonnes analysées
 
@@ -156,7 +159,6 @@ COLONNE_DOMAINE: 'Domaine',
 COLONNES_ESSENTIELLES: ['Nom Installation', 'ECP', 'ATA', 'Séquence',
                         'Validation Définition Electrique', 'Date création',
                         'Réalisation FWD > Avancement'],
-GROUPES_MASQUES_AU_DEPART: ['HDK AA'],
 ```
 
 ### Revenir en arrière
@@ -199,19 +201,35 @@ savoir ce qui a changé entre les deux.
   pourcentage d'avancement sans rien dire de l'effort de cette campagne. Le
   seuil se règle par `MOIS_RECONDUIT` dans `Javascript.html`.
 
-### Vue essentielle
+### Les deux vues du tableau
 
-Le bouton **Vue essentielle**, à côté de « Colonnes », ne laisse que la
-référence, l'avancement, la date de création et les colonnes analysées. Un
-second clic remet **exactement** la disposition d'avant, y compris les colonnes
-qu'on avait masquées soi-même.
+Un interrupteur au-dessus du tableau, et rien entre les deux :
 
-### Voir un exemple
+- **Toutes les colonnes** (au départ) : l'extract tel quel. Les 138 colonnes,
+  les mêmes intitulés, **l'ordre exact de la feuille**. C'est la vue de
+  référence, celle sur laquelle tout le monde parle de la même chose.
+- **Vue essentielle** : la poignée de colonnes qu'on regarde vraiment —
+  référence, nom d'installation, ECP, ATA, séquence, validation définition
+  électrique, date de création, avancement.
 
-Le lien **voir un exemple**, à côté du titre « Avancement dans le temps »,
-remplit d'un coup **le graphique et le journal** avec un historique fabriqué à
-partir des comptes du jour, sous un bandeau qui dit que c'en est un. Le tableau
-et les compteurs du haut restent sur les vraies données.
+« Choisir » reste à côté pour masquer une colonne à la main ; le choix est
+retenu d'une ouverture à l'autre.
+
+Dans l'ordre de la feuille, la référence n'est **pas** la première colonne : une
+colonne sans intitulé la précède. Le bloc figé à gauche couvre donc tout ce qui
+précède la référence, elle comprise, chaque colonne posée après la précédente.
+Masquer la colonne sans intitulé laisse la référence seule figée.
+
+### L'interrupteur exemple / réel
+
+**Tout en haut de la page**, avant le titre : un seul interrupteur, qui porte
+sur toute la page. Il n'y a plus un bouton par bloc, et on ne peut pas se
+retrouver à moitié en exemple.
+
+En mode **Exemple**, la page se borde de tirets et remplit **le graphique et le
+journal** avec un historique fabriqué à partir des comptes du jour. Les plans
+affichés, eux, restent ceux de la feuille — et la phrase le dit : c'est
+l'historique qui est fabriqué, pas les plans.
 
 Il est toujours proposé : au premier import il montre ce que la page dira plus
 tard, et plus tard il sert encore à l'expliquer à quelqu'un.
