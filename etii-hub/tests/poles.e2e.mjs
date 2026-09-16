@@ -81,23 +81,26 @@ for (const code of ['ETII', 'ETIIA', 'ETIIE', 'ETIII']) {
 console.log('\n== Recherche : facette de pôle ==');
 await page.goto(`${B}/docsearch.html`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(900);
-const facettesPole = await page.evaluate(() =>
-  [...document.querySelectorAll('button.facette')]
-    .filter(b => /ETIIA|ETIIE|ETIII/.test(b.textContent))
-    .map(b => b.textContent.trim().replace(/\s+/g, ' ')));
-t('les trois pôles sont proposés en facette', facettesPole.length === 3,
-  JSON.stringify(facettesPole));
+// Le filtrage par pôle passe par un menu déroulant, aux côtés de « métier »
+// et « porteur » — c'est la mise en page voulue par le service.
+const optionsPole = await page.evaluate(() => {
+  const sel = document.getElementById('ds-pole');
+  return sel ? [...sel.options].map(o => o.value).filter(Boolean) : null;
+});
+t('le menu « pôle » propose les trois pôles',
+  Array.isArray(optionsPole) && ['ETIIA', 'ETIIE', 'ETIII'].every(c => optionsPole.includes(c)),
+  JSON.stringify(optionsPole));
 
 const attenduA = docs.documents.filter(d => (d.pole || []).includes('ETIIA')).length;
-t(`le compteur ETIIA vaut ${attenduA}`,
-  facettesPole.some(f => f.includes(String(attenduA))), JSON.stringify(facettesPole));
-
-await page.locator('button.facette').filter({ hasText: 'ETIIA' }).first().click();
-await page.waitForTimeout(700);
+await page.selectOption('#ds-pole', 'ETIIA');
+await page.waitForTimeout(800);
 const n = await page.locator('#ds-resultats > *').count();
-t('activer la facette ETIIA filtre les résultats', n > 0 && n <= attenduA, `(${n}/${attenduA})`);
-t('la facette est reflétée dans l\'URL', /ETIIA/i.test(decodeURIComponent(page.url())),
+t(`choisir ETIIA filtre les résultats (${attenduA} documents concernés)`,
+  n > 0 && n <= attenduA, `(${n}/${attenduA})`);
+t('le choix est reflété dans l\'URL', /ETIIA/i.test(decodeURIComponent(page.url())),
   page.url().slice(-60));
+t('les trois menus de filtre sont présents',
+  (await page.locator('#ds-metier, #ds-porteur, #ds-pole').count()) === 3);
 
 console.log('\n== Navigation entre les neuf pages ==');
 for (const p of ['index','etiia','etiie','etiii','communication','reunions','organigramme','faq','docsearch']) {

@@ -20,32 +20,35 @@ let ok=0, ko=0;
 const t=(n,c,d='')=>{ if(c){ok++;console.log(`  OK    ${n}`);} else {ko++;console.log(`  ÉCHEC ${n} ${d}`);} };
 
 console.log('== Facettes ==');
-const facettes = page.locator('button.facette');
-console.log(`  puces de facette : ${await facettes.count()}`);
-const perimVisibles = await page.evaluate(() => [...document.querySelectorAll('button.facette')]
-  .filter(b => /H160|H175|Transverse/.test(b.textContent))
-  .map(b => ({ txt: b.textContent.trim().replace(/\s+/g,' '), visible: b.getBoundingClientRect().height > 0 })));
-t('les 3 puces de périmètre existent et sont rendues',
-  perimVisibles.length === 3 && perimVisibles.every(p => p.visible),
-  JSON.stringify(perimVisibles));
+// Le filtrage se fait par trois menus déroulants et par les tuiles
+// d'exploration : c'est la mise en page voulue par le service.
+const menus = await page.evaluate(() => ['ds-metier','ds-porteur','ds-pole']
+  .map(id => { const s = document.getElementById(id);
+    return s ? { id, options: s.options.length } : null; }).filter(Boolean));
+t('les trois menus de filtre sont présents', menus.length === 3, JSON.stringify(menus));
+t('chaque menu propose des valeurs', menus.every(m => m.options > 1), JSON.stringify(menus));
 
-console.log('\n== Compteurs croisés de facettes ==');
-const avant = await page.evaluate(() => [...document.querySelectorAll('button.facette')]
-  .map(b => b.textContent.trim().replace(/\s+/g,' ')));
-await page.locator('button.facette').filter({hasText:'H160'}).first().click();
-await page.waitForTimeout(400);
-const apres = await page.evaluate(() => [...document.querySelectorAll('button.facette')]
-  .map(b => b.textContent.trim().replace(/\s+/g,' ')));
-t('activer une facette recalcule les autres compteurs',
-  JSON.stringify(avant) !== JSON.stringify(apres));
-const h160Apres = apres.find(x=>/H160/.test(x));
-t('le compteur de la facette active reste inchangé (calcul croisé)',
-  h160Apres === avant.find(x=>/H160/.test(x)), `avant=${avant.find(x=>/H160/.test(x))} après=${h160Apres}`);
-await page.locator('button.facette').filter({hasText:'H160'}).first().click();
-await page.waitForTimeout(300);
+console.log('\n== Un filtre restreint bien les résultats ==');
+// Une requête reste active pendant la comparaison : sans requête NI filtre,
+// la page revient à son écran d'accueil et n'affiche aucune liste — zéro
+// résultat y serait le comportement correct, pas un point de comparaison.
+await page.locator('#ds-champ').fill('norme');
+await page.waitForTimeout(700);
+const sansFiltre = await page.locator('#ds-resultats > *').count();
+await page.selectOption('#ds-pole', 'ETIIA');
+await page.waitForTimeout(700);
+const avecFiltre = await page.locator('#ds-resultats > *').count();
+t('filtrer par pôle réduit le nombre de résultats',
+  avecFiltre > 0 && avecFiltre < sansFiltre, `(${avecFiltre} avec, ${sansFiltre} sans)`);
+await page.selectOption('#ds-pole', '');
+await page.locator('#ds-champ').fill('');
+await page.waitForTimeout(600);
+
+console.log('\n== Les cinq tuiles d\'exploration ==');
+const tuiles = await page.locator('[data-action="filtrer-type"]').count();
+t('cinq tuiles d\'exploration par type', tuiles === 5, `(${tuiles})`);
 const txtPerim = await page.locator('body').innerText();
-t('les valeurs de périmètre sont présentes', /H160/.test(txtPerim) && /Transverse/.test(txtPerim),
-  `H160:${/H160/.test(txtPerim)} H175:${/H175/.test(txtPerim)} Transverse:${/Transverse/.test(txtPerim)}`);
+t('la page mentionne le fonds documentaire', /document/i.test(txtPerim));
 
 console.log('\n== Recherche au fil de la frappe ==');
 const champ = page.locator('input[type="search"], input[role="combobox"], #recherche').first();

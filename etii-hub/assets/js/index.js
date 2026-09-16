@@ -1,32 +1,40 @@
 /* =========================================================================
-   ETII Hub — Tableau de bord du service (index.html)
+   ETII Hub — La page du service ETII (index.html)
 
-   La page répond à une seule question : « comment va le service, et où
-   vais-je ? ». Elle s'organise donc en deux temps :
+   C'est la vitrine du service, et elle est ordonnée par importance :
 
-     1. l'état — quatre tuiles d'indicateurs, l'évolution sur douze mois,
-        la comparaison des trois pôles ;
-     2. la destination — les trois espaces de pôle, la communication de
-        service, et l'accès à la recherche documentaire.
+     1. LE DISPATCHER — trois cartes de pôle. Le premier geste attendu
+        d'un arrivant est de choisir son pôle : rien ne passe avant.
+     2. LE MOT DU CHEF DE SERVICE — une parole, dans son propre bloc.
+     3. LA FLOTTE — le carrousel des appareils suivis.
+     4. LE SUIVI OTQ / OTD — tuiles, douze mois par pôle, comparaison,
+        puis une ligne d'état disant d'où viennent ces chiffres.
+     5. LES ANNONCES DE SERVICE — en fin de page, deux au plus.
+     6. LA RECHERCHE DOCUMENTAIRE — écrite en dur dans la page.
 
-   Trois zones asynchrones, trois cycles d'état indépendants (data.js) :
+   Cinq zones asynchrones, cinq cycles d'état indépendants (data.js) :
 
-     #zone-indicateurs   indicateurs.json
      #zone-poles         organigramme.json (+ indicateurs.json, facultatif)
-     #zone-communication communications.json
+     #zone-mot           communications.json → motDuChef
+     #zone-flotte        flotte.json
+     #zone-indicateurs   indicateurs.json
+     #zone-communication communications.json → annonces
 
-   L'indépendance est délibérée : si indicateurs.json ne charge pas, seule
-   la zone des indicateurs porte le message d'erreur. Les cartes de pôle
-   s'affichent quand même — leur effectif vient de l'organigramme, et seule
-   la mention d'OTQ manque.
+   L'indépendance est délibérée : chaque section affiche son propre état.
+   Si indicateurs.json ne charge pas, les cartes de pôle s'affichent quand
+   même — leur effectif vient de l'organigramme, seule la mention d'OTQ
+   manque. Si communications.json manque, le mot du chef et les annonces
+   le disent chacun de leur côté, et la flotte continue de défiler.
 
-   Tout le DOM est construit avec el() et monter() : aucun innerHTML,
-   aucun gestionnaire en attribut HTML.
+   Tout le DOM est construit avec el() / monter() : aucun innerHTML, aucun
+   gestionnaire en attribut HTML, aucune valeur de style en dur — les
+   seules propriétés posées sont des `--…` valant un jeton de tokens.css.
    ========================================================================= */
 
 import { el, monter, etatUrl, initTheme, initNav, annoncer } from './ui.js';
-import { chargerDonnees, avecEtat, verifierForme } from './data.js';
+import { chargerDonnees, viderCache, avecEtat, verifierForme } from './data.js';
 import { tuileIndicateur, graphiqueLignes, barresComparees } from './indicateurs.js';
+import { carrousel } from './helicos.js';
 
 /* -------------------------------------------------------------------------
    1. Constantes de la page
@@ -34,33 +42,33 @@ import { tuileIndicateur, graphiqueLignes, barresComparees } from './indicateurs
 
 /*
    Les trois pôles, dans l'ordre de l'accord d'équipe. Le libellé, la
-   métaphore et la description sont de la matière éditoriale, pas de la
-   donnée : ils vivent ici, pas dans un JSON. La couleur est un jeton de
-   tokens.css — jamais une valeur brute, et jamais le seul signal du pôle.
+   métaphore et la phrase de description sont de la matière éditoriale, pas
+   de la donnée : ils vivent ici, pas dans un JSON. La couleur est un jeton
+   de tokens.css — jamais une valeur brute, et jamais le seul signal du pôle.
 */
 const POLES = [
   {
     cle: 'ETIIA',
     metaphore: 'Squelette & ADN',
-    description: 'Logique et règles d’architecture : découpage '
-      + 'fonctionnel, conventions de nommage et principes que tous les '
-      + 'autres travaux appliquent ensuite.',
+    description: 'Les règles d’architecture : découpage fonctionnel, '
+      + 'conventions de nommage et principes que tous les autres travaux '
+      + 'appliquent ensuite.',
     page: 'etiia.html',
     couleur: 'var(--pole-etiia)'
   },
   {
     cle: 'ETIIE',
     metaphore: 'Système nerveux',
-    description: 'Schémas électriques et communication entre systèmes : '
-      + 'signaux, interfaces et cohérence des échanges d’un bout à l’autre '
-      + 'de la définition.',
+    description: 'Les schémas électriques et la communication entre '
+      + 'systèmes : signaux, interfaces et cohérence des échanges d’un bout '
+      + 'à l’autre de la définition.',
     page: 'etiie.html',
     couleur: 'var(--pole-etiie)'
   },
   {
     cle: 'ETIII',
     metaphore: 'Structure & harnais',
-    description: 'Intégration physique et routage dans la maquette '
+    description: 'L’intégration physique et le routage dans la maquette '
       + 'numérique : cheminements, fixations et vérification des '
       + 'interférences avant fabrication.',
     page: 'etiii.html',
@@ -69,7 +77,7 @@ const POLES = [
 ];
 
 /* Couleur de série du NIVEAU SERVICE, tous pôles confondus. Les tuiles du
-   haut mesurent le service : elles n'empruntent la couleur d'aucun pôle. */
+   suivi mesurent le service : elles n'empruntent la couleur d'aucun pôle. */
 const COULEUR_SERVICE = 'var(--pole-etii)';
 
 /* Ordre d'affichage des indicateurs. L'OTQ vient en premier : c'est
@@ -77,7 +85,7 @@ const COULEUR_SERVICE = 'var(--pole-etii)';
    pôle. Les autres suivent, ils ne le remplacent pas. */
 const ORDRE_INDICATEURS = ['otq', 'otd', 'ecarts', 'charge'];
 
-/** Nombre maximal d'annonces de service reprises sur le tableau de bord. */
+/** Nombre maximal d'annonces de service reprises en fin de page. */
 const MAX_ANNONCES = 2;
 
 /** Statuts d'annonce : libellé lisible et variante de composant. */
@@ -103,7 +111,7 @@ const MOIS_LONGS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
  * décimale, ce qui suffit à toutes les séries du service.
  *
  * Volontairement local : indicateurs.js formate ce qu'il affiche lui-même,
- * cette fonction ne sert qu'aux textes propres au tableau de bord.
+ * cette fonction ne sert qu'aux textes propres à cette page.
  *
  * @param {*} valeur
  * @param {string} [unite] '%' ou chaîne vide
@@ -124,7 +132,7 @@ function formaterValeur(valeur, unite) {
   }
 
   // Espace insécable avant l'unité : « 93,6 % » ne doit jamais se couper.
-  return unite ? texte + ' ' + unite : texte;
+  return unite ? texte + ' ' + unite : texte;
 }
 
 /**
@@ -167,9 +175,26 @@ function dateLongue(code) {
 }
 
 /**
- * Garde-fou de composant : les fabriques d'indicateurs doivent rendre un
- * nœud. Une signature qui aurait changé casserait la page entière ; ici
- * elle bascule proprement la zone concernée en état d'erreur.
+ * Heure de l'horloge locale, en « 14:07 » et en valeur machine.
+ * Aucune dépendance à une locale disponible : les chiffres sont composés
+ * à la main, donc identiques partout.
+ *
+ * @param {Date} instant
+ * @returns {{affichage:string, machine:string}}
+ */
+function heureDe(instant) {
+  const deuxChiffres = (n) => (n < 10 ? '0' : '') + n;
+  const h = deuxChiffres(instant.getHours());
+  const m = deuxChiffres(instant.getMinutes());
+  const s = deuxChiffres(instant.getSeconds());
+  return { affichage: h + ' h ' + m, machine: h + ':' + m + ':' + s };
+}
+
+/**
+ * Garde-fou de composant : les fabriques d'indicateurs et de flotte
+ * doivent rendre un nœud. Une signature qui aurait changé casserait la
+ * page entière ; ici elle bascule proprement la zone concernée en état
+ * d'erreur, et les autres sections continuent de vivre.
  *
  * @param {*} valeur
  * @param {string} origine nom de la fabrique, cité dans le message
@@ -181,7 +206,7 @@ function exigerNoeud(valeur, origine) {
   }
   throw new Error(
     'Le composant ' + origine + '() n’a rien renvoyé d’affichable : '
-    + 'la zone des indicateurs ne peut pas être construite.'
+    + 'cette section ne peut pas être construite.'
   );
 }
 
@@ -206,9 +231,274 @@ function serieDe(source, cle, longueur) {
   return serie;
 }
 
-/* -------------------------------------------------------------------------
-   4. Zone des indicateurs — tuiles, suivi mensuel, comparaison
-   ------------------------------------------------------------------------- */
+/**
+ * Liste des mois couverts par un jeu d'indicateurs, ou [] si illisible.
+ * @param {*} indicateurs
+ * @returns {string[]}
+ */
+function moisDe(indicateurs) {
+  if (!indicateurs || typeof indicateurs !== 'object') return [];
+  const periode = indicateurs.periode;
+  if (!periode || typeof periode !== 'object') return [];
+  return Array.isArray(periode.mois) ? periode.mois : [];
+}
+
+/* =========================================================================
+   4. LE DISPATCHER — les trois cartes de pôle
+   ========================================================================= */
+
+/**
+ * Effectif réel d'un pôle : son responsable, plus les membres de chaque
+ * squad. Lu dans organigramme.json, jamais recopié en dur.
+ *
+ * @param {object} organigramme
+ * @param {string} cle 'ETIIA' | 'ETIIE' | 'ETIII'
+ * @returns {number|null} null si le pôle est absent des données
+ */
+function effectifDe(organigramme, cle) {
+  const liste = Array.isArray(organigramme.poles) ? organigramme.poles : [];
+  const bloc = liste.find((entree) => entree && entree.pole === cle);
+  if (!bloc) return null;
+
+  let total = bloc.responsable ? 1 : 0;
+  for (const squad of Array.isArray(bloc.squads) ? bloc.squads : []) {
+    if (squad && Array.isArray(squad.membres)) total += squad.membres.length;
+  }
+  return total;
+}
+
+/**
+ * OTQ du dernier mois pour un pôle, avec sa cible et son unité.
+ * Tolère un jeu d'indicateurs absent : la carte s'affichera sans la mesure.
+ *
+ * @param {object|null} indicateurs
+ * @param {string} cle
+ * @returns {{valeur:number, unite:string, cible:number|null, mois:string}|null}
+ */
+function otqDuMois(indicateurs, cle) {
+  if (!indicateurs || typeof indicateurs !== 'object') return null;
+
+  const source = indicateurs.poles && indicateurs.poles[cle];
+  const serie = source && Array.isArray(source.otq) ? source.otq : null;
+  if (!serie || serie.length === 0) return null;
+
+  const index = serie.length - 1;
+  if (typeof serie[index] !== 'number') return null;
+
+  const def = (indicateurs.definitions && indicateurs.definitions.otq) || {};
+  const mois = moisDe(indicateurs);
+
+  return {
+    valeur: serie[index],
+    unite: typeof def.unite === 'string' ? def.unite : '%',
+    cible: typeof def.cible === 'number' ? def.cible : null,
+    mois: mois[index] || ''
+  };
+}
+
+/**
+ * Une mesure du pied de carte : une valeur lisible, son libellé, et
+ * éventuellement une pastille d'état.
+ *
+ * @param {string} libelle
+ * @param {string} valeur
+ * @param {Element|null} [complement]
+ * @returns {Element}
+ */
+function mesureDePole(libelle, valeur, complement) {
+  return el('div', { class: 'carte-pole__mesure' },
+    el('span', { class: 'carte-pole__valeur' }, valeur),
+    el('span', { class: 'carte-pole__libelle' }, libelle),
+    complement || null);
+}
+
+/**
+ * Carte d'entrée vers l'espace d'un pôle — la brique du dispatcher.
+ *
+ * La couleur du pôle est portée par le filet de tête et par la pastille du
+ * titre, toujours collée au libellé « ETIIA » : elle confirme, elle ne dit
+ * jamais seule. Une seule zone cliquable, le lien de titre étiré par
+ * .carte__lien::after — aucun gestionnaire posé sur la carte.
+ *
+ * @param {object} pole entrée de POLES
+ * @param {number|null} effectif
+ * @param {object|null} otq
+ * @returns {Element}
+ */
+function carteDePole(pole, effectif, otq) {
+  const mesures = el('div', { class: 'carte-pole__mesures' });
+
+  mesures.append(mesureDePole(
+    'Effectif',
+    effectif === null ? '—' : formaterValeur(effectif, ''),
+    el('span', { class: 'texte-xs texte-faible' },
+      effectif === null
+        ? 'Organigramme indisponible'
+        : (effectif > 1 ? 'personnes du pôle' : 'personne du pôle'))));
+
+  if (otq) {
+    /* La variante colore la pastille, mais le texte dit déjà tout : valeur,
+       unité, mois et position par rapport à la cible. Rien ne repose sur la
+       seule couleur. */
+    const atteinte = typeof otq.cible === 'number' && otq.valeur >= otq.cible;
+    mesures.append(mesureDePole(
+      'OTQ' + (otq.mois ? ' ' + libelleMois(otq.mois) : '')
+        + (typeof otq.cible === 'number'
+          ? ' · cible ' + formaterValeur(otq.cible, otq.unite)
+          : ''),
+      formaterValeur(otq.valeur, otq.unite),
+      typeof otq.cible === 'number'
+        ? el('span', { class: 'badge ' + (atteinte ? 'badge--succes' : 'badge--alerte') },
+            el('span', { class: 'badge__point', 'aria-hidden': 'true' }),
+            atteinte ? 'Cible atteinte' : 'Sous la cible')
+        : null));
+  } else {
+    mesures.append(mesureDePole('OTQ', '—',
+      el('span', { class: 'texte-xs texte-faible' }, 'Indicateurs indisponibles')));
+  }
+
+  return el('article', {
+    class: 'carte carte--ample carte--cliquable carte-pole',
+    style: { '--couleur-pole': pole.couleur }
+  },
+    el('div', { class: 'carte__entete' },
+      el('h3', { class: 'carte__titre carte-pole__code' },
+        el('span', { class: 'carte-pole__point', 'aria-hidden': 'true' }),
+        el('a', { class: 'carte__lien', href: pole.page }, pole.cle)),
+      el('p', { class: 'carte__sous-titre carte-pole__metaphore' }, pole.metaphore)),
+
+    el('div', { class: 'carte__corps' }, el('p', null, pole.description)),
+
+    mesures);
+}
+
+/**
+ * Rend les trois cartes du dispatcher.
+ * @param {[object, object|null]} ressources [organigramme, indicateurs]
+ * @param {Element} conteneur
+ */
+function rendrePoles(ressources, conteneur) {
+  const organigramme = ressources[0];
+  const indicateurs = ressources[1];
+
+  verifierForme(organigramme, { poles: 'tableau' }, 'organigramme.json');
+
+  monter(conteneur, el('div', { class: 'grille dispatch' },
+    POLES.map((pole) => carteDePole(
+      pole,
+      effectifDe(organigramme, pole.cle),
+      otqDuMois(indicateurs, pole.cle)))));
+}
+
+/* =========================================================================
+   5. LE MOT DU CHEF DE SERVICE
+   ========================================================================= */
+
+/**
+ * Le mot, extrait de communications.json.
+ * Il est distinct des annonces : un fichier sans « motDuChef » n'est pas
+ * une erreur, c'est un mot non publié — d'où un état vide, pas un échec.
+ *
+ * @param {object} donnees
+ * @returns {object|null}
+ */
+function motDuChef(donnees) {
+  if (!donnees || typeof donnees !== 'object') return null;
+  const mot = donnees.motDuChef;
+  if (!mot || typeof mot !== 'object') return null;
+  if (!Array.isArray(mot.corps) || mot.corps.length === 0) return null;
+  return mot;
+}
+
+/**
+ * Une ligne du corps du mot. Les types sont explicites, exactement comme
+ * pour le corps d'une annonce : aucun préfixe à interpréter.
+ *
+ * @param {*} ligne
+ * @returns {Element|null}
+ */
+function ligneDuMot(ligne) {
+  if (!ligne || typeof ligne !== 'object') return null;
+
+  const texte = String(ligne.texte === null || ligne.texte === undefined
+    ? '' : ligne.texte).trim();
+  if (texte === '') return null;
+
+  if (ligne.type === 'titre') return el('h4', { class: 'sans-marge' }, texte);
+  return el('p', { class: 'sans-marge' }, texte);
+}
+
+/**
+ * Rend le mot du chef de service dans son bloc dédié.
+ * @param {object} mot
+ * @param {Element} conteneur
+ */
+function rendreMot(mot, conteneur) {
+  const paragraphes = mot.corps.map(ligneDuMot).filter(Boolean);
+
+  const signature = el('p', { class: 'mot__signature sans-marge texte-sm' },
+    el('span', { class: 'mot__auteur' }, String(mot.auteur || 'Le chef de service')));
+
+  if (mot.fonction) {
+    signature.append(el('span', { class: 'texte-doux' }, String(mot.fonction)));
+  }
+  if (mot.date) {
+    signature.append(el('time', {
+      class: 'texte-faible',
+      datetime: String(mot.date)
+    }, dateLongue(mot.date)));
+  }
+
+  monter(conteneur, el('article', { class: 'carte carte--ample mot' },
+    el('div', { class: 'mot__entete' },
+      el('h3', { class: 'carte__titre mot__titre' },
+        String(mot.titre || 'Le mot du chef de service')),
+      el('span', { class: 'badge badge--accent' }, 'Parole du service')),
+
+    el('div', { class: 'mot__corps' },
+      // Guillemet ouvrant : décoratif, donc masqué aux lecteurs d'écran.
+      el('span', { class: 'mot__marque', 'aria-hidden': 'true' }, '«'),
+      paragraphes),
+
+    signature));
+}
+
+/* =========================================================================
+   6. LA FLOTTE
+   ========================================================================= */
+
+/**
+ * Rend le carrousel des appareils, suivi de l'avertissement du fichier.
+ *
+ * L'avertissement n'est pas décoratif : les désignations sont publiques,
+ * le contexte de service ne l'est pas — il est fictif. Le texte vient du
+ * champ « avertissement » de flotte.json, jamais d'une chaîne recopiée.
+ *
+ * @param {object} donnees contenu de flotte.json
+ * @param {Element} conteneur
+ */
+function rendreFlotte(donnees, conteneur) {
+  verifierForme(donnees, { flotte: 'tableau' }, 'flotte.json');
+
+  const avertissement = typeof donnees.avertissement === 'string'
+    ? donnees.avertissement.trim()
+    : '';
+
+  monter(conteneur, el('div', { class: 'pile' },
+    exigerNoeud(carrousel(donnees.flotte, {
+      etiquette: 'Flotte suivie par le service ETII'
+    }), 'carrousel'),
+
+    avertissement
+      ? el('p', { class: 'flotte-note sans-marge' },
+          el('span', { 'aria-hidden': 'true' }, '※'),
+          el('span', null, avertissement))
+      : null));
+}
+
+/* =========================================================================
+   7. LE SUIVI OTQ / OTD
+   ========================================================================= */
 
 /*
    Le sélecteur d'indicateur pilote le graphique, le tableau et les barres.
@@ -225,7 +515,9 @@ function indicateurDemande() {
 }
 
 /**
- * Construit la zone complète des indicateurs.
+ * Construit la zone complète des indicateurs : quatre tuiles, le suivi
+ * mensuel par pôle avec son sélecteur, puis la comparaison des pôles.
+ *
  * @param {object} donnees contenu de indicateurs.json
  * @param {Element} conteneur
  */
@@ -237,7 +529,7 @@ function rendreIndicateurs(donnees, conteneur) {
     service: 'objet'
   }, 'indicateurs.json');
 
-  const mois = Array.isArray(donnees.periode.mois) ? donnees.periode.mois : [];
+  const mois = moisDe(donnees);
   if (mois.length === 0) {
     throw new Error('« indicateurs.json » : la période ne contient aucun mois.');
   }
@@ -305,7 +597,7 @@ function rendreIndicateurs(donnees, conteneur) {
     });
   }
 
-  /* --- 4.1 La ligne de tuiles ----------------------------------------
+  /* --- 7.1 La ligne de tuiles -----------------------------------------
      Quatre tuiles, l'OTQ en tête. Elles mesurent le SERVICE : leur couleur
      de série est donc celle du niveau service, pas celle d'un pôle. */
 
@@ -321,7 +613,7 @@ function rendreIndicateurs(donnees, conteneur) {
     }), 'tuileIndicateur'));
   }
 
-  /* --- 4.2 Le sélecteur d'indicateur ---------------------------------- */
+  /* --- 7.2 Le sélecteur d'indicateur ---------------------------------- */
 
   const select = el('select', {
     class: 'champ__controle choix-indicateur',
@@ -330,7 +622,7 @@ function rendreIndicateurs(donnees, conteneur) {
   }, cles.map((cle) => el('option', { value: cle },
     donnees.definitions[cle].libelle + ' — ' + donnees.definitions[cle].nom)));
 
-  /* --- 4.3 Les réceptacles pilotés par le sélecteur ------------------- */
+  /* --- 7.3 Les réceptacles pilotés par le sélecteur ------------------- */
 
   const zoneGraphique = el('div');
   const zoneBarres = el('div');
@@ -403,15 +695,16 @@ function rendreIndicateurs(donnees, conteneur) {
     }
   }
 
-  /* --- 4.4 Assemblage -------------------------------------------------- */
+  /* --- 7.4 Assemblage -------------------------------------------------- */
 
   monter(conteneur,
     tuiles,
 
     el('section', { class: 'pile', 'aria-labelledby': 'titre-suivi' },
       el('div', { class: 'rangee rangee--entre' },
-        el('h3', { class: 'sans-marge', id: 'titre-suivi' }, 'Suivi mensuel'),
-        el('div', { class: 'rangee rangee--serree' },
+        el('h3', { class: 'sans-marge', id: 'titre-suivi' },
+          'Suivi sur douze mois, par pôle'),
+        el('div', { class: 'rangee rangee--serree suivi-choix' },
           el('label', { class: 'champ__etiquette', for: 'choix-indicateur' },
             'Indicateur affiché'),
           select)),
@@ -428,130 +721,114 @@ function rendreIndicateurs(donnees, conteneur) {
 }
 
 /* -------------------------------------------------------------------------
-   5. Zone des pôles
+   7bis. Ligne d'état des données
+
+   Deux informations, et pas une de plus : jusqu'où va la donnée, et quand
+   elle a été lue. Le bouton relit le fichier — il n'interroge rien. La
+   nuance est écrite noir sur blanc dans la page, sous cette ligne.
+
+   Les nœuds sont créés UNE fois et seul leur texte change : le bouton
+   « Actualiser » survit donc à ses propres rafraîchissements, et le focus
+   ne saute nulle part.
    ------------------------------------------------------------------------- */
 
-/**
- * Effectif réel d'un pôle : son responsable, plus les membres de chaque
- * squad. Lu dans organigramme.json, jamais recopié en dur.
- *
- * @param {object} organigramme
- * @param {string} cle 'ETIIA' | 'ETIIE' | 'ETIII'
- * @returns {number|null} null si le pôle est absent des données
- */
-function effectifDe(organigramme, cle) {
-  const liste = Array.isArray(organigramme.poles) ? organigramme.poles : [];
-  const bloc = liste.find((entree) => entree && entree.pole === cle);
-  if (!bloc) return null;
+/** Texte variable de la ligne d'état. */
+const majTexte = el('p', {
+  class: 'maj__texte texte-sm texte-doux',
+  role: 'status'
+});
 
-  let total = bloc.responsable ? 1 : 0;
-  for (const squad of Array.isArray(bloc.squads) ? bloc.squads : []) {
-    if (squad && Array.isArray(squad.membres)) total += squad.membres.length;
-  }
-  return total;
-}
+/** Libellé du bouton, remplacé pendant le chargement. */
+const majLibelle = el('span', null, 'Actualiser');
 
-/**
- * OTQ du dernier mois pour un pôle, avec sa cible et son unité.
- * Tolère un jeu d'indicateurs absent : la carte s'affichera sans la mesure.
- *
- * @param {object|null} indicateurs
- * @param {string} cle
- * @returns {{valeur:number, unite:string, cible:number|null, mois:string}|null}
- */
-function otqDuMois(indicateurs, cle) {
-  if (!indicateurs || typeof indicateurs !== 'object') return null;
+/** Vrai pendant un rechargement : le bouton ne se déclenche pas deux fois. */
+let majEnCours = false;
 
-  const source = indicateurs.poles && indicateurs.poles[cle];
-  const serie = source && Array.isArray(source.otq) ? source.otq : null;
-  if (!serie || serie.length === 0) return null;
-
-  const index = serie.length - 1;
-  if (typeof serie[index] !== 'number') return null;
-
-  const def = (indicateurs.definitions && indicateurs.definitions.otq) || {};
-  const mois = indicateurs.periode && Array.isArray(indicateurs.periode.mois)
-    ? indicateurs.periode.mois
-    : [];
-
-  return {
-    valeur: serie[index],
-    unite: typeof def.unite === 'string' ? def.unite : '%',
-    cible: typeof def.cible === 'number' ? def.cible : null,
-    mois: mois[index] || ''
-  };
-}
+const majBouton = el('button', {
+  type: 'button',
+  class: 'bouton bouton--secondaire bouton--compact',
+  onClick: actualiserIndicateurs
+},
+  el('span', { class: 'bouton__icone', 'aria-hidden': 'true' }, '⟳'),
+  majLibelle);
 
 /**
- * Carte d'entrée vers l'espace d'un pôle.
- * La couleur du pôle est portée par le filet de tête et par la pastille du
- * titre — toujours collée au libellé « ETIIA », jamais seule.
+ * Reflète l'état du dernier cycle de chargement des indicateurs.
+ * Branchée en `surEtat` de la zone : elle est donc rejouée à chaque
+ * tentative, y compris après un « Réessayer » du bloc d'erreur.
  *
- * @param {object} pole entrée de POLES
- * @param {number|null} effectif
- * @param {object|null} otq
- * @returns {Element}
+ * @param {{etat:string, donnees?:*, erreur?:Error}} [resultat]
+ *        omis ou nul : le premier chargement n'a pas encore abouti.
  */
-function carteDePole(pole, effectif, otq) {
-  const pied = el('p', { class: 'carte__pied carte-pole__pied sans-marge' });
-
-  pied.append(el('span', { class: 'badge badge--neutre' },
-    effectif === null
-      ? 'Effectif indisponible'
-      : effectif + (effectif > 1 ? ' personnes' : ' personne')));
-
-  if (otq) {
-    /* La variante colore le badge, mais le texte dit déjà tout : valeur,
-       unité et mois. Rien ne repose sur la seule couleur. */
-    const atteinte = typeof otq.cible === 'number' && otq.valeur >= otq.cible;
-    pied.append(el('span', {
-      class: 'badge ' + (atteinte ? 'badge--succes' : 'badge--alerte')
-    },
-      'OTQ ' + formaterValeur(otq.valeur, otq.unite)
-      + (otq.mois ? ' en ' + libelleMois(otq.mois) : '')));
-  } else {
-    pied.append(el('span', { class: 'badge badge--neutre' }, 'OTQ indisponible'));
+function refleterEtatDonnees(resultat) {
+  if (!resultat) {
+    monter(majTexte, 'Lecture du jeu de données en cours…');
+    return;
   }
 
-  return el('article', {
-    class: 'carte carte--cliquable carte-pole',
-    style: { '--couleur-pole': pole.couleur }
-  },
-    el('div', { class: 'carte__entete' },
-      el('h3', { class: 'carte__titre titre-pole' },
-        el('span', { class: 'titre-pole__point', 'aria-hidden': 'true' }),
-        el('a', { class: 'carte__lien', href: pole.page }, pole.cle)),
-      el('p', { class: 'carte__sous-titre' }, pole.metaphore)),
-    el('div', { class: 'carte__corps' }, el('p', null, pole.description)),
-    pied);
+  const heure = heureDe(new Date());
+  const horodatage = el('time', { datetime: heure.machine }, heure.affichage);
+
+  if (resultat.etat !== 'succes') {
+    monter(majTexte,
+      'Jeu de données indisponible — dernière tentative à ', horodatage, '.');
+    return;
+  }
+
+  const mois = moisDe(resultat.donnees);
+  const dernier = mois.length ? mois[mois.length - 1] : '';
+
+  monter(majTexte,
+    'Instantané arrêté à ',
+    dernier
+      ? el('time', { datetime: String(dernier) }, libelleMois(dernier, 'long'))
+      : el('span', null, 'une période non précisée'),
+    ' · relu à ', horodatage, '.');
 }
 
 /**
- * Rend les trois cartes de pôle.
- * @param {[object, object|null]} ressources [organigramme, indicateurs]
- * @param {Element} conteneur
+ * Recharge réellement indicateurs.json.
+ *
+ * data.js mémoïse la PROMESSE : sans purge du cache, « Actualiser »
+ * réafficherait la même réponse sans jamais toucher au fichier. On vide
+ * donc l'entrée avant de relancer, puis on rejoue les deux zones qui
+ * vivent de ce jeu — les indicateurs, et l'OTQ des cartes de pôle.
  */
-function rendrePoles(ressources, conteneur) {
-  const organigramme = ressources[0];
-  const indicateurs = ressources[1];
+async function actualiserIndicateurs() {
+  if (majEnCours) return;
 
-  verifierForme(organigramme, { poles: 'tableau' }, 'organigramme.json');
+  /* `aria-disabled` plutôt que `disabled` : un bouton désactivé sous le
+     doigt perd le focus au profit du corps du document, et le clavier se
+     retrouve au début de la page. Ici le bouton reste focalisable, la
+     garde ci-dessus suffit à ignorer un second clic. */
+  majEnCours = true;
+  majBouton.setAttribute('aria-disabled', 'true');
+  majTexte.setAttribute('aria-busy', 'true');
+  majLibelle.textContent = 'Actualisation…';
 
-  monter(conteneur, el('div', { class: 'grille grille--ample' },
-    POLES.map((pole) => carteDePole(
-      pole,
-      effectifDe(organigramme, pole.cle),
-      otqDuMois(indicateurs, pole.cle)))));
+  try {
+    viderCache('indicateurs');
+    /* avecEtat() ne rejette jamais : les deux zones afficheront leur propre
+       état, quoi qu'il arrive au fichier. Le résultat est annoncé par la
+       ligne d'état elle-même (role="status") — en ajouter un second par
+       annoncer() ferait parler le lecteur d'écran deux fois. */
+    await Promise.all([lancerIndicateurs(), lancerPoles()]);
+  } finally {
+    majEnCours = false;
+    majBouton.removeAttribute('aria-disabled');
+    majTexte.setAttribute('aria-busy', 'false');
+    majLibelle.textContent = 'Actualiser';
+  }
 }
 
-/* -------------------------------------------------------------------------
-   6. Zone de communication de service
-   ------------------------------------------------------------------------- */
+/* =========================================================================
+   8. LES ANNONCES DE SERVICE
+   ========================================================================= */
 
 /**
  * Annonces de NIVEAU SERVICE, les plus récentes d'abord.
  * Les annonces de pôle appartiennent à l'espace de leur pôle : elles n'ont
- * rien à faire sur le tableau de bord du service.
+ * rien à faire sur la page du service.
  *
  * @param {object} donnees contenu de communications.json
  * @returns {object[]} deux annonces au plus
@@ -626,57 +903,103 @@ function rendreCommunication(annonces, conteneur) {
   monter(conteneur, el('div', { class: 'pile' }, annonces.map(carteAnnonce)));
 }
 
-/* -------------------------------------------------------------------------
-   7. Démarrage
-   ------------------------------------------------------------------------- */
+/* =========================================================================
+   9. Démarrage — une section, un cycle d'état
+   ========================================================================= */
 
 initTheme();
 initNav('index.html');
 
 /* Retour arrière, avance, ou lien collé : le hash reste la source de
    vérité de l'indicateur affiché. L'écouteur est posé une seule fois, même
-   si la zone est reconstruite par un « Réessayer ». */
+   si la zone est reconstruite par un « Réessayer » ou une actualisation. */
 etatUrl.ecouter(() => {
   if (typeof appliquerIndicateur === 'function') {
     appliquerIndicateur(indicateurDemande(), true);
   }
 });
 
-/* 4.x — Indicateurs. Sa propre zone, son propre message d'erreur. */
-avecEtat('#zone-indicateurs', () => chargerDonnees('indicateurs'),
-  rendreIndicateurs, {
-    squelette: 2,
-    texteChargement: 'Chargement des indicateurs du service…',
-    titreErreur: 'Indicateurs indisponibles',
-    titreVide: 'Aucun indicateur publié',
-    texteVide: 'Les indicateurs du service apparaîtront ici dès qu’une '
-      + 'première période aura été publiée.'
+/**
+ * Le dispatcher. L'organigramme est indispensable (c'est lui qui donne
+ * l'effectif) ; les indicateurs sont un bonus, leur échec est absorbé pour
+ * que les trois cartes s'affichent quand même.
+ *
+ * @returns {Promise<object>}
+ */
+function lancerPoles() {
+  return avecEtat('#zone-poles',
+    () => Promise.all([
+      chargerDonnees('organigramme'),
+      chargerDonnees('indicateurs').catch(() => null)
+    ]),
+    rendrePoles, {
+      squelette: 3,
+      texteChargement: 'Chargement des pôles…',
+      titreErreur: 'Pôles indisponibles',
+      titreVide: 'Aucun pôle déclaré',
+      texteVide: 'Les trois espaces de pôle apparaîtront ici dès que '
+        + 'l’organigramme du service aura été publié.'
+    });
+}
+
+/**
+ * Le suivi OTQ / OTD. La ligne d'état est rejouée à chaque cycle.
+ * @returns {Promise<object>}
+ */
+function lancerIndicateurs() {
+  return avecEtat('#zone-indicateurs', () => chargerDonnees('indicateurs'),
+    rendreIndicateurs, {
+      squelette: 2,
+      texteChargement: 'Chargement des indicateurs du service…',
+      titreErreur: 'Indicateurs indisponibles',
+      titreVide: 'Aucun indicateur publié',
+      texteVide: 'Les indicateurs du service apparaîtront ici dès qu’une '
+        + 'première période aura été publiée.',
+      surEtat: refleterEtatDonnees
+    });
+}
+
+/* 2 — Le dispatcher, tout en haut. */
+lancerPoles();
+
+/* 3 — Le mot du chef de service. */
+avecEtat('#zone-mot',
+  async () => motDuChef(await chargerDonnees('communications')),
+  rendreMot, {
+    squelette: 1,
+    texteChargement: 'Chargement du mot du chef de service…',
+    titreErreur: 'Mot du chef de service indisponible',
+    titreVide: 'Aucun mot publié',
+    texteVide: 'Le prochain mot du chef de service paraîtra ici. Les '
+      + 'annonces, elles, restent en bas de page.'
   });
 
-/* 5 — Les trois pôles. L'organigramme est indispensable (c'est lui qui
-   donne l'effectif) ; les indicateurs sont un bonus, leur échec est
-   absorbé pour que les trois cartes s'affichent quand même. */
-avecEtat('#zone-poles',
-  () => Promise.all([
-    chargerDonnees('organigramme'),
-    chargerDonnees('indicateurs').catch(() => null)
-  ]),
-  rendrePoles, {
-    squelette: 3,
-    texteChargement: 'Chargement des pôles…',
-    titreErreur: 'Pôles indisponibles',
-    titreVide: 'Aucun pôle déclaré'
-  });
+/* 4 — La flotte. */
+avecEtat('#zone-flotte', () => chargerDonnees('flotte'), rendreFlotte, {
+  squelette: 1,
+  texteChargement: 'Chargement de la flotte…',
+  titreErreur: 'Flotte indisponible',
+  titreVide: 'Aucun appareil suivi',
+  texteVide: 'Les appareils suivis par le service apparaîtront ici.',
+  estVide: (donnees) => !donnees || !Array.isArray(donnees.flotte)
+    || donnees.flotte.length === 0
+});
 
-/* 6 — Communication de service. */
+/* 5 — Le suivi OTQ / OTD, et sa ligne d'état. */
+monter(document.getElementById('zone-maj'),
+  el('div', { class: 'maj' }, majTexte, majBouton));
+refleterEtatDonnees();
+lancerIndicateurs();
+
+/* 6 — Les annonces de service, en fin de page. */
 avecEtat('#zone-communication',
   async () => annoncesDeService(await chargerDonnees('communications')),
   rendreCommunication, {
     squelette: 2,
     compact: true,
     texteChargement: 'Chargement des annonces de service…',
-    titreErreur: 'Annonces indisponibles',
     titreVide: 'Aucune annonce de service',
+    titreErreur: 'Annonces indisponibles',
     texteVide: 'Les annonces publiées au niveau du service apparaîtront '
       + 'ici. Celles des pôles restent dans leur espace.'
   });

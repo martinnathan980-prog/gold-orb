@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Recherche documentaire — ETII Hub</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Moteur de recherche du fonds documentaire ETII : recherche instantanée, facettes combinables, navigation entièrement au clavier.">
+  <meta name="description" content="Moteur de recherche du fonds documentaire ETII : recherche instantanée, filtres combinables, navigation entièrement au clavier.">
   <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
@@ -15,12 +15,16 @@
   <!-- =======================================================================
        Styles propres à cette page UNIQUEMENT.
 
-       Deux catégories, et rien d'autre :
+       Trois catégories, et rien d'autre :
 
-       A. Agencement spécifique à la recherche documentaire (colonne de
-          facettes, tuiles d'accueil, carte de résultat) : aucun composant
-          existant ne couvre ces cas.
-       B. Pont entre le contrat de classes de ui.js et la feuille de
+       A. Le bloc d'interrogation : grand titre centré, barre de recherche
+          large, ligne de menus déroulants. C'est la forme d'origine du
+          service : on demande d'abord « que recherchez-vous ? », le reste
+          n'apparaît qu'ensuite.
+       B. Exploration rapide et grille de résultats : trois colonnes sur
+          large écran, deux puis une en dessous. Aucun composant existant
+          ne couvre ces agencements.
+       C. Pont entre le contrat de classes de ui.js et la feuille de
           composants. `ui.js` fabrique `.modale / .modale__boite / .toast…`
           (cf. son en-tête de fichier) alors que components.css stylise
           `.modale-fond / .modale / .notification…`. Sans ces règles, la
@@ -38,8 +42,6 @@
        contente de rattacher un code de pôle à son jeton. La couleur n'est
        JAMAIS seule porteuse de sens : toute pastille teintée est
        accompagnée du code du pôle écrit en toutes lettres (SPEC §1bis).
-       Même mécanique que faq.html, pour que les deux pages parlent de la
-       même façon des mêmes pôles.
        --------------------------------------------------------------------- */
 
     [data-pole="ETII"]  { --pole-teinte: var(--pole-etii); }
@@ -47,9 +49,8 @@
     [data-pole="ETIIE"] { --pole-teinte: var(--pole-etiie); }
     [data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
 
-    /* Point de couleur d'une puce de pôle (carte ou facette). Purement
-       décoratif : le libellé qui le suit porte seul l'information, et il
-       reste lisible sans lui. */
+    /* Point de couleur d'une pastille de pôle. Purement décoratif : le
+       libellé qui le suit porte seul l'information. */
     .pole-point {
       flex: none;
       inline-size: var(--e-2);
@@ -74,94 +75,253 @@
     }
 
     /* ---------------------------------------------------------------------
-       A1. Agencement général : barre de recherche, puis filtres + résultats
+       A1. Le bloc d'interrogation
+       Titre, barre, menus déroulants et rappel des raccourcis : tout est
+       centré sur une seule colonne, c'est la forme d'origine du service.
        --------------------------------------------------------------------- */
 
-    /* La zone de saisie reste au-dessus du contenu défilant : on la garde
-       collée sous l'en-tête pour qu'elle demeure atteignable à la souris
-       comme au clavier, même après avoir parcouru cinquante résultats. */
-    .ds-barre-recherche {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      padding-block: var(--e-4);
-      background-color: var(--fond);
+    .ds-questionnement {
+      align-items: center;
+      text-align: center;
+      padding-block-start: var(--e-6);
     }
 
-    .ds-agencement {
-      display: grid;
-      gap: var(--e-8);
-      align-items: start;
-    }
-
-    /* `[hidden]` doit l'emporter sur les `display` posés par .grille et
-       .rangee, dont la spécificité est identique à celle de la règle du
-       navigateur. Une règle ciblée suffit : pas de !important. */
-    .ds-agencement [hidden],
-    #ds-propositions[hidden] {
-      display: none;
-    }
-
-    @media (min-width: 60rem) {
-      .ds-agencement {
-        grid-template-columns: minmax(0, calc(var(--e-16) * 4)) minmax(0, 1fr);
-        gap: var(--e-10);
-      }
-
-      /* La colonne de filtres suit le défilement : les compteurs restent
-         visibles pendant qu'on parcourt les résultats. */
-      .ds-filtres {
-        position: sticky;
-        top: calc(var(--e-16) + var(--e-4));
-        max-height: calc(100dvh - var(--e-16) - var(--e-8));
-        overflow-y: auto;
-        overscroll-behavior: contain;
-      }
-    }
-
-    /* Intitulé d'un groupe de facettes : discret, mais bien un titre. */
-    .ds-titre-facette {
+    /* Le titre est la question posée : il occupe la pleine échelle
+       typographique et ne partage sa ligne avec rien. */
+    .ds-question {
       margin: 0;
-      font-size: var(--texte-xs);
-      font-weight: var(--graisse-forte);
-      text-transform: uppercase;
+      max-inline-size: var(--largeur-texte);
+    }
+
+    .ds-accroche {
+      margin: 0;
+      max-inline-size: var(--largeur-texte);
       color: var(--texte-doux);
     }
 
+    /* Le repère de recherche : barre, menus et rappel des raccourcis,
+       empilés et centrés sous la question. */
+    .ds-recherche {
+      align-items: center;
+      inline-size: 100%;
+    }
+
+    /* La barre est l'objet principal de la page : large, centrée, seule. */
+    .ds-barre {
+      inline-size: 100%;
+      max-inline-size: calc(var(--e-16) * 12);
+      margin-inline: auto;
+    }
+
+    /* La loupe est une icône en trait, pas un glyphe de police : même
+       épaisseur que les icônes des tuiles d'exploration. */
+    .ds-loupe {
+      inline-size: var(--e-5);
+      block-size: var(--e-5);
+    }
+
+    /* components.css masque le rappel « / » dès que la coquille a le focus.
+       Ici le champ est focalisé au chargement : le rappel disparaîtrait
+       avant d'avoir été lu. On le conserve tant que le champ est vide —
+       la règle d'origine, qui le retire dès la première frappe, reste
+       prioritaire puisqu'elle vient après dans la cascade du document. */
+    .ds-barre .recherche:focus-within .recherche__raccourci {
+      visibility: visible;
+    }
+
+    .ds-barre .recherche__champ:not(:placeholder-shown) ~ .recherche__raccourci {
+      visibility: hidden;
+    }
+
+    /* Les trois menus déroulants tiennent sur une seule ligne, centrés, et
+       se replient d'eux-mêmes sur les écrans étroits. */
+    .ds-menus {
+      justify-content: center;
+      inline-size: 100%;
+      max-inline-size: calc(var(--e-16) * 12);
+      margin-inline: auto;
+    }
+
+    /* .champ__select est une boîte de bloc : dans une rangée, elle doit au
+       contraire rester à sa taille propre et pouvoir rétrécir. */
+    .ds-menu {
+      inline-size: auto;
+      flex: 1 1 calc(var(--e-16) * 3);
+      min-inline-size: min(calc(var(--e-16) * 3), 100%);
+      max-inline-size: 100%;
+      text-align: start;
+    }
+
+    /* Rappel des raccourcis clavier. --texte-doux et non --texte-faible :
+       le contraste AA doit tenir dans les deux thèmes (SPEC §7). */
+    .ds-aide {
+      margin: 0;
+      color: var(--texte-doux);
+      font-size: var(--texte-xs);
+    }
+
+    .ds-aide kbd {
+      padding-inline: var(--e-1);
+      background-color: var(--fond-enfonce);
+      color: var(--texte);
+      border: 1px solid var(--bordure);
+      border-radius: var(--rayon-sm);
+      font-size: var(--texte-xs);
+    }
+
+    /* Teinte lisible d'une pastille de type.
+       components.css rapproche la teinte d'un badge de la couleur de texte
+       du thème — color-mix(… 72 %, var(--texte)) — précisément pour tenir
+       le contraste AA. skin.css repose ensuite une teinte plate sur les
+       variantes colorées, ce qui retombe à 3,2:1 en thème clair pour du
+       texte de 12 px. On rétablit ici le calcul d'origine, sur les seules
+       pastilles émises par cette page, sans toucher au socle. */
+    .ds-badge-type {
+      color: color-mix(in srgb, var(--badge-teinte) 72%, var(--texte));
+    }
+
     /* ---------------------------------------------------------------------
-       A2. Carte de résultat
+       A2. Blocs escamotables
+       .pile et .grille posent un `display` de même spécificité que la règle
+       [hidden] du navigateur : une règle ciblée suffit à rendre la main à
+       l'attribut, sans !important.
        --------------------------------------------------------------------- */
 
-    /* La grille de résultats est une vraie liste : les cartes sont des
-       <li>, pas des options de listbox. Les marqueurs de liste n'ont rien
-       à faire ici. */
-    .ds-liste {
+    .ds-bloc[hidden] { display: none; }
+
+    /* ---------------------------------------------------------------------
+       B1. Exploration rapide : cinq tuiles d'accès par type
+       --------------------------------------------------------------------- */
+
+    .ds-tuiles {
+      --ds-tuile-min: calc(var(--e-16) * 2.5);
+
+      display: grid;
+      gap: var(--e-4);
+      grid-template-columns: repeat(
+        auto-fit, minmax(min(var(--ds-tuile-min), 100%), 1fr)
+      );
       margin: 0;
       padding: 0;
       list-style: none;
     }
 
+    .ds-tuile {
+      inline-size: 100%;
+      block-size: 100%;
+      min-block-size: calc(var(--e-16) * 2.5);
+      align-items: center;
+      justify-content: center;
+      gap: var(--e-3);
+      padding-block: var(--e-5);
+      text-align: center;
+      font-family: var(--police);
+      font-size: var(--texte-md);
+    }
+
+    .ds-tuile__icone {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      inline-size: var(--e-12);
+      block-size: var(--e-12);
+      background-color: var(--accent-doux);
+      color: var(--texte-accent);
+      border: 1px solid var(--accent-lueur);
+      border-radius: var(--rayon-md);
+    }
+
+    .ds-icone {
+      inline-size: var(--e-6);
+      block-size: var(--e-6);
+    }
+
+    .ds-tuile__nom {
+      font-size: var(--texte-md);
+      font-weight: var(--graisse-forte);
+      color: var(--texte);
+      line-height: var(--interligne-serre);
+    }
+
+    .ds-tuile__compte {
+      margin-block-start: auto;
+      color: var(--texte-doux);
+      font-size: var(--texte-xs);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---------------------------------------------------------------------
+       B2. Bandeau de résultats
+       --------------------------------------------------------------------- */
+
+    /* Compteur : chiffres de largeur fixe, aucun tressautement pendant la
+       frappe. C'est le titre de la section de résultats. */
+    .ds-compteur {
+      margin: 0;
+      font-size: var(--texte-lg);
+      font-weight: var(--graisse-forte);
+      color: var(--texte);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: normal;
+    }
+
+    /* Rappel des filtres actifs : une puce par filtre, retirable. */
+    .ds-rappels {
+      flex: 1 1 auto;
+      min-inline-size: 0;
+    }
+
+    /* .facettes pose un `display` : l'attribut [hidden] doit le reprendre. */
+    .ds-rappels[hidden] { display: none; }
+
+    /* ---------------------------------------------------------------------
+       B3. Grille de résultats : trois colonnes, puis deux, puis une
+       La largeur minimale de colonne est dérivée des jetons d'espacement.
+       Le conteneur étant borné à --largeur-contenu, une quatrième colonne
+       ne peut jamais tenir : la grille plafonne donc à trois.
+       --------------------------------------------------------------------- */
+
+    .ds-grille {
+      --ds-colonne-min: calc(var(--e-16) * 5);
+
+      display: grid;
+      gap: var(--e-5);
+      grid-template-columns: repeat(
+        auto-fit, minmax(min(var(--ds-colonne-min), 100%), 1fr)
+      );
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    /* Grille vidée : l'attribut [hidden] doit l'emporter sur `display`. */
+    .ds-grille[hidden] { display: none; }
+
+    /* ---------------------------------------------------------------------
+       B4. Carte de résultat
+       --------------------------------------------------------------------- */
+
     /* Cliquer une carte la désigne comme résultat courant : le pointeur
        doit le dire. */
     .ds-carte {
       cursor: pointer;
-      scroll-margin-block: calc(var(--e-16) + var(--e-8));
+      scroll-margin-block: var(--e-16);
     }
 
     /* Résultat courant du parcours ↑/↓. L'état est porté par aria-current,
        source unique de vérité — c'est la règle que components.css applique
        à [role="option"][aria-selected="true"], transposée à cette liste. */
     .ds-carte[aria-current="true"] {
-      background-color: var(--accent-doux);
+      background: var(--accent-doux);
       border-color: var(--accent);
     }
 
     .ds-carte__titre {
+      margin: 0;
       font-size: var(--texte-lg);
       font-weight: var(--graisse-forte);
       line-height: var(--interligne-serre);
       color: var(--texte);
-      margin: 0;
     }
 
     /* Résumé borné à trois lignes : les cartes d'une même rangée gardent
@@ -179,19 +339,35 @@
       overflow: hidden;
     }
 
-    /* Les actions de la carte sont repoussées à droite du pied. */
+    /* Le pied de carte s'empile : sur un tiers de largeur, métadonnées et
+       actions ne tiennent pas côte à côte. */
+    .ds-carte__pied {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--e-3);
+      margin-block-start: auto;
+    }
+
+    .ds-carte__meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--e-1) var(--e-3);
+      font-size: var(--texte-xs);
+      color: var(--texte-doux);
+    }
+
     .ds-carte__actions {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: var(--e-2);
-      margin-inline-start: auto;
     }
 
-    /* Mention des six documents sans lien : une information, pas un bouton
+    /* Mention des documents sans lien : une information, pas un bouton
        mort. Le ton reste neutre, la cible tactile n'est pas requise. */
     .ds-sans-lien {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       gap: var(--e-2);
       margin: 0;
@@ -201,77 +377,16 @@
     }
 
     /* ---------------------------------------------------------------------
-       A3. Accueil de la page : grandes tuiles d'accès par type
+       B5. Gabarit de carte pendant le chargement
        --------------------------------------------------------------------- */
 
-    .ds-tuile {
-      inline-size: 100%;
-      block-size: 100%;
-      align-items: flex-start;
-      gap: var(--e-2);
-      text-align: start;
-      font-family: var(--police);
-      font-size: var(--texte-md);
-      min-height: calc(var(--e-16) * 2.5);
-    }
-
-    .ds-tuile__glyphe {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      inline-size: var(--e-10);
-      block-size: var(--e-10);
-      background-color: var(--accent-doux);
-      color: var(--texte-accent);
-      border-radius: var(--rayon-md);
-      font-size: var(--texte-xl);
-      line-height: 1;
-    }
-
-    .ds-tuile__nom {
-      font-size: var(--texte-lg);
-      font-weight: var(--graisse-forte);
-      color: var(--texte);
-    }
-
-    .ds-tuile__compte {
-      margin-top: auto;
-      color: var(--texte-doux);
-      font-size: var(--texte-sm);
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* ---------------------------------------------------------------------
-       A4. Divers
-       --------------------------------------------------------------------- */
-
-    /* Compteur de résultats : chiffres de largeur fixe, aucun tressautement
-       de la barre pendant la frappe. */
-    .ds-compteur {
-      margin: 0;
-      font-size: var(--texte-sm);
-      font-weight: var(--graisse-moyenne);
-      color: var(--texte-doux);
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Gabarit de carte pendant le chargement. */
     .ds-squelette {
-      min-height: calc(var(--e-16) * 3);
+      min-block-size: calc(var(--e-16) * 3);
       justify-content: space-between;
     }
 
-    /* Contraste AA (SPEC §7) : --texte-faible ne dépasse pas 4,5:1 sur
-       --fond-enfonce (3,86:1 en clair, 3,98:1 en sombre). Le compteur
-       porte un chiffre, donc une information : il passe à --texte-doux
-       (6,15:1 en clair, 7,39:1 en sombre). La règle plus spécifique de
-       components.css pour la facette active reste prioritaire. */
-    .facette__compteur {
-      color: var(--texte-doux);
-    }
-
     /* ---------------------------------------------------------------------
-       B1. Pont ui.js -> design system : modale
+       C1. Pont ui.js -> design system : modale
        `ui.js` produit .modale (le voile) > .modale__boite (la boîte).
        components.css attend .modale-fond > .modale : on réaffecte donc ici
        les rôles, sans toucher au socle.
@@ -410,7 +525,7 @@
     }
 
     /* ---------------------------------------------------------------------
-       B2. Pont ui.js -> design system : notifications éphémères
+       C2. Pont ui.js -> design system : notifications éphémères
        --------------------------------------------------------------------- */
 
     .toasts {
@@ -472,9 +587,10 @@
     }
 
     /* ---------------------------------------------------------------------
-       Mouvement : toute transition de cette page est ici, et nulle part
-       ailleurs. base.css neutralise déjà l'ensemble sous
-       prefers-reduced-motion: reduce.
+       Mouvement : toute transition et toute animation de cette page sont
+       ici, et nulle part ailleurs. base.css neutralise déjà l'ensemble sous
+       prefers-reduced-motion: reduce ; la règle ci-dessous garantit que
+       rien ne s'anime même si ce socle venait à manquer.
        --------------------------------------------------------------------- */
 
     @media (prefers-reduced-motion: no-preference) {
@@ -482,7 +598,68 @@
       .toast {
         transition: opacity var(--duree) var(--courbe);
       }
+
+      .ds-questionnement {
+        animation: ds-apparition var(--duree) var(--courbe) both;
+      }
+
+      @keyframes ds-apparition {
+        from { opacity: 0; transform: translateY(calc(var(--e-2) * -1)); }
+        to   { opacity: 1; transform: none; }
+      }
     }
+
+    @media (prefers-reduced-motion: reduce) {
+      .modale,
+      .toast,
+      .ds-questionnement {
+        animation: none;
+        transition: none;
+      }
+    }
+    /* --- Filtres avancés, repliés par défaut ---------------------------
+       Les trois menus déroulants couvrent l'usage courant ; le détail par
+       type, périmètre et porteur ne s'ouvre qu'à la demande. */
+    .ds-agencement {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-8);
+    }
+
+    .ds-filtres-avances {
+      border: 1px solid var(--bordure-douce);
+      border-radius: var(--rayon-md);
+      background-color: var(--fond-enfonce);
+    }
+
+    .ds-filtres-avances__resume {
+      display: flex;
+      align-items: center;
+      gap: var(--e-2);
+      min-block-size: var(--cible-tactile);
+      padding: var(--e-2) var(--e-4);
+      font-size: var(--texte-sm);
+      font-weight: var(--graisse-forte);
+      color: var(--texte-doux);
+      border-radius: var(--rayon-md);
+      cursor: pointer;
+    }
+
+    .ds-filtres-avances__resume:hover { color: var(--texte); }
+
+    .ds-filtres-avances__resume:focus-visible {
+      outline: var(--focus-epaisseur) solid var(--focus-couleur);
+      outline-offset: calc(var(--focus-decalage) * -1);
+    }
+
+    .ds-filtres-avances__corps { padding: 0 var(--e-4) var(--e-4); }
+
+    .ds-filtres-avances__groupes {
+      display: grid;
+      gap: var(--e-5);
+      grid-template-columns: repeat(auto-fit, minmax(calc(var(--e-16) * 4), 1fr));
+    }
+
   </style>
 </head>
 
@@ -514,60 +691,107 @@
     <div class="conteneur pile pile--lache">
 
       <!-- ============================================================
-           Titre + champ de recherche
+           Le questionnement : la question, la barre, les trois menus.
            ============================================================ -->
-      <div class="pile">
-        <div class="pile pile--serree">
-          <h1>Recherche documentaire</h1>
-          <p class="texte-doux mesure sans-marge">
-            Le fonds documentaire du service, interrogeable au fil de la
-            frappe. Insensible à la casse, aux accents et aux fautes de
-            frappe.
-          </p>
-        </div>
+      <section class="ds-questionnement pile" aria-labelledby="ds-question">
 
-        <div class="ds-barre-recherche" role="search">
-          <label class="visuellement-cache" for="ds-champ">
-            Rechercher un document
-          </label>
+        <h1 class="ds-question" id="ds-question">Que recherchez-vous&nbsp;?</h1>
 
-          <div class="recherche recherche--proeminente">
-            <span class="recherche__icone" aria-hidden="true">⌕</span>
+        <p class="ds-accroche">
+          Le fonds documentaire du service, interrogeable au fil de la frappe.
+          Insensible à la casse, aux accents et aux fautes de frappe.
+        </p>
 
-            <input
-              class="recherche__champ"
-              id="ds-champ"
-              name="q"
-              type="search"
-              placeholder="Titre, référence, mot-clé, métier…"
-              autocomplete="off"
-              autocapitalize="none"
-              spellcheck="false"
-              enterkeyhint="search"
-              aria-describedby="ds-aide">
+        <!-- Le repère « search » ne couvre que les contrôles : le titre de
+             page reste un titre, pas une partie du formulaire. -->
+        <div class="ds-recherche pile" role="search"
+             aria-label="Recherche documentaire">
 
-            <kbd class="recherche__raccourci" aria-hidden="true">/</kbd>
+          <div class="ds-barre">
+            <label class="visuellement-cache" for="ds-champ">
+              Rechercher un outil, un process, une norme
+            </label>
 
-            <button
-              class="bouton bouton--discret bouton--icone bouton--rond recherche__effacer"
-              type="button"
-              data-action="effacer-requete"
-              aria-label="Effacer la recherche">
-              <span aria-hidden="true">×</span>
-            </button>
+            <div class="recherche recherche--proeminente">
+              <span class="recherche__icone" aria-hidden="true">
+                <svg class="ds-loupe" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     focusable="false" aria-hidden="true">
+                  <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                  <path d="M15.4 15.4 L20.5 20.5"></path>
+                </svg>
+              </span>
+
+              <input
+                class="recherche__champ"
+                id="ds-champ"
+                name="q"
+                type="search"
+                placeholder="Rechercher un outil, un process…"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                enterkeyhint="search"
+                aria-describedby="ds-aide">
+
+              <kbd class="recherche__raccourci" aria-hidden="true">/</kbd>
+
+              <button
+                class="bouton bouton--discret bouton--icone bouton--rond recherche__effacer"
+                type="button"
+                data-action="effacer-requete"
+                aria-label="Effacer la recherche">
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
           </div>
 
-          <p class="texte-xs texte-doux sans-marge" id="ds-aide">
+          <!-- Trois menus déroulants sur une seule ligne. Ce sont de vrais
+               <select> : ils se combinent entre eux et avec la recherche.
+               Les options sont ajoutées par docsearch.js depuis le JSON ;
+               les menus restent désactivés tant que le fonds n'est pas là. -->
+          <div class="ds-menus rangee rangee--serree">
+            <label class="visuellement-cache" for="ds-metier">
+              Filtrer par métier
+            </label>
+            <span class="champ__select ds-menu">
+              <select class="champ__controle" id="ds-metier" name="metier" disabled>
+                <option value="">Tous les métiers</option>
+              </select>
+            </span>
+
+            <label class="visuellement-cache" for="ds-porteur">
+              Filtrer par porteur
+            </label>
+            <span class="champ__select ds-menu">
+              <select class="champ__controle" id="ds-porteur" name="porteur" disabled>
+                <option value="">Tous les porteurs</option>
+              </select>
+            </span>
+
+            <label class="visuellement-cache" for="ds-pole">
+              Filtrer par pôle
+            </label>
+            <span class="champ__select ds-menu">
+              <select class="champ__controle" id="ds-pole" name="pole" disabled>
+                <option value="">Tous les pôles</option>
+              </select>
+            </span>
+          </div>
+
+          <p class="ds-aide" id="ds-aide">
             <kbd>/</kbd> pour revenir au champ,
             <kbd>↑</kbd> <kbd>↓</kbd> pour parcourir les résultats,
             <kbd>Entrée</kbd> pour ouvrir, <kbd>Échap</kbd> pour effacer.
           </p>
+
         </div>
-      </div>
+      </section>
 
       <!-- ============================================================
            Zone pilotée par avecEtat() : chargement, erreur, ou
-           l'interface complète (facettes + résultats).
+           l'interface complète (exploration rapide + résultats).
            ============================================================ -->
       <div id="ds-zone"></div>
 
@@ -575,7 +799,8 @@
            Propositions enregistrées localement (aucun envoi réseau).
            Masquée tant qu'il n'y en a aucune.
            ============================================================ -->
-      <section class="pile" id="ds-propositions" aria-labelledby="ds-propositions-titre" hidden>
+      <section class="ds-bloc pile" id="ds-propositions"
+               aria-labelledby="ds-propositions-titre" hidden>
         <div class="pile pile--serree">
           <h2 id="ds-propositions-titre">Vos propositions</h2>
           <p class="texte-doux texte-sm mesure sans-marge">

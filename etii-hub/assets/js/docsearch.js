@@ -6,27 +6,35 @@
    `data.js` charge et gère les états. Ce module ne fait que trois choses :
 
      1. construire l'index UNE fois, au chargement ;
-     2. traduire l'état (requête + facettes) en résultats, puis en DOM ;
+     2. traduire l'état (requête + filtres) en résultats, puis en DOM ;
      3. maintenir cet état synchronisé avec l'URL, le clavier et le
         stockage local.
 
+   La forme de la page est celle d'origine du service : on pose d'abord la
+   question — « Que recherchez-vous ? » —, on offre une barre large et
+   trois menus déroulants, puis on répond. Tant que rien n'est demandé, la
+   page propose une exploration rapide par type ; dès qu'une requête ou un
+   filtre existe, elle affiche une grille de cartes.
+
    Invariants tenus ici :
-   - aucun `innerHTML`, aucun `onclick=` : tout passe par el()/frag()/
-     monter() et par la délégation d'événements de ui.js ;
+   - aucun `innerHTML`, aucun `onclick=` : tout passe par el()/svg()/
+     frag()/monter() et par la délégation d'événements de ui.js ;
    - aucun appel réseau autre que le chargement de assets/data/documents.json ;
    - l'index n'est jamais reconstruit à la frappe ;
    - la grille n'est jamais reconstruite non plus : les cartes sont
      conservées et seulement réordonnées, seul le surlignage est réécrit ;
-   - un seul gestionnaire par conteneur, jamais un par carte.
+   - un seul gestionnaire par conteneur, jamais un par carte ;
+   - tout bouton qui disparaît en se déclenchant rend le focus à un
+     élément vivant — jamais à <body>.
    ========================================================================= */
 
 import {
-  el, monter, vider, surlignerVers, deleguer,
+  el, svg, frag, monter, vider, surlignerVers, deleguer,
   ouvrirModale, toast, annoncer, copierTexte,
   debounce, etatUrl, stockage, initTheme, initNav
 } from './ui.js';
 
-import { creerIndex, rechercher, surligner, suggerer, normaliser } from './search.js';
+import { creerIndex, rechercher, surligner, suggerer } from './search.js';
 
 /* -------------------------------------------------------------------------
    0. Accès aux données
@@ -212,8 +220,8 @@ async function avecEtatLocal(cible, source, rendu, options) {
    ETIIA / ETIIE / ETIII sont à une seule substitution les uns des autres :
    indexés, la tolérance aux fautes de frappe (Levenshtein ≤ 1 sur 4 à 7
    caractères, SPEC §5) ferait remonter les documents d'un pôle quand on
-   tape le code d'un autre. Le pôle se choisit donc à la facette, qui est
-   exacte, et se lit sur la carte — jamais au petit bonheur du classement.
+   tape le code d'un autre. Le pôle se choisit donc au menu déroulant, qui
+   est exact, et se lit sur la carte — jamais au petit bonheur du classement.
 */
 const CHAMPS_INDEXES = [
   { nom: 'titre',       poids: 10 },  // fort
@@ -227,32 +235,26 @@ const CHAMPS_INDEXES = [
 ];
 
 /*
-   Les dimensions de facettes : les quatre exigées par la SPEC §4.6, plus
-   le pôle, qui est l'axe structurel du service (SPEC §1bis). Le pôle vient
-   en tête parce que c'est la première question que l'on se pose devant le
-   fonds : « qu'est-ce qui relève de chez moi ? ».
+   Les trois menus déroulants de la barre. Ce sont de vrais <select>
+   étiquetés, à valeur unique : « Tous les métiers » est la valeur vide.
+   Ils se combinent entre eux (ET) et avec la requête.
 
    `champ` peut désigner une chaîne ou un TABLEAU dans le document : un
    document relève parfois de deux pôles, exactement comme il relève
    parfois de deux métiers. `valeursDoc()` normalise les deux formes, et
-   tout le reste de la mécanique — compteurs croisés, désactivation à zéro,
-   hash, « Tout effacer » — est écrit une fois pour toutes les dimensions.
+   tout le reste de la mécanique — filtrage, rappels, hash, « Tout
+   effacer » — est écrit une fois pour les trois dimensions.
 
-   `filtrable` marque les dimensions à forte cardinalité (le porteur : une
-   cinquantaine de valeurs) : leur liste reçoit un champ de filtrage et un
-   repli « afficher tout », sans quoi la colonne deviendrait impraticable.
-   `teinte` marque les dimensions dont les valeurs ont une couleur propre.
    `documents.json` ne déclare pas de clé « porteurs » : `preparerCorpus()`
    déduit alors les valeurs du corpus, comme pour toute source absente.
 */
 const DIMENSIONS = [
-  { cle: 'pole',      champ: 'pole',      libelle: 'Pôle',      source: 'poles',
-    teinte: true },
-  { cle: 'type',      champ: 'type',      libelle: 'Type',      source: 'types' },
-  { cle: 'metier',    champ: 'metier',    libelle: 'Métier',    source: 'metiers' },
-  { cle: 'porteur',   champ: 'porteur',   libelle: 'Porteur',   source: 'porteurs',
-    filtrable: true, pluriel: 'porteurs' },
-  { cle: 'perimetre', champ: 'perimetre', libelle: 'Périmètre', source: 'perimetres' }
+  { cle: 'metier',  champ: 'metier',  libelle: 'Métier',  source: 'metiers',
+    id: 'ds-metier',  tous: 'Tous les métiers' },
+  { cle: 'porteur', champ: 'porteur', libelle: 'Porteur', source: 'porteurs',
+    id: 'ds-porteur', tous: 'Tous les porteurs' },
+  { cle: 'pole',    champ: 'pole',    libelle: 'Pôle',    source: 'poles',
+    id: 'ds-pole',    tous: 'Tous les pôles', teinte: true }
 ];
 
 /** Raccourci vers la dimension « pôle », affichée sur chaque carte. */
@@ -261,22 +263,8 @@ const DIMENSION_POLE = DIMENSIONS.find((dimension) => dimension.cle === 'pole');
 /** Raccourci vers la dimension « métier », multivaluée comme le pôle. */
 const DIMENSION_METIER = DIMENSIONS.find((dimension) => dimension.cle === 'metier');
 
-/** Nombre de valeurs montrées d'emblée dans une facette filtrable. */
-const VALEURS_FACETTE_VISIBLES = 12;
-
-/*
-   Habillage des types documentaires. Purement décoratif : le sens est
-   toujours porté par le libellé, jamais par la seule couleur ou le seul
-   glyphe (SPEC §7). Un type inconnu retombe sur la variante neutre.
-*/
-const STYLE_TYPE = {
-  'Technique': { glyphe: '◆', badge: 'badge--accent' },
-  'Outil':     { glyphe: '⚙', badge: 'badge--info' },
-  'Processus': { glyphe: '⇄', badge: 'badge--succes' },
-  'Norme':     { glyphe: '§', badge: 'badge--alerte' },
-  'Formation': { glyphe: '✻', badge: 'badge--neutre' }
-};
-const STYLE_TYPE_DEFAUT = { glyphe: '▪', badge: 'badge--neutre' };
+/** Libellé de la dimension « type », filtrée par les tuiles d'exploration. */
+const LIBELLE_TYPE = 'Type';
 
 /** Anti-rebond de la recherche : court, sous le seuil de perception. */
 const DELAI_FRAPPE = 120;
@@ -286,6 +274,9 @@ const DELAI_URL = 300;
 
 /** Anti-rebond de l'annonce vocale : on n'annonce pas chaque caractère. */
 const DELAI_ANNONCE = 700;
+
+/** Durée du retour visuel d'un bouton de copie, en millisecondes. */
+const DELAI_RETOUR_COPIE = 1800;
 
 /** Garde-fou d'affichage : au-delà, on rend une page, pas une liste. */
 const LIMITE_AFFICHAGE = 120;
@@ -299,13 +290,106 @@ const FORMAT_DATE = new Intl.DateTimeFormat('fr-FR', {
 });
 
 /* -------------------------------------------------------------------------
-   2. État de la page
+   2. Icônes des tuiles d'exploration
+
+   Icônes en trait, dessinées ici en SVG inline : aucune police d'icônes,
+   aucune requête réseau, et la couleur suit `currentColor`. Elles sont
+   décoratives — le libellé de la tuile porte seul l'information.
+   ------------------------------------------------------------------------- */
+
+/**
+ * Coquille commune des icônes : une grille de 24 unités, un trait unique.
+ * @param {...Element} formes
+ * @returns {SVGElement}
+ */
+function iconeSvg(...formes) {
+  return svg('svg', {
+    class: 'ds-icone',
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    'stroke-width': '1.6',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+    focusable: 'false',
+    'aria-hidden': 'true'
+  }, formes);
+}
+
+/** Tracé simple. */
+function trace(d) {
+  return svg('path', { d });
+}
+
+/** Engrenage — les outils. */
+function iconeEngrenage() {
+  return iconeSvg(
+    svg('circle', { cx: '12', cy: '12', r: '5.6' }),
+    svg('circle', { cx: '12', cy: '12', r: '2.2' }),
+    trace('M17.6 12H20.6 M15.96 8.04L18.08 5.92 M12 6.4V3.4 M8.04 8.04L5.92 5.92 '
+      + 'M6.4 12H3.4 M8.04 15.96L5.92 18.08 M12 17.6V20.6 M15.96 15.96L18.08 18.08'));
+}
+
+/** Fiche écrite — la documentation technique. */
+function iconeFiche() {
+  return iconeSvg(
+    trace('M13.5 3.5H7.5A1.5 1.5 0 0 0 6 5v14a1.5 1.5 0 0 0 1.5 1.5h9'
+      + 'A1.5 1.5 0 0 0 18 19V8z'),
+    trace('M13.5 3.5V8H18'),
+    trace('M9 12.5h6 M9 16h4'));
+}
+
+/** Double flèche — les processus. */
+function iconeFlux() {
+  return iconeSvg(
+    trace('M4.5 9.5h13 M14.5 6.5l3 3-3 3'),
+    trace('M19.5 15.5h-13 M9.5 12.5l-3 3 3 3'));
+}
+
+/** Écusson coché — les normes. */
+function iconeSceau() {
+  return iconeSvg(
+    trace('M12 3.2l7 2.6v5.2c0 4.1-2.9 7.1-7 8.5-4.1-1.4-7-4.4-7-8.5V5.8z'),
+    trace('M9.1 12.1l2.2 2.2 3.9-4.2'));
+}
+
+/** Toque — les formations. */
+function iconeToque() {
+  return iconeSvg(
+    trace('M12 4 21 8.4 12 12.8 3 8.4z'),
+    trace('M6.8 10.3v4.3c0 1.7 2.3 3.1 5.2 3.1s5.2-1.4 5.2-3.1v-4.3'),
+    trace('M20.4 8.8v5'));
+}
+
+/*
+   Habillage d'un type documentaire : le libellé au pluriel de sa tuile,
+   son icône, et la variante de badge employée sur les cartes. Purement
+   décoratif : le sens est toujours porté par le libellé, jamais par la
+   seule couleur ou la seule icône (SPEC §7).
+*/
+const TYPES = {
+  'Outil':     { libelle: 'Outils',     icone: iconeEngrenage, badge: 'badge--info' },
+  'Technique': { libelle: 'Technique',  icone: iconeFiche,     badge: 'badge--accent' },
+  'Processus': { libelle: 'Processus',  icone: iconeFlux,      badge: 'badge--succes' },
+  'Norme':     { libelle: 'Normes',     icone: iconeSceau,     badge: 'badge--alerte' },
+  'Formation': { libelle: 'Formations', icone: iconeToque,     badge: 'badge--neutre' }
+};
+
+/** Habillage d'un type inconnu du tableau ci-dessus. */
+function habillageType(type) {
+  const connu = TYPES[type];
+  if (connu) return connu;
+  return { libelle: type || 'Document', icone: iconeFiche, badge: 'badge--neutre' };
+}
+
+/* -------------------------------------------------------------------------
+   3. État de la page
    ------------------------------------------------------------------------- */
 
 /**
  * Fabrique un objet portant une entrée par dimension. Dérivé de
- * DIMENSIONS plutôt qu'écrit à la main : ajouter une facette ne laisse
- * plus la possibilité d'oublier l'une des trois tables.
+ * DIMENSIONS plutôt qu'écrit à la main : ajouter un menu ne laisse plus la
+ * possibilité d'oublier l'une des tables.
  *
  * @param {() => *} fabrique valeur initiale d'une entrée
  * @returns {Object<string, *>}
@@ -319,8 +403,10 @@ function parDimension(fabrique) {
 const etat = {
   /** Texte saisi, tel quel. */
   requete: '',
-  /** Valeurs actives par dimension : une entrée par clé de DIMENSIONS. */
-  facettes: parDimension(() => new Set()),
+  /** Valeur choisie dans chaque menu déroulant ('' = « Tous les … »). */
+  filtres: parDimension(() => ''),
+  /** Type retenu par une tuile d'exploration ('' = aucun). */
+  type: '',
   /** Mode « parcourir tout le fonds », sans requête ni filtre. */
   tout: false,
   /** Index du résultat courant dans la liste affichée, -1 si aucun. */
@@ -335,6 +421,8 @@ const corpus = {
   index: null,
   valeurs: parDimension(() => []),
   connues: parDimension(() => new Set()),
+  types: [],
+  typesConnus: new Set(),
   comptesType: new Map()
 };
 
@@ -342,13 +430,14 @@ const corpus = {
 const refs = {
   champ: null,
   zone: null,
-  barre: null,
+  menus: new Map(),          // clé de dimension -> <select>
+  exploration: null,
+  tuiles: null,
+  resultats: null,           // la section entière
   compteur: null,
-  resultats: null,
+  rappels: null,
+  grille: null,
   messages: null,
-  effacerTout: null,
-  facettes: new Map(),        // 'dim|valeur' -> bouton
-  outilsFacette: new Map(),   // clé de dimension filtrable -> { champ, bouton… }
   propositionsSection: null,
   propositionsListe: null
 };
@@ -367,6 +456,9 @@ let annulerFrappe = () => {};
 let cacheRequete = null;
 let cacheClassement = null;
 
+/** Signature des rappels de filtres affichés, pour ne les rebâtir qu'au besoin. */
+let signatureRappels = null;
+
 /** Propositions locales, source de vérité en mémoire. */
 let propositions = [];
 
@@ -374,14 +466,14 @@ let propositions = [];
 let pretARendre = false;
 
 /* -------------------------------------------------------------------------
-   3. Petits utilitaires
+   4. Petits utilitaires
    ------------------------------------------------------------------------- */
 
-/** Normalise une valeur d'URL (chaîne ou répétition) en tableau. */
-function enTableau(valeur) {
-  if (Array.isArray(valeur)) return valeur;
-  if (valeur === null || valeur === undefined || valeur === '') return [];
-  return [String(valeur)];
+/** Première valeur d'une entrée d'URL (chaîne ou répétition), en chaîne. */
+function premiere(valeur) {
+  if (Array.isArray(valeur)) return valeur.length ? String(valeur[0]) : '';
+  if (valeur === null || valeur === undefined) return '';
+  return String(valeur);
 }
 
 /** Valeurs d'un document pour une dimension donnée, toujours en tableau. */
@@ -391,28 +483,27 @@ function valeursDoc(doc, dimension) {
   return (typeof brut === 'string' && brut) ? [brut] : [];
 }
 
-/** Y a-t-il au moins une facette active ? */
-function auMoinsUneFacette() {
-  return DIMENSIONS.some((d) => etat.facettes[d.cle].size > 0);
+/** Y a-t-il au moins un filtre actif (menu ou tuile) ? */
+function auMoinsUnFiltre() {
+  if (etat.type !== '') return true;
+  return DIMENSIONS.some((dimension) => etat.filtres[dimension.cle] !== '');
 }
 
 /**
- * Le document satisfait-il les facettes actives ?
- * OU à l'intérieur d'une dimension, ET entre les dimensions.
+ * Le document satisfait-il les filtres actifs ?
+ * ET entre les dimensions ; à l'intérieur d'une dimension multivaluée, il
+ * suffit qu'une des valeurs du document corresponde.
  *
  * @param {object} doc
- * @param {string} [dimensionIgnoree] dimension exclue du test — c'est ce
- *        qui permet de compter les résultats d'une facette « comme si »
- *        elle n'était pas déjà appliquée.
  * @returns {boolean}
  */
-function correspondFacettes(doc, dimensionIgnoree) {
+function correspondFiltres(doc) {
+  if (etat.type !== '' && doc.type !== etat.type) return false;
+
   for (const dimension of DIMENSIONS) {
-    if (dimension.cle === dimensionIgnoree) continue;
-    const actives = etat.facettes[dimension.cle];
-    if (actives.size === 0) continue;
-    const valeurs = valeursDoc(doc, dimension);
-    if (!valeurs.some((v) => actives.has(v))) return false;
+    const choisie = etat.filtres[dimension.cle];
+    if (choisie === '') continue;
+    if (!valeursDoc(doc, dimension).includes(choisie)) return false;
   }
   return true;
 }
@@ -438,47 +529,69 @@ function pluriel(nombre, singulier, plurielForme) {
   return nombre > 1 ? plurielForme : singulier;
 }
 
-/** Habillage d'un type documentaire. */
-function styleType(type) {
-  return STYLE_TYPE[type] || STYLE_TYPE_DEFAUT;
+/**
+ * Retour visuel d'un bouton d'action : le libellé change quelques
+ * instants puis revient de lui-même. Le nœud n'est jamais remplacé, donc
+ * le focus clavier ne bouge pas.
+ *
+ * @param {HTMLElement} bouton
+ * @param {string} texte
+ */
+function retourVisuel(bouton, texte) {
+  if (!bouton) return;
+  if (bouton.libelleOrigine === undefined) bouton.libelleOrigine = bouton.textContent;
+  if (bouton.minuteurRetour) clearTimeout(bouton.minuteurRetour);
+
+  bouton.textContent = texte;
+  bouton.minuteurRetour = setTimeout(() => {
+    bouton.textContent = bouton.libelleOrigine;
+    bouton.minuteurRetour = null;
+  }, DELAI_RETOUR_COPIE);
 }
 
 /* -------------------------------------------------------------------------
-   4. Synchronisation avec l'URL
+   5. Synchronisation avec l'URL
 
-   Format : #q=harnais&type=Technique&metier=Qualité&tout=1
+   Format : #q=harnais&metier=Qualité&porteur=Personne%2008&pole=ETIIA&type=Norme
    Écriture en replaceState (etatUrl s'en charge) et anti-rebondie : le
    bouton « Précédent » reste utilisable, l'URL reste partageable.
    ------------------------------------------------------------------------- */
+
+/** Clés que cette page reconnaît dans le fragment d'URL. */
+const CLES_URL = ['q', 'type', 'tout'].concat(DIMENSIONS.map((dimension) => dimension.cle));
 
 /** Lit l'état depuis le hash et le recopie dans `etat`. */
 function appliquerUrl(brut) {
   const source = brut || etatUrl.lire();
 
   etat.requete = typeof source.q === 'string' ? source.q : '';
+
+  const type = premiere(source.type);
+  etat.type = corpus.typesConnus.has(type) ? type : '';
+
+  etat.tout = premiere(source.tout) === '1';
+
   for (const dimension of DIMENSIONS) {
-    const connues = corpus.connues[dimension.cle];
-    etat.facettes[dimension.cle] = new Set(
-      enTableau(source[dimension.cle]).filter((v) => connues.has(v))
-    );
+    const valeur = premiere(source[dimension.cle]);
+    etat.filtres[dimension.cle] = corpus.connues[dimension.cle].has(valeur) ? valeur : '';
   }
-  etat.tout = String(source.tout || '') === '1';
 }
 
-/** Clés que cette page reconnaît dans le fragment d'URL. */
-const CLES_URL = ['q', 'tout'].concat(DIMENSIONS.map((dimension) => dimension.cle));
-
 const ecrireUrl = debounce(() => {
-  // Construit depuis DIMENSIONS : ajouter une facette ne demande rien ici.
-  const sortie = { q: etat.requete.trim(), tout: etat.tout ? '1' : '' };
+  // Construit depuis DIMENSIONS : ajouter un menu ne demande rien ici.
+  const sortie = {
+    q: etat.requete.trim(),
+    type: etat.type,
+    tout: etat.tout ? '1' : ''
+  };
   for (const dimension of DIMENSIONS) {
-    sortie[dimension.cle] = Array.from(etat.facettes[dimension.cle]);
+    sortie[dimension.cle] = etat.filtres[dimension.cle];
   }
   etatUrl.ecrire(sortie);
 }, DELAI_URL);
 
 /* -------------------------------------------------------------------------
-   5. Squelettes de chargement
+   6. Squelettes de chargement
    ------------------------------------------------------------------------- */
 
 /** Une carte grise, gabarit d'un résultat en cours de chargement. */
@@ -495,260 +608,16 @@ function carteSquelette() {
 
 /** Grille de squelettes affichée pendant le chargement du corpus. */
 function afficherSquelettes(cible) {
-  const grille = el('div', {
-    class: 'grille grille--ample',
-    ariaHidden: 'true'
-  });
-  for (let i = 0; i < 6; i += 1) grille.append(carteSquelette());
+  const grille = el('ul', { class: 'ds-grille', ariaHidden: 'true' });
+  for (let i = 0; i < 6; i += 1) grille.append(el('li', {}, carteSquelette()));
   monter(cible, grille);
 }
 
 /* -------------------------------------------------------------------------
-   6. Construction de l'interface (une seule fois, après chargement)
+   7. Préparation du corpus
    ------------------------------------------------------------------------- */
 
-/**
- * Bâtit la colonne de facettes et la colonne de résultats, puis les monte
- * dans le conteneur piloté par avecEtat().
- *
- * @param {object} donnees contenu de documents.json
- * @param {Element} cible
- */
-function construireInterface(donnees, cible) {
-  preparerCorpus(donnees);
-
-  // Un « Réessayer » rebâtit tout : les cartes mises en cache appartiennent
-  // à une grille désormais jetée, on repart donc d'un cache vierge.
-  fiches.clear();
-  carteActive = null;
-  cacheRequete = null;
-  cacheClassement = null;
-
-  /* --- Colonne de gauche : les facettes -------------------------------- */
-
-  refs.facettes.clear();
-  refs.outilsFacette.clear();
-
-  refs.effacerTout = el('button', {
-    type: 'button',
-    class: 'bouton bouton--discret bouton--compact',
-    onClick: () => toutEffacer()
-  }, 'Tout effacer');
-
-  const groupes = DIMENSIONS.map((dimension) => {
-    const idTitre = 'ds-facette-' + dimension.cle;
-
-    const liste = el('ul', {
-      class: 'facettes',
-      ariaLabelledby: idTitre
-    }, corpus.valeurs[dimension.cle].map((valeur) => {
-      const compteur = el('span', { class: 'facette__compteur' }, '0');
-      const bouton = el('button', {
-        type: 'button',
-        class: 'facette',
-        ariaPressed: 'false',
-        // `data-pole` n'est posé que sur les dimensions teintées : c'est
-        // lui qui résout --pole-teinte en CSS. Le point qui en découle est
-        // décoratif, le code du pôle est écrit juste à côté.
-        dataset: {
-          dimension: dimension.cle,
-          valeur,
-          pole: dimension.teinte ? valeur : null
-        }
-      },
-      el('span', { class: 'facette__marque', ariaHidden: 'true' }, '✓'),
-      dimension.teinte
-        ? el('span', { class: 'pole-point', ariaHidden: 'true' })
-        : null,
-      el('span', {}, valeur),
-      compteur);
-
-      const element = el('li', {}, bouton);
-      bouton.compteurNoeud = compteur;
-      bouton.elementListe = element;
-      bouton.nombreCourant = 0;
-      refs.facettes.set(dimension.cle + '|' + valeur, bouton);
-      return element;
-    }));
-
-    // Dimension à forte cardinalité : champ de filtrage + repli d'affichage.
-    const outils = dimension.filtrable ? outilsFacette(dimension, idTitre) : null;
-
-    return el('section', { class: 'pile pile--serree' },
-      el('h3', { class: 'ds-titre-facette', id: idTitre }, dimension.libelle),
-      outils ? outils.champBloc : null,
-      liste,
-      outils ? outils.vide : null,
-      outils ? outils.bouton : null);
-  });
-
-  const filtres = el('aside', {
-    class: 'ds-filtres pile',
-    ariaLabel: 'Filtres'
-  },
-  el('div', { class: 'rangee rangee--entre rangee--serree' },
-    el('h2', { class: 'ds-titre-facette' }, 'Filtres'),
-    refs.effacerTout),
-  ...groupes);
-
-  /* --- Colonne de droite : compteur, résultats, messages --------------- */
-
-  refs.compteur = el('p', { class: 'ds-compteur' }, '');
-
-  refs.barre = el('div', { class: 'rangee rangee--entre' },
-    refs.compteur,
-    el('button', {
-      type: 'button',
-      class: 'bouton bouton--discret bouton--compact',
-      onClick: (evt) => ouvrirModaleProposition(evt.currentTarget)
-    }, 'Proposer un document'));
-
-  // Une liste de cartes actionnables, pas un listbox : les options ARIA
-  // imposent « Children Presentational: True », ce qui effacerait les
-  // boutons « Ouvrir » et « Copier le lien » de l'arbre d'accessibilité.
-  refs.resultats = el('ul', {
-    class: 'grille grille--ample ds-liste',
-    id: 'ds-resultats',
-    role: 'list',
-    ariaLabel: 'Résultats de la recherche'
-  });
-
-  refs.messages = el('div', {});
-
-  const colonne = el('div', { class: 'pile pile--lache' },
-    refs.barre, refs.resultats, refs.messages);
-
-  monter(cible, el('div', { class: 'ds-agencement' }, filtres, colonne));
-
-  /* --- Délégations : un gestionnaire par conteneur, jamais par carte --- */
-
-  deleguer(filtres, '.facette[data-dimension]', 'click', (evt, bouton) => {
-    basculerFacette(bouton.dataset.dimension, bouton.dataset.valeur);
-  });
-
-  deleguer(refs.resultats, '[data-action]', 'click', (evt, bouton) => {
-    surActionCarte(evt, bouton);
-  });
-
-  // Un clic dans une carte (hors bouton) la désigne comme résultat courant :
-  // souris et clavier partagent ainsi la même notion de « courant ».
-  deleguer(refs.resultats, '.ds-carte', 'click', (evt, carte) => {
-    if (evt.target.closest('[data-action]')) return;
-    const position = etat.affiches.findIndex((doc) => String(doc.id) === carte.dataset.id);
-    if (position !== -1) definirActif(position, false);
-  });
-
-  // Une fois le focus posé sur une carte, le parcours continue au clavier.
-  refs.resultats.addEventListener('keydown', surToucheResultats);
-
-  deleguer(refs.messages, '[data-action]', 'click', (evt, bouton) => {
-    surActionMessage(evt, bouton);
-  });
-
-  pretARendre = true;
-}
-
-/**
- * Outils d'une facette à forte cardinalité : un champ pour filtrer les
- * valeurs, un bouton pour déplier le reste, un mot quand rien ne
- * correspond. Sans cela, les 51 porteurs du fonds rendraient la colonne
- * de filtres inutilisable.
- *
- * @param {object} dimension entrée de DIMENSIONS
- * @param {string} idTitre   identifiant du titre du groupe
- * @returns {object} accès conservés dans refs.outilsFacette
- */
-function outilsFacette(dimension, idTitre) {
-  const idChamp = idTitre + '-filtre';
-  const nom = dimension.pluriel || dimension.libelle.toLowerCase();
-
-  const champ = el('input', {
-    class: 'champ__controle',
-    id: idChamp,
-    type: 'search',
-    autocomplete: 'off',
-    autocapitalize: 'none',
-    spellcheck: 'false',
-    placeholder: 'Filtrer les ' + nom + '…',
-    onInput: () => {
-      outils.etendu = false;
-      majVisibiliteValeurs(dimension);
-    }
-  });
-
-  const champBloc = el('div', { class: 'champ' },
-    el('label', { class: 'visuellement-cache', for: idChamp },
-      'Restreindre la liste des ' + nom),
-    champ);
-
-  const vide = el('p', {
-    class: 'texte-xs texte-doux sans-marge',
-    hidden: true
-  }, 'Aucune valeur ne correspond.');
-
-  const bouton = el('button', {
-    type: 'button',
-    class: 'bouton bouton--discret bouton--compact',
-    hidden: true,
-    onClick: () => {
-      outils.etendu = !outils.etendu;
-      majVisibiliteValeurs(dimension);
-      // Le bouton survit au basculement : le focus n'est jamais perdu.
-      bouton.focus();
-    }
-  }, '');
-
-  const outils = { champ, champBloc, vide, bouton, etendu: false };
-  refs.outilsFacette.set(dimension.cle, outils);
-  return outils;
-}
-
-/**
- * Applique le filtre textuel et le repli d'affichage à une facette
- * filtrable. Une valeur active reste toujours visible : il faut pouvoir
- * la relâcher, même si elle ne correspond plus au filtre saisi.
- *
- * @param {object} dimension entrée de DIMENSIONS
- */
-function majVisibiliteValeurs(dimension) {
-  const outils = refs.outilsFacette.get(dimension.cle);
-  if (!outils) return;
-
-  const filtre = normaliser(outils.champ.value || '');
-  const actives = etat.facettes[dimension.cle];
-  const candidats = [];
-
-  for (const valeur of corpus.valeurs[dimension.cle]) {
-    const bouton = refs.facettes.get(dimension.cle + '|' + valeur);
-    if (!bouton || !bouton.elementListe) continue;
-
-    const active = actives.has(valeur);
-    const correspond = filtre === '' || normaliser(valeur).indexOf(filtre) !== -1;
-
-    if (active) {
-      bouton.elementListe.hidden = false;
-    } else if (bouton.nombreCourant > 0 && correspond) {
-      candidats.push(bouton.elementListe);
-    } else {
-      bouton.elementListe.hidden = true;
-    }
-  }
-
-  const limite = outils.etendu ? candidats.length : VALEURS_FACETTE_VISIBLES;
-  candidats.forEach((element, position) => { element.hidden = position >= limite; });
-
-  const reste = candidats.length - VALEURS_FACETTE_VISIBLES;
-  outils.bouton.hidden = reste <= 0;
-  if (!outils.bouton.hidden) {
-    outils.bouton.textContent = outils.etendu
-      ? 'Réduire la liste'
-      : 'Afficher ' + reste + ' ' + pluriel(reste, 'valeur de plus', 'valeurs de plus');
-  }
-
-  outils.vide.hidden = candidats.length > 0 || actives.size > 0;
-}
-
-/** Prépare corpus, index et valeurs de facettes. Appelé une seule fois. */
+/** Prépare corpus, index et valeurs de menus. Appelé une seule fois. */
 function preparerCorpus(donnees) {
   if (!donnees || typeof donnees !== 'object' || !Array.isArray(donnees.documents)) {
     throw new Error(
@@ -776,11 +645,23 @@ function preparerCorpus(donnees) {
 
     const valeurs = declarees.length
       ? declarees
-      : Array.from(new Set(corpus.documents.flatMap((doc) => valeursDoc(doc, dimension)))).sort();
+      : Array.from(new Set(corpus.documents.flatMap(
+        (doc) => valeursDoc(doc, dimension)))).sort((a, b) => a.localeCompare(b, 'fr'));
 
     corpus.valeurs[dimension.cle] = valeurs;
     corpus.connues[dimension.cle] = new Set(valeurs);
   }
+
+  const typesDeclares = Array.isArray(facettes.types)
+    ? facettes.types.filter((v) => typeof v === 'string' && v)
+    : [];
+
+  corpus.types = typesDeclares.length
+    ? typesDeclares
+    : Array.from(new Set(corpus.documents
+      .map((doc) => (typeof doc.type === 'string' ? doc.type : ''))
+      .filter(Boolean))).sort((a, b) => a.localeCompare(b, 'fr'));
+  corpus.typesConnus = new Set(corpus.types);
 
   corpus.comptesType = new Map();
   for (const doc of corpus.documents) {
@@ -791,7 +672,167 @@ function preparerCorpus(donnees) {
 }
 
 /* -------------------------------------------------------------------------
-   7. Rendu : état -> affichage
+   8. Construction de l'interface (une seule fois, après chargement)
+   ------------------------------------------------------------------------- */
+
+/**
+ * Remplit les trois menus déroulants de la barre et les rend actifs.
+ * Le balisage vient de la page : seule la liste d'options dépend du JSON.
+ */
+function remplirMenus() {
+  for (const dimension of DIMENSIONS) {
+    const select = refs.menus.get(dimension.cle);
+    if (!select) continue;
+
+    // Un « Réessayer » repasse ici : on ne garde que l'option « Tous les … ».
+    while (select.options.length > 1) select.remove(1);
+
+    select.append(frag(corpus.valeurs[dimension.cle].map(
+      (valeur) => el('option', { value: valeur }, valeur))));
+
+    select.disabled = false;
+  }
+}
+
+/**
+ * Bâtit l'exploration rapide et la section de résultats, puis les monte
+ * dans le conteneur piloté par avecEtat().
+ *
+ * @param {object} donnees contenu de documents.json
+ * @param {Element} cible
+ */
+function construireInterface(donnees, cible) {
+  preparerCorpus(donnees);
+  remplirMenus();
+
+  // Un « Réessayer » rebâtit tout : les cartes mises en cache appartiennent
+  // à une grille désormais jetée, on repart donc d'un cache vierge.
+  fiches.clear();
+  carteActive = null;
+  cacheRequete = null;
+  cacheClassement = null;
+  signatureRappels = null;
+
+  /* --- Exploration rapide : cinq tuiles, construites une fois ---------- */
+
+  refs.tuiles = el('ul', { class: 'ds-tuiles' }, corpus.types.map((type) => {
+    const habillage = habillageType(type);
+    const nombre = corpus.comptesType.get(type) || 0;
+
+    return el('li', {},
+      el('button', {
+        type: 'button',
+        class: 'carte carte--compacte carte--cliquable ds-tuile',
+        dataset: { action: 'filtrer-type', valeur: type },
+        ariaLabel: 'Explorer les documents de type ' + type + ', ' + nombre + ' '
+          + pluriel(nombre, 'document', 'documents')
+      },
+      el('span', { class: 'ds-tuile__icone', ariaHidden: 'true' }, habillage.icone()),
+      el('span', { class: 'ds-tuile__nom' }, habillage.libelle),
+      el('span', { class: 'ds-tuile__compte' },
+        nombre + ' ' + pluriel(nombre, 'document', 'documents'))));
+  }));
+
+  const total = corpus.documents.length;
+
+  refs.exploration = el('section', {
+    class: 'ds-bloc pile',
+    ariaLabelledby: 'ds-exploration-titre'
+  },
+  el('h2', { class: 'separateur-titre', id: 'ds-exploration-titre' },
+    'Exploration rapide'),
+  refs.tuiles,
+  // Sorties de l'exploration : tout voir, ou signaler un document absent.
+  // La proposition doit rester atteignable ici : le seul autre bouton vit
+  // dans la barre de compteur, qui n'existe pas sur l'écran d'accueil.
+  el('div', { class: 'rangee rangee--centree' },
+    el('button', {
+      type: 'button',
+      class: 'bouton bouton--secondaire',
+      dataset: { action: 'parcourir-tout' }
+    }, 'Parcourir les ' + total + ' documents'),
+    el('button', {
+      type: 'button',
+      class: 'bouton bouton--discret',
+      dataset: { action: 'proposer' }
+    }, 'Proposer un document')));
+
+  /* --- Résultats : compteur, rappels de filtres, grille, messages ------ */
+
+  refs.compteur = el('h2', { class: 'ds-compteur', id: 'ds-compteur' }, '');
+
+  refs.rappels = el('ul', {
+    class: 'facettes ds-rappels',
+    ariaLabel: 'Filtres actifs',
+    hidden: true
+  });
+
+  const proposer = el('button', {
+    type: 'button',
+    class: 'bouton bouton--discret bouton--compact pousse',
+    onClick: (evt) => ouvrirModaleProposition(evt.currentTarget)
+  }, 'Proposer un document');
+
+  // Une liste de cartes actionnables, pas un listbox : les options ARIA
+  // imposent « Children Presentational: True », ce qui effacerait les
+  // boutons « Ouvrir » et « Copier le lien » de l'arbre d'accessibilité.
+  refs.grille = el('ul', {
+    class: 'ds-grille',
+    id: 'ds-resultats',
+    role: 'list'
+  });
+
+  refs.messages = el('div', {});
+
+  refs.resultats = el('section', {
+    class: 'ds-bloc pile',
+    ariaLabelledby: 'ds-compteur',
+    hidden: true
+  },
+  el('div', { class: 'separateur', role: 'presentation' }),
+  el('div', { class: 'rangee rangee--serree' }, refs.compteur, refs.rappels, proposer),
+  refs.grille,
+  refs.messages);
+
+  monter(cible, el('div', { class: 'pile pile--lache' },
+    refs.exploration, refs.resultats));
+
+  /* --- Délégations : un gestionnaire par conteneur, jamais par carte --- */
+
+  deleguer(refs.exploration, '[data-action]', 'click', (evt, bouton) => {
+    if (bouton.dataset.action === 'filtrer-type') choisirType(bouton.dataset.valeur);
+    else if (bouton.dataset.action === 'parcourir-tout') parcourirTout();
+    else if (bouton.dataset.action === 'proposer') ouvrirModaleProposition(bouton);
+  });
+
+  deleguer(refs.grille, '[data-action]', 'click', (evt, bouton) => {
+    surActionCarte(evt, bouton);
+  });
+
+  // Un clic dans une carte (hors bouton) la désigne comme résultat courant :
+  // souris et clavier partagent ainsi la même notion de « courant ».
+  deleguer(refs.grille, '.ds-carte', 'click', (evt, carte) => {
+    if (evt.target.closest('[data-action]')) return;
+    const position = etat.affiches.findIndex((doc) => String(doc.id) === carte.dataset.id);
+    if (position !== -1) definirActif(position, false);
+  });
+
+  // Une fois le focus posé sur une carte, le parcours continue au clavier.
+  refs.grille.addEventListener('keydown', surToucheResultats);
+
+  deleguer(refs.rappels, '[data-action="retirer-filtre"]', 'click', (evt, bouton) => {
+    retirerFiltre(bouton.dataset.cle);
+  });
+
+  deleguer(refs.messages, '[data-action]', 'click', (evt, bouton) => {
+    surActionMessage(evt, bouton);
+  });
+
+  pretARendre = true;
+}
+
+/* -------------------------------------------------------------------------
+   9. Rendu : état -> affichage
    ------------------------------------------------------------------------- */
 
 /** Recalcule tout ce qui dépend de l'état, dans l'ordre le moins coûteux. */
@@ -799,22 +840,24 @@ function rendre() {
   if (!pretARendre) return;
 
   const base = classement();
+  const retenus = base.filter((resultat) => correspondFiltres(resultat.doc));
 
-  majCompteursFacettes(base);
+  // L'exploration ne rend aucune liste : `affiches` doit donc rester vide,
+  // sinon ↑/↓ désigneraient des cartes détachées du DOM et Entrée ouvrirait
+  // un document que la page n'affiche nulle part.
+  const exploration = etat.requete.trim() === '' && !auMoinsUnFiltre() && !etat.tout;
+  etat.affiches = exploration ? [] : retenus.map((resultat) => resultat.doc);
 
-  const filtres = base.filter((resultat) => correspondFacettes(resultat.doc));
+  majMenus();
+  majRappels();
 
-  const accueil = etat.requete.trim() === '' && !auMoinsUneFacette() && !etat.tout;
+  refs.exploration.hidden = !exploration;
+  refs.resultats.hidden = exploration;
 
-  // L'accueil ne rend aucune liste : `affiches` doit donc rester vide, sinon
-  // ↑/↓ désigneraient des cartes détachées du DOM et Entrée ouvrirait un
-  // document que la page n'affiche nulle part.
-  etat.affiches = accueil ? [] : filtres.map((resultat) => resultat.doc);
-
-  refs.effacerTout.disabled = !auMoinsUneFacette() && etat.requete === '' && !etat.tout;
-
-  if (accueil) {
-    afficherAccueil();
+  if (exploration) {
+    definirActif(-1, false);
+    vider(refs.grille);
+    vider(refs.messages);
   } else if (etat.affiches.length === 0) {
     afficherAucunResultat();
   } else {
@@ -825,45 +868,58 @@ function rendre() {
   annoncerResultats();
 }
 
-/** Met à jour libellés, compteurs et état activé/désactivé des facettes. */
-function majCompteursFacettes(base) {
+/** Reporte l'état dans les trois menus déroulants. */
+function majMenus() {
   for (const dimension of DIMENSIONS) {
-    // Compteur d'une facette : calculé en IGNORANT sa propre dimension,
-    // comme dans toute recherche à facettes digne de ce nom.
-    const comptes = new Map();
-    for (const resultat of base) {
-      if (!correspondFacettes(resultat.doc, dimension.cle)) continue;
-      for (const valeur of valeursDoc(resultat.doc, dimension)) {
-        comptes.set(valeur, (comptes.get(valeur) || 0) + 1);
-      }
-    }
-
-    const actives = etat.facettes[dimension.cle];
-    for (const valeur of corpus.valeurs[dimension.cle]) {
-      const bouton = refs.facettes.get(dimension.cle + '|' + valeur);
-      if (!bouton) continue;
-
-      const nombre = comptes.get(valeur) || 0;
-      const active = actives.has(valeur);
-
-      bouton.nombreCourant = nombre;
-      if (bouton.compteurNoeud.textContent !== String(nombre)) {
-        bouton.compteurNoeud.textContent = String(nombre);
-      }
-      bouton.setAttribute('aria-pressed', active ? 'true' : 'false');
-      bouton.setAttribute('aria-label',
-        dimension.libelle + ' ' + valeur + ', ' + nombre + ' '
-        + pluriel(nombre, 'résultat', 'résultats'));
-
-      // Une facette sans résultat est désactivée, pas retirée — sauf si
-      // elle est active : il faut toujours pouvoir la relâcher.
-      bouton.disabled = nombre === 0 && !active;
-    }
-
-    // Les dimensions à forte cardinalité ne montrent qu'une part de leurs
-    // valeurs : la sélection dépend des compteurs qu'on vient de poser.
-    if (dimension.filtrable) majVisibiliteValeurs(dimension);
+    const select = refs.menus.get(dimension.cle);
+    if (!select) continue;
+    const valeur = etat.filtres[dimension.cle];
+    if (select.value !== valeur) select.value = valeur;
   }
+}
+
+/** Liste des filtres actifs, sous forme de descripteurs affichables. */
+function filtresActifs() {
+  const actifs = [];
+  if (etat.type !== '') {
+    actifs.push({ cle: 'type', libelle: LIBELLE_TYPE, valeur: etat.type });
+  }
+  for (const dimension of DIMENSIONS) {
+    const valeur = etat.filtres[dimension.cle];
+    if (valeur !== '') {
+      actifs.push({ cle: dimension.cle, libelle: dimension.libelle, valeur });
+    }
+  }
+  return actifs;
+}
+
+/**
+ * Rappel des filtres actifs, chacun retirable. La liste n'est rebâtie que
+ * lorsqu'elle change réellement : une puce qui a le focus n'est pas
+ * détruite à chaque caractère saisi.
+ */
+function majRappels() {
+  const actifs = filtresActifs();
+  const signature = actifs.map((f) => f.cle + '=' + f.valeur).join('&');
+  if (signature === signatureRappels) return;
+  signatureRappels = signature;
+
+  if (actifs.length === 0) {
+    refs.rappels.hidden = true;
+    vider(refs.rappels);
+    return;
+  }
+
+  refs.rappels.hidden = false;
+  monter(refs.rappels, actifs.map((filtre) => el('li', {},
+    el('button', {
+      type: 'button',
+      class: 'facette facette--compacte',
+      dataset: { action: 'retirer-filtre', cle: filtre.cle },
+      ariaLabel: 'Retirer le filtre ' + filtre.libelle + ' ' + filtre.valeur
+    },
+    el('span', {}, filtre.libelle + ' : ' + filtre.valeur),
+    el('span', { ariaHidden: 'true' }, '×')))));
 }
 
 /** Affiche la grille de résultats (réutilisation maximale des cartes). */
@@ -879,10 +935,8 @@ function afficherResultats() {
   });
 
   // Une seule mutation : les cartes existantes sont déplacées, pas recréées.
-  monter(refs.resultats, noeuds);
-
-  refs.resultats.hidden = false;
-  refs.barre.hidden = false;
+  monter(refs.grille, noeuds);
+  refs.grille.hidden = false;
   refs.compteur.textContent = texteCompteur(total);
 
   vider(refs.messages);
@@ -895,59 +949,11 @@ function afficherResultats() {
   definirActif(-1, false);
 }
 
-/** Écran d'accueil : accès rapides par type, plus le volume du fonds. */
-function afficherAccueil() {
-  vider(refs.resultats);
-  refs.resultats.hidden = true;
-  refs.barre.hidden = true;
-  definirActif(-1, false);
-
-  const total = corpus.documents.length;
-
-  const tuiles = el('ul', { class: 'grille grille--compacte' },
-    corpus.valeurs.type.map((type) => {
-      const nombre = corpus.comptesType.get(type) || 0;
-      const habillage = styleType(type);
-      return el('li', {},
-        el('button', {
-          type: 'button',
-          class: 'carte carte--compacte carte--cliquable ds-tuile',
-          dataset: { action: 'filtrer-type', valeur: type },
-          ariaLabel: 'Filtrer sur le type ' + type + ', ' + nombre + ' '
-            + pluriel(nombre, 'document', 'documents')
-        },
-        el('span', { class: 'ds-tuile__glyphe', ariaHidden: 'true' }, habillage.glyphe),
-        el('span', { class: 'ds-tuile__nom' }, type),
-        el('span', { class: 'ds-tuile__compte' },
-          nombre + ' ' + pluriel(nombre, 'document', 'documents'))));
-    }));
-
-  monter(refs.messages, el('div', { class: 'pile pile--lache' },
-    el('div', { class: 'pile pile--serree' },
-      el('h2', {}, 'Accès rapides'),
-      el('p', { class: 'texte-doux mesure sans-marge' },
-        total + ' ' + pluriel(total, 'document référencé', 'documents référencés')
-        + '. Choisissez un type pour commencer, ou tapez directement votre '
-        + 'recherche dans le champ ci-dessus.')),
-    tuiles,
-    el('div', { class: 'rangee' },
-      el('button', {
-        type: 'button',
-        class: 'bouton bouton--secondaire',
-        dataset: { action: 'parcourir-tout' }
-      }, 'Parcourir les ' + total + ' documents'),
-      el('button', {
-        type: 'button',
-        class: 'bouton bouton--discret',
-        dataset: { action: 'proposer' }
-      }, 'Proposer un document'))));
-}
-
 /** Aucun résultat : suggestion, retrait des filtres, proposition. */
 function afficherAucunResultat() {
-  vider(refs.resultats);
-  refs.resultats.hidden = true;
-  refs.barre.hidden = false;
+  vider(refs.grille);
+  // Une grille vide laisserait une gouttière béante au-dessus du message.
+  refs.grille.hidden = true;
   refs.compteur.textContent = texteCompteur(0);
   definirActif(-1, false);
 
@@ -973,28 +979,23 @@ function afficherAucunResultat() {
   }
 
   // Rappel des filtres actifs, retirables un à un.
-  const actifs = [];
-  for (const dimension of DIMENSIONS) {
-    for (const valeur of etat.facettes[dimension.cle]) {
-      actifs.push(el('li', {},
-        el('button', {
-          type: 'button',
-          class: 'facette facette--compacte',
-          dataset: { action: 'retirer-facette', dimension: dimension.cle, valeur },
-          ariaLabel: 'Retirer le filtre ' + dimension.libelle + ' ' + valeur
-        },
-        el('span', {}, dimension.libelle + ' : ' + valeur),
-        el('span', { ariaHidden: 'true' }, '×'))));
-    }
-  }
+  const actifs = filtresActifs();
   if (actifs.length) {
     bloc.append(
       el('p', { class: 'texte-sm texte-doux sans-marge' }, 'Filtres actifs :'),
-      el('ul', { class: 'facettes' }, actifs));
+      el('ul', { class: 'facettes' }, actifs.map((filtre) => el('li', {},
+        el('button', {
+          type: 'button',
+          class: 'facette facette--compacte',
+          dataset: { action: 'retirer-filtre', cle: filtre.cle },
+          ariaLabel: 'Retirer le filtre ' + filtre.libelle + ' ' + filtre.valeur
+        },
+        el('span', {}, filtre.libelle + ' : ' + filtre.valeur),
+        el('span', { ariaHidden: 'true' }, '×'))))));
   }
 
   const actions = el('div', { class: 'etat-vide__actions' });
-  if (etat.requete !== '' || auMoinsUneFacette() || etat.tout) {
+  if (etat.requete !== '' || auMoinsUnFiltre() || etat.tout) {
     actions.append(el('button', {
       type: 'button',
       class: 'bouton bouton--secondaire',
@@ -1011,18 +1012,16 @@ function afficherAucunResultat() {
   monter(refs.messages, bloc);
 }
 
-/** Phrase du compteur visible. */
+/** Phrase du compteur, au-dessus de la grille. */
 function texteCompteur(nombre) {
-  const total = corpus.documents.length;
-  if (nombre === 0) return 'Aucun document';
-  const debut = nombre + ' ' + pluriel(nombre, 'document', 'documents');
-  return nombre === total ? debut : debut + ' sur ' + total;
+  if (nombre === 0) return 'Aucun document trouvé';
+  return nombre + ' ' + pluriel(nombre, 'document trouvé', 'documents trouvés');
 }
 
 /** Explication de l'absence de résultat, adaptée à ce qui est actif. */
 function texteAucunResultat() {
   const avecRequete = etat.requete.trim() !== '';
-  const avecFiltres = auMoinsUneFacette();
+  const avecFiltres = auMoinsUnFiltre();
 
   if (avecRequete && avecFiltres) {
     return 'Aucun document ne répond à la fois à « ' + etat.requete.trim()
@@ -1036,11 +1035,11 @@ function texteAucunResultat() {
 }
 
 /* -------------------------------------------------------------------------
-   8. Cartes de résultat
+   10. Cartes de résultat
 
    Une carte est construite au plus une fois par document et conservée
    dans `fiches`. À la frappe suivante, seuls les fragments surlignés sont
-   réécrits : la structure, les badges et les boutons ne bougent pas.
+   réécrits : la structure, les pastilles et les boutons ne bougent pas.
    ------------------------------------------------------------------------- */
 
 /** Récupère la fiche d'un document, en la construisant au besoin. */
@@ -1049,7 +1048,7 @@ function obtenirFiche(doc) {
   const existante = fiches.get(id);
   if (existante) return existante;
 
-  const habillage = styleType(doc.type);
+  const habillage = habillageType(doc.type);
 
   const titre = el('h3', { class: 'ds-carte__titre' });
   const reference = el('span', { class: 'badge badge--carre badge--contour' });
@@ -1065,12 +1064,13 @@ function obtenirFiche(doc) {
         el('span', { class: 'pole-point', ariaHidden: 'true' }),
         'Pôle ' + code)));
 
+  /* Les métiers, étiquetés eux aussi : le préfixe reste hors écran, mais
+     un lecteur d'écran annonce bien « Métier : Harnais ». */
   const metiers = valeursDoc(doc, DIMENSION_METIER).map(
-    (metier) => el('li', {}, el('span', { class: 'badge badge--contour' }, metier)));
-
-  const perimetre = typeof doc.perimetre === 'string' && doc.perimetre
-    ? el('li', {}, el('span', { class: 'badge badge--info' }, doc.perimetre))
-    : null;
+    (metier) => el('li', {},
+      el('span', { class: 'badge badge--contour' },
+        el('span', { class: 'visuellement-cache' }, 'Métier : '),
+        metier)));
 
   const actions = el('div', { class: 'ds-carte__actions' });
 
@@ -1089,17 +1089,20 @@ function obtenirFiche(doc) {
         dataset: { action: 'copier-lien' }
       }, 'Copier le lien'));
   } else {
-    // Les six documents sans lien : une mention claire, aucun bouton mort.
+    // Les documents sans lien : une mention claire, aucun bouton mort.
     actions.append(
-      el('p', { class: 'ds-sans-lien' },
-        el('span', { ariaHidden: 'true' }, '✉'),
-        'Communiqué sur demande auprès du porteur'),
       el('button', {
         type: 'button',
         class: 'bouton bouton--discret bouton--compact',
         dataset: { action: 'copier-reference' }
       }, 'Copier la référence'));
   }
+
+  const sansLien = (typeof doc.lien === 'string' && doc.lien.trim() !== '')
+    ? null
+    : el('p', { class: 'ds-sans-lien' },
+      el('span', { ariaHidden: 'true' }, '✉'),
+      'Communiqué sur demande auprès du porteur');
 
   const maj = typeof doc.maj === 'string' ? doc.maj : '';
 
@@ -1109,22 +1112,24 @@ function obtenirFiche(doc) {
   // métiers et la date de mise à jour.
   const carte = el('li', {
     class: 'carte carte--compacte ds-carte',
-    id: 'ds-option-' + id,
+    id: 'ds-document-' + id,
     dataset: { id },
     tabIndex: -1
   },
   el('div', { class: 'carte__meta' },
-    el('span', { class: 'badge ' + habillage.badge },
+    el('span', { class: 'badge ds-badge-type ' + habillage.badge },
       el('span', { class: 'badge__point', ariaHidden: 'true' }),
       typeof doc.type === 'string' ? doc.type : 'Document'),
     reference),
   titre,
   resume,
-  el('ul', { class: 'facettes' }, poles, metiers, perimetre),
-  el('div', { class: 'carte__pied' },
-    el('span', {}, 'Porteur : ' + (doc.porteur || '—')),
-    maj ? el('span', {}, 'Mis à jour le ',
-      el('time', { datetime: maj }, formaterDate(maj))) : null,
+  el('ul', { class: 'facettes' }, poles, metiers),
+  el('div', { class: 'carte__pied ds-carte__pied' },
+    el('p', { class: 'ds-carte__meta' },
+      el('span', {}, 'Porteur : ' + (doc.porteur || '—')),
+      maj ? el('span', {}, 'Mis à jour le ',
+        el('time', { datetime: maj }, formaterDate(maj))) : null),
+    sansLien,
     actions));
 
   const fiche = { doc, carte, titre, reference, resume, requete: null };
@@ -1159,7 +1164,7 @@ function majSurlignage(fiche, requete) {
 }
 
 /* -------------------------------------------------------------------------
-   9. Actions
+   11. Actions
    ------------------------------------------------------------------------- */
 
 /** Clic sur un bouton d'une carte de résultat. */
@@ -1173,55 +1178,30 @@ function surActionCarte(evt, bouton) {
 
   if (action === 'copier-lien') {
     evt.preventDefault();
-    copier(doc.lien, 'Lien copié dans le presse-papiers.');
+    copier(doc.lien, 'Lien copié dans le presse-papiers.', bouton, 'Lien copié');
     return;
   }
   if (action === 'copier-reference') {
     evt.preventDefault();
-    copier(doc.reference, 'Référence copiée dans le presse-papiers.');
+    copier(doc.reference, 'Référence copiée dans le presse-papiers.',
+      bouton, 'Référence copiée');
   }
   // « Ouvrir » est une vraie ancre : on ne lui coupe pas son comportement.
 }
 
-/** Clic sur un bouton de la zone de messages (accueil, aucun résultat). */
+/** Clic sur un bouton de la zone de messages (aucun résultat, troncature). */
 function surActionMessage(evt, bouton) {
   const action = bouton.dataset.action;
 
-  if (action === 'filtrer-type') {
-    etat.facettes.type = new Set([bouton.dataset.valeur]);
-    etat.tout = false;
-    rendre();
-    refs.champ.focus();
-    return;
-  }
-  if (action === 'parcourir-tout') {
-    etat.tout = true;
-    rendre();
-    // `rendre()` remplace le contenu de refs.messages : le bouton cliqué
+  if (action === 'appliquer-suggestion') {
+    definirRequete(bouton.dataset.valeur);
+    // Le bloc « aucun résultat » vient d'être remplacé : le bouton cliqué
     // n'existe plus, le focus doit être replacé explicitement.
     refs.champ.focus();
     return;
   }
-  if (action === 'appliquer-suggestion') {
-    definirRequete(bouton.dataset.valeur);
-    refs.champ.focus();
-    return;
-  }
-  if (action === 'retirer-facette') {
-    const dimension = bouton.dataset.dimension;
-    const valeur = bouton.dataset.valeur;
-    const actives = etat.facettes[dimension];
-    if (!actives) return;
-    actives.delete(valeur);
-    rendre();
-
-    // Le bouton cliqué vient d'être détruit par le rendu. On vise la puce
-    // de facette correspondante, qui lui survit ; à défaut, le champ.
-    const equivalent = refs.facettes.get(dimension + '|' + valeur);
-    const visible = equivalent && !equivalent.disabled && equivalent.isConnected
-      && !(equivalent.elementListe && equivalent.elementListe.hidden);
-    if (visible) equivalent.focus();
-    else refs.champ.focus();
+  if (action === 'retirer-filtre') {
+    retirerFiltre(bouton.dataset.cle);
     return;
   }
   if (action === 'tout-effacer') {
@@ -1233,36 +1213,85 @@ function surActionMessage(evt, bouton) {
   }
 }
 
-/** Copie un texte, avec retour visuel explicite dans les deux cas. */
-function copier(texte, messageSucces) {
+/**
+ * Copie un texte, avec retour visuel explicite dans les deux cas : une
+ * notification, et le libellé du bouton lui-même.
+ *
+ * @param {string} texte
+ * @param {string} messageSucces
+ * @param {HTMLElement} [bouton]
+ * @param {string} [libelleSucces]
+ */
+function copier(texte, messageSucces, bouton, libelleSucces) {
   const valeur = typeof texte === 'string' ? texte.trim() : '';
   if (valeur === '') {
     toast('Rien à copier pour ce document.', 'alerte');
     return;
   }
   copierTexte(valeur).then((ok) => {
-    if (ok) toast(messageSucces, 'succes');
-    else toast('La copie a échoué. Sélectionnez le texte puis copiez-le manuellement.', 'critique');
+    if (ok) {
+      toast(messageSucces, 'succes');
+      if (libelleSucces) retourVisuel(bouton, libelleSucces);
+    } else {
+      toast('La copie a échoué. Sélectionnez le texte puis copiez-le manuellement.',
+        'critique');
+    }
   });
 }
 
-/** Active ou désactive une valeur de facette. */
-function basculerFacette(dimension, valeur) {
-  const actives = etat.facettes[dimension];
-  if (!actives) return;
-  if (actives.has(valeur)) actives.delete(valeur);
-  else actives.add(valeur);
+/** Une tuile d'exploration a été choisie : elle lance une recherche par type. */
+function choisirType(valeur) {
+  if (!corpus.typesConnus.has(valeur)) return;
+  etat.type = valeur;
   etat.tout = false;
   rendre();
+  // L'exploration disparaît : la tuile cliquée n'est plus affichée, donc
+  // plus focalisable. Le focus revient au champ, jamais à <body>.
+  refs.champ.focus();
 }
 
-/** Remet la page à zéro : requête, facettes, mode parcours. */
+/** Parcourir tout le fonds, sans requête ni filtre. */
+function parcourirTout() {
+  etat.tout = true;
+  rendre();
+  // Même raison que ci-dessus : le bouton cliqué vient d'être masqué avec
+  // l'exploration, le focus doit être replacé explicitement.
+  refs.champ.focus();
+}
+
+/**
+ * Retire un filtre, puis replace le focus sur un élément vivant : le menu
+ * déroulant correspondant s'il existe, le champ de recherche sinon.
+ *
+ * @param {string} cle 'type', ou la clé d'une dimension
+ */
+function retirerFiltre(cle) {
+  if (cle === 'type') {
+    if (etat.type === '') return;
+    etat.type = '';
+    rendre();
+    refs.champ.focus();
+    return;
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(etat.filtres, cle)) return;
+  if (etat.filtres[cle] === '') return;
+  etat.filtres[cle] = '';
+  rendre();
+
+  const select = refs.menus.get(cle);
+  if (select && select.isConnected && !select.disabled) select.focus();
+  else refs.champ.focus();
+}
+
+/** Remet la page à zéro : requête, menus, exploration. */
 function toutEffacer() {
   annulerFrappe();
   etat.requete = '';
   refs.champ.value = '';
-  for (const dimension of DIMENSIONS) etat.facettes[dimension.cle].clear();
+  etat.type = '';
   etat.tout = false;
+  for (const dimension of DIMENSIONS) etat.filtres[dimension.cle] = '';
   rendre();
   refs.champ.focus();
 }
@@ -1277,7 +1306,7 @@ function definirRequete(texte) {
 }
 
 /* -------------------------------------------------------------------------
-   10. Clavier : parcours des résultats depuis le champ de recherche
+   12. Clavier : parcours des résultats depuis le champ de recherche
    ------------------------------------------------------------------------- */
 
 /**
@@ -1377,10 +1406,10 @@ function surToucheChamp(evt) {
       break;
     case 'Escape':
       // Échap efface la requête ; si elle est déjà vide, il lève ce qui
-      // reste (facettes, parcours) plutôt que de ne rien faire.
+      // reste (menus, exploration par type) plutôt que de ne rien faire.
       evt.preventDefault();
       if (etat.requete !== '') definirRequete('');
-      else if (auMoinsUneFacette() || etat.tout) toutEffacer();
+      else if (auMoinsUnFiltre() || etat.tout) toutEffacer();
       else definirActif(-1);
       break;
     default:
@@ -1472,14 +1501,14 @@ function surToucheDocument(evt) {
   // parcours des résultats gère Échap avant d'arriver ici.
   if (evt.key === 'Escape' && cible !== refs.champ && !dansUneSaisie
       && !(cible && typeof cible.closest === 'function' && cible.closest('.ds-carte'))) {
-    if (etat.requete === '' && !auMoinsUneFacette() && !etat.tout) return;
+    if (etat.requete === '' && !auMoinsUnFiltre() && !etat.tout) return;
     evt.preventDefault();
     toutEffacer();
   }
 }
 
 /* -------------------------------------------------------------------------
-   11. Annonce aux lecteurs d'écran
+   13. Annonce aux lecteurs d'écran
 
    Une seule annonce, anti-rebondie : sans cela, chaque caractère saisi
    déclencherait une interruption vocale.
@@ -1487,8 +1516,9 @@ function surToucheDocument(evt) {
 
 const annoncerResultats = debounce(() => {
   const nombre = etat.affiches.length;
-  if (etat.requete.trim() === '' && !auMoinsUneFacette() && !etat.tout) {
-    annoncer('Accueil de la recherche, ' + corpus.documents.length + ' documents référencés.');
+  if (etat.requete.trim() === '' && !auMoinsUnFiltre() && !etat.tout) {
+    annoncer('Exploration rapide, ' + corpus.documents.length
+      + ' documents référencés.');
     return;
   }
   if (nombre === 0) {
@@ -1499,7 +1529,7 @@ const annoncerResultats = debounce(() => {
 }, DELAI_ANNONCE);
 
 /* -------------------------------------------------------------------------
-   12. Propositions locales (aucun envoi réseau)
+   14. Propositions locales (aucun envoi réseau)
    ------------------------------------------------------------------------- */
 
 /** Charge les propositions mémorisées dans ce navigateur. */
@@ -1545,7 +1575,7 @@ function formulaireProposition() {
 
   const champType = el('select', { class: 'champ__controle', id: idBase + '-type' },
     el('option', { value: '' }, 'Non précisé'),
-    corpus.valeurs.type.map((type) => el('option', { value: type }, type)));
+    corpus.types.map((type) => el('option', { value: type }, type)));
 
   const casesMetier = corpus.valeurs.metier.map((metier) => el('label', { class: 'case' },
     el('input', {
@@ -1641,7 +1671,7 @@ function formulaireProposition() {
   };
 }
 
-/** Ouvre la modale « Proposer un document ». */
+/** Ouvre la modale « Proposer un document » (enregistrement LOCAL). */
 function ouvrirModaleProposition(declencheur) {
   const champs = formulaireProposition();
 
@@ -1672,7 +1702,9 @@ function ouvrirModaleProposition(declencheur) {
   };
 
   // La touche Entrée dans le formulaire déclenche la même validation.
-  champs.formulaire.addEventListener('submit', () => { if (valider()) instance.fermer('action'); });
+  champs.formulaire.addEventListener('submit', () => {
+    if (valider()) instance.fermer('action');
+  });
 
   const instance = ouvrirModale({
     titre: 'Proposer un document',
@@ -1712,7 +1744,7 @@ function rendrePropositions() {
       el('div', { class: 'carte__pied' },
         el('span', {}, 'Ajoutée le ', el('time',
           { datetime: proposition.cree }, formaterDate(proposition.cree))),
-        el('div', { class: 'ds-carte__actions' },
+        el('div', { class: 'ds-carte__actions pousse' },
           el('button', {
             type: 'button',
             class: 'bouton bouton--danger-discret bouton--compact',
@@ -1744,6 +1776,9 @@ function confirmerSuppression(id, declencheur) {
           enregistrerPropositions();
           rendrePropositions();
           toast('Proposition supprimée.', 'info');
+          // La carte supprimée emportait le bouton déclencheur : ui.js ne
+          // pourra pas lui rendre le focus. On vise le champ de recherche.
+          refs.champ.focus();
         }
       }
     ]
@@ -1751,7 +1786,7 @@ function confirmerSuppression(id, declencheur) {
 }
 
 /* -------------------------------------------------------------------------
-   13. Démarrage
+   15. Démarrage
    ------------------------------------------------------------------------- */
 
 function demarrer() {
@@ -1762,6 +1797,11 @@ function demarrer() {
   refs.zone = document.getElementById('ds-zone');
   refs.propositionsSection = document.getElementById('ds-propositions');
   refs.propositionsListe = document.getElementById('ds-propositions-liste');
+
+  for (const dimension of DIMENSIONS) {
+    const select = document.getElementById(dimension.id);
+    if (select) refs.menus.set(dimension.cle, select);
+  }
 
   if (!refs.champ || !refs.zone) return;
 
@@ -1784,7 +1824,6 @@ function demarrer() {
   // Recherche instantanée, anti-rebondie sous le seuil de perception.
   const surFrappe = debounce(() => {
     etat.requete = refs.champ.value;
-    etat.tout = false;
     rendre();
   }, DELAI_FRAPPE);
 
@@ -1793,6 +1832,19 @@ function demarrer() {
   refs.champ.addEventListener('input', surFrappe);
   refs.champ.addEventListener('keydown', surToucheChamp);
   document.addEventListener('keydown', surToucheDocument);
+
+  // Les trois menus déroulants : ils se combinent entre eux et avec la
+  // recherche, et ne survivent jamais à un état qu'ils ne décrivent pas.
+  for (const dimension of DIMENSIONS) {
+    const select = refs.menus.get(dimension.cle);
+    if (!select) continue;
+    select.addEventListener('change', () => {
+      const valeur = select.value;
+      etat.filtres[dimension.cle] =
+        corpus.connues[dimension.cle].has(valeur) ? valeur : '';
+      rendre();
+    });
+  }
 
   deleguer(document, '[data-action="effacer-requete"]', 'click', () => {
     definirRequete('');
@@ -1805,7 +1857,7 @@ function demarrer() {
     (donnees, cible) => {
       construireInterface(donnees, cible);
 
-      // L'état complet n'est restauré qu'ici : les valeurs de facettes de
+      // L'état complet n'est restauré qu'ici : les valeurs de menus de
       // l'URL doivent être confrontées à celles que le corpus déclare.
       appliquerUrl();
       // Ce que la personne a pu taper pendant le chargement l'emporte.

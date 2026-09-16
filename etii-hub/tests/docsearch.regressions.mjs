@@ -15,12 +15,19 @@ await page.goto('http://localhost:8111/docsearch.html',{waitUntil:'networkidle'}
 await page.waitForTimeout(600);
 let ok=0,ko=0; const t=(n,c,d='')=>{c?(ok++,console.log(`  OK    ${n}`)):(ko++,console.log(`  ÉCHEC ${n} ${d}`))};
 
-console.log('== Défaut 1 : la facette "porteur" ==');
-const groupes = await page.evaluate(()=>[...document.querySelectorAll('h2,h3,legend,.facettes__titre,[class*="facette"] > :first-child')]
-  .map(e=>e.textContent.trim()).filter(x=>/type|métier|périmètre|porteur/i.test(x)));
-t('les 4 dimensions de facette sont présentes',
-  ['type','métier','périmètre','porteur'].every(d=>groupes.some(g=>new RegExp(d,'i').test(g))),
-  JSON.stringify(groupes));
+console.log('== Défaut 1 : le filtrage par porteur existe ==');
+// La colonne de facettes a laissé place à trois menus déroulants et aux
+// tuiles d'exploration par type — c'est la mise en page voulue. Le contrôle
+// porte donc sur la CAPACITÉ de filtrer, pas sur la forme du contrôle.
+const filtres = await page.evaluate(() => ({
+  menus: ['ds-metier', 'ds-porteur', 'ds-pole']
+    .filter(id => document.getElementById(id)),
+  typesParTuile: [...document.querySelectorAll('[data-action="filtrer-type"]')].length,
+}));
+t('les trois menus de filtre sont présents', filtres.menus.length === 3,
+  JSON.stringify(filtres.menus));
+t('le filtrage par type passe par les tuiles', filtres.typesParTuile >= 5,
+  `(${filtres.typesParTuile} tuiles)`);
 
 console.log('\n== Défaut 3 : le lien d\'évitement préserve la recherche ==');
 await page.fill('#ds-champ','harnais'); await page.waitForTimeout(700);
@@ -41,13 +48,21 @@ if (await parcourir.count()) {
   t('le focus est replacé ailleurs que sur BODY', !/^BODY$/.test(cible), `(${cible})`);
 } else t('bouton "Parcourir" présent', false);
 
+console.log('\n== Proposer un document reste atteignable depuis l\'accueil ==');
+const propAccueil = await page.evaluate(() => [...document.querySelectorAll('button')]
+  .filter(b => /Proposer un document/.test(b.textContent)
+            && b.getBoundingClientRect().height > 0).length);
+t('un bouton « Proposer » est visible sur l\'accueil', propAccueil >= 1, `(${propAccueil})`);
+
 console.log('\n== Défaut 5 : pas de role=option sur une carte contenant des contrôles ==');
 const faute = await page.evaluate(()=>[...document.querySelectorAll('[role="option"]')]
   .filter(o=>o.querySelector('a,button,input')).length);
 t('aucune option ARIA ne contient de contrôle interactif', faute===0, `(${faute})`);
 
 console.log('\n== Défaut 6 : "/" neutralisé quand une modale est ouverte ==');
-const proposer = page.locator('button').filter({hasText:/proposer un document/i}).first();
+// Selon l'état de la page, plusieurs boutons « Proposer » coexistent dont
+// certains masqués : on cible celui qui est réellement visible.
+const proposer = page.locator('button:visible').filter({hasText:/proposer un document/i}).first();
 if (await proposer.count()) {
   await proposer.click(); await page.waitForTimeout(500);
   await page.keyboard.press('/'); await page.waitForTimeout(300);

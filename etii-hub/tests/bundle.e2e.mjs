@@ -56,8 +56,11 @@ await page.waitForTimeout(2000);
 await f.locator('#ds-champ').fill('conecteur'); await page.waitForTimeout(1000);
 t('tolérance aux fautes hors serveur', (await f.locator('#ds-resultats > *').count()) > 0);
 t('les termes sont surlignés', (await f.locator('mark').count()) > 0);
-const pf = await f.locator('button.facette').filter({hasText:/ETIIA|ETIIE|ETIII/}).count();
-t('la facette de pôle est proposée', pf === 3, `(${pf})`);
+// Le filtrage passe par trois menus déroulants, pas par des puces.
+const menus = await f.locator('#ds-metier, #ds-porteur, #ds-pole').count();
+t('les trois menus de filtre sont présents', menus === 3, `(${menus})`);
+const tuiles = await f.locator('[data-action="filtrer-type"]').count();
+t('les cinq tuiles d\'exploration sont présentes', tuiles === 5, `(${tuiles})`);
 
 console.log('\n== Les neuf pages s\'ouvrent ==');
 for (const [lien, attendu] of [['etiie.html','ETIIE'],['etiii.html','ETIII'],
