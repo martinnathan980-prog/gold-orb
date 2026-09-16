@@ -13,7 +13,7 @@
 <!-- Les données sont posées dans la page au moment où le modèle est évalué :
      pas d'écran de chargement, pas d'aller-retour. -->
 <script>
-  window.SUIVI_FWD_DONNEES = <?!= JSON.stringify(getDonneesPourClient()) ?>;
+  window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
   /* Pont vers le classeur. Les jalons sont partagés : ils repartent au serveur
      à chaque changement, pour que la collègue et sa chef voient les mêmes. */

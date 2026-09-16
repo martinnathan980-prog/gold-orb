@@ -42,7 +42,7 @@ function feuilleExemple(nbLignes) {
       '2026-' + String(1 + Math.floor(alea() * 8)).padStart(2, '0') + '-' + String(1 + Math.floor(alea() * 27)).padStart(2, '0'),
       tire(AVANCE),
       tire(['MR', 'AB', 'CM', 'TL']),
-      alea() < 0.25 ? 'Attente d’accès & <validation>' : ''
+      alea() < 0.25 ? 'Attente d’accès & <validation> </script> <!-- ' : ''
     ]);
   }
   return valeurs;

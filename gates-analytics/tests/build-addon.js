@@ -10,9 +10,11 @@ const { feuilleExemple } = require('./feuille-exemple');
 
 const racine = path.join(__dirname, '..');
 
-function chargerServeur(classeur, proprietes) {
-  const contexte = vm.createContext(poserEnvironnement({ console: console, JSON: JSON, Date: Date, Math: Math },
-    classeur, proprietes));
+function chargerServeur(classeur, proprietes, fichiers) {
+  const muet = { log: function () {} };
+  const contexte = vm.createContext(poserEnvironnement(
+    { console: muet, JSON: JSON, Date: Date, Math: Math },
+    classeur, proprietes, fichiers));
   vm.runInContext(fs.readFileSync(path.join(racine, 'Code.gs'), 'utf8'), contexte);
   return contexte;
 }
@@ -68,8 +70,8 @@ function construire(options) {
   index = index.replace(/<\?!=\s*include\('(\w+)'\);?\s*\?>/g, function (_, nom) {
     return fs.readFileSync(path.join(racine, nom + '.html'), 'utf8');
   });
-  index = index.replace(/<\?!=\s*JSON\.stringify\(getDonneesPourClient\(\)\)\s*\?>/,
-    JSON.stringify(paquet).replace(/</g, '\\u003c'));
+  index = index.replace(/<\?!=\s*donneesJSONPourPage\(\)\s*\?>/,
+    contexte.donneesJSONPourPage());
 
   // Les polices locales évitent toute dépendance réseau pendant les tests.
   if (fs.existsSync(path.join(racine, 'prototype', 'fonts', 'local.css'))) {

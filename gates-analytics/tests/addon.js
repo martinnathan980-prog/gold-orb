@@ -22,9 +22,9 @@ function verifier(nom, condition, detail) {
 }
 function section(t) { sectionCourante = t; console.log('\n— ' + t + ' —'); }
 
-function serveurSur(valeurs, proprietes) {
+function serveurSur(valeurs, proprietes, fichiers) {
   const classeur = new Classeur([new Feuille('Données', valeurs)]);
-  return { contexte: chargerServeur(classeur, proprietes || {}), classeur: classeur };
+  return { contexte: chargerServeur(classeur, proprietes || {}, fichiers), classeur: classeur };
 }
 
 (async () => {
@@ -217,6 +217,57 @@ function serveurSur(valeurs, proprietes) {
     JSON.stringify(pBizarres.colonnes.map(c => c.cle)));
 
   // =================================================================
+  section('Diagnostic');
+  /* C'est la fonction qu'on lance quand « ça ne marche pas » : elle doit
+     nommer la cause, pas se contenter d'échouer. */
+  const dOk = serveurSur(feuilleExemple(30));
+  dOk.contexte.enregistrerInstantaneHebdo();
+  const rapportOk = dOk.contexte.diagnostic();
+  verifier('le diagnostic nomme le classeur et l\'onglet',
+    /Classeur/.test(rapportOk) && /Onglet de données/.test(rapportOk));
+  verifier('il nomme la colonne d\'avancement',
+    /Avancement FWD : colonne/.test(rapportOk), rapportOk.split('\n').find(l => /Avancement/.test(l)));
+  verifier('il donne les quatre comptes',
+    /terminés, \d+ en cours, \d+ à faire, \d+ non renseignés/.test(rapportOk));
+  verifier('il compte les relevés archivés', /Relevés archivés : 1/.test(rapportOk));
+  verifier('il donne le poids du paquet', /Paquet envoyé à la page : \d+ Ko/.test(rapportOk));
+  verifier('il conclut que tout est en place', /Tout est en place/.test(rapportOk));
+  verifier('il passe aussi par l\'alerte à l\'écran', dOk.contexte.__alertes.length === 1);
+
+  const dSansFichiers = serveurSur(feuilleExemple(10), {}, ['Index']);
+  const rapportSansFichiers = dSansFichiers.contexte.diagnostic();
+  verifier('un fichier HTML manquant est nommé',
+    /« Styles » INTROUVABLE/.test(rapportSansFichiers) &&
+    /« Javascript » INTROUVABLE/.test(rapportSansFichiers));
+  verifier('et la marche à suivre est donnée',
+    /sans \.html/.test(rapportSansFichiers));
+  verifier('il ne conclut pas que tout va bien',
+    /Il manque des fichiers/.test(rapportSansFichiers));
+
+  const dVide = serveurSur([]);
+  verifier('une feuille vide est diagnostiquée',
+    /L'onglet est vide/.test(dVide.contexte.diagnostic()));
+
+  const dSansFWD = serveurSur([['Réf', 'Truc'], ['A-1', 'x']]);
+  const rapportSansFWD = dSansFWD.contexte.diagnostic();
+  verifier('l\'absence de colonne d\'avancement est signalée',
+    /Aucune colonne d'avancement FWD/.test(rapportSansFWD));
+  verifier('et la conséquence est expliquée',
+    /tout sera « non renseigné »/.test(rapportSansFWD));
+
+  const dSansHisto = serveurSur(feuilleExemple(10));
+  verifier('l\'absence de relevé est signalée avec la marche à suivre',
+    /Relevés archivés : 0/.test(dSansHisto.contexte.diagnostic()) &&
+    /Archiver le relevé/.test(dSansHisto.contexte.diagnostic()));
+
+  const dOrphelin = { contexte: chargerServeur(null, {}) };
+  const rapportOrphelin = dOrphelin.contexte.diagnostic();
+  verifier('un script non lié au classeur est la première chose dite',
+    /AUCUN CLASSEUR ATTACHÉ/.test(rapportOrphelin));
+  verifier('et la vraie marche à suivre est donnée',
+    /Extensions → Apps Script/.test(rapportOrphelin));
+
+  // =================================================================
   section('La page rendue par Apps Script');
   const nav = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
   const ctx = await nav.newContext({ viewport: { width: 1280, height: 1000 } });
@@ -259,6 +310,16 @@ function serveurSur(valeurs, proprietes) {
     vu.totauxGroupes.reduce((a, b) => a + b, 0) === 186, String(vu.totauxGroupes.reduce((a, b) => a + b, 0)));
   verifier('le graphique a de quoi tracer', vu.releves);
   verifier('la ligne d\'import annonce les relevés archivés', /relevés archivés/.test(vu.importe), vu.importe);
+
+  // Une cellule contenant une balise fermante ne doit pas couper la page en deux.
+  verifier('une balise fermante dans une cellule ne casse pas la page',
+    await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length === 186 &&
+      !!document.querySelector('svg.graphe') &&
+      document.querySelectorAll('.critique-ligne').length > 0 &&
+      document.querySelectorAll('.etat-n').length === 4));
+  verifier('et elle s\'affiche comme du texte dans le tableau',
+    await p.evaluate(() => [...document.querySelectorAll('#corps-tableau td')]
+      .some(td => td.textContent.includes('</script>'))));
 
   // Le chiffre affiché doit correspondre à ce que le serveur a compté.
   const attendu = { termine: 0, encours: 0, afaire: 0, vide: 0 };

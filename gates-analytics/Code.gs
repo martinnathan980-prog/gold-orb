@@ -102,6 +102,8 @@ function onOpen() {
     .addSeparator()
     .addItem('Activer l\'archivage automatique (vendredi 17 h)', 'installerSuiviHebdomadaire')
     .addItem('Désactiver l\'archivage automatique', 'desinstallerSuiviHebdomadaire')
+    .addSeparator()
+    .addItem('Diagnostic', 'diagnostic')
     .addToUi();
 }
 
@@ -443,6 +445,144 @@ function getDonneesPourClient() {
       colonnes: [], cleDate: null, dimParDefaut: '', plans: [], releves: [], jalons: []
     };
   }
+}
+
+/**
+ * Le paquet, sérialisé pour être posé tel quel dans un <script>.
+ *
+ * Une cellule du classeur peut contenir n'importe quoi — y compris la chaîne
+ * qui ferme une balise script. Sans échappement, une seule ligne de commentaire
+ * mal choisie couperait la page en deux et rien ne s'afficherait.
+ */
+function donneesJSONPourPage() {
+  return JSON.stringify(getDonneesPourClient())
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+// =====================================================================
+//  DIAGNOSTIC
+// =====================================================================
+
+/**
+ * À lancer depuis l'éditeur (▷ Exécuter) ou depuis le menu quand la page ne
+ * s'ouvre pas. Dit ce que le script voit réellement, plutôt que de laisser
+ * deviner.
+ */
+function diagnostic() {
+  const lignes = [];
+  function dire(texte) { lignes.push(texte); }
+
+  let classeur = null;
+  try {
+    classeur = SpreadsheetApp.getActiveSpreadsheet();
+  } catch (err) {
+    classeur = null;
+  }
+
+  if (!classeur) {
+    dire('✗ AUCUN CLASSEUR ATTACHÉ À CE SCRIPT.');
+    dire('');
+    dire('C\'est la cause la plus fréquente : le projet a été créé depuis');
+    dire('script.google.com au lieu du classeur lui-même.');
+    dire('');
+    dire('Il faut repartir du classeur : Extensions → Apps Script, puis');
+    dire('recoller les quatre fichiers dans le projet qui s\'ouvre.');
+    return terminerDiagnostic(lignes);
+  }
+  dire('✓ Classeur : ' + classeur.getName());
+
+  const nomsFichiers = [];
+  ['Index', 'Styles', 'Javascript'].forEach(function (nom) {
+    try {
+      const contenu = HtmlService.createHtmlOutputFromFile(nom).getContent();
+      dire('✓ Fichier « ' + nom +' » : ' + contenu.length + ' caractères');
+      nomsFichiers.push(nom);
+    } catch (err) {
+      dire('✗ Fichier « ' + nom + ' » INTROUVABLE.');
+      dire('   → + → HTML, et le nommer exactement « ' + nom + ' », sans .html');
+    }
+  });
+
+  let feuille = null;
+  try {
+    feuille = getFeuilleDonnees(classeur);
+    dire('✓ Onglet de données : « ' + feuille.getName() + ' »');
+  } catch (err) {
+    dire('✗ Onglet de données : ' + err.message);
+    return terminerDiagnostic(lignes);
+  }
+
+  try {
+    const donnees = feuille.getDataRange().getDisplayValues();
+    dire('  ' + donnees.length + ' lignes lues dans l\'onglet');
+    if (donnees.length === 0) {
+      dire('✗ L\'onglet est vide : collez l\'export GATES en A1.');
+      return terminerDiagnostic(lignes);
+    }
+    const iEntete = detecterLigneEntete(donnees);
+    dire('✓ Ligne d\'en-têtes : ligne ' + (iEntete + 1));
+    dire('  ' + donnees[iEntete].filter(function (e) { return String(e).trim(); }).join(' | '));
+
+    const modele = construireModele();
+    dire('✓ ' + modele.colonnes.length + ' colonnes, ' + modele.plans.length + ' plans');
+
+    const colFWD = modele.colonnes.filter(function (c) { return c.cle === 'avancement'; })[0];
+    if (modele.avertissement) {
+      dire('✗ ' + modele.avertissement);
+      dire('   → la page s\'affichera, mais tout sera « non renseigné ».');
+    } else {
+      dire('✓ Avancement FWD : colonne « ' + colFWD.titre + ' »');
+      const compte = { termine: 0, encours: 0, afaire: 0, vide: 0 };
+      modele.plans.forEach(function (p) { compte[classerFWD(p.avancement)]++; });
+      dire('  ' + compte.termine + ' terminés, ' + compte.encours + ' en cours, ' +
+           compte.afaire + ' à faire, ' + compte.vide + ' non renseignés');
+    }
+
+    const colRef = modele.colonnes.filter(function (c) { return c.fige; })[0];
+    dire('✓ Référence figée : colonne « ' + (colRef ? colRef.titre : '?') + ' »');
+    dire('✓ Dimensions proposées : ' +
+         (modele.clesDim.length ? modele.clesDim.join(', ') : 'aucune') +
+         (modele.cleDate ? ', ancienneté' : ''));
+    dire('  Ouverte par défaut : ' + (modele.dimParDefaut || 'aucune'));
+
+    const histo = getHistorique(classeur);
+    dire('✓ Relevés archivés : ' + histo.length);
+    if (histo.length === 0) {
+      dire('   → Suivi FWD → Archiver le relevé de cette semaine.');
+      dire('     Sans relevé, pas de courbe ni de fin estimée.');
+    } else {
+      dire('  du ' + histo[0].semaine + ' au ' + histo[histo.length - 1].semaine);
+    }
+    dire('✓ Jalons enregistrés : ' + getJalons().length);
+
+    const poids = donneesJSONPourPage().length;
+    dire('✓ Paquet envoyé à la page : ' + Math.round(poids / 1024) + ' Ko');
+
+    dire('');
+    dire(nomsFichiers.length === 3
+      ? 'Tout est en place : Suivi FWD → Ouvrir le tableau de bord.'
+      : 'Il manque des fichiers HTML (voir ci-dessus).');
+  } catch (err) {
+    dire('✗ ERREUR : ' + (err && err.message ? err.message : err));
+    if (err && err.stack) dire(String(err.stack).split('\n').slice(0, 3).join('\n'));
+  }
+
+  return terminerDiagnostic(lignes);
+}
+
+function terminerDiagnostic(lignes) {
+  const rapport = lignes.join('\n');
+  console.log(rapport);
+  try {
+    SpreadsheetApp.getUi().alert('Diagnostic — Suivi FWD', rapport,
+      SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (err) {
+    // Lancé depuis l'éditeur sans interface : le journal d'exécution suffit.
+  }
+  return rapport;
 }
 
 // =====================================================================

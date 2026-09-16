@@ -48,7 +48,8 @@ Feuille.prototype.getRange = function (ligne, colonne, nbLignes, nbColonnes) {
   };
 };
 
-function Classeur(feuilles) { this.feuilles = feuilles; }
+function Classeur(feuilles, nom) { this.feuilles = feuilles; this.nom = nom || 'Classeur de test'; }
+Classeur.prototype.getName = function () { return this.nom; };
 Classeur.prototype.getSheets = function () { return this.feuilles; };
 Classeur.prototype.getSheetByName = function (nom) {
   return this.feuilles.filter(function (f) { return f.getName() === nom; })[0] || null;
@@ -60,13 +61,17 @@ Classeur.prototype.insertSheet = function (nom) {
 };
 
 /** Installe les globales Apps Script dans un contexte, autour d'un classeur. */
-function poserEnvironnement(contexte, classeur, proprietes) {
+function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
   const props = proprietes || {};
+  /* Les fichiers HTML du projet. Apps Script lève une exception sur un nom
+     inconnu : c'est exactement ce que le diagnostic doit savoir détecter. */
+  const presents = fichiers || ['Index', 'Styles', 'Javascript'];
   contexte.SpreadsheetApp = {
     getActiveSpreadsheet: function () { return classeur; },
     getUi: function () {
       return {
-        alert: function (m) { contexte.__alertes.push(m); },
+        alert: function (a, b) { contexte.__alertes.push(b === undefined ? a : b); },
+        ButtonSet: { OK: 'OK' },
         createMenu: function () {
           const menu = { addItem: function () { return menu; }, addSeparator: function () { return menu; }, addToUi: function () {} };
           return menu;
@@ -87,7 +92,10 @@ function poserEnvironnement(contexte, classeur, proprietes) {
   contexte.Utilities = { getUuid: function () { compteur++; return 'uuid-' + compteur; } };
   contexte.HtmlService = {
     createTemplateFromFile: function () { return { evaluate: function () { return { setTitle: function () { return this; }, addMetaTag: function () { return this; }, setWidth: function () { return this; }, setHeight: function () { return this; }, setXFrameOptionsMode: function () { return this; } }; } }; },
-    createHtmlOutputFromFile: function () { return { getContent: function () { return ''; } }; },
+    createHtmlOutputFromFile: function (nom) {
+      if (presents.indexOf(nom) === -1) throw new Error('Fichier introuvable : ' + nom);
+      return { getContent: function () { return '<!-- ' + nom + ' -->'; } };
+    },
     XFrameOptionsMode: { ALLOWALL: 'ALLOWALL' }
   };
   contexte.ScriptApp = {
