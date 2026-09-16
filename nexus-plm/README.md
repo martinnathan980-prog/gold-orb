@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 1 008 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 1 051 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 686 tests : logique, pondération, serveur, bundle
+npm test                 # 721 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 322 tests dans un vrai Chromium
+npm run test:navigateur  # 330 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -264,16 +264,17 @@ Sur le jeu de démonstration, la colonnette sort en tête : une seule norme,
 `NSA 5512`, mais cinq références. C'est une liste d'actions de rationalisation
 directement exploitable, calculée sans rien saisir de plus.
 
-La vue montre aussi, sous les dispersées, les familles **déjà rangées** : une
-norme, une référence, rien à faire. C'est la cible, et la voir permet de
-mesurer le chemin parcouru autant que celui qui reste. Dans chaque famille
-dispersée, la référence la plus montée est marquée : c'est le point de
-convergence naturel, celui qui coûte le moins à généraliser.
+Dans chaque famille dispersée, la référence la plus montée est marquée : c'est
+le point de convergence naturel, celui qui coûte le moins à généraliser.
 
-Toute référence, rangée ou non, se déplie d'un clic sur **les boîtes qui la
+Toute référence se déplie d'un clic sur **les boîtes qui la
 montent**, nommées ; un clic de plus ouvre la fiche de la boîte. On passe du
 constat (« cinq références pour une colonnette ») au terrain (« lesquelles, et
 où ») sans quitter la vue.
+
+Les familles déjà rangées ne sont pas listées : elles ne demandent aucune
+action, et noyaient celles qui en demandent une. Quand il n'y a plus rien à
+disperser, la vue le dit en une ligne.
 
 L'application manipule **trois** niveaux de granularité, à ne pas confondre :
 
@@ -337,6 +338,28 @@ complète, pondération comprise.
 
 L'intérêt est rappelé en tête : deux PN pour la même chose, c'est deux pièces à
 approvisionner, qualifier et stocker au lieu d'une.
+
+## Le balayage des doublons, et ce qu'il coûte
+
+Comparer chaque paire de sous-ensembles du même type est quadratique. Il faut
+donc un plafond, mais l'ancien — 400 paires — correspondait à **29
+sous-ensembles du même type** : toute base réelle passait dessous et
+l'indicateur restait à « — », sans rien dire. Mesuré : 21 000 paires
+(≈ 120 boîtes) tiennent en 0,6 s, ce qui convient pour une action déclenchée au
+clic. Le plafond est là.
+
+Au-delà, l'indicateur ne se tait plus : il affiche « trop de pièces : filtrez
+d'abord », et la liste explique que **le balayage suit la sélection affichée** —
+une recherche, un statut, un porteur, et il repart.
+
+## L'état initial ne doit pas produire un zéro silencieux
+
+`Store.poids` et `Store.criteresActifs` partent vides et ne sont remplis que par
+`chargerReglages()`. Tout ce qui y touchait avant : soit plantait
+(`reglerPoids`), soit rendait un score de 0 sur tout, sans message. Un classement
+entièrement à zéro se lit « rien ne se ressemble », alors que cela voulait dire
+« rien n'a été comparé ». Les deux tables s'initialisent désormais à la demande,
+sur les valeurs du registre.
 
 ## Un geste de moins, partout
 
@@ -407,22 +430,26 @@ l'application.
 
 ## Indicateurs
 
-Cinq mesures, toutes cliquables, toutes agissant sur la grille :
+Quatre mesures, toutes cliquables, toutes agissant sur la grille :
 
 | Indicateur | Ce qu'il compte | Au clic |
 |---|---|---|
 | Boîtes | la base, ou la sélection courante | tout réafficher |
 | Validées | celles dont le statut est `Validé` | ne montrer qu'elles |
 | À standardiser | les familles de composants servies par plusieurs références | la vue Standardisation |
-| Pièces réutilisées | les sous-ensembles montés dans plusieurs boîtes | ne montrer que ces boîtes |
 | Doublons probables | les paires au-dessus de 85 % | la liste, avec le détail |
 
-« Références uniques » a disparu. Le nombre additionnait des PN de boîtes et
-des PN de sous-ensembles — deux niveaux dans un seul total, qui ne répondait à
-aucune question — et c'était le seul bloc inerte au milieu de quatre boutons
-identiques : on cliquait, rien ne bougeait. « Pièces réutilisées » annonçait
-« 13 % des pièces », un pourcentage dont personne ne savait de quoi il était le
-pourcentage ; il dit maintenant « montées dans plusieurs boîtes ».
+Deux indicateurs ont été retirés faute d'être compris. « Références uniques »
+additionnait des PN de boîtes et des PN de sous-ensembles — deux niveaux dans
+un seul total — et était le seul bloc inerte au milieu de boutons identiques.
+« Pièces réutilisées » comptait les sous-ensembles montés dans plusieurs
+boîtes : le chiffre ne répondait à aucune question qu'on se pose devant la
+grille, et son filtre non plus. Retirés avec toute leur mécanique.
+
+La ligne « sur toute la base » sous les chiffres ne disait rien que la grille
+ne montrait déjà, et le badge `/` accolé à « Par composant » annonçait un
+raccourci clavier que personne ne cherchait. Partis aussi. Le raccourci lui-même
+fonctionne toujours.
 
 ## Déploiement
 

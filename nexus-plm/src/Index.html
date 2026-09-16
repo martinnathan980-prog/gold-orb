@@ -62,21 +62,13 @@
             <span class="indicateur-valeur" id="kpiStandard">–</span>
             <span class="indicateur-detail" id="kpiStandardDetail"></span>
           </button>
-          <button type="button" class="indicateur indicateur-reemploi" id="indReutil"
-                  data-action="filtrer-reutilise" aria-pressed="false"
-                  title="Ne montrer que les boîtes qui partagent une pièce">
-            <span class="indicateur-libelle">Pièces réutilisées</span>
-            <span class="indicateur-valeur" id="kpiReutil">–</span>
-            <span class="indicateur-detail" id="kpiReutilDetail"></span>
-          </button>
           <button type="button" class="indicateur indicateur-alerte" id="indDoublons"
                   data-action="ouvrir-doublons" title="Voir les paires de pièces très proches">
             <span class="indicateur-libelle">Doublons probables</span>
             <span class="indicateur-valeur" id="kpiDoublons">–</span>
-            <span class="indicateur-detail">voir la liste</span>
+            <span class="indicateur-detail" id="kpiDoublonsDetail">voir la liste</span>
           </button>
         </div>
-        <p class="indicateurs-portee" id="kpiPortee">sur toute la base</p>
       </div>
     </header>
 
@@ -89,7 +81,6 @@
           <input type="text" id="searchBar" autocomplete="off"
                  placeholder="Rechercher un PN, une fonction, une référence, un mot-clé…"
                  aria-label="Recherche globale">
-          <kbd class="raccourci" aria-hidden="true">/</kbd>
           <button type="button" class="btn-dans-champ" id="btnComposant"
                   data-action="ouvrir-multi-recherche">Par composant</button>
         </label>

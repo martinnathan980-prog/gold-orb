@@ -27,7 +27,6 @@ const Store = {
   filtreComposants: [],
   filtreTypes: [],
   filtreStatut: null,        // un statut, ou rien
-  filtreReutilise: false,    // seulement les boîtes qui partagent une pièce
   vueMode: 'boites',         // 'boites' ou 'pieces'
   tri: 'pn',
   enEditionBoite: false,
@@ -79,8 +78,20 @@ function porteeParCle(cle) {
   return PORTEES.find(function (p) { return p.cle === cle; }) || PORTEES[0];
 }
 
+/**
+ * Tant que les réglages n'ont pas été chargés, TOUS les critères comptent.
+ * L'ancien repli — une liste vide — donnait un score de 0 sur tout, sans
+ * message : un classement d'équivalences entièrement à zéro se lit comme
+ * « rien ne se ressemble », alors que c'est « rien n'a été comparé ».
+ */
+function clesActives(portee) {
+  const liste = Store.criteresActifs[portee];
+  return Array.isArray(liste) ? liste
+                              : porteeParCle(portee).criteres.map(function (c) { return c.cle; });
+}
+
 function criteresActifs(portee) {
-  const liste = Store.criteresActifs[portee] || [];
+  const liste = clesActives(portee);
   // On respecte l'ordre du registre, pas celui des clics.
   return porteeParCle(portee).criteres.filter(function (c) {
     return liste.indexOf(c.cle) !== -1;
@@ -88,7 +99,20 @@ function criteresActifs(portee) {
 }
 
 function critereEstActif(portee, cle) {
-  return (Store.criteresActifs[portee] || []).indexOf(cle) !== -1;
+  return clesActives(portee).indexOf(cle) !== -1;
+}
+
+/**
+ * La table des parts d'une portée, créée à la demande. Comme pour les
+ * critères actifs, l'état initial de Store est vide : tout ce qui touche aux
+ * poids avant le chargement des réglages plantait sur un objet absent.
+ */
+function tablePoids(portee) {
+  if (!Store.poids[portee]) {
+    Store.poids[portee] = {};
+    porteeParCle(portee).criteres.forEach(function (c) { Store.poids[portee][c.cle] = c.poids; });
+  }
+  return Store.poids[portee];
 }
 
 /**
@@ -98,7 +122,7 @@ function critereEstActif(portee, cle) {
  */
 function normaliserPoids(portee) {
   const actifs = criteresActifs(portee);
-  const table = Store.poids[portee];
+  const table = tablePoids(portee);
   if (!actifs.length) return;
   if (actifs.length === 1) { table[actifs[0].cle] = 100; return; }
 
@@ -126,7 +150,7 @@ function normaliserPoids(portee) {
  */
 function reglerPoids(portee, cle, valeur) {
   const actifs = criteresActifs(portee);
-  const table = Store.poids[portee];
+  const table = tablePoids(portee);
   const voulue = Math.max(0, Math.min(100, Math.round(Number(valeur) || 0)));
 
   if (actifs.length <= 1) { if (actifs.length) table[actifs[0].cle] = 100; return; }
@@ -158,7 +182,7 @@ function reglerPoids(portee, cle, valeur) {
 
 function activerCritere(portee, cle) {
   if (critereEstActif(portee, cle)) return;
-  Store.criteresActifs[portee] = (Store.criteresActifs[portee] || []).concat([cle]);
+  Store.criteresActifs[portee] = clesActives(portee).concat([cle]);
   // Le nouveau critère prend une part équitable, prise sur les autres.
   const actifs = criteresActifs(portee);
   reglerPoids(portee, cle, Math.round(100 / actifs.length));
@@ -166,10 +190,10 @@ function activerCritere(portee, cle) {
 }
 
 function desactiverCritere(portee, cle) {
-  const restants = (Store.criteresActifs[portee] || []).filter(function (c) { return c !== cle; });
+  const restants = clesActives(portee).filter(function (c) { return c !== cle; });
   if (!restants.length) return false;          // on ne retire pas le dernier
   Store.criteresActifs[portee] = restants;
-  Store.poids[portee][cle] = 0;
+  tablePoids(portee)[cle] = 0;
   normaliserPoids(portee);
   enregistrerReglages();
   return true;
@@ -408,26 +432,6 @@ function aLeStatut(boite, statut) {
   return normaliserStatut(boite['Statut']) === normaliserStatut(statut);
 }
 
-/** PN des pièces montées dans plus d'une boîte. */
-function piecesReutilisees() {
-  const boitesParPiece = new Map();
-  Store.nomenclature.forEach(function (n) {
-    const piece = normaliserTexte(n['PN du type']);
-    if (!piece) return;
-    if (!boitesParPiece.has(piece)) boitesParPiece.set(piece, new Set());
-    boitesParPiece.get(piece).add(String(n[CLE_PN()]).trim());
-  });
-  const partagees = new Set();
-  boitesParPiece.forEach(function (boites, piece) { if (boites.size > 1) partagees.add(piece); });
-  return partagees;
-}
-
-function partageUnePiece(boite, partagees) {
-  return (boite.nomenclature || []).some(function (n) {
-    return partagees.has(normaliserTexte(n['PN du type']));
-  });
-}
-
 // ------------------------------------------------------------
 // Tri
 // ------------------------------------------------------------
@@ -449,12 +453,10 @@ function rangStatut(s) {
 // Vue courante : un seul filtrage dont tout dérive
 // ------------------------------------------------------------
 function calculerVue() {
-  const partagees = Store.filtreReutilise ? piecesReutilisees() : null;
   const visibles = Store.boites.filter(function (b) {
     return contientTousComposants(b, Store.filtreComposants) &&
            contientTypes(b, Store.filtreTypes) &&
            aLeStatut(b, Store.filtreStatut) &&
-           (!partagees || partageUnePiece(b, partagees)) &&
            correspond(b, Store.recherche);
   }).sort((TRIS[Store.tri] || TRIS.pn).fn);
 
@@ -475,12 +477,17 @@ function calculerVue() {
     visibles: visibles, parFonction: parFonction, onglet: onglet,
     aAfficher: onglet === 'Toutes' ? visibles : (parFonction.get(onglet) || []),
     filtre: !!(Store.recherche || Store.filtreComposants.length || Store.filtreTypes.length ||
-               Store.filtreStatut || Store.filtreReutilise)
+               Store.filtreStatut)
   };
 }
 
 const SEUIL_DOUBLON = 85;      // au-delà, deux PN distincts méritent un examen
-const PLAFOND_PAIRES = 400;    // au-delà, on ne balaie pas toutes les paires
+// Le balayage est quadratique : il faut un plafond. L'ancien, 400 paires,
+// correspondait à 29 sous-ensembles du même type — toute base réelle passait
+// dessous et l'indicateur restait muet. Mesuré : 21 000 paires ≈ 0,6 s, ce qui
+// tient pour une action déclenchée au clic. Au-delà, on le dit et on renvoie
+// vers le filtrage, car le balayage suit la sélection courante.
+const PLAFOND_PAIRES = 21000;
 
 /**
  * Indicateurs orientés RÉUTILISATION : c'est la question que pose l'outil.
@@ -703,31 +710,6 @@ function opportunitesStandardisation(liste) {
   });
 }
 
-/**
- * Les familles déjà rangées : une seule norme, une seule référence. C'est
- * l'état visé, et il faut le voir aussi — sinon l'écran ne montre que ce qui
- * va mal et on ne sait pas où on en est.
- */
-function famillesStandardisees(liste) {
-  const sorties = [];
-  famillesComposants(liste).forEach(function (f) {
-    const normes = Array.from(f.normes.values());
-    if (normes.length !== 1 || normes[0].references.size !== 1) return;
-    const ref = Array.from(normes[0].references.values())[0];
-    sorties.push({
-      categorie: f.categorie, fonction: f.fonction,
-      norme: normes[0].norme, reference: ref.reference,
-      nbBoites: ref.boites.size,
-      boites: Array.from(ref.boites).sort(function (a, b) {
-        return a.localeCompare(b, 'fr', { numeric: true });
-      })
-    });
-  });
-  return sorties.sort(function (a, b) {
-    return b.nbBoites - a.nbBoites || a.fonction.localeCompare(b.fonction, 'fr');
-  });
-}
-
 /** Répartition des sous-ensembles par type, pour la barre de filtres. */
 function repartitionTypes() {
   const compte = new Map();
@@ -762,10 +744,6 @@ function tousLesMotsCles() {
     motsCles(n['Mots-clés']).forEach(function (m) { ensemble.add(m); });
   });
   return Array.from(ensemble).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
-}
-
-function formaterComposant(entree) {
-  return libelleComposant(composantDepuisCatalogue(entree));
 }
 
 const CATALOGUE_MAX = 30;

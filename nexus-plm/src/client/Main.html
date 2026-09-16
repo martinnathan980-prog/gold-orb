@@ -222,11 +222,6 @@ enregistrerActions({
     Store.filtreStatut = Store.filtreStatut === d.statut ? null : d.statut;
     rendreInterface();
   },
-  'filtrer-reutilise': function () {
-    Store.filtreReutilise = !Store.filtreReutilise;
-    rendreInterface();
-  },
-
   'voir-standardisation': function () {
     Store.vueMode = Store.vueMode === 'standardisation' ? 'boites' : 'standardisation';
     enregistrerReglages();
@@ -237,7 +232,9 @@ enregistrerActions({
     const vue = calculerVue();
     const r = compterDoublonsProbables(vue.aAfficher);
     definirTexte('doublonsSous', r.nombre === null
-      ? 'Trop de pièces pour un balayage complet.'
+      ? 'Trop de pièces pour un balayage complet : comparer chaque paire ' +
+        'devient trop long. Restreignez d\'abord la sélection — une recherche, ' +
+        'un statut, un porteur — le balayage suit ce qui est affiché.'
       : r.nombre + ' paire(s) au-dessus de ' + SEUIL_DOUBLON + ' %, selon vos critères courants. ' +
         'Deux PN différents pour la même chose, c\'est deux pièces à approvisionner, ' +
         'qualifier et stocker au lieu d\'une.');
@@ -265,7 +262,7 @@ enregistrerActions({
   },
   'tout-effacer': function () {
     Store.recherche = ''; Store.filtreComposants = []; Store.filtreTypes = [];
-    Store.filtreStatut = null; Store.filtreReutilise = false;
+    Store.filtreStatut = null;
     Store.ongletActif = 'Toutes';
     const c = parId('searchBar'); if (c) c.value = '';
     rendreInterface();

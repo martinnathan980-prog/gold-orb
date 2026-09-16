@@ -82,24 +82,6 @@ function classeStatut(statut) {
 }
 
 // ------------------------------------------------------------
-// CSV
-// ------------------------------------------------------------
-// Séparateur ';' : Excel en locale FR n'ouvre pas les ',' en colonnes.
-const CSV_SEPARATEUR = ';';
-
-function champCsv(valeur) {
-  const s = String(valeur === null || valeur === undefined ? '' : valeur)
-              .replace(/\r?\n/g, ' / ');
-  return '"' + s.replace(/"/g, '""') + '"';
-}
-
-function construireCsv(lignes) {
-  return '﻿' + lignes.map(function (ligne) {   // BOM : sinon Excel FR casse les accents
-    return ligne.map(champCsv).join(CSV_SEPARATEUR);
-  }).join('\r\n');
-}
-
-// ------------------------------------------------------------
 // Délégation d'événements
 // ------------------------------------------------------------
 const ACTIONS = {};

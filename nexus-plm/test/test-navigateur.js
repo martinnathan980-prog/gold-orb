@@ -124,8 +124,14 @@ async function ecranPropre(page) {
   eq('indicateur boîtes', await texte(page, '#kpiBoites'), '10');
   eq('validées', await texte(page, '#kpiVal'), '5 / 10');
   eq('libellé « Boîtes »', (await texte(page, '.indicateur-libelle')).trim(), 'Boîtes');
-  vrai('indicateur de réutilisation renseigné',
-       Number(await texte(page, '#kpiReutil')) > 0);
+  eq('plus d\'indicateur de réutilisation', await page.locator('#kpiReutil').count(), 0);
+  eq('ni son filtre', await page.locator('[data-action="filtrer-reutilise"]').count(), 0);
+  vrai('indicateur « À standardiser » renseigné',
+       Number(await texte(page, '#kpiStandard')) >= 0);
+  eq('plus de ligne de portée sous les chiffres',
+     await page.locator('#kpiPortee, .indicateurs-portee').count(), 0);
+  eq('plus de badge « / » dans le champ de recherche',
+     await page.locator('.champ-recherche .raccourci').count(), 0);
   vrai('indicateur de doublons renseigné',
        (await texte(page, '#kpiDoublons')).trim().length > 0);
   eq('pas de compteur de sous-ensembles', await page.locator('#kpiLignes').count(), 0);
@@ -198,7 +204,7 @@ async function ecranPropre(page) {
       disposition: getComputedStyle(conteneur).display
     };
   });
-  eq('cinq mesures', mesures.nombre, 5);
+  eq('quatre mesures', mesures.nombre, 4);
   vrai('toutes sur la même ligne', mesures.alignes);
   eq('sans fond propre : ce ne sont pas des cartes', mesures.fondTransparent, 'rgba(0, 0, 0, 0)');
   eq('ni bordure propre', mesures.sansBordure, '0px');
@@ -290,11 +296,6 @@ async function ecranPropre(page) {
   await page.locator('#indValidees').click();
   await page.waitForTimeout(300);
   eq('second clic : retour à 10', await page.locator('.carte').count(), 10);
-  await page.locator('#indReutil').click();
-  await page.waitForTimeout(300);
-  const partageant = await page.locator('.carte').count();
-  vrai('« Pièces réutilisées » ne montre que les boîtes qui partagent une pièce',
-       partageant > 0 && partageant < 10);
   await page.locator('#indBoites').click();
   await page.waitForTimeout(300);
   eq('« Boîtes » remet tout', await page.locator('.carte').count(), 10);
@@ -408,19 +409,12 @@ async function ecranPropre(page) {
   await page.waitForTimeout(400);
   eq('et la rend quand on efface', await page.locator('.famille').count(), nbFamilles);
 
-  // Les familles DEJA rangees sont montrees aussi : une norme, une reference,
-  // c'est la cible, et on doit pouvoir la constater.
-  vrai('les familles rangees ont leur section',
-       await page.locator('.standard-propres').count() === 1);
-  const nbPropres = await page.locator('.propre').count();
-  vrai('il y en a au moins une', nbPropres >= 1);
-  eq('leur nombre est annonce',
-     (await texte(page, '.standard-compte')).trim(), String(nbPropres));
-  const propre = page.locator('.propre').first();
-  vrai('chacune montre sa fonction', (await propre.locator('.propre-fonction')
-       .evaluate(function (e) { return e.textContent.trim(); })).length > 0);
-  vrai('sa norme', await propre.locator('.propre-norme').count() === 1);
-  vrai('et sa reference unique', await propre.locator('.ref-pn').count() === 1);
+  // Les familles DEJA rangees ne sont plus listees : elles ne demandent aucune
+  // action, et noyaient celles qui en demandent une.
+  eq('plus de section « Deja rangees »', await page.locator('.standard-propres').count(), 0);
+  eq('ni de ligne rangee', await page.locator('.propre').count(), 0);
+  faux('le mot ne figure plus dans la vue',
+       (await texte(page, '#mainContainer')).indexOf('Déjà rangées') !== -1);
 
   // Cliquer une reference nomme les boites ou elle sert, et y mene.
   const refPliee = page.locator('.famille .ref').first();
@@ -637,15 +631,81 @@ async function ecranPropre(page) {
   await page.waitForTimeout(450);
   eq('un second clic ramene aux cartes', await page.locator('.carte').count(), 10);
 
-  bloc('Pieces reutilisees : on dit ce que c\'est');
-  vrai('le detail est explicite',
-       (await texte(page, '#kpiReutilDetail')).indexOf('plusieurs boîtes') !== -1);
-  const avantReutil = await page.locator('.carte').count();
-  await page.locator('#indReutil').click(); await page.waitForTimeout(450);
-  vrai('le clic filtre vraiment', await page.locator('.carte').count() < avantReutil);
-  vrai('et le filtre actif le nomme',
-       (await texte(page, '#filtreActif')).indexOf('partageant') !== -1);
-  await page.locator('#indReutil').click(); await page.waitForTimeout(450);
+
+  // ---------------------------------------------------------------
+  bloc('Ce que la batterie a trouve');
+  await ecranPropre(page);
+
+  // Le balayage des doublons se coupait au-dela de 400 paires, soit 29
+  // sous-ensembles du meme type : toute base reelle restait a « — ».
+  const seuils = await page.evaluate(function () {
+    const mesure = function (n) {
+      const b = [], no = [];
+      for (let i = 0; i < n; i++) {
+        b.push({ 'PN Global': 'T' + i });
+        no.push({ 'ID_Ligne': 'T' + i + '-h', 'PN Global': 'T' + i, 'Type': 'Harnais',
+                  'PN du type': 'T' + i + '.h', 'Référence': 'R-' + (i % 4) });
+      }
+      const memoireB = Store.boites, memoireN = Store.nomenclature;
+      chargerDonnees({ boites: b, nomenclature: no, headersBoites: ['PN Global'],
+        headersNom: ['ID_Ligne', 'PN Global', 'Type', 'PN du type', 'Référence'],
+        config: { colonnes: { boites: 'PN Global', nomenclature: 'ID_Ligne' } } });
+      const t0 = performance.now();
+      const r = compterDoublonsProbables(Store.boites);
+      const ms = Math.round(performance.now() - t0);
+      Store.boites = memoireB; Store.nomenclature = memoireN;
+      return { n: n, tronque: r.nombre === null, ms: ms };
+    };
+    return [mesure(60), mesure(150), mesure(400)];
+  });
+  vrai('60 boites du meme type : balayage complet', !seuils[0].tronque);
+  vrai('150 aussi', !seuils[1].tronque);
+  vrai('et sans y passer la journee', seuils[1].ms < 2000);
+  vrai('400 : on s\'arrete, plutot que de figer la page', seuils[2].tronque);
+  await page.evaluate(function () { return chargerTout(); });
+  await page.waitForTimeout(800);
+
+  // Et le « — » ne reste pas muet.
+  const detailDoublons = await texte(page, '#kpiDoublonsDetail');
+  vrai('l\'indicateur porte un detail', detailDoublons.trim().length > 0);
+
+  // Avant que les reglages ne soient charges, tous les criteres comptent :
+  // un classement entierement a zero se lirait « rien ne se ressemble ».
+  const replis = await page.evaluate(function () {
+    const memoire = Store.criteresActifs;
+    Store.criteresActifs = {};
+    const a = Store.boites[0];
+    const r = comparerBoites(a, a);
+    const n = criteresActifs('boite').length;
+    Store.criteresActifs = memoire;
+    return { score: r.score, mesurable: r.mesurable, n: n };
+  });
+  eq('une boite vaut 100 contre elle-meme', replis.score, 100);
+  vrai('la comparaison reste mesurable', replis.mesurable);
+  vrai('tous les criteres comptent par defaut', replis.n > 0);
+
+  // On ne peut pas ecarter le dernier critere.
+  const dernier = await page.evaluate(function () {
+    const memoire = Store.criteresActifs.boite.slice();
+    CRITERES_BOITE.slice(0, -1).forEach(function (c) { desactiverCritere('boite', c.cle); });
+    const reste = criteresActifs('boite').length;
+    const refus = desactiverCritere('boite', criteresActifs('boite')[0].cle) === false;
+    Store.criteresActifs.boite = memoire;
+    reinitialiserPoids();
+    return { reste: reste, refus: refus };
+  });
+  eq('il reste un critere', dernier.reste, 1);
+  vrai('et il ne part pas', dernier.refus);
+  await page.evaluate(function () { chargerReglages(); rendreInterface(); });
+  await page.waitForTimeout(400);
+
+  // Aucune fonction morte parmi celles retirees.
+  const disparues = await page.evaluate(function () {
+    return ['construireCsv', 'champCsv', 'clesNormalisees', 'formaterComposant',
+            'piecesReutilisees', 'famillesStandardisees', 'telecharger']
+      .filter(function (n) { return typeof window[n] === 'function' || typeof eval('typeof ' + n) === 'function'; });
+  });
+  eq('les fonctions retirees ne sont plus la', disparues, []);
   await ecranPropre(page);
 
   bloc('Filtres par type de sous-ensemble');

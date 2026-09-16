@@ -177,10 +177,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .indicateur-standard .indicateur-valeur { color: var(--marque); }
 .indicateur[aria-pressed="true"] { background: var(--marque-voile); }
 .indicateur[aria-pressed="true"] .indicateur-libelle { color: var(--marque); }
-.indicateurs-portee {
-  text-align: center; font-size: 10.5px; color: var(--encre-3);
-  letter-spacing: .08em; text-transform: uppercase; margin-top: var(--e-2);
-}
 
 /* ---------------- barre d'action ---------------- */
 /* Pleine largeur, teintée, filet marine au-dessus : elle coupe la page en
@@ -221,11 +217,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
   padding: 13px 0; font-size: 15px; outline: none; min-width: 0;
 }
 .champ-recherche input::placeholder { color: var(--encre-3); }
-.raccourci {
-  border: 1px solid var(--trait); border-radius: 4px; padding: 1px 6px;
-  font-size: 11px; color: var(--encre-3); background: var(--surface-3);
-  font-family: var(--police-data);
-}
 /* La recherche par composant vit DANS le champ : c'est une autre façon de
    chercher, pas une fonction annexe posée à côté. */
 .btn-dans-champ {
@@ -414,29 +405,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .ref-boites { display: flex; flex-wrap: wrap; gap: 4px; padding-left: 2px; }
 .ref-boites[hidden] { display: none; }
 
-/* Les familles déjà rangées : une ligne chacune, en retrait. */
-.standard-propres { margin-top: var(--e-5); }
-.standard-titre {
-  display: flex; align-items: center; gap: var(--e-2);
-  font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
-  color: var(--encre-3); padding-bottom: 6px; border-bottom: 1px solid var(--trait);
-}
-.standard-compte {
-  font-family: var(--police-data); font-size: 11px; font-weight: 600;
-  background: var(--vert-voile); color: var(--vert); border-radius: 999px; padding: 1px 9px;
-}
-.propres { display: flex; flex-direction: column; }
-.propre {
-  display: grid; grid-template-columns: minmax(0, 1fr) 120px 120px auto; gap: var(--e-3);
-  align-items: center; padding: 7px 2px; border-bottom: 1px solid var(--surface-3);
-}
-.propre:last-child { border-bottom: 0; }
-.propre-fonction { font-size: 13px; font-weight: 600; }
-.propre-cat { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3); }
-.propre-norme { font-size: 12px; color: var(--encre-2); }
-@media (max-width: 720px) {
-  .propre { grid-template-columns: 1fr; gap: 3px; }
-}
 @media (max-width: 620px) {
   .famille-norme { grid-template-columns: 1fr; gap: 4px; }
 }
@@ -478,18 +446,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .status-etude    { color: var(--ambre); }
 .status-obsolete { color: var(--rouge); }
 
-.btn-sur-image {
-  position: absolute; top: 10px; right: 10px;
-  padding: 5px 11px; border-radius: 999px;
-  background: rgba(255,255,255,.93); backdrop-filter: blur(6px); color: var(--encre-2);
-  border: 0; box-shadow: var(--ombre-1);
-  font-size: 11.5px; font-weight: 600; line-height: 1.4;
-  opacity: 0; transform: translateY(-4px); transition: opacity .18s, transform .18s, color .15s;
-}
-.carte:hover .btn-sur-image, .btn-sur-image:focus-visible { opacity: 1; transform: none; }
-.btn-sur-image:hover { color: var(--marque); }
-@media (hover: none) { .btn-sur-image { opacity: 1; transform: none; } }
-
 .carte-corps { display: flex; flex-direction: column; gap: var(--e-3); padding: var(--e-4); flex: 1; }
 .carte-tete { display: flex; align-items: baseline; justify-content: space-between; gap: var(--e-2); }
 .carte-pn { font-family: var(--police-data); font-size: 15px; font-weight: 600; color: var(--encre); word-break: break-all; line-height: 1.3; }
@@ -519,7 +475,7 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .carte-actions > * { flex: 1; white-space: nowrap; padding-inline: 10px; }
 
 /* ---------------- boutons ---------------- */
-.btn-principal, .btn-neutre, .btn-accent, .btn-mini, .btn-lien, .btn-action, .btn-icone {
+.btn-principal, .btn-neutre, .btn-accent, .btn-mini, .btn-lien, .btn-action {
   border-radius: var(--r-s); border: 1px solid transparent; font-weight: 600;
   transition: background .15s, color .15s, border-color .15s; text-align: center;
 }
@@ -542,13 +498,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .btn-danger:hover { background: var(--rouge); color: #fff; }
 .btn-danger-plein { background: var(--rouge); color: #fff; border-color: var(--rouge); }
 .btn-danger-plein:hover { background: var(--rouge); filter: brightness(1.1); }
-.btn-icone { background: var(--surface); color: var(--encre-2); border-color: var(--trait); padding: 5px 10px; font-size: 13px; }
-.btn-entete { display: inline-flex; align-items: center; gap: 7px; background: var(--surface);
-  color: var(--encre); border: 1px solid var(--trait-fort); border-radius: 999px;
-  padding: 9px 18px; font-size: 13px; font-weight: 600; }
-.btn-entete:hover { background: var(--surface-3); }
-.btn-entete-fort { background: var(--marque); color: var(--sur-marque); border-color: var(--marque); box-shadow: var(--ombre-1); }
-.btn-entete-fort:hover { background: var(--marque-2); color: var(--sur-marque); }
 
 /* ---------------- panneau (fiche) ---------------- */
 .panneau { width: min(720px, 100vw) !important; background: var(--sol-2); color: var(--encre); border-left: 1px solid var(--trait); }
@@ -587,7 +536,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .ligne { display: flex; gap: var(--e-3); padding: 8px 0; border-bottom: 1px solid var(--surface-3); align-items: flex-start; }
 .ligne:last-child { border-bottom: 0; }
 .ligne-bloc { flex-direction: column; gap: var(--e-2); }
-.ligne-appoint { border-bottom: 0; padding-top: 0; }
 .ligne-cle { flex: 0 0 38%; font-size: 12.5px; color: var(--encre-3); font-weight: 500; }
 .ligne-bloc .ligne-cle { flex: none; }
 .ligne-aide { display: block; font-size: 11px; color: var(--encre-3); opacity: .8; font-weight: 400; }
@@ -622,6 +570,15 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .puce-porteur { background: var(--marque-voile); color: var(--marque); border-color: var(--trait-fort); font-family: var(--police-data); }
 .puce-suppr { border: 0; background: transparent; color: inherit; font-size: 14px; line-height: 1; padding: 0 3px; opacity: .55; }
 .puce-suppr:hover { opacity: 1; color: var(--rouge); }
+/* Au doigt, la croix faisait 14 px de côté : on vise à côté une fois sur
+   deux. On agrandit la zone atteignable sans grossir le signe. */
+@media (pointer: coarse) {
+  .puce-suppr {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 26px; min-height: 26px; margin: -6px -4px -6px 0; padding: 0;
+  }
+  .composant .puce-suppr { margin: 0; }
+}
 .ajout-multi { display: flex; gap: 6px; margin-top: 6px; }
 .ajout-multi .saisie-multi { flex: 1; min-width: 0; background: var(--surface-2); color: var(--encre); border: 1px solid var(--trait-fort); border-radius: var(--r-s); padding: 6px 10px; font-size: 12.5px; }
 .zone-puces { display: flex; flex-wrap: wrap; gap: 6px; min-height: 54px; padding: var(--e-3); background: var(--surface-2); border: 1px solid var(--trait); border-radius: var(--r-s); margin-bottom: var(--e-3); }
@@ -904,7 +861,7 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 
 @media (prefers-reduced-motion: reduce) {
   .mini-spinner { animation: none; }
-  .carte, .carte-image, .btn-sur-image, .indicateur { transition: none; }
+  .carte, .carte-image, .indicateur { transition: none; }
   .carte:hover, button.indicateur:hover { transform: none; }
   .carte:hover .carte-image { transform: none; }
 }
@@ -927,7 +884,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
   .ligne { flex-direction: column; gap: 3px; }
   .ligne-cle { flex: none; }
   .carte-meta dd { text-align: left; }
-  .raccourci { display: none; }
   .outils { flex-direction: column; align-items: stretch; }
   .outils-droite { justify-content: space-between; }
   .modale-outils { flex-wrap: wrap; }

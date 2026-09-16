@@ -96,46 +96,21 @@ function piecesHtml(vue) {
  */
 function standardisationHtml(vue) {
   const familles = opportunitesStandardisation(vue.aAfficher);
-  const propres = famillesStandardisees(vue.aAfficher);
 
-  if (!familles.length && !propres.length) {
+  if (!familles.length) {
     return '<div class="etat-vide">' +
-      '<p>Aucun composant à analyser.</p>' +
-      '<p class="etat-vide-aide">Renseignez les composants des boîtes et des ' +
-      'structures pour voir apparaître les familles.</p>' +
+      '<p>Rien à standardiser.</p>' +
+      '<p class="etat-vide-aide">Chaque fonction est servie par une seule ' +
+      'référence, ou il n\'y a pas encore de composant à analyser.</p>' +
     '</div>';
   }
 
-  let html = '';
-
-  if (familles.length) {
-    html += '<p class="standard-intro">' + familles.length +
-        ' famille(s) servies par plusieurs références. Les plus dispersées ' +
-        'd\'abord : ce sont elles qui coûtent le plus à faire vivre. ' +
-        'Cliquez une référence pour voir où elle sert.' +
-      '</p>' +
-      '<div class="familles">' + familles.map(familleHtml).join('') + '</div>';
-  }
-
-  // L'état visé : une fonction, une norme, une référence.
-  if (propres.length) {
-    html += '<div class="standard-propres">' +
-      '<h3 class="standard-titre">Déjà rangées' +
-        '<span class="standard-compte">' + propres.length + '</span></h3>' +
-      '<p class="standard-intro">Une seule norme, une seule référence. ' +
-        'Rien à faire, c\'est la cible.</p>' +
-      '<div class="propres">' + propres.map(function (f) {
-        const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
-        return '<div class="propre">' +
-          '<span class="propre-fonction">' + esc(f.fonction) + '</span>' +
-          '<span class="propre-cat">' + esc(cat.libelle) + '</span>' +
-          '<span class="propre-norme">' + esc(f.norme || '—') + '</span>' +
-          referenceHtml({ reference: f.reference, nbBoites: f.nbBoites, boites: f.boites }, false) +
-        '</div>';
-      }).join('') + '</div>' +
-    '</div>';
-  }
-  return html;
+  return '<p class="standard-intro">' + familles.length +
+      ' famille(s) servies par plusieurs références. Les plus dispersées ' +
+      'd\'abord : ce sont elles qui coûtent le plus à faire vivre. ' +
+      'Cliquez une référence pour voir où elle sert.' +
+    '</p>' +
+    '<div class="familles">' + familles.map(familleHtml).join('') + '</div>';
 }
 
 /** Une référence, dépliable sur la liste des boîtes où elle sert. */
@@ -331,10 +306,6 @@ function rendreKpi(kpi, vue) {
   const ind = parId('indStandard');
   if (ind) ind.setAttribute('aria-pressed', String(Store.vueMode === 'standardisation'));
 
-  definirTexte('kpiReutil', String(kpi.reutilisees));
-  definirTexte('kpiReutilDetail', kpi.reutilisees
-    ? 'montées dans plusieurs boîtes'
-    : 'aucune pièce partagée');
 
   // L'indicateur dit s'il filtre en ce moment.
   const marquer = function (id, actif) {
@@ -344,13 +315,14 @@ function rendreKpi(kpi, vue) {
     if (el.tagName === 'BUTTON') el.setAttribute('aria-pressed', String(!!actif));
   };
   marquer('indValidees', Store.filtreStatut && normaliserStatut(Store.filtreStatut) === 'validé');
-  marquer('indReutil', Store.filtreReutilise);
 
   const doublons = compterDoublonsProbables(vue ? vue.aAfficher : Store.boites);
   definirTexte('kpiDoublons', doublons.nombre === null ? '—' : String(doublons.nombre));
+  // Un « — » sans explication laisse croire qu'il n'y a rien à voir.
+  definirTexte('kpiDoublonsDetail', doublons.nombre === null
+    ? 'trop de pièces : filtrez d\'abord'
+    : 'voir la liste');
 
-  const portee = parId('kpiPortee');
-  if (portee) portee.textContent = filtre ? 'sur la sélection courante' : 'sur toute la base';
 }
 
 function rendreFiltreActif(vue) {
@@ -372,11 +344,6 @@ function rendreFiltreActif(vue) {
     morceaux.push('<span class="filtre-jeton">Statut : ' + esc(Store.filtreStatut) +
       '<button type="button" aria-label="Retirer"' +
       dataAttrs({ action: 'filtrer-statut', statut: Store.filtreStatut }) + '>&times;</button></span>');
-  }
-  if (Store.filtreReutilise) {
-    morceaux.push('<span class="filtre-jeton">Boîtes partageant une pièce' +
-      '<button type="button" aria-label="Retirer"' +
-      dataAttrs({ action: 'filtrer-reutilise' }) + '>&times;</button></span>');
   }
   if (Store.recherche) {
     morceaux.push('<span class="filtre-jeton">« ' + esc(Store.recherche) + ' »' +

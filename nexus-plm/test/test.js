@@ -13,6 +13,12 @@ const C = H.chargerClient([
   'client/Dialogues.html'
 ]);
 
+// Sources lues une fois : plusieurs blocs verifient le code livre.
+const lireSrc = function (f) { return fs.readFileSync(path.join(H.RACINE, f), 'utf8'); };
+const grilleSrc = lireSrc('client/ViewGrid.html');
+const ficheSrc = lireSrc('client/ViewFiche.html');
+const cssSrc = lireSrc('client/Styles.html');
+
 let ok = 0, ko = 0;
 const V = '\x1b[32m', R = '\x1b[31m', G = '\x1b[90m', Z = '\x1b[0m';
 function eq(t, a, b) {
@@ -552,21 +558,21 @@ charger(
   [{ 'ID_Ligne': 'a', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'HRN-1' },
    { 'ID_Ligne': 'b', 'PN Global': 'B2', 'Type': 'Harnais', 'PN du type': 'HRN-1' },
    { 'ID_Ligne': 'c', 'PN Global': 'B3', 'Type': 'Harnais', 'PN du type': 'HRN-9' }]);
-C.Store.filtreStatut = null; C.Store.filtreReutilise = false;
+C.Store.filtreStatut = null;
 eq('sans filtre : 3', C.calculerVue().aAfficher.length, 3);
 C.Store.filtreStatut = 'Validé';
 eq('validées seulement', C.calculerVue().aAfficher.map(function (b) { return b['PN Global']; }), ['B1', 'B3']);
 vrai('la vue se sait filtrée', C.calculerVue().filtre);
 C.Store.filtreStatut = null;
-C.Store.filtreReutilise = true;
-eq('boîtes partageant une pièce', C.calculerVue().aAfficher.map(function (b) { return b['PN Global']; }), ['B1', 'B2']);
-C.Store.filtreReutilise = false;
-eq('pièces réutilisées', Array.from(C.piecesReutilisees()), ['hrn-1']);
+faux('sans filtre, la vue ne se dit pas filtrée', C.calculerVue().filtre);
+// Le filtre « pièces réutilisées » a été retiré : la notion n'était pas
+// comprise, et le bouton ne répondait à aucune question qu'on se pose.
+eq('plus de filtre par réemploi', typeof C.piecesReutilisees, 'undefined');
 
-eq('guillemets doublés', C.champCsv('Entraxe 5" nominal'), '"Entraxe 5"" nominal"');
-const csv = C.construireCsv([['Type', 'PN'], ['Repère #3', 'A"B']]);
-eq('BOM UTF-8', csv.charCodeAt(0), 0xFEFF);
-eq('contenu', csv.slice(1), '"Type";"PN"\r\n"Repère #3";"A""B"');
+// L'export CSV a ete retire il y a plusieurs versions ; ses deux aides
+// n'avaient plus d'appelant et ne survivaient que par ce test.
+eq('plus de fabrique CSV', typeof C.construireCsv, 'undefined');
+eq('ni d\'echappement de cellule', typeof C.champCsv, 'undefined');
 
 eq('lien Drive /d/', C.urlMiniature('https://drive.google.com/file/d/1A2B3C4D5E6F7G8H9I0J1K2L/view'),
    'https://drive.google.com/thumbnail?id=1A2B3C4D5E6F7G8H9I0J1K2L&sz=w1000');
@@ -825,42 +831,39 @@ const htmlStd = C.standardisationHtml(C.calculerVue());
 faux('une fonction piégée n\'injecte rien', /<b>V<\/b>/.test(htmlStd));
 vrai('elle est affichée échappée', htmlStd.indexOf('&lt;b&gt;V&lt;/b&gt;') !== -1);
 vrai('le compte de références est affiché', htmlStd.indexOf('2</b> références') !== -1);
-// Sans dispersion, la famille propre est montree : c'est la cible atteinte.
+// Sans dispersion, il n'y a rien a montrer : les familles deja rangees ne
+// demandent aucune action, les lister noyait celles qui en demandent une.
 charger([{ 'PN Global': 'B1', 'Composants': 'Voyant | N1 | R1' }], []);
 const htmlPropre = C.standardisationHtml(C.calculerVue());
-vrai('sans dispersion, la famille rangee est affichee',
-     htmlPropre.indexOf('standard-propres') !== -1);
-faux('et ce n\'est pas un etat vide', htmlPropre.indexOf('etat-vide') !== -1);
-vrai('avec sa reference depliable',
-     htmlPropre.indexOf('data-action="deplier-reference"') !== -1);
-vrai('et la boite ou elle sert', htmlPropre.indexOf('>B1</button>') !== -1);
+vrai('une famille deja rangee ne s\'affiche pas', htmlPropre.indexOf('etat-vide') !== -1);
+vrai('et on dit pourquoi', htmlPropre.indexOf('Rien à standardiser') !== -1);
+faux('plus de section « Deja rangees »', /standard-propres|Déjà rangées/.test(htmlPropre));
 
-// Sans aucun composant, en revanche, il n'y a rien a analyser.
+// Sans aucun composant, meme message : il n'y a rien a analyser.
 charger([{ 'PN Global': 'B1' }], []);
-vrai('sans composant, on le dit',
+vrai('sans composant, on le dit aussi',
      C.standardisationHtml(C.calculerVue()).indexOf('etat-vide') !== -1);
 
-// Les familles rangees, en detail.
+// Une famille dispersee, elle, est bien rendue, avec ses boites depliables.
 charger(
-  [{ 'PN Global': 'B1', 'Composants': 'Voyant | N1 | R1\nRelais | N2 | R2' },
-   { 'PN Global': 'B2', 'Composants': 'Voyant | N1 | R1\nRelais | N2 | R9' }], []);
-const propres = C.famillesStandardisees(C.Store.boites);
-eq('une seule famille est rangee', propres.length, 1);
-eq('c\'est le voyant', propres[0].fonction, 'Voyant');
-eq('avec sa norme unique', propres[0].norme, 'N1');
-eq('et sa reference unique', propres[0].reference, 'R1');
-eq('servie par deux boites', propres[0].nbBoites, 2);
-eq('nommees', propres[0].boites, ['B1', 'B2']);
-eq('le relais, lui, reste disperse',
-   C.opportunitesStandardisation(C.Store.boites).map(function (f) { return f.fonction; }),
-   ['Relais']);
+  [{ 'PN Global': 'B1', 'Composants': 'Voyant | N1 | R1' },
+   { 'PN Global': 'B2', 'Composants': 'Voyant | N1 | R2' }], []);
+const htmlDisperse = C.standardisationHtml(C.calculerVue());
+vrai('la famille dispersee est la', htmlDisperse.indexOf('famille') !== -1);
+vrai('avec ses references depliables',
+     htmlDisperse.indexOf('data-action="deplier-reference"') !== -1);
+vrai('et les boites ou elles servent', htmlDisperse.indexOf('>B1</button>') !== -1);
+eq('la fonction famillesStandardisees a disparu avec la section',
+   typeof C.famillesStandardisees, 'undefined');
 
-// Le classement met en tete la famille la plus repandue.
+// Le classement met en tete la famille la PLUS dispersee : c'est celle qui
+// coute le plus a faire vivre.
 charger(
   [{ 'PN Global': 'B1', 'Composants': 'Voyant | N1 | R1\nEcrou | N3 | R3' },
-   { 'PN Global': 'B2', 'Composants': 'Voyant | N1 | R1' }], []);
-eq('la plus servie passe devant',
-   C.famillesStandardisees(C.Store.boites).map(function (f) { return f.fonction; }),
+   { 'PN Global': 'B2', 'Composants': 'Voyant | N1 | R2\nEcrou | N3 | R4' },
+   { 'PN Global': 'B3', 'Composants': 'Voyant | N1 | R5' }], []);
+eq('la plus dispersee passe devant',
+   C.opportunitesStandardisation(C.Store.boites).map(function (f) { return f.fonction; }),
    ['Voyant', 'Ecrou']);
 
 // La reference la plus utilisee d'une famille dispersee est signalee.
@@ -1015,7 +1018,8 @@ eq('deux suppressions confirmées : la boîte et le sous-ensemble',
    (srcMainSeul.match(/confirmer\(\{/g) || []).length, 2);
 vrai('demander() existe', typeof C.demander === 'function');
 vrai('confirmer() existe', typeof C.confirmer === 'function');
-vrai('les indicateurs filtrent', declarees.has('filtrer-statut') && declarees.has('filtrer-reutilise'));
+vrai('un indicateur filtre la base', declarees.has('filtrer-statut'));
+faux('plus de filtre par réemploi', declarees.has('filtrer-reutilise'));
 vrai('ajout d\'un composant en trois niveaux', declarees.has('ajouter-composant'));
 faux('« Multi » n\'est plus proposé comme porteur', /value="Multi"/.test(srcIndex));
 faux('plus de porteurs codés en dur dans la page', /<datalist id="list-Porteur">\s*<option/.test(srcIndex));
@@ -1055,16 +1059,27 @@ vrai('le formulaire de création porte les porteurs', srcIndex.indexOf('newBoite
 vrai('le statut', srcIndex.indexOf('newBoiteStatut') !== -1);
 vrai('le niveau de qualification', srcIndex.indexOf('newBoiteNiveau') !== -1);
 vrai('et l\'URL de la photo', srcIndex.indexOf('newBoiteImage') !== -1);
-vrai('indicateur de réutilisation', srcIndex.indexOf('kpiReutil') !== -1);
+// « Pieces reutilisees » comptait les sous-ensembles montes dans plusieurs
+// boites. Personne ne savait le lire, et le filtre ne repondait a aucune
+// question qu'on se pose devant la grille : retire, avec sa mecanique.
+faux('plus d\'indicateur de réutilisation', srcIndex.indexOf('kpiReutil') !== -1);
+faux('ni son filtre', /filtrer-reutilise/.test(srcIndex));
+faux('ni la mécanique côté données',
+     lireSrc('client/Store.html').indexOf('piecesReutilisees') !== -1);
+faux('ni le partage de pièce',
+     lireSrc('client/Store.html').indexOf('partageUnePiece') !== -1);
+// La ligne « sur toute la base » sous les chiffres ne disait rien que la
+// grille ne montrait deja.
+faux('plus de ligne de portée sous les indicateurs', /kpiPortee/.test(srcIndex));
+faux('ni son style', /indicateurs-portee/.test(cssSrc));
+// Le « / » accole a « Par composant » etait un badge sans emploi visible.
+faux('plus de badge de raccourci dans le champ', /class="raccourci"/.test(srcIndex));
+faux('ni son style', /\.raccourci \{/.test(cssSrc));
 // « Références uniques » additionnait des PN de boîtes et des PN de
 // sous-ensembles, et n'était même pas cliquable : remplacé par ce qu'il
 // reste à ranger, qui mène à la vue correspondante.
 faux('plus d\'indicateur « Références uniques »', /Références uniques/.test(srcIndex));
 faux('ni le compteur qui l\'alimentait', /kpiNoms/.test(srcIndex));
-const lireSrc = function (f) { return fs.readFileSync(path.join(H.RACINE, f), 'utf8'); };
-const grilleSrc = lireSrc('client/ViewGrid.html');
-const ficheSrc = lireSrc('client/ViewFiche.html');
-const cssSrc = lireSrc('client/Styles.html');
 faux('ni dans le rendu', grilleSrc.indexOf('kpiNoms') !== -1);
 faux('plus d\'indicateur inerte au milieu des boutons', /indicateur-fixe/.test(srcIndex));
 vrai('un indicateur « À standardiser » le remplace', srcIndex.indexOf('kpiStandard') !== -1);
@@ -1072,14 +1087,11 @@ vrai('et il est cliquable', declarees.has('voir-standardisation'));
 vrai('il mène à la troisième vue',
      /'voir-standardisation':[\s\S]{0,200}: 'standardisation'/
        .test(sansCommentaires(lireSrc('client/Main.html'))));
-eq('les cinq indicateurs sont tous des boutons',
-   (srcIndex.match(/<button[^>]*class="indicateur[ "]/g) || []).length, 5);
+eq('quatre indicateurs, tous des boutons',
+   (srcIndex.match(/<button[^>]*class="indicateur[ "]/g) || []).length, 4);
 faux('aucun n\'est un bloc inerte', /<div[^>]*class="indicateur[ "]/.test(srcIndex));
-// Le nombre de pièces réutilisées se lisait « 13 % des pièces » : un
-// pourcentage dont personne ne savait de quoi il était le pourcentage.
-faux('plus de pourcentage obscur sous la réutilisation',
-     grilleSrc.indexOf('pctReutilisees') !== -1);
-vrai('on dit ce que c\'est', grilleSrc.indexOf('montées dans plusieurs boîtes') !== -1);
+faux('plus rien du réemploi dans le rendu',
+     /kpiReutil|pctReutilisees|indReutil/.test(grilleSrc));
 
 // Les équivalences se lancent depuis la fiche de la boîte, comme pour un
 // sous-ensemble : il fallait refermer la fiche et retrouver la carte.
@@ -1162,6 +1174,102 @@ eq('et elle est bien vue comme dispersee',
 const cA = C.listeComposants('Bouton poussoir | ECS 7251 | MS-1')[0];
 const cB = C.listeComposants('Bouton  poussoir | ECS 7251 | MS-1')[0];
 eq('la comparaison ne les separe pas', C.comparerComposants(cA, cB).ratio, 1);
+
+// =====================================================================
+bloc('Ce que la batterie a trouve');
+// =====================================================================
+// 1) Avant que les reglages ne soient charges, Store.criteresActifs est vide.
+// L'ancien repli donnait un score de 0 sur TOUT, sans message : un classement
+// entierement a zero se lit « rien ne se ressemble », pas « rien n'a ete
+// compare ». Par defaut, tous les criteres comptent.
+const actifsSauves = C.Store.criteresActifs;
+C.Store.criteresActifs = {};
+charger([{ 'PN Global': 'B1', 'Fonction': 'APU', 'Composants': 'V|N|R' }], []);
+const memeBoite = C.boiteParPn('B1');
+const avantReglages = C.comparerBoites(memeBoite, memeBoite);
+vrai('sans reglages charges, la comparaison reste mesurable', avantReglages.mesurable);
+eq('et une boite vaut 100 contre elle-meme', avantReglages.score, 100);
+vrai('tous les criteres sont retenus par defaut',
+     C.criteresActifs('boite').length === C.CRITERES_BOITE.length);
+vrai('critereEstActif() suit le meme repli', C.critereEstActif('boite', 'fonction'));
+// Un tableau VIDE, lui, est un choix explicite : on le respecte.
+C.Store.criteresActifs = { boite: [] };
+eq('une liste vide reste une liste vide', C.criteresActifs('boite').length, 0);
+C.Store.criteresActifs = actifsSauves;
+
+// 2) On ne peut pas ecarter le dernier critere : le garde-fou existe.
+C.chargerReglages();
+const tous = C.CRITERES_BOITE.map(function (c) { return c.cle; });
+tous.slice(0, -1).forEach(function (cle) { C.desactiverCritere('boite', cle); });
+eq('il reste un critere', C.criteresActifs('boite').length, 1);
+faux('et le dernier ne part pas', C.desactiverCritere('boite', C.criteresActifs('boite')[0].cle));
+eq('il est toujours la', C.criteresActifs('boite').length, 1);
+C.reinitialiserPoids();
+C.chargerReglages();
+
+// 3) Le balayage des doublons est quadratique, donc plafonne. L'ancien
+// plafond (400 paires) correspondait a 29 sous-ensembles du meme type :
+// toute base reelle passait dessous et l'indicateur restait muet.
+vrai('le plafond couvre une base de travail', C.PLAFOND_PAIRES >= 20000);
+// Et quand il est depasse, l'indicateur ne reste pas muet : il dit quoi faire.
+vrai('le « — » est explique',
+     lireSrc('client/ViewGrid.html').indexOf('kpiDoublonsDetail') !== -1);
+vrai('et la modale renvoie vers le filtrage',
+     /Restreignez[\s\S]{0,20}la sélection/.test(sansCommentaires(lireSrc('client/Main.html'))));
+// La croix des puces faisait 14 px de cote : intenable au doigt.
+vrai('la croix des puces est agrandie au doigt',
+     /@media \(pointer: coarse\)[\s\S]{0,260}\.puce-suppr[\s\S]{0,200}min-height: 26px/
+       .test(lireSrc('client/Styles.html')));
+const surMesure = function (n) {
+  const b = [], no = [];
+  for (let i = 0; i < n; i++) {
+    b.push({ 'PN Global': 'B' + i });
+    no.push({ 'ID_Ligne': 'B' + i + '-h', 'PN Global': 'B' + i, 'Type': 'Harnais',
+              'PN du type': 'B' + i + '.h', 'Référence': 'REF-' + (i % 3) });
+  }
+  charger(b, no);
+  return C.compterDoublonsProbables(C.Store.boites);
+};
+vrai('100 boites du meme type sont balayees', surMesure(100).nombre !== null);
+vrai('200 aussi', surMesure(200).nombre !== null);
+const tropGros = surMesure(400);
+eq('au-dela, on ne balaie pas a moitie', tropGros.nombre, null);
+vrai('et on le signale', tropGros.tronque);
+eq('sans rendre de paires partielles', tropGros.paires, []);
+
+// 4) Le code mort est parti : l'export CSV, ses aides, et trois fonctions
+// que rien n'appelait.
+['construireCsv', 'champCsv', 'clesNormalisees', 'formaterComposant',
+ 'CSV_SEPARATEUR'].forEach(function (n) {
+  eq(n + ' a disparu', typeof C[n], 'undefined');
+});
+vrai('formaterComposantStructure, lui, sert au catalogue',
+     typeof C.formaterComposantStructure === 'function');
+
+// 5) Meme fragilite du cote des poids : Store.poids part vide, et tout ce qui
+// y touchait avant le chargement des reglages plantait sur un objet absent.
+const poidsSauves = C.Store.poids;
+C.Store.poids = {};
+C.reglerPoids('boite', 'fonction', 50);
+eq('regler une part sans reglages charges ne plante plus',
+   C.criteresActifs('boite').reduce(function (t, c) { return t + C.poidsDe('boite', c); }, 0), 100);
+C.Store.poids = {};
+C.normaliserPoids('structure');
+eq('normaliser non plus',
+   C.criteresActifs('structure').reduce(function (t, c) { return t + C.poidsDe('structure', c); }, 0), 100);
+C.Store.poids = {};
+C.Store.criteresActifs = {};
+vrai('ecarter un critere non plus', C.desactiverCritere('boite', 'porteur'));
+eq('et le total reste a 100',
+   C.criteresActifs('boite').reduce(function (t, c) { return t + C.poidsDe('boite', c); }, 0), 100);
+C.Store.poids = poidsSauves;
+C.chargerReglages();
+
+// 6) Le CSS orphelin est parti avec le code qui l'utilisait.
+['btn-sur-image', 'btn-icone', 'btn-entete', 'ligne-appoint', 'indicateurs-portee', 'raccourci']
+  .forEach(function (c) {
+    faux('.' + c + ' n\'a plus de regle', new RegExp('\\.' + c + '[\\s,{:]').test(cssSrc));
+  });
 
 // =====================================================================
 bloc('Saisie guidee : les trois niveaux se resserrent');
@@ -1341,12 +1449,15 @@ vrai('idem pour le sous-ensemble',
 // Standardisation : on déplie une référence pour voir où elle sert.
 vrai('deplier-reference est implémentée', declarees.has('deplier-reference'));
 vrai('la référence est un bouton dépliable', /data-action="deplier-reference"/.test(
-     C.standardisationHtml({ aAfficher: [{ 'PN Global': 'B1', 'Composants': 'V | N | R' }] })));
+     C.standardisationHtml({ aAfficher: [
+       { 'PN Global': 'B1', 'Composants': 'V | N | R1' },
+       { 'PN Global': 'B2', 'Composants': 'V | N | R2' }] })));
 vrai('l\'état d\'ouverture est annoncé', /aria-expanded/.test(srcGrille));
 vrai('les boîtes citées ouvrent leur fiche',
      /usage-lien[\s\S]{0,120}ouvrir-fiche/.test(srcGrille));
-vrai('les familles rangées ont leur style', /\.standard-propres \{/.test(
-     fs.readFileSync(path.join(H.RACINE, 'client/Styles.html'), 'utf8')));
+faux('le style des familles rangées est parti avec la section',
+     /\.standard-propres|\.propre \{/.test(
+       fs.readFileSync(path.join(H.RACINE, 'client/Styles.html'), 'utf8')));
 vrai('la référence majoritaire se repère', /\.ref-majoritaire \{/.test(
      fs.readFileSync(path.join(H.RACINE, 'client/Styles.html'), 'utf8')));
 

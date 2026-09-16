@@ -188,10 +188,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .indicateur-standard .indicateur-valeur { color: var(--marque); }
 .indicateur[aria-pressed="true"] { background: var(--marque-voile); }
 .indicateur[aria-pressed="true"] .indicateur-libelle { color: var(--marque); }
-.indicateurs-portee {
-  text-align: center; font-size: 10.5px; color: var(--encre-3);
-  letter-spacing: .08em; text-transform: uppercase; margin-top: var(--e-2);
-}
 
 /* ---------------- barre d'action ---------------- */
 /* Pleine largeur, teintée, filet marine au-dessus : elle coupe la page en
@@ -232,11 +228,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
   padding: 13px 0; font-size: 15px; outline: none; min-width: 0;
 }
 .champ-recherche input::placeholder { color: var(--encre-3); }
-.raccourci {
-  border: 1px solid var(--trait); border-radius: 4px; padding: 1px 6px;
-  font-size: 11px; color: var(--encre-3); background: var(--surface-3);
-  font-family: var(--police-data);
-}
 /* La recherche par composant vit DANS le champ : c'est une autre façon de
    chercher, pas une fonction annexe posée à côté. */
 .btn-dans-champ {
@@ -425,29 +416,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .ref-boites { display: flex; flex-wrap: wrap; gap: 4px; padding-left: 2px; }
 .ref-boites[hidden] { display: none; }
 
-/* Les familles déjà rangées : une ligne chacune, en retrait. */
-.standard-propres { margin-top: var(--e-5); }
-.standard-titre {
-  display: flex; align-items: center; gap: var(--e-2);
-  font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
-  color: var(--encre-3); padding-bottom: 6px; border-bottom: 1px solid var(--trait);
-}
-.standard-compte {
-  font-family: var(--police-data); font-size: 11px; font-weight: 600;
-  background: var(--vert-voile); color: var(--vert); border-radius: 999px; padding: 1px 9px;
-}
-.propres { display: flex; flex-direction: column; }
-.propre {
-  display: grid; grid-template-columns: minmax(0, 1fr) 120px 120px auto; gap: var(--e-3);
-  align-items: center; padding: 7px 2px; border-bottom: 1px solid var(--surface-3);
-}
-.propre:last-child { border-bottom: 0; }
-.propre-fonction { font-size: 13px; font-weight: 600; }
-.propre-cat { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--encre-3); }
-.propre-norme { font-size: 12px; color: var(--encre-2); }
-@media (max-width: 720px) {
-  .propre { grid-template-columns: 1fr; gap: 3px; }
-}
 @media (max-width: 620px) {
   .famille-norme { grid-template-columns: 1fr; gap: 4px; }
 }
@@ -489,18 +457,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .status-etude    { color: var(--ambre); }
 .status-obsolete { color: var(--rouge); }
 
-.btn-sur-image {
-  position: absolute; top: 10px; right: 10px;
-  padding: 5px 11px; border-radius: 999px;
-  background: rgba(255,255,255,.93); backdrop-filter: blur(6px); color: var(--encre-2);
-  border: 0; box-shadow: var(--ombre-1);
-  font-size: 11.5px; font-weight: 600; line-height: 1.4;
-  opacity: 0; transform: translateY(-4px); transition: opacity .18s, transform .18s, color .15s;
-}
-.carte:hover .btn-sur-image, .btn-sur-image:focus-visible { opacity: 1; transform: none; }
-.btn-sur-image:hover { color: var(--marque); }
-@media (hover: none) { .btn-sur-image { opacity: 1; transform: none; } }
-
 .carte-corps { display: flex; flex-direction: column; gap: var(--e-3); padding: var(--e-4); flex: 1; }
 .carte-tete { display: flex; align-items: baseline; justify-content: space-between; gap: var(--e-2); }
 .carte-pn { font-family: var(--police-data); font-size: 15px; font-weight: 600; color: var(--encre); word-break: break-all; line-height: 1.3; }
@@ -530,7 +486,7 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .carte-actions > * { flex: 1; white-space: nowrap; padding-inline: 10px; }
 
 /* ---------------- boutons ---------------- */
-.btn-principal, .btn-neutre, .btn-accent, .btn-mini, .btn-lien, .btn-action, .btn-icone {
+.btn-principal, .btn-neutre, .btn-accent, .btn-mini, .btn-lien, .btn-action {
   border-radius: var(--r-s); border: 1px solid transparent; font-weight: 600;
   transition: background .15s, color .15s, border-color .15s; text-align: center;
 }
@@ -553,13 +509,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .btn-danger:hover { background: var(--rouge); color: #fff; }
 .btn-danger-plein { background: var(--rouge); color: #fff; border-color: var(--rouge); }
 .btn-danger-plein:hover { background: var(--rouge); filter: brightness(1.1); }
-.btn-icone { background: var(--surface); color: var(--encre-2); border-color: var(--trait); padding: 5px 10px; font-size: 13px; }
-.btn-entete { display: inline-flex; align-items: center; gap: 7px; background: var(--surface);
-  color: var(--encre); border: 1px solid var(--trait-fort); border-radius: 999px;
-  padding: 9px 18px; font-size: 13px; font-weight: 600; }
-.btn-entete:hover { background: var(--surface-3); }
-.btn-entete-fort { background: var(--marque); color: var(--sur-marque); border-color: var(--marque); box-shadow: var(--ombre-1); }
-.btn-entete-fort:hover { background: var(--marque-2); color: var(--sur-marque); }
 
 /* ---------------- panneau (fiche) ---------------- */
 .panneau { width: min(720px, 100vw) !important; background: var(--sol-2); color: var(--encre); border-left: 1px solid var(--trait); }
@@ -598,7 +547,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .ligne { display: flex; gap: var(--e-3); padding: 8px 0; border-bottom: 1px solid var(--surface-3); align-items: flex-start; }
 .ligne:last-child { border-bottom: 0; }
 .ligne-bloc { flex-direction: column; gap: var(--e-2); }
-.ligne-appoint { border-bottom: 0; padding-top: 0; }
 .ligne-cle { flex: 0 0 38%; font-size: 12.5px; color: var(--encre-3); font-weight: 500; }
 .ligne-bloc .ligne-cle { flex: none; }
 .ligne-aide { display: block; font-size: 11px; color: var(--encre-3); opacity: .8; font-weight: 400; }
@@ -633,6 +581,15 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .puce-porteur { background: var(--marque-voile); color: var(--marque); border-color: var(--trait-fort); font-family: var(--police-data); }
 .puce-suppr { border: 0; background: transparent; color: inherit; font-size: 14px; line-height: 1; padding: 0 3px; opacity: .55; }
 .puce-suppr:hover { opacity: 1; color: var(--rouge); }
+/* Au doigt, la croix faisait 14 px de côté : on vise à côté une fois sur
+   deux. On agrandit la zone atteignable sans grossir le signe. */
+@media (pointer: coarse) {
+  .puce-suppr {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 26px; min-height: 26px; margin: -6px -4px -6px 0; padding: 0;
+  }
+  .composant .puce-suppr { margin: 0; }
+}
 .ajout-multi { display: flex; gap: 6px; margin-top: 6px; }
 .ajout-multi .saisie-multi { flex: 1; min-width: 0; background: var(--surface-2); color: var(--encre); border: 1px solid var(--trait-fort); border-radius: var(--r-s); padding: 6px 10px; font-size: 12.5px; }
 .zone-puces { display: flex; flex-wrap: wrap; gap: 6px; min-height: 54px; padding: var(--e-3); background: var(--surface-2); border: 1px solid var(--trait); border-radius: var(--r-s); margin-bottom: var(--e-3); }
@@ -915,7 +872,7 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 
 @media (prefers-reduced-motion: reduce) {
   .mini-spinner { animation: none; }
-  .carte, .carte-image, .btn-sur-image, .indicateur { transition: none; }
+  .carte, .carte-image, .indicateur { transition: none; }
   .carte:hover, button.indicateur:hover { transform: none; }
   .carte:hover .carte-image { transform: none; }
 }
@@ -938,7 +895,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
   .ligne { flex-direction: column; gap: 3px; }
   .ligne-cle { flex: none; }
   .carte-meta dd { text-align: left; }
-  .raccourci { display: none; }
   .outils { flex-direction: column; align-items: stretch; }
   .outils-droite { justify-content: space-between; }
   .modale-outils { flex-wrap: wrap; }
@@ -998,21 +954,13 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
             <span class="indicateur-valeur" id="kpiStandard">–</span>
             <span class="indicateur-detail" id="kpiStandardDetail"></span>
           </button>
-          <button type="button" class="indicateur indicateur-reemploi" id="indReutil"
-                  data-action="filtrer-reutilise" aria-pressed="false"
-                  title="Ne montrer que les boîtes qui partagent une pièce">
-            <span class="indicateur-libelle">Pièces réutilisées</span>
-            <span class="indicateur-valeur" id="kpiReutil">–</span>
-            <span class="indicateur-detail" id="kpiReutilDetail"></span>
-          </button>
           <button type="button" class="indicateur indicateur-alerte" id="indDoublons"
                   data-action="ouvrir-doublons" title="Voir les paires de pièces très proches">
             <span class="indicateur-libelle">Doublons probables</span>
             <span class="indicateur-valeur" id="kpiDoublons">–</span>
-            <span class="indicateur-detail">voir la liste</span>
+            <span class="indicateur-detail" id="kpiDoublonsDetail">voir la liste</span>
           </button>
         </div>
-        <p class="indicateurs-portee" id="kpiPortee">sur toute la base</p>
       </div>
     </header>
 
@@ -1025,7 +973,6 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
           <input type="text" id="searchBar" autocomplete="off"
                  placeholder="Rechercher un PN, une fonction, une référence, un mot-clé…"
                  aria-label="Recherche globale">
-          <kbd class="raccourci" aria-hidden="true">/</kbd>
           <button type="button" class="btn-dans-champ" id="btnComposant"
                   data-action="ouvrir-multi-recherche">Par composant</button>
         </label>
@@ -1360,24 +1307,6 @@ function classeStatut(statut) {
   if (STATUTS.VALIDE.indexOf(s) !== -1) return 'status-valide';
   if (STATUTS.OBSOLETE.indexOf(s) !== -1) return 'status-obsolete';
   return 'status-etude';
-}
-
-// ------------------------------------------------------------
-// CSV
-// ------------------------------------------------------------
-// Séparateur ';' : Excel en locale FR n'ouvre pas les ',' en colonnes.
-const CSV_SEPARATEUR = ';';
-
-function champCsv(valeur) {
-  const s = String(valeur === null || valeur === undefined ? '' : valeur)
-              .replace(/\r?\n/g, ' / ');
-  return '"' + s.replace(/"/g, '""') + '"';
-}
-
-function construireCsv(lignes) {
-  return '﻿' + lignes.map(function (ligne) {   // BOM : sinon Excel FR casse les accents
-    return ligne.map(champCsv).join(CSV_SEPARATEUR);
-  }).join('\r\n');
 }
 
 // ------------------------------------------------------------
@@ -2018,9 +1947,6 @@ function motsCles(valeur) {
   return sortie;
 }
 
-function clesNormalisees(valeur) {
-  return motsCles(valeur).map(normaliserTexte);
-}
 </script>
 
     <!-- client/Api.html -->
@@ -2159,7 +2085,6 @@ const Store = {
   filtreComposants: [],
   filtreTypes: [],
   filtreStatut: null,        // un statut, ou rien
-  filtreReutilise: false,    // seulement les boîtes qui partagent une pièce
   vueMode: 'boites',         // 'boites' ou 'pieces'
   tri: 'pn',
   enEditionBoite: false,
@@ -2211,8 +2136,20 @@ function porteeParCle(cle) {
   return PORTEES.find(function (p) { return p.cle === cle; }) || PORTEES[0];
 }
 
+/**
+ * Tant que les réglages n'ont pas été chargés, TOUS les critères comptent.
+ * L'ancien repli — une liste vide — donnait un score de 0 sur tout, sans
+ * message : un classement d'équivalences entièrement à zéro se lit comme
+ * « rien ne se ressemble », alors que c'est « rien n'a été comparé ».
+ */
+function clesActives(portee) {
+  const liste = Store.criteresActifs[portee];
+  return Array.isArray(liste) ? liste
+                              : porteeParCle(portee).criteres.map(function (c) { return c.cle; });
+}
+
 function criteresActifs(portee) {
-  const liste = Store.criteresActifs[portee] || [];
+  const liste = clesActives(portee);
   // On respecte l'ordre du registre, pas celui des clics.
   return porteeParCle(portee).criteres.filter(function (c) {
     return liste.indexOf(c.cle) !== -1;
@@ -2220,7 +2157,20 @@ function criteresActifs(portee) {
 }
 
 function critereEstActif(portee, cle) {
-  return (Store.criteresActifs[portee] || []).indexOf(cle) !== -1;
+  return clesActives(portee).indexOf(cle) !== -1;
+}
+
+/**
+ * La table des parts d'une portée, créée à la demande. Comme pour les
+ * critères actifs, l'état initial de Store est vide : tout ce qui touche aux
+ * poids avant le chargement des réglages plantait sur un objet absent.
+ */
+function tablePoids(portee) {
+  if (!Store.poids[portee]) {
+    Store.poids[portee] = {};
+    porteeParCle(portee).criteres.forEach(function (c) { Store.poids[portee][c.cle] = c.poids; });
+  }
+  return Store.poids[portee];
 }
 
 /**
@@ -2230,7 +2180,7 @@ function critereEstActif(portee, cle) {
  */
 function normaliserPoids(portee) {
   const actifs = criteresActifs(portee);
-  const table = Store.poids[portee];
+  const table = tablePoids(portee);
   if (!actifs.length) return;
   if (actifs.length === 1) { table[actifs[0].cle] = 100; return; }
 
@@ -2258,7 +2208,7 @@ function normaliserPoids(portee) {
  */
 function reglerPoids(portee, cle, valeur) {
   const actifs = criteresActifs(portee);
-  const table = Store.poids[portee];
+  const table = tablePoids(portee);
   const voulue = Math.max(0, Math.min(100, Math.round(Number(valeur) || 0)));
 
   if (actifs.length <= 1) { if (actifs.length) table[actifs[0].cle] = 100; return; }
@@ -2290,7 +2240,7 @@ function reglerPoids(portee, cle, valeur) {
 
 function activerCritere(portee, cle) {
   if (critereEstActif(portee, cle)) return;
-  Store.criteresActifs[portee] = (Store.criteresActifs[portee] || []).concat([cle]);
+  Store.criteresActifs[portee] = clesActives(portee).concat([cle]);
   // Le nouveau critère prend une part équitable, prise sur les autres.
   const actifs = criteresActifs(portee);
   reglerPoids(portee, cle, Math.round(100 / actifs.length));
@@ -2298,10 +2248,10 @@ function activerCritere(portee, cle) {
 }
 
 function desactiverCritere(portee, cle) {
-  const restants = (Store.criteresActifs[portee] || []).filter(function (c) { return c !== cle; });
+  const restants = clesActives(portee).filter(function (c) { return c !== cle; });
   if (!restants.length) return false;          // on ne retire pas le dernier
   Store.criteresActifs[portee] = restants;
-  Store.poids[portee][cle] = 0;
+  tablePoids(portee)[cle] = 0;
   normaliserPoids(portee);
   enregistrerReglages();
   return true;
@@ -2540,26 +2490,6 @@ function aLeStatut(boite, statut) {
   return normaliserStatut(boite['Statut']) === normaliserStatut(statut);
 }
 
-/** PN des pièces montées dans plus d'une boîte. */
-function piecesReutilisees() {
-  const boitesParPiece = new Map();
-  Store.nomenclature.forEach(function (n) {
-    const piece = normaliserTexte(n['PN du type']);
-    if (!piece) return;
-    if (!boitesParPiece.has(piece)) boitesParPiece.set(piece, new Set());
-    boitesParPiece.get(piece).add(String(n[CLE_PN()]).trim());
-  });
-  const partagees = new Set();
-  boitesParPiece.forEach(function (boites, piece) { if (boites.size > 1) partagees.add(piece); });
-  return partagees;
-}
-
-function partageUnePiece(boite, partagees) {
-  return (boite.nomenclature || []).some(function (n) {
-    return partagees.has(normaliserTexte(n['PN du type']));
-  });
-}
-
 // ------------------------------------------------------------
 // Tri
 // ------------------------------------------------------------
@@ -2581,12 +2511,10 @@ function rangStatut(s) {
 // Vue courante : un seul filtrage dont tout dérive
 // ------------------------------------------------------------
 function calculerVue() {
-  const partagees = Store.filtreReutilise ? piecesReutilisees() : null;
   const visibles = Store.boites.filter(function (b) {
     return contientTousComposants(b, Store.filtreComposants) &&
            contientTypes(b, Store.filtreTypes) &&
            aLeStatut(b, Store.filtreStatut) &&
-           (!partagees || partageUnePiece(b, partagees)) &&
            correspond(b, Store.recherche);
   }).sort((TRIS[Store.tri] || TRIS.pn).fn);
 
@@ -2607,12 +2535,17 @@ function calculerVue() {
     visibles: visibles, parFonction: parFonction, onglet: onglet,
     aAfficher: onglet === 'Toutes' ? visibles : (parFonction.get(onglet) || []),
     filtre: !!(Store.recherche || Store.filtreComposants.length || Store.filtreTypes.length ||
-               Store.filtreStatut || Store.filtreReutilise)
+               Store.filtreStatut)
   };
 }
 
 const SEUIL_DOUBLON = 85;      // au-delà, deux PN distincts méritent un examen
-const PLAFOND_PAIRES = 400;    // au-delà, on ne balaie pas toutes les paires
+// Le balayage est quadratique : il faut un plafond. L'ancien, 400 paires,
+// correspondait à 29 sous-ensembles du même type — toute base réelle passait
+// dessous et l'indicateur restait muet. Mesuré : 21 000 paires ≈ 0,6 s, ce qui
+// tient pour une action déclenchée au clic. Au-delà, on le dit et on renvoie
+// vers le filtrage, car le balayage suit la sélection courante.
+const PLAFOND_PAIRES = 21000;
 
 /**
  * Indicateurs orientés RÉUTILISATION : c'est la question que pose l'outil.
@@ -2835,31 +2768,6 @@ function opportunitesStandardisation(liste) {
   });
 }
 
-/**
- * Les familles déjà rangées : une seule norme, une seule référence. C'est
- * l'état visé, et il faut le voir aussi — sinon l'écran ne montre que ce qui
- * va mal et on ne sait pas où on en est.
- */
-function famillesStandardisees(liste) {
-  const sorties = [];
-  famillesComposants(liste).forEach(function (f) {
-    const normes = Array.from(f.normes.values());
-    if (normes.length !== 1 || normes[0].references.size !== 1) return;
-    const ref = Array.from(normes[0].references.values())[0];
-    sorties.push({
-      categorie: f.categorie, fonction: f.fonction,
-      norme: normes[0].norme, reference: ref.reference,
-      nbBoites: ref.boites.size,
-      boites: Array.from(ref.boites).sort(function (a, b) {
-        return a.localeCompare(b, 'fr', { numeric: true });
-      })
-    });
-  });
-  return sorties.sort(function (a, b) {
-    return b.nbBoites - a.nbBoites || a.fonction.localeCompare(b.fonction, 'fr');
-  });
-}
-
 /** Répartition des sous-ensembles par type, pour la barre de filtres. */
 function repartitionTypes() {
   const compte = new Map();
@@ -2894,10 +2802,6 @@ function tousLesMotsCles() {
     motsCles(n['Mots-clés']).forEach(function (m) { ensemble.add(m); });
   });
   return Array.from(ensemble).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
-}
-
-function formaterComposant(entree) {
-  return libelleComposant(composantDepuisCatalogue(entree));
 }
 
 const CATALOGUE_MAX = 30;
@@ -3293,46 +3197,21 @@ function piecesHtml(vue) {
  */
 function standardisationHtml(vue) {
   const familles = opportunitesStandardisation(vue.aAfficher);
-  const propres = famillesStandardisees(vue.aAfficher);
 
-  if (!familles.length && !propres.length) {
+  if (!familles.length) {
     return '<div class="etat-vide">' +
-      '<p>Aucun composant à analyser.</p>' +
-      '<p class="etat-vide-aide">Renseignez les composants des boîtes et des ' +
-      'structures pour voir apparaître les familles.</p>' +
+      '<p>Rien à standardiser.</p>' +
+      '<p class="etat-vide-aide">Chaque fonction est servie par une seule ' +
+      'référence, ou il n\'y a pas encore de composant à analyser.</p>' +
     '</div>';
   }
 
-  let html = '';
-
-  if (familles.length) {
-    html += '<p class="standard-intro">' + familles.length +
-        ' famille(s) servies par plusieurs références. Les plus dispersées ' +
-        'd\'abord : ce sont elles qui coûtent le plus à faire vivre. ' +
-        'Cliquez une référence pour voir où elle sert.' +
-      '</p>' +
-      '<div class="familles">' + familles.map(familleHtml).join('') + '</div>';
-  }
-
-  // L'état visé : une fonction, une norme, une référence.
-  if (propres.length) {
-    html += '<div class="standard-propres">' +
-      '<h3 class="standard-titre">Déjà rangées' +
-        '<span class="standard-compte">' + propres.length + '</span></h3>' +
-      '<p class="standard-intro">Une seule norme, une seule référence. ' +
-        'Rien à faire, c\'est la cible.</p>' +
-      '<div class="propres">' + propres.map(function (f) {
-        const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
-        return '<div class="propre">' +
-          '<span class="propre-fonction">' + esc(f.fonction) + '</span>' +
-          '<span class="propre-cat">' + esc(cat.libelle) + '</span>' +
-          '<span class="propre-norme">' + esc(f.norme || '—') + '</span>' +
-          referenceHtml({ reference: f.reference, nbBoites: f.nbBoites, boites: f.boites }, false) +
-        '</div>';
-      }).join('') + '</div>' +
-    '</div>';
-  }
-  return html;
+  return '<p class="standard-intro">' + familles.length +
+      ' famille(s) servies par plusieurs références. Les plus dispersées ' +
+      'd\'abord : ce sont elles qui coûtent le plus à faire vivre. ' +
+      'Cliquez une référence pour voir où elle sert.' +
+    '</p>' +
+    '<div class="familles">' + familles.map(familleHtml).join('') + '</div>';
 }
 
 /** Une référence, dépliable sur la liste des boîtes où elle sert. */
@@ -3528,10 +3407,6 @@ function rendreKpi(kpi, vue) {
   const ind = parId('indStandard');
   if (ind) ind.setAttribute('aria-pressed', String(Store.vueMode === 'standardisation'));
 
-  definirTexte('kpiReutil', String(kpi.reutilisees));
-  definirTexte('kpiReutilDetail', kpi.reutilisees
-    ? 'montées dans plusieurs boîtes'
-    : 'aucune pièce partagée');
 
   // L'indicateur dit s'il filtre en ce moment.
   const marquer = function (id, actif) {
@@ -3541,13 +3416,14 @@ function rendreKpi(kpi, vue) {
     if (el.tagName === 'BUTTON') el.setAttribute('aria-pressed', String(!!actif));
   };
   marquer('indValidees', Store.filtreStatut && normaliserStatut(Store.filtreStatut) === 'validé');
-  marquer('indReutil', Store.filtreReutilise);
 
   const doublons = compterDoublonsProbables(vue ? vue.aAfficher : Store.boites);
   definirTexte('kpiDoublons', doublons.nombre === null ? '—' : String(doublons.nombre));
+  // Un « — » sans explication laisse croire qu'il n'y a rien à voir.
+  definirTexte('kpiDoublonsDetail', doublons.nombre === null
+    ? 'trop de pièces : filtrez d\'abord'
+    : 'voir la liste');
 
-  const portee = parId('kpiPortee');
-  if (portee) portee.textContent = filtre ? 'sur la sélection courante' : 'sur toute la base';
 }
 
 function rendreFiltreActif(vue) {
@@ -3569,11 +3445,6 @@ function rendreFiltreActif(vue) {
     morceaux.push('<span class="filtre-jeton">Statut : ' + esc(Store.filtreStatut) +
       '<button type="button" aria-label="Retirer"' +
       dataAttrs({ action: 'filtrer-statut', statut: Store.filtreStatut }) + '>&times;</button></span>');
-  }
-  if (Store.filtreReutilise) {
-    morceaux.push('<span class="filtre-jeton">Boîtes partageant une pièce' +
-      '<button type="button" aria-label="Retirer"' +
-      dataAttrs({ action: 'filtrer-reutilise' }) + '>&times;</button></span>');
   }
   if (Store.recherche) {
     morceaux.push('<span class="filtre-jeton">« ' + esc(Store.recherche) + ' »' +
@@ -4926,11 +4797,6 @@ enregistrerActions({
     Store.filtreStatut = Store.filtreStatut === d.statut ? null : d.statut;
     rendreInterface();
   },
-  'filtrer-reutilise': function () {
-    Store.filtreReutilise = !Store.filtreReutilise;
-    rendreInterface();
-  },
-
   'voir-standardisation': function () {
     Store.vueMode = Store.vueMode === 'standardisation' ? 'boites' : 'standardisation';
     enregistrerReglages();
@@ -4941,7 +4807,9 @@ enregistrerActions({
     const vue = calculerVue();
     const r = compterDoublonsProbables(vue.aAfficher);
     definirTexte('doublonsSous', r.nombre === null
-      ? 'Trop de pièces pour un balayage complet.'
+      ? 'Trop de pièces pour un balayage complet : comparer chaque paire ' +
+        'devient trop long. Restreignez d\'abord la sélection — une recherche, ' +
+        'un statut, un porteur — le balayage suit ce qui est affiché.'
       : r.nombre + ' paire(s) au-dessus de ' + SEUIL_DOUBLON + ' %, selon vos critères courants. ' +
         'Deux PN différents pour la même chose, c\'est deux pièces à approvisionner, ' +
         'qualifier et stocker au lieu d\'une.');
@@ -4969,7 +4837,7 @@ enregistrerActions({
   },
   'tout-effacer': function () {
     Store.recherche = ''; Store.filtreComposants = []; Store.filtreTypes = [];
-    Store.filtreStatut = null; Store.filtreReutilise = false;
+    Store.filtreStatut = null;
     Store.ongletActif = 'Toutes';
     const c = parId('searchBar'); if (c) c.value = '';
     rendreInterface();
