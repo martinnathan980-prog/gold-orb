@@ -34,7 +34,11 @@ function construire(options) {
   const contexte = chargerServeur(classeur, opts.proprietes || {});
 
   // Deux relevés archivés, à deux semaines d'écart, pour que la page ait une pente.
-  if (opts.historique !== false) {
+  if (opts.historique === 'premier') {
+    // Un seul relevé : le cas du tout premier archivage, où le graphique n'a
+    // rien à tracer et où le bouton « voir un exemple » doit apparaître.
+    contexte.enregistrerInstantaneHebdo();
+  } else if (opts.historique !== false) {
     contexte.enregistrerInstantaneHebdo();
     const histo = classeur.getSheetByName('Historique_FWD');
     // On recule le relevé qu'on vient d'écrire et on en ajoute un plus récent.
@@ -68,6 +72,17 @@ function construire(options) {
         });
       });
       l[7] = JSON.stringify(groupes);
+      /* L'avancement plan par plan doit vraiment différer d'une semaine à
+         l'autre, sinon le journal des changements n'aurait rien à raconter. */
+      const plans = JSON.parse(base[8] || '{}');
+      const refs = Object.keys(plans);
+      const aReculer = Math.round(refs.length * (1 - part) * 0.5);
+      for (let r = 0; r < aReculer; r++) {
+        const ref = refs[(r * 7 + k * 3) % refs.length];
+        plans[ref] = ['À faire', '50%', ''][(r + k) % 3];
+      }
+      if (k === 0) { delete plans[refs[1]]; delete plans[refs[2]]; }   // deux plans apparus depuis
+      l[8] = JSON.stringify(plans);
       histo.valeurs.push(l);
     });
   }

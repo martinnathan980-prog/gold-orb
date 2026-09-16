@@ -122,13 +122,21 @@ function serveurSur(valeurs, proprietes, fichiers) {
     mGates.cleDate === 'date_creation', String(mGates.cleDate));
 
   const titresDim = mGates.clesDim.map(c => mGates.colonnes.find(x => x.cle === c).titre);
-  verifier('les huit colonnes d\'analyse sont celles prévues, dans l\'ordre',
-    JSON.stringify(titresDim) === JSON.stringify(['ATA', 'Séquence',
-      'Validation Définition Electrique', 'Statut iBG', 'Etape', 'Produit',
-      'Chapitre', 'Redraw']), JSON.stringify(titresDim));
+  verifier('les colonnes d\'analyse sont celles demandées, dans l\'ordre',
+    JSON.stringify(titresDim) === JSON.stringify(['ATA', 'Avancement', 'CC',
+      'Chapitre', 'ECP', 'Validation Définition Electrique']), JSON.stringify(titresDim));
   verifier('l\'ATA est ouvert par défaut', mGates.dimParDefaut === 'ata', mGates.dimParDefaut);
-  verifier('le « Redraw » retenu est celui du groupe FWD',
-    mGates.colonnes.find(c => c.cle === mGates.clesDim[7]).groupe === 'Réalisation FWD');
+  verifier('l\'« Avancement » retenu est celui du groupe FWD',
+    mGates.colonnes.find(c => c.cle === mGates.clesDim[1]).groupe === 'Réalisation FWD');
+  verifier('la vue essentielle tient en moins de dix colonnes',
+    mGates.clesEssentielles.length <= 10 && mGates.clesEssentielles.length >= 5,
+    String(mGates.clesEssentielles.length));
+  verifier('elle contient la référence, l\'avancement et la date',
+    ['reference', 'avancement', mGates.cleDate].every(c => mGates.clesEssentielles.indexOf(c) !== -1),
+    JSON.stringify(mGates.clesEssentielles));
+  verifier('la colonne de domaine est repérée',
+    mGates.cleDomaine && mGates.colonnes.find(c => c.cle === mGates.cleDomaine).titre === 'Domaine',
+    String(mGates.cleDomaine));
   verifier('l\'ancienneté s\'ajoute grâce à la date de création',
     mGates.cleDate && mGates.colonnes.find(c => c.cle === mGates.cleDate).titre === 'Date création',
     String(mGates.cleDate));
@@ -138,8 +146,13 @@ function serveurSur(valeurs, proprietes, fichiers) {
     !titresDim.some(t => ['Validité', 'Quantité', 'A traiter par', 'Configuration officielle',
                           'Avancement Définition Electrique', 'Avancement Concept Harnais',
                           'Type'].indexOf(t) !== -1), JSON.stringify(titresDim));
-  verifier('ni la référence, ni le FWD, ni la date',
-    !titresDim.some(t => ['Référence UD', 'Avancement', 'Date création'].indexOf(t) !== -1));
+  verifier('ni la référence ni la date brute ne sont des dimensions',
+    !titresDim.some(t => ['Référence UD', 'Date création'].indexOf(t) !== -1), JSON.stringify(titresDim));
+  /* L'avancement FWD lui-même est une dimension demandée : regrouper par sa
+     valeur brute montre d'un coup les façons de l'écrire, donc les saisies
+     qui divergent. */
+  verifier('l\'avancement FWD est bien proposé comme dimension',
+    titresDim.indexOf('Avancement') !== -1);
   verifier('le nombre de dimensions reste tenable', titresDim.length <= 8, String(titresDim.length));
 
   /* Liste vidée : la détection automatique doit retomber sur des colonnes
@@ -453,7 +466,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('les quatre états totalisent les 186 plans',
     vu.etats.reduce((a, b) => a + b, 0) === 186, JSON.stringify(vu.etats));
   verifier('aucun état n\'est vide de sens', vu.etats.every(n => n >= 0));
-  verifier('les en-têtes du tableau sont ceux de la feuille',
+  verifier('les en-têtes du tableau sont ceux de la feuille, référence en tête',
     vu.colonnes[0] === 'Référence UD' && vu.colonnes.indexOf('Avancement FWD') !== -1,
     JSON.stringify(vu.colonnes));
   verifier('les 186 lignes sont dans le tableau', vu.lignes === 186, String(vu.lignes));
@@ -536,6 +549,11 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('les quatre états totalisent 186', vg.etats.reduce((a, b) => a + b, 0) === 186, JSON.stringify(vg.etats));
   verifier('le tableau s\'ouvre sur 47 colonnes, pas 138', vg.visibles === 47, String(vg.visibles));
   verifier('la colonne « Avancement » est visible au départ', vg.colFWD !== -1, String(vg.colFWD));
+  verifier('la référence figée ouvre le tableau, malgré la colonne vide n° 1',
+    await pg.evaluate(() => {
+      const th = document.querySelector('tr.titres th');
+      return th.textContent.trim() === 'Référence UD' && th.classList.contains('col-fige');
+    }));
   verifier('pas de débordement horizontal de la page', vg.debord <= 2, vg.debord + ' px');
   verifier('l\'ATA est ouvert par défaut', vg.dimActive === 'ata' && /par ATA/.test(vg.titre), vg.titre);
   verifier('tous les ATA sont comptés', vg.totaux === 186 && vg.groupes >= 5,
@@ -551,6 +569,187 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('et la page tient toujours', await pg.evaluate(() =>
     document.documentElement.scrollWidth - window.innerWidth <= 2 &&
     document.querySelectorAll('#corps-tableau tr').length === 186));
+
+  // =================================================================
+  section('Journal des changements');
+  const jrn = await pg.evaluate(() => ({
+    semaines: [...document.querySelectorAll('.journal-tete .sem')].map(e => e.textContent.trim()),
+    resumes: [...document.querySelectorAll('.journal-tete .resume')].map(e => e.textContent.trim()),
+    ouvertes: [...document.querySelectorAll('.journal-tete')].map(e => e.getAttribute('aria-expanded')),
+    lignes: document.querySelectorAll('.journal-ligne').length,
+    premiere: (document.querySelector('.journal-ligne') || {}).textContent
+  }));
+  verifier('une entrée par semaine où quelque chose a bougé',
+    jrn.semaines.length >= 2, String(jrn.semaines.length));
+  verifier('la semaine la plus récente est en tête',
+    jrn.semaines[0] > jrn.semaines[jrn.semaines.length - 1], JSON.stringify(jrn.semaines));
+  verifier('elle est la seule ouverte d\'emblée',
+    jrn.ouvertes[0] === 'true' && jrn.ouvertes.slice(1).every(v => v === 'false'),
+    JSON.stringify(jrn.ouvertes));
+  verifier('le résumé est écrit en français correct',
+    jrn.resumes.every(r => !/en en cour|passés en terminé/.test(r)) &&
+    jrn.resumes.some(r => /terminés?|passés? en cours|repassés? à faire/.test(r)),
+    JSON.stringify(jrn.resumes[0]));
+  verifier('chaque ligne nomme le plan et son passage',
+    /UD-/.test(jrn.premiere || ''), jrn.premiere);
+  verifier('les états sont au singulier dans une flèche',
+    !/Terminés\s*$/.test(jrn.premiere || '') , jrn.premiere);
+
+  // Replier / déplier
+  await pg.click('.journal-tete >> nth=0'); await pg.waitForTimeout(350);
+  verifier('replier une semaine cache sa liste',
+    await pg.evaluate(() => document.querySelectorAll('.journal-liste').length === 0));
+  await pg.click('.journal-tete >> nth=1'); await pg.waitForTimeout(350);
+  verifier('déplier une autre semaine montre la sienne',
+    await pg.evaluate(() => document.querySelectorAll('.journal-liste').length === 1));
+
+  // Filtrer par type de passage
+  await pg.click('#filtre-journal button[data-journal="termine"]'); await pg.waitForTimeout(400);
+  verifier('le filtre « Terminés » ne laisse que des passages en terminé',
+    await pg.evaluate(() => [...document.querySelectorAll('.journal-ligne .vers')]
+      .every(v => /Terminé/.test(v.textContent))));
+  verifier('et les résumés ne parlent plus que de terminés',
+    await pg.evaluate(() => [...document.querySelectorAll('.journal-tete .resume')]
+      .every(r => !/passé|repassé|effacé/.test(r.textContent))));
+  await pg.click('#filtre-journal button[data-journal=""]'); await pg.waitForTimeout(400);
+
+  // Cliquer un plan filtre le tableau sur lui
+  await pg.click('.journal-tete >> nth=0'); await pg.waitForTimeout(300);
+  const refCliquee = await pg.evaluate(() => document.querySelector('.journal-ligne').dataset.ref);
+  await pg.click('.journal-ligne >> nth=0'); await pg.waitForTimeout(600);
+  verifier('cliquer un plan du journal réduit le tableau à ce plan',
+    await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === 1,
+    String(await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length)));
+  verifier('et c\'est bien le bon plan',
+    await pg.evaluate(r => document.querySelector('#corps-tableau td').textContent.trim() === r, refCliquee));
+  await pg.click('.journal-ligne >> nth=0'); await pg.waitForTimeout(600);
+  verifier('re-cliquer rend les 186 plans',
+    await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === 186);
+
+  // =================================================================
+  section('Filtres rapides : domaine et reconduits');
+  const rap = await pg.evaluate(() => ({
+    puces: [...document.querySelectorAll('.puce-rapide')].map(b => b.textContent.trim()),
+    domaines: [...document.querySelectorAll('.puce-rapide[data-domaine]')].map(b => b.dataset.domaine)
+  }));
+  verifier('le domaine propose ses valeurs réelles',
+    rap.domaines.indexOf('PERSO') !== -1 && rap.domaines.indexOf('BASE/OPTION') !== -1,
+    JSON.stringify(rap.domaines));
+  verifier('et un « Tous » pour revenir', rap.domaines.indexOf('') !== -1);
+  verifier('les terminés reconduits sont comptés',
+    rap.puces.some(t => /Terminésreconduits\d+/.test(t.replace(/\s/g, ''))), JSON.stringify(rap.puces));
+
+  await pg.click('.puce-rapide[data-domaine="PERSO"]'); await pg.waitForTimeout(500);
+  const nPerso = await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length);
+  verifier('filtrer sur un domaine réduit le tableau', nPerso > 0 && nPerso < 186, String(nPerso));
+  verifier('et le tableau ne contient que ce domaine',
+    await pg.evaluate(() => {
+      const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.textContent.trim() === 'Domaine');
+      return i !== -1 && [...document.querySelectorAll('#corps-tableau tr')]
+        .every(tr => tr.children[i].textContent.trim() === 'PERSO');
+    }));
+  await pg.click('.puce-rapide[data-domaine="PERSO"]'); await pg.waitForTimeout(450);
+  verifier('re-cliquer lève le filtre',
+    await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === 186);
+
+  await pg.click('.puce-rapide[data-reconduits]'); await pg.waitForTimeout(500);
+  verifier('les reconduits ne sont que des plans terminés et vieux',
+    await pg.evaluate(() => {
+      const ths = [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim());
+      const iA = ths.indexOf('Avancement'), iD = ths.indexOf('Date création');
+      if (iA === -1 || iD === -1) return false;
+      const lignes = [...document.querySelectorAll('#corps-tableau tr')];
+      if (!lignes.length) return false;
+      return lignes.every(tr => {
+        const a = tr.children[iA].textContent.trim().toLowerCase();
+        const an = Number((tr.children[iD].textContent.match(/^(\d{4})/) || [])[1]);
+        return (/^100|termin/.test(a)) && an <= 2025;
+      });
+    }));
+  await pg.click('.puce-rapide[data-reconduits]'); await pg.waitForTimeout(450);
+
+  // =================================================================
+  section('Vue essentielle du tableau');
+  const toutes = await pg.evaluate(() => document.querySelectorAll('tr.titres th').length);
+  await pg.click('#bascule-essentielles'); await pg.waitForTimeout(600);
+  const ess = await pg.evaluate(() => ({
+    titres: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()),
+    presse: document.getElementById('bascule-essentielles').getAttribute('aria-pressed'),
+    lignes: document.querySelectorAll('#corps-tableau tr').length
+  }));
+  verifier('la vue essentielle ne garde que les colonnes utiles',
+    ess.titres.length >= 5 && ess.titres.length <= 10, String(ess.titres.length));
+  verifier('la référence ouvre le tableau et l\'avancement y est',
+    ess.titres[0] === 'Référence UD' && ess.titres.indexOf('Avancement') !== -1,
+    JSON.stringify(ess.titres));
+  verifier('les colonnes d\'analyse y sont toutes',
+    ['ATA', 'CC', 'Chapitre', 'ECP', 'Validation Définition Electrique', 'Date création']
+      .every(t => ess.titres.indexOf(t) !== -1), JSON.stringify(ess.titres));
+  verifier('aucun plan n\'est perdu au passage', ess.lignes === 186, String(ess.lignes));
+  verifier('le bouton dit qu\'il est enfoncé', ess.presse === 'true');
+  await pg.click('#bascule-essentielles'); await pg.waitForTimeout(600);
+  verifier('le relâcher remet exactement la disposition d\'avant',
+    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === toutes,
+    toutes + ' → ' + (await pg.evaluate(() => document.querySelectorAll('tr.titres th').length)));
+
+  // Une disposition personnalisée doit survivre à l'aller-retour.
+  await pg.click('#bascule-colonnes'); await pg.waitForTimeout(250);
+  await pg.click('#panneau-colonnes input[data-col="ata"]'); await pg.waitForTimeout(350);
+  await pg.click('body', { position: { x: 5, y: 5 } }); await pg.waitForTimeout(250);
+  const sansAta = await pg.evaluate(() => document.querySelectorAll('tr.titres th').length);
+  await pg.click('#bascule-essentielles'); await pg.waitForTimeout(500);
+  await pg.click('#bascule-essentielles'); await pg.waitForTimeout(500);
+  verifier('une colonne masquée à la main le reste après l\'aller-retour',
+    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === sansAta,
+    sansAta + ' → ' + (await pg.evaluate(() => document.querySelectorAll('tr.titres th').length)));
+  await pg.click('#bascule-colonnes'); await pg.waitForTimeout(250);
+  await pg.click('#tout-colonnes'); await pg.waitForTimeout(400);
+  await pg.click('body', { position: { x: 5, y: 5 } }); await pg.waitForTimeout(250);
+
+  // =================================================================
+  section('Aperçu quand l\'historique est vide');
+  construire({ gates: true, historique: 'premier', sortie: 'apercu-premier.html' });
+  const ctxPremier = await nav.newContext({ viewport: { width: 1280, height: 1000 } });
+  const pp = await ctxPremier.newPage();
+  pp.on('pageerror', e => erreursJS.push('premier : ' + e.message));
+  pp.on('console', m => { if (m.type() === 'error' && !m.text().includes('ERR_FILE')) erreursJS.push('premier : ' + m.text()); });
+  await pp.goto('file://' + path.join(__dirname, '..', 'apercu-premier.html'));
+  await pp.waitForTimeout(1600);
+
+  verifier('avec un seul relevé, le bouton d\'aperçu est proposé',
+    await pp.evaluate(() => !document.getElementById('bascule-exemple').hidden));
+  verifier('le bandeau n\'est pas là tant qu\'on n\'a rien demandé',
+    await pp.evaluate(() => document.getElementById('bandeau-exemple').hidden));
+  verifier('le journal explique pourquoi il est vide',
+    await pp.evaluate(() => /deuxième archivage/.test(document.getElementById('zone-journal').textContent)));
+
+  const avantEx = await pp.evaluate(() => document.querySelectorAll('.zone-clic').length);
+  await pp.click('#bascule-exemple'); await pp.waitForTimeout(800);
+  const ex = await pp.evaluate(() => ({
+    bandeau: !document.getElementById('bandeau-exemple').hidden,
+    texteBandeau: document.getElementById('bandeau-exemple').textContent,
+    zones: document.querySelectorAll('.zone-clic').length,
+    points: document.querySelectorAll('svg.graphe circle').length,
+    presse: document.getElementById('bascule-exemple').getAttribute('aria-pressed'),
+    plans: document.querySelectorAll('#corps-tableau tr').length,
+    phrase: document.getElementById('phrase').textContent
+  }));
+  verifier('l\'aperçu trace une vraie courbe', ex.points >= 5, String(ex.points));
+  verifier('le bandeau dit que c\'est un exemple',
+    ex.bandeau && /exemple/i.test(ex.texteBandeau) && /réel/i.test(ex.texteBandeau));
+  verifier('le bouton se marque enfoncé', ex.presse === 'true');
+  verifier('le tableau, lui, reste sur les vraies données',
+    ex.plans === 186 && /186 plans/.test(ex.phrase), ex.phrase);
+  await pp.click('#fermer-exemple'); await pp.waitForTimeout(700);
+  verifier('« revenir au réel » remet tout en place',
+    await pp.evaluate(() => document.getElementById('bandeau-exemple').hidden &&
+      document.getElementById('bascule-exemple').getAttribute('aria-pressed') === 'false'));
+  verifier('et le graphique retrouve son cadrage',
+    await pp.evaluate(() => document.querySelectorAll('.zone-clic').length) === avantEx,
+    avantEx + ' → ' + (await pp.evaluate(() => document.querySelectorAll('.zone-clic').length)));
+  verifier('avec cinq relevés, le bouton d\'aperçu ne s\'affiche pas',
+    await pg.evaluate(() => document.getElementById('bascule-exemple').hidden));
+  await ctxPremier.close();
 
   await ctxGates.close();
   await ctx.close();

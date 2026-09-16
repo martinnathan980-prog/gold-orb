@@ -118,30 +118,23 @@ Autres points tenus par le code :
 
 ### Les colonnes analysées
 
-Dans « Avancement FWD par… », dans cet ordre :
+Dans « Avancement FWD par… », rangées par ordre alphabétique dans le sélecteur :
 
-| Colonne | Pourquoi |
+| Colonne | Ce qu'elle montre |
 |---|---|
+| **Ancienneté** | tranches calculées sur `Date création` |
 | **ATA** | le découpage attendu, ouvert par défaut |
-| **Séquence** | découpage de montage |
-| **Validation Définition Electrique** | pré-requis amont : un FWD non commencé sans définition validée est normal, avec définition validée il ne l'est pas |
-| **Statut iBG** | l'autre pré-requis amont |
-| **Etape** | état du cycle (`AVAILABLE`, `IN WORK`…) |
-| **Produit** | variante |
+| **Avancement** | la colonne FWD elle-même : d'un coup d'œil, toutes les façons de l'écrire, donc les saisies qui divergent |
+| **CC** | code circuit |
 | **Chapitre** | découpage documentaire |
-| **Redraw** | charge cachée, dans le groupe `Réalisation FWD` |
-| **Ancienneté** | ajoutée d'elle-même à partir de `Date création` |
+| **Date création (par mois)** | un groupe par mois, rangés dans l'ordre du temps |
+| **ECP** | |
+| **Validation Définition Electrique** | pré-requis amont : un FWD non commencé sans définition validée est normal ; avec définition validée, il ne l'est pas |
 
-Écartées volontairement : `Libellé`, `Nom Installation`, `Désignation GATES`,
-`Raison de la création` et les seize `Commentaire` — du texte libre ne fait pas
-une catégorie. `Référence UD` et `ECP` sont des identifiants. Les intitulés qui
-reviennent treize fois (`Validité`, `A traiter par`…) seraient impossibles à
-désigner.
-
-Pour en échanger une, une ligne en haut de `Code.gs` :
+Pour en changer, une ligne en haut de `Code.gs` :
 
 ```js
-DIMENSIONS: ['ATA', 'Séquence', 'Groupage', 'Réalisation FWD > Redraw'],
+DIMENSIONS: ['ATA', 'CC', 'Chapitre', 'Réalisation FWD > Avancement'],
 ```
 
 La syntaxe `Groupe > Colonne` sert quand plusieurs colonnes portent le même
@@ -151,8 +144,48 @@ Les deux autres réglages du même bloc :
 
 ```js
 COLONNE_FWD: 'Réalisation FWD > Avancement',
+COLONNE_DOMAINE: 'Domaine',
 GROUPES_MASQUES_AU_DEPART: ['HDK AA'],
 ```
+
+### Le journal des changements
+
+Chaque relevé archivé garde l'avancement **plan par plan**. Comparer deux
+relevés successifs donne, semaine par semaine, qui a bougé et dans quel sens —
+la seule chose que l'export du jour ne dira jamais.
+
+- La semaine la plus récente est en haut, ouverte ; les autres se déplient
+  d'un clic.
+- `Tout / Terminés / En cours / À faire` ne garde que les passages voulus.
+- Cliquer un plan réduit le tableau du bas à ce plan.
+- Les nouveaux plans et ceux qui ont disparu de l'export sont signalés.
+
+Le journal se remplit au **deuxième** archivage : il faut deux relevés pour
+savoir ce qui a changé entre les deux.
+
+### Les filtres rapides, au-dessus du tableau
+
+- **Domaine** — une puce par valeur (`BASE/OPTION`, `PERSO`…), avec le compte.
+- **Terminés reconduits** — les plans déjà terminés dont la date de création
+  remonte à plus de douze mois. Ils viennent d'avant : ils gonflent le
+  pourcentage d'avancement sans rien dire de l'effort de cette campagne. Le
+  seuil se règle par `MOIS_RECONDUIT` dans `Javascript.html`.
+
+### Vue essentielle
+
+Le bouton **Vue essentielle**, à côté de « Colonnes », ne laisse que la
+référence, l'avancement, la date de création et les colonnes analysées. Un
+second clic remet **exactement** la disposition d'avant, y compris les colonnes
+qu'on avait masquées soi-même.
+
+### Voir un exemple
+
+Tant qu'il n'y a qu'un ou deux relevés, le graphique n'a rien à tracer et
+personne ne voit à quoi la page servira. Le lien **voir un exemple**, à côté du
+titre « Avancement dans le temps », fabrique un historique fictif à partir des
+comptes du jour, sous un bandeau qui dit que c'en est un. Le tableau, lui,
+reste sur les vraies données. Le lien disparaît de lui-même au troisième
+relevé.
 
 ## 7. Les quatre états
 

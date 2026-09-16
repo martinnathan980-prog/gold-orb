@@ -44,11 +44,13 @@
      << A faire >> est une valeur saisie ; << vide >> est une cellule
      non renseignee. Les confondre masquerait un defaut de saisie.
      ============================================================ */
+  /* « libelle » compte des plans (« 63 Terminés »), « court » qualifie un plan
+     (« À faire → Terminé ») : le pluriel n'a pas sa place dans le second. */
   var ETATS = [
-    { cle: 'termine', libelle: 'Terminés',   couleur: 'var(--fait)',   teinte: '#286b45' },
-    { cle: 'encours', libelle: 'En cours',   couleur: 'var(--cours)',  teinte: '#bf7f14' },
-    { cle: 'afaire',  libelle: 'À faire',    couleur: 'var(--afaire)', teinte: '#71716a' },
-    { cle: 'vide',    libelle: 'Non renseignés', couleur: 'transparent', teinte: 'var(--filet-fort)', hachure: true }
+    { cle: 'termine', libelle: 'Terminés',   court: 'Terminé',   couleur: 'var(--fait)',   teinte: '#286b45' },
+    { cle: 'encours', libelle: 'En cours',   court: 'En cours',  couleur: 'var(--cours)',  teinte: '#bf7f14' },
+    { cle: 'afaire',  libelle: 'À faire',    court: 'À faire',   couleur: 'var(--afaire)', teinte: '#71716a' },
+    { cle: 'vide',    libelle: 'Non renseignés', court: 'Non renseigné', couleur: 'transparent', teinte: 'var(--filet-fort)', hachure: true }
   ];
   /* Les deux fonds soutenus portent du blanc, l'ambre garde l'encre du texte :
      c'est le couple valide par le controle de contraste. */
@@ -310,9 +312,40 @@
   var CLES_DIM = (SRC.clesDim && SRC.clesDim.length
       ? SRC.clesDim.filter(function (c) { return PAR_CLE[c]; })
       : COLONNES.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; }))
-    .concat(CLE_DATE ? ['_anciennete'] : []);
+    .concat(CLE_DATE ? ['_anciennete', '_mois'] : []);
+
+  var CLE_DOMAINE = (SRC.cleDomaine && PAR_CLE[SRC.cleDomaine]) ? SRC.cleDomaine : null;
+  var CLES_ESSENTIELLES = (SRC.clesEssentielles || []).filter(function (c) { return PAR_CLE[c]; });
+  /* Le bouton ne s'affiche que s'il y a une vue essentielle qui tienne debout :
+     sur un export de dix colonnes, tout masquer n'apporte rien. */
+  var VAUT_ESSENTIELLES = CLES_ESSENTIELLES.length >= 2 &&
+                          CLES_ESSENTIELLES.length < COLONNES.length - 3;
+  /* Le libellé d'un plan : la première colonne de texte long, pour que le
+     journal dise autre chose qu'une référence. */
+  var CLE_LIBELLE = (function () {
+    for (var i = 0; i < COLONNES.length; i++) {
+      if (!COLONNES[i].fige && /large/.test(COLONNES[i].classe || '')) return COLONNES[i].cle;
+    }
+    return null;
+  })();
+
+  var MOIS_COURT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+                    'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  /* Une date de création brute ferait autant de groupes que de jours : on
+     regroupe au mois, ce qui se lit et se compare. */
+  function moisDe(valeur) {
+    var m = /(\d{4})[-\/.](\d{1,2})/.exec(String(valeur || ''));
+    return m ? MOIS_COURT[Number(m[2]) - 1] + ' ' + m[1] : '\u2014';
+  }
+  function rangMois(nom) {
+    if (nom === '\u2014') return -1;
+    var bout = nom.split(' ');
+    return Number(bout[1]) * 12 + MOIS_COURT.indexOf(bout[0]);
+  }
   function valeurDim(p, cle) {
-    return cle === '_anciennete' ? ancienneteDepuis(p[CLE_DATE], dateDe(AUJ)) : p[cle];
+    if (cle === '_anciennete') return ancienneteDepuis(p[CLE_DATE], dateDe(AUJ));
+    if (cle === '_mois') return moisDe(p[CLE_DATE]);
+    return p[cle];
   }
 
   /* Plusieurs colonnes de l'export sont des booléens écrits « true » / « false ».
@@ -428,7 +461,15 @@
 
   var vue = {
     recherche: '', etat: '', filtres: {},
-    ordre: COLONNES.map(function (c) { return c.cle; }),
+    /* L'ordre de la feuille, à une exception près : la colonne figée passe en
+       tête. Elle est verrouillée à gauche de l'écran ; si une autre la
+       précédait — l'export commence par une colonne sans intitulé — le
+       verrouillage se ferait sur du vide. */
+    ordre: (function () {
+      var figee = COLONNES.filter(function (c) { return c.fige; }).map(function (c) { return c.cle; });
+      return figee.concat(COLONNES.filter(function (c) { return !c.fige; })
+        .map(function (c) { return c.cle; }));
+    })(),
     /* Certains exports répètent un bloc de colonnes par variante : une centaine
        de colonnes qui noieraient le tableau à la première ouverture. Elles
        s'ouvrent repliées — rien n'est supprimé, « tout afficher » les ramène,
@@ -444,6 +485,12 @@
     aideFin: false,
     groupe: null, refs: null, refsLibelle: '',
     vides: {},
+    domaine: '',
+    reconduits: false,
+    essentielles: false,
+    journal: '',
+    journalOuverts: {},
+    exemple: false,
     fen: { debut: 0, span: 28 }
   };
 
@@ -512,6 +559,8 @@
       if (vue.etat && p._etat !== vue.etat) return false;
       if (vue.groupe && String(valeurDim(p, vue.groupe.dim)) !== vue.groupe.val) return false;
       if (vue.refs && !vue.refs[p.reference]) return false;
+      if (vue.domaine && String(p[CLE_DOMAINE] || '') !== vue.domaine) return false;
+      if (vue.reconduits && !estReconduit(p)) return false;
       for (var kv in vue.vides) {
         if (vue.vides[kv] && String(p[kv] == null ? '' : p[kv]).trim() !== '') return false;
       }
@@ -522,6 +571,22 @@
       return true;
     });
   }
+  /* Un plan « reconduit » : déjà terminé, mais créé il y a si longtemps qu'il
+     ne vient pas de cette campagne. On ne l'a pas soldé, on en a hérité — et il
+     gonfle le pourcentage d'avancement sans rien dire de l'effort réel. */
+  var MOIS_RECONDUIT = 12;
+  function moisDepuis(valeur, reference) {
+    var m = /(\d{4})[-\/.](\d{1,2})/.exec(String(valeur || ''));
+    if (!m) return null;
+    return (reference.getUTCFullYear() - Number(m[1])) * 12 +
+           (reference.getUTCMonth() + 1 - Number(m[2]));
+  }
+  function estReconduit(p) {
+    if (p._etat !== 'termine' || !CLE_DATE) return false;
+    var mois = moisDepuis(p[CLE_DATE], dateDe(AUJ));
+    return mois !== null && mois >= MOIS_RECONDUIT;
+  }
+
   function compte(liste) {
     var c = { termine: 0, encours: 0, afaire: 0, vide: 0 };
     liste.forEach(function (p) { c[p._etat]++; });
@@ -530,7 +595,7 @@
     return c;
   }
   function filtreActif() {
-    return !!(vue.recherche || vue.etat || vue.groupe || vue.refs ||
+    return !!(vue.recherche || vue.etat || vue.groupe || vue.refs || vue.domaine || vue.reconduits ||
       Object.keys(vue.filtres).some(function (k) { return vue.filtres[k]; }) ||
       Object.keys(vue.vides).some(function (k) { return vue.vides[k]; }));
   }
@@ -1220,6 +1285,10 @@
     /* Tri : par defaut on met en tete ce qu'il faut pousser le plus fort (ou la
        fin la plus lointaine sans jalon). Un clic sur un en-tete prend le relais. */
     function cleTri(r, cle) {
+      /* Les dimensions dérivées du temps se rangent dans l'ordre du temps :
+         « avr. 2024 » ne vient pas avant « mai 2020 » parce que A précède M. */
+      if (cle === 'nom' && dim === '_mois') return rangMois(r.nom);
+      if (cle === 'nom' && dim === '_anciennete') return ORDRE_ANCIENNETE.indexOf(r.nom);
       if (cle === 'nom') return r.nom;
       if (cle === 'total') return r.total;
       if (cle === 'pct') return r.pct;
@@ -1360,10 +1429,16 @@
 
   /* L'ordre du sélecteur est celui que donne la source : quand la liste est
      fixée à la main, c'est l'ordre demandé qui compte, pas celui de la feuille. */
+  /* Le sélecteur est rangé par ordre alphabétique : on y cherche un nom, pas
+     une position dans la feuille. */
   var DIMENSIONS = CLES_DIM
-    .filter(function (c) { return c !== '_anciennete' && PAR_CLE[c]; })
+    .filter(function (c) { return c !== '_anciennete' && c !== '_mois' && PAR_CLE[c]; })
     .map(function (c) { return PAR_CLE[c]; })
-    .concat(CLE_DATE ? [{ cle: '_anciennete', titre: 'Ancienneté (' + PAR_CLE[CLE_DATE].titre.toLowerCase() + ')' }] : []);
+    .concat(CLE_DATE ? [
+      { cle: '_anciennete', titre: 'Ancienneté' },
+      { cle: '_mois', titre: PAR_CLE[CLE_DATE].titre + ' (par mois)' }
+    ] : [])
+    .sort(function (a, b) { return a.titre.localeCompare(b.titre, 'fr'); });
   var TITRE_DIM = {};
   DIMENSIONS.forEach(function (d) { TITRE_DIM[d.cle] = d.titre; });
 
@@ -1507,6 +1582,265 @@
       (morceaux.length ? morceaux.join('') : '<span>aucun changement.</span>');
   }
 
+  /* ============================================================
+     JOURNAL DES CHANGEMENTS
+     Chaque relevé archivé garde l'avancement plan par plan. Comparer deux
+     relevés successifs donne, semaine par semaine, qui a bougé et dans quel
+     sens — la seule chose que l'export du jour ne dira jamais.
+     ============================================================ */
+  var PLAN_PAR_REF = {};
+  PLANS.forEach(function (p) { PLAN_PAR_REF[p.reference] = p; });
+
+  function construireJournal() {
+    var journal = [];
+    for (var k = 1; k < RELEVES.length; k++) {
+      var avant = RELEVES[k - 1].plans, apres = RELEVES[k].plans;
+      if (!avant || !apres) continue;
+      var evenements = [];
+      Object.keys(apres).forEach(function (ref) {
+        var brutAvant = avant[ref];
+        if (brutAvant === undefined) {
+          evenements.push({ ref: ref, type: 'nouveau', apres: classer(apres[ref]) });
+          return;
+        }
+        var ea = classer(brutAvant), eb = classer(apres[ref]);
+        if (ea !== eb) evenements.push({ ref: ref, type: 'change', avant: ea, apres: eb });
+      });
+      Object.keys(avant).forEach(function (ref) {
+        if (apres[ref] === undefined) {
+          evenements.push({ ref: ref, type: 'disparu', avant: classer(avant[ref]) });
+        }
+      });
+      if (evenements.length) journal.push({ i: RELEVES[k].i, evenements: evenements });
+    }
+    return journal.reverse();          // la semaine la plus récente en tête
+  }
+  var JOURNAL = construireJournal();
+
+  /* La semaine où chaque plan est passé en terminé, pour de bon. */
+  var SEMAINE_FIN = (function () {
+    var f = {};
+    JOURNAL.slice().reverse().forEach(function (sem) {
+      sem.evenements.forEach(function (e) {
+        if (e.apres === 'termine') f[e.ref] = sem.i;
+        else if (e.avant === 'termine') delete f[e.ref];   // reparti en arrière
+      });
+    });
+    return f;
+  })();
+
+  function etiqEtat(cle) {
+    var e = ETAT_PAR_CLE[cle];
+    if (!e) return '';
+    var pastille = e.hachure
+      ? '<span class="pastille hachure"></span>'
+      : '<span class="pastille" style="background:' + e.couleur + '"></span>';
+    return '<span class="etiq-etat">' + pastille + ech(e.court) + '</span>';
+  }
+
+  var MAX_JOURNAL = 12;                // lignes affichées avant « voir tout »
+
+  function rendreJournal() {
+    var zone = $('zone-journal');
+    if (!JOURNAL.length) {
+      zone.innerHTML = '<div class="journal-vide">Le journal se remplira au deuxième archivage : ' +
+        'il faut deux relevés pour savoir ce qui a bougé entre les deux.</div>';
+      return;
+    }
+    var filtre = vue.journal;
+    var html = JOURNAL.map(function (sem, rang) {
+      var evts = sem.evenements.filter(function (e) {
+        return !filtre || e.apres === filtre;
+      });
+      if (!evts.length) return '';
+
+      var parType = { termine: 0, encours: 0, afaire: 0, vide: 0, nouveau: 0, disparu: 0 };
+      evts.forEach(function (e) {
+        if (e.type === 'nouveau') parType.nouveau++;
+        else if (e.type === 'disparu') parType.disparu++;
+        else parType[e.apres]++;
+      });
+      /* « passés en en cours » ne se dit pas : chaque état a sa tournure. */
+      var resume = [];
+      ETATS.forEach(function (et) {
+        var n = parType[et.cle];
+        if (!n) return;
+        var pluriel = n > 1 ? 's' : '';
+        if (et.cle === 'termine')      resume.push(nb(n) + ' terminé' + pluriel);
+        else if (et.cle === 'encours') resume.push(nb(n) + ' passé' + pluriel + ' en cours');
+        else if (et.cle === 'afaire')  resume.push(nb(n) + ' repassé' + pluriel + ' à faire');
+        else                           resume.push(nb(n) + ' effacé' + pluriel);
+      });
+      if (parType.nouveau) resume.push(nb(parType.nouveau) + ' nouveau' + (parType.nouveau > 1 ? 'x' : ''));
+      if (parType.disparu) resume.push(nb(parType.disparu) + ' disparu' + (parType.disparu > 1 ? 's' : ''));
+
+      // La semaine la plus récente s'ouvre d'elle-même : c'est celle qu'on vient voir.
+      var ouvert = vue.journalOuverts[sem.i] !== undefined ? vue.journalOuverts[sem.i] : (rang === 0);
+      var limite = vue.journalOuverts['tout' + sem.i] ? evts.length : MAX_JOURNAL;
+
+      var lignes = evts.slice(0, limite).map(function (e) {
+        var plan = PLAN_PAR_REF[e.ref];
+        var quoi = plan && CLE_LIBELLE ? String(plan[CLE_LIBELLE] || '') : '';
+        var vers = e.type === 'nouveau'
+          ? '<span class="vers">nouveau ' + etiqEtat(e.apres) + '</span>'
+          : e.type === 'disparu'
+            ? '<span class="vers">' + etiqEtat(e.avant) + ' <span class="fleche-etat">→</span> retiré</span>'
+            : '<span class="vers">' + etiqEtat(e.avant) + '<span class="fleche-etat">→</span>' + etiqEtat(e.apres) + '</span>';
+        return '<li><button class="journal-ligne" type="button" data-ref="' + ech(e.ref) +
+          '" title="N’afficher que ce plan dans le tableau">' +
+          '<span class="ref">' + ech(e.ref) + '</span>' +
+          '<span class="quoi">' + ech(quoi) + '</span>' + vers + '</button></li>';
+      }).join('');
+
+      var reste = evts.length - limite;
+      if (reste > 0) {
+        lignes += '<li><button class="journal-plus" type="button" data-tout="' + sem.i + '">' +
+          'voir les ' + nb(reste) + ' autres</button></li>';
+      }
+
+      return '<div class="journal-semaine">' +
+        '<button class="journal-tete" type="button" data-semaine="' + sem.i + '" aria-expanded="' + ouvert + '">' +
+        '<svg class="chevron" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
+        '<path d="m3.5 1.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+        '<span class="sem">' + etiquette(sem.i) + '</span>' +
+        '<span class="resume">' + ech(resume.join(' · ')) + '</span></button>' +
+        (ouvert ? '<ul class="journal-liste">' + lignes + '</ul>' : '') +
+        '</div>';
+    }).join('');
+
+    zone.innerHTML = html || '<div class="journal-vide">Aucun changement de ce type dans l’historique.</div>';
+  }
+
+  /* ============================================================
+     APERÇU
+     Avec un seul relevé, le graphique n'a rien à tracer et personne ne voit
+     à quoi servira la page. Un bouton fabrique donc un historique fictif à
+     partir des comptes du jour — sous bandeau, pour qu'il soit impossible de
+     le prendre pour du réel.
+     ============================================================ */
+  var RELEVES_REELS = RELEVES;
+  var AUJ_REEL = AUJ;
+  var BASE_REELLE = BASE;
+
+  function relevesDExemple() {
+    var c = compte(PLANS);
+    var semaines = 8;
+    var faux = [];
+    for (var k = 0; k <= semaines; k++) {
+      var part = 0.25 + (0.75 * k) / semaines;      // montée régulière jusqu'à aujourd'hui
+      var termine = Math.round(c.termine * part);
+      var glisse = c.termine - termine;
+      faux.push({
+        i: k,
+        total: c.total,
+        termine: termine,
+        encours: c.encours + Math.round(glisse * 0.6),
+        afaire: c.afaire + (glisse - Math.round(glisse * 0.6)),
+        vide: c.vide,
+        groupes: {},
+        plans: null
+      });
+    }
+    return faux;
+  }
+
+  function basculerExemple(actif) {
+    vue.exemple = actif;
+    if (actif) {
+      RELEVES = relevesDExemple();
+      AUJ = RELEVES[RELEVES.length - 1].i;
+      BASE = dateDeBase(BASE_REELLE, AUJ_REEL - AUJ);   // « aujourd'hui » reste aujourd'hui
+      vue.fen = { debut: 0, span: Math.max(14, AUJ + 6) };
+    } else {
+      RELEVES = RELEVES_REELS;
+      AUJ = AUJ_REEL;
+      BASE = BASE_REELLE;
+      vue.fen = { debut: 0, span: 28 };
+    }
+    DERNIER = RELEVES[RELEVES.length - 1];
+    $('bandeau-exemple').hidden = !actif;
+    $('bascule-exemple').setAttribute('aria-pressed', String(actif));
+    $('bascule-exemple').textContent = actif ? 'masquer l’exemple' : 'voir un exemple';
+    rendre();
+  }
+
+  /* Le bouton n'a de sens que tant que l'historique est trop mince pour
+     dessiner quoi que ce soit. */
+  if (VAUT_ESSENTIELLES) {
+    $('bascule-essentielles').hidden = false;
+    $('bascule-essentielles').title = 'N\u2019afficher que les colonnes utiles au suivi \u2014 un second clic remet tout';
+  }
+
+  (function proposerExemple() {
+    if (RELEVES_REELS.length < 3) {
+      $('bascule-exemple').hidden = false;
+      $('bascule-exemple').title = 'Montrer, sur des données fictives, ce que ce graphique dira une fois quelques relevés archivés';
+    }
+  })();
+
+  /* ============================================================
+     FILTRES RAPIDES
+     Le domaine (perso ou base/option) et les plans reconduits : deux
+     questions posées chaque semaine, deux boutons plutôt qu'un détour par
+     les filtres de colonne.
+     ============================================================ */
+  function rendreRapides() {
+    var zone = $('rapides');
+    var morceaux = [];
+
+    if (CLE_DOMAINE) {
+      var parDomaine = {};
+      PLANS.forEach(function (p) {
+        var v = String(p[CLE_DOMAINE] || '').trim();
+        if (v) parDomaine[v] = (parDomaine[v] || 0) + 1;
+      });
+      var valeurs = Object.keys(parDomaine).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+      if (valeurs.length > 1 && valeurs.length <= 8) {
+        morceaux.push('<span class="titre-rapide">' + ech(PAR_CLE[CLE_DOMAINE].titre) + '</span>');
+        morceaux.push('<button class="puce-rapide" type="button" data-domaine="" aria-pressed="' +
+          (!vue.domaine) + '">Tous</button>');
+        valeurs.forEach(function (v) {
+          morceaux.push('<button class="puce-rapide" type="button" data-domaine="' + ech(v) +
+            '" aria-pressed="' + (vue.domaine === v) + '">' + ech(v) +
+            '<span class="n">' + nb(parDomaine[v]) + '</span></button>');
+        });
+      }
+    }
+
+    var nReconduits = 0;
+    PLANS.forEach(function (p) { if (estReconduit(p)) nReconduits++; });
+    if (nReconduits) {
+      morceaux.push('<button class="puce-rapide" type="button" data-reconduits="1" aria-pressed="' +
+        vue.reconduits + '" title="Plans déjà terminés dont la date de création remonte à plus de ' +
+        MOIS_RECONDUIT + ' mois : ils viennent d’avant, ils n’ont pas été soldés ici.">' +
+        'Terminés reconduits<span class="n">' + nb(nReconduits) + '</span></button>');
+    }
+
+    zone.innerHTML = morceaux.join('');
+  }
+
+  /* ============================================================
+     VUE ESSENTIELLE
+     Cent trente-huit colonnes, c'est l'extract ; sept, c'est ce qu'on regarde.
+     Le bouton bascule de l'un à l'autre sans rien perdre : la disposition
+     d'avant est remise telle quelle au retour.
+     ============================================================ */
+  var cacheesAvantEssentielles = null;
+  function appliquerEssentielles() {
+    if (vue.essentielles) {
+      if (cacheesAvantEssentielles === null) {
+        cacheesAvantEssentielles = JSON.parse(JSON.stringify(vue.cachees));
+      }
+      var garder = {};
+      CLES_ESSENTIELLES.forEach(function (c) { garder[c] = true; });
+      vue.cachees = {};
+      COLONNES.forEach(function (c) { if (!garder[c.cle] && !c.fige) vue.cachees[c.cle] = true; });
+    } else if (cacheesAvantEssentielles !== null) {
+      vue.cachees = cacheesAvantEssentielles;
+      cacheesAvantEssentielles = null;
+    }
+  }
+
   function rendreIncomplets() {
     var col = PAR_CLE[COLONNE_SUIVIE];
     var n = 0;
@@ -1529,12 +1863,14 @@
     var liste = selection();
     rendreAvancement(liste);
     rendreGraphique(liste);
+    rendreJournal();
     rendreCritique(liste);
     rendreEntetes();
     rendreCorps(liste);
     rendrePanneauColonnes();
     rendreComparatif();
     rendreIncomplets();
+    rendreRapides();
     $('reinit').hidden = !filtreActif();
     planifierSauvegarde();
   }
@@ -1624,6 +1960,74 @@
     if (!b) return;
     var meme = vue.groupe && vue.groupe.dim === vue.dimCritique && vue.groupe.val === b.dataset.groupe;
     vue.groupe = meme ? null : { dim: vue.dimCritique, val: b.dataset.groupe };
+    rendre();
+  });
+
+  $('zone-journal').addEventListener('click', function (e) {
+    var tout = e.target.closest('button[data-tout]');
+    if (tout) {
+      vue.journalOuverts['tout' + tout.dataset.tout] = true;
+      rendreJournal();
+      return;
+    }
+    var tete = e.target.closest('button[data-semaine]');
+    if (tete) {
+      var i = tete.dataset.semaine;
+      var ouvert = tete.getAttribute('aria-expanded') === 'true';
+      vue.journalOuverts[i] = !ouvert;
+      rendreJournal();
+      return;
+    }
+    var ligne = e.target.closest('button[data-ref]');
+    if (ligne) {
+      /* Cliquer un plan du journal, c'est demander « lequel, exactement ? » :
+         le tableau se réduit à lui, et le bandeau dit d'où vient le filtre. */
+      var ref = ligne.dataset.ref;
+      var meme = vue.refs && Object.keys(vue.refs).length === 1 && vue.refs[ref];
+      if (meme) { vue.refs = null; vue.refsLibelle = ''; }
+      else {
+        vue.refs = {}; vue.refs[ref] = true;
+        vue.refsLibelle = 'plan ' + ref;
+      }
+      rendre();
+      var cadre = $('cadre-tableau');
+      if (cadre && !meme) cadre.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+  });
+
+  document.querySelector('#filtre-journal').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-journal]');
+    if (!b) return;
+    vue.journal = b.dataset.journal;
+    document.querySelectorAll('#filtre-journal button').forEach(function (x) {
+      x.setAttribute('aria-pressed', String(x === b));
+    });
+    rendreJournal();
+  });
+
+  $('rapides').addEventListener('click', function (e) {
+    var d = e.target.closest('button[data-domaine]');
+    if (d) {
+      vue.domaine = (vue.domaine === d.dataset.domaine) ? '' : d.dataset.domaine;
+      rendre();
+      return;
+    }
+    if (e.target.closest('button[data-reconduits]')) {
+      vue.reconduits = !vue.reconduits;
+      rendre();
+    }
+  });
+
+  $('bascule-exemple').addEventListener('click', function () {
+    basculerExemple(!vue.exemple);
+  });
+  $('fermer-exemple').addEventListener('click', function () { basculerExemple(false); });
+
+  $('bascule-essentielles').addEventListener('click', function () {
+    vue.essentielles = !vue.essentielles;
+    $('bascule-essentielles').setAttribute('aria-pressed', String(vue.essentielles));
+    appliquerEssentielles();
     rendre();
   });
 
@@ -1720,6 +2124,7 @@
   $('reinit').addEventListener('click', function () {
     vue.recherche = ''; vue.etat = ''; vue.filtres = {}; vue.groupe = null; vue.vides = {};
     vue.refs = null; vue.refsLibelle = '';
+    vue.domaine = ''; vue.reconduits = false;
     $('recherche').value = '';
     rendre();
   });

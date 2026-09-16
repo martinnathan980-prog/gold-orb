@@ -100,7 +100,7 @@ function feuilleGates(nbLignes) {
     l[iSeq]   = 'S' + (1 + Math.floor(alea() * 5));
     l[iEtape] = tire(['AVAILABLE', 'IN WORK', 'FROZEN']);
     l[iProd]  = tire(['SUPER PUMA', 'MK2', 'MK3']);
-    l[iDom]   = 'ELEC';
+    l[iDom]   = tire(['BASE/OPTION', 'BASE/OPTION', 'PERSO']);
     l[iChap]  = tire(['A', 'B', 'C', 'D']);
     l[iSChap] = tire(['A1', 'A2', 'B1', 'B2', 'C1']);
     l[iGrp]   = tire(['G1', 'G2', 'G3']);

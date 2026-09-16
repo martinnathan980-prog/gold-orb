@@ -69,14 +69,19 @@ const CONFIG = {
    */
   DIMENSIONS: [
     'ATA',
-    'Séquence',
-    'Validation Définition Electrique',
-    'Statut iBG',
-    'Etape',
-    'Produit',
+    'Réalisation FWD > Avancement',
+    'CC',
     'Chapitre',
-    'Réalisation FWD > Redraw'
+    'ECP',
+    'Validation Définition Electrique'
   ],
+
+  /**
+   * La colonne qui dit si un plan est du perso ou de la base/option. Elle
+   * pilote le filtre rapide en haut du tableau. Vide = détection par
+   * l'intitulé « domaine ».
+   */
+  COLONNE_DOMAINE: 'Domaine',
 
   /**
    * Groupes de colonnes masqués à la première ouverture. L'export GATES répète
@@ -376,6 +381,16 @@ function trouverIndexReference(entetes) {
   return 0;
 }
 
+/** Index de la colonne qui distingue le perso de la base/option. */
+function trouverIndexDomaine(entetes, groupes) {
+  const force = indexParDesignation(CONFIG.COLONNE_DOMAINE, entetes, groupes);
+  if (force !== -1) return force;
+  for (let i = 0; i < entetes.length; i++) {
+    if (normaliser(entetes[i]).indexOf('domaine') !== -1) return i;
+  }
+  return -1;
+}
+
 /** Index d'une colonne de date de création, pour la dimension « ancienneté ». */
 function trouverIndexDate(entetes, lignes) {
   for (let i = 0; i < entetes.length; i++) {
@@ -431,6 +446,7 @@ function construireModele() {
 
   const iFWD = trouverIndexFWD(entetes, groupes);
   const iRef = trouverIndexReference(entetes);
+  const iDomaine = trouverIndexDomaine(entetes, groupes);
   const lignesBrutes = donnees.slice(indexEntete + 1);
   const iDate = trouverIndexDate(entetes, lignesBrutes);
 
@@ -550,6 +566,14 @@ function construireModele() {
     cleDate: cleDate,
     clesDim: clesDim,
     dimParDefaut: choisirDimensionParDefaut(colonnes, clesDim),
+    /* La « vue essentielle » du tableau : ce qu'on regarde vraiment, sans les
+       cent trente-huit colonnes de l'export. */
+    clesEssentielles: colonnes
+      .filter(function (c) {
+        return c.fige || c.cle === 'avancement' || c.cle === cleDate || c.dim;
+      })
+      .map(function (c) { return c.cle; }),
+    cleDomaine: iDomaine === -1 ? null : colonnes[iDomaine].cle,
     avertissement: cleFWD === null
       ? 'Aucune colonne d\'avancement FWD n\'a été reconnue dans l\'en-tête.'
       : '',
@@ -636,6 +660,8 @@ function getDonneesPourClient() {
       colonnes: modele.colonnes,
       cleDate: modele.cleDate,
       clesDim: modele.clesDim,
+      clesEssentielles: modele.clesEssentielles,
+      cleDomaine: modele.cleDomaine,
       dimParDefaut: modele.dimParDefaut,
       lignesIgnorees: modele.lignesIgnorees,
       plans: modele.plans,
@@ -648,7 +674,8 @@ function getDonneesPourClient() {
       message: err && err.message ? err.message : String(err),
       feuille: '',
       genereLe: new Date().toISOString(),
-      colonnes: [], cleDate: null, clesDim: [], dimParDefaut: '', plans: [], releves: [], jalons: []
+      colonnes: [], cleDate: null, clesDim: [], clesEssentielles: [], cleDomaine: null,
+      dimParDefaut: '', plans: [], releves: [], jalons: []
     };
   }
 }
