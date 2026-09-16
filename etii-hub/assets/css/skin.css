@@ -1,40 +1,55 @@
 /* =========================================================================
    ETII Hub — Matière
-   Charge APRÈS components.css. Ce fichier ne change aucune structure : il
-   pose l'atmosphère et la matière du portail — fond profond, panneaux en
-   verre dépoli, accent émeraude, profondeur.
+   Charge APRÈS components.css. Ne change aucune structure : pose la
+   matière du portail.
+
+   Parti pris : sobriété. Pas de grille technique en fond, pas de halos
+   colorés, pas de verre dépoli, pas de lueur néon. Des surfaces franches,
+   des filets d'un pixel, des ombres très douces, beaucoup d'air.
    Tout provient des jetons de tokens.css.
    ========================================================================= */
 
 /* -------------------------------------------------------------------------
-   1. L'atmosphère
-   Trois halos colorés et une grille de calque technique, en CSS pur.
-   Aucune image, aucune requête : le site reste utilisable hors ligne.
+   1. Le fond : uni, calme, sans motif
    ---------------------------------------------------------------------- */
 
 body {
   background-color: var(--fond);
-  background-image:
-    radial-gradient(60rem 42rem at 12% -8%,  var(--halo-1), transparent 62%),
-    radial-gradient(52rem 38rem at 92% 4%,   var(--halo-2), transparent 60%),
-    radial-gradient(46rem 46rem at 52% 108%, var(--halo-3), transparent 64%),
-    linear-gradient(var(--grille) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grille) 1px, transparent 1px);
-  background-size: auto, auto, auto, 3.5rem 3.5rem, 3.5rem 3.5rem;
-  background-attachment: fixed, fixed, fixed, fixed, fixed;
+  color: var(--texte);
   font-family: var(--police);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, .carte__titre, .modale__titre, .etat-vide__titre {
+/* -------------------------------------------------------------------------
+   2. Typographie : titres larges et serrés, texte au calme
+   ---------------------------------------------------------------------- */
+
+h1, h2, h3, h4,
+.carte__titre, .modale__titre, .etat-vide__titre {
   font-family: var(--police-titre);
+  font-weight: var(--graisse-max);
   letter-spacing: var(--lettrage-titre);
+  line-height: var(--interligne-serre);
   text-wrap: balance;
+  color: var(--texte);
 }
 
-h1 { font-weight: var(--graisse-max); }
+h1 { font-size: var(--texte-3xl); }
+h2 { font-size: var(--texte-2xl); }
+h3 { font-size: var(--texte-xl); }
 
-/* Chiffres, références et raccourcis : chasse fixe, alignement en colonne. */
+/* Les intitulés en capitales respirent. */
+.separateur-titre,
+.champ__etiquette,
+.carte__meta {
+  text-transform: uppercase;
+  letter-spacing: var(--lettrage-etiquette);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-forte);
+  color: var(--texte-faible);
+}
+
 .mono, .facette__compteur, .badge--carre, kbd,
 .champ__controle--mono, time {
   font-family: var(--police-mono);
@@ -42,8 +57,7 @@ h1 { font-weight: var(--graisse-max); }
 }
 
 /* -------------------------------------------------------------------------
-   2. Le verre dépoli
-   La matière commune à tous les panneaux du site.
+   3. Cartes : surfaces franches, filet d'un pixel, ombre très douce
    ---------------------------------------------------------------------- */
 
 .carte,
@@ -51,69 +65,35 @@ h1 { font-weight: var(--graisse-max); }
 .notification,
 .onglets__panneau,
 .etat-vide--encadre {
-  background: var(--verre);
-  backdrop-filter: var(--verre-flou);
-  -webkit-backdrop-filter: var(--verre-flou);
-  border: 1px solid var(--verre-bord);
-  box-shadow: var(--ombre-md), var(--verre-reflet);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  box-shadow: var(--ombre-sm);
 }
 
 .carte {
   border-radius: var(--rayon-lg);
-  border-top-color: var(--verre-crete);
   transition:
     transform var(--duree) var(--courbe),
     box-shadow var(--duree) var(--courbe),
-    border-color var(--duree) var(--courbe),
-    background var(--duree) var(--courbe);
+    border-color var(--duree) var(--courbe);
 }
 
-.carte--ample,
-.modale { border-radius: var(--rayon-xl); }
+.carte--ample, .modale { border-radius: var(--rayon-xl); }
 
-/* Le survol soulève la carte et l'éclaire — il ne la repeint pas. */
+/* Le survol soulève à peine : l'ombre fait le travail, pas la couleur. */
 .carte--cliquable:hover,
 .carte--cliquable:focus-within {
-  background: var(--verre-survol);
-  border-color: var(--accent-lueur);
-  border-top-color: var(--accent-vif);
-  transform: translateY(-3px);
-  box-shadow: var(--ombre-lg), var(--ombre-accent), var(--verre-reflet);
-}
-
-/* Balayage lumineux : la carte réagit au passage, discrètement. */
-.carte--cliquable { position: relative; overflow: hidden; isolation: isolate; }
-
-.carte--cliquable::after {
-  content: "";
-  position: absolute;
-  inset-block: 0;
-  inset-inline-start: -60%;
-  width: 45%;
-  background: linear-gradient(100deg,
-    transparent, var(--verre-balayage), transparent);
-  transform: skewX(-18deg);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.carte--cliquable:hover::after {
-  animation: balayage var(--duree-lente) var(--courbe);
-}
-
-@keyframes balayage {
-  from { inset-inline-start: -60%; opacity: 1; }
-  to   { inset-inline-start: 115%; opacity: 0; }
+  transform: translateY(-2px);
+  box-shadow: var(--ombre-lg);
+  border-color: var(--bordure-forte);
 }
 
 .carte--mise-en-avant {
   border-color: var(--accent-lueur);
-  border-top: 2px solid var(--accent-vif);
-  box-shadow: var(--ombre-lg), var(--ombre-accent), var(--verre-reflet);
+  box-shadow: var(--ombre-md);
 }
 
-/* Cartes de statut : un liseré vertical plutôt qu'un cadre coloré complet. */
+/* Cartes de statut : un filet vertical, rien de plus. */
 .carte--statut-info,
 .carte--statut-succes,
 .carte--statut-alerte,
@@ -126,119 +106,108 @@ h1 { font-weight: var(--graisse-max); }
 .carte--statut-critique { --statut-bord: var(--statut-critique); }
 
 /* -------------------------------------------------------------------------
-   3. En-tête et navigation
+   4. En-tête : barre translucide et discrète
    ---------------------------------------------------------------------- */
 
 .site-entete {
-  background: linear-gradient(to bottom,
-    color-mix(in srgb, var(--fond-profond) 92%, transparent),
-    color-mix(in srgb, var(--fond-profond) 72%, transparent));
-  backdrop-filter: var(--verre-flou);
-  -webkit-backdrop-filter: var(--verre-flou);
-  border-bottom: 1px solid var(--bordure);
-  box-shadow: var(--ombre-sm);
+  background-color: color-mix(in srgb, var(--fond) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--bordure-douce);
+  box-shadow: none;
 }
 
 .site-logo {
   font-family: var(--police-titre);
   font-weight: var(--graisse-max);
-  letter-spacing: 0.06em;
+  letter-spacing: -0.01em;
+  color: var(--texte);
 }
 
 .site-nav__liste a {
   border-radius: var(--rayon-plein);
-  transition: background var(--duree-rapide) var(--courbe),
-              color var(--duree-rapide) var(--courbe);
+  color: var(--texte-doux);
+  font-weight: var(--graisse-moyenne);
+  transition: color var(--duree-rapide) var(--courbe),
+              background-color var(--duree-rapide) var(--courbe);
 }
 
-.site-nav__liste a:hover { background: var(--bordure-douce); }
+.site-nav__liste a:hover { color: var(--texte); background-color: var(--bordure-douce); }
 
-/* La page courante porte l'accent, pas un simple fond bleu. */
 .site-nav__liste a[aria-current="page"] {
-  background: var(--accent-doux);
-  color: var(--accent-vif);
-  box-shadow: inset 0 0 0 1px var(--accent-lueur);
+  color: var(--texte);
+  font-weight: var(--graisse-forte);
+  background-color: var(--bordure-douce);
 }
 
 .bascule-theme {
   border-radius: var(--rayon-plein);
-  border: 1px solid var(--verre-bord);
-  background: var(--verre);
-  backdrop-filter: var(--verre-flou);
-  -webkit-backdrop-filter: var(--verre-flou);
+  border: 1px solid var(--bordure);
+  background-color: transparent;
+  color: var(--texte-doux);
 }
 
+.bascule-theme:hover { background-color: var(--bordure-douce); color: var(--texte); }
+
 /* -------------------------------------------------------------------------
-   4. Titres de section : un filet lumineux de part et d'autre
+   5. Titres de section : un simple filet, pas de dégradé
    ---------------------------------------------------------------------- */
 
 .separateur-titre {
   display: flex;
   align-items: center;
-  gap: var(--e-5);
-  text-transform: uppercase;
-  letter-spacing: var(--lettrage-etiquette);
-  font-size: var(--texte-sm);
-  font-weight: var(--graisse-extra);
-  color: var(--texte-doux);
+  gap: var(--e-4);
 }
 
-.separateur-titre::before,
 .separateur-titre::after {
   content: "";
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg,
-    transparent, var(--bordure-forte), transparent);
+  background-color: var(--bordure);
 }
 
 /* -------------------------------------------------------------------------
-   5. Contrôles
+   6. Contrôles
    ---------------------------------------------------------------------- */
 
 .bouton {
   border-radius: var(--rayon-plein);
   font-family: var(--police);
   font-weight: var(--graisse-forte);
-  letter-spacing: 0.01em;
-  transition: transform var(--duree-rapide) var(--courbe),
-              box-shadow var(--duree-rapide) var(--courbe),
-              background var(--duree-rapide) var(--courbe);
+  letter-spacing: 0;
+  transition: background-color var(--duree-rapide) var(--courbe),
+              color var(--duree-rapide) var(--courbe),
+              border-color var(--duree-rapide) var(--courbe),
+              transform var(--duree-rapide) var(--courbe);
 }
 
 .bouton--principal {
-  background: linear-gradient(140deg, var(--accent-vif), var(--accent));
+  background-color: var(--accent);
   color: var(--accent-contenu);
   border: 1px solid transparent;
-  box-shadow: var(--ombre-accent);
+  box-shadow: none;
 }
 
-.bouton--principal:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--ombre-lg), var(--ombre-accent);
-}
+.bouton--principal:hover { background-color: var(--accent-vif); }
+.bouton:active { transform: scale(0.98); }
 
 .bouton--secondaire,
 .bouton--icone {
-  background: var(--verre);
-  backdrop-filter: var(--verre-flou);
-  -webkit-backdrop-filter: var(--verre-flou);
-  border: 1px solid var(--verre-bord);
+  background-color: var(--fond-eleve);
+  border: 1px solid var(--bordure);
+  color: var(--texte);
 }
 
 .bouton--secondaire:hover,
-.bouton--icone:hover {
-  background: var(--verre-survol);
-  border-color: var(--accent-lueur);
-}
+.bouton--icone:hover { background-color: var(--fond-profond); }
 
-.bouton:active { transform: translateY(0); }
+.bouton--discret { color: var(--accent); background-color: transparent; border-color: transparent; }
+.bouton--discret:hover { background-color: var(--accent-doux); }
 
-/* Champs : creusés dans le fond plutôt que posés dessus. */
-/* Les champs sont creusés dans le fond plutôt que posés dessus. */
 .champ__controle,
-.champ__select {
-  background: var(--fond-enfonce);
+.champ__select,
+.recherche {
+  background-color: var(--fond-eleve);
   border: 1px solid var(--bordure);
   border-radius: var(--rayon-md);
   color: var(--texte);
@@ -250,29 +219,16 @@ h1 { font-weight: var(--graisse-max); }
 .champ__controle:focus,
 .champ__select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-doux);
+  box-shadow: 0 0 0 4px var(--accent-doux);
 }
 
-/* La recherche : c'est le conteneur .recherche qui porte le cadre, l'input
-   à l'intérieur reste nu. Styler les deux produirait un double anneau. */
-.recherche {
-  background: var(--fond-enfonce);
-  border-color: var(--bordure);
-  border-radius: var(--rayon-plein);
-  transition: border-color var(--duree-rapide) var(--courbe),
-              box-shadow var(--duree-rapide) var(--courbe);
-}
-
+.recherche { border-radius: var(--rayon-plein); }
 .recherche:hover { border-color: var(--bordure-forte); }
 
-/* Le champ de recherche est l'objet principal du site : il est traité comme tel. */
 .recherche--proeminente {
   padding-inline: var(--e-5);
-  background: var(--verre);
-  backdrop-filter: var(--verre-flou);
-  -webkit-backdrop-filter: var(--verre-flou);
-  border: 1px solid var(--verre-bord);
-  box-shadow: var(--ombre-lg), var(--verre-reflet);
+  box-shadow: var(--ombre-md);
+  border-color: var(--bordure);
 }
 
 .recherche--proeminente .recherche__champ {
@@ -282,156 +238,117 @@ h1 { font-weight: var(--graisse-max); }
 
 .recherche--proeminente:focus-within {
   border-color: var(--accent);
-  box-shadow: var(--ombre-lg), 0 0 36px var(--accent-lueur), var(--verre-reflet);
+  box-shadow: var(--ombre-md), 0 0 0 4px var(--accent-doux);
 }
 
 .recherche__raccourci {
   font-family: var(--police-mono);
   border: 1px solid var(--bordure);
   border-radius: var(--rayon-sm);
-  background: var(--fond-enfonce);
+  background-color: var(--fond-profond);
   color: var(--texte-faible);
 }
 
 /* -------------------------------------------------------------------------
-   6. Facettes, badges, onglets
-   .facettes est une liste de puces : elle ne reçoit aucun cadre, les puces
-   flottent directement sur le fond.
+   7. Puces, badges, onglets
    ---------------------------------------------------------------------- */
 
-.facettes {
-  background: none;
-  border: 0;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-/* -------------------------------------------------------------------------
-   6b. Puces, badges, onglets
-   ---------------------------------------------------------------------- */
+.facettes { background: none; border: 0; box-shadow: none; }
 
 .facette {
   border-radius: var(--rayon-plein);
-  background: var(--verre);
-  border: 1px solid var(--verre-bord);
+  background-color: var(--fond-eleve);
+  border: 1px solid var(--bordure);
   color: var(--texte-doux);
   font-weight: var(--graisse-moyenne);
-  transition: background var(--duree-rapide) var(--courbe),
+  transition: background-color var(--duree-rapide) var(--courbe),
               border-color var(--duree-rapide) var(--courbe),
               color var(--duree-rapide) var(--courbe);
 }
 
-.facette:hover:not(:disabled) {
-  background: var(--verre-survol);
-  color: var(--texte);
-  border-color: var(--bordure-forte);
-}
+.facette:hover:not(:disabled) { background-color: var(--fond-profond); color: var(--texte); }
 
 .facette[aria-pressed="true"] {
-  background: var(--accent-doux);
-  border-color: var(--accent);
-  color: var(--accent-vif);
-  box-shadow: inset 0 0 0 1px var(--accent-lueur);
+  background-color: var(--texte);
+  border-color: var(--texte);
+  color: var(--texte-inverse);
 }
 
-.facette__compteur {
-  color: var(--texte-faible);
-  font-size: var(--texte-xs);
-}
-
-.facette[aria-pressed="true"] .facette__compteur { color: var(--accent-vif); }
+.facette__compteur { color: var(--texte-faible); font-size: var(--texte-xs); }
+.facette[aria-pressed="true"] .facette__compteur { color: var(--texte-inverse); opacity: 0.75; }
 
 .badge {
   border-radius: var(--rayon-plein);
   font-weight: var(--graisse-forte);
-  letter-spacing: 0.02em;
   border: 1px solid transparent;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
-.badge--info     { background: var(--statut-info-fond);     color: var(--statut-info);     border-color: color-mix(in srgb, var(--statut-info) 32%, transparent); }
-.badge--succes   { background: var(--statut-succes-fond);   color: var(--statut-succes);   border-color: color-mix(in srgb, var(--statut-succes) 32%, transparent); }
-.badge--alerte   { background: var(--statut-alerte-fond);   color: var(--statut-alerte);   border-color: color-mix(in srgb, var(--statut-alerte) 32%, transparent); }
-.badge--critique { background: var(--statut-critique-fond); color: var(--statut-critique); border-color: color-mix(in srgb, var(--statut-critique) 32%, transparent); }
-.badge--accent   { background: var(--accent-doux);          color: var(--accent-vif);      border-color: var(--accent-lueur); }
-.badge--neutre   { background: var(--bordure-douce);        color: var(--texte-doux);      border-color: var(--bordure); }
+.badge--info     { background-color: var(--statut-info-fond);     color: var(--statut-info); }
+.badge--succes   { background-color: var(--statut-succes-fond);   color: var(--statut-succes); }
+.badge--alerte   { background-color: var(--statut-alerte-fond);   color: var(--statut-alerte); }
+.badge--critique { background-color: var(--statut-critique-fond); color: var(--statut-critique); }
+.badge--accent   { background-color: var(--accent-doux);          color: var(--texte-accent); }
+.badge--neutre   { background-color: var(--fond-profond);         color: var(--texte-doux); }
 
-.onglets__liste {
-  gap: var(--e-2);
-  border-bottom: 1px solid var(--bordure);
-}
+.onglets__liste { gap: var(--e-2); border-bottom: 1px solid var(--bordure); }
 
 .onglets__onglet {
-  border-radius: var(--rayon-md) var(--rayon-md) 0 0;
+  border-radius: 0;
   font-weight: var(--graisse-forte);
   color: var(--texte-doux);
   border-bottom: 2px solid transparent;
+  background: none;
   transition: color var(--duree-rapide) var(--courbe),
-              border-color var(--duree-rapide) var(--courbe),
-              background var(--duree-rapide) var(--courbe);
+              border-color var(--duree-rapide) var(--courbe);
 }
 
-.onglets__onglet:hover { color: var(--texte); background: var(--bordure-douce); }
+.onglets__onglet:hover { color: var(--texte); }
 
 .onglets__onglet[aria-selected="true"] {
-  color: var(--accent-vif);
-  border-bottom-color: var(--accent-vif);
-  background: var(--accent-doux);
+  color: var(--texte);
+  border-bottom-color: var(--texte);
+  background: none;
 }
 
 /* -------------------------------------------------------------------------
-   7. Surlignage des résultats et sélection clavier
+   8. Surlignage, sélection, modales, pied
    ---------------------------------------------------------------------- */
 
 mark, .surlignage {
-  background: var(--surlignage);
+  background-color: var(--surlignage);
   color: var(--surlignage-texte);
   border-radius: 3px;
   padding-inline: 2px;
   font-weight: var(--graisse-forte);
 }
 
-/* L'élément parcouru au clavier est repéré par un rail d'accent. */
 .resultat--actif,
-[class*="ds-carte"]:focus,
 .carte:focus-visible {
   border-color: var(--accent) !important;
-  box-shadow: var(--ombre-lg), 0 0 0 1px var(--accent),
-              0 0 28px var(--accent-lueur) !important;
+  box-shadow: var(--ombre-md), 0 0 0 3px var(--accent-doux) !important;
 }
-
-/* -------------------------------------------------------------------------
-   8. Modales, notifications, pied de page
-   ---------------------------------------------------------------------- */
 
 .modale-fond {
-  background: color-mix(in srgb, var(--fond-profond) 78%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background-color: color-mix(in srgb, var(--gris-900) 34%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
-.modale__entete { border-bottom: 1px solid var(--bordure); }
-.modale__pied   { border-top: 1px solid var(--bordure); }
+.modale__entete { border-bottom: 1px solid var(--bordure-douce); }
+.modale__pied   { border-top: 1px solid var(--bordure-douce); }
 
-.notification { border-radius: var(--rayon-lg); box-shadow: var(--ombre-lg); }
-.notification--succes { border-color: color-mix(in srgb, var(--statut-succes) 40%, transparent); }
-.notification--erreur { border-color: color-mix(in srgb, var(--statut-critique) 40%, transparent); }
+.notification { border-radius: var(--rayon-md); box-shadow: var(--ombre-lg); }
 
 .site-pied {
-  border-top: 1px solid var(--bordure);
-  background: linear-gradient(to top,
-    color-mix(in srgb, var(--fond-profond) 80%, transparent), transparent);
+  border-top: 1px solid var(--bordure-douce);
+  background: none;
   color: var(--texte-faible);
 }
 
-.separateur { border-color: var(--bordure); }
+.separateur { border-color: var(--bordure-douce); }
 
 .squelette {
-  background: linear-gradient(90deg,
-    var(--bordure-douce) 25%, var(--bordure) 37%, var(--bordure-douce) 63%);
-  background-size: 400% 100%;
+  background-color: var(--fond-profond);
   border-radius: var(--rayon-sm);
 }
 
@@ -442,16 +359,22 @@ mark, .surlignage {
 @media (prefers-reduced-motion: reduce) {
   .carte--cliquable:hover,
   .carte--cliquable:focus-within,
-  .bouton--principal:hover { transform: none; }
-  .carte--cliquable:hover::after { animation: none; }
+  .bouton:active { transform: none; }
   .squelette { animation: none; }
 }
 
-/* Le flou de fond coûte cher sur petit écran : on le retire, la couleur reste. */
-@media (max-width: 40rem) {
-  .carte, .facettes, .notification, .bouton--secondaire, .bouton--icone {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-  body { background-attachment: scroll; }
+/* -------------------------------------------------------------------------
+   10. Rattrapages du socle
+   ---------------------------------------------------------------------- */
+
+/* La recherche recevait DEUX anneaux au focus : le outline générique de
+   components.css et l'anneau doux posé plus haut. On garde le second, qui
+   est le traitement voulu, et on neutralise le premier. */
+.recherche:focus-within {
+  outline: none;
 }
+
+/* Les tuiles d'exploration doivent rester compactes : avec l'échelle
+   d'espacement élargie, elles s'étiraient en pavés presque vides. */
+.grille--compacte { --grille-min: calc(var(--e-16) * 1.9); }
+.grille--serree   { --grille-min: calc(var(--e-16) * 1.5); }
