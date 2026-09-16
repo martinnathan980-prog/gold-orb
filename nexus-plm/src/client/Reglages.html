@@ -60,11 +60,18 @@ function favorisHtml(portee) {
   const favoris = favorisDe(portee.cle);
   if (!favoris.length) return '';
 
+  const aucunPose = !favoris.some(function (f) { return favoriEnPlace(portee.cle, f); });
+
   return '<div class="favoris">' +
-    '<h4>Favoris</h4>' +
-    '<p class="favoris-aide">Une intention posée d\'un coup. Les curseurs ' +
-      'restent réglables juste après.</p>' +
+    '<h4>Chercher d\'abord…</h4>' +
     '<div class="favoris-liste">' +
+      // « Par défaut » ouvre la liste : c'est l'état de départ, pas un repli.
+      '<button type="button" class="favori favori-defaut' + (aucunPose ? ' actif' : '') + '"' +
+        dataAttrs({ action: 'reinitialiser-reglages' }) +
+        ' aria-pressed="' + aucunPose + '" title="Revenir aux parts du registre">' +
+        '<span class="favori-nom">Par défaut</span>' +
+        '<span class="favori-aide">les parts d\'origine</span>' +
+      '</button>' +
       favoris.map(function (f) {
         const actif = favoriEnPlace(portee.cle, f);
         return '<button type="button" class="favori' + (actif ? ' actif' : '') + '"' +
@@ -74,12 +81,6 @@ function favorisHtml(portee) {
           '<span class="favori-aide">' + esc(f.aide) + '</span>' +
         '</button>';
       }).join('') +
-      '<button type="button" class="favori favori-defaut"' +
-        dataAttrs({ action: 'reinitialiser-reglages' }) +
-        ' title="Revenir aux parts du registre">' +
-        '<span class="favori-nom">Par défaut</span>' +
-        '<span class="favori-aide">les parts d\'origine</span>' +
-      '</button>' +
     '</div>' +
   '</div>';
 }
@@ -106,13 +107,26 @@ function curseursHtml() {
            '<b>' + esc(seul ? seul.libelle : '—') + '</b>. ' +
            'Le score en dépend entièrement, il n\'y a pas d\'arbitrage à faire.</p>';
   } else {
-    html = favorisHtml(portee) + groupeReglageHtml(portee);
+    // Les curseurs servent une fois sur dix : un favori suffit le reste du
+    // temps. On les replie derrière un engrenage plutôt que de les imposer.
+    const ouvert = !!Store.reglagesDetaille;
+    html = favorisHtml(portee) +
+      '<div class="reglage-detail' + (ouvert ? ' ouvert' : '') + '">' +
+        '<button type="button" class="reglage-bascule"' +
+          dataAttrs({ action: 'basculer-reglage-detaille' }) +
+          ' aria-expanded="' + ouvert + '">' +
+          '<span class="reglage-engrenage" aria-hidden="true">⚙</span>' +
+          '<span>Régler les parts à la main</span>' +
+          '<span class="reglage-chevron" aria-hidden="true">' + (ouvert ? '▴' : '▾') + '</span>' +
+        '</button>' +
+        (ouvert ? '<div class="reglage-detail-corps">' + groupeReglageHtml(portee) + '</div>' : '') +
+      '</div>';
   }
 
   // Quand la portée compare des composants, on règle AUSSI la répartition
   // entre leurs trois niveaux. C'est une pondération dans la pondération :
   // elle dit ce que vaut une fonction partagée face à une référence exacte.
-  if (porteeAvecComposants(portee)) {
+  if (porteeAvecComposants(portee) && Store.reglagesDetaille) {
     const niveaux = porteeParCle('composant');
     html += '<div class="sous-reglage">' +
       '<h4>Niveaux de composant</h4>' +

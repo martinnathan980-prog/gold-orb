@@ -585,6 +585,10 @@ enregistrerActions({
     rendreReglages();
     rafraichirComparaison();
   },
+  'basculer-reglage-detaille': function () {
+    Store.reglagesDetaille = !Store.reglagesDetaille;
+    rendreReglages();
+  },
   'appliquer-favori': function (d) {
     if (!appliquerFavori(d.portee, d.favori)) return;
     rendreReglages();
@@ -697,6 +701,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const el = e.target;
     if (!el.classList || !el.classList.contains('saisie-multi')) return;
     if (el.tagName !== 'SELECT' || !el.value || !el.dataset.ajout) return;
+    const action = ACTIONS[el.dataset.ajout];
+    if (action) action(el.dataset);
+  });
+
+  // Choisir une suggestion dans un champ libre, c'est la vouloir : on la pose
+  // sans attendre un geste de plus. Les valeurs y sont longues et composées,
+  // personne ne les tape par accident.
+  document.addEventListener('input', function (e) {
+    const el = e.target;
+    if (!el.classList || !el.classList.contains('saisie-multi')) return;
+    if (el.tagName === 'SELECT' || !el.dataset.ajout) return;
+    const liste = el.getAttribute('list');
+    if (!liste || !optionConnue(liste, el.value.trim())) return;
     const action = ACTIONS[el.dataset.ajout];
     if (action) action(el.dataset);
   });

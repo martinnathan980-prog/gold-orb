@@ -28,6 +28,17 @@ function pageComplete() {
          '</body></html>';
 }
 
+/** Un indicateur se vise par son libelle : la bande est rendue, pas figee. */
+const indic = function (page, libelle) {
+  return page.locator('.indicateur', { hasText: libelle }).first();
+};
+const valeurIndic = async function (page, libelle) {
+  return (await indic(page, libelle).locator('.indicateur-valeur').innerText()).trim();
+};
+const detailIndic = async function (page, libelle) {
+  return (await indic(page, libelle).locator('.indicateur-detail').innerText()).trim();
+};
+
 const texte = function (page, sel) {
   return page.locator(sel).first().evaluate(function (el) { return el.textContent; });
 };
@@ -121,19 +132,19 @@ async function ecranPropre(page) {
   bloc('Chargement');
   eq('13 boîtes', await page.locator('.carte').count(), 13);
   eq('titre NEXUS seul', (await texte(page, '.marque h1')).trim(), 'NEXUS');
-  eq('indicateur boîtes', await texte(page, '#kpiBoites'), '13');
-  eq('validées', await texte(page, '#kpiVal'), '7 / 13');
+  eq('indicateur boîtes', await valeurIndic(page, 'Boîtes'), '13');
+  eq('validées', await valeurIndic(page, 'Validées'), '7 / 13');
   eq('libellé « Boîtes »', (await texte(page, '.indicateur-libelle')).trim(), 'Boîtes');
   eq('plus d\'indicateur de réutilisation', await page.locator('#kpiReutil').count(), 0);
   eq('ni son filtre', await page.locator('[data-action="filtrer-reutilise"]').count(), 0);
   vrai('indicateur « À standardiser » renseigné',
-       Number(await texte(page, '#kpiStandard')) >= 0);
+       Number(await valeurIndic(page, 'À standardiser')) >= 0);
   eq('plus de ligne de portée sous les chiffres',
-     await page.locator('#kpiPortee, .indicateurs-portee').count(), 0);
+     await page.locator('.indicateurs-portee').count(), 0);
   eq('plus de badge « / » dans le champ de recherche',
      await page.locator('.champ-recherche .raccourci').count(), 0);
   vrai('indicateur de doublons renseigné',
-       (await texte(page, '#kpiDoublons')).trim().length > 0);
+       (await valeurIndic(page, 'Doublons probables')).length > 0);
   eq('pas de compteur de sous-ensembles', await page.locator('#kpiLignes').count(), 0);
   eq('pas de bouton Journal', await page.locator('[data-action="ouvrir-journal"]').count(), 0);
   eq('pas de Pondération dans l\'en-tête',
@@ -294,17 +305,17 @@ async function ecranPropre(page) {
   await ecranPropre(page);
 
   bloc('Indicateurs qui filtrent');
-  await page.locator('#indValidees').click();
+  await indic(page, 'Validées').click();
   await page.waitForTimeout(300);
   eq('cliquer « Validées » ne montre que les validées', await page.locator('.carte').count(), 7);
   vrai('l\'indicateur se dit actif',
-       (await page.locator('#indValidees').getAttribute('class')).indexOf('actif') !== -1);
+       (await indic(page, 'Validées').getAttribute('class')).indexOf('actif') !== -1);
   eq('et propose son retrait dans les filtres',
      await page.locator('#filtreActif [data-action="filtrer-statut"]').count(), 1);
-  await page.locator('#indValidees').click();
+  await indic(page, 'Validées').click();
   await page.waitForTimeout(300);
   eq('second clic : retour à 10', await page.locator('.carte').count(), 13);
-  await page.locator('#indBoites').click();
+  await indic(page, 'Boîtes').click();
   await page.waitForTimeout(300);
   eq('« Boîtes » remet tout', await page.locator('.carte').count(), 13);
 
@@ -612,7 +623,7 @@ async function ecranPropre(page) {
 
   // ---------------------------------------------------------------
   bloc('Doublons : ce qui les separe, et la comparaison complete');
-  await page.locator('#indDoublons').click();
+  await indic(page, 'Doublons probables').click();
   await page.waitForSelector('#doublonsModal.show'); await page.waitForTimeout(400);
   const premierDoublon = page.locator('.doublon').first();
   vrai('chaque paire montre son detail', await premierDoublon.locator('.doublon-detail').count() === 1);
@@ -633,18 +644,19 @@ async function ecranPropre(page) {
   // ---------------------------------------------------------------
   bloc('Indicateur « A standardiser »');
   eq('il a remplace « References uniques »',
-     await page.locator('#indRefs').count(), 0);
-  eq('et c\'est un bouton', await page.locator('button#indStandard').count(), 1);
+     await page.locator('.indicateur', { hasText: 'Références uniques' }).count(), 0);
+  eq('et c\'est un bouton',
+     await page.locator('button.indicateur', { hasText: 'À standardiser' }).count(), 1);
   vrai('il annonce un nombre de familles',
-       Number(await texte(page, '#kpiStandard')) >= 0);
+       Number(await valeurIndic(page, 'À standardiser')) >= 0);
   vrai('et dit de quoi il s\'agit',
-       (await texte(page, '#kpiStandardDetail')).indexOf('référence') !== -1);
-  await page.locator('#indStandard').click();
+       (await detailIndic(page, 'À standardiser')).indexOf('référence') !== -1);
+  await indic(page, 'À standardiser').click();
   await page.waitForTimeout(450);
   eq('un clic mene a la vue Standardisation', await page.locator('.carte').count(), 0);
   vrai('des familles y sont listees', await page.locator('.famille').count() > 0);
-  eq('l\'indicateur se marque', await page.locator('#indStandard').getAttribute('aria-pressed'), 'true');
-  await page.locator('#indStandard').click();
+  eq('l\'indicateur se marque', await indic(page, 'À standardiser').getAttribute('aria-pressed'), 'true');
+  await indic(page, 'À standardiser').click();
   await page.waitForTimeout(450);
   eq('un second clic ramene aux cartes', await page.locator('.carte').count(), 13);
 
@@ -683,7 +695,7 @@ async function ecranPropre(page) {
   await page.waitForTimeout(800);
 
   // Et le « — » ne reste pas muet.
-  const detailDoublons = await texte(page, '#kpiDoublonsDetail');
+  const detailDoublons = await detailIndic(page, 'Doublons probables');
   vrai('l\'indicateur porte un detail', detailDoublons.trim().length > 0);
 
   // Avant que les reglages ne soient charges, tous les criteres comptent :
@@ -728,25 +740,28 @@ async function ecranPropre(page) {
   // ---------------------------------------------------------------
   bloc('Espace Composants : une base a part, pas une lecture de plus');
   await ecranPropre(page);
-  eq('deux espaces sont offerts', await page.locator('.espace').count(), 2);
+  eq('deux espaces sont offerts', await page.locator('.onglet-espace').count(), 2);
   eq('« Boîtes » est l\'espace par defaut',
-     await page.locator('.espace.actif').innerText().then(function (t) { return t.split('\n')[1]; }),
-     'Boîtes');
+     (await page.locator('.onglet-espace.actif').innerText()).trim(), 'Boîtes');
   eq('les trois lectures sont la', await page.locator('.onglet-vue').count(), 3);
 
-  await page.locator('.espace', { hasText: 'Composants' }).click();
+  await page.locator('.onglet-espace', { hasText: 'Composants' }).click();
   await page.waitForTimeout(700);
   eq('les lectures des boites disparaissent', await page.locator('.onglet-vue').count(), 0);
   eq('les filtres par type aussi', await page.locator('.filtres-type .jeton').count(), 0);
   eq('les onglets de fonction aussi', await page.locator('#functionTabs .onglet').count(), 0);
   eq('plus de cartes', await page.locator('.carte').count(), 0);
 
-  // La bande de tete dit ce que contient la base, et ce qui y cloche.
-  const bande = await texte(page, '.compo-bande');
-  ['références', 'fonctions', 'normes', 'montages', 'hors catalogue', 'jamais montées']
-    .forEach(function (mot) {
-      vrai('la bande annonce « ' + mot + ' »', bande.indexOf(mot) !== -1);
-    });
+  // Les indicateurs du HAUT changent avec l'espace : garder ceux des boites
+  // faisait lire « 13 boites » comme s'il qualifiait les composants.
+  const libelles = await page.locator('.indicateur-libelle').allTextContents();
+  eq('quatre indicateurs, pas sept', libelles.length, 4);
+  ['Références', 'À ranger', 'Hors catalogue', 'Montées une fois'].forEach(function (l) {
+    vrai('l\'espace composants annonce « ' + l + ' »', libelles.indexOf(l) !== -1);
+  });
+  faux('« Boîtes » a disparu du haut', libelles.indexOf('Boîtes') !== -1);
+  faux('« Validées » aussi', libelles.indexOf('Validées') !== -1);
+  eq('plus de seconde bande de chiffres', await page.locator('.compo-bande').count(), 0);
 
   // Le rail : les trois familles, avec leur compte.
   eq('trois familles au rail', await page.locator('.cf-famille').count(), 3);
@@ -763,7 +778,7 @@ async function ecranPropre(page) {
   vrai('des normes sous les fonctions ouvertes', await page.locator('.cn-bloc').count() >= 1);
   vrai('et des references sous les normes', await page.locator('.cr-ligne').count() >= 1);
   // Tout deplier les rend toutes.
-  await page.locator('.compo-barre-btn').click(); await page.waitForTimeout(500);
+  await page.locator('.arbre-barre-btn').click(); await page.waitForTimeout(500);
   const nbRefs = await page.locator('.cr-ligne').count();
   vrai('deplie, la base entiere se lit', nbRefs > 20);
   vrai('chaque fonction a au moins une norme',
@@ -787,15 +802,15 @@ async function ecranPropre(page) {
   vrai('des references sont donc visibles sans rien cliquer',
        await page.locator('.cr-ligne').count() > 0);
 
-  await page.locator('.compo-barre-btn').click(); await page.waitForTimeout(500);
+  await page.locator('.arbre-barre-btn').click(); await page.waitForTimeout(500);
   const tout = await etatArbre();
   eq('« Tout déplier » les ouvre toutes', tout.ouvertes, tout.total);
   vrai('et la page s\'allonge', tout.hauteur > repos.hauteur);
-  await page.locator('.compo-barre-btn').click(); await page.waitForTimeout(500);
+  await page.locator('.arbre-barre-btn').click(); await page.waitForTimeout(500);
   const rien = await etatArbre();
   eq('« Tout replier » les ferme toutes', rien.ouvertes, 0);
   vrai('et la page se raccourcit', rien.hauteur < tout.hauteur);
-  await page.locator('.compo-barre-btn').click(); await page.waitForTimeout(500);
+  await page.locator('.arbre-barre-btn').click(); await page.waitForTimeout(500);
 
   // Une fonction se replie une par une.
   const f1 = page.locator('.cfo-tete').first();
@@ -818,22 +833,33 @@ async function ecranPropre(page) {
   // Le cas le plus utile : une piece montee que le catalogue ne connait pas.
   vrai('des pieces hors catalogue sont signalees',
        await page.locator('.cr-hors').count() >= 1);
-  await page.locator('.cb-mesure', { hasText: 'hors catalogue' }).click();
+  await page.locator('.indicateur', { hasText: 'hors catalogue' }).click();
   await page.waitForTimeout(500);
   const horsCat = await page.locator('.cr-ligne').count();
   vrai('le filtre ne garde qu\'elles', horsCat >= 1 && horsCat < avantFamille);
   eq('toutes portent la marque', await page.locator('.cr-hors').count(), horsCat);
-  await page.locator('.cb-mesure', { hasText: 'hors catalogue' }).click();
+  await page.locator('.indicateur', { hasText: 'hors catalogue' }).click();
   await page.waitForTimeout(500);
 
-  // Et l'inverse : au catalogue, montee nulle part.
-  await page.locator('.cb-mesure', { hasText: 'jamais montées' }).click();
+  // Et l'inverse : au catalogue, montee nulle part. Ce filtre-la vit au rail,
+  // avec les autres etats — ce sont des filtres, pas des alertes.
+  await page.locator('.cf-etat', { hasText: 'Jamais montées' }).click();
   await page.waitForTimeout(500);
   vrai('les references dormantes se filtrent aussi',
        await page.locator('.cr-dormant').count() >= 1);
   eq('aucune n\'est montee', await page.locator('.cr-compte').count(), 0);
-  await page.locator('.cb-mesure', { hasText: 'jamais montées' }).click();
+  eq('le rail marque l\'etat pose', await page.locator('.cf-etat.actif').count(), 1);
+  await page.locator('.cf-etat', { hasText: 'Jamais montées' }).click();
   await page.waitForTimeout(500);
+
+  // Le rail et la bande du haut visent le meme filtre : ils restent d'accord.
+  await page.locator('.cf-etat', { hasText: 'Hors catalogue' }).click();
+  await page.waitForTimeout(500);
+  eq('la tuile du haut se marque aussi',
+     await indic(page, 'Hors catalogue').getAttribute('aria-pressed'), 'true');
+  await indic(page, 'Hors catalogue').click();
+  await page.waitForTimeout(500);
+  eq('et le rail se demarque avec elle', await page.locator('.cf-etat.actif').count(), 0);
 
   // Un clic nomme les boites, un clic de plus ouvre la fiche.
   const compte1 = page.locator('.cr-compte').first();
@@ -854,11 +880,11 @@ async function ecranPropre(page) {
   await page.waitForTimeout(500);
   const apresRecherche = await page.locator('.cr-ligne').count();
   vrai('la recherche restreint la base', apresRecherche > 0 && apresRecherche < avantFamille);
-  await page.locator('.espace', { hasText: 'Boîtes' }).click();
+  await page.locator('.onglet-espace', { hasText: 'Boîtes' }).click();
   await page.waitForTimeout(600);
   eq('l\'espace boites n\'herite pas du mot-cle', await page.locator('.carte').count(), 13);
   eq('et son champ est bien vide', await page.locator('#searchBar').inputValue(), '');
-  await page.locator('.espace', { hasText: 'Composants' }).click();
+  await page.locator('.onglet-espace', { hasText: 'Composants' }).click();
   await page.waitForTimeout(600);
   eq('en revenant, la recherche des composants est retrouvee',
      await page.locator('#searchBar').inputValue(), 'collier');
@@ -871,7 +897,7 @@ async function ecranPropre(page) {
   vrai('pas de defilement horizontal (composants)', largeurCompo.doc <= largeurCompo.vue + 1);
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-composants.png') });
 
-  await page.locator('.espace', { hasText: 'Boîtes' }).click();
+  await page.locator('.onglet-espace', { hasText: 'Boîtes' }).click();
   await page.waitForTimeout(500);
   eq('retour a la grille', await page.locator('.carte').count(), 13);
   await ecranPropre(page);
@@ -916,7 +942,13 @@ async function ecranPropre(page) {
   await page.waitForTimeout(700);
   eq('« Même contenu » ne garde que ses criteres',
      await page.evaluate(function () { return criteresActifs('boite').length; }), 3);
-  vrai('les autres sont proposes au rajout',
+  // Les curseurs vivent derriere un engrenage : ils servent une fois sur dix.
+  eq('aucun curseur a l\'ouverture du rail',
+     await page.locator('#reglagesRail .curseur').count(), 0);
+  await page.locator('[data-action="basculer-reglage-detaille"]').click();
+  await page.waitForTimeout(500);
+  vrai('l\'engrenage les revele', await page.locator('#reglagesRail .curseur').count() > 0);
+  vrai('les criteres ecartes sont proposes au rajout',
        await page.locator('.btn-ajout-critere').count() >= 1);
 
   // Bouger un curseur quitte le favori : on ne pretend pas y etre reste.
@@ -1120,8 +1152,11 @@ async function ecranPropre(page) {
 
   // Mot-clé ajouté sur une plaquette
   const avantMots = await blocPlaq.locator('.puce-motcle').count();
+  // Plus de bouton « Ajouter » : Entree pose la valeur, c'est tout.
+  eq('le bouton Ajouter a disparu des champs libres',
+     await blocPlaq.locator('.ajout-multi .btn-mini').count(), 0);
   await blocPlaq.locator('.saisie-multi[data-champ="Mots-clés"]').fill('treuil');
-  await blocPlaq.locator('[data-action="ajouter-multi-nom"][data-champ="Mots-clés"]').click();
+  await blocPlaq.locator('.saisie-multi[data-champ="Mots-clés"]').press('Enter');
   await page.waitForTimeout(750);
   eq('mot-clé ajouté',
      await page.locator('.bloc-type-plaquette').first().locator('.puce-motcle').count(),

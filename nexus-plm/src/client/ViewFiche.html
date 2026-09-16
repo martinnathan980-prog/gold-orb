@@ -81,15 +81,13 @@ function blocMultiHtml(champ, valeurs, editable, actionAjout, actionSuppr, donne
         '</div>'
       : '';
   } else if (editable) {
-    // Champ libre : le bouton reste, mais Entrée suffit, et choisir une
-    // suggestion de la liste ajoute directement.
+    // Champ libre : Entrée pose la valeur, et choisir une suggestion de la
+    // liste la pose aussi. Le bouton « Ajouter » ne servait plus qu'à être visé.
     ajout = '<div class="ajout-multi">' +
         '<input type="text" class="saisie-multi"' +
           (champ.liste ? ' list="' + esc(champ.liste) + '"' : '') +
           dataAttrs(Object.assign({ ajout: actionAjout }, donnees)) +
-          ' placeholder="Ajouter…" aria-label="Ajouter à ' + esc(champ.libelle) + '">' +
-        '<button type="button" class="btn-mini"' +
-          dataAttrs(Object.assign({ action: actionAjout }, donnees)) + '>Ajouter</button>' +
+          ' placeholder="Ajouter…  (Entrée)" aria-label="Ajouter à ' + esc(champ.libelle) + '">' +
       '</div>';
   }
   return '<div class="ligne ligne-bloc">' +

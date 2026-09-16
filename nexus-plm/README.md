@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 1 214 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 1 235 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 812 tests : logique, pondération, serveur, bundle
+npm test                 # 825 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 402 tests dans un vrai Chromium
+npm run test:navigateur  # 410 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -211,6 +211,13 @@ avant de servir. Le résultat ne dépend donc pas de l'ordre de saisie, et le
 meilleur candidat est pris plutôt que le premier rencontré. Chaque composant
 de la cible ne sert qu'une fois. Le détail affiche, par composant, quels
 niveaux sont partagés et ce que cela rapporte.
+
+## Le rail de pondération
+
+« Par défaut » ouvre la liste — c'est l'état de départ, pas un repli — puis
+viennent les favoris. Les curseurs, eux, sont **repliés derrière un
+engrenage** : ils servent une fois sur dix, un favori suffit le reste du
+temps. Qui veut vraiment arbitrer les déplie ; les autres ne les voient pas.
 
 ## Favoris de pondération
 
@@ -447,26 +454,20 @@ l'application.
 
 ## Indicateurs
 
-Quatre mesures, toutes cliquables, toutes agissant sur la grille :
+Ils appartiennent à l'espace affiché. Garder ceux des boîtes en consultant les
+composants faisait lire les mauvais chiffres : on croit que « 13 boîtes »
+qualifie ce qu'on a sous les yeux. Quatre de chaque côté, jamais sept.
 
-| Indicateur | Ce qu'il compte | Au clic |
-|---|---|---|
-| Boîtes | la base, ou la sélection courante | tout réafficher |
-| Validées | celles dont le statut est `Validé` | ne montrer qu'elles |
-| À standardiser | les familles de composants servies par plusieurs références | la vue Standardisation |
-| Doublons probables | les paires au-dessus de 85 % | la liste, avec le détail |
+| Espace Boîtes | Espace Composants |
+|---|---|
+| Boîtes — *tout réafficher* | Références — *relâcher les filtres* |
+| Validées — *ne montrer qu'elles* | À ranger — *les fonctions dispersées* |
+| À standardiser — *la vue correspondante* | Hors catalogue — *les pièces non référencées* |
+| Doublons probables — *la liste, au-dessus de 95 %* | Montées une fois — *l'appro isolé* |
 
-Deux indicateurs ont été retirés faute d'être compris. « Références uniques »
-additionnait des PN de boîtes et des PN de sous-ensembles — deux niveaux dans
-un seul total — et était le seul bloc inerte au milieu de boutons identiques.
-« Pièces réutilisées » comptait les sous-ensembles montés dans plusieurs
-boîtes : le chiffre ne répondait à aucune question qu'on se pose devant la
-grille, et son filtre non plus. Retirés avec toute leur mécanique.
-
-La ligne « sur toute la base » sous les chiffres ne disait rien que la grille
-ne montrait déjà, et le badge `/` accolé à « Par composant » annonçait un
-raccourci clavier que personne ne cherchait. Partis aussi. Le raccourci lui-même
-fonctionne toujours.
+Les filtres par **état** et par **emploi** vivent au rail de gauche, avec les
+familles : ce sont des filtres, pas des alertes, et les compter en gros
+chiffres noyait le reste.
 
 ## Déploiement
 

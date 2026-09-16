@@ -41,33 +41,7 @@
           <h1>NEXUS</h1>
         </div>
         <!-- Indicateurs : chacun est aussi un filtre. -->
-        <div class="indicateurs" role="group" aria-label="Indicateurs">
-          <button type="button" class="indicateur" id="indBoites" data-action="tout-effacer"
-                  title="Revenir à toute la base">
-            <span class="indicateur-libelle">Boîtes</span>
-            <span class="indicateur-valeur" id="kpiBoites">–</span>
-            <span class="indicateur-detail" id="kpiBoitesDetail">toute la base</span>
-          </button>
-          <button type="button" class="indicateur indicateur-valide" id="indValidees"
-                  data-action="filtrer-statut" data-statut="Validé" aria-pressed="false"
-                  title="Ne montrer que les boîtes validées">
-            <span class="indicateur-libelle">Validées</span>
-            <span class="indicateur-valeur" id="kpiVal">–</span>
-            <span class="indicateur-detail" id="kpiValDetail"></span>
-          </button>
-          <button type="button" class="indicateur indicateur-standard" id="indStandard"
-                  data-action="voir-standardisation"
-                  title="Voir les familles de composants servies par plusieurs références">
-            <span class="indicateur-libelle">À standardiser</span>
-            <span class="indicateur-valeur" id="kpiStandard">–</span>
-            <span class="indicateur-detail" id="kpiStandardDetail"></span>
-          </button>
-          <button type="button" class="indicateur indicateur-alerte" id="indDoublons"
-                  data-action="ouvrir-doublons" title="Voir les paires de pièces très proches">
-            <span class="indicateur-libelle">Doublons probables</span>
-            <span class="indicateur-valeur" id="kpiDoublons">–</span>
-            <span class="indicateur-detail" id="kpiDoublonsDetail">voir la liste</span>
-          </button>
+        <div class="indicateurs" id="zoneIndicateurs" role="group" aria-label="Indicateurs">
         </div>
       </div>
     </header>

@@ -427,58 +427,26 @@ body.espace-composants .outils { display: none; }
    Une base a part, pas une lecture de plus : elle a son propre selecteur,
    sa propre bande de tete, son rail de familles et son arbre. */
 
-/* Le selecteur d'espace : plus fort que les onglets de lecture, parce que
-   c'est un changement de base, pas un changement de point de vue. */
+/* Le selecteur d'espace : meme pilule que les lectures, deux segments de
+   meme taille, pose plus haut. Pas un aplat bleu de plus. */
 .choix-espace {
-  display: flex; gap: var(--e-2); margin-bottom: var(--e-4);
-  border-bottom: 1px solid var(--trait); padding-bottom: var(--e-3);
+  display: inline-flex; background: var(--surface-3); border: 1px solid var(--trait);
+  border-radius: 999px; padding: 3px; margin-bottom: var(--e-4);
 }
-.espace {
-  display: flex; align-items: center; gap: var(--e-3); text-align: left;
-  padding: 9px 16px 9px 13px; border: 1px solid var(--trait);
-  border-radius: var(--r-m); background: var(--surface); color: var(--encre-2);
-  min-width: 0; flex: 0 1 auto; transition: background .15s, border-color .15s, color .15s;
+.onglet-espace {
+  background: none; border: 0; border-radius: 999px; padding: 7px 26px;
+  font-size: 13px; font-weight: 700; letter-spacing: .01em;
+  color: var(--encre-3); transition: background .14s, color .14s;
+  min-width: 140px;
 }
-.espace:hover { background: var(--surface-3); border-color: var(--trait-fort); color: var(--encre); }
-.espace.actif {
-  background: var(--marque); border-color: var(--marque); color: var(--sur-marque);
-  box-shadow: var(--ombre-1);
-}
-.espace-icone { font-size: 17px; line-height: 1; flex: none; }
-.espace-texte { display: flex; flex-direction: column; min-width: 0; }
-.espace-nom { font-size: 14px; font-weight: 700; letter-spacing: .01em; }
-.espace-aide { font-size: 11px; color: var(--encre-3); line-height: 1.35; }
-.espace.actif .espace-aide { color: var(--sur-marque); opacity: .78; }
-@media (max-width: 620px) {
-  .choix-espace { flex-direction: column; }
-  .espace { width: 100%; }
+.onglet-espace:hover { color: var(--encre); }
+.onglet-espace.actif { background: var(--marque); color: var(--sur-marque); box-shadow: var(--ombre-1); }
+@media (max-width: 520px) {
+  .choix-espace { display: flex; width: 100%; }
+  .onglet-espace { flex: 1; min-width: 0; padding: 7px 10px; }
 }
 
-/* La bande de tete : ce que contient la base, et ce qui y cloche. */
-.compo-bande {
-  display: flex; flex-wrap: wrap; align-items: stretch;
-  border: 1px solid var(--trait); border-radius: var(--r-m); overflow: hidden;
-  background: var(--surface); margin-bottom: var(--e-4);
-}
-.cb-mesure {
-  flex: 1 1 128px; min-width: 112px; padding: 11px 14px 12px;
-  display: flex; flex-direction: column; gap: 1px; text-align: left;
-  border: 0; border-left: 1px solid var(--trait); background: none; color: var(--encre);
-}
-.cb-mesure:first-child { border-left: 0; }
-.cb-cliquable { transition: background .15s; }
-.cb-cliquable:hover { background: var(--sol-2); }
-.cb-cliquable.actif { background: var(--marque-voile); box-shadow: inset 0 -2px 0 var(--marque); }
-.cb-n {
-  font-family: var(--police-titre); font-size: 24px; font-weight: 700; line-height: 1.05;
-  font-variant-numeric: tabular-nums;
-}
-.cb-libelle { font-size: 11.5px; font-weight: 600; color: var(--encre-2); }
-.cb-aide { font-size: 10.5px; color: var(--encre-3); line-height: 1.35; }
-.cb-total .cb-n { color: var(--marque); }
-.cb-ambre .cb-n { color: var(--ambre); }
-.cb-rouge .cb-n { color: var(--rouge); }
-.cb-doux .cb-n { color: var(--encre-3); }
+.indicateur-isole .indicateur-valeur { color: var(--ambre); }
 
 /* Le corps : rail des familles a gauche, arbre a droite. */
 .compo-corps { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: var(--e-4); align-items: start; }
@@ -513,6 +481,18 @@ body.espace-composants .outils { display: none; }
 .cf-n { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-3);
   font-variant-numeric: tabular-nums; flex: none; }
 .cf-famille.actif .cf-n { color: var(--marque); font-weight: 600; }
+.compo-rail-titre-2 { margin-top: var(--e-4); }
+.cf-etat {
+  display: flex; align-items: center; gap: 8px; text-align: left; width: 100%;
+  padding: 5px 9px; border: 1px solid transparent; border-radius: var(--r-s);
+  background: none; color: var(--encre-2); font-size: 12px;
+  transition: background .13s, border-color .13s, color .13s;
+}
+.cf-etat:hover { background: var(--surface-3); color: var(--encre); }
+.cf-etat.actif { background: var(--marque-voile); border-color: var(--marque); color: var(--marque); }
+.cf-etat-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cf-etat.actif .cf-n { color: var(--marque); font-weight: 600; }
+
 .cf-effacer {
   margin-top: var(--e-3); width: 100%; padding: 6px; font-size: 12px;
   border: 1px dashed var(--trait-fort); border-radius: var(--r-s);
@@ -522,17 +502,17 @@ body.espace-composants .outils { display: none; }
 
 /* L'arbre : famille, fonction, norme, reference. */
 .compo-arbre { display: flex; flex-direction: column; gap: var(--e-4); min-width: 0; }
-.compo-barre {
+.arbre-barre {
   display: flex; align-items: center; justify-content: space-between;
   gap: var(--e-3); flex-wrap: wrap;
   padding-bottom: var(--e-2); border-bottom: 1px solid var(--trait);
 }
-.compo-barre-compte { font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
-.compo-barre-btn {
+.arbre-barre-compte { font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.arbre-barre-btn {
   font-size: 12px; padding: 5px 12px; border: 1px solid var(--trait-fort);
   border-radius: 999px; background: var(--surface); color: var(--encre-2);
 }
-.compo-barre-btn:hover { background: var(--surface-3); color: var(--encre); }
+.arbre-barre-btn:hover { background: var(--surface-3); color: var(--encre); }
 .cfa-bloc { display: flex; flex-direction: column; gap: var(--e-2); min-width: 0; }
 .cfa-tete { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap;
   padding-bottom: 6px; border-bottom: 2px solid var(--encre); }
@@ -563,14 +543,33 @@ body.espace-composants .outils { display: none; }
 }
 .cfo-corps { display: flex; flex-direction: column; }
 
-.cn-bloc { border-top: 1px solid var(--surface-3); }
-.cn-bloc:first-child { border-top: 0; }
-.cn-tete { display: flex; align-items: center; gap: 9px; padding: 8px 13px 6px; flex-wrap: wrap; }
-.cn-nom { font-family: var(--police-data); font-size: 12px; font-weight: 600; color: var(--marque); }
+/* La norme est un bandeau ; ses references vivent en retrait, sous un filet
+   vertical qui rend la hierarchie lisible meme a vingt normes d'affilee. */
+.cn-bloc { margin-top: 2px; }
+.cn-tete {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 6px 13px 6px 26px; background: var(--sol-2);
+  border-top: 1px solid var(--trait); border-bottom: 1px solid var(--surface-3);
+  position: relative;
+}
+.cn-puce {
+  position: absolute; left: 14px; top: 50%; width: 6px; height: 6px;
+  margin-top: -3px; border-radius: 1px; background: var(--trait-fort);
+}
+.cn-nom { font-family: var(--police-data); font-size: 12px; font-weight: 700; color: var(--marque); }
 .cn-compte { font-size: 11px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
-.cn-dispersee { box-shadow: inset 3px 0 0 var(--ambre); }
+.cn-dispersee .cn-tete { background: var(--ambre-voile); }
+.cn-dispersee .cn-puce { background: var(--ambre); }
 .cn-dispersee .cn-nom { color: var(--ambre); }
-.cn-references { padding: 0 13px 10px; }
+.cn-references {
+  padding: 2px 13px 6px 26px; position: relative;
+}
+/* Le filet qui relie les references a leur norme. */
+.cn-references::before {
+  content: ""; position: absolute; left: 16px; top: 0; bottom: 8px;
+  width: 1px; background: var(--trait);
+}
+.cn-dispersee .cn-references::before { background: var(--ambre-trait); }
 
 .cr-entete, .cr-ligne {
   display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.25fr) 172px minmax(0, .85fr);
@@ -578,11 +577,15 @@ body.espace-composants .outils { display: none; }
 }
 .cr-entete {
   font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--encre-3);
-  font-weight: 600; padding-bottom: 4px; border-bottom: 1px solid var(--trait);
+  font-weight: 600; padding: 7px 13px 5px 26px; border-bottom: 1px solid var(--trait);
+  background: var(--surface);
 }
-.cr-ligne { padding: 7px 0; border-bottom: 1px solid var(--surface-3); }
+.cr-ligne { padding: 6px 0; border-bottom: 1px solid var(--surface-3); }
 .cr-ligne:last-child { border-bottom: 0; }
-.cr-isole { box-shadow: inset 3px 0 0 var(--ambre-trait); padding-left: 7px; }
+.cr-isole .cr-ref::before {
+  content: ""; display: inline-block; width: 3px; height: 11px; margin-right: 6px;
+  background: var(--ambre); vertical-align: -1px; border-radius: 1px;
+}
 .cr-ref { font-family: var(--police-data); font-size: 12px; font-weight: 600;
   min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .cr-designation { font-size: 12px; color: var(--encre-2); min-width: 0;
@@ -596,7 +599,7 @@ body.espace-composants .outils { display: none; }
 .cr-emploi { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .cr-jauge { display: block; height: 4px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
 .cr-jauge span { display: block; height: 100%; background: var(--marque); border-radius: 2px; }
-.cr-isole .cr-jauge span { background: var(--ambre-trait); }
+.cr-isole .cr-jauge span { background: var(--ambre); }
 .cr-compte {
   border: 0; background: none; padding: 0; text-align: left;
   font-family: var(--police-data); font-size: 11px; color: var(--encre-2);
@@ -793,7 +796,15 @@ body.espace-composants .outils { display: none; }
   .composant .puce-suppr { margin: 0; }
 }
 .ajout-multi { display: flex; gap: 6px; margin-top: 6px; }
-.ajout-multi .saisie-multi { flex: 1; min-width: 0; background: var(--surface-2); color: var(--encre); border: 1px solid var(--trait-fort); border-radius: var(--r-s); padding: 6px 10px; font-size: 12.5px; }
+.ajout-multi .saisie-multi {
+  flex: 0 1 auto; min-width: 0; max-width: 260px;
+  background: var(--surface-2); color: var(--encre);
+  border: 1px solid var(--trait-fort); border-radius: var(--r-s);
+  padding: 6px 10px; font-size: 12.5px;
+}
+/* Une liste fermee se dimensionne sur son contenu : « Ajouter un porteur… »
+   n'a aucune raison de barrer la fiche sur toute sa largeur. */
+.ajout-multi .saisie-multi-seule { flex: 0 0 auto; width: auto; max-width: 100%; }
 .zone-puces { display: flex; flex-wrap: wrap; gap: 6px; min-height: 54px; padding: var(--e-3); background: var(--surface-2); border: 1px solid var(--trait); border-radius: var(--r-s); margin-bottom: var(--e-3); }
 
 /* Composants à trois niveaux : fonction, norme, référence — en colonnes,
@@ -816,9 +827,14 @@ body.espace-composants .outils { display: none; }
 .composants-outils { display: flex; justify-content: flex-end; margin-top: 6px; }
 @media (max-width: 560px) { .ajout-composant { grid-template-columns: 1fr 1fr; } }
 
-.vignette { display: block; border: 1px solid var(--trait); border-radius: var(--r-s); overflow: hidden; padding: 0; background: var(--surface-3); margin-bottom: var(--e-3); width: 100%; }
-.vignette img { display: block; width: 100%; max-width: 100%; max-height: 220px; object-fit: cover; }
-.vignette-large img { max-height: 280px; }
+/* La photo situe la piece, elle n'est pas le sujet de la fiche : on la pose
+   en vignette, et un clic l'agrandit pour qui veut vraiment la voir. */
+.vignette { display: block; border: 1px solid var(--trait); border-radius: var(--r-s);
+  overflow: hidden; padding: 0; background: var(--surface-3); margin-bottom: var(--e-3);
+  width: 100%; max-width: 260px; }
+.vignette img { display: block; width: 100%; max-width: 100%; max-height: 120px; object-fit: cover; }
+.vignette-large { max-width: 320px; }
+.vignette-large img { max-height: 150px; }
 .loupe img { width: 100%; max-width: 100%; border-radius: var(--r-s); }
 .fiche-pied { padding: var(--e-4) 0 var(--e-7); text-align: center; }
 .fiche-pied .btn-principal { width: 100%; max-width: 380px; }
@@ -996,12 +1012,25 @@ body.espace-composants .outils { display: none; }
    l'en-tête du rail annonce sa présence. Un aplat marine la rend
    repérable au défilement. */
 /* Favoris de pondération : une intention posée d'un coup. */
-.favoris { margin-bottom: var(--e-4); padding-bottom: var(--e-3); border-bottom: 1px solid var(--trait); }
+.favoris { margin-bottom: var(--e-3); }
+/* Les curseurs, replies derriere un engrenage : ils servent une fois sur dix. */
+.reglage-detail { border-top: 1px solid var(--trait); padding-top: var(--e-2); }
+.reglage-bascule {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 4px;
+  border: 0; background: none; color: var(--encre-2); font-size: 12.5px; font-weight: 600;
+  text-align: left;
+}
+.reglage-bascule:hover { color: var(--encre); }
+.reglage-bascule span:nth-child(2) { flex: 1; }
+.reglage-engrenage { font-size: 14px; color: var(--encre-3); }
+.reglage-chevron { color: var(--encre-3); font-size: 10px; }
+.reglage-detail.ouvert .reglage-engrenage { color: var(--marque); }
+.reglage-detail-corps { padding-top: var(--e-2); }
+
 .favoris h4 {
   margin: 0 0 3px; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
   color: var(--encre-3); font-weight: 700;
 }
-.favoris-aide { margin: 0 0 var(--e-3); font-size: 11.5px; color: var(--encre-3); line-height: 1.45; }
 .favoris-liste { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .favori {
   display: flex; flex-direction: column; gap: 1px; text-align: left;

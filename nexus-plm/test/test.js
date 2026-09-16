@@ -1064,10 +1064,38 @@ vrai('le formulaire de création porte les porteurs', srcIndex.indexOf('newBoite
 vrai('le statut', srcIndex.indexOf('newBoiteStatut') !== -1);
 vrai('le niveau de qualification', srcIndex.indexOf('newBoiteNiveau') !== -1);
 vrai('et l\'URL de la photo', srcIndex.indexOf('newBoiteImage') !== -1);
+// Les indicateurs sont desormais rendus : ils appartiennent a l'espace
+// affiche, et garder ceux des boites en consultant les composants faisait
+// lire les mauvais chiffres.
+vrai('la bande est rendue, plus ecrite en dur', srcIndex.indexOf('id="zoneIndicateurs"') !== -1);
+faux('aucun indicateur n\'est fige dans la page', /indicateur-libelle/.test(srcIndex));
+charger([{ 'PN Global': 'B1', 'Statut': 'Validé', 'Composants': 'Voyant | MS25041 | R1' },
+         { 'PN Global': 'B2', 'Statut': 'En étude', 'Composants': 'Voyant | MS25041 | R2' }], []);
+C.Store.espace = 'boites';
+const indBoites = C.indicateursBoitesHtml(C.calculerKpi(C.Store.boites), C.calculerVue());
+['Boîtes', 'Validées', 'À standardiser', 'Doublons probables'].forEach(function (l) {
+  vrai('l\'espace boites annonce « ' + l + ' »', indBoites.indexOf(l) !== -1);
+});
+eq('quatre indicateurs, tous des boutons',
+   (indBoites.match(/<button class="indicateur/g) || []).length, 4);
+faux('aucun n\'est un bloc inerte', /<div class="indicateur/.test(indBoites));
+
+C.Store.espace = 'composants';
+C.Store.catalogue = [];
+const indCompo = C.indicateursComposantsHtml(C.calculerVue());
+['Références', 'À ranger', 'Hors catalogue', 'Montées une fois'].forEach(function (l) {
+  vrai('l\'espace composants annonce « ' + l + ' »', indCompo.indexOf(l) !== -1);
+});
+eq('quatre aussi, pas sept',
+   (indCompo.match(/<button class="indicateur/g) || []).length, 4);
+faux('« Boîtes » ne reste pas affiché dans les composants', /Boîtes<\/span>/.test(indCompo));
+faux('ni « Validées »', indCompo.indexOf('Validées') !== -1);
+C.Store.espace = 'boites';
+
 // « Pieces reutilisees » comptait les sous-ensembles montes dans plusieurs
 // boites. Personne ne savait le lire, et le filtre ne repondait a aucune
 // question qu'on se pose devant la grille : retire, avec sa mecanique.
-faux('plus d\'indicateur de réutilisation', srcIndex.indexOf('kpiReutil') !== -1);
+faux('plus d\'indicateur de réutilisation', indBoites.indexOf('réutilis') !== -1);
 faux('ni son filtre', /filtrer-reutilise/.test(srcIndex));
 faux('ni la mécanique côté données',
      lireSrc('client/Store.html').indexOf('piecesReutilisees') !== -1);
@@ -1087,14 +1115,13 @@ faux('plus d\'indicateur « Références uniques »', /Références uniques/.tes
 faux('ni le compteur qui l\'alimentait', /kpiNoms/.test(srcIndex));
 faux('ni dans le rendu', grilleSrc.indexOf('kpiNoms') !== -1);
 faux('plus d\'indicateur inerte au milieu des boutons', /indicateur-fixe/.test(srcIndex));
-vrai('un indicateur « À standardiser » le remplace', srcIndex.indexOf('kpiStandard') !== -1);
+
 vrai('et il est cliquable', declarees.has('voir-standardisation'));
 vrai('il mène à la troisième vue',
      /'voir-standardisation':[\s\S]{0,200}: 'standardisation'/
        .test(sansCommentaires(lireSrc('client/Main.html'))));
-eq('quatre indicateurs, tous des boutons',
-   (srcIndex.match(/<button[^>]*class="indicateur[ "]/g) || []).length, 4);
-faux('aucun n\'est un bloc inerte', /<div[^>]*class="indicateur[ "]/.test(srcIndex));
+faux('la page ne fige plus d\'indicateur',
+     /<button[^>]*class="indicateur[ "]/.test(srcIndex));
 faux('plus rien du réemploi dans le rendu',
      /kpiReutil|pctReutilisees|indReutil/.test(grilleSrc));
 
@@ -1122,7 +1149,7 @@ vrai('et elles se resserrent à la frappe',
 vrai('l\'index est construit côté logique, pas côté DOM',
      fs.readFileSync(path.join(H.RACINE, 'client/Composants.html'), 'utf8')
        .indexOf('function construireIndexComposants') !== -1);
-vrai('indicateur de doublons probables', srcIndex.indexOf('kpiDoublons') !== -1);
+vrai('les doublons restent un indicateur', indBoites.indexOf('Doublons probables') !== -1);
 vrai('les doublons sont consultables', declarees.has('ouvrir-doublons'));
 vrai('on bascule entre boîtes et sous-ensembles', declarees.has('changer-vue'));
 vrai('trois lectures de la base', /\['standardisation', 'Standardisation'\]/.test(
@@ -1145,8 +1172,8 @@ faux('plus de bandeau de démonstration dans la source livrée',
      /barreDemo/.test(srcIndex));
 
 faux('plus de sous-titre sous le titre', /Nomenclatures d'assemblages/.test(srcIndex));
-vrai('indicateur « Boîtes »', /indicateur-libelle">Boîtes</.test(srcIndex));
-faux('plus d\'indicateur « Sous-ensembles »', /indicateur-libelle">Sous-ensembles</.test(srcIndex));
+vrai('indicateur « Boîtes »', /indicateur-libelle">Boîtes</.test(indBoites));
+faux('plus d\'indicateur « Sous-ensembles »', /indicateur-libelle">Sous-ensembles</.test(indBoites));
 faux('plus de duplication de boîte sur la carte',
      fs.readFileSync(path.join(H.RACINE, 'client/ViewGrid.html'), 'utf8')
        .indexOf('dupliquer-boite') !== -1);
@@ -1468,7 +1495,7 @@ C.chargerReglages();
 vrai('le plafond couvre une base de travail', C.PLAFOND_PAIRES >= 20000);
 // Et quand il est depasse, l'indicateur ne reste pas muet : il dit quoi faire.
 vrai('le « — » est explique',
-     lireSrc('client/ViewGrid.html').indexOf('kpiDoublonsDetail') !== -1);
+     lireSrc('client/ViewGrid.html').indexOf('trop de pièces : filtrez d') !== -1);
 vrai('et la modale renvoie vers le filtrage',
      /Restreignez[\s\S]{0,20}la sélection/.test(sansCommentaires(lireSrc('client/Main.html'))));
 // La croix des puces faisait 14 px de cote : intenable au doigt.

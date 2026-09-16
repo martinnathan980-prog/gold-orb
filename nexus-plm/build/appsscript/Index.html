@@ -438,58 +438,26 @@ body.espace-composants .outils { display: none; }
    Une base a part, pas une lecture de plus : elle a son propre selecteur,
    sa propre bande de tete, son rail de familles et son arbre. */
 
-/* Le selecteur d'espace : plus fort que les onglets de lecture, parce que
-   c'est un changement de base, pas un changement de point de vue. */
+/* Le selecteur d'espace : meme pilule que les lectures, deux segments de
+   meme taille, pose plus haut. Pas un aplat bleu de plus. */
 .choix-espace {
-  display: flex; gap: var(--e-2); margin-bottom: var(--e-4);
-  border-bottom: 1px solid var(--trait); padding-bottom: var(--e-3);
+  display: inline-flex; background: var(--surface-3); border: 1px solid var(--trait);
+  border-radius: 999px; padding: 3px; margin-bottom: var(--e-4);
 }
-.espace {
-  display: flex; align-items: center; gap: var(--e-3); text-align: left;
-  padding: 9px 16px 9px 13px; border: 1px solid var(--trait);
-  border-radius: var(--r-m); background: var(--surface); color: var(--encre-2);
-  min-width: 0; flex: 0 1 auto; transition: background .15s, border-color .15s, color .15s;
+.onglet-espace {
+  background: none; border: 0; border-radius: 999px; padding: 7px 26px;
+  font-size: 13px; font-weight: 700; letter-spacing: .01em;
+  color: var(--encre-3); transition: background .14s, color .14s;
+  min-width: 140px;
 }
-.espace:hover { background: var(--surface-3); border-color: var(--trait-fort); color: var(--encre); }
-.espace.actif {
-  background: var(--marque); border-color: var(--marque); color: var(--sur-marque);
-  box-shadow: var(--ombre-1);
-}
-.espace-icone { font-size: 17px; line-height: 1; flex: none; }
-.espace-texte { display: flex; flex-direction: column; min-width: 0; }
-.espace-nom { font-size: 14px; font-weight: 700; letter-spacing: .01em; }
-.espace-aide { font-size: 11px; color: var(--encre-3); line-height: 1.35; }
-.espace.actif .espace-aide { color: var(--sur-marque); opacity: .78; }
-@media (max-width: 620px) {
-  .choix-espace { flex-direction: column; }
-  .espace { width: 100%; }
+.onglet-espace:hover { color: var(--encre); }
+.onglet-espace.actif { background: var(--marque); color: var(--sur-marque); box-shadow: var(--ombre-1); }
+@media (max-width: 520px) {
+  .choix-espace { display: flex; width: 100%; }
+  .onglet-espace { flex: 1; min-width: 0; padding: 7px 10px; }
 }
 
-/* La bande de tete : ce que contient la base, et ce qui y cloche. */
-.compo-bande {
-  display: flex; flex-wrap: wrap; align-items: stretch;
-  border: 1px solid var(--trait); border-radius: var(--r-m); overflow: hidden;
-  background: var(--surface); margin-bottom: var(--e-4);
-}
-.cb-mesure {
-  flex: 1 1 128px; min-width: 112px; padding: 11px 14px 12px;
-  display: flex; flex-direction: column; gap: 1px; text-align: left;
-  border: 0; border-left: 1px solid var(--trait); background: none; color: var(--encre);
-}
-.cb-mesure:first-child { border-left: 0; }
-.cb-cliquable { transition: background .15s; }
-.cb-cliquable:hover { background: var(--sol-2); }
-.cb-cliquable.actif { background: var(--marque-voile); box-shadow: inset 0 -2px 0 var(--marque); }
-.cb-n {
-  font-family: var(--police-titre); font-size: 24px; font-weight: 700; line-height: 1.05;
-  font-variant-numeric: tabular-nums;
-}
-.cb-libelle { font-size: 11.5px; font-weight: 600; color: var(--encre-2); }
-.cb-aide { font-size: 10.5px; color: var(--encre-3); line-height: 1.35; }
-.cb-total .cb-n { color: var(--marque); }
-.cb-ambre .cb-n { color: var(--ambre); }
-.cb-rouge .cb-n { color: var(--rouge); }
-.cb-doux .cb-n { color: var(--encre-3); }
+.indicateur-isole .indicateur-valeur { color: var(--ambre); }
 
 /* Le corps : rail des familles a gauche, arbre a droite. */
 .compo-corps { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: var(--e-4); align-items: start; }
@@ -524,6 +492,18 @@ body.espace-composants .outils { display: none; }
 .cf-n { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-3);
   font-variant-numeric: tabular-nums; flex: none; }
 .cf-famille.actif .cf-n { color: var(--marque); font-weight: 600; }
+.compo-rail-titre-2 { margin-top: var(--e-4); }
+.cf-etat {
+  display: flex; align-items: center; gap: 8px; text-align: left; width: 100%;
+  padding: 5px 9px; border: 1px solid transparent; border-radius: var(--r-s);
+  background: none; color: var(--encre-2); font-size: 12px;
+  transition: background .13s, border-color .13s, color .13s;
+}
+.cf-etat:hover { background: var(--surface-3); color: var(--encre); }
+.cf-etat.actif { background: var(--marque-voile); border-color: var(--marque); color: var(--marque); }
+.cf-etat-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cf-etat.actif .cf-n { color: var(--marque); font-weight: 600; }
+
 .cf-effacer {
   margin-top: var(--e-3); width: 100%; padding: 6px; font-size: 12px;
   border: 1px dashed var(--trait-fort); border-radius: var(--r-s);
@@ -533,17 +513,17 @@ body.espace-composants .outils { display: none; }
 
 /* L'arbre : famille, fonction, norme, reference. */
 .compo-arbre { display: flex; flex-direction: column; gap: var(--e-4); min-width: 0; }
-.compo-barre {
+.arbre-barre {
   display: flex; align-items: center; justify-content: space-between;
   gap: var(--e-3); flex-wrap: wrap;
   padding-bottom: var(--e-2); border-bottom: 1px solid var(--trait);
 }
-.compo-barre-compte { font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
-.compo-barre-btn {
+.arbre-barre-compte { font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.arbre-barre-btn {
   font-size: 12px; padding: 5px 12px; border: 1px solid var(--trait-fort);
   border-radius: 999px; background: var(--surface); color: var(--encre-2);
 }
-.compo-barre-btn:hover { background: var(--surface-3); color: var(--encre); }
+.arbre-barre-btn:hover { background: var(--surface-3); color: var(--encre); }
 .cfa-bloc { display: flex; flex-direction: column; gap: var(--e-2); min-width: 0; }
 .cfa-tete { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap;
   padding-bottom: 6px; border-bottom: 2px solid var(--encre); }
@@ -574,14 +554,33 @@ body.espace-composants .outils { display: none; }
 }
 .cfo-corps { display: flex; flex-direction: column; }
 
-.cn-bloc { border-top: 1px solid var(--surface-3); }
-.cn-bloc:first-child { border-top: 0; }
-.cn-tete { display: flex; align-items: center; gap: 9px; padding: 8px 13px 6px; flex-wrap: wrap; }
-.cn-nom { font-family: var(--police-data); font-size: 12px; font-weight: 600; color: var(--marque); }
+/* La norme est un bandeau ; ses references vivent en retrait, sous un filet
+   vertical qui rend la hierarchie lisible meme a vingt normes d'affilee. */
+.cn-bloc { margin-top: 2px; }
+.cn-tete {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 6px 13px 6px 26px; background: var(--sol-2);
+  border-top: 1px solid var(--trait); border-bottom: 1px solid var(--surface-3);
+  position: relative;
+}
+.cn-puce {
+  position: absolute; left: 14px; top: 50%; width: 6px; height: 6px;
+  margin-top: -3px; border-radius: 1px; background: var(--trait-fort);
+}
+.cn-nom { font-family: var(--police-data); font-size: 12px; font-weight: 700; color: var(--marque); }
 .cn-compte { font-size: 11px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
-.cn-dispersee { box-shadow: inset 3px 0 0 var(--ambre); }
+.cn-dispersee .cn-tete { background: var(--ambre-voile); }
+.cn-dispersee .cn-puce { background: var(--ambre); }
 .cn-dispersee .cn-nom { color: var(--ambre); }
-.cn-references { padding: 0 13px 10px; }
+.cn-references {
+  padding: 2px 13px 6px 26px; position: relative;
+}
+/* Le filet qui relie les references a leur norme. */
+.cn-references::before {
+  content: ""; position: absolute; left: 16px; top: 0; bottom: 8px;
+  width: 1px; background: var(--trait);
+}
+.cn-dispersee .cn-references::before { background: var(--ambre-trait); }
 
 .cr-entete, .cr-ligne {
   display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.25fr) 172px minmax(0, .85fr);
@@ -589,11 +588,15 @@ body.espace-composants .outils { display: none; }
 }
 .cr-entete {
   font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--encre-3);
-  font-weight: 600; padding-bottom: 4px; border-bottom: 1px solid var(--trait);
+  font-weight: 600; padding: 7px 13px 5px 26px; border-bottom: 1px solid var(--trait);
+  background: var(--surface);
 }
-.cr-ligne { padding: 7px 0; border-bottom: 1px solid var(--surface-3); }
+.cr-ligne { padding: 6px 0; border-bottom: 1px solid var(--surface-3); }
 .cr-ligne:last-child { border-bottom: 0; }
-.cr-isole { box-shadow: inset 3px 0 0 var(--ambre-trait); padding-left: 7px; }
+.cr-isole .cr-ref::before {
+  content: ""; display: inline-block; width: 3px; height: 11px; margin-right: 6px;
+  background: var(--ambre); vertical-align: -1px; border-radius: 1px;
+}
 .cr-ref { font-family: var(--police-data); font-size: 12px; font-weight: 600;
   min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .cr-designation { font-size: 12px; color: var(--encre-2); min-width: 0;
@@ -607,7 +610,7 @@ body.espace-composants .outils { display: none; }
 .cr-emploi { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .cr-jauge { display: block; height: 4px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
 .cr-jauge span { display: block; height: 100%; background: var(--marque); border-radius: 2px; }
-.cr-isole .cr-jauge span { background: var(--ambre-trait); }
+.cr-isole .cr-jauge span { background: var(--ambre); }
 .cr-compte {
   border: 0; background: none; padding: 0; text-align: left;
   font-family: var(--police-data); font-size: 11px; color: var(--encre-2);
@@ -804,7 +807,15 @@ body.espace-composants .outils { display: none; }
   .composant .puce-suppr { margin: 0; }
 }
 .ajout-multi { display: flex; gap: 6px; margin-top: 6px; }
-.ajout-multi .saisie-multi { flex: 1; min-width: 0; background: var(--surface-2); color: var(--encre); border: 1px solid var(--trait-fort); border-radius: var(--r-s); padding: 6px 10px; font-size: 12.5px; }
+.ajout-multi .saisie-multi {
+  flex: 0 1 auto; min-width: 0; max-width: 260px;
+  background: var(--surface-2); color: var(--encre);
+  border: 1px solid var(--trait-fort); border-radius: var(--r-s);
+  padding: 6px 10px; font-size: 12.5px;
+}
+/* Une liste fermee se dimensionne sur son contenu : « Ajouter un porteur… »
+   n'a aucune raison de barrer la fiche sur toute sa largeur. */
+.ajout-multi .saisie-multi-seule { flex: 0 0 auto; width: auto; max-width: 100%; }
 .zone-puces { display: flex; flex-wrap: wrap; gap: 6px; min-height: 54px; padding: var(--e-3); background: var(--surface-2); border: 1px solid var(--trait); border-radius: var(--r-s); margin-bottom: var(--e-3); }
 
 /* Composants à trois niveaux : fonction, norme, référence — en colonnes,
@@ -827,9 +838,14 @@ body.espace-composants .outils { display: none; }
 .composants-outils { display: flex; justify-content: flex-end; margin-top: 6px; }
 @media (max-width: 560px) { .ajout-composant { grid-template-columns: 1fr 1fr; } }
 
-.vignette { display: block; border: 1px solid var(--trait); border-radius: var(--r-s); overflow: hidden; padding: 0; background: var(--surface-3); margin-bottom: var(--e-3); width: 100%; }
-.vignette img { display: block; width: 100%; max-width: 100%; max-height: 220px; object-fit: cover; }
-.vignette-large img { max-height: 280px; }
+/* La photo situe la piece, elle n'est pas le sujet de la fiche : on la pose
+   en vignette, et un clic l'agrandit pour qui veut vraiment la voir. */
+.vignette { display: block; border: 1px solid var(--trait); border-radius: var(--r-s);
+  overflow: hidden; padding: 0; background: var(--surface-3); margin-bottom: var(--e-3);
+  width: 100%; max-width: 260px; }
+.vignette img { display: block; width: 100%; max-width: 100%; max-height: 120px; object-fit: cover; }
+.vignette-large { max-width: 320px; }
+.vignette-large img { max-height: 150px; }
 .loupe img { width: 100%; max-width: 100%; border-radius: var(--r-s); }
 .fiche-pied { padding: var(--e-4) 0 var(--e-7); text-align: center; }
 .fiche-pied .btn-principal { width: 100%; max-width: 380px; }
@@ -1007,12 +1023,25 @@ body.espace-composants .outils { display: none; }
    l'en-tête du rail annonce sa présence. Un aplat marine la rend
    repérable au défilement. */
 /* Favoris de pondération : une intention posée d'un coup. */
-.favoris { margin-bottom: var(--e-4); padding-bottom: var(--e-3); border-bottom: 1px solid var(--trait); }
+.favoris { margin-bottom: var(--e-3); }
+/* Les curseurs, replies derriere un engrenage : ils servent une fois sur dix. */
+.reglage-detail { border-top: 1px solid var(--trait); padding-top: var(--e-2); }
+.reglage-bascule {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 4px;
+  border: 0; background: none; color: var(--encre-2); font-size: 12.5px; font-weight: 600;
+  text-align: left;
+}
+.reglage-bascule:hover { color: var(--encre); }
+.reglage-bascule span:nth-child(2) { flex: 1; }
+.reglage-engrenage { font-size: 14px; color: var(--encre-3); }
+.reglage-chevron { color: var(--encre-3); font-size: 10px; }
+.reglage-detail.ouvert .reglage-engrenage { color: var(--marque); }
+.reglage-detail-corps { padding-top: var(--e-2); }
+
 .favoris h4 {
   margin: 0 0 3px; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
   color: var(--encre-3); font-weight: 700;
 }
-.favoris-aide { margin: 0 0 var(--e-3); font-size: 11.5px; color: var(--encre-3); line-height: 1.45; }
 .favoris-liste { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .favori {
   display: flex; flex-direction: column; gap: 1px; text-align: left;
@@ -1169,33 +1198,7 @@ body.espace-composants .outils { display: none; }
           <h1>NEXUS</h1>
         </div>
         <!-- Indicateurs : chacun est aussi un filtre. -->
-        <div class="indicateurs" role="group" aria-label="Indicateurs">
-          <button type="button" class="indicateur" id="indBoites" data-action="tout-effacer"
-                  title="Revenir à toute la base">
-            <span class="indicateur-libelle">Boîtes</span>
-            <span class="indicateur-valeur" id="kpiBoites">–</span>
-            <span class="indicateur-detail" id="kpiBoitesDetail">toute la base</span>
-          </button>
-          <button type="button" class="indicateur indicateur-valide" id="indValidees"
-                  data-action="filtrer-statut" data-statut="Validé" aria-pressed="false"
-                  title="Ne montrer que les boîtes validées">
-            <span class="indicateur-libelle">Validées</span>
-            <span class="indicateur-valeur" id="kpiVal">–</span>
-            <span class="indicateur-detail" id="kpiValDetail"></span>
-          </button>
-          <button type="button" class="indicateur indicateur-standard" id="indStandard"
-                  data-action="voir-standardisation"
-                  title="Voir les familles de composants servies par plusieurs références">
-            <span class="indicateur-libelle">À standardiser</span>
-            <span class="indicateur-valeur" id="kpiStandard">–</span>
-            <span class="indicateur-detail" id="kpiStandardDetail"></span>
-          </button>
-          <button type="button" class="indicateur indicateur-alerte" id="indDoublons"
-                  data-action="ouvrir-doublons" title="Voir les paires de pièces très proches">
-            <span class="indicateur-libelle">Doublons probables</span>
-            <span class="indicateur-valeur" id="kpiDoublons">–</span>
-            <span class="indicateur-detail" id="kpiDoublonsDetail">voir la liste</span>
-          </button>
+        <div class="indicateurs" id="zoneIndicateurs" role="group" aria-label="Indicateurs">
         </div>
       </div>
     </header>
@@ -2408,6 +2411,7 @@ const Store = {
   poids: {},
   criteresActifs: {},
   seuilEquivalence: 15,
+  reglagesDetaille: false,   // les curseurs, repliés derrière l'engrenage
 
   // Charge utile de la dernière suppression, conservée pour l'annulation.
   derniereSuppression: null,
@@ -3730,29 +3734,18 @@ function selecteurVueHtml() {
 
 /**
  * LE SÉLECTEUR D'ESPACE
- * Deux bases, pas deux vues : les boîtes d'un côté, les composants de
- * l'autre. Elles ne se filtrent pas pareil et ne répondent pas aux mêmes
- * questions — il faut que ça se voie avant de cliquer.
+ * Deux bases, pas deux vues. Même langage que le sélecteur de lecture — une
+ * pilule, deux segments de même taille — mais posé au-dessus, parce qu'il
+ * décide de ce que tout le reste montre.
  */
 function selecteurEspaceHtml() {
-  const espaces = [
-    { cle: 'boites', libelle: 'Boîtes', icone: '◼',
-      aide: 'assemblages, sous-ensembles, standardisation' },
-    { cle: 'composants', libelle: 'Composants', icone: '⬡',
-      aide: 'le référentiel des pièces montées' }
-  ];
   return '<div class="choix-espace" role="tablist" aria-label="Base consultée">' +
-    espaces.map(function (e) {
-      const actif = Store.espace === e.cle;
-      return '<button type="button" role="tab" class="espace' + (actif ? ' actif' : '') + '"' +
-        dataAttrs({ action: 'changer-espace', espace: e.cle }) +
-        ' aria-selected="' + actif + '">' +
-        '<span class="espace-icone" aria-hidden="true">' + e.icone + '</span>' +
-        '<span class="espace-texte">' +
-          '<span class="espace-nom">' + esc(e.libelle) + '</span>' +
-          '<span class="espace-aide">' + esc(e.aide) + '</span>' +
-        '</span>' +
-      '</button>';
+    [['boites', 'Boîtes'], ['composants', 'Composants']].map(function (e) {
+      const actif = Store.espace === e[0];
+      return '<button type="button" role="tab" class="onglet-espace' +
+        (actif ? ' actif' : '') + '"' +
+        dataAttrs({ action: 'changer-espace', espace: e[0] }) +
+        ' aria-selected="' + actif + '">' + esc(e[1]) + '</button>';
     }).join('') +
   '</div>';
 }
@@ -3794,36 +3787,6 @@ function piecesHtml(vue) {
 // ESPACE COMPOSANTS — une base à part, avec ses propres filtres
 // ============================================================
 
-/** La bande de tête : ce que contient la base, et ce qui y cloche. */
-function bandeComposantsHtml(bilan, total) {
-  const mesure = function (n, libelle, aide, classe, action, valeur) {
-    const actif = action && Store.compo[action.champ] === valeur;
-    const corps =
-      '<span class="cb-n">' + n + '</span>' +
-      '<span class="cb-libelle">' + esc(libelle) + '</span>' +
-      (aide ? '<span class="cb-aide">' + esc(aide) + '</span>' : '');
-    if (!action) return '<div class="cb-mesure ' + (classe || '') + '">' + corps + '</div>';
-    return '<button type="button" class="cb-mesure cb-cliquable ' + (classe || '') +
-      (actif ? ' actif' : '') + '"' +
-      dataAttrs({ action: 'filtrer-composants', champ: action.champ, valeur: actif ? '' : valeur }) +
-      ' aria-pressed="' + actif + '">' + corps + '</button>';
-  };
-
-  return '<div class="compo-bande">' +
-    mesure(bilan.references, 'références', total !== bilan.references
-             ? 'sur ' + total + ' au total' : 'dans la base', 'cb-total') +
-    mesure(bilan.fonctions, 'fonctions', 'services rendus') +
-    mesure(bilan.normes, 'normes', 'référentiels cités') +
-    mesure(bilan.montages, 'montages', 'occurrences réelles') +
-    mesure(bilan.isoles, 'montée une fois', 'appro isolé', 'cb-ambre',
-           { champ: 'emploi' }, 'isole') +
-    mesure(bilan.hors, 'hors catalogue', 'non maîtrisées', 'cb-rouge',
-           { champ: 'etat' }, ETAT_COMPOSANT.HORS) +
-    mesure(bilan.dormants, 'jamais montées', 'au catalogue seul', 'cb-doux',
-           { champ: 'etat' }, ETAT_COMPOSANT.DORMANT) +
-  '</div>';
-}
-
 /** Le rail de gauche : les familles, puis les filtres posés. */
 function railComposantsHtml(toutes) {
   const parFamille = {};
@@ -3844,9 +3807,40 @@ function railComposantsHtml(toutes) {
     '</button>';
   }).join('');
 
-  return '<aside class="compo-rail" aria-label="Familles de composants">' +
+  // Les états vivent au rail, pas dans la bande du haut : ce sont des
+  // filtres, pas des alertes, et les compter en gros chiffres noyait le reste.
+  const compteEtat = {};
+  toutes.forEach(function (c) { compteEtat[c.etat] = (compteEtat[c.etat] || 0) + 1; });
+  const etats = [
+    { cle: ETAT_COMPOSANT.HORS, libelle: 'Hors catalogue' },
+    { cle: ETAT_COMPOSANT.DORMANT, libelle: 'Jamais montées' },
+    { cle: ETAT_COMPOSANT.COURANT, libelle: 'Courantes' }
+  ].map(function (e) {
+    const actif = Store.compo.etat === e.cle;
+    return '<button type="button" class="cf-etat' + (actif ? ' actif' : '') + '"' +
+      dataAttrs({ action: 'filtrer-composants', champ: 'etat', valeur: actif ? '' : e.cle }) +
+      ' aria-pressed="' + actif + '">' +
+      '<span class="cf-etat-nom">' + esc(e.libelle) + '</span>' +
+      '<span class="cf-n">' + (compteEtat[e.cle] || 0) + '</span>' +
+    '</button>';
+  }).join('');
+
+  const emplois = [['partage', 'Partagées'], ['isole', 'Montées une fois']].map(function (e) {
+    const actif = Store.compo.emploi === e[0];
+    return '<button type="button" class="cf-etat' + (actif ? ' actif' : '') + '"' +
+      dataAttrs({ action: 'filtrer-composants', champ: 'emploi', valeur: actif ? '' : e[0] }) +
+      ' aria-pressed="' + actif + '">' +
+      '<span class="cf-etat-nom">' + esc(e[1]) + '</span>' +
+    '</button>';
+  }).join('');
+
+  return '<aside class="compo-rail" aria-label="Filtres de la base de composants">' +
     '<h3 class="compo-rail-titre">Familles</h3>' +
     '<div class="cf-liste">' + familles + '</div>' +
+    '<h3 class="compo-rail-titre compo-rail-titre-2">État</h3>' +
+    '<div class="cf-liste">' + etats + '</div>' +
+    '<h3 class="compo-rail-titre compo-rail-titre-2">Emploi</h3>' +
+    '<div class="cf-liste">' + emplois + '</div>' +
     (filtreComposantActif()
       ? '<button type="button" class="cf-effacer"' +
         dataAttrs({ action: 'effacer-filtres-composants' }) + '>Tout réafficher</button>'
@@ -3893,36 +3887,44 @@ function ligneReferenceHtml(c, maxi) {
   '</div>';
 }
 
-/** Une norme et ses références. */
+/**
+ * Une norme, en bandeau, puis ses références en retrait sous un filet.
+ * L'en-tête de colonnes ne se répète PAS à chaque norme : répété, il
+ * aplatissait la hiérarchie au lieu de la montrer.
+ */
 function blocNormeHtml(norme, maxi) {
   const n = norme.lignes.length;
+  const montees = norme.lignes.filter(function (l) { return l.nbBoites > 0; }).length;
+
   return '<div class="cn-bloc' + (norme.dispersee ? ' cn-dispersee' : '') + '">' +
     '<div class="cn-tete">' +
+      '<span class="cn-puce" aria-hidden="true"></span>' +
       '<span class="cn-nom">' + esc(norme.libelle) + '</span>' +
-      '<span class="cn-compte">' + n + (n > 1 ? ' références' : ' référence') + '</span>' +
+      '<span class="cn-compte">' + n + (n > 1 ? ' références' : ' référence') +
+        (montees < n ? ' · ' + montees + ' montée' + (montees > 1 ? 's' : '') : '') +
+      '</span>' +
       (norme.dispersee
-        ? '<span class="cn-alerte" title="Plusieurs références montées sous la même norme">' +
+        ? '<span class="cn-alerte" title="Plusieurs références montées sous cette norme">' +
           'dispersée</span>'
         : '') +
     '</div>' +
     '<div class="cn-references">' +
-      '<div class="cr-entete"><span>Référence</span><span>Désignation</span>' +
-        '<span>Emploi</span><span>Porteurs</span></div>' +
       norme.lignes.map(function (l) { return ligneReferenceHtml(l, maxi); }).join('') +
     '</div>' +
   '</div>';
 }
 
-/** Une fonction et ses normes. C'est le niveau auquel on cherche. */
 // Tout ouvrir fait un mur ; tout replier ouvre sur une page vide. On ouvre
-// donc les premières — ce sont les plus montées, elles sont triées ainsi — et
-// on replie la traîne, qu'on déplie quand on la cherche.
+// les premières — ce sont les plus montées, elles sont triées ainsi — et on
+// replie la traîne, qu'on déplie quand on la cherche.
 const FONCTIONS_OUVERTES = 5;
 
+/** Une fonction, ses normes, et un seul en-tête de colonnes pour tout. */
 function blocFonctionHtml(fonction, maxi, cleFamille, replieParDefaut) {
   const id = cleFamille + '::' + normaliserTexte(fonction.libelle);
   const choisi = Store.compo.deplies[id];
   const ouvert = choisi === undefined ? !replieParDefaut : choisi !== false;
+  const nbNormes = fonction.normes.length;
 
   return '<section class="cfo-bloc' + (ouvert ? '' : ' replie') + '">' +
     '<button type="button" class="cfo-tete"' +
@@ -3931,8 +3933,8 @@ function blocFonctionHtml(fonction, maxi, cleFamille, replieParDefaut) {
       '<span class="cfo-chevron" aria-hidden="true">' + (ouvert ? '▾' : '▸') + '</span>' +
       '<span class="cfo-nom">' + esc(fonction.libelle) + '</span>' +
       '<span class="cfo-chiffres">' +
-        '<b>' + fonction.references + '</b> réf.' +
-        ' · <b>' + fonction.normes.length + '</b> norme' + (fonction.normes.length > 1 ? 's' : '') +
+        '<b>' + nbNormes + '</b> norme' + (nbNormes > 1 ? 's' : '') +
+        ' · <b>' + fonction.references + '</b> référence' + (fonction.references > 1 ? 's' : '') +
         ' · <b>' + fonction.nbBoites + '</b> boîte' + (fonction.nbBoites > 1 ? 's' : '') +
       '</span>' +
       (fonction.dispersee
@@ -3941,6 +3943,8 @@ function blocFonctionHtml(fonction, maxi, cleFamille, replieParDefaut) {
     '</button>' +
     (ouvert
       ? '<div class="cfo-corps">' +
+          '<div class="cr-entete"><span>Référence</span><span>Désignation</span>' +
+            '<span>Emploi</span><span>Porteurs</span></div>' +
           fonction.normes.map(function (n) { return blocNormeHtml(n, maxi); }).join('') +
         '</div>'
       : '') +
@@ -3976,12 +3980,12 @@ function composantsHtml(vue) {
   const ouvertes = Object.keys(rangs).filter(estOuverte).length;
 
   const barre = arbre.length
-    ? '<div class="compo-barre">' +
-        '<span class="compo-barre-compte">' +
+    ? '<div class="arbre-barre">' +
+        '<span class="arbre-barre-compte">' +
           nbFonctions + ' fonction' + (nbFonctions > 1 ? 's' : '') +
           ' · ' + retenues.length + ' référence' + (retenues.length > 1 ? 's' : '') +
         '</span>' +
-        '<button type="button" class="compo-barre-btn"' +
+        '<button type="button" class="arbre-barre-btn"' +
           dataAttrs({ action: 'deplier-tout-composants',
                       ouvrir: String(ouvertes < nbFonctions) }) + '>' +
           (ouvertes < nbFonctions ? 'Tout déplier' : 'Tout replier') +
@@ -4016,8 +4020,7 @@ function composantsHtml(vue) {
         '</p>' +
       '</div>';
 
-  return bandeComposantsHtml(bilan, toutes.length) +
-    '<div class="compo-corps">' +
+  return '<div class="compo-corps">' +
       railComposantsHtml(toutes) +
       '<div class="compo-arbre">' + barre + corps + '</div>' +
     '</div>';
@@ -4245,40 +4248,106 @@ function rendreInterface() {
   if (chargement) chargement.hidden = true;
 }
 
-function rendreKpi(kpi, vue) {
-  const filtre = !!(vue && vue.filtre);
-  definirTexte('kpiBoites', String(kpi.nbBoites));
-  definirTexte('kpiBoitesDetail', filtre ? 'cliquer pour tout revoir' : 'toute la base');
-  definirTexte('kpiVal', kpi.nbValides + ' / ' + kpi.nbBoites);
-  definirTexte('kpiValDetail', kpi.pctValides + ' % validées');
-  // Compter des PN n'apprenait rien, et melangeait deux niveaux dans un seul
-  // nombre. Ce qui compte, c'est ce qu'il reste a ranger.
-  const dispersees = opportunitesStandardisation(vue ? vue.aAfficher : []);
-  definirTexte('kpiStandard', String(dispersees.length));
-  definirTexte('kpiStandardDetail', dispersees.length
-    ? 'familles à plusieurs références'
-    : 'une norme, une référence partout');
-  const ind = parId('indStandard');
-  if (ind) ind.setAttribute('aria-pressed', String(Store.vueMode === 'standardisation'));
-
-
-  // L'indicateur dit s'il filtre en ce moment.
-  const marquer = function (id, actif) {
-    const el = parId(id);
-    if (!el) return;
-    el.classList.toggle('actif', !!actif);
-    if (el.tagName === 'BUTTON') el.setAttribute('aria-pressed', String(!!actif));
-  };
-  marquer('indValidees', Store.filtreStatut && normaliserStatut(Store.filtreStatut) === 'validé');
-
-  const doublons = compterDoublonsProbables(vue ? vue.aAfficher : Store.boites);
-  definirTexte('kpiDoublons', doublons.nombre === null ? '—' : String(doublons.nombre));
-  // Un « — » sans explication laisse croire qu'il n'y a rien à voir.
-  definirTexte('kpiDoublonsDetail', doublons.nombre === null
-    ? 'trop de pièces : filtrez d\'abord'
-    : 'voir la liste');
-
+/**
+ * Les indicateurs du haut appartiennent à l'espace affiché. Garder ceux des
+ * boîtes en consultant les composants faisait lire les mauvais chiffres :
+ * on croit que « 13 boîtes » qualifie ce qu'on a sous les yeux.
+ */
+function indicateurHtml(o) {
+  const balise = o.action ? 'button' : 'div';
+  const attrs = o.action
+    ? ' type="button"' + dataAttrs(o.donnees || {}) +
+      (o.actif !== undefined ? ' aria-pressed="' + !!o.actif + '"' : '')
+    : '';
+  return '<' + balise + ' class="indicateur ' + (o.classe || '') +
+    (o.actif ? ' actif' : '') + '"' + attrs +
+    (o.titre ? ' title="' + esc(o.titre) + '"' : '') + '>' +
+    '<span class="indicateur-libelle">' + esc(o.libelle) + '</span>' +
+    '<span class="indicateur-valeur">' + esc(String(o.valeur)) + '</span>' +
+    '<span class="indicateur-detail">' + esc(o.detail || '') + '</span>' +
+  '</' + balise + '>';
 }
+
+function rendreKpi(kpi, vue) {
+  definirHtml('zoneIndicateurs', Store.espace === 'composants'
+    ? indicateursComposantsHtml(vue)
+    : indicateursBoitesHtml(kpi, vue));
+}
+
+function indicateursBoitesHtml(kpi, vue) {
+  const filtre = !!(vue && vue.filtre);
+  const dispersees = opportunitesStandardisation(vue ? vue.aAfficher : []);
+  const doublons = compterDoublonsProbables(vue ? vue.aAfficher : Store.boites);
+  const valide = Store.filtreStatut && normaliserStatut(Store.filtreStatut) === 'validé';
+
+  return [
+    { libelle: 'Boîtes', valeur: kpi.nbBoites,
+      detail: filtre ? 'cliquer pour tout revoir' : 'toute la base',
+      action: true, donnees: { action: 'tout-effacer' }, titre: 'Revenir à toute la base' },
+    { libelle: 'Validées', valeur: kpi.nbValides + ' / ' + kpi.nbBoites,
+      detail: kpi.pctValides + ' % validées', classe: 'indicateur-valide',
+      action: true, actif: !!valide, titre: 'Ne montrer que les boîtes validées',
+      donnees: { action: 'filtrer-statut', statut: 'Validé' } },
+    { libelle: 'À standardiser', valeur: dispersees.length,
+      detail: dispersees.length ? 'familles à plusieurs références'
+                                : 'une norme, une référence partout',
+      classe: 'indicateur-standard', action: true,
+      actif: Store.vueMode === 'standardisation',
+      titre: 'Voir les familles servies par plusieurs références',
+      donnees: { action: 'voir-standardisation' } },
+    { libelle: 'Doublons probables',
+      valeur: doublons.nombre === null ? '—' : doublons.nombre,
+      detail: doublons.nombre === null ? 'trop de pièces : filtrez d\'abord' : 'voir la liste',
+      classe: 'indicateur-alerte', action: true,
+      titre: 'Voir les paires de pièces très proches',
+      donnees: { action: 'ouvrir-doublons' } }
+  ].map(indicateurHtml).join('');
+}
+
+/**
+ * Quatre mesures, pas sept. Le compte des fonctions, des normes et des
+ * montages est vrai mais n'appelle aucune décision : il est resté dans
+ * l'arbre, où il qualifie ce qu'on regarde.
+ */
+function indicateursComposantsHtml(vue) {
+  const toutes = baseComposants(vue.aAfficher);
+  const retenues = composantsFiltres(vue.aAfficher);
+  const bilan = bilanComposants(retenues);
+  const filtre = filtreComposantActif();
+
+  let aRanger = 0;
+  arbreComposants(retenues).forEach(function (f) {
+    aRanger += f.fonctions.filter(function (fo) { return fo.dispersee; }).length;
+  });
+
+  return [
+    { libelle: 'Références', valeur: bilan.references,
+      detail: filtre ? 'sur ' + toutes.length + ' — tout revoir' : 'dans la base',
+      action: true, titre: 'Relâcher tous les filtres',
+      donnees: { action: 'effacer-filtres-composants' } },
+    { libelle: 'À ranger', valeur: aRanger,
+      detail: aRanger ? 'fonctions dispersées' : 'une référence par fonction',
+      classe: 'indicateur-standard', action: true,
+      actif: Store.compo.emploi === null && Store.compo.etat === null && false,
+      titre: 'Voir les familles servies par plusieurs références',
+      donnees: { action: 'voir-standardisation' } },
+    { libelle: 'Hors catalogue', valeur: bilan.hors,
+      detail: bilan.hors ? 'montées, non référencées' : 'tout est au catalogue',
+      classe: 'indicateur-alerte', action: true,
+      actif: Store.compo.etat === ETAT_COMPOSANT.HORS,
+      titre: 'Voir les pièces montées absentes du catalogue',
+      donnees: { action: 'filtrer-composants', champ: 'etat',
+                 valeur: Store.compo.etat === ETAT_COMPOSANT.HORS ? '' : ETAT_COMPOSANT.HORS } },
+    { libelle: 'Montées une fois', valeur: bilan.isoles,
+      detail: bilan.isoles ? 'appro isolé' : 'tout est partagé',
+      classe: 'indicateur-isole', action: true,
+      actif: Store.compo.emploi === 'isole',
+      titre: 'Voir les références montées dans une seule boîte',
+      donnees: { action: 'filtrer-composants', champ: 'emploi',
+                 valeur: Store.compo.emploi === 'isole' ? '' : 'isole' } }
+  ].map(indicateurHtml).join('');
+}
+
 
 function rendreFiltreActif(vue) {
   const zone = parId('filtreActif');
@@ -4397,15 +4466,13 @@ function blocMultiHtml(champ, valeurs, editable, actionAjout, actionSuppr, donne
         '</div>'
       : '';
   } else if (editable) {
-    // Champ libre : le bouton reste, mais Entrée suffit, et choisir une
-    // suggestion de la liste ajoute directement.
+    // Champ libre : Entrée pose la valeur, et choisir une suggestion de la
+    // liste la pose aussi. Le bouton « Ajouter » ne servait plus qu'à être visé.
     ajout = '<div class="ajout-multi">' +
         '<input type="text" class="saisie-multi"' +
           (champ.liste ? ' list="' + esc(champ.liste) + '"' : '') +
           dataAttrs(Object.assign({ ajout: actionAjout }, donnees)) +
-          ' placeholder="Ajouter…" aria-label="Ajouter à ' + esc(champ.libelle) + '">' +
-        '<button type="button" class="btn-mini"' +
-          dataAttrs(Object.assign({ action: actionAjout }, donnees)) + '>Ajouter</button>' +
+          ' placeholder="Ajouter…  (Entrée)" aria-label="Ajouter à ' + esc(champ.libelle) + '">' +
       '</div>';
   }
   return '<div class="ligne ligne-bloc">' +
@@ -5161,11 +5228,18 @@ function favorisHtml(portee) {
   const favoris = favorisDe(portee.cle);
   if (!favoris.length) return '';
 
+  const aucunPose = !favoris.some(function (f) { return favoriEnPlace(portee.cle, f); });
+
   return '<div class="favoris">' +
-    '<h4>Favoris</h4>' +
-    '<p class="favoris-aide">Une intention posée d\'un coup. Les curseurs ' +
-      'restent réglables juste après.</p>' +
+    '<h4>Chercher d\'abord…</h4>' +
     '<div class="favoris-liste">' +
+      // « Par défaut » ouvre la liste : c'est l'état de départ, pas un repli.
+      '<button type="button" class="favori favori-defaut' + (aucunPose ? ' actif' : '') + '"' +
+        dataAttrs({ action: 'reinitialiser-reglages' }) +
+        ' aria-pressed="' + aucunPose + '" title="Revenir aux parts du registre">' +
+        '<span class="favori-nom">Par défaut</span>' +
+        '<span class="favori-aide">les parts d\'origine</span>' +
+      '</button>' +
       favoris.map(function (f) {
         const actif = favoriEnPlace(portee.cle, f);
         return '<button type="button" class="favori' + (actif ? ' actif' : '') + '"' +
@@ -5175,12 +5249,6 @@ function favorisHtml(portee) {
           '<span class="favori-aide">' + esc(f.aide) + '</span>' +
         '</button>';
       }).join('') +
-      '<button type="button" class="favori favori-defaut"' +
-        dataAttrs({ action: 'reinitialiser-reglages' }) +
-        ' title="Revenir aux parts du registre">' +
-        '<span class="favori-nom">Par défaut</span>' +
-        '<span class="favori-aide">les parts d\'origine</span>' +
-      '</button>' +
     '</div>' +
   '</div>';
 }
@@ -5207,13 +5275,26 @@ function curseursHtml() {
            '<b>' + esc(seul ? seul.libelle : '—') + '</b>. ' +
            'Le score en dépend entièrement, il n\'y a pas d\'arbitrage à faire.</p>';
   } else {
-    html = favorisHtml(portee) + groupeReglageHtml(portee);
+    // Les curseurs servent une fois sur dix : un favori suffit le reste du
+    // temps. On les replie derrière un engrenage plutôt que de les imposer.
+    const ouvert = !!Store.reglagesDetaille;
+    html = favorisHtml(portee) +
+      '<div class="reglage-detail' + (ouvert ? ' ouvert' : '') + '">' +
+        '<button type="button" class="reglage-bascule"' +
+          dataAttrs({ action: 'basculer-reglage-detaille' }) +
+          ' aria-expanded="' + ouvert + '">' +
+          '<span class="reglage-engrenage" aria-hidden="true">⚙</span>' +
+          '<span>Régler les parts à la main</span>' +
+          '<span class="reglage-chevron" aria-hidden="true">' + (ouvert ? '▴' : '▾') + '</span>' +
+        '</button>' +
+        (ouvert ? '<div class="reglage-detail-corps">' + groupeReglageHtml(portee) + '</div>' : '') +
+      '</div>';
   }
 
   // Quand la portée compare des composants, on règle AUSSI la répartition
   // entre leurs trois niveaux. C'est une pondération dans la pondération :
   // elle dit ce que vaut une fonction partagée face à une référence exacte.
-  if (porteeAvecComposants(portee)) {
+  if (porteeAvecComposants(portee) && Store.reglagesDetaille) {
     const niveaux = porteeParCle('composant');
     html += '<div class="sous-reglage">' +
       '<h4>Niveaux de composant</h4>' +
@@ -6097,6 +6178,10 @@ enregistrerActions({
     rendreReglages();
     rafraichirComparaison();
   },
+  'basculer-reglage-detaille': function () {
+    Store.reglagesDetaille = !Store.reglagesDetaille;
+    rendreReglages();
+  },
   'appliquer-favori': function (d) {
     if (!appliquerFavori(d.portee, d.favori)) return;
     rendreReglages();
@@ -6209,6 +6294,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const el = e.target;
     if (!el.classList || !el.classList.contains('saisie-multi')) return;
     if (el.tagName !== 'SELECT' || !el.value || !el.dataset.ajout) return;
+    const action = ACTIONS[el.dataset.ajout];
+    if (action) action(el.dataset);
+  });
+
+  // Choisir une suggestion dans un champ libre, c'est la vouloir : on la pose
+  // sans attendre un geste de plus. Les valeurs y sont longues et composées,
+  // personne ne les tape par accident.
+  document.addEventListener('input', function (e) {
+    const el = e.target;
+    if (!el.classList || !el.classList.contains('saisie-multi')) return;
+    if (el.tagName === 'SELECT' || !el.dataset.ajout) return;
+    const liste = el.getAttribute('list');
+    if (!liste || !optionConnue(liste, el.value.trim())) return;
     const action = ACTIONS[el.dataset.ajout];
     if (action) action(el.dataset);
   });
