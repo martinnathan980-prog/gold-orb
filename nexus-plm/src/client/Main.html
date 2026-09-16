@@ -231,23 +231,7 @@ enregistrerActions({
     rendreInterface();
   },
 
-  'deplier-tout-composants': function (d) {
-    const ouvrir = d.ouvrir === 'true';
-    Store.compo.deplies = {};
-    const vue = calculerVue();
-    arbreComposants(composantsFiltres(vue.aAfficher)).forEach(function (f) {
-      f.fonctions.forEach(function (fo) {
-        Store.compo.deplies[f.cle + '::' + normaliserTexte(fo.libelle)] = ouvrir;
-      });
-    });
-    rendreInterface();
-  },
 
-  'basculer-fonction': function (d) {
-    const id = d.fonction;
-    Store.compo.deplies[id] = Store.compo.deplies[id] === false;
-    rendreInterface();
-  },
 
   'changer-vue': function (d) {
     if (['boites', 'pieces', 'standardisation'].indexOf(d.vue) === -1) return;
@@ -321,7 +305,19 @@ enregistrerActions({
     rendreInterface();
   },
 
+  'ouvrir-fiche-composant': function (d) {
+    Store.ficheComposant = { categorie: d.categorie, fonction: d.fonction };
+    rendreFiche();
+    ouvrirPanneau();
+  },
+  'trier-composants': function (d) {
+    Store.compo.tri = d.tri;
+    enregistrerReglages();
+    rendreInterface();
+  },
+
   'ouvrir-fiche': function (d) {
+    Store.ficheComposant = null;
     Store.pnCourant = d.pn;
     Store.enEditionBoite = false;
     Store.enEditionNom = {};
@@ -585,6 +581,12 @@ enregistrerActions({
     rendreReglages();
     rafraichirComparaison();
   },
+  'deplier-resultat': function (d) {
+    // Un seul détail ouvert à la fois : c'est un classement, on compare en
+    // remontant la liste, pas en dépliant tout.
+    Store.resultatDeplie = Store.resultatDeplie === d.resultat ? '' : d.resultat;
+    rafraichirComparaison();
+  },
   'basculer-reglage-detaille': function () {
     Store.reglagesDetaille = !Store.reglagesDetaille;
     rendreReglages();
@@ -601,14 +603,6 @@ enregistrerActions({
   },
 
   // --- standardisation ---
-  'deplier-composant': function (d, noeud) {
-    const bloc = noeud.parentNode && noeud.parentNode.querySelector('.cr-boites');
-    if (!bloc) return;
-    const ouvert = !bloc.hidden;
-    bloc.hidden = ouvert;
-    noeud.setAttribute('aria-expanded', String(!ouvert));
-    noeud.classList.toggle('actif', !ouvert);
-  },
 
   'deplier-reference': function (d, noeud) {
     const bloc = noeud.parentNode && noeud.parentNode.querySelector('.ref-boites');

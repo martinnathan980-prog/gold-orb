@@ -28,12 +28,20 @@ function pucesHtml(valeurs, actionSuppr, donnees, editable, classe) {
   }).join('');
 }
 
-function apercuImageHtml(valeur, classe) {
+/**
+ * La photo situe la pièce. Elle se pose au centre, dans un cadre de rapport
+ * fixe : collée à gauche et au format de la source, elle déséquilibrait la
+ * fiche et changeait de hauteur d'une boîte à l'autre.
+ */
+function apercuImageHtml(valeur, classe, centre) {
   const url = urlMiniature(valeur);
   if (!url) return '';
-  return '<button type="button" class="vignette ' + (classe || '') + '"' +
-         dataAttrs({ action: 'agrandir-image', url: url }) +
-         ' aria-label="Agrandir l\'image"><img src="' + esc(url) + '" alt="" loading="lazy"></button>';
+  const bouton = '<button type="button" class="vignette ' + (classe || '') + '"' +
+    dataAttrs({ action: 'agrandir-image', url: url }) +
+    ' aria-label="Agrandir l\'image" title="Agrandir">' +
+    '<img src="' + esc(url) + '" alt="" loading="lazy">' +
+  '</button>';
+  return centre ? '<div class="vignette-cadre">' + bouton + '</div>' : bouton;
 }
 
 function ligneHtml(libelle, contenu, aide) {
@@ -187,7 +195,7 @@ function blocBoiteHtml(boite) {
       '<div class="bloc-actions"><span id="spin-boite" class="zone-spin"></span>' + actions + '</div>' +
     '</header>';
 
-  if (!edition) html += apercuImageHtml(boite['Image'], 'vignette-large');
+  if (!edition) html += apercuImageHtml(boite['Image'], 'vignette-large', true);
 
   Store.headersBoites.forEach(function (cle) {
     const valeur = boite[cle];
@@ -306,7 +314,7 @@ function blocNomHtml(ligne) {
     '</div>';
   }
 
-  if (!edition) html += apercuImageHtml(ligne['Image'], '');
+  if (!edition) html += apercuImageHtml(ligne['Image'], 'vignette-sous', true);
 
   // Seuls les champs du type : c'est tout l'intérêt du registre.
   champsDuType(type).forEach(function (champ) {
@@ -377,15 +385,163 @@ function ficheHtml(boite) {
       '</nav>'
     : '';
 
-  return sommaire +
-         blocBoiteHtml(boite) +
-         lignes.map(blocNomHtml).join('') +
-         '<div class="fiche-pied">' +
-           boutonHtml('nouveau-sous-ensemble', {}, '+ Ajouter un sous-ensemble', 'btn-principal') +
-         '</div>';
+  // La boîte est le tronc, les sous-ensembles sont ses branches. Les
+  // empiler à plat laissait croire à quatre blocs de même rang ; ici la
+  // subordination se voit : un retrait, un filet vertical, un compteur.
+  const branches = lignes.length
+    ? '<div class="arbre-fiche">' +
+        '<div class="arbre-tete">' +
+          '<span class="arbre-titre">Sous-ensembles</span>' +
+          '<span class="arbre-compte">' + lignes.length +
+            (lignes.length > 1 ? ' montés' : ' monté') + '</span>' +
+        '</div>' +
+        '<div class="arbre-branches">' +
+          lignes.map(function (l) {
+            return '<div class="arbre-branche">' + blocNomHtml(l) + '</div>';
+          }).join('') +
+          '<div class="arbre-branche arbre-ajout">' +
+            boutonHtml('nouveau-sous-ensemble', {}, '+ Ajouter un sous-ensemble', 'btn-neutre') +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    : '<div class="fiche-pied">' +
+        boutonHtml('nouveau-sous-ensemble', {}, '+ Ajouter un sous-ensemble', 'btn-principal') +
+      '</div>';
+
+  return sommaire + blocBoiteHtml(boite) + branches;
+}
+
+/**
+ * LA FICHE D'UNE FONCTION DE COMPOSANT
+ *
+ * Le pendant de la fiche d'une boîte : on l'ouvre depuis la liste, dans le
+ * même panneau. Une norme par bloc, ses références dessous, et la plus
+ * montée marquée — c'est vers elle qu'il coûte le moins cher de converger.
+ */
+function ficheComposantHtml(cible) {
+  const base = baseComposants(calculerVue().aAfficher).filter(function (c) {
+    return c.categorie === cible.categorie &&
+           normaliserTexte(c.fonction) === normaliserTexte(cible.fonction);
+  });
+  if (!base.length) {
+    return '<div class="etat-vide"><p>Cette fonction n\'est plus dans la base.</p>' +
+           '<p class="etat-vide-aide">Fermez le panneau : la liste est à jour.</p></div>';
+  }
+
+  const parNorme = new Map();
+  base.forEach(function (c) {
+    const cle = normaliserTexte(c.norme) || '\u0000';
+    if (!parNorme.has(cle)) parNorme.set(cle, { libelle: c.norme || 'sans norme', lignes: [] });
+    parNorme.get(cle).lignes.push(c);
+  });
+
+  const montees = base.filter(function (c) { return c.nbBoites > 0; });
+  const majoritaire = montees.slice().sort(function (a, b) { return b.nbBoites - a.nbBoites; })[0];
+  const boites = new Set();
+  base.forEach(function (c) { c.boites.forEach(function (b) { boites.add(b); }); });
+  const maxi = base.reduce(function (m, c) { return Math.max(m, c.nbBoites); }, 1);
+
+  // Le résumé : ce qu'on est venu savoir avant de lire le détail.
+  const resume = '<div class="fc-resume">' +
+    '<div class="fc-mesure"><span class="fc-n">' + parNorme.size + '</span>' +
+      '<span class="fc-l">norme' + (parNorme.size > 1 ? 's' : '') + '</span></div>' +
+    '<div class="fc-mesure"><span class="fc-n">' + base.length + '</span>' +
+      '<span class="fc-l">référence' + (base.length > 1 ? 's' : '') + '</span></div>' +
+    '<div class="fc-mesure"><span class="fc-n">' + boites.size + '</span>' +
+      '<span class="fc-l">boîte' + (boites.size > 1 ? 's' : '') + '</span></div>' +
+  '</div>';
+
+  const conseil = montees.length > 1 && majoritaire
+    ? '<p class="fc-conseil">' +
+        '<b>' + montees.length + ' références montées</b> pour le même service. ' +
+        'La plus répandue est <span class="fc-pn">' + esc(majoritaire.reference) + '</span>' +
+        ' (' + majoritaire.nbBoites + ' boîte' + (majoritaire.nbBoites > 1 ? 's' : '') + ') : ' +
+        'c\'est vers elle qu\'il coûte le moins cher de converger.' +
+      '</p>'
+    : '';
+
+  const blocs = Array.from(parNorme.values())
+    .sort(function (a, b) {
+      const mb = b.lignes.reduce(function (t, l) { return t + l.nbBoites; }, 0);
+      const ma = a.lignes.reduce(function (t, l) { return t + l.nbBoites; }, 0);
+      return mb - ma || a.libelle.localeCompare(b.libelle, 'fr');
+    })
+    .map(function (n) {
+      n.lignes.sort(function (a, b) {
+        return b.nbBoites - a.nbBoites ||
+               String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+      });
+      return '<section class="fc-norme">' +
+        '<header class="fc-norme-tete">' +
+          '<span class="fc-norme-cle">Norme</span>' +
+          '<span class="fc-norme-nom">' + esc(n.libelle) + '</span>' +
+          '<span class="fc-norme-n">' + n.lignes.length +
+            (n.lignes.length > 1 ? ' références' : ' référence') + '</span>' +
+        '</header>' +
+        n.lignes.map(function (c) {
+          return ficheReferenceHtml(c, maxi, majoritaire && c.cle === majoritaire.cle);
+        }).join('') +
+      '</section>';
+    }).join('');
+
+  return resume + conseil + '<div class="fc-normes">' + blocs + '</div>';
+}
+
+/** Une référence dans la fiche d'une fonction. */
+function ficheReferenceHtml(c, maxi, majoritaire) {
+  const part = c.nbBoites ? Math.max(6, Math.round((c.nbBoites / (maxi || 1)) * 100)) : 0;
+  const etat = c.etat === ETAT_COMPOSANT.HORS
+    ? '<span class="cr-etat cr-hors" title="Montée mais absente du catalogue">hors catalogue</span>'
+    : c.etat === ETAT_COMPOSANT.DORMANT
+      ? '<span class="cr-etat cr-dormant" title="Au catalogue, montée nulle part">jamais montée</span>'
+      : '';
+
+  return '<div class="fc-ref' + (majoritaire ? ' fc-majoritaire' : '') + '">' +
+    '<div class="fc-ref-tete">' +
+      '<span class="fc-ref-pn">' + esc(txt(c.reference, 'sans référence')) + '</span>' +
+      (majoritaire ? '<span class="fc-tag-majo">la plus montée</span>' : '') +
+      etat +
+    '</div>' +
+    (c.designation ? '<p class="fc-ref-designation">' + esc(c.designation) + '</p>' : '') +
+    '<div class="fc-ref-emploi">' +
+      '<span class="lf-jauge" aria-hidden="true"><span style="width:' + part + '%"></span></span>' +
+      '<span class="fc-ref-compte">' +
+        (c.nbBoites
+          ? c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte') +
+            (c.montages > c.nbBoites ? ' · ' + c.montages + ' montages' : '')
+          : 'montée nulle part') +
+      '</span>' +
+    '</div>' +
+    (c.boites.length
+      ? '<div class="fc-ref-boites">' +
+          c.boites.map(function (pn) {
+            return '<button type="button" class="usage-lien"' +
+                   dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
+          }).join('') +
+        '</div>'
+      : '') +
+    (c.porteurs.length
+      ? '<div class="fc-ref-porteurs">' +
+          c.porteurs.map(function (p) {
+            return '<span class="puce-porteur puce-porteur-mini">' + esc(p) + '</span>';
+          }).join('') +
+        '</div>'
+      : '') +
+  '</div>';
 }
 
 function rendreFiche() {
+  // Le panneau sert les deux bases : une boîte, ou une fonction de composant.
+  if (Store.ficheComposant) {
+    const cat = CATEGORIES_COMPOSANT[Store.ficheComposant.categorie] ||
+                CATEGORIES_COMPOSANT.composant;
+    definirTexte('slideOverTitle', Store.ficheComposant.fonction);
+    const sousC = parId('slideOverSousTitre');
+    if (sousC) sousC.textContent = cat.libelle;
+    definirHtml('slideOverBody', ficheComposantHtml(Store.ficheComposant));
+    return;
+  }
+
   const boite = boiteCourante();
   definirTexte('slideOverTitle', boite ? txt(boite[CLE_PN()]) : 'Fiche');
   const sous = parId('slideOverSousTitre');

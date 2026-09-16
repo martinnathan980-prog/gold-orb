@@ -32,7 +32,7 @@ const Store = {
   espace: 'boites',          // 'boites' ou 'composants'
   vueMode: 'boites',         // dans l'espace boîtes : 'boites', 'pieces', 'standardisation'
   compo: { recherche: '', famille: null, fonction: null, norme: null,
-           etat: null, emploi: null, deplies: {} },
+           etat: null, emploi: null, tri: 'emploi' },
   tri: 'pn',
   enEditionBoite: false,
   enEditionNom: {},
@@ -44,6 +44,8 @@ const Store = {
   criteresActifs: {},
   seuilEquivalence: 15,
   reglagesDetaille: false,   // les curseurs, repliés derrière l'engrenage
+  resultatDeplie: null,      // le candidat dont on regarde le détail
+  ficheComposant: null,      // { categorie, fonction } quand le panneau sert les composants
 
   // Charge utile de la dernière suppression, conservée pour l'annulation.
   derniereSuppression: null,

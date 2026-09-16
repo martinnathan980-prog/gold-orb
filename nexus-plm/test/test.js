@@ -1326,9 +1326,72 @@ charger([{ 'PN Global': 'B"1', 'Composants': '<b>V</b> | <i>N</i> | <u>R</u>' }]
 const htmlBase = C.composantsHtml(C.calculerVue());
 faux('un composant piege n\'injecte rien', /<b>V<\/b>|<i>N<\/i>/.test(htmlBase));
 vrai('il est affiche echappe', htmlBase.indexOf('&lt;b&gt;V&lt;/b&gt;') !== -1);
-vrai('la reference est depliable', htmlBase.indexOf('data-action="deplier-composant"') !== -1);
 vrai('la famille se filtre', htmlBase.indexOf('data-champ="famille"') !== -1);
-vrai('et la fonction se replie', htmlBase.indexOf('data-action="basculer-fonction"') !== -1);
+// La liste ne montre que les fonctions : le detail s'ouvre dans la fiche.
+vrai('une fonction mene a sa fiche',
+     htmlBase.indexOf('data-action="ouvrir-fiche-composant"') !== -1);
+vrai('et la liste se trie', htmlBase.indexOf('data-action="trier-composants"') !== -1);
+faux('plus d\'arbre deplie dans la liste', /data-action="basculer-fonction"/.test(htmlBase));
+
+// La liste des fonctions, et ses tris.
+charger(
+  [{ 'PN Global': 'B1', 'Composants': 'Voyant | N1 | R1\nRelais | N2 | R9' },
+   { 'PN Global': 'B2', 'Composants': 'Voyant | N1 | R2' },
+   { 'PN Global': 'B3', 'Composants': 'Voyant | N3 | R3' }], []);
+C.Store.catalogue = [];
+C.Store.compo.tri = 'emploi';
+let fcts = C.fonctionsComposants(C.baseComposants(C.Store.boites));
+eq('deux fonctions', fcts.length, 2);
+eq('la plus montee en tete', fcts[0].libelle, 'Voyant');
+eq('avec ses trois references', fcts[0].references, 3);
+eq('sous deux normes', fcts[0].normes, 2);
+eq('dans trois boites', fcts[0].nbBoites, 3);
+vrai('et elle est dispersee', fcts[0].dispersee);
+faux('le relais, monte une seule fois, ne l\'est pas',
+     fcts.find(function (f) { return f.libelle === 'Relais'; }).dispersee);
+
+C.Store.compo.tri = 'alpha';
+eq('tri alphabetique',
+   C.fonctionsComposants(C.baseComposants(C.Store.boites)).map(function (f) { return f.libelle; }),
+   ['Relais', 'Voyant']);
+C.Store.compo.tri = 'dispersion';
+eq('tri par dispersion',
+   C.fonctionsComposants(C.baseComposants(C.Store.boites))[0].libelle, 'Voyant');
+C.Store.compo.tri = 'emploi';
+
+// Une reference au catalogue que personne ne monte ne rend pas « disperse ».
+C.Store.catalogue = [{ 'Catégorie': 'composant', 'Fonction': 'Relais',
+                       'Norme': 'N2', 'Référence': 'R-DORMANTE' }];
+charger([{ 'PN Global': 'B1', 'Composants': 'Relais | N2 | R9' }], []);
+fcts = C.fonctionsComposants(C.baseComposants(C.Store.boites));
+eq('deux references connues', fcts[0].references, 2);
+eq('mais une seule montee', fcts[0].montees, 1);
+faux('donc pas de dispersion', fcts[0].dispersee);
+eq('et la dormante est comptee', fcts[0].dormantes, 1);
+C.Store.catalogue = [];
+
+// La fiche d'une fonction.
+charger(
+  [{ 'PN Global': 'B1', 'Porteur': 'H225', 'Composants': 'Voyant | MS25041 | R1' },
+   { 'PN Global': 'B2', 'Porteur': 'H160', 'Composants': 'Voyant | MS25041 | R1' },
+   { 'PN Global': 'B3', 'Composants': 'Voyant | MS25041 | R2' }], []);
+C.Store.ficheComposant = { categorie: 'composant', fonction: 'Voyant' };
+const ficheFct = C.ficheComposantHtml(C.Store.ficheComposant);
+vrai('le resume compte les normes', /<span class="fc-n">1<\/span>/.test(ficheFct));
+vrai('la norme est un bloc', ficheFct.indexOf('MS25041') !== -1);
+vrai('la plus montee est marquee', ficheFct.indexOf('la plus montée') !== -1);
+vrai('et le conseil la nomme', /converger/.test(ficheFct));
+vrai('les boites sont nommees', ficheFct.indexOf('>B1</button>') !== -1);
+vrai('et les porteurs cumules', ficheFct.indexOf('H225') !== -1 && ficheFct.indexOf('H160') !== -1);
+// Une seule reference montee : aucun conseil de convergence a donner.
+charger([{ 'PN Global': 'B1', 'Composants': 'Voyant | MS25041 | R1' }], []);
+faux('sans dispersion, pas de conseil',
+     C.ficheComposantHtml({ categorie: 'composant', fonction: 'Voyant' }).indexOf('converger') !== -1);
+// Une fonction disparue ne plante pas la fiche.
+vrai('une fonction inconnue se dit',
+     C.ficheComposantHtml({ categorie: 'composant', fonction: 'Jamais vue' })
+       .indexOf('etat-vide') !== -1);
+C.Store.ficheComposant = null;
 charger([{ 'PN Global': 'B1' }], []);
 C.Store.catalogue = [];
 vrai('baseC vide, on le dit', C.composantsHtml(C.calculerVue()).indexOf('etat-vide') !== -1);

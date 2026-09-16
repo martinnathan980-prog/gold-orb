@@ -112,60 +112,38 @@ function piecesHtml(vue) {
 // ESPACE COMPOSANTS — une base à part, avec ses propres filtres
 // ============================================================
 
-/** Le rail de gauche : les familles, puis les filtres posés. */
+/**
+ * Le rail : les familles, rien d'autre. C'est la seule coupe qui change ce
+ * qu'on cherche ; un état ou un mode d'emploi se filtre depuis la bande du
+ * haut, quand on vient justement pour ça.
+ */
 function railComposantsHtml(toutes) {
   const parFamille = {};
   toutes.forEach(function (c) { parFamille[c.categorie] = (parFamille[c.categorie] || 0) + 1; });
 
-  const familles = Object.keys(CATEGORIES_COMPOSANT).map(function (cle) {
-    const cat = CATEGORIES_COMPOSANT[cle];
+  const ligne = function (cle, libelle, aide, compte) {
     const actif = Store.compo.famille === cle;
     return '<button type="button" class="cf-famille' + (actif ? ' actif' : '') + '"' +
       dataAttrs({ action: 'filtrer-composants', champ: 'famille', valeur: actif ? '' : cle }) +
       ' aria-pressed="' + actif + '">' +
-      '<span class="cf-pastille cf-' + esc(cle) + '" aria-hidden="true"></span>' +
+      '<span class="cf-pastille cf-' + esc(cle || 'toutes') + '" aria-hidden="true"></span>' +
       '<span class="cf-texte">' +
-        '<span class="cf-nom">' + esc(cat.libelle) + '</span>' +
-        '<span class="cf-aide">' + esc(cat.aide) + '</span>' +
+        '<span class="cf-nom">' + esc(libelle) + '</span>' +
+        (aide ? '<span class="cf-aide">' + esc(aide) + '</span>' : '') +
       '</span>' +
-      '<span class="cf-n">' + (parFamille[cle] || 0) + '</span>' +
+      '<span class="cf-n">' + compte + '</span>' +
     '</button>';
-  }).join('');
+  };
 
-  // Les états vivent au rail, pas dans la bande du haut : ce sont des
-  // filtres, pas des alertes, et les compter en gros chiffres noyait le reste.
-  const compteEtat = {};
-  toutes.forEach(function (c) { compteEtat[c.etat] = (compteEtat[c.etat] || 0) + 1; });
-  const etats = [
-    { cle: ETAT_COMPOSANT.HORS, libelle: 'Hors catalogue' },
-    { cle: ETAT_COMPOSANT.DORMANT, libelle: 'Jamais montées' },
-    { cle: ETAT_COMPOSANT.COURANT, libelle: 'Courantes' }
-  ].map(function (e) {
-    const actif = Store.compo.etat === e.cle;
-    return '<button type="button" class="cf-etat' + (actif ? ' actif' : '') + '"' +
-      dataAttrs({ action: 'filtrer-composants', champ: 'etat', valeur: actif ? '' : e.cle }) +
-      ' aria-pressed="' + actif + '">' +
-      '<span class="cf-etat-nom">' + esc(e.libelle) + '</span>' +
-      '<span class="cf-n">' + (compteEtat[e.cle] || 0) + '</span>' +
-    '</button>';
-  }).join('');
-
-  const emplois = [['partage', 'Partagées'], ['isole', 'Montées une fois']].map(function (e) {
-    const actif = Store.compo.emploi === e[0];
-    return '<button type="button" class="cf-etat' + (actif ? ' actif' : '') + '"' +
-      dataAttrs({ action: 'filtrer-composants', champ: 'emploi', valeur: actif ? '' : e[0] }) +
-      ' aria-pressed="' + actif + '">' +
-      '<span class="cf-etat-nom">' + esc(e[1]) + '</span>' +
-    '</button>';
-  }).join('');
-
-  return '<aside class="compo-rail" aria-label="Filtres de la base de composants">' +
+  return '<aside class="compo-rail" aria-label="Familles de composants">' +
     '<h3 class="compo-rail-titre">Familles</h3>' +
-    '<div class="cf-liste">' + familles + '</div>' +
-    '<h3 class="compo-rail-titre compo-rail-titre-2">État</h3>' +
-    '<div class="cf-liste">' + etats + '</div>' +
-    '<h3 class="compo-rail-titre compo-rail-titre-2">Emploi</h3>' +
-    '<div class="cf-liste">' + emplois + '</div>' +
+    '<div class="cf-liste">' +
+      ligne('', 'Toutes', '', toutes.length) +
+      Object.keys(CATEGORIES_COMPOSANT).map(function (cle) {
+        const cat = CATEGORIES_COMPOSANT[cle];
+        return ligne(cle, cat.libelle, cat.aide, parFamille[cle] || 0);
+      }).join('') +
+    '</div>' +
     (filtreComposantActif()
       ? '<button type="button" class="cf-effacer"' +
         dataAttrs({ action: 'effacer-filtres-composants' }) + '>Tout réafficher</button>'
@@ -173,169 +151,126 @@ function railComposantsHtml(toutes) {
   '</aside>';
 }
 
-/** Une référence : la ligne la plus fine de la base. */
-function ligneReferenceHtml(c, maxi) {
-  const part = c.nbBoites ? Math.max(5, Math.round((c.nbBoites / (maxi || 1)) * 100)) : 0;
-  const etat = c.etat === ETAT_COMPOSANT.HORS
-    ? '<span class="cr-etat cr-hors" title="Monté mais absent du catalogue">hors catalogue</span>'
-    : c.etat === ETAT_COMPOSANT.DORMANT
-      ? '<span class="cr-etat cr-dormant" title="Au catalogue, monté nulle part">jamais montée</span>'
-      : '';
-
-  return '<div class="cr-ligne' + (c.nbBoites === 1 ? ' cr-isole' : '') + '">' +
-    '<span class="cr-ref">' + esc(txt(c.reference, 'sans référence')) + '</span>' +
-    '<span class="cr-designation">' + (c.designation ? esc(c.designation) : '<span class="vide">—</span>') + etat + '</span>' +
-    '<span class="cr-emploi">' +
-      (c.nbBoites
-        ? '<span class="cr-jauge" aria-hidden="true"><span style="width:' + part + '%"></span></span>' +
-          '<button type="button" class="cr-compte"' +
-            dataAttrs({ action: 'deplier-composant' }) + ' aria-expanded="false"' +
-            ' title="Voir les boîtes qui la montent">' +
-            c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte') +
-            (c.montages > c.nbBoites ? ' · ' + c.montages + ' montages' : '') +
-          '</button>' +
-          '<span class="cr-boites" hidden>' +
-            c.boites.map(function (pn) {
-              return '<button type="button" class="usage-lien"' +
-                     dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
-            }).join('') +
-          '</span>'
-        : '<span class="cr-jamais">non montée</span>') +
-    '</span>' +
-    '<span class="cr-porteurs">' +
-      (c.porteurs.length
-        ? c.porteurs.map(function (p) {
-            return '<span class="puce-porteur puce-porteur-mini">' + esc(p) + '</span>';
-          }).join('')
-        : '<span class="vide">—</span>') +
-    '</span>' +
-  '</div>';
-}
-
 /**
- * Une norme, en bandeau, puis ses références en retrait sous un filet.
- * L'en-tête de colonnes ne se répète PAS à chaque norme : répété, il
- * aplatissait la hiérarchie au lieu de la montrer.
+ * LA LISTE DES FONCTIONS
+ *
+ * À trois cents références, un arbre tout déplié est illisible et un arbre
+ * tout replié est vide. On liste donc ce qu'on cherche vraiment — une
+ * FONCTION : « il me faut un collier » — dans un tableau dense et trié. Le
+ * détail (les normes, leurs références, où elles sont montées) s'ouvre dans
+ * la fiche, comme pour une boîte.
  */
-function blocNormeHtml(norme, maxi) {
-  const n = norme.lignes.length;
-  const montees = norme.lignes.filter(function (l) { return l.nbBoites > 0; }).length;
+const TRIS_COMPOSANTS = [
+  { cle: 'emploi',     libelle: 'Les plus montés',
+    fn: function (a, b) { return b.nbBoites - a.nbBoites || b.montages - a.montages; } },
+  { cle: 'dispersion', libelle: 'Les plus dispersés',
+    fn: function (a, b) { return b.montees - a.montees || b.references - a.references; } },
+  { cle: 'alpha',      libelle: 'Alphabétique',
+    fn: function (a, b) { return a.libelle.localeCompare(b.libelle, 'fr'); } },
+  { cle: 'famille',    libelle: 'Par famille',
+    fn: function (a, b) {
+      const ordre = Object.keys(CATEGORIES_COMPOSANT);
+      return ordre.indexOf(a.categorie) - ordre.indexOf(b.categorie) ||
+             a.libelle.localeCompare(b.libelle, 'fr');
+    } }
+];
 
-  return '<div class="cn-bloc' + (norme.dispersee ? ' cn-dispersee' : '') + '">' +
-    '<div class="cn-tete">' +
-      '<span class="cn-puce" aria-hidden="true"></span>' +
-      '<span class="cn-nom">' + esc(norme.libelle) + '</span>' +
-      '<span class="cn-compte">' + n + (n > 1 ? ' références' : ' référence') +
-        (montees < n ? ' · ' + montees + ' montée' + (montees > 1 ? 's' : '') : '') +
-      '</span>' +
-      (norme.dispersee
-        ? '<span class="cn-alerte" title="Plusieurs références montées sous cette norme">' +
-          'dispersée</span>'
-        : '') +
-    '</div>' +
-    '<div class="cn-references">' +
-      norme.lignes.map(function (l) { return ligneReferenceHtml(l, maxi); }).join('') +
-    '</div>' +
+/** Les fonctions de la base, à plat, prêtes à trier. */
+function fonctionsComposants(composants) {
+  const parFonction = new Map();
+  composants.forEach(function (c) {
+    const cle = c.categorie + '::' + normaliserTexte(c.fonction);
+    if (!parFonction.has(cle)) {
+      parFonction.set(cle, {
+        cle: cle, categorie: c.categorie,
+        libelle: c.fonction || 'Fonction non précisée',
+        normesVues: new Set(), references: 0, montages: 0,
+        boites: new Set(), hors: 0, dormantes: 0, lignes: []
+      });
+    }
+    const f = parFonction.get(cle);
+    f.lignes.push(c);
+    f.references++;
+    f.montages += c.montages;
+    if (c.norme) f.normesVues.add(normaliserTexte(c.norme));
+    c.boites.forEach(function (b) { f.boites.add(b); });
+    if (c.etat === ETAT_COMPOSANT.HORS) f.hors++;
+    if (c.etat === ETAT_COMPOSANT.DORMANT) f.dormantes++;
+  });
+
+  const tri = TRIS_COMPOSANTS.find(function (t) { return t.cle === Store.compo.tri; }) ||
+              TRIS_COMPOSANTS[0];
+
+  return Array.from(parFonction.values()).map(function (f) {
+    f.normes = f.normesVues.size;
+    f.nbBoites = f.boites.size;
+    // Dispersée : plusieurs références RÉELLEMENT montées pour le même service.
+    f.montees = f.lignes.filter(function (l) { return l.nbBoites > 0; }).length;
+    f.dispersee = f.montees > 1;
+    return f;
+  }).sort(function (a, b) { return tri.fn(a, b) || a.libelle.localeCompare(b.libelle, 'fr'); });
+}
+
+function triComposantsHtml(nb) {
+  return '<div class="compo-tri">' +
+    '<span class="compo-tri-compte">' + nb + (nb > 1 ? ' fonctions' : ' fonction') + '</span>' +
+    '<span class="compo-tri-choix">' +
+      TRIS_COMPOSANTS.map(function (t) {
+        const actif = (Store.compo.tri || 'emploi') === t.cle;
+        return '<button type="button" class="compo-tri-btn' + (actif ? ' actif' : '') + '"' +
+          dataAttrs({ action: 'trier-composants', tri: t.cle }) +
+          ' aria-pressed="' + actif + '">' + esc(t.libelle) + '</button>';
+      }).join('') +
+    '</span>' +
   '</div>';
 }
 
-// Tout ouvrir fait un mur ; tout replier ouvre sur une page vide. On ouvre
-// les premières — ce sont les plus montées, elles sont triées ainsi — et on
-// replie la traîne, qu'on déplie quand on la cherche.
-const FONCTIONS_OUVERTES = 5;
+/** Une fonction : une ligne du tableau. Le détail est dans la fiche. */
+function ligneFonctionHtml(f, maxi) {
+  const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
+  const part = f.nbBoites ? Math.max(5, Math.round((f.nbBoites / (maxi || 1)) * 100)) : 0;
 
-/** Une fonction, ses normes, et un seul en-tête de colonnes pour tout. */
-function blocFonctionHtml(fonction, maxi, cleFamille, replieParDefaut) {
-  const id = cleFamille + '::' + normaliserTexte(fonction.libelle);
-  const choisi = Store.compo.deplies[id];
-  const ouvert = choisi === undefined ? !replieParDefaut : choisi !== false;
-  const nbNormes = fonction.normes.length;
-
-  return '<section class="cfo-bloc' + (ouvert ? '' : ' replie') + '">' +
-    '<button type="button" class="cfo-tete"' +
-      dataAttrs({ action: 'basculer-fonction', fonction: id }) +
-      ' aria-expanded="' + ouvert + '">' +
-      '<span class="cfo-chevron" aria-hidden="true">' + (ouvert ? '▾' : '▸') + '</span>' +
-      '<span class="cfo-nom">' + esc(fonction.libelle) + '</span>' +
-      '<span class="cfo-chiffres">' +
-        '<b>' + nbNormes + '</b> norme' + (nbNormes > 1 ? 's' : '') +
-        ' · <b>' + fonction.references + '</b> référence' + (fonction.references > 1 ? 's' : '') +
-        ' · <b>' + fonction.nbBoites + '</b> boîte' + (fonction.nbBoites > 1 ? 's' : '') +
-      '</span>' +
-      (fonction.dispersee
-        ? '<span class="cfo-alerte" title="Plusieurs références pour le même service">à ranger</span>'
+  return '<button type="button" class="lf-ligne' + (f.dispersee ? ' lf-disperse' : '') + '"' +
+    dataAttrs({ action: 'ouvrir-fiche-composant', categorie: f.categorie, fonction: f.libelle }) +
+    ' title="Voir ses normes et ses références">' +
+    '<span class="lf-fonction">' +
+      '<span class="cf-pastille cf-' + esc(f.categorie) + '" aria-hidden="true"></span>' +
+      '<span class="lf-nom">' + esc(f.libelle) + '</span>' +
+    '</span>' +
+    '<span class="lf-famille">' + esc(cat.libelle) + '</span>' +
+    '<span class="lf-n"><b>' + f.normes + '</b> norme' + (f.normes > 1 ? 's' : '') + '</span>' +
+    '<span class="lf-n"><b>' + f.references + '</b> réf.' +
+      (f.montees < f.references
+        ? '<span class="lf-doux"> · ' + f.montees + ' montée' + (f.montees > 1 ? 's' : '') + '</span>'
         : '') +
-    '</button>' +
-    (ouvert
-      ? '<div class="cfo-corps">' +
-          '<div class="cr-entete"><span>Référence</span><span>Désignation</span>' +
-            '<span>Emploi</span><span>Porteurs</span></div>' +
-          fonction.normes.map(function (n) { return blocNormeHtml(n, maxi); }).join('') +
-        '</div>'
-      : '') +
-  '</section>';
+    '</span>' +
+    '<span class="lf-emploi">' +
+      '<span class="lf-jauge" aria-hidden="true"><span style="width:' + part + '%"></span></span>' +
+      '<span class="lf-boites">' + f.nbBoites + ' boîte' + (f.nbBoites > 1 ? 's' : '') + '</span>' +
+    '</span>' +
+    '<span class="lf-marques">' +
+      (f.dispersee ? '<span class="lf-tag lf-tag-ranger">à ranger</span>' : '') +
+      (f.hors ? '<span class="lf-tag lf-tag-hors">hors catalogue</span>' : '') +
+    '</span>' +
+    '<span class="lf-fleche" aria-hidden="true">›</span>' +
+  '</button>';
 }
 
-/** L'espace Composants au complet. */
+/** L'espace Composants : le rail, le tri, la liste. */
 function composantsHtml(vue) {
   const toutes = baseComposants(vue.aAfficher);
   const retenues = composantsFiltres(vue.aAfficher);
-  const bilan = bilanComposants(retenues);
-  const arbre = arbreComposants(retenues);
-  const maxi = retenues.reduce(function (m, c) { return Math.max(m, c.nbBoites); }, 1);
+  const fonctions = fonctionsComposants(retenues);
+  const maxi = fonctions.reduce(function (m, f) { return Math.max(m, f.nbBoites); }, 1);
 
-  const nbFonctions = arbre.reduce(function (t, f) { return t + f.fonctions.length; }, 0);
-
-  // Le rang d'une fonction dans l'arbre décide de son état par défaut. Quand
-  // un filtre a déjà réduit la liste, on ouvre tout : on l'a demandée.
-  const rangs = {};
-  let rang = 0;
-  arbre.forEach(function (f) {
-    f.fonctions.forEach(function (fo) {
-      rangs[f.cle + '::' + normaliserTexte(fo.libelle)] = rang++;
-    });
-  });
-  const replieParRang = function (id) {
-    return nbFonctions > FONCTIONS_OUVERTES && rangs[id] >= FONCTIONS_OUVERTES;
-  };
-  const estOuverte = function (id) {
-    const choisi = Store.compo.deplies[id];
-    return choisi === undefined ? !replieParRang(id) : choisi !== false;
-  };
-  const ouvertes = Object.keys(rangs).filter(estOuverte).length;
-
-  const barre = arbre.length
-    ? '<div class="arbre-barre">' +
-        '<span class="arbre-barre-compte">' +
-          nbFonctions + ' fonction' + (nbFonctions > 1 ? 's' : '') +
-          ' · ' + retenues.length + ' référence' + (retenues.length > 1 ? 's' : '') +
-        '</span>' +
-        '<button type="button" class="arbre-barre-btn"' +
-          dataAttrs({ action: 'deplier-tout-composants',
-                      ouvrir: String(ouvertes < nbFonctions) }) + '>' +
-          (ouvertes < nbFonctions ? 'Tout déplier' : 'Tout replier') +
-        '</button>' +
+  const corps = fonctions.length
+    ? '<div class="lf-cadre">' +
+        '<div class="lf-entete">' +
+          '<span>Fonction</span><span>Famille</span><span>Normes</span>' +
+          '<span>Références</span><span>Emploi</span><span></span><span></span>' +
+        '</div>' +
+        fonctions.map(function (f) { return ligneFonctionHtml(f, maxi); }).join('') +
       '</div>'
-    : '';
-
-  const corps = arbre.length
-    ? arbre.map(function (f) {
-        return '<section class="cfa-bloc">' +
-          '<header class="cfa-tete">' +
-            '<span class="cf-pastille cf-' + esc(f.cle) + '" aria-hidden="true"></span>' +
-            '<h2 class="cfa-nom">' + esc(f.libelle) + '</h2>' +
-            '<span class="cfa-chiffres">' +
-              f.references + ' référence' + (f.references > 1 ? 's' : '') +
-              ' · ' + f.fonctions.length + ' fonction' + (f.fonctions.length > 1 ? 's' : '') +
-              ' · ' + f.montages + ' montage' + (f.montages > 1 ? 's' : '') +
-            '</span>' +
-          '</header>' +
-          f.fonctions.map(function (fo) {
-            const id = f.cle + '::' + normaliserTexte(fo.libelle);
-            return blocFonctionHtml(fo, maxi, f.cle, replieParRang(id));
-          }).join('') +
-        '</section>';
-      }).join('')
     : '<div class="etat-vide">' +
         '<p>Aucun composant ne correspond.</p>' +
         '<p class="etat-vide-aide">' +
@@ -347,9 +282,10 @@ function composantsHtml(vue) {
 
   return '<div class="compo-corps">' +
       railComposantsHtml(toutes) +
-      '<div class="compo-arbre">' + barre + corps + '</div>' +
+      '<div class="compo-table">' + triComposantsHtml(fonctions.length) + corps + '</div>' +
     '</div>';
 }
+
 
 /**
  * Les opportunités de rationalisation. Une famille = une catégorie et une

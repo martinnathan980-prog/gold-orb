@@ -134,24 +134,55 @@ function scoreHtml(score) {
   return '<div class="score ' + teinte + '"><b>' + score + '<small>%</small></b></div>';
 }
 
-function resultatHtml(titre, sousTitreHtml, r, actions) {
+/**
+ * Un candidat du classement : le PN et le score, repliés. Le détail
+ * critère par critère se déplie au clic.
+ *
+ * Douze candidats × huit critères, c'est cent lignes déroulées d'un coup :
+ * on lit le premier, on fait défiler, on perd le fil. On classe d'abord, on
+ * regarde le pourquoi ensuite — et seulement celui qu'on a choisi.
+ */
+let compteurResultat = 0;
+
+function resultatHtml(titre, sousTitreHtml, r, actions, deplieParDefaut) {
+  const id = 'res-' + (++compteurResultat);
+  const ouvert = Store.resultatDeplie === id ||
+                 (deplieParDefaut && Store.resultatDeplie === null);
+
   // On NOMME les critères qu'on n'a pas pu comparer, au lieu d'annoncer un
   // pourcentage de couverture que personne ne sait interpréter.
   const alerte = r.nonComparables && r.nonComparables.length
     ? '<p class="alerte-manquant">Non comparé, faute de donnée : <b>' +
       esc(r.nonComparables.join(', ')) + '</b>. Le score porte sur le reste.</p>'
     : '';
-  return '<article class="resultat">' +
-    '<header class="resultat-tete">' +
-      '<div>' +
-        '<h4>' + esc(titre) + '</h4>' +
-        '<p class="resultat-sous">' + sousTitreHtml + '</p>' +
-      '</div>' +
+
+  // Le résumé replié : ce qui concorde, ce qui sépare, en deux nombres.
+  const concordent = r.criteres.filter(function (c) { return c.etat === ETAT.IDENTIQUE; }).length;
+  const separent = r.criteres.filter(function (c) {
+    return c.etat === ETAT.DIFFERENT || c.etat === ETAT.PARTIEL;
+  }).length;
+
+  return '<article class="resultat' + (ouvert ? ' ouvert' : '') + '" id="' + id + '">' +
+    '<button type="button" class="resultat-tete"' +
+      dataAttrs({ action: 'deplier-resultat', resultat: id }) +
+      ' aria-expanded="' + ouvert + '">' +
+      '<span class="resultat-chevron" aria-hidden="true">' + (ouvert ? '▾' : '▸') + '</span>' +
+      '<span class="resultat-identite">' +
+        '<span class="resultat-pn">' + esc(titre) + '</span>' +
+        '<span class="resultat-sous">' + sousTitreHtml + '</span>' +
+      '</span>' +
+      '<span class="resultat-bilan">' +
+        '<span class="rb-ok">' + concordent + ' concordent</span>' +
+        (separent ? '<span class="rb-ko">' + separent + ' séparent</span>' : '') +
+      '</span>' +
       scoreHtml(r.score) +
-    '</header>' +
-    alerte +
-    (actions || '') +
-    '<div class="criteres">' + r.criteres.map(critereHtml).join('') + '</div>' +
+    '</button>' +
+    (ouvert
+      ? '<div class="resultat-corps">' +
+          alerte + (actions || '') +
+          '<div class="criteres">' + r.criteres.map(critereHtml).join('') + '</div>' +
+        '</div>'
+      : '') +
   '</article>';
 }
 
@@ -194,6 +225,7 @@ function aucunResultatHtml(quoi, portee) {
 // Rendu du classement (sans ouvrir la modale)
 // ------------------------------------------------------------
 function rendreEquivalencesBoite(pn) {
+  compteurResultat = 0;
   const resultats = equivalencesBoite(pn);
   definirTexte('compareTitle', 'Équivalences de ' + txt(pn));
   definirTexte('compareSousTitre', resultats.length + ' boîte(s) au-dessus du seuil');
@@ -206,12 +238,14 @@ function rendreEquivalencesBoite(pn) {
             '<div class="resultat-actions">' +
               '<button type="button" class="btn-mini"' +
               dataAttrs({ action: 'ouvrir-fiche-depuis-compare', pn: r.cible[CLE_PN()] }) +
-              '>Ouvrir cette fiche</button></div>');
+              '>Ouvrir cette fiche</button></div>',
+            r === resultats[0]);
         }).join('')
       : aucunResultatHtml('Essayez une autre boîte, ou assouplissez la pondération.', 'boite')));
 }
 
 function rendreEquivalencesNom(id) {
+  compteurResultat = 0;
   const source = nomParId(id);
   if (!source) return;
   const type = typeDe(source);
@@ -229,7 +263,8 @@ function rendreEquivalencesNom(id) {
             '<div class="resultat-actions">' +
               '<button type="button" class="btn-mini"' +
               dataAttrs({ action: 'ouvrir-fiche-depuis-compare', pn: r.cible[CLE_PN()] }) +
-              '>Ouvrir la boîte</button></div>');
+              '>Ouvrir la boîte</button></div>',
+            r === resultats[0]);
         }).join('')
       : aucunResultatHtml('Seules les pièces du même type sont comparées : ' +
                           type.libelle.toLowerCase() + '.', type.cle)));
@@ -245,6 +280,7 @@ function alignerRail(portee) {
 }
 
 function afficherEquivalencesBoite(pn) {
+  Store.resultatDeplie = null;      // on repart du meilleur candidat déplié
   Store.comparaison = { sorte: 'boite', cle: pn, portee: 'boite' };
   alignerRail('boite');
   rendreEquivalencesBoite(pn);
@@ -254,6 +290,7 @@ function afficherEquivalencesBoite(pn) {
 function afficherEquivalencesNom(id) {
   const source = nomParId(id);
   if (!source) return;
+  Store.resultatDeplie = null;
   Store.idNomCourant = id;
   const type = typeDe(source);
   Store.comparaison = { sorte: 'nom', cle: id, portee: type.cle };

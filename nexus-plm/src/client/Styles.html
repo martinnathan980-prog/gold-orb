@@ -481,18 +481,6 @@ body.espace-composants .outils { display: none; }
 .cf-n { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-3);
   font-variant-numeric: tabular-nums; flex: none; }
 .cf-famille.actif .cf-n { color: var(--marque); font-weight: 600; }
-.compo-rail-titre-2 { margin-top: var(--e-4); }
-.cf-etat {
-  display: flex; align-items: center; gap: 8px; text-align: left; width: 100%;
-  padding: 5px 9px; border: 1px solid transparent; border-radius: var(--r-s);
-  background: none; color: var(--encre-2); font-size: 12px;
-  transition: background .13s, border-color .13s, color .13s;
-}
-.cf-etat:hover { background: var(--surface-3); color: var(--encre); }
-.cf-etat.actif { background: var(--marque-voile); border-color: var(--marque); color: var(--marque); }
-.cf-etat-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cf-etat.actif .cf-n { color: var(--marque); font-weight: 600; }
-
 .cf-effacer {
   margin-top: var(--e-3); width: 100%; padding: 6px; font-size: 12px;
   border: 1px dashed var(--trait-fort); border-radius: var(--r-s);
@@ -500,124 +488,118 @@ body.espace-composants .outils { display: none; }
 }
 .cf-effacer:hover { background: var(--surface-3); color: var(--encre); }
 
-/* L'arbre : famille, fonction, norme, reference. */
-.compo-arbre { display: flex; flex-direction: column; gap: var(--e-4); min-width: 0; }
-.arbre-barre {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: var(--e-3); flex-wrap: wrap;
-  padding-bottom: var(--e-2); border-bottom: 1px solid var(--trait);
+/* La liste des fonctions : dense, triable, scannable a trois cents lignes.
+   Le detail s'ouvre dans la fiche, pas en dessous. */
+.compo-table { min-width: 0; display: flex; flex-direction: column; gap: var(--e-3); }
+.compo-tri { display: flex; align-items: center; gap: var(--e-3); flex-wrap: wrap; }
+.compo-tri-compte { font-size: 12.5px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.compo-tri-choix { display: inline-flex; flex-wrap: wrap; gap: 3px; margin-left: auto;
+  background: var(--surface-3); border: 1px solid var(--trait); border-radius: 999px; padding: 2px; }
+.compo-tri-btn {
+  border: 0; background: none; border-radius: 999px; padding: 4px 12px;
+  font-size: 11.5px; font-weight: 600; color: var(--encre-3); white-space: nowrap;
 }
-.arbre-barre-compte { font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
-.arbre-barre-btn {
-  font-size: 12px; padding: 5px 12px; border: 1px solid var(--trait-fort);
-  border-radius: 999px; background: var(--surface); color: var(--encre-2);
-}
-.arbre-barre-btn:hover { background: var(--surface-3); color: var(--encre); }
-.cfa-bloc { display: flex; flex-direction: column; gap: var(--e-2); min-width: 0; }
-.cfa-tete { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap;
-  padding-bottom: 6px; border-bottom: 2px solid var(--encre); }
-.cfa-tete .cf-pastille { align-self: center; }
-.cfa-nom { margin: 0; font-family: var(--police-titre); font-size: 17px; font-weight: 700; }
-.cfa-chiffres { font-size: 11.5px; color: var(--encre-3); font-variant-numeric: tabular-nums;
-  margin-left: auto; }
+.compo-tri-btn:hover { color: var(--encre); }
+.compo-tri-btn.actif { background: var(--surface); color: var(--marque); box-shadow: var(--ombre-1); }
 
-.cfo-bloc { border: 1px solid var(--trait); border-radius: var(--r-m);
+.lf-cadre { border: 1px solid var(--trait); border-radius: var(--r-m);
   background: var(--surface); overflow: hidden; }
-.cfo-tete {
-  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
-  padding: 10px 13px; border: 0; background: none; color: var(--encre);
-  border-bottom: 1px solid var(--trait);
-}
-.cfo-bloc.replie .cfo-tete { border-bottom: 0; }
-.cfo-tete:hover { background: var(--surface-3); }
-.cfo-chevron { color: var(--encre-3); font-size: 11px; flex: none; width: 10px; }
-.cfo-nom { font-size: 14px; font-weight: 700; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cfo-chiffres { font-size: 11.5px; color: var(--encre-3); margin-left: auto;
-  font-variant-numeric: tabular-nums; white-space: nowrap; }
-.cfo-chiffres b { font-family: var(--police-data); color: var(--encre-2); font-weight: 600; }
-.cfo-alerte, .cn-alerte {
-  font-size: 10px; letter-spacing: .07em; text-transform: uppercase; font-weight: 700;
-  padding: 2px 8px; border-radius: 999px; white-space: nowrap; flex: none;
-  background: var(--ambre-voile); color: var(--ambre); border: 1px solid var(--ambre-trait);
-}
-.cfo-corps { display: flex; flex-direction: column; }
-
-/* La norme est un bandeau ; ses references vivent en retrait, sous un filet
-   vertical qui rend la hierarchie lisible meme a vingt normes d'affilee. */
-.cn-bloc { margin-top: 2px; }
-.cn-tete {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  padding: 6px 13px 6px 26px; background: var(--sol-2);
-  border-top: 1px solid var(--trait); border-bottom: 1px solid var(--surface-3);
-  position: relative;
-}
-.cn-puce {
-  position: absolute; left: 14px; top: 50%; width: 6px; height: 6px;
-  margin-top: -3px; border-radius: 1px; background: var(--trait-fort);
-}
-.cn-nom { font-family: var(--police-data); font-size: 12px; font-weight: 700; color: var(--marque); }
-.cn-compte { font-size: 11px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
-.cn-dispersee .cn-tete { background: var(--ambre-voile); }
-.cn-dispersee .cn-puce { background: var(--ambre); }
-.cn-dispersee .cn-nom { color: var(--ambre); }
-.cn-references {
-  padding: 2px 13px 6px 26px; position: relative;
-}
-/* Le filet qui relie les references a leur norme. */
-.cn-references::before {
-  content: ""; position: absolute; left: 16px; top: 0; bottom: 8px;
-  width: 1px; background: var(--trait);
-}
-.cn-dispersee .cn-references::before { background: var(--ambre-trait); }
-
-.cr-entete, .cr-ligne {
-  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.25fr) 172px minmax(0, .85fr);
+.lf-entete, .lf-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) 168px 96px 132px 150px minmax(0, 150px) 16px;
   gap: var(--e-3); align-items: center;
 }
-.cr-entete {
+.lf-entete {
   font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--encre-3);
-  font-weight: 600; padding: 7px 13px 5px 26px; border-bottom: 1px solid var(--trait);
-  background: var(--surface);
+  font-weight: 600; padding: 9px var(--e-4) 7px; border-bottom: 1px solid var(--trait-fort);
 }
-.cr-ligne { padding: 6px 0; border-bottom: 1px solid var(--surface-3); }
-.cr-ligne:last-child { border-bottom: 0; }
-.cr-isole .cr-ref::before {
-  content: ""; display: inline-block; width: 3px; height: 11px; margin-right: 6px;
-  background: var(--ambre); vertical-align: -1px; border-radius: 1px;
+.lf-ligne {
+  width: 100%; text-align: left; border: 0; background: none; color: var(--encre);
+  padding: 9px var(--e-4); border-bottom: 1px solid var(--surface-3);
+  transition: background .12s;
 }
-.cr-ref { font-family: var(--police-data); font-size: 12px; font-weight: 600;
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.cr-designation { font-size: 12px; color: var(--encre-2); min-width: 0;
-  display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
-.cr-etat {
+.lf-ligne:last-child { border-bottom: 0; }
+.lf-ligne:hover { background: var(--sol-2); }
+.lf-ligne:hover .lf-fleche { color: var(--marque); transform: translateX(2px); }
+.lf-fonction { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.lf-nom { font-size: 13.5px; font-weight: 600; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lf-famille { font-size: 11.5px; color: var(--encre-3); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lf-n { font-size: 11.5px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.lf-n b { font-family: var(--police-data); font-size: 13px; color: var(--encre); font-weight: 700; }
+.lf-doux { color: var(--encre-3); }
+.lf-emploi { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.lf-jauge { display: block; height: 4px; background: var(--surface-3);
+  border-radius: 2px; overflow: hidden; }
+.lf-jauge span { display: block; height: 100%; background: var(--marque); border-radius: 2px; }
+.lf-disperse .lf-jauge span { background: var(--ambre); }
+.lf-boites { font-family: var(--police-data); font-size: 11px; color: var(--encre-2);
+  font-variant-numeric: tabular-nums; }
+.lf-marques { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.lf-tag {
   font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
-  padding: 1px 7px; border-radius: 999px; white-space: nowrap;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
 }
-.cr-hors { background: var(--rouge-voile); color: var(--rouge); border: 1px solid var(--rouge-trait); }
-.cr-dormant { background: var(--surface-3); color: var(--encre-3); border: 1px solid var(--trait); }
-.cr-emploi { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.cr-jauge { display: block; height: 4px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
-.cr-jauge span { display: block; height: 100%; background: var(--marque); border-radius: 2px; }
-.cr-isole .cr-jauge span { background: var(--ambre); }
-.cr-compte {
-  border: 0; background: none; padding: 0; text-align: left;
-  font-family: var(--police-data); font-size: 11px; color: var(--encre-2);
-  font-variant-numeric: tabular-nums; text-decoration: underline;
-  text-decoration-style: dotted; text-underline-offset: 3px;
-}
-.cr-compte:hover, .cr-compte.actif { color: var(--marque); }
-.cr-jamais { font-size: 11px; color: var(--encre-3); font-style: italic; }
-.cr-boites { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 2px; }
-.cr-boites[hidden] { display: none; }
-.cr-porteurs { display: flex; flex-wrap: wrap; gap: 3px; min-width: 0; }
-.puce-porteur-mini { font-size: 10px; padding: 1px 6px; }
+.lf-tag-ranger { background: var(--ambre-voile); color: var(--ambre); border: 1px solid var(--ambre-trait); }
+.lf-tag-hors { background: var(--rouge-voile); color: var(--rouge); border: 1px solid var(--rouge-trait); }
+.lf-fleche { color: var(--trait-fort); font-size: 16px; transition: color .12s, transform .12s; }
+.cf-toutes { background: var(--trait-fort); }
 
-@media (max-width: 760px) {
-  .cr-entete { display: none; }
-  .cr-ligne { grid-template-columns: 1fr; gap: 4px; padding: 10px 0; }
-  .cfo-chiffres { margin-left: 0; width: 100%; }
+@media (max-width: 1080px) {
+  .lf-entete { display: none; }
+  .lf-ligne { grid-template-columns: minmax(0, 1fr) auto; gap: 5px var(--e-3); padding: 11px var(--e-3); }
+  .lf-famille, .lf-n { font-size: 11px; }
+  .lf-emploi, .lf-marques { grid-column: 1 / -1; }
+  .lf-marques { justify-content: flex-start; }
+  .lf-fleche { display: none; }
 }
+
+/* La fiche d'une fonction : le pendant de la fiche d'une boite. */
+.fc-resume { display: flex; gap: 1px; background: var(--trait); border: 1px solid var(--trait);
+  border-radius: var(--r-m); overflow: hidden; margin-bottom: var(--e-4); }
+.fc-mesure { flex: 1; background: var(--surface); padding: 11px var(--e-3);
+  display: flex; flex-direction: column; gap: 1px; }
+.fc-n { font-family: var(--police-titre); font-size: 22px; font-weight: 700; line-height: 1.05;
+  font-variant-numeric: tabular-nums; }
+.fc-l { font-size: 11px; color: var(--encre-3); }
+.fc-conseil {
+  margin: 0 0 var(--e-4); padding: 11px 14px; font-size: 13px; line-height: 1.55;
+  background: var(--ambre-voile); border-left: 3px solid var(--ambre);
+  border-radius: 0 var(--r-s) var(--r-s) 0; color: var(--encre);
+}
+.fc-pn { font-family: var(--police-data); font-weight: 700; }
+
+.fc-normes { display: flex; flex-direction: column; gap: var(--e-4); }
+.fc-norme { border: 1px solid var(--trait); border-radius: var(--r-m);
+  background: var(--surface); overflow: hidden; }
+.fc-norme-tete {
+  display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap;
+  padding: 9px var(--e-4); background: var(--sol-2); border-bottom: 1px solid var(--trait);
+}
+.fc-norme-cle { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--encre-3); font-weight: 700; }
+.fc-norme-nom { font-family: var(--police-data); font-size: 14px; font-weight: 700; color: var(--marque); }
+.fc-norme-n { font-size: 11.5px; color: var(--encre-3); margin-left: auto;
+  font-variant-numeric: tabular-nums; }
+
+.fc-ref { padding: var(--e-3) var(--e-4); border-bottom: 1px solid var(--surface-3); }
+.fc-ref:last-child { border-bottom: 0; }
+.fc-majoritaire { background: var(--vert-voile); box-shadow: inset 3px 0 0 var(--vert); }
+.fc-ref-tete { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fc-ref-pn { font-family: var(--police-data); font-size: 13px; font-weight: 700; word-break: break-all; }
+.fc-tag-majo {
+  font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  background: var(--vert); color: #fff;
+}
+.fc-ref-designation { margin: 3px 0 0; font-size: 12.5px; color: var(--encre-2); }
+.fc-ref-emploi { display: flex; align-items: center; gap: 10px; margin-top: 7px; }
+.fc-ref-emploi .lf-jauge { flex: 1; max-width: 160px; }
+.fc-ref-compte { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-2);
+  font-variant-numeric: tabular-nums; }
+.fc-ref-boites { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.fc-ref-porteurs { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
 
 /* ---------------- cartes ---------------- */
 .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(296px, 1fr)); gap: var(--e-4); }
@@ -827,14 +809,52 @@ body.espace-composants .outils { display: none; }
 .composants-outils { display: flex; justify-content: flex-end; margin-top: 6px; }
 @media (max-width: 560px) { .ajout-composant { grid-template-columns: 1fr 1fr; } }
 
-/* La photo situe la piece, elle n'est pas le sujet de la fiche : on la pose
-   en vignette, et un clic l'agrandit pour qui veut vraiment la voir. */
-.vignette { display: block; border: 1px solid var(--trait); border-radius: var(--r-s);
-  overflow: hidden; padding: 0; background: var(--surface-3); margin-bottom: var(--e-3);
-  width: 100%; max-width: 260px; }
-.vignette img { display: block; width: 100%; max-width: 100%; max-height: 120px; object-fit: cover; }
-.vignette-large { max-width: 320px; }
-.vignette-large img { max-height: 150px; }
+/* La photo situe la piece. Cadre de rapport fixe, centre : au format de la
+   source et collee a gauche, elle changeait de hauteur d'une boite a l'autre
+   et desequilibrait la fiche. Un clic l'agrandit pour qui veut la detailler. */
+.vignette-cadre { display: flex; justify-content: center; margin-bottom: var(--e-4); }
+.vignette {
+  display: block; padding: 0; border: 1px solid var(--trait); border-radius: var(--r-m);
+  overflow: hidden; background: var(--surface-3); width: 100%; max-width: 340px;
+  aspect-ratio: 4 / 3; position: relative; transition: border-color .15s, box-shadow .15s;
+}
+.vignette:hover { border-color: var(--trait-fort); box-shadow: var(--ombre-1); }
+.vignette img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.vignette-sous { max-width: 240px; }
+@media (max-width: 520px) { .vignette { max-width: 100%; } }
+
+/* L'arbre de la fiche : la boite est le tronc, les sous-ensembles sont ses
+   branches. Un retrait et un filet disent la subordination. */
+.arbre-fiche { margin-top: var(--e-5); }
+.arbre-tete {
+  display: flex; align-items: baseline; gap: var(--e-3);
+  padding-bottom: 7px; margin-bottom: var(--e-3);
+  border-bottom: 2px solid var(--marque);
+}
+.arbre-titre {
+  font-family: var(--police-titre); font-size: 13px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--marque);
+}
+.arbre-compte { font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums;
+  margin-left: auto; }
+.arbre-branches { position: relative; padding-left: var(--e-5); }
+/* Le filet qui relie les branches au tronc. */
+.arbre-branches::before {
+  content: ""; position: absolute; left: 7px; top: 0; bottom: 30px;
+  width: 2px; background: var(--trait);
+}
+.arbre-branche { position: relative; margin-bottom: var(--e-3); }
+.arbre-branche::before {
+  content: ""; position: absolute; left: calc(var(--e-5) * -1 + 7px); top: 26px;
+  width: calc(var(--e-5) - 9px); height: 2px; background: var(--trait);
+}
+.arbre-ajout { padding-top: 2px; }
+.arbre-ajout::before { top: 18px; }
+@media (max-width: 620px) {
+  .arbre-branches { padding-left: var(--e-3); }
+  .arbre-branches::before { left: 2px; }
+  .arbre-branche::before { display: none; }
+}
 .loupe img { width: 100%; max-width: 100%; border-radius: var(--r-s); }
 .fiche-pied { padding: var(--e-4) 0 var(--e-7); text-align: center; }
 .fiche-pied .btn-principal { width: 100%; max-width: 380px; }
@@ -926,11 +946,30 @@ body.espace-composants .outils { display: none; }
 .rappel-texte b { font-size: 13px; }
 .rappel-texte span { font-size: 11.5px; color: var(--encre-3); overflow-wrap: anywhere; }
 
-.resultat { background: var(--surface); border: 1px solid var(--trait); border-radius: var(--r-m); padding: var(--e-4); margin-bottom: var(--e-3); }
-.resultat-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--e-3); padding-bottom: var(--e-3); margin-bottom: var(--e-3); border-bottom: 1px solid var(--trait); }
-.resultat-tete h4 { font-family: var(--police-data); font-size: 15px; font-weight: 600; word-break: break-all; }
-.resultat-sous { font-size: 12.5px; color: var(--encre-3); margin-top: 3px; }
+/* Un classement se lit en remontant la liste : on montre le rang et le score,
+   le detail critere par critere se deplie pour le seul candidat qu'on regarde. */
+.resultat { background: var(--surface); border: 1px solid var(--trait);
+  border-radius: var(--r-m); margin-bottom: 6px; overflow: hidden; }
+.resultat.ouvert { border-color: var(--trait-fort); box-shadow: var(--ombre-1); }
+.resultat-tete {
+  display: flex; align-items: center; gap: var(--e-3); width: 100%; text-align: left;
+  padding: 11px var(--e-4); border: 0; background: none; color: var(--encre);
+}
+.resultat-tete:hover { background: var(--sol-2); }
+.resultat.ouvert .resultat-tete { border-bottom: 1px solid var(--trait); }
+.resultat-chevron { color: var(--encre-3); font-size: 11px; flex: none; width: 10px; }
+.resultat-identite { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.resultat-pn { font-family: var(--police-data); font-size: 14px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.resultat-sous { font-size: 12px; color: var(--encre-3); margin-top: 1px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.resultat-bilan { display: flex; gap: 10px; font-size: 11px; flex: none;
+  font-variant-numeric: tabular-nums; }
+.rb-ok { color: var(--vert); }
+.rb-ko { color: var(--ambre); }
+.resultat-corps { padding: var(--e-3) var(--e-4) var(--e-4); }
 .resultat-actions { margin-bottom: var(--e-3); }
+@media (max-width: 620px) { .resultat-bilan { display: none; } }
 .score { text-align: center; padding: 8px 16px; border-radius: var(--r-s); border: 1px solid; flex-shrink: 0; }
 .score b { display: block; font-family: var(--police-titre); font-size: 22px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
 .score b small { font-size: 12px; font-weight: 600; }

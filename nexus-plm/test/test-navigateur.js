@@ -763,122 +763,96 @@ async function ecranPropre(page) {
   faux('« Validées » aussi', libelles.indexOf('Validées') !== -1);
   eq('plus de seconde bande de chiffres', await page.locator('.compo-bande').count(), 0);
 
-  // Le rail : les trois familles, avec leur compte.
-  eq('trois familles au rail', await page.locator('.cf-famille').count(), 3);
+  // Le rail : les familles, rien d'autre. Un etat ou un mode d'emploi se
+  // filtre depuis la bande du haut, quand on vient justement pour ca.
+  eq('quatre entrees au rail : « Toutes » plus les trois familles',
+     await page.locator('.cf-famille').count(), 4);
   const famillesRail = await page.locator('.cf-nom').allTextContents();
-  ['Composants de boîte', 'Composants mécaniques', 'Composants routing'].forEach(function (f) {
-    vrai('« ' + f + '  » est proposee', famillesRail.indexOf(f) !== -1);
-  });
-
-  // L'arbre : famille, puis fonction, puis norme, puis reference.
-  const nbFonctions = await page.locator('.cfo-bloc').count();
-  vrai('des fonctions sont listees', nbFonctions > 5);
-  vrai('chacune sous une famille', await page.locator('.cfa-bloc').count() >= 1);
-  // Seules les fonctions ouvertes rendent leurs normes : c'est voulu.
-  vrai('des normes sous les fonctions ouvertes', await page.locator('.cn-bloc').count() >= 1);
-  vrai('et des references sous les normes', await page.locator('.cr-ligne').count() >= 1);
-  // Tout deplier les rend toutes.
-  await page.locator('.arbre-barre-btn').click(); await page.waitForTimeout(500);
-  const nbRefs = await page.locator('.cr-ligne').count();
-  vrai('deplie, la base entiere se lit', nbRefs > 20);
-  vrai('chaque fonction a au moins une norme',
-       await page.locator('.cn-bloc').count() >= nbFonctions);
-
-  // Ni mur ni page vide : les premieres fonctions — les plus montees — sont
-  // ouvertes, la traine est repliee, et un bouton fait basculer l'ensemble.
-  const etatArbre = async function () {
-    return page.evaluate(function () {
-      return { total: document.querySelectorAll('.cfo-bloc').length,
-               ouvertes: document.querySelectorAll('.cfo-bloc:not(.replie)').length,
-               hauteur: document.documentElement.scrollHeight };
+  ['Toutes', 'Composants de boîte', 'Composants mécaniques', 'Composants routing']
+    .forEach(function (f) {
+      vrai('« ' + f + ' » est proposee', famillesRail.indexOf(f) !== -1);
     });
+  eq('plus de filtre par etat au rail', await page.locator('.cf-etat').count(), 0);
+
+  // La liste des fonctions : c'est ce qu'on cherche, « il me faut un collier ».
+  const nbFonctions = await page.locator('.lf-ligne').count();
+  vrai('des fonctions sont listees', nbFonctions > 10);
+  eq('plus d\'arbre deplie', await page.locator('.cfo-bloc').count(), 0);
+  eq('ni de bouton « tout deplier »', await page.locator('.arbre-barre-btn').count(), 0);
+  const ligneFct = page.locator('.lf-ligne').first();
+  vrai('chaque ligne porte sa fonction',
+       (await ligneFct.locator('.lf-nom').innerText()).trim().length > 0);
+  vrai('sa famille', (await ligneFct.locator('.lf-famille').innerText()).indexOf('Composants') !== -1);
+  vrai('le compte de normes ET de references',
+       await ligneFct.locator('.lf-n').count() === 2);
+  vrai('et une jauge d\'emploi', await ligneFct.locator('.lf-jauge').count() === 1);
+  vrai('les dispersees sont marquees', await page.locator('.lf-tag-ranger').count() >= 1);
+
+  // Le tri : quatre lectures du meme tableau.
+  eq('quatre tris offerts', await page.locator('.compo-tri-btn').count(), 4);
+  const teteListe = async function () {
+    return (await page.locator('.lf-nom').first().innerText()).trim();
   };
-  // On repart de l'etat par defaut : le bloc precedent a tout deplie.
-  await page.evaluate(function () { Store.compo.deplies = {}; rendreInterface(); });
+  const parEmploi = await teteListe();
+  await page.locator('.compo-tri-btn', { hasText: 'Alphabétique' }).click();
   await page.waitForTimeout(500);
-  const repos = await etatArbre();
-  vrai('une partie des fonctions est ouverte au repos', repos.ouvertes > 0);
-  vrai('mais pas toutes', repos.ouvertes < repos.total);
-  vrai('des references sont donc visibles sans rien cliquer',
-       await page.locator('.cr-ligne').count() > 0);
+  const parAlpha = await teteListe();
+  vrai('trier change l\'ordre', parAlpha !== parEmploi);
+  eq('et le tri pose est marque', await page.locator('.compo-tri-btn.actif').count(), 1);
+  await page.locator('.compo-tri-btn', { hasText: 'Les plus montés' }).click();
+  await page.waitForTimeout(500);
+  eq('on revient a l\'emploi', await teteListe(), parEmploi);
 
-  await page.locator('.arbre-barre-btn').click(); await page.waitForTimeout(500);
-  const tout = await etatArbre();
-  eq('« Tout déplier » les ouvre toutes', tout.ouvertes, tout.total);
-  vrai('et la page s\'allonge', tout.hauteur > repos.hauteur);
-  await page.locator('.arbre-barre-btn').click(); await page.waitForTimeout(500);
-  const rien = await etatArbre();
-  eq('« Tout replier » les ferme toutes', rien.ouvertes, 0);
-  vrai('et la page se raccourcit', rien.hauteur < tout.hauteur);
-  await page.locator('.arbre-barre-btn').click(); await page.waitForTimeout(500);
+  // Le detail s'ouvre dans la FICHE, comme pour une boite.
+  await ligneFct.click();
+  await page.waitForSelector('#detailsSlideOver.show'); await page.waitForTimeout(500);
+  eq('la fiche porte le nom de la fonction',
+     (await texte(page, '#slideOverTitle')).trim(), parEmploi);
+  vrai('et sa famille en sous-titre',
+       (await texte(page, '#slideOverSousTitre')).indexOf('Composants') !== -1);
+  eq('un resume de trois mesures', await page.locator('.fc-mesure').count(), 3);
+  vrai('les normes sont des blocs', await page.locator('.fc-norme').count() >= 1);
+  vrai('avec leurs references', await page.locator('.fc-ref').count() >= 1);
+  vrai('la plus montee est marquee', await page.locator('.fc-majoritaire').count() === 1);
+  vrai('et un conseil de convergence est donne',
+       (await texte(page, '.fc-conseil')).indexOf('converger') !== -1);
 
-  // Une fonction se replie une par une.
-  const f1 = page.locator('.cfo-tete').first();
-  eq('la premiere fonction est ouverte', await f1.getAttribute('aria-expanded'), 'true');
-  await f1.click(); await page.waitForTimeout(350);
-  eq('un clic la replie', await f1.getAttribute('aria-expanded'), 'false');
-  await f1.click(); await page.waitForTimeout(350);
-  eq('un second la rouvre', await f1.getAttribute('aria-expanded'), 'true');
+  // De la fiche d'une fonction, on ouvre la boite qui la monte.
+  const boiteCitee = (await page.locator('.fc-ref-boites .usage-lien').first().innerText()).trim();
+  await page.locator('.fc-ref-boites .usage-lien').first().click();
+  await page.waitForTimeout(600);
+  vrai('la boite citee s\'ouvre',
+       (await texte(page, '#slideOverTitle')).indexOf(boiteCitee) !== -1);
+  await fermerFiche(page);
 
   // Le filtre par famille.
-  const avantFamille = await page.locator('.cr-ligne').count();
+  const avantFamille = await page.locator('.lf-ligne').count();
   await page.locator('.cf-famille', { hasText: 'routing' }).click();
   await page.waitForTimeout(500);
-  vrai('filtrer par famille restreint', await page.locator('.cr-ligne').count() < avantFamille);
-  eq('une seule famille reste affichee', await page.locator('.cfa-bloc').count(), 1);
+  vrai('filtrer par famille restreint', await page.locator('.lf-ligne').count() < avantFamille);
   eq('le rail marque la famille posee', await page.locator('.cf-famille.actif').count(), 1);
   await page.locator('.cf-effacer').click(); await page.waitForTimeout(500);
-  eq('tout revient', await page.locator('.cr-ligne').count(), avantFamille);
+  eq('tout revient', await page.locator('.lf-ligne').count(), avantFamille);
 
-  // Le cas le plus utile : une piece montee que le catalogue ne connait pas.
-  vrai('des pieces hors catalogue sont signalees',
-       await page.locator('.cr-hors').count() >= 1);
-  await page.locator('.indicateur', { hasText: 'hors catalogue' }).click();
-  await page.waitForTimeout(500);
-  const horsCat = await page.locator('.cr-ligne').count();
-  vrai('le filtre ne garde qu\'elles', horsCat >= 1 && horsCat < avantFamille);
-  eq('toutes portent la marque', await page.locator('.cr-hors').count(), horsCat);
-  await page.locator('.indicateur', { hasText: 'hors catalogue' }).click();
-  await page.waitForTimeout(500);
-
-  // Et l'inverse : au catalogue, montee nulle part. Ce filtre-la vit au rail,
-  // avec les autres etats — ce sont des filtres, pas des alertes.
-  await page.locator('.cf-etat', { hasText: 'Jamais montées' }).click();
-  await page.waitForTimeout(500);
-  vrai('les references dormantes se filtrent aussi',
-       await page.locator('.cr-dormant').count() >= 1);
-  eq('aucune n\'est montee', await page.locator('.cr-compte').count(), 0);
-  eq('le rail marque l\'etat pose', await page.locator('.cf-etat.actif').count(), 1);
-  await page.locator('.cf-etat', { hasText: 'Jamais montées' }).click();
-  await page.waitForTimeout(500);
-
-  // Le rail et la bande du haut visent le meme filtre : ils restent d'accord.
-  await page.locator('.cf-etat', { hasText: 'Hors catalogue' }).click();
-  await page.waitForTimeout(500);
-  eq('la tuile du haut se marque aussi',
-     await indic(page, 'Hors catalogue').getAttribute('aria-pressed'), 'true');
+  // Les etats se filtrent depuis la bande du haut.
   await indic(page, 'Hors catalogue').click();
   await page.waitForTimeout(500);
-  eq('et le rail se demarque avec elle', await page.locator('.cf-etat.actif').count(), 0);
-
-  // Un clic nomme les boites, un clic de plus ouvre la fiche.
-  const compte1 = page.locator('.cr-compte').first();
-  eq('les boites sont repliees', await compte1.getAttribute('aria-expanded'), 'false');
-  await compte1.click(); await page.waitForTimeout(300);
-  eq('un clic les deplie', await compte1.getAttribute('aria-expanded'), 'true');
-  const boites1 = page.locator('.cr-ligne').first().locator('.cr-boites .usage-lien');
-  vrai('les boites sont nommees', await boites1.count() >= 1);
-  const pnCite = (await boites1.first().innerText()).trim();
-  await boites1.first().click();
-  await page.waitForSelector('#detailsSlideOver.show'); await page.waitForTimeout(400);
-  vrai('la boite citee s\'ouvre',
-       (await texte(page, '#slideOverTitle')).indexOf(pnCite) !== -1);
-  await fermerFiche(page);
+  const horsCat = await page.locator('.lf-ligne').count();
+  vrai('« Hors catalogue » restreint', horsCat >= 1 && horsCat < avantFamille);
+  eq('et les lignes le disent', await page.locator('.lf-tag-hors').count(), horsCat);
+  await indic(page, 'Hors catalogue').click();
+  await page.waitForTimeout(500);
+  await indic(page, 'Montées une fois').click();
+  await page.waitForTimeout(500);
+  vrai('« Montées une fois » aussi',
+       await page.locator('.lf-ligne').count() < avantFamille);
+  await indic(page, 'Montées une fois').click();
+  await page.waitForTimeout(500);
 
   // La recherche de l'espace lui appartient : revenir aux boites ne l'herite pas.
   await page.fill('#searchBar', 'collier');
   await page.waitForTimeout(500);
-  const apresRecherche = await page.locator('.cr-ligne').count();
+  const apresRecherche = await page.locator('.lf-ligne').count();
   vrai('la recherche restreint la base', apresRecherche > 0 && apresRecherche < avantFamille);
   await page.locator('.onglet-espace', { hasText: 'Boîtes' }).click();
   await page.waitForTimeout(600);
@@ -888,7 +862,7 @@ async function ecranPropre(page) {
   await page.waitForTimeout(600);
   eq('en revenant, la recherche des composants est retrouvee',
      await page.locator('#searchBar').inputValue(), 'collier');
-  eq('et son resultat aussi', await page.locator('.cr-ligne').count(), apresRecherche);
+  eq('et son resultat aussi', await page.locator('.lf-ligne').count(), apresRecherche);
   await page.locator('.cf-effacer').click(); await page.waitForTimeout(500);
 
   const largeurCompo = await page.evaluate(function () {
@@ -997,6 +971,79 @@ async function ecranPropre(page) {
        await page.locator('#slideOverBody .champ-boite[data-champ="Image"]').count() === 1);
   await page.locator('#slideOverBody [data-action="annuler-boite"]').click();
   await page.waitForTimeout(400);
+  await fermerFiche(page);
+  await ecranPropre(page);
+
+  // ---------------------------------------------------------------
+  bloc('Le classement se lit replie');
+  await ecranPropre(page);
+  await page.locator('.carte', { hasText: '332H80001' })
+            .getByRole('button', { name: 'Équivalences' }).click();
+  await page.waitForSelector('#compareModal.show'); await page.waitForTimeout(800);
+
+  const nbCandidats = await page.locator('.resultat').count();
+  vrai('plusieurs candidats sont classes', nbCandidats > 3);
+  eq('un seul est deplie a l\'ouverture', await page.locator('.resultat.ouvert').count(), 1);
+  vrai('et c\'est le mieux classe',
+       (await page.locator('.resultat').first().getAttribute('class')).indexOf('ouvert') !== -1);
+
+  // La ligne repliee dit deja l'essentiel : le PN, le score, et le partage.
+  const ligneRepliee = page.locator('.resultat').nth(1);
+  vrai('chaque ligne porte son PN',
+       (await ligneRepliee.locator('.resultat-pn').innerText()).trim().length > 0);
+  vrai('son score', await ligneRepliee.locator('.score').count() === 1);
+  vrai('et le compte de ce qui concorde',
+       (await ligneRepliee.locator('.rb-ok').innerText()).indexOf('concordent') !== -1);
+
+  const hautReplie = await page.evaluate(function () {
+    return document.getElementById('compareResult').scrollHeight;
+  });
+  await ligneRepliee.locator('.resultat-tete').click();
+  await page.waitForTimeout(500);
+  eq('cliquer en deplie un autre', await page.locator('.resultat.ouvert').count(), 1);
+  vrai('et referme le premier',
+       (await page.locator('.resultat').first().getAttribute('class')).indexOf('ouvert') === -1);
+  vrai('le detail montre les criteres',
+       await page.locator('.resultat.ouvert .critere').count() >= 2);
+
+  // Tout replier : le classement seul, sans un detail.
+  await ligneRepliee.locator('.resultat-tete').click();
+  await page.waitForTimeout(500);
+  eq('on peut tout replier', await page.locator('.resultat.ouvert').count(), 0);
+  const hautNu = await page.evaluate(function () {
+    return document.getElementById('compareResult').scrollHeight;
+  });
+  vrai('et la page raccourcit d\'autant', hautNu < hautReplie);
+  await fermerModale(page, 'compareModal');
+  await ecranPropre(page);
+
+  // ---------------------------------------------------------------
+  bloc('La fiche est un arbre : la boite, puis ses branches');
+  await ouvrirFiche(page, '332P20001');
+  eq('un bloc pour la boite', await page.locator('#slideOverBody .bloc-general').count(), 1);
+  eq('une tete pour les sous-ensembles', await page.locator('.arbre-tete').count(), 1);
+  vrai('qui les compte',
+       (await texte(page, '.arbre-compte')).indexOf('monté') !== -1);
+  const nbBranches = await page.locator('.arbre-branche').count();
+  vrai('chaque sous-ensemble est une branche', nbBranches >= 3);
+
+  // La subordination se voit : les branches sont en retrait de la boite.
+  const posBoite = await page.locator('#slideOverBody .bloc-general').boundingBox();
+  const posBranche = await page.locator('.arbre-branche .bloc').first().boundingBox();
+  vrai('les branches sont en retrait', posBranche.x > posBoite.x + 8);
+  vrai('et sous la boite', posBranche.y > posBoite.y + posBoite.height - 2);
+  vrai('un filet les relie au tronc', await page.evaluate(function () {
+    const b = document.querySelector('.arbre-branches');
+    return !!b && getComputedStyle(b, '::before').content !== 'none';
+  }));
+
+  // La photo est cadree et centree, plus collee a gauche au format source.
+  const vign = await page.locator('.vignette-large').boundingBox();
+  const corps = await page.locator('#slideOverBody').boundingBox();
+  vrai('la photo est centree',
+       Math.abs((vign.x + vign.width / 2) - (corps.x + corps.width / 2)) < 16);
+  vrai('dans un cadre de rapport fixe',
+       Math.abs(vign.width / vign.height - 4 / 3) < 0.05);
   await fermerFiche(page);
   await ecranPropre(page);
 
@@ -1174,8 +1221,17 @@ async function ecranPropre(page) {
   faux('aucun critère de dimensions', corpsCompare.indexOf('Dimensions') !== -1);
   faux('plus de « couverture » en pourcentage', /couverture/i.test(corpsCompare));
   vrai('le rappel de pondération est affiché', corpsCompare.indexOf('Pondération') !== -1);
-  vrai('chaque critère montre sa jauge',
-       await page.locator('#compareResult .critere-jauge').count() >= 2);
+  // Seul le candidat deplie montre ses criteres : douze candidats deroules
+  // d'un coup, c'etait cent lignes et on perdait le fil.
+  vrai('le candidat deplie montre ses jauges',
+       await page.locator('#compareResult .resultat.ouvert .critere-jauge').count() >= 1);
+  eq('un seul candidat est deplie',
+     await page.locator('#compareResult .resultat.ouvert').count(), 1);
+  const replies = await page.locator('#compareResult .resultat:not(.ouvert)').count();
+  if (replies) {
+    eq('les autres ne montrent aucun critere',
+       await page.locator('#compareResult .resultat:not(.ouvert) .critere-jauge').count(), 0);
+  }
   // Un harnais se compare sur une égalité : pas d'ensembles à détailler.
   eq('aucun bloc d\'ensembles pour un harnais',
      await page.locator('#compareResult .ensemble').count(), 0);

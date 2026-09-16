@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 1 235 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 1 275 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 825 tests : logique, pondération, serveur, bundle
+npm test                 # 847 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 410 tests dans un vrai Chromium
+npm run test:navigateur  # 428 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -212,6 +212,21 @@ meilleur candidat est pris plutôt que le premier rencontré. Chaque composant
 de la cible ne sert qu'une fois. Le détail affiche, par composant, quels
 niveaux sont partagés et ce que cela rapporte.
 
+## La fiche est un arbre
+
+La boîte est le tronc, les sous-ensembles sont ses branches : un retrait, un
+filet vertical, un compteur. Les empiler à plat laissait croire à quatre blocs
+de même rang. La photo est cadrée au rapport 4/3 et centrée — au format de la
+source et collée à gauche, elle changeait de hauteur d'une boîte à l'autre.
+
+## Le classement se lit replié
+
+Douze candidats × huit critères, c'est cent lignes déroulées d'un coup : on lit
+le premier, on fait défiler, on perd le fil. Chaque candidat tient maintenant
+sur une ligne — PN, fonction, *n concordent / n séparent*, score — et le détail
+critère par critère se déplie pour **celui qu'on a choisi**, un seul à la fois.
+Le mieux classé est ouvert à l'arrivée.
+
 ## Le rail de pondération
 
 « Par défaut » ouvre la liste — c'est l'état de départ, pas un repli — puis
@@ -294,8 +309,8 @@ l'espace Boîtes : revenir aux boîtes n'hérite pas du mot-clé tapé ici.
 ## L'espace Composants
 
 Il réunit **deux sources qui ne se recouvrent pas** : le catalogue — ce qu'on
-a le droit de monter — et les montages réels — ce qu'on monte effectivement.
-Leur différence est l'information la plus utile de la page.
+a le droit de monter — et les montages réels. Leur différence est
+l'information la plus utile de la page.
 
 | État | Ce que ça veut dire |
 |---|---|
@@ -303,15 +318,25 @@ Leur différence est l'information la plus utile de la page.
 | **hors catalogue** | monté, mais absent du catalogue : une pièce non maîtrisée |
 | jamais montée | au catalogue, montée nulle part : un référencement qui dort |
 
-L'arbre suit l'ordre dans lequel on cherche une pièce : **famille → fonction →
-norme → référence**. On sait ce qu'on veut faire avant de savoir sous quelle
-norme le chercher. Chaque niveau porte ses comptes, et une norme servie par
-plusieurs références montées est marquée « dispersée ».
+**On liste ce qu'on cherche, pas ce qu'on a.** Un arbre tout déplié est
+illisible à trois cents références ; tout replié, il est vide. La page liste
+donc les **fonctions** — « il me faut un collier » — dans un tableau dense :
+famille, nombre de normes, nombre de références, emploi, et les marques
+*à ranger* / *hors catalogue*. Quatre tris : les plus montés, les plus
+dispersés, alphabétique, par famille.
 
-Le rail de gauche filtre par famille ; la bande de tête filtre par état — les
-tuiles « montée une fois », « hors catalogue » et « jamais montées » sont des
-boutons. Les premières fonctions, les plus montées, sont ouvertes ; la traîne
-est repliée, et un bouton fait basculer l'ensemble. Ni mur, ni page vide.
+Le détail s'ouvre dans la **fiche**, comme pour une boîte : un résumé en trois
+mesures, un conseil de convergence quand plusieurs références servent le même
+usage, puis **un bloc par norme** avec ses références, leur emploi, leurs
+porteurs et les boîtes qui les montent. La plus montée est marquée : c'est
+vers elle qu'il coûte le moins cher de converger.
+
+Concrètement : 1 006 références tiennent en **22 Ko de HTML** au lieu de 856,
+et la page fait 1 700 px au lieu de 5 600.
+
+Le rail de gauche ne porte que les **familles** — la seule coupe qui change ce
+qu'on cherche. Les états se filtrent depuis la bande du haut, quand on vient
+justement pour ça.
 
 ## Pas de duplication
 

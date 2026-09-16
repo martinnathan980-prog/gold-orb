@@ -492,18 +492,6 @@ body.espace-composants .outils { display: none; }
 .cf-n { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-3);
   font-variant-numeric: tabular-nums; flex: none; }
 .cf-famille.actif .cf-n { color: var(--marque); font-weight: 600; }
-.compo-rail-titre-2 { margin-top: var(--e-4); }
-.cf-etat {
-  display: flex; align-items: center; gap: 8px; text-align: left; width: 100%;
-  padding: 5px 9px; border: 1px solid transparent; border-radius: var(--r-s);
-  background: none; color: var(--encre-2); font-size: 12px;
-  transition: background .13s, border-color .13s, color .13s;
-}
-.cf-etat:hover { background: var(--surface-3); color: var(--encre); }
-.cf-etat.actif { background: var(--marque-voile); border-color: var(--marque); color: var(--marque); }
-.cf-etat-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cf-etat.actif .cf-n { color: var(--marque); font-weight: 600; }
-
 .cf-effacer {
   margin-top: var(--e-3); width: 100%; padding: 6px; font-size: 12px;
   border: 1px dashed var(--trait-fort); border-radius: var(--r-s);
@@ -511,124 +499,118 @@ body.espace-composants .outils { display: none; }
 }
 .cf-effacer:hover { background: var(--surface-3); color: var(--encre); }
 
-/* L'arbre : famille, fonction, norme, reference. */
-.compo-arbre { display: flex; flex-direction: column; gap: var(--e-4); min-width: 0; }
-.arbre-barre {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: var(--e-3); flex-wrap: wrap;
-  padding-bottom: var(--e-2); border-bottom: 1px solid var(--trait);
+/* La liste des fonctions : dense, triable, scannable a trois cents lignes.
+   Le detail s'ouvre dans la fiche, pas en dessous. */
+.compo-table { min-width: 0; display: flex; flex-direction: column; gap: var(--e-3); }
+.compo-tri { display: flex; align-items: center; gap: var(--e-3); flex-wrap: wrap; }
+.compo-tri-compte { font-size: 12.5px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.compo-tri-choix { display: inline-flex; flex-wrap: wrap; gap: 3px; margin-left: auto;
+  background: var(--surface-3); border: 1px solid var(--trait); border-radius: 999px; padding: 2px; }
+.compo-tri-btn {
+  border: 0; background: none; border-radius: 999px; padding: 4px 12px;
+  font-size: 11.5px; font-weight: 600; color: var(--encre-3); white-space: nowrap;
 }
-.arbre-barre-compte { font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
-.arbre-barre-btn {
-  font-size: 12px; padding: 5px 12px; border: 1px solid var(--trait-fort);
-  border-radius: 999px; background: var(--surface); color: var(--encre-2);
-}
-.arbre-barre-btn:hover { background: var(--surface-3); color: var(--encre); }
-.cfa-bloc { display: flex; flex-direction: column; gap: var(--e-2); min-width: 0; }
-.cfa-tete { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap;
-  padding-bottom: 6px; border-bottom: 2px solid var(--encre); }
-.cfa-tete .cf-pastille { align-self: center; }
-.cfa-nom { margin: 0; font-family: var(--police-titre); font-size: 17px; font-weight: 700; }
-.cfa-chiffres { font-size: 11.5px; color: var(--encre-3); font-variant-numeric: tabular-nums;
-  margin-left: auto; }
+.compo-tri-btn:hover { color: var(--encre); }
+.compo-tri-btn.actif { background: var(--surface); color: var(--marque); box-shadow: var(--ombre-1); }
 
-.cfo-bloc { border: 1px solid var(--trait); border-radius: var(--r-m);
+.lf-cadre { border: 1px solid var(--trait); border-radius: var(--r-m);
   background: var(--surface); overflow: hidden; }
-.cfo-tete {
-  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
-  padding: 10px 13px; border: 0; background: none; color: var(--encre);
-  border-bottom: 1px solid var(--trait);
-}
-.cfo-bloc.replie .cfo-tete { border-bottom: 0; }
-.cfo-tete:hover { background: var(--surface-3); }
-.cfo-chevron { color: var(--encre-3); font-size: 11px; flex: none; width: 10px; }
-.cfo-nom { font-size: 14px; font-weight: 700; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cfo-chiffres { font-size: 11.5px; color: var(--encre-3); margin-left: auto;
-  font-variant-numeric: tabular-nums; white-space: nowrap; }
-.cfo-chiffres b { font-family: var(--police-data); color: var(--encre-2); font-weight: 600; }
-.cfo-alerte, .cn-alerte {
-  font-size: 10px; letter-spacing: .07em; text-transform: uppercase; font-weight: 700;
-  padding: 2px 8px; border-radius: 999px; white-space: nowrap; flex: none;
-  background: var(--ambre-voile); color: var(--ambre); border: 1px solid var(--ambre-trait);
-}
-.cfo-corps { display: flex; flex-direction: column; }
-
-/* La norme est un bandeau ; ses references vivent en retrait, sous un filet
-   vertical qui rend la hierarchie lisible meme a vingt normes d'affilee. */
-.cn-bloc { margin-top: 2px; }
-.cn-tete {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  padding: 6px 13px 6px 26px; background: var(--sol-2);
-  border-top: 1px solid var(--trait); border-bottom: 1px solid var(--surface-3);
-  position: relative;
-}
-.cn-puce {
-  position: absolute; left: 14px; top: 50%; width: 6px; height: 6px;
-  margin-top: -3px; border-radius: 1px; background: var(--trait-fort);
-}
-.cn-nom { font-family: var(--police-data); font-size: 12px; font-weight: 700; color: var(--marque); }
-.cn-compte { font-size: 11px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
-.cn-dispersee .cn-tete { background: var(--ambre-voile); }
-.cn-dispersee .cn-puce { background: var(--ambre); }
-.cn-dispersee .cn-nom { color: var(--ambre); }
-.cn-references {
-  padding: 2px 13px 6px 26px; position: relative;
-}
-/* Le filet qui relie les references a leur norme. */
-.cn-references::before {
-  content: ""; position: absolute; left: 16px; top: 0; bottom: 8px;
-  width: 1px; background: var(--trait);
-}
-.cn-dispersee .cn-references::before { background: var(--ambre-trait); }
-
-.cr-entete, .cr-ligne {
-  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.25fr) 172px minmax(0, .85fr);
+.lf-entete, .lf-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) 168px 96px 132px 150px minmax(0, 150px) 16px;
   gap: var(--e-3); align-items: center;
 }
-.cr-entete {
+.lf-entete {
   font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--encre-3);
-  font-weight: 600; padding: 7px 13px 5px 26px; border-bottom: 1px solid var(--trait);
-  background: var(--surface);
+  font-weight: 600; padding: 9px var(--e-4) 7px; border-bottom: 1px solid var(--trait-fort);
 }
-.cr-ligne { padding: 6px 0; border-bottom: 1px solid var(--surface-3); }
-.cr-ligne:last-child { border-bottom: 0; }
-.cr-isole .cr-ref::before {
-  content: ""; display: inline-block; width: 3px; height: 11px; margin-right: 6px;
-  background: var(--ambre); vertical-align: -1px; border-radius: 1px;
+.lf-ligne {
+  width: 100%; text-align: left; border: 0; background: none; color: var(--encre);
+  padding: 9px var(--e-4); border-bottom: 1px solid var(--surface-3);
+  transition: background .12s;
 }
-.cr-ref { font-family: var(--police-data); font-size: 12px; font-weight: 600;
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.cr-designation { font-size: 12px; color: var(--encre-2); min-width: 0;
-  display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
-.cr-etat {
+.lf-ligne:last-child { border-bottom: 0; }
+.lf-ligne:hover { background: var(--sol-2); }
+.lf-ligne:hover .lf-fleche { color: var(--marque); transform: translateX(2px); }
+.lf-fonction { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.lf-nom { font-size: 13.5px; font-weight: 600; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lf-famille { font-size: 11.5px; color: var(--encre-3); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lf-n { font-size: 11.5px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.lf-n b { font-family: var(--police-data); font-size: 13px; color: var(--encre); font-weight: 700; }
+.lf-doux { color: var(--encre-3); }
+.lf-emploi { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.lf-jauge { display: block; height: 4px; background: var(--surface-3);
+  border-radius: 2px; overflow: hidden; }
+.lf-jauge span { display: block; height: 100%; background: var(--marque); border-radius: 2px; }
+.lf-disperse .lf-jauge span { background: var(--ambre); }
+.lf-boites { font-family: var(--police-data); font-size: 11px; color: var(--encre-2);
+  font-variant-numeric: tabular-nums; }
+.lf-marques { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.lf-tag {
   font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
-  padding: 1px 7px; border-radius: 999px; white-space: nowrap;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
 }
-.cr-hors { background: var(--rouge-voile); color: var(--rouge); border: 1px solid var(--rouge-trait); }
-.cr-dormant { background: var(--surface-3); color: var(--encre-3); border: 1px solid var(--trait); }
-.cr-emploi { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.cr-jauge { display: block; height: 4px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
-.cr-jauge span { display: block; height: 100%; background: var(--marque); border-radius: 2px; }
-.cr-isole .cr-jauge span { background: var(--ambre); }
-.cr-compte {
-  border: 0; background: none; padding: 0; text-align: left;
-  font-family: var(--police-data); font-size: 11px; color: var(--encre-2);
-  font-variant-numeric: tabular-nums; text-decoration: underline;
-  text-decoration-style: dotted; text-underline-offset: 3px;
-}
-.cr-compte:hover, .cr-compte.actif { color: var(--marque); }
-.cr-jamais { font-size: 11px; color: var(--encre-3); font-style: italic; }
-.cr-boites { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 2px; }
-.cr-boites[hidden] { display: none; }
-.cr-porteurs { display: flex; flex-wrap: wrap; gap: 3px; min-width: 0; }
-.puce-porteur-mini { font-size: 10px; padding: 1px 6px; }
+.lf-tag-ranger { background: var(--ambre-voile); color: var(--ambre); border: 1px solid var(--ambre-trait); }
+.lf-tag-hors { background: var(--rouge-voile); color: var(--rouge); border: 1px solid var(--rouge-trait); }
+.lf-fleche { color: var(--trait-fort); font-size: 16px; transition: color .12s, transform .12s; }
+.cf-toutes { background: var(--trait-fort); }
 
-@media (max-width: 760px) {
-  .cr-entete { display: none; }
-  .cr-ligne { grid-template-columns: 1fr; gap: 4px; padding: 10px 0; }
-  .cfo-chiffres { margin-left: 0; width: 100%; }
+@media (max-width: 1080px) {
+  .lf-entete { display: none; }
+  .lf-ligne { grid-template-columns: minmax(0, 1fr) auto; gap: 5px var(--e-3); padding: 11px var(--e-3); }
+  .lf-famille, .lf-n { font-size: 11px; }
+  .lf-emploi, .lf-marques { grid-column: 1 / -1; }
+  .lf-marques { justify-content: flex-start; }
+  .lf-fleche { display: none; }
 }
+
+/* La fiche d'une fonction : le pendant de la fiche d'une boite. */
+.fc-resume { display: flex; gap: 1px; background: var(--trait); border: 1px solid var(--trait);
+  border-radius: var(--r-m); overflow: hidden; margin-bottom: var(--e-4); }
+.fc-mesure { flex: 1; background: var(--surface); padding: 11px var(--e-3);
+  display: flex; flex-direction: column; gap: 1px; }
+.fc-n { font-family: var(--police-titre); font-size: 22px; font-weight: 700; line-height: 1.05;
+  font-variant-numeric: tabular-nums; }
+.fc-l { font-size: 11px; color: var(--encre-3); }
+.fc-conseil {
+  margin: 0 0 var(--e-4); padding: 11px 14px; font-size: 13px; line-height: 1.55;
+  background: var(--ambre-voile); border-left: 3px solid var(--ambre);
+  border-radius: 0 var(--r-s) var(--r-s) 0; color: var(--encre);
+}
+.fc-pn { font-family: var(--police-data); font-weight: 700; }
+
+.fc-normes { display: flex; flex-direction: column; gap: var(--e-4); }
+.fc-norme { border: 1px solid var(--trait); border-radius: var(--r-m);
+  background: var(--surface); overflow: hidden; }
+.fc-norme-tete {
+  display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap;
+  padding: 9px var(--e-4); background: var(--sol-2); border-bottom: 1px solid var(--trait);
+}
+.fc-norme-cle { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--encre-3); font-weight: 700; }
+.fc-norme-nom { font-family: var(--police-data); font-size: 14px; font-weight: 700; color: var(--marque); }
+.fc-norme-n { font-size: 11.5px; color: var(--encre-3); margin-left: auto;
+  font-variant-numeric: tabular-nums; }
+
+.fc-ref { padding: var(--e-3) var(--e-4); border-bottom: 1px solid var(--surface-3); }
+.fc-ref:last-child { border-bottom: 0; }
+.fc-majoritaire { background: var(--vert-voile); box-shadow: inset 3px 0 0 var(--vert); }
+.fc-ref-tete { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fc-ref-pn { font-family: var(--police-data); font-size: 13px; font-weight: 700; word-break: break-all; }
+.fc-tag-majo {
+  font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  background: var(--vert); color: #fff;
+}
+.fc-ref-designation { margin: 3px 0 0; font-size: 12.5px; color: var(--encre-2); }
+.fc-ref-emploi { display: flex; align-items: center; gap: 10px; margin-top: 7px; }
+.fc-ref-emploi .lf-jauge { flex: 1; max-width: 160px; }
+.fc-ref-compte { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-2);
+  font-variant-numeric: tabular-nums; }
+.fc-ref-boites { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.fc-ref-porteurs { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
 
 /* ---------------- cartes ---------------- */
 .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(296px, 1fr)); gap: var(--e-4); }
@@ -838,14 +820,52 @@ body.espace-composants .outils { display: none; }
 .composants-outils { display: flex; justify-content: flex-end; margin-top: 6px; }
 @media (max-width: 560px) { .ajout-composant { grid-template-columns: 1fr 1fr; } }
 
-/* La photo situe la piece, elle n'est pas le sujet de la fiche : on la pose
-   en vignette, et un clic l'agrandit pour qui veut vraiment la voir. */
-.vignette { display: block; border: 1px solid var(--trait); border-radius: var(--r-s);
-  overflow: hidden; padding: 0; background: var(--surface-3); margin-bottom: var(--e-3);
-  width: 100%; max-width: 260px; }
-.vignette img { display: block; width: 100%; max-width: 100%; max-height: 120px; object-fit: cover; }
-.vignette-large { max-width: 320px; }
-.vignette-large img { max-height: 150px; }
+/* La photo situe la piece. Cadre de rapport fixe, centre : au format de la
+   source et collee a gauche, elle changeait de hauteur d'une boite a l'autre
+   et desequilibrait la fiche. Un clic l'agrandit pour qui veut la detailler. */
+.vignette-cadre { display: flex; justify-content: center; margin-bottom: var(--e-4); }
+.vignette {
+  display: block; padding: 0; border: 1px solid var(--trait); border-radius: var(--r-m);
+  overflow: hidden; background: var(--surface-3); width: 100%; max-width: 340px;
+  aspect-ratio: 4 / 3; position: relative; transition: border-color .15s, box-shadow .15s;
+}
+.vignette:hover { border-color: var(--trait-fort); box-shadow: var(--ombre-1); }
+.vignette img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.vignette-sous { max-width: 240px; }
+@media (max-width: 520px) { .vignette { max-width: 100%; } }
+
+/* L'arbre de la fiche : la boite est le tronc, les sous-ensembles sont ses
+   branches. Un retrait et un filet disent la subordination. */
+.arbre-fiche { margin-top: var(--e-5); }
+.arbre-tete {
+  display: flex; align-items: baseline; gap: var(--e-3);
+  padding-bottom: 7px; margin-bottom: var(--e-3);
+  border-bottom: 2px solid var(--marque);
+}
+.arbre-titre {
+  font-family: var(--police-titre); font-size: 13px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--marque);
+}
+.arbre-compte { font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums;
+  margin-left: auto; }
+.arbre-branches { position: relative; padding-left: var(--e-5); }
+/* Le filet qui relie les branches au tronc. */
+.arbre-branches::before {
+  content: ""; position: absolute; left: 7px; top: 0; bottom: 30px;
+  width: 2px; background: var(--trait);
+}
+.arbre-branche { position: relative; margin-bottom: var(--e-3); }
+.arbre-branche::before {
+  content: ""; position: absolute; left: calc(var(--e-5) * -1 + 7px); top: 26px;
+  width: calc(var(--e-5) - 9px); height: 2px; background: var(--trait);
+}
+.arbre-ajout { padding-top: 2px; }
+.arbre-ajout::before { top: 18px; }
+@media (max-width: 620px) {
+  .arbre-branches { padding-left: var(--e-3); }
+  .arbre-branches::before { left: 2px; }
+  .arbre-branche::before { display: none; }
+}
 .loupe img { width: 100%; max-width: 100%; border-radius: var(--r-s); }
 .fiche-pied { padding: var(--e-4) 0 var(--e-7); text-align: center; }
 .fiche-pied .btn-principal { width: 100%; max-width: 380px; }
@@ -937,11 +957,30 @@ body.espace-composants .outils { display: none; }
 .rappel-texte b { font-size: 13px; }
 .rappel-texte span { font-size: 11.5px; color: var(--encre-3); overflow-wrap: anywhere; }
 
-.resultat { background: var(--surface); border: 1px solid var(--trait); border-radius: var(--r-m); padding: var(--e-4); margin-bottom: var(--e-3); }
-.resultat-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--e-3); padding-bottom: var(--e-3); margin-bottom: var(--e-3); border-bottom: 1px solid var(--trait); }
-.resultat-tete h4 { font-family: var(--police-data); font-size: 15px; font-weight: 600; word-break: break-all; }
-.resultat-sous { font-size: 12.5px; color: var(--encre-3); margin-top: 3px; }
+/* Un classement se lit en remontant la liste : on montre le rang et le score,
+   le detail critere par critere se deplie pour le seul candidat qu'on regarde. */
+.resultat { background: var(--surface); border: 1px solid var(--trait);
+  border-radius: var(--r-m); margin-bottom: 6px; overflow: hidden; }
+.resultat.ouvert { border-color: var(--trait-fort); box-shadow: var(--ombre-1); }
+.resultat-tete {
+  display: flex; align-items: center; gap: var(--e-3); width: 100%; text-align: left;
+  padding: 11px var(--e-4); border: 0; background: none; color: var(--encre);
+}
+.resultat-tete:hover { background: var(--sol-2); }
+.resultat.ouvert .resultat-tete { border-bottom: 1px solid var(--trait); }
+.resultat-chevron { color: var(--encre-3); font-size: 11px; flex: none; width: 10px; }
+.resultat-identite { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.resultat-pn { font-family: var(--police-data); font-size: 14px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.resultat-sous { font-size: 12px; color: var(--encre-3); margin-top: 1px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.resultat-bilan { display: flex; gap: 10px; font-size: 11px; flex: none;
+  font-variant-numeric: tabular-nums; }
+.rb-ok { color: var(--vert); }
+.rb-ko { color: var(--ambre); }
+.resultat-corps { padding: var(--e-3) var(--e-4) var(--e-4); }
 .resultat-actions { margin-bottom: var(--e-3); }
+@media (max-width: 620px) { .resultat-bilan { display: none; } }
 .score { text-align: center; padding: 8px 16px; border-radius: var(--r-s); border: 1px solid; flex-shrink: 0; }
 .score b { display: block; font-family: var(--police-titre); font-size: 22px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
 .score b small { font-size: 12px; font-weight: 600; }
@@ -2400,7 +2439,7 @@ const Store = {
   espace: 'boites',          // 'boites' ou 'composants'
   vueMode: 'boites',         // dans l'espace boîtes : 'boites', 'pieces', 'standardisation'
   compo: { recherche: '', famille: null, fonction: null, norme: null,
-           etat: null, emploi: null, deplies: {} },
+           etat: null, emploi: null, tri: 'emploi' },
   tri: 'pn',
   enEditionBoite: false,
   enEditionNom: {},
@@ -2412,6 +2451,8 @@ const Store = {
   criteresActifs: {},
   seuilEquivalence: 15,
   reglagesDetaille: false,   // les curseurs, repliés derrière l'engrenage
+  resultatDeplie: null,      // le candidat dont on regarde le détail
+  ficheComposant: null,      // { categorie, fonction } quand le panneau sert les composants
 
   // Charge utile de la dernière suppression, conservée pour l'annulation.
   derniereSuppression: null,
@@ -3787,60 +3828,38 @@ function piecesHtml(vue) {
 // ESPACE COMPOSANTS — une base à part, avec ses propres filtres
 // ============================================================
 
-/** Le rail de gauche : les familles, puis les filtres posés. */
+/**
+ * Le rail : les familles, rien d'autre. C'est la seule coupe qui change ce
+ * qu'on cherche ; un état ou un mode d'emploi se filtre depuis la bande du
+ * haut, quand on vient justement pour ça.
+ */
 function railComposantsHtml(toutes) {
   const parFamille = {};
   toutes.forEach(function (c) { parFamille[c.categorie] = (parFamille[c.categorie] || 0) + 1; });
 
-  const familles = Object.keys(CATEGORIES_COMPOSANT).map(function (cle) {
-    const cat = CATEGORIES_COMPOSANT[cle];
+  const ligne = function (cle, libelle, aide, compte) {
     const actif = Store.compo.famille === cle;
     return '<button type="button" class="cf-famille' + (actif ? ' actif' : '') + '"' +
       dataAttrs({ action: 'filtrer-composants', champ: 'famille', valeur: actif ? '' : cle }) +
       ' aria-pressed="' + actif + '">' +
-      '<span class="cf-pastille cf-' + esc(cle) + '" aria-hidden="true"></span>' +
+      '<span class="cf-pastille cf-' + esc(cle || 'toutes') + '" aria-hidden="true"></span>' +
       '<span class="cf-texte">' +
-        '<span class="cf-nom">' + esc(cat.libelle) + '</span>' +
-        '<span class="cf-aide">' + esc(cat.aide) + '</span>' +
+        '<span class="cf-nom">' + esc(libelle) + '</span>' +
+        (aide ? '<span class="cf-aide">' + esc(aide) + '</span>' : '') +
       '</span>' +
-      '<span class="cf-n">' + (parFamille[cle] || 0) + '</span>' +
+      '<span class="cf-n">' + compte + '</span>' +
     '</button>';
-  }).join('');
+  };
 
-  // Les états vivent au rail, pas dans la bande du haut : ce sont des
-  // filtres, pas des alertes, et les compter en gros chiffres noyait le reste.
-  const compteEtat = {};
-  toutes.forEach(function (c) { compteEtat[c.etat] = (compteEtat[c.etat] || 0) + 1; });
-  const etats = [
-    { cle: ETAT_COMPOSANT.HORS, libelle: 'Hors catalogue' },
-    { cle: ETAT_COMPOSANT.DORMANT, libelle: 'Jamais montées' },
-    { cle: ETAT_COMPOSANT.COURANT, libelle: 'Courantes' }
-  ].map(function (e) {
-    const actif = Store.compo.etat === e.cle;
-    return '<button type="button" class="cf-etat' + (actif ? ' actif' : '') + '"' +
-      dataAttrs({ action: 'filtrer-composants', champ: 'etat', valeur: actif ? '' : e.cle }) +
-      ' aria-pressed="' + actif + '">' +
-      '<span class="cf-etat-nom">' + esc(e.libelle) + '</span>' +
-      '<span class="cf-n">' + (compteEtat[e.cle] || 0) + '</span>' +
-    '</button>';
-  }).join('');
-
-  const emplois = [['partage', 'Partagées'], ['isole', 'Montées une fois']].map(function (e) {
-    const actif = Store.compo.emploi === e[0];
-    return '<button type="button" class="cf-etat' + (actif ? ' actif' : '') + '"' +
-      dataAttrs({ action: 'filtrer-composants', champ: 'emploi', valeur: actif ? '' : e[0] }) +
-      ' aria-pressed="' + actif + '">' +
-      '<span class="cf-etat-nom">' + esc(e[1]) + '</span>' +
-    '</button>';
-  }).join('');
-
-  return '<aside class="compo-rail" aria-label="Filtres de la base de composants">' +
+  return '<aside class="compo-rail" aria-label="Familles de composants">' +
     '<h3 class="compo-rail-titre">Familles</h3>' +
-    '<div class="cf-liste">' + familles + '</div>' +
-    '<h3 class="compo-rail-titre compo-rail-titre-2">État</h3>' +
-    '<div class="cf-liste">' + etats + '</div>' +
-    '<h3 class="compo-rail-titre compo-rail-titre-2">Emploi</h3>' +
-    '<div class="cf-liste">' + emplois + '</div>' +
+    '<div class="cf-liste">' +
+      ligne('', 'Toutes', '', toutes.length) +
+      Object.keys(CATEGORIES_COMPOSANT).map(function (cle) {
+        const cat = CATEGORIES_COMPOSANT[cle];
+        return ligne(cle, cat.libelle, cat.aide, parFamille[cle] || 0);
+      }).join('') +
+    '</div>' +
     (filtreComposantActif()
       ? '<button type="button" class="cf-effacer"' +
         dataAttrs({ action: 'effacer-filtres-composants' }) + '>Tout réafficher</button>'
@@ -3848,169 +3867,126 @@ function railComposantsHtml(toutes) {
   '</aside>';
 }
 
-/** Une référence : la ligne la plus fine de la base. */
-function ligneReferenceHtml(c, maxi) {
-  const part = c.nbBoites ? Math.max(5, Math.round((c.nbBoites / (maxi || 1)) * 100)) : 0;
-  const etat = c.etat === ETAT_COMPOSANT.HORS
-    ? '<span class="cr-etat cr-hors" title="Monté mais absent du catalogue">hors catalogue</span>'
-    : c.etat === ETAT_COMPOSANT.DORMANT
-      ? '<span class="cr-etat cr-dormant" title="Au catalogue, monté nulle part">jamais montée</span>'
-      : '';
-
-  return '<div class="cr-ligne' + (c.nbBoites === 1 ? ' cr-isole' : '') + '">' +
-    '<span class="cr-ref">' + esc(txt(c.reference, 'sans référence')) + '</span>' +
-    '<span class="cr-designation">' + (c.designation ? esc(c.designation) : '<span class="vide">—</span>') + etat + '</span>' +
-    '<span class="cr-emploi">' +
-      (c.nbBoites
-        ? '<span class="cr-jauge" aria-hidden="true"><span style="width:' + part + '%"></span></span>' +
-          '<button type="button" class="cr-compte"' +
-            dataAttrs({ action: 'deplier-composant' }) + ' aria-expanded="false"' +
-            ' title="Voir les boîtes qui la montent">' +
-            c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte') +
-            (c.montages > c.nbBoites ? ' · ' + c.montages + ' montages' : '') +
-          '</button>' +
-          '<span class="cr-boites" hidden>' +
-            c.boites.map(function (pn) {
-              return '<button type="button" class="usage-lien"' +
-                     dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
-            }).join('') +
-          '</span>'
-        : '<span class="cr-jamais">non montée</span>') +
-    '</span>' +
-    '<span class="cr-porteurs">' +
-      (c.porteurs.length
-        ? c.porteurs.map(function (p) {
-            return '<span class="puce-porteur puce-porteur-mini">' + esc(p) + '</span>';
-          }).join('')
-        : '<span class="vide">—</span>') +
-    '</span>' +
-  '</div>';
-}
-
 /**
- * Une norme, en bandeau, puis ses références en retrait sous un filet.
- * L'en-tête de colonnes ne se répète PAS à chaque norme : répété, il
- * aplatissait la hiérarchie au lieu de la montrer.
+ * LA LISTE DES FONCTIONS
+ *
+ * À trois cents références, un arbre tout déplié est illisible et un arbre
+ * tout replié est vide. On liste donc ce qu'on cherche vraiment — une
+ * FONCTION : « il me faut un collier » — dans un tableau dense et trié. Le
+ * détail (les normes, leurs références, où elles sont montées) s'ouvre dans
+ * la fiche, comme pour une boîte.
  */
-function blocNormeHtml(norme, maxi) {
-  const n = norme.lignes.length;
-  const montees = norme.lignes.filter(function (l) { return l.nbBoites > 0; }).length;
+const TRIS_COMPOSANTS = [
+  { cle: 'emploi',     libelle: 'Les plus montés',
+    fn: function (a, b) { return b.nbBoites - a.nbBoites || b.montages - a.montages; } },
+  { cle: 'dispersion', libelle: 'Les plus dispersés',
+    fn: function (a, b) { return b.montees - a.montees || b.references - a.references; } },
+  { cle: 'alpha',      libelle: 'Alphabétique',
+    fn: function (a, b) { return a.libelle.localeCompare(b.libelle, 'fr'); } },
+  { cle: 'famille',    libelle: 'Par famille',
+    fn: function (a, b) {
+      const ordre = Object.keys(CATEGORIES_COMPOSANT);
+      return ordre.indexOf(a.categorie) - ordre.indexOf(b.categorie) ||
+             a.libelle.localeCompare(b.libelle, 'fr');
+    } }
+];
 
-  return '<div class="cn-bloc' + (norme.dispersee ? ' cn-dispersee' : '') + '">' +
-    '<div class="cn-tete">' +
-      '<span class="cn-puce" aria-hidden="true"></span>' +
-      '<span class="cn-nom">' + esc(norme.libelle) + '</span>' +
-      '<span class="cn-compte">' + n + (n > 1 ? ' références' : ' référence') +
-        (montees < n ? ' · ' + montees + ' montée' + (montees > 1 ? 's' : '') : '') +
-      '</span>' +
-      (norme.dispersee
-        ? '<span class="cn-alerte" title="Plusieurs références montées sous cette norme">' +
-          'dispersée</span>'
-        : '') +
-    '</div>' +
-    '<div class="cn-references">' +
-      norme.lignes.map(function (l) { return ligneReferenceHtml(l, maxi); }).join('') +
-    '</div>' +
+/** Les fonctions de la base, à plat, prêtes à trier. */
+function fonctionsComposants(composants) {
+  const parFonction = new Map();
+  composants.forEach(function (c) {
+    const cle = c.categorie + '::' + normaliserTexte(c.fonction);
+    if (!parFonction.has(cle)) {
+      parFonction.set(cle, {
+        cle: cle, categorie: c.categorie,
+        libelle: c.fonction || 'Fonction non précisée',
+        normesVues: new Set(), references: 0, montages: 0,
+        boites: new Set(), hors: 0, dormantes: 0, lignes: []
+      });
+    }
+    const f = parFonction.get(cle);
+    f.lignes.push(c);
+    f.references++;
+    f.montages += c.montages;
+    if (c.norme) f.normesVues.add(normaliserTexte(c.norme));
+    c.boites.forEach(function (b) { f.boites.add(b); });
+    if (c.etat === ETAT_COMPOSANT.HORS) f.hors++;
+    if (c.etat === ETAT_COMPOSANT.DORMANT) f.dormantes++;
+  });
+
+  const tri = TRIS_COMPOSANTS.find(function (t) { return t.cle === Store.compo.tri; }) ||
+              TRIS_COMPOSANTS[0];
+
+  return Array.from(parFonction.values()).map(function (f) {
+    f.normes = f.normesVues.size;
+    f.nbBoites = f.boites.size;
+    // Dispersée : plusieurs références RÉELLEMENT montées pour le même service.
+    f.montees = f.lignes.filter(function (l) { return l.nbBoites > 0; }).length;
+    f.dispersee = f.montees > 1;
+    return f;
+  }).sort(function (a, b) { return tri.fn(a, b) || a.libelle.localeCompare(b.libelle, 'fr'); });
+}
+
+function triComposantsHtml(nb) {
+  return '<div class="compo-tri">' +
+    '<span class="compo-tri-compte">' + nb + (nb > 1 ? ' fonctions' : ' fonction') + '</span>' +
+    '<span class="compo-tri-choix">' +
+      TRIS_COMPOSANTS.map(function (t) {
+        const actif = (Store.compo.tri || 'emploi') === t.cle;
+        return '<button type="button" class="compo-tri-btn' + (actif ? ' actif' : '') + '"' +
+          dataAttrs({ action: 'trier-composants', tri: t.cle }) +
+          ' aria-pressed="' + actif + '">' + esc(t.libelle) + '</button>';
+      }).join('') +
+    '</span>' +
   '</div>';
 }
 
-// Tout ouvrir fait un mur ; tout replier ouvre sur une page vide. On ouvre
-// les premières — ce sont les plus montées, elles sont triées ainsi — et on
-// replie la traîne, qu'on déplie quand on la cherche.
-const FONCTIONS_OUVERTES = 5;
+/** Une fonction : une ligne du tableau. Le détail est dans la fiche. */
+function ligneFonctionHtml(f, maxi) {
+  const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
+  const part = f.nbBoites ? Math.max(5, Math.round((f.nbBoites / (maxi || 1)) * 100)) : 0;
 
-/** Une fonction, ses normes, et un seul en-tête de colonnes pour tout. */
-function blocFonctionHtml(fonction, maxi, cleFamille, replieParDefaut) {
-  const id = cleFamille + '::' + normaliserTexte(fonction.libelle);
-  const choisi = Store.compo.deplies[id];
-  const ouvert = choisi === undefined ? !replieParDefaut : choisi !== false;
-  const nbNormes = fonction.normes.length;
-
-  return '<section class="cfo-bloc' + (ouvert ? '' : ' replie') + '">' +
-    '<button type="button" class="cfo-tete"' +
-      dataAttrs({ action: 'basculer-fonction', fonction: id }) +
-      ' aria-expanded="' + ouvert + '">' +
-      '<span class="cfo-chevron" aria-hidden="true">' + (ouvert ? '▾' : '▸') + '</span>' +
-      '<span class="cfo-nom">' + esc(fonction.libelle) + '</span>' +
-      '<span class="cfo-chiffres">' +
-        '<b>' + nbNormes + '</b> norme' + (nbNormes > 1 ? 's' : '') +
-        ' · <b>' + fonction.references + '</b> référence' + (fonction.references > 1 ? 's' : '') +
-        ' · <b>' + fonction.nbBoites + '</b> boîte' + (fonction.nbBoites > 1 ? 's' : '') +
-      '</span>' +
-      (fonction.dispersee
-        ? '<span class="cfo-alerte" title="Plusieurs références pour le même service">à ranger</span>'
+  return '<button type="button" class="lf-ligne' + (f.dispersee ? ' lf-disperse' : '') + '"' +
+    dataAttrs({ action: 'ouvrir-fiche-composant', categorie: f.categorie, fonction: f.libelle }) +
+    ' title="Voir ses normes et ses références">' +
+    '<span class="lf-fonction">' +
+      '<span class="cf-pastille cf-' + esc(f.categorie) + '" aria-hidden="true"></span>' +
+      '<span class="lf-nom">' + esc(f.libelle) + '</span>' +
+    '</span>' +
+    '<span class="lf-famille">' + esc(cat.libelle) + '</span>' +
+    '<span class="lf-n"><b>' + f.normes + '</b> norme' + (f.normes > 1 ? 's' : '') + '</span>' +
+    '<span class="lf-n"><b>' + f.references + '</b> réf.' +
+      (f.montees < f.references
+        ? '<span class="lf-doux"> · ' + f.montees + ' montée' + (f.montees > 1 ? 's' : '') + '</span>'
         : '') +
-    '</button>' +
-    (ouvert
-      ? '<div class="cfo-corps">' +
-          '<div class="cr-entete"><span>Référence</span><span>Désignation</span>' +
-            '<span>Emploi</span><span>Porteurs</span></div>' +
-          fonction.normes.map(function (n) { return blocNormeHtml(n, maxi); }).join('') +
-        '</div>'
-      : '') +
-  '</section>';
+    '</span>' +
+    '<span class="lf-emploi">' +
+      '<span class="lf-jauge" aria-hidden="true"><span style="width:' + part + '%"></span></span>' +
+      '<span class="lf-boites">' + f.nbBoites + ' boîte' + (f.nbBoites > 1 ? 's' : '') + '</span>' +
+    '</span>' +
+    '<span class="lf-marques">' +
+      (f.dispersee ? '<span class="lf-tag lf-tag-ranger">à ranger</span>' : '') +
+      (f.hors ? '<span class="lf-tag lf-tag-hors">hors catalogue</span>' : '') +
+    '</span>' +
+    '<span class="lf-fleche" aria-hidden="true">›</span>' +
+  '</button>';
 }
 
-/** L'espace Composants au complet. */
+/** L'espace Composants : le rail, le tri, la liste. */
 function composantsHtml(vue) {
   const toutes = baseComposants(vue.aAfficher);
   const retenues = composantsFiltres(vue.aAfficher);
-  const bilan = bilanComposants(retenues);
-  const arbre = arbreComposants(retenues);
-  const maxi = retenues.reduce(function (m, c) { return Math.max(m, c.nbBoites); }, 1);
+  const fonctions = fonctionsComposants(retenues);
+  const maxi = fonctions.reduce(function (m, f) { return Math.max(m, f.nbBoites); }, 1);
 
-  const nbFonctions = arbre.reduce(function (t, f) { return t + f.fonctions.length; }, 0);
-
-  // Le rang d'une fonction dans l'arbre décide de son état par défaut. Quand
-  // un filtre a déjà réduit la liste, on ouvre tout : on l'a demandée.
-  const rangs = {};
-  let rang = 0;
-  arbre.forEach(function (f) {
-    f.fonctions.forEach(function (fo) {
-      rangs[f.cle + '::' + normaliserTexte(fo.libelle)] = rang++;
-    });
-  });
-  const replieParRang = function (id) {
-    return nbFonctions > FONCTIONS_OUVERTES && rangs[id] >= FONCTIONS_OUVERTES;
-  };
-  const estOuverte = function (id) {
-    const choisi = Store.compo.deplies[id];
-    return choisi === undefined ? !replieParRang(id) : choisi !== false;
-  };
-  const ouvertes = Object.keys(rangs).filter(estOuverte).length;
-
-  const barre = arbre.length
-    ? '<div class="arbre-barre">' +
-        '<span class="arbre-barre-compte">' +
-          nbFonctions + ' fonction' + (nbFonctions > 1 ? 's' : '') +
-          ' · ' + retenues.length + ' référence' + (retenues.length > 1 ? 's' : '') +
-        '</span>' +
-        '<button type="button" class="arbre-barre-btn"' +
-          dataAttrs({ action: 'deplier-tout-composants',
-                      ouvrir: String(ouvertes < nbFonctions) }) + '>' +
-          (ouvertes < nbFonctions ? 'Tout déplier' : 'Tout replier') +
-        '</button>' +
+  const corps = fonctions.length
+    ? '<div class="lf-cadre">' +
+        '<div class="lf-entete">' +
+          '<span>Fonction</span><span>Famille</span><span>Normes</span>' +
+          '<span>Références</span><span>Emploi</span><span></span><span></span>' +
+        '</div>' +
+        fonctions.map(function (f) { return ligneFonctionHtml(f, maxi); }).join('') +
       '</div>'
-    : '';
-
-  const corps = arbre.length
-    ? arbre.map(function (f) {
-        return '<section class="cfa-bloc">' +
-          '<header class="cfa-tete">' +
-            '<span class="cf-pastille cf-' + esc(f.cle) + '" aria-hidden="true"></span>' +
-            '<h2 class="cfa-nom">' + esc(f.libelle) + '</h2>' +
-            '<span class="cfa-chiffres">' +
-              f.references + ' référence' + (f.references > 1 ? 's' : '') +
-              ' · ' + f.fonctions.length + ' fonction' + (f.fonctions.length > 1 ? 's' : '') +
-              ' · ' + f.montages + ' montage' + (f.montages > 1 ? 's' : '') +
-            '</span>' +
-          '</header>' +
-          f.fonctions.map(function (fo) {
-            const id = f.cle + '::' + normaliserTexte(fo.libelle);
-            return blocFonctionHtml(fo, maxi, f.cle, replieParRang(id));
-          }).join('') +
-        '</section>';
-      }).join('')
     : '<div class="etat-vide">' +
         '<p>Aucun composant ne correspond.</p>' +
         '<p class="etat-vide-aide">' +
@@ -4022,9 +3998,10 @@ function composantsHtml(vue) {
 
   return '<div class="compo-corps">' +
       railComposantsHtml(toutes) +
-      '<div class="compo-arbre">' + barre + corps + '</div>' +
+      '<div class="compo-table">' + triComposantsHtml(fonctions.length) + corps + '</div>' +
     '</div>';
 }
+
 
 /**
  * Les opportunités de rationalisation. Une famille = une catégorie et une
@@ -4413,12 +4390,20 @@ function pucesHtml(valeurs, actionSuppr, donnees, editable, classe) {
   }).join('');
 }
 
-function apercuImageHtml(valeur, classe) {
+/**
+ * La photo situe la pièce. Elle se pose au centre, dans un cadre de rapport
+ * fixe : collée à gauche et au format de la source, elle déséquilibrait la
+ * fiche et changeait de hauteur d'une boîte à l'autre.
+ */
+function apercuImageHtml(valeur, classe, centre) {
   const url = urlMiniature(valeur);
   if (!url) return '';
-  return '<button type="button" class="vignette ' + (classe || '') + '"' +
-         dataAttrs({ action: 'agrandir-image', url: url }) +
-         ' aria-label="Agrandir l\'image"><img src="' + esc(url) + '" alt="" loading="lazy"></button>';
+  const bouton = '<button type="button" class="vignette ' + (classe || '') + '"' +
+    dataAttrs({ action: 'agrandir-image', url: url }) +
+    ' aria-label="Agrandir l\'image" title="Agrandir">' +
+    '<img src="' + esc(url) + '" alt="" loading="lazy">' +
+  '</button>';
+  return centre ? '<div class="vignette-cadre">' + bouton + '</div>' : bouton;
 }
 
 function ligneHtml(libelle, contenu, aide) {
@@ -4572,7 +4557,7 @@ function blocBoiteHtml(boite) {
       '<div class="bloc-actions"><span id="spin-boite" class="zone-spin"></span>' + actions + '</div>' +
     '</header>';
 
-  if (!edition) html += apercuImageHtml(boite['Image'], 'vignette-large');
+  if (!edition) html += apercuImageHtml(boite['Image'], 'vignette-large', true);
 
   Store.headersBoites.forEach(function (cle) {
     const valeur = boite[cle];
@@ -4691,7 +4676,7 @@ function blocNomHtml(ligne) {
     '</div>';
   }
 
-  if (!edition) html += apercuImageHtml(ligne['Image'], '');
+  if (!edition) html += apercuImageHtml(ligne['Image'], 'vignette-sous', true);
 
   // Seuls les champs du type : c'est tout l'intérêt du registre.
   champsDuType(type).forEach(function (champ) {
@@ -4762,15 +4747,163 @@ function ficheHtml(boite) {
       '</nav>'
     : '';
 
-  return sommaire +
-         blocBoiteHtml(boite) +
-         lignes.map(blocNomHtml).join('') +
-         '<div class="fiche-pied">' +
-           boutonHtml('nouveau-sous-ensemble', {}, '+ Ajouter un sous-ensemble', 'btn-principal') +
-         '</div>';
+  // La boîte est le tronc, les sous-ensembles sont ses branches. Les
+  // empiler à plat laissait croire à quatre blocs de même rang ; ici la
+  // subordination se voit : un retrait, un filet vertical, un compteur.
+  const branches = lignes.length
+    ? '<div class="arbre-fiche">' +
+        '<div class="arbre-tete">' +
+          '<span class="arbre-titre">Sous-ensembles</span>' +
+          '<span class="arbre-compte">' + lignes.length +
+            (lignes.length > 1 ? ' montés' : ' monté') + '</span>' +
+        '</div>' +
+        '<div class="arbre-branches">' +
+          lignes.map(function (l) {
+            return '<div class="arbre-branche">' + blocNomHtml(l) + '</div>';
+          }).join('') +
+          '<div class="arbre-branche arbre-ajout">' +
+            boutonHtml('nouveau-sous-ensemble', {}, '+ Ajouter un sous-ensemble', 'btn-neutre') +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    : '<div class="fiche-pied">' +
+        boutonHtml('nouveau-sous-ensemble', {}, '+ Ajouter un sous-ensemble', 'btn-principal') +
+      '</div>';
+
+  return sommaire + blocBoiteHtml(boite) + branches;
+}
+
+/**
+ * LA FICHE D'UNE FONCTION DE COMPOSANT
+ *
+ * Le pendant de la fiche d'une boîte : on l'ouvre depuis la liste, dans le
+ * même panneau. Une norme par bloc, ses références dessous, et la plus
+ * montée marquée — c'est vers elle qu'il coûte le moins cher de converger.
+ */
+function ficheComposantHtml(cible) {
+  const base = baseComposants(calculerVue().aAfficher).filter(function (c) {
+    return c.categorie === cible.categorie &&
+           normaliserTexte(c.fonction) === normaliserTexte(cible.fonction);
+  });
+  if (!base.length) {
+    return '<div class="etat-vide"><p>Cette fonction n\'est plus dans la base.</p>' +
+           '<p class="etat-vide-aide">Fermez le panneau : la liste est à jour.</p></div>';
+  }
+
+  const parNorme = new Map();
+  base.forEach(function (c) {
+    const cle = normaliserTexte(c.norme) || '\u0000';
+    if (!parNorme.has(cle)) parNorme.set(cle, { libelle: c.norme || 'sans norme', lignes: [] });
+    parNorme.get(cle).lignes.push(c);
+  });
+
+  const montees = base.filter(function (c) { return c.nbBoites > 0; });
+  const majoritaire = montees.slice().sort(function (a, b) { return b.nbBoites - a.nbBoites; })[0];
+  const boites = new Set();
+  base.forEach(function (c) { c.boites.forEach(function (b) { boites.add(b); }); });
+  const maxi = base.reduce(function (m, c) { return Math.max(m, c.nbBoites); }, 1);
+
+  // Le résumé : ce qu'on est venu savoir avant de lire le détail.
+  const resume = '<div class="fc-resume">' +
+    '<div class="fc-mesure"><span class="fc-n">' + parNorme.size + '</span>' +
+      '<span class="fc-l">norme' + (parNorme.size > 1 ? 's' : '') + '</span></div>' +
+    '<div class="fc-mesure"><span class="fc-n">' + base.length + '</span>' +
+      '<span class="fc-l">référence' + (base.length > 1 ? 's' : '') + '</span></div>' +
+    '<div class="fc-mesure"><span class="fc-n">' + boites.size + '</span>' +
+      '<span class="fc-l">boîte' + (boites.size > 1 ? 's' : '') + '</span></div>' +
+  '</div>';
+
+  const conseil = montees.length > 1 && majoritaire
+    ? '<p class="fc-conseil">' +
+        '<b>' + montees.length + ' références montées</b> pour le même service. ' +
+        'La plus répandue est <span class="fc-pn">' + esc(majoritaire.reference) + '</span>' +
+        ' (' + majoritaire.nbBoites + ' boîte' + (majoritaire.nbBoites > 1 ? 's' : '') + ') : ' +
+        'c\'est vers elle qu\'il coûte le moins cher de converger.' +
+      '</p>'
+    : '';
+
+  const blocs = Array.from(parNorme.values())
+    .sort(function (a, b) {
+      const mb = b.lignes.reduce(function (t, l) { return t + l.nbBoites; }, 0);
+      const ma = a.lignes.reduce(function (t, l) { return t + l.nbBoites; }, 0);
+      return mb - ma || a.libelle.localeCompare(b.libelle, 'fr');
+    })
+    .map(function (n) {
+      n.lignes.sort(function (a, b) {
+        return b.nbBoites - a.nbBoites ||
+               String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+      });
+      return '<section class="fc-norme">' +
+        '<header class="fc-norme-tete">' +
+          '<span class="fc-norme-cle">Norme</span>' +
+          '<span class="fc-norme-nom">' + esc(n.libelle) + '</span>' +
+          '<span class="fc-norme-n">' + n.lignes.length +
+            (n.lignes.length > 1 ? ' références' : ' référence') + '</span>' +
+        '</header>' +
+        n.lignes.map(function (c) {
+          return ficheReferenceHtml(c, maxi, majoritaire && c.cle === majoritaire.cle);
+        }).join('') +
+      '</section>';
+    }).join('');
+
+  return resume + conseil + '<div class="fc-normes">' + blocs + '</div>';
+}
+
+/** Une référence dans la fiche d'une fonction. */
+function ficheReferenceHtml(c, maxi, majoritaire) {
+  const part = c.nbBoites ? Math.max(6, Math.round((c.nbBoites / (maxi || 1)) * 100)) : 0;
+  const etat = c.etat === ETAT_COMPOSANT.HORS
+    ? '<span class="cr-etat cr-hors" title="Montée mais absente du catalogue">hors catalogue</span>'
+    : c.etat === ETAT_COMPOSANT.DORMANT
+      ? '<span class="cr-etat cr-dormant" title="Au catalogue, montée nulle part">jamais montée</span>'
+      : '';
+
+  return '<div class="fc-ref' + (majoritaire ? ' fc-majoritaire' : '') + '">' +
+    '<div class="fc-ref-tete">' +
+      '<span class="fc-ref-pn">' + esc(txt(c.reference, 'sans référence')) + '</span>' +
+      (majoritaire ? '<span class="fc-tag-majo">la plus montée</span>' : '') +
+      etat +
+    '</div>' +
+    (c.designation ? '<p class="fc-ref-designation">' + esc(c.designation) + '</p>' : '') +
+    '<div class="fc-ref-emploi">' +
+      '<span class="lf-jauge" aria-hidden="true"><span style="width:' + part + '%"></span></span>' +
+      '<span class="fc-ref-compte">' +
+        (c.nbBoites
+          ? c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte') +
+            (c.montages > c.nbBoites ? ' · ' + c.montages + ' montages' : '')
+          : 'montée nulle part') +
+      '</span>' +
+    '</div>' +
+    (c.boites.length
+      ? '<div class="fc-ref-boites">' +
+          c.boites.map(function (pn) {
+            return '<button type="button" class="usage-lien"' +
+                   dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
+          }).join('') +
+        '</div>'
+      : '') +
+    (c.porteurs.length
+      ? '<div class="fc-ref-porteurs">' +
+          c.porteurs.map(function (p) {
+            return '<span class="puce-porteur puce-porteur-mini">' + esc(p) + '</span>';
+          }).join('') +
+        '</div>'
+      : '') +
+  '</div>';
 }
 
 function rendreFiche() {
+  // Le panneau sert les deux bases : une boîte, ou une fonction de composant.
+  if (Store.ficheComposant) {
+    const cat = CATEGORIES_COMPOSANT[Store.ficheComposant.categorie] ||
+                CATEGORIES_COMPOSANT.composant;
+    definirTexte('slideOverTitle', Store.ficheComposant.fonction);
+    const sousC = parId('slideOverSousTitre');
+    if (sousC) sousC.textContent = cat.libelle;
+    definirHtml('slideOverBody', ficheComposantHtml(Store.ficheComposant));
+    return;
+  }
+
   const boite = boiteCourante();
   definirTexte('slideOverTitle', boite ? txt(boite[CLE_PN()]) : 'Fiche');
   const sous = parId('slideOverSousTitre');
@@ -4963,24 +5096,55 @@ function scoreHtml(score) {
   return '<div class="score ' + teinte + '"><b>' + score + '<small>%</small></b></div>';
 }
 
-function resultatHtml(titre, sousTitreHtml, r, actions) {
+/**
+ * Un candidat du classement : le PN et le score, repliés. Le détail
+ * critère par critère se déplie au clic.
+ *
+ * Douze candidats × huit critères, c'est cent lignes déroulées d'un coup :
+ * on lit le premier, on fait défiler, on perd le fil. On classe d'abord, on
+ * regarde le pourquoi ensuite — et seulement celui qu'on a choisi.
+ */
+let compteurResultat = 0;
+
+function resultatHtml(titre, sousTitreHtml, r, actions, deplieParDefaut) {
+  const id = 'res-' + (++compteurResultat);
+  const ouvert = Store.resultatDeplie === id ||
+                 (deplieParDefaut && Store.resultatDeplie === null);
+
   // On NOMME les critères qu'on n'a pas pu comparer, au lieu d'annoncer un
   // pourcentage de couverture que personne ne sait interpréter.
   const alerte = r.nonComparables && r.nonComparables.length
     ? '<p class="alerte-manquant">Non comparé, faute de donnée : <b>' +
       esc(r.nonComparables.join(', ')) + '</b>. Le score porte sur le reste.</p>'
     : '';
-  return '<article class="resultat">' +
-    '<header class="resultat-tete">' +
-      '<div>' +
-        '<h4>' + esc(titre) + '</h4>' +
-        '<p class="resultat-sous">' + sousTitreHtml + '</p>' +
-      '</div>' +
+
+  // Le résumé replié : ce qui concorde, ce qui sépare, en deux nombres.
+  const concordent = r.criteres.filter(function (c) { return c.etat === ETAT.IDENTIQUE; }).length;
+  const separent = r.criteres.filter(function (c) {
+    return c.etat === ETAT.DIFFERENT || c.etat === ETAT.PARTIEL;
+  }).length;
+
+  return '<article class="resultat' + (ouvert ? ' ouvert' : '') + '" id="' + id + '">' +
+    '<button type="button" class="resultat-tete"' +
+      dataAttrs({ action: 'deplier-resultat', resultat: id }) +
+      ' aria-expanded="' + ouvert + '">' +
+      '<span class="resultat-chevron" aria-hidden="true">' + (ouvert ? '▾' : '▸') + '</span>' +
+      '<span class="resultat-identite">' +
+        '<span class="resultat-pn">' + esc(titre) + '</span>' +
+        '<span class="resultat-sous">' + sousTitreHtml + '</span>' +
+      '</span>' +
+      '<span class="resultat-bilan">' +
+        '<span class="rb-ok">' + concordent + ' concordent</span>' +
+        (separent ? '<span class="rb-ko">' + separent + ' séparent</span>' : '') +
+      '</span>' +
       scoreHtml(r.score) +
-    '</header>' +
-    alerte +
-    (actions || '') +
-    '<div class="criteres">' + r.criteres.map(critereHtml).join('') + '</div>' +
+    '</button>' +
+    (ouvert
+      ? '<div class="resultat-corps">' +
+          alerte + (actions || '') +
+          '<div class="criteres">' + r.criteres.map(critereHtml).join('') + '</div>' +
+        '</div>'
+      : '') +
   '</article>';
 }
 
@@ -5023,6 +5187,7 @@ function aucunResultatHtml(quoi, portee) {
 // Rendu du classement (sans ouvrir la modale)
 // ------------------------------------------------------------
 function rendreEquivalencesBoite(pn) {
+  compteurResultat = 0;
   const resultats = equivalencesBoite(pn);
   definirTexte('compareTitle', 'Équivalences de ' + txt(pn));
   definirTexte('compareSousTitre', resultats.length + ' boîte(s) au-dessus du seuil');
@@ -5035,12 +5200,14 @@ function rendreEquivalencesBoite(pn) {
             '<div class="resultat-actions">' +
               '<button type="button" class="btn-mini"' +
               dataAttrs({ action: 'ouvrir-fiche-depuis-compare', pn: r.cible[CLE_PN()] }) +
-              '>Ouvrir cette fiche</button></div>');
+              '>Ouvrir cette fiche</button></div>',
+            r === resultats[0]);
         }).join('')
       : aucunResultatHtml('Essayez une autre boîte, ou assouplissez la pondération.', 'boite')));
 }
 
 function rendreEquivalencesNom(id) {
+  compteurResultat = 0;
   const source = nomParId(id);
   if (!source) return;
   const type = typeDe(source);
@@ -5058,7 +5225,8 @@ function rendreEquivalencesNom(id) {
             '<div class="resultat-actions">' +
               '<button type="button" class="btn-mini"' +
               dataAttrs({ action: 'ouvrir-fiche-depuis-compare', pn: r.cible[CLE_PN()] }) +
-              '>Ouvrir la boîte</button></div>');
+              '>Ouvrir la boîte</button></div>',
+            r === resultats[0]);
         }).join('')
       : aucunResultatHtml('Seules les pièces du même type sont comparées : ' +
                           type.libelle.toLowerCase() + '.', type.cle)));
@@ -5074,6 +5242,7 @@ function alignerRail(portee) {
 }
 
 function afficherEquivalencesBoite(pn) {
+  Store.resultatDeplie = null;      // on repart du meilleur candidat déplié
   Store.comparaison = { sorte: 'boite', cle: pn, portee: 'boite' };
   alignerRail('boite');
   rendreEquivalencesBoite(pn);
@@ -5083,6 +5252,7 @@ function afficherEquivalencesBoite(pn) {
 function afficherEquivalencesNom(id) {
   const source = nomParId(id);
   if (!source) return;
+  Store.resultatDeplie = null;
   Store.idNomCourant = id;
   const type = typeDe(source);
   Store.comparaison = { sorte: 'nom', cle: id, portee: type.cle };
@@ -5824,23 +5994,7 @@ enregistrerActions({
     rendreInterface();
   },
 
-  'deplier-tout-composants': function (d) {
-    const ouvrir = d.ouvrir === 'true';
-    Store.compo.deplies = {};
-    const vue = calculerVue();
-    arbreComposants(composantsFiltres(vue.aAfficher)).forEach(function (f) {
-      f.fonctions.forEach(function (fo) {
-        Store.compo.deplies[f.cle + '::' + normaliserTexte(fo.libelle)] = ouvrir;
-      });
-    });
-    rendreInterface();
-  },
 
-  'basculer-fonction': function (d) {
-    const id = d.fonction;
-    Store.compo.deplies[id] = Store.compo.deplies[id] === false;
-    rendreInterface();
-  },
 
   'changer-vue': function (d) {
     if (['boites', 'pieces', 'standardisation'].indexOf(d.vue) === -1) return;
@@ -5914,7 +6068,19 @@ enregistrerActions({
     rendreInterface();
   },
 
+  'ouvrir-fiche-composant': function (d) {
+    Store.ficheComposant = { categorie: d.categorie, fonction: d.fonction };
+    rendreFiche();
+    ouvrirPanneau();
+  },
+  'trier-composants': function (d) {
+    Store.compo.tri = d.tri;
+    enregistrerReglages();
+    rendreInterface();
+  },
+
   'ouvrir-fiche': function (d) {
+    Store.ficheComposant = null;
     Store.pnCourant = d.pn;
     Store.enEditionBoite = false;
     Store.enEditionNom = {};
@@ -6178,6 +6344,12 @@ enregistrerActions({
     rendreReglages();
     rafraichirComparaison();
   },
+  'deplier-resultat': function (d) {
+    // Un seul détail ouvert à la fois : c'est un classement, on compare en
+    // remontant la liste, pas en dépliant tout.
+    Store.resultatDeplie = Store.resultatDeplie === d.resultat ? '' : d.resultat;
+    rafraichirComparaison();
+  },
   'basculer-reglage-detaille': function () {
     Store.reglagesDetaille = !Store.reglagesDetaille;
     rendreReglages();
@@ -6194,14 +6366,6 @@ enregistrerActions({
   },
 
   // --- standardisation ---
-  'deplier-composant': function (d, noeud) {
-    const bloc = noeud.parentNode && noeud.parentNode.querySelector('.cr-boites');
-    if (!bloc) return;
-    const ouvert = !bloc.hidden;
-    bloc.hidden = ouvert;
-    noeud.setAttribute('aria-expanded', String(!ouvert));
-    noeud.classList.toggle('actif', !ouvert);
-  },
 
   'deplier-reference': function (d, noeud) {
     const bloc = noeud.parentNode && noeud.parentNode.querySelector('.ref-boites');
