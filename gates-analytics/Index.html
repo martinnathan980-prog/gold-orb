@@ -30,6 +30,8 @@
 
 <div class="page">
 
+  <div class="filtres-actifs" id="filtres-actifs" hidden></div>
+
   <header class="masthead">
     <h1>Suivi FWD</h1>
     <div class="semaine">
@@ -79,11 +81,11 @@
       <p class="note-graphe" id="note-graphe"></p>
       <div class="legende" id="legende"></div>
     </div>
-  </section>
 
-  <section class="bloc">
-    <div class="section-tete">
-      <h2>Journal des changements</h2>
+    <!-- Le journal appartient au graphe : la courbe dit combien, le journal
+         dit lesquels. Les séparer obligeait à faire l'aller-retour. -->
+    <div class="section-tete section-journal">
+      <h3 class="titre-journal">Ce qui a changé, semaine par semaine</h3>
       <span class="segmente" id="filtre-journal" role="group" aria-label="Ne montrer que certains passages">
         <button type="button" data-journal="" aria-pressed="true">Tout</button>
         <button type="button" data-journal="termine" aria-pressed="false">Terminés</button>
@@ -104,6 +106,7 @@
         <select class="select" id="dim-critique"></select>
       </div>
     </div>
+    <p class="indice-dim" id="indice-dim"></p>
     <div class="feuille">
       <div id="zone-critique"></div>
     </div>

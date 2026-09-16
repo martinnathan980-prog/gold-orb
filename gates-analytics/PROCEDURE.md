@@ -122,16 +122,25 @@ Dans « Avancement FWD par… », rangées par ordre alphabétique dans le séle
 
 | Colonne | Ce qu'elle montre |
 |---|---|
-| **Ancienneté** | tranches calculées sur `Date création` |
+| **Ancienneté** | quatre tranches calculées sur `Date création` — « qu'est-ce qui traîne depuis longtemps ? » |
 | **ATA** | le découpage attendu, ouvert par défaut |
 | **Avancement** | la colonne FWD elle-même : d'un coup d'œil, toutes les façons de l'écrire, donc les saisies qui divergent |
 | **CC** | code circuit |
 | **Chapitre** | découpage documentaire |
-| **Date création (par mois)** | un groupe par mois, rangés dans l'ordre du temps |
+| **Date création (par mois)** | un groupe par mois, rangés dans l'ordre du temps — « de quelle vague vient ce lot ? » |
 | **ECP** | |
-| **Validation Définition Electrique** | pré-requis amont : un FWD non commencé sans définition validée est normal ; avec définition validée, il ne l'est pas |
 
-Pour en changer, une ligne en haut de `Code.gs` :
+Une note sous le titre explique la dimension choisie, en particulier la
+différence entre l'ancienneté (des tranches) et le mois de création (une date).
+
+**Choisir une ligne déplie ses références** : les plans non terminés d'abord,
+une pastille par état, et un clic sur une référence réduit le tableau du bas à
+ce plan. Au-delà de quinze groupes, le bloc en montre quinze et propose le
+reste.
+
+Chaque colonne calculée porte un **?** qui ouvre la même explication chiffrée.
+
+Pour changer la liste, une ligne en haut de `Code.gs` :
 
 ```js
 DIMENSIONS: ['ATA', 'CC', 'Chapitre', 'Réalisation FWD > Avancement'],
@@ -140,13 +149,23 @@ DIMENSIONS: ['ATA', 'CC', 'Chapitre', 'Réalisation FWD > Avancement'],
 La syntaxe `Groupe > Colonne` sert quand plusieurs colonnes portent le même
 intitulé. Liste vidée, la détection automatique reprend la main.
 
-Les deux autres réglages du même bloc :
+Les autres réglages du même bloc :
 
 ```js
 COLONNE_FWD: 'Réalisation FWD > Avancement',
 COLONNE_DOMAINE: 'Domaine',
+COLONNES_ESSENTIELLES: ['Nom Installation', 'ECP', 'ATA', 'Séquence',
+                        'Validation Définition Electrique', 'Date création',
+                        'Réalisation FWD > Avancement'],
 GROUPES_MASQUES_AU_DEPART: ['HDK AA'],
 ```
+
+### Revenir en arrière
+
+Dès qu'un filtre est posé — un état, un domaine, un groupe, une référence, une
+recherche, un filtre de colonne — un **bandeau collé en haut de la page** nomme
+chacun d'eux et donne sa croix, avec un **Tout effacer**. Où qu'on ait cliqué,
+la sortie est à portée.
 
 ### Le journal des changements
 
@@ -154,11 +173,18 @@ Chaque relevé archivé garde l'avancement **plan par plan**. Comparer deux
 relevés successifs donne, semaine par semaine, qui a bougé et dans quel sens —
 la seule chose que l'export du jour ne dira jamais.
 
+Il est **sous le graphique**, dans la même section : la courbe dit combien, le
+journal dit lesquels.
+
 - La semaine la plus récente est en haut, ouverte ; les autres se déplient
   d'un clic.
-- `Tout / Terminés / En cours / À faire` ne garde que les passages voulus.
+- `Tout / Terminés / En cours / À faire` ne garde que les passages voulus, et
+  **chaque compte du résumé est cliquable** : « 6 terminés » n'affiche plus que
+  ceux-là, sur toutes les semaines à la fois.
 - Cliquer un plan réduit le tableau du bas à ce plan.
 - Les nouveaux plans et ceux qui ont disparu de l'export sont signalés.
+- **Survoler une semaine sur le graphique** donne le même contenu en raccourci :
+  le nombre de passages en terminé et les références.
 
 Le journal se remplit au **deuxième** archivage : il faut deux relevés pour
 savoir ce qui a changé entre les deux.

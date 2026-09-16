@@ -90,6 +90,20 @@
      Dimension derivee de la colonne de date : un plan cree il y a longtemps
      et toujours pas termine est celui sur lequel il faut se pencher.
      ============================================================ */
+  var MOIS_COURT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+                    'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  /* Une date de création brute ferait autant de groupes que de jours : on
+     regroupe au mois, ce qui se lit et se compare. */
+  function moisDe(valeur) {
+    var m = /(\d{4})[-\/.](\d{1,2})/.exec(String(valeur || ''));
+    return m ? MOIS_COURT[Number(m[2]) - 1] + ' ' + m[1] : '\u2014';
+  }
+  function rangMois(nom) {
+    if (nom === '\u2014') return -1;
+    var bout = nom.split(' ');
+    return Number(bout[1]) * 12 + MOIS_COURT.indexOf(bout[0]);
+  }
+
   var ORDRE_ANCIENNETE = ['moins d’un mois', '1 à 3 mois', '3 à 6 mois', 'plus de 6 mois'];
   function ancienneteDepuis(valeur, reference) {
     var m = /(\d{4})[-\/.](\d{1,2})/.exec(String(valeur || ''));
@@ -138,25 +152,31 @@
         return ((t ^ t >>> 14) >>> 0) / 4294967296;
       };
     }
-    var alea = graine(20260915);
+    var alea = graine(20260919);
     function tire(l) { return l[Math.floor(alea() * l.length)]; }
     function ent(a, b) { return a + Math.floor(alea() * (b - a + 1)); }
 
+    /* Les colonnes de l'export GATES, intitulés et groupes compris. La
+       démonstration doit ressembler à ce que l'on verra dans le classeur :
+       une colonne inventée crée plus de confusion qu'elle n'en évite. */
     var colonnes = [
       { cle: 'reference',   groupe: 'Informations principales', titre: 'Référence UD', classe: 'ref', fige: true },
-      { cle: 'installation',groupe: 'Informations principales', titre: 'Nom installation', classe: 'large' },
-      { cle: 'ata',         groupe: 'Informations principales', titre: 'ATA', classe: 'num', dim: true },
-      { cle: 'sequence',    groupe: 'Informations principales', titre: 'Séquence', classe: 'num', dim: true },
-      { cle: 'ecp',         groupe: 'Définition du plan', titre: 'ECP', classe: 'ref' },
-      { cle: 'definition',  groupe: 'Définition du plan', titre: 'Validation définition électrique', classe: '', dim: true },
-      { cle: 'ibg',         groupe: 'Définition du plan', titre: 'Statut IBG', classe: '', dim: true },
-      { cle: 'creation',    groupe: 'Définition du plan', titre: 'Date création', classe: 'num' },
-      { cle: 'avancement',  groupe: 'FWD', titre: 'Avancement FWD', classe: '' },
-      { cle: 'responsable', groupe: 'FWD', titre: 'Resp.', classe: 'num', dim: true },
-      { cle: 'commentaire', groupe: 'FWD', titre: 'Commentaire', classe: 'large doux' }
+      { cle: 'domaine',     groupe: 'Informations principales', titre: 'Domaine', classe: 'num' },
+      { cle: 'date_creation', groupe: 'Informations principales', titre: 'Date création', classe: 'num' },
+      { cle: 'installation',groupe: 'Informations principales', titre: 'Nom Installation', classe: 'large' },
+      { cle: 'chapitre',    groupe: 'Informations principales', titre: 'Chapitre', classe: 'num', dim: true },
+      { cle: 'produit',     groupe: 'Informations principales', titre: 'Produit', classe: 'num' },
+      { cle: 'cc',          groupe: 'Définition du plan', titre: 'CC', classe: 'num', dim: true },
+      { cle: 'ata',         groupe: 'Définition du plan', titre: 'ATA', classe: 'num', dim: true },
+      { cle: 'sequence',    groupe: 'Définition du plan', titre: 'Séquence', classe: 'num' },
+      { cle: 'ecp',         groupe: 'Définition du plan', titre: 'ECP', classe: 'ref', dim: true },
+      { cle: 'ibg',         groupe: 'Définition du plan', titre: 'Statut iBG', classe: 'num' },
+      { cle: 'vde',         groupe: 'Définition du plan', titre: 'Validation Définition Electrique', classe: 'num' },
+      { cle: 'avancement',  groupe: 'Réalisation FWD', titre: 'Avancement', classe: 'num', dim: true },
+      { cle: 'redraw',      groupe: 'Réalisation FWD', titre: 'Redraw', classe: 'num' }
     ];
 
-    var ATA = ['24', '25', '31', '33', '34', '39', '53', '92'];
+    var ATA = ['21', '24', '25', '31', '33', '34', '39', '46', '53', '92'];
     var INSTALLATIONS = [
       'Harnais alimentation cabine', 'Cheminement plancher avant', 'Boîtier de disjoncteurs',
       'Éclairage de soute', 'Platine de masse structure', 'Faisceau treuil de sauvetage',
@@ -165,95 +185,113 @@
       'Harnais capteurs boîte de transmission', 'Bâti convertisseur statique',
       'Cheminement console centrale', 'Bloc prises maintenance'
     ];
-    var COMMENTAIRES = [
-      'En attente d’accès zone', 'Dépend de la levée de l’ECP',
-      'Contrôle dimensionnel à replanifier', 'Reprise après modification de cheminement',
-      'Pièce manquante en magasin'
-    ];
+    /* L'avancement FWD ne prend que ces quatre formes : pas de pourcentage. */
+    var AVANCEMENTS = ['Terminé', 'En cours', 'À faire', ''];
 
     var plans = [];
     for (var i = 0; i < 186; i++) {
       var t = alea(), avancement;
-      if (t < 0.35)      { avancement = '100%'; }
-      else if (t < 0.64) { avancement = tire([10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90]) + '%'; }
-      else if (t < 0.84) { avancement = 'À faire'; }
+      if (t < 0.34)      { avancement = 'Terminé'; }
+      else if (t < 0.63) { avancement = 'En cours'; }
+      else if (t < 0.85) { avancement = 'À faire'; }
       else               { avancement = ''; }
       var ata = tire(ATA);
       var e0 = classer(avancement);
+      var annee = e0 === 'termine' ? ent(2018, 2026) : ent(2023, 2026);
       plans.push({
         reference: 'UD-' + ata + '-' + String(1037 + i * 7).slice(-4),
+        domaine: alea() < 0.68 ? 'BASE/OPTION' : 'PERSO',
+        date_creation: annee + '-' + String(ent(1, 12)).padStart(2, '0') +
+                       '-' + String(ent(1, 28)).padStart(2, '0') + 'T22:00:00.000Z',
         installation: tire(INSTALLATIONS),
+        chapitre: tire(['A', 'B', 'C', 'D']),
+        produit: tire(['SUPER PUMA', 'MK2', 'MK3']),
+        cc: '3' + String(ent(1, 12)).padStart(2, '0') + '99',
         ata: ata,
-        sequence: tire(['S1', 'S2', 'S3', 'S4', 'S5']),
-        ecp: alea() < 0.86 ? 'ECP-' + ent(2100, 2899) : '',
-        definition: e0 === 'termine' || e0 === 'encours'
-          ? tire(['Validée', 'Validée', 'En attente']) : tire(['En attente', 'Sans objet']),
-        ibg: e0 === 'termine' ? (alea() < 0.85 ? 'Validé' : 'En revue')
-           : e0 === 'encours' ? tire(['Validé', 'En revue', 'À contrôler'])
-           : (alea() < 0.6 ? 'Non lancé' : 'En revue'),
-        creation: '2026-' + String(ent(1, 8)).padStart(2, '0') + '-' + String(ent(1, 28)).padStart(2, '0'),
+        sequence: String(ent(600, 602)),
+        ecp: alea() < 0.86 ? 'ECP-' + ent(2100, 2140) : '',
+        ibg: tire(['true', 'false']),
+        vde: e0 === 'termine' || e0 === 'encours' ? 'true' : tire(['true', 'false']),
         avancement: avancement,
-        responsable: tire(['MR', 'AB', 'CM', 'TL', 'SN', 'JD']),
-        commentaire: alea() < 0.26 ? tire(COMMENTAIRES) : ''
+        redraw: tire(['true', 'false'])
       });
     }
     plans.forEach(function (p) { p._etat = classer(p.avancement); p._pct = pourcentDe(p); });
 
-    var clesDim = colonnes.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; })
-      .concat(['_anciennete']);
+    var clesDim = ['ata', 'avancement', 'cc', 'chapitre', 'ecp'];
     var refDate = lundiDeLaSemaine(2026, 38);
     function valeurDe(p, cle) {
-      return cle === '_anciennete' ? ancienneteDepuis(p.creation, refDate) : p[cle];
+      if (cle === '_anciennete') return ancienneteDepuis(p.date_creation, refDate);
+      if (cle === '_mois') return moisDe(p.date_creation);
+      return p[cle];
+    }
+    var clesAvecDerivees = clesDim.concat(['_anciennete', '_mois']);
+
+    /* Douze semaines d'historique, avec l'avancement plan par plan à chaque
+       relevé : c'est ce qui fait vivre le journal des changements et la bulle
+       du graphique. On part de l'état du jour et on remonte le temps. */
+    var SEMAINES = 12;
+    var etatCourant = {};
+    plans.forEach(function (p) { etatCourant[p.reference] = p.avancement; });
+
+    var releves = [];
+    var instantanes = [];
+    for (var k = SEMAINES; k >= 0; k--) {
+      instantanes[k] = JSON.parse(JSON.stringify(etatCourant));
+      if (k === 0) break;
+      /* Une semaine en arrière : quelques plans terminés ne l'étaient pas
+         encore, quelques plans en cours n'étaient qu'à faire. */
+      var refs = plans.map(function (p) { return p.reference; });
+      var recules = 0;
+      for (var r = 0; r < refs.length && recules < 9; r++) {
+        var ref = refs[(r * 17 + k * 29) % refs.length];
+        var v = etatCourant[ref];
+        if (v === 'Terminé') { etatCourant[ref] = 'En cours'; recules++; }
+        else if (v === 'En cours' && alea() < 0.5) { etatCourant[ref] = 'À faire'; recules++; }
+      }
+      // Deux plans n'existaient pas encore au tout début.
+      if (k === 1) { delete etatCourant[refs[3]]; delete etatCourant[refs[11]]; }
     }
 
-    // Cinq imports successifs : proportion croissante de terminés.
-    var aujourdhui = releveDepuis(plans, 4, clesDim, valeurDe, true);
-    var releves = [];
-    [0.42, 0.58, 0.74, 0.88].forEach(function (part, k) {
-      var r = { i: k, total: aujourdhui.total, groupes: {}, plans: null };
-      r.termine = Math.round(aujourdhui.termine * part);
-      var glisse = aujourdhui.termine - r.termine;
-      r.encours = aujourdhui.encours + Math.round(glisse * 0.6);
-      r.afaire = aujourdhui.afaire + (glisse - Math.round(glisse * 0.6));
-      r.vide = aujourdhui.vide;
-      clesDim.forEach(function (d) {
-        r.groupes[d] = {};
-        Object.keys(aujourdhui.groupes[d]).forEach(function (v) {
-          var g = aujourdhui.groupes[d][v];
-          r.groupes[d][v] = { total: g.total, termine: Math.round(g.termine * part) };
+    for (var s = 0; s <= SEMAINES; s++) {
+      var carte = instantanes[s];
+      var etats = { termine: 0, encours: 0, afaire: 0, vide: 0 };
+      var groupes = {};
+      clesAvecDerivees.forEach(function (d) { groupes[d] = {}; });
+      Object.keys(carte).forEach(function (ref) {
+        var etat = classer(carte[ref]);
+        etats[etat]++;
+        var plan = plans.filter(function (p) { return p.reference === ref; })[0];
+        if (!plan) return;
+        clesAvecDerivees.forEach(function (d) {
+          var v = String(valeurDe(plan, d) || '—');
+          if (!groupes[d][v]) groupes[d][v] = { total: 0, termine: 0 };
+          groupes[d][v].total++;
+          if (etat === 'termine') groupes[d][v].termine++;
         });
       });
-      releves.push(r);
-    });
-
-    // Avant-dernier relevé : état plan par plan, pour que le comparatif
-    // du dernier import ait de quoi se calculer.
-    var precedent = releves[releves.length - 1];
-    precedent.plans = {};
-    var refs = plans.map(function (p) { return p.reference; });
-    plans.forEach(function (p) { precedent.plans[p.reference] = p.avancement; });
-    for (var k = 0; k < 14; k++) {                       // ont avancé depuis
-      precedent.plans[refs[(k * 13 + 5) % refs.length]] = tire(['20%', '40%', '60%', 'À faire']);
+      releves.push({
+        semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), s)),
+        total: Object.keys(carte).length,
+        termine: etats.termine, encours: etats.encours, afaire: etats.afaire, vide: etats.vide,
+        groupes: groupes,
+        plans: carte
+      });
     }
-    for (var k2 = 0; k2 < 3; k2++) {                     // ont reculé depuis
-      precedent.plans[refs[(k2 * 47 + 11) % refs.length]] = '100%';
-    }
-    for (var k3 = 0; k3 < 5; k3++) delete precedent.plans[refs[(k3 * 29 + 3) % refs.length]];  // nouveaux
-    precedent.plans['UD-24-0990'] = '50%';               // disparus depuis
-    precedent.plans['UD-31-0991'] = 'À faire';
-    releves.push(aujourdhui);
-
-    // Le jeu d'exemple part de la semaine 34 de 2026, un relevé par semaine.
-    releves.forEach(function (r) { r.semaine = etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 34), r.i)); });
 
     return {
       colonnes: colonnes,
-      cleDate: 'creation',
+      cleDate: 'date_creation',
+      cleDomaine: 'domaine',
+      clesDim: clesDim,
+      clesEssentielles: ['reference', 'installation', 'ecp', 'ata', 'sequence', 'vde',
+                         'date_creation', 'avancement'],
+      dimParDefaut: 'ata',
       plans: plans,
       releves: releves,
       jalons: [
-        { id: 'ex1', semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 34), 1)), texte: 'Revue de définition' },
-        { id: 'ex2', semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 34), 14)), texte: 'Livraison plateau' }
+        { id: 'ex1', semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 6)), texte: 'Revue de définition' },
+        { id: 'ex2', semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 18)), texte: 'Livraison plateau' }
       ],
       info: { feuille: 'Démonstration', message: '' }
     };
@@ -329,19 +367,6 @@
     return null;
   })();
 
-  var MOIS_COURT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
-                    'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-  /* Une date de création brute ferait autant de groupes que de jours : on
-     regroupe au mois, ce qui se lit et se compare. */
-  function moisDe(valeur) {
-    var m = /(\d{4})[-\/.](\d{1,2})/.exec(String(valeur || ''));
-    return m ? MOIS_COURT[Number(m[2]) - 1] + ' ' + m[1] : '\u2014';
-  }
-  function rangMois(nom) {
-    if (nom === '\u2014') return -1;
-    var bout = nom.split(' ');
-    return Number(bout[1]) * 12 + MOIS_COURT.indexOf(bout[0]);
-  }
   function valeurDim(p, cle) {
     if (cle === '_anciennete') return ancienneteDepuis(p[CLE_DATE], dateDe(AUJ));
     if (cle === '_mois') return moisDe(p[CLE_DATE]);
@@ -490,6 +515,7 @@
     essentielles: false,
     journal: '',
     journalOuverts: {},
+    groupesTout: false,
     exemple: false,
     fen: { debut: 0, span: 28 }
   };
@@ -1108,7 +1134,8 @@
       bulle.innerHTML = '<div class="tete-bulle">Relevé du ' + etiquette(i) + '</div>' +
         '<div class="bulle-ligne"><span class="pastille" style="background:var(--fait)"></span>terminés<span class="n">' + pt.termine + '</span></div>' +
         '<div class="bulle-ligne"><span class="pastille" style="background:var(--filet-fort)"></span>sur<span class="n">' + pt.total + '</span></div>' +
-        (gagne !== null ? '<div class="bulle-ligne" style="margin-top:5px;padding-top:5px;border-top:1px solid var(--filet)">depuis le précédent<span class="n">' + (gagne > 0 ? '+' : '') + gagne + '</span></div>' : '');
+        (gagne !== null ? '<div class="bulle-ligne" style="margin-top:5px;padding-top:5px;border-top:1px solid var(--filet)">depuis le précédent<span class="n">' + (gagne > 0 ? '+' : '') + gagne + '</span></div>' : '') +
+        finisCetteSemaine(i);
     } else {
       bulle.innerHTML = '<div class="tete-bulle">' + etiquette(i) + '</div><div class="bulle-ligne">' +
         (i > AUJ ? 'À venir · cliquez pour poser un jalon' : 'Pas de relevé cette semaine-là') + '</div>';
@@ -1117,6 +1144,28 @@
     bulle.style.left = Math.min(e.clientX + 14, window.innerWidth - bulle.offsetWidth - 12) + 'px';
     bulle.style.top = Math.min(e.clientY + 16, window.innerHeight - bulle.offsetHeight - 12) + 'px';
   });
+  /* Sous la courbe, les noms. « +6 cette semaine » ne dit pas lesquels : la
+     bulle donne les références passées en terminé, c'est ce qu'on vient
+     chercher en pointant une semaine. */
+  var MAX_BULLE = 8;
+  function finisCetteSemaine(i) {
+    var sem = JOURNAL.filter(function (s) { return s.i === i; })[0];
+    if (!sem) return '';
+    var finis = sem.evenements.filter(function (e) { return e.apres === 'termine'; });
+    if (!finis.length) return '';
+    var liste = finis.slice(0, MAX_BULLE).map(function (e) {
+      var plan = PLAN_PAR_REF[e.ref];
+      var quoi = plan && CLE_LIBELLE ? String(plan[CLE_LIBELLE] || '') : '';
+      return '<div class="bulle-ud"><span class="r">' + ech(e.ref) + '</span>' +
+        (quoi ? '<span class="q">' + ech(quoi) + '</span>' : '') + '</div>';
+    }).join('');
+    var reste = finis.length - MAX_BULLE;
+    return '<div class="bulle-finis"><div class="tete-bulle">' +
+      nb(finis.length) + ' pass\u00e9' + (finis.length > 1 ? 's' : '') + ' en termin\u00e9</div>' +
+      liste + (reste > 0 ? '<div class="bulle-reste">et ' + nb(reste) + ' autre' + (reste > 1 ? 's' : '') + '\u2026</div>' : '') +
+      '</div>';
+  }
+
   cadreGraphe.addEventListener('mouseleave', function () { $('bulle').dataset.visible = 'false'; });
 
   /* Clavier : deplacer ou supprimer un jalon sans souris */
@@ -1241,6 +1290,37 @@
     return h + '</div>';
   }
 
+  /* « Plus de 6 mois : 42 » ne dit pas lesquels. Choisir une ligne déplie donc
+     les références, les non terminées d'abord — ce sont celles sur lesquelles
+     il y a quelque chose à faire. */
+  var MAX_UD = 36;
+  function listeUD(r) {
+    var ordre = { afaire: 0, vide: 1, encours: 2, termine: 3 };
+    var plans = (r.plans || []).slice().sort(function (a, b) {
+      return (ordre[a._etat] - ordre[b._etat]) || a.reference.localeCompare(b.reference, 'fr', { numeric: true });
+    });
+    if (!plans.length) return '';
+    var restants = plans.filter(function (p) { return p._etat !== 'termine'; }).length;
+    var jetons = plans.slice(0, MAX_UD).map(function (p) {
+      var e = ETAT_PAR_CLE[p._etat];
+      var pastille = e.hachure
+        ? '<span class="pastille hachure"></span>'
+        : '<span class="pastille" style="background:' + e.couleur + '"></span>';
+      var quoi = CLE_LIBELLE ? String(p[CLE_LIBELLE] || '') : '';
+      return '<button class="jeton-ud" type="button" data-ud="' + ech(p.reference) +
+        '" title="' + ech(e.court + (quoi ? ' — ' + quoi : '')) + '">' +
+        pastille + ech(p.reference) + '</button>';
+    }).join('');
+    var reste = plans.length - MAX_UD;
+    return '<div class="groupe-refs"><div class="entete">' +
+      '<span>' + nb(plans.length) + ' plan' + (plans.length > 1 ? 's' : '') +
+      (restants ? ' · <b>' + nb(restants) + '</b> pas encore terminé' + (restants > 1 ? 's' : '') : ' · tout est soldé') +
+      '</span><span>cliquez une référence pour la retrouver dans le tableau</span></div>' +
+      '<div class="grille">' + jetons +
+      (reste > 0 ? '<span class="jeton-ud" style="cursor:default">et ' + nb(reste) + ' autres…</span>' : '') +
+      '</div></div>';
+  }
+
   function rendreCritique(liste) {
     var dim = vue.dimCritique;
     var prochain = jalons.filter(function (j) { return j.i > AUJ; })
@@ -1250,9 +1330,10 @@
     var groupes = {};
     liste.forEach(function (p) {
       var k = String(valeurDim(p, dim) || '\u2014');
-      if (!groupes[k]) groupes[k] = { nom: k, total: 0, termine: 0, encours: 0, afaire: 0, vide: 0 };
+      if (!groupes[k]) groupes[k] = { nom: k, total: 0, termine: 0, encours: 0, afaire: 0, vide: 0, plans: [] };
       groupes[k].total++;
       groupes[k][p._etat]++;
+      groupes[k].plans.push(p);
     });
 
     /* Rythme : il vient des relevés archivés, qui portent sur l'ensemble des
@@ -1271,7 +1352,7 @@
       var vitesse = rg ? rg.central : 0;
       return {
         rythme: rg,
-        nom: g.nom, total: g.total, restants: restants, vitesse: vitesse,
+        nom: g.nom, total: g.total, restants: restants, vitesse: vitesse, plans: g.plans,
         termine: g.termine, encours: g.encours, afaire: g.afaire, vide: g.vide,
         pct: g.total ? Math.round((g.termine / g.total) * 100) : 0,
         fin: restants === 0 ? AUJ : semaineFin(g.termine, g.total, vitesse),
@@ -1341,8 +1422,10 @@
         (titre ? ' title="' + ech(titre) + '"' : '') + '>' + ech(libelle) + fleche(cle) + '</button>';
     }
 
-    var aide = '<button type="button" class="aide" id="aide-fin" aria-expanded="' + (!!vue.aideFin) +
-      '" aria-controls="panneau-fin" title="Comment cette date est calculée">?</button>';
+    function aide(quoi) {
+      return '<button type="button" class="aide" data-aide="1" aria-expanded="' + (!!vue.aideFin) +
+        '" aria-controls="panneau-fin" title="Comment ' + ech(quoi) + ' se calcule">?</button>';
+    }
 
     var html = '<div class="critique-tete">' +
       entete('nom', TITRE_DIM[dim].replace(/ \(.*\)$/, ''), TITRE_DIM[dim]) + '</span>' +
@@ -1350,15 +1433,21 @@
       entete('pct', 'répartition FWD', 'Trier par part de plans terminés.', 'a-gauche') + '</span>' +
       (prochain
         ? entete('requis', 'à solder/sem.', 'Plans restants divisés par les ' + semainesJalon +
-            ' semaines avant le jalon, arrondi au plan supérieur.') + '</span>' +
-          entete('tension', 'effort demandé', 'Ce rythme requis comparé au rythme réellement tenu.') + '</span>'
-        : entete('tension', 'rythme actuel', 'Plans terminés par semaine depuis le premier relevé.') + '</span>') +
-      entete('fin', 'fin estimée', 'Date d’arrivée si le rythme actuel se maintient.') + aide + '</span>' +
+            ' semaines avant le jalon, arrondi au plan supérieur.') + aide('« à solder par semaine »') + '</span>' +
+          entete('tension', 'effort demandé', 'Ce rythme requis comparé au rythme réellement tenu.') + aide('l’effort demandé') + '</span>'
+        : entete('tension', 'rythme actuel', 'Plans terminés par semaine depuis le premier relevé.') + aide('le rythme actuel') + '</span>') +
+      entete('fin', 'fin estimée', 'Date d’arrivée si le rythme actuel se maintient.') + aide('la fin estimée') + '</span>' +
       '</div>';
 
     if (vue.aideFin) html += panneauAide(rangs, prochain, semainesJalon);
 
-    html += rangs.map(function (r) {
+    /* « Date création par mois » peut produire quatre-vingts lignes : on en
+       montre une quinzaine, le reste à la demande. */
+    var MAX_GROUPES = 15;
+    var montres = vue.groupesTout ? rangs.length : Math.min(rangs.length, MAX_GROUPES);
+    var cachesGroupes = rangs.length - montres;
+
+    html += rangs.slice(0, montres).map(function (r) {
       var actif = vue.groupe && vue.groupe.dim === dim && vue.groupe.val === r.nom;
 
       /* Le pourcentage s'ecrit dans le segment quand il y tient ; en dessous
@@ -1413,17 +1502,24 @@
 
       return '<button class="critique-ligne" type="button" data-groupe="' + ech(r.nom) + '" aria-pressed="' + !!actif +
         '" title="' + r.termine + ' terminés, ' + r.encours + ' en cours, ' + r.afaire + ' à faire, ' +
-        r.vide + ' non renseignés — cliquez pour filtrer le tableau et le graphique">' +
+        r.vide + ' non renseignés — cliquez pour voir lesquels">' +
         '<span class="critique-nom">' + ech(libelleGroupe(r.nom)) + '</span>' +
         '<span class="critique-total" data-libelle="plans">' + r.total + '</span>' +
         '<span class="critique-barre">' + barre + '</span>' +
-        col1 + col2 + col3 + '</button>';
+        col1 + col2 + col3 + '</button>' +
+        (actif ? listeUD(r) : '');
     }).join('');
+
+    if (cachesGroupes > 0) {
+      html += '<button class="journal-plus" type="button" id="plus-groupes">voir les ' +
+        nb(cachesGroupes) + ' autre' + (cachesGroupes > 1 ? 's' : '') + '</button>';
+    }
 
     $('zone-critique').className = prochain ? '' : 'sans-jalon';
     $('zone-critique').innerHTML = html;
     // « par groupe » ne parlait à personne : le titre nomme la dimension choisie.
     $('titre-groupe').textContent = 'Avancement FWD par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '');
+    $('indice-dim').textContent = NOTE_DIM(dim);
 
   }
 
@@ -1431,6 +1527,25 @@
      fixée à la main, c'est l'ordre demandé qui compte, pas celui de la feuille. */
   /* Le sélecteur est rangé par ordre alphabétique : on y cherche un nom, pas
      une position dans la feuille. */
+  /* Deux dimensions viennent de la même colonne de date et se confondent
+     facilement : on dit laquelle répond à quelle question. */
+  function NOTE_DIM(dim) {
+    var titreDate = CLE_DATE && PAR_CLE[CLE_DATE] ? PAR_CLE[CLE_DATE].titre.toLowerCase() : 'date de création';
+    if (dim === '_anciennete') {
+      return 'Depuis combien de temps le plan existe, en quatre tranches calculées sur « ' + titreDate +
+        ' ». Répond à « qu\u2019est-ce qui traîne depuis longtemps ? ».';
+    }
+    if (dim === '_mois') {
+      return 'Le mois où le plan a été créé, un groupe par mois, rangés dans l\u2019ordre du temps. ' +
+        'Répond à « de quelle vague vient ce lot ? » \u2014 l\u2019ancienneté, elle, regroupe en tranches.';
+    }
+    if (dim === 'avancement') {
+      return 'La valeur brute de la colonne d\u2019avancement, telle qu\u2019elle est saisie : ' +
+        'd\u2019un coup d\u2019\u0153il, toutes les façons de l\u2019écrire, donc les saisies qui divergent.';
+    }
+    return '';
+  }
+
   var DIMENSIONS = CLES_DIM
     .filter(function (c) { return c !== '_anciennete' && c !== '_mois' && PAR_CLE[c]; })
     .map(function (c) { return PAR_CLE[c]; })
@@ -1629,13 +1744,13 @@
     return f;
   })();
 
-  function etiqEtat(cle) {
+  function etiqEtat(cle, role) {
     var e = ETAT_PAR_CLE[cle];
     if (!e) return '';
     var pastille = e.hachure
       ? '<span class="pastille hachure"></span>'
       : '<span class="pastille" style="background:' + e.couleur + '"></span>';
-    return '<span class="etiq-etat">' + pastille + ech(e.court) + '</span>';
+    return '<span class="etiq-etat ' + (role || '') + '">' + pastille + ech(e.court) + '</span>';
   }
 
   var MAX_JOURNAL = 12;                // lignes affichées avant « voir tout »
@@ -1660,19 +1775,25 @@
         else if (e.type === 'disparu') parType.disparu++;
         else parType[e.apres]++;
       });
-      /* « passés en en cours » ne se dit pas : chaque état a sa tournure. */
+      /* « passés en en cours » ne se dit pas : chaque état a sa tournure.
+         Et chaque compte est un bouton : cliquer « 4 terminés » n'affiche plus
+         que ceux-là, pour toutes les semaines à la fois. */
       var resume = [];
       ETATS.forEach(function (et) {
         var n = parType[et.cle];
         if (!n) return;
         var pluriel = n > 1 ? 's' : '';
-        if (et.cle === 'termine')      resume.push(nb(n) + ' terminé' + pluriel);
-        else if (et.cle === 'encours') resume.push(nb(n) + ' passé' + pluriel + ' en cours');
-        else if (et.cle === 'afaire')  resume.push(nb(n) + ' repassé' + pluriel + ' à faire');
-        else                           resume.push(nb(n) + ' effacé' + pluriel);
+        var mot;
+        if (et.cle === 'termine')      mot = nb(n) + ' terminé' + pluriel;
+        else if (et.cle === 'encours') mot = nb(n) + ' passé' + pluriel + ' en cours';
+        else if (et.cle === 'afaire')  mot = nb(n) + ' repassé' + pluriel + ' à faire';
+        else                           mot = nb(n) + ' effacé' + pluriel;
+        resume.push('<button class="compte-passage" type="button" data-passage="' + et.cle +
+          '" aria-pressed="' + (vue.journal === et.cle) + '" title="N\u2019afficher que ces passages, sur toutes les semaines">' +
+          ech(mot) + '</button>');
       });
-      if (parType.nouveau) resume.push(nb(parType.nouveau) + ' nouveau' + (parType.nouveau > 1 ? 'x' : ''));
-      if (parType.disparu) resume.push(nb(parType.disparu) + ' disparu' + (parType.disparu > 1 ? 's' : ''));
+      if (parType.nouveau) resume.push('<span>' + nb(parType.nouveau) + ' nouveau' + (parType.nouveau > 1 ? 'x' : '') + '</span>');
+      if (parType.disparu) resume.push('<span>' + nb(parType.disparu) + ' disparu' + (parType.disparu > 1 ? 's' : '') + '</span>');
 
       // La semaine la plus récente s'ouvre d'elle-même : c'est celle qu'on vient voir.
       var ouvert = vue.journalOuverts[sem.i] !== undefined ? vue.journalOuverts[sem.i] : (rang === 0);
@@ -1682,10 +1803,13 @@
         var plan = PLAN_PAR_REF[e.ref];
         var quoi = plan && CLE_LIBELLE ? String(plan[CLE_LIBELLE] || '') : '';
         var vers = e.type === 'nouveau'
-          ? '<span class="vers">nouveau ' + etiqEtat(e.apres) + '</span>'
+          ? '<span class="vers"><span class="etiq-etat avant">nouveau</span>' +
+            '<span class="fleche-etat">\u2192</span>' + etiqEtat(e.apres, 'apres') + '</span>'
           : e.type === 'disparu'
-            ? '<span class="vers">' + etiqEtat(e.avant) + ' <span class="fleche-etat">→</span> retiré</span>'
-            : '<span class="vers">' + etiqEtat(e.avant) + '<span class="fleche-etat">→</span>' + etiqEtat(e.apres) + '</span>';
+            ? '<span class="vers">' + etiqEtat(e.avant, 'avant') +
+              '<span class="fleche-etat">\u2192</span><span class="etiq-etat apres">retiré</span></span>'
+            : '<span class="vers">' + etiqEtat(e.avant, 'avant') +
+              '<span class="fleche-etat">\u2192</span>' + etiqEtat(e.apres, 'apres') + '</span>';
         return '<li><button class="journal-ligne" type="button" data-ref="' + ech(e.ref) +
           '" title="N’afficher que ce plan dans le tableau">' +
           '<span class="ref">' + ech(e.ref) + '</span>' +
@@ -1699,11 +1823,13 @@
       }
 
       return '<div class="journal-semaine">' +
-        '<button class="journal-tete" type="button" data-semaine="' + sem.i + '" aria-expanded="' + ouvert + '">' +
+        '<span class="journal-tete">' +
+        '<button class="journal-plier" type="button" data-semaine="' + sem.i + '" aria-expanded="' + ouvert +
+        '" aria-label="Plier ou d\u00e9plier la semaine ' + etiquette(sem.i) + '">' +
         '<svg class="chevron" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
         '<path d="m3.5 1.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
-        '<span class="sem">' + etiquette(sem.i) + '</span>' +
-        '<span class="resume">' + ech(resume.join(' · ')) + '</span></button>' +
+        '<span class="sem">' + etiquette(sem.i) + '</span></button>' +
+        '<span class="resume">' + resume.join(' <span class="sep">·</span> ') + '</span></span>' +
         (ouvert ? '<ul class="journal-liste">' + lignes + '</ul>' : '') +
         '</div>';
     }).join('');
@@ -1825,20 +1951,95 @@
      Le bouton bascule de l'un à l'autre sans rien perdre : la disposition
      d'avant est remise telle quelle au retour.
      ============================================================ */
-  var cacheesAvantEssentielles = null;
+  var avantEssentielles = null;
   function appliquerEssentielles() {
     if (vue.essentielles) {
-      if (cacheesAvantEssentielles === null) {
-        cacheesAvantEssentielles = JSON.parse(JSON.stringify(vue.cachees));
+      if (avantEssentielles === null) {
+        avantEssentielles = {
+          cachees: JSON.parse(JSON.stringify(vue.cachees)),
+          ordre: vue.ordre.slice()
+        };
       }
       var garder = {};
       CLES_ESSENTIELLES.forEach(function (c) { garder[c] = true; });
       vue.cachees = {};
       COLONNES.forEach(function (c) { if (!garder[c.cle] && !c.fige) vue.cachees[c.cle] = true; });
-    } else if (cacheesAvantEssentielles !== null) {
-      vue.cachees = cacheesAvantEssentielles;
-      cacheesAvantEssentielles = null;
+      /* La vue essentielle range aussi : l'ordre voulu est celui de la liste,
+         pas celui de la feuille. Les colonnes masquées gardent le leur, pour
+         que le retour ne dérange rien. */
+      vue.ordre = CLES_ESSENTIELLES.slice()
+        .concat(vue.ordre.filter(function (c) { return CLES_ESSENTIELLES.indexOf(c) === -1; }));
+    } else if (avantEssentielles !== null) {
+      vue.cachees = avantEssentielles.cachees;
+      vue.ordre = avantEssentielles.ordre;
+      avantEssentielles = null;
     }
+  }
+
+  /* ============================================================
+     FILTRES ACTIFS
+     On clique un état, un groupe, un domaine, une ligne du journal… et plus
+     personne ne sait ce qui reste posé. Le bandeau nomme chaque filtre et
+     donne sa croix ; il colle en haut de la page, donc la sortie est toujours
+     à portée.
+     ============================================================ */
+  function filtresPoses() {
+    var liste = [];
+    if (vue.etat) liste.push({ cle: 'etat', mot: 'État', valeur: ETAT_PAR_CLE[vue.etat].libelle });
+    if (vue.domaine) liste.push({ cle: 'domaine', mot: PAR_CLE[CLE_DOMAINE].titre, valeur: vue.domaine });
+    if (vue.reconduits) liste.push({ cle: 'reconduits', mot: '', valeur: 'Terminés reconduits' });
+    if (vue.groupe) {
+      liste.push({
+        cle: 'groupe',
+        mot: TITRE_DIM[vue.groupe.dim] || 'Groupe',
+        valeur: libelleGroupe(vue.groupe.val)
+      });
+    }
+    if (vue.refs) {
+      var n = Object.keys(vue.refs).length;
+      liste.push({ cle: 'refs', mot: 'Sélection', valeur: vue.refsLibelle || (n + ' plans') });
+    }
+    Object.keys(vue.vides).forEach(function (k) {
+      if (vue.vides[k]) liste.push({ cle: 'vide:' + k, mot: PAR_CLE[k].titre, valeur: 'non renseigné' });
+    });
+    Object.keys(vue.filtres).forEach(function (k) {
+      if (vue.filtres[k]) liste.push({ cle: 'filtre:' + k, mot: PAR_CLE[k].titre, valeur: vue.filtres[k] });
+    });
+    if (vue.recherche) liste.push({ cle: 'recherche', mot: 'Recherche', valeur: vue.recherche });
+    return liste;
+  }
+
+  function retirerFiltre(cle) {
+    if (cle === 'etat') vue.etat = '';
+    else if (cle === 'domaine') vue.domaine = '';
+    else if (cle === 'reconduits') vue.reconduits = false;
+    else if (cle === 'groupe') vue.groupe = null;
+    else if (cle === 'refs') { vue.refs = null; vue.refsLibelle = ''; }
+    else if (cle === 'recherche') { vue.recherche = ''; $('recherche').value = ''; }
+    else if (cle.indexOf('vide:') === 0) delete vue.vides[cle.slice(5)];
+    else if (cle.indexOf('filtre:') === 0) delete vue.filtres[cle.slice(7)];
+  }
+
+  function toutEffacer() {
+    vue.recherche = ''; vue.etat = ''; vue.filtres = {}; vue.groupe = null; vue.vides = {};
+    vue.refs = null; vue.refsLibelle = '';
+    vue.domaine = ''; vue.reconduits = false;
+    $('recherche').value = '';
+  }
+
+  function rendreFiltresActifs() {
+    var zone = $('filtres-actifs');
+    var poses = filtresPoses();
+    zone.hidden = !poses.length;
+    if (!poses.length) { zone.innerHTML = ''; return; }
+    zone.innerHTML = '<span class="mot">Filtres</span>' +
+      poses.map(function (f) {
+        return '<span class="jeton">' + (f.mot ? ech(f.mot) + ' : ' : '') +
+          '<b>' + ech(f.valeur) + '</b>' +
+          '<button class="x" type="button" data-retirer="' + ech(f.cle) +
+          '" aria-label="Retirer ce filtre" title="Retirer ce filtre">×</button></span>';
+      }).join('') +
+      '<button class="tout-effacer" type="button" id="tout-effacer">Tout effacer</button>';
   }
 
   function rendreIncomplets() {
@@ -1871,6 +2072,7 @@
     rendreComparatif();
     rendreIncomplets();
     rendreRapides();
+    rendreFiltresActifs();
     $('reinit').hidden = !filtreActif();
     planifierSauvegarde();
   }
@@ -1949,11 +2151,28 @@
       if (repris) repris.focus();
       return;
     }
-    if (e.target.closest('#aide-fin')) {
+    var boutonAide = e.target.closest('button[data-aide]');
+    if (boutonAide) {
       vue.aideFin = !vue.aideFin;
       rendreCritique(selection());
-      var bouton = $('aide-fin');
-      if (bouton) bouton.focus();
+      var repris = document.querySelector('button[data-aide]');
+      if (repris) repris.focus();
+      return;
+    }
+    if (e.target.closest('#plus-groupes')) {
+      vue.groupesTout = true;
+      rendreCritique(selection());
+      return;
+    }
+    var ud = e.target.closest('button[data-ud]');
+    if (ud) {
+      /* Une référence choisie dans la liste : le tableau se réduit à elle et
+         on y descend, plutôt que de la chercher à la main. */
+      vue.refs = {}; vue.refs[ud.dataset.ud] = true;
+      vue.refsLibelle = 'plan ' + ud.dataset.ud;
+      rendre();
+      var cadre = $('cadre-tableau');
+      if (cadre) cadre.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     var b = e.target.closest('.critique-ligne');
@@ -1967,6 +2186,16 @@
     var tout = e.target.closest('button[data-tout]');
     if (tout) {
       vue.journalOuverts['tout' + tout.dataset.tout] = true;
+      rendreJournal();
+      return;
+    }
+    var passage = e.target.closest('button[data-passage]');
+    if (passage) {
+      var cible = passage.dataset.passage;
+      vue.journal = (vue.journal === cible) ? '' : cible;
+      document.querySelectorAll('#filtre-journal button').forEach(function (x) {
+        x.setAttribute('aria-pressed', String(x.dataset.journal === vue.journal));
+      });
       rendreJournal();
       return;
     }
@@ -2004,6 +2233,12 @@
       x.setAttribute('aria-pressed', String(x === b));
     });
     rendreJournal();
+  });
+
+  $('filtres-actifs').addEventListener('click', function (e) {
+    if (e.target.closest('#tout-effacer')) { toutEffacer(); rendre(); return; }
+    var x = e.target.closest('button[data-retirer]');
+    if (x) { retirerFiltre(x.dataset.retirer); rendre(); }
   });
 
   $('rapides').addEventListener('click', function (e) {
@@ -2121,13 +2356,7 @@
     tete.querySelectorAll('.glisse, .cible').forEach(function (el) { el.classList.remove('glisse', 'cible'); });
   });
 
-  $('reinit').addEventListener('click', function () {
-    vue.recherche = ''; vue.etat = ''; vue.filtres = {}; vue.groupe = null; vue.vides = {};
-    vue.refs = null; vue.refsLibelle = '';
-    vue.domaine = ''; vue.reconduits = false;
-    $('recherche').value = '';
-    rendre();
-  });
+  $('reinit').addEventListener('click', function () { toutEffacer(); rendre(); });
   $('defile').addEventListener('scroll', majOmbre, { passive: true });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') fermerSaisie();

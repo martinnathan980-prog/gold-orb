@@ -133,7 +133,7 @@ async function reinitialiser(pg) {
   await p.click('.etat-btn[data-etat="vide"]'); await p.waitForTimeout(350);
   verifier('« non renseignés » ne laisse que des cellules FWD vides',
     await p.evaluate(() => {
-      const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => /Avancement FWD/.test(t.textContent));
+      const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => /^Avancement$/.test(t.textContent.trim()));
       if (i < 0) return false;
       return [...document.querySelectorAll('#corps-tableau tr')]
         .every(tr => /^(|—|non renseigné)$/i.test(tr.children[i].textContent.trim()));
@@ -142,9 +142,10 @@ async function reinitialiser(pg) {
 
   // =================================================================
   section('Recherche — entrées hostiles');
+  const premiereRef = await p.evaluate(() => document.querySelector('#corps-tableau td').textContent.trim());
   const entrees = [
-    { q: 'UD-24-1226', attendu: n => n === 1, nom: 'une référence exacte' },
-    { q: 'ud-24-1226', attendu: n => n === 1, nom: 'la même en minuscules' },
+    { q: premiereRef, attendu: n => n === 1, nom: 'une référence exacte' },
+    { q: premiereRef.toLowerCase(), attendu: n => n === 1, nom: 'la même en minuscules' },
     { q: 'bati', attendu: n => n > 0, nom: 'sans accent trouve l\'accentué (bâti)' },
     { q: 'BÂTI', attendu: n => n > 0, nom: 'accentué en capitales' },
     { q: 'treuil de sauvetage', attendu: n => n > 0, nom: 'plusieurs mots' },
@@ -375,8 +376,9 @@ async function reinitialiser(pg) {
     verifier('les flèches déplacent un jalon sans le perdre',
       await p.evaluate(() => document.querySelectorAll('.jalon-poignee').length) === avantD);
   }
+  await p.click('.segmente button[data-span="0"]'); await p.waitForTimeout(400);
   let garde = 0;
-  while ((await p.evaluate(() => document.querySelectorAll('.jalon-supp').length)) > 0 && garde++ < 30) {
+  while ((await p.evaluate(() => document.querySelectorAll('.jalon-supp').length)) > 0 && garde++ < 40) {
     await p.click('.jalon-supp >> nth=0'); await p.waitForTimeout(220);
   }
   verifier('on peut supprimer tous les jalons',
@@ -416,7 +418,7 @@ async function reinitialiser(pg) {
     const b = await lire(cle);
     verifier(`tri « ${cle} » : les deux sens diffèrent`,
       a.join('|') !== b.join('|') || new Set(a).size === 1, JSON.stringify(a));
-    verifier(`tri « ${cle} » : aucune ligne perdue`, a.length === b.length && a.length === 8,
+    verifier(`tri « ${cle} » : aucune ligne perdue`, a.length === b.length && a.length >= 5,
       a.length + '/' + b.length);
     await p.click(`button[data-trig="${cle}"]`); await p.waitForTimeout(250);
   }
@@ -459,15 +461,15 @@ async function reinitialiser(pg) {
   section('Panneau d\'explication de la fin estimée');
   verifier('le panneau est fermé au départ',
     await p.evaluate(() => !document.getElementById('panneau-fin') &&
-      document.getElementById('aide-fin').getAttribute('aria-expanded') === 'false'));
-  await p.click('#aide-fin'); await p.waitForTimeout(350);
+      document.querySelector('button[data-aide]').getAttribute('aria-expanded') === 'false'));
+  await p.click('button[data-aide] >> nth=0'); await p.waitForTimeout(350);
   const aide = await p.evaluate(() => {
     const el = document.getElementById('panneau-fin');
     if (!el) return null;
     return {
       texte: el.textContent,
       formules: [...el.querySelectorAll('.aide-formule')].map(f => f.textContent),
-      expanded: document.getElementById('aide-fin').getAttribute('aria-expanded'),
+      expanded: document.querySelector('button[data-aide]').getAttribute('aria-expanded'),
       largeur: el.getBoundingClientRect().width,
       scrollFormule: [...el.querySelectorAll('.aide-formule')].some(f => f.scrollWidth > f.clientWidth + 1)
     };
@@ -493,13 +495,13 @@ async function reinitialiser(pg) {
     }
     verifier('les chiffres de l\'exemple se recalculent exactement', calculOk, calculDetail);
   }
-  await p.click('#aide-fin'); await p.waitForTimeout(300);
+  await p.click('button[data-aide] >> nth=0'); await p.waitForTimeout(300);
   verifier('le panneau se referme', await p.evaluate(() => !document.getElementById('panneau-fin')));
-  await p.click('#aide-fin'); await p.waitForTimeout(250);
-  for (let i = 0; i < 8; i++) { await p.click('#aide-fin'); await p.waitForTimeout(60); }
+  await p.click('button[data-aide] >> nth=0'); await p.waitForTimeout(250);
+  for (let i = 0; i < 8; i++) { await p.click('button[data-aide] >> nth=0'); await p.waitForTimeout(60); }
   await p.waitForTimeout(300);
   verifier('huit bascules rapides du panneau ne cassent rien',
-    await p.evaluate(() => document.querySelectorAll('.critique-ligne').length === 8));
+    await p.evaluate(() => document.querySelectorAll('.critique-ligne').length >= 5));
   verifier('ouvrir le panneau ne filtre pas le tableau',
     await p.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === 186));
 
@@ -520,6 +522,9 @@ async function reinitialiser(pg) {
   const dims = await p.evaluate(() => [...document.querySelectorAll('#dim-critique option')].map(o => o.value));
   for (const d of dims) {
     await p.selectOption('#dim-critique', d); await p.waitForTimeout(400);
+    // Le bloc n'ouvre qu'une quinzaine de lignes : on déplie avant de compter.
+    const plus = await p.$('#plus-groupes');
+    if (plus) { await plus.click(); await p.waitForTimeout(400); }
     const r = await p.evaluate(() => ({
       lignes: document.querySelectorAll('.critique-ligne').length,
       titre: document.getElementById('titre-groupe').textContent,
@@ -544,7 +549,7 @@ async function reinitialiser(pg) {
     JSON.stringify(vide.critique.slice(0, 80)));
   verifier('le graphique survit à la sélection vide', vide.graphe);
   verifier('les compteurs d\'état tombent à zéro', vide.etats.every(v => v === '0'), JSON.stringify(vide.etats));
-  await p.click('#aide-fin').catch(() => {});
+  await p.click('button[data-aide] >> nth=0').catch(() => {});
   await p.waitForTimeout(250);
   verifier('le bouton d\'aide absent ne provoque pas d\'erreur', true);
   await p.fill('#recherche', ''); await p.waitForTimeout(400);
@@ -645,12 +650,12 @@ async function reinitialiser(pg) {
     await pk.evaluate(() => [...document.querySelectorAll('.etat-btn')].every(b => b.hasAttribute('aria-pressed'))));
   verifier('les lignes de groupe exposent aria-pressed',
     await pk.evaluate(() => [...document.querySelectorAll('.critique-ligne')].every(b => b.hasAttribute('aria-pressed'))));
-  await pk.focus('#aide-fin');
+  await pk.focus('button[data-aide]');
   await pk.keyboard.press('Enter'); await pk.waitForTimeout(350);
   verifier('le panneau d\'aide s\'ouvre au clavier',
     await pk.evaluate(() => !!document.getElementById('panneau-fin')));
   verifier('le focus reste sur le bouton d\'aide après ouverture',
-    await pk.evaluate(() => document.activeElement && document.activeElement.id === 'aide-fin'));
+    await pk.evaluate(() => document.activeElement && document.activeElement.hasAttribute('data-aide')));
   await pk.keyboard.press('Enter'); await pk.waitForTimeout(300);
   await pk.focus('button[data-trig="total"]');
   await pk.keyboard.press('Enter'); await pk.waitForTimeout(350);

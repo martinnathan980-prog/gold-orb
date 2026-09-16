@@ -124,7 +124,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const titresDim = mGates.clesDim.map(c => mGates.colonnes.find(x => x.cle === c).titre);
   verifier('les colonnes d\'analyse sont celles demandées, dans l\'ordre',
     JSON.stringify(titresDim) === JSON.stringify(['ATA', 'Avancement', 'CC',
-      'Chapitre', 'ECP', 'Validation Définition Electrique']), JSON.stringify(titresDim));
+      'Chapitre', 'ECP']), JSON.stringify(titresDim));
   verifier('l\'ATA est ouvert par défaut', mGates.dimParDefaut === 'ata', mGates.dimParDefaut);
   verifier('l\'« Avancement » retenu est celui du groupe FWD',
     mGates.colonnes.find(c => c.cle === mGates.clesDim[1]).groupe === 'Réalisation FWD');
@@ -510,13 +510,17 @@ function serveurSur(valeurs, proprietes, fichiers) {
         .every(tr => /^(|—|non renseigné|-)$/i.test(tr.children[i].textContent.trim()));
     }));
   await p.click('.etat-btn[data-etat="vide"]'); await p.waitForTimeout(300);
-  await p.click('#aide-fin').catch(() => {}); await p.waitForTimeout(400);
+  await p.click('button[data-aide] >> nth=0').catch(() => {}); await p.waitForTimeout(400);
   verifier('le panneau d\'explication s\'ouvre sur des chiffres réels',
     await p.evaluate(() => {
       const el = document.getElementById('panneau-fin');
       return !!el && /Exemple/.test(el.textContent);
     }));
+  await p.evaluate(() => { const b = document.getElementById('tout-effacer'); if (b) b.click(); });
+  await p.waitForTimeout(400);
   await p.selectOption('#dim-critique', vu.dims[vu.dims.length - 1]); await p.waitForTimeout(500);
+  const plusDim = await p.$('#plus-groupes');
+  if (plusDim) { await plusDim.click(); await p.waitForTimeout(400); }
   verifier('changer de dimension recalcule le bloc sans rien perdre',
     await p.evaluate(() => [...document.querySelectorAll('.critique-total')]
       .reduce((s, t) => s + (+t.textContent), 0) === 186));
@@ -575,7 +579,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const jrn = await pg.evaluate(() => ({
     semaines: [...document.querySelectorAll('.journal-tete .sem')].map(e => e.textContent.trim()),
     resumes: [...document.querySelectorAll('.journal-tete .resume')].map(e => e.textContent.trim()),
-    ouvertes: [...document.querySelectorAll('.journal-tete')].map(e => e.getAttribute('aria-expanded')),
+    ouvertes: [...document.querySelectorAll('.journal-plier')].map(e => e.getAttribute('aria-expanded')),
     lignes: document.querySelectorAll('.journal-ligne').length,
     premiere: (document.querySelector('.journal-ligne') || {}).textContent
   }));
@@ -596,10 +600,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
     !/Terminés\s*$/.test(jrn.premiere || '') , jrn.premiere);
 
   // Replier / déplier
-  await pg.click('.journal-tete >> nth=0'); await pg.waitForTimeout(350);
+  await pg.click('.journal-plier >> nth=0'); await pg.waitForTimeout(350);
   verifier('replier une semaine cache sa liste',
     await pg.evaluate(() => document.querySelectorAll('.journal-liste').length === 0));
-  await pg.click('.journal-tete >> nth=1'); await pg.waitForTimeout(350);
+  await pg.click('.journal-plier >> nth=1'); await pg.waitForTimeout(350);
   verifier('déplier une autre semaine montre la sienne',
     await pg.evaluate(() => document.querySelectorAll('.journal-liste').length === 1));
 
@@ -614,7 +618,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pg.click('#filtre-journal button[data-journal=""]'); await pg.waitForTimeout(400);
 
   // Cliquer un plan filtre le tableau sur lui
-  await pg.click('.journal-tete >> nth=0'); await pg.waitForTimeout(300);
+  await pg.click('.journal-plier >> nth=0'); await pg.waitForTimeout(300);
   const refCliquee = await pg.evaluate(() => document.querySelector('.journal-ligne').dataset.ref);
   await pg.click('.journal-ligne >> nth=0'); await pg.waitForTimeout(600);
   verifier('cliquer un plan du journal réduit le tableau à ce plan',
@@ -682,9 +686,12 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('la référence ouvre le tableau et l\'avancement y est',
     ess.titres[0] === 'Référence UD' && ess.titres.indexOf('Avancement') !== -1,
     JSON.stringify(ess.titres));
-  verifier('les colonnes d\'analyse y sont toutes',
-    ['ATA', 'CC', 'Chapitre', 'ECP', 'Validation Définition Electrique', 'Date création']
-      .every(t => ess.titres.indexOf(t) !== -1), JSON.stringify(ess.titres));
+  verifier('la vue essentielle est exactement celle demandée',
+    JSON.stringify(ess.titres) === JSON.stringify(['Référence UD', 'Nom Installation', 'ECP',
+      'ATA', 'Séquence', 'Validation Définition Electrique', 'Date création', 'Avancement']),
+    JSON.stringify(ess.titres));
+  verifier('ni Statut iBG ni les blocs répétés n\'y entrent',
+    ess.titres.indexOf('Statut iBG') === -1 && ess.titres.indexOf('Validité') === -1);
   verifier('aucun plan n\'est perdu au passage', ess.lignes === 186, String(ess.lignes));
   verifier('le bouton dit qu\'il est enfoncé', ess.presse === 'true');
   await pg.click('#bascule-essentielles'); await pg.waitForTimeout(600);
@@ -705,6 +712,138 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pg.click('#bascule-colonnes'); await pg.waitForTimeout(250);
   await pg.click('#tout-colonnes'); await pg.waitForTimeout(400);
   await pg.click('body', { position: { x: 5, y: 5 } }); await pg.waitForTimeout(250);
+
+  // =================================================================
+  section('Bandeau des filtres actifs');
+  await pg.evaluate(() => { const b = document.getElementById('tout-effacer'); if (b) b.click(); });
+  await pg.waitForTimeout(400);
+  verifier('aucun bandeau tant que rien n\'est filtré',
+    await pg.evaluate(() => document.getElementById('filtres-actifs').hidden));
+
+  await pg.click('.etat-btn[data-etat="encours"]'); await pg.waitForTimeout(350);
+  await pg.click('.puce-rapide[data-domaine="PERSO"]'); await pg.waitForTimeout(350);
+  await pg.fill('#recherche', 'UD-24'); await pg.waitForTimeout(400);
+  const jetons = await pg.evaluate(() => [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()));
+  verifier('chaque filtre posé devient un jeton nommé', jetons.length === 3, JSON.stringify(jetons));
+  verifier('le jeton dit quelle colonne et quelle valeur',
+    jetons.some(t => /État : En cours/.test(t)) && jetons.some(t => /Domaine : PERSO/.test(t)) &&
+    jetons.some(t => /Recherche : UD-24/.test(t)), JSON.stringify(jetons));
+  verifier('le bandeau reste visible en haut de page',
+    await pg.evaluate(() => getComputedStyle(document.getElementById('filtres-actifs')).position === 'sticky'));
+
+  const avantCroix = await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length);
+  await pg.click('.jeton .x >> nth=0'); await pg.waitForTimeout(450);
+  verifier('la croix d\'un jeton ne retire que ce filtre',
+    await pg.evaluate(() => document.querySelectorAll('.jeton').length) === 2 &&
+    (await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length)) >= avantCroix);
+  await pg.click('#tout-effacer'); await pg.waitForTimeout(450);
+  verifier('« Tout effacer » rend les 186 plans et cache le bandeau',
+    await pg.evaluate(() => document.getElementById('filtres-actifs').hidden &&
+      document.querySelectorAll('#corps-tableau tr').length === 186 &&
+      document.getElementById('recherche').value === ''));
+
+  // Un filtre venu d'un groupe doit aussi apparaître, avec son libellé lisible.
+  await pg.click('.critique-ligne >> nth=0'); await pg.waitForTimeout(500);
+  verifier('choisir un groupe pose un jeton nommé',
+    await pg.evaluate(() => {
+      const j = [...document.querySelectorAll('.jeton')].map(x => x.textContent);
+      return j.length === 1 && /ATA/.test(j[0]);
+    }));
+  await pg.click('#tout-effacer'); await pg.waitForTimeout(450);
+
+  // =================================================================
+  section('Liste des UD sous un groupe');
+  const grosGroupe = await pg.evaluate(() => {
+    const l = [...document.querySelectorAll('.critique-ligne')];
+    l.sort((a, b) => +b.querySelector('.critique-total').textContent - +a.querySelector('.critique-total').textContent);
+    return l[0].dataset.groupe;
+  });
+  await pg.click(`.critique-ligne[data-groupe="${grosGroupe}"]`); await pg.waitForTimeout(600);
+  const ud = await pg.evaluate(() => ({
+    jetons: [...document.querySelectorAll('.jeton-ud[data-ud]')].map(b => b.textContent.trim()),
+    entete: (document.querySelector('.groupe-refs .entete') || {}).textContent || '',
+    etats: [...document.querySelectorAll('.jeton-ud[data-ud] .pastille')].map(e => e.className),
+    tableau: document.querySelectorAll('#corps-tableau tr').length
+  }));
+  verifier('choisir un groupe déplie ses références', ud.jetons.length > 0, String(ud.jetons.length));
+  verifier('toutes sont des références de plan', ud.jetons.every(t => /^UD-/.test(t)), JSON.stringify(ud.jetons.slice(0, 3)));
+  verifier('l\'en-tête dit combien et combien restent',
+    /\d+ plans?/.test(ud.entete) && /(pas encore terminés?|tout est soldé)/.test(ud.entete), ud.entete.trim());
+  verifier('le tableau du bas montre exactement le même groupe',
+    ud.tableau === Math.min(ud.jetons.length, ud.tableau) && ud.tableau > 0);
+  verifier('les non terminés sont en tête de liste',
+    await pg.evaluate(() => {
+      const ordre = ['afaire', 'vide', 'encours', 'termine'];
+      const rang = [...document.querySelectorAll('.jeton-ud[data-ud]')].map(b => {
+        const t = b.getAttribute('title') || '';
+        if (/À faire/.test(t)) return 0;
+        if (/Non renseigné/.test(t)) return 1;
+        if (/En cours/.test(t)) return 2;
+        return 3;
+      });
+      return rang.every((v, i) => i === 0 || rang[i - 1] <= v);
+    }));
+  const refUD = await pg.evaluate(() => document.querySelector('.jeton-ud[data-ud]').dataset.ud);
+  await pg.click('.jeton-ud[data-ud] >> nth=0'); await pg.waitForTimeout(700);
+  verifier('cliquer une référence réduit le tableau à ce plan',
+    await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === 1);
+  verifier('et c\'est la bonne',
+    await pg.evaluate(r => document.querySelector('#corps-tableau td').textContent.trim() === r, refUD));
+  await pg.click('#tout-effacer'); await pg.waitForTimeout(450);
+
+  // =================================================================
+  section('Repères du bloc par groupe');
+  /* Sans jalon, le bloc n'a que deux colonnes calculées ; avec un jalon, trois.
+     Chacune porte son « ? ». */
+  const nbAides = await pg.evaluate(() => document.querySelectorAll('button[data-aide]').length);
+  const avecJalon = await pg.evaluate(() => !document.getElementById('zone-critique').classList.contains('sans-jalon'));
+  verifier('chaque colonne calculée porte son « ? »',
+    nbAides === (avecJalon ? 3 : 2), nbAides + ' pour ' + (avecJalon ? 'trois' : 'deux') + ' colonnes');
+  await pg.selectOption('#dim-critique', '_anciennete'); await pg.waitForTimeout(500);
+  const noteA = await pg.textContent('#indice-dim');
+  await pg.selectOption('#dim-critique', '_mois'); await pg.waitForTimeout(500);
+  const noteM = await pg.textContent('#indice-dim');
+  verifier('l\'ancienneté est expliquée', /tranches/.test(noteA), noteA);
+  verifier('le mois de création aussi, et la différence est dite',
+    /mois/.test(noteM) && /ancienneté/i.test(noteM), noteM);
+  verifier('les deux notes ne disent pas la même chose', noteA !== noteM);
+  const bcp = await pg.evaluate(() => ({
+    lignes: document.querySelectorAll('.critique-ligne').length,
+    plus: !!document.getElementById('plus-groupes')
+  }));
+  verifier('une dimension à beaucoup de groupes n\'en ouvre qu\'une quinzaine',
+    bcp.lignes <= 15, String(bcp.lignes));
+  verifier('et propose de voir les autres', bcp.plus);
+  await pg.click('#plus-groupes'); await pg.waitForTimeout(500);
+  verifier('« voir les autres » les montre tous',
+    await pg.evaluate(() => document.querySelectorAll('.critique-ligne').length) > bcp.lignes &&
+    await pg.evaluate(() => !document.getElementById('plus-groupes')));
+  await pg.selectOption('#dim-critique', 'ata'); await pg.waitForTimeout(500);
+
+  // =================================================================
+  section('Bulle du graphique');
+  const bulle = await pg.evaluate(() => {
+    const zones = [...document.querySelectorAll('.zone-clic')];
+    return zones.length;
+  });
+  verifier('le graphique a des semaines survolables', bulle > 0, String(bulle));
+  // Le graphique doit être à l'écran : la souris travaille en coordonnées de fenêtre.
+  await pg.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' }));
+  await pg.waitForTimeout(350);
+  let texteBulle = '';
+  const zonesG = await pg.$$('.zone-clic');
+  for (const z of zonesG) {
+    const bb = await z.boundingBox();
+    if (!bb || bb.y < 0 || bb.y > 900) continue;
+    await pg.mouse.move(bb.x + bb.width / 2, bb.y + bb.height * 0.6);
+    await pg.waitForTimeout(120);
+    const t = await pg.evaluate(() => document.getElementById('bulle').textContent);
+    if (/passés? en terminé/.test(t)) { texteBulle = t; break; }
+  }
+  verifier('survoler une semaine annonce les passages en terminé',
+    /passés? en terminé/.test(texteBulle), texteBulle.slice(0, 90));
+  verifier('et donne les références, pas seulement le compte',
+    /UD-/.test(texteBulle), texteBulle.slice(0, 120));
 
   // =================================================================
   section('Aperçu quand l\'historique est vide');

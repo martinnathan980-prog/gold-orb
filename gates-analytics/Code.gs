@@ -72,8 +72,22 @@ const CONFIG = {
     'Réalisation FWD > Avancement',
     'CC',
     'Chapitre',
+    'ECP'
+  ],
+
+  /**
+   * Les colonnes que garde le bouton « Vue essentielle » du tableau, dans
+   * l'ordre voulu. La référence figée y est toujours ajoutée en tête.
+   * Vide = la référence, l'avancement, la date et les colonnes analysées.
+   */
+  COLONNES_ESSENTIELLES: [
+    'Nom Installation',
     'ECP',
-    'Validation Définition Electrique'
+    'ATA',
+    'Séquence',
+    'Validation Définition Electrique',
+    'Date création',
+    'Réalisation FWD > Avancement'
   ],
 
   /**
@@ -568,11 +582,7 @@ function construireModele() {
     dimParDefaut: choisirDimensionParDefaut(colonnes, clesDim),
     /* La « vue essentielle » du tableau : ce qu'on regarde vraiment, sans les
        cent trente-huit colonnes de l'export. */
-    clesEssentielles: colonnes
-      .filter(function (c) {
-        return c.fige || c.cle === 'avancement' || c.cle === cleDate || c.dim;
-      })
-      .map(function (c) { return c.cle; }),
+    clesEssentielles: choisirEssentielles(colonnes, entetes, groupes, cleDate),
     cleDomaine: iDomaine === -1 ? null : colonnes[iDomaine].cle,
     avertissement: cleFWD === null
       ? 'Aucune colonne d\'avancement FWD n\'a été reconnue dans l\'en-tête.'
@@ -625,6 +635,26 @@ function scoreDimension(index, titre, stats, nbLignes, occurrences, iRef, iFWD, 
   score += Math.max(0, 20 - stats.longueurMoyenne);
   score += (stats.remplies / Math.max(1, nbLignes)) * 20;
   return score;
+}
+
+/**
+ * Les colonnes de la vue essentielle, dans l'ordre demandé.
+ * La colonne figée ouvre toujours la liste : elle reste verrouillée à gauche.
+ */
+function choisirEssentielles(colonnes, entetes, groupes, cleDate) {
+  const figee = colonnes.filter(function (c) { return c.fige; }).map(function (c) { return c.cle; });
+  let reste;
+  if (CONFIG.COLONNES_ESSENTIELLES && CONFIG.COLONNES_ESSENTIELLES.length) {
+    reste = CONFIG.COLONNES_ESSENTIELLES
+      .map(function (d) { return indexParDesignation(d, entetes, groupes); })
+      .filter(function (i) { return i !== -1; })
+      .map(function (i) { return colonnes[i].cle; });
+  } else {
+    reste = colonnes
+      .filter(function (c) { return c.cle === 'avancement' || c.cle === cleDate || c.dim; })
+      .map(function (c) { return c.cle; });
+  }
+  return figee.concat(reste.filter(function (c) { return figee.indexOf(c) === -1; }));
 }
 
 /**
