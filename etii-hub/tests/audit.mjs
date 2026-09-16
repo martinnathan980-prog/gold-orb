@@ -45,7 +45,10 @@ const INTERDITS = [
   // Gamme civile publique d'Airbus Helicopters. Toute autre désignation
   // en H suivi de trois chiffres est refusée : militaire, prototype ou
   // programme interne n'ont rien à faire dans un dépôt public.
-  [/\bH(?!125\b|130\b|135\b|145\b|160\b|175\b|215\b|225\b)\d{3}\b/, 'programme non public'],
+  // Gamme publique d'Airbus Helicopters, civile et militaire. Le suffixe M
+  // est pris en compte : sans lui, « H225M » échappait au contrôle par un
+  // simple effet de bord de la limite de mot.
+  [/\bH(?!(?:125|130|135|145|160|175|215|225)M?\b)\d{3}M?\b/, 'programme non public'],
 ];
 for (const [motif, libelle] of INTERDITS) {
   const touches = [...tous, ...jsonFiles].filter(f => motif.test(lire(f)));

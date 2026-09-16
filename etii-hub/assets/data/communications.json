@@ -175,5 +175,88 @@
       ],
       "pole": "ETIII"
     }
+  ],
+  "agenda": [
+    {
+      "id": "a01",
+      "date": "2026-10-08",
+      "statut": "a-venir",
+      "pole": "ETII",
+      "type": "jalon",
+      "titre": "Revue de configuration trimestrielle",
+      "resume": "Revue des livrables émis depuis juillet. Écarts non soldés à remonter la veille."
+    },
+    {
+      "id": "a02",
+      "date": "2026-10-02",
+      "statut": "a-venir",
+      "pole": "ETIIA",
+      "type": "atelier",
+      "titre": "Atelier d'harmonisation des pratiques",
+      "resume": "Alignement des méthodes de définition entre les squads."
+    },
+    {
+      "id": "a03",
+      "date": "2026-09-24",
+      "statut": "a-venir",
+      "pole": "ETIIE",
+      "type": "reunion",
+      "titre": "Point d'avancement du lot avionique",
+      "resume": "Suivi de l'intégration et des écarts ouverts."
+    },
+    {
+      "id": "a04",
+      "date": "2026-09-15",
+      "statut": "passee",
+      "pole": "ETII",
+      "type": "mot",
+      "titre": "Un trimestre qui se tient",
+      "resume": "Le mot de la direction sur l'OTQ, la charge et la revue à venir."
+    },
+    {
+      "id": "a05",
+      "date": "2026-09-12",
+      "statut": "passee",
+      "pole": "ETII",
+      "type": "succes",
+      "titre": "Validation du jalon de définition",
+      "resume": "L'architecture électrique du lot 3 est validée."
+    },
+    {
+      "id": "a06",
+      "date": "2026-09-08",
+      "statut": "passee",
+      "pole": "ETIIE",
+      "type": "alerte",
+      "titre": "Migration de la plateforme documentaire",
+      "resume": "Interruption de service mercredi de 19h45 à 23h00."
+    },
+    {
+      "id": "a07",
+      "date": "2026-09-02",
+      "statut": "passee",
+      "pole": "ETIIA",
+      "type": "info",
+      "titre": "Nouvelle procédure de revue par les pairs",
+      "resume": "Deux relecteurs indépendants requis avant diffusion."
+    },
+    {
+      "id": "a08",
+      "date": "2026-08-26",
+      "statut": "passee",
+      "pole": "ETIII",
+      "type": "info",
+      "titre": "Ouverture du portail de recherche documentaire",
+      "resume": "Un point d'entrée unique pour retrouver les documents du service."
+    },
+    {
+      "id": "a09",
+      "date": "2026-08-19",
+      "statut": "passee",
+      "pole": "ETIII",
+      "type": "succes",
+      "titre": "Clôture de la campagne d'essais",
+      "resume": "Tous les écarts relevés ont été traités."
+    }
   ]
 }
