@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Organigramme — ETII Hub</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Organigramme du service ETII : direction, responsables de pôle, squads et membres, filtrable par pôle, réorganisable à la souris comme au clavier.">
+  <meta name="description" content="Arborescence du service ETII : direction, pôles, squads et membres. Branches pliables, fiche de personne, recherche qui déplie, réorganisation à la souris comme au clavier.">
+  <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
@@ -14,508 +15,980 @@
   <!-- =====================================================================
        Styles propres à la page Organigramme.
 
-       Uniquement ce qu'aucune classe de base.css, components.css ou
-       skin.css ne couvre : la barre d'outils, le rail d'arborescence qui
-       rend la profondeur visible, la carte de personne, l'avatar généré,
-       les zones de dépôt, et le pont entre le balisage produit par ui.js
+       On ne déclare ici que ce qu'aucune classe de base.css,
+       components.css ou skin.css ne couvre : l'arbre et ses traits de
+       rattachement, les nœuds, l'avatar généré, la fiche latérale, les
+       zones de dépôt, et le pont entre le balisage produit par ui.js
        (modale, notifications) et le design system.
 
-       Aucune valeur de couleur brute : tout vient de tokens.css. Seuls les
-       points de rupture sont en pixels, comme dans base.css — une media
-       query ne peut pas lire une variable CSS.
+       Direction visuelle : clair, aéré, sobre. Fond blanc cassé, filets
+       d'un pixel, ombres très douces. Aucun dégradé, aucune lueur. La
+       seule couleur vive de l'écran est le filet du pôle, et il est
+       toujours accompagné du code du pôle en toutes lettres.
+
+       Aucune valeur de couleur brute : tout vient de tokens.css. Seuls
+       les points de rupture sont en pixels et le filet à un pixel, comme
+       dans le socle — une media query ne peut pas lire une variable CSS,
+       et un trait d'un pixel n'est pas une décision de design mais la
+       plus fine ligne que l'écran sache tracer.
        ===================================================================== -->
   <style>
-    /* ---------------------------------------------------------------------
-       A0. Variables locales de la page
-       --------------------------------------------------------------------- */
+    /* =====================================================================
+       A. Jetons locaux de la page
+       ===================================================================== */
 
-    .organigramme {
-      /* Facteur de zoom, piloté par les boutons et le curseur. La valeur
-         est posée par organigramme.js sur cet élément : tout ce qui suit
-         s'y réfère, donc rien d'autre n'a besoin d'être recalculé. */
+    /* Les jetons locaux vivent sur :root, et non sur l'arbre : la fiche,
+       la barre d'outils, le bandeau de repères et les modales en ont
+       besoin eux aussi, et ils ne sont pas à l'intérieur de l'arbre. */
+    :root {
+      /* Épaisseur des traits de rattachement. Un pixel : le filet du
+         projet, celui des bordures de cartes. */
+      --org-filet: 1px;
+
+      /* Couleur des traits. Neutre, jamais teintée : le trait dit le
+         rattachement, pas l'appartenance. */
+      --org-trait: var(--bordure-forte);
+
+      /* Écart horizontal entre les trois colonnes de pôle. Le rail qui
+         les relie s'en sert pour franchir la gouttière. */
+      --org-ecart: var(--e-8);
+
+      /* Retrait d'un niveau dans les branches indentées. */
+      --org-indent: var(--e-6);
+
+      /* Hauteur à laquelle le coude d'une branche rejoint son nœud :
+         la moitié d'une ligne. Redéfini par densité plus bas. */
+      --org-coude: calc(var(--cible-tactile) / 2);
+
+      /* Facteur de zoom, piloté par le curseur. Posé en JavaScript sur
+         l'arbre, qui le redéfinit pour sa sous-arborescence ; la valeur
+         neutre ci-dessous sert partout ailleurs. */
       --org-echelle: 1;
 
-      /* Largeur minimale d'une carte de personne, avant zoom. */
-      --org-carte-min: calc(var(--e-16) * 4);
+      /* Diamètre de l'avatar généré. */
+      --org-avatar: calc(var(--e-8) * var(--org-echelle));
 
-      /* Opacité des cartes hors recherche : mises en retrait, jamais
-         retirées du flux ni de l'ordre de tabulation. */
-      --org-retrait: 0.34;
+      /* Largeur minimale d'une colonne de pôle. En dessous, les colonnes
+         cesseraient de rétrécir et le plan défilerait horizontalement —
+         plutôt que de hacher les noms lettre par lettre. */
+      --org-colonne: calc(var(--e-16) * 3);
 
-      /* Épaisseur du rail d'arborescence. */
-      --org-rail: calc(var(--e-1) / 2);
-
-      /* Teinte du niveau courant. Redéfinie par pôle ci-dessous ; au
-         niveau du service elle reste neutre, car « ETII » n'est pas un
-         pôle et n'a donc pas de couleur de série. */
-      --org-teinte: var(--texte-doux);
+      /* Opacité d'une personne mise en retrait par la recherche. Elle
+         reste dans le flux et dans l'ordre de tabulation. */
+      --org-retrait: 0.32;
     }
 
-    /* ---------------------------------------------------------------------
-       A1. Couleurs de pôle
-       La palette catégorielle vit dans tokens.css ; ici on se contente de
-       rattacher un code de pôle à son jeton. La couleur n'est JAMAIS seule
-       porteuse de sens : chaque élément teinté est accompagné du code du
-       pôle en toutes lettres.
-       --------------------------------------------------------------------- */
+    /* --- Teinte des avatars ------------------------------------------------
+       La teinte (l'angle) est dérivée de l'identifiant et posée en
+       JavaScript sous la forme d'un simple nombre. La saturation et les
+       clartés, elles, restent ici : ce sont des décisions de design, et
+       elles sont volontairement basses pour que soixante-cinq avatars ne
+       fassent pas un arc-en-ciel. Le contraste initiales/fond reste très
+       au-dessus de AA quelle que soit la teinte, puisque l'écart de
+       clarté est constant. */
+    :root {
+      --org-teinte: 0;
+      --org-avatar-saturation: 20%;
+      --org-avatar-fond: 93%;
+      --org-avatar-encre: 26%;
 
-    [data-pole="ETIIA"] { --org-teinte: var(--pole-etiia); }
-    [data-pole="ETIIE"] { --org-teinte: var(--pole-etiie); }
-    [data-pole="ETIII"] { --org-teinte: var(--pole-etiii); }
-    [data-pole="ETII"]  { --org-teinte: var(--pole-etii); }
-
-    /* Pastille de couleur des puces de facette et des en-têtes. Elle est
-       toujours suivie d'une étiquette textuelle. */
-    .org-puce {
-      flex: none;
-      display: inline-block;
-      inline-size: var(--e-3);
-      block-size: var(--e-3);
-      border-radius: var(--rayon-plein);
-      background-color: var(--org-teinte);
-      /* Cerclage : la pastille reste visible même si sa teinte s'approche
-         du fond de la puce sur laquelle elle est posée. */
-      box-shadow: 0 0 0 1px var(--bordure-forte);
+      /* Taille des initiales, exprimée dans le repère interne du dessin :
+         le viewBox de l'avatar fait 40 unités de côté, et cette valeur en
+         est une coordonnée, pas une dimension d'écran. Elle suit donc
+         l'avatar quand il grandit ou rapetisse. */
+      --org-avatar-glyphe: 15px;
     }
 
-    /* ---------------------------------------------------------------------
-       A2. Sélecteur de pôle
-       --------------------------------------------------------------------- */
-
-    .org-selecteur {
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-3);
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="clair"]) {
+        --org-avatar-saturation: 22%;
+        --org-avatar-fond: 26%;
+        --org-avatar-encre: 86%;
+      }
     }
 
-    .org-selecteur__titre {
+    :root[data-theme="sombre"] {
+      --org-avatar-saturation: 22%;
+      --org-avatar-fond: 26%;
+      --org-avatar-encre: 86%;
+    }
+
+    /* --- Rattachement d'un code de pôle à son jeton -------------------------
+       La palette catégorielle vit dans tokens.css. La couleur n'est
+       jamais seule porteuse de sens : chaque élément teinté porte le code
+       du pôle écrit en toutes lettres juste à côté. */
+    :root { --org-pole: var(--pole-etii); }
+    [data-pole="ETIIA"] { --org-pole: var(--pole-etiia); }
+    [data-pole="ETIIE"] { --org-pole: var(--pole-etiie); }
+    [data-pole="ETIII"] { --org-pole: var(--pole-etiii); }
+
+    /* =====================================================================
+       B. En-tête de page
+       ===================================================================== */
+
+    .org-surtitre {
       margin: 0;
+      text-transform: uppercase;
+      letter-spacing: var(--lettrage-etiquette);
       font-size: var(--texte-xs);
       font-weight: var(--graisse-forte);
-      letter-spacing: var(--lettrage-etiquette);
-      text-transform: uppercase;
-      color: var(--texte-doux);
-    }
-
-    /* Ligne de situation : « Périmètre affiché : ETIIA — 20 personnes ».
-       Elle est recalculée à chaque déplacement, y compris entre pôles. */
-    .org-contexte {
-      margin: 0;
-      font-size: var(--texte-sm);
-      color: var(--texte-doux);
-    }
-
-    /* ---------------------------------------------------------------------
-       A3. Barre d'outils : recherche, zoom, réinitialisation
-       Elle reste atteignable pendant le défilement d'une longue liste.
-       --------------------------------------------------------------------- */
-
-    .org-barre {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--e-3) var(--e-4);
-
-      padding: var(--e-3) var(--e-4);
-      background-color: var(--fond-eleve);
-      border: 1px solid var(--bordure-douce);
-      border-radius: var(--rayon-lg);
-      box-shadow: var(--ombre-sm);
-    }
-
-    .org-barre__recherche {
-      flex: 1 1 calc(var(--e-16) * 4);
-      min-inline-size: 0;
-    }
-
-    .org-barre__actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--e-2);
-    }
-
-    /* --- Zoom : deux boutons encadrant un curseur ----------------------- */
-
-    .org-zoom {
-      display: flex;
-      align-items: center;
-      gap: var(--e-2);
-
-      padding-inline: var(--e-2);
-      border: 1px solid var(--bordure);
-      border-radius: var(--rayon-plein);
-      background-color: var(--fond-enfonce);
-    }
-
-    .org-zoom__curseur {
-      inline-size: calc(var(--e-16) * 1.5);
-      min-block-size: var(--cible-tactile);
-      accent-color: var(--accent);
-      cursor: pointer;
-    }
-
-    .org-zoom__valeur {
-      min-inline-size: calc(var(--e-10) + var(--e-2));
-      text-align: end;
-      font-variant-numeric: tabular-nums;
-      font-size: var(--texte-xs);
-      font-weight: var(--graisse-moyenne);
-      color: var(--texte-doux);
-    }
-
-    /* Résumé de la recherche filtrante. */
-    .org-resume {
-      margin: 0;
-      font-size: var(--texte-sm);
-      color: var(--texte-doux);
-    }
-
-    .org-resume[hidden] { display: none; }
-
-    /* ---------------------------------------------------------------------
-       A4. Arborescence : le rail qui rend la profondeur visible
-       Chaque descente d'un niveau décale le contenu et trace un rail
-       vertical teinté ; un tiret horizontal relie le rail à chaque nœud.
-       La profondeur se lit donc à l'œil, sans dépendre d'une couleur : le
-       décalage et les intertitres la portent tout autant.
-       --------------------------------------------------------------------- */
-
-    /* Niveau 0 : le service. La direction, puis le rail des trois pôles. */
-    .org-service {
-      --pile-espace: var(--e-5);
-    }
-
-    .org-branche {
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-5);
-
-      margin-inline-start: var(--e-4);
-      padding-inline-start: var(--e-6);
-      border-inline-start: var(--org-rail) solid var(--org-teinte);
-    }
-
-    .org-noeud {
-      position: relative;
-    }
-
-    /* Tiret de liaison entre le rail du parent et le nœud. Décoratif :
-       l'appartenance est déjà écrite dans le balisage et dans les
-       intertitres. */
-    .org-noeud::before {
-      content: "";
-      position: absolute;
-      inset-inline-start: calc(var(--e-6) * -1);
-      inset-block-start: var(--e-6);
-      inline-size: var(--e-5);
-      border-block-start: var(--org-rail) solid var(--org-teinte);
-      pointer-events: none;
-    }
-
-    /* Intertitre non hiérarchique (« Responsable de pôle », « Membres »).
-       Ce n'est volontairement pas un <h…> : soixante-cinq titres de plus
-       encombreraient le plan du document sans rien apprendre. */
-    .org-etiquette {
-      margin: 0;
-      font-size: var(--texte-xs);
-      font-weight: var(--graisse-forte);
-      letter-spacing: var(--lettrage-etiquette);
-      text-transform: uppercase;
-      color: var(--texte-doux);
-    }
-
-    /* ---------------------------------------------------------------------
-       A5. Bloc de pôle
-       --------------------------------------------------------------------- */
-
-    .org-pole {
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-5);
-
-      padding: var(--e-5);
-      background-color: var(--fond-eleve);
-      border: 1px solid var(--bordure-douce);
-      border-inline-start: var(--e-1) solid var(--org-teinte);
-      border-radius: var(--rayon-lg);
-      box-shadow: var(--ombre-sm);
-    }
-
-    .org-pole__entete {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--e-2) var(--e-4);
-    }
-
-    .org-pole__identite {
-      flex: 1 1 auto;
-      min-inline-size: 0;
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-1);
-    }
-
-    .org-pole__titre {
-      display: flex;
-      align-items: center;
-      gap: var(--e-3);
-      margin: 0;
-      font-size: var(--texte-xl);
-      line-height: var(--interligne-serre);
-      overflow-wrap: anywhere;
-    }
-
-    .org-pole__sous-titre {
-      margin: 0;
-      font-size: var(--texte-sm);
-      color: var(--texte-doux);
-      overflow-wrap: anywhere;
-    }
-
-    /* ---------------------------------------------------------------------
-       A6. Bloc de squad
-       --------------------------------------------------------------------- */
-
-    .org-squad {
-      --carte-espace: var(--e-4);
-      padding: 0;
-      overflow: hidden;
-    }
-
-    .org-squad__entete {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--e-2) var(--e-4);
-
-      padding: var(--e-4) var(--e-5);
-      background-color: var(--fond-enfonce);
-      border-block-end: 1px solid var(--bordure-douce);
-    }
-
-    .org-squad__titre {
-      flex: 1 1 auto;
-      min-inline-size: 0;
-      margin: 0;
-      font-size: var(--texte-lg);
-      line-height: var(--interligne-serre);
-      /* Un nom de squad peut être long et contenir n'importe quel
-         caractère : il se coupe plutôt que de déborder. */
-      overflow-wrap: anywhere;
-    }
-
-    .org-squad__corps {
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-4);
-      padding: var(--e-5);
-    }
-
-    .org-squad__section {
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-2);
-    }
-
-    /* Indice n'apparaissant que pendant un glissement. */
-    .org-indice {
-      display: none;
-      margin: 0;
-      font-size: var(--texte-xs);
-      font-weight: var(--graisse-moyenne);
-      color: var(--texte-accent);
-    }
-
-    :root[data-org-glisse] .org-indice { display: block; }
-
-    /* ---------------------------------------------------------------------
-       A7. Zones de dépôt
-       --------------------------------------------------------------------- */
-
-    .org-depot {
-      padding: var(--e-2);
-      border: var(--org-rail) dashed transparent;
-      border-radius: var(--rayon-md);
-    }
-
-    /* Repère permanent pendant un glissement : sans lui, on ne sait pas où
-       l'on a le droit de lâcher. */
-    :root[data-org-glisse] .org-depot {
-      border-color: var(--bordure);
-    }
-
-    /* Survol : le trait reste en pointillés, donc l'information ne repose
-       jamais sur la seule couleur. */
-    .org-depot[data-survol] {
-      background-color: var(--accent-doux);
-      border-color: var(--accent);
-    }
-
-    /* La zone « leader » est une case unique, pas une grille. */
-    .org-depot--leader {
-      min-block-size: calc(var(--e-16) * var(--org-echelle));
-    }
-
-    .org-depot__vide {
-      margin: 0;
-      padding: var(--e-3);
-      font-size: var(--texte-sm);
       color: var(--texte-faible);
     }
 
-    /* ---------------------------------------------------------------------
-       A8. Grille de personnes — vrai responsive, piloté par le zoom
-       --------------------------------------------------------------------- */
+    /* =====================================================================
+       C. Bandeau de repères
+       Chaque valeur est calculée à partir du fichier de données. Aucune
+       n'est écrite dans la page.
+       ===================================================================== */
 
-    .org-grille {
+    .org-reperes {
       display: grid;
-      gap: calc(var(--e-4) * var(--org-echelle));
-      grid-template-columns: repeat(
-        auto-fill,
-        minmax(min(100%, calc(var(--org-carte-min) * var(--org-echelle))), 1fr)
-      );
-
+      grid-template-columns: repeat(auto-fit, minmax(min(calc(var(--e-16) * 1.7), 100%), 1fr));
+      gap: var(--e-5);
       margin: 0;
       padding: 0;
       list-style: none;
     }
 
-    /* ---------------------------------------------------------------------
-       A9. Carte de personne
-       --------------------------------------------------------------------- */
-
-    .personne {
-      --carte-marge: calc(var(--e-4) * var(--org-echelle));
-      --carte-espace: calc(var(--e-3) * var(--org-echelle));
-
-      block-size: 100%;
-    }
-
-    .personne[draggable="true"] { cursor: grab; }
-    .personne[draggable="true"]:active { cursor: grabbing; }
-
-    /* Carte en cours de glissement : elle reste visible à sa place
-       d'origine, en retrait, pour garder le repère de départ. */
-    .personne[data-glisse] {
-      opacity: var(--org-retrait);
-      border-color: var(--accent);
-    }
-
-    .personne__tete {
-      display: flex;
-      align-items: center;
-      gap: calc(var(--e-3) * var(--org-echelle));
-      min-inline-size: 0;
-    }
-
-    .personne__identite {
+    .org-repere {
       display: flex;
       flex-direction: column;
       gap: var(--e-1);
-      min-inline-size: 0;
+      padding-inline-start: var(--e-4);
+      border-inline-start: var(--org-filet) solid var(--bordure);
     }
 
-    .personne__nom {
-      margin: 0;
-      font-size: calc(var(--texte-md) * var(--org-echelle));
+    /* Le repère d'un pôle porte son filet dans la couleur du pôle : c'est
+       la seule couleur vive du bandeau, et le code est écrit dessous. */
+    .org-repere--pole { border-inline-start-color: var(--org-pole); }
+
+    .org-repere__valeur {
+      font-family: var(--police-titre);
+      font-size: var(--texte-2xl);
+      font-weight: var(--graisse-max);
+      letter-spacing: var(--lettrage-titre);
+      line-height: var(--interligne-serre);
+      font-variant-numeric: tabular-nums;
+      color: var(--texte);
+    }
+
+    .org-repere__libelle {
+      font-size: var(--texte-xs);
       font-weight: var(--graisse-forte);
-      line-height: var(--interligne-serre);
-      overflow-wrap: anywhere;
+      text-transform: uppercase;
+      letter-spacing: var(--lettrage-etiquette);
+      color: var(--texte-faible);
     }
 
-    .personne__poste {
-      margin: 0;
-      font-size: calc(var(--texte-sm) * var(--org-echelle));
-      line-height: var(--interligne-serre);
-      color: var(--texte-doux);
-      overflow-wrap: anywhere;
-    }
+    /* =====================================================================
+       D. Barre d'outils
+       ===================================================================== */
 
-    .personne__pied {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--e-2);
-      margin-block-start: auto;
-    }
-
-    /* Le bouton de déplacement est poussé en fin de pied. */
-    .personne__deplacer { margin-inline-start: auto; }
-
-    /* Mise en retrait des cartes hors recherche : elles gardent leur
-       place, restent focalisables et lisibles par un lecteur d'écran. */
-    .personne[data-hors-filtre] { opacity: var(--org-retrait); }
-
-    /* Dès qu'une carte en retrait reçoit le focus ou le survol, elle
-       redevient pleinement lisible : le clavier n'emmène jamais vers
-       quelque chose d'illisible. */
-    .personne[data-hors-filtre]:hover,
-    .personne[data-hors-filtre]:focus-within { opacity: 1; }
-
-    /* ---------------------------------------------------------------------
-       A10. Avatar généré localement (SPEC §4.4)
-       Le SVG est fabriqué par organigramme.js : un disque dont la TEINTE
-       est dérivée de l'identifiant, et les initiales par-dessus. Le module
-       ne transmet qu'un NOMBRE (--avatar-teinte) ; la seule formule de
-       couleur du projet hors tokens.css est celle-ci, et elle n'existe que
-       parce qu'une couleur par personne ne peut pas être un jeton.
-       Saturation et clarté sont fixes : les initiales (--gris-50, jeton
-       jamais redéfini par le thème) gardent ainsi un contraste supérieur
-       à 4,5:1 sur toutes les teintes, en thème clair comme en sombre.
-       --------------------------------------------------------------------- */
-
-    .avatar {
-      /* Repli : organigramme.js pose la teinte réelle sur chaque avatar.
-         Déclarée ici pour que la variable existe toujours, même si le
-         module ne s'exécute pas. */
-      --avatar-teinte: 0;
-
-      flex: none;
-      inline-size: calc(var(--e-10) * var(--org-echelle));
-      block-size: calc(var(--e-10) * var(--org-echelle));
-      border-radius: var(--rayon-plein);
-      /* Cerclage discret : détache le disque du fond de carte en thème
-         sombre, où les deux peuvent être proches. */
-      box-shadow: 0 0 0 1px var(--bordure);
-    }
-
-    .avatar__fond { fill: hsl(var(--avatar-teinte) 55% 28%); }
-
-    /* Pas de letter-spacing : avec text-anchor: middle, l'espace ajouté
-       après la dernière lettre décentrerait les initiales dans le disque. */
-    .avatar__initiales {
-      fill: var(--gris-50);
-      font-family: var(--police);
-    }
-
-    /* ---------------------------------------------------------------------
-       A11. Modale de déplacement : la liste des destinations
-       --------------------------------------------------------------------- */
-
-    .org-destination {
+    .org-outils {
       display: flex;
       flex-direction: column;
       gap: var(--e-4);
+      padding: var(--e-5);
+      background-color: var(--fond-eleve);
+      border: var(--org-filet) solid var(--bordure);
+      border-radius: var(--rayon-lg);
+      box-shadow: var(--ombre-sm);
     }
 
-    .org-destination__actuelle {
+    .org-outils__ligne {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--e-3) var(--e-5);
+    }
+
+    .org-outils .recherche { flex: 1 1 calc(var(--e-16) * 3.5); }
+
+    .org-outils__resultat {
+      flex: 0 1 auto;
+      min-inline-size: 0;
+    }
+
+    .org-outils__separateur {
+      inline-size: 100%;
+      block-size: var(--org-filet);
+      background-color: var(--bordure-douce);
+    }
+
+    /* --- Sélecteur segmenté (densité) ------------------------------------
+       Des boutons radio natifs : la navigation par flèches, l'exclusion
+       mutuelle et l'annonce du groupe sont celles du navigateur. Seule
+       l'apparence est reprise. */
+    .org-segment {
+      display: flex;
+      align-items: center;
+      gap: var(--e-3);
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .org-segment__legende {
+      padding: 0;
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-forte);
+      text-transform: uppercase;
+      letter-spacing: var(--lettrage-etiquette);
+      color: var(--texte-faible);
+    }
+
+    .org-segment__choix {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--e-1);
+      padding: var(--e-1);
+      background-color: var(--fond-enfonce);
+      border-radius: var(--rayon-plein);
+    }
+
+    .org-segment__option {
+      position: relative;
+      display: inline-flex;
+    }
+
+    /* Le contrôle reste focalisable : il est masqué visuellement, jamais
+       retiré de l'ordre de tabulation. */
+    .org-segment__radio {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      margin: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .org-segment__libelle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-block-size: calc(var(--cible-tactile) - var(--e-2));
+      padding-inline: var(--e-4);
+      border-radius: var(--rayon-plein);
+      font-size: var(--texte-sm);
+      font-weight: var(--graisse-moyenne);
+      color: var(--texte-doux);
+      cursor: pointer;
+    }
+
+    .org-segment__option:hover .org-segment__libelle {
+      color: var(--texte);
+    }
+
+    .org-segment__radio:checked + .org-segment__libelle {
+      background-color: var(--texte);
+      color: var(--texte-inverse);
+      font-weight: var(--graisse-forte);
+    }
+
+    .org-segment__radio:focus-visible + .org-segment__libelle {
+      outline: var(--focus-epaisseur) solid var(--focus-couleur);
+      outline-offset: var(--focus-decalage);
+    }
+
+    /* --- Curseur de zoom --------------------------------------------------- */
+    .org-zoom {
+      display: flex;
+      align-items: center;
+      gap: var(--e-3);
+      margin: 0;
+    }
+
+    .org-zoom__etiquette {
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-forte);
+      text-transform: uppercase;
+      letter-spacing: var(--lettrage-etiquette);
+      color: var(--texte-faible);
+    }
+
+    .org-zoom__curseur {
+      inline-size: calc(var(--e-16) * 1.6);
+      min-block-size: var(--cible-tactile);
+      accent-color: var(--accent);
+      background: none;
+      border: 0;
+    }
+
+    .org-zoom__valeur {
+      min-inline-size: calc(var(--e-8) + var(--e-2));
+      font-size: var(--texte-sm);
+      font-variant-numeric: tabular-nums;
+      color: var(--texte-doux);
+    }
+
+    /* =====================================================================
+       E. Scène : l'arbre et la fiche côte à côte
+       ===================================================================== */
+
+    .org-scene {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--e-6);
+      align-items: start;
+    }
+
+    /* Sans ce plancher, la largeur minimale de l'arbre remonterait jusqu'à
+       la grille et pousserait la page à déborder horizontalement. C'est le
+       plan qui défile, pas le document. */
+    .org-scene > * { min-inline-size: 0; }
+
+    @media (min-width: 1100px) {
+      /* La fiche prend sa colonne dès qu'il y a la place, et suit le
+         défilement. En dessous, elle se replie au-dessus de l'arbre. */
+      .org-scene--fiche-ouverte {
+        grid-template-columns: minmax(0, 1fr) calc(var(--e-16) * 4.6);
+      }
+
+      .org-scene--fiche-ouverte .org-fiche {
+        position: sticky;
+        inset-block-start: var(--e-12);
+        max-block-size: calc(100dvh - var(--e-16));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+      }
+    }
+
+    @media (max-width: 1099px) {
+      /* Sur les écrans étroits, la fiche passe devant l'arbre : on ne
+         demande pas à l'utilisateur de la chercher plus bas. */
+      .org-fiche { order: -1; }
+    }
+
+    .org-plan {
+      min-inline-size: 0;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      padding-block: var(--e-2);
+    }
+
+    .organigramme {
+      font-size: calc(var(--texte-md) * var(--org-echelle));
+    }
+
+    /* =====================================================================
+       F. L'arbre : sommet, fourche des pôles, branches indentées
+       ===================================================================== */
+
+    .org-sommet {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .org-sommet__noeud {
+      inline-size: min(100%, calc(var(--e-16) * 4));
+    }
+
+    /* Le tronc qui descend de la direction vers le rail des pôles. */
+    .org-sommet__tronc {
+      inline-size: var(--org-filet);
+      block-size: var(--e-6);
+      background-color: var(--org-trait);
+    }
+
+    .org-poles {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-6);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .org-pole {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* L'attache d'un pôle : une descente verticale, et — dès que les
+       trois colonnes tiennent sur une ligne — la moitié du rail qui la
+       relie à ses voisines. Le premier et le dernier pôle n'en tracent
+       qu'un côté : le rail s'arrête exactement sur eux. */
+    .org-pole__attache {
+      position: relative;
+      display: block;
+      block-size: var(--e-6);
+    }
+
+    .org-pole__attache::before {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: 50%;
+      inline-size: var(--org-filet);
+      background-color: var(--org-trait);
+    }
+
+    @media (min-width: 1000px) {
+      .org-poles {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: var(--org-ecart);
+      }
+
+      .org-poles > .org-pole {
+        flex: 1 1 0;
+        /* Plancher assumé : sous cette largeur, la colonne ne rétrécit
+           plus et c'est le plan qui défile. Un nom ne sera jamais haché
+           lettre par lettre pour tenir dans une colonne trop étroite. */
+        min-inline-size: var(--org-colonne);
+      }
+
+      .org-pole__attache::after {
+        content: "";
+        position: absolute;
+        inset-block-start: 0;
+        inset-inline-start: calc(var(--org-ecart) / -2);
+        inset-inline-end: calc(var(--org-ecart) / -2);
+        block-size: var(--org-filet);
+        background-color: var(--org-trait);
+      }
+
+      .org-pole:first-child .org-pole__attache::after { inset-inline-start: 50%; }
+      .org-pole:last-child  .org-pole__attache::after { inset-inline-end: 50%; }
+    }
+
+    /* --- Branches indentées : squads, puis membres -------------------------
+       Chaque élément trace le rail vertical de son niveau et le coude qui
+       rejoint son nœud. Le dernier de la fratrie interrompt le rail à la
+       hauteur du coude : la branche se referme, exactement comme sur un
+       organigramme tracé à la main. */
+    .org-branches {
+      margin: 0;
+      padding: 0;
+      padding-inline-start: var(--e-4);
+      list-style: none;
+    }
+
+    .org-branche {
+      position: relative;
+      padding-inline-start: var(--org-indent);
+    }
+
+    .org-branche::before {
+      content: "";
+      position: absolute;
+      inset-inline-start: 0;
+      inset-block-start: 0;
+      block-size: 100%;
+      inline-size: var(--org-filet);
+      background-color: var(--org-trait);
+    }
+
+    .org-branche:last-child::before { block-size: var(--org-coude); }
+
+    .org-branche::after {
+      content: "";
+      position: absolute;
+      inset-inline-start: 0;
+      inset-block-start: var(--org-coude);
+      inline-size: var(--org-indent);
+      block-size: var(--org-filet);
+      background-color: var(--org-trait);
+    }
+
+    /* =====================================================================
+       G. Nœuds
+       ===================================================================== */
+
+    .org-tete {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--e-2);
+    }
+
+    .org-tete > .org-noeud { flex: 1 1 auto; min-inline-size: 0; }
+
+    /* --- Bouton de pliage --------------------------------------------------- */
+    .org-plier {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      inline-size: var(--cible-tactile);
+      min-block-size: var(--cible-tactile);
+      padding: 0;
+
+      background-color: transparent;
+      color: var(--texte-doux);
+      border: var(--org-filet) solid transparent;
+      border-radius: var(--rayon-plein);
+      font-size: var(--texte-sm);
+      line-height: 1;
+    }
+
+    .org-plier:hover {
+      background-color: var(--fond-enfonce);
+      color: var(--texte);
+    }
+
+    .org-plier__chevron {
+      display: block;
+      /* Le chevron pointe vers le bas quand la branche est ouverte. Une
+         rotation d'un quart de tour, déclenchée par l'état accessible
+         lui-même : pas de classe posée en doublon. */
+      transform: rotate(-90deg);
+    }
+
+    .org-plier[aria-expanded="true"] .org-plier__chevron {
+      transform: rotate(0deg);
+    }
+
+    /* --- Carte de nœud ------------------------------------------------------ */
+    .org-noeud {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-1);
+      padding: var(--e-3) var(--e-4);
+      background-color: var(--carte-fond);
+      border: var(--org-filet) solid var(--carte-bord);
+      border-radius: var(--rayon-md);
+    }
+
+    .org-noeud__titre {
+      margin: 0;
+      font-family: var(--police-titre);
+      font-size: var(--texte-md);
+      font-weight: var(--graisse-max);
+      letter-spacing: var(--lettrage-titre);
+      line-height: var(--interligne-serre);
+      color: var(--texte);
+      overflow-wrap: break-word;
+    }
+
+    .org-noeud__meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--e-1) var(--e-3);
+      margin: 0;
+      font-size: var(--texte-xs);
+      color: var(--texte-doux);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Le nœud de pôle : un filet dans la couleur du pôle, posé à gauche,
+       et le code écrit juste à côté. */
+    /* Le nœud de pôle occupe toute sa colonne, bouton de pliage compris :
+       la descente verticale du rail tombe ainsi sur son milieu exact. */
+    .org-noeud--pole {
+      flex-direction: row;
+      align-items: center;
+      gap: var(--e-2);
+      padding: var(--e-2) var(--e-4) var(--e-2) var(--e-2);
+
+      border-inline-start: 3px solid var(--org-pole);
+      background-color: var(--fond-eleve);
+      box-shadow: var(--ombre-sm);
+    }
+
+    .org-noeud__corps {
+      flex: 1 1 auto;
+      min-inline-size: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-1);
+    }
+
+    .org-noeud--pole .org-noeud__titre { font-size: var(--texte-lg); }
+
+    .org-noeud--squad {
+      background-color: var(--fond-profond);
+      border-style: dashed;
+    }
+
+    .org-noeud--direction {
+      align-items: stretch;
+      box-shadow: var(--ombre-md);
+      border-radius: var(--rayon-lg);
+      padding: var(--e-4);
+    }
+
+    /* --- Ligne de personne -------------------------------------------------- */
+    .org-personne {
+      display: flex;
+      align-items: stretch;
+      gap: var(--e-1);
+      padding-block: calc(var(--e-1) / 2);
+    }
+
+    .org-personne__principal {
+      flex: 1 1 auto;
+      min-inline-size: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--e-3);
+      padding: var(--e-2) var(--e-3);
+      text-align: start;
+
+      background-color: transparent;
+      color: var(--texte);
+      border: var(--org-filet) solid transparent;
+      border-radius: var(--rayon-md);
+      min-block-size: var(--cible-tactile);
+    }
+
+    .org-personne__principal:hover {
+      background-color: var(--fond-eleve);
+      border-color: var(--bordure);
+    }
+
+    /* La personne ouverte dans la fiche : l'état est porté par
+       aria-current, seule source de vérité. */
+    .org-personne__principal[aria-current="true"] {
+      background-color: var(--accent-doux);
+      border-color: var(--accent);
+    }
+
+    .org-personne__identite {
+      min-inline-size: 0;
+      display: flex;
+      flex-direction: column;
+      gap: calc(var(--e-1) / 2);
+    }
+
+    .org-personne__nom {
+      font-weight: var(--graisse-forte);
+      line-height: var(--interligne-serre);
+      overflow-wrap: break-word;
+    }
+
+    .org-personne__poste {
+      font-size: var(--texte-sm);
+      color: var(--texte-doux);
+      line-height: var(--interligne-serre);
+      overflow-wrap: break-word;
+    }
+
+    .org-personne__perimetre {
+      font-size: var(--texte-xs);
+      color: var(--texte-faible);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .org-personne__deplacer {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      inline-size: var(--cible-tactile);
+      min-block-size: var(--cible-tactile);
+      align-self: center;
+      padding: 0;
+
+      background-color: transparent;
+      color: var(--texte-faible);
+      border: var(--org-filet) solid transparent;
+      border-radius: var(--rayon-plein);
+      font-size: var(--texte-md);
+      line-height: 1;
+    }
+
+    .org-personne__deplacer:hover {
+      background-color: var(--fond-enfonce);
+      color: var(--texte);
+      border-color: var(--bordure);
+    }
+
+    /* Le leader d'une squad se distingue par une pastille étiquetée, pas
+       par une couleur : l'information est écrite. */
+    .org-etiquette {
+      display: inline-flex;
+      align-items: center;
+      padding-inline: var(--e-2);
+      border: var(--org-filet) solid var(--bordure);
+      border-radius: var(--rayon-plein);
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-forte);
+      text-transform: uppercase;
+      letter-spacing: var(--lettrage-etiquette);
+      color: var(--texte-doux);
+      white-space: nowrap;
+    }
+
+    /* --- Avatar généré ------------------------------------------------------
+       Aucun appel réseau : un cercle et deux ou trois initiales, dessinés
+       en SVG. La teinte vient de l'identifiant, la saturation et les
+       clartés des jetons locaux ci-dessus. */
+    .org-avatar {
+      flex: none;
+      inline-size: var(--org-avatar);
+      block-size: var(--org-avatar);
+      border-radius: var(--rayon-plein);
+    }
+
+    .org-avatar__fond {
+      fill: hsl(var(--org-teinte) var(--org-avatar-saturation) var(--org-avatar-fond));
+    }
+
+    .org-avatar__initiales {
+      fill: hsl(var(--org-teinte) var(--org-avatar-saturation) var(--org-avatar-encre));
+      font-family: var(--police-titre);
+      font-size: var(--org-avatar-glyphe);
+      font-weight: var(--graisse-max);
+    }
+
+    .org-avatar--grand { --org-avatar: calc(var(--e-16) / 2); }
+
+    /* --- Densité ------------------------------------------------------------
+       Un seul attribut commande la vue compacte, la vue normale et la vue
+       détaillée. Rien n'est retiré du DOM : seul l'affichage change. */
+    .organigramme[data-densite="compacte"] {
+      --org-avatar: calc(var(--e-6) * var(--org-echelle));
+      --org-coude: calc(var(--cible-tactile) / 2.4);
+    }
+
+    .organigramme[data-densite="compacte"] .org-personne__poste,
+    .organigramme[data-densite="compacte"] .org-personne__perimetre,
+    .organigramme[data-densite="normale"] .org-personne__perimetre {
+      display: none;
+    }
+
+    .organigramme[data-densite="compacte"] .org-personne__principal {
+      min-block-size: calc(var(--cible-tactile) - var(--e-2));
+      padding-block: var(--e-1);
+    }
+
+    .organigramme[data-densite="detaillee"] {
+      --org-coude: calc(var(--cible-tactile) / 1.6);
+    }
+
+    /* =====================================================================
+       H. Recherche : retrait des non-correspondances
+       ===================================================================== */
+
+    /* Mise en retrait, jamais retrait du flux : la personne reste
+       atteignable au clavier et lisible par un lecteur d'écran. */
+    .org-personne[data-retrait="true"] { opacity: var(--org-retrait); }
+    .org-personne[data-retrait="true"]:focus-within { opacity: 1; }
+
+    .org-personne[data-trouve="true"] .org-personne__principal {
+      border-color: var(--bordure-forte);
+      background-color: var(--fond-eleve);
+    }
+
+    .org-branche[data-vide="true"] > .org-tete .org-noeud__titre {
+      color: var(--texte-faible);
+    }
+
+    /* =====================================================================
+       I. Glisser-déposer
+       ===================================================================== */
+
+    .org-personne[draggable="true"] .org-personne__principal { cursor: grab; }
+    .org-personne[data-glisse="true"] { opacity: var(--org-retrait); }
+
+    /* Pendant un glissement, les squads d'accueil se signalent — et la
+       squad survolée s'affirme. La zone de dépôt est la branche entière
+       (le nœud de squad et ses membres), pour que la cible soit large. */
+    .organigramme[data-glissement="true"] .org-noeud--squad {
+      border-color: var(--bordure-forte);
+    }
+
+    [data-depot][data-survol="true"] > .org-tete > .org-noeud--squad {
+      border-color: var(--accent);
+      border-style: solid;
+      background-color: var(--accent-doux);
+    }
+
+    /* La mention de dépôt n'apparaît que pendant un glissement : rien ne
+       clignote, rien ne s'agite en permanence. */
+    .org-noeud__depot { display: none; }
+
+    .organigramme[data-glissement="true"] .org-noeud__depot {
+      display: inline;
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-forte);
+      color: var(--texte-accent);
+    }
+
+    /* =====================================================================
+       J. Fiche de personne
+       ===================================================================== */
+
+    .org-fiche {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-4);
+      padding: var(--e-5);
+
+      background-color: var(--fond-eleve);
+      border: var(--org-filet) solid var(--bordure);
+      border-radius: var(--rayon-lg);
+      box-shadow: var(--ombre-md);
+    }
+
+    .org-fiche:focus { outline: none; }
+
+    .org-fiche:focus-visible {
+      outline: var(--focus-epaisseur) solid var(--focus-couleur);
+      outline-offset: var(--focus-decalage);
+    }
+
+    .org-fiche__entete {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--e-3);
+    }
+
+    .org-fiche__identite {
+      flex: 1 1 auto;
+      min-inline-size: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--e-4);
+    }
+
+    .org-fiche__titre {
+      margin: 0;
+      font-family: var(--police-titre);
+      font-size: var(--texte-xl);
+      font-weight: var(--graisse-max);
+      letter-spacing: var(--lettrage-titre);
+      line-height: var(--interligne-serre);
+      overflow-wrap: break-word;
+    }
+
+    .org-fiche__poste {
       margin: 0;
       font-size: var(--texte-sm);
       color: var(--texte-doux);
     }
 
-    /* ---------------------------------------------------------------------
-       C1. Pont ui.js -> design system : modale
+    .org-fiche__fermer {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      inline-size: var(--cible-tactile);
+      block-size: var(--cible-tactile);
+      padding: 0;
+
+      background-color: transparent;
+      color: var(--texte-doux);
+      border: var(--org-filet) solid transparent;
+      border-radius: var(--rayon-plein);
+      font-size: var(--texte-xl);
+      line-height: 1;
+    }
+
+    .org-fiche__fermer:hover {
+      background-color: var(--fond-enfonce);
+      color: var(--texte);
+    }
+
+    .org-fiche__liste {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: var(--e-2) var(--e-4);
+      margin: 0;
+    }
+
+    .org-fiche__cle {
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-forte);
+      text-transform: uppercase;
+      letter-spacing: var(--lettrage-etiquette);
+      color: var(--texte-faible);
+      align-self: center;
+    }
+
+    .org-fiche__valeur {
+      margin: 0;
+      font-size: var(--texte-sm);
+      overflow-wrap: break-word;
+      align-self: center;
+    }
+
+    .org-fiche__pole {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--e-2);
+    }
+
+    .org-fiche__filet {
+      flex: none;
+      inline-size: var(--e-5);
+      block-size: 3px;
+      border-radius: var(--rayon-plein);
+      background-color: var(--org-pole);
+    }
+
+    .org-fiche__groupe {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-2);
+    }
+
+    .org-fiche__intitule {
+      margin: 0;
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-forte);
+      text-transform: uppercase;
+      letter-spacing: var(--lettrage-etiquette);
+      color: var(--texte-faible);
+    }
+
+    .org-fiche__puces {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--e-2);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    /* Un collègue : une puce cliquable qui ouvre sa propre fiche. */
+    .org-puce {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--e-2);
+      min-block-size: calc(var(--cible-tactile) - var(--e-2));
+      padding-inline: var(--e-3);
+
+      background-color: var(--fond-eleve);
+      color: var(--texte);
+      border: var(--org-filet) solid var(--bordure);
+      border-radius: var(--rayon-plein);
+      font-size: var(--texte-sm);
+      text-align: start;
+    }
+
+    .org-puce:hover {
+      background-color: var(--fond-profond);
+      border-color: var(--bordure-forte);
+    }
+
+    .org-puce .org-avatar { --org-avatar: var(--e-5); }
+
+    .org-fiche__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--e-2);
+    }
+
+    /* --- La mention d'un champ déclaré mais vide ---------------------------
+       Une seule mention, toujours la même : le hub ne présente jamais une
+       valeur plausible à la place d'un trou. */
+    .org-vide {
+      font-style: italic;
+      color: var(--texte-faible);
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: var(--graisse-normale);
+    }
+
+    /* =====================================================================
+       K. Pont ui.js -> design system : modale et notifications
        `ui.js` produit .modale (le voile) > .modale__boite (la boîte).
        components.css attend .modale-fond > .modale : on réaffecte donc ici
        les rôles, sans toucher au socle.
-       --------------------------------------------------------------------- */
+       ===================================================================== */
 
     .modale {
       position: fixed;
@@ -523,7 +996,6 @@
       z-index: 200;
 
       display: flex;
-      flex-direction: row;
       align-items: center;
       justify-content: center;
       padding: var(--e-4);
@@ -548,12 +1020,12 @@
       display: flex;
       flex-direction: column;
       max-block-size: calc(100dvh - var(--e-12));
-      inline-size: min(100%, calc(var(--e-16) * 9));
+      inline-size: min(100%, calc(var(--e-16) * 8));
       margin: auto;
 
       background-color: var(--fond-eleve);
       color: var(--texte);
-      border: 1px solid var(--bordure);
+      border: var(--org-filet) solid var(--bordure);
       border-radius: var(--rayon-lg);
       box-shadow: var(--ombre-lg);
       overflow: hidden;
@@ -566,12 +1038,12 @@
       align-items: flex-start;
       gap: var(--e-4);
       padding: var(--e-5) var(--e-6);
-      border-block-end: 1px solid var(--bordure-douce);
+      border-block-end: var(--org-filet) solid var(--bordure-douce);
     }
 
     .modale__titre {
       flex: 1 1 auto;
-      min-width: 0;
+      min-inline-size: 0;
       margin: 0;
       font-size: var(--texte-xl);
       font-weight: var(--graisse-forte);
@@ -591,7 +1063,7 @@
 
       background-color: transparent;
       color: var(--texte-doux);
-      border: 1px solid transparent;
+      border: var(--org-filet) solid transparent;
       border-radius: var(--rayon-md);
       font-size: var(--texte-xl);
       line-height: 1;
@@ -622,7 +1094,7 @@
       gap: var(--e-3);
       padding: var(--e-4) var(--e-6);
       background-color: var(--fond-enfonce);
-      border-block-start: 1px solid var(--bordure-douce);
+      border-block-start: var(--org-filet) solid var(--bordure-douce);
     }
 
     /* États transitoires posés par ui.js via data-etat. */
@@ -641,10 +1113,6 @@
 
       .modale__actions .bouton { flex: 1 1 auto; }
     }
-
-    /* ---------------------------------------------------------------------
-       C2. Pont ui.js -> design system : notifications éphémères
-       --------------------------------------------------------------------- */
 
     .toasts {
       position: fixed;
@@ -671,7 +1139,7 @@
 
       background-color: var(--fond-eleve);
       color: var(--texte);
-      border: 1px solid var(--bordure);
+      border: var(--org-filet) solid var(--bordure);
       border-inline-start: var(--e-1) solid var(--org-toast-teinte);
       border-radius: var(--rayon-md);
       box-shadow: var(--ombre-lg);
@@ -687,7 +1155,7 @@
 
     .toast__texte {
       flex: 1 1 auto;
-      min-width: 0;
+      min-inline-size: 0;
       align-self: center;
       line-height: var(--interligne);
       overflow-wrap: anywhere;
@@ -705,11 +1173,12 @@
       }
     }
 
-    /* ---------------------------------------------------------------------
-       Mouvement : toute transition de cette page est ici, et nulle part
-       ailleurs. base.css neutralise déjà l'ensemble sous
+    /* =====================================================================
+       L. Mouvement — discret, et jamais permanent
+       Toute transition de cette page est déclarée ici, et nulle part
+       ailleurs. base.css neutralise l'ensemble sous
        prefers-reduced-motion: reduce.
-       --------------------------------------------------------------------- */
+       ===================================================================== */
 
     @media (prefers-reduced-motion: no-preference) {
       .modale,
@@ -717,54 +1186,40 @@
         transition: opacity var(--duree) var(--courbe);
       }
 
-      .personne,
-      .org-depot {
+      .org-plier__chevron {
+        transition: transform var(--duree-rapide) var(--courbe);
+      }
+
+      .org-personne,
+      .org-personne__principal,
+      .org-noeud,
+      .org-puce,
+      .org-plier,
+      .org-segment__libelle {
         transition: opacity var(--duree-rapide) var(--courbe),
                     background-color var(--duree-rapide) var(--courbe),
-                    border-color var(--duree-rapide) var(--courbe);
+                    border-color var(--duree-rapide) var(--courbe),
+                    color var(--duree-rapide) var(--courbe);
       }
     }
 
-    /* ---------------------------------------------------------------------
-       Impression : l'organigramme seul, à plat.
-       --------------------------------------------------------------------- */
+    /* =====================================================================
+       M. Impression : l'arbre seul, tout déplié, à plat
+       ===================================================================== */
 
     @media print {
-      /* base.css masque déjà .sans-impression ; ici on retire ce qui n'a
-         aucun sens sur le papier : les outils et les boutons d'action. */
-      .org-barre,
-      .org-selecteur,
-      .personne__deplacer { display: none !important; }
+      .org-outils,
+      .org-fiche,
+      .org-plier,
+      .org-personne__deplacer { display: none !important; }
 
-      .org-pole,
-      .org-squad,
-      .personne {
-        break-inside: avoid;
-        page-break-inside: avoid;
-        box-shadow: none;
-      }
-    }
+      .org-plan { overflow: visible; }
 
-    /* Sur petit écran, le rail mangerait la largeur utile : on le réduit
-       sans le supprimer — la profondeur doit rester visible. */
-    @media (max-width: 640px) {
-      .org-branche {
-        margin-inline-start: var(--e-2);
-        padding-inline-start: var(--e-4);
-      }
-
-      .org-noeud::before {
-        inset-inline-start: calc(var(--e-4) * -1);
-        inline-size: var(--e-3);
-      }
-
-      .org-pole,
-      .org-squad__corps,
-      .org-squad__entete { padding: var(--e-4); }
+      .org-noeud,
+      .org-branche { break-inside: avoid; page-break-inside: avoid; }
     }
   </style>
 </head>
-
 <body>
   <a class="lien-evitement" href="#contenu">Aller au contenu</a>
 
@@ -790,105 +1245,140 @@
   </header>
 
   <main id="contenu" tabindex="-1">
-    <div class="conteneur pile pile--lache organigramme">
+    <div class="conteneur conteneur--large pile pile--section">
 
-      <!-- ==============================================================
-           Titre et mode d'emploi
-           ============================================================== -->
+      <!-- ================================================================
+           1. En-tête de page
+           ================================================================ -->
       <div class="pile pile--serree">
+        <p class="org-surtitre">Service ETII</p>
         <h1>Organigramme</h1>
         <p class="mesure texte-doux sans-marge">
-          Le service ETII, puis chacun de ses trois pôles : un responsable
-          et deux squads. Choisissez le périmètre à afficher, puis
-          réorganisez librement : faites glisser une personne vers une
-          autre squad — y compris dans un autre pôle — ou utilisez le
-          bouton <strong>Déplacer…</strong> de sa carte, qui fait
-          exactement la même chose au clavier. Les changements restent sur
-          ce poste et n'affectent personne d'autre.
+          La direction en haut, les trois pôles en dessous, puis les squads et
+          leurs membres. Chaque branche se plie et se déplie ; une personne
+          s’ouvre en fiche. Les réorganisations restent sur ce poste et
+          n’écrivent rien sur le serveur.
         </p>
       </div>
 
-      <!-- ==============================================================
-           Sélecteur de pôle.
-           Les quatre puces et leurs effectifs sont construits par
-           organigramme.js à partir des données : la section reste masquée
-           tant qu'il n'y a rien de fiable à proposer.
-           ============================================================== -->
-      <section class="org-selecteur sans-impression" id="org-selecteur"
-               aria-labelledby="org-selecteur-titre" hidden>
-        <h2 class="org-selecteur__titre" id="org-selecteur-titre">
-          Périmètre affiché
-        </h2>
-        <ul class="facettes" id="org-poles"></ul>
-        <p class="org-contexte" id="org-contexte"></p>
+      <!-- ================================================================
+           2. Bandeau de repères
+           Toutes les valeurs sont comptées dans le fichier de données.
+           Aucune n'est écrite dans cette page.
+           ================================================================ -->
+      <section class="pile" aria-labelledby="titre-reperes">
+        <h2 class="separateur-titre sans-marge" id="titre-reperes">Repères</h2>
+        <div id="zone-reperes" aria-busy="true">
+          <p class="texte-doux texte-sm sans-marge">Comptage en cours…</p>
+        </div>
       </section>
 
-      <!-- ==============================================================
-           Barre d'outils.
-           Tous les contrôles sont désactivés tant que les données ne sont
-           pas chargées : organigramme.js les réactive à l'état « succès ».
-           ============================================================== -->
-      <section class="org-barre sans-impression" aria-label="Outils de l'organigramme">
+      <!-- ================================================================
+           3. Barre d'outils
+           Le balisage est statique : les contrôles existent avant le
+           premier octet de JavaScript, et sont désactivés tant que les
+           données ne sont pas là.
+           ================================================================ -->
+      <section class="org-outils" aria-labelledby="titre-outils">
+        <h2 class="visuellement-cache" id="titre-outils">Réglages de l’arborescence</h2>
 
-        <div class="org-barre__recherche">
+        <div class="org-outils__ligne">
           <div class="recherche">
             <span class="recherche__icone" aria-hidden="true">⌕</span>
-            <label class="visuellement-cache" for="org-recherche">
-              Rechercher une personne, un poste ou un périmètre
-            </label>
             <input class="recherche__champ" id="org-recherche" type="search"
-                   placeholder="Rechercher une personne, un poste, un périmètre…"
-                   autocomplete="off" spellcheck="false"
-                   aria-describedby="org-resume" disabled>
-            <button class="bouton bouton--discret bouton--compact bouton--icone recherche__effacer"
-                    id="org-effacer" type="button" aria-label="Effacer la recherche">
-              <span aria-hidden="true">×</span>
-            </button>
+                   placeholder="Rechercher une personne, un poste, une squad…"
+                   autocomplete="off" spellcheck="false" disabled
+                   aria-describedby="org-recherche-aide">
+            <kbd class="recherche__raccourci">/</kbd>
+          </div>
+          <p class="visuellement-cache" id="org-recherche-aide">
+            La recherche met en valeur les personnes correspondantes et déplie
+            automatiquement les branches nécessaires pour les révéler.
+          </p>
+          <p class="texte-sm texte-doux sans-marge org-outils__resultat"
+             id="org-resultat" role="status" aria-live="polite"></p>
+        </div>
+
+        <p class="org-outils__separateur" aria-hidden="true"></p>
+
+        <div class="org-outils__ligne">
+          <div class="facettes" role="group" aria-label="Périmètre affiché"
+               id="org-vues">
+            <button class="facette" type="button" aria-pressed="true"
+                    data-vue="ETII" disabled>Tout le service</button>
+            <button class="facette" type="button" aria-pressed="false"
+                    data-vue="ETIIA" disabled>ETIIA</button>
+            <button class="facette" type="button" aria-pressed="false"
+                    data-vue="ETIIE" disabled>ETIIE</button>
+            <button class="facette" type="button" aria-pressed="false"
+                    data-vue="ETIII" disabled>ETIII</button>
           </div>
         </div>
 
-        <div class="org-zoom" role="group" aria-label="Taille des cartes">
-          <button class="bouton bouton--discret bouton--compact bouton--icone"
-                  id="org-zoom-moins" type="button"
-                  aria-label="Réduire la taille des cartes" disabled>
-            <span aria-hidden="true">−</span>
-          </button>
+        <p class="org-outils__separateur" aria-hidden="true"></p>
 
-          <label class="visuellement-cache" for="org-zoom">
-            Taille des cartes, en pourcentage
-          </label>
-          <input class="org-zoom__curseur" id="org-zoom" type="range"
-                 min="80" max="160" step="10" value="100"
-                 aria-describedby="org-zoom-valeur" disabled>
+        <div class="org-outils__ligne">
+          <div class="rangee rangee--serree">
+            <button class="bouton bouton--secondaire bouton--compact" type="button"
+                    id="org-tout-deplier" disabled>Tout déplier</button>
+            <button class="bouton bouton--secondaire bouton--compact" type="button"
+                    id="org-tout-replier" disabled>Tout replier</button>
+          </div>
 
-          <button class="bouton bouton--discret bouton--compact bouton--icone"
-                  id="org-zoom-plus" type="button"
-                  aria-label="Agrandir la taille des cartes" disabled>
-            <span aria-hidden="true">+</span>
-          </button>
+          <fieldset class="org-segment">
+            <legend class="org-segment__legende">Densité</legend>
+            <div class="org-segment__choix">
+              <label class="org-segment__option">
+                <input class="org-segment__radio" type="radio" name="org-densite"
+                       value="compacte" disabled>
+                <span class="org-segment__libelle">Compacte</span>
+              </label>
+              <label class="org-segment__option">
+                <input class="org-segment__radio" type="radio" name="org-densite"
+                       value="normale" checked disabled>
+                <span class="org-segment__libelle">Normale</span>
+              </label>
+              <label class="org-segment__option">
+                <input class="org-segment__radio" type="radio" name="org-densite"
+                       value="detaillee" disabled>
+                <span class="org-segment__libelle">Détaillée</span>
+              </label>
+            </div>
+          </fieldset>
 
-          <output class="org-zoom__valeur" id="org-zoom-valeur"
-                  for="org-zoom">100 %</output>
-        </div>
+          <p class="org-zoom">
+            <label class="org-zoom__etiquette" for="org-zoom">Zoom</label>
+            <input class="org-zoom__curseur" id="org-zoom" type="range"
+                   min="85" max="140" step="5" value="100" disabled
+                   aria-describedby="org-zoom-valeur">
+            <output class="org-zoom__valeur" id="org-zoom-valeur"
+                    for="org-zoom">100 %</output>
+          </p>
 
-        <div class="org-barre__actions">
-          <button class="bouton bouton--danger-discret bouton--compact"
-                  id="org-reinitialiser" type="button" disabled>
-            Réinitialiser
+          <button class="bouton bouton--danger-discret bouton--compact pousse"
+                  type="button" id="org-reinitialiser" disabled>
+            Réinitialiser l’organisation
           </button>
         </div>
       </section>
 
-      <!-- Résumé de la recherche. Vide et masqué tant qu'aucune recherche
-           n'est en cours ; relié au champ par aria-describedby. -->
-      <p class="org-resume" id="org-resume" hidden></p>
+      <!-- ================================================================
+           4. La scène : l'arbre, et la fiche de personne à côté
+           ================================================================ -->
+      <div class="org-scene" id="org-scene">
+        <section class="pile pile--serree" aria-labelledby="titre-arbre">
+          <h2 class="visuellement-cache" id="titre-arbre">
+            Arborescence du service
+          </h2>
+          <div class="org-plan" id="zone-arbre"></div>
+        </section>
 
-      <!-- ==============================================================
-           L'organigramme lui-même.
-           Rempli par organigramme.js via avecEtat() : chargement, erreur
-           et vide sont rendus ici, dans ce même conteneur.
-           ============================================================== -->
-      <div class="pile pile--lache" id="organigramme"></div>
+        <!-- La fiche est un complément permanent, pas une fenêtre modale :
+             elle ne confisque jamais le focus. Échap la referme et rend le
+             focus à la personne qui l'a ouverte. -->
+        <aside class="org-fiche" id="org-fiche" tabindex="-1" hidden
+               aria-labelledby="org-fiche-titre"></aside>
+      </div>
 
     </div>
   </main>

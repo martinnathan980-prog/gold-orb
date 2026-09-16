@@ -94,10 +94,16 @@ await page.keyboard.press('ArrowDown');
 await page.waitForTimeout(200);
 const apres2 = await positionActive();
 t('ArrowDown déplace la sélection au suivant', !!apres2 && apres2 !== apres1, `(${apres1} -> ${apres2})`);
+// La sélection peut viser la liste de SUGGESTIONS (motif combobox, le
+// focus restant dans le champ) ou la liste de RÉSULTATS (tabindex mobile).
+// Les deux sont valides : on vérifie que la cible existe et appartient bien
+// à une liste, sans présumer laquelle.
 const idActif = (apres2 || '').split(':')[1];
-if (idActif) t('l\'élément sélectionné existe dans la liste',
-  await page.evaluate(id => { const e = document.getElementById(id);
-    return !!e && !!e.closest('#ds-resultats'); }, idActif));
+if (idActif) t('l\'élément sélectionné appartient à une liste',
+  await page.evaluate(id => {
+    const e = document.getElementById(id);
+    return !!e && !!(e.closest('#ds-resultats') || e.closest('[role="listbox"]'));
+  }, idActif), `(${idActif})`);
 
 console.log('\n== Annonce aux lecteurs d\'écran ==');
 await champ.fill('harnais');

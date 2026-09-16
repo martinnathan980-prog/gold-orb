@@ -1,478 +1,784 @@
 /* =========================================================================
    ETII Hub — La page du service ETII (index.html)
 
-   C'est la vitrine du service, et elle est ordonnée par importance :
+   La page ne porte que trois choses, dans cet ordre :
 
-     1. LE DISPATCHER — trois cartes de pôle. Le premier geste attendu
-        d'un arrivant est de choisir son pôle : rien ne passe avant.
-     2. LE MOT DU CHEF DE SERVICE — une parole, dans son propre bloc.
-     3. LA FLOTTE — le carrousel des appareils suivis.
-     4. LE SUIVI OTQ / OTD — tuiles, douze mois par pôle, comparaison,
-        puis une ligne d'état disant d'où viennent ces chiffres.
-     5. LES ANNONCES DE SERVICE — en fin de page, deux au plus.
-     6. LA RECHERCHE DOCUMENTAIRE — écrite en dur dans la page.
+     1. L'AGENDA DU SERVICE — une frise chronologique unique, filtrable
+        par pôle et par période, dont le mot du chef de service est
+        l'entrée la plus importante.
+     2. LA FLOTTE SUIVIE — rendue par grilleFlotte() de flotte.js, suivie
+        de l'avertissement porté par le fichier.
+     3. LE SUIVI OTQ / OTD — en attente de raccordement. Aucun graphique,
+        aucune donnée d'exemple : un encadré qui dit exactement cela.
 
-   Cinq zones asynchrones, cinq cycles d'état indépendants (data.js) :
+   Le choix du pôle et l'accès à la recherche documentaire sont dans la
+   navigation du haut : la page ne les répète pas.
 
-     #zone-poles         organigramme.json (+ indicateurs.json, facultatif)
-     #zone-mot           communications.json → motDuChef
-     #zone-flotte        flotte.json
-     #zone-indicateurs   indicateurs.json
-     #zone-communication communications.json → annonces
+   RÈGLE TENUE D'UN BOUT À L'AUTRE : rien n'est inventé. Tout ce qui
+   s'affiche vient des fichiers JSON. Un champ absent ou nul s'affiche
+   « à renseigner », jamais comme une valeur plausible. Les seules valeurs
+   calculées ici — le nombre de jours restants, les compteurs de facette —
+   se déduisent de la donnée lue et de la date du jour, rien d'autre.
 
-   L'indépendance est délibérée : chaque section affiche son propre état.
-   Si indicateurs.json ne charge pas, les cartes de pôle s'affichent quand
-   même — leur effectif vient de l'organigramme, seule la mention d'OTQ
-   manque. Si communications.json manque, le mot du chef et les annonces
-   le disent chacun de leur côté, et la flotte continue de défiler.
+   Tout le DOM est construit avec el() / svg() / monter() : aucun
+   innerHTML, aucun gestionnaire en attribut HTML, aucune valeur de style
+   en dur — les seules propriétés posées sont des `--…` valant un jeton de
+   tokens.css.
 
-   Tout le DOM est construit avec el() / monter() : aucun innerHTML, aucun
-   gestionnaire en attribut HTML, aucune valeur de style en dur — les
-   seules propriétés posées sont des `--…` valant un jeton de tokens.css.
+   Deux zones asynchrones, deux cycles d'état indépendants (data.js) :
+
+     #zone-agenda   communications.json → agenda + motDuChef
+     #zone-flotte   flotte.json
+
+   La troisième zone, #zone-otq, ne charge rien : elle n'a pas de source.
    ========================================================================= */
 
-import { el, monter, etatUrl, initTheme, initNav, annoncer } from './ui.js';
-import { chargerDonnees, viderCache, avecEtat, verifierForme } from './data.js';
-import { tuileIndicateur, graphiqueLignes, barresComparees } from './indicateurs.js';
-import { carrousel } from './helicos.js';
+import { el, svg, monter, etatUrl, initTheme, initNav } from './ui.js';
+import { chargerDonnees, avecEtat, verifierForme } from './data.js';
+import { grilleFlotte } from './flotte.js';
 
 /* -------------------------------------------------------------------------
    1. Constantes de la page
    ------------------------------------------------------------------------- */
 
-/*
-   Les trois pôles, dans l'ordre de l'accord d'équipe. Le libellé, la
-   métaphore et la phrase de description sont de la matière éditoriale, pas
-   de la donnée : ils vivent ici, pas dans un JSON. La couleur est un jeton
-   de tokens.css — jamais une valeur brute, et jamais le seul signal du pôle.
-*/
-const POLES = [
-  {
-    cle: 'ETIIA',
-    metaphore: 'Squelette & ADN',
-    description: 'Les règles d’architecture : découpage fonctionnel, '
-      + 'conventions de nommage et principes que tous les autres travaux '
-      + 'appliquent ensuite.',
-    page: 'etiia.html',
-    couleur: 'var(--pole-etiia)'
-  },
-  {
-    cle: 'ETIIE',
-    metaphore: 'Système nerveux',
-    description: 'Les schémas électriques et la communication entre '
-      + 'systèmes : signaux, interfaces et cohérence des échanges d’un bout '
-      + 'à l’autre de la définition.',
-    page: 'etiie.html',
-    couleur: 'var(--pole-etiie)'
-  },
-  {
-    cle: 'ETIII',
-    metaphore: 'Structure & harnais',
-    description: 'L’intégration physique et le routage dans la maquette '
-      + 'numérique : cheminements, fixations et vérification des '
-      + 'interférences avant fabrication.',
-    page: 'etiii.html',
-    couleur: 'var(--pole-etiii)'
-  }
-];
+/** Mention unique des champs déclarés mais vides. Jamais de substitut. */
+const NON_RENSEIGNE = 'à renseigner';
 
-/* Couleur de série du NIVEAU SERVICE, tous pôles confondus. Les tuiles du
-   suivi mesurent le service : elles n'empruntent la couleur d'aucun pôle. */
-const COULEUR_SERVICE = 'var(--pole-etii)';
-
-/* Ordre d'affichage des indicateurs. L'OTQ vient en premier : c'est
-   l'indicateur que le service regarde, et celui que porte chaque carte de
-   pôle. Les autres suivent, ils ne le remplacent pas. */
-const ORDRE_INDICATEURS = ['otq', 'otd', 'ecarts', 'charge'];
-
-/** Nombre maximal d'annonces de service reprises en fin de page. */
-const MAX_ANNONCES = 2;
-
-/** Statuts d'annonce : libellé lisible et variante de composant. */
-const STATUTS = {
-  info:   { variante: 'info',   libelle: 'Information' },
-  urgent: { variante: 'alerte', libelle: 'Urgent' },
-  succes: { variante: 'succes', libelle: 'Succès' }
-};
-
-const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
-                     'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 const MOIS_LONGS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
                     'juillet', 'août', 'septembre', 'octobre', 'novembre',
                     'décembre'];
 
+const JOUR_MS = 24 * 60 * 60 * 1000;
+
+/*
+   Les pôles connus du hub. Le libellé et la couleur sont de la matière
+   d'interface, pas de la donnée : la couleur est un jeton de tokens.css, et
+   elle n'est jamais le seul signal — le libellé l'accompagne toujours.
+   Un code absent de cette table s'affiche tel que le fichier l'écrit.
+*/
+const POLES = {
+  ETII:  { libelle: 'Service ETII', couleur: 'var(--pole-etii)' },
+  ETIIA: { libelle: 'Pôle ETIIA',   couleur: 'var(--pole-etiia)' },
+  ETIIE: { libelle: 'Pôle ETIIE',   couleur: 'var(--pole-etiie)' },
+  ETIII: { libelle: 'Pôle ETIII',   couleur: 'var(--pole-etiii)' }
+};
+
+/*
+   Types d'entrée reconnus. Chaque type a un libellé lisible ET une icône
+   en trait : l'information n'est jamais portée par la seule couleur, ni
+   par la seule forme. Un type inconnu garde son libellé brut et reçoit
+   l'icône générique.
+*/
+const TYPES = {
+  jalon:   'Jalon',
+  atelier: 'Atelier',
+  reunion: 'Réunion',
+  mot:     'Mot du chef de service',
+  succes:  'Succès',
+  alerte:  'Alerte',
+  info:    'Information'
+};
+
+/* Tracés des icônes de type, en trait seul, sur une grille de 24 × 24. */
+const TRACES = {
+  /* Un fanion sur sa hampe. */
+  jalon: ['M6 3.2v17.6', 'M6 4.6h11.2l-2.6 3.5 2.6 3.5H6z'],
+  /* Trois participants reliés autour d'une table. */
+  atelier: [
+    'M12 4.2a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8',
+    'M6 14.4a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8',
+    'M18 14.4a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8',
+    'M10.4 8.3 7.6 14.4', 'M13.6 8.3l2.8 6.1', 'M8.4 16.8h7.2'
+  ],
+  /* Une bulle de dialogue. */
+  reunion: ['M5 5h14v10h-8.6L6 18.6V15H5z', 'M8.4 8.6h7.2', 'M8.4 11.6h4.4'],
+  /* Un porte-voix : une parole adressée au service, pas une brève. À
+     cette taille, deux guillemets se lisaient « 99 » — la forme doit
+     rester reconnaissable dans une pastille de deux centimètres. */
+  mot: [
+    'M4.6 10.2v3.6a1.4 1.4 0 0 0 1.4 1.4h2l7.6 3.8V5L8 8.8H6a1.4 1.4 0 0 0-1.4 1.4z',
+    'M18.6 9.6a3.6 3.6 0 0 1 0 4.8',
+    'M8 15.2v3.4a1.4 1.4 0 0 0 1.4 1.4h.6a1.4 1.4 0 0 0 1.4-1.4v-1.8'
+  ],
+  /* Une coche dans un cercle. */
+  succes: ['M12 3.2a8.8 8.8 0 1 0 0 17.6 8.8 8.8 0 0 0 0-17.6',
+           'M8.2 12.2l2.6 2.6 5-5.2'],
+  /* Un triangle d'avertissement. */
+  alerte: ['M12 4.2 20.8 19.4H3.2z', 'M12 10v4.2', 'M12 17.2h.01'],
+  /* Un « i » dans un cercle. */
+  info: ['M12 3.2a8.8 8.8 0 1 0 0 17.6 8.8 8.8 0 0 0 0-17.6',
+         'M12 11.2v5', 'M12 7.8h.01'],
+  /* Repli : un cercle et son centre. Il dit « type non reconnu », il ne
+     fait pas semblant d'en désigner un. */
+  defaut: ['M12 3.2a8.8 8.8 0 1 0 0 17.6 8.8 8.8 0 0 0 0-17.6', 'M12 12h.01'],
+  /* Une fiche de raccordement, pour l'encadré d'attente. */
+  branchement: ['M9 3v4.4', 'M15 3v4.4', 'M6.2 7.4h11.6v3.2a5.8 5.8 0 0 1-11.6 0z',
+                'M12 16.4V21']
+};
+
+/** Valeur de facette signifiant « aucun filtre ». */
+const TOUS = 'tous';
+
+/** Les trois périodes proposées, dans l'ordre d'affichage. */
+const PERIODES = [
+  { id: 'tout',    libelle: 'Tout' },
+  { id: 'a-venir', libelle: 'À venir' },
+  { id: 'passee',  libelle: 'Passées' }
+];
+
 /* -------------------------------------------------------------------------
-   2. Formatage
+   2. Lecture tolérante
    ------------------------------------------------------------------------- */
 
 /**
- * Met une valeur numérique en forme française, unité comprise.
- * Les entiers restent entiers (26 écarts, pas 26,0) ; le reste garde une
- * décimale, ce qui suffit à toutes les séries du service.
- *
- * Volontairement local : indicateurs.js formate ce qu'il affiche lui-même,
- * cette fonction ne sert qu'aux textes propres à cette page.
+ * Chaîne lisible d'une valeur quelconque, ou '' si elle n'en est pas une.
+ * Ne remplace jamais une valeur manquante par autre chose que du vide :
+ * c'est l'affichage, plus bas, qui écrit « à renseigner ».
  *
  * @param {*} valeur
- * @param {string} [unite] '%' ou chaîne vide
- * @returns {string} '93,6 %', '26', ou '—' si la valeur est inexploitable
- */
-function formaterValeur(valeur, unite) {
-  if (typeof valeur !== 'number' || !Number.isFinite(valeur)) return '—';
-
-  const decimales = Number.isInteger(valeur) ? 0 : 1;
-  let texte;
-  try {
-    texte = valeur.toLocaleString('fr-FR', {
-      minimumFractionDigits: decimales,
-      maximumFractionDigits: decimales
-    });
-  } catch (_e) {
-    texte = valeur.toFixed(decimales).replace('.', ',');
-  }
-
-  // Espace insécable avant l'unité : « 93,6 % » ne doit jamais se couper.
-  return unite ? texte + ' ' + unite : texte;
-}
-
-/**
- * Libellé d'un mois au format « 2026-09 ».
- *
- * @param {string} code
- * @param {string} [forme] 'long' → « septembre 2026 », 'court' →
- *                         « sept. 26 », sinon « sept. 2026 »
- * @returns {string} le code tel quel s'il est illisible
- */
-function libelleMois(code, forme) {
-  const brut = String(code === null || code === undefined ? '' : code);
-  const parts = /^(\d{4})-(\d{2})$/.exec(brut);
-  if (!parts) return brut;
-
-  const index = Number(parts[2]) - 1;
-  if (index < 0 || index > 11) return brut;
-
-  if (forme === 'long') return MOIS_LONGS[index] + ' ' + parts[1];
-  if (forme === 'court') return MOIS_COURTS[index] + ' ' + parts[1].slice(2);
-  return MOIS_COURTS[index] + ' ' + parts[1];
-}
-
-/**
- * Date longue à partir d'un « 2026-09-12 » → « 12 septembre 2026 ».
- * @param {string} code
  * @returns {string}
  */
-function dateLongue(code) {
-  const brut = String(code === null || code === undefined ? '' : code);
-  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(brut);
-  if (!parts) return brut;
-
-  const index = Number(parts[2]) - 1;
-  if (index < 0 || index > 11) return brut;
-
-  const jour = Number(parts[3]);
-  return (jour === 1 ? '1er' : String(jour))
-    + ' ' + MOIS_LONGS[index] + ' ' + parts[1];
+function txt(valeur) {
+  return typeof valeur === 'string' ? valeur.trim() : '';
 }
 
 /**
- * Heure de l'horloge locale, en « 14:07 » et en valeur machine.
- * Aucune dépendance à une locale disponible : les chiffres sont composés
- * à la main, donc identiques partout.
+ * Décompose une date ISO courte, sans passer par le fuseau local.
+ * @param {*} brut  attendu : 'AAAA-MM-JJ'
+ * @returns {{annee:number, mois:number, jour:number, utc:number}|null}
+ */
+function partiesDate(brut) {
+  const m = txt(brut).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+
+  const annee = Number(m[1]);
+  const mois = Number(m[2]);
+  const jour = Number(m[3]);
+  if (mois < 1 || mois > 12 || jour < 1 || jour > 31) return null;
+
+  return { annee, mois, jour, utc: Date.UTC(annee, mois - 1, jour) };
+}
+
+/**
+ * Date en toutes lettres : « 8 octobre 2026 ». Chaîne vide si la date
+ * n'est pas exploitable — l'appelant affiche alors « à renseigner ».
  *
- * @param {Date} instant
- * @returns {{affichage:string, machine:string}}
+ * @param {*} brut
+ * @returns {string}
  */
-function heureDe(instant) {
-  const deuxChiffres = (n) => (n < 10 ? '0' : '') + n;
-  const h = deuxChiffres(instant.getHours());
-  const m = deuxChiffres(instant.getMinutes());
-  const s = deuxChiffres(instant.getSeconds());
-  return { affichage: h + ' h ' + m, machine: h + ':' + m + ':' + s };
+function dateLongue(brut) {
+  const p = partiesDate(brut);
+  return p ? `${p.jour} ${MOIS_LONGS[p.mois - 1]} ${p.annee}` : '';
+}
+
+/** Minuit du jour courant, en UTC, pour comparer des dates sans heure. */
+function aujourdhui() {
+  const maintenant = new Date();
+  return Date.UTC(maintenant.getFullYear(), maintenant.getMonth(),
+    maintenant.getDate());
 }
 
 /**
- * Garde-fou de composant : les fabriques d'indicateurs et de flotte
- * doivent rendre un nœud. Une signature qui aurait changé casserait la
- * page entière ; ici elle bascule proprement la zone concernée en état
- * d'erreur, et les autres sections continuent de vivre.
+ * Nombre de jours entiers séparant une date du jour courant.
+ * Ce n'est pas une donnée inventée : c'est une soustraction entre la date
+ * lue dans le fichier et la date d'aujourd'hui.
  *
- * @param {*} valeur
- * @param {string} origine nom de la fabrique, cité dans le message
- * @returns {Node}
+ * @param {*} brut
+ * @returns {number|null} positif pour l'avenir, null si la date est illisible
  */
-function exigerNoeud(valeur, origine) {
-  if (valeur && typeof valeur === 'object' && typeof valeur.nodeType === 'number') {
-    return valeur;
-  }
-  throw new Error(
-    'Le composant ' + origine + '() n’a rien renvoyé d’affichable : '
-    + 'cette section ne peut pas être construite.'
-  );
+function joursRestants(brut) {
+  const p = partiesDate(brut);
+  return p ? Math.round((p.utc - aujourdhui()) / JOUR_MS) : null;
 }
 
-/* -------------------------------------------------------------------------
-   3. Lecture des séries
-   ------------------------------------------------------------------------- */
+/**
+ * Libellé du délai restant.
+ * @param {number|null} jours
+ * @returns {string} '' si le délai n'est pas calculable
+ */
+function libelleDelai(jours) {
+  if (jours === null) return '';
+  if (jours > 1) return `dans ${jours} jours`;
+  if (jours === 1) return 'dans 1 jour';
+  if (jours === 0) return 'aujourd’hui';
+  return 'échéance dépassée';
+}
 
 /**
- * Série d'un indicateur pour une source (un pôle, ou le service).
- * Une série de longueur différente de la période est refusée : mieux vaut
- * masquer une courbe que de la décaler d'un mois.
+ * Normalise une entrée d'agenda : rien n'est complété, tout est seulement
+ * mis dans une forme sûre à manipuler.
  *
- * @param {*} source
- * @param {string} cle
- * @param {number} longueur nombre de mois attendu
- * @returns {number[]|null}
+ * @param {*} brut
+ * @param {number} rang
+ * @returns {{id:string, date:string, statut:string, pole:string,
+ *            type:string, titre:string, resume:string}}
  */
-function serieDe(source, cle, longueur) {
-  if (!source || typeof source !== 'object') return null;
-  const serie = source[cle];
-  if (!Array.isArray(serie) || serie.length !== longueur) return null;
-  return serie;
-}
-
-/**
- * Liste des mois couverts par un jeu d'indicateurs, ou [] si illisible.
- * @param {*} indicateurs
- * @returns {string[]}
- */
-function moisDe(indicateurs) {
-  if (!indicateurs || typeof indicateurs !== 'object') return [];
-  const periode = indicateurs.periode;
-  if (!periode || typeof periode !== 'object') return [];
-  return Array.isArray(periode.mois) ? periode.mois : [];
-}
-
-/* =========================================================================
-   4. LE DISPATCHER — les trois cartes de pôle
-   ========================================================================= */
-
-/**
- * Effectif réel d'un pôle : son responsable, plus les membres de chaque
- * squad. Lu dans organigramme.json, jamais recopié en dur.
- *
- * @param {object} organigramme
- * @param {string} cle 'ETIIA' | 'ETIIE' | 'ETIII'
- * @returns {number|null} null si le pôle est absent des données
- */
-function effectifDe(organigramme, cle) {
-  const liste = Array.isArray(organigramme.poles) ? organigramme.poles : [];
-  const bloc = liste.find((entree) => entree && entree.pole === cle);
-  if (!bloc) return null;
-
-  let total = bloc.responsable ? 1 : 0;
-  for (const squad of Array.isArray(bloc.squads) ? bloc.squads : []) {
-    if (squad && Array.isArray(squad.membres)) total += squad.membres.length;
-  }
-  return total;
-}
-
-/**
- * OTQ du dernier mois pour un pôle, avec sa cible et son unité.
- * Tolère un jeu d'indicateurs absent : la carte s'affichera sans la mesure.
- *
- * @param {object|null} indicateurs
- * @param {string} cle
- * @returns {{valeur:number, unite:string, cible:number|null, mois:string}|null}
- */
-function otqDuMois(indicateurs, cle) {
-  if (!indicateurs || typeof indicateurs !== 'object') return null;
-
-  const source = indicateurs.poles && indicateurs.poles[cle];
-  const serie = source && Array.isArray(source.otq) ? source.otq : null;
-  if (!serie || serie.length === 0) return null;
-
-  const index = serie.length - 1;
-  if (typeof serie[index] !== 'number') return null;
-
-  const def = (indicateurs.definitions && indicateurs.definitions.otq) || {};
-  const mois = moisDe(indicateurs);
+function normaliserEntree(brut, rang) {
+  const source = (brut && typeof brut === 'object') ? brut : {};
+  const statut = txt(source.statut).toLowerCase();
 
   return {
-    valeur: serie[index],
-    unite: typeof def.unite === 'string' ? def.unite : '%',
-    cible: typeof def.cible === 'number' ? def.cible : null,
-    mois: mois[index] || ''
+    id: txt(source.id) || `agenda-${rang}`,
+    date: txt(source.date),
+    /* Un statut non reconnu n'est pas redressé : il reste vide, et
+       l'entrée n'est classée ni dans l'avenir ni dans le passé. */
+    statut: (statut === 'a-venir' || statut === 'passee') ? statut : '',
+    pole: txt(source.pole),
+    type: txt(source.type).toLowerCase(),
+    titre: txt(source.titre),
+    resume: txt(source.resume)
   };
 }
 
 /**
- * Une mesure du pied de carte : une valeur lisible, son libellé, et
- * éventuellement une pastille d'état.
+ * Normalise le mot du chef de service. Les lignes de corps sans texte sont
+ * écartées : ce sont des séparateurs, pas des paragraphes vides.
  *
- * @param {string} libelle
- * @param {string} valeur
- * @param {Element|null} [complement]
- * @returns {Element}
+ * @param {*} brut
+ * @returns {{auteur:string, fonction:string, date:string, titre:string,
+ *            corps:string[]}|null}
  */
-function mesureDePole(libelle, valeur, complement) {
-  return el('div', { class: 'carte-pole__mesure' },
-    el('span', { class: 'carte-pole__valeur' }, valeur),
-    el('span', { class: 'carte-pole__libelle' }, libelle),
-    complement || null);
+function normaliserMot(brut) {
+  if (!brut || typeof brut !== 'object') return null;
+
+  const corps = Array.isArray(brut.corps)
+    ? brut.corps
+      .map((ligne) => (ligne && typeof ligne === 'object')
+        ? txt(ligne.texte)
+        : txt(ligne))
+      .filter((ligne) => ligne !== '')
+    : [];
+
+  return {
+    auteur: txt(brut.auteur),
+    fonction: txt(brut.fonction),
+    date: txt(brut.date),
+    titre: txt(brut.titre),
+    corps
+  };
 }
 
 /**
- * Carte d'entrée vers l'espace d'un pôle — la brique du dispatcher.
+ * Ordre d'affichage : un seul axe du temps, descendant. Les entrées sans
+ * date exploitable ferment la marche — elles ne sont pas datées d'office.
  *
- * La couleur du pôle est portée par le filet de tête et par la pastille du
- * titre, toujours collée au libellé « ETIIA » : elle confirme, elle ne dit
- * jamais seule. Une seule zone cliquable, le lien de titre étiré par
- * .carte__lien::after — aucun gestionnaire posé sur la carte.
- *
- * @param {object} pole entrée de POLES
- * @param {number|null} effectif
- * @param {object|null} otq
- * @returns {Element}
+ * @param {object} a
+ * @param {object} b
+ * @returns {number}
  */
-function carteDePole(pole, effectif, otq) {
-  const mesures = el('div', { class: 'carte-pole__mesures' });
+function parRecence(a, b) {
+  const da = partiesDate(a.date);
+  const db = partiesDate(b.date);
 
-  mesures.append(mesureDePole(
-    'Effectif',
-    effectif === null ? '—' : formaterValeur(effectif, ''),
-    el('span', { class: 'texte-xs texte-faible' },
-      effectif === null
-        ? 'Organigramme indisponible'
-        : (effectif > 1 ? 'personnes du pôle' : 'personne du pôle'))));
+  if (da && db && da.utc !== db.utc) return db.utc - da.utc;
+  if (da && !db) return -1;
+  if (!da && db) return 1;
 
-  if (otq) {
-    /* La variante colore la pastille, mais le texte dit déjà tout : valeur,
-       unité, mois et position par rapport à la cible. Rien ne repose sur la
-       seule couleur. */
-    const atteinte = typeof otq.cible === 'number' && otq.valeur >= otq.cible;
-    mesures.append(mesureDePole(
-      'OTQ' + (otq.mois ? ' ' + libelleMois(otq.mois) : '')
-        + (typeof otq.cible === 'number'
-          ? ' · cible ' + formaterValeur(otq.cible, otq.unite)
-          : ''),
-      formaterValeur(otq.valeur, otq.unite),
-      typeof otq.cible === 'number'
-        ? el('span', { class: 'badge ' + (atteinte ? 'badge--succes' : 'badge--alerte') },
-            el('span', { class: 'badge__point', 'aria-hidden': 'true' }),
-            atteinte ? 'Cible atteinte' : 'Sous la cible')
-        : null));
-  } else {
-    mesures.append(mesureDePole('OTQ', '—',
-      el('span', { class: 'texte-xs texte-faible' }, 'Indicateurs indisponibles')));
+  /* Égalité départagée explicitement, jamais par l'ordre d'insertion. */
+  return a.titre.localeCompare(b.titre, 'fr') || a.id.localeCompare(b.id, 'fr');
+}
+
+/* -------------------------------------------------------------------------
+   3. Fragments d'affichage
+   ------------------------------------------------------------------------- */
+
+/**
+ * Mention « à renseigner », avec le nom du champ pour les lecteurs
+ * d'écran : « Pôle : à renseigner » est utile, « à renseigner » seul ne
+ * l'est pas.
+ *
+ * @param {string} champ
+ * @returns {HTMLElement}
+ */
+function champManquant(champ) {
+  return el('span', { class: 'champ-manquant' },
+    el('span', { class: 'visuellement-cache' }, `${champ} : `),
+    NON_RENSEIGNE);
+}
+
+/**
+ * Icône d'un type d'entrée, en trait seul, dans la couleur du texte.
+ * Purement visuelle : le libellé du type est écrit juste à côté.
+ *
+ * @param {string} nom  clé de TRACES
+ * @returns {SVGElement}
+ */
+function icone(nom) {
+  const traces = TRACES[nom] || TRACES.defaut;
+
+  return svg('svg', {
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    'stroke-width': '1.6',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+    focusable: 'false',
+    'aria-hidden': 'true'
+  }, traces.map((d) => svg('path', { d })));
+}
+
+/**
+ * Pastille de pôle ÉTIQUETÉE : un point teinté, décoratif, et le libellé
+ * qui porte réellement l'information (SPEC §1bis).
+ *
+ * @param {string} code  code du pôle tel qu'il est écrit dans le fichier
+ * @returns {HTMLElement}
+ */
+function pastillePole(code) {
+  const connu = POLES[code];
+
+  return el('span', {
+    class: 'badge badge--contour pastille-pole',
+    style: connu ? { '--couleur-pole': connu.couleur } : null
+  },
+  el('span', { class: 'pastille-pole__point', 'aria-hidden': 'true' }),
+  connu ? connu.libelle : code);
+}
+
+/* -------------------------------------------------------------------------
+   4. La frise chronologique
+   ------------------------------------------------------------------------- */
+
+/**
+ * Ligne de méta d'une entrée : date, délai restant, pôle, type.
+ *
+ * @param {object} entree
+ * @param {boolean} avecDate  faux pour le mot du chef, dont la date est
+ *                            portée par la signature
+ * @returns {HTMLElement}
+ */
+function metaEntree(entree, avecDate) {
+  const lisible = dateLongue(entree.date);
+  const delai = entree.statut === 'a-venir'
+    ? libelleDelai(joursRestants(entree.date))
+    : '';
+
+  const libelleType = TYPES[entree.type] || entree.type;
+
+  return el('p', { class: 'chrono__meta sans-marge' },
+    avecDate
+      ? (lisible
+        ? el('time', { datetime: entree.date }, lisible)
+        : champManquant('Date'))
+      : null,
+
+    delai ? el('span', { class: 'chrono__delai' }, delai) : null,
+
+    entree.pole ? pastillePole(entree.pole) : champManquant('Pôle'),
+
+    libelleType
+      ? el('span', { class: 'chrono__type' }, libelleType)
+      : champManquant('Type'));
+}
+
+/**
+ * Le mot du chef de service, tel qu'il paraît dans la frise : une carte à
+ * part, une typographie plus grande, une attribution détachée.
+ *
+ * @param {object} entree  l'entrée d'agenda qui le porte
+ * @param {object} mot     le bloc motDuChef normalisé
+ * @returns {HTMLElement}
+ */
+function blocMot(entree, mot) {
+  const titre = mot.titre || entree.titre;
+  const lisible = dateLongue(mot.date);
+
+  const signature = el('p', { class: 'mot__signature sans-marge' },
+    mot.auteur
+      ? el('span', { class: 'mot__auteur' }, mot.auteur)
+      : champManquant('Auteur'),
+    mot.fonction ? el('span', null, mot.fonction) : champManquant('Fonction'),
+    lisible
+      ? el('time', { datetime: mot.date }, lisible)
+      : champManquant('Date'));
+
+  /* Pas de guillemet décoratif ici : la pastille de la frise porte déjà
+     l'icône de guillemets du type « mot », et deux fois le même signe à
+     dix centimètres l'un de l'autre n'ajoute rien. */
+  return el('div', { class: 'chrono__bloc mot' },
+    metaEntree(entree, false),
+
+    el('h3', { class: 'mot__titre' },
+      titre || champManquant('Titre')),
+
+    mot.corps.length
+      ? el('div', { class: 'mot__corps' },
+        mot.corps.map((ligne) => el('p', { class: 'sans-marge' }, ligne)))
+      : el('p', { class: 'sans-marge' }, champManquant('Texte du mot')),
+
+    signature);
+}
+
+/**
+ * Une entrée ordinaire de la frise.
+ *
+ * @param {object} entree
+ * @returns {HTMLElement}
+ */
+function blocEntree(entree) {
+  return el('div', { class: 'chrono__bloc' },
+    metaEntree(entree, true),
+
+    el('h3', { class: 'chrono__titre' },
+      entree.titre || champManquant('Titre')),
+
+    entree.resume
+      ? el('p', { class: 'chrono__resume sans-marge' }, entree.resume)
+      : el('p', { class: 'sans-marge' }, champManquant('Résumé')));
+}
+
+/**
+ * Ligne complète de la frise : le rail, la pastille de type, le contenu.
+ *
+ * @param {object} entree
+ * @param {object|null} mot  motDuChef, s'il est porté par cette entrée
+ * @returns {HTMLElement}
+ */
+function ligneChrono(entree, mot) {
+  return el('li', {
+    class: ['chrono__entree',
+      entree.statut === 'a-venir' ? 'chrono__entree--a-venir' : null,
+      mot ? 'chrono__entree--mot' : null],
+    dataset: { statut: entree.statut || 'inconnu' }
+  },
+  el('span', { class: 'chrono__rail' },
+    el('span', { class: 'chrono__puce' }, icone(entree.type))),
+
+  el('div', { class: 'chrono__corps' },
+    mot ? blocMot(entree, mot) : blocEntree(entree)));
+}
+
+/**
+ * Le repère « aujourd'hui », posé entre l'avenir et le passé.
+ * La date affichée est celle du poste qui consulte la page : c'est le seul
+ * élément de la frise qui ne vienne pas d'un fichier, et il n'annonce rien
+ * d'autre que la date du jour.
+ *
+ * @returns {HTMLElement}
+ */
+function ligneAujourdhui() {
+  const maintenant = new Date();
+  const iso = [
+    String(maintenant.getFullYear()),
+    String(maintenant.getMonth() + 1).padStart(2, '0'),
+    String(maintenant.getDate()).padStart(2, '0')
+  ].join('-');
+
+  return el('li', { class: 'chrono__jour' },
+    el('span', { class: 'chrono__rail' },
+      el('span', { class: 'chrono__puce' },
+        el('span', { class: 'chrono__point-jour', 'aria-hidden': 'true' }))),
+
+    el('p', { class: 'separateur-titre chrono__jour-texte sans-marge' },
+      el('span', null, 'Aujourd’hui'),
+      el('time', { datetime: iso }, dateLongue(iso))));
+}
+
+/* -------------------------------------------------------------------------
+   5. L'agenda : filtres et rendu
+   ------------------------------------------------------------------------- */
+
+/**
+ * Une puce de facette, avec son compteur.
+ *
+ * Le compteur visible est doublé d'un texte pour les lecteurs d'écran :
+ * « 3 » seul ne dit pas ce qu'il compte.
+ *
+ * @param {{id:string, libelle:string}} facette
+ * @param {Map<string, object>} registre  reçoit les nœuds de la puce
+ * @param {function(string): void} choisir
+ * @returns {HTMLElement} l'élément de liste
+ */
+function puceFacette(facette, registre, choisir) {
+  const compteur = el('span', { class: 'facette__compteur' }, '0');
+  const detail = el('span', { class: 'visuellement-cache' }, '');
+
+  const bouton = el('button', {
+    class: 'facette',
+    type: 'button',
+    ariaPressed: 'false',
+    dataset: { facette: facette.id },
+    onClick: () => choisir(facette.id)
+  },
+  el('span', { class: 'facette__marque', 'aria-hidden': 'true' }, '✓'),
+  el('span', null, facette.libelle),
+  compteur,
+  detail);
+
+  registre.set(facette.id, { bouton, compteur, detail });
+
+  return el('li', null, bouton);
+}
+
+/**
+ * Groupe de facettes : un intitulé, puis les puces.
+ *
+ * @param {string} intitule
+ * @param {string} id
+ * @param {HTMLElement[]} puces
+ * @returns {HTMLElement}
+ */
+function groupeFacettes(intitule, id, puces) {
+  return el('div', {
+    class: 'agenda-filtres__groupe',
+    role: 'group',
+    ariaLabelledby: id
+  },
+  el('p', { class: 'champ__etiquette sans-marge', id }, intitule),
+  el('ul', { class: 'facettes' }, puces));
+}
+
+/*
+   Les filtres de l'agenda voyagent dans le hash — #pole=ETIIA&periode=a-venir
+   — pour que la vue soit partageable. L'agenda peut être reconstruit, après
+   un « Réessayer » par exemple : c'est donc le module qui garde le lien vers
+   la vue courante, et l'écouteur de hashchange n'est posé qu'une seule fois,
+   au démarrage.
+*/
+let appliquerUrl = null;
+
+/**
+ * Construit l'agenda complet : les deux groupes de filtres, le résumé, et
+ * la frise. Tout l'état vit dans cette fermeture ; rien n'est global.
+ *
+ * @param {object[]} entrees  entrées normalisées, déjà triées
+ * @param {object|null} mot   motDuChef normalisé
+ * @returns {HTMLElement}
+ */
+function construireAgenda(entrees, mot) {
+  /* --- Facettes de pôle : relevées sur la donnée, dans l'ordre du hub --- */
+  const codes = [];
+  for (const entree of entrees) {
+    if (entree.pole && !codes.includes(entree.pole)) codes.push(entree.pole);
+  }
+  const ordre = Object.keys(POLES);
+  codes.sort((a, b) => {
+    const ia = ordre.indexOf(a);
+    const ib = ordre.indexOf(b);
+    if (ia !== ib) return (ia < 0 ? ordre.length : ia) - (ib < 0 ? ordre.length : ib);
+    return a.localeCompare(b, 'fr');
+  });
+
+  const facettesPole = [{ id: TOUS, libelle: 'Tous' }].concat(
+    codes.map((code) => ({ id: code, libelle: code })));
+
+  /* --- État, restauré depuis l'URL ------------------------------------- */
+  let poleActif = TOUS;
+  let periodeActive = 'tout';
+
+  const registrePole = new Map();
+  const registrePeriode = new Map();
+
+  const zoneListe = el('div');
+  const resume = el('p', { class: 'agenda-resume sans-marge', role: 'status' });
+
+  /** L'entrée correspond-elle au pôle demandé ? */
+  const selonPole = (entree, pole) => pole === TOUS || entree.pole === pole;
+
+  /** L'entrée correspond-elle à la période demandée ? */
+  const selonPeriode = (entree, periode) =>
+    periode === 'tout' || entree.statut === periode;
+
+  /** Le mot du chef est-il porté par cette entrée ? */
+  const motDe = (entree) =>
+    (mot && entree.type === 'mot' && mot.date === entree.date) ? mot : null;
+
+  /**
+   * Écrit l'état courant dans le hash, pour que la vue soit partageable.
+   * Les valeurs par défaut ne sont pas écrites : l'URL reste nue.
+   */
+  function refleterUrl() {
+    etatUrl.ecrire({
+      pole: poleActif === TOUS ? '' : poleActif,
+      periode: periodeActive === 'tout' ? '' : periodeActive
+    });
   }
 
-  return el('article', {
-    class: 'carte carte--ample carte--cliquable carte-pole',
-    style: { '--couleur-pole': pole.couleur }
-  },
-    el('div', { class: 'carte__entete' },
-      el('h3', { class: 'carte__titre carte-pole__code' },
-        el('span', { class: 'carte-pole__point', 'aria-hidden': 'true' }),
-        el('a', { class: 'carte__lien', href: pole.page }, pole.cle)),
-      el('p', { class: 'carte__sous-titre carte-pole__metaphore' }, pole.metaphore)),
+  /**
+   * Applique l'état lu dans l'URL. Une valeur inconnue est ignorée sans
+   * erreur : le filtre correspondant retombe sur sa valeur par défaut.
+   *
+   * @returns {boolean} vrai si quelque chose a changé
+   */
+  function lireUrl() {
+    const etat = etatUrl.lire();
 
-    el('div', { class: 'carte__corps' }, el('p', null, pole.description)),
+    const pole = typeof etat.pole === 'string' ? etat.pole : '';
+    const periode = typeof etat.periode === 'string' ? etat.periode : '';
 
-    mesures);
+    const nouveauPole = facettesPole.some((f) => f.id === pole) ? pole : TOUS;
+    const nouvellePeriode = PERIODES.some((p) => p.id === periode)
+      ? periode : 'tout';
+
+    if (nouveauPole === poleActif && nouvellePeriode === periodeActive) {
+      return false;
+    }
+    poleActif = nouveauPole;
+    periodeActive = nouvellePeriode;
+    return true;
+  }
+
+  /**
+   * Met à jour les compteurs des deux groupes de facettes.
+   *
+   * Chaque compteur est relevé sur la donnée réelle, en tenant compte de
+   * l'AUTRE filtre : le nombre annoncé est donc exactement le nombre
+   * d'entrées qu'un clic ferait apparaître.
+   */
+  function majCompteurs() {
+    for (const facette of facettesPole) {
+      const n = entrees.filter((e) =>
+        selonPole(e, facette.id) && selonPeriode(e, periodeActive)).length;
+      const cible = registrePole.get(facette.id);
+      cible.compteur.textContent = String(n);
+      cible.detail.textContent = ` (${n} ${n <= 1 ? 'entrée' : 'entrées'})`;
+    }
+
+    for (const periode of PERIODES) {
+      const n = entrees.filter((e) =>
+        selonPole(e, poleActif) && selonPeriode(e, periode.id)).length;
+      const cible = registrePeriode.get(periode.id);
+      cible.compteur.textContent = String(n);
+      cible.detail.textContent = ` (${n} ${n <= 1 ? 'entrée' : 'entrées'})`;
+    }
+  }
+
+  /** Remet les deux filtres à leur valeur par défaut. */
+  function reinitialiser() {
+    poleActif = TOUS;
+    periodeActive = 'tout';
+    rendre();
+  }
+
+  /** État vide : les filtres ne laissent rien passer. */
+  function etatVide() {
+    return el('div', { class: 'etat-vide etat-vide--compact' },
+      el('p', { class: 'etat-vide__titre' }, 'Aucune entrée'),
+      el('p', { class: 'etat-vide__texte' },
+        'Aucune entrée de l’agenda ne correspond aux filtres actifs.'),
+      el('div', { class: 'etat-vide__actions' },
+        el('button', {
+          class: 'bouton bouton--secondaire',
+          type: 'button',
+          onClick: reinitialiser
+        }, 'Réinitialiser les filtres')));
+  }
+
+  /**
+   * Reconstruit la frise et tout ce qui en dépend.
+   *
+   * L'ordre est celui d'un axe du temps unique et descendant : les
+   * échéances à venir d'abord, de la plus lointaine à la plus proche, le
+   * repère du jour, puis le passé du plus récent au plus ancien. Les
+   * entrées dont le statut n'est pas renseigné ferment la frise, sans être
+   * rangées d'office d'un côté ou de l'autre.
+   */
+  function rendre() {
+    const visibles = entrees.filter((e) =>
+      selonPole(e, poleActif) && selonPeriode(e, periodeActive));
+
+    const aVenir = visibles.filter((e) => e.statut === 'a-venir');
+    const passees = visibles.filter((e) => e.statut === 'passee');
+    const indecises = visibles.filter((e) => e.statut === '');
+
+    const lignes = [];
+    /* Les à-venir sont triées par récence décroissante comme le reste :
+       l'échéance la plus lointaine ouvre la frise, la plus proche touche
+       le repère du jour. */
+    for (const entree of aVenir) lignes.push(ligneChrono(entree, motDe(entree)));
+    if (aVenir.length && passees.length) lignes.push(ligneAujourdhui());
+    for (const entree of passees) lignes.push(ligneChrono(entree, motDe(entree)));
+    for (const entree of indecises) lignes.push(ligneChrono(entree, motDe(entree)));
+
+    monter(zoneListe, lignes.length
+      ? el('ol', {
+        class: 'chrono',
+        ariaLabel: 'Frise chronologique de l’agenda du service'
+      }, lignes)
+      : etatVide());
+
+    for (const [cle, noeuds] of registrePole) {
+      noeuds.bouton.setAttribute('aria-pressed',
+        cle === poleActif ? 'true' : 'false');
+    }
+    for (const [cle, noeuds] of registrePeriode) {
+      noeuds.bouton.setAttribute('aria-pressed',
+        cle === periodeActive ? 'true' : 'false');
+    }
+
+    majCompteurs();
+
+    const nomPole = poleActif === TOUS
+      ? 'tous les pôles'
+      : (POLES[poleActif] ? POLES[poleActif].libelle : poleActif);
+    const nomPeriode = (PERIODES.find((p) => p.id === periodeActive) || {})
+      .libelle || 'Tout';
+
+    const accord = visibles.length <= 1 ? 'entrée affichée' : 'entrées affichées';
+    resume.textContent =
+      `${visibles.length} ${accord} — ${nomPole}, ${nomPeriode.toLowerCase()}.`;
+
+    refleterUrl();
+  }
+
+  /* --- Puces ------------------------------------------------------------ */
+  const pucesPole = facettesPole.map((facette) =>
+    puceFacette(facette, registrePole, (id) => {
+      if (poleActif === id) return;
+      poleActif = id;
+      rendre();
+    }));
+
+  const pucesPeriode = PERIODES.map((periode) =>
+    puceFacette(periode, registrePeriode, (id) => {
+      if (periodeActive === id) return;
+      periodeActive = id;
+      rendre();
+    }));
+
+  const filtres = el('div', { class: 'agenda-filtres' },
+    groupeFacettes('Pôle', 'agenda-filtre-pole', pucesPole),
+    groupeFacettes('Période', 'agenda-filtre-periode', pucesPeriode));
+
+  /* La navigation par l'historique est relayée au module : l'écouteur de
+     hashchange, lui, est posé une seule fois au démarrage. */
+  appliquerUrl = () => {
+    if (lireUrl()) rendre();
+  };
+
+  lireUrl();
+  rendre();
+
+  return el('div', { class: 'pile' }, filtres, resume, zoneListe);
 }
 
 /**
- * Rend les trois cartes du dispatcher.
- * @param {[object, object|null]} ressources [organigramme, indicateurs]
- * @param {Element} conteneur
- */
-function rendrePoles(ressources, conteneur) {
-  const organigramme = ressources[0];
-  const indicateurs = ressources[1];
-
-  verifierForme(organigramme, { poles: 'tableau' }, 'organigramme.json');
-
-  monter(conteneur, el('div', { class: 'grille dispatch' },
-    POLES.map((pole) => carteDePole(
-      pole,
-      effectifDe(organigramme, pole.cle),
-      otqDuMois(indicateurs, pole.cle)))));
-}
-
-/* =========================================================================
-   5. LE MOT DU CHEF DE SERVICE
-   ========================================================================= */
-
-/**
- * Le mot, extrait de communications.json.
- * Il est distinct des annonces : un fichier sans « motDuChef » n'est pas
- * une erreur, c'est un mot non publié — d'où un état vide, pas un échec.
+ * Rend l'agenda du service à partir de communications.json.
  *
  * @param {object} donnees
- * @returns {object|null}
- */
-function motDuChef(donnees) {
-  if (!donnees || typeof donnees !== 'object') return null;
-  const mot = donnees.motDuChef;
-  if (!mot || typeof mot !== 'object') return null;
-  if (!Array.isArray(mot.corps) || mot.corps.length === 0) return null;
-  return mot;
-}
-
-/**
- * Une ligne du corps du mot. Les types sont explicites, exactement comme
- * pour le corps d'une annonce : aucun préfixe à interpréter.
- *
- * @param {*} ligne
- * @returns {Element|null}
- */
-function ligneDuMot(ligne) {
-  if (!ligne || typeof ligne !== 'object') return null;
-
-  const texte = String(ligne.texte === null || ligne.texte === undefined
-    ? '' : ligne.texte).trim();
-  if (texte === '') return null;
-
-  if (ligne.type === 'titre') return el('h4', { class: 'sans-marge' }, texte);
-  return el('p', { class: 'sans-marge' }, texte);
-}
-
-/**
- * Rend le mot du chef de service dans son bloc dédié.
- * @param {object} mot
  * @param {Element} conteneur
  */
-function rendreMot(mot, conteneur) {
-  const paragraphes = mot.corps.map(ligneDuMot).filter(Boolean);
+function rendreAgenda(donnees, conteneur) {
+  verifierForme(donnees, { agenda: 'tableau', motDuChef: 'objet?' },
+    'communications.json');
 
-  const signature = el('p', { class: 'mot__signature sans-marge texte-sm' },
-    el('span', { class: 'mot__auteur' }, String(mot.auteur || 'Le chef de service')));
+  const entrees = donnees.agenda.map(normaliserEntree).sort(parRecence);
+  const mot = normaliserMot(donnees.motDuChef);
 
-  if (mot.fonction) {
-    signature.append(el('span', { class: 'texte-doux' }, String(mot.fonction)));
-  }
-  if (mot.date) {
-    signature.append(el('time', {
-      class: 'texte-faible',
-      datetime: String(mot.date)
-    }, dateLongue(mot.date)));
-  }
-
-  monter(conteneur, el('article', { class: 'carte carte--ample mot' },
-    el('div', { class: 'mot__entete' },
-      el('h3', { class: 'carte__titre mot__titre' },
-        String(mot.titre || 'Le mot du chef de service')),
-      el('span', { class: 'badge badge--accent' }, 'Parole du service')),
-
-    el('div', { class: 'mot__corps' },
-      // Guillemet ouvrant : décoratif, donc masqué aux lecteurs d'écran.
-      el('span', { class: 'mot__marque', 'aria-hidden': 'true' }, '«'),
-      paragraphes),
-
-    signature));
+  monter(conteneur, construireAgenda(entrees, mot));
 }
 
-/* =========================================================================
-   6. LA FLOTTE
-   ========================================================================= */
+/* -------------------------------------------------------------------------
+   6. La flotte suivie
+   ------------------------------------------------------------------------- */
 
 /**
- * Rend le carrousel des appareils, suivi de l'avertissement du fichier.
+ * Rend la grille des appareils, suivie de l'avertissement du fichier.
  *
- * L'avertissement n'est pas décoratif : les désignations sont publiques,
- * le contexte de service ne l'est pas — il est fictif. Le texte vient du
- * champ « avertissement » de flotte.json, jamais d'une chaîne recopiée.
+ * L'avertissement n'est pas décoratif : les désignations sont publiques, le
+ * contexte de service ne l'est pas — il est fictif. Le texte vient du champ
+ * « avertissement » de flotte.json, jamais d'une chaîne recopiée ici.
  *
  * @param {object} donnees contenu de flotte.json
  * @param {Element} conteneur
@@ -480,503 +786,125 @@ function rendreMot(mot, conteneur) {
 function rendreFlotte(donnees, conteneur) {
   verifierForme(donnees, { flotte: 'tableau' }, 'flotte.json');
 
-  const avertissement = typeof donnees.avertissement === 'string'
-    ? donnees.avertissement.trim()
-    : '';
+  const grille = grilleFlotte(donnees, {
+    etiquette: 'Filtrer la flotte par catégorie',
+    niveauTitre: 3
+  });
+
+  if (!grille || grille.nodeType !== 1) {
+    throw new Error('La grille de la flotte n’a pas pu être construite.');
+  }
+
+  const avertissement = txt(donnees.avertissement);
 
   monter(conteneur, el('div', { class: 'pile' },
-    exigerNoeud(carrousel(donnees.flotte, {
-      etiquette: 'Flotte suivie par le service ETII'
-    }), 'carrousel'),
-
+    grille,
     avertissement
       ? el('p', { class: 'flotte-note sans-marge' },
-          el('span', { 'aria-hidden': 'true' }, '※'),
-          el('span', null, avertissement))
+        el('span', { 'aria-hidden': 'true' }, '※'),
+        el('span', null, avertissement))
       : null));
 }
 
-/* =========================================================================
-   7. LE SUIVI OTQ / OTD
-   ========================================================================= */
-
-/*
-   Le sélecteur d'indicateur pilote le graphique, le tableau et les barres.
-   Son état voyage dans le hash (#indicateur=otd) pour que la vue soit
-   partageable, exactement comme le pôle actif sur les pages transverses.
-   La valeur par défaut — l'OTQ — n'est pas écrite : l'URL reste nue.
-*/
-let appliquerIndicateur = null;
-
-/** Lit l'indicateur demandé par l'URL ('' si rien ou illisible). */
-function indicateurDemande() {
-  const etat = etatUrl.lire();
-  return typeof etat.indicateur === 'string' ? etat.indicateur.toLowerCase() : '';
-}
-
-/**
- * Construit la zone complète des indicateurs : quatre tuiles, le suivi
- * mensuel par pôle avec son sélecteur, puis la comparaison des pôles.
- *
- * @param {object} donnees contenu de indicateurs.json
- * @param {Element} conteneur
- */
-function rendreIndicateurs(donnees, conteneur) {
-  verifierForme(donnees, {
-    periode: 'objet',
-    definitions: 'objet',
-    poles: 'objet',
-    service: 'objet'
-  }, 'indicateurs.json');
-
-  const mois = moisDe(donnees);
-  if (mois.length === 0) {
-    throw new Error('« indicateurs.json » : la période ne contient aucun mois.');
-  }
-  const dernier = mois.length - 1;
-
-  /* Pôles réellement mesurés, dans l'ordre de l'accord d'équipe. */
-  const polesMesures = POLES.filter(
-    (pole) => donnees.poles[pole.cle] && typeof donnees.poles[pole.cle] === 'object');
-
-  /* Indicateurs exploitables : définis ET suivis au niveau du service. */
-  const cles = ORDRE_INDICATEURS.filter((cle) =>
-    donnees.definitions[cle] && serieDe(donnees.service, cle, mois.length));
-
-  if (cles.length === 0) {
-    throw new Error(
-      '« indicateurs.json » : aucun indicateur ne couvre la période '
-      + 'annoncée — les séries et la liste des mois ne concordent pas.'
-    );
-  }
-
-  /**
-   * L'indicateur est-il une SOMME des pôles plutôt qu'une moyenne ?
-   * Le test porte sur la donnée, pas sur le nom : un total d'écarts se
-   * reconnaît à ce que le service vaut la somme des trois pôles. La cible
-   * du service s'en déduit — sinon, comparer 26 écarts à une cible de 12
-   * établie par pôle n'aurait aucun sens.
-   *
-   * @param {string} cle
-   * @returns {boolean}
-   */
-  function estSomme(cle) {
-    const service = serieDe(donnees.service, cle, mois.length);
-    if (!service || polesMesures.length < 2) return false;
-
-    let total = 0;
-    for (const pole of polesMesures) {
-      const serie = serieDe(donnees.poles[pole.cle], cle, mois.length);
-      if (!serie) return false;
-      total += Number(serie[dernier]) || 0;
-    }
-    return Math.abs(total - Number(service[dernier])) < 0.5;
-  }
-
-  /**
-   * Définition d'un indicateur AU NIVEAU DU SERVICE.
-   *
-   * Pour un indicateur sommé, la cible du fichier est établie par pôle :
-   * l'appliquer telle quelle au total du service ferait dire n'importe
-   * quoi à la tuile. On la multiplie donc par le nombre de pôles, et on le
-   * dit dans le texte d'aide. Pour tous les autres, la définition est
-   * reprise sans y toucher.
-   *
-   * @param {string} cle
-   * @returns {object}
-   */
-  function definitionService(cle) {
-    const def = donnees.definitions[cle];
-    if (!estSomme(cle) || typeof def.cible !== 'number') return def;
-
-    return Object.assign({}, def, {
-      cible: def.cible * polesMesures.length,
-      aide: def.aide + ' Total des ' + polesMesures.length
-        + ' pôles : la cible de ' + formaterValeur(def.cible, def.unite)
-        + ' s’entend par pôle.'
-    });
-  }
-
-  /* --- 7.1 La ligne de tuiles -----------------------------------------
-     Quatre tuiles, l'OTQ en tête. Elles mesurent le SERVICE : leur couleur
-     de série est donc celle du niveau service, pas celle d'un pôle. */
-
-  const tuiles = el('div', { class: 'grille grille--compacte' });
-
-  for (const cle of cles) {
-    tuiles.append(exigerNoeud(tuileIndicateur({
-      cle: cle,
-      definition: definitionService(cle),
-      serie: donnees.service[cle],
-      mois: mois,
-      couleur: COULEUR_SERVICE
-    }), 'tuileIndicateur'));
-  }
-
-  /* --- 7.2 Le sélecteur d'indicateur ---------------------------------- */
-
-  const select = el('select', {
-    class: 'champ__controle choix-indicateur',
-    id: 'choix-indicateur',
-    onChange: (evt) => changer(evt.target.value, true)
-  }, cles.map((cle) => el('option', { value: cle },
-    donnees.definitions[cle].libelle + ' — ' + donnees.definitions[cle].nom)));
-
-  /* --- 7.3 Les réceptacles pilotés par le sélecteur ------------------- */
-
-  const zoneGraphique = el('div');
-  const zoneBarres = el('div');
-
-  /**
-   * Rejoue le graphique et les barres pour l'indicateur demandé.
-   *
-   * Le tableau de valeurs n'est pas construit ici : graphiqueLignes() et
-   * barresComparees() intègrent déjà le leur, replié dans un `<details>`
-   * sous la figure. En ajouter un second ferait doublon.
-   *
-   * @param {string} demande
-   * @param {boolean} avecAnnonce annoncer le changement aux lecteurs d'écran
-   */
-  function appliquer(demande, avecAnnonce) {
-    const cle = cles.includes(demande) ? demande : cles[0];
-    const def = donnees.definitions[cle];
-
-    if (select.value !== cle) select.value = cle;
-
-    /* Une série par pôle. La couleur suit l'entité, jamais son rang, et
-       chaque série porte son libellé : une courbe n'est jamais identifiée
-       par la seule couleur. */
-    const series = polesMesures
-      .map((pole) => ({
-        cle: pole.cle,
-        libelle: pole.cle,
-        couleur: pole.couleur,
-        valeurs: serieDe(donnees.poles[pole.cle], cle, mois.length)
-      }))
-      .filter((serie) => serie.valeurs !== null);
-
-    monter(zoneGraphique, exigerNoeud(graphiqueLignes({
-      mois: mois,
-      series: series,
-      definition: def,
-      titre: def.libelle + ' par pôle'
-    }), 'graphiqueLignes'));
-
-    monter(zoneBarres, exigerNoeud(barresComparees({
-      categories: series.map((serie) => serie.libelle),
-      valeurs: series.map((serie) => serie.valeurs[dernier]),
-      couleurs: series.map((serie) => serie.couleur),
-      definition: def,
-      titre: def.libelle + ' par pôle en ' + libelleMois(mois[dernier], 'long')
-    }), 'barresComparees'));
-
-    if (avecAnnonce) annoncer('Indicateur affiché : ' + def.nom + '.');
-  }
-
-  /**
-   * Point d'entrée unique des changements : met l'URL à jour, puis
-   * reconstruit. Un échec tardif d'une fabrique est journalisé et annoncé
-   * plutôt que laissé remonter — la page reste navigable.
-   *
-   * @param {string} demande
-   * @param {boolean} depuisInteraction
-   */
-  function changer(demande, depuisInteraction) {
-    const cle = cles.includes(demande) ? demande : cles[0];
-    if (depuisInteraction) {
-      // La valeur par défaut ne s'écrit pas : l'URL reste courte.
-      etatUrl.ecrire({ indicateur: cle === cles[0] ? null : cle });
-    }
-    try {
-      appliquer(cle, depuisInteraction);
-    } catch (erreur) {
-      console.error('[index] ' + erreur.message, erreur);
-      annoncer('L’indicateur demandé n’a pas pu être affiché.');
-    }
-  }
-
-  /* --- 7.4 Assemblage -------------------------------------------------- */
-
-  monter(conteneur,
-    tuiles,
-
-    el('section', { class: 'pile', 'aria-labelledby': 'titre-suivi' },
-      el('div', { class: 'rangee rangee--entre' },
-        el('h3', { class: 'sans-marge', id: 'titre-suivi' },
-          'Suivi sur douze mois, par pôle'),
-        el('div', { class: 'rangee rangee--serree suivi-choix' },
-          el('label', { class: 'champ__etiquette', for: 'choix-indicateur' },
-            'Indicateur affiché'),
-          select)),
-      zoneGraphique),
-
-    el('section', { class: 'pile', 'aria-labelledby': 'titre-comparaison' },
-      el('h3', { class: 'sans-marge', id: 'titre-comparaison' },
-        'Comparaison des pôles'),
-      zoneBarres));
-
-  /* Le hash fait foi au premier rendu comme après un « Précédent ». */
-  appliquerIndicateur = changer;
-  changer(indicateurDemande(), false);
-}
-
 /* -------------------------------------------------------------------------
-   7bis. Ligne d'état des données
-
-   Deux informations, et pas une de plus : jusqu'où va la donnée, et quand
-   elle a été lue. Le bouton relit le fichier — il n'interroge rien. La
-   nuance est écrite noir sur blanc dans la page, sous cette ligne.
-
-   Les nœuds sont créés UNE fois et seul leur texte change : le bouton
-   « Actualiser » survit donc à ses propres rafraîchissements, et le focus
-   ne saute nulle part.
+   7. Le suivi OTQ / OTD — en attente de raccordement
    ------------------------------------------------------------------------- */
 
-/** Texte variable de la ligne d'état. */
-const majTexte = el('p', {
-  class: 'maj__texte texte-sm texte-doux',
-  role: 'status'
-});
-
-/** Libellé du bouton, remplacé pendant le chargement. */
-const majLibelle = el('span', null, 'Actualiser');
-
-/** Vrai pendant un rechargement : le bouton ne se déclenche pas deux fois. */
-let majEnCours = false;
-
-const majBouton = el('button', {
-  type: 'button',
-  class: 'bouton bouton--secondaire bouton--compact',
-  onClick: actualiserIndicateurs
-},
-  el('span', { class: 'bouton__icone', 'aria-hidden': 'true' }, '⟳'),
-  majLibelle);
-
 /**
- * Reflète l'état du dernier cycle de chargement des indicateurs.
- * Branchée en `surEtat` de la zone : elle est donc rejouée à chaque
- * tentative, y compris après un « Réessayer » du bloc d'erreur.
+ * POINT DE RACCORDEMENT UNIQUE du suivi OTQ / OTD.
  *
- * @param {{etat:string, donnees?:*, erreur?:Error}} [resultat]
- *        omis ou nul : le premier chargement n'a pas encore abouti.
- */
-function refleterEtatDonnees(resultat) {
-  if (!resultat) {
-    monter(majTexte, 'Lecture du jeu de données en cours…');
-    return;
-  }
-
-  const heure = heureDe(new Date());
-  const horodatage = el('time', { datetime: heure.machine }, heure.affichage);
-
-  if (resultat.etat !== 'succes') {
-    monter(majTexte,
-      'Jeu de données indisponible — dernière tentative à ', horodatage, '.');
-    return;
-  }
-
-  const mois = moisDe(resultat.donnees);
-  const dernier = mois.length ? mois[mois.length - 1] : '';
-
-  monter(majTexte,
-    'Instantané arrêté à ',
-    dernier
-      ? el('time', { datetime: String(dernier) }, libelleMois(dernier, 'long'))
-      : el('span', null, 'une période non précisée'),
-    ' · relu à ', horodatage, '.');
-}
-
-/**
- * Recharge réellement indicateurs.json.
+ * Le graphe d'origine de cette section interrogeait une source en direct du
+ * service, dont le code n'a pas été fourni au projet. Tant que ce code
+ * manque, la page n'affiche NI graphique, NI valeur, NI indicateur : aucune
+ * donnée d'exemple ne doit pouvoir être prise pour une mesure du service.
  *
- * data.js mémoïse la PROMESSE : sans purge du cache, « Actualiser »
- * réafficherait la même réponse sans jamais toucher au fichier. On vide
- * donc l'entrée avant de relancer, puis on rejoue les deux zones qui
- * vivent de ce jeu — les indicateurs, et l'OTQ des cartes de pôle.
- */
-async function actualiserIndicateurs() {
-  if (majEnCours) return;
-
-  /* `aria-disabled` plutôt que `disabled` : un bouton désactivé sous le
-     doigt perd le focus au profit du corps du document, et le clavier se
-     retrouve au début de la page. Ici le bouton reste focalisable, la
-     garde ci-dessus suffit à ignorer un second clic. */
-  majEnCours = true;
-  majBouton.setAttribute('aria-disabled', 'true');
-  majTexte.setAttribute('aria-busy', 'true');
-  majLibelle.textContent = 'Actualisation…';
-
-  try {
-    viderCache('indicateurs');
-    /* avecEtat() ne rejette jamais : les deux zones afficheront leur propre
-       état, quoi qu'il arrive au fichier. Le résultat est annoncé par la
-       ligne d'état elle-même (role="status") — en ajouter un second par
-       annoncer() ferait parler le lecteur d'écran deux fois. */
-    await Promise.all([lancerIndicateurs(), lancerPoles()]);
-  } finally {
-    majEnCours = false;
-    majBouton.removeAttribute('aria-disabled');
-    majTexte.setAttribute('aria-busy', 'false');
-    majLibelle.textContent = 'Actualiser';
-  }
-}
-
-/* =========================================================================
-   8. LES ANNONCES DE SERVICE
-   ========================================================================= */
-
-/**
- * Annonces de NIVEAU SERVICE, les plus récentes d'abord.
- * Les annonces de pôle appartiennent à l'espace de leur pôle : elles n'ont
- * rien à faire sur la page du service.
+ * C'est ici, et nulle part ailleurs, que le raccordement se fera : cette
+ * fonction est le seul endroit à modifier. Elle devra alors renvoyer les
+ * données de la source — ou une promesse — et rendreSuiviOTQ() sera le seul
+ * autre endroit à compléter, pour les afficher.
  *
- * @param {object} donnees contenu de communications.json
- * @returns {object[]} deux annonces au plus
+ * @returns {null} toujours null tant que la source n'est pas fournie
  */
-function annoncesDeService(donnees) {
-  verifierForme(donnees, { annonces: 'tableau' }, 'communications.json');
+function chargerSuiviOTQ() {
+  return null;
+}
 
-  return donnees.annonces
-    .filter((annonce) => annonce && typeof annonce === 'object'
-      && annonce.pole === 'ETII')
-    .slice()
-    /* Tri stable et explicite : date décroissante, puis titre — jamais
-       l'ordre d'insertion du fichier. */
-    .sort((a, b) => {
-      const parDate = String(b.date || '').localeCompare(String(a.date || ''));
-      if (parDate !== 0) return parDate;
-      return String(a.titre || '').localeCompare(String(b.titre || ''), 'fr');
-    })
-    .slice(0, MAX_ANNONCES);
+/** Encadré d'attente : il dit ce qu'il en est, et rien de plus. */
+function encadreAttente() {
+  return el('div', { class: 'attente' },
+    el('span', { class: 'attente__icone', 'aria-hidden': 'true' },
+      icone('branchement')),
+
+    el('div', { class: 'attente__texte' },
+      el('p', { class: 'attente__titre sans-marge' },
+        'En attente du raccordement à la source du service'),
+
+      el('p', { class: 'texte-doux sans-marge' },
+        'Le suivi OTQ / OTD était alimenté par une source interrogée en '
+        + 'direct, dont le code n’a pas encore été fourni. La section reste '
+        + 'donc vide : aucun graphique, aucune valeur et aucun indicateur '
+        + 'ne sont affichés ici, pour qu’aucun chiffre d’exemple ne puisse '
+        + 'être pris pour une mesure du service.'),
+
+      el('p', { class: 'texte-doux texte-sm sans-marge' },
+        'Le branchement se fera en un seul point : la fonction ',
+        el('span', { class: 'mono' }, 'chargerSuiviOTQ()'),
+        ' de ',
+        el('span', { class: 'mono' }, 'assets/js/index.js'),
+        ', qui renvoie null aujourd’hui.')));
 }
 
 /**
- * Lien vers l'annonce dans le Communication Center, pôle « ETII » actif.
- * Le paramètre d'annonce est un bonus : si la page cible ne le connaît pas,
- * le lien mène malgré tout à la bonne liste filtrée.
+ * Rend la section du suivi OTQ / OTD.
  *
- * @param {object} annonce
- * @returns {string}
- */
-function lienAnnonce(annonce) {
-  const base = 'communication.html#pole=ETII';
-  return annonce.id ? base + '&annonce=' + encodeURIComponent(String(annonce.id)) : base;
-}
-
-/**
- * Carte d'aperçu d'une annonce.
- * @param {object} annonce
- * @returns {Element}
- */
-function carteAnnonce(annonce) {
-  const statut = STATUTS[annonce.statut] || { variante: 'neutre', libelle: 'Annonce' };
-  const classeStatut = statut.variante === 'neutre'
-    ? ''
-    : ' carte--statut-' + statut.variante;
-
-  return el('article', { class: 'carte carte--compacte carte--cliquable' + classeStatut },
-    el('p', { class: 'carte__meta sans-marge' },
-      annonce.date
-        ? el('time', { datetime: String(annonce.date) }, dateLongue(annonce.date))
-        : null,
-      el('span', { class: 'badge badge--' + statut.variante }, statut.libelle),
-      annonce.categorie
-        ? el('span', { class: 'badge badge--neutre badge--contour' },
-            String(annonce.categorie))
-        : null),
-
-    el('h3', { class: 'carte__titre' },
-      el('a', { class: 'carte__lien', href: lienAnnonce(annonce) },
-        String(annonce.titre || 'Annonce'))),
-
-    annonce.resume
-      ? el('p', { class: 'sans-marge texte-doux' }, String(annonce.resume))
-      : null);
-}
-
-/**
- * Rend les annonces de service.
- * @param {object[]} annonces
  * @param {Element} conteneur
  */
-function rendreCommunication(annonces, conteneur) {
-  monter(conteneur, el('div', { class: 'pile' }, annonces.map(carteAnnonce)));
+function rendreSuiviOTQ(conteneur) {
+  if (!conteneur) return;
+
+  const suivi = chargerSuiviOTQ();
+
+  /* Le jour où la source sera branchée, `suivi` cessera d'être nul et
+     l'affichage viendra se construire ICI, à partir de lui seul. Tant que
+     cet affichage n'est pas écrit, la section continue d'annoncer son
+     attente : une vue à moitié vraie serait pire que pas de vue du tout. */
+  if (suivi !== null) {
+    console.info('[index] Source de suivi OTQ / OTD fournie : '
+      + 'le rendu de la section reste à écrire.');
+  }
+
+  monter(conteneur, encadreAttente());
 }
 
 /* =========================================================================
-   9. Démarrage — une section, un cycle d'état
+   8. Démarrage — une section, un cycle d'état
    ========================================================================= */
 
 initTheme();
 initNav('index.html');
 
-/* Retour arrière, avance, ou lien collé : le hash reste la source de
-   vérité de l'indicateur affiché. L'écouteur est posé une seule fois, même
-   si la zone est reconstruite par un « Réessayer » ou une actualisation. */
+/* Retour arrière, avance, ou lien collé : le hash reste la source de vérité
+   des filtres de l'agenda. L'écouteur est posé une seule fois, même si
+   l'agenda est reconstruit par un « Réessayer ». */
 etatUrl.ecouter(() => {
-  if (typeof appliquerIndicateur === 'function') {
-    appliquerIndicateur(indicateurDemande(), true);
-  }
+  if (typeof appliquerUrl === 'function') appliquerUrl();
 });
 
-/**
- * Le dispatcher. L'organigramme est indispensable (c'est lui qui donne
- * l'effectif) ; les indicateurs sont un bonus, leur échec est absorbé pour
- * que les trois cartes s'affichent quand même.
- *
- * @returns {Promise<object>}
- */
-function lancerPoles() {
-  return avecEtat('#zone-poles',
-    () => Promise.all([
-      chargerDonnees('organigramme'),
-      chargerDonnees('indicateurs').catch(() => null)
-    ]),
-    rendrePoles, {
-      squelette: 3,
-      texteChargement: 'Chargement des pôles…',
-      titreErreur: 'Pôles indisponibles',
-      titreVide: 'Aucun pôle déclaré',
-      texteVide: 'Les trois espaces de pôle apparaîtront ici dès que '
-        + 'l’organigramme du service aura été publié.'
-    });
-}
+/* 1 — L'agenda du service. */
+avecEtat('#zone-agenda', () => chargerDonnees('communications'), rendreAgenda, {
+  squelette: 3,
+  texteChargement: 'Chargement de l’agenda du service…',
+  titreErreur: 'Agenda indisponible',
+  titreVide: 'Aucune entrée à l’agenda',
+  texteVide: 'Les points du service, les jalons et le mot du chef de '
+    + 'service apparaîtront ici dès qu’ils auront été publiés.',
+  estVide: (donnees) => !donnees
+    || (!Array.isArray(donnees.agenda) || donnees.agenda.length === 0)
+});
 
-/**
- * Le suivi OTQ / OTD. La ligne d'état est rejouée à chaque cycle.
- * @returns {Promise<object>}
- */
-function lancerIndicateurs() {
-  return avecEtat('#zone-indicateurs', () => chargerDonnees('indicateurs'),
-    rendreIndicateurs, {
-      squelette: 2,
-      texteChargement: 'Chargement des indicateurs du service…',
-      titreErreur: 'Indicateurs indisponibles',
-      titreVide: 'Aucun indicateur publié',
-      texteVide: 'Les indicateurs du service apparaîtront ici dès qu’une '
-        + 'première période aura été publiée.',
-      surEtat: refleterEtatDonnees
-    });
-}
-
-/* 2 — Le dispatcher, tout en haut. */
-lancerPoles();
-
-/* 3 — Le mot du chef de service. */
-avecEtat('#zone-mot',
-  async () => motDuChef(await chargerDonnees('communications')),
-  rendreMot, {
-    squelette: 1,
-    texteChargement: 'Chargement du mot du chef de service…',
-    titreErreur: 'Mot du chef de service indisponible',
-    titreVide: 'Aucun mot publié',
-    texteVide: 'Le prochain mot du chef de service paraîtra ici. Les '
-      + 'annonces, elles, restent en bas de page.'
-  });
-
-/* 4 — La flotte. */
+/* 2 — La flotte suivie. */
 avecEtat('#zone-flotte', () => chargerDonnees('flotte'), rendreFlotte, {
-  squelette: 1,
+  squelette: 2,
   texteChargement: 'Chargement de la flotte…',
   titreErreur: 'Flotte indisponible',
   titreVide: 'Aucun appareil suivi',
@@ -985,21 +913,5 @@ avecEtat('#zone-flotte', () => chargerDonnees('flotte'), rendreFlotte, {
     || donnees.flotte.length === 0
 });
 
-/* 5 — Le suivi OTQ / OTD, et sa ligne d'état. */
-monter(document.getElementById('zone-maj'),
-  el('div', { class: 'maj' }, majTexte, majBouton));
-refleterEtatDonnees();
-lancerIndicateurs();
-
-/* 6 — Les annonces de service, en fin de page. */
-avecEtat('#zone-communication',
-  async () => annoncesDeService(await chargerDonnees('communications')),
-  rendreCommunication, {
-    squelette: 2,
-    compact: true,
-    texteChargement: 'Chargement des annonces de service…',
-    titreVide: 'Aucune annonce de service',
-    titreErreur: 'Annonces indisponibles',
-    texteVide: 'Les annonces publiées au niveau du service apparaîtront '
-      + 'ici. Celles des pôles restent dans leur espace.'
-  });
+/* 3 — Le suivi OTQ / OTD. Aucune source : aucun cycle de chargement. */
+rendreSuiviOTQ(document.getElementById('zone-otq'));

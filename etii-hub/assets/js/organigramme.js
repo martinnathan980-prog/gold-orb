@@ -1,73 +1,96 @@
 /* =========================================================================
    ETII Hub — Organigramme
 
-   Le service ETII n'est pas plat. Cette page en rend la hiérarchie réelle :
+   Le service ETII n'est pas plat, et cette page ne fait pas semblant : elle
+   trace l'arbre réel, traits de rattachement compris.
 
-       ETII                          le service
-        ├── direction de service
-        └── ETIIA | ETIIE | ETIII    un pôle
-             ├── responsable de pôle
-             └── squads              leader + membres
-
-   Le pôle affiché voyage dans le hash (`organigramme.html#pole=ETIIA`).
-   La valeur « ETII » affiche tout le service ; toute valeur inconnue
-   retombe sur « ETII » sans erreur, et l'URL est réécrite en conséquence.
+       ETII                            le service
+        └── direction de service       le sommet
+             ├── ETIIA ─┐
+             ├── ETIIE  ├─ un pôle : son responsable, puis ses squads
+             └── ETIII ─┘   chaque squad : son leader, puis ses membres
 
    Ce que la page garantit :
-     - tout le DOM est construit avec el()/monter() — aucun innerHTML,
-       aucun gestionnaire en attribut, aucun sélecteur CSS fabriqué par
-       concaténation (un nom de squad peut contenir ' " < > et cassait
-       l'ancienne implémentation, SPEC §6.6) ;
-     - le glisser-déposer a un équivalent clavier COMPLET : le bouton
-       « Déplacer… » de chaque carte ouvre une modale qui fait exactement
-       la même chose, y compris d'un pôle à l'autre ;
-     - les réorganisations sont locales (mémoire + localStorage) et
-       annulables par un bouton de réinitialisation confirmé ;
-     - les trois états — chargement, erreur, vide — passent par avecEtat().
 
-   Le lien entre un élément du DOM et l'objet du modèle qu'il représente
-   passe TOUJOURS par un WeakMap, jamais par un sélecteur reconstruit.
+     - Une VRAIE représentation d'arbre. Le sommet, le rail qui fourche
+       vers les trois pôles, puis des branches indentées dont chaque
+       élément trace son rail vertical et son coude. Les traits sont en
+       CSS, posés par des pseudo-éléments : rien à recalculer au
+       redimensionnement, rien à repeindre au défilement.
+
+     - Chaque branche se plie et se déplie, au clic comme au clavier, par
+       un bouton portant `aria-expanded` et `aria-controls`. Deux boutons
+       globaux déplient ou replient tout.
+
+     - Cliquer sur une personne ouvre sa fiche : poste, pôle, squad,
+       périmètre, rattachement hiérarchique et collègues de squad. La
+       fiche est un complément permanent, pas une fenêtre modale : elle ne
+       confisque jamais le focus, Échap la referme et rend le focus à la
+       personne qui l'a ouverte.
+
+     - La recherche met en valeur les correspondances ET déplie les
+       branches nécessaires pour les révéler. Les non-correspondances sont
+       mises en retrait, jamais retirées du flux ni de l'ordre de
+       tabulation.
+
+     - Les avatars sont dessinés ici, en SVG : initiales et teinte
+       dérivées de l'identifiant. Aucun appel réseau.
+
+     - Le glisser-déposer entre squads a un équivalent clavier COMPLET :
+       le bouton « Déplacer… » de chaque personne ouvre une modale qui
+       fait exactement la même chose, y compris d'un pôle à l'autre. Les
+       réorganisations sont locales (mémoire + localStorage) et annulables
+       par un bouton de réinitialisation confirmé.
+
+   Et ce qu'elle n'invente jamais : un champ absent s'affiche « à
+   renseigner ». Aucun chiffre n'est écrit dans la page — l'effectif, le
+   nombre de squads et les effectifs par pôle sont comptés dans le fichier
+   de données, à chaque rendu.
+
+   Contraintes structurelles du projet (SPEC §8) :
+     - tout le DOM passe par el()/svg()/frag()/monter() : aucun innerHTML,
+       aucun gestionnaire en attribut ;
+     - aucun sélecteur ni gestionnaire construit par concaténation de
+       chaînes : un nom de squad contenant une apostrophe ou un guillemet
+       ne peut rien casser (SPEC §6.6). Le lien entre un élément du DOM et
+       l'objet qu'il représente passe par une Map, jamais par un sélecteur
+       reconstruit ;
+     - aucune valeur de couleur, de dimension ou de durée : ce module ne
+       pose que des classes, des attributs data-* et deux nombres sans
+       unité (la teinte d'un avatar, le facteur de zoom).
    ========================================================================= */
 
 import {
-  el, svg, monter, vider, deleguer, debounce, annoncer, toast,
+  el, svg, monter, deleguer, debounce, annoncer, toast, surlignerVers,
   ouvrirModale, etatUrl, stockage, initTheme, initNav
 } from './ui.js';
 
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
+import { normaliser, surligner } from './search.js';
 
 /* -------------------------------------------------------------------------
    0. Constantes
    ------------------------------------------------------------------------- */
 
 /** Clé de la réorganisation locale. */
-const CLE_ETAT = 'organigramme:etat';
+const CLE_ORGANISATION = 'organigramme:organisation';
 
-/** Clé du niveau de zoom. */
-const CLE_ZOOM = 'organigramme:zoom';
+/** Clé des réglages d'affichage (densité, zoom). */
+const CLE_AFFICHAGE = 'organigramme:affichage';
 
-/** Version du format enregistré. Un incrément invalide les sauvegardes
-    d'un format antérieur au lieu de les appliquer de travers. */
-const VERSION_ETAT = 3;
-
-const ZOOM_MIN = 80;
-const ZOOM_MAX = 160;
-const ZOOM_PAS = 10;
-const ZOOM_DEFAUT = 100;
-
-/** Anti-rebond de la recherche filtrante, en millisecondes. */
-const DELAI_FILTRE = 120;
+/**
+ * Version du format enregistré. Un incrément invalide les sauvegardes
+ * d'un format antérieur au lieu de les appliquer de travers.
+ */
+const VERSION_ETAT = 4;
 
 /** Code du niveau service : « tous pôles confondus ». */
 const SERVICE = 'ETII';
 
-/** Longueur maximale d'un nom de squad saisi. */
-const NOM_MAX = 60;
-
 /**
- * Contrat d'URL : les quatre valeurs admises, et le lien de navigation
- * qui porte `aria-current="page"` pour chacune. Le niveau service renvoie
- * au tableau de bord, un pôle à son propre espace.
+ * Contrat d'URL : les quatre valeurs admises pour `#pole=`, et le lien de
+ * navigation qui porte `aria-current="page"` pour chacune. Le niveau
+ * service renvoie au tableau de bord, un pôle à son propre espace.
  */
 const PAGE_DE_POLE = {
   ETII: 'index.html',
@@ -76,186 +99,1662 @@ const PAGE_DE_POLE = {
   ETIII: 'etiii.html'
 };
 
-/**
- * Libellés de la structure de service (accord d'équipe, SPEC §1bis).
- * Les métaphores sont fixes : elles décrivent le rôle d'un pôle, pas une
- * donnée qui pourrait changer d'une livraison à l'autre.
- */
-const DESCRIPTION_POLE = {
-  ETII: {
-    libelle: 'Tout le service',
-    sousTitre: 'ETII — les trois pôles réunis'
-  },
-  ETIIA: {
-    libelle: 'ETIIA',
-    sousTitre: 'Squelette & ADN — logique et règles d’architecture'
-  },
-  ETIIE: {
-    libelle: 'ETIIE',
-    sousTitre: 'Système nerveux — schémas électriques, communication'
-  },
-  ETIII: {
-    libelle: 'ETIII',
-    sousTitre: 'Structure & harnais — intégration physique, routage'
-  }
-};
+/** Densités admises, dans l'ordre du sélecteur segmenté. */
+const DENSITES = ['compacte', 'normale', 'detaillee'];
 
-/** Ordre d'affichage des puces du sélecteur. */
-const CODES_ADMIS = ['ETII', 'ETIIA', 'ETIIE', 'ETIII'];
+/** Bornes du zoom, en pourcentage. Elles doivent coïncider avec les
+    attributs min/max/step du curseur déclaré dans la page. */
+const ZOOM_MIN = 85;
+const ZOOM_MAX = 140;
+const ZOOM_DEFAUT = 100;
+
+/** Anti-rebond de la recherche, en millisecondes. */
+const DELAI_RECHERCHE = 120;
+
+/**
+ * Mention unique d'un champ déclaré mais vide. Toujours la même, partout :
+ * le hub ne présente jamais une valeur plausible à la place d'un trou.
+ */
+const MENTION_VIDE = 'à renseigner';
 
 /* -------------------------------------------------------------------------
    1. État du module
    ------------------------------------------------------------------------- */
 
-/** Données brutes telles que chargées, conservées pour la réinitialisation. */
+/** Données telles que chargées. Jamais modifiées : servent de référence
+    pour la réinitialisation et pour détecter une organisation modifiée. */
 let donneesSource = null;
 
-/** Modèle de travail, seul objet modifié par les déplacements. */
+/** Modèle de travail : seul objet que les déplacements modifient. */
 let modele = null;
 
 /** Pôle affiché. Toujours l'une des quatre valeurs admises. */
-let poleActif = SERVICE;
+let vue = SERVICE;
 
-/** Éléments statiques de la page. */
-const refs = {
-  racine: null,
-  conteneur: null,
-  selecteur: null,
-  puces: null,
-  contexte: null,
-  recherche: null,
-  effacer: null,
-  resume: null,
-  zoom: null,
-  zoomMoins: null,
-  zoomPlus: null,
-  zoomValeur: null,
-  reinitialiser: null
-};
+/** Requête de recherche brute, telle que saisie. */
+let requete = '';
 
-/** Puces du sélecteur de pôle, par code. */
-const vueParCode = new Map();
+/** Termes normalisés de la requête. Vide = aucune recherche en cours. */
+let termes = [];
 
-/* Ponts DOM -> modèle. Un WeakMap ne retient pas les nœuds détruits à
-   chaque rendu, et surtout il évite d'avoir à reconstruire un sélecteur
-   à partir d'un identifiant ou d'un nom. */
-const personneParElement = new WeakMap();
-const squadParElement = new WeakMap();
-const poleParElement = new WeakMap();
+/** Identifiants des personnes correspondant à la recherche. */
+let correspondances = new Set();
 
-/** Cartes rendues, par personne : sert au filtre et au retour de focus. */
-let vueParPersonne = new Map();
+/** Identifiant de la personne ouverte en fiche, ou null. */
+let ficheOuverte = null;
 
-/** Personne en cours de glissement, ou null. */
-let personneGlissee = null;
+/** Élément à refocaliser quand la fiche se referme. */
+let declencheurFiche = null;
 
-/** Zone de dépôt actuellement survolée pendant un glissement. */
-let depotSurvole = null;
+/** Densité d'affichage et facteur de zoom. */
+let densite = 'normale';
+let zoom = ZOOM_DEFAUT;
 
-/** Compteur d'identifiants uniques (squads, champs de modale). */
-let compteur = 0;
+/** Identifiant de la personne en cours de glissement, ou null. */
+let glissement = null;
+
+/** Éléments statiques de la page, résolus une fois. */
+const refs = {};
+
+/**
+ * Index des personnes : identifiant -> contexte complet.
+ * { personne, role, pole, squad } — `pole` et `squad` valent null pour la
+ * direction, `squad` vaut null pour un responsable de pôle.
+ */
+const index = new Map();
+
+/** Identifiant -> bouton principal de la personne dans l'arbre rendu. */
+const rendus = new Map();
+
+/** Élément de dépôt -> { pole, squad } qu'il représente. */
+const depots = new WeakMap();
+
+/** Groupes pliables du rendu courant : { bouton, liste, type, pole, squad }. */
+let groupes = [];
+
+/** Racine de l'arbre rendu (porte densité, zoom et état de glissement). */
+let racineArbre = null;
+
+/** État d'ouverture, conservé d'un rendu à l'autre.
+    Aucune clé composée : une Map par niveau, donc aucune concaténation. */
+const ouverturePoles = new Map();          // code de pôle -> booléen
+const ouvertureSquads = new Map();         // code de pôle -> Map(nom -> booléen)
+
+/** Instantané de l'état d'ouverture pris au début d'une recherche. */
+let ouvertureAvantRecherche = null;
+
+/** Les contrôles de la barre d'outils sont-ils déjà câblés ? Le bouton
+    « Réessayer » d'un état d'erreur rejoue le rendu : sans ce garde-fou,
+    chaque tentative doublerait les écouteurs. */
+let outilsCables = false;
+
+/** Compteur d'identifiants générés pour aria-controls / aria-labelledby. */
+let compteurId = 0;
+
+/** Un identifiant unique et stable dans la page. */
+function idLocal() {
+  compteurId += 1;
+  return 'org-n' + compteurId;
+}
 
 /* -------------------------------------------------------------------------
-   2. Utilitaires
+   2. Petits utilitaires de présentation
    ------------------------------------------------------------------------- */
 
 /**
- * Identifiant unique et stable pour un préfixe donné.
- * @param {string} prefixe
- * @returns {string}
- */
-function idUnique(prefixe) {
-  compteur += 1;
-  return prefixe + '-' + compteur;
-}
-
-/**
- * Chaîne propre, jamais `undefined` ni `null` dans le DOM.
+ * Une chaîne non vide, ou null. Sert de porte unique entre la donnée et
+ * l'affichage : tout ce qui n'est pas une chaîne utilisable devient un
+ * trou déclaré, jamais une valeur inventée.
+ *
  * @param {*} valeur
- * @returns {string}
+ * @returns {string|null}
  */
 function texte(valeur) {
-  if (valeur === null || valeur === undefined) return '';
-  return String(valeur);
+  if (typeof valeur !== 'string') return null;
+  const propre = valeur.trim();
+  return propre === '' ? null : propre;
 }
 
 /**
- * Accord en nombre : « 1 personne », « 20 personnes ».
+ * Le nœud à afficher pour un champ : sa valeur, ou la mention « à
+ * renseigner » reconnaissable du premier coup d'œil.
+ *
+ * @param {*} valeur
+ * @returns {Node}
+ */
+function valeurOuVide(valeur) {
+  const propre = texte(valeur);
+  if (propre !== null) return document.createTextNode(propre);
+  return el('span', { class: 'org-vide' }, MENTION_VIDE);
+}
+
+/**
+ * Même chose, mais surlignée selon la recherche en cours. Le moteur de
+ * recherche ne produit que des segments de texte brut ; les `<mark>`
+ * naissent dans ui.js. Aucune chaîne ne transite par innerHTML.
+ *
+ * @param {*} valeur
+ * @returns {Node}
+ */
+function valeurSurlignee(valeur) {
+  const propre = texte(valeur);
+  if (propre === null) return el('span', { class: 'org-vide' }, MENTION_VIDE);
+  if (termes.length === 0) return document.createTextNode(propre);
+  return surlignerVers(surligner(propre, requete));
+}
+
+/**
+ * Accord d'un nom commun sur un effectif.
+ *
  * @param {number} n
  * @param {string} singulier
  * @param {string} pluriel
  * @returns {string}
  */
-function accorder(n, singulier, pluriel) {
+function accord(n, singulier, pluriel) {
   return n + ' ' + (n > 1 ? pluriel : singulier);
 }
 
-/** Diacritiques, pour la normalisation de la recherche. */
-const MARQUES = new RegExp('[\\u0300-\\u036f]', 'g');
-
-/**
- * Minuscules sans accents : « Intégration » et « integration » se
- * rencontrent. La ponctuation devient de l'espace.
- * @param {*} valeur
- * @returns {string}
- */
-function normaliser(valeur) {
-  return texte(valeur)
-    .normalize('NFD')
-    .replace(MARQUES, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-}
-
-/**
- * Ramène n'importe quelle valeur de hash à un code de pôle admis.
- * Toute valeur inconnue retombe sur « ETII », sans erreur (contrat d'URL).
- * @param {*} valeur
- * @returns {string}
- */
-function normaliserPole(valeur) {
-  /* Une clé répétée dans le hash est lue comme un tableau : on retient la
-     dernière occurrence, comme le ferait un formulaire. */
-  const brut = Array.isArray(valeur) ? valeur[valeur.length - 1] : valeur;
-  const code = texte(brut).trim().toUpperCase();
-  return CODES_ADMIS.indexOf(code) !== -1 ? code : SERVICE;
-}
-
-/**
- * Nom d'une squad, entre guillemets français, pour les phrases d'annonce.
- * Le résultat n'est JAMAIS interprété : il finit en textContent.
- * @param {object} squad
- * @returns {string}
- */
-function cite(squad) {
-  return '« ' + texte(squad && squad.nom) + ' »';
-}
-
-/** Donne le focus à un élément, sans jamais lever d'exception. */
-function focaliser(element) {
-  if (!element || typeof element.focus !== 'function') return false;
-  try { element.focus(); return true; } catch (_e) { return false; }
-}
-
 /* -------------------------------------------------------------------------
-   3. Modèle
-   Construit une fois à partir du JSON, puis modifié en place par les
-   déplacements. Les identifiants de squad sont GÉNÉRÉS ici : ils ne
-   viennent jamais d'une donnée, donc aucun nom saisi ne peut se retrouver
-   dans un attribut servant de clé.
+   3. Modèle : construction, index, persistance
    ------------------------------------------------------------------------- */
 
 /**
- * Vérifie la forme du JSON et bâtit le modèle de travail.
- * Lève une Error au message français si la forme est invalide : avecEtat()
- * bascule alors proprement en état d'erreur.
+ * Copie de travail du fichier de données. On ne garde que les champs du
+ * contrat : rien n'est ajouté, rien n'est deviné.
  *
  * @param {object} donnees
  * @returns {object}
  */
 function construireModele(donnees) {
-  verifierForme(donnees, {
+  const poles = [];
+
+  for (const brut of donnees.poles) {
+    if (!brut || typeof brut !== 'object') continue;
+
+    const squads = [];
+    const listeSquads = Array.isArray(brut.squads) ? brut.squads : [];
+
+    for (const squad of listeSquads) {
+      if (!squad || typeof squad !== 'object') continue;
+      const membres = Array.isArray(squad.membres) ? squad.membres : [];
+      squads.push({
+        nom: squad.nom,
+        membres: membres.filter((m) => m && typeof m === 'object').map(copiePersonne)
+      });
+    }
+
+    poles.push({
+      pole: brut.pole,
+      responsable: (brut.responsable && typeof brut.responsable === 'object')
+        ? copiePersonne(brut.responsable)
+        : null,
+      squads: squads
+    });
+  }
+
+  return {
+    service: donnees.service,
+    direction: (donnees.direction && typeof donnees.direction === 'object')
+      ? copiePersonne(donnees.direction)
+      : null,
+    poles: poles
+  };
+}
+
+/**
+ * Copie d'une personne, limitée aux cinq champs du contrat.
+ * @param {object} p
+ * @returns {object}
+ */
+function copiePersonne(p) {
+  return {
+    id: p.id,
+    nom: p.nom,
+    poste: p.poste,
+    role: p.role,
+    perimetre: p.perimetre
+  };
+}
+
+/**
+ * Reconstruit l'index des personnes à partir du modèle courant.
+ * Tout le reste de la page le consulte : c'est la seule façon d'aller
+ * d'un identifiant à son contexte.
+ */
+function construireIndex() {
+  index.clear();
+
+  if (modele.direction && texte(modele.direction.id)) {
+    index.set(modele.direction.id, {
+      personne: modele.direction,
+      role: 'direction',
+      pole: null,
+      squad: null
+    });
+  }
+
+  for (const pole of modele.poles) {
+    if (pole.responsable && texte(pole.responsable.id)) {
+      index.set(pole.responsable.id, {
+        personne: pole.responsable,
+        role: 'responsable',
+        pole: pole.pole,
+        squad: null
+      });
+    }
+    for (const squad of pole.squads) {
+      for (const membre of squad.membres) {
+        if (!texte(membre.id)) continue;
+        index.set(membre.id, {
+          personne: membre,
+          role: membre.role === 'leader' ? 'leader' : 'membre',
+          pole: pole.pole,
+          squad: squad.nom
+        });
+      }
+    }
+  }
+}
+
+/**
+ * Retrouve l'objet squad d'un pôle par son nom.
+ * Comparaison de valeurs, jamais de sélecteur reconstruit : un nom
+ * contenant une apostrophe, un guillemet ou un chevron passe sans risque.
+ *
+ * @param {string} codePole
+ * @param {string} nomSquad
+ * @returns {object|null}
+ */
+function trouverSquad(codePole, nomSquad) {
+  for (const pole of modele.poles) {
+    if (pole.pole !== codePole) continue;
+    for (const squad of pole.squads) {
+      if (squad.nom === nomSquad) return squad;
+    }
+  }
+  return null;
+}
+
+/**
+ * Range les membres d'une squad : leader d'abord, le reste dans l'ordre
+ * où il est arrivé. Le rang vient du champ `role` du fichier ; il n'est
+ * jamais deviné à partir du poste.
+ *
+ * @param {object} squad
+ */
+function ordonner(squad) {
+  const leaders = squad.membres.filter((m) => m.role === 'leader');
+  const autres = squad.membres.filter((m) => m.role !== 'leader');
+  squad.membres = leaders.concat(autres);
+}
+
+/**
+ * Affectation d'origine de chaque membre, telle que le fichier la donne.
+ * @returns {Map<string, {pole: string, squad: string}>}
+ */
+function affectationsSource() {
+  const carte = new Map();
+  if (!donneesSource || !Array.isArray(donneesSource.poles)) return carte;
+
+  for (const pole of donneesSource.poles) {
+    const squads = Array.isArray(pole && pole.squads) ? pole.squads : [];
+    for (const squad of squads) {
+      const membres = Array.isArray(squad && squad.membres) ? squad.membres : [];
+      for (const membre of membres) {
+        if (membre && texte(membre.id)) {
+          carte.set(membre.id, { pole: pole.pole, squad: squad.nom });
+        }
+      }
+    }
+  }
+  return carte;
+}
+
+/** Affectation courante de chaque membre dans le modèle de travail. */
+function affectationsCourantes() {
+  const carte = new Map();
+  for (const pole of modele.poles) {
+    for (const squad of pole.squads) {
+      for (const membre of squad.membres) {
+        if (texte(membre.id)) carte.set(membre.id, { pole: pole.pole, squad: squad.nom });
+      }
+    }
+  }
+  return carte;
+}
+
+/**
+ * L'organisation affichée diffère-t-elle de celle du fichier ?
+ * @returns {boolean}
+ */
+function organisationModifiee() {
+  const origine = affectationsSource();
+  const courante = affectationsCourantes();
+  if (origine.size !== courante.size) return true;
+
+  for (const [id, place] of origine) {
+    const ici = courante.get(id);
+    if (!ici || ici.pole !== place.pole || ici.squad !== place.squad) return true;
+  }
+  return false;
+}
+
+/** Enregistre l'organisation courante. L'échec du stockage est sans effet
+    sur la page : elle perd sa mémoire, pas ses fonctions. */
+function enregistrerOrganisation() {
+  const affectations = [];
+  for (const [id, place] of affectationsCourantes()) {
+    affectations.push({ id: id, pole: place.pole, squad: place.squad });
+  }
+  stockage.ecrire(CLE_ORGANISATION, {
+    version: VERSION_ETAT,
+    affectations: affectations
+  });
+}
+
+/**
+ * Rejoue une réorganisation enregistrée sur le modèle fraîchement
+ * construit. Toute affectation qui ne correspond plus à rien (squad
+ * disparue, identifiant inconnu) est ignorée : la personne reste là où le
+ * fichier la place.
+ *
+ * @returns {boolean} vrai si au moins une affectation a été rejouée
+ */
+function appliquerOrganisationEnregistree() {
+  const brut = stockage.lire(CLE_ORGANISATION, null);
+  if (!brut || typeof brut !== 'object') return false;
+  if (brut.version !== VERSION_ETAT || !Array.isArray(brut.affectations)) return false;
+
+  const souhait = new Map();
+  for (const entree of brut.affectations) {
+    if (!entree || typeof entree !== 'object') continue;
+    if (!texte(entree.id) || !texte(entree.pole)) continue;
+    souhait.set(entree.id, { pole: entree.pole, squad: entree.squad });
+  }
+  if (souhait.size === 0) return false;
+
+  /* Toutes les personnes sont retirées de leurs squads, puis replacées
+     dans l'ordre du fichier : la destination compte, pas l'ordre dans
+     lequel les déplacements ont eu lieu. */
+  const origine = affectationsCourantes();
+  const personnes = new Map();
+  for (const pole of modele.poles) {
+    for (const squad of pole.squads) {
+      for (const membre of squad.membres) personnes.set(membre.id, membre);
+      squad.membres = [];
+    }
+  }
+
+  let rejoue = false;
+  for (const [id, membre] of personnes) {
+    const depart = origine.get(id);
+    const vise = souhait.get(id) || depart;
+    let cible = vise ? trouverSquad(vise.pole, vise.squad) : null;
+    if (!cible && depart) cible = trouverSquad(depart.pole, depart.squad);
+    if (!cible) continue;
+    cible.membres.push(membre);
+    if (depart && vise && (vise.pole !== depart.pole || vise.squad !== depart.squad)) {
+      rejoue = true;
+    }
+  }
+
+  for (const pole of modele.poles) for (const squad of pole.squads) ordonner(squad);
+  return rejoue;
+}
+
+/* -------------------------------------------------------------------------
+   4. Comptages — lus dans les données, jamais écrits dans la page
+   ------------------------------------------------------------------------- */
+
+/** Effectif d'un pôle : son responsable, s'il est déclaré, plus ses membres. */
+function effectifPole(pole) {
+  let total = pole.responsable ? 1 : 0;
+  for (const squad of pole.squads) total += squad.membres.length;
+  return total;
+}
+
+/** Effectif du service entier. */
+function effectifService() {
+  let total = modele.direction ? 1 : 0;
+  for (const pole of modele.poles) total += effectifPole(pole);
+  return total;
+}
+
+/** Nombre total de squads déclarées. */
+function nombreSquads() {
+  let total = 0;
+  for (const pole of modele.poles) total += pole.squads.length;
+  return total;
+}
+
+/* -------------------------------------------------------------------------
+   5. Avatar généré localement
+   ------------------------------------------------------------------------- */
+
+/**
+ * Initiales d'un libellé. « Personne 07 » donne « P07 » : la lettre du
+ * premier mot, puis le dernier mot s'il est numérique. Deux personnes
+ * différentes ne se confondent donc pas.
+ *
+ * @param {*} nom
+ * @returns {string}
+ */
+function initiales(nom) {
+  const propre = texte(nom);
+  if (propre === null) return '?';
+
+  const mots = propre.split(/\s+/).filter(Boolean);
+  const premier = Array.from(mots[0])[0].toLocaleUpperCase('fr');
+  if (mots.length === 1) return premier;
+
+  const dernier = mots[mots.length - 1];
+  if (/^\d+$/.test(dernier)) return premier + dernier.slice(-2);
+  return premier + Array.from(dernier)[0].toLocaleUpperCase('fr');
+}
+
+/**
+ * Teinte d'un avatar : un angle de 0 à 359 dérivé de l'identifiant, par
+ * une somme pondérée stable. Le même identifiant donne toujours la même
+ * teinte, d'une session à l'autre et d'un navigateur à l'autre.
+ *
+ * Seul l'angle est calculé ici. La saturation et les clartés restent dans
+ * la feuille de style de la page, où elles suivent le thème.
+ *
+ * @param {*} id
+ * @returns {number}
+ */
+function teinteDe(id) {
+  const source = texte(id) || '';
+  let somme = 0;
+  for (let i = 0; i < source.length; i += 1) {
+    somme = (somme * 31 + source.charCodeAt(i)) % 100003;
+  }
+  return somme % 360;
+}
+
+/**
+ * L'avatar : un cercle teinté et deux ou trois initiales, en SVG inline.
+ * Purement décoratif — le nom est écrit juste à côté — donc masqué aux
+ * technologies d'assistance.
+ *
+ * @param {object} personne
+ * @param {boolean} [grand]
+ * @returns {SVGElement}
+ */
+function avatar(personne, grand) {
+  return svg('svg', {
+    class: ['org-avatar', grand ? 'org-avatar--grand' : null],
+    viewBox: '0 0 40 40',
+    'aria-hidden': 'true',
+    focusable: 'false',
+    style: { '--org-teinte': teinteDe(personne && personne.id) }
+  },
+  svg('circle', { class: 'org-avatar__fond', cx: '20', cy: '20', r: '20' }),
+  svg('text', {
+    class: 'org-avatar__initiales',
+    x: '20',
+    y: '20',
+    'text-anchor': 'middle',
+    'dominant-baseline': 'central'
+  }, initiales(personne && personne.nom)));
+}
+
+/* -------------------------------------------------------------------------
+   6. Recherche : correspondances et dépliage automatique
+   ------------------------------------------------------------------------- */
+
+/**
+ * Texte indexé d'une personne : tout ce sur quoi la recherche porte,
+ * normalisé une fois (minuscules, sans diacritiques).
+ *
+ * @param {object} entree  une valeur de l'index
+ * @returns {string}
+ */
+function foin(entree) {
+  const morceaux = [
+    entree.personne.nom,
+    entree.personne.poste,
+    entree.personne.perimetre,
+    entree.pole,
+    entree.squad
+  ];
+  return normaliser(morceaux.filter((m) => texte(m) !== null).join(' '));
+}
+
+/**
+ * Recalcule les correspondances, puis règle l'ouverture des branches pour
+ * que chaque personne trouvée soit visible sans un seul clic.
+ *
+ * L'état d'ouverture manuel est photographié au début d'une recherche et
+ * restitué quand elle se termine : chercher ne détruit pas le travail de
+ * pliage de l'utilisateur.
+ */
+function appliquerRecherche() {
+  const avant = termes.length > 0;
+  const normalisee = normaliser(requete);
+  termes = normalisee ? normalisee.split(' ').filter(Boolean) : [];
+  const apres = termes.length > 0;
+
+  correspondances = new Set();
+  if (apres) {
+    for (const [id, entree] of index) {
+      const cible = foin(entree);
+      if (termes.every((t) => cible.includes(t))) correspondances.add(id);
+    }
+  }
+
+  if (!avant && apres) photographierOuverture();
+
+  if (apres) {
+    /* Une branche s'ouvre si elle contient une correspondance, et se
+       referme sinon : le résultat est lisible d'un coup d'œil. */
+    for (const pole of modele.poles) {
+      let poleTrouve = pole.responsable ? correspondances.has(pole.responsable.id) : false;
+      for (const squad of pole.squads) {
+        const trouve = squad.membres.some((m) => correspondances.has(m.id));
+        definirOuvertureSquad(pole.pole, squad.nom, trouve);
+        if (trouve) poleTrouve = true;
+      }
+      ouverturePoles.set(pole.pole, poleTrouve);
+    }
+  } else if (avant && !apres) {
+    restituerOuverture();
+  }
+
+  rendreArbre();
+  annoncerResultat();
+}
+
+/** Nombre de personnes trouvées, écrit dans la région d'état de la page. */
+function annoncerResultat() {
+  if (!refs.resultat) return;
+
+  if (termes.length === 0) {
+    refs.resultat.textContent = '';
+    return;
+  }
+  const total = correspondances.size;
+  refs.resultat.textContent = total === 0
+    ? 'Aucune personne ne correspond à cette recherche.'
+    : accord(total, 'personne trouvée', 'personnes trouvées')
+      + ' — les branches concernées sont dépliées.';
+}
+
+/* -------------------------------------------------------------------------
+   7. Pliage : état conservé d'un rendu à l'autre
+   ------------------------------------------------------------------------- */
+
+/** Un pôle est-il déplié ? Ouvert par défaut. */
+function ouvertPole(code) {
+  return ouverturePoles.get(code) !== false;
+}
+
+/** Une squad est-elle dépliée ? Ouverte par défaut. */
+function ouvertSquad(code, nom) {
+  const parPole = ouvertureSquads.get(code);
+  if (!parPole) return true;
+  return parPole.get(nom) !== false;
+}
+
+/** Fixe l'ouverture d'une squad. */
+function definirOuvertureSquad(code, nom, ouvert) {
+  let parPole = ouvertureSquads.get(code);
+  if (!parPole) {
+    parPole = new Map();
+    ouvertureSquads.set(code, parPole);
+  }
+  parPole.set(nom, ouvert === true);
+}
+
+/** Photographie l'état d'ouverture courant, avant de le remplacer. */
+function photographierOuverture() {
+  const squads = new Map();
+  for (const [code, parPole] of ouvertureSquads) squads.set(code, new Map(parPole));
+  ouvertureAvantRecherche = { poles: new Map(ouverturePoles), squads: squads };
+}
+
+/** Restitue l'état photographié, s'il y en a un. */
+function restituerOuverture() {
+  if (!ouvertureAvantRecherche) return;
+
+  ouverturePoles.clear();
+  for (const [code, valeur] of ouvertureAvantRecherche.poles) ouverturePoles.set(code, valeur);
+
+  ouvertureSquads.clear();
+  for (const [code, parPole] of ouvertureAvantRecherche.squads) {
+    ouvertureSquads.set(code, new Map(parPole));
+  }
+  ouvertureAvantRecherche = null;
+}
+
+/**
+ * Plie ou déplie une branche et met à jour son bouton.
+ * L'état visuel et l'état accessible n'ont qu'une source : aria-expanded.
+ *
+ * @param {object} groupe  une entrée de `groupes`
+ * @param {boolean} ouvert
+ */
+function appliquerOuverture(groupe, ouvert) {
+  groupe.bouton.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+  groupe.liste.hidden = !ouvert;
+
+  if (groupe.type === 'pole') ouverturePoles.set(groupe.pole, ouvert);
+  else definirOuvertureSquad(groupe.pole, groupe.squad, ouvert);
+}
+
+/**
+ * Déplie ou replie l'ensemble des branches visibles.
+ * @param {boolean} ouvert
+ */
+function toutBasculer(ouvert) {
+  for (const groupe of groupes) appliquerOuverture(groupe, ouvert);
+  annoncer(ouvert
+    ? 'Toutes les branches sont dépliées.'
+    : 'Toutes les branches sont repliées.');
+}
+
+/* -------------------------------------------------------------------------
+   8. Construction de l'arbre
+   ------------------------------------------------------------------------- */
+
+/** Les pôles à afficher, selon le périmètre choisi. */
+function polesVisibles() {
+  if (vue === SERVICE) return modele.poles;
+  return modele.poles.filter((p) => p.pole === vue);
+}
+
+/**
+ * Le bouton de pliage d'une branche.
+ *
+ * @param {string} idListe   identifiant de la liste commandée
+ * @param {boolean} ouvert
+ * @param {string} libelle   ce que le bouton plie ou déplie, en toutes lettres
+ * @returns {HTMLElement}
+ */
+function boutonPliage(idListe, ouvert, libelle) {
+  return el('button', {
+    type: 'button',
+    class: 'org-plier',
+    dataPlier: '',
+    ariaExpanded: ouvert ? 'true' : 'false',
+    ariaControls: idListe,
+    ariaLabel: 'Plier ou déplier : ' + libelle
+  }, el('span', { class: 'org-plier__chevron', ariaHidden: 'true' }, '▾'));
+}
+
+/**
+ * Une ligne de personne : avatar, nom, poste, périmètre, et — pour les
+ * personnes rattachées à une squad — le bouton « Déplacer… », équivalent
+ * clavier intégral du glisser-déposer.
+ *
+ * @param {object} entree  une valeur de l'index
+ * @returns {HTMLElement}
+ */
+function lignePersonne(entree) {
+  const personne = entree.personne;
+  const deplacable = entree.squad !== null;
+
+  const principal = el('button', {
+    type: 'button',
+    class: 'org-personne__principal',
+    dataPersonne: personne.id,
+    ariaCurrent: ficheOuverte === personne.id ? 'true' : null
+  },
+  avatar(personne),
+  el('span', { class: 'org-personne__identite' },
+    el('span', { class: 'org-personne__nom' }, valeurSurlignee(personne.nom)),
+    el('span', { class: 'org-personne__poste' }, valeurSurlignee(personne.poste)),
+    el('span', { class: 'org-personne__perimetre' },
+      'Périmètre : ', valeurOuVide(personne.perimetre))),
+  entree.role === 'leader'
+    ? el('span', { class: 'org-etiquette' }, 'Leader')
+    : null,
+  entree.role === 'responsable'
+    ? el('span', { class: 'org-etiquette' }, 'Responsable')
+    : null,
+  entree.role === 'direction'
+    ? el('span', { class: 'org-etiquette' }, 'Direction')
+    : null);
+
+  if (texte(personne.id)) rendus.set(personne.id, principal);
+
+  const ligne = el('div', {
+    class: 'org-personne',
+    dataRole: entree.role,
+    draggable: deplacable ? 'true' : null,
+    dataGlissable: deplacable ? personne.id : null,
+    dataTrouve: correspondances.has(personne.id) ? 'true' : null,
+    dataRetrait: (termes.length > 0 && !correspondances.has(personne.id)) ? 'true' : null
+  },
+  principal,
+  deplacable
+    ? el('button', {
+      type: 'button',
+      class: 'org-personne__deplacer',
+      dataDeplacer: personne.id,
+      ariaLabel: 'Déplacer ' + (texte(personne.nom) || 'cette personne')
+        + ' vers une autre squad'
+    }, el('span', { ariaHidden: 'true' }, '⇄'))
+    : null);
+
+  return ligne;
+}
+
+/** Le sommet : la direction de service, et le tronc qui en descend. */
+function sommet() {
+  const entree = modele.direction && index.get(modele.direction.id);
+
+  const carte = entree
+    ? el('div', { class: 'org-noeud org-noeud--direction' },
+      el('p', { class: 'org-noeud__meta' },
+        texte(modele.service) || SERVICE, ' · Direction de service'),
+      lignePersonne(entree))
+    : el('div', { class: 'org-noeud org-noeud--direction' },
+      el('p', { class: 'org-noeud__titre' }, 'Direction'),
+      el('p', { class: 'org-noeud__meta' },
+        el('span', { class: 'org-vide' }, MENTION_VIDE)));
+
+  return el('div', { class: 'org-sommet' },
+    el('div', { class: 'org-sommet__noeud' }, carte),
+    el('span', { class: 'org-sommet__tronc', ariaHidden: 'true' }));
+}
+
+/** La branche d'une squad : son nœud, sa zone de dépôt, ses membres. */
+function brancheSquad(pole, squad) {
+  const idListe = idLocal();
+  const idTitre = idLocal();
+  const ouvert = ouvertSquad(pole.pole, squad.nom);
+  const nomLisible = texte(squad.nom) || MENTION_VIDE;
+
+  const noeud = el('div', { class: 'org-noeud org-noeud--squad' },
+    el('p', { class: 'org-noeud__titre', id: idTitre }, valeurSurlignee(squad.nom)),
+    el('p', { class: 'org-noeud__meta' },
+      accord(squad.membres.length, 'personne', 'personnes'),
+      el('span', { class: 'org-noeud__depot' }, 'Déposer ici')));
+
+  const bouton = boutonPliage(idListe, ouvert, 'squad ' + nomLisible);
+
+  const liste = el('ul', {
+    class: 'org-branches',
+    id: idListe,
+    ariaLabelledby: idTitre,
+    hidden: !ouvert
+  },
+  squad.membres.map((membre) => {
+    const entree = index.get(membre.id);
+    return el('li', { class: 'org-branche' }, entree ? lignePersonne(entree) : null);
+  }));
+
+  const branche = el('li', {
+    class: 'org-branche',
+    dataDepot: '',
+    dataVide: (termes.length > 0
+      && !squad.membres.some((m) => correspondances.has(m.id))) ? 'true' : null
+  },
+  el('div', { class: 'org-tete' }, bouton, noeud),
+  liste);
+
+  depots.set(branche, { pole: pole.pole, squad: squad.nom });
+  groupes.push({
+    bouton: bouton,
+    liste: liste,
+    type: 'squad',
+    pole: pole.pole,
+    squad: squad.nom
+  });
+
+  return branche;
+}
+
+/** La colonne d'un pôle : son nœud, son responsable, ses squads. */
+function branchePole(pole) {
+  const idListe = idLocal();
+  const idTitre = idLocal();
+  const ouvert = ouvertPole(pole.pole);
+  const codeLisible = texte(pole.pole) || MENTION_VIDE;
+  const responsable = pole.responsable && index.get(pole.responsable.id);
+
+  const bouton = boutonPliage(idListe, ouvert, 'pôle ' + codeLisible);
+
+  /* Le bouton de pliage est DANS la carte du pôle, et non à côté : la
+     carte occupe ainsi toute la colonne, et le trait qui descend du rail
+     tombe exactement sur son milieu. */
+  const noeud = el('div', { class: 'org-noeud org-noeud--pole' },
+    bouton,
+    el('div', { class: 'org-noeud__corps' },
+      el('p', { class: 'org-noeud__titre', id: idTitre }, valeurSurlignee(pole.pole)),
+      el('p', { class: 'org-noeud__meta' },
+        accord(effectifPole(pole), 'personne', 'personnes'),
+        el('span', null, accord(pole.squads.length, 'squad', 'squads')))));
+
+  const liste = el('ul', {
+    class: 'org-branches',
+    id: idListe,
+    ariaLabelledby: idTitre,
+    hidden: !ouvert
+  },
+  el('li', { class: 'org-branche' },
+    responsable
+      ? lignePersonne(responsable)
+      : el('p', { class: 'org-noeud__meta' },
+        'Responsable de pôle : ', el('span', { class: 'org-vide' }, MENTION_VIDE))),
+  pole.squads.map((squad) => brancheSquad(pole, squad)));
+
+  groupes.push({
+    bouton: bouton,
+    liste: liste,
+    type: 'pole',
+    pole: pole.pole,
+    squad: null
+  });
+
+  return el('li', { class: 'org-pole', dataPole: pole.pole },
+    el('span', { class: 'org-pole__attache', ariaHidden: 'true' }),
+    noeud,
+    liste);
+}
+
+/**
+ * Rendu complet de l'arbre. Appelé à chaque changement d'état : le DOM
+ * n'est jamais rafistolé, il est reconstruit à partir du modèle. Avec
+ * quelques dizaines de personnes, c'est instantané — et cela supprime
+ * toute possibilité de divergence entre l'affichage et les données.
+ */
+function rendreArbre() {
+  if (!refs.plan || !modele) return;
+
+  rendus.clear();
+  groupes = [];
+
+  const visibles = polesVisibles();
+
+  racineArbre = el('div', {
+    class: 'organigramme',
+    dataDensite: densite,
+    style: { '--org-echelle': zoom / 100 }
+  },
+  sommet(),
+  visibles.length
+    ? el('ul', { class: 'org-poles' }, visibles.map(branchePole))
+    : el('p', { class: 'texte-doux' },
+      'Aucun pôle ne correspond au périmètre choisi.'));
+
+  monter(refs.plan, racineArbre);
+  marquerPersonneCourante();
+}
+
+/* -------------------------------------------------------------------------
+   9. Bandeau de repères
+   ------------------------------------------------------------------------- */
+
+/** Un repère : une valeur comptée, et ce qu'elle mesure. */
+function repere(valeur, libelle, codePole) {
+  return el('li', {
+    class: ['org-repere', codePole ? 'org-repere--pole' : null],
+    dataPole: codePole || null
+  },
+  el('span', { class: 'org-repere__valeur' }, String(valeur)),
+  el('span', { class: 'org-repere__libelle' }, libelle));
+}
+
+/** Le bandeau entier. Toutes les valeurs sont comptées dans les données. */
+function rendreReperes() {
+  if (!refs.reperes || !modele) return;
+
+  const parPole = modele.poles.map((pole) => repere(
+    effectifPole(pole),
+    (texte(pole.pole) || MENTION_VIDE) + ' · ' + accord(pole.squads.length, 'squad', 'squads'),
+    texte(pole.pole)
+  ));
+
+  monter(refs.reperes, el('ul', { class: 'org-reperes' },
+    repere(effectifService(), 'Effectif du service'),
+    repere(modele.poles.length, 'Pôles'),
+    repere(nombreSquads(), 'Squads'),
+    parPole));
+
+  refs.reperes.setAttribute('aria-busy', 'false');
+}
+
+/* -------------------------------------------------------------------------
+   10. Fiche de personne
+   ------------------------------------------------------------------------- */
+
+/**
+ * Le responsable hiérarchique d'une personne, déduit de sa position dans
+ * l'arbre — c'est précisément ce que l'arbre dit. Rien n'est inventé :
+ * si le niveau supérieur n'est pas déclaré, il n'y a pas de rattachement
+ * à afficher.
+ *
+ * @param {object} entree
+ * @returns {object|null} une entrée de l'index, ou null
+ */
+function superieur(entree) {
+  if (entree.role === 'direction') return null;
+
+  if (entree.role === 'responsable') {
+    return modele.direction ? index.get(modele.direction.id) || null : null;
+  }
+
+  const pole = modele.poles.find((p) => p.pole === entree.pole) || null;
+  if (!pole) return null;
+
+  if (entree.role === 'leader') {
+    return pole.responsable ? index.get(pole.responsable.id) || null : null;
+  }
+
+  const squad = trouverSquad(entree.pole, entree.squad);
+  const leader = squad ? squad.membres.find((m) => m.role === 'leader') : null;
+  if (leader && leader.id !== entree.personne.id) return index.get(leader.id) || null;
+  return pole.responsable ? index.get(pole.responsable.id) || null : null;
+}
+
+/** Les autres personnes de la même squad. */
+function collegues(entree) {
+  if (entree.squad === null) return [];
+  const squad = trouverSquad(entree.pole, entree.squad);
+  if (!squad) return [];
+  return squad.membres
+    .filter((m) => m.id !== entree.personne.id)
+    .map((m) => index.get(m.id))
+    .filter(Boolean);
+}
+
+/** Les personnes directement encadrées : pôles pour la direction, leaders
+    de squad pour un responsable de pôle. */
+function encadres(entree) {
+  if (entree.role === 'direction') {
+    return modele.poles
+      .map((p) => (p.responsable ? index.get(p.responsable.id) : null))
+      .filter(Boolean);
+  }
+  if (entree.role === 'responsable') {
+    const pole = modele.poles.find((p) => p.pole === entree.pole);
+    if (!pole) return [];
+    return pole.squads
+      .map((s) => s.membres.find((m) => m.role === 'leader'))
+      .filter(Boolean)
+      .map((m) => index.get(m.id))
+      .filter(Boolean);
+  }
+  return [];
+}
+
+/** Une ligne « clé / valeur » de la fiche. */
+function ligneFiche(cle, valeur) {
+  return [
+    el('dt', { class: 'org-fiche__cle' }, cle),
+    el('dd', { class: 'org-fiche__valeur' }, valeur)
+  ];
+}
+
+/** Une puce ouvrant la fiche d'une autre personne. */
+function puceVers(entree) {
+  return el('li', null,
+    el('button', {
+      type: 'button',
+      class: 'org-puce',
+      dataPersonne: entree.personne.id
+    },
+    avatar(entree.personne),
+    el('span', null, valeurOuVide(entree.personne.nom))));
+}
+
+/** Un groupe de puces, ou rien si la liste est vide. */
+function groupePuces(intitule, liste) {
+  if (liste.length === 0) return null;
+  return el('div', { class: 'org-fiche__groupe' },
+    el('p', { class: 'org-fiche__intitule' },
+      intitule + ' (' + liste.length + ')'),
+    el('ul', { class: 'org-fiche__puces' }, liste.map(puceVers)));
+}
+
+/**
+ * Contenu de la fiche. Aucun champ n'est masqué quand il est vide : il
+ * est affiché avec la mention « à renseigner », pour qu'on sache que la
+ * donnée manque et non que le champ n'existe pas.
+ *
+ * @param {object} entree
+ * @returns {DocumentFragment|Array}
+ */
+function contenuFiche(entree) {
+  const personne = entree.personne;
+  const chef = superieur(entree);
+
+  const lignes = [];
+  lignes.push(ligneFiche('Poste', valeurOuVide(personne.poste)));
+
+  if (entree.role === 'direction') {
+    lignes.push(ligneFiche('Périmètre organisationnel',
+      texte(modele.service) || MENTION_VIDE));
+  } else {
+    lignes.push(ligneFiche('Pôle',
+      el('span', { class: 'org-fiche__pole', dataPole: texte(entree.pole) },
+        el('span', { class: 'org-fiche__filet', ariaHidden: 'true' }),
+        valeurOuVide(entree.pole))));
+  }
+
+  if (entree.role === 'leader' || entree.role === 'membre') {
+    lignes.push(ligneFiche('Squad', valeurOuVide(entree.squad)));
+  }
+
+  lignes.push(ligneFiche('Périmètre', valeurOuVide(personne.perimetre)));
+
+  /* Le rattachement est un groupe à part, et non une ligne du tableau :
+     c'est une personne, donc une puce qui ouvre sa fiche — pas une
+     valeur à lire. */
+  const rattachement = el('div', { class: 'org-fiche__groupe' },
+    el('p', { class: 'org-fiche__intitule' }, 'Rattachement hiérarchique'),
+    entree.role === 'direction'
+      ? el('p', { class: 'org-fiche__valeur sans-marge' }, 'Sommet du service')
+      : (chef
+        ? el('ul', { class: 'org-fiche__puces' }, puceVers(chef))
+        : el('p', { class: 'org-fiche__valeur sans-marge' },
+          el('span', { class: 'org-vide' }, MENTION_VIDE))));
+
+  return [
+    el('header', { class: 'org-fiche__entete' },
+      el('div', { class: 'org-fiche__identite' },
+        avatar(personne, true),
+        el('div', null,
+          el('h2', { class: 'org-fiche__titre', id: 'org-fiche-titre' },
+            valeurOuVide(personne.nom)),
+          el('p', { class: 'org-fiche__poste' }, valeurOuVide(personne.poste)))),
+      el('button', {
+        type: 'button',
+        class: 'org-fiche__fermer',
+        dataFermerFiche: '',
+        ariaLabel: 'Fermer la fiche'
+      }, el('span', { ariaHidden: 'true' }, '×'))),
+
+    el('dl', { class: 'org-fiche__liste' }, lignes),
+
+    rattachement,
+    groupePuces('Collègues de squad', collegues(entree)),
+    groupePuces(entree.role === 'direction' ? 'Responsables de pôle' : 'Leaders de squad',
+      encadres(entree)),
+
+    entree.squad !== null
+      ? el('div', { class: 'org-fiche__actions' },
+        el('button', {
+          type: 'button',
+          class: 'bouton bouton--secondaire bouton--compact',
+          dataDeplacer: personne.id
+        }, 'Déplacer vers une autre squad…'))
+      : null
+  ];
+}
+
+/** Reporte `aria-current` sur la personne ouverte, et sur elle seule. */
+function marquerPersonneCourante() {
+  for (const [id, bouton] of rendus) {
+    if (id === ficheOuverte) bouton.setAttribute('aria-current', 'true');
+    else bouton.removeAttribute('aria-current');
+  }
+}
+
+/**
+ * Ouvre la fiche d'une personne.
+ *
+ * @param {string} id
+ * @param {Element} [declencheur] élément à refocaliser à la fermeture
+ */
+function ouvrirFiche(id, declencheur) {
+  const entree = index.get(id);
+  if (!entree || !refs.fiche) return;
+
+  /* Le déclencheur d'origine est conservé tant que la fiche reste
+     ouverte : naviguer de collègue en collègue à l'intérieur de la fiche
+     ne doit pas faire perdre le point de retour dans l'arbre. */
+  if (declencheur && !ficheOuverte) declencheurFiche = declencheur;
+
+  ficheOuverte = id;
+  monter(refs.fiche, contenuFiche(entree));
+  refs.fiche.hidden = false;
+  if (refs.scene) refs.scene.classList.add('org-scene--fiche-ouverte');
+
+  marquerPersonneCourante();
+  refs.fiche.focus();
+  majUrl();
+}
+
+/**
+ * Reconstruit le contenu de la fiche ouverte sans toucher au focus.
+ * Appelé après un déplacement : la squad et les collègues ont changé, mais
+ * l'utilisateur n'a pas demandé à être emmené ailleurs.
+ */
+function rafraichirFiche() {
+  if (!refs.fiche || refs.fiche.hidden || !ficheOuverte) return;
+  const entree = index.get(ficheOuverte);
+  if (!entree) { fermerFiche(false); return; }
+  monter(refs.fiche, contenuFiche(entree));
+  marquerPersonneCourante();
+}
+
+/**
+ * Referme la fiche et rend le focus à son point de départ.
+ * @param {boolean} [rendreFocus=true]
+ */
+function fermerFiche(rendreFocus) {
+  if (!refs.fiche || refs.fiche.hidden) return;
+
+  const precedent = ficheOuverte;
+  ficheOuverte = null;
+  refs.fiche.hidden = true;
+  monter(refs.fiche);
+  if (refs.scene) refs.scene.classList.remove('org-scene--fiche-ouverte');
+  marquerPersonneCourante();
+
+  if (rendreFocus !== false) {
+    const cible = (declencheurFiche && declencheurFiche.isConnected)
+      ? declencheurFiche
+      : (precedent ? rendus.get(precedent) : null);
+    if (cible && cible.isConnected) cible.focus();
+    else if (refs.recherche) refs.recherche.focus();
+  }
+  declencheurFiche = null;
+  majUrl();
+}
+
+/* -------------------------------------------------------------------------
+   11. Déplacement : glisser-déposer et équivalent clavier
+   ------------------------------------------------------------------------- */
+
+/** Toutes les squads du service, dans l'ordre de l'arbre. */
+function destinations() {
+  const liste = [];
+  for (const pole of modele.poles) {
+    for (const squad of pole.squads) {
+      liste.push({
+        pole: pole.pole,
+        squad: squad.nom,
+        effectif: squad.membres.length
+      });
+    }
+  }
+  return liste;
+}
+
+/**
+ * Déplace une personne vers une autre squad. Retourne faux si le
+ * déplacement n'a pas de sens (personne inconnue, personne non rattachée
+ * à une squad, squad de destination absente, ou destination identique).
+ *
+ * @param {string} id
+ * @param {{pole: string, squad: string}} cible
+ * @returns {boolean}
+ */
+function deplacer(id, cible) {
+  const entree = index.get(id);
+  if (!entree || entree.squad === null || !cible) return false;
+  if (entree.pole === cible.pole && entree.squad === cible.squad) return false;
+
+  const source = trouverSquad(entree.pole, entree.squad);
+  const arrivee = trouverSquad(cible.pole, cible.squad);
+  if (!source || !arrivee) return false;
+
+  const position = source.membres.findIndex((m) => m.id === id);
+  if (position === -1) return false;
+
+  const [personne] = source.membres.splice(position, 1);
+  arrivee.membres.push(personne);
+  ordonner(source);
+  ordonner(arrivee);
+
+  enregistrerOrganisation();
+  construireIndex();
+
+  /* La branche d'arrivée s'ouvre : on ne déplace pas quelqu'un dans un
+     tiroir fermé. */
+  definirOuvertureSquad(cible.pole, cible.squad, true);
+  ouverturePoles.set(cible.pole, true);
+
+  if (termes.length > 0) appliquerRecherche();
+  else rendreArbre();
+
+  rendreReperes();
+  majEtatReinitialisation();
+
+  /* Le focus suit la personne déplacée jusqu'à sa nouvelle place : après
+     un déplacement au clavier, on se retrouve exactement là où l'on vient
+     d'arriver, et non renvoyé en haut de page. */
+  rafraichirFiche();
+  const bouton = rendus.get(id);
+  if (bouton) bouton.focus();
+
+  const nom = texte(personne.nom) || 'La personne';
+  toast(nom + ' rejoint ' + (texte(cible.squad) || MENTION_VIDE)
+    + ' (' + (texte(cible.pole) || MENTION_VIDE) + ').', 'succes');
+  return true;
+}
+
+/**
+ * Modale de déplacement : l'équivalent clavier intégral du
+ * glisser-déposer. Toutes les squads du service y sont, celle d'origine
+ * comprise et signalée comme telle.
+ *
+ * @param {string} id
+ * @param {Element} [declencheur]
+ */
+function ouvrirDeplacement(id, declencheur) {
+  const entree = index.get(id);
+  if (!entree || entree.squad === null) return;
+
+  const nom = texte(entree.personne.nom) || 'cette personne';
+  const nomGroupe = idLocal();
+  const choix = destinations();
+  let selection = null;
+
+  const options = choix.map((destination) => {
+    const actuelle = destination.pole === entree.pole
+      && destination.squad === entree.squad;
+    if (actuelle) selection = destination;
+
+    return el('label', { class: 'case' },
+      el('input', {
+        class: 'case__controle',
+        type: 'radio',
+        name: nomGroupe,
+        checked: actuelle,
+        /* La destination est capturée par la fermeture : aucune valeur
+           n'est sérialisée dans l'attribut, donc aucun nom de squad n'a
+           besoin d'être échappé. */
+        onChange: () => { selection = destination; }
+      }),
+      el('span', { class: 'case__texte' },
+        valeurOuVide(destination.pole), ' · ', valeurOuVide(destination.squad),
+        el('span', { class: 'case__texte-aide' },
+          accord(destination.effectif, 'personne', 'personnes')
+          + (actuelle ? ' — squad actuelle' : ''))));
+  });
+
+  ouvrirModale({
+    titre: 'Déplacer ' + nom,
+    declencheur: declencheur,
+    classe: 'modale--deplacement',
+    contenu: [
+      el('p', { class: 'sans-marge texte-doux texte-sm' },
+        'Choisissez la squad d’accueil. Le changement reste sur ce poste : '
+        + 'rien n’est envoyé sur le réseau.'),
+      el('div', { class: 'pile pile--serree', role: 'group',
+        ariaLabel: 'Squad d’accueil' }, options)
+    ],
+    actions: [
+      { libelle: 'Annuler', variante: 'secondaire' },
+      {
+        libelle: 'Déplacer',
+        variante: 'principal',
+        onClick: (evt, api) => {
+          /* La modale se ferme AVANT le déplacement : sa restitution de
+             focus ne peut donc pas écraser celle que fait `deplacer`,
+             qui vise la carte reconstruite. */
+          api.fermer('action');
+          if (selection) deplacer(id, selection);
+          return false;
+        }
+      }
+    ]
+  });
+}
+
+/** Active ou désactive le bouton de réinitialisation selon l'état réel. */
+function majEtatReinitialisation() {
+  if (!refs.reinitialiser) return;
+  refs.reinitialiser.disabled = !organisationModifiee();
+}
+
+/**
+ * Réinitialisation, confirmée explicitement : aucune action destructrice
+ * ne part d'un simple clic (SPEC §6.5).
+ * @param {Element} [declencheur]
+ */
+function confirmerReinitialisation(declencheur) {
+  ouvrirModale({
+    titre: 'Réinitialiser l’organisation ?',
+    declencheur: declencheur,
+    contenu: el('p', { class: 'sans-marge' },
+      'Tous les déplacements effectués sur ce poste seront oubliés et '
+      + 'l’organigramme reviendra à celui du fichier de données. '
+      + 'Cette action ne peut pas être annulée.'),
+    actions: [
+      { libelle: 'Annuler', variante: 'secondaire', autofocus: true },
+      {
+        libelle: 'Réinitialiser',
+        variante: 'danger',
+        onClick: (evt, api) => {
+          api.fermer('action');
+          reinitialiser();
+          return false;
+        }
+      }
+    ]
+  });
+}
+
+/** Revient à l'organisation du fichier de données. */
+function reinitialiser() {
+  stockage.supprimer(CLE_ORGANISATION);
+  modele = construireModele(donneesSource);
+  for (const pole of modele.poles) for (const squad of pole.squads) ordonner(squad);
+  construireIndex();
+
+  if (ficheOuverte && !index.has(ficheOuverte)) fermerFiche(false);
+
+  if (termes.length > 0) appliquerRecherche();
+  else rendreArbre();
+
+  rendreReperes();
+  majEtatReinitialisation();
+  rafraichirFiche();
+
+  toast('Organigramme rétabli tel qu’il figure dans les données.', 'info');
+
+  /* Le bouton de réinitialisation vient d'être désactivé : il ne peut plus
+     recevoir le focus. On le rend au champ de recherche, qui est le
+     premier contrôle de la barre d'outils. */
+  if (refs.recherche) refs.recherche.focus();
+}
+
+/** Retire la marque de survol de toutes les zones de dépôt. */
+function nettoyerSurvol() {
+  if (!racineArbre) return;
+  for (const zone of racineArbre.querySelectorAll('[data-survol]')) {
+    zone.removeAttribute('data-survol');
+  }
+}
+
+/** Termine un glissement, quelle qu'en soit l'issue. */
+function finirGlissement() {
+  glissement = null;
+  nettoyerSurvol();
+  if (!racineArbre) return;
+  racineArbre.removeAttribute('data-glissement');
+  for (const ligne of racineArbre.querySelectorAll('[data-glisse]')) {
+    ligne.removeAttribute('data-glisse');
+  }
+}
+
+/* -------------------------------------------------------------------------
+   12. Réglages : périmètre, densité, zoom
+   ------------------------------------------------------------------------- */
+
+/** Écrit le périmètre et la fiche ouverte dans le hash de l'URL. */
+function majUrl() {
+  etatUrl.ecrire({ pole: vue, personne: ficheOuverte });
+}
+
+/** Applique un périmètre, met à jour les puces, l'arbre et l'URL. */
+function definirVue(code, avecUrl) {
+  vue = Object.prototype.hasOwnProperty.call(PAGE_DE_POLE, code) ? code : SERVICE;
+
+  if (refs.vues) {
+    for (const puce of refs.vues.querySelectorAll('[data-vue]')) {
+      puce.setAttribute('aria-pressed', puce.dataset.vue === vue ? 'true' : 'false');
+    }
+  }
+  initNav(PAGE_DE_POLE[vue]);
+
+  /* Une fiche ouverte sur une personne désormais hors périmètre n'a plus
+     de carte de retour dans l'arbre : on la referme sans voler le focus. */
+  rendreArbre();
+  if (ficheOuverte && !rendus.has(ficheOuverte)) fermerFiche(false);
+  if (avecUrl !== false) majUrl();
+}
+
+/** Applique une densité d'affichage et la mémorise. */
+function definirDensite(valeur) {
+  densite = DENSITES.includes(valeur) ? valeur : 'normale';
+  if (racineArbre) racineArbre.dataset.densite = densite;
+  for (const radio of refs.densites) radio.checked = (radio.value === densite);
+  enregistrerAffichage();
+}
+
+/** Applique un facteur de zoom et le mémorise. */
+function definirZoom(valeur) {
+  const nombre = Number(valeur);
+  zoom = Number.isFinite(nombre)
+    ? Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(nombre)))
+    : ZOOM_DEFAUT;
+
+  if (racineArbre) racineArbre.style.setProperty('--org-echelle', String(zoom / 100));
+  if (refs.zoom) refs.zoom.value = String(zoom);
+  if (refs.zoomValeur) refs.zoomValeur.textContent = zoom + ' %';
+  enregistrerAffichage();
+}
+
+/** Mémorise densité et zoom. */
+function enregistrerAffichage() {
+  stockage.ecrire(CLE_AFFICHAGE, { version: VERSION_ETAT, densite: densite, zoom: zoom });
+}
+
+/** Relit densité et zoom, en refusant toute valeur hors contrat. */
+function lireAffichage() {
+  const brut = stockage.lire(CLE_AFFICHAGE, null);
+  if (!brut || typeof brut !== 'object' || brut.version !== VERSION_ETAT) return;
+  if (DENSITES.includes(brut.densite)) densite = brut.densite;
+  const nombre = Number(brut.zoom);
+  if (Number.isFinite(nombre)) {
+    zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(nombre)));
+  }
+}
+
+/* -------------------------------------------------------------------------
+   13. Câblage des contrôles
+   ------------------------------------------------------------------------- */
+
+/**
+ * Tous les écouteurs de l'arbre sont posés une fois, par délégation, sur
+ * un conteneur qui ne change jamais. Les sélecteurs sont des littéraux :
+ * aucun n'est construit à partir d'une donnée.
+ */
+function cablerArbre() {
+  const plan = refs.plan;
+
+  deleguer(plan, '[data-personne]', 'click', (evt, cible) => {
+    evt.preventDefault();
+    ouvrirFiche(cible.dataset.personne, cible);
+  });
+
+  deleguer(plan, '[data-deplacer]', 'click', (evt, cible) => {
+    evt.preventDefault();
+    ouvrirDeplacement(cible.dataset.deplacer, cible);
+  });
+
+  deleguer(plan, '[data-plier]', 'click', (evt, cible) => {
+    const groupe = groupes.find((g) => g.bouton === cible);
+    if (!groupe) return;
+    appliquerOuverture(groupe, cible.getAttribute('aria-expanded') !== 'true');
+  });
+
+  /* Conventions d'arborescence : Flèche droite déplie, Flèche gauche
+     replie. Le bouton reste par ailleurs un bouton ordinaire, actionnable
+     par Entrée et Espace. */
+  deleguer(plan, '[data-plier]', 'keydown', (evt, cible) => {
+    if (evt.key !== 'ArrowRight' && evt.key !== 'ArrowLeft') return;
+    const groupe = groupes.find((g) => g.bouton === cible);
+    if (!groupe) return;
+    evt.preventDefault();
+    appliquerOuverture(groupe, evt.key === 'ArrowRight');
+  });
+
+  /* --- Glisser-déposer ------------------------------------------------- */
+
+  deleguer(plan, '[data-glissable]', 'dragstart', (evt, cible) => {
+    const id = cible.dataset.glissable;
+    if (!index.has(id)) return;
+    glissement = id;
+    cible.dataset.glisse = 'true';
+    if (racineArbre) racineArbre.dataset.glissement = 'true';
+    try {
+      evt.dataTransfer.effectAllowed = 'move';
+      evt.dataTransfer.setData('text/plain', id);
+    } catch (_e) { /* certains navigateurs refusent : le glissement marche quand même */ }
+  });
+
+  deleguer(plan, '[data-glissable]', 'dragend', () => finirGlissement());
+
+  deleguer(plan, '[data-depot]', 'dragover', (evt, cible) => {
+    if (!glissement) return;
+    const cibleDepot = depots.get(cible);
+    const entree = index.get(glissement);
+    if (!cibleDepot || !entree) return;
+    if (entree.pole === cibleDepot.pole && entree.squad === cibleDepot.squad) return;
+
+    evt.preventDefault();
+    try { evt.dataTransfer.dropEffect = 'move'; } catch (_e) { /* ignoré */ }
+    cible.dataset.survol = 'true';
+  });
+
+  deleguer(plan, '[data-depot]', 'dragleave', (evt, cible) => {
+    if (cible.contains(evt.relatedTarget)) return;
+    cible.removeAttribute('data-survol');
+  });
+
+  deleguer(plan, '[data-depot]', 'drop', (evt, cible) => {
+    if (!glissement) return;
+    const cibleDepot = depots.get(cible);
+    if (!cibleDepot) return;
+    evt.preventDefault();
+    const id = glissement;
+    finirGlissement();
+    deplacer(id, cibleDepot);
+  });
+}
+
+/** Écouteurs de la fiche latérale. */
+function cablerFiche() {
+  deleguer(refs.fiche, '[data-fermer-fiche]', 'click', (evt) => {
+    evt.preventDefault();
+    fermerFiche();
+  });
+
+  deleguer(refs.fiche, '[data-personne]', 'click', (evt, cible) => {
+    evt.preventDefault();
+    ouvrirFiche(cible.dataset.personne);
+  });
+
+  deleguer(refs.fiche, '[data-deplacer]', 'click', (evt, cible) => {
+    evt.preventDefault();
+    ouvrirDeplacement(cible.dataset.deplacer, cible);
+  });
+}
+
+/** Écouteurs de la barre d'outils, posés une seule fois. */
+function cablerOutils() {
+  if (outilsCables) return;
+  outilsCables = true;
+
+  const chercher = debounce(() => {
+    requete = refs.recherche.value;
+    appliquerRecherche();
+  }, DELAI_RECHERCHE);
+
+  refs.recherche.addEventListener('input', chercher);
+
+  /* Échap vide le champ ; s'il est déjà vide, le comportement natif de
+     la croix du champ de recherche s'applique. */
+  refs.recherche.addEventListener('keydown', (evt) => {
+    if (evt.key !== 'Escape' && evt.key !== 'Esc') return;
+    if (refs.recherche.value === '') return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    refs.recherche.value = '';
+    chercher.annuler();
+    requete = '';
+    appliquerRecherche();
+  });
+
+  deleguer(refs.vues, '[data-vue]', 'click', (evt, cible) => {
+    evt.preventDefault();
+    definirVue(cible.dataset.vue);
+  });
+
+  refs.toutDeplier.addEventListener('click', () => toutBasculer(true));
+  refs.toutReplier.addEventListener('click', () => toutBasculer(false));
+
+  for (const radio of refs.densites) {
+    radio.addEventListener('change', () => {
+      if (radio.checked) definirDensite(radio.value);
+    });
+  }
+
+  refs.zoom.addEventListener('input', () => definirZoom(refs.zoom.value));
+
+  refs.reinitialiser.addEventListener('click', (evt) => {
+    confirmerReinitialisation(evt.currentTarget);
+  });
+}
+
+/** Raccourcis globaux : « / » focalise la recherche, Échap ferme la fiche. */
+function cablerRaccourcis() {
+  document.addEventListener('keydown', (evt) => {
+    if (evt.defaultPrevented || evt.ctrlKey || evt.metaKey || evt.altKey) return;
+
+    const actif = document.activeElement;
+    const saisie = actif && (actif.tagName === 'INPUT' || actif.tagName === 'TEXTAREA'
+      || actif.tagName === 'SELECT' || actif.isContentEditable);
+
+    if (evt.key === '/' && !saisie && !refs.recherche.disabled) {
+      evt.preventDefault();
+      refs.recherche.focus();
+      refs.recherche.select();
+      return;
+    }
+
+    if ((evt.key === 'Escape' || evt.key === 'Esc')
+        && refs.fiche && !refs.fiche.hidden) {
+      evt.preventDefault();
+      fermerFiche();
+    }
+  });
+}
+
+/** Rend les contrôles utilisables : ils n'existaient que désactivés. */
+function activerOutils() {
+  const controles = [
+    refs.recherche, refs.toutDeplier, refs.toutReplier,
+    refs.zoom, refs.reinitialiser
+  ];
+  for (const controle of controles) if (controle) controle.disabled = false;
+  for (const radio of refs.densites) radio.disabled = false;
+  if (refs.vues) {
+    for (const puce of refs.vues.querySelectorAll('[data-vue]')) puce.disabled = false;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   14. Amorçage
+   ------------------------------------------------------------------------- */
+
+/** Résout une fois pour toutes les éléments statiques de la page. */
+function resoudreRefs() {
+  refs.plan = document.getElementById('zone-arbre');
+  refs.reperes = document.getElementById('zone-reperes');
+  refs.recherche = document.getElementById('org-recherche');
+  refs.resultat = document.getElementById('org-resultat');
+  refs.vues = document.getElementById('org-vues');
+  refs.toutDeplier = document.getElementById('org-tout-deplier');
+  refs.toutReplier = document.getElementById('org-tout-replier');
+  refs.zoom = document.getElementById('org-zoom');
+  refs.zoomValeur = document.getElementById('org-zoom-valeur');
+  refs.reinitialiser = document.getElementById('org-reinitialiser');
+  refs.fiche = document.getElementById('org-fiche');
+  refs.scene = document.getElementById('org-scene');
+  refs.densites = Array.from(
+    document.querySelectorAll('input[name="org-densite"]')
+  );
+}
+
+/**
+ * Construit la page à partir des données. Appelé par `avecEtat`, donc
+ * uniquement quand le chargement a réussi et que le contenu n'est pas
+ * vide : les états de chargement, d'erreur et de vacuité sont à sa charge.
+ *
+ * @param {object} donnees
+ */
+function rendre(donnees) {
+  donneesSource = verifierForme(donnees, {
     service: 'chaine?',
     direction: 'objet?',
     poles: {
@@ -264,1428 +1763,93 @@ function construireModele(donnees) {
     }
   }, 'organigramme.json');
 
-  const etat = {
-    service: texte(donnees.service) || SERVICE,
-    direction: donnees.direction ? personneDe(donnees.direction, 'direction') : null,
-    poles: [],
-    parCode: new Map(),
-    squadParId: new Map(),
-    personneParId: new Map()
-  };
-
-  for (const brutPole of donnees.poles) {
-    const code = texte(brutPole.pole).trim().toUpperCase();
-    const description = DESCRIPTION_POLE[code] || null;
-
-    const pole = {
-      code: code,
-      libelle: description ? description.libelle : code,
-      sousTitre: description ? description.sousTitre : '',
-      responsable: brutPole.responsable
-        ? personneDe(brutPole.responsable, 'responsable')
-        : null,
-      squads: []
-    };
-
-    for (const brutSquad of brutPole.squads) {
-      if (!brutSquad || typeof brutSquad !== 'object') continue;
-      const squad = creerSquad(etat, pole, texte(brutSquad.nom));
-      const membres = Array.isArray(brutSquad.membres) ? brutSquad.membres : [];
-      for (const brutMembre of membres) {
-        if (!brutMembre || typeof brutMembre !== 'object') continue;
-        const personne = personneDe(brutMembre, 'membre');
-        personne.squad = squad;
-        squad.membres.push(personne);
-        etat.personneParId.set(personne.id, personne);
-      }
-      ordonner(squad);
-    }
-
-    etat.poles.push(pole);
-    etat.parCode.set(pole.code, pole);
-  }
-
-  return etat;
-}
-
-/**
- * Normalise une personne. Le rôle par défaut dépend de sa place dans la
- * hiérarchie : la donnée le précise, mais ne peut pas le contredire.
- * @param {object} brut
- * @param {string} roleParDefaut
- * @returns {object}
- */
-function personneDe(brut, roleParDefaut) {
-  const role = texte(brut.role).trim().toLowerCase();
-  return {
-    id: texte(brut.id),
-    nom: texte(brut.nom),
-    poste: texte(brut.poste),
-    perimetre: texte(brut.perimetre),
-    role: role || roleParDefaut,
-    squad: null
-  };
-}
-
-/**
- * Crée une squad et l'enregistre. L'identifiant est généré, jamais dérivé
- * du nom : c'est ce qui rend les apostrophes et les chevrons inoffensifs.
- * @param {object} etat
- * @param {object} pole
- * @param {string} nom
- * @returns {object}
- */
-function creerSquad(etat, pole, nom) {
-  const squad = {
-    id: idUnique('squad'),
-    nom: nom || 'Squad sans nom',
-    pole: pole,
-    membres: []
-  };
-  pole.squads.push(squad);
-  etat.squadParId.set(squad.id, squad);
-  return squad;
-}
-
-/** Le leader d'une squad, ou null. */
-function leaderDe(squad) {
-  return squad.membres.find((m) => m.role === 'leader') || null;
-}
-
-/** Les membres non leaders d'une squad. */
-function membresDe(squad) {
-  return squad.membres.filter((m) => m.role !== 'leader');
-}
-
-/** Replace le leader en tête de liste : l'ordre du DOM suit la hiérarchie. */
-function ordonner(squad) {
-  squad.membres.sort((a, b) => {
-    const ra = a.role === 'leader' ? 0 : 1;
-    const rb = b.role === 'leader' ? 0 : 1;
-    return ra - rb;
-  });
-}
-
-/** Effectif d'un pôle : son responsable et tous les membres de ses squads. */
-function effectifPole(pole) {
-  let total = pole.responsable ? 1 : 0;
-  for (const squad of pole.squads) total += squad.membres.length;
-  return total;
-}
-
-/** Effectif du service entier, direction comprise. */
-function effectifService(etat) {
-  let total = etat.direction ? 1 : 0;
-  for (const pole of etat.poles) total += effectifPole(pole);
-  return total;
-}
-
-/** Effectif affiché pour un code du sélecteur. */
-function effectifDe(code) {
-  if (!modele) return 0;
-  if (code === SERVICE) return effectifService(modele);
-  const pole = modele.parCode.get(code);
-  return pole ? effectifPole(pole) : 0;
-}
-
-/** Les pôles visibles dans la vue courante. */
-function polesVisibles() {
-  if (!modele) return [];
-  if (poleActif === SERVICE) return modele.poles;
-  const pole = modele.parCode.get(poleActif);
-  return pole ? [pole] : [];
-}
-
-/* -------------------------------------------------------------------------
-   4. Persistance locale
-   Le stockage est facultatif : sans lui, la page fonctionne, elle perd
-   seulement sa mémoire d'une visite à l'autre.
-   ------------------------------------------------------------------------- */
-
-/**
- * Photographie de la répartition courante. Les identifiants de squad,
- * générés à chaque chargement, n'y figurent pas : c'est l'ORDRE des
- * squads dans chaque pôle qui les identifie.
- * @returns {object}
- */
-function serialiser() {
-  return {
-    v: VERSION_ETAT,
-    poles: modele.poles.map((pole) => ({
-      pole: pole.code,
-      squads: pole.squads.map((squad) => ({
-        nom: squad.nom,
-        membres: squad.membres.map((m) => ({ id: m.id, role: m.role }))
-      }))
-    }))
-  };
-}
-
-/** Enregistre la répartition courante, en silence si le stockage est fermé. */
-function enregistrer() {
-  stockage.ecrire(CLE_ETAT, serialiser());
-}
-
-/**
- * Réapplique une sauvegarde au modèle.
- *
- * Tout ou rien : si le moindre écart existe entre les personnes
- * enregistrées et celles du fichier de données (ajout, retrait,
- * renommage d'identifiant), la sauvegarde est refusée en bloc. Appliquer
- * une réorganisation à moitié serait pire que de ne pas l'appliquer.
- *
- * @param {object} sauvegarde
- * @returns {boolean} vrai si la sauvegarde a été appliquée
- */
-function appliquerSauvegarde(sauvegarde) {
-  if (!sauvegarde || typeof sauvegarde !== 'object') return false;
-  if (sauvegarde.v !== VERSION_ETAT) return false;
-  if (!Array.isArray(sauvegarde.poles)) return false;
-
-  /* 1. Les pôles enregistrés doivent être exactement ceux du fichier. */
-  if (sauvegarde.poles.length !== modele.poles.length) return false;
-  const parCodeSauvegarde = new Map();
-  for (const entree of sauvegarde.poles) {
-    if (!entree || typeof entree !== 'object') return false;
-    const code = texte(entree.pole).trim().toUpperCase();
-    if (!modele.parCode.has(code)) return false;
-    if (parCodeSauvegarde.has(code)) return false;
-    if (!Array.isArray(entree.squads) || entree.squads.length === 0) return false;
-    parCodeSauvegarde.set(code, entree);
-  }
-
-  /* 2. Les personnes enregistrées doivent être exactement les personnes
-        déplaçables du fichier, chacune une seule fois. */
-  const attendues = new Set(modele.personneParId.keys());
-  const vues = new Set();
-  for (const entree of parCodeSauvegarde.values()) {
-    for (const squad of entree.squads) {
-      if (!squad || typeof squad !== 'object') return false;
-      if (!Array.isArray(squad.membres)) return false;
-      for (const membre of squad.membres) {
-        if (!membre || typeof membre !== 'object') return false;
-        const id = texte(membre.id);
-        if (!attendues.has(id) || vues.has(id)) return false;
-        vues.add(id);
-      }
-    }
-  }
-  if (vues.size !== attendues.size) return false;
-
-  /* 3. Rien ne cloche : on rebâtit les squads de chaque pôle. */
-  modele.squadParId.clear();
-  for (const pole of modele.poles) {
-    const entree = parCodeSauvegarde.get(pole.code);
-    pole.squads = [];
-
-    for (const brutSquad of entree.squads) {
-      const squad = creerSquad(modele, pole, texte(brutSquad.nom));
-      for (const brutMembre of brutSquad.membres) {
-        const personne = modele.personneParId.get(texte(brutMembre.id));
-        personne.role = brutMembre.role === 'leader' ? 'leader' : 'membre';
-        personne.squad = squad;
-        squad.membres.push(personne);
-      }
-      /* Une squad ne peut pas avoir deux leaders : le premier gagne. */
-      let leaderVu = false;
-      for (const membre of squad.membres) {
-        if (membre.role !== 'leader') continue;
-        if (leaderVu) membre.role = 'membre';
-        leaderVu = true;
-      }
-      ordonner(squad);
-    }
-  }
-
-  return true;
-}
-
-/* -------------------------------------------------------------------------
-   5. Avatars générés localement (SPEC §4.4)
-   ------------------------------------------------------------------------- */
-
-/**
- * Teinte HSL dérivée de l'identifiant, entre 0 et 359.
- *
- * Hachage FNV-1a 32 bits : deux identifiants voisins (« p01 » et « p02 »)
- * donnent des teintes éloignées, là où une somme naïve les rendrait
- * indiscernables. Entièrement déterministe : la même personne a toujours
- * la même couleur, d'une visite à l'autre et d'un poste à l'autre.
- *
- * @param {string} id
- * @returns {number}
- */
-function teinteDe(id) {
-  const chaine = texte(id);
-  let hachage = 2166136261;
-  for (let i = 0; i < chaine.length; i += 1) {
-    hachage ^= chaine.charCodeAt(i);
-    hachage = Math.imul(hachage, 16777619);
-  }
-  return (hachage >>> 0) % 360;
-}
-
-/**
- * Initiales de l'avatar : première lettre, puis le numéro s'il y en a un
- * (« Personne 03 » -> « P03 »). Trois caractères au maximum.
- * @param {object} personne
- * @returns {string}
- */
-function initialesDe(personne) {
-  const mots = texte(personne.nom || personne.id).split(/\s+/).filter(Boolean);
-  if (mots.length === 0) return '?';
-
-  const premier = mots[0].charAt(0).toUpperCase();
-  const dernier = mots[mots.length - 1];
-
-  if (mots.length > 1 && /^\d+$/.test(dernier)) return (premier + dernier).slice(0, 3);
-  if (mots.length > 1) return premier + dernier.charAt(0).toUpperCase();
-  return mots[0].slice(0, 2).toUpperCase();
-}
-
-/**
- * Avatar SVG inline : un disque teinté et des initiales.
- *
- * Aucun appel réseau, aucun service tiers, aucune image. Le module ne
- * transmet qu'un NOMBRE (--avatar-teinte) ; la formule de couleur vit
- * dans le <style> de la page, avec une saturation et une clarté fixes qui
- * garantissent le contraste des initiales dans les deux thèmes.
- *
- * L'avatar est décoratif : le nom est écrit juste à côté, donc il est
- * masqué aux lecteurs d'écran plutôt qu'annoncé deux fois.
- *
- * @param {object} personne
- * @returns {SVGElement}
- */
-function avatarDe(personne) {
-  return svg('svg', {
-    class: 'avatar',
-    viewBox: '0 0 40 40',
-    'aria-hidden': 'true',
-    focusable: 'false',
-    style: { '--avatar-teinte': teinteDe(personne.id) }
-  },
-  svg('circle', { class: 'avatar__fond', cx: '20', cy: '20', r: '20' }),
-  svg('text', {
-    class: 'avatar__initiales',
-    x: '20',
-    y: '20',
-    'text-anchor': 'middle',
-    'dominant-baseline': 'central',
-    'font-size': '14',
-    'font-weight': '700'
-  }, initialesDe(personne)));
-}
-
-/* -------------------------------------------------------------------------
-   6. Sélecteur de pôle
-   Quatre puces de facette, avec l'effectif de chacune. Elles sont
-   construites une fois puis mises à jour : reconstruire la liste à chaque
-   clic ferait perdre le focus de la puce que l'on vient d'activer.
-   ------------------------------------------------------------------------- */
-
-/**
- * Construit les puces du sélecteur. Rejoué à chaque chargement réussi —
- * y compris après un « Réessayer » — pour qu'elles décrivent toujours les
- * données réellement affichées.
- */
-function construireSelecteur() {
-  if (!refs.puces) return;
-
-  vueParCode.clear();
-  const elements = [];
-
-  for (const code of CODES_ADMIS) {
-    /* Un code absent du fichier de données n'a pas de puce : proposer un
-       filtre qui n'affiche rien serait un piège. */
-    if (code !== SERVICE && !modele.parCode.has(code)) continue;
-
-    const description = DESCRIPTION_POLE[code];
-    const compteurNoeud = el('span', { class: 'facette__compteur' }, '0');
-
-    const bouton = el('button', {
-      type: 'button',
-      class: 'facette',
-      ariaPressed: 'false',
-      dataset: { pole: code },
-      onClick: () => choisirPole(code, true)
-    },
-    el('span', { class: 'facette__marque', ariaHidden: 'true' }, '✓'),
-    /* Pastille de couleur du pôle. Elle ne porte jamais l'information à
-       elle seule : le code du pôle est écrit juste après. */
-    code === SERVICE ? null : el('span', { class: 'org-puce', ariaHidden: 'true' }),
-    el('span', null, description.libelle),
-    compteurNoeud,
-    el('span', { class: 'visuellement-cache' }, ' personnes'));
-
-    vueParCode.set(code, { bouton: bouton, compteur: compteurNoeud });
-    elements.push(el('li', { dataset: { pole: code } }, bouton));
-  }
-
-  monter(refs.puces, elements);
-  if (refs.selecteur) refs.selecteur.hidden = elements.length === 0;
-}
-
-/** Met à jour effectifs et état pressé des puces, plus la ligne de situation. */
-function majSelecteur() {
-  for (const [code, vue] of vueParCode) {
-    const total = effectifDe(code);
-    vue.compteur.textContent = String(total);
-    vue.bouton.setAttribute('aria-pressed', code === poleActif ? 'true' : 'false');
-  }
-  majContexte();
-}
-
-/** Phrase de situation sous les puces : périmètre, effectif, profondeur. */
-function majContexte() {
-  if (!refs.contexte || !modele) return;
-
-  if (poleActif === SERVICE) {
-    refs.contexte.textContent = 'Périmètre affiché : tout le service '
-      + modele.service + ' — ' + accorder(effectifService(modele), 'personne', 'personnes')
-      + ' réparties entre ' + accorder(modele.poles.length, 'pôle', 'pôles') + '.';
-    return;
-  }
-
-  const pole = modele.parCode.get(poleActif);
-  if (!pole) {
-    refs.contexte.textContent = '';
-    return;
-  }
-
-  refs.contexte.textContent = 'Périmètre affiché : ' + modele.service + ' › '
-    + pole.code + ' — ' + accorder(effectifPole(pole), 'personne', 'personnes')
-    + ', ' + accorder(pole.squads.length, 'squad', 'squads') + '.';
-}
-
-/**
- * Change de pôle : hash, navigation principale, puces et contenu.
- * Aucun rechargement.
- *
- * @param {string} code
- * @param {boolean} annonce vrai pour l'annoncer aux lecteurs d'écran
- */
-function choisirPole(code, annonce) {
-  const suivant = normaliserPole(code);
-  const changement = suivant !== poleActif;
-  poleActif = suivant;
-
-  /* Contrat d'URL : le pôle actif est toujours écrit, même « ETII », pour
-     qu'un lien copié dise explicitement ce qu'il montre. */
-  etatUrl.ecrire({ pole: poleActif });
-
-  /* Sur une page transverse, l'entrée courante de la navigation est celle
-     du pôle affiché — le tableau de bord au niveau service. */
-  initNav(PAGE_DE_POLE[poleActif]);
-
-  if (!modele) return;
-
-  majSelecteur();
-  rendre();
-  appliquerFiltre(false);
-
-  if (annonce && changement) {
-    annoncer('Périmètre ' + DESCRIPTION_POLE[poleActif].libelle + ' affiché : '
-      + accorder(effectifDe(poleActif), 'personne', 'personnes') + '.');
-  }
-}
-
-/* -------------------------------------------------------------------------
-   7. Rendu
-   ------------------------------------------------------------------------- */
-
-/** Reconstruit entièrement le contenu de la zone d'organigramme. */
-function rendre() {
-  if (!refs.conteneur || !modele) return;
-
-  vueParPersonne = new Map();
-  vider(refs.conteneur);
-
-  const pile = el('div', { class: 'pile pile--section' });
-  const poles = polesVisibles();
-
-  if (poleActif === SERVICE) {
-    pile.append(vueService(poles));
-  } else if (poles.length === 0) {
-    pile.append(blocVide(
-      'Pôle introuvable',
-      'Le pôle demandé n’existe pas dans les données. Choisissez un autre '
-      + 'périmètre ci-dessus.'));
-  } else {
-    for (const pole of poles) pile.append(vuePole(pole));
-  }
-
-  monter(refs.conteneur, pile);
-}
-
-/**
- * Niveau service : la direction, puis les trois pôles sur un rail commun.
- * @param {Array} poles
- * @returns {Element}
- */
-function vueService(poles) {
-  /* Le contenu est assemblé AVANT la création de la section : `monter()`
-     remplace le contenu d'un parent, il ne l'y ajoute pas. */
-  const contenu = [];
-
-  if (modele.direction) {
-    contenu.push(
-      el('p', { class: 'org-etiquette' }, 'Direction de service'),
-      el('ul', { class: 'org-grille' }, vuePersonne(modele.direction, false)));
-  }
-
-  if (poles.length === 0) {
-    contenu.push(blocVide(
-      'Aucun pôle à afficher',
-      'Le fichier de données ne décrit aucun pôle : il n’y a pas de '
-      + 'hiérarchie à représenter pour le moment.'));
-  } else {
-    /* Niveau 1 : les pôles pendent du rail du service. */
-    contenu.push(el('div', { class: 'org-branche', dataset: { pole: SERVICE } },
-      poles.map((pole) => vuePole(pole, true))));
-  }
-
-  return el('section', {
-    class: 'pile org-service',
-    dataset: { pole: SERVICE },
-    ariaLabel: 'Service ' + modele.service
-  }, contenu);
-}
-
-/**
- * Bloc d'un pôle : en-tête, responsable, puis ses squads un cran plus bas.
- * @param {object} pole
- * @param {boolean} [estNoeud] vrai si le bloc pend d'un rail parent
- * @returns {Element}
- */
-function vuePole(pole, estNoeud) {
-  const effectif = effectifPole(pole);
-
-  const boutonAjout = el('button', {
-    type: 'button',
-    class: 'bouton bouton--secondaire bouton--compact sans-impression',
-    ariaLabel: 'Ajouter une squad au pôle ' + pole.code,
-    dataset: { action: 'ajouter-squad' }
-  }, 'Ajouter une squad');
-  poleParElement.set(boutonAjout, pole);
-
-  const entete = el('header', { class: 'org-pole__entete' },
-    el('div', { class: 'org-pole__identite' },
-      el('h2', { class: 'org-pole__titre' },
-        el('span', { class: 'org-puce', ariaHidden: 'true' }),
-        pole.code),
-      pole.sousTitre ? el('p', { class: 'org-pole__sous-titre' }, pole.sousTitre) : null),
-    el('span', { class: 'badge badge--neutre' },
-      accorder(effectif, 'personne', 'personnes')),
-    boutonAjout);
-
-  /* Niveau 2 du pôle : le responsable, puis ses squads un cran plus bas.
-     Tout est assemblé avant création : `monter()` remplace un contenu, il
-     ne l'ajoute pas. */
-  const sousNiveau = pole.squads.length === 0
-    ? [blocVide(
-      'Aucune squad',
-      'Ce pôle ne contient encore aucune squad. Le bouton « Ajouter une '
-      + 'squad » en crée une.')]
-    : [
-      el('p', { class: 'org-etiquette' },
-        accorder(pole.squads.length, 'squad rattachée', 'squads rattachées')),
-      el('div', { class: 'org-branche' },
-        pole.squads.map((squad) => vueSquad(squad)))
-    ];
-
-  const noeudResponsable = el('div', { class: 'org-noeud' },
-    el('p', { class: 'org-etiquette' }, 'Responsable de pôle'),
-    pole.responsable
-      ? el('ul', { class: 'org-grille' }, vuePersonne(pole.responsable, false))
-      : el('p', { class: 'org-depot__vide' },
-        'Aucun responsable n’est désigné pour ce pôle.'),
-    sousNiveau);
-
-  return el('section', {
-    class: ['org-pole', estNoeud ? 'org-noeud' : null],
-    dataset: { pole: pole.code }
-  }, entete, el('div', { class: 'org-branche' }, noeudResponsable));
-}
-
-/**
- * Bloc d'une squad : leader et membres, chacun dans sa zone de dépôt.
- * @param {object} squad
- * @returns {Element}
- */
-function vueSquad(squad) {
-  const leader = leaderDe(squad);
-  const membres = membresDe(squad);
-
-  const boutonRenommer = el('button', {
-    type: 'button',
-    class: 'bouton bouton--discret bouton--compact sans-impression',
-    ariaLabel: 'Renommer la squad ' + squad.nom,
-    dataset: { action: 'renommer-squad' }
-  }, 'Renommer');
-  squadParElement.set(boutonRenommer, squad);
-
-  const entete = el('header', { class: 'org-squad__entete' },
-    el('h3', { class: 'org-squad__titre' }, squad.nom),
-    el('span', { class: 'badge badge--neutre' },
-      accorder(squad.membres.length, 'personne', 'personnes')),
-    boutonRenommer);
-
-  const zoneLeader = zoneDepot(squad, 'leader',
-    leader ? [vuePersonne(leader, true)] : [],
-    'Aucun leader désigné pour cette squad.');
-  zoneLeader.classList.add('org-depot--leader');
-
-  const zoneMembres = zoneDepot(squad, 'membre',
-    membres.map((membre) => vuePersonne(membre, true)),
-    'Aucun membre dans cette squad.');
-
-  const corps = el('div', { class: 'org-squad__corps' },
-    el('div', { class: 'org-squad__section' },
-      el('p', { class: 'org-etiquette' }, 'Leader'),
-      zoneLeader,
-      el('p', { class: 'org-indice' },
-        'Déposez ici pour confier le rôle de leader.')),
-    el('div', { class: 'org-squad__section' },
-      el('p', { class: 'org-etiquette' }, 'Membres'),
-      zoneMembres,
-      el('p', { class: 'org-indice' },
-        'Déposez ici pour rattacher à cette squad.')));
-
-  return el('article', {
-    class: 'org-squad carte org-noeud',
-    dataset: { squad: squad.id }
-  }, entete, corps);
-}
-
-/**
- * Zone de dépôt d'une squad. Le rôle visé est porté par un `data-`, jamais
- * lu depuis un nom : c'est le WeakMap qui relie l'élément à la squad.
- *
- * @param {object} squad
- * @param {string} role 'leader' | 'membre'
- * @param {Array} cartes
- * @param {string} texteVide
- * @returns {Element}
- */
-function zoneDepot(squad, role, cartes, texteVide) {
-  const zone = el('div', {
-    class: 'org-depot',
-    dataset: { depot: role }
-  }, cartes.length
-    ? el('ul', { class: 'org-grille' }, cartes)
-    : el('p', { class: 'org-depot__vide' }, texteVide));
-
-  squadParElement.set(zone, squad);
-  return zone;
-}
-
-/**
- * Carte d'une personne.
- *
- * @param {object} personne
- * @param {boolean} deplacable  faux pour la direction et les responsables,
- *                              dont le rattachement est structurel
- * @returns {Element}
- */
-function vuePersonne(personne, deplacable) {
-  const estLeader = personne.role === 'leader';
-
-  let boutonDeplacer = null;
-  if (deplacable) {
-    boutonDeplacer = el('button', {
-      type: 'button',
-      class: 'bouton bouton--discret bouton--compact personne__deplacer',
-      ariaLabel: 'Déplacer ' + personne.nom + ' vers une autre squad',
-      dataset: { action: 'deplacer' }
-    }, 'Déplacer…');
-    personneParElement.set(boutonDeplacer, personne);
-  }
-
-  const carte = el('li', {
-    class: 'personne carte',
-    draggable: deplacable ? 'true' : null,
-    dataset: { personne: personne.id }
-  },
-  el('div', { class: 'personne__tete' },
-    avatarDe(personne),
-    el('div', { class: 'personne__identite' },
-      el('p', { class: 'personne__nom' }, personne.nom),
-      el('p', { class: 'personne__poste' }, personne.poste))),
-  el('div', { class: 'personne__pied' },
-    personne.perimetre
-      ? el('span', { class: 'badge badge--neutre' }, personne.perimetre)
-      : null,
-    estLeader ? el('span', { class: 'badge badge--accent' }, 'Leader') : null,
-    deplacable
-      ? null
-      : el('span', { class: 'badge badge--contour' }, 'Rattachement fixe'),
-    boutonDeplacer));
-
-  personneParElement.set(carte, personne);
-  vueParPersonne.set(personne, { carte: carte, bouton: boutonDeplacer });
-  return carte;
-}
-
-/**
- * Bloc d'information réutilisant l'état vide du design system.
- * @param {string} titre
- * @param {string} explication
- * @returns {Element}
- */
-function blocVide(titre, explication) {
-  return el('div', { class: 'etat-vide etat-vide--encadre etat-vide--compact' },
-    el('span', { class: 'etat-vide__illustration', ariaHidden: 'true' }, '∅'),
-    el('p', { class: 'etat-vide__titre' }, titre),
-    el('p', { class: 'etat-vide__texte' }, explication));
-}
-
-/**
- * Squelette d'attente, purement décoratif : avecEtat() ajoute lui-même
- * `aria-busy` et le texte de statut lisible par un lecteur d'écran.
- * @param {Element} cible
- */
-function squelette(cible) {
-  const carte = () => el('li', { class: 'personne carte' },
-    el('div', { class: 'personne__tete' },
-      el('span', { class: 'squelette squelette--avatar' }),
-      el('div', { class: 'personne__identite' },
-        el('span', { class: 'squelette squelette--ligne squelette--moyen' }),
-        el('span', { class: 'squelette squelette--ligne squelette--court' }))));
-
-  const squad = () => el('article', { class: 'org-squad carte' },
-    el('div', { class: 'org-squad__entete' },
-      el('span', { class: 'squelette squelette--ligne squelette--titre' })),
-    el('div', { class: 'org-squad__corps' },
-      el('ul', { class: 'org-grille' }, [carte(), carte(), carte(), carte()])));
-
-  monter(cible, el('div', {
-    class: 'pile pile--section',
-    ariaHidden: 'true'
-  }, squad(), squad()));
-}
-
-/* -------------------------------------------------------------------------
-   8. Déplacement — le cœur, partagé par la souris et le clavier
-   ------------------------------------------------------------------------- */
-
-/**
- * Déplace une personne vers une squad, dans le rôle demandé.
- *
- * C'est l'UNIQUE fonction qui modifie la répartition : le glisser-déposer
- * et la modale clavier passent tous deux par ici, donc les deux chemins ne
- * peuvent pas diverger.
- *
- * @param {object} personne
- * @param {object} cible squad de destination
- * @param {string} role  'leader' | 'membre'
- * @returns {boolean} vrai si quelque chose a réellement changé
- */
-function deplacer(personne, cible, role) {
-  if (!personne || !cible) return false;
-
-  const source = personne.squad;
-  const roleVise = role === 'leader' ? 'leader' : 'membre';
-
-  if (source === cible && personne.role === roleVise) {
-    toast(personne.nom + ' est déjà ' + (roleVise === 'leader' ? 'leader' : 'membre')
-      + ' de ' + cite(cible) + '.', 'info');
-    return false;
-  }
-
-  const poleSource = source ? source.pole : null;
-  const changePole = poleSource !== cible.pole;
-
-  /* Retrait de la squad d'origine. */
-  if (source) {
-    const position = source.membres.indexOf(personne);
-    if (position !== -1) source.membres.splice(position, 1);
-  }
-
-  /* Le rôle de leader est unique : l'ancien titulaire redevient membre. */
-  let retrograde = null;
-  if (roleVise === 'leader') {
-    const ancien = leaderDe(cible);
-    if (ancien && ancien !== personne) {
-      ancien.role = 'membre';
-      retrograde = ancien;
-    }
-  }
-
-  personne.role = roleVise;
-  personne.squad = cible;
-  cible.membres.push(personne);
-  ordonner(cible);
-
-  enregistrer();
-  majSelecteur();
-  rendre();
-  appliquerFiltre(false);
-
-  /* Message : il doit dire ce qui a changé, y compris l'effet de bord sur
-     l'ancien leader et le passage d'un pôle à l'autre. */
-  let message = personne.nom + ' rejoint ' + cite(cible)
-    + ' comme ' + (roleVise === 'leader' ? 'leader' : 'membre')
-    + ' (' + cible.pole.code + ').';
-  if (retrograde) message += ' ' + retrograde.nom + ' redevient membre.';
-  if (changePole && poleSource) {
-    message += ' Effectif de ' + poleSource.code + ' : '
-      + effectifPole(poleSource) + ', de ' + cible.pole.code + ' : '
-      + effectifPole(cible.pole) + '.';
-  }
-
-  /* Retour de focus. Si la personne n'est plus visible — déplacée vers un
-     pôle que la vue courante ne montre pas — on renvoie vers la puce de ce
-     pôle plutôt que de laisser le focus retomber sur le document. */
-  const vue = vueParPersonne.get(personne);
-  if (vue && vue.bouton && focaliser(vue.bouton)) {
-    toast(message, 'succes');
-  } else {
-    const puce = vueParCode.get(cible.pole.code);
-    if (puce) focaliser(puce.bouton);
-    message += ' Le périmètre affiché (' + DESCRIPTION_POLE[poleActif].libelle
-      + ') ne la montre plus.';
-    toast(message, 'info');
-  }
-
-  annoncer(message);
-  return true;
-}
-
-/* -------------------------------------------------------------------------
-   9. Glisser-déposer
-   Le dépôt ne lit jamais de sélecteur : l'élément survolé est traduit en
-   squad par le WeakMap, et le rôle visé est porté par `data-depot`.
-   ------------------------------------------------------------------------- */
-
-/** Câble le glisser-déposer, une seule fois, par délégation. */
-function cablerGlisserDeposer() {
-  const conteneur = refs.conteneur;
-  if (!conteneur) return;
-
-  deleguer(conteneur, '.personne[draggable="true"]', 'dragstart', (evt, carte) => {
-    const personne = personneParElement.get(carte);
-    if (!personne) return;
-
-    personneGlissee = personne;
-    carte.dataset.glisse = '';
-    try { document.documentElement.dataset.orgGlisse = ''; } catch (_e) { /* ignoré */ }
-
-    try {
-      evt.dataTransfer.effectAllowed = 'move';
-      /* Un identifiant, pas un nom : rien de ce qui transite ici ne sert
-         jamais à fabriquer un sélecteur. */
-      evt.dataTransfer.setData('text/plain', personne.id);
-    } catch (_e) { /* certains navigateurs refusent setData hors dragstart */ }
-  });
-
-  deleguer(conteneur, '.personne[draggable="true"]', 'dragend', (evt, carte) => {
-    delete carte.dataset.glisse;
-    terminerGlissement();
-  });
-
-  deleguer(conteneur, '.org-depot', 'dragover', (evt, zone) => {
-    if (!personneGlissee) return;
-    /* Sans preventDefault, le navigateur refuse le dépôt. */
-    evt.preventDefault();
-    try { evt.dataTransfer.dropEffect = 'move'; } catch (_e) { /* ignoré */ }
-    survoler(zone);
-  });
-
-  deleguer(conteneur, '.org-depot', 'drop', (evt, zone) => {
-    evt.preventDefault();
-
-    const squad = squadParElement.get(zone);
-    const role = zone.dataset.depot === 'leader' ? 'leader' : 'membre';
-
-    let personne = personneGlissee;
-    if (!personne) {
-      let id = '';
-      try { id = texte(evt.dataTransfer.getData('text/plain')); } catch (_e) { id = ''; }
-      personne = modele ? modele.personneParId.get(id) : null;
-    }
-
-    terminerGlissement();
-    if (personne && squad) deplacer(personne, squad, role);
-  });
-
-  /* Un glissement abandonné hors de toute zone doit nettoyer le décor. */
-  document.addEventListener('dragend', terminerGlissement);
-  document.addEventListener('drop', terminerGlissement);
-}
-
-/** Marque une seule zone comme survolée. */
-function survoler(zone) {
-  if (depotSurvole === zone) return;
-  if (depotSurvole) delete depotSurvole.dataset.survol;
-  depotSurvole = zone;
-  if (zone) zone.dataset.survol = '';
-}
-
-/** Retire tout le décor de glissement. */
-function terminerGlissement() {
-  personneGlissee = null;
-  survoler(null);
-  try { delete document.documentElement.dataset.orgGlisse; } catch (_e) { /* ignoré */ }
-}
-
-/* -------------------------------------------------------------------------
-   10. Équivalent clavier : la modale « Déplacer… » (SPEC §4.4)
-   Elle fait EXACTEMENT ce que fait le glisser-déposer : choisir une squad
-   de destination — dans n'importe quel pôle — et un rôle.
-   ------------------------------------------------------------------------- */
-
-/**
- * Ouvre la modale de déplacement d'une personne.
- * @param {object} personne
- * @param {Element} declencheur bouton à refocaliser à la fermeture
- */
-function ouvrirModaleDeplacement(personne, declencheur) {
-  if (!modele) return;
-
-  const squadActuelle = personne.squad;
-  const idSelect = idUnique('org-destination');
-  const nomGroupe = idUnique('org-role');
-
-  /* Les options portent l'identifiant GÉNÉRÉ de la squad : le nom, lui,
-     n'est que du texte affiché. Une squad nommée « L'équipe <A> » ne
-     casse donc rien. */
-  const select = el('select', {
-    class: 'champ__controle',
-    id: idSelect
-  }, modele.poles.map((pole) => el('optgroup', {
-    label: pole.code + (pole.sousTitre ? ' — ' + pole.sousTitre : '')
-  }, pole.squads.map((squad) => el('option', {
-    value: squad.id
-  }, squad.nom + (squad === squadActuelle ? ' (squad actuelle)' : ''))))));
-
-  /* La valeur est posée après construction : c'est le seul moyen fiable
-     de présélectionner une option dans un <select> déjà rempli. */
-  if (squadActuelle) select.value = squadActuelle.id;
-
-  const radioMembre = el('input', {
-    class: 'case__controle',
-    type: 'radio',
-    name: nomGroupe,
-    value: 'membre',
-    checked: personne.role !== 'leader'
-  });
-
-  const radioLeader = el('input', {
-    class: 'case__controle',
-    type: 'radio',
-    name: nomGroupe,
-    value: 'leader',
-    checked: personne.role === 'leader'
-  });
-
-  const contenu = el('div', { class: 'org-destination' },
-    el('p', { class: 'org-destination__actuelle' },
-      squadActuelle
-        ? personne.nom + ' est aujourd’hui '
-          + (personne.role === 'leader' ? 'leader' : 'membre') + ' de '
-          + cite(squadActuelle) + ', dans le pôle ' + squadActuelle.pole.code + '.'
-        : personne.nom + ' n’est rattachée à aucune squad.'),
-
-    el('div', { class: 'champ' },
-      el('label', { class: 'champ__etiquette', for: idSelect },
-        'Squad de destination'),
-      el('span', { class: 'champ__select' }, select),
-      el('span', { class: 'champ__aide' },
-        'Les squads sont regroupées par pôle : un déplacement d’un pôle à '
-        + 'un autre est autorisé et met à jour les effectifs.')),
-
-    el('fieldset', { class: 'groupe-champs' },
-      el('legend', { class: 'groupe-champs__legende' }, 'Rôle dans la squad'),
-      el('label', { class: 'case' }, radioMembre,
-        el('span', { class: 'case__texte' }, 'Membre')),
-      el('label', { class: 'case' }, radioLeader,
-        el('span', { class: 'case__texte' }, 'Leader',
-          el('span', { class: 'case__texte-aide' },
-            'Le leader actuel de la squad choisie redeviendra membre.')))));
-
-  ouvrirModale({
-    titre: 'Déplacer ' + personne.nom,
-    contenu: contenu,
-    declencheur: declencheur,
-    actions: [
-      { libelle: 'Annuler', variante: 'discret' },
-      {
-        libelle: 'Déplacer',
-        variante: 'principal',
-        onClick: () => {
-          const cible = modele.squadParId.get(select.value);
-          if (!cible) {
-            toast('Cette squad n’existe plus : choisissez une autre '
-              + 'destination.', 'alerte');
-            return false;   // la modale reste ouverte
-          }
-          const role = radioLeader.checked ? 'leader' : 'membre';
-          /* Le déplacement se fait après la fermeture : il reconstruit le
-             DOM, donc le retour de focus doit viser la nouvelle carte. */
-          setTimeout(() => deplacer(personne, cible, role), 0);
-          return true;
-        }
-      }
-    ]
-  });
-}
-
-/* -------------------------------------------------------------------------
-   11. Nommer une squad : création et renommage
-   ------------------------------------------------------------------------- */
-
-/**
- * Modale d'un champ de texte unique, avec validation.
- * @param {object} options { titre, etiquette, valeur, libelleValider, aide,
- *                           declencheur, onValider(nom) }
- */
-function ouvrirModaleNom(options) {
-  const idChamp = idUnique('org-nom');
-  const idErreur = idUnique('org-nom-erreur');
-
-  const champ = el('input', {
-    class: 'champ__controle',
-    id: idChamp,
-    type: 'text',
-    value: texte(options.valeur),
-    maxlength: NOM_MAX,
-    autocomplete: 'off',
-    spellcheck: 'false',
-    ariaDescribedby: idErreur,
-    autofocus: true
-  });
-
-  const erreur = el('p', { class: 'champ__erreur', id: idErreur, role: 'alert' });
-
-  const contenu = el('div', { class: 'champ' },
-    el('label', { class: 'champ__etiquette', for: idChamp }, options.etiquette),
-    champ,
-    el('span', { class: 'champ__aide' }, options.aide || ''),
-    erreur);
-
-  /** Valide et applique. Renvoie false pour garder la modale ouverte. */
-  const valider = () => {
-    const valeur = texte(champ.value).trim();
-    if (!valeur) {
-      erreur.textContent = 'Un nom est nécessaire : le champ est vide.';
-      focaliser(champ);
-      return false;
-    }
-    if (valeur.length > NOM_MAX) {
-      erreur.textContent = 'Le nom ne peut pas dépasser ' + NOM_MAX + ' caractères.';
-      focaliser(champ);
-      return false;
-    }
-    erreur.textContent = '';
-    options.onValider(valeur);
-    return true;
-  };
-
-  const api = ouvrirModale({
-    titre: options.titre,
-    contenu: contenu,
-    declencheur: options.declencheur,
-    actions: [
-      { libelle: 'Annuler', variante: 'discret' },
-      { libelle: options.libelleValider, variante: 'principal', onClick: valider }
-    ]
-  });
-
-  /* Entrée valide, comme dans un vrai formulaire. */
-  champ.addEventListener('keydown', (evt) => {
-    if (evt.key !== 'Enter') return;
-    evt.preventDefault();
-    if (valider()) api.fermer('action');
-  });
-}
-
-/**
- * Crée une squad dans un pôle.
- * @param {object} pole
- * @param {Element} declencheur
- */
-function ouvrirCreationSquad(pole, declencheur) {
-  ouvrirModaleNom({
-    titre: 'Nouvelle squad dans ' + pole.code,
-    etiquette: 'Nom de la squad',
-    valeur: '',
-    aide: 'Apostrophes, guillemets et chevrons sont acceptés : le nom n’est '
-      + 'que du texte, jamais du balisage.',
-    libelleValider: 'Créer',
-    declencheur: declencheur,
-    onValider: (nom) => {
-      const squad = creerSquad(modele, pole, nom);
-      enregistrer();
-      majSelecteur();
-      rendre();
-      appliquerFiltre(false);
-
-      const message = 'Squad ' + cite(squad) + ' créée dans ' + pole.code
-        + '. Elle est vide : déplacez-y des personnes.';
-      toast(message, 'succes');
-      annoncer(message);
-    }
-  });
-}
-
-/**
- * Renomme une squad.
- * @param {object} squad
- * @param {Element} declencheur
- */
-function ouvrirRenommageSquad(squad, declencheur) {
-  const ancien = squad.nom;
-  ouvrirModaleNom({
-    titre: 'Renommer une squad',
-    etiquette: 'Nom de la squad',
-    valeur: squad.nom,
-    aide: 'Apostrophes, guillemets et chevrons sont acceptés : le nom n’est '
-      + 'que du texte, jamais du balisage.',
-    libelleValider: 'Renommer',
-    declencheur: declencheur,
-    onValider: (nom) => {
-      squad.nom = nom;
-      enregistrer();
-      rendre();
-      appliquerFiltre(false);
-
-      const message = 'Squad ' + cite({ nom: ancien }) + ' renommée en '
-        + cite(squad) + '.';
-      toast(message, 'succes');
-      annoncer(message);
-    }
-  });
-}
-
-/* -------------------------------------------------------------------------
-   12. Réinitialisation
-   Action destructrice : elle est TOUJOURS confirmée (SPEC §6.5).
-   ------------------------------------------------------------------------- */
-
-/**
- * Demande confirmation avant de tout remettre en place.
- * @param {Element} declencheur
- */
-function confirmerReinitialisation(declencheur) {
-  ouvrirModale({
-    titre: 'Réinitialiser l’organigramme ?',
-    declencheur: declencheur,
-    contenu: el('p', { class: 'mesure sans-marge' },
-      'Toutes les réorganisations faites sur ce poste seront perdues : '
-      + 'déplacements, changements de leader, squads créées et renommées. '
-      + 'L’organigramme d’origine sera rétabli. Cette action ne peut pas '
-      + 'être annulée.'),
-    actions: [
-      { libelle: 'Annuler', variante: 'discret' },
-      {
-        libelle: 'Réinitialiser',
-        variante: 'danger',
-        onClick: () => { reinitialiser(); }
-      }
-    ]
-  });
-}
-
-/** Rétablit l'organigramme d'origine. */
-function reinitialiser() {
-  stockage.supprimer(CLE_ETAT);
   modele = construireModele(donneesSource);
+  for (const pole of modele.poles) for (const squad of pole.squads) ordonner(squad);
 
-  majSelecteur();
-  rendre();
-  appliquerFiltre(false);
+  const rejoue = appliquerOrganisationEnregistree();
+  construireIndex();
 
-  const message = 'Organigramme réinitialisé : '
-    + accorder(effectifService(modele), 'personne', 'personnes')
-    + ' réparties comme dans les données d’origine.';
-  toast(message, 'succes');
-  annoncer(message);
-  focaliser(refs.reinitialiser);
-}
+  const etat = etatUrl.lire();
+  vue = (typeof etat.pole === 'string'
+    && Object.prototype.hasOwnProperty.call(PAGE_DE_POLE, etat.pole))
+    ? etat.pole
+    : SERVICE;
 
-/* -------------------------------------------------------------------------
-   13. Recherche filtrante
-   Les cartes hors filtre sont mises en RETRAIT, jamais retirées du flux ni
-   de l'ordre de tabulation (SPEC §4.4).
-   ------------------------------------------------------------------------- */
-
-/**
- * Applique la recherche courante aux cartes rendues.
- * @param {boolean} annonce vrai pour annoncer le résultat
- */
-function appliquerFiltre(annonce) {
-  if (!refs.recherche || !refs.resume) return;
-
-  const brut = refs.recherche.value || '';
-  const requete = normaliser(brut);
-  const total = vueParPersonne.size;
-
-  if (!requete) {
-    for (const vue of vueParPersonne.values()) delete vue.carte.dataset.horsFiltre;
-    refs.resume.textContent = '';
-    refs.resume.hidden = true;
-    if (annonce) {
-      annoncer('Filtre effacé, '
-        + accorder(total, 'personne affichée', 'personnes affichées') + '.');
-    }
-    return;
-  }
-
-  /* Tous les termes doivent être trouvés : « h160 essais » ne renvoie que
-     les personnes qui cumulent les deux. */
-  const termes = requete.split(' ').filter(Boolean);
-  let trouves = 0;
-
-  for (const [personne, vue] of vueParPersonne) {
-    const squad = personne.squad;
-    const foin = normaliser([
-      personne.nom,
-      personne.poste,
-      personne.perimetre,
-      personne.role,
-      squad ? squad.nom : '',
-      squad ? squad.pole.code : poleActif
-    ].join(' '));
-
-    const correspond = termes.every((terme) => foin.indexOf(terme) !== -1);
-    if (correspond) {
-      trouves += 1;
-      delete vue.carte.dataset.horsFiltre;
-    } else {
-      vue.carte.dataset.horsFiltre = '';
+  if (refs.vues) {
+    for (const puce of refs.vues.querySelectorAll('[data-vue]')) {
+      puce.setAttribute('aria-pressed', puce.dataset.vue === vue ? 'true' : 'false');
     }
   }
+  initNav(PAGE_DE_POLE[vue]);
 
-  const message = trouves === 0
-    ? 'Aucune personne ne correspond à « ' + brut.trim()
-      + ' » dans le périmètre affiché. Toutes les cartes restent visibles, '
-      + 'en retrait.'
-    : accorder(trouves, 'personne correspond', 'personnes correspondent')
-      + ' à « ' + brut.trim() + ' » sur ' + total
-      + ' affichées. Les autres sont mises en retrait.';
+  rendreReperes();
+  rendreArbre();
 
-  refs.resume.textContent = message;
-  refs.resume.hidden = false;
-  if (annonce) annoncer(message);
-}
+  activerOutils();
+  definirDensite(densite);
+  definirZoom(zoom);
+  majEtatReinitialisation();
+  cablerOutils();
 
-/* -------------------------------------------------------------------------
-   14. Zoom
-   Il agit sur la TAILLE DES CARTES via une variable CSS, donc la grille
-   reflue pour de bon. Aucun transform sur la page (SPEC §2).
-   ------------------------------------------------------------------------- */
-
-/**
- * Ramène une valeur dans les bornes du zoom, arrondie au pas.
- * @param {*} valeur
- * @returns {number}
- */
-function bornerZoom(valeur) {
-  const nombre = Number(valeur);
-  if (!Number.isFinite(nombre)) return ZOOM_DEFAUT;
-  const arrondi = Math.round(nombre / ZOOM_PAS) * ZOOM_PAS;
-  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, arrondi));
-}
-
-/**
- * Applique un niveau de zoom.
- * @param {*} valeur pourcentage
- * @param {boolean} memoriser vrai pour l'enregistrer
- */
-function appliquerZoom(valeur, memoriser) {
-  const pourcent = bornerZoom(valeur);
-
-  if (refs.zoom) refs.zoom.value = String(pourcent);
-  if (refs.zoomValeur) refs.zoomValeur.textContent = pourcent + ' %';
-  if (refs.racine) {
-    /* Un nombre, pas une couleur ni une dimension : la formule qui en tire
-       des tailles vit entièrement dans le <style> de la page. */
-    refs.racine.style.setProperty('--org-echelle', String(pourcent / 100));
-  }
-  if (memoriser) stockage.ecrire(CLE_ZOOM, pourcent);
-}
-
-/* -------------------------------------------------------------------------
-   15. Câblage
-   ------------------------------------------------------------------------- */
-
-/** Active les contrôles, une fois les données réellement affichées. */
-function activerOutils(actif) {
-  const controles = [
-    refs.recherche, refs.zoom, refs.zoomMoins, refs.zoomPlus, refs.reinitialiser
-  ];
-  for (const controle of controles) {
-    if (controle) controle.disabled = !actif;
-  }
-}
-
-/** Câble la barre d'outils. Appelé une seule fois. */
-function cablerOutils() {
-  const filtrer = debounce(() => appliquerFiltre(true), DELAI_FILTRE);
-
-  if (refs.recherche) {
-    refs.recherche.addEventListener('input', filtrer);
-    refs.recherche.addEventListener('keydown', (evt) => {
-      /* Échap efface le filtre sans quitter le champ. */
-      if (evt.key !== 'Escape' && evt.key !== 'Esc') return;
-      if (!refs.recherche.value) return;
-      evt.preventDefault();
-      refs.recherche.value = '';
-      filtrer.annuler();
-      appliquerFiltre(true);
-    });
+  if (rejoue) {
+    toast('Une réorganisation enregistrée sur ce poste a été rétablie.', 'info');
   }
 
-  if (refs.effacer) {
-    refs.effacer.addEventListener('click', () => {
-      refs.recherche.value = '';
-      filtrer.annuler();
-      appliquerFiltre(true);
-      focaliser(refs.recherche);
-    });
+  /* Fiche partagée par l'URL : elle s'ouvre, mais sans voler le focus au
+     chargement de la page. */
+  const demandee = typeof etat.personne === 'string' ? etat.personne : null;
+  if (demandee && index.has(demandee) && rendus.has(demandee)) {
+    const bouton = rendus.get(demandee);
+    ouvrirFiche(demandee, bouton);
+    if (bouton && bouton.isConnected) bouton.focus();
+  } else {
+    majUrl();
   }
-
-  if (refs.zoom) {
-    refs.zoom.addEventListener('input', () => appliquerZoom(refs.zoom.value, true));
-  }
-  if (refs.zoomMoins) {
-    refs.zoomMoins.addEventListener('click',
-      () => appliquerZoom(Number(refs.zoom.value) - ZOOM_PAS, true));
-  }
-  if (refs.zoomPlus) {
-    refs.zoomPlus.addEventListener('click',
-      () => appliquerZoom(Number(refs.zoom.value) + ZOOM_PAS, true));
-  }
-  if (refs.reinitialiser) {
-    refs.reinitialiser.addEventListener('click',
-      (evt) => confirmerReinitialisation(evt.currentTarget));
-  }
-}
-
-/** Câble les boutons des cartes et des blocs, par délégation. */
-function cablerActions() {
-  deleguer(refs.conteneur, '[data-action="deplacer"]', 'click', (evt, bouton) => {
-    const personne = personneParElement.get(bouton);
-    if (personne) ouvrirModaleDeplacement(personne, bouton);
-  });
-
-  deleguer(refs.conteneur, '[data-action="renommer-squad"]', 'click', (evt, bouton) => {
-    const squad = squadParElement.get(bouton);
-    if (squad) ouvrirRenommageSquad(squad, bouton);
-  });
-
-  deleguer(refs.conteneur, '[data-action="ajouter-squad"]', 'click', (evt, bouton) => {
-    const pole = poleParElement.get(bouton);
-    if (pole) ouvrirCreationSquad(pole, bouton);
-  });
-}
-
-/* -------------------------------------------------------------------------
-   16. Démarrage
-   ------------------------------------------------------------------------- */
-
-/** Résout les éléments statiques de la page. */
-function resoudreRefs() {
-  refs.racine = document.querySelector('.organigramme');
-  refs.conteneur = document.getElementById('organigramme');
-  refs.selecteur = document.getElementById('org-selecteur');
-  refs.puces = document.getElementById('org-poles');
-  refs.contexte = document.getElementById('org-contexte');
-  refs.recherche = document.getElementById('org-recherche');
-  refs.effacer = document.getElementById('org-effacer');
-  refs.resume = document.getElementById('org-resume');
-  refs.zoom = document.getElementById('org-zoom');
-  refs.zoomMoins = document.getElementById('org-zoom-moins');
-  refs.zoomPlus = document.getElementById('org-zoom-plus');
-  refs.zoomValeur = document.getElementById('org-zoom-valeur');
-  refs.reinitialiser = document.getElementById('org-reinitialiser');
-}
-
-/**
- * Rendu appelé par avecEtat() : construit le modèle, y applique la
- * sauvegarde si elle est cohérente, puis affiche.
- * @param {object} donnees
- */
-function rendreDepuisDonnees(donnees) {
-  donneesSource = donnees;
-  modele = construireModele(donnees);
-
-  const sauvegarde = stockage.lire(CLE_ETAT, null);
-  if (sauvegarde && !appliquerSauvegarde(sauvegarde)) {
-    /* Sauvegarde incohérente avec les données : on la jette plutôt que de
-       l'appliquer à moitié, et on le dit — le contenu affiché n'est pas
-       celui que la personne avait laissé. */
-    stockage.supprimer(CLE_ETAT);
-    toast('La réorganisation enregistrée ne correspond plus aux données : '
-      + 'l’organigramme d’origine est affiché.', 'alerte');
-  }
-
-  construireSelecteur();
-  majSelecteur();
-  rendre();
 }
 
 /** Point d'entrée. */
 function demarrer() {
   initTheme();
-
+  initNav();
   resoudreRefs();
-  if (!refs.conteneur) return;
 
-  /* Le pôle actif vient du hash avant tout affichage : la navigation
-     principale doit déjà porter la bonne entrée courante. */
-  poleActif = normaliserPole(etatUrl.lire().pole);
-  etatUrl.ecrire({ pole: poleActif });
-  initNav(PAGE_DE_POLE[poleActif]);
+  if (!refs.plan) return;
 
-  appliquerZoom(stockage.lire(CLE_ZOOM, ZOOM_DEFAUT), false);
-  cablerOutils();
-  cablerActions();
-  cablerGlisserDeposer();
+  lireAffichage();
+  cablerArbre();
+  cablerFiche();
+  cablerRaccourcis();
 
-  /* « Précédent », « Suivant » ou lien collé : le pôle suit l'URL. */
-  etatUrl.ecouter((etat) => choisirPole(etat.pole, true));
+  /* Le périmètre voyage dans le hash : un lien collé, un retour arrière
+     ou un lien depuis un espace de pôle doivent tous être honorés. */
+  etatUrl.ecouter((etat) => {
+    if (!modele) return;
+    const code = (typeof etat.pole === 'string'
+      && Object.prototype.hasOwnProperty.call(PAGE_DE_POLE, etat.pole))
+      ? etat.pole
+      : SERVICE;
+    if (code !== vue) definirVue(code, false);
 
-  avecEtat(refs.conteneur, () => chargerDonnees('organigramme'), (donnees) => {
-    rendreDepuisDonnees(donnees);
-  }, {
-    squelette: squelette,
-    texteChargement: 'Chargement de l’organigramme en cours…',
-    titreErreur: 'Organigramme indisponible',
-    titreVide: 'Aucune équipe à afficher',
-    texteVide: 'Le fichier de données ne décrit ni direction ni pôle. '
-      + 'Il n’y a pas de hiérarchie à représenter pour le moment.',
-    estVide: (donnees) => {
-      if (!donnees || typeof donnees !== 'object') return true;
-      const poles = Array.isArray(donnees.poles) ? donnees.poles.length : 0;
-      return poles === 0 && !donnees.direction;
-    },
-    surEtat: (resultat) => {
-      const pret = resultat.etat === 'succes';
-      activerOutils(pret);
-
-      if (!pret) {
-        /* Ni modèle ni cartes : le filtre, le résumé et le sélecteur de
-           pôle n'ont plus d'objet. */
-        vueParPersonne = new Map();
-        if (refs.selecteur) refs.selecteur.hidden = true;
-        if (refs.resume) {
-          refs.resume.textContent = '';
-          refs.resume.hidden = true;
-        }
-        return;
-      }
-
-      annoncer('Organigramme chargé. Périmètre '
-        + DESCRIPTION_POLE[poleActif].libelle + ' : '
-        + accorder(effectifDe(poleActif), 'personne', 'personnes') + '.');
+    const demandee = typeof etat.personne === 'string' ? etat.personne : null;
+    if (demandee && index.has(demandee)) {
+      if (demandee !== ficheOuverte) ouvrirFiche(demandee);
+    } else if (ficheOuverte) {
+      fermerFiche(false);
     }
+  });
+
+  avecEtat(refs.plan, () => chargerDonnees('organigramme'), rendre, {
+    squelette: 4,
+    texteChargement: 'Chargement de l’organigramme du service…',
+    titreErreur: 'L’organigramme n’a pas pu être chargé',
+    titreVide: 'Aucune équipe déclarée',
+    texteVide: 'Le fichier organigramme.json ne décrit aucun pôle. '
+      + 'Rien n’est affiché : la page ne devine pas de structure.',
+    estVide: (donnees) => !donnees || !Array.isArray(donnees.poles)
+      || donnees.poles.length === 0
   });
 }
 
-/* Le module est chargé en `type="module"`, donc différé : le DOM est déjà
-   analysé. Le garde-fou couvre le cas d'une insertion manuelle plus tôt. */
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', demarrer, { once: true });
 } else {

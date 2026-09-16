@@ -1,129 +1,390 @@
 {
-  "avertissement": "Désignations et segments issus de la gamme civile publique. Charges, jalons et avancements sont fictifs, comme tout le jeu de démonstration.",
+  "avertissement": "Désignations et segments issus de la gamme publique. Les valeurs techniques et économiques sont à renseigner par le service : elles ne sont pas inventées ici.",
+  "categories": [
+    {
+      "cle": "civil",
+      "libelle": "Civil"
+    },
+    {
+      "cle": "militaire",
+      "libelle": "Militaire"
+    },
+    {
+      "cle": "prototype",
+      "libelle": "Prototype"
+    }
+  ],
+  "champs": {
+    "technique": [
+      {
+        "cle": "motorisation",
+        "libelle": "Motorisation"
+      },
+      {
+        "cle": "masseMaxDecollage",
+        "libelle": "Masse max. au décollage"
+      },
+      {
+        "cle": "capacite",
+        "libelle": "Capacité"
+      },
+      {
+        "cle": "rayonAction",
+        "libelle": "Rayon d'action"
+      },
+      {
+        "cle": "vitesseCroisiere",
+        "libelle": "Vitesse de croisière"
+      },
+      {
+        "cle": "longueurHarnais",
+        "libelle": "Longueur de harnais"
+      },
+      {
+        "cle": "nbConnecteurs",
+        "libelle": "Nombre de connecteurs"
+      }
+    ],
+    "economique": [
+      {
+        "cle": "heuresIngenierie",
+        "libelle": "Heures d'ingénierie"
+      },
+      {
+        "cle": "chargePersMois",
+        "libelle": "Charge (personnes-mois)"
+      },
+      {
+        "cle": "coutRecurrent",
+        "libelle": "Coût récurrent"
+      },
+      {
+        "cle": "volumeSerie",
+        "libelle": "Volume série"
+      },
+      {
+        "cle": "tauxService",
+        "libelle": "Taux de service"
+      }
+    ]
+  },
   "flotte": [
     {
       "code": "H125",
+      "categorie": "civil",
       "segment": "Monomoteur léger",
-      "silhouette": "patins-monoturbine",
-      "usages": [
-        "Travail aérien",
-        "Montagne",
-        "Secours"
-      ],
       "poles": [
         "ETIIE",
         "ETIII"
       ],
-      "charge": 14,
-      "jalon": "Revue de définition du faisceau cabine",
-      "avancement": 72,
-      "echeance": "2026-11"
+      "silhouette": "patins-monoturbine",
+      "photo": "",
+      "technique": {
+        "motorisation": null,
+        "masseMaxDecollage": null,
+        "capacite": null,
+        "rayonAction": null,
+        "vitesseCroisiere": null,
+        "longueurHarnais": null,
+        "nbConnecteurs": null
+      },
+      "economique": {
+        "heuresIngenierie": null,
+        "chargePersMois": null,
+        "coutRecurrent": null,
+        "volumeSerie": null,
+        "tauxService": null
+      },
+      "jalon": null,
+      "avancement": null
     },
     {
       "code": "H130",
+      "categorie": "civil",
       "segment": "Monomoteur léger",
-      "silhouette": "patins-fenestron",
-      "usages": [
-        "Transport passagers",
-        "Tourisme aérien"
-      ],
       "poles": [
         "ETIIE"
       ],
-      "charge": 9,
-      "jalon": "Mise à jour des schémas de distribution",
-      "avancement": 48,
-      "echeance": "2027-02"
+      "silhouette": "patins-fenestron",
+      "photo": "",
+      "technique": {
+        "motorisation": null,
+        "masseMaxDecollage": null,
+        "capacite": null,
+        "rayonAction": null,
+        "vitesseCroisiere": null,
+        "longueurHarnais": null,
+        "nbConnecteurs": null
+      },
+      "economique": {
+        "heuresIngenierie": null,
+        "chargePersMois": null,
+        "coutRecurrent": null,
+        "volumeSerie": null,
+        "tauxService": null
+      },
+      "jalon": null,
+      "avancement": null
     },
     {
       "code": "H135",
+      "categorie": "civil",
       "segment": "Bimoteur léger",
-      "silhouette": "patins-fenestron-bi",
-      "usages": [
-        "Secours médicalisé",
-        "Sécurité civile",
-        "Formation"
-      ],
       "poles": [
         "ETIIA",
         "ETIIE"
       ],
-      "charge": 18,
-      "jalon": "Harmonisation des conventions de nommage",
-      "avancement": 86,
-      "echeance": "2026-10"
+      "silhouette": "patins-fenestron-bi",
+      "photo": "",
+      "technique": {
+        "motorisation": null,
+        "masseMaxDecollage": null,
+        "capacite": null,
+        "rayonAction": null,
+        "vitesseCroisiere": null,
+        "longueurHarnais": null,
+        "nbConnecteurs": null
+      },
+      "economique": {
+        "heuresIngenierie": null,
+        "chargePersMois": null,
+        "coutRecurrent": null,
+        "volumeSerie": null,
+        "tauxService": null
+      },
+      "jalon": null,
+      "avancement": null
     },
     {
       "code": "H145",
+      "categorie": "civil",
       "segment": "Bimoteur léger",
-      "silhouette": "patins-fenestron-bi",
-      "usages": [
-        "Secours médicalisé",
-        "Missions publiques",
-        "Transport"
-      ],
       "poles": [
         "ETIIA",
         "ETIIE",
         "ETIII"
       ],
-      "charge": 23,
-      "jalon": "Intégration du lot avionique",
-      "avancement": 61,
-      "echeance": "2027-01"
+      "silhouette": "patins-fenestron-bi",
+      "photo": "",
+      "technique": {
+        "motorisation": null,
+        "masseMaxDecollage": null,
+        "capacite": null,
+        "rayonAction": null,
+        "vitesseCroisiere": null,
+        "longueurHarnais": null,
+        "nbConnecteurs": null
+      },
+      "economique": {
+        "heuresIngenierie": null,
+        "chargePersMois": null,
+        "coutRecurrent": null,
+        "volumeSerie": null,
+        "tauxService": null
+      },
+      "jalon": null,
+      "avancement": null
     },
     {
       "code": "H160",
+      "categorie": "civil",
       "segment": "Bimoteur moyen",
-      "silhouette": "roues-fenestron-bi",
-      "usages": [
-        "Offshore",
-        "Transport privé",
-        "Secours"
-      ],
       "poles": [
         "ETIIA",
         "ETIIE",
         "ETIII"
       ],
-      "charge": 31,
-      "jalon": "Validation du jalon de définition, lot 3",
-      "avancement": 94,
-      "echeance": "2026-09"
+      "silhouette": "roues-fenestron-bi",
+      "photo": "",
+      "technique": {
+        "motorisation": null,
+        "masseMaxDecollage": null,
+        "capacite": null,
+        "rayonAction": null,
+        "vitesseCroisiere": null,
+        "longueurHarnais": null,
+        "nbConnecteurs": null
+      },
+      "economique": {
+        "heuresIngenierie": null,
+        "chargePersMois": null,
+        "coutRecurrent": null,
+        "volumeSerie": null,
+        "tauxService": null
+      },
+      "jalon": null,
+      "avancement": null
     },
     {
       "code": "H175",
+      "categorie": "civil",
       "segment": "Bimoteur super-moyen",
-      "silhouette": "roues-bi",
-      "usages": [
-        "Offshore",
-        "Transport longue distance"
-      ],
       "poles": [
         "ETIIE",
         "ETIII"
       ],
-      "charge": 27,
-      "jalon": "Revue de cheminement des harnais",
-      "avancement": 55,
-      "echeance": "2027-03"
+      "silhouette": "roues-bi",
+      "photo": "",
+      "technique": {
+        "motorisation": null,
+        "masseMaxDecollage": null,
+        "capacite": null,
+        "rayonAction": null,
+        "vitesseCroisiere": null,
+        "longueurHarnais": null,
+        "nbConnecteurs": null
+      },
+      "economique": {
+        "heuresIngenierie": null,
+        "chargePersMois": null,
+        "coutRecurrent": null,
+        "volumeSerie": null,
+        "tauxService": null
+      },
+      "jalon": null,
+      "avancement": null
     },
     {
       "code": "H225",
+      "categorie": "civil",
       "segment": "Bimoteur lourd",
-      "silhouette": "roues-bi-lourd",
-      "usages": [
-        "Transport lourd",
-        "Missions publiques",
-        "Offshore"
-      ],
       "poles": [
         "ETIII"
       ],
-      "charge": 16,
-      "jalon": "Reprise des reprises de masse",
-      "avancement": 38,
-      "echeance": "2027-05"
+      "silhouette": "roues-bi-lourd",
+      "photo": "",
+      "technique": {
+        "motorisation": null,
+        "masseMaxDecollage": null,
+        "capacite": null,
+        "rayonAction": null,
+        "vitesseCroisiere": null,
+        "longueurHarnais": null,
+        "nbConnecteurs": null
+      },
+      "economique": {
+        "heuresIngenierie": null,
+        "chargePersMois": null,
+        "coutRecurrent": null,
+        "volumeSerie": null,
+        "tauxService": null
+      },
+      "jalon": null,
+      "avancement": null
+    },
+    {
+      "code": "H225M",
+      "categorie": "militaire",
+      "segment": "Bimoteur lourd",
+      "poles": [
+        "ETIII"
+      ],
+      "silhouette": "roues-bi-lourd",
+      "photo": "",
+      "technique": {
+        "motorisation": null,
+        "masseMaxDecollage": null,
+        "capacite": null,
+        "rayonAction": null,
+        "vitesseCroisiere": null,
+        "longueurHarnais": null,
+        "nbConnecteurs": null
+      },
+      "economique": {
+        "heuresIngenierie": null,
+        "chargePersMois": null,
+        "coutRecurrent": null,
+        "volumeSerie": null,
+        "tauxService": null
+      },
+      "jalon": null,
+      "avancement": null
+    },
+    {
+      "code": "H145M",
+      "categorie": "militaire",
+      "segment": "Bimoteur léger",
+      "poles": [
+        "ETIIA",
+        "ETIII"
+      ],
+      "silhouette": "patins-fenestron-bi",
+      "photo": "",
+      "technique": {
+        "motorisation": null,
+        "masseMaxDecollage": null,
+        "capacite": null,
+        "rayonAction": null,
+        "vitesseCroisiere": null,
+        "longueurHarnais": null,
+        "nbConnecteurs": null
+      },
+      "economique": {
+        "heuresIngenierie": null,
+        "chargePersMois": null,
+        "coutRecurrent": null,
+        "volumeSerie": null,
+        "tauxService": null
+      },
+      "jalon": null,
+      "avancement": null
+    },
+    {
+      "code": "DEMO-1",
+      "categorie": "prototype",
+      "segment": "Banc d'essai",
+      "poles": [
+        "ETIIA"
+      ],
+      "silhouette": "roues-bi",
+      "photo": "",
+      "technique": {
+        "motorisation": null,
+        "masseMaxDecollage": null,
+        "capacite": null,
+        "rayonAction": null,
+        "vitesseCroisiere": null,
+        "longueurHarnais": null,
+        "nbConnecteurs": null
+      },
+      "economique": {
+        "heuresIngenierie": null,
+        "chargePersMois": null,
+        "coutRecurrent": null,
+        "volumeSerie": null,
+        "tauxService": null
+      },
+      "jalon": null,
+      "avancement": null
+    },
+    {
+      "code": "DEMO-2",
+      "categorie": "prototype",
+      "segment": "Démonstrateur",
+      "poles": [
+        "ETIIA",
+        "ETIIE"
+      ],
+      "silhouette": "roues-fenestron-bi",
+      "photo": "",
+      "technique": {
+        "motorisation": null,
+        "masseMaxDecollage": null,
+        "capacite": null,
+        "rayonAction": null,
+        "vitesseCroisiere": null,
+        "longueurHarnais": null,
+        "nbConnecteurs": null
+      },
+      "economique": {
+        "heuresIngenierie": null,
+        "chargePersMois": null,
+        "coutRecurrent": null,
+        "volumeSerie": null,
+        "tauxService": null
+      },
+      "jalon": null,
+      "avancement": null
     }
   ]
 }

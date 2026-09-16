@@ -1,77 +1,53 @@
 /* =========================================================================
-   ETII Hub — Module de la base de connaissances (SPEC.md §4.5)
+   ETII Hub — Base de connaissances (faq.html)
 
-   C'est une page TRANSVERSE : un seul gabarit, partagé par le service et
-   par ses trois pôles, filtré par le pôle actif. Le pôle voyage dans le
-   hash de l'URL — `faq.html#pole=ETIIA` — et « ETII » désigne le niveau
-   service, tous pôles confondus.
+   Une COLONNE DE LECTURE unique, et rien d'autre. Pas de face-à-face liste
+   étroite / lecteur : on cherche, on filtre, on déplie — la réponse s'ouvre
+   exactement sous la question cliquée. Le regard ne traverse jamais l'écran,
+   et la mise en page est la même sur téléphone.
 
-   Six responsabilités, et rien d'autre :
+   Ce que fait ce module :
+     - construit l'index de recherche (search.js) et classe par pertinence,
+       avec surlignage des termes trouvés ;
+     - croise DEUX facettes, le pôle et la catégorie, chaque puce portant le
+       nombre de questions qu'elle donnerait si on la choisissait ;
+     - reflète l'état complet dans le hash : pôle, requête, catégories,
+       question dépliée — l'URL se colle et se partage ;
+     - propose « vouliez-vous dire… » (suggerer) quand la recherche ne donne
+       rien, puis l'appel aux experts ;
+     - enregistre LOCALEMENT les questions posées et les affiche, avec leur
+       date, le pôle visé et un bouton de suppression.
 
-     1. Démarrer le thème et marquer, dans la navigation principale, le
-        lien du PÔLE ACTIF (celui du tableau de bord si le pôle est ETII).
-     2. Charger faq.json et en rendre les trois états — chargement, erreur,
-        vide — via avecEtat() de data.js.
-     3. Classer les questions par pertinence avec le moteur commun
-        (search.js) : question en poids fort, mots-clés et catégorie en
-        poids moyen, réponse en poids faible. Les correspondances sont
-        surlignées via surligner() + surlignerVers().
-     4. Filtrer par PÔLE et par CATÉGORIE, en puces de facette avec
-        compteur. Les deux filtres se combinent, et chaque compteur est
-        calculé en ignorant la dimension qu'il chiffre mais en tenant
-        compte de l'autre : les deux séries de compteurs se recalculent
-        donc l'une en fonction de l'autre.
-     5. Afficher, pour chaque question, son pôle d'origine par une
-        pastille ÉTIQUETÉE — jamais par la seule couleur — et proposer un
-        état vide explicite quand un pôle n'a aucune question.
-     6. Recueillir les questions sans réponse : la modale « Poser la
-        question » les enregistre LOCALEMENT (stockage de ui.js) et les
-        affiche dans « Vos questions en attente », avec suppression.
+   Deux règles qui ne se discutent pas :
 
-   Ce que cette page ne fait PAS, et ne doit jamais refaire :
-   l'ancienne version envoyait la question à une adresse interne codée en
-   dur. Il n'y a ici aucun envoi réseau, aucun `mailto:`, aucune adresse
-   e-mail — le seul accès distant du module est le fetch de faq.json, qui
-   passe par data.js (SPEC §0 et §4.5).
+   1. AUCUNE DONNÉE INVENTÉE. Seul ce qui existe dans faq.json est affiché.
+      Un champ absent ou vide devient « à renseigner », jamais une valeur
+      plausible.
+   2. AUCUN ENVOI RÉSEAU pour une question posée, et donc aucune adresse de
+      destination écrite en dur — ni courriel, ni `mailto:`, ni serveur. La
+      page le dit en toutes lettres à l'endroit où la question se pose.
 
-   Tout le DOM produit ici passe par el() / frag() / monter() : le texte
-   est inséré en textContent, jamais en innerHTML, et aucun gestionnaire
-   n'est écrit en attribut HTML (SPEC §8).
+   Tout le DOM passe par el()/svg()/frag()/monter() : aucun innerHTML, aucun
+   gestionnaire en attribut. Les classes nouvelles sont déclarées dans le
+   <style> de faq.html, à partir des seuls jetons de tokens.css.
    ========================================================================= */
 
+import { chargerDonnees, avecEtat, verifierForme } from './data.js';
+import { creerIndex, rechercher, surligner, suggerer } from './search.js';
 import {
-  el, frag, monter, vider, deleguer, surlignerVers,
-  ouvrirModale, toast, annoncer, debounce,
-  etatUrl, stockage, initTheme, initNav
+  el, svg, frag, monter, surlignerVers, deleguer, debounce,
+  etatUrl, stockage, initTheme, initNav, ouvrirModale, toast, annoncer
 } from './ui.js';
 
-import { chargerDonnees, avecEtat, verifierForme } from './data.js';
-
-import { creerIndex, rechercher, surligner, suggerer } from './search.js';
-
 /* -------------------------------------------------------------------------
-   1. Constantes de la page
+   1. Périmètres — l'accord d'équipe, pas une donnée
    ------------------------------------------------------------------------- */
 
 /*
-   Pondération de l'index (SPEC §5). Le champ de poids le plus fort fait
-   office de « titre » pour le moteur : c'est lui qui porte les bonus
-   « la requête commence le titre » et « la requête est le titre ». Ici
-   c'est l'intitulé de la question, ce qui est exactement l'intention.
-*/
-const CHAMPS_INDEXES = [
-  { nom: 'question',  poids: 10 },  // fort
-  { nom: 'motsCles',  poids: 5 },   // moyen
-  { nom: 'categorie', poids: 5 },   // moyen
-  { nom: 'reponse',   poids: 1 }    // faible
-];
-
-/*
-   Les quatre périmètres de l'accord d'équipe, dans l'ordre : le service
-   puis ses trois pôles. Le libellé et la métaphore sont de la matière
-   éditoriale, pas de la donnée — ils vivent ici, pas dans un JSON. La
-   couleur, elle, est un jeton de tokens.css, rattaché au code du pôle par
-   le <style> de la page : jamais une valeur brute écrite en JavaScript.
+   Les quatre périmètres, dans l'ordre : le service puis ses trois pôles.
+   Libellé et métaphore sont de la matière éditoriale ; la couleur est un
+   jeton rattaché au code par le <style> de la page. Jamais de valeur brute
+   écrite en JavaScript.
 */
 const POLES = [
   { cle: 'ETII',  libelle: 'Tout le service', metaphore: 'Les quatre périmètres réunis' },
@@ -83,7 +59,13 @@ const POLES = [
 /** Les seuls codes admis dans le hash. Toute autre valeur retombe sur ETII. */
 const CODES_POLE = POLES.map((pole) => pole.cle);
 
-/** Le niveau service : « tout le service », et le repli de toute erreur. */
+/**
+ * Le niveau service : « tout le service », et le repli de toute erreur.
+ * C'est aussi une valeur possible du champ `pole` d'une question — celles
+ * qui concernent le service entier. La puce « Tout le service » ne filtre
+ * donc rien : elle montre les quatre périmètres, y compris ces
+ * questions-là, que leur pastille désigne en toutes lettres.
+ */
 const POLE_SERVICE = 'ETII';
 
 /** Page d'espace correspondant à chaque pôle, pour marquer la navigation. */
@@ -101,1515 +83,1138 @@ const PAGES_TRANSVERSES = [
   { page: 'organigramme.html', libelle: 'Organigramme' }
 ];
 
-/** Clés sous lesquelles l'état est écrit dans le hash de l'URL. */
+/* -------------------------------------------------------------------------
+   2. Contrats d'URL, de stockage et d'indexation
+   ------------------------------------------------------------------------- */
+
 const CLE_POLE = 'pole';
 const CLE_REQUETE = 'q';
 const CLE_CATEGORIE = 'cat';
 const CLE_QUESTION = 'question';
 
-/** Clé de stockage local des questions posées et non encore traitées. */
-const CLE_ATTENTE = 'faq.questions-en-attente';
+/** Clé de stockage local des questions posées (ui.js préfixe le nom). */
+const CLE_STOCKAGE = 'faq-questions';
 
-/** Délai de regroupement des frappes, en millisecondes. */
+/**
+ * Champs indexés et leur poids. Le plus fort fait office de « titre » au
+ * sens de search.js : c'est l'intitulé de la question qui porte le bonus
+ * « la requête commence le titre ».
+ */
+const CHAMPS_INDEX = [
+  { nom: 'question', poids: 6 },
+  { nom: 'motsCles', poids: 3 },
+  { nom: 'categorie', poids: 2 },
+  { nom: 'reponse', poids: 1 }
+];
+
+/** Attente avant de relancer la recherche, en millisecondes. */
 const DELAI_FRAPPE = 120;
 
-/** Délai avant écriture de l'URL : on n'empile pas une entrée par frappe. */
-const DELAI_URL = 260;
-
-/** Délai avant annonce du nombre de résultats, pour ne pas hacher la voix. */
-const DELAI_ANNONCE = 500;
-
-/** Nombre de gabarits d'option affichés pendant le chargement. */
-const SQUELETTES_LISTE = 4;
-
-/** Longueur maximale d'une question posée : une question, pas un rapport. */
-const LONGUEUR_MAX_QUESTION = 600;
+/** La mention unique d'un champ déclaré mais vide. Toujours la même. */
+const MENTION_MANQUANT = 'à renseigner';
 
 /* -------------------------------------------------------------------------
-   2. État du module
+   3. Lecture défensive des données
    ------------------------------------------------------------------------- */
 
-/** Corpus et index, construits une seule fois au premier rendu réussi. */
-const corpus = {
-  questions: [],
-  index: null,
-  categories: []
-};
+/**
+ * Texte utilisable, ou null. Une chaîne d'espaces n'est pas une valeur.
+ * @param {*} valeur
+ * @returns {string|null}
+ */
+function texteNet(valeur) {
+  if (typeof valeur !== 'string') return null;
+  const net = valeur.trim();
+  return net === '' ? null : net;
+}
 
-/** État courant de l'interface, reflété dans le hash de l'URL. */
-const etat = {
-  /** Pôle actif, toujours l'un des quatre codes admis. */
-  pole: POLE_SERVICE,
-  requete: '',
-  categories: new Set(),
-  idSelection: null,
-  /** Questions réellement affichées, déjà classées par pertinence. */
-  affichees: []
-};
+/**
+ * La mention « à renseigner », en un nœud reconnaissable partout.
+ * @param {string} [quoi] précision pour les lecteurs d'écran
+ * @returns {Element}
+ */
+function manquant(quoi) {
+  return el('span', {
+    class: 'champ-manquant',
+    ariaLabel: quoi ? quoi + ' : ' + MENTION_MANQUANT : null
+  }, MENTION_MANQUANT);
+}
 
-/** Références vers les nœuds durables de la page. */
-const refs = {
-  zone: null,
-  sousNav: null,
-  champ: null,
-  compteur: null,
-  agencement: null,
-  liste: null,
-  detail: null,
-  messages: null,
-  poles: new Map(),         // code de pôle -> { bouton, compteur }
-  facettes: new Map(),      // catégorie -> { bouton, compteur }
-  attenteSection: null,
-  attenteListe: null
-};
+/**
+ * Le texte, surligné sur les termes de la requête — ou la mention.
+ * Le moteur ne produit que des segments de texte brut ; c'est
+ * surlignerVers() qui en fait des <mark>. Aucune chaîne ne transite par
+ * innerHTML.
+ *
+ * @param {string|null} texte
+ * @param {string} quoi  nom du champ, pour la mention
+ * @returns {Node}
+ */
+function texteSurligne(texte, quoi) {
+  if (!texte) return manquant(quoi);
+  return surlignerVers(surligner(texte, requete));
+}
 
-/** Identifiant de question -> élément <li role="option"> correspondant. */
-const optionsParId = new Map();
+/**
+ * Normalise une entrée de faq.json en une vue d'affichage.
+ *
+ * Rien n'est inventé : un champ absent, vide ou d'un type inattendu devient
+ * `null`, et l'affichage dira « à renseigner ». L'identifiant de repli ne
+ * sert qu'à l'index et au pliage — il n'est jamais montré.
+ *
+ * @param {*} entree
+ * @param {number} rang
+ * @returns {object|null}
+ */
+function vueDeQuestion(entree, rang) {
+  if (!entree || typeof entree !== 'object') return null;
 
-/** Questions posées localement, les plus récentes en tête. */
+  const pole = texteNet(entree.pole);
+  const motsCles = Array.isArray(entree.motsCles)
+    ? entree.motsCles.map(texteNet).filter(Boolean)
+    : [];
+
+  return {
+    id: texteNet(entree.id) || ('faq-' + rang),
+    question: texteNet(entree.question),
+    reponse: texteNet(entree.reponse),
+    categorie: texteNet(entree.categorie),
+    // Un code de pôle inconnu n'est pas corrigé en silence : il est traité
+    // comme absent, et la question reste visible au niveau service.
+    pole: (pole && CODES_POLE.includes(pole)) ? pole : null,
+    motsCles: motsCles
+  };
+}
+
+/** Libellé lisible d'un code de pôle. */
+function libellePole(code) {
+  const pole = POLES.find((item) => item.cle === code);
+  return pole ? pole.libelle : code;
+}
+
+/* -------------------------------------------------------------------------
+   4. État de la page
+   ------------------------------------------------------------------------- */
+
+/** Toutes les questions, en vues d'affichage. */
+let questions = [];
+
+/** Index de recherche, construit une fois au chargement. */
+let index = null;
+
+/** Pôle actif — toujours l'un des quatre codes admis. */
+let poleActif = POLE_SERVICE;
+
+/** Requête en cours, telle que saisie. */
+let requete = '';
+
+/** Catégories retenues. Vide = aucune restriction. */
+const categoriesActives = new Set();
+
+/** Identifiant de la question dépliée, ou null. Une seule à la fois. */
+let idOuvert = null;
+
+/** Résultats du dernier calcul : [{ doc, score, champsTouches }]. */
+let resultats = [];
+
+/** Compteurs croisés de la dernière passe. */
+let comptesPole = new Map();
+let compteTousPoles = 0;
+let comptesCategorie = new Map();
+
+/** Catégories déclarées dans le fichier, triées, sans doublon. */
+let categoriesConnues = [];
+
+/** Questions posées et conservées dans ce navigateur. */
 let enAttente = [];
 
-/** Empreinte du volet de réponse déjà peint (sélection + surlignage). */
-let detailPeint = null;
+/** Nœuds durables, reconstruits à chaque rendu. */
+const refs = {
+  sousNav: null,
+  appel: null,
+  attente: null,
+  attenteListe: null,
+  champ: null,
+  compte: null,
+  effacer: null,
+  liste: null,
+  vide: null,
+  facettesPole: null,
+  facettesCategorie: null
+};
 
-/** Identifiant de la question déjà peinte, pour ne pas rejouer le fondu. */
-let detailIdPeint = null;
+/** Identifiant de question -> { item, bouton, panneau }. */
+const noeudsParId = new Map();
 
 /* -------------------------------------------------------------------------
-   3. Démarrage
+   5. Recherche et compteurs croisés
    ------------------------------------------------------------------------- */
 
-/*
-   Le démarrage est une FONCTION, appelée à la toute fin du module et non
-   ici : les `const` déclarés plus bas (ecrireUrl, annoncerResultats,
-   FORMAT_DATE) ne sont initialisés qu'à leur ligne de déclaration, et
-   rendreEnAttente() les atteint dès le premier affichage. Exécuter le
-   démarrage en tête du fichier les prendrait dans leur zone morte
-   temporelle et casserait la page au chargement.
-*/
+/** La question appartient-elle au périmètre actif ? */
+function correspondPole(vue) {
+  if (poleActif === POLE_SERVICE) return true;
+  return vue.pole === poleActif;
+}
 
-/** Amorce la page : thème, navigation, questions locales, écouteurs. */
-function demarrerPage() {
-  initTheme();
+/** La question est-elle dans l'une des catégories retenues ? */
+function correspondCategorie(vue) {
+  if (categoriesActives.size === 0) return true;
+  return vue.categorie !== null && categoriesActives.has(vue.categorie);
+}
 
-  refs.zone = document.getElementById('zone-faq');
-  refs.sousNav = document.getElementById('faq-sous-nav');
-  refs.attenteSection = document.getElementById('faq-attente');
-  refs.attenteListe = document.getElementById('faq-attente-liste');
-
-  /* Le pôle est connu avant même les données : la navigation principale et
-     la sous-navigation sont donc justes dès la première image, y compris
-     si faq.json est introuvable. */
-  etat.pole = poleDepuisEtat(etatUrl.lire());
-  majNavigation();
-
-  /* Les questions locales sont indépendantes de faq.json : elles
-     s'affichent même si le fichier de données est introuvable ou
-     invalide. */
-  enAttente = lireEnAttente();
-  rendreEnAttente();
-
-  brancherDelegations();
-  brancherRaccourciGlobal();
-
-  /* Enregistré UNE seule fois, hors du rendu : un clic sur « Réessayer »
-     relance le rendu, il ne doit pas empiler les écouteurs.
-     `replaceState` ne déclenche pas hashchange, donc seules les vraies
-     navigations — retour arrière, lien collé — arrivent ici. */
-  etatUrl.ecouter(surNavigationHash);
-
-  demarrer();
+/** Incrémente une entrée de compteur. */
+function incrementer(carte, cle) {
+  if (!cle) return;
+  carte.set(cle, (carte.get(cle) || 0) + 1);
 }
 
 /**
- * Lance le cycle chargement -> succès | vide | erreur sur la zone de page.
- * avecEtat() ne rejette jamais : quelle que soit l'issue, la page reste
- * navigable et l'erreur est lisible et actionnable.
+ * Recalcule les résultats ET les deux jeux de compteurs.
+ *
+ * Le compteur d'une facette se calcule en ignorant CETTE facette et en
+ * appliquant toutes les autres : c'est ce qui rend les nombres justes quand
+ * on combine pôle et catégorie. Deux passes suffisent, et la seconde n'est
+ * pas refaite pour obtenir les résultats affichés — ils s'en déduisent par
+ * un simple filtre, ce qui garantit qu'affichage et compteurs ne peuvent
+ * pas diverger.
  */
-function demarrer() {
-  avecEtat(
-    refs.zone,
+function calculer() {
+  if (!index) {
+    resultats = [];
+    return;
+  }
 
-    /* Fabrique de promesse, et non promesse : le bouton « Réessayer » de
-       l'état d'erreur peut ainsi relancer un vrai chargement. */
-    () => chargerDonnees('faq').then((brut) => verifierForme(brut, {
-      questions: {
-        type: 'tableau',
-        elements: { id: 'chaine', question: 'chaine', reponse: 'chaine' }
-      }
-    }, 'faq.json')),
+  // Toutes catégories retenues appliquées, pôle ignoré : base des compteurs
+  // de pôle, et source des résultats affichés.
+  const baseDesPoles = rechercher(index, requete, { filtre: correspondCategorie });
+  // Pôle actif appliqué, catégories ignorées : base des compteurs de
+  // catégorie.
+  const baseDesCategories = rechercher(index, requete, { filtre: correspondPole });
 
-    rendre,
+  resultats = baseDesPoles.filter((resultat) => correspondPole(resultat.doc));
 
-    {
-      squelette: squeletteDeuxVolets,
-      texteChargement: 'Chargement des questions fréquentes…',
-      titreErreur: 'Base de connaissances indisponible',
-      titreVide: 'Aucune question publiée',
-      texteVide: 'La base de connaissances ne contient encore aucune '
-        + 'question. Vous pouvez néanmoins poser la vôtre : elle sera '
-        + 'conservée dans ce navigateur.',
-      estVide: (brut) => !brut || !Array.isArray(brut.questions)
-        || brut.questions.filter(estQuestion).length === 0
-    }
-  );
+  comptesPole = new Map();
+  compteTousPoles = baseDesPoles.length;
+  for (const resultat of baseDesPoles) incrementer(comptesPole, resultat.doc.pole);
+
+  comptesCategorie = new Map();
+  for (const resultat of baseDesCategories) {
+    incrementer(comptesCategorie, resultat.doc.categorie);
+  }
+}
+
+/** Une facette est-elle active, quelle qu'elle soit ? */
+function filtresActifs() {
+  return requete.trim() !== ''
+    || poleActif !== POLE_SERVICE
+    || categoriesActives.size > 0;
 }
 
 /* -------------------------------------------------------------------------
-   4. État de chargement
+   6. Puces de facette
    ------------------------------------------------------------------------- */
 
 /**
- * Gabarit gris reprenant la disposition en deux volets : la page ne saute
- * pas au moment où les vraies données arrivent. Purement décoratif, donc
- * entièrement masqué aux lecteurs d'écran — avecEtat() ajoute par ailleurs
- * un texte de statut annoncé, et aria-busy sur le conteneur.
+ * Une puce de facette : libellé + compteur croisé.
+ *
+ * L'état est porté par `aria-pressed`, jamais par une classe : information
+ * visuelle et information accessible ont une source unique. Une puce dont
+ * le compteur vaut zéro reste lisible mais devient inactionnable — sauf si
+ * elle est elle-même retenue, sans quoi on ne pourrait plus la relâcher.
+ *
+ * @param {object} options
+ * @returns {Element}
+ */
+function puceFacette(options) {
+  const actif = options.actif === true;
+  const compte = typeof options.compte === 'number' ? options.compte : 0;
+
+  return el('li', null,
+    el('button', {
+      type: 'button',
+      class: ['facette', 'facette--compacte'],
+      ariaPressed: actif ? 'true' : 'false',
+      disabled: (!actif && compte === 0) ? true : null,
+      dataset: options.dataset || null,
+      onClick: options.onClick
+    },
+    options.point || null,
+    el('span', null, options.libelle),
+    el('span', { class: 'facette__compteur' }, String(compte))));
+}
+
+/** Point de couleur d'un pôle. Décoratif : le code suit, en toutes lettres. */
+function pointPole(code) {
+  return el('span', {
+    class: 'pole-point',
+    dataset: { pole: code },
+    ariaHidden: 'true'
+  });
+}
+
+/** Reconstruit les puces de pôle. */
+function rendreFacettesPole() {
+  if (!refs.facettesPole) return;
+
+  monter(refs.facettesPole, POLES.map((pole) => {
+    const tous = pole.cle === POLE_SERVICE;
+    return puceFacette({
+      libelle: tous ? pole.libelle : pole.cle,
+      compte: tous ? compteTousPoles : (comptesPole.get(pole.cle) || 0),
+      actif: poleActif === pole.cle,
+      point: tous ? null : pointPole(pole.cle),
+      onClick: () => choisirPole(pole.cle)
+    });
+  }));
+}
+
+/** Reconstruit les puces de catégorie. */
+function rendreFacettesCategorie() {
+  if (!refs.facettesCategorie) return;
+
+  if (categoriesConnues.length === 0) {
+    monter(refs.facettesCategorie,
+      el('li', null,
+        el('p', { class: 'faq__compte sans-marge' },
+          'Aucune catégorie n’est renseignée dans le fichier.')));
+    return;
+  }
+
+  monter(refs.facettesCategorie, categoriesConnues.map((categorie) => puceFacette({
+    libelle: categorie,
+    compte: comptesCategorie.get(categorie) || 0,
+    actif: categoriesActives.has(categorie),
+    onClick: () => basculerCategorie(categorie)
+  })));
+}
+
+/* -------------------------------------------------------------------------
+   7. Actions de filtrage
+   ------------------------------------------------------------------------- */
+
+/**
+ * Change le périmètre. Le focus reste sur la puce cliquée : seules les
+ * puces sont reconstruites, et le navigateur retrouve la sienne à l'index
+ * équivalent — d'où la reconstruction complète des deux groupes, qui garde
+ * l'ordre stable.
+ *
+ * @param {string} code
+ */
+function choisirPole(code) {
+  const cible = CODES_POLE.includes(code) ? code : POLE_SERVICE;
+  if (cible === poleActif) return;
+  poleActif = cible;
+  rafraichir({ annonce: true, focusFacette: 'pole', valeurFacette: cible });
+  initNav(PAGE_DE_POLE[poleActif] || 'index.html');
+  rendreSousNav();
+}
+
+/**
+ * Retient ou relâche une catégorie. Les catégories se cumulent : une
+ * question retenue par l'une d'elles suffit.
+ * @param {string} categorie
+ */
+function basculerCategorie(categorie) {
+  if (categoriesActives.has(categorie)) categoriesActives.delete(categorie);
+  else categoriesActives.add(categorie);
+  rafraichir({ annonce: true, focusFacette: 'categorie', valeurFacette: categorie });
+}
+
+/** Remet la page à zéro : requête, pôle, catégories. */
+function toutEffacer() {
+  requete = '';
+  poleActif = POLE_SERVICE;
+  categoriesActives.clear();
+  if (refs.champ) refs.champ.value = '';
+  rafraichir({ annonce: true });
+  initNav(PAGE_DE_POLE[poleActif] || 'index.html');
+  rendreSousNav();
+  if (refs.champ) refs.champ.focus();
+}
+
+/* -------------------------------------------------------------------------
+   8. L'accordéon
+   ------------------------------------------------------------------------- */
+
+/** Chevron d'état. Redondant avec aria-expanded, donc masqué aux lecteurs. */
+function chevron() {
+  return svg('svg', {
+    class: 'faq__chevron',
+    viewBox: '0 0 16 16',
+    'aria-hidden': 'true',
+    focusable: 'false'
+  },
+  svg('path', {
+    d: 'M6 3.5 10.5 8 6 12.5',
+    fill: 'none',
+    stroke: 'currentColor',
+    'stroke-width': '1.8',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round'
+  }));
+}
+
+/** Pastille étiquetée du pôle d'une question, ou la mention. */
+function pastillePole(code) {
+  if (!code) return manquant('Pôle');
+  return el('span', { class: 'pole-pastille', dataset: { pole: code } },
+    el('span', { class: 'pole-point', ariaHidden: 'true' }),
+    el('span', null, code));
+}
+
+/**
+ * Une question et sa réponse, pliées.
+ *
+ * L'intitulé est un vrai <button> dans un <h3> : la structure de titres
+ * reste parcourable, et Entrée comme Espace fonctionnent sans code. Le
+ * panneau est relié par aria-controls / aria-labelledby, et masqué par
+ * l'attribut `hidden` — pas par une classe, pour que les technologies
+ * d'assistance le sachent aussi.
+ *
+ * @param {object} vue
+ * @returns {Element}
+ */
+function itemQuestion(vue) {
+  const idBouton = 'faq-bouton-' + vue.id;
+  const idPanneau = 'faq-panneau-' + vue.id;
+  const ouvert = idOuvert === vue.id;
+
+  const bouton = el('button', {
+    type: 'button',
+    class: 'faq__bascule',
+    id: idBouton,
+    ariaExpanded: ouvert ? 'true' : 'false',
+    ariaControls: idPanneau,
+    dataset: { bascule: vue.id }
+  },
+  el('span', { class: 'faq__enonce' }, texteSurligne(vue.question, 'Question')),
+  chevron());
+
+  const motsCles = vue.motsCles.length
+    ? el('ul', { class: 'faq__mots', ariaLabel: 'Mots-clés' },
+        vue.motsCles.map((mot) => el('li', null,
+          el('span', { class: 'badge badge--neutre badge--contour' },
+            surlignerVers(surligner(mot, requete))))))
+    : null;
+
+  const panneau = el('div', {
+    class: 'faq__reponse',
+    id: idPanneau,
+    role: 'region',
+    ariaLabelledby: idBouton,
+    hidden: ouvert ? null : true
+  },
+  el('p', { class: 'faq__texte' }, texteSurligne(vue.reponse, 'Réponse')),
+  el('p', { class: 'faq__meta' },
+    pastillePole(vue.pole),
+    vue.categorie ? el('span', null, vue.categorie) : manquant('Catégorie'),
+    motsCles));
+
+  const item = el('li', {
+    class: 'faq__item',
+    dataset: { ouvert: ouvert ? 'oui' : 'non' }
+  }, el('h3', { class: 'faq__intitule' }, bouton), panneau);
+
+  noeudsParId.set(vue.id, { item: item, bouton: bouton, panneau: panneau });
+  return item;
+}
+
+/**
+ * Déplie une question et replie l'autre. Le DOM est modifié sur place :
+ * la liste n'est PAS reconstruite, donc le focus ne bouge pas et la page
+ * ne saute pas sous le doigt.
+ *
+ * @param {string} id
+ */
+function basculerQuestion(id) {
+  idOuvert = (idOuvert === id) ? null : id;
+
+  for (const [cle, noeuds] of noeudsParId) {
+    const ouvert = cle === idOuvert;
+    noeuds.bouton.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+    noeuds.panneau.hidden = !ouvert;
+    noeuds.item.dataset.ouvert = ouvert ? 'oui' : 'non';
+  }
+
+  ecrireUrl();
+}
+
+/* -------------------------------------------------------------------------
+   9. Absence de résultat : suggestion, puis appel aux experts
+   ------------------------------------------------------------------------- */
+
+/**
+ * Bloc affiché quand rien ne correspond.
+ *
+ * suggerer() n'est appelé qu'ici, c'est-à-dire uniquement lorsque la
+ * recherche a réellement donné zéro résultat : c'est son contrat d'appel.
+ *
+ * @returns {Element}
+ */
+function blocAucunResultat() {
+  const saisie = requete.trim();
+  const suggestion = (index && saisie) ? suggerer(index, saisie) : null;
+
+  const actions = [];
+
+  if (suggestion) {
+    actions.push(el('button', {
+      type: 'button',
+      class: 'bouton bouton--secondaire',
+      onClick: () => {
+        requete = suggestion;
+        if (refs.champ) refs.champ.value = suggestion;
+        rafraichir({ annonce: true });
+        if (refs.champ) refs.champ.focus();
+      }
+    }, 'Rechercher « ' + suggestion + ' »'));
+  }
+
+  actions.push(el('button', {
+    type: 'button',
+    class: 'bouton bouton--principal',
+    onClick: (evt) => ouvrirDemande(saisie, evt.currentTarget)
+  }, 'Poser la question aux experts'));
+
+  if (filtresActifs()) {
+    actions.push(el('button', {
+      type: 'button',
+      class: 'bouton bouton--discret',
+      onClick: () => toutEffacer()
+    }, 'Effacer les filtres'));
+  }
+
+  return el('div', { class: 'etat-vide etat-vide--encadre' },
+    el('span', { class: 'etat-vide__illustration', ariaHidden: 'true' }, '∅'),
+    el('h3', { class: 'etat-vide__titre' }, 'Aucune question ne correspond'),
+    el('p', { class: 'etat-vide__texte mesure' },
+      suggestion
+        ? 'Rien ne correspond à cette recherche dans le périmètre affiché. '
+          + 'Vouliez-vous dire « ' + suggestion + ' » ?'
+        : 'Rien ne correspond à cette recherche dans le périmètre affiché. '
+          + 'Élargissez les filtres, ou posez la question aux experts : elle '
+          + 'sera conservée dans ce navigateur.'),
+    el('div', { class: 'etat-vide__actions' }, actions));
+}
+
+/* -------------------------------------------------------------------------
+   10. Rendu : ce qui change à chaque frappe
+   ------------------------------------------------------------------------- */
+
+/** Phrase de décompte, toujours exacte, jamais arrondie. */
+function phraseCompte() {
+  const total = questions.length;
+  const n = resultats.length;
+
+  if (!filtresActifs()) {
+    return n === 1
+      ? '1 question dans la base de connaissances.'
+      : n + ' questions dans la base de connaissances.';
+  }
+  return (n === 0 ? 'Aucune question' : (n === 1 ? '1 question' : n + ' questions'))
+    + ' sur ' + total
+    + ' — périmètre ' + libellePole(poleActif)
+    + (categoriesActives.size
+      ? ', catégories : ' + Array.from(categoriesActives).join(', ')
+      : '')
+    + '.';
+}
+
+/**
+ * Recalcule, puis repeint ce qui dépend de l'état : puces, décompte, liste.
+ * Le reste de la page — barre de recherche, appel aux experts, questions en
+ * attente — est durable et n'est jamais reconstruit.
+ *
+ * @param {object} [options]
+ *        annonce        annoncer le nombre de résultats aux lecteurs d'écran
+ *        focusFacette   'pole' | 'categorie' : refocaliser la puce agie
+ *        valeurFacette  valeur de la puce à refocaliser
+ */
+function rafraichir(options) {
+  const reglages = options || {};
+
+  calculer();
+
+  // La question dépliée n'a plus lieu d'être si elle a quitté la liste.
+  if (idOuvert && !resultats.some((resultat) => resultat.doc.id === idOuvert)) {
+    idOuvert = null;
+  }
+
+  rendreFacettesPole();
+  rendreFacettesCategorie();
+
+  if (refs.compte) refs.compte.textContent = phraseCompte();
+  if (refs.effacer) refs.effacer.hidden = !filtresActifs();
+
+  noeudsParId.clear();
+  if (refs.liste) {
+    monter(refs.liste, resultats.map((resultat) => itemQuestion(resultat.doc)));
+    refs.liste.hidden = resultats.length === 0;
+  }
+  if (refs.vide) {
+    monter(refs.vide, resultats.length === 0 ? blocAucunResultat() : null);
+    refs.vide.hidden = resultats.length !== 0;
+  }
+
+  ecrireUrl();
+
+  if (reglages.annonce) annoncer(phraseCompte());
+
+  // Une puce reconstruite perd le focus : on le lui rend, pour que le
+  // parcours au clavier ne reparte pas du haut de la page à chaque clic.
+  if (reglages.focusFacette) rendreFocusFacette(reglages);
+}
+
+/**
+ * Replace le focus sur la puce qui vient d'être agie.
+ * @param {object} reglages
+ */
+function rendreFocusFacette(reglages) {
+  const hote = reglages.focusFacette === 'pole'
+    ? refs.facettesPole
+    : refs.facettesCategorie;
+  if (!hote) return;
+
+  const boutons = Array.from(hote.querySelectorAll('button'));
+  const cible = reglages.focusFacette === 'pole'
+    ? boutons[CODES_POLE.indexOf(reglages.valeurFacette)]
+    : boutons[categoriesConnues.indexOf(reglages.valeurFacette)];
+
+  if (cible && typeof cible.focus === 'function' && !cible.disabled) cible.focus();
+}
+
+/* -------------------------------------------------------------------------
+   11. Construction de la colonne de lecture
+   ------------------------------------------------------------------------- */
+
+/** La barre de recherche, seule commande du haut de page. */
+function barreRecherche() {
+  const relancer = debounce(() => {
+    requete = refs.champ ? refs.champ.value : '';
+    rafraichir({ annonce: true });
+  }, DELAI_FRAPPE);
+
+  const champ = el('input', {
+    class: 'recherche__champ',
+    type: 'search',
+    id: 'faq-champ',
+    name: 'q',
+    placeholder: 'Rechercher une question, un mot-clé…',
+    autocomplete: 'off',
+    spellcheck: 'false',
+    value: requete,
+    ariaLabel: 'Rechercher dans la base de connaissances',
+    ariaDescribedby: 'faq-compte',
+    onInput: relancer,
+    onKeyDown: (evt) => {
+      if (evt.key !== 'Escape') return;
+      if (champ.value === '') return;
+      evt.preventDefault();
+      champ.value = '';
+      requete = '';
+      rafraichir({ annonce: true });
+    }
+  });
+  refs.champ = champ;
+
+  return el('div', { class: 'faq__barre' },
+    el('div', { class: 'recherche recherche--proeminente' },
+      el('span', { class: 'recherche__icone', ariaHidden: 'true' }, '⌕'),
+      champ,
+      el('button', {
+        type: 'button',
+        class: 'recherche__effacer bouton bouton--icone bouton--compact',
+        ariaLabel: 'Effacer la recherche',
+        onClick: () => {
+          champ.value = '';
+          requete = '';
+          rafraichir({ annonce: true });
+          champ.focus();
+        }
+      }, el('span', { ariaHidden: 'true' }, '×')),
+      el('kbd', { class: 'recherche__raccourci', ariaHidden: 'true' }, '/')));
+}
+
+/** Les deux groupes de facettes, chacun annoncé par son intitulé. */
+function blocFacettes() {
+  const idPole = 'faq-legende-pole';
+  const idCategorie = 'faq-legende-categorie';
+
+  refs.facettesPole = el('ul', { class: 'facettes', ariaLabelledby: idPole });
+  refs.facettesCategorie = el('ul', { class: 'facettes', ariaLabelledby: idCategorie });
+
+  return el('div', { class: 'faq__filtres' },
+    el('div', { class: 'faq__groupe' },
+      el('p', { class: 'faq__legende', id: idPole }, 'Pôle'),
+      refs.facettesPole),
+    el('div', { class: 'faq__groupe' },
+      el('p', { class: 'faq__legende', id: idCategorie }, 'Catégorie'),
+      refs.facettesCategorie));
+}
+
+/** La ligne de décompte et le bouton de remise à zéro. */
+function blocResume() {
+  refs.compte = el('p', { class: 'faq__compte', id: 'faq-compte' });
+  refs.effacer = el('button', {
+    type: 'button',
+    class: 'bouton bouton--discret bouton--compact',
+    hidden: true,
+    onClick: () => toutEffacer()
+  }, 'Effacer les filtres');
+
+  return el('div', { class: 'faq__resume' }, refs.compte, refs.effacer);
+}
+
+/**
+ * Construit la colonne complète dans #zone-faq, puis pose les écouteurs
+ * délégués — un seul pour toute la liste, jamais un par question.
  *
  * @param {Element} conteneur
  */
-function squeletteDeuxVolets(conteneur) {
-  const colonne = [];
-  for (let i = 0; i < SQUELETTES_LISTE; i += 1) {
-    colonne.push(
-      el('div', { class: 'carte carte--compacte squelette-groupe' },
-        el('span', { class: 'squelette squelette--ligne squelette--titre' }),
-        el('span', { class: 'squelette squelette--ligne squelette--moyen' })
-      )
-    );
-  }
+function construireColonne(conteneur) {
+  refs.liste = el('ul', { class: 'faq__liste' });
+  refs.vide = el('div', { hidden: true });
 
   monter(conteneur,
-    el('div', { class: 'faq', 'aria-hidden': 'true' },
-      el('div', { class: 'faq__volet pile pile--serree' }, colonne),
-      el('div', { class: 'carte squelette-groupe' },
-        el('span', { class: 'squelette squelette--ligne squelette--court' }),
-        el('span', { class: 'squelette squelette--ligne squelette--titre' }),
-        el('span', { class: 'squelette squelette--bloc' })
-      )
-    )
-  );
+    barreRecherche(),
+    blocFacettes(),
+    blocResume(),
+    refs.liste,
+    refs.vide);
+
+  deleguer(refs.liste, '[data-bascule]', 'click', (evt, cible) => {
+    basculerQuestion(cible.dataset.bascule);
+  });
+
+  deleguer(refs.liste, '[data-bascule]', 'keydown', (evt, cible) => {
+    naviguerListe(evt, cible);
+  });
 }
 
 /* -------------------------------------------------------------------------
-   5. Rendu principal
+   12. Clavier
    ------------------------------------------------------------------------- */
 
 /**
- * Construit le corpus, l'index, puis la structure durable de la page :
- * barre de recherche, facettes de catégorie, et les deux volets.
- *
- * @param {object} donnees    contenu de faq.json
- * @param {Element} conteneur zone de page, déjà vidée par avecEtat()
- */
-function rendre(donnees, conteneur) {
-  corpus.questions = donnees.questions.filter(estQuestion);
-
-  /* Index construit une fois pour toutes : la frappe ne fait plus que le
-     consulter (SPEC §5). */
-  corpus.index = creerIndex(corpus.questions, CHAMPS_INDEXES);
-
-  /* Catégories réellement présentes, triées de façon déterministe : jamais
-     l'ordre d'apparition dans le fichier. */
-  corpus.categories = Array.from(new Set(
-    corpus.questions
-      .map((question) => texteSimple(question.categorie))
-      .filter((valeur) => valeur !== '')
-  )).sort((a, b) => a.localeCompare(b, 'fr'));
-
-  /* L'état vient de l'URL : un lien collé restitue requête, filtres et
-     question sélectionnée. */
-  lireUrl();
-  majNavigation();
-
-  optionsParId.clear();
-  refs.poles.clear();
-  refs.facettes.clear();
-  detailPeint = null;
-  detailIdPeint = null;
-
-  monter(conteneur,
-    /* Le sélecteur de pôle est en tête : c'est lui qui fixe le périmètre
-       dans lequel la recherche et les catégories travaillent ensuite. */
-    construireSelecteurPoles(),
-    construireBarre(),
-    corpus.categories.length > 0 ? construireFacettes() : null,
-    construireMessages(),
-    construireAgencement()
-  );
-
-  appliquer();
-}
-
-/**
- * Les quatre puces de facette « Tout le service / ETIIA / ETIIE / ETIII »,
- * chacune avec le nombre de questions correspondantes.
- *
- * Ce sont des <button aria-pressed>, jamais des <div> : l'état est donc
- * annoncé aux lecteurs d'écran, et la puce est actionnable au clavier
- * comme à la souris. Aucune puce n'est jamais désactivée : un pôle à zéro
- * question reste sélectionnable et affiche alors son état vide, qui sait
- * proposer le retour à tout le service.
- *
- * @returns {HTMLElement}
- */
-function construireSelecteurPoles() {
-  const puces = POLES.map((pole) => {
-    const compteur = el('span', { class: 'facette__compteur' }, '0');
-
-    const bouton = el('button', {
-      class: 'facette',
-      type: 'button',
-      'aria-pressed': 'false',
-      dataset: { pole: pole.cle }
-    },
-      el('span', { class: 'facette__marque', 'aria-hidden': 'true' }, '✓'),
-      /* Point teinté DÉCORATIF : le libellé qui suit porte seul le sens. */
-      el('span', { class: 'pole-point', 'aria-hidden': 'true' }),
-      el('span', null, pole.libelle),
-      compteur
-    );
-
-    refs.poles.set(pole.cle, { bouton: bouton, compteur: compteur });
-    return el('li', null, bouton);
-  });
-
-  return el('section', {
-    class: 'pile pile--serree sans-impression',
-    'aria-labelledby': 'faq-titre-poles'
-  },
-    el('h2', { class: 'faq__titre-section', id: 'faq-titre-poles' },
-      'Périmètre affiché'),
-    el('ul', { class: 'facettes' }, puces)
-  );
-}
-
-/**
- * Barre de recherche : champ, compteur de résultats et accès permanent à
- * « Poser la question ».
- *
- * @returns {HTMLElement}
- */
-function construireBarre() {
-  const surFrappe = debounce(() => {
-    /* Changer la requête change le classement : la sélection courante
-       n'est plus forcément pertinente, appliquer() la réévalue. */
-    appliquer();
-  }, DELAI_FRAPPE);
-
-  refs.champ = el('input', {
-    class: 'recherche__champ',
-    id: 'faq-recherche',
-    type: 'search',
-    /* `placeholder` est requis par la règle :not(:placeholder-shown) de
-       components.css, qui fait apparaître le bouton d'effacement. */
-    placeholder: 'Corrosion, validation, tolérance…',
-    autocomplete: 'off',
-    autocapitalize: 'none',
-    spellcheck: 'false',
-    enterkeyhint: 'search',
-    value: etat.requete,
-    'aria-describedby': 'faq-recherche-aide',
-    onInput: (evt) => {
-      etat.requete = texteSimple(evt.target.value);
-      surFrappe();
-    },
-    onKeyDown: surClavierChamp
-  });
-
-  /* Compteur purement visuel : l'annonce aux lecteurs d'écran passe par la
-     région unique d'annoncer(), différée — sans quoi chaque frappe serait
-     énoncée deux fois. */
-  refs.compteur = el('p', {
-    class: 'texte-sm texte-doux sans-marge',
-    id: 'faq-compteur'
-  });
-
-  return el('div', { class: 'faq__barre pile pile--serree sans-impression' },
-
-    el('label', { class: 'visuellement-cache', for: 'faq-recherche' },
-      'Rechercher une question dans la base de connaissances'),
-
-    el('div', { class: 'recherche recherche--proeminente' },
-      el('span', { class: 'recherche__icone', 'aria-hidden': 'true' }, '⌕'),
-      refs.champ,
-      el('kbd', { class: 'recherche__raccourci', 'aria-hidden': 'true' }, '/'),
-      el('button', {
-        class: 'bouton bouton--discret bouton--icone bouton--rond recherche__effacer',
-        type: 'button',
-        'aria-label': 'Effacer la recherche',
-        dataset: { action: 'effacer-recherche' }
-      }, el('span', { 'aria-hidden': 'true' }, '×'))
-    ),
-
-    el('p', { class: 'champ__aide', id: 'faq-recherche-aide' },
-      'La recherche porte sur l’intitulé, les mots-clés, la catégorie et '
-      + 'le texte de la réponse, et tolère les fautes de frappe.'),
-
-    el('div', { class: 'rangee rangee--serree rangee--entre' },
-      refs.compteur,
-      el('button', {
-        class: 'bouton bouton--secondaire bouton--compact',
-        type: 'button',
-        dataset: { action: 'poser' }
-      }, 'Poser la question')
-    )
-  );
-}
-
-/**
- * Puces de facette par catégorie. Ce sont des <button aria-pressed>, dont
- * l'état est lu sur l'attribut ARIA : l'information visuelle et
- * l'information accessible ont une source unique.
- *
- * @returns {HTMLElement}
- */
-function construireFacettes() {
-  const puces = corpus.categories.map((categorie) => {
-    const compteur = el('span', { class: 'facette__compteur' }, '0');
-
-    const bouton = el('button', {
-      class: 'facette',
-      type: 'button',
-      'aria-pressed': 'false',
-      dataset: { categorie: categorie }
-    },
-      el('span', { class: 'facette__marque', 'aria-hidden': 'true' }, '✓'),
-      el('span', null, categorie),
-      compteur
-    );
-
-    refs.facettes.set(categorie, { bouton: bouton, compteur: compteur });
-    return el('li', null, bouton);
-  });
-
-  return el('div', {
-    class: 'pile pile--serree',
-    role: 'group',
-    'aria-labelledby': 'faq-titre-categories'
-  },
-    el('h2', { class: 'faq__titre-section', id: 'faq-titre-categories' },
-      'Catégories'),
-    el('ul', { class: 'facettes' }, puces)
-  );
-}
-
-/**
- * Conteneur des messages d'absence de résultat. Vide et masqué tant que la
- * recherche renvoie quelque chose.
- *
- * @returns {HTMLElement}
- */
-function construireMessages() {
-  refs.messages = el('div', { id: 'faq-messages', hidden: true });
-  return refs.messages;
-}
-
-/**
- * Les deux volets : liste d'options à gauche, réponse à droite.
- *
- * @returns {HTMLElement}
- */
-function construireAgencement() {
-  refs.liste = el('ul', {
-    class: 'faq__options',
-    role: 'listbox',
-    id: 'faq-liste',
-    'aria-labelledby': 'faq-titre-liste',
-    /* Un seul écouteur pour toute la liste : l'événement remonte depuis
-       l'option qui a le focus. */
-    onKeyDown: surClavierListe
-  });
-
-  /* Région nommée, focalisable par programme seulement : la touche Entrée
-     y emmène depuis la liste, mais elle reste hors de l'ordre de
-     tabulation. Volontairement PAS de aria-live : le contenu se réécrit à
-     chaque frappe (le surlignage suit la requête), et une région vivante
-     ferait relire la réponse entière à chaque fois. Le parcours de la
-     listbox énonce déjà l'intitulé de chaque option. */
-  refs.detail = el('section', {
-    class: 'faq__volet faq__detail carte carte--ample',
-    id: 'faq-detail',
-    tabindex: '-1',
-    'aria-label': 'Réponse à la question sélectionnée'
-  });
-
-  refs.agencement = el('div', { class: 'faq' },
-    el('div', { class: 'faq__volet faq__liste pile pile--serree' },
-      el('h2', { class: 'faq__titre-section', id: 'faq-titre-liste' },
-        'Questions'),
-      refs.liste
-    ),
-    refs.detail
-  );
-
-  return refs.agencement;
-}
-
-/* -------------------------------------------------------------------------
-   6. Traduction de l'état en affichage
-   ------------------------------------------------------------------------- */
-
-/**
- * Recalcule tout à partir de `etat` : classement, compteurs de facettes,
- * liste, réponse, messages, URL et annonce. C'est le seul point d'entrée
- * du rendu incrémental — aucun autre chemin ne peint l'interface.
- */
-function appliquer() {
-  if (!corpus.index) return;
-
-  /* Classement complet, AVANT tout filtrage : c'est ce résultat qui sert
-     de base aux deux séries de compteurs. */
-  const base = rechercher(corpus.index, etat.requete);
-
-  /* Chaque compteur ignore la dimension qu'il chiffre, mais tient compte
-     de l'autre : les puces de pôle se recalculent selon les catégories
-     actives, les puces de catégorie selon le pôle actif. C'est ce qui fait
-     que les deux filtres se combinent honnêtement — un compteur affiché
-     est toujours le nombre de questions que la puce donnerait réellement
-     si on la pressait. */
-  majCompteursPoles(base.filter((resultat) => correspondCategories(resultat.doc)));
-  majCompteursFacettes(base.filter((resultat) => correspondPole(resultat.doc)));
-
-  etat.affichees = base
-    .filter((resultat) => correspondPole(resultat.doc)
-      && correspondCategories(resultat.doc))
-    .map((resultat) => resultat.doc);
-
-  /* La sélection survit tant qu'elle reste affichée ; sinon on retombe sur
-     la question la mieux classée. */
-  if (!etat.affichees.some((question) => question.id === etat.idSelection)) {
-    etat.idSelection = etat.affichees.length ? etat.affichees[0].id : null;
-  }
-
-  rendreListe();
-  rendreDetail();
-  rendreEtatRecherche();
-
-  ecrireUrl();
-  annoncerResultats();
-}
-
-/**
- * Compteurs des quatre puces de pôle : nombre de questions que chacune
- * donnerait si on la pressait, les catégories actives restant en place.
- * « Tout le service » montre tout ; un pôle ne montre que ses entrées.
- *
- * @param {Array<{doc:object}>} base résultats classés, filtrés par
- *        catégorie mais PAS par pôle
- */
-function majCompteursPoles(base) {
-  const comptes = new Map();
-  for (const resultat of base) {
-    const code = poleDe(resultat.doc);
-    comptes.set(code, (comptes.get(code) || 0) + 1);
-  }
-
-  for (const [code, puce] of refs.poles) {
-    const nombre = code === POLE_SERVICE ? base.length : (comptes.get(code) || 0);
-    const actif = code === etat.pole;
-
-    if (puce.compteur.textContent !== String(nombre)) {
-      puce.compteur.textContent = String(nombre);
-    }
-
-    puce.bouton.setAttribute('aria-pressed', actif ? 'true' : 'false');
-    puce.bouton.setAttribute('aria-label',
-      libellePole(code) + ', ' + nombre + ' '
-      + pluriel(nombre, 'question', 'questions'));
-  }
-}
-
-/**
- * Compteur d'une facette de catégorie : nombre de résultats qu'elle
- * donnerait si elle était la seule catégorie active, à pôle inchangé. Il
- * est donc calculé en IGNORANT la dimension « catégorie » elle-même, comme
- * dans toute recherche à facettes digne de ce nom.
- *
- * @param {Array<{doc:object}>} base résultats classés, filtrés par pôle
- *        mais PAS par catégorie
- */
-function majCompteursFacettes(base) {
-  const comptes = new Map();
-  for (const resultat of base) {
-    const categorie = texteSimple(resultat.doc.categorie);
-    if (categorie === '') continue;
-    comptes.set(categorie, (comptes.get(categorie) || 0) + 1);
-  }
-
-  for (const [categorie, puce] of refs.facettes) {
-    const nombre = comptes.get(categorie) || 0;
-    const active = etat.categories.has(categorie);
-
-    if (puce.compteur.textContent !== String(nombre)) {
-      puce.compteur.textContent = String(nombre);
-    }
-
-    puce.bouton.setAttribute('aria-pressed', active ? 'true' : 'false');
-    puce.bouton.setAttribute('aria-label',
-      'Catégorie ' + categorie + ', ' + nombre + ' '
-      + pluriel(nombre, 'question', 'questions'));
-
-    /* Une facette sans résultat est désactivée, pas retirée — sauf si elle
-       est active : il faut toujours pouvoir la relâcher. */
-    puce.bouton.disabled = nombre === 0 && !active;
-  }
-}
-
-/** La question satisfait-elle les catégories actives ? */
-function correspondCategories(question) {
-  if (etat.categories.size === 0) return true;
-  return etat.categories.has(texteSimple(question.categorie));
-}
-
-/**
- * La question appartient-elle au périmètre actif ? Au niveau service, tout
- * passe ; sur un pôle, seules ses propres entrées.
- *
- * @param {object} question
- * @returns {boolean}
- */
-function correspondPole(question) {
-  if (etat.pole === POLE_SERVICE) return true;
-  return poleDe(question) === etat.pole;
-}
-
-/**
- * Reconstruit la liste d'options. Chaque option est une vraie option de
- * listbox à tabulation glissante : une seule est dans l'ordre de
- * tabulation, les flèches déplacent le focus et la sélection.
- */
-function rendreListe() {
-  optionsParId.clear();
-
-  const options = etat.affichees.map((question) => {
-    const actif = question.id === etat.idSelection;
-
-    const option = el('li', {
-      class: 'carte carte--compacte faq__option',
-      role: 'option',
-      id: 'faq-option-' + question.id,
-      'aria-selected': actif ? 'true' : 'false',
-      tabindex: actif ? '0' : '-1',
-      dataset: { id: question.id },
-      onClick: () => selectionner(question.id, true)
-    },
-      el('p', { class: 'carte__meta' },
-        pastillePole(question),
-        question.categorie
-          ? el('span', { class: 'badge badge--neutre' }, question.categorie)
-          : null
-      ),
-
-      el('p', { class: 'faq__intitule' },
-        surlignerVers(surligner(question.question, etat.requete)))
-    );
-
-    optionsParId.set(question.id, option);
-    return option;
-  });
-
-  monter(refs.liste, options);
-}
-
-/**
- * Peint le volet de droite à partir de la sélection courante.
- *
- * Deux garde-fous évitent de retravailler le DOM pour rien à la frappe :
- * on ne repeint que si la sélection OU le surlignage ont réellement
- * changé, et le fondu n'est rejoué que lorsque la question change — sinon
- * il clignoterait à chaque caractère saisi.
- */
-function rendreDetail() {
-  const question = corpus.questions.find((item) => item.id === etat.idSelection);
-  /* JSON.stringify sépare sans ambiguïté : aucun séparateur choisi à la
-     main ne peut être confondu avec un caractère de la requête. */
-  const signature = JSON.stringify([etat.idSelection, etat.requete]);
-
-  if (signature === detailPeint) return;
-
-  const changeDeQuestion = etat.idSelection !== detailIdPeint;
-  detailPeint = signature;
-  detailIdPeint = etat.idSelection;
-
-  if (!question) {
-    monter(refs.detail, el('p', { class: 'texte-faible texte-sm' },
-      'Choisissez une question dans la liste pour afficher sa réponse.'));
-    return;
-  }
-
-  monter(refs.detail, contenuDetail(question, changeDeQuestion));
-}
-
-/**
- * Contenu de la réponse : catégorie, intitulé, réponse, puis les mots-clés
- * transformés en rebonds de recherche.
- *
- * @param {object} question
- * @param {boolean} anime  rejouer le fondu (changement de question)
- * @returns {DocumentFragment}
- */
-function contenuDetail(question, anime) {
-  const motsCles = Array.isArray(question.motsCles)
-    ? question.motsCles.map(texteSimple).filter((mot) => mot !== '')
-    : [];
-
-  return frag(
-    el('div', {
-      class: 'faq__contenu pile',
-      dataset: { anime: anime ? '' : null }
-    },
-
-      el('p', { class: 'carte__meta' },
-        pastillePole(question),
-        question.categorie
-          ? el('span', { class: 'badge badge--accent' }, question.categorie)
-          : null
-      ),
-
-      el('h2', null, surlignerVers(surligner(question.question, etat.requete))),
-
-      el('p', { class: 'faq__reponse' },
-        surlignerVers(surligner(texteSimple(question.reponse), etat.requete))),
-
-      motsCles.length
-        ? el('div', { class: 'pile pile--serree' },
-          el('h3', { class: 'faq__titre-section' }, 'Mots-clés'),
-          el('ul', { class: 'facettes' }, motsCles.map((mot) =>
-            el('li', null,
-              el('button', {
-                class: 'facette facette--compacte',
-                type: 'button',
-                dataset: { action: 'mot-cle', valeur: mot },
-                'aria-label': 'Rechercher « ' + mot + ' »'
-              }, mot))))
-        )
-        : null,
-
-      el('div', { class: 'carte__pied sans-impression' },
-        el('p', { class: 'texte-sm texte-doux sans-marge' },
-          'Cette réponse ne répond pas tout à fait à votre besoin ?'),
-        el('button', {
-          class: 'bouton bouton--discret bouton--compact pousse',
-          type: 'button',
-          dataset: { action: 'poser' }
-        }, 'Poser la question')
-      )
-    )
-  );
-}
-
-/**
- * Pastille ÉTIQUETÉE du pôle d'origine d'une question.
- *
- * Le point coloré est décoratif ; l'information est portée par le texte
- * qui l'accompagne — « Pôle ETIIA », ou « Service ETII » au niveau
- * service. La couleur ne signale donc jamais seule le pôle (SPEC §1bis).
- *
- * @param {object} question
- * @returns {HTMLElement}
- */
-function pastillePole(question) {
-  const code = poleDe(question);
-
-  return el('span', {
-    class: 'badge badge--pole',
-    dataset: { pole: code }
-  },
-    el('span', { class: 'badge__point', 'aria-hidden': 'true' }),
-    (code === POLE_SERVICE ? 'Service ' : 'Pôle ') + code
-  );
-}
-
-/**
- * Compteur, masquage des volets, et état vide de recherche. Les trois
- * états de la page — chargement, erreur, vide — sont pris en charge par
- * avecEtat() ; celui-ci est le quatrième, propre à la recherche : « la
- * base est bien chargée, mais la requête ne donne rien ».
- */
-function rendreEtatRecherche() {
-  const aucun = etat.affichees.length === 0;
-
-  refs.compteur.textContent = texteCompteur(etat.affichees.length);
-  refs.agencement.hidden = aucun;
-  refs.messages.hidden = !aucun;
-
-  if (aucun) monter(refs.messages, blocAucunResultat());
-  else vider(refs.messages);
-}
-
-/**
- * Bloc « aucun résultat » : suggestion orthographique du moteur, rappel
- * des filtres actifs retirables un à un, et proposition de poser la
- * question.
- *
- * @returns {HTMLElement}
- */
-function blocAucunResultat() {
-  /* Cas particulier, et le plus fréquent d'un lien collé : le pôle
-     demandé n'a AUCUNE question, quoi que l'on cherche. Le dire
-     franchement vaut mieux que de laisser croire à une recherche
-     infructueuse, et la seule action utile est de revenir au service. */
-  if (etat.pole !== POLE_SERVICE && comptePole(etat.pole) === 0) {
-    return blocPoleVide();
-  }
-
-  const bloc = el('div', { class: 'etat-vide etat-vide--encadre' },
-    el('span', { class: 'etat-vide__illustration', 'aria-hidden': 'true' }, '∅'),
-    el('p', { class: 'etat-vide__titre' }, 'Aucune question ne correspond'),
-    el('p', { class: 'etat-vide__texte' }, texteAucunResultat())
-  );
-
-  /* « Vouliez-vous dire… » : proposé par le moteur, jamais deviné ici.
-     suggerer() ne s'appelle qu'à zéro résultat, comme son contrat l'exige. */
-  const suggestion = etat.requete.trim() === ''
-    ? null
-    : suggerer(corpus.index, etat.requete);
-
-  if (suggestion) {
-    bloc.append(el('p', { class: 'etat-vide__texte' },
-      'Vouliez-vous dire ',
-      el('button', {
-        class: 'bouton bouton--discret bouton--compact',
-        type: 'button',
-        dataset: { action: 'suggestion', valeur: suggestion }
-      }, suggestion),
-      ' ?'));
-  }
-
-  /* Rappel des filtres actifs — pôle compris — retirables un à un : sans
-     lui, un filtre oublié ressemble à une base vide. */
-  const actifs = [];
-
-  if (etat.pole !== POLE_SERVICE) {
-    actifs.push(el('li', null,
-      el('button', {
-        class: 'facette facette--compacte',
-        type: 'button',
-        dataset: { action: 'retirer-pole' },
-        'aria-label': 'Revenir à tout le service, en quittant le pôle '
-          + etat.pole
-      },
-        el('span', { class: 'pole-point', 'aria-hidden': 'true' }),
-        el('span', null, 'Pôle : ' + etat.pole),
-        el('span', { 'aria-hidden': 'true' }, '×')
-      )));
-  }
-
-  for (const categorie of etat.categories) {
-    actifs.push(el('li', null,
-      el('button', {
-        class: 'facette facette--compacte',
-        type: 'button',
-        dataset: { action: 'retirer-categorie', valeur: categorie },
-        'aria-label': 'Retirer le filtre de catégorie ' + categorie
-      },
-        el('span', null, 'Catégorie : ' + categorie),
-        el('span', { 'aria-hidden': 'true' }, '×')
-      )));
-  }
-
-  if (actifs.length > 0) {
-    bloc.append(
-      el('p', { class: 'texte-sm texte-doux sans-marge' }, 'Filtres actifs :'),
-      el('ul', {
-        class: 'facettes',
-        dataset: { pole: etat.pole }
-      }, actifs));
-  }
-
-  const actions = el('div', { class: 'etat-vide__actions' });
-
-  if (etat.requete !== '' || etat.categories.size > 0
-      || etat.pole !== POLE_SERVICE) {
-    actions.append(el('button', {
-      class: 'bouton bouton--secondaire',
-      type: 'button',
-      dataset: { action: 'tout-effacer' }
-    }, 'Tout effacer'));
-  }
-
-  actions.append(el('button', {
-    class: 'bouton bouton--principal',
-    type: 'button',
-    dataset: { action: 'poser' }
-  }, 'Poser la question'));
-
-  bloc.append(actions);
-  return bloc;
-}
-
-/**
- * État vide d'un pôle qui n'a aucune question, quelle que soit la
- * recherche. Explicite, et actionnable : il propose de revenir à tout le
- * service, là où les questions existent.
- *
- * @returns {HTMLElement}
- */
-function blocPoleVide() {
-  const total = corpus.questions.length;
-
-  return el('div', { class: 'etat-vide etat-vide--encadre' },
-    el('span', { class: 'etat-vide__illustration', 'aria-hidden': 'true' }, '∅'),
-    el('p', { class: 'etat-vide__titre' },
-      'Aucune question pour ' + libellePole(etat.pole)),
-    el('p', { class: 'etat-vide__texte' },
-      'Le pôle ' + etat.pole + ' — ' + metaphorePole(etat.pole)
-      + ' — n’a encore aucune question dans la base. Le service en compte '
-      + 'par ailleurs ' + total + ' au total.'),
-    el('div', { class: 'etat-vide__actions' },
-      el('button', {
-        class: 'bouton bouton--principal',
-        type: 'button',
-        dataset: { action: 'retirer-pole' }
-      }, 'Voir tout le service'),
-      el('button', {
-        class: 'bouton bouton--secondaire',
-        type: 'button',
-        dataset: { action: 'poser' }
-      }, 'Poser la question')
-    )
-  );
-}
-
-/**
- * Nombre de questions d'un périmètre, toutes recherches et catégories
- * confondues.
- *
- * @param {string} code
- * @returns {number}
- */
-function comptePole(code) {
-  if (code === POLE_SERVICE) return corpus.questions.length;
-  return corpus.questions.filter((question) => poleDe(question) === code).length;
-}
-
-/** Phrase expliquant pourquoi rien ne s'affiche. */
-function texteAucunResultat() {
-  const avecRequete = etat.requete.trim() !== '';
-  const avecFiltre = etat.categories.size > 0;
-  const dans = etat.pole === POLE_SERVICE
-    ? ''
-    : ' pour le pôle ' + etat.pole;
-
-  if (avecRequete && avecFiltre) {
-    return 'Aucune question ne correspond à « ' + etat.requete.trim()
-      + ' » dans les catégories sélectionnées' + dans + '.';
-  }
-  if (avecRequete) {
-    return 'Aucune question ne correspond à « ' + etat.requete.trim() + ' »'
-      + dans + '.';
-  }
-  if (avecFiltre) {
-    return 'Aucune question dans les catégories sélectionnées' + dans + '.';
-  }
-  if (dans !== '') {
-    return 'Aucune question à afficher' + dans + '.';
-  }
-  return 'La base de connaissances ne contient aucune question à afficher.';
-}
-
-/* -------------------------------------------------------------------------
-   7. Sélection
-   ------------------------------------------------------------------------- */
-
-/**
- * Sélectionne une question : met à jour la liste, la réponse et l'URL.
- *
- * @param {string} id
- * @param {boolean} focaliser  replacer le focus sur l'option choisie
- */
-function selectionner(id, focaliser) {
-  if (!optionsParId.has(id)) return;
-
-  if (id !== etat.idSelection) {
-    etat.idSelection = id;
-    peindreSelection();
-    rendreDetail();
-    ecrireUrl();
-  }
-
-  if (focaliser) {
-    const option = optionsParId.get(id);
-    if (option) option.focus();
-  }
-}
-
-/**
- * Applique la sélection aux options, sans toucher ni à l'URL ni au focus.
- * Tabulation glissante : une seule option reste dans l'ordre de
- * tabulation, les autres n'y sont atteignables qu'aux flèches.
- */
-function peindreSelection() {
-  for (const [cle, option] of optionsParId) {
-    const actif = cle === etat.idSelection;
-    option.setAttribute('aria-selected', actif ? 'true' : 'false');
-    option.setAttribute('tabindex', actif ? '0' : '-1');
-  }
-}
-
-/* -------------------------------------------------------------------------
-   8. Clavier
-   ------------------------------------------------------------------------- */
-
-/**
- * Clavier de la listbox, conforme au motif standard :
- *   ↓ / ↑        question suivante / précédente (la sélection suit le focus)
- *   Origine/Fin  première / dernière question
- *   Entrée       confirme et emmène au volet de réponse
- *   Espace       confirme sans quitter la liste
+ * Flèches, Début, Fin et Échap dans l'accordéon.
+ * Entrée et Espace sont assurés par le <button> natif : rien à écrire.
  *
  * @param {KeyboardEvent} evt
+ * @param {Element} cible  le bouton qui a la main
  */
-function surClavierListe(evt) {
-  /* Une combinaison avec une touche de modification appartient au
-     navigateur ou au lecteur d'écran, pas à ce composant. */
-  if (evt.altKey || evt.ctrlKey || evt.metaKey) return;
+function naviguerListe(evt, cible) {
+  const boutons = Array.from(refs.liste.querySelectorAll('[data-bascule]'));
+  const position = boutons.indexOf(cible);
+  if (position === -1) return;
 
-  const position = etat.affichees.findIndex(
-    (question) => question.id === etat.idSelection);
-  if (position < 0) return;
-
-  let cible = null;
-
-  switch (evt.key) {
-    case 'ArrowDown':
-      cible = Math.min(position + 1, etat.affichees.length - 1);
-      break;
-
-    case 'ArrowUp':
-      cible = Math.max(position - 1, 0);
-      break;
-
-    case 'Home':
-      cible = 0;
-      break;
-
-    case 'End':
-      cible = etat.affichees.length - 1;
-      break;
-
-    case 'Enter':
-      evt.preventDefault();
-      /* La réponse peut être longue : y emmener le focus évite de la
-         retraverser à la tabulation depuis le haut de la liste. */
-      refs.detail.focus();
-      return;
-
-    case ' ':
-    case 'Spacebar':
-      evt.preventDefault();
-      selectionner(etat.idSelection, true);
-      return;
-
-    default:
-      return;
-  }
-
-  evt.preventDefault();
-  selectionner(etat.affichees[cible].id, true);
-}
-
-/**
- * Clavier du champ de recherche :
- *   Échap    efface la recherche sans quitter le champ
- *   ↓        descend dans la liste des résultats
- *   Entrée   ouvre la réponse la mieux classée
- *
- * @param {KeyboardEvent} evt
- */
-function surClavierChamp(evt) {
-  if (evt.altKey || evt.ctrlKey || evt.metaKey) return;
-
-  if (evt.key === 'Escape' && etat.requete !== '') {
+  let suivant = null;
+  if (evt.key === 'ArrowDown') suivant = boutons[position + 1] || boutons[0];
+  else if (evt.key === 'ArrowUp') suivant = boutons[position - 1] || boutons[boutons.length - 1];
+  else if (evt.key === 'Home') suivant = boutons[0];
+  else if (evt.key === 'End') suivant = boutons[boutons.length - 1];
+  else if (evt.key === 'Escape' && cible.getAttribute('aria-expanded') === 'true') {
     evt.preventDefault();
-    effacerRecherche();
+    basculerQuestion(cible.dataset.bascule);
+    return;
+  } else {
     return;
   }
 
-  if (evt.key === 'ArrowDown' && etat.idSelection) {
+  if (suivant) {
     evt.preventDefault();
-    const option = optionsParId.get(etat.idSelection);
-    if (option) option.focus();
-    return;
-  }
-
-  if (evt.key === 'Enter' && etat.idSelection) {
-    evt.preventDefault();
-    refs.detail.focus();
+    suivant.focus();
   }
 }
 
 /**
- * Raccourci global « / » : place le curseur dans le champ de recherche.
- * Ignoré dès que la frappe a lieu dans un champ de saisie — sans quoi il
- * deviendrait impossible d'écrire une barre oblique.
+ * « / » place le curseur dans le champ de recherche, où que l'on soit —
+ * sauf si l'on est déjà en train d'écrire quelque part.
  */
-function brancherRaccourciGlobal() {
+function raccourciGlobal() {
   document.addEventListener('keydown', (evt) => {
-    if (evt.key !== '/' || evt.altKey || evt.ctrlKey || evt.metaKey) return;
-    if (!refs.champ || estSaisie(document.activeElement)) return;
+    if (evt.key !== '/' || evt.ctrlKey || evt.metaKey || evt.altKey) return;
 
+    const actif = document.activeElement;
+    if (actif && (actif.isContentEditable
+      || /^(input|textarea|select)$/i.test(actif.tagName || ''))) return;
+
+    if (!refs.champ) return;
     evt.preventDefault();
     refs.champ.focus();
     refs.champ.select();
   });
 }
 
-/** L'élément est-il une zone de saisie ? */
-function estSaisie(element) {
-  if (!element || element.nodeType !== 1) return false;
-  const balise = element.tagName;
-  if (balise === 'INPUT' || balise === 'TEXTAREA' || balise === 'SELECT') return true;
-  return element.isContentEditable === true;
-}
-
 /* -------------------------------------------------------------------------
-   9. Actions déléguées
+   13. Appel aux experts — le bloc durable
    ------------------------------------------------------------------------- */
 
 /**
- * Un seul écouteur par zone durable, plutôt qu'un gestionnaire par nœud
- * recréé à chaque frappe. `#zone-faq` et la liste des questions en attente
- * existent dans le HTML de la page : les écouteurs survivent donc aussi
- * bien au rendu des données qu'à un clic sur « Réessayer ».
- *
- * Aucun gestionnaire n'est construit par concaténation de chaîne : c'est
- * précisément ce qui cassait l'ancienne version (SPEC §6.6).
+ * Le bloc « une question sans réponse ? ». Il vit hors de la zone de
+ * données : il reste disponible même si faq.json est introuvable, ce qui
+ * est précisément le moment où l'on a le plus besoin de demander.
  */
-function brancherDelegations() {
-  if (refs.zone) {
-    /* Les deux sélecteurs sont disjoints : une puce de pôle porte
-       data-pole, une puce de catégorie data-categorie. Aucune ne porte les
-       deux, donc aucun clic n'est traité deux fois. */
-    deleguer(refs.zone, '.facette[data-pole]', 'click', (evt, bouton) => {
-      changerPole(bouton.dataset.pole);
-    });
+function rendreAppel() {
+  if (!refs.appel) return;
 
-    deleguer(refs.zone, '.facette[data-categorie]', 'click', (evt, bouton) => {
-      basculerCategorie(bouton.dataset.categorie);
-    });
-
-    deleguer(refs.zone, '[data-action]', 'click', (evt, bouton) => {
-      executerAction(bouton.dataset.action, bouton);
-    });
-  }
-
-  if (refs.attenteListe) {
-    deleguer(refs.attenteListe, '[data-action]', 'click', (evt, bouton) => {
-      executerAction(bouton.dataset.action, bouton);
-    });
-  }
-}
-
-/**
- * Aiguillage des actions déclarées en `data-action`.
- *
- * @param {string} action
- * @param {Element} bouton  élément déclencheur, pour la restitution du focus
- */
-function executerAction(action, bouton) {
-  switch (action) {
-    case 'poser':
-      ouvrirModaleQuestion(bouton);
-      break;
-
-    case 'effacer-recherche':
-      effacerRecherche();
-      break;
-
-    case 'suggestion':
-      appliquerRequete(bouton.dataset.valeur || '');
-      break;
-
-    case 'mot-cle':
-      appliquerRequete(bouton.dataset.valeur || '');
-      break;
-
-    case 'retirer-categorie': {
-      /* Le bouton qui portait le focus disparaît avec l'état vide : on le
-         rend à la puce de facette correspondante, jamais au document nu. */
-      const categorie = bouton.dataset.valeur;
-      etat.categories.delete(categorie);
-      appliquer();
-      const puce = refs.facettes.get(categorie);
-      if (puce && !puce.bouton.disabled) puce.bouton.focus();
-      else if (refs.champ) refs.champ.focus();
-      break;
-    }
-
-    case 'retirer-pole': {
-      /* Le bouton qui portait le focus disparaît avec l'état vide : on le
-         rend à la puce « Tout le service », jamais au document nu. */
-      changerPole(POLE_SERVICE);
-      const puce = refs.poles.get(POLE_SERVICE);
-      if (puce) puce.bouton.focus();
-      else if (refs.champ) refs.champ.focus();
-      break;
-    }
-
-    case 'tout-effacer':
-      /* Tout, c'est aussi le périmètre : on revient au service entier,
-         sans quoi « Tout effacer » laisserait un filtre en place. */
-      etat.pole = POLE_SERVICE;
-      etat.requete = '';
-      etat.categories.clear();
-      if (refs.champ) refs.champ.value = '';
-      majNavigation();
-      appliquer();
-      if (refs.champ) refs.champ.focus();
-      break;
-
-    case 'supprimer-attente':
-      confirmerSuppression(bouton.dataset.id, bouton);
-      break;
-
-    default:
-      /* Action inconnue : on ne fait rien plutôt que d'échouer bruyamment. */
-  }
-}
-
-/** Remplace la requête courante, champ compris, puis réapplique. */
-function appliquerRequete(valeur) {
-  etat.requete = texteSimple(valeur);
-  if (refs.champ) {
-    refs.champ.value = etat.requete;
-    refs.champ.focus();
-  }
-  appliquer();
-}
-
-/** Vide la recherche et rend le focus au champ. */
-function effacerRecherche() {
-  etat.requete = '';
-  if (refs.champ) {
-    refs.champ.value = '';
-    refs.champ.focus();
-  }
-  appliquer();
-}
-
-/**
- * Change le périmètre affiché. Les catégories actives survivent au
- * changement de pôle : les deux filtres se combinent, l'un ne chasse pas
- * l'autre. Une catégorie devenue introuvable dans le nouveau pôle voit
- * simplement son compteur tomber à zéro — et l'état vide l'explique.
- *
- * @param {string} code
- */
-function changerPole(code) {
-  const cible = normaliserPole(code);
-  if (cible === etat.pole) return;
-
-  etat.pole = cible;
-  majNavigation();
-  appliquer();
-}
-
-/** Active ou désactive une catégorie de filtre. */
-function basculerCategorie(categorie) {
-  if (typeof categorie !== 'string' || categorie === '') return;
-
-  if (etat.categories.has(categorie)) etat.categories.delete(categorie);
-  else etat.categories.add(categorie);
-
-  appliquer();
+  monter(refs.appel,
+    el('div', { class: 'faq__appel' },
+      el('div', { class: 'faq__appel-texte pile pile--serree' },
+        el('h2', { class: 'sans-marge', id: 'faq-appel-titre' },
+          'Une question sans réponse ?'),
+        el('p', { class: 'texte-doux sans-marge' },
+          'Décrivez-la, indiquez le pôle concerné, et elle rejoindra votre '
+          + 'liste ci-dessous.')),
+      el('button', {
+        type: 'button',
+        class: 'bouton bouton--principal faq__demander',
+        onClick: (evt) => ouvrirDemande(requete.trim(), evt.currentTarget)
+      }, 'Poser une question aux experts')));
 }
 
 /* -------------------------------------------------------------------------
-   10. Questions posées, enregistrées LOCALEMENT
+   14. La modale « Poser une question aux experts »
    ------------------------------------------------------------------------- */
 
 /**
- * Ouvre la modale « Poser la question ».
+ * Formulaire de question, dans une modale accessible fournie par ui.js :
+ * role="dialog", aria-modal, titre relié, piège de focus réel, fermeture
+ * par Échap et par le fond, focus rendu au bouton d'origine.
  *
- * La validation n'envoie rien : elle écrit dans le stockage local de
- * ui.js, puis réaffiche la section « Vos questions en attente ». Il n'y a
- * ni requête réseau, ni adresse e-mail, ni `mailto:` — l'adresse interne
- * codée en dur de l'ancienne version a été retirée et ne doit pas revenir
- * (SPEC §0 et §4.5).
- *
- * @param {Element} declencheur  élément auquel rendre le focus à la fermeture
+ * @param {string} [texteInitial] la recherche en cours, pour ne pas la
+ *        retaper — c'est bien la saisie de la personne, pas une invention
+ * @param {Element} [declencheur]
  */
-function ouvrirModaleQuestion(declencheur) {
-  const idChamp = 'faq-nouvelle-question';
+function ouvrirDemande(texteInitial, declencheur) {
+  let champQuestion = null;
+  let champPole = null;
+  let champContexte = null;
+  let groupeQuestion = null;
+  let messageErreur = null;
 
-  const erreur = el('span', {
-    class: 'champ__erreur',
-    id: idChamp + '-erreur',
-    role: 'alert',
-    hidden: true
-  }, 'Merci de saisir votre question avant de l’enregistrer.');
-
-  const zone = el('textarea', {
-    class: 'champ__controle',
-    id: idChamp,
-    rows: 4,
-    maxlength: LONGUEUR_MAX_QUESTION,
-    /* Pré-remplissage avec la recherche restée sans réponse : la personne
-       n'a pas à retaper ce qu'elle vient de chercher. */
-    value: etat.requete,
-    'aria-describedby': idChamp + '-aide ' + idChamp + '-erreur',
-    onInput: () => {
-      erreur.hidden = true;
-      zone.removeAttribute('aria-invalid');
-    }
-  });
-
-  /**
-   * Enregistre la question si elle est exploitable.
-   * @returns {boolean} faux pour laisser la modale ouverte
-   */
+  /** Vérifie la saisie ; en cas d'échec, le dit et rend la main. */
   function valider() {
-    const texte = texteSimple(zone.value);
+    const texte = champQuestion ? champQuestion.value.trim() : '';
 
     if (texte === '') {
-      erreur.hidden = false;
-      zone.setAttribute('aria-invalid', 'true');
-      zone.focus();
+      if (groupeQuestion) groupeQuestion.classList.add('champ--erreur');
+      if (messageErreur) messageErreur.hidden = false;
+      if (champQuestion) {
+        champQuestion.setAttribute('aria-invalid', 'true');
+        champQuestion.focus();
+      }
       return false;
     }
 
-    enAttente = [{
-      id: identifiantLocal(),
-      texte: texte.slice(0, LONGUEUR_MAX_QUESTION),
-      cree: new Date().toISOString()
-    }].concat(enAttente);
-
-    const ecrit = enregistrerEnAttente();
-    rendreEnAttente();
-
-    toast(ecrit
-      ? 'Question enregistrée dans ce navigateur.'
-      : 'Question ajoutée, mais le stockage de ce navigateur est '
-        + 'indisponible : elle disparaîtra au rechargement.',
-    ecrit ? 'succes' : 'alerte');
-
+    enregistrerQuestion({
+      question: texte,
+      pole: champPole ? champPole.value : POLE_SERVICE,
+      contexte: champContexte ? champContexte.value.trim() : ''
+    });
     return true;
   }
 
-  const formulaire = el('form', {
-    class: 'pile',
-    novalidate: true,
-    onSubmit: (evt) => {
-      evt.preventDefault();
-      if (valider()) instance.fermer('action');
-    }
-  },
-    el('p', { class: 'champ' },
-      el('label', { class: 'champ__etiquette', for: idChamp },
-        'Votre question'),
-      zone,
-      el('span', { class: 'champ__aide', id: idChamp + '-aide' },
-        'Elle est conservée dans ce navigateur uniquement. Aucun envoi, '
-        + 'aucun message, aucun destinataire.'),
-      erreur
-    ),
+  const idAide = 'faq-demande-aide';
+  const idErreur = 'faq-demande-erreur';
 
-    /* Bouton de soumission implicite : permet la validation à la touche
-       Entrée sans être atteignable à la tabulation — l'action réelle est
-       dans le pied de la modale. */
-    el('button', { type: 'submit', class: 'visuellement-cache', tabindex: '-1' },
-      'Enregistrer')
-  );
+  ouvrirModale({
+    titre: 'Poser une question aux experts',
+    classe: 'modale--etroite',
+    declencheur: declencheur || null,
+    contenu: (api) => {
+      messageErreur = el('p', {
+        class: 'champ__erreur',
+        id: idErreur,
+        role: 'alert',
+        hidden: true
+      }, 'Écrivez votre question avant d’enregistrer.');
 
-  const instance = ouvrirModale({
-    titre: 'Poser la question',
-    declencheur: declencheur,
-    contenu: formulaire,
+      champQuestion = el('textarea', {
+        class: 'champ__controle',
+        id: 'faq-demande-question',
+        name: 'question',
+        rows: 4,
+        required: true,
+        value: typeof texteInitial === 'string' ? texteInitial : '',
+        ariaDescribedby: idAide + ' ' + idErreur,
+        onInput: () => {
+          if (groupeQuestion) groupeQuestion.classList.remove('champ--erreur');
+          if (messageErreur) messageErreur.hidden = true;
+          champQuestion.removeAttribute('aria-invalid');
+        }
+      });
+
+      groupeQuestion = el('p', { class: 'champ' },
+        el('label', { class: 'champ__etiquette', for: 'faq-demande-question' },
+          'Votre question ',
+          el('span', { class: 'champ__requis', ariaHidden: 'true' }, '*')),
+        champQuestion,
+        el('span', { class: 'champ__aide', id: idAide },
+          'Formulez-la comme vous la poseriez à l’oral : c’est ce texte qui '
+          + 'sera conservé, mot pour mot.'),
+        messageErreur);
+
+      champPole = el('select', {
+        class: 'champ__select',
+        id: 'faq-demande-pole',
+        name: 'pole',
+        value: poleActif
+      }, POLES.map((pole) => el('option', {
+        value: pole.cle,
+        selected: pole.cle === poleActif ? true : null
+      }, pole.cle === POLE_SERVICE
+        ? pole.libelle
+        : pole.cle + ' — ' + pole.metaphore)));
+
+      champContexte = el('textarea', {
+        class: 'champ__controle',
+        id: 'faq-demande-contexte',
+        name: 'contexte',
+        rows: 3
+      });
+
+      // Le <form> n'a aucune action ni méthode : il n'existe que pour que
+      // la touche Entrée d'un champ déclenche la même validation que le
+      // bouton. Rien ne part sur le réseau, jamais.
+      return el('form', {
+        class: 'pile',
+        novalidate: true,
+        onSubmit: (evt) => {
+          evt.preventDefault();
+          if (valider()) api.fermer('validation');
+        }
+      },
+      groupeQuestion,
+
+      el('p', { class: 'champ' },
+        el('label', { class: 'champ__etiquette', for: 'faq-demande-pole' },
+          'Pôle concerné'),
+        champPole),
+
+      el('p', { class: 'champ' },
+        el('label', { class: 'champ__etiquette', for: 'faq-demande-contexte' },
+          'Contexte (facultatif)'),
+        champContexte,
+        el('span', { class: 'champ__aide' },
+          'Ce qui aiderait à répondre : ce que vous avez déjà cherché, le '
+          + 'cas rencontré.')),
+
+      el('p', { class: 'faq__note' },
+        'Ce portail est une démonstration hors ligne : il n’a aucune '
+        + 'destination configurée. Votre question ne part donc nulle part — '
+        + 'ni message, ni courriel, ni requête vers un serveur. Elle est '
+        + 'enregistrée dans ce navigateur, sur cet appareil seulement, et '
+        + 'vous pouvez la supprimer à tout moment. Tant qu’une destination '
+        + 'n’aura pas été configurée par l’équipe qui administre le portail, '
+        + 'aucun envoi n’aura lieu.'));
+    },
     actions: [
       { libelle: 'Annuler', variante: 'secondaire' },
-      { libelle: 'Enregistrer', variante: 'principal', onClick: () => valider() }
+      {
+        libelle: 'Enregistrer la question',
+        variante: 'principal',
+        ferme: false,
+        onClick: (evt, api) => { if (valider()) api.fermer('validation'); }
+      }
     ]
   });
 }
 
+/* -------------------------------------------------------------------------
+   15. Questions en attente — stockage local, aucun réseau
+   ------------------------------------------------------------------------- */
+
+/** Relit la liste conservée, en se méfiant de tout. */
+function lireAttente() {
+  const brut = stockage.lire(CLE_STOCKAGE, []);
+  if (!Array.isArray(brut)) return [];
+
+  return brut
+    .map((entree, rang) => {
+      if (!entree || typeof entree !== 'object') return null;
+      const question = texteNet(entree.question);
+      if (!question) return null;
+      const pole = texteNet(entree.pole);
+      return {
+        id: texteNet(entree.id) || ('attente-' + rang),
+        question: question,
+        contexte: texteNet(entree.contexte),
+        pole: (pole && CODES_POLE.includes(pole)) ? pole : null,
+        date: texteNet(entree.date)
+      };
+    })
+    .filter(Boolean);
+}
+
+/** Écrit la liste, sans jamais faire échouer la page si le stockage refuse. */
+function ecrireAttente() {
+  const enregistre = stockage.ecrire(CLE_STOCKAGE, enAttente);
+  if (!enregistre) {
+    toast('Ce navigateur refuse le stockage local : la question restera '
+      + 'affichée jusqu’à la fermeture de l’onglet.', 'alerte');
+  }
+}
+
+/** Compteur d'appoint : deux questions posées dans la même milliseconde. */
+let rangAttente = 0;
+
 /**
- * Suppression d'une question locale : action destructrice, donc confirmée
- * explicitement (SPEC §6.5).
+ * Enregistre une question posée et rafraîchit la section.
+ * @param {{question:string, pole:string, contexte:string}} saisie
+ */
+function enregistrerQuestion(saisie) {
+  rangAttente += 1;
+
+  enAttente.unshift({
+    id: 'q-' + Date.now() + '-' + rangAttente,
+    question: saisie.question,
+    contexte: saisie.contexte || null,
+    pole: CODES_POLE.includes(saisie.pole) ? saisie.pole : POLE_SERVICE,
+    date: new Date().toISOString()
+  });
+
+  ecrireAttente();
+  rendreAttente();
+  toast('Question enregistrée dans ce navigateur. Aucun envoi n’a eu lieu.',
+    'succes');
+  annoncer('Question ajoutée à vos questions en attente.');
+}
+
+/**
+ * Supprime une question, après confirmation explicite : une action
+ * destructrice ne se déclenche jamais d'un seul clic (SPEC §6.5).
  *
  * @param {string} id
  * @param {Element} declencheur
  */
-function confirmerSuppression(id, declencheur) {
-  const question = enAttente.find((item) => item.id === id);
-  if (!question) return;
+function supprimerQuestion(id, declencheur) {
+  const cible = enAttente.find((entree) => entree.id === id);
+  if (!cible) return;
 
   ouvrirModale({
     titre: 'Supprimer cette question ?',
-    declencheur: declencheur,
     classe: 'modale--etroite',
-    contenu: el('p', null,
-      '« ' + question.texte + ' » sera définitivement retirée de vos '
-      + 'questions en attente. Cette action est irréversible.'),
+    declencheur: declencheur || null,
+    contenu: () => frag(
+      el('p', { class: 'sans-marge texte-doux' },
+        'Elle sera retirée de ce navigateur. Cette suppression est '
+        + 'définitive.'),
+      el('p', { class: 'faq__attente-texte' }, cible.question)),
     actions: [
-      { libelle: 'Annuler', variante: 'secondaire', autofocus: true },
+      { libelle: 'Annuler', variante: 'secondaire' },
       {
         libelle: 'Supprimer',
         variante: 'danger',
         onClick: () => {
-          enAttente = enAttente.filter((item) => item.id !== id);
-          enregistrerEnAttente();
-          rendreEnAttente();
-          toast('Question supprimée.', 'info');
+          enAttente = enAttente.filter((entree) => entree.id !== id);
+          ecrireAttente();
+          rendreAttente();
+          annoncer('Question supprimée.');
         }
       }
     ]
   });
 }
 
-/** Affiche — ou masque — la section « Vos questions en attente ». */
-function rendreEnAttente() {
-  if (!refs.attenteSection || !refs.attenteListe) return;
+/** Date longue en français, ou la mention si la date est illisible. */
+function noeudDate(iso) {
+  if (!iso) return manquant('Date');
 
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return manquant('Date');
+
+  let libelle;
+  try {
+    libelle = new Intl.DateTimeFormat('fr-FR', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    }).format(date);
+  } catch (_e) {
+    libelle = iso.slice(0, 10);
+  }
+  return el('time', { datetime: iso }, libelle);
+}
+
+/** Repeint la section « Vos questions en attente ». */
+function rendreAttente() {
+  if (!refs.attente || !refs.attenteListe) return;
+
+  refs.attente.hidden = enAttente.length === 0;
   if (enAttente.length === 0) {
-    refs.attenteSection.hidden = true;
-    vider(refs.attenteListe);
+    monter(refs.attenteListe);
     return;
   }
 
-  refs.attenteSection.hidden = false;
+  monter(refs.attenteListe, enAttente.map((entree) => el('li', {
+    class: 'faq__attente-item'
+  },
+  el('div', { class: 'faq__attente-haut' },
+    el('p', { class: 'faq__attente-texte' }, entree.question),
+    // Volontairement neutre : la seule couleur vive de l'écran est celle
+    // de l'appel aux experts. Le caractère destructeur est porté par le
+    // mot et par la confirmation, pas par un rouge de plus.
+    el('button', {
+      type: 'button',
+      class: 'bouton bouton--secondaire bouton--compact',
+      dataset: { supprimer: entree.id },
+      ariaLabel: 'Supprimer cette question en attente'
+    }, 'Supprimer')),
 
-  monter(refs.attenteListe, enAttente.map((question) =>
-    el('li', { class: 'carte carte--compacte' },
-      el('div', { class: 'carte__entete' },
-        el('p', { class: 'faq__attente-texte' }, question.texte),
-        el('span', { class: 'badge badge--neutre' }, 'En attente')
-      ),
-      el('div', { class: 'carte__pied' },
-        question.cree
-          ? el('span', { class: 'texte-sm texte-doux' },
-            'Posée le ',
-            el('time', { datetime: question.cree }, formaterDate(question.cree)))
-          : el('span', { class: 'texte-sm texte-doux' }, 'Question locale'),
-        el('button', {
-          class: 'bouton bouton--danger-discret bouton--compact pousse',
-          type: 'button',
-          dataset: { action: 'supprimer-attente', id: question.id },
-          'aria-label': 'Supprimer la question « ' + question.texte + ' »'
-        }, 'Supprimer')
-      )
-    )));
-}
+  entree.contexte
+    ? el('p', { class: 'faq__attente-contexte' }, entree.contexte)
+    : null,
 
-/**
- * Relit les questions locales, en écartant tout ce qui n'a pas la forme
- * attendue : une version antérieure ou une édition manuelle du stockage ne
- * doit pas casser la page.
- *
- * @returns {Array<{id:string, texte:string, cree:string}>}
- */
-function lireEnAttente() {
-  const brut = stockage.lire(CLE_ATTENTE, []);
-  if (!Array.isArray(brut)) return [];
-
-  return brut
-    .filter((item) => item && typeof item === 'object'
-      && typeof item.id === 'string' && item.id !== ''
-      && typeof item.texte === 'string' && item.texte.trim() !== '')
-    .map((item) => ({
-      id: item.id,
-      texte: item.texte,
-      cree: typeof item.cree === 'string' ? item.cree : ''
-    }));
-}
-
-/**
- * Enregistre les questions locales.
- * @returns {boolean} vrai si l'écriture a réellement eu lieu
- */
-function enregistrerEnAttente() {
-  return stockage.ecrire(CLE_ATTENTE, enAttente);
-}
-
-/**
- * Identifiant local, sans collision pratique et sans dépendance.
- * @returns {string}
- */
-function identifiantLocal() {
-  return 'q-' + Date.now().toString(36)
-    + '-' + Math.random().toString(36).slice(2, 7);
+  el('p', { class: 'faq__attente-meta' },
+    pastillePole(entree.pole),
+    noeudDate(entree.date),
+    el('span', null, 'En attente — aucun envoi')))));
 }
 
 /* -------------------------------------------------------------------------
-   11. État dans l'URL
+   16. État dans l'URL
    ------------------------------------------------------------------------- */
 
-/** Lit pôle, requête, catégories et question sélectionnée depuis le hash. */
-function lireUrl() {
-  const lu = etatUrl.lire();
-
-  etat.pole = poleDepuisEtat(lu);
-  etat.requete = texteSimple(lu[CLE_REQUETE]);
-
-  const brut = lu[CLE_CATEGORIE];
-  const valeurs = Array.isArray(brut)
-    ? brut
-    : (typeof brut === 'string' && brut !== '' ? [brut] : []);
-
-  /* Seules les catégories réellement présentes sont retenues : un lien
-     ancien ne doit pas produire un filtre fantôme qui vide la page. */
-  etat.categories = new Set(
-    valeurs.filter((valeur) => corpus.categories.includes(valeur)));
-
-  const id = typeof lu[CLE_QUESTION] === 'string' ? lu[CLE_QUESTION] : '';
-  etat.idSelection = id !== '' ? id : null;
-}
-
-/* Écriture différée : `replaceState` n'empile pas l'historique, mais rien
-   ne sert d'écrire l'URL à chaque frappe. */
-const ecrireUrl = debounce(() => {
+/** Écrit le périmètre, la recherche, les catégories et la question dépliée. */
+function ecrireUrl() {
   etatUrl.ecrire({
-    /* Le pôle est toujours écrit, même au niveau service : l'URL dit alors
-       explicitement « tout le service », et reste partageable telle quelle. */
-    [CLE_POLE]: etat.pole,
-    [CLE_REQUETE]: etat.requete,
-    [CLE_CATEGORIE]: Array.from(etat.categories),
-    [CLE_QUESTION]: etat.idSelection
+    [CLE_POLE]: poleActif,
+    [CLE_REQUETE]: requete.trim(),
+    [CLE_CATEGORIE]: Array.from(categoriesActives),
+    [CLE_QUESTION]: idOuvert
   });
-}, DELAI_URL);
-
-/**
- * Navigation réelle de l'utilisateur : « Précédent », « Suivant », lien
- * collé. `replaceState` ne déclenche pas cet événement, donc aucune boucle
- * de rétroaction n'est possible avec ecrireUrl().
- */
-function surNavigationHash() {
-  if (!corpus.index) return;
-
-  const avant = signatureEtat();
-  lireUrl();
-  if (signatureEtat() === avant) return;
-
-  if (refs.champ) refs.champ.value = etat.requete;
-  majNavigation();
-  appliquer();
 }
 
-/** Empreinte compacte de l'état, pour détecter un changement réel. */
-function signatureEtat() {
-  return etat.pole
-    + '|' + etat.requete
-    + '|' + Array.from(etat.categories).sort().join(',')
-    + '|' + (etat.idSelection || '');
+/**
+ * Applique un état venu de l'URL. Toute valeur inconnue est ignorée sans
+ * erreur : un lien vieilli ouvre une page utilisable, jamais une page
+ * cassée.
+ *
+ * @param {object} etat  résultat de etatUrl.lire()
+ */
+function appliquerUrl(etat) {
+  const source = etat || {};
+
+  const pole = typeof source[CLE_POLE] === 'string' ? source[CLE_POLE] : '';
+  poleActif = CODES_POLE.includes(pole) ? pole : POLE_SERVICE;
+
+  requete = typeof source[CLE_REQUETE] === 'string' ? source[CLE_REQUETE] : '';
+  if (refs.champ) refs.champ.value = requete;
+
+  categoriesActives.clear();
+  const brutCategories = source[CLE_CATEGORIE];
+  const listeCategories = Array.isArray(brutCategories)
+    ? brutCategories
+    : (typeof brutCategories === 'string' && brutCategories ? [brutCategories] : []);
+  for (const categorie of listeCategories) {
+    if (categoriesConnues.includes(categorie)) categoriesActives.add(categorie);
+  }
+
+  const question = typeof source[CLE_QUESTION] === 'string' ? source[CLE_QUESTION] : '';
+  idOuvert = questions.some((vue) => vue.id === question) ? question : null;
 }
 
 /* -------------------------------------------------------------------------
-   11bis. Navigation et sous-navigation
+   17. Navigation et sous-navigation
    ------------------------------------------------------------------------- */
-
-/**
- * Reporte le pôle actif sur la navigation principale et la
- * sous-navigation.
- *
- * Sur une page transverse, c'est le lien du PÔLE ACTIF qui porte
- * `aria-current="page"` — celui du tableau de bord quand le pôle est
- * « ETII ». initNav() se charge de poser l'attribut sur ce seul lien et de
- * le retirer partout ailleurs : il n'y en a jamais deux.
- */
-function majNavigation() {
-  initNav(PAGE_DE_POLE[etat.pole] || 'index.html');
-  rendreSousNav();
-}
 
 /**
  * Sous-navigation vers les trois autres pages transverses, chaque lien
@@ -1620,173 +1225,120 @@ function rendreSousNav() {
   if (!refs.sousNav) return;
 
   refs.sousNav.setAttribute('aria-label',
-    'Autres pages — ' + libellePole(etat.pole));
+    'Autres pages — ' + libellePole(poleActif));
 
   monter(refs.sousNav,
     el('ul', { class: 'rangee rangee--serree' },
       PAGES_TRANSVERSES.map((entree) => el('li', null,
         el('a', {
           class: 'bouton bouton--secondaire bouton--compact',
-          href: entree.page + '#' + CLE_POLE + '=' + encodeURIComponent(etat.pole)
+          href: entree.page + '#' + CLE_POLE + '=' + encodeURIComponent(poleActif)
         }, entree.libelle))),
       el('li', null,
         el('a', {
           class: 'bouton bouton--discret bouton--compact',
-          href: PAGE_DE_POLE[etat.pole] || 'index.html'
-        }, etat.pole === POLE_SERVICE
+          href: PAGE_DE_POLE[poleActif] || 'index.html'
+        }, poleActif === POLE_SERVICE
           ? 'Tableau de bord ETII'
-          : 'Espace ' + etat.pole))
-    )
-  );
+          : 'Espace ' + poleActif))));
 }
 
 /* -------------------------------------------------------------------------
-   12. Annonces
-   ------------------------------------------------------------------------- */
-
-/* Différée et regroupée : à la frappe, seul le dernier état est énoncé. */
-const annoncerResultats = debounce(() => {
-  const nombre = etat.affichees.length;
-
-  const perimetre = etat.pole === POLE_SERVICE
-    ? ''
-    : ' pour le pôle ' + etat.pole;
-
-  if (nombre === 0) {
-    annoncer('Aucune question ne correspond' + perimetre + '. '
-      + (etat.pole === POLE_SERVICE
-        ? 'Vous pouvez poser votre question.'
-        : 'Revenez à tout le service, ou posez votre question.'));
-    return;
-  }
-
-  annoncer(nombre + ' ' + pluriel(nombre, 'question trouvée', 'questions trouvées')
-    + perimetre
-    + '. Utilisez les flèches haut et bas pour parcourir la liste.');
-}, DELAI_ANNONCE);
-
-/* -------------------------------------------------------------------------
-   13. Petits utilitaires
+   18. Amorçage
    ------------------------------------------------------------------------- */
 
 /**
- * Une question exploitable : un objet doté d'un identifiant, d'un intitulé
- * et d'une réponse. Les entrées malformées sont écartées silencieusement
- * plutôt que d'interrompre l'affichage des autres.
- *
- * @param {*} question
- * @returns {boolean}
+ * Rendu de la zone de données : index, colonne, premier affichage.
+ * @param {object} donnees contenu de faq.json
+ * @param {Element} conteneur
  */
-function estQuestion(question) {
-  return !!question && typeof question === 'object'
-    && typeof question.id === 'string' && question.id !== ''
-    && typeof question.question === 'string' && question.question !== ''
-    && typeof question.reponse === 'string';
-}
+function rendreDonnees(donnees, conteneur) {
+  verifierForme(donnees, { questions: 'tableau' }, 'faq.json');
 
-/**
- * Pôle lu dans l'état d'URL. Toute valeur absente ou inconnue retombe sur
- * « ETII », le niveau service, sans erreur ni message (SPEC §1bis).
- *
- * @param {object} lu  résultat de etatUrl.lire()
- * @returns {string}
- */
-function poleDepuisEtat(lu) {
-  if (!lu || typeof lu !== 'object') return POLE_SERVICE;
-  const brut = Array.isArray(lu[CLE_POLE]) ? lu[CLE_POLE][0] : lu[CLE_POLE];
-  return normaliserPole(brut);
-}
+  questions = donnees.questions
+    .map((entree, rang) => vueDeQuestion(entree, rang))
+    .filter(Boolean);
 
-/**
- * Pôle d'origine d'une question. Une question sans pôle, ou dont le pôle
- * est inconnu, appartient au niveau service.
- *
- * @param {object} question
- * @returns {string}
- */
-function poleDe(question) {
-  return normaliserPole(question ? question.pole : null);
-}
+  categoriesConnues = Array.from(new Set(
+    questions.map((vue) => vue.categorie).filter(Boolean)
+  )).sort((a, b) => a.localeCompare(b, 'fr'));
 
-/**
- * Ramène n'importe quelle valeur à l'un des quatre codes admis.
- * @param {*} valeur
- * @returns {string}
- */
-function normaliserPole(valeur) {
-  const code = typeof valeur === 'string' ? valeur.trim().toUpperCase() : '';
-  return CODES_POLE.includes(code) ? code : POLE_SERVICE;
-}
+  index = creerIndex(questions, CHAMPS_INDEX);
 
-/** Libellé lisible d'un périmètre, pour les annonces et les aria-label. */
-function libellePole(code) {
-  const pole = POLES.find((item) => item.cle === code);
-  return pole ? pole.libelle : POLE_SERVICE;
-}
+  construireColonne(conteneur);
 
-/** Métaphore d'un pôle, matière éditoriale de l'accord d'équipe. */
-function metaphorePole(code) {
-  const pole = POLES.find((item) => item.cle === code);
-  return pole ? pole.metaphore : '';
-}
+  // L'URL est relue MAINTENANT : les catégories connues et les
+  // identifiants de questions n'existaient pas avant le chargement.
+  appliquerUrl(etatUrl.lire());
+  if (refs.champ) refs.champ.value = requete;
 
-/** Chaîne nettoyée, quelle que soit la valeur reçue. */
-function texteSimple(valeur) {
-  return typeof valeur === 'string' ? valeur.trim() : '';
-}
+  initNav(PAGE_DE_POLE[poleActif] || 'index.html');
+  rendreSousNav();
+  rafraichir({ annonce: false });
 
-/** Accord au pluriel, sans bibliothèque ni table. */
-function pluriel(nombre, singulier, pluriels) {
-  return nombre > 1 ? pluriels : singulier;
-}
-
-/** Libellé du compteur de résultats, périmètre compris. */
-function texteCompteur(nombre) {
-  const perimetre = etat.pole === POLE_SERVICE
-    ? ''
-    : ' — pôle ' + etat.pole;
-
-  if (nombre === 0) return 'Aucune question' + perimetre;
-  return nombre + ' ' + pluriel(nombre, 'question', 'questions')
-    + (etat.requete.trim() !== '' ? ', classées par pertinence' : '')
-    + perimetre;
-}
-
-/** Formateur de date en français, construit une seule fois. */
-const FORMAT_DATE = (function () {
-  try {
-    return new Intl.DateTimeFormat('fr-FR', {
-      day: 'numeric', month: 'long', year: 'numeric'
-    });
-  } catch (_e) {
-    return null;   // moteur sans Intl : on retombera sur la date brute
-  }
-})();
-
-/**
- * Met une date ISO en forme lisible. En cas de doute, la valeur d'origine
- * est rendue telle quelle : mieux vaut une date brute qu'un « Invalid Date ».
- *
- * @param {string} iso
- * @returns {string}
- */
-function formaterDate(iso) {
-  if (typeof iso !== 'string' || iso === '') return '';
-  if (!FORMAT_DATE) return iso;
-
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-
-  try {
-    return FORMAT_DATE.format(date);
-  } catch (_e) {
-    return iso;
+  // Une question désignée par le lien d'un espace de pôle se déplie et se
+  // place sous les yeux, sans voler le focus.
+  if (idOuvert && noeudsParId.has(idOuvert)) {
+    const noeuds = noeudsParId.get(idOuvert);
+    try { noeuds.item.scrollIntoView({ block: 'center' }); } catch (_e) { /* ignoré */ }
   }
 }
 
-/* -------------------------------------------------------------------------
-   14. Amorçage
-   Dernière ligne du module : tout ce qui précède est déclaré et initialisé.
-   ------------------------------------------------------------------------- */
+function demarrer() {
+  initTheme();
 
-demarrerPage();
+  refs.sousNav = document.getElementById('faq-sous-nav');
+  refs.appel = document.getElementById('faq-appel');
+  refs.attente = document.getElementById('faq-attente');
+  refs.attenteListe = document.getElementById('faq-attente-liste');
+
+  // Le pôle est lu tout de suite pour que la navigation et la
+  // sous-navigation soient justes dès la première image, avant même que
+  // faq.json ne réponde.
+  const etatInitial = etatUrl.lire();
+  const poleInitial = typeof etatInitial[CLE_POLE] === 'string' ? etatInitial[CLE_POLE] : '';
+  poleActif = CODES_POLE.includes(poleInitial) ? poleInitial : POLE_SERVICE;
+  initNav(PAGE_DE_POLE[poleActif] || 'index.html');
+  rendreSousNav();
+
+  // Ces deux sections vivent hors de la zone de données : elles restent
+  // utilisables même si faq.json est introuvable ou invalide.
+  rendreAppel();
+  enAttente = lireAttente();
+  rendreAttente();
+
+  deleguer(refs.attenteListe, '[data-supprimer]', 'click', (evt, cible) => {
+    supprimerQuestion(cible.dataset.supprimer, cible);
+  });
+
+  raccourciGlobal();
+
+  avecEtat('#zone-faq', () => chargerDonnees('faq'), rendreDonnees, {
+    squelette: 4,
+    texteChargement: 'Chargement de la base de connaissances…',
+    titreErreur: 'Base de connaissances indisponible',
+    titreVide: 'Aucune question publiée',
+    texteVide: 'Le fichier ne contient encore aucune question. Vous pouvez '
+      + 'tout de même poser la vôtre : elle sera conservée dans ce '
+      + 'navigateur.',
+    estVide: (donnees) => !donnees
+      || !Array.isArray(donnees.questions)
+      || donnees.questions.length === 0
+  });
+
+  // « Précédent », « Suivant », lien collé : replaceState ne déclenche pas
+  // cet événement, donc aucune boucle de rétroaction n'est possible.
+  etatUrl.ecouter((etat) => {
+    if (!index) return;
+    appliquerUrl(etat);
+    initNav(PAGE_DE_POLE[poleActif] || 'index.html');
+    rendreSousNav();
+    rafraichir({ annonce: false });
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', demarrer, { once: true });
+} else {
+  demarrer();
+}
