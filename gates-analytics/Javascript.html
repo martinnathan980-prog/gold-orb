@@ -143,6 +143,151 @@
      Dans l'application réelle, Apps Script injecte window.SUIVI_FWD_DONNEES
      avant ce script : colonnes réelles, plans, relevés archivés, jalons.
      ============================================================ */
+  /* Les 138 colonnes de l'export GATES, intitulés, groupes et ordre repris à
+     l'identique du fichier. La démonstration doit montrer exactement ce que
+     le classeur montrera : une colonne en moins et on ne parle plus de la
+     même chose. */
+  var COLONNES_GATES = [
+    { cle: "colonne_1", groupe: "", titre: "Colonne 1" },
+    { cle: "reference", groupe: "Informations principales", titre: "Référence UD" },
+    { cle: "rpt", groupe: "Informations principales", titre: "RPT" },
+    { cle: "colonne_4", groupe: "Informations principales", titre: "Colonne 4" },
+    { cle: "colonne_5", groupe: "Informations principales", titre: "Colonne 5" },
+    { cle: "propa", groupe: "Informations principales", titre: "Propa." },
+    { cle: "libelle", groupe: "Informations principales", titre: "Libellé" },
+    { cle: "domaine", groupe: "Informations principales", titre: "Domaine" },
+    { cle: "type", groupe: "Informations principales", titre: "Type" },
+    { cle: "date_creation", groupe: "Informations principales", titre: "Date création" },
+    { cle: "nom_installation", groupe: "Informations principales", titre: "Nom Installation" },
+    { cle: "chapitre", groupe: "Informations principales", titre: "Chapitre" },
+    { cle: "sous_chapitre", groupe: "Informations principales", titre: "Sous-chapitre" },
+    { cle: "etape", groupe: "Informations principales", titre: "Etape" },
+    { cle: "produit", groupe: "Informations principales", titre: "Produit" },
+    { cle: "raison_de_la_creation", groupe: "Informations principales", titre: "Raison de la création" },
+    { cle: "commentaire", groupe: "Informations principales", titre: "Commentaire" },
+    { cle: "version", groupe: "Définition du plan", titre: "Version" },
+    { cle: "groupage", groupe: "Définition du plan", titre: "Groupage" },
+    { cle: "installation_gates", groupe: "Définition du plan", titre: "Installation GATES" },
+    { cle: "designation_gates", groupe: "Définition du plan", titre: "Désignation GATES" },
+    { cle: "type_2", groupe: "Définition du plan", titre: "Type" },
+    { cle: "bte_btr_cdr_plt", groupe: "Définition du plan", titre: "BTE/BTR/CDR/PLT" },
+    { cle: "pwd", groupe: "Définition du plan", titre: "PWD" },
+    { cle: "cc", groupe: "Définition du plan", titre: "CC" },
+    { cle: "ata", groupe: "Définition du plan", titre: "ATA" },
+    { cle: "sequence", groupe: "Définition du plan", titre: "Séquence" },
+    { cle: "commentaire_2", groupe: "Définition du plan", titre: "Commentaire" },
+    { cle: "ecp", groupe: "Définition du plan", titre: "ECP" },
+    { cle: "statut_ibg", groupe: "Définition du plan", titre: "Statut iBG" },
+    { cle: "rpts_lies", groupe: "Définition du plan", titre: "RPTs liés" },
+    { cle: "validation_definition_electrique", groupe: "Définition du plan", titre: "Validation Définition Electrique" },
+    { cle: "xpwd", groupe: "Définition du plan", titre: "XPWD" },
+    { cle: "ddi", groupe: "Définition du plan", titre: "DDI" },
+    { cle: "logiciel_archivage", groupe: "Définition du plan", titre: "Logiciel Archivage" },
+    { cle: "eclairage", groupe: "Définition du plan", titre: "Eclairage" },
+    { cle: "patchboard", groupe: "Définition du plan", titre: "Patchboard" },
+    { cle: "tableau_d_alarmes", groupe: "Définition du plan", titre: "Tableau d'alarmes" },
+    { cle: "panier_a_cartes_16ww", groupe: "Définition du plan", titre: "Panier à cartes 16WW" },
+    { cle: "commentaire_3", groupe: "Concept Harnais", titre: "Commentaire" },
+    { cle: "geometrical_harness", groupe: "Concept Harnais", titre: "GEOMETRICAL HARNESS" },
+    { cle: "avancement", groupe: "Réalisation FWD", titre: "Avancement" },
+    { cle: "date_de_depart", groupe: "Réalisation FWD", titre: "Date de départ" },
+    { cle: "date_de_retour", groupe: "Réalisation FWD", titre: "Date de retour" },
+    { cle: "redraw", groupe: "Réalisation FWD", titre: "Redraw" },
+    { cle: "classif_sap_beta", groupe: "", titre: "Classif. SAP (BETA)" },
+    { cle: "classif_calculee_beta", groupe: "", titre: "Classif. calculée (BETA)" },
+    { cle: "validite", groupe: "HDK AA", titre: "Validité" },
+    { cle: "quantite", groupe: "HDK AA", titre: "Quantité" },
+    { cle: "configuration_officielle", groupe: "HDK AA", titre: "Configuration officielle" },
+    { cle: "avancement_definition_electrique", groupe: "HDK AA", titre: "Avancement Définition Electrique" },
+    { cle: "a_traiter_par", groupe: "HDK AA", titre: "A traiter par" },
+    { cle: "commentaire_4", groupe: "HDK AA", titre: "Commentaire" },
+    { cle: "avancement_concept_harnais", groupe: "HDK AA", titre: "Avancement Concept Harnais" },
+    { cle: "validite_2", groupe: "HDK AA 011", titre: "Validité" },
+    { cle: "quantite_2", groupe: "HDK AA 011", titre: "Quantité" },
+    { cle: "configuration_officielle_2", groupe: "HDK AA 011", titre: "Configuration officielle" },
+    { cle: "avancement_definition_electrique_2", groupe: "HDK AA 011", titre: "Avancement Définition Electrique" },
+    { cle: "a_traiter_par_2", groupe: "HDK AA 011", titre: "A traiter par" },
+    { cle: "commentaire_5", groupe: "HDK AA 011", titre: "Commentaire" },
+    { cle: "avancement_concept_harnais_2", groupe: "HDK AA 011", titre: "Avancement Concept Harnais" },
+    { cle: "validite_3", groupe: "HDK AA 012", titre: "Validité" },
+    { cle: "quantite_3", groupe: "HDK AA 012", titre: "Quantité" },
+    { cle: "configuration_officielle_3", groupe: "HDK AA 012", titre: "Configuration officielle" },
+    { cle: "avancement_definition_electrique_3", groupe: "HDK AA 012", titre: "Avancement Définition Electrique" },
+    { cle: "a_traiter_par_3", groupe: "HDK AA 012", titre: "A traiter par" },
+    { cle: "commentaire_6", groupe: "HDK AA 012", titre: "Commentaire" },
+    { cle: "avancement_concept_harnais_3", groupe: "HDK AA 012", titre: "Avancement Concept Harnais" },
+    { cle: "validite_4", groupe: "HDK AA 002", titre: "Validité" },
+    { cle: "quantite_4", groupe: "HDK AA 002", titre: "Quantité" },
+    { cle: "configuration_officielle_4", groupe: "HDK AA 002", titre: "Configuration officielle" },
+    { cle: "avancement_definition_electrique_4", groupe: "HDK AA 002", titre: "Avancement Définition Electrique" },
+    { cle: "a_traiter_par_4", groupe: "HDK AA 002", titre: "A traiter par" },
+    { cle: "commentaire_7", groupe: "HDK AA 002", titre: "Commentaire" },
+    { cle: "avancement_concept_harnais_4", groupe: "HDK AA 002", titre: "Avancement Concept Harnais" },
+    { cle: "validite_5", groupe: "HDK AA 001", titre: "Validité" },
+    { cle: "quantite_5", groupe: "HDK AA 001", titre: "Quantité" },
+    { cle: "configuration_officielle_5", groupe: "HDK AA 001", titre: "Configuration officielle" },
+    { cle: "avancement_definition_electrique_5", groupe: "HDK AA 001", titre: "Avancement Définition Electrique" },
+    { cle: "a_traiter_par_5", groupe: "HDK AA 001", titre: "A traiter par" },
+    { cle: "commentaire_8", groupe: "HDK AA 001", titre: "Commentaire" },
+    { cle: "avancement_concept_harnais_5", groupe: "HDK AA 001", titre: "Avancement Concept Harnais" },
+    { cle: "validite_6", groupe: "HDK AA 004", titre: "Validité" },
+    { cle: "quantite_6", groupe: "HDK AA 004", titre: "Quantité" },
+    { cle: "configuration_officielle_6", groupe: "HDK AA 004", titre: "Configuration officielle" },
+    { cle: "avancement_definition_electrique_6", groupe: "HDK AA 004", titre: "Avancement Définition Electrique" },
+    { cle: "a_traiter_par_6", groupe: "HDK AA 004", titre: "A traiter par" },
+    { cle: "commentaire_9", groupe: "HDK AA 004", titre: "Commentaire" },
+    { cle: "avancement_concept_harnais_6", groupe: "HDK AA 004", titre: "Avancement Concept Harnais" },
+    { cle: "validite_7", groupe: "HDK AA 006", titre: "Validité" },
+    { cle: "quantite_7", groupe: "HDK AA 006", titre: "Quantité" },
+    { cle: "configuration_officielle_7", groupe: "HDK AA 006", titre: "Configuration officielle" },
+    { cle: "avancement_definition_electrique_7", groupe: "HDK AA 006", titre: "Avancement Définition Electrique" },
+    { cle: "a_traiter_par_7", groupe: "HDK AA 006", titre: "A traiter par" },
+    { cle: "commentaire_10", groupe: "HDK AA 006", titre: "Commentaire" },
+    { cle: "avancement_concept_harnais_7", groupe: "HDK AA 006", titre: "Avancement Concept Harnais" },
+    { cle: "validite_8", groupe: "HDK AA 010", titre: "Validité" },
+    { cle: "quantite_8", groupe: "HDK AA 010", titre: "Quantité" },
+    { cle: "configuration_officielle_8", groupe: "HDK AA 010", titre: "Configuration officielle" },
+    { cle: "avancement_definition_electrique_8", groupe: "HDK AA 010", titre: "Avancement Définition Electrique" },
+    { cle: "a_traiter_par_8", groupe: "HDK AA 010", titre: "A traiter par" },
+    { cle: "commentaire_11", groupe: "HDK AA 010", titre: "Commentaire" },
+    { cle: "avancement_concept_harnais_8", groupe: "HDK AA 010", titre: "Avancement Concept Harnais" },
+    { cle: "validite_9", groupe: "HDK AA 005", titre: "Validité" },
+    { cle: "quantite_9", groupe: "HDK AA 005", titre: "Quantité" },
+    { cle: "configuration_officielle_9", groupe: "HDK AA 005", titre: "Configuration officielle" },
+    { cle: "avancement_definition_electrique_9", groupe: "HDK AA 005", titre: "Avancement Définition Electrique" },
+    { cle: "a_traiter_par_9", groupe: "HDK AA 005", titre: "A traiter par" },
+    { cle: "commentaire_12", groupe: "HDK AA 005", titre: "Commentaire" },
+    { cle: "avancement_concept_harnais_9", groupe: "HDK AA 005", titre: "Avancement Concept Harnais" },
+    { cle: "validite_10", groupe: "HDK AA 003", titre: "Validité" },
+    { cle: "quantite_10", groupe: "HDK AA 003", titre: "Quantité" },
+    { cle: "configuration_officielle_10", groupe: "HDK AA 003", titre: "Configuration officielle" },
+    { cle: "avancement_definition_electrique_10", groupe: "HDK AA 003", titre: "Avancement Définition Electrique" },
+    { cle: "a_traiter_par_10", groupe: "HDK AA 003", titre: "A traiter par" },
+    { cle: "commentaire_13", groupe: "HDK AA 003", titre: "Commentaire" },
+    { cle: "avancement_concept_harnais_10", groupe: "HDK AA 003", titre: "Avancement Concept Harnais" },
+    { cle: "validite_11", groupe: "HDK AA 007", titre: "Validité" },
+    { cle: "quantite_11", groupe: "HDK AA 007", titre: "Quantité" },
+    { cle: "configuration_officielle_11", groupe: "HDK AA 007", titre: "Configuration officielle" },
+    { cle: "avancement_definition_electrique_11", groupe: "HDK AA 007", titre: "Avancement Définition Electrique" },
+    { cle: "a_traiter_par_11", groupe: "HDK AA 007", titre: "A traiter par" },
+    { cle: "commentaire_14", groupe: "HDK AA 007", titre: "Commentaire" },
+    { cle: "avancement_concept_harnais_11", groupe: "HDK AA 007", titre: "Avancement Concept Harnais" },
+    { cle: "validite_12", groupe: "HDK AA 008", titre: "Validité" },
+    { cle: "quantite_12", groupe: "HDK AA 008", titre: "Quantité" },
+    { cle: "configuration_officielle_12", groupe: "HDK AA 008", titre: "Configuration officielle" },
+    { cle: "avancement_definition_electrique_12", groupe: "HDK AA 008", titre: "Avancement Définition Electrique" },
+    { cle: "a_traiter_par_12", groupe: "HDK AA 008", titre: "A traiter par" },
+    { cle: "commentaire_15", groupe: "HDK AA 008", titre: "Commentaire" },
+    { cle: "avancement_concept_harnais_12", groupe: "HDK AA 008", titre: "Avancement Concept Harnais" },
+    { cle: "validite_13", groupe: "HDK AA 009", titre: "Validité" },
+    { cle: "quantite_13", groupe: "HDK AA 009", titre: "Quantité" },
+    { cle: "configuration_officielle_13", groupe: "HDK AA 009", titre: "Configuration officielle" },
+    { cle: "avancement_definition_electrique_13", groupe: "HDK AA 009", titre: "Avancement Définition Electrique" },
+    { cle: "a_traiter_par_13", groupe: "HDK AA 009", titre: "A traiter par" },
+    { cle: "commentaire_16", groupe: "HDK AA 009", titre: "Commentaire" },
+    { cle: "avancement_concept_harnais_13", groupe: "HDK AA 009", titre: "Avancement Concept Harnais" }
+  ];
+
   function jeuDExemple() {
     function graine(a) {
       return function () {
@@ -152,29 +297,20 @@
         return ((t ^ t >>> 14) >>> 0) / 4294967296;
       };
     }
-    var alea = graine(20260919);
+    var alea = graine(20260920);
     function tire(l) { return l[Math.floor(alea() * l.length)]; }
     function ent(a, b) { return a + Math.floor(alea() * (b - a + 1)); }
 
-    /* Les colonnes de l'export GATES, intitulés et groupes compris. La
-       démonstration doit ressembler à ce que l'on verra dans le classeur :
-       une colonne inventée crée plus de confusion qu'elle n'en évite. */
-    var colonnes = [
-      { cle: 'reference',   groupe: 'Informations principales', titre: 'Référence UD', classe: 'ref', fige: true },
-      { cle: 'domaine',     groupe: 'Informations principales', titre: 'Domaine', classe: 'num' },
-      { cle: 'date_creation', groupe: 'Informations principales', titre: 'Date création', classe: 'num' },
-      { cle: 'installation',groupe: 'Informations principales', titre: 'Nom Installation', classe: 'large' },
-      { cle: 'chapitre',    groupe: 'Informations principales', titre: 'Chapitre', classe: 'num', dim: true },
-      { cle: 'produit',     groupe: 'Informations principales', titre: 'Produit', classe: 'num' },
-      { cle: 'cc',          groupe: 'Définition du plan', titre: 'CC', classe: 'num', dim: true },
-      { cle: 'ata',         groupe: 'Définition du plan', titre: 'ATA', classe: 'num', dim: true },
-      { cle: 'sequence',    groupe: 'Définition du plan', titre: 'Séquence', classe: 'num' },
-      { cle: 'ecp',         groupe: 'Définition du plan', titre: 'ECP', classe: 'ref', dim: true },
-      { cle: 'ibg',         groupe: 'Définition du plan', titre: 'Statut iBG', classe: 'num' },
-      { cle: 'vde',         groupe: 'Définition du plan', titre: 'Validation Définition Electrique', classe: 'num' },
-      { cle: 'avancement',  groupe: 'Réalisation FWD', titre: 'Avancement', classe: 'num', dim: true },
-      { cle: 'redraw',      groupe: 'Réalisation FWD', titre: 'Redraw', classe: 'num' }
-    ];
+    /* Les blocs répétés par variante s'ouvrent repliés, comme dans le classeur :
+       quarante-sept colonnes à l'ouverture, cent trente-huit d'un clic. */
+    var colonnes = COLONNES_GATES.map(function (c) {
+      var col = { cle: c.cle, groupe: c.groupe, titre: c.titre, classe: '' };
+      if (c.cle === 'reference') { col.fige = true; col.classe = 'ref'; }
+      else if (/^(nom_installation|libelle|designation_gates|raison_de_la_creation|classif_calculee_beta)/.test(c.cle)) col.classe = 'large';
+      else col.classe = 'num';
+      if (c.groupe.indexOf('HDK AA') === 0) col.masqueeAuDepart = true;
+      return col;
+    });
 
     var ATA = ['21', '24', '25', '31', '33', '34', '39', '46', '53', '92'];
     var INSTALLATIONS = [
@@ -185,12 +321,12 @@
       'Harnais capteurs boîte de transmission', 'Bâti convertisseur statique',
       'Cheminement console centrale', 'Bloc prises maintenance'
     ];
-    /* L'avancement FWD ne prend que ces quatre formes : pas de pourcentage. */
-    var AVANCEMENTS = ['Terminé', 'En cours', 'À faire', ''];
 
+    var NB_PLANS = 640;
     var plans = [];
-    for (var i = 0; i < 186; i++) {
+    for (var i = 0; i < NB_PLANS; i++) {
       var t = alea(), avancement;
+      /* L'avancement FWD ne prend que ces quatre formes : jamais de pourcentage. */
       if (t < 0.34)      { avancement = 'Terminé'; }
       else if (t < 0.63) { avancement = 'En cours'; }
       else if (t < 0.85) { avancement = 'À faire'; }
@@ -198,61 +334,87 @@
       var ata = tire(ATA);
       var e0 = classer(avancement);
       var annee = e0 === 'termine' ? ent(2018, 2026) : ent(2023, 2026);
-      plans.push({
-        reference: 'UD-' + ata + '-' + String(1037 + i * 7).slice(-4),
-        domaine: alea() < 0.68 ? 'BASE/OPTION' : 'PERSO',
-        date_creation: annee + '-' + String(ent(1, 12)).padStart(2, '0') +
-                       '-' + String(ent(1, 28)).padStart(2, '0') + 'T22:00:00.000Z',
-        installation: tire(INSTALLATIONS),
-        chapitre: tire(['A', 'B', 'C', 'D']),
-        produit: tire(['SUPER PUMA', 'MK2', 'MK3']),
-        cc: '3' + String(ent(1, 12)).padStart(2, '0') + '99',
-        ata: ata,
-        sequence: String(ent(600, 602)),
-        ecp: alea() < 0.86 ? 'ECP-' + ent(2100, 2140) : '',
-        ibg: tire(['true', 'false']),
-        vde: e0 === 'termine' || e0 === 'encours' ? 'true' : tire(['true', 'false']),
-        avancement: avancement,
-        redraw: tire(['true', 'false'])
-      });
-    }
-    plans.forEach(function (p) { p._etat = classer(p.avancement); p._pct = pourcentDe(p); });
 
-    var clesDim = ['ata', 'avancement', 'cc', 'chapitre', 'ecp'];
+      var p = {};
+      colonnes.forEach(function (c) { p[c.cle] = ''; });
+      p.reference = 'UD-' + ata + '-' + String(1037 + i * 7).slice(-4);
+      p.rpt = tire(['true', 'false']);
+      p.propa = tire(['BASE/OPTION', 'BASE', 'OPTION']);
+      p.libelle = 'Faisceau ' + (i + 1);
+      p.domaine = alea() < 0.68 ? 'BASE/OPTION' : 'PERSO';
+      p.type = tire(['STD', 'SPEC']);
+      p.date_creation = annee + '-' + String(ent(1, 12)).padStart(2, '0') +
+                        '-' + String(ent(1, 28)).padStart(2, '0') + 'T22:00:00.000Z';
+      p.nom_installation = tire(INSTALLATIONS);
+      p.chapitre = tire(['A', 'B', 'C', 'D']);
+      p.sous_chapitre = tire(['A1', 'A2', 'B1', 'B2', 'C1']);
+      p.etape = tire(['AVAILABLE', 'IN WORK', 'FROZEN']);
+      p.produit = tire(['SUPER PUMA', 'MK2', 'MK3']);
+      p.version = String(ent(1, 4));
+      p.groupage = tire(['G1', 'G2', 'G3']);
+      p.installation_gates = 'GATES-' + (5000 + i);
+      p.designation_gates = 'Désignation du plan ' + (i + 1);
+      p.type_2 = tire(['PM', 'PS']);
+      p.bte_btr_cdr_plt = tire(['BTE', 'BTR', 'CDR', 'PLT']);
+      p.pwd = String(600 + ent(0, 2));
+      p.cc = '3' + String(ent(1, 12)).padStart(2, '0') + '99';
+      p.ata = ata;
+      p.sequence = String(ent(600, 602));
+      p.ecp = alea() < 0.86 ? 'ECP-' + ent(2100, 2140) : '';
+      p.statut_ibg = tire(['true', 'false']);
+      p.validation_definition_electrique = e0 === 'termine' || e0 === 'encours' ? 'true' : tire(['true', 'false']);
+      p.xpwd = tire(['XPWD1', 'XPWD2']);
+      p.ddi = tire(['N/A', 'DDI-A']);
+      p.avancement = avancement;
+      p.redraw = tire(['true', 'false']);
+      /* Les blocs par variante : quelques-uns renseignés, le reste à blanc,
+         comme dans l'export. */
+      colonnes.forEach(function (c) {
+        if (c.groupe.indexOf('HDK AA') !== 0) return;
+        if (alea() < 0.75) { p[c.cle] = '-'; return; }
+        if (/^validite/.test(c.cle)) p[c.cle] = tire(['V', 'NV']);
+        else if (/^quantite/.test(c.cle)) p[c.cle] = '1';
+        else if (/^configuration/.test(c.cle)) p[c.cle] = tire(['EMPTY', '()']);
+        else if (/^a_traiter_par/.test(c.cle)) p[c.cle] = tire(['MR', 'AB', 'CM']);
+        else p[c.cle] = tire(['EMPTY', 'V']);
+      });
+      plans.push(p);
+    }
+    plans.forEach(function (x) { x._etat = classer(x.avancement); x._pct = pourcentDe(x); });
+
+    var clesDim = ['ata', 'cc', 'ecp'];
     var refDate = lundiDeLaSemaine(2026, 38);
-    function valeurDe(p, cle) {
-      if (cle === '_anciennete') return ancienneteDepuis(p.date_creation, refDate);
-      if (cle === '_mois') return moisDe(p.date_creation);
-      return p[cle];
+    function valeurDe(x, c) {
+      if (c === '_anciennete') return ancienneteDepuis(x.date_creation, refDate);
+      if (c === '_mois') return moisDe(x.date_creation);
+      return x[c];
     }
     var clesAvecDerivees = clesDim.concat(['_anciennete', '_mois']);
 
     /* Douze semaines d'historique, avec l'avancement plan par plan à chaque
-       relevé : c'est ce qui fait vivre le journal des changements et la bulle
-       du graphique. On part de l'état du jour et on remonte le temps. */
+       relevé : c'est ce qui fait vivre le journal et la bulle du graphique. */
     var SEMAINES = 12;
     var etatCourant = {};
-    plans.forEach(function (p) { etatCourant[p.reference] = p.avancement; });
+    plans.forEach(function (x) { etatCourant[x.reference] = x.avancement; });
+    var refs = plans.map(function (x) { return x.reference; });
 
-    var releves = [];
     var instantanes = [];
     for (var k = SEMAINES; k >= 0; k--) {
       instantanes[k] = JSON.parse(JSON.stringify(etatCourant));
       if (k === 0) break;
-      /* Une semaine en arrière : quelques plans terminés ne l'étaient pas
-         encore, quelques plans en cours n'étaient qu'à faire. */
-      var refs = plans.map(function (p) { return p.reference; });
       var recules = 0;
-      for (var r = 0; r < refs.length && recules < 9; r++) {
+      for (var r = 0; r < refs.length && recules < 26; r++) {
         var ref = refs[(r * 17 + k * 29) % refs.length];
         var v = etatCourant[ref];
         if (v === 'Terminé') { etatCourant[ref] = 'En cours'; recules++; }
         else if (v === 'En cours' && alea() < 0.5) { etatCourant[ref] = 'À faire'; recules++; }
       }
-      // Deux plans n'existaient pas encore au tout début.
       if (k === 1) { delete etatCourant[refs[3]]; delete etatCourant[refs[11]]; }
     }
 
+    var parRef = {};
+    plans.forEach(function (x) { parRef[x.reference] = x; });
+    var releves = [];
     for (var s = 0; s <= SEMAINES; s++) {
       var carte = instantanes[s];
       var etats = { termine: 0, encours: 0, afaire: 0, vide: 0 };
@@ -261,7 +423,7 @@
       Object.keys(carte).forEach(function (ref) {
         var etat = classer(carte[ref]);
         etats[etat]++;
-        var plan = plans.filter(function (p) { return p.reference === ref; })[0];
+        var plan = parRef[ref];
         if (!plan) return;
         clesAvecDerivees.forEach(function (d) {
           var v = String(valeurDe(plan, d) || '—');
@@ -284,8 +446,8 @@
       cleDate: 'date_creation',
       cleDomaine: 'domaine',
       clesDim: clesDim,
-      clesEssentielles: ['reference', 'installation', 'ecp', 'ata', 'sequence', 'vde',
-                         'date_creation', 'avancement'],
+      clesEssentielles: ['reference', 'nom_installation', 'ecp', 'ata', 'sequence',
+                         'validation_definition_electrique', 'date_creation', 'avancement'],
       dimParDefaut: 'ata',
       plans: plans,
       releves: releves,
@@ -350,7 +512,7 @@
   var CLES_DIM = (SRC.clesDim && SRC.clesDim.length
       ? SRC.clesDim.filter(function (c) { return PAR_CLE[c]; })
       : COLONNES.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; }))
-    .concat(CLE_DATE ? ['_anciennete', '_mois'] : []);
+    .concat(CLE_DATE ? ['_mois'] : []);
 
   var CLE_DOMAINE = (SRC.cleDomaine && PAR_CLE[SRC.cleDomaine]) ? SRC.cleDomaine : null;
   var CLES_ESSENTIELLES = (SRC.clesEssentielles || []).filter(function (c) { return PAR_CLE[c]; });
@@ -1404,7 +1566,7 @@
     }
 
     if (!rangs.length) {
-      $('zone-critique').className = '';
+      $('zone-critique').classList.remove('sans-jalon');
       $('zone-critique').innerHTML = '<div class="vide-message">Aucun plan dans la sélection.</div>';
       return;
     }
@@ -1431,23 +1593,18 @@
       entete('nom', TITRE_DIM[dim].replace(/ \(.*\)$/, ''), TITRE_DIM[dim]) + '</span>' +
       entete('total', 'plans', 'Nombre de plans du groupe dans la sélection courante.') + '</span>' +
       entete('pct', 'répartition FWD', 'Trier par part de plans terminés.', 'a-gauche') + '</span>' +
-      (prochain
-        ? entete('requis', 'à solder/sem.', 'Plans restants divisés par les ' + semainesJalon +
-            ' semaines avant le jalon, arrondi au plan supérieur.') + aide('« à solder par semaine »') + '</span>' +
-          entete('tension', 'effort demandé', 'Ce rythme requis comparé au rythme réellement tenu.') + aide('l’effort demandé') + '</span>'
-        : entete('tension', 'rythme actuel', 'Plans terminés par semaine depuis le premier relevé.') + aide('le rythme actuel') + '</span>') +
       entete('fin', 'fin estimée', 'Date d’arrivée si le rythme actuel se maintient.') + aide('la fin estimée') + '</span>' +
+      (prochain
+        ? entete('tension', 'effort demandé', 'Ce qu\'il faudrait solder chaque semaine pour tenir le jalon, comparé au rythme réellement tenu.') + aide('l’effort demandé') + '</span>'
+        : entete('tension', 'rythme actuel', 'Plans terminés par semaine depuis le premier relevé.') + aide('le rythme actuel') + '</span>') +
       '</div>';
 
     if (vue.aideFin) html += panneauAide(rangs, prochain, semainesJalon);
 
-    /* « Date création par mois » peut produire quatre-vingts lignes : on en
-       montre une quinzaine, le reste à la demande. */
-    var MAX_GROUPES = 15;
-    var montres = vue.groupesTout ? rangs.length : Math.min(rangs.length, MAX_GROUPES);
-    var cachesGroupes = rangs.length - montres;
-
-    html += rangs.slice(0, montres).map(function (r) {
+    /* Toutes les lignes sont là — « Date création par mois » peut en faire
+       quatre-vingts — mais le bloc a une hauteur : on descend dedans au lieu
+       de pousser le reste de la page vers le bas. */
+    html += rangs.map(function (r) {
       var actif = vue.groupe && vue.groupe.dim === dim && vue.groupe.val === r.nom;
 
       /* Le pourcentage s'ecrit dans le segment quand il y tient ; en dessous
@@ -1462,32 +1619,26 @@
           : '<span style="width:' + part.toFixed(2) + '%;background:' + e.couleur + ';color:' + encre + '">' + texte + '</span>';
       }).join('');
 
-      // --- colonne chiffree 1 : ce qu'il faut solder, ou le rythme tenu
-      var col1;
-      if (prochain) {
-        col1 = r.restants === 0
-          ? '<span class="critique-fin doux" data-libelle="à solder/sem.">—</span>'
-          : '<span class="critique-fin" data-libelle="à solder/sem." title="' + r.restants +
-            ' plans restants à répartir sur ' + semainesJalon + ' semaines, soit ' +
-            r.requis.toFixed(1).replace('.', ',') + ' par semaine.">' + Math.ceil(r.requis) + '</span>';
+      /* Une seule colonne d'appoint : l'effort demandé quand un jalon fixe une
+         échéance, le rythme réellement tenu sinon. « À solder par semaine » a
+         été retiré : personne ne suivait un nombre par semaine. */
+      var col2;
+      if (!prochain) {
+        col2 = '<span class="critique-effort" data-libelle="rythme actuel"><span class="v critique-ecart' +
+          (r.vitesse > 0 ? '' : ' arret') + '">' +
+          (r.vitesse > 0 ? r.vitesse.toFixed(1).replace('.', ',') + '/sem.' : 'rien de soldé') +
+          '</span></span>';
+      } else if (r.restants === 0) {
+        col2 = '<span class="critique-effort" data-libelle="effort demandé"><span class="v critique-ecart">tout est soldé</span></span>';
+      } else if (r.vitesse <= 0) {
+        col2 = '<span class="critique-effort" data-libelle="effort demandé"><span class="v critique-ecart arret">rien de soldé<small>aucun rythme</small></span></span>';
       } else {
-        col1 = '<span class="critique-fin' + (r.vitesse > 0 ? '' : ' doux') + '" data-libelle="rythme actuel">' +
-          (r.vitesse > 0 ? r.vitesse.toFixed(1).replace('.', ',') + '/sem.' : '—') + '</span>';
-      }
-
-      // --- colonne chiffree 2 : l'effort demande, seulement s'il y a un jalon
-      var col2 = '';
-      if (prochain) {
-        if (r.restants === 0) {
-          col2 = '<span class="critique-effort" data-libelle="effort demandé"><span class="v critique-ecart">tout est soldé</span></span>';
-        } else if (r.vitesse <= 0) {
-          col2 = '<span class="critique-effort" data-libelle="effort demandé"><span class="v critique-ecart arret">rien de soldé<small>aucun rythme</small></span></span>';
-        } else {
-          col2 = '<span class="critique-effort" data-libelle="effort demandé"><span class="v critique-ecart">' +
-            (r.tension > 1 ? '<b class="tard">×' + r.tension.toFixed(1).replace('.', ',') + '</b>'
-                           : '×' + r.tension.toFixed(1).replace('.', ',')) +
-            '<small>rythme ' + r.vitesse.toFixed(1).replace('.', ',') + '/sem.</small></span></span>';
-        }
+        col2 = '<span class="critique-effort" data-libelle="effort demandé" title="' + r.restants +
+          ' plans restants à répartir sur ' + semainesJalon + ' semaines, soit ' +
+          r.requis.toFixed(1).replace('.', ',') + ' par semaine."><span class="v critique-ecart">' +
+          (r.tension > 1 ? '<b class="tard">×' + r.tension.toFixed(1).replace('.', ',') + '</b>'
+                         : '×' + r.tension.toFixed(1).replace('.', ',')) +
+          '<small>rythme ' + r.vitesse.toFixed(1).replace('.', ',') + '/sem.</small></span></span>';
       }
 
       // --- colonne chiffree 3 : la date d'arrivee au rythme actuel
@@ -1506,16 +1657,15 @@
         '<span class="critique-nom">' + ech(libelleGroupe(r.nom)) + '</span>' +
         '<span class="critique-total" data-libelle="plans">' + r.total + '</span>' +
         '<span class="critique-barre">' + barre + '</span>' +
-        col1 + col2 + col3 + '</button>' +
+        col3 + col2 + '</button>' +
         (actif ? listeUD(r) : '');
     }).join('');
 
-    if (cachesGroupes > 0) {
-      html += '<button class="journal-plus" type="button" id="plus-groupes">voir les ' +
-        nb(cachesGroupes) + ' autre' + (cachesGroupes > 1 ? 's' : '') + '</button>';
-    }
 
-    $('zone-critique').className = prochain ? '' : 'sans-jalon';
+
+    /* toggle et non className : le conteneur porte aussi « defile-liste »,
+       qui lui donne sa hauteur et sa barre de défilement. */
+    $('zone-critique').classList.toggle('sans-jalon', !prochain);
     $('zone-critique').innerHTML = html;
     // « par groupe » ne parlait à personne : le titre nomme la dimension choisie.
     $('titre-groupe').textContent = 'Avancement FWD par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '');
@@ -1547,12 +1697,9 @@
   }
 
   var DIMENSIONS = CLES_DIM
-    .filter(function (c) { return c !== '_anciennete' && c !== '_mois' && PAR_CLE[c]; })
+    .filter(function (c) { return c !== '_mois' && PAR_CLE[c]; })
     .map(function (c) { return PAR_CLE[c]; })
-    .concat(CLE_DATE ? [
-      { cle: '_anciennete', titre: 'Ancienneté' },
-      { cle: '_mois', titre: PAR_CLE[CLE_DATE].titre + ' (par mois)' }
-    ] : [])
+    .concat(CLE_DATE ? [{ cle: '_mois', titre: PAR_CLE[CLE_DATE].titre + ' (par mois)' }] : [])
     .sort(function (a, b) { return a.titre.localeCompare(b.titre, 'fr'); });
   var TITRE_DIM = {};
   DIMENSIONS.forEach(function (d) { TITRE_DIM[d.cle] = d.titre; });
@@ -1731,6 +1878,7 @@
     return journal.reverse();          // la semaine la plus récente en tête
   }
   var JOURNAL = construireJournal();
+  function recalculerJournal() { JOURNAL = construireJournal(); }
 
   /* La semaine où chaque plan est passé en terminé, pour de bon. */
   var SEMAINE_FIN = (function () {
@@ -1799,6 +1947,15 @@
       var ouvert = vue.journalOuverts[sem.i] !== undefined ? vue.journalOuverts[sem.i] : (rang === 0);
       var limite = vue.journalOuverts['tout' + sem.i] ? evts.length : MAX_JOURNAL;
 
+      /* Rangées par état d'arrivée, puis par référence : « terminé, terminé,
+         terminé, à faire, à faire » se lit, « en vrac » ne se lit pas. */
+      var rangEtat = { termine: 0, encours: 1, afaire: 2, vide: 3 };
+      evts = evts.slice().sort(function (a, b) {
+        var ra = a.type === 'disparu' ? 5 : (a.type === 'nouveau' ? 4 : rangEtat[a.apres]);
+        var rb = b.type === 'disparu' ? 5 : (b.type === 'nouveau' ? 4 : rangEtat[b.apres]);
+        return (ra - rb) || a.ref.localeCompare(b.ref, 'fr', { numeric: true });
+      });
+
       var lignes = evts.slice(0, limite).map(function (e) {
         var plan = PLAN_PAR_REF[e.ref];
         var quoi = plan && CLE_LIBELLE ? String(plan[CLE_LIBELLE] || '') : '';
@@ -1856,6 +2013,17 @@
       var part = 0.25 + (0.75 * k) / semaines;      // montée régulière jusqu'à aujourd'hui
       var termine = Math.round(c.termine * part);
       var glisse = c.termine - termine;
+      /* Un avancement plan par plan, sinon le journal resterait vide et
+         l'exemple ne montrerait que la moitié de ce que fera la page. */
+      var carte = {};
+      var atteint = 0;
+      PLANS.forEach(function (p) {
+        if (p._etat === 'termine') {
+          carte[p.reference] = atteint++ < termine ? 'Terminé' : 'En cours';
+        } else {
+          carte[p.reference] = p.avancement;
+        }
+      });
       faux.push({
         i: k,
         total: c.total,
@@ -1864,7 +2032,7 @@
         afaire: c.afaire + (glisse - Math.round(glisse * 0.6)),
         vide: c.vide,
         groupes: {},
-        plans: null
+        plans: carte
       });
     }
     return faux;
@@ -1884,6 +2052,7 @@
       vue.fen = { debut: 0, span: 28 };
     }
     DERNIER = RELEVES[RELEVES.length - 1];
+    recalculerJournal();
     $('bandeau-exemple').hidden = !actif;
     $('bascule-exemple').setAttribute('aria-pressed', String(actif));
     $('bascule-exemple').textContent = actif ? 'masquer l’exemple' : 'voir un exemple';
@@ -1897,11 +2066,14 @@
     $('bascule-essentielles').title = 'N\u2019afficher que les colonnes utiles au suivi \u2014 un second clic remet tout';
   }
 
+  /* Le bouton est toujours là : au premier import il montre ce que la page
+     dira plus tard, et plus tard il sert encore à l'expliquer à quelqu'un.
+     Il remplit d'un coup le graphique ET le journal. */
   (function proposerExemple() {
-    if (RELEVES_REELS.length < 3) {
-      $('bascule-exemple').hidden = false;
-      $('bascule-exemple').title = 'Montrer, sur des données fictives, ce que ce graphique dira une fois quelques relevés archivés';
-    }
+    $('bascule-exemple').hidden = false;
+    $('bascule-exemple').title = RELEVES_REELS.length < 3
+      ? 'Montrer, sur des données fictives, ce que cette page dira une fois quelques relevés archivés'
+      : 'Remplacer le graphique et le journal par un exemple, le temps de montrer comment ça marche';
   })();
 
   /* ============================================================
@@ -2157,11 +2329,6 @@
       rendreCritique(selection());
       var repris = document.querySelector('button[data-aide]');
       if (repris) repris.focus();
-      return;
-    }
-    if (e.target.closest('#plus-groupes')) {
-      vue.groupesTout = true;
-      rendreCritique(selection());
       return;
     }
     var ud = e.target.closest('button[data-ud]');

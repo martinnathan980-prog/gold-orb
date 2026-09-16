@@ -123,11 +123,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
 
   const titresDim = mGates.clesDim.map(c => mGates.colonnes.find(x => x.cle === c).titre);
   verifier('les colonnes d\'analyse sont celles demandées, dans l\'ordre',
-    JSON.stringify(titresDim) === JSON.stringify(['ATA', 'Avancement', 'CC',
-      'Chapitre', 'ECP']), JSON.stringify(titresDim));
+    JSON.stringify(titresDim) === JSON.stringify(['ATA', 'CC', 'ECP']), JSON.stringify(titresDim));
   verifier('l\'ATA est ouvert par défaut', mGates.dimParDefaut === 'ata', mGates.dimParDefaut);
-  verifier('l\'« Avancement » retenu est celui du groupe FWD',
-    mGates.colonnes.find(c => c.cle === mGates.clesDim[1]).groupe === 'Réalisation FWD');
+  verifier('le mois de création s\'y ajoute côté page, pas côté serveur',
+    mGates.cleDate === 'date_creation' && mGates.clesDim.indexOf('_mois') === -1);
   verifier('la vue essentielle tient en moins de dix colonnes',
     mGates.clesEssentielles.length <= 10 && mGates.clesEssentielles.length >= 5,
     String(mGates.clesEssentielles.length));
@@ -148,11 +147,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
                           'Type'].indexOf(t) !== -1), JSON.stringify(titresDim));
   verifier('ni la référence ni la date brute ne sont des dimensions',
     !titresDim.some(t => ['Référence UD', 'Date création'].indexOf(t) !== -1), JSON.stringify(titresDim));
-  /* L'avancement FWD lui-même est une dimension demandée : regrouper par sa
-     valeur brute montre d'un coup les façons de l'écrire, donc les saisies
-     qui divergent. */
-  verifier('l\'avancement FWD est bien proposé comme dimension',
-    titresDim.indexOf('Avancement') !== -1);
+  verifier('ni l\'avancement ni le chapitre n\'y sont, comme demandé',
+    titresDim.indexOf('Avancement') === -1 && titresDim.indexOf('Chapitre') === -1,
+    JSON.stringify(titresDim));
   verifier('le nombre de dimensions reste tenable', titresDim.length <= 8, String(titresDim.length));
 
   /* Liste vidée : la détection automatique doit retomber sur des colonnes
@@ -519,8 +516,6 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await p.evaluate(() => { const b = document.getElementById('tout-effacer'); if (b) b.click(); });
   await p.waitForTimeout(400);
   await p.selectOption('#dim-critique', vu.dims[vu.dims.length - 1]); await p.waitForTimeout(500);
-  const plusDim = await p.$('#plus-groupes');
-  if (plusDim) { await plusDim.click(); await p.waitForTimeout(400); }
   verifier('changer de dimension recalcule le bloc sans rien perdre',
     await p.evaluate(() => [...document.querySelectorAll('.critique-total')]
       .reduce((s, t) => s + (+t.textContent), 0) === 186));
@@ -799,25 +794,24 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const avecJalon = await pg.evaluate(() => !document.getElementById('zone-critique').classList.contains('sans-jalon'));
   verifier('chaque colonne calculée porte son « ? »',
     nbAides === (avecJalon ? 3 : 2), nbAides + ' pour ' + (avecJalon ? 'trois' : 'deux') + ' colonnes');
-  await pg.selectOption('#dim-critique', '_anciennete'); await pg.waitForTimeout(500);
+  await pg.selectOption('#dim-critique', 'ata'); await pg.waitForTimeout(500);
   const noteA = await pg.textContent('#indice-dim');
   await pg.selectOption('#dim-critique', '_mois'); await pg.waitForTimeout(500);
   const noteM = await pg.textContent('#indice-dim');
-  verifier('l\'ancienneté est expliquée', /tranches/.test(noteA), noteA);
-  verifier('le mois de création aussi, et la différence est dite',
-    /mois/.test(noteM) && /ancienneté/i.test(noteM), noteM);
-  verifier('les deux notes ne disent pas la même chose', noteA !== noteM);
-  const bcp = await pg.evaluate(() => ({
-    lignes: document.querySelectorAll('.critique-ligne').length,
-    plus: !!document.getElementById('plus-groupes')
-  }));
-  verifier('une dimension à beaucoup de groupes n\'en ouvre qu\'une quinzaine',
-    bcp.lignes <= 15, String(bcp.lignes));
-  verifier('et propose de voir les autres', bcp.plus);
-  await pg.click('#plus-groupes'); await pg.waitForTimeout(500);
-  verifier('« voir les autres » les montre tous',
-    await pg.evaluate(() => document.querySelectorAll('.critique-ligne').length) > bcp.lignes &&
-    await pg.evaluate(() => !document.getElementById('plus-groupes')));
+  verifier('une dimension ordinaire n\'a pas besoin de note', noteA.trim() === '', noteA);
+  verifier('le mois de création, lui, est expliqué',
+    /mois/.test(noteM) && /vague|temps/i.test(noteM), noteM);
+  const bcp = await pg.evaluate(() => {
+    const z = document.getElementById('zone-critique');
+    return {
+      lignes: document.querySelectorAll('.critique-ligne').length,
+      hauteur: Math.round(z.getBoundingClientRect().height),
+      defile: z.scrollHeight > z.clientHeight + 4
+    };
+  });
+  verifier('toutes les lignes sont présentes, même nombreuses', bcp.lignes > 15, String(bcp.lignes));
+  verifier('le bloc garde une hauteur raisonnable', bcp.hauteur <= 520, bcp.hauteur + ' px');
+  verifier('et on y descend au lieu d\'allonger la page', bcp.defile);
   await pg.selectOption('#dim-critique', 'ata'); await pg.waitForTimeout(500);
 
   // =================================================================
@@ -886,8 +880,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('et le graphique retrouve son cadrage',
     await pp.evaluate(() => document.querySelectorAll('.zone-clic').length) === avantEx,
     avantEx + ' → ' + (await pp.evaluate(() => document.querySelectorAll('.zone-clic').length)));
-  verifier('avec cinq relevés, le bouton d\'aperçu ne s\'affiche pas',
-    await pg.evaluate(() => document.getElementById('bascule-exemple').hidden));
+  /* Le bouton reste proposé même avec de l'historique : il sert aussi à
+     montrer la page à quelqu'un, pas seulement à combler un vide. */
+  verifier('le bouton d\'aperçu reste proposé même avec de l\'historique',
+    await pg.evaluate(() => !document.getElementById('bascule-exemple').hidden));
   await ctxPremier.close();
 
   await ctxGates.close();

@@ -69,9 +69,7 @@ const CONFIG = {
    */
   DIMENSIONS: [
     'ATA',
-    'Réalisation FWD > Avancement',
     'CC',
-    'Chapitre',
     'ECP'
   ],
 

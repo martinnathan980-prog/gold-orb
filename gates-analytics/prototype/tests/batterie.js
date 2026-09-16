@@ -56,6 +56,14 @@ async function reinitialiser(pg) {
 
   const ctx = await contexte();
   let p = await page(ctx, 'principal');
+  /* Le jeu d'exemple peut changer de taille : on relève le total une fois et
+     tout le reste s'y réfère. */
+  const TOTAL = await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length);
+  /* Le nombre total de colonnes de l'export, y compris celles que la page
+     ouvre repliées : c'est ce que « tout afficher » doit rendre. */
+  const COLONNES_TOTAL = await p.evaluate(() =>
+    document.querySelectorAll('#panneau-colonnes input[data-col]').length);
+  console.log('  (jeu d\'exemple : ' + TOTAL + ' plans, ' + COLONNES_TOTAL + ' colonnes)');
 
   // =================================================================
   section('Chargement et cohérence des chiffres');
@@ -70,14 +78,14 @@ async function reinitialiser(pg) {
   }));
   const somme = kpi.etats.reduce((a, b) => a + b, 0);
   verifier('le titre de la page est posé', kpi.titre === 'Suivi FWD', kpi.titre);
-  verifier('les quatre états totalisent 186', somme === 186, 'somme=' + somme);
+  verifier('les quatre états totalisent le nombre de plans', somme === TOTAL, somme + ' vs ' + TOTAL);
   verifier('le % est écrit dans la barre et correspond aux terminés',
-    kpi.pct.replace(/\D/g, '') === String(Math.round(kpi.etats[0] / 186 * 100)), 'lu=' + kpi.pct);
+    kpi.pct.replace(/\D/g, '') === String(Math.round(kpi.etats[0] / TOTAL * 100)), 'lu=' + kpi.pct);
   verifier('plus de pourcentage en doublon au-dessus de la barre',
     await p.evaluate(() => !document.getElementById('pourcentage') && !document.querySelector('.etat-part')));
   verifier('la barre totalise 100 %', Math.abs(kpi.parts.reduce((a, b) => a + b, 0) - 100) < 0.2);
-  verifier('le tableau annonce tous les plans', /186/.test(kpi.compte));
-  verifier('le tableau affiche bien 186 lignes', kpi.lignes === 186, kpi.lignes + ' lignes');
+  verifier('le tableau annonce tous les plans', kpi.compte.indexOf(String(TOTAL)) !== -1, kpi.compte);
+  verifier('le tableau affiche toutes les lignes', kpi.lignes === TOTAL, kpi.lignes + ' lignes');
 
   // =================================================================
   section('Alignement des chiffres et filets de séparation');
@@ -125,11 +133,11 @@ async function reinitialiser(pg) {
       presse: document.querySelectorAll('.etat-btn[aria-pressed="true"]').length
     }));
     verifier(`filtrer « ${etat} » ne garde qu'un seul état actif`, r.presse === 1, r.presse + ' actifs');
-    verifier(`filtrer « ${etat} » réduit le tableau`, r.lignes > 0 && r.lignes < 186, r.lignes + ' lignes');
+    verifier(`filtrer « ${etat} » réduit le tableau`, r.lignes > 0 && r.lignes < TOTAL, r.lignes + ' lignes');
     await p.click(`.etat-btn[data-etat="${etat}"]`); await p.waitForTimeout(300);
   }
   verifier('re-cliquer retire le filtre',
-    await p.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === 186));
+    await p.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
   await p.click('.etat-btn[data-etat="vide"]'); await p.waitForTimeout(350);
   verifier('« non renseignés » ne laisse que des cellules FWD vides',
     await p.evaluate(() => {
@@ -154,7 +162,7 @@ async function reinitialiser(pg) {
     { q: '.*', attendu: n => n === 0, nom: 'une expression régulière' },
     { q: '((((', attendu: n => n === 0, nom: 'des parenthèses déséquilibrées' },
     { q: '\\', attendu: n => n === 0, nom: 'un antislash seul' },
-    { q: '   ', attendu: n => n === 186, nom: 'des espaces seuls' },
+    { q: '   ', attendu: n => n === TOTAL, nom: 'des espaces seuls' },
     { q: 'zzzzzzzz', attendu: n => n === 0, nom: 'rien du tout' },
     { q: 'a'.repeat(3000), attendu: n => n === 0, nom: 'une chaîne de 3000 caractères' },
     { q: '🚁 émoji', attendu: n => n === 0, nom: 'un émoji' }
@@ -169,14 +177,14 @@ async function reinitialiser(pg) {
   verifier('aucune balise n\'est passée dans le DOM du tableau',
     await p.evaluate(() => !document.querySelector('#corps-tableau b, #corps-tableau script')));
   await p.fill('#recherche', ''); await p.waitForTimeout(320);
-  verifier('vider la recherche rend les 186 plans',
-    await p.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === 186));
+  verifier('vider la recherche rend tous les plans',
+    await p.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
 
   // =================================================================
   section('Filtres de colonne');
   await p.fill('input[data-filtre="ata"]', '24'); await p.waitForTimeout(350);
   const f1 = await p.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length));
-  verifier('filtrer une colonne réduit le tableau', f1 > 0 && f1 < 186, f1 + ' lignes');
+  verifier('filtrer une colonne réduit le tableau', f1 > 0 && f1 < TOTAL, f1 + ' lignes');
   await p.fill('#recherche', 'Cockpit'); await p.waitForTimeout(350);
   const f2 = await p.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length));
   verifier('recherche + filtre colonne se cumulent', f2 <= f1, f2 + ' ≤ ' + f1);
@@ -188,9 +196,9 @@ async function reinitialiser(pg) {
                             /0 plan/.test(document.getElementById('compte').textContent)));
   await reinitialiser(p);
   verifier('« tout réinitialiser » vide recherche et filtres',
-    await p.evaluate(() => document.getElementById('recherche').value === '' &&
+    await p.evaluate(t => document.getElementById('recherche').value === '' &&
       [...document.querySelectorAll('input[data-filtre]')].every(i => i.value === '') &&
-      (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === 186));
+      (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
 
   // =================================================================
   section('Tri du tableau');
@@ -207,7 +215,7 @@ async function reinitialiser(pg) {
       const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === c);
       return [...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.children[i].textContent.trim());
     }, cle);
-    if (asc.length !== 186 || desc.length !== 186) { triOk = false; triDetail = cle + ' perd des lignes'; break; }
+    if (asc.length !== TOTAL || desc.length !== TOTAL) { triOk = false; triDetail = cle + ' perd des lignes'; break; }
     if (asc.join('|') === desc.join('|') && new Set(asc).size > 1) { triOk = false; triDetail = cle + ' ne s\'inverse pas'; break; }
   }
   verifier('chaque colonne se trie dans les deux sens sans perdre de ligne', triOk, triDetail);
@@ -225,10 +233,14 @@ async function reinitialiser(pg) {
   const restant = await p.evaluate(() => document.querySelectorAll('tr.titres th').length);
   verifier('masquer toutes les colonnes possibles en laisse au moins une', restant >= 1, restant + ' colonne(s)');
   verifier('le tableau ne casse pas avec une seule colonne',
-    await p.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === 186));
-  await p.click('#tout-colonnes'); await p.waitForTimeout(350);
-  verifier('« tout afficher » remet toutes les colonnes',
-    await p.evaluate(() => document.querySelectorAll('tr.titres th').length) === avant);
+    await p.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
+  await p.click('#tout-colonnes'); await p.waitForTimeout(900);
+  /* « Tout afficher » rend TOUTES les colonnes de l'export, y compris celles
+     que la page ouvre repliées : c'est bien plus que ce qu'on voyait au départ. */
+  const apresTout = await p.evaluate(() => document.querySelectorAll('tr.titres th').length);
+  verifier('« tout afficher » remet toutes les colonnes de la feuille',
+    apresTout >= avant && apresTout === COLONNES_TOTAL,
+    apresTout + ' affichées');
   verifier('la référence UD reste verrouillée',
     await p.evaluate(() => document.querySelector('#panneau-colonnes input[data-col="reference"]').disabled));
   await p.keyboard.press('Escape');
@@ -393,7 +405,7 @@ async function reinitialiser(pg) {
   await poserJalon(6, 'Jalon de test');
   await p.waitForTimeout(300);
   const tris = await p.evaluate(() => [...document.querySelectorAll('button[data-trig]')].map(b => b.dataset.trig));
-  verifier('six colonnes triables avec un jalon', tris.length === 6, JSON.stringify(tris));
+  verifier('cinq colonnes triables avec un jalon', tris.length === 5, JSON.stringify(tris));
   verifier('les en-têtes sont centrés (sauf la répartition)',
     await p.evaluate(() => {
       const c = [...document.querySelectorAll('.critique-tete > span')];
@@ -411,7 +423,7 @@ async function reinitialiser(pg) {
       return e ? e.textContent.trim() : '';
     }), cle);
   }
-  for (const cle of ['nom', 'total', 'requis', 'tension', 'fin']) {
+  for (const cle of tris) {
     await p.click(`button[data-trig="${cle}"]`); await p.waitForTimeout(280);
     const a = await lire(cle);
     await p.click(`button[data-trig="${cle}"]`); await p.waitForTimeout(280);
@@ -439,19 +451,16 @@ async function reinitialiser(pg) {
     const lignes = [...document.querySelectorAll('.critique-ligne')];
     return {
       totaux: lignes.map(l => +l.querySelector('.critique-total').textContent),
-      solder: lignes.map(l => l.querySelector('.critique-fin').textContent.trim()),
       dates: lignes.map(l => l.querySelector('.critique-date .v').textContent.trim()),
       efforts: lignes.map(l => l.querySelector('.critique-effort .v').textContent.trim()),
       barres: lignes.map(l => [...l.querySelectorAll('.critique-barre span')]
         .reduce((s, x) => s + parseFloat(x.style.width), 0))
     };
   });
-  verifier('la somme des plans par groupe fait 186',
-    coh.totaux.reduce((a, b) => a + b, 0) === 186, String(coh.totaux.reduce((a, b) => a + b, 0)));
+  verifier('la somme des plans par groupe est complète',
+    coh.totaux.reduce((a, b) => a + b, 0) === TOTAL, String(coh.totaux.reduce((a, b) => a + b, 0)));
   verifier('chaque répartition totalise 100 %',
     coh.barres.every(b => Math.abs(b - 100) < 0.5), JSON.stringify(coh.barres.map(b => b.toFixed(1))));
-  verifier('« à solder/sem. » n\'affiche que des entiers',
-    coh.solder.every(v => v === '—' || /^\d+$/.test(v)), JSON.stringify(coh.solder));
   verifier('« fin estimée » est une semaine ISO, « — » ou « soldé »',
     coh.dates.every(v => /^\d{4}-S\d{2}$/.test(v) || v === '—' || v === 'soldé'), JSON.stringify(coh.dates));
   verifier('« effort demandé » porte le facteur et le rythme',
@@ -503,7 +512,7 @@ async function reinitialiser(pg) {
   verifier('huit bascules rapides du panneau ne cassent rien',
     await p.evaluate(() => document.querySelectorAll('.critique-ligne').length >= 5));
   verifier('ouvrir le panneau ne filtre pas le tableau',
-    await p.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === 186));
+    await p.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
 
   // =================================================================
   section('Sélection d\'un groupe et dimensions');
@@ -513,12 +522,12 @@ async function reinitialiser(pg) {
     note: document.getElementById('note-graphe').textContent,
     presse: document.querySelectorAll('.critique-ligne[aria-pressed="true"]').length
   }));
-  verifier('cliquer un groupe filtre le tableau', !/186 plans$/.test(apresGroupe.compte), apresGroupe.compte);
+  verifier('cliquer un groupe filtre le tableau', apresGroupe.compte.indexOf(TOTAL + ' plans') === -1, apresGroupe.compte);
   verifier('le graphique suit le groupe', /Historique de/.test(apresGroupe.note), apresGroupe.note);
   verifier('une seule ligne est marquée sélectionnée', apresGroupe.presse === 1);
   await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(350);
   verifier('re-cliquer désélectionne',
-    await p.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === 186));
+    await p.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
   const dims = await p.evaluate(() => [...document.querySelectorAll('#dim-critique option')].map(o => o.value));
   for (const d of dims) {
     await p.selectOption('#dim-critique', d); await p.waitForTimeout(400);
@@ -531,7 +540,7 @@ async function reinitialiser(pg) {
       total: [...document.querySelectorAll('.critique-total')].reduce((s, e) => s + (+e.textContent), 0)
     }));
     verifier(`dimension « ${d} » : au moins un groupe et le compte est juste`,
-      r.lignes > 0 && r.total === 186, r.lignes + ' groupes, total ' + r.total);
+      r.lignes > 0 && r.total === TOTAL, r.lignes + ' groupes, total ' + r.total);
   }
   await p.selectOption('#dim-critique', 'ata'); await p.waitForTimeout(350);
 
@@ -553,8 +562,8 @@ async function reinitialiser(pg) {
   await p.waitForTimeout(250);
   verifier('le bouton d\'aide absent ne provoque pas d\'erreur', true);
   await p.fill('#recherche', ''); await p.waitForTimeout(400);
-  verifier('on revient à 186 plans après la sélection vide',
-    await p.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === 186));
+  verifier('on revient à tous les plans après la sélection vide',
+    await p.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
 
   // =================================================================
   section('Stress : clics répétés et combinaisons');
@@ -568,8 +577,8 @@ async function reinitialiser(pg) {
       document.getElementById('compte').textContent.length > 0));
   await reinitialiser(p);
   verifier('« tout réinitialiser » remet tout d\'aplomb',
-    await p.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === 186 &&
-      document.querySelectorAll('.etat-btn[aria-pressed="true"]').length === 0));
+    await p.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t &&
+      document.querySelectorAll('.etat-btn[aria-pressed="true"]').length === 0, TOTAL));
 
   // =================================================================
   section('Persistance (même navigateur, page rechargée)');
@@ -597,7 +606,7 @@ async function reinitialiser(pg) {
   await pc.evaluate(() => localStorage.setItem('suivi-fwd:v1', '{ceci n\'est pas du JSON'));
   await pc.reload(); await pc.waitForTimeout(1300);
   verifier('un stockage illisible ne bloque pas le démarrage',
-    await pc.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === 186));
+    await pc.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
   await pc.evaluate(() => localStorage.setItem('suivi-fwd:v1', JSON.stringify({
     jalons: [{ i: 'pas un nombre', texte: 42 }, null, { i: 99999 }],
     fen: { debut: 'x' }, tri: { cle: '__proto__' }, triGroupe: { cle: 'rm -rf', asc: 'oui' },
@@ -610,7 +619,7 @@ async function reinitialiser(pg) {
     refVisible: !!document.querySelector('tr.titres th[data-cle="reference"]'),
     triActif: document.querySelectorAll('button[data-trig][data-actif="true"]').length
   }));
-  verifier('des préférences absurdes sont ignorées sans plantage', survie.lignes === 186, survie.lignes + ' lignes');
+  verifier('des préférences absurdes sont ignorées sans plantage', survie.lignes === TOTAL, survie.lignes + ' lignes');
   verifier('toutes les colonnes restent présentes', survie.colonnes >= 11, survie.colonnes + ' colonnes');
   verifier('la référence UD ne peut pas être masquée par le stockage', survie.refVisible);
   verifier('une clé de tri inconnue n\'est pas appliquée', survie.triActif === 0);
@@ -626,11 +635,11 @@ async function reinitialiser(pg) {
   });
   await pb.goto(URL); await pb.waitForTimeout(1300);
   verifier('un localStorage inaccessible ne casse pas la page',
-    await pb.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === 186));
+    await pb.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
   await pb.click('.etat-btn[data-etat="termine"]').catch(() => {});
   await pb.waitForTimeout(300);
   verifier('les filtres marchent quand même sans stockage',
-    await pb.evaluate(() => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) < 186));
+    await pb.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) < t, TOTAL));
   await ctxBloque.close();
 
   // =================================================================

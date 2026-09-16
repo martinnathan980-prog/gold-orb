@@ -122,16 +122,15 @@ Dans « Avancement FWD par… », rangées par ordre alphabétique dans le séle
 
 | Colonne | Ce qu'elle montre |
 |---|---|
-| **Ancienneté** | quatre tranches calculées sur `Date création` — « qu'est-ce qui traîne depuis longtemps ? » |
 | **ATA** | le découpage attendu, ouvert par défaut |
-| **Avancement** | la colonne FWD elle-même : d'un coup d'œil, toutes les façons de l'écrire, donc les saisies qui divergent |
 | **CC** | code circuit |
-| **Chapitre** | découpage documentaire |
-| **Date création (par mois)** | un groupe par mois, rangés dans l'ordre du temps — « de quelle vague vient ce lot ? » |
+| **Date création (par mois)** | un groupe par mois, rangés dans l'ordre du temps |
 | **ECP** | |
 
-Une note sous le titre explique la dimension choisie, en particulier la
-différence entre l'ancienneté (des tranches) et le mois de création (une date).
+Deux colonnes calculées : **fin estimée**, puis **effort demandé**. « À solder
+par semaine » a été retiré — personne ne suit un nombre par semaine. Le bloc a
+une hauteur bornée : au-delà d'une dizaine de lignes, on descend dedans plutôt
+que d'allonger la page.
 
 **Choisir une ligne déplie ses références** : les plans non terminés d'abord,
 une pastille par état, et un clic sur une référence réduit le tableau du bas à
@@ -143,7 +142,7 @@ Chaque colonne calculée porte un **?** qui ouvre la même explication chiffrée
 Pour changer la liste, une ligne en haut de `Code.gs` :
 
 ```js
-DIMENSIONS: ['ATA', 'CC', 'Chapitre', 'Réalisation FWD > Avancement'],
+DIMENSIONS: ['ATA', 'CC', 'ECP'],
 ```
 
 La syntaxe `Groupe > Colonne` sert quand plusieurs colonnes portent le même
@@ -174,7 +173,10 @@ relevés successifs donne, semaine par semaine, qui a bougé et dans quel sens �
 la seule chose que l'export du jour ne dira jamais.
 
 Il est **sous le graphique**, dans la même section : la courbe dit combien, le
-journal dit lesquels.
+journal dit lesquels. Sa hauteur est bornée, on y descend.
+
+Dans chaque semaine, les plans sont **rangés par état d'arrivée** : tous les
+terminés, puis les passés en cours, puis les repassés à faire.
 
 - La semaine la plus récente est en haut, ouverte ; les autres se déplient
   d'un clic.
@@ -206,12 +208,13 @@ qu'on avait masquées soi-même.
 
 ### Voir un exemple
 
-Tant qu'il n'y a qu'un ou deux relevés, le graphique n'a rien à tracer et
-personne ne voit à quoi la page servira. Le lien **voir un exemple**, à côté du
-titre « Avancement dans le temps », fabrique un historique fictif à partir des
-comptes du jour, sous un bandeau qui dit que c'en est un. Le tableau, lui,
-reste sur les vraies données. Le lien disparaît de lui-même au troisième
-relevé.
+Le lien **voir un exemple**, à côté du titre « Avancement dans le temps »,
+remplit d'un coup **le graphique et le journal** avec un historique fabriqué à
+partir des comptes du jour, sous un bandeau qui dit que c'en est un. Le tableau
+et les compteurs du haut restent sur les vraies données.
+
+Il est toujours proposé : au premier import il montre ce que la page dira plus
+tard, et plus tard il sert encore à l'expliquer à quelqu'un.
 
 ## 7. Les quatre états
 

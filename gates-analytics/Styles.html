@@ -182,6 +182,14 @@ body {
 /* ---------------------------------------------------- Journal */
 .indice-dim { margin: -6px 0 12px; font-size: 12.5px; color: var(--encre-3); max-width: 76ch; }
 .indice-dim:empty { display: none; }
+/* Deux listes qui peuvent s'allonger sans fin : on leur donne une hauteur et
+   un défilement, plutôt que de laisser la page grandir jusqu'à l'illisible. */
+.defile-liste { max-height: 430px; overflow-y: auto; overscroll-behavior: contain; }
+.defile-liste::-webkit-scrollbar { width: 9px; }
+.defile-liste::-webkit-scrollbar-thumb { background: var(--filet-fort); border-radius: 5px; }
+.defile-liste::-webkit-scrollbar-track { background: transparent; }
+@media (max-width: 720px) { .defile-liste { max-height: 380px; } }
+
 .section-journal { margin-top: 26px; }
 .titre-journal {
   font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 17px; margin: 0;
@@ -388,8 +396,8 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 
 /* Une seule definition de colonnes, portee par le conteneur : l'en-tete et les
    lignes ne peuvent pas diverger, et la variante sans jalon n'a qu'a la redefinir. */
-#zone-critique { --cols: 92px 56px minmax(0, 1fr) 122px 136px 122px; }
-#zone-critique.sans-jalon { --cols: 108px 62px minmax(0, 1fr) 146px 126px; }
+#zone-critique { --cols: 96px 58px minmax(0, 1fr) 126px minmax(0, 150px); }
+#zone-critique.sans-jalon { --cols: 104px 62px minmax(0, 1fr) 126px minmax(0, 150px); }
 .critique-tete, .critique-ligne {
   display: grid; grid-template-columns: var(--cols);
   gap: 14px; align-items: center;
