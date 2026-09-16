@@ -111,7 +111,7 @@ function reinitialiserAvecDemo() {
 
   // Colonnes nomenclature : PN Global, Type, PN du type, Référence, Mots-clés,
   //   Montage, Nb pas, Long, Larg, Masse, HL, DAL, 3 qualifications,
-  //   Structure mécanique, Composants électriques, Image, Commentaires
+  //   Composants mécaniques, Composants routing, Image, Commentaires
   const nom = [
     ['332P20001',   'Structure boîte',      '332P20001.01',   '', '', 'Console STD',  '1', '500', '140', '500',  'A', 'A', 'Cat. S', 'Qual. H225', 'Case 1', 'Colonnette | NSA 5512 | COL-M4-20\nÉquerre | EN 2491 | EQ-90-A', 'Collier | NSA 8420 | CT-120\nEmbase | ECS 2210 | EMB-4', '', ''],
     ['332P20001',   'Harnais',              '332P20001.03',   'HRN-2251-A', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],

@@ -51,6 +51,50 @@ function groupeReglageHtml(portee) {
   return lignes + totalHtml(portee) + critereDisponiblesHtml(portee);
 }
 
+/**
+ * Les favoris de la portée : une intention posée d'un coup. Celui qui
+ * correspond exactement aux parts en place est marqué — sinon on ne saurait
+ * pas si on est encore dessus après avoir bougé un curseur.
+ */
+function favorisHtml(portee) {
+  const favoris = favorisDe(portee.cle);
+  if (!favoris.length) return '';
+
+  return '<div class="favoris">' +
+    '<h4>Favoris</h4>' +
+    '<p class="favoris-aide">Une intention posée d\'un coup. Les curseurs ' +
+      'restent réglables juste après.</p>' +
+    '<div class="favoris-liste">' +
+      favoris.map(function (f) {
+        const actif = favoriEnPlace(portee.cle, f);
+        return '<button type="button" class="favori' + (actif ? ' actif' : '') + '"' +
+          dataAttrs({ action: 'appliquer-favori', portee: portee.cle, favori: f.cle }) +
+          ' aria-pressed="' + actif + '" title="' + esc(f.aide) + '">' +
+          '<span class="favori-nom">' + esc(f.libelle) + '</span>' +
+          '<span class="favori-aide">' + esc(f.aide) + '</span>' +
+        '</button>';
+      }).join('') +
+      '<button type="button" class="favori favori-defaut"' +
+        dataAttrs({ action: 'reinitialiser-reglages' }) +
+        ' title="Revenir aux parts du registre">' +
+        '<span class="favori-nom">Par défaut</span>' +
+        '<span class="favori-aide">les parts d\'origine</span>' +
+      '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+/** Les parts en place sont-elles exactement celles de ce favori ? */
+function favoriEnPlace(portee, favori) {
+  const voulus = normaliserFavori(favori);
+  const actifs = criteresActifs(portee);
+  if (actifs.length !== Object.keys(voulus).length) return false;
+  return actifs.every(function (c) {
+    return voulus[c.cle] !== undefined &&
+           Math.abs((Number(tablePoids(portee)[c.cle]) || 0) - voulus[c.cle]) < 1;
+  });
+}
+
 function curseursHtml() {
   const portee = porteeCourante();
 
@@ -62,7 +106,7 @@ function curseursHtml() {
            '<b>' + esc(seul ? seul.libelle : '—') + '</b>. ' +
            'Le score en dépend entièrement, il n\'y a pas d\'arbitrage à faire.</p>';
   } else {
-    html = groupeReglageHtml(portee);
+    html = favorisHtml(portee) + groupeReglageHtml(portee);
   }
 
   // Quand la portée compare des composants, on règle AUSSI la répartition
@@ -138,6 +182,17 @@ function rafraichirCurseurs(cleTenue) {
     if (etiquette) etiquette.textContent = part + ' %';
     const jauge = bloc.querySelector('.reglage-jauge span');
     if (jauge) jauge.style.width = part + '%';
+  });
+
+  // Bouger un curseur quitte le favori : on ne prétend pas y être resté.
+  document.querySelectorAll('.favori[data-favori]').forEach(function (bouton) {
+    const portee = bouton.dataset.portee;
+    const favori = (favorisDe(portee) || []).find(function (f) {
+      return f.cle === bouton.dataset.favori;
+    });
+    const actif = !!favori && favoriEnPlace(portee, favori);
+    bouton.classList.toggle('actif', actif);
+    bouton.setAttribute('aria-pressed', String(actif));
   });
 
   document.querySelectorAll('.reglage-total').forEach(function (total) {

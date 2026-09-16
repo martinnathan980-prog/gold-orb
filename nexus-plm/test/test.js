@@ -51,7 +51,7 @@ function attribut(html, nom) {
 const CONFIG = {
   multiBoite: ['Porteur', 'Composants'],
   multiNom: ['Qualification Brouillard salin', 'Qualification Vibration',
-             'Qualification Explosion', 'Mots-clés', 'Structure mécanique', 'Composants électriques'],
+             'Qualification Explosion', 'Mots-clés', 'Composants mécaniques', 'Composants routing'],
   lectureSeuleNom: ['ID_Ligne', 'PN Global'],
   statuts: ['En étude', 'Validé', 'Obsolète'],
   porteurs: []
@@ -109,15 +109,15 @@ eq('le harnais : PN, référence, image, commentaires',
    champs('harnais'), ['PN du type', 'Référence', 'Image', 'Commentaires libres']);
 eq('la plaquette : PN, mots-clés, image, commentaires',
    champs('plaquette'), ['PN du type', 'Mots-clés', 'Image', 'Commentaires libres']);
-faux('aucun composant sur le harnais', champs('harnais').indexOf('Structure mécanique') !== -1);
-faux('aucun composant sur la plaquette', champs('plaquette').indexOf('Composants électriques') !== -1);
-vrai('la structure porte sa structure mécanique', champs('structure').indexOf('Structure mécanique') !== -1);
-vrai('et ses composants électriques', champs('structure').indexOf('Composants électriques') !== -1);
+faux('aucun composant sur le harnais', champs('harnais').indexOf('Composants mécaniques') !== -1);
+faux('aucun composant sur la plaquette', champs('plaquette').indexOf('Composants routing') !== -1);
+vrai('la structure porte sa composants mécaniques', champs('structure').indexOf('Composants mécaniques') !== -1);
+vrai('et ses composants électriques', champs('structure').indexOf('Composants routing') !== -1);
 faux('plus de colonne « Composant STD »', C.toutesLesColonnesNom().indexOf('Composant STD') !== -1);
 eq('la structure compare ses deux familles séparément',
    C.TYPES.structure.criteres.filter(function (c) { return c.mode === C.MODE.COMPOSANTS; })
      .map(function (c) { return c.champ; }),
-   ['Structure mécanique', 'Composants électriques']);
+   ['Composants mécaniques', 'Composants routing']);
 eq('la boîte compare ses propres composants (boutons, voyants…)',
    C.CRITERES_BOITE.filter(function (c) { return c.mode === C.MODE.COMPOSANTS; })
      .map(function (c) { return c.champ; }), ['Composants']);
@@ -131,8 +131,13 @@ vrai('les parts de la structure font 100 au registre',
 bloc('Porteurs : tous ceux d\'Airbus Helicopters, et pas de « Multi »');
 // =====================================================================
 faux('« Multi » a disparu', C.PORTEURS.indexOf('Multi') !== -1);
-['H125', 'H130', 'H135', 'H145', 'H145M', 'H155', 'H160', 'H160M', 'H175', 'H175M',
- 'H215', 'H215M', 'H225', 'H225M', 'NH90', 'Tigre', 'UH-72 Lakota'].forEach(function (p) {
+eq('quinze porteurs', C.PORTEURS.length, 15);
+vrai('le Dauphin est de la famille', C.PORTEURS.indexOf('Dauphin') !== -1);
+[ 'H155', 'H175M', 'UH-72 Lakota' ].forEach(function (p) {
+  faux(p + ' a ete retire', C.PORTEURS.indexOf(p) !== -1);
+});
+['Dauphin', 'H125', 'H130', 'H135', 'H145', 'H145M', 'H160', 'H160M', 'H175',
+ 'H215', 'H215M', 'H225', 'H225M', 'NH90', 'Tigre'].forEach(function (p) {
   vrai('porteur ' + p, C.PORTEURS.indexOf(p) !== -1);
 });
 eq('la liste est fermée (registre)', C.CHAMPS_BOITE['Porteur'].ferme, true);
@@ -352,7 +357,7 @@ vrai('et son montage', blocS.indexOf('Rack') !== -1);
 faux('la structure n\'affiche pas de champ Référence (celle du harnais)',
      /ligne-cle">Référence/.test(blocS));
 vrai('la structure affiche ses deux familles de composants',
-     blocS.indexOf('Structure mécanique') !== -1 && blocS.indexOf('Composants électriques') !== -1);
+     blocS.indexOf('Composants mécaniques') !== -1 && blocS.indexOf('Composants routing') !== -1);
 vrai('en colonnes fonction / norme / référence', blocS.indexOf('composants-entete') !== -1);
 vrai('avec un catalogue par catégorie',
      blocS.indexOf('data-categorie="mecanique"') !== -1 && blocS.indexOf('data-categorie="electrique"') !== -1);
@@ -362,11 +367,11 @@ vrai('la plaquette affiche ses mots-clés', blocP.indexOf('mission SAR') !== -1)
 vrai('avec le style dédié', blocP.indexOf('puce-motcle') !== -1);
 faux('la plaquette n\'affiche PAS son numéro (même renseigné)', blocP.indexOf('PL-1') !== -1);
 faux('ni ses cotes', blocP.indexOf('777') !== -1);
-faux('ni de composants', /Structure mécanique|Composants électriques/.test(blocP));
+faux('ni de composants', /Composants mécaniques|Composants routing/.test(blocP));
 
 const blocH2 = C.blocNomHtml(C.nomParId('H1'));
 faux('le harnais n\'affiche pas de qualification', blocH2.indexOf('Qualif') !== -1);
-faux('ni de composants', /Structure mécanique|Composants électriques/.test(blocH2));
+faux('ni de composants', /Composants mécaniques|Composants routing/.test(blocH2));
 faux('plus de duplication d\'un sous-ensemble : on en ajoute un, on ne le recopie pas',
      blocH2.indexOf('dupliquer-nom') !== -1);
 vrai('mais on peut toujours l\'éditer', blocH2.indexOf('editer-nom') !== -1);
@@ -541,7 +546,7 @@ C.Store.catalogue = [
   { 'Catégorie': 'mecanique',  'Fonction': 'Entretoise',      'Norme': 'NSA 5520', 'Référence': 'ENT-10' },
   { 'Catégorie': 'electrique', 'Fonction': 'Collier',         'Norme': 'NSA 8420', 'Référence': 'CT-120' }
 ];
-eq('catalogue filtré par catégorie : la structure mécanique', C.filtrerCatalogue('', 'mecanique').total, 2);
+eq('catalogue filtré par catégorie : la composants mécaniques', C.filtrerCatalogue('', 'mecanique').total, 2);
 eq('les composants de boîte', C.filtrerCatalogue('', 'composant').total, 1);
 eq('les composants électriques', C.filtrerCatalogue('', 'electrique').total, 1);
 eq('pas de colonnette proposée pour une boîte', C.filtrerCatalogue('colonnette', 'composant').total, 0);
@@ -743,7 +748,7 @@ const boiteAvec = function (pn, composants) {
 };
 const structureAvec = function (id, pn, meca) {
   return { 'ID_Ligne': id, 'PN Global': pn, 'Type': 'Structure boîte',
-           'PN du type': pn + '.01', 'Structure mécanique': meca };
+           'PN du type': pn + '.01', 'Composants mécaniques': meca };
 };
 
 // Cinq références sous une seule norme : le cas d'école.
@@ -804,7 +809,7 @@ charger(
   [structureAvec('S1', 'B1', 'Colonnette | NSA 5512 | COL-M4-20'),
    structureAvec('S2', 'B2', 'Colonnette | NSA 5512 | COL-M6-40')]);
 op = C.opportunitesStandardisation(C.Store.boites);
-eq('la structure mécanique compte aussi', op.length, 1);
+eq('la composants mécaniques compte aussi', op.length, 1);
 eq('dans sa catégorie', op[0].categorie, 'mecanique');
 eq('deux références de colonnette', op[0].nbReferences, 2);
 
@@ -1176,6 +1181,195 @@ const cB = C.listeComposants('Bouton  poussoir | ECS 7251 | MS-1')[0];
 eq('la comparaison ne les separe pas', C.comparerComposants(cA, cB).ratio, 1);
 
 // =====================================================================
+bloc('Quatrieme lecture : l\'inventaire des composants');
+// =====================================================================
+charger(
+  [{ 'PN Global': 'B1', 'Porteur': 'H225', 'Composants': 'Voyant | MS25041 | MS25041-3' },
+   { 'PN Global': 'B2', 'Porteur': 'H160\nH160M', 'Composants': 'Voyant | MS25041 | MS25041-3' },
+   { 'PN Global': 'B3', 'Porteur': 'H225', 'Composants': 'Voyant | MS25041 | MS25041-5' }],
+  [structureAvec('S1', 'B1', 'Colonnette | NAS43 | NAS43DD3-20'),
+   structureAvec('S2', 'B3', 'Colonnette | NAS43 | NAS43DD3-20')]);
+
+let invC = C.inventaireComposants(C.Store.boites);
+eq('trois composants distincts', invC.length, 3);
+const voyant = invC.find(function (c) { return c.reference === 'MS25041-3'; });
+vrai('le voyant est recense', !!voyant);
+eq('sur deux boites', voyant.nbBoites, 2);
+eq('nommees', voyant.boites, ['B1', 'B2']);
+eq('et leurs porteurs sont cumules', voyant.porteurs, ['H160', 'H160M', 'H225']);
+eq('la categorie est retenue', voyant.categorie, 'composant');
+// Le classement met en tete le plus monte ; a egalite, l'ordre est stable.
+vrai('les plus montes sont en tete', invC[0].nbBoites >= invC[invC.length - 1].nbBoites);
+
+const colonnette = invC.find(function (c) { return c.fonction === 'Colonnette'; });
+vrai('les composants des SOUS-ENSEMBLES comptent aussi', !!colonnette);
+eq('avec leur propre categorie', colonnette.categorie, 'mecanique');
+eq('sur deux boites', colonnette.nbBoites, 2);
+
+// Deux references differentes sont deux composants, pas un.
+const rouge = invC.find(function (c) { return c.reference === 'MS25041-5'; });
+vrai('une autre reference est une autre ligne', !!rouge);
+eq('montee une seule fois', rouge.nbBoites, 1);
+
+// Le meme composant pose deux fois dans la meme boite : une boite, deux montages.
+charger([{ 'PN Global': 'B1',
+           'Composants': 'Voyant | MS25041 | MS25041-3\nVoyant | MS25041 | MS25041-3' }], []);
+invC = C.inventaireComposants(C.Store.boites);
+eq('une seule ligne', invC.length, 1);
+eq('une seule boite', invC[0].nbBoites, 1);
+
+// L'inventaire suit les filtres, comme les trois autres vues.
+charger(
+  [{ 'PN Global': 'B1', 'Statut': 'Validé',   'Composants': 'Voyant | MS25041 | MS25041-3' },
+   { 'PN Global': 'B2', 'Statut': 'En étude', 'Composants': 'Relais | MS27401 | MS27401-1' }], []);
+eq('sans filtre, deux composants',
+   C.inventaireComposants(C.calculerVue().aAfficher).length, 2);
+C.Store.filtreStatut = 'Validé';
+eq('filtre sur les validees, un seul',
+   C.inventaireComposants(C.calculerVue().aAfficher).length, 1);
+C.Store.filtreStatut = null;
+
+eq('base vide', C.inventaireComposants([]), []);
+
+// Le bilan de tete.
+charger(
+  [{ 'PN Global': 'B1', 'Composants': 'Voyant | MS25041 | MS25041-3\nRelais | MS27401 | MS27401-1' },
+   { 'PN Global': 'B2', 'Composants': 'Voyant | MS25041 | MS25041-3' }], []);
+const bilan = C.bilanComposants(C.inventaireComposants(C.Store.boites));
+eq('deux references', bilan.references, 2);
+eq('deux fonctions', bilan.fonctions, 2);
+eq('deux normes', bilan.normes, 2);
+eq('trois montages', bilan.montages, 3);
+eq('un seul composant monte dans une seule boite', bilan.uniques, 1);
+
+// Le rendu, echappement compris.
+charger([{ 'PN Global': 'B"1', 'Composants': '<b>V</b> | <i>N</i> | <u>R</u>' }], []);
+const htmlCompo = C.composantsHtml(C.calculerVue());
+faux('un composant piege n\'injecte rien', /<b>V<\/b>|<i>N<\/i>/.test(htmlCompo));
+vrai('il est affiche echappe', htmlCompo.indexOf('&lt;b&gt;V&lt;/b&gt;') !== -1);
+vrai('la boite est depliable', htmlCompo.indexOf('data-action="deplier-composant"') !== -1);
+vrai('et menе a sa fiche', htmlCompo.indexOf('data-action="ouvrir-fiche"') !== -1);
+charger([{ 'PN Global': 'B1' }], []);
+vrai('sans composant, on le dit',
+     C.composantsHtml(C.calculerVue()).indexOf('etat-vide') !== -1);
+
+// Le mode de vue accepte la quatrieme lecture.
+C.Store.vueMode = 'composants';
+C.enregistrerReglages();
+C.Store.vueMode = 'boites';
+C.chargerReglages();
+eq('le mode composants est relu', C.Store.vueMode, 'composants');
+C.Store.vueMode = 'boites';
+C.enregistrerReglages();
+
+// =====================================================================
+bloc('Favoris de ponderation');
+// =====================================================================
+C.chargerReglages();
+const favBoite = C.favorisDe('boite');
+vrai('la boite a des favoris', favBoite.length >= 3);
+vrai('chacun ne nomme que des criteres existants',
+     favBoite.every(function (f) {
+       return Object.keys(f.poids).every(function (c) {
+         return C.CRITERES_BOITE.some(function (x) { return x.cle === c; });
+       });
+     }));
+vrai('chacun porte une aide', favBoite.every(function (f) { return f.aide && f.aide.length > 3; }));
+
+// Les parts sont ecrites en relatif : c'est l'application qui ramene a 100.
+favBoite.forEach(function (f) {
+  const parts = C.normaliserFavori(f);
+  const total = Object.keys(parts).reduce(function (t, c) { return t + parts[c]; }, 0);
+  eq('« ' + f.libelle + ' » totalise 100 %', total, 100);
+});
+
+vrai('poser un favori repond vrai', C.appliquerFavori('boite', 'porteur'));
+eq('le porteur pese le plus',
+   C.criteresActifs('boite').reduce(function (a, b) {
+     return C.poidsDe('boite', a) >= C.poidsDe('boite', b) ? a : b;
+   }).cle, 'porteur');
+eq('et le total reste a 100',
+   C.criteresActifs('boite').reduce(function (t, c) { return t + C.poidsDe('boite', c); }, 0), 100);
+
+// Un favori dit aussi ce qui NE compte pas : les criteres absents sont ecartes.
+vrai('poser « Meme contenu » ne garde que ses criteres', C.appliquerFavori('boite', 'contenu'));
+eq('trois criteres retenus', C.criteresActifs('boite').length, 3);
+faux('le porteur est ecarte', C.critereEstActif('boite', 'porteur'));
+
+// Un favori inconnu ne change rien.
+const avantInconnu = C.criteresActifs('boite').map(function (c) { return c.cle; });
+faux('un favori inconnu est refuse', C.appliquerFavori('boite', 'nimporte'));
+eq('et rien n\'a bouge', C.criteresActifs('boite').map(function (c) { return c.cle; }), avantInconnu);
+faux('une portee inconnue aussi', C.appliquerFavori('nimporte', 'porteur'));
+
+// Un favori change VRAIMENT le classement : c'est tout son interet.
+charger(
+  [{ 'PN Global': 'SRC', 'Fonction': 'HOIST', 'Porteur': 'H145',
+     'Niveau de qualification': 'Qualified to H145', 'Composants': 'Voyant | MS25041 | MS25041-3' },
+   { 'PN Global': 'MEME-PORTEUR', 'Fonction': 'COM', 'Porteur': 'H145',
+     'Niveau de qualification': 'Qualified to H145', 'Composants': 'Relais | MS27401 | MS27401-1' },
+   { 'PN Global': 'MEME-CONTENU', 'Fonction': 'NAV', 'Porteur': 'H225',
+     'Niveau de qualification': 'Qualified to H225', 'Composants': 'Voyant | MS25041 | MS25041-3' }], []);
+C.appliquerFavori('boite', 'porteur');
+eq('avec « Meme porteur », c\'est le porteur qui gagne',
+   C.equivalencesBoite('SRC')[0].cible['PN Global'], 'MEME-PORTEUR');
+C.appliquerFavori('boite', 'contenu');
+eq('avec « Meme contenu », c\'est le contenu',
+   C.equivalencesBoite('SRC')[0].cible['PN Global'], 'MEME-CONTENU');
+C.reinitialiserPoids();
+
+// Chaque portee comparable a au moins un favori applicable.
+C.porteesComparables().forEach(function (p) {
+  vrai('la portee « ' + p.libelle + ' » a un favori', C.favorisDe(p.cle).length >= 1);
+});
+
+// =====================================================================
+bloc('La fiche ne cache plus rien hors edition');
+// =====================================================================
+charger(
+  [{ 'PN Global': 'B1', 'Fonction': 'APU', 'Image': 'https://exemple.fr/photo.jpg' }],
+  [{ 'ID_Ligne': 'S1', 'PN Global': 'B1', 'Type': 'Structure boîte',
+     'PN du type': 'B1.01', 'Montage': 'Console STD',
+     'Image': 'https://exemple.fr/structure.jpg' }]);
+C.Store.enEditionBoite = false; C.Store.enEditionNom = {};
+const ficheLue = C.ficheHtml(C.boiteParPn('B1'));
+// Un champ qu'il faut passer en edition pour LIRE est un champ qu'on oublie.
+vrai('l\'URL de la photo de boite se lit', ficheLue.indexOf('exemple.fr/photo.jpg') !== -1);
+vrai('celle du sous-ensemble aussi', ficheLue.indexOf('exemple.fr/structure.jpg') !== -1);
+vrai('elles sont cliquables', ficheLue.indexOf('class="lien-url"') !== -1);
+vrai('et s\'ouvrent dans un onglet', ficheLue.indexOf('rel="noopener noreferrer"') !== -1);
+vrai('le type du sous-ensemble se lit aussi', /Type[\s\S]{0,120}Structure boîte/.test(ficheLue));
+
+// Tout ce que l'edition montre doit se lire hors edition.
+C.Store.enEditionBoite = true; C.Store.enEditionNom = { 'S1': true };
+const ficheEditee = C.ficheHtml(C.boiteParPn('B1'));
+C.Store.enEditionBoite = false; C.Store.enEditionNom = {};
+const libelles = ['Fonction', 'Image (URL)', 'Montage', 'Type'];
+libelles.forEach(function (l) {
+  vrai('« ' + l + '  » est lisible hors edition', ficheLue.indexOf(l) !== -1);
+  vrai('et editable', ficheEditee.indexOf(l) !== -1);
+});
+
+// Une URL longue est raccourcie a l'affichage, mais entiere au survol.
+const longue = 'https://drive.google.com/file/d/' + 'A'.repeat(60) + '/view';
+charger([{ 'PN Global': 'B1', 'Image': longue }], []);
+const htmlLongue = C.ficheHtml(C.boiteParPn('B1'));
+vrai('l\'URL longue est tronquee a l\'oeil', htmlLongue.indexOf('…') !== -1);
+vrai('mais entiere dans le lien', htmlLongue.indexOf('href="' + longue + '"') !== -1);
+
+// Une valeur qui n'est pas une URL reste du texte, pas un lien mort.
+charger([{ 'PN Global': 'B1', 'Image': 'pas une url' }], []);
+faux('un texte quelconque ne devient pas un lien',
+     /class="lien-url"/.test(C.ficheHtml(C.boiteParPn('B1'))));
+charger([{ 'PN Global': 'B1', 'Image': '' }], []);
+vrai('une image absente se dit', C.ficheHtml(C.boiteParPn('B1')).indexOf('—') !== -1);
+
+// Une URL piegee ne sort pas de son attribut.
+charger([{ 'PN Global': 'B1', 'Image': 'https://x.fr/"><script>alert(1)</script>' }], []);
+faux('une URL piegee n\'injecte rien',
+     /<script>alert\(1\)<\/script>/.test(C.ficheHtml(C.boiteParPn('B1'))));
+
+// =====================================================================
 bloc('Ce que la batterie a trouve');
 // =====================================================================
 // 1) Avant que les reglages ne soient charges, Store.criteresActifs est vide.
@@ -1424,11 +1618,14 @@ eq('trois rendus lui rendent la main',
 vrai('les écritures multiples rendent une promesse',
      /function majMultiBoite[\s\S]{0,400}return /.test(srcMainSeul));
 
-// F6 — le catalogue reste ouvert : trois colonnettes, trois clics, pas neuf.
-faux('ajouter depuis le catalogue ne referme plus',
-     /'ajouter-catalogue':[\s\S]{0,500}fermerModal/.test(srcMainSeul));
-vrai('et la liste se rafraîchit sur place',
-     /'ajouter-catalogue':[\s\S]{0,500}rendreCatalogue\(\)/.test(srcMainSeul));
+// F6 — le catalogue se referme apres un ajout : le geste se termine la ou il
+// a commence, sur la fiche, et on voit le composant pose.
+vrai('ajouter depuis le catalogue referme la modale',
+     /'ajouter-catalogue':[\s\S]{0,500}fermerModal\('catalogueModal'\)/
+       .test(sansCommentaires(lireSrc('client/Main.html'))));
+vrai('et confirme l\'ajout',
+     /'ajouter-catalogue':[\s\S]{0,500}confirmerSucces/
+       .test(sansCommentaires(lireSrc('client/Main.html'))));
 
 // Supprimer se voit sans passer en édition : c'est une action sur la fiche,
 // pas sur un formulaire.

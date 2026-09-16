@@ -1,34 +1,47 @@
 ﻿Catégorie;Fonction;Norme;Référence;Désignation
-composant;Bouton poussoir;ECS 7251;MS24523-22;Push button, 1 contact
-composant;Bouton poussoir;ECS 7251;MS24523-23;Push button, 2 contacts
-composant;Bouton poussoir;ECS 0763;MS24523-31;Push button, lumineux
-composant;Bouton poussoir;ECS 0780;MS24523-40;Push button, protégé
-composant;Interrupteur;ASNE 0567;8500K12;Switch, 2 positions
-composant;Interrupteur;ASNE 0571;TGL-2P;Toggle, 3 positions
-composant;Double commande;FRF 772-034;DC-IG-2;Double commande IG
-composant;Relais;ECS 1120;RLY-28-2C;Relais 28 V, 2 contacts
-composant;Voyant;ECS 4410;LED-G-28;LED verte 28 V
-composant;Voyant;ECS 4410;LED-G-05;LED verte 5 V
-composant;Voyant;ECS 4411;LED-R-28;LED rouge 28 V
-composant;Voyant;ECS 4411;LED-R-05;LED rouge 5 V
-composant;Fusible;NSA 9350;F5A;Fusible 5 A
-composant;Fusible;NSA 9350;F10A;Fusible 10 A
-composant;Connecteur;EN 3645;CN-3645-12;Circulaire 12 voies
-composant;Connecteur;EN 4165;CN-4165-2;Rectangulaire 2 modules
-mecanique;Colonnette;NSA 5512;COL-M4-20;M4, 20 mm
-mecanique;Colonnette;NSA 5512;COL-M4-22;M4, 22 mm
-mecanique;Colonnette;NSA 5512;COL-M4-30;M4, 30 mm
-mecanique;Colonnette;NSA 5512;COL-M5-25;M5, 25 mm
-mecanique;Colonnette;NSA 5512;COL-M6-40;M6, 40 mm
-mecanique;Entretoise;NSA 5520;ENT-10;10 mm
-mecanique;Équerre;EN 2491;EQ-90-A;90°, type A
-mecanique;Équerre;EN 2491;EQ-90-B;90°, type B
-mecanique;Insert;NSA 5591;INS-M4;Insert fileté M4
-mecanique;Insert;NSA 5591;INS-M6;Insert fileté M6
-electrique;Collier;NSA 8420;CT-120;Collier 120 mm
-electrique;Collier;NSA 8421;CT-200;Collier 200 mm
-electrique;Embase;ECS 2210;EMB-4;Embase 4 mm
-electrique;Embase;ECS 2210;EMB-6;Embase 6 mm
-electrique;Passe-fil;ECS 2230;PF-8;Ø 8 mm
-electrique;Passe-fil;ECS 2230;PF-12;Ø 12 mm
-electrique;Cosse;EN 2491;CS-4;Cosse à sertir 4 mm²
+composant;Bouton poussoir;MS24523;MS24523-22;Toggle switch, DPDT, ON-ON
+composant;Bouton poussoir;MS24523;MS24523-23;Toggle switch, DPDT, ON-OFF-ON
+composant;Bouton poussoir;MS24524;MS24524-23;Toggle switch, 4PDT
+composant;Bouton poussoir;MS25089;MS25089-3D;Switch, pushbutton, momentané
+composant;Interrupteur;MS24523;MS24523-30;Toggle switch, SPDT
+composant;Interrupteur;MS27407;MS27407-1;Switch, guard, rabattable
+composant;Voyant;MS25041;MS25041-3;Indicator light, 28 VDC, vert
+composant;Voyant;MS25041;MS25041-5;Indicator light, 28 VDC, rouge
+composant;Voyant;MS25041;MS25041-7;Indicator light, 28 VDC, ambre
+composant;Disjoncteur;MS3320;MS3320-5;Circuit breaker, 5 A, trip-free
+composant;Disjoncteur;MS3320;MS3320-10;Circuit breaker, 10 A, trip-free
+composant;Relais;MS27401;MS27401-1;Relay, 28 VDC, 2PDT
+composant;Connecteur;EN 3645;EN3645-001-12-05;Circulaire, taille 12, 5 contacts
+composant;Connecteur;EN 4165;EN4165-002-02;Rectangulaire modulaire, 2 modules
+composant;Connecteur;MIL-DTL-38999;D38999/26WD19PN;Série III, taille 13, 19 contacts
+mecanique;Colonnette;NAS43;NAS43DD3-20;Entretoise Ø 4,8, longueur 20 mm
+mecanique;Colonnette;NAS43;NAS43DD3-22;Entretoise Ø 4,8, longueur 22 mm
+mecanique;Colonnette;NAS43;NAS43DD3-30;Entretoise Ø 4,8, longueur 30 mm
+mecanique;Colonnette;NAS43;NAS43DD4-25;Entretoise Ø 6,4, longueur 25 mm
+mecanique;Colonnette;NAS43;NAS43DD5-40;Entretoise Ø 7,9, longueur 40 mm
+mecanique;Vis;NAS1352;NAS1352N3-10;Vis CHC, inox, 10-32 UNF
+mecanique;Vis;NAS1352;NAS1352N4-12;Vis CHC, inox, 1/4-28 UNF
+mecanique;Écrou;MS21042;MS21042-3;Écrou frein, 10-32 UNF
+mecanique;Rondelle;NAS1149;NAS1149D0316J;Rondelle plate, 3/16, cadmiée
+mecanique;Insert;MS21209;MS21209F1-15;Insert hélicoïdal, 10-32 UNF
+mecanique;Insert;MS21209;MS21209F4-15;Insert hélicoïdal, 1/4-28 UNF
+mecanique;Écrou à river;NAS1329;NAS1329A3K130;Écrou noyé, 10-32 UNF
+mecanique;Équerre;AND10133;AND10133-0404;Équerre 90°, aile 40 mm
+mecanique;Équerre;AND10133;AND10133-0606;Équerre 90°, aile 60 mm
+electrique;Collier;MS3367;MS3367-4-9;Collier, 4,8 mm, Ø max 100 mm
+electrique;Collier;MS3367;MS3367-5-9;Collier, 4,8 mm, Ø max 190 mm
+electrique;Collier;MS3367;MS3367-7-9;Collier, 7,6 mm, Ø max 190 mm
+electrique;Support de câble;MS21919;MS21919WDG8;Collier amorti, Ø 12,7 mm
+electrique;Support de câble;MS21919;MS21919WDG12;Collier amorti, Ø 19,0 mm
+electrique;Support de câble;MS21919;MS21919WDG16;Collier amorti, Ø 25,4 mm
+electrique;Embase;MS25281;MS25281R9;Embase clip, Ø 14,3 mm
+electrique;Embase;MS25281;MS25281R12;Embase clip, Ø 19,0 mm
+electrique;Passe-fil;MS21266;MS21266-1N;Passe-fil caterpillar, Ø 6,4 mm
+electrique;Passe-fil;MS21266;MS21266-2N;Passe-fil caterpillar, Ø 9,5 mm
+electrique;Cosse;MS25036;MS25036-102;Cosse à œil, AWG 22-16, M4
+electrique;Cosse;MS25036;MS25036-108;Cosse à œil, AWG 16-14, M4
+electrique;Gaine;EN 6049;EN6049-006-16-2;Gaine tressée, Ø 16 mm
+electrique;Gaine;EN 6049;EN6049-006-25-2;Gaine tressée, Ø 25 mm
+electrique;Backshell;AS85049;AS85049/38-13N;Backshell coudé 90°, taille 13
+electrique;Bornier;MS27212;MS27212-2-8;Bornier 8 plots, 20 A
+electrique;Câble;MIL-W-22759;M22759/16-20-9;Fil ETFE, AWG 20, blanc

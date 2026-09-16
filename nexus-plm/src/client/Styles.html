@@ -314,10 +314,21 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 
 /* ---------------- choix de la vue ---------------- */
 /* Un segmenté court : deux lectures de la même base, pas un menu. */
-.choix-vue { display: inline-flex; background: var(--surface-3); border: 1px solid var(--trait); border-radius: 999px; padding: 2px; }
+.choix-vue {
+  display: inline-flex; flex-wrap: wrap; max-width: 100%;
+  background: var(--surface-3); border: 1px solid var(--trait);
+  border-radius: 999px; padding: 2px;
+}
 .onglet-vue {
   background: none; border: 0; border-radius: 999px; padding: 5px 14px;
   font-size: 12.5px; font-weight: 600; color: var(--encre-3); transition: .14s;
+  white-space: nowrap;
+}
+/* À quatre lectures, la pilule ne tient plus sur une ligne de téléphone :
+   on resserre plutôt que de laisser la page déborder sur le côté. */
+@media (max-width: 520px) {
+  .choix-vue { border-radius: var(--r-m); }
+  .onglet-vue { padding: 5px 9px; font-size: 11.5px; border-radius: var(--r-s); }
 }
 .onglet-vue:hover { color: var(--encre); }
 .onglet-vue.actif { background: var(--marque); color: var(--sur-marque); box-shadow: var(--ombre-1); }
@@ -407,6 +418,68 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 
 @media (max-width: 620px) {
   .famille-norme { grid-template-columns: 1fr; gap: 4px; }
+}
+
+/* ---------------- inventaire des composants ---------------- */
+/* Quatrieme lecture de la base : ce qu'on monte, et combien de fois. */
+.compo-bilan {
+  display: flex; flex-wrap: wrap; gap: var(--e-2) var(--e-5);
+  padding: 0 2px var(--e-3); margin-bottom: var(--e-3);
+  border-bottom: 1px solid var(--trait);
+  font-size: 12.5px; color: var(--encre-3);
+}
+.compo-bilan b { font-family: var(--police-data); font-size: 14px; color: var(--encre); font-weight: 700; }
+.compo-bilan-seul { color: var(--ambre); }
+.compo-bilan-seul b { color: var(--ambre); }
+
+.inventaire-compo .inventaire-entete,
+.compo-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) minmax(0, 1.15fr) 150px 190px minmax(0, 1fr);
+  gap: var(--e-3); align-items: center;
+}
+.compo-ligne { padding: 9px var(--e-2); border-bottom: 1px solid var(--surface-3); }
+.compo-ligne:last-child { border-bottom: 0; }
+.compo-ligne:hover { background: var(--surface-2); }
+.compo-seul { box-shadow: inset 3px 0 0 var(--ambre-trait); }
+
+.compo-fonction { font-size: 13px; font-weight: 600; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compo-norme { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-2); }
+.compo-reference { font-family: var(--police-data); font-size: 12px; color: var(--encre);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compo-famille {
+  font-size: 10px; letter-spacing: .07em; text-transform: uppercase; font-weight: 600;
+  padding: 2px 8px; border-radius: 999px; border: 1px solid var(--trait);
+  background: var(--surface-3); color: var(--encre-3); white-space: nowrap;
+  justify-self: start;
+}
+.compo-fam-composant  { background: var(--t-plaquette-voile); color: var(--t-plaquette); border-color: var(--t-plaquette-trait); }
+.compo-fam-mecanique  { background: var(--t-structure-voile); color: var(--t-structure); border-color: var(--t-structure-trait); }
+.compo-fam-electrique { background: var(--t-harnais-voile);   color: var(--t-harnais);   border-color: var(--t-harnais-trait); }
+
+.compo-emploi { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+/* La jauge rend le classement lisible d'un coup d'oeil, sans lire les chiffres. */
+.compo-jauge { display: block; height: 4px; background: var(--surface-3);
+  border-radius: 2px; overflow: hidden; }
+.compo-jauge span { display: block; height: 100%; background: var(--marque); border-radius: 2px; }
+.compo-seul .compo-jauge span { background: var(--ambre-trait); }
+.compo-compte {
+  border: 0; background: none; padding: 0; text-align: left;
+  font-family: var(--police-data); font-size: 11.5px; color: var(--encre-2);
+  font-variant-numeric: tabular-nums; text-decoration: underline;
+  text-decoration-style: dotted; text-underline-offset: 3px;
+}
+.compo-compte:hover, .compo-compte.actif { color: var(--marque); }
+.compo-boites { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 2px; }
+.compo-boites[hidden] { display: none; }
+.compo-porteurs { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.puce-porteur-mini { font-size: 10.5px; padding: 1px 7px; }
+
+@media (max-width: 900px) {
+  .inventaire-compo .inventaire-entete { display: none; }
+  .compo-ligne { grid-template-columns: 1fr 1fr; gap: 4px var(--e-3); padding: var(--e-3) var(--e-2); }
+  .compo-fonction, .compo-emploi, .compo-porteurs { grid-column: 1 / -1; }
 }
 
 /* ---------------- cartes ---------------- */
@@ -538,6 +611,12 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .ligne-bloc { flex-direction: column; gap: var(--e-2); }
 .ligne-cle { flex: 0 0 38%; font-size: 12.5px; color: var(--encre-3); font-weight: 500; }
 .ligne-bloc .ligne-cle { flex: none; }
+.lien-url {
+  font-family: var(--police-data); font-size: 11.5px; color: var(--marque);
+  text-decoration: underline; text-underline-offset: 3px; word-break: break-all;
+}
+.lien-url:hover { color: var(--marque-2); }
+.lien-embarque { color: var(--encre-3); text-decoration: none; font-style: italic; }
 .ligne-aide { display: block; font-size: 11px; color: var(--encre-3); opacity: .8; font-weight: 400; }
 .ligne-val { flex: 1; font-size: 13px; min-width: 0; word-break: break-word; width: 100%; }
 
@@ -782,6 +861,29 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
    Dans le fil, à la suite des critères : on descend pour la trouver, et
    l'en-tête du rail annonce sa présence. Un aplat marine la rend
    repérable au défilement. */
+/* Favoris de pondération : une intention posée d'un coup. */
+.favoris { margin-bottom: var(--e-4); padding-bottom: var(--e-3); border-bottom: 1px solid var(--trait); }
+.favoris h4 {
+  margin: 0 0 3px; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--encre-3); font-weight: 700;
+}
+.favoris-aide { margin: 0 0 var(--e-3); font-size: 11.5px; color: var(--encre-3); line-height: 1.45; }
+.favoris-liste { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.favori {
+  display: flex; flex-direction: column; gap: 1px; text-align: left;
+  padding: 7px 10px; border: 1px solid var(--trait); border-radius: var(--r-s);
+  background: var(--surface); color: var(--encre); min-width: 0;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.favori:hover { background: var(--surface-3); border-color: var(--trait-fort); }
+.favori.actif { background: var(--marque-voile); border-color: var(--marque); color: var(--marque); }
+.favori-nom { font-size: 12.5px; font-weight: 600; }
+.favori-aide { font-size: 10.5px; color: var(--encre-3); line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis; }
+.favori.actif .favori-aide { color: var(--marque); opacity: .8; }
+.favori-defaut { border-style: dashed; }
+@media (max-width: 520px) { .favoris-liste { grid-template-columns: 1fr; } }
+
 .sous-reglage {
   margin: var(--e-3) calc(var(--e-4) * -1) 0;
   padding: var(--e-3) var(--e-4);

@@ -47,7 +47,7 @@ function filtresTypeHtml() {
 function selecteurVueHtml() {
   return '<div class="choix-vue" role="group" aria-label="Mode d\'affichage">' +
     [['boites', 'Boîtes'], ['pieces', 'Sous-ensembles'],
-     ['standardisation', 'Standardisation']].map(function (v) {
+     ['composants', 'Composants'], ['standardisation', 'Standardisation']].map(function (v) {
       const actif = Store.vueMode === v[0];
       return '<button type="button" class="onglet-vue' + (actif ? ' actif' : '') + '"' +
              dataAttrs({ action: 'changer-vue', vue: v[0] }) +
@@ -86,6 +86,80 @@ function piecesHtml(vue) {
         '</span>' +
       '</div>';
     }).join('') +
+  '</div>';
+}
+
+/**
+ * L'inventaire des COMPOSANTS : une ligne par composant distinct, avec ce
+ * qu'il faut pour décider — sa catégorie, ses trois niveaux, sur combien de
+ * boîtes il est monté, et sur quels porteurs. Les plus montés d'abord :
+ * ce sont ceux dont une rupture d'approvisionnement coûte le plus cher.
+ */
+function composantsHtml(vue) {
+  const composants = inventaireComposants(vue.aAfficher);
+  if (!composants.length) {
+    return '<div class="etat-vide">' +
+      '<p>Aucun composant à inventorier.</p>' +
+      '<p class="etat-vide-aide">Renseignez les composants des boîtes et de ' +
+      'leurs sous-ensembles pour les voir apparaître ici.</p>' +
+    '</div>';
+  }
+
+  const bilan = bilanComposants(composants);
+  const maxi = composants[0].nbBoites || 1;
+
+  return '<div class="compo-bilan">' +
+      '<span><b>' + bilan.references + '</b> références distinctes</span>' +
+      '<span><b>' + bilan.fonctions + '</b> fonctions</span>' +
+      '<span><b>' + bilan.normes + '</b> normes</span>' +
+      '<span><b>' + bilan.montages + '</b> montages au total</span>' +
+      (bilan.uniques
+        ? '<span class="compo-bilan-seul"><b>' + bilan.uniques +
+          '</b> montée' + (bilan.uniques > 1 ? 's' : '') + ' dans une seule boîte</span>'
+        : '') +
+    '</div>' +
+    '<div class="inventaire inventaire-compo">' +
+      '<div class="inventaire-entete">' +
+        '<span>Composant</span><span>Norme</span><span>Référence</span>' +
+        '<span>Famille</span><span>Emploi</span><span>Porteurs</span>' +
+      '</div>' +
+      composants.map(function (c) { return ligneComposantHtml(c, maxi); }).join('') +
+    '</div>';
+}
+
+function ligneComposantHtml(c, maxi) {
+  const cat = CATEGORIES_COMPOSANT[c.categorie] || CATEGORIES_COMPOSANT.composant;
+  const seul = c.nbBoites <= 1;
+  const part = Math.max(4, Math.round((c.nbBoites / (maxi || 1)) * 100));
+
+  return '<div class="compo-ligne' + (seul ? ' compo-seul' : '') + '">' +
+    '<span class="compo-fonction">' + esc(txt(c.fonction, 'fonction non précisée')) + '</span>' +
+    '<span class="compo-norme">' + esc(txt(c.norme, '—')) + '</span>' +
+    '<span class="compo-reference">' + esc(txt(c.reference, '—')) + '</span>' +
+    '<span class="compo-famille compo-fam-' + esc(c.categorie) + '">' + esc(cat.libelle) + '</span>' +
+    '<span class="compo-emploi">' +
+      '<span class="compo-jauge" aria-hidden="true">' +
+        '<span style="width:' + part + '%"></span></span>' +
+      '<button type="button" class="compo-compte"' +
+        dataAttrs({ action: 'deplier-composant' }) + ' aria-expanded="false"' +
+        ' title="Voir les boîtes qui le montent">' +
+        c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte') +
+        (c.montages > c.nbBoites ? ' · ' + c.montages + ' montages' : '') +
+      '</button>' +
+      '<span class="compo-boites" hidden>' +
+        c.boites.map(function (pn) {
+          return '<button type="button" class="usage-lien"' +
+                 dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
+        }).join('') +
+      '</span>' +
+    '</span>' +
+    '<span class="compo-porteurs">' +
+      (c.porteurs.length
+        ? c.porteurs.map(function (p) {
+            return '<span class="puce-porteur puce-porteur-mini">' + esc(p) + '</span>';
+          }).join('')
+        : '<span class="vide">—</span>') +
+    '</span>' +
   '</div>';
 }
 
@@ -270,12 +344,17 @@ function rendreInterface() {
   if (contenant) contenant.classList.toggle('grille', mode === 'boites');
   definirHtml('mainContainer',
     mode === 'pieces' ? piecesHtml(vue) :
+    mode === 'composants' ? composantsHtml(vue) :
     mode === 'standardisation' ? standardisationHtml(vue) : grilleHtml(vue));
 
   if (mode === 'pieces') {
     const n = inventairePieces(vue.aAfficher).length;
     definirTexte('bilanResultats',
                  n + (n > 1 ? ' sous-ensembles distincts' : ' sous-ensemble'));
+  } else if (mode === 'composants') {
+    const n = inventaireComposants(vue.aAfficher).length;
+    definirTexte('bilanResultats',
+                 n + (n > 1 ? ' composants distincts' : ' composant'));
   } else if (mode === 'standardisation') {
     const n = opportunitesStandardisation(vue.aAfficher).length;
     definirTexte('bilanResultats',

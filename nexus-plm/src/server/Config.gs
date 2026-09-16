@@ -32,8 +32,8 @@ const CFG = {
     // lisible à l'oeil, et chaque type n'utilise que les siennes (voir
     // client/Types.html, qui pilote l'affichage et l'équivalence).
     // Sur la structure, deux familles de composants distinctes :
-    //   « Structure mécanique »      : colonnettes, entretoises, ce qui est dur
-    //   « Composants électriques »   : colliers, embases, ce qui tient les câbles
+    //   « Composants mécaniques »      : colonnettes, entretoises, ce qui est dur
+    //   « Composants routing »   : colliers, embases, ce qui tient les câbles
     // Même format : Fonction | Norme | Référence, une ligne par composant.
     NOMENCLATURE: ['ID_Ligne', 'PN Global', 'Type', 'PN du type',
                    'Référence', 'Mots-clés',
@@ -41,7 +41,7 @@ const CFG = {
                    'Masse (g)', 'HL', 'DAL',
                    'Qualification Brouillard salin', 'Qualification Vibration',
                    'Qualification Explosion',
-                   'Structure mécanique', 'Composants électriques',
+                   'Composants mécaniques', 'Composants routing',
                    'Image', 'Commentaires libres'],
     JOURNAL: ['Horodatage', 'Utilisateur', 'Action', 'Cible', 'Détail']
   },
@@ -50,12 +50,11 @@ const CFG = {
   MULTI_BOITE: ['Porteur', 'Composants'],
   MULTI_NOM: ['Qualification Brouillard salin', 'Qualification Vibration',
               'Qualification Explosion', 'Mots-clés',
-              'Structure mécanique', 'Composants électriques'],
+              'Composants mécaniques', 'Composants routing'],
 
   // Tous les porteurs Airbus Helicopters, et rien d'autre.
-  PORTEURS: ['H125', 'H130', 'H135', 'H145', 'H145M', 'H155', 'H160', 'H160M',
-             'H175', 'H175M', 'H215', 'H215M', 'H225', 'H225M', 'NH90', 'Tigre',
-             'UH-72 Lakota'],
+  PORTEURS: ['Dauphin', 'H125', 'H130', 'H135', 'H145', 'H145M', 'H160', 'H160M',
+             'H175', 'H215', 'H215M', 'H225', 'H225M', 'NH90', 'Tigre'],
 
   // Types connus. Le libellé écrit dans la feuille ; le client reconnaît
   // aussi les variantes courantes (accents, synonymes).

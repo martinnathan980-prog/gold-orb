@@ -27,7 +27,7 @@ const Store = {
   filtreComposants: [],
   filtreTypes: [],
   filtreStatut: null,        // un statut, ou rien
-  vueMode: 'boites',         // 'boites' ou 'pieces'
+  vueMode: 'boites',         // 'boites', 'pieces', 'composants' ou 'standardisation'
   tri: 'pn',
   enEditionBoite: false,
   enEditionNom: {},
@@ -199,6 +199,54 @@ function desactiverCritere(portee, cle) {
   return true;
 }
 
+/**
+ * Les parts d'un favori, ramenées à 100 % exactement. Elles sont écrites en
+ * relatif dans le registre — c'est plus lisible — donc on les normalise ici
+ * plutôt que d'exiger que chaque favori totalise déjà 100.
+ */
+function normaliserFavori(favori) {
+  const cles = Object.keys(favori.poids);
+  const somme = cles.reduce(function (t, c) { return t + Math.max(0, favori.poids[c]); }, 0);
+  const sortie = {};
+  if (!cles.length || somme <= 0) return sortie;
+
+  cles.forEach(function (c) {
+    sortie[c] = Math.round((Math.max(0, favori.poids[c]) / somme) * 100);
+  });
+  // L'arrondi est absorbé par la plus grosse part : le total fait 100 pile.
+  const total = cles.reduce(function (t, c) { return t + sortie[c]; }, 0);
+  if (total !== 100) {
+    const plusGrand = cles.reduce(function (a, b) { return sortie[a] >= sortie[b] ? a : b; });
+    sortie[plusGrand] += 100 - total;
+  }
+  return sortie;
+}
+
+/**
+ * Pose un favori : les critères qu'il nomme deviennent les critères retenus,
+ * avec ses parts. Les autres sont écartés — c'est le sens d'un favori, il dit
+ * aussi ce qui ne compte PAS.
+ */
+function appliquerFavori(portee, cle) {
+  const favori = (favorisDe(portee) || []).find(function (f) { return f.cle === cle; });
+  if (!favori) return false;
+  const parts = normaliserFavori(favori);
+  const cles = Object.keys(parts);
+  if (!cles.length) return false;
+
+  Store.criteresActifs[portee] = porteeParCle(portee).criteres
+    .filter(function (c) { return parts[c.cle] !== undefined; })
+    .map(function (c) { return c.cle; });
+
+  const table = tablePoids(portee);
+  porteeParCle(portee).criteres.forEach(function (c) {
+    table[c.cle] = parts[c.cle] !== undefined ? parts[c.cle] : 0;
+  });
+  normaliserPoids(portee);
+  enregistrerReglages();
+  return true;
+}
+
 function reinitialiserPoids() {
   Store.poids = poidsParDefaut();
   Store.criteresActifs = actifsParDefaut();
@@ -245,7 +293,7 @@ function chargerReglages() {
       }
       if (typeof lu.seuil === 'number') Store.seuilEquivalence = lu.seuil;
       if (typeof lu.tri === 'string') Store.tri = lu.tri;
-      if (['boites', 'pieces', 'standardisation'].indexOf(lu.vue) !== -1) Store.vueMode = lu.vue;
+      if (['boites', 'pieces', 'composants', 'standardisation'].indexOf(lu.vue) !== -1) Store.vueMode = lu.vue;
     }
   } catch (e) { /* réglages illisibles : on repart des valeurs par défaut */ }
   PORTEES.forEach(function (p) { normaliserPoids(p.cle); });
@@ -583,6 +631,88 @@ function boitesUtilisant(pnPiece, saufBoite) {
     vues.add(b);
   });
   return Array.from(vues).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+}
+
+/**
+ * L'inventaire des COMPOSANTS : une ligne par composant distinct, où qu'il
+ * soit monté — dans une boîte, dans une structure, dans n'importe quel champ
+ * de composants d'un type. Un composant est identifié par sa catégorie et
+ * ses trois niveaux : deux références différentes sont deux composants.
+ *
+ * C'est la quatrième lecture de la même base. Les trois autres répondent à
+ * « que contient cette boîte », « où sert ce sous-ensemble » et « où la base
+ * se disperse ». Celle-ci répond à « qu'est-ce qu'on monte, et combien de
+ * fois » — la question de l'approvisionnement et du stock.
+ */
+function inventaireComposants(liste) {
+  const parComposant = new Map();
+
+  const recenser = function (categorie, texte, pnBoite, porteurLigne) {
+    listeComposants(texte).forEach(function (c) {
+      if (!c.fonction && !c.norme && !c.reference) return;
+      const cle = categorie + '|' + normaliserTexte(c.fonction) + '|' +
+                  normaliserTexte(c.norme) + '|' + normaliserTexte(c.reference);
+      if (!parComposant.has(cle)) {
+        parComposant.set(cle, {
+          cle: cle, categorie: categorie, fonction: c.fonction,
+          norme: c.norme, reference: c.reference,
+          boites: [], porteurs: new Set(), montages: 0
+        });
+      }
+      const e = parComposant.get(cle);
+      e.montages++;
+      if (e.boites.indexOf(pnBoite) === -1) e.boites.push(pnBoite);
+      valeursMulti(porteurLigne).forEach(function (p) { e.porteurs.add(p); });
+    });
+  };
+
+  liste.forEach(function (b) {
+    const pnBoite = String(b[CLE_PN()]).trim();
+    const porteurs = b['Porteur'];
+
+    // Les champs de composants de la BOÎTE.
+    Object.keys(CHAMPS_BOITE).forEach(function (cle) {
+      const regle = CHAMPS_BOITE[cle];
+      if (regle.genre !== GENRE.COMPOSANTS) return;
+      recenser(regle.categorie || 'composant', b[cle], pnBoite, porteurs);
+    });
+
+    // Puis ceux de chacun de ses sous-ensembles, selon leur type.
+    (b.nomenclature || []).forEach(function (n) {
+      champsDuType(typeDe(n)).forEach(function (champ) {
+        if (champ.genre !== GENRE.COMPOSANTS) return;
+        recenser(champ.categorie || 'composant', n[champ.cle], pnBoite, porteurs);
+      });
+    });
+  });
+
+  return Array.from(parComposant.values())
+    .map(function (e) {
+      e.boites.sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); });
+      e.nbBoites = e.boites.length;
+      e.porteurs = Array.from(e.porteurs).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+      return e;
+    })
+    // Le plus monté d'abord : c'est celui dont une rupture coûte le plus cher.
+    .sort(function (a, b) {
+      return b.nbBoites - a.nbBoites || b.montages - a.montages ||
+             String(a.fonction).localeCompare(String(b.fonction), 'fr') ||
+             String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+    });
+}
+
+/** Le bilan de l'inventaire, pour la ligne de tête de la vue. */
+function bilanComposants(composants) {
+  const normes = new Set(), fonctions = new Set();
+  let montages = 0, uniques = 0;
+  composants.forEach(function (c) {
+    if (c.norme) normes.add(normaliserTexte(c.norme));
+    if (c.fonction) fonctions.add(normaliserTexte(c.fonction));
+    montages += c.montages;
+    if (c.nbBoites === 1) uniques++;
+  });
+  return { references: composants.length, normes: normes.size,
+           fonctions: fonctions.size, montages: montages, uniques: uniques };
 }
 
 /**

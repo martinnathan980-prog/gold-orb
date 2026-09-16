@@ -325,10 +325,21 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 
 /* ---------------- choix de la vue ---------------- */
 /* Un segmenté court : deux lectures de la même base, pas un menu. */
-.choix-vue { display: inline-flex; background: var(--surface-3); border: 1px solid var(--trait); border-radius: 999px; padding: 2px; }
+.choix-vue {
+  display: inline-flex; flex-wrap: wrap; max-width: 100%;
+  background: var(--surface-3); border: 1px solid var(--trait);
+  border-radius: 999px; padding: 2px;
+}
 .onglet-vue {
   background: none; border: 0; border-radius: 999px; padding: 5px 14px;
   font-size: 12.5px; font-weight: 600; color: var(--encre-3); transition: .14s;
+  white-space: nowrap;
+}
+/* À quatre lectures, la pilule ne tient plus sur une ligne de téléphone :
+   on resserre plutôt que de laisser la page déborder sur le côté. */
+@media (max-width: 520px) {
+  .choix-vue { border-radius: var(--r-m); }
+  .onglet-vue { padding: 5px 9px; font-size: 11.5px; border-radius: var(--r-s); }
 }
 .onglet-vue:hover { color: var(--encre); }
 .onglet-vue.actif { background: var(--marque); color: var(--sur-marque); box-shadow: var(--ombre-1); }
@@ -418,6 +429,68 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 
 @media (max-width: 620px) {
   .famille-norme { grid-template-columns: 1fr; gap: 4px; }
+}
+
+/* ---------------- inventaire des composants ---------------- */
+/* Quatrieme lecture de la base : ce qu'on monte, et combien de fois. */
+.compo-bilan {
+  display: flex; flex-wrap: wrap; gap: var(--e-2) var(--e-5);
+  padding: 0 2px var(--e-3); margin-bottom: var(--e-3);
+  border-bottom: 1px solid var(--trait);
+  font-size: 12.5px; color: var(--encre-3);
+}
+.compo-bilan b { font-family: var(--police-data); font-size: 14px; color: var(--encre); font-weight: 700; }
+.compo-bilan-seul { color: var(--ambre); }
+.compo-bilan-seul b { color: var(--ambre); }
+
+.inventaire-compo .inventaire-entete,
+.compo-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) minmax(0, 1.15fr) 150px 190px minmax(0, 1fr);
+  gap: var(--e-3); align-items: center;
+}
+.compo-ligne { padding: 9px var(--e-2); border-bottom: 1px solid var(--surface-3); }
+.compo-ligne:last-child { border-bottom: 0; }
+.compo-ligne:hover { background: var(--surface-2); }
+.compo-seul { box-shadow: inset 3px 0 0 var(--ambre-trait); }
+
+.compo-fonction { font-size: 13px; font-weight: 600; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compo-norme { font-family: var(--police-data); font-size: 11.5px; color: var(--encre-2); }
+.compo-reference { font-family: var(--police-data); font-size: 12px; color: var(--encre);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compo-famille {
+  font-size: 10px; letter-spacing: .07em; text-transform: uppercase; font-weight: 600;
+  padding: 2px 8px; border-radius: 999px; border: 1px solid var(--trait);
+  background: var(--surface-3); color: var(--encre-3); white-space: nowrap;
+  justify-self: start;
+}
+.compo-fam-composant  { background: var(--t-plaquette-voile); color: var(--t-plaquette); border-color: var(--t-plaquette-trait); }
+.compo-fam-mecanique  { background: var(--t-structure-voile); color: var(--t-structure); border-color: var(--t-structure-trait); }
+.compo-fam-electrique { background: var(--t-harnais-voile);   color: var(--t-harnais);   border-color: var(--t-harnais-trait); }
+
+.compo-emploi { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+/* La jauge rend le classement lisible d'un coup d'oeil, sans lire les chiffres. */
+.compo-jauge { display: block; height: 4px; background: var(--surface-3);
+  border-radius: 2px; overflow: hidden; }
+.compo-jauge span { display: block; height: 100%; background: var(--marque); border-radius: 2px; }
+.compo-seul .compo-jauge span { background: var(--ambre-trait); }
+.compo-compte {
+  border: 0; background: none; padding: 0; text-align: left;
+  font-family: var(--police-data); font-size: 11.5px; color: var(--encre-2);
+  font-variant-numeric: tabular-nums; text-decoration: underline;
+  text-decoration-style: dotted; text-underline-offset: 3px;
+}
+.compo-compte:hover, .compo-compte.actif { color: var(--marque); }
+.compo-boites { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 2px; }
+.compo-boites[hidden] { display: none; }
+.compo-porteurs { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.puce-porteur-mini { font-size: 10.5px; padding: 1px 7px; }
+
+@media (max-width: 900px) {
+  .inventaire-compo .inventaire-entete { display: none; }
+  .compo-ligne { grid-template-columns: 1fr 1fr; gap: 4px var(--e-3); padding: var(--e-3) var(--e-2); }
+  .compo-fonction, .compo-emploi, .compo-porteurs { grid-column: 1 / -1; }
 }
 
 /* ---------------- cartes ---------------- */
@@ -549,6 +622,12 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
 .ligne-bloc { flex-direction: column; gap: var(--e-2); }
 .ligne-cle { flex: 0 0 38%; font-size: 12.5px; color: var(--encre-3); font-weight: 500; }
 .ligne-bloc .ligne-cle { flex: none; }
+.lien-url {
+  font-family: var(--police-data); font-size: 11.5px; color: var(--marque);
+  text-decoration: underline; text-underline-offset: 3px; word-break: break-all;
+}
+.lien-url:hover { color: var(--marque-2); }
+.lien-embarque { color: var(--encre-3); text-decoration: none; font-style: italic; }
 .ligne-aide { display: block; font-size: 11px; color: var(--encre-3); opacity: .8; font-weight: 400; }
 .ligne-val { flex: 1; font-size: 13px; min-width: 0; word-break: break-word; width: 100%; }
 
@@ -793,6 +872,29 @@ button.indicateur:hover .indicateur-valeur { text-decoration: underline; text-un
    Dans le fil, à la suite des critères : on descend pour la trouver, et
    l'en-tête du rail annonce sa présence. Un aplat marine la rend
    repérable au défilement. */
+/* Favoris de pondération : une intention posée d'un coup. */
+.favoris { margin-bottom: var(--e-4); padding-bottom: var(--e-3); border-bottom: 1px solid var(--trait); }
+.favoris h4 {
+  margin: 0 0 3px; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--encre-3); font-weight: 700;
+}
+.favoris-aide { margin: 0 0 var(--e-3); font-size: 11.5px; color: var(--encre-3); line-height: 1.45; }
+.favoris-liste { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.favori {
+  display: flex; flex-direction: column; gap: 1px; text-align: left;
+  padding: 7px 10px; border: 1px solid var(--trait); border-radius: var(--r-s);
+  background: var(--surface); color: var(--encre); min-width: 0;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.favori:hover { background: var(--surface-3); border-color: var(--trait-fort); }
+.favori.actif { background: var(--marque-voile); border-color: var(--marque); color: var(--marque); }
+.favori-nom { font-size: 12.5px; font-weight: 600; }
+.favori-aide { font-size: 10.5px; color: var(--encre-3); line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis; }
+.favori.actif .favori-aide { color: var(--marque); opacity: .8; }
+.favori-defaut { border-style: dashed; }
+@media (max-width: 520px) { .favoris-liste { grid-template-columns: 1fr; } }
+
 .sous-reglage {
   margin: var(--e-3) calc(var(--e-4) * -1) 0;
   padding: var(--e-3) var(--e-4);
@@ -1388,8 +1490,8 @@ function antiRebond(fonction, delai) {
 
 const CATEGORIES_COMPOSANT = {
   composant:  { cle: 'composant',  libelle: 'Composants',             aide: 'boutons, voyants, interrupteurs, relais' },
-  mecanique:  { cle: 'mecanique',  libelle: 'Structure mécanique',    aide: 'colonnettes, entretoises, équerres, inserts' },
-  electrique: { cle: 'electrique', libelle: 'Composants électriques', aide: 'colliers, embases, passe-fils, tenue des câbles' }
+  mecanique:  { cle: 'mecanique',  libelle: 'Composants mécaniques',    aide: 'colonnettes, entretoises, équerres, inserts, visserie' },
+  electrique: { cle: 'electrique', libelle: 'Composants routing', aide: 'colliers, embases, passe-fils, gaines — la tenue du câblage' }
 };
 
 // Les trois niveaux, du plus large au plus précis. Leurs parts se règlent
@@ -1681,9 +1783,8 @@ const MODE = {
 };
 
 // Tous les porteurs Airbus Helicopters, et rien d'autre.
-const PORTEURS = ['H125', 'H130', 'H135', 'H145', 'H145M', 'H155', 'H160', 'H160M',
-                  'H175', 'H175M', 'H215', 'H215M', 'H225', 'H225M', 'NH90', 'Tigre',
-                  'UH-72 Lakota'];
+const PORTEURS = ['Dauphin', 'H125', 'H130', 'H135', 'H145', 'H145M', 'H160', 'H160M',
+                  'H175', 'H215', 'H215M', 'H225', 'H225M', 'NH90', 'Tigre'];
 
 // Champs particuliers de la BOÎTE (le reste de ses colonnes est générique).
 const CHAMPS_BOITE = {
@@ -1735,9 +1836,9 @@ const TYPES = {
     ].concat(CHAMPS_QUALIF, [
       // Deux familles distinctes, comparées séparément : ce qui est dur, et
       // ce qui tient les câbles. Les boutons et voyants, eux, sont sur la boîte.
-      { cle: 'Structure mécanique', libelle: 'Structure mécanique', genre: GENRE.COMPOSANTS,
+      { cle: 'Composants mécaniques', libelle: 'Composants mécaniques', genre: GENRE.COMPOSANTS,
         categorie: 'mecanique', aide: CATEGORIES_COMPOSANT.mecanique.aide },
-      { cle: 'Composants électriques', libelle: 'Composants électriques', genre: GENRE.COMPOSANTS,
+      { cle: 'Composants routing', libelle: 'Composants routing', genre: GENRE.COMPOSANTS,
         categorie: 'electrique', aide: CATEGORIES_COMPOSANT.electrique.aide }
     ], CHAMPS_COMMUNS),
     criteres: [
@@ -1752,10 +1853,10 @@ const TYPES = {
       { cle: 'hl', libelle: 'HL', mode: MODE.EGALITE, champ: 'HL', poids: 4 },
       { cle: 'qualifications', libelle: 'Qualifications', mode: MODE.ENSEMBLE,
         champs: CLES_QUALIF, poids: 14 },
-      { cle: 'mecanique', libelle: 'Structure mécanique', mode: MODE.COMPOSANTS,
-        champ: 'Structure mécanique', poids: 20 },
-      { cle: 'electrique', libelle: 'Composants électriques', mode: MODE.COMPOSANTS,
-        champ: 'Composants électriques', poids: 20 }
+      { cle: 'mecanique', libelle: 'Composants mécaniques', mode: MODE.COMPOSANTS,
+        champ: 'Composants mécaniques', poids: 20 },
+      { cle: 'electrique', libelle: 'Composants routing', mode: MODE.COMPOSANTS,
+        champ: 'Composants routing', poids: 20 }
     ]
   },
 
@@ -1869,6 +1970,77 @@ const PORTEES = [{ cle: 'boite', libelle: 'Boîte', icone: '◼', criteres: CRIT
     return { cle: t.cle, libelle: t.libelle, icone: t.icone, criteres: t.criteres };
   }))
   .concat([PORTEE_COMPOSANT]);
+
+/**
+ * FAVORIS DE PONDÉRATION
+ * Régler cinq curseurs avant chaque recherche, personne ne le fait. Un favori
+ * pose d'un coup une intention : « je cherche d'abord la même fonction »,
+ * « je cherche d'abord sur le même porteur ». Les parts sont relatives, elles
+ * sont ramenées à 100 % à l'application ; un critère absent est écarté.
+ *
+ * Ce sont des points de départ, pas des verrous : les curseurs restent là.
+ */
+const FAVORIS = {
+  boite: [
+    { cle: 'fonction', libelle: 'Même fonction',
+      aide: 'la fonction d\'abord, le reste départage',
+      poids: { fonction: 45, composants: 25, architecture: 15, qualification: 10, porteur: 5 } },
+    { cle: 'porteur', libelle: 'Même porteur',
+      aide: 'ce qui vole déjà sur cet appareil',
+      poids: { porteur: 40, qualification: 25, fonction: 20, architecture: 10, composants: 5 } },
+    { cle: 'contenu', libelle: 'Même contenu',
+      aide: 'les mêmes composants, les mêmes sous-ensembles',
+      poids: { composants: 50, architecture: 35, fonction: 15 } },
+    { cle: 'qualif', libelle: 'Même qualification',
+      aide: 'ce qui est déjà qualifié au bon niveau',
+      poids: { qualification: 45, porteur: 30, fonction: 15, composants: 10 } }
+  ],
+  structure: [
+    { cle: 'encombrement', libelle: 'Même encombrement',
+      aide: 'ça rentre au même endroit',
+      poids: { dimensions: 40, pas: 25, montage: 20, masse: 15 } },
+    { cle: 'qualif', libelle: 'Même qualification',
+      aide: 'DAL, HL et essais déjà couverts',
+      poids: { qualifications: 45, dal: 25, hl: 20, montage: 10 } },
+    { cle: 'contenu', libelle: 'Même contenu',
+      aide: 'la même visserie, le même routing',
+      poids: { mecanique: 40, electrique: 40, montage: 20 } },
+    { cle: 'montage', libelle: 'Même montage',
+      aide: 'la même implantation avant tout',
+      poids: { montage: 50, pas: 25, dimensions: 25 } }
+  ],
+  plaquette: [
+    { cle: 'marquage', libelle: 'Même marquage',
+      aide: 'les mots gravés, rien d\'autre',
+      poids: { motsCles: 100 } }
+  ],
+  harnais: [
+    { cle: 'reference', libelle: 'Même référence',
+      aide: 'la référence fait foi',
+      poids: { reference: 100 } }
+  ],
+  composant: [
+    { cle: 'exact', libelle: 'Référence exacte',
+      aide: 'seul le modèle exact compte',
+      poids: { reference: 70, norme: 20, fonction: 10 } },
+    { cle: 'norme', libelle: 'Même norme',
+      aide: 'interchangeable au sens de la norme',
+      poids: { norme: 55, fonction: 30, reference: 15 } },
+    { cle: 'fonction', libelle: 'Même fonction',
+      aide: 'ça rend le même service, quel que soit le modèle',
+      poids: { fonction: 60, norme: 25, reference: 15 } }
+  ]
+};
+
+/** Les favoris d'une portée, ceux dont tous les critères existent encore. */
+function favorisDe(cle) {
+  const portee = PORTEES.find(function (p) { return p.cle === cle; });
+  if (!portee) return [];
+  const connus = portee.criteres.map(function (c) { return c.cle; });
+  return (FAVORIS[cle] || []).filter(function (f) {
+    return Object.keys(f.poids).every(function (c) { return connus.indexOf(c) !== -1; });
+  });
+}
 
 /** Les portées qu'on peut réellement comparer : l'interne n'en est pas une. */
 function porteesComparables() {
@@ -2085,7 +2257,7 @@ const Store = {
   filtreComposants: [],
   filtreTypes: [],
   filtreStatut: null,        // un statut, ou rien
-  vueMode: 'boites',         // 'boites' ou 'pieces'
+  vueMode: 'boites',         // 'boites', 'pieces', 'composants' ou 'standardisation'
   tri: 'pn',
   enEditionBoite: false,
   enEditionNom: {},
@@ -2257,6 +2429,54 @@ function desactiverCritere(portee, cle) {
   return true;
 }
 
+/**
+ * Les parts d'un favori, ramenées à 100 % exactement. Elles sont écrites en
+ * relatif dans le registre — c'est plus lisible — donc on les normalise ici
+ * plutôt que d'exiger que chaque favori totalise déjà 100.
+ */
+function normaliserFavori(favori) {
+  const cles = Object.keys(favori.poids);
+  const somme = cles.reduce(function (t, c) { return t + Math.max(0, favori.poids[c]); }, 0);
+  const sortie = {};
+  if (!cles.length || somme <= 0) return sortie;
+
+  cles.forEach(function (c) {
+    sortie[c] = Math.round((Math.max(0, favori.poids[c]) / somme) * 100);
+  });
+  // L'arrondi est absorbé par la plus grosse part : le total fait 100 pile.
+  const total = cles.reduce(function (t, c) { return t + sortie[c]; }, 0);
+  if (total !== 100) {
+    const plusGrand = cles.reduce(function (a, b) { return sortie[a] >= sortie[b] ? a : b; });
+    sortie[plusGrand] += 100 - total;
+  }
+  return sortie;
+}
+
+/**
+ * Pose un favori : les critères qu'il nomme deviennent les critères retenus,
+ * avec ses parts. Les autres sont écartés — c'est le sens d'un favori, il dit
+ * aussi ce qui ne compte PAS.
+ */
+function appliquerFavori(portee, cle) {
+  const favori = (favorisDe(portee) || []).find(function (f) { return f.cle === cle; });
+  if (!favori) return false;
+  const parts = normaliserFavori(favori);
+  const cles = Object.keys(parts);
+  if (!cles.length) return false;
+
+  Store.criteresActifs[portee] = porteeParCle(portee).criteres
+    .filter(function (c) { return parts[c.cle] !== undefined; })
+    .map(function (c) { return c.cle; });
+
+  const table = tablePoids(portee);
+  porteeParCle(portee).criteres.forEach(function (c) {
+    table[c.cle] = parts[c.cle] !== undefined ? parts[c.cle] : 0;
+  });
+  normaliserPoids(portee);
+  enregistrerReglages();
+  return true;
+}
+
 function reinitialiserPoids() {
   Store.poids = poidsParDefaut();
   Store.criteresActifs = actifsParDefaut();
@@ -2303,7 +2523,7 @@ function chargerReglages() {
       }
       if (typeof lu.seuil === 'number') Store.seuilEquivalence = lu.seuil;
       if (typeof lu.tri === 'string') Store.tri = lu.tri;
-      if (['boites', 'pieces', 'standardisation'].indexOf(lu.vue) !== -1) Store.vueMode = lu.vue;
+      if (['boites', 'pieces', 'composants', 'standardisation'].indexOf(lu.vue) !== -1) Store.vueMode = lu.vue;
     }
   } catch (e) { /* réglages illisibles : on repart des valeurs par défaut */ }
   PORTEES.forEach(function (p) { normaliserPoids(p.cle); });
@@ -2641,6 +2861,88 @@ function boitesUtilisant(pnPiece, saufBoite) {
     vues.add(b);
   });
   return Array.from(vues).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+}
+
+/**
+ * L'inventaire des COMPOSANTS : une ligne par composant distinct, où qu'il
+ * soit monté — dans une boîte, dans une structure, dans n'importe quel champ
+ * de composants d'un type. Un composant est identifié par sa catégorie et
+ * ses trois niveaux : deux références différentes sont deux composants.
+ *
+ * C'est la quatrième lecture de la même base. Les trois autres répondent à
+ * « que contient cette boîte », « où sert ce sous-ensemble » et « où la base
+ * se disperse ». Celle-ci répond à « qu'est-ce qu'on monte, et combien de
+ * fois » — la question de l'approvisionnement et du stock.
+ */
+function inventaireComposants(liste) {
+  const parComposant = new Map();
+
+  const recenser = function (categorie, texte, pnBoite, porteurLigne) {
+    listeComposants(texte).forEach(function (c) {
+      if (!c.fonction && !c.norme && !c.reference) return;
+      const cle = categorie + '|' + normaliserTexte(c.fonction) + '|' +
+                  normaliserTexte(c.norme) + '|' + normaliserTexte(c.reference);
+      if (!parComposant.has(cle)) {
+        parComposant.set(cle, {
+          cle: cle, categorie: categorie, fonction: c.fonction,
+          norme: c.norme, reference: c.reference,
+          boites: [], porteurs: new Set(), montages: 0
+        });
+      }
+      const e = parComposant.get(cle);
+      e.montages++;
+      if (e.boites.indexOf(pnBoite) === -1) e.boites.push(pnBoite);
+      valeursMulti(porteurLigne).forEach(function (p) { e.porteurs.add(p); });
+    });
+  };
+
+  liste.forEach(function (b) {
+    const pnBoite = String(b[CLE_PN()]).trim();
+    const porteurs = b['Porteur'];
+
+    // Les champs de composants de la BOÎTE.
+    Object.keys(CHAMPS_BOITE).forEach(function (cle) {
+      const regle = CHAMPS_BOITE[cle];
+      if (regle.genre !== GENRE.COMPOSANTS) return;
+      recenser(regle.categorie || 'composant', b[cle], pnBoite, porteurs);
+    });
+
+    // Puis ceux de chacun de ses sous-ensembles, selon leur type.
+    (b.nomenclature || []).forEach(function (n) {
+      champsDuType(typeDe(n)).forEach(function (champ) {
+        if (champ.genre !== GENRE.COMPOSANTS) return;
+        recenser(champ.categorie || 'composant', n[champ.cle], pnBoite, porteurs);
+      });
+    });
+  });
+
+  return Array.from(parComposant.values())
+    .map(function (e) {
+      e.boites.sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); });
+      e.nbBoites = e.boites.length;
+      e.porteurs = Array.from(e.porteurs).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+      return e;
+    })
+    // Le plus monté d'abord : c'est celui dont une rupture coûte le plus cher.
+    .sort(function (a, b) {
+      return b.nbBoites - a.nbBoites || b.montages - a.montages ||
+             String(a.fonction).localeCompare(String(b.fonction), 'fr') ||
+             String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+    });
+}
+
+/** Le bilan de l'inventaire, pour la ligne de tête de la vue. */
+function bilanComposants(composants) {
+  const normes = new Set(), fonctions = new Set();
+  let montages = 0, uniques = 0;
+  composants.forEach(function (c) {
+    if (c.norme) normes.add(normaliserTexte(c.norme));
+    if (c.fonction) fonctions.add(normaliserTexte(c.fonction));
+    montages += c.montages;
+    if (c.nbBoites === 1) uniques++;
+  });
+  return { references: composants.length, normes: normes.size,
+           fonctions: fonctions.size, montages: montages, uniques: uniques };
 }
 
 /**
@@ -3148,7 +3450,7 @@ function filtresTypeHtml() {
 function selecteurVueHtml() {
   return '<div class="choix-vue" role="group" aria-label="Mode d\'affichage">' +
     [['boites', 'Boîtes'], ['pieces', 'Sous-ensembles'],
-     ['standardisation', 'Standardisation']].map(function (v) {
+     ['composants', 'Composants'], ['standardisation', 'Standardisation']].map(function (v) {
       const actif = Store.vueMode === v[0];
       return '<button type="button" class="onglet-vue' + (actif ? ' actif' : '') + '"' +
              dataAttrs({ action: 'changer-vue', vue: v[0] }) +
@@ -3187,6 +3489,80 @@ function piecesHtml(vue) {
         '</span>' +
       '</div>';
     }).join('') +
+  '</div>';
+}
+
+/**
+ * L'inventaire des COMPOSANTS : une ligne par composant distinct, avec ce
+ * qu'il faut pour décider — sa catégorie, ses trois niveaux, sur combien de
+ * boîtes il est monté, et sur quels porteurs. Les plus montés d'abord :
+ * ce sont ceux dont une rupture d'approvisionnement coûte le plus cher.
+ */
+function composantsHtml(vue) {
+  const composants = inventaireComposants(vue.aAfficher);
+  if (!composants.length) {
+    return '<div class="etat-vide">' +
+      '<p>Aucun composant à inventorier.</p>' +
+      '<p class="etat-vide-aide">Renseignez les composants des boîtes et de ' +
+      'leurs sous-ensembles pour les voir apparaître ici.</p>' +
+    '</div>';
+  }
+
+  const bilan = bilanComposants(composants);
+  const maxi = composants[0].nbBoites || 1;
+
+  return '<div class="compo-bilan">' +
+      '<span><b>' + bilan.references + '</b> références distinctes</span>' +
+      '<span><b>' + bilan.fonctions + '</b> fonctions</span>' +
+      '<span><b>' + bilan.normes + '</b> normes</span>' +
+      '<span><b>' + bilan.montages + '</b> montages au total</span>' +
+      (bilan.uniques
+        ? '<span class="compo-bilan-seul"><b>' + bilan.uniques +
+          '</b> montée' + (bilan.uniques > 1 ? 's' : '') + ' dans une seule boîte</span>'
+        : '') +
+    '</div>' +
+    '<div class="inventaire inventaire-compo">' +
+      '<div class="inventaire-entete">' +
+        '<span>Composant</span><span>Norme</span><span>Référence</span>' +
+        '<span>Famille</span><span>Emploi</span><span>Porteurs</span>' +
+      '</div>' +
+      composants.map(function (c) { return ligneComposantHtml(c, maxi); }).join('') +
+    '</div>';
+}
+
+function ligneComposantHtml(c, maxi) {
+  const cat = CATEGORIES_COMPOSANT[c.categorie] || CATEGORIES_COMPOSANT.composant;
+  const seul = c.nbBoites <= 1;
+  const part = Math.max(4, Math.round((c.nbBoites / (maxi || 1)) * 100));
+
+  return '<div class="compo-ligne' + (seul ? ' compo-seul' : '') + '">' +
+    '<span class="compo-fonction">' + esc(txt(c.fonction, 'fonction non précisée')) + '</span>' +
+    '<span class="compo-norme">' + esc(txt(c.norme, '—')) + '</span>' +
+    '<span class="compo-reference">' + esc(txt(c.reference, '—')) + '</span>' +
+    '<span class="compo-famille compo-fam-' + esc(c.categorie) + '">' + esc(cat.libelle) + '</span>' +
+    '<span class="compo-emploi">' +
+      '<span class="compo-jauge" aria-hidden="true">' +
+        '<span style="width:' + part + '%"></span></span>' +
+      '<button type="button" class="compo-compte"' +
+        dataAttrs({ action: 'deplier-composant' }) + ' aria-expanded="false"' +
+        ' title="Voir les boîtes qui le montent">' +
+        c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte') +
+        (c.montages > c.nbBoites ? ' · ' + c.montages + ' montages' : '') +
+      '</button>' +
+      '<span class="compo-boites" hidden>' +
+        c.boites.map(function (pn) {
+          return '<button type="button" class="usage-lien"' +
+                 dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
+        }).join('') +
+      '</span>' +
+    '</span>' +
+    '<span class="compo-porteurs">' +
+      (c.porteurs.length
+        ? c.porteurs.map(function (p) {
+            return '<span class="puce-porteur puce-porteur-mini">' + esc(p) + '</span>';
+          }).join('')
+        : '<span class="vide">—</span>') +
+    '</span>' +
   '</div>';
 }
 
@@ -3371,12 +3747,17 @@ function rendreInterface() {
   if (contenant) contenant.classList.toggle('grille', mode === 'boites');
   definirHtml('mainContainer',
     mode === 'pieces' ? piecesHtml(vue) :
+    mode === 'composants' ? composantsHtml(vue) :
     mode === 'standardisation' ? standardisationHtml(vue) : grilleHtml(vue));
 
   if (mode === 'pieces') {
     const n = inventairePieces(vue.aAfficher).length;
     definirTexte('bilanResultats',
                  n + (n > 1 ? ' sous-ensembles distincts' : ' sous-ensemble'));
+  } else if (mode === 'composants') {
+    const n = inventaireComposants(vue.aAfficher).length;
+    definirTexte('bilanResultats',
+                 n + (n > 1 ? ' composants distincts' : ' composant'));
   } else if (mode === 'standardisation') {
     const n = opportunitesStandardisation(vue.aAfficher).length;
     definirTexte('bilanResultats',
@@ -3681,11 +4062,35 @@ function blocBoiteHtml(boite) {
                     liste: regle.liste || null };
 
     if (edition) { html += ligneHtml(champ.libelle, saisieHtml(champ, valeur, 'champ-boite')); return; }
-    if (genre === GENRE.IMAGE) return;         // déjà présentée en vignette
+    // Hors édition, on montre TOUT ce qu'on peut éditer, l'URL comprise : un
+    // champ qu'il faut passer en édition pour lire est un champ qu'on oublie.
+    if (genre === GENRE.IMAGE) { html += ligneHtml(champ.libelle, urlLisibleHtml(valeur)); return; }
     html += ligneHtml(champ.libelle, valeurLisibleHtml(valeur));
   });
 
   return html + '</section>';
+}
+
+/**
+ * Une URL se lit ET s'ouvre. On ne l'affiche pas en entier : un lien Drive
+ * fait 80 caractères et pousserait la colonne hors de la fiche.
+ */
+function urlLisibleHtml(valeur) {
+  const url = String(valeur || '').trim();
+  if (!url) return '<span class="vide">—</span>';
+
+  // Une image embarquée fait plusieurs milliers de caractères : on dit ce
+  // que c'est, on ne déverse pas la charge utile dans la fiche.
+  if (/^data:/i.test(url)) {
+    const type = (url.match(/^data:([a-z0-9.+-]+\/[a-z0-9.+-]+)/i) || [])[1] || 'données';
+    return '<span class="lien-url lien-embarque" title="Image embarquée dans la cellule">' +
+           'image intégrée (' + esc(type) + ')</span>';
+  }
+  if (!/^https?:\/\//i.test(url)) return valeurLisibleHtml(url);
+
+  const court = url.length > 58 ? url.slice(0, 55) + '…' : url;
+  return '<a class="lien-url" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer"' +
+         ' title="' + esc(url) + '">' + esc(court) + '</a>';
 }
 
 function valeurLisibleHtml(valeur) {
@@ -3730,6 +4135,8 @@ function blocNomHtml(ligne) {
     html += ligneHtml('Type', saisieHtml({ cle: 'Type', genre: GENRE.TEXTE, liste: 'list-Type' },
                                          ligne['Type'], 'champ-nom', id),
                       'change la fiche affichée');
+  } else {
+    html += ligneHtml('Type', valeurLisibleHtml(ligne['Type']));
   }
 
   // Réemploi : la même pièce est-elle montée ailleurs ?
@@ -3770,7 +4177,9 @@ function blocNomHtml(ligne) {
     }
 
     if (champ.genre === GENRE.IMAGE) {
-      if (edition) html += ligneHtml('Image (URL)', saisieHtml(champ, valeur, 'champ-nom', id));
+      html += edition
+        ? ligneHtml('Image (URL)', saisieHtml(champ, valeur, 'champ-nom', id))
+        : ligneHtml('Image (URL)', urlLisibleHtml(valeur));
       return;
     }
 
@@ -4270,6 +4679,50 @@ function groupeReglageHtml(portee) {
   return lignes + totalHtml(portee) + critereDisponiblesHtml(portee);
 }
 
+/**
+ * Les favoris de la portée : une intention posée d'un coup. Celui qui
+ * correspond exactement aux parts en place est marqué — sinon on ne saurait
+ * pas si on est encore dessus après avoir bougé un curseur.
+ */
+function favorisHtml(portee) {
+  const favoris = favorisDe(portee.cle);
+  if (!favoris.length) return '';
+
+  return '<div class="favoris">' +
+    '<h4>Favoris</h4>' +
+    '<p class="favoris-aide">Une intention posée d\'un coup. Les curseurs ' +
+      'restent réglables juste après.</p>' +
+    '<div class="favoris-liste">' +
+      favoris.map(function (f) {
+        const actif = favoriEnPlace(portee.cle, f);
+        return '<button type="button" class="favori' + (actif ? ' actif' : '') + '"' +
+          dataAttrs({ action: 'appliquer-favori', portee: portee.cle, favori: f.cle }) +
+          ' aria-pressed="' + actif + '" title="' + esc(f.aide) + '">' +
+          '<span class="favori-nom">' + esc(f.libelle) + '</span>' +
+          '<span class="favori-aide">' + esc(f.aide) + '</span>' +
+        '</button>';
+      }).join('') +
+      '<button type="button" class="favori favori-defaut"' +
+        dataAttrs({ action: 'reinitialiser-reglages' }) +
+        ' title="Revenir aux parts du registre">' +
+        '<span class="favori-nom">Par défaut</span>' +
+        '<span class="favori-aide">les parts d\'origine</span>' +
+      '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+/** Les parts en place sont-elles exactement celles de ce favori ? */
+function favoriEnPlace(portee, favori) {
+  const voulus = normaliserFavori(favori);
+  const actifs = criteresActifs(portee);
+  if (actifs.length !== Object.keys(voulus).length) return false;
+  return actifs.every(function (c) {
+    return voulus[c.cle] !== undefined &&
+           Math.abs((Number(tablePoids(portee)[c.cle]) || 0) - voulus[c.cle]) < 1;
+  });
+}
+
 function curseursHtml() {
   const portee = porteeCourante();
 
@@ -4281,7 +4734,7 @@ function curseursHtml() {
            '<b>' + esc(seul ? seul.libelle : '—') + '</b>. ' +
            'Le score en dépend entièrement, il n\'y a pas d\'arbitrage à faire.</p>';
   } else {
-    html = groupeReglageHtml(portee);
+    html = favorisHtml(portee) + groupeReglageHtml(portee);
   }
 
   // Quand la portée compare des composants, on règle AUSSI la répartition
@@ -4357,6 +4810,17 @@ function rafraichirCurseurs(cleTenue) {
     if (etiquette) etiquette.textContent = part + ' %';
     const jauge = bloc.querySelector('.reglage-jauge span');
     if (jauge) jauge.style.width = part + '%';
+  });
+
+  // Bouger un curseur quitte le favori : on ne prétend pas y être resté.
+  document.querySelectorAll('.favori[data-favori]').forEach(function (bouton) {
+    const portee = bouton.dataset.portee;
+    const favori = (favorisDe(portee) || []).find(function (f) {
+      return f.cle === bouton.dataset.favori;
+    });
+    const actif = !!favori && favoriEnPlace(portee, favori);
+    bouton.classList.toggle('actif', actif);
+    bouton.setAttribute('aria-pressed', String(actif));
   });
 
   document.querySelectorAll('.reglage-total').forEach(function (total) {
@@ -4773,7 +5237,7 @@ enregistrerActions({
     rendreInterface();
   },
   'changer-vue': function (d) {
-    if (['boites', 'pieces', 'standardisation'].indexOf(d.vue) === -1) return;
+    if (['boites', 'pieces', 'composants', 'standardisation'].indexOf(d.vue) === -1) return;
     Store.vueMode = d.vue;
     enregistrerReglages();
     rendreInterface();
@@ -4982,11 +5446,11 @@ enregistrerActions({
     const composant = composantDepuisCatalogue(entree);
     const formate = formaterComposantStructure(composant);
     if (!formate) return;
-    // On ne referme pas : poser trois colonnettes ne doit pas demander
-    // d'ouvrir le catalogue trois fois.
+    // On referme : le geste se termine là où il a commencé, sur la fiche,
+    // et on voit tout de suite le composant posé.
     majMultiCible(cible, ajouterA(formate)).then(function () {
+      fermerModal('catalogueModal');
       confirmerSucces(libelleComposant(composant) + ' ajouté.');
-      rendreCatalogue();
     });
   },
 
@@ -5107,6 +5571,11 @@ enregistrerActions({
     rendreReglages();
     rafraichirComparaison();
   },
+  'appliquer-favori': function (d) {
+    if (!appliquerFavori(d.portee, d.favori)) return;
+    rendreReglages();
+    rafraichirComparaison();
+  },
   'reinitialiser-reglages': function () {
     reinitialiserPoids();
     rendreReglages();
@@ -5114,6 +5583,15 @@ enregistrerActions({
   },
 
   // --- standardisation ---
+  'deplier-composant': function (d, noeud) {
+    const bloc = noeud.parentNode && noeud.parentNode.querySelector('.compo-boites');
+    if (!bloc) return;
+    const ouvert = !bloc.hidden;
+    bloc.hidden = ouvert;
+    noeud.setAttribute('aria-expanded', String(!ouvert));
+    noeud.classList.toggle('actif', !ouvert);
+  },
+
   'deplier-reference': function (d, noeud) {
     const bloc = noeud.parentNode && noeud.parentNode.querySelector('.ref-boites');
     if (!bloc) return;

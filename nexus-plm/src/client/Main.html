@@ -198,7 +198,7 @@ enregistrerActions({
     rendreInterface();
   },
   'changer-vue': function (d) {
-    if (['boites', 'pieces', 'standardisation'].indexOf(d.vue) === -1) return;
+    if (['boites', 'pieces', 'composants', 'standardisation'].indexOf(d.vue) === -1) return;
     Store.vueMode = d.vue;
     enregistrerReglages();
     rendreInterface();
@@ -407,11 +407,11 @@ enregistrerActions({
     const composant = composantDepuisCatalogue(entree);
     const formate = formaterComposantStructure(composant);
     if (!formate) return;
-    // On ne referme pas : poser trois colonnettes ne doit pas demander
-    // d'ouvrir le catalogue trois fois.
+    // On referme : le geste se termine là où il a commencé, sur la fiche,
+    // et on voit tout de suite le composant posé.
     majMultiCible(cible, ajouterA(formate)).then(function () {
+      fermerModal('catalogueModal');
       confirmerSucces(libelleComposant(composant) + ' ajouté.');
-      rendreCatalogue();
     });
   },
 
@@ -532,6 +532,11 @@ enregistrerActions({
     rendreReglages();
     rafraichirComparaison();
   },
+  'appliquer-favori': function (d) {
+    if (!appliquerFavori(d.portee, d.favori)) return;
+    rendreReglages();
+    rafraichirComparaison();
+  },
   'reinitialiser-reglages': function () {
     reinitialiserPoids();
     rendreReglages();
@@ -539,6 +544,15 @@ enregistrerActions({
   },
 
   // --- standardisation ---
+  'deplier-composant': function (d, noeud) {
+    const bloc = noeud.parentNode && noeud.parentNode.querySelector('.compo-boites');
+    if (!bloc) return;
+    const ouvert = !bloc.hidden;
+    bloc.hidden = ouvert;
+    noeud.setAttribute('aria-expanded', String(!ouvert));
+    noeud.classList.toggle('actif', !ouvert);
+  },
+
   'deplier-reference': function (d, noeud) {
     const bloc = noeud.parentNode && noeud.parentNode.querySelector('.ref-boites');
     if (!bloc) return;

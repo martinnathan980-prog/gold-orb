@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 1 051 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 1 165 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 721 tests : logique, pondération, serveur, bundle
+npm test                 # 792 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 330 tests dans un vrai Chromium
+npm run test:navigateur  # 373 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -47,7 +47,7 @@ base à elle : le classeur *est* la base, et chaque onglet est une table.
 | Onglet | Rôle | Une ligne = |
 |---|---|---|
 | `1_BOITES` | les boîtes | une boîte : Fonction, PN Global, DS/VCI, Porteur, Statut, Niveau de qualification, **Composants** (boutons, voyants…), Image, Commentaires |
-| `2_NOMENCLATURE` | les sous-ensembles | un sous-ensemble rattaché à sa boîte par `PN Global` : Type, PN du type, puis les colonnes de son type (référence, mots-clés, cotes, **Structure mécanique**, **Composants électriques**…) |
+| `2_NOMENCLATURE` | les sous-ensembles | un sous-ensemble rattaché à sa boîte par `PN Global` : Type, PN du type, puis les colonnes de son type (référence, mots-clés, cotes, **Composants mécaniques**, **Composants routing**…) |
 | `9_JOURNAL` | la trace | qui a modifié quoi, et quand |
 | *catalogue* (classeur séparé) | les composants connus | Catégorie, Fonction, Norme, Référence, Désignation |
 
@@ -139,7 +139,7 @@ fichier.
 
 | Type | Champs propres | Critères d'équivalence |
 |---|---|---|
-| **Structure boîte** | montage, nombre de pas, longueur, largeur, masse, HL, DAL, **structure mécanique**, **composants électriques** | montage, pas, dimensions, masse, DAL, HL, qualifications, structure mécanique, composants électriques |
+| **Structure boîte** | montage, nombre de pas, longueur, largeur, masse, HL, DAL, **composants mécaniques**, **composants électriques** | montage, pas, dimensions, masse, DAL, HL, qualifications, composants mécaniques, composants électriques |
 | **Harnais** | PN, référence | **référence, et rien d'autre** |
 | **Plaquette éclairante** | PN, **mots-clés** | **mots-clés, et rien d'autre** |
 
@@ -160,8 +160,8 @@ Les composants ne sont pas au même endroit selon ce qu'ils sont :
 | Famille | Où | Exemples |
 |---|---|---|
 | **Composants** | sur la **boîte** | boutons poussoirs, voyants, interrupteurs, relais — ce qui se voit et se manipule |
-| **Structure mécanique** | sur la **structure boîte** | colonnettes, entretoises, équerres, inserts — ce qui est dur |
-| **Composants électriques** | sur la **structure boîte** | colliers, embases, passe-fils — ce qui tient les câbles |
+| **Composants mécaniques** | sur la **structure boîte** | colonnettes, entretoises, équerres, inserts — ce qui est dur |
+| **Composants routing** | sur la **structure boîte** | colliers, embases, passe-fils — ce qui tient les câbles |
 
 Chaque famille a sa colonne, son catalogue (filtré par catégorie) et son
 critère d'équivalence, pondéré séparément.
@@ -212,6 +212,27 @@ meilleur candidat est pris plutôt que le premier rencontré. Chaque composant
 de la cible ne sert qu'une fois. Le détail affiche, par composant, quels
 niveaux sont partagés et ce que cela rapporte.
 
+## Favoris de pondération
+
+Régler cinq curseurs avant chaque recherche, personne ne le fait. Un favori
+pose d'un coup une **intention** : « je cherche d'abord la même fonction »,
+« je cherche d'abord ce qui vole déjà sur cet appareil », « je cherche d'abord
+le même contenu ». Un clic, le classement se recompose.
+
+Un favori dit aussi ce qui **ne** compte pas : les critères qu'il ne nomme pas
+sont écartés, et réapparaissent dans « Critères écartés ». Les parts sont
+écrites en relatif dans le registre — c'est plus lisible — et ramenées à 100 %
+à l'application.
+
+Ce sont des points de départ, pas des verrous : les curseurs restent là, et
+bouger l'un d'eux démarque le favori. On ne prétend pas y être resté.
+
+| Portée | Favoris |
+|---|---|
+| Boîte | Même fonction · Même porteur · Même contenu · Même qualification |
+| Structure boîte | Même encombrement · Même qualification · Même contenu · Même montage |
+| Composant | Référence exacte · Même norme · Même fonction |
+
 ## Pondération
 
 La pondération se règle **depuis la comparaison elle-même**, dans un rail à
@@ -246,48 +267,26 @@ score : « Non comparé, faute de donnée : Masse. Le score porte sur le reste. 
   laisser croire à un retour en arrière exact.
 - Côté serveur, la feuille `9_JOURNAL` enregistre qui a modifié quoi et quand.
 
-## Trois lectures de la même base
+## Quatre lectures de la même base
 
-Un sélecteur bascule entre **Boîtes**, **Sous-ensembles** et
-**Standardisation**.
+Un sélecteur bascule entre **Boîtes**, **Sous-ensembles**, **Composants** et
+**Standardisation**. Une seule base, quatre questions.
 
-- **Boîtes** : la grille de cartes. Répond à « que contient cette boîte ».
-- **Sous-ensembles** : l'inventaire. Une ligne par PN de sous-ensemble, son
-  type, le nombre de boîtes qui le montent et lesquelles. Répond à « où sert
-  ce sous-ensemble », la question du réemploi prise par l'autre bout.
+- **Boîtes** : la grille de cartes. « Que contient cette boîte ? »
+- **Sous-ensembles** : une ligne par PN de sous-ensemble, son type, le nombre
+  de boîtes qui le montent et lesquelles. « Où sert ce sous-ensemble ? » —
+  le réemploi pris par l'autre bout.
+- **Composants** : une ligne par composant distinct, où qu'il soit monté —
+  dans une boîte ou dans n'importe quel champ de composants d'un
+  sous-ensemble. Sa famille, sur combien de boîtes il est monté, sur quels
+  porteurs. « Qu'est-ce qu'on monte, et combien de fois ? » — la question de
+  l'approvisionnement. Les plus montés d'abord : ce sont ceux dont une
+  rupture coûte le plus cher. Ceux montés **une seule fois** portent un filet
+  ambre : candidats au regroupement, ou risque d'appro isolé.
 - **Standardisation** : les familles de composants qui se dispersent. Une
   famille est une catégorie et une fonction. Quand elle porte plusieurs
   normes, ou plusieurs références sous une même norme, c'est autant de pièces
   à faire vivre pour le même service. Les plus dispersées d'abord.
-
-Sur le jeu de démonstration, la colonnette sort en tête : une seule norme,
-`NSA 5512`, mais cinq références. C'est une liste d'actions de rationalisation
-directement exploitable, calculée sans rien saisir de plus.
-
-Dans chaque famille dispersée, la référence la plus montée est marquée : c'est
-le point de convergence naturel, celui qui coûte le moins à généraliser.
-
-Toute référence se déplie d'un clic sur **les boîtes qui la
-montent**, nommées ; un clic de plus ouvre la fiche de la boîte. On passe du
-constat (« cinq références pour une colonnette ») au terrain (« lesquelles, et
-où ») sans quitter la vue.
-
-Les familles déjà rangées ne sont pas listées : elles ne demandent aucune
-action, et noyaient celles qui en demandent une. Quand il n'y a plus rien à
-disperser, la vue le dit en une ligne.
-
-L'application manipule **trois** niveaux de granularité, à ne pas confondre :
-
-| Niveau | Exemples | Où |
-|---|---|---|
-| Boîte | 332P20001 | vue « Boîtes » |
-| Sous-ensemble | un harnais, une structure boîte, une plaquette | vue « Sous-ensembles » |
-| Composant | bouton poussoir, colonnette, collier | fiche et équivalences |
-
-Les sous-ensembles les plus réutilisés arrivent en tête, marqués d'un filet
-marine. L'inventaire suit les filtres en cours : une recherche ou un filtre de
-statut le restreint comme il restreint la grille. Un clic sur une boîte ouvre
-sa fiche.
 
 ## Pas de duplication
 

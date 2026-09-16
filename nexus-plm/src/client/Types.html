@@ -28,9 +28,8 @@ const MODE = {
 };
 
 // Tous les porteurs Airbus Helicopters, et rien d'autre.
-const PORTEURS = ['H125', 'H130', 'H135', 'H145', 'H145M', 'H155', 'H160', 'H160M',
-                  'H175', 'H175M', 'H215', 'H215M', 'H225', 'H225M', 'NH90', 'Tigre',
-                  'UH-72 Lakota'];
+const PORTEURS = ['Dauphin', 'H125', 'H130', 'H135', 'H145', 'H145M', 'H160', 'H160M',
+                  'H175', 'H215', 'H215M', 'H225', 'H225M', 'NH90', 'Tigre'];
 
 // Champs particuliers de la BOÎTE (le reste de ses colonnes est générique).
 const CHAMPS_BOITE = {
@@ -82,9 +81,9 @@ const TYPES = {
     ].concat(CHAMPS_QUALIF, [
       // Deux familles distinctes, comparées séparément : ce qui est dur, et
       // ce qui tient les câbles. Les boutons et voyants, eux, sont sur la boîte.
-      { cle: 'Structure mécanique', libelle: 'Structure mécanique', genre: GENRE.COMPOSANTS,
+      { cle: 'Composants mécaniques', libelle: 'Composants mécaniques', genre: GENRE.COMPOSANTS,
         categorie: 'mecanique', aide: CATEGORIES_COMPOSANT.mecanique.aide },
-      { cle: 'Composants électriques', libelle: 'Composants électriques', genre: GENRE.COMPOSANTS,
+      { cle: 'Composants routing', libelle: 'Composants routing', genre: GENRE.COMPOSANTS,
         categorie: 'electrique', aide: CATEGORIES_COMPOSANT.electrique.aide }
     ], CHAMPS_COMMUNS),
     criteres: [
@@ -99,10 +98,10 @@ const TYPES = {
       { cle: 'hl', libelle: 'HL', mode: MODE.EGALITE, champ: 'HL', poids: 4 },
       { cle: 'qualifications', libelle: 'Qualifications', mode: MODE.ENSEMBLE,
         champs: CLES_QUALIF, poids: 14 },
-      { cle: 'mecanique', libelle: 'Structure mécanique', mode: MODE.COMPOSANTS,
-        champ: 'Structure mécanique', poids: 20 },
-      { cle: 'electrique', libelle: 'Composants électriques', mode: MODE.COMPOSANTS,
-        champ: 'Composants électriques', poids: 20 }
+      { cle: 'mecanique', libelle: 'Composants mécaniques', mode: MODE.COMPOSANTS,
+        champ: 'Composants mécaniques', poids: 20 },
+      { cle: 'electrique', libelle: 'Composants routing', mode: MODE.COMPOSANTS,
+        champ: 'Composants routing', poids: 20 }
     ]
   },
 
@@ -216,6 +215,77 @@ const PORTEES = [{ cle: 'boite', libelle: 'Boîte', icone: '◼', criteres: CRIT
     return { cle: t.cle, libelle: t.libelle, icone: t.icone, criteres: t.criteres };
   }))
   .concat([PORTEE_COMPOSANT]);
+
+/**
+ * FAVORIS DE PONDÉRATION
+ * Régler cinq curseurs avant chaque recherche, personne ne le fait. Un favori
+ * pose d'un coup une intention : « je cherche d'abord la même fonction »,
+ * « je cherche d'abord sur le même porteur ». Les parts sont relatives, elles
+ * sont ramenées à 100 % à l'application ; un critère absent est écarté.
+ *
+ * Ce sont des points de départ, pas des verrous : les curseurs restent là.
+ */
+const FAVORIS = {
+  boite: [
+    { cle: 'fonction', libelle: 'Même fonction',
+      aide: 'la fonction d\'abord, le reste départage',
+      poids: { fonction: 45, composants: 25, architecture: 15, qualification: 10, porteur: 5 } },
+    { cle: 'porteur', libelle: 'Même porteur',
+      aide: 'ce qui vole déjà sur cet appareil',
+      poids: { porteur: 40, qualification: 25, fonction: 20, architecture: 10, composants: 5 } },
+    { cle: 'contenu', libelle: 'Même contenu',
+      aide: 'les mêmes composants, les mêmes sous-ensembles',
+      poids: { composants: 50, architecture: 35, fonction: 15 } },
+    { cle: 'qualif', libelle: 'Même qualification',
+      aide: 'ce qui est déjà qualifié au bon niveau',
+      poids: { qualification: 45, porteur: 30, fonction: 15, composants: 10 } }
+  ],
+  structure: [
+    { cle: 'encombrement', libelle: 'Même encombrement',
+      aide: 'ça rentre au même endroit',
+      poids: { dimensions: 40, pas: 25, montage: 20, masse: 15 } },
+    { cle: 'qualif', libelle: 'Même qualification',
+      aide: 'DAL, HL et essais déjà couverts',
+      poids: { qualifications: 45, dal: 25, hl: 20, montage: 10 } },
+    { cle: 'contenu', libelle: 'Même contenu',
+      aide: 'la même visserie, le même routing',
+      poids: { mecanique: 40, electrique: 40, montage: 20 } },
+    { cle: 'montage', libelle: 'Même montage',
+      aide: 'la même implantation avant tout',
+      poids: { montage: 50, pas: 25, dimensions: 25 } }
+  ],
+  plaquette: [
+    { cle: 'marquage', libelle: 'Même marquage',
+      aide: 'les mots gravés, rien d\'autre',
+      poids: { motsCles: 100 } }
+  ],
+  harnais: [
+    { cle: 'reference', libelle: 'Même référence',
+      aide: 'la référence fait foi',
+      poids: { reference: 100 } }
+  ],
+  composant: [
+    { cle: 'exact', libelle: 'Référence exacte',
+      aide: 'seul le modèle exact compte',
+      poids: { reference: 70, norme: 20, fonction: 10 } },
+    { cle: 'norme', libelle: 'Même norme',
+      aide: 'interchangeable au sens de la norme',
+      poids: { norme: 55, fonction: 30, reference: 15 } },
+    { cle: 'fonction', libelle: 'Même fonction',
+      aide: 'ça rend le même service, quel que soit le modèle',
+      poids: { fonction: 60, norme: 25, reference: 15 } }
+  ]
+};
+
+/** Les favoris d'une portée, ceux dont tous les critères existent encore. */
+function favorisDe(cle) {
+  const portee = PORTEES.find(function (p) { return p.cle === cle; });
+  if (!portee) return [];
+  const connus = portee.criteres.map(function (c) { return c.cle; });
+  return (FAVORIS[cle] || []).filter(function (f) {
+    return Object.keys(f.poids).every(function (c) { return connus.indexOf(c) !== -1; });
+  });
+}
 
 /** Les portées qu'on peut réellement comparer : l'interne n'en est pas une. */
 function porteesComparables() {

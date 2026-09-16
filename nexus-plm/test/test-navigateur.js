@@ -119,10 +119,10 @@ async function ecranPropre(page) {
 
   // ---------------------------------------------------------------
   bloc('Chargement');
-  eq('10 boîtes', await page.locator('.carte').count(), 10);
+  eq('13 boîtes', await page.locator('.carte').count(), 13);
   eq('titre NEXUS seul', (await texte(page, '.marque h1')).trim(), 'NEXUS');
-  eq('indicateur boîtes', await texte(page, '#kpiBoites'), '10');
-  eq('validées', await texte(page, '#kpiVal'), '5 / 10');
+  eq('indicateur boîtes', await texte(page, '#kpiBoites'), '13');
+  eq('validées', await texte(page, '#kpiVal'), '7 / 13');
   eq('libellé « Boîtes »', (await texte(page, '.indicateur-libelle')).trim(), 'Boîtes');
   eq('plus d\'indicateur de réutilisation', await page.locator('#kpiReutil').count(), 0);
   eq('ni son filtre', await page.locator('[data-action="filtrer-reutilise"]').count(), 0);
@@ -215,14 +215,22 @@ async function ecranPropre(page) {
   vrai('soulignée d\'un filet marine', teintes.filet === 'rgb(0, 32, 91)');
   eq('le champ de recherche reste blanc : c\'est là qu\'on écrit',
      teintes.champ, 'rgb(255, 255, 255)');
-  eq('17 porteurs proposés à la création',
-     await page.locator('#newBoitePorteurs input').count(), 17);
+  eq('15 porteurs proposés à la création',
+     await page.locator('#newBoitePorteurs input').count(), 15);
+  eq('« Dauphin » y figure',
+     await page.locator('#newBoitePorteurs input[value="Dauphin"]').count(), 1);
+  eq('« H155 » n\'y est plus',
+     await page.locator('#newBoitePorteurs input[value="H155"]').count(), 0);
+  eq('« H175M » non plus',
+     await page.locator('#newBoitePorteurs input[value="H175M"]').count(), 0);
+  eq('« UH-72 Lakota » non plus',
+     await page.locator('#newBoitePorteurs input[value="UH-72 Lakota"]').count(), 0);
   eq('aucun « Multi »', await page.locator('#newBoitePorteurs input[value="Multi"]').count(), 0);
   eq('« Super Puma » n\'est plus un porteur', await page.locator('#list-Porteur option[value="Super Puma"]').count(), 0);
   eq('pas d\'export CSV', await page.locator('[data-action="exporter-bom"]').count(), 0);
   faux('chargement masqué', await page.locator('#loading').isVisible());
-  eq('chaque boîte a sa photo', await page.locator('img.carte-image').count(), 10);
-  eq('le statut se lit sur la photo', await page.locator('.carte-statut').count(), 10);
+  eq('chaque boîte a sa photo', await page.locator('img.carte-image').count(), 13);
+  eq('le statut se lit sur la photo', await page.locator('.carte-statut').count(), 13);
   vrai('la composition est une barre empilée',
        await page.locator('.compo-barre').count() >= 8);
   // Une entrée par type présent et par carte, pas une par sous-ensemble.
@@ -265,7 +273,7 @@ async function ecranPropre(page) {
   eq('la photo est rendue depuis l\'URL saisie',
      await page.locator('#slideOverBody img[src="https://exemple.fr/photo.jpg"]').count(), 1);
   await fermerFiche(page);
-  eq('11 boîtes', await page.locator('.carte').count(), 11);
+  eq('14 boîtes', await page.locator('.carte').count(), 14);
 
   // On la retire pour ne pas fausser la suite — via le dialogue intégré,
   // puisque confirm() n'existe pas dans l'iframe d'Apps Script.
@@ -282,28 +290,28 @@ async function ecranPropre(page) {
        (await page.locator('#dialogueValider').getAttribute('class')).indexOf('btn-danger-plein') !== -1);
   await repondreDialogue(page);
   await page.waitForTimeout(900);
-  eq('retour à 10 boîtes', await page.locator('.carte').count(), 10);
+  eq('retour à 10 boîtes', await page.locator('.carte').count(), 13);
   await ecranPropre(page);
 
   bloc('Indicateurs qui filtrent');
   await page.locator('#indValidees').click();
   await page.waitForTimeout(300);
-  eq('cliquer « Validées » ne montre que les validées', await page.locator('.carte').count(), 5);
+  eq('cliquer « Validées » ne montre que les validées', await page.locator('.carte').count(), 7);
   vrai('l\'indicateur se dit actif',
        (await page.locator('#indValidees').getAttribute('class')).indexOf('actif') !== -1);
   eq('et propose son retrait dans les filtres',
      await page.locator('#filtreActif [data-action="filtrer-statut"]').count(), 1);
   await page.locator('#indValidees').click();
   await page.waitForTimeout(300);
-  eq('second clic : retour à 10', await page.locator('.carte').count(), 10);
+  eq('second clic : retour à 10', await page.locator('.carte').count(), 13);
   await page.locator('#indBoites').click();
   await page.waitForTimeout(300);
-  eq('« Boîtes » remet tout', await page.locator('.carte').count(), 10);
+  eq('« Boîtes » remet tout', await page.locator('.carte').count(), 13);
 
   // ---------------------------------------------------------------
   bloc('Vue Pièces : où sert chaque référence');
   await ecranPropre(page);
-  eq('trois vues proposées', await page.locator('.onglet-vue').count(), 3);
+  eq('quatre vues proposées', await page.locator('.onglet-vue').count(), 4);
   vrai('« Boîtes » est la vue par défaut',
        (await texte(page, '.onglet-vue.actif')).trim() === 'Boîtes');
   eq('la seconde vue s\'appelle « Sous-ensembles », pas « Pièces »',
@@ -366,13 +374,13 @@ async function ecranPropre(page) {
   await page.locator('.onglet-vue', { hasText: 'Boîtes' }).click();
   await page.waitForTimeout(350);
   eq('retour à la grille', await page.locator('#mainContainer.grille').count(), 1);
-  eq('les cartes reviennent', await page.locator('.carte').count(), 10);
+  eq('les cartes reviennent', await page.locator('.carte').count(), 13);
   eq('et le tri aussi', await page.locator('#triBouton').count(), 1);
 
   // ---------------------------------------------------------------
   bloc('Vue Standardisation : où la base se disperse');
   await ecranPropre(page);
-  eq('trois vues proposées', await page.locator('.onglet-vue').count(), 3);
+  eq('quatre vues proposées', await page.locator('.onglet-vue').count(), 4);
   await page.locator('.onglet-vue', { hasText: 'Standardisation' }).click();
   await page.waitForTimeout(400);
   const nbFamilles = await page.locator('.famille').count();
@@ -456,7 +464,7 @@ async function ecranPropre(page) {
 
   await page.locator('.onglet-vue', { hasText: 'Boîtes' }).click();
   await page.waitForTimeout(350);
-  eq('retour à la grille', await page.locator('.carte').count(), 10);
+  eq('retour à la grille', await page.locator('.carte').count(), 13);
 
   // ---------------------------------------------------------------
   bloc('Recherche par composants : plus de bouton a viser');
@@ -470,9 +478,18 @@ async function ecranPropre(page) {
      await page.locator('#multiSearchModal [data-action="fermer-multi-recherche"]').count(), 1);
 
   // Choisir une suggestion suffit : l'input recoit la valeur, le filtre part.
-  const suggestion = await page.locator('#datalistStds option').first()
-    .evaluate(function (e) { return e.value; });
-  vrai('des suggestions sont proposees', suggestion.length > 0);
+  // On vise une suggestion reellement montee : le catalogue propose aussi des
+  // composants que personne n'a encore posés, et filtrer dessus ne rend rien.
+  const suggestion = await page.evaluate(function () {
+    const montes = new Set();
+    Store.boites.forEach(function (b) {
+      listeComposants(b['Composants']).forEach(function (c) { montes.add(libelleComposant(c)); });
+    });
+    return Array.from(document.querySelectorAll('#datalistStds option'))
+      .map(function (o) { return o.value; })
+      .find(function (v) { return montes.has(v); }) || '';
+  });
+  vrai('une suggestion deja montee est proposee', suggestion.length > 0);
   await page.fill('#multiSearchInputSelect', suggestion);
   await page.waitForTimeout(400);
   eq('la valeur choisie devient une puce, sans clic de plus',
@@ -484,12 +501,12 @@ async function ecranPropre(page) {
   vrai('la modale est restee ouverte',
        await page.locator('#multiSearchModal.show').count() === 1);
   const filtrees = await page.locator('.carte').count();
-  vrai('la grille derriere est deja filtree', filtrees > 0 && filtrees < 10);
+  vrai('la grille derriere est deja filtree', filtrees > 0 && filtrees < 13);
   eq('le filtre actif le dit',
      await page.locator('#filtreActif .filtre-jeton').count(), 1);
 
   // Entree ajoute aussi, pour une valeur libre.
-  await page.fill('#multiSearchInputSelect', 'NSA 5512');
+  await page.fill('#multiSearchInputSelect', 'NAS43');
   await page.locator('#multiSearchInputSelect').press('Enter');
   await page.waitForTimeout(400);
   eq('Entree ajoute une seconde puce',
@@ -506,7 +523,7 @@ async function ecranPropre(page) {
   await page.locator('#filtreActif .filtre-jeton button').first().click();
   await page.waitForTimeout(400);
   eq('filtre relache, toutes les boites reviennent',
-     await page.locator('.carte').count(), 10);
+     await page.locator('.carte').count(), 13);
 
   // ---------------------------------------------------------------
   bloc('Ajouter sans viser : listes fermees, Entree, et le focus rendu');
@@ -558,12 +575,12 @@ async function ecranPropre(page) {
   await page.waitForTimeout(300);
   const normesBP = await listeDe('norme');
   vrai('la liste Norme se resserre sur la fonction', normesBP.length < normesToutes.length);
-  faux('une norme de colonnette n\'y figure plus', normesBP.indexOf('NSA 5512') !== -1);
-  vrai('mais la sienne, oui', normesBP.indexOf('ECS 7251') !== -1);
+  faux('une norme de colonnette n\'y figure plus', normesBP.indexOf('NAS43') !== -1);
+  vrai('mais la sienne, oui', normesBP.indexOf('MS24523') !== -1);
   const refsBP = await listeDe('reference');
   vrai('les references suivent aussi',
-       refsBP.length > 0 && refsBP.every(function (r) { return r.indexOf('MS24523') === 0; }));
-  await page.locator(blocBoite + ' .saisie-composant[data-niveau="norme"]').fill('ECS 7251');
+       refsBP.length > 0 && refsBP.every(function (r) { return /^MS2(4523|4524|5089)/.test(r); }));
+  await page.locator(blocBoite + ' .saisie-composant[data-niveau="norme"]').fill('MS24523');
   await page.waitForTimeout(300);
   const refsNorme = await listeDe('reference');
   vrai('et se resserrent encore sur la norme', refsNorme.length < refsBP.length);
@@ -579,8 +596,8 @@ async function ecranPropre(page) {
     const el = document.querySelector('.bloc-type-structure .saisie-composant[data-niveau="norme"]');
     return Array.from(document.getElementById(el.getAttribute('list')).options).map(function (o) { return o.value; });
   });
-  vrai('la colonnette ne propose que sa norme', normesMeca.indexOf('NSA 5512') !== -1);
-  faux('et pas celles des boutons', normesMeca.indexOf('ECS 7251') !== -1);
+  vrai('la colonnette ne propose que sa norme', normesMeca.indexOf('NAS43') !== -1);
+  faux('et pas celles des boutons', normesMeca.indexOf('MS24523') !== -1);
   eq('le bloc de la boite n\'a pas bouge', (await listeDe('norme')).length, normesToutes.length);
 
   bloc('Equivalences depuis la fiche de la boite');
@@ -629,7 +646,7 @@ async function ecranPropre(page) {
   eq('l\'indicateur se marque', await page.locator('#indStandard').getAttribute('aria-pressed'), 'true');
   await page.locator('#indStandard').click();
   await page.waitForTimeout(450);
-  eq('un second clic ramene aux cartes', await page.locator('.carte').count(), 10);
+  eq('un second clic ramene aux cartes', await page.locator('.carte').count(), 13);
 
 
   // ---------------------------------------------------------------
@@ -708,6 +725,167 @@ async function ecranPropre(page) {
   eq('les fonctions retirees ne sont plus la', disparues, []);
   await ecranPropre(page);
 
+  // ---------------------------------------------------------------
+  bloc('Vue Composants : ce qu\'on monte, et combien de fois');
+  await ecranPropre(page);
+  await page.locator('.onglet-vue', { hasText: 'Composants' }).click();
+  await page.waitForTimeout(500);
+  const nbCompo = await page.locator('.compo-ligne').count();
+  vrai('des composants sont listes', nbCompo > 10);
+  eq('plus de cartes', await page.locator('.carte').count(), 0);
+  eq('ni d\'inventaire de sous-ensembles', await page.locator('.piece').count(), 0);
+  vrai('le bilan les compte',
+       (await texte(page, '#bilanResultats')).indexOf('composant') !== -1);
+
+  const enTeteCompo = await texte(page, '.compo-bilan');
+  ['références distinctes', 'fonctions', 'normes', 'montages'].forEach(function (mot) {
+    vrai('l\'en-tete annonce « ' + mot + ' »', enTeteCompo.indexOf(mot) !== -1);
+  });
+
+  const premier = page.locator('.compo-ligne').first();
+  vrai('chaque ligne porte sa fonction',
+       (await premier.locator('.compo-fonction').innerText()).trim().length > 0);
+  vrai('sa norme', await premier.locator('.compo-norme').count() === 1);
+  vrai('sa reference', await premier.locator('.compo-reference').count() === 1);
+  vrai('sa famille', await premier.locator('.compo-famille').count() === 1);
+  vrai('une jauge d\'emploi', await premier.locator('.compo-jauge').count() === 1);
+  vrai('et les porteurs concernes',
+       await premier.locator('.compo-porteurs .puce-porteur').count() >= 1);
+
+  // Les plus montes d'abord : c'est l'information qu'on vient chercher.
+  const comptes = await page.locator('.compo-compte').evaluateAll(function (els) {
+    return els.map(function (e) { return parseInt(e.textContent, 10) || 0; });
+  });
+  vrai('les plus montes sont en tete', comptes[0] >= comptes[comptes.length - 1]);
+
+  // Un clic nomme les boites, un clic de plus ouvre la fiche.
+  const compte1 = page.locator('.compo-compte').first();
+  eq('les boites sont repliees au depart', await compte1.getAttribute('aria-expanded'), 'false');
+  await compte1.click(); await page.waitForTimeout(250);
+  eq('un clic les deplie', await compte1.getAttribute('aria-expanded'), 'true');
+  const boites1 = page.locator('.compo-ligne').first().locator('.compo-boites .usage-lien');
+  vrai('les boites sont nommees', await boites1.count() >= 1);
+  const pnCite = (await boites1.first().innerText()).trim();
+  await boites1.first().click();
+  await page.waitForSelector('#detailsSlideOver.show'); await page.waitForTimeout(400);
+  vrai('la boite citee s\'ouvre',
+       (await texte(page, '#slideOverTitle')).indexOf(pnCite) !== -1);
+  await fermerFiche(page);
+
+  // Un composant monte une seule fois est signale : c'est un candidat au
+  // regroupement, ou un risque d'appro isole.
+  vrai('les composants isoles se reperent',
+       await page.locator('.compo-seul').count() >= 1);
+
+  // L'inventaire suit les filtres, comme les trois autres vues.
+  await page.fill('#searchBar', 'APU');
+  await page.waitForTimeout(450);
+  vrai('la recherche restreint l\'inventaire',
+       await page.locator('.compo-ligne').count() < nbCompo);
+  await page.fill('#searchBar', ''); await page.waitForTimeout(450);
+  eq('et le rend quand on efface', await page.locator('.compo-ligne').count(), nbCompo);
+
+  const largeurCompo = await page.evaluate(function () {
+    return { doc: document.documentElement.scrollWidth, vue: window.innerWidth };
+  });
+  vrai('pas de defilement horizontal (composants)', largeurCompo.doc <= largeurCompo.vue + 1);
+  await page.screenshot({ path: path.join(RACINE, 'build/apercu-composants.png') });
+  await page.locator('.onglet-vue', { hasText: 'Boîtes' }).click();
+  await page.waitForTimeout(400);
+  eq('retour a la grille', await page.locator('.carte').count(), 13);
+
+  // ---------------------------------------------------------------
+  bloc('Favoris de ponderation : une intention posee d\'un coup');
+  await ecranPropre(page);
+  await page.locator('.carte', { hasText: '332H80001' })
+            .getByRole('button', { name: 'Équivalences' }).click();
+  await page.waitForSelector('#compareModal.show'); await page.waitForTimeout(900);
+  await page.locator('[data-action="ouvrir-reglages"]').first().click();
+  await page.waitForTimeout(600);
+  vrai('le rail propose des favoris', await page.locator('.favori').count() >= 4);
+  vrai('chacun porte son intention',
+       (await page.locator('.favori-aide').first().innerText()).trim().length > 5);
+
+  const tete = async function () {
+    return (await texte(page, '#compareResult .resultat .resultat-pn, #compareResult .resultat')).trim();
+  };
+  const scoreTete = async function () {
+    return parseInt(await texte(page, '#compareResult .resultat .score b'), 10);
+  };
+  const avantFavori = await scoreTete();
+  await page.locator('.favori', { hasText: 'Même porteur' }).click();
+  await page.waitForTimeout(700);
+  eq('le favori pose est marque', await page.locator('.favori.actif').count(), 1);
+  const apresPorteur = await scoreTete();
+  vrai('le classement se recompose', apresPorteur !== avantFavori);
+  eq('le total reste a 100 %',
+     await page.evaluate(function () {
+       return criteresActifs('boite').reduce(function (t, c) { return t + poidsDe('boite', c); }, 0);
+     }), 100);
+  vrai('le porteur pese le plus',
+       await page.evaluate(function () {
+         return criteresActifs('boite').reduce(function (a, b) {
+           return poidsDe('boite', a) >= poidsDe('boite', b) ? a : b;
+         }).cle === 'porteur';
+       }));
+
+  // Un favori dit aussi ce qui NE compte pas.
+  await page.locator('.favori', { hasText: 'Même contenu' }).click();
+  await page.waitForTimeout(700);
+  eq('« Même contenu » ne garde que ses criteres',
+     await page.evaluate(function () { return criteresActifs('boite').length; }), 3);
+  vrai('les autres sont proposes au rajout',
+       await page.locator('.btn-ajout-critere').count() >= 1);
+
+  // Bouger un curseur quitte le favori : on ne pretend pas y etre reste.
+  const curseur = page.locator('#reglagesRail .curseur[data-portee="boite"]').first();
+  await curseur.evaluate(function (el) {
+    el.value = 70; el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.waitForTimeout(600);
+  eq('plus aucun favori n\'est marque', await page.locator('.favori.actif').count(), 0);
+
+  await page.locator('.favori', { hasText: 'Par défaut' }).click();
+  await page.waitForTimeout(700);
+  eq('« Par défaut » remet les parts du registre',
+     await page.evaluate(function () { return criteresActifs('boite').length; }),
+     await page.evaluate(function () { return CRITERES_BOITE.length; }));
+  await fermerModale(page, 'compareModal');
+  await ecranPropre(page);
+
+  // ---------------------------------------------------------------
+  bloc('La fiche ne cache plus rien hors edition');
+  await ouvrirFiche(page, '332P20001');
+  const corpsLu = await texte(page, '#slideOverBody');
+  vrai('le champ Image se lit sans passer en edition',
+       await page.locator('#slideOverBody .lien-url').count() >= 1);
+  vrai('le type du sous-ensemble se lit aussi', corpsLu.indexOf('Structure boîte') !== -1);
+  // Les photos du jeu d'exemple sont embarquees : on dit ce que c'est plutot
+  // que de deverser 4 Ko de donnees dans la fiche.
+  vrai('une image embarquee est annoncee, pas deversee',
+       corpsLu.indexOf('image intégrée') !== -1);
+  faux('sa charge utile ne remplit pas la fiche', corpsLu.indexOf('data:image/svg') !== -1);
+  // Une vraie URL, elle, est un lien.
+  await page.evaluate(function () {
+    boiteParPn('332P20001')['Image'] = 'https://exemple.fr/boitier.jpg';
+    rendreFiche();
+  });
+  await page.waitForTimeout(400);
+  eq('une URL http devient un lien',
+     await page.locator('#slideOverBody .lien-url[target="_blank"]').count(), 1);
+  vrai('vers la bonne adresse',
+       (await page.locator('#slideOverBody .lien-url').first().getAttribute('href'))
+         === 'https://exemple.fr/boitier.jpg');
+  // Ce qui est lisible doit rester editable.
+  await page.locator('#slideOverBody [data-action="editer-boite"]').click();
+  await page.waitForTimeout(400);
+  vrai('et reste editable',
+       await page.locator('#slideOverBody .champ-boite[data-champ="Image"]').count() === 1);
+  await page.locator('#slideOverBody [data-action="annuler-boite"]').click();
+  await page.waitForTimeout(400);
+  await fermerFiche(page);
+  await ecranPropre(page);
+
   bloc('Filtres par type de sous-ensemble');
   eq('3 types présents', await page.locator('.filtres-type .jeton').count(), 3);
   await page.locator('.jeton', { hasText: 'Harnais' }).click();
@@ -722,7 +900,7 @@ async function ecranPropre(page) {
   vrai('deux types exigés ensemble = plus restrictif', deuxTypes <= avecHarnais);
   await page.locator('#filtreActif [data-action="tout-effacer"]').click();
   await page.waitForTimeout(250);
-  eq('tout effacé', await page.locator('.carte').count(), 10);
+  eq('tout effacé', await page.locator('.carte').count(), 13);
 
   // ---------------------------------------------------------------
   bloc('Recherche et tri');
@@ -772,7 +950,7 @@ async function ecranPropre(page) {
 
   const blocHarnais = page.locator('.bloc-type-harnais').first();
   const txtHarnais = await blocHarnais.evaluate(function (el) { return el.textContent; });
-  vrai('le harnais affiche sa référence', txtHarnais.indexOf('HRN-2251-A') !== -1);
+  vrai('le harnais affiche sa référence', txtHarnais.indexOf('EN4165-002-02') !== -1);
   faux('le harnais n\'affiche pas de longueur', txtHarnais.indexOf('Longueur') !== -1);
   faux('ni de masse', txtHarnais.indexOf('Masse') !== -1);
   faux('ni de qualification', txtHarnais.indexOf('Qualif') !== -1);
@@ -790,12 +968,12 @@ async function ecranPropre(page) {
   vrai('et son nombre de pas', txtStruct.indexOf('Nombre de pas') !== -1);
   eq('la structure n\'a pas de champ Référence (celui du harnais)',
      await blocStruct.locator('.ligne-cle', { hasText: /^Référence/ }).count(), 0);
-  vrai('elle porte sa structure mécanique', txtStruct.indexOf('Structure mécanique') !== -1);
-  vrai('et ses composants électriques', txtStruct.indexOf('Composants électriques') !== -1);
+  vrai('elle porte sa composants mécaniques', txtStruct.indexOf('Composants mécaniques') !== -1);
+  vrai('et ses composants électriques', txtStruct.indexOf('Composants routing') !== -1);
   eq('deux tableaux de composants', await blocStruct.locator('.composants').count(), 2);
   vrai('en trois colonnes : fonction, norme, référence',
        await blocStruct.locator('.composant .niveau-reference').count() >= 2);
-  vrai('la colonnette est dans la structure mécanique', txtStruct.indexOf('Colonnette') !== -1);
+  vrai('la colonnette est dans la composants mécaniques', txtStruct.indexOf('Colonnette') !== -1);
   vrai('le collier est dans les composants électriques', txtStruct.indexOf('Collier') !== -1);
 
   const blocGeneral = page.locator('.bloc-general');
@@ -809,14 +987,14 @@ async function ecranPropre(page) {
   const nbAvantCompo = await blocGeneral.locator('.composant').count();
   await blocGeneral.locator('.saisie-composant[data-niveau="fonction"]').fill('Interrupteur');
   await blocGeneral.locator('.saisie-composant[data-niveau="norme"]').fill('ASNE 0567');
-  await blocGeneral.locator('.saisie-composant[data-niveau="reference"]').fill('8500K12');
+  await blocGeneral.locator('.saisie-composant[data-niveau="reference"]').fill('MS24524-23');
   await blocGeneral.locator('[data-action="ajouter-composant"]').click();
   await page.waitForTimeout(800);
   eq('composant ajouté sur la boîte',
      await page.locator('.bloc-general .composant').count(), nbAvantCompo + 1);
   vrai('avec ses trois niveaux',
-       (await texte(page, '.bloc-general')).indexOf('8500K12') !== -1);
-  await page.locator('.bloc-general .composant', { hasText: '8500K12' })
+       (await texte(page, '.bloc-general')).indexOf('MS24524-23') !== -1);
+  await page.locator('.bloc-general .composant', { hasText: 'MS24524-23' })
             .locator('[data-action="supprimer-composant"]').click();
   await page.waitForTimeout(800);
   eq('et retiré', await page.locator('.bloc-general .composant').count(), nbAvantCompo);
@@ -987,7 +1165,7 @@ async function ecranPropre(page) {
   vrai('un score reste affiché', (await texte(page, '#compareResult .score b')).length > 0);
   vrai('le score de structure a suivi ou tenu bon',
        typeof scoreAvantNiveau === 'string');
-  await page.locator('[data-action="reinitialiser-reglages"]').click();
+  await page.locator('#reglagesRail .btn-lien[data-action="reinitialiser-reglages"]').click();
   await page.waitForTimeout(400);
   // Les composants se comparent par paliers : référence, norme, fonction.
   vrai('les paliers d\'équivalence des composants sont affichés',
@@ -1046,7 +1224,7 @@ async function ecranPropre(page) {
   await page.waitForTimeout(300);
   eq('seuil mis à jour', (await texte(page, '#seuilValeur')).trim(), '60 %');
 
-  await page.locator('[data-action="reinitialiser-reglages"]').click();
+  await page.locator('#reglagesRail .btn-lien[data-action="reinitialiser-reglages"]').click();
   await page.waitForTimeout(400);
   faux('plus de pondération personnalisée',
        await page.locator('#reglagesModifies').isVisible());
@@ -1118,7 +1296,7 @@ async function ecranPropre(page) {
 
   bloc('Catalogue et création typée');
   if (!(await page.locator('#detailsSlideOver.show').count())) await ouvrirFiche(page, '332P20001');
-  // Le catalogue est filtré par catégorie : la structure mécanique ne
+  // Le catalogue est filtré par catégorie : la composants mécaniques ne
   // propose pas de bouton poussoir, ni la boîte de colonnette.
   await page.locator('.bloc-type-structure [data-action="ouvrir-catalogue"][data-categorie="mecanique"]').first().click();
   await page.waitForSelector('#catalogueModal.show');
@@ -1126,7 +1304,7 @@ async function ecranPropre(page) {
   const catMeca = await texte(page, '#catalogueList');
   vrai('le catalogue mécanique propose des colonnettes', catMeca.indexOf('Colonnette') !== -1);
   faux('mais aucun bouton poussoir', catMeca.indexOf('Bouton poussoir') !== -1);
-  await page.fill('#catSearch', 'entretoise');
+  await page.fill('#catSearch', 'NAS43DD3-22');
   await page.waitForTimeout(350);
   eq('un seul résultat', await page.locator('.ligne-catalogue').count(), 1);
   await page.locator('.ligne-catalogue').click();
@@ -1134,24 +1312,13 @@ async function ecranPropre(page) {
   const compos = await page.locator('.bloc-type-structure .composant')
     .evaluateAll(function (e) { return e.map(function (x) { return x.textContent; }); });
   vrai('le composant affiché est celui ajouté, avec sa référence',
-       compos.some(function (p) { return p.indexOf('Entretoise') !== -1 && p.indexOf('ENT-10') !== -1; }));
+       compos.some(function (p) { return p.indexOf('Colonnette') !== -1 && p.indexOf('NAS43DD3-22') !== -1; }));
 
-  // Poser trois colonnettes ne doit pas demander d'ouvrir le catalogue trois
-  // fois : il reste ouvert, et la liste se rafraichit sur place.
-  vrai('le catalogue reste ouvert apres un ajout',
-       await page.locator('#catalogueModal.show').count() === 1);
-  await page.fill('#catSearch', 'colonnette');
-  await page.waitForTimeout(350);
-  vrai('on peut y enchainer un second choix',
-       await page.locator('.ligne-catalogue').count() >= 1);
-  await page.locator('.ligne-catalogue').first().click();
-  await page.waitForTimeout(900);
-  const compos2 = await page.locator('.bloc-type-structure .composant')
-    .evaluateAll(function (e) { return e.map(function (x) { return x.textContent; }); });
-  vrai('le second composant est pose lui aussi',
-       compos2.some(function (p) { return p.indexOf('Colonnette') !== -1; }));
-  await fermerModale(page, 'catalogueModal');
-  await page.waitForTimeout(300);
+  // Le catalogue se referme apres l'ajout : le geste se termine sur la fiche,
+  // ou l'on voit tout de suite le composant pose.
+  eq('le catalogue se referme apres un ajout',
+     await page.locator('#catalogueModal.show').count(), 0);
+  await page.waitForTimeout(400);
 
   await page.locator('.bloc-general [data-action="ouvrir-catalogue"]').first().click();
   await page.waitForSelector('#catalogueModal.show');
@@ -1215,7 +1382,7 @@ async function ecranPropre(page) {
   }, null, { timeout: 8000 });
   vrai('PN en double refusé', true);
   await ecranPropre(page);
-  eq('aucune boîte créée', await page.locator('.carte').count(), 10);
+  eq('aucune boîte créée', await page.locator('.carte').count(), 13);
 
   // ---------------------------------------------------------------
   bloc('Thème sombre');
@@ -1274,7 +1441,7 @@ async function ecranPropre(page) {
   await ecranPropre(page);
   await page.locator('#demoReset').click();
   await page.waitForTimeout(1200);
-  eq('réinitialisation de la démo', await page.locator('.carte').count(), 10);
+  eq('réinitialisation de la démo', await page.locator('.carte').count(), 13);
   await page.evaluate(function () {
     // Bootstrap rend le focus au déclencheur en fermant un panneau, ce qui
     // refait défiler la page : on le retire avant de remonter.

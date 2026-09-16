@@ -219,11 +219,35 @@ function blocBoiteHtml(boite) {
                     liste: regle.liste || null };
 
     if (edition) { html += ligneHtml(champ.libelle, saisieHtml(champ, valeur, 'champ-boite')); return; }
-    if (genre === GENRE.IMAGE) return;         // déjà présentée en vignette
+    // Hors édition, on montre TOUT ce qu'on peut éditer, l'URL comprise : un
+    // champ qu'il faut passer en édition pour lire est un champ qu'on oublie.
+    if (genre === GENRE.IMAGE) { html += ligneHtml(champ.libelle, urlLisibleHtml(valeur)); return; }
     html += ligneHtml(champ.libelle, valeurLisibleHtml(valeur));
   });
 
   return html + '</section>';
+}
+
+/**
+ * Une URL se lit ET s'ouvre. On ne l'affiche pas en entier : un lien Drive
+ * fait 80 caractères et pousserait la colonne hors de la fiche.
+ */
+function urlLisibleHtml(valeur) {
+  const url = String(valeur || '').trim();
+  if (!url) return '<span class="vide">—</span>';
+
+  // Une image embarquée fait plusieurs milliers de caractères : on dit ce
+  // que c'est, on ne déverse pas la charge utile dans la fiche.
+  if (/^data:/i.test(url)) {
+    const type = (url.match(/^data:([a-z0-9.+-]+\/[a-z0-9.+-]+)/i) || [])[1] || 'données';
+    return '<span class="lien-url lien-embarque" title="Image embarquée dans la cellule">' +
+           'image intégrée (' + esc(type) + ')</span>';
+  }
+  if (!/^https?:\/\//i.test(url)) return valeurLisibleHtml(url);
+
+  const court = url.length > 58 ? url.slice(0, 55) + '…' : url;
+  return '<a class="lien-url" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer"' +
+         ' title="' + esc(url) + '">' + esc(court) + '</a>';
 }
 
 function valeurLisibleHtml(valeur) {
@@ -268,6 +292,8 @@ function blocNomHtml(ligne) {
     html += ligneHtml('Type', saisieHtml({ cle: 'Type', genre: GENRE.TEXTE, liste: 'list-Type' },
                                          ligne['Type'], 'champ-nom', id),
                       'change la fiche affichée');
+  } else {
+    html += ligneHtml('Type', valeurLisibleHtml(ligne['Type']));
   }
 
   // Réemploi : la même pièce est-elle montée ailleurs ?
@@ -308,7 +334,9 @@ function blocNomHtml(ligne) {
     }
 
     if (champ.genre === GENRE.IMAGE) {
-      if (edition) html += ligneHtml('Image (URL)', saisieHtml(champ, valeur, 'champ-nom', id));
+      html += edition
+        ? ligneHtml('Image (URL)', saisieHtml(champ, valeur, 'champ-nom', id))
+        : ligneHtml('Image (URL)', urlLisibleHtml(valeur));
       return;
     }
 
