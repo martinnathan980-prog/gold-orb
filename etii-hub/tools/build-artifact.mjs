@@ -131,12 +131,18 @@ function dependances(nom, vues = new Set(), ordre = []) {
   return ordre;
 }
 
-// Les trois espaces de pôle partagent pole.js : le module à intégrer n'est
-// donc pas déduit du nom de la page mais lu dans sa balise <script>.
-function moduleDeLaPage(nom, html) {
-  const m = html.match(/<script type="module" src="assets\/js\/([a-z0-9-]+)\.js"><\/script>/);
-  if (!m) throw new Error(`${nom}.html : aucun module <script type="module" src="assets/js/…"> trouvé`);
-  return m[1];
+// Une page peut charger PLUSIEURS modules — la page elle-même, et des
+// modules transverses comme le sélecteur de direction. On les lit tous,
+// dans l'ordre du document, plutôt que de supposer qu'il n'y en a qu'un :
+// prendre le premier ferait passer un module transverse pour la page.
+function modulesDeLaPage(nom, html) {
+  const noms = [...html.matchAll(
+    /<script type="module" src="assets\/js\/([a-z0-9-]+)\.js"><\/script>/g)]
+    .map((m) => m[1]);
+  if (!noms.length) {
+    throw new Error(`${nom}.html : aucun module <script type="module" src="assets/js/…"> trouvé`);
+  }
+  return noms;
 }
 
 function construirePage(nom) {
@@ -149,21 +155,27 @@ function construirePage(nom) {
     `$1\n  <style>\n${cssAssemble}\n  </style>`);
 
   // Le module de page devient un script intégré, dépendances comprises.
-  const moduleDePage = bles(moduleDeLaPage(nom, html));
+  const moduleDePage = bles(modulesDeLaPage(nom, html));
+  // Tous les modules sont fondus dans un seul script ; les balises
+  // d'origine disparaissent.
   html = html.replace(
-    /[ \t]*<script type="module" src="assets\/js\/[a-z-]+\.js"><\/script>/,
-    `  <script type="module">\n${moduleDePage}\n  </script>`);
+    /[ \t]*<script type="module" src="assets\/js\/[a-z0-9-]+\.js"><\/script>\n?/g, '');
+  html = html.replace(/([ \t]*)<\/body>/,
+    `  <script type="module">\n${moduleDePage}\n  </script>\n$1</body>`);
 
   verifierSyntaxe(nom, moduleDePage);
 
   return html;
 }
 
-function bles(nom) {
-  // Le module de la page vient en dernier ; ses dépendances le précèdent,
-  // chacune une seule fois, dans l'ordre où elles doivent être évaluées.
-  const chaine = dependances(nom);
-  const socle = chaine.slice(0, -1)
+function bles(noms) {
+  // Les modules d'entrée viennent en dernier ; leurs dépendances les
+  // précèdent, chacune une seule fois, dans l'ordre d'évaluation.
+  const entrees = Array.isArray(noms) ? noms : [noms];
+  const vues = new Set();
+  const ordre = [];
+  for (const entree of entrees) dependances(entree, vues, ordre);
+  const socle = ordre.filter((n) => !entrees.includes(n))
     .map(n => bloc(n, lire(`assets/js/${n}.js`))).join('\n');
   return `const __M = {};
 // Les données sont intégrées : aucun fetch, donc aucune contrainte file://
@@ -180,7 +192,7 @@ __M["data"].chargerDonnees = function (nomJeu) {
         'Jeu de données « ' + nomJeu + ' » absent de la version autonome.'));
 };
 
-${bloc(nom, lire(`assets/js/${nom}.js`), { asynchrone: true })}`;
+${entrees.map((n) => bloc(n, lire(`assets/js/${n}.js`), { asynchrone: true })).join('\n')}`;
 }
 
 /* Sérialisation sûre pour une insertion DANS une balise <script>.

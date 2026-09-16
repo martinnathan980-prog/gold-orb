@@ -98,7 +98,11 @@ verifier('ni eval ni new Function', evals.length ? `dans : ${evals.join(', ')}` 
 
 // --- 5. Jetons CSS ------------------------------------------------------
 console.log('\n== Jetons CSS ==');
-const brutes = cssFiles.filter(f => f !== 'assets/css/tokens.css')
+// Les fichiers de PALETTE ont le droit de porter des valeurs brutes :
+// c'est leur rôle. directions.css est temporaire — il disparaît avec le
+// sélecteur une fois la direction retenue promue dans tokens.css.
+const FICHIERS_PALETTE = ['assets/css/tokens.css', 'assets/css/directions.css'];
+const brutes = cssFiles.filter(f => !FICHIERS_PALETTE.includes(f))
   .filter(f => lireSansCommentaires(f).split('\n').some(l =>
     /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(l) && !/var\(|currentColor/.test(l)));
 verifier('aucune couleur brute hors tokens.css',
