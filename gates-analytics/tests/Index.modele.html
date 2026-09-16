@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Suivi FWD</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+    <?!= include('Styles'); ?>
+  </head>
+  <body>
+
+<!-- Les données sont posées dans la page au moment où le modèle est évalué :
+     pas d'écran de chargement, pas d'aller-retour. -->
+<script>
+  window.SUIVI_FWD_DONNEES = <?!= JSON.stringify(getDonneesPourClient()) ?>;
+
+  /* Pont vers le classeur. Les jalons sont partagés : ils repartent au serveur
+     à chaque changement, pour que la collègue et sa chef voient les mêmes. */
+  window.SUIVI_FWD_API = {
+    sauverJalons: function (liste) {
+      try {
+        google.script.run
+          .withFailureHandler(function (e) { console.error('Jalons non enregistrés :', e && e.message); })
+          .sauverJalons(liste);
+      } catch (e) { /* page ouverte hors classeur : sans conséquence */ }
+    }
+  };
+</script>
+
+<!--MARKUP-->
+
+    <?!= include('Javascript'); ?>
+  </body>
+</html>

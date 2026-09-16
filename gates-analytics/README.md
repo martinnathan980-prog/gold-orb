@@ -1,122 +1,77 @@
-# GATES Analytics
+# Suivi FWD
 
-Tableau de bord de suivi des plans d'intégration électrique, construit sur
-Google Apps Script + Google Sheets.
+Tableau de bord de l'avancement FWD des plans d'intégration électrique, à
+poser dans un classeur Google Sheets. La mise en place et le geste
+hebdomadaire sont dans **[PROCEDURE.md](PROCEDURE.md)**.
 
-```
-PROCEDURE.md      Le geste hebdomadaire, en deux étapes
-import/           Script Python : archiver un export hors Google Sheets
-Code.gs           Serveur : lecture de la feuille, historique, jalons
-Index.html        Structure de la page
-Styles.html       Feuille de style
-Javascript.html   Logique client (filtres, tri, tableau, graphiques)
-appsscript.json   Manifeste (fuseau, portées OAuth, déploiement web)
-tests/run-tests.js Tests unitaires (node tests/run-tests.js)
-```
+## Ce qu'il y a dans ce dossier
 
-## Installation
-
-1. Ouvrir le classeur Google Sheets ▸ **Extensions ▸ Apps Script**.
-2. Créer les fichiers `Code.gs`, `Index.html`, `Styles.html`, `Javascript.html`
-   et y coller le contenu de ce dossier (les trois derniers sont des fichiers
-   **HTML** dans l'éditeur Apps Script, même pour le CSS et le JS).
-3. **Déployer ▸ Nouveau déploiement ▸ Application Web**, puis ouvrir l'URL `/exec`.
-4. Recharger le classeur : le menu **GATES Analytics** apparaît.
-5. Menu ▸ **Activer le suivi hebdomadaire automatique** pour lancer l'historique.
-
-Avec [clasp](https://github.com/google/clasp) : `clasp push` depuis ce dossier.
-
-## Configuration
-
-Tout se règle dans l'objet `CONFIG` en haut de `Code.gs` :
-
-| Clé | Rôle |
+| Fichier | Rôle |
 |---|---|
-| `FEUILLE_DONNEES` | Onglet à lire. Vide = premier onglet visible non interne. |
-| `FEUILLE_HISTORIQUE` | Onglet des instantanés (`Historique_FWD`). |
-| `MOTS_CLES_ENTETE` | Mots-clés qui identifient la ligne d'en-têtes. |
-| `AUTORISER_INTEGRATION_EXTERNE` | `true` pour embarquer la page dans Google Sites. |
-| `FENETRE_RYTHME` | Nombre de semaines sur lesquelles se mesure le rythme (6 par défaut). |
+| `Code.gs` | Serveur : lecture de la feuille, modèle de colonnes, historique, jalons |
+| `Index.html` | Page ; elle injecte les données du classeur au rendu, sans aller-retour |
+| `Styles.html` | Feuille de style |
+| `Javascript.html` | Interface |
+| `appsscript.json` | Manifeste (fuseau, portées OAuth) |
+| `prototype/` | La même interface, autonome, avec un jeu d'exemple — c'est la source |
+| `import/releve.py` | Variante hors Google : archive les relevés depuis un CSV |
+| `tests/` | Batterie de l'add-on (serveur + page rendue) |
 
-## Fonctionnement
+## Une seule interface, deux sources
 
-**Historique.** L'export GATES ne contient que l'état du jour : on ne sait pas
-quand un plan est passé à 100 %. L'historique ne peut donc pas être reconstitué,
-seulement **accumulé**. `enregistrerInstantaneHebdo()` écrit une ligne par semaine
-ISO dans `Historique_FWD` — comptes globaux, comptes par ATA, et avancement plan
-par plan sur les deux derniers relevés (pour le comparatif entre imports).
-L'opération est idempotente : plusieurs imports la même semaine ne font qu'une
-ligne, la dernière. Voir [`PROCEDURE.md`](PROCEDURE.md) pour le geste hebdomadaire.
+`prototype/suivi-fwd.html` est **la** version de l'interface. Elle tourne seule
+avec un jeu d'exemple, ce qui permet de la montrer et de la tester sans
+classeur. Quand elle trouve `window.SUIVI_FWD_DONNEES` posé dans la page, elle
+s'alimente à la place sur le classeur.
 
-**Classement de l'avancement.** `classerFWD()` applique d'abord une règle
-numérique (`>= 100` terminé, `<= 0` vide), puis des mots-clés. La fonction est
-dupliquée à l'identique dans `Code.gs` et `Javascript.html` — le serveur s'en sert
-pour les instantanés, le client pour les KPI filtrés. **Toute modification doit
-être reportée des deux côtés** ; un test vérifie que les deux versions concordent.
+`Styles.html`, `Javascript.html` et `Index.html` en sont **dérivés** :
 
-**Jalons.** Stockés dans les propriétés du document (`PropertiesService`), donc
-partagés par tous les utilisateurs et conservés entre deux sessions.
+```sh
+npm run build        # redécoupe le prototype en fichiers Apps Script
+```
+
+Ne jamais modifier les trois fichiers dérivés à la main : la modification se
+ferait perdre au découpage suivant. Tout passe par le prototype.
 
 ## Tests
 
-```bash
-node tests/run-tests.js     # ou: npm test
+```sh
+npm install
+npm test
 ```
 
-Les tests chargent `Code.gs` et le `<script>` de `Javascript.html` dans un
-contexte `vm` isolé, avec des stubs minimaux. Ils couvrent les semaines ISO,
-le classement d'avancement, la détection des en-têtes, l'échappement HTML,
-le tri, le réordonnancement des colonnes et l'agrégation des graphiques.
+- `npm run test:addon` — 67 tests. Le vrai `Code.gs` tourne dans Node contre un
+  classeur en mémoire (`tests/faux-classeur.js`), sur un export volontairement
+  pénible : lignes de titre, groupes fusionnés, en-têtes accentués ou
+  dupliqués, ligne vide au milieu, avancements de toutes les formes. Puis la
+  page qu'Apps Script rendrait est chargée dans un vrai navigateur et comparée
+  aux comptes du serveur. Couvre aussi : feuille vide, feuille sans colonne
+  d'avancement, historique corrompu, 4 000 plans, jalons hostiles.
+- `npm run test:interface` — 175 tests sur l'interface elle-même. Elle
+  n'essaie pas seulement de vérifier que ça marche : recherches avec balises,
+  expressions régulières, 3 000 caractères ou émoji, jalon au texte injecté,
+  `localStorage` corrompu puis inaccessible, zoom et déplacement extrêmes,
+  sept largeurs d'écran, clavier seul, contraste dans les deux thèmes. Toute
+  erreur JavaScript remontée par la console fait échouer le lot.
 
-## Ce qui a changé par rapport à la version initiale
+`CHROMIUM_PATH` force un binaire Chromium précis si celui de Playwright n'est
+pas installé.
 
-### Corrections
+## Le parti pris
 
-| # | Problème | Correction |
-|---|---|---|
-| 1 | `getDonneesPlans` calculait l'historique réel puis renvoyait `historiqueExemple`, un tableau codé en dur : **le graphique d'évolution affichait des chiffres inventés**. | L'historique réel est lu depuis `Historique_FWD`, dédoublonné et trié. Les données de démonstration sont derrière une option désactivée. |
-| 2 | `getActiveSheet()` : le tableau de bord lisait l'onglet ouvert en dernier, y compris `Historique_FWD`. | Résolution déterministe de l'onglet (`CONFIG.FEUILLE_DONNEES`, sinon premier onglet visible non interne). |
-| 3 | Les valeurs des cellules étaient injectées en HTML sans échappement (`<td>${valeur}</td>`, `onclick="cacherGroupe('${groupe}')"`). Un groupe nommé « Définition d'ensemble » cassait la page ; un contenu de cellule pouvait injecter du HTML. | Échappement systématique + gestion des clics par délégation avec `data-*`, plus aucun `onclick` construit par concaténation. |
-| 4 | Trier ou masquer une colonne reconstruisait les en-têtes et **effaçait tous les filtres de colonne** en cours. | Les filtres vivent dans l'état et sont restaurés à chaque reconstruction. |
-| 5 | Le glisser-déposer de colonnes calculait l'index cible avant de retirer la colonne source : décalage d'un cran vers la droite. | Fonction pure `reordonner()`, couverte par des tests. |
-| 6 | Le graphique de dates gardait les 20 périodes les **plus fréquentes** avant de les trier : des mois disparaissaient de la courbe. | Tri chronologique d'abord, puis conservation des 24 dernières périodes. |
-| 7 | `s.includes('100')` classait comme « terminé » toute cellule contenant la suite `100` : « 1001 pièces », « ECP-1004 », « 100 à revoir ». | Règle numérique explicite (`>= 100` / `<= 0`) évaluée avant les mots-clés. |
-| 8 | Le tri numérique échouait sur « 75 % », « 1 234,5 » (virgule, espace insécable) et mélangeait les cellules vides. | `valeurNumerique()` tolérante + vides toujours en bas + `localeCompare` français. |
-| 9 | Les lignes entièrement vides de la feuille étaient comptées dans le total, ce qui diluait le pourcentage d'avancement. | Filtrage des lignes vides côté serveur. |
-| 10 | Les jalons n'existaient qu'en mémoire : perdus à chaque rechargement. | Persistance via `PropertiesService`, partagée entre utilisateurs. |
-| 11 | Les lignes de `Historique_FWD` étaient renvoyées dans leur ordre d'insertion, et la semaine existante était cherchée par comparaison stricte (`===`) sur la valeur brute de la cellule : une semaine ressaisie ou reformatée créait un doublon affiché hors chronologie. | Lecture normalisée, dédoublonnée et triée ; `numeroSemaineISO()` testée sur les bascules d'année (2020-S53, 2025-S01). |
-| 12 | Les deux jalons codés en dur (`2026-S30`, `2026-S36`) ne correspondaient qu'aux données de démonstration ; posés sur une semaine absente de l'axe, ils disparaissaient sans explication. | Jalons saisis et persistés par l'utilisateur, ceux qui sortent de la plage affichée sont ignorés explicitement. |
-| 13 | `setXFrameOptionsMode(ALLOWALL)` autorisait l'intégration de la page dans n'importe quel site (clickjacking). | Protection par défaut, intégration externe derrière une option explicite. |
-| 14 | Aucun `withFailureHandler` : en cas d'erreur serveur, la page restait bloquée sur le spinner. | Bandeau d'erreur, états vides et messages explicites. |
-| 15 | La lecture du tableau de bord **écrivait** dans le classeur à chaque ouverture. | La lecture ne modifie plus rien ; l'écriture est déclenchée par le menu ou le déclencheur hebdomadaire. |
+**L'historique s'accumule, il ne se reconstitue pas.** L'export GATES est une
+photo du jour : il ne dit pas quand un plan est passé à 100 %. Un relevé est
+donc archivé à chaque import, un par semaine ISO, et rien n'est jamais
+supprimé.
 
-### Performances
+**Quatre états, pas trois.** « À faire » est une valeur saisie ; une cellule
+vide est un défaut de saisie. Les confondre masquerait le second.
 
-- `ajusterHauteursEnTetes()` était appelé à **chaque événement de défilement**, créant
-  un `setTimeout` par pixel parcouru sans rien changer au rendu. Il ne s'exécute plus
-  qu'après un rendu ou un redimensionnement, via `requestAnimationFrame`.
-- Chaque frappe dans un filtre relançait le filtrage, deux reconstructions de
-  graphique (`destroy()` + `new Chart()`) et un rendu complet du tableau. Les saisies
-  sont maintenant débattues (180 ms), le graphique d'évolution n'est plus touché par
-  les filtres, et le graphique dynamique est mis à jour au lieu d'être recréé tant
-  que son type ne change pas.
-- `genererNomPropre()` appelait `getIdxFWDStrict()` pour **chaque colonne**, et cette
-  fonction reparcourt elle-même les en-têtes jusqu'à trois fois : le coût était
-  quadratique en nombre de colonnes à chaque reconstruction du tableau. L'index FWD
-  est désormais calculé une seule fois, côté serveur.
-- Le tableau se rendait d'un bloc. Il est désormais rendu par tranches de 200 lignes,
-  avec chargement au défilement.
+**Le rythme est mesuré, pas lissé.** La saisie est irrégulière — une semaine un
+lot entier, la suivante rien. Une moyenne glissante mesurerait surtout la date
+du dernier lot. On prend donc la cadence moyenne depuis le premier relevé, et
+le bouton « ? » de la colonne *fin estimée* refait le calcul avec les chiffres
+de la ligne, pour que personne n'ait à faire confiance sur parole.
 
-### Nouveautés
-
-- KPI « Sans statut » et total, cohérents avec le classement serveur.
-- Courbe du pourcentage d'avancement sur un second axe du graphique d'évolution.
-- Export CSV de la vue filtrée (UTF-8 + `;`, lisible directement par Excel FR).
-- Bouton « Réinitialiser » et compteur de filtres actifs.
-- Disposition des colonnes (ordre + colonnes masquées) mémorisée par utilisateur.
-- Toutes les colonnes sont proposées dans l'analyse, groupées par famille
-  (l'ancienne liste blanche en cachait la plupart).
-- Menu du classeur : instantané manuel, activation/désactivation du suivi hebdomadaire.
-- Accessibilité : libellés, rôles ARIA, respect de `prefers-reduced-motion`,
-  mise en page utilisable sur écran étroit.
-- Intégrités SRI sur les CDN Bootstrap.
+**Aucun nom de colonne en dur.** Tout se déduit de l'en-tête et du contenu. Si
+l'export change de colonnes, il n'y a rien à modifier.

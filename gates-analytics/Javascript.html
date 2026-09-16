@@ -1,1082 +1,1719 @@
 <script>
-/**
- * GATES Analytics — logique client.
- *
- * Principes :
- *  - un seul état applicatif (`etat`) ;
- *  - aucune donnée de la feuille n'est injectée en HTML sans échappement ;
- *  - les rendus coûteux (tableau, graphiques) sont débattus et incrémentaux ;
- *  - le graphique d'évolution ne dépend pas des filtres : il n'est pas redessiné à chaque frappe.
- */
 (function () {
   'use strict';
 
-  // ===================================================================
-  //  ÉTAT
-  // ===================================================================
-  var etat = {
-    groupes: [],
-    entetes: [],
-    lignes: [],
-    historique: [],
-    jalons: [],
-    indexFWD: -1,
-    feuille: '',
-    genereLe: null,
+  var $ = function (id) { return document.getElementById(id); };
+  function ech(v) {
+    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function norm(v) {
+    return String(v == null ? '' : v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  }
+  function nb(n) { return n.toLocaleString('fr-FR'); }
 
-    lignesFiltrees: [],
-    ordreColonnes: [],
-    colonnesCachees: {},          // { indexOrigine: true }
-    filtres: {},                  // { indexOrigine: "texte saisi" }
-    rechercheGlobale: '',
-    tri: { index: -1, asc: true },
-    filtreFWDVide: false,
-    lignesRendues: 0
-  };
-
-  var TAILLE_PAGE = 200;
-  var DEBOUNCE_MS = 180;
-  var MAX_CATEGORIES = 15;
-  var MAX_PERIODES = 24;
-
-  var COULEURS = ['#005587', '#00a9e0', '#f2a900', '#10b981', '#f59e0b',
-                  '#8b5cf6', '#ef4444', '#06b6d4', '#84cc16', '#64748b'];
-
-  var graphiqueDynamique = null;
-  var graphiqueEvolution = null;
-  var signatureEvolution = '';
-
-  // ===================================================================
-  //  OUTILS
-  // ===================================================================
-  function $(id) { return document.getElementById(id); }
-
-  function normaliser(texte) {
-    if (texte === null || texte === undefined) return '';
-    return texte.toString().toLowerCase()
-      .normalize('NFD').replace(/[̀-ͯ]/g, '')
-      .replace(/\s+/g, ' ').trim();
+  /* ============================================================
+     SEMAINES ISO
+     ============================================================ */
+  function lundiDeLaSemaine(annee, semaine) {
+    var jan4 = new Date(Date.UTC(annee, 0, 4));
+    var jour = jan4.getUTCDay() || 7;
+    var lundi = new Date(jan4);
+    lundi.setUTCDate(jan4.getUTCDate() - jour + 1 + (semaine - 1) * 7);
+    return lundi;
+  }
+  function etiquetteISO(d) {
+    var t = new Date(d.getTime());
+    var jour = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - jour);
+    var debut = Date.UTC(t.getUTCFullYear(), 0, 1);
+    var s = Math.ceil(((t.getTime() - debut) / 86400000 + 1) / 7);
+    return t.getUTCFullYear() + '-S' + (s < 10 ? '0' : '') + s;
+  }
+  /** « 2026-S34 » -> le lundi de cette semaine. null si le libellé est illisible. */
+  function lundiDeLibelle(libelle) {
+    var m = /^\s*(\d{4})\s*-?\s*[sS]\s*(\d{1,2})\s*$/.exec(String(libelle || ''));
+    if (!m) return null;
+    var s = parseInt(m[2], 10);
+    if (s < 1 || s > 53) return null;
+    return lundiDeLaSemaine(parseInt(m[1], 10), s);
   }
 
-  /** Échappement HTML — indispensable : le contenu vient d'une feuille éditée par des humains. */
-  function echapper(valeur) {
-    if (valeur === null || valeur === undefined) return '';
-    return valeur.toString()
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  /* ============================================================
+     LES QUATRE ETATS
+     << A faire >> est une valeur saisie ; << vide >> est une cellule
+     non renseignee. Les confondre masquerait un defaut de saisie.
+     ============================================================ */
+  var ETATS = [
+    { cle: 'termine', libelle: 'Terminés',   couleur: 'var(--fait)',   teinte: '#286b45' },
+    { cle: 'encours', libelle: 'En cours',   couleur: 'var(--cours)',  teinte: '#bf7f14' },
+    { cle: 'afaire',  libelle: 'À faire',    couleur: 'var(--afaire)', teinte: '#71716a' },
+    { cle: 'vide',    libelle: 'Non renseignés', couleur: 'transparent', teinte: 'var(--filet-fort)', hachure: true }
+  ];
+  /* Les deux fonds soutenus portent du blanc, l'ambre garde l'encre du texte :
+     c'est le couple valide par le controle de contraste. */
+  function encreSegment(cle) {
+    if (cle === 'termine' || cle === 'afaire') return 'var(--sur-plein)';
+    return cle === 'encours' ? 'var(--sur-ambre)' : 'var(--encre)';
   }
+  var ETAT_PAR_CLE = {};
+  ETATS.forEach(function (e) { ETAT_PAR_CLE[e.cle] = e; });
 
-  function valeurNumerique(valeur) {
-    if (valeur === null || valeur === undefined) return NaN;
-    var texte = valeur.toString().replace(/[\s  ]/g, '').replace(/%$/, '').replace(',', '.');
-    if (texte === '' || !/^[-+]?\d*\.?\d+$/.test(texte)) return NaN;
-    return parseFloat(texte);
-  }
-
-  /**
-   * Classement d'un avancement FWD.
-   * ⚠ Doit rester identique à classerFWD() dans Code.gs.
-   */
-  function classerFWD(valeur) {
-    var s = normaliser(valeur);
-    if (s === '' || s === '-' || s === 'na' || s === 'n/a' ||
-        s.indexOf('non renseigne') !== -1 || s.indexOf('a faire') !== -1) return 'vide';
-    var n = valeurNumerique(s);
+  /* ⚠ Cette fonction existe à l'identique côté serveur (Code.gs) : le serveur
+     s'en sert pour archiver les relevés, le client pour les compteurs filtrés.
+     Toute modification doit être reportée des deux côtés. */
+  function classer(valeur) {
+    var s = norm(valeur);
+    if (s === '' || s === '-') return 'vide';
+    if (s.indexOf('a faire') !== -1 || s === 'non commence') return 'afaire';
+    var n = parseFloat(s.replace(/[\s%]/g, '').replace(',', '.'));
     if (!isNaN(n)) {
       if (n >= 100) return 'termine';
-      if (n <= 0) return 'vide';
+      if (n <= 0) return 'afaire';
       return 'encours';
     }
-    if (/(termine|acheve|cloture|clos|fini|valide|done|complete|ok)/.test(s)) return 'termine';
+    if (/(termine|acheve|cloture|solde|fini|ok)/.test(s)) return 'termine';
     return 'encours';
   }
-
-  function debounce(fn, delai) {
-    var minuteur = null;
-    return function () {
-      var args = arguments, ctx = this;
-      clearTimeout(minuteur);
-      minuteur = setTimeout(function () { fn.apply(ctx, args); }, delai);
-    };
+  function pourcentDe(p) {
+    var c = classer(p.avancement);
+    if (c === 'termine') return 100;
+    if (c === 'vide' || c === 'afaire') return 0;
+    var n = parseFloat(norm(p.avancement).replace(/[\s%]/g, '').replace(',', '.'));
+    return isNaN(n) ? 50 : n;
   }
 
-  function formaterNombre(n) {
-    try { return Number(n).toLocaleString('fr-FR'); } catch (e) { return String(n); }
+  /* ============================================================
+     ANCIENNETE
+     Dimension derivee de la colonne de date : un plan cree il y a longtemps
+     et toujours pas termine est celui sur lequel il faut se pencher.
+     ============================================================ */
+  var ORDRE_ANCIENNETE = ['moins d’un mois', '1 à 3 mois', '3 à 6 mois', 'plus de 6 mois'];
+  function ancienneteDepuis(valeur, reference) {
+    var m = /(\d{4})[-\/.](\d{1,2})/.exec(String(valeur || ''));
+    if (!m) return '—';
+    var mois = (reference.getUTCFullYear() - Number(m[1])) * 12 +
+               (reference.getUTCMonth() + 1 - Number(m[2]));
+    if (mois >= 6) return 'plus de 6 mois';
+    if (mois >= 3) return '3 à 6 mois';
+    if (mois >= 1) return '1 à 3 mois';
+    return 'moins d’un mois';
   }
 
-  function toast(message, type) {
-    var zone = $('zoneToasts');
-    var el = document.createElement('div');
-    el.className = 'toast align-items-center text-bg-' + (type || 'secondary') + ' border-0';
-    el.setAttribute('role', 'alert');
-    el.innerHTML = '<div class="d-flex"><div class="toast-body">' + echapper(message) +
-                   '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" ' +
-                   'data-bs-dismiss="toast" aria-label="Fermer"></button></div>';
-    zone.appendChild(el);
-    el.addEventListener('hidden.bs.toast', function () { el.remove(); });
-    if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
-      new bootstrap.Toast(el, { delay: 4000 }).show();
-    } else {
-      el.classList.add('show');
-      setTimeout(function () { el.remove(); }, 4000);
+  /* Un relevé : les comptes globaux, les comptes par dimension, et
+     l'avancement plan par plan quand on veut pouvoir faire le comparatif. */
+  function releveDepuis(plans, i, clesDim, valeurDe, avecPlans) {
+    var r = { i: i, total: plans.length, termine: 0, encours: 0, afaire: 0, vide: 0, groupes: {}, plans: null };
+    clesDim.forEach(function (d) { r.groupes[d] = {}; });
+    plans.forEach(function (p) {
+      r[p._etat]++;
+      clesDim.forEach(function (d) {
+        var v = String(valeurDe(p, d) || '—');
+        if (!r.groupes[d][v]) r.groupes[d][v] = { total: 0, termine: 0 };
+        r.groupes[d][v].total++;
+        if (p._etat === 'termine') r.groupes[d][v].termine++;
+      });
+    });
+    if (avecPlans) {
+      r.plans = {};
+      plans.forEach(function (p) { r.plans[p.reference] = p.avancement; });
     }
+    return r;
   }
 
-  /**
-   * Chart.js est chargé depuis un CDN public : sur un réseau d'entreprise qui le
-   * bloque, la page doit rester utilisable (KPI, filtres, tableau, export) au lieu
-   * de planter sur `new Chart(...)`.
-   */
-  var avertissementGraphiques = false;
-  function graphiquesDisponibles() {
-    if (typeof Chart !== 'undefined') return true;
-    if (!avertissementGraphiques) {
-      avertissementGraphiques = true;
-      document.querySelectorAll('.chart-wrapper').forEach(function (zone) {
-        var message = document.createElement('div');
-        message.className = 'message-vide';
-        message.textContent = 'Graphiques indisponibles : la bibliothèque Chart.js n\'a pas pu être chargée ' +
-          '(CDN bloqué ou hors ligne). Les chiffres et le tableau restent à jour.';
-        zone.appendChild(message);
+  /* ============================================================
+     JEU D'EXEMPLE
+     Il ne sert que lorsque la page tourne seule, sans classeur derrière.
+     Dans l'application réelle, Apps Script injecte window.SUIVI_FWD_DONNEES
+     avant ce script : colonnes réelles, plans, relevés archivés, jalons.
+     ============================================================ */
+  function jeuDExemple() {
+    function graine(a) {
+      return function () {
+        a |= 0; a = a + 0x6D2B79F5 | 0;
+        var t = Math.imul(a ^ a >>> 15, 1 | a);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+    var alea = graine(20260915);
+    function tire(l) { return l[Math.floor(alea() * l.length)]; }
+    function ent(a, b) { return a + Math.floor(alea() * (b - a + 1)); }
+
+    var colonnes = [
+      { cle: 'reference',   groupe: 'Informations principales', titre: 'Référence UD', classe: 'ref', fige: true },
+      { cle: 'installation',groupe: 'Informations principales', titre: 'Nom installation', classe: 'large' },
+      { cle: 'ata',         groupe: 'Informations principales', titre: 'ATA', classe: 'num', dim: true },
+      { cle: 'sequence',    groupe: 'Informations principales', titre: 'Séquence', classe: 'num', dim: true },
+      { cle: 'ecp',         groupe: 'Définition du plan', titre: 'ECP', classe: 'ref' },
+      { cle: 'definition',  groupe: 'Définition du plan', titre: 'Validation définition électrique', classe: '', dim: true },
+      { cle: 'ibg',         groupe: 'Définition du plan', titre: 'Statut IBG', classe: '', dim: true },
+      { cle: 'creation',    groupe: 'Définition du plan', titre: 'Date création', classe: 'num' },
+      { cle: 'avancement',  groupe: 'FWD', titre: 'Avancement FWD', classe: '' },
+      { cle: 'responsable', groupe: 'FWD', titre: 'Resp.', classe: 'num', dim: true },
+      { cle: 'commentaire', groupe: 'FWD', titre: 'Commentaire', classe: 'large doux' }
+    ];
+
+    var ATA = ['24', '25', '31', '33', '34', '39', '53', '92'];
+    var INSTALLATIONS = [
+      'Harnais alimentation cabine', 'Cheminement plancher avant', 'Boîtier de disjoncteurs',
+      'Éclairage de soute', 'Platine de masse structure', 'Faisceau treuil de sauvetage',
+      'Connectique traversée de cloison', 'Support calculateur avionique', 'Antenne VHF dorsale',
+      'Coffret relais poste avant', 'Câblage siège pilote', 'Raccordement phare d’atterrissage',
+      'Harnais capteurs boîte de transmission', 'Bâti convertisseur statique',
+      'Cheminement console centrale', 'Bloc prises maintenance'
+    ];
+    var COMMENTAIRES = [
+      'En attente d’accès zone', 'Dépend de la levée de l’ECP',
+      'Contrôle dimensionnel à replanifier', 'Reprise après modification de cheminement',
+      'Pièce manquante en magasin'
+    ];
+
+    var plans = [];
+    for (var i = 0; i < 186; i++) {
+      var t = alea(), avancement;
+      if (t < 0.35)      { avancement = '100%'; }
+      else if (t < 0.64) { avancement = tire([10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90]) + '%'; }
+      else if (t < 0.84) { avancement = 'À faire'; }
+      else               { avancement = ''; }
+      var ata = tire(ATA);
+      var e0 = classer(avancement);
+      plans.push({
+        reference: 'UD-' + ata + '-' + String(1037 + i * 7).slice(-4),
+        installation: tire(INSTALLATIONS),
+        ata: ata,
+        sequence: tire(['S1', 'S2', 'S3', 'S4', 'S5']),
+        ecp: alea() < 0.86 ? 'ECP-' + ent(2100, 2899) : '',
+        definition: e0 === 'termine' || e0 === 'encours'
+          ? tire(['Validée', 'Validée', 'En attente']) : tire(['En attente', 'Sans objet']),
+        ibg: e0 === 'termine' ? (alea() < 0.85 ? 'Validé' : 'En revue')
+           : e0 === 'encours' ? tire(['Validé', 'En revue', 'À contrôler'])
+           : (alea() < 0.6 ? 'Non lancé' : 'En revue'),
+        creation: '2026-' + String(ent(1, 8)).padStart(2, '0') + '-' + String(ent(1, 28)).padStart(2, '0'),
+        avancement: avancement,
+        responsable: tire(['MR', 'AB', 'CM', 'TL', 'SN', 'JD']),
+        commentaire: alea() < 0.26 ? tire(COMMENTAIRES) : ''
       });
     }
-    return false;
+    plans.forEach(function (p) { p._etat = classer(p.avancement); p._pct = pourcentDe(p); });
+
+    var clesDim = colonnes.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; })
+      .concat(['_anciennete']);
+    var refDate = lundiDeLaSemaine(2026, 38);
+    function valeurDe(p, cle) {
+      return cle === '_anciennete' ? ancienneteDepuis(p.creation, refDate) : p[cle];
+    }
+
+    // Cinq imports successifs : proportion croissante de terminés.
+    var aujourdhui = releveDepuis(plans, 4, clesDim, valeurDe, true);
+    var releves = [];
+    [0.42, 0.58, 0.74, 0.88].forEach(function (part, k) {
+      var r = { i: k, total: aujourdhui.total, groupes: {}, plans: null };
+      r.termine = Math.round(aujourdhui.termine * part);
+      var glisse = aujourdhui.termine - r.termine;
+      r.encours = aujourdhui.encours + Math.round(glisse * 0.6);
+      r.afaire = aujourdhui.afaire + (glisse - Math.round(glisse * 0.6));
+      r.vide = aujourdhui.vide;
+      clesDim.forEach(function (d) {
+        r.groupes[d] = {};
+        Object.keys(aujourdhui.groupes[d]).forEach(function (v) {
+          var g = aujourdhui.groupes[d][v];
+          r.groupes[d][v] = { total: g.total, termine: Math.round(g.termine * part) };
+        });
+      });
+      releves.push(r);
+    });
+
+    // Avant-dernier relevé : état plan par plan, pour que le comparatif
+    // du dernier import ait de quoi se calculer.
+    var precedent = releves[releves.length - 1];
+    precedent.plans = {};
+    var refs = plans.map(function (p) { return p.reference; });
+    plans.forEach(function (p) { precedent.plans[p.reference] = p.avancement; });
+    for (var k = 0; k < 14; k++) {                       // ont avancé depuis
+      precedent.plans[refs[(k * 13 + 5) % refs.length]] = tire(['20%', '40%', '60%', 'À faire']);
+    }
+    for (var k2 = 0; k2 < 3; k2++) {                     // ont reculé depuis
+      precedent.plans[refs[(k2 * 47 + 11) % refs.length]] = '100%';
+    }
+    for (var k3 = 0; k3 < 5; k3++) delete precedent.plans[refs[(k3 * 29 + 3) % refs.length]];  // nouveaux
+    precedent.plans['UD-24-0990'] = '50%';               // disparus depuis
+    precedent.plans['UD-31-0991'] = 'À faire';
+    releves.push(aujourdhui);
+
+    // Le jeu d'exemple part de la semaine 34 de 2026, un relevé par semaine.
+    releves.forEach(function (r) { r.semaine = etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 34), r.i)); });
+
+    return {
+      colonnes: colonnes,
+      cleDate: 'creation',
+      plans: plans,
+      releves: releves,
+      jalons: [
+        { id: 'ex1', semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 34), 1)), texte: 'Revue de définition' },
+        { id: 'ex2', semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 34), 14)), texte: 'Livraison plateau' }
+      ],
+      info: { feuille: 'Démonstration', message: '' }
+    };
+  }
+  function dateDeBase(base, i) {
+    var d = new Date(base.getTime()); d.setUTCDate(base.getUTCDate() + i * 7); return d;
   }
 
-  function afficherErreur(message) {
-    var el = $('banniereErreur');
-    if (!message) { el.classList.add('d-none'); return; }
-    el.textContent = message;
-    el.classList.remove('d-none');
+  /* ============================================================
+     SOURCE DES DONNEES
+     ============================================================ */
+  var SERVEUR = !!(window.SUIVI_FWD_DONNEES && window.SUIVI_FWD_DONNEES.plans &&
+                   window.SUIVI_FWD_DONNEES.plans.length);
+  var SRC = SERVEUR ? window.SUIVI_FWD_DONNEES : jeuDExemple();
+  /* Pont facultatif vers le classeur : présent seulement dans l'add-on. */
+  var API = window.SUIVI_FWD_API || null;
+
+  var COLONNES = SRC.colonnes;
+  var PAR_CLE = {};
+  COLONNES.forEach(function (c) { PAR_CLE[c.cle] = c; });
+  var CLE_DATE = SRC.cleDate || null;
+
+  var PLANS = SRC.plans;
+  PLANS.forEach(function (p) { p._etat = classer(p.avancement); p._pct = pourcentDe(p); });
+
+  /* Le repère temporel : la semaine du premier relevé archivé. Tout l'axe du
+     graphique est un décalage en semaines par rapport à ce lundi-là. */
+  var RELEVES_SRC = (SRC.releves || []).filter(function (r) { return lundiDeLibelle(r.semaine); });
+  RELEVES_SRC.sort(function (a, b) { return lundiDeLibelle(a.semaine) - lundiDeLibelle(b.semaine); });
+  var BASE = RELEVES_SRC.length ? lundiDeLibelle(RELEVES_SRC[0].semaine)
+                                : lundiDeLibelle(etiquetteISO(new Date()));
+  function dateDe(i) { return dateDeBase(BASE, i); }
+  function etiquette(i) { return etiquetteISO(dateDe(i)); }
+  function indexDe(semaine) {
+    var l = lundiDeLibelle(semaine);
+    return l === null ? null : Math.round((l.getTime() - BASE.getTime()) / 604800000);
+  }
+  var AUJ = RELEVES_SRC.length ? indexDe(RELEVES_SRC[RELEVES_SRC.length - 1].semaine) : 0;
+
+  var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+              'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  (function afficherSemaine() {
+    var lundi = dateDe(AUJ);
+    var dimanche = new Date(lundi.getTime()); dimanche.setUTCDate(lundi.getUTCDate() + 6);
+    var m1 = MOIS[lundi.getUTCMonth()], m2 = MOIS[dimanche.getUTCMonth()];
+    $('dates-semaine').textContent = m1 === m2
+      ? 'du ' + lundi.getUTCDate() + ' au ' + dimanche.getUTCDate() + ' ' + m2 + ' ' + dimanche.getUTCFullYear()
+      : 'du ' + lundi.getUTCDate() + ' ' + m1 + ' au ' + dimanche.getUTCDate() + ' ' + m2 + ' ' + dimanche.getUTCFullYear();
+    $('num-semaine').textContent = 'Semaine ' + etiquette(AUJ).slice(6).replace(/^0/, '');
+  })();
+
+  /* Les dimensions du bloc « Avancement FWD par… » : les colonnes que le
+     serveur a jugées catégorielles, plus l'ancienneté s'il a trouvé une date. */
+  var CLES_DIM = COLONNES.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; })
+    .concat(CLE_DATE ? ['_anciennete'] : []);
+  function valeurDim(p, cle) {
+    return cle === '_anciennete' ? ancienneteDepuis(p[CLE_DATE], dateDe(AUJ)) : p[cle];
   }
 
-  // ===================================================================
-  //  PRÉFÉRENCES D'AFFICHAGE (locales à l'utilisateur)
-  // ===================================================================
-  function cleDisposition() { return 'gates:disposition:' + (etat.feuille || 'defaut'); }
+  /* ============================================================
+     HISTORIQUE
+     L'export ne contient que l'état du jour : on ne sait pas quand un plan
+     est passé à 100 %. L'historique ne peut donc pas être reconstitué —
+     il s'accumule, un relevé par semaine. Le dernier est recalculé à partir
+     de la feuille pour que la page colle toujours à ce qu'on y lit.
+     ============================================================ */
+  var RELEVES = RELEVES_SRC.map(function (r) {
+    return {
+      i: indexDe(r.semaine),
+      total: r.total, termine: r.termine, encours: r.encours, afaire: r.afaire, vide: r.vide,
+      groupes: r.groupes || {}, plans: r.plans || null
+    };
+  });
+  (function relevéCourant() {
+    var vivant = releveDepuis(PLANS, AUJ, CLES_DIM, valeurDim, true);
+    var dernier = RELEVES[RELEVES.length - 1];
+    // Le dernier relevé archivé garde son état plan par plan : c'est lui qui
+    // sert de point de comparaison si la feuille a bougé depuis.
+    if (dernier && dernier.i === AUJ) {
+      if (RELEVES.length > 1 && !RELEVES[RELEVES.length - 2].plans) {
+        RELEVES[RELEVES.length - 2].plans = dernier.plans;
+      }
+      RELEVES[RELEVES.length - 1] = vivant;
+    } else {
+      RELEVES.push(vivant);
+    }
+  })();
+  /* Plusieurs imports dans la même semaine ne font qu'un point : le dernier
+     de la semaine l'emporte. Sinon le graphique afficherait trois relevés
+     serrés puis rien pendant quinze jours. */
+  (function unRelevéParSemaine() {
+    var parSemaine = {};
+    RELEVES.forEach(function (r) { parSemaine[r.i] = r; });
+    RELEVES = Object.keys(parSemaine)
+      .map(function (k) { return parSemaine[k]; })
+      .sort(function (a, b) { return a.i - b.i; });
+  })();
 
-  function sauverDisposition() {
+  var DERNIER = RELEVES[RELEVES.length - 1];
+  $('import').textContent = 'Dernier import : semaine ' + etiquette(DERNIER.i).slice(5) + ' · ' +
+    RELEVES.length + (RELEVES.length > 1 ? ' relevés archivés' : ' relevé archivé');
+
+  /* ------------------------------------------------------------
+     RYTHME
+     La saisie est irrégulière : une semaine on solde un lot entier,
+     la suivante rien. Une moyenne sur six semaines mesure donc surtout
+     la date du dernier lot, pas la cadence réelle.
+     On calcule à la place TOUS les rythmes soutenus observés — depuis le
+     premier relevé, depuis le deuxième, etc. jusqu'au dernier intervalle —
+     et on en garde l'étendue. Chaque borne est un rythme qui a réellement
+     tenu sur une période réelle ; l'écart entre les deux, c'est l'irrégularité
+     elle-même, rendue visible au lieu d'être moyennée.
+     ------------------------------------------------------------ */
+  function rythmes(pts) {
+    if (!pts || pts.length < 2) return null;
+    var premier = pts[0], dernier = pts[pts.length - 1];
+    var semaines = dernier.i - premier.i;
+    if (semaines <= 0) return null;
+    return {
+      central: (dernier.termine - premier.termine) / semaines,
+      gagnes: dernier.termine - premier.termine,
+      semaines: semaines,
+      n: pts.length
+    };
+  }
+
+  /** Semaine d'arrivée à un rythme donné, ou null si ce rythme ne mène nulle part. */
+  function semaineFin(atteint, total, rythme) {
+    if (!rythme || rythme <= 0) return null;
+    return AUJ + Math.ceil((total - atteint) / rythme);
+  }
+
+  /* Ce qui a bougé entre les deux derniers imports. Invisible à l'œil nu
+     sur 186 lignes, et c'est pourtant la question de chaque semaine. */
+  /* On compte les passages d'un état à l'autre, avec les mots des quatre états :
+     « passés en terminé » et non « ont avancé ». */
+  function comparatif() {
+    if (RELEVES.length < 2) return null;
+    var avant = RELEVES[RELEVES.length - 2].plans;
+    if (!avant) return null;
+    var d = { termine: [], encours: [], afaire: [], nouveaux: [], disparus: [] };
+    PLANS.forEach(function (p) {
+      if (!(p.reference in avant)) { d.nouveaux.push(p.reference); return; }
+      if (classer(avant[p.reference]) !== p._etat && d[p._etat]) d[p._etat].push(p.reference);
+    });
+    var actuelles = {};
+    PLANS.forEach(function (p) { actuelles[p.reference] = true; });
+    Object.keys(avant).forEach(function (ref) { if (!actuelles[ref]) d.disparus.push(ref); });
+    return d;
+  }
+  var COMPARATIF = comparatif();
+
+  /* Les jalons viennent de la source : dans le classeur ils sont partagés par
+     tout le monde, dans la démonstration ils sont posés en dur. */
+  var jalons = (SRC.jalons || []).map(function (j) {
+    return { id: j.id || null, i: indexDe(j.semaine), texte: String(j.texte || 'Jalon') };
+  }).filter(function (j) { return j.i !== null; })
+    .sort(function (a, b) { return a.i - b.i; });
+
+  var vue = {
+    recherche: '', etat: '', filtres: {},
+    ordre: COLONNES.map(function (c) { return c.cle; }),
+    cachees: {},
+    tri: { cle: 'reference', asc: true },
+    dimCritique: (SRC.dimParDefaut && CLES_DIM.indexOf(SRC.dimParDefaut) !== -1) ? SRC.dimParDefaut : (CLES_DIM[0] || ''),
+    triGroupe: { cle: null, asc: false },
+    aideFin: false,
+    groupe: null, refs: null, refsLibelle: '',
+    vides: {},
+    fen: { debut: 0, span: 28 }
+  };
+
+  /* ----------------------------------------------------------
+     Mémoire locale : jalons, cadrage et disposition survivent
+     à la fermeture de l'onglet.
+     ---------------------------------------------------------- */
+  /* Les seules cles de tri acceptees pour le bloc par groupe : une preference
+     relue d'un ancien stockage ne doit pas pouvoir injecter n'importe quoi. */
+  var TRIS_GROUPE = ['nom', 'total', 'pct', 'requis', 'tension', 'fin'];
+  var CLE_PREFS = 'suivi-fwd:v1';
+  var minuteurPrefs = null;
+  function sauverPrefs() {
     try {
-      localStorage.setItem(cleDisposition(), JSON.stringify({
-        ordre: etat.ordreColonnes,
-        cachees: Object.keys(etat.colonnesCachees).map(Number)
+      localStorage.setItem(CLE_PREFS, JSON.stringify({
+        jalons: jalons, fen: vue.fen,
+        dimCritique: vue.dimCritique, ordre: vue.ordre, cachees: vue.cachees, tri: vue.tri,
+        triGroupe: vue.triGroupe
       }));
-    } catch (e) { /* mode privé ou stockage bloqué : sans conséquence */ }
+    } catch (e) { /* navigation privée ou stockage bloqué : sans conséquence */ }
   }
-
-  function chargerDisposition(ordreParDefaut) {
+  function planifierSauvegarde() {
+    clearTimeout(minuteurPrefs);
+    minuteurPrefs = setTimeout(sauverPrefs, 400);
+  }
+  function chargerPrefs() {
     try {
-      var brut = localStorage.getItem(cleDisposition());
-      if (!brut) return null;
+      var brut = localStorage.getItem(CLE_PREFS);
+      if (!brut) return;
       var pref = JSON.parse(brut);
-      if (!pref || !Array.isArray(pref.ordre)) return null;
-      // On ne garde que les colonnes qui existent encore, et on ajoute les nouvelles.
-      var valides = pref.ordre.filter(function (i) { return ordreParDefaut.indexOf(i) !== -1; });
-      ordreParDefaut.forEach(function (i) { if (valides.indexOf(i) === -1) valides.push(i); });
-      var cachees = {};
-      (pref.cachees || []).forEach(function (i) { if (i !== 0) cachees[i] = true; });
-      return { ordre: valides, cachees: cachees };
-    } catch (e) { return null; }
-  }
-
-  // ===================================================================
-  //  COLONNES
-  // ===================================================================
-  function estColonneVerrouillee(idx) {
-    return idx === 0 || normaliser(etat.entetes[idx]).indexOf('reference ud') !== -1;
-  }
-
-  function nomPropre(idx) {
-    var brut = (etat.entetes[idx] || '')
-      .replace('Informations principales - ', '')
-      .replace('Définition du plan - ', '')
-      .replace('Definition du plan - ', '');
-    return idx === etat.indexFWD ? 'Avancement FWD' : brut;
-  }
-
-  function colonnesVisibles() {
-    return etat.ordreColonnes.filter(function (idx) { return !etat.colonnesCachees[idx]; });
-  }
-
-  // ===================================================================
-  //  CHARGEMENT
-  // ===================================================================
-  function charger() {
-    afficherErreur('');
-    if (typeof google === 'undefined' || !google.script || !google.script.run) {
-      afficherErreur("Cette page doit être ouverte depuis le déploiement Apps Script (URL /exec).");
-      return;
-    }
-    google.script.run
-      .withSuccessHandler(initialiser)
-      .withFailureHandler(function (err) {
-        afficherErreur('Échec du chargement : ' + (err && err.message ? err.message : err));
-        $('corpsTableau').innerHTML =
-          '<tr><td class="text-center p-5 text-danger">Impossible de charger les données.</td></tr>';
-      })
-      .getDonneesPlans();
-  }
-
-  function initialiser(donnees) {
-    if (!donnees) { afficherErreur('Réponse vide du serveur.'); return; }
-
-    etat.groupes = donnees.groupes || [];
-    etat.entetes = donnees.entetes || [];
-    etat.lignes = donnees.lignes || [];
-    etat.historique = donnees.historique || [];
-    etat.jalons = donnees.jalons || [];
-    etat.indexFWD = typeof donnees.indexFWD === 'number' ? donnees.indexFWD : -1;
-    etat.feuille = donnees.feuille || '';
-    etat.genereLe = donnees.genereLe ? new Date(donnees.genereLe) : new Date();
-
-    if (!donnees.ok) afficherErreur(donnees.message || 'Données indisponibles.');
-
-    var ordreDefaut = [];
-    etat.entetes.forEach(function (col, idx) { if (col !== '') ordreDefaut.push(idx); });
-
-    var pref = chargerDisposition(ordreDefaut);
-    etat.ordreColonnes = pref ? pref.ordre : ordreDefaut;
-    etat.colonnesCachees = pref ? pref.cachees : {};
-
-    majInfoSource();
-    remplirSelecteurGraphique();
-    majMenuColonnes();
-    construireEntetes();
-    appliquerFiltres();
-    dessinerEvolution();
-    afficherJalons();
-  }
-
-  function majInfoSource() {
-    var heure = etat.genereLe
-      ? etat.genereLe.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-      : '—';
-    $('infoSource').textContent = (etat.feuille ? etat.feuille + ' · ' : '') +
-      formaterNombre(etat.lignes.length) + ' plans · maj ' + heure;
-  }
-
-  // ===================================================================
-  //  EN-TÊTES DU TABLEAU
-  // ===================================================================
-  function construireEntetes() {
-    var visibles = colonnesVisibles();
-    if (visibles.length === 0) {
-      $('enTetesTableau').innerHTML = '';
-      return;
-    }
-
-    // Ligne des groupes (fusion des colonnes contiguës d'un même groupe).
-    var htmlGroupes = '<tr class="group-row">';
-    var groupeCourant = etat.groupes[visibles[0]] || '';
-    var span = 1;
-    function cellGroupe(nom, largeur) {
-      var bouton = nom
-        ? '<i class="fa-solid fa-eye-slash hide-col-btn js-cacher-groupe" role="button" tabindex="0" ' +
-          'title="Masquer ce groupe" data-groupe="' + echapper(nom) + '"></i>'
-        : '';
-      return '<th colspan="' + largeur + '">' + echapper(nom) + ' ' + bouton + '</th>';
-    }
-    for (var i = 1; i < visibles.length; i++) {
-      var g = etat.groupes[visibles[i]] || '';
-      if (g === groupeCourant) { span++; continue; }
-      htmlGroupes += cellGroupe(groupeCourant, span);
-      groupeCourant = g;
-      span = 1;
-    }
-    htmlGroupes += cellGroupe(groupeCourant, span) + '</tr>';
-
-    // Lignes titres + filtres.
-    var htmlTitres = '<tr class="title-row">';
-    var htmlFiltres = '<tr class="filter-row">';
-    visibles.forEach(function (idx) {
-      var icone = etat.tri.index === idx
-        ? ' <i class="fa-solid fa-arrow-' + (etat.tri.asc ? 'up' : 'down') + ' tri-icone"></i>'
-        : '';
-      var boutonMasquer = estColonneVerrouillee(idx)
-        ? ''
-        : '<i class="fa-solid fa-eye-slash hide-col-btn float-end js-cacher-colonne" role="button" ' +
-          'tabindex="0" title="Masquer" data-index="' + idx + '"></i>';
-
-      htmlTitres +=
-        '<th draggable="true" data-index="' + idx + '" scope="col" ' +
-        'title="Cliquer pour trier, glisser pour déplacer">' +
-        '<i class="fa-solid fa-grip-vertical me-2" style="opacity:.3;"></i>' +
-        echapper(nomPropre(idx)) + icone + boutonMasquer + '</th>';
-
-      // La valeur saisie est restaurée : trier ou masquer une colonne
-      // ne doit pas effacer les filtres en cours.
-      htmlFiltres +=
-        '<th><input type="text" class="column-filter" data-index="' + idx + '" ' +
-        'placeholder="Filtrer…" aria-label="Filtrer ' + echapper(nomPropre(idx)) + '" ' +
-        'value="' + echapper(etat.filtres[idx] || '') + '"></th>';
-    });
-    htmlTitres += '</tr>';
-    htmlFiltres += '</tr>';
-
-    $('enTetesTableau').innerHTML = htmlGroupes + htmlTitres + htmlFiltres;
-    ajusterHauteursEnTetes();
-  }
-
-  /**
-   * Décale les lignes d'en-tête collantes.
-   * Appelé après un rendu ou un redimensionnement — plus à chaque événement
-   * de défilement, où il n'avait aucun effet utile mais créait un timer par pixel.
-   */
-  function ajusterHauteursEnTetes() {
-    requestAnimationFrame(function () {
-      var groupRow = document.querySelector('.group-row');
-      var titleRow = document.querySelector('.title-row');
-      var filterRow = document.querySelector('.filter-row');
-      if (!groupRow || !titleRow || !filterRow) return;
-      var h1 = groupRow.getBoundingClientRect().height;
-      var h2 = titleRow.getBoundingClientRect().height;
-      titleRow.querySelectorAll('th').forEach(function (th) { th.style.top = h1 + 'px'; });
-      filterRow.querySelectorAll('th').forEach(function (th) { th.style.top = (h1 + h2 - 1) + 'px'; });
-    });
-  }
-
-  // ===================================================================
-  //  FILTRES / TRI
-  // ===================================================================
-  function comparer(a, b) {
-    var idx = etat.tri.index;
-    var va = a[idx] === undefined || a[idx] === null ? '' : String(a[idx]).trim();
-    var vb = b[idx] === undefined || b[idx] === null ? '' : String(b[idx]).trim();
-
-    // Les cellules vides finissent toujours en bas, quel que soit le sens du tri.
-    if (va === '' && vb === '') return 0;
-    if (va === '') return 1;
-    if (vb === '') return -1;
-
-    var na = valeurNumerique(va), nb = valeurNumerique(vb);
-    if (!isNaN(na) && !isNaN(nb)) return etat.tri.asc ? na - nb : nb - na;
-
-    var res = va.localeCompare(vb, 'fr', { numeric: true, sensitivity: 'base' });
-    return etat.tri.asc ? res : -res;
-  }
-
-  function appliquerFiltres() {
-    var recherche = etat.rechercheGlobale;
-    var actifs = [];
-    Object.keys(etat.filtres).forEach(function (k) {
-      if (etat.filtres[k]) actifs.push({ idx: Number(k), val: normaliser(etat.filtres[k]) });
-    });
-
-    etat.lignesFiltrees = etat.lignes.filter(function (ligne) {
-      if (recherche && normaliser(ligne.join(' ')).indexOf(recherche) === -1) return false;
-      for (var i = 0; i < actifs.length; i++) {
-        if (normaliser(ligne[actifs[i].idx] || '').indexOf(actifs[i].val) === -1) return false;
+      // Quand le classeur fournit les jalons, la copie locale ne fait pas foi.
+      if (!SERVEUR && Array.isArray(pref.jalons)) {
+        jalons = pref.jalons.filter(function (j) {
+          return j && typeof j.i === 'number' && typeof j.texte === 'string';
+        });
       }
-      if (etat.filtreFWDVide) {
-        if (etat.indexFWD === -1) return false;
-        if (classerFWD(ligne[etat.indexFWD]) !== 'vide') return false;
+      if (pref.fen && typeof pref.fen.debut === 'number') vue.fen = pref.fen;
+      ['dimCritique'].forEach(function (k) {
+        if (pref[k] && CLES_DIM.indexOf(pref[k]) !== -1) vue[k] = pref[k];
+      });
+      if (Array.isArray(pref.ordre)) {
+        // On ne garde que les colonnes encore presentes, et on ajoute les nouvelles.
+        var valides = pref.ordre.filter(function (k) { return PAR_CLE[k]; });
+        COLONNES.forEach(function (c) { if (valides.indexOf(c.cle) === -1) valides.push(c.cle); });
+        vue.ordre = valides;
       }
+      if (pref.cachees && typeof pref.cachees === 'object') {
+        vue.cachees = {};
+        Object.keys(pref.cachees).forEach(function (k) {
+          // Une colonne figee ou inconnue ne se masque pas, quoi qu'en dise le stockage.
+          if (PAR_CLE[k] && !PAR_CLE[k].fige && pref.cachees[k]) vue.cachees[k] = true;
+        });
+      }
+      if (pref.tri && PAR_CLE[pref.tri.cle]) vue.tri = pref.tri;
+      if (pref.triGroupe && TRIS_GROUPE.indexOf(pref.triGroupe.cle) !== -1) {
+        vue.triGroupe = { cle: pref.triGroupe.cle, asc: !!pref.triGroupe.asc };
+      }
+    } catch (e) { /* preferences illisibles : on repart des valeurs par defaut */ }
+  }
+
+  /* ============================================================ SELECTION */
+  function selection() {
+    var q = norm(vue.recherche);
+    var cols = Object.keys(vue.filtres).filter(function (k) { return vue.filtres[k]; });
+    return PLANS.filter(function (p) {
+      if (vue.etat && p._etat !== vue.etat) return false;
+      if (vue.groupe && String(valeurDim(p, vue.groupe.dim)) !== vue.groupe.val) return false;
+      if (vue.refs && !vue.refs[p.reference]) return false;
+      for (var kv in vue.vides) {
+        if (vue.vides[kv] && String(p[kv] == null ? '' : p[kv]).trim() !== '') return false;
+      }
+      for (var k = 0; k < cols.length; k++) {
+        if (norm(p[cols[k]]).indexOf(norm(vue.filtres[cols[k]])) === -1) return false;
+      }
+      if (q && norm(COLONNES.map(function (c) { return p[c.cle]; }).join(' ')).indexOf(q) === -1) return false;
       return true;
     });
-
-    if (etat.tri.index > -1) etat.lignesFiltrees.sort(comparer);
-
-    var nbFiltres = actifs.length + (recherche ? 1 : 0) + (etat.filtreFWDVide ? 1 : 0);
-    var badge = $('compteurFiltres');
-    badge.textContent = nbFiltres + (nbFiltres > 1 ? ' filtres actifs' : ' filtre actif');
-    badge.classList.toggle('d-none', nbFiltres === 0);
-
-    calculerKPIs();
-    rendreCorps(true);
-    dessinerGraphiqueDynamique();
+  }
+  function compte(liste) {
+    var c = { termine: 0, encours: 0, afaire: 0, vide: 0 };
+    liste.forEach(function (p) { c[p._etat]++; });
+    c.total = liste.length;
+    c.pct = c.total ? Math.round((c.termine / c.total) * 100) : 0;
+    return c;
+  }
+  function filtreActif() {
+    return !!(vue.recherche || vue.etat || vue.groupe || vue.refs ||
+      Object.keys(vue.filtres).some(function (k) { return vue.filtres[k]; }) ||
+      Object.keys(vue.vides).some(function (k) { return vue.vides[k]; }));
   }
 
-  var appliquerFiltresDebounce = debounce(appliquerFiltres, DEBOUNCE_MS);
 
-  // ===================================================================
-  //  CORPS DU TABLEAU (rendu incrémental)
-  // ===================================================================
-  function colonnesStatut() {
-    var set = {};
-    if (etat.indexFWD > -1) set[etat.indexFWD] = true;
-    etat.entetes.forEach(function (e, i) {
-      if (normaliser(e).indexOf('statut') !== -1) set[i] = true;
-    });
-    return set;
-  }
+  /* ============================================================ AVANCEMENT */
 
-  function classeBadge(valeur) {
-    var c = classerFWD(valeur);
-    return c === 'termine' ? 'bg-termine' : (c === 'encours' ? 'bg-encours' : 'bg-afaire');
-  }
-
-  function rendreCorps(reinitialiser) {
-    var visibles = colonnesVisibles();
-    var statuts = colonnesStatut();
-    var corps = $('corpsTableau');
-
-    if (reinitialiser) {
-      etat.lignesRendues = 0;
-      corps.innerHTML = '';
-      $('zoneTableau').scrollTop = 0;
-    }
-
-    if (etat.lignesFiltrees.length === 0) {
-      corps.innerHTML = '<tr><td colspan="' + Math.max(visibles.length, 1) +
-        '" class="text-center p-5 text-muted">Aucun plan ne correspond aux filtres.</td></tr>';
-      majPagination();
+  /* Chaque chiffre se cale au centre de son segment de barre : la ligne devient
+     la légende de la barre au lieu d'une rangée régulière. Les segments minces
+     produisant des étiquettes qui se touchent, on les écarte après mesure
+     plutôt que de deviner les largeurs à l'avance. */
+  /* Les segments vides ne sont pas rendus : on releve les coupures reelles
+     dans le DOM plutot que de les recalculer a partir des pourcentages. */
+  function placerFilets() {
+    var zone = $('filets'), barre = $('barre');
+    if (!zone || !barre) return;
+    var segs = Array.prototype.slice.call(barre.children);
+    if (segs.length < 2 || window.matchMedia('(max-width: 680px)').matches) {
+      zone.innerHTML = '';
       return;
     }
-
-    var debut = etat.lignesRendues;
-    var fin = Math.min(debut + TAILLE_PAGE, etat.lignesFiltrees.length);
-    var morceaux = [];
-
-    for (var r = debut; r < fin; r++) {
-      var ligne = etat.lignesFiltrees[r];
-      morceaux.push('<tr>');
-      for (var c = 0; c < visibles.length; c++) {
-        var idx = visibles[c];
-        var valeur = ligne[idx] === undefined || ligne[idx] === null ? '' : String(ligne[idx]).trim();
-        if (statuts[idx] && valeur !== '') {
-          morceaux.push('<td><span class="badge-statut ' + classeBadge(valeur) + '">' +
-                        echapper(valeur) + '</span></td>');
-        } else {
-          morceaux.push('<td title="' + echapper(valeur) + '">' + echapper(valeur) + '</td>');
-        }
-      }
-      morceaux.push('</tr>');
-    }
-
-    corps.insertAdjacentHTML('beforeend', morceaux.join(''));
-    etat.lignesRendues = fin;
-    majPagination();
-    if (reinitialiser) ajusterHauteursEnTetes();
-  }
-
-  function majPagination() {
-    var zone = $('zonePagination');
-    var total = etat.lignesFiltrees.length;
-    if (etat.lignesRendues >= total) {
-      zone.innerHTML = total === 0 ? '' :
-        '<span class="text-muted small">' + formaterNombre(total) + ' ligne(s) affichée(s)</span>';
-      return;
-    }
-    zone.innerHTML =
-      '<button class="btn btn-sm btn-outline-primary" id="btnPlusDeLignes" type="button">' +
-      'Afficher ' + Math.min(TAILLE_PAGE, total - etat.lignesRendues) + ' lignes de plus</button>' +
-      '<div class="text-muted small mt-1">' + formaterNombre(etat.lignesRendues) + ' / ' +
-      formaterNombre(total) + '</div>';
-    $('btnPlusDeLignes').addEventListener('click', function () { rendreCorps(false); });
-  }
-
-  // ===================================================================
-  //  KPI
-  // ===================================================================
-  function calculerKPIs() {
-    var termine = 0, encours = 0, vide = 0;
-    if (etat.indexFWD > -1) {
-      for (var i = 0; i < etat.lignesFiltrees.length; i++) {
-        var classe = classerFWD(etat.lignesFiltrees[i][etat.indexFWD]);
-        if (classe === 'termine') termine++;
-        else if (classe === 'encours') encours++;
-        else vide++;
-      }
-    } else {
-      vide = etat.lignesFiltrees.length;
-    }
-
-    var total = etat.lignesFiltrees.length;
-    var pct = total === 0 ? 0 : Math.round((termine / total) * 100);
-
-    $('kpi-termines').textContent = formaterNombre(termine);
-    $('kpi-encours').textContent = formaterNombre(encours);
-    $('kpi-vides').textContent = formaterNombre(vide);
-    $('kpi-pourcentage-text').textContent = pct + ' %';
-    $('kpi-progress-bar').style.width = pct + '%';
-    $('kpi-progress').setAttribute('aria-valuenow', pct);
-    $('total-plans-text').textContent = formaterNombre(total) + ' plan(s) affiché(s)' +
-      (total !== etat.lignes.length ? ' sur ' + formaterNombre(etat.lignes.length) : '');
-  }
-
-  // ===================================================================
-  //  GRAPHIQUE DYNAMIQUE
-  // ===================================================================
-  function remplirSelecteurGraphique() {
-    var sel = $('selectKpiGraphique');
-    var precedent = sel.value;
-    var html = '';
-    var groupeCourant = null;
-
-    etat.entetes.forEach(function (col, idx) {
-      if (col === '') return;
-      var groupe = etat.groupes[idx] || 'Général';
-      if (groupe !== groupeCourant) {
-        if (groupeCourant !== null) html += '</optgroup>';
-        html += '<optgroup label="' + echapper(groupe) + '">';
-        groupeCourant = groupe;
-      }
-      html += '<option value="' + idx + '">' + echapper(nomPropre(idx)) + '</option>';
-    });
-    if (groupeCourant !== null) html += '</optgroup>';
-    sel.innerHTML = html;
-
-    if (precedent && sel.querySelector('option[value="' + precedent + '"]')) sel.value = precedent;
-    else if (etat.indexFWD > -1) sel.value = String(etat.indexFWD);
-  }
-
-  function agreger(idx) {
-    var comptes = Object.create(null);
-    var nomNorm = normaliser(etat.entetes[idx]);
-    var estDate = nomNorm.indexOf('date') !== -1;
-
-    for (var i = 0; i < etat.lignesFiltrees.length; i++) {
-      var brut = etat.lignesFiltrees[i][idx];
-      var v = brut === undefined || brut === null ? '' : String(brut).trim();
-      if (v === '') v = 'Non renseigné';
-      else if (estDate) {
-        var m = v.match(/(\d{4})[-/.](\d{2})/);         // 2026-03-…
-        if (m) v = m[1] + '-' + m[2];
-        else {
-          var f = v.match(/(\d{2})[-/.](\d{2})[-/.](\d{4})/); // 12/03/2026
-          v = f ? f[3] + '-' + f[2] : v.substring(0, 10);
-        }
-      }
-      comptes[v] = (comptes[v] || 0) + 1;
-    }
-
-    var entrees = Object.keys(comptes).map(function (k) { return [k, comptes[k]]; });
-
-    if (estDate) {
-      // Correction : on trie d'abord chronologiquement, puis on garde les périodes
-      // les plus récentes. L'ancienne version gardait les 20 périodes les plus
-      // *fréquentes* avant de les trier — la courbe sautait des mois.
-      entrees.sort(function (a, b) { return a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0); });
-      if (entrees.length > MAX_PERIODES) entrees = entrees.slice(entrees.length - MAX_PERIODES);
-      return { entrees: entrees, estDate: true };
-    }
-
-    entrees.sort(function (a, b) { return b[1] - a[1]; });
-    if (entrees.length > MAX_CATEGORIES) {
-      var reste = entrees.slice(MAX_CATEGORIES)
-        .reduce(function (somme, e) { return somme + e[1]; }, 0);
-      entrees = entrees.slice(0, MAX_CATEGORIES);
-      entrees.push(['Autres (' + (Object.keys(comptes).length - MAX_CATEGORIES) + ' valeurs)', reste]);
-    }
-    return { entrees: entrees, estDate: false };
-  }
-
-  /**
-   * Couleur d'une part de statut.
-   * On s'appuie sur classerFWD() pour que les couleurs du graphique correspondent
-   * exactement aux compteurs des cartes KPI : auparavant « 50% » recevait une couleur
-   * de secours arbitraire alors qu'il est compté « en cours ».
-   * Les parts voisines de même classe restent distinctes grâce au liseré blanc.
-   */
-  function couleurStatut(libelle) {
-    var l = normaliser(libelle);
-    if (l.indexOf('controler') !== -1) return '#a855f7';
-    if (l === '' || l.indexOf('non renseigne') !== -1) return '#94a3b8';
-    var classe = classerFWD(libelle);
-    if (classe === 'termine') return '#10b981';
-    if (classe === 'encours') return '#f59e0b';
-    return '#38bdf8';
-  }
-
-  function dessinerGraphiqueDynamique() {
-    if (!graphiquesDisponibles()) return;
-    var sel = $('selectKpiGraphique');
-    var idx = parseInt(sel.value, 10);
-    if (isNaN(idx)) return;
-
-    var agr = agreger(idx);
-    var labels = agr.entrees.map(function (e) {
-      return e[0].length > 40 ? e[0].substring(0, 40) + '…' : e[0];
-    });
-    var donnees = agr.entrees.map(function (e) { return e[1]; });
-
-    var nomNorm = normaliser(etat.entetes[idx]);
-    var type = 'bar';
-    var couleurs = COULEURS.slice(0, labels.length);
-    var legende = false;
-    var indexAxis = 'x';
-
-    if (agr.estDate) {
-      type = 'line';
-      couleurs = '#00a9e0';
-    } else if (idx === etat.indexFWD || nomNorm.indexOf('statut') !== -1 ||
-               nomNorm.indexOf('fwd') !== -1 || nomNorm.indexOf('avancement') !== -1) {
-      type = 'doughnut';
-      legende = true;
-      couleurs = labels.map(couleurStatut);
-    } else if (nomNorm.indexOf('ata') !== -1 || nomNorm.indexOf('chapitre') !== -1) {
-      type = 'polarArea';
-      legende = true;
-    } else {
-      // Libellés longs : barres horizontales, bien plus lisibles.
-      var libelleLong = labels.some(function (l) { return l.length > 14; });
-      if (libelleLong) indexAxis = 'y';
-    }
-
-    var config = {
-      type: type,
-      data: {
-        labels: labels,
-        datasets: [{
-          label: nomPropre(idx),
-          data: donnees,
-          backgroundColor: couleurs,
-          borderColor: type === 'line' ? '#00a9e0' : '#ffffff',
-          borderWidth: type === 'line' ? 3 : (type === 'doughnut' ? 2 : 0),
-          fill: type === 'line',
-          tension: .3,
-          borderRadius: type === 'bar' ? 4 : 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        indexAxis: indexAxis,
-        animation: { duration: 250 },
-        plugins: {
-          legend: { display: legende, position: 'right' },
-          tooltip: { callbacks: { label: function (c) { return ' ' + formaterNombre(c.parsed.y ?? c.parsed) + ' plan(s)'; } } }
-        },
-        scales: (type === 'doughnut' || type === 'polarArea') ? {} : {
-          x: { ticks: { autoSkip: true, maxRotation: 45 } },
-          y: { beginAtZero: true, grid: { color: '#e2e8f0' } }
-        }
-      }
-    };
-
-    // On ne détruit le graphique que si son type change : sinon on met à jour
-    // les données, ce qui évite un flash à chaque frappe dans un filtre.
-    if (graphiqueDynamique && graphiqueDynamique.config.type === type) {
-      graphiqueDynamique.data = config.data;
-      graphiqueDynamique.options = config.options;
-      graphiqueDynamique.update();
-      return;
-    }
-    if (graphiqueDynamique) graphiqueDynamique.destroy();
-    graphiqueDynamique = new Chart($('chartDynamique').getContext('2d'), config);
-  }
-
-  // ===================================================================
-  //  GRAPHIQUE D'ÉVOLUTION (historique réel + jalons)
-  // ===================================================================
-  function dessinerEvolution() {
-    if (!graphiquesDisponibles()) return;
-    var message = $('messageHistorique');
-
-    if (!etat.historique || etat.historique.length === 0) {
-      message.textContent = "Aucun instantané enregistré pour l'instant. " +
-        "Menu « GATES Analytics ▸ Enregistrer un instantané » pour démarrer le suivi.";
-      message.classList.remove('d-none');
-      if (graphiqueEvolution) { graphiqueEvolution.destroy(); graphiqueEvolution = null; }
-      signatureEvolution = '';
-      return;
-    }
-    message.classList.toggle('d-none', etat.historique.length > 1);
-    if (etat.historique.length === 1) {
-      message.textContent = "Un seul point d'historique : la courbe se construira semaine après semaine.";
-      message.classList.remove('d-none');
-    }
-
-    // Le graphique ne dépend ni des filtres ni du tri : on ne le redessine
-    // que si l'historique ou les jalons ont réellement changé.
-    var signature = JSON.stringify([etat.historique, etat.jalons]);
-    if (signature === signatureEvolution && graphiqueEvolution) return;
-    signatureEvolution = signature;
-
-    var labels = etat.historique.map(function (r) { return r[0]; });
-    var termines = etat.historique.map(function (r) { return r[1]; });
-    var encours = etat.historique.map(function (r) { return r[2]; });
-    var vides = etat.historique.map(function (r) { return r[3]; });
-    var pourcentages = etat.historique.map(function (r) {
-      var total = (r[1] || 0) + (r[2] || 0) + (r[3] || 0);
-      return total === 0 ? 0 : Math.round((r[1] / total) * 100);
-    });
-
-    var annotations = {};
-    etat.jalons.forEach(function (jalon, i) {
-      if (labels.indexOf(jalon.semaine) === -1) return;  // un jalon hors plage casserait l'échelle
-      annotations['jalon' + i] = {
-        type: 'line',
-        xMin: jalon.semaine, xMax: jalon.semaine,
-        borderColor: '#dc2626', borderWidth: 2, borderDash: [6, 6],
-        label: {
-          display: true, content: jalon.texte, position: 'start',
-          backgroundColor: 'rgba(220,38,38,.9)', color: '#fff', font: { weight: 'bold' }
-        }
-      };
-    });
-
-    if (graphiqueEvolution) graphiqueEvolution.destroy();
-    graphiqueEvolution = new Chart($('chartEvolutionFWD').getContext('2d'), {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [
-          { label: 'Terminés', data: termines, backgroundColor: '#10b981', stack: 'plans', order: 2 },
-          { label: 'En cours', data: encours, backgroundColor: '#f59e0b', stack: 'plans', order: 2 },
-          { label: 'Sans statut', data: vides, backgroundColor: '#cbd5e1', stack: 'plans', order: 2 },
-          {
-            label: '% avancement', data: pourcentages, type: 'line', yAxisID: 'y1', order: 1,
-            borderColor: '#003366', backgroundColor: '#003366', borderWidth: 2,
-            tension: .3, pointRadius: 3, fill: false
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { position: 'top' }, annotation: { annotations: annotations } },
-        scales: {
-          x: { stacked: true },
-          y: { stacked: true, beginAtZero: true, grid: { color: '#e2e8f0' }, title: { display: true, text: 'Plans' } },
-          y1: {
-            position: 'right', beginAtZero: true, max: 100, grid: { drawOnChartArea: false },
-            ticks: { callback: function (v) { return v + ' %'; } }
-          }
-        }
-      }
-    });
-  }
-
-  // ===================================================================
-  //  JALONS
-  // ===================================================================
-  function afficherJalons() {
-    var ul = $('listeJalonsUI');
-    if (!etat.jalons.length) {
-      ul.innerHTML = '<li class="list-group-item text-muted text-center py-3">Aucun jalon défini</li>';
-      return;
-    }
-    ul.innerHTML = etat.jalons.map(function (j) {
-      return '<li class="list-group-item d-flex justify-content-between align-items-center">' +
-        '<div><span class="badge bg-secondary me-2">' + echapper(j.semaine) + '</span>' +
-        '<b>' + echapper(j.texte) + '</b></div>' +
-        '<button class="btn btn-sm btn-outline-danger js-supprimer-jalon" type="button" ' +
-        'data-id="' + echapper(j.id) + '" aria-label="Supprimer le jalon">' +
-        '<i class="fa-solid fa-trash"></i></button></li>';
+    var base = barre.getBoundingClientRect();
+    zone.innerHTML = segs.slice(0, -1).map(function (seg) {
+      var r = seg.getBoundingClientRect();
+      return '<i style="left:' + (r.right - base.left + 1).toFixed(1) + 'px"></i>';
     }).join('');
   }
 
-  function majJalons(liste) {
-    etat.jalons = liste || [];
-    afficherJalons();
-    dessinerEvolution();
-  }
-
-  function erreurJalon(message) {
-    var el = $('erreurJalon');
-    if (!message) { el.classList.add('d-none'); return; }
-    el.textContent = message;
-    el.classList.remove('d-none');
-  }
-
-  // ===================================================================
-  //  EXPORT CSV
-  // ===================================================================
-  function exporterCSV() {
-    if (!etat.lignesFiltrees.length) { toast('Rien à exporter.', 'warning'); return; }
-    var visibles = colonnesVisibles();
-
-    function cellule(v) {
-      var s = v === undefined || v === null ? '' : String(v);
-      return '"' + s.replace(/"/g, '""') + '"';
+  function alignerEtats(c) {
+    placerFilets();
+    var zone = $('etats');
+    var boutons = Array.prototype.slice.call(zone.querySelectorAll('.etat-btn'));
+    if (!boutons.length) return;
+    if (window.matchMedia('(max-width: 680px)').matches) {
+      boutons.forEach(function (b) { b.style.left = ''; });
+      return;
     }
+    var largeur = zone.getBoundingClientRect().width;
+    if (!largeur || !c.total) return;
 
-    var lignes = [visibles.map(function (i) { return cellule(nomPropre(i)); }).join(';')];
-    etat.lignesFiltrees.forEach(function (l) {
-      lignes.push(visibles.map(function (i) { return cellule(l[i]); }).join(';'));
+    var cumul = 0;
+    var cibles = ETATS.map(function (e) {
+      var part = (c[e.cle] / c.total) * largeur;
+      var centre = cumul + part / 2;
+      cumul += part;
+      return centre;
     });
 
-    // BOM UTF-8 + séparateur « ; » pour qu'Excel en français ouvre le fichier correctement.
-    var blob = new Blob(['﻿' + lignes.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
-    var url = URL.createObjectURL(blob);
-    var lien = document.createElement('a');
-    lien.href = url;
-    lien.download = 'gates-analytics-' + new Date().toISOString().slice(0, 10) + '.csv';
-    document.body.appendChild(lien);
-    lien.click();
-    document.body.removeChild(lien);
-    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-    toast(formaterNombre(etat.lignesFiltrees.length) + ' ligne(s) exportée(s).', 'success');
-  }
-
-  // ===================================================================
-  //  MENU DES COLONNES
-  // ===================================================================
-  function majMenuColonnes() {
-    var html = '';
-    var groupeCourant = null;
-    etat.ordreColonnes.forEach(function (idx) {
-      var groupe = etat.groupes[idx] || 'Général';
-      if (groupe !== groupeCourant) {
-        html += '<hr class="my-2"><h6 class="text-primary mt-2">' + echapper(groupe) + '</h6>';
-        groupeCourant = groupe;
-      }
-      var visible = !etat.colonnesCachees[idx];
-      var bloque = estColonneVerrouillee(idx) ? ' disabled' : '';
-      html += '<div class="form-check form-switch mb-1">' +
-        '<input class="form-check-input js-toggle-colonne" type="checkbox" id="chkCol' + idx + '" ' +
-        'data-index="' + idx + '"' + (visible ? ' checked' : '') + bloque + '>' +
-        '<label class="form-check-label" for="chkCol' + idx + '">' + echapper(nomPropre(idx)) + '</label></div>';
-    });
-    $('listeCheckboxesColonnes').innerHTML = html;
-  }
-
-  function cacherColonne(idx) {
-    if (estColonneVerrouillee(idx)) return;
-    etat.colonnesCachees[idx] = true;
-    sauverDisposition();
-    majMenuColonnes();
-    construireEntetes();
-    rendreCorps(true);
-  }
-
-  function cacherGroupe(nomGroupe) {
-    etat.ordreColonnes.forEach(function (idx) {
-      if (etat.groupes[idx] === nomGroupe && !estColonneVerrouillee(idx)) etat.colonnesCachees[idx] = true;
-    });
-    sauverDisposition();
-    majMenuColonnes();
-    construireEntetes();
-    rendreCorps(true);
-  }
-
-  /**
-   * Réordonne `liste` en plaçant `idxSource` juste avant ou juste après `idxCible`
-   * selon le sens du déplacement. Fonction pure, couverte par les tests.
-   *
-   * L'ancienne version calculait l'index cible AVANT de retirer la colonne source,
-   * si bien qu'un déplacement vers la droite atterrissait un cran trop à gauche.
-   */
-  function reordonner(liste, idxSource, idxCible) {
-    var depuis = liste.indexOf(idxSource);
-    var vers = liste.indexOf(idxCible);
-    if (depuis === -1 || vers === -1 || depuis === vers) return liste;
-
-    var copie = liste.slice();
-    var colonne = copie.splice(depuis, 1)[0];
-    var position = copie.indexOf(idxCible);
-    copie.splice(depuis < vers ? position + 1 : position, 0, colonne);
-    return copie;
-  }
-
-  function deplacerColonne(idxSource, idxCible) {
-    var nouvelOrdre = reordonner(etat.ordreColonnes, idxSource, idxCible);
-    if (nouvelOrdre === etat.ordreColonnes) return;
-    etat.ordreColonnes = nouvelOrdre;
-
-    sauverDisposition();
-    majMenuColonnes();
-    construireEntetes();
-    rendreCorps(true);
-  }
-
-  // ===================================================================
-  //  ÉVÉNEMENTS
-  // ===================================================================
-  var indexDrag = null;
-
-  function brancherEvenements() {
-    $('barreRechercheGlobale').addEventListener('input', function (e) {
-      etat.rechercheGlobale = normaliser(e.target.value);
-      appliquerFiltresDebounce();
-    });
-
-    $('selectKpiGraphique').addEventListener('change', dessinerGraphiqueDynamique);
-    $('btnRafraichir').addEventListener('click', charger);
-    $('btnExportCsv').addEventListener('click', exporterCSV);
-
-    $('btnToutAfficher').addEventListener('click', function () {
-      etat.colonnesCachees = {};
-      sauverDisposition();
-      majMenuColonnes();
-      construireEntetes();
-      rendreCorps(true);
-    });
-
-    $('btnResetDisposition').addEventListener('click', function () {
-      etat.colonnesCachees = {};
-      etat.ordreColonnes = [];
-      etat.entetes.forEach(function (col, idx) { if (col !== '') etat.ordreColonnes.push(idx); });
-      sauverDisposition();
-      majMenuColonnes();
-      construireEntetes();
-      rendreCorps(true);
-    });
-
-    $('btnReinitFiltres').addEventListener('click', function () {
-      etat.filtres = {};
-      etat.rechercheGlobale = '';
-      etat.tri = { index: -1, asc: true };
-      $('barreRechercheGlobale').value = '';
-      if (etat.filtreFWDVide) basculerFiltreVides();
-      construireEntetes();
-      appliquerFiltres();
-    });
-
-    $('btnFiltreVides').addEventListener('click', basculerFiltreVides);
-
-    // --- Délégation sur les en-têtes : tri, masquage, glisser-déposer ---
-    var thead = $('enTetesTableau');
-
-    thead.addEventListener('click', function (e) {
-      var masquerCol = e.target.closest('.js-cacher-colonne');
-      if (masquerCol) { e.stopPropagation(); cacherColonne(Number(masquerCol.dataset.index)); return; }
-
-      var masquerGrp = e.target.closest('.js-cacher-groupe');
-      if (masquerGrp) { e.stopPropagation(); cacherGroupe(masquerGrp.dataset.groupe); return; }
-
-      var th = e.target.closest('tr.title-row th');
-      if (!th) return;
-      var idx = Number(th.dataset.index);
-      if (etat.tri.index === idx) etat.tri.asc = !etat.tri.asc;
-      else etat.tri = { index: idx, asc: true };
-      construireEntetes();
-      appliquerFiltres();
-    });
-
-    thead.addEventListener('input', function (e) {
-      if (!e.target.classList.contains('column-filter')) return;
-      var idx = e.target.dataset.index;
-      if (e.target.value) etat.filtres[idx] = e.target.value;
-      else delete etat.filtres[idx];
-      appliquerFiltresDebounce();
-    });
-
-    thead.addEventListener('dragstart', function (e) {
-      var th = e.target.closest('tr.title-row th');
-      if (!th) return;
-      indexDrag = Number(th.dataset.index);
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', String(indexDrag));   // requis par Firefox
-    });
-    thead.addEventListener('dragover', function (e) {
-      var th = e.target.closest('tr.title-row th');
-      if (!th || indexDrag === null) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      th.classList.add('drag-over');
-    });
-    thead.addEventListener('dragleave', function (e) {
-      var th = e.target.closest('tr.title-row th');
-      if (th) th.classList.remove('drag-over');
-    });
-    thead.addEventListener('drop', function (e) {
-      var th = e.target.closest('tr.title-row th');
-      if (!th) return;
-      e.preventDefault();
-      th.classList.remove('drag-over');
-      var cible = Number(th.dataset.index);
-      if (indexDrag !== null && indexDrag !== cible) deplacerColonne(indexDrag, cible);
-      indexDrag = null;
-    });
-    thead.addEventListener('dragend', function () {
-      indexDrag = null;
-      thead.querySelectorAll('.drag-over').forEach(function (el) { el.classList.remove('drag-over'); });
-    });
-
-    // --- Menu des colonnes ---
-    $('listeCheckboxesColonnes').addEventListener('change', function (e) {
-      if (!e.target.classList.contains('js-toggle-colonne')) return;
-      var idx = Number(e.target.dataset.index);
-      if (e.target.checked) delete etat.colonnesCachees[idx];
-      else etat.colonnesCachees[idx] = true;
-      sauverDisposition();
-      construireEntetes();
-      rendreCorps(true);
-    });
-
-    // --- Jalons ---
-    $('formJalon').addEventListener('submit', function (e) {
-      e.preventDefault();
-      erreurJalon('');
-      var bouton = $('btnAjouterJalon');
-      bouton.disabled = true;
-      google.script.run
-        .withSuccessHandler(function (liste) {
-          bouton.disabled = false;
-          $('inputJalonSemaine').value = '';
-          $('inputJalonTexte').value = '';
-          majJalons(liste);
-          toast('Jalon ajouté.', 'success');
-        })
-        .withFailureHandler(function (err) {
-          bouton.disabled = false;
-          erreurJalon(err && err.message ? err.message : 'Ajout impossible.');
-        })
-        .ajouterJalon($('inputJalonSemaine').value, $('inputJalonTexte').value);
-    });
-
-    $('listeJalonsUI').addEventListener('click', function (e) {
-      var bouton = e.target.closest('.js-supprimer-jalon');
-      if (!bouton) return;
-      bouton.disabled = true;
-      google.script.run
-        .withSuccessHandler(function (liste) { majJalons(liste); toast('Jalon supprimé.'); })
-        .withFailureHandler(function (err) {
-          bouton.disabled = false;
-          toast((err && err.message) || 'Suppression impossible.', 'danger');
-        })
-        .supprimerJalon(bouton.dataset.id);
-    });
-
-    // --- Chargement progressif au défilement ---
-    var zone = $('zoneTableau');
-    var chargementEnCours = false;
-    zone.addEventListener('scroll', function () {
-      if (chargementEnCours) return;
-      if (etat.lignesRendues >= etat.lignesFiltrees.length) return;
-      if (zone.scrollTop + zone.clientHeight < zone.scrollHeight - 200) return;
-      chargementEnCours = true;
-      requestAnimationFrame(function () { rendreCorps(false); chargementEnCours = false; });
-    }, { passive: true });
-
-    window.addEventListener('resize', debounce(function () {
-      ajusterHauteursEnTetes();
-      if (graphiqueDynamique) graphiqueDynamique.resize();
-      if (graphiqueEvolution) graphiqueEvolution.resize();
-    }, 150));
-  }
-
-  function basculerFiltreVides() {
-    etat.filtreFWDVide = !etat.filtreFWDVide;
-    var btn = $('btnFiltreVides');
-    if (etat.filtreFWDVide) {
-      btn.classList.replace('btn-outline-warning', 'btn-warning');
-      btn.innerHTML = '<i class="fa-solid fa-xmark me-1"></i> Désactiver le filtre « vides »';
-    } else {
-      btn.classList.replace('btn-warning', 'btn-outline-warning');
-      btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Voir les avancements FWD vides';
+    // Placement au centre, puis on pousse vers la droite ce qui se chevauche…
+    var gauches = boutons.map(function (b, i) { return cibles[i] - b.offsetWidth / 2; });
+    for (var i = 1; i < boutons.length; i++) {
+      var mini = gauches[i - 1] + boutons[i - 1].offsetWidth + 4;
+      if (gauches[i] < mini) gauches[i] = mini;
     }
-    appliquerFiltres();
+    // …puis on recale vers la gauche si le dernier sort du cadre.
+    var debord = gauches[boutons.length - 1] + boutons[boutons.length - 1].offsetWidth - largeur;
+    for (var k = boutons.length - 1; k >= 0 && debord > 0; k--) {
+      gauches[k] -= debord;
+      debord = k > 0 ? Math.max(0, (gauches[k - 1] + boutons[k - 1].offsetWidth + 4) - gauches[k]) : 0;
+    }
+    boutons.forEach(function (b, i) { b.style.left = Math.max(0, gauches[i]).toFixed(1) + 'px'; });
   }
 
-  // ===================================================================
-  //  DÉMARRAGE
-  // ===================================================================
-  if (window.Chart && window['chartjs-plugin-annotation']) {
-    Chart.register(window['chartjs-plugin-annotation']);
-    Chart.defaults.font.family = "'Segoe UI', Tahoma, sans-serif";
+  function rendreAvancement(liste) {
+    var c = compte(liste);
+    $('phrase').innerHTML = '<b>' + nb(c.termine) + '</b> sur ' + nb(c.total) + ' plans terminés' +
+      (filtreActif() ? ' dans la sélection' : '');
+
+    /* Le pourcentage se lit dans la barre : les chiffres du dessous n'ont plus
+       qu'un sens possible, un nombre de plans. */
+    $('barre').innerHTML = ETATS.map(function (e) {
+      if (!c[e.cle]) return '';
+      var part = (c[e.cle] / (c.total || 1)) * 100;
+      var texte = part >= 6 ? Math.round(part) + '\u202f%' : '';
+      return e.hachure
+        ? '<span class="hachure" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '</span>'
+        : '<span style="width:' + part.toFixed(2) + '%;background:' + e.couleur +
+          ';color:' + encreSegment(e.cle) + '">' + texte + '</span>';
+    }).join('');
+
+    $('etats').innerHTML = ETATS.map(function (e) {
+      var pastille = e.hachure
+        ? '<span class="pastille hachure"></span>'
+        : '<span class="pastille" style="background:' + e.couleur + '"></span>';
+      var actif = vue.etat === e.cle;
+      return '<button class="etat-btn" type="button" data-etat="' + e.cle + '" style="--teinte:' + e.teinte +
+        '" aria-pressed="' + actif + '" title="' + (actif ? 'Retirer le filtre' : 'N\u2019afficher que ces plans') + '">' +
+        '<span class="etat-haut">' + pastille + ech(e.libelle) + '</span>' +
+        '<span class="etat-n">' + nb(c[e.cle]) + '</span></button>';
+    }).join('');
+
+    requestAnimationFrame(function () { alignerEtats(c); });
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
-    brancherEvenements();
-    charger();
-  });
-
-  // Exposé uniquement pour les tests Node (`typeof module` est indéfini dans le navigateur).
-  if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-      etat: etat,
-      echapper: echapper,
-      normaliser: normaliser,
-      valeurNumerique: valeurNumerique,
-      classerFWD: classerFWD,
-      comparer: comparer,
-      reordonner: reordonner,
-      agreger: agreger
+  /* ============================================================ GRAPHIQUE */
+  /* Série affichée : l'historique global, ou celui d'un groupe quand une ligne
+     du bloc « Avancement FWD par… » est sélectionnée. Un filtre libre (recherche,
+     colonne) ne peut pas s'appliquer rétroactivement à des comptes déjà archivés :
+     dans ce cas le graphique reste sur l'ensemble, et le dit. */
+  function serieAffichee() {
+    if (vue.groupe && CLES_DIM.indexOf(vue.groupe.dim) !== -1) {
+      var pts = RELEVES.map(function (r) {
+        var g = r.groupes[vue.groupe.dim][vue.groupe.val];
+        return { i: r.i, total: g ? g.total : 0, termine: g ? g.termine : 0 };
+      });
+      return { pts: pts, portee: vue.groupe.val, partiel: false };
+    }
+    return {
+      pts: RELEVES.map(function (r) { return { i: r.i, total: r.total, termine: r.termine }; }),
+      portee: null,
+      partiel: filtreActif()
     };
   }
+
+  var L = 980, mG = 36, mD = 58, plotH = 160, ecart = 15, bandeH = 32, mBas = 24;
+  var mHaut = 44, H = mHaut + plotH + ecart + bandeH + mBas;
+  var HAUTEUR_ETIQUETTE = 17;
+  var LARGEUR = L - mG - mD;
+  var MAX_IDX = 104;                       // deux ans de visibilite maximum
+  var derniereAnalyse = null;
+
+  function bornerFenetre() {
+    var f = vue.fen;
+    f.span = Math.max(8, Math.min(f.span, MAX_IDX + 1));
+    f.debut = Math.max(0, Math.min(f.debut, MAX_IDX - f.span + 1));
+  }
+
+  function rendreGraphique(liste) {
+    bornerFenetre();
+    var vueSerie = serieAffichee();
+    var pts = vueSerie.pts;
+    var dernier = pts[pts.length - 1];
+    var total = Math.max(dernier.total, 1);
+    var atteint = dernier.termine;
+    var restants = total - atteint;
+    var ryt = rythmes(pts);
+    var vitesse = ryt ? ryt.central : 0;
+    var projIdx = semaineFin(atteint, total, vitesse);
+
+    $('note-graphe').textContent = vueSerie.portee
+      ? 'Historique de ' + vueSerie.portee + ' · ' + RELEVES.length + ' relevés'
+      : (vueSerie.partiel
+          ? 'Historique de l’ensemble des plans : les relevés archivés ne peuvent pas être refiltrés.'
+          : RELEVES.length + ' relevés depuis le premier import');
+    var prochain = jalons.filter(function (j) { return j.i > AUJ; }).sort(function (a, b) { return a.i - b.i; })[0];
+
+    var d0 = vue.fen.debut, span = vue.fen.span, d1 = d0 + span - 1;
+    var pasX = LARGEUR / (span - 1);
+    var x = function (i) { return mG + pasX * (i - d0); };
+
+    /* Deux jalons proches ecrivaient l'un sur l'autre. On calcule l'emprise de
+       chaque etiquette, puis on les repartit sur le plus petit nombre de
+       niveaux ou aucune ne touche sa voisine. */
+    var places = [];
+    if (AUJ >= d0 && AUJ <= d1) {
+      var xAuj = mG + pasX * (AUJ - d0);
+      places.push({ aujourdhui: true, jx: xAuj, xa: xAuj - 72, xb: xAuj - 4 });
+    }
+    jalons.forEach(function (j, idx) {
+      if (j.i < d0 || j.i > d1) return;
+      var jx = x(j.i);
+      var largeur = j.texte.length * 6.1 + 34;
+      var versGauche = jx + largeur + 14 > L - mD;
+      places.push({ j: j, idx: idx, jx: jx, largeur: largeur, versGauche: versGauche,
+                    xa: versGauche ? jx - largeur - 4 : jx + 4,
+                    xb: versGauche ? jx - 4 : jx + largeur + 4 });
+    });
+    places.sort(function (a, b) { return a.xa - b.xa; });
+    var finDeNiveau = [];
+    places.forEach(function (pl) {
+      var n = 0;
+      while (n < finDeNiveau.length && pl.xa < finDeNiveau[n] + 10) n++;
+      pl.niveau = n;
+      finDeNiveau[n] = pl.xb;
+    });
+    var niveaux = Math.max(1, finDeNiveau.length);
+    mHaut = 26 + niveaux * HAUTEUR_ETIQUETTE;
+    H = mHaut + plotH + ecart + bandeH + mBas;
+
+    var y = function (v) { return mHaut + plotH - (v / total) * plotH; };
+    var yBande = mHaut + plotH + ecart;
+    var basTotal = yBande + bandeH;
+
+    var s = ['<svg class="graphe" viewBox="0 0 ' + L + ' ' + H + '" role="img" aria-label="Plans termines par semaine, historique et projection">'];
+    s.push('<defs><clipPath id="zoneTracee"><rect x="' + mG + '" y="' + (mHaut - 12) + '" width="' + LARGEUR + '" height="' + (plotH + 16) + '"/></clipPath></defs>');
+
+    var pas = total <= 25 ? 5 : total <= 60 ? 20 : 50;
+    for (var v = 0; v < total; v += pas) {
+      if (total - v < pas * 0.5) continue;
+      s.push('<line x1="' + mG + '" x2="' + (L - mD) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
+      s.push('<text class="grad" x="' + (mG - 8) + '" y="' + (y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + v + '</text>');
+    }
+    s.push('<line x1="' + mG + '" x2="' + (L - mD) + '" y1="' + y(total).toFixed(1) + '" y2="' + y(total).toFixed(1) + '" stroke="var(--filet-fort)" stroke-width="1"/>');
+    s.push('<text class="grad" x="' + (L - mD + 8) + '" y="' + (y(total) + 3.5).toFixed(1) + '">' + nb(total) + '</text>');
+
+    // Tout ce qui peut sortir du cadre est decoupe a la zone tracee.
+    s.push('<g clip-path="url(#zoneTracee)">');
+
+    var visibles = pts.filter(function (pt) { return pt.i >= d0 - 2 && pt.i <= d1 + 2; });
+    if (visibles.length === 1) {
+      s.push('<circle cx="' + x(visibles[0].i).toFixed(1) + '" cy="' + y(visibles[0].termine).toFixed(1) +
+             '" r="4.5" fill="var(--fait)"/>');
+    }
+    if (visibles.length > 1) {
+      var chemin = visibles.map(function (p, k) { return (k ? 'L' : 'M') + x(p.i).toFixed(1) + ' ' + y(p.termine).toFixed(1); }).join(' ');
+      var xa = x(visibles[0].i).toFixed(1), xb = x(visibles[visibles.length - 1].i).toFixed(1);
+      s.push('<path d="' + chemin + ' L' + xb + ' ' + y(0).toFixed(1) + ' L' + xa + ' ' + y(0).toFixed(1) + ' Z" fill="var(--fait)" opacity=".11"/>');
+      s.push('<path d="' + chemin + '" fill="none" stroke="var(--fait)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>');
+      visibles.forEach(function (pt) {
+        if (pt.i === dernier.i) return;
+        s.push('<circle cx="' + x(pt.i).toFixed(1) + '" cy="' + y(pt.termine).toFixed(1) +
+               '" r="3" fill="var(--surface)" stroke="var(--fait)" stroke-width="1.6"/>');
+      });
+    }
+
+    var horsClip = [];
+    var enRetard = false, requis = null;
+    if (prochain && restants > 0) {
+      requis = restants / (prochain.i - AUJ);
+      enRetard = vitesse <= 0 || requis > vitesse;
+      var cr = enRetard ? 'var(--alerte)' : 'var(--fait)';
+      s.push('<path d="M' + x(AUJ).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(prochain.i).toFixed(1) + ' ' + y(total).toFixed(1) + '" fill="none" stroke="' + cr + '" stroke-width="1.6"/>');
+      s.push('<circle cx="' + x(prochain.i).toFixed(1) + '" cy="' + y(total).toFixed(1) + '" r="3.4" fill="' + cr + '"/>');
+    }
+
+    if (projIdx !== null) {
+      s.push('<path d="M' + x(AUJ).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(projIdx).toFixed(1) + ' ' + y(total).toFixed(1) +
+             '" fill="none" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="5 4" opacity=".6"/>');
+      if (projIdx >= d0 && projIdx <= d1) {
+        s.push('<circle cx="' + x(projIdx).toFixed(1) + '" cy="' + y(total).toFixed(1) + '" r="3.4" fill="none" stroke="var(--fait)" stroke-width="1.6"/>');
+        var xp = Math.max(mG + 22, Math.min(x(projIdx), L - mD - 22));
+        // Sous le plafond plutot qu'au-dessus : au-dessus, elle tombait dans la
+        // bande des jalons et se superposait a leurs etiquettes.
+        horsClip.push('<text class="grad" x="' + xp.toFixed(1) + '" y="' + (y(total) + 16).toFixed(1) +
+                      '" text-anchor="middle">' + etiquette(projIdx) + '</text>');
+      }
+      if (prochain && enRetard) {
+        var auJalon = atteint + vitesse * (prochain.i - AUJ);
+        var manque = Math.round(total - auJalon);
+        if (manque > 0 && prochain.i >= d0 && prochain.i <= d1) {
+          var xj = x(prochain.i), y1 = y(auJalon), y2 = y(total);
+          s.push('<line x1="' + xj.toFixed(1) + '" x2="' + xj.toFixed(1) + '" y1="' + y1.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="var(--alerte)" stroke-width="1" opacity=".45"/>');
+          s.push('<text class="grad" x="' + (xj + 7).toFixed(1) + '" y="' + ((y1 + y2) / 2 + 4).toFixed(1) + '" fill="var(--alerte)" font-weight="500">-' + manque + '</text>');
+        }
+      }
+    }
+    s.push('</g>');
+    horsClip.forEach(function (t) { s.push(t); });
+
+    if (AUJ >= d0 && AUJ <= d1) {
+      s.push('<line x1="' + x(AUJ).toFixed(1) + '" x2="' + x(AUJ).toFixed(1) + '" y1="' + (mHaut - 6) + '" y2="' + basTotal.toFixed(1) + '" stroke="var(--encre-3)" stroke-width="1"/>');
+      var plAuj = places.filter(function (q) { return q.aujourdhui; })[0];
+      var yAuj = mHaut - 13 - (plAuj ? plAuj.niveau : 0) * HAUTEUR_ETIQUETTE;
+      s.push('<text class="grad" x="' + (x(AUJ) - 6).toFixed(1) + '" y="' + yAuj.toFixed(1) + '" text-anchor="end">aujourd’hui</text>');
+      s.push('<circle cx="' + x(AUJ).toFixed(1) + '" cy="' + y(atteint).toFixed(1) + '" r="4.5" fill="var(--fait)" stroke="var(--surface)" stroke-width="2"/>');
+      s.push('<text class="grad" x="' + (x(AUJ) - 9).toFixed(1) + '" y="' + (y(atteint) - 8).toFixed(1) + '" text-anchor="end" fill="var(--encre)" font-weight="500">' + atteint + '</text>');
+    }
+
+    // Jalons : poignee visible, deplacable a la souris, croix de suppression.
+    places.forEach(function (pl) {
+      if (pl.aujourdhui) return;
+      var j = pl.j, idx = pl.idx, jx = pl.jx;
+      var critique = prochain && j.i === prochain.i && enRetard;
+      var couleur = critique ? 'var(--alerte)' : 'var(--encre-3)';
+      var yBase = mHaut - 8 - pl.niveau * HAUTEUR_ETIQUETTE;   // haut du trait pour ce niveau
+      var yTexte = yBase - 5;
+      var xTexte = pl.versGauche ? jx - 10 : jx + 10;
+      var xCroix = pl.versGauche ? pl.xa + 12 : pl.xb - 12;
+
+      s.push('<g class="jalon" data-jalon="' + idx + '">');
+      s.push('<line x1="' + jx.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" y2="' + basTotal.toFixed(1) +
+             '" stroke="' + couleur + '" stroke-width="1" stroke-dasharray="2 3"/>');
+      s.push('<g class="jalon-poignee" data-jalon="' + idx + '" role="button" tabindex="0" aria-label="Jalon ' + ech(j.texte) + ' en ' + etiquette(j.i) + '. Fleches gauche et droite pour deplacer, Suppr pour retirer.">');
+      s.push('<rect class="jalon-fond" x="' + pl.xa.toFixed(1) + '" y="' + (yTexte - 12).toFixed(1) + '" width="' + pl.largeur.toFixed(1) + '" height="17" fill="var(--encre)" opacity="0" rx="2"/>');
+      s.push('<path d="M' + jx.toFixed(1) + ' ' + yBase.toFixed(1) + ' l-4 -5.5 l8 0 Z" fill="' + couleur + '"/>');
+      s.push('<text class="jalon-texte" x="' + xTexte.toFixed(1) + '" y="' + yTexte.toFixed(1) + '" text-anchor="' + (pl.versGauche ? 'end' : 'start') + '" fill="' + couleur + '">' + ech(j.texte) + '</text>');
+      s.push('</g>');
+      s.push('<g class="jalon-supp" data-jalon="' + idx + '" role="button" tabindex="0" aria-label="Supprimer le jalon ' + ech(j.texte) + '">');
+      s.push('<circle cx="' + xCroix.toFixed(1) + '" cy="' + (yTexte - 4).toFixed(1) + '" r="7" fill="transparent"/>');
+      s.push('<path d="M' + (xCroix - 3).toFixed(1) + ' ' + (yTexte - 7).toFixed(1) + ' l6 6 M' + (xCroix + 3).toFixed(1) + ' ' + (yTexte - 7) + ' l-6 6" stroke="' + couleur + '" stroke-width="1.3" stroke-linecap="round" opacity=".6"/>');
+      s.push('</g></g>');
+    });
+
+    if (!prochain && d1 > AUJ + 2) {
+      var xv = x(AUJ + Math.round((d1 - AUJ) / 2));
+      s.push('<text class="grad" x="' + xv.toFixed(1) + '" y="' + (mHaut + plotH * 0.86).toFixed(1) +
+             '" text-anchor="middle">Aucun jalon \u00e0 venir \u2014 cliquez une semaine pour en poser un</text>');
+    }
+
+    // Rythme hebdomadaire
+    /* Une barre par semaine, pas par relevé : quand deux relevés sont séparés
+       de trois semaines, le gain est réparti sur les trois. Les hauteurs
+       restent comparables quelle que soit la cadence des imports. */
+    var taux = [];
+    for (var k5 = 1; k5 < pts.length; k5++) {
+      var dSem = pts[k5].i - pts[k5 - 1].i;
+      if (dSem <= 0) continue;
+      var parSem = (pts[k5].termine - pts[k5 - 1].termine) / dSem;
+      for (var w = pts[k5 - 1].i + 1; w <= pts[k5].i; w++) taux.push({ i: w, v: parSem });
+    }
+    var maxSem = 1;
+    taux.forEach(function (t) { maxSem = Math.max(maxSem, t.v); });
+    var lb = Math.min(15, pasX * 0.62);
+    s.push('<text class="grad" x="' + mG + '" y="' + (yBande - 3).toFixed(1) + '">terminés par semaine</text>');
+    taux.forEach(function (t) {
+      if (t.i < d0 || t.i > d1 || t.v <= 0) return;
+      var h = (t.v / maxSem) * bandeH;
+      s.push('<rect x="' + (x(t.i) - lb / 2).toFixed(1) + '" y="' + (yBande + bandeH - h).toFixed(1) +
+             '" width="' + lb.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="var(--fait)" opacity=".42"/>');
+    });
+    s.push('<line x1="' + mG + '" x2="' + (L - mD) + '" y1="' + basTotal.toFixed(1) + '" y2="' + basTotal.toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
+
+    // Graduations : espacees pour tenir une dizaine d etiquettes quel que soit le zoom
+    var saut = Math.max(1, Math.ceil(span / 11));
+    for (var k3 = d0; k3 <= d1; k3++) {
+      if ((k3 - d0) % saut !== 0 && k3 !== AUJ) continue;
+      var lib = etiquette(k3);
+      s.push('<text class="grad" x="' + x(k3).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle"' + (k3 > AUJ ? ' opacity=".7"' : '') + '>' +
+             (lib.indexOf('2026-') === 0 ? lib.slice(5) : lib) + '</text>');
+    }
+
+    for (var k4 = d0; k4 <= d1; k4++) {
+      s.push('<rect class="zone-clic" x="' + (x(k4) - pasX / 2).toFixed(1) + '" y="' + (mHaut - 6) + '" width="' + pasX.toFixed(1) +
+             '" height="' + (plotH + ecart + bandeH + 6).toFixed(1) + '" fill="transparent" tabindex="0" role="button" data-i="' + k4 + '" ' +
+             'aria-label="' + etiquette(k4) + (k4 <= AUJ ? ' : ' + pts[k4].termine + ' terminés' : ' (à venir)') + '. Activer pour poser un jalon."/>');
+    }
+
+    s.push('</svg>');
+    $('zone-graphe').innerHTML = s.join('');
+
+    var items = ['<span class="legende-item"><svg width="20" height="8" aria-hidden="true"><line x1="0" y1="4" x2="20" y2="4" stroke="var(--fait)" stroke-width="2.2"/></svg>' +
+      '<span title="Nombre de plans pass\u00e9s \u00e0 100 %, cumul\u00e9 semaine apr\u00e8s semaine.">r\u00e9alis\u00e9</span></span>'];
+    if (ryt && restants > 0) {
+      var explication = ryt.gagnes + ' plans termin\u00e9s en ' + ryt.semaines + ' semaines entre le premier ' +
+        'et le dernier relev\u00e9, soit ' + vitesse.toFixed(1).replace('.', ',') + ' par semaine. ' +
+        (projIdx !== null
+          ? 'Les ' + restants + ' restants demandent ' + (projIdx - AUJ) + ' semaines de plus.'
+          : 'Aucun plan sold\u00e9 sur la p\u00e9riode : pas de fin pr\u00e9visible.');
+      items.push('<span class="legende-item"><svg width="22" height="8" aria-hidden="true">' +
+        '<line x1="0" y1="4" x2="22" y2="4" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="4 3" opacity=".65"/></svg>' +
+        '<span title="' + explication + '">au rythme moyen (' + vitesse.toFixed(1).replace('.', ',') + '/sem.)' +
+        (projIdx !== null ? ' \u2192 fin vers ' + etiquette(projIdx) : ' \u2014 pas de fin pr\u00e9visible') +
+        '</span></span>');
+    }
+    if (requis !== null) {
+      items.push('<span class="legende-item"><svg width="20" height="8" aria-hidden="true"><line x1="0" y1="4" x2="20" y2="4" stroke="' +
+        (enRetard ? 'var(--alerte)' : 'var(--fait)') + '" stroke-width="1.6"/></svg>' +
+        '<span title="' + restants + ' plans restants \u00e0 solder en ' + (prochain.i - AUJ) +
+        ' semaines. Rouge si ce rythme d\u00e9passe le rythme actuel. D\u00e9placez le jalon pour recalculer.">' +
+        'requis pour \u00ab\u00a0' + ech(prochain.texte) + '\u00a0\u00bb : ' +
+        requis.toFixed(1).replace('.', ',') + '/sem.</span></span>');
+    }
+    $('legende').innerHTML = items.join('');
+
+    derniereAnalyse = { pts: pts, total: total, atteint: atteint, restants: restants, vitesse: vitesse,
+                        projIdx: projIdx, prochain: prochain, requis: requis, enRetard: enRetard, span: span, d0: d0 };
+    majBoutonsZoom();
+    planifierSauvegarde();
+  }
+
+  function majBoutonsZoom() {
+    var boutons = document.querySelectorAll('.commandes-graphe .segmente button');
+    for (var i = 0; i < boutons.length; i++) {
+      var v = Number(boutons[i].dataset.span);
+      boutons[i].setAttribute('aria-pressed', String(v === vue.fen.span));
+    }
+  }
+
+  function spanTout() {
+    var a = derniereAnalyse;
+    var maxJalon = jalons.reduce(function (m, j) { return Math.max(m, j.i); }, AUJ);
+    var maxProj = a && a.projIdx !== null ? a.projIdx : AUJ;
+    return Math.min(MAX_IDX + 1, Math.max(maxJalon, maxProj, AUJ) + 3);
+  }
+
+  /* Poser, deplacer ou retirer un jalon change la fenetre avant echeance :
+     le bloc par groupe en depend autant que la courbe. */
+  function majJalons() {
+    var sel = selection();
+    rendreGraphique(sel);
+    rendreCritique(sel);
+    planifierSauvegarde();
+    /* Dans le classeur, les jalons sont partagés : ils repartent au serveur,
+       sinon la collègue et sa chef n'auraient pas les mêmes. */
+    if (API && API.sauverJalons) {
+      API.sauverJalons(jalons.map(function (j) {
+        return { id: j.id || null, semaine: etiquette(j.i), texte: j.texte };
+      }));
+    }
+  }
+
+  function reglerSpan(span) {
+    vue.fen.span = span || spanTout();
+    vue.fen.debut = span ? Math.max(0, AUJ - Math.round(vue.fen.span * 0.45)) : 0;
+    rendreGraphique(selection());
+  }
+
+  /* ---- Index de semaine sous le curseur ---- */
+  function indexSousCurseur(clientX) {
+    var svg = $('zone-graphe').querySelector('svg');
+    if (!svg) return null;
+    var r = svg.getBoundingClientRect();
+    if (!r.width) return null;
+    var xv = (clientX - r.left) * (L / r.width);
+    return Math.round(vue.fen.debut + (xv - mG) / (LARGEUR / (vue.fen.span - 1)));
+  }
+  function pxParSemaine() {
+    var svg = $('zone-graphe').querySelector('svg');
+    if (!svg) return 1;
+    var r = svg.getBoundingClientRect();
+    return (r.width / L) * (LARGEUR / (vue.fen.span - 1));
+  }
+
+  /* ---- Interactions : les ecouteurs vivent sur le conteneur, donc ils
+          survivent au redessin du SVG ---- */
+  var cadreGraphe = $('cadre-graphe');
+  var glisse = null;
+
+  cadreGraphe.addEventListener('pointerdown', function (e) {
+    if (e.button !== 0) return;
+    var supp = e.target.closest ? e.target.closest('.jalon-supp') : null;
+    if (supp) {
+      e.preventDefault();
+      jalons.splice(Number(supp.dataset.jalon), 1);
+      majJalons();
+      return;
+    }
+    var poignee = e.target.closest ? e.target.closest('.jalon-poignee') : null;
+    if (poignee) {
+      e.preventDefault();
+      glisse = { type: 'jalon', idx: Number(poignee.dataset.jalon), x0: e.clientX, i0: jalons[Number(poignee.dataset.jalon)].i, bouge: false };
+      cadreGraphe.dataset.glisseJalon = 'true';
+    } else if (!(e.target.closest && e.target.closest('#saisie-jalon'))) {
+      /* Le glissement part de n'importe quel point du cadre. Le limiter aux
+         bandes cliquables laissait mortes la frise des jalons en haut et la
+         marge du bas, alors que le curseur y promettait deja la main. */
+      var surGraphe = !!(e.target.closest && e.target.closest('svg'));
+      glisse = {
+        type: 'pan', x0: e.clientX, debut0: vue.fen.debut, bouge: false,
+        i: surGraphe ? indexSousCurseur(e.clientX) : null
+      };
+    } else return;
+    cadreGraphe.setPointerCapture(e.pointerId);
+  });
+
+  cadreGraphe.addEventListener('wheel', function (e) {
+    if (!e.target.closest || !e.target.closest('svg')) return;
+    e.preventDefault();
+    var i = indexSousCurseur(e.clientX);
+    if (i === null) return;
+    var span0 = vue.fen.span;
+    var span1 = Math.max(8, Math.min(MAX_IDX + 1, Math.round(span0 * (e.deltaY > 0 ? 1.18 : 1 / 1.18))));
+    if (span1 === span0) return;
+    // La semaine sous le curseur reste au meme endroit a l'ecran.
+    var part = (i - vue.fen.debut) / (span0 - 1);
+    vue.fen.span = span1;
+    vue.fen.debut = Math.round(i - part * (span1 - 1));
+    rendreGraphique(selection());
+  }, { passive: false });
+
+  cadreGraphe.addEventListener('pointermove', function (e) {
+    if (!glisse) return;
+    var dx = e.clientX - glisse.x0;
+    if (Math.abs(dx) > 4) glisse.bouge = true;
+    if (!glisse.bouge) return;
+    var semaines = dx / pxParSemaine();
+    if (glisse.type === 'jalon') {
+      var ni = Math.max(0, Math.min(MAX_IDX, Math.round(glisse.i0 + semaines)));
+      if (jalons[glisse.idx] && jalons[glisse.idx].i !== ni &&
+          !jalons.some(function (j, k) { return k !== glisse.idx && j.i === ni; })) {
+        jalons[glisse.idx].i = ni;
+        majJalons();
+      }
+    } else {
+      cadreGraphe.dataset.glisse = 'true';
+      var nd = Math.round(glisse.debut0 - semaines);
+      if (nd !== vue.fen.debut) { vue.fen.debut = nd; rendreGraphique(selection()); }
+    }
+  });
+
+  function finGlisse(e) {
+    if (!glisse) return;
+    var g = glisse;
+    glisse = null;
+    cadreGraphe.dataset.glisse = 'false';
+    cadreGraphe.dataset.glisseJalon = 'false';
+    if (g.type === 'jalon') {
+      jalons.sort(function (a, b) { return a.i - b.i; });
+      majJalons();
+      return;
+    }
+    if (!g.bouge && g.i !== null) ouvrirSaisie(g.i, e ? e.clientX : null);
+  }
+  cadreGraphe.addEventListener('pointerup', finGlisse);
+  cadreGraphe.addEventListener('pointercancel', function () { finGlisse(null); });
+
+  /* Infobulle */
+  cadreGraphe.addEventListener('mousemove', function (e) {
+    if (glisse && glisse.bouge) { $('bulle').dataset.visible = 'false'; return; }
+    if (!e.target.closest || !e.target.closest('.zone-clic')) { $('bulle').dataset.visible = 'false'; return; }
+    var i = indexSousCurseur(e.clientX);
+    var a = derniereAnalyse;
+    if (i === null || !a) return;
+    var bulle = $('bulle');
+    var k = -1;
+    for (var q = 0; q < a.pts.length; q++) if (a.pts[q].i === i) k = q;
+    if (k !== -1) {
+      var pt = a.pts[k];
+      var gagne = k > 0 ? pt.termine - a.pts[k - 1].termine : null;
+      bulle.innerHTML = '<div class="tete-bulle">Relevé du ' + etiquette(i) + '</div>' +
+        '<div class="bulle-ligne"><span class="pastille" style="background:var(--fait)"></span>terminés<span class="n">' + pt.termine + '</span></div>' +
+        '<div class="bulle-ligne"><span class="pastille" style="background:var(--filet-fort)"></span>sur<span class="n">' + pt.total + '</span></div>' +
+        (gagne !== null ? '<div class="bulle-ligne" style="margin-top:5px;padding-top:5px;border-top:1px solid var(--filet)">depuis le précédent<span class="n">' + (gagne > 0 ? '+' : '') + gagne + '</span></div>' : '');
+    } else {
+      bulle.innerHTML = '<div class="tete-bulle">' + etiquette(i) + '</div><div class="bulle-ligne">' +
+        (i > AUJ ? 'À venir · cliquez pour poser un jalon' : 'Pas de relevé cette semaine-là') + '</div>';
+    }
+    bulle.dataset.visible = 'true';
+    bulle.style.left = Math.min(e.clientX + 14, window.innerWidth - bulle.offsetWidth - 12) + 'px';
+    bulle.style.top = Math.min(e.clientY + 16, window.innerHeight - bulle.offsetHeight - 12) + 'px';
+  });
+  cadreGraphe.addEventListener('mouseleave', function () { $('bulle').dataset.visible = 'false'; });
+
+  /* Clavier : deplacer ou supprimer un jalon sans souris */
+  cadreGraphe.addEventListener('keydown', function (e) {
+    var poignee = e.target.closest ? e.target.closest('.jalon-poignee') : null;
+    if (poignee) {
+      var idx = Number(poignee.dataset.jalon);
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        var ni = Math.max(0, Math.min(MAX_IDX, jalons[idx].i + (e.key === 'ArrowRight' ? 1 : -1)));
+        if (!jalons.some(function (j, k) { return k !== idx && j.i === ni; })) {
+          jalons[idx].i = ni;
+          majJalons();
+        }
+        return;
+      }
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault(); jalons.splice(idx, 1); majJalons(); return;
+      }
+    }
+    var supp = e.target.closest ? e.target.closest('.jalon-supp') : null;
+    if (supp && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault(); jalons.splice(Number(supp.dataset.jalon), 1); majJalons(); return;
+    }
+    var bande = e.target.closest ? e.target.closest('.zone-clic') : null;
+    if (bande && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault(); ouvrirSaisie(Number(bande.dataset.i), null);
+    }
+  });
+
+  var iSaisie = null;
+  function ouvrirSaisie(i, clientX) {
+    if (i === null || i < 0 || i > MAX_IDX) return;
+    if (jalons.some(function (j) { return j.i === i; })) return;
+    iSaisie = i;
+    var boite = $('saisie-jalon');
+    var cadre = cadreGraphe.getBoundingClientRect();
+    $('jalon-semaine').textContent = etiquette(i);
+    boite.dataset.ouvert = 'true';
+    var centre = clientX !== null ? clientX - cadre.left : cadre.width / 2;
+    boite.style.left = Math.max(0, Math.min(centre - boite.offsetWidth / 2, cadre.width - boite.offsetWidth)) + 'px';
+    boite.style.top = (mHaut + 10) + 'px';
+    $('champ-jalon').value = '';
+    $('champ-jalon').focus();
+  }
+  function fermerSaisie() { $('saisie-jalon').dataset.ouvert = 'false'; iSaisie = null; }
+  $('saisie-jalon').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (iSaisie === null) return;
+    jalons.push({ i: iSaisie, texte: $('champ-jalon').value.trim() || 'Jalon' });
+    jalons.sort(function (a, b) { return a.i - b.i; });
+    fermerSaisie();
+    majJalons();
+  });
+  $('champ-jalon').addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); fermerSaisie(); } });
+
+  document.querySelector('.commandes-graphe .segmente').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-span]');
+    if (b) reglerSpan(Number(b.dataset.span));
+  });
+
+  /* ============================================================
+     CHEMIN CRITIQUE
+     La courbe globale masque l'essentiel : un groupe a l'arret n'y
+     laisse aucune trace tant que les autres avancent. On projette donc
+     chaque groupe a SON rythme, et on regarde lequel arrive le dernier.
+     ============================================================ */
+  var FENETRE = 6;
+
+  /* L'explication ne vaut que chiffree : on reprend une ligne reelle du bloc et
+     on y refait le calcul pas a pas, plutot qu'un exemple invente. */
+  function panneauAide(rangs, prochain, semainesJalon) {
+    var ex = null;
+    for (var i = 0; i < rangs.length; i++) {
+      if (rangs[i].restants > 0 && rangs[i].vitesse > 0 && rangs[i].fin !== null && rangs[i].rythme) { ex = rangs[i]; break; }
+    }
+    function d(n) { return (Math.round(n * 10) / 10).toFixed(1).replace('.', ','); }
+    /* Dans l'exemple, un rythme arrondi au dixieme ne redonnerait pas la date
+       affichee : on garde deux decimales, sans zero inutile. */
+    function d2(n) { return String(Math.round(n * 100) / 100).replace('.', ','); }
+
+    var h = '<div class="aide-panneau" id="panneau-fin" role="region" aria-label="Comment la fin estimée est calculée">';
+    h += '<h3>D’où vient la fin estimée ?</h3>';
+    h += '<p>GATES ne donne qu’une photo du jour, sans historique. On archive donc un relevé à chaque import, ' +
+         'puis on compare le premier au dernier et on prolonge la pente en ligne droite.</p>';
+    h += '<div class="aide-formule">' +
+         'rythme   = (terminés aujourd’hui − terminés au 1<sup>er</sup> relevé) ÷ semaines écoulées\n' +
+         'restants = total − terminés aujourd’hui\n' +
+         '<b>fin      = semaine actuelle + arrondi supérieur(restants ÷ rythme)</b>' +
+         '</div>';
+
+    if (ex) {
+      var depart = ex.termine - ex.rythme.gagnes;
+      var sem = ex.fin - AUJ;
+      h += '<div class="aide-formule"><span class="exemple">Exemple — ' + ech(TITRE_DIM[vue.dimCritique].replace(/ \(.*\)$/, '')) +
+           ' ' + ech(ex.nom) + ', au dernier import</span>' +
+           'rythme   = (' + ex.termine + ' − ' + depart + ') ÷ ' + ex.rythme.semaines + ' sem. = ' +
+           d2(ex.vitesse) + ' plan par semaine\n' +
+           'restants = ' + ex.total + ' − ' + ex.termine + ' = ' + ex.restants + ' plans\n' +
+           '<b>fin      = ' + ex.restants + ' ÷ ' + d2(ex.vitesse) + ' = ' + sem + ' semaines → ' +
+           etiquette(AUJ) + ' + ' + sem + ' = ' + etiquette(ex.fin) + '</b>' +
+           '</div>';
+      if (prochain && semainesJalon > 0) {
+        h += '<div class="aide-formule"><span class="exemple">Et les deux colonnes voisines, sur la même ligne</span>' +
+             'à solder/sem. = restants ÷ semaines avant le jalon\n' +
+             '              = ' + ex.restants + ' ÷ ' + semainesJalon + ' = ' + d(ex.requis) +
+             ' → affiché ' + Math.ceil(ex.requis) + ' (on n’achève pas un demi-plan)\n' +
+             'effort        = à solder/sem. ÷ rythme actuel\n' +
+             '              = ' + d(ex.requis) + ' ÷ ' + d2(ex.vitesse) + ' = ×' + d(ex.tension) +
+             (ex.tension > 1 ? '  → il faut aller ' + d(ex.tension) + ' fois plus vite qu’aujourd’hui'
+                             : '  → le rythme actuel suffit') +
+             '</div>';
+      }
+    } else {
+      h += '<p>Aucun groupe de la sélection n’a de rythme exploitable pour l’instant : ' +
+           'il faut au moins deux relevés et un plan terminé entre les deux.</p>';
+    }
+
+    h += '<p>Un groupe qui n’a rien soldé depuis le premier relevé n’a pas de rythme : sa fin reste « — ». ' +
+         'La date se recalcule à chaque import et peut reculer — ce n’est pas un engagement, ' +
+         'c’est ce que dit le rythme tenu jusqu’ici.</p>';
+    return h + '</div>';
+  }
+
+  function rendreCritique(liste) {
+    var dim = vue.dimCritique;
+    var prochain = jalons.filter(function (j) { return j.i > AUJ; })
+      .sort(function (a, b) { return a.i - b.i; })[0];
+
+    // Répartition : état du jour, filtrée comme le reste de la page.
+    var groupes = {};
+    liste.forEach(function (p) {
+      var k = String(valeurDim(p, dim) || '\u2014');
+      if (!groupes[k]) groupes[k] = { nom: k, total: 0, termine: 0, encours: 0, afaire: 0, vide: 0 };
+      groupes[k].total++;
+      groupes[k][p._etat]++;
+    });
+
+    /* Rythme : il vient des relevés archivés, qui portent sur l'ensemble des
+       plans du groupe. Un comptage déjà figé ne peut pas être refiltré. */
+
+    var semainesJalon = prochain ? prochain.i - AUJ : 0;
+    var rangs = Object.keys(groupes).map(function (k) {
+      var g = groupes[k];
+      var restants = g.total - g.termine;
+      // Même méthode que la courbe : l'étendue des rythmes réellement tenus.
+      var serieGroupe = RELEVES.map(function (rel) {
+        var gr = rel.groupes[dim] && rel.groupes[dim][k];
+        return { i: rel.i, termine: gr ? gr.termine : 0 };
+      });
+      var rg = rythmes(serieGroupe);
+      var vitesse = rg ? rg.central : 0;
+      return {
+        rythme: rg,
+        nom: g.nom, total: g.total, restants: restants, vitesse: vitesse,
+        termine: g.termine, encours: g.encours, afaire: g.afaire, vide: g.vide,
+        pct: g.total ? Math.round((g.termine / g.total) * 100) : 0,
+        fin: restants === 0 ? AUJ : semaineFin(g.termine, g.total, vitesse),
+        // L'effort demandé : combien il faut solder par semaine pour tenir le
+        // jalon, et par quel facteur cela dépasse le rythme actuel du groupe.
+        requis: semainesJalon > 0 ? restants / semainesJalon : 0,
+        tension: (semainesJalon > 0 && vitesse > 0) ? (restants / semainesJalon) / vitesse : Infinity
+      };
+    });
+
+    /* Tri : par defaut on met en tete ce qu'il faut pousser le plus fort (ou la
+       fin la plus lointaine sans jalon). Un clic sur un en-tete prend le relais. */
+    function cleTri(r, cle) {
+      if (cle === 'nom') return r.nom;
+      if (cle === 'total') return r.total;
+      if (cle === 'pct') return r.pct;
+      if (cle === 'requis') return r.requis;
+      if (cle === 'tension') return r.vitesse > 0 ? r.tension : Infinity;
+      if (cle === 'fin') return r.fin === null ? Infinity : r.fin;
+      return 0;
+    }
+    var tg = vue.triGroupe;
+    if (tg && tg.cle) {
+      var signe = tg.asc ? 1 : -1;
+      rangs.sort(function (a, b) {
+        var x = cleTri(a, tg.cle), y = cleTri(b, tg.cle);
+        if (typeof x === 'string') {
+          // Les codes ATA sont des nombres ecrits en texte : on les compare comme tels.
+          var nx = parseFloat(x), ny = parseFloat(y);
+          if (!isNaN(nx) && !isNaN(ny) && nx !== ny) return (nx - ny) * signe;
+          return x.localeCompare(y, 'fr', { numeric: true }) * signe;
+        }
+        if (x === y) return a.nom.localeCompare(b.nom, 'fr', { numeric: true });
+        // Infinity des deux cotes : egalite, on retombe sur le nom.
+        if (!isFinite(x) && !isFinite(y)) return a.nom.localeCompare(b.nom, 'fr', { numeric: true });
+        return (x < y ? -1 : 1) * signe;
+      });
+    } else {
+      rangs.sort(function (a, b) {
+        if ((a.restants === 0) !== (b.restants === 0)) return a.restants === 0 ? 1 : -1;
+        if (prochain) return b.tension - a.tension;
+        if ((a.fin === null) !== (b.fin === null)) return a.fin === null ? -1 : 1;
+        return (b.fin || 0) - (a.fin || 0);
+      });
+    }
+
+    if (!rangs.length) {
+      $('zone-critique').className = '';
+      $('zone-critique').innerHTML = '<div class="vide-message">Aucun plan dans la sélection.</div>';
+      return;
+    }
+
+    function fleche(cle) {
+      if (!tg || tg.cle !== cle) return '';
+      return '<svg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="' +
+        (tg.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
+        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    function entete(cle, libelle, titre, classe) {
+      var actif = !!(tg && tg.cle === cle);
+      return '<span class="' + (classe || '') + '"><button type="button" class="tri-groupe" data-trig="' + cle +
+        '" data-actif="' + actif + '" aria-label="Trier par ' + ech(libelle) + '"' +
+        (titre ? ' title="' + ech(titre) + '"' : '') + '>' + ech(libelle) + fleche(cle) + '</button>';
+    }
+
+    var aide = '<button type="button" class="aide" id="aide-fin" aria-expanded="' + (!!vue.aideFin) +
+      '" aria-controls="panneau-fin" title="Comment cette date est calculée">?</button>';
+
+    var html = '<div class="critique-tete">' +
+      entete('nom', TITRE_DIM[dim].replace(/ \(.*\)$/, ''), '') + '</span>' +
+      entete('total', 'plans', 'Nombre de plans du groupe dans la sélection courante.') + '</span>' +
+      entete('pct', 'répartition FWD', 'Trier par part de plans terminés.', 'a-gauche') + '</span>' +
+      (prochain
+        ? entete('requis', 'à solder/sem.', 'Plans restants divisés par les ' + semainesJalon +
+            ' semaines avant le jalon, arrondi au plan supérieur.') + '</span>' +
+          entete('tension', 'effort demandé', 'Ce rythme requis comparé au rythme réellement tenu.') + '</span>'
+        : entete('tension', 'rythme actuel', 'Plans terminés par semaine depuis le premier relevé.') + '</span>') +
+      entete('fin', 'fin estimée', 'Date d’arrivée si le rythme actuel se maintient.') + aide + '</span>' +
+      '</div>';
+
+    if (vue.aideFin) html += panneauAide(rangs, prochain, semainesJalon);
+
+    html += rangs.map(function (r) {
+      var actif = vue.groupe && vue.groupe.dim === dim && vue.groupe.val === r.nom;
+
+      /* Le pourcentage s'ecrit dans le segment quand il y tient ; en dessous
+         il reste dans l'infobulle plutot que d'etre rogne. */
+      var barre = ETATS.map(function (e) {
+        if (!r[e.cle]) return '';
+        var part = (r[e.cle] / r.total) * 100;
+        var texte = part >= 11 ? Math.round(part) + ' %' : '';
+        var encre = encreSegment(e.cle);
+        return e.hachure
+          ? '<span class="hachure" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '</span>'
+          : '<span style="width:' + part.toFixed(2) + '%;background:' + e.couleur + ';color:' + encre + '">' + texte + '</span>';
+      }).join('');
+
+      // --- colonne chiffree 1 : ce qu'il faut solder, ou le rythme tenu
+      var col1;
+      if (prochain) {
+        col1 = r.restants === 0
+          ? '<span class="critique-fin doux" data-libelle="à solder/sem.">—</span>'
+          : '<span class="critique-fin" data-libelle="à solder/sem." title="' + r.restants +
+            ' plans restants à répartir sur ' + semainesJalon + ' semaines, soit ' +
+            r.requis.toFixed(1).replace('.', ',') + ' par semaine.">' + Math.ceil(r.requis) + '</span>';
+      } else {
+        col1 = '<span class="critique-fin' + (r.vitesse > 0 ? '' : ' doux') + '" data-libelle="rythme actuel">' +
+          (r.vitesse > 0 ? r.vitesse.toFixed(1).replace('.', ',') + '/sem.' : '—') + '</span>';
+      }
+
+      // --- colonne chiffree 2 : l'effort demande, seulement s'il y a un jalon
+      var col2 = '';
+      if (prochain) {
+        if (r.restants === 0) {
+          col2 = '<span class="critique-effort" data-libelle="effort demandé"><span class="v critique-ecart">tout est soldé</span></span>';
+        } else if (r.vitesse <= 0) {
+          col2 = '<span class="critique-effort" data-libelle="effort demandé"><span class="v critique-ecart arret">rien de soldé<small>aucun rythme</small></span></span>';
+        } else {
+          col2 = '<span class="critique-effort" data-libelle="effort demandé"><span class="v critique-ecart">' +
+            (r.tension > 1 ? '<b class="tard">×' + r.tension.toFixed(1).replace('.', ',') + '</b>'
+                           : '×' + r.tension.toFixed(1).replace('.', ',')) +
+            '<small>rythme ' + r.vitesse.toFixed(1).replace('.', ',') + '/sem.</small></span></span>';
+        }
+      }
+
+      // --- colonne chiffree 3 : la date d'arrivee au rythme actuel
+      var texteFin = r.restants === 0 ? 'soldé' : (r.fin === null ? '—' : etiquette(r.fin));
+      var col3 = '<span class="critique-date' + (r.fin === null && r.restants !== 0 ? ' doux' : '') +
+        '" data-libelle="fin estimée" title="' +
+        (r.restants === 0 ? 'Plus rien à solder dans ce groupe.'
+          : r.fin === null ? 'Aucun plan terminé depuis le premier relevé : pas de rythme, donc pas de date.'
+          : r.restants + ' plans restants à ' + r.vitesse.toFixed(1).replace('.', ',') +
+            ' par semaine, soit ' + (r.fin - AUJ) + ' semaines.') +
+        '"><span class="v">' + texteFin + '</span></span>';
+
+      return '<button class="critique-ligne" type="button" data-groupe="' + ech(r.nom) + '" aria-pressed="' + !!actif +
+        '" title="' + r.termine + ' terminés, ' + r.encours + ' en cours, ' + r.afaire + ' à faire, ' +
+        r.vide + ' non renseignés — cliquez pour filtrer le tableau et le graphique">' +
+        '<span class="critique-nom">' + ech(r.nom) + '</span>' +
+        '<span class="critique-total" data-libelle="plans">' + r.total + '</span>' +
+        '<span class="critique-barre">' + barre + '</span>' +
+        col1 + col2 + col3 + '</button>';
+    }).join('');
+
+    $('zone-critique').className = prochain ? '' : 'sans-jalon';
+    $('zone-critique').innerHTML = html;
+    // « par groupe » ne parlait à personne : le titre nomme la dimension choisie.
+    $('titre-groupe').textContent = 'Avancement FWD par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '');
+
+  }
+
+  var DIMENSIONS = COLONNES.filter(function (c) { return c.dim; })
+    .concat(CLE_DATE ? [{ cle: '_anciennete', titre: 'Ancienneté (' + PAR_CLE[CLE_DATE].titre.toLowerCase() + ')' }] : []);
+  var TITRE_DIM = {};
+  DIMENSIONS.forEach(function (d) { TITRE_DIM[d.cle] = d.titre; });
+
+  function remplirDims() {
+    $('dim-critique').innerHTML = DIMENSIONS.map(function (d) {
+      return '<option value="' + d.cle + '">' + ech(d.titre) + '</option>';
+    }).join('');
+    $('dim-critique').value = vue.dimCritique;
+  }
+
+  /* ============================================================ TABLEAU */
+  function visibles() {
+    return vue.ordre.filter(function (k) { return !vue.cachees[k]; }).map(function (k) { return PAR_CLE[k]; });
+  }
+  function rendreEntetes() {
+    var cols = visibles();
+    var groupes = [];
+    cols.forEach(function (c) {
+      var d = groupes[groupes.length - 1];
+      if (d && d.nom === c.groupe) d.n++; else groupes.push({ nom: c.groupe, n: 1, fige: c.fige });
+    });
+    var html = '<tr class="groupes">' + groupes.map(function (g) {
+      return '<th colspan="' + g.n + '"' + (g.fige ? ' class="col-fige"' : '') + '>' + ech(g.nom) + '</th>';
+    }).join('') + '</tr><tr class="titres">' + cols.map(function (c) {
+      var actif = vue.tri.cle === c.cle;
+      var fleche = actif ? '<svg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="' +
+        (vue.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
+        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '';
+      var poignee = c.fige ? '' : '<span class="poignee" aria-hidden="true"><svg width="7" height="12" viewBox="0 0 7 12" fill="currentColor">' +
+        '<circle cx="1.6" cy="2" r="1.1"/><circle cx="5.4" cy="2" r="1.1"/><circle cx="1.6" cy="6" r="1.1"/>' +
+        '<circle cx="5.4" cy="6" r="1.1"/><circle cx="1.6" cy="10" r="1.1"/><circle cx="5.4" cy="10" r="1.1"/></svg></span>';
+      return '<th scope="col" data-cle="' + c.cle + '"' + (c.fige ? ' class="col-fige"' : ' draggable="true"') +
+        ' aria-sort="' + (actif ? (vue.tri.asc ? 'ascending' : 'descending') : 'none') + '">' +
+        poignee + '<button type="button" data-tri="' + c.cle + '">' + ech(c.titre) + fleche + '</button></th>';
+    }).join('') + '</tr><tr class="filtres">' + cols.map(function (c) {
+      var val = vue.filtres[c.cle] || '';
+      return '<th' + (c.fige ? ' class="col-fige"' : '') + '><input type="text" data-filtre="' + c.cle + '" value="' + ech(val) +
+        '" placeholder="filtrer" data-actif="' + (!!val) + '" aria-label="Filtrer ' + ech(c.titre) + '"></th>';
+    }).join('') + '</tr>';
+    $('tete-tableau').innerHTML = html;
+    ajusterSticky();
+  }
+  function ajusterSticky() {
+    requestAnimationFrame(function () {
+      var g = document.querySelector('.groupes'), t = document.querySelector('.titres'), f = document.querySelector('.filtres');
+      if (!g || !t || !f) return;
+      var hg = g.getBoundingClientRect().height;
+      var ht = t.getBoundingClientRect().height;
+      t.querySelectorAll('th').forEach(function (th) { th.style.top = hg + 'px'; });
+      f.querySelectorAll('th').forEach(function (th) { th.style.top = (hg + ht) + 'px'; });
+    });
+  }
+  function rendreCorps(liste) {
+    var cols = visibles();
+    var rangs = liste.slice().sort(function (a, b) {
+      var k = vue.tri.cle, sens = vue.tri.asc ? 1 : -1;
+      if (k === 'avancement') return (a._pct - b._pct) * sens || a.reference.localeCompare(b.reference);
+      var va = String(a[k] == null ? '' : a[k]), vb = String(b[k] == null ? '' : b[k]);
+      if (va === '' && vb === '') return 0;
+      if (va === '') return 1;
+      if (vb === '') return -1;
+      return va.localeCompare(vb, 'fr', { numeric: true, sensitivity: 'base' }) * sens;
+    });
+
+    if (!rangs.length) {
+      $('corps-tableau').innerHTML = '<tr><td colspan="' + cols.length + '"><div class="vide-message">Aucun plan ne correspond aux filtres.</div></td></tr>';
+      $('compte').textContent = '0 plan';
+      majOmbre();
+      return;
+    }
+
+    $('corps-tableau').innerHTML = rangs.map(function (p) {
+      return '<tr>' + cols.map(function (c) {
+        var fige = c.fige ? ' col-fige' : '';
+        if (c.cle === 'avancement') {
+          var e = ETAT_PAR_CLE[p._etat];
+          var past = e.hachure ? '<span class="pastille hachure"></span>'
+            : '<span class="pastille" style="background:' + e.couleur + '"></span>';
+          return '<td class="' + fige.trim() + '"><span class="etat-cellule">' + past +
+            (p.avancement ? '<span class="num">' + ech(p.avancement) + '</span>' : '<span class="doux">non renseigné</span>') +
+            '</span></td>';
+        }
+        var val = p[c.cle];
+        var classes = (c.classe + fige).trim();
+        if (val === '' || val == null) return '<td class="' + classes + ' doux">-</td>';
+        var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
+        return '<td class="' + classes + '"' + titre + '>' + ech(val) + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+
+    $('compte').textContent = nb(rangs.length) + (rangs.length > 1 ? ' plans' : ' plan') +
+      (rangs.length !== PLANS.length ? ' sur ' + nb(PLANS.length) : '');
+    majOmbre();
+  }
+  function rendrePanneauColonnes() {
+    var groupes = [];
+    COLONNES.forEach(function (c) {
+      var d = groupes.filter(function (g) { return g.nom === c.groupe; })[0];
+      if (!d) { d = { nom: c.groupe, cols: [] }; groupes.push(d); }
+      d.cols.push(c);
+    });
+    $('panneau-colonnes').innerHTML = groupes.map(function (g) {
+      return '<div class="groupe-colonnes"><span>' + ech(g.nom) + '</span>' + g.cols.map(function (c) {
+        return '<label class="case" data-verrou="' + !!c.fige + '"><input type="checkbox" data-col="' + c.cle + '"' +
+          (vue.cachees[c.cle] ? '' : ' checked') + (c.fige ? ' disabled' : '') + '> ' + ech(c.titre) + '</label>';
+      }).join('') + '</div>';
+    }).join('') + '<button class="lien-doux" id="tout-colonnes" type="button">tout afficher</button>';
+    var caches = Object.keys(vue.cachees).filter(function (k) { return vue.cachees[k]; }).length;
+    $('compteur-colonnes').textContent = caches ? '(' + (COLONNES.length - caches) + '/' + COLONNES.length + ')' : '';
+  }
+  /* Seule la colonne d'avancement FWD interesse le suivi : une cellule vide
+     ailleurs n'est pas un defaut a traquer. */
+  var COLONNE_SUIVIE = 'avancement';
+  /* Ce qui a bougé depuis l'import précédent. Sur 186 lignes, personne ne
+     peut le voir à l'œil ; c'est pourtant la question de chaque semaine. */
+  var LOTS_DELTA = [
+    { cle: 'termine',  libelle: 'passés en terminé', etat: 'termine', classe: '' },
+    { cle: 'encours',  libelle: 'passés en cours',   etat: 'encours', classe: '' },
+    { cle: 'afaire',   libelle: 'passés à faire',    etat: 'afaire',  classe: '' },
+    { cle: 'nouveaux', libelle: 'nouveaux',          etat: null,      classe: '' },
+    { cle: 'disparus', libelle: 'disparus',          etat: null,      classe: '' }
+  ];
+
+  function rendreComparatif() {
+    var zone = $('comparatif');
+    if (!COMPARATIF) {
+      zone.innerHTML = '<span>Premier import : le comparatif appara\u00eetra au prochain.</span>';
+      return;
+    }
+    var morceaux = LOTS_DELTA.filter(function (l) { return COMPARATIF[l.cle].length; }).map(function (l) {
+      var actif = vue.refsLibelle === l.cle;
+      var e = l.etat ? ETAT_PAR_CLE[l.etat] : null;
+      var pastille = !e ? ''
+        : (e.hachure ? '<span class="pastille hachure"></span>'
+                     : '<span class="pastille" style="background:' + e.couleur + '"></span>');
+      return '<button class="puce-delta ' + l.classe + '" type="button" data-delta="' + l.cle +
+        '" aria-pressed="' + actif + '">' +
+        pastille + '<b>' + nb(COMPARATIF[l.cle].length) + '</b> ' + l.libelle + '</button>';
+    });
+    zone.innerHTML = '<span>Depuis l\u2019import du ' + etiquette(RELEVES[RELEVES.length - 2].i) + ' :</span>' +
+      (morceaux.length ? morceaux.join('') : '<span>aucun changement.</span>');
+  }
+
+  function rendreIncomplets() {
+    var col = PAR_CLE[COLONNE_SUIVIE];
+    var n = 0;
+    for (var i = 0; i < PLANS.length; i++) {
+      if (String(PLANS[i][COLONNE_SUIVIE] == null ? '' : PLANS[i][COLONNE_SUIVIE]).trim() === '') n++;
+    }
+    if (!n) { $('incomplets').innerHTML = ''; return; }
+    $('incomplets').innerHTML =
+      '<button class="puce-vide" type="button" data-vide="' + COLONNE_SUIVIE + '" aria-pressed="' + !!vue.vides[COLONNE_SUIVIE] +
+      '" title="N\u2019afficher que les plans dont ' + ech(col.titre) + ' est vide">' +
+      ech(col.titre) + ' non renseign\u00e9 <b>' + nb(n) + '</b></button>';
+  }
+
+  function majOmbre() {
+    var d = $('defile');
+    $('cadre-tableau').dataset.deborde = (d.scrollWidth - d.clientWidth - d.scrollLeft) > 4 ? 'true' : 'false';
+  }
+
+  function rendre() {
+    var liste = selection();
+    rendreAvancement(liste);
+    rendreGraphique(liste);
+    rendreCritique(liste);
+    rendreEntetes();
+    rendreCorps(liste);
+    rendrePanneauColonnes();
+    rendreComparatif();
+    rendreIncomplets();
+    $('reinit').hidden = !filtreActif();
+    planifierSauvegarde();
+  }
+
+  /* ============================================================ EVENEMENTS */
+  var minuteur = null;
+  $('recherche').addEventListener('input', function (e) {
+    var v = e.target.value;
+    clearTimeout(minuteur);
+    minuteur = setTimeout(function () { vue.recherche = v; rendre(); }, 170);
+  });
+
+  $('etats').addEventListener('click', function (e) {
+    var b = e.target.closest('.etat-btn');
+    if (!b) return;
+    vue.etat = vue.etat === b.dataset.etat ? '' : b.dataset.etat;
+    rendre();
+  });
+
+  /* Survol : on voit tout de suite lesquels, sans avoir à filtrer. */
+  var MAX_APERCU = 12;
+  $('comparatif').addEventListener('mousemove', function (e) {
+    var b = e.target.closest('.puce-delta');
+    var bulle = $('bulle');
+    if (!b || !COMPARATIF) { bulle.dataset.visible = 'false'; return; }
+    var lot = LOTS_DELTA.filter(function (l) { return l.cle === b.dataset.delta; })[0];
+    var refs = COMPARATIF[b.dataset.delta];
+    bulle.innerHTML = '<div class="tete-bulle">' + nb(refs.length) + ' ' + ech(lot.libelle) + '</div>' +
+      '<div class="liste-refs">' + refs.slice(0, MAX_APERCU).map(ech).join('<br>') +
+      (refs.length > MAX_APERCU ? '<br><span class="doux">et ' + nb(refs.length - MAX_APERCU) + ' autres\u2026</span>' : '') +
+      '</div><div class="doux" style="margin-top:6px;padding-top:5px;border-top:1px solid var(--filet)">' +
+      (vue.refsLibelle === b.dataset.delta ? 'Cliquez pour retirer le filtre' : 'Cliquez pour n\u2019afficher que ceux-l\u00e0') +
+      '</div>';
+    bulle.dataset.visible = 'true';
+    bulle.style.left = Math.min(e.clientX + 14, window.innerWidth - bulle.offsetWidth - 12) + 'px';
+    bulle.style.top = Math.min(e.clientY + 16, window.innerHeight - bulle.offsetHeight - 12) + 'px';
+  });
+  $('comparatif').addEventListener('mouseleave', function () { $('bulle').dataset.visible = 'false'; });
+
+  $('comparatif').addEventListener('click', function (e) {
+    var b = e.target.closest('.puce-delta');
+    if (!b) return;
+    var cle = b.dataset.delta;
+    if (vue.refsLibelle === cle) { vue.refs = null; vue.refsLibelle = ''; }
+    else {
+      vue.refs = {};
+      COMPARATIF[cle].forEach(function (r) { vue.refs[r] = true; });
+      vue.refsLibelle = cle;
+    }
+    rendre();
+  });
+
+  $('incomplets').addEventListener('click', function (e) {
+    var b = e.target.closest('.puce-vide');
+    if (!b) return;
+    var k = b.dataset.vide;
+    if (vue.vides[k]) delete vue.vides[k]; else vue.vides[k] = true;
+    rendre();
+  });
+
+  $('dim-critique').addEventListener('change', function (e) {
+    vue.dimCritique = e.target.value; vue.groupe = null; rendre();
+  });
+  $('zone-critique').addEventListener('click', function (e) {
+    /* Un en-tete de colonne : premier clic dans le sens naturel, deuxieme dans
+       l'autre, troisieme retour au classement par defaut. */
+    var t = e.target.closest('button[data-trig]');
+    if (t) {
+      var cle = t.dataset.trig, naturel = (cle === 'nom');
+      if (vue.triGroupe.cle !== cle) vue.triGroupe = { cle: cle, asc: naturel };
+      else if (vue.triGroupe.asc === naturel) vue.triGroupe = { cle: cle, asc: !naturel };
+      else vue.triGroupe = { cle: null, asc: false };
+      planifierSauvegarde();
+      rendreCritique(selection());
+      var repris = document.querySelector('button[data-trig="' + cle + '"]');
+      if (repris) repris.focus();
+      return;
+    }
+    if (e.target.closest('#aide-fin')) {
+      vue.aideFin = !vue.aideFin;
+      rendreCritique(selection());
+      var bouton = $('aide-fin');
+      if (bouton) bouton.focus();
+      return;
+    }
+    var b = e.target.closest('.critique-ligne');
+    if (!b) return;
+    var meme = vue.groupe && vue.groupe.dim === vue.dimCritique && vue.groupe.val === b.dataset.groupe;
+    vue.groupe = meme ? null : { dim: vue.dimCritique, val: b.dataset.groupe };
+    rendre();
+  });
+
+  $('bascule-colonnes').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var p = $('panneau-colonnes');
+    p.hidden = !p.hidden;
+    $('bascule-colonnes').setAttribute('aria-expanded', String(!p.hidden));
+  });
+  document.addEventListener('click', function (e) {
+    if (!$('panneau-colonnes').hidden && !e.target.closest('#panneau-colonnes') && !e.target.closest('#bascule-colonnes')) {
+      $('panneau-colonnes').hidden = true;
+      $('bascule-colonnes').setAttribute('aria-expanded', 'false');
+    }
+    if ($('saisie-jalon').dataset.ouvert === 'true' && !e.target.closest('#cadre-graphe')) fermerSaisie();
+  });
+  $('panneau-colonnes').addEventListener('change', function (e) {
+    var c = e.target.closest('input[data-col]');
+    if (!c) return;
+    if (c.checked) delete vue.cachees[c.dataset.col]; else vue.cachees[c.dataset.col] = true;
+    rendreEntetes(); rendreCorps(selection()); rendrePanneauColonnes();
+  });
+  $('panneau-colonnes').addEventListener('click', function (e) {
+    if (!e.target.closest('#tout-colonnes')) return;
+    vue.cachees = {};
+    rendreEntetes(); rendreCorps(selection()); rendrePanneauColonnes();
+  });
+
+  var tete = $('tete-tableau');
+  tete.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-tri]');
+    if (!b) return;
+    if (vue.tri.cle === b.dataset.tri) vue.tri.asc = !vue.tri.asc;
+    else vue.tri = { cle: b.dataset.tri, asc: true };
+    rendreEntetes(); rendreCorps(selection());
+  });
+  var minuteurFiltre = null;
+  tete.addEventListener('input', function (e) {
+    var c = e.target.closest('input[data-filtre]');
+    if (!c) return;
+    var cle = c.dataset.filtre, val = c.value;
+    c.dataset.actif = String(!!val);
+    clearTimeout(minuteurFiltre);
+    minuteurFiltre = setTimeout(function () {
+      if (val) vue.filtres[cle] = val; else delete vue.filtres[cle];
+      var liste = selection();
+      rendreAvancement(liste); rendreGraphique(liste); rendreCritique(liste); rendreCorps(liste);
+      $('reinit').hidden = !filtreActif();
+    }, 170);
+  });
+
+  /* L ordre cible est calcule APRES le retrait de la colonne source,
+     sinon l insertion se decale d un cran. */
+  function reordonner(liste, source, cible) {
+    var de = liste.indexOf(source), vers = liste.indexOf(cible);
+    if (de === -1 || vers === -1 || de === vers) return liste;
+    var copie = liste.slice();
+    var col = copie.splice(de, 1)[0];
+    var pos = copie.indexOf(cible);
+    copie.splice(de < vers ? pos + 1 : pos, 0, col);
+    return copie;
+  }
+  var cleGlissee = null;
+  tete.addEventListener('dragstart', function (e) {
+    var th = e.target.closest('th[draggable]');
+    if (!th) return;
+    cleGlissee = th.dataset.cle;
+    th.classList.add('glisse');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', cleGlissee);
+  });
+  tete.addEventListener('dragover', function (e) {
+    var th = e.target.closest('tr.titres th');
+    if (!th || !cleGlissee || th.dataset.cle === cleGlissee) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move'; th.classList.add('cible');
+  });
+  tete.addEventListener('dragleave', function (e) {
+    var th = e.target.closest('tr.titres th');
+    if (th) th.classList.remove('cible');
+  });
+  tete.addEventListener('drop', function (e) {
+    var th = e.target.closest('tr.titres th');
+    if (!th || !cleGlissee) return;
+    e.preventDefault(); th.classList.remove('cible');
+    vue.ordre = reordonner(vue.ordre, cleGlissee, th.dataset.cle);
+    cleGlissee = null;
+    rendreEntetes(); rendreCorps(selection());
+  });
+  tete.addEventListener('dragend', function () {
+    cleGlissee = null;
+    tete.querySelectorAll('.glisse, .cible').forEach(function (el) { el.classList.remove('glisse', 'cible'); });
+  });
+
+  $('reinit').addEventListener('click', function () {
+    vue.recherche = ''; vue.etat = ''; vue.filtres = {}; vue.groupe = null; vue.vides = {};
+    vue.refs = null; vue.refsLibelle = '';
+    $('recherche').value = '';
+    rendre();
+  });
+  $('defile').addEventListener('scroll', majOmbre, { passive: true });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') fermerSaisie();
+    if (e.key === '/' && document.activeElement !== $('recherche')) {
+      e.preventDefault(); $('recherche').focus(); $('recherche').select();
+    }
+  });
+  var minuteurTaille = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(minuteurTaille);
+    minuteurTaille = setTimeout(function () {
+      fermerSaisie(); rendreGraphique(selection()); ajusterSticky(); majOmbre();
+      alignerEtats(compte(selection()));
+    }, 160);
+  });
+
+  chargerPrefs();
+  remplirDims();
+  rendre();
 })();
 </script>

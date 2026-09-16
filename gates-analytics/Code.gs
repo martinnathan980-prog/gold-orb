@@ -1,13 +1,17 @@
 /**
- * GATES Analytics — Suivi des plans d'intégration électrique
- * ============================================================
+ * Suivi FWD — tableau de bord des plans d'intégration électrique
+ * =============================================================
  * Côté serveur (Google Apps Script).
  *
- * Responsabilités :
- *   - lire la feuille de données (détection automatique des en-têtes et des groupes) ;
- *   - classer l'avancement FWD de chaque ligne ;
- *   - entretenir un historique hebdomadaire réel (feuille « Historique_FWD ») ;
- *   - stocker les jalons de façon persistante (propriétés du document).
+ * Ce fichier ne fait que quatre choses :
+ *   1. lire l'onglet de données et en déduire un modèle de colonnes
+ *      (aucun nom de colonne n'est écrit en dur : tout vient de l'en-tête) ;
+ *   2. classer l'avancement FWD de chaque ligne en quatre états ;
+ *   3. entretenir un historique hebdomadaire réel (onglet « Historique_FWD ») ;
+ *   4. stocker les jalons, partagés par tous ceux qui ouvrent le classeur.
+ *
+ * La page est rendue d'une traite : Index.html injecte le paquet de données
+ * dans la page au moment de l'évaluation du modèle, sans aller-retour.
  */
 
 // =====================================================================
@@ -30,42 +34,56 @@ const CONFIG = {
   MOTS_CLES_ENTETE: ['reference ud', 'reference', 'ata', 'nom installation'],
 
   /** Clé de stockage des jalons dans les propriétés du document. */
-  CLE_JALONS: 'GATES_JALONS',
+  CLE_JALONS: 'SUIVI_FWD_JALONS',
 
   /** Nombre maximum de jalons conservés. */
   MAX_JALONS: 40,
 
-  /**
-   * true = la page peut être embarquée dans n'importe quel site (Google Sites, iframe tierce).
-   * false = protection anti-clickjacking (recommandé si l'appli est ouverte directement).
-   */
-  AUTORISER_INTEGRATION_EXTERNE: false,
+  /** Au-delà, une colonne est considérée comme un identifiant, pas une catégorie. */
+  MAX_VALEURS_DIMENSION: 40,
+
+  /** Nombre maximum de dimensions proposées dans « Grouper par ». */
+  MAX_DIMENSIONS: 8,
 
   /**
-   * Le rythme se mesure sur TOUS les intervalles observés depuis le premier
-   * relevé, pas sur une fenêtre fixe : la saisie est irrégulière (une semaine
-   * un lot entier, la suivante rien), et une moyenne glissante mesurerait
-   * surtout la date du dernier lot.
+   * true = la page peut être embarquée dans n'importe quel site (Google Sites).
+   * false = protection anti-clickjacking (recommandé si l'appli est ouverte directement).
    */
+  AUTORISER_INTEGRATION_EXTERNE: false
 };
 
 const ENTETES_HISTORIQUE = [
   'Semaine', 'Date', 'Total', 'Terminés', 'En cours', 'À faire', 'Non renseignés',
-  'Par ATA', 'Plans'
+  'Par dimension', 'Plans'
 ];
 
+/** Une cellule de feuille de calcul ne tient pas plus de 50 000 caractères. */
+const MAX_CARACTERES_CELLULE = 45000;
+
 // =====================================================================
-//  POINT D'ENTRÉE WEB
+//  POINTS D'ENTRÉE
 // =====================================================================
+
+/** Déploiement en application web. */
 function doGet() {
   const page = HtmlService.createTemplateFromFile('Index')
     .evaluate()
-    .setTitle('GATES Analytics')
+    .setTitle('Suivi FWD')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 
   return CONFIG.AUTORISER_INTEGRATION_EXTERNE
     ? page.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     : page;
+}
+
+/** Ouverture depuis le classeur, en fenêtre. */
+function ouvrirTableauDeBord() {
+  const page = HtmlService.createTemplateFromFile('Index')
+    .evaluate()
+    .setTitle('Suivi FWD')
+    .setWidth(2000)
+    .setHeight(1400);
+  SpreadsheetApp.getUi().showModalDialog(page, 'Suivi FWD');
 }
 
 /** Permet d'inclure Styles.html / Javascript.html depuis Index.html. */
@@ -76,12 +94,14 @@ function include(nomFichier) {
 /** Menu ajouté au classeur à l'ouverture. */
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu('GATES Analytics')
-    .addItem('Enregistrer un instantané maintenant', 'enregistrerInstantaneHebdo')
-    .addItem('Activer le suivi hebdomadaire automatique', 'installerSuiviHebdomadaire')
-    .addItem('Désactiver le suivi automatique', 'desinstallerSuiviHebdomadaire')
+    .createMenu('Suivi FWD')
+    .addItem('Ouvrir le tableau de bord', 'ouvrirTableauDeBord')
     .addSeparator()
-    .addItem('Supprimer le dernier relevé', 'supprimerDernierReleve')
+    .addItem('Archiver le relevé de cette semaine', 'enregistrerInstantaneHebdo')
+    .addItem('Supprimer le relevé de cette semaine', 'supprimerDernierReleve')
+    .addSeparator()
+    .addItem('Activer l\'archivage automatique (vendredi 17 h)', 'installerSuiviHebdomadaire')
+    .addItem('Désactiver l\'archivage automatique', 'desinstallerSuiviHebdomadaire')
     .addToUi();
 }
 
@@ -102,44 +122,26 @@ function normaliser(valeur) {
 }
 
 /**
- * Convertit une cellule affichée en nombre.
- * Gère « 75 % », « 1 234,5 », l'espace insécable et la virgule décimale.
- * Renvoie NaN si la valeur n'est pas numérique.
- */
-function valeurNumerique(valeur) {
-  if (valeur === null || valeur === undefined) return NaN;
-  const texte = valeur
-    .toString()
-    .replace(/[\s  ]/g, '')
-    .replace(/%$/, '')
-    .replace(',', '.');
-  if (texte === '' || !/^[-+]?\d*\.?\d+$/.test(texte)) return NaN;
-  return parseFloat(texte);
-}
-
-/**
- * Classe un avancement FWD : 'termine' | 'encours' | 'vide'.
+ * Classe une valeur d'avancement FWD en quatre états.
  *
- * Règle numérique d'abord (>= 100 terminé, <= 0 vide), sinon mots-clés.
- * Évite le faux positif de l'ancienne version où « 1000 » contenait « 100 ».
+ * « À faire » est une valeur saisie ; une cellule vide est un défaut de saisie.
+ * Les confondre masquerait le second, qui est précisément ce qu'on veut voir.
  *
- * ⚠ Cette fonction est volontairement dupliquée à l'identique dans Javascript.html :
- *    le serveur l'utilise pour les instantanés, le client pour les KPI filtrés.
- *    Toute modification doit être reportée des deux côtés.
+ * ⚠ Cette fonction est volontairement dupliquée à l'identique dans
+ *    Javascript.html : le serveur s'en sert pour archiver les relevés, le
+ *    client pour les compteurs filtrés. Toute modification va des deux côtés.
  */
 function classerFWD(valeur) {
   const s = normaliser(valeur);
-  if (s === '' || s === '-' || s === 'na' || s === 'n/a' ||
-      s.indexOf('non renseigne') !== -1 || s.indexOf('a faire') !== -1) {
-    return 'vide';
-  }
-  const n = valeurNumerique(s);
+  if (s === '' || s === '-') return 'vide';
+  if (s.indexOf('a faire') !== -1 || s === 'non commence') return 'afaire';
+  const n = parseFloat(s.replace(/[\s%]/g, '').replace(',', '.'));
   if (!isNaN(n)) {
     if (n >= 100) return 'termine';
-    if (n <= 0) return 'vide';
+    if (n <= 0) return 'afaire';
     return 'encours';
   }
-  if (/(termine|acheve|cloture|clos|fini|valide|done|complete|ok)/.test(s)) return 'termine';
+  if (/(termine|acheve|cloture|solde|fini|ok)/.test(s)) return 'termine';
   return 'encours';
 }
 
@@ -162,21 +164,31 @@ function normaliserSemaine(texte) {
   return m[1] + '-S' + (semaine < 10 ? '0' : '') + semaine;
 }
 
+/** Identifiant de colonne stable, tiré du libellé d'en-tête. */
+function cleDepuisEntete(titre, deja) {
+  let base = normaliser(titre).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  if (!base) base = 'colonne';
+  if (/^\d/.test(base)) base = 'c_' + base;
+  let cle = base, n = 2;
+  while (deja[cle]) { cle = base + '_' + n; n++; }
+  deja[cle] = true;
+  return cle;
+}
+
 // =====================================================================
 //  LECTURE DE LA FEUILLE
 // =====================================================================
 
 /**
  * Renvoie la feuille de données.
- * L'ancienne version utilisait getActiveSheet() : le tableau de bord lisait
- * alors l'onglet sur lequel l'utilisateur avait cliqué en dernier — y compris
- * « Historique_FWD ». On résout désormais un onglet déterministe.
+ * On résout un onglet déterministe plutôt que getActiveSheet() : sinon le
+ * tableau de bord lirait l'onglet cliqué en dernier, « Historique_FWD » compris.
  */
 function getFeuilleDonnees(classeur) {
   if (CONFIG.FEUILLE_DONNEES) {
     const nommee = classeur.getSheetByName(CONFIG.FEUILLE_DONNEES);
     if (!nommee) {
-      throw new Error("L'onglet « " + CONFIG.FEUILLE_DONNEES + " » est introuvable.");
+      throw new Error('L\'onglet « ' + CONFIG.FEUILLE_DONNEES + ' » est introuvable.');
     }
     return nommee;
   }
@@ -207,10 +219,7 @@ function detecterLigneEntete(donnees) {
   return 0;
 }
 
-/**
- * Propage les groupes fusionnés vers la droite.
- * Fait côté serveur une seule fois, au lieu d'être recalculé par le client.
- */
+/** Propage les groupes fusionnés (la ligne au-dessus de l'en-tête) vers la droite. */
 function propagerGroupes(groupes, nbColonnes) {
   const resultat = new Array(nbColonnes);
   let dernier = '';
@@ -222,15 +231,13 @@ function propagerGroupes(groupes, nbColonnes) {
   return resultat;
 }
 
-/**
- * Index de la colonne « Avancement FWD ».
- * Recherche croisée groupe + colonne, du plus précis au plus permissif.
- */
+/** Index de la colonne d'avancement FWD, du critère le plus précis au plus large. */
 function trouverIndexFWD(entetes, groupes) {
   const criteres = [
     function (col, grp) { return col.indexOf('avancement') !== -1 && (grp.indexOf('fwd') !== -1 || col.indexOf('fwd') !== -1); },
     function (col, grp) { return col.indexOf('realisation') !== -1 && (grp.indexOf('fwd') !== -1 || col.indexOf('fwd') !== -1); },
-    function (col) { return col.indexOf('fwd') !== -1; }
+    function (col) { return col.indexOf('fwd') !== -1; },
+    function (col) { return col.indexOf('avancement') !== -1; }
   ];
   for (let c = 0; c < criteres.length; c++) {
     for (let i = 0; i < entetes.length; i++) {
@@ -238,6 +245,41 @@ function trouverIndexFWD(entetes, groupes) {
     }
   }
   return -1;
+}
+
+/** Index de la colonne qui identifie un plan : elle sera figée à gauche. */
+function trouverIndexReference(entetes) {
+  const motifs = ['reference ud', 'reference', 'ref', 'identifiant', 'numero de plan', 'plan'];
+  for (let m = 0; m < motifs.length; m++) {
+    for (let i = 0; i < entetes.length; i++) {
+      if (normaliser(entetes[i]).indexOf(motifs[m]) !== -1) return i;
+    }
+  }
+  return 0;
+}
+
+/** Index d'une colonne de date de création, pour la dimension « ancienneté ». */
+function trouverIndexDate(entetes, lignes) {
+  for (let i = 0; i < entetes.length; i++) {
+    const n = normaliser(entetes[i]);
+    if (n.indexOf('creation') === -1 && n.indexOf('ouverture') === -1) continue;
+    if (colonneRessembleAUneDate(lignes, i)) return i;
+  }
+  for (let j = 0; j < entetes.length; j++) {
+    if (normaliser(entetes[j]).indexOf('date') !== -1 && colonneRessembleAUneDate(lignes, j)) return j;
+  }
+  return -1;
+}
+
+function colonneRessembleAUneDate(lignes, index) {
+  let vues = 0, dates = 0;
+  for (let i = 0; i < lignes.length && vues < 40; i++) {
+    const v = String(lignes[i][index] || '').trim();
+    if (!v) continue;
+    vues++;
+    if (/\d{4}[-\/.]\d{1,2}|\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4}/.test(v)) dates++;
+  }
+  return vues > 0 && dates / vues >= 0.7;
 }
 
 /** Une ligne est significative si au moins une cellule est renseignée. */
@@ -249,68 +291,165 @@ function ligneNonVide(ligne) {
 }
 
 // =====================================================================
-//  API APPELÉE PAR LE CLIENT
+//  MODÈLE DE COLONNES
+//  Rien n'est écrit en dur : le nom, le groupe, le type et le rôle de chaque
+//  colonne se déduisent de l'en-tête et du contenu.
 // =====================================================================
 
+function construireModele() {
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  const feuille = getFeuilleDonnees(classeur);
+  const donnees = feuille.getDataRange().getDisplayValues();
+  if (donnees.length === 0) {
+    throw new Error('La feuille « ' + feuille.getName() + ' » est vide.');
+  }
+
+  const indexEntete = detecterLigneEntete(donnees);
+  const entetes = donnees[indexEntete].map(function (e) { return String(e).trim(); });
+  const nbColonnes = entetes.length;
+  const groupes = propagerGroupes(indexEntete > 0 ? donnees[indexEntete - 1] : [], nbColonnes);
+  const lignes = donnees.slice(indexEntete + 1).filter(ligneNonVide);
+
+  const iFWD = trouverIndexFWD(entetes, groupes);
+  const iRef = trouverIndexReference(entetes);
+  const iDate = trouverIndexDate(entetes, lignes);
+
+  // Statistiques par colonne : longueur moyenne et nombre de valeurs distinctes.
+  const stats = [];
+  for (let c = 0; c < nbColonnes; c++) {
+    const distinctes = {};
+    let nDistinctes = 0, somme = 0, remplies = 0;
+    for (let l = 0; l < lignes.length; l++) {
+      const v = String(lignes[l][c] === undefined ? '' : lignes[l][c]).trim();
+      if (!v) continue;
+      remplies++;
+      somme += v.length;
+      if (!distinctes[v]) { distinctes[v] = true; nDistinctes++; }
+    }
+    stats.push({
+      distinctes: nDistinctes,
+      remplies: remplies,
+      longueurMoyenne: remplies ? somme / remplies : 0
+    });
+  }
+
+  const deja = {};
+  const colonnes = [];
+  let cleFWD = null, cleRef = null, cleDate = null;
+  let nbDims = 0;
+
+  for (let i = 0; i < nbColonnes; i++) {
+    const titre = entetes[i] || ('Colonne ' + (i + 1));
+    const cle = (i === iRef) ? 'reference'
+              : (i === iFWD) ? 'avancement'
+              : cleDepuisEntete(titre, deja);
+    if (i === iRef) { deja.reference = true; cleRef = cle; }
+    if (i === iFWD) { deja.avancement = true; cleFWD = cle; }
+    if (i === iDate) cleDate = cle;
+
+    const s = stats[i];
+    let classe = '';
+    if (i === iRef) classe = 'ref';
+    else if (s.longueurMoyenne > 28) classe = 'large';
+    else if (s.longueurMoyenne <= 12) classe = 'num';
+
+    /* Une colonne est une « dimension » si elle se comporte comme une
+       catégorie : assez de valeurs pour distinguer, assez peu pour regrouper. */
+    const categorielle = i !== iRef && i !== iFWD && i !== iDate &&
+      s.distinctes >= 2 &&
+      s.distinctes <= CONFIG.MAX_VALEURS_DIMENSION &&
+      s.distinctes <= Math.max(2, lignes.length / 2) &&
+      s.longueurMoyenne <= 28 &&
+      nbDims < CONFIG.MAX_DIMENSIONS;
+    if (categorielle) nbDims++;
+
+    const col = { cle: cle, groupe: groupes[i] || '', titre: titre, classe: classe };
+    if (i === iRef) col.fige = true;
+    if (categorielle) col.dim = true;
+    colonnes.push(col);
+  }
+
+  const plans = lignes.map(function (ligne, n) {
+    const p = {};
+    for (let i = 0; i < nbColonnes; i++) {
+      p[colonnes[i].cle] = String(ligne[i] === undefined ? '' : ligne[i]).trim();
+    }
+    // Une référence vide rendrait le comparatif faux : on en fabrique une stable.
+    if (!p.reference) p.reference = 'ligne-' + (n + 1);
+    // Sans colonne d'avancement reconnue, tout est « non renseigné », et le
+    // message d'avertissement dit pourquoi plutôt que de laisser deviner.
+    if (cleFWD === null) p.avancement = '';
+    return p;
+  });
+
+  const clesDim = colonnes.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; });
+
+  return {
+    feuille: feuille.getName(),
+    colonnes: colonnes,
+    plans: plans,
+    cleDate: cleDate,
+    clesDim: clesDim,
+    dimParDefaut: choisirDimensionParDefaut(colonnes, clesDim),
+    avertissement: cleFWD === null
+      ? 'Aucune colonne d\'avancement FWD n\'a été reconnue dans l\'en-tête.'
+      : ''
+  };
+}
+
 /**
- * Charge tout ce dont la page a besoin, en un seul aller-retour.
- * Ne provoque aucune écriture : la lecture du tableau de bord ne doit pas
- * modifier le classeur (l'ancienne version écrivait l'historique à chaque ouverture).
+ * Dimension ouverte par défaut dans « Avancement FWD par… ».
+ * C'est le découpage métier qu'on regarde en premier — l'ATA, à défaut le
+ * lot ou la zone —, pas simplement la colonne la plus à gauche.
  */
-function getDonneesPlans() {
+function choisirDimensionParDefaut(colonnes, clesDim) {
+  if (!clesDim.length) return '';
+  const motifs = ['ata', 'chapitre', 'lot', 'zone', 'section', 'systeme'];
+  for (let m = 0; m < motifs.length; m++) {
+    for (let i = 0; i < colonnes.length; i++) {
+      if (clesDim.indexOf(colonnes[i].cle) === -1) continue;
+      if (normaliser(colonnes[i].titre).indexOf(motifs[m]) !== -1) return colonnes[i].cle;
+    }
+  }
+  return clesDim[0];
+}
+
+// =====================================================================
+//  PAQUET ENVOYÉ À LA PAGE
+// =====================================================================
+
+function getDonneesPourClient() {
   try {
     const classeur = SpreadsheetApp.getActiveSpreadsheet();
-    const feuille = getFeuilleDonnees(classeur);
-    const donnees = feuille.getDataRange().getDisplayValues();
-
-    if (donnees.length === 0) {
-      return paquetVide(feuille.getName(), 'La feuille « ' + feuille.getName() + ' » est vide.');
-    }
-
-    const indexEntete = detecterLigneEntete(donnees);
-    const entetes = donnees[indexEntete].map(function (e) { return String(e).trim(); });
-    const nbColonnes = entetes.length;
-    const groupes = propagerGroupes(indexEntete > 0 ? donnees[indexEntete - 1] : [], nbColonnes);
-    const lignes = donnees.slice(indexEntete + 1).filter(ligneNonVide);
-    const indexFWD = trouverIndexFWD(entetes, groupes);
-
+    const modele = construireModele();
     return {
       ok: true,
-      message: '',
-      feuille: feuille.getName(),
+      message: modele.avertissement,
+      feuille: modele.feuille,
       genereLe: new Date().toISOString(),
-      groupes: groupes,
-      entetes: entetes,
-      lignes: lignes,
-      indexFWD: indexFWD,
-      historique: getHistorique(classeur),
+      colonnes: modele.colonnes,
+      cleDate: modele.cleDate,
+      dimParDefaut: modele.dimParDefaut,
+      plans: modele.plans,
+      releves: getHistorique(classeur),
       jalons: getJalons()
     };
   } catch (err) {
-    return paquetVide('', err && err.message ? err.message : String(err));
+    return {
+      ok: false,
+      message: err && err.message ? err.message : String(err),
+      feuille: '',
+      genereLe: new Date().toISOString(),
+      colonnes: [], cleDate: null, dimParDefaut: '', plans: [], releves: [], jalons: []
+    };
   }
-}
-
-function paquetVide(nomFeuille, message) {
-  return {
-    ok: false,
-    message: message,
-    feuille: nomFeuille,
-    genereLe: new Date().toISOString(),
-    groupes: [],
-    entetes: [],
-    lignes: [],
-    indexFWD: -1,
-    historique: [],
-    jalons: getJalons()
-  };
 }
 
 // =====================================================================
 //  HISTORIQUE
 //  L'export ne contient que l'état du jour : on ne sait pas quand un plan est
 //  passé à 100 %. L'historique ne peut donc pas être reconstitué, seulement
-//  accumulé — un relevé par semaine ISO, écrit à chaque import.
+//  accumulé — un relevé par semaine ISO. Rien n'est jamais supprimé.
 // =====================================================================
 
 function getFeuilleHistorique(classeur, creerSiAbsente) {
@@ -344,7 +483,7 @@ function getHistorique(classeur) {
       encours: Number(ligne[4]) || 0,
       afaire: Number(ligne[5]) || 0,
       vide: Number(ligne[6]) || 0,
-      parAta: analyserJson(ligne[7]),
+      groupes: analyserJson(ligne[7]) || {},
       plans: analyserJson(ligne[8])
     };
   });
@@ -357,42 +496,53 @@ function analyserJson(valeur) {
   try { return JSON.parse(valeur); } catch (err) { return null; }
 }
 
-/** Compte l'état du jour, globalement et par ATA, et relève chaque plan. */
+/** Ancienneté d'un plan, en toutes lettres — même découpage que côté page. */
+function ancienneteDepuis(valeur, reference) {
+  const m = /(\d{4})[-\/.](\d{1,2})/.exec(String(valeur || ''));
+  if (!m) return '—';
+  const mois = (reference.getUTCFullYear() - Number(m[1])) * 12 +
+               (reference.getUTCMonth() + 1 - Number(m[2]));
+  if (mois >= 6) return 'plus de 6 mois';
+  if (mois >= 3) return '3 à 6 mois';
+  if (mois >= 1) return '1 à 3 mois';
+  return 'moins d’un mois';
+}
+
+/** Compte l'état du jour : global, par dimension, et plan par plan. */
 function compterAvancements() {
-  const classeur = SpreadsheetApp.getActiveSpreadsheet();
-  const feuille = getFeuilleDonnees(classeur);
-  const donnees = feuille.getDataRange().getDisplayValues();
-  const vide = { total: 0, termine: 0, encours: 0, afaire: 0, vide: 0, parAta: {}, plans: {} };
-  if (donnees.length === 0) return vide;
+  const modele = construireModele();
+  const clesDim = modele.clesDim.concat(modele.cleDate ? ['_anciennete'] : []);
+  const maintenant = new Date();
+  const reference = new Date(Date.UTC(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate()));
 
-  const indexEntete = detecterLigneEntete(donnees);
-  const entetes = donnees[indexEntete];
-  const groupes = propagerGroupes(indexEntete > 0 ? donnees[indexEntete - 1] : [], entetes.length);
-  const indexFWD = trouverIndexFWD(entetes, groupes);
-  const indexRef = entetes.findIndex(function (e) { return normaliser(e).indexOf('reference') !== -1; });
-  const indexAta = entetes.findIndex(function (e) {
-    const n = normaliser(e);
-    return n === 'ata' || n.indexOf('chapitre') !== -1;
-  });
-  const lignes = donnees.slice(indexEntete + 1).filter(ligneNonVide);
+  const compte = {
+    total: modele.plans.length,
+    termine: 0, encours: 0, afaire: 0, vide: 0,
+    groupes: {}, plans: {}
+  };
+  clesDim.forEach(function (d) { compte.groupes[d] = {}; });
 
-  const compte = { total: lignes.length, termine: 0, encours: 0, afaire: 0, vide: 0, parAta: {}, plans: {} };
-
-  lignes.forEach(function (ligne, n) {
-    const brut = indexFWD === -1 ? '' : ligne[indexFWD];
-    const etat = classerFWD(brut);
+  modele.plans.forEach(function (p) {
+    const etat = classerFWD(p.avancement);
     compte[etat]++;
-
-    const reference = indexRef === -1 ? 'ligne-' + (n + 1) : String(ligne[indexRef]).trim();
-    if (reference) compte.plans[reference] = String(brut).trim();
-
-    const ata = indexAta === -1 ? '—' : (String(ligne[indexAta]).trim() || '—');
-    if (!compte.parAta[ata]) compte.parAta[ata] = { total: 0, termine: 0 };
-    compte.parAta[ata].total++;
-    if (etat === 'termine') compte.parAta[ata].termine++;
+    compte.plans[p.reference] = String(p.avancement || '');
+    clesDim.forEach(function (d) {
+      const v = String((d === '_anciennete'
+        ? ancienneteDepuis(p[modele.cleDate], reference)
+        : p[d]) || '—');
+      if (!compte.groupes[d][v]) compte.groupes[d][v] = { total: 0, termine: 0 };
+      compte.groupes[d][v].total++;
+      if (etat === 'termine') compte.groupes[d][v].termine++;
+    });
   });
 
   return compte;
+}
+
+/** Sérialise sans jamais dépasser ce qu'une cellule peut contenir. */
+function jsonTenable(valeur) {
+  const texte = JSON.stringify(valeur);
+  return texte.length > MAX_CARACTERES_CELLULE ? '' : texte;
 }
 
 /**
@@ -407,8 +557,8 @@ function enregistrerInstantaneHebdo() {
   const ligne = [
     semaine, new Date(), compte.total, compte.termine, compte.encours,
     compte.afaire, compte.vide,
-    JSON.stringify(compte.parAta),
-    JSON.stringify(compte.plans)
+    jsonTenable(compte.groupes),
+    jsonTenable(compte.plans)
   ];
 
   const feuille = getFeuilleHistorique(classeur, true);
@@ -421,11 +571,8 @@ function enregistrerInstantaneHebdo() {
     }
   }
 
-  if (indexLigne === -1) {
-    feuille.appendRow(ligne);
-  } else {
-    feuille.getRange(indexLigne, 1, 1, ligne.length).setValues([ligne]);
-  }
+  if (indexLigne === -1) feuille.appendRow(ligne);
+  else feuille.getRange(indexLigne, 1, 1, ligne.length).setValues([ligne]);
 
   return { ok: true, semaine: semaine, compte: compte };
 }
@@ -458,6 +605,7 @@ function installerSuiviHebdomadaire() {
     .onWeekDay(ScriptApp.WeekDay.FRIDAY)
     .atHour(17)
     .create();
+  SpreadsheetApp.getUi().alert('Archivage automatique activé : chaque vendredi vers 17 h.');
 }
 
 function desinstallerSuiviHebdomadaire() {
@@ -481,27 +629,27 @@ function getJalons() {
   }
 }
 
-function sauvegarderJalons(liste) {
+/**
+ * Remplace la liste entière. La page envoie toujours son état complet :
+ * poser, déplacer et retirer passent par le même chemin, donc il n'y a pas
+ * de demi-état possible entre le classeur et l'écran.
+ */
+function sauverJalons(liste) {
+  const propres = (Array.isArray(liste) ? liste : [])
+    .map(function (j) {
+      const semaine = normaliserSemaine(j && j.semaine);
+      if (!semaine) return null;
+      return {
+        id: (j && j.id) ? String(j.id) : Utilities.getUuid(),
+        semaine: semaine,
+        texte: String((j && j.texte) || 'Jalon').trim().slice(0, 60) || 'Jalon'
+      };
+    })
+    .filter(function (j) { return j !== null; })
+    .sort(function (a, b) { return a.semaine < b.semaine ? -1 : (a.semaine > b.semaine ? 1 : 0); })
+    .slice(0, CONFIG.MAX_JALONS);
+
   PropertiesService.getDocumentProperties()
-    .setProperty(CONFIG.CLE_JALONS, JSON.stringify(liste.slice(0, CONFIG.MAX_JALONS)));
-  return liste;
-}
-
-function ajouterJalon(semaineBrute, texte) {
-  const semaine = normaliserSemaine(semaineBrute);
-  if (!semaine) {
-    throw new Error('Semaine invalide : utilisez le format AAAA-Sxx (ex. 2026-S38).');
-  }
-  const libelle = String(texte || '').trim().slice(0, 60) || 'Jalon';
-  const jalons = getJalons();
-  if (jalons.length >= CONFIG.MAX_JALONS) {
-    throw new Error('Nombre maximum de jalons atteint (' + CONFIG.MAX_JALONS + ').');
-  }
-  jalons.push({ id: Utilities.getUuid(), semaine: semaine, texte: libelle });
-  jalons.sort(function (a, b) { return a.semaine < b.semaine ? -1 : (a.semaine > b.semaine ? 1 : 0); });
-  return sauvegarderJalons(jalons);
-}
-
-function supprimerJalon(id) {
-  return sauvegarderJalons(getJalons().filter(function (j) { return j.id !== id; }));
+    .setProperty(CONFIG.CLE_JALONS, JSON.stringify(propres));
+  return propres;
 }

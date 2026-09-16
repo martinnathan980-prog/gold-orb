@@ -464,7 +464,7 @@ table.plans thead .col-fige { z-index: 6; }
   <header class="masthead">
     <h1>Suivi FWD</h1>
     <div class="semaine">
-      <span><b>Semaine 38</b></span>
+      <span><b id="num-semaine">—</b></span>
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
     </div>
@@ -596,43 +596,14 @@ table.plans thead .col-fige { z-index: 6; }
     var s = Math.ceil(((t.getTime() - debut) / 86400000 + 1) / 7);
     return t.getUTCFullYear() + '-S' + (s < 10 ? '0' : '') + s;
   }
-  var BASE = lundiDeLaSemaine(2026, 34);
-  var PREMIER_RELEVE = 34;          // semaine ISO du premier import
-  var NB_RELEVES = 5;               // nombre d'imports deja faits (jeu d'exemple)
-  var AUJ = NB_RELEVES - 1;
-  function dateDe(i) { var d = new Date(BASE.getTime()); d.setUTCDate(BASE.getUTCDate() + i * 7); return d; }
-  function etiquette(i) { return etiquetteISO(dateDe(i)); }
-
-  var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
-              'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-  (function afficherSemaine() {
-    var lundi = dateDe(AUJ);
-    var dimanche = new Date(lundi.getTime()); dimanche.setUTCDate(lundi.getUTCDate() + 6);
-    var m1 = MOIS[lundi.getUTCMonth()], m2 = MOIS[dimanche.getUTCMonth()];
-    $('dates-semaine').textContent = m1 === m2
-      ? 'du ' + lundi.getUTCDate() + ' au ' + dimanche.getUTCDate() + ' ' + m2 + ' ' + dimanche.getUTCFullYear()
-      : 'du ' + lundi.getUTCDate() + ' ' + m1 + ' au ' + dimanche.getUTCDate() + ' ' + m2 + ' ' + dimanche.getUTCFullYear();
-  })();
-
-  /* ============================================================
-     COLONNES - dans l'application reelle, cette liste vient de la
-     ligne d'en-tete de l'export : rien n'est presuppose ici.
-     ============================================================ */
-  var COLONNES = [
-    { cle: 'reference',   groupe: 'Informations principales', titre: 'Référence UD', classe: 'ref', fige: true },
-    { cle: 'installation',groupe: 'Informations principales', titre: 'Nom installation', classe: 'large' },
-    { cle: 'ata',         groupe: 'Informations principales', titre: 'ATA', classe: 'num', dim: true },
-    { cle: 'sequence',    groupe: 'Informations principales', titre: 'Séquence', classe: 'num', dim: true },
-    { cle: 'ecp',         groupe: 'Définition du plan', titre: 'ECP', classe: 'ref' },
-    { cle: 'definition',  groupe: 'Définition du plan', titre: 'Validation définition électrique', classe: '', dim: true },
-    { cle: 'ibg',         groupe: 'Définition du plan', titre: 'Statut IBG', classe: '', dim: true },
-    { cle: 'creation',    groupe: 'Définition du plan', titre: 'Date création', classe: 'num' },
-    { cle: 'avancement',  groupe: 'FWD', titre: 'Avancement FWD', classe: '' },
-    { cle: 'responsable', groupe: 'FWD', titre: 'Resp.', classe: 'num', dim: true },
-    { cle: 'commentaire', groupe: 'FWD', titre: 'Commentaire', classe: 'large doux' }
-  ];
-  var PAR_CLE = {};
-  COLONNES.forEach(function (c) { PAR_CLE[c.cle] = c; });
+  /** « 2026-S34 » -> le lundi de cette semaine. null si le libellé est illisible. */
+  function lundiDeLibelle(libelle) {
+    var m = /^\s*(\d{4})\s*-?\s*[sS]\s*(\d{1,2})\s*$/.exec(String(libelle || ''));
+    if (!m) return null;
+    var s = parseInt(m[2], 10);
+    if (s < 1 || s > 53) return null;
+    return lundiDeLaSemaine(parseInt(m[1], 10), s);
+  }
 
   /* ============================================================
      LES QUATRE ETATS
@@ -654,6 +625,9 @@ table.plans thead .col-fige { z-index: 6; }
   var ETAT_PAR_CLE = {};
   ETATS.forEach(function (e) { ETAT_PAR_CLE[e.cle] = e; });
 
+  /* ⚠ Cette fonction existe à l'identique côté serveur (Code.gs) : le serveur
+     s'en sert pour archiver les relevés, le client pour les compteurs filtrés.
+     Toute modification doit être reportée des deux côtés. */
   function classer(valeur) {
     var s = norm(valeur);
     if (s === '' || s === '-') return 'vide';
@@ -675,91 +649,32 @@ table.plans thead .col-fige { z-index: 6; }
     return isNaN(n) ? 50 : n;
   }
 
-  /* ============================================================ JEU D'EXEMPLE */
-  function graine(a) {
-    return function () {
-      a |= 0; a = a + 0x6D2B79F5 | 0;
-      var t = Math.imul(a ^ a >>> 15, 1 | a);
-      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
-  }
-  var alea = graine(20260915);
-  function tire(l) { return l[Math.floor(alea() * l.length)]; }
-  function ent(a, b) { return a + Math.floor(alea() * (b - a + 1)); }
-
-  var ATA = ['24', '25', '31', '33', '34', '39', '53', '92'];
-  var INSTALLATIONS = [
-    'Harnais alimentation cabine', 'Cheminement plancher avant', 'Boîtier de disjoncteurs',
-    'Éclairage de soute', 'Platine de masse structure', 'Faisceau treuil de sauvetage',
-    'Connectique traversée de cloison', 'Support calculateur avionique', 'Antenne VHF dorsale',
-    'Coffret relais poste avant', 'Câblage siège pilote', 'Raccordement phare d’atterrissage',
-    'Harnais capteurs boîte de transmission', 'Bâti convertisseur statique',
-    'Cheminement console centrale', 'Bloc prises maintenance'
-  ];
-  var COMMENTAIRES = [
-    'En attente d’accès zone', 'Dépend de la levée de l’ECP',
-    'Contrôle dimensionnel à replanifier', 'Reprise après modification de cheminement',
-    'Pièce manquante en magasin'
-  ];
-
-  var PLANS = [];
-  for (var i = 0; i < 186; i++) {
-    var t = alea(), avancement;
-    if (t < 0.35)      { avancement = '100%'; }
-    else if (t < 0.64) { avancement = tire([10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90]) + '%'; }
-    else if (t < 0.84) { avancement = 'À faire'; }
-    else               { avancement = ''; }
-    var ata = tire(ATA);
-    var e0 = classer(avancement);
-    PLANS.push({
-      reference: 'UD-' + ata + '-' + String(1037 + i * 7).slice(-4),
-      installation: tire(INSTALLATIONS),
-      ata: ata,
-      sequence: tire(['S1', 'S2', 'S3', 'S4', 'S5']),
-      ecp: alea() < 0.86 ? 'ECP-' + ent(2100, 2899) : '',
-      definition: e0 === 'termine' || e0 === 'encours'
-        ? tire(['Validée', 'Validée', 'En attente']) : tire(['En attente', 'Sans objet']),
-      ibg: e0 === 'termine' ? (alea() < 0.85 ? 'Validé' : 'En revue')
-         : e0 === 'encours' ? tire(['Validé', 'En revue', 'À contrôler'])
-         : (alea() < 0.6 ? 'Non lancé' : 'En revue'),
-      creation: '2026-' + String(ent(1, 8)).padStart(2, '0') + '-' + String(ent(1, 28)).padStart(2, '0'),
-      avancement: avancement,
-      responsable: tire(['MR', 'AB', 'CM', 'TL', 'SN', 'JD']),
-      commentaire: alea() < 0.26 ? tire(COMMENTAIRES) : ''
-    });
-  }
-  PLANS.forEach(function (p) { p._etat = classer(p.avancement); p._pct = pourcentDe(p); });
-
-  /* Ancienneté : dimension dérivée de la date de création. Un plan créé il y a
-     longtemps et toujours pas terminé est celui sur lequel il faut se pencher. */
-  function ancienneteDe(p) {
-    var mois = (2026 - Number(p.creation.slice(0, 4))) * 12 + (9 - Number(p.creation.slice(5, 7)));
+  /* ============================================================
+     ANCIENNETE
+     Dimension derivee de la colonne de date : un plan cree il y a longtemps
+     et toujours pas termine est celui sur lequel il faut se pencher.
+     ============================================================ */
+  var ORDRE_ANCIENNETE = ['moins d’un mois', '1 à 3 mois', '3 à 6 mois', 'plus de 6 mois'];
+  function ancienneteDepuis(valeur, reference) {
+    var m = /(\d{4})[-\/.](\d{1,2})/.exec(String(valeur || ''));
+    if (!m) return '—';
+    var mois = (reference.getUTCFullYear() - Number(m[1])) * 12 +
+               (reference.getUTCMonth() + 1 - Number(m[2]));
     if (mois >= 6) return 'plus de 6 mois';
     if (mois >= 3) return '3 à 6 mois';
     if (mois >= 1) return '1 à 3 mois';
-    return 'moins d\u2019un mois';
+    return 'moins d’un mois';
   }
-  var ORDRE_ANCIENNETE = ['moins d\u2019un mois', '1 à 3 mois', '3 à 6 mois', 'plus de 6 mois'];
-  function valeurDim(p, cle) { return cle === '_anciennete' ? ancienneteDe(p) : p[cle]; }
 
-  /* ============================================================
-     HISTORIQUE
-     L'export ne contient que l'état du jour : on ne sait pas quand un
-     plan est passé à 100 %. L'historique ne peut donc pas être
-     reconstitué — il se construit à partir du premier import, un relevé
-     par import. Chaque relevé garde les comptes globaux, les comptes par
-     dimension, et l'avancement plan par plan pour le comparatif.
-     ============================================================ */
-  var CLES_DIM = ['ata', 'sequence', 'definition', 'ibg', 'responsable', '_anciennete'];
-
-  function releveDepuis(plans, i, avecPlans) {
+  /* Un relevé : les comptes globaux, les comptes par dimension, et
+     l'avancement plan par plan quand on veut pouvoir faire le comparatif. */
+  function releveDepuis(plans, i, clesDim, valeurDe, avecPlans) {
     var r = { i: i, total: plans.length, termine: 0, encours: 0, afaire: 0, vide: 0, groupes: {}, plans: null };
-    CLES_DIM.forEach(function (d) { r.groupes[d] = {}; });
+    clesDim.forEach(function (d) { r.groupes[d] = {}; });
     plans.forEach(function (p) {
       r[p._etat]++;
-      CLES_DIM.forEach(function (d) {
-        var v = String(valeurDim(p, d) || '\u2014');
+      clesDim.forEach(function (d) {
+        var v = String(valeurDe(p, d) || '—');
         if (!r.groupes[d][v]) r.groupes[d][v] = { total: 0, termine: 0 };
         r.groupes[d][v].total++;
         if (p._etat === 'termine') r.groupes[d][v].termine++;
@@ -772,51 +687,224 @@ table.plans thead .col-fige { z-index: 6; }
     return r;
   }
 
-  var RELEVES = [];
-  (function construireRelevesExemple() {
-    var aujourdhui = releveDepuis(PLANS, AUJ, true);
+  /* ============================================================
+     JEU D'EXEMPLE
+     Il ne sert que lorsque la page tourne seule, sans classeur derrière.
+     Dans l'application réelle, Apps Script injecte window.SUIVI_FWD_DONNEES
+     avant ce script : colonnes réelles, plans, relevés archivés, jalons.
+     ============================================================ */
+  function jeuDExemple() {
+    function graine(a) {
+      return function () {
+        a |= 0; a = a + 0x6D2B79F5 | 0;
+        var t = Math.imul(a ^ a >>> 15, 1 | a);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+    var alea = graine(20260915);
+    function tire(l) { return l[Math.floor(alea() * l.length)]; }
+    function ent(a, b) { return a + Math.floor(alea() * (b - a + 1)); }
 
-    // Relevés antérieurs : proportion croissante de terminés, pour illustrer
-    // ce que donneront cinq imports successifs.
-    var parts = [0.42, 0.58, 0.74, 0.88];
-    parts.forEach(function (part, k) {
+    var colonnes = [
+      { cle: 'reference',   groupe: 'Informations principales', titre: 'Référence UD', classe: 'ref', fige: true },
+      { cle: 'installation',groupe: 'Informations principales', titre: 'Nom installation', classe: 'large' },
+      { cle: 'ata',         groupe: 'Informations principales', titre: 'ATA', classe: 'num', dim: true },
+      { cle: 'sequence',    groupe: 'Informations principales', titre: 'Séquence', classe: 'num', dim: true },
+      { cle: 'ecp',         groupe: 'Définition du plan', titre: 'ECP', classe: 'ref' },
+      { cle: 'definition',  groupe: 'Définition du plan', titre: 'Validation définition électrique', classe: '', dim: true },
+      { cle: 'ibg',         groupe: 'Définition du plan', titre: 'Statut IBG', classe: '', dim: true },
+      { cle: 'creation',    groupe: 'Définition du plan', titre: 'Date création', classe: 'num' },
+      { cle: 'avancement',  groupe: 'FWD', titre: 'Avancement FWD', classe: '' },
+      { cle: 'responsable', groupe: 'FWD', titre: 'Resp.', classe: 'num', dim: true },
+      { cle: 'commentaire', groupe: 'FWD', titre: 'Commentaire', classe: 'large doux' }
+    ];
+
+    var ATA = ['24', '25', '31', '33', '34', '39', '53', '92'];
+    var INSTALLATIONS = [
+      'Harnais alimentation cabine', 'Cheminement plancher avant', 'Boîtier de disjoncteurs',
+      'Éclairage de soute', 'Platine de masse structure', 'Faisceau treuil de sauvetage',
+      'Connectique traversée de cloison', 'Support calculateur avionique', 'Antenne VHF dorsale',
+      'Coffret relais poste avant', 'Câblage siège pilote', 'Raccordement phare d’atterrissage',
+      'Harnais capteurs boîte de transmission', 'Bâti convertisseur statique',
+      'Cheminement console centrale', 'Bloc prises maintenance'
+    ];
+    var COMMENTAIRES = [
+      'En attente d’accès zone', 'Dépend de la levée de l’ECP',
+      'Contrôle dimensionnel à replanifier', 'Reprise après modification de cheminement',
+      'Pièce manquante en magasin'
+    ];
+
+    var plans = [];
+    for (var i = 0; i < 186; i++) {
+      var t = alea(), avancement;
+      if (t < 0.35)      { avancement = '100%'; }
+      else if (t < 0.64) { avancement = tire([10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90]) + '%'; }
+      else if (t < 0.84) { avancement = 'À faire'; }
+      else               { avancement = ''; }
+      var ata = tire(ATA);
+      var e0 = classer(avancement);
+      plans.push({
+        reference: 'UD-' + ata + '-' + String(1037 + i * 7).slice(-4),
+        installation: tire(INSTALLATIONS),
+        ata: ata,
+        sequence: tire(['S1', 'S2', 'S3', 'S4', 'S5']),
+        ecp: alea() < 0.86 ? 'ECP-' + ent(2100, 2899) : '',
+        definition: e0 === 'termine' || e0 === 'encours'
+          ? tire(['Validée', 'Validée', 'En attente']) : tire(['En attente', 'Sans objet']),
+        ibg: e0 === 'termine' ? (alea() < 0.85 ? 'Validé' : 'En revue')
+           : e0 === 'encours' ? tire(['Validé', 'En revue', 'À contrôler'])
+           : (alea() < 0.6 ? 'Non lancé' : 'En revue'),
+        creation: '2026-' + String(ent(1, 8)).padStart(2, '0') + '-' + String(ent(1, 28)).padStart(2, '0'),
+        avancement: avancement,
+        responsable: tire(['MR', 'AB', 'CM', 'TL', 'SN', 'JD']),
+        commentaire: alea() < 0.26 ? tire(COMMENTAIRES) : ''
+      });
+    }
+    plans.forEach(function (p) { p._etat = classer(p.avancement); p._pct = pourcentDe(p); });
+
+    var clesDim = colonnes.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; })
+      .concat(['_anciennete']);
+    var refDate = lundiDeLaSemaine(2026, 38);
+    function valeurDe(p, cle) {
+      return cle === '_anciennete' ? ancienneteDepuis(p.creation, refDate) : p[cle];
+    }
+
+    // Cinq imports successifs : proportion croissante de terminés.
+    var aujourdhui = releveDepuis(plans, 4, clesDim, valeurDe, true);
+    var releves = [];
+    [0.42, 0.58, 0.74, 0.88].forEach(function (part, k) {
       var r = { i: k, total: aujourdhui.total, groupes: {}, plans: null };
       r.termine = Math.round(aujourdhui.termine * part);
       var glisse = aujourdhui.termine - r.termine;
       r.encours = aujourdhui.encours + Math.round(glisse * 0.6);
       r.afaire = aujourdhui.afaire + (glisse - Math.round(glisse * 0.6));
       r.vide = aujourdhui.vide;
-      CLES_DIM.forEach(function (d) {
+      clesDim.forEach(function (d) {
         r.groupes[d] = {};
         Object.keys(aujourdhui.groupes[d]).forEach(function (v) {
           var g = aujourdhui.groupes[d][v];
           r.groupes[d][v] = { total: g.total, termine: Math.round(g.termine * part) };
         });
       });
-      RELEVES.push(r);
+      releves.push(r);
     });
 
     // Avant-dernier relevé : état plan par plan, pour que le comparatif
     // du dernier import ait de quoi se calculer.
-    var precedent = RELEVES[RELEVES.length - 1];
+    var precedent = releves[releves.length - 1];
     precedent.plans = {};
-    var refs = PLANS.map(function (p) { return p.reference; });
-    PLANS.forEach(function (p) { precedent.plans[p.reference] = p.avancement; });
+    var refs = plans.map(function (p) { return p.reference; });
+    plans.forEach(function (p) { precedent.plans[p.reference] = p.avancement; });
     for (var k = 0; k < 14; k++) {                       // ont avancé depuis
-      var r1 = refs[(k * 13 + 5) % refs.length];
-      precedent.plans[r1] = tire(['20%', '40%', '60%', 'À faire']);
+      precedent.plans[refs[(k * 13 + 5) % refs.length]] = tire(['20%', '40%', '60%', 'À faire']);
     }
     for (var k2 = 0; k2 < 3; k2++) {                     // ont reculé depuis
-      var r2 = refs[(k2 * 47 + 11) % refs.length];
-      precedent.plans[r2] = '100%';
+      precedent.plans[refs[(k2 * 47 + 11) % refs.length]] = '100%';
     }
     for (var k3 = 0; k3 < 5; k3++) delete precedent.plans[refs[(k3 * 29 + 3) % refs.length]];  // nouveaux
     precedent.plans['UD-24-0990'] = '50%';               // disparus depuis
     precedent.plans['UD-31-0991'] = 'À faire';
+    releves.push(aujourdhui);
 
-    RELEVES.push(aujourdhui);
+    // Le jeu d'exemple part de la semaine 34 de 2026, un relevé par semaine.
+    releves.forEach(function (r) { r.semaine = etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 34), r.i)); });
+
+    return {
+      colonnes: colonnes,
+      cleDate: 'creation',
+      plans: plans,
+      releves: releves,
+      jalons: [
+        { id: 'ex1', semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 34), 1)), texte: 'Revue de définition' },
+        { id: 'ex2', semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 34), 14)), texte: 'Livraison plateau' }
+      ],
+      info: { feuille: 'Démonstration', message: '' }
+    };
+  }
+  function dateDeBase(base, i) {
+    var d = new Date(base.getTime()); d.setUTCDate(base.getUTCDate() + i * 7); return d;
+  }
+
+  /* ============================================================
+     SOURCE DES DONNEES
+     ============================================================ */
+  var SERVEUR = !!(window.SUIVI_FWD_DONNEES && window.SUIVI_FWD_DONNEES.plans &&
+                   window.SUIVI_FWD_DONNEES.plans.length);
+  var SRC = SERVEUR ? window.SUIVI_FWD_DONNEES : jeuDExemple();
+  /* Pont facultatif vers le classeur : présent seulement dans l'add-on. */
+  var API = window.SUIVI_FWD_API || null;
+
+  var COLONNES = SRC.colonnes;
+  var PAR_CLE = {};
+  COLONNES.forEach(function (c) { PAR_CLE[c.cle] = c; });
+  var CLE_DATE = SRC.cleDate || null;
+
+  var PLANS = SRC.plans;
+  PLANS.forEach(function (p) { p._etat = classer(p.avancement); p._pct = pourcentDe(p); });
+
+  /* Le repère temporel : la semaine du premier relevé archivé. Tout l'axe du
+     graphique est un décalage en semaines par rapport à ce lundi-là. */
+  var RELEVES_SRC = (SRC.releves || []).filter(function (r) { return lundiDeLibelle(r.semaine); });
+  RELEVES_SRC.sort(function (a, b) { return lundiDeLibelle(a.semaine) - lundiDeLibelle(b.semaine); });
+  var BASE = RELEVES_SRC.length ? lundiDeLibelle(RELEVES_SRC[0].semaine)
+                                : lundiDeLibelle(etiquetteISO(new Date()));
+  function dateDe(i) { return dateDeBase(BASE, i); }
+  function etiquette(i) { return etiquetteISO(dateDe(i)); }
+  function indexDe(semaine) {
+    var l = lundiDeLibelle(semaine);
+    return l === null ? null : Math.round((l.getTime() - BASE.getTime()) / 604800000);
+  }
+  var AUJ = RELEVES_SRC.length ? indexDe(RELEVES_SRC[RELEVES_SRC.length - 1].semaine) : 0;
+
+  var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+              'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  (function afficherSemaine() {
+    var lundi = dateDe(AUJ);
+    var dimanche = new Date(lundi.getTime()); dimanche.setUTCDate(lundi.getUTCDate() + 6);
+    var m1 = MOIS[lundi.getUTCMonth()], m2 = MOIS[dimanche.getUTCMonth()];
+    $('dates-semaine').textContent = m1 === m2
+      ? 'du ' + lundi.getUTCDate() + ' au ' + dimanche.getUTCDate() + ' ' + m2 + ' ' + dimanche.getUTCFullYear()
+      : 'du ' + lundi.getUTCDate() + ' ' + m1 + ' au ' + dimanche.getUTCDate() + ' ' + m2 + ' ' + dimanche.getUTCFullYear();
+    $('num-semaine').textContent = 'Semaine ' + etiquette(AUJ).slice(6).replace(/^0/, '');
   })();
 
+  /* Les dimensions du bloc « Avancement FWD par… » : les colonnes que le
+     serveur a jugées catégorielles, plus l'ancienneté s'il a trouvé une date. */
+  var CLES_DIM = COLONNES.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; })
+    .concat(CLE_DATE ? ['_anciennete'] : []);
+  function valeurDim(p, cle) {
+    return cle === '_anciennete' ? ancienneteDepuis(p[CLE_DATE], dateDe(AUJ)) : p[cle];
+  }
+
+  /* ============================================================
+     HISTORIQUE
+     L'export ne contient que l'état du jour : on ne sait pas quand un plan
+     est passé à 100 %. L'historique ne peut donc pas être reconstitué —
+     il s'accumule, un relevé par semaine. Le dernier est recalculé à partir
+     de la feuille pour que la page colle toujours à ce qu'on y lit.
+     ============================================================ */
+  var RELEVES = RELEVES_SRC.map(function (r) {
+    return {
+      i: indexDe(r.semaine),
+      total: r.total, termine: r.termine, encours: r.encours, afaire: r.afaire, vide: r.vide,
+      groupes: r.groupes || {}, plans: r.plans || null
+    };
+  });
+  (function relevéCourant() {
+    var vivant = releveDepuis(PLANS, AUJ, CLES_DIM, valeurDim, true);
+    var dernier = RELEVES[RELEVES.length - 1];
+    // Le dernier relevé archivé garde son état plan par plan : c'est lui qui
+    // sert de point de comparaison si la feuille a bougé depuis.
+    if (dernier && dernier.i === AUJ) {
+      if (RELEVES.length > 1 && !RELEVES[RELEVES.length - 2].plans) {
+        RELEVES[RELEVES.length - 2].plans = dernier.plans;
+      }
+      RELEVES[RELEVES.length - 1] = vivant;
+    } else {
+      RELEVES.push(vivant);
+    }
+  })();
   /* Plusieurs imports dans la même semaine ne font qu'un point : le dernier
      de la semaine l'emporte. Sinon le graphique afficherait trois relevés
      serrés puis rien pendant quinze jours. */
@@ -882,17 +970,19 @@ table.plans thead .col-fige { z-index: 6; }
   }
   var COMPARATIF = comparatif();
 
-  var jalons = [
-    { i: 1,  texte: 'Revue de définition' },
-    { i: 14, texte: 'Livraison plateau' }
-  ];
+  /* Les jalons viennent de la source : dans le classeur ils sont partagés par
+     tout le monde, dans la démonstration ils sont posés en dur. */
+  var jalons = (SRC.jalons || []).map(function (j) {
+    return { id: j.id || null, i: indexDe(j.semaine), texte: String(j.texte || 'Jalon') };
+  }).filter(function (j) { return j.i !== null; })
+    .sort(function (a, b) { return a.i - b.i; });
 
   var vue = {
     recherche: '', etat: '', filtres: {},
     ordre: COLONNES.map(function (c) { return c.cle; }),
     cachees: {},
     tri: { cle: 'reference', asc: true },
-    dimCritique: 'ata',
+    dimCritique: (SRC.dimParDefaut && CLES_DIM.indexOf(SRC.dimParDefaut) !== -1) ? SRC.dimParDefaut : (CLES_DIM[0] || ''),
     triGroupe: { cle: null, asc: false },
     aideFin: false,
     groupe: null, refs: null, refsLibelle: '',
@@ -927,14 +1017,15 @@ table.plans thead .col-fige { z-index: 6; }
       var brut = localStorage.getItem(CLE_PREFS);
       if (!brut) return;
       var pref = JSON.parse(brut);
-      if (Array.isArray(pref.jalons)) {
+      // Quand le classeur fournit les jalons, la copie locale ne fait pas foi.
+      if (!SERVEUR && Array.isArray(pref.jalons)) {
         jalons = pref.jalons.filter(function (j) {
           return j && typeof j.i === 'number' && typeof j.texte === 'string';
         });
       }
       if (pref.fen && typeof pref.fen.debut === 'number') vue.fen = pref.fen;
       ['dimCritique'].forEach(function (k) {
-        if (pref[k] && (PAR_CLE[pref[k]] || pref[k] === '_anciennete')) vue[k] = pref[k];
+        if (pref[k] && CLES_DIM.indexOf(pref[k]) !== -1) vue[k] = pref[k];
       });
       if (Array.isArray(pref.ordre)) {
         // On ne garde que les colonnes encore presentes, et on ajoute les nouvelles.
@@ -1365,6 +1456,13 @@ table.plans thead .col-fige { z-index: 6; }
     rendreGraphique(sel);
     rendreCritique(sel);
     planifierSauvegarde();
+    /* Dans le classeur, les jalons sont partagés : ils repartent au serveur,
+       sinon la collègue et sa chef n'auraient pas les mêmes. */
+    if (API && API.sauverJalons) {
+      API.sauverJalons(jalons.map(function (j) {
+        return { id: j.id || null, semaine: etiquette(j.i), texte: j.texte };
+      }));
+    }
   }
 
   function reglerSpan(span) {
@@ -1804,7 +1902,7 @@ table.plans thead .col-fige { z-index: 6; }
   }
 
   var DIMENSIONS = COLONNES.filter(function (c) { return c.dim; })
-    .concat([{ cle: '_anciennete', titre: 'Ancienneté (date de création)' }]);
+    .concat(CLE_DATE ? [{ cle: '_anciennete', titre: 'Ancienneté (' + PAR_CLE[CLE_DATE].titre.toLowerCase() + ')' }] : []);
   var TITRE_DIM = {};
   DIMENSIONS.forEach(function (d) { TITRE_DIM[d.cle] = d.titre; });
 

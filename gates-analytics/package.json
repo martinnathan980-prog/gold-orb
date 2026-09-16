@@ -1,9 +1,15 @@
 {
-  "name": "gates-analytics",
-  "version": "2.0.0",
+  "name": "suivi-fwd",
+  "version": "3.0.0",
   "private": true,
-  "description": "Tableau de bord de suivi des plans d'intégration électrique (Google Apps Script)",
+  "description": "Suivi FWD — tableau de bord des plans d'intégration électrique (Google Apps Script)",
   "scripts": {
-    "test": "node tests/run-tests.js"
+    "build": "node tests/split-prototype.js",
+    "test": "node tests/split-prototype.js && node tests/build-addon.js && node tests/addon.js && node prototype/tests/build-apercu.js && node prototype/tests/batterie.js",
+    "test:addon": "node tests/build-addon.js && node tests/addon.js",
+    "test:interface": "node prototype/tests/build-apercu.js && node prototype/tests/batterie.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.47.0"
   }
 }
