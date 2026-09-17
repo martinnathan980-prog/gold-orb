@@ -84,18 +84,20 @@ gunzip -c /tmp/xau2024.csv.gz | head
 
 ### `decoder.py`
 
-| Option              | Effet                                                    |
-|---------------------|----------------------------------------------------------|
-| `-o CHEMIN`         | fichier de sortie, ou **dossier** si plusieurs fichiers  |
-| `--input-dir DIR`   | décode tous les `.gb64` d'un dossier                      |
-| `--stdout`          | écrit les octets décodés sur la sortie standard          |
-| `--info`            | affiche seulement les métadonnées (ne décode pas)        |
-| `-f, --force`       | écrase le fichier de sortie existant                     |
-| `-`                 | lit un conteneur depuis l'entrée standard                |
+| Option                  | Effet                                                       |
+|-------------------------|-------------------------------------------------------------|
+| `-o CHEMIN`             | fichier de sortie ; **dossier** si le chemin finit par `/` ou si plusieurs fichiers sont reconstruits (créé au besoin) |
+| `--input-dir DIR`       | décode tous les `.gb64` d'un dossier                        |
+| `--stdout`              | écrit les octets décodés sur la sortie standard             |
+| `--info`                | affiche seulement les métadonnées (ne décode pas)           |
+| `--max-output-bytes N`  | borne la taille décompressée (`200M`) ; à utiliser pour un conteneur non fiable (anti-bombe de décompression) |
+| `-f, --force`           | écrase le fichier de sortie existant                        |
+| `-`                     | lit un conteneur depuis l'entrée standard                   |
 
-Le décodeur accepte aussi du **base64 brut sans en-tête** : il décode puis
-décompresse automatiquement si les octets commencent par la signature gzip
-(`1f 8b`).
+Le décodeur n'interprète un en-tête que si le fichier commence par la ligne
+marqueur `GB64 vN`. Sinon il traite tout le contenu comme du **base64 brut** :
+il décode puis décompresse automatiquement si les octets commencent par la
+signature gzip (`1f 8b`).
 
 ## Format du conteneur (`GB64 v1`)
 
@@ -128,6 +130,12 @@ au décodage, avec vérification de chaque `SHA-256`.
   requis).
 - Un `SHA-256` qui ne correspond pas fait échouer le décodage (code de retour
   non nul) : une donnée corrompue n'est pas écrite silencieusement.
+- Une **partie manquante** ou un total incohérent fait échouer le décodage :
+  jamais de reconstruction tronquée silencieuse.
+- La décompression est **bornée** : le décodeur s'arrête si la sortie dépasse
+  la taille annoncée dans l'en-tête, et l'option `--max-output-bytes` pose une
+  borne dure pour un conteneur non fiable (protection contre les bombes de
+  décompression). Les valeurs d'en-tête sont assainies avant affichage.
 
 ## Codes de retour
 
