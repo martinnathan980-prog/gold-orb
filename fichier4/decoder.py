@@ -19,6 +19,10 @@ texte (base64), éventuellement découpé en plusieurs parties. Ce script fait
 le chemin inverse : base64 -> octets -> gunzip -> fichier d'origine, avec
 vérification d'intégrité (taille + SHA-256).
 
+Un conteneur GB64 commence par la ligne marqueur « GB64 vN ». En l'absence
+de ce marqueur, l'entrée entière est traitée comme du base64 brut (décodé,
+puis décompressé si les octets commencent par la signature gzip).
+
 Exemples
 --------
     # Un seul fichier .gb64 -> écrit le fichier d'origine à côté
@@ -28,7 +32,7 @@ Exemples
     python3 decoder.py sortie.part-*.gb64
 
     # Un dossier entier de .gb64 (regroupés par nom d'origine)
-    python3 decoder.py --input-dir ./bundle -o ./restaure
+    python3 decoder.py --input-dir ./bundle -o ./restaure/
 
     # Sortie vers un chemin précis
     python3 decoder.py data.gb64 -o /tmp/data.csv.gz
@@ -38,6 +42,9 @@ Exemples
 
     # Afficher seulement les métadonnées, sans décoder
     python3 decoder.py --info data.gb64
+
+    # Borne de sécurité pour des conteneurs non fiables
+    python3 decoder.py inconnu.gb64 --max-output-bytes 200M
 """
 
 import argparse
@@ -46,11 +53,17 @@ import binascii
 import glob
 import gzip
 import hashlib
+import io
 import os
+import re
 import sys
+import zlib
 
-MAGIC = "GB64"          # marqueur de première ligne d'en-tête
-GZIP_MAGIC = b"\x1f\x8b"  # signature d'un flux gzip
+MARKER = "GB64"                # début de la ligne marqueur (« GB64 vN »)
+MARKER_RE = re.compile(r"^GB64\s+\S", re.IGNORECASE)  # marqueur = « GB64 » + espace + version
+GZIP_MAGIC = b"\x1f\x8b"       # signature d'un flux gzip
+KNOWN_KEYS = {"name", "size", "sha256", "gzip", "parts", "part",
+              "psize", "psha256"}
 
 
 # --------------------------------------------------------------------------- #
@@ -65,6 +78,22 @@ def sha256_hex(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def sanitize_display(value):
+    """
+    Neutralise les caractères de contrôle avant affichage vers un terminal
+    (évite l'injection de séquences d'échappement via un en-tête hostile).
+    """
+    if value is None:
+        return ""
+    out = []
+    for ch in str(value):
+        if ch == "\t" or (" " <= ch <= "~") or ch > "\x7f":
+            out.append(ch)
+        else:
+            out.append("\\x%02x" % ord(ch))
+    return "".join(out)
+
+
 def safe_basename(name):
     """
     Empêche toute traversée de répertoire : on ne garde que le nom de base.
@@ -74,7 +103,6 @@ def safe_basename(name):
         return ""
     name = name.replace("\\", "/")
     name = os.path.basename(name)
-    # neutralise quelques cas dégénérés
     if name in (".", "..", ""):
         return ""
     return name
@@ -85,19 +113,43 @@ def b64decode_lenient(text):
     Décode du base64 en tolérant les espaces, retours à la ligne, et un
     éventuel rembourrage manquant. Accepte aussi le base64 « URL-safe ».
     """
-    # retire tout ce qui n'est pas un caractère base64 significatif
     cleaned = "".join(text.split())
     if not cleaned:
         return b""
-    # supporte l'alphabet URL-safe éventuel
     cleaned = cleaned.replace("-", "+").replace("_", "/")
-    # rétablit le rembourrage '=' si nécessaire
     missing = (-len(cleaned)) % 4
     cleaned += "=" * missing
     try:
         return base64.b64decode(cleaned, validate=False)
     except (binascii.Error, ValueError) as exc:
         raise ValueError("base64 invalide : %s" % exc)
+
+
+def gunzip_bounded(payload, limit):
+    """
+    Décompresse un flux gzip en flux, en s'arrêtant si la sortie dépasse
+    `limit` octets (None = pas de limite). Protège contre les bombes de
+    décompression : on n'alloue jamais au-delà de la borne.
+    """
+    src = io.BytesIO(payload)
+    out = io.BytesIO()
+    total = 0
+    try:
+        with gzip.GzipFile(fileobj=src, mode="rb") as gz:
+            while True:
+                chunk = gz.read(65536)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if limit is not None and total > limit:
+                    raise ValueError(
+                        "la sortie décompressée dépasse la limite de %d octets "
+                        "(possible bombe de décompression ; ajuster "
+                        "--max-output-bytes)" % limit)
+                out.write(chunk)
+    except (OSError, EOFError, zlib.error) as exc:
+        raise ValueError("échec de la décompression gzip : %s" % exc)
+    return out.getvalue()
 
 
 # --------------------------------------------------------------------------- #
@@ -117,87 +169,82 @@ class Part(object):
 
     @property
     def part_index(self):
-        try:
-            return int(self.header.get("part", "1"))
-        except (TypeError, ValueError):
-            return 1
+        return _int_field(self.header, "part", default=1, source=self.source)
 
     @property
     def parts_total(self):
-        try:
-            return int(self.header.get("parts", "1"))
-        except (TypeError, ValueError):
-            return 1
+        return _int_field(self.header, "parts", default=1, source=self.source)
+
+
+def _int_field(header, key, default=None, source="<?>"):
+    """Lit une valeur entière d'en-tête, avec message clair si non numérique."""
+    raw = header.get(key)
+    if raw is None:
+        return default
+    try:
+        return int(str(raw).strip())
+    except (TypeError, ValueError):
+        raise ValueError("champ d'en-tête « %s » non numérique dans %s : %r"
+                         % (key, source, raw))
 
 
 def parse_container(text, source="<?>"):
     """
-    Sépare l'en-tête (lignes « clé=valeur » jusqu'à la première ligne vide)
-    du corps base64, puis décode le corps. Tolère l'absence d'en-tête
-    (base64 brut) et les lignes de commentaire commençant par '#'.
+    Sépare l'en-tête du corps base64, puis décode le corps.
+
+    L'en-tête n'est reconnu QUE si la première ligne non vide est le marqueur
+    « GB64 vN ». Dans ce cas, les lignes « clé=valeur » sont lues jusqu'à la
+    première ligne vide. Sans marqueur, tout le texte est du base64 brut :
+    on ne tente jamais d'interpréter une ligne isolée comme un en-tête (ce
+    qui corromprait un base64 finissant par « = » ou commençant par « GB64 »).
     """
     lines = text.splitlines()
-
     header = {}
-    body_start = 0
-    saw_header = False
 
-    # Détecte un en-tête : soit la première ligne commence par le marqueur,
-    # soit on trouve des lignes « clé=valeur » avant une ligne vide.
-    i = 0
+    # cherche la première ligne non vide
+    first_idx = 0
+    while first_idx < len(lines) and lines[first_idx].strip() == "":
+        first_idx += 1
+
+    has_marker = (first_idx < len(lines)
+                  and MARKER_RE.match(lines[first_idx].strip()))
+
+    if not has_marker:
+        # base64 brut : aucun en-tête
+        raw = b64decode_lenient(text)
+        return Part(header, raw, source)
+
+    header["_marker"] = lines[first_idx].strip()
+    i = first_idx + 1
     n = len(lines)
+    body_start = n
 
-    # Ligne marqueur optionnelle : "GB64 v1"
-    if n > 0 and lines[0].strip().upper().startswith(MAGIC):
-        header["_marker"] = lines[0].strip()
-        saw_header = True
-        i = 1
-
-    # Lignes d'en-tête clé=valeur jusqu'à une ligne vide
     while i < n:
-        line = lines[i]
-        stripped = line.strip()
+        stripped = lines[i].strip()
         if stripped == "":
-            # fin de l'en-tête
-            i += 1
-            body_start = i
+            body_start = i + 1
             break
         if stripped.startswith("#"):
             i += 1
             continue
-        if "=" in stripped and _looks_like_header_key(stripped.split("=", 1)[0]):
+        if "=" in stripped:
             key, value = stripped.split("=", 1)
             header[key.strip()] = value.strip()
-            saw_header = True
             i += 1
             continue
-        # première ligne qui ne ressemble pas à un en-tête -> début du corps
+        # ligne inattendue dans l'en-tête -> début du corps
         body_start = i
         break
-    else:
-        # on a consommé toutes les lignes comme en-tête (pas de corps)
-        body_start = n
-
-    if not saw_header:
-        # aucun en-tête reconnu : tout le contenu est du base64 brut
-        body_start = 0
 
     body = "\n".join(lines[body_start:])
     raw = b64decode_lenient(body)
     return Part(header, raw, source)
 
 
-def _looks_like_header_key(token):
-    token = token.strip()
-    if not token or len(token) > 40:
-        return False
-    return all(c.isalnum() or c in "-_" for c in token)
-
-
 # --------------------------------------------------------------------------- #
 # Reconstruction d'un fichier à partir de ses parties                         #
 # --------------------------------------------------------------------------- #
-def reassemble(parts):
+def reassemble(parts, max_output=None):
     """
     Trie les parties par index, vérifie la cohérence, concatène les octets
     bruts, décompresse (gzip) si nécessaire, puis vérifie l'intégrité.
@@ -209,44 +256,41 @@ def reassemble(parts):
     parts = sorted(parts, key=lambda p: p.part_index)
     ref = parts[0].header
 
-    total = parts[0].parts_total
-    # cohérence du nombre de parties déclaré
     declared_totals = set(p.parts_total for p in parts)
     if len(declared_totals) > 1:
-        eprint("Attention : nombre total de parties incohérent entre les "
-               "fichiers : %s" % sorted(declared_totals))
-        total = max(declared_totals)
+        raise ValueError("nombre total de parties incohérent entre les "
+                         "fichiers : %s" % sorted(declared_totals))
+    total = declared_totals.pop()
 
-    if total != len(parts):
-        eprint("Attention : %d partie(s) fournie(s) mais %d attendue(s)."
-               % (len(parts), total))
-
+    # index en double ?
     seen = {}
     for p in parts:
         idx = p.part_index
         if idx in seen:
             raise ValueError("partie %d en double (%s et %s)"
-                             % (idx, seen[idx].source, p.source))
+                             % (idx, sanitize_display(seen[idx].source),
+                                sanitize_display(p.source)))
         seen[idx] = p
 
-    if len(parts) > 1:
-        expected = list(range(1, len(parts) + 1))
-        got = sorted(seen.keys())
-        if got != expected:
-            raise ValueError("indices de parties non contigus : attendu %s, "
-                             "obtenu %s" % (expected, got))
+    # nombre de parties fourni == total déclaré ? (sinon reconstruction
+    # tronquée -> erreur fatale, pas un simple avertissement)
+    if total != len(parts):
+        raise ValueError("%d partie(s) fournie(s) mais %d attendue(s) : "
+                         "reconstruction incomplète" % (len(parts), total))
 
-    # vérifie l'intégrité de chaque partie (psize / psha256) si fournie
+    # indices contigus 1..total ?
+    expected = list(range(1, total + 1))
+    got = sorted(seen.keys())
+    if got != expected:
+        raise ValueError("indices de parties non contigus : attendu %s, "
+                         "obtenu %s" % (expected, got))
+
+    # intégrité de chaque partie (psize / psha256) si fournie
     for p in parts:
-        psize = p.header.get("psize")
-        if psize is not None:
-            try:
-                if int(psize) != len(p.raw):
-                    raise ValueError(
-                        "taille de partie %d incohérente : en-tête=%s, "
-                        "réel=%d" % (p.part_index, psize, len(p.raw)))
-            except ValueError as exc:
-                raise ValueError(str(exc))
+        psize = _int_field(p.header, "psize", source=p.source)
+        if psize is not None and psize != len(p.raw):
+            raise ValueError("taille de partie %d incohérente : en-tête=%d, "
+                             "réel=%d" % (p.part_index, psize, len(p.raw)))
         psha = p.header.get("psha256")
         if psha:
             actual = sha256_hex(p.raw)
@@ -257,32 +301,31 @@ def reassemble(parts):
 
     payload = b"".join(p.raw for p in parts)
 
-    # décompression gzip
+    # taille d'origine annoncée (sert aussi de borne de décompression)
+    size = _int_field(ref, "size", source=parts[0].source)
+
+    # gzip : selon l'en-tête, sinon auto-détection par la signature
     gzip_flag = ref.get("gzip")
     if gzip_flag is None:
-        # auto-détection si l'en-tête ne précise rien
         do_gunzip = payload[:2] == GZIP_MAGIC
     else:
         do_gunzip = str(gzip_flag).strip() in ("1", "true", "yes", "on")
 
     if do_gunzip:
-        try:
-            original = gzip.decompress(payload)
-        except (OSError, EOFError) as exc:
-            raise ValueError("échec de la décompression gzip : %s" % exc)
+        # borne : la plus petite entre la taille annoncée et --max-output-bytes
+        limits = [x for x in (size, max_output) if x is not None]
+        limit = min(limits) if limits else None
+        original = gunzip_bounded(payload, limit)
     else:
+        if max_output is not None and len(payload) > max_output:
+            raise ValueError("la sortie dépasse la limite de %d octets"
+                             % max_output)
         original = payload
 
     # vérification d'intégrité globale
-    size = ref.get("size")
-    if size is not None:
-        try:
-            if int(size) != len(original):
-                raise ValueError(
-                    "taille finale incohérente : en-tête=%s, réel=%d"
-                    % (size, len(original)))
-        except ValueError as exc:
-            raise ValueError(str(exc))
+    if size is not None and size != len(original):
+        raise ValueError("taille finale incohérente : en-tête=%d, réel=%d"
+                         % (size, len(original)))
 
     sha = ref.get("sha256")
     if sha:
@@ -302,27 +345,27 @@ def collect_inputs(inputs, input_dir):
     """Retourne une liste de chemins de fichiers à lire (hors '-')."""
     paths = []
 
+    def scan_dir(d):
+        found = []
+        for entry in sorted(os.listdir(d)):
+            full = os.path.join(d, entry)
+            if os.path.isfile(full) and (entry.endswith(".gb64")
+                                         or ".part-" in entry):
+                found.append(full)
+        return found
+
     if input_dir:
         if not os.path.isdir(input_dir):
             raise ValueError("dossier introuvable : %s" % input_dir)
-        for entry in sorted(os.listdir(input_dir)):
-            if entry.endswith(".gb64") or ".part-" in entry:
-                full = os.path.join(input_dir, entry)
-                if os.path.isfile(full):
-                    paths.append(full)
+        paths.extend(scan_dir(input_dir))
 
     for item in inputs:
         if item == "-":
             paths.append("-")
             continue
         if os.path.isdir(item):
-            for entry in sorted(os.listdir(item)):
-                full = os.path.join(item, entry)
-                if os.path.isfile(full) and (entry.endswith(".gb64")
-                                             or ".part-" in entry):
-                    paths.append(full)
+            paths.extend(scan_dir(item))
             continue
-        # motif glob (utile si le shell n'a pas développé *)
         if any(ch in item for ch in "*?[") and not os.path.exists(item):
             matched = sorted(glob.glob(item))
             if not matched:
@@ -331,7 +374,6 @@ def collect_inputs(inputs, input_dir):
             continue
         paths.append(item)
 
-    # dédoublonnage en conservant l'ordre
     seen = set()
     unique = []
     for p in paths:
@@ -353,17 +395,22 @@ def read_text(path):
 # --------------------------------------------------------------------------- #
 # Écriture de la sortie                                                        #
 # --------------------------------------------------------------------------- #
-def output_path_for(ref, group_key, args):
-    """Détermine le chemin de sortie pour un groupe reconstruit."""
-    if args.output and not os.path.isdir(args.output):
-        # -o est un chemin de fichier explicite (uniquement si un seul groupe)
-        return args.output
+def looks_like_dir(path):
+    """-o est-il un dossier ? (existant, ou terminé par un séparateur)"""
+    if not path:
+        return False
+    if os.path.isdir(path):
+        return True
+    return path.endswith(os.sep) or (os.altsep and path.endswith(os.altsep))
 
+
+def output_path_for(ref, group_key, out_dir_or_file, as_dir):
+    """Détermine le chemin de sortie pour un groupe reconstruit."""
     name = safe_basename(ref.get("name", "")) or safe_basename(group_key) \
         or "sortie.bin"
-
-    out_dir = args.output if (args.output and os.path.isdir(args.output)) \
-        else os.getcwd()
+    if out_dir_or_file and not as_dir:
+        return out_dir_or_file  # -o est un fichier explicite (un seul groupe)
+    out_dir = out_dir_or_file if as_dir else os.getcwd()
     return os.path.join(out_dir, name)
 
 
@@ -372,8 +419,8 @@ def write_output(data, path, force):
         raise ValueError("le fichier existe déjà : %s (utiliser --force pour "
                          "écraser)" % path)
     parent = os.path.dirname(path)
-    if parent and not os.path.isdir(parent):
-        os.makedirs(parent)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
     with open(path, "wb") as fh:
         fh.write(data)
 
@@ -381,6 +428,20 @@ def write_output(data, path, force):
 # --------------------------------------------------------------------------- #
 # Programme principal                                                          #
 # --------------------------------------------------------------------------- #
+def parse_size(text):
+    """Convertit « 200M », « 500k », « 1048576 » en octets."""
+    text = str(text).strip().lower()
+    if not text:
+        raise ValueError("taille vide")
+    mult = 1
+    if text[-1] in "kmg":
+        mult = {"k": 1024, "m": 1024 ** 2, "g": 1024 ** 3}[text[-1]]
+        text = text[:-1]
+    if text.endswith("b"):
+        text = text[:-1]
+    return int(float(text) * mult)
+
+
 def build_parser():
     p = argparse.ArgumentParser(
         prog="decoder.py",
@@ -395,11 +456,14 @@ def build_parser():
                    help="décode tous les .gb64 d'un dossier")
     p.add_argument("-o", "--output", metavar="CHEMIN",
                    help="fichier de sortie (un seul groupe) ou dossier de "
-                        "sortie (plusieurs groupes)")
+                        "sortie (terminer par « / » ou plusieurs groupes)")
     p.add_argument("--stdout", action="store_true",
                    help="écrit les octets décodés sur la sortie standard")
     p.add_argument("--info", action="store_true",
                    help="affiche seulement les métadonnées, sans décoder")
+    p.add_argument("--max-output-bytes", metavar="N", default=None,
+                   help="borne de sécurité sur la taille décompressée "
+                        "(ex : 200M) ; utile pour un conteneur non fiable")
     p.add_argument("-f", "--force", action="store_true",
                    help="écrase les fichiers de sortie existants")
     p.add_argument("-q", "--quiet", action="store_true",
@@ -411,8 +475,17 @@ def main(argv=None):
     args = build_parser().parse_args(argv)
 
     if not args.inputs and not args.input_dir:
-        # aucun argument : lit stdin par défaut
-        args.inputs = ["-"]
+        args.inputs = ["-"]  # aucun argument : lit stdin
+
+    max_output = None
+    if args.max_output_bytes is not None:
+        try:
+            max_output = parse_size(args.max_output_bytes)
+        except ValueError as exc:
+            eprint("Erreur : --max-output-bytes invalide : %s" % exc)
+            return 2
+        if max_output <= 0:
+            max_output = None
 
     try:
         paths = collect_inputs(args.inputs, args.input_dir)
@@ -429,50 +502,65 @@ def main(argv=None):
     for path in paths:
         try:
             text, src = read_text(path)
-            part = parse_container(text, source=src)
-            parts.append(part)
+            parts.append(parse_container(text, source=src))
         except (OSError, ValueError) as exc:
-            eprint("Erreur en lisant %s : %s" % (path, exc))
+            eprint("Erreur en lisant %s : %s"
+                   % (sanitize_display(path), exc))
             return 2
 
     # mode info : affiche les en-têtes et sort
     if args.info:
         for part in parts:
-            print("--- %s ---" % part.source)
+            print("--- %s ---" % sanitize_display(part.source))
             if part.header:
                 for key in sorted(part.header):
-                    print("  %s = %s" % (key, part.header[key]))
+                    print("  %s = %s" % (sanitize_display(key),
+                                         sanitize_display(part.header[key])))
             else:
                 print("  (aucun en-tête ; base64 brut)")
             print("  octets décodés (cette partie) = %d" % len(part.raw))
         return 0
 
-    # regroupe les parties par fichier d'origine (clé = name, sinon source)
+    # regroupe les parties : les fichiers découpés (parts>1) par nom d'origine,
+    # les conteneurs mono-partie chacun séparément (pas de fusion abusive).
     groups = {}
     order = []
-    for part in parts:
-        key = part.name or _strip_part_suffix(os.path.basename(part.source))
-        if key not in groups:
-            groups[key] = []
-            order.append(key)
-        groups[key].append(part)
+    try:
+        for part in parts:
+            if part.parts_total > 1:
+                key = "multi:" + (part.name
+                                  or _strip_part_suffix(
+                                      os.path.basename(part.source)))
+            else:
+                key = "single:" + part.source
+            if key not in groups:
+                groups[key] = []
+                order.append(key)
+            groups[key].append(part)
+    except ValueError as exc:
+        eprint("Erreur : %s" % exc)
+        return 2
 
-    if args.stdout and len(order) > 1:
+    multiple = len(order) > 1
+
+    if args.stdout and multiple:
         eprint("Erreur : --stdout impossible avec plusieurs fichiers "
                "reconstruits (%d groupes)." % len(order))
         return 2
 
-    if args.output and not os.path.isdir(args.output) and len(order) > 1:
-        eprint("Erreur : -o doit être un dossier quand plusieurs fichiers "
-               "sont reconstruits.")
-        return 2
+    as_dir = bool(args.output) and (looks_like_dir(args.output) or multiple)
+    if args.output and multiple and not as_dir:
+        # plusieurs groupes mais -o ressemble à un fichier -> on le traite en
+        # dossier (créé au besoin)
+        as_dir = True
 
     exit_code = 0
     for key in order:
         try:
-            data, ref = reassemble(groups[key])
+            data, ref = reassemble(groups[key], max_output=max_output)
         except ValueError as exc:
-            eprint("Erreur (%s) : %s" % (key, exc))
+            eprint("Erreur (%s) : %s"
+                   % (sanitize_display(_group_label(key)), exc))
             exit_code = 1
             continue
 
@@ -480,27 +568,36 @@ def main(argv=None):
             sys.stdout.buffer.write(data)
             continue
 
-        out = output_path_for(ref, key, args)
+        out = output_path_for(ref, _group_label(key), args.output, as_dir)
         try:
             write_output(data, out, args.force)
         except (OSError, ValueError) as exc:
-            eprint("Erreur d'écriture (%s) : %s" % (key, exc))
+            eprint("Erreur d'écriture (%s) : %s"
+                   % (sanitize_display(_group_label(key)), exc))
             exit_code = 1
             continue
 
         if not args.quiet:
-            eprint("OK : %s -> %s (%d octets)" % (key, out, len(data)))
+            eprint("OK : %s -> %s (%d octets)"
+                   % (sanitize_display(_group_label(key)),
+                      sanitize_display(out), len(data)))
 
     return exit_code
 
 
+def _group_label(key):
+    """Nom lisible d'un groupe (retire le préfixe interne multi:/single:)."""
+    if key.startswith("multi:"):
+        return key[len("multi:"):]
+    if key.startswith("single:"):
+        return os.path.basename(key[len("single:"):])
+    return key
+
+
 def _strip_part_suffix(name):
     """Retire les suffixes .gb64 et .part-NNN pour déduire un nom logique."""
-    for suf in (".gb64",):
-        if name.endswith(suf):
-            name = name[: -len(suf)]
-    # retire un éventuel « .part-001 »
-    import re
+    if name.endswith(".gb64"):
+        name = name[: -len(".gb64")]
     name = re.sub(r"\.part-\d+$", "", name)
     return name
 

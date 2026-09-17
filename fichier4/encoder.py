@@ -64,6 +64,21 @@ def parse_size(text):
     return int(value * mult)
 
 
+def sanitize_name(name):
+    """
+    Neutralise les caractères de contrôle (dont \\n et \\r) dans le nom
+    stocké : ils casseraient le format ligne par ligne de l'en-tête.
+    Les noms ordinaires (y compris accentués) ne sont pas modifiés.
+    """
+    out = []
+    for ch in name:
+        if ch in ("\r", "\n") or ord(ch) < 0x20 or ch == "\x7f":
+            out.append("_")
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
 def wrap_b64(data, width):
     """Encode en base64 et coupe en lignes de largeur fixe."""
     b64 = base64.b64encode(data).decode("ascii")
@@ -89,12 +104,16 @@ def build_header(name, size, sha, gzip_flag, parts, part, psize, psha):
 
 
 def emit(container_text, out_path, use_stdout):
+    """Écrit le conteneur (UTF-8, cohérent avec la lecture du décodeur)."""
     if use_stdout:
         sys.stdout.write(container_text)
         if not container_text.endswith("\n"):
             sys.stdout.write("\n")
         return
-    with open(out_path, "w", encoding="ascii", newline="\n") as fh:
+    parent = os.path.dirname(out_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(container_text)
         if not container_text.endswith("\n"):
             fh.write("\n")
@@ -134,12 +153,20 @@ def main(argv=None):
         eprint("Erreur : fichier introuvable : %s" % args.file)
         return 2
 
-    with open(args.file, "rb") as fh:
-        original = fh.read()
+    if args.stdout and args.chunk_bytes:
+        eprint("Erreur : --stdout est incompatible avec --chunk-bytes.")
+        return 2
+
+    try:
+        with open(args.file, "rb") as fh:
+            original = fh.read()
+    except OSError as exc:
+        eprint("Erreur de lecture : %s" % exc)
+        return 2
 
     orig_size = len(original)
     orig_sha = sha256_hex(original)
-    name = os.path.basename(args.file)
+    name = sanitize_name(os.path.basename(args.file))
 
     do_gzip = not args.no_gzip
     if do_gzip:
@@ -148,7 +175,7 @@ def main(argv=None):
     else:
         payload = original
 
-    # découpage éventuel
+    # taille des tranches
     if args.chunk_bytes:
         try:
             chunk = parse_size(args.chunk_bytes)
@@ -159,68 +186,68 @@ def main(argv=None):
             eprint("Erreur : --chunk-bytes doit être > 0")
             return 2
     else:
-        chunk = len(payload) if payload else 1  # tout en une partie
+        chunk = len(payload) if payload else 1
 
-    if args.stdout and args.chunk_bytes:
-        eprint("Erreur : --stdout est incompatible avec --chunk-bytes.")
-        return 2
-
-    # construit les tranches d'octets du flux (compressé ou non)
+    # tranches d'octets du flux (compressé ou non)
     if len(payload) == 0:
         slices = [b""]
     else:
         slices = [payload[i:i + chunk] for i in range(0, len(payload), chunk)]
     parts_total = len(slices)
 
-    # chemin de sortie
     base_out = args.output or (args.file + ".gb64")
 
-    written = []
+    # calcule d'abord tous les chemins, vérifie l'absence de collision AVANT
+    # d'écrire quoi que ce soit
+    plans = []
     for idx, chunk_bytes in enumerate(slices, start=1):
-        header = build_header(
-            name=name,
-            size=orig_size,
-            sha=orig_sha,
-            gzip_flag=do_gzip,
-            parts=parts_total,
-            part=idx,
-            psize=len(chunk_bytes),
-            psha=sha256_hex(chunk_bytes),
-        )
-        body = wrap_b64(chunk_bytes, args.width)
-        container = header + "\n" + body + "\n"
-
         if args.stdout:
-            emit(container, None, True)
-            continue
-
-        if parts_total == 1:
+            out_path = None
+        elif parts_total == 1:
             out_path = base_out
         else:
-            root = base_out
-            if root.endswith(".gb64"):
-                root = root[: -len(".gb64")]
+            root = base_out[:-len(".gb64")] if base_out.endswith(".gb64") \
+                else base_out
             out_path = "%s.part-%03d.gb64" % (root, idx)
+        plans.append((idx, chunk_bytes, out_path))
 
-        if os.path.exists(out_path) and not args.force:
-            eprint("Erreur : le fichier existe déjà : %s (utiliser --force)"
-                   % out_path)
+    if not args.stdout and not args.force:
+        for _, _, out_path in plans:
+            if out_path and os.path.exists(out_path):
+                eprint("Erreur : le fichier existe déjà : %s (utiliser --force)"
+                       % out_path)
+                return 2
+
+    written = []
+    for idx, chunk_bytes, out_path in plans:
+        header = build_header(
+            name=name, size=orig_size, sha=orig_sha, gzip_flag=do_gzip,
+            parts=parts_total, part=idx,
+            psize=len(chunk_bytes), psha=sha256_hex(chunk_bytes))
+        container = header + "\n" + wrap_b64(chunk_bytes, args.width) + "\n"
+        try:
+            emit(container, out_path, args.stdout)
+        except OSError as exc:
+            eprint("Erreur d'écriture (%s) : %s" % (out_path, exc))
             return 2
-        emit(container, out_path, False)
-        written.append(out_path)
+        if not args.stdout:
+            written.append(out_path)
 
     if not args.quiet and not args.stdout:
-        ratio = (len(payload) / orig_size) if orig_size else 0
-        eprint("Source   : %s (%d octets, sha256=%s)"
-               % (name, orig_size, orig_sha[:16] + "..."))
-        eprint("Compressé: %d octets (gzip=%s, ratio=%.1f%%)"
-               % (len(payload), "oui" if do_gzip else "non", 100 * ratio))
-        eprint("Parties  : %d" % parts_total)
+        pct = (100.0 * len(payload) / orig_size) if orig_size else 100.0
+        eprint("Source    : %s (%d octets, sha256=%s...)"
+               % (name, orig_size, orig_sha[:16]))
+        eprint("Compressé : %d octets (gzip=%s, taille = %.1f%% de l'original)"
+               % (len(payload), "oui" if do_gzip else "non", pct))
+        eprint("Parties   : %d" % parts_total)
         for w in written:
             eprint("  écrit : %s (%d octets)" % (w, os.path.getsize(w)))
-        eprint("Décoder avec : python3 decoder.py %s"
-               % (written[0] if parts_total == 1
-                  else (base_out.rsplit('.gb64', 1)[0] + ".part-*.gb64")))
+        if parts_total == 1:
+            eprint("Décoder avec : python3 decoder.py %s" % written[0])
+        else:
+            root = base_out[:-len(".gb64")] if base_out.endswith(".gb64") \
+                else base_out
+            eprint("Décoder avec : python3 decoder.py %s.part-*.gb64" % root)
 
     return 0
 
