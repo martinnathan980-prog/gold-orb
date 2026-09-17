@@ -315,12 +315,19 @@ enregistrerActions({
     enregistrerReglages();
     rendreInterface();
   },
+  'changer-vue-composants': function (d) {
+    if (!VUES_COMPOSANTS.some(function (v) { return v.cle === d.vue; })) return;
+    Store.compo.vue = d.vue;
+    enregistrerReglages();
+    rendreInterface();
+  },
 
   'ouvrir-fiche': function (d) {
     Store.ficheComposant = null;
     Store.pnCourant = d.pn;
     Store.enEditionBoite = false;
     Store.enEditionNom = {};
+    Store.branchesDepliees = {};   // une fiche s'ouvre sur sa vue d'ensemble
     rendreFiche();
     ouvrirPanneau();
   },
@@ -329,8 +336,16 @@ enregistrerActions({
     Store.pnCourant = d.pn;
     Store.enEditionBoite = false;
     Store.enEditionNom = {};
+    Store.branchesDepliees = {};
     rendreFiche();
     ouvrirPanneau();
+  },
+  // Une branche se déplie et se replie d'un clic sur sa ligne. En édition,
+  // elle reste ouverte : on ne referme pas un formulaire par mégarde.
+  'deplier-branche': function (d) {
+    if (Store.enEditionNom[d.id]) return;
+    Store.branchesDepliees[d.id] = !Store.branchesDepliees[d.id];
+    rendreFiche();
   },
 
   // --- boîte ---
@@ -528,6 +543,7 @@ enregistrerActions({
         appliquerNom(r.ligne);
         parId('newEnsPn').value = '';
         Store.enEditionNom[r.ligne[CLE_NOM()]] = true;   // ouvert en saisie directe
+        Store.branchesDepliees[r.ligne[CLE_NOM()]] = true;
         rafraichir();
       })
       .catch(function (e) { signalerErreur(e, 'ajout du sous-ensemble'); });

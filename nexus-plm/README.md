@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 1 275 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 1 449 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 847 tests : logique, pondération, serveur, bundle
+npm test                 # 948 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 428 tests dans un vrai Chromium
+npm run test:navigateur  # 501 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -216,8 +216,26 @@ niveaux sont partagés et ce que cela rapporte.
 
 La boîte est le tronc, les sous-ensembles sont ses branches : un retrait, un
 filet vertical, un compteur. Les empiler à plat laissait croire à quatre blocs
-de même rang. La photo est cadrée au rapport 4/3 et centrée — au format de la
-source et collée à gauche, elle changeait de hauteur d'une boîte à l'autre.
+de même rang.
+
+**La boîte est le parent, et se lit d'un coup.** Une fiche d'identité : la
+photo tient une colonne étroite à gauche, les champs clés — fonction, PN,
+DS/VCI, porteur, statut, qualification — se lisent en face d'elle. Ce qui est
+large (les composants, l'URL, les commentaires) passe dessous. À pleine
+largeur, la photo repoussait la fonction et le PN sous le pli.
+
+**Les branches sont repliées à l'ouverture.** Chaque sous-ensemble tient en
+une ligne : son type, son PN, un résumé tiré du registre (« Console STD ·
+500 × 140 mm · 505 g », la référence d'un harnais, trois mots-clés d'une
+plaquette), « aussi dans N boîtes » s'il est réemployé, sa photo en timbre.
+Trois sous-ensembles font trois lignes : c'est la vue d'ensemble. Un clic
+déplie la fiche complète de la pièce, avec ses trois boutons ; un second la
+replie. Une branche en édition reste ouverte, et un sous-ensemble créé s'ouvre
+déplié, en saisie. Ouvrir une autre fiche repart de la vue d'ensemble.
+
+**Trois boutons, trois contrastes.** Équivalences est plein marine, Éditer
+est blanc, Supprimer est blanc liseré de rouge, sur des blocs blancs. Trois
+boutons du même bleu pâle sur un fond bleu pâle ne se distinguaient pas.
 
 ## Le classement se lit replié
 
@@ -300,7 +318,13 @@ ne se filtrent pas pareil et ne répondent pas aux mêmes questions.
 - **Sous-ensembles** : une ligne par PN, son type, les boîtes qui le montent.
   « Où sert ce sous-ensemble ? » — le réemploi pris par l'autre bout.
 - **Standardisation** : les familles de composants qui se dispersent. « Où la
-  base coûte-t-elle plus qu'elle ne devrait ? »
+  base coûte-t-elle plus qu'elle ne devrait ? » En tête, le **bilan de la
+  convergence** : si chaque famille convergeait vers sa référence la plus
+  montée, combien de références cesserait-on de faire vivre, et combien de
+  boîtes faudrait-il modifier. Chaque famille annonce sa **cible** et son
+  **coût en boîtes**, avec une barre de parts : la cible en couleur, le reste
+  en gris — on lit d'un coup si la convergence est facile (10 / 2 / 1) ou
+  disputée (5 / 4 / 4).
 
 **Espace Composants** — le référentiel des pièces, avec ses propres filtres,
 sa propre recherche et sa propre bande d'indicateurs. Rien n'est partagé avec
@@ -337,6 +361,34 @@ et la page fait 1 700 px au lieu de 5 600.
 Le rail de gauche ne porte que les **familles** — la seule coupe qui change ce
 qu'on cherche. Les états se filtrent depuis la bande du haut, quand on vient
 justement pour ça.
+
+### Trois lectures de la même base
+
+Un commutateur, en tête de la liste, et la lecture choisie est mémorisée.
+
+- **Liste** — une fonction par ligne, triable. Sous le nombre de références,
+  une **barre de parts** : un segment par référence montée, large de ses
+  boîtes, la cible en couleur et les autres en gris.
+- **Par porteur** — une **matrice** : les fonctions en lignes, les porteurs en
+  colonnes (dans l'ordre du registre, « sans porteur » en dernier), et dans
+  chaque case le nombre de boîtes de ce porteur qui montent la fonction. La
+  teinte suit le nombre — une seule couleur, du clair au foncé — et le chiffre
+  est écrit dans la case : la couleur aide, elle ne porte rien seule. C'est
+  une table, elle se lit aussi sans la voir. C'est la question de la
+  communalité entre programmes : le H160 monte-t-il les mêmes colliers que
+  le H145 ?
+- **Carte** — un **treemap** : chaque fonction est une tuile dont l'aire est
+  le nombre de boîtes qui la montent, rangée dans la région de sa famille.
+  Ce qui compte est grand ; ce qui se disperse est marqué *à ranger*. Les
+  fonctions au catalogue que personne ne monte n'ont pas d'aire : elles sont
+  listées dessous. Les positions viennent d'un « squarified treemap » calculé
+  en pourcentages, la carte suit la largeur de l'écran sans mesure.
+
+Dans la **fiche d'une fonction**, le conseil de convergence devient un
+**plan** : la cible, ce qu'on cesserait de faire vivre, et les boîtes à
+modifier — nommées, cliquables. Puis « qui monte quoi » : la même matrice,
+référence par porteur, cible marquée. C'est là qu'on voit qu'un programme
+s'écarte des autres.
 
 ## Pas de duplication
 

@@ -175,7 +175,24 @@ function blocComposantsHtml(champ, valeur, cible) {
 }
 
 // ------------------------------------------------------------
-// Bloc « Général » de la boîte
+// La fiche d'identité : la photo à gauche, les champs clés à droite
+// ------------------------------------------------------------
+/**
+ * La photo situe la pièce, elle ne doit pas la dominer. À pleine largeur
+ * elle repoussait la fonction et le PN sous le pli : on lisait une photo,
+ * puis on cherchait la fiche. Ici elle tient une colonne, et les champs
+ * qu'on vient lire sont en face d'elle.
+ */
+function identiteHtml(photoHtml, champsHtml) {
+  if (!photoHtml) return champsHtml;
+  return '<div class="fiche-identite">' +
+           '<div class="fiche-photo">' + photoHtml + '</div>' +
+           '<div class="fiche-champs">' + champsHtml + '</div>' +
+         '</div>';
+}
+
+// ------------------------------------------------------------
+// Bloc « Général » de la boîte — le parent
 // ------------------------------------------------------------
 function blocBoiteHtml(boite) {
   const edition = Store.enEditionBoite;
@@ -195,8 +212,9 @@ function blocBoiteHtml(boite) {
       '<div class="bloc-actions"><span id="spin-boite" class="zone-spin"></span>' + actions + '</div>' +
     '</header>';
 
-  if (!edition) html += apercuImageHtml(boite['Image'], 'vignette-large', true);
-
+  // Les champs clés se lisent en face de la photo ; ce qui est large — les
+  // composants, l'URL, les commentaires — passe dessous, à pleine largeur.
+  let cles = '', larges = '';
   Store.headersBoites.forEach(function (cle) {
     const valeur = boite[cle];
     const regle = CHAMPS_BOITE[cle] || {};
@@ -206,15 +224,15 @@ function blocBoiteHtml(boite) {
        estMultiBoite(cle) ? GENRE.MULTI : GENRE.TEXTE);
 
     if (genre === GENRE.COMPOSANTS) {
-      html += blocComposantsHtml({ cle: cle, libelle: cle, categorie: regle.categorie, aide: regle.aide },
-                                 valeur, { portee: 'boite', id: null });
+      larges += blocComposantsHtml({ cle: cle, libelle: cle, categorie: regle.categorie, aide: regle.aide },
+                                   valeur, { portee: 'boite', id: null });
       return;
     }
     if (genre === GENRE.MULTI) {
       // Le porteur se choisit dans la liste fermée des porteurs Airbus Helicopters.
       const champ = { cle: cle, libelle: cle, liste: regle.liste || null,
                       options: regle.ferme ? porteursConnus() : null };
-      html += blocMultiHtml(champ, valeursMulti(valeur), true,
+      cles += blocMultiHtml(champ, valeursMulti(valeur), true,
                             'ajouter-multi-boite', 'supprimer-multi-boite', { champ: cle },
                             regle.ferme ? 'puce-porteur' : '');
       return;
@@ -223,14 +241,21 @@ function blocBoiteHtml(boite) {
     const champ = { cle: cle, libelle: genre === GENRE.IMAGE ? 'Image (URL)' : cle,
                     genre: genre === GENRE.LONG ? GENRE.LONG : GENRE.TEXTE,
                     liste: regle.liste || null };
+    const large = genre === GENRE.IMAGE || genre === GENRE.LONG;
 
-    if (edition) { html += ligneHtml(champ.libelle, saisieHtml(champ, valeur, 'champ-boite')); return; }
+    if (edition) {
+      const ligne = ligneHtml(champ.libelle, saisieHtml(champ, valeur, 'champ-boite'));
+      if (large) larges += ligne; else cles += ligne;
+      return;
+    }
     // Hors édition, on montre TOUT ce qu'on peut éditer, l'URL comprise : un
     // champ qu'il faut passer en édition pour lire est un champ qu'on oublie.
-    if (genre === GENRE.IMAGE) { html += ligneHtml(champ.libelle, urlLisibleHtml(valeur)); return; }
-    html += ligneHtml(champ.libelle, valeurLisibleHtml(valeur));
+    if (genre === GENRE.IMAGE) { larges += ligneHtml(champ.libelle, urlLisibleHtml(valeur)); return; }
+    const ligne = ligneHtml(champ.libelle, valeurLisibleHtml(valeur));
+    if (large) larges += ligne; else cles += ligne;
   });
 
+  html += identiteHtml(edition ? '' : apercuImageHtml(boite['Image'], 'vignette-fiche'), cles) + larges;
   return html + '</section>';
 }
 
@@ -267,12 +292,86 @@ function boutonHtml(action, donnees, libelle, classe) {
 }
 
 // ------------------------------------------------------------
-// Bloc d'un sous-ensemble — piloté par son type
+// Une branche : un sous-ensemble, replié en une ligne, déplié en fiche
 // ------------------------------------------------------------
-function blocNomHtml(ligne) {
+/**
+ * Le résumé d'une ligne repliée : ce que le type déclare comme parlant
+ * (registre `resume`), en une phrase. Deux cotes qui se suivent s'écrivent
+ * « L × l mm », une masse porte son unité, des mots-clés se citent.
+ */
+function resumeBranche(ligne, type) {
+  const cles = type.resume || [];
+  const morceaux = [];
+  for (let i = 0; i < cles.length; i++) {
+    const cle = cles[i];
+    const champ = type.champs.find(function (c) { return c.cle === cle; }) || {};
+    if (champ.genre === GENRE.MOTS_CLES) {
+      const mots = motsCles(ligne[cle]);
+      if (mots.length) morceaux.push(mots.slice(0, 3).join(', ') + (mots.length > 3 ? '…' : ''));
+      continue;
+    }
+    const v = txt(ligne[cle]);
+    if (v === '-') continue;
+    if (/Dim Long/.test(cle) && /Dim Larg/.test(cles[i + 1] || '')) {
+      const l = txt(ligne[cles[i + 1]]);
+      i++;
+      morceaux.push(l === '-' ? v + ' mm' : v + ' × ' + l + ' mm');
+      continue;
+    }
+    const unite = (cle.match(/\((mm|g|kg)\)/) || [])[1];
+    morceaux.push(unite ? v + ' ' + unite : v);
+  }
+  return morceaux.join(' · ');
+}
+
+/**
+ * La ligne d'une branche. Repliée, elle dit le type, le PN, un résumé, où
+ * la pièce est aussi montée, et montre sa photo en timbre. C'est la vue
+ * d'ensemble : trois sous-ensembles tiennent en trois lignes.
+ */
+function brancheHtml(ligne) {
   const id = ligne[CLE_NOM()];
   const type = typeDe(ligne);
   const edition = !!Store.enEditionNom[id];
+  const ouverte = edition || !!Store.branchesDepliees[id];
+  const ailleurs = boitesUtilisant(ligne['PN du type'], ligne[CLE_PN()]);
+  const url = urlMiniature(ligne['Image']);
+  const resume = resumeBranche(ligne, type);
+
+  const tete = '<button type="button" class="branche-tete"' +
+    dataAttrs({ action: 'deplier-branche', id: id }) +
+    ' aria-expanded="' + (ouverte ? 'true' : 'false') + '"' +
+    ' title="' + (ouverte ? 'Replier' : 'Déplier') + ' ce sous-ensemble">' +
+    '<span class="pastille-type ' + type.teinte + '" aria-hidden="true">' + type.icone + '</span>' +
+    '<span class="branche-texte">' +
+      '<span class="branche-ligne">' +
+        '<span class="branche-type">' + esc(type.libelle) + '</span>' +
+        '<span class="branche-pn">' + esc(txt(ligne['PN du type'], 'sans PN')) + '</span>' +
+      '</span>' +
+      (resume ? '<span class="branche-resume">' + esc(resume) + '</span>' : '') +
+    '</span>' +
+    (ailleurs.length
+      ? '<span class="branche-partage" title="' + esc(ailleurs.join(', ')) + '">' +
+          'aussi dans ' + ailleurs.length + (ailleurs.length > 1 ? ' boîtes' : ' boîte') + '</span>'
+      : '') +
+    (url ? '<span class="branche-photo"><img src="' + esc(url) + '" alt="" loading="lazy"></span>' : '') +
+    '<span class="branche-chevron" aria-hidden="true">›</span>' +
+  '</button>';
+
+  return '<section class="bloc bloc-branche bloc-' + type.teinte + (ouverte ? ' ouverte' : '') + '">' +
+    tete +
+    (ouverte ? '<div class="branche-corps">' + blocNomHtml(ligne, type, edition, ailleurs) + '</div>' : '') +
+  '</section>';
+}
+
+// ------------------------------------------------------------
+// Le corps d'un sous-ensemble déplié — piloté par son type
+// ------------------------------------------------------------
+function blocNomHtml(ligne, type, edition, ailleurs) {
+  const id = ligne[CLE_NOM()];
+  type = type || typeDe(ligne);
+  if (edition === undefined) edition = !!Store.enEditionNom[id];
+  if (!ailleurs) ailleurs = boitesUtilisant(ligne['PN du type'], ligne[CLE_PN()]);
 
   const actions = edition
     ? boutonHtml('sauver-nom', { id: id }, 'Enregistrer', 'btn-valider') +
@@ -281,79 +380,67 @@ function blocNomHtml(ligne) {
       boutonHtml('editer-nom', { id: id }, 'Éditer', 'btn-neutre') +
       boutonHtml('supprimer-nom', { id: id }, 'Supprimer', 'btn-danger');
 
-  let html = '<section class="bloc bloc-' + type.teinte + '">' +
-    '<header class="bloc-tete">' +
-      '<div class="bloc-identite">' +
-        '<span class="pastille-type ' + type.teinte + '">' + type.icone + '</span>' +
-        '<div>' +
-          '<h3>' + esc(type.libelle) + '</h3>' +
-          '<p class="bloc-pn">' + esc(txt(ligne['PN du type'], 'sans PN')) + '</p>' +
-        '</div>' +
-      '</div>' +
-      '<div class="bloc-actions"><span id="spin-nom-' + esc(id) + '" class="zone-spin"></span>' +
-        actions + '</div>' +
-    '</header>';
+  let html = '<div class="bloc-actions branche-outils">' +
+    '<span id="spin-nom-' + esc(id) + '" class="zone-spin"></span>' + actions + '</div>';
 
+  let cles = '', larges = '';
   if (edition) {
-    html += ligneHtml('Type', saisieHtml({ cle: 'Type', genre: GENRE.TEXTE, liste: 'list-Type' },
+    cles += ligneHtml('Type', saisieHtml({ cle: 'Type', genre: GENRE.TEXTE, liste: 'list-Type' },
                                          ligne['Type'], 'champ-nom', id),
                       'change la fiche affichée');
   } else {
-    html += ligneHtml('Type', valeurLisibleHtml(ligne['Type']));
+    cles += ligneHtml('Type', valeurLisibleHtml(ligne['Type']));
   }
 
-  // Réemploi : la même pièce est-elle montée ailleurs ?
-  const ailleurs = boitesUtilisant(ligne['PN du type'], ligne[CLE_PN()]);
+  // Réemploi : la même pièce est-elle montée ailleurs ? Une ligne comme les
+  // autres, en face de la photo — plus un bandeau collé sous elle.
   if (ailleurs.length) {
-    html += '<div class="usages">' +
-      '<span class="usages-titre">Aussi montée dans</span>' +
-      ailleurs.map(function (pn) {
-        return '<button type="button" class="usage-lien"' +
-               dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
-      }).join('') +
-    '</div>';
+    cles += ligneHtml('Aussi montée dans',
+      '<div class="usages">' +
+        ailleurs.map(function (pn) {
+          return '<button type="button" class="usage-lien"' +
+                 dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
+        }).join('') +
+      '</div>');
   }
-
-  if (!edition) html += apercuImageHtml(ligne['Image'], 'vignette-sous', true);
 
   // Seuls les champs du type : c'est tout l'intérêt du registre.
   champsDuType(type).forEach(function (champ) {
     const valeur = ligne[champ.cle];
 
     if (champ.genre === GENRE.COMPOSANTS) {
-      html += blocComposantsHtml(champ, valeur, { portee: 'nom', id: id });
+      larges += blocComposantsHtml(champ, valeur, { portee: 'nom', id: id });
       return;
     }
 
     if (champ.genre === GENRE.MULTI) {
-      html += blocMultiHtml(champ, valeursMulti(valeur), true,
+      cles += blocMultiHtml(champ, valeursMulti(valeur), true,
                             'ajouter-multi-nom', 'supprimer-multi-nom',
                             { id: id, champ: champ.cle });
       return;
     }
 
     if (champ.genre === GENRE.MOTS_CLES) {
-      html += blocMultiHtml(champ, motsCles(valeur), true,
+      cles += blocMultiHtml(champ, motsCles(valeur), true,
                             'ajouter-multi-nom', 'supprimer-multi-nom',
                             { id: id, champ: champ.cle }, 'puce-motcle');
       return;
     }
 
     if (champ.genre === GENRE.IMAGE) {
-      html += edition
+      larges += edition
         ? ligneHtml('Image (URL)', saisieHtml(champ, valeur, 'champ-nom', id))
         : ligneHtml('Image (URL)', urlLisibleHtml(valeur));
       return;
     }
 
-    if (edition) {
-      html += ligneHtml(champ.libelle, saisieHtml(champ, valeur, 'champ-nom', id), champ.aide);
-      return;
-    }
-    html += ligneHtml(champ.libelle, valeurLisibleHtml(valeur), champ.aide);
+    const ligneChamp = edition
+      ? ligneHtml(champ.libelle, saisieHtml(champ, valeur, 'champ-nom', id), champ.aide)
+      : ligneHtml(champ.libelle, valeurLisibleHtml(valeur), champ.aide);
+    if (champ.genre === GENRE.LONG) larges += ligneChamp; else cles += ligneChamp;
   });
 
-  return html + '</section>';
+  return html + identiteHtml(edition ? '' : apercuImageHtml(ligne['Image'], 'vignette-fiche'), cles) + larges;
 }
 
 // ------------------------------------------------------------
@@ -375,29 +462,28 @@ function ficheHtml(boite) {
     parType.get(t.cle).push(l);
   });
 
-  const sommaire = parType.size
-    ? '<nav class="sommaire" aria-label="Composition">' +
-        Array.from(parType.entries()).map(function (e) {
-          const t = typeParCle(e[0]);
-          return '<span class="sommaire-item ' + t.teinte + '">' + t.icone + ' ' +
-                 esc(t.libelle) + ' <b>' + e[1].length + '</b></span>';
-        }).join('') +
-      '</nav>'
-    : '';
+  // La composition se lit dans la tête de l'arbre, pas dans un bandeau à
+  // part au-dessus de la boîte : c'est des sous-ensembles qu'elle parle.
+  const sommaire = Array.from(parType.entries()).map(function (e) {
+    const t = typeParCle(e[0]);
+    return '<span class="sommaire-item ' + t.teinte + '">' + t.icone + ' ' +
+           esc(t.libelle) + ' <b>' + e[1].length + '</b></span>';
+  }).join('');
 
-  // La boîte est le tronc, les sous-ensembles sont ses branches. Les
-  // empiler à plat laissait croire à quatre blocs de même rang ; ici la
-  // subordination se voit : un retrait, un filet vertical, un compteur.
+  // La boîte est le tronc, les sous-ensembles sont ses branches. Chacune
+  // tient en une ligne tant qu'on ne l'ouvre pas : on voit d'abord tout,
+  // puis on regarde une pièce.
   const branches = lignes.length
     ? '<div class="arbre-fiche">' +
         '<div class="arbre-tete">' +
           '<span class="arbre-titre">Sous-ensembles</span>' +
           '<span class="arbre-compte">' + lignes.length +
             (lignes.length > 1 ? ' montés' : ' monté') + '</span>' +
+          '<nav class="sommaire" aria-label="Composition">' + sommaire + '</nav>' +
         '</div>' +
         '<div class="arbre-branches">' +
           lignes.map(function (l) {
-            return '<div class="arbre-branche">' + blocNomHtml(l) + '</div>';
+            return '<div class="arbre-branche">' + brancheHtml(l) + '</div>';
           }).join('') +
           '<div class="arbre-branche arbre-ajout">' +
             boutonHtml('nouveau-sous-ensemble', {}, '+ Ajouter un sous-ensemble', 'btn-neutre') +
@@ -408,7 +494,7 @@ function ficheHtml(boite) {
         boutonHtml('nouveau-sous-ensemble', {}, '+ Ajouter un sous-ensemble', 'btn-principal') +
       '</div>';
 
-  return sommaire + blocBoiteHtml(boite) + branches;
+  return blocBoiteHtml(boite) + branches;
 }
 
 /**
@@ -451,13 +537,49 @@ function ficheComposantHtml(cible) {
       '<span class="fc-l">boîte' + (boites.size > 1 ? 's' : '') + '</span></div>' +
   '</div>';
 
-  const conseil = montees.length > 1 && majoritaire
-    ? '<p class="fc-conseil">' +
-        '<b>' + montees.length + ' références montées</b> pour le même service. ' +
-        'La plus répandue est <span class="fc-pn">' + esc(majoritaire.reference) + '</span>' +
-        ' (' + majoritaire.nbBoites + ' boîte' + (majoritaire.nbBoites > 1 ? 's' : '') + ') : ' +
-        'c\'est vers elle qu\'il coûte le moins cher de converger.' +
-      '</p>'
+  // Le plan de convergence : la cible, ce qu'on cesserait de faire vivre,
+  // et les boîtes à modifier — nommées, cliquables. C'est la décision.
+  const plan = planConvergence(base);
+  const conseil = plan
+    ? '<section class="fc-plan">' +
+        '<p class="fc-conseil">' +
+          '<b>' + montees.length + ' références montées</b> pour le même service. ' +
+          'La plus répandue est <span class="fc-pn">' + esc(plan.cible.reference) + '</span>' +
+          ' (' + plan.cible.nbBoites + ' boîte' + (plan.cible.nbBoites > 1 ? 's' : '') + ') : ' +
+          'c\'est vers elle qu\'il coûte le moins cher de converger.' +
+        '</p>' +
+        '<div class="fc-plan-corps">' +
+          partsHtml(base, 'parts-fiche') +
+          '<div class="fc-plan-chiffres">' +
+            '<span class="fc-plan-mesure"><b>−' + plan.economie + '</b> référence' + (plan.economie > 1 ? 's' : '') + ' à faire vivre</span>' +
+            '<span class="fc-plan-mesure fc-plan-cout"><b>' + plan.aModifier.length + '</b> boîte' + (plan.aModifier.length > 1 ? 's' : '') + ' à modifier</span>' +
+          '</div>' +
+          '<div class="fc-plan-boites">' +
+            plan.aModifier.map(function (pn) {
+              return '<button type="button" class="usage-lien"' +
+                     dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+      '</section>'
+    : '';
+
+  // Qui monte quoi : la même fonction, référence par référence, porteur par
+  // porteur. C'est là qu'on voit qu'un programme s'écarte des autres.
+  const porteursVus = new Set();
+  montees.forEach(function (c) { c.porteurs.forEach(function (p) { porteursVus.add(p); }); });
+  const matrice = montees.length > 1 && porteursVus.size > 1
+    ? '<section class="fc-matrice">' +
+        '<h4 class="fc-titre">Qui monte quoi</h4>' +
+        matriceHtml(matriceEmploi(montees.slice().sort(function (a, b) { return b.nbBoites - a.nbBoites; })
+          .map(function (c) { return { libelle: txt(c.reference, 'sans référence'), lignes: [c], composant: c }; })), {
+          enTete: 'Référence',
+          ligne: function (g) {
+            return '<span class="mx-ref' + (plan && g.composant === plan.cible ? ' mx-ref-cible' : '') + '">' +
+                   esc(g.libelle) + (plan && g.composant === plan.cible ? '<span class="mx-cible-tag">cible</span>' : '') + '</span>';
+          }
+        }) +
+      '</section>'
     : '';
 
   const blocs = Array.from(parNorme.values())
@@ -484,7 +606,7 @@ function ficheComposantHtml(cible) {
       '</section>';
     }).join('');
 
-  return resume + conseil + '<div class="fc-normes">' + blocs + '</div>';
+  return resume + conseil + matrice + '<div class="fc-normes">' + blocs + '</div>';
 }
 
 /** Une référence dans la fiche d'une fonction. */

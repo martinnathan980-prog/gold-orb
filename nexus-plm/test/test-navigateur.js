@@ -54,11 +54,25 @@ async function fermerModale(page, id) {
   await page.locator('#' + id + ' .btn-close').click();
   await attendreFerme(page, id);
 }
-async function ouvrirFiche(page, pn) {
+/**
+ * Les branches d'une fiche sont repliees a l'ouverture : la plupart des
+ * tests lisent le CONTENU des sous-ensembles, on les deplie donc toutes.
+ * Un test qui veut la vue d'ensemble passe `replie`.
+ */
+async function deplierBranches(page) {
+  for (let i = 0; i < 12; i++) {
+    const repliee = page.locator('#slideOverBody .branche-tete[aria-expanded="false"]').first();
+    if (!(await repliee.count())) break;
+    await repliee.click();
+    await page.waitForTimeout(180);
+  }
+}
+async function ouvrirFiche(page, pn, replie) {
   await page.locator('.carte', { hasText: pn })
             .getByRole('button', { name: 'Fiche complète' }).click();
   await page.waitForSelector('#detailsSlideOver.show');
   await page.waitForTimeout(320);
+  if (!replie) await deplierBranches(page);
 }
 async function fermerFiche(page) {
   await page.locator('#detailsSlideOver .btn-close').click();
@@ -467,6 +481,20 @@ async function ecranPropre(page) {
   vrai('une reference majoritaire est signalee',
        await page.locator('.famille .ref-majoritaire').count() >= 1);
 
+  // Le bilan de la convergence, en tete : ce qu'elle rapporte, ce qu'elle coute.
+  eq('un bilan en trois tuiles', await page.locator('.standard-bilan .sb-tuile').count(), 3);
+  const bilanTxt = await texte(page, '.standard-bilan');
+  vrai('il compte les familles', /familles? dispersée/.test(bilanTxt));
+  vrai('les references avant et apres', /\d+\s*→\s*\d+/.test(bilanTxt));
+  vrai('et les boites a modifier', /boîtes? à modifier/.test(bilanTxt));
+  // Chaque famille annonce sa cible et son cout.
+  eq('chaque famille porte sa cible', await page.locator('.famille .famille-cible').count(), nbFamilles);
+  eq('la cible est la plus montee',
+     (await colonnette.locator('.famille-cible b').innerText()).trim(), 'NAS43DD3-20');
+  vrai('et le cout en boites',
+       /\d+ boîtes? à modifier/.test(await colonnette.locator('.famille-cout').innerText()));
+  eq('avec ses parts en barre', await colonnette.locator('.parts .part-cible').count(), 1);
+
   const largeurStd = await page.evaluate(function () {
     return { doc: document.documentElement.scrollWidth, vue: window.innerWidth };
   });
@@ -803,6 +831,103 @@ async function ecranPropre(page) {
   await page.waitForTimeout(500);
   eq('on revient a l\'emploi', await teteListe(), parEmploi);
 
+  // Trois lectures de la meme base : la liste, la matrice par porteur, la carte.
+  eq('trois lectures offertes', await page.locator('.compo-vue-btn').count(), 3);
+  eq('la liste est la lecture par defaut',
+     (await page.locator('.compo-vue-btn.actif').innerText()).trim(), 'Liste');
+  vrai('les fonctions dispersees montrent leurs parts', await page.locator('.lf-ligne .parts').count() >= 3);
+  const ligneCollierListe = page.locator('.lf-ligne', { hasText: 'Collier' }).first();
+  const partsCollier = ligneCollierListe.locator('.parts');
+  eq('la cible d\'abord', await partsCollier.locator('.part-cible').count(), 1);
+  vrai('puis un segment par autre reference montee', await partsCollier.locator('.part-autre').count() >= 1);
+  vrai('et le detail est dans l\'info-bulle',
+       /cible MS3367-4-9 : \d+ boîtes/.test(await partsCollier.getAttribute('title')));
+  const boitesCollier = (await ligneCollierListe.locator('.lf-boites').innerText()).trim().split(' ')[0];
+
+  await page.locator('.compo-vue-btn', { hasText: 'Par porteur' }).click(); await page.waitForTimeout(500);
+  eq('la matrice est une table', await page.locator('table.mx').count(), 1);
+  eq('plus de liste', await page.locator('.lf-ligne').count(), 0);
+  const porteursMx = await page.locator('.mx-porteur').allTextContents();
+  vrai('un porteur par colonne', porteursMx.length >= 5);
+  vrai('dans l\'ordre du registre',
+       porteursMx.indexOf('Dauphin') < porteursMx.indexOf('H160') &&
+       porteursMx.indexOf('H160') < porteursMx.indexOf('H225'));
+  eq('une fonction par ligne', await page.locator('.mx tbody tr').count(), nbFonctions);
+  const ligneCollierMx = page.locator('.mx tbody tr', { hasText: 'Collier' }).first();
+  const casesCollier = await ligneCollierMx.locator('.mx-case span').allTextContents();
+  vrai('chaque case porte son nombre', casesCollier.some(function (c) { return /^\d+$/.test(c.trim()); }));
+  eq('le total de la ligne est le nombre de boites de la liste',
+     (await ligneCollierMx.locator('.mx-total').innerText()).trim(), boitesCollier);
+  vrai('la teinte suit le nombre : du plus clair au plus fonce',
+       await page.locator('.mx-case.mx-5').count() >= 1 && await page.locator('.mx-case.mx-1, .mx-case.mx-2').count() >= 1);
+  vrai('une case vide se dit', await page.locator('.mx-case.mx-0').count() >= 1);
+  vrai('et une legende explique l\'echelle', (await texte(page, '.mx-legende')).indexOf('boîte') !== -1);
+  const largeurMx = await page.evaluate(function () {
+    return { doc: document.documentElement.scrollWidth, vue: window.innerWidth };
+  });
+  vrai('pas de defilement horizontal (matrice)', largeurMx.doc <= largeurMx.vue + 1);
+  await page.screenshot({ path: path.join(RACINE, 'build/apercu-composants-porteurs.png') });
+  await ligneCollierMx.locator('.mx-fonction').click();
+  await page.waitForSelector('#detailsSlideOver.show'); await page.waitForTimeout(500);
+  eq('la fonction ouvre sa fiche depuis la matrice', (await texte(page, '#slideOverTitle')).trim(), 'Collier');
+  // La fiche : le plan de convergence, et qui monte quoi.
+  eq('la fiche donne un plan de convergence', await page.locator('.fc-plan').count(), 1);
+  vrai('qui nomme les boites a modifier', await page.locator('.fc-plan-boites .usage-lien').count() >= 1);
+  vrai('et chiffre ce qu\'on cesse de faire vivre', /−\d/.test(await texte(page, '.fc-plan-chiffres')));
+  eq('une matrice reference par porteur', await page.locator('.fc-matrice table.mx').count(), 1);
+  eq('avec la cible marquee', await page.locator('.fc-matrice .mx-cible-tag').count(), 1);
+  vrai('une ligne par reference montee', await page.locator('.fc-matrice tbody tr').count() >= 2);
+  await fermerFiche(page);
+
+  await page.locator('.compo-vue-btn', { hasText: 'Carte' }).click(); await page.waitForTimeout(500);
+  eq('la carte est la', await page.locator('.tm').count(), 1);
+  eq('sans tri : elle se range par aire', await page.locator('.compo-tri-btn').count(), 0);
+  const nbTuiles = await page.locator('.tm-tuile').count();
+  vrai('une tuile par fonction montee', nbTuiles >= 15 && nbTuiles < nbFonctions);
+  eq('trois regions, une par famille', await page.locator('.tm-region').count(), 3);
+  const tuileCollier = page.locator('.tm-tuile[aria-label^="Collier"]').first();
+  const tuileCosse = page.locator('.tm-tuile[aria-label^="Cosse"]').first();
+  const bCollier = await tuileCollier.boundingBox();
+  const bCosse = await tuileCosse.boundingBox();
+  vrai('l\'aire suit les boites : le collier est bien plus grand que la cosse',
+       bCollier.width * bCollier.height > 5 * bCosse.width * bCosse.height);
+  vrai('les dispersees sont marquees', await page.locator('.tm-tuile.tm-disperse').count() >= 5);
+  vrai('les dormantes sont listees a part', (await texte(page, '.tm-dormantes')).indexOf('Vis') !== -1);
+  vrai('chaque tuile dit tout dans son titre', /\d+ boîtes/.test(await tuileCollier.getAttribute('title')));
+  const geometrie = await page.evaluate(function () {
+    const r = Array.from(document.querySelectorAll('.tm-tuile')).map(function (e) { return e.getBoundingClientRect(); });
+    const carte = document.querySelector('.tm').getBoundingClientRect();
+    let hors = 0, chev = 0;
+    r.forEach(function (a, i) {
+      if (a.left < carte.left - 1 || a.right > carte.right + 1 || a.top < carte.top - 1 || a.bottom > carte.bottom + 1) hors++;
+      r.forEach(function (b, j) {
+        if (j <= i) return;
+        const x = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        const y = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+        if (x > 2 && y > 2) chev++;
+      });
+    });
+    return { hors: hors, chev: chev };
+  });
+  eq('aucune tuile hors de la carte', geometrie.hors, 0);
+  eq('aucun chevauchement', geometrie.chev, 0);
+  const largeurTm = await page.evaluate(function () {
+    return { doc: document.documentElement.scrollWidth, vue: window.innerWidth };
+  });
+  vrai('pas de defilement horizontal (carte)', largeurTm.doc <= largeurTm.vue + 1);
+  await page.screenshot({ path: path.join(RACINE, 'build/apercu-composants-carte.png') });
+  await tuileCollier.click();
+  await page.waitForSelector('#detailsSlideOver.show'); await page.waitForTimeout(500);
+  eq('une tuile ouvre sa fiche', (await texte(page, '#slideOverTitle')).trim(), 'Collier');
+  await fermerFiche(page);
+  // (le stockage local est ferme dans ce bac a sable : la memorisation est
+  // couverte par les tests unitaires, on verifie ici l'etat en place)
+  vrai('la lecture est celle de l\'etat', await page.evaluate(function () {
+    return Store.compo.vue === 'carte';
+  }));
+  await page.locator('.compo-vue-btn', { hasText: 'Liste' }).click(); await page.waitForTimeout(400);
+  eq('retour a la liste', await page.locator('.lf-ligne').count(), nbFonctions);
+
   // Le detail s'ouvre dans la FICHE, comme pour une boite.
   await ligneFct.click();
   await page.waitForSelector('#detailsSlideOver.show'); await page.waitForTimeout(500);
@@ -1018,14 +1143,46 @@ async function ecranPropre(page) {
   await ecranPropre(page);
 
   // ---------------------------------------------------------------
-  bloc('La fiche est un arbre : la boite, puis ses branches');
-  await ouvrirFiche(page, '332P20001');
+  bloc('La fiche est un arbre : la boite, puis ses branches repliees');
+  await ouvrirFiche(page, '332P20001', true);
   eq('un bloc pour la boite', await page.locator('#slideOverBody .bloc-general').count(), 1);
   eq('une tete pour les sous-ensembles', await page.locator('.arbre-tete').count(), 1);
   vrai('qui les compte',
        (await texte(page, '.arbre-compte')).indexOf('monté') !== -1);
-  const nbBranches = await page.locator('.arbre-branche').count();
+  vrai('et resume leur composition dans la meme tete',
+       await page.locator('.arbre-tete .sommaire-item').count() >= 3);
+  const nbBranches = await page.locator('.arbre-branche .bloc-branche').count();
   vrai('chaque sous-ensemble est une branche', nbBranches >= 3);
+
+  // La vue d'ensemble : les branches sont repliees, une ligne chacune.
+  eq('toutes repliees a l\'ouverture',
+     await page.locator('.branche-tete[aria-expanded="false"]').count(), nbBranches);
+  eq('aucun corps deplie', await page.locator('.branche-corps').count(), 0);
+  const ligneStruct = page.locator('.bloc-type-structure .branche-tete').first();
+  vrai('la ligne dit le type',
+       /structure/i.test(await ligneStruct.locator('.branche-type').innerText()));
+  vrai('le PN', (await ligneStruct.locator('.branche-pn').innerText()).trim().length > 0);
+  vrai('et un resume — montage, cotes, masse',
+       /mm/.test(await ligneStruct.locator('.branche-resume').innerText()));
+  vrai('avec sa photo en timbre', await ligneStruct.locator('.branche-photo img').count() === 1);
+  const hautVueEnsemble = await page.evaluate(function () {
+    return document.getElementById('slideOverBody').scrollHeight;
+  });
+  vrai('la fiche tient en peu de hauteur : c\'est une vue d\'ensemble', hautVueEnsemble < 1500);
+
+  // Un clic deplie, un second replie.
+  await ligneStruct.click(); await page.waitForTimeout(350);
+  eq('un clic deplie la branche', await page.locator('.bloc-type-structure .branche-corps').count(), 1);
+  eq('et le dit',
+     await page.locator('.bloc-type-structure .branche-tete').first().getAttribute('aria-expanded'), 'true');
+  vrai('ses champs apparaissent', (await texte(page, '.bloc-type-structure')).indexOf('Longueur') !== -1);
+  eq('avec ses trois boutons',
+     await page.locator('.bloc-type-structure .branche-outils .btn-action').count(), 3);
+  vrai('la fiche s\'allonge d\'autant', await page.evaluate(function () {
+    return document.getElementById('slideOverBody').scrollHeight;
+  }) > hautVueEnsemble + 300);
+  await page.locator('.bloc-type-structure .branche-tete').first().click(); await page.waitForTimeout(350);
+  eq('un second clic la replie', await page.locator('.bloc-type-structure .branche-corps').count(), 0);
 
   // La subordination se voit : les branches sont en retrait de la boite.
   const posBoite = await page.locator('#slideOverBody .bloc-general').boundingBox();
@@ -1036,14 +1193,49 @@ async function ecranPropre(page) {
     const b = document.querySelector('.arbre-branches');
     return !!b && getComputedStyle(b, '::before').content !== 'none';
   }));
+  vrai('la boite prend du relief, pas les branches', await page.evaluate(function () {
+    return getComputedStyle(document.querySelector('.bloc-general')).boxShadow !== 'none' &&
+           getComputedStyle(document.querySelector('.bloc-branche')).boxShadow === 'none';
+  }));
 
-  // La photo est cadree et centree, plus collee a gauche au format source.
-  const vign = await page.locator('.vignette-large').boundingBox();
-  const corps = await page.locator('#slideOverBody').boundingBox();
-  vrai('la photo est centree',
-       Math.abs((vign.x + vign.width / 2) - (corps.x + corps.width / 2)) < 16);
+  // La photo tient une colonne etroite ; les champs cles se lisent en face.
+  const vign = await page.locator('.bloc-general .vignette-fiche').boundingBox();
+  const champs = await page.locator('.bloc-general .fiche-champs').boundingBox();
+  vrai('la photo est petite', vign.width <= 160);
+  vrai('a gauche des champs', vign.x + vign.width <= champs.x + 1);
+  vrai('a la meme hauteur', Math.abs(vign.y - champs.y) < 24);
   vrai('dans un cadre de rapport fixe',
        Math.abs(vign.width / vign.height - 4 / 3) < 0.05);
+  const posPn = await page.locator('.bloc-general .ligne-cle', { hasText: 'PN Global' }).boundingBox();
+  vrai('la fonction et le PN se lisent sans defiler', posPn.y < 600);
+
+  // Les trois boutons se distinguent : plein, blanc, blanc lisere de rouge.
+  const fonds = await page.evaluate(function () {
+    const g = document.querySelector('.bloc-general');
+    const st = function (sel) { return getComputedStyle(g.querySelector(sel)); };
+    return { eq: st('[data-action="comparer-boite"]').backgroundColor,
+             eqTexte: st('[data-action="comparer-boite"]').color,
+             ed: st('[data-action="editer-boite"]').backgroundColor,
+             edBord: st('[data-action="editer-boite"]').borderTopColor,
+             sup: st('[data-action="supprimer-boite"]').backgroundColor,
+             supTexte: st('[data-action="supprimer-boite"]').color,
+             supBord: st('[data-action="supprimer-boite"]').borderTopColor };
+  });
+  eq('Equivalences est plein marine', fonds.eq, 'rgb(0, 32, 91)');
+  eq('en blanc dessus', fonds.eqTexte, 'rgb(255, 255, 255)');
+  eq('Editer est blanc', fonds.ed, 'rgb(255, 255, 255)');
+  eq('Supprimer aussi', fonds.sup, 'rgb(255, 255, 255)');
+  eq('mais ecrit en rouge', fonds.supTexte, 'rgb(163, 32, 32)');
+  vrai('et lisere de rouge, la ou Editer est lisere de gris', fonds.supBord !== fonds.edBord);
+
+  // « Aussi montee dans » est une ligne de la fiche, pas un bandeau colle a la photo.
+  await deplierBranches(page);
+  const usages = page.locator('#slideOverBody .usages').first();
+  eq('le reemploi se lit', await usages.count(), 1);
+  vrai('comme une ligne, avec son libelle',
+       (await usages.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " ligne ")][1]').innerText())
+         .indexOf('Aussi montée dans') !== -1);
+  eq('plus de bandeau', await page.locator('.usages-titre').count(), 0);
   await fermerFiche(page);
   await ecranPropre(page);
 
@@ -1639,8 +1831,9 @@ async function ecranPropre(page) {
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-pieces.png') });
   await page.locator('.onglet-vue', { hasText: 'Boîtes' }).click();
   await page.waitForTimeout(400);
-  await ouvrirFiche(page, '332P20001');
+  await ouvrirFiche(page, '332P20001', true);
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-fiche.png') });
+  await deplierBranches(page);
   await page.locator('.bloc-type-plaquette [data-action="comparer-nom"]').first().click();
   await page.waitForSelector('#compareModal.show');
   await page.waitForTimeout(500);
@@ -1658,7 +1851,7 @@ async function ecranPropre(page) {
   vrai('réglages et comparaison coexistent, côte à côte',
        await page.locator('#compareModal.show').count() === 1 && await railVisible(page));
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-reglages.png') });
-  console.log('  6 captures écrites dans build/');
+  console.log('  8 captures écrites dans build/');
 
   eq('aucune exception JavaScript non rattrapée', exceptions, []);
   vrai('les échecs provoqués ont été journalisés', diagnostics.length >= 2);

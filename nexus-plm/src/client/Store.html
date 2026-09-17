@@ -32,7 +32,8 @@ const Store = {
   espace: 'boites',          // 'boites' ou 'composants'
   vueMode: 'boites',         // dans l'espace boîtes : 'boites', 'pieces', 'standardisation'
   compo: { recherche: '', famille: null, fonction: null, norme: null,
-           etat: null, emploi: null, tri: 'emploi' },
+           etat: null, emploi: null, tri: 'emploi',
+           vue: 'liste' },        // 'liste', 'matrice' (par porteur) ou 'carte'
   tri: 'pn',
   enEditionBoite: false,
   enEditionNom: {},
@@ -46,6 +47,7 @@ const Store = {
   reglagesDetaille: false,   // les curseurs, repliés derrière l'engrenage
   resultatDeplie: null,      // le candidat dont on regarde le détail
   ficheComposant: null,      // { categorie, fonction } quand le panneau sert les composants
+  branchesDepliees: {},      // les sous-ensembles ouverts dans la fiche, par ID_Ligne
 
   // Charge utile de la dernière suppression, conservée pour l'annulation.
   derniereSuppression: null,
@@ -268,7 +270,7 @@ function enregistrerReglages() {
     localStorage.setItem(CLE_REGLAGES, JSON.stringify({
       poids: Store.poids, actifs: Store.criteresActifs,
       seuil: Store.seuilEquivalence, tri: Store.tri, vue: Store.vueMode,
-      espace: Store.espace
+      espace: Store.espace, vueComposants: Store.compo.vue
     }));
   } catch (e) { /* navigation privée, stockage refusé : sans gravité */ }
 }
@@ -304,6 +306,9 @@ function chargerReglages() {
       if (typeof lu.tri === 'string') Store.tri = lu.tri;
       if (['boites', 'pieces', 'standardisation'].indexOf(lu.vue) !== -1) Store.vueMode = lu.vue;
       if (['boites', 'composants'].indexOf(lu.espace) !== -1) Store.espace = lu.espace;
+      if (VUES_COMPOSANTS.some(function (v) { return v.cle === lu.vueComposants; })) {
+        Store.compo.vue = lu.vueComposants;
+      }
     }
   } catch (e) { /* réglages illisibles : on repart des valeurs par défaut */ }
   PORTEES.forEach(function (p) { normaliserPoids(p.cle); });
@@ -679,7 +684,8 @@ function baseComposants(liste) {
         cle: cle, categorie: categorie,
         fonction: c.fonction || '', norme: c.norme || '', reference: c.reference || '',
         designation: '', auCatalogue: false,
-        montages: 0, boites: [], porteurs: new Set(), portees: new Set()
+        montages: 0, boites: [], porteurs: new Set(), portees: new Set(),
+        parPorteur: {}       // porteur -> boîtes qui la montent (pour la matrice)
       });
     }
     return base.get(cle);
@@ -702,7 +708,13 @@ function baseComposants(liste) {
       e.montages++;
       e.portees.add(portee);
       if (e.boites.indexOf(pnBoite) === -1) e.boites.push(pnBoite);
-      valeursMulti(porteurs).forEach(function (p) { e.porteurs.add(p); });
+      // Une boîte sans porteur compte quand même : elle va dans une colonne à part.
+      const lesPorteurs = valeursMulti(porteurs);
+      (lesPorteurs.length ? lesPorteurs : ['']).forEach(function (p) {
+        e.porteurs.add(p);
+        if (!e.parPorteur[p]) e.parPorteur[p] = [];
+        if (e.parPorteur[p].indexOf(pnBoite) === -1) e.parPorteur[p].push(pnBoite);
+      });
     });
   };
 
@@ -728,7 +740,8 @@ function baseComposants(liste) {
   return Array.from(base.values()).map(function (e) {
     e.boites.sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); });
     e.nbBoites = e.boites.length;
-    e.porteurs = Array.from(e.porteurs).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+    e.porteurs = Array.from(e.porteurs).filter(Boolean)
+      .sort(function (a, b) { return a.localeCompare(b, 'fr'); });
     e.portees = Array.from(e.portees).sort();
     e.etat = !e.auCatalogue ? ETAT_COMPOSANT.HORS
            : e.nbBoites === 0 ? ETAT_COMPOSANT.DORMANT
@@ -850,6 +863,191 @@ function filtreComposantActif() {
   return !!(f.recherche || f.famille || f.fonction || f.norme || f.etat || f.emploi);
 }
 
+/** Les trois lectures de l'espace Composants. */
+const VUES_COMPOSANTS = [
+  { cle: 'liste',   libelle: 'Liste',        aide: 'Une fonction par ligne, triable' },
+  { cle: 'matrice', libelle: 'Par porteur',  aide: 'Qui monte quoi, programme par programme' },
+  { cle: 'carte',   libelle: 'Carte',        aide: 'Toute la base en une image' }
+];
+
+/**
+ * Les porteurs dans l'ordre du registre, puis les inconnus par ordre
+ * alphabétique, et la colonne « sans porteur » en dernier si elle sert.
+ */
+function ordonnerPorteurs(presents) {
+  const liste = Array.from(presents);
+  const rang = function (p) {
+    if (p === '') return 1e6;
+    const i = PORTEURS.indexOf(p);
+    return i === -1 ? 1e5 : i;
+  };
+  return liste.sort(function (a, b) { return rang(a) - rang(b) || a.localeCompare(b, 'fr'); });
+}
+
+/**
+ * LA MATRICE D'EMPLOI
+ *
+ * Une ligne par groupe (une fonction, ou une référence), une colonne par
+ * porteur, et dans chaque case le nombre de boîtes de ce porteur qui montent
+ * le groupe. C'est la question de la communalité entre programmes : le H160
+ * monte-t-il les mêmes colliers que le H145 ? Un groupe est { libelle, lignes }
+ * où lignes sont des composants de la base.
+ */
+function matriceEmploi(groupes) {
+  const presents = new Set();
+  groupes.forEach(function (g) {
+    g.lignes.forEach(function (c) {
+      Object.keys(c.parPorteur || {}).forEach(function (p) { presents.add(p); });
+    });
+  });
+  const porteurs = ordonnerPorteurs(presents);
+  let maxi = 0;
+
+  const lignes = groupes.map(function (g) {
+    const toutes = new Set();
+    const cellules = porteurs.map(function (p) {
+      const boites = new Set();
+      g.lignes.forEach(function (c) {
+        ((c.parPorteur || {})[p] || []).forEach(function (b) { boites.add(b); toutes.add(b); });
+      });
+      if (boites.size > maxi) maxi = boites.size;
+      return { porteur: p, n: boites.size,
+               boites: Array.from(boites).sort(function (a, b) {
+                 return a.localeCompare(b, 'fr', { numeric: true });
+               }) };
+    });
+    return { groupe: g, cellules: cellules, total: toutes.size };
+  });
+
+  return { porteurs: porteurs, lignes: lignes, maxi: maxi };
+}
+
+/**
+ * LA CARTE DE LA BASE — un treemap
+ *
+ * Chaque fonction est une tuile dont l'aire est le nombre de boîtes qui la
+ * montent, rangée dans la région de sa famille. Les grandes tuiles sont ce
+ * qui compte ; celles qui se dispersent sont marquées. Les fonctions au
+ * catalogue que personne ne monte n'ont pas d'aire : elles sont listées à part.
+ *
+ * Coordonnées dans un repère de `largeur` × `hauteur` unités : la vue les
+ * convertit en pourcentages, la carte suit la largeur disponible sans mesure.
+ */
+function carteComposants(fonctions, largeur, hauteur) {
+  largeur = largeur || 1000; hauteur = hauteur || 620;
+  const BANDEAU = 24;      // la hauteur du libellé de famille, en unités
+  const MARGE = 3;
+
+  const dormantes = fonctions.filter(function (f) { return f.nbBoites === 0; });
+  const parFamille = new Map();
+  fonctions.forEach(function (f) {
+    if (f.nbBoites === 0) return;
+    if (!parFamille.has(f.categorie)) {
+      const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
+      parFamille.set(f.categorie, { cle: f.categorie, libelle: cat.libelle, fonctions: [], poids: 0, boites: new Set() });
+    }
+    const fam = parFamille.get(f.categorie);
+    fam.fonctions.push(f);
+    fam.poids += f.nbBoites;
+    f.boites.forEach(function (b) { fam.boites.add(b); });
+  });
+
+  const familles = Array.from(parFamille.values())
+    .sort(function (a, b) { return b.poids - a.poids || a.libelle.localeCompare(b.libelle, 'fr'); });
+  const regions = squarifier(familles.map(function (f) { return f.poids; }),
+                             { x: 0, y: 0, w: largeur, h: hauteur });
+
+  familles.forEach(function (fam, i) {
+    fam.rect = regions[i];
+    fam.nbBoites = fam.boites.size;
+    fam.fonctions.sort(function (a, b) { return b.nbBoites - a.nbBoites || a.libelle.localeCompare(b.libelle, 'fr'); });
+    const interieur = {
+      x: fam.rect.x + MARGE, y: fam.rect.y + BANDEAU,
+      w: Math.max(0, fam.rect.w - 2 * MARGE), h: Math.max(0, fam.rect.h - BANDEAU - MARGE)
+    };
+    const tuiles = squarifier(fam.fonctions.map(function (f) { return f.nbBoites; }), interieur);
+    fam.tuiles = fam.fonctions.map(function (f, j) { return { fonction: f, rect: tuiles[j] }; });
+  });
+
+  return { familles: familles, dormantes: dormantes, largeur: largeur, hauteur: hauteur };
+}
+
+/**
+ * Treemap « squarified » (Bruls, Huizing, van Wijk) : on remplit le
+ * rectangle par rangées le long de son petit côté, en n'ajoutant une tuile à
+ * la rangée courante que si elle n'en dégrade pas le pire rapport
+ * largeur/hauteur. Les poids doivent être triés décroissants ; on renvoie un
+ * rectangle par poids, dans l'ordre reçu.
+ */
+function squarifier(poids, rect) {
+  const sorties = poids.map(function () { return { x: rect.x, y: rect.y, w: 0, h: 0 }; });
+  const total = poids.reduce(function (t, p) { return t + (p > 0 ? p : 0); }, 0);
+  const aire = rect.w * rect.h;
+  if (!total || aire <= 0) return sorties;
+  const echelle = aire / total;
+  const items = poids.map(function (p, i) { return { i: i, a: p > 0 ? p * echelle : 0 }; })
+                     .filter(function (it) { return it.a > 0; });
+
+  let x = rect.x, y = rect.y, w = rect.w, h = rect.h;
+  let rangee = [];
+
+  const somme = function (r) { return r.reduce(function (t, it) { return t + it.a; }, 0); };
+  const pire = function (r, cote) {
+    const s = somme(r);
+    if (!s || !cote) return Infinity;
+    let mx = 0, mn = Infinity;
+    r.forEach(function (it) { if (it.a > mx) mx = it.a; if (it.a < mn) mn = it.a; });
+    return Math.max((cote * cote * mx) / (s * s), (s * s) / (cote * cote * mn));
+  };
+  const poser = function (r) {
+    const s = somme(r);
+    if (w >= h) {              // une colonne, le long de la hauteur
+      const cw = h ? s / h : 0; let cy = y;
+      r.forEach(function (it) { const ch = cw ? it.a / cw : 0; sorties[it.i] = { x: x, y: cy, w: cw, h: ch }; cy += ch; });
+      x += cw; w = Math.max(0, w - cw);
+    } else {                   // une rangée, le long de la largeur
+      const ch = w ? s / w : 0; let cx = x;
+      r.forEach(function (it) { const cw = ch ? it.a / ch : 0; sorties[it.i] = { x: cx, y: y, w: cw, h: ch }; cx += cw; });
+      y += ch; h = Math.max(0, h - ch);
+    }
+  };
+
+  items.forEach(function (it) {
+    const cote = Math.min(w, h);
+    if (!rangee.length) { rangee.push(it); return; }
+    if (pire(rangee, cote) >= pire(rangee.concat([it]), cote)) { rangee.push(it); return; }
+    poser(rangee);
+    rangee = [it];
+  });
+  if (rangee.length) poser(rangee);
+  return sorties;
+}
+
+/**
+ * LE PLAN DE CONVERGENCE d'une fonction : parmi ses références montées, la
+ * cible est la plus répandue ; les boîtes à modifier sont celles qui montent
+ * une autre référence. `lignes` sont des composants de la base.
+ */
+function planConvergence(lignes) {
+  const montees = lignes.filter(function (c) { return c.nbBoites > 0; });
+  if (montees.length < 2) return null;
+  const cible = montees.slice().sort(function (a, b) {
+    return b.nbBoites - a.nbBoites ||
+           String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+  })[0];
+  const aModifier = new Set();
+  montees.forEach(function (c) {
+    if (c === cible) return;
+    c.boites.forEach(function (b) { aModifier.add(b); });
+  });
+  return {
+    cible: cible,
+    autres: montees.filter(function (c) { return c !== cible; }),
+    aModifier: Array.from(aModifier).sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); }),
+    economie: montees.length - 1      // les références qu'on cesserait de faire vivre
+  };
+}
+
 
 /**
  * L'inventaire des PIÈCES vu depuis les boîtes affichées : un PN de pièce,
@@ -961,12 +1159,29 @@ function opportunitesStandardisation(liste) {
     // Une seule norme et une seule référence : rien à rationaliser.
     if (normes.length <= 1 && nbReferences <= 1) return;
 
+    // La cible : la référence la plus montée. Les boîtes à modifier : celles
+    // qui en montent une autre. C'est le coût concret de la convergence.
+    const toutes = [];
+    normes.forEach(function (n) { n.references.forEach(function (r) { toutes.push(r); }); });
+    toutes.sort(function (a, b) {
+      return b.nbBoites - a.nbBoites ||
+             String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+    });
+    const cible = toutes[0];
+    const aModifier = new Set();
+    toutes.forEach(function (r) {
+      if (r === cible) return;
+      r.boites.forEach(function (b) { aModifier.add(b); });
+    });
+
     sorties.push({
       categorie: f.categorie, fonction: f.fonction, normes: normes,
       nbNormes: normes.length, nbReferences: nbReferences,
       nbBoites: normes.reduce(function (t, n) {
         return t + n.references.reduce(function (u, r) { return u + r.nbBoites; }, 0);
-      }, 0)
+      }, 0),
+      cible: cible, references: toutes,
+      aModifier: Array.from(aModifier).sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); })
     });
   });
 
@@ -974,6 +1189,27 @@ function opportunitesStandardisation(liste) {
     return b.nbReferences - a.nbReferences || b.nbNormes - a.nbNormes ||
            a.fonction.localeCompare(b.fonction, 'fr');
   });
+}
+
+/**
+ * Le bilan de la standardisation : si chaque famille dispersée convergeait
+ * vers sa référence la plus montée, combien de références cesserait-on de
+ * faire vivre, et combien de boîtes faudrait-il modifier ?
+ */
+function bilanStandardisation(familles) {
+  const boites = new Set();
+  let references = 0;
+  familles.forEach(function (f) {
+    references += f.nbReferences;
+    f.aModifier.forEach(function (b) { boites.add(b); });
+  });
+  return {
+    familles: familles.length,
+    references: references,
+    apres: familles.length,               // une référence par famille
+    economie: references - familles.length,
+    boites: boites.size
+  };
 }
 
 /** Répartition des sous-ensembles par type, pour la barre de filtres. */

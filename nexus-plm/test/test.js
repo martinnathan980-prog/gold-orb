@@ -327,7 +327,10 @@ vrai('le champ Référence est rendu', !!champRef);
 eq('la valeur survit à l\'apostrophe', attribut(champRef[0], 'value'), 'R\'2');
 C.Store.enEditionNom = {};
 
+// Les branches sont repliées à l'ouverture : on déplie la plaquette pour lire ses puces.
+C.Store.branchesDepliees = { 'L-2': true };
 const ficheLecture = C.ficheHtml(C.Store.boites[0]);
+C.Store.branchesDepliees = {};
 eq('data-valeur d\'une puce survit au guillemet ET à l\'apostrophe',
    attribut(ficheLecture.match(/data-action="supprimer-multi-nom"[^>]*>/)[0], 'data-valeur'),
    'entraxe 5" d\'origine');
@@ -879,8 +882,10 @@ charger(
 const htmlMaj = C.standardisationHtml(C.calculerVue());
 eq('une seule reference majoritaire',
    (htmlMaj.match(/ref-majoritaire/g) || []).length, 1);
+// (la barre des parts, en tete de famille, cite aussi R2 : on regarde les puces)
 vrai('et c\'est la plus utilisee',
-     htmlMaj.indexOf('ref-majoritaire') < htmlMaj.indexOf('R2'));
+     htmlMaj.indexOf('ref-majoritaire') < htmlMaj.indexOf('ref-pn">R2'));
+vrai('le plan de la famille la nomme comme cible', /famille-cible">cible <b>R1</.test(htmlMaj));
 
 // Le mode de vue accepte la troisième lecture, et refuse ce qui n'existe pas.
 C.Store.vueMode = 'standardisation';
@@ -1483,6 +1488,8 @@ charger(
      'PN du type': 'B1.01', 'Montage': 'Console STD',
      'Image': 'https://exemple.fr/structure.jpg' }]);
 C.Store.enEditionBoite = false; C.Store.enEditionNom = {};
+// La branche est depliee : c'est la qu'on lit un sous-ensemble.
+C.Store.branchesDepliees = { 'S1': true };
 const ficheLue = C.ficheHtml(C.boiteParPn('B1'));
 // Un champ qu'il faut passer en edition pour LIRE est un champ qu'on oublie.
 vrai('l\'URL de la photo de boite se lit', ficheLue.indexOf('exemple.fr/photo.jpg') !== -1);
@@ -1904,6 +1911,255 @@ faux('plus de style pour les outils d\'en-tête', /\.entete-outils/.test(srcCss)
 vrai('le rail et le classement sont côte à côte', /\.compare-corps\.avec-reglages \{ grid-template-columns: 300px/.test(srcCss));
 vrai('les couleurs de type subsistent', /--t-structure:|--t-harnais:|--t-plaquette:/.test(srcCss));
 vrai('les couleurs de statut subsistent', /--vert:|--ambre:|--rouge:/.test(srcCss));
+
+// =====================================================================
+bloc('La fiche : la boîte est le parent, les branches se replient');
+// =====================================================================
+charger(
+  [{ 'PN Global': 'B1', 'Fonction': 'APU', 'Statut': 'Validé', 'Image': 'https://x.fr/a.jpg' },
+   { 'PN Global': 'B2', 'Fonction': 'APU' }],
+  [{ 'ID_Ligne': 'S1', 'PN Global': 'B1', 'Type': 'Structure boîte', 'PN du type': 'SS',
+     'Montage': 'Rack', 'Dim Long (mm)': '500', 'Dim Larg (mm)': '140', 'Masse (g)': '505',
+     'Image': 'https://x.fr/s.jpg' },
+   { 'ID_Ligne': 'S2', 'PN Global': 'B2', 'Type': 'Structure boîte', 'PN du type': 'SS' },
+   { 'ID_Ligne': 'P1', 'PN Global': 'B1', 'Type': 'Plaquette éclairante', 'PN du type': 'PP',
+     'Mots-clés': 'SAR, APU, nuit, cargo' },
+   { 'ID_Ligne': 'H1', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'HH', 'Référence': 'EN4165' }]);
+C.Store.pnCourant = 'B1'; C.Store.branchesDepliees = {}; C.Store.enEditionNom = {};
+const s1 = C.nomParId('S1');
+eq('le résumé d\'une structure : montage, cotes L × l, masse',
+   C.resumeBranche(s1, C.typeDe(s1)), 'Rack · 500 × 140 mm · 505 g');
+eq('celui d\'une plaquette cite trois mots-clés, puis …',
+   C.resumeBranche(C.nomParId('P1'), C.TYPES.plaquette), 'SAR, APU, nuit…');
+eq('celui d\'un harnais, sa référence', C.resumeBranche(C.nomParId('H1'), C.TYPES.harnais), 'EN4165');
+eq('sans rien, rien', C.resumeBranche(C.nomParId('S2'), C.TYPES.structure), '');
+
+const ficheP = C.ficheHtml(C.boiteParPn('B1'));
+faux('plus de sommaire au-dessus de la boîte', /^<nav class="sommaire"/.test(ficheP));
+vrai('la composition se lit dans la tête de l\'arbre', /arbre-tete[\s\S]*?sommaire-item/.test(ficheP));
+vrai('la boîte porte une fiche d\'identité : photo à gauche, champs à droite',
+     /bloc-general[\s\S]*?fiche-identite[\s\S]*?fiche-photo[\s\S]*?vignette-fiche[\s\S]*?fiche-champs/.test(ficheP));
+vrai('la fonction est dans les champs clés', /fiche-champs[\s\S]*?ligne-cle">Fonction/.test(ficheP));
+vrai('les composants sont en dessous, à pleine largeur',
+     ficheP.indexOf('class="composants"') > ficheP.indexOf('fiche-champs'));
+eq('trois branches, repliées', (ficheP.match(/aria-expanded="false"/g) || []).length, 3);
+eq('aucun corps déplié', (ficheP.match(/branche-corps/g) || []).length, 0);
+vrai('chaque ligne dit son type, son PN et son résumé',
+     /branche-type">Structure boîte<[\s\S]*?branche-pn">SS<[\s\S]*?branche-resume">Rack · 500 × 140 mm · 505 g</.test(ficheP));
+vrai('la structure, montée aussi dans B2, le dit en ligne', /aussi dans 1 boîte/.test(ficheP));
+vrai('et montre sa photo en timbre', /branche-photo"><img src="https:\/\/x\.fr\/s\.jpg"/.test(ficheP));
+faux('les champs ne sont pas rendus tant que la branche est repliée', ficheP.indexOf('Longueur (mm)') !== -1);
+
+C.Store.branchesDepliees = { 'S1': true };
+const ficheD = C.ficheHtml(C.boiteParPn('B1'));
+eq('une branche dépliée', (ficheD.match(/aria-expanded="true"/g) || []).length, 1);
+vrai('son corps porte les champs', ficheD.indexOf('Longueur (mm)') !== -1);
+vrai('ses trois boutons', /branche-outils[\s\S]*?comparer-nom[\s\S]*?editer-nom[\s\S]*?supprimer-nom/.test(ficheD));
+vrai('« Aussi montée dans » est une ligne de la fiche, en face de la photo',
+     /fiche-champs[\s\S]*?ligne-cle">Aussi montée dans[\s\S]*?usages[\s\S]*?>B2</.test(ficheD));
+faux('plus de bandeau collé à la photo', /usages-titre/.test(ficheD));
+C.Store.enEditionNom = { 'P1': true }; C.Store.branchesDepliees = {};
+vrai('une branche en édition est toujours ouverte',
+     /bloc-type-plaquette ouverte/.test(C.ficheHtml(C.boiteParPn('B1'))));
+C.Store.enEditionNom = {};
+vrai('deplier-branche est implémentée', declarees.has('deplier-branche'));
+vrai('ouvrir une fiche repart de la vue d\'ensemble',
+     /'ouvrir-fiche':[\s\S]{0,400}branchesDepliees = \{\}/.test(srcMainSeul));
+vrai('un sous-ensemble créé s\'ouvre déplié, en saisie',
+     /'creer-sous-ensemble':[\s\S]{0,900}branchesDepliees\[/.test(srcMainSeul));
+
+// Les boutons : trois rôles, trois contrastes — plus trois bleus sur du bleu.
+vrai('Équivalences est plein',
+     /\.bloc-actions \.btn-action\.btn-accent \{ background: var\(--marque\); color: var\(--sur-marque\)/.test(srcCss));
+vrai('Éditer est blanc', /\.bloc-actions \.btn-action\.btn-neutre \{ background: var\(--surface-2\)/.test(srcCss));
+vrai('Supprimer est blanc liseré de rouge',
+     /\.bloc-actions \.btn-action\.btn-danger \{ background: var\(--surface-2\); color: var\(--rouge\)/.test(srcCss));
+vrai('les blocs sont blancs sur le panneau', /\.bloc \{ background: var\(--surface-2\)/.test(srcCss));
+vrai('la boîte prend du relief', /\.bloc-general \{[^}]*box-shadow/.test(srcCss));
+vrai('la photo tient une colonne étroite', /\.vignette \{[\s\S]*?max-width: 148px/.test(srcCss));
+faux('plus de grande vignette', /vignette-large|vignette-sous/.test(srcCss + srcFiche));
+
+// =====================================================================
+bloc('Composants : trois lectures — la matrice, la carte, les parts');
+// =====================================================================
+C.Store.catalogue = [{ 'Catégorie': 'composant', 'Fonction': 'Vis', 'Norme': 'N9', 'Référence': 'V-DORMANTE' }];
+charger(
+  [{ 'PN Global': 'B1', 'Porteur': 'H160', 'Composants': 'Voyant | N1 | R1\nRelais | N2 | R9' },
+   { 'PN Global': 'B2', 'Porteur': 'H160\nH160M', 'Composants': 'Voyant | N1 | R2' },
+   { 'PN Global': 'B3', 'Porteur': 'Dauphin', 'Composants': 'Voyant | N1 | R1' },
+   { 'PN Global': 'B4', 'Composants': 'Voyant | N1 | R1' }], []);
+remettre(); C.Store.compo.tri = 'emploi';
+const baseM = C.baseComposants(C.Store.boites);
+const r1 = baseM.find(function (c) { return c.reference === 'R1'; });
+eq('chaque référence sait ses boîtes par porteur',
+   r1.parPorteur, { 'H160': ['B1'], 'Dauphin': ['B3'], '': ['B4'] });
+eq('les porteurs restent la liste des vrais porteurs', r1.porteurs, ['Dauphin', 'H160']);
+const fctsM = C.fonctionsComposants(baseM);
+const mx = C.matriceEmploi(fctsM);
+eq('les colonnes : les porteurs du registre dans l\'ordre, puis « sans porteur »',
+   mx.porteurs, ['Dauphin', 'H160', 'H160M', '']);
+const ligneVoyant = mx.lignes.find(function (l) { return l.groupe.libelle === 'Voyant'; });
+eq('une case par porteur : les boîtes du porteur qui montent la fonction',
+   ligneVoyant.cellules.map(function (c) { return c.n; }), [1, 2, 1, 1]);
+eq('le total de la ligne est le nombre de boîtes distinctes', ligneVoyant.total, 4);
+eq('la case nomme ses boîtes', ligneVoyant.cellules[1].boites, ['B1', 'B2']);
+eq('le maximum sert d\'échelle', mx.maxi, 2);
+eq('la dormante fait une ligne vide',
+   mx.lignes.find(function (l) { return l.groupe.libelle === 'Vis'; }).total, 0);
+const htmlMx = C.matriceHtml(mx);
+vrai('la matrice est une table', /<table class="mx">/.test(htmlMx));
+vrai('avec la colonne « sans porteur » nommée', htmlMx.indexOf('Sans porteur') !== -1);
+vrai('la teinte suit le nombre', /mx-case mx-5/.test(htmlMx) && /mx-case mx-3/.test(htmlMx));
+vrai('une case vide se dit', /mx-case mx-0/.test(htmlMx));
+vrai('chaque case explique son contenu', /title="Voyant · H160 : 2 boîtes — B1, B2"/.test(htmlMx));
+vrai('une fonction mène à sa fiche', /mx-fonction"[^>]*data-action="ouvrir-fiche-composant"/.test(htmlMx));
+
+// La carte : un treemap.
+const carteM = C.carteComposants(fctsM, 1000, 600);
+eq('les fonctions montées font des tuiles, les dormantes non',
+   carteM.familles.reduce(function (t, f) { return t + f.tuiles.length; }, 0), 2);
+eq('la dormante est listée à part', carteM.dormantes.map(function (f) { return f.libelle; }), ['Vis']);
+const tuileDe = function (nom) {
+  let t = null;
+  carteM.familles.forEach(function (f) { f.tuiles.forEach(function (x) { if (x.fonction.libelle === nom) t = x; }); });
+  return t;
+};
+const aire = function (r) { return r.w * r.h; };
+vrai('l\'aire suit les boîtes : le voyant (4) fait quatre fois le relais (1)',
+     Math.abs(aire(tuileDe('Voyant').rect) / aire(tuileDe('Relais').rect) - 4) < 1e-6);
+vrai('les tuiles restent dans la région de leur famille',
+     carteM.familles.every(function (f) {
+       return f.tuiles.every(function (t) {
+         return t.rect.x >= f.rect.x - 1e-6 && t.rect.y >= f.rect.y - 1e-6 &&
+                t.rect.x + t.rect.w <= f.rect.x + f.rect.w + 1e-6 &&
+                t.rect.y + t.rect.h <= f.rect.y + f.rect.h + 1e-6;
+       });
+     }));
+const poidsSq = [6, 6, 4, 3, 2, 2, 1];
+const rects = C.squarifier(poidsSq, { x: 0, y: 0, w: 600, h: 400 });
+eq('une tuile par poids', rects.length, 7);
+vrai('les aires sont proportionnelles',
+     rects.every(function (r, i) { return Math.abs(aire(r) - poidsSq[i] * 10000) < 1e-6; }));
+vrai('aucune ne déborde',
+     rects.every(function (r) { return r.x >= -1e-9 && r.y >= -1e-9 && r.x + r.w <= 600 + 1e-6 && r.y + r.h <= 400 + 1e-6; }));
+let chevauchements = 0;
+rects.forEach(function (a, i) {
+  rects.forEach(function (b, j) {
+    if (j <= i) return;
+    const x = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+    const y = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+    if (x > 1e-6 && y > 1e-6) chevauchements++;
+  });
+});
+eq('aucune ne chevauche une autre', chevauchements, 0);
+vrai('et elles sont plutôt carrées : c\'est tout l\'intérêt du « squarified »',
+     rects.every(function (r) { return Math.max(r.w / r.h, r.h / r.w) < 3; }));
+eq('un poids nul ne fait pas de tuile', C.squarifier([0, 5], { x: 0, y: 0, w: 10, h: 10 })[0].w, 0);
+eq('un rectangle vide ne plante pas', C.squarifier([1, 2], { x: 0, y: 0, w: 0, h: 0 }).length, 2);
+eq('aucun poids non plus', C.squarifier([], { x: 0, y: 0, w: 10, h: 10 }), []);
+const htmlCarte = C.carteBaseHtml(carteM);
+vrai('les tuiles sont des boutons vers la fiche', /tm-tuile[^>]*data-action="ouvrir-fiche-composant"/.test(htmlCarte));
+vrai('positionnées en pourcentages', /left:\d+\.\d+%;top:\d+\.\d+%;width:/.test(htmlCarte));
+vrai('la dormante est nommée sous la carte', /tm-dormantes[\s\S]*?>Vis</.test(htmlCarte));
+vrai('une région par famille, nommée', /tm-region tm-composant[\s\S]*?tm-famille[\s\S]*?Composants de boîte/.test(htmlCarte));
+
+// Les parts : la cible en couleur, le reste en gris.
+const voyantLignes = fctsM.find(function (f) { return f.libelle === 'Voyant'; }).lignes;
+const parts = C.partsHtml(voyantLignes);
+vrai('la cible d\'abord, un segment par référence montée, large de ses boîtes',
+     /<span class="part-cible" style="flex-grow:3"><\/span><span class="part-autre" style="flex-grow:1"><\/span><\/span>$/.test(parts));
+vrai('et l\'info-bulle dit tout', parts.indexOf('title="cible R1 : 3 boîtes · R2 : 1 boîte"') !== -1);
+eq('une seule référence montée : pas de barre',
+   C.partsHtml(fctsM.find(function (f) { return f.libelle === 'Relais'; }).lignes), '');
+vrai('la liste porte les parts sous les références', /lf-refs[\s\S]*?parts parts-ligne/.test(C.listeFonctionsHtml(fctsM)));
+
+// Le plan de convergence.
+const planV = C.planConvergence(voyantLignes);
+eq('la cible est la plus montée', planV.cible.reference, 'R1');
+eq('les boîtes à modifier montent une autre référence', planV.aModifier, ['B2']);
+eq('l\'économie : les références qu\'on cesse de faire vivre', planV.economie, 1);
+eq('rien à converger avec une seule référence montée',
+   C.planConvergence(fctsM.find(function (f) { return f.libelle === 'Relais'; }).lignes), null);
+const ficheV = C.ficheComposantHtml({ categorie: 'composant', fonction: 'Voyant' });
+vrai('la fiche porte le plan : économie, coût, boîtes nommées',
+     /fc-plan[\s\S]*?−1<\/b> référence[\s\S]*?>1<\/b> boîte à modifier[\s\S]*?>B2</.test(ficheV));
+vrai('et la matrice référence × porteur, cible marquée',
+     /fc-matrice[\s\S]*?mx-ref-cible[\s\S]*?mx-cible-tag/.test(ficheV));
+charger(
+  [{ 'PN Global': 'B1', 'Porteur': 'H160', 'Composants': 'Voyant | N1 | R1' },
+   { 'PN Global': 'B2', 'Porteur': 'H160', 'Composants': 'Voyant | N1 | R2' }], []);
+faux('un seul porteur : pas de matrice, rien à comparer',
+     /fc-matrice/.test(C.ficheComposantHtml({ categorie: 'composant', fonction: 'Voyant' })));
+C.Store.catalogue = [];
+
+// La lecture choisie, et mémorisée.
+eq('trois lectures', C.VUES_COMPOSANTS.map(function (v) { return v.cle; }), ['liste', 'matrice', 'carte']);
+C.Store.compo.vue = 'matrice'; C.enregistrerReglages();
+C.Store.compo.vue = 'liste'; C.chargerReglages();
+eq('la lecture est mémorisée', C.Store.compo.vue, 'matrice');
+vrai('changer-vue-composants est implémentée', declarees.has('changer-vue-composants'));
+vrai('et refuse une lecture inconnue', /'changer-vue-composants':[\s\S]{0,200}VUES_COMPOSANTS\.some/.test(srcMainSeul));
+vrai('l\'espace rend la matrice', /<table class="mx">/.test(C.composantsHtml(C.calculerVue())));
+C.Store.compo.vue = 'carte';
+const htmlEspaceCarte = C.composantsHtml(C.calculerVue());
+vrai('ou la carte', /class="tm"/.test(htmlEspaceCarte));
+faux('sans tri : elle se range par aire', /trier-composants/.test(htmlEspaceCarte));
+vrai('le commutateur marque la lecture en place', /compo-vue-btn actif"[^>]*data-vue="carte"/.test(htmlEspaceCarte));
+C.Store.compo.vue = 'liste'; C.enregistrerReglages();
+
+// =====================================================================
+bloc('Standardisation : le plan de convergence');
+// =====================================================================
+charger(
+  [{ 'PN Global': 'B1', 'Composants': 'Voyant | N | R1' },
+   { 'PN Global': 'B2', 'Composants': 'Voyant | N | R1' },
+   { 'PN Global': 'B3', 'Composants': 'Voyant | N | R2\nRelais | M | K1' },
+   { 'PN Global': 'B4', 'Composants': 'Voyant | N | R3\nRelais | M | K2' }], []);
+const ops = C.opportunitesStandardisation(C.Store.boites);
+eq('deux familles dispersées, la plus dispersée d\'abord',
+   ops.map(function (f) { return f.fonction; }), ['Voyant', 'Relais']);
+eq('la cible du voyant est la plus montée', ops[0].cible.reference, 'R1');
+eq('deux boîtes à modifier', ops[0].aModifier, ['B3', 'B4']);
+eq('le relais : à égalité, la première référence dans l\'ordre', ops[1].cible.reference, 'K1');
+const bilanS = C.bilanStandardisation(ops);
+eq('le bilan : 5 références → 2, soit 3 de moins',
+   [bilanS.references, bilanS.apres, bilanS.economie], [5, 2, 3]);
+eq('2 boîtes à modifier, sans double compte', bilanS.boites, 2);
+eq('base vide : rien à dire', C.bilanStandardisation([]).boites, 0);
+const htmlS = C.standardisationHtml(C.calculerVue());
+vrai('le bilan est en tête', /standard-bilan[\s\S]*?5 <span class="sb-fleche">→<\/span> 2/.test(htmlS));
+vrai('et compte les boîtes à modifier', /sb-cout"><span class="sb-n">2</.test(htmlS));
+vrai('chaque famille annonce sa cible', /famille-cible">cible <b>R1<\/b>/.test(htmlS));
+vrai('et son coût', /famille-cout">2 boîtes à modifier/.test(htmlS));
+vrai('avec ses parts', /parts parts-famille/.test(htmlS));
+
+// =====================================================================
+bloc('Échappement des nouvelles lectures : matrice, carte, plan');
+// =====================================================================
+const PIEGE2 = '"><script>alert(2)</script>';
+C.Store.catalogue = [];
+charger(
+  [{ 'PN Global': 'B' + PIEGE2, 'Porteur': 'H' + PIEGE2, 'Composants': 'Voyant' + PIEGE2 + ' | N' + PIEGE2 + ' | R1' + PIEGE2 },
+   { 'PN Global': 'B2', 'Porteur': 'H' + PIEGE2, 'Composants': 'Voyant' + PIEGE2 + ' | N' + PIEGE2 + ' | R2' + PIEGE2 }],
+  [{ 'ID_Ligne': 'S9', 'PN Global': 'B2', 'Type': 'Structure boîte', 'PN du type': 'S' + PIEGE2,
+     'Montage': 'M' + PIEGE2, 'Image': 'https://x.fr/' + PIEGE2 }]);
+remettre();
+['matrice', 'carte', 'liste'].forEach(function (v) {
+  C.Store.compo.vue = v;
+  faux('aucun script ne passe dans la lecture « ' + v + ' »',
+       /<script>alert/.test(C.composantsHtml(C.calculerVue())));
+});
+C.Store.compo.vue = 'liste';
+faux('ni dans la standardisation', /<script>alert/.test(C.standardisationHtml(C.calculerVue())));
+faux('ni dans la fiche d\'une fonction',
+     /<script>alert/.test(C.ficheComposantHtml({ categorie: 'composant', fonction: 'Voyant' + PIEGE2 })));
+C.Store.pnCourant = 'B2'; C.Store.branchesDepliees = {};
+const fichePiege = C.ficheHtml(C.boiteParPn('B2'));
+faux('ni dans une branche repliée (résumé, PN, timbre)', /<script>alert/.test(fichePiege));
+vrai('le résumé piégé est bien là, échappé', fichePiege.indexOf('M&quot;&gt;&lt;script&gt;') !== -1);
+C.Store.branchesDepliees = { 'S9': true };
+faux('ni dépliée', /<script>alert/.test(C.ficheHtml(C.boiteParPn('B2'))));
+C.Store.branchesDepliees = {};
 
 console.log('\n' + (ko === 0 ? V : R) + ok + ' OK, ' + ko + ' KO' + Z +
             G + '  (' + declarees.size + ' actions)' + Z);

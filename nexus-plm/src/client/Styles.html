@@ -52,6 +52,11 @@
   --ambre: #90620b; --ambre-voile: #f8f1e0; --ambre-trait: #e6d3a8;
   --rouge: #a32020; --rouge-voile: #f8eaea; --rouge-trait: #e6bdbd;
 
+  /* La rampe de magnitude : la marque, du plus clair au plus fonce. Une
+     seule teinte, pour qu'un « plus » se lise comme un « plus foncé ». */
+  --seq-1: #e4ecf8; --seq-2: #bcd0ee; --seq-3: #8aa9dc; --seq-4: #4f76bb; --seq-5: #00205b;
+  --part-autre: #b3c2d9;
+
   --r-s: 6px; --r-m: 10px; --r-l: 16px;
   --e-1: 4px; --e-2: 8px; --e-3: 12px; --e-4: 16px; --e-5: 24px; --e-6: 36px; --e-7: 56px;
   --large: 1340px;
@@ -74,6 +79,8 @@
     --trait: #29333f; --trait-fort: #394656;
     --bande: #16202f; --bande-2: #1a2637;
     --marque: #8fb0f0; --marque-2: #a8c2f5; --marque-voile: #1b2740; --sur-marque: #0f1522;
+    --seq-1: #1c2740; --seq-2: #27395e; --seq-3: #3a5486; --seq-4: #5d7fbf; --seq-5: #8fb0f0;
+    --part-autre: #4a5a72;
 
     --t-structure: #8fabd6; --t-structure-voile: #1b2436; --t-structure-trait: #35476b;
     --t-harnais:   #d9a06a; --t-harnais-voile:   #2c2118; --t-harnais-trait:   #5d4327;
@@ -502,6 +509,116 @@ body.espace-composants .outils { display: none; }
 .compo-tri-btn:hover { color: var(--encre); }
 .compo-tri-btn.actif { background: var(--surface); color: var(--marque); box-shadow: var(--ombre-1); }
 
+/* Le commutateur des trois lectures : liste, par porteur, carte. */
+.compo-vues { display: inline-flex; border: 1px solid var(--trait-fort); border-radius: var(--r-s); overflow: hidden; }
+.compo-vue-btn {
+  background: var(--surface-2); color: var(--encre-2); border: 0; padding: 6px 13px;
+  font-size: 12.5px; font-weight: 600; border-right: 1px solid var(--trait);
+}
+.compo-vue-btn:last-child { border-right: 0; }
+.compo-vue-btn:hover { background: var(--surface); color: var(--encre); }
+.compo-vue-btn.actif { background: var(--marque); color: var(--sur-marque); }
+
+/* Les parts d'une fonction : une barre empilee, un segment par reference
+   montee, la cible en couleur, les autres en gris, 2 px de fond entre eux. */
+.parts { display: flex; gap: 2px; height: 5px; width: 100%; max-width: 132px; }
+.parts > span { display: block; height: 100%; border-radius: 2px; min-width: 3px; }
+.part-cible { background: var(--vert); }
+.part-autre { background: var(--part-autre); }
+.parts-ligne { margin-top: 4px; }
+.lf-refs { display: flex; flex-direction: column; align-items: flex-start; }
+.parts-famille { max-width: 180px; height: 6px; }
+.parts-fiche { max-width: 100%; height: 8px; }
+.parts-tuile { max-width: 110px; margin-top: 4px; }
+.parts-legende { width: 36px; height: 5px; display: inline-flex; vertical-align: middle; }
+
+/* La matrice par porteur : une table, la teinte suit le nombre. */
+.mx-cadre { border: 1px solid var(--trait); border-radius: var(--r-m); background: var(--surface-2); overflow: hidden; }
+.mx-defil { overflow: auto; }
+.mx { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12.5px; }
+.mx th, .mx td { padding: 0; text-align: center; }
+.mx thead th { position: sticky; top: 0; z-index: 1; background: var(--surface-2); border-bottom: 1px solid var(--trait); }
+.mx-coin { text-align: left !important; padding: 10px var(--e-3) 8px !important; font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--encre-3); font-weight: 700; }
+.mx-porteur { font-family: var(--police-data); font-size: 11px; font-weight: 600; color: var(--encre-2); padding: 10px 4px 8px !important; min-width: 52px; }
+.mx-porteur.mx-sans { color: var(--encre-3); font-style: italic; font-family: var(--police); }
+.mx-total { font-size: 11px; color: var(--encre-3); padding: 6px 10px !important; min-width: 56px; font-variant-numeric: tabular-nums; }
+.mx tbody .mx-total b { color: var(--encre); font-family: var(--police-data); font-weight: 700; }
+.mx-ligne { text-align: left !important; position: sticky; left: 0; z-index: 1; background: var(--surface-2); border-right: 1px solid var(--trait); min-width: 190px; max-width: 250px; }
+.mx tbody tr:hover .mx-ligne, .mx tbody tr:hover .mx-total { background: var(--sol-2); }
+.mx-fonction { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: 0; color: var(--encre); padding: 7px var(--e-3); font-size: 12.5px; font-weight: 600; }
+.mx-fonction:hover .mx-nom { color: var(--marque); text-decoration: underline; text-underline-offset: 3px; }
+.mx-nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mx-case { padding: 3px !important; }
+.mx-case > span { display: block; min-height: 30px; line-height: 30px; border-radius: 4px; font-family: var(--police-data); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--encre); transition: filter .12s; }
+.mx-case:hover > span { filter: brightness(.94); }
+.mx-vide { color: var(--trait-fort); font-weight: 400 !important; }
+.mx-0 > span { background: transparent; }
+.mx-1 > span { background: var(--seq-1); }
+.mx-2 > span { background: var(--seq-2); }
+.mx-3 > span { background: var(--seq-3); }
+.mx-4 > span { background: var(--seq-4); color: var(--sur-marque); }
+.mx-5 > span { background: var(--seq-5); color: var(--sur-marque); }
+.mx-legende { display: flex; align-items: center; gap: 4px; padding: 8px var(--e-3); font-size: 11px; color: var(--encre-3); border-top: 1px solid var(--trait); }
+.mx-legende i { width: 18px; height: 10px; border-radius: 2px; display: inline-block; }
+.mx-legende .mx-1 { background: var(--seq-1); } .mx-legende .mx-2 { background: var(--seq-2); }
+.mx-legende .mx-3 { background: var(--seq-3); } .mx-legende .mx-4 { background: var(--seq-4); }
+.mx-legende .mx-5 { background: var(--seq-5); }
+.mx-legende-aide { margin-left: auto; }
+.mx-ref { font-family: var(--police-data); font-size: 12px; font-weight: 600; padding: 7px var(--e-3); display: inline-flex; align-items: center; gap: 8px; }
+.mx-cible-tag { font-family: var(--police); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--vert); background: var(--vert-voile); border: 1px solid var(--vert-trait); border-radius: 999px; padding: 1px 7px; }
+
+/* La carte de la base : un treemap. Regions par famille, tuiles par
+   fonction, 2 px de fond entre elles. Le libelle porte l'identite, la teinte
+   de famille ne fait que l'accompagner. */
+.tm-cadre { display: flex; flex-direction: column; gap: var(--e-3); }
+.tm { position: relative; width: 100%; background: var(--surface-2); border: 1px solid var(--trait); border-radius: var(--r-m); overflow: hidden; }
+.tm-region { position: absolute; box-sizing: border-box; }
+.tm-region.tm-composant  { background: var(--t-plaquette-voile); }
+.tm-region.tm-mecanique  { background: var(--t-structure-voile); }
+.tm-region.tm-electrique { background: var(--t-harnais-voile); }
+.tm-famille { position: absolute; left: 8px; top: 3px; right: 6px; display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--encre-2); white-space: nowrap; overflow: hidden; }
+.tm-famille-n { font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--encre-3); margin-left: 2px; }
+.tm-tuile {
+  position: absolute; box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;
+  gap: 2px; padding: 7px 9px; border: 2px solid var(--surface-2); border-radius: 5px; text-align: left;
+  background: var(--surface); color: var(--encre); overflow: hidden; transition: filter .12s;
+}
+.tm-tuile.tm-composant  { background: color-mix(in oklab, var(--t-plaquette) 16%, var(--surface-2)); }
+.tm-tuile.tm-mecanique  { background: color-mix(in oklab, var(--t-structure) 16%, var(--surface-2)); }
+.tm-tuile.tm-electrique { background: color-mix(in oklab, var(--t-harnais) 16%, var(--surface-2)); }
+.tm-tuile:hover { filter: brightness(.95); z-index: 2; }
+.tm-tuile:focus-visible { outline: 2px solid var(--marque); outline-offset: -3px; }
+.tm-nom { font-size: 13px; font-weight: 700; line-height: 1.15; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Une tuile etroite garde son nom : il se replie sur deux lignes plutot que
+   de disparaitre. */
+.tm-moyenne .tm-nom { font-size: 11.5px; white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.tm-moyenne { padding: 5px 6px; }
+@media (max-width: 620px) { .tm-famille-n { display: none; } }
+.tm-n { font-size: 11.5px; color: var(--encre-2); font-variant-numeric: tabular-nums; }
+.tm-tag { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; color: var(--ambre); background: var(--ambre-voile); border: 1px solid var(--ambre-trait); border-radius: 999px; padding: 1px 7px; margin-top: 2px; }
+.tm-disperse::after { content: ""; position: absolute; right: 6px; top: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--ambre); }
+.tm-large.tm-disperse::after { display: none; }
+.tm-legende { display: flex; flex-wrap: wrap; gap: var(--e-2) var(--e-4); font-size: 11.5px; color: var(--encre-3); align-items: center; }
+.tm-legende > span { display: inline-flex; align-items: center; gap: 6px; }
+.tm-legende-aire i { width: 14px; height: 10px; border-radius: 2px; background: var(--surface-3); display: inline-block; }
+.tm-dormantes { font-size: 12px; color: var(--encre-3); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 0; }
+.tm-dormantes-titre { margin-right: 4px; }
+@media (max-width: 620px) { .tm-tuile { padding: 4px 6px; } .tm-n, .parts-tuile, .tm-tag { display: none; } }
+
+/* La standardisation : le bilan en tete, la cible et son cout par famille. */
+.standard-bilan { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--trait); border: 1px solid var(--trait); border-radius: var(--r-m); overflow: hidden; margin-bottom: var(--e-4); }
+.sb-tuile { background: var(--surface-2); padding: 14px var(--e-4); display: flex; flex-direction: column; gap: 2px; }
+.sb-n { font-family: var(--police-titre); font-size: 26px; font-weight: 700; line-height: 1.05; color: var(--marque); }
+.sb-fleche { font-weight: 400; color: var(--encre-3); font-size: 20px; }
+.sb-cout .sb-n { color: var(--ambre); }
+.sb-l { font-size: 12.5px; font-weight: 600; color: var(--encre); }
+.sb-aide { font-size: 11px; color: var(--encre-3); }
+@media (max-width: 620px) { .standard-bilan { grid-template-columns: 1fr; } }
+.famille-plan { display: flex; align-items: center; gap: var(--e-3); flex-wrap: wrap; padding: 8px var(--e-4); border-bottom: 1px solid var(--surface-3); font-size: 12px; color: var(--encre-2); }
+.famille-cible b { font-family: var(--police-data); color: var(--vert); font-weight: 700; }
+.famille-cible-n { color: var(--encre-3); }
+.famille-cout { margin-left: auto; font-weight: 600; color: var(--ambre); background: var(--ambre-voile); border: 1px solid var(--ambre-trait); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+
 .lf-cadre { border: 1px solid var(--trait); border-radius: var(--r-m);
   background: var(--surface); overflow: hidden; }
 .lf-entete, .lf-ligne {
@@ -569,6 +686,16 @@ body.espace-composants .outils { display: none; }
   border-radius: 0 var(--r-s) var(--r-s) 0; color: var(--encre);
 }
 .fc-pn { font-family: var(--police-data); font-weight: 700; }
+.fc-plan { border: 1px solid var(--trait); border-radius: var(--r-m); background: var(--surface-2); margin-bottom: var(--e-4); overflow: hidden; }
+.fc-plan .fc-conseil { margin: 0; border: 0; border-radius: 0; border-bottom: 1px solid var(--trait); }
+.fc-plan-corps { padding: var(--e-3) var(--e-4); display: flex; flex-direction: column; gap: 8px; }
+.fc-plan-chiffres { display: flex; gap: var(--e-4); flex-wrap: wrap; font-size: 12.5px; color: var(--encre-2); }
+.fc-plan-mesure b { font-family: var(--police-titre); font-size: 16px; color: var(--vert); }
+.fc-plan-cout b { color: var(--ambre); }
+.fc-plan-boites { display: flex; flex-wrap: wrap; gap: 4px; }
+.fc-matrice { margin-bottom: var(--e-4); }
+.fc-titre { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--encre-3); font-weight: 700; margin: 0 0 6px; }
+.fc-matrice .mx-ligne { min-width: 150px; }
 
 .fc-normes { display: flex; flex-direction: column; gap: var(--e-4); }
 .fc-norme { border: 1px solid var(--trait); border-radius: var(--r-m);
@@ -690,6 +817,16 @@ body.espace-composants .outils { display: none; }
 .btn-danger:hover { background: var(--rouge); color: #fff; }
 .btn-danger-plein { background: var(--rouge); color: #fff; border-color: var(--rouge); }
 .btn-danger-plein:hover { background: var(--rouge); filter: brightness(1.1); }
+/* Les trois boutons d'un bloc de fiche : l'action principale est pleine, la
+   neutre est blanche, la dangereuse est blanche liserée de rouge. Trois
+   boutons du meme bleu pale sur un fond bleu pale ne se distinguaient pas. */
+.bloc-actions .btn-action.btn-accent { background: var(--marque); color: var(--sur-marque); border-color: var(--marque); }
+.bloc-actions .btn-action.btn-accent:hover { background: var(--marque-2); border-color: var(--marque-2); }
+.bloc-actions .btn-action.btn-neutre { background: var(--surface-2); color: var(--encre); border-color: var(--trait-fort); }
+.bloc-actions .btn-action.btn-neutre:hover { background: var(--surface); border-color: var(--encre-3); }
+.bloc-actions .btn-action.btn-danger { background: var(--surface-2); color: var(--rouge); border-color: var(--rouge-trait); }
+.bloc-actions .btn-action.btn-danger:hover { background: var(--rouge); color: #fff; border-color: var(--rouge); }
+.bloc-actions .btn-action.btn-valider { background: var(--vert); color: #fff; border-color: var(--vert); }
 
 /* ---------------- panneau (fiche) ---------------- */
 .panneau { width: min(720px, 100vw) !important; background: var(--sol-2); color: var(--encre); border-left: 1px solid var(--trait); }
@@ -699,24 +836,26 @@ body.espace-composants .outils { display: none; }
 .panneau-actions { display: flex; align-items: center; gap: var(--e-2); flex-shrink: 0; }
 .offcanvas-body { padding: var(--e-4); }
 
-.sommaire { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--e-4); }
-.sommaire-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 4px 11px; border-radius: 999px; border: 1px solid; }
+.sommaire { display: flex; flex-wrap: wrap; gap: 5px; }
+.sommaire-item { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 500; padding: 2px 9px; border-radius: 999px; border: 1px solid; }
 .sommaire-item b { font-variant-numeric: tabular-nums; }
 .sommaire-item.type-structure { background: var(--t-structure-voile); color: var(--t-structure); border-color: var(--t-structure-trait); }
 .sommaire-item.type-harnais   { background: var(--t-harnais-voile);   color: var(--t-harnais);   border-color: var(--t-harnais-trait); }
 .sommaire-item.type-plaquette { background: var(--t-plaquette-voile); color: var(--t-plaquette); border-color: var(--t-plaquette-trait); }
 .sommaire-item.type-autre     { background: var(--t-autre-voile);     color: var(--t-autre);     border-color: var(--t-autre-trait); }
 
-.bloc { background: var(--surface); border: 1px solid var(--trait); border-radius: var(--r-m); padding: var(--e-4); margin-bottom: var(--e-3); }
-.bloc-general { border-left: 3px solid var(--marque); }
+/* Les blocs sont blancs sur le fond du panneau : ce qui se lit est clair,
+   ce qui se clique se voit. La boite, le parent, prend du relief ; ses
+   branches restent a plat. */
+.bloc { background: var(--surface-2); border: 1px solid var(--trait); border-radius: var(--r-m); padding: var(--e-4); margin-bottom: var(--e-3); }
+.bloc-general { border-left: 3px solid var(--marque); box-shadow: var(--ombre-2); }
 .bloc-type-structure { border-left: 3px solid var(--t-structure); }
 .bloc-type-harnais   { border-left: 3px solid var(--t-harnais); }
 .bloc-type-plaquette { border-left: 3px solid var(--t-plaquette); }
 .bloc-type-autre     { border-left: 3px solid var(--t-autre); }
 .bloc-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--e-3); padding-bottom: var(--e-3); margin-bottom: var(--e-3); border-bottom: 1px solid var(--trait); flex-wrap: wrap; }
 .bloc-tete h3 { font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-.bloc-identite { display: flex; gap: var(--e-3); align-items: center; }
-.bloc-pn { font-family: var(--police-data); font-size: 12.5px; color: var(--encre-3); word-break: break-all; }
+.bloc-general .bloc-tete h3 { font-family: var(--police-titre); font-size: 14px; letter-spacing: .12em; color: var(--marque); }
 .pastille-type { display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: var(--r-s); font-size: 14px; border: 1px solid; }
 .pastille-type.type-structure { background: var(--t-structure-voile); color: var(--t-structure); border-color: var(--t-structure-trait); }
 .pastille-type.type-harnais   { background: var(--t-harnais-voile);   color: var(--t-harnais);   border-color: var(--t-harnais-trait); }
@@ -740,8 +879,7 @@ body.espace-composants .outils { display: none; }
 .ligne-val { flex: 1; font-size: 13px; min-width: 0; word-break: break-word; width: 100%; }
 
 /* Où cette pièce est-elle montée : la question clé d'un outil de réemploi. */
-.usages { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: var(--e-2); }
-.usages-titre { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--encre-3); font-weight: 600; }
+.usages { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .usage-lien { font-family: var(--police-data); font-size: 11.5px; background: var(--surface-3); border: 1px solid var(--trait); border-radius: var(--r-s); padding: 3px 9px; color: var(--encre-2); }
 .usage-lien:hover { background: var(--marque); color: var(--sur-marque); border-color: var(--marque); }
 
@@ -804,30 +942,39 @@ body.espace-composants .outils { display: none; }
 .composant .puce-suppr { justify-self: center; }
 .composants-vide { font-size: 12.5px; color: var(--encre-3); padding: 8px 10px; grid-column: 1 / -1; }
 .ajout-composant { display: grid; grid-template-columns: 1.2fr 1fr 1.1fr auto; gap: 6px; margin-top: 8px; }
+/* Les listes de suggestion n'occupent pas de case : elles ne se voient pas. */
+.listes-bloc { display: contents; }
 .ajout-composant .saisie-composant { min-width: 0; background: var(--surface-2); color: var(--encre); border: 1px solid var(--trait-fort); border-radius: var(--r-s); padding: 6px 9px; font-size: 12.5px; }
 .ajout-composant .saisie-composant:focus { outline: none; border-color: var(--marque); }
 .composants-outils { display: flex; justify-content: flex-end; margin-top: 6px; }
 @media (max-width: 560px) { .ajout-composant { grid-template-columns: 1fr 1fr; } }
 
-/* La photo situe la piece. Cadre de rapport fixe, centre : au format de la
-   source et collee a gauche, elle changeait de hauteur d'une boite a l'autre
-   et desequilibrait la fiche. Un clic l'agrandit pour qui veut la detailler. */
+/* La fiche d'identite : la photo tient une colonne a gauche, les champs
+   cles se lisent en face. A pleine largeur, la photo repoussait la fonction
+   et le PN sous le pli. Un clic l'agrandit pour qui veut la detailler. */
+.fiche-identite { display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: var(--e-4); align-items: start; }
+.fiche-champs { min-width: 0; }
+.fiche-champs .ligne:first-child { padding-top: 0; }
+.fiche-identite + .ligne { border-top: 1px solid var(--surface-3); }
 .vignette-cadre { display: flex; justify-content: center; margin-bottom: var(--e-4); }
 .vignette {
-  display: block; padding: 0; border: 1px solid var(--trait); border-radius: var(--r-m);
-  overflow: hidden; background: var(--surface-3); width: 100%; max-width: 340px;
+  display: block; padding: 0; border: 1px solid var(--trait); border-radius: var(--r-s);
+  overflow: hidden; background: var(--surface-3); width: 100%; max-width: 148px;
   aspect-ratio: 4 / 3; position: relative; transition: border-color .15s, box-shadow .15s;
 }
 .vignette:hover { border-color: var(--trait-fort); box-shadow: var(--ombre-1); }
 .vignette img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.vignette-sous { max-width: 240px; }
-@media (max-width: 520px) { .vignette { max-width: 100%; } }
+@media (max-width: 560px) {
+  .fiche-identite { grid-template-columns: 1fr; }
+  .fiche-photo { display: flex; justify-content: center; }
+  .vignette { max-width: 180px; }
+}
 
 /* L'arbre de la fiche : la boite est le tronc, les sous-ensembles sont ses
    branches. Un retrait et un filet disent la subordination. */
 .arbre-fiche { margin-top: var(--e-5); }
 .arbre-tete {
-  display: flex; align-items: baseline; gap: var(--e-3);
+  display: flex; align-items: center; gap: var(--e-3); flex-wrap: wrap;
   padding-bottom: 7px; margin-bottom: var(--e-3);
   border-bottom: 2px solid var(--marque);
 }
@@ -835,17 +982,17 @@ body.espace-composants .outils { display: none; }
   font-family: var(--police-titre); font-size: 13px; font-weight: 700;
   letter-spacing: .1em; text-transform: uppercase; color: var(--marque);
 }
-.arbre-compte { font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums;
-  margin-left: auto; }
+.arbre-compte { font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.arbre-tete .sommaire { margin-left: auto; }
 .arbre-branches { position: relative; padding-left: var(--e-5); }
 /* Le filet qui relie les branches au tronc. */
 .arbre-branches::before {
   content: ""; position: absolute; left: 7px; top: 0; bottom: 30px;
   width: 2px; background: var(--trait);
 }
-.arbre-branche { position: relative; margin-bottom: var(--e-3); }
+.arbre-branche { position: relative; margin-bottom: var(--e-2); }
 .arbre-branche::before {
-  content: ""; position: absolute; left: calc(var(--e-5) * -1 + 7px); top: 26px;
+  content: ""; position: absolute; left: calc(var(--e-5) * -1 + 7px); top: 28px;
   width: calc(var(--e-5) - 9px); height: 2px; background: var(--trait);
 }
 .arbre-ajout { padding-top: 2px; }
@@ -854,6 +1001,36 @@ body.espace-composants .outils { display: none; }
   .arbre-branches { padding-left: var(--e-3); }
   .arbre-branches::before { left: 2px; }
   .arbre-branche::before { display: none; }
+}
+
+/* Une branche : repliee, une ligne — type, PN, resume, reemploi, photo en
+   timbre. Depliee, la fiche du sous-ensemble sous cette meme ligne. */
+.bloc-branche { padding: 0; margin-bottom: 0; }
+.bloc-branche.ouverte { border-color: var(--trait-fort); box-shadow: var(--ombre-1); }
+.branche-tete {
+  display: flex; align-items: center; gap: var(--e-3); width: 100%; text-align: left;
+  padding: 9px var(--e-3) 9px var(--e-3); background: none; border: 0; border-radius: var(--r-m);
+  color: var(--encre); cursor: pointer;
+}
+.branche-tete:hover { background: var(--sol-2); }
+.ouverte > .branche-tete { border-radius: var(--r-m) var(--r-m) 0 0; border-bottom: 1px solid var(--trait); }
+.branche-texte { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.branche-ligne { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+.branche-type { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.branche-pn { font-family: var(--police-data); font-size: 12px; color: var(--encre-2); word-break: break-all; }
+.branche-resume { font-size: 12px; color: var(--encre-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.branche-partage {
+  font-size: 11px; color: var(--encre-2); background: var(--surface); border: 1px solid var(--trait);
+  border-radius: 999px; padding: 2px 9px; white-space: nowrap; flex: none;
+}
+.branche-photo { width: 56px; height: 42px; border-radius: 4px; overflow: hidden; border: 1px solid var(--trait); background: var(--surface-3); flex: none; }
+.branche-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.branche-chevron { color: var(--trait-fort); font-size: 20px; line-height: 1; flex: none; transition: transform .15s, color .15s; }
+.ouverte > .branche-tete .branche-chevron { transform: rotate(90deg); color: var(--marque); }
+.branche-corps { padding: var(--e-2) var(--e-4) var(--e-4); }
+.branche-outils { justify-content: flex-end; padding-bottom: var(--e-3); }
+@media (max-width: 560px) {
+  .branche-photo, .branche-resume { display: none; }
 }
 .loupe img { width: 100%; max-width: 100%; border-radius: var(--r-s); }
 .fiche-pied { padding: var(--e-4) 0 var(--e-7); text-align: center; }

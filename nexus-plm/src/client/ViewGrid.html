@@ -211,18 +211,66 @@ function fonctionsComposants(composants) {
   }).sort(function (a, b) { return tri.fn(a, b) || a.libelle.localeCompare(b.libelle, 'fr'); });
 }
 
+/** Les trois lectures de l'espace, en un commutateur. */
+function vuesComposantsHtml() {
+  const courante = Store.compo.vue || 'liste';
+  return '<span class="compo-vues" role="group" aria-label="Lecture">' +
+    VUES_COMPOSANTS.map(function (v) {
+      const actif = courante === v.cle;
+      return '<button type="button" class="compo-vue-btn' + (actif ? ' actif' : '') + '"' +
+        dataAttrs({ action: 'changer-vue-composants', vue: v.cle }) +
+        ' aria-pressed="' + actif + '" title="' + esc(v.aide) + '">' + esc(v.libelle) + '</button>';
+    }).join('') +
+  '</span>';
+}
+
 function triComposantsHtml(nb) {
+  // La carte se range par aire : un tri n'y voudrait rien dire.
+  const avecTri = (Store.compo.vue || 'liste') !== 'carte';
   return '<div class="compo-tri">' +
+    vuesComposantsHtml() +
     '<span class="compo-tri-compte">' + nb + (nb > 1 ? ' fonctions' : ' fonction') + '</span>' +
-    '<span class="compo-tri-choix">' +
-      TRIS_COMPOSANTS.map(function (t) {
-        const actif = (Store.compo.tri || 'emploi') === t.cle;
-        return '<button type="button" class="compo-tri-btn' + (actif ? ' actif' : '') + '"' +
-          dataAttrs({ action: 'trier-composants', tri: t.cle }) +
-          ' aria-pressed="' + actif + '">' + esc(t.libelle) + '</button>';
-      }).join('') +
-    '</span>' +
+    (avecTri
+      ? '<span class="compo-tri-choix">' +
+          TRIS_COMPOSANTS.map(function (t) {
+            const actif = (Store.compo.tri || 'emploi') === t.cle;
+            return '<button type="button" class="compo-tri-btn' + (actif ? ' actif' : '') + '"' +
+              dataAttrs({ action: 'trier-composants', tri: t.cle }) +
+              ' aria-pressed="' + actif + '">' + esc(t.libelle) + '</button>';
+          }).join('') +
+        '</span>'
+      : '') +
   '</div>';
+}
+
+/**
+ * LES PARTS D'UNE FONCTION
+ *
+ * Une barre empilée : chaque segment est une référence montée, large de son
+ * nombre de boîtes. La cible — la plus montée — est en tête et en couleur,
+ * les autres, celles qu'il faudrait migrer, en gris. On lit d'un coup si la
+ * convergence est facile (10 / 2 / 1) ou disputée (5 / 4 / 4). Le détail
+ * est dans l'info-bulle, et en clair dans la fiche.
+ */
+function partsHtml(lignes, classe) {
+  const montees = lignes.filter(function (c) { return c.nbBoites > 0; })
+    .sort(function (a, b) {
+      return b.nbBoites - a.nbBoites ||
+             String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+    });
+  if (montees.length < 2) return '';
+  const total = montees.reduce(function (t, c) { return t + c.nbBoites; }, 0);
+  const titre = montees.map(function (c, i) {
+    return (i === 0 ? 'cible ' : '') + txt(c.reference, 'sans référence') + ' : ' +
+           c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte');
+  }).join(' · ');
+  return '<span class="parts ' + (classe || '') + '" role="img" aria-label="' + esc(titre) + '"' +
+    ' title="' + esc(titre) + '">' +
+    montees.map(function (c, i) {
+      return '<span class="' + (i === 0 ? 'part-cible' : 'part-autre') + '"' +
+             ' style="flex-grow:' + c.nbBoites + '"></span>';
+    }).join('') +
+  '</span>';
 }
 
 /** Une fonction : une ligne du tableau. Le détail est dans la fiche. */
@@ -239,10 +287,11 @@ function ligneFonctionHtml(f, maxi) {
     '</span>' +
     '<span class="lf-famille">' + esc(cat.libelle) + '</span>' +
     '<span class="lf-n"><b>' + f.normes + '</b> norme' + (f.normes > 1 ? 's' : '') + '</span>' +
-    '<span class="lf-n"><b>' + f.references + '</b> réf.' +
+    '<span class="lf-n lf-refs"><span><b>' + f.references + '</b> réf.' +
       (f.montees < f.references
         ? '<span class="lf-doux"> · ' + f.montees + ' montée' + (f.montees > 1 ? 's' : '') + '</span>'
-        : '') +
+        : '') + '</span>' +
+      partsHtml(f.lignes, 'parts-ligne') +
     '</span>' +
     '<span class="lf-emploi">' +
       '<span class="lf-jauge" aria-hidden="true"><span style="width:' + part + '%"></span></span>' +
@@ -256,22 +305,164 @@ function ligneFonctionHtml(f, maxi) {
   '</button>';
 }
 
-/** L'espace Composants : le rail, le tri, la liste. */
+/** La liste : une fonction par ligne. */
+function listeFonctionsHtml(fonctions) {
+  const maxi = fonctions.reduce(function (m, f) { return Math.max(m, f.nbBoites); }, 1);
+  return '<div class="lf-cadre">' +
+      '<div class="lf-entete">' +
+        '<span>Fonction</span><span>Famille</span><span>Normes</span>' +
+        '<span>Références</span><span>Emploi</span><span></span><span></span>' +
+      '</div>' +
+      fonctions.map(function (f) { return ligneFonctionHtml(f, maxi); }).join('') +
+    '</div>';
+}
+
+/**
+ * LA MATRICE PAR PORTEUR
+ *
+ * Une grille : les fonctions en lignes, les porteurs en colonnes, et dans
+ * chaque case le nombre de boîtes de ce porteur qui montent la fonction. La
+ * teinte suit le nombre — une seule couleur, du clair au foncé — et le
+ * chiffre est écrit dans la case : la couleur aide, elle ne porte rien seule.
+ * C'est une table : elle se lit aussi sans la voir.
+ */
+function matriceHtml(mx, options) {
+  options = options || {};
+  const libellePorteur = function (p) { return p === '' ? 'Sans porteur' : p; };
+  const pas = function (n) {
+    if (!n) return 0;
+    return Math.max(1, Math.min(5, Math.ceil((n / (mx.maxi || 1)) * 5)));
+  };
+
+  const tete = '<tr><th scope="col" class="mx-coin">' + esc(options.enTete || 'Fonction') + '</th>' +
+    mx.porteurs.map(function (p) {
+      return '<th scope="col" class="mx-porteur' + (p === '' ? ' mx-sans' : '') + '">' +
+             '<span>' + esc(libellePorteur(p)) + '</span></th>';
+    }).join('') +
+    '<th scope="col" class="mx-total">Boîtes</th></tr>';
+
+  const corps = mx.lignes.map(function (l) {
+    const g = l.groupe;
+    const ligneTete = options.ligne
+      ? options.ligne(g)
+      : '<button type="button" class="mx-fonction"' +
+          dataAttrs({ action: 'ouvrir-fiche-composant', categorie: g.categorie, fonction: g.libelle }) +
+          ' title="Voir ses normes et ses références">' +
+          '<span class="cf-pastille cf-' + esc(g.categorie) + '" aria-hidden="true"></span>' +
+          '<span class="mx-nom">' + esc(g.libelle) + '</span>' +
+        '</button>';
+    return '<tr>' +
+      '<th scope="row" class="mx-ligne">' + ligneTete + '</th>' +
+      l.cellules.map(function (c) {
+        const titre = esc(g.libelle) + ' · ' + esc(libellePorteur(c.porteur)) + ' : ' +
+          (c.n ? c.n + (c.n > 1 ? ' boîtes — ' : ' boîte — ') + esc(c.boites.join(', ')) : 'aucune boîte');
+        return '<td class="mx-case mx-' + pas(c.n) + '" title="' + titre + '">' +
+               (c.n ? '<span>' + c.n + '</span>' : '<span class="mx-vide" aria-label="0">·</span>') +
+               '</td>';
+      }).join('') +
+      '<td class="mx-total"><b>' + l.total + '</b></td>' +
+    '</tr>';
+  }).join('');
+
+  const legende = '<div class="mx-legende" aria-hidden="true">' +
+    '<span>1</span>' +
+    [1, 2, 3, 4, 5].map(function (i) { return '<i class="mx-' + i + '"></i>'; }).join('') +
+    '<span>' + mx.maxi + (mx.maxi > 1 ? ' boîtes' : ' boîte') + '</span>' +
+    '<span class="mx-legende-aide">boîtes du porteur qui montent la fonction</span>' +
+  '</div>';
+
+  return '<div class="mx-cadre"><div class="mx-defil">' +
+    '<table class="mx"><thead>' + tete + '</thead><tbody>' + corps + '</tbody></table>' +
+  '</div>' + legende + '</div>';
+}
+
+/**
+ * LA CARTE DE LA BASE
+ *
+ * Chaque fonction est une tuile, large de ses boîtes, dans la région de sa
+ * famille. Ce qui compte est grand ; ce qui se disperse est marqué « à
+ * ranger ». Les positions viennent du treemap, en pourcentages : la carte
+ * suit la largeur de l'écran.
+ */
+function carteBaseHtml(carte) {
+  const pc = function (v, base) { return ((v / base) * 100).toFixed(2) + '%'; };
+  const boite = function (r) {
+    return 'left:' + pc(r.x, carte.largeur) + ';top:' + pc(r.y, carte.hauteur) +
+           ';width:' + pc(r.w, carte.largeur) + ';height:' + pc(r.h, carte.hauteur);
+  };
+
+  const regions = carte.familles.map(function (fam) {
+    const tuiles = fam.tuiles.map(function (t) {
+      const f = t.fonction;
+      const r = t.rect;
+      // Ce qui tient dans la tuile : le nom dès qu'elle est lisible, le
+      // compte et la barre quand il y a de la place. Le reste est dans le
+      // titre, et en clair dans la liste.
+      const large = r.w >= carte.largeur * 0.11 && r.h >= carte.hauteur * 0.09;
+      const moyenne = r.w >= carte.largeur * 0.04 && r.h >= carte.hauteur * 0.045;
+      const titre = f.libelle + ' · ' + f.nbBoites + (f.nbBoites > 1 ? ' boîtes' : ' boîte') +
+        ' · ' + f.references + (f.references > 1 ? ' références' : ' référence') +
+        (f.dispersee ? ' · à ranger' : '') + (f.hors ? ' · hors catalogue' : '');
+      return '<button type="button" class="tm-tuile tm-' + esc(fam.cle) +
+          (f.dispersee ? ' tm-disperse' : '') + (large ? ' tm-large' : moyenne ? ' tm-moyenne' : ' tm-petite') + '"' +
+          ' style="' + boite(r) + '"' +
+          dataAttrs({ action: 'ouvrir-fiche-composant', categorie: f.categorie, fonction: f.libelle }) +
+          ' title="' + esc(titre) + '" aria-label="' + esc(titre) + '">' +
+          (moyenne
+            ? '<span class="tm-nom">' + esc(f.libelle) + '</span>' +
+              (large
+                ? '<span class="tm-n">' + f.nbBoites + (f.nbBoites > 1 ? ' boîtes' : ' boîte') +
+                    (f.references > 1 ? ' · ' + f.references + ' réf.' : '') + '</span>' +
+                  partsHtml(f.lignes, 'parts-tuile') +
+                  (f.dispersee ? '<span class="tm-tag">à ranger</span>' : '')
+                : '')
+            : '') +
+        '</button>';
+    }).join('');
+    return '<div class="tm-region tm-' + esc(fam.cle) + '" style="' + boite(fam.rect) + '">' +
+        '<span class="tm-famille">' +
+          '<span class="cf-pastille cf-' + esc(fam.cle) + '" aria-hidden="true"></span>' +
+          esc(fam.libelle) +
+          '<span class="tm-famille-n">' + fam.fonctions.length +
+            (fam.fonctions.length > 1 ? ' fonctions' : ' fonction') + ' · ' +
+            fam.nbBoites + (fam.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span>' +
+        '</span>' +
+      '</div>' + tuiles;
+  }).join('');
+
+  const dormantes = carte.dormantes.length
+    ? '<p class="tm-dormantes">' +
+        '<span class="tm-dormantes-titre">Au catalogue, montées nulle part :</span> ' +
+        carte.dormantes.map(function (f) {
+          return '<button type="button" class="usage-lien"' +
+            dataAttrs({ action: 'ouvrir-fiche-composant', categorie: f.categorie, fonction: f.libelle }) +
+            '>' + esc(f.libelle) + '</button>';
+        }).join(' ') +
+      '</p>'
+    : '';
+
+  const legende = '<div class="tm-legende" aria-hidden="true">' +
+    '<span class="tm-legende-aire"><i></i> l\'aire d\'une tuile : ses boîtes</span>' +
+    '<span class="tm-legende-parts"><span class="parts parts-legende"><span class="part-cible" style="flex-grow:3"></span><span class="part-autre" style="flex-grow:1"></span></span> cible / à migrer</span>' +
+    '<span class="tm-legende-tag"><span class="tm-tag">à ranger</span> plusieurs références montées</span>' +
+  '</div>';
+
+  return '<div class="tm-cadre">' +
+    '<div class="tm" style="aspect-ratio:' + carte.largeur + '/' + carte.hauteur + '">' + regions + '</div>' +
+    legende + dormantes +
+  '</div>';
+}
+
+/** L'espace Composants : le rail, le commutateur, puis la lecture choisie. */
 function composantsHtml(vue) {
   const toutes = baseComposants(vue.aAfficher);
   const retenues = composantsFiltres(vue.aAfficher);
   const fonctions = fonctionsComposants(retenues);
-  const maxi = fonctions.reduce(function (m, f) { return Math.max(m, f.nbBoites); }, 1);
+  const lecture = Store.compo.vue || 'liste';
 
-  const corps = fonctions.length
-    ? '<div class="lf-cadre">' +
-        '<div class="lf-entete">' +
-          '<span>Fonction</span><span>Famille</span><span>Normes</span>' +
-          '<span>Références</span><span>Emploi</span><span></span><span></span>' +
-        '</div>' +
-        fonctions.map(function (f) { return ligneFonctionHtml(f, maxi); }).join('') +
-      '</div>'
-    : '<div class="etat-vide">' +
+  let corps;
+  if (!fonctions.length) {
+    corps = '<div class="etat-vide">' +
         '<p>Aucun composant ne correspond.</p>' +
         '<p class="etat-vide-aide">' +
         (filtreComposantActif()
@@ -279,6 +470,13 @@ function composantsHtml(vue) {
           : 'Renseignez le catalogue et les composants des boîtes.') +
         '</p>' +
       '</div>';
+  } else if (lecture === 'matrice') {
+    corps = matriceHtml(matriceEmploi(fonctions));
+  } else if (lecture === 'carte') {
+    corps = carteBaseHtml(carteComposants(fonctions));
+  } else {
+    corps = listeFonctionsHtml(fonctions);
+  }
 
   return '<div class="compo-corps">' +
       railComposantsHtml(toutes) +
@@ -303,10 +501,25 @@ function standardisationHtml(vue) {
     '</div>';
   }
 
-  return '<p class="standard-intro">' + familles.length +
-      ' famille(s) servies par plusieurs références. Les plus dispersées ' +
-      'd\'abord : ce sont elles qui coûtent le plus à faire vivre. ' +
-      'Cliquez une référence pour voir où elle sert.' +
+  // Le bilan d'abord : ce que rapporterait la convergence, et ce qu'elle
+  // coûterait. C'est la phrase qu'on retient.
+  const bilan = bilanStandardisation(familles);
+  const tuiles = '<div class="standard-bilan">' +
+    '<div class="sb-tuile"><span class="sb-n">' + bilan.familles + '</span>' +
+      '<span class="sb-l">famille' + (bilan.familles > 1 ? 's' : '') + ' dispersée' + (bilan.familles > 1 ? 's' : '') + '</span>' +
+      '<span class="sb-aide">servies par plusieurs références</span></div>' +
+    '<div class="sb-tuile"><span class="sb-n">' + bilan.references + ' <span class="sb-fleche">→</span> ' + bilan.apres + '</span>' +
+      '<span class="sb-l">références à faire vivre</span>' +
+      '<span class="sb-aide">si chacune converge vers sa plus montée</span></div>' +
+    '<div class="sb-tuile sb-cout"><span class="sb-n">' + bilan.boites + '</span>' +
+      '<span class="sb-l">boîte' + (bilan.boites > 1 ? 's' : '') + ' à modifier</span>' +
+      '<span class="sb-aide">le coût de la convergence</span></div>' +
+  '</div>';
+
+  return tuiles +
+    '<p class="standard-intro">Les plus dispersées d\'abord : ce sont elles qui coûtent ' +
+      'le plus à faire vivre. La cible de chaque famille est sa référence la plus montée ; ' +
+      'cliquez une référence pour voir où elle sert.' +
     '</p>' +
     '<div class="familles">' + familles.map(familleHtml).join('') + '</div>';
 }
@@ -352,6 +565,17 @@ function familleHtml(f) {
           '<b>' + f.nbReferences + '</b> références</span>' +
       '</div>' +
     '</header>' +
+    // La cible et son coût : converger vers la plus montée, c'est modifier
+    // les boîtes qui en montent une autre. Le chiffre qui décide.
+    (f.cible && f.aModifier.length
+      ? '<div class="famille-plan">' +
+          partsHtml(f.references, 'parts-famille') +
+          '<span class="famille-cible">cible <b>' + esc(txt(f.cible.reference, 'sans référence')) + '</b>' +
+            ' <span class="famille-cible-n">' + f.cible.nbBoites + (f.cible.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span></span>' +
+          '<span class="famille-cout">' + f.aModifier.length +
+            (f.aModifier.length > 1 ? ' boîtes à modifier' : ' boîte à modifier') + '</span>' +
+        '</div>'
+      : '') +
     '<ul class="famille-normes">' + f.normes.map(function (n) {
       return '<li class="famille-norme">' +
         '<span class="norme-nom">' + esc(n.norme || 'norme non précisée') + '</span>' +
