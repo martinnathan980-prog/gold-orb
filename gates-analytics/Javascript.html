@@ -4,7 +4,7 @@
 
   var $ = function (id) { return document.getElementById(id); };
   function ech(v) {
-    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/\x3C/g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   function norm(v) {
@@ -823,7 +823,7 @@
     var base = barre.getBoundingClientRect();
     zone.innerHTML = segs.slice(0, -1).map(function (seg) {
       var r = seg.getBoundingClientRect();
-      return '<i style="left:' + (r.right - base.left + 1).toFixed(1) + 'px"></i>';
+      return '\x3Ci style="left:' + (r.right - base.left + 1).toFixed(1) + 'px">\x3C/i>';
     }).join('');
   }
 
@@ -864,7 +864,7 @@
 
   function rendreAvancement(liste) {
     var c = compte(liste);
-    $('phrase').innerHTML = '<b>' + nb(c.termine) + '</b> sur ' + nb(c.total) + ' plans terminés' +
+    $('phrase').innerHTML = '\x3Cb>' + nb(c.termine) + '\x3C/b> sur ' + nb(c.total) + ' plans terminés' +
       (filtreActif() ? ' dans la sélection' : '');
 
     /* Le pourcentage se lit dans la barre : les chiffres du dessous n'ont plus
@@ -874,20 +874,20 @@
       var part = (c[e.cle] / (c.total || 1)) * 100;
       var texte = part >= 6 ? Math.round(part) + '\u202f%' : '';
       return e.hachure
-        ? '<span class="hachure" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '</span>'
-        : '<span style="width:' + part.toFixed(2) + '%;background:' + e.couleur +
-          ';color:' + encreSegment(e.cle) + '">' + texte + '</span>';
+        ? '\x3Cspan class="hachure" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '\x3C/span>'
+        : '\x3Cspan style="width:' + part.toFixed(2) + '%;background:' + e.couleur +
+          ';color:' + encreSegment(e.cle) + '">' + texte + '\x3C/span>';
     }).join('');
 
     $('etats').innerHTML = ETATS.map(function (e) {
       var pastille = e.hachure
-        ? '<span class="pastille hachure"></span>'
-        : '<span class="pastille" style="background:' + e.couleur + '"></span>';
+        ? '\x3Cspan class="pastille hachure">\x3C/span>'
+        : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>';
       var actif = vue.etat === e.cle;
-      return '<button class="etat-btn" type="button" data-etat="' + e.cle + '" style="--teinte:' + e.teinte +
+      return '\x3Cbutton class="etat-btn" type="button" data-etat="' + e.cle + '" style="--teinte:' + e.teinte +
         '" aria-pressed="' + actif + '" title="' + (actif ? 'Retirer le filtre' : 'N\u2019afficher que ces plans') + '">' +
-        '<span class="etat-haut">' + pastille + ech(e.libelle) + '</span>' +
-        '<span class="etat-n">' + nb(c[e.cle]) + '</span></button>';
+        '\x3Cspan class="etat-haut">' + pastille + ech(e.libelle) + '\x3C/span>' +
+        '\x3Cspan class="etat-n">' + nb(c[e.cle]) + '\x3C/span>\x3C/button>';
     }).join('');
 
     requestAnimationFrame(function () { alignerEtats(c); });
@@ -982,34 +982,34 @@
     var yBande = mHaut + plotH + ecart;
     var basTotal = yBande + bandeH;
 
-    var s = ['<svg class="graphe" viewBox="0 0 ' + L + ' ' + H + '" role="img" aria-label="Plans termines par semaine, historique et projection">'];
-    s.push('<defs><clipPath id="zoneTracee"><rect x="' + mG + '" y="' + (mHaut - 12) + '" width="' + LARGEUR + '" height="' + (plotH + 16) + '"/></clipPath></defs>');
+    var s = ['\x3Csvg class="graphe" viewBox="0 0 ' + L + ' ' + H + '" role="img" aria-label="Plans termines par semaine, historique et projection">'];
+    s.push('\x3Cdefs>\x3CclipPath id="zoneTracee">\x3Crect x="' + mG + '" y="' + (mHaut - 12) + '" width="' + LARGEUR + '" height="' + (plotH + 16) + '"/>\x3C/clipPath>\x3C/defs>');
 
     var pas = total <= 25 ? 5 : total <= 60 ? 20 : 50;
     for (var v = 0; v < total; v += pas) {
       if (total - v < pas * 0.5) continue;
-      s.push('<line x1="' + mG + '" x2="' + (L - mD) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
-      s.push('<text class="grad" x="' + (mG - 8) + '" y="' + (y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + v + '</text>');
+      s.push('\x3Cline x1="' + mG + '" x2="' + (L - mD) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
+      s.push('\x3Ctext class="grad" x="' + (mG - 8) + '" y="' + (y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + v + '\x3C/text>');
     }
-    s.push('<line x1="' + mG + '" x2="' + (L - mD) + '" y1="' + y(total).toFixed(1) + '" y2="' + y(total).toFixed(1) + '" stroke="var(--filet-fort)" stroke-width="1"/>');
-    s.push('<text class="grad" x="' + (L - mD + 8) + '" y="' + (y(total) + 3.5).toFixed(1) + '">' + nb(total) + '</text>');
+    s.push('\x3Cline x1="' + mG + '" x2="' + (L - mD) + '" y1="' + y(total).toFixed(1) + '" y2="' + y(total).toFixed(1) + '" stroke="var(--filet-fort)" stroke-width="1"/>');
+    s.push('\x3Ctext class="grad" x="' + (L - mD + 8) + '" y="' + (y(total) + 3.5).toFixed(1) + '">' + nb(total) + '\x3C/text>');
 
     // Tout ce qui peut sortir du cadre est decoupe a la zone tracee.
-    s.push('<g clip-path="url(#zoneTracee)">');
+    s.push('\x3Cg clip-path="url(#zoneTracee)">');
 
     var visibles = pts.filter(function (pt) { return pt.i >= d0 - 2 && pt.i <= d1 + 2; });
     if (visibles.length === 1) {
-      s.push('<circle cx="' + x(visibles[0].i).toFixed(1) + '" cy="' + y(visibles[0].termine).toFixed(1) +
+      s.push('\x3Ccircle cx="' + x(visibles[0].i).toFixed(1) + '" cy="' + y(visibles[0].termine).toFixed(1) +
              '" r="4.5" fill="var(--fait)"/>');
     }
     if (visibles.length > 1) {
       var chemin = visibles.map(function (p, k) { return (k ? 'L' : 'M') + x(p.i).toFixed(1) + ' ' + y(p.termine).toFixed(1); }).join(' ');
       var xa = x(visibles[0].i).toFixed(1), xb = x(visibles[visibles.length - 1].i).toFixed(1);
-      s.push('<path d="' + chemin + ' L' + xb + ' ' + y(0).toFixed(1) + ' L' + xa + ' ' + y(0).toFixed(1) + ' Z" fill="var(--fait)" opacity=".11"/>');
-      s.push('<path d="' + chemin + '" fill="none" stroke="var(--fait)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>');
+      s.push('\x3Cpath d="' + chemin + ' L' + xb + ' ' + y(0).toFixed(1) + ' L' + xa + ' ' + y(0).toFixed(1) + ' Z" fill="var(--fait)" opacity=".11"/>');
+      s.push('\x3Cpath d="' + chemin + '" fill="none" stroke="var(--fait)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>');
       visibles.forEach(function (pt) {
         if (pt.i === dernier.i) return;
-        s.push('<circle cx="' + x(pt.i).toFixed(1) + '" cy="' + y(pt.termine).toFixed(1) +
+        s.push('\x3Ccircle cx="' + x(pt.i).toFixed(1) + '" cy="' + y(pt.termine).toFixed(1) +
                '" r="3" fill="var(--surface)" stroke="var(--fait)" stroke-width="1.6"/>');
       });
     }
@@ -1020,41 +1020,41 @@
       requis = restants / (prochain.i - AUJ);
       enRetard = vitesse <= 0 || requis > vitesse;
       var cr = enRetard ? 'var(--alerte)' : 'var(--fait)';
-      s.push('<path d="M' + x(AUJ).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(prochain.i).toFixed(1) + ' ' + y(total).toFixed(1) + '" fill="none" stroke="' + cr + '" stroke-width="1.6"/>');
-      s.push('<circle cx="' + x(prochain.i).toFixed(1) + '" cy="' + y(total).toFixed(1) + '" r="3.4" fill="' + cr + '"/>');
+      s.push('\x3Cpath d="M' + x(AUJ).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(prochain.i).toFixed(1) + ' ' + y(total).toFixed(1) + '" fill="none" stroke="' + cr + '" stroke-width="1.6"/>');
+      s.push('\x3Ccircle cx="' + x(prochain.i).toFixed(1) + '" cy="' + y(total).toFixed(1) + '" r="3.4" fill="' + cr + '"/>');
     }
 
     if (projIdx !== null) {
-      s.push('<path d="M' + x(AUJ).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(projIdx).toFixed(1) + ' ' + y(total).toFixed(1) +
+      s.push('\x3Cpath d="M' + x(AUJ).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(projIdx).toFixed(1) + ' ' + y(total).toFixed(1) +
              '" fill="none" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="5 4" opacity=".6"/>');
       if (projIdx >= d0 && projIdx <= d1) {
-        s.push('<circle cx="' + x(projIdx).toFixed(1) + '" cy="' + y(total).toFixed(1) + '" r="3.4" fill="none" stroke="var(--fait)" stroke-width="1.6"/>');
+        s.push('\x3Ccircle cx="' + x(projIdx).toFixed(1) + '" cy="' + y(total).toFixed(1) + '" r="3.4" fill="none" stroke="var(--fait)" stroke-width="1.6"/>');
         var xp = Math.max(mG + 22, Math.min(x(projIdx), L - mD - 22));
         // Sous le plafond plutot qu'au-dessus : au-dessus, elle tombait dans la
         // bande des jalons et se superposait a leurs etiquettes.
-        horsClip.push('<text class="grad" x="' + xp.toFixed(1) + '" y="' + (y(total) + 16).toFixed(1) +
-                      '" text-anchor="middle">' + etiquette(projIdx) + '</text>');
+        horsClip.push('\x3Ctext class="grad" x="' + xp.toFixed(1) + '" y="' + (y(total) + 16).toFixed(1) +
+                      '" text-anchor="middle">' + etiquette(projIdx) + '\x3C/text>');
       }
       if (prochain && enRetard) {
         var auJalon = atteint + vitesse * (prochain.i - AUJ);
         var manque = Math.round(total - auJalon);
         if (manque > 0 && prochain.i >= d0 && prochain.i <= d1) {
           var xj = x(prochain.i), y1 = y(auJalon), y2 = y(total);
-          s.push('<line x1="' + xj.toFixed(1) + '" x2="' + xj.toFixed(1) + '" y1="' + y1.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="var(--alerte)" stroke-width="1" opacity=".45"/>');
-          s.push('<text class="grad" x="' + (xj + 7).toFixed(1) + '" y="' + ((y1 + y2) / 2 + 4).toFixed(1) + '" fill="var(--alerte)" font-weight="500">-' + manque + '</text>');
+          s.push('\x3Cline x1="' + xj.toFixed(1) + '" x2="' + xj.toFixed(1) + '" y1="' + y1.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="var(--alerte)" stroke-width="1" opacity=".45"/>');
+          s.push('\x3Ctext class="grad" x="' + (xj + 7).toFixed(1) + '" y="' + ((y1 + y2) / 2 + 4).toFixed(1) + '" fill="var(--alerte)" font-weight="500">-' + manque + '\x3C/text>');
         }
       }
     }
-    s.push('</g>');
+    s.push('\x3C/g>');
     horsClip.forEach(function (t) { s.push(t); });
 
     if (AUJ >= d0 && AUJ <= d1) {
-      s.push('<line x1="' + x(AUJ).toFixed(1) + '" x2="' + x(AUJ).toFixed(1) + '" y1="' + (mHaut - 6) + '" y2="' + basTotal.toFixed(1) + '" stroke="var(--encre-3)" stroke-width="1"/>');
+      s.push('\x3Cline x1="' + x(AUJ).toFixed(1) + '" x2="' + x(AUJ).toFixed(1) + '" y1="' + (mHaut - 6) + '" y2="' + basTotal.toFixed(1) + '" stroke="var(--encre-3)" stroke-width="1"/>');
       var plAuj = places.filter(function (q) { return q.aujourdhui; })[0];
       var yAuj = mHaut - 13 - (plAuj ? plAuj.niveau : 0) * HAUTEUR_ETIQUETTE;
-      s.push('<text class="grad" x="' + (x(AUJ) - 6).toFixed(1) + '" y="' + yAuj.toFixed(1) + '" text-anchor="end">aujourd’hui</text>');
-      s.push('<circle cx="' + x(AUJ).toFixed(1) + '" cy="' + y(atteint).toFixed(1) + '" r="4.5" fill="var(--fait)" stroke="var(--surface)" stroke-width="2"/>');
-      s.push('<text class="grad" x="' + (x(AUJ) - 9).toFixed(1) + '" y="' + (y(atteint) - 8).toFixed(1) + '" text-anchor="end" fill="var(--encre)" font-weight="500">' + atteint + '</text>');
+      s.push('\x3Ctext class="grad" x="' + (x(AUJ) - 6).toFixed(1) + '" y="' + yAuj.toFixed(1) + '" text-anchor="end">aujourd’hui\x3C/text>');
+      s.push('\x3Ccircle cx="' + x(AUJ).toFixed(1) + '" cy="' + y(atteint).toFixed(1) + '" r="4.5" fill="var(--fait)" stroke="var(--surface)" stroke-width="2"/>');
+      s.push('\x3Ctext class="grad" x="' + (x(AUJ) - 9).toFixed(1) + '" y="' + (y(atteint) - 8).toFixed(1) + '" text-anchor="end" fill="var(--encre)" font-weight="500">' + atteint + '\x3C/text>');
     }
 
     // Jalons : poignee visible, deplacable a la souris, croix de suppression.
@@ -1068,24 +1068,24 @@
       var xTexte = pl.versGauche ? jx - 10 : jx + 10;
       var xCroix = pl.versGauche ? pl.xa + 12 : pl.xb - 12;
 
-      s.push('<g class="jalon" data-jalon="' + idx + '">');
-      s.push('<line x1="' + jx.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" y2="' + basTotal.toFixed(1) +
+      s.push('\x3Cg class="jalon" data-jalon="' + idx + '">');
+      s.push('\x3Cline x1="' + jx.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" y2="' + basTotal.toFixed(1) +
              '" stroke="' + couleur + '" stroke-width="1" stroke-dasharray="2 3"/>');
-      s.push('<g class="jalon-poignee" data-jalon="' + idx + '" role="button" tabindex="0" aria-label="Jalon ' + ech(j.texte) + ' en ' + etiquette(j.i) + '. Fleches gauche et droite pour deplacer, Suppr pour retirer.">');
-      s.push('<rect class="jalon-fond" x="' + pl.xa.toFixed(1) + '" y="' + (yTexte - 12).toFixed(1) + '" width="' + pl.largeur.toFixed(1) + '" height="17" fill="var(--encre)" opacity="0" rx="2"/>');
-      s.push('<path d="M' + jx.toFixed(1) + ' ' + yBase.toFixed(1) + ' l-4 -5.5 l8 0 Z" fill="' + couleur + '"/>');
-      s.push('<text class="jalon-texte" x="' + xTexte.toFixed(1) + '" y="' + yTexte.toFixed(1) + '" text-anchor="' + (pl.versGauche ? 'end' : 'start') + '" fill="' + couleur + '">' + ech(j.texte) + '</text>');
-      s.push('</g>');
-      s.push('<g class="jalon-supp" data-jalon="' + idx + '" role="button" tabindex="0" aria-label="Supprimer le jalon ' + ech(j.texte) + '">');
-      s.push('<circle cx="' + xCroix.toFixed(1) + '" cy="' + (yTexte - 4).toFixed(1) + '" r="7" fill="transparent"/>');
-      s.push('<path d="M' + (xCroix - 3).toFixed(1) + ' ' + (yTexte - 7).toFixed(1) + ' l6 6 M' + (xCroix + 3).toFixed(1) + ' ' + (yTexte - 7) + ' l-6 6" stroke="' + couleur + '" stroke-width="1.3" stroke-linecap="round" opacity=".6"/>');
-      s.push('</g></g>');
+      s.push('\x3Cg class="jalon-poignee" data-jalon="' + idx + '" role="button" tabindex="0" aria-label="Jalon ' + ech(j.texte) + ' en ' + etiquette(j.i) + '. Fleches gauche et droite pour deplacer, Suppr pour retirer.">');
+      s.push('\x3Crect class="jalon-fond" x="' + pl.xa.toFixed(1) + '" y="' + (yTexte - 12).toFixed(1) + '" width="' + pl.largeur.toFixed(1) + '" height="17" fill="var(--encre)" opacity="0" rx="2"/>');
+      s.push('\x3Cpath d="M' + jx.toFixed(1) + ' ' + yBase.toFixed(1) + ' l-4 -5.5 l8 0 Z" fill="' + couleur + '"/>');
+      s.push('\x3Ctext class="jalon-texte" x="' + xTexte.toFixed(1) + '" y="' + yTexte.toFixed(1) + '" text-anchor="' + (pl.versGauche ? 'end' : 'start') + '" fill="' + couleur + '">' + ech(j.texte) + '\x3C/text>');
+      s.push('\x3C/g>');
+      s.push('\x3Cg class="jalon-supp" data-jalon="' + idx + '" role="button" tabindex="0" aria-label="Supprimer le jalon ' + ech(j.texte) + '">');
+      s.push('\x3Ccircle cx="' + xCroix.toFixed(1) + '" cy="' + (yTexte - 4).toFixed(1) + '" r="7" fill="transparent"/>');
+      s.push('\x3Cpath d="M' + (xCroix - 3).toFixed(1) + ' ' + (yTexte - 7).toFixed(1) + ' l6 6 M' + (xCroix + 3).toFixed(1) + ' ' + (yTexte - 7) + ' l-6 6" stroke="' + couleur + '" stroke-width="1.3" stroke-linecap="round" opacity=".6"/>');
+      s.push('\x3C/g>\x3C/g>');
     });
 
     if (!prochain && d1 > AUJ + 2) {
       var xv = x(AUJ + Math.round((d1 - AUJ) / 2));
-      s.push('<text class="grad" x="' + xv.toFixed(1) + '" y="' + (mHaut + plotH * 0.86).toFixed(1) +
-             '" text-anchor="middle">Aucun jalon \u00e0 venir \u2014 cliquez une semaine pour en poser un</text>');
+      s.push('\x3Ctext class="grad" x="' + xv.toFixed(1) + '" y="' + (mHaut + plotH * 0.86).toFixed(1) +
+             '" text-anchor="middle">Aucun jalon \u00e0 venir \u2014 cliquez une semaine pour en poser un\x3C/text>');
     }
 
     // Rythme hebdomadaire
@@ -1102,54 +1102,54 @@
     var maxSem = 1;
     taux.forEach(function (t) { maxSem = Math.max(maxSem, t.v); });
     var lb = Math.min(15, pasX * 0.62);
-    s.push('<text class="grad" x="' + mG + '" y="' + (yBande - 3).toFixed(1) + '">terminés par semaine</text>');
+    s.push('\x3Ctext class="grad" x="' + mG + '" y="' + (yBande - 3).toFixed(1) + '">terminés par semaine\x3C/text>');
     taux.forEach(function (t) {
       if (t.i < d0 || t.i > d1 || t.v <= 0) return;
       var h = (t.v / maxSem) * bandeH;
-      s.push('<rect x="' + (x(t.i) - lb / 2).toFixed(1) + '" y="' + (yBande + bandeH - h).toFixed(1) +
+      s.push('\x3Crect x="' + (x(t.i) - lb / 2).toFixed(1) + '" y="' + (yBande + bandeH - h).toFixed(1) +
              '" width="' + lb.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="var(--fait)" opacity=".42"/>');
     });
-    s.push('<line x1="' + mG + '" x2="' + (L - mD) + '" y1="' + basTotal.toFixed(1) + '" y2="' + basTotal.toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
+    s.push('\x3Cline x1="' + mG + '" x2="' + (L - mD) + '" y1="' + basTotal.toFixed(1) + '" y2="' + basTotal.toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
 
     // Graduations : espacees pour tenir une dizaine d etiquettes quel que soit le zoom
     var saut = Math.max(1, Math.ceil(span / 11));
     for (var k3 = d0; k3 <= d1; k3++) {
       if ((k3 - d0) % saut !== 0 && k3 !== AUJ) continue;
       var lib = etiquette(k3);
-      s.push('<text class="grad" x="' + x(k3).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle"' + (k3 > AUJ ? ' opacity=".7"' : '') + '>' +
-             (lib.indexOf('2026-') === 0 ? lib.slice(5) : lib) + '</text>');
+      s.push('\x3Ctext class="grad" x="' + x(k3).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle"' + (k3 > AUJ ? ' opacity=".7"' : '') + '>' +
+             (lib.indexOf('2026-') === 0 ? lib.slice(5) : lib) + '\x3C/text>');
     }
 
     for (var k4 = d0; k4 <= d1; k4++) {
-      s.push('<rect class="zone-clic" x="' + (x(k4) - pasX / 2).toFixed(1) + '" y="' + (mHaut - 6) + '" width="' + pasX.toFixed(1) +
+      s.push('\x3Crect class="zone-clic" x="' + (x(k4) - pasX / 2).toFixed(1) + '" y="' + (mHaut - 6) + '" width="' + pasX.toFixed(1) +
              '" height="' + (plotH + ecart + bandeH + 6).toFixed(1) + '" fill="transparent" tabindex="0" role="button" data-i="' + k4 + '" ' +
              'aria-label="' + etiquette(k4) + (k4 <= AUJ ? ' : ' + pts[k4].termine + ' terminés' : ' (à venir)') + '. Activer pour poser un jalon."/>');
     }
 
-    s.push('</svg>');
+    s.push('\x3C/svg>');
     $('zone-graphe').innerHTML = s.join('');
 
-    var items = ['<span class="legende-item"><svg width="20" height="8" aria-hidden="true"><line x1="0" y1="4" x2="20" y2="4" stroke="var(--fait)" stroke-width="2.2"/></svg>' +
-      '<span title="Nombre de plans pass\u00e9s \u00e0 100 %, cumul\u00e9 semaine apr\u00e8s semaine.">r\u00e9alis\u00e9</span></span>'];
+    var items = ['\x3Cspan class="legende-item">\x3Csvg width="20" height="8" aria-hidden="true">\x3Cline x1="0" y1="4" x2="20" y2="4" stroke="var(--fait)" stroke-width="2.2"/>\x3C/svg>' +
+      '\x3Cspan title="Nombre de plans pass\u00e9s \u00e0 100 %, cumul\u00e9 semaine apr\u00e8s semaine.">r\u00e9alis\u00e9\x3C/span>\x3C/span>'];
     if (ryt && restants > 0) {
       var explication = ryt.gagnes + ' plans termin\u00e9s en ' + ryt.semaines + ' semaines entre le premier ' +
         'et le dernier relev\u00e9, soit ' + vitesse.toFixed(1).replace('.', ',') + ' par semaine. ' +
         (projIdx !== null
           ? 'Les ' + restants + ' restants demandent ' + (projIdx - AUJ) + ' semaines de plus.'
           : 'Aucun plan sold\u00e9 sur la p\u00e9riode : pas de fin pr\u00e9visible.');
-      items.push('<span class="legende-item"><svg width="22" height="8" aria-hidden="true">' +
-        '<line x1="0" y1="4" x2="22" y2="4" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="4 3" opacity=".65"/></svg>' +
-        '<span title="' + explication + '">au rythme moyen (' + vitesse.toFixed(1).replace('.', ',') + '/sem.)' +
+      items.push('\x3Cspan class="legende-item">\x3Csvg width="22" height="8" aria-hidden="true">' +
+        '\x3Cline x1="0" y1="4" x2="22" y2="4" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="4 3" opacity=".65"/>\x3C/svg>' +
+        '\x3Cspan title="' + explication + '">au rythme moyen (' + vitesse.toFixed(1).replace('.', ',') + '/sem.)' +
         (projIdx !== null ? ' \u2192 fin vers ' + etiquette(projIdx) : ' \u2014 pas de fin pr\u00e9visible') +
-        '</span></span>');
+        '\x3C/span>\x3C/span>');
     }
     if (requis !== null) {
-      items.push('<span class="legende-item"><svg width="20" height="8" aria-hidden="true"><line x1="0" y1="4" x2="20" y2="4" stroke="' +
-        (enRetard ? 'var(--alerte)' : 'var(--fait)') + '" stroke-width="1.6"/></svg>' +
-        '<span title="' + restants + ' plans restants \u00e0 solder en ' + (prochain.i - AUJ) +
+      items.push('\x3Cspan class="legende-item">\x3Csvg width="20" height="8" aria-hidden="true">\x3Cline x1="0" y1="4" x2="20" y2="4" stroke="' +
+        (enRetard ? 'var(--alerte)' : 'var(--fait)') + '" stroke-width="1.6"/>\x3C/svg>' +
+        '\x3Cspan title="' + restants + ' plans restants \u00e0 solder en ' + (prochain.i - AUJ) +
         ' semaines. Rouge si ce rythme d\u00e9passe le rythme actuel. D\u00e9placez le jalon pour recalculer.">' +
         'requis pour \u00ab\u00a0' + ech(prochain.texte) + '\u00a0\u00bb : ' +
-        requis.toFixed(1).replace('.', ',') + '/sem.</span></span>');
+        requis.toFixed(1).replace('.', ',') + '/sem.\x3C/span>\x3C/span>');
     }
     $('legende').innerHTML = items.join('');
 
@@ -1308,14 +1308,14 @@
     if (k !== -1) {
       var pt = a.pts[k];
       var gagne = k > 0 ? pt.termine - a.pts[k - 1].termine : null;
-      bulle.innerHTML = '<div class="tete-bulle">Relevé du ' + etiquette(i) + '</div>' +
-        '<div class="bulle-ligne"><span class="pastille" style="background:var(--fait)"></span>terminés<span class="n">' + pt.termine + '</span></div>' +
-        '<div class="bulle-ligne"><span class="pastille" style="background:var(--filet-fort)"></span>sur<span class="n">' + pt.total + '</span></div>' +
-        (gagne !== null ? '<div class="bulle-ligne" style="margin-top:5px;padding-top:5px;border-top:1px solid var(--filet)">depuis le précédent<span class="n">' + (gagne > 0 ? '+' : '') + gagne + '</span></div>' : '') +
+      bulle.innerHTML = '\x3Cdiv class="tete-bulle">Relevé du ' + etiquette(i) + '\x3C/div>' +
+        '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille" style="background:var(--fait)">\x3C/span>terminés\x3Cspan class="n">' + pt.termine + '\x3C/span>\x3C/div>' +
+        '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille" style="background:var(--filet-fort)">\x3C/span>sur\x3Cspan class="n">' + pt.total + '\x3C/span>\x3C/div>' +
+        (gagne !== null ? '\x3Cdiv class="bulle-ligne" style="margin-top:5px;padding-top:5px;border-top:1px solid var(--filet)">depuis le précédent\x3Cspan class="n">' + (gagne > 0 ? '+' : '') + gagne + '\x3C/span>\x3C/div>' : '') +
         finisCetteSemaine(i);
     } else {
-      bulle.innerHTML = '<div class="tete-bulle">' + etiquette(i) + '</div><div class="bulle-ligne">' +
-        (i > AUJ ? 'À venir · cliquez pour poser un jalon' : 'Pas de relevé cette semaine-là') + '</div>';
+      bulle.innerHTML = '\x3Cdiv class="tete-bulle">' + etiquette(i) + '\x3C/div>\x3Cdiv class="bulle-ligne">' +
+        (i > AUJ ? 'À venir · cliquez pour poser un jalon' : 'Pas de relevé cette semaine-là') + '\x3C/div>';
     }
     bulle.dataset.visible = 'true';
     bulle.style.left = Math.min(e.clientX + 14, window.innerWidth - bulle.offsetWidth - 12) + 'px';
@@ -1333,14 +1333,14 @@
     var liste = finis.slice(0, MAX_BULLE).map(function (e) {
       var plan = PLAN_PAR_REF[e.ref];
       var quoi = plan && CLE_LIBELLE ? String(plan[CLE_LIBELLE] || '') : '';
-      return '<div class="bulle-ud"><span class="r">' + ech(e.ref) + '</span>' +
-        (quoi ? '<span class="q">' + ech(quoi) + '</span>' : '') + '</div>';
+      return '\x3Cdiv class="bulle-ud">\x3Cspan class="r">' + ech(e.ref) + '\x3C/span>' +
+        (quoi ? '\x3Cspan class="q">' + ech(quoi) + '\x3C/span>' : '') + '\x3C/div>';
     }).join('');
     var reste = finis.length - MAX_BULLE;
-    return '<div class="bulle-finis"><div class="tete-bulle">' +
-      nb(finis.length) + ' pass\u00e9' + (finis.length > 1 ? 's' : '') + ' en termin\u00e9</div>' +
-      liste + (reste > 0 ? '<div class="bulle-reste">et ' + nb(reste) + ' autre' + (reste > 1 ? 's' : '') + '\u2026</div>' : '') +
-      '</div>';
+    return '\x3Cdiv class="bulle-finis">\x3Cdiv class="tete-bulle">' +
+      nb(finis.length) + ' pass\u00e9' + (finis.length > 1 ? 's' : '') + ' en termin\u00e9\x3C/div>' +
+      liste + (reste > 0 ? '\x3Cdiv class="bulle-reste">et ' + nb(reste) + ' autre' + (reste > 1 ? 's' : '') + '\u2026\x3C/div>' : '') +
+      '\x3C/div>';
   }
 
   cadreGraphe.addEventListener('mouseleave', function () { $('bulle').dataset.visible = 'false'; });
@@ -1424,29 +1424,29 @@
        affichee : on garde deux decimales, sans zero inutile. */
     function d2(n) { return String(Math.round(n * 100) / 100).replace('.', ','); }
 
-    var h = '<div class="aide-panneau" id="panneau-fin" role="region" aria-label="Comment la fin estimée est calculée">';
-    h += '<h3>D’où vient la fin estimée ?</h3>';
-    h += '<p>GATES ne donne qu’une photo du jour, sans historique. On archive donc un relevé à chaque import, ' +
-         'puis on compare le premier au dernier et on prolonge la pente en ligne droite.</p>';
-    h += '<div class="aide-formule">' +
-         'rythme   = (terminés aujourd’hui − terminés au 1<sup>er</sup> relevé) ÷ semaines écoulées\n' +
+    var h = '\x3Cdiv class="aide-panneau" id="panneau-fin" role="region" aria-label="Comment la fin estimée est calculée">';
+    h += '\x3Ch3>D’où vient la fin estimée ?\x3C/h3>';
+    h += '\x3Cp>GATES ne donne qu’une photo du jour, sans historique. On archive donc un relevé à chaque import, ' +
+         'puis on compare le premier au dernier et on prolonge la pente en ligne droite.\x3C/p>';
+    h += '\x3Cdiv class="aide-formule">' +
+         'rythme   = (terminés aujourd’hui − terminés au 1\x3Csup>er\x3C/sup> relevé) ÷ semaines écoulées\n' +
          'restants = total − terminés aujourd’hui\n' +
-         '<b>fin      = semaine actuelle + arrondi supérieur(restants ÷ rythme)</b>' +
-         '</div>';
+         '\x3Cb>fin      = semaine actuelle + arrondi supérieur(restants ÷ rythme)\x3C/b>' +
+         '\x3C/div>';
 
     if (ex) {
       var depart = ex.termine - ex.rythme.gagnes;
       var sem = ex.fin - AUJ;
-      h += '<div class="aide-formule"><span class="exemple">Exemple — ' + ech(TITRE_DIM[vue.dimCritique].replace(/ \(.*\)$/, '')) +
-           ' ' + ech(ex.nom) + ', au dernier import</span>' +
+      h += '\x3Cdiv class="aide-formule">\x3Cspan class="exemple">Exemple — ' + ech(TITRE_DIM[vue.dimCritique].replace(/ \(.*\)$/, '')) +
+           ' ' + ech(ex.nom) + ', au dernier import\x3C/span>' +
            'rythme   = (' + ex.termine + ' − ' + depart + ') ÷ ' + ex.rythme.semaines + ' sem. = ' +
            d2(ex.vitesse) + ' plan par semaine\n' +
            'restants = ' + ex.total + ' − ' + ex.termine + ' = ' + ex.restants + ' plans\n' +
-           '<b>fin      = ' + ex.restants + ' ÷ ' + d2(ex.vitesse) + ' = ' + sem + ' semaines → ' +
-           etiquette(AUJ) + ' + ' + sem + ' = ' + etiquette(ex.fin) + '</b>' +
-           '</div>';
+           '\x3Cb>fin      = ' + ex.restants + ' ÷ ' + d2(ex.vitesse) + ' = ' + sem + ' semaines → ' +
+           etiquette(AUJ) + ' + ' + sem + ' = ' + etiquette(ex.fin) + '\x3C/b>' +
+           '\x3C/div>';
       if (prochain && semainesJalon > 0) {
-        h += '<div class="aide-formule"><span class="exemple">Et les deux colonnes voisines, sur la même ligne</span>' +
+        h += '\x3Cdiv class="aide-formule">\x3Cspan class="exemple">Et les deux colonnes voisines, sur la même ligne\x3C/span>' +
              'à solder/sem. = restants ÷ semaines avant le jalon\n' +
              '              = ' + ex.restants + ' ÷ ' + semainesJalon + ' = ' + d(ex.requis) +
              ' → affiché ' + Math.ceil(ex.requis) + ' (on n’achève pas un demi-plan)\n' +
@@ -1454,17 +1454,17 @@
              '              = ' + d(ex.requis) + ' ÷ ' + d2(ex.vitesse) + ' = ×' + d(ex.tension) +
              (ex.tension > 1 ? '  → il faut aller ' + d(ex.tension) + ' fois plus vite qu’aujourd’hui'
                              : '  → le rythme actuel suffit') +
-             '</div>';
+             '\x3C/div>';
       }
     } else {
-      h += '<p>Aucun groupe de la sélection n’a de rythme exploitable pour l’instant : ' +
-           'il faut au moins deux relevés et un plan terminé entre les deux.</p>';
+      h += '\x3Cp>Aucun groupe de la sélection n’a de rythme exploitable pour l’instant : ' +
+           'il faut au moins deux relevés et un plan terminé entre les deux.\x3C/p>';
     }
 
-    h += '<p>Un groupe qui n’a rien soldé depuis le premier relevé n’a pas de rythme : sa fin reste « — ». ' +
+    h += '\x3Cp>Un groupe qui n’a rien soldé depuis le premier relevé n’a pas de rythme : sa fin reste « — ». ' +
          'La date se recalcule à chaque import et peut reculer — ce n’est pas un engagement, ' +
-         'c’est ce que dit le rythme tenu jusqu’ici.</p>';
-    return h + '</div>';
+         'c’est ce que dit le rythme tenu jusqu’ici.\x3C/p>';
+    return h + '\x3C/div>';
   }
 
   /* « Plus de 6 mois : 42 » ne dit pas lesquels. Choisir une ligne déplie donc
@@ -1481,21 +1481,21 @@
     var jetons = plans.slice(0, MAX_UD).map(function (p) {
       var e = ETAT_PAR_CLE[p._etat];
       var pastille = e.hachure
-        ? '<span class="pastille hachure"></span>'
-        : '<span class="pastille" style="background:' + e.couleur + '"></span>';
+        ? '\x3Cspan class="pastille hachure">\x3C/span>'
+        : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>';
       var quoi = CLE_LIBELLE ? String(p[CLE_LIBELLE] || '') : '';
-      return '<button class="jeton-ud" type="button" data-ud="' + ech(p.reference) +
+      return '\x3Cbutton class="jeton-ud" type="button" data-ud="' + ech(p.reference) +
         '" title="' + ech(e.court + (quoi ? ' — ' + quoi : '')) + '">' +
-        pastille + ech(p.reference) + '</button>';
+        pastille + ech(p.reference) + '\x3C/button>';
     }).join('');
     var reste = plans.length - MAX_UD;
-    return '<div class="groupe-refs"><div class="entete">' +
-      '<span>' + nb(plans.length) + ' plan' + (plans.length > 1 ? 's' : '') +
-      (restants ? ' · <b>' + nb(restants) + '</b> pas encore terminé' + (restants > 1 ? 's' : '') : ' · tout est soldé') +
-      '</span><span>cliquez une référence pour la retrouver dans le tableau</span></div>' +
-      '<div class="grille">' + jetons +
-      (reste > 0 ? '<span class="jeton-ud" style="cursor:default">et ' + nb(reste) + ' autres…</span>' : '') +
-      '</div></div>';
+    return '\x3Cdiv class="groupe-refs">\x3Cdiv class="entete">' +
+      '\x3Cspan>' + nb(plans.length) + ' plan' + (plans.length > 1 ? 's' : '') +
+      (restants ? ' · \x3Cb>' + nb(restants) + '\x3C/b> pas encore terminé' + (restants > 1 ? 's' : '') : ' · tout est soldé') +
+      '\x3C/span>\x3Cspan>cliquez une référence pour la retrouver dans le tableau\x3C/span>\x3C/div>' +
+      '\x3Cdiv class="grille">' + jetons +
+      (reste > 0 ? '\x3Cspan class="jeton-ud" style="cursor:default">et ' + nb(reste) + ' autres…\x3C/span>' : '') +
+      '\x3C/div>\x3C/div>';
   }
 
   function rendreCritique(liste) {
@@ -1582,37 +1582,37 @@
 
     if (!rangs.length) {
       $('zone-critique').classList.remove('sans-jalon');
-      $('zone-critique').innerHTML = '<div class="vide-message">Aucun plan dans la sélection.</div>';
+      $('zone-critique').innerHTML = '\x3Cdiv class="vide-message">Aucun plan dans la sélection.\x3C/div>';
       return;
     }
 
     function fleche(cle) {
       if (!tg || tg.cle !== cle) return '';
-      return '<svg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="' +
+      return '\x3Csvg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">\x3Cpath d="' +
         (tg.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
-        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>';
     }
     function entete(cle, libelle, titre, classe) {
       var actif = !!(tg && tg.cle === cle);
-      return '<span class="' + (classe || '') + '"><button type="button" class="tri-groupe" data-trig="' + cle +
+      return '\x3Cspan class="' + (classe || '') + '">\x3Cbutton type="button" class="tri-groupe" data-trig="' + cle +
         '" data-actif="' + actif + '" aria-label="Trier par ' + ech(libelle) + '"' +
-        (titre ? ' title="' + ech(titre) + '"' : '') + '>' + ech(libelle) + fleche(cle) + '</button>';
+        (titre ? ' title="' + ech(titre) + '"' : '') + '>' + ech(libelle) + fleche(cle) + '\x3C/button>';
     }
 
     function aide(quoi) {
-      return '<button type="button" class="aide" data-aide="1" aria-expanded="' + (!!vue.aideFin) +
-        '" aria-controls="panneau-fin" title="Comment ' + ech(quoi) + ' se calcule">?</button>';
+      return '\x3Cbutton type="button" class="aide" data-aide="1" aria-expanded="' + (!!vue.aideFin) +
+        '" aria-controls="panneau-fin" title="Comment ' + ech(quoi) + ' se calcule">?\x3C/button>';
     }
 
-    var html = '<div class="critique-tete">' +
-      entete('nom', TITRE_DIM[dim].replace(/ \(.*\)$/, ''), TITRE_DIM[dim]) + '</span>' +
-      entete('total', 'plans', 'Nombre de plans du groupe dans la sélection courante.') + '</span>' +
-      entete('pct', 'répartition FWD', 'Trier par part de plans terminés.', 'a-gauche') + '</span>' +
-      entete('fin', 'fin estimée', 'Date d’arrivée si le rythme actuel se maintient.') + aide('la fin estimée') + '</span>' +
+    var html = '\x3Cdiv class="critique-tete">' +
+      entete('nom', TITRE_DIM[dim].replace(/ \(.*\)$/, ''), TITRE_DIM[dim]) + '\x3C/span>' +
+      entete('total', 'plans', 'Nombre de plans du groupe dans la sélection courante.') + '\x3C/span>' +
+      entete('pct', 'répartition FWD', 'Trier par part de plans terminés.', 'a-gauche') + '\x3C/span>' +
+      entete('fin', 'fin estimée', 'Date d’arrivée si le rythme actuel se maintient.') + aide('la fin estimée') + '\x3C/span>' +
       (prochain
-        ? entete('tension', 'effort demandé', 'Ce qu\'il faudrait solder chaque semaine pour tenir le jalon, comparé au rythme réellement tenu.') + aide('l’effort demandé') + '</span>'
-        : entete('tension', 'rythme actuel', 'Plans terminés par semaine depuis le premier relevé.') + aide('le rythme actuel') + '</span>') +
-      '</div>';
+        ? entete('tension', 'effort demandé', 'Ce qu\'il faudrait solder chaque semaine pour tenir le jalon, comparé au rythme réellement tenu.') + aide('l’effort demandé') + '\x3C/span>'
+        : entete('tension', 'rythme actuel', 'Plans terminés par semaine depuis le premier relevé.') + aide('le rythme actuel') + '\x3C/span>') +
+      '\x3C/div>';
 
     if (vue.aideFin) html += panneauAide(rangs, prochain, semainesJalon);
 
@@ -1630,8 +1630,8 @@
         var texte = part >= 11 ? Math.round(part) + ' %' : '';
         var encre = encreSegment(e.cle);
         return e.hachure
-          ? '<span class="hachure" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '</span>'
-          : '<span style="width:' + part.toFixed(2) + '%;background:' + e.couleur + ';color:' + encre + '">' + texte + '</span>';
+          ? '\x3Cspan class="hachure" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '\x3C/span>'
+          : '\x3Cspan style="width:' + part.toFixed(2) + '%;background:' + e.couleur + ';color:' + encre + '">' + texte + '\x3C/span>';
       }).join('');
 
       /* Une seule colonne d'appoint : l'effort demandé quand un jalon fixe une
@@ -1639,40 +1639,40 @@
          été retiré : personne ne suivait un nombre par semaine. */
       var col2;
       if (!prochain) {
-        col2 = '<span class="critique-effort" data-libelle="rythme actuel"><span class="v critique-ecart' +
+        col2 = '\x3Cspan class="critique-effort" data-libelle="rythme actuel">\x3Cspan class="v critique-ecart' +
           (r.vitesse > 0 ? '' : ' arret') + '">' +
           (r.vitesse > 0 ? r.vitesse.toFixed(1).replace('.', ',') + '/sem.' : 'rien de soldé') +
-          '</span></span>';
+          '\x3C/span>\x3C/span>';
       } else if (r.restants === 0) {
-        col2 = '<span class="critique-effort" data-libelle="effort demandé"><span class="v critique-ecart">tout est soldé</span></span>';
+        col2 = '\x3Cspan class="critique-effort" data-libelle="effort demandé">\x3Cspan class="v critique-ecart">tout est soldé\x3C/span>\x3C/span>';
       } else if (r.vitesse <= 0) {
-        col2 = '<span class="critique-effort" data-libelle="effort demandé"><span class="v critique-ecart arret">rien de soldé<small>aucun rythme</small></span></span>';
+        col2 = '\x3Cspan class="critique-effort" data-libelle="effort demandé">\x3Cspan class="v critique-ecart arret">rien de soldé\x3Csmall>aucun rythme\x3C/small>\x3C/span>\x3C/span>';
       } else {
-        col2 = '<span class="critique-effort" data-libelle="effort demandé" title="' + r.restants +
+        col2 = '\x3Cspan class="critique-effort" data-libelle="effort demandé" title="' + r.restants +
           ' plans restants à répartir sur ' + semainesJalon + ' semaines, soit ' +
-          r.requis.toFixed(1).replace('.', ',') + ' par semaine."><span class="v critique-ecart">' +
-          (r.tension > 1 ? '<b class="tard">×' + r.tension.toFixed(1).replace('.', ',') + '</b>'
+          r.requis.toFixed(1).replace('.', ',') + ' par semaine.">\x3Cspan class="v critique-ecart">' +
+          (r.tension > 1 ? '\x3Cb class="tard">×' + r.tension.toFixed(1).replace('.', ',') + '\x3C/b>'
                          : '×' + r.tension.toFixed(1).replace('.', ',')) +
-          '<small>rythme ' + r.vitesse.toFixed(1).replace('.', ',') + '/sem.</small></span></span>';
+          '\x3Csmall>rythme ' + r.vitesse.toFixed(1).replace('.', ',') + '/sem.\x3C/small>\x3C/span>\x3C/span>';
       }
 
       // --- colonne chiffree 3 : la date d'arrivee au rythme actuel
       var texteFin = r.restants === 0 ? 'soldé' : (r.fin === null ? '—' : etiquette(r.fin));
-      var col3 = '<span class="critique-date' + (r.fin === null && r.restants !== 0 ? ' doux' : '') +
+      var col3 = '\x3Cspan class="critique-date' + (r.fin === null && r.restants !== 0 ? ' doux' : '') +
         '" data-libelle="fin estimée" title="' +
         (r.restants === 0 ? 'Plus rien à solder dans ce groupe.'
           : r.fin === null ? 'Aucun plan terminé depuis le premier relevé : pas de rythme, donc pas de date.'
           : r.restants + ' plans restants à ' + r.vitesse.toFixed(1).replace('.', ',') +
             ' par semaine, soit ' + (r.fin - AUJ) + ' semaines.') +
-        '"><span class="v">' + texteFin + '</span></span>';
+        '">\x3Cspan class="v">' + texteFin + '\x3C/span>\x3C/span>';
 
-      return '<button class="critique-ligne" type="button" data-groupe="' + ech(r.nom) + '" aria-pressed="' + !!actif +
+      return '\x3Cbutton class="critique-ligne" type="button" data-groupe="' + ech(r.nom) + '" aria-pressed="' + !!actif +
         '" title="' + r.termine + ' terminés, ' + r.encours + ' en cours, ' + r.afaire + ' à faire, ' +
         r.vide + ' non renseignés — cliquez pour voir lesquels">' +
-        '<span class="critique-nom">' + ech(libelleGroupe(r.nom)) + '</span>' +
-        '<span class="critique-total" data-libelle="plans">' + r.total + '</span>' +
-        '<span class="critique-barre">' + barre + '</span>' +
-        col3 + col2 + '</button>' +
+        '\x3Cspan class="critique-nom">' + ech(libelleGroupe(r.nom)) + '\x3C/span>' +
+        '\x3Cspan class="critique-total" data-libelle="plans">' + r.total + '\x3C/span>' +
+        '\x3Cspan class="critique-barre">' + barre + '\x3C/span>' +
+        col3 + col2 + '\x3C/button>' +
         (actif ? listeUD(r) : '');
     }).join('');
 
@@ -1721,7 +1721,7 @@
 
   function remplirDims() {
     $('dim-critique').innerHTML = DIMENSIONS.map(function (d) {
-      return '<option value="' + d.cle + '">' + ech(d.titre) + '</option>';
+      return '\x3Coption value="' + d.cle + '">' + ech(d.titre) + '\x3C/option>';
     }).join('');
     $('dim-critique').value = vue.dimCritique;
   }
@@ -1755,29 +1755,29 @@
       if (d && d.nom === c.groupe && d.fige === colle) d.n++;
       else groupes.push({ nom: c.groupe, n: 1, fige: colle, debut: i, suite: !!(d && d.nom === c.groupe) });
     });
-    var html = '<tr class="groupes">' + groupes.map(function (g) {
+    var html = '\x3Ctr class="groupes">' + groupes.map(function (g) {
       var cl = g.fige ? (g.debut + g.n === nFige ? 'col-fige fige-fin' : 'col-fige') : '';
-      return '<th colspan="' + g.n + '" data-debut="' + g.debut + '"' + (cl ? ' class="' + cl + '"' : '') +
-        '>' + ech(g.suite ? '' : g.nom) + '</th>';
-    }).join('') + '</tr><tr class="titres">' + cols.map(function (c, i) {
+      return '\x3Cth colspan="' + g.n + '" data-debut="' + g.debut + '"' + (cl ? ' class="' + cl + '"' : '') +
+        '>' + ech(g.suite ? '' : g.nom) + '\x3C/th>';
+    }).join('') + '\x3C/tr>\x3Ctr class="titres">' + cols.map(function (c, i) {
       var actif = vue.tri.cle === c.cle;
-      var fleche = actif ? '<svg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="' +
+      var fleche = actif ? '\x3Csvg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">\x3Cpath d="' +
         (vue.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
-        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '';
-      var poignee = c.fige ? '' : '<span class="poignee" aria-hidden="true"><svg width="7" height="12" viewBox="0 0 7 12" fill="currentColor">' +
-        '<circle cx="1.6" cy="2" r="1.1"/><circle cx="5.4" cy="2" r="1.1"/><circle cx="1.6" cy="6" r="1.1"/>' +
-        '<circle cx="5.4" cy="6" r="1.1"/><circle cx="1.6" cy="10" r="1.1"/><circle cx="5.4" cy="10" r="1.1"/></svg></span>';
+        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>' : '';
+      var poignee = c.fige ? '' : '\x3Cspan class="poignee" aria-hidden="true">\x3Csvg width="7" height="12" viewBox="0 0 7 12" fill="currentColor">' +
+        '\x3Ccircle cx="1.6" cy="2" r="1.1"/>\x3Ccircle cx="5.4" cy="2" r="1.1"/>\x3Ccircle cx="1.6" cy="6" r="1.1"/>' +
+        '\x3Ccircle cx="5.4" cy="6" r="1.1"/>\x3Ccircle cx="1.6" cy="10" r="1.1"/>\x3Ccircle cx="5.4" cy="10" r="1.1"/>\x3C/svg>\x3C/span>';
       var cl = classeFige(i, nFige);
-      return '<th scope="col" data-cle="' + c.cle + '"' + (cl ? ' class="' + cl + '"' : '') +
+      return '\x3Cth scope="col" data-cle="' + c.cle + '"' + (cl ? ' class="' + cl + '"' : '') +
         (c.fige ? '' : ' draggable="true"') +
         ' aria-sort="' + (actif ? (vue.tri.asc ? 'ascending' : 'descending') : 'none') + '">' +
-        poignee + '<button type="button" data-tri="' + c.cle + '">' + ech(c.titre) + fleche + '</button></th>';
-    }).join('') + '</tr><tr class="filtres">' + cols.map(function (c, i) {
+        poignee + '\x3Cbutton type="button" data-tri="' + c.cle + '">' + ech(c.titre) + fleche + '\x3C/button>\x3C/th>';
+    }).join('') + '\x3C/tr>\x3Ctr class="filtres">' + cols.map(function (c, i) {
       var val = vue.filtres[c.cle] || '';
       var cl = classeFige(i, nFige);
-      return '<th' + (cl ? ' class="' + cl + '"' : '') + '><input type="text" data-filtre="' + c.cle + '" value="' + ech(val) +
-        '" placeholder="filtrer" data-actif="' + (!!val) + '" aria-label="Filtrer ' + ech(c.titre) + '"></th>';
-    }).join('') + '</tr>';
+      return '\x3Cth' + (cl ? ' class="' + cl + '"' : '') + '>\x3Cinput type="text" data-filtre="' + c.cle + '" value="' + ech(val) +
+        '" placeholder="filtrer" data-actif="' + (!!val) + '" aria-label="Filtrer ' + ech(c.titre) + '">\x3C/th>';
+    }).join('') + '\x3C/tr>';
     $('tete-tableau').innerHTML = html;
     ajusterSticky();
   }
@@ -1827,7 +1827,7 @@
     });
 
     if (!rangs.length) {
-      $('corps-tableau').innerHTML = '<tr><td colspan="' + cols.length + '"><div class="vide-message">Aucun plan ne correspond aux filtres.</div></td></tr>';
+      $('corps-tableau').innerHTML = '\x3Ctr>\x3Ctd colspan="' + cols.length + '">\x3Cdiv class="vide-message">Aucun plan ne correspond aux filtres.\x3C/div>\x3C/td>\x3C/tr>';
       $('compte').textContent = '0 plan';
       majOmbre();
       return;
@@ -1835,22 +1835,22 @@
 
     var nFige = nbFigees(cols);
     $('corps-tableau').innerHTML = rangs.map(function (p) {
-      return '<tr>' + cols.map(function (c, i) {
+      return '\x3Ctr>' + cols.map(function (c, i) {
         var fige = classeFige(i, nFige);
         if (c.cle === 'avancement') {
           var e = ETAT_PAR_CLE[p._etat];
-          var past = e.hachure ? '<span class="pastille hachure"></span>'
-            : '<span class="pastille" style="background:' + e.couleur + '"></span>';
-          return '<td class="' + fige + '"><span class="etat-cellule">' + past +
-            (p.avancement ? '<span class="num">' + ech(p.avancement) + '</span>' : '<span class="doux">non renseigné</span>') +
-            '</span></td>';
+          var past = e.hachure ? '\x3Cspan class="pastille hachure">\x3C/span>'
+            : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>';
+          return '\x3Ctd class="' + fige + '">\x3Cspan class="etat-cellule">' + past +
+            (p.avancement ? '\x3Cspan class="num">' + ech(p.avancement) + '\x3C/span>' : '\x3Cspan class="doux">non renseigné\x3C/span>') +
+            '\x3C/span>\x3C/td>';
         }
         var val = p[c.cle];
         var classes = (c.classe + ' ' + fige).trim();
-        if (val === '' || val == null) return '<td class="' + classes + ' doux">-</td>';
+        if (val === '' || val == null) return '\x3Ctd class="' + classes + ' doux">-\x3C/td>';
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
-        return '<td class="' + classes + '"' + titre + '>' + ech(val) + '</td>';
-      }).join('') + '</tr>';
+        return '\x3Ctd class="' + classes + '"' + titre + '>' + ech(val) + '\x3C/td>';
+      }).join('') + '\x3C/tr>';
     }).join('');
 
     $('compte').textContent = nb(rangs.length) + (rangs.length > 1 ? ' plans' : ' plan') +
@@ -1866,11 +1866,11 @@
       d.cols.push(c);
     });
     $('panneau-colonnes').innerHTML = groupes.map(function (g) {
-      return '<div class="groupe-colonnes"><span>' + ech(g.nom) + '</span>' + g.cols.map(function (c) {
-        return '<label class="case" data-verrou="' + !!c.fige + '"><input type="checkbox" data-col="' + c.cle + '"' +
-          (vue.cachees[c.cle] ? '' : ' checked') + (c.fige ? ' disabled' : '') + '> ' + ech(c.titre) + '</label>';
-      }).join('') + '</div>';
-    }).join('') + '<button class="lien-doux" id="tout-colonnes" type="button">tout afficher</button>';
+      return '\x3Cdiv class="groupe-colonnes">\x3Cspan>' + ech(g.nom) + '\x3C/span>' + g.cols.map(function (c) {
+        return '\x3Clabel class="case" data-verrou="' + !!c.fige + '">\x3Cinput type="checkbox" data-col="' + c.cle + '"' +
+          (vue.cachees[c.cle] ? '' : ' checked') + (c.fige ? ' disabled' : '') + '> ' + ech(c.titre) + '\x3C/label>';
+      }).join('') + '\x3C/div>';
+    }).join('') + '\x3Cbutton class="lien-doux" id="tout-colonnes" type="button">tout afficher\x3C/button>';
     var caches = Object.keys(vue.cachees).filter(function (k) { return vue.cachees[k]; }).length;
     $('compteur-colonnes').textContent = caches ? '(' + (COLONNES.length - caches) + '/' + COLONNES.length + ')' : '';
   }
@@ -1890,21 +1890,21 @@
   function rendreComparatif() {
     var zone = $('comparatif');
     if (!COMPARATIF) {
-      zone.innerHTML = '<span>Premier import : le comparatif appara\u00eetra au prochain.</span>';
+      zone.innerHTML = '\x3Cspan>Premier import : le comparatif appara\u00eetra au prochain.\x3C/span>';
       return;
     }
     var morceaux = LOTS_DELTA.filter(function (l) { return COMPARATIF[l.cle].length; }).map(function (l) {
       var actif = vue.refsLibelle === l.cle;
       var e = l.etat ? ETAT_PAR_CLE[l.etat] : null;
       var pastille = !e ? ''
-        : (e.hachure ? '<span class="pastille hachure"></span>'
-                     : '<span class="pastille" style="background:' + e.couleur + '"></span>');
-      return '<button class="puce-delta ' + l.classe + '" type="button" data-delta="' + l.cle +
+        : (e.hachure ? '\x3Cspan class="pastille hachure">\x3C/span>'
+                     : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>');
+      return '\x3Cbutton class="puce-delta ' + l.classe + '" type="button" data-delta="' + l.cle +
         '" aria-pressed="' + actif + '">' +
-        pastille + '<b>' + nb(COMPARATIF[l.cle].length) + '</b> ' + l.libelle + '</button>';
+        pastille + '\x3Cb>' + nb(COMPARATIF[l.cle].length) + '\x3C/b> ' + l.libelle + '\x3C/button>';
     });
-    zone.innerHTML = '<span>Depuis l\u2019import du ' + etiquette(RELEVES[RELEVES.length - 2].i) + ' :</span>' +
-      (morceaux.length ? morceaux.join('') : '<span>aucun changement.</span>');
+    zone.innerHTML = '\x3Cspan>Depuis l\u2019import du ' + etiquette(RELEVES[RELEVES.length - 2].i) + ' :\x3C/span>' +
+      (morceaux.length ? morceaux.join('') : '\x3Cspan>aucun changement.\x3C/span>');
   }
 
   /* ============================================================
@@ -1959,9 +1959,9 @@
     var e = ETAT_PAR_CLE[cle];
     if (!e) return '';
     var pastille = e.hachure
-      ? '<span class="pastille hachure"></span>'
-      : '<span class="pastille" style="background:' + e.couleur + '"></span>';
-    return '<span class="etiq-etat ' + (role || '') + '">' + pastille + ech(e.court) + '</span>';
+      ? '\x3Cspan class="pastille hachure">\x3C/span>'
+      : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>';
+    return '\x3Cspan class="etiq-etat ' + (role || '') + '">' + pastille + ech(e.court) + '\x3C/span>';
   }
 
   var MAX_JOURNAL = 12;                // lignes affichées avant « voir tout »
@@ -1969,8 +1969,8 @@
   function rendreJournal() {
     var zone = $('zone-journal');
     if (!JOURNAL.length) {
-      zone.innerHTML = '<div class="journal-vide">Le journal se remplira au deuxième archivage : ' +
-        'il faut deux relevés pour savoir ce qui a bougé entre les deux.</div>';
+      zone.innerHTML = '\x3Cdiv class="journal-vide">Le journal se remplira au deuxième archivage : ' +
+        'il faut deux relevés pour savoir ce qui a bougé entre les deux.\x3C/div>';
       return;
     }
     var filtre = vue.journal;
@@ -1999,12 +1999,12 @@
         else if (et.cle === 'encours') mot = nb(n) + ' passé' + pluriel + ' en cours';
         else if (et.cle === 'afaire')  mot = nb(n) + ' repassé' + pluriel + ' à faire';
         else                           mot = nb(n) + ' effacé' + pluriel;
-        resume.push('<button class="compte-passage" type="button" data-passage="' + et.cle +
+        resume.push('\x3Cbutton class="compte-passage" type="button" data-passage="' + et.cle +
           '" aria-pressed="' + (vue.journal === et.cle) + '" title="N\u2019afficher que ces passages, sur toutes les semaines">' +
-          ech(mot) + '</button>');
+          ech(mot) + '\x3C/button>');
       });
-      if (parType.nouveau) resume.push('<span>' + nb(parType.nouveau) + ' nouveau' + (parType.nouveau > 1 ? 'x' : '') + '</span>');
-      if (parType.disparu) resume.push('<span>' + nb(parType.disparu) + ' disparu' + (parType.disparu > 1 ? 's' : '') + '</span>');
+      if (parType.nouveau) resume.push('\x3Cspan>' + nb(parType.nouveau) + ' nouveau' + (parType.nouveau > 1 ? 'x' : '') + '\x3C/span>');
+      if (parType.disparu) resume.push('\x3Cspan>' + nb(parType.disparu) + ' disparu' + (parType.disparu > 1 ? 's' : '') + '\x3C/span>');
 
       // La semaine la plus récente s'ouvre d'elle-même : c'est celle qu'on vient voir.
       var ouvert = vue.journalOuverts[sem.i] !== undefined ? vue.journalOuverts[sem.i] : (rang === 0);
@@ -2023,38 +2023,38 @@
         var plan = PLAN_PAR_REF[e.ref];
         var quoi = plan && CLE_LIBELLE ? String(plan[CLE_LIBELLE] || '') : '';
         var vers = e.type === 'nouveau'
-          ? '<span class="vers"><span class="etiq-etat avant">nouveau</span>' +
-            '<span class="fleche-etat">\u2192</span>' + etiqEtat(e.apres, 'apres') + '</span>'
+          ? '\x3Cspan class="vers">\x3Cspan class="etiq-etat avant">nouveau\x3C/span>' +
+            '\x3Cspan class="fleche-etat">\u2192\x3C/span>' + etiqEtat(e.apres, 'apres') + '\x3C/span>'
           : e.type === 'disparu'
-            ? '<span class="vers">' + etiqEtat(e.avant, 'avant') +
-              '<span class="fleche-etat">\u2192</span><span class="etiq-etat apres">retiré</span></span>'
-            : '<span class="vers">' + etiqEtat(e.avant, 'avant') +
-              '<span class="fleche-etat">\u2192</span>' + etiqEtat(e.apres, 'apres') + '</span>';
-        return '<li><button class="journal-ligne" type="button" data-ref="' + ech(e.ref) +
+            ? '\x3Cspan class="vers">' + etiqEtat(e.avant, 'avant') +
+              '\x3Cspan class="fleche-etat">\u2192\x3C/span>\x3Cspan class="etiq-etat apres">retiré\x3C/span>\x3C/span>'
+            : '\x3Cspan class="vers">' + etiqEtat(e.avant, 'avant') +
+              '\x3Cspan class="fleche-etat">\u2192\x3C/span>' + etiqEtat(e.apres, 'apres') + '\x3C/span>';
+        return '\x3Cli>\x3Cbutton class="journal-ligne" type="button" data-ref="' + ech(e.ref) +
           '" title="N’afficher que ce plan dans le tableau">' +
-          '<span class="ref">' + ech(e.ref) + '</span>' +
-          '<span class="quoi">' + ech(quoi) + '</span>' + vers + '</button></li>';
+          '\x3Cspan class="ref">' + ech(e.ref) + '\x3C/span>' +
+          '\x3Cspan class="quoi">' + ech(quoi) + '\x3C/span>' + vers + '\x3C/button>\x3C/li>';
       }).join('');
 
       var reste = evts.length - limite;
       if (reste > 0) {
-        lignes += '<li><button class="journal-plus" type="button" data-tout="' + sem.i + '">' +
-          'voir les ' + nb(reste) + ' autres</button></li>';
+        lignes += '\x3Cli>\x3Cbutton class="journal-plus" type="button" data-tout="' + sem.i + '">' +
+          'voir les ' + nb(reste) + ' autres\x3C/button>\x3C/li>';
       }
 
-      return '<div class="journal-semaine">' +
-        '<span class="journal-tete">' +
-        '<button class="journal-plier" type="button" data-semaine="' + sem.i + '" aria-expanded="' + ouvert +
+      return '\x3Cdiv class="journal-semaine">' +
+        '\x3Cspan class="journal-tete">' +
+        '\x3Cbutton class="journal-plier" type="button" data-semaine="' + sem.i + '" aria-expanded="' + ouvert +
         '" aria-label="Plier ou d\u00e9plier la semaine ' + etiquette(sem.i) + '">' +
-        '<svg class="chevron" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
-        '<path d="m3.5 1.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
-        '<span class="sem">' + etiquette(sem.i) + '</span></button>' +
-        '<span class="resume">' + resume.join(' <span class="sep">·</span> ') + '</span></span>' +
-        (ouvert ? '<ul class="journal-liste">' + lignes + '</ul>' : '') +
-        '</div>';
+        '\x3Csvg class="chevron" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
+        '\x3Cpath d="m3.5 1.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>' +
+        '\x3Cspan class="sem">' + etiquette(sem.i) + '\x3C/span>\x3C/button>' +
+        '\x3Cspan class="resume">' + resume.join(' \x3Cspan class="sep">·\x3C/span> ') + '\x3C/span>\x3C/span>' +
+        (ouvert ? '\x3Cul class="journal-liste">' + lignes + '\x3C/ul>' : '') +
+        '\x3C/div>';
     }).join('');
 
-    zone.innerHTML = html || '<div class="journal-vide">Aucun changement de ce type dans l’historique.</div>';
+    zone.innerHTML = html || '\x3Cdiv class="journal-vide">Aucun changement de ce type dans l’historique.\x3C/div>';
   }
 
   /* ============================================================
@@ -2123,7 +2123,7 @@
     /* Dire exactement ce qui est fabrique : l'historique, pas les plans. Une
        phrase qui exagere se fait prendre en defaut et on ne croit plus rien. */
     $('mot-mode').innerHTML = actif
-      ? '<b>Historique fabriqué</b> — un aperçu de ce que la page montrera quand les relevés se seront accumulés.'
+      ? '\x3Cb>Historique fabriqué\x3C/b> — un aperçu de ce que la page montrera quand les relevés se seront accumulés.'
       : '';
     rendre();
   }
@@ -2228,14 +2228,14 @@
     var poses = filtresPoses();
     zone.hidden = !poses.length;
     if (!poses.length) { zone.innerHTML = ''; return; }
-    zone.innerHTML = '<span class="mot">Filtres</span>' +
+    zone.innerHTML = '\x3Cspan class="mot">Filtres\x3C/span>' +
       poses.map(function (f) {
-        return '<span class="jeton">' + (f.mot ? ech(f.mot) + ' : ' : '') +
-          '<b>' + ech(f.valeur) + '</b>' +
-          '<button class="x" type="button" data-retirer="' + ech(f.cle) +
-          '" aria-label="Retirer ce filtre" title="Retirer ce filtre">×</button></span>';
+        return '\x3Cspan class="jeton">' + (f.mot ? ech(f.mot) + ' : ' : '') +
+          '\x3Cb>' + ech(f.valeur) + '\x3C/b>' +
+          '\x3Cbutton class="x" type="button" data-retirer="' + ech(f.cle) +
+          '" aria-label="Retirer ce filtre" title="Retirer ce filtre">×\x3C/button>\x3C/span>';
       }).join('') +
-      '<button class="tout-effacer" type="button" id="tout-effacer">Tout effacer</button>';
+      '\x3Cbutton class="tout-effacer" type="button" id="tout-effacer">Tout effacer\x3C/button>';
   }
 
   function rendreIncomplets() {
@@ -2246,9 +2246,9 @@
     }
     if (!n) { $('incomplets').innerHTML = ''; return; }
     $('incomplets').innerHTML =
-      '<button class="puce-vide" type="button" data-vide="' + COLONNE_SUIVIE + '" aria-pressed="' + !!vue.vides[COLONNE_SUIVIE] +
+      '\x3Cbutton class="puce-vide" type="button" data-vide="' + COLONNE_SUIVIE + '" aria-pressed="' + !!vue.vides[COLONNE_SUIVIE] +
       '" title="N\u2019afficher que les plans dont ' + ech(col.titre) + ' est vide">' +
-      ech(col.titre) + ' non renseign\u00e9 <b>' + nb(n) + '</b></button>';
+      ech(col.titre) + ' non renseign\u00e9 \x3Cb>' + nb(n) + '\x3C/b>\x3C/button>';
   }
 
   function majOmbre() {
@@ -2295,12 +2295,12 @@
     if (!b || !COMPARATIF) { bulle.dataset.visible = 'false'; return; }
     var lot = LOTS_DELTA.filter(function (l) { return l.cle === b.dataset.delta; })[0];
     var refs = COMPARATIF[b.dataset.delta];
-    bulle.innerHTML = '<div class="tete-bulle">' + nb(refs.length) + ' ' + ech(lot.libelle) + '</div>' +
-      '<div class="liste-refs">' + refs.slice(0, MAX_APERCU).map(ech).join('<br>') +
-      (refs.length > MAX_APERCU ? '<br><span class="doux">et ' + nb(refs.length - MAX_APERCU) + ' autres\u2026</span>' : '') +
-      '</div><div class="doux" style="margin-top:6px;padding-top:5px;border-top:1px solid var(--filet)">' +
+    bulle.innerHTML = '\x3Cdiv class="tete-bulle">' + nb(refs.length) + ' ' + ech(lot.libelle) + '\x3C/div>' +
+      '\x3Cdiv class="liste-refs">' + refs.slice(0, MAX_APERCU).map(ech).join('\x3Cbr>') +
+      (refs.length > MAX_APERCU ? '\x3Cbr>\x3Cspan class="doux">et ' + nb(refs.length - MAX_APERCU) + ' autres\u2026\x3C/span>' : '') +
+      '\x3C/div>\x3Cdiv class="doux" style="margin-top:6px;padding-top:5px;border-top:1px solid var(--filet)">' +
       (vue.refsLibelle === b.dataset.delta ? 'Cliquez pour retirer le filtre' : 'Cliquez pour n\u2019afficher que ceux-l\u00e0') +
-      '</div>';
+      '\x3C/div>';
     bulle.dataset.visible = 'true';
     bulle.style.left = Math.min(e.clientX + 14, window.innerWidth - bulle.offsetWidth - 12) + 'px';
     bulle.style.top = Math.min(e.clientY + 16, window.innerHeight - bulle.offsetHeight - 12) + 'px';
