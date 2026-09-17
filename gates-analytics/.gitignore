@@ -3,3 +3,6 @@ apercu-addon.html
 apercu-gates.html
 apercu-premier.html
 prototype/apercu.html
+
+# Fichier reconstruit par import/decoder.py (artefact local, jamais versionne)
+import/Javascript.html
