@@ -6,3 +6,7 @@ prototype/apercu.html
 
 # Fichier reconstruit par import/decoder.py (artefact local, jamais versionne)
 import/Javascript.html
+
+# Demonstration autonome, reconstruite par prototype/tests/build-autonome.js
+prototype/suivi-fwd-demo.html
+prototype/suivi-fwd-demo.html.gz.b64.txt
