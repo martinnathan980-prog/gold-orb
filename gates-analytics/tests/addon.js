@@ -31,8 +31,17 @@ function serveurSur(valeurs, proprietes, fichiers) {
 (async () => {
   // =================================================================
   section('Détection des colonnes');
-  const { paquet } = construire();
+  const { paquet, contexte: ctxPaquet } = construire();
   verifier('le paquet est valide', paquet.ok === true, paquet.message);
+  /* Le contrat : pour l'instant le classeur n'en porte qu'un, l'onglet de
+     données, et le paquet le dit — la page en déduit qu'il n'y a rien à choisir. */
+  verifier('le paquet porte la liste des contrats et le contrat servi',
+    Array.isArray(paquet.contrats) && paquet.contrats.length === 1 &&
+    paquet.contrats[0].id === 'Données' && paquet.contrats[0].nom === 'Données' &&
+    paquet.contrat === 'Données', JSON.stringify(paquet.contrats) + ' / ' + paquet.contrat);
+  verifier('un contrat demandé est accepté, et sert le même paquet pour l\'instant',
+    ctxPaquet.getDonneesPourClient('autre').plans.length === paquet.plans.length &&
+    ctxPaquet.getDonneesPourClient('autre').contrat === 'Données');
   verifier('les onze colonnes sont vues', paquet.colonnes.length === 11, String(paquet.colonnes.length));
   verifier('les lignes de titre ne sont pas prises pour des données',
     paquet.plans.length === 186, paquet.plans.length + ' plans');
@@ -351,6 +360,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const pVide = vide.contexte.getDonneesPourClient();
   verifier('une feuille vide renvoie une erreur lisible, pas une exception',
     pVide.ok === false && /vide/i.test(pVide.message), pVide.message);
+  verifier('et le paquet d\'erreur porte une liste de contrats vide',
+    Array.isArray(pVide.contrats) && pVide.contrats.length === 0 && pVide.contrat === '');
 
   const doublons = serveurSur([
     ['Réf', 'Statut', 'Statut', 'Avancement FWD'],
@@ -478,6 +489,25 @@ function serveurSur(valeurs, proprietes, fichiers) {
     vu.totauxGroupes.reduce((a, b) => a + b, 0) === 186, String(vu.totauxGroupes.reduce((a, b) => a + b, 0)));
   verifier('le graphique a de quoi tracer', vu.releves);
   verifier('la ligne d\'import annonce les relevés archivés', /relevés archivés/.test(vu.importe), vu.importe);
+
+  /* Un seul contrat : le sélecteur n'a rien à proposer, il reste caché — et le
+     rappel du contrat sous le titre avec lui. */
+  const contratAddon = await p.evaluate(() => ({
+    selecteur: document.getElementById('choix-contrat').hidden &&
+               document.getElementById('select-contrat').offsetParent === null,
+    rappel: document.getElementById('contrat-courant').hidden,
+    pont: typeof window.SUIVI_FWD_API.chargerContrat === 'function' && !window.SUIVI_FWD_API.sauverJalons
+  }));
+  verifier('avec un seul contrat, la page ne montre pas de sélecteur', contratAddon.selecteur);
+  verifier('ni le rappel du contrat sous le titre', contratAddon.rappel);
+  verifier('le pont vers le classeur expose chargerContrat, et plus sauverJalons', contratAddon.pont);
+  // Hors du classeur, le pont ne peut pas répondre : il rappelle avec null, sans casser la page.
+  verifier('hors classeur, chargerContrat rappelle null au lieu de planter',
+    await p.evaluate(() => new Promise(resolve => {
+      window.SUIVI_FWD_API.chargerContrat('autre', paquet => resolve(paquet === null));
+    })));
+  verifier('et la page reste entière',
+    await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length === 186));
 
   // Une cellule contenant une balise fermante ne doit pas couper la page en deux.
   verifier('une balise fermante dans une cellule ne casse pas la page',

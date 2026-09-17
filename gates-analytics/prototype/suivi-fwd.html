@@ -155,6 +155,20 @@ body[data-exemple="true"] .bandeau-mode {
   border: 1px dashed var(--cours); background: var(--creux);
   padding: 10px 13px; margin-top: 12px;
 }
+/* Le choix du contrat : à droite du même bandeau, dans le même registre
+   discret. Il n'apparaît que s'il y a vraiment plusieurs contrats entre
+   lesquels choisir — avec un seul, il n'aurait rien à dire. */
+.bandeau-mode .choix-contrat {
+  margin-left: auto; display: inline-flex; align-items: baseline; gap: 8px;
+  font-size: 12.5px; color: var(--encre-3);
+}
+.bandeau-mode .choix-contrat[hidden] { display: none; }
+.bandeau-mode .choix-contrat select { font-size: 13px; min-width: 64px; }
+.bandeau-mode .choix-contrat select:disabled { color: var(--encre-3); cursor: progress; }
+.bandeau-mode .attente { font-size: 12px; color: var(--encre-3); }
+.bandeau-mode .attente:empty { display: none; }
+.masthead .contrat-courant { display: inline-flex; gap: 9px; align-items: baseline; }
+.masthead .contrat-courant[hidden] { display: none; }
 
 
 /* ---------------------------------------------------- Filtres actifs */
@@ -632,6 +646,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
       <button type="button" data-mode="exemple" aria-pressed="false">Exemple</button>
     </span>
     <span class="mot-mode" id="mot-mode"></span>
+    <span class="choix-contrat" id="choix-contrat" hidden>
+      <label for="select-contrat">Contrat</label>
+      <select class="select" id="select-contrat"></select>
+      <span class="attente" id="etat-contrat" role="status" aria-live="polite"></span>
+    </span>
   </div>
 
   <header class="masthead">
@@ -640,6 +659,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
       <span><b id="num-semaine">—</b></span>
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
+      <span class="contrat-courant" id="contrat-courant" hidden>
+        <span aria-hidden="true">·</span>
+        <span>contrat <b id="nom-contrat"></b></span>
+      </span>
     </div>
   </header>
 
@@ -1077,7 +1100,19 @@ table.plans thead tr th.col-fige { z-index: 6; }
     { cle: "avancement_concept_harnais_13", groupe: "HDK AA 009", titre: "Avancement Concept Harnais" }
   ];
 
-  function jeuDExemple() {
+  /* Trois contrats fictifs, de tailles différentes, chacun avec sa graine et
+     sa profondeur d'historique : changer de contrat doit changer visiblement
+     les comptes, la courbe et le pied de page, sinon on ne verrait pas que
+     la page a suivi. */
+  var CONTRATS_EXEMPLE = [
+    { id: 'X1', nom: 'X1', plans: 640, graine: 20260920, semaines: 12 },
+    { id: 'X2', nom: 'X2', plans: 410, graine: 20260721, semaines: 9 },
+    { id: 'X3', nom: 'X3', plans: 275, graine: 20260322, semaines: 6 }
+  ];
+
+  /** Le jeu d'exemple d'un contrat ; un identifiant inconnu donne le premier. */
+  function jeuDExemple(contrat) {
+    var fiche = CONTRATS_EXEMPLE.filter(function (c) { return c.id === contrat; })[0] || CONTRATS_EXEMPLE[0];
     function graine(a) {
       return function () {
         a |= 0; a = a + 0x6D2B79F5 | 0;
@@ -1086,7 +1121,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
         return ((t ^ t >>> 14) >>> 0) / 4294967296;
       };
     }
-    var alea = graine(20260920);
+    var alea = graine(fiche.graine);
     function tire(l) { return l[Math.floor(alea() * l.length)]; }
     function ent(a, b) { return a + Math.floor(alea() * (b - a + 1)); }
 
@@ -1110,7 +1145,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       'Cheminement console centrale', 'Bloc prises maintenance'
     ];
 
-    var NB_PLANS = 640;
+    var NB_PLANS = fiche.plans;
     var plans = [];
     for (var i = 0; i < NB_PLANS; i++) {
       var t = alea(), avancement;
@@ -1179,9 +1214,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }
     var clesAvecDerivees = clesDim.concat(['_anciennete', '_mois']);
 
-    /* Douze semaines d'historique, avec l'avancement plan par plan à chaque
-       relevé : c'est ce qui fait vivre le journal et la bulle du graphique. */
-    var SEMAINES = 12;
+    /* Plusieurs semaines d'historique, avec l'avancement plan par plan à
+       chaque relevé : c'est ce qui fait vivre le journal et la bulle du
+       graphique. La profondeur dépend du contrat. */
+    var SEMAINES = fiche.semaines;
     var etatCourant = {};
     plans.forEach(function (x) { etatCourant[x.reference] = x.avancement; });
     var refs = plans.map(function (x) { return x.reference; });
@@ -1240,10 +1276,13 @@ table.plans thead tr th.col-fige { z-index: 6; }
       plans: plans,
       releves: releves,
       jalons: [
-        { id: 'ex1', semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 6)), texte: 'Revue de définition' },
-        { id: 'ex2', semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 18)), texte: 'Livraison plateau' }
+        { semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 6)), texte: 'Revue de définition' },
+        { semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 18)), texte: 'Livraison plateau' }
       ],
-      info: { feuille: 'Démonstration', message: '' }
+      /* La liste des contrats et celui-ci : c'est ce que le sélecteur affiche. */
+      contrats: CONTRATS_EXEMPLE.map(function (c) { return { id: c.id, nom: c.nom }; }),
+      contrat: fiche.id,
+      info: { feuille: 'Démonstration ' + fiche.nom, message: '' }
     };
   }
   function dateDeBase(base, i) {
@@ -1252,38 +1291,42 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
   /* ============================================================
      SOURCE DES DONNEES
+     Une « source » est un paquet { colonnes, plans, releves, jalons,
+     contrats… } : le jeu d'exemple quand la page tourne seule, le paquet du
+     classeur dans l'add-on. Tout l'état qui en découle se recalcule d'un
+     bloc dans chargerSource() — le même chemin sert au premier affichage,
+     au passage en mode « Exemple » et au changement de contrat, donc les
+     trois offrent exactement les mêmes fonctions. Les écouteurs, eux, sont
+     posés une seule fois sur les éléments fixes de la page.
      ============================================================ */
   var SERVEUR = !!(window.SUIVI_FWD_DONNEES && window.SUIVI_FWD_DONNEES.plans &&
                    window.SUIVI_FWD_DONNEES.plans.length);
-  var SRC = SERVEUR ? window.SUIVI_FWD_DONNEES : jeuDExemple();
   /* Pont facultatif vers le classeur : présent seulement dans l'add-on. */
   var API = window.SUIVI_FWD_API || null;
 
-  var COLONNES = SRC.colonnes;
-  var PAR_CLE = {};
-  COLONNES.forEach(function (c) { PAR_CLE[c.cle] = c; });
-  var CLE_DATE = SRC.cleDate || null;
-
-  var PLANS = SRC.plans;
-  PLANS.forEach(function (p) { p._etat = classer(p.avancement); p._pct = pourcentDe(p); });
+  /* L'état dérivé de la source courante. Déclaré ici, rempli par chargerSource(). */
+  var SRC = null;                  // la source affichée : réelle, ou son exemple
+  var SRC_REELLE = null;           // la dernière source réelle chargée
+  var COLONNES, PAR_CLE, CLE_DATE, PLANS, RELEVES_SRC, BASE, AUJ;
+  var CLES_DIM, CLE_DOMAINE, CLES_ESSENTIELLES, VAUT_ESSENTIELLES, CLE_LIBELLE;
+  var RELEVES, DERNIER, COMPARATIF, jalons;
+  var DIMENSIONS, TITRE_DIM, ORDRE_FEUILLE, PLAN_PAR_REF, JOURNAL, SEMAINE_FIN;
+  var RELEVES_REELS, AUJ_REEL, BASE_REELLE;
+  var CONTRATS, CONTRAT;
+  var vue = null;
 
   /* Le repère temporel : la semaine du premier relevé archivé. Tout l'axe du
      graphique est un décalage en semaines par rapport à ce lundi-là. */
-  var RELEVES_SRC = (SRC.releves || []).filter(function (r) { return lundiDeLibelle(r.semaine); });
-  RELEVES_SRC.sort(function (a, b) { return lundiDeLibelle(a.semaine) - lundiDeLibelle(b.semaine); });
-  var BASE = RELEVES_SRC.length ? lundiDeLibelle(RELEVES_SRC[0].semaine)
-                                : lundiDeLibelle(etiquetteISO(new Date()));
   function dateDe(i) { return dateDeBase(BASE, i); }
   function etiquette(i) { return etiquetteISO(dateDe(i)); }
   function indexDe(semaine) {
     var l = lundiDeLibelle(semaine);
     return l === null ? null : Math.round((l.getTime() - BASE.getTime()) / 604800000);
   }
-  var AUJ = RELEVES_SRC.length ? indexDe(RELEVES_SRC[RELEVES_SRC.length - 1].semaine) : 0;
 
   var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
               'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-  (function afficherSemaine() {
+  function afficherSemaine() {
     var lundi = dateDe(AUJ);
     var dimanche = new Date(lundi.getTime()); dimanche.setUTCDate(lundi.getUTCDate() + 6);
     var m1 = MOIS[lundi.getUTCMonth()], m2 = MOIS[dimanche.getUTCMonth()];
@@ -1291,31 +1334,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       ? 'du ' + lundi.getUTCDate() + ' au ' + dimanche.getUTCDate() + ' ' + m2 + ' ' + dimanche.getUTCFullYear()
       : 'du ' + lundi.getUTCDate() + ' ' + m1 + ' au ' + dimanche.getUTCDate() + ' ' + m2 + ' ' + dimanche.getUTCFullYear();
     $('num-semaine').textContent = 'Semaine ' + etiquette(AUJ).slice(6).replace(/^0/, '');
-  })();
-
-  /* Les dimensions du bloc « Avancement FWD par… » : les colonnes que le
-     serveur a jugées catégorielles, plus l'ancienneté s'il a trouvé une date. */
-  /* L'ordre vient de la source quand elle le donne : une liste fixée à la main
-     doit s'afficher dans l'ordre demandé, pas dans celui des colonnes. */
-  var CLES_DIM = (SRC.clesDim && SRC.clesDim.length
-      ? SRC.clesDim.filter(function (c) { return PAR_CLE[c]; })
-      : COLONNES.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; }))
-    .concat(CLE_DATE ? ['_mois'] : []);
-
-  var CLE_DOMAINE = (SRC.cleDomaine && PAR_CLE[SRC.cleDomaine]) ? SRC.cleDomaine : null;
-  var CLES_ESSENTIELLES = (SRC.clesEssentielles || []).filter(function (c) { return PAR_CLE[c]; });
-  /* Sur un export de dix colonnes, une « vue essentielle » n'apporte rien :
-     le choix ne s'affiche que s'il y a vraiment deux vues distinctes. */
-  var VAUT_ESSENTIELLES = CLES_ESSENTIELLES.length >= 2 &&
-                          CLES_ESSENTIELLES.length < COLONNES.length - 3;
-  /* Le libellé d'un plan : la première colonne de texte long, pour que le
-     journal dise autre chose qu'une référence. */
-  var CLE_LIBELLE = (function () {
-    for (var i = 0; i < COLONNES.length; i++) {
-      if (!COLONNES[i].fige && /large/.test(COLONNES[i].classe || '')) return COLONNES[i].cle;
-    }
-    return null;
-  })();
+  }
 
   function valeurDim(p, cle) {
     if (cle === '_anciennete') return ancienneteDepuis(p[CLE_DATE], dateDe(AUJ));
@@ -1334,21 +1353,83 @@ table.plans thead tr th.col-fige { z-index: 6; }
     return v;
   }
 
-  /* ============================================================
-     HISTORIQUE
-     L'export ne contient que l'état du jour : on ne sait pas quand un plan
-     est passé à 100 %. L'historique ne peut donc pas être reconstitué —
-     il s'accumule, un relevé par semaine. Le dernier est recalculé à partir
-     de la feuille pour que la page colle toujours à ce qu'on y lit.
-     ============================================================ */
-  var RELEVES = RELEVES_SRC.map(function (r) {
-    return {
-      i: indexDe(r.semaine),
-      total: r.total, termine: r.termine, encours: r.encours, afaire: r.afaire, vide: r.vide,
-      groupes: r.groupes || {}, plans: r.plans || null
-    };
-  });
-  (function relevéCourant() {
+  /* Les jalons d'une source, en indices de semaine. Ceux qui ne tombent sur
+     aucune semaine lisible sont écartés. */
+  function jalonsDe(liste) {
+    return (Array.isArray(liste) ? liste : []).map(function (j) {
+      if (!j) return null;
+      return { id: j.id || null, i: indexDe(j.semaine), texte: String(j.texte || 'Jalon') };
+    }).filter(function (j) { return j && j.i !== null; })
+      .sort(function (a, b) { return a.i - b.i; });
+  }
+  /* Le chemin inverse : les jalons de l'écran, en semaines, pour les rendre
+     à une source ou les mémoriser. */
+  function jalonsEnSemaines() {
+    return jalons.map(function (j) {
+      return { id: j.id || null, semaine: etiquette(j.i), texte: j.texte };
+    });
+  }
+
+  /**
+   * Dérive tout l'état de la page d'une source. Rejouable : la source
+   * initiale, l'exemple fabriqué et chaque contrat passent par ici.
+   * Ne dessine rien : l'appelant enchaîne remplirDims() puis rendre().
+   */
+  function chargerSource(src) {
+    SRC = src;
+    if (!src.exemple) SRC_REELLE = src;
+
+    COLONNES = src.colonnes;
+    /* Sans prototype : une clé venue d'un stockage ne peut pas tomber sur
+       « constructor » ou « __proto__ » et passer pour une colonne. */
+    PAR_CLE = Object.create(null);
+    COLONNES.forEach(function (c) { PAR_CLE[c.cle] = c; });
+    CLE_DATE = src.cleDate || null;
+
+    PLANS = src.plans;
+    PLANS.forEach(function (p) { p._etat = classer(p.avancement); p._pct = pourcentDe(p); });
+
+    RELEVES_SRC = (src.releves || []).filter(function (r) { return r && lundiDeLibelle(r.semaine); });
+    RELEVES_SRC.sort(function (a, b) { return lundiDeLibelle(a.semaine) - lundiDeLibelle(b.semaine); });
+    BASE = RELEVES_SRC.length ? lundiDeLibelle(RELEVES_SRC[0].semaine)
+                              : lundiDeLibelle(etiquetteISO(new Date()));
+    AUJ = RELEVES_SRC.length ? indexDe(RELEVES_SRC[RELEVES_SRC.length - 1].semaine) : 0;
+    afficherSemaine();
+
+    /* Les dimensions du bloc « Avancement FWD par… » : les colonnes que le
+       serveur a jugées catégorielles, plus le mois s'il a trouvé une date.
+       L'ordre vient de la source quand elle le donne : une liste fixée à la
+       main doit s'afficher dans l'ordre demandé, pas dans celui des colonnes. */
+    CLES_DIM = (src.clesDim && src.clesDim.length
+        ? src.clesDim.filter(function (c) { return PAR_CLE[c]; })
+        : COLONNES.filter(function (c) { return c.dim; }).map(function (c) { return c.cle; }))
+      .concat(CLE_DATE ? ['_mois'] : []);
+
+    CLE_DOMAINE = (src.cleDomaine && PAR_CLE[src.cleDomaine]) ? src.cleDomaine : null;
+    CLES_ESSENTIELLES = (src.clesEssentielles || []).filter(function (c) { return PAR_CLE[c]; });
+    /* Sur un export de dix colonnes, une « vue essentielle » n'apporte rien :
+       le choix ne vaut que s'il y a vraiment deux vues distinctes. */
+    VAUT_ESSENTIELLES = CLES_ESSENTIELLES.length >= 2 &&
+                        CLES_ESSENTIELLES.length < COLONNES.length - 3;
+    /* Le libellé d'un plan : la première colonne de texte long, pour que le
+       journal dise autre chose qu'une référence. */
+    CLE_LIBELLE = null;
+    for (var i = 0; i < COLONNES.length; i++) {
+      if (!COLONNES[i].fige && /large/.test(COLONNES[i].classe || '')) { CLE_LIBELLE = COLONNES[i].cle; break; }
+    }
+
+    /* HISTORIQUE
+       L'export ne contient que l'état du jour : on ne sait pas quand un plan
+       est passé à 100 %. L'historique ne peut donc pas être reconstitué —
+       il s'accumule, un relevé par semaine. Le dernier est recalculé à partir
+       de la feuille pour que la page colle toujours à ce qu'on y lit. */
+    RELEVES = RELEVES_SRC.map(function (r) {
+      return {
+        i: indexDe(r.semaine),
+        total: r.total, termine: r.termine, encours: r.encours, afaire: r.afaire, vide: r.vide,
+        groupes: r.groupes || {}, plans: r.plans || null
+      };
+    });
     var vivant = releveDepuis(PLANS, AUJ, CLES_DIM, valeurDim, true);
     var dernier = RELEVES[RELEVES.length - 1];
     // Le dernier relevé archivé garde son état plan par plan : c'est lui qui
@@ -1361,21 +1442,133 @@ table.plans thead tr th.col-fige { z-index: 6; }
     } else {
       RELEVES.push(vivant);
     }
-  })();
-  /* Plusieurs imports dans la même semaine ne font qu'un point : le dernier
-     de la semaine l'emporte. Sinon le graphique afficherait trois relevés
-     serrés puis rien pendant quinze jours. */
-  (function unRelevéParSemaine() {
+    /* Plusieurs imports dans la même semaine ne font qu'un point : le dernier
+       de la semaine l'emporte. Sinon le graphique afficherait trois relevés
+       serrés puis rien pendant quinze jours. */
     var parSemaine = {};
     RELEVES.forEach(function (r) { parSemaine[r.i] = r; });
     RELEVES = Object.keys(parSemaine)
       .map(function (k) { return parSemaine[k]; })
       .sort(function (a, b) { return a.i - b.i; });
-  })();
 
-  var DERNIER = RELEVES[RELEVES.length - 1];
-  $('import').textContent = 'Dernier import : semaine ' + etiquette(DERNIER.i).slice(5) + ' · ' +
-    RELEVES.length + (RELEVES.length > 1 ? ' relevés archivés' : ' relevé archivé');
+    DERNIER = RELEVES[RELEVES.length - 1];
+    $('import').textContent = 'Dernier import : semaine ' + etiquette(DERNIER.i).slice(5) + ' · ' +
+      RELEVES.length + (RELEVES.length > 1 ? ' relevés archivés' : ' relevé archivé');
+
+    COMPARATIF = comparatif();
+
+    /* Les jalons viennent de la source : dans le classeur ils sont partagés par
+       tout le monde, dans la démonstration ils sont posés en dur. */
+    jalons = jalonsDe(src.jalons);
+
+    DIMENSIONS = CLES_DIM
+      .filter(function (c) { return c !== '_mois' && PAR_CLE[c]; })
+      .map(function (c) { return PAR_CLE[c]; })
+      .concat(CLE_DATE ? [{ cle: '_mois', titre: PAR_CLE[CLE_DATE].titre + ' (par mois)' }] : [])
+      .sort(function (a, b) { return a.titre.localeCompare(b.titre, 'fr'); });
+    TITRE_DIM = {};
+    DIMENSIONS.forEach(function (d) { TITRE_DIM[d.cle] = d.titre; });
+
+    ORDRE_FEUILLE = COLONNES.map(function (c) { return c.cle; });
+
+    PLAN_PAR_REF = {};
+    PLANS.forEach(function (p) { PLAN_PAR_REF[p.reference] = p; });
+    JOURNAL = construireJournal();
+    SEMAINE_FIN = semainesDeFin();
+
+    /* Ce dont l'exemple a besoin pour se fabriquer : la vraie « aujourd'hui ». */
+    if (!src.exemple) { RELEVES_REELS = RELEVES; AUJ_REEL = AUJ; BASE_REELLE = BASE; }
+
+    CONTRATS = (Array.isArray(src.contrats) ? src.contrats : [])
+      .filter(function (c) { return c && c.id !== undefined && c.id !== null && c.id !== ''; })
+      .map(function (c) { return { id: String(c.id), nom: String(c.nom || c.id) }; });
+    CONTRAT = (src.contrat !== undefined && src.contrat !== null && src.contrat !== '')
+      ? String(src.contrat) : (CONTRATS.length ? CONTRATS[0].id : '');
+
+    remettreVue();
+    afficherContrat();
+    refleterVue();
+    fermerSaisie();
+    $('bulle').dataset.visible = 'false';
+  }
+
+  /* La « vue » : ce que le lecteur a posé sur la page. Les filtres, la
+     sélection et le cadrage appartiennent à une source et repartent de zéro
+     avec elle ; la disposition — dimension, colonnes, tris, vue du tableau —
+     est une préférence qui traverse les sources, tant que la nouvelle la
+     permet. */
+  function remettreVue() {
+    var avant = vue;
+    vue = {
+      recherche: '', etat: '', filtres: {},
+      groupe: null, refs: null, refsLibelle: '',
+      vides: {}, domaine: '', reconduits: false,
+      journal: '', journalOuverts: {}, groupesTout: false,
+      aideFin: false,
+      exemple: !!SRC.exemple,
+      fen: { debut: 0, span: 28 },
+      /* L'ordre de la feuille, sans exception : tout le monde doit voir le même
+         tableau que l'export. Le verrouillage à gauche s'adapte à cet ordre
+         plutôt que l'inverse. Et le tableau s'ouvre complet : c'est l'extract.
+         La vue essentielle est là pour l'autre besoin. */
+      ordre: ORDRE_FEUILLE.slice(),
+      cachees: {},
+      tri: { cle: 'reference', asc: true },
+      dimCritique: (SRC.dimParDefaut && CLES_DIM.indexOf(SRC.dimParDefaut) !== -1) ? SRC.dimParDefaut : (CLES_DIM[0] || ''),
+      triGroupe: { cle: null, asc: false },
+      /* Deux vues du tableau, et rien entre les deux : « toutes » montre l'export
+         tel quel, dans son ordre ; « essentielle » ne garde que ce qu'on regarde. */
+      vueTable: 'toutes'
+    };
+    if (!avant) return;
+    appliquerDisposition(avant);
+    vue.vueTable = avant.vueTable === 'essentielle' ? 'essentielle' : 'toutes';
+    if (vue.vueTable === 'essentielle') appliquerVueTable();
+  }
+
+  /* Les commandes fixes de la page reflètent la vue : le champ de recherche,
+     les interrupteurs du journal, du tableau et du mode. */
+  function refleterVue() {
+    $('recherche').value = vue.recherche;
+    document.querySelectorAll('#filtre-journal button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.journal === vue.journal));
+    });
+    document.querySelectorAll('#vue-tableau button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.vue === vue.vueTable));
+    });
+    afficherMode();
+  }
+
+  /* Le bandeau du haut dit dans quel mode on est. La phrase dit exactement ce
+     qui est fabriqué : l'historique, pas les plans. Une phrase qui exagère se
+     fait prendre en défaut et on ne croit plus rien. */
+  function afficherMode() {
+    var actif = !!vue.exemple;
+    document.body.dataset.exemple = String(actif);
+    document.querySelectorAll('#mode-donnees button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String((b.dataset.mode === 'exemple') === actif));
+    });
+    $('mot-mode').innerHTML = actif
+      ? '<b>Historique fabriqué</b> — un aperçu de ce que la page montrera quand les relevés se seront accumulés.'
+      : '';
+  }
+
+  /* Le sélecteur de contrat et le rappel du contrat courant sous le titre.
+     Avec un seul contrat, ni l'un ni l'autre n'a quelque chose à dire. */
+  function afficherContrat() {
+    var plusieurs = CONTRATS.length > 1;
+    var courant = CONTRATS.filter(function (c) { return c.id === CONTRAT; })[0];
+    var sel = $('select-contrat');
+    $('choix-contrat').hidden = !plusieurs;
+    sel.innerHTML = CONTRATS.map(function (c) {
+      return '<option value="' + ech(c.id) + '">' + ech(c.nom) + '</option>';
+    }).join('');
+    sel.value = CONTRAT;
+    sel.disabled = false;
+    $('etat-contrat').textContent = '';
+    $('contrat-courant').hidden = !plusieurs;
+    $('nom-contrat').textContent = courant ? courant.nom : CONTRAT;
+  }
 
   /* ------------------------------------------------------------
      RYTHME
@@ -1425,46 +1618,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
     Object.keys(avant).forEach(function (ref) { if (!actuelles[ref]) d.disparus.push(ref); });
     return d;
   }
-  var COMPARATIF = comparatif();
-
-  /* Les jalons viennent de la source : dans le classeur ils sont partagés par
-     tout le monde, dans la démonstration ils sont posés en dur. */
-  var jalons = (SRC.jalons || []).map(function (j) {
-    return { id: j.id || null, i: indexDe(j.semaine), texte: String(j.texte || 'Jalon') };
-  }).filter(function (j) { return j.i !== null; })
-    .sort(function (a, b) { return a.i - b.i; });
-
-  var vue = {
-    recherche: '', etat: '', filtres: {},
-    /* L'ordre de la feuille, sans exception : tout le monde doit voir le même
-       tableau que l'export. Le verrouillage à gauche s'adapte à cet ordre
-       plutôt que l'inverse. */
-    ordre: COLONNES.map(function (c) { return c.cle; }),
-    /* Le tableau s'ouvre complet : c'est l'extract, et c'est ce que tout le
-       monde doit avoir sous les yeux. La vue essentielle est là pour l'autre
-       besoin. */
-    cachees: {},
-    tri: { cle: 'reference', asc: true },
-    dimCritique: (SRC.dimParDefaut && CLES_DIM.indexOf(SRC.dimParDefaut) !== -1) ? SRC.dimParDefaut : (CLES_DIM[0] || ''),
-    triGroupe: { cle: null, asc: false },
-    aideFin: false,
-    groupe: null, refs: null, refsLibelle: '',
-    vides: {},
-    domaine: '',
-    reconduits: false,
-    /* Deux vues du tableau, et rien entre les deux : « toutes » montre l'export
-       tel quel, dans son ordre ; « essentielle » ne garde que ce qu'on regarde. */
-    vueTable: 'toutes',
-    journal: '',
-    journalOuverts: {},
-    groupesTout: false,
-    exemple: false,
-    fen: { debut: 0, span: 28 }
-  };
 
   /* ----------------------------------------------------------
      Mémoire locale : jalons, cadrage et disposition survivent
-     à la fermeture de l'onglet.
+     à la fermeture de l'onglet. Elle est globale : la même
+     disposition suit le lecteur d'un contrat à l'autre.
      ---------------------------------------------------------- */
   /* Les seules cles de tri acceptees pour le bloc par groupe : une preference
      relue d'un ancien stockage ne doit pas pouvoir injecter n'importe quoi. */
@@ -1474,7 +1632,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
   function sauverPrefs() {
     try {
       localStorage.setItem(CLE_PREFS, JSON.stringify({
-        jalons: jalons, fen: vue.fen,
+        jalons: jalonsEnSemaines(), fen: vue.fen,
         dimCritique: vue.dimCritique, ordre: vue.ordre, cachees: vue.cachees, tri: vue.tri,
         triGroupe: vue.triGroupe
       }));
@@ -1484,38 +1642,48 @@ table.plans thead tr th.col-fige { z-index: 6; }
     clearTimeout(minuteurPrefs);
     minuteurPrefs = setTimeout(sauverPrefs, 400);
   }
+  /* La disposition — dimension, ordre et colonnes cachées du tableau, tris —
+     se relit d'un stockage ou d'une vue précédente. Elle est validée contre la
+     source courante : une colonne disparue ou une clé inconnue ne passe pas. */
+  function appliquerDisposition(pref) {
+    if (pref.dimCritique && CLES_DIM.indexOf(pref.dimCritique) !== -1) vue.dimCritique = pref.dimCritique;
+    if (Array.isArray(pref.ordre)) {
+      // On ne garde que les colonnes encore presentes, et on ajoute les nouvelles.
+      var valides = pref.ordre.filter(function (k) { return PAR_CLE[k]; });
+      COLONNES.forEach(function (c) { if (valides.indexOf(c.cle) === -1) valides.push(c.cle); });
+      vue.ordre = valides;
+    }
+    if (pref.cachees && typeof pref.cachees === 'object') {
+      vue.cachees = {};
+      Object.keys(pref.cachees).forEach(function (k) {
+        // Une colonne figee ou inconnue ne se masque pas, quoi qu'en dise le stockage.
+        if (PAR_CLE[k] && !PAR_CLE[k].fige && pref.cachees[k]) vue.cachees[k] = true;
+      });
+    }
+    if (pref.tri && PAR_CLE[pref.tri.cle]) vue.tri = { cle: pref.tri.cle, asc: !!pref.tri.asc };
+    if (pref.triGroupe && TRIS_GROUPE.indexOf(pref.triGroupe.cle) !== -1) {
+      vue.triGroupe = { cle: pref.triGroupe.cle, asc: !!pref.triGroupe.asc };
+    }
+  }
   function chargerPrefs() {
     try {
       var brut = localStorage.getItem(CLE_PREFS);
       if (!brut) return;
       var pref = JSON.parse(brut);
+      if (!pref || typeof pref !== 'object') return;
       // Quand le classeur fournit les jalons, la copie locale ne fait pas foi.
       if (!SERVEUR && Array.isArray(pref.jalons)) {
-        jalons = pref.jalons.filter(function (j) {
-          return j && typeof j.i === 'number' && typeof j.texte === 'string';
-        });
+        jalons = jalonsDe(pref.jalons.map(function (j) {
+          if (!j || typeof j.texte !== 'string') return null;
+          /* Un ancien stockage notait l'indice de semaine ; on note désormais
+             la semaine elle-même, qui ne dépend pas du premier relevé. */
+          return { semaine: typeof j.i === 'number' ? etiquette(j.i) : j.semaine, texte: j.texte };
+        }));
       }
-      if (pref.fen && typeof pref.fen.debut === 'number') vue.fen = pref.fen;
-      ['dimCritique'].forEach(function (k) {
-        if (pref[k] && CLES_DIM.indexOf(pref[k]) !== -1) vue[k] = pref[k];
-      });
-      if (Array.isArray(pref.ordre)) {
-        // On ne garde que les colonnes encore presentes, et on ajoute les nouvelles.
-        var valides = pref.ordre.filter(function (k) { return PAR_CLE[k]; });
-        COLONNES.forEach(function (c) { if (valides.indexOf(c.cle) === -1) valides.push(c.cle); });
-        vue.ordre = valides;
+      if (pref.fen && typeof pref.fen.debut === 'number' && typeof pref.fen.span === 'number') {
+        vue.fen = { debut: pref.fen.debut, span: pref.fen.span };
       }
-      if (pref.cachees && typeof pref.cachees === 'object') {
-        vue.cachees = {};
-        Object.keys(pref.cachees).forEach(function (k) {
-          // Une colonne figee ou inconnue ne se masque pas, quoi qu'en dise le stockage.
-          if (PAR_CLE[k] && !PAR_CLE[k].fige && pref.cachees[k]) vue.cachees[k] = true;
-        });
-      }
-      if (pref.tri && PAR_CLE[pref.tri.cle]) vue.tri = pref.tri;
-      if (pref.triGroupe && TRIS_GROUPE.indexOf(pref.triGroupe.cle) !== -1) {
-        vue.triGroupe = { cle: pref.triGroupe.cle, asc: !!pref.triGroupe.asc };
-      }
+      appliquerDisposition(pref);
     } catch (e) { /* preferences illisibles : on repart des valeurs par defaut */ }
   }
 
@@ -1879,10 +2047,17 @@ table.plans thead tr th.col-fige { z-index: 6; }
              (lib.indexOf('2026-') === 0 ? lib.slice(5) : lib) + '</text>');
     }
 
+    /* Le point d'une semaine se cherche par son indice, pas par sa position
+       dans la série : une semaine sans relevé n'a pas de point. */
+    var ptParI = {};
+    pts.forEach(function (pt) { ptParI[pt.i] = pt; });
     for (var k4 = d0; k4 <= d1; k4++) {
+      var ptK = ptParI[k4];
       s.push('<rect class="zone-clic" x="' + (x(k4) - pasX / 2).toFixed(1) + '" y="' + (mHaut - 6) + '" width="' + pasX.toFixed(1) +
              '" height="' + (plotH + ecart + bandeH + 6).toFixed(1) + '" fill="transparent" tabindex="0" role="button" data-i="' + k4 + '" ' +
-             'aria-label="' + etiquette(k4) + (k4 <= AUJ ? ' : ' + pts[k4].termine + ' terminés' : ' (à venir)') + '. Activer pour poser un jalon."/>');
+             'aria-label="' + etiquette(k4) +
+             (k4 > AUJ ? ' (à venir)' : (ptK ? ' : ' + ptK.termine + ' terminés' : ' : pas de relevé')) +
+             '. Activer pour poser un jalon."/>');
     }
 
     s.push('</svg>');
@@ -1942,11 +2117,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     planifierSauvegarde();
     /* Dans le classeur, les jalons sont partagés : ils repartent au serveur,
        sinon la collègue et sa chef n'auraient pas les mêmes. */
-    if (API && API.sauverJalons) {
-      API.sauverJalons(jalons.map(function (j) {
-        return { id: j.id || null, semaine: etiquette(j.i), texte: j.texte };
-      }));
-    }
+    if (API && API.sauverJalons) API.sauverJalons(jalonsEnSemaines());
   }
 
   function reglerSpan(span) {
@@ -2470,14 +2641,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     return '';
   }
 
-  var DIMENSIONS = CLES_DIM
-    .filter(function (c) { return c !== '_mois' && PAR_CLE[c]; })
-    .map(function (c) { return PAR_CLE[c]; })
-    .concat(CLE_DATE ? [{ cle: '_mois', titre: PAR_CLE[CLE_DATE].titre + ' (par mois)' }] : [])
-    .sort(function (a, b) { return a.titre.localeCompare(b.titre, 'fr'); });
-  var TITRE_DIM = {};
-  DIMENSIONS.forEach(function (d) { TITRE_DIM[d.cle] = d.titre; });
-
+  /* DIMENSIONS et TITRE_DIM sont dérivés de la source dans chargerSource(). */
   function remplirDims() {
     $('dim-critique').innerHTML = DIMENSIONS.map(function (d) {
       return '<option value="' + d.cle + '">' + ech(d.titre) + '</option>';
@@ -2672,9 +2836,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
      relevés successifs donne, semaine par semaine, qui a bougé et dans quel
      sens — la seule chose que l'export du jour ne dira jamais.
      ============================================================ */
-  var PLAN_PAR_REF = {};
-  PLANS.forEach(function (p) { PLAN_PAR_REF[p.reference] = p; });
-
+  /* PLAN_PAR_REF, JOURNAL et SEMAINE_FIN sont dérivés dans chargerSource(). */
   function construireJournal() {
     var journal = [];
     for (var k = 1; k < RELEVES.length; k++) {
@@ -2699,11 +2861,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }
     return journal.reverse();          // la semaine la plus récente en tête
   }
-  var JOURNAL = construireJournal();
-  function recalculerJournal() { JOURNAL = construireJournal(); }
 
   /* La semaine où chaque plan est passé en terminé, pour de bon. */
-  var SEMAINE_FIN = (function () {
+  function semainesDeFin() {
     var f = {};
     JOURNAL.slice().reverse().forEach(function (sem) {
       sem.evenements.forEach(function (e) {
@@ -2712,7 +2872,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       });
     });
     return f;
-  })();
+  }
 
   function etiqEtat(cle, role) {
     var e = ETAT_PAR_CLE[cle];
@@ -2823,10 +2983,31 @@ table.plans thead tr th.col-fige { z-index: 6; }
      partir des comptes du jour — sous bandeau, pour qu'il soit impossible de
      le prendre pour du réel.
      ============================================================ */
-  var RELEVES_REELS = RELEVES;
-  var AUJ_REEL = AUJ;
-  var BASE_REELLE = BASE;
+  /* Un relevé complet à partir d'une carte plan par plan — les mêmes comptes,
+     globaux et par dimension, que releveDepuis() tire des plans vivants. Les
+     relevés fabriqués ont ainsi tout ce qu'ont les relevés archivés : la
+     courbe d'un groupe, son rythme et sa fin estimée marchent à l'identique. */
+  function releveDeCarte(semaine, carte) {
+    var r = { semaine: semaine, total: 0, termine: 0, encours: 0, afaire: 0, vide: 0, groupes: {}, plans: carte };
+    CLES_DIM.forEach(function (d) { r.groupes[d] = {}; });
+    Object.keys(carte).forEach(function (ref) {
+      var etat = classer(carte[ref]);
+      r.total++;
+      r[etat]++;
+      var p = PLAN_PAR_REF[ref];
+      if (!p) return;
+      CLES_DIM.forEach(function (d) {
+        var v = String(valeurDim(p, d) || '—');
+        if (!r.groupes[d][v]) r.groupes[d][v] = { total: 0, termine: 0 };
+        r.groupes[d][v].total++;
+        if (etat === 'termine') r.groupes[d][v].termine++;
+      });
+    });
+    return r;
+  }
 
+  /* Neuf semaines d'historique fictif, en semaines réelles : la dernière est
+     la vraie « aujourd'hui », les autres remontent d'une semaine chacune. */
   function relevesDExemple() {
     var c = compte(PLANS);
     var semaines = 8;
@@ -2834,59 +3015,39 @@ table.plans thead tr th.col-fige { z-index: 6; }
     for (var k = 0; k <= semaines; k++) {
       var part = 0.25 + (0.75 * k) / semaines;      // montée régulière jusqu'à aujourd'hui
       var termine = Math.round(c.termine * part);
-      var glisse = c.termine - termine;
       /* Un avancement plan par plan, sinon le journal resterait vide et
          l'exemple ne montrerait que la moitié de ce que fera la page. */
       var carte = {};
       var atteint = 0;
       PLANS.forEach(function (p) {
-        if (p._etat === 'termine') {
-          carte[p.reference] = atteint++ < termine ? 'Terminé' : 'En cours';
-        } else {
-          carte[p.reference] = p.avancement;
-        }
+        carte[p.reference] = (p._etat === 'termine' && atteint++ >= termine) ? 'En cours' : p.avancement;
       });
-      faux.push({
-        i: k,
-        total: c.total,
-        termine: termine,
-        encours: c.encours + Math.round(glisse * 0.6),
-        afaire: c.afaire + (glisse - Math.round(glisse * 0.6)),
-        vide: c.vide,
-        groupes: {},
-        plans: carte
-      });
+      faux.push(releveDeCarte(etiquetteISO(dateDeBase(BASE_REELLE, AUJ_REEL - semaines + k)), carte));
     }
     return faux;
   }
 
+  /* Le mode « Exemple » est une source comme une autre : la source réelle,
+     avec l'historique fabriqué à la place de l'archivé. Elle passe par
+     chargerSource() comme le reste — c'est ce qui garantit que l'exemple
+     montre exactement ce que la page fera, ni plus ni moins. */
   function basculerExemple(actif) {
-    vue.exemple = actif;
+    if (actif === !!vue.exemple) return;
+    /* Les jalons posés à l'écran suivent le lecteur d'un mode à l'autre : on
+       les rend à la source réelle, en semaines, avant de basculer. */
+    SRC_REELLE.jalons = jalonsEnSemaines();
     if (actif) {
-      RELEVES = relevesDExemple();
-      AUJ = RELEVES[RELEVES.length - 1].i;
-      BASE = dateDeBase(BASE_REELLE, AUJ_REEL - AUJ);   // « aujourd'hui » reste aujourd'hui
-      vue.fen = { debut: 0, span: Math.max(14, AUJ + 6) };
+      var exemple = {};
+      Object.keys(SRC_REELLE).forEach(function (k) { exemple[k] = SRC_REELLE[k]; });
+      exemple.releves = relevesDExemple();
+      exemple.exemple = true;
+      chargerSource(exemple);
     } else {
-      RELEVES = RELEVES_REELS;
-      AUJ = AUJ_REEL;
-      BASE = BASE_REELLE;
-      vue.fen = { debut: 0, span: 28 };
+      chargerSource(SRC_REELLE);
     }
-    DERNIER = RELEVES[RELEVES.length - 1];
-    recalculerJournal();
-    document.body.dataset.exemple = String(actif);
-    document.querySelectorAll('#mode-donnees button').forEach(function (b) {
-      b.setAttribute('aria-pressed', String((b.dataset.mode === 'exemple') === actif));
-    });
-    /* Dire exactement ce qui est fabrique : l'historique, pas les plans. Une
-       phrase qui exagere se fait prendre en defaut et on ne croit plus rien. */
-    $('mot-mode').innerHTML = actif
-      ? '<b>Historique fabriqué</b> — un aperçu de ce que la page montrera quand les relevés se seront accumulés.'
-      : '';
+    remplirDims();
     rendre();
   }
-
 
   /* L'interrupteur vit en haut de page : il porte sur tout, pas sur un bloc.
      Au premier import il montre ce que la page dira plus tard ; après, il sert
@@ -2894,10 +3055,42 @@ table.plans thead tr th.col-fige { z-index: 6; }
   document.querySelector('#mode-donnees').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-mode]');
     if (!b) return;
-    var veutExemple = b.dataset.mode === 'exemple';
-    if (veutExemple !== vue.exemple) basculerExemple(veutExemple);
+    basculerExemple(b.dataset.mode === 'exemple');
   });
-  document.body.dataset.exemple = 'false';
+
+  /* ============================================================
+     CHANGEMENT DE CONTRAT
+     Dans l'add-on, le paquet du contrat demandé vient du classeur par le pont
+     SUIVI_FWD_API ; seule, la page fabrique le jeu d'exemple correspondant.
+     Dans les deux cas la nouvelle source passe par chargerSource() : le
+     cadrage et les filtres repartent de zéro, la disposition est conservée.
+     ============================================================ */
+  var demandeContrat = 0;
+  function changerContrat(id) {
+    if (!id || id === CONTRAT) return;
+    var sel = $('select-contrat'), etat = $('etat-contrat');
+    var demande = ++demandeContrat;
+    function poser(paquet) {
+      if (demande !== demandeContrat) return;        // une demande plus récente a pris le relais
+      if (!paquet || !paquet.plans || !paquet.plans.length) {
+        sel.disabled = false;
+        sel.value = CONTRAT;
+        etat.textContent = paquet && paquet.message ? paquet.message : 'Contrat impossible à charger.';
+        return;
+      }
+      chargerSource(paquet);
+      remplirDims();
+      rendre();
+    }
+    if (API && API.chargerContrat) {
+      sel.disabled = true;
+      etat.textContent = 'Chargement…';
+      API.chargerContrat(id, poser);
+    } else {
+      poser(jeuDExemple(id));
+    }
+  }
+  $('select-contrat').addEventListener('change', function (e) { changerContrat(e.target.value); });
 
 
   /* ============================================================
@@ -2912,8 +3105,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
      Rien entre les deux, et chacune se retrouve à l'identique en revenant.
      ============================================================ */
-  var ORDRE_FEUILLE = COLONNES.map(function (c) { return c.cle; });
-
+  /* ORDRE_FEUILLE est dérivé de la source dans chargerSource(). */
   function appliquerVueTable() {
     if (vue.vueTable === 'essentielle') {
       var garder = {};
@@ -2926,9 +3118,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
       vue.cachees = {};
       vue.ordre = ORDRE_FEUILLE.slice();
     }
-    document.querySelectorAll('#vue-tableau button').forEach(function (b) {
-      b.setAttribute('aria-pressed', String(b.dataset.vue === vue.vueTable));
-    });
   }
 
   /* ============================================================
@@ -3195,6 +3384,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     if (!b || b.dataset.vue === vue.vueTable) return;
     vue.vueTable = b.dataset.vue;
     appliquerVueTable();
+    refleterVue();
     rendre();
   });
 
@@ -3305,6 +3495,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }, 160);
   });
 
+  /* Exposés pour la batterie : recharger une source arbitraire — par exemple
+     un jeu sans liste de contrats — sans passer par l'interface. */
+  window.__jeuDExemple = jeuDExemple;
+  window.__chargerSource = function (src) { chargerSource(src); remplirDims(); rendre(); };
+
+  chargerSource(SERVEUR ? window.SUIVI_FWD_DONNEES : jeuDExemple());
   chargerPrefs();
   remplirDims();
   rendre();

@@ -138,6 +138,24 @@ async function reinitialiser(pg) {
   verifier('et il demarre sur le reel',
     modeDepart.presse === 'reel:true exemple:false' && modeDepart.marque === 'false',
     JSON.stringify(modeDepart));
+  /* Parité : les deux modes passent par la même dérivation, donc chaque bloc
+     rempli en réel l'est aussi en exemple — comparatif « depuis l'import »,
+     journal, fin estimée et rythme par groupe, courbe. On relève la même
+     signature dans les deux modes et on exige qu'elle soit identique. */
+  const blocsRemplis = () => p.evaluate(() => ({
+    comparatif: /Depuis l’import/.test(document.getElementById('comparatif').textContent) &&
+                document.querySelectorAll('.puce-delta').length > 0,
+    journal: document.querySelectorAll('.journal-ligne').length > 0,
+    finEstimee: [...document.querySelectorAll('.critique-date .v')]
+      .some(v => /^\d{4}-S\d{2}$/.test(v.textContent.trim())),
+    rythme: [...document.querySelectorAll('.critique-effort .v')].some(v => /sem\./.test(v.textContent)),
+    courbe: document.querySelectorAll('svg.graphe circle').length >= 5,
+    groupes: document.querySelectorAll('.critique-ligne').length > 0,
+    plans: document.querySelectorAll('#corps-tableau tr').length
+  }));
+  const reelBlocs = await blocsRemplis();
+  verifier('en reel, tous les blocs sont remplis',
+    Object.keys(reelBlocs).every(k => reelBlocs[k]), JSON.stringify(reelBlocs));
   await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(900);
   const modeEx = await p.evaluate(() => ({
     marque: document.body.dataset.exemple,
@@ -151,10 +169,50 @@ async function reinitialiser(pg) {
   verifier('et elle dit ce qui est fabrique', /historique/i.test(modeEx.mot), modeEx.mot);
   verifier('le graphique se remplit sans perdre de plan',
     modeEx.points >= 5 && modeEx.lignes === TOTAL, JSON.stringify(modeEx));
+  const exBlocs = await blocsRemplis();
+  verifier('l\'exemple remplit exactement les memes blocs que le reel',
+    JSON.stringify(exBlocs) === JSON.stringify(reelBlocs), JSON.stringify(exBlocs));
+  verifier('le comparatif de l\'exemple se rapporte a l\'historique fabrique',
+    await p.evaluate(() => /Depuis l’import du \d{4}-S\d{2}/.test(document.getElementById('comparatif').textContent)));
+  // Choisir un groupe : la courbe et le rythme suivent, comme en réel.
+  await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(450);
+  const exGroupe = await p.evaluate(() => ({
+    note: document.getElementById('note-graphe').textContent,
+    points: document.querySelectorAll('svg.graphe circle').length,
+    presse: document.querySelectorAll('.critique-ligne[aria-pressed="true"]').length,
+    lignes: document.querySelectorAll('#corps-tableau tr').length
+  }));
+  verifier('en exemple, choisir un groupe trace son historique',
+    /Historique de/.test(exGroupe.note) && exGroupe.points >= 5 && exGroupe.presse === 1,
+    JSON.stringify(exGroupe));
+  verifier('et filtre le tableau', exGroupe.lignes > 0 && exGroupe.lignes < TOTAL, String(exGroupe.lignes));
+  await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(350);
+  // La bulle du graphique nomme les passages en terminé, comme en réel.
+  await p.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' }));
+  await p.waitForTimeout(300);
+  let bulleEx = '';
+  for (const z of await p.$$('.zone-clic')) {
+    const bb = await z.boundingBox();
+    if (!bb || bb.y < 0 || bb.y > 900) continue;
+    await p.mouse.move(bb.x + bb.width / 2, bb.y + bb.height * 0.6);
+    await p.waitForTimeout(90);
+    const t = await p.evaluate(() => document.getElementById('bulle').textContent);
+    if (/passés? en terminé/.test(t)) { bulleEx = t; break; }
+  }
+  verifier('en exemple, la bulle du graphique annonce les passages en termine',
+    /passés? en terminé/.test(bulleEx), bulleEx.slice(0, 80));
+  await p.mouse.move(5, 5);
+  // Les filtres marchent en exemple aussi.
+  await p.click('.etat-btn[data-etat="termine"]'); await p.waitForTimeout(350);
+  verifier('en exemple, filtrer un etat reduit le tableau',
+    await p.evaluate(t => { const n = document.querySelectorAll('#corps-tableau tr').length; return n > 0 && n < t; }, TOTAL));
+  await p.click('.etat-btn[data-etat="termine"]'); await p.waitForTimeout(300);
   await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(800);
   verifier('revenir au reel efface la marque et la phrase',
     await p.evaluate(() => document.body.dataset.exemple === 'false' &&
       document.getElementById('mot-mode').textContent.trim() === ''));
+  verifier('et retrouve exactement les blocs du depart',
+    JSON.stringify(await blocsRemplis()) === JSON.stringify(reelBlocs));
   for (let i = 0; i < 5; i++) {
     await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(150);
     await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(150);
@@ -163,6 +221,90 @@ async function reinitialiser(pg) {
   verifier('dix bascules d\'affilee laissent la page intacte',
     await p.evaluate(t => document.body.dataset.exemple === 'false' &&
       document.querySelectorAll('#corps-tableau tr').length === t, TOTAL));
+
+  // =================================================================
+  /* Plusieurs contrats, une seule page : le sélecteur vit dans le bandeau du
+     haut, le contrat courant est rappelé sous le titre, et changer de contrat
+     recharge tout — comptes, historique, pied de page — en repartant des
+     filtres et du cadrage par défaut. */
+  section('Sélecteur de contrat');
+  const sel0 = await p.evaluate(() => ({
+    visible: !document.getElementById('choix-contrat').hidden &&
+             document.getElementById('select-contrat').offsetParent !== null,
+    haut: document.getElementById('choix-contrat').getBoundingClientRect().top <
+          document.querySelector('.masthead').getBoundingClientRect().top,
+    options: [...document.querySelectorAll('#select-contrat option')].map(o => o.value).join(','),
+    courant: document.getElementById('select-contrat').value,
+    nom: document.getElementById('nom-contrat').textContent,
+    nomVisible: !document.getElementById('contrat-courant').hidden,
+    titre: document.title,
+    zones: document.querySelectorAll('.zone-clic').length
+  }));
+  verifier('le selecteur est la, en haut, et liste les trois contrats',
+    sel0.visible && sel0.haut && sel0.options === 'X1,X2,X3', JSON.stringify(sel0));
+  verifier('il demarre sur X1, rappele sous le titre',
+    sel0.courant === 'X1' && sel0.nom === 'X1' && sel0.nomVisible, JSON.stringify(sel0));
+  verifier('le titre de la page reste « Suivi FWD »', sel0.titre === 'Suivi FWD', sel0.titre);
+  const pied0 = await p.evaluate(() => document.getElementById('import').textContent);
+  const etats0 = await p.evaluate(() => [...document.querySelectorAll('.etat-n')].map(e => e.textContent).join(' '));
+  // Un filtre et un cadrage posés avant de changer : ils doivent repartir de zéro.
+  await p.click('.etat-btn[data-etat="termine"]'); await p.waitForTimeout(300);
+  await p.click('.segmente button[data-span="52"]'); await p.waitForTimeout(300);
+  const lireContrat = () => p.evaluate(() => ({
+    plans: document.querySelectorAll('#corps-tableau tr').length,
+    pied: document.getElementById('import').textContent,
+    nom: document.getElementById('nom-contrat').textContent,
+    courant: document.getElementById('select-contrat').value,
+    filtres: document.getElementById('filtres-actifs').hidden,
+    presse: document.querySelectorAll('.etat-btn[aria-pressed="true"]').length,
+    zones: document.querySelectorAll('.zone-clic').length,
+    etats: [...document.querySelectorAll('.etat-n')].map(e => e.textContent).join(' '),
+    groupes: [...document.querySelectorAll('.critique-total')].reduce((s, e) => s + (+e.textContent), 0),
+    journal: document.querySelectorAll('.journal-ligne').length,
+    mode: document.body.dataset.exemple
+  }));
+  await p.selectOption('#select-contrat', 'X2'); await p.waitForTimeout(1200);
+  const x2 = await lireContrat();
+  verifier('changer de contrat change le nombre de plans', x2.plans > 0 && x2.plans !== TOTAL, String(x2.plans));
+  verifier('et le pied de page', x2.pied !== pied0, x2.pied);
+  verifier('le contrat courant est rappele sous le titre', x2.nom === 'X2' && x2.courant === 'X2', x2.nom);
+  verifier('les filtres et le cadrage repartent de zero',
+    x2.filtres && x2.presse === 0 && x2.zones === sel0.zones, JSON.stringify(x2));
+  verifier('le bloc par groupe et le journal suivent le nouveau contrat',
+    x2.groupes === x2.plans && x2.journal > 0, x2.groupes + ' / ' + x2.plans);
+  await p.selectOption('#select-contrat', 'X3'); await p.waitForTimeout(1200);
+  const x3 = await lireContrat();
+  verifier('un troisieme contrat a encore d\'autres comptes',
+    x3.plans > 0 && x3.plans !== x2.plans && x3.plans !== TOTAL && x3.nom === 'X3', String(x3.plans));
+  // L'exemple d'un autre contrat, puis un changement de contrat : on revient au réel.
+  await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(800);
+  await p.selectOption('#select-contrat', 'X1'); await p.waitForTimeout(1200);
+  const x1 = await lireContrat();
+  verifier('revenir a X1 redonne les comptes initiaux',
+    x1.plans === TOTAL && x1.etats === etats0 && x1.pied === pied0, JSON.stringify(x1));
+  verifier('et un changement de contrat ramene aux donnees reelles', x1.mode === 'false', x1.mode);
+  // Sans liste de contrats — ou avec un seul — rien à choisir : le sélecteur disparaît.
+  await p.evaluate(() => { const s = window.__jeuDExemple('X1'); delete s.contrats; window.__chargerSource(s); });
+  await p.waitForTimeout(900);
+  const seul = await p.evaluate(() => ({
+    cache: document.getElementById('choix-contrat').hidden &&
+           document.getElementById('select-contrat').offsetParent === null,
+    nomCache: document.getElementById('contrat-courant').hidden,
+    plans: document.querySelectorAll('#corps-tableau tr').length
+  }));
+  verifier('sans liste de contrats, le selecteur et le rappel disparaissent',
+    seul.cache && seul.nomCache && seul.plans === TOTAL, JSON.stringify(seul));
+  await p.evaluate(() => { const s = window.__jeuDExemple('X1'); s.contrats = [{ id: 'X1', nom: 'X1' }]; window.__chargerSource(s); });
+  await p.waitForTimeout(900);
+  verifier('avec un seul contrat liste, pareil',
+    await p.evaluate(() => document.getElementById('choix-contrat').hidden &&
+      document.getElementById('contrat-courant').hidden));
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('X1')));
+  await p.waitForTimeout(900);
+  verifier('la liste revenue, le selecteur revient',
+    await p.evaluate(() => !document.getElementById('choix-contrat').hidden &&
+      [...document.querySelectorAll('#select-contrat option')].map(o => o.value).join(',') === 'X1,X2,X3' &&
+      document.getElementById('select-contrat').value === 'X1'));
 
   // =================================================================
   section('Chargement et cohérence des chiffres');

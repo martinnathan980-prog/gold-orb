@@ -666,7 +666,15 @@ function choisirDimensionParDefaut(colonnes, clesDim) {
 //  PAQUET ENVOYÉ À LA PAGE
 // =====================================================================
 
-function getDonneesPourClient() {
+/**
+ * Le paquet complet d'un contrat, tel que la page le consomme.
+ *
+ * `contrat` désigne le contrat demandé ; pour l'instant le classeur n'en
+ * porte qu'un — l'onglet de données — et le paramètre est ignoré. La page
+ * reçoit néanmoins la liste des contrats et celui qui est servi, ce qui lui
+ * permet d'afficher (ou non) son sélecteur sans rien savoir du classeur.
+ */
+function getDonneesPourClient(contrat) {
   try {
     const classeur = SpreadsheetApp.getActiveSpreadsheet();
     const modele = construireModele();
@@ -684,7 +692,9 @@ function getDonneesPourClient() {
       lignesIgnorees: modele.lignesIgnorees,
       plans: modele.plans,
       releves: getHistorique(classeur),
-      jalons: getJalons()
+      jalons: getJalons(),
+      contrats: [{ id: modele.feuille, nom: modele.feuille }],
+      contrat: modele.feuille
     };
   } catch (err) {
     return {
@@ -693,7 +703,8 @@ function getDonneesPourClient() {
       feuille: '',
       genereLe: new Date().toISOString(),
       colonnes: [], cleDate: null, clesDim: [], clesEssentielles: [], cleDomaine: null,
-      dimParDefaut: '', plans: [], releves: [], jalons: []
+      dimParDefaut: '', plans: [], releves: [], jalons: [],
+      contrats: [], contrat: ''
     };
   }
 }

@@ -152,6 +152,20 @@ body[data-exemple="true"] .bandeau-mode {
   border: 1px dashed var(--cours); background: var(--creux);
   padding: 10px 13px; margin-top: 12px;
 }
+/* Le choix du contrat : à droite du même bandeau, dans le même registre
+   discret. Il n'apparaît que s'il y a vraiment plusieurs contrats entre
+   lesquels choisir — avec un seul, il n'aurait rien à dire. */
+.bandeau-mode .choix-contrat {
+  margin-left: auto; display: inline-flex; align-items: baseline; gap: 8px;
+  font-size: 12.5px; color: var(--encre-3);
+}
+.bandeau-mode .choix-contrat[hidden] { display: none; }
+.bandeau-mode .choix-contrat select { font-size: 13px; min-width: 64px; }
+.bandeau-mode .choix-contrat select:disabled { color: var(--encre-3); cursor: progress; }
+.bandeau-mode .attente { font-size: 12px; color: var(--encre-3); }
+.bandeau-mode .attente:empty { display: none; }
+.masthead .contrat-courant { display: inline-flex; gap: 9px; align-items: baseline; }
+.masthead .contrat-courant[hidden] { display: none; }
 
 
 /* ---------------------------------------------------- Filtres actifs */

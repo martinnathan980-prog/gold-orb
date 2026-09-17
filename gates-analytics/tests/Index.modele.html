@@ -15,15 +15,20 @@
 <script>
   window.SUIVI_FWD_DONNEES = <?!= donneesJSONPourPage() ?>;
 
-  /* Pont vers le classeur. Les jalons sont partagés : ils repartent au serveur
-     à chaque changement, pour que la collègue et sa chef voient les mêmes. */
+  /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
+     se recharger. Le rappel reçoit le paquet, ou null si le classeur n'a pas
+     répondu — la page garde alors le contrat courant et le dit. */
   window.SUIVI_FWD_API = {
-    sauverJalons: function (liste) {
+    chargerContrat: function (id, cb) {
       try {
         google.script.run
-          .withFailureHandler(function (e) { console.error('Jalons non enregistrés :', e && e.message); })
-          .sauverJalons(liste);
-      } catch (e) { /* page ouverte hors classeur : sans conséquence */ }
+          .withSuccessHandler(cb)
+          .withFailureHandler(function (e) {
+            console.error('Contrat non chargé :', e && e.message);
+            cb(null);
+          })
+          .getDonneesPourClient(id);
+      } catch (e) { cb(null); /* page ouverte hors classeur : sans conséquence */ }
     }
   };
 </script>
