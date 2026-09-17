@@ -144,10 +144,11 @@ function scoreHtml(score) {
  */
 let compteurResultat = 0;
 
-function resultatHtml(titre, sousTitreHtml, r, actions, deplieParDefaut) {
+function resultatHtml(titre, sousTitreHtml, r, actions) {
   const id = 'res-' + (++compteurResultat);
-  const ouvert = Store.resultatDeplie === id ||
-                 (deplieParDefaut && Store.resultatDeplie === null);
+  // Tout est replié à l'ouverture : c'est une liste. On lit le classement,
+  // puis on clique le seul candidat dont on veut le détail.
+  const ouvert = Store.resultatDeplie === id;
 
   // On NOMME les critères qu'on n'a pas pu comparer, au lieu d'annoncer un
   // pourcentage de couverture que personne ne sait interpréter.
@@ -238,8 +239,7 @@ function rendreEquivalencesBoite(pn) {
             '<div class="resultat-actions">' +
               '<button type="button" class="btn-mini"' +
               dataAttrs({ action: 'ouvrir-fiche-depuis-compare', pn: r.cible[CLE_PN()] }) +
-              '>Ouvrir cette fiche</button></div>',
-            r === resultats[0]);
+              '>Ouvrir cette fiche</button></div>');
         }).join('')
       : aucunResultatHtml('Essayez une autre boîte, ou assouplissez la pondération.', 'boite')));
 }
@@ -263,8 +263,7 @@ function rendreEquivalencesNom(id) {
             '<div class="resultat-actions">' +
               '<button type="button" class="btn-mini"' +
               dataAttrs({ action: 'ouvrir-fiche-depuis-compare', pn: r.cible[CLE_PN()] }) +
-              '>Ouvrir la boîte</button></div>',
-            r === resultats[0]);
+              '>Ouvrir la boîte</button></div>');
         }).join('')
       : aucunResultatHtml('Seules les pièces du même type sont comparées : ' +
                           type.libelle.toLowerCase() + '.', type.cle)));
@@ -280,7 +279,7 @@ function alignerRail(portee) {
 }
 
 function afficherEquivalencesBoite(pn) {
-  Store.resultatDeplie = null;      // on repart du meilleur candidat déplié
+  Store.resultatDeplie = null;      // on repart de la liste, tout replié
   Store.comparaison = { sorte: 'boite', cle: pn, portee: 'boite' };
   alignerRail('boite');
   rendreEquivalencesBoite(pn);

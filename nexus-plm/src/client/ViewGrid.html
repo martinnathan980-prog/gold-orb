@@ -166,14 +166,51 @@ const TRIS_COMPOSANTS = [
   { cle: 'dispersion', libelle: 'Les plus dispersés',
     fn: function (a, b) { return b.montees - a.montees || b.references - a.references; } },
   { cle: 'alpha',      libelle: 'Alphabétique',
-    fn: function (a, b) { return a.libelle.localeCompare(b.libelle, 'fr'); } },
-  { cle: 'famille',    libelle: 'Par famille',
-    fn: function (a, b) {
-      const ordre = Object.keys(CATEGORIES_COMPOSANT);
-      return ordre.indexOf(a.categorie) - ordre.indexOf(b.categorie) ||
-             a.libelle.localeCompare(b.libelle, 'fr');
-    } }
+    fn: function (a, b) { return a.libelle.localeCompare(b.libelle, 'fr'); } }
 ];
+
+/**
+ * Les fonctions, rangées par famille — dans l'ordre du registre : composants
+ * de boîte, mécaniques, routing. La famille n'est pas un tri parmi d'autres,
+ * c'est la structure de la liste : on s'y repère avant de trier dedans.
+ */
+function fonctionsParFamille(fonctions) {
+  return Object.keys(CATEGORIES_COMPOSANT).map(function (cle) {
+    const lignes = fonctions.filter(function (f) { return f.categorie === cle; });
+    const boites = new Set();
+    lignes.forEach(function (f) { f.boites.forEach(function (b) { boites.add(b); }); });
+    return { cle: cle, libelle: CATEGORIES_COMPOSANT[cle].libelle,
+             aide: CATEGORIES_COMPOSANT[cle].aide, fonctions: lignes, nbBoites: boites.size };
+  }).filter(function (g) { return g.fonctions.length; });
+}
+
+/** Ce que veulent dire les marques, en clair. */
+const AIDE_MARQUES = {
+  ranger: 'Plusieurs références montées pour le même service : à faire converger',
+  hors:   'Montée dans une boîte, mais absente du catalogue : personne ne la suit'
+};
+
+/**
+ * Comment lire la lecture affichée, en deux phrases. Une grille ne
+ * s'explique pas d'elle-même ; on le dit, plutôt que de laisser deviner.
+ */
+function aideLectureHtml(lecture) {
+  const textes = {
+    liste: 'Une ligne par fonction, rangées par famille. Sous le nombre de références, ' +
+           'la barre : <span class="aide-vert">vert</span>, la référence la plus montée ; ' +
+           '<span class="aide-gris">gris</span>, les autres. ' +
+           '<b>À ranger</b> : plusieurs références montées pour le même service. ' +
+           '<b>Hors catalogue</b> : montée dans une boîte, mais absente du catalogue.',
+    matrice: 'Dans chaque case : le nombre de boîtes de ce porteur qui montent la fonction. ' +
+             'Plus la case est foncée, plus c\'est monté. <b>En tout</b> compte les boîtes ' +
+             'distinctes — une boîte qui vole sur deux porteurs est dans les deux colonnes, ' +
+             'mais une seule fois dans le total.',
+    carte: 'Plus une tuile est grande, plus la fonction est montée dans de boîtes. ' +
+           '<b>À ranger</b> : plusieurs références montées pour le même service. ' +
+           'Cliquez une tuile pour ouvrir sa fiche.'
+  };
+  return '<p class="compo-lire">' + (textes[lecture] || textes.liste) + '</p>';
+}
 
 /** Les fonctions de la base, à plat, prêtes à trier. */
 function fonctionsComposants(composants) {
@@ -226,7 +263,8 @@ function vuesComposantsHtml() {
 
 function triComposantsHtml(nb) {
   // La carte se range par aire : un tri n'y voudrait rien dire.
-  const avecTri = (Store.compo.vue || 'liste') !== 'carte';
+  const lecture = Store.compo.vue || 'liste';
+  const avecTri = lecture !== 'carte';
   return '<div class="compo-tri">' +
     vuesComposantsHtml() +
     '<span class="compo-tri-compte">' + nb + (nb > 1 ? ' fonctions' : ' fonction') + '</span>' +
@@ -240,7 +278,30 @@ function triComposantsHtml(nb) {
           }).join('') +
         '</span>'
       : '') +
-  '</div>';
+  '</div>' + aideLectureHtml(lecture);
+}
+
+/**
+ * Les parts, avec leur légende : une ligne par référence montée, sa couleur,
+ * son nombre de boîtes. C'est la barre expliquée, pour la fiche.
+ */
+function partsDetailHtml(lignes) {
+  const montees = lignes.filter(function (c) { return c.nbBoites > 0; })
+    .sort(function (a, b) {
+      return b.nbBoites - a.nbBoites ||
+             String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+    });
+  if (montees.length < 2) return '';
+  return partsHtml(lignes, 'parts-fiche') +
+    '<ul class="parts-legende-liste">' +
+      montees.map(function (c, i) {
+        return '<li><i class="' + (i === 0 ? 'part-cible' : 'part-autre') + '"></i>' +
+          '<span class="parts-ref">' + esc(txt(c.reference, 'sans référence')) + '</span>' +
+          '<span class="parts-n">' + c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span>' +
+          (i === 0 ? '<span class="parts-cible-tag">la plus montée</span>' : '') +
+        '</li>';
+      }).join('') +
+    '</ul>';
 }
 
 /**
@@ -275,7 +336,6 @@ function partsHtml(lignes, classe) {
 
 /** Une fonction : une ligne du tableau. Le détail est dans la fiche. */
 function ligneFonctionHtml(f, maxi) {
-  const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
   const part = f.nbBoites ? Math.max(5, Math.round((f.nbBoites / (maxi || 1)) * 100)) : 0;
 
   return '<button type="button" class="lf-ligne' + (f.dispersee ? ' lf-disperse' : '') + '"' +
@@ -285,7 +345,6 @@ function ligneFonctionHtml(f, maxi) {
       '<span class="cf-pastille cf-' + esc(f.categorie) + '" aria-hidden="true"></span>' +
       '<span class="lf-nom">' + esc(f.libelle) + '</span>' +
     '</span>' +
-    '<span class="lf-famille">' + esc(cat.libelle) + '</span>' +
     '<span class="lf-n"><b>' + f.normes + '</b> norme' + (f.normes > 1 ? 's' : '') + '</span>' +
     '<span class="lf-n lf-refs"><span><b>' + f.references + '</b> réf.' +
       (f.montees < f.references
@@ -298,22 +357,37 @@ function ligneFonctionHtml(f, maxi) {
       '<span class="lf-boites">' + f.nbBoites + ' boîte' + (f.nbBoites > 1 ? 's' : '') + '</span>' +
     '</span>' +
     '<span class="lf-marques">' +
-      (f.dispersee ? '<span class="lf-tag lf-tag-ranger">à ranger</span>' : '') +
-      (f.hors ? '<span class="lf-tag lf-tag-hors">hors catalogue</span>' : '') +
+      (f.dispersee ? '<span class="lf-tag lf-tag-ranger" title="' + esc(AIDE_MARQUES.ranger) + '">à ranger</span>' : '') +
+      (f.hors ? '<span class="lf-tag lf-tag-hors" title="' + esc(AIDE_MARQUES.hors) + '">hors catalogue</span>' : '') +
     '</span>' +
     '<span class="lf-fleche" aria-hidden="true">›</span>' +
   '</button>';
 }
 
-/** La liste : une fonction par ligne. */
+/** L'en-tête d'une famille dans la liste. */
+function groupeFamilleHtml(g) {
+  return '<div class="lf-groupe">' +
+    '<span class="cf-pastille cf-' + esc(g.cle) + '" aria-hidden="true"></span>' +
+    '<span class="lf-groupe-nom">' + esc(g.libelle) + '</span>' +
+    (g.aide ? '<span class="lf-groupe-aide">' + esc(g.aide) + '</span>' : '') +
+    '<span class="lf-groupe-n">' + g.fonctions.length +
+      (g.fonctions.length > 1 ? ' fonctions' : ' fonction') + ' · ' +
+      g.nbBoites + (g.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span>' +
+  '</div>';
+}
+
+/** La liste : une fonction par ligne, rangées par famille. */
 function listeFonctionsHtml(fonctions) {
   const maxi = fonctions.reduce(function (m, f) { return Math.max(m, f.nbBoites); }, 1);
   return '<div class="lf-cadre">' +
       '<div class="lf-entete">' +
-        '<span>Fonction</span><span>Famille</span><span>Normes</span>' +
+        '<span>Fonction</span><span>Normes</span>' +
         '<span>Références</span><span>Emploi</span><span></span><span></span>' +
       '</div>' +
-      fonctions.map(function (f) { return ligneFonctionHtml(f, maxi); }).join('') +
+      fonctionsParFamille(fonctions).map(function (g) {
+        return groupeFamilleHtml(g) +
+               g.fonctions.map(function (f) { return ligneFonctionHtml(f, maxi); }).join('');
+      }).join('') +
     '</div>';
 }
 
@@ -339,9 +413,11 @@ function matriceHtml(mx, options) {
       return '<th scope="col" class="mx-porteur' + (p === '' ? ' mx-sans' : '') + '">' +
              '<span>' + esc(libellePorteur(p)) + '</span></th>';
     }).join('') +
-    '<th scope="col" class="mx-total">Boîtes</th></tr>';
+    '<th scope="col" class="mx-total" title="Boîtes distinctes : une boîte qui vole sur deux porteurs ' +
+      'est dans les deux colonnes, mais comptée une seule fois ici">En tout</th></tr>';
 
-  const corps = mx.lignes.map(function (l) {
+  const nbColonnes = mx.porteurs.length + 2;
+  const ligneHtml = function (l) {
     const g = l.groupe;
     const ligneTete = options.ligne
       ? options.ligne(g)
@@ -362,13 +438,24 @@ function matriceHtml(mx, options) {
       }).join('') +
       '<td class="mx-total"><b>' + l.total + '</b></td>' +
     '</tr>';
-  }).join('');
+  };
+
+  // Les lignes vont par famille, comme la liste : une ligne d'en-tête par
+  // famille, sauf quand l'appelant range lui-même ses lignes.
+  const corps = options.ligne
+    ? mx.lignes.map(ligneHtml).join('')
+    : fonctionsParFamille(mx.lignes.map(function (l) { return l.groupe; })).map(function (g) {
+        return '<tr class="mx-groupe"><th scope="colgroup" colspan="' + nbColonnes + '">' +
+            '<span class="cf-pastille cf-' + esc(g.cle) + '" aria-hidden="true"></span>' +
+            esc(g.libelle) + '</th></tr>' +
+          mx.lignes.filter(function (l) { return l.groupe.categorie === g.cle; }).map(ligneHtml).join('');
+      }).join('');
 
   const legende = '<div class="mx-legende" aria-hidden="true">' +
     '<span>1</span>' +
     [1, 2, 3, 4, 5].map(function (i) { return '<i class="mx-' + i + '"></i>'; }).join('') +
     '<span>' + mx.maxi + (mx.maxi > 1 ? ' boîtes' : ' boîte') + '</span>' +
-    '<span class="mx-legende-aide">boîtes du porteur qui montent la fonction</span>' +
+    '<span class="mx-legende-aide">plus c\'est foncé, plus c\'est monté · « En tout » : boîtes distinctes</span>' +
   '</div>';
 
   return '<div class="mx-cadre"><div class="mx-defil">' +
@@ -442,9 +529,9 @@ function carteBaseHtml(carte) {
     : '';
 
   const legende = '<div class="tm-legende" aria-hidden="true">' +
-    '<span class="tm-legende-aire"><i></i> l\'aire d\'une tuile : ses boîtes</span>' +
-    '<span class="tm-legende-parts"><span class="parts parts-legende"><span class="part-cible" style="flex-grow:3"></span><span class="part-autre" style="flex-grow:1"></span></span> cible / à migrer</span>' +
-    '<span class="tm-legende-tag"><span class="tm-tag">à ranger</span> plusieurs références montées</span>' +
+    '<span class="tm-legende-aire"><i></i> plus la tuile est grande, plus la fonction est montée</span>' +
+    '<span class="tm-legende-parts"><span class="parts parts-legende"><span class="part-cible" style="flex-grow:3"></span><span class="part-autre" style="flex-grow:1"></span></span> vert : la référence la plus montée · gris : les autres</span>' +
+    '<span class="tm-legende-tag"><span class="tm-tag">à ranger</span> plusieurs références montées pour le même service</span>' +
   '</div>';
 
   return '<div class="tm-cadre">' +
@@ -817,7 +904,7 @@ function indicateursComposantsHtml(vue) {
       titre: 'Voir les familles servies par plusieurs références',
       donnees: { action: 'voir-standardisation' } },
     { libelle: 'Hors catalogue', valeur: bilan.hors,
-      detail: bilan.hors ? 'montées, non référencées' : 'tout est au catalogue',
+      detail: bilan.hors ? 'montées, absentes du catalogue' : 'tout est au catalogue',
       classe: 'indicateur-alerte', action: true,
       actif: Store.compo.etat === ETAT_COMPOSANT.HORS,
       titre: 'Voir les pièces montées absentes du catalogue',

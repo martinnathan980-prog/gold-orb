@@ -556,6 +556,8 @@ body.espace-composants .outils { display: none; }
 .mx tbody .mx-total b { color: var(--encre); font-family: var(--police-data); font-weight: 700; }
 .mx-ligne { text-align: left !important; position: sticky; left: 0; z-index: 1; background: var(--surface-2); border-right: 1px solid var(--trait); min-width: 190px; max-width: 250px; }
 .mx tbody tr:hover .mx-ligne, .mx tbody tr:hover .mx-total { background: var(--sol-2); }
+.mx-groupe th { text-align: left !important; padding: 9px var(--e-3) 5px !important; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--encre-2); background: var(--surface); border-top: 1px solid var(--trait); border-bottom: 1px solid var(--trait); position: sticky; left: 0; }
+.mx-groupe th .cf-pastille { display: inline-block; margin-right: 7px; vertical-align: middle; }
 .mx-fonction { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: 0; color: var(--encre); padding: 7px var(--e-3); font-size: 12.5px; font-weight: 600; }
 .mx-fonction:hover .mx-nom { color: var(--marque); text-decoration: underline; text-underline-offset: 3px; }
 .mx-nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -634,7 +636,7 @@ body.espace-composants .outils { display: none; }
   background: var(--surface); overflow: hidden; }
 .lf-entete, .lf-ligne {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) 168px 96px 132px 150px minmax(0, 150px) 16px;
+  grid-template-columns: minmax(0, 1.5fr) 96px 132px 150px minmax(0, 150px) 16px;
   gap: var(--e-3); align-items: center;
 }
 .lf-entete {
@@ -652,8 +654,21 @@ body.espace-composants .outils { display: none; }
 .lf-fonction { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .lf-nom { font-size: 13.5px; font-weight: 600; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lf-famille { font-size: 11.5px; color: var(--encre-3); min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* L'en-tete d'une famille : la liste se lit par groupes, on s'y repere. */
+.lf-groupe {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  padding: 10px var(--e-4) 7px; background: var(--surface); border-bottom: 1px solid var(--trait);
+  border-top: 1px solid var(--trait);
+}
+.lf-groupe:first-of-type { border-top: 0; }
+.lf-groupe .cf-pastille { align-self: center; }
+.lf-groupe-nom { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.lf-groupe-aide { font-size: 11.5px; color: var(--encre-3); }
+.lf-groupe-n { margin-left: auto; font-size: 11.5px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+/* Comment lire la lecture affichee : deux phrases, sous le commutateur. */
+.compo-lire { margin: 0; font-size: 12.5px; color: var(--encre-2); line-height: 1.5; max-width: 90ch; }
+.aide-vert { color: var(--vert); font-weight: 600; }
+.aide-gris { color: var(--encre-3); font-weight: 600; }
 .lf-n { font-size: 11.5px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
 .lf-n b { font-family: var(--police-data); font-size: 13px; color: var(--encre); font-weight: 700; }
 .lf-doux { color: var(--encre-3); }
@@ -677,7 +692,8 @@ body.espace-composants .outils { display: none; }
 @media (max-width: 1080px) {
   .lf-entete { display: none; }
   .lf-ligne { grid-template-columns: minmax(0, 1fr) auto; gap: 5px var(--e-3); padding: 11px var(--e-3); }
-  .lf-famille, .lf-n { font-size: 11px; }
+  .lf-n { font-size: 11px; }
+  .lf-groupe-aide { display: none; }
   .lf-emploi, .lf-marques { grid-column: 1 / -1; }
   .lf-marques { justify-content: flex-start; }
   .lf-fleche { display: none; }
@@ -699,11 +715,22 @@ body.espace-composants .outils { display: none; }
 .fc-pn { font-family: var(--police-data); font-weight: 700; }
 .fc-plan { border: 1px solid var(--trait); border-radius: var(--r-m); background: var(--surface-2); margin-bottom: var(--e-4); overflow: hidden; }
 .fc-plan .fc-conseil { margin: 0; border: 0; border-radius: 0; border-bottom: 1px solid var(--trait); }
+.fc-plan > .fc-titre { padding: 10px var(--e-4) 0; margin: 0 0 4px; }
+.fc-matrice .mx-legende-aide { display: none; }
 .fc-plan-corps { padding: var(--e-3) var(--e-4); display: flex; flex-direction: column; gap: 8px; }
 .fc-plan-chiffres { display: flex; gap: var(--e-4); flex-wrap: wrap; font-size: 12.5px; color: var(--encre-2); }
 .fc-plan-mesure b { font-family: var(--police-titre); font-size: 16px; color: var(--vert); }
 .fc-plan-cout b { color: var(--ambre); }
-.fc-plan-boites { display: flex; flex-wrap: wrap; gap: 4px; }
+.fc-plan-boites { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.fc-plan-boites-titre { font-size: 12.5px; color: var(--encre-2); margin-right: 4px; }
+.fc-plan-si { margin: 4px 0 0; font-size: 12.5px; color: var(--encre-2); }
+.fc-lire { margin: 0 0 8px; font-size: 12px; color: var(--encre-3); line-height: 1.45; }
+.parts-legende-liste { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; }
+.parts-legende-liste li { display: flex; align-items: center; gap: 8px; }
+.parts-legende-liste i { width: 14px; height: 8px; border-radius: 2px; flex: none; display: inline-block; }
+.parts-ref { font-family: var(--police-data); font-weight: 600; }
+.parts-n { color: var(--encre-2); font-variant-numeric: tabular-nums; }
+.parts-cible-tag { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--vert); background: var(--vert-voile); border: 1px solid var(--vert-trait); border-radius: 999px; padding: 1px 7px; }
 .fc-matrice { margin-bottom: var(--e-4); }
 .fc-titre { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--encre-3); font-weight: 700; margin: 0 0 6px; }
 .fc-matrice .mx-ligne { min-width: 150px; }
@@ -960,10 +987,12 @@ body.espace-composants .outils { display: none; }
 .composants-outils { display: flex; justify-content: flex-end; margin-top: 6px; }
 @media (max-width: 560px) { .ajout-composant { grid-template-columns: 1fr 1fr; } }
 
-/* La fiche d'identite : la photo tient une colonne a gauche, les champs
-   cles se lisent en face. A pleine largeur, la photo repoussait la fonction
-   et le PN sous le pli. Un clic l'agrandit pour qui veut la detailler. */
-.fiche-identite { display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: var(--e-4); align-items: start; }
+/* La fiche d'identite : la photo se pose en haut a droite, en timbre, et
+   les champs gardent toute leur place — ils reprennent la largeur entiere
+   des qu'ils passent sous elle. En colonne a gauche, elle decalait toute la
+   fiche technique. Un clic l'agrandit pour qui veut la detailler. */
+.fiche-identite::after { content: ""; display: table; clear: both; }
+.fiche-photo { float: right; width: 148px; margin: 0 0 var(--e-2) var(--e-4); }
 .fiche-champs { min-width: 0; }
 .fiche-champs .ligne:first-child { padding-top: 0; }
 .fiche-identite + .ligne { border-top: 1px solid var(--surface-3); }
@@ -976,9 +1005,7 @@ body.espace-composants .outils { display: none; }
 .vignette:hover { border-color: var(--trait-fort); box-shadow: var(--ombre-1); }
 .vignette img { display: block; width: 100%; height: 100%; object-fit: cover; }
 @media (max-width: 560px) {
-  .fiche-identite { grid-template-columns: 1fr; }
-  .fiche-photo { display: flex; justify-content: center; }
-  .vignette { max-width: 180px; }
+  .fiche-photo { width: 112px; margin-left: var(--e-3); }
 }
 
 /* L'arbre de la fiche : la boite est le tronc, les sous-ensembles sont ses
@@ -4295,14 +4322,51 @@ const TRIS_COMPOSANTS = [
   { cle: 'dispersion', libelle: 'Les plus dispersés',
     fn: function (a, b) { return b.montees - a.montees || b.references - a.references; } },
   { cle: 'alpha',      libelle: 'Alphabétique',
-    fn: function (a, b) { return a.libelle.localeCompare(b.libelle, 'fr'); } },
-  { cle: 'famille',    libelle: 'Par famille',
-    fn: function (a, b) {
-      const ordre = Object.keys(CATEGORIES_COMPOSANT);
-      return ordre.indexOf(a.categorie) - ordre.indexOf(b.categorie) ||
-             a.libelle.localeCompare(b.libelle, 'fr');
-    } }
+    fn: function (a, b) { return a.libelle.localeCompare(b.libelle, 'fr'); } }
 ];
+
+/**
+ * Les fonctions, rangées par famille — dans l'ordre du registre : composants
+ * de boîte, mécaniques, routing. La famille n'est pas un tri parmi d'autres,
+ * c'est la structure de la liste : on s'y repère avant de trier dedans.
+ */
+function fonctionsParFamille(fonctions) {
+  return Object.keys(CATEGORIES_COMPOSANT).map(function (cle) {
+    const lignes = fonctions.filter(function (f) { return f.categorie === cle; });
+    const boites = new Set();
+    lignes.forEach(function (f) { f.boites.forEach(function (b) { boites.add(b); }); });
+    return { cle: cle, libelle: CATEGORIES_COMPOSANT[cle].libelle,
+             aide: CATEGORIES_COMPOSANT[cle].aide, fonctions: lignes, nbBoites: boites.size };
+  }).filter(function (g) { return g.fonctions.length; });
+}
+
+/** Ce que veulent dire les marques, en clair. */
+const AIDE_MARQUES = {
+  ranger: 'Plusieurs références montées pour le même service : à faire converger',
+  hors:   'Montée dans une boîte, mais absente du catalogue : personne ne la suit'
+};
+
+/**
+ * Comment lire la lecture affichée, en deux phrases. Une grille ne
+ * s'explique pas d'elle-même ; on le dit, plutôt que de laisser deviner.
+ */
+function aideLectureHtml(lecture) {
+  const textes = {
+    liste: 'Une ligne par fonction, rangées par famille. Sous le nombre de références, ' +
+           'la barre : <span class="aide-vert">vert</span>, la référence la plus montée ; ' +
+           '<span class="aide-gris">gris</span>, les autres. ' +
+           '<b>À ranger</b> : plusieurs références montées pour le même service. ' +
+           '<b>Hors catalogue</b> : montée dans une boîte, mais absente du catalogue.',
+    matrice: 'Dans chaque case : le nombre de boîtes de ce porteur qui montent la fonction. ' +
+             'Plus la case est foncée, plus c\'est monté. <b>En tout</b> compte les boîtes ' +
+             'distinctes — une boîte qui vole sur deux porteurs est dans les deux colonnes, ' +
+             'mais une seule fois dans le total.',
+    carte: 'Plus une tuile est grande, plus la fonction est montée dans de boîtes. ' +
+           '<b>À ranger</b> : plusieurs références montées pour le même service. ' +
+           'Cliquez une tuile pour ouvrir sa fiche.'
+  };
+  return '<p class="compo-lire">' + (textes[lecture] || textes.liste) + '</p>';
+}
 
 /** Les fonctions de la base, à plat, prêtes à trier. */
 function fonctionsComposants(composants) {
@@ -4355,7 +4419,8 @@ function vuesComposantsHtml() {
 
 function triComposantsHtml(nb) {
   // La carte se range par aire : un tri n'y voudrait rien dire.
-  const avecTri = (Store.compo.vue || 'liste') !== 'carte';
+  const lecture = Store.compo.vue || 'liste';
+  const avecTri = lecture !== 'carte';
   return '<div class="compo-tri">' +
     vuesComposantsHtml() +
     '<span class="compo-tri-compte">' + nb + (nb > 1 ? ' fonctions' : ' fonction') + '</span>' +
@@ -4369,7 +4434,30 @@ function triComposantsHtml(nb) {
           }).join('') +
         '</span>'
       : '') +
-  '</div>';
+  '</div>' + aideLectureHtml(lecture);
+}
+
+/**
+ * Les parts, avec leur légende : une ligne par référence montée, sa couleur,
+ * son nombre de boîtes. C'est la barre expliquée, pour la fiche.
+ */
+function partsDetailHtml(lignes) {
+  const montees = lignes.filter(function (c) { return c.nbBoites > 0; })
+    .sort(function (a, b) {
+      return b.nbBoites - a.nbBoites ||
+             String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+    });
+  if (montees.length < 2) return '';
+  return partsHtml(lignes, 'parts-fiche') +
+    '<ul class="parts-legende-liste">' +
+      montees.map(function (c, i) {
+        return '<li><i class="' + (i === 0 ? 'part-cible' : 'part-autre') + '"></i>' +
+          '<span class="parts-ref">' + esc(txt(c.reference, 'sans référence')) + '</span>' +
+          '<span class="parts-n">' + c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span>' +
+          (i === 0 ? '<span class="parts-cible-tag">la plus montée</span>' : '') +
+        '</li>';
+      }).join('') +
+    '</ul>';
 }
 
 /**
@@ -4404,7 +4492,6 @@ function partsHtml(lignes, classe) {
 
 /** Une fonction : une ligne du tableau. Le détail est dans la fiche. */
 function ligneFonctionHtml(f, maxi) {
-  const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
   const part = f.nbBoites ? Math.max(5, Math.round((f.nbBoites / (maxi || 1)) * 100)) : 0;
 
   return '<button type="button" class="lf-ligne' + (f.dispersee ? ' lf-disperse' : '') + '"' +
@@ -4414,7 +4501,6 @@ function ligneFonctionHtml(f, maxi) {
       '<span class="cf-pastille cf-' + esc(f.categorie) + '" aria-hidden="true"></span>' +
       '<span class="lf-nom">' + esc(f.libelle) + '</span>' +
     '</span>' +
-    '<span class="lf-famille">' + esc(cat.libelle) + '</span>' +
     '<span class="lf-n"><b>' + f.normes + '</b> norme' + (f.normes > 1 ? 's' : '') + '</span>' +
     '<span class="lf-n lf-refs"><span><b>' + f.references + '</b> réf.' +
       (f.montees < f.references
@@ -4427,22 +4513,37 @@ function ligneFonctionHtml(f, maxi) {
       '<span class="lf-boites">' + f.nbBoites + ' boîte' + (f.nbBoites > 1 ? 's' : '') + '</span>' +
     '</span>' +
     '<span class="lf-marques">' +
-      (f.dispersee ? '<span class="lf-tag lf-tag-ranger">à ranger</span>' : '') +
-      (f.hors ? '<span class="lf-tag lf-tag-hors">hors catalogue</span>' : '') +
+      (f.dispersee ? '<span class="lf-tag lf-tag-ranger" title="' + esc(AIDE_MARQUES.ranger) + '">à ranger</span>' : '') +
+      (f.hors ? '<span class="lf-tag lf-tag-hors" title="' + esc(AIDE_MARQUES.hors) + '">hors catalogue</span>' : '') +
     '</span>' +
     '<span class="lf-fleche" aria-hidden="true">›</span>' +
   '</button>';
 }
 
-/** La liste : une fonction par ligne. */
+/** L'en-tête d'une famille dans la liste. */
+function groupeFamilleHtml(g) {
+  return '<div class="lf-groupe">' +
+    '<span class="cf-pastille cf-' + esc(g.cle) + '" aria-hidden="true"></span>' +
+    '<span class="lf-groupe-nom">' + esc(g.libelle) + '</span>' +
+    (g.aide ? '<span class="lf-groupe-aide">' + esc(g.aide) + '</span>' : '') +
+    '<span class="lf-groupe-n">' + g.fonctions.length +
+      (g.fonctions.length > 1 ? ' fonctions' : ' fonction') + ' · ' +
+      g.nbBoites + (g.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span>' +
+  '</div>';
+}
+
+/** La liste : une fonction par ligne, rangées par famille. */
 function listeFonctionsHtml(fonctions) {
   const maxi = fonctions.reduce(function (m, f) { return Math.max(m, f.nbBoites); }, 1);
   return '<div class="lf-cadre">' +
       '<div class="lf-entete">' +
-        '<span>Fonction</span><span>Famille</span><span>Normes</span>' +
+        '<span>Fonction</span><span>Normes</span>' +
         '<span>Références</span><span>Emploi</span><span></span><span></span>' +
       '</div>' +
-      fonctions.map(function (f) { return ligneFonctionHtml(f, maxi); }).join('') +
+      fonctionsParFamille(fonctions).map(function (g) {
+        return groupeFamilleHtml(g) +
+               g.fonctions.map(function (f) { return ligneFonctionHtml(f, maxi); }).join('');
+      }).join('') +
     '</div>';
 }
 
@@ -4468,9 +4569,11 @@ function matriceHtml(mx, options) {
       return '<th scope="col" class="mx-porteur' + (p === '' ? ' mx-sans' : '') + '">' +
              '<span>' + esc(libellePorteur(p)) + '</span></th>';
     }).join('') +
-    '<th scope="col" class="mx-total">Boîtes</th></tr>';
+    '<th scope="col" class="mx-total" title="Boîtes distinctes : une boîte qui vole sur deux porteurs ' +
+      'est dans les deux colonnes, mais comptée une seule fois ici">En tout</th></tr>';
 
-  const corps = mx.lignes.map(function (l) {
+  const nbColonnes = mx.porteurs.length + 2;
+  const ligneHtml = function (l) {
     const g = l.groupe;
     const ligneTete = options.ligne
       ? options.ligne(g)
@@ -4491,13 +4594,24 @@ function matriceHtml(mx, options) {
       }).join('') +
       '<td class="mx-total"><b>' + l.total + '</b></td>' +
     '</tr>';
-  }).join('');
+  };
+
+  // Les lignes vont par famille, comme la liste : une ligne d'en-tête par
+  // famille, sauf quand l'appelant range lui-même ses lignes.
+  const corps = options.ligne
+    ? mx.lignes.map(ligneHtml).join('')
+    : fonctionsParFamille(mx.lignes.map(function (l) { return l.groupe; })).map(function (g) {
+        return '<tr class="mx-groupe"><th scope="colgroup" colspan="' + nbColonnes + '">' +
+            '<span class="cf-pastille cf-' + esc(g.cle) + '" aria-hidden="true"></span>' +
+            esc(g.libelle) + '</th></tr>' +
+          mx.lignes.filter(function (l) { return l.groupe.categorie === g.cle; }).map(ligneHtml).join('');
+      }).join('');
 
   const legende = '<div class="mx-legende" aria-hidden="true">' +
     '<span>1</span>' +
     [1, 2, 3, 4, 5].map(function (i) { return '<i class="mx-' + i + '"></i>'; }).join('') +
     '<span>' + mx.maxi + (mx.maxi > 1 ? ' boîtes' : ' boîte') + '</span>' +
-    '<span class="mx-legende-aide">boîtes du porteur qui montent la fonction</span>' +
+    '<span class="mx-legende-aide">plus c\'est foncé, plus c\'est monté · « En tout » : boîtes distinctes</span>' +
   '</div>';
 
   return '<div class="mx-cadre"><div class="mx-defil">' +
@@ -4571,9 +4685,9 @@ function carteBaseHtml(carte) {
     : '';
 
   const legende = '<div class="tm-legende" aria-hidden="true">' +
-    '<span class="tm-legende-aire"><i></i> l\'aire d\'une tuile : ses boîtes</span>' +
-    '<span class="tm-legende-parts"><span class="parts parts-legende"><span class="part-cible" style="flex-grow:3"></span><span class="part-autre" style="flex-grow:1"></span></span> cible / à migrer</span>' +
-    '<span class="tm-legende-tag"><span class="tm-tag">à ranger</span> plusieurs références montées</span>' +
+    '<span class="tm-legende-aire"><i></i> plus la tuile est grande, plus la fonction est montée</span>' +
+    '<span class="tm-legende-parts"><span class="parts parts-legende"><span class="part-cible" style="flex-grow:3"></span><span class="part-autre" style="flex-grow:1"></span></span> vert : la référence la plus montée · gris : les autres</span>' +
+    '<span class="tm-legende-tag"><span class="tm-tag">à ranger</span> plusieurs références montées pour le même service</span>' +
   '</div>';
 
   return '<div class="tm-cadre">' +
@@ -4946,7 +5060,7 @@ function indicateursComposantsHtml(vue) {
       titre: 'Voir les familles servies par plusieurs références',
       donnees: { action: 'voir-standardisation' } },
     { libelle: 'Hors catalogue', valeur: bilan.hors,
-      detail: bilan.hors ? 'montées, non référencées' : 'tout est au catalogue',
+      detail: bilan.hors ? 'montées, absentes du catalogue' : 'tout est au catalogue',
       classe: 'indicateur-alerte', action: true,
       actif: Store.compo.etat === ETAT_COMPOSANT.HORS,
       titre: 'Voir les pièces montées absentes du catalogue',
@@ -5178,9 +5292,10 @@ function blocComposantsHtml(champ, valeur, cible) {
 // ------------------------------------------------------------
 /**
  * La photo situe la pièce, elle ne doit pas la dominer. À pleine largeur
- * elle repoussait la fonction et le PN sous le pli : on lisait une photo,
- * puis on cherchait la fiche. Ici elle tient une colonne, et les champs
- * qu'on vient lire sont en face d'elle.
+ * elle repoussait la fonction et le PN sous le pli ; en colonne à gauche,
+ * elle décalait toute la fiche technique. Elle se pose donc en haut à
+ * droite, en timbre : les champs gardent leur place, et reprennent toute
+ * la largeur dès qu'ils passent dessous.
  */
 function identiteHtml(photoHtml, champsHtml) {
   if (!photoHtml) return champsHtml;
@@ -5538,22 +5653,28 @@ function ficheComposantHtml(cible) {
 
   // Le plan de convergence : la cible, ce qu'on cesserait de faire vivre,
   // et les boîtes à modifier — nommées, cliquables. C'est la décision.
+  // Le plan se lit en trois phrases : ce qu'on a, ce qu'on garderait, ce
+  // que ça coûterait. Les chiffres sont là, mais ce sont les phrases qui
+  // portent — on ne doit pas avoir à deviner ce qu'une barre veut dire.
   const plan = planConvergence(base);
   const conseil = plan
     ? '<section class="fc-plan">' +
+        '<h4 class="fc-titre">Le plan de convergence</h4>' +
         '<p class="fc-conseil">' +
-          '<b>' + montees.length + ' références montées</b> pour le même service. ' +
-          'La plus répandue est <span class="fc-pn">' + esc(plan.cible.reference) + '</span>' +
-          ' (' + plan.cible.nbBoites + ' boîte' + (plan.cible.nbBoites > 1 ? 's' : '') + ') : ' +
-          'c\'est vers elle qu\'il coûte le moins cher de converger.' +
+          '<b>' + montees.length + ' références</b> sont montées pour le même service. ' +
+          'La plus répandue est <span class="fc-pn">' + esc(plan.cible.reference) + '</span>, ' +
+          'dans <b>' + plan.cible.nbBoites + ' boîte' + (plan.cible.nbBoites > 1 ? 's' : '') +
+          ' sur ' + boites.size + '</b>.' +
         '</p>' +
         '<div class="fc-plan-corps">' +
-          partsHtml(base, 'parts-fiche') +
+          partsDetailHtml(base) +
+          '<p class="fc-plan-si">Si toutes les boîtes montaient cette référence :</p>' +
           '<div class="fc-plan-chiffres">' +
             '<span class="fc-plan-mesure"><b>−' + plan.economie + '</b> référence' + (plan.economie > 1 ? 's' : '') + ' à faire vivre</span>' +
             '<span class="fc-plan-mesure fc-plan-cout"><b>' + plan.aModifier.length + '</b> boîte' + (plan.aModifier.length > 1 ? 's' : '') + ' à modifier</span>' +
           '</div>' +
           '<div class="fc-plan-boites">' +
+            '<span class="fc-plan-boites-titre">' + (plan.aModifier.length > 1 ? 'Les boîtes' : 'La boîte') + ' à modifier :</span>' +
             plan.aModifier.map(function (pn) {
               return '<button type="button" class="usage-lien"' +
                      dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
@@ -5570,6 +5691,8 @@ function ficheComposantHtml(cible) {
   const matrice = montees.length > 1 && porteursVus.size > 1
     ? '<section class="fc-matrice">' +
         '<h4 class="fc-titre">Qui monte quoi</h4>' +
+        '<p class="fc-lire">Le nombre de boîtes de chaque porteur qui montent chaque référence. ' +
+          'Plus la case est foncée, plus c\'est monté.</p>' +
         matriceHtml(matriceEmploi(montees.slice().sort(function (a, b) { return b.nbBoites - a.nbBoites; })
           .map(function (c) { return { libelle: txt(c.reference, 'sans référence'), lignes: [c], composant: c }; })), {
           enTete: 'Référence',
@@ -5865,10 +5988,11 @@ function scoreHtml(score) {
  */
 let compteurResultat = 0;
 
-function resultatHtml(titre, sousTitreHtml, r, actions, deplieParDefaut) {
+function resultatHtml(titre, sousTitreHtml, r, actions) {
   const id = 'res-' + (++compteurResultat);
-  const ouvert = Store.resultatDeplie === id ||
-                 (deplieParDefaut && Store.resultatDeplie === null);
+  // Tout est replié à l'ouverture : c'est une liste. On lit le classement,
+  // puis on clique le seul candidat dont on veut le détail.
+  const ouvert = Store.resultatDeplie === id;
 
   // On NOMME les critères qu'on n'a pas pu comparer, au lieu d'annoncer un
   // pourcentage de couverture que personne ne sait interpréter.
@@ -5959,8 +6083,7 @@ function rendreEquivalencesBoite(pn) {
             '<div class="resultat-actions">' +
               '<button type="button" class="btn-mini"' +
               dataAttrs({ action: 'ouvrir-fiche-depuis-compare', pn: r.cible[CLE_PN()] }) +
-              '>Ouvrir cette fiche</button></div>',
-            r === resultats[0]);
+              '>Ouvrir cette fiche</button></div>');
         }).join('')
       : aucunResultatHtml('Essayez une autre boîte, ou assouplissez la pondération.', 'boite')));
 }
@@ -5984,8 +6107,7 @@ function rendreEquivalencesNom(id) {
             '<div class="resultat-actions">' +
               '<button type="button" class="btn-mini"' +
               dataAttrs({ action: 'ouvrir-fiche-depuis-compare', pn: r.cible[CLE_PN()] }) +
-              '>Ouvrir la boîte</button></div>',
-            r === resultats[0]);
+              '>Ouvrir la boîte</button></div>');
         }).join('')
       : aucunResultatHtml('Seules les pièces du même type sont comparées : ' +
                           type.libelle.toLowerCase() + '.', type.cle)));
@@ -6001,7 +6123,7 @@ function alignerRail(portee) {
 }
 
 function afficherEquivalencesBoite(pn) {
-  Store.resultatDeplie = null;      // on repart du meilleur candidat déplié
+  Store.resultatDeplie = null;      // on repart de la liste, tout replié
   Store.comparaison = { sorte: 'boite', cle: pn, portee: 'boite' };
   alignerRail('boite');
   rendreEquivalencesBoite(pn);

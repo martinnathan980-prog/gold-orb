@@ -1385,13 +1385,15 @@ const ficheFct = C.ficheComposantHtml(C.Store.ficheComposant);
 vrai('le resume compte les normes', /<span class="fc-n">1<\/span>/.test(ficheFct));
 vrai('la norme est un bloc', ficheFct.indexOf('MS25041') !== -1);
 vrai('la plus montee est marquee', ficheFct.indexOf('la plus montée') !== -1);
-vrai('et le conseil la nomme', /converger/.test(ficheFct));
+vrai('et le plan la nomme, en phrases', /Le plan de convergence[\s\S]*?fc-pn">R1<[\s\S]*?Si toutes les boîtes montaient cette référence/.test(ficheFct));
+vrai('la barre est expliquée : une ligne par référence, sa couleur, ses boîtes',
+     /parts-legende-liste[\s\S]*?part-cible[\s\S]*?parts-ref">R1<[\s\S]*?parts-n">2 boîtes[\s\S]*?la plus montée/.test(ficheFct));
 vrai('les boites sont nommees', ficheFct.indexOf('>B1</button>') !== -1);
 vrai('et les porteurs cumules', ficheFct.indexOf('H225') !== -1 && ficheFct.indexOf('H160') !== -1);
 // Une seule reference montee : aucun conseil de convergence a donner.
 charger([{ 'PN Global': 'B1', 'Composants': 'Voyant | MS25041 | R1' }], []);
 faux('sans dispersion, pas de conseil',
-     C.ficheComposantHtml({ categorie: 'composant', fonction: 'Voyant' }).indexOf('converger') !== -1);
+     C.ficheComposantHtml({ categorie: 'composant', fonction: 'Voyant' }).indexOf('fc-plan') !== -1);
 // Une fonction disparue ne plante pas la fiche.
 vrai('une fonction inconnue se dit',
      C.ficheComposantHtml({ categorie: 'composant', fonction: 'Jamais vue' })

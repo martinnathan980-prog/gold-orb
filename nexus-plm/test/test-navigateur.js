@@ -810,14 +810,31 @@ async function ecranPropre(page) {
   const ligneFct = page.locator('.lf-ligne').first();
   vrai('chaque ligne porte sa fonction',
        (await ligneFct.locator('.lf-nom').innerText()).trim().length > 0);
-  vrai('sa famille', (await ligneFct.locator('.lf-famille').innerText()).indexOf('Composants') !== -1);
+  // Plus de colonne famille : la liste est rangee par famille, avec un en-tete.
+  eq('la liste est rangee par famille : trois en-tetes', await page.locator('.lf-groupe').count(), 3);
+  vrai('dans l\'ordre du registre : boite, mecanique, routing',
+       /boîte[\s\S]*?mécaniques[\s\S]*?routing/i.test(await page.locator('.lf-cadre').innerText()));
+  vrai('chaque en-tete compte ses fonctions et ses boites',
+       /\d+ fonctions? · \d+ boîtes?/.test(await page.locator('.lf-groupe-n').first().innerText()));
+  vrai('la premiere ligne suit son en-tete', await page.evaluate(function () {
+    const g = document.querySelector('.lf-groupe');
+    return g && g.nextElementSibling && g.nextElementSibling.classList.contains('lf-ligne');
+  }));
+  eq('plus de colonne famille dans les lignes', await page.locator('.lf-famille').count(), 0);
+  // On dit comment lire, sous le commutateur.
+  vrai('la liste s\'explique en deux phrases',
+       /Hors catalogue[\s\S]*?absente du catalogue/.test(await texte(page, '.compo-lire')));
+  vrai('et les marques ont une info-bulle',
+       /absente du catalogue/.test(await page.locator('.lf-tag-hors').first().getAttribute('title')));
   vrai('le compte de normes ET de references',
        await ligneFct.locator('.lf-n').count() === 2);
   vrai('et une jauge d\'emploi', await ligneFct.locator('.lf-jauge').count() === 1);
   vrai('les dispersees sont marquees', await page.locator('.lf-tag-ranger').count() >= 1);
 
-  // Le tri : quatre lectures du meme tableau.
-  eq('quatre tris offerts', await page.locator('.compo-tri-btn').count(), 4);
+  // Le tri : trois ordres, a l'interieur des familles.
+  eq('trois tris offerts', await page.locator('.compo-tri-btn').count(), 3);
+  eq('plus de tri « par famille » : c\'est la structure, pas un ordre',
+     await page.locator('.compo-tri-btn', { hasText: 'famille' }).count(), 0);
   const teteListe = async function () {
     return (await page.locator('.lf-nom').first().innerText()).trim();
   };
@@ -852,7 +869,12 @@ async function ecranPropre(page) {
   vrai('dans l\'ordre du registre',
        porteursMx.indexOf('Dauphin') < porteursMx.indexOf('H160') &&
        porteursMx.indexOf('H160') < porteursMx.indexOf('H225'));
-  eq('une fonction par ligne', await page.locator('.mx tbody tr').count(), nbFonctions);
+  eq('une fonction par ligne', await page.locator('.mx tbody tr:not(.mx-groupe)').count(), nbFonctions);
+  eq('rangees par famille, avec un en-tete', await page.locator('.mx tbody tr.mx-groupe').count(), 3);
+  vrai('la matrice s\'explique : la case, la teinte, le total',
+       /boîtes distinctes/.test(await texte(page, '.compo-lire')));
+  vrai('la colonne du total dit ce qu\'elle compte',
+       /distinctes/.test(await page.locator('th.mx-total').getAttribute('title')));
   const ligneCollierMx = page.locator('.mx tbody tr', { hasText: 'Collier' }).first();
   const casesCollier = await ligneCollierMx.locator('.mx-case span').allTextContents();
   vrai('chaque case porte son nombre', casesCollier.some(function (c) { return /^\d+$/.test(c.trim()); }));
@@ -939,8 +961,8 @@ async function ecranPropre(page) {
   vrai('les normes sont des blocs', await page.locator('.fc-norme').count() >= 1);
   vrai('avec leurs references', await page.locator('.fc-ref').count() >= 1);
   vrai('la plus montee est marquee', await page.locator('.fc-majoritaire').count() === 1);
-  vrai('et un conseil de convergence est donne',
-       (await texte(page, '.fc-conseil')).indexOf('converger') !== -1);
+  vrai('et un plan de convergence est donne, en phrases',
+       (await texte(page, '.fc-plan')).indexOf('Si toutes les boîtes montaient cette référence') !== -1);
 
   // De la fiche d'une fonction, on ouvre la boite qui la monte.
   const boiteCitee = (await page.locator('.fc-ref-boites .usage-lien').first().innerText()).trim();
@@ -1108,9 +1130,9 @@ async function ecranPropre(page) {
 
   const nbCandidats = await page.locator('.resultat').count();
   vrai('plusieurs candidats sont classes', nbCandidats > 3);
-  eq('un seul est deplie a l\'ouverture', await page.locator('.resultat.ouvert').count(), 1);
-  vrai('et c\'est le mieux classe',
-       (await page.locator('.resultat').first().getAttribute('class')).indexOf('ouvert') !== -1);
+  // C'est une liste : rien n'est deplie a l'ouverture, on clique ce qu'on veut lire.
+  eq('aucun n\'est deplie a l\'ouverture', await page.locator('.resultat.ouvert').count(), 0);
+  eq('aucun critere n\'est deroule', await page.locator('.resultat .critere').count(), 0);
 
   // La ligne repliee dit deja l'essentiel : le PN, le score, et le partage.
   const ligneRepliee = page.locator('.resultat').nth(1);
@@ -1120,14 +1142,26 @@ async function ecranPropre(page) {
   vrai('et le compte de ce qui concorde',
        (await ligneRepliee.locator('.rb-ok').innerText()).indexOf('concordent') !== -1);
 
-  const hautReplie = await page.evaluate(function () {
+  const hautListe = await page.evaluate(function () {
     return document.getElementById('compareResult').scrollHeight;
   });
   await ligneRepliee.locator('.resultat-tete').click();
   await page.waitForTimeout(500);
-  eq('cliquer en deplie un autre', await page.locator('.resultat.ouvert').count(), 1);
-  vrai('et referme le premier',
-       (await page.locator('.resultat').first().getAttribute('class')).indexOf('ouvert') === -1);
+  eq('cliquer en deplie un', await page.locator('.resultat.ouvert').count(), 1);
+  vrai('et la page s\'allonge du detail', await page.evaluate(function () {
+    return document.getElementById('compareResult').scrollHeight;
+  }) > hautListe + 100);
+  vrai('et c\'est celui qu\'on a clique',
+       (await ligneRepliee.getAttribute('class')).indexOf('ouvert') !== -1);
+  await page.locator('.resultat').first().locator('.resultat-tete').click();
+  await page.waitForTimeout(400);
+  eq('en deplier un autre referme le premier', await page.locator('.resultat.ouvert').count(), 1);
+  vrai('et c\'est le nouveau',
+       (await page.locator('.resultat').first().getAttribute('class')).indexOf('ouvert') !== -1);
+  await page.locator('.resultat').first().locator('.resultat-tete').click();
+  await page.waitForTimeout(300);
+  await ligneRepliee.locator('.resultat-tete').click();
+  await page.waitForTimeout(400);
   vrai('le detail montre les criteres',
        await page.locator('.resultat.ouvert .critere').count() >= 2);
 
@@ -1138,7 +1172,7 @@ async function ecranPropre(page) {
   const hautNu = await page.evaluate(function () {
     return document.getElementById('compareResult').scrollHeight;
   });
-  vrai('et la page raccourcit d\'autant', hautNu < hautReplie);
+  eq('et la page retrouve la hauteur de la liste', hautNu, hautListe);
   await fermerModale(page, 'compareModal');
   await ecranPropre(page);
 
@@ -1198,12 +1232,21 @@ async function ecranPropre(page) {
            getComputedStyle(document.querySelector('.bloc-branche')).boxShadow === 'none';
   }));
 
-  // La photo tient une colonne etroite ; les champs cles se lisent en face.
+  // La photo se pose en haut a droite, en timbre ; les champs gardent leur
+  // place a gauche et reprennent toute la largeur sous elle.
   const vign = await page.locator('.bloc-general .vignette-fiche').boundingBox();
   const champs = await page.locator('.bloc-general .fiche-champs').boundingBox();
+  const premiereCle = await page.locator('.bloc-general .fiche-champs .ligne-cle').first().boundingBox();
   vrai('la photo est petite', vign.width <= 160);
-  vrai('a gauche des champs', vign.x + vign.width <= champs.x + 1);
-  vrai('a la meme hauteur', Math.abs(vign.y - champs.y) < 24);
+  vrai('en haut a droite', vign.x + vign.width >= champs.x + champs.width - 2 &&
+       Math.abs(vign.y - champs.y) < 24);
+  vrai('les champs commencent au bord gauche', premiereCle.x <= champs.x + 2);
+  vrai('et repassent a pleine largeur sous la photo', await page.evaluate(function () {
+    const lignes = Array.from(document.querySelectorAll('.bloc-general .fiche-champs .ligne'));
+    const derniere = lignes[lignes.length - 1].getBoundingClientRect();
+    const photo = document.querySelector('.bloc-general .fiche-photo').getBoundingClientRect();
+    return derniere.top >= photo.bottom - 1 && derniere.right >= photo.right - 2;
+  }));
   vrai('dans un cadre de rapport fixe',
        Math.abs(vign.width / vign.height - 4 / 3) < 0.05);
   const posPn = await page.locator('.bloc-general .ligne-cle', { hasText: 'PN Global' }).boundingBox();
@@ -1414,7 +1457,11 @@ async function ecranPropre(page) {
   faux('plus de « couverture » en pourcentage', /couverture/i.test(corpsCompare));
   vrai('le rappel de pondération est affiché', corpsCompare.indexOf('Pondération') !== -1);
   // Seul le candidat deplie montre ses criteres : douze candidats deroules
-  // d'un coup, c'etait cent lignes et on perdait le fil.
+  // d'un coup, c'etait cent lignes et on perdait le fil. A l'ouverture, aucun.
+  eq('a l\'ouverture, aucun candidat n\'est deplie',
+     await page.locator('#compareResult .resultat.ouvert').count(), 0);
+  await page.locator('#compareResult .resultat-tete').first().click();
+  await page.waitForTimeout(400);
   vrai('le candidat deplie montre ses jauges',
        await page.locator('#compareResult .resultat.ouvert .critere-jauge').count() >= 1);
   eq('un seul candidat est deplie',
@@ -1532,7 +1579,12 @@ async function ecranPropre(page) {
        typeof scoreAvantNiveau === 'string');
   await page.locator('#reglagesRail .btn-lien[data-action="reinitialiser-reglages"]').click();
   await page.waitForTimeout(400);
-  // Les composants se comparent par paliers : référence, norme, fonction.
+  // Les composants se comparent par paliers : référence, norme, fonction —
+  // visibles dans le candidat qu'on deplie.
+  if (!(await page.locator('#compareResult .resultat.ouvert').count())) {
+    await page.locator('#compareResult .resultat-tete').first().click();
+    await page.waitForTimeout(400);
+  }
   vrai('les paliers d\'équivalence des composants sont affichés',
        await page.locator('#compareResult .palier').count() >= 1);
   const scoreAvantCurseur = Number((await texte(page, '#compareResult .score b')).replace(/\D/g, ''));

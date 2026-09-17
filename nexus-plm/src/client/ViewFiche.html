@@ -179,9 +179,10 @@ function blocComposantsHtml(champ, valeur, cible) {
 // ------------------------------------------------------------
 /**
  * La photo situe la pièce, elle ne doit pas la dominer. À pleine largeur
- * elle repoussait la fonction et le PN sous le pli : on lisait une photo,
- * puis on cherchait la fiche. Ici elle tient une colonne, et les champs
- * qu'on vient lire sont en face d'elle.
+ * elle repoussait la fonction et le PN sous le pli ; en colonne à gauche,
+ * elle décalait toute la fiche technique. Elle se pose donc en haut à
+ * droite, en timbre : les champs gardent leur place, et reprennent toute
+ * la largeur dès qu'ils passent dessous.
  */
 function identiteHtml(photoHtml, champsHtml) {
   if (!photoHtml) return champsHtml;
@@ -539,22 +540,28 @@ function ficheComposantHtml(cible) {
 
   // Le plan de convergence : la cible, ce qu'on cesserait de faire vivre,
   // et les boîtes à modifier — nommées, cliquables. C'est la décision.
+  // Le plan se lit en trois phrases : ce qu'on a, ce qu'on garderait, ce
+  // que ça coûterait. Les chiffres sont là, mais ce sont les phrases qui
+  // portent — on ne doit pas avoir à deviner ce qu'une barre veut dire.
   const plan = planConvergence(base);
   const conseil = plan
     ? '<section class="fc-plan">' +
+        '<h4 class="fc-titre">Le plan de convergence</h4>' +
         '<p class="fc-conseil">' +
-          '<b>' + montees.length + ' références montées</b> pour le même service. ' +
-          'La plus répandue est <span class="fc-pn">' + esc(plan.cible.reference) + '</span>' +
-          ' (' + plan.cible.nbBoites + ' boîte' + (plan.cible.nbBoites > 1 ? 's' : '') + ') : ' +
-          'c\'est vers elle qu\'il coûte le moins cher de converger.' +
+          '<b>' + montees.length + ' références</b> sont montées pour le même service. ' +
+          'La plus répandue est <span class="fc-pn">' + esc(plan.cible.reference) + '</span>, ' +
+          'dans <b>' + plan.cible.nbBoites + ' boîte' + (plan.cible.nbBoites > 1 ? 's' : '') +
+          ' sur ' + boites.size + '</b>.' +
         '</p>' +
         '<div class="fc-plan-corps">' +
-          partsHtml(base, 'parts-fiche') +
+          partsDetailHtml(base) +
+          '<p class="fc-plan-si">Si toutes les boîtes montaient cette référence :</p>' +
           '<div class="fc-plan-chiffres">' +
             '<span class="fc-plan-mesure"><b>−' + plan.economie + '</b> référence' + (plan.economie > 1 ? 's' : '') + ' à faire vivre</span>' +
             '<span class="fc-plan-mesure fc-plan-cout"><b>' + plan.aModifier.length + '</b> boîte' + (plan.aModifier.length > 1 ? 's' : '') + ' à modifier</span>' +
           '</div>' +
           '<div class="fc-plan-boites">' +
+            '<span class="fc-plan-boites-titre">' + (plan.aModifier.length > 1 ? 'Les boîtes' : 'La boîte') + ' à modifier :</span>' +
             plan.aModifier.map(function (pn) {
               return '<button type="button" class="usage-lien"' +
                      dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
@@ -571,6 +578,8 @@ function ficheComposantHtml(cible) {
   const matrice = montees.length > 1 && porteursVus.size > 1
     ? '<section class="fc-matrice">' +
         '<h4 class="fc-titre">Qui monte quoi</h4>' +
+        '<p class="fc-lire">Le nombre de boîtes de chaque porteur qui montent chaque référence. ' +
+          'Plus la case est foncée, plus c\'est monté.</p>' +
         matriceHtml(matriceEmploi(montees.slice().sort(function (a, b) { return b.nbBoites - a.nbBoites; })
           .map(function (c) { return { libelle: txt(c.reference, 'sans référence'), lignes: [c], composant: c }; })), {
           enTete: 'Référence',

@@ -545,6 +545,8 @@ body.espace-composants .outils { display: none; }
 .mx tbody .mx-total b { color: var(--encre); font-family: var(--police-data); font-weight: 700; }
 .mx-ligne { text-align: left !important; position: sticky; left: 0; z-index: 1; background: var(--surface-2); border-right: 1px solid var(--trait); min-width: 190px; max-width: 250px; }
 .mx tbody tr:hover .mx-ligne, .mx tbody tr:hover .mx-total { background: var(--sol-2); }
+.mx-groupe th { text-align: left !important; padding: 9px var(--e-3) 5px !important; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--encre-2); background: var(--surface); border-top: 1px solid var(--trait); border-bottom: 1px solid var(--trait); position: sticky; left: 0; }
+.mx-groupe th .cf-pastille { display: inline-block; margin-right: 7px; vertical-align: middle; }
 .mx-fonction { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: 0; color: var(--encre); padding: 7px var(--e-3); font-size: 12.5px; font-weight: 600; }
 .mx-fonction:hover .mx-nom { color: var(--marque); text-decoration: underline; text-underline-offset: 3px; }
 .mx-nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -623,7 +625,7 @@ body.espace-composants .outils { display: none; }
   background: var(--surface); overflow: hidden; }
 .lf-entete, .lf-ligne {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) 168px 96px 132px 150px minmax(0, 150px) 16px;
+  grid-template-columns: minmax(0, 1.5fr) 96px 132px 150px minmax(0, 150px) 16px;
   gap: var(--e-3); align-items: center;
 }
 .lf-entete {
@@ -641,8 +643,21 @@ body.espace-composants .outils { display: none; }
 .lf-fonction { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .lf-nom { font-size: 13.5px; font-weight: 600; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lf-famille { font-size: 11.5px; color: var(--encre-3); min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* L'en-tete d'une famille : la liste se lit par groupes, on s'y repere. */
+.lf-groupe {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  padding: 10px var(--e-4) 7px; background: var(--surface); border-bottom: 1px solid var(--trait);
+  border-top: 1px solid var(--trait);
+}
+.lf-groupe:first-of-type { border-top: 0; }
+.lf-groupe .cf-pastille { align-self: center; }
+.lf-groupe-nom { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.lf-groupe-aide { font-size: 11.5px; color: var(--encre-3); }
+.lf-groupe-n { margin-left: auto; font-size: 11.5px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+/* Comment lire la lecture affichee : deux phrases, sous le commutateur. */
+.compo-lire { margin: 0; font-size: 12.5px; color: var(--encre-2); line-height: 1.5; max-width: 90ch; }
+.aide-vert { color: var(--vert); font-weight: 600; }
+.aide-gris { color: var(--encre-3); font-weight: 600; }
 .lf-n { font-size: 11.5px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
 .lf-n b { font-family: var(--police-data); font-size: 13px; color: var(--encre); font-weight: 700; }
 .lf-doux { color: var(--encre-3); }
@@ -666,7 +681,8 @@ body.espace-composants .outils { display: none; }
 @media (max-width: 1080px) {
   .lf-entete { display: none; }
   .lf-ligne { grid-template-columns: minmax(0, 1fr) auto; gap: 5px var(--e-3); padding: 11px var(--e-3); }
-  .lf-famille, .lf-n { font-size: 11px; }
+  .lf-n { font-size: 11px; }
+  .lf-groupe-aide { display: none; }
   .lf-emploi, .lf-marques { grid-column: 1 / -1; }
   .lf-marques { justify-content: flex-start; }
   .lf-fleche { display: none; }
@@ -688,11 +704,22 @@ body.espace-composants .outils { display: none; }
 .fc-pn { font-family: var(--police-data); font-weight: 700; }
 .fc-plan { border: 1px solid var(--trait); border-radius: var(--r-m); background: var(--surface-2); margin-bottom: var(--e-4); overflow: hidden; }
 .fc-plan .fc-conseil { margin: 0; border: 0; border-radius: 0; border-bottom: 1px solid var(--trait); }
+.fc-plan > .fc-titre { padding: 10px var(--e-4) 0; margin: 0 0 4px; }
+.fc-matrice .mx-legende-aide { display: none; }
 .fc-plan-corps { padding: var(--e-3) var(--e-4); display: flex; flex-direction: column; gap: 8px; }
 .fc-plan-chiffres { display: flex; gap: var(--e-4); flex-wrap: wrap; font-size: 12.5px; color: var(--encre-2); }
 .fc-plan-mesure b { font-family: var(--police-titre); font-size: 16px; color: var(--vert); }
 .fc-plan-cout b { color: var(--ambre); }
-.fc-plan-boites { display: flex; flex-wrap: wrap; gap: 4px; }
+.fc-plan-boites { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.fc-plan-boites-titre { font-size: 12.5px; color: var(--encre-2); margin-right: 4px; }
+.fc-plan-si { margin: 4px 0 0; font-size: 12.5px; color: var(--encre-2); }
+.fc-lire { margin: 0 0 8px; font-size: 12px; color: var(--encre-3); line-height: 1.45; }
+.parts-legende-liste { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; }
+.parts-legende-liste li { display: flex; align-items: center; gap: 8px; }
+.parts-legende-liste i { width: 14px; height: 8px; border-radius: 2px; flex: none; display: inline-block; }
+.parts-ref { font-family: var(--police-data); font-weight: 600; }
+.parts-n { color: var(--encre-2); font-variant-numeric: tabular-nums; }
+.parts-cible-tag { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--vert); background: var(--vert-voile); border: 1px solid var(--vert-trait); border-radius: 999px; padding: 1px 7px; }
 .fc-matrice { margin-bottom: var(--e-4); }
 .fc-titre { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--encre-3); font-weight: 700; margin: 0 0 6px; }
 .fc-matrice .mx-ligne { min-width: 150px; }
@@ -949,10 +976,12 @@ body.espace-composants .outils { display: none; }
 .composants-outils { display: flex; justify-content: flex-end; margin-top: 6px; }
 @media (max-width: 560px) { .ajout-composant { grid-template-columns: 1fr 1fr; } }
 
-/* La fiche d'identite : la photo tient une colonne a gauche, les champs
-   cles se lisent en face. A pleine largeur, la photo repoussait la fonction
-   et le PN sous le pli. Un clic l'agrandit pour qui veut la detailler. */
-.fiche-identite { display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: var(--e-4); align-items: start; }
+/* La fiche d'identite : la photo se pose en haut a droite, en timbre, et
+   les champs gardent toute leur place — ils reprennent la largeur entiere
+   des qu'ils passent sous elle. En colonne a gauche, elle decalait toute la
+   fiche technique. Un clic l'agrandit pour qui veut la detailler. */
+.fiche-identite::after { content: ""; display: table; clear: both; }
+.fiche-photo { float: right; width: 148px; margin: 0 0 var(--e-2) var(--e-4); }
 .fiche-champs { min-width: 0; }
 .fiche-champs .ligne:first-child { padding-top: 0; }
 .fiche-identite + .ligne { border-top: 1px solid var(--surface-3); }
@@ -965,9 +994,7 @@ body.espace-composants .outils { display: none; }
 .vignette:hover { border-color: var(--trait-fort); box-shadow: var(--ombre-1); }
 .vignette img { display: block; width: 100%; height: 100%; object-fit: cover; }
 @media (max-width: 560px) {
-  .fiche-identite { grid-template-columns: 1fr; }
-  .fiche-photo { display: flex; justify-content: center; }
-  .vignette { max-width: 180px; }
+  .fiche-photo { width: 112px; margin-left: var(--e-3); }
 }
 
 /* L'arbre de la fiche : la boite est le tronc, les sous-ensembles sont ses

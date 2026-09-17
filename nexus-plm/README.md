@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 1 449 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 1 465 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 948 tests : logique, pondération, serveur, bundle
+npm test                 # 949 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 501 tests dans un vrai Chromium
+npm run test:navigateur  # 516 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -219,10 +219,12 @@ filet vertical, un compteur. Les empiler à plat laissait croire à quatre blocs
 de même rang.
 
 **La boîte est le parent, et se lit d'un coup.** Une fiche d'identité : la
-photo tient une colonne étroite à gauche, les champs clés — fonction, PN,
-DS/VCI, porteur, statut, qualification — se lisent en face d'elle. Ce qui est
-large (les composants, l'URL, les commentaires) passe dessous. À pleine
-largeur, la photo repoussait la fonction et le PN sous le pli.
+photo se pose en haut à droite, en timbre ; les champs clés — fonction, PN,
+DS/VCI, porteur, statut, qualification — gardent leur place à gauche et
+reprennent toute la largeur dès qu'ils passent sous elle. Ce qui est large
+(les composants, l'URL, les commentaires) suit. À pleine largeur, la photo
+repoussait la fonction et le PN sous le pli ; en colonne à gauche, elle
+décalait toute la fiche technique.
 
 **Les branches sont repliées à l'ouverture.** Chaque sous-ensemble tient en
 une ligne : son type, son PN, un résumé tiré du registre (« Console STD ·
@@ -243,7 +245,7 @@ Douze candidats × huit critères, c'est cent lignes déroulées d'un coup : on 
 le premier, on fait défiler, on perd le fil. Chaque candidat tient maintenant
 sur une ligne — PN, fonction, *n concordent / n séparent*, score — et le détail
 critère par critère se déplie pour **celui qu'on a choisi**, un seul à la fois.
-Le mieux classé est ouvert à l'arrivée.
+À l'ouverture, rien n'est déplié : c'est une liste, on clique ce qu'on veut lire.
 
 ## Le rail de pondération
 
@@ -346,8 +348,11 @@ l'information la plus utile de la page.
 illisible à trois cents références ; tout replié, il est vide. La page liste
 donc les **fonctions** — « il me faut un collier » — dans un tableau dense :
 famille, nombre de normes, nombre de références, emploi, et les marques
-*à ranger* / *hors catalogue*. Quatre tris : les plus montés, les plus
-dispersés, alphabétique, par famille.
+*à ranger* / *hors catalogue*. La liste est **rangée par famille** — un
+en-tête par famille, dans l'ordre du registre — et trois tris s'appliquent à
+l'intérieur : les plus montés, les plus dispersés, alphabétique. Sous le
+commutateur, deux phrases disent comment lire la lecture affichée, et chaque
+marque porte son explication en info-bulle.
 
 Le détail s'ouvre dans la **fiche**, comme pour une boîte : un résumé en trois
 mesures, un conseil de convergence quand plusieurs références servent le même
@@ -374,7 +379,10 @@ Un commutateur, en tête de la liste, et la lecture choisie est mémorisée.
   chaque case le nombre de boîtes de ce porteur qui montent la fonction. La
   teinte suit le nombre — une seule couleur, du clair au foncé — et le chiffre
   est écrit dans la case : la couleur aide, elle ne porte rien seule. C'est
-  une table, elle se lit aussi sans la voir. C'est la question de la
+  une table, elle se lit aussi sans la voir. Les lignes vont par famille,
+  comme la liste. La colonne **En tout** compte les boîtes distinctes — une
+  boîte qui vole sur deux porteurs est dans les deux colonnes, mais une seule
+  fois dans le total — et le dit en info-bulle. C'est la question de la
   communalité entre programmes : le H160 monte-t-il les mêmes colliers que
   le H145 ?
 - **Carte** — un **treemap** : chaque fonction est une tuile dont l'aire est
@@ -385,8 +393,11 @@ Un commutateur, en tête de la liste, et la lecture choisie est mémorisée.
   en pourcentages, la carte suit la largeur de l'écran sans mesure.
 
 Dans la **fiche d'une fonction**, le conseil de convergence devient un
-**plan** : la cible, ce qu'on cesserait de faire vivre, et les boîtes à
-modifier — nommées, cliquables. Puis « qui monte quoi » : la même matrice,
+**plan, en trois phrases** : ce qu'on a (« 3 références sont montées pour le
+même service, la plus répandue est X, dans 10 boîtes sur 13 »), la barre des
+parts avec sa légende — une ligne par référence, sa couleur, ses boîtes —,
+puis « si toutes les boîtes montaient cette référence » : ce qu'on cesserait
+de faire vivre, et les boîtes à modifier — nommées, cliquables. Puis « qui monte quoi » : la même matrice,
 référence par porteur, cible marquée. C'est là qu'on voit qu'un programme
 s'écarte des autres.
 
