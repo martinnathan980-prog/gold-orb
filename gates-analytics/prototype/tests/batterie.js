@@ -1021,62 +1021,69 @@ async function reinitialiser(pg) {
   await p.waitForTimeout(300);
   verifier('l\'infobulle revient après un glissement',
     await p.evaluate(() => document.getElementById('bulle').dataset.visible === 'true'));
-  // Un simple clic dans la frise du haut doit poser un jalon, pas glisser.
+  /* Un clic net, dans la frise comme sur une semaine, ne fait rien : l'outil
+     se consulte, rien ne se pose sur le graphique. */
+  const avantClic = await p.evaluate(() => ({
+    jalons: document.querySelectorAll('.jalon').length, semaine: null
+  }));
+  avantClic.semaine = await derniereSemaine();
   await p.mouse.click(cadre.x + cadre.width * 0.75, cadre.y + cadre.height * 0.05);
   await p.waitForTimeout(350);
-  verifier('un clic net dans la frise ouvre quand même la saisie de jalon',
-    await p.evaluate(() => document.getElementById('saisie-jalon').dataset.ouvert === 'true'));
-  await p.keyboard.press('Escape'); await p.waitForTimeout(250);
-  verifier('Échap referme la saisie',
-    await p.evaluate(() => document.getElementById('saisie-jalon').dataset.ouvert === 'false'));
-  // Un glissement parti d'une poignée déplace le jalon, jamais la fenêtre.
-  const avantPoignee = await derniereSemaine();
-  const poigneeEl = await p.$('.jalon-poignee');
-  if (poigneeEl) {
-    const bp = await poigneeEl.boundingBox();
+  const apresClic = { jalons: await p.evaluate(() => document.querySelectorAll('.jalon').length), semaine: await derniereSemaine() };
+  verifier('un clic net dans la frise ne pose rien et ne déplace rien',
+    apresClic.jalons === avantClic.jalons && apresClic.semaine === avantClic.semaine, JSON.stringify(apresClic));
+  /* Un glissement parti d'une étiquette de jalon déplace la fenêtre comme
+     partout ailleurs : il n'y a plus de poignée qui capte le geste. */
+  const avantEtiquette = await derniereSemaine();
+  const etiquetteEl = await p.$('.jalon-texte');
+  if (etiquetteEl) {
+    const bp = await etiquetteEl.boundingBox();
     await p.mouse.move(bp.x + bp.width / 2, bp.y + bp.height / 2);
     await p.mouse.down();
-    for (let i = 1; i <= 6; i++) await p.mouse.move(bp.x + bp.width / 2 + i * 12, bp.y + bp.height / 2);
+    for (let i = 1; i <= 8; i++) await p.mouse.move(bp.x + bp.width / 2 - i * 30, bp.y + bp.height / 2);
     await p.mouse.up(); await p.waitForTimeout(400);
   }
-  verifier('glisser une poignée de jalon ne déplace pas la fenêtre',
-    (await derniereSemaine()) === avantPoignee);
+  verifier('glisser depuis une étiquette de jalon déplace la fenêtre, pas le jalon',
+    !!etiquetteEl && (await derniereSemaine()) !== avantEtiquette, avantEtiquette + ' → ' + (await derniereSemaine()));
   await p.click('.segmente button[data-span="26"]'); await p.waitForTimeout(300);
 
   // =================================================================
-  section('Jalons : ajout, doublon, texte hostile, suppression');
-  const j0 = await p.evaluate(() => document.querySelectorAll('.jalon-supp').length);
-  verifier('des jalons sont présents au départ', j0 >= 1, j0 + ' jalon(s)');
-  async function poserJalon(indexDepuisFin, texte) {
-    const zones = await p.$$('.zone-clic');
-    if (!zones.length) return false;
-    const z = zones[Math.max(0, zones.length - indexDepuisFin)];
-    const bz = await z.boundingBox();
+  section('Jalons fixes');
+  /* Les jalons viennent de la source, et d'elle seule : quatre par contrat en
+     démonstration. Rien ne permet d'en poser, d'en déplacer ni d'en retirer —
+     l'outil se consulte. */
+  await p.click('.segmente button[data-span="0"]'); await p.waitForTimeout(400);
+  const fixes = await p.evaluate(() => ({
+    source: window.__jeuDExemple('X1').jalons.length,
+    dessines: document.querySelectorAll('.jalon').length,
+    textes: [...document.querySelectorAll('.jalon-texte')].map(t => t.textContent),
+    poignees: document.querySelectorAll('.jalon-poignee, .jalon-supp, [data-glisse-jalon]').length,
+    formulaire: !!(document.getElementById('saisie-jalon') || document.getElementById('champ-jalon') ||
+                   document.querySelector('form.saisie-jalon')),
+    boutons: document.querySelectorAll('svg.graphe [role="button"]').length,
+    curseur: getComputedStyle(document.getElementById('cadre-graphe')).cursor,
+    indice: document.querySelector('.commandes-graphe .indice').textContent,
+    pont: !(window.SUIVI_FWD_API && window.SUIVI_FWD_API.sauverJalons)
+  }));
+  verifier('la démonstration a quatre jalons', fixes.source === 4, String(fixes.source));
+  verifier('les quatre sont dessinés, avec leur texte',
+    fixes.dessines === 4 && fixes.textes.length === 4 && fixes.textes.every(t => t.trim().length > 0),
+    JSON.stringify(fixes.textes));
+  verifier('aucune poignée, croix ni formulaire dans le DOM', fixes.poignees === 0 && !fixes.formulaire);
+  verifier('aucun bouton dans le graphique', fixes.boutons === 0, String(fixes.boutons));
+  verifier('le curseur du cadre reste la main du panoramique', fixes.curseur === 'grab', fixes.curseur);
+  verifier('l\'indice ne promet plus de poser un jalon', !/poser/.test(fixes.indice), fixes.indice);
+  verifier('aucun pont de sauvegarde des jalons', fixes.pont);
+  /* Un clic sur une semaine, à venir ou passée, ne pose rien. */
+  const zonesClic = await p.$$('.zone-clic');
+  for (const k of [5, Math.round(zonesClic.length / 2)]) {
+    const bz = await zonesClic[Math.max(0, zonesClic.length - k)].boundingBox();
     await p.mouse.move(bz.x + bz.width / 2, bz.y + bz.height / 2);
-    await p.mouse.down(); await p.mouse.up(); await p.waitForTimeout(350);
-    const ouvert = await p.evaluate(() => document.getElementById('saisie-jalon').dataset.ouvert === 'true');
-    if (!ouvert) return false;
-    await p.fill('#champ-jalon', texte);
-    await p.press('#champ-jalon', 'Enter'); await p.waitForTimeout(400);
-    return true;
+    await p.mouse.down(); await p.mouse.up(); await p.waitForTimeout(300);
   }
-  verifier('cliquer une semaine ouvre la saisie et pose un jalon', await poserJalon(5, 'Test recette'));
-  verifier('le jalon saisi apparaît avec son texte',
-    await p.evaluate(() => [...document.querySelectorAll('.jalon-texte')].some(t => t.textContent === 'Test recette')));
-  verifier('reposer un jalon sur la même semaine n\'ouvre pas la saisie',
-    !(await poserJalon(5, 'Doublon')));
-  verifier('aucun doublon de jalon n\'a été créé',
-    await p.evaluate(() => [...document.querySelectorAll('.jalon-texte')].filter(t => /Test recette|Doublon/.test(t.textContent)).length === 1));
-  await poserJalon(9, '<img src=x onerror="window.__xss=1">');
-  verifier('un texte de jalon avec balise ne s\'exécute pas',
-    await p.evaluate(() => typeof window.__xss === 'undefined' && !document.querySelector('.jalon img')));
-  await poserJalon(12, 'X'.repeat(400));
-  verifier('un jalon de 400 caractères ne fait pas déborder la page',
-    await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
-    await p.evaluate(() => document.documentElement.scrollWidth + ' vs ' + window.innerWidth));
-  await poserJalon(15, '');
-  verifier('un jalon sans texte reçoit un libellé par défaut',
-    await p.evaluate(() => [...document.querySelectorAll('.jalon-texte')].every(t => t.textContent.trim().length > 0)));
+  await p.keyboard.press('Enter'); await p.keyboard.press('Delete'); await p.waitForTimeout(300);
+  verifier('un clic sur une semaine ne pose rien, Entrée et Suppr ne changent rien',
+    await p.evaluate(() => document.querySelectorAll('.jalon').length === 4 && !document.getElementById('champ-jalon')));
   verifier('aucune étiquette de jalon n\'en chevauche une autre',
     await p.evaluate(() => {
       const r = [...document.querySelectorAll('.jalon-texte')].map(t => t.getBoundingClientRect())
@@ -1087,31 +1094,60 @@ async function reinitialiser(pg) {
       }
       return true;
     }));
-  const poignee = await p.$('.jalon-poignee');
-  if (poignee) {
-    await poignee.focus();
-    const avantD = await p.evaluate(() => document.querySelectorAll('.jalon-poignee').length);
-    await p.keyboard.press('ArrowRight'); await p.waitForTimeout(300);
-    await p.keyboard.press('ArrowLeft'); await p.waitForTimeout(300);
-    verifier('les flèches déplacent un jalon sans le perdre',
-      await p.evaluate(() => document.querySelectorAll('.jalon-poignee').length) === avantD);
-  }
+  /* Le panoramique et la molette marchent toujours, jalons compris. */
+  const avantPan = await derniereSemaine();
+  await balayer(0.5, -1);
+  verifier('le panoramique fonctionne toujours', (await derniereSemaine()) !== avantPan);
+  const avantMolette = await p.evaluate(() => document.querySelectorAll('.zone-clic').length);
+  await p.mouse.move(cadre.x + cadre.width * 0.5, cadre.y + cadre.height * 0.5);
+  await p.mouse.wheel(0, -300); await p.waitForTimeout(300);
+  verifier('la molette fonctionne toujours',
+    (await p.evaluate(() => document.querySelectorAll('.zone-clic').length)) !== avantMolette);
+  /* Une configuration hostile : balise, 400 caractères, texte vide, semaine
+     illisible. Rien ne s'exécute, rien ne déborde, l'illisible est écarté. */
+  await p.evaluate(() => {
+    const s = window.__jeuDExemple('X1');
+    s.jalons = [
+      { semaine: s.jalons[0].semaine, texte: '<img src=x onerror="window.__xss=1">' },
+      { semaine: s.jalons[1].semaine, texte: 'X'.repeat(400) },
+      { semaine: s.jalons[2].semaine, texte: '' },
+      { semaine: 'nawak', texte: 'ignoré' },
+      null
+    ];
+    window.__chargerSource(s);
+  });
   await p.click('.segmente button[data-span="0"]'); await p.waitForTimeout(400);
-  let garde = 0;
-  while ((await p.evaluate(() => document.querySelectorAll('.jalon-supp').length)) > 0 && garde++ < 40) {
-    await p.click('.jalon-supp >> nth=0'); await p.waitForTimeout(220);
-  }
-  verifier('on peut supprimer tous les jalons',
-    await p.evaluate(() => document.querySelectorAll('.jalon-supp').length === 0));
+  const hostile = await p.evaluate(() => ({
+    xss: typeof window.__xss === 'undefined' && !document.querySelector('.jalon img'),
+    balise: [...document.querySelectorAll('.jalon-texte')].some(t => /<img/.test(t.textContent)),
+    longueurs: [...document.querySelectorAll('.jalon-texte')].map(t => t.textContent.length),
+    deborde: document.documentElement.scrollWidth > window.innerWidth + 2,
+    largeur: document.documentElement.scrollWidth + ' vs ' + window.innerWidth,
+    n: document.querySelectorAll('.jalon').length
+  }));
+  verifier('un texte de jalon avec balise ne s\'exécute pas et s\'affiche tel quel', hostile.xss && hostile.balise);
+  verifier('un jalon de 400 caractères est coupé et ne fait pas déborder la page',
+    !hostile.deborde && hostile.longueurs.every(l => l <= 60), hostile.largeur + ' ' + JSON.stringify(hostile.longueurs));
+  verifier('un jalon sans texte reçoit un libellé, une semaine illisible est écartée',
+    hostile.n === 3 && hostile.longueurs.every(l => l > 0), String(hostile.n));
+  /* Sans jalon à venir, le bloc par groupe bascule en « rythme actuel ». */
+  await p.evaluate(() => { const s = window.__jeuDExemple('X1'); s.jalons = []; window.__chargerSource(s); });
+  await p.waitForTimeout(400);
+  verifier('sans jalon, aucun n\'est dessiné et le graphique tient toujours debout',
+    await p.evaluate(() => document.querySelectorAll('.jalon').length === 0 && document.querySelectorAll('.zone-clic').length > 0));
   verifier('sans jalon, le bloc par groupe bascule en mode « rythme actuel »',
     await p.evaluate(() => document.getElementById('zone-critique').classList.contains('sans-jalon')));
-  verifier('sans jalon, le graphique tient toujours debout',
-    await p.evaluate(() => document.querySelectorAll('.zone-clic').length > 0));
+  verifier('sans jalon, le graphique le dit sans inviter à en poser',
+    await p.evaluate(() => {
+      const t = [...document.querySelectorAll('svg.graphe text')].map(x => x.textContent).find(x => /Aucun jalon/.test(x));
+      return !!t && !/cliquez/.test(t);
+    }));
+  // Retour à la source de démonstration, avec ses quatre jalons.
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('X1')));
+  await p.waitForTimeout(400);
 
   // =================================================================
   section('Bloc par groupe : colonnes triables');
-  await poserJalon(6, 'Jalon de test');
-  await p.waitForTimeout(300);
   const tris = await p.evaluate(() => [...document.querySelectorAll('button[data-trig]')].map(b => b.dataset.trig));
   verifier('cinq colonnes triables avec un jalon', tris.length === 5, JSON.stringify(tris));
   verifier('les en-têtes sont centrés (sauf la répartition)',
@@ -1299,11 +1335,13 @@ async function reinitialiser(pg) {
   await p.reload(); await p.waitForTimeout(1400);
   const apresRech = await p.evaluate(() => {
     const b = document.querySelector('button[data-trig][data-actif="true"]');
-    return { tri: b ? b.dataset.trig : null, jalons: document.querySelectorAll('.jalon-supp').length };
+    return { tri: b ? b.dataset.trig : null, jalons: window.__jeuDExemple('X1').jalons.length,
+             stockes: /"jalons"/.test(localStorage.getItem('suivi-fwd:v1') || '') };
   });
   verifier('le tri du bloc par groupe survit au rechargement',
     apresRech.tri === triAvant, triAvant + ' → ' + apresRech.tri);
-  verifier('les jalons survivent au rechargement', apresRech.jalons >= 1, apresRech.jalons + ' jalon(s)');
+  verifier('les jalons ne passent pas par le stockage : ils viennent de la source',
+    apresRech.jalons === 4 && !apresRech.stockes, JSON.stringify(apresRech));
 
   // =================================================================
   section('Stockage local corrompu ou indisponible');
@@ -1316,18 +1354,22 @@ async function reinitialiser(pg) {
   verifier('un stockage illisible ne bloque pas le démarrage',
     await pc.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
   await pc.evaluate(() => localStorage.setItem('suivi-fwd:v1', JSON.stringify({
-    jalons: [{ i: 'pas un nombre', texte: 42 }, null, { i: 99999 }],
+    jalons: [{ i: 'pas un nombre', texte: 42 }, null, { i: 99999 }, { semaine: '2026-S50', texte: '<b>stocké</b>' }],
     fen: { debut: 'x' }, tri: { cle: '__proto__' }, triGroupe: { cle: 'rm -rf', asc: 'oui' },
     ordre: ['inexistante'], cachees: { reference: true }
   })));
   await pc.reload(); await pc.waitForTimeout(1300);
+  await pc.click('.segmente button[data-span="0"]'); await pc.waitForTimeout(400);
   const survie = await pc.evaluate(() => ({
     lignes: (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length),
     colonnes: document.querySelectorAll('tr.titres th').length,
     refVisible: !!document.querySelector('tr.titres th[data-cle="reference"]'),
-    triActif: document.querySelectorAll('button[data-trig][data-actif="true"]').length
+    triActif: document.querySelectorAll('button[data-trig][data-actif="true"]').length,
+    jalons: [...document.querySelectorAll('.jalon-texte')].map(t => t.textContent)
   }));
   verifier('des préférences absurdes sont ignorées sans plantage', survie.lignes === TOTAL, survie.lignes + ' lignes');
+  verifier('des jalons laissés dans un ancien stockage ne sont pas relus',
+    survie.jalons.length === 4 && !survie.jalons.some(t => /stock/.test(t)), JSON.stringify(survie.jalons));
   verifier('toutes les colonnes restent présentes', survie.colonnes >= 11, survie.colonnes + ' colonnes');
   verifier('la référence UD ne peut pas être masquée par le stockage', survie.refVisible);
   verifier('une clé de tri inconnue n\'est pas appliquée', survie.triActif === 0);

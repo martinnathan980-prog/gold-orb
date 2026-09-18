@@ -604,9 +604,14 @@
       dimParDefaut: 'ata',
       plans: plans,
       releves: releves,
+      /* Quatre jalons par contrat, relatifs à la semaine courante du contrat
+         (le dernier relevé). DATES PROVISOIRES, tirées au hasard : à remplacer
+         par les vraies échéances du programme quand elles seront connues. */
       jalons: [
-        { semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 6)), texte: 'Revue de définition' },
-        { semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 18)), texte: 'Livraison plateau' }
+        { semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 6)),  texte: 'Gel de la définition' },
+        { semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 14)), texte: 'Revue critique' },
+        { semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 26)), texte: 'Livraison plateau' },
+        { semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 40)), texte: 'Premier vol' }
       ],
       /* La liste des contrats et celui-ci : c'est ce que le sélecteur affiche. */
       contrats: CONTRATS_EXEMPLE.map(function (c) { return { id: c.id, nom: c.nom }; }),
@@ -682,21 +687,18 @@
     return v;
   }
 
-  /* Les jalons d'une source, en indices de semaine. Ceux qui ne tombent sur
-     aucune semaine lisible sont écartés. */
+  /* Les jalons d'une source, en indices de semaine. Ils sont fixes : ils
+     viennent de la configuration et ne s'éditent pas à l'écran. Ceux qui ne
+     tombent sur aucune semaine lisible sont écartés ; le texte est coupé à
+     60 caractères, la même règle que le serveur, pour qu'une configuration
+     bavarde ne fasse pas déborder la frise. */
   function jalonsDe(liste) {
     return (Array.isArray(liste) ? liste : []).map(function (j) {
       if (!j) return null;
-      return { id: j.id || null, i: indexDe(j.semaine), texte: String(j.texte || 'Jalon') };
+      var texte = String(j.texte || 'Jalon').trim().slice(0, 60) || 'Jalon';
+      return { i: indexDe(j.semaine), texte: texte };
     }).filter(function (j) { return j && j.i !== null; })
       .sort(function (a, b) { return a.i - b.i; });
-  }
-  /* Le chemin inverse : les jalons de l'écran, en semaines, pour les rendre
-     à une source ou les mémoriser. */
-  function jalonsEnSemaines() {
-    return jalons.map(function (j) {
-      return { id: j.id || null, semaine: etiquette(j.i), texte: j.texte };
-    });
   }
 
   /**
@@ -791,8 +793,8 @@
        comparatif affiché en découle, restreint au périmètre courant. */
     EVENEMENTS_IMPORT = evenementsImport();
 
-    /* Les jalons viennent de la source : dans le classeur ils sont partagés par
-       tout le monde, dans la démonstration ils sont posés en dur. */
+    /* Les jalons viennent uniquement de la source : la configuration du
+       classeur dans l'add-on, des dates posées en dur dans la démonstration. */
     jalons = jalonsDe(src.jalons);
 
     DIMENSIONS = CLES_DIM
@@ -826,7 +828,6 @@
     COMPARATIF = comparatif();
     afficherContrat();
     refleterVue();
-    fermerSaisie();
     $('bulle').dataset.visible = 'false';
   }
 
@@ -967,7 +968,7 @@
   }
 
   /* ----------------------------------------------------------
-     Mémoire locale : jalons, cadrage et disposition survivent
+     Mémoire locale : cadrage et disposition survivent
      à la fermeture de l'onglet. Elle est globale : la même
      disposition suit le lecteur d'un contrat à l'autre.
      ---------------------------------------------------------- */
@@ -979,7 +980,7 @@
   function sauverPrefs() {
     try {
       localStorage.setItem(CLE_PREFS, JSON.stringify({
-        jalons: jalonsEnSemaines(), fen: vue.fen,
+        fen: vue.fen,
         dimCritique: vue.dimCritique, ordre: vue.ordre, cachees: vue.cachees, tri: vue.tri,
         triGroupe: vue.triGroupe
       }));
@@ -1018,15 +1019,8 @@
       if (!brut) return;
       var pref = JSON.parse(brut);
       if (!pref || typeof pref !== 'object') return;
-      // Quand le classeur fournit les jalons, la copie locale ne fait pas foi.
-      if (!SERVEUR && Array.isArray(pref.jalons)) {
-        jalons = jalonsDe(pref.jalons.map(function (j) {
-          if (!j || typeof j.texte !== 'string') return null;
-          /* Un ancien stockage notait l'indice de semaine ; on note désormais
-             la semaine elle-même, qui ne dépend pas du premier relevé. */
-          return { semaine: typeof j.i === 'number' ? etiquette(j.i) : j.semaine, texte: j.texte };
-        }));
-      }
+      /* Un ancien stockage pouvait contenir des jalons : ils ne font plus
+         foi, les jalons viennent de la configuration. On les ignore. */
       if (pref.fen && typeof pref.fen.debut === 'number' && typeof pref.fen.span === 'number') {
         vue.fen = { debut: pref.fen.debut, span: pref.fen.span };
       }
@@ -1444,7 +1438,10 @@
       s.push('\x3Ctext class="grad" x="' + (x(AUJ) - 9).toFixed(1) + '" y="' + (y(atteint) - 8).toFixed(1) + '" text-anchor="end" fill="var(--encre)" font-weight="500">' + atteint + '\x3C/text>');
     }
 
-    // Jalons : poignee visible, deplacable a la souris, croix de suppression.
+    /* Jalons : un trait, un triangle, une étiquette. Rien à saisir ni à
+       déplacer — ils viennent de la configuration, l'outil ne fait que les
+       montrer. Le survol de la semaine dessous passe par la bande cliquable,
+       comme partout ailleurs sur le graphique. */
     places.forEach(function (pl) {
       if (pl.aujourdhui) return;
       var j = pl.j, idx = pl.idx, jx = pl.jx;
@@ -1453,26 +1450,20 @@
       var yBase = mHaut - 8 - pl.niveau * HAUTEUR_ETIQUETTE;   // haut du trait pour ce niveau
       var yTexte = yBase - 5;
       var xTexte = pl.versGauche ? jx - 10 : jx + 10;
-      var xCroix = pl.versGauche ? pl.xa + 12 : pl.xb - 12;
 
-      s.push('\x3Cg class="jalon" data-jalon="' + idx + '">');
+      s.push('\x3Cg class="jalon" data-jalon="' + idx + '" role="img" aria-label="Jalon ' + ech(j.texte) + ' en ' + etiquette(j.i) + '">');
+      s.push('\x3Ctitle>' + ech(j.texte) + ' \u2014 ' + etiquette(j.i) + '\x3C/title>');
       s.push('\x3Cline x1="' + jx.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" y2="' + basTotal.toFixed(1) +
              '" stroke="' + couleur + '" stroke-width="1" stroke-dasharray="2 3"/>');
-      s.push('\x3Cg class="jalon-poignee" data-jalon="' + idx + '" role="button" tabindex="0" aria-label="Jalon ' + ech(j.texte) + ' en ' + etiquette(j.i) + '. Fleches gauche et droite pour deplacer, Suppr pour retirer.">');
-      s.push('\x3Crect class="jalon-fond" x="' + pl.xa.toFixed(1) + '" y="' + (yTexte - 12).toFixed(1) + '" width="' + pl.largeur.toFixed(1) + '" height="17" fill="var(--encre)" opacity="0" rx="2"/>');
       s.push('\x3Cpath d="M' + jx.toFixed(1) + ' ' + yBase.toFixed(1) + ' l-4 -5.5 l8 0 Z" fill="' + couleur + '"/>');
       s.push('\x3Ctext class="jalon-texte" x="' + xTexte.toFixed(1) + '" y="' + yTexte.toFixed(1) + '" text-anchor="' + (pl.versGauche ? 'end' : 'start') + '" fill="' + couleur + '">' + ech(j.texte) + '\x3C/text>');
       s.push('\x3C/g>');
-      s.push('\x3Cg class="jalon-supp" data-jalon="' + idx + '" role="button" tabindex="0" aria-label="Supprimer le jalon ' + ech(j.texte) + '">');
-      s.push('\x3Ccircle cx="' + xCroix.toFixed(1) + '" cy="' + (yTexte - 4).toFixed(1) + '" r="7" fill="transparent"/>');
-      s.push('\x3Cpath d="M' + (xCroix - 3).toFixed(1) + ' ' + (yTexte - 7).toFixed(1) + ' l6 6 M' + (xCroix + 3).toFixed(1) + ' ' + (yTexte - 7) + ' l-6 6" stroke="' + couleur + '" stroke-width="1.3" stroke-linecap="round" opacity=".6"/>');
-      s.push('\x3C/g>\x3C/g>');
     });
 
     if (!prochain && d1 > AUJ + 2) {
       var xv = x(AUJ + Math.round((d1 - AUJ) / 2));
       s.push('\x3Ctext class="grad" x="' + xv.toFixed(1) + '" y="' + (mHaut + plotH * 0.86).toFixed(1) +
-             '" text-anchor="middle">Aucun jalon \u00e0 venir \u2014 cliquez une semaine pour en poser un\x3C/text>');
+             '" text-anchor="middle">Aucun jalon \u00e0 venir\x3C/text>');
     }
 
     // Rythme hebdomadaire
@@ -1513,11 +1504,12 @@
     pts.forEach(function (pt) { ptParI[pt.i] = pt; });
     for (var k4 = d0; k4 <= d1; k4++) {
       var ptK = ptParI[k4];
+      /* Une bande par semaine : elle porte le survol (bulle) et se lit au
+         clavier, mais n'est plus un bouton — rien ne se pose sur le graphique. */
       s.push('\x3Crect class="zone-clic" x="' + (x(k4) - pasX / 2).toFixed(1) + '" y="' + (mHaut - 6) + '" width="' + pasX.toFixed(1) +
-             '" height="' + (plotH + ecart + bandeH + 6).toFixed(1) + '" fill="transparent" tabindex="0" role="button" data-i="' + k4 + '" ' +
+             '" height="' + (plotH + ecart + bandeH + 6).toFixed(1) + '" fill="transparent" tabindex="0" role="img" data-i="' + k4 + '" ' +
              'aria-label="' + etiquette(k4) +
-             (k4 > AUJ ? ' (à venir)' : (ptK ? ' : ' + ptK.termine + ' terminés' : ' : pas de relevé')) +
-             '. Activer pour poser un jalon."/>');
+             (k4 > AUJ ? ' (à venir)' : (ptK ? ' : ' + ptK.termine + ' terminés' : ' : pas de relevé')) + '"/>');
     }
 
     s.push('\x3C/svg>');
@@ -1541,7 +1533,7 @@
       items.push('\x3Cspan class="legende-item">\x3Csvg width="20" height="8" aria-hidden="true">\x3Cline x1="0" y1="4" x2="20" y2="4" stroke="' +
         (enRetard ? 'var(--alerte)' : 'var(--fait)') + '" stroke-width="1.6"/>\x3C/svg>' +
         '\x3Cspan title="' + restants + ' plans restants \u00e0 solder en ' + (prochain.i - AUJ) +
-        ' semaines. Rouge si ce rythme d\u00e9passe le rythme actuel. D\u00e9placez le jalon pour recalculer.">' +
+        ' semaines. Rouge si ce rythme d\u00e9passe le rythme actuel.">' +
         'requis pour \u00ab\u00a0' + ech(prochain.texte) + '\u00a0\u00bb : ' +
         requis.toFixed(1).replace('.', ',') + '/sem.\x3C/span>\x3C/span>');
     }
@@ -1566,18 +1558,6 @@
     var maxJalon = jalons.reduce(function (m, j) { return Math.max(m, j.i); }, AUJ);
     var maxProj = a && a.projIdx !== null ? a.projIdx : AUJ;
     return Math.min(MAX_IDX + 1, Math.max(maxJalon, maxProj, AUJ) + 3);
-  }
-
-  /* Poser, deplacer ou retirer un jalon change la fenetre avant echeance :
-     le bloc par groupe en depend autant que la courbe. */
-  function majJalons() {
-    var sel = selection();
-    rendreGraphique(sel);
-    rendreCritique(sel);
-    planifierSauvegarde();
-    /* Dans le classeur, les jalons sont partagés : ils repartent au serveur,
-       sinon la collègue et sa chef n'auraient pas les mêmes. */
-    if (API && API.sauverJalons) API.sauverJalons(jalonsEnSemaines());
   }
 
   function reglerSpan(span) {
@@ -1607,30 +1587,12 @@
   var cadreGraphe = $('cadre-graphe');
   var glisse = null;
 
+  /* Le seul geste du graphique : le panoramique. Il part de n'importe quel
+     point du cadre, frise des jalons et marge du bas comprises — le curseur
+     y promet la main partout. Un clic net ne fait rien. */
   cadreGraphe.addEventListener('pointerdown', function (e) {
     if (e.button !== 0) return;
-    var supp = e.target.closest ? e.target.closest('.jalon-supp') : null;
-    if (supp) {
-      e.preventDefault();
-      jalons.splice(Number(supp.dataset.jalon), 1);
-      majJalons();
-      return;
-    }
-    var poignee = e.target.closest ? e.target.closest('.jalon-poignee') : null;
-    if (poignee) {
-      e.preventDefault();
-      glisse = { type: 'jalon', idx: Number(poignee.dataset.jalon), x0: e.clientX, i0: jalons[Number(poignee.dataset.jalon)].i, bouge: false };
-      cadreGraphe.dataset.glisseJalon = 'true';
-    } else if (!(e.target.closest && e.target.closest('#saisie-jalon'))) {
-      /* Le glissement part de n'importe quel point du cadre. Le limiter aux
-         bandes cliquables laissait mortes la frise des jalons en haut et la
-         marge du bas, alors que le curseur y promettait deja la main. */
-      var surGraphe = !!(e.target.closest && e.target.closest('svg'));
-      glisse = {
-        type: 'pan', x0: e.clientX, debut0: vue.fen.debut, bouge: false,
-        i: surGraphe ? indexSousCurseur(e.clientX) : null
-      };
-    } else return;
+    glisse = { x0: e.clientX, debut0: vue.fen.debut, bouge: false };
     cadreGraphe.setPointerCapture(e.pointerId);
   });
 
@@ -1655,35 +1617,18 @@
     if (Math.abs(dx) > 4) glisse.bouge = true;
     if (!glisse.bouge) return;
     var semaines = dx / pxParSemaine();
-    if (glisse.type === 'jalon') {
-      var ni = Math.max(0, Math.min(MAX_IDX, Math.round(glisse.i0 + semaines)));
-      if (jalons[glisse.idx] && jalons[glisse.idx].i !== ni &&
-          !jalons.some(function (j, k) { return k !== glisse.idx && j.i === ni; })) {
-        jalons[glisse.idx].i = ni;
-        majJalons();
-      }
-    } else {
-      cadreGraphe.dataset.glisse = 'true';
-      var nd = Math.round(glisse.debut0 - semaines);
-      if (nd !== vue.fen.debut) { vue.fen.debut = nd; rendreGraphique(selection()); }
-    }
+    cadreGraphe.dataset.glisse = 'true';
+    var nd = Math.round(glisse.debut0 - semaines);
+    if (nd !== vue.fen.debut) { vue.fen.debut = nd; rendreGraphique(selection()); }
   });
 
-  function finGlisse(e) {
+  function finGlisse() {
     if (!glisse) return;
-    var g = glisse;
     glisse = null;
     cadreGraphe.dataset.glisse = 'false';
-    cadreGraphe.dataset.glisseJalon = 'false';
-    if (g.type === 'jalon') {
-      jalons.sort(function (a, b) { return a.i - b.i; });
-      majJalons();
-      return;
-    }
-    if (!g.bouge && g.i !== null) ouvrirSaisie(g.i, e ? e.clientX : null);
   }
   cadreGraphe.addEventListener('pointerup', finGlisse);
-  cadreGraphe.addEventListener('pointercancel', function () { finGlisse(null); });
+  cadreGraphe.addEventListener('pointercancel', finGlisse);
 
   /* Infobulle */
   cadreGraphe.addEventListener('mousemove', function (e) {
@@ -1706,7 +1651,7 @@
         comptesDeLaSemaine(i);
     } else {
       bulle.innerHTML = '\x3Cdiv class="tete-bulle">' + etiquette(i) + '\x3C/div>\x3Cdiv class="bulle-ligne">' +
-        (i > AUJ ? 'À venir · cliquez pour poser un jalon' : 'Pas de relevé cette semaine-là') + '\x3C/div>';
+        (i > AUJ ? 'À venir' : 'Pas de relevé cette semaine-là') + '\x3C/div>';
     }
     bulle.dataset.visible = 'true';
     bulle.style.left = Math.min(e.clientX + 14, window.innerWidth - bulle.offsetWidth - 12) + 'px';
@@ -1745,60 +1690,6 @@
   }
 
   cadreGraphe.addEventListener('mouseleave', function () { $('bulle').dataset.visible = 'false'; });
-
-  /* Clavier : deplacer ou supprimer un jalon sans souris */
-  cadreGraphe.addEventListener('keydown', function (e) {
-    var poignee = e.target.closest ? e.target.closest('.jalon-poignee') : null;
-    if (poignee) {
-      var idx = Number(poignee.dataset.jalon);
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        e.preventDefault();
-        var ni = Math.max(0, Math.min(MAX_IDX, jalons[idx].i + (e.key === 'ArrowRight' ? 1 : -1)));
-        if (!jalons.some(function (j, k) { return k !== idx && j.i === ni; })) {
-          jalons[idx].i = ni;
-          majJalons();
-        }
-        return;
-      }
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault(); jalons.splice(idx, 1); majJalons(); return;
-      }
-    }
-    var supp = e.target.closest ? e.target.closest('.jalon-supp') : null;
-    if (supp && (e.key === 'Enter' || e.key === ' ')) {
-      e.preventDefault(); jalons.splice(Number(supp.dataset.jalon), 1); majJalons(); return;
-    }
-    var bande = e.target.closest ? e.target.closest('.zone-clic') : null;
-    if (bande && (e.key === 'Enter' || e.key === ' ')) {
-      e.preventDefault(); ouvrirSaisie(Number(bande.dataset.i), null);
-    }
-  });
-
-  var iSaisie = null;
-  function ouvrirSaisie(i, clientX) {
-    if (i === null || i < 0 || i > MAX_IDX) return;
-    if (jalons.some(function (j) { return j.i === i; })) return;
-    iSaisie = i;
-    var boite = $('saisie-jalon');
-    var cadre = cadreGraphe.getBoundingClientRect();
-    $('jalon-semaine').textContent = etiquette(i);
-    boite.dataset.ouvert = 'true';
-    var centre = clientX !== null ? clientX - cadre.left : cadre.width / 2;
-    boite.style.left = Math.max(0, Math.min(centre - boite.offsetWidth / 2, cadre.width - boite.offsetWidth)) + 'px';
-    boite.style.top = (mHaut + 10) + 'px';
-    $('champ-jalon').value = '';
-    $('champ-jalon').focus();
-  }
-  function fermerSaisie() { $('saisie-jalon').dataset.ouvert = 'false'; iSaisie = null; }
-  $('saisie-jalon').addEventListener('submit', function (e) {
-    e.preventDefault();
-    if (iSaisie === null) return;
-    jalons.push({ i: iSaisie, texte: $('champ-jalon').value.trim() || 'Jalon' });
-    jalons.sort(function (a, b) { return a.i - b.i; });
-    fermerSaisie();
-    majJalons();
-  });
-  $('champ-jalon').addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); fermerSaisie(); } });
 
   document.querySelector('.commandes-graphe .segmente').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-span]');
@@ -2561,9 +2452,6 @@
      montre exactement ce que la page fera, ni plus ni moins. */
   function basculerExemple(actif) {
     if (actif === !!vue.exemple) return;
-    /* Les jalons posés à l'écran suivent le lecteur d'un mode à l'autre : on
-       les rend à la source réelle, en semaines, avant de basculer. */
-    SRC_REELLE.jalons = jalonsEnSemaines();
     if (actif) {
       var exemple = {};
       Object.keys(SRC_REELLE).forEach(function (k) { exemple[k] = SRC_REELLE[k]; });
@@ -2951,7 +2839,6 @@
       $('panneau-colonnes').hidden = true;
       $('bascule-colonnes').setAttribute('aria-expanded', 'false');
     }
-    if ($('saisie-jalon').dataset.ouvert === 'true' && !e.target.closest('#cadre-graphe')) fermerSaisie();
   });
   $('panneau-colonnes').addEventListener('change', function (e) {
     var c = e.target.closest('input[data-col]');
@@ -3033,7 +2920,6 @@
   $('reinit').addEventListener('click', function () { toutEffacer(); rendre(); });
   $('defile').addEventListener('scroll', majOmbre, { passive: true });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') fermerSaisie();
     if (e.key === '/' && document.activeElement !== $('recherche')) {
       e.preventDefault(); $('recherche').focus(); $('recherche').select();
     }
@@ -3042,7 +2928,7 @@
   window.addEventListener('resize', function () {
     clearTimeout(minuteurTaille);
     minuteurTaille = setTimeout(function () {
-      fermerSaisie(); rendreGraphique(selection()); ajusterSticky(); majOmbre();
+      rendreGraphique(selection()); ajusterSticky(); majOmbre();
       alignerEtats(compte(selection()));
     }, 160);
   });

@@ -315,32 +315,44 @@ function serveurSur(valeurs, proprietes, fichiers) {
     relu[0].semaine === '2026-S02' && relu[0].plans === null && JSON.stringify(relu[0].groupes) === '{}');
 
   // =================================================================
-  section('Jalons partagés');
+  section('Jalons de configuration');
+  /* Les jalons vivent dans CONFIG.JALONS, et nulle part ailleurs : pas de
+     propriété de document, pas d'écriture. getJalons() valide ce que la
+     configuration contient. On modifie CONFIG dans le contexte du serveur,
+     comme le ferait quelqu'un qui édite Code.gs. */
   const j = serveurSur(feuilleExemple(10));
-  const ecrits = j.contexte.sauverJalons([
+  const configurer = (liste) => vm.runInContext('CONFIG.JALONS = ' + JSON.stringify(liste), j.contexte);
+  const parDefaut = j.contexte.getJalons();
+  verifier('la configuration livrée porte quatre jalons, triés et normalisés',
+    parDefaut.length === 4 && parDefaut.every(x => /^\d{4}-S\d{2}$/.test(x.semaine) && x.texte) &&
+    parDefaut.every((x, i) => i === 0 || parDefaut[i - 1].semaine <= x.semaine), JSON.stringify(parDefaut));
+  verifier('aucune fonction de sauvegarde ni de propriété de document ne subsiste',
+    typeof j.contexte.sauverJalons === 'undefined' && !/PropertiesService|CLE_JALONS/.test(fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8')));
+  configurer([
     { semaine: '2026-s8', texte: '  Revue de définition  ' },
     { semaine: '2026-S02', texte: '' },
     { semaine: 'nawak', texte: 'ignoré' },
     null,
     { semaine: '2026-S40', texte: 'X'.repeat(200) }
   ]);
-  verifier('les entrées invalides sont écartées', ecrits.length === 3, String(ecrits.length));
+  const lus = j.contexte.getJalons();
+  verifier('les entrées invalides sont écartées', lus.length === 3, String(lus.length));
   verifier('les jalons sont triés par semaine',
-    ecrits.map(x => x.semaine).join(',') === '2026-S02,2026-S08,2026-S40', ecrits.map(x => x.semaine).join(','));
-  verifier('un texte vide reçoit un libellé', ecrits[0].texte === 'Jalon');
-  verifier('un texte à rallonge est coupé à 60 caractères', ecrits[2].texte.length === 60);
-  verifier('chaque jalon reçoit un identifiant', ecrits.every(x => !!x.id));
-  verifier('les jalons se relisent', j.contexte.getJalons().length === 3);
-  const idPremier = ecrits[0].id;
-  j.contexte.sauverJalons(ecrits.slice(0, 2));
-  verifier('supprimer revient à renvoyer la liste amputée', j.contexte.getJalons().length === 2);
-  verifier('les identifiants sont conservés', j.contexte.getJalons()[0].id === idPremier);
+    lus.map(x => x.semaine).join(',') === '2026-S02,2026-S08,2026-S40', lus.map(x => x.semaine).join(','));
+  verifier('un texte vide reçoit un libellé', lus[0].texte === 'Jalon');
+  verifier('un texte est épuré de ses espaces', lus[1].texte === 'Revue de définition');
+  verifier('un texte à rallonge est coupé à 60 caractères', lus[2].texte.length === 60);
+  verifier('les jalons n\'ont plus d\'identifiant : rien à sauvegarder',
+    lus.every(x => Object.keys(x).sort().join(',') === 'semaine,texte'));
+  verifier('le paquet envoyé à la page reprend ces jalons',
+    JSON.stringify(j.contexte.getDonneesPourClient().jalons) === JSON.stringify(lus));
   const trop = [];
   for (let i = 1; i <= 60; i++) trop.push({ semaine: '2026-S' + String((i % 52) + 1).padStart(2, '0'), texte: 'j' + i });
-  verifier('le nombre de jalons est plafonné', j.contexte.sauverJalons(trop).length === 40);
-  const casse = serveurSur(feuilleExemple(5), { SUIVI_FWD_JALONS: 'ceci n\'est pas du JSON' });
-  verifier('une propriété illisible renvoie une liste vide',
-    Array.isArray(casse.contexte.getJalons()) && casse.contexte.getJalons().length === 0);
+  configurer(trop);
+  verifier('le nombre de jalons est plafonné', j.contexte.getJalons().length === 40);
+  vm.runInContext('CONFIG.JALONS = "pas une liste"', j.contexte);
+  verifier('une configuration qui n\'est pas une liste donne une liste vide',
+    Array.isArray(j.contexte.getJalons()) && j.contexte.getJalons().length === 0);
 
   // =================================================================
   section('Feuilles hostiles');
@@ -467,7 +479,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     titre: document.getElementById('titre-groupe').textContent,
     groupes: document.querySelectorAll('.critique-ligne').length,
     totauxGroupes: [...document.querySelectorAll('.critique-total')].map(t => +t.textContent),
-    jalons: document.querySelectorAll('.jalon-supp').length,
+    jalons: document.querySelectorAll('.jalon-poignee, .jalon-supp, #saisie-jalon').length,
     releves: document.querySelectorAll('.zone-clic').length > 0,
     importe: document.getElementById('import').textContent
   }));
@@ -489,6 +501,17 @@ function serveurSur(valeurs, proprietes, fichiers) {
     vu.totauxGroupes.reduce((a, b) => a + b, 0) === 186, String(vu.totauxGroupes.reduce((a, b) => a + b, 0)));
   verifier('le graphique a de quoi tracer', vu.releves);
   verifier('la ligne d\'import annonce les relevés archivés', /relevés archivés/.test(vu.importe), vu.importe);
+  verifier('rien ne permet d\'éditer un jalon dans la page', vu.jalons === 0);
+  /* Les jalons de CONFIG sont dessinés — ceux qui tombent après le premier
+     relevé, puisque l'axe du graphique part de là. Sur « Tout », la fenêtre
+     s'étend jusqu'au dernier jalon. */
+  await p.click('.segmente button[data-span="0"]'); await p.waitForTimeout(400);
+  const attendus = paquet.jalons.filter(x => x.semaine >= paquet.releves[0].semaine);
+  const jalonsPage = await p.evaluate(() => [...document.querySelectorAll('.jalon .jalon-texte')].map(t => t.textContent));
+  verifier('la page affiche les jalons de la configuration',
+    jalonsPage.length === attendus.length && attendus.every(x => jalonsPage.indexOf(x.texte) !== -1),
+    JSON.stringify(jalonsPage) + ' pour ' + JSON.stringify(attendus.map(x => x.texte)));
+  verifier('la configuration livrée en met quatre à l\'écran', jalonsPage.length === 4, String(jalonsPage.length));
 
   /* Un seul contrat : le sélecteur n'a rien à proposer, il reste caché — et le
      rappel du contrat sous le titre avec lui. */
@@ -964,12 +987,18 @@ function serveurSur(valeurs, proprietes, fichiers) {
 
   // =================================================================
   section('Repères du bloc par groupe');
-  /* Sans jalon, le bloc n'a que deux colonnes calculées ; avec un jalon, trois.
-     Chacune porte son « ? ». */
-  const nbAides = await pg.evaluate(() => document.querySelectorAll('button[data-aide]').length);
-  const avecJalon = await pg.evaluate(() => !document.getElementById('zone-critique').classList.contains('sans-jalon'));
-  verifier('chaque colonne calculée porte son « ? »',
-    nbAides === (avecJalon ? 3 : 2), nbAides + ' pour ' + (avecJalon ? 'trois' : 'deux') + ' colonnes');
+  /* Deux colonnes calculées, chacune avec son « ? » : la fin estimée, et la
+     dernière, qui est « effort demandé » quand un jalon de la configuration
+     est à venir (c'est le cas : CONFIG.JALONS en fournit), « rythme actuel »
+     sinon. */
+  const reperes = await pg.evaluate(() => ({
+    aides: document.querySelectorAll('button[data-aide]').length,
+    avecJalon: !document.getElementById('zone-critique').classList.contains('sans-jalon'),
+    derniere: [...document.querySelectorAll('.critique-tete button[data-trig]')].slice(-1)[0].textContent.trim()
+  }));
+  verifier('chaque colonne calculée porte son « ? »', reperes.aides === 2, reperes.aides + ' « ? »');
+  verifier('avec un jalon de configuration à venir, la dernière colonne est l\'effort demandé',
+    reperes.avecJalon && /effort demandé/.test(reperes.derniere), JSON.stringify(reperes));
   await pg.selectOption('#dim-critique', 'ata'); await pg.waitForTimeout(500);
   const noteA = await pg.textContent('#indice-dim');
   await pg.selectOption('#dim-critique', '_mois'); await pg.waitForTimeout(500);

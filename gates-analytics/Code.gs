@@ -8,7 +8,8 @@
  *      (aucun nom de colonne n'est écrit en dur : tout vient de l'en-tête) ;
  *   2. classer l'avancement FWD de chaque ligne en quatre états ;
  *   3. entretenir un historique hebdomadaire réel (onglet « Historique_FWD ») ;
- *   4. stocker les jalons, partagés par tous ceux qui ouvrent le classeur.
+ *   4. fournir les jalons du programme, fixés ici dans la configuration :
+ *      la page les montre, personne ne les modifie à l'écran.
  *
  * La page est rendue d'une traite : Index.html injecte le paquet de données
  * dans la page au moment de l'évaluation du modèle, sans aller-retour.
@@ -33,10 +34,22 @@ const CONFIG = {
   /** Mots-clés qui identifient la ligne d'en-têtes (normalisés, sans accents). */
   MOTS_CLES_ENTETE: ['reference ud', 'reference', 'ata', 'nom installation'],
 
-  /** Clé de stockage des jalons dans les propriétés du document. */
-  CLE_JALONS: 'SUIVI_FWD_JALONS',
+  /**
+   * Les jalons du programme, affichés sur le graphique et utilisés pour
+   * l'« effort demandé » du bloc par groupe (le prochain jalon à venir fait
+   * l'échéance). Ils ne s'éditent pas à l'écran : c'est ici qu'on les
+   * change. Semaine ISO « AAAA-SNN », texte de 60 caractères au plus.
+   *
+   * DATES PROVISOIRES, à remplacer par les vraies échéances du programme.
+   */
+  JALONS: [
+    { semaine: '2026-S44', texte: 'Gel de la définition' },
+    { semaine: '2026-S52', texte: 'Revue critique' },
+    { semaine: '2027-S12', texte: 'Livraison plateau' },
+    { semaine: '2027-S26', texte: 'Premier vol' }
+  ],
 
-  /** Nombre maximum de jalons conservés. */
+  /** Nombre maximum de jalons transmis à la page. */
   MAX_JALONS: 40,
 
   /** Au-delà, une colonne est considérée comme un identifiant, pas une catégorie. */
@@ -826,7 +839,7 @@ function diagnostic() {
     } else {
       dire('  du ' + histo[0].semaine + ' au ' + histo[histo.length - 1].semaine);
     }
-    dire('✓ Jalons enregistrés : ' + getJalons().length);
+    dire('✓ Jalons de configuration : ' + getJalons().length);
 
     const poids = donneesJSONPourPage().length;
     dire('✓ Paquet envoyé à la page : ' + Math.round(poids / 1024) + ' Ko');
@@ -1025,32 +1038,22 @@ function desinstallerSuiviHebdomadaire() {
 }
 
 // =====================================================================
-//  JALONS (persistants, partagés par tous les utilisateurs du classeur)
+//  JALONS (fixés dans CONFIG, identiques pour tous les lecteurs)
 // =====================================================================
 
-function getJalons() {
-  try {
-    const brut = PropertiesService.getDocumentProperties().getProperty(CONFIG.CLE_JALONS);
-    if (!brut) return [];
-    const liste = JSON.parse(brut);
-    return Array.isArray(liste) ? liste : [];
-  } catch (err) {
-    return [];
-  }
-}
-
 /**
- * Remplace la liste entière. La page envoie toujours son état complet :
- * poser, déplacer et retirer passent par le même chemin, donc il n'y a pas
- * de demi-état possible entre le classeur et l'écran.
+ * Les jalons de CONFIG.JALONS, validés : semaine normalisée, texte épuré et
+ * coupé à 60 caractères, entrées illisibles écartées, tri par semaine,
+ * plafond MAX_JALONS. Une faute de frappe dans la configuration ne fait
+ * donc jamais tomber la page — le jalon fautif est simplement absent.
  */
-function sauverJalons(liste) {
-  const propres = (Array.isArray(liste) ? liste : [])
+function getJalons() {
+  const liste = Array.isArray(CONFIG.JALONS) ? CONFIG.JALONS : [];
+  return liste
     .map(function (j) {
       const semaine = normaliserSemaine(j && j.semaine);
       if (!semaine) return null;
       return {
-        id: (j && j.id) ? String(j.id) : Utilities.getUuid(),
         semaine: semaine,
         texte: String((j && j.texte) || 'Jalon').trim().slice(0, 60) || 'Jalon'
       };
@@ -1058,8 +1061,4 @@ function sauverJalons(liste) {
     .filter(function (j) { return j !== null; })
     .sort(function (a, b) { return a.semaine < b.semaine ? -1 : (a.semaine > b.semaine ? 1 : 0); })
     .slice(0, CONFIG.MAX_JALONS);
-
-  PropertiesService.getDocumentProperties()
-    .setProperty(CONFIG.CLE_JALONS, JSON.stringify(propres));
-  return propres;
 }

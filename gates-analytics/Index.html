@@ -81,7 +81,7 @@
     <div class="section-tete">
       <h2>Avancement dans le temps</h2>
       <div class="commandes-graphe">
-        <span class="indice">Glissez pour vous déplacer · cliquez une semaine pour y poser un jalon</span>
+        <span class="indice">Glissez pour vous déplacer · molette pour zoomer</span>
         <span class="segmente" role="group" aria-label="Période affichée">
           <button type="button" data-span="13">3 mois</button>
           <button type="button" data-span="26">6 mois</button>
@@ -93,11 +93,6 @@
     <div class="feuille">
       <div class="cadre-graphe" id="cadre-graphe">
         <div id="zone-graphe"></div>
-        <form class="saisie-jalon" id="saisie-jalon" data-ouvert="false">
-          <label for="champ-jalon">Jalon en <span id="jalon-semaine" class="num"></span></label>
-          <input type="text" id="champ-jalon" maxlength="34" placeholder="Nom du jalon" autocomplete="off">
-          <div class="aide">Entrée pour poser · Échap pour annuler</div>
-        </form>
       </div>
       <p class="note-graphe" id="note-graphe"></p>
       <div class="legende" id="legende"></div>
