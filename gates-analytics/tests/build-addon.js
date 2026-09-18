@@ -30,8 +30,15 @@ function construire(options) {
   } else {
     donnees = new Feuille('Données', feuilleExemple(opts.lignes || 186));
   }
-  const classeur = new Classeur([donnees], 'Suivi FWD H225');
+  /* D'autres onglets à côté des données — par exemple l'extract d'une seconde
+     base à rapprocher — et une configuration à surcharger, comme le ferait
+     quelqu'un qui édite Code.gs. */
+  const classeur = new Classeur([donnees].concat(opts.feuilles || []), 'Suivi FWD H225');
   const contexte = chargerServeur(classeur, opts.proprietes || {});
+  if (opts.config) {
+    const cfg = vm.runInContext('CONFIG', contexte);
+    Object.keys(opts.config).forEach(function (k) { cfg[k] = opts.config[k]; });
+  }
 
   // Deux relevés archivés, à deux semaines d'écart, pour que la page ait une pente.
   if (opts.historique === 'premier') {

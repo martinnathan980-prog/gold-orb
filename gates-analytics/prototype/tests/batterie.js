@@ -321,6 +321,183 @@ async function reinitialiser(pg) {
       document.getElementById('select-contrat').value === 'X1'));
 
   // =================================================================
+  /* Le rapprochement avec une seconde base : la démonstration en fabrique
+     une, aux colonnes nommées autrement, avec des écarts délibérés — 5 plans
+     absents là, 5 références absentes ici, 2 indices différents, 10 champs
+     différents. La section vit entre le bloc par groupe et le tableau ; trois
+     compteurs filtrent le tableau, « absents d'ici » déplie une liste, et
+     un panneau détaille les écarts de champ. Elle suit le périmètre et le
+     contrat, et disparaît quand la source ne décrit aucune seconde base. */
+  section('Rapprochement avec une seconde base');
+  const lireRapp = () => p.evaluate(() => {
+    const R = window.__rapprochement();
+    const top = el => Math.round(document.getElementById(el).getBoundingClientRect().top + window.scrollY);
+    return {
+      cache: document.getElementById('rapprochement').hidden,
+      titre: document.getElementById('titre-rapprochement').textContent,
+      phrase: document.getElementById('phrase-rapprochement').textContent,
+      puces: [...document.querySelectorAll('#puces-rapprochement button[data-rapp]')].map(b => ({
+        cle: b.dataset.rapp, n: +b.querySelector('b').textContent.replace(/\s/g, ''),
+        libelle: b.textContent.replace(/^\s*\d+\s*/, '').trim(),
+        presse: b.getAttribute('aria-pressed'), inactif: b.disabled
+      })),
+      ordre: top('zone-critique') < top('rapprochement') && top('rapprochement') < top('cadre-tableau'),
+      lignes: document.querySelectorAll('#corps-tableau tr').length,
+      refsTableau: [...document.querySelectorAll('#corps-tableau tr td.ref')].map(td => td.textContent.trim()),
+      jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()),
+      bouton: document.getElementById('bouton-detail-rapprochement').textContent,
+      ouvert: document.getElementById('bouton-detail-rapprochement').getAttribute('aria-expanded'),
+      grille: !!document.querySelector('#detail-rapprochement .rapp-grille'),
+      cellules: document.querySelectorAll('#detail-rapprochement .rapp-grille > div').length,
+      entetes: [...document.querySelectorAll('#detail-rapprochement .rapp-entete')].map(e => e.textContent),
+      refsDetail: [...document.querySelectorAll('#detail-rapprochement .rapp-grille > div.ref')].map(e => e.textContent),
+      lignesDetail: [...document.querySelectorAll('#detail-rapprochement .rapp-grille > div')].map(e => e.textContent),
+      absents: document.querySelectorAll('#absents-rapprochement .rapp-liste .ligne').length,
+      absentsRefs: [...document.querySelectorAll('#absents-rapprochement .ligne .ref')].map(e => e.textContent),
+      absentsChamps: [...document.querySelectorAll('#absents-rapprochement .ligne')].map(l => l.querySelectorAll('.champ').length),
+      R: R && {
+        absentsLa: R.absentsLa.length, absentsIci: R.absentsIci.length,
+        indice: R.indiceDifferent.length, ecarts: R.ecarts.length, total: R.total,
+        nbPlans: R.nbPlans, nbLignes: R.nbLignes,
+        refsEcarts: R.ecarts.map(e => e.plan.reference),
+        champsEcarts: R.ecarts.map(e => e.champ),
+        indices: R.indiceDifferent.map(x => ({ ici: x.plan.reference, la: x.ref_la, racineIci: window.__analyserUD(x.plan.reference).racine, racineLa: window.__analyserUD(x.ref_la).racine })),
+        avancement: R.ecarts.filter(e => e.champ === 'Avancement').map(e => [e.ici, e.la])
+      }
+    };
+  });
+  const r0 = await lireRapp();
+  verifier('la section est là, nommée d\'après la seconde base',
+    !r0.cache && r0.titre === 'Rapprochement avec Base FWD (extract Excel)', r0.titre);
+  verifier('entre le bloc par groupe et le tableau', r0.ordre);
+  verifier('la phrase compte les deux côtés et les écarts',
+    r0.phrase === TOTAL + ' plans ici, ' + TOTAL + ' lignes là : 22 écarts.', r0.phrase);
+  verifier('quatre compteurs, dans l\'ordre, avec les nombres attendus : 5 / 5 / 2 / 10',
+    r0.puces.map(x => x.cle + '=' + x.n).join(' ') === 'absentsLa=5 absentsIci=5 indiceDifferent=2 ecarts=10',
+    JSON.stringify(r0.puces));
+  verifier('et les libellés attendus',
+    r0.puces.map(x => x.libelle).join(' | ') === 'absents de la seconde base | absents d’ici | indice différent | champs différents',
+    r0.puces.map(x => x.libelle).join(' | '));
+  verifier('aucun n\'est pressé ni inactif au départ, le tableau est entier',
+    r0.puces.every(x => x.presse === 'false' && !x.inactif) && r0.lignes === TOTAL && r0.jetons.length === 0);
+  verifier('le moteur donne les mêmes comptes : 22 écarts au total',
+    r0.R && r0.R.total === 22 && r0.R.nbPlans === TOTAL && r0.R.nbLignes === TOTAL, JSON.stringify(r0.R && [r0.R.total, r0.R.nbPlans, r0.R.nbLignes]));
+  verifier('les écarts de champ couvrent les cinq champs déclarés, deux fois chacun',
+    ['ATA', 'ECP', 'Avancement', 'Nom Installation', 'Séquence'].every(c => r0.R.champsEcarts.filter(x => x === c).length === 2),
+    JSON.stringify(r0.R.champsEcarts));
+  verifier('l\'avancement se compare par état : « OK » / « WIP » contre « Terminé » / « En cours »',
+    r0.R.avancement.length === 2 && r0.R.avancement.every(([ici, la]) => /^(OK|WIP)$/.test(la) && !/^(OK|WIP)$/.test(ici)),
+    JSON.stringify(r0.R.avancement));
+  verifier('un indice différent, c\'est la même racine sous une autre émission',
+    r0.R.indices.length === 2 && r0.R.indices.every(x => x.racineIci === x.racineLa && x.ici !== x.la && /-/.test(x.la)),
+    JSON.stringify(r0.R.indices));
+
+  // « champs différents » : le tableau se réduit aux dix plans concernés.
+  await p.click('#puces-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(500);
+  const rEc = await lireRapp();
+  verifier('cliquer « champs différents » réduit le tableau à 10 plans', rEc.lignes === 10, String(rEc.lignes));
+  verifier('ce sont bien les plans en écart',
+    rEc.refsTableau.length === 10 && rEc.refsTableau.every(r => r0.R.refsEcarts.indexOf(r) !== -1), JSON.stringify(rEc.refsTableau));
+  verifier('le bandeau nomme le filtre « Rapprochement : champs différents », la puce est pressée',
+    rEc.jetons.length === 1 && rEc.jetons[0] === 'Rapprochement : champs différents' &&
+    rEc.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'ecarts', JSON.stringify(rEc.jetons));
+  verifier('les comptes ne bougent pas : le rapprochement ne se filtre pas lui-même',
+    rEc.puces.map(x => x.n).join() === '5,5,2,10');
+  await p.click('#puces-rapprochement button[data-rapp="absentsLa"]'); await p.waitForTimeout(500);
+  const rAb = await lireRapp();
+  verifier('« absents de la seconde base » remplace la sélection : 5 plans',
+    rAb.lignes === 5 && rAb.jetons[0] === 'Rapprochement : absents de la seconde base' &&
+    rAb.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'absentsLa', JSON.stringify(rAb.jetons) + ' ' + rAb.lignes);
+  await p.click('#puces-rapprochement button[data-rapp="indiceDifferent"]'); await p.waitForTimeout(500);
+  const rIn = await lireRapp();
+  verifier('« indice différent » : 2 plans, ceux du moteur',
+    rIn.lignes === 2 && rIn.refsTableau.sort().join() === r0.R.indices.map(x => x.ici).sort().join(), JSON.stringify(rIn.refsTableau));
+  await p.click('#puces-rapprochement button[data-rapp="indiceDifferent"]'); await p.waitForTimeout(500);
+  const rOff = await lireRapp();
+  verifier('re-cliquer le compteur pressé retire le filtre',
+    rOff.lignes === TOTAL && rOff.jetons.length === 0 && rOff.puces.every(x => x.presse === 'false'));
+  await p.click('#puces-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(400);
+  await p.click('.jeton .x'); await p.waitForTimeout(400);
+  verifier('la croix du bandeau retire aussi le filtre du rapprochement',
+    await p.evaluate(t => document.querySelectorAll('#corps-tableau tr').length === t &&
+      document.getElementById('filtres-actifs').hidden, TOTAL));
+
+  // Le détail des écarts : fermé au départ, une grille de quatre colonnes.
+  verifier('le détail est replié au départ, son bouton compte les écarts',
+    r0.ouvert === 'false' && !r0.grille && r0.cellules === 0 && /^détail des écarts \(10\)$/.test(r0.bouton), r0.bouton);
+  await p.click('#bouton-detail-rapprochement'); await p.waitForTimeout(350);
+  const rDe = await lireRapp();
+  verifier('le détail liste les 10 écarts en grille de quatre colonnes',
+    rDe.ouvert === 'true' && rDe.grille && rDe.cellules === 44 && rDe.entetes.join('|') === 'Référence|Champ|Ici|Là',
+    rDe.cellules + ' cellules, ' + rDe.entetes.join('|'));
+  verifier('une ligne par écart : la référence en mono, le champ, la valeur ici, la valeur là',
+    rDe.refsDetail.length === 10 && rDe.refsDetail.join() === r0.R.refsEcarts.join() &&
+    rDe.lignesDetail.slice(4).filter((_, i) => i % 4 === 1).join() === r0.R.champsEcarts.join(),
+    JSON.stringify(rDe.refsDetail.slice(0, 3)));
+  verifier('ouvrir le détail ne filtre pas le tableau', rDe.lignes === TOTAL);
+  await p.click('#bouton-detail-rapprochement'); await p.waitForTimeout(300);
+  verifier('le détail se replie', (await lireRapp()).cellules === 0);
+
+  // « absents d'ici » : ces références n'ont pas de ligne, on les liste.
+  await p.click('#puces-rapprochement button[data-rapp="absentsIci"]'); await p.waitForTimeout(350);
+  const rIci = await lireRapp();
+  verifier('« absents d\'ici » déplie la liste des 5 références, sans toucher au tableau',
+    rIci.absents === 5 && rIci.lignes === TOTAL && rIci.jetons.length === 0 &&
+    rIci.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'absentsIci', JSON.stringify([rIci.absents, rIci.lignes]));
+  verifier('chaque référence est inédite ici, et vient avec ses cinq champs',
+    rIci.absentsRefs.every(r => r0.R.refsEcarts.indexOf(r) === -1 && /^NEW/.test(r)) &&
+    rIci.absentsChamps.every(n => n === 5), JSON.stringify(rIci.absentsRefs));
+  await p.click('#puces-rapprochement button[data-rapp="absentsIci"]'); await p.waitForTimeout(300);
+  verifier('re-cliquer replie la liste', (await lireRapp()).absents === 0);
+
+  // Le périmètre : les plans hors périmètre ne comptent pas.
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
+  const rPe = await lireRapp();
+  verifier('le périmètre PERSO réduit les comptes des trois lots de plans',
+    rPe.R.absentsLa + rPe.R.indice + rPe.R.ecarts < 17 && rPe.R.nbPlans < TOTAL &&
+    rPe.puces.map(x => x.n).join() === [rPe.R.absentsLa, rPe.R.absentsIci, rPe.R.indice, rPe.R.ecarts].join(),
+    JSON.stringify(rPe.puces.map(x => x.n)));
+  verifier('les références absentes d\'ici, sans domaine, restent comptées', rPe.R.absentsIci === 5);
+  verifier('la phrase nomme le périmètre et compte ses plans',
+    new RegExp('^' + rPe.R.nbPlans + ' plans ici \\(périmètre PERSO\\), ' + TOTAL + ' lignes là : ' + rPe.R.total + ' écarts?\\.$').test(rPe.phrase), rPe.phrase);
+  await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(600);
+  verifier('revenir à Tout redonne les 22 écarts', (await lireRapp()).R.total === 22);
+
+  // Le contrat : la seconde base est celle du contrat courant.
+  await p.selectOption('#select-contrat', 'X3'); await p.waitForTimeout(1200);
+  const rX3 = await lireRapp();
+  verifier('changer de contrat recalcule le rapprochement sur ses plans',
+    rX3.R.nbPlans !== TOTAL && rX3.R.nbPlans === rX3.lignes && rX3.R.nbLignes === rX3.R.nbPlans &&
+    rX3.phrase.indexOf(rX3.R.nbPlans + ' plans ici') === 0 && rX3.R.total === 22, rX3.phrase);
+  verifier('les écarts sont ceux d\'autres plans',
+    rX3.R.refsEcarts.every(r => r0.R.refsEcarts.indexOf(r) === -1), JSON.stringify(rX3.R.refsEcarts.slice(0, 2)));
+  await p.selectOption('#select-contrat', 'X1'); await p.waitForTimeout(1200);
+
+  // L'exemple : la même seconde base, les mêmes comptes.
+  await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(800);
+  const rEx = await lireRapp();
+  verifier('en mode exemple, la section reste et dit la même chose',
+    !rEx.cache && rEx.R.total === 22 && rEx.phrase === r0.phrase, rEx.phrase);
+  await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(800);
+
+  // Sans description de seconde base, il n'y a rien à rapprocher.
+  await p.evaluate(() => { const s = window.__jeuDExemple('X1'); delete s.rapprochement; window.__chargerSource(s); });
+  await p.waitForTimeout(900);
+  const rSans = await lireRapp();
+  verifier('sans rapprochement dans la source, la section est absente',
+    rSans.cache && rSans.R === null, JSON.stringify([rSans.cache, rSans.R]));
+  verifier('et le reste de la page est intact', rSans.lignes === TOTAL);
+  await p.evaluate(() => { const s = window.__jeuDExemple('X1'); s.rapprochement = { nom: 'Vide', cleReference: 'REF', champs: [], lignes: [] }; window.__chargerSource(s); });
+  await p.waitForTimeout(900);
+  const rVide = await lireRapp();
+  verifier('une seconde base vide : tous les plans sont absents de là, les autres compteurs inactifs',
+    !rVide.cache && rVide.R.absentsLa === TOTAL && rVide.puces[0].n === TOTAL &&
+    rVide.puces.slice(1).every(x => x.inactif) && /aucun|écarts\.$/.test(rVide.phrase), rVide.phrase);
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('X1')));
+  await p.waitForTimeout(900);
+  verifier('la seconde base revenue, la section revient', !(await lireRapp()).cache && (await lireRapp()).R.total === 22);
+
+  // =================================================================
   /* Le périmètre : tout en haut, à côté du mode. « Tout », puis une puce par
      domaine avec son compte. Il pilote toute la page — barre, tableau, bloc
      par groupe, courbe, journal, comparatif — et, sous un périmètre, la courbe

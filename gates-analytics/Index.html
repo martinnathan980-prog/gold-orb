@@ -140,6 +140,23 @@
     </div>
   </section>
 
+  <!-- Le rapprochement avec une seconde base : présent seulement quand la
+       source en porte une. Les compteurs filtrent le tableau ; ce qui n'est
+       pas dans le tableau — les références absentes d'ici — se déplie ici. -->
+  <section class="bloc rapprochement" id="rapprochement" hidden>
+    <div class="section-tete">
+      <h2 id="titre-rapprochement">Rapprochement</h2>
+    </div>
+    <div class="feuille">
+      <p class="rapp-phrase" id="phrase-rapprochement"></p>
+      <div class="rapp-puces" id="puces-rapprochement" role="group" aria-label="Écarts entre les deux bases"></div>
+      <div id="absents-rapprochement"></div>
+      <button class="journal-plus rapp-detail-bouton" type="button" id="bouton-detail-rapprochement"
+              data-rapp-detail="1" aria-expanded="false" aria-controls="detail-rapprochement">détail des écarts</button>
+      <div id="detail-rapprochement"></div>
+    </div>
+  </section>
+
   <section class="bloc">
     <div class="section-tete">
       <h2>Plans</h2>

@@ -401,6 +401,47 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .puce-delta:hover { color: var(--encre); border-bottom-color: var(--encre); }
 .puce-delta[aria-pressed="true"] { color: var(--encre); font-weight: 500; border-bottom: 1px solid var(--encre); }
 .puce-delta b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; }
+
+/* ---------------------------------------------------- Rapprochement
+   Quatre compteurs dans le registre des puces du comparatif ; une liste
+   sobre pour ce qui n'est pas dans le tableau ; une grille pour le détail. */
+.rapprochement[hidden] { display: none; }
+.rapp-phrase { margin: 0 0 12px; font-size: 13px; color: var(--encre-2); }
+.rapp-puces {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 20px;
+  font-size: 13px; color: var(--encre-3);
+}
+.rapp-puces .puce-delta:disabled { cursor: default; color: var(--encre-3); border-bottom-color: transparent; }
+.rapp-puces .puce-delta:disabled:hover { color: var(--encre-3); }
+.rapp-liste { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--filet); font-size: 12.5px; }
+.rapp-liste .sous-titre {
+  margin: 0 0 6px; font: 500 10.5px/1.4 "IBM Plex Sans", system-ui, sans-serif;
+  letter-spacing: .09em; text-transform: uppercase; color: var(--encre-2);
+}
+.rapp-liste .ligne {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 14px;
+  padding: 5px 0; border-bottom: 1px solid var(--filet);
+}
+.rapp-liste .ligne:last-child { border-bottom: none; }
+.rapp-liste .champ { color: var(--encre-3); white-space: nowrap; }
+.rapp-liste .champ b { font-weight: 500; color: var(--encre-2); }
+.rapp-detail-bouton { margin-top: 14px; display: inline-flex; align-items: baseline; gap: 6px; }
+.rapp-detail-bouton::before { content: "▸"; font-size: 10px; }
+.rapp-detail-bouton[aria-expanded="true"]::before { content: "▾"; }
+.rapp-detail { margin-top: 8px; max-height: 360px; overflow: auto; overscroll-behavior: contain; }
+.rapp-grille {
+  display: grid; grid-template-columns: max-content max-content minmax(90px, 1fr) minmax(90px, 1fr);
+  gap: 0 18px; font-size: 12.5px; min-width: 100%;
+}
+.rapp-grille > div { padding: 5px 0; border-bottom: 1px solid var(--filet); min-width: 0; overflow-wrap: anywhere; }
+.rapp-grille .rapp-entete {
+  position: sticky; top: 0; background: var(--surface);
+  font: 500 10.5px/1.4 "IBM Plex Sans", system-ui, sans-serif;
+  letter-spacing: .09em; text-transform: uppercase; color: var(--encre-2);
+  border-bottom-color: var(--filet-fort);
+}
+.rapp-grille .champ { color: var(--encre-2); }
+.rapp-vide { color: var(--encre-3); font-size: 13px; padding: 8px 2px 0; }
 .bulle .liste-refs {
   font-family: "IBM Plex Mono", monospace; font-size: 11.5px; line-height: 1.6;
   max-height: 210px; overflow: hidden;

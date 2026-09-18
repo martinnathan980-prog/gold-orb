@@ -3,13 +3,15 @@
  * =============================================================
  * Côté serveur (Google Apps Script).
  *
- * Ce fichier ne fait que quatre choses :
+ * Ce fichier ne fait que cinq choses :
  *   1. lire l'onglet de données et en déduire un modèle de colonnes
  *      (aucun nom de colonne n'est écrit en dur : tout vient de l'en-tête) ;
  *   2. classer l'avancement FWD de chaque ligne en quatre états ;
  *   3. entretenir un historique hebdomadaire réel (onglet « Historique_FWD ») ;
  *   4. fournir les jalons du programme, fixés ici dans la configuration :
- *      la page les montre, personne ne les modifie à l'écran.
+ *      la page les montre, personne ne les modifie à l'écran ;
+ *   5. lire, si la configuration en nomme un, l'onglet d'une seconde base à
+ *      rapprocher des plans (CONFIG.RAPPROCHEMENT) — la page fait le reste.
  *
  * La page est rendue d'une traite : Index.html injecte le paquet de données
  * dans la page au moment de l'évaluation du modèle, sans aller-retour.
@@ -107,6 +109,42 @@ const CONFIG = {
    * l'intitulé « domaine ».
    */
   COLONNE_DOMAINE: 'Domaine',
+
+  /**
+   * Rapprochement avec une seconde base — l'extract d'un autre outil, collé
+   * dans un onglet de ce classeur, dont la structure n'est pas celle de
+   * l'export GATES. La page apparie ses lignes aux plans par la racine de la
+   * référence UD, puis compare les champs déclarés ici.
+   *
+   * À RENSEIGNER QUAND LA SECONDE BASE SERA CONNUE. Tant que FEUILLE est
+   * vide, rien n'est lu et la section n'apparaît pas dans la page.
+   *
+   * FEUILLE        : nom de l'onglet qui porte l'extract (en-tête = première
+   *                  ligne non vide, données en dessous).
+   * NOM            : nom affiché dans la page ; vide = le nom de l'onglet.
+   * CLE_REFERENCE  : intitulé, dans cet onglet, de la colonne de référence UD.
+   * CHAMPS         : les champs à comparer, [{ ici, la, titre }] :
+   *                    ici   = colonne de l'export GATES, désignée comme
+   *                            ailleurs dans cette configuration (intitulé,
+   *                            ou « Groupe > Colonne » en cas de doublon) ;
+   *                    la    = intitulé de la colonne dans le second onglet ;
+   *                    titre = comment la page nomme ce champ.
+   *                  L'avancement FWD se compare par état (terminé, en
+   *                  cours…), les autres champs à la lettre près, sans tenir
+   *                  compte de la casse ni des accents.
+   *
+   * Exemple, pour un extract dont les colonnes seraient REF_UD, ATA_CODE et
+   * STATUT_FWD :
+   *   FEUILLE: 'Base FWD', CLE_REFERENCE: 'REF_UD',
+   *   CHAMPS: [ { ici: 'ATA', la: 'ATA_CODE', titre: 'ATA' },
+   *             { ici: 'Réalisation FWD > Avancement', la: 'STATUT_FWD', titre: 'Avancement' } ]
+   */
+  RAPPROCHEMENT: {
+    FEUILLE: '',
+    NOM: '',
+    CLE_REFERENCE: '',
+    CHAMPS: []
+  },
 
   /** Intitulés de texte libre : jamais des catégories, quoi qu'en dise le contenu. */
   MOTS_TEXTE_LIBRE: ['commentaire', 'libelle', 'raison', 'designation', 'remarque',
@@ -261,7 +299,10 @@ function getFeuilleDonnees(classeur) {
     }
     return nommee;
   }
-  const internes = CONFIG.FEUILLES_INTERNES.map(normaliser);
+  /* L'onglet de la seconde base, s'il est nommé, n'est pas l'onglet de données. */
+  const internes = CONFIG.FEUILLES_INTERNES
+    .concat(CONFIG.RAPPROCHEMENT && CONFIG.RAPPROCHEMENT.FEUILLE ? [CONFIG.RAPPROCHEMENT.FEUILLE] : [])
+    .map(normaliser);
   const candidates = classeur.getSheets().filter(function (f) {
     return !f.isSheetHidden() && internes.indexOf(normaliser(f.getName())) === -1;
   });
@@ -691,7 +732,7 @@ function getDonneesPourClient(contrat) {
   try {
     const classeur = SpreadsheetApp.getActiveSpreadsheet();
     const modele = construireModele();
-    return {
+    const paquet = {
       ok: true,
       message: modele.avertissement,
       feuille: modele.feuille,
@@ -709,6 +750,11 @@ function getDonneesPourClient(contrat) {
       contrats: [{ id: modele.feuille, nom: modele.feuille }],
       contrat: modele.feuille
     };
+    /* La seconde base, seulement si la configuration en nomme une : la page
+       masque la section quand la clé est absente. */
+    const rapprochement = getRapprochement(classeur, modele.colonnes);
+    if (rapprochement) paquet.rapprochement = rapprochement;
+    return paquet;
   } catch (err) {
     return {
       ok: false,
@@ -1061,4 +1107,90 @@ function getJalons() {
     .filter(function (j) { return j !== null; })
     .sort(function (a, b) { return a.semaine < b.semaine ? -1 : (a.semaine > b.semaine ? 1 : 0); })
     .slice(0, CONFIG.MAX_JALONS);
+}
+
+// =====================================================================
+//  RAPPROCHEMENT AVEC UNE SECONDE BASE (CONFIG.RAPPROCHEMENT)
+// =====================================================================
+
+/**
+ * La description de la seconde base pour la page : { nom, cleReference,
+ * champs, lignes }, ou null tant que CONFIG.RAPPROCHEMENT.FEUILLE est vide
+ * — la page n'affiche alors pas la section.
+ *
+ * L'onglet est lu tel quel : l'en-tête est la première ligne non vide, les
+ * lignes suivantes deviennent des objets { intitulé: valeur }. Les intitulés
+ * sont conservés à la lettre, puisque c'est par eux que CHAMPS désigne les
+ * colonnes de la seconde base. Côté GATES, `ici` est une désignation comme
+ * ailleurs dans la configuration (intitulé, ou « Groupe > Colonne ») et se
+ * résout en clé de colonne ; un champ dont l'un des deux côtés est introuvable
+ * est écarté, pas la section entière.
+ *
+ * @param {Spreadsheet} classeur
+ * @param {Array} colonnes  les colonnes du modèle GATES ({ cle, titre, groupe })
+ */
+function getRapprochement(classeur, colonnes) {
+  const cfg = CONFIG.RAPPROCHEMENT;
+  if (!cfg || !cfg.FEUILLE) return null;
+  const feuille = classeur.getSheetByName(cfg.FEUILLE);
+  if (!feuille) return null;
+
+  const donnees = feuille.getDataRange().getDisplayValues();
+  let indexEntete = -1;
+  for (let i = 0; i < donnees.length; i++) {
+    if (ligneNonVide(donnees[i])) { indexEntete = i; break; }
+  }
+  if (indexEntete === -1) return null;
+  const entetes = donnees[indexEntete].map(function (e) { return String(e).trim(); });
+
+  const lignes = [];
+  for (let i = indexEntete + 1; i < donnees.length; i++) {
+    if (!ligneNonVide(donnees[i])) continue;
+    const ligne = {};
+    entetes.forEach(function (titre, j) {
+      if (!titre) return;
+      ligne[titre] = String(donnees[i][j] === undefined ? '' : donnees[i][j]);
+    });
+    lignes.push(ligne);
+  }
+
+  /* Un intitulé de la seconde base, retrouvé sans tenir compte de la casse ni
+     des accents, mais rendu tel qu'il est écrit dans l'onglet. */
+  function enteteLa(voulu) {
+    const n = normaliser(voulu);
+    for (let j = 0; j < entetes.length; j++) {
+      if (entetes[j] && normaliser(entetes[j]) === n) return entetes[j];
+    }
+    return '';
+  }
+  function cleIci(designation) {
+    const liste = Array.isArray(colonnes) ? colonnes : [];
+    const voulu = normaliser(designation);
+    if (!voulu) return '';
+    for (let i = 0; i < liste.length; i++) {
+      const c = liste[i];
+      if (c.cle === designation) return c.cle;
+      if (normaliser(c.titre) === voulu) return c.cle;
+      if (normaliser((c.groupe || '') + ' > ' + c.titre) === voulu) return c.cle;
+    }
+    return '';
+  }
+
+  const cleReference = enteteLa(cfg.CLE_REFERENCE);
+  if (!cleReference) return null;
+  const champs = (Array.isArray(cfg.CHAMPS) ? cfg.CHAMPS : [])
+    .map(function (c) {
+      if (!c) return null;
+      const ici = cleIci(c.ici), la = enteteLa(c.la);
+      if (!ici || !la) return null;
+      return { ici: ici, la: la, titre: String(c.titre || c.la).trim().slice(0, 60) || la };
+    })
+    .filter(function (c) { return c !== null; });
+
+  return {
+    nom: String(cfg.NOM || feuille.getName()).trim().slice(0, 80) || feuille.getName(),
+    cleReference: cleReference,
+    champs: champs,
+    lignes: lignes
+  };
 }

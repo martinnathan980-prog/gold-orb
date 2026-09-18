@@ -355,6 +355,70 @@ function serveurSur(valeurs, proprietes, fichiers) {
     Array.isArray(j.contexte.getJalons()) && j.contexte.getJalons().length === 0);
 
   // =================================================================
+  /* La seconde base : rien tant que CONFIG.RAPPROCHEMENT.FEUILLE est vide.
+     Nommée, l'onglet est lu (en-tête = première ligne non vide), les champs
+     sont résolus des deux côtés, et le paquet porte la description que la
+     page attend. La vraie base n'est pas connue : on la joue avec un onglet
+     « Base2 » aux colonnes nommées autrement. */
+  section('Rapprochement avec une seconde base');
+  verifier('par défaut, la configuration ne nomme aucune seconde base',
+    vm.runInContext('CONFIG.RAPPROCHEMENT.FEUILLE === "" && CONFIG.RAPPROCHEMENT.CHAMPS.length === 0', ctxPaquet));
+  verifier('le paquet ne porte alors pas de clé « rapprochement »', !('rapprochement' in paquet), Object.keys(paquet).join());
+  verifier('getRapprochement rend null', ctxPaquet.getRapprochement(ctxPaquet.SpreadsheetApp.getActiveSpreadsheet(), paquet.colonnes) === null);
+
+  const refs = paquet.plans.slice(0, 3).map(p => p.reference);
+  /* L'en-tête est la première ligne non vide : une ligne blanche au-dessus
+     ne compte pas, une ligne blanche au milieu non plus. */
+  const base2 = new Feuille('Base2', [
+    ['', '', '', ''],
+    ['REF_UD', 'ATA_CODE', 'STATUT_FWD', 'Colonne en trop'],
+    [refs[0].toLowerCase(), paquet.plans[0].ata, 'OK', 'x'],
+    ['', '', '', ''],
+    [refs[1], '99', 'WIP', ''],
+    [refs[2], paquet.plans[2].ata, '', 42],
+    ['UD-99-9999', '24', 'TODO', '']
+  ]);
+  const configRapp = {
+    RAPPROCHEMENT: {
+      FEUILLE: 'Base2', NOM: '', CLE_REFERENCE: 'ref_ud',
+      CHAMPS: [
+        { ici: 'ATA', la: 'ata_code', titre: 'ATA' },
+        { ici: 'Avancement FWD', la: 'STATUT_FWD', titre: 'Avancement' },
+        { ici: 'Colonne inconnue', la: 'STATUT_FWD', titre: 'écarté : introuvable ici' },
+        { ici: 'ATA', la: 'Colonne absente là', titre: 'écarté : introuvable là' },
+        null
+      ]
+    }
+  };
+  const avecBase2 = construire({ lignes: 30, feuilles: [base2], config: configRapp, sortie: 'apercu-rapprochement.html' });
+  const rapp = avecBase2.paquet.rapprochement;
+  verifier('l\'onglet de la seconde base n\'est pas pris pour l\'onglet de données',
+    avecBase2.paquet.feuille === 'Données' && avecBase2.paquet.plans.length === 30, avecBase2.paquet.feuille);
+  verifier('le paquet porte le rapprochement, nommé d\'après l\'onglet faute de NOM',
+    !!rapp && rapp.nom === 'Base2', JSON.stringify(rapp && rapp.nom));
+  verifier('la clé de référence est l\'intitulé tel qu\'il est écrit dans l\'onglet',
+    rapp && rapp.cleReference === 'REF_UD', rapp && rapp.cleReference);
+  verifier('les champs sont résolus : clé GATES d\'un côté, intitulé de l\'onglet de l\'autre ; les introuvables écartés',
+    rapp && JSON.stringify(rapp.champs) === JSON.stringify([
+      { ici: 'ata', la: 'ATA_CODE', titre: 'ATA' },
+      { ici: 'avancement', la: 'STATUT_FWD', titre: 'Avancement' }
+    ]), JSON.stringify(rapp && rapp.champs));
+  verifier('les lignes : celles sous l\'en-tête, sans les vides, valeurs en chaînes',
+    rapp && rapp.lignes.length === 4 && rapp.lignes[0].REF_UD === refs[0].toLowerCase() &&
+    rapp.lignes[2].STATUT_FWD === '' && rapp.lignes[2]['Colonne en trop'] === '42' &&
+    rapp.lignes[3].REF_UD === 'UD-99-9999', JSON.stringify(rapp && rapp.lignes));
+  verifier('le paquet reste sérialisable pour la page', /"rapprochement":\{/.test(avecBase2.contexte.donneesJSONPourPage()));
+  /* Un onglet nommé mais absent : pas de section, pas d'erreur — la page s'ouvre. */
+  const sansOnglet = construire({ lignes: 10, config: { RAPPROCHEMENT: { FEUILLE: 'Nulle part', CLE_REFERENCE: 'REF', CHAMPS: [] } }, sortie: 'apercu-rapprochement-absent.html' });
+  verifier('un onglet nommé mais introuvable : le paquet reste valide, sans rapprochement',
+    sansOnglet.paquet.ok === true && !('rapprochement' in sansOnglet.paquet));
+  /* Une référence introuvable dans l'en-tête : rien à apparier, donc rien. */
+  const sansCleRef = construire({ lignes: 10, feuilles: [base2], config: { RAPPROCHEMENT: { FEUILLE: 'Base2', CLE_REFERENCE: 'Pas là', CHAMPS: [] } }, sortie: 'apercu-rapprochement-absent.html' });
+  verifier('une clé de référence introuvable dans l\'onglet : pas de rapprochement',
+    sansCleRef.paquet.ok === true && !('rapprochement' in sansCleRef.paquet));
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-rapprochement-absent.html'));
+
+  // =================================================================
   section('Feuilles hostiles');
   const sansFWD = serveurSur([
     ['Réf', 'Chose', 'Machin'],
@@ -1065,6 +1129,49 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('en comptes, sans lister les références ni « et N autres »',
     !/UD-/.test(texteBulle) && !/autres/.test(texteBulle) &&
     /terminés\s*\d+\s*\/\s*\d+/.test(texteBulle), texteBulle.slice(0, 120));
+
+  // =================================================================
+  section('La seconde base, de l\'onglet à l\'écran');
+  /* La page rendue sur le classeur qui porte « Base2 » : la section apparaît,
+     nommée d'après l'onglet, et ses comptes sont ceux qu'on peut recalculer
+     à la main depuis les trois lignes appariées. Sur la page ordinaire, sans
+     seconde base, la section n'existe pas. */
+  verifier('sans seconde base, la page n\'a pas de section de rapprochement',
+    await p.evaluate(() => document.getElementById('rapprochement').hidden &&
+      document.getElementById('rapprochement').offsetParent === null));
+  const ctxRapp = await nav.newContext({ viewport: { width: 1280, height: 1000 } });
+  const pr = await ctxRapp.newPage();
+  pr.on('pageerror', e => erreursJS.push('rapprochement : ' + e.message));
+  pr.on('console', m => { if (m.type() === 'error' && !m.text().includes('ERR_FILE')) erreursJS.push('rapprochement : ' + m.text()); });
+  await pr.goto('file://' + path.join(__dirname, '..', 'apercu-rapprochement.html'));
+  await pr.waitForTimeout(1600);
+  const classe = avecBase2.contexte.classerFWD;
+  const plans30 = avecBase2.paquet.plans;
+  const ecartsAttendus = (classe(plans30[0].avancement) !== 'termine' ? 1 : 0) +
+    1 + (classe(plans30[1].avancement) !== 'encours' ? 1 : 0) +
+    (classe(plans30[2].avancement) !== 'vide' ? 1 : 0);
+  const ecran = await pr.evaluate(() => ({
+    visible: !document.getElementById('rapprochement').hidden,
+    titre: document.getElementById('titre-rapprochement').textContent,
+    phrase: document.getElementById('phrase-rapprochement').textContent,
+    puces: [...document.querySelectorAll('#puces-rapprochement button[data-rapp]')].map(b => b.dataset.rapp + '=' + b.querySelector('b').textContent),
+    plans: document.querySelectorAll('#corps-tableau tr').length
+  }));
+  verifier('la section est là, nommée d\'après l\'onglet', ecran.visible && ecran.titre === 'Rapprochement avec Base2', ecran.titre);
+  verifier('la phrase compte 30 plans ici et 4 lignes là', /^30 plans ici, 4 lignes là : \d+ écarts\.$/.test(ecran.phrase), ecran.phrase);
+  verifier('27 plans absents de là, 1 référence absente d\'ici, aucun indice (références hors format), les écarts recalculés',
+    ecran.puces.join(' ') === 'absentsLa=27 absentsIci=1 indiceDifferent=0 ecarts=' + ecartsAttendus, ecran.puces.join(' ') + ' attendu ecarts=' + ecartsAttendus);
+  await pr.click('#puces-rapprochement button[data-rapp="absentsLa"]'); await pr.waitForTimeout(500);
+  verifier('cliquer « absents de la seconde base » filtre le tableau sur ces 27 plans',
+    await pr.evaluate(() => document.querySelectorAll('#corps-tableau tr').length === 27 &&
+      [...document.querySelectorAll('.jeton')].some(j => /Rapprochement : absents de la seconde base/.test(j.textContent))));
+  await pr.click('#puces-rapprochement button[data-rapp="absentsIci"]'); await pr.waitForTimeout(400);
+  verifier('« absents d\'ici » liste UD-99-9999 avec ses champs',
+    await pr.evaluate(() => {
+      const l = document.querySelector('#absents-rapprochement .ligne');
+      return !!l && l.querySelector('.ref').textContent === 'UD-99-9999' && l.querySelectorAll('.champ').length === 2;
+    }));
+  await ctxRapp.close();
 
   // =================================================================
   section('Aperçu quand l\'historique est vide');
