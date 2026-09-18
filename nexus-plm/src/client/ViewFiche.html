@@ -539,7 +539,9 @@ function ficheHtml(boite) {
  * montée marquée — c'est vers elle qu'il coûte le moins cher de converger.
  */
 function ficheComposantHtml(cible) {
-  const base = baseComposants(calculerVue().aAfficher).filter(function (c) {
+  // Toute la base, toujours : ouverte depuis une boîte filtrée sur sa
+  // fonction, la fiche d'un voyant ne voyait plus qu'une boîte.
+  const base = baseComposants(Store.boites).filter(function (c) {
     return c.categorie === cible.categorie &&
            normaliserTexte(c.fonction) === normaliserTexte(cible.fonction);
   });

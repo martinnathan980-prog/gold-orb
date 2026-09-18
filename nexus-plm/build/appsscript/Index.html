@@ -4728,8 +4728,11 @@ function carteBaseHtml(carte) {
 
 /** L'espace Composants : le rail, le commutateur, puis la lecture choisie. */
 function composantsHtml(vue) {
-  const toutes = baseComposants(vue.aAfficher);
-  const retenues = composantsFiltres(vue.aAfficher);
+  // La base des composants est la base entière : les filtres des boîtes
+  // (onglet de fonction, statut, recherche) sont invisibles d'ici, ils ne
+  // s'appliquent pas. L'espace a ses propres filtres.
+  const toutes = baseComposants(Store.boites);
+  const retenues = composantsFiltres(Store.boites);
   const fonctions = fonctionsComposants(retenues);
   const lecture = Store.compo.vue || 'liste';
 
@@ -4979,7 +4982,7 @@ function rendreInterface() {
     mode === 'standardisation' ? standardisationHtml(vue) : grilleHtml(vue));
 
   if (composants) {
-    const n = composantsFiltres(vue.aAfficher).length;
+    const n = composantsFiltres(Store.boites).length;
     definirTexte('bilanResultats',
                  n + (n > 1 ? ' références' : ' référence'));
   } else if (mode === 'pieces') {
@@ -5062,8 +5065,8 @@ function indicateursBoitesHtml(kpi, vue) {
  * l'arbre, où il qualifie ce qu'on regarde.
  */
 function indicateursComposantsHtml(vue) {
-  const toutes = baseComposants(vue.aAfficher);
-  const retenues = composantsFiltres(vue.aAfficher);
+  const toutes = baseComposants(Store.boites);
+  const retenues = composantsFiltres(Store.boites);
   const bilan = bilanComposants(retenues);
   const filtre = filtreComposantActif();
 
@@ -5676,7 +5679,9 @@ function ficheHtml(boite) {
  * montée marquée — c'est vers elle qu'il coûte le moins cher de converger.
  */
 function ficheComposantHtml(cible) {
-  const base = baseComposants(calculerVue().aAfficher).filter(function (c) {
+  // Toute la base, toujours : ouverte depuis une boîte filtrée sur sa
+  // fonction, la fiche d'un voyant ne voyait plus qu'une boîte.
+  const base = baseComposants(Store.boites).filter(function (c) {
     return c.categorie === cible.categorie &&
            normaliserTexte(c.fonction) === normaliserTexte(cible.fonction);
   });
