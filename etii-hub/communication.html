@@ -7,11 +7,11 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
   <meta name="description" content="Communication du service ETII et de ses trois pôles : liste chronologique filtrable par pôle, détail de l'annonce sélectionnée et bandeau des alertes en cours.">
   <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="assets/css/polices.css">
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/skin.css">
-  <link rel="stylesheet" href="assets/css/directions.css">
 
   <!-- =====================================================================
        Styles propres au Communication Center.
@@ -111,10 +111,12 @@
     /* Intitulé de section discret (sélecteur de pôle, liste d'annonces). */
     .comm__titre-section {
       margin: 0;
-      font-size: var(--texte-sm);
-      font-weight: var(--graisse-forte);
+      font-family: var(--police-mono);
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-moyenne);
+      letter-spacing: var(--lettrage-etiquette);
       text-transform: uppercase;
-      color: var(--texte-doux);
+      color: var(--texte-faible);
     }
 
     /* ===================================================================
@@ -286,7 +288,7 @@
       inline-size: max-content;
     }
 
-    .bandeau__liste {
+    ul.bandeau__liste {
       display: flex;
       align-items: center;
       gap: var(--e-8);
@@ -396,7 +398,8 @@
       <!-- ==============================================================
            Titre et accroche
            ============================================================== -->
-      <div class="pile pile--serree">
+      <div class="pile pile--serree page-entete">
+        <p class="page-entete__sur-titre">Service ETII</p>
         <h1>Communication</h1>
         <p class="mesure texte-doux sans-marge">
           Les annonces du service et de ses trois pôles, de la plus récente
@@ -436,7 +439,6 @@
     </div>
   </footer>
 
-  <script type="module" src="assets/js/directions.js"></script>
   <script type="module" src="assets/js/communication.js"></script>
 </body>
 </html>

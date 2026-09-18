@@ -406,7 +406,7 @@ html {
 
 .pile--serree { --pile-espace: var(--e-2); }
 .pile--lache  { --pile-espace: var(--e-8); }
-.pile--section { --pile-espace: var(--e-12); }
+.pile--section { --pile-espace: var(--e-10); }
 
 /* Rangée flexible : s'enroule naturellement, jamais de débordement. */
 .rangee {

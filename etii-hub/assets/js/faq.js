@@ -1307,6 +1307,13 @@ function demarrer() {
   enAttente = lireAttente();
   rendreAttente();
 
+  // Venu d'une page de pôle par « Poser une question aux experts » : le
+  // hash porte proposer=1. La fenêtre s'ouvre, pôle présélectionné ; la clé
+  // disparaît de l'URL à la première écriture d'état.
+  if (etatInitial.proposer === '1') {
+    requestAnimationFrame(() => ouvrirDemande('', null));
+  }
+
   deleguer(refs.attenteListe, '[data-supprimer]', 'click', (evt, cible) => {
     supprimerQuestion(cible.dataset.supprimer, cible);
   });

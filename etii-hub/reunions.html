@@ -7,11 +7,11 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
   <meta name="description" content="Comptes-rendus de réunion et prochains points du service ETII et de ses trois pôles : synthèse, objectif, sujets, actions et décisions, avec sélecteur de pôle, recherche et impression.">
   <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="assets/css/polices.css">
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/skin.css">
-  <link rel="stylesheet" href="assets/css/directions.css">
 
   <!-- =====================================================================
        Styles propres à la page Réunions.
@@ -64,10 +64,12 @@
     /* Intitulé de section discret (sélecteur de pôle, titre de liste). */
     .reunions__titre-section {
       margin: 0;
-      font-size: var(--texte-sm);
-      font-weight: var(--graisse-forte);
+      font-family: var(--police-mono);
+      font-size: var(--texte-xs);
+      font-weight: var(--graisse-moyenne);
+      letter-spacing: var(--lettrage-etiquette);
       text-transform: uppercase;
-      color: var(--texte-doux);
+      color: var(--texte-faible);
     }
 
     /* ===================================================================
@@ -432,7 +434,8 @@
       <!-- ==============================================================
            Titre et accroche
            ============================================================== -->
-      <div class="pile pile--serree">
+      <div class="pile pile--serree page-entete">
+        <p class="page-entete__sur-titre">Service ETII</p>
         <h1>Réunions</h1>
         <p class="mesure texte-doux sans-marge">
           Les comptes-rendus passés et les points à venir, pour le service
@@ -474,7 +477,6 @@
     </div>
   </footer>
 
-  <script type="module" src="assets/js/directions.js"></script>
   <script type="module" src="assets/js/reunions.js"></script>
 </body>
 </html>

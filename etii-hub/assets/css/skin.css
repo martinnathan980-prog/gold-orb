@@ -3,14 +3,17 @@
    Charge APRÈS components.css. Ne change aucune structure : pose la
    matière du portail.
 
-   Parti pris : sobriété. Pas de grille technique en fond, pas de halos
-   colorés, pas de verre dépoli, pas de lueur néon. Des surfaces franches,
-   des filets d'un pixel, des ombres très douces, beaucoup d'air.
-   Tout provient des jetons de tokens.css.
+   Parti pris : LE DOCUMENT TECHNIQUE. Une feuille blanche sur un papier
+   gris, des filets d'un pixel, des angles à peine cassés, aucune ombre
+   portée hors des fenêtres. Le marine est la seule couleur : liens, onglet
+   courant, bouton principal, filet de tête. Les intitulés de colonne, les
+   étiquettes, les compteurs, les dates et les codes sont en mono et en
+   capitales espacées ; les titres en Newsreader ; tout le reste en Plex
+   Sans, à 14 px. Tout provient des jetons de tokens.css.
    ========================================================================= */
 
 /* -------------------------------------------------------------------------
-   1. Le fond : uni, calme, sans motif
+   1. Le papier
    ---------------------------------------------------------------------- */
 
 body {
@@ -21,142 +24,220 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+::selection {
+  background-color: var(--accent-doux);
+  color: var(--texte);
+}
+
+/* Barres de défilement fines, dans le ton des filets. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bordure-forte) transparent;
+}
+
 /* -------------------------------------------------------------------------
-   2. Typographie : titres larges et serrés, texte au calme
+   2. Typographie : titres en Newsreader, étiquettes en mono
    ---------------------------------------------------------------------- */
 
-h1, h2, h3, h4,
-.carte__titre, .modale__titre, .etat-vide__titre {
+h1, h2,
+.modale__titre,
+.etat-vide__titre {
   font-family: var(--police-titre);
-  font-weight: var(--graisse-max);
+  font-weight: var(--graisse-normale);
   letter-spacing: var(--lettrage-titre);
   line-height: var(--interligne-serre);
   text-wrap: balance;
   color: var(--texte);
 }
 
-h1 { font-size: var(--texte-3xl); }
-h2 { font-size: var(--texte-2xl); }
-h3 { font-size: var(--texte-xl); }
+h1 {
+  font-size: var(--texte-3xl);
+  font-weight: 300;
+  letter-spacing: 0.005em;
+}
 
-/* Les intitulés en capitales respirent. */
+h2 { font-size: var(--texte-2xl); }
+
+h3, h4, .carte__titre {
+  font-family: var(--police);
+  font-weight: var(--graisse-forte);
+  letter-spacing: -0.005em;
+  color: var(--texte);
+}
+
+h3 { font-size: var(--texte-lg); }
+h4 { font-size: var(--texte-md); }
+
+/* L'étiquette : mono, capitales, espacée, discrète. C'est le repère
+   typographique du registre — en tête de section, de colonne, de champ. */
 .separateur-titre,
 .champ__etiquette,
-.carte__meta {
-  text-transform: uppercase;
-  letter-spacing: var(--lettrage-etiquette);
+.carte__meta,
+.groupe-champs__legende,
+.fil-ariane,
+h6 {
+  font-family: var(--police-mono);
   font-size: var(--texte-xs);
-  font-weight: var(--graisse-forte);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
   color: var(--texte-faible);
 }
 
-.mono, .facette__compteur, .badge--carre, kbd,
-.champ__controle--mono, time {
+.mono, .facette__compteur, .badge--carre, kbd, time,
+.champ__controle--mono {
   font-family: var(--police-mono);
   font-variant-numeric: tabular-nums;
 }
 
+a {
+  color: var(--texte-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--bordure-forte);
+}
+
+a:hover { text-decoration-color: currentColor; }
+
 /* -------------------------------------------------------------------------
-   3. Cartes : surfaces franches, filet d'un pixel, ombre très douce
+   3. Feuilles : blanc, filet, rien d'autre
    ---------------------------------------------------------------------- */
 
 .carte,
-.modale,
-.notification,
 .onglets__panneau,
 .etat-vide--encadre {
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
-  box-shadow: var(--ombre-sm);
+  border-radius: var(--rayon-lg);
+  box-shadow: none;
 }
 
 .carte {
-  border-radius: var(--rayon-lg);
   transition:
-    transform var(--duree) var(--courbe),
-    box-shadow var(--duree) var(--courbe),
-    border-color var(--duree) var(--courbe);
+    background-color var(--duree-rapide) var(--courbe),
+    border-color var(--duree-rapide) var(--courbe);
 }
 
-.carte--ample, .modale { border-radius: var(--rayon-xl); }
-
-/* Le survol soulève à peine : l'ombre fait le travail, pas la couleur. */
+/* Le survol ne soulève rien : le filet se renforce, la feuille se teinte. */
 .carte--cliquable:hover,
 .carte--cliquable:focus-within {
-  transform: translateY(-2px);
-  box-shadow: var(--ombre-lg);
+  transform: none;
+  box-shadow: none;
   border-color: var(--bordure-forte);
+  background-color: var(--carte-survol);
 }
 
+/* La feuille mise en avant porte un filet marine dans sa marge : c'est la
+   marque des documents du service, et la seule couleur de la feuille. */
 .carte--mise-en-avant {
-  border-color: var(--accent-lueur);
-  box-shadow: var(--ombre-md);
+  border-color: var(--bordure);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
-/* Cartes de statut : un filet vertical, rien de plus. */
 .carte--statut-info,
 .carte--statut-succes,
 .carte--statut-alerte,
 .carte--statut-critique {
-  border-inline-start: 3px solid var(--statut-bord, var(--bordure-forte));
+  border-inline-start: 1px solid var(--bordure);
+  box-shadow: inset 3px 0 0 var(--statut-bord, var(--bordure-forte));
 }
 .carte--statut-info     { --statut-bord: var(--statut-info); }
 .carte--statut-succes   { --statut-bord: var(--statut-succes); }
 .carte--statut-alerte   { --statut-bord: var(--statut-alerte); }
 .carte--statut-critique { --statut-bord: var(--statut-critique); }
 
+.carte__titre { font-size: var(--texte-md); }
+
 /* -------------------------------------------------------------------------
-   4. En-tête : barre translucide et discrète
+   4. La barre du haut : 52 px, blanche, un filet dessous
    ---------------------------------------------------------------------- */
 
 .site-entete {
-  background-color: color-mix(in srgb, var(--fond) 82%, transparent);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid var(--bordure-douce);
+  background-color: var(--fond-eleve);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom: 1px solid var(--bordure);
   box-shadow: none;
 }
 
-.site-logo {
-  font-family: var(--police-titre);
-  font-weight: var(--graisse-max);
-  letter-spacing: -0.01em;
-  color: var(--texte);
+.site-entete__interieur {
+  padding-block: var(--e-1);
+  gap: var(--e-2) var(--e-5);
 }
+
+.site-logo {
+  gap: var(--e-2);
+  color: var(--texte);
+  font-family: var(--police);
+  font-size: var(--texte-md);
+  font-weight: var(--graisse-forte);
+  letter-spacing: -0.01em;
+}
+
+/* Le « HUB » n'est plus un aplat : une mention mono, en retrait, séparée
+   par un filet — comme le contexte dans la barre d'un outil. */
+.site-logo span {
+  padding: 0 0 0 var(--e-2);
+  margin-inline-start: var(--e-1);
+  background: none;
+  border-radius: 0;
+  border-inline-start: 1px solid var(--bordure);
+  color: var(--texte-faible);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+}
+
+.site-nav__liste { gap: var(--e-1); }
 
 .site-nav__liste a {
-  border-radius: var(--rayon-plein);
+  border-radius: 0;
+  border-bottom-width: 2px;
+  min-height: calc(var(--cible-tactile) + var(--e-2));
   color: var(--texte-doux);
+  font-size: var(--texte-sm);
   font-weight: var(--graisse-moyenne);
-  transition: color var(--duree-rapide) var(--courbe),
-              background-color var(--duree-rapide) var(--courbe);
 }
 
-.site-nav__liste a:hover { color: var(--texte); background-color: var(--bordure-douce); }
+.site-nav__liste a:hover {
+  color: var(--texte);
+  background: none;
+}
 
 .site-nav__liste a[aria-current="page"] {
-  color: var(--texte);
+  color: var(--texte-accent);
+  background: none;
+  border-bottom-color: var(--accent);
   font-weight: var(--graisse-forte);
-  background-color: var(--bordure-douce);
 }
 
 .bascule-theme {
-  border-radius: var(--rayon-plein);
+  min-height: calc(var(--cible-tactile) - var(--e-2));
+  padding-inline: var(--e-3);
+  border-radius: var(--rayon-md);
   border: 1px solid var(--bordure);
-  background-color: transparent;
+  background-color: var(--fond-enfonce);
   color: var(--texte-doux);
+  font-size: var(--texte-xs);
 }
 
-.bascule-theme:hover { background-color: var(--bordure-douce); color: var(--texte); }
+.bascule-theme:hover {
+  background-color: var(--fond-profond);
+  border-color: var(--bordure-forte);
+  color: var(--texte);
+}
 
 /* -------------------------------------------------------------------------
-   5. Titres de section : un simple filet, pas de dégradé
+   5. Titres de section : l'étiquette mono, puis le filet
    ---------------------------------------------------------------------- */
 
 .separateur-titre {
   display: flex;
   align-items: center;
-  gap: var(--e-4);
+  gap: var(--e-3);
 }
 
 .separateur-titre::after {
@@ -167,42 +248,51 @@ h3 { font-size: var(--texte-xl); }
 }
 
 /* -------------------------------------------------------------------------
-   6. Contrôles
+   6. Contrôles : trois niveaux de bouton, un seul rayon
    ---------------------------------------------------------------------- */
 
 .bouton {
-  border-radius: var(--rayon-plein);
+  min-height: calc(var(--cible-tactile) - var(--e-1));
+  padding-inline: var(--e-3);
+  border-radius: var(--rayon-md);
   font-family: var(--police);
-  font-weight: var(--graisse-forte);
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
   letter-spacing: 0;
   transition: background-color var(--duree-rapide) var(--courbe),
               color var(--duree-rapide) var(--courbe),
-              border-color var(--duree-rapide) var(--courbe),
-              transform var(--duree-rapide) var(--courbe);
+              border-color var(--duree-rapide) var(--courbe);
 }
 
 .bouton--principal {
   background-color: var(--accent);
   color: var(--accent-contenu);
-  border: 1px solid transparent;
+  border: 1px solid var(--accent);
   box-shadow: none;
 }
 
-.bouton--principal:hover { background-color: var(--accent-vif); }
-.bouton:active { transform: scale(0.98); }
+.bouton--principal:hover { background-color: var(--accent-vif); border-color: var(--accent-vif); }
+.bouton:active { transform: none; }
 
 .bouton--secondaire,
 .bouton--icone {
-  background-color: var(--fond-eleve);
+  background-color: var(--fond-enfonce);
   border: 1px solid var(--bordure);
   color: var(--texte);
 }
 
 .bouton--secondaire:hover,
-.bouton--icone:hover { background-color: var(--fond-profond); }
+.bouton--icone:hover {
+  background-color: var(--fond-profond);
+  border-color: var(--bordure-forte);
+}
 
-.bouton--discret { color: var(--accent); background-color: transparent; border-color: transparent; }
-.bouton--discret:hover { background-color: var(--accent-doux); }
+.bouton--discret {
+  color: var(--texte-doux);
+  background-color: transparent;
+  border-color: transparent;
+}
+.bouton--discret:hover { background-color: var(--fond-enfonce); color: var(--texte); }
 
 .champ__controle,
 .champ__select,
@@ -216,165 +306,309 @@ h3 { font-size: var(--texte-xl); }
               box-shadow var(--duree-rapide) var(--courbe);
 }
 
-.champ__controle:focus,
-.champ__select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-doux);
+.champ__select { border: 0; }
+
+.champ__controle {
+  min-height: calc(var(--cible-tactile) - var(--e-1));
+  font-size: var(--texte-sm);
 }
 
-.recherche { border-radius: var(--rayon-plein); }
-.recherche:hover { border-color: var(--bordure-forte); }
+.champ__controle:focus,
+.champ__select:focus-within .champ__controle {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ombre-accent);
+}
+
+.champ__controle::placeholder { color: var(--texte-faible); }
+
+.recherche { border-color: var(--bordure-forte); }
+.recherche:hover { border-color: var(--texte-faible); }
 
 .recherche--proeminente {
-  padding-inline: var(--e-5);
-  box-shadow: var(--ombre-md);
-  border-color: var(--bordure);
+  min-height: calc(var(--cible-tactile) + var(--e-2));
+  padding-inline: var(--e-4);
+  border-radius: var(--rayon-md);
+  border-color: var(--bordure-forte);
+  box-shadow: none;
 }
 
 .recherche--proeminente .recherche__champ {
   font-size: var(--texte-lg);
-  min-height: calc(var(--cible-tactile) + var(--e-3));
+  min-height: calc(var(--cible-tactile) + var(--e-2));
 }
 
-.recherche--proeminente:focus-within {
+.recherche:focus-within {
+  outline: none;
   border-color: var(--accent);
-  box-shadow: var(--ombre-md), 0 0 0 4px var(--accent-doux);
+  box-shadow: var(--ombre-accent);
 }
 
 .recherche__raccourci {
   font-family: var(--police-mono);
+  font-size: var(--texte-xs);
   border: 1px solid var(--bordure);
   border-radius: var(--rayon-sm);
-  background-color: var(--fond-profond);
+  background-color: var(--fond-enfonce);
   color: var(--texte-faible);
 }
 
+kbd {
+  font-size: var(--texte-xs);
+  padding: 0 var(--e-1);
+  border: 1px solid var(--bordure);
+  border-bottom-width: 2px;
+  border-radius: var(--rayon-sm);
+  background-color: var(--fond-eleve);
+  color: var(--texte-doux);
+}
+
 /* -------------------------------------------------------------------------
-   7. Puces, badges, onglets
+   7. Puces, jetons, badges, onglets
    ---------------------------------------------------------------------- */
 
 .facettes { background: none; border: 0; box-shadow: none; }
 
+/* Une puce au repos est un petit cadre ; pressée, elle devient un jeton
+   d'encre — l'état actif se voit de loin, sans couleur. */
 .facette {
-  border-radius: var(--rayon-plein);
+  min-height: calc(var(--cible-tactile) - var(--e-2));
+  padding-inline: var(--e-3);
+  border-radius: var(--rayon-sm);
   background-color: var(--fond-eleve);
   border: 1px solid var(--bordure);
   color: var(--texte-doux);
-  font-weight: var(--graisse-moyenne);
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-normale);
   transition: background-color var(--duree-rapide) var(--courbe),
               border-color var(--duree-rapide) var(--courbe),
               color var(--duree-rapide) var(--courbe);
 }
 
-.facette:hover:not(:disabled) { background-color: var(--fond-profond); color: var(--texte); }
-
-.facette[aria-pressed="true"] {
-  background-color: var(--texte);
-  border-color: var(--texte);
-  color: var(--texte-inverse);
+.facette:hover:not(:disabled) {
+  background-color: var(--fond-enfonce);
+  border-color: var(--bordure-forte);
+  color: var(--texte);
 }
 
-.facette__compteur { color: var(--texte-faible); font-size: var(--texte-xs); }
-.facette[aria-pressed="true"] .facette__compteur { color: var(--texte-inverse); opacity: 0.75; }
+.facette[aria-pressed="true"],
+.facette[aria-pressed="true"]:hover:not(:disabled) {
+  background-color: var(--fond-inverse);
+  border-color: var(--fond-inverse);
+  color: var(--texte-inverse);
+  font-weight: var(--graisse-moyenne);
+}
+
+.facette__compteur {
+  font-size: var(--texte-xs);
+  color: var(--texte-faible);
+  background: none;
+  padding: 0;
+}
+.facette[aria-pressed="true"] .facette__compteur {
+  background: none;
+  color: var(--texte-inverse);
+  opacity: 0.7;
+}
 
 .badge {
-  border-radius: var(--rayon-plein);
-  font-weight: var(--graisse-forte);
-  border: 1px solid transparent;
+  border-radius: var(--rayon-sm);
+  border: 1px solid var(--badge-bordure, var(--bordure));
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: calc(var(--e-1) / 2) var(--e-2);
 }
 
-.badge--info     { background-color: var(--statut-info-fond);     color: var(--statut-info); }
-.badge--succes   { background-color: var(--statut-succes-fond);   color: var(--statut-succes); }
-.badge--alerte   { background-color: var(--statut-alerte-fond);   color: var(--statut-alerte); }
-.badge--critique { background-color: var(--statut-critique-fond); color: var(--statut-critique); }
-.badge--accent   { background-color: var(--accent-doux);          color: var(--texte-accent); }
-.badge--neutre   { background-color: var(--fond-profond);         color: var(--texte-doux); }
+.badge--info     { background-color: var(--statut-info-fond);     color: var(--statut-info);     border-color: transparent; }
+.badge--succes   { background-color: var(--statut-succes-fond);   color: var(--statut-succes);   border-color: transparent; }
+.badge--alerte   { background-color: var(--statut-alerte-fond);   color: var(--statut-alerte);   border-color: transparent; }
+.badge--critique { background-color: var(--statut-critique-fond); color: var(--statut-critique); border-color: transparent; }
+.badge--accent   { background-color: var(--accent-doux);          color: var(--texte-accent);    border-color: transparent; }
+.badge--neutre   { background-color: var(--fond-enfonce);         color: var(--texte-doux); }
 
-.onglets__liste { gap: var(--e-2); border-bottom: 1px solid var(--bordure); }
+.onglets__liste { gap: var(--e-1); border-bottom: 1px solid var(--bordure); }
 
 .onglets__onglet {
   border-radius: 0;
-  font-weight: var(--graisse-forte);
+  min-height: calc(var(--cible-tactile) - var(--e-1));
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
   color: var(--texte-doux);
   border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
   background: none;
   transition: color var(--duree-rapide) var(--courbe),
               border-color var(--duree-rapide) var(--courbe);
 }
 
-.onglets__onglet:hover { color: var(--texte); }
+.onglets__onglet:hover { color: var(--texte); background-color: var(--fond-enfonce); }
 
 .onglets__onglet[aria-selected="true"] {
-  color: var(--texte);
-  border-bottom-color: var(--texte);
+  color: var(--texte-accent);
+  border-bottom-color: var(--accent);
   background: none;
 }
 
 /* -------------------------------------------------------------------------
-   8. Surlignage, sélection, modales, pied
+   8. Tableaux : intitulés mono en capitales, chiffres alignés
+   ---------------------------------------------------------------------- */
+
+table {
+  font-size: var(--texte-sm);
+  border-collapse: collapse;
+}
+
+th {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+  text-align: start;
+  padding: var(--e-1) var(--e-2) var(--e-2);
+  border-bottom: 1px solid var(--bordure-forte);
+}
+
+td {
+  padding: var(--e-2);
+  border-bottom: 1px solid var(--bordure-douce);
+  vertical-align: top;
+}
+
+td.mono, td[data-type="nombre"], .cellule-nombre {
+  font-family: var(--police-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+/* -------------------------------------------------------------------------
+   9. Surlignage, sélection, fenêtres, pied
    ---------------------------------------------------------------------- */
 
 mark, .surlignage {
   background-color: var(--surlignage);
   color: var(--surlignage-texte);
-  border-radius: 3px;
-  padding-inline: 2px;
-  font-weight: var(--graisse-forte);
+  border-radius: 2px;
+  padding-inline: 1px;
+  font-weight: var(--graisse-moyenne);
 }
 
 .resultat--actif,
 .carte:focus-visible {
   border-color: var(--accent) !important;
-  box-shadow: var(--ombre-md), 0 0 0 3px var(--accent-doux) !important;
+  box-shadow: var(--ombre-accent) !important;
+}
+
+.modale {
+  border-radius: var(--rayon-xl);
+  border: 0;
+  box-shadow: var(--ombre-lg);
 }
 
 .modale-fond {
-  background-color: color-mix(in srgb, var(--gris-900) 34%, transparent);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background-color: color-mix(in srgb, var(--gris-900) 42%, transparent);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
-.modale__entete { border-bottom: 1px solid var(--bordure-douce); }
-.modale__pied   { border-top: 1px solid var(--bordure-douce); }
+.modale__entete { border-bottom: 1px solid var(--bordure); }
+.modale__pied   { border-top: 1px solid var(--bordure); background-color: var(--fond-enfonce); }
 
-.notification { border-radius: var(--rayon-md); box-shadow: var(--ombre-lg); }
+.notification {
+  border-radius: var(--rayon-md);
+  box-shadow: var(--ombre-lg);
+}
 
 .site-pied {
-  border-top: 1px solid var(--bordure-douce);
+  border-top: 1px solid var(--bordure);
   background: none;
   color: var(--texte-faible);
+  font-size: var(--texte-xs);
 }
 
-.separateur { border-color: var(--bordure-douce); }
+.site-pied__mention {
+  border-radius: var(--rayon-sm);
+  border-color: var(--bordure);
+  background-color: var(--fond-eleve);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.separateur { border-color: var(--bordure); }
 
 .squelette {
   background-color: var(--fond-profond);
   border-radius: var(--rayon-sm);
 }
 
+.etat-vide__titre { font-size: var(--texte-xl); }
+
 /* -------------------------------------------------------------------------
-   9. Sobriété du mouvement
+   10. Sobriété du mouvement
    ---------------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
-  .carte--cliquable:hover,
-  .carte--cliquable:focus-within,
-  .bouton:active { transform: none; }
   .squelette { animation: none; }
 }
 
 /* -------------------------------------------------------------------------
-   10. Rattrapages du socle
+   11. Rattrapages du socle
    ---------------------------------------------------------------------- */
 
-/* La recherche recevait DEUX anneaux au focus : le outline générique de
-   components.css et l'anneau doux posé plus haut. On garde le second, qui
-   est le traitement voulu, et on neutralise le premier. */
-.recherche:focus-within {
-  outline: none;
+/* Les tuiles d'exploration restent compactes. */
+.grille--compacte { --grille-min: calc(var(--e-16) * 2.6); }
+.grille--serree   { --grille-min: calc(var(--e-16) * 2); }
+
+/* Impression : le papier devient blanc, les filets restent. */
+@media print {
+  body { background: var(--gris-50); }
+  .carte, .onglets__panneau { border-color: var(--gris-400); }
 }
 
-/* Les tuiles d'exploration doivent rester compactes : avec l'échelle
-   d'espacement élargie, elles s'étiraient en pavés presque vides. */
-.grille--compacte { --grille-min: calc(var(--e-16) * 1.9); }
-.grille--serree   { --grille-min: calc(var(--e-16) * 1.5); }
+/* -------------------------------------------------------------------------
+   12. Cartouche de page : l'étiquette mono, le titre, la phrase, le filet
+   Le filet est marine ; sur une page de pôle il prend la couleur du pôle.
+   ---------------------------------------------------------------------- */
+
+.page-entete {
+  padding-block-end: var(--e-5);
+  border-bottom: 2px solid var(--accent);
+}
+
+body[data-pole] .page-entete {
+  border-bottom-color: var(--couleur-pole, var(--accent));
+}
+
+.page-entete__sur-titre {
+  margin: 0;
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+/* -------------------------------------------------------------------------
+   13. La barre : chaque pôle porte sa pastille, toujours avec son libellé
+   ---------------------------------------------------------------------- */
+
+.site-nav__liste a[data-pole]::before {
+  content: "";
+  flex: none;
+  inline-size: var(--e-2);
+  block-size: var(--e-2);
+  margin-inline-end: var(--e-2);
+  border-radius: var(--rayon-plein);
+  background-color: var(--pole-nav, var(--texte-faible));
+}
+
+.site-nav__liste a[data-pole="ETIIA"] { --pole-nav: var(--pole-etiia); }
+.site-nav__liste a[data-pole="ETIIE"] { --pole-nav: var(--pole-etiie); }
+.site-nav__liste a[data-pole="ETIII"] { --pole-nav: var(--pole-etiii); }

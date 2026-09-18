@@ -93,7 +93,8 @@ for (const [lien, attendu] of [['organigramme.html', 'Organigramme'],
                                ['faq.html', 'question|connaissance|FAQ']]) {
   await f.locator('nav.site-nav a[href="etiia.html"]').first().click();
   await page.waitForTimeout(1900);
-  const cible = f.locator(`a[href^="${lien}"]`).first();
+  // « :visible » : les liens de FAQ vivent désormais dans des volets fermés.
+  const cible = f.locator(`a[href^="${lien}"]:visible`).first();
   if (await cible.count() === 0) { t(`${lien} accessible depuis ETIIA`, false); continue; }
   await cible.click();
   await page.waitForTimeout(1900);

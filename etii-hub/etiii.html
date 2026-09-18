@@ -7,11 +7,11 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
   <meta name="description" content="Espace d’un pôle du service ETII : la communication du pôle, son organigramme en résumé et ses questions fréquentes.">
   <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="assets/css/polices.css">
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/skin.css">
-  <link rel="stylesheet" href="assets/css/directions.css">
 
   <!-- =====================================================================
        Styles du gabarit d'espace de pôle.
@@ -243,6 +243,127 @@
       max-inline-size: var(--largeur-texte);
       color: var(--texte-doux);
     }
+    /* --- L'équipe du pôle : la tête, puis les squads en volets -------------
+       Des <details> natifs. Le chevron est un simple coin tourné ; il
+       pivote à l'ouverture. Identifiants, effectifs et périmètres en mono. */
+    .equipe__tete {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: var(--e-2) var(--e-3);
+      padding: var(--e-3) var(--e-4);
+      background-color: var(--carte-fond);
+      border: 1px solid var(--carte-bord);
+      border-radius: var(--rayon-lg);
+      box-shadow: inset 3px 0 0 var(--couleur-pole);
+    }
+
+    .equipe__id, .equipe__perimetre,
+    .squad__id, .squad__effectif, .squad__membre-perimetre {
+      font-size: var(--texte-xs);
+      color: var(--texte-faible);
+    }
+
+    .equipe__nom { font-weight: var(--graisse-forte); }
+    .equipe__poste { font-size: var(--texte-sm); color: var(--texte-doux); }
+    .equipe__perimetre { margin-inline-start: auto; }
+
+    .equipe__squads { display: grid; gap: var(--e-2); }
+
+    .squad,
+    .faq-apercu__entree {
+      background-color: var(--carte-fond);
+      border: 1px solid var(--carte-bord);
+      border-radius: var(--rayon-lg);
+    }
+
+    .squad__resume,
+    .faq-apercu__question {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: var(--e-2) var(--e-3);
+      padding: var(--e-3) var(--e-4);
+      cursor: pointer;
+      list-style: none;
+      border-radius: var(--rayon-lg);
+    }
+
+    .squad__resume::-webkit-details-marker,
+    .faq-apercu__question::-webkit-details-marker { display: none; }
+
+    .squad__resume:hover,
+    .faq-apercu__question:hover { background-color: var(--carte-survol); }
+
+    .chevron {
+      flex: none;
+      align-self: center;
+      inline-size: var(--e-2);
+      block-size: var(--e-2);
+      margin-inline-end: var(--e-1);
+      border-inline-end: 1px solid var(--texte-faible);
+      border-block-end: 1px solid var(--texte-faible);
+      transform: translateY(-2px) rotate(-45deg);
+    }
+
+    details[open] > summary .chevron { transform: translateY(-3px) rotate(45deg); }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .chevron { transition: transform var(--duree-rapide) var(--courbe); }
+    }
+
+    .squad__nom { font-weight: var(--graisse-forte); }
+
+    .squad__lead {
+      margin-inline-start: auto;
+      font-size: var(--texte-sm);
+      color: var(--texte-doux);
+    }
+
+    .squad__membres {
+      list-style: none;
+      margin: 0;
+      padding: 0 var(--e-4) var(--e-3);
+      border-top: 1px solid var(--bordure-douce);
+    }
+
+    .squad__membre {
+      display: grid;
+      grid-template-columns: calc(var(--e-8) + var(--e-3)) minmax(0, 1.2fr) minmax(0, 1fr) calc(var(--e-16) * 1.2);
+      gap: var(--e-3);
+      align-items: baseline;
+      padding: var(--e-2) 0;
+      border-bottom: 1px solid var(--bordure-douce);
+      font-size: var(--texte-sm);
+    }
+
+    .squad__membre:last-child { border-bottom: 0; }
+    .squad__membre--lead .squad__membre-nom { font-weight: var(--graisse-forte); }
+    .squad__membre-poste { color: var(--texte-doux); }
+    .squad__membre-perimetre { text-align: end; }
+    .squad__vide { padding: 0 var(--e-4) var(--e-3); }
+
+    @media (max-width: 640px) {
+      .squad__membre { grid-template-columns: auto minmax(0, 1fr); }
+      .squad__membre-poste { grid-column: 2; }
+    }
+
+    /* --- Aperçu de la FAQ : des questions qui se déplient ------------------ */
+    .faq-apercu { display: grid; gap: var(--e-2); }
+
+    .faq-apercu__intitule { flex: 1 1 auto; font-weight: var(--graisse-forte); }
+
+    .faq-apercu__reponse {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-3);
+      padding: 0 var(--e-4) var(--e-4) calc(var(--e-4) + var(--e-2) + var(--e-1) + var(--e-3));
+      font-size: var(--texte-sm);
+      color: var(--texte-doux);
+    }
+
+    .faq-apercu__lien { font-size: var(--texte-sm); }
+
   </style>
 </head>
 
@@ -283,7 +404,7 @@
            JavaScript : la page en porte donc exactement un, avec ou sans
            script. pole.js ne fait que le préciser.
            ================================================================ -->
-      <div class="pile pile--serree pole-entete">
+      <div class="pile pile--serree pole-entete page-entete">
         <p class="pole-marque sans-marge">
           <span class="pole-marque__filet" aria-hidden="true"></span>
           <span class="pole-marque__libelle" id="pole-libelle">Pôle</span>
@@ -356,7 +477,6 @@
     </div>
   </footer>
 
-  <script type="module" src="assets/js/directions.js"></script>
   <script type="module" src="assets/js/pole.js"></script>
 </body>
 </html>

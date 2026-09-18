@@ -117,9 +117,11 @@ servable par n'importe quel serveur de fichiers.
       docsearch.html          Recherche documentaire  <-- LE CŒUR
       assets/
         css/
+          polices.css         Polices embarquées (Plex Sans, Plex Mono, Newsreader)
           tokens.css          Variables : couleurs, espacements, typo, ombres
           base.css            Reset, typographie, primitives, utilitaires
           components.css      Cartes, boutons, champs, badges, modales
+          skin.css            Matière : papier, filets, mono, marine
         js/
           data.js             Chargement JSON + cache + erreurs
           search.js           Moteur de recherche (§5)

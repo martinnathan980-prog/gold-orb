@@ -3,31 +3,35 @@
    Source unique de vérité. Aucune valeur brute (couleur, espacement, durée)
    ne doit apparaître ailleurs que dans ce fichier.
 
-   Parti pris : CLAIR, AÉRÉ, SOBRE. Fond blanc cassé, beaucoup d'espace,
-   typographie large et serrée en titre, ombres très douces, une seule
-   couleur vive à la fois. Le bleu de marque ancre les titres ; un bleu plus
-   lumineux porte l'interaction. Le thème sombre existe et reçoit le même
-   soin, mais c'est la variante.
+   Parti pris : LE DOCUMENT TECHNIQUE. Le registre des outils du service :
+   un papier gris très légèrement froid, des feuilles blanches posées
+   dessus, des filets d'un pixel, aucune ombre portée digne de ce nom, des
+   angles à peine cassés. L'encre est presque noire ; le marine Airbus est
+   la seule couleur d'accent, réservée à ce qui se clique et à ce qui
+   compte. Les chiffres, les codes, les dates et les intitulés de colonne
+   sont en IBM Plex Mono ; le texte courant en IBM Plex Sans, dense et
+   petit ; les titres en Newsreader, la seule fantaisie autorisée.
+   Le thème sombre est travaillé pour lui-même, pas inversé.
    ========================================================================= */
 
 :root {
   color-scheme: light dark;
 
   /* --- Marque ---------------------------------------------------------- */
-  --marque-bleu:        #00205b;   /* bleu profond : titres, aplats forts  */
-  --marque-bleu-clair:  #005587;   /* bleu de liaison                       */
-  --marque-cyan:        #0090c8;
+  --marque-bleu:        #00205b;   /* marine Airbus : l'accent, unique      */
+  --marque-bleu-clair:  #0b3c96;   /* marine éclairci : survol, actif       */
+  --marque-cyan:        #0090c8;   /* réservé aux visualisations            */
 
   /* --- Statuts --------------------------------------------------------- */
-  --statut-info:     #0369a1;
-  --statut-succes:   #047857;
-  --statut-alerte:   #b45309;
-  --statut-critique: #b91c1c;
+  --statut-info:     #125f8f;
+  --statut-succes:   #1a7f4b;
+  --statut-alerte:   #8a5a00;
+  --statut-critique: #b03a34;
 
-  --statut-info-fond:     #e8f2fb;
-  --statut-succes-fond:   #e6f4ee;
-  --statut-alerte-fond:   #fdf1e3;
-  --statut-critique-fond: #fdecec;
+  --statut-info-fond:     #e9f1f7;
+  --statut-succes-fond:   #e6f3ec;
+  --statut-alerte-fond:   #fbf3e2;
+  --statut-critique-fond: #fbebea;
 
   /* --- Couleurs de série des trois pôles --------------------------------
      Palette catégorielle validée dans les deux thèmes : bande de clarté,
@@ -39,24 +43,27 @@
   --pole-etiii: #b45309;
   --pole-etii:  var(--texte-doux);
 
-  /* --- Neutres, très légèrement froids ---------------------------------- */
-  --gris-50:  #fbfbfd;
-  --gris-100: #f5f5f7;
-  --gris-200: #ececf0;
-  --gris-300: #d9d9e0;
-  --gris-400: #b0b0bb;
-  --gris-500: #86868b;
-  --gris-600: #6e6e73;
-  --gris-700: #48484d;
-  --gris-800: #2b2b30;
-  --gris-900: #1d1d1f;
+  /* --- Neutres : un gris choisi, qui tire vers le bleu de l'accent -------- */
+  --gris-50:  #fbfbfc;
+  --gris-100: #f1f3f6;
+  --gris-200: #e8eaee;
+  --gris-300: #dfe3e9;
+  --gris-400: #c3c9d3;
+  --gris-500: #8d97a3;
+  --gris-600: #5b6874;
+  --gris-700: #3d4854;
+  --gris-800: #26303a;
+  --gris-900: #16202b;
 
-  /* --- Rôles sémantiques ------------------------------------------------ */
-  --fond:          var(--gris-50);
-  --fond-profond:  var(--gris-100);
+  /* --- Rôles sémantiques ------------------------------------------------
+     Le papier est le fond de page ; la feuille (fond-eleve) est blanche et
+     s'en détache par un filet, jamais par une ombre. Le creux (fond-enfonce)
+     est la surface en retrait : champ au repos, bouton, ligne survolée. */
+  --fond:          var(--gris-100);
+  --fond-profond:  var(--gris-200);
   --fond-eleve:    #ffffff;
-  --fond-enfonce:  var(--gris-100);
-  --fond-inverse:  var(--marque-bleu);
+  --fond-enfonce:  var(--gris-50);
+  --fond-inverse:  var(--gris-900);
 
   --texte:         var(--gris-900);
   --texte-doux:    var(--gris-600);
@@ -64,198 +71,195 @@
   --texte-inverse: #ffffff;
   --texte-accent:  var(--marque-bleu);
 
-  --bordure:       rgb(0 0 0 / 0.09);
-  --bordure-douce: rgb(0 0 0 / 0.05);
-  --bordure-forte: rgb(0 0 0 / 0.20);
+  --bordure:       var(--gris-300);
+  --bordure-douce: #edf0f4;
+  --bordure-forte: var(--gris-400);
 
-  --accent:          var(--marque-bleu-clair);
-  --accent-vif:      var(--marque-bleu);
+  --accent:          var(--marque-bleu);
+  --accent-vif:      var(--marque-bleu-clair);
   --accent-contenu:  #ffffff;
-  --accent-doux:     #e8f1f7;
-  --accent-lueur:    rgb(0 85 135 / 0.16);
-  --surlignage:      #ffe8a3;
-  --surlignage-texte: #5a4100;
+  --accent-doux:     #e9eef7;
+  --accent-lueur:    rgb(0 32 91 / 0.18);
+  --surlignage:      #fbeec4;
+  --surlignage-texte: #3d2e00;
 
-  /* --- Surfaces : plus d'effet de verre, des cartes franches ------------- */
+  /* --- Surfaces -------------------------------------------------------- */
   --carte-fond:   var(--fond-eleve);
   --carte-bord:   var(--bordure);
-  --carte-survol: var(--fond-eleve);
+  --carte-survol: var(--fond-enfonce);
 
-  /* --- Typographie ------------------------------------------------------ */
-  --police-titre: ui-sans-serif, system-ui, -apple-system, "SF Pro Display",
-                  "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --police: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+  /* --- Typographie ------------------------------------------------------
+     Les trois familles sont embarquées par polices.css : le site n'a pas
+     besoin du réseau pour avoir sa figure. */
+  --police-titre: "Newsreader", Georgia, "Times New Roman", serif;
+  --police: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system,
             "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --police-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-                 "Liberation Mono", monospace;
+  --police-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, "SF Mono",
+                 Menlo, Consolas, "Liberation Mono", monospace;
 
-  --texte-xs:  0.75rem;
-  --texte-sm:  0.8125rem;
-  --texte-md:  0.9375rem;
-  --texte-lg:  clamp(1.0625rem, 0.4vw + 0.97rem, 1.25rem);
-  --texte-xl:  clamp(1.25rem,  0.9vw + 1.06rem, 1.625rem);
-  --texte-2xl: clamp(1.625rem, 1.8vw + 1.2rem,  2.375rem);
-  --texte-3xl: clamp(2.25rem,  3.6vw + 1.4rem,  4rem);
+  /* Base à 14 px : dense, comme un outil, pas comme une brochure. */
+  --texte-xs:  0.71875rem;                                   /* 11.5 px */
+  --texte-sm:  0.8125rem;                                    /* 13 px   */
+  --texte-md:  0.875rem;                                     /* 14 px   */
+  --texte-lg:  1rem;                                         /* 16 px   */
+  --texte-xl:  1.25rem;                                      /* 20 px   */
+  --texte-2xl: clamp(1.375rem, 0.5vw + 1.25rem, 1.625rem);   /* 22–26   */
+  --texte-3xl: clamp(2rem, 2.4vw + 1.4rem, 3rem);            /* 32–48   */
 
   --graisse-normale: 400;
   --graisse-moyenne: 500;
   --graisse-forte:   600;
-  --graisse-extra:   650;
-  --graisse-max:     700;
+  --graisse-extra:   600;
+  --graisse-max:     600;
 
-  --interligne-serre: 1.08;
-  --interligne:       1.6;
-  --lettrage-titre:  -0.028em;
-  --lettrage-etiquette: 0.08em;
+  --interligne-serre: 1.15;
+  --interligne:       1.5;
+  --lettrage-titre:  0;
+  --lettrage-etiquette: 0.1em;
 
-  /* --- Espacement : plus généreux que la version précédente -------------- */
-  --e-1:  0.25rem;
-  --e-2:  0.5rem;
-  --e-3:  0.75rem;
-  --e-4:  1rem;
-  --e-5:  1.5rem;
-  --e-6:  2rem;
-  --e-8:  2.75rem;
-  --e-10: 3.5rem;
-  --e-12: 4.5rem;
-  --e-16: 6rem;
+  /* --- Espacement : une échelle serrée, à pas de 4 px --------------------- */
+  --e-1:  0.25rem;   /*  4 px */
+  --e-2:  0.5rem;    /*  8 px */
+  --e-3:  0.75rem;   /* 12 px */
+  --e-4:  1rem;      /* 16 px */
+  --e-5:  1.25rem;   /* 20 px */
+  --e-6:  1.5rem;    /* 24 px */
+  --e-8:  2rem;      /* 32 px */
+  --e-10: 2.75rem;   /* 44 px */
+  --e-12: 3.5rem;    /* 56 px */
+  --e-16: 5rem;      /* 80 px */
 
-  /* --- Formes ------------------------------------------------------------ */
-  --rayon-sm:    8px;
-  --rayon-md:    14px;
-  --rayon-lg:    20px;
-  --rayon-xl:    28px;
-  --rayon-plein: 980px;
+  /* --- Formes : des angles à peine cassés ---------------------------------- */
+  --rayon-sm:    3px;
+  --rayon-md:    4px;
+  --rayon-lg:    6px;
+  --rayon-xl:    8px;
+  --rayon-plein: 999px;
 
-  /* --- Profondeur : des ombres très douces, jamais de trait dur ---------- */
-  --ombre-sm: 0 1px 2px rgb(0 0 0 / 0.04);
-  --ombre-md: 0 2px 6px rgb(0 0 0 / 0.04),
-              0 8px 24px rgb(0 0 0 / 0.06);
-  --ombre-lg: 0 4px 12px rgb(0 0 0 / 0.05),
-              0 20px 48px rgb(0 0 0 / 0.09);
-  --ombre-accent: 0 8px 24px rgb(0 85 135 / 0.16);
+  /* --- Profondeur : le filet fait le travail, l'ombre est l'exception ----- */
+  --ombre-sm: none;
+  --ombre-md: 0 1px 3px rgb(22 32 43 / 0.07);
+  --ombre-lg: 0 18px 50px rgb(18 26 35 / 0.22), 0 0 0 1px var(--bordure);
+  --ombre-accent: 0 0 0 3px var(--accent-doux);
 
-  /* --- Mouvement --------------------------------------------------------- */
-  --duree-rapide: 150ms;
-  --duree:        280ms;
-  --duree-lente:  560ms;
-  --courbe: cubic-bezier(0.32, 0.72, 0, 1);
+  /* --- Mouvement : court, jamais décoratif ------------------------------- */
+  --duree-rapide: 140ms;
+  --duree:        220ms;
+  --duree-lente:  400ms;
+  --courbe: cubic-bezier(0.3, 0.7, 0.4, 1);
 
   /* --- Mise en page ------------------------------------------------------ */
-  --largeur-contenu: 68rem;
-  --largeur-texte:   62ch;
-  --cible-tactile:   44px;
+  --largeur-contenu: 75rem;
+  --largeur-texte:   72ch;
+  --cible-tactile:   40px;
 
   /* --- Focus ------------------------------------------------------------- */
-  --focus-couleur:   var(--marque-bleu-clair);
+  --focus-couleur:   var(--marque-bleu);
   --focus-epaisseur: 2px;
-  --focus-decalage:  3px;
+  --focus-decalage:  2px;
 }
 
 /* =========================================================================
-   Thème sombre — la variante, travaillée pour elle-même et non inversée.
+   Thème sombre — un atelier de nuit : mêmes filets, même densité, l'encre
+   et le papier échangés avec soin et non inversés.
    ========================================================================= */
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="clair"]) {
-    --fond:         #000000;
-    --fond-profond: #0a0a0c;
-    --fond-eleve:   #161618;
-    --fond-enfonce: #0a0a0c;
-    --fond-inverse: var(--gris-50);
+    --fond:         #101318;
+    --fond-profond: #0b0d11;
+    --fond-eleve:   #171b22;
+    --fond-enfonce: #1d222b;
+    --fond-inverse: #e9eaee;
 
-    --texte:         #f5f5f7;
-    --texte-doux:    #a1a1a6;
-    --texte-faible:  #86868b;
-    --texte-inverse: var(--gris-900);
-    --texte-accent:  #6cb8e4;
+    --texte:         #e9eaee;
+    --texte-doux:    #a3aab7;
+    --texte-faible:  #7a8391;
+    --texte-inverse: #101318;
+    --texte-accent:  #8fb0f0;
 
-    --bordure:       rgb(255 255 255 / 0.10);
-    --bordure-douce: rgb(255 255 255 / 0.06);
-    --bordure-forte: rgb(255 255 255 / 0.22);
+    --bordure:       #262c37;
+    --bordure-douce: #1e242d;
+    --bordure-forte: #3a4250;
 
-    --accent:         #2b9fd8;
-    --accent-vif:     #6cb8e4;
-    --accent-contenu: #04121c;
-    --accent-doux:    rgb(43 159 216 / 0.16);
-    --accent-lueur:   rgb(43 159 216 / 0.28);
-    --surlignage:     #6b5200;
-    --surlignage-texte: #ffeaa8;
+    --accent:         #8fb0f0;
+    --accent-vif:     #aac3f5;
+    --accent-contenu: #0b1530;
+    --accent-doux:    rgb(143 176 240 / 0.14);
+    --accent-lueur:   rgb(143 176 240 / 0.30);
+    --surlignage:     #5a4300;
+    --surlignage-texte: #ffe9b0;
 
-    --carte-fond:   #161618;
-    --carte-bord:   rgb(255 255 255 / 0.10);
-    --carte-survol: #1d1d20;
+    --carte-fond:   #171b22;
+    --carte-bord:   #262c37;
+    --carte-survol: #1d222b;
 
     --pole-etiia: #8b5cf6;
     --pole-etiie: #0ea5c9;
     --pole-etiii: #c47a0c;
 
-    --statut-info:     #58b6ef;
-    --statut-succes:   #4ad294;
-    --statut-alerte:   #f0a44a;
-    --statut-critique: #f2757a;
+    --statut-info:     #6fb1e0;
+    --statut-succes:   #6fae82;
+    --statut-alerte:   #dda434;
+    --statut-critique: #e0745c;
 
-    --statut-info-fond:     rgb(88 182 239 / 0.14);
-    --statut-succes-fond:   rgb(74 210 148 / 0.14);
-    --statut-alerte-fond:   rgb(240 164 74 / 0.14);
-    --statut-critique-fond: rgb(242 117 122 / 0.14);
+    --statut-info-fond:     rgb(111 177 224 / 0.14);
+    --statut-succes-fond:   rgb(111 174 130 / 0.14);
+    --statut-alerte-fond:   rgb(221 164 52 / 0.14);
+    --statut-critique-fond: rgb(224 116 92 / 0.14);
 
-    --ombre-sm: 0 1px 2px rgb(0 0 0 / 0.5);
-    --ombre-md: 0 2px 6px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.45);
-    --ombre-lg: 0 4px 12px rgb(0 0 0 / 0.45), 0 20px 48px rgb(0 0 0 / 0.55);
-    --ombre-accent: 0 8px 24px rgb(43 159 216 / 0.24);
+    --ombre-md: 0 1px 3px rgb(0 0 0 / 0.4);
+    --ombre-lg: 0 18px 50px rgb(0 0 0 / 0.6), 0 0 0 1px var(--bordure-forte);
 
-    --focus-couleur: #6cb8e4;
+    --focus-couleur: #8fb0f0;
   }
 }
 
 :root[data-theme="sombre"] {
-  --fond:         #000000;
-  --fond-profond: #0a0a0c;
-  --fond-eleve:   #161618;
-  --fond-enfonce: #0a0a0c;
-  --fond-inverse: var(--gris-50);
+  --fond:         #101318;
+  --fond-profond: #0b0d11;
+  --fond-eleve:   #171b22;
+  --fond-enfonce: #1d222b;
+  --fond-inverse: #e9eaee;
 
-  --texte:         #f5f5f7;
-  --texte-doux:    #a1a1a6;
-  --texte-faible:  #86868b;
-  --texte-inverse: var(--gris-900);
-  --texte-accent:  #6cb8e4;
+  --texte:         #e9eaee;
+  --texte-doux:    #a3aab7;
+  --texte-faible:  #7a8391;
+  --texte-inverse: #101318;
+  --texte-accent:  #8fb0f0;
 
-  --bordure:       rgb(255 255 255 / 0.10);
-  --bordure-douce: rgb(255 255 255 / 0.06);
-  --bordure-forte: rgb(255 255 255 / 0.22);
+  --bordure:       #262c37;
+  --bordure-douce: #1e242d;
+  --bordure-forte: #3a4250;
 
-  --accent:         #2b9fd8;
-  --accent-vif:     #6cb8e4;
-  --accent-contenu: #04121c;
-  --accent-doux:    rgb(43 159 216 / 0.16);
-  --accent-lueur:   rgb(43 159 216 / 0.28);
-  --surlignage:     #6b5200;
-  --surlignage-texte: #ffeaa8;
+  --accent:         #8fb0f0;
+  --accent-vif:     #aac3f5;
+  --accent-contenu: #0b1530;
+  --accent-doux:    rgb(143 176 240 / 0.14);
+  --accent-lueur:   rgb(143 176 240 / 0.30);
+  --surlignage:     #5a4300;
+  --surlignage-texte: #ffe9b0;
 
-  --carte-fond:   #161618;
-  --carte-bord:   rgb(255 255 255 / 0.10);
-  --carte-survol: #1d1d20;
+  --carte-fond:   #171b22;
+  --carte-bord:   #262c37;
+  --carte-survol: #1d222b;
 
   --pole-etiia: #8b5cf6;
   --pole-etiie: #0ea5c9;
   --pole-etiii: #c47a0c;
 
-  --statut-info:     #58b6ef;
-  --statut-succes:   #4ad294;
-  --statut-alerte:   #f0a44a;
-  --statut-critique: #f2757a;
+  --statut-info:     #6fb1e0;
+  --statut-succes:   #6fae82;
+  --statut-alerte:   #dda434;
+  --statut-critique: #e0745c;
 
-  --statut-info-fond:     rgb(88 182 239 / 0.14);
-  --statut-succes-fond:   rgb(74 210 148 / 0.14);
-  --statut-alerte-fond:   rgb(240 164 74 / 0.14);
-  --statut-critique-fond: rgb(242 117 122 / 0.14);
+  --statut-info-fond:     rgb(111 177 224 / 0.14);
+  --statut-succes-fond:   rgb(111 174 130 / 0.14);
+  --statut-alerte-fond:   rgb(221 164 52 / 0.14);
+  --statut-critique-fond: rgb(224 116 92 / 0.14);
 
-  --ombre-sm: 0 1px 2px rgb(0 0 0 / 0.5);
-  --ombre-md: 0 2px 6px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.45);
-  --ombre-lg: 0 4px 12px rgb(0 0 0 / 0.45), 0 20px 48px rgb(0 0 0 / 0.55);
-  --ombre-accent: 0 8px 24px rgb(43 159 216 / 0.24);
+  --ombre-md: 0 1px 3px rgb(0 0 0 / 0.4);
+  --ombre-lg: 0 18px 50px rgb(0 0 0 / 0.6), 0 0 0 1px var(--bordure-forte);
 
-  --focus-couleur: #6cb8e4;
+  --focus-couleur: #8fb0f0;
 }

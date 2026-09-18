@@ -63,9 +63,11 @@ etii-hub/
   *.html                  Une page = un point d'entrée, un module ES
   assets/
     css/
+      polices.css         IBM Plex Sans, IBM Plex Mono, Newsreader embarquées
       tokens.css          Jetons : couleurs, typo, espacements, ombres
       base.css            Reset, typographie, mise en page, en-tête
       components.css      Cartes, boutons, champs, onglets, modales
+      skin.css            La matière : registre « document technique »
     js/
       data.js             Chargement JSON, cache, états d'erreur
       search.js           Moteur de recherche

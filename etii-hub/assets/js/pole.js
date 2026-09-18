@@ -427,7 +427,24 @@ function effectifLisible(nombre) {
 }
 
 /**
- * Rend le responsable de pôle, ses squads et leur effectif.
+ * Identifiant lisible d'une personne : « p03 » s'écrit P03, comme sur la
+ * page de l'organigramme. Sans identifiant, la mention « à renseigner ».
+ *
+ * @param {*} personne
+ * @returns {string|Element}
+ */
+function identifiantLisible(personne) {
+  const id = texteNet(personne && personne.id);
+  return id ? id.toUpperCase() : manquant();
+}
+
+/**
+ * Rend l'équipe du pôle : le responsable en tête, puis chaque squad sous
+ * forme d'un volet qui se déplie sur la liste de ses membres — identifiant,
+ * nom, poste et périmètre, tels que le fichier les déclare. Le lead de la
+ * squad est nommé dès le volet fermé : c'est lui qu'on cherche le plus
+ * souvent. Les volets sont des <details> natifs : ouverts et fermés au
+ * clavier comme à la souris, sans un octet de script.
  *
  * @param {object} pole  entrée de POLES
  * @param {object} bloc  entrée de organigramme.json pour ce pôle
@@ -454,36 +471,59 @@ function rendreOrganigramme(pole, bloc, conteneur) {
     el('span', { class: 'badge badge--neutre badge--contour' },
       squads.length + (squads.length > 1 ? ' squads' : ' squad')));
 
-  /* Le responsable : une carte à part, c'est la tête du pôle. */
-  const carteResponsable = responsable
-    ? el('article', { class: 'carte carte--compacte' },
-        el('div', { class: 'carte__entete' },
-          el('h3', { class: 'carte__titre' }, texteOuManquant(responsable.nom)),
-          el('span', { class: 'badge badge--neutre badge--contour' },
-            texteOuManquant(responsable.poste))),
+  /* Le responsable : une ligne de tête, marquée du filet du pôle. */
+  const ligneResponsable = responsable
+    ? el('div', { class: 'equipe__tete' },
+        el('span', { class: 'equipe__id mono' }, identifiantLisible(responsable)),
+        el('span', { class: 'equipe__nom' }, texteOuManquant(responsable.nom)),
+        el('span', { class: 'equipe__poste' }, texteOuManquant(responsable.poste)),
         declare(responsable, 'perimetre')
-          ? el('p', { class: 'texte-sm texte-doux sans-marge' },
-              'Périmètre : ', texteOuManquant(responsable.perimetre))
+          ? el('span', { class: 'equipe__perimetre mono' },
+              texteOuManquant(responsable.perimetre))
           : null)
     : el('p', { class: 'texte-doux sans-marge' },
         'Ce pôle n’a pas de responsable déclaré dans l’organigramme.');
 
-  /* Les squads : nom et effectif, rien de plus — la vue complète est à un
-     clic, sur la page dédiée. */
+  /* Les squads : un volet chacune, le lead nommé dès le volet fermé. */
   const listeSquads = squads.length
-    ? el('ul', { class: 'grille grille--compacte grille--serree' },
-        squads.map((squad, rang) => el('li', { class: 'carte carte--plate carte--compacte' },
-          el('p', { class: 'gras sans-marge' }, texteOuManquant(squad && squad.nom)),
-          el('p', { class: 'texte-sm texte-doux sans-marge' },
-            effectifs[rang] === null
-              ? manquant()
-              : effectifLisible(effectifs[rang])))))
+    ? el('div', { class: 'equipe__squads' },
+        squads.map((squad, rang) => {
+          const membres = Array.isArray(squad && squad.membres) ? squad.membres : [];
+          const lead = membres.find((m) => m && typeof m === 'object' && m.role === 'leader') || null;
+
+          return el('details', { class: 'squad' },
+            el('summary', { class: 'squad__resume' },
+              el('span', { class: 'chevron', 'aria-hidden': 'true' }),
+              el('span', { class: 'squad__nom' }, texteOuManquant(squad && squad.nom)),
+              el('span', { class: 'squad__effectif mono' },
+                effectifs[rang] === null ? manquant() : effectifLisible(effectifs[rang])),
+              lead
+                ? el('span', { class: 'squad__lead' },
+                    el('span', { class: 'texte-faible' }, texteOuManquant(lead.poste), ' · '),
+                    texteOuManquant(lead.nom))
+                : null),
+            membres.length
+              ? el('ol', { class: 'squad__membres' },
+                  membres.map((membre) => el('li', {
+                    class: ['squad__membre',
+                      membre && membre.role === 'leader' ? 'squad__membre--lead' : null]
+                  },
+                    el('span', { class: 'squad__id mono' }, identifiantLisible(membre)),
+                    el('span', { class: 'squad__membre-nom' },
+                      texteOuManquant(membre && membre.nom)),
+                    el('span', { class: 'squad__membre-poste' },
+                      texteOuManquant(membre && membre.poste)),
+                    el('span', { class: 'squad__membre-perimetre mono' },
+                      declare(membre, 'perimetre') ? texteOuManquant(membre.perimetre) : ''))))
+              : el('p', { class: 'texte-doux texte-sm squad__vide sans-marge' },
+                  'Aucun membre déclaré pour cette squad.'));
+        }))
     : el('p', { class: 'texte-doux sans-marge' },
         'Aucune squad n’est rattachée à ce pôle dans l’organigramme.');
 
   monter(conteneur,
     compteurs,
-    carteResponsable,
+    ligneResponsable,
     listeSquads,
     lienSuite('organigramme.html', pole.cle,
       'Voir l’organigramme complet du pôle'));
@@ -514,41 +554,52 @@ function questionsDuPole(donnees, code) {
 }
 
 /**
- * Rend l'aperçu de la FAQ du pôle.
+ * Rend l'aperçu de la FAQ du pôle : chaque question est un volet qui se
+ * déplie sur sa réponse, avec un lien vers la fiche complète. En pied,
+ * deux actions : toute la FAQ du pôle, et poser une question aux experts —
+ * le lien ouvre directement la fenêtre de demande, pôle présélectionné.
+ *
  * @param {object} pole
  * @param {object[]} questions
  * @param {Element} conteneur
  */
 function rendreFaq(pole, questions, conteneur) {
+  const volets = questions.length
+    ? el('div', { class: 'faq-apercu' },
+        questions.map((question) => {
+          const identifiant = texteNet(question.id);
+
+          return el('details', { class: 'faq-apercu__entree' },
+            el('summary', { class: 'faq-apercu__question' },
+              el('span', { class: 'chevron', 'aria-hidden': 'true' }),
+              el('span', { class: 'faq-apercu__intitule' },
+                texteOuManquant(question.question)),
+              declare(question, 'categorie')
+                ? el('span', { class: 'badge badge--neutre badge--contour' },
+                    texteOuManquant(question.categorie))
+                : null),
+            el('div', { class: 'faq-apercu__reponse' },
+              el('p', { class: 'mesure sans-marge' },
+                declare(question, 'reponse') ? texteOuManquant(question.reponse) : manquant()),
+              identifiant
+                ? el('a', {
+                    class: 'faq-apercu__lien',
+                    href: lienPole('faq.html', pole.cle, { question: identifiant })
+                  }, 'Ouvrir dans la base de connaissances')
+                : null));
+        }))
+    : el('p', { class: 'texte-doux sans-marge' },
+        'Aucune question n’est encore rattachée à ce pôle.');
+
   monter(conteneur,
-    el('ul', { class: 'pile' },
-      questions.map((question) => {
-        const identifiant = texteNet(question.id);
-        const intitule = texteOuManquant(question.question);
-
-        return el('li', {
-          class: ['carte', 'carte--compacte', identifiant ? 'carte--cliquable' : null]
-        },
-        el('h3', { class: 'carte__titre' },
-          identifiant
-            ? el('a', {
-                class: 'carte__lien',
-                href: lienPole('faq.html', pole.cle, { question: identifiant })
-              }, intitule)
-            : intitule),
-
-        declare(question, 'categorie')
-          ? el('p', { class: 'carte__meta sans-marge' },
-              el('span', { class: 'badge badge--neutre badge--contour' },
-                texteOuManquant(question.categorie)))
-          : null,
-
-        declare(question, 'reponse')
-          ? el('p', { class: 'mesure sans-marge texte-doux' },
-              texteOuManquant(question.reponse))
-          : null);
-      })),
-    lienSuite('faq.html', pole.cle, 'Toute la FAQ du pôle'));
+    volets,
+    el('p', { class: 'rangee sans-marge' },
+      el('a', { class: 'bouton bouton--secondaire', href: lienPole('faq.html', pole.cle) },
+        'Toute la FAQ du pôle'),
+      el('a', {
+        class: 'bouton bouton--principal',
+        href: lienPole('faq.html', pole.cle, { proposer: 1 })
+      }, 'Poser une question aux experts')));
 }
 
 /* -------------------------------------------------------------------------
