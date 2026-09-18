@@ -405,6 +405,7 @@ body.espace-composants .outils { display: none; }
 .famille-identite { display: flex; align-items: baseline; gap: var(--e-2); flex-wrap: wrap; min-width: 0; }
 .famille-nom { font-size: 14px; font-weight: 700; }
 .famille-cat { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--encre-3); font-weight: 600; }
+.famille-norme-nom { font-family: var(--police-data); font-size: 13px; font-weight: 600; color: var(--marque); }
 .famille-compte { display: flex; gap: 6px; flex-shrink: 0; }
 .famille-chiffre {
   font-size: 11.5px; color: var(--encre-2); background: var(--surface-2);
@@ -725,6 +726,8 @@ body.espace-composants .outils { display: none; }
 .fc-plan-boites-titre { font-size: 12.5px; color: var(--encre-2); margin-right: 4px; }
 .fc-plan-si { margin: 4px 0 0; font-size: 12.5px; color: var(--encre-2); }
 .fc-lire { margin: 0 0 8px; font-size: 12px; color: var(--encre-3); line-height: 1.45; }
+.fc-titre-norme { font-family: var(--police-data); letter-spacing: 0; text-transform: none; color: var(--marque); font-size: 12px; }
+.fc-note { margin: 0 0 var(--e-4); padding: 10px 14px; font-size: 12.5px; color: var(--encre-2); background: var(--surface); border: 1px solid var(--trait); border-radius: var(--r-s); }
 .parts-legende-liste { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; }
 .parts-legende-liste li { display: flex; align-items: center; gap: 8px; }
 .parts-legende-liste i { width: 14px; height: 8px; border-radius: 2px; flex: none; display: inline-block; }
@@ -905,6 +908,24 @@ body.espace-composants .outils { display: none; }
 .ligne { display: flex; gap: var(--e-3); padding: 8px 0; border-bottom: 1px solid var(--surface-3); align-items: flex-start; }
 .ligne:last-child { border-bottom: 0; }
 .ligne-bloc { flex-direction: column; gap: var(--e-2); }
+/* Un repere dans une fiche longue : un filet court en marine, un titre en
+   capitales, une aide. Un trait, pas un aplat — on le voit, il ne crie pas. */
+.fiche-section { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 14px 0 4px; }
+.fiche-section-filet { width: 22px; height: 3px; border-radius: 2px; background: var(--marque); align-self: center; flex: none; }
+.fiche-section-titre { font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--marque); }
+.fiche-section-aide { font-size: 11px; color: var(--encre-3); }
+.ligne-section { padding-top: 0; gap: 4px; }
+.ligne-section > .fiche-section { padding-top: 10px; }
+.fiche-champs .fiche-section:first-child { padding-top: 0; }
+.fiche-section + .ligne { border-top: 0; }
+/* Un composant de la fiche mene a sa fiche dans la base. */
+.niveau-lien { background: none; border: 0; padding: 0; text-align: left; color: var(--encre); cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 600; }
+.niveau-lien:hover { color: var(--marque); text-decoration: underline; text-underline-offset: 3px; }
+/* Le retour du panneau : d'ou l'on vient, quand on vient de quelque part. */
+.panneau-titre { min-width: 0; }
+.panneau-retour-zone { margin-bottom: 4px; }
+.panneau-retour { background: none; border: 0; padding: 0; font-size: 12px; font-weight: 600; color: var(--marque); font-family: var(--police-data); }
+.panneau-retour:hover { text-decoration: underline; text-underline-offset: 3px; }
 .ligne-cle { flex: 0 0 38%; font-size: 12.5px; color: var(--encre-3); font-weight: 500; }
 .ligne-bloc .ligne-cle { flex: none; }
 .lien-url {
@@ -1493,7 +1514,8 @@ body.espace-composants .outils { display: none; }
     <div class="offcanvas offcanvas-end panneau" tabindex="-1" id="detailsSlideOver"
          aria-labelledby="slideOverTitle">
       <div class="offcanvas-header panneau-tete">
-        <div>
+        <div class="panneau-titre">
+          <div id="slideOverRetour" class="panneau-retour-zone" hidden></div>
           <h2 class="offcanvas-title" id="slideOverTitle">Fiche</h2>
           <p class="panneau-sous" id="slideOverSousTitre"></p>
         </div>
@@ -1580,7 +1602,7 @@ body.espace-composants .outils { display: none; }
           <div class="modal-body">
             <div class="ligne-saisie">
               <input type="text" list="datalistStds" id="multiSearchInputSelect"
-                     placeholder="Fonction, norme ou référence…" aria-label="Composant à chercher">
+                     placeholder="Composant, norme ou référence…" aria-label="Composant à chercher">
             </div>
             <div id="multiSearchPillsContainer" class="zone-puces"></div>
             <button type="button" class="btn-principal" data-action="fermer-multi-recherche">
@@ -1604,7 +1626,7 @@ body.espace-composants .outils { display: none; }
           </div>
           <div class="modal-body">
             <input type="text" id="catSearch" class="saisie-pleine"
-                   placeholder="Fonction, norme, référence, désignation…" aria-label="Filtrer le catalogue">
+                   placeholder="Composant, norme, référence, désignation…" aria-label="Filtrer le catalogue">
             <p id="catalogueInfo" class="modale-sous"></p>
             <div id="catalogueList" class="liste-catalogue"></div>
           </div>
@@ -1878,7 +1900,7 @@ const CATEGORIES_COMPOSANT = {
 // Les trois niveaux, du plus large au plus précis. Leurs parts se règlent
 // dans la pondération : elles totalisent toujours 100 %.
 const NIVEAUX = [
-  { cle: 'fonction',  libelle: 'Fonction',  poids: 20, aide: 'ce que c\'est',
+  { cle: 'fonction',  libelle: 'Composant', poids: 20, aide: 'ce que c\'est',
     classe: 'niveau-fonction' },
   { cle: 'norme',     libelle: 'Norme',     poids: 30, aide: 'ce qui le définit',
     classe: 'niveau-norme' },
@@ -2180,15 +2202,18 @@ const CHAMPS_BOITE = {
 // ------------------------------------------------------------
 // Champs communs à tous les types
 // ------------------------------------------------------------
+// Une fiche longue se lit par sections : chaque champ dit la sienne, et la
+// fiche pose un repère quand elle change. Sans section, le champ suit le
+// précédent.
 const CHAMPS_COMMUNS = [
-  { cle: 'Image', libelle: 'Image', genre: GENRE.IMAGE },
-  { cle: 'Commentaires libres', libelle: 'Commentaires', genre: GENRE.LONG }
+  { cle: 'Image', libelle: 'Image', genre: GENRE.IMAGE, section: 'Image et commentaires' },
+  { cle: 'Commentaires libres', libelle: 'Commentaires', genre: GENRE.LONG, section: 'Image et commentaires' }
 ];
 
 const CHAMPS_QUALIF = [
-  { cle: 'Qualification Brouillard salin', libelle: 'Qualif. brouillard salin', genre: GENRE.MULTI, liste: 'list-Qualif' },
-  { cle: 'Qualification Vibration', libelle: 'Qualif. vibration', genre: GENRE.MULTI, liste: 'list-Qualif' },
-  { cle: 'Qualification Explosion', libelle: 'Qualif. explosion', genre: GENRE.MULTI, liste: 'list-Qualif' }
+  { cle: 'Qualification Brouillard salin', libelle: 'Qualif. brouillard salin', genre: GENRE.MULTI, liste: 'list-Qualif', section: 'Qualifications' },
+  { cle: 'Qualification Vibration', libelle: 'Qualif. vibration', genre: GENRE.MULTI, liste: 'list-Qualif', section: 'Qualifications' },
+  { cle: 'Qualification Explosion', libelle: 'Qualif. explosion', genre: GENRE.MULTI, liste: 'list-Qualif', section: 'Qualifications' }
 ];
 
 const CLES_QUALIF = CHAMPS_QUALIF.map(function (c) { return c.cle; });
@@ -2206,14 +2231,14 @@ const TYPES = {
     resume: ['Montage', 'Dim Long (mm)', 'Dim Larg (mm)', 'Masse (g)'],
     champs: [
       { cle: 'PN du type', libelle: 'PN du type', genre: GENRE.TEXTE, requis: true },
-      { cle: 'Montage', libelle: 'Montage', genre: GENRE.LISTE, liste: 'list-Montage' },
+      { cle: 'Montage', libelle: 'Montage', genre: GENRE.LISTE, liste: 'list-Montage', section: 'Géométrie' },
       { cle: 'Nombre de pas', libelle: 'Nombre de pas', genre: GENRE.NOMBRE,
-        aide: '1 pas ≈ 9,525 mm' },
-      { cle: 'Dim Long (mm)', libelle: 'Longueur (mm)', genre: GENRE.NOMBRE },
-      { cle: 'Dim Larg (mm)', libelle: 'Largeur (mm)', genre: GENRE.NOMBRE },
-      { cle: 'Masse (g)', libelle: 'Masse (g)', genre: GENRE.NOMBRE },
-      { cle: 'HL', libelle: 'HL', genre: GENRE.LISTE, liste: 'list-Niveau' },
-      { cle: 'DAL', libelle: 'DAL', genre: GENRE.LISTE, liste: 'list-Niveau' }
+        aide: '1 pas ≈ 9,525 mm', section: 'Géométrie' },
+      { cle: 'Dim Long (mm)', libelle: 'Longueur (mm)', genre: GENRE.NOMBRE, section: 'Géométrie' },
+      { cle: 'Dim Larg (mm)', libelle: 'Largeur (mm)', genre: GENRE.NOMBRE, section: 'Géométrie' },
+      { cle: 'Masse (g)', libelle: 'Masse (g)', genre: GENRE.NOMBRE, section: 'Géométrie' },
+      { cle: 'HL', libelle: 'HL', genre: GENRE.LISTE, liste: 'list-Niveau', section: 'Niveaux' },
+      { cle: 'DAL', libelle: 'DAL', genre: GENRE.LISTE, liste: 'list-Niveau', section: 'Niveaux' }
     ].concat(CHAMPS_QUALIF, [
       // Deux familles distinctes, comparées séparément : ce qui est dur, et
       // ce qui tient les câbles. Les boutons et voyants, eux, sont sur la boîte.
@@ -2659,6 +2684,7 @@ const Store = {
   resultatDeplie: null,      // le candidat dont on regarde le détail
   ficheComposant: null,      // { categorie, fonction } quand le panneau sert les composants
   branchesDepliees: {},      // les sous-ensembles ouverts dans la fiche, par ID_Ligne
+  pileFiches: [],            // d'où l'on vient dans le panneau : [{ pn } | { composant }]
 
   // Charge utile de la dernière suppression, conservée pour l'annulation.
   derniereSuppression: null,
@@ -3420,8 +3446,9 @@ function arbreComposants(composants) {
           return no;
         }).sort(parEmploi);
         // Plusieurs normes pour une fonction : dispersion d'un cran au-dessus.
-        fo.dispersee = fo.normes.length > 1 ||
-                       fo.normes.some(function (n) { return n.dispersee; });
+        // Plusieurs normes n'est PAS une dispersion : deux normes différentes
+        // ont en général leur raison. La dispersion se juge sous une même norme.
+        fo.dispersee = fo.normes.some(function (n) { return n.dispersee; });
         return fo;
       }).sort(function (a, b) { return parEmploi(a, b) || parNom(a, b); });
       return f;
@@ -3740,70 +3767,59 @@ function famillesComposants(liste) {
 }
 
 /**
- * Les familles qui se DISPERSENT : plusieurs normes pour une même fonction,
- * ou plusieurs références pour une même norme. Chacune est une rationalisation
- * possible. Les plus dispersées d'abord, ce sont elles qui coûtent le plus.
+ * Ce qui se DISPERSE : plusieurs références montées pour le même composant
+ * SOUS UNE MÊME NORME. Deux normes différentes pour un même composant ne
+ * sont pas une dispersion — elles ont en général leur raison — et on ne
+ * propose pas de les fondre. Une famille = un composant + une norme.
+ * Chacune est une convergence possible ; les plus dispersées d'abord, ce
+ * sont elles qui coûtent le plus à faire vivre.
  */
 function opportunitesStandardisation(liste) {
   const sorties = [];
 
   famillesComposants(liste).forEach(function (f) {
-    const normes = Array.from(f.normes.values()).map(function (n) {
-      return {
-        norme: n.norme,
-        references: Array.from(n.references.values()).map(function (r) {
-          return { reference: r.reference, nbBoites: r.boites.size,
-                   boites: Array.from(r.boites).sort(function (a, b) {
-                     return a.localeCompare(b, 'fr', { numeric: true });
-                   }) };
-        }).sort(function (a, b) {
-          return b.nbBoites - a.nbBoites ||
-                 String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
-        })
-      };
-    }).sort(function (a, b) {
-      return b.references.length - a.references.length ||
-             String(a.norme).localeCompare(String(b.norme), 'fr', { numeric: true });
-    });
+    f.normes.forEach(function (n) {
+      const references = Array.from(n.references.values()).map(function (r) {
+        return { reference: r.reference, nbBoites: r.boites.size,
+                 boites: Array.from(r.boites).sort(function (a, b) {
+                   return a.localeCompare(b, 'fr', { numeric: true });
+                 }) };
+      }).sort(function (a, b) {
+        return b.nbBoites - a.nbBoites ||
+               String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+      });
+      // Une seule référence sous cette norme : rien à faire converger.
+      if (references.length <= 1) return;
 
-    const nbReferences = normes.reduce(function (t, n) { return t + n.references.length; }, 0);
-    // Une seule norme et une seule référence : rien à rationaliser.
-    if (normes.length <= 1 && nbReferences <= 1) return;
+      // La cible : la référence la plus montée. Les boîtes à modifier :
+      // celles qui en montent une autre. C'est le coût concret.
+      const cible = references[0];
+      const aModifier = new Set();
+      references.forEach(function (r) {
+        if (r === cible) return;
+        r.boites.forEach(function (b) { aModifier.add(b); });
+      });
+      const boites = new Set();
+      references.forEach(function (r) { r.boites.forEach(function (b) { boites.add(b); }); });
 
-    // La cible : la référence la plus montée. Les boîtes à modifier : celles
-    // qui en montent une autre. C'est le coût concret de la convergence.
-    const toutes = [];
-    normes.forEach(function (n) { n.references.forEach(function (r) { toutes.push(r); }); });
-    toutes.sort(function (a, b) {
-      return b.nbBoites - a.nbBoites ||
-             String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
-    });
-    const cible = toutes[0];
-    const aModifier = new Set();
-    toutes.forEach(function (r) {
-      if (r === cible) return;
-      r.boites.forEach(function (b) { aModifier.add(b); });
-    });
-
-    sorties.push({
-      categorie: f.categorie, fonction: f.fonction, normes: normes,
-      nbNormes: normes.length, nbReferences: nbReferences,
-      nbBoites: normes.reduce(function (t, n) {
-        return t + n.references.reduce(function (u, r) { return u + r.nbBoites; }, 0);
-      }, 0),
-      cible: cible, references: toutes,
-      aModifier: Array.from(aModifier).sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); })
+      sorties.push({
+        categorie: f.categorie, fonction: f.fonction, norme: n.norme,
+        references: references, nbReferences: references.length,
+        nbBoites: boites.size, cible: cible,
+        aModifier: Array.from(aModifier).sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); })
+      });
     });
   });
 
   return sorties.sort(function (a, b) {
-    return b.nbReferences - a.nbReferences || b.nbNormes - a.nbNormes ||
-           a.fonction.localeCompare(b.fonction, 'fr');
+    return b.nbReferences - a.nbReferences || b.nbBoites - a.nbBoites ||
+           a.fonction.localeCompare(b.fonction, 'fr') ||
+           String(a.norme).localeCompare(String(b.norme), 'fr', { numeric: true });
   });
 }
 
 /**
- * Le bilan de la standardisation : si chaque famille dispersée convergeait
+ * Le bilan de la standardisation : si chaque norme dispersée convergeait
  * vers sa référence la plus montée, combien de références cesserait-on de
  * faire vivre, et combien de boîtes faudrait-il modifier ?
  */
@@ -3817,7 +3833,7 @@ function bilanStandardisation(familles) {
   return {
     familles: familles.length,
     references: references,
-    apres: familles.length,               // une référence par famille
+    apres: familles.length,               // une référence par norme dispersée
     economie: references - familles.length,
     boites: boites.size
   };
@@ -4342,8 +4358,9 @@ function fonctionsParFamille(fonctions) {
 
 /** Ce que veulent dire les marques, en clair. */
 const AIDE_MARQUES = {
-  ranger: 'Plusieurs références montées pour le même service : à faire converger',
-  hors:   'Montée dans une boîte, mais absente du catalogue : personne ne la suit'
+  ranger: 'Plusieurs références montées sous une même norme pour le même composant : à faire converger',
+  hors:   'Montée dans une boîte, mais absente du catalogue — la liste des composants autorisés, ' +
+          'tenue dans le classeur Catalogue. Personne ne la suit.'
 };
 
 /**
@@ -4352,17 +4369,18 @@ const AIDE_MARQUES = {
  */
 function aideLectureHtml(lecture) {
   const textes = {
-    liste: 'Une ligne par fonction, rangées par famille. Sous le nombre de références, ' +
+    liste: 'Un composant par ligne, rangés par famille. Sous le nombre de références, ' +
            'la barre : <span class="aide-vert">vert</span>, la référence la plus montée ; ' +
            '<span class="aide-gris">gris</span>, les autres. ' +
-           '<b>À ranger</b> : plusieurs références montées pour le même service. ' +
-           '<b>Hors catalogue</b> : montée dans une boîte, mais absente du catalogue.',
-    matrice: 'Dans chaque case : le nombre de boîtes de ce porteur qui montent la fonction. ' +
+           '<b>À ranger</b> : plusieurs références montées sous une même norme. ' +
+           '<b>Absent du catalogue</b> : monté dans une boîte, mais pas dans le catalogue — ' +
+           'la liste des composants autorisés, tenue dans le classeur Catalogue.',
+    matrice: 'Dans chaque case : le nombre de boîtes de ce porteur qui montent le composant. ' +
              'Plus la case est foncée, plus c\'est monté. <b>En tout</b> compte les boîtes ' +
              'distinctes — une boîte qui vole sur deux porteurs est dans les deux colonnes, ' +
              'mais une seule fois dans le total.',
-    carte: 'Plus une tuile est grande, plus la fonction est montée dans de boîtes. ' +
-           '<b>À ranger</b> : plusieurs références montées pour le même service. ' +
+    carte: 'Plus une tuile est grande, plus le composant est monté dans de boîtes. ' +
+           '<b>À ranger</b> : plusieurs références montées sous une même norme. ' +
            'Cliquez une tuile pour ouvrir sa fiche.'
   };
   return '<p class="compo-lire">' + (textes[lecture] || textes.liste) + '</p>';
@@ -4376,9 +4394,9 @@ function fonctionsComposants(composants) {
     if (!parFonction.has(cle)) {
       parFonction.set(cle, {
         cle: cle, categorie: c.categorie,
-        libelle: c.fonction || 'Fonction non précisée',
+        libelle: c.fonction || 'Composant non précisé',
         normesVues: new Set(), references: 0, montages: 0,
-        boites: new Set(), hors: 0, dormantes: 0, lignes: []
+        boites: new Set(), hors: 0, dormantes: 0, lignes: [], parNorme: new Map()
       });
     }
     const f = parFonction.get(cle);
@@ -4386,6 +4404,9 @@ function fonctionsComposants(composants) {
     f.references++;
     f.montages += c.montages;
     if (c.norme) f.normesVues.add(normaliserTexte(c.norme));
+    const cleN = normaliserTexte(c.norme) || '\u0000';
+    if (!f.parNorme.has(cleN)) f.parNorme.set(cleN, { libelle: c.norme || 'sans norme', lignes: [] });
+    f.parNorme.get(cleN).lignes.push(c);
     c.boites.forEach(function (b) { f.boites.add(b); });
     if (c.etat === ETAT_COMPOSANT.HORS) f.hors++;
     if (c.etat === ETAT_COMPOSANT.DORMANT) f.dormantes++;
@@ -4397,9 +4418,16 @@ function fonctionsComposants(composants) {
   return Array.from(parFonction.values()).map(function (f) {
     f.normes = f.normesVues.size;
     f.nbBoites = f.boites.size;
-    // Dispersée : plusieurs références RÉELLEMENT montées pour le même service.
     f.montees = f.lignes.filter(function (l) { return l.nbBoites > 0; }).length;
-    f.dispersee = f.montees > 1;
+    // Dispersé : plusieurs références RÉELLEMENT montées sous une MÊME norme.
+    // Deux normes différentes ne comptent pas — elles ont leur raison. On
+    // retient la norme la plus dispersée : c'est elle que la barre montre.
+    f.normeDispersee = null;
+    f.parNorme.forEach(function (n) {
+      n.montees = n.lignes.filter(function (l) { return l.nbBoites > 0; }).length;
+      if (n.montees > 1 && (!f.normeDispersee || n.montees > f.normeDispersee.montees)) f.normeDispersee = n;
+    });
+    f.dispersee = !!f.normeDispersee;
     return f;
   }).sort(function (a, b) { return tri.fn(a, b) || a.libelle.localeCompare(b.libelle, 'fr'); });
 }
@@ -4423,7 +4451,7 @@ function triComposantsHtml(nb) {
   const avecTri = lecture !== 'carte';
   return '<div class="compo-tri">' +
     vuesComposantsHtml() +
-    '<span class="compo-tri-compte">' + nb + (nb > 1 ? ' fonctions' : ' fonction') + '</span>' +
+    '<span class="compo-tri-compte">' + nb + (nb > 1 ? ' composants' : ' composant') + '</span>' +
     (avecTri
       ? '<span class="compo-tri-choix">' +
           TRIS_COMPOSANTS.map(function (t) {
@@ -4477,10 +4505,12 @@ function partsHtml(lignes, classe) {
     });
   if (montees.length < 2) return '';
   const total = montees.reduce(function (t, c) { return t + c.nbBoites; }, 0);
-  const titre = montees.map(function (c, i) {
-    return (i === 0 ? 'cible ' : '') + txt(c.reference, 'sans référence') + ' : ' +
-           c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte');
-  }).join(' · ');
+  const normes = new Set(montees.map(function (c) { return normaliserTexte(c.norme); }));
+  const titre = (normes.size === 1 && montees[0].norme ? 'norme ' + montees[0].norme + ' — ' : '') +
+    montees.map(function (c, i) {
+      return (i === 0 ? 'cible ' : '') + txt(c.reference, 'sans référence') + ' : ' +
+             c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte');
+    }).join(' · ');
   return '<span class="parts ' + (classe || '') + '" role="img" aria-label="' + esc(titre) + '"' +
     ' title="' + esc(titre) + '">' +
     montees.map(function (c, i) {
@@ -4506,7 +4536,7 @@ function ligneFonctionHtml(f, maxi) {
       (f.montees < f.references
         ? '<span class="lf-doux"> · ' + f.montees + ' montée' + (f.montees > 1 ? 's' : '') + '</span>'
         : '') + '</span>' +
-      partsHtml(f.lignes, 'parts-ligne') +
+      (f.normeDispersee ? partsHtml(f.normeDispersee.lignes, 'parts-ligne') : '') +
     '</span>' +
     '<span class="lf-emploi">' +
       '<span class="lf-jauge" aria-hidden="true"><span style="width:' + part + '%"></span></span>' +
@@ -4514,7 +4544,7 @@ function ligneFonctionHtml(f, maxi) {
     '</span>' +
     '<span class="lf-marques">' +
       (f.dispersee ? '<span class="lf-tag lf-tag-ranger" title="' + esc(AIDE_MARQUES.ranger) + '">à ranger</span>' : '') +
-      (f.hors ? '<span class="lf-tag lf-tag-hors" title="' + esc(AIDE_MARQUES.hors) + '">hors catalogue</span>' : '') +
+      (f.hors ? '<span class="lf-tag lf-tag-hors" title="' + esc(AIDE_MARQUES.hors) + '">absent du catalogue</span>' : '') +
     '</span>' +
     '<span class="lf-fleche" aria-hidden="true">›</span>' +
   '</button>';
@@ -4527,7 +4557,7 @@ function groupeFamilleHtml(g) {
     '<span class="lf-groupe-nom">' + esc(g.libelle) + '</span>' +
     (g.aide ? '<span class="lf-groupe-aide">' + esc(g.aide) + '</span>' : '') +
     '<span class="lf-groupe-n">' + g.fonctions.length +
-      (g.fonctions.length > 1 ? ' fonctions' : ' fonction') + ' · ' +
+      (g.fonctions.length > 1 ? ' composants' : ' composant') + ' · ' +
       g.nbBoites + (g.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span>' +
   '</div>';
 }
@@ -4537,7 +4567,7 @@ function listeFonctionsHtml(fonctions) {
   const maxi = fonctions.reduce(function (m, f) { return Math.max(m, f.nbBoites); }, 1);
   return '<div class="lf-cadre">' +
       '<div class="lf-entete">' +
-        '<span>Fonction</span><span>Normes</span>' +
+        '<span>Composant</span><span>Normes</span>' +
         '<span>Références</span><span>Emploi</span><span></span><span></span>' +
       '</div>' +
       fonctionsParFamille(fonctions).map(function (g) {
@@ -4564,7 +4594,7 @@ function matriceHtml(mx, options) {
     return Math.max(1, Math.min(5, Math.ceil((n / (mx.maxi || 1)) * 5)));
   };
 
-  const tete = '<tr><th scope="col" class="mx-coin">' + esc(options.enTete || 'Fonction') + '</th>' +
+  const tete = '<tr><th scope="col" class="mx-coin">' + esc(options.enTete || 'Composant') + '</th>' +
     mx.porteurs.map(function (p) {
       return '<th scope="col" class="mx-porteur' + (p === '' ? ' mx-sans' : '') + '">' +
              '<span>' + esc(libellePorteur(p)) + '</span></th>';
@@ -4645,7 +4675,7 @@ function carteBaseHtml(carte) {
       const moyenne = r.w >= carte.largeur * 0.04 && r.h >= carte.hauteur * 0.045;
       const titre = f.libelle + ' · ' + f.nbBoites + (f.nbBoites > 1 ? ' boîtes' : ' boîte') +
         ' · ' + f.references + (f.references > 1 ? ' références' : ' référence') +
-        (f.dispersee ? ' · à ranger' : '') + (f.hors ? ' · hors catalogue' : '');
+        (f.dispersee ? ' · à ranger' : '') + (f.hors ? ' · absent du catalogue' : '');
       return '<button type="button" class="tm-tuile tm-' + esc(fam.cle) +
           (f.dispersee ? ' tm-disperse' : '') + (large ? ' tm-large' : moyenne ? ' tm-moyenne' : ' tm-petite') + '"' +
           ' style="' + boite(r) + '"' +
@@ -4656,7 +4686,7 @@ function carteBaseHtml(carte) {
               (large
                 ? '<span class="tm-n">' + f.nbBoites + (f.nbBoites > 1 ? ' boîtes' : ' boîte') +
                     (f.references > 1 ? ' · ' + f.references + ' réf.' : '') + '</span>' +
-                  partsHtml(f.lignes, 'parts-tuile') +
+                  (f.normeDispersee ? partsHtml(f.normeDispersee.lignes, 'parts-tuile') : '') +
                   (f.dispersee ? '<span class="tm-tag">à ranger</span>' : '')
                 : '')
             : '') +
@@ -4667,7 +4697,7 @@ function carteBaseHtml(carte) {
           '<span class="cf-pastille cf-' + esc(fam.cle) + '" aria-hidden="true"></span>' +
           esc(fam.libelle) +
           '<span class="tm-famille-n">' + fam.fonctions.length +
-            (fam.fonctions.length > 1 ? ' fonctions' : ' fonction') + ' · ' +
+            (fam.fonctions.length > 1 ? ' composants' : ' composant') + ' · ' +
             fam.nbBoites + (fam.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span>' +
         '</span>' +
       '</div>' + tuiles;
@@ -4685,9 +4715,9 @@ function carteBaseHtml(carte) {
     : '';
 
   const legende = '<div class="tm-legende" aria-hidden="true">' +
-    '<span class="tm-legende-aire"><i></i> plus la tuile est grande, plus la fonction est montée</span>' +
+    '<span class="tm-legende-aire"><i></i> plus la tuile est grande, plus le composant est monté dans de boîtes</span>' +
     '<span class="tm-legende-parts"><span class="parts parts-legende"><span class="part-cible" style="flex-grow:3"></span><span class="part-autre" style="flex-grow:1"></span></span> vert : la référence la plus montée · gris : les autres</span>' +
-    '<span class="tm-legende-tag"><span class="tm-tag">à ranger</span> plusieurs références montées pour le même service</span>' +
+    '<span class="tm-legende-tag"><span class="tm-tag">à ranger</span> plusieurs références montées sous une même norme</span>' +
   '</div>';
 
   return '<div class="tm-cadre">' +
@@ -4739,8 +4769,8 @@ function standardisationHtml(vue) {
   if (!familles.length) {
     return '<div class="etat-vide">' +
       '<p>Rien à standardiser.</p>' +
-      '<p class="etat-vide-aide">Chaque fonction est servie par une seule ' +
-      'référence, ou il n\'y a pas encore de composant à analyser.</p>' +
+      '<p class="etat-vide-aide">Sous chaque norme, un composant n\'a qu\'une ' +
+      'référence montée — ou il n\'y a pas encore de composant à analyser.</p>' +
     '</div>';
   }
 
@@ -4749,8 +4779,8 @@ function standardisationHtml(vue) {
   const bilan = bilanStandardisation(familles);
   const tuiles = '<div class="standard-bilan">' +
     '<div class="sb-tuile"><span class="sb-n">' + bilan.familles + '</span>' +
-      '<span class="sb-l">famille' + (bilan.familles > 1 ? 's' : '') + ' dispersée' + (bilan.familles > 1 ? 's' : '') + '</span>' +
-      '<span class="sb-aide">servies par plusieurs références</span></div>' +
+      '<span class="sb-l">norme' + (bilan.familles > 1 ? 's' : '') + ' dispersée' + (bilan.familles > 1 ? 's' : '') + '</span>' +
+      '<span class="sb-aide">plusieurs références montées pour le même composant</span></div>' +
     '<div class="sb-tuile"><span class="sb-n">' + bilan.references + ' <span class="sb-fleche">→</span> ' + bilan.apres + '</span>' +
       '<span class="sb-l">références à faire vivre</span>' +
       '<span class="sb-aide">si chacune converge vers sa plus montée</span></div>' +
@@ -4760,9 +4790,10 @@ function standardisationHtml(vue) {
   '</div>';
 
   return tuiles +
-    '<p class="standard-intro">Les plus dispersées d\'abord : ce sont elles qui coûtent ' +
-      'le plus à faire vivre. La cible de chaque famille est sa référence la plus montée ; ' +
-      'cliquez une référence pour voir où elle sert.' +
+    '<p class="standard-intro">On converge <b>sous une même norme</b> : deux normes ' +
+      'différentes pour un même composant ont en général leur raison, on ne les fond pas. ' +
+      'Les plus dispersées d\'abord : ce sont elles qui coûtent le plus à faire vivre. ' +
+      'La cible est la référence la plus montée ; cliquez une référence pour voir où elle sert.' +
     '</p>' +
     '<div class="familles">' + familles.map(familleHtml).join('') + '</div>';
 }
@@ -4787,25 +4818,20 @@ function referenceHtml(r, majoritaire) {
 
 function familleHtml(f) {
   const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
-  // La référence la plus répandue est le candidat naturel à la cible.
-  let meilleure = null;
-  f.normes.forEach(function (n) {
-    n.references.forEach(function (r) {
-      if (!meilleure || r.nbBoites > meilleure.nbBoites) meilleure = r;
-    });
-  });
 
   return '<article class="famille">' +
     '<header class="famille-tete">' +
       '<div class="famille-identite">' +
         '<h3 class="famille-nom">' + esc(f.fonction) + '</h3>' +
+        '<span class="famille-norme-nom" title="La norme sous laquelle on converge">' +
+          esc(f.norme || 'norme non précisée') + '</span>' +
         '<span class="famille-cat">' + esc(cat.libelle) + '</span>' +
       '</div>' +
       '<div class="famille-compte">' +
-        '<span class="famille-chiffre' + (f.nbNormes > 1 ? ' famille-disperse' : '') + '">' +
-          '<b>' + f.nbNormes + '</b> norme' + (f.nbNormes > 1 ? 's' : '') + '</span>' +
         '<span class="famille-chiffre famille-disperse">' +
           '<b>' + f.nbReferences + '</b> références</span>' +
+        '<span class="famille-chiffre">' +
+          '<b>' + f.nbBoites + '</b> boîte' + (f.nbBoites > 1 ? 's' : '') + '</span>' +
       '</div>' +
     '</header>' +
     // La cible et son coût : converger vers la plus montée, c'est modifier
@@ -4819,14 +4845,12 @@ function familleHtml(f) {
             (f.aModifier.length > 1 ? ' boîtes à modifier' : ' boîte à modifier') + '</span>' +
         '</div>'
       : '') +
-    '<ul class="famille-normes">' + f.normes.map(function (n) {
-      return '<li class="famille-norme">' +
-        '<span class="norme-nom">' + esc(n.norme || 'norme non précisée') + '</span>' +
-        '<span class="norme-refs">' + n.references.map(function (r) {
-          return referenceHtml(r, meilleure && r === meilleure && f.nbReferences > 1);
+    '<ul class="famille-normes"><li class="famille-norme">' +
+        '<span class="norme-nom">' + esc(f.norme || 'norme non précisée') + '</span>' +
+        '<span class="norme-refs">' + f.references.map(function (r) {
+          return referenceHtml(r, r === f.cible);
         }).join('') + '</span>' +
-      '</li>';
-    }).join('') + '</ul>' +
+    '</li></ul>' +
   '</article>';
 }
 
@@ -4941,7 +4965,7 @@ function rendreInterface() {
   const recherche = parId('searchBar');
   if (recherche) {
     recherche.placeholder = composants
-      ? 'Rechercher une fonction, une norme, une référence…'
+      ? 'Rechercher un composant, une norme, une référence…'
       : 'Rechercher un PN, une fonction, une référence, un mot-clé…';
     const attendue = composants ? Store.compo.recherche : Store.recherche;
     if (recherche.value !== attendue) recherche.value = attendue;
@@ -5017,11 +5041,11 @@ function indicateursBoitesHtml(kpi, vue) {
       action: true, actif: !!valide, titre: 'Ne montrer que les boîtes validées',
       donnees: { action: 'filtrer-statut', statut: 'Validé' } },
     { libelle: 'À standardiser', valeur: dispersees.length,
-      detail: dispersees.length ? 'familles à plusieurs références'
-                                : 'une norme, une référence partout',
+      detail: dispersees.length ? 'normes à plusieurs références'
+                                : 'une référence par norme, partout',
       classe: 'indicateur-standard', action: true,
       actif: Store.vueMode === 'standardisation',
-      titre: 'Voir les familles servies par plusieurs références',
+      titre: 'Voir les composants montés sous plusieurs références d\'une même norme',
       donnees: { action: 'voir-standardisation' } },
     { libelle: 'Doublons probables',
       valeur: doublons.nombre === null ? '—' : doublons.nombre,
@@ -5054,16 +5078,16 @@ function indicateursComposantsHtml(vue) {
       action: true, titre: 'Relâcher tous les filtres',
       donnees: { action: 'effacer-filtres-composants' } },
     { libelle: 'À ranger', valeur: aRanger,
-      detail: aRanger ? 'fonctions dispersées' : 'une référence par fonction',
+      detail: aRanger ? 'composants dispersés' : 'une référence par norme',
       classe: 'indicateur-standard', action: true,
       actif: Store.compo.emploi === null && Store.compo.etat === null && false,
-      titre: 'Voir les familles servies par plusieurs références',
+      titre: 'Voir les composants montés sous plusieurs références d\'une même norme',
       donnees: { action: 'voir-standardisation' } },
-    { libelle: 'Hors catalogue', valeur: bilan.hors,
-      detail: bilan.hors ? 'montées, absentes du catalogue' : 'tout est au catalogue',
+    { libelle: 'Absents du catalogue', valeur: bilan.hors,
+      detail: bilan.hors ? 'montés, pas dans la liste autorisée' : 'tout est au catalogue',
       classe: 'indicateur-alerte', action: true,
       actif: Store.compo.etat === ETAT_COMPOSANT.HORS,
-      titre: 'Voir les pièces montées absentes du catalogue',
+      titre: 'Voir les composants montés dans une boîte mais absents du catalogue (la liste des composants autorisés)',
       donnees: { action: 'filtrer-composants', champ: 'etat',
                  valeur: Store.compo.etat === ETAT_COMPOSANT.HORS ? '' : ETAT_COMPOSANT.HORS } },
     { libelle: 'Montées une fois', valeur: bilan.isoles,
@@ -5157,6 +5181,18 @@ function apercuImageHtml(valeur, classe, centre) {
   return centre ? '<div class="vignette-cadre">' + bouton + '</div>' : bouton;
 }
 
+/**
+ * Un repère dans une fiche longue : un filet court, un titre, une aide.
+ * Discret — un trait et des capitales, pas un aplat — mais on le voit.
+ */
+function sectionHtml(titre, aide) {
+  return '<div class="fiche-section">' +
+           '<span class="fiche-section-filet" aria-hidden="true"></span>' +
+           '<span class="fiche-section-titre">' + esc(titre) + '</span>' +
+           (aide ? '<span class="fiche-section-aide">' + esc(aide) + '</span>' : '') +
+         '</div>';
+}
+
 function ligneHtml(libelle, contenu, aide) {
   return '<div class="ligne">' +
            '<div class="ligne-cle">' + esc(libelle) +
@@ -5240,8 +5276,15 @@ function blocComposantsHtml(champ, valeur, cible) {
             ? '<span class="niveau-' + niveau + '">' + esc(texte) + '</span>'
             : '<span class="niveau-' + niveau + ' niveau-vide">non précisé</span>';
         };
+        // Le composant mène à sa fiche dans la base : d'une boîte, on passe
+        // à « où sert ce voyant, sous quelles références ».
+        const composant = c.fonction
+          ? '<button type="button" class="niveau-fonction niveau-lien"' +
+              dataAttrs({ action: 'ouvrir-fiche-composant', categorie: categorie, fonction: c.fonction }) +
+              ' title="Voir ce composant dans la base">' + esc(c.fonction) + '</button>'
+          : cellule('fonction', c.fonction);
         return '<div class="composant">' +
-          cellule('fonction', c.fonction) + cellule('norme', c.norme) + cellule('reference', c.reference) +
+          composant + cellule('norme', c.norme) + cellule('reference', c.reference) +
           '<button type="button" class="puce-suppr" aria-label="Retirer ' + esc(libelleComposant(c)) + '"' +
             dataAttrs(Object.assign({ action: 'supprimer-composant', valeur: c.brut }, donnees)) +
           '>&times;</button>' +
@@ -5265,16 +5308,15 @@ function blocComposantsHtml(champ, valeur, cible) {
     '<datalist id="' + uid + '-reference">' + optionsHtml(sug.references) + '</datalist>' +
   '</span>';
 
-  return '<div class="ligne ligne-bloc">' +
-    '<div class="ligne-cle">' + esc(champ.libelle) +
-      (champ.aide ? '<span class="ligne-aide">' + esc(champ.aide) + '</span>' : '') + '</div>' +
+  return '<div class="ligne ligne-bloc ligne-section">' +
+    sectionHtml(champ.libelle, champ.aide) +
     '<div class="ligne-val">' +
       '<div class="composants">' +
-        '<div class="composants-entete"><span>Fonction</span><span>Norme</span><span>Référence</span><span></span></div>' +
+        '<div class="composants-entete"><span>Composant</span><span>Norme</span><span>Référence</span><span></span></div>' +
         lignes +
       '</div>' +
       '<div class="ajout-composant">' + listes +
-        saisie('fonction', 'Fonction') + saisie('norme', 'Norme') + saisie('reference', 'Référence') +
+        saisie('fonction', 'Composant') + saisie('norme', 'Norme') + saisie('reference', 'Référence') +
         '<button type="button" class="btn-mini"' +
           dataAttrs(Object.assign({ action: 'ajouter-composant' }, donnees)) + '>Ajouter</button>' +
       '</div>' +
@@ -5327,8 +5369,14 @@ function blocBoiteHtml(boite) {
     '</header>';
 
   // Les champs clés se lisent en face de la photo ; ce qui est large — les
-  // composants, l'URL, les commentaires — passe dessous, à pleine largeur.
-  let cles = '', larges = '';
+  // composants, l'URL, les commentaires — passe dessous, à pleine largeur,
+  // chacun sous son repère.
+  let cles = '', larges = '', sectionFinale = false;
+  const finale = function () {
+    if (sectionFinale) return '';
+    sectionFinale = true;
+    return sectionHtml('Image et commentaires');
+  };
   Store.headersBoites.forEach(function (cle) {
     const valeur = boite[cle];
     const regle = CHAMPS_BOITE[cle] || {};
@@ -5359,14 +5407,14 @@ function blocBoiteHtml(boite) {
 
     if (edition) {
       const ligne = ligneHtml(champ.libelle, saisieHtml(champ, valeur, 'champ-boite'));
-      if (large) larges += ligne; else cles += ligne;
+      if (large) larges += finale() + ligne; else cles += ligne;
       return;
     }
     // Hors édition, on montre TOUT ce qu'on peut éditer, l'URL comprise : un
     // champ qu'il faut passer en édition pour lire est un champ qu'on oublie.
-    if (genre === GENRE.IMAGE) { larges += ligneHtml(champ.libelle, urlLisibleHtml(valeur)); return; }
+    if (genre === GENRE.IMAGE) { larges += finale() + ligneHtml(champ.libelle, urlLisibleHtml(valeur)); return; }
     const ligne = ligneHtml(champ.libelle, valeurLisibleHtml(valeur));
-    if (large) larges += ligne; else cles += ligne;
+    if (large) larges += finale() + ligne; else cles += ligne;
   });
 
   html += identiteHtml(edition ? '' : apercuImageHtml(boite['Image'], 'vignette-fiche'), cles) + larges;
@@ -5518,7 +5566,15 @@ function blocNomHtml(ligne, type, edition, ailleurs) {
       '</div>');
   }
 
-  // Seuls les champs du type : c'est tout l'intérêt du registre.
+  // Seuls les champs du type : c'est tout l'intérêt du registre. Quand la
+  // section change, on pose un repère : une structure a beaucoup de champs,
+  // ils se lisent par groupes.
+  let sectionCourante = null;
+  const repere = function (champ) {
+    if (!champ.section || champ.section === sectionCourante) return '';
+    sectionCourante = champ.section;
+    return sectionHtml(champ.section);
+  };
   champsDuType(type).forEach(function (champ) {
     const valeur = ligne[champ.cle];
 
@@ -5528,30 +5584,31 @@ function blocNomHtml(ligne, type, edition, ailleurs) {
     }
 
     if (champ.genre === GENRE.MULTI) {
-      cles += blocMultiHtml(champ, valeursMulti(valeur), true,
+      cles += repere(champ) + blocMultiHtml(champ, valeursMulti(valeur), true,
                             'ajouter-multi-nom', 'supprimer-multi-nom',
                             { id: id, champ: champ.cle });
       return;
     }
 
     if (champ.genre === GENRE.MOTS_CLES) {
-      cles += blocMultiHtml(champ, motsCles(valeur), true,
+      cles += repere(champ) + blocMultiHtml(champ, motsCles(valeur), true,
                             'ajouter-multi-nom', 'supprimer-multi-nom',
                             { id: id, champ: champ.cle }, 'puce-motcle');
       return;
     }
 
     if (champ.genre === GENRE.IMAGE) {
-      larges += edition
+      larges += repere(champ) + (edition
         ? ligneHtml('Image (URL)', saisieHtml(champ, valeur, 'champ-nom', id))
-        : ligneHtml('Image (URL)', urlLisibleHtml(valeur));
+        : ligneHtml('Image (URL)', urlLisibleHtml(valeur)));
       return;
     }
 
     const ligneChamp = edition
       ? ligneHtml(champ.libelle, saisieHtml(champ, valeur, 'champ-nom', id), champ.aide)
       : ligneHtml(champ.libelle, valeurLisibleHtml(valeur), champ.aide);
-    if (champ.genre === GENRE.LONG) larges += ligneChamp; else cles += ligneChamp;
+    if (champ.genre === GENRE.LONG) larges += repere(champ) + ligneChamp;
+    else cles += repere(champ) + ligneChamp;
   });
 
   return html + identiteHtml(edition ? '' : apercuImageHtml(ligne['Image'], 'vignette-fiche'), cles) + larges;
@@ -5624,7 +5681,7 @@ function ficheComposantHtml(cible) {
            normaliserTexte(c.fonction) === normaliserTexte(cible.fonction);
   });
   if (!base.length) {
-    return '<div class="etat-vide"><p>Cette fonction n\'est plus dans la base.</p>' +
+    return '<div class="etat-vide"><p>Ce composant n\'est plus dans la base.</p>' +
            '<p class="etat-vide-aide">Fermez le panneau : la liste est à jour.</p></div>';
   }
 
@@ -5636,7 +5693,6 @@ function ficheComposantHtml(cible) {
   });
 
   const montees = base.filter(function (c) { return c.nbBoites > 0; });
-  const majoritaire = montees.slice().sort(function (a, b) { return b.nbBoites - a.nbBoites; })[0];
   const boites = new Set();
   base.forEach(function (c) { c.boites.forEach(function (b) { boites.add(b); }); });
   const maxi = base.reduce(function (m, c) { return Math.max(m, c.nbBoites); }, 1);
@@ -5653,36 +5709,53 @@ function ficheComposantHtml(cible) {
 
   // Le plan de convergence : la cible, ce qu'on cesserait de faire vivre,
   // et les boîtes à modifier — nommées, cliquables. C'est la décision.
-  // Le plan se lit en trois phrases : ce qu'on a, ce qu'on garderait, ce
-  // que ça coûterait. Les chiffres sont là, mais ce sont les phrases qui
-  // portent — on ne doit pas avoir à deviner ce qu'une barre veut dire.
-  const plan = planConvergence(base);
-  const conseil = plan
-    ? '<section class="fc-plan">' +
-        '<h4 class="fc-titre">Le plan de convergence</h4>' +
+  // Le plan se fait SOUS UNE MÊME NORME : deux normes différentes ont en
+  // général leur raison — on ne propose pas de les fondre. Il se lit en
+  // trois phrases : ce qu'on a, ce qu'on garderait, ce que ça coûterait.
+  const normesDispersees = Array.from(parNorme.values())
+    .map(function (n) { return { norme: n, plan: planConvergence(n.lignes) }; })
+    .filter(function (x) { return x.plan; })
+    .sort(function (a, b) { return b.plan.economie - a.plan.economie; });
+  const plan = normesDispersees.length ? normesDispersees[0].plan : null;   // le principal, pour la matrice
+
+  const conseil = normesDispersees.map(function (x) {
+    const n = x.norme, p = x.plan;
+    const boitesNorme = new Set();
+    n.lignes.forEach(function (c) { c.boites.forEach(function (b) { boitesNorme.add(b); }); });
+    const montesNorme = n.lignes.filter(function (c) { return c.nbBoites > 0; }).length;
+    return '<section class="fc-plan">' +
+        '<h4 class="fc-titre">Le plan de convergence' +
+          (parNorme.size > 1 ? ' — norme <span class="fc-titre-norme">' + esc(n.libelle) + '</span>' : '') + '</h4>' +
         '<p class="fc-conseil">' +
-          '<b>' + montees.length + ' références</b> sont montées pour le même service. ' +
-          'La plus répandue est <span class="fc-pn">' + esc(plan.cible.reference) + '</span>, ' +
-          'dans <b>' + plan.cible.nbBoites + ' boîte' + (plan.cible.nbBoites > 1 ? 's' : '') +
-          ' sur ' + boites.size + '</b>.' +
+          '<b>' + montesNorme + ' références</b> sont montées sous la norme ' +
+          '<span class="fc-pn">' + esc(n.libelle) + '</span> pour le même service. ' +
+          'La plus répandue est <span class="fc-pn">' + esc(p.cible.reference) + '</span>, ' +
+          'dans <b>' + p.cible.nbBoites + ' boîte' + (p.cible.nbBoites > 1 ? 's' : '') +
+          ' sur ' + boitesNorme.size + '</b>.' +
         '</p>' +
         '<div class="fc-plan-corps">' +
-          partsDetailHtml(base) +
+          partsDetailHtml(n.lignes) +
           '<p class="fc-plan-si">Si toutes les boîtes montaient cette référence :</p>' +
           '<div class="fc-plan-chiffres">' +
-            '<span class="fc-plan-mesure"><b>−' + plan.economie + '</b> référence' + (plan.economie > 1 ? 's' : '') + ' à faire vivre</span>' +
-            '<span class="fc-plan-mesure fc-plan-cout"><b>' + plan.aModifier.length + '</b> boîte' + (plan.aModifier.length > 1 ? 's' : '') + ' à modifier</span>' +
+            '<span class="fc-plan-mesure"><b>−' + p.economie + '</b> référence' + (p.economie > 1 ? 's' : '') + ' à faire vivre</span>' +
+            '<span class="fc-plan-mesure fc-plan-cout"><b>' + p.aModifier.length + '</b> boîte' + (p.aModifier.length > 1 ? 's' : '') + ' à modifier</span>' +
           '</div>' +
           '<div class="fc-plan-boites">' +
-            '<span class="fc-plan-boites-titre">' + (plan.aModifier.length > 1 ? 'Les boîtes' : 'La boîte') + ' à modifier :</span>' +
-            plan.aModifier.map(function (pn) {
+            '<span class="fc-plan-boites-titre">' + (p.aModifier.length > 1 ? 'Les boîtes' : 'La boîte') + ' à modifier :</span>' +
+            p.aModifier.map(function (pn) {
               return '<button type="button" class="usage-lien"' +
                      dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
             }).join('') +
           '</div>' +
         '</div>' +
-      '</section>'
-    : '';
+      '</section>';
+  }).join('') +
+  // Plusieurs normes, mais une référence montée par norme : rien à fondre.
+  // On le dit, pour qu'on ne cherche pas un plan qui n'a pas lieu d'être.
+  (parNorme.size > 1 && !normesDispersees.length && montees.length > 1
+    ? '<p class="fc-note">' + parNorme.size + ' normes, une référence montée par norme : ' +
+      'rien à faire converger. Deux normes différentes ont en général leur raison.</p>'
+    : '');
 
   // Qui monte quoi : la même fonction, référence par référence, porteur par
   // porteur. C'est là qu'on voit qu'un programme s'écarte des autres.
@@ -5697,8 +5770,9 @@ function ficheComposantHtml(cible) {
           .map(function (c) { return { libelle: txt(c.reference, 'sans référence'), lignes: [c], composant: c }; })), {
           enTete: 'Référence',
           ligne: function (g) {
-            return '<span class="mx-ref' + (plan && g.composant === plan.cible ? ' mx-ref-cible' : '') + '">' +
-                   esc(g.libelle) + (plan && g.composant === plan.cible ? '<span class="mx-cible-tag">cible</span>' : '') + '</span>';
+            const cible = normesDispersees.some(function (x) { return x.plan.cible === g.composant; });
+            return '<span class="mx-ref' + (cible ? ' mx-ref-cible' : '') + '">' +
+                   esc(g.libelle) + (cible ? '<span class="mx-cible-tag">cible</span>' : '') + '</span>';
           }
         }) +
       '</section>'
@@ -5715,6 +5789,10 @@ function ficheComposantHtml(cible) {
         return b.nbBoites - a.nbBoites ||
                String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
       });
+      // La plus montée se marque PAR NORME, et seulement quand il y a de
+      // quoi choisir : une référence seule sous sa norme n'est pas « la plus ».
+      const planNorme = planConvergence(n.lignes);
+      const majoritaire = planNorme ? planNorme.cible : null;
       return '<section class="fc-norme">' +
         '<header class="fc-norme-tete">' +
           '<span class="fc-norme-cle">Norme</span>' +
@@ -5735,7 +5813,7 @@ function ficheComposantHtml(cible) {
 function ficheReferenceHtml(c, maxi, majoritaire) {
   const part = c.nbBoites ? Math.max(6, Math.round((c.nbBoites / (maxi || 1)) * 100)) : 0;
   const etat = c.etat === ETAT_COMPOSANT.HORS
-    ? '<span class="cr-etat cr-hors" title="Montée mais absente du catalogue">hors catalogue</span>'
+    ? '<span class="cr-etat cr-hors" title="' + esc(AIDE_MARQUES.hors) + '">absente du catalogue</span>'
     : c.etat === ETAT_COMPOSANT.DORMANT
       ? '<span class="cr-etat cr-dormant" title="Au catalogue, montée nulle part">jamais montée</span>'
       : '';
@@ -5774,8 +5852,34 @@ function ficheReferenceHtml(c, maxi, majoritaire) {
   '</div>';
 }
 
+/** Le bouton « retour » du panneau : d'où l'on vient, quand on vient de quelque part. */
+function rendreRetourFiche() {
+  const zone = parId('slideOverRetour');
+  if (!zone) return;
+  const pile = Store.pileFiches || [];
+  if (!pile.length) { zone.innerHTML = ''; zone.hidden = true; return; }
+  const precedent = pile[pile.length - 1];
+  const libelle = precedent.composant ? precedent.composant.fonction : precedent.pn;
+  zone.hidden = false;
+  zone.innerHTML = '<button type="button" class="panneau-retour"' +
+    dataAttrs({ action: 'fiche-retour' }) + ' title="Revenir à la fiche précédente">' +
+    '<span aria-hidden="true">←</span> ' + esc(txt(libelle, 'Retour')) + '</button>';
+}
+
 function rendreFiche() {
-  // Le panneau sert les deux bases : une boîte, ou une fonction de composant.
+  rendreRetourFiche();
+  rendreCorpsFiche();
+  // Un rendu remplace le bouton qu'on vient de cliquer : le focus tombe sur
+  // la page, et Échap ne ferme plus le panneau. On le rend au panneau.
+  if (typeof panneauOuvert === 'function' && panneauOuvert() &&
+      (!document.activeElement || document.activeElement === document.body)) {
+    const panneau = parId('detailsSlideOver');
+    if (panneau && typeof panneau.focus === 'function') panneau.focus();
+  }
+}
+
+function rendreCorpsFiche() {
+  // Le panneau sert les deux bases : une boîte, ou un composant.
   if (Store.ficheComposant) {
     const cat = CATEGORIES_COMPOSANT[Store.ficheComposant.categorie] ||
                 CATEGORIES_COMPOSANT.composant;
@@ -6349,7 +6453,7 @@ function curseursHtml() {
     const niveaux = porteeParCle('composant');
     html += '<div class="sous-reglage">' +
       '<h4>Niveaux de composant</h4>' +
-      '<p class="sous-reglage-aide">Les niveaux s\'additionnent : même fonction, ' +
+      '<p class="sous-reglage-aide">Les niveaux s\'additionnent : même composant, ' +
         'puis même norme en plus, puis même référence en plus. Ce qui n\'est pas ' +
         'renseigné ne compte pas.</p>' +
       groupeReglageHtml(niveaux) +
@@ -6599,13 +6703,19 @@ function ouvrirDialogue(options, avecChamp) {
     valider.textContent = options.bouton || (avecChamp ? 'Valider' : 'Confirmer');
     valider.className = 'btn-principal' + (options.danger ? ' btn-danger-plein' : '');
 
-    let regle = false;
+    // Répondre pendant l'animation d'ouverture — Échap par réflexe — ne doit
+    // pas laisser un dialogue orphelin : Bootstrap ignore hide() tant qu'il
+    // s'ouvre, on referme donc dès qu'il est ouvert.
+    let regle = false, ouvert = false;
     const terminer = function (resultat) {
       if (regle) return;
       regle = true;
       dialogueEnCours = null;
       const m = bootstrap.Modal.getInstance(el);
-      if (m) m.hide();
+      if (m) {
+        if (ouvert) m.hide();
+        else el.addEventListener('shown.bs.modal', function () { m.hide(); }, { once: true });
+      }
       resoudre(resultat);
     };
     dialogueEnCours = {
@@ -6616,8 +6726,14 @@ function ouvrirDialogue(options, avecChamp) {
     const modal = bootstrap.Modal.getOrCreateInstance(el, { backdrop: 'static' });
     el.addEventListener('hidden.bs.modal', function () { if (!regle) terminer(avecChamp ? null : false); },
                         { once: true });
+    // Un dialogue qui détruit met le focus sur « Annuler » : Entrée par
+    // réflexe ne supprime rien. Les autres vont droit à la validation.
     el.addEventListener('shown.bs.modal', function () {
-      if (avecChamp) { champ.focus(); champ.select(); } else valider.focus();
+      ouvert = true;
+      if (regle) return;
+      if (avecChamp) { champ.focus(); champ.select(); }
+      else if (options.danger) { const a = el.querySelector('[data-action="dialogue-annuler"]'); if (a) a.focus(); else valider.focus(); }
+      else valider.focus();
     }, { once: true });
     modal.show();
   });
@@ -6631,14 +6747,21 @@ enregistrerActions({
   'dialogue-annuler': function () { if (dialogueEnCours) dialogueEnCours.annuler(); }
 });
 
-// Entrée valide, Échap annule (Bootstrap ferme déjà sur Échap, on résout).
+// Entrée valide. Échap annule LE DIALOGUE, et seulement lui : en phase de
+// capture, avant Bootstrap — sinon, ouvert par-dessus le panneau de fiche,
+// c'est le panneau qui se fermait et le dialogue qui restait.
 document.addEventListener('keydown', function (e) {
   if (!dialogueEnCours) return;
   if (e.key === 'Enter' && e.target && e.target.id === 'dialogueChamp') {
     e.preventDefault();
     dialogueEnCours.valider();
   }
-});
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    dialogueEnCours.annuler();
+  }
+}, true);
 </script>
 
     <!-- client/Main.html -->
@@ -6676,6 +6799,25 @@ function fermerModal(id) {
   if (m) m.hide();
 }
 function ouvrirPanneau() { bootstrap.Offcanvas.getOrCreateInstance(parId('detailsSlideOver')).show(); }
+function panneauOuvert() {
+  const el = parId('detailsSlideOver');
+  return !!(el && el.classList && el.classList.contains('show'));
+}
+/**
+ * Quand une fiche en ouvre une autre — « aussi montée dans », un composant,
+ * une boîte citée — on garde d'où l'on vient, pour y revenir d'un clic.
+ * Le panneau fermé, la pile se vide : on repart de la liste.
+ */
+function empilerFicheCourante(pnCible) {
+  if (!panneauOuvert()) return;
+  if (!Store.pileFiches) Store.pileFiches = [];
+  if (Store.ficheComposant) {
+    Store.pileFiches.push({ composant: Store.ficheComposant });
+  } else if (Store.pnCourant && Store.pnCourant !== pnCible) {
+    Store.pileFiches.push({ pn: Store.pnCourant, branches: Store.branchesDepliees });
+  }
+  if (Store.pileFiches.length > 12) Store.pileFiches.shift();
+}
 function fermerPanneau() {
   const i = bootstrap.Offcanvas.getInstance(parId('detailsSlideOver'));
   if (i) i.hide();
@@ -6684,6 +6826,17 @@ function fermerPanneau() {
 function rafraichir() {
   rendreInterface();
   if (Store.pnCourant) rendreFiche();
+}
+
+/**
+ * Poser le focus là où l'on va taper. Un formulaire qui s'ouvre sans focus
+ * oblige à viser le premier champ à la souris — c'est un geste de trop.
+ */
+function focaliser(selecteur) {
+  const el = document.querySelector(selecteur);
+  if (!el || typeof el.focus !== 'function') return;
+  el.focus();
+  if (typeof el.select === 'function' && el.tagName === 'INPUT') el.select();
 }
 
 // ------------------------------------------------------------
@@ -6742,6 +6895,7 @@ function sauverBoite(modifs) {
       appliquerBoite(r.boite, r.pnPrecedent);
       Store.enEditionBoite = false;
       rafraichir();
+      confirmerSucces('Boîte enregistrée.');
       remplirListesDeSuggestion();
     })
     .catch(function (e) {
@@ -6758,6 +6912,7 @@ function sauverNom(id, modifs) {
       Store.enEditionNom[id] = false;
       rafraichir();
       remplirListesDeSuggestion();
+      confirmerSucces(txt(r.ligne['PN du type'], 'Sous-ensemble') + ' enregistré.');
     })
     .catch(function (e) {
       signalerErreur(e, 'sauvegarde du sous-ensemble');
@@ -6950,9 +7105,25 @@ enregistrerActions({
   },
 
   'ouvrir-fiche-composant': function (d) {
+    empilerFicheCourante();
     Store.ficheComposant = { categorie: d.categorie, fonction: d.fonction };
     rendreFiche();
     ouvrirPanneau();
+  },
+  // D'où l'on vient : on remonte d'un cran, sans refermer ni rechercher.
+  'fiche-retour': function () {
+    const precedent = (Store.pileFiches || []).pop();
+    if (!precedent) return;
+    if (precedent.composant) {
+      Store.ficheComposant = precedent.composant;
+    } else {
+      Store.ficheComposant = null;
+      Store.pnCourant = precedent.pn;
+      Store.enEditionBoite = false;
+      Store.enEditionNom = {};
+      Store.branchesDepliees = precedent.branches || {};
+    }
+    rendreFiche();
   },
   'trier-composants': function (d) {
     Store.compo.tri = d.tri;
@@ -6967,6 +7138,7 @@ enregistrerActions({
   },
 
   'ouvrir-fiche': function (d) {
+    empilerFicheCourante(d.pn);
     Store.ficheComposant = null;
     Store.pnCourant = d.pn;
     Store.enEditionBoite = false;
@@ -6977,6 +7149,8 @@ enregistrerActions({
   },
   'ouvrir-fiche-depuis-compare': function (d) {
     fermerModal('compareModal');
+    empilerFicheCourante(d.pn);
+    Store.ficheComposant = null;
     Store.pnCourant = d.pn;
     Store.enEditionBoite = false;
     Store.enEditionNom = {};
@@ -6993,7 +7167,7 @@ enregistrerActions({
   },
 
   // --- boîte ---
-  'editer-boite':  function () { Store.enEditionBoite = true;  rendreFiche(); },
+  'editer-boite':  function () { Store.enEditionBoite = true;  rendreFiche(); focaliser('.champ-boite'); },
   'annuler-boite': function () { Store.enEditionBoite = false; rendreFiche(); },
   'sauver-boite':  function () { sauverBoite(lireChamps('champ-boite')); },
 
@@ -7039,7 +7213,11 @@ enregistrerActions({
   'supprimer-multi-boite': function (d) { majMultiBoite(d.champ, retirerDe(d.valeur)); },
 
   // --- sous-ensembles ---
-  'editer-nom':  function (d) { Store.enEditionNom[d.id] = true;  rendreFiche(); },
+  'editer-nom':  function (d) {
+    Store.enEditionNom[d.id] = true;
+    rendreFiche();
+    focaliser('.champ-nom[data-ligne="' + String(d.id).replace(/"/g, '\\"') + '"]');
+  },
   'annuler-nom': function (d) { Store.enEditionNom[d.id] = false; rendreFiche(); },
   'sauver-nom':  function (d) { sauverNom(d.id, lireChamps('champ-nom', d.id)); },
 
@@ -7082,7 +7260,7 @@ enregistrerActions({
   // --- composants à trois niveaux ---
   'ajouter-composant': function (d) {
     const c = lireSaisieComposant(d.champ, d.id);
-    if (!c) { afficherBandeau('Indiquez au moins la fonction du composant.', 'erreur'); return; }
+    if (!c) { afficherBandeau('Indiquez au moins le composant.', 'erreur'); return; }
     majMultiCible({ portee: d.portee, id: d.id, champ: d.champ },
                   ajouterA(formaterComposantStructure(c)))
       .then(function () {
@@ -7157,10 +7335,17 @@ enregistrerActions({
          'newBoiteNiveau', 'newBoiteImage'].forEach(function (i) { parId(i).value = ''; });
         parId('newBoiteStatut').value = 'En étude';
         document.querySelectorAll('#newBoitePorteurs input').forEach(function (i) { i.checked = false; });
+        // Une boîte qui naît s'ouvre propre : aucune édition héritée d'une
+        // autre fiche, aucun historique, aucune branche dépliée.
         Store.pnCourant = boite[CLE_PN()];
+        Store.enEditionBoite = false;
+        Store.enEditionNom = {};
+        Store.branchesDepliees = {};
+        Store.pileFiches = [];
         rafraichir();
         rendreFiche();
         ouvrirPanneau();
+        confirmerSucces('Boîte ' + txt(boite[CLE_PN()]) + ' créée. Ajoutez-lui ses sous-ensembles.');
       })
       .catch(function (e) { signalerErreur(e, "création de la boîte"); });
   },
@@ -7189,6 +7374,8 @@ enregistrerActions({
         Store.enEditionNom[r.ligne[CLE_NOM()]] = true;   // ouvert en saisie directe
         Store.branchesDepliees[r.ligne[CLE_NOM()]] = true;
         rafraichir();
+        focaliser('.champ-nom[data-ligne="' + String(r.ligne[CLE_NOM()]).replace(/"/g, '\\"') + '"]');
+        confirmerSucces('Sous-ensemble ajouté — renseignez-le, puis Enregistrer.');
       })
       .catch(function (e) { signalerErreur(e, 'ajout du sous-ensemble'); });
   },
@@ -7288,7 +7475,7 @@ function rendreCatalogue() {
   const categorie = Store.cibleCatalogue ? Store.cibleCatalogue.categorie : null;
   const r = filtrerCatalogue(requete, categorie);
   definirHtml('catalogueList', r.affiches.length
-    ? '<div class="catalogue-entete"><span>Fonction</span><span>Norme</span><span>Référence</span><span></span></div>' +
+    ? '<div class="catalogue-entete"><span>Composant</span><span>Norme</span><span>Référence</span><span></span></div>' +
       r.affiches.map(function (e) {
         const c = e.structure;
         return '<button type="button" class="ligne-catalogue"' +
@@ -7322,6 +7509,20 @@ function rendreChoixComposants() {
 document.addEventListener('DOMContentLoaded', function () {
   chargerReglages();
   installerDelegation();
+
+  // Une modale qui s'ouvre pose le focus dans son champ : on tape tout de suite.
+  [['newBoiteModal', '#newBoitePn'], ['newSousEnsModal', '#newEnsPn'],
+   ['catalogueModal', '#catSearch'], ['multiSearchModal', '#multiSearchInputSelect']]
+    .forEach(function (paire) {
+      const m = parId(paire[0]);
+      if (m && m.addEventListener) m.addEventListener('shown.bs.modal', function () { focaliser(paire[1]); });
+    });
+
+  // Le panneau fermé, on repart de zéro : la pile des fiches se vide.
+  const panneau = parId('detailsSlideOver');
+  if (panneau && panneau.addEventListener) {
+    panneau.addEventListener('hidden.bs.offcanvas', function () { Store.pileFiches = []; });
+  }
 
   const recherche = parId('searchBar');
   if (recherche) {
@@ -7374,8 +7575,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Entrée ajoute, dans un champ libre comme dans un composant : viser un
   // bouton à la souris pour valider un mot-clé n'a jamais fait gagner personne.
+  // Échap dans un champ d'édition annule CETTE édition, et rien d'autre :
+  // sans cela, Bootstrap refermait le panneau entier et la saisie avec.
+  // En phase de capture, pour passer avant ses écouteurs.
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || !e.target.classList) return;
+    if (e.target.classList.contains('champ-boite')) {
+      e.preventDefault(); e.stopPropagation();
+      ACTIONS['annuler-boite']();
+      focaliser('#slideOverBody [data-action="editer-boite"]');
+    } else if (e.target.classList.contains('champ-nom')) {
+      e.preventDefault(); e.stopPropagation();
+      const id = e.target.dataset.ligne;
+      ACTIONS['annuler-nom']({ id: id });
+      focaliser('#slideOverBody [data-action="editer-nom"][data-id="' + String(id).replace(/"/g, '\\"') + '"]');
+    }
+  }, true);
+
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter' || !e.target.classList) return;
+
+    // Entrée dans une petite modale de saisie la valide : le bouton est là
+    // pour la souris, pas pour obliger à lâcher le clavier.
+    if (e.target.closest && e.target.tagName === 'INPUT') {
+      if (e.target.closest('#newBoiteModal')) { e.preventDefault(); ACTIONS['creer-boite'](); return; }
+      if (e.target.closest('#newSousEnsModal')) { e.preventDefault(); ACTIONS['creer-sous-ensemble'](); return; }
+    }
 
     if (e.target.classList.contains('saisie-multi') && e.target.dataset.ajout) {
       e.preventDefault();

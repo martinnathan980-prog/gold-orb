@@ -418,10 +418,17 @@ async function ecranPropre(page) {
   // La colonnette du jeu de démonstration : une norme, cinq références.
   const colonnette = page.locator('.famille', { hasText: 'Colonnette' }).first();
   eq('la colonnette est repérée', await colonnette.count(), 1);
+  eq('sous sa norme, nommée dans l\'en-tete',
+     (await colonnette.locator('.famille-norme-nom').innerText()).trim(), 'NAS43');
   const compteColonnette = await colonnette.locator('.famille-chiffre')
     .evaluateAll(function (els) { return els.map(function (e) { return e.textContent.trim(); }); });
-  vrai('elle annonce une seule norme', compteColonnette[0].indexOf('1 norme') === 0);
-  vrai('mais plusieurs références', /[2-9] références/.test(compteColonnette[1]));
+  vrai('elle annonce plusieurs références', /[2-9] références/.test(compteColonnette[0]));
+  vrai('et ses boites', /\d+ boîtes?/.test(compteColonnette[1]));
+  // On converge SOUS UNE MEME NORME : l'interrupteur du jeu d'exemple a deux
+  // normes, une reference montee chacune — il n'est plus liste.
+  eq('deux normes a une reference chacune ne sont pas une dispersion',
+     await page.locator('.famille', { hasText: 'Interrupteur' }).count(), 0);
+  vrai('et l\'intro le dit', /sous une même norme/.test(await texte(page, '.standard-intro')));
   vrai('et les nomme', await colonnette.locator('.ref-pn').count() >= 2);
   vrai('avec leur nombre de boîtes',
        /\d+ boîte/.test(await colonnette.locator('.ref-usage').first()
@@ -484,7 +491,7 @@ async function ecranPropre(page) {
   // Le bilan de la convergence, en tete : ce qu'elle rapporte, ce qu'elle coute.
   eq('un bilan en trois tuiles', await page.locator('.standard-bilan .sb-tuile').count(), 3);
   const bilanTxt = await texte(page, '.standard-bilan');
-  vrai('il compte les familles', /familles? dispersée/.test(bilanTxt));
+  vrai('il compte les normes dispersées', /normes? dispersée/.test(bilanTxt));
   vrai('les references avant et apres', /\d+\s*→\s*\d+/.test(bilanTxt));
   vrai('et les boites a modifier', /boîtes? à modifier/.test(bilanTxt));
   // Chaque famille annonce sa cible et son cout.
@@ -784,7 +791,7 @@ async function ecranPropre(page) {
   // faisait lire « 13 boites » comme s'il qualifiait les composants.
   const libelles = await page.locator('.indicateur-libelle').allTextContents();
   eq('quatre indicateurs, pas sept', libelles.length, 4);
-  ['Références', 'À ranger', 'Hors catalogue', 'Montées une fois'].forEach(function (l) {
+  ['Références', 'À ranger', 'Absents du catalogue', 'Montées une fois'].forEach(function (l) {
     vrai('l\'espace composants annonce « ' + l + ' »', libelles.indexOf(l) !== -1);
   });
   faux('« Boîtes » a disparu du haut', libelles.indexOf('Boîtes') !== -1);
@@ -815,7 +822,7 @@ async function ecranPropre(page) {
   vrai('dans l\'ordre du registre : boite, mecanique, routing',
        /boîte[\s\S]*?mécaniques[\s\S]*?routing/i.test(await page.locator('.lf-cadre').innerText()));
   vrai('chaque en-tete compte ses fonctions et ses boites',
-       /\d+ fonctions? · \d+ boîtes?/.test(await page.locator('.lf-groupe-n').first().innerText()));
+       /\d+ composants? · \d+ boîtes?/.test(await page.locator('.lf-groupe-n').first().innerText()));
   vrai('la premiere ligne suit son en-tete', await page.evaluate(function () {
     const g = document.querySelector('.lf-groupe');
     return g && g.nextElementSibling && g.nextElementSibling.classList.contains('lf-ligne');
@@ -823,7 +830,7 @@ async function ecranPropre(page) {
   eq('plus de colonne famille dans les lignes', await page.locator('.lf-famille').count(), 0);
   // On dit comment lire, sous le commutateur.
   vrai('la liste s\'explique en deux phrases',
-       /Hors catalogue[\s\S]*?absente du catalogue/.test(await texte(page, '.compo-lire')));
+       /Absent du catalogue[\s\S]*?composants autorisés/.test(await texte(page, '.compo-lire')));
   vrai('et les marques ont une info-bulle',
        /absente du catalogue/.test(await page.locator('.lf-tag-hors').first().getAttribute('title')));
   vrai('le compte de normes ET de references',
@@ -982,12 +989,15 @@ async function ecranPropre(page) {
   eq('tout revient', await page.locator('.lf-ligne').count(), avantFamille);
 
   // Les etats se filtrent depuis la bande du haut.
-  await indic(page, 'Hors catalogue').click();
+  await indic(page, 'Absents du catalogue').click();
   await page.waitForTimeout(500);
   const horsCat = await page.locator('.lf-ligne').count();
-  vrai('« Hors catalogue » restreint', horsCat >= 1 && horsCat < avantFamille);
+  vrai('« Absents du catalogue » restreint', horsCat >= 1 && horsCat < avantFamille);
   eq('et les lignes le disent', await page.locator('.lf-tag-hors').count(), horsCat);
-  await indic(page, 'Hors catalogue').click();
+  vrai('en clair : « absent du catalogue », et le catalogue est expliqué',
+       /absent du catalogue/i.test(await page.locator('.lf-tag-hors').first().innerText()) &&
+       /composants autorisés/.test(await page.locator('.lf-tag-hors').first().getAttribute('title')));
+  await indic(page, 'Absents du catalogue').click();
   await page.waitForTimeout(500);
   await indic(page, 'Montées une fois').click();
   await page.waitForTimeout(500);
@@ -1212,6 +1222,14 @@ async function ecranPropre(page) {
   vrai('ses champs apparaissent', (await texte(page, '.bloc-type-structure')).indexOf('Longueur') !== -1);
   eq('avec ses trois boutons',
      await page.locator('.bloc-type-structure .branche-outils .btn-action').count(), 3);
+  // Des reperes : la structure se lit par sections.
+  const reperes = await page.locator('.bloc-type-structure .fiche-section-titre').allInnerTexts();
+  vrai('geometrie, niveaux, qualifications, composants, image',
+       ['Géométrie', 'Niveaux', 'Qualifications', 'Composants mécaniques', 'Composants routing', 'Image et commentaires']
+         .every(function (t) { return reperes.some(function (r) { return r.toLowerCase() === t.toLowerCase(); }); }));
+  vrai('chaque repere a son filet', await page.locator('.bloc-type-structure .fiche-section-filet').count() >= 5);
+  vrai('la boite aussi : « Composants » ressort',
+       (await page.locator('.bloc-general .fiche-section-titre').allInnerTexts()).some(function (t) { return /composants/i.test(t); }));
   vrai('la fiche s\'allonge d\'autant', await page.evaluate(function () {
     return document.getElementById('slideOverBody').scrollHeight;
   }) > hautVueEnsemble + 300);
@@ -1270,6 +1288,17 @@ async function ecranPropre(page) {
   eq('Supprimer aussi', fonds.sup, 'rgb(255, 255, 255)');
   eq('mais ecrit en rouge', fonds.supTexte, 'rgb(163, 32, 32)');
   vrai('et lisere de rouge, la ou Editer est lisere de gris', fonds.supBord !== fonds.edBord);
+
+  // Un composant de la boite mene a sa fiche dans la base, et on revient.
+  const lienCompo = page.locator('.bloc-general .composant .niveau-lien').first();
+  const nomCompo = (await lienCompo.innerText()).trim();
+  await lienCompo.click(); await page.waitForTimeout(500);
+  eq('le composant ouvre sa fiche', (await texte(page, '#slideOverTitle')).trim(), nomCompo);
+  eq('et le panneau propose de revenir', await page.locator('.panneau-retour').count(), 1);
+  vrai('a la boite d\'ou l\'on vient', (await page.locator('.panneau-retour').innerText()).indexOf('332P20001') !== -1);
+  await page.locator('.panneau-retour').click(); await page.waitForTimeout(500);
+  eq('retour a la boite', (await texte(page, '#slideOverTitle')).trim(), '332P20001');
+  eq('et plus rien a remonter', await page.locator('.panneau-retour').count(), 0);
 
   // « Aussi montee dans » est une ligne de la fiche, pas un bandeau colle a la photo.
   await deplierBranches(page);
@@ -1559,7 +1588,7 @@ async function ecranPropre(page) {
   eq('les trois niveaux sont nommés',
      await page.locator('.sous-reglage .reglage-tete label')
                .evaluateAll(function (els) { return els.map(function (e) { return e.textContent; }); }),
-     ['Fonction', 'Norme', 'Référence']);
+     ['Composant', 'Norme', 'Référence']);
   const totalNiveaux = Number((await page.locator('.reglage-total[data-portee="composant"]')
     .evaluate(function (e) { return e.textContent; })).replace(/\D/g, ''));
   eq('les niveaux totalisent 100 %', totalNiveaux, 100);
@@ -1680,6 +1709,12 @@ async function ecranPropre(page) {
   await lienUsage.click();
   await page.waitForTimeout(700);
   eq('le lien mène à l\'autre boîte', (await texte(page, '#slideOverTitle')).trim(), pnLie);
+  eq('avec un retour vers la première', await page.locator('.panneau-retour').count(), 1);
+  await page.locator('.panneau-retour').click(); await page.waitForTimeout(500);
+  eq('qui ramène bien à 332P20001', (await texte(page, '#slideOverTitle')).trim(), '332P20001');
+  await fermerFiche(page);
+  await ouvrirFiche(page, '332P20001', true);
+  eq('le panneau rouvert repart sans historique', await page.locator('.panneau-retour').count(), 0);
   await ecranPropre(page);
 
   await page.locator('[data-action="ouvrir-doublons"]').click();
@@ -1819,6 +1854,71 @@ async function ecranPropre(page) {
   await page.screenshot({ path: path.join(RACINE, 'build/apercu-sombre.png') });
   await page.emulateMedia({ colorScheme: 'light' });
   await page.waitForTimeout(300);
+
+  // ---------------------------------------------------------------
+  bloc('Le check-up : focus, Entree, Echap, messages');
+  await ecranPropre(page);
+  // Une modale qui s'ouvre pose le focus dans son champ, et Entree la valide.
+  await page.locator('[data-action="nouvelle-boite"]').first().click();
+  await page.waitForSelector('#newBoiteModal.show'); await page.waitForTimeout(500);
+  eq('la modale « Nouvelle boite » ouvre sur son premier champ',
+     await page.evaluate(function () { return document.activeElement && document.activeElement.id; }), 'newBoitePn');
+  await page.fill('#newBoitePn', 'CHECK-001'); await page.fill('#newBoiteFonction', 'CHECK');
+  await page.locator('#newBoiteFonction').press('Enter');
+  await page.waitForTimeout(1200);
+  eq('Entree cree la boite', await page.locator('.carte', { hasText: 'CHECK-001' }).count(), 1);
+  vrai('et le dit', /CHECK-001 créée/.test(await texte(page, '#bandeauMessage')));
+  vrai('la fiche s\'ouvre, sans historique', await page.locator('#detailsSlideOver.show').count() === 1 &&
+       await page.locator('.panneau-retour').count() === 0);
+  eq('et elle s\'ouvre en lecture, jamais en édition héritée d\'une autre fiche',
+     await page.locator('#slideOverBody .champ-boite').count(), 0);
+  // Editer pose le focus dans le premier champ ; Echap annule l'edition, pas le panneau.
+  await page.locator('#slideOverBody [data-action="editer-boite"]').click(); await page.waitForTimeout(300);
+  eq('Editer pose le focus dans le premier champ',
+     await page.evaluate(function () { return document.activeElement && document.activeElement.dataset.champ; }), 'Fonction');
+  await page.keyboard.type('PERDU');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(400);
+  eq('Echap dans un champ annule l\'edition', await page.locator('.champ-boite').count(), 0);
+  vrai('sans fermer le panneau', await page.locator('#detailsSlideOver.show').count() === 1);
+  faux('et sans garder la saisie', (await texte(page, '#slideOverBody')).indexOf('PERDU') !== -1);
+  await page.locator('#slideOverBody [data-action="editer-boite"]').click(); await page.waitForTimeout(300);
+  await page.locator('.champ-boite[data-champ="DS/VCI Associé"]').fill('CHECK-051');
+  await page.locator('#slideOverBody [data-action="sauver-boite"]').click(); await page.waitForTimeout(800);
+  vrai('Enregistrer le dit', /Boîte enregistrée/.test(await texte(page, '#bandeauMessage')));
+  // Un sous-ensemble cree s'ouvre en saisie, focus pose, et Echap ne ferme pas le panneau.
+  await page.locator('[data-action="nouveau-sous-ensemble"]').click();
+  await page.waitForSelector('#newSousEnsModal.show'); await page.waitForTimeout(500);
+  eq('la modale du sous-ensemble ouvre sur le PN',
+     await page.evaluate(function () { return document.activeElement && document.activeElement.id; }), 'newEnsPn');
+  await page.fill('#newEnsPn', 'CHECK-001.01');
+  await page.locator('#newEnsPn').press('Enter'); await page.waitForTimeout(1000);
+  eq('Entree cree le sous-ensemble, en saisie', await page.locator('.bloc-branche.ouverte .champ-nom').count() > 0, true);
+  eq('le focus est dans son premier champ',
+     await page.evaluate(function () { return document.activeElement && document.activeElement.classList.contains('champ-nom'); }), true);
+  vrai('et on est guide', /renseignez-le/.test(await texte(page, '#bandeauMessage')));
+  await page.keyboard.press('Escape'); await page.waitForTimeout(400);
+  eq('Echap annule cette edition seulement', await page.locator('.champ-nom').count(), 0);
+  vrai('le panneau reste', await page.locator('#detailsSlideOver.show').count() === 1);
+  // Le dialogue de suppression : focus sur Annuler, Echap ne touche qu'a lui.
+  // (la branche creee est restee depliee apres l'annulation : on ne la replie pas)
+  eq('la branche creee reste depliee apres Echap', await page.locator('.bloc-branche.ouverte').count(), 1);
+  await deplierBranches(page);
+  await page.locator('[data-action="supprimer-nom"]').first().click();
+  await page.waitForSelector('#dialogueModal.show'); await page.waitForTimeout(500);
+  eq('un dialogue qui detruit met le focus sur Annuler',
+     await page.evaluate(function () { return document.activeElement && document.activeElement.textContent.trim(); }), 'Annuler');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(600);
+  eq('Echap ferme le dialogue', await page.locator('#dialogueModal.show').count(), 0);
+  vrai('et laisse le panneau ouvert', await page.locator('#detailsSlideOver.show').count() === 1);
+  eq('rien n\'a ete supprime', await page.locator('.bloc-branche').count(), 1);
+  // Le catalogue ouvre sur sa recherche.
+  await page.locator('.bloc-general [data-action="ouvrir-catalogue"]').first().click();
+  await page.waitForSelector('#catalogueModal.show'); await page.waitForTimeout(500);
+  eq('le catalogue ouvre sur sa recherche',
+     await page.evaluate(function () { return document.activeElement && document.activeElement.id; }), 'catSearch');
+  await fermerModale(page, 'catalogueModal');
+  await fermerFiche(page);
+  await ecranPropre(page);
 
   // ---------------------------------------------------------------
   bloc('Affichage mobile');

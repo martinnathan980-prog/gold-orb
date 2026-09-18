@@ -32,6 +32,25 @@ function fermerModal(id) {
   if (m) m.hide();
 }
 function ouvrirPanneau() { bootstrap.Offcanvas.getOrCreateInstance(parId('detailsSlideOver')).show(); }
+function panneauOuvert() {
+  const el = parId('detailsSlideOver');
+  return !!(el && el.classList && el.classList.contains('show'));
+}
+/**
+ * Quand une fiche en ouvre une autre — « aussi montée dans », un composant,
+ * une boîte citée — on garde d'où l'on vient, pour y revenir d'un clic.
+ * Le panneau fermé, la pile se vide : on repart de la liste.
+ */
+function empilerFicheCourante(pnCible) {
+  if (!panneauOuvert()) return;
+  if (!Store.pileFiches) Store.pileFiches = [];
+  if (Store.ficheComposant) {
+    Store.pileFiches.push({ composant: Store.ficheComposant });
+  } else if (Store.pnCourant && Store.pnCourant !== pnCible) {
+    Store.pileFiches.push({ pn: Store.pnCourant, branches: Store.branchesDepliees });
+  }
+  if (Store.pileFiches.length > 12) Store.pileFiches.shift();
+}
 function fermerPanneau() {
   const i = bootstrap.Offcanvas.getInstance(parId('detailsSlideOver'));
   if (i) i.hide();
@@ -40,6 +59,17 @@ function fermerPanneau() {
 function rafraichir() {
   rendreInterface();
   if (Store.pnCourant) rendreFiche();
+}
+
+/**
+ * Poser le focus là où l'on va taper. Un formulaire qui s'ouvre sans focus
+ * oblige à viser le premier champ à la souris — c'est un geste de trop.
+ */
+function focaliser(selecteur) {
+  const el = document.querySelector(selecteur);
+  if (!el || typeof el.focus !== 'function') return;
+  el.focus();
+  if (typeof el.select === 'function' && el.tagName === 'INPUT') el.select();
 }
 
 // ------------------------------------------------------------
@@ -98,6 +128,7 @@ function sauverBoite(modifs) {
       appliquerBoite(r.boite, r.pnPrecedent);
       Store.enEditionBoite = false;
       rafraichir();
+      confirmerSucces('Boîte enregistrée.');
       remplirListesDeSuggestion();
     })
     .catch(function (e) {
@@ -114,6 +145,7 @@ function sauverNom(id, modifs) {
       Store.enEditionNom[id] = false;
       rafraichir();
       remplirListesDeSuggestion();
+      confirmerSucces(txt(r.ligne['PN du type'], 'Sous-ensemble') + ' enregistré.');
     })
     .catch(function (e) {
       signalerErreur(e, 'sauvegarde du sous-ensemble');
@@ -306,9 +338,25 @@ enregistrerActions({
   },
 
   'ouvrir-fiche-composant': function (d) {
+    empilerFicheCourante();
     Store.ficheComposant = { categorie: d.categorie, fonction: d.fonction };
     rendreFiche();
     ouvrirPanneau();
+  },
+  // D'où l'on vient : on remonte d'un cran, sans refermer ni rechercher.
+  'fiche-retour': function () {
+    const precedent = (Store.pileFiches || []).pop();
+    if (!precedent) return;
+    if (precedent.composant) {
+      Store.ficheComposant = precedent.composant;
+    } else {
+      Store.ficheComposant = null;
+      Store.pnCourant = precedent.pn;
+      Store.enEditionBoite = false;
+      Store.enEditionNom = {};
+      Store.branchesDepliees = precedent.branches || {};
+    }
+    rendreFiche();
   },
   'trier-composants': function (d) {
     Store.compo.tri = d.tri;
@@ -323,6 +371,7 @@ enregistrerActions({
   },
 
   'ouvrir-fiche': function (d) {
+    empilerFicheCourante(d.pn);
     Store.ficheComposant = null;
     Store.pnCourant = d.pn;
     Store.enEditionBoite = false;
@@ -333,6 +382,8 @@ enregistrerActions({
   },
   'ouvrir-fiche-depuis-compare': function (d) {
     fermerModal('compareModal');
+    empilerFicheCourante(d.pn);
+    Store.ficheComposant = null;
     Store.pnCourant = d.pn;
     Store.enEditionBoite = false;
     Store.enEditionNom = {};
@@ -349,7 +400,7 @@ enregistrerActions({
   },
 
   // --- boîte ---
-  'editer-boite':  function () { Store.enEditionBoite = true;  rendreFiche(); },
+  'editer-boite':  function () { Store.enEditionBoite = true;  rendreFiche(); focaliser('.champ-boite'); },
   'annuler-boite': function () { Store.enEditionBoite = false; rendreFiche(); },
   'sauver-boite':  function () { sauverBoite(lireChamps('champ-boite')); },
 
@@ -395,7 +446,11 @@ enregistrerActions({
   'supprimer-multi-boite': function (d) { majMultiBoite(d.champ, retirerDe(d.valeur)); },
 
   // --- sous-ensembles ---
-  'editer-nom':  function (d) { Store.enEditionNom[d.id] = true;  rendreFiche(); },
+  'editer-nom':  function (d) {
+    Store.enEditionNom[d.id] = true;
+    rendreFiche();
+    focaliser('.champ-nom[data-ligne="' + String(d.id).replace(/"/g, '\\"') + '"]');
+  },
   'annuler-nom': function (d) { Store.enEditionNom[d.id] = false; rendreFiche(); },
   'sauver-nom':  function (d) { sauverNom(d.id, lireChamps('champ-nom', d.id)); },
 
@@ -438,7 +493,7 @@ enregistrerActions({
   // --- composants à trois niveaux ---
   'ajouter-composant': function (d) {
     const c = lireSaisieComposant(d.champ, d.id);
-    if (!c) { afficherBandeau('Indiquez au moins la fonction du composant.', 'erreur'); return; }
+    if (!c) { afficherBandeau('Indiquez au moins le composant.', 'erreur'); return; }
     majMultiCible({ portee: d.portee, id: d.id, champ: d.champ },
                   ajouterA(formaterComposantStructure(c)))
       .then(function () {
@@ -513,10 +568,17 @@ enregistrerActions({
          'newBoiteNiveau', 'newBoiteImage'].forEach(function (i) { parId(i).value = ''; });
         parId('newBoiteStatut').value = 'En étude';
         document.querySelectorAll('#newBoitePorteurs input').forEach(function (i) { i.checked = false; });
+        // Une boîte qui naît s'ouvre propre : aucune édition héritée d'une
+        // autre fiche, aucun historique, aucune branche dépliée.
         Store.pnCourant = boite[CLE_PN()];
+        Store.enEditionBoite = false;
+        Store.enEditionNom = {};
+        Store.branchesDepliees = {};
+        Store.pileFiches = [];
         rafraichir();
         rendreFiche();
         ouvrirPanneau();
+        confirmerSucces('Boîte ' + txt(boite[CLE_PN()]) + ' créée. Ajoutez-lui ses sous-ensembles.');
       })
       .catch(function (e) { signalerErreur(e, "création de la boîte"); });
   },
@@ -545,6 +607,8 @@ enregistrerActions({
         Store.enEditionNom[r.ligne[CLE_NOM()]] = true;   // ouvert en saisie directe
         Store.branchesDepliees[r.ligne[CLE_NOM()]] = true;
         rafraichir();
+        focaliser('.champ-nom[data-ligne="' + String(r.ligne[CLE_NOM()]).replace(/"/g, '\\"') + '"]');
+        confirmerSucces('Sous-ensemble ajouté — renseignez-le, puis Enregistrer.');
       })
       .catch(function (e) { signalerErreur(e, 'ajout du sous-ensemble'); });
   },
@@ -644,7 +708,7 @@ function rendreCatalogue() {
   const categorie = Store.cibleCatalogue ? Store.cibleCatalogue.categorie : null;
   const r = filtrerCatalogue(requete, categorie);
   definirHtml('catalogueList', r.affiches.length
-    ? '<div class="catalogue-entete"><span>Fonction</span><span>Norme</span><span>Référence</span><span></span></div>' +
+    ? '<div class="catalogue-entete"><span>Composant</span><span>Norme</span><span>Référence</span><span></span></div>' +
       r.affiches.map(function (e) {
         const c = e.structure;
         return '<button type="button" class="ligne-catalogue"' +
@@ -678,6 +742,20 @@ function rendreChoixComposants() {
 document.addEventListener('DOMContentLoaded', function () {
   chargerReglages();
   installerDelegation();
+
+  // Une modale qui s'ouvre pose le focus dans son champ : on tape tout de suite.
+  [['newBoiteModal', '#newBoitePn'], ['newSousEnsModal', '#newEnsPn'],
+   ['catalogueModal', '#catSearch'], ['multiSearchModal', '#multiSearchInputSelect']]
+    .forEach(function (paire) {
+      const m = parId(paire[0]);
+      if (m && m.addEventListener) m.addEventListener('shown.bs.modal', function () { focaliser(paire[1]); });
+    });
+
+  // Le panneau fermé, on repart de zéro : la pile des fiches se vide.
+  const panneau = parId('detailsSlideOver');
+  if (panneau && panneau.addEventListener) {
+    panneau.addEventListener('hidden.bs.offcanvas', function () { Store.pileFiches = []; });
+  }
 
   const recherche = parId('searchBar');
   if (recherche) {
@@ -730,8 +808,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Entrée ajoute, dans un champ libre comme dans un composant : viser un
   // bouton à la souris pour valider un mot-clé n'a jamais fait gagner personne.
+  // Échap dans un champ d'édition annule CETTE édition, et rien d'autre :
+  // sans cela, Bootstrap refermait le panneau entier et la saisie avec.
+  // En phase de capture, pour passer avant ses écouteurs.
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || !e.target.classList) return;
+    if (e.target.classList.contains('champ-boite')) {
+      e.preventDefault(); e.stopPropagation();
+      ACTIONS['annuler-boite']();
+      focaliser('#slideOverBody [data-action="editer-boite"]');
+    } else if (e.target.classList.contains('champ-nom')) {
+      e.preventDefault(); e.stopPropagation();
+      const id = e.target.dataset.ligne;
+      ACTIONS['annuler-nom']({ id: id });
+      focaliser('#slideOverBody [data-action="editer-nom"][data-id="' + String(id).replace(/"/g, '\\"') + '"]');
+    }
+  }, true);
+
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter' || !e.target.classList) return;
+
+    // Entrée dans une petite modale de saisie la valide : le bouton est là
+    // pour la souris, pas pour obliger à lâcher le clavier.
+    if (e.target.closest && e.target.tagName === 'INPUT') {
+      if (e.target.closest('#newBoiteModal')) { e.preventDefault(); ACTIONS['creer-boite'](); return; }
+      if (e.target.closest('#newSousEnsModal')) { e.preventDefault(); ACTIONS['creer-sous-ensemble'](); return; }
+    }
 
     if (e.target.classList.contains('saisie-multi') && e.target.dataset.ajout) {
       e.preventDefault();

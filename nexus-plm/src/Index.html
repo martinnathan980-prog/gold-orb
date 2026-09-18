@@ -93,7 +93,8 @@
     <div class="offcanvas offcanvas-end panneau" tabindex="-1" id="detailsSlideOver"
          aria-labelledby="slideOverTitle">
       <div class="offcanvas-header panneau-tete">
-        <div>
+        <div class="panneau-titre">
+          <div id="slideOverRetour" class="panneau-retour-zone" hidden></div>
           <h2 class="offcanvas-title" id="slideOverTitle">Fiche</h2>
           <p class="panneau-sous" id="slideOverSousTitre"></p>
         </div>
@@ -180,7 +181,7 @@
           <div class="modal-body">
             <div class="ligne-saisie">
               <input type="text" list="datalistStds" id="multiSearchInputSelect"
-                     placeholder="Fonction, norme ou référence…" aria-label="Composant à chercher">
+                     placeholder="Composant, norme ou référence…" aria-label="Composant à chercher">
             </div>
             <div id="multiSearchPillsContainer" class="zone-puces"></div>
             <button type="button" class="btn-principal" data-action="fermer-multi-recherche">
@@ -204,7 +205,7 @@
           </div>
           <div class="modal-body">
             <input type="text" id="catSearch" class="saisie-pleine"
-                   placeholder="Fonction, norme, référence, désignation…" aria-label="Filtrer le catalogue">
+                   placeholder="Composant, norme, référence, désignation…" aria-label="Filtrer le catalogue">
             <p id="catalogueInfo" class="modale-sous"></p>
             <div id="catalogueList" class="liste-catalogue"></div>
           </div>

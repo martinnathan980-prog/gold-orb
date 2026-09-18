@@ -48,6 +48,7 @@ const Store = {
   resultatDeplie: null,      // le candidat dont on regarde le détail
   ficheComposant: null,      // { categorie, fonction } quand le panneau sert les composants
   branchesDepliees: {},      // les sous-ensembles ouverts dans la fiche, par ID_Ligne
+  pileFiches: [],            // d'où l'on vient dans le panneau : [{ pn } | { composant }]
 
   // Charge utile de la dernière suppression, conservée pour l'annulation.
   derniereSuppression: null,
@@ -809,8 +810,9 @@ function arbreComposants(composants) {
           return no;
         }).sort(parEmploi);
         // Plusieurs normes pour une fonction : dispersion d'un cran au-dessus.
-        fo.dispersee = fo.normes.length > 1 ||
-                       fo.normes.some(function (n) { return n.dispersee; });
+        // Plusieurs normes n'est PAS une dispersion : deux normes différentes
+        // ont en général leur raison. La dispersion se juge sous une même norme.
+        fo.dispersee = fo.normes.some(function (n) { return n.dispersee; });
         return fo;
       }).sort(function (a, b) { return parEmploi(a, b) || parNom(a, b); });
       return f;
@@ -1129,70 +1131,59 @@ function famillesComposants(liste) {
 }
 
 /**
- * Les familles qui se DISPERSENT : plusieurs normes pour une même fonction,
- * ou plusieurs références pour une même norme. Chacune est une rationalisation
- * possible. Les plus dispersées d'abord, ce sont elles qui coûtent le plus.
+ * Ce qui se DISPERSE : plusieurs références montées pour le même composant
+ * SOUS UNE MÊME NORME. Deux normes différentes pour un même composant ne
+ * sont pas une dispersion — elles ont en général leur raison — et on ne
+ * propose pas de les fondre. Une famille = un composant + une norme.
+ * Chacune est une convergence possible ; les plus dispersées d'abord, ce
+ * sont elles qui coûtent le plus à faire vivre.
  */
 function opportunitesStandardisation(liste) {
   const sorties = [];
 
   famillesComposants(liste).forEach(function (f) {
-    const normes = Array.from(f.normes.values()).map(function (n) {
-      return {
-        norme: n.norme,
-        references: Array.from(n.references.values()).map(function (r) {
-          return { reference: r.reference, nbBoites: r.boites.size,
-                   boites: Array.from(r.boites).sort(function (a, b) {
-                     return a.localeCompare(b, 'fr', { numeric: true });
-                   }) };
-        }).sort(function (a, b) {
-          return b.nbBoites - a.nbBoites ||
-                 String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
-        })
-      };
-    }).sort(function (a, b) {
-      return b.references.length - a.references.length ||
-             String(a.norme).localeCompare(String(b.norme), 'fr', { numeric: true });
-    });
+    f.normes.forEach(function (n) {
+      const references = Array.from(n.references.values()).map(function (r) {
+        return { reference: r.reference, nbBoites: r.boites.size,
+                 boites: Array.from(r.boites).sort(function (a, b) {
+                   return a.localeCompare(b, 'fr', { numeric: true });
+                 }) };
+      }).sort(function (a, b) {
+        return b.nbBoites - a.nbBoites ||
+               String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
+      });
+      // Une seule référence sous cette norme : rien à faire converger.
+      if (references.length <= 1) return;
 
-    const nbReferences = normes.reduce(function (t, n) { return t + n.references.length; }, 0);
-    // Une seule norme et une seule référence : rien à rationaliser.
-    if (normes.length <= 1 && nbReferences <= 1) return;
+      // La cible : la référence la plus montée. Les boîtes à modifier :
+      // celles qui en montent une autre. C'est le coût concret.
+      const cible = references[0];
+      const aModifier = new Set();
+      references.forEach(function (r) {
+        if (r === cible) return;
+        r.boites.forEach(function (b) { aModifier.add(b); });
+      });
+      const boites = new Set();
+      references.forEach(function (r) { r.boites.forEach(function (b) { boites.add(b); }); });
 
-    // La cible : la référence la plus montée. Les boîtes à modifier : celles
-    // qui en montent une autre. C'est le coût concret de la convergence.
-    const toutes = [];
-    normes.forEach(function (n) { n.references.forEach(function (r) { toutes.push(r); }); });
-    toutes.sort(function (a, b) {
-      return b.nbBoites - a.nbBoites ||
-             String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
-    });
-    const cible = toutes[0];
-    const aModifier = new Set();
-    toutes.forEach(function (r) {
-      if (r === cible) return;
-      r.boites.forEach(function (b) { aModifier.add(b); });
-    });
-
-    sorties.push({
-      categorie: f.categorie, fonction: f.fonction, normes: normes,
-      nbNormes: normes.length, nbReferences: nbReferences,
-      nbBoites: normes.reduce(function (t, n) {
-        return t + n.references.reduce(function (u, r) { return u + r.nbBoites; }, 0);
-      }, 0),
-      cible: cible, references: toutes,
-      aModifier: Array.from(aModifier).sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); })
+      sorties.push({
+        categorie: f.categorie, fonction: f.fonction, norme: n.norme,
+        references: references, nbReferences: references.length,
+        nbBoites: boites.size, cible: cible,
+        aModifier: Array.from(aModifier).sort(function (a, b) { return a.localeCompare(b, 'fr', { numeric: true }); })
+      });
     });
   });
 
   return sorties.sort(function (a, b) {
-    return b.nbReferences - a.nbReferences || b.nbNormes - a.nbNormes ||
-           a.fonction.localeCompare(b.fonction, 'fr');
+    return b.nbReferences - a.nbReferences || b.nbBoites - a.nbBoites ||
+           a.fonction.localeCompare(b.fonction, 'fr') ||
+           String(a.norme).localeCompare(String(b.norme), 'fr', { numeric: true });
   });
 }
 
 /**
- * Le bilan de la standardisation : si chaque famille dispersée convergeait
+ * Le bilan de la standardisation : si chaque norme dispersée convergeait
  * vers sa référence la plus montée, combien de références cesserait-on de
  * faire vivre, et combien de boîtes faudrait-il modifier ?
  */
@@ -1206,7 +1197,7 @@ function bilanStandardisation(familles) {
   return {
     familles: familles.length,
     references: references,
-    apres: familles.length,               // une référence par famille
+    apres: familles.length,               // une référence par norme dispersée
     economie: references - familles.length,
     boites: boites.size
   };

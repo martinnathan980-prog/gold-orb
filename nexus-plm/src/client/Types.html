@@ -44,15 +44,18 @@ const CHAMPS_BOITE = {
 // ------------------------------------------------------------
 // Champs communs à tous les types
 // ------------------------------------------------------------
+// Une fiche longue se lit par sections : chaque champ dit la sienne, et la
+// fiche pose un repère quand elle change. Sans section, le champ suit le
+// précédent.
 const CHAMPS_COMMUNS = [
-  { cle: 'Image', libelle: 'Image', genre: GENRE.IMAGE },
-  { cle: 'Commentaires libres', libelle: 'Commentaires', genre: GENRE.LONG }
+  { cle: 'Image', libelle: 'Image', genre: GENRE.IMAGE, section: 'Image et commentaires' },
+  { cle: 'Commentaires libres', libelle: 'Commentaires', genre: GENRE.LONG, section: 'Image et commentaires' }
 ];
 
 const CHAMPS_QUALIF = [
-  { cle: 'Qualification Brouillard salin', libelle: 'Qualif. brouillard salin', genre: GENRE.MULTI, liste: 'list-Qualif' },
-  { cle: 'Qualification Vibration', libelle: 'Qualif. vibration', genre: GENRE.MULTI, liste: 'list-Qualif' },
-  { cle: 'Qualification Explosion', libelle: 'Qualif. explosion', genre: GENRE.MULTI, liste: 'list-Qualif' }
+  { cle: 'Qualification Brouillard salin', libelle: 'Qualif. brouillard salin', genre: GENRE.MULTI, liste: 'list-Qualif', section: 'Qualifications' },
+  { cle: 'Qualification Vibration', libelle: 'Qualif. vibration', genre: GENRE.MULTI, liste: 'list-Qualif', section: 'Qualifications' },
+  { cle: 'Qualification Explosion', libelle: 'Qualif. explosion', genre: GENRE.MULTI, liste: 'list-Qualif', section: 'Qualifications' }
 ];
 
 const CLES_QUALIF = CHAMPS_QUALIF.map(function (c) { return c.cle; });
@@ -70,14 +73,14 @@ const TYPES = {
     resume: ['Montage', 'Dim Long (mm)', 'Dim Larg (mm)', 'Masse (g)'],
     champs: [
       { cle: 'PN du type', libelle: 'PN du type', genre: GENRE.TEXTE, requis: true },
-      { cle: 'Montage', libelle: 'Montage', genre: GENRE.LISTE, liste: 'list-Montage' },
+      { cle: 'Montage', libelle: 'Montage', genre: GENRE.LISTE, liste: 'list-Montage', section: 'Géométrie' },
       { cle: 'Nombre de pas', libelle: 'Nombre de pas', genre: GENRE.NOMBRE,
-        aide: '1 pas ≈ 9,525 mm' },
-      { cle: 'Dim Long (mm)', libelle: 'Longueur (mm)', genre: GENRE.NOMBRE },
-      { cle: 'Dim Larg (mm)', libelle: 'Largeur (mm)', genre: GENRE.NOMBRE },
-      { cle: 'Masse (g)', libelle: 'Masse (g)', genre: GENRE.NOMBRE },
-      { cle: 'HL', libelle: 'HL', genre: GENRE.LISTE, liste: 'list-Niveau' },
-      { cle: 'DAL', libelle: 'DAL', genre: GENRE.LISTE, liste: 'list-Niveau' }
+        aide: '1 pas ≈ 9,525 mm', section: 'Géométrie' },
+      { cle: 'Dim Long (mm)', libelle: 'Longueur (mm)', genre: GENRE.NOMBRE, section: 'Géométrie' },
+      { cle: 'Dim Larg (mm)', libelle: 'Largeur (mm)', genre: GENRE.NOMBRE, section: 'Géométrie' },
+      { cle: 'Masse (g)', libelle: 'Masse (g)', genre: GENRE.NOMBRE, section: 'Géométrie' },
+      { cle: 'HL', libelle: 'HL', genre: GENRE.LISTE, liste: 'list-Niveau', section: 'Niveaux' },
+      { cle: 'DAL', libelle: 'DAL', genre: GENRE.LISTE, liste: 'list-Niveau', section: 'Niveaux' }
     ].concat(CHAMPS_QUALIF, [
       // Deux familles distinctes, comparées séparément : ce qui est dur, et
       // ce qui tient les câbles. Les boutons et voyants, eux, sont sur la boîte.

@@ -186,8 +186,9 @@ function fonctionsParFamille(fonctions) {
 
 /** Ce que veulent dire les marques, en clair. */
 const AIDE_MARQUES = {
-  ranger: 'Plusieurs références montées pour le même service : à faire converger',
-  hors:   'Montée dans une boîte, mais absente du catalogue : personne ne la suit'
+  ranger: 'Plusieurs références montées sous une même norme pour le même composant : à faire converger',
+  hors:   'Montée dans une boîte, mais absente du catalogue — la liste des composants autorisés, ' +
+          'tenue dans le classeur Catalogue. Personne ne la suit.'
 };
 
 /**
@@ -196,17 +197,18 @@ const AIDE_MARQUES = {
  */
 function aideLectureHtml(lecture) {
   const textes = {
-    liste: 'Une ligne par fonction, rangées par famille. Sous le nombre de références, ' +
+    liste: 'Un composant par ligne, rangés par famille. Sous le nombre de références, ' +
            'la barre : <span class="aide-vert">vert</span>, la référence la plus montée ; ' +
            '<span class="aide-gris">gris</span>, les autres. ' +
-           '<b>À ranger</b> : plusieurs références montées pour le même service. ' +
-           '<b>Hors catalogue</b> : montée dans une boîte, mais absente du catalogue.',
-    matrice: 'Dans chaque case : le nombre de boîtes de ce porteur qui montent la fonction. ' +
+           '<b>À ranger</b> : plusieurs références montées sous une même norme. ' +
+           '<b>Absent du catalogue</b> : monté dans une boîte, mais pas dans le catalogue — ' +
+           'la liste des composants autorisés, tenue dans le classeur Catalogue.',
+    matrice: 'Dans chaque case : le nombre de boîtes de ce porteur qui montent le composant. ' +
              'Plus la case est foncée, plus c\'est monté. <b>En tout</b> compte les boîtes ' +
              'distinctes — une boîte qui vole sur deux porteurs est dans les deux colonnes, ' +
              'mais une seule fois dans le total.',
-    carte: 'Plus une tuile est grande, plus la fonction est montée dans de boîtes. ' +
-           '<b>À ranger</b> : plusieurs références montées pour le même service. ' +
+    carte: 'Plus une tuile est grande, plus le composant est monté dans de boîtes. ' +
+           '<b>À ranger</b> : plusieurs références montées sous une même norme. ' +
            'Cliquez une tuile pour ouvrir sa fiche.'
   };
   return '<p class="compo-lire">' + (textes[lecture] || textes.liste) + '</p>';
@@ -220,9 +222,9 @@ function fonctionsComposants(composants) {
     if (!parFonction.has(cle)) {
       parFonction.set(cle, {
         cle: cle, categorie: c.categorie,
-        libelle: c.fonction || 'Fonction non précisée',
+        libelle: c.fonction || 'Composant non précisé',
         normesVues: new Set(), references: 0, montages: 0,
-        boites: new Set(), hors: 0, dormantes: 0, lignes: []
+        boites: new Set(), hors: 0, dormantes: 0, lignes: [], parNorme: new Map()
       });
     }
     const f = parFonction.get(cle);
@@ -230,6 +232,9 @@ function fonctionsComposants(composants) {
     f.references++;
     f.montages += c.montages;
     if (c.norme) f.normesVues.add(normaliserTexte(c.norme));
+    const cleN = normaliserTexte(c.norme) || '\u0000';
+    if (!f.parNorme.has(cleN)) f.parNorme.set(cleN, { libelle: c.norme || 'sans norme', lignes: [] });
+    f.parNorme.get(cleN).lignes.push(c);
     c.boites.forEach(function (b) { f.boites.add(b); });
     if (c.etat === ETAT_COMPOSANT.HORS) f.hors++;
     if (c.etat === ETAT_COMPOSANT.DORMANT) f.dormantes++;
@@ -241,9 +246,16 @@ function fonctionsComposants(composants) {
   return Array.from(parFonction.values()).map(function (f) {
     f.normes = f.normesVues.size;
     f.nbBoites = f.boites.size;
-    // Dispersée : plusieurs références RÉELLEMENT montées pour le même service.
     f.montees = f.lignes.filter(function (l) { return l.nbBoites > 0; }).length;
-    f.dispersee = f.montees > 1;
+    // Dispersé : plusieurs références RÉELLEMENT montées sous une MÊME norme.
+    // Deux normes différentes ne comptent pas — elles ont leur raison. On
+    // retient la norme la plus dispersée : c'est elle que la barre montre.
+    f.normeDispersee = null;
+    f.parNorme.forEach(function (n) {
+      n.montees = n.lignes.filter(function (l) { return l.nbBoites > 0; }).length;
+      if (n.montees > 1 && (!f.normeDispersee || n.montees > f.normeDispersee.montees)) f.normeDispersee = n;
+    });
+    f.dispersee = !!f.normeDispersee;
     return f;
   }).sort(function (a, b) { return tri.fn(a, b) || a.libelle.localeCompare(b.libelle, 'fr'); });
 }
@@ -267,7 +279,7 @@ function triComposantsHtml(nb) {
   const avecTri = lecture !== 'carte';
   return '<div class="compo-tri">' +
     vuesComposantsHtml() +
-    '<span class="compo-tri-compte">' + nb + (nb > 1 ? ' fonctions' : ' fonction') + '</span>' +
+    '<span class="compo-tri-compte">' + nb + (nb > 1 ? ' composants' : ' composant') + '</span>' +
     (avecTri
       ? '<span class="compo-tri-choix">' +
           TRIS_COMPOSANTS.map(function (t) {
@@ -321,10 +333,12 @@ function partsHtml(lignes, classe) {
     });
   if (montees.length < 2) return '';
   const total = montees.reduce(function (t, c) { return t + c.nbBoites; }, 0);
-  const titre = montees.map(function (c, i) {
-    return (i === 0 ? 'cible ' : '') + txt(c.reference, 'sans référence') + ' : ' +
-           c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte');
-  }).join(' · ');
+  const normes = new Set(montees.map(function (c) { return normaliserTexte(c.norme); }));
+  const titre = (normes.size === 1 && montees[0].norme ? 'norme ' + montees[0].norme + ' — ' : '') +
+    montees.map(function (c, i) {
+      return (i === 0 ? 'cible ' : '') + txt(c.reference, 'sans référence') + ' : ' +
+             c.nbBoites + (c.nbBoites > 1 ? ' boîtes' : ' boîte');
+    }).join(' · ');
   return '<span class="parts ' + (classe || '') + '" role="img" aria-label="' + esc(titre) + '"' +
     ' title="' + esc(titre) + '">' +
     montees.map(function (c, i) {
@@ -350,7 +364,7 @@ function ligneFonctionHtml(f, maxi) {
       (f.montees < f.references
         ? '<span class="lf-doux"> · ' + f.montees + ' montée' + (f.montees > 1 ? 's' : '') + '</span>'
         : '') + '</span>' +
-      partsHtml(f.lignes, 'parts-ligne') +
+      (f.normeDispersee ? partsHtml(f.normeDispersee.lignes, 'parts-ligne') : '') +
     '</span>' +
     '<span class="lf-emploi">' +
       '<span class="lf-jauge" aria-hidden="true"><span style="width:' + part + '%"></span></span>' +
@@ -358,7 +372,7 @@ function ligneFonctionHtml(f, maxi) {
     '</span>' +
     '<span class="lf-marques">' +
       (f.dispersee ? '<span class="lf-tag lf-tag-ranger" title="' + esc(AIDE_MARQUES.ranger) + '">à ranger</span>' : '') +
-      (f.hors ? '<span class="lf-tag lf-tag-hors" title="' + esc(AIDE_MARQUES.hors) + '">hors catalogue</span>' : '') +
+      (f.hors ? '<span class="lf-tag lf-tag-hors" title="' + esc(AIDE_MARQUES.hors) + '">absent du catalogue</span>' : '') +
     '</span>' +
     '<span class="lf-fleche" aria-hidden="true">›</span>' +
   '</button>';
@@ -371,7 +385,7 @@ function groupeFamilleHtml(g) {
     '<span class="lf-groupe-nom">' + esc(g.libelle) + '</span>' +
     (g.aide ? '<span class="lf-groupe-aide">' + esc(g.aide) + '</span>' : '') +
     '<span class="lf-groupe-n">' + g.fonctions.length +
-      (g.fonctions.length > 1 ? ' fonctions' : ' fonction') + ' · ' +
+      (g.fonctions.length > 1 ? ' composants' : ' composant') + ' · ' +
       g.nbBoites + (g.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span>' +
   '</div>';
 }
@@ -381,7 +395,7 @@ function listeFonctionsHtml(fonctions) {
   const maxi = fonctions.reduce(function (m, f) { return Math.max(m, f.nbBoites); }, 1);
   return '<div class="lf-cadre">' +
       '<div class="lf-entete">' +
-        '<span>Fonction</span><span>Normes</span>' +
+        '<span>Composant</span><span>Normes</span>' +
         '<span>Références</span><span>Emploi</span><span></span><span></span>' +
       '</div>' +
       fonctionsParFamille(fonctions).map(function (g) {
@@ -408,7 +422,7 @@ function matriceHtml(mx, options) {
     return Math.max(1, Math.min(5, Math.ceil((n / (mx.maxi || 1)) * 5)));
   };
 
-  const tete = '<tr><th scope="col" class="mx-coin">' + esc(options.enTete || 'Fonction') + '</th>' +
+  const tete = '<tr><th scope="col" class="mx-coin">' + esc(options.enTete || 'Composant') + '</th>' +
     mx.porteurs.map(function (p) {
       return '<th scope="col" class="mx-porteur' + (p === '' ? ' mx-sans' : '') + '">' +
              '<span>' + esc(libellePorteur(p)) + '</span></th>';
@@ -489,7 +503,7 @@ function carteBaseHtml(carte) {
       const moyenne = r.w >= carte.largeur * 0.04 && r.h >= carte.hauteur * 0.045;
       const titre = f.libelle + ' · ' + f.nbBoites + (f.nbBoites > 1 ? ' boîtes' : ' boîte') +
         ' · ' + f.references + (f.references > 1 ? ' références' : ' référence') +
-        (f.dispersee ? ' · à ranger' : '') + (f.hors ? ' · hors catalogue' : '');
+        (f.dispersee ? ' · à ranger' : '') + (f.hors ? ' · absent du catalogue' : '');
       return '<button type="button" class="tm-tuile tm-' + esc(fam.cle) +
           (f.dispersee ? ' tm-disperse' : '') + (large ? ' tm-large' : moyenne ? ' tm-moyenne' : ' tm-petite') + '"' +
           ' style="' + boite(r) + '"' +
@@ -500,7 +514,7 @@ function carteBaseHtml(carte) {
               (large
                 ? '<span class="tm-n">' + f.nbBoites + (f.nbBoites > 1 ? ' boîtes' : ' boîte') +
                     (f.references > 1 ? ' · ' + f.references + ' réf.' : '') + '</span>' +
-                  partsHtml(f.lignes, 'parts-tuile') +
+                  (f.normeDispersee ? partsHtml(f.normeDispersee.lignes, 'parts-tuile') : '') +
                   (f.dispersee ? '<span class="tm-tag">à ranger</span>' : '')
                 : '')
             : '') +
@@ -511,7 +525,7 @@ function carteBaseHtml(carte) {
           '<span class="cf-pastille cf-' + esc(fam.cle) + '" aria-hidden="true"></span>' +
           esc(fam.libelle) +
           '<span class="tm-famille-n">' + fam.fonctions.length +
-            (fam.fonctions.length > 1 ? ' fonctions' : ' fonction') + ' · ' +
+            (fam.fonctions.length > 1 ? ' composants' : ' composant') + ' · ' +
             fam.nbBoites + (fam.nbBoites > 1 ? ' boîtes' : ' boîte') + '</span>' +
         '</span>' +
       '</div>' + tuiles;
@@ -529,9 +543,9 @@ function carteBaseHtml(carte) {
     : '';
 
   const legende = '<div class="tm-legende" aria-hidden="true">' +
-    '<span class="tm-legende-aire"><i></i> plus la tuile est grande, plus la fonction est montée</span>' +
+    '<span class="tm-legende-aire"><i></i> plus la tuile est grande, plus le composant est monté dans de boîtes</span>' +
     '<span class="tm-legende-parts"><span class="parts parts-legende"><span class="part-cible" style="flex-grow:3"></span><span class="part-autre" style="flex-grow:1"></span></span> vert : la référence la plus montée · gris : les autres</span>' +
-    '<span class="tm-legende-tag"><span class="tm-tag">à ranger</span> plusieurs références montées pour le même service</span>' +
+    '<span class="tm-legende-tag"><span class="tm-tag">à ranger</span> plusieurs références montées sous une même norme</span>' +
   '</div>';
 
   return '<div class="tm-cadre">' +
@@ -583,8 +597,8 @@ function standardisationHtml(vue) {
   if (!familles.length) {
     return '<div class="etat-vide">' +
       '<p>Rien à standardiser.</p>' +
-      '<p class="etat-vide-aide">Chaque fonction est servie par une seule ' +
-      'référence, ou il n\'y a pas encore de composant à analyser.</p>' +
+      '<p class="etat-vide-aide">Sous chaque norme, un composant n\'a qu\'une ' +
+      'référence montée — ou il n\'y a pas encore de composant à analyser.</p>' +
     '</div>';
   }
 
@@ -593,8 +607,8 @@ function standardisationHtml(vue) {
   const bilan = bilanStandardisation(familles);
   const tuiles = '<div class="standard-bilan">' +
     '<div class="sb-tuile"><span class="sb-n">' + bilan.familles + '</span>' +
-      '<span class="sb-l">famille' + (bilan.familles > 1 ? 's' : '') + ' dispersée' + (bilan.familles > 1 ? 's' : '') + '</span>' +
-      '<span class="sb-aide">servies par plusieurs références</span></div>' +
+      '<span class="sb-l">norme' + (bilan.familles > 1 ? 's' : '') + ' dispersée' + (bilan.familles > 1 ? 's' : '') + '</span>' +
+      '<span class="sb-aide">plusieurs références montées pour le même composant</span></div>' +
     '<div class="sb-tuile"><span class="sb-n">' + bilan.references + ' <span class="sb-fleche">→</span> ' + bilan.apres + '</span>' +
       '<span class="sb-l">références à faire vivre</span>' +
       '<span class="sb-aide">si chacune converge vers sa plus montée</span></div>' +
@@ -604,9 +618,10 @@ function standardisationHtml(vue) {
   '</div>';
 
   return tuiles +
-    '<p class="standard-intro">Les plus dispersées d\'abord : ce sont elles qui coûtent ' +
-      'le plus à faire vivre. La cible de chaque famille est sa référence la plus montée ; ' +
-      'cliquez une référence pour voir où elle sert.' +
+    '<p class="standard-intro">On converge <b>sous une même norme</b> : deux normes ' +
+      'différentes pour un même composant ont en général leur raison, on ne les fond pas. ' +
+      'Les plus dispersées d\'abord : ce sont elles qui coûtent le plus à faire vivre. ' +
+      'La cible est la référence la plus montée ; cliquez une référence pour voir où elle sert.' +
     '</p>' +
     '<div class="familles">' + familles.map(familleHtml).join('') + '</div>';
 }
@@ -631,25 +646,20 @@ function referenceHtml(r, majoritaire) {
 
 function familleHtml(f) {
   const cat = CATEGORIES_COMPOSANT[f.categorie] || CATEGORIES_COMPOSANT.composant;
-  // La référence la plus répandue est le candidat naturel à la cible.
-  let meilleure = null;
-  f.normes.forEach(function (n) {
-    n.references.forEach(function (r) {
-      if (!meilleure || r.nbBoites > meilleure.nbBoites) meilleure = r;
-    });
-  });
 
   return '<article class="famille">' +
     '<header class="famille-tete">' +
       '<div class="famille-identite">' +
         '<h3 class="famille-nom">' + esc(f.fonction) + '</h3>' +
+        '<span class="famille-norme-nom" title="La norme sous laquelle on converge">' +
+          esc(f.norme || 'norme non précisée') + '</span>' +
         '<span class="famille-cat">' + esc(cat.libelle) + '</span>' +
       '</div>' +
       '<div class="famille-compte">' +
-        '<span class="famille-chiffre' + (f.nbNormes > 1 ? ' famille-disperse' : '') + '">' +
-          '<b>' + f.nbNormes + '</b> norme' + (f.nbNormes > 1 ? 's' : '') + '</span>' +
         '<span class="famille-chiffre famille-disperse">' +
           '<b>' + f.nbReferences + '</b> références</span>' +
+        '<span class="famille-chiffre">' +
+          '<b>' + f.nbBoites + '</b> boîte' + (f.nbBoites > 1 ? 's' : '') + '</span>' +
       '</div>' +
     '</header>' +
     // La cible et son coût : converger vers la plus montée, c'est modifier
@@ -663,14 +673,12 @@ function familleHtml(f) {
             (f.aModifier.length > 1 ? ' boîtes à modifier' : ' boîte à modifier') + '</span>' +
         '</div>'
       : '') +
-    '<ul class="famille-normes">' + f.normes.map(function (n) {
-      return '<li class="famille-norme">' +
-        '<span class="norme-nom">' + esc(n.norme || 'norme non précisée') + '</span>' +
-        '<span class="norme-refs">' + n.references.map(function (r) {
-          return referenceHtml(r, meilleure && r === meilleure && f.nbReferences > 1);
+    '<ul class="famille-normes"><li class="famille-norme">' +
+        '<span class="norme-nom">' + esc(f.norme || 'norme non précisée') + '</span>' +
+        '<span class="norme-refs">' + f.references.map(function (r) {
+          return referenceHtml(r, r === f.cible);
         }).join('') + '</span>' +
-      '</li>';
-    }).join('') + '</ul>' +
+    '</li></ul>' +
   '</article>';
 }
 
@@ -785,7 +793,7 @@ function rendreInterface() {
   const recherche = parId('searchBar');
   if (recherche) {
     recherche.placeholder = composants
-      ? 'Rechercher une fonction, une norme, une référence…'
+      ? 'Rechercher un composant, une norme, une référence…'
       : 'Rechercher un PN, une fonction, une référence, un mot-clé…';
     const attendue = composants ? Store.compo.recherche : Store.recherche;
     if (recherche.value !== attendue) recherche.value = attendue;
@@ -861,11 +869,11 @@ function indicateursBoitesHtml(kpi, vue) {
       action: true, actif: !!valide, titre: 'Ne montrer que les boîtes validées',
       donnees: { action: 'filtrer-statut', statut: 'Validé' } },
     { libelle: 'À standardiser', valeur: dispersees.length,
-      detail: dispersees.length ? 'familles à plusieurs références'
-                                : 'une norme, une référence partout',
+      detail: dispersees.length ? 'normes à plusieurs références'
+                                : 'une référence par norme, partout',
       classe: 'indicateur-standard', action: true,
       actif: Store.vueMode === 'standardisation',
-      titre: 'Voir les familles servies par plusieurs références',
+      titre: 'Voir les composants montés sous plusieurs références d\'une même norme',
       donnees: { action: 'voir-standardisation' } },
     { libelle: 'Doublons probables',
       valeur: doublons.nombre === null ? '—' : doublons.nombre,
@@ -898,16 +906,16 @@ function indicateursComposantsHtml(vue) {
       action: true, titre: 'Relâcher tous les filtres',
       donnees: { action: 'effacer-filtres-composants' } },
     { libelle: 'À ranger', valeur: aRanger,
-      detail: aRanger ? 'fonctions dispersées' : 'une référence par fonction',
+      detail: aRanger ? 'composants dispersés' : 'une référence par norme',
       classe: 'indicateur-standard', action: true,
       actif: Store.compo.emploi === null && Store.compo.etat === null && false,
-      titre: 'Voir les familles servies par plusieurs références',
+      titre: 'Voir les composants montés sous plusieurs références d\'une même norme',
       donnees: { action: 'voir-standardisation' } },
-    { libelle: 'Hors catalogue', valeur: bilan.hors,
-      detail: bilan.hors ? 'montées, absentes du catalogue' : 'tout est au catalogue',
+    { libelle: 'Absents du catalogue', valeur: bilan.hors,
+      detail: bilan.hors ? 'montés, pas dans la liste autorisée' : 'tout est au catalogue',
       classe: 'indicateur-alerte', action: true,
       actif: Store.compo.etat === ETAT_COMPOSANT.HORS,
-      titre: 'Voir les pièces montées absentes du catalogue',
+      titre: 'Voir les composants montés dans une boîte mais absents du catalogue (la liste des composants autorisés)',
       donnees: { action: 'filtrer-composants', champ: 'etat',
                  valeur: Store.compo.etat === ETAT_COMPOSANT.HORS ? '' : ETAT_COMPOSANT.HORS } },
     { libelle: 'Montées une fois', valeur: bilan.isoles,

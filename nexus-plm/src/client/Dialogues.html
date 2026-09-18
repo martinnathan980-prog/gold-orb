@@ -29,13 +29,19 @@ function ouvrirDialogue(options, avecChamp) {
     valider.textContent = options.bouton || (avecChamp ? 'Valider' : 'Confirmer');
     valider.className = 'btn-principal' + (options.danger ? ' btn-danger-plein' : '');
 
-    let regle = false;
+    // Répondre pendant l'animation d'ouverture — Échap par réflexe — ne doit
+    // pas laisser un dialogue orphelin : Bootstrap ignore hide() tant qu'il
+    // s'ouvre, on referme donc dès qu'il est ouvert.
+    let regle = false, ouvert = false;
     const terminer = function (resultat) {
       if (regle) return;
       regle = true;
       dialogueEnCours = null;
       const m = bootstrap.Modal.getInstance(el);
-      if (m) m.hide();
+      if (m) {
+        if (ouvert) m.hide();
+        else el.addEventListener('shown.bs.modal', function () { m.hide(); }, { once: true });
+      }
       resoudre(resultat);
     };
     dialogueEnCours = {
@@ -46,8 +52,14 @@ function ouvrirDialogue(options, avecChamp) {
     const modal = bootstrap.Modal.getOrCreateInstance(el, { backdrop: 'static' });
     el.addEventListener('hidden.bs.modal', function () { if (!regle) terminer(avecChamp ? null : false); },
                         { once: true });
+    // Un dialogue qui détruit met le focus sur « Annuler » : Entrée par
+    // réflexe ne supprime rien. Les autres vont droit à la validation.
     el.addEventListener('shown.bs.modal', function () {
-      if (avecChamp) { champ.focus(); champ.select(); } else valider.focus();
+      ouvert = true;
+      if (regle) return;
+      if (avecChamp) { champ.focus(); champ.select(); }
+      else if (options.danger) { const a = el.querySelector('[data-action="dialogue-annuler"]'); if (a) a.focus(); else valider.focus(); }
+      else valider.focus();
     }, { once: true });
     modal.show();
   });
@@ -61,12 +73,19 @@ enregistrerActions({
   'dialogue-annuler': function () { if (dialogueEnCours) dialogueEnCours.annuler(); }
 });
 
-// Entrée valide, Échap annule (Bootstrap ferme déjà sur Échap, on résout).
+// Entrée valide. Échap annule LE DIALOGUE, et seulement lui : en phase de
+// capture, avant Bootstrap — sinon, ouvert par-dessus le panneau de fiche,
+// c'est le panneau qui se fermait et le dialogue qui restait.
 document.addEventListener('keydown', function (e) {
   if (!dialogueEnCours) return;
   if (e.key === 'Enter' && e.target && e.target.id === 'dialogueChamp') {
     e.preventDefault();
     dialogueEnCours.valider();
   }
-});
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    dialogueEnCours.annuler();
+  }
+}, true);
 </script>

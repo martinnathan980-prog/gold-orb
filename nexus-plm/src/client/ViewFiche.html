@@ -44,6 +44,18 @@ function apercuImageHtml(valeur, classe, centre) {
   return centre ? '<div class="vignette-cadre">' + bouton + '</div>' : bouton;
 }
 
+/**
+ * Un repère dans une fiche longue : un filet court, un titre, une aide.
+ * Discret — un trait et des capitales, pas un aplat — mais on le voit.
+ */
+function sectionHtml(titre, aide) {
+  return '<div class="fiche-section">' +
+           '<span class="fiche-section-filet" aria-hidden="true"></span>' +
+           '<span class="fiche-section-titre">' + esc(titre) + '</span>' +
+           (aide ? '<span class="fiche-section-aide">' + esc(aide) + '</span>' : '') +
+         '</div>';
+}
+
 function ligneHtml(libelle, contenu, aide) {
   return '<div class="ligne">' +
            '<div class="ligne-cle">' + esc(libelle) +
@@ -127,8 +139,15 @@ function blocComposantsHtml(champ, valeur, cible) {
             ? '<span class="niveau-' + niveau + '">' + esc(texte) + '</span>'
             : '<span class="niveau-' + niveau + ' niveau-vide">non précisé</span>';
         };
+        // Le composant mène à sa fiche dans la base : d'une boîte, on passe
+        // à « où sert ce voyant, sous quelles références ».
+        const composant = c.fonction
+          ? '<button type="button" class="niveau-fonction niveau-lien"' +
+              dataAttrs({ action: 'ouvrir-fiche-composant', categorie: categorie, fonction: c.fonction }) +
+              ' title="Voir ce composant dans la base">' + esc(c.fonction) + '</button>'
+          : cellule('fonction', c.fonction);
         return '<div class="composant">' +
-          cellule('fonction', c.fonction) + cellule('norme', c.norme) + cellule('reference', c.reference) +
+          composant + cellule('norme', c.norme) + cellule('reference', c.reference) +
           '<button type="button" class="puce-suppr" aria-label="Retirer ' + esc(libelleComposant(c)) + '"' +
             dataAttrs(Object.assign({ action: 'supprimer-composant', valeur: c.brut }, donnees)) +
           '>&times;</button>' +
@@ -152,16 +171,15 @@ function blocComposantsHtml(champ, valeur, cible) {
     '<datalist id="' + uid + '-reference">' + optionsHtml(sug.references) + '</datalist>' +
   '</span>';
 
-  return '<div class="ligne ligne-bloc">' +
-    '<div class="ligne-cle">' + esc(champ.libelle) +
-      (champ.aide ? '<span class="ligne-aide">' + esc(champ.aide) + '</span>' : '') + '</div>' +
+  return '<div class="ligne ligne-bloc ligne-section">' +
+    sectionHtml(champ.libelle, champ.aide) +
     '<div class="ligne-val">' +
       '<div class="composants">' +
-        '<div class="composants-entete"><span>Fonction</span><span>Norme</span><span>Référence</span><span></span></div>' +
+        '<div class="composants-entete"><span>Composant</span><span>Norme</span><span>Référence</span><span></span></div>' +
         lignes +
       '</div>' +
       '<div class="ajout-composant">' + listes +
-        saisie('fonction', 'Fonction') + saisie('norme', 'Norme') + saisie('reference', 'Référence') +
+        saisie('fonction', 'Composant') + saisie('norme', 'Norme') + saisie('reference', 'Référence') +
         '<button type="button" class="btn-mini"' +
           dataAttrs(Object.assign({ action: 'ajouter-composant' }, donnees)) + '>Ajouter</button>' +
       '</div>' +
@@ -214,8 +232,14 @@ function blocBoiteHtml(boite) {
     '</header>';
 
   // Les champs clés se lisent en face de la photo ; ce qui est large — les
-  // composants, l'URL, les commentaires — passe dessous, à pleine largeur.
-  let cles = '', larges = '';
+  // composants, l'URL, les commentaires — passe dessous, à pleine largeur,
+  // chacun sous son repère.
+  let cles = '', larges = '', sectionFinale = false;
+  const finale = function () {
+    if (sectionFinale) return '';
+    sectionFinale = true;
+    return sectionHtml('Image et commentaires');
+  };
   Store.headersBoites.forEach(function (cle) {
     const valeur = boite[cle];
     const regle = CHAMPS_BOITE[cle] || {};
@@ -246,14 +270,14 @@ function blocBoiteHtml(boite) {
 
     if (edition) {
       const ligne = ligneHtml(champ.libelle, saisieHtml(champ, valeur, 'champ-boite'));
-      if (large) larges += ligne; else cles += ligne;
+      if (large) larges += finale() + ligne; else cles += ligne;
       return;
     }
     // Hors édition, on montre TOUT ce qu'on peut éditer, l'URL comprise : un
     // champ qu'il faut passer en édition pour lire est un champ qu'on oublie.
-    if (genre === GENRE.IMAGE) { larges += ligneHtml(champ.libelle, urlLisibleHtml(valeur)); return; }
+    if (genre === GENRE.IMAGE) { larges += finale() + ligneHtml(champ.libelle, urlLisibleHtml(valeur)); return; }
     const ligne = ligneHtml(champ.libelle, valeurLisibleHtml(valeur));
-    if (large) larges += ligne; else cles += ligne;
+    if (large) larges += finale() + ligne; else cles += ligne;
   });
 
   html += identiteHtml(edition ? '' : apercuImageHtml(boite['Image'], 'vignette-fiche'), cles) + larges;
@@ -405,7 +429,15 @@ function blocNomHtml(ligne, type, edition, ailleurs) {
       '</div>');
   }
 
-  // Seuls les champs du type : c'est tout l'intérêt du registre.
+  // Seuls les champs du type : c'est tout l'intérêt du registre. Quand la
+  // section change, on pose un repère : une structure a beaucoup de champs,
+  // ils se lisent par groupes.
+  let sectionCourante = null;
+  const repere = function (champ) {
+    if (!champ.section || champ.section === sectionCourante) return '';
+    sectionCourante = champ.section;
+    return sectionHtml(champ.section);
+  };
   champsDuType(type).forEach(function (champ) {
     const valeur = ligne[champ.cle];
 
@@ -415,30 +447,31 @@ function blocNomHtml(ligne, type, edition, ailleurs) {
     }
 
     if (champ.genre === GENRE.MULTI) {
-      cles += blocMultiHtml(champ, valeursMulti(valeur), true,
+      cles += repere(champ) + blocMultiHtml(champ, valeursMulti(valeur), true,
                             'ajouter-multi-nom', 'supprimer-multi-nom',
                             { id: id, champ: champ.cle });
       return;
     }
 
     if (champ.genre === GENRE.MOTS_CLES) {
-      cles += blocMultiHtml(champ, motsCles(valeur), true,
+      cles += repere(champ) + blocMultiHtml(champ, motsCles(valeur), true,
                             'ajouter-multi-nom', 'supprimer-multi-nom',
                             { id: id, champ: champ.cle }, 'puce-motcle');
       return;
     }
 
     if (champ.genre === GENRE.IMAGE) {
-      larges += edition
+      larges += repere(champ) + (edition
         ? ligneHtml('Image (URL)', saisieHtml(champ, valeur, 'champ-nom', id))
-        : ligneHtml('Image (URL)', urlLisibleHtml(valeur));
+        : ligneHtml('Image (URL)', urlLisibleHtml(valeur)));
       return;
     }
 
     const ligneChamp = edition
       ? ligneHtml(champ.libelle, saisieHtml(champ, valeur, 'champ-nom', id), champ.aide)
       : ligneHtml(champ.libelle, valeurLisibleHtml(valeur), champ.aide);
-    if (champ.genre === GENRE.LONG) larges += ligneChamp; else cles += ligneChamp;
+    if (champ.genre === GENRE.LONG) larges += repere(champ) + ligneChamp;
+    else cles += repere(champ) + ligneChamp;
   });
 
   return html + identiteHtml(edition ? '' : apercuImageHtml(ligne['Image'], 'vignette-fiche'), cles) + larges;
@@ -511,7 +544,7 @@ function ficheComposantHtml(cible) {
            normaliserTexte(c.fonction) === normaliserTexte(cible.fonction);
   });
   if (!base.length) {
-    return '<div class="etat-vide"><p>Cette fonction n\'est plus dans la base.</p>' +
+    return '<div class="etat-vide"><p>Ce composant n\'est plus dans la base.</p>' +
            '<p class="etat-vide-aide">Fermez le panneau : la liste est à jour.</p></div>';
   }
 
@@ -523,7 +556,6 @@ function ficheComposantHtml(cible) {
   });
 
   const montees = base.filter(function (c) { return c.nbBoites > 0; });
-  const majoritaire = montees.slice().sort(function (a, b) { return b.nbBoites - a.nbBoites; })[0];
   const boites = new Set();
   base.forEach(function (c) { c.boites.forEach(function (b) { boites.add(b); }); });
   const maxi = base.reduce(function (m, c) { return Math.max(m, c.nbBoites); }, 1);
@@ -540,36 +572,53 @@ function ficheComposantHtml(cible) {
 
   // Le plan de convergence : la cible, ce qu'on cesserait de faire vivre,
   // et les boîtes à modifier — nommées, cliquables. C'est la décision.
-  // Le plan se lit en trois phrases : ce qu'on a, ce qu'on garderait, ce
-  // que ça coûterait. Les chiffres sont là, mais ce sont les phrases qui
-  // portent — on ne doit pas avoir à deviner ce qu'une barre veut dire.
-  const plan = planConvergence(base);
-  const conseil = plan
-    ? '<section class="fc-plan">' +
-        '<h4 class="fc-titre">Le plan de convergence</h4>' +
+  // Le plan se fait SOUS UNE MÊME NORME : deux normes différentes ont en
+  // général leur raison — on ne propose pas de les fondre. Il se lit en
+  // trois phrases : ce qu'on a, ce qu'on garderait, ce que ça coûterait.
+  const normesDispersees = Array.from(parNorme.values())
+    .map(function (n) { return { norme: n, plan: planConvergence(n.lignes) }; })
+    .filter(function (x) { return x.plan; })
+    .sort(function (a, b) { return b.plan.economie - a.plan.economie; });
+  const plan = normesDispersees.length ? normesDispersees[0].plan : null;   // le principal, pour la matrice
+
+  const conseil = normesDispersees.map(function (x) {
+    const n = x.norme, p = x.plan;
+    const boitesNorme = new Set();
+    n.lignes.forEach(function (c) { c.boites.forEach(function (b) { boitesNorme.add(b); }); });
+    const montesNorme = n.lignes.filter(function (c) { return c.nbBoites > 0; }).length;
+    return '<section class="fc-plan">' +
+        '<h4 class="fc-titre">Le plan de convergence' +
+          (parNorme.size > 1 ? ' — norme <span class="fc-titre-norme">' + esc(n.libelle) + '</span>' : '') + '</h4>' +
         '<p class="fc-conseil">' +
-          '<b>' + montees.length + ' références</b> sont montées pour le même service. ' +
-          'La plus répandue est <span class="fc-pn">' + esc(plan.cible.reference) + '</span>, ' +
-          'dans <b>' + plan.cible.nbBoites + ' boîte' + (plan.cible.nbBoites > 1 ? 's' : '') +
-          ' sur ' + boites.size + '</b>.' +
+          '<b>' + montesNorme + ' références</b> sont montées sous la norme ' +
+          '<span class="fc-pn">' + esc(n.libelle) + '</span> pour le même service. ' +
+          'La plus répandue est <span class="fc-pn">' + esc(p.cible.reference) + '</span>, ' +
+          'dans <b>' + p.cible.nbBoites + ' boîte' + (p.cible.nbBoites > 1 ? 's' : '') +
+          ' sur ' + boitesNorme.size + '</b>.' +
         '</p>' +
         '<div class="fc-plan-corps">' +
-          partsDetailHtml(base) +
+          partsDetailHtml(n.lignes) +
           '<p class="fc-plan-si">Si toutes les boîtes montaient cette référence :</p>' +
           '<div class="fc-plan-chiffres">' +
-            '<span class="fc-plan-mesure"><b>−' + plan.economie + '</b> référence' + (plan.economie > 1 ? 's' : '') + ' à faire vivre</span>' +
-            '<span class="fc-plan-mesure fc-plan-cout"><b>' + plan.aModifier.length + '</b> boîte' + (plan.aModifier.length > 1 ? 's' : '') + ' à modifier</span>' +
+            '<span class="fc-plan-mesure"><b>−' + p.economie + '</b> référence' + (p.economie > 1 ? 's' : '') + ' à faire vivre</span>' +
+            '<span class="fc-plan-mesure fc-plan-cout"><b>' + p.aModifier.length + '</b> boîte' + (p.aModifier.length > 1 ? 's' : '') + ' à modifier</span>' +
           '</div>' +
           '<div class="fc-plan-boites">' +
-            '<span class="fc-plan-boites-titre">' + (plan.aModifier.length > 1 ? 'Les boîtes' : 'La boîte') + ' à modifier :</span>' +
-            plan.aModifier.map(function (pn) {
+            '<span class="fc-plan-boites-titre">' + (p.aModifier.length > 1 ? 'Les boîtes' : 'La boîte') + ' à modifier :</span>' +
+            p.aModifier.map(function (pn) {
               return '<button type="button" class="usage-lien"' +
                      dataAttrs({ action: 'ouvrir-fiche', pn: pn }) + '>' + esc(pn) + '</button>';
             }).join('') +
           '</div>' +
         '</div>' +
-      '</section>'
-    : '';
+      '</section>';
+  }).join('') +
+  // Plusieurs normes, mais une référence montée par norme : rien à fondre.
+  // On le dit, pour qu'on ne cherche pas un plan qui n'a pas lieu d'être.
+  (parNorme.size > 1 && !normesDispersees.length && montees.length > 1
+    ? '<p class="fc-note">' + parNorme.size + ' normes, une référence montée par norme : ' +
+      'rien à faire converger. Deux normes différentes ont en général leur raison.</p>'
+    : '');
 
   // Qui monte quoi : la même fonction, référence par référence, porteur par
   // porteur. C'est là qu'on voit qu'un programme s'écarte des autres.
@@ -584,8 +633,9 @@ function ficheComposantHtml(cible) {
           .map(function (c) { return { libelle: txt(c.reference, 'sans référence'), lignes: [c], composant: c }; })), {
           enTete: 'Référence',
           ligne: function (g) {
-            return '<span class="mx-ref' + (plan && g.composant === plan.cible ? ' mx-ref-cible' : '') + '">' +
-                   esc(g.libelle) + (plan && g.composant === plan.cible ? '<span class="mx-cible-tag">cible</span>' : '') + '</span>';
+            const cible = normesDispersees.some(function (x) { return x.plan.cible === g.composant; });
+            return '<span class="mx-ref' + (cible ? ' mx-ref-cible' : '') + '">' +
+                   esc(g.libelle) + (cible ? '<span class="mx-cible-tag">cible</span>' : '') + '</span>';
           }
         }) +
       '</section>'
@@ -602,6 +652,10 @@ function ficheComposantHtml(cible) {
         return b.nbBoites - a.nbBoites ||
                String(a.reference).localeCompare(String(b.reference), 'fr', { numeric: true });
       });
+      // La plus montée se marque PAR NORME, et seulement quand il y a de
+      // quoi choisir : une référence seule sous sa norme n'est pas « la plus ».
+      const planNorme = planConvergence(n.lignes);
+      const majoritaire = planNorme ? planNorme.cible : null;
       return '<section class="fc-norme">' +
         '<header class="fc-norme-tete">' +
           '<span class="fc-norme-cle">Norme</span>' +
@@ -622,7 +676,7 @@ function ficheComposantHtml(cible) {
 function ficheReferenceHtml(c, maxi, majoritaire) {
   const part = c.nbBoites ? Math.max(6, Math.round((c.nbBoites / (maxi || 1)) * 100)) : 0;
   const etat = c.etat === ETAT_COMPOSANT.HORS
-    ? '<span class="cr-etat cr-hors" title="Montée mais absente du catalogue">hors catalogue</span>'
+    ? '<span class="cr-etat cr-hors" title="' + esc(AIDE_MARQUES.hors) + '">absente du catalogue</span>'
     : c.etat === ETAT_COMPOSANT.DORMANT
       ? '<span class="cr-etat cr-dormant" title="Au catalogue, montée nulle part">jamais montée</span>'
       : '';
@@ -661,8 +715,34 @@ function ficheReferenceHtml(c, maxi, majoritaire) {
   '</div>';
 }
 
+/** Le bouton « retour » du panneau : d'où l'on vient, quand on vient de quelque part. */
+function rendreRetourFiche() {
+  const zone = parId('slideOverRetour');
+  if (!zone) return;
+  const pile = Store.pileFiches || [];
+  if (!pile.length) { zone.innerHTML = ''; zone.hidden = true; return; }
+  const precedent = pile[pile.length - 1];
+  const libelle = precedent.composant ? precedent.composant.fonction : precedent.pn;
+  zone.hidden = false;
+  zone.innerHTML = '<button type="button" class="panneau-retour"' +
+    dataAttrs({ action: 'fiche-retour' }) + ' title="Revenir à la fiche précédente">' +
+    '<span aria-hidden="true">←</span> ' + esc(txt(libelle, 'Retour')) + '</button>';
+}
+
 function rendreFiche() {
-  // Le panneau sert les deux bases : une boîte, ou une fonction de composant.
+  rendreRetourFiche();
+  rendreCorpsFiche();
+  // Un rendu remplace le bouton qu'on vient de cliquer : le focus tombe sur
+  // la page, et Échap ne ferme plus le panneau. On le rend au panneau.
+  if (typeof panneauOuvert === 'function' && panneauOuvert() &&
+      (!document.activeElement || document.activeElement === document.body)) {
+    const panneau = parId('detailsSlideOver');
+    if (panneau && typeof panneau.focus === 'function') panneau.focus();
+  }
+}
+
+function rendreCorpsFiche() {
+  // Le panneau sert les deux bases : une boîte, ou un composant.
   if (Store.ficheComposant) {
     const cat = CATEGORIES_COMPOSANT[Store.ficheComposant.categorie] ||
                 CATEGORIES_COMPOSANT.composant;

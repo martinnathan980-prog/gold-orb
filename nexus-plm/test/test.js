@@ -760,13 +760,13 @@ charger(
    boiteAvec('B2', 'Bouton poussoir | ECS 7251 | MS24523-23'),
    boiteAvec('B3', 'Bouton poussoir | ECS 7251 | MS24523-24')], []);
 let op = C.opportunitesStandardisation(C.Store.boites);
-eq('une famille dispersée', op.length, 1);
-eq('la fonction', op[0].fonction, 'Bouton poussoir');
-eq('une seule norme', op[0].nbNormes, 1);
-eq('mais trois références', op[0].nbReferences, 3);
+eq('une norme dispersée', op.length, 1);
+eq('le composant', op[0].fonction, 'Bouton poussoir');
+eq('et sa norme', op[0].norme, 'ECS 7251');
+eq('trois références sous cette norme', op[0].nbReferences, 3);
 eq('la catégorie est celle du champ', op[0].categorie, 'composant');
 eq('chaque référence sait où elle sert',
-   op[0].normes[0].references.map(function (r) { return r.nbBoites; }), [1, 1, 1]);
+   op[0].references.map(function (r) { return r.nbBoites; }), [1, 1, 1]);
 
 // Une seule référence partout : rien à rationaliser.
 charger(
@@ -778,13 +778,24 @@ eq('mais on sait qu\'elle sert dans deux boîtes',
    Array.from(C.famillesComposants(C.Store.boites).values())[0]
      .normes.get('ecs 7251').references.get('ms24523-22').boites.size, 2);
 
-// Plusieurs normes pour une même fonction : dispersion aussi.
+// Plusieurs normes pour un même composant, une référence par norme : ce
+// N'EST PAS une dispersion. Deux normes différentes ont en général leur
+// raison ; on ne propose pas de les fondre.
 charger(
   [boiteAvec('B1', 'Voyant | ECS 4410 | LED-G-28'),
    boiteAvec('B2', 'Voyant | ECS 4411 | LED-R-28')], []);
+eq('deux normes, une référence chacune : rien à converger',
+   C.opportunitesStandardisation(C.Store.boites).length, 0);
+// Deux normes dont UNE se disperse : une seule opportunité, sous cette norme.
+charger(
+  [boiteAvec('B1', 'Voyant | ECS 4410 | LED-G-28'),
+   boiteAvec('B2', 'Voyant | ECS 4410 | LED-G-29'),
+   boiteAvec('B3', 'Voyant | ECS 4411 | LED-R-28')], []);
 op = C.opportunitesStandardisation(C.Store.boites);
-eq('deux normes pour la même fonction', op[0].nbNormes, 2);
-eq('et deux références', op[0].nbReferences, 2);
+eq('une seule norme se disperse', op.length, 1);
+eq('c\'est la 4410', op[0].norme, 'ECS 4410');
+eq('avec ses deux références, pas trois', op[0].nbReferences, 2);
+faux('la référence de l\'autre norme n\'est pas à modifier', op[0].aModifier.indexOf('B3') !== -1);
 
 // Le classement : la famille la plus dispersée en tête.
 charger(
@@ -1088,7 +1099,7 @@ faux('aucun n\'est un bloc inerte', /<div class="indicateur/.test(indBoites));
 C.Store.espace = 'composants';
 C.Store.catalogue = [];
 const indCompo = C.indicateursComposantsHtml(C.calculerVue());
-['Références', 'À ranger', 'Hors catalogue', 'Montées une fois'].forEach(function (l) {
+['Références', 'À ranger', 'Absents du catalogue', 'Montées une fois'].forEach(function (l) {
   vrai('l\'espace composants annonce « ' + l + ' »', indCompo.indexOf(l) !== -1);
 });
 eq('quatre aussi, pas sept',
@@ -2070,7 +2081,7 @@ const voyantLignes = fctsM.find(function (f) { return f.libelle === 'Voyant'; })
 const parts = C.partsHtml(voyantLignes);
 vrai('la cible d\'abord, un segment par référence montée, large de ses boîtes',
      /<span class="part-cible" style="flex-grow:3"><\/span><span class="part-autre" style="flex-grow:1"><\/span><\/span>$/.test(parts));
-vrai('et l\'info-bulle dit tout', parts.indexOf('title="cible R1 : 3 boîtes · R2 : 1 boîte"') !== -1);
+vrai('et l\'info-bulle dit tout, norme comprise', parts.indexOf('title="norme N1 — cible R1 : 3 boîtes · R2 : 1 boîte"') !== -1);
 eq('une seule référence montée : pas de barre',
    C.partsHtml(fctsM.find(function (f) { return f.libelle === 'Relais'; }).lignes), '');
 vrai('la liste porte les parts sous les références', /lf-refs[\s\S]*?parts parts-ligne/.test(C.listeFonctionsHtml(fctsM)));
@@ -2162,6 +2173,95 @@ vrai('le résumé piégé est bien là, échappé', fichePiege.indexOf('M&quot;&
 C.Store.branchesDepliees = { 'S9': true };
 faux('ni dépliée', /<script>alert/.test(C.ficheHtml(C.boiteParPn('B2'))));
 C.Store.branchesDepliees = {};
+
+// =====================================================================
+bloc('Des repères dans la fiche, la convergence par norme, le retour');
+// =====================================================================
+C.Store.catalogue = [];
+charger(
+  [{ 'PN Global': 'B1', 'Fonction': 'APU', 'Composants': 'Voyant | N1 | R1', 'Image': 'https://x.fr/a.jpg', 'Commentaires libres': 'RAS' }],
+  [{ 'ID_Ligne': 'S1', 'PN Global': 'B1', 'Type': 'Structure boîte', 'PN du type': 'SS',
+     'Montage': 'Rack', 'Dim Long (mm)': '500', 'Qualification Vibration': 'Q1',
+     'Composants mécaniques': 'Colonnette | NAS43 | NAS43DD3-20', 'Image': 'https://x.fr/s.jpg' }]);
+C.Store.pnCourant = 'B1'; C.Store.branchesDepliees = { 'S1': true }; C.Store.enEditionNom = {};
+const ficheR = C.ficheHtml(C.boiteParPn('B1'));
+vrai('la boîte pose un repère « Composants » : un filet et un titre',
+     /fiche-section-filet[\s\S]{0,80}fiche-section-titre">Composants</.test(ficheR));
+vrai('avec son aide', /fiche-section-aide">boutons, voyants/.test(ficheR));
+vrai('et un repère « Image et commentaires » avant l\'URL et les commentaires',
+     /fiche-section-titre">Image et commentaires<[\s\S]*?Image \(URL\)[\s\S]*?Commentaires libres/.test(ficheR));
+eq('un seul repère « Image et commentaires » pour la boîte', (ficheR.match(/Image et commentaires/g) || []).length, 2);
+vrai('la structure se lit par sections : géométrie, niveaux, qualifications, composants, image',
+     /fiche-section-titre">Géométrie<[\s\S]*?Montage[\s\S]*?fiche-section-titre">Niveaux<[\s\S]*?fiche-section-titre">Qualifications<[\s\S]*?fiche-section-titre">Composants mécaniques<[\s\S]*?fiche-section-titre">Composants routing<[\s\S]*?fiche-section-titre">Image et commentaires</.test(ficheR));
+eq('la géométrie n\'est annoncée qu\'une fois', (ficheR.match(/">Géométrie</g) || []).length, 1);
+vrai('le tableau des composants dit « Composant », pas « Fonction »',
+     /composants-entete"><span>Composant<\/span>/.test(ficheR) && !/composants-entete"><span>Fonction/.test(ficheR));
+vrai('et la saisie aussi', /placeholder="Composant"/.test(ficheR) && !/placeholder="Fonction"/.test(ficheR));
+vrai('un composant de la fiche mène à sa fiche dans la base',
+     /niveau-lien"[^>]*data-action="ouvrir-fiche-composant"[^>]*data-categorie="mecanique"[^>]*data-fonction="Colonnette"/.test(ficheR));
+C.Store.branchesDepliees = {};
+vrai('le harnais, court, n\'a pas de repère avant sa référence',
+     !/fiche-section-titre">Géométrie/.test(C.blocNomHtml({ 'ID_Ligne': 'H9', 'PN Global': 'B1', 'Type': 'Harnais', 'PN du type': 'H', 'Référence': 'X' })));
+
+// La convergence se juge SOUS UNE MÊME NORME.
+charger(
+  [{ 'PN Global': 'B1', 'Composants': 'Bouton | MS24523 | MS24523-22' },
+   { 'PN Global': 'B2', 'Composants': 'Bouton | MS24523 | MS24523-22' },
+   { 'PN Global': 'B3', 'Composants': 'Bouton | MS24523 | MS24523-23' },
+   { 'PN Global': 'B4', 'Composants': 'Bouton | MS25089 | MS25089-3D' }], []);
+remettre();
+const fBouton = C.fonctionsComposants(C.baseComposants(C.Store.boites))[0];
+eq('deux normes', fBouton.normes, 2);
+vrai('le composant est dispersé : deux références montées sous MS24523', fBouton.dispersee);
+eq('et c\'est cette norme que la barre montre', fBouton.normeDispersee.libelle, 'MS24523');
+eq('deux références dans la barre, pas trois', fBouton.normeDispersee.lignes.length, 2);
+const ficheB = C.ficheComposantHtml({ categorie: 'composant', fonction: 'Bouton' });
+eq('un seul plan : celui de la norme dispersée', (ficheB.match(/class="fc-plan"/g) || []).length, 1);
+vrai('il nomme sa norme', /Le plan de convergence — norme <span class="fc-titre-norme">MS24523</.test(ficheB));
+vrai('deux références sous la norme, deux boîtes sur trois pour la cible',
+     /<b>2 références<\/b> sont montées sous la norme[\s\S]*?MS24523-22[\s\S]*?<b>2 boîtes sur 3<\/b>/.test(ficheB));
+vrai('la boîte de l\'autre norme n\'est pas à modifier',
+     !/>B4</.test((ficheB.match(/fc-plan-boites">[\s\S]*?<\/div>/) || [''])[0]));
+vrai('la plus montée se marque par norme : pas sur la référence seule de MS25089',
+     (ficheB.match(/fc-tag-majo/g) || []).length === 1);
+charger(
+  [{ 'PN Global': 'B1', 'Composants': 'Bouton | MS24523 | MS24523-22' },
+   { 'PN Global': 'B2', 'Composants': 'Bouton | MS25089 | MS25089-3D' }], []);
+const ficheN = C.ficheComposantHtml({ categorie: 'composant', fonction: 'Bouton' });
+faux('deux normes, une référence chacune : pas de plan', /fc-plan"/.test(ficheN));
+vrai('et on dit pourquoi', /fc-note">2 normes, une référence montée par norme[\s\S]*?ont en général leur raison/.test(ficheN));
+faux('ni de « plus montée »', /fc-tag-majo/.test(ficheN));
+faux('ni de tag « à ranger » dans la liste',
+     /lf-tag-ranger/.test(C.listeFonctionsHtml(C.fonctionsComposants(C.baseComposants(C.Store.boites)))));
+eq('et l\'espace ne compte rien à ranger',
+   (C.indicateursComposantsHtml(C.calculerVue()).match(/À ranger[\s\S]*?indicateur-valeur">0</) || []).length, 1);
+
+// « Absent du catalogue » : dit, et expliqué.
+C.Store.catalogue = [{ 'Catégorie': 'composant', 'Fonction': 'Bouton', 'Norme': 'MS24523', 'Référence': 'MS24523-22' }];
+charger([{ 'PN Global': 'B1', 'Composants': 'Bouton | MS24523 | MS24523-99' }], []);
+const listeH = C.listeFonctionsHtml(C.fonctionsComposants(C.baseComposants(C.Store.boites)));
+vrai('la marque dit « absent du catalogue »', /lf-tag-hors"[^>]*>absent du catalogue</.test(listeH));
+vrai('et explique ce qu\'est le catalogue', /title="[^"]*liste des composants autorisés[^"]*"/.test(listeH));
+vrai('la lecture aussi', /classeur Catalogue/.test(C.aideLectureHtml('liste')));
+vrai('l\'indicateur du haut aussi',
+     /Absents du catalogue[\s\S]*?pas dans la liste autorisée/.test(C.indicateursComposantsHtml(C.calculerVue())));
+vrai('et la fiche de la référence', /cr-hors" title="[^"]*composants autorisés[^"]*">absente du catalogue</.test(
+     C.ficheComposantHtml({ categorie: 'composant', fonction: 'Bouton' })));
+C.Store.catalogue = [];
+
+// Le vocabulaire : composant, norme, référence — partout.
+vrai('la liste titre « Composant »', /lf-entete">[\s\S]*?<span>Composant<\/span>/.test(listeH));
+vrai('et compte des composants', /compo-tri-compte">1 composant</.test(C.triComposantsHtml(1)));
+eq('le premier niveau de pondération s\'appelle « Composant »', C.NIVEAUX[0].libelle, 'Composant');
+faux('plus de « fonction » dans les aides de lecture', /fonction/i.test(C.aideLectureHtml('liste') + C.aideLectureHtml('matrice') + C.aideLectureHtml('carte')));
+
+// Le retour dans le panneau.
+vrai('fiche-retour est implémentée', declarees.has('fiche-retour'));
+vrai('ouvrir une fiche empile la courante', /'ouvrir-fiche':[\s\S]{0,120}empilerFicheCourante\(d\.pn\)/.test(srcMainSeul));
+vrai('ouvrir un composant aussi', /'ouvrir-fiche-composant':[\s\S]{0,120}empilerFicheCourante\(\)/.test(srcMainSeul));
+vrai('fermer le panneau vide la pile', /hidden\.bs\.offcanvas[\s\S]{0,80}pileFiches = \[\]/.test(srcMainSeul));
+vrai('le panneau a une zone de retour', /id="slideOverRetour"/.test(srcIndex));
+eq('la pile est un état du magasin', C.Store.pileFiches, []);
 
 console.log('\n' + (ko === 0 ? V : R) + ok + ' OK, ' + ko + ' KO' + Z +
             G + '  (' + declarees.size + ' actions)' + Z);

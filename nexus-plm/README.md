@@ -5,13 +5,13 @@ Gestion de nomenclatures d'assemblages, sur Google Apps Script + Google Sheets.
 - `ANALYSE.md` — analyse de la version d'origine (bugs, fragilités, décision d'architecture)
 - `correctifs/` — lot 1 : correctifs ciblés des 6 bugs, à poser sur la version d'origine
 - `src/` — **réécriture complète** (celle-ci)
-- `test/` — 1 465 tests, exécutés sur les fichiers réellement livrés
+- `test/` — 1 544 tests, exécutés sur les fichiers réellement livrés
 
 ```
-npm test                 # 949 tests : logique, pondération, serveur, bundle
+npm test                 # 991 tests : logique, pondération, serveur, bundle
 npm run demo             # construit build/demo.html et build/nexus-demo.html
 npm run appsscript       # construit build/appsscript/ (version à coller)
-npm run test:navigateur  # 516 tests dans un vrai Chromium
+npm run test:navigateur  # 553 tests dans un vrai Chromium
 ```
 
 ## Mise en service — deux chemins
@@ -239,6 +239,19 @@ déplié, en saisie. Ouvrir une autre fiche repart de la vue d'ensemble.
 est blanc, Supprimer est blanc liseré de rouge, sur des blocs blancs. Trois
 boutons du même bleu pâle sur un fond bleu pâle ne se distinguaient pas.
 
+**Des repères.** Une structure porte vingt champs : ils se lisent par
+sections — Géométrie, Niveaux, Qualifications, Composants mécaniques,
+Composants routing, Image et commentaires — chacune sous un filet court en
+marine et un titre en capitales. Chaque champ du registre dit sa section ; la
+fiche pose le repère quand elle change. La boîte a les siens : Composants,
+Image et commentaires. Un trait, pas un aplat : on le voit, il ne crie pas.
+
+**D'une fiche à l'autre, et retour.** Un composant de la boîte mène à sa
+fiche dans la base ; « aussi montée dans » et les boîtes citées ouvrent leur
+fiche. Le panneau garde d'où l'on vient : un bouton « ← 332P20001 » remonte
+d'un cran, autant de fois qu'on est descendu. Le panneau fermé, on repart de
+la liste.
+
 ## Le classement se lit replié
 
 Douze candidats × huit critères, c'est cent lignes déroulées d'un coup : on lit
@@ -319,14 +332,18 @@ ne se filtrent pas pareil et ne répondent pas aux mêmes questions.
 - **Boîtes** : la grille de cartes. « Que contient cette boîte ? »
 - **Sous-ensembles** : une ligne par PN, son type, les boîtes qui le montent.
   « Où sert ce sous-ensemble ? » — le réemploi pris par l'autre bout.
-- **Standardisation** : les familles de composants qui se dispersent. « Où la
-  base coûte-t-elle plus qu'elle ne devrait ? » En tête, le **bilan de la
-  convergence** : si chaque famille convergeait vers sa référence la plus
-  montée, combien de références cesserait-on de faire vivre, et combien de
-  boîtes faudrait-il modifier. Chaque famille annonce sa **cible** et son
-  **coût en boîtes**, avec une barre de parts : la cible en couleur, le reste
-  en gris — on lit d'un coup si la convergence est facile (10 / 2 / 1) ou
-  disputée (5 / 4 / 4).
+- **Standardisation** : ce qui se disperse. « Où la base coûte-t-elle plus
+  qu'elle ne devrait ? » **On converge sous une même norme** : une famille est
+  un composant et une norme, et elle se disperse quand plusieurs références
+  y sont montées. Deux normes différentes pour un même composant ne sont pas
+  une dispersion — elles ont en général leur raison — et l'outil ne propose
+  pas de les fondre. En tête, le **bilan de la convergence** : si chaque norme
+  dispersée convergeait vers sa référence la plus montée, combien de
+  références cesserait-on de faire vivre, et combien de boîtes faudrait-il
+  modifier. Chaque famille annonce sa norme, sa **cible** et son **coût en
+  boîtes**, avec une barre de parts : la cible en couleur, le reste en gris —
+  on lit d'un coup si la convergence est facile (10 / 2 / 1) ou disputée
+  (5 / 4 / 4).
 
 **Espace Composants** — le référentiel des pièces, avec ses propres filtres,
 sa propre recherche et sa propre bande d'indicateurs. Rien n'est partagé avec
@@ -341,12 +358,18 @@ l'information la plus utile de la page.
 | État | Ce que ça veut dire |
 |---|---|
 | courant | au catalogue, et monté |
-| **hors catalogue** | monté, mais absent du catalogue : une pièce non maîtrisée |
-| jamais montée | au catalogue, montée nulle part : un référencement qui dort |
+| **absent du catalogue** | monté dans une boîte, mais pas dans le catalogue — la liste des composants autorisés, tenue dans le classeur Catalogue. Personne ne le suit. |
+| jamais monté | au catalogue, monté nulle part : un référencement qui dort |
+
+Le vocabulaire est celui du métier : un **composant** (bouton poussoir,
+disjoncteur, collier), sa **norme**, sa **référence**. « Fonction » reste le
+mot de la boîte (APU, HOIST), jamais celui d'un composant. Chaque marque —
+*à ranger*, *absent du catalogue* — s'explique au survol, et l'indicateur du
+haut dit ce qu'il compte.
 
 **On liste ce qu'on cherche, pas ce qu'on a.** Un arbre tout déplié est
 illisible à trois cents références ; tout replié, il est vide. La page liste
-donc les **fonctions** — « il me faut un collier » — dans un tableau dense :
+donc les **composants** — « il me faut un collier » — dans un tableau dense :
 famille, nombre de normes, nombre de références, emploi, et les marques
 *à ranger* / *hors catalogue*. La liste est **rangée par famille** — un
 en-tête par famille, dans l'ordre du registre — et trois tris s'appliquent à
@@ -392,12 +415,15 @@ Un commutateur, en tête de la liste, et la lecture choisie est mémorisée.
   listées dessous. Les positions viennent d'un « squarified treemap » calculé
   en pourcentages, la carte suit la largeur de l'écran sans mesure.
 
-Dans la **fiche d'une fonction**, le conseil de convergence devient un
-**plan, en trois phrases** : ce qu'on a (« 3 références sont montées pour le
-même service, la plus répandue est X, dans 10 boîtes sur 13 »), la barre des
-parts avec sa légende — une ligne par référence, sa couleur, ses boîtes —,
-puis « si toutes les boîtes montaient cette référence » : ce qu'on cesserait
-de faire vivre, et les boîtes à modifier — nommées, cliquables. Puis « qui monte quoi » : la même matrice,
+Dans la **fiche d'un composant**, le conseil de convergence devient un
+**plan, en trois phrases, par norme** : ce qu'on a (« 3 références sont
+montées sous la norme MS3367 pour le même service, la plus répandue est X,
+dans 10 boîtes sur 13 »), la barre des parts avec sa légende — une ligne par
+référence, sa couleur, ses boîtes —, puis « si toutes les boîtes montaient
+cette référence » : ce qu'on cesserait de faire vivre, et les boîtes à
+modifier — nommées, cliquables. Un composant sous plusieurs normes a un plan
+par norme dispersée ; s'il n'a qu'une référence par norme, la fiche le dit :
+rien à faire converger, deux normes ont leur raison. Puis « qui monte quoi » : la même matrice,
 référence par porteur, cible marquée. C'est là qu'on voit qu'un programme
 s'écarte des autres.
 
@@ -493,6 +519,17 @@ composants d'affilée ne demande plus cinq clics de replacement.
 « Supprimer » a quitté le mode édition, pour la boîte comme pour le
 sous-ensemble : c'est une action **sur la fiche**, pas un champ de
 formulaire. On ne passe plus en édition pour effacer.
+
+**Le check-up.** Tout a été cliqué, saisi, fermé. Ce qui en est sorti :
+une modale qui s'ouvre pose le focus dans son champ, et **Entrée la valide**
+(nouvelle boîte, nouveau sous-ensemble) ; **Éditer** pose le focus dans le
+premier champ ; **Échap** dans un champ annule *cette* édition — pas le
+panneau entier, qui emportait la saisie avec lui ; un sous-ensemble créé
+s'ouvre en saisie, focus posé, avec un mot pour dire quoi faire ; chaque
+enregistrement le dit (« Boîte enregistrée. ») ; un dialogue qui détruit met
+le focus sur **Annuler**, et Échap ne ferme que lui — ouvert par-dessus la
+fiche, c'est la fiche qui se fermait ; après un clic qui redessine le
+panneau, le focus lui revient, pour qu'Échap le ferme encore.
 
 ## Porteurs
 

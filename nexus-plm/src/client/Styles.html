@@ -394,6 +394,7 @@ body.espace-composants .outils { display: none; }
 .famille-identite { display: flex; align-items: baseline; gap: var(--e-2); flex-wrap: wrap; min-width: 0; }
 .famille-nom { font-size: 14px; font-weight: 700; }
 .famille-cat { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--encre-3); font-weight: 600; }
+.famille-norme-nom { font-family: var(--police-data); font-size: 13px; font-weight: 600; color: var(--marque); }
 .famille-compte { display: flex; gap: 6px; flex-shrink: 0; }
 .famille-chiffre {
   font-size: 11.5px; color: var(--encre-2); background: var(--surface-2);
@@ -714,6 +715,8 @@ body.espace-composants .outils { display: none; }
 .fc-plan-boites-titre { font-size: 12.5px; color: var(--encre-2); margin-right: 4px; }
 .fc-plan-si { margin: 4px 0 0; font-size: 12.5px; color: var(--encre-2); }
 .fc-lire { margin: 0 0 8px; font-size: 12px; color: var(--encre-3); line-height: 1.45; }
+.fc-titre-norme { font-family: var(--police-data); letter-spacing: 0; text-transform: none; color: var(--marque); font-size: 12px; }
+.fc-note { margin: 0 0 var(--e-4); padding: 10px 14px; font-size: 12.5px; color: var(--encre-2); background: var(--surface); border: 1px solid var(--trait); border-radius: var(--r-s); }
 .parts-legende-liste { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; }
 .parts-legende-liste li { display: flex; align-items: center; gap: 8px; }
 .parts-legende-liste i { width: 14px; height: 8px; border-radius: 2px; flex: none; display: inline-block; }
@@ -894,6 +897,24 @@ body.espace-composants .outils { display: none; }
 .ligne { display: flex; gap: var(--e-3); padding: 8px 0; border-bottom: 1px solid var(--surface-3); align-items: flex-start; }
 .ligne:last-child { border-bottom: 0; }
 .ligne-bloc { flex-direction: column; gap: var(--e-2); }
+/* Un repere dans une fiche longue : un filet court en marine, un titre en
+   capitales, une aide. Un trait, pas un aplat — on le voit, il ne crie pas. */
+.fiche-section { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 14px 0 4px; }
+.fiche-section-filet { width: 22px; height: 3px; border-radius: 2px; background: var(--marque); align-self: center; flex: none; }
+.fiche-section-titre { font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--marque); }
+.fiche-section-aide { font-size: 11px; color: var(--encre-3); }
+.ligne-section { padding-top: 0; gap: 4px; }
+.ligne-section > .fiche-section { padding-top: 10px; }
+.fiche-champs .fiche-section:first-child { padding-top: 0; }
+.fiche-section + .ligne { border-top: 0; }
+/* Un composant de la fiche mene a sa fiche dans la base. */
+.niveau-lien { background: none; border: 0; padding: 0; text-align: left; color: var(--encre); cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 600; }
+.niveau-lien:hover { color: var(--marque); text-decoration: underline; text-underline-offset: 3px; }
+/* Le retour du panneau : d'ou l'on vient, quand on vient de quelque part. */
+.panneau-titre { min-width: 0; }
+.panneau-retour-zone { margin-bottom: 4px; }
+.panneau-retour { background: none; border: 0; padding: 0; font-size: 12px; font-weight: 600; color: var(--marque); font-family: var(--police-data); }
+.panneau-retour:hover { text-decoration: underline; text-underline-offset: 3px; }
 .ligne-cle { flex: 0 0 38%; font-size: 12.5px; color: var(--encre-3); font-weight: 500; }
 .ligne-bloc .ligne-cle { flex: none; }
 .lien-url {
