@@ -59,11 +59,11 @@ async function reinitialiser(pg) {
   /* Le jeu d'exemple peut changer de taille : on relève le total une fois et
      tout le reste s'y réfère. */
   const TOTAL = await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length);
-  /* Le nombre total de colonnes de l'export : le tableau les ouvre toutes,
-     c'est la consigne, et c'est aussi ce que « tout afficher » doit rendre. */
-  const COLONNES_TOTAL = await p.evaluate(() =>
-    document.querySelectorAll('#panneau-colonnes input[data-col]').length);
-  console.log('  (jeu d\'exemple : ' + TOTAL + ' plans, ' + COLONNES_TOTAL + ' colonnes)');
+  /* Le nombre de colonnes que le tableau montre : les 138 de l'export, moins
+     « Colonne 1 » — sans intitulé et vide de bout en bout, la seule que la
+     page retire. C'est la consigne, et tout le reste s'y réfère. */
+  const COLONNES_TOTAL = 137;
+  console.log('  (jeu d\'exemple : ' + TOTAL + ' plans, ' + COLONNES_TOTAL + ' colonnes attendues)');
 
   // =================================================================
   /* Le tableau du bas EST l'extract : toutes les colonnes, les memes
@@ -73,12 +73,26 @@ async function reinitialiser(pg) {
   const extrait = await p.evaluate(() => ({
     affichees: document.querySelectorAll('tr.titres th').length,
     ordre: [...document.querySelectorAll('tr.titres th')].map(t => t.dataset.cle),
-    source: window.__ORDRE_SOURCE || null,
+    titres: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()),
     figees: [...document.querySelectorAll('tr.titres th.col-fige')].map(t => t.dataset.cle),
-    gauches: [...document.querySelectorAll('tr.titres th.col-fige')].map(t => parseFloat(t.style.left))
+    gauches: [...document.querySelectorAll('tr.titres th.col-fige')].map(t => parseFloat(t.style.left)),
+    /* Les valeurs des deux colonnes sans intitulé qui restent : au moins une
+       cellule renseignée chacune, sinon elles n'auraient rien à faire là. */
+    col4: [...document.querySelectorAll('#corps-tableau tr')].some(tr =>
+      tr.children[[...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'colonne_4')].textContent.trim() !== '-'),
+    col5: [...document.querySelectorAll('#corps-tableau tr')].some(tr =>
+      tr.children[[...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'colonne_5')].textContent.trim() !== '-')
   }));
-  verifier('aucune colonne n\'est cachee au depart',
+  verifier('le tableau ouvre sur les 137 colonnes : l\'export entier, moins la seule vide sans intitule',
     extrait.affichees === COLONNES_TOTAL, extrait.affichees + ' / ' + COLONNES_TOTAL);
+  verifier('« Colonne 1 », vide de bout en bout, n\'est pas dans les en-tetes',
+    extrait.titres.indexOf('Colonne 1') === -1 && extrait.ordre.indexOf('colonne_1') === -1,
+    extrait.titres.slice(0, 4).join(' | '));
+  verifier('« Colonne 4 » et « Colonne 5 », sans intitule mais renseignees, restent, a leur place',
+    extrait.titres[2] === 'Colonne 4' && extrait.titres[3] === 'Colonne 5' && extrait.col4 && extrait.col5,
+    extrait.titres.slice(0, 5).join(' | '));
+  verifier('la reference ouvre le tableau : plus rien ne la precede',
+    extrait.ordre[0] === 'reference', extrait.ordre[0]);
   verifier('la reference est figee, et tout ce qui la precede avec elle',
     extrait.figees.length >= 1 &&
     extrait.figees[extrait.figees.length - 1] === 'reference' &&
@@ -931,28 +945,230 @@ async function reinitialiser(pg) {
     await p.evaluate(() => document.querySelectorAll('tr.titres th[aria-sort="ascending"], tr.titres th[aria-sort="descending"]').length === 1));
 
   // =================================================================
-  section('Colonnes : masquer, tout masquer, remettre');
-  await p.click('#bascule-colonnes'); await p.waitForTimeout(250);
-  const avant = await p.evaluate(() => document.querySelectorAll('tr.titres th').length);
-  const cases = await p.evaluate(() => [...document.querySelectorAll('#panneau-colonnes input[data-col]')]
-    .filter(i => !i.disabled).map(i => i.dataset.col));
-  for (const c of cases) { await p.click(`#panneau-colonnes input[data-col="${c}"]`); await p.waitForTimeout(60); }
-  await p.waitForTimeout(350);
-  const restant = await p.evaluate(() => document.querySelectorAll('tr.titres th').length);
-  verifier('masquer toutes les colonnes possibles en laisse au moins une', restant >= 1, restant + ' colonne(s)');
-  verifier('le tableau ne casse pas avec une seule colonne',
-    await p.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
-  await p.click('#tout-colonnes'); await p.waitForTimeout(900);
-  /* « Tout afficher » rend TOUTES les colonnes de l'export, y compris celles
-     que la page ouvre repliées : c'est bien plus que ce qu'on voyait au départ. */
-  const apresTout = await p.evaluate(() => document.querySelectorAll('tr.titres th').length);
-  verifier('« tout afficher » remet toutes les colonnes de la feuille',
-    apresTout >= avant && apresTout === COLONNES_TOTAL,
-    apresTout + ' affichées');
-  verifier('la référence UD reste verrouillée',
-    await p.evaluate(() => document.querySelector('#panneau-colonnes input[data-col="reference"]').disabled));
-  await p.keyboard.press('Escape');
-  await p.click('body', { position: { x: 5, y: 5 } }); await p.waitForTimeout(250);
+  /* Plus de « Choisir » ni de panneau de cases : le lecteur consulte, il ne
+     compose pas son tableau. Deux vues, et rien entre les deux. */
+  section('Deux vues, rien entre les deux');
+  const deuxVues = await p.evaluate(() => ({
+    choisir: !!document.getElementById('bascule-colonnes') || !!document.getElementById('panneau-colonnes') ||
+             !!document.getElementById('compteur-colonnes') || !!document.getElementById('tout-colonnes'),
+    boutons: [...document.querySelectorAll('.outils button')].map(b => b.textContent.trim()).filter(t => /choisir/i.test(t)).length,
+    cases: document.querySelectorAll('.outils input[type="checkbox"]').length,
+    vues: [...document.querySelectorAll('#vue-tableau button')].map(b => b.dataset.vue).join(' '),
+    n: document.querySelectorAll('tr.titres th').length
+  }));
+  verifier('ni bouton « Choisir », ni panneau de colonnes, ni compteur',
+    !deuxVues.choisir && deuxVues.boutons === 0 && deuxVues.cases === 0, JSON.stringify(deuxVues));
+  verifier('il ne reste que « Toutes les colonnes » et « Vue essentielle »',
+    deuxVues.vues === 'toutes essentielle', deuxVues.vues);
+  verifier('« toutes » = 137 colonnes', deuxVues.n === COLONNES_TOTAL, String(deuxVues.n));
+  await p.click('#vue-tableau button[data-vue="essentielle"]'); await p.waitForTimeout(500);
+  const essentielle = await p.evaluate(() => [...document.querySelectorAll('tr.titres th')].map(t => t.dataset.cle));
+  verifier('« essentielle » = 8 colonnes, la reference en tete',
+    essentielle.length === 8 && essentielle[0] === 'reference', essentielle.join(','));
+  await p.click('#vue-tableau button[data-vue="toutes"]'); await p.waitForTimeout(500);
+  const retourToutes = await p.evaluate(() => ({
+    n: document.querySelectorAll('tr.titres th').length,
+    titres: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()),
+    lignes: document.querySelectorAll('#corps-tableau tr').length
+  }));
+  verifier('retour = 137, sans perdre de plan', retourToutes.n === COLONNES_TOTAL && retourToutes.lignes === TOTAL,
+    retourToutes.n + ' colonnes, ' + retourToutes.lignes + ' lignes');
+  verifier('« Colonne 1 » n\'est dans aucune des deux vues',
+    retourToutes.titres.indexOf('Colonne 1') === -1 && essentielle.indexOf('colonne_1') === -1);
+  /* Une ancienne preference « cachees » (le panneau d'avant) ne doit plus rien
+     masquer : contexte neuf, stockage pose avant le chargement. */
+  const ctxAncien = await contexte();
+  const pa = await ctxAncien.newPage();
+  brancher(pa, 'ancienne pref');
+  await pa.addInitScript(() => {
+    try {
+      localStorage.setItem('suivi-fwd:v1', JSON.stringify({
+        cachees: { ata: true, avancement: true, nom_installation: true, rpt: true }
+      }));
+    } catch (e) { /* sans stockage, rien a ignorer */ }
+  });
+  await pa.goto(URL); await pa.waitForTimeout(1300);
+  const ancien = await pa.evaluate(() => ({
+    n: document.querySelectorAll('tr.titres th').length,
+    ata: !!document.querySelector('tr.titres th[data-cle="ata"]'),
+    avancement: !!document.querySelector('tr.titres th[data-cle="avancement"]'),
+    stocke: /"cachees"/.test(localStorage.getItem('suivi-fwd:v1') || '')
+  }));
+  verifier('une ancienne pref « cachees » est ignoree : les 137 colonnes sont la',
+    ancien.n === COLONNES_TOTAL && ancien.ata && ancien.avancement, JSON.stringify(ancien));
+  verifier('et la page ne memorise plus de colonnes cachees', !ancien.stocke);
+  await ctxAncien.close();
+
+  // =================================================================
+  /* Le bloc « Avancement FWD par… » : un filtre sur la colonne de gauche, qui
+     ne touche qu'a ce bloc, et sous chaque ligne depliee TOUTES les
+     references, en deux paquets titres. */
+  section('Bloc par groupe : filtre de la colonne de gauche');
+  await reinitialiser(p);
+  await p.selectOption('#dim-critique', 'ata'); await p.waitForTimeout(500);
+  const avantFiltre = await p.evaluate(() => ({
+    champ: !!document.getElementById('filtre-groupe'),
+    placeholder: (document.getElementById('filtre-groupe') || {}).placeholder,
+    dansTete: !!document.querySelector('.section-tete #filtre-groupe'),
+    hauteur: Math.round(document.getElementById('filtre-groupe').getBoundingClientRect().height),
+    largeur: Math.round(document.getElementById('filtre-groupe').getBoundingClientRect().width),
+    loupe: !!document.querySelector('.recherche-groupe svg'),
+    groupes: [...document.querySelectorAll('.critique-ligne')].map(l => l.dataset.groupe),
+    compte: document.getElementById('compte-groupes').textContent,
+    etats: [...document.querySelectorAll('.etat-n')].map(e => e.textContent).join(' '),
+    lignes: document.querySelectorAll('#corps-tableau tr').length,
+    points: document.querySelectorAll('svg.graphe circle').length
+  }));
+  verifier('le champ de filtre existe, dans l\'en-tete du bloc, avec sa loupe',
+    avantFiltre.champ && avantFiltre.dansTete && avantFiltre.loupe);
+  verifier('son invite suit la dimension : « Filtrer les ATA… »',
+    avantFiltre.placeholder === 'Filtrer les ATA…', avantFiltre.placeholder);
+  verifier('il est compact : ~30 px de haut, ~200 px de large',
+    avantFiltre.hauteur >= 26 && avantFiltre.hauteur <= 34 && avantFiltre.largeur >= 180 && avantFiltre.largeur <= 220,
+    avantFiltre.hauteur + ' × ' + avantFiltre.largeur);
+  verifier('sans filtre, pas de compte', avantFiltre.compte === '' && avantFiltre.groupes.length === 10,
+    avantFiltre.compte + ' / ' + avantFiltre.groupes.length);
+  await p.fill('#filtre-groupe', '2'); await p.waitForTimeout(450);
+  const filtre2 = await p.evaluate(() => ({
+    groupes: [...document.querySelectorAll('.critique-ligne')].map(l => l.dataset.groupe),
+    compte: document.getElementById('compte-groupes').textContent,
+    etats: [...document.querySelectorAll('.etat-n')].map(e => e.textContent).join(' '),
+    lignes: document.querySelectorAll('#corps-tableau tr').length,
+    points: document.querySelectorAll('svg.graphe circle').length,
+    jetons: document.querySelectorAll('.jeton').length
+  }));
+  verifier('filtrer « 2 » ne garde que les ATA qui contiennent 2',
+    filtre2.groupes.length > 0 && filtre2.groupes.length < 10 && filtre2.groupes.every(g => /2/.test(g)) &&
+    avantFiltre.groupes.filter(g => /2/.test(g)).length === filtre2.groupes.length, filtre2.groupes.join(','));
+  verifier('le compte dit « n sur m »',
+    filtre2.compte === filtre2.groupes.length + ' sur 10', filtre2.compte);
+  verifier('sans toucher au reste de la page : barre, tableau, courbe, bandeau des filtres',
+    filtre2.etats === avantFiltre.etats && filtre2.lignes === TOTAL && filtre2.points === avantFiltre.points &&
+    filtre2.jetons === 0, JSON.stringify(filtre2));
+  await p.fill('#filtre-groupe', 'zzz'); await p.waitForTimeout(450);
+  verifier('un filtre qui ne trouve rien le dit, sans casser l\'en-tete',
+    await p.evaluate(() => document.querySelectorAll('.critique-ligne').length === 0 &&
+      /Aucun groupe ne contient/.test(document.getElementById('zone-critique').textContent) &&
+      !!document.querySelector('.critique-tete') &&
+      document.getElementById('compte-groupes').textContent === '0 sur 10'));
+  await p.fill('#filtre-groupe', '2'); await p.waitForTimeout(450);
+  await p.focus('#filtre-groupe'); await p.keyboard.press('Escape'); await p.waitForTimeout(400);
+  const echap = await p.evaluate(() => ({
+    valeur: document.getElementById('filtre-groupe').value,
+    groupes: document.querySelectorAll('.critique-ligne').length,
+    compte: document.getElementById('compte-groupes').textContent
+  }));
+  verifier('Echap vide le champ et rend les dix lignes',
+    echap.valeur === '' && echap.groupes === 10 && echap.compte === '', JSON.stringify(echap));
+  await p.fill('#filtre-groupe', '3'); await p.waitForTimeout(450);
+  await p.selectOption('#dim-critique', 'cc'); await p.waitForTimeout(500);
+  const apresDim = await p.evaluate(() => ({
+    valeur: document.getElementById('filtre-groupe').value,
+    placeholder: document.getElementById('filtre-groupe').placeholder,
+    compte: document.getElementById('compte-groupes').textContent,
+    groupes: document.querySelectorAll('.critique-ligne').length
+  }));
+  verifier('changer de dimension vide le filtre et change l\'invite',
+    apresDim.valeur === '' && apresDim.compte === '' && apresDim.placeholder === 'Filtrer les CC…' && apresDim.groupes > 0,
+    JSON.stringify(apresDim));
+  await p.fill('#filtre-groupe', '3'); await p.waitForTimeout(700);
+  verifier('le filtre n\'est pas memorise',
+    await p.evaluate(() => !/filtreGroupe/.test(localStorage.getItem('suivi-fwd:v1') || '')));
+  await p.fill('#filtre-groupe', ''); await p.waitForTimeout(300);
+  await p.selectOption('#dim-critique', 'ata'); await p.waitForTimeout(500);
+
+  section('Bloc par groupe : la liste des UD est complete');
+  const grosAta = await p.evaluate(() => {
+    const l = [...document.querySelectorAll('.critique-ligne')];
+    l.sort((a, b) => +b.querySelector('.critique-total').textContent - +a.querySelector('.critique-total').textContent);
+    return { groupe: l[0].dataset.groupe, total: +l[0].querySelector('.critique-total').textContent };
+  });
+  await p.click(`.critique-ligne[data-groupe="${grosAta.groupe}"]`); await p.waitForTimeout(600);
+  const liste = await p.evaluate(() => {
+    const refs = [...document.querySelectorAll('.jeton-ud')];
+    const titres = [...document.querySelectorAll('.groupe-refs .sous-titre')].map(t => t.textContent.replace(/\s+/g, ' ').trim());
+    const paquets = [...document.querySelectorAll('.groupe-refs .sous-groupe')].map(sg => ({
+      titre: sg.querySelector('.sous-titre').textContent,
+      refs: [...sg.querySelectorAll('.jeton-ud')].map(b => ({
+        ref: b.dataset.ud, etat: (b.getAttribute('title') || '').split(' — ')[0]
+      }))
+    }));
+    const zone = document.getElementById('zone-critique');
+    return {
+      jetons: refs.length, ud: refs.filter(b => b.dataset.ud).length,
+      autres: /autres/.test(document.querySelector('.groupe-refs').textContent),
+      titres, paquets,
+      entete: document.querySelector('.groupe-refs .entete').textContent,
+      pastilles: refs.every(b => b.querySelector('.pastille')),
+      mono: refs.every(b => /Mono|mono/.test(getComputedStyle(b).fontFamily)),
+      dedans: refs.every(b => b.getBoundingClientRect().right <= zone.getBoundingClientRect().right + 1),
+      defile: zone.scrollHeight > zone.clientHeight && getComputedStyle(zone).overflowY === 'auto'
+    };
+  });
+  const ETATS_RESTANTS = ['À faire', 'Non renseigné', 'En cours'];
+  const rangEtat = e => ETATS_RESTANTS.indexOf(e);
+  const numRef = r => Number(r.replace(/\D/g, ''));
+  const bienRange = (refs) => refs.every((x, i) => i === 0 ||
+    rangEtat(refs[i - 1].etat) < rangEtat(x.etat) ||
+    (rangEtat(refs[i - 1].etat) === rangEtat(x.etat) && refs[i - 1].ref.localeCompare(x.ref, 'fr', { numeric: true }) <= 0));
+  verifier('deplier un groupe montre TOUTES ses references : autant de jetons que de plans',
+    liste.ud === grosAta.total && liste.jetons === liste.ud, liste.ud + ' / ' + grosAta.total);
+  verifier('plus aucun « et N autres »', !liste.autres);
+  verifier('deux sous-titres, « Pas encore termines (n) » puis « Termines (n) », avec les bons comptes',
+    liste.paquets.length === 2 && /^Pas encore terminés\s*\((\d+)\)$/.test(liste.titres[0]) && /^Terminés\s*\((\d+)\)$/.test(liste.titres[1]) &&
+    +liste.titres[0].match(/\((\d+)\)/)[1] === liste.paquets[0].refs.length &&
+    +liste.titres[1].match(/\((\d+)\)/)[1] === liste.paquets[1].refs.length &&
+    liste.paquets[0].refs.length + liste.paquets[1].refs.length === grosAta.total,
+    JSON.stringify(liste.titres));
+  verifier('le premier paquet : a faire, non renseignes, en cours — dans cet ordre, puis par reference',
+    liste.paquets[0].refs.every(r => rangEtat(r.etat) !== -1) && bienRange(liste.paquets[0].refs),
+    JSON.stringify(liste.paquets[0].refs.slice(0, 3)));
+  verifier('le second : rien que des termines, par reference',
+    liste.paquets[1].refs.every(r => r.etat === 'Terminé') &&
+    liste.paquets[1].refs.every((r, i) => i === 0 || liste.paquets[1].refs[i - 1].ref.localeCompare(r.ref, 'fr', { numeric: true }) <= 0));
+  verifier('l\'en-tete dit combien et invite a cliquer une reference',
+    new RegExp('^' + grosAta.total + ' plans · ' + liste.paquets[0].refs.length + ' pas encore terminés').test(liste.entete.trim()) &&
+    /cliquez une référence pour la retrouver dans le tableau/.test(liste.entete), liste.entete.trim());
+  verifier('des jetons compacts : pastille + reference en mono, aucun ne deborde',
+    liste.pastilles && liste.mono && liste.dedans);
+  verifier('le bloc defile plutot que de pousser la page', liste.defile);
+  const refJeton = liste.paquets[1].refs[0].ref;
+  await p.click(`.jeton-ud[data-ud="${refJeton}"]`); await p.waitForTimeout(600);
+  verifier('un clic sur un jeton filtre le tableau sur ce plan',
+    await p.evaluate(r => {
+      const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'reference');
+      const trs = document.querySelectorAll('#corps-tableau tr');
+      return trs.length === 1 && trs[0].children[i].textContent.trim() === r &&
+        [...document.querySelectorAll('.jeton')].some(j => j.textContent.indexOf(r) !== -1);
+    }, refJeton), refJeton);
+  /* Deux cents references d'un coup : une source ou tous les plans partagent
+     le meme ATA. La liste doit rester lisible et defilable. */
+  await p.evaluate(() => {
+    const src = window.__jeuDExemple('X1');
+    src.plans.forEach(p => { p.ata = '21'; });
+    window.__chargerSource(src);
+  });
+  await p.waitForTimeout(500);
+  await p.click('.critique-ligne[data-groupe="21"]'); await p.waitForTimeout(700);
+  const deuxCents = await p.evaluate(() => {
+    const zone = document.getElementById('zone-critique');
+    const refs = [...document.querySelectorAll('.jeton-ud')];
+    const derniere = refs[refs.length - 1].getBoundingClientRect();
+    return {
+      jetons: refs.length, plans: document.querySelectorAll('#corps-tableau tr').length,
+      defile: zone.scrollHeight > zone.clientHeight,
+      hauteur: Math.round(zone.getBoundingClientRect().height),
+      dedans: refs.every(b => b.getBoundingClientRect().right <= zone.getBoundingClientRect().right + 1),
+      lignes: new Set(refs.map(b => Math.round(b.getBoundingClientRect().top))).size,
+      dernierAtteignable: derniere.top - zone.getBoundingClientRect().top < zone.scrollHeight
+    };
+  });
+  verifier('640 references dans un seul groupe : toutes la, en grille, dans un bloc qui defile',
+    deuxCents.jetons === TOTAL && deuxCents.defile && deuxCents.dedans && deuxCents.lignes > 20 &&
+    deuxCents.hauteur <= 460 && deuxCents.dernierAtteignable, JSON.stringify(deuxCents));
+  await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('X1')); });
+  await p.waitForTimeout(500);
+  await reinitialiser(p);
 
   // =================================================================
   section('Graphique : zoom, déplacement, extrêmes');
@@ -1370,7 +1586,8 @@ async function reinitialiser(pg) {
   verifier('des préférences absurdes sont ignorées sans plantage', survie.lignes === TOTAL, survie.lignes + ' lignes');
   verifier('des jalons laissés dans un ancien stockage ne sont pas relus',
     survie.jalons.length === 4 && !survie.jalons.some(t => /stock/.test(t)), JSON.stringify(survie.jalons));
-  verifier('toutes les colonnes restent présentes', survie.colonnes >= 11, survie.colonnes + ' colonnes');
+  verifier('une ancienne clé « cachees » est ignorée : les 137 colonnes restent présentes',
+    survie.colonnes === COLONNES_TOTAL, survie.colonnes + ' colonnes');
   verifier('la référence UD ne peut pas être masquée par le stockage', survie.refVisible);
   verifier('une clé de tri inconnue n\'est pas appliquée', survie.triActif === 0);
   await ctxCorrompu.close();

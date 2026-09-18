@@ -613,18 +613,25 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('les quatre états totalisent 186', vg.etats.reduce((a, b) => a + b, 0) === 186, JSON.stringify(vg.etats));
   /* La consigne est explicite : le tableau du bas EST l'extract. Toutes les
      colonnes, les mêmes intitulés, l'ordre de la feuille — c'est ce qui fait
-     que tout le monde parle de la même chose. */
-  verifier('le tableau s\'ouvre sur les 138 colonnes de la feuille',
-    vg.visibles === 138, String(vg.visibles));
+     que tout le monde parle de la même chose. Une seule exception, décidée
+     par l'utilisateur : une colonne sans intitulé (« Colonne N ») ET vide de
+     bout en bout est retirée — « Colonne 1 » ici. Le modèle serveur, lui,
+     garde ses 138 : c'est la page qui trie. */
+  verifier('le tableau s\'ouvre sur 137 colonnes : les 138 de la feuille, moins « Colonne 1 » vide',
+    vg.visibles === 137, String(vg.visibles));
+  verifier('« Colonne 1 » n\'est pas dans les en-têtes ; « Colonne 4 » et « Colonne 5 », renseignées, y sont',
+    vg.ordre.indexOf('Colonne 1') === -1 && vg.ordre.indexOf('Colonne 4') !== -1 && vg.ordre.indexOf('Colonne 5') !== -1,
+    vg.ordre.slice(0, 5).join(' | '));
   verifier('la colonne « Avancement » est visible au départ', vg.colFWD !== -1, String(vg.colFWD));
-  verifier('et dans l\'ordre exact de la feuille, sans exception',
-    JSON.stringify(vg.ordre) === JSON.stringify(mGates.colonnes.map(c => c.titre)),
+  verifier('et dans l\'ordre exact de la feuille, sans autre exception',
+    JSON.stringify(vg.ordre) === JSON.stringify(mGates.colonnes.filter(c => c.titre !== 'Colonne 1').map(c => c.titre)),
     vg.ordre.slice(0, 6).join(' | '));
   verifier('pas de débordement horizontal de la page', vg.debord <= 2, vg.debord + ' px');
 
-  /* Dans l'ordre de la feuille, la référence est en deuxième position. Le bloc
-     figé doit donc tenir sur plusieurs colonnes posées les unes après les
-     autres — sinon la référence vient recouvrir ce qui la précède. */
+  /* Le bloc figé couvre tout ce qui précède la référence, elle comprise — et
+     se pose colonne après colonne, sinon la référence recouvrirait ce qui la
+     précède. « Colonne 1 » retirée, la référence ouvre le tableau : le bloc
+     se réduit à elle, sans que le mécanisme change. */
   const fige = await pg.evaluate(() => {
     const th = [...document.querySelectorAll('tr.titres th')];
     const n = th.findIndex(t => t.textContent.trim() === 'Référence UD');
@@ -642,6 +649,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('le bloc figé couvre tout ce qui précède la référence, elle comprise',
     fige.figees.length === fige.rang + 1 && fige.figees[fige.rang] === 'Référence UD',
     JSON.stringify(fige.figees));
+  verifier('la référence ouvre le tableau : elle est seule figée',
+    fige.rang === 0 && fige.figees.length === 1, JSON.stringify(fige.figees));
   verifier('chaque colonne figée se pose après la précédente, jamais dessus',
     fige.gauches[0] === 0 && fige.gauches.every((g, i) => i === 0 || g > fige.gauches[i - 1]),
     JSON.stringify(fige.gauches));
@@ -684,12 +693,15 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('tous les ATA sont comptés', vg.totaux === 186 && vg.groupes >= 5,
     vg.groupes + ' groupes, ' + vg.totaux + ' plans');
 
-  await pg.click('#tout-colonnes').catch(async () => {
-    await pg.click('#bascule-colonnes'); await pg.waitForTimeout(250); await pg.click('#tout-colonnes');
-  });
-  await pg.waitForTimeout(600);
-  verifier('« tout afficher » ramène les 138 colonnes',
-    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === 138,
+  /* Plus de « Choisir » : rien ne permet de composer son tableau colonne par
+     colonne. Deux vues, et « Toutes les colonnes » rend les 137. */
+  verifier('ni bouton « Choisir », ni panneau de colonnes',
+    await pg.evaluate(() => !document.getElementById('bascule-colonnes') && !document.getElementById('panneau-colonnes') &&
+      !document.getElementById('tout-colonnes') && document.querySelectorAll('.outils input[type="checkbox"]').length === 0));
+  await pg.click('#vue-tableau button[data-vue="essentielle"]'); await pg.waitForTimeout(400);
+  await pg.click('#vue-tableau button[data-vue="toutes"]'); await pg.waitForTimeout(600);
+  verifier('« Toutes les colonnes » ramène les 137 colonnes',
+    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === 137,
     String(await pg.evaluate(() => document.querySelectorAll('tr.titres th').length)));
   verifier('et la page tient toujours', await pg.evaluate(() =>
     document.documentElement.scrollWidth - window.innerWidth <= 2 &&
@@ -767,8 +779,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('cliquer un plan du journal réduit le tableau à ce plan',
     await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === 1,
     String(await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length)));
-  /* La référence n'est plus la première cellule : dans l'ordre de la feuille
-     une colonne sans intitulé la précède. On la cherche par son en-tête. */
+  /* On cherche la référence par son en-tête plutôt que de supposer sa
+     position : le tableau suit l'ordre de la feuille, pas l'inverse. */
   verifier('et c\'est bien le bon plan',
     await pg.evaluate(r => {
       const i = [...document.querySelectorAll('tr.titres th')]
@@ -790,7 +802,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     n: document.querySelectorAll('tr.titres th').length
   }));
   verifier('la vue « toutes les colonnes » est celle de depart',
-    vueDepart.presse.join(' ') === 'toutes:true essentielle:false' && vueDepart.n === 138,
+    vueDepart.presse.join(' ') === 'toutes:true essentielle:false' && vueDepart.n === 137,
     JSON.stringify(vueDepart));
 
   await pg.click('#vue-tableau button[data-vue="essentielle"]'); await pg.waitForTimeout(600);
@@ -820,7 +832,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   }));
   verifier('revenir rend l\'extract entier dans l\'ordre de la feuille',
     JSON.stringify(retour.titres) === JSON.stringify(vg.ordre), String(retour.titres.length));
-  verifier('et le bloc fige reprend ses deux colonnes', retour.figees === 2, String(retour.figees));
+  verifier('et le bloc fige reste la reference seule', retour.figees === 1, String(retour.figees));
 
   // Un aller-retour repete ne doit rien laisser derriere lui.
   for (let i = 0; i < 4; i++) {
@@ -829,12 +841,12 @@ function serveurSur(valeurs, proprietes, fichiers) {
   }
   await pg.waitForTimeout(500);
   verifier('quatre allers-retours rapides ne derangent rien',
-    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === 138 &&
+    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === 137 &&
     await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === 186);
   // Re-cliquer la vue deja active ne doit pas la casser non plus.
   await pg.click('#vue-tableau button[data-vue="toutes"]'); await pg.waitForTimeout(400);
   verifier('re-cliquer la vue active la laisse en place',
-    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === 138);
+    await pg.evaluate(() => document.querySelectorAll('tr.titres th').length) === 137);
 
   // =================================================================
   section('Bandeau des filtres actifs');
@@ -951,11 +963,18 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pg.click(`.critique-ligne[data-groupe="${grosGroupe}"]`); await pg.waitForTimeout(600);
   const ud = await pg.evaluate(() => ({
     jetons: [...document.querySelectorAll('.jeton-ud[data-ud]')].map(b => b.textContent.trim()),
+    total: +document.querySelector('.critique-ligne[aria-pressed="true"] .critique-total').textContent,
     entete: (document.querySelector('.groupe-refs .entete') || {}).textContent || '',
+    sousTitres: [...document.querySelectorAll('.groupe-refs .sous-titre')].map(t => t.textContent.replace(/\s+/g, ' ').trim()),
+    autres: /autres/.test((document.querySelector('.groupe-refs') || {}).textContent || ''),
     etats: [...document.querySelectorAll('.jeton-ud[data-ud] .pastille')].map(e => e.className),
     tableau: document.querySelectorAll('#corps-tableau tr').length
   }));
   verifier('choisir un groupe déplie ses références', ud.jetons.length > 0, String(ud.jetons.length));
+  verifier('toutes, sans « et N autres », en deux paquets titrés',
+    ud.jetons.length === ud.total && !ud.autres && ud.sousTitres.length === 2 &&
+    /^Pas encore terminés\s*\(\d+\)$/.test(ud.sousTitres[0]) && /^Terminés\s*\(\d+\)$/.test(ud.sousTitres[1]),
+    ud.jetons.length + ' / ' + ud.total + ' ' + JSON.stringify(ud.sousTitres));
   verifier('toutes sont des références de plan', ud.jetons.every(t => /^UD-/.test(t)), JSON.stringify(ud.jetons.slice(0, 3)));
   verifier('l\'en-tête dit combien et combien restent',
     /\d+ plans?/.test(ud.entete) && /(pas encore terminés?|tout est soldé)/.test(ud.entete), ud.entete.trim());

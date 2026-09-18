@@ -118,9 +118,20 @@
   <section class="bloc">
     <div class="section-tete">
       <h2 id="titre-groupe">Avancement FWD</h2>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:baseline">
+      <div class="commandes-groupe">
         <label class="masque" for="dim-critique">Grouper par</label>
         <select class="select" id="dim-critique"></select>
+        <!-- Le filtre de la colonne de gauche : il ne touche qu'aux lignes de
+             ce bloc, jamais au reste de la page. Rien n'en est mémorisé. -->
+        <div class="recherche recherche-groupe">
+          <label class="masque" for="filtre-groupe">Filtrer les groupes</label>
+          <input id="filtre-groupe" type="search" placeholder="Filtrer…" autocomplete="off">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+            <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="compte-groupes" id="compte-groupes" role="status" aria-live="polite"></span>
       </div>
     </div>
     <p class="indice-dim" id="indice-dim"></p>
@@ -148,12 +159,6 @@
         <button type="button" data-vue="toutes" aria-pressed="true">Toutes les colonnes</button>
         <button type="button" data-vue="essentielle" aria-pressed="false">Vue essentielle</button>
       </span>
-      <div class="zone-relative">
-        <button class="bascule" id="bascule-colonnes" type="button" aria-expanded="false">
-          Choisir <span class="compteur" id="compteur-colonnes"></span>
-        </button>
-        <div class="panneau-colonnes" id="panneau-colonnes" hidden></div>
-      </div>
       <button class="lien-doux" id="reinit" type="button" hidden>tout réinitialiser</button>
     </div>
     <div class="incomplets" id="incomplets"></div>

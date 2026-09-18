@@ -304,25 +304,39 @@ body[data-exemple="true"] .bandeau-mode {
 .compte-passage:hover { background: var(--creux); color: var(--encre); border-bottom-color: var(--encre-3); }
 .compte-passage[aria-pressed="true"] { background: var(--encre); color: var(--papier); border-bottom-color: transparent; }
 
-/* La liste des UD d'un groupe, dépliée sous sa ligne. */
+/* La liste des UD d'un groupe, dépliée sous sa ligne : TOUTES les références,
+   en deux paquets titrés — ce qui reste à faire d'abord, puis ce qui est
+   soldé. Le conteneur du bloc a sa hauteur et son défilement : deux cents
+   références se parcourent, elles ne poussent pas le reste de la page. */
 .groupe-refs {
-  padding: 4px 0 14px 14px; border-left: 2px solid var(--filet);
-  margin: 0 0 6px 14px;
+  padding: 6px 0 16px 16px; border-left: 2px solid var(--filet);
+  margin: 2px 0 8px 14px;
 }
 .groupe-refs .entete {
-  font-size: 11.5px; color: var(--encre-3); margin-bottom: 7px;
+  font-size: 11.5px; color: var(--encre-3); margin-bottom: 4px;
   display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
 }
+.groupe-refs .sous-groupe { margin-top: 10px; }
+.groupe-refs .sous-titre {
+  margin: 0 0 7px; font: 500 10.5px/1.4 "IBM Plex Sans", system-ui, sans-serif;
+  letter-spacing: .09em; text-transform: uppercase; color: var(--encre-2);
+  display: flex; align-items: baseline; gap: 7px;
+}
+.groupe-refs .sous-titre .n {
+  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  letter-spacing: 0; color: var(--encre-3);
+}
 .groupe-refs .grille {
-  display: flex; flex-wrap: wrap; gap: 5px 7px;
+  display: flex; flex-wrap: wrap; gap: 6px 7px;
 }
 .jeton-ud {
+  display: inline-flex; align-items: center; gap: 6px;
   border: 1px solid var(--filet); background: var(--surface); color: var(--encre-2);
-  border-radius: 3px; padding: 2px 8px; font-family: "IBM Plex Mono", monospace;
-  font-size: 11.5px; cursor: pointer;
+  border-radius: 3px; padding: 3px 9px 3px 8px; font-family: "IBM Plex Mono", monospace;
+  font-size: 11.5px; line-height: 1.3; cursor: pointer; white-space: nowrap;
 }
-.jeton-ud:hover { border-color: var(--encre-3); color: var(--encre); }
-.jeton-ud .pastille { width: 7px; height: 7px; margin-right: 5px; display: inline-block; vertical-align: middle; }
+.jeton-ud:hover { border-color: var(--encre-3); color: var(--encre); background: var(--creux); }
+.jeton-ud .pastille { width: 7px; height: 7px; margin: 0; flex: none; }
 .journal-vide { color: var(--encre-3); font-size: 13px; padding: 14px 2px; }
 .journal-plus {
   background: none; border: none; font: inherit; font-size: 12.5px; color: var(--encre-3);
@@ -417,6 +431,23 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .bulle-ligne .n { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
 
 /* ---------------------------------------------------- Avancement par groupe */
+
+/* Les commandes du bloc : le choix de la dimension, puis le filtre de la
+   colonne de gauche — un champ compact, dérivé de la recherche du tableau
+   mais plus bas et plus court, et son compte « n sur m » quand il agit. */
+.commandes-groupe { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; min-width: 0; }
+.recherche.recherche-groupe { flex: none; width: 200px; min-width: 0; }
+.recherche-groupe input {
+  height: 30px; padding: 4px 10px 4px 30px; font-size: 13px; border-radius: 15px;
+}
+.recherche-groupe input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.recherche-groupe svg { left: 11px; margin-top: -7px; }
+.compte-groupes {
+  font-size: 12px; color: var(--encre-3); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.compte-groupes:empty { display: none; }
+@media (max-width: 480px) { .recherche.recherche-groupe { width: 100%; } }
 
 /* Une seule definition de colonnes, portee par le conteneur : l'en-tete et les
    lignes ne peuvent pas diverger, et la variante sans jalon n'a qu'a la redefinir. */
@@ -547,28 +578,9 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 .recherche svg { position: absolute; left: 12px; top: 50%; margin-top: -8px; color: var(--encre-3); }
 .recherche input:focus + svg, .recherche input:not(:placeholder-shown) + svg { color: var(--encre); }
 
-.bascule {
-  border: none; background: none; padding: 3px 0; font: inherit; cursor: pointer;
-  color: var(--encre-2); border-bottom: 1px solid transparent; white-space: nowrap;
-}
-.bascule:hover { color: var(--encre); border-bottom-color: var(--filet-fort); }
-.bascule[aria-expanded="true"] { color: var(--encre); border-bottom-color: var(--encre); }
-.bascule .compteur { color: var(--encre-3); }
 .lien-doux { border: none; background: none; padding: 3px 0; font: inherit; cursor: pointer; color: var(--encre-3); text-decoration: underline; text-underline-offset: 3px; }
 .lien-doux:hover { color: var(--encre); }
 .lien-doux[hidden] { display: none; }
-
-.zone-relative { position: relative; }
-.panneau-colonnes {
-  position: absolute; z-index: 15; right: 0; margin-top: 6px; background: var(--surface);
-  border: 1px solid var(--filet-fort); padding: 12px 14px; min-width: 250px; max-height: 330px; overflow: auto;
-}
-.panneau-colonnes[hidden] { display: none; }
-.groupe-colonnes { margin-bottom: 10px; }
-.groupe-colonnes > span { display: block; font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-3); margin-bottom: 5px; }
-.case { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; cursor: pointer; }
-.case input { accent-color: var(--fait); }
-.case[data-verrou="true"] { color: var(--encre-3); cursor: default; }
 
 .incomplets {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px;
@@ -733,9 +745,20 @@ table.plans thead tr th.col-fige { z-index: 6; }
   <section class="bloc">
     <div class="section-tete">
       <h2 id="titre-groupe">Avancement FWD</h2>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:baseline">
+      <div class="commandes-groupe">
         <label class="masque" for="dim-critique">Grouper par</label>
         <select class="select" id="dim-critique"></select>
+        <!-- Le filtre de la colonne de gauche : il ne touche qu'aux lignes de
+             ce bloc, jamais au reste de la page. Rien n'en est mémorisé. -->
+        <div class="recherche recherche-groupe">
+          <label class="masque" for="filtre-groupe">Filtrer les groupes</label>
+          <input id="filtre-groupe" type="search" placeholder="Filtrer…" autocomplete="off">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+            <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="compte-groupes" id="compte-groupes" role="status" aria-live="polite"></span>
       </div>
     </div>
     <p class="indice-dim" id="indice-dim"></p>
@@ -763,12 +786,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
         <button type="button" data-vue="toutes" aria-pressed="true">Toutes les colonnes</button>
         <button type="button" data-vue="essentielle" aria-pressed="false">Vue essentielle</button>
       </span>
-      <div class="zone-relative">
-        <button class="bascule" id="bascule-colonnes" type="button" aria-expanded="false">
-          Choisir <span class="compteur" id="compteur-colonnes"></span>
-        </button>
-        <div class="panneau-colonnes" id="panneau-colonnes" hidden></div>
-      </div>
       <button class="lien-doux" id="reinit" type="button" hidden>tout réinitialiser</button>
     </div>
     <div class="incomplets" id="incomplets"></div>
@@ -1045,7 +1062,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
   /* Les 138 colonnes de l'export GATES, intitulés, groupes et ordre repris à
      l'identique du fichier. La démonstration doit montrer exactement ce que
      le classeur montrera : une colonne en moins et on ne parle plus de la
-     même chose. */
+     même chose. (« Colonne 1 », vide de bout en bout, est retirée au
+     chargement par la même règle que pour le classeur : 137 à l'écran.) */
   var COLONNES_GATES = [
     { cle: "colonne_1", groupe: "", titre: "Colonne 1" },
     { cle: "reference", groupe: "Informations principales", titre: "Référence UD" },
@@ -1212,8 +1230,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
     function tire(l) { return l[Math.floor(alea() * l.length)]; }
     function ent(a, b) { return a + Math.floor(alea() * (b - a + 1)); }
 
-    /* Les blocs répétés par variante s'ouvrent repliés, comme dans le classeur :
-       quarante-sept colonnes à l'ouverture, cent trente-huit d'un clic. */
+    /* Toutes les colonnes de l'export, dans son ordre : le tableau s'ouvre
+       dessus, et la vue essentielle n'en garde qu'une poignée. */
     var colonnes = COLONNES_GATES.map(function (c) {
       var col = { cle: c.cle, groupe: c.groupe, titre: c.titre, classe: '' };
       if (c.cle === 'reference') { col.fige = true; col.classe = 'ref'; }
@@ -1253,6 +1271,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
       p.reference = tire(['HEL', 'ELE', 'HAR', 'CAB', 'AVI']) + String(1000 + ent(0, 8999)) + 'A' +
                     ('00' + (i % 1000)).slice(-3) + '00' + ent(1, 3) + tire(['A', 'B', 'C']);
       p.rpt = tire(['true', 'false']);
+      /* Deux colonnes sans intitulé mais renseignées par endroits, comme dans
+         l'export : elles restent dans le tableau. La première colonne de la
+         feuille (« Colonne 1 »), vide de bout en bout, en est retirée. */
+      p.colonne_4 = i % 3 === 0 ? 'X' : (i % 6 === 1 ? 'O' : '');
+      p.colonne_5 = i % 4 === 1 ? 'Voir RPT' : (i % 8 === 3 ? 'Voir ECP' : '');
       p.propa = tire(['BASE/OPTION', 'BASE', 'OPTION']);
       p.libelle = 'Faisceau ' + (i + 1);
       p.domaine = alea() < 0.68 ? 'BASE/OPTION' : 'PERSO';
@@ -1495,6 +1518,19 @@ table.plans thead tr th.col-fige { z-index: 6; }
       .sort(function (a, b) { return a.i - b.i; });
   }
 
+  /* Une colonne « Colonne N » — le nom que le serveur donne à une colonne sans
+     intitulé — dont toutes les cellules sont vides. C'est la seule colonne de
+     l'extract que le tableau ne montre pas. */
+  var FORME_COLONNE_AUTO = /^Colonne \d+$/;
+  function colonneVideSansIntitule(col, plans) {
+    if (!col || !FORME_COLONNE_AUTO.test(String(col.titre || '').trim())) return false;
+    for (var i = 0; i < plans.length; i++) {
+      var v = plans[i][col.cle];
+      if (String(v == null ? '' : v).trim() !== '') return false;
+    }
+    return true;
+  }
+
   /**
    * Dérive tout l'état de la page d'une source. Rejouable : la source
    * initiale, l'exemple fabriqué et chaque contrat passent par ici.
@@ -1504,14 +1540,20 @@ table.plans thead tr th.col-fige { z-index: 6; }
     SRC = src;
     if (!src.exemple) SRC_REELLE = src;
 
-    COLONNES = src.colonnes;
+    PLANS = src.plans;
+    /* Le tableau est l'extract, à une exception près, décidée par l'utilisateur :
+       une colonne que le serveur a dû nommer lui-même (« Colonne 1 », faute
+       d'intitulé) et qui ne porte AUCUNE valeur n'apporte rien à personne — elle
+       est retirée. Une colonne sans intitulé mais renseignée reste. La règle
+       vaut pour la démonstration comme pour le classeur : les deux montrent
+       la même chose. */
+    COLONNES = (src.colonnes || []).filter(function (c) { return !colonneVideSansIntitule(c, PLANS); });
     /* Sans prototype : une clé venue d'un stockage ne peut pas tomber sur
        « constructor » ou « __proto__ » et passer pour une colonne. */
     PAR_CLE = Object.create(null);
     COLONNES.forEach(function (c) { PAR_CLE[c.cle] = c; });
     CLE_DATE = src.cleDate || null;
 
-    PLANS = src.plans;
     PLANS.forEach(function (p) {
       p._etat = classer(p.avancement); p._pct = pourcentDe(p);
       p._racine = analyserUD(p.reference).racine;
@@ -1645,10 +1687,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
          plutôt que l'inverse. Et le tableau s'ouvre complet : c'est l'extract.
          La vue essentielle est là pour l'autre besoin. */
       ordre: ORDRE_FEUILLE.slice(),
+      /* Les colonnes cachées : la mécanique interne de la vue essentielle,
+         jamais une préférence. */
       cachees: {},
       tri: { cle: 'reference', asc: true },
       dimCritique: (SRC.dimParDefaut && CLES_DIM.indexOf(SRC.dimParDefaut) !== -1) ? SRC.dimParDefaut : (CLES_DIM[0] || ''),
       triGroupe: { cle: null, asc: false },
+      /* Le filtre de la colonne de gauche du bloc : un texte cherché dans le
+         nom des groupes. Ni mémorisé, ni conservé d'une dimension à l'autre. */
+      filtreGroupe: '',
       /* Deux vues du tableau, et rien entre les deux : « toutes » montre l'export
          tel quel, dans son ordre ; « essentielle » ne garde que ce qu'on regarde. */
       vueTable: 'toutes'
@@ -1663,6 +1710,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
      les interrupteurs du journal, du tableau et du mode. */
   function refleterVue() {
     $('recherche').value = vue.recherche;
+    $('filtre-groupe').value = vue.filtreGroupe;
     document.querySelectorAll('#filtre-journal button').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.dataset.journal === vue.journal));
     });
@@ -1775,7 +1823,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     try {
       localStorage.setItem(CLE_PREFS, JSON.stringify({
         fen: vue.fen,
-        dimCritique: vue.dimCritique, ordre: vue.ordre, cachees: vue.cachees, tri: vue.tri,
+        dimCritique: vue.dimCritique, ordre: vue.ordre, tri: vue.tri,
         triGroupe: vue.triGroupe
       }));
     } catch (e) { /* navigation privée ou stockage bloqué : sans conséquence */ }
@@ -1784,9 +1832,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
     clearTimeout(minuteurPrefs);
     minuteurPrefs = setTimeout(sauverPrefs, 400);
   }
-  /* La disposition — dimension, ordre et colonnes cachées du tableau, tris —
-     se relit d'un stockage ou d'une vue précédente. Elle est validée contre la
-     source courante : une colonne disparue ou une clé inconnue ne passe pas. */
+  /* La disposition — dimension, ordre des colonnes du tableau, tris — se relit
+     d'un stockage ou d'une vue précédente. Elle est validée contre la source
+     courante : une colonne disparue ou une clé inconnue ne passe pas. Les
+     colonnes cachées ne sont PAS une préférence : elles ne sont que la
+     mécanique de la vue essentielle. Un ancien stockage qui en porte encore
+     (« cachees ») est ignoré — rien ne peut masquer une colonne à l'ouverture. */
   function appliquerDisposition(pref) {
     if (pref.dimCritique && CLES_DIM.indexOf(pref.dimCritique) !== -1) vue.dimCritique = pref.dimCritique;
     if (Array.isArray(pref.ordre)) {
@@ -1794,13 +1845,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
       var valides = pref.ordre.filter(function (k) { return PAR_CLE[k]; });
       COLONNES.forEach(function (c) { if (valides.indexOf(c.cle) === -1) valides.push(c.cle); });
       vue.ordre = valides;
-    }
-    if (pref.cachees && typeof pref.cachees === 'object') {
-      vue.cachees = {};
-      Object.keys(pref.cachees).forEach(function (k) {
-        // Une colonne figee ou inconnue ne se masque pas, quoi qu'en dise le stockage.
-        if (PAR_CLE[k] && !PAR_CLE[k].fige && pref.cachees[k]) vue.cachees[k] = true;
-      });
     }
     if (pref.tri && PAR_CLE[pref.tri.cle]) vue.tri = { cle: pref.tri.cle, asc: !!pref.tri.asc };
     if (pref.triGroupe && TRIS_GROUPE.indexOf(pref.triGroupe.cle) !== -1) {
@@ -2554,34 +2598,56 @@ table.plans thead tr th.col-fige { z-index: 6; }
   }
 
   /* « Plus de 6 mois : 42 » ne dit pas lesquels. Choisir une ligne déplie donc
-     les références, les non terminées d'abord — ce sont celles sur lesquelles
-     il y a quelque chose à faire. */
-  var MAX_UD = 36;
+     TOUTES ses références, en deux paquets : ce qui n'est pas terminé — à
+     faire, non renseigné, en cours, dans cet ordre, parce que c'est là qu'il
+     y a quelque chose à faire — puis ce qui est soldé. Dans chaque paquet,
+     les références se suivent dans l'ordre numérique. Rien n'est tronqué :
+     un « et N autres » qui ne s'ouvre pas ne sert à personne. */
   function listeUD(r) {
     var ordre = { afaire: 0, vide: 1, encours: 2, termine: 3 };
     var plans = (r.plans || []).slice().sort(function (a, b) {
       return (ordre[a._etat] - ordre[b._etat]) || a.reference.localeCompare(b.reference, 'fr', { numeric: true });
     });
     if (!plans.length) return '';
-    var restants = plans.filter(function (p) { return p._etat !== 'termine'; }).length;
-    var jetons = plans.slice(0, MAX_UD).map(function (p) {
+    function jeton(p) {
       var e = ETAT_PAR_CLE[p._etat];
-      var pastille = e.hachure
-        ? '<span class="pastille hachure"></span>'
-        : '<span class="pastille" style="background:' + e.couleur + '"></span>';
       var quoi = CLE_LIBELLE ? String(p[CLE_LIBELLE] || '') : '';
       return '<button class="jeton-ud" type="button" data-ud="' + ech(p.reference) +
         '" title="' + ech(e.court + (quoi ? ' — ' + quoi : '')) + '">' +
-        pastille + ech(p.reference) + '</button>';
-    }).join('');
-    var reste = plans.length - MAX_UD;
+        pastilleDe(p._etat) + ech(p.reference) + '</button>';
+    }
+    function paquet(titre, liste) {
+      if (!liste.length) return '';
+      return '<div class="sous-groupe"><h4 class="sous-titre">' + titre +
+        '<span class="n">(' + nb(liste.length) + ')</span></h4>' +
+        '<div class="grille">' + liste.map(jeton).join('') + '</div></div>';
+    }
+    var restants = plans.filter(function (p) { return p._etat !== 'termine'; });
+    var termines = plans.filter(function (p) { return p._etat === 'termine'; });
     return '<div class="groupe-refs"><div class="entete">' +
       '<span>' + nb(plans.length) + ' plan' + (plans.length > 1 ? 's' : '') +
-      (restants ? ' · <b>' + nb(restants) + '</b> pas encore terminé' + (restants > 1 ? 's' : '') : ' · tout est soldé') +
+      (restants.length ? ' · <b>' + nb(restants.length) + '</b> pas encore terminé' + (restants.length > 1 ? 's' : '')
+                       : ' · tout est soldé') +
       '</span><span>cliquez une référence pour la retrouver dans le tableau</span></div>' +
-      '<div class="grille">' + jetons +
-      (reste > 0 ? '<span class="jeton-ud" style="cursor:default">et ' + nb(reste) + ' autres…</span>' : '') +
-      '</div></div>';
+      paquet('Pas encore terminés', restants) +
+      paquet('Terminés', termines) +
+      '</div>';
+  }
+
+  /* Le filtre de la colonne de gauche : les groupes dont le nom — tel qu'il
+     s'affiche, donc « Oui » pour « true » — contient le texte tapé. */
+  function retenuParFiltreGroupe(r) {
+    var q = norm(vue.filtreGroupe);
+    if (!q) return true;
+    return norm(libelleGroupe(r.nom)).indexOf(q) !== -1 || norm(r.nom).indexOf(q) !== -1;
+  }
+  /* Le champ suit la dimension : « Filtrer les ATA… », « Filtrer les mois… ». */
+  function libellerFiltreGroupe(dim) {
+    var quoi = dim === '_mois' ? 'mois'
+             : dim === '_anciennete' ? 'tranches'
+             : (TITRE_DIM[dim] || 'groupes').replace(/ \(.*\)$/, '');
+    $('filtre-groupe').placeholder = 'Filtrer les ' + quoi + '…';
+    $('filtre-groupe').setAttribute('aria-label', 'Filtrer les ' + quoi);
   }
 
   function rendreCritique(liste) {
@@ -2671,11 +2737,24 @@ table.plans thead tr th.col-fige { z-index: 6; }
       });
     }
 
+    // « par groupe » ne parlait à personne : le titre nomme la dimension choisie.
+    $('titre-groupe').textContent = 'Avancement FWD par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '');
+    $('indice-dim').textContent = NOTE_DIM(dim);
+    libellerFiltreGroupe(dim);
+
     if (!rangs.length) {
       $('zone-critique').classList.remove('sans-jalon');
       $('zone-critique').innerHTML = '<div class="vide-message">Aucun plan dans la sélection.</div>';
+      $('compte-groupes').textContent = '';
       return;
     }
+
+    /* Le filtre de la colonne de gauche ne touche qu'à ce bloc : les lignes
+       qu'il écarte restent comptées partout ailleurs. Le compte dit combien
+       restent sur combien tant qu'il agit. */
+    var tous = rangs.length;
+    rangs = rangs.filter(retenuParFiltreGroupe);
+    $('compte-groupes').textContent = rangs.length === tous ? '' : nb(rangs.length) + ' sur ' + nb(tous);
 
     function fleche(cle) {
       if (!tg || tg.cle !== cle) return '';
@@ -2767,16 +2846,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
         (actif ? listeUD(r) : '');
     }).join('');
 
-
+    if (!rangs.length) {
+      html += '<div class="vide-message">Aucun groupe ne contient « ' + ech(vue.filtreGroupe.trim()) +
+        ' ». Échap vide le filtre.</div>';
+    }
 
     /* toggle et non className : le conteneur porte aussi « defile-liste »,
        qui lui donne sa hauteur et sa barre de défilement. */
     $('zone-critique').classList.toggle('sans-jalon', !prochain);
     $('zone-critique').innerHTML = html;
-    // « par groupe » ne parlait à personne : le titre nomme la dimension choisie.
-    $('titre-groupe').textContent = 'Avancement FWD par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '');
-    $('indice-dim').textContent = NOTE_DIM(dim);
-
   }
 
   /* L'ordre du sélecteur est celui que donne la source : quand la liste est
@@ -2943,22 +3021,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
       (rangs.length !== base ? ' sur ' + nb(base) : '');
     ajusterSticky();
     majOmbre();
-  }
-  function rendrePanneauColonnes() {
-    var groupes = [];
-    COLONNES.forEach(function (c) {
-      var d = groupes.filter(function (g) { return g.nom === c.groupe; })[0];
-      if (!d) { d = { nom: c.groupe, cols: [] }; groupes.push(d); }
-      d.cols.push(c);
-    });
-    $('panneau-colonnes').innerHTML = groupes.map(function (g) {
-      return '<div class="groupe-colonnes"><span>' + ech(g.nom) + '</span>' + g.cols.map(function (c) {
-        return '<label class="case" data-verrou="' + !!c.fige + '"><input type="checkbox" data-col="' + c.cle + '"' +
-          (vue.cachees[c.cle] ? '' : ' checked') + (c.fige ? ' disabled' : '') + '> ' + ech(c.titre) + '</label>';
-      }).join('') + '</div>';
-    }).join('') + '<button class="lien-doux" id="tout-colonnes" type="button">tout afficher</button>';
-    var caches = Object.keys(vue.cachees).filter(function (k) { return vue.cachees[k]; }).length;
-    $('compteur-colonnes').textContent = caches ? '(' + (COLONNES.length - caches) + '/' + COLONNES.length + ')' : '';
   }
   /* Seule la colonne d'avancement FWD interesse le suivi : une cellule vide
      ailleurs n'est pas un defaut a traquer. */
@@ -3439,7 +3501,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
     rendreCritique(liste);
     rendreEntetes();
     rendreCorps(liste);
-    rendrePanneauColonnes();
     rendreComparatif();
     rendreIncomplets();
     rendreFiltresActifs();
@@ -3508,7 +3569,31 @@ table.plans thead tr th.col-fige { z-index: 6; }
   });
 
   $('dim-critique').addEventListener('change', function (e) {
-    vue.dimCritique = e.target.value; vue.groupe = null; rendre();
+    /* Une autre dimension, d'autres noms : le filtre de la colonne de gauche
+       n'aurait plus de sens, il repart à blanc. */
+    vue.dimCritique = e.target.value; vue.groupe = null;
+    vue.filtreGroupe = ''; $('filtre-groupe').value = '';
+    rendre();
+  });
+  /* Le filtre de la colonne de gauche : il ne redessine que le bloc. Échap
+     le vide ; le type « search » du champ fait de même par sa croix. */
+  var minuteurGroupe = null;
+  function poserFiltreGroupe(v) {
+    clearTimeout(minuteurGroupe);
+    if (v === vue.filtreGroupe) return;
+    vue.filtreGroupe = v;
+    rendreCritique(selection());
+  }
+  $('filtre-groupe').addEventListener('input', function (e) {
+    var v = e.target.value;
+    clearTimeout(minuteurGroupe);
+    minuteurGroupe = setTimeout(function () { poserFiltreGroupe(v); }, 170);
+  });
+  $('filtre-groupe').addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    e.preventDefault();
+    e.target.value = '';
+    poserFiltreGroupe('');
   });
   $('zone-critique').addEventListener('click', function (e) {
     /* Un en-tete de colonne : premier clic dans le sens naturel, deuxieme dans
@@ -3620,30 +3705,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
     appliquerVueTable();
     refleterVue();
     rendre();
-  });
-
-  $('bascule-colonnes').addEventListener('click', function (e) {
-    e.stopPropagation();
-    var p = $('panneau-colonnes');
-    p.hidden = !p.hidden;
-    $('bascule-colonnes').setAttribute('aria-expanded', String(!p.hidden));
-  });
-  document.addEventListener('click', function (e) {
-    if (!$('panneau-colonnes').hidden && !e.target.closest('#panneau-colonnes') && !e.target.closest('#bascule-colonnes')) {
-      $('panneau-colonnes').hidden = true;
-      $('bascule-colonnes').setAttribute('aria-expanded', 'false');
-    }
-  });
-  $('panneau-colonnes').addEventListener('change', function (e) {
-    var c = e.target.closest('input[data-col]');
-    if (!c) return;
-    if (c.checked) delete vue.cachees[c.dataset.col]; else vue.cachees[c.dataset.col] = true;
-    rendreEntetes(); rendreCorps(selection()); rendrePanneauColonnes();
-  });
-  $('panneau-colonnes').addEventListener('click', function (e) {
-    if (!e.target.closest('#tout-colonnes')) return;
-    vue.cachees = {};
-    rendreEntetes(); rendreCorps(selection()); rendrePanneauColonnes();
   });
 
   var tete = $('tete-tableau');

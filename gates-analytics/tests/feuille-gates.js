@@ -115,6 +115,12 @@ function feuilleGates(nbLignes) {
     l[iNom]   = 'Installation ' + (i + 1);
     l[iECP]   = alea() < 0.85 ? 'ECP-' + (2100 + Math.floor(alea() * 800)) : '';
     l[iComm]  = alea() < 0.2 ? 'Voir note interne' : '';
+    /* Les colonnes sans intitulé : la première (col. 1) est vide de bout en
+       bout — la page la retire ; les deux autres (col. 4 et 5) portent des
+       marques éparses — elles restent. Moins d'une ligne sur deux, pour que
+       la détection automatique n'en fasse jamais une dimension. */
+    l[3] = i % 3 === 0 ? 'X' : (i % 6 === 1 ? 'O' : '');
+    l[4] = i % 4 === 1 ? 'Voir RPT' : (i % 8 === 3 ? 'Voir ECP' : '');
     // Les treize blocs répétés : mêmes intitulés partout, valeurs sans rapport.
     GROUPES_FUSIONNES.filter(function (f) { return f.texte.indexOf('HDK AA') === 0; })
       .forEach(function (f) {

@@ -301,25 +301,39 @@ body[data-exemple="true"] .bandeau-mode {
 .compte-passage:hover { background: var(--creux); color: var(--encre); border-bottom-color: var(--encre-3); }
 .compte-passage[aria-pressed="true"] { background: var(--encre); color: var(--papier); border-bottom-color: transparent; }
 
-/* La liste des UD d'un groupe, dépliée sous sa ligne. */
+/* La liste des UD d'un groupe, dépliée sous sa ligne : TOUTES les références,
+   en deux paquets titrés — ce qui reste à faire d'abord, puis ce qui est
+   soldé. Le conteneur du bloc a sa hauteur et son défilement : deux cents
+   références se parcourent, elles ne poussent pas le reste de la page. */
 .groupe-refs {
-  padding: 4px 0 14px 14px; border-left: 2px solid var(--filet);
-  margin: 0 0 6px 14px;
+  padding: 6px 0 16px 16px; border-left: 2px solid var(--filet);
+  margin: 2px 0 8px 14px;
 }
 .groupe-refs .entete {
-  font-size: 11.5px; color: var(--encre-3); margin-bottom: 7px;
+  font-size: 11.5px; color: var(--encre-3); margin-bottom: 4px;
   display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
 }
+.groupe-refs .sous-groupe { margin-top: 10px; }
+.groupe-refs .sous-titre {
+  margin: 0 0 7px; font: 500 10.5px/1.4 "IBM Plex Sans", system-ui, sans-serif;
+  letter-spacing: .09em; text-transform: uppercase; color: var(--encre-2);
+  display: flex; align-items: baseline; gap: 7px;
+}
+.groupe-refs .sous-titre .n {
+  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  letter-spacing: 0; color: var(--encre-3);
+}
 .groupe-refs .grille {
-  display: flex; flex-wrap: wrap; gap: 5px 7px;
+  display: flex; flex-wrap: wrap; gap: 6px 7px;
 }
 .jeton-ud {
+  display: inline-flex; align-items: center; gap: 6px;
   border: 1px solid var(--filet); background: var(--surface); color: var(--encre-2);
-  border-radius: 3px; padding: 2px 8px; font-family: "IBM Plex Mono", monospace;
-  font-size: 11.5px; cursor: pointer;
+  border-radius: 3px; padding: 3px 9px 3px 8px; font-family: "IBM Plex Mono", monospace;
+  font-size: 11.5px; line-height: 1.3; cursor: pointer; white-space: nowrap;
 }
-.jeton-ud:hover { border-color: var(--encre-3); color: var(--encre); }
-.jeton-ud .pastille { width: 7px; height: 7px; margin-right: 5px; display: inline-block; vertical-align: middle; }
+.jeton-ud:hover { border-color: var(--encre-3); color: var(--encre); background: var(--creux); }
+.jeton-ud .pastille { width: 7px; height: 7px; margin: 0; flex: none; }
 .journal-vide { color: var(--encre-3); font-size: 13px; padding: 14px 2px; }
 .journal-plus {
   background: none; border: none; font: inherit; font-size: 12.5px; color: var(--encre-3);
@@ -414,6 +428,23 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .bulle-ligne .n { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
 
 /* ---------------------------------------------------- Avancement par groupe */
+
+/* Les commandes du bloc : le choix de la dimension, puis le filtre de la
+   colonne de gauche — un champ compact, dérivé de la recherche du tableau
+   mais plus bas et plus court, et son compte « n sur m » quand il agit. */
+.commandes-groupe { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; min-width: 0; }
+.recherche.recherche-groupe { flex: none; width: 200px; min-width: 0; }
+.recherche-groupe input {
+  height: 30px; padding: 4px 10px 4px 30px; font-size: 13px; border-radius: 15px;
+}
+.recherche-groupe input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.recherche-groupe svg { left: 11px; margin-top: -7px; }
+.compte-groupes {
+  font-size: 12px; color: var(--encre-3); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.compte-groupes:empty { display: none; }
+@media (max-width: 480px) { .recherche.recherche-groupe { width: 100%; } }
 
 /* Une seule definition de colonnes, portee par le conteneur : l'en-tete et les
    lignes ne peuvent pas diverger, et la variante sans jalon n'a qu'a la redefinir. */
@@ -544,28 +575,9 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 .recherche svg { position: absolute; left: 12px; top: 50%; margin-top: -8px; color: var(--encre-3); }
 .recherche input:focus + svg, .recherche input:not(:placeholder-shown) + svg { color: var(--encre); }
 
-.bascule {
-  border: none; background: none; padding: 3px 0; font: inherit; cursor: pointer;
-  color: var(--encre-2); border-bottom: 1px solid transparent; white-space: nowrap;
-}
-.bascule:hover { color: var(--encre); border-bottom-color: var(--filet-fort); }
-.bascule[aria-expanded="true"] { color: var(--encre); border-bottom-color: var(--encre); }
-.bascule .compteur { color: var(--encre-3); }
 .lien-doux { border: none; background: none; padding: 3px 0; font: inherit; cursor: pointer; color: var(--encre-3); text-decoration: underline; text-underline-offset: 3px; }
 .lien-doux:hover { color: var(--encre); }
 .lien-doux[hidden] { display: none; }
-
-.zone-relative { position: relative; }
-.panneau-colonnes {
-  position: absolute; z-index: 15; right: 0; margin-top: 6px; background: var(--surface);
-  border: 1px solid var(--filet-fort); padding: 12px 14px; min-width: 250px; max-height: 330px; overflow: auto;
-}
-.panneau-colonnes[hidden] { display: none; }
-.groupe-colonnes { margin-bottom: 10px; }
-.groupe-colonnes > span { display: block; font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-3); margin-bottom: 5px; }
-.case { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; cursor: pointer; }
-.case input { accent-color: var(--fait); }
-.case[data-verrou="true"] { color: var(--encre-3); cursor: default; }
 
 .incomplets {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px;
