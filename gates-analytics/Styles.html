@@ -131,6 +131,10 @@ body {
   content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--teinte);
 }
 .pastille { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+/* Un changement d'indice n'est pas un état : sa pastille est un anneau, pas
+   un aplat. « sans » tient la place d'une pastille pour garder l'alignement. */
+.pastille.neutre { background: transparent; box-shadow: inset 0 0 0 1.5px var(--encre-3); }
+.pastille.sans { background: transparent; }
 /* Sous 680 px les segments sont trop étroits pour porter une étiquette :
    on repasse à une grille régulière. */
 @media (max-width: 680px) {
@@ -242,7 +246,7 @@ body[data-exemple="true"] .bandeau-mode {
 /* Trois colonnes alignées : la référence, ce que c'est, où ça va. Le regard
    descend une colonne au lieu de chercher la flèche au milieu du texte. */
 .journal-ligne {
-  display: grid; grid-template-columns: 116px minmax(0, 1fr) 190px;
+  display: grid; grid-template-columns: 136px minmax(0, 1fr) 190px;
   align-items: baseline; gap: 12px; width: 100%;
   background: none; border: none; font: inherit; color: inherit;
   padding: 6px 6px; text-align: left; cursor: pointer; border-radius: 3px;
@@ -253,6 +257,10 @@ body[data-exemple="true"] .bandeau-mode {
 }
 .journal-ligne:hover { background: var(--creux); }
 .journal-ligne .ref { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
+/* Une réémission : l'ancienne référence au-dessus, effacée, la nouvelle dessous. */
+.journal-ligne .ref-indice { display: grid; gap: 1px; }
+.journal-ligne .ref-indice .ancienne { color: var(--encre-3); }
+.journal-ligne .ref-indice .nouvelle { white-space: nowrap; }
 .journal-ligne .quoi {
   color: var(--encre-3); font-size: 12.5px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -327,6 +335,9 @@ select.select:focus { outline: none; border-bottom-color: var(--focus); }
 .segmente button:first-child { border-left: none; }
 .segmente button:hover { background: var(--creux); color: var(--encre); }
 .segmente button[aria-pressed="true"] { background: var(--encre); color: var(--surface); }
+/* Cinq boutons ne tiennent pas sur un téléphone : le filtre du journal passe
+   sur deux lignes plutôt que de faire déborder la page. */
+@media (max-width: 480px) { #filtre-journal { flex-wrap: wrap; } }
 
 .cadre-graphe { position: relative; }
 .jalon-poignee { cursor: grab; }
@@ -393,11 +404,9 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 }
 .bulle[data-visible="true"] { opacity: 1; }
 .bulle .tete-bulle { color: var(--encre-3); font-size: 11px; margin-bottom: 5px; }
-.bulle-finis { margin-top: 7px; padding-top: 6px; border-top: 1px solid var(--filet); max-width: 300px; }
-.bulle-ud { display: flex; align-items: baseline; gap: 8px; line-height: 1.5; }
-.bulle-ud .r { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--encre); flex: none; }
-.bulle-ud .q { color: var(--encre-3); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bulle-reste { color: var(--encre-3); font-size: 11px; margin-top: 3px; }
+/* Les comptes de la semaine, sous les deux lignes de tête : même dessin
+   qu'elles — une pastille, un mot, un nombre à droite. */
+.bulle-comptes { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--filet); display: grid; gap: 1px; }
 .bulle-ligne { display: flex; align-items: center; gap: 7px; }
 .bulle-ligne .n { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
 

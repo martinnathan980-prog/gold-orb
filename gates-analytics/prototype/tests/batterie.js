@@ -307,6 +307,213 @@ async function reinitialiser(pg) {
       document.getElementById('select-contrat').value === 'X1'));
 
   // =================================================================
+  /* Une référence UD = racine (l'identité du plan : 3 lettres, 4 chiffres, A,
+     3 chiffres) + indice (3 chiffres) + révision (une lettre). Le parseur
+     tolère les séparateurs et la casse ; hors format, la chaîne entière tient
+     lieu de racine et la référence n'est jamais appariée. */
+  section('Références UD : le parseur');
+  const formes = await p.evaluate(() => {
+    const f = window.__analyserUD;
+    return ['HEL0225A017001A', 'hel0225a017001a', 'HEL-0225-A017-001-A', 'HEL_0225_A017_001_A',
+            'HEL 0225 A017 001 A', 'HEL.0225.A017.001.A', 'HEL/0225/A017/001/A', '  hel-0225 a 017.002/b ',
+            'CAB1000A001003C', 'UD-24-1037', '  ud-24-1037 ', 'HEL0225A017001', 'HEL0225B017001A', '', null]
+      .map(r => [r, f(r)]);
+  });
+  const lu = r => JSON.stringify(r);
+  const canon = lu({ racine: 'HEL0225A017', indice: '001', revision: 'A', valide: true });
+  formes.slice(0, 7).forEach(([forme, res]) => {
+    verifier('« ' + forme + ' » se lit HEL0225A017 / 001 / A', lu(res) === canon, lu(res));
+  });
+  verifier('séparateurs mélangés, minuscules et espaces autour : 002 / B',
+    lu(formes[7][1]) === lu({ racine: 'HEL0225A017', indice: '002', revision: 'B', valide: true }), lu(formes[7][1]));
+  verifier('une autre racine, indice 003, révision C',
+    lu(formes[8][1]) === lu({ racine: 'CAB1000A001', indice: '003', revision: 'C', valide: true }), lu(formes[8][1]));
+  verifier('hors format : la chaîne entière est la racine, et rien d’autre',
+    formes[9][1].racine === 'UD-24-1037' && formes[9][1].valide === false &&
+    formes[9][1].indice === '' && formes[9][1].revision === '', lu(formes[9][1]));
+  verifier('hors format, épurée : majuscules, sans espaces autour',
+    formes[10][1].racine === 'UD-24-1037' && !formes[10][1].valide, lu(formes[10][1]));
+  verifier('sans révision, ce n’est pas une référence au format',
+    !formes[11][1].valide && formes[11][1].racine === 'HEL0225A017001', lu(formes[11][1]));
+  verifier('un « B » à la place du « A » de la racine non plus', !formes[12][1].valide, lu(formes[12][1]));
+  verifier('vide et null donnent une racine vide, non valide, sans planter',
+    formes[13][1].racine === '' && !formes[13][1].valide && formes[14][1].racine === '' && !formes[14][1].valide);
+
+  // =================================================================
+  /* Six plans de la démonstration ont été réémis au fil des semaines : même
+     racine, autre indice ou révision. Le journal et le comparatif doivent y
+     voir un changement d'indice — jamais un disparu plus un nouveau. */
+  section('Changements d’indice : appariement par racine');
+  const colRef = () => [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'reference');
+  const refsTable = await p.evaluate(() => {
+    const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'reference');
+    return [...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.children[i].textContent.trim());
+  });
+  verifier('toutes les références du tableau sont au format complet : racine, indice, révision',
+    refsTable.length === TOTAL && refsTable.every(r => /^[A-Z]{3}\d{4}A\d{3}\d{3}[A-C]$/.test(r)),
+    refsTable.slice(0, 3).join(' '));
+  const app = await p.evaluate(() => {
+    const J = window.__journal(), C = window.__comparatif(), racine = r => window.__analyserUD(r).racine;
+    const indices = [], nouveaux = [], disparus = [];
+    J.forEach(s => s.evenements.forEach(e => {
+      if (e.type === 'indice') indices.push({ i: s.i, ref: e.ref, ancienne: e.ancienne, avant: e.avant, apres: e.apres });
+      else if (e.type === 'nouveau') nouveaux.push(e.ref);
+      else if (e.type === 'disparu') disparus.push(e.ref);
+    }));
+    const racines = indices.map(x => racine(x.ref));
+    const derniere = Math.max.apply(null, indices.map(x => x.i));
+    return {
+      indices, nouveaux, disparus,
+      semaines: new Set(indices.map(x => x.i)).size,
+      memeRacine: indices.every(x => racine(x.ref) === racine(x.ancienne) && x.ref !== x.ancienne),
+      avecEtat: indices.filter(x => x.avant !== x.apres).length,
+      touches: nouveaux.concat(disparus).filter(r => racines.indexOf(racine(r)) !== -1),
+      attenduComparatif: indices.filter(x => x.i === derniere).map(x => x.ref).sort(),
+      comparatif: C && C.indice ? C.indice.slice().sort() : null,
+      reemissions: C && C.reemissions ? C.reemissions : null
+    };
+  });
+  verifier('le journal porte les six réémissions fabriquées', app.indices.length === 6, String(app.indices.length));
+  verifier('à six semaines différentes', app.semaines === 6, String(app.semaines));
+  verifier('chacune garde sa racine et change de référence', app.memeRacine, lu(app.indices.slice(0, 2)));
+  verifier('deux d’entre elles changent aussi d’état au passage', app.avecEtat === 2, String(app.avecEtat));
+  verifier('aucun de ces plans n’est compté comme nouveau ni disparu', app.touches.length === 0, lu(app.touches));
+  verifier('les deux plans réellement apparus restent des nouveaux, et rien n’a disparu',
+    app.nouveaux.length === 2 && app.disparus.length === 0, app.nouveaux.length + ' / ' + app.disparus.length);
+  verifier('le journal parle des nouvelles références, celles du tableau',
+    app.indices.every(x => refsTable.indexOf(x.ref) !== -1 && refsTable.indexOf(x.ancienne) === -1));
+  verifier('le comparatif « depuis l’import » porte le lot des changements d’indice de la dernière semaine',
+    app.comparatif && app.comparatif.length >= 1 && lu(app.comparatif) === lu(app.attenduComparatif),
+    lu(app.comparatif) + ' vs ' + lu(app.attenduComparatif));
+  verifier('avec, pour chacun, l’ancienne et la nouvelle référence',
+    app.reemissions && app.reemissions.length === app.comparatif.length &&
+    app.reemissions.every(r => r.ancienne && r.ref && r.ancienne !== r.ref), lu(app.reemissions));
+
+  const domIndice = await p.evaluate(() => ({
+    puce: (document.querySelector('.puce-delta[data-delta="indice"]') || { textContent: '' }).textContent,
+    pastille: !!document.querySelector('.puce-delta[data-delta="indice"] .pastille.neutre'),
+    comptes: [...document.querySelectorAll('.compte-passage[data-passage="indice"]')].map(b => b.textContent),
+    bouton: !!document.querySelector('#filtre-journal button[data-journal="indice"]')
+  }));
+  verifier('la puce « changements d’indice » est là, avec une pastille neutre',
+    /changements? d’indice/.test(domIndice.puce) && domIndice.pastille, domIndice.puce);
+  verifier('chaque semaine concernée compte son changement d’indice, en bouton',
+    domIndice.comptes.length === 6 && domIndice.comptes.every(t => /^1 changement d’indice$/.test(t)),
+    lu(domIndice.comptes));
+  verifier('et le filtre du journal propose aussi les changements d’indice', domIndice.bouton);
+
+  // Survoler la puce : les deux références, ancienne → nouvelle.
+  await p.evaluate(() => document.getElementById('comparatif').scrollIntoView({ block: 'center' }));
+  await p.waitForTimeout(250);
+  const bbPuce = await (await p.$('.puce-delta[data-delta="indice"]')).boundingBox();
+  await p.mouse.move(bbPuce.x + 6, bbPuce.y + bbPuce.height / 2); await p.waitForTimeout(200);
+  const survol = await p.evaluate(() => document.getElementById('bulle').textContent);
+  verifier('survoler la puce montre « ancienne → nouvelle »',
+    /[A-Z]{3}\d{4}A\d{6}[A-Z] → [A-Z]{3}\d{4}A\d{6}[A-Z]/.test(survol), survol.slice(0, 100));
+  await p.mouse.move(5, 5); await p.waitForTimeout(150);
+
+  // Cliquer la puce : le tableau ne montre plus que les plans réémis, sous leur nouvelle référence.
+  await p.click('.puce-delta[data-delta="indice"]'); await p.waitForTimeout(500);
+  const filtreIndice = await p.evaluate(() => {
+    const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'reference');
+    return {
+      lignes: [...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.children[i].textContent.trim()).sort(),
+      presse: document.querySelector('.puce-delta[data-delta="indice"]').getAttribute('aria-pressed'),
+      jeton: document.getElementById('filtres-actifs').textContent
+    };
+  });
+  verifier('cliquer « changements d’indice » filtre le tableau sur les nouvelles références',
+    lu(filtreIndice.lignes) === lu(app.comparatif), lu(filtreIndice.lignes));
+  verifier('la puce se marque pressée et le bandeau nomme le filtre',
+    filtreIndice.presse === 'true' && /changements d’indice/.test(filtreIndice.jeton), filtreIndice.jeton);
+  await p.click('.puce-delta[data-delta="indice"]'); await p.waitForTimeout(500);
+  verifier('re-cliquer rend tous les plans',
+    await p.evaluate(t => document.querySelectorAll('#corps-tableau tr').length === t, TOTAL));
+
+  // Le compte du journal filtre sur les changements d'indice ; la ligne se lit ancienne → nouvelle.
+  await p.click('.compte-passage[data-passage="indice"] >> nth=0'); await p.waitForTimeout(400);
+  for (let garde = 0; garde < 20; garde++) {
+    const plie = await p.$('.journal-plier[aria-expanded="false"]');
+    if (!plie) break;
+    await plie.click(); await p.waitForTimeout(90);
+  }
+  await p.waitForTimeout(250);
+  const lignesIndice = await p.evaluate(() => ({
+    total: document.querySelectorAll('.journal-ligne').length,
+    indice: [...document.querySelectorAll('.journal-ligne.indice')].map(b => ({
+      ref: b.dataset.ref, type: b.dataset.type,
+      ancienne: (b.querySelector('.ref-indice .ancienne') || { textContent: '' }).textContent,
+      nouvelle: (b.querySelector('.ref-indice .nouvelle') || { textContent: '' }).textContent,
+      etats: b.querySelectorAll('.vers .etiq-etat').length,
+      quoi: b.querySelector('.quoi').textContent
+    })),
+    presse: [...document.querySelectorAll('#filtre-journal button')]
+      .map(b => b.dataset.journal + ':' + b.getAttribute('aria-pressed')).join(' ')
+  }));
+  verifier('sous ce filtre, le journal ne montre que les six réémissions',
+    lignesIndice.total === 6 && lignesIndice.indice.length === 6, lignesIndice.total + ' / ' + lignesIndice.indice.length);
+  verifier('chaque ligne se lit « ancienne → nouvelle », puis l’état avant et après',
+    lignesIndice.indice.every(l => l.type === 'indice' && /^[A-Z]{3}\d{4}A\d{6}[A-Z]$/.test(l.ancienne) &&
+      l.nouvelle === '→ ' + l.ref && l.etats === 2), lu(lignesIndice.indice[0]));
+  verifier('et nomme le plan', lignesIndice.indice.every(l => l.quoi.trim() !== ''));
+  verifier('le filtre du journal reflète le choix',
+    lignesIndice.presse === ':false termine:false encours:false afaire:false indice:true', lignesIndice.presse);
+  const refIndice = lignesIndice.indice[0].ref;
+  await p.click('.journal-ligne.indice >> nth=0'); await p.waitForTimeout(500);
+  verifier('cliquer une réémission réduit le tableau au plan, sous sa nouvelle référence',
+    await p.evaluate(r => {
+      const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'reference');
+      const trs = document.querySelectorAll('#corps-tableau tr');
+      return trs.length === 1 && trs[0].children[i].textContent.trim() === r;
+    }, refIndice), refIndice);
+  await p.click('.journal-ligne.indice >> nth=0'); await p.waitForTimeout(400);
+  await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(400);
+  verifier('« Tout » rend le journal entier',
+    await p.evaluate(t => document.querySelectorAll('.journal-ligne').length > 6 &&
+      document.querySelectorAll('#corps-tableau tr').length === t, TOTAL));
+  await reinitialiser(p);
+
+  // =================================================================
+  /* La bulle d'une semaine résume ce qui a bougé — des comptes, une ligne
+     chacun — et ne liste plus les plans : le journal, dessous, s'en charge. */
+  section('La bulle du graphique résume la semaine sans lister les plans');
+  await p.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' }));
+  await p.waitForTimeout(300);
+  const bulles = [];
+  for (const z of await p.$$('.zone-clic')) {
+    const bb = await z.boundingBox();
+    if (!bb || bb.y < 0 || bb.y > 900) continue;
+    await p.mouse.move(bb.x + bb.width / 2, bb.y + bb.height * 0.6); await p.waitForTimeout(80);
+    bulles.push(await p.evaluate(() => ({
+      texte: document.getElementById('bulle').textContent,
+      lignes: [...document.querySelectorAll('#bulle .bulle-comptes .bulle-ligne')].map(l => ({
+        pastille: !!l.querySelector('.pastille'), n: (l.querySelector('.n') || { textContent: '' }).textContent,
+        texte: l.textContent
+      }))
+    })));
+  }
+  await p.mouse.move(5, 5); await p.waitForTimeout(150);
+  const releves = bulles.filter(b => /Relevé du \d{4}-S\d{2}/.test(b.texte));
+  verifier('chaque semaine relevée a sa bulle « Relevé du … »', releves.length >= 5, String(releves.length));
+  verifier('elle dit « terminés N / total »',
+    releves.every(b => /terminés\s*\d+\s*\/\s*\d+/.test(b.texte)), (releves[0] || {}).texte);
+  verifier('et « depuis le précédent ±n » dès le deuxième relevé',
+    releves.filter(b => /depuis le précédent\s*[+\-−]?\s*\d/.test(b.texte)).length >= releves.length - 1);
+  verifier('plus aucune référence de plan dans la bulle',
+    releves.every(b => !/[A-Z]{3}\d{4}A\d{3}/.test(b.texte)), (releves.find(b => /[A-Z]{3}\d{4}A\d{3}/.test(b.texte)) || {}).texte);
+  verifier('ni « et N autres »', releves.every(b => !/autres/.test(b.texte)));
+  verifier('les semaines qui ont bougé donnent leurs comptes : passés en terminé…',
+    releves.filter(b => /passés? en terminé/.test(b.texte)).length >= 3);
+  verifier('… nouveaux, et changements d’indice',
+    releves.some(b => /nouveaux/.test(b.texte)) && releves.some(b => /changements? d’indice/.test(b.texte)));
+  const toutesLignes = releves.reduce((l, b) => l.concat(b.lignes), []);
+  verifier('une ligne par compte : pastille, mot, nombre à droite',
+    toutesLignes.length >= 6 && toutesLignes.every(l => l.pastille && /^\d+$/.test(l.n.replace(/\s/g, ''))),
+    lu(toutesLignes.slice(0, 2)));
+  verifier('les changements d’indice comptés dans les bulles font les six du journal',
+    toutesLignes.filter(l => /changements? d’indice/.test(l.texte)).reduce((s, l) => s + Number(l.n), 0) === 6);
+
+  // =================================================================
   section('Chargement et cohérence des chiffres');
   const kpi = await p.evaluate(() => ({
     titre: document.title,

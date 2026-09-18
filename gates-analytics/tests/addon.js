@@ -688,6 +688,28 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /UD-/.test(jrn.premiere || ''), jrn.premiere);
   verifier('les états sont au singulier dans une flèche',
     !/Terminés\s*$/.test(jrn.premiere || '') , jrn.premiere);
+  /* Les références de cette feuille (UD-24-1037) ne sont pas au format UD :
+     elles n'ont pas de racine, donc jamais d'appariement — un plan apparu est
+     un nouveau, point. Un appariement de travers ferait un faux changement
+     d'indice entre deux plans qui n'ont rien à voir. */
+  const appariement = await pg.evaluate(() => {
+    const J = window.__journal();
+    const types = { indice: 0, nouveau: 0, disparu: 0, change: 0 };
+    J.forEach(s => s.evenements.forEach(e => { types[e.type]++; }));
+    return {
+      types,
+      puce: !!document.querySelector('.puce-delta[data-delta="indice"]'),
+      compte: !!document.querySelector('.compte-passage[data-passage="indice"]'),
+      racines: window.__analyserUD('UD-24-1037')
+    };
+  });
+  verifier('des références hors format ne sont jamais appariées : aucun changement d’indice',
+    appariement.types.indice === 0 && !appariement.puce && !appariement.compte, JSON.stringify(appariement.types));
+  verifier('les deux plans apparus dans l’historique restent des nouveaux',
+    appariement.types.nouveau === 2 && appariement.types.disparu === 0 && appariement.types.change > 0,
+    JSON.stringify(appariement.types));
+  verifier('et la page lit bien ces références comme hors format',
+    appariement.racines.valide === false && appariement.racines.racine === 'UD-24-1037');
 
   // Replier / déplier
   await pg.click('.journal-plier >> nth=0'); await pg.waitForTimeout(350);
@@ -917,8 +939,11 @@ function serveurSur(valeurs, proprietes, fichiers) {
   }
   verifier('survoler une semaine annonce les passages en terminé',
     /passés? en terminé/.test(texteBulle), texteBulle.slice(0, 90));
-  verifier('et donne les références, pas seulement le compte',
-    /UD-/.test(texteBulle), texteBulle.slice(0, 120));
+  /* La bulle résume : « terminés N / total », l'écart, puis les comptes de la
+     semaine. Les références, elles, sont dans le journal, dessous. */
+  verifier('en comptes, sans lister les références ni « et N autres »',
+    !/UD-/.test(texteBulle) && !/autres/.test(texteBulle) &&
+    /terminés\s*\d+\s*\/\s*\d+/.test(texteBulle), texteBulle.slice(0, 120));
 
   // =================================================================
   section('Aperçu quand l\'historique est vide');

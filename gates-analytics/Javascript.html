@@ -86,6 +86,81 @@
   }
 
   /* ============================================================
+     REFERENCES UD
+     Une référence s'écrit RACINE + INDICE + REVISION : HEL0225A017 001 A.
+     La racine (3 lettres, 4 chiffres, A, 3 chiffres) est l'identité du plan ;
+     l'indice (3 chiffres) et la révision (une lettre) bougent quand le plan
+     est réémis. Deux relevés successifs ne portent alors plus la même chaîne
+     pour le même plan : comparer les chaînes telles quelles ferait de chaque
+     réémission un « disparu » plus un « nouveau ».
+     ============================================================ */
+  var FORME_UD = /^([A-Z]{3})(\d{4})A(\d{3})(\d{3})([A-Z])$/;
+  /** Tolérant aux séparateurs (-, _, espace, point, /) et à la casse. Une
+      référence hors format garde sa forme entière — épurée — comme racine. */
+  function analyserUD(ref) {
+    var brut = String(ref == null ? '' : ref).trim().toUpperCase();
+    var m = FORME_UD.exec(brut.replace(/[-_\s.\/]+/g, ''));
+    if (!m) return { racine: brut, indice: '', revision: '', valide: false };
+    return { racine: m[1] + m[2] + 'A' + m[3], indice: m[4], revision: m[5], valide: true };
+  }
+  /* Le rang d'une émission : sert à choisir, entre deux candidates de même
+     racine, la plus proche de celle qui a disparu. */
+  function rangUD(ud) { return Number(ud.indice) * 26 + (ud.revision.charCodeAt(0) - 65); }
+  /* Exposée pour la batterie : une fonction pure se vérifie cas par cas. */
+  window.__analyserUD = analyserUD;
+
+  /* Compare deux cartes plan par plan { ref: avancement } et rend les
+     événements : 'change' (même référence, autre état), 'nouveau', 'disparu'
+     et 'indice'. Les références qui ne se retrouvent pas telles quelles sont
+     appariées par racine : une racine partie d'un côté et revenue de l'autre
+     sous un autre indice est le même plan réémis. Quand plusieurs candidates
+     se présentent, la plus proche par indice puis révision l'emporte ; les
+     autres restent nouvelles ou disparues. Une référence hors format n'a pas
+     de racine au sens propre : elle n'est jamais appariée. */
+  function apparier(avant, apres) {
+    var a = Object.prototype.hasOwnProperty;
+    var evenements = [], partis = {}, venus = {};
+    Object.keys(apres).forEach(function (ref) {
+      if (a.call(avant, ref)) {
+        var ea = classer(avant[ref]), eb = classer(apres[ref]);
+        if (ea !== eb) evenements.push({ ref: ref, type: 'change', avant: ea, apres: eb });
+        return;
+      }
+      var ud = analyserUD(ref);
+      if (ud.valide) (venus[ud.racine] = venus[ud.racine] || []).push({ ref: ref, rang: rangUD(ud) });
+      else evenements.push({ ref: ref, type: 'nouveau', apres: classer(apres[ref]) });
+    });
+    Object.keys(avant).forEach(function (ref) {
+      if (a.call(apres, ref)) return;
+      var ud = analyserUD(ref);
+      if (ud.valide) (partis[ud.racine] = partis[ud.racine] || []).push({ ref: ref, rang: rangUD(ud) });
+      else evenements.push({ ref: ref, type: 'disparu', avant: classer(avant[ref]) });
+    });
+    Object.keys(venus).forEach(function (racine) {
+      var paires = [];
+      (partis[racine] || []).forEach(function (p) {
+        venus[racine].forEach(function (v) { paires.push({ p: p, v: v, d: Math.abs(v.rang - p.rang) }); });
+      });
+      paires.sort(function (x, y) { return (x.d - y.d) || (x.p.rang - y.p.rang) || (x.v.rang - y.v.rang); });
+      paires.forEach(function (pr) {
+        if (pr.p.pris || pr.v.pris) return;
+        pr.p.pris = pr.v.pris = true;
+        evenements.push({ ref: pr.v.ref, type: 'indice', ancienne: pr.p.ref,
+                          avant: classer(avant[pr.p.ref]), apres: classer(apres[pr.v.ref]) });
+      });
+      venus[racine].forEach(function (v) {
+        if (!v.pris) evenements.push({ ref: v.ref, type: 'nouveau', apres: classer(apres[v.ref]) });
+      });
+    });
+    Object.keys(partis).forEach(function (racine) {
+      partis[racine].forEach(function (p) {
+        if (!p.pris) evenements.push({ ref: p.ref, type: 'disparu', avant: classer(avant[p.ref]) });
+      });
+    });
+    return evenements;
+  }
+
+  /* ============================================================
      ANCIENNETE
      Dimension derivee de la colonne de date : un plan cree il y a longtemps
      et toujours pas termine est celui sur lequel il faut se pencher.
@@ -378,7 +453,11 @@
 
       var p = {};
       colonnes.forEach(function (c) { p[c.cle] = ''; });
-      p.reference = 'UD-' + ata + '-' + String(1037 + i * 7).slice(-4);
+      /* Une vraie référence UD : racine (3 lettres, 4 chiffres, A, 3 chiffres),
+         indice sur 3 chiffres, révision en lettre. La racine est unique par
+         plan : ses trois derniers chiffres suivent le rang. */
+      p.reference = tire(['HEL', 'ELE', 'HAR', 'CAB', 'AVI']) + String(1000 + ent(0, 8999)) + 'A' +
+                    ('00' + (i % 1000)).slice(-3) + '00' + ent(1, 3) + tire(['A', 'B', 'C']);
       p.rpt = tire(['true', 'false']);
       p.propa = tire(['BASE/OPTION', 'BASE', 'OPTION']);
       p.libelle = 'Faisceau ' + (i + 1);
@@ -436,6 +515,28 @@
        chaque relevé : c'est ce qui fait vivre le journal et la bulle du
        graphique. La profondeur dépend du contrat. */
     var SEMAINES = fiche.semaines;
+
+    /* Quelques plans ont été réémis au fil des semaines : leur référence a
+       changé d'indice ou de révision sans que le plan change d'identité. Six
+       par contrat, à des semaines différentes ; deux d'entre eux changent
+       aussi d'état à ce moment-là. Les cartes d'avant portent l'ancienne
+       référence, celles d'après la nouvelle — c'est ce que le journal doit
+       apparier au lieu d'y voir un disparu et un nouveau. */
+    var reemissions = [];
+    for (var q = 5; reemissions.length < 6 && q < plans.length; q += 53) {
+      var pl = plans[q], ud = analyserUD(pl.reference), ancienne;
+      if (reemissions.length % 2 === 0) {
+        if (ud.indice === '001') { ud.indice = '002'; pl.reference = ud.racine + '002' + ud.revision; }
+        ancienne = ud.racine + ('00' + (Number(ud.indice) - 1)).slice(-3) + ud.revision;
+      } else {
+        if (ud.revision === 'A') { ud.revision = 'B'; pl.reference = ud.racine + ud.indice + 'B'; }
+        ancienne = ud.racine + ud.indice + String.fromCharCode(ud.revision.charCodeAt(0) - 1);
+      }
+      reemissions.push({ ref: pl.reference, ancienne: ancienne,
+                         k: SEMAINES - reemissions.length, avecEtat: reemissions.length % 3 === 0 });
+    }
+    var ETAT_DAVANT = { 'Terminé': 'En cours', 'En cours': 'À faire', 'À faire': 'En cours', '': 'À faire' };
+
     var etatCourant = {};
     plans.forEach(function (x) { etatCourant[x.reference] = x.avancement; });
     var refs = plans.map(function (x) { return x.reference; });
@@ -451,11 +552,21 @@
         if (v === 'Terminé') { etatCourant[ref] = 'En cours'; recules++; }
         else if (v === 'En cours' && alea() < 0.5) { etatCourant[ref] = 'À faire'; recules++; }
       }
+      reemissions.forEach(function (re) {
+        if (re.k !== k) return;
+        /* Avant cette semaine, le plan portait l'ancienne référence — et,
+           pour certains, n'était pas encore dans le même état. */
+        var val = etatCourant[re.ref];
+        delete etatCourant[re.ref];
+        etatCourant[re.ancienne] = re.avecEtat ? ETAT_DAVANT[val] : val;
+      });
       if (k === 1) { delete etatCourant[refs[3]]; delete etatCourant[refs[11]]; }
     }
 
-    var parRef = {};
-    plans.forEach(function (x) { parRef[x.reference] = x; });
+    /* Une ancienne référence retrouve son plan par la racine : ses comptes
+       par dimension ne doivent pas manquer dans les relevés d'avant. */
+    var parRef = {}, parRacine = {};
+    plans.forEach(function (x) { parRef[x.reference] = x; parRacine[analyserUD(x.reference).racine] = x; });
     var releves = [];
     for (var s = 0; s <= SEMAINES; s++) {
       var carte = instantanes[s];
@@ -465,7 +576,7 @@
       Object.keys(carte).forEach(function (ref) {
         var etat = classer(carte[ref]);
         etats[etat]++;
-        var plan = parRef[ref];
+        var plan = parRef[ref] || parRacine[analyserUD(ref).racine];
         if (!plan) return;
         clesAvecDerivees.forEach(function (d) {
           var v = String(valeurDe(plan, d) || '—');
@@ -528,7 +639,7 @@
   var COLONNES, PAR_CLE, CLE_DATE, PLANS, RELEVES_SRC, BASE, AUJ;
   var CLES_DIM, CLE_DOMAINE, CLES_ESSENTIELLES, VAUT_ESSENTIELLES, CLE_LIBELLE;
   var RELEVES, DERNIER, COMPARATIF, jalons;
-  var DIMENSIONS, TITRE_DIM, ORDRE_FEUILLE, PLAN_PAR_REF, JOURNAL, SEMAINE_FIN;
+  var DIMENSIONS, TITRE_DIM, ORDRE_FEUILLE, PLAN_PAR_REF, PLAN_PAR_RACINE, JOURNAL, SEMAINE_FIN;
   var RELEVES_REELS, AUJ_REEL, BASE_REELLE;
   var CONTRATS, CONTRAT;
   var vue = null;
@@ -605,7 +716,10 @@
     CLE_DATE = src.cleDate || null;
 
     PLANS = src.plans;
-    PLANS.forEach(function (p) { p._etat = classer(p.avancement); p._pct = pourcentDe(p); });
+    PLANS.forEach(function (p) {
+      p._etat = classer(p.avancement); p._pct = pourcentDe(p);
+      p._racine = analyserUD(p.reference).racine;
+    });
 
     RELEVES_SRC = (src.releves || []).filter(function (r) { return r && lundiDeLibelle(r.semaine); });
     RELEVES_SRC.sort(function (a, b) { return lundiDeLibelle(a.semaine) - lundiDeLibelle(b.semaine); });
@@ -690,7 +804,8 @@
     ORDRE_FEUILLE = COLONNES.map(function (c) { return c.cle; });
 
     PLAN_PAR_REF = {};
-    PLANS.forEach(function (p) { PLAN_PAR_REF[p.reference] = p; });
+    PLAN_PAR_RACINE = {};
+    PLANS.forEach(function (p) { PLAN_PAR_REF[p.reference] = p; PLAN_PAR_RACINE[p._racine] = p; });
     JOURNAL = construireJournal();
     SEMAINE_FIN = semainesDeFin();
 
@@ -822,18 +937,22 @@
      sur 186 lignes, et c'est pourtant la question de chaque semaine. */
   /* On compte les passages d'un état à l'autre, avec les mots des quatre états :
      « passés en terminé » et non « ont avancé ». */
+  /* Les références sont appariées par racine (voir apparier) : un plan réémis
+     va dans « changements d'indice », sous sa nouvelle référence — et aussi
+     dans le lot de son état d'arrivée s'il en a changé au passage, car il
+     est alors bien passé en terminé, ou en cours. Le passage à « vide » n'est
+     pas un lot : une cellule effacée n'est pas un progrès à annoncer. */
   function comparatif() {
     if (RELEVES.length < 2) return null;
     var avant = RELEVES[RELEVES.length - 2].plans;
-    if (!avant) return null;
-    var d = { termine: [], encours: [], afaire: [], nouveaux: [], disparus: [] };
-    PLANS.forEach(function (p) {
-      if (!(p.reference in avant)) { d.nouveaux.push(p.reference); return; }
-      if (classer(avant[p.reference]) !== p._etat && d[p._etat]) d[p._etat].push(p.reference);
+    if (!avant || !DERNIER.plans) return null;
+    var d = { termine: [], encours: [], afaire: [], nouveaux: [], disparus: [], indice: [], reemissions: [] };
+    apparier(avant, DERNIER.plans).forEach(function (e) {
+      if (e.type === 'nouveau') { d.nouveaux.push(e.ref); return; }
+      if (e.type === 'disparu') { d.disparus.push(e.ref); return; }
+      if (e.type === 'indice') { d.indice.push(e.ref); d.reemissions.push({ ref: e.ref, ancienne: e.ancienne }); }
+      if (e.avant !== e.apres && d[e.apres]) d[e.apres].push(e.ref);
     });
-    var actuelles = {};
-    PLANS.forEach(function (p) { actuelles[p.reference] = true; });
-    Object.keys(avant).forEach(function (ref) { if (!actuelles[ref]) d.disparus.push(ref); });
     return d;
   }
 
@@ -1457,10 +1576,11 @@
       var pt = a.pts[k];
       var gagne = k > 0 ? pt.termine - a.pts[k - 1].termine : null;
       bulle.innerHTML = '\x3Cdiv class="tete-bulle">Relevé du ' + etiquette(i) + '\x3C/div>' +
-        '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille" style="background:var(--fait)">\x3C/span>terminés\x3Cspan class="n">' + pt.termine + '\x3C/span>\x3C/div>' +
-        '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille" style="background:var(--filet-fort)">\x3C/span>sur\x3Cspan class="n">' + pt.total + '\x3C/span>\x3C/div>' +
-        (gagne !== null ? '\x3Cdiv class="bulle-ligne" style="margin-top:5px;padding-top:5px;border-top:1px solid var(--filet)">depuis le précédent\x3Cspan class="n">' + (gagne > 0 ? '+' : '') + gagne + '\x3C/span>\x3C/div>' : '') +
-        finisCetteSemaine(i);
+        '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille" style="background:var(--fait)">\x3C/span>terminés\x3Cspan class="n">' +
+          nb(pt.termine) + ' / ' + nb(pt.total) + '\x3C/span>\x3C/div>' +
+        (gagne !== null ? '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille sans">\x3C/span>depuis le précédent\x3Cspan class="n">' +
+          (gagne > 0 ? '+' : '') + nb(gagne) + '\x3C/span>\x3C/div>' : '') +
+        comptesDeLaSemaine(i);
     } else {
       bulle.innerHTML = '\x3Cdiv class="tete-bulle">' + etiquette(i) + '\x3C/div>\x3Cdiv class="bulle-ligne">' +
         (i > AUJ ? 'À venir · cliquez pour poser un jalon' : 'Pas de relevé cette semaine-là') + '\x3C/div>';
@@ -1469,26 +1589,36 @@
     bulle.style.left = Math.min(e.clientX + 14, window.innerWidth - bulle.offsetWidth - 12) + 'px';
     bulle.style.top = Math.min(e.clientY + 16, window.innerHeight - bulle.offsetHeight - 12) + 'px';
   });
-  /* Sous la courbe, les noms. « +6 cette semaine » ne dit pas lesquels : la
-     bulle donne les références passées en terminé, c'est ce qu'on vient
-     chercher en pointant une semaine. */
-  var MAX_BULLE = 8;
-  function finisCetteSemaine(i) {
+  /* Sous les deux lignes de tête, le résumé de la semaine. « +6 » ne dit pas
+     ce qui s'est passé : la bulle reprend les comptes du journal — passages,
+     nouveaux, disparus, changements d'indice — une ligne par compte non nul,
+     et rien d'autre : le journal, dessous, donne le détail. Quand la courbe
+     est celle d'un groupe, les comptes se limitent aux plans de ce groupe. */
+  var LIGNES_BULLE = [
+    { cle: 'termine', un: 'passé en terminé',   des: 'passés en terminé' },
+    { cle: 'encours', un: 'passé en cours',     des: 'passés en cours' },
+    { cle: 'afaire',  un: 'repassé à faire',    des: 'repassés à faire' },
+    { cle: 'vide',    un: 'effacé',             des: 'effacés' },
+    { cle: 'nouveau', un: 'nouveau',            des: 'nouveaux' },
+    { cle: 'disparu', un: 'disparu',            des: 'disparus' },
+    { cle: 'indice',  un: 'changement d’indice', des: 'changements d’indice' }
+  ];
+  function comptesDeLaSemaine(i) {
     var sem = JOURNAL.filter(function (s) { return s.i === i; })[0];
     if (!sem) return '';
-    var finis = sem.evenements.filter(function (e) { return e.apres === 'termine'; });
-    if (!finis.length) return '';
-    var liste = finis.slice(0, MAX_BULLE).map(function (e) {
-      var plan = PLAN_PAR_REF[e.ref];
-      var quoi = plan && CLE_LIBELLE ? String(plan[CLE_LIBELLE] || '') : '';
-      return '\x3Cdiv class="bulle-ud">\x3Cspan class="r">' + ech(e.ref) + '\x3C/span>' +
-        (quoi ? '\x3Cspan class="q">' + ech(quoi) + '\x3C/span>' : '') + '\x3C/div>';
-    }).join('');
-    var reste = finis.length - MAX_BULLE;
-    return '\x3Cdiv class="bulle-finis">\x3Cdiv class="tete-bulle">' +
-      nb(finis.length) + ' pass\u00e9' + (finis.length > 1 ? 's' : '') + ' en termin\u00e9\x3C/div>' +
-      liste + (reste > 0 ? '\x3Cdiv class="bulle-reste">et ' + nb(reste) + ' autre' + (reste > 1 ? 's' : '') + '\u2026\x3C/div>' : '') +
-      '\x3C/div>';
+    var evts = sem.evenements;
+    if (vue.groupe && CLES_DIM.indexOf(vue.groupe.dim) !== -1) {
+      evts = evts.filter(function (e) {
+        var p = planDeRef(e.ref);
+        return p && String(valeurDim(p, vue.groupe.dim)) === vue.groupe.val;
+      });
+    }
+    var c = comptesEvenements(evts);
+    var lignes = LIGNES_BULLE.filter(function (l) { return c[l.cle]; }).map(function (l) {
+      return '\x3Cdiv class="bulle-ligne">' + pastilleDe(l.cle) + (c[l.cle] > 1 ? l.des : l.un) +
+        '\x3Cspan class="n">' + nb(c[l.cle]) + '\x3C/span>\x3C/div>';
+    });
+    return lignes.length ? '\x3Cdiv class="bulle-comptes">' + lignes.join('') + '\x3C/div>' : '';
   }
 
   cadreGraphe.addEventListener('mouseleave', function () { $('bulle').dataset.visible = 'false'; });
@@ -2020,13 +2150,17 @@
   var COLONNE_SUIVIE = 'avancement';
   /* Ce qui a bougé depuis l'import précédent. Sur 186 lignes, personne ne
      peut le voir à l'œil ; c'est pourtant la question de chaque semaine. */
+  /* « un » et « des » : le libellé s'accorde au compte — « 1 passé en
+     terminé », « 20 passés en terminé ». */
   var LOTS_DELTA = [
-    { cle: 'termine',  libelle: 'passés en terminé', etat: 'termine', classe: '' },
-    { cle: 'encours',  libelle: 'passés en cours',   etat: 'encours', classe: '' },
-    { cle: 'afaire',   libelle: 'passés à faire',    etat: 'afaire',  classe: '' },
-    { cle: 'nouveaux', libelle: 'nouveaux',          etat: null,      classe: '' },
-    { cle: 'disparus', libelle: 'disparus',          etat: null,      classe: '' }
+    { cle: 'termine',  un: 'passé en terminé',    des: 'passés en terminé',    etat: 'termine' },
+    { cle: 'encours',  un: 'passé en cours',      des: 'passés en cours',      etat: 'encours' },
+    { cle: 'afaire',   un: 'passé à faire',       des: 'passés à faire',       etat: 'afaire' },
+    { cle: 'nouveaux', un: 'nouveau',             des: 'nouveaux',             etat: null },
+    { cle: 'disparus', un: 'disparu',             des: 'disparus',             etat: null },
+    { cle: 'indice',   un: 'changement d’indice', des: 'changements d’indice', etat: null }
   ];
+  function libelleLot(l, n) { return n > 1 ? l.des : l.un; }
 
   function rendreComparatif() {
     var zone = $('comparatif');
@@ -2036,13 +2170,11 @@
     }
     var morceaux = LOTS_DELTA.filter(function (l) { return COMPARATIF[l.cle].length; }).map(function (l) {
       var actif = vue.refsLibelle === l.cle;
-      var e = l.etat ? ETAT_PAR_CLE[l.etat] : null;
-      var pastille = !e ? ''
-        : (e.hachure ? '\x3Cspan class="pastille hachure">\x3C/span>'
-                     : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>');
-      return '\x3Cbutton class="puce-delta ' + l.classe + '" type="button" data-delta="' + l.cle +
+      var n = COMPARATIF[l.cle].length;
+      var pastille = l.etat || l.cle === 'indice' ? pastilleDe(l.etat || l.cle) : '';
+      return '\x3Cbutton class="puce-delta" type="button" data-delta="' + l.cle +
         '" aria-pressed="' + actif + '">' +
-        pastille + '\x3Cb>' + nb(COMPARATIF[l.cle].length) + '\x3C/b> ' + l.libelle + '\x3C/button>';
+        pastille + '\x3Cb>' + nb(n) + '\x3C/b> ' + libelleLot(l, n) + '\x3C/button>';
     });
     zone.innerHTML = '\x3Cspan>Depuis l\u2019import du ' + etiquette(RELEVES[RELEVES.length - 2].i) + ' :\x3C/span>' +
       (morceaux.length ? morceaux.join('') : '\x3Cspan>aucun changement.\x3C/span>');
@@ -2054,51 +2186,77 @@
      relevés successifs donne, semaine par semaine, qui a bougé et dans quel
      sens — la seule chose que l'export du jour ne dira jamais.
      ============================================================ */
-  /* PLAN_PAR_REF, JOURNAL et SEMAINE_FIN sont dérivés dans chargerSource(). */
+  /* PLAN_PAR_REF, PLAN_PAR_RACINE, JOURNAL et SEMAINE_FIN sont dérivés dans
+     chargerSource(). Les événements d'une semaine viennent d'apparier() :
+     un plan réémis y est un changement d'indice, pas un disparu plus un nouveau. */
   function construireJournal() {
     var journal = [];
     for (var k = 1; k < RELEVES.length; k++) {
       var avant = RELEVES[k - 1].plans, apres = RELEVES[k].plans;
       if (!avant || !apres) continue;
-      var evenements = [];
-      Object.keys(apres).forEach(function (ref) {
-        var brutAvant = avant[ref];
-        if (brutAvant === undefined) {
-          evenements.push({ ref: ref, type: 'nouveau', apres: classer(apres[ref]) });
-          return;
-        }
-        var ea = classer(brutAvant), eb = classer(apres[ref]);
-        if (ea !== eb) evenements.push({ ref: ref, type: 'change', avant: ea, apres: eb });
-      });
-      Object.keys(avant).forEach(function (ref) {
-        if (apres[ref] === undefined) {
-          evenements.push({ ref: ref, type: 'disparu', avant: classer(avant[ref]) });
-        }
-      });
+      var evenements = apparier(avant, apres);
       if (evenements.length) journal.push({ i: RELEVES[k].i, evenements: evenements });
     }
     return journal.reverse();          // la semaine la plus récente en tête
   }
 
-  /* La semaine où chaque plan est passé en terminé, pour de bon. */
+  /* Le plan derrière une référence, même ancienne : une référence qui n'est
+     plus dans la feuille se retrouve par sa racine — c'est le même plan,
+     réémis depuis. */
+  function planDeRef(ref) {
+    return PLAN_PAR_REF[ref] || PLAN_PAR_RACINE[analyserUD(ref).racine] || null;
+  }
+
+  /* La semaine où chaque plan est passé en terminé, pour de bon — par racine,
+     puisque la référence peut changer d'indice sans que le plan change. Une
+     réémission d'un plan déjà terminé ne le fait pas « finir » à nouveau. */
   function semainesDeFin() {
     var f = {};
     JOURNAL.slice().reverse().forEach(function (sem) {
       sem.evenements.forEach(function (e) {
-        if (e.apres === 'termine') f[e.ref] = sem.i;
-        else if (e.avant === 'termine') delete f[e.ref];   // reparti en arrière
+        var racine = analyserUD(e.ref).racine;
+        if (e.apres === 'termine' && e.avant !== 'termine') f[racine] = sem.i;
+        else if (e.avant === 'termine' && e.apres !== 'termine') delete f[racine];   // reparti en arrière
       });
     });
     return f;
   }
 
+  /* Le filtre du journal : un état d'arrivée, ou « indice ». Un changement
+     d'indice qui a aussi changé l'état se range sous cet état ; sans passage,
+     il ne se range sous aucun. */
+  function retenuParJournal(e, filtre) {
+    if (!filtre) return true;
+    if (filtre === 'indice') return e.type === 'indice';
+    return e.apres === filtre && (e.type !== 'indice' || e.avant !== e.apres);
+  }
+  /* Les comptes d'une liste d'événements, avec les mots du journal et de la
+     bulle : passages par état d'arrivée, nouveaux, disparus, changements
+     d'indice. Un plan réémis qui change d'état compte des deux côtés. */
+  function comptesEvenements(evts) {
+    var c = { termine: 0, encours: 0, afaire: 0, vide: 0, nouveau: 0, disparu: 0, indice: 0 };
+    evts.forEach(function (e) {
+      if (e.type === 'nouveau') { c.nouveau++; return; }
+      if (e.type === 'disparu') { c.disparu++; return; }
+      if (e.type === 'indice') { c.indice++; if (e.avant === e.apres) return; }
+      c[e.apres]++;
+    });
+    return c;
+  }
+
+  /* La pastille d'un état — ou, hors des états, l'anneau neutre du changement
+     d'indice et la pastille transparente qui tient la place des autres. */
+  function pastilleDe(cle) {
+    var e = ETAT_PAR_CLE[cle];
+    if (!e) return '\x3Cspan class="pastille ' + (cle === 'indice' ? 'neutre' : 'sans') + '">\x3C/span>';
+    return e.hachure
+      ? '\x3Cspan class="pastille hachure">\x3C/span>'
+      : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>';
+  }
   function etiqEtat(cle, role) {
     var e = ETAT_PAR_CLE[cle];
     if (!e) return '';
-    var pastille = e.hachure
-      ? '\x3Cspan class="pastille hachure">\x3C/span>'
-      : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>';
-    return '\x3Cspan class="etiq-etat ' + (role || '') + '">' + pastille + ech(e.court) + '\x3C/span>';
+    return '\x3Cspan class="etiq-etat ' + (role || '') + '">' + pastilleDe(cle) + ech(e.court) + '\x3C/span>';
   }
 
   var MAX_JOURNAL = 12;                // lignes affichées avant « voir tout »
@@ -2112,17 +2270,10 @@
     }
     var filtre = vue.journal;
     var html = JOURNAL.map(function (sem, rang) {
-      var evts = sem.evenements.filter(function (e) {
-        return !filtre || e.apres === filtre;
-      });
+      var evts = sem.evenements.filter(function (e) { return retenuParJournal(e, filtre); });
       if (!evts.length) return '';
 
-      var parType = { termine: 0, encours: 0, afaire: 0, vide: 0, nouveau: 0, disparu: 0 };
-      evts.forEach(function (e) {
-        if (e.type === 'nouveau') parType.nouveau++;
-        else if (e.type === 'disparu') parType.disparu++;
-        else parType[e.apres]++;
-      });
+      var parType = comptesEvenements(evts);
       /* « passés en en cours » ne se dit pas : chaque état a sa tournure.
          Et chaque compte est un bouton : cliquer « 4 terminés » n'affiche plus
          que ceux-là, pour toutes les semaines à la fois. */
@@ -2140,6 +2291,11 @@
           '" aria-pressed="' + (vue.journal === et.cle) + '" title="N\u2019afficher que ces passages, sur toutes les semaines">' +
           ech(mot) + '\x3C/button>');
       });
+      if (parType.indice) {
+        resume.push('\x3Cbutton class="compte-passage" type="button" data-passage="indice" aria-pressed="' +
+          (vue.journal === 'indice') + '" title="N\u2019afficher que les changements d\u2019indice, sur toutes les semaines">' +
+          nb(parType.indice) + ' changement' + (parType.indice > 1 ? 's' : '') + ' d\u2019indice\x3C/button>');
+      }
       if (parType.nouveau) resume.push('\x3Cspan>' + nb(parType.nouveau) + ' nouveau' + (parType.nouveau > 1 ? 'x' : '') + '\x3C/span>');
       if (parType.disparu) resume.push('\x3Cspan>' + nb(parType.disparu) + ' disparu' + (parType.disparu > 1 ? 's' : '') + '\x3C/span>');
 
@@ -2148,16 +2304,19 @@
       var limite = vue.journalOuverts['tout' + sem.i] ? evts.length : MAX_JOURNAL;
 
       /* Rangées par état d'arrivée, puis par référence : « terminé, terminé,
-         terminé, à faire, à faire » se lit, « en vrac » ne se lit pas. */
+         terminé, à faire, à faire » se lit, « en vrac » ne se lit pas. Les
+         changements d'indice viennent après les passages, avant les nouveaux
+         et les disparus. */
       var rangEtat = { termine: 0, encours: 1, afaire: 2, vide: 3 };
+      var rangType = { indice: 4, nouveau: 5, disparu: 6 };
       evts = evts.slice().sort(function (a, b) {
-        var ra = a.type === 'disparu' ? 5 : (a.type === 'nouveau' ? 4 : rangEtat[a.apres]);
-        var rb = b.type === 'disparu' ? 5 : (b.type === 'nouveau' ? 4 : rangEtat[b.apres]);
+        var ra = rangType[a.type] !== undefined ? rangType[a.type] : rangEtat[a.apres];
+        var rb = rangType[b.type] !== undefined ? rangType[b.type] : rangEtat[b.apres];
         return (ra - rb) || a.ref.localeCompare(b.ref, 'fr', { numeric: true });
       });
 
       var lignes = evts.slice(0, limite).map(function (e) {
-        var plan = PLAN_PAR_REF[e.ref];
+        var plan = planDeRef(e.ref);
         var quoi = plan && CLE_LIBELLE ? String(plan[CLE_LIBELLE] || '') : '';
         var vers = e.type === 'nouveau'
           ? '\x3Cspan class="vers">\x3Cspan class="etiq-etat avant">nouveau\x3C/span>' +
@@ -2167,9 +2326,15 @@
               '\x3Cspan class="fleche-etat">\u2192\x3C/span>\x3Cspan class="etiq-etat apres">retiré\x3C/span>\x3C/span>'
             : '\x3Cspan class="vers">' + etiqEtat(e.avant, 'avant') +
               '\x3Cspan class="fleche-etat">\u2192\x3C/span>' + etiqEtat(e.apres, 'apres') + '\x3C/span>';
-        return '\x3Cli>\x3Cbutton class="journal-ligne" type="button" data-ref="' + ech(e.ref) +
-          '" title="N’afficher que ce plan dans le tableau">' +
-          '\x3Cspan class="ref">' + ech(e.ref) + '\x3C/span>' +
+        /* Une réémission se lit « ANCIENNE → NOUVELLE », puis l'état avant et
+           après : le même plan sous deux références, et ce qu'il est devenu. */
+        var reference = e.type === 'indice'
+          ? '\x3Cspan class="ref ref-indice">\x3Cspan class="ancienne">' + ech(e.ancienne) + '\x3C/span>' +
+            '\x3Cspan class="nouvelle">\u2192 ' + ech(e.ref) + '\x3C/span>\x3C/span>'
+          : '\x3Cspan class="ref">' + ech(e.ref) + '\x3C/span>';
+        return '\x3Cli>\x3Cbutton class="journal-ligne' + (e.type === 'indice' ? ' indice' : '') +
+          '" type="button" data-ref="' + ech(e.ref) + '" data-type="' + e.type +
+          '" title="N’afficher que ce plan dans le tableau">' + reference +
           '\x3Cspan class="quoi">' + ech(quoi) + '\x3C/span>' + vers + '\x3C/button>\x3C/li>';
       }).join('');
 
@@ -2359,7 +2524,10 @@
     }
     if (vue.refs) {
       var n = Object.keys(vue.refs).length;
-      liste.push({ cle: 'refs', mot: 'Sélection', valeur: vue.refsLibelle || (n + ' plans') });
+      /* Un lot du comparatif se nomme par son libellé, pas par sa clé — et au
+         pluriel : le bandeau nomme une catégorie, il ne compte pas. */
+      var lot = LOTS_DELTA.filter(function (l) { return l.cle === vue.refsLibelle; })[0];
+      liste.push({ cle: 'refs', mot: 'Sélection', valeur: lot ? lot.des : (vue.refsLibelle || (n + ' plans')) });
     }
     Object.keys(vue.vides).forEach(function (k) {
       if (vue.vides[k]) liste.push({ cle: 'vide:' + k, mot: PAR_CLE[k].titre, valeur: 'non renseigné' });
@@ -2461,8 +2629,12 @@
     if (!b || !COMPARATIF) { bulle.dataset.visible = 'false'; return; }
     var lot = LOTS_DELTA.filter(function (l) { return l.cle === b.dataset.delta; })[0];
     var refs = COMPARATIF[b.dataset.delta];
-    bulle.innerHTML = '\x3Cdiv class="tete-bulle">' + nb(refs.length) + ' ' + ech(lot.libelle) + '\x3C/div>' +
-      '\x3Cdiv class="liste-refs">' + refs.slice(0, MAX_APERCU).map(ech).join('\x3Cbr>') +
+    /* Un changement d'indice se montre avec ses deux références. */
+    var lignes = b.dataset.delta === 'indice'
+      ? COMPARATIF.reemissions.map(function (r) { return ech(r.ancienne) + ' \u2192 ' + ech(r.ref); })
+      : refs.map(ech);
+    bulle.innerHTML = '\x3Cdiv class="tete-bulle">' + nb(refs.length) + ' ' + ech(libelleLot(lot, refs.length)) + '\x3C/div>' +
+      '\x3Cdiv class="liste-refs">' + lignes.slice(0, MAX_APERCU).join('\x3Cbr>') +
       (refs.length > MAX_APERCU ? '\x3Cbr>\x3Cspan class="doux">et ' + nb(refs.length - MAX_APERCU) + ' autres\u2026\x3C/span>' : '') +
       '\x3C/div>\x3Cdiv class="doux" style="margin-top:6px;padding-top:5px;border-top:1px solid var(--filet)">' +
       (vue.refsLibelle === b.dataset.delta ? 'Cliquez pour retirer le filtre' : 'Cliquez pour n\u2019afficher que ceux-l\u00e0') +
@@ -2567,7 +2739,10 @@
     if (ligne) {
       /* Cliquer un plan du journal, c'est demander « lequel, exactement ? » :
          le tableau se réduit à lui, et le bandeau dit d'où vient le filtre. */
-      var ref = ligne.dataset.ref;
+      /* Une référence d'une semaine passée peut avoir changé d'indice depuis :
+         c'est le plan d'aujourd'hui, sous sa référence courante, qu'on montre. */
+      var plan = planDeRef(ligne.dataset.ref);
+      var ref = plan ? plan.reference : ligne.dataset.ref;
       var meme = vue.refs && Object.keys(vue.refs).length === 1 && vue.refs[ref];
       if (meme) { vue.refs = null; vue.refsLibelle = ''; }
       else {
@@ -2717,6 +2892,10 @@
      un jeu sans liste de contrats — sans passer par l'interface. */
   window.__jeuDExemple = jeuDExemple;
   window.__chargerSource = function (src) { chargerSource(src); remplirDims(); rendre(); };
+  /* Et lire ce que la page a déduit : le journal et le comparatif, tels
+     quels, pour vérifier l'appariement sans passer par le rendu. */
+  window.__journal = function () { return JOURNAL; };
+  window.__comparatif = function () { return COMPARATIF; };
 
   chargerSource(SERVEUR ? window.SUIVI_FWD_DONNEES : jeuDExemple());
   chargerPrefs();
