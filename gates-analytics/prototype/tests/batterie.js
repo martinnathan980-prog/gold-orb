@@ -307,6 +307,197 @@ async function reinitialiser(pg) {
       document.getElementById('select-contrat').value === 'X1'));
 
   // =================================================================
+  /* Le périmètre : tout en haut, à côté du mode. « Tout », puis une puce par
+     domaine avec son compte. Il pilote toute la page — barre, tableau, bloc
+     par groupe, courbe, journal, comparatif — et, sous un périmètre, la courbe
+     est DÉRIVÉE des cartes plan par plan archivées croisées avec le domaine
+     courant de chaque plan, jamais des comptes figés. */
+  section('Périmètre par domaine, tout en haut');
+  const additionner = l => l.reduce((a, b) => a + b, 0);
+  const lirePerimetre = () => p.evaluate(() => {
+    const iDom = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'domaine');
+    const serie = window.__serieAffichee();
+    const evts = window.__journalAffiche().reduce((l, s) => l.concat(s.evenements), []);
+    const C = window.__comparatif();
+    const refsComparatif = C ? ['termine', 'encours', 'afaire', 'nouveaux', 'disparus', 'indice']
+      .reduce((l, k) => l.concat(C[k]), []) : [];
+    return {
+      phrase: document.getElementById('phrase').textContent,
+      etats: [...document.querySelectorAll('.etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
+      compte: document.getElementById('compte').textContent,
+      lignes: document.querySelectorAll('#corps-tableau tr').length,
+      domaines: [...new Set([...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.children[iDom].textContent.trim()))],
+      groupes: document.querySelectorAll('.critique-ligne').length,
+      totalGroupes: [...document.querySelectorAll('.critique-total')].reduce((s, e) => s + (+e.textContent), 0),
+      serie: serie.pts, dernier: serie.pts[serie.pts.length - 1],
+      note: document.getElementById('note-graphe').textContent,
+      evenements: evts.length,
+      domainesJournal: [...new Set(evts.map(e => window.__domaineDe(e.ref)))],
+      lignesJournal: document.querySelectorAll('.journal-ligne').length,
+      comparatif: refsComparatif.length,
+      domainesComparatif: [...new Set(refsComparatif.map(r => window.__domaineDe(r)))],
+      jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()),
+      presse: [...document.querySelectorAll('#choix-perimetre button')]
+        .map(b => b.dataset.perimetre + ':' + b.getAttribute('aria-pressed')).join(' '),
+      incomplets: document.getElementById('incomplets').textContent,
+      rythmes: [...document.querySelectorAll('.critique-effort .v')].map(v => v.textContent.trim()).join('|')
+    };
+  });
+  const selP = await p.evaluate(() => ({
+    visible: !document.getElementById('perimetre').hidden &&
+             document.getElementById('choix-perimetre').offsetParent !== null,
+    haut: document.getElementById('perimetre').getBoundingClientRect().top <
+          document.querySelector('.masthead').getBoundingClientRect().top,
+    dansBandeau: !!document.querySelector('#bandeau-mode #choix-perimetre'),
+    boutons: [...document.querySelectorAll('#choix-perimetre button')].map(b => ({
+      val: b.dataset.perimetre, texte: b.textContent.trim(),
+      n: +(b.querySelector('.n') || { textContent: '0' }).textContent.replace(/\s/g, ''),
+      presse: b.getAttribute('aria-pressed')
+    }))
+  }));
+  verifier('le sélecteur est là, dans le bandeau du haut, avant le titre',
+    selP.visible && selP.haut && selP.dansBandeau, JSON.stringify(selP).slice(0, 120));
+  verifier('trois boutons : Tout, puis un par domaine de la démo',
+    selP.boutons.map(b => b.val).join(',') === ',BASE/OPTION,PERSO' && /^Tout/.test(selP.boutons[0].texte),
+    JSON.stringify(selP.boutons));
+  verifier('il démarre sur Tout', selP.boutons.map(b => b.presse).join(',') === 'true,false,false');
+  const nBase = selP.boutons[1].n, nPerso = selP.boutons[2].n;
+  verifier('chaque puce porte son compte, et les deux domaines font le total',
+    selP.boutons[0].n === TOTAL && nBase > 0 && nPerso > 0 && nBase + nPerso === TOTAL,
+    nBase + ' + ' + nPerso + ' vs ' + TOTAL);
+  const tout0 = await lirePerimetre();
+  verifier('en Tout, le tableau mêle les deux domaines', tout0.domaines.length === 2 && tout0.lignes === TOTAL);
+
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
+  const perso = await lirePerimetre();
+  verifier('choisir PERSO change la phrase d’avancement, qui nomme le périmètre',
+    perso.phrase !== tout0.phrase && /dans le périmètre PERSO/.test(perso.phrase), perso.phrase);
+  verifier('les quatre états totalisent les plans PERSO', additionner(perso.etats) === nPerso, JSON.stringify(perso.etats));
+  verifier('le tableau ne montre que des plans PERSO, et les compte',
+    perso.lignes === nPerso && perso.domaines.join() === 'PERSO' && perso.compte === nPerso + ' plans',
+    perso.compte + ' / ' + perso.domaines.join());
+  verifier('le bloc par groupe ne compte que le périmètre', perso.totalGroupes === nPerso, String(perso.totalGroupes));
+  verifier('les rythmes par groupe sont recalculés sur le périmètre', perso.rythmes !== tout0.rythmes,
+    perso.rythmes.slice(0, 60));
+  verifier('les non renseignés du périmètre sont ceux de la barre',
+    new RegExp('non renseigné ' + perso.etats[3] + '$').test(perso.incomplets), perso.incomplets);
+  verifier('la courbe est dérivée du périmètre : dernier point = terminés / plans PERSO, autant de relevés',
+    perso.dernier.termine === perso.etats[0] && perso.dernier.total === nPerso &&
+    perso.serie.length === tout0.serie.length, JSON.stringify(perso.dernier));
+  verifier('chaque point du périmètre est plus petit que le point global de la même semaine',
+    perso.serie.every((pt, k) => pt.total < tout0.serie[k].total && pt.termine <= tout0.serie[k].termine));
+  verifier('la note du graphique nomme le périmètre', /^Historique du périmètre PERSO · \d+ relevés$/.test(perso.note), perso.note);
+  verifier('le journal ne garde que les plans PERSO : aucun événement d’un plan BASE/OPTION',
+    perso.evenements > 0 && perso.domainesJournal.join() === 'PERSO' && perso.lignesJournal <= tout0.lignesJournal,
+    JSON.stringify(perso.domainesJournal) + ' ' + perso.evenements);
+  verifier('le comparatif « depuis l’import » aussi',
+    perso.comparatif > 0 && perso.comparatif < tout0.comparatif && perso.domainesComparatif.join() === 'PERSO',
+    perso.comparatif + ' / ' + tout0.comparatif);
+  verifier('le bandeau nomme le périmètre comme un filtre, et la puce est pressée',
+    perso.jetons.length === 1 && /^Périmètre : PERSO$/.test(perso.jetons[0]) &&
+    perso.presse === ':false BASE/OPTION:false PERSO:true', JSON.stringify(perso.jetons) + ' ' + perso.presse);
+  // Le bloc par mois : moins de groupes dans le périmètre que dans l'ensemble.
+  await p.selectOption('#dim-critique', '_mois'); await p.waitForTimeout(500);
+  const moisPerso = await p.evaluate(() => document.querySelectorAll('.critique-ligne').length);
+  await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(500);
+  const moisTout = await p.evaluate(() => document.querySelectorAll('.critique-ligne').length);
+  verifier('par mois, le périmètre a moins de lignes de groupe que Tout',
+    moisPerso > 0 && moisPerso < moisTout, moisPerso + ' vs ' + moisTout);
+  await p.selectOption('#dim-critique', 'ata'); await p.waitForTimeout(500);
+
+  await p.click('#choix-perimetre button[data-perimetre="BASE/OPTION"]'); await p.waitForTimeout(700);
+  const base = await lirePerimetre();
+  verifier('BASE/OPTION a ses propres comptes',
+    additionner(base.etats) === nBase && base.lignes === nBase && base.domaines.join() === 'BASE/OPTION' &&
+    base.dernier.total === nBase && base.dernier.termine === base.etats[0], JSON.stringify(base.etats));
+  verifier('PERSO + BASE/OPTION = Tout, état par état',
+    perso.etats.every((v, k) => v + base.etats[k] === tout0.etats[k]),
+    JSON.stringify([perso.etats, base.etats, tout0.etats]));
+  verifier('… pour chaque point de la courbe aussi',
+    perso.serie.every((pt, k) => pt.total + base.serie[k].total === tout0.serie[k].total &&
+      pt.termine + base.serie[k].termine === tout0.serie[k].termine));
+  verifier('… et pour les événements du journal et du comparatif',
+    perso.evenements + base.evenements === tout0.evenements && perso.comparatif + base.comparatif === tout0.comparatif,
+    perso.evenements + ' + ' + base.evenements + ' vs ' + tout0.evenements);
+
+  await p.click('.jeton .x'); await p.waitForTimeout(700);
+  const retourTout = await lirePerimetre();
+  verifier('la croix du bandeau ramène à Tout, avec exactement les valeurs initiales',
+    JSON.stringify(retourTout) === JSON.stringify(tout0),
+    Object.keys(tout0).filter(k => JSON.stringify(tout0[k]) !== JSON.stringify(retourTout[k])).join(','));
+
+  // Le périmètre se cumule avec les autres filtres, et « Tout effacer » retire tout.
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(500);
+  await p.click('.etat-btn[data-etat="termine"]'); await p.waitForTimeout(500);
+  const cumul = await lirePerimetre();
+  verifier('périmètre + état se cumulent : les terminés PERSO, « sur » les plans PERSO',
+    cumul.lignes === perso.etats[0] && cumul.compte === perso.etats[0] + ' plans sur ' + nPerso &&
+    /dans la sélection/.test(cumul.phrase) && cumul.jetons.length === 2, cumul.compte + ' / ' + cumul.phrase);
+  verifier('la courbe reste celle du périmètre, et le dit',
+    cumul.dernier.total === nPerso && /Historique du périmètre PERSO/.test(cumul.note) &&
+    /autres filtres ne s’appliquent pas/.test(cumul.note), cumul.note);
+  await p.click('#tout-effacer'); await p.waitForTimeout(700);
+  verifier('« Tout effacer » remet le périmètre à Tout',
+    JSON.stringify(await lirePerimetre()) === JSON.stringify(tout0));
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(500);
+  await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(700);
+  verifier('le bouton « Tout » aussi', JSON.stringify(await lirePerimetre()) === JSON.stringify(tout0));
+  await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(300);
+  verifier('re-cliquer la puce pressée ne change rien', JSON.stringify(await lirePerimetre()) === JSON.stringify(tout0));
+
+  // En exemple, même dérivation : l'historique fabriqué a ses cartes.
+  await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(900);
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
+  const exPerso = await lirePerimetre();
+  verifier('en exemple aussi, la courbe du périmètre est dérivée des cartes',
+    exPerso.serie.length >= 5 && exPerso.dernier.total === nPerso && exPerso.dernier.termine === exPerso.etats[0] &&
+    exPerso.domainesJournal.join() === 'PERSO', JSON.stringify(exPerso.dernier));
+  await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(800);
+  verifier('revenir au réel rouvre sur Tout', (await lirePerimetre()).presse === ':true BASE/OPTION:false PERSO:false');
+
+  // Un relevé sans carte plan par plan ne peut pas être dérivé : il est écarté, et la note le dit.
+  await p.evaluate(() => {
+    const s = window.__jeuDExemple('X1');
+    s.releves[0].plans = null; s.releves[1].plans = null;
+    window.__chargerSource(s);
+  });
+  await p.waitForTimeout(900);
+  const toutSansCarte = await lirePerimetre();
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
+  const sansCarte = await lirePerimetre();
+  verifier('en Tout, les relevés sans carte restent sur la courbe (comptes archivés)',
+    toutSansCarte.serie.length === tout0.serie.length && !/hors périmètre/.test(toutSansCarte.note), toutSansCarte.note);
+  verifier('sous un périmètre, ils sont écartés de la série',
+    sansCarte.serie.length === tout0.serie.length - 2, sansCarte.serie.length + ' points');
+  verifier('et la note le dit', /2 relevés sans détail plan par plan, hors périmètre/.test(sansCarte.note), sansCarte.note);
+
+  // Sans colonne de domaine, rien à proposer : le sélecteur se tait.
+  await p.evaluate(() => { const s = window.__jeuDExemple('X1'); delete s.cleDomaine; window.__chargerSource(s); });
+  await p.waitForTimeout(900);
+  const sansDomaine = await p.evaluate(() => ({
+    cache: document.getElementById('perimetre').hidden && document.getElementById('choix-perimetre').offsetParent === null,
+    boutons: document.querySelectorAll('#choix-perimetre button').length,
+    lignes: document.querySelectorAll('#corps-tableau tr').length,
+    bandeau: document.getElementById('filtres-actifs').hidden
+  }));
+  verifier('sans colonne de domaine, le sélecteur disparaît et tout est affiché',
+    sansDomaine.cache && sansDomaine.boutons === 0 && sansDomaine.lignes === TOTAL && sansDomaine.bandeau,
+    JSON.stringify(sansDomaine));
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('X1')));
+  await p.waitForTimeout(900);
+  verifier('la colonne revenue, le sélecteur revient, sur Tout',
+    await p.evaluate(() => !document.getElementById('perimetre').hidden &&
+      document.querySelectorAll('#choix-perimetre button').length === 3 &&
+      document.querySelector('#choix-perimetre button[data-perimetre=""]').getAttribute('aria-pressed') === 'true'));
+
+  // Le périmètre n'est pas une préférence : la page rouvre toujours sur Tout.
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(900);
+  await p.reload(); await p.waitForTimeout(1400);
+  verifier('le périmètre n’est pas mémorisé : la page rouvre sur Tout',
+    await p.evaluate(t => document.querySelector('#choix-perimetre button[data-perimetre=""]').getAttribute('aria-pressed') === 'true' &&
+      document.querySelectorAll('#corps-tableau tr').length === t && document.getElementById('filtres-actifs').hidden, TOTAL));
+
+  // =================================================================
   /* Une référence UD = racine (l'identité du plan : 3 lettres, 4 chiffres, A,
      3 chiffres) + indice (3 chiffres) + révision (une lettre). Le parseur
      tolère les séparateurs et la casse ; hors format, la chaîne entière tient

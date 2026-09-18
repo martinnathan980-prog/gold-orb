@@ -638,7 +638,7 @@
   var SRC_REELLE = null;           // la dernière source réelle chargée
   var COLONNES, PAR_CLE, CLE_DATE, PLANS, RELEVES_SRC, BASE, AUJ;
   var CLES_DIM, CLE_DOMAINE, CLES_ESSENTIELLES, VAUT_ESSENTIELLES, CLE_LIBELLE;
-  var RELEVES, DERNIER, COMPARATIF, jalons;
+  var RELEVES, DERNIER, EVENEMENTS_IMPORT, COMPARATIF, jalons;
   var DIMENSIONS, TITRE_DIM, ORDRE_FEUILLE, PLAN_PAR_REF, PLAN_PAR_RACINE, JOURNAL, SEMAINE_FIN;
   var RELEVES_REELS, AUJ_REEL, BASE_REELLE;
   var CONTRATS, CONTRAT;
@@ -787,7 +787,9 @@
     $('import').textContent = 'Dernier import : semaine ' + etiquette(DERNIER.i).slice(5) + ' · ' +
       RELEVES.length + (RELEVES.length > 1 ? ' relevés archivés' : ' relevé archivé');
 
-    COMPARATIF = comparatif();
+    /* Ce qui a bougé entre les deux derniers imports, plan par plan. Le
+       comparatif affiché en découle, restreint au périmètre courant. */
+    EVENEMENTS_IMPORT = evenementsImport();
 
     /* Les jalons viennent de la source : dans le classeur ils sont partagés par
        tout le monde, dans la démonstration ils sont posés en dur. */
@@ -806,6 +808,7 @@
     PLAN_PAR_REF = {};
     PLAN_PAR_RACINE = {};
     PLANS.forEach(function (p) { PLAN_PAR_REF[p.reference] = p; PLAN_PAR_RACINE[p._racine] = p; });
+    MEMO_DERIVE = {};
     JOURNAL = construireJournal();
     SEMAINE_FIN = semainesDeFin();
 
@@ -819,6 +822,8 @@
       ? String(src.contrat) : (CONTRATS.length ? CONTRATS[0].id : '');
 
     remettreVue();
+    rendrePerimetre();
+    COMPARATIF = comparatif();
     afficherContrat();
     refleterVue();
     fermerSaisie();
@@ -826,16 +831,16 @@
   }
 
   /* La « vue » : ce que le lecteur a posé sur la page. Les filtres, la
-     sélection et le cadrage appartiennent à une source et repartent de zéro
-     avec elle ; la disposition — dimension, colonnes, tris, vue du tableau —
-     est une préférence qui traverse les sources, tant que la nouvelle la
-     permet. */
+     sélection, le périmètre et le cadrage appartiennent à une source et
+     repartent de zéro avec elle — on ouvre toujours sur « Tout » ; la
+     disposition — dimension, colonnes, tris, vue du tableau — est une
+     préférence qui traverse les sources, tant que la nouvelle la permet. */
   function remettreVue() {
     var avant = vue;
     vue = {
       recherche: '', etat: '', filtres: {},
       groupe: null, refs: null, refsLibelle: '',
-      vides: {}, domaine: '', reconduits: false,
+      vides: {}, perimetre: '', reconduits: false,
       journal: '', journalOuverts: {}, groupesTout: false,
       aideFin: false,
       exemple: !!SRC.exemple,
@@ -942,12 +947,17 @@
      dans le lot de son état d'arrivée s'il en a changé au passage, car il
      est alors bien passé en terminé, ou en cours. Le passage à « vide » n'est
      pas un lot : une cellule effacée n'est pas un progrès à annoncer. */
-  function comparatif() {
+  function evenementsImport() {
     if (RELEVES.length < 2) return null;
     var avant = RELEVES[RELEVES.length - 2].plans;
     if (!avant || !DERNIER.plans) return null;
+    return apparier(avant, DERNIER.plans);
+  }
+  /* Le comparatif affiché : les mêmes événements, restreints au périmètre. */
+  function comparatif() {
+    if (!EVENEMENTS_IMPORT) return null;
     var d = { termine: [], encours: [], afaire: [], nouveaux: [], disparus: [], indice: [], reemissions: [] };
-    apparier(avant, DERNIER.plans).forEach(function (e) {
+    EVENEMENTS_IMPORT.filter(dansPerimetreEvt).forEach(function (e) {
       if (e.type === 'nouveau') { d.nouveaux.push(e.ref); return; }
       if (e.type === 'disparu') { d.disparus.push(e.ref); return; }
       if (e.type === 'indice') { d.indice.push(e.ref); d.reemissions.push({ ref: e.ref, ancienne: e.ancienne }); }
@@ -1029,10 +1039,10 @@
     var q = norm(vue.recherche);
     var cols = Object.keys(vue.filtres).filter(function (k) { return vue.filtres[k]; });
     return PLANS.filter(function (p) {
+      if (!dansPerimetre(p)) return false;
       if (vue.etat && p._etat !== vue.etat) return false;
       if (vue.groupe && String(valeurDim(p, vue.groupe.dim)) !== vue.groupe.val) return false;
       if (vue.refs && !vue.refs[p.reference]) return false;
-      if (vue.domaine && String(p[CLE_DOMAINE] || '') !== vue.domaine) return false;
       if (vue.reconduits && !estReconduit(p)) return false;
       for (var kv in vue.vides) {
         if (vue.vides[kv] && String(p[kv] == null ? '' : p[kv]).trim() !== '') return false;
@@ -1061,10 +1071,98 @@
     c.pct = c.total ? Math.round((c.termine / c.total) * 100) : 0;
     return c;
   }
-  function filtreActif() {
-    return !!(vue.recherche || vue.etat || vue.groupe || vue.refs || vue.domaine || vue.reconduits ||
+  /* Les filtres « libres » — recherche, état, groupe, lot, colonnes — ne
+     s'appliquent qu'aux plans du jour : un compte archivé ne se refiltre pas.
+     Le périmètre, lui, se dérive des cartes plan par plan et suit l'historique ;
+     filtreActif() réunit les deux pour ce qui se voit à l'écran. */
+  function filtreLibre() {
+    return !!(vue.recherche || vue.etat || vue.groupe || vue.refs || vue.reconduits ||
       Object.keys(vue.filtres).some(function (k) { return vue.filtres[k]; }) ||
       Object.keys(vue.vides).some(function (k) { return vue.vides[k]; }));
+  }
+  function filtreActif() { return !!vue.perimetre || filtreLibre(); }
+
+  /* ============================================================
+     PÉRIMÈTRE
+     La colonne de domaine (BASE/OPTION, PERSO…) découpe les plans en
+     familles qu'on suit séparément. Le périmètre choisi en haut de page
+     restreint tout : la sélection du jour, le comparatif, le journal, et les
+     séries historiques — dérivées relevé par relevé de la carte plan par plan
+     archivée, croisée avec le domaine COURANT de chaque plan. L'onglet
+     Historique, lui, n'est jamais réécrit.
+     ============================================================ */
+  function domaineDe(p) {
+    var v = CLE_DOMAINE ? String(p[CLE_DOMAINE] == null ? '' : p[CLE_DOMAINE]).trim() : '';
+    return v || '\u2014';
+  }
+  function dansPerimetre(p) { return !vue.perimetre || domaineDe(p) === vue.perimetre; }
+  /* Un événement du journal appartient au périmètre si le plan qu'il concerne
+     — retrouvé par référence ou par racine — en fait partie aujourd'hui. Un
+     plan disparu dont on ne connaît plus le domaine n'apparaît qu'en « Tout ». */
+  function dansPerimetreEvt(e) {
+    if (!vue || !vue.perimetre) return true;
+    var p = planDeRef(e.ref);
+    return !!p && domaineDe(p) === vue.perimetre;
+  }
+  /* Les plans du périmètre : la population de référence des comptes. */
+  function population() { return vue.perimetre ? PLANS.filter(dansPerimetre) : PLANS; }
+
+  /* Les comptes d'un relevé restreints à un périmètre, tirés de sa carte plan
+     par plan : le total, les terminés, et — si une dimension est demandée —
+     les mêmes par valeur. Un relevé sans carte ne donne rien : on ne devine
+     pas. Mémorisé par relevé : la courbe se redessine à chaque glissement. */
+  var MEMO_DERIVE = {};
+  function comptesDerives(rel, perimetre, dim) {
+    var cle = rel.i + '|' + perimetre + '|' + (dim || '');
+    if (MEMO_DERIVE[cle]) return MEMO_DERIVE[cle];
+    var c = { total: 0, termine: 0, groupes: {} };
+    Object.keys(rel.plans || {}).forEach(function (ref) {
+      var p = planDeRef(ref);
+      if (!p || domaineDe(p) !== perimetre) return;
+      var fini = classer(rel.plans[ref]) === 'termine';
+      c.total++;
+      if (fini) c.termine++;
+      if (!dim) return;
+      var v = String(valeurDim(p, dim) || '\u2014');
+      if (!c.groupes[v]) c.groupes[v] = { total: 0, termine: 0 };
+      c.groupes[v].total++;
+      if (fini) c.groupes[v].termine++;
+    });
+    MEMO_DERIVE[cle] = c;
+    return c;
+  }
+
+  /* Le sélecteur du haut : « Tout », puis une puce par domaine avec son
+     compte de plans. Reconstruit à chaque source ; seul l'état pressé bouge
+     ensuite. Sans colonne de domaine, il se tait. */
+  function rendrePerimetre() {
+    var zone = $('perimetre');
+    if (!CLE_DOMAINE) { zone.hidden = true; $('choix-perimetre').innerHTML = ''; return; }
+    var comptes = {};
+    PLANS.forEach(function (p) { var d = domaineDe(p); comptes[d] = (comptes[d] || 0) + 1; });
+    var valeurs = Object.keys(comptes).sort(function (a, b) {
+      if (a === '\u2014') return 1;
+      if (b === '\u2014') return -1;
+      return a.localeCompare(b, 'fr', { numeric: true });
+    });
+    var titre = PAR_CLE[CLE_DOMAINE].titre;
+    var puces = [{ val: '', nom: 'Tout', n: PLANS.length,
+                   aide: 'Suivre tous les plans, quel que soit le ' + titre.toLowerCase() }]
+      .concat(valeurs.map(function (v) {
+        return { val: v, nom: libelleGroupe(v), n: comptes[v],
+                 aide: 'Ne suivre que les plans dont ' + titre + ' vaut \u00ab\u00a0' + v + '\u00a0\u00bb' };
+      }));
+    $('choix-perimetre').innerHTML = puces.map(function (x) {
+      return '\x3Cbutton type="button" data-perimetre="' + ech(x.val) + '" aria-pressed="' +
+        (vue.perimetre === x.val) + '" title="' + ech(x.aide) + '">' +
+        ech(x.nom) + '\x3Cspan class="n">' + nb(x.n) + '\x3C/span>\x3C/button>';
+    }).join('');
+    zone.hidden = false;
+  }
+  function refleterPerimetre() {
+    document.querySelectorAll('#choix-perimetre button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.perimetre === vue.perimetre));
+    });
   }
 
 
@@ -1128,8 +1226,11 @@
 
   function rendreAvancement(liste) {
     var c = compte(liste);
+    /* Sous un périmètre seul, la phrase le nomme ; dès qu'un autre filtre
+       s'ajoute, c'est une sélection. */
     $('phrase').innerHTML = '\x3Cb>' + nb(c.termine) + '\x3C/b> sur ' + nb(c.total) + ' plans terminés' +
-      (filtreActif() ? ' dans la sélection' : '');
+      (filtreLibre() ? ' dans la sélection'
+                     : (vue.perimetre ? ' dans le périmètre ' + ech(vue.perimetre) : ''));
 
     /* Le pourcentage se lit dans la barre : les chiffres du dessous n'ont plus
        qu'un sens possible, un nombre de plans. */
@@ -1161,20 +1262,36 @@
   /* Série affichée : l'historique global, ou celui d'un groupe quand une ligne
      du bloc « Avancement FWD par… » est sélectionnée. Un filtre libre (recherche,
      colonne) ne peut pas s'appliquer rétroactivement à des comptes déjà archivés :
-     dans ce cas le graphique reste sur l'ensemble, et le dit. */
+     dans ce cas le graphique reste sur l'ensemble, et le dit.
+     Sous un périmètre, les comptes archivés ne servent plus : la série est
+     dérivée, relevé par relevé, de la carte plan par plan — les plans de la
+     carte qui appartiennent au périmètre aujourd'hui, et ceux d'entre eux
+     classés terminés. Un relevé sans carte est écarté, et la note le dit. */
   function serieAffichee() {
-    if (vue.groupe && CLES_DIM.indexOf(vue.groupe.dim) !== -1) {
-      var pts = RELEVES.map(function (r) {
-        var g = r.groupes[vue.groupe.dim][vue.groupe.val];
+    var groupe = (vue.groupe && CLES_DIM.indexOf(vue.groupe.dim) !== -1) ? vue.groupe : null;
+    var per = vue.perimetre;
+    var pts, ecartes = 0;
+    if (per) {
+      pts = [];
+      RELEVES.forEach(function (r) {
+        if (!r.plans) { ecartes++; return; }
+        var c = comptesDerives(r, per, groupe ? groupe.dim : null);
+        var g = groupe ? (c.groupes[groupe.val] || { total: 0, termine: 0 }) : c;
+        pts.push({ i: r.i, total: g.total, termine: g.termine });
+      });
+      if (!pts.length) pts.push({ i: AUJ, total: 0, termine: 0 });
+    } else if (groupe) {
+      pts = RELEVES.map(function (r) {
+        var g = r.groupes[groupe.dim] && r.groupes[groupe.dim][groupe.val];
         return { i: r.i, total: g ? g.total : 0, termine: g ? g.termine : 0 };
       });
-      return { pts: pts, portee: vue.groupe.val, partiel: false };
+    } else {
+      pts = RELEVES.map(function (r) { return { i: r.i, total: r.total, termine: r.termine }; });
     }
-    return {
-      pts: RELEVES.map(function (r) { return { i: r.i, total: r.total, termine: r.termine }; }),
-      portee: null,
-      partiel: filtreActif()
-    };
+    var portee = groupe
+      ? 'de ' + groupe.val + (per ? ' dans le périmètre ' + per : '')
+      : (per ? 'du périmètre ' + per : null);
+    return { pts: pts, portee: portee, partiel: filtreLibre(), ecartes: ecartes };
   }
 
   var L = 980, mG = 36, mD = 58, plotH = 160, ecart = 15, bandeH = 32, mBas = 24;
@@ -1202,11 +1319,17 @@
     var vitesse = ryt ? ryt.central : 0;
     var projIdx = semaineFin(atteint, total, vitesse);
 
-    $('note-graphe').textContent = vueSerie.portee
-      ? 'Historique de ' + vueSerie.portee + ' · ' + RELEVES.length + ' relevés'
+    var note = vueSerie.portee
+      ? 'Historique ' + vueSerie.portee + ' · ' + pts.length + ' relevés' +
+        (vueSerie.partiel ? ' · les autres filtres ne s’appliquent pas à l’historique' : '')
       : (vueSerie.partiel
           ? 'Historique de l’ensemble des plans : les relevés archivés ne peuvent pas être refiltrés.'
           : RELEVES.length + ' relevés depuis le premier import');
+    if (vueSerie.ecartes) {
+      note += ' · ' + vueSerie.ecartes + ' relevé' + (vueSerie.ecartes > 1 ? 's' : '') +
+        ' sans détail plan par plan, hors périmètre';
+    }
+    $('note-graphe').textContent = note;
     var prochain = jalons.filter(function (j) { return j.i > AUJ; }).sort(function (a, b) { return a.i - b.i; })[0];
 
     var d0 = vue.fen.debut, span = vue.fen.span, d1 = d0 + span - 1;
@@ -1606,7 +1729,7 @@
   function comptesDeLaSemaine(i) {
     var sem = JOURNAL.filter(function (s) { return s.i === i; })[0];
     if (!sem) return '';
-    var evts = sem.evenements;
+    var evts = sem.evenements.filter(dansPerimetreEvt);
     if (vue.groupe && CLES_DIM.indexOf(vue.groupe.dim) !== -1) {
       evts = evts.filter(function (e) {
         var p = planDeRef(e.ref);
@@ -1792,15 +1915,20 @@
     });
 
     /* Rythme : il vient des relevés archivés, qui portent sur l'ensemble des
-       plans du groupe. Un comptage déjà figé ne peut pas être refiltré. */
+       plans du groupe. Un comptage déjà figé ne peut pas être refiltré — sauf
+       par le périmètre, qui se dérive de la carte plan par plan de chaque
+       relevé, comme la courbe ; un relevé sans carte est alors écarté. */
+    var per = vue.perimetre;
+    var relevesRythme = per ? RELEVES.filter(function (rel) { return !!rel.plans; }) : RELEVES;
 
     var semainesJalon = prochain ? prochain.i - AUJ : 0;
     var rangs = Object.keys(groupes).map(function (k) {
       var g = groupes[k];
       var restants = g.total - g.termine;
       // Même méthode que la courbe : l'étendue des rythmes réellement tenus.
-      var serieGroupe = RELEVES.map(function (rel) {
-        var gr = rel.groupes[dim] && rel.groupes[dim][k];
+      var serieGroupe = relevesRythme.map(function (rel) {
+        var gr = per ? comptesDerives(rel, per, dim).groupes[k]
+                     : (rel.groupes[dim] && rel.groupes[dim][k]);
         return { i: rel.i, termine: gr ? gr.termine : 0 };
       });
       var rg = rythmes(serieGroupe);
@@ -2124,8 +2252,10 @@
       }).join('') + '\x3C/tr>';
     }).join('');
 
+    /* « sur N » : N est la population du périmètre, pas la feuille entière. */
+    var base = population().length;
     $('compte').textContent = nb(rangs.length) + (rangs.length > 1 ? ' plans' : ' plan') +
-      (rangs.length !== PLANS.length ? ' sur ' + nb(PLANS.length) : '');
+      (rangs.length !== base ? ' sur ' + nb(base) : '');
     ajusterSticky();
     majOmbre();
   }
@@ -2261,6 +2391,15 @@
 
   var MAX_JOURNAL = 12;                // lignes affichées avant « voir tout »
 
+  /* Le journal affiché : sous un périmètre, seuls les événements des plans
+     qui en font partie ; une semaine qui n'en a plus disparaît. */
+  function journalAffiche() {
+    if (!vue.perimetre) return JOURNAL;
+    return JOURNAL.map(function (sem) {
+      return { i: sem.i, evenements: sem.evenements.filter(dansPerimetreEvt) };
+    }).filter(function (sem) { return sem.evenements.length > 0; });
+  }
+
   function rendreJournal() {
     var zone = $('zone-journal');
     if (!JOURNAL.length) {
@@ -2268,8 +2407,14 @@
         'il faut deux relevés pour savoir ce qui a bougé entre les deux.\x3C/div>';
       return;
     }
+    var journal = journalAffiche();
+    if (!journal.length) {
+      zone.innerHTML = '\x3Cdiv class="journal-vide">Aucun changement dans le périmètre ' +
+        ech(vue.perimetre) + '.\x3C/div>';
+      return;
+    }
     var filtre = vue.journal;
-    var html = JOURNAL.map(function (sem, rang) {
+    var html = journal.map(function (sem, rang) {
       var evts = sem.evenements.filter(function (e) { return retenuParJournal(e, filtre); });
       if (!evts.length) return '';
 
@@ -2441,6 +2586,15 @@
     basculerExemple(b.dataset.mode === 'exemple');
   });
 
+  /* Le périmètre porte sur toute la page : un clic, et tout se recalcule —
+     comparatif compris. Cliquer la puce déjà pressée ne change rien. */
+  $('choix-perimetre').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-perimetre]');
+    if (!b || b.dataset.perimetre === vue.perimetre) return;
+    vue.perimetre = b.dataset.perimetre;
+    rendre();
+  });
+
   /* ============================================================
      CHANGEMENT DE CONTRAT
      Dans l'add-on, le paquet du contrat demandé vient du classeur par le pont
@@ -2505,15 +2659,16 @@
 
   /* ============================================================
      FILTRES ACTIFS
-     On clique un état, un groupe, un domaine, une ligne du journal… et plus
+     On clique un périmètre, un état, un groupe, une ligne du journal… et plus
      personne ne sait ce qui reste posé. Le bandeau nomme chaque filtre et
      donne sa croix ; il colle en haut de la page, donc la sortie est toujours
      à portée.
      ============================================================ */
   function filtresPoses() {
     var liste = [];
+    /* Le périmètre d'abord : c'est le plus large, et il se retire comme les autres. */
+    if (vue.perimetre) liste.push({ cle: 'perimetre', mot: 'Périmètre', valeur: vue.perimetre });
     if (vue.etat) liste.push({ cle: 'etat', mot: 'État', valeur: ETAT_PAR_CLE[vue.etat].libelle });
-    if (vue.domaine) liste.push({ cle: 'domaine', mot: PAR_CLE[CLE_DOMAINE].titre, valeur: vue.domaine });
     if (vue.reconduits) liste.push({ cle: 'reconduits', mot: '', valeur: 'Terminés reconduits' });
     if (vue.groupe) {
       liste.push({
@@ -2541,7 +2696,7 @@
 
   function retirerFiltre(cle) {
     if (cle === 'etat') vue.etat = '';
-    else if (cle === 'domaine') vue.domaine = '';
+    else if (cle === 'perimetre') vue.perimetre = '';
     else if (cle === 'reconduits') vue.reconduits = false;
     else if (cle === 'groupe') vue.groupe = null;
     else if (cle === 'refs') { vue.refs = null; vue.refsLibelle = ''; }
@@ -2553,7 +2708,7 @@
   function toutEffacer() {
     vue.recherche = ''; vue.etat = ''; vue.filtres = {}; vue.groupe = null; vue.vides = {};
     vue.refs = null; vue.refsLibelle = '';
-    vue.domaine = ''; vue.reconduits = false;
+    vue.perimetre = ''; vue.reconduits = false;
     $('recherche').value = '';
   }
 
@@ -2574,9 +2729,10 @@
 
   function rendreIncomplets() {
     var col = PAR_CLE[COLONNE_SUIVIE];
+    var plans = population();
     var n = 0;
-    for (var i = 0; i < PLANS.length; i++) {
-      if (String(PLANS[i][COLONNE_SUIVIE] == null ? '' : PLANS[i][COLONNE_SUIVIE]).trim() === '') n++;
+    for (var i = 0; i < plans.length; i++) {
+      if (String(plans[i][COLONNE_SUIVIE] == null ? '' : plans[i][COLONNE_SUIVIE]).trim() === '') n++;
     }
     if (!n) { $('incomplets').innerHTML = ''; return; }
     $('incomplets').innerHTML =
@@ -2591,6 +2747,9 @@
   }
 
   function rendre() {
+    /* Le comparatif dépend du périmètre : on le refait avant tout le reste. */
+    COMPARATIF = comparatif();
+    refleterPerimetre();
     var liste = selection();
     rendreAvancement(liste);
     rendreGraphique(liste);
@@ -2896,6 +3055,11 @@
      quels, pour vérifier l'appariement sans passer par le rendu. */
   window.__journal = function () { return JOURNAL; };
   window.__comparatif = function () { return COMPARATIF; };
+  /* Sous un périmètre : le journal tel qu'il est affiché, la série tracée et
+     le domaine du plan derrière une référence — pour vérifier la dérivation. */
+  window.__journalAffiche = function () { return journalAffiche(); };
+  window.__serieAffichee = function () { return serieAffichee(); };
+  window.__domaineDe = function (ref) { var p = planDeRef(ref); return p ? domaineDe(p) : null; };
 
   chargerSource(SERVEUR ? window.SUIVI_FWD_DONNEES : jeuDExemple());
   chargerPrefs();

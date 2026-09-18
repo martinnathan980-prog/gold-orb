@@ -509,6 +509,14 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('et la page reste entière',
     await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length === 186));
 
+  /* Cette feuille n'a pas de colonne de domaine : le périmètre n'a rien à
+     proposer et reste caché, sans laisser un bouton derrière lui. */
+  verifier('sans colonne de domaine, le paquet le dit', paquet.cleDomaine === null, String(paquet.cleDomaine));
+  verifier('et la page ne montre pas de sélecteur de périmètre',
+    await p.evaluate(() => document.getElementById('perimetre').hidden &&
+      document.getElementById('perimetre').offsetParent === null &&
+      document.querySelectorAll('#choix-perimetre button').length === 0));
+
   // Une cellule contenant une balise fermante ne doit pas couper la page en deux.
   verifier('une balise fermante dans une cellule ne casse pas la page',
     await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length === 186 &&
@@ -813,8 +821,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
     await pg.evaluate(() => document.getElementById('filtres-actifs').hidden));
 
   await pg.click('.etat-btn[data-etat="encours"]'); await pg.waitForTimeout(350);
-  /* Le filtre par colonne est la seule porte d'entrée depuis que les puces
-     « domaine » et « reconduits » ont été retirées : personne ne les lisait. */
+  /* Le domaine se choisit par le périmètre du haut ; le filtre de colonne
+     reste une porte d'entrée, et son jeton nomme la colonne. */
   await pg.fill('input[data-filtre="domaine"]', 'PERSO'); await pg.waitForTimeout(400);
   await pg.fill('#recherche', 'UD-24'); await pg.waitForTimeout(400);
   const jetons = await pg.evaluate(() => [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()));
@@ -844,6 +852,71 @@ function serveurSur(valeurs, proprietes, fichiers) {
       return j.length === 1 && /ATA/.test(j[0]);
     }));
   await pg.click('#tout-effacer'); await pg.waitForTimeout(450);
+
+  // =================================================================
+  /* La feuille GATES a une colonne « Domaine » : le périmètre est proposé en
+     haut, une puce par valeur avec son compte, et il restreint toute la page.
+     Code.gs n'y est pour rien : la page dérive tout du paquet et des cartes. */
+  section('Périmètre par domaine');
+  const perim = await pg.evaluate(() => ({
+    visible: !document.getElementById('perimetre').hidden &&
+             document.getElementById('choix-perimetre').offsetParent !== null,
+    haut: document.getElementById('perimetre').getBoundingClientRect().top <
+          document.querySelector('.masthead').getBoundingClientRect().top,
+    boutons: [...document.querySelectorAll('#choix-perimetre button')].map(b => ({
+      val: b.dataset.perimetre, n: +b.querySelector('.n').textContent.replace(/\s/g, ''),
+      presse: b.getAttribute('aria-pressed')
+    })),
+    serieTout: window.__serieAffichee().pts
+  }));
+  const attenduDom = { 'BASE/OPTION': 0, 'PERSO': 0 };
+  mGates.plans.forEach(pl => { attenduDom[pl[mGates.cleDomaine]]++; });
+  verifier('le sélecteur est proposé, en haut, avec une puce par domaine de la feuille',
+    perim.visible && perim.haut && perim.boutons.map(b => b.val).join(',') === ',BASE/OPTION,PERSO',
+    JSON.stringify(perim.boutons));
+  verifier('les comptes sont ceux de la feuille, et il démarre sur Tout',
+    perim.boutons[0].n === 186 && perim.boutons[1].n === attenduDom['BASE/OPTION'] &&
+    perim.boutons[2].n === attenduDom.PERSO && perim.boutons[0].presse === 'true',
+    JSON.stringify(perim.boutons) + ' vs ' + JSON.stringify(attenduDom));
+
+  await pg.click('#choix-perimetre button[data-perimetre="PERSO"]'); await pg.waitForTimeout(700);
+  const persoG = await pg.evaluate(() => {
+    const iDom = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'domaine');
+    const serie = window.__serieAffichee();
+    return {
+      lignes: document.querySelectorAll('#corps-tableau tr').length,
+      domaines: [...new Set([...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.children[iDom].textContent.trim()))],
+      etats: [...document.querySelectorAll('.etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
+      totalGroupes: [...document.querySelectorAll('.critique-total')].reduce((s, t) => s + (+t.textContent), 0),
+      serie: serie.pts,
+      note: document.getElementById('note-graphe').textContent,
+      jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()),
+      journal: window.__journalAffiche().reduce((l, s) => l.concat(s.evenements), []).map(e => window.__domaineDe(e.ref)),
+      phrase: document.getElementById('phrase').textContent
+    };
+  });
+  verifier('choisir PERSO restreint le tableau, la barre et le bloc par groupe aux plans PERSO',
+    persoG.lignes === attenduDom.PERSO && persoG.domaines.join() === 'PERSO' &&
+    persoG.etats.reduce((a, b) => a + b, 0) === attenduDom.PERSO && persoG.totalGroupes === attenduDom.PERSO,
+    JSON.stringify([persoG.lignes, persoG.domaines, persoG.etats, persoG.totalGroupes]));
+  verifier('la phrase nomme le périmètre', /dans le périmètre PERSO/.test(persoG.phrase), persoG.phrase);
+  const dernierG = persoG.serie[persoG.serie.length - 1];
+  verifier('la courbe est dérivée des cartes archivées : autant de relevés, dernier point = terminés PERSO',
+    persoG.serie.length === perim.serieTout.length && persoG.serie.length >= 2 &&
+    dernierG.total === attenduDom.PERSO && dernierG.termine === persoG.etats[0],
+    JSON.stringify(dernierG) + ' / ' + persoG.serie.length);
+  verifier('chaque point du périmètre est en deçà du point global',
+    persoG.serie.every((pt, k) => pt.total < perim.serieTout[k].total && pt.termine <= perim.serieTout[k].termine));
+  verifier('la note du graphique nomme le périmètre', /Historique du périmètre PERSO/.test(persoG.note), persoG.note);
+  verifier('le journal ne parle que de plans PERSO',
+    persoG.journal.length > 0 && persoG.journal.every(d => d === 'PERSO'), JSON.stringify([...new Set(persoG.journal)]));
+  verifier('le bandeau nomme le périmètre', persoG.jetons.length === 1 && /^Périmètre : PERSO$/.test(persoG.jetons[0]),
+    JSON.stringify(persoG.jetons));
+  await pg.click('#tout-effacer'); await pg.waitForTimeout(600);
+  verifier('« Tout effacer » rend les 186 plans et la puce Tout',
+    await pg.evaluate(() => document.querySelectorAll('#corps-tableau tr').length === 186 &&
+      document.querySelector('#choix-perimetre button[data-perimetre=""]').getAttribute('aria-pressed') === 'true' &&
+      document.getElementById('filtres-actifs').hidden));
 
   // =================================================================
   section('Liste des UD sous un groupe');
