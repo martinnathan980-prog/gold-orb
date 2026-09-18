@@ -5,7 +5,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
-const { construire, chargerServeur } = require('./build-addon');
+const { construire, chargerServeur, brancherClasseur } = require('./build-addon');
 const { Feuille, Classeur } = require('./faux-classeur');
 const { feuilleExemple } = require('./feuille-exemple');
 const { feuilleGates, entetes: entetesGates, colonne: colonneGates } = require('./feuille-gates');
@@ -33,15 +33,23 @@ function serveurSur(valeurs, proprietes, fichiers) {
   section('Détection des colonnes');
   const { paquet, contexte: ctxPaquet } = construire();
   verifier('le paquet est valide', paquet.ok === true, paquet.message);
-  /* Le contrat : pour l'instant le classeur n'en porte qu'un, l'onglet de
-     données, et le paquet le dit — la page en déduit qu'il n'y a rien à choisir. */
+  /* Le contrat : ce classeur n'a qu'un onglet visible, « Données », donc un
+     seul contrat, nommé comme l'onglet — la page en déduit qu'il n'y a rien à
+     choisir. */
   verifier('le paquet porte la liste des contrats et le contrat servi',
     Array.isArray(paquet.contrats) && paquet.contrats.length === 1 &&
     paquet.contrats[0].id === 'Données' && paquet.contrats[0].nom === 'Données' &&
     paquet.contrat === 'Données', JSON.stringify(paquet.contrats) + ' / ' + paquet.contrat);
-  verifier('un contrat demandé est accepté, et sert le même paquet pour l\'instant',
-    ctxPaquet.getDonneesPourClient('autre').plans.length === paquet.plans.length &&
-    ctxPaquet.getDonneesPourClient('autre').contrat === 'Données');
+  verifier('le contrat demandé par son identifiant est servi',
+    ctxPaquet.getDonneesPourClient('Données').plans.length === paquet.plans.length &&
+    ctxPaquet.getDonneesPourClient('Données').contrat === 'Données');
+  /* Un identifiant qui ne désigne aucun onglet : une erreur qui le nomme, pas
+     un repli silencieux sur un autre contrat — la page la montre et garde le
+     contrat courant. */
+  const inconnu = ctxPaquet.getDonneesPourClient('autre');
+  verifier('un contrat inconnu donne un paquet d\'erreur qui le nomme, jamais un autre contrat',
+    inconnu.ok === false && /« autre » est introuvable/.test(inconnu.message) &&
+    inconnu.plans.length === 0 && inconnu.contrat === '', inconnu.message);
   verifier('les onze colonnes sont vues', paquet.colonnes.length === 11, String(paquet.colonnes.length));
   verifier('les lignes de titre ne sont pas prises pour des données',
     paquet.plans.length === 186, paquet.plans.length + ' plans');
@@ -264,18 +272,25 @@ function serveurSur(valeurs, proprietes, fichiers) {
 
   // =================================================================
   section('Historique : archivage et relecture');
+  /* Un contrat par onglet, un onglet d'historique par contrat : celui du
+     contrat « Données » s'appelle « Historique_FWD_Données ». */
   const h = serveurSur(feuilleExemple(50));
   const r1 = h.contexte.enregistrerInstantaneHebdo();
-  verifier('un relevé est écrit', r1.ok && r1.compte.total === 50, JSON.stringify(r1.semaine));
-  verifier('l\'onglet historique est créé et masqué',
-    h.classeur.getSheetByName('Historique_FWD') !== null &&
-    h.classeur.getSheetByName('Historique_FWD').isSheetHidden());
-  const avant = h.classeur.getSheetByName('Historique_FWD').valeurs.length;
+  verifier('un relevé est écrit, et le détail nomme le contrat et son onglet d\'historique',
+    r1.ok && r1.contrats.length === 1 && r1.contrats[0].id === 'Données' &&
+    r1.contrats[0].historique === 'Historique_FWD_Données' && r1.contrats[0].compte.total === 50,
+    JSON.stringify(r1.semaine) + ' ' + JSON.stringify(r1.contrats && r1.contrats.map(c => [c.id, c.historique])));
+  verifier('l\'onglet d\'historique du contrat est créé et masqué',
+    h.classeur.getSheetByName('Historique_FWD_Données') !== null &&
+    h.classeur.getSheetByName('Historique_FWD_Données').isSheetHidden() &&
+    h.classeur.getSheetByName('Historique_FWD') === null,
+    h.classeur.getSheets().map(f => f.getName()).join(', '));
+  const avant = h.classeur.getSheetByName('Historique_FWD_Données').valeurs.length;
   h.contexte.enregistrerInstantaneHebdo();
   h.contexte.enregistrerInstantaneHebdo();
   verifier('réimporter la même semaine ne crée pas de doublon',
-    h.classeur.getSheetByName('Historique_FWD').valeurs.length === avant,
-    avant + ' → ' + h.classeur.getSheetByName('Historique_FWD').valeurs.length);
+    h.classeur.getSheetByName('Historique_FWD_Données').valeurs.length === avant,
+    avant + ' → ' + h.classeur.getSheetByName('Historique_FWD_Données').valeurs.length);
   const histo = h.contexte.getHistorique(h.classeur);
   verifier('le relevé se relit', histo.length === 1 && histo[0].total === 50);
   verifier('les quatre états sont archivés séparément',
@@ -295,7 +310,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   // Une feuille énorme ne doit pas faire exploser la cellule d'historique.
   const gros = serveurSur(feuilleExemple(4000));
   gros.contexte.enregistrerInstantaneHebdo();
-  const ligneGrosse = gros.classeur.getSheetByName('Historique_FWD').valeurs[1];
+  const ligneGrosse = gros.classeur.getSheetByName('Historique_FWD_Données').valeurs[1];
   verifier('4 000 plans s\'archivent sans dépasser la taille d\'une cellule',
     String(ligneGrosse[7]).length <= 45000 && String(ligneGrosse[8]).length <= 45000,
     'dimensions ' + String(ligneGrosse[7]).length + ' car., plans ' + String(ligneGrosse[8]).length + ' car.');
@@ -305,7 +320,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   section('Historique : relecture tolérante');
   const abime = serveurSur(feuilleExemple(20));
   abime.contexte.enregistrerInstantaneHebdo();
-  const f = abime.classeur.getSheetByName('Historique_FWD');
+  const f = abime.classeur.getSheetByName('Historique_FWD_Données');
   f.valeurs.push(['pas une semaine', new Date(), 1, 1, 0, 0, 0, '{', '{']);
   f.valeurs.push(['', '', '', '', '', '', '', '', '']);
   f.valeurs.push(['2026-S02', new Date(), 5, 1, 1, 1, 2, 'JSON cassé {[', 'idem']);
@@ -313,6 +328,177 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('les lignes illisibles sont ignorées', relu.length === 2, relu.length + ' relevés');
   verifier('un JSON cassé ne fait pas tomber la lecture',
     relu[0].semaine === '2026-S02' && relu[0].plans === null && JSON.stringify(relu[0].groupes) === '{}');
+
+  // =================================================================
+  /* L'ancien classeur : un seul onglet de données et l'onglet « Historique_FWD »
+     tout court, avec des relevés dedans. Il continue de servir tel quel — rien
+     n'est renommé, rien n'est reconstruit, et aucun onglet nouveau n'apparaît. */
+  section('Historique : rétro-compatibilité de l\'ancien onglet « Historique_FWD »');
+  const ENTETES_H = ['Semaine', 'Date', 'Total', 'Terminés', 'En cours', 'À faire', 'Non renseignés', 'Par dimension', 'Plans'];
+  const ancienHisto = new Feuille('Historique_FWD', [
+    ENTETES_H.slice(),
+    ['2026-S30', new Date(2026, 6, 24), 30, 5, 5, 10, 10, '{"ata":{"24":{"total":30,"termine":5}}}', '{}']
+  ], true);
+  const ancien = new Classeur([new Feuille('Données', feuilleExemple(30)), ancienHisto], 'Ancien classeur');
+  const cAncien = chargerServeur(ancien, {});
+  verifier('un seul onglet visible : un seul contrat, et « Historique_FWD » n\'en est pas un',
+    JSON.stringify(cAncien.listerContrats(ancien)) === JSON.stringify([{ id: 'Données', nom: 'Données' }]));
+  verifier('l\'ancien onglet est l\'historique de ce contrat',
+    cAncien.getFeuilleHistorique(ancien, 'Données', false) === ancienHisto &&
+    cAncien.getHistorique(ancien, 'Données').length === 1 &&
+    cAncien.getHistorique(ancien, 'Données')[0].semaine === '2026-S30');
+  const rAncien = cAncien.enregistrerInstantaneHebdo();
+  verifier('l\'archivage écrit dedans, sans créer « Historique_FWD_Données »',
+    rAncien.contrats[0].historique === 'Historique_FWD' && ancienHisto.valeurs.length === 3 &&
+    ancien.getSheetByName('Historique_FWD_Données') === null &&
+    cAncien.getHistorique(ancien).length === 2,
+    ancien.getSheets().map(x => x.getName()).join(', '));
+  verifier('le paquet de la page lit ces relevés', cAncien.getDonneesPourClient().releves.length === 2);
+  ancienHisto.showSheet();
+  verifier('démasqué, l\'ancien onglet n\'est toujours pas un contrat',
+    cAncien.listerContrats(ancien).length === 1 && cAncien.getDonneesPourClient().contrats.length === 1);
+  ancienHisto.hideSheet();
+  /* Le diagnostic le nomme comme onglet d'historique, sans rien signaler. */
+  const rapAncien = cAncien.diagnostic();
+  verifier('le diagnostic le donne comme onglet d\'historique du contrat',
+    /Relevés archivés : 2 \(onglet « Historique_FWD »\)/.test(rapAncien) && !/rattaché à aucun contrat/.test(rapAncien),
+    rapAncien.split('\n').find(l => /Relevés archivés/.test(l)));
+
+  // =================================================================
+  /* Plusieurs contrats : chaque onglet visible qui n'est pas de service en
+     est un, nommé comme l'onglet, dans l'ordre des onglets ; chacun a son
+     historique masqué « Historique_FWD_<nom> » ; l'archivage et la
+     suppression passent sur tous ; la page reçoit le premier et demande les
+     autres. */
+  section('Plusieurs contrats : un onglet visible chacun');
+  const multi = construire({ contrats: ['X1', 'X2'], sortie: 'apercu-contrats.html' });
+  const cM = multi.contexte, clM = multi.classeur, pM = multi.paquet;
+  verifier('deux onglets, deux contrats, dans l\'ordre des onglets',
+    JSON.stringify(cM.listerContrats(clM)) === JSON.stringify([{ id: 'X1', nom: 'X1' }, { id: 'X2', nom: 'X2' }]),
+    JSON.stringify(cM.listerContrats(clM)));
+  verifier('le paquet d\'ouverture est celui du premier, et porte les deux',
+    pM.ok === true && pM.contrat === 'X1' && pM.feuille === 'X1' && pM.plans.length === 186 &&
+    JSON.stringify(pM.contrats) === JSON.stringify([{ id: 'X1', nom: 'X1' }, { id: 'X2', nom: 'X2' }]),
+    pM.contrat + ' / ' + pM.plans.length);
+  const pX2 = cM.getDonneesPourClient('X2');
+  verifier('le paquet de X2 est un autre paquet : son onglet, ses plans, ses relevés',
+    pX2.ok === true && pX2.contrat === 'X2' && pX2.plans.length === 93 && pX2.plans.length !== pM.plans.length &&
+    pX2.contrats.length === 2 && pX2.releves.length === 5 && pX2.releves[4].total === 93 && pM.releves[4].total === 186,
+    pX2.contrat + ' / ' + pX2.plans.length + ' plans, ' + pX2.releves.length + ' relevés');
+  verifier('le paquet posé dans la page est celui du premier contrat',
+    /"contrat":"X1"/.test(cM.donneesJSONPourPage()) && /"contrats":\[\{"id":"X1","nom":"X1"\},\{"id":"X2","nom":"X2"\}\]/.test(cM.donneesJSONPourPage()));
+  verifier('un identifiant se retrouve sans tenir compte de la casse ni des accents',
+    cM.getDonneesPourClient('x2').contrat === 'X2' && cM.getDonneesPourClient(' X1 ').contrat === 'X1');
+  verifier('deux onglets d\'historique masqués, un par contrat, et pas d\'ancien onglet',
+    ['Historique_FWD_X1', 'Historique_FWD_X2'].every(n => clM.getSheetByName(n) !== null && clM.getSheetByName(n).isSheetHidden()) &&
+    clM.getSheetByName('Historique_FWD') === null, clM.getSheets().map(x => x.getName()).join(', '));
+
+  const histoX1 = clM.getSheetByName('Historique_FWD_X1'), histoX2 = clM.getSheetByName('Historique_FWD_X2');
+  const avantM = [histoX1.valeurs.length, histoX2.valeurs.length];
+  const rM = cM.enregistrerInstantaneHebdo();
+  verifier('l\'archivage passe sur les deux contrats et renvoie le détail, contrat par contrat',
+    rM.ok === true && rM.contrats.map(c => c.id + ':' + c.historique + ':' + c.compte.total).join(' ') ===
+      'X1:Historique_FWD_X1:186 X2:Historique_FWD_X2:93',
+    JSON.stringify(rM.contrats && rM.contrats.map(c => [c.id, c.historique, c.compte.total])));
+  verifier('la semaine courante est mise à jour dans chaque onglet, sans doublon',
+    histoX1.valeurs.length === avantM[0] && histoX2.valeurs.length === avantM[1] &&
+    cM.normaliserSemaine(histoX1.valeurs[histoX1.valeurs.length - 1][0]) === rM.semaine &&
+    cM.normaliserSemaine(histoX2.valeurs[histoX2.valeurs.length - 1][0]) === rM.semaine);
+  verifier('les comptes archivés sont ceux de chaque contrat, pas ceux de l\'autre',
+    Number(histoX1.valeurs[histoX1.valeurs.length - 1][2]) === 186 &&
+    Number(histoX2.valeurs[histoX2.valeurs.length - 1][2]) === 93);
+
+  const sM = cM.supprimerDernierReleve();
+  verifier('la suppression retire la semaine courante des deux contrats',
+    sM.supprimes.join() === 'X1,X2' && sM.sans.length === 0 &&
+    histoX1.valeurs.length === avantM[0] - 1 && histoX2.valeurs.length === avantM[1] - 1 &&
+    cM.getHistorique(clM, 'X1').length === 4 && cM.getHistorique(clM, 'X2').length === 4,
+    JSON.stringify(sM));
+  verifier('et l\'alerte récapitule contrat par contrat',
+    /^Relevé \d{4}-S\d{2} supprimé pour « X1 », « X2 »\. Recollez/.test(cM.__alertes[cM.__alertes.length - 1]),
+    cM.__alertes[cM.__alertes.length - 1]);
+  const sM2 = cM.supprimerDernierReleve();
+  verifier('une seconde suppression n\'a plus rien à retirer, et le dit',
+    sM2.supprimes.length === 0 && sM2.sans.join() === 'X1,X2' &&
+    /^Aucun relevé pour la semaine \d{4}-S\d{2}\.$/.test(cM.__alertes[cM.__alertes.length - 1]),
+    cM.__alertes[cM.__alertes.length - 1]);
+  /* Un seul contrat archivé cette semaine : le récapitulatif distingue. */
+  histoX1.appendRow([rM.semaine, new Date(), 186, 1, 1, 1, 183, '{}', '{}']);
+  const sM3 = cM.supprimerDernierReleve();
+  verifier('un contrat avec relevé, l\'autre sans : le récapitulatif distingue les deux',
+    sM3.supprimes.join() === 'X1' && sM3.sans.join() === 'X2' &&
+    /supprimé pour « X1 » ; aucun relevé pour « X2 »/.test(cM.__alertes[cM.__alertes.length - 1]),
+    cM.__alertes[cM.__alertes.length - 1]);
+
+  histoX2.showSheet();
+  verifier('un onglet d\'historique démasqué n\'est pas un contrat pour autant',
+    cM.listerContrats(clM).length === 2 && cM.getDonneesPourClient().contrats.length === 2);
+  histoX2.hideSheet();
+  const rapM = cM.diagnostic();
+  verifier('le diagnostic nomme les deux contrats et leurs onglets d\'historique',
+    /2 contrat\(s\), un onglet visible chacun : « X1 », « X2 »/.test(rapM) &&
+    /— Contrat « X1 » —/.test(rapM) && /— Contrat « X2 » —/.test(rapM) &&
+    /Relevés archivés : 4 \(onglet « Historique_FWD_X1 »\)/.test(rapM) &&
+    /Relevés archivés : 4 \(onglet « Historique_FWD_X2 »\)/.test(rapM),
+    rapM.split('\n').filter(l => /contrat|Contrat|Relevés/.test(l)).join(' / '));
+  verifier('il dit que la page part sur le premier contrat, et conclut',
+    /contrat « X1 », le premier ; les autres se chargent à la demande/.test(rapM) && /Tout est en place/.test(rapM));
+
+  /* L'ancien onglet « Historique_FWD » à côté de deux contrats : il n'est
+     l'historique de personne, et le diagnostic dit comment le rattacher. */
+  clM.insertSheet('Historique_FWD').appendRow(ENTETES_H.slice());
+  verifier('à côté de plusieurs contrats, l\'ancien onglet n\'est ni un contrat ni l\'historique de l\'un d\'eux',
+    cM.listerContrats(clM).length === 2 &&
+    cM.getFeuilleHistorique(clM, 'X1', false).getName() === 'Historique_FWD_X1' &&
+    cM.getFeuilleHistorique(clM, 'X2', false).getName() === 'Historique_FWD_X2');
+  const rapOrphelin = cM.diagnostic();
+  verifier('et le diagnostic dit comment le rattacher',
+    /« Historique_FWD » n'est rattaché à aucun contrat/.test(rapOrphelin) &&
+    /renommer « Historique_FWD_<nom du contrat> »/.test(rapOrphelin),
+    rapOrphelin.split('\n').find(l => /rattaché/.test(l)));
+
+  /* Un onglet de contrat illisible n'empêche pas les autres d'être archivés ;
+     l'erreur est quand même relancée, pour que le déclencheur la signale. */
+  const clV = new Classeur([new Feuille('X1', feuilleExemple(20)), new Feuille('Vide', [])], 'Avec un onglet vide');
+  const cV = chargerServeur(clV, {});
+  let erreurV = '';
+  try { cV.enregistrerInstantaneHebdo(); } catch (e) { erreurV = e.message; }
+  verifier('un contrat illisible n\'empêche pas l\'archivage des autres, mais l\'erreur est relancée',
+    cV.getHistorique(clV, 'X1').length === 1 && /1 contrat\(s\) archivé\(s\), 1 en erreur/.test(erreurV) &&
+    /« Vide » : La feuille « Vide » est vide/.test(erreurV), erreurV);
+  verifier('le paquet de ce contrat est un paquet d\'erreur, le premier reste servi',
+    cV.getDonneesPourClient('Vide').ok === false && cV.getDonneesPourClient().ok === true &&
+    cV.getDonneesPourClient().contrats.length === 2);
+  verifier('le diagnostic le dit et ne conclut pas que tout va bien',
+    /— Contrat « Vide » —/.test(cV.diagnostic()) && /L'onglet est vide/.test(cV.diagnostic()) &&
+    /Un contrat au moins n'est pas lisible/.test(cV.diagnostic()));
+
+  /* Ce qui n'est pas un contrat : un onglet masqué, un onglet de service, la
+     seconde base. CONFIG.FEUILLE_DONNEES, lui, impose un contrat unique. */
+  const clS = new Classeur([
+    new Feuille('Paramètres', [['clé', 'valeur']]),
+    new Feuille('X1', feuilleExemple(20)),
+    new Feuille('Brouillon', feuilleExemple(10), true),
+    new Feuille('Base2', [['REF_UD']]),
+    new Feuille('X2', feuilleExemple(15)),
+    new Feuille('Historique_FWD', [ENTETES_H.slice(), ['2026-S20', new Date(2026, 4, 15), 20, 2, 2, 8, 8, '{}', '{}']], true)
+  ], 'Service');
+  const cS = chargerServeur(clS, {});
+  vm.runInContext('CONFIG.RAPPROCHEMENT.FEUILLE = "Base2"', cS);
+  verifier('ni un onglet de service, ni un onglet masqué, ni la seconde base ne sont des contrats',
+    cS.listerContrats(clS).map(c => c.id).join() === 'X1,X2', JSON.stringify(cS.listerContrats(clS)));
+  vm.runInContext('CONFIG.FEUILLE_DONNEES = "X2"', cS);
+  verifier('CONFIG.FEUILLE_DONNEES impose un contrat unique, cet onglet-là',
+    cS.listerContrats(clS).map(c => c.id).join() === 'X2' && cS.getDonneesPourClient().contrat === 'X2' &&
+    cS.getDonneesPourClient().plans.length === 15 && cS.getDonneesPourClient().contrats.length === 1);
+  verifier('et ce contrat unique retrouve l\'ancien onglet d\'historique',
+    cS.getHistorique(clS, 'X2').length === 1 && cS.getHistorique(clS, 'X2')[0].semaine === '2026-S20');
+  verifier('un autre onglet demandé est alors introuvable',
+    cS.getDonneesPourClient('X1').ok === false && /« X1 » est introuvable/.test(cS.getDonneesPourClient('X1').message));
+  vm.runInContext('CONFIG.FEUILLE_DONNEES = "Nulle part"', cS);
+  verifier('un onglet imposé qui n\'existe pas est une erreur lisible',
+    cS.getDonneesPourClient().ok === false && /« Nulle part » est introuvable/.test(cS.getDonneesPourClient().message) &&
+    /Onglet de données : L'onglet « Nulle part » est introuvable/.test(cS.diagnostic()));
 
   // =================================================================
   section('Jalons de configuration');
@@ -1269,6 +1455,88 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('l\'interrupteur reste propose meme avec de l\'historique',
     await pg.evaluate(() => !!document.querySelector('#mode-donnees button[data-mode="exemple"]')));
   await ctxPremier.close();
+
+  // =================================================================
+  /* La page assemblée sur le classeur à deux contrats, avec un
+     google.script.run factice qui répond par le vrai serveur : le sélecteur
+     est là, changer de contrat demande son paquet au classeur par le pont
+     d'Index.html et la page passe sur l'autre onglet. Un contrat introuvable
+     ou une panne du classeur laissent la page sur le contrat courant. */
+  section('Changer de contrat dans la page rendue');
+  const ctxMulti = await nav.newContext({ viewport: { width: 1280, height: 1000 } });
+  const pm = await ctxMulti.newPage();
+  pm.on('pageerror', e => erreursJS.push('contrats : ' + e.message));
+  /* La panne simulée passe par le rappel d'échec du pont, qui la journalise
+     en console.error : c'est le comportement attendu, pas une erreur du test. */
+  pm.on('console', m => {
+    if (m.type() === 'error' && !m.text().includes('ERR_FILE') && !/Contrat non chargé/.test(m.text())) {
+      erreursJS.push('contrats : ' + m.text());
+    }
+  });
+  await brancherClasseur(pm, multi.contexte);
+  await pm.goto('file://' + path.join(__dirname, '..', 'apercu-contrats.html'));
+  await pm.waitForTimeout(1600);
+  const etatPage = () => pm.evaluate(() => ({
+    visible: !document.getElementById('choix-contrat').hidden &&
+             document.getElementById('select-contrat').offsetParent !== null,
+    options: [...document.querySelectorAll('#select-contrat option')].map(o => o.value).join(','),
+    courant: document.getElementById('select-contrat').value,
+    disabled: document.getElementById('select-contrat').disabled,
+    etat: document.getElementById('etat-contrat').textContent,
+    nom: document.getElementById('nom-contrat').textContent,
+    nomVisible: !document.getElementById('contrat-courant').hidden,
+    plans: document.querySelectorAll('#corps-tableau tr').length,
+    etats: [...document.querySelectorAll('.etat-n')].reduce((s, e) => s + (+e.textContent.replace(/\s/g, '')), 0),
+    totauxGroupes: [...document.querySelectorAll('.critique-total')].reduce((s, t) => s + (+t.textContent), 0),
+    releves: window.__serieAffichee().pts.length,
+    phrase: document.getElementById('phrase').textContent,
+    appels: window.__appelsClasseur.slice()
+  }));
+  const departM = await etatPage();
+  verifier('avec deux contrats, le sélecteur est visible et les liste dans l\'ordre des onglets',
+    departM.visible && departM.options === 'X1,X2' && departM.courant === 'X1', JSON.stringify(departM.options));
+  verifier('le contrat courant est rappelé sous le titre', departM.nomVisible && departM.nom === 'X1', departM.nom);
+  verifier('la page s\'ouvre sur le premier contrat, avec ses relevés, sans rien demander au classeur',
+    departM.plans === 186 && departM.etats === 186 && departM.releves === pM.releves.length && departM.appels.length === 0,
+    JSON.stringify([departM.plans, departM.releves, departM.appels]));
+
+  await pm.selectOption('#select-contrat', 'X2'); await pm.waitForTimeout(1500);
+  const x2M = await etatPage();
+  verifier('changer de contrat demande le paquet de X2 au classeur, par le pont',
+    x2M.appels.join() === 'X2', JSON.stringify(x2M.appels));
+  verifier('et la page passe sur X2 : ses 93 plans partout, son nom sous le titre',
+    x2M.plans === 93 && x2M.etats === 93 && x2M.totauxGroupes === 93 && x2M.nom === 'X2' &&
+    x2M.courant === 'X2' && /93 plans/.test(x2M.phrase), JSON.stringify([x2M.plans, x2M.etats, x2M.totauxGroupes, x2M.nom]));
+  /* Le classeur a bougé depuis l'assemblage de la page (suppressions plus
+     haut) : le pont sert son état du moment, pas celui de l'ouverture. */
+  verifier('le graphique trace l\'historique de X2, tel qu\'il est dans le classeur à cet instant',
+    x2M.releves === cM.getHistorique(clM, 'X2').length && x2M.releves >= 2,
+    x2M.releves + ' vs ' + cM.getHistorique(clM, 'X2').length);
+  verifier('le sélecteur est rendu à la main, sans message', !x2M.disabled && x2M.etat === '', x2M.etat);
+
+  /* Un contrat introuvable — ajouté au sélecteur pour la démonstration : le
+     serveur répond par un paquet d'erreur, la page le montre et garde X2. */
+  await pm.evaluate(() => {
+    const o = document.createElement('option'); o.value = 'Nulle part'; o.textContent = 'Nulle part';
+    document.getElementById('select-contrat').appendChild(o);
+  });
+  await pm.selectOption('#select-contrat', 'Nulle part'); await pm.waitForTimeout(1200);
+  const rateM = await etatPage();
+  verifier('un contrat introuvable : la page garde X2, remet le sélecteur dessus et montre le message du serveur',
+    rateM.plans === 93 && rateM.courant === 'X2' && rateM.nom === 'X2' && !rateM.disabled &&
+    /« Nulle part » est introuvable/.test(rateM.etat), JSON.stringify([rateM.plans, rateM.courant, rateM.etat]));
+  verifier('une panne du classeur passe par le rappel d\'échec du pont : null, sans casser la page',
+    await pm.evaluate(() => new Promise(resolve => {
+      window.SUIVI_FWD_API.chargerContrat('__panne__', paquet => resolve(paquet === null));
+    })) && (await etatPage()).plans === 93);
+
+  await pm.selectOption('#select-contrat', 'X1'); await pm.waitForTimeout(1500);
+  const retourM = await etatPage();
+  verifier('revenir à X1 rend ses 186 plans et son historique',
+    retourM.plans === 186 && retourM.etats === 186 && retourM.nom === 'X1' &&
+    retourM.releves === cM.getHistorique(clM, 'X1').length && retourM.etat === '',
+    JSON.stringify([retourM.plans, retourM.nom, retourM.releves]));
+  await ctxMulti.close();
 
   await ctxGates.close();
   await ctx.close();

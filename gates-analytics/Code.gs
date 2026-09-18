@@ -3,31 +3,60 @@
  * =============================================================
  * Côté serveur (Google Apps Script).
  *
- * Ce fichier ne fait que cinq choses :
- *   1. lire l'onglet de données et en déduire un modèle de colonnes
+ * Ce fichier ne fait que six choses :
+ *   1. reconnaître les contrats du classeur : chaque onglet VISIBLE qui n'est
+ *      pas un onglet de service est un contrat, et le nom de l'onglet est à la
+ *      fois son identifiant et son nom (« X1 ») ;
+ *   2. lire l'onglet d'un contrat et en déduire un modèle de colonnes
  *      (aucun nom de colonne n'est écrit en dur : tout vient de l'en-tête) ;
- *   2. classer l'avancement FWD de chaque ligne en quatre états ;
- *   3. entretenir un historique hebdomadaire réel (onglet « Historique_FWD ») ;
- *   4. fournir les jalons du programme, fixés ici dans la configuration :
+ *   3. classer l'avancement FWD de chaque ligne en quatre états ;
+ *   4. entretenir, pour chaque contrat, un historique hebdomadaire réel dans
+ *      un onglet masqué « Historique_FWD_<nom du contrat> » — l'archivage
+ *      passe sur tous les contrats d'un coup, une ligne par contrat dans son
+ *      onglet, et l'historique ne se reconstruit jamais, il s'accumule ;
+ *   5. fournir les jalons du programme, fixés ici dans la configuration :
  *      la page les montre, personne ne les modifie à l'écran ;
- *   5. lire, si la configuration en nomme un, l'onglet d'une seconde base à
+ *   6. lire, si la configuration en nomme un, l'onglet d'une seconde base à
  *      rapprocher des plans (CONFIG.RAPPROCHEMENT) — la page fait le reste.
  *
- * La page est rendue d'une traite : Index.html injecte le paquet de données
- * dans la page au moment de l'évaluation du modèle, sans aller-retour.
+ * La page est rendue d'une traite : Index.html injecte le paquet du PREMIER
+ * contrat (l'ordre des onglets) au moment de l'évaluation du modèle, sans
+ * aller-retour. Les autres contrats se chargent à la demande, quand la
+ * lectrice change de contrat : google.script.run → getDonneesPourClient(id).
+ *
+ * Rétro-compatibilité : un classeur à contrat unique qui porte encore
+ * l'ancien onglet « Historique_FWD » tout court continue de s'en servir —
+ * rien n'est renommé, rien n'est reconstruit. Le jour où un second onglet de
+ * contrat apparaît, cet ancien onglet n'appartient plus à personne : le
+ * renommer « Historique_FWD_<nom> » rend ses relevés au contrat qui les a
+ * produits (le diagnostic le rappelle).
  */
 
 // =====================================================================
 //  CONFIGURATION
 // =====================================================================
 const CONFIG = {
-  /** Nom de l'onglet de données. Vide = premier onglet visible qui n'est pas interne. */
+  /**
+   * Nom de l'onglet de données. Vide = chaque onglet visible qui n'est pas un
+   * onglet de service est un contrat, nommé comme l'onglet, dans l'ordre des
+   * onglets. Renseigné = un seul contrat, cet onglet-là, quoi qu'il y ait à
+   * côté.
+   */
   FEUILLE_DONNEES: '',
 
-  /** Onglet où sont stockés les instantanés hebdomadaires. */
+  /**
+   * Préfixe des onglets d'historique : celui d'un contrat s'appelle
+   * « Historique_FWD_<nom du contrat> ». Tout onglet dont le nom commence par
+   * ce préfixe est un onglet de service, jamais un contrat. Un classeur à
+   * contrat unique qui porte encore l'onglet « Historique_FWD » tout court le
+   * garde tel quel.
+   */
   FEUILLE_HISTORIQUE: 'Historique_FWD',
 
-  /** Onglets ignorés lors de la détection automatique de la feuille de données. */
+  /**
+   * Onglets de service, jamais pris pour des contrats — en plus de ceux du
+   * préfixe d'historique et de l'onglet de la seconde base (RAPPROCHEMENT).
+   */
   FEUILLES_INTERNES: ['Historique_FWD', 'Paramètres', 'Parametres', 'Config'],
 
   /** Nombre de lignes scannées en haut de feuille pour trouver la ligne d'en-têtes. */
@@ -283,33 +312,62 @@ function cleDepuisEntete(titre, deja) {
 }
 
 // =====================================================================
-//  LECTURE DE LA FEUILLE
+//  CONTRATS ET LECTURE DE LA FEUILLE
+//  Un contrat = un onglet visible qui n'est pas un onglet de service. Son
+//  identifiant et son nom sont le nom de l'onglet. Les onglets d'historique
+//  sont masqués, mais un onglet d'historique démasqué par curiosité ne doit
+//  pas devenir un contrat pour autant : le préfixe le protège.
 // =====================================================================
 
+/** Vrai si l'onglet est un onglet de service, jamais un contrat. */
+function estOngletInterne(nom) {
+  const n = normaliser(nom);
+  /* L'onglet de la seconde base, s'il est nommé, n'est pas un contrat non plus. */
+  const internes = CONFIG.FEUILLES_INTERNES
+    .concat(CONFIG.RAPPROCHEMENT && CONFIG.RAPPROCHEMENT.FEUILLE ? [CONFIG.RAPPROCHEMENT.FEUILLE] : [])
+    .map(normaliser);
+  if (internes.indexOf(n) !== -1) return true;
+  const prefixe = normaliser(CONFIG.FEUILLE_HISTORIQUE);
+  return !!prefixe && n.indexOf(prefixe) === 0;
+}
+
 /**
- * Renvoie la feuille de données.
- * On résout un onglet déterministe plutôt que getActiveSheet() : sinon le
- * tableau de bord lirait l'onglet cliqué en dernier, « Historique_FWD » compris.
+ * Les contrats du classeur, [{ id, nom }], dans l'ordre des onglets.
+ * CONFIG.FEUILLE_DONNEES renseigné impose un contrat unique : cet onglet-là.
  */
-function getFeuilleDonnees(classeur) {
+function listerContrats(classeur) {
   if (CONFIG.FEUILLE_DONNEES) {
     const nommee = classeur.getSheetByName(CONFIG.FEUILLE_DONNEES);
     if (!nommee) {
       throw new Error('L\'onglet « ' + CONFIG.FEUILLE_DONNEES + ' » est introuvable.');
     }
-    return nommee;
+    return [{ id: nommee.getName(), nom: nommee.getName() }];
   }
-  /* L'onglet de la seconde base, s'il est nommé, n'est pas l'onglet de données. */
-  const internes = CONFIG.FEUILLES_INTERNES
-    .concat(CONFIG.RAPPROCHEMENT && CONFIG.RAPPROCHEMENT.FEUILLE ? [CONFIG.RAPPROCHEMENT.FEUILLE] : [])
-    .map(normaliser);
-  const candidates = classeur.getSheets().filter(function (f) {
-    return !f.isSheetHidden() && internes.indexOf(normaliser(f.getName())) === -1;
-  });
-  if (candidates.length === 0) {
+  return classeur.getSheets()
+    .filter(function (f) { return !f.isSheetHidden() && !estOngletInterne(f.getName()); })
+    .map(function (f) { return { id: f.getName(), nom: f.getName() }; });
+}
+
+/**
+ * Renvoie l'onglet de données d'un contrat — le premier si aucun n'est
+ * demandé. On résout un onglet déterministe plutôt que getActiveSheet() :
+ * sinon le tableau de bord lirait l'onglet cliqué en dernier, un onglet
+ * d'historique compris. Un contrat demandé qui n'existe pas est une erreur
+ * franche, pas un repli silencieux sur un autre contrat : la page la montre.
+ */
+function getFeuilleDonnees(classeur, contrat) {
+  const contrats = listerContrats(classeur);
+  if (contrats.length === 0) {
     throw new Error('Aucun onglet de données exploitable dans ce classeur.');
   }
-  return candidates[0];
+  const voulu = contrat === undefined || contrat === null ? '' : String(contrat).trim();
+  if (!voulu) return classeur.getSheetByName(contrats[0].id);
+  for (let i = 0; i < contrats.length; i++) {
+    if (contrats[i].id === voulu || normaliser(contrats[i].id) === normaliser(voulu)) {
+      return classeur.getSheetByName(contrats[i].id);
+    }
+  }
+  throw new Error('Le contrat « ' + voulu + ' » est introuvable : aucun onglet visible de ce nom.');
 }
 
 /** Trouve la ligne d'en-têtes dans les premières lignes de la feuille. */
@@ -495,9 +553,10 @@ function ligneNonVide(ligne) {
 //  colonne se déduisent de l'en-tête et du contenu.
 // =====================================================================
 
-function construireModele() {
+/** Le modèle d'un contrat — le premier si aucun n'est demandé. */
+function construireModele(contrat) {
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
-  const feuille = getFeuilleDonnees(classeur);
+  const feuille = getFeuilleDonnees(classeur, contrat);
   const donnees = feuille.getDataRange().getDisplayValues();
   if (donnees.length === 0) {
     throw new Error('La feuille « ' + feuille.getName() + ' » est vide.');
@@ -723,15 +782,18 @@ function choisirDimensionParDefaut(colonnes, clesDim) {
 /**
  * Le paquet complet d'un contrat, tel que la page le consomme.
  *
- * `contrat` désigne le contrat demandé ; pour l'instant le classeur n'en
- * porte qu'un — l'onglet de données — et le paramètre est ignoré. La page
- * reçoit néanmoins la liste des contrats et celui qui est servi, ce qui lui
- * permet d'afficher (ou non) son sélecteur sans rien savoir du classeur.
+ * `contrat` est l'identifiant du contrat demandé (le nom de son onglet) ;
+ * absent, c'est le premier contrat du classeur qui est servi — celui que la
+ * page reçoit à l'ouverture. Le paquet porte la liste des contrats et celui
+ * qui est servi : la page en déduit s'il y a un sélecteur à montrer, sans
+ * rien savoir du classeur. Un contrat inconnu donne un paquet d'erreur
+ * (ok: false, message), que la page affiche sans quitter le contrat courant.
  */
 function getDonneesPourClient(contrat) {
   try {
     const classeur = SpreadsheetApp.getActiveSpreadsheet();
-    const modele = construireModele();
+    const contrats = listerContrats(classeur);
+    const modele = construireModele(contrat);
     const paquet = {
       ok: true,
       message: modele.avertissement,
@@ -745,9 +807,9 @@ function getDonneesPourClient(contrat) {
       dimParDefaut: modele.dimParDefaut,
       lignesIgnorees: modele.lignesIgnorees,
       plans: modele.plans,
-      releves: getHistorique(classeur),
+      releves: getHistorique(classeur, modele.feuille),
       jalons: getJalons(),
-      contrats: [{ id: modele.feuille, nom: modele.feuille }],
+      contrats: contrats,
       contrat: modele.feuille
     };
     /* La seconde base, seulement si la configuration en nomme une : la page
@@ -769,7 +831,8 @@ function getDonneesPourClient(contrat) {
 }
 
 /**
- * Le paquet, sérialisé pour être posé tel quel dans un <script>.
+ * Le paquet du premier contrat, sérialisé pour être posé tel quel dans un
+ * <script> — c'est ce que la page reçoit à l'ouverture.
  *
  * Une cellule du classeur peut contenir n'importe quoi — y compris la chaîne
  * qui ferme une balise script. Sans échappement, une seule ligne de commentaire
@@ -827,13 +890,74 @@ function diagnostic() {
     }
   });
 
-  let feuille = null;
+  /* Les contrats : un onglet visible chacun. Sans aucun, rien à diagnostiquer. */
+  let contrats = [];
   try {
-    feuille = getFeuilleDonnees(classeur);
-    dire('✓ Onglet de données : « ' + feuille.getName() + ' »');
+    contrats = listerContrats(classeur);
+    if (contrats.length === 0) {
+      throw new Error('Aucun onglet de données exploitable dans ce classeur.');
+    }
   } catch (err) {
     dire('✗ Onglet de données : ' + err.message);
     return terminerDiagnostic(lignes);
+  }
+  if (CONFIG.FEUILLE_DONNEES) {
+    dire('✓ Contrat unique, onglet imposé par CONFIG.FEUILLE_DONNEES : « ' + contrats[0].nom + ' »');
+  } else {
+    dire('✓ ' + contrats.length + ' contrat(s), un onglet visible chacun : ' +
+         contrats.map(function (c) { return '« ' + c.nom + ' »'; }).join(', '));
+  }
+
+  let tousLisibles = true;
+  contrats.forEach(function (c) {
+    if (contrats.length > 1) { dire(''); dire('— Contrat « ' + c.nom + ' » —'); }
+    if (!diagnostiquerContrat(classeur, c, dire)) tousLisibles = false;
+  });
+
+  /* L'ancien onglet d'historique, à côté de plusieurs contrats, n'appartient
+     à personne : ses relevés ne s'afficheront nulle part tant qu'il n'est pas
+     renommé. On le dit, on ne le renomme pas à la place de quelqu'un. */
+  if (contrats.length > 1 && classeur.getSheetByName(CONFIG.FEUILLE_HISTORIQUE)) {
+    dire('');
+    dire('⚠ L\'ancien onglet « ' + CONFIG.FEUILLE_HISTORIQUE + ' » n\'est rattaché à aucun contrat.');
+    dire('   → le renommer « ' + nomFeuilleHistorique('<nom du contrat>') +
+         ' » rend ses relevés au contrat qui les a produits.');
+  }
+
+  dire('');
+  dire('✓ Jalons de configuration : ' + getJalons().length);
+  try {
+    const poids = donneesJSONPourPage().length;
+    dire('✓ Paquet envoyé à la page : ' + Math.round(poids / 1024) + ' Ko' +
+         (contrats.length > 1
+           ? ' (contrat « ' + contrats[0].nom + ' », le premier ; les autres se chargent à la demande)'
+           : ''));
+  } catch (err) {
+    dire('✗ Paquet envoyé à la page : ' + (err && err.message ? err.message : err));
+    tousLisibles = false;
+  }
+
+  dire('');
+  if (nomsFichiers.length !== 3) dire('Il manque des fichiers HTML (voir ci-dessus).');
+  else if (!tousLisibles) dire('Un contrat au moins n\'est pas lisible (voir ci-dessus).');
+  else dire('Tout est en place : Suivi FWD → Ouvrir le tableau de bord.');
+
+  return terminerDiagnostic(lignes);
+}
+
+/**
+ * Le diagnostic d'un contrat : son onglet, ses colonnes, ses comptes, son
+ * historique. Renvoie faux quand l'onglet n'est pas exploitable — le
+ * diagnostic continue avec les autres contrats plutôt que de s'arrêter.
+ */
+function diagnostiquerContrat(classeur, contrat, dire) {
+  let feuille = null;
+  try {
+    feuille = getFeuilleDonnees(classeur, contrat.id);
+    dire('✓ Onglet de données : « ' + feuille.getName() + ' »');
+  } catch (err) {
+    dire('✗ Onglet de données : ' + err.message);
+    return false;
   }
 
   try {
@@ -841,13 +965,13 @@ function diagnostic() {
     dire('  ' + donnees.length + ' lignes lues dans l\'onglet');
     if (donnees.length === 0) {
       dire('✗ L\'onglet est vide : collez l\'export GATES en A1.');
-      return terminerDiagnostic(lignes);
+      return false;
     }
     const iEntete = detecterLigneEntete(donnees);
     dire('✓ Ligne d\'en-têtes : ligne ' + (iEntete + 1));
     dire('  ' + donnees[iEntete].filter(function (e) { return String(e).trim(); }).join(' | '));
 
-    const modele = construireModele();
+    const modele = construireModele(contrat.id);
     dire('✓ ' + modele.colonnes.length + ' colonnes, ' + modele.plans.length + ' plans');
 
     const colFWD = modele.colonnes.filter(function (c) { return c.cle === 'avancement'; })[0];
@@ -877,29 +1001,23 @@ function diagnostic() {
     dire('  Tableau ouvert sur les ' + modele.colonnes.length +
          ' colonnes de la feuille, dans son ordre');
 
-    const histo = getHistorique(classeur);
-    dire('✓ Relevés archivés : ' + histo.length);
+    const feuilleHisto = getFeuilleHistorique(classeur, contrat.id, false);
+    const histo = getHistorique(classeur, contrat.id);
+    dire('✓ Relevés archivés : ' + histo.length + (feuilleHisto
+      ? ' (onglet « ' + feuilleHisto.getName() + ' »)'
+      : ' (onglet « ' + nomFeuilleHistorique(contrat.id) + ' », créé au premier archivage)'));
     if (histo.length === 0) {
       dire('   → Suivi FWD → Archiver le relevé de cette semaine.');
       dire('     Sans relevé, pas de courbe ni de fin estimée.');
     } else {
       dire('  du ' + histo[0].semaine + ' au ' + histo[histo.length - 1].semaine);
     }
-    dire('✓ Jalons de configuration : ' + getJalons().length);
-
-    const poids = donneesJSONPourPage().length;
-    dire('✓ Paquet envoyé à la page : ' + Math.round(poids / 1024) + ' Ko');
-
-    dire('');
-    dire(nomsFichiers.length === 3
-      ? 'Tout est en place : Suivi FWD → Ouvrir le tableau de bord.'
-      : 'Il manque des fichiers HTML (voir ci-dessus).');
+    return true;
   } catch (err) {
     dire('✗ ERREUR : ' + (err && err.message ? err.message : err));
     if (err && err.stack) dire(String(err.stack).split('\n').slice(0, 3).join('\n'));
+    return false;
   }
-
-  return terminerDiagnostic(lignes);
 }
 
 function terminerDiagnostic(lignes) {
@@ -915,16 +1033,43 @@ function terminerDiagnostic(lignes) {
 }
 
 // =====================================================================
-//  HISTORIQUE
+//  HISTORIQUE — UN ONGLET PAR CONTRAT
 //  L'export ne contient que l'état du jour : on ne sait pas quand un plan est
 //  passé à 100 %. L'historique ne peut donc pas être reconstitué, seulement
-//  accumulé — un relevé par semaine ISO. Rien n'est jamais supprimé.
+//  accumulé — un relevé par semaine ISO, par contrat, dans l'onglet masqué
+//  « Historique_FWD_<nom du contrat> ». Rien n'est jamais supprimé.
 // =====================================================================
 
-function getFeuilleHistorique(classeur, creerSiAbsente) {
-  let feuille = classeur.getSheetByName(CONFIG.FEUILLE_HISTORIQUE);
+/** Le nom de l'onglet d'historique d'un contrat. */
+function nomFeuilleHistorique(contrat) {
+  return CONFIG.FEUILLE_HISTORIQUE + '_' + String(contrat);
+}
+
+/** L'identifiant d'un contrat : celui qu'on donne, sinon le premier du classeur. */
+function idContrat(classeur, contrat) {
+  const voulu = contrat === undefined || contrat === null ? '' : String(contrat).trim();
+  return voulu || getFeuilleDonnees(classeur).getName();
+}
+
+/**
+ * L'onglet d'historique d'un contrat.
+ *
+ * Rétro-compatibilité : un classeur à contrat unique qui porte encore
+ * l'ancien onglet « Historique_FWD » tout court le garde — ses relevés sont
+ * ceux de ce contrat, rien n'est renommé ni recopié. Dès qu'il y a plusieurs
+ * contrats, chacun a le sien, et l'ancien onglet n'est plus lu (le diagnostic
+ * dit comment le rattacher). L'onglet propre au contrat l'emporte toujours
+ * s'il existe.
+ */
+function getFeuilleHistorique(classeur, contrat, creerSiAbsente) {
+  const id = idContrat(classeur, contrat);
+  const nom = nomFeuilleHistorique(id);
+  let feuille = classeur.getSheetByName(nom);
+  if (!feuille && contratUnique(classeur)) {
+    feuille = classeur.getSheetByName(CONFIG.FEUILLE_HISTORIQUE);
+  }
   if (!feuille && creerSiAbsente) {
-    feuille = classeur.insertSheet(CONFIG.FEUILLE_HISTORIQUE);
+    feuille = classeur.insertSheet(nom);
     feuille.appendRow(ENTETES_HISTORIQUE);
     feuille.getRange(1, 1, 1, ENTETES_HISTORIQUE.length).setFontWeight('bold');
     feuille.setFrozenRows(1);
@@ -933,9 +1078,14 @@ function getFeuilleHistorique(classeur, creerSiAbsente) {
   return feuille;
 }
 
-/** Lit l'onglet Historique : un objet par relevé, trié par semaine. */
-function getHistorique(classeur) {
-  const feuille = getFeuilleHistorique(classeur, false);
+/** Vrai si le classeur ne porte qu'un contrat. */
+function contratUnique(classeur) {
+  try { return listerContrats(classeur).length === 1; } catch (err) { return false; }
+}
+
+/** Lit l'historique d'un contrat : un objet par relevé, trié par semaine. */
+function getHistorique(classeur, contrat) {
+  const feuille = getFeuilleHistorique(classeur, contrat, false);
   if (!feuille || feuille.getLastRow() < 2) return [];
 
   const valeurs = feuille.getRange(2, 1, feuille.getLastRow() - 1, ENTETES_HISTORIQUE.length).getValues();
@@ -977,9 +1127,9 @@ function ancienneteDepuis(valeur, reference) {
   return 'moins d’un mois';
 }
 
-/** Compte l'état du jour : global, par dimension, et plan par plan. */
-function compterAvancements() {
-  const modele = construireModele();
+/** Compte l'état du jour d'un contrat : global, par dimension, et plan par plan. */
+function compterAvancements(contrat) {
+  const modele = construireModele(contrat);
   const clesDim = modele.clesDim.concat(modele.cleDate ? ['_anciennete'] : []);
   const maintenant = new Date();
   const reference = new Date(Date.UTC(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate()));
@@ -1014,57 +1164,100 @@ function jsonTenable(valeur) {
   return texte.length > MAX_CARACTERES_CELLULE ? '' : texte;
 }
 
+/** La ligne de l'onglet (1-based) qui porte cette semaine, ou -1. */
+function ligneDeLaSemaine(feuille, semaine) {
+  const derniere = feuille.getLastRow();
+  if (derniere < 2) return -1;
+  const semaines = feuille.getRange(2, 1, derniere - 1, 1).getValues();
+  for (let i = semaines.length - 1; i >= 0; i--) {
+    if (normaliserSemaine(semaines[i][0]) === semaine) return i + 2;
+  }
+  return -1;
+}
+
 /**
- * Archive le relevé de la semaine courante.
+ * Archive le relevé de la semaine courante, pour TOUS les contrats du
+ * classeur : une ligne par contrat, dans l'onglet d'historique du contrat.
  * Idempotent : réimporter dans la même semaine met la ligne à jour au lieu
  * d'en empiler une seconde.
+ *
+ * Chaque contrat s'archive pour lui-même : un onglet illisible n'empêche pas
+ * les autres d'être relevés. Mais l'erreur n'est pas tue pour autant — elle
+ * est relancée à la fin, une fois les autres archivés, pour que le déclencheur
+ * hebdomadaire la signale. Renvoie le détail, contrat par contrat.
  */
 function enregistrerInstantaneHebdo() {
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
-  const compte = compterAvancements();
   const semaine = numeroSemaineISO(new Date());
-  const ligne = [
-    semaine, new Date(), compte.total, compte.termine, compte.encours,
-    compte.afaire, compte.vide,
-    jsonTenable(compte.groupes),
-    jsonTenable(compte.plans)
-  ];
-
-  const feuille = getFeuilleHistorique(classeur, true);
-  const derniere = feuille.getLastRow();
-  let indexLigne = -1;
-  if (derniere >= 2) {
-    const semaines = feuille.getRange(2, 1, derniere - 1, 1).getValues();
-    for (let i = 0; i < semaines.length; i++) {
-      if (normaliserSemaine(semaines[i][0]) === semaine) { indexLigne = i + 2; break; }
-    }
+  const contrats = listerContrats(classeur);
+  if (contrats.length === 0) {
+    throw new Error('Aucun onglet de données exploitable dans ce classeur.');
   }
 
-  if (indexLigne === -1) feuille.appendRow(ligne);
-  else feuille.getRange(indexLigne, 1, 1, ligne.length).setValues([ligne]);
+  const detail = [];
+  const erreurs = [];
+  contrats.forEach(function (c) {
+    try {
+      const compte = compterAvancements(c.id);
+      const ligne = [
+        semaine, new Date(), compte.total, compte.termine, compte.encours,
+        compte.afaire, compte.vide,
+        jsonTenable(compte.groupes),
+        jsonTenable(compte.plans)
+      ];
+      const feuille = getFeuilleHistorique(classeur, c.id, true);
+      const indexLigne = ligneDeLaSemaine(feuille, semaine);
+      if (indexLigne === -1) feuille.appendRow(ligne);
+      else feuille.getRange(indexLigne, 1, 1, ligne.length).setValues([ligne]);
+      detail.push({ id: c.id, nom: c.nom, historique: feuille.getName(), compte: compte });
+    } catch (err) {
+      erreurs.push('« ' + c.nom + ' » : ' + (err && err.message ? err.message : err));
+    }
+  });
 
-  return { ok: true, semaine: semaine, compte: compte };
+  if (erreurs.length) {
+    throw new Error('Relevé ' + semaine + ' — ' +
+      (detail.length ? detail.length + ' contrat(s) archivé(s), ' : '') +
+      erreurs.length + ' en erreur : ' + erreurs.join(' ; '));
+  }
+  return { ok: true, semaine: semaine, contrats: detail };
 }
 
-/** Retire le relevé de la semaine courante — pour rattraper un mauvais export. */
+/**
+ * Retire le relevé de la semaine courante — pour rattraper un mauvais export —
+ * de tous les contrats, et récapitule à l'écran ce qui a été retiré et ce qui
+ * n'avait rien.
+ */
 function supprimerDernierReleve() {
   const classeur = SpreadsheetApp.getActiveSpreadsheet();
-  const feuille = getFeuilleHistorique(classeur, false);
   const ui = SpreadsheetApp.getUi();
-  if (!feuille || feuille.getLastRow() < 2) {
-    ui.alert('Aucun relevé à supprimer.');
-    return;
-  }
   const semaine = numeroSemaineISO(new Date());
-  const semaines = feuille.getRange(2, 1, feuille.getLastRow() - 1, 1).getValues();
-  for (let i = semaines.length - 1; i >= 0; i--) {
-    if (normaliserSemaine(semaines[i][0]) === semaine) {
-      feuille.deleteRow(i + 2);
-      ui.alert('Relevé ' + semaine + ' supprimé. Recollez le bon export puis relancez l\'archivage.');
-      return;
-    }
+  const supprimes = [];
+  const sans = [];
+  let contrats = [];
+  try { contrats = listerContrats(classeur); } catch (err) { contrats = []; }
+
+  contrats.forEach(function (c) {
+    const feuille = getFeuilleHistorique(classeur, c.id, false);
+    const indexLigne = feuille ? ligneDeLaSemaine(feuille, semaine) : -1;
+    if (indexLigne === -1) { sans.push(c.nom); return; }
+    feuille.deleteRow(indexLigne);
+    supprimes.push(c.nom);
+  });
+
+  const nommer = function (liste) { return liste.map(function (n) { return '« ' + n + ' »'; }).join(', '); };
+  let message;
+  if (!supprimes.length) {
+    message = 'Aucun relevé pour la semaine ' + semaine + '.';
+  } else if (contrats.length === 1) {
+    message = 'Relevé ' + semaine + ' supprimé. Recollez le bon export puis relancez l\'archivage.';
+  } else {
+    message = 'Relevé ' + semaine + ' supprimé pour ' + nommer(supprimes) +
+      (sans.length ? ' ; aucun relevé pour ' + nommer(sans) : '') +
+      '. Recollez le bon export puis relancez l\'archivage.';
   }
-  ui.alert('Aucun relevé pour la semaine ' + semaine + '.');
+  ui.alert(message);
+  return { semaine: semaine, supprimes: supprimes, sans: sans };
 }
 
 function installerSuiviHebdomadaire() {

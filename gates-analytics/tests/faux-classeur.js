@@ -14,6 +14,7 @@ function Feuille(nom, valeurs, cachee, fusions) {
 Feuille.prototype.getName = function () { return this.nom; };
 Feuille.prototype.isSheetHidden = function () { return this.cachee; };
 Feuille.prototype.hideSheet = function () { this.cachee = true; };
+Feuille.prototype.showSheet = function () { this.cachee = false; };
 Feuille.prototype.setFrozenRows = function () { return this; };
 Feuille.prototype.getLastRow = function () { return this.valeurs.length; };
 Feuille.prototype.appendRow = function (ligne) { this.valeurs.push(ligne.slice()); };
