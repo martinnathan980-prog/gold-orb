@@ -92,7 +92,7 @@ Si quelqu'un te demande pourquoi il y a des messages en privé, la réponse est 
 > Salut tout le monde ! Le 9 novembre, Océane a 30 ans, et je lui prépare une vidéo surprise.
 >
 > Le concept : j'ai inventé une compagnie aérienne, **Océane Airlines**, et la vidéo suit le **vol OC 1996**, destination ses 30 ans.
-> Escales à Nîmes, Blagnac, Marignane et Pointe-à-Pitre, tout ce qu'elle a traversé depuis 1996.
+> Escales à Nîmes, à l'école, à Marignane et à Pointe-à-Pitre, tout ce qu'elle a traversé depuis 1996.
 > **Vous êtes tous l'équipage.** Chacun filme 30 secondes avec son téléphone, je monte le tout.
 > Pas besoin de savoir jouer : ceux qui jouent le plus mal sont souvent les plus drôles.
 >
@@ -209,7 +209,7 @@ Si quelqu'un te demande pourquoi il y a des messages en privé, la réponse est 
 | Consignes de sécurité (0:30) | Nathan + Coralie | chefs de cabine, en gilet jaune | 45 s |
 | Décollage Nîmes 1996 (1:15) | **Véronique, seule** | l'équipage fondateur, aux commandes depuis 1996 | 30 s |
 | Décollage Nîmes 1996 (1:15) | **Serge, seul** | l'équipage fondateur, aux commandes depuis 1996 | 30 s |
-| Escale Blagnac (2:00) | Julien | ancien copilote, période école | 30 s |
+| Escale École (2:00) | Julien | ancien copilote, même promotion | 30 s |
 | Escale Marignane (2:30) | Hervé | la tour de contrôle de Marignane | 30 s |
 | Turbulences (3:00) | une voix off | commentateur animalier | 30 s |
 | Escale Pointe-à-Pitre (3:30) | Sébastien | chef d'escale des Antilles | 30 s |
@@ -513,7 +513,7 @@ Dans l'ordre d'urgence réelle. Réponds même en vrac, une ligne par question s
 4. **La fête, c'est quel jour et à quel endroit dans les Cévennes ?** Le 9 novembre tombe un lundi, donc le week-end d'avant ou celui d'après. Tant que ce n'est pas calé, tout le calendrier flotte.
 5. **Où passe le clip de Célestin ?** Il n'a pas de créneau à lui. Tu lui en ouvres un, ou il passe dans la cabine classe éco ?
 6. **Qui présente le duty free ?** C'est le dernier rôle non pourvu, et il faut quelqu'un qui sur-joue.
-7. **Julien, tu le mets à Blagnac (l'école) ou à Marignane (le boulot) ?** Il peut faire les deux, il ne peut pas être dans les deux clips.
+7. **Julien tourne deux clips**, un à l'école (2:00) et un à Marignane (2:30), si possible à deux endroits différents pour qu'on ne voie pas que c'est la même personne deux fois de suite. Prévois-le quand tu le briefes.
 8. **Le nom exact de l'école, entre Montpellier et Toulouse.** L'ENAC ? Ça change une ligne du brief de Julien.
 9. **Tu as les numéros directs d'Hervé et de Julien ?** Ou il faut passer par quelqu'un, et donc rallonger tout le circuit ?
 10. **Paul est bien le mari de Coralie ?** À confirmer avant que je l'écrive où que ce soit.

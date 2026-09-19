@@ -30,7 +30,7 @@ Aujourd'hui : samedi 19 septembre. Il reste 7 semaines.
 | Rétroplanning | ✅ `01-retroplanning.md` |
 | Casting et suivi | ⬜ à remplir `05-casting.md` |
 | Questions restantes | ⬜ `17-questions.md` |
-| Graphismes, logo, cartons | ⬜ semaine du 12 octobre |
+| Graphismes, logo, cartons | ✅ 14 PNG dans `cartons/` |
 | Tes 8 annonces enregistrées | ⬜ semaine du 21 septembre |
 | Tournages de groupe | ⬜ week-end du 3-4 octobre |
 | Collecte des vidéos | ⬜ deadline dimanche 11 octobre |
