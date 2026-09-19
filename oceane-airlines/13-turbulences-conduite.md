@@ -44,7 +44,7 @@ Le temps 4 est le plus long des quatre, et c'est voulu : c'est là qu'est la chu
 
 ## La voix off
 
-> Sud de la France. Fin de journée. Le spécimen que nous observons est une conductrice adulte, calme, en pleine possession de ses moyens.
+> Sud de la France. Fin de journée. Le spécimen que nous observons est une conductrice adulte, calme, en pleine possession de ses moyens. On a longtemps cru qu'il n'y avait eu qu'un seul trottoir.
 >
 > Première observation. Le trottoir se présente. Chez la plupart des espèces, il marque une frontière. Chez celle-ci, il marque une invitation. La roue monte. Le passager se fige.
 >
