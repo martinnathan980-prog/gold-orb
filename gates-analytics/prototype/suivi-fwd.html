@@ -26,6 +26,8 @@
   --r1: #eef4f0; --r2: #d6e6dc; --r3: #b3d2c1; --r4: #86b8a0; --r5: #52997a; --r6: #286b45;
 
   --focus: #286b45;
+  /* Le voile ambre d'une cellule qui diffère de l'autre base. */
+  --voile-ecart: rgba(191, 127, 20, .14);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -36,6 +38,7 @@
     --sur-plein: #11110f;
     --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
     --focus: #6fae82;
+    --voile-ecart: rgba(221, 164, 52, .2);
   }
 }
 :root[data-theme="dark"] {
@@ -46,6 +49,7 @@
   --sur-plein: #11110f;
   --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
   --focus: #6fae82;
+  --voile-ecart: rgba(221, 164, 52, .2);
 }
 
 * { box-sizing: border-box; }
@@ -391,6 +395,9 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .cadre-graphe[data-glisse="true"] { cursor: grabbing; }
 .cadre-graphe svg text { user-select: none; }
 .zone-clic { cursor: inherit; }
+/* Survoler une semaine l'éclaire d'une bande discrète, sous la bulle. */
+.zone-clic:hover { fill: var(--filet); fill-opacity: .55; }
+.annee { font-size: 10px; fill: var(--encre-3); font-family: "IBM Plex Mono", monospace; letter-spacing: .04em; }
 .jalon-texte { font-size: 11.5px; fill: var(--encre-2); font-weight: 500; }
 
 .note-graphe { margin: 12px 0 0; text-align: center; font-size: 12px; color: var(--encre-3); }
@@ -416,24 +423,51 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
    sobre pour ce qui n'est pas dans le tableau ; une grille pour le détail. */
 .rapprochement[hidden] { display: none; }
 .rapp-phrase { margin: 0 0 12px; font-size: 13px; color: var(--encre-2); }
-.rapp-puces {
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 20px;
-  font-size: 13px; color: var(--encre-3);
+/* Le rapprochement en un coup d'œil : une jauge proportionnelle sur les
+   plans d'ici, puis une tuile par lot avec son grand nombre. La couleur dit
+   le verdict — vert identique, anneau réémis, ambre écart, rouge absent ;
+   le trait pointillé, à part, ce qui n'existe que dans l'autre base. */
+.rapp-jauge { display: flex; gap: 2px; height: 14px; margin: 14px 0 0; }
+.rapp-jauge span { display: block; min-width: 0; flex: none; transition: width .3s ease; }
+.rapp-jauge .identique { background: var(--fait); }
+.rapp-jauge .emission { background: transparent; box-shadow: inset 0 0 0 1.5px var(--encre-3); }
+.rapp-jauge .ecart { background: var(--cours); }
+.rapp-jauge .absentLa { background: var(--alerte); }
+.rapp-jauge .seul { margin-left: 10px; background: transparent; border: 1.5px dashed var(--encre-3); box-sizing: border-box; }
+.rapp-tuiles {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 12px;
 }
-.rapp-puces .puce-delta:disabled { cursor: default; color: var(--encre-3); border-bottom-color: transparent; }
-.rapp-puces .puce-delta:disabled:hover { color: var(--encre-3); }
-.rapp-liste { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--filet); font-size: 12.5px; }
-.rapp-liste .sous-titre {
-  margin: 0 0 6px; font: 500 10.5px/1.4 "IBM Plex Sans", system-ui, sans-serif;
-  letter-spacing: .09em; text-transform: uppercase; color: var(--encre-2);
+.rapp-tuile {
+  position: relative; text-align: left; background: var(--creux); border: 1px solid var(--filet);
+  padding: 10px 12px 9px; font: inherit; color: var(--encre-2); cursor: pointer; display: grid; gap: 3px;
+  align-content: start;
 }
-.rapp-liste .ligne {
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 14px;
-  padding: 5px 0; border-bottom: 1px solid var(--filet);
+.rapp-tuile:hover { border-color: var(--filet-fort); color: var(--encre); }
+.rapp-tuile:disabled { cursor: default; opacity: .55; }
+.rapp-tuile:disabled:hover { border-color: var(--filet); color: var(--encre-2); }
+.rapp-tuile[aria-pressed="true"] { border-color: var(--encre); box-shadow: inset 0 0 0 1px var(--encre); color: var(--encre); }
+.rapp-tuile b {
+  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 400;
+  font-size: 26px; line-height: 1.1; color: var(--encre);
 }
-.rapp-liste .ligne:last-child { border-bottom: none; }
-.rapp-liste .champ { color: var(--encre-3); white-space: nowrap; }
-.rapp-liste .champ b { font-weight: 500; color: var(--encre-2); }
+.rapp-tuile .mot { display: flex; align-items: center; gap: 7px; font-size: 12.5px; line-height: 1.3; }
+.rapp-tuile .sous { font-size: 11.5px; color: var(--encre-3); }
+.rapp-tuile .sous:empty { display: none; }
+.pastille.identique { background: var(--fait); }
+.pastille.ecart { background: var(--cours); }
+.pastille.absent { background: var(--alerte); }
+.pastille.seul { background: transparent; border: 1.5px dashed var(--encre-3); box-sizing: border-box; }
+/* Le tableau de la seconde base : le verdict en pastille dans la cellule de
+   la référence, les cellules qui diffèrent d'ici sous un voile ambre, avec la
+   valeur d'ici en info-bulle ; les cases à cocher de l'extract en ✓ / –. */
+table.plans td.ecart { background: var(--voile-ecart); box-shadow: inset 0 -1px 0 var(--cours); }
+table.plans td.coche { text-align: center; color: var(--encre-2); }
+table.plans .verdict { display: inline-flex; align-items: center; gap: 8px; }
+table.plans tbody tr.choisie td { background: var(--creux); box-shadow: inset 0 -1px 0 var(--encre); }
+table.plans tbody tr[data-plan] { cursor: pointer; }
+.legende-rapp { display: inline-flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--encre-3); margin-left: auto; }
+.legende-rapp span { display: inline-flex; align-items: center; gap: 6px; }
+.legende-rapp:empty { display: none; }
 .rapp-detail-bouton { margin-top: 14px; display: inline-flex; align-items: baseline; gap: 6px; }
 .rapp-detail-bouton::before { content: "▸"; font-size: 10px; }
 .rapp-detail-bouton[aria-expanded="true"]::before { content: "▾"; }
@@ -660,10 +694,22 @@ table.plans thead .groupes th {
   font-weight: 500; padding: 9px 14px 5px; white-space: nowrap;
   position: sticky; top: 0; z-index: 4; border-bottom: 1px solid var(--filet);
 }
-table.plans thead .titres th {
+table.plans thead .titres th, table.plans thead .titres-la th {
   font-weight: 500; font-size: 12.5px; color: var(--encre-2); padding: 6px 14px 7px;
   white-space: nowrap; border-bottom: 1px solid var(--filet-fort); position: sticky; z-index: 4;
 }
+/* Le tableau de la seconde base : mêmes en-têtes, mais sous d'autres noms de
+   classe, pour que ce qui vise le tableau d'ici ne l'atteigne pas. Sa
+   première colonne, la référence, reste collée à gauche. */
+table.plans thead .titres-la th { top: 0; }
+table.plans thead .titres-la th button {
+  border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+table.plans thead .titres-la th button:hover { color: var(--encre); }
+.col-fige-la { position: sticky; left: 0; background: var(--surface); z-index: 2; box-shadow: inset -1px 0 0 var(--filet-fort); }
+table.plans tbody tr:hover .col-fige-la { background: var(--creux); }
+table.plans thead tr th.col-fige-la { z-index: 6; }
 table.plans thead .filtres th { padding: 0 14px 7px; position: sticky; z-index: 4; border-bottom: 1px solid var(--filet); }
 table.plans thead .filtres input {
   width: 100%; min-width: 78px; border: none; border-bottom: 1px solid var(--filet);
@@ -822,16 +868,16 @@ table.plans thead tr th.col-fige { z-index: 6; }
   </section>
 
   <!-- Le rapprochement avec une seconde base : présent seulement quand la
-       source en porte une. Les compteurs filtrent le tableau ; ce qui n'est
-       pas dans le tableau — les références absentes d'ici — se déplie ici. -->
+       source en porte une. Chaque tuile filtre le tableau d'ici, ou celui de
+       la seconde base pour ce qui n'existe que là. -->
   <section class="bloc rapprochement" id="rapprochement" hidden>
     <div class="section-tete">
       <h2 id="titre-rapprochement">Rapprochement</h2>
     </div>
     <div class="feuille">
       <p class="rapp-phrase" id="phrase-rapprochement"></p>
-      <div class="rapp-puces" id="puces-rapprochement" role="group" aria-label="Écarts entre les deux bases"></div>
-      <div id="absents-rapprochement"></div>
+      <div class="rapp-jauge" id="jauge-rapprochement" aria-hidden="true"></div>
+      <div class="rapp-tuiles" id="puces-rapprochement" role="group" aria-label="Verdict du rapprochement, un lot par tuile"></div>
       <button class="journal-plus rapp-detail-bouton" type="button" id="bouton-detail-rapprochement"
               data-rapp-detail="1" aria-expanded="false" aria-controls="detail-rapprochement">détail des écarts</button>
       <div id="detail-rapprochement"></div>
@@ -869,6 +915,39 @@ table.plans thead tr th.col-fige { z-index: 6; }
         </table>
       </div>
       <div class="ombre-defile"></div>
+    </div>
+  </section>
+
+  <!-- La seconde base, telle que son extract : toutes ses colonnes, dans son
+       ordre, sous leurs intitulés ; le verdict du rapprochement en pastille
+       dans la cellule de la référence, les cellules qui diffèrent teintées. -->
+  <section class="bloc" id="seconde-base" hidden>
+    <div class="section-tete">
+      <h2 id="titre-seconde">Seconde base</h2>
+      <span class="compte" id="compte-seconde">—</span>
+    </div>
+    <div class="outils">
+      <div class="recherche">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <label class="masque" for="recherche-seconde">Rechercher dans la seconde base</label>
+        <input id="recherche-seconde" type="search" placeholder="Rechercher…" autocomplete="off">
+      </div>
+      <span class="segmente" id="vue-seconde" role="group" aria-label="Colonnes affichées de la seconde base">
+        <button type="button" data-vue="toutes" aria-pressed="true">Toutes les colonnes</button>
+        <button type="button" data-vue="essentielle" aria-pressed="false">Vue essentielle</button>
+      </span>
+      <span class="legende-rapp" id="legende-seconde"></span>
+    </div>
+    <div class="cadre-tableau" id="cadre-seconde">
+      <div class="defile">
+        <table class="plans seconde">
+          <thead id="tete-seconde"></thead>
+          <tbody id="corps-seconde"></tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -1534,76 +1613,100 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var d = new Date(base.getTime()); d.setUTCDate(base.getUTCDate() + i * 7); return d;
   }
 
-  /* La seconde base, en attendant la vraie : un extract Excel fictif dont les
-     colonnes portent d'autres noms (REF_UD, ATA_CODE, STATUT_FWD…), construit
-     à partir des plans du contrat avec des écarts DÉLIBÉRÉS et déterministes
-     — les mêmes à chaque ouverture, pour que la section ait toujours quelque
-     chose à montrer et que la batterie sache quoi attendre :
-       · 5 plans absents de la seconde base ;
-       · 5 références présentes là mais pas ici (racines inédites) ;
-       · 10 plans dont un champ diffère (ATA, ECP, avancement, installation,
-         séquence, à tour de rôle) ;
-       · 2 plans que la seconde base connaît sous un autre indice.
+  /* La seconde base, en attendant la vraie : « SEE », l'extract Excel de
+     l'intranet — titre « Nommage WD BFLOW » en ligne 1, en-têtes en ligne 3,
+     données dessous. Ses colonnes sont celles de l'extract, dans son ordre.
+     La référence UD s'y lit sur trois colonnes : NAME (la racine), SOL. (la
+     solution, trois chiffres) et Cust.V (l'indice, une lettre). Elle est
+     construite à partir des plans du contrat avec des écarts DÉLIBÉRÉS et
+     déterministes — les mêmes à chaque ouverture, pour que la section ait
+     toujours quelque chose à montrer et que la batterie sache quoi attendre :
+       · 5 plans absents de SEE ;
+       · 5 références présentes dans SEE mais pas ici (racines inédites) ;
+       · 10 plans dont un champ diffère (Validated, REDRAW, installation,
+         produit, à tour de rôle) ;
+       · 2 plans que SEE connaît sous une autre émission : l'un sous une
+         autre solution, l'autre sous un autre indice.
      Les rangs sont tous inférieurs au plus petit contrat (275 plans) : les
      trois contrats portent le même jeu d'écarts, seuls leurs plans changent.
-     Les références s'y écrivent avec un tiret entre racine et indice, et l'ECP
-     en minuscules : l'appariement passe par la racine, la comparaison par
-     norm(). L'avancement s'y dit autrement (OK / WIP / Non commencé / vide) :
-     pour ce champ-là, la comparaison passe par classer(), pas par la chaîne. */
+     Les cases à cocher de l'extract s'y lisent TRUE / FALSE, comme dans un
+     classeur ; « Validated » se compare à l'avancement d'ici par état — un
+     plan terminé ici doit être validé là, et réciproquement. */
   var ECARTS_EXEMPLE = {
     absentsLa: [7, 61, 143, 199, 250],
     indice: [50, 120],
     champs: [3, 30, 77, 110, 150, 180, 210, 230, 255, 265]
   };
-  var STATUT_LA = { termine: 'OK', encours: 'WIP', afaire: 'Non commencé', vide: '' };
+  var COLONNES_SEE = ['NAME', 'SOL.', 'Cust.V', 'Int. V', 'ARCHIVE FILE PREFIX', 'VALIDITY PSN FULL',
+    'User Status', 'DIAGRAM TYPE', 'PRODUCT FAMILY', 'Validated', 'FG1 TAGDESCRIPTION', 'FG2 TAGDESCRIPTION',
+    'SCHEMA NUMBER', 'Released Date', 'Obsolete Date', 'Validated Date', 'REDRAW', 'ARCHIVED', 'CGM', 'XPEMPTY'];
+  var ESSENTIELLES_SEE = ['NAME', 'SOL.', 'Cust.V', 'VALIDITY PSN FULL', 'DIAGRAM TYPE', 'PRODUCT FAMILY',
+    'Validated', 'Released Date', 'REDRAW'];
   var CHAMPS_RAPPROCHEMENT_EXEMPLE = [
-    { ici: 'ata',              la: 'ATA_CODE',     titre: 'ATA' },
-    { ici: 'ecp',              la: 'ECP',          titre: 'ECP' },
-    { ici: 'avancement',       la: 'STATUT_FWD',   titre: 'Avancement' },
-    { ici: 'nom_installation', la: 'INSTALLATION', titre: 'Nom Installation' },
-    { ici: 'sequence',         la: 'SEQ',          titre: 'Séquence' }
+    { ici: 'avancement',       la: 'Validated',          titre: 'Avancement / Validated' },
+    { ici: 'redraw',           la: 'REDRAW',             titre: 'Redraw' },
+    { ici: 'nom_installation', la: 'FG1 TAGDESCRIPTION', titre: 'Installation' },
+    { ici: 'produit',          la: 'PRODUCT FAMILY',     titre: 'Produit' }
   ];
+  var AVIONS_SEE = ['2851', '2860', '2874', '2902', '2915'];
   function rapprochementDExemple(plans) {
-    var absents = {}, autreIndice = {}, autreChamp = {};
+    var absents = {}, autreEmission = {}, autreChamp = {};
     ECARTS_EXEMPLE.absentsLa.forEach(function (i) { absents[i] = true; });
-    ECARTS_EXEMPLE.indice.forEach(function (i) { autreIndice[i] = true; });
+    ECARTS_EXEMPLE.indice.forEach(function (i, k) { autreEmission[i] = k; });
     ECARTS_EXEMPLE.champs.forEach(function (i, k) { autreChamp[i] = k; });
     var lignes = [];
+    function ligneSEE(racine, solution, indice, i, p) {
+      var termine = !!p && classer(p.avancement) === 'termine';
+      var l = {};
+      l['NAME'] = racine;
+      l['SOL.'] = solution;
+      l['Cust.V'] = indice;
+      l['Int. V'] = String(1 + (i % 3));
+      l['ARCHIVE FILE PREFIX'] = 'WD_' + racine + '_' + solution + indice;
+      l['VALIDITY PSN FULL'] = AVIONS_SEE[i % AVIONS_SEE.length];
+      l['User Status'] = termine ? 'Released' : 'In Work';
+      l['DIAGRAM TYPE'] = ['WD', 'HD', 'SD'][i % 3];
+      l['PRODUCT FAMILY'] = p ? p.produit : 'SUPER PUMA';
+      l['Validated'] = termine ? 'TRUE' : 'FALSE';
+      l['FG1 TAGDESCRIPTION'] = p ? p.nom_installation : 'Harnais alimentation cabine';
+      l['FG2 TAGDESCRIPTION'] = i % 4 === 0 && p ? 'Zone ' + p.chapitre + p.sous_chapitre : '';
+      l['SCHEMA NUMBER'] = p ? p.cc : '32499';
+      l['Released Date'] = p ? p.date_creation : '2026-01-15';
+      l['Obsolete Date'] = '';
+      l['Validated Date'] = termine ? '2026-0' + (1 + i % 9) + '-1' + (i % 9) : '';
+      l['REDRAW'] = p && p.redraw === 'true' ? 'TRUE' : 'FALSE';
+      l['ARCHIVED'] = 'FALSE';
+      l['CGM'] = termine ? 'TRUE' : 'FALSE';
+      l['XPEMPTY'] = 'FALSE';
+      return l;
+    }
     plans.forEach(function (p, i) {
       if (absents[i]) return;
       var ud = analyserUD(p.reference);
-      var solution = autreIndice[i] ? ('00' + (Number(ud.solution) + 1)).slice(-3) : ud.solution;
-      var l = {
-        REF_UD: ud.racine + '-' + solution + ud.indice,
-        ATA_CODE: p.ata,
-        ECP: String(p.ecp || '').toLowerCase(),
-        STATUT_FWD: STATUT_LA[classer(p.avancement)],
-        INSTALLATION: p.nom_installation,
-        SEQ: p.sequence,
-        AUTRE_COLONNE_INUTILE: 'lot ' + (i % 7)
-      };
+      var solution = ud.solution, indice = ud.indice;
+      if (autreEmission[i] === 0) solution = ('00' + (Number(ud.solution) + 1)).slice(-3);
+      else if (autreEmission[i] === 1) indice = String.fromCharCode(ud.indice.charCodeAt(0) + 1);
+      var l = ligneSEE(ud.racine, solution, indice, i, p);
       if (autreChamp[i] !== undefined) {
-        switch (autreChamp[i] % 5) {
-          case 0: l.ATA_CODE = p.ata === '21' ? '22' : '21'; break;
-          case 1: l.ECP = p.ecp ? '' : 'ecp-2199'; break;
-          case 2: l.STATUT_FWD = classer(p.avancement) === 'termine' ? 'WIP' : 'OK'; break;
-          case 3: l.INSTALLATION = 'Cheminement plafond arrière'; break;
-          default: l.SEQ = p.sequence === '600' ? '601' : '600';
+        switch (autreChamp[i] % 4) {
+          case 0: l['Validated'] = l['Validated'] === 'TRUE' ? 'FALSE' : 'TRUE'; break;
+          case 1: l['REDRAW'] = l['REDRAW'] === 'TRUE' ? 'FALSE' : 'TRUE'; break;
+          case 2: l['FG1 TAGDESCRIPTION'] = 'Cheminement plafond arrière'; break;
+          default: l['PRODUCT FAMILY'] = p.produit === 'MK2' ? 'MK3' : 'MK2';
         }
       }
       lignes.push(l);
     });
     for (var k = 0; k < 5; k++) {
-      lignes.push({
-        REF_UD: 'NEW' + (5100 + k) + 'A' + ('00' + k).slice(-3) + '-001A',
-        ATA_CODE: '24', ECP: 'ecp-2150', STATUT_FWD: 'WIP',
-        INSTALLATION: 'Harnais alimentation cabine', SEQ: '600', AUTRE_COLONNE_INUTILE: 'lot 0'
-      });
+      lignes.push(ligneSEE('NEW' + (5100 + k) + 'A' + ('00' + k).slice(-3), '001', 'A', k, null));
     }
     return {
-      nom: 'Base FWD (extract Excel)',
-      cleReference: 'REF_UD',
+      nom: 'SEE',
+      titre: 'Nommage WD BFLOW',
+      cleReference: ['NAME', 'SOL.', 'Cust.V'],
       champs: CHAMPS_RAPPROCHEMENT_EXEMPLE,
+      colonnes: COLONNES_SEE,
+      essentielles: ESSENTIELLES_SEE,
       lignes: lignes
     };
   }
@@ -1770,6 +1873,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
     CLE_DOMAINE = (src.cleDomaine && PAR_CLE[src.cleDomaine]) ? src.cleDomaine : null;
     CLES_ESSENTIELLES = (src.clesEssentielles || []).filter(function (c) { return PAR_CLE[c]; });
+    preparerSeconde(src.rapprochement);
     /* Sur un export de dix colonnes, une « vue essentielle » n'apporte rien :
        le choix ne vaut que s'il y a vraiment deux vues distinctes. */
     VAUT_ESSENTIELLES = CLES_ESSENTIELLES.length >= 2 &&
@@ -1887,9 +1991,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
       vides: {}, perimetre: '',
       journal: '', journalOuverts: {}, groupesTout: false,
       aideFin: false,
-      /* Le rapprochement : la liste des références absentes d'ici et le
-         détail des écarts, dépliés ou non. Rien de tout cela n'est mémorisé. */
-      rappAbsentsIci: false, rappDetail: false,
+      /* Le rapprochement : le lot « seulement là » posé sur le tableau de
+         là, et le détail des écarts, déplié ou non. Rien n'est mémorisé. */
+      lotLa: null, rappDetail: false,
+      /* Le tableau de la seconde base : sa recherche, ses deux vues, son tri.
+         Le tri vide, c'est l'ordre de l'extract. */
+      seconde: { recherche: '', vueTable: 'toutes', tri: { cle: null, asc: true } },
       exemple: !!SRC.exemple,
       fen: cadrageParDefaut(),
       /* L'ordre de la feuille, sans exception : tout le monde doit voir le même
@@ -1914,6 +2021,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     appliquerDisposition(avant);
     vue.vueTable = avant.vueTable === 'essentielle' ? 'essentielle' : 'toutes';
     if (vue.vueTable === 'essentielle') appliquerVueTable();
+    if (avant.seconde && avant.seconde.vueTable === 'essentielle') vue.seconde.vueTable = 'essentielle';
   }
 
   /* Les commandes fixes de la page reflètent la vue : le champ de recherche,
@@ -1926,6 +2034,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
     });
     document.querySelectorAll('#vue-tableau button').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.dataset.vue === vue.vueTable));
+    });
+    $('recherche-seconde').value = vue.seconde.recherche;
+    document.querySelectorAll('#vue-seconde button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.vue === vue.seconde.vueTable));
     });
     afficherMode();
   }
@@ -2036,63 +2148,126 @@ table.plans thead tr th.col-fige { z-index: 6; }
      Sans description dans la source, il n'y a rien à rapprocher et la
      section n'existe pas.
      ============================================================ */
+  /* Les lots du rapprochement, dans l'ordre de lecture : d'abord ce qui va,
+     puis ce qui diffère, puis ce qui manque de chaque côté. « § » se remplace
+     par le nom de la seconde base. Les quatre premiers filtrent le tableau
+     d'ici ; le dernier n'a de lignes que là, il filtre le tableau de là. */
   var LOTS_RAPPROCHEMENT = [
-    { cle: 'absentsLa',       libelle: 'absents de la seconde base', filtre: true },
-    { cle: 'absentsIci',      libelle: 'absents d’ici',              filtre: false },
-    { cle: 'indiceDifferent', libelle: 'solution ou indice différent', filtre: true },
-    { cle: 'ecarts',          libelle: 'champs différents',          filtre: true }
+    { cle: 'identiques',      libelle: 'identiques des deux côtés',   pastille: 'identique', cote: 'ici' },
+    { cle: 'indiceDifferent', libelle: 'solution ou indice différent', pastille: 'neutre',    cote: 'ici' },
+    { cle: 'ecarts',          libelle: 'champs différents',           pastille: 'ecart',     cote: 'ici' },
+    { cle: 'absentsLa',       libelle: 'absents de §',                pastille: 'absent',    cote: 'ici' },
+    { cle: 'absentsIci',      libelle: 'seulement dans §',            pastille: 'seul',      cote: 'la' }
   ];
+  /* La catégorie d'une ligne de là derrière chaque lot ; null : ces plans
+     n'ont pas de ligne là. */
+  var CATEGORIE_PAR_LOT = { identiques: 'identique', indiceDifferent: 'emission', ecarts: 'ecart',
+                            absentsLa: null, absentsIci: 'seul' };
+  function nomSeconde() {
+    return String((SRC && SRC.rapprochement && SRC.rapprochement.nom) || 'la seconde base');
+  }
+  function libelleRapp(l) { return l.libelle.replace('§', nomSeconde()); }
+
+  /* La référence d'une ligne de la seconde base : une colonne qui la porte
+     entière, ou plusieurs qu'on recompose — NAME (racine), SOL. (solution) et
+     Cust.V (indice) dans SEE. Un extract Excel rend volontiers « 1 » pour
+     « 001 » : la solution se remet sur trois chiffres, l'indice en capitale. */
+  function refDeLigne(rap, l) {
+    var cle = rap.cleReference;
+    if (!Array.isArray(cle)) return String(l[cle] == null ? '' : l[cle]).trim();
+    var parts = cle.map(function (k) { return String(l[k] == null ? '' : l[k]).trim(); });
+    if (parts.length === 3) {
+      if (/^\d{1,3}$/.test(parts[1])) parts[1] = ('00' + parts[1]).slice(-3);
+      parts[2] = parts[2].toUpperCase();
+    }
+    return parts.join('');
+  }
+  /* Les cases à cocher d'un extract : TRUE / FALSE, VRAI / FAUX, oui / non… */
+  var VRAI = /^(true|vrai|oui|yes|x|✓|☑)$/i, FAUX = /^(false|faux|non|no|☐)$/i;
+  function estBooleen(v) { var t = String(v == null ? '' : v).trim(); return VRAI.test(t) || FAUX.test(t); }
+  function estVrai(v) { return VRAI.test(String(v == null ? '' : v).trim()); }
+  /* Deux valeurs disent-elles la même chose ? L'avancement se compare par
+     état ; face à une case à cocher, terminé ici vaut coché là. Deux cases
+     se comparent cochée à cochée ; le reste à la lettre près, après norm(). */
+  function memeValeur(cle, ici, la) {
+    if (cle === COLONNE_SUIVIE) {
+      if (estBooleen(la)) return (classer(ici) === 'termine') === estVrai(la);
+      return classer(ici) === classer(la);
+    }
+    if (estBooleen(ici) && estBooleen(la)) return estVrai(ici) === estVrai(la);
+    return norm(ici) === norm(la);
+  }
   /**
    * Rapproche `plans` (ceux du périmètre) des lignes de la seconde base.
    * Rend null sans description exploitable. Sinon :
+   *   identiques      [plan]                     — même émission, mêmes champs ;
+   *   indiceDifferent [{ plan, ref_la, type }]   — même racine, autre émission
+   *                                                 (type : solution ou indice) ;
+   *   ecarts          [{ plan, champ, ici, la }] — un champ qui ne dit pas
+   *                                                 la même chose des deux côtés ;
    *   absentsLa       [plan]                     — ici, pas là ;
    *   absentsIci      [ligne]                    — là, et aucun plan du
    *                                                 contrat n'a cette racine ;
-   *   indiceDifferent [{ plan, ref_la }]         — même racine, autre émission ;
-   *   ecarts          [{ plan, champ, ici, la }] — un champ qui ne dit pas
-   *                                                 la même chose des deux côtés.
+   *   parPlan         { référence: catégorie }   — une seule catégorie par
+   *                                                 plan, pour la jauge ;
+   *   lignes          [{ ligne, ref, ud, i, cat, plan, ecarts }] — chaque
+   *                   ligne de là avec son verdict, pour le tableau de là.
    */
   function rapprocher(rap, plans) {
     if (!rap || !Array.isArray(rap.lignes) || !rap.cleReference) return null;
-    var cleRef = String(rap.cleReference);
     var champs = (Array.isArray(rap.champs) ? rap.champs : [])
       .filter(function (c) { return c && c.ici && c.la; });
     /* Les lignes de la seconde base par racine : une ligne dont la référence
        est illisible garde sa chaîne entière comme racine, comme ici. */
-    var parRacine = Object.create(null);
-    rap.lignes.forEach(function (l) {
+    var parRacine = Object.create(null), lignes = [];
+    rap.lignes.forEach(function (l, i) {
       if (!l || typeof l !== 'object') return;
-      var ud = analyserUD(l[cleRef]);
+      var ref = refDeLigne(rap, l), ud = analyserUD(ref);
+      var e = { ligne: l, ref: ref, ud: ud, i: i, cat: 'vide', plan: null, ecarts: {} };
+      lignes.push(e);
       if (!ud.racine) return;
-      (parRacine[ud.racine] = parRacine[ud.racine] || []).push({ ligne: l, ud: ud });
+      (parRacine[ud.racine] = parRacine[ud.racine] || []).push(e);
     });
-    var r = { absentsLa: [], absentsIci: [], indiceDifferent: [], ecarts: [],
+    var r = { identiques: [], indiceDifferent: [], ecarts: [], absentsLa: [], absentsIci: [],
+              parPlan: Object.create(null), lignes: lignes,
               nbPlans: plans.length, nbLignes: rap.lignes.length, total: 0 };
     plans.forEach(function (p) {
       var candidates = parRacine[p._racine];
-      if (!candidates) { r.absentsLa.push(p); return; }
+      if (!candidates) { r.absentsLa.push(p); r.parPlan[p.reference] = 'absentLa'; return; }
       var udIci = analyserUD(p.reference);
       /* Plusieurs lignes de même racine : celle qui porte exactement la même
          émission, sinon la première. */
       var meme = candidates.filter(function (c) {
         return c.ud.solution === udIci.solution && c.ud.indice === udIci.indice;
       })[0] || candidates[0];
+      var cat = 'identique';
       if (meme.ud.solution !== udIci.solution || meme.ud.indice !== udIci.indice) {
-        r.indiceDifferent.push({ plan: p, ref_la: String(meme.ligne[cleRef]) });
+        r.indiceDifferent.push({ plan: p, ref_la: meme.ref,
+                                 type: meme.ud.solution !== udIci.solution ? 'solution' : 'indice' });
+        cat = 'emission';
       }
       champs.forEach(function (c) {
         var ici = p[c.ici], la = meme.ligne[c.la];
-        var egal = c.ici === COLONNE_SUIVIE ? classer(ici) === classer(la) : norm(ici) === norm(la);
-        if (!egal) r.ecarts.push({ plan: p, champ: String(c.titre || c.la), ici: ici, la: la });
+        if (memeValeur(c.ici, ici, la)) return;
+        r.ecarts.push({ plan: p, champ: String(c.titre || c.la), ici: ici, la: la });
+        meme.ecarts[c.la] = ici;
+        if (cat === 'identique') cat = 'ecart';
       });
+      if (cat === 'identique') r.identiques.push(p);
+      r.parPlan[p.reference] = cat;
+      meme.cat = cat; meme.plan = p;
+      /* Les autres lignes de même racine : le même plan, sous une autre émission. */
+      candidates.forEach(function (c) { if (c !== meme && !c.plan) { c.cat = 'emission'; c.plan = p; } });
     });
-    /* Une ligne n'a pas de domaine : elle est « absente d'ici » si aucun plan
-       du contrat, périmètre ou non, ne porte sa racine. */
+    /* Une ligne n'a pas de domaine : elle est « seulement là » si aucun plan
+       du contrat, périmètre ou non, ne porte sa racine ; sous un périmètre,
+       une ligne d'un plan hors périmètre est simplement hors champ. */
     var racinesIci = Object.create(null);
     PLANS.forEach(function (p) { racinesIci[p._racine] = true; });
-    Object.keys(parRacine).forEach(function (racine) {
-      if (racinesIci[racine]) return;
-      parRacine[racine].forEach(function (c) { r.absentsIci.push(c.ligne); });
+    lignes.forEach(function (e) {
+      if (e.plan || !e.ud.racine) return;
+      if (racinesIci[e.ud.racine]) { e.cat = 'hors'; return; }
+      e.cat = 'seul'; r.absentsIci.push(e.ligne);
     });
     /* Les absents d'ici portent sur tout le contrat, jamais sur le seul
        périmètre : ils se comptent à part, pour ne pas mêler les deux. */
@@ -2100,15 +2275,34 @@ table.plans thead tr th.col-fige { z-index: 6; }
     r.total = r.totalPerimetre + r.absentsIci.length;
     return r;
   }
-  /* Les références du tableau derrière un compteur : c'est ce que le clic
-     pose en sélection. Un plan qui diffère sur deux champs ne compte qu'une fois. */
+  /* Les références du tableau derrière un lot : c'est ce que le clic pose en
+     sélection. Un plan qui diffère sur deux champs ne compte qu'une fois. */
   function refsDuLotRapprochement(cle) {
     var refs = {};
     (RAPPROCHEMENT[cle] || []).forEach(function (x) {
-      var p = cle === 'absentsLa' ? x : x.plan;
+      var p = (cle === 'absentsLa' || cle === 'identiques') ? x : x.plan;
       refs[p.reference] = true;
     });
     return Object.keys(refs);
+  }
+  /* Poser ou retirer un lot : les lots d'ici passent par la sélection du
+     tableau, comme les puces du comparatif ; le lot de là ne filtre que le
+     tableau de là. Un seul lot à la fois. */
+  function poserLotRapp(cle) {
+    var lot = LOTS_RAPPROCHEMENT.filter(function (l) { return l.cle === cle; })[0];
+    if (!lot) return;
+    var deja = lotRappActif() === cle;
+    if (vue.refsLibelle.indexOf('rapprochement:') === 0) { vue.refs = null; vue.refsLibelle = ''; }
+    vue.lotLa = null;
+    if (deja) return;
+    if (lot.cote === 'la') { vue.lotLa = cle; return; }
+    vue.refs = {};
+    refsDuLotRapprochement(cle).forEach(function (r) { vue.refs[r] = true; });
+    vue.refsLibelle = 'rapprochement:' + cle;
+  }
+  function lotRappActif() {
+    if (vue.lotLa) return vue.lotLa;
+    return vue.refs && vue.refsLibelle.indexOf('rapprochement:') === 0 ? vue.refsLibelle.slice(14) : null;
   }
 
   /* ----------------------------------------------------------
@@ -2208,7 +2402,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
      Le périmètre, lui, se dérive des cartes plan par plan et suit l'historique ;
      filtreActif() réunit les deux pour ce qui se voit à l'écran. */
   function filtreLibre() {
-    return !!(vue.recherche || vue.etat || vue.groupe || vue.refs ||
+    return !!(vue.recherche || vue.etat || vue.groupe || vue.refs || vue.lotLa || vue.seconde.recherche ||
       Object.keys(vue.filtres).some(function (k) { return vue.filtres[k]; }) ||
       Object.keys(vue.vides).some(function (k) { return vue.vides[k]; }));
   }
@@ -2426,7 +2620,14 @@ table.plans thead tr th.col-fige { z-index: 6; }
     return { pts: pts, portee: portee, partiel: filtreLibre(), ecartes: ecartes };
   }
 
-  var L = 980, mG = 36, mD = 58, plotH = 160, ecart = 15, bandeH = 32, mBas = 24;
+  /* Une échelle qui se lit : quatre traits au plus, à des valeurs rondes —
+     0, 200, 400 pour 640 plans, le plafond à part. */
+  function pasDEchelle(total) {
+    var candidats = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10000];
+    for (var i = 0; i < candidats.length; i++) if (total / candidats[i] <= 4.5) return candidats[i];
+    return candidats[candidats.length - 1];
+  }
+  var L = 980, mG = 36, mD = 72, plotH = 176, ecart = 16, bandeH = 30, mBas = 34;
   var mHaut = 44, H = mHaut + plotH + ecart + bandeH + mBas;
   var HAUTEUR_ETIQUETTE = 17;
   var LARGEUR = L - mG - mD;
@@ -2504,14 +2705,16 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var s = ['<svg class="graphe" viewBox="0 0 ' + L + ' ' + H + '" role="img" aria-label="Plans termines par semaine, historique et projection">'];
     s.push('<defs><clipPath id="zoneTracee"><rect x="' + mG + '" y="' + (mHaut - 12) + '" width="' + LARGEUR + '" height="' + (plotH + 16) + '"/></clipPath></defs>');
 
-    var pas = total <= 25 ? 5 : total <= 60 ? 20 : 50;
+    /* L'échelle se lit d'un coup d'œil : des valeurs rondes, quatre traits au
+       plus, le plafond à part et nommé. */
+    var pas = pasDEchelle(total);
     for (var v = 0; v < total; v += pas) {
       if (total - v < pas * 0.5) continue;
       s.push('<line x1="' + mG + '" x2="' + (L - mD) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
-      s.push('<text class="grad" x="' + (mG - 8) + '" y="' + (y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + v + '</text>');
+      s.push('<text class="grad" x="' + (mG - 8) + '" y="' + (y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + nb(v) + '</text>');
     }
     s.push('<line x1="' + mG + '" x2="' + (L - mD) + '" y1="' + y(total).toFixed(1) + '" y2="' + y(total).toFixed(1) + '" stroke="var(--filet-fort)" stroke-width="1"/>');
-    s.push('<text class="grad" x="' + (L - mD + 8) + '" y="' + (y(total) + 3.5).toFixed(1) + '">' + nb(total) + '</text>');
+    s.push('<text class="grad" x="' + (L - mD + 8) + '" y="' + (y(total) + 3.5).toFixed(1) + '">' + nb(total) + ' plans</text>');
 
     // Tout ce qui peut sortir du cadre est decoupe a la zone tracee.
     s.push('<g clip-path="url(#zoneTracee)">');
@@ -2524,12 +2727,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
     if (visibles.length > 1) {
       var chemin = visibles.map(function (p, k) { return (k ? 'L' : 'M') + x(p.i).toFixed(1) + ' ' + y(p.termine).toFixed(1); }).join(' ');
       var xa = x(visibles[0].i).toFixed(1), xb = x(visibles[visibles.length - 1].i).toFixed(1);
-      s.push('<path d="' + chemin + ' L' + xb + ' ' + y(0).toFixed(1) + ' L' + xa + ' ' + y(0).toFixed(1) + ' Z" fill="var(--fait)" opacity=".11"/>');
-      s.push('<path d="' + chemin + '" fill="none" stroke="var(--fait)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>');
+      s.push('<path d="' + chemin + ' L' + xb + ' ' + y(0).toFixed(1) + ' L' + xa + ' ' + y(0).toFixed(1) + ' Z" fill="var(--fait)" opacity=".09"/>');
+      s.push('<path d="' + chemin + '" fill="none" stroke="var(--fait)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>');
+      /* Un point par relevé, plein, cerclé de la couleur du fond pour rester
+         lisible sur la courbe ; discret quand les relevés se serrent. */
+      var rayon = visibles.length > 40 ? 2 : 3;
       visibles.forEach(function (pt) {
         if (pt.i === dernier.i) return;
         s.push('<circle cx="' + x(pt.i).toFixed(1) + '" cy="' + y(pt.termine).toFixed(1) +
-               '" r="3" fill="var(--surface)" stroke="var(--fait)" stroke-width="1.6"/>');
+               '" r="' + rayon + '" fill="var(--fait)" stroke="var(--surface)" stroke-width="2"/>');
       });
     }
 
@@ -2592,7 +2798,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       s.push('<g class="jalon" data-jalon="' + idx + '" role="img" aria-label="Jalon ' + ech(j.texte) + ' en ' + etiquette(j.i) + '">');
       s.push('<title>' + ech(j.texte) + ' \u2014 ' + etiquette(j.i) + '</title>');
       s.push('<line x1="' + jx.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" y2="' + basTotal.toFixed(1) +
-             '" stroke="' + couleur + '" stroke-width="1" stroke-dasharray="2 3"/>');
+             '" stroke="' + couleur + '" stroke-width="1" stroke-dasharray="3 4" opacity=".8"/>');
       s.push('<path d="M' + jx.toFixed(1) + ' ' + yBase.toFixed(1) + ' l-4 -5.5 l8 0 Z" fill="' + couleur + '"/>');
       s.push('<text class="jalon-texte" x="' + xTexte.toFixed(1) + '" y="' + yTexte.toFixed(1) + '" text-anchor="' + (pl.versGauche ? 'end' : 'start') + '" fill="' + couleur + '">' + ech(j.texte) + '</text>');
       s.push('</g>');
@@ -2617,23 +2823,35 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }
     var maxSem = 1;
     taux.forEach(function (t) { maxSem = Math.max(maxSem, t.v); });
-    var lb = Math.min(15, pasX * 0.62);
+    var lb = Math.min(14, Math.max(2, pasX - 2));
     s.push('<text class="grad" x="' + mG + '" y="' + (yBande - 3).toFixed(1) + '">terminés par semaine</text>');
     taux.forEach(function (t) {
       if (t.i < d0 || t.i > d1 || t.v <= 0) return;
-      var h = (t.v / maxSem) * bandeH;
-      s.push('<rect x="' + (x(t.i) - lb / 2).toFixed(1) + '" y="' + (yBande + bandeH - h).toFixed(1) +
-             '" width="' + lb.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="var(--fait)" opacity=".42"/>');
+      var h = Math.max(1.5, (t.v / maxSem) * bandeH);
+      var rx = Math.min(2, lb / 2, h / 2);
+      var xg = x(t.i) - lb / 2, yh = yBande + bandeH - h, yb = yBande + bandeH;
+      s.push('<path d="M' + xg.toFixed(1) + ' ' + yb.toFixed(1) + ' V' + (yh + rx).toFixed(1) +
+             ' Q' + xg.toFixed(1) + ' ' + yh.toFixed(1) + ' ' + (xg + rx).toFixed(1) + ' ' + yh.toFixed(1) +
+             ' H' + (xg + lb - rx).toFixed(1) + ' Q' + (xg + lb).toFixed(1) + ' ' + yh.toFixed(1) + ' ' + (xg + lb).toFixed(1) + ' ' + (yh + rx).toFixed(1) +
+             ' V' + yb.toFixed(1) + ' Z" fill="var(--r4)"/>');
     });
     s.push('<line x1="' + mG + '" x2="' + (L - mD) + '" y1="' + basTotal.toFixed(1) + '" y2="' + basTotal.toFixed(1) + '" stroke="var(--filet)" stroke-width="1"/>');
 
     // Graduations : espacees pour tenir une dizaine d etiquettes quel que soit le zoom
     var saut = Math.max(1, Math.ceil(span / 11));
+    var anneeEcrite = '';
     for (var k3 = d0; k3 <= d1; k3++) {
       if ((k3 - d0) % saut !== 0 && k3 !== AUJ) continue;
       var lib = etiquette(k3);
-      s.push('<text class="grad" x="' + x(k3).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle"' + (k3 > AUJ ? ' opacity=".7"' : '') + '>' +
-             (lib.indexOf('2026-') === 0 ? lib.slice(5) : lib) + '</text>');
+      var annee = lib.slice(0, 4), semaine = lib.slice(5);
+      s.push('<text class="grad" x="' + x(k3).toFixed(1) + '" y="' + (H - 19) + '" text-anchor="middle"' + (k3 > AUJ ? ' opacity=".7"' : '') + '>' +
+             semaine + '</text>');
+      /* L'année n'encombre pas chaque graduation : une fois, puis à chaque
+         changement. */
+      if (annee !== anneeEcrite) {
+        s.push('<text class="annee" x="' + x(k3).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + annee + '</text>');
+        anneeEcrite = annee;
+      }
     }
 
     /* Le point d'une semaine se cherche par son indice, pas par sa position
@@ -3789,8 +4007,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
       /* Un compteur du rapprochement se nomme de même, sous son propre mot :
          on sait d'où vient le filtre sans remonter le chercher. */
       var lotRapp = LOTS_RAPPROCHEMENT.filter(function (l) { return 'rapprochement:' + l.cle === vue.refsLibelle; })[0];
-      if (lotRapp) liste.push({ cle: 'refs', mot: 'Rapprochement', valeur: lotRapp.libelle });
+      if (lotRapp) liste.push({ cle: 'refs', mot: 'Rapprochement', valeur: libelleRapp(lotRapp) });
       else liste.push({ cle: 'refs', mot: 'Sélection', valeur: lot ? lot.des : (vue.refsLibelle || (n + ' plans')) });
+    }
+    if (vue.lotLa) {
+      var lotLa = LOTS_RAPPROCHEMENT.filter(function (l) { return l.cle === vue.lotLa; })[0];
+      if (lotLa) liste.push({ cle: 'lotLa', mot: 'Rapprochement', valeur: libelleRapp(lotLa) });
     }
     Object.keys(vue.vides).forEach(function (k) {
       if (vue.vides[k]) liste.push({ cle: 'vide:' + k, mot: PAR_CLE[k].titre, valeur: 'non renseigné' });
@@ -3807,6 +4029,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     else if (cle === 'perimetre') vue.perimetre = '';
     else if (cle === 'groupe') vue.groupe = null;
     else if (cle === 'refs') { vue.refs = null; vue.refsLibelle = ''; }
+    else if (cle === 'lotLa') vue.lotLa = null;
     else if (cle === 'recherche') { vue.recherche = ''; $('recherche').value = ''; }
     else if (cle.indexOf('vide:') === 0) delete vue.vides[cle.slice(5)];
     else if (cle.indexOf('filtre:') === 0) delete vue.filtres[cle.slice(7)];
@@ -3816,6 +4039,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
     vue.recherche = ''; vue.etat = ''; vue.filtres = {}; vue.groupe = null; vue.vides = {};
     vue.refs = null; vue.refsLibelle = '';
     vue.perimetre = '';
+    vue.lotLa = null;
+    vue.seconde.recherche = ''; $('recherche-seconde').value = '';
     $('recherche').value = '';
   }
 
@@ -3862,53 +4087,77 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var s = String(v == null ? '' : v).trim();
     return s ? ech(s) : '<span class="doux">—</span>';
   }
+  function pastilleVerdict(cat) {
+    var classe = { identique: 'identique', emission: 'neutre', ecart: 'ecart', seul: 'seul', absentLa: 'absent' }[cat];
+    if (!classe) return '<span class="pastille sans"></span>';
+    return '<span class="pastille ' + classe + '"></span>';
+  }
+  var MOT_VERDICT = {
+    identique: 'Identique des deux côtés',
+    emission: 'Le même plan, sous une autre solution ou un autre indice',
+    ecart: 'Des champs diffèrent d’ici',
+    seul: 'Aucun plan d’ici sous cette racine'
+  };
   function rendreRapprochement() {
     var zone = $('rapprochement');
     if (!RAPPROCHEMENT) { zone.hidden = true; return; }
     zone.hidden = false;
-    var R = RAPPROCHEMENT, rap = SRC.rapprochement;
-    var champs = (Array.isArray(rap.champs) ? rap.champs : []).filter(function (c) { return c && c.la; });
-    $('titre-rapprochement').textContent = 'Rapprochement avec ' + String(rap.nom || 'la seconde base');
+    var R = RAPPROCHEMENT, nom = nomSeconde();
+    $('titre-rapprochement').textContent = 'Rapprochement avec ' + nom;
 
-    /* Sous un périmètre, la phrase ne mélange pas les deux populations : les
-       écarts du périmètre d'un côté, les références absentes d'ici — qui
-       valent pour tout le contrat, la seconde base n'ayant pas de domaine —
-       de l'autre. */
+    /* La phrase : d'abord ce qui va, en nombre et en part ; puis les écarts.
+       Sous un périmètre, elle ne mélange pas les deux populations : les écarts
+       du périmètre d'un côté, les références seulement là — qui valent pour
+       tout le contrat, la seconde base n'ayant pas de domaine — de l'autre. */
     var ecarts = function (n) { return n ? nb(n) + (n > 1 ? ' écarts' : ' écart') : 'aucun écart'; };
+    var nId = R.identiques.length;
+    var pct = R.nbPlans ? Math.round(100 * nId / R.nbPlans) : 0;
+    var idem = nb(nId) + (nId > 1 ? ' identiques' : ' identique') + ' (' + pct + ' %)';
+    var seuls = nb(R.absentsIci.length) + (R.absentsIci.length > 1 ? ' références seulement dans ' : ' référence seulement dans ') + nom;
     $('phrase-rapprochement').textContent = vue.perimetre
       ? nb(R.nbPlans) + (R.nbPlans > 1 ? ' plans ici' : ' plan ici') + ' (périmètre ' + vue.perimetre + ') : ' +
-        ecarts(R.totalPerimetre) + ' dans le périmètre · ' + nb(R.absentsIci.length) +
-        (R.absentsIci.length > 1 ? ' références absentes' : ' référence absente') + ' d’ici, tout le contrat.'
+        idem + ', ' + ecarts(R.totalPerimetre) + ' dans le périmètre · ' + seuls + ', tout le contrat.'
       : nb(R.nbPlans) + (R.nbPlans > 1 ? ' plans ici' : ' plan ici') +
-        ', ' + nb(R.nbLignes) + (R.nbLignes > 1 ? ' lignes là' : ' ligne là') + ' : ' + ecarts(R.total) + '.';
+        ', ' + nb(R.nbLignes) + (R.nbLignes > 1 ? ' lignes dans ' : ' ligne dans ') + nom + ' : ' +
+        idem + ', ' + ecarts(R.total) + '.';
 
+    /* La jauge : chaque plan d'ici dans une seule case — identique, réémis,
+       en écart, absent de là — et, à part, ce qui n'existe que là, à la même
+       échelle. */
+    var parCat = { identique: 0, emission: 0, ecart: 0, absentLa: 0 };
+    Object.keys(R.parPlan).forEach(function (ref) { parCat[R.parPlan[ref]]++; });
+    var echelle = Math.max(R.nbPlans, 1);
+    var largeur = function (n) { return (100 * n / echelle).toFixed(2) + '%'; };
+    $('jauge-rapprochement').innerHTML = ['identique', 'emission', 'ecart', 'absentLa'].map(function (cat) {
+      return parCat[cat] ? '<span class="' + cat + '" style="width:' + largeur(parCat[cat]) + '"></span>' : '';
+    }).join('') + (R.absentsIci.length
+      ? '<span class="seul" style="width:' + largeur(Math.min(R.absentsIci.length, echelle)) + '"></span>' : '');
+
+    /* Une tuile par lot : le grand nombre, la pastille et le mot ; dessous,
+       le détail qui aide à lire — la part, la répartition solution / indice,
+       le nombre de plans derrière les écarts de champ. */
+    var actif = lotRappActif();
+    var nEmSolution = R.indiceDifferent.filter(function (x) { return x.type === 'solution'; }).length;
+    var plansEcarts = {};
+    R.ecarts.forEach(function (e) { plansEcarts[e.plan.reference] = true; });
+    var nPlansEcarts = Object.keys(plansEcarts).length;
     $('puces-rapprochement').innerHTML = LOTS_RAPPROCHEMENT.map(function (l) {
       var n = R[l.cle].length;
-      var actif = l.filtre ? vue.refsLibelle === 'rapprochement:' + l.cle : !!vue.rappAbsentsIci;
-      var aide = !n ? 'Aucun' : l.filtre
-        ? (actif ? 'Cliquez pour retirer le filtre' : 'Cliquez pour n’afficher que ces plans dans le tableau')
-        : (actif ? 'Cliquez pour replier la liste' : 'Ces références ne sont pas dans le tableau : cliquez pour les lister');
-      var libelle = l.libelle + (vue.perimetre && !l.filtre ? ' (tout le contrat)' : '');
-      return '<button class="puce-delta" type="button" data-rapp="' + l.cle + '" aria-pressed="' + (n ? actif : false) +
-        '"' + (n ? '' : ' disabled') + ' title="' + ech(aide) + '"><b>' + nb(n) + '</b> ' + ech(libelle) + '</button>';
+      var presse = n ? actif === l.cle : false;
+      var sous = '';
+      if (l.cle === 'identiques' && n) sous = pct + ' % des plans d’ici';
+      else if (l.cle === 'indiceDifferent' && n) sous = nb(nEmSolution) + ' de solution · ' + nb(n - nEmSolution) + ' d’indice';
+      else if (l.cle === 'ecarts' && n) sous = 'sur ' + nb(nPlansEcarts) + (nPlansEcarts > 1 ? ' plans' : ' plan');
+      else if (l.cle === 'absentsIci' && n) sous = 'aucune racine connue ici';
+      var aide = !n ? 'Aucun' : presse ? 'Cliquez pour retirer le filtre'
+        : l.cote === 'la' ? 'Cliquez pour n’afficher que ces lignes dans le tableau de ' + nom
+        : 'Cliquez pour n’afficher que ces plans dans le tableau';
+      var libelle = libelleRapp(l) + (vue.perimetre && l.cote === 'la' ? ' (tout le contrat)' : '');
+      return '<button class="rapp-tuile" type="button" data-rapp="' + l.cle + '" aria-pressed="' + presse + '"' +
+        (n ? '' : ' disabled') + ' title="' + ech(aide) + '"><b>' + nb(n) + '</b>' +
+        '<span class="mot">' + pastilleVerdict(l.pastille === 'neutre' ? 'emission' : l.pastille === 'absent' ? 'absentLa' : l.cle === 'identiques' ? 'identique' : l.cle === 'ecarts' ? 'ecart' : 'seul') +
+        ech(libelle) + '</span><span class="sous">' + ech(sous) + '</span></button>';
     }).join('');
-
-    /* Les références absentes d'ici, avec leurs champs : elles n'existent
-       dans aucune ligne du tableau, c'est ici qu'on les lit. */
-    var absents = $('absents-rapprochement');
-    if (vue.rappAbsentsIci && R.absentsIci.length) {
-      absents.innerHTML = '<div class="rapp-liste" role="region" aria-label="Références absentes d’ici">' +
-        '<p class="sous-titre">Absentes d’ici · ' + nb(R.absentsIci.length) + '</p>' +
-        R.absentsIci.map(function (l) {
-          return '<div class="ligne"><span class="ref">' + ech(l[rap.cleReference]) + '</span>' +
-            champs.map(function (c) {
-              return '<span class="champ">' + ech(c.titre || c.la) + ' <b>' + valeurRapp(l[c.la]) + '</b></span>';
-            }).join('') + '</div>';
-        }).join('') + '</div>';
-    } else {
-      absents.innerHTML = '';
-      if (!R.absentsIci.length) vue.rappAbsentsIci = false;
-    }
 
     var bouton = $('bouton-detail-rapprochement');
     bouton.setAttribute('aria-expanded', String(!!vue.rappDetail));
@@ -3923,11 +4172,126 @@ table.plans thead tr th.col-fige { z-index: 6; }
     detail.innerHTML = '<div class="rapp-detail" role="region" aria-label="Détail des écarts de champ">' +
       '<div class="rapp-grille">' +
       '<div class="rapp-entete">Référence</div><div class="rapp-entete">Champ</div>' +
-      '<div class="rapp-entete">Ici</div><div class="rapp-entete">Là</div>' +
+      '<div class="rapp-entete">Ici</div><div class="rapp-entete">' + ech(nom) + '</div>' +
       R.ecarts.map(function (e) {
         return '<div class="ref">' + ech(e.plan.reference) + '</div><div class="champ">' + ech(e.champ) + '</div>' +
           '<div>' + valeurRapp(e.ici) + '</div><div>' + valeurRapp(e.la) + '</div>';
       }).join('') + '</div></div>';
+  }
+
+  /* ============================================================
+     LA SECONDE BASE, TELLE QUE SON EXTRACT
+     Toutes ses colonnes, dans son ordre, sous leurs intitulés — la vue de
+     référence, comme pour le tableau d'ici — et une vue essentielle si la
+     source en désigne une. Le verdict du rapprochement se lit sur chaque
+     ligne : la pastille dans la cellule de la référence, les cellules qui
+     diffèrent d'ici sous un voile ambre. Cliquer une ligne appariée réduit
+     le tableau d'ici au plan correspondant.
+     ============================================================ */
+  var SECONDE = null;   // { titres, cles, essentielles, vautEssentielles, premiere }
+  function preparerSeconde(rap) {
+    if (!rap || !Array.isArray(rap.lignes) || !rap.cleReference) { SECONDE = null; return; }
+    var titres = Array.isArray(rap.colonnes) ? rap.colonnes.map(String).filter(Boolean) : [];
+    if (!titres.length) {
+      var vus = {};
+      rap.lignes.forEach(function (l) {
+        if (!l || typeof l !== 'object') return;
+        Object.keys(l).forEach(function (k) { if (!vus[k]) { vus[k] = true; titres.push(k); } });
+      });
+    }
+    var cles = [].concat(rap.cleReference).map(String);
+    /* Les colonnes de la référence font toujours partie de la vue essentielle. */
+    var ess = cles.filter(function (t) { return titres.indexOf(t) !== -1; });
+    (Array.isArray(rap.essentielles) ? rap.essentielles : []).map(String).forEach(function (t) {
+      if (titres.indexOf(t) !== -1 && ess.indexOf(t) === -1) ess.push(t);
+    });
+    SECONDE = {
+      titres: titres, cles: cles, essentielles: ess,
+      vautEssentielles: ess.length >= 2 && ess.length < titres.length - 3,
+      premiere: cles[0]
+    };
+  }
+  function lignesSecondeAffichees() {
+    var R = RAPPROCHEMENT, S = vue.seconde;
+    var lot = lotRappActif();
+    var voulu = lot ? CATEGORIE_PAR_LOT[lot] : undefined;
+    var cherche = norm(S.recherche);
+    var lignes = R.lignes.filter(function (e) {
+      if (e.cat === 'hors') return false;
+      if (lot && (voulu === null || e.cat !== voulu)) return false;
+      if (cherche && !SECONDE.titres.some(function (t) { return norm(e.ligne[t]).indexOf(cherche) !== -1; })) return false;
+      return true;
+    });
+    if (S.tri.cle) {
+      var k = S.tri.cle, sens = S.tri.asc ? 1 : -1;
+      lignes = lignes.slice().sort(function (a, b) {
+        var va = String(a.ligne[k] == null ? '' : a.ligne[k]), vb = String(b.ligne[k] == null ? '' : b.ligne[k]);
+        if (va === '' && vb === '') return a.i - b.i;
+        if (va === '') return 1;
+        if (vb === '') return -1;
+        return va.localeCompare(vb, 'fr', { numeric: true, sensitivity: 'base' }) * sens || a.i - b.i;
+      });
+    }
+    return lignes;
+  }
+  function rendreSeconde() {
+    var zone = $('seconde-base');
+    if (!RAPPROCHEMENT || !SECONDE) { zone.hidden = true; return; }
+    zone.hidden = false;
+    var R = RAPPROCHEMENT, S = vue.seconde, nom = nomSeconde();
+    $('titre-seconde').textContent = nom;
+    $('vue-seconde').hidden = !SECONDE.vautEssentielles;
+    var cols = S.vueTable === 'essentielle' && SECONDE.vautEssentielles ? SECONDE.essentielles : SECONDE.titres;
+    var lignes = lignesSecondeAffichees();
+    var lot = lotRappActif();
+
+    $('tete-seconde').innerHTML = '<tr class="titres-la">' + cols.map(function (t) {
+      var actif = S.tri.cle === t;
+      var fleche = actif ? '<svg class="fleche" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="' +
+        (S.tri.asc ? 'M5 8.5V1.5M2 4.5 5 1.5l3 3' : 'M5 1.5v7M2 5.5 5 8.5l3-3') +
+        '" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '';
+      return '<th scope="col" data-cle="' + ech(t) + '" aria-sort="' + (actif ? (S.tri.asc ? 'ascending' : 'descending') : 'none') +
+        '"' + (t === SECONDE.premiere ? ' class="col-fige-la"' : '') + '><button type="button" data-tri-seconde="' + ech(t) + '">' +
+        ech(t) + fleche + '</button></th>';
+    }).join('') + '</tr>';
+
+    var seul = vue.refs && Object.keys(vue.refs).length === 1 ? Object.keys(vue.refs)[0] : null;
+    if (!lignes.length) {
+      $('corps-seconde').innerHTML = '<tr><td colspan="' + Math.max(cols.length, 1) + '"><div class="vide-message">' +
+        (lot === 'absentsLa' ? 'Ces plans n’ont pas de ligne dans ' + ech(nom) + '.' : 'Aucune ligne ne correspond.') +
+        '</div></td></tr>';
+    } else {
+      $('corps-seconde').innerHTML = lignes.map(function (e) {
+        var ref = e.plan ? e.plan.reference : '';
+        return '<tr data-i="' + e.i + '" data-cat="' + e.cat + '"' + (ref ? ' data-plan="' + ech(ref) + '"' : '') +
+          (ref && seul === ref ? ' class="choisie"' : '') +
+          (ref ? ' title="' + ech(MOT_VERDICT[e.cat] || '') + ' — cliquez pour ne garder que ce plan ici"' : '') + '>' +
+          cols.map(function (t) {
+            var val = e.ligne[t], s = String(val == null ? '' : val);
+            var classes = [], titre = '';
+            if (t === SECONDE.premiere) classes.push('col-fige-la');
+            if (e.ecarts[t] !== undefined) {
+              classes.push('ecart');
+              titre = ' title="Ici : ' + ech(String(e.ecarts[t] == null || e.ecarts[t] === '' ? '—' : e.ecarts[t])) + '"';
+            }
+            var contenu;
+            if (t === SECONDE.premiere) {
+              contenu = '<span class="verdict">' + pastilleVerdict(e.cat) + '<span class="ref">' + ech(s) + '</span></span>';
+            } else if (s === '') { classes.push('doux'); contenu = '-'; }
+            else if (estBooleen(s)) { classes.push('coche'); contenu = '<span title="' + ech(s) + '">' + (estVrai(s) ? '✓' : '–') + '</span>'; }
+            else contenu = ech(s);
+            return '<td' + (classes.length ? ' class="' + classes.join(' ') + '"' : '') + titre + '>' + contenu + '</td>';
+          }).join('') + '</tr>';
+      }).join('');
+    }
+
+    var base = R.nbLignes;
+    $('compte-seconde').textContent = nb(lignes.length) + (lignes.length > 1 ? ' lignes' : ' ligne') +
+      (lignes.length !== base ? ' sur ' + nb(base) : '');
+    $('legende-seconde').innerHTML = ['identique', 'emission', 'ecart', 'seul'].map(function (cat) {
+      var mots = { identique: 'identique', emission: 'autre solution ou indice', ecart: 'champs différents', seul: 'seulement ici' };
+      return '<span>' + pastilleVerdict(cat) + ech(mots[cat]) + '</span>';
+    }).join('');
   }
 
   function rendre() {
@@ -3945,6 +4309,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     rendreCorps(liste);
     rendreComparatif();
     rendreRapprochement();
+    rendreSeconde();
     rendreIncomplets();
     rendreFiltresActifs();
     $('reinit').hidden = !filtreActif();
@@ -4010,28 +4375,51 @@ table.plans thead tr th.col-fige { z-index: 6; }
     rendre();
   });
 
-  /* Les compteurs du rapprochement : trois filtrent le tableau, comme les
-     puces du comparatif ; « absents d'ici » déplie une liste, puisque ces
-     références n'ont aucune ligne à montrer. Le détail se déplie de même. */
+  /* Les tuiles du rapprochement : les lots d'ici filtrent le tableau, comme
+     les puces du comparatif ; « seulement là » filtre le tableau de là. Le
+     détail se déplie à part. */
   $('rapprochement').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-rapp]');
-    if (b && RAPPROCHEMENT) {
-      var cle = b.dataset.rapp;
-      var lot = LOTS_RAPPROCHEMENT.filter(function (l) { return l.cle === cle; })[0];
-      if (!lot) return;
-      if (!lot.filtre) { vue.rappAbsentsIci = !vue.rappAbsentsIci; rendreRapprochement(); return; }
-      var libelle = 'rapprochement:' + cle;
-      if (vue.refsLibelle === libelle) { vue.refs = null; vue.refsLibelle = ''; }
-      else {
-        vue.refs = {};
-        refsDuLotRapprochement(cle).forEach(function (r) { vue.refs[r] = true; });
-        vue.refsLibelle = libelle;
-      }
-      rendre();
-      return;
-    }
+    if (b && RAPPROCHEMENT) { poserLotRapp(b.dataset.rapp); rendre(); return; }
     var d = e.target.closest('button[data-rapp-detail]');
     if (d && RAPPROCHEMENT) { vue.rappDetail = !vue.rappDetail; rendreRapprochement(); }
+  });
+
+  /* Le tableau de la seconde base : sa recherche, ses deux vues et son tri ne
+     touchent qu'à lui ; cliquer une ligne appariée réduit le tableau d'ici
+     au plan correspondant, et le bandeau dit d'où vient le filtre. */
+  var minuteurSeconde = null;
+  $('recherche-seconde').addEventListener('input', function (e) {
+    var v = e.target.value;
+    clearTimeout(minuteurSeconde);
+    minuteurSeconde = setTimeout(function () {
+      vue.seconde.recherche = v;
+      if (RAPPROCHEMENT) { rendreSeconde(); rendreFiltresActifs(); $('reinit').hidden = !filtreActif(); }
+    }, 170);
+  });
+  $('vue-seconde').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-vue]');
+    if (!b || b.dataset.vue === vue.seconde.vueTable) return;
+    vue.seconde.vueTable = b.dataset.vue;
+    refleterVue();
+    if (RAPPROCHEMENT) rendreSeconde();
+  });
+  $('tete-seconde').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-tri-seconde]');
+    if (!b) return;
+    var t = vue.seconde.tri;
+    if (t.cle === b.dataset.triSeconde) { if (t.asc) t.asc = false; else vue.seconde.tri = { cle: null, asc: true }; }
+    else vue.seconde.tri = { cle: b.dataset.triSeconde, asc: true };
+    if (RAPPROCHEMENT) rendreSeconde();
+  });
+  $('corps-seconde').addEventListener('click', function (e) {
+    var tr = e.target.closest('tr[data-plan]');
+    if (!tr || !RAPPROCHEMENT) return;
+    var ref = tr.dataset.plan;
+    var meme = vue.refs && Object.keys(vue.refs).length === 1 && vue.refs[ref];
+    if (meme) { vue.refs = null; vue.refsLibelle = ''; }
+    else { vue.refs = {}; vue.refs[ref] = true; vue.refsLibelle = 'plan ' + ref; }
+    rendre();
   });
 
   $('incomplets').addEventListener('click', function (e) {
@@ -4275,6 +4663,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
   window.__comparatif = function () { return COMPARATIF; };
   /* Le rapprochement tel qu'il est calculé, sur le périmètre courant. */
   window.__rapprochement = function () { return RAPPROCHEMENT; };
+  /* Et le tableau de là tel qu'il est affiché : ses colonnes et ses lignes. */
+  window.__secondeAffichee = function () {
+    return SECONDE && RAPPROCHEMENT ? { titres: SECONDE.titres, essentielles: SECONDE.essentielles,
+      lignes: lignesSecondeAffichees().map(function (e) { return { i: e.i, ref: e.ref, cat: e.cat, ecarts: Object.keys(e.ecarts) }; }) } : null;
+  };
   /* Sous un périmètre : le journal tel qu'il est affiché, la série tracée et
      le domaine du plan derrière une référence — pour vérifier la dérivation. */
   window.__journalAffiche = function () { return journalAffiche(); };

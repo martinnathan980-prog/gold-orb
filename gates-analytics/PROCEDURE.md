@@ -370,52 +370,86 @@ savoir ce qui a changé entre les deux.
 saisie*. Les confondre masquerait le second, qui est précisément ce qu'on
 cherche à voir : le bouton « non renseignés » sous la barre sort la liste.
 
-## 12. Rapprochement avec une seconde base
+## 12. Rapprochement avec une seconde base : SEE
 
-Une autre base suit les mêmes plans sous une autre structure : un extract dont
-les colonnes s'appellent autrement. Collé dans un onglet de ce classeur et
-décrit dans la configuration, il donne une section **« Rapprochement avec
-<nom> »**, entre le bloc par groupe et le tableau. Sans description, la section
-n'existe pas.
+Une autre base suit les mêmes plans sous une autre structure. La seconde base
+prévue est **SEE**, l'extract Excel de l'intranet (« Nommage WD BFLOW ») : un
+titre en ligne 1, les en-têtes en ligne 3, les données dessous, et la
+référence UD répartie sur trois colonnes — **NAME** (la racine), **SOL.** (la
+solution, trois chiffres) et **Cust.V** (l'indice, une lettre). Collé tel quel
+dans un onglet de ce classeur et décrit dans la configuration, il donne deux
+choses ; sans description, ni l'une ni l'autre n'existe.
 
-Les lignes de la seconde base sont appariées aux plans **par la racine** de la
-référence UD (§ 9), pour qu'un plan réémis d'un côté reste le même plan. La
-section commence par une phrase (« 640 plans ici, 640 lignes là : 22 écarts »),
-puis quatre compteurs :
+**La section « Rapprochement avec SEE »**, entre le bloc par groupe et le
+tableau, faite pour se lire en un coup d'œil :
 
-| Compteur | Ce qu'il compte |
-|---|---|
-| **absents de la seconde base** | des plans d'ici que l'autre base ne connaît pas |
-| **absents d'ici** | des lignes de là dont aucun plan du contrat n'a la racine ; elles ne sont pas dans le tableau, le compteur déplie leur liste |
-| **indice différent** | le même plan, connu de l'autre côté sous un autre indice ou une autre révision |
-| **champs différents** | un champ déclaré qui n'a pas la même valeur des deux côtés |
+- une phrase : « 640 plans ici, 640 lignes dans SEE : 623 identiques (97 %),
+  22 écarts » ;
+- une jauge : chaque plan d'ici dans une seule case — identique (vert), même
+  plan sous une autre solution ou un autre indice (anneau), champs différents
+  (ambre), absent de SEE (rouge) — et, à part, en pointillé, ce qui n'existe
+  que dans SEE ;
+- cinq tuiles, une par lot, avec son grand nombre :
 
-Les trois premiers compteurs qui portent sur des plans d'ici filtrent le
-tableau (bandeau « Rapprochement : … », croix pour retirer). Un bouton
-**détail des écarts (n)** déplie une grille : référence, champ, valeur ici,
-valeur là. Le tout suit le périmètre et le contrat. Rien n'est modifiable,
-rien n'est mémorisé.
+| Tuile | Ce qu'elle compte | Le clic |
+|---|---|---|
+| **identiques des deux côtés** | même émission, mêmes champs | filtre le tableau d'ici, et celui de SEE |
+| **solution ou indice différent** | le même plan (même racine), connu là sous une autre solution ou un autre indice ; le sous-titre dit combien de chaque | idem |
+| **champs différents** | un champ déclaré qui ne dit pas la même chose des deux côtés | idem |
+| **absents de SEE** | des plans d'ici que SEE ne connaît pas | filtre le tableau d'ici ; celui de SEE se dit vide |
+| **seulement dans SEE** | des lignes de là dont aucun plan du contrat n'a la racine | filtre le tableau de SEE, sans toucher à celui d'ici |
 
-Un champ se compare à la lettre près, sans tenir compte de la casse ni des
-accents ; l'avancement FWD, lui, se compare **par état** : « OK », « 100 % »
-et « Terminé » disent la même chose.
+Un seul lot à la fois ; le bandeau le nomme (« Rapprochement : … »), la croix
+le retire. Un bouton **détail des écarts (n)** déplie une grille : référence,
+champ, valeur ici, valeur dans SEE.
+
+**Le tableau « SEE »**, sous le tableau des plans : l'extract à l'identique —
+toutes ses colonnes, dans son ordre, sous leurs intitulés — et une *Vue
+essentielle* si la configuration en désigne une (les colonnes de la référence
+en font toujours partie). Le verdict se lit sur chaque ligne : la pastille
+dans la cellule NAME, et les cellules qui diffèrent d'ici sous un voile ambre,
+la valeur d'ici en info-bulle. Les cases à cocher de l'extract (TRUE / FALSE)
+se lisent ✓ ou –. Une recherche et un tri par intitulé (un clic, un second
+pour inverser, un troisième pour l'ordre de l'extract) qui ne touchent qu'à
+lui ; cliquer une ligne appariée réduit le tableau d'ici à ce plan.
+
+Les lignes de SEE sont appariées aux plans **par la racine** (§ 9), pour qu'un
+plan réémis d'un côté reste le même plan. La solution que l'extract Excel
+aurait réduite à « 1 » est remise sur trois chiffres. Un champ se compare à la
+lettre près, sans tenir compte de la casse ni des accents ; deux cases à cocher
+se comparent cochée à cochée ; l'avancement FWD, lui, se compare **par état**,
+et face à une case à cocher, un plan terminé ici doit être coché là.
+
+Le tout suit le périmètre (sous PERSO, les lignes des plans hors périmètre
+s'effacent du tableau de SEE ; ce qui n'est que dans SEE, sans domaine, reste
+compté à part, tout contrat) et le contrat. Rien n'est modifiable, rien n'est
+mémorisé.
 
 La démonstration en montre un exemple aux écarts délibérés. Dans le classeur,
-tout reste à renseigner **quand la seconde base sera connue**, dans `Code.gs` :
+la configuration de `Code.gs` décrit déjà SEE tel qu'il a été vu ; il reste à
+**nommer l'onglet** — et à confirmer les champs comparés :
 
 ```js
 RAPPROCHEMENT: {
-  FEUILLE: '',        // nom de l'onglet qui porte l'extract (vide = section absente)
-  NOM: '',            // nom affiché ; vide = le nom de l'onglet
-  CLE_REFERENCE: '',  // intitulé, dans cet onglet, de la colonne de référence UD
-  CHAMPS: []          // [{ ici, la, titre }] : colonne GATES, colonne de l'onglet, nom affiché
+  FEUILLE: '',                                  // nom de l'onglet où SEE est collé (vide = rien)
+  NOM: 'SEE',                                   // nom affiché ; vide = le nom de l'onglet
+  CLE_REFERENCE: ['NAME', 'SOL.', 'Cust.V'],   // la référence, recomposée dans cet ordre
+  ESSENTIELLES: ['NAME', 'SOL.', 'Cust.V', 'VALIDITY PSN FULL', 'DIAGRAM TYPE',
+                 'PRODUCT FAMILY', 'Validated', 'Released Date', 'REDRAW'],
+  CHAMPS: [                                     // hypothèse à confirmer
+    { ici: 'Réalisation FWD > Avancement', la: 'Validated',          titre: 'Avancement / Validated' },
+    { ici: 'Réalisation FWD > Redraw',     la: 'REDRAW',             titre: 'Redraw' },
+    { ici: 'Nom Installation',             la: 'FG1 TAGDESCRIPTION', titre: 'Installation' }
+  ]
 },
 ```
 
 `ici` se désigne comme partout dans la configuration (intitulé, ou
-`Groupe > Colonne` en cas de doublon) ; `la` est l'intitulé tel qu'écrit dans
-l'onglet. Un champ dont l'un des deux côtés est introuvable est écarté, pas la
-section entière. L'onglet nommé n'est jamais pris pour un contrat.
+« Groupe > Colonne » en cas de doublon) ; `la` est l'intitulé dans l'onglet,
+retrouvé sans tenir compte de la casse ni des accents. L'en-tête est la ligne
+qui porte tous les intitulés de la référence (la ligne 3 dans SEE), sinon la
+première ligne non vide. Un champ dont l'un des deux côtés est introuvable est
+écarté, pas la section.
 
 ## 13. Les jalons
 

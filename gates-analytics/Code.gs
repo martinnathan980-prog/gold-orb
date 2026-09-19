@@ -140,18 +140,26 @@ const CONFIG = {
   COLONNE_DOMAINE: 'Domaine',
 
   /**
-   * Rapprochement avec une seconde base — l'extract d'un autre outil, collé
-   * dans un onglet de ce classeur, dont la structure n'est pas celle de
-   * l'export GATES. La page apparie ses lignes aux plans par la racine de la
-   * référence UD, puis compare les champs déclarés ici.
+   * Rapprochement avec une seconde base : SEE, l'extract Excel de l'intranet
+   * (« Nommage WD BFLOW »), collé tel quel dans un onglet du classeur — titre
+   * en ligne 1, en-têtes en ligne 3, données dessous. Rien tant que FEUILLE
+   * est vide : la page n'affiche alors ni le rapprochement ni le tableau de
+   * la seconde base.
    *
-   * À RENSEIGNER QUAND LA SECONDE BASE SERA CONNUE. Tant que FEUILLE est
-   * vide, rien n'est lu et la section n'apparaît pas dans la page.
-   *
-   * FEUILLE        : nom de l'onglet qui porte l'extract (en-tête = première
-   *                  ligne non vide, données en dessous).
+   * FEUILLE        : nom de l'onglet qui porte l'extract. L'en-tête est la
+   *                  première ligne (parmi les LIGNES_SCAN_ENTETE premières)
+   *                  qui porte tous les intitulés de CLE_REFERENCE — dans SEE
+   *                  la ligne 3, sous le titre ; à défaut, la première ligne
+   *                  non vide. Les intitulés sont conservés à la lettre.
    * NOM            : nom affiché dans la page ; vide = le nom de l'onglet.
-   * CLE_REFERENCE  : intitulé, dans cet onglet, de la colonne de référence UD.
+   * CLE_REFERENCE  : intitulé de la colonne qui porte la référence UD
+   *                  entière — ou la liste des intitulés qui la composent,
+   *                  recomposée dans cet ordre. Dans SEE : NAME (la racine),
+   *                  SOL. (la solution, remise sur trois chiffres si Excel
+   *                  l'a réduite à « 1 ») et Cust.V (l'indice).
+   * ESSENTIELLES   : les intitulés de la « vue essentielle » du tableau de
+   *                  la seconde base, dans l'ordre voulu ; vide = pas de vue
+   *                  essentielle. Les colonnes de la référence y sont toujours.
    * CHAMPS         : les champs à comparer, [{ ici, la, titre }] :
    *                    ici   = colonne de l'export GATES, désignée comme
    *                            ailleurs dans cette configuration (intitulé,
@@ -159,20 +167,28 @@ const CONFIG = {
    *                    la    = intitulé de la colonne dans le second onglet ;
    *                    titre = comment la page nomme ce champ.
    *                  L'avancement FWD se compare par état (terminé, en
-   *                  cours…), les autres champs à la lettre près, sans tenir
-   *                  compte de la casse ni des accents.
+   *                  cours…) ; face à une case à cocher (TRUE / FALSE), un
+   *                  plan terminé ici doit être coché là, et réciproquement.
+   *                  Deux cases à cocher se comparent cochée à cochée ; les
+   *                  autres champs à la lettre près, sans tenir compte de la
+   *                  casse ni des accents.
    *
-   * Exemple, pour un extract dont les colonnes seraient REF_UD, ATA_CODE et
-   * STATUT_FWD :
-   *   FEUILLE: 'Base FWD', CLE_REFERENCE: 'REF_UD',
-   *   CHAMPS: [ { ici: 'ATA', la: 'ATA_CODE', titre: 'ATA' },
-   *             { ici: 'Réalisation FWD > Avancement', la: 'STATUT_FWD', titre: 'Avancement' } ]
+   * Les valeurs ci-dessous décrivent SEE tel qu'il a été vu ; les CHAMPS
+   * sont une hypothèse à confirmer avant de renseigner FEUILLE (« Validated »
+   * dit-il bien que le plan est terminé côté FWD ?). Un champ dont l'un des
+   * deux côtés est introuvable est écarté, pas la section entière.
    */
   RAPPROCHEMENT: {
     FEUILLE: '',
-    NOM: '',
-    CLE_REFERENCE: '',
-    CHAMPS: []
+    NOM: 'SEE',
+    CLE_REFERENCE: ['NAME', 'SOL.', 'Cust.V'],
+    ESSENTIELLES: ['NAME', 'SOL.', 'Cust.V', 'VALIDITY PSN FULL', 'DIAGRAM TYPE', 'PRODUCT FAMILY',
+                   'Validated', 'Released Date', 'REDRAW'],
+    CHAMPS: [
+      { ici: 'Réalisation FWD > Avancement', la: 'Validated',          titre: 'Avancement / Validated' },
+      { ici: 'Réalisation FWD > Redraw',     la: 'REDRAW',             titre: 'Redraw' },
+      { ici: 'Nom Installation',             la: 'FG1 TAGDESCRIPTION', titre: 'Installation' }
+    ]
   },
 
   /** Intitulés de texte libre : jamais des catégories, quoi qu'en dise le contenu. */
@@ -1379,16 +1395,20 @@ function getJalons() {
 
 /**
  * La description de la seconde base pour la page : { nom, cleReference,
- * champs, lignes }, ou null tant que CONFIG.RAPPROCHEMENT.FEUILLE est vide
- * — la page n'affiche alors pas la section.
+ * champs, lignes, colonnes, essentielles }, ou null tant que
+ * CONFIG.RAPPROCHEMENT.FEUILLE est vide — la page n'affiche alors rien.
  *
- * L'onglet est lu tel quel : l'en-tête est la première ligne non vide, les
- * lignes suivantes deviennent des objets { intitulé: valeur }. Les intitulés
- * sont conservés à la lettre, puisque c'est par eux que CHAMPS désigne les
- * colonnes de la seconde base. Côté GATES, `ici` est une désignation comme
- * ailleurs dans la configuration (intitulé, ou « Groupe > Colonne ») et se
- * résout en clé de colonne ; un champ dont l'un des deux côtés est introuvable
- * est écarté, pas la section entière.
+ * L'onglet est lu tel quel : l'en-tête est la première ligne qui porte tous
+ * les intitulés de la référence (dans SEE, la ligne 3, sous le titre), sinon
+ * la première ligne non vide ; les lignes suivantes deviennent des objets
+ * { intitulé: valeur }. Les intitulés sont conservés à la lettre, puisque
+ * c'est par eux que CHAMPS et ESSENTIELLES désignent les colonnes de la
+ * seconde base, et `colonnes` les rend dans l'ordre de l'onglet. Côté
+ * GATES, `ici` est une désignation comme ailleurs dans la configuration
+ * (intitulé, ou « Groupe > Colonne ») et se résout en clé de colonne ; un
+ * champ dont l'un des deux côtés est introuvable est écarté, pas la section
+ * entière. La référence : une chaîne quand une colonne la porte entière, la
+ * liste des intitulés quand elle se recompose.
  *
  * @param {Spreadsheet} classeur
  * @param {Array} colonnes  les colonnes du modèle GATES ({ cle, titre, groupe })
@@ -1399,10 +1419,24 @@ function getRapprochement(classeur, colonnes) {
   const feuille = classeur.getSheetByName(cfg.FEUILLE);
   if (!feuille) return null;
 
+  const clesVoulues = [].concat(cfg.CLE_REFERENCE === undefined || cfg.CLE_REFERENCE === null ? [] : cfg.CLE_REFERENCE)
+    .map(function (c) { return String(c).trim(); }).filter(Boolean);
+  if (!clesVoulues.length) return null;
+
   const donnees = feuille.getDataRange().getDisplayValues();
-  let indexEntete = -1;
-  for (let i = 0; i < donnees.length; i++) {
-    if (ligneNonVide(donnees[i])) { indexEntete = i; break; }
+  let indexEntete = -1, premiereNonVide = -1;
+  const limite = Math.min(CONFIG.LIGNES_SCAN_ENTETE, donnees.length);
+  for (let i = 0; i < limite && indexEntete === -1; i++) {
+    if (!ligneNonVide(donnees[i])) continue;
+    if (premiereNonVide === -1) premiereNonVide = i;
+    const cellules = donnees[i].map(function (c) { return normaliser(String(c).trim()); });
+    if (clesVoulues.every(function (k) { return cellules.indexOf(normaliser(k)) !== -1; })) indexEntete = i;
+  }
+  if (indexEntete === -1) indexEntete = premiereNonVide;
+  if (indexEntete === -1) {
+    for (let i = 0; i < donnees.length; i++) {
+      if (ligneNonVide(donnees[i])) { indexEntete = i; break; }
+    }
   }
   if (indexEntete === -1) return null;
   const entetes = donnees[indexEntete].map(function (e) { return String(e).trim(); });
@@ -1440,8 +1474,8 @@ function getRapprochement(classeur, colonnes) {
     return '';
   }
 
-  const cleReference = enteteLa(cfg.CLE_REFERENCE);
-  if (!cleReference) return null;
+  const clesReference = clesVoulues.map(enteteLa);
+  if (clesReference.some(function (c) { return !c; })) return null;
   const champs = (Array.isArray(cfg.CHAMPS) ? cfg.CHAMPS : [])
     .map(function (c) {
       if (!c) return null;
@@ -1450,11 +1484,15 @@ function getRapprochement(classeur, colonnes) {
       return { ici: ici, la: la, titre: String(c.titre || c.la).trim().slice(0, 60) || la };
     })
     .filter(function (c) { return c !== null; });
+  const essentielles = (Array.isArray(cfg.ESSENTIELLES) ? cfg.ESSENTIELLES : [])
+    .map(enteteLa).filter(Boolean);
 
   return {
     nom: String(cfg.NOM || feuille.getName()).trim().slice(0, 80) || feuille.getName(),
-    cleReference: cleReference,
+    cleReference: clesReference.length === 1 ? clesReference[0] : clesReference,
     champs: champs,
-    lignes: lignes
+    lignes: lignes,
+    colonnes: entetes.filter(Boolean),
+    essentielles: essentielles
   };
 }

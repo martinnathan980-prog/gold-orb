@@ -628,13 +628,18 @@ function serveurSur(valeurs, proprietes, fichiers) {
 
   // =================================================================
   /* La seconde base : rien tant que CONFIG.RAPPROCHEMENT.FEUILLE est vide.
-     Nommée, l'onglet est lu (en-tête = première ligne non vide), les champs
-     sont résolus des deux côtés, et le paquet porte la description que la
-     page attend. La vraie base n'est pas connue : on la joue avec un onglet
-     « Base2 » aux colonnes nommées autrement. */
+     Nommée, l'onglet est lu (en-tête = la ligne qui porte la référence,
+     sinon la première non vide), les champs sont résolus des deux côtés, et
+     le paquet porte la description que la page attend. On la joue d'abord
+     avec un onglet « Base2 » aux colonnes nommées autrement, puis avec SEE
+     tel qu'il se colle : titre en ligne 1, en-tête en ligne 3, référence
+     sur trois colonnes. */
   section('Rapprochement avec une seconde base');
   verifier('par défaut, la configuration ne nomme aucune seconde base',
-    vm.runInContext('CONFIG.RAPPROCHEMENT.FEUILLE === "" && CONFIG.RAPPROCHEMENT.CHAMPS.length === 0', ctxPaquet));
+    vm.runInContext('CONFIG.RAPPROCHEMENT.FEUILLE === ""', ctxPaquet));
+  verifier('mais décrit déjà SEE : la référence sur NAME, SOL. et Cust.V, une vue essentielle, des champs à confirmer',
+    vm.runInContext('JSON.stringify(CONFIG.RAPPROCHEMENT.CLE_REFERENCE) === \'["NAME","SOL.","Cust.V"]\' && ' +
+      'CONFIG.RAPPROCHEMENT.ESSENTIELLES.indexOf("NAME") === 0 && CONFIG.RAPPROCHEMENT.CHAMPS.length === 3', ctxPaquet));
   verifier('le paquet ne porte alors pas de clé « rapprochement »', !('rapprochement' in paquet), Object.keys(paquet).join());
   verifier('getRapprochement rend null', ctxPaquet.getRapprochement(ctxPaquet.SpreadsheetApp.getActiveSpreadsheet(), paquet.colonnes) === null);
 
@@ -679,6 +684,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     rapp && rapp.lignes.length === 4 && rapp.lignes[0].REF_UD === refs[0].toLowerCase() &&
     rapp.lignes[2].STATUT_FWD === '' && rapp.lignes[2]['Colonne en trop'] === '42' &&
     rapp.lignes[3].REF_UD === 'UD-99-9999', JSON.stringify(rapp && rapp.lignes));
+  verifier('les colonnes de l\'onglet, dans son ordre, et pas de vue essentielle faute d\'ESSENTIELLES',
+    rapp && rapp.colonnes.join('|') === 'REF_UD|ATA_CODE|STATUT_FWD|Colonne en trop' && JSON.stringify(rapp.essentielles) === '[]',
+    JSON.stringify(rapp && [rapp.colonnes, rapp.essentielles]));
   verifier('le paquet reste sérialisable pour la page', /"rapprochement":\{/.test(avecBase2.contexte.donneesJSONPourPage()));
   /* Un onglet nommé mais absent : pas de section, pas d'erreur — la page s'ouvre. */
   const sansOnglet = construire({ lignes: 10, config: { RAPPROCHEMENT: { FEUILLE: 'Nulle part', CLE_REFERENCE: 'REF', CHAMPS: [] } }, sortie: 'apercu-rapprochement-absent.html' });
@@ -689,6 +697,38 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('une clé de référence introuvable dans l\'onglet : pas de rapprochement',
     sansCleRef.paquet.ok === true && !('rapprochement' in sansCleRef.paquet));
   fs.unlinkSync(path.join(__dirname, '..', 'apercu-rapprochement-absent.html'));
+
+  /* SEE tel qu'il se colle : le titre en ligne 1, une ligne vide, l'en-tête
+     en ligne 3 ; la référence sur trois colonnes, la solution réduite à « 1 »
+     par Excel, l'indice en minuscule ; des cases à cocher TRUE / FALSE. Le
+     serveur rend l'onglet tel quel : c'est la page qui recompose. */
+  const see = new Feuille('SEE', [
+    ['Nommage WD BFLOW', '', '', '', ''],
+    ['', '', '', '', ''],
+    ['NAME', 'SOL.', 'Cust.V', 'Validated', 'REDRAW'],
+    ['CAB1810A005', '1', 'b', 'TRUE', 'FALSE'],
+    ['', '', '', '', ''],
+    ['HAR2530A011', '002', 'C', 'FALSE', 'TRUE']
+  ]);
+  const configSEE = { RAPPROCHEMENT: {
+    FEUILLE: 'SEE', NOM: '', CLE_REFERENCE: ['name', 'sol.', 'cust.v'],
+    ESSENTIELLES: ['NAME', 'Validated', 'Introuvable'],
+    CHAMPS: [{ ici: 'Avancement FWD', la: 'validated', titre: 'Avancement / Validated' }]
+  } };
+  const avecSEE = construire({ lignes: 10, feuilles: [see], config: configSEE, sortie: 'apercu-see.html' });
+  const rSEE = avecSEE.paquet.rapprochement;
+  verifier('SEE : l\'en-tête est la ligne 3, celle qui porte NAME, SOL. et Cust.V — pas le titre « Nommage WD BFLOW »',
+    !!rSEE && rSEE.lignes.length === 2 && rSEE.colonnes.join('|') === 'NAME|SOL.|Cust.V|Validated|REDRAW',
+    JSON.stringify(rSEE && [rSEE.lignes.length, rSEE.colonnes]));
+  verifier('la référence est la liste des trois intitulés, tels qu\'ils sont écrits dans l\'onglet',
+    !!rSEE && JSON.stringify(rSEE.cleReference) === '["NAME","SOL.","Cust.V"]', JSON.stringify(rSEE && rSEE.cleReference));
+  verifier('les essentielles sont résolues, l\'introuvable écartée',
+    !!rSEE && rSEE.essentielles.join('|') === 'NAME|Validated', JSON.stringify(rSEE && rSEE.essentielles));
+  verifier('les valeurs restent celles de l\'onglet — « 1 », « b », TRUE — c\'est la page qui recompose',
+    !!rSEE && rSEE.lignes[0]['SOL.'] === '1' && rSEE.lignes[0]['Cust.V'] === 'b' && rSEE.lignes[1].REDRAW === 'TRUE' &&
+    rSEE.champs.length === 1 && rSEE.champs[0].la === 'Validated', JSON.stringify(rSEE && rSEE.lignes));
+  verifier('nommée d\'après l\'onglet faute de NOM', !!rSEE && rSEE.nom === 'SEE');
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-see.html'));
 
   // =================================================================
   section('Feuilles hostiles');
@@ -1425,26 +1465,40 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const ecartsAttendus = (classe(plans30[0].avancement) !== 'termine' ? 1 : 0) +
     1 + (classe(plans30[1].avancement) !== 'encours' ? 1 : 0) +
     (classe(plans30[2].avancement) !== 'vide' ? 1 : 0);
+  const identiquesAttendus = 3 - (classe(plans30[0].avancement) !== 'termine' ? 1 : 0) - 1 -
+    (classe(plans30[2].avancement) !== 'vide' ? 1 : 0);
   const ecran = await pr.evaluate(() => ({
     visible: !document.getElementById('rapprochement').hidden,
     titre: document.getElementById('titre-rapprochement').textContent,
     phrase: document.getElementById('phrase-rapprochement').textContent,
     puces: [...document.querySelectorAll('#puces-rapprochement button[data-rapp]')].map(b => b.dataset.rapp + '=' + b.querySelector('b').textContent),
-    plans: document.querySelectorAll('#corps-tableau tr').length
+    plans: document.querySelectorAll('#corps-tableau tr').length,
+    seconde: !document.getElementById('seconde-base').hidden,
+    titreSeconde: document.getElementById('titre-seconde').textContent,
+    entetesSeconde: [...document.querySelectorAll('#tete-seconde th')].map(t => t.textContent.trim()).join('|'),
+    lignesSeconde: document.querySelectorAll('#corps-seconde tr[data-i]').length,
+    vueSeconde: document.getElementById('vue-seconde').hidden
   }));
   verifier('la section est là, nommée d\'après l\'onglet', ecran.visible && ecran.titre === 'Rapprochement avec Base2', ecran.titre);
-  verifier('la phrase compte 30 plans ici et 4 lignes là', /^30 plans ici, 4 lignes là : \d+ écarts\.$/.test(ecran.phrase), ecran.phrase);
-  verifier('27 plans absents de là, 1 référence absente d\'ici, aucun indice (références hors format), les écarts recalculés',
-    ecran.puces.join(' ') === 'absentsLa=27 absentsIci=1 indiceDifferent=0 ecarts=' + ecartsAttendus, ecran.puces.join(' ') + ' attendu ecarts=' + ecartsAttendus);
+  verifier('la phrase compte 30 plans ici et 4 lignes là, les identiques et les écarts',
+    new RegExp('^30 plans ici, 4 lignes dans Base2 : ' + identiquesAttendus + ' identiques? \\(\\d+ %\\), \\d+ écarts\\.$').test(ecran.phrase), ecran.phrase);
+  verifier('les identiques, aucune émission différente (références hors format), les écarts recalculés, 27 plans absents de là, 1 référence seulement là',
+    ecran.puces.join(' ') === 'identiques=' + identiquesAttendus + ' indiceDifferent=0 ecarts=' + ecartsAttendus + ' absentsLa=27 absentsIci=1',
+    ecran.puces.join(' ') + ' attendu ecarts=' + ecartsAttendus + ', identiques=' + identiquesAttendus);
+  verifier('le tableau de la seconde base est là, nommé d\'après l\'onglet, avec ses quatre colonnes et ses quatre lignes, sans vue essentielle',
+    ecran.seconde && ecran.titreSeconde === 'Base2' && ecran.entetesSeconde === 'REF_UD|ATA_CODE|STATUT_FWD|Colonne en trop' &&
+    ecran.lignesSeconde === 4 && ecran.vueSeconde, JSON.stringify([ecran.titreSeconde, ecran.entetesSeconde, ecran.lignesSeconde]));
   await pr.click('#puces-rapprochement button[data-rapp="absentsLa"]'); await pr.waitForTimeout(500);
-  verifier('cliquer « absents de la seconde base » filtre le tableau sur ces 27 plans',
+  verifier('cliquer « absents de Base2 » filtre le tableau sur ces 27 plans',
     await pr.evaluate(() => document.querySelectorAll('#corps-tableau tr').length === 27 &&
-      [...document.querySelectorAll('.jeton')].some(j => /Rapprochement : absents de la seconde base/.test(j.textContent))));
+      [...document.querySelectorAll('.jeton')].some(j => /Rapprochement : absents de Base2/.test(j.textContent))));
   await pr.click('#puces-rapprochement button[data-rapp="absentsIci"]'); await pr.waitForTimeout(400);
-  verifier('« absents d\'ici » liste UD-99-9999 avec ses champs',
+  verifier('« seulement dans Base2 » réduit le tableau de là à UD-99-9999 et rend celui d\'ici entier',
     await pr.evaluate(() => {
-      const l = document.querySelector('#absents-rapprochement .ligne');
-      return !!l && l.querySelector('.ref').textContent === 'UD-99-9999' && l.querySelectorAll('.champ').length === 2;
+      const l = document.querySelectorAll('#corps-seconde tr[data-i]');
+      return l.length === 1 && l[0].querySelector('.verdict .ref').textContent === 'UD-99-9999' &&
+        document.querySelectorAll('#corps-tableau tr').length === 30 &&
+        [...document.querySelectorAll('.jeton')].some(j => /Rapprochement : seulement dans Base2/.test(j.textContent));
     }));
   await ctxRapp.close();
 

@@ -331,14 +331,22 @@ async function reinitialiser(pg) {
       document.getElementById('select-contrat').value === 'HDK'));
 
   // =================================================================
-  /* Le rapprochement avec une seconde base : la démonstration en fabrique
-     une, aux colonnes nommées autrement, avec des écarts délibérés — 5 plans
-     absents là, 5 références absentes ici, 2 indices différents, 10 champs
-     différents. La section vit entre le bloc par groupe et le tableau ; trois
-     compteurs filtrent le tableau, « absents d'ici » déplie une liste, et
-     un panneau détaille les écarts de champ. Elle suit le périmètre et le
-     contrat, et disparaît quand la source ne décrit aucune seconde base. */
+  /* Le rapprochement avec une seconde base : la démonstration joue SEE, un
+     extract dont la référence se lit sur trois colonnes (NAME, SOL., Cust.V),
+     avec des écarts délibérés — 5 plans absents de SEE, 5 références
+     seulement dans SEE, 2 émissions différentes (une solution, un indice),
+     10 champs différents. La section vit entre le bloc par groupe et le
+     tableau : une phrase, une jauge, cinq tuiles. Quatre filtrent le tableau
+     d'ici, « seulement dans SEE » filtre le tableau de là, et un panneau
+     détaille les écarts de champ. Elle suit le périmètre et le contrat, et
+     disparaît quand la source ne décrit aucune seconde base. */
   section('Rapprochement avec une seconde base');
+  const COLONNES_SEE = ['NAME', 'SOL.', 'Cust.V', 'Int. V', 'ARCHIVE FILE PREFIX', 'VALIDITY PSN FULL',
+    'User Status', 'DIAGRAM TYPE', 'PRODUCT FAMILY', 'Validated', 'FG1 TAGDESCRIPTION', 'FG2 TAGDESCRIPTION',
+    'SCHEMA NUMBER', 'Released Date', 'Obsolete Date', 'Validated Date', 'REDRAW', 'ARCHIVED', 'CGM', 'XPEMPTY'];
+  const ESSENTIELLES_SEE = ['NAME', 'SOL.', 'Cust.V', 'VALIDITY PSN FULL', 'DIAGRAM TYPE', 'PRODUCT FAMILY',
+    'Validated', 'Released Date', 'REDRAW'];
+  const IDENTIQUES = TOTAL - 17, PCT = Math.round(100 * IDENTIQUES / TOTAL);
   const lireRapp = () => p.evaluate(() => {
     const R = window.__rapprochement();
     const top = el => Math.round(document.getElementById(el).getBoundingClientRect().top + window.scrollY);
@@ -346,9 +354,11 @@ async function reinitialiser(pg) {
       cache: document.getElementById('rapprochement').hidden,
       titre: document.getElementById('titre-rapprochement').textContent,
       phrase: document.getElementById('phrase-rapprochement').textContent,
+      jauge: [...document.querySelectorAll('#jauge-rapprochement span')].map(s => ({ cat: s.className, w: parseFloat(s.style.width) })),
       puces: [...document.querySelectorAll('#puces-rapprochement button[data-rapp]')].map(b => ({
         cle: b.dataset.rapp, n: +b.querySelector('b').textContent.replace(/\s/g, ''),
-        libelle: b.textContent.replace(/^\s*\d+\s*/, '').trim(),
+        libelle: b.querySelector('.mot').textContent.trim(), sous: b.querySelector('.sous').textContent.trim(),
+        pastille: (b.querySelector('.mot .pastille') || { className: '' }).className.replace('pastille', '').trim(),
         presse: b.getAttribute('aria-pressed'), inactif: b.disabled
       })),
       ordre: top('zone-critique') < top('rapprochement') && top('rapprochement') < top('cadre-tableau'),
@@ -362,83 +372,129 @@ async function reinitialiser(pg) {
       entetes: [...document.querySelectorAll('#detail-rapprochement .rapp-entete')].map(e => e.textContent),
       refsDetail: [...document.querySelectorAll('#detail-rapprochement .rapp-grille > div.ref')].map(e => e.textContent),
       lignesDetail: [...document.querySelectorAll('#detail-rapprochement .rapp-grille > div')].map(e => e.textContent),
-      absents: document.querySelectorAll('#absents-rapprochement .rapp-liste .ligne').length,
-      absentsRefs: [...document.querySelectorAll('#absents-rapprochement .ligne .ref')].map(e => e.textContent),
-      absentsChamps: [...document.querySelectorAll('#absents-rapprochement .ligne')].map(l => l.querySelectorAll('.champ').length),
+      seconde: document.querySelectorAll('#corps-seconde tr[data-i]').length,
+      secondeCache: document.getElementById('seconde-base').hidden,
+      secondeVide: (document.querySelector('#corps-seconde .vide-message') || { textContent: '' }).textContent,
+      secondeRefs: [...document.querySelectorAll('#corps-seconde tr[data-i] .verdict .ref')].map(e => e.textContent),
       R: R && {
-        absentsLa: R.absentsLa.length, absentsIci: R.absentsIci.length,
+        identiques: R.identiques.length, absentsLa: R.absentsLa.length, absentsIci: R.absentsIci.length,
         indice: R.indiceDifferent.length, ecarts: R.ecarts.length, total: R.total,
         nbPlans: R.nbPlans, nbLignes: R.nbLignes,
         refsEcarts: R.ecarts.map(e => e.plan.reference),
+        refsIdentiques: R.identiques.map(x => x.reference),
         champsEcarts: R.ecarts.map(e => e.champ),
-        indices: R.indiceDifferent.map(x => ({ ici: x.plan.reference, la: x.ref_la, racineIci: window.__analyserUD(x.plan.reference).racine, racineLa: window.__analyserUD(x.ref_la).racine })),
-        avancement: R.ecarts.filter(e => e.champ === 'Avancement').map(e => [e.ici, e.la])
+        indices: R.indiceDifferent.map(x => ({ ici: x.plan.reference, la: x.ref_la, type: x.type,
+          racineIci: window.__analyserUD(x.plan.reference).racine, racineLa: window.__analyserUD(x.ref_la).racine })),
+        avancement: R.ecarts.filter(e => e.champ === 'Avancement / Validated').map(e => [e.ici, e.la])
       }
     };
   });
   const r0 = await lireRapp();
   verifier('la section est là, nommée d\'après la seconde base',
-    !r0.cache && r0.titre === 'Rapprochement avec Base FWD (extract Excel)', r0.titre);
+    !r0.cache && r0.titre === 'Rapprochement avec SEE', r0.titre);
   verifier('entre le bloc par groupe et le tableau', r0.ordre);
-  verifier('la phrase compte les deux côtés et les écarts',
-    r0.phrase === TOTAL + ' plans ici, ' + TOTAL + ' lignes là : 22 écarts.', r0.phrase);
-  verifier('quatre compteurs, dans l\'ordre, avec les nombres attendus : 5 / 5 / 2 / 10',
-    r0.puces.map(x => x.cle + '=' + x.n).join(' ') === 'absentsLa=5 absentsIci=5 indiceDifferent=2 ecarts=10',
-    JSON.stringify(r0.puces));
-  verifier('et les libellés attendus',
-    r0.puces.map(x => x.libelle).join(' | ') === 'absents de la seconde base | absents d’ici | solution ou indice différent | champs différents',
+  verifier('la phrase compte les deux côtés, dit d\'abord ce qui va, puis les écarts',
+    r0.phrase === TOTAL + ' plans ici, ' + TOTAL + ' lignes dans SEE : ' + IDENTIQUES + ' identiques (' + PCT + ' %), 22 écarts.', r0.phrase);
+  verifier('cinq tuiles, dans l\'ordre de lecture, avec les nombres attendus : ' + IDENTIQUES + ' / 2 / 10 / 5 / 5',
+    r0.puces.map(x => x.cle + '=' + x.n).join(' ') === 'identiques=' + IDENTIQUES + ' indiceDifferent=2 ecarts=10 absentsLa=5 absentsIci=5',
+    JSON.stringify(r0.puces.map(x => x.cle + '=' + x.n)));
+  verifier('et les libellés attendus, qui nomment la base',
+    r0.puces.map(x => x.libelle).join(' | ') === 'identiques des deux côtés | solution ou indice différent | champs différents | absents de SEE | seulement dans SEE',
     r0.puces.map(x => x.libelle).join(' | '));
-  verifier('aucun n\'est pressé ni inactif au départ, le tableau est entier',
-    r0.puces.every(x => x.presse === 'false' && !x.inactif) && r0.lignes === TOTAL && r0.jetons.length === 0);
+  verifier('chaque tuile porte sa pastille : vert, anneau, ambre, rouge, pointillé',
+    r0.puces.map(x => x.pastille).join() === 'identique,neutre,ecart,absent,seul', r0.puces.map(x => x.pastille).join());
+  verifier('et son sous-titre : la part, solution / indice, les plans derrière les écarts',
+    r0.puces[0].sous === PCT + ' % des plans d’ici' && r0.puces[1].sous === '1 de solution · 1 d’indice' &&
+    r0.puces[2].sous === 'sur 10 plans' && r0.puces[3].sous === '' && r0.puces[4].sous === 'aucune racine connue ici',
+    JSON.stringify(r0.puces.map(x => x.sous)));
+  const sommeIci = r0.jauge.filter(j => j.cat !== 'seul').reduce((t, j) => t + j.w, 0);
+  verifier('la jauge fait la somme des plans d\'ici, dans l\'ordre du verdict, et met à part ce qui n\'existe que là',
+    r0.jauge.map(j => j.cat).join() === 'identique,emission,ecart,absentLa,seul' && Math.abs(sommeIci - 100) < 0.1 &&
+    Math.abs(r0.jauge[4].w - 500 / TOTAL) < 0.05, JSON.stringify(r0.jauge));
+  verifier('aucune n\'est pressée ni inactive au départ, les deux tableaux sont entiers',
+    r0.puces.every(x => x.presse === 'false' && !x.inactif) && r0.lignes === TOTAL && r0.seconde === TOTAL && r0.jetons.length === 0,
+    JSON.stringify([r0.lignes, r0.seconde, r0.jetons]));
   verifier('le moteur donne les mêmes comptes : 22 écarts au total',
-    r0.R && r0.R.total === 22 && r0.R.nbPlans === TOTAL && r0.R.nbLignes === TOTAL, JSON.stringify(r0.R && [r0.R.total, r0.R.nbPlans, r0.R.nbLignes]));
-  verifier('les écarts de champ couvrent les cinq champs déclarés, deux fois chacun',
-    ['ATA', 'ECP', 'Avancement', 'Nom Installation', 'Séquence'].every(c => r0.R.champsEcarts.filter(x => x === c).length === 2),
+    r0.R && r0.R.total === 22 && r0.R.nbPlans === TOTAL && r0.R.nbLignes === TOTAL && r0.R.identiques === IDENTIQUES,
+    JSON.stringify(r0.R && [r0.R.total, r0.R.nbPlans, r0.R.nbLignes, r0.R.identiques]));
+  verifier('les écarts de champ tournent sur les quatre champs déclarés : 3 / 3 / 2 / 2',
+    ['Avancement / Validated', 'Redraw', 'Installation', 'Produit'].map(c => r0.R.champsEcarts.filter(x => x === c).length).join() === '3,3,2,2',
     JSON.stringify(r0.R.champsEcarts));
-  verifier('l\'avancement se compare par état : « OK » / « WIP » contre « Terminé » / « En cours »',
-    r0.R.avancement.length === 2 && r0.R.avancement.every(([ici, la]) => /^(OK|WIP)$/.test(la) && !/^(OK|WIP)$/.test(ici)),
+  verifier('l\'avancement se compare à la case « Validated » : terminé ici doit être coché là',
+    r0.R.avancement.length === 3 && r0.R.avancement.every(([ici, la]) => /^(TRUE|FALSE)$/.test(la) && ((ici === 'Terminé') !== (la === 'TRUE'))),
     JSON.stringify(r0.R.avancement));
-  verifier('un indice différent, c\'est la même racine sous une autre émission',
-    r0.R.indices.length === 2 && r0.R.indices.every(x => x.racineIci === x.racineLa && x.ici !== x.la && /-/.test(x.la)),
+  verifier('une émission différente, c\'est la même racine, et le type dit ce qui a changé',
+    r0.R.indices.length === 2 && r0.R.indices.every(x => x.racineIci === x.racineLa && x.ici !== x.la) &&
+    r0.R.indices.map(x => x.type).sort().join() === 'indice,solution' &&
+    r0.R.indices.every(x => x.type === 'solution' ? x.ici.slice(-1) === x.la.slice(-1) && x.ici.slice(-4, -1) !== x.la.slice(-4, -1)
+                                                  : x.ici.slice(-1) !== x.la.slice(-1) && x.ici.slice(0, -1) === x.la.slice(0, -1)),
     JSON.stringify(r0.R.indices));
 
-  // « champs différents » : le tableau se réduit aux dix plans concernés.
+  // « champs différents » : les deux tableaux se réduisent aux dix plans concernés.
   await p.click('#puces-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(500);
   const rEc = await lireRapp();
-  verifier('cliquer « champs différents » réduit le tableau à 10 plans', rEc.lignes === 10, String(rEc.lignes));
-  verifier('ce sont bien les plans en écart',
-    rEc.refsTableau.length === 10 && rEc.refsTableau.every(r => r0.R.refsEcarts.indexOf(r) !== -1), JSON.stringify(rEc.refsTableau));
-  verifier('le bandeau nomme le filtre « Rapprochement : champs différents », la puce est pressée',
+  verifier('cliquer « champs différents » réduit le tableau d\'ici à 10 plans, et celui de SEE à leurs 10 lignes',
+    rEc.lignes === 10 && rEc.seconde === 10, rEc.lignes + ' / ' + rEc.seconde);
+  verifier('ce sont bien les plans en écart, des deux côtés',
+    rEc.refsTableau.length === 10 && rEc.refsTableau.every(r => r0.R.refsEcarts.indexOf(r) !== -1) &&
+    rEc.secondeRefs.length === 10 && rEc.secondeRefs.every(r => r0.R.refsEcarts.some(f => f.indexOf(r) === 0)), JSON.stringify(rEc.secondeRefs.slice(0, 3)));
+  verifier('le bandeau nomme le filtre « Rapprochement : champs différents », la tuile est pressée',
     rEc.jetons.length === 1 && rEc.jetons[0] === 'Rapprochement : champs différents' &&
     rEc.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'ecarts', JSON.stringify(rEc.jetons));
   verifier('les comptes ne bougent pas : le rapprochement ne se filtre pas lui-même',
-    rEc.puces.map(x => x.n).join() === '5,5,2,10');
+    rEc.puces.map(x => x.n).join() === [IDENTIQUES, 2, 10, 5, 5].join());
   await p.click('#puces-rapprochement button[data-rapp="absentsLa"]'); await p.waitForTimeout(500);
   const rAb = await lireRapp();
-  verifier('« absents de la seconde base » remplace la sélection : 5 plans',
-    rAb.lignes === 5 && rAb.jetons[0] === 'Rapprochement : absents de la seconde base' &&
-    rAb.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'absentsLa', JSON.stringify(rAb.jetons) + ' ' + rAb.lignes);
+  verifier('« absents de SEE » remplace la sélection : 5 plans ici, et le tableau de SEE le dit vide',
+    rAb.lignes === 5 && rAb.jetons[0] === 'Rapprochement : absents de SEE' && rAb.seconde === 0 &&
+    rAb.secondeVide === 'Ces plans n’ont pas de ligne dans SEE.' &&
+    rAb.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'absentsLa', JSON.stringify([rAb.jetons, rAb.lignes, rAb.secondeVide]));
   await p.click('#puces-rapprochement button[data-rapp="indiceDifferent"]'); await p.waitForTimeout(500);
   const rIn = await lireRapp();
-  verifier('« indice différent » : 2 plans, ceux du moteur',
-    rIn.lignes === 2 && rIn.refsTableau.sort().join() === r0.R.indices.map(x => x.ici).sort().join(), JSON.stringify(rIn.refsTableau));
-  await p.click('#puces-rapprochement button[data-rapp="indiceDifferent"]'); await p.waitForTimeout(500);
+  verifier('« solution ou indice différent » : 2 plans ici, leurs 2 lignes là, sous l\'autre émission',
+    rIn.lignes === 2 && rIn.refsTableau.sort().join() === r0.R.indices.map(x => x.ici).sort().join() &&
+    rIn.secondeRefs.length === 2 && rIn.secondeRefs.every(r => r0.R.indices.some(x => x.la.indexOf(r) === 0)), JSON.stringify([rIn.refsTableau, rIn.secondeRefs]));
+  await p.click('#puces-rapprochement button[data-rapp="identiques"]'); await p.waitForTimeout(500);
+  const rId = await lireRapp();
+  verifier('« identiques » : les ' + IDENTIQUES + ' plans, des deux côtés',
+    rId.lignes === IDENTIQUES && rId.seconde === IDENTIQUES && rId.jetons[0] === 'Rapprochement : identiques des deux côtés', JSON.stringify([rId.lignes, rId.seconde]));
+  await p.click('#puces-rapprochement button[data-rapp="identiques"]'); await p.waitForTimeout(500);
   const rOff = await lireRapp();
-  verifier('re-cliquer le compteur pressé retire le filtre',
-    rOff.lignes === TOTAL && rOff.jetons.length === 0 && rOff.puces.every(x => x.presse === 'false'));
+  verifier('re-cliquer la tuile pressée retire le filtre',
+    rOff.lignes === TOTAL && rOff.seconde === TOTAL && rOff.jetons.length === 0 && rOff.puces.every(x => x.presse === 'false'));
   await p.click('#puces-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(400);
   await p.click('.jeton .x'); await p.waitForTimeout(400);
   verifier('la croix du bandeau retire aussi le filtre du rapprochement',
     await p.evaluate(t => document.querySelectorAll('#corps-tableau tr').length === t &&
       document.getElementById('filtres-actifs').hidden, TOTAL));
 
+  // « seulement dans SEE » : ces références n'ont pas de plan ici — c'est le tableau de là qui se filtre.
+  await p.click('#puces-rapprochement button[data-rapp="absentsIci"]'); await p.waitForTimeout(400);
+  const rIci = await lireRapp();
+  verifier('« seulement dans SEE » réduit le tableau de SEE à ses 5 lignes, sans toucher au tableau d\'ici',
+    rIci.seconde === 5 && rIci.lignes === TOTAL &&
+    rIci.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'absentsIci', JSON.stringify([rIci.seconde, rIci.lignes]));
+  verifier('chaque référence est inédite ici',
+    rIci.secondeRefs.length === 5 && rIci.secondeRefs.every(r => /^NEW/.test(r) && r0.R.refsEcarts.indexOf(r) === -1), JSON.stringify(rIci.secondeRefs));
+  verifier('le bandeau le nomme, avec sa croix',
+    rIci.jetons.length === 1 && rIci.jetons[0] === 'Rapprochement : seulement dans SEE', JSON.stringify(rIci.jetons));
+  await p.click('.jeton .x'); await p.waitForTimeout(400);
+  const rIci2 = await lireRapp();
+  verifier('la croix rend le tableau de SEE entier', rIci2.seconde === TOTAL && rIci2.jetons.length === 0 && rIci2.puces.every(x => x.presse === 'false'));
+  await p.click('#puces-rapprochement button[data-rapp="absentsIci"]'); await p.waitForTimeout(300);
+  await p.click('#puces-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(400);
+  const rBasc = await lireRapp();
+  verifier('un lot d\'ici posé après « seulement dans SEE » le remplace : un seul lot à la fois',
+    rBasc.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'ecarts' && rBasc.jetons.length === 1 && rBasc.seconde === 10, JSON.stringify(rBasc.jetons));
+  await p.click('#puces-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(400);
+
   // Le détail des écarts : fermé au départ, une grille de quatre colonnes.
   verifier('le détail est replié au départ, son bouton compte les écarts',
     r0.ouvert === 'false' && !r0.grille && r0.cellules === 0 && /^détail des écarts \(10\)$/.test(r0.bouton), r0.bouton);
   await p.click('#bouton-detail-rapprochement'); await p.waitForTimeout(350);
   const rDe = await lireRapp();
-  verifier('le détail liste les 10 écarts en grille de quatre colonnes',
-    rDe.ouvert === 'true' && rDe.grille && rDe.cellules === 44 && rDe.entetes.join('|') === 'Référence|Champ|Ici|Là',
+  verifier('le détail liste les 10 écarts en grille de quatre colonnes, la dernière au nom de la base',
+    rDe.ouvert === 'true' && rDe.grille && rDe.cellules === 44 && rDe.entetes.join('|') === 'Référence|Champ|Ici|SEE',
     rDe.cellules + ' cellules, ' + rDe.entetes.join('|'));
   verifier('une ligne par écart : la référence en mono, le champ, la valeur ici, la valeur là',
     rDe.refsDetail.length === 10 && rDe.refsDetail.join() === r0.R.refsEcarts.join() &&
@@ -448,32 +504,22 @@ async function reinitialiser(pg) {
   await p.click('#bouton-detail-rapprochement'); await p.waitForTimeout(300);
   verifier('le détail se replie', (await lireRapp()).cellules === 0);
 
-  // « absents d'ici » : ces références n'ont pas de ligne, on les liste.
-  await p.click('#puces-rapprochement button[data-rapp="absentsIci"]'); await p.waitForTimeout(350);
-  const rIci = await lireRapp();
-  verifier('« absents d\'ici » déplie la liste des 5 références, sans toucher au tableau',
-    rIci.absents === 5 && rIci.lignes === TOTAL && rIci.jetons.length === 0 &&
-    rIci.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'absentsIci', JSON.stringify([rIci.absents, rIci.lignes]));
-  verifier('chaque référence est inédite ici, et vient avec ses cinq champs',
-    rIci.absentsRefs.every(r => r0.R.refsEcarts.indexOf(r) === -1 && /^NEW/.test(r)) &&
-    rIci.absentsChamps.every(n => n === 5), JSON.stringify(rIci.absentsRefs));
-  await p.click('#puces-rapprochement button[data-rapp="absentsIci"]'); await p.waitForTimeout(300);
-  verifier('re-cliquer replie la liste', (await lireRapp()).absents === 0);
-
   // Le périmètre : les plans hors périmètre ne comptent pas.
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
   const rPe = await lireRapp();
-  verifier('le périmètre PERSO réduit les comptes des trois lots de plans',
-    rPe.R.absentsLa + rPe.R.indice + rPe.R.ecarts < 17 && rPe.R.nbPlans < TOTAL &&
-    rPe.puces.map(x => x.n).join() === [rPe.R.absentsLa, rPe.R.absentsIci, rPe.R.indice, rPe.R.ecarts].join(),
+  verifier('le périmètre PERSO réduit les comptes des lots de plans',
+    rPe.R.absentsLa + rPe.R.indice + rPe.R.ecarts < 17 && rPe.R.nbPlans < TOTAL && rPe.R.identiques < IDENTIQUES &&
+    rPe.puces.map(x => x.n).join() === [rPe.R.identiques, rPe.R.indice, rPe.R.ecarts, rPe.R.absentsLa, rPe.R.absentsIci].join(),
     JSON.stringify(rPe.puces.map(x => x.n)));
-  verifier('les références absentes d\'ici, sans domaine, restent comptées', rPe.R.absentsIci === 5);
-  /* Sous périmètre, les absents d'ici (sans domaine, tout le contrat) se
-     comptent à part : la phrase ne les mêle plus aux écarts du périmètre. */
+  verifier('les références seulement là, sans domaine, restent comptées', rPe.R.absentsIci === 5);
+  /* Sous périmètre, les références seulement là (sans domaine, tout le
+     contrat) se comptent à part : la phrase ne les mêle plus aux écarts du
+     périmètre. */
   const ecartsPerimetre = rPe.R.absentsLa + rPe.R.indice + rPe.R.ecarts;
-  verifier('la phrase nomme le périmètre, compte ses écarts et met à part les absents d’ici',
-    new RegExp('^' + rPe.R.nbPlans + ' plans ici \\(périmètre PERSO\\) : ' + ecartsPerimetre + ' écarts? dans le périmètre · ' +
-               rPe.R.absentsIci + ' références? absentes? d’ici, tout le contrat\\.$').test(rPe.phrase), rPe.phrase);
+  verifier('la phrase nomme le périmètre, compte ses identiques et ses écarts, et met à part ce qui n\'est que là',
+    new RegExp('^' + rPe.R.nbPlans + ' plans ici \\(périmètre PERSO\\) : ' + rPe.R.identiques + ' identiques? \\(\\d+ %\\), ' +
+               ecartsPerimetre + ' écarts? dans le périmètre · 5 références seulement dans SEE, tout le contrat\\.$').test(rPe.phrase), rPe.phrase);
+  verifier('la tuile « seulement dans SEE » le dit aussi', rPe.puces[4].libelle === 'seulement dans SEE (tout le contrat)', rPe.puces[4].libelle);
   await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(600);
   verifier('revenir à Tout redonne les 22 écarts', (await lireRapp()).R.total === 22);
 
@@ -498,18 +544,172 @@ async function reinitialiser(pg) {
   await p.evaluate(() => { const s = window.__jeuDExemple('HDK'); delete s.rapprochement; window.__chargerSource(s); });
   await p.waitForTimeout(900);
   const rSans = await lireRapp();
-  verifier('sans rapprochement dans la source, la section est absente',
-    rSans.cache && rSans.R === null, JSON.stringify([rSans.cache, rSans.R]));
+  verifier('sans rapprochement dans la source, la section est absente, et le tableau de là avec elle',
+    rSans.cache && rSans.R === null && rSans.secondeCache, JSON.stringify([rSans.cache, rSans.R, rSans.secondeCache]));
   verifier('et le reste de la page est intact', rSans.lignes === TOTAL);
   await p.evaluate(() => { const s = window.__jeuDExemple('HDK'); s.rapprochement = { nom: 'Vide', cleReference: 'REF', champs: [], lignes: [] }; window.__chargerSource(s); });
   await p.waitForTimeout(900);
   const rVide = await lireRapp();
-  verifier('une seconde base vide : tous les plans sont absents de là, les autres compteurs inactifs',
-    !rVide.cache && rVide.R.absentsLa === TOTAL && rVide.puces[0].n === TOTAL &&
-    rVide.puces.slice(1).every(x => x.inactif) && /aucun|écarts\.$/.test(rVide.phrase), rVide.phrase);
+  verifier('une seconde base vide : tous les plans sont absents de là, les autres tuiles inactives',
+    !rVide.cache && rVide.R.absentsLa === TOTAL && rVide.puces[3].n === TOTAL && rVide.puces[3].libelle === 'absents de Vide' &&
+    rVide.puces.filter((x, i) => i !== 3).every(x => x.inactif) && /aucun|écarts\.$/.test(rVide.phrase), rVide.phrase);
   await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
   await p.waitForTimeout(900);
   verifier('la seconde base revenue, la section revient', !(await lireRapp()).cache && (await lireRapp()).R.total === 22);
+
+  // =================================================================
+  /* Le tableau de la seconde base : l'extract SEE tel quel — ses vingt
+     colonnes, dans son ordre, sous leurs intitulés — sous le tableau d'ici.
+     Le verdict du rapprochement se lit sur chaque ligne : la pastille dans
+     la cellule NAME, les cellules qui diffèrent d'ici voilées avec la valeur
+     d'ici en info-bulle. Deux vues, un tri, une recherche qui ne touchent
+     qu'à lui ; cliquer une ligne appariée réduit le tableau d'ici au plan. */
+  section('La seconde base, telle que son extract');
+  const lireSeconde = () => p.evaluate(() => {
+    const Sd = window.__secondeAffichee();
+    const cats = {}; (Sd ? Sd.lignes : []).forEach(l => { cats[l.cat] = (cats[l.cat] || 0) + 1; });
+    const top = el => Math.round(document.getElementById(el).getBoundingClientRect().top + window.scrollY);
+    const entetes = [...document.querySelectorAll('#tete-seconde th')];
+    const pastilles = {};
+    document.querySelectorAll('#corps-seconde .verdict .pastille').forEach(s => {
+      const k = s.className.replace('pastille', '').trim(); pastilles[k] = (pastilles[k] || 0) + 1;
+    });
+    return {
+      cache: document.getElementById('seconde-base').hidden,
+      titre: document.getElementById('titre-seconde').textContent,
+      compte: document.getElementById('compte-seconde').textContent,
+      sousTableau: top('seconde-base') > top('cadre-tableau'),
+      entetes: entetes.map(t => t.textContent.trim()),
+      tris: entetes.map(t => t.getAttribute('aria-sort')),
+      titres: Sd ? Sd.titres : null, essentielles: Sd ? Sd.essentielles : null,
+      n: Sd ? Sd.lignes.length : -1, cats,
+      refs: Sd ? Sd.lignes.map(l => l.ref) : [],
+      lignesDom: document.querySelectorAll('#corps-seconde tr[data-i]').length,
+      premieres: [...document.querySelectorAll('#corps-seconde tr[data-i]')].slice(0, 3).map(tr => [...tr.children].map(td => td.textContent.trim())),
+      pastilles,
+      ecartsCells: [...document.querySelectorAll('#corps-seconde td.ecart')].map(td => ({
+        col: entetes[[...td.parentNode.children].indexOf(td)].textContent.trim(), titre: td.getAttribute('title') })),
+      coches: document.querySelectorAll('#corps-seconde td.coche').length,
+      cochesTexte: [...new Set([...document.querySelectorAll('#corps-seconde td.coche')].map(td => td.textContent.trim()))].sort(),
+      vueVisible: !document.getElementById('vue-seconde').hidden,
+      vues: [...document.querySelectorAll('#vue-seconde button')].map(b => b.dataset.vue + ':' + b.getAttribute('aria-pressed')).join(' '),
+      legende: [...document.querySelectorAll('#legende-seconde > span')].map(s => s.textContent.trim()),
+      figee: !!document.querySelector('#corps-seconde tr td.col-fige-la .verdict .ref') && !!document.querySelector('#tete-seconde th.col-fige-la') &&
+             getComputedStyle(document.querySelector('#tete-seconde th.col-fige-la')).position === 'sticky',
+      choisies: document.querySelectorAll('#corps-seconde tr.choisie').length,
+      seulsSansPlan: document.querySelectorAll('#corps-seconde tr[data-cat="seul"]').length -
+                     document.querySelectorAll('#corps-seconde tr[data-cat="seul"][data-plan]').length,
+      gates: document.querySelectorAll('#corps-tableau tr').length,
+      jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()),
+      reinit: !document.getElementById('reinit').hidden
+    };
+  });
+  const s0 = await lireSeconde();
+  verifier('le tableau de SEE est là, sous celui d\'ici, nommé d\'après la base',
+    !s0.cache && s0.titre === 'SEE' && s0.sousTableau, s0.titre);
+  verifier('toutes ses colonnes, dans son ordre, sous leurs intitulés — les vingt de l\'extract',
+    s0.entetes.join('|') === COLONNES_SEE.join('|') && s0.titres.join('|') === COLONNES_SEE.join('|'), s0.entetes.join('|'));
+  verifier('une ligne par ligne de l\'extract : ' + TOTAL + ', soit ' + (TOTAL - 5) + ' plans d\'ici et 5 seulement là',
+    s0.n === TOTAL && s0.lignesDom === TOTAL && s0.compte === TOTAL.toLocaleString('fr-FR') + ' lignes', s0.compte);
+  verifier('le verdict en pastille dans la cellule NAME — vert, anneau, ambre, pointillé — aux comptes des tuiles',
+    s0.pastilles.identique === IDENTIQUES && s0.pastilles.neutre === 2 && s0.pastilles.ecart === 10 && s0.pastilles.seul === 5,
+    JSON.stringify(s0.pastilles));
+  verifier('la référence se recompose de NAME, SOL. et Cust.V : racine, trois chiffres, une lettre',
+    s0.refs.every(r => /^[A-Z]{3}\d{4}A\d{3}\d{3}[A-Z]$/.test(r)) && s0.premieres[0][0] + s0.premieres[0][1] + s0.premieres[0][2] === s0.refs[0],
+    JSON.stringify([s0.premieres[0].slice(0, 3), s0.refs[0]]));
+  verifier('la colonne NAME est figée à gauche', s0.figee);
+  verifier('les cellules qui diffèrent d\'ici sont voilées, la valeur d\'ici en info-bulle : 10, sur les quatre champs comparés',
+    s0.ecartsCells.length === 10 && [...new Set(s0.ecartsCells.map(c => c.col))].sort().join('|') === 'FG1 TAGDESCRIPTION|PRODUCT FAMILY|REDRAW|Validated' &&
+    s0.ecartsCells.every(c => /^Ici : .+/.test(c.titre)), JSON.stringify(s0.ecartsCells.slice(0, 2)));
+  verifier('les cases à cocher de l\'extract se lisent ✓ ou – : cinq colonnes, ' + (5 * TOTAL) + ' cellules',
+    s0.coches === 5 * TOTAL && s0.cochesTexte.join() === '–,✓', JSON.stringify([s0.coches, s0.cochesTexte]));
+  verifier('la légende nomme les quatre verdicts',
+    s0.legende.join('|') === 'identique|autre solution ou indice|champs différents|seulement ici', s0.legende.join('|'));
+  verifier('deux vues, toutes les colonnes d\'abord', s0.vueVisible && s0.vues === 'toutes:true essentielle:false', s0.vues);
+  await p.click('#vue-seconde button[data-vue="essentielle"]'); await p.waitForTimeout(300);
+  const sEs = await lireSeconde();
+  verifier('la vue essentielle ne garde que les neuf colonnes désignées, référence comprise, dans cet ordre',
+    sEs.entetes.join('|') === ESSENTIELLES_SEE.join('|') && sEs.vues === 'toutes:false essentielle:true' && sEs.lignesDom === TOTAL,
+    sEs.entetes.join('|'));
+  await p.click('#vue-seconde button[data-vue="toutes"]'); await p.waitForTimeout(300);
+  verifier('revenir à toutes les colonnes rend l\'extract entier', (await lireSeconde()).entetes.length === 20);
+  await p.click('#tete-seconde button[data-tri-seconde="VALIDITY PSN FULL"]'); await p.waitForTimeout(300);
+  const sTri = await lireSeconde();
+  verifier('cliquer un intitulé trie sur cette colonne',
+    sTri.tris[5] === 'ascending' && sTri.premieres[0][5] <= sTri.premieres[1][5] && sTri.premieres[1][5] <= sTri.premieres[2][5],
+    JSON.stringify(sTri.premieres.map(l => l[5])));
+  await p.click('#tete-seconde button[data-tri-seconde="VALIDITY PSN FULL"]'); await p.waitForTimeout(300);
+  const sTri2 = await lireSeconde();
+  verifier('re-cliquer inverse', sTri2.tris[5] === 'descending' && sTri2.premieres[0][5] >= sTri2.premieres[1][5], JSON.stringify(sTri2.premieres.map(l => l[5])));
+  await p.click('#tete-seconde button[data-tri-seconde="VALIDITY PSN FULL"]'); await p.waitForTimeout(300);
+  const sTri3 = await lireSeconde();
+  verifier('un troisième clic rend l\'ordre de l\'extract',
+    sTri3.tris.every(t => t === 'none') && sTri3.refs[0] === s0.refs[0] && sTri3.premieres[0][0] === s0.premieres[0][0], JSON.stringify(sTri3.premieres[0].slice(0, 3)));
+  await p.fill('#recherche-seconde', 'NEW51'); await p.waitForTimeout(500);
+  const sRe = await lireSeconde();
+  verifier('la recherche ne filtre que ce tableau : 5 lignes sur ' + TOTAL + ', le tableau d\'ici intact',
+    sRe.n === 5 && sRe.compte === '5 lignes sur ' + TOTAL.toLocaleString('fr-FR') && sRe.gates === TOTAL && sRe.reinit,
+    JSON.stringify([sRe.n, sRe.compte, sRe.gates]));
+  await p.fill('#recherche-seconde', 'aucune ligne ne porte ceci'); await p.waitForTimeout(500);
+  verifier('rien trouvé : le tableau le dit', await p.evaluate(() => (document.querySelector('#corps-seconde .vide-message') || {}).textContent === 'Aucune ligne ne correspond.'));
+  await p.click('#reinit'); await p.waitForTimeout(500);
+  const sRz = await lireSeconde();
+  verifier('« tout réinitialiser » vide aussi cette recherche', sRz.n === TOTAL && await p.evaluate(() => document.getElementById('recherche-seconde').value === ''));
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
+  const sPe = await lireSeconde();
+  const rPe2 = await lireRapp();
+  verifier('sous le périmètre PERSO, les lignes des plans hors périmètre s\'effacent ; celles seulement là restent',
+    !sPe.cats.hors && sPe.n === rPe2.R.identiques + rPe2.R.indice + rPe2.R.ecarts + 5 && sPe.n < TOTAL &&
+    sPe.compte === sPe.n.toLocaleString('fr-FR') + ' lignes sur ' + TOTAL.toLocaleString('fr-FR'), JSON.stringify([sPe.n, sPe.cats, sPe.compte]));
+  await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(700);
+  const refChoisie = await p.evaluate(() => document.querySelector('#corps-seconde tr[data-plan]').dataset.plan);
+  await p.click('#corps-seconde tr[data-plan] >> nth=0'); await p.waitForTimeout(500);
+  const sCl = await lireSeconde();
+  verifier('cliquer une ligne appariée réduit le tableau d\'ici à ce plan, la ligne se marque, le bandeau le nomme',
+    sCl.gates === 1 && sCl.choisies === 1 && sCl.jetons.join() === 'Sélection : plan ' + refChoisie &&
+    await p.evaluate(r => document.querySelector('#corps-tableau tr td.ref').textContent.trim() === r, refChoisie), JSON.stringify(sCl.jetons));
+  await p.click('#corps-seconde tr[data-plan] >> nth=0'); await p.waitForTimeout(500);
+  const sCl2 = await lireSeconde();
+  verifier('re-cliquer la même ligne rend tous les plans', sCl2.gates === TOTAL && sCl2.choisies === 0 && sCl2.jetons.length === 0);
+  verifier('une ligne seulement là ne mène nulle part : pas de plan à montrer ici', s0.seulsSansPlan === 5 && sCl2.seulsSansPlan === 5);
+
+  // =================================================================
+  /* Le graphique, plus aérien : une échelle à valeurs rondes (0, 200, 400,
+     le plafond nommé « 640 plans »), la semaine seule en graduation et
+     l'année une fois par changement, des points pleins cerclés de fond, des
+     barres fines au sommet arrondi, et une bande discrète sous la souris. */
+  section('Le graphique, plus aérien');
+  const graphe = await p.evaluate(() => {
+    const grads = [...document.querySelectorAll('svg.graphe .grad')].map(t => t.textContent);
+    const iPlafond = grads.findIndex(t => / plans$/.test(t));
+    return {
+      echelle: grads.slice(0, iPlafond), plafond: grads[iPlafond],
+      semaines: grads.filter(t => /^S\d{2}$/.test(t)), avecAnnee: grads.filter(t => /^\d{4}-S/.test(t) && !/plans/.test(t)),
+      annees: [...document.querySelectorAll('svg.graphe .annee')].map(t => t.textContent),
+      pointsPleins: document.querySelectorAll('svg.graphe circle[fill="var(--fait)"][stroke="var(--surface)"]').length,
+      barres: document.querySelectorAll('svg.graphe path[fill="var(--r4)"]').length,
+      courbe: (document.querySelector('svg.graphe path[stroke="var(--fait)"][stroke-width="2"]') || {}).tagName === 'path'
+    };
+  });
+  verifier('l’échelle compte trois traits ronds sous le plafond : 0, 200, 400',
+    graphe.echelle.join() === '0,200,400', JSON.stringify(graphe.echelle));
+  verifier('le plafond est nommé : « ' + TOTAL + ' plans »', graphe.plafond === TOTAL.toLocaleString('fr-FR') + ' plans', graphe.plafond);
+  verifier('les graduations ne portent que la semaine, une dizaine au plus',
+    graphe.semaines.length >= 6 && graphe.semaines.length <= 12 && graphe.avecAnnee.length <= 1, JSON.stringify([graphe.semaines, graphe.avecAnnee]));
+  verifier('l’année s’écrit une fois par changement, sous la graduation',
+    graphe.annees.length >= 1 && graphe.annees.length <= 3 && new Set(graphe.annees).size === graphe.annees.length &&
+    graphe.annees.every(a => /^\d{4}$/.test(a)), JSON.stringify(graphe.annees));
+  verifier('la courbe fait 2 px, ses relevés sont des points pleins cerclés de fond',
+    graphe.courbe && graphe.pointsPleins >= 5, JSON.stringify([graphe.courbe, graphe.pointsPleins]));
+  verifier('le rythme hebdomadaire se dessine en barres fines, dans un ton clair de la rampe', graphe.barres >= 5, String(graphe.barres));
+  const zonesSurvol = await p.$$('.zone-clic');
+  await zonesSurvol[Math.floor(zonesSurvol.length / 2)].hover(); await p.waitForTimeout(250);
+  verifier('survoler une semaine l’éclaire d’une bande discrète',
+    await p.evaluate(() => {
+      const z = [...document.querySelectorAll('.zone-clic')].find(el => el.matches(':hover'));
+      return !!z && getComputedStyle(z).fill !== 'rgba(0, 0, 0, 0)' && Number(getComputedStyle(z).fillOpacity) < 0.7;
+    }));
+  await p.mouse.move(5, 5); await p.waitForTimeout(150);
 
   // =================================================================
   /* Le périmètre : sous le titre, au-dessus de la barre. « Tout », puis une puce par

@@ -147,16 +147,16 @@
   </section>
 
   <!-- Le rapprochement avec une seconde base : présent seulement quand la
-       source en porte une. Les compteurs filtrent le tableau ; ce qui n'est
-       pas dans le tableau — les références absentes d'ici — se déplie ici. -->
+       source en porte une. Chaque tuile filtre le tableau d'ici, ou celui de
+       la seconde base pour ce qui n'existe que là. -->
   <section class="bloc rapprochement" id="rapprochement" hidden>
     <div class="section-tete">
       <h2 id="titre-rapprochement">Rapprochement</h2>
     </div>
     <div class="feuille">
       <p class="rapp-phrase" id="phrase-rapprochement"></p>
-      <div class="rapp-puces" id="puces-rapprochement" role="group" aria-label="Écarts entre les deux bases"></div>
-      <div id="absents-rapprochement"></div>
+      <div class="rapp-jauge" id="jauge-rapprochement" aria-hidden="true"></div>
+      <div class="rapp-tuiles" id="puces-rapprochement" role="group" aria-label="Verdict du rapprochement, un lot par tuile"></div>
       <button class="journal-plus rapp-detail-bouton" type="button" id="bouton-detail-rapprochement"
               data-rapp-detail="1" aria-expanded="false" aria-controls="detail-rapprochement">détail des écarts</button>
       <div id="detail-rapprochement"></div>
@@ -194,6 +194,39 @@
         </table>
       </div>
       <div class="ombre-defile"></div>
+    </div>
+  </section>
+
+  <!-- La seconde base, telle que son extract : toutes ses colonnes, dans son
+       ordre, sous leurs intitulés ; le verdict du rapprochement en pastille
+       dans la cellule de la référence, les cellules qui diffèrent teintées. -->
+  <section class="bloc" id="seconde-base" hidden>
+    <div class="section-tete">
+      <h2 id="titre-seconde">Seconde base</h2>
+      <span class="compte" id="compte-seconde">—</span>
+    </div>
+    <div class="outils">
+      <div class="recherche">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <label class="masque" for="recherche-seconde">Rechercher dans la seconde base</label>
+        <input id="recherche-seconde" type="search" placeholder="Rechercher…" autocomplete="off">
+      </div>
+      <span class="segmente" id="vue-seconde" role="group" aria-label="Colonnes affichées de la seconde base">
+        <button type="button" data-vue="toutes" aria-pressed="true">Toutes les colonnes</button>
+        <button type="button" data-vue="essentielle" aria-pressed="false">Vue essentielle</button>
+      </span>
+      <span class="legende-rapp" id="legende-seconde"></span>
+    </div>
+    <div class="cadre-tableau" id="cadre-seconde">
+      <div class="defile">
+        <table class="plans seconde">
+          <thead id="tete-seconde"></thead>
+          <tbody id="corps-seconde"></tbody>
+        </table>
+      </div>
     </div>
   </section>
 
