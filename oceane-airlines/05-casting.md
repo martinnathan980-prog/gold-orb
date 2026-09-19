@@ -1,74 +1,91 @@
 # Casting et suivi
 
-Version 2, calée sur la structure 7 minutes. À remplir.
-
-## Les rôles à pourvoir en priorité
-
-Ces quatre-là bloquent l'écriture et le tournage. Le commandant de bord est le plus urgent.
-
-| Priorité | Rôle | Séquences | Ce qu'il faut | Qui ? | Statut |
-|---|---|---|---|---|---|
-| 🔴 1 | **Commandant de bord** | Les 8 annonces, tout le film | Du coffre, un débit lent, et surtout la capacité à rester sérieux. Voir le test en 2 min dans `02-concept.md`. | | ⬜ |
-| 🟠 2 | **Présentateur·rice duty free** | 4:30 | Quelqu'un qui n'a pas peur du ridicule, énergie de téléachat, joue fort | | ⬜ |
-| 🟠 3 | **Voix du documentaire animalier** | 3:00 | Voix calme, posée, émerveillée. Peut être la même personne que le commandant si elle sait changer de registre. | | ⬜ |
-| 🟢 4 | **Tour de contrôle** (optionnel) | Décollage et atterrissage | Deux phrases, voix radio, un casque ou des écouteurs à l'image | | ⬜ |
-
-## Les séquences et leurs intervenants
+Version 3, avec les vraies personnes. Coche au fur et à mesure.
 
 Statuts : ⬜ pas contacté · 📨 brief envoyé · ✅ confirmé · 🎬 vidéo reçue · ✔️ validée · ❌ ne participe pas
 
-| Temps | Séquence | Qui | Registre | Durée | Statut | Reçu le | Notes |
-|---|---|---|---|---|---|---|---|
-| 0:30 | Consignes de sécurité | La fratrie (toi + ?) | 🟡 | 45 s | ⬜ | | Combien vous êtes ? |
-| 1:15 | Décollage Nîmes 1996 | Papa + Maman | 🔵 | 45 s | ⬜ | | + les archives photo |
-| 2:00 | Escale Blagnac | Collègue de l'alternance | 🟡 | 30 s | ⬜ | | Prénom ? contact ? |
-| 2:30 | Escale Marignane | Les 2 d'Airbus Helicopters | Mixte | 30 s | ⬜ | | Prénoms ? |
-| 3:00 | Turbulences | Voix off + plans voiture | 🟡 | 30 s | ⬜ | | Tournage à l'arrêt |
-| 3:30 | Escale Pointe-à-Pitre | [beau-frère] | 🔵 | 30 s | ⬜ | | Décalage horaire |
-| 4:00 | Cabine, classe éco | Les cousins | 🟡 | 30 s | ⬜ | | Combien ? une seule prise |
-| 4:30 | Duty free | Présentateur + objets | 🟡 | 30 s | ⬜ | | 3 ou 4 objets gardés |
-| 5:00 | Présidence | Mamie | 🔵 | 30 s | ⬜ | | Quelqu'un doit la filmer |
-| 5:30 | Perte de signal | Tout le monde | 🟡 | 30 s | ⬜ | | 3 s par personne |
-| 6:00 | Terminal Maternité | [fille] (filmée par [mari]) | 🔵 | 30 s | ⬜ | | Protocole selon l'âge |
-| 6:30 | Atterrissage | Tout le monde | Fête | 30 s | ⬜ | | 1 chiffre par personne |
+## Les rôles pourvus
 
-## Le compte à rebours de l'atterrissage
+| Rôle | Séquences | Qui | Statut |
+|---|---|---|---|
+| **Commandant de bord** | Les 8 annonces | **Nathan**, voix traitée | ✅ |
+| **Chef d'équipage sécurité** | 0:30 | **Nathan et Coralie** | ✅ |
+| **Premiers pilotes** | 1:15 | **Véronique** et **Serge** | ⬜ |
+| **Ancien copilote, promotion** | 2:00 | **Julien** | ⬜ |
+| **Équipe technique Marignane** | 2:30 | **Hervé** et **Julien** | ⬜ |
+| **Chef d'escale Pointe-à-Pitre** | 3:30 | **Sébastien** | ⬜ |
+| **Présidente du conseil** | 5:00 | **Mamie Christiane** | ⬜ |
+| **Plus jeune passagère** | 6:00 | **Joséphine**, filmée par **Célestin** | ⬜ |
+| **Passager 1A, siège voisin** | 6:00 | **Célestin** | ⬜ |
+| **Cabine classe éco** | 4:00 | Les cousins, **Guy**, **Marité**, **Paul** | ⬜ |
 
-Un chiffre par personne, 10 à 1, puis tout le monde. À attribuer, en gardant les plus expressifs pour la fin.
+## Les deux rôles encore à pourvoir
+
+| Priorité | Rôle | Séquence | Ce qu'il faut | Candidats |
+|---|---|---|---|---|
+| 🔴 | **Présentateur duty free** | 4:30 | Quelqu'un de cabotin, qui surjoue sans complexe, sans peur du ridicule | |
+| 🟠 | **Voix du documentaire animalier** | 3:00 | Voix calme, posée, émerveillée. Peut être Nathan, avec un traitement différent des annonces | |
+
+## Suivi par séquence
+
+| Temps | Séquence | Qui | Durée | Statut | Reçu le | Notes |
+|---|---|---|---|---|---|---|
+| 0:30 | Consignes de sécurité | Nathan, Coralie | 45 s | ⬜ | | à tourner ensemble |
+| 1:15 | Décollage Nîmes | Véronique | 25 s | ⬜ | | clip séparé |
+| 1:15 | Décollage Nîmes | Serge | 25 s | ⬜ | | clip séparé |
+| 2:00 | Escale École | Julien | 30 s | ⬜ | | clip 1 sur 2 |
+| 2:30 | Escale Marignane | Hervé | 30 s | ⬜ | | l'anglais, la cheminée |
+| 2:30 | Escale Marignane | Julien | 20 s | ⬜ | | clip 2 sur 2, autre décor |
+| 3:00 | Turbulences | voix off + plans | 35 s | ⬜ | | parking, voiture à l'arrêt |
+| 3:30 | Escale PTP | Sébastien | 30 s | ⬜ | | briefer très tôt |
+| 4:00 | Cabine éco | cousins + Guy, Marité, Paul | 30 s | ⬜ | | une seule prise, partie de Uno |
+| 4:30 | Duty free | présentateur | 30 s | ⬜ | | 3 ou 4 produits gardés |
+| 5:00 | Présidence | Christiane | 30 s | ⬜ | | filmée chez elle |
+| 5:30 | Perte de signal | tout le monde | 30 s | ⬜ | | 3 s par personne |
+| 6:00 | Terminal Maternité | Célestin, Joséphine | 30 s | ⬜ | | |
+| 6:30 | Atterrissage | tout le monde | 30 s | ⬜ | | 1 chiffre par personne |
+
+## Le compte à rebours
+
+Proposition de départ. Les plus expressifs vers la fin, et le 1 pour Joséphine.
 
 | Chiffre | Qui | Statut |
 |---|---|---|
-| 10 | | ⬜ |
-| 9 | | ⬜ |
-| 8 | | ⬜ |
-| 7 | | ⬜ |
-| 6 | | ⬜ |
-| 5 | | ⬜ |
-| 4 | | ⬜ |
-| 3 | | ⬜ |
-| 2 | | ⬜ |
-| 1 | | ⬜ |
+| 10 | Hervé | ⬜ |
+| 9 | Julien | ⬜ |
+| 8 | Paul | ⬜ |
+| 7 | Guy | ⬜ |
+| 6 | Marité | ⬜ |
+| 5 | Sébastien | ⬜ |
+| 4 | Coralie | ⬜ |
+| 3 | Véronique et Serge | ⬜ |
+| 2 | Christiane | ⬜ |
+| 1 | **Joséphine** | ⬜ |
+| Tous | « Joyeux anniversaire Océane ! » | ⬜ |
 
-## Annuaire des participants
+Les cousins et tous ceux qui n'ont pas de chiffre passent dans le final collectif, où tout le monde tient.
 
-| # | Prénom | Lien | Séquence | À l'aise en caméra ? | Statut | Notes |
-|---|---|---|---|---|---|---|
-| 1 | | Père | 1:15 | | ⬜ | |
-| 2 | | Mère | 1:15 | | ⬜ | |
-| 3 | | Mari | 6:00 + archives | | ⬜ | allié n°1 |
-| 4 | | Fille | 6:00 | | ⬜ | |
-| 5 | Toi | Fratrie | 0:30 | | ⬜ | |
-| 6 | | Fratrie | 0:30 | | ⬜ | |
-| 7 | | Mamie | 5:00 | | ⬜ | à filmer sur place |
-| 8 | | Beau-frère, Guadeloupe | 3:30 | | ⬜ | |
-| 9 | | Collègue Blagnac | 2:00 | | ⬜ | |
-| 10 | | Collègue Marignane | 2:30 | | ⬜ | |
-| 11 | | Collègue Marignane | 2:30 | | ⬜ | |
-| 12 | | Cousin·e | 4:00 | | ⬜ | |
-| … | | | | | | |
+## La perte de signal
+
+Une phrase par personne, 3 secondes. À répartir :
+
+| Phrase à imiter | Qui | Statut |
+|---|---|---|
+| Le « Allô » | | ⬜ |
+| Le « Allô » | | ⬜ |
+| Le « Allô » | | ⬜ |
+| Le « yes » en réunion en anglais | | ⬜ |
+| « Je gère très bien mes émotions » | | ⬜ |
+| « J'ai perdu mes clés » | | ⬜ |
+| Autre | | ⬜ |
 
 ## Compteur
-- Rôles prioritaires pourvus : 0 / 4
+- Rôles pourvus : 10 sur 12
 - Contactés : 0
 - Vidéos reçues : 0
-- Durée cumulée reçue : 0 s (cible : 5 min de rushs pour 7 min de film, le reste c'est le commandant et les cartons)
+- Durée cumulée reçue : 0 s (cible : environ 5 minutes de rushs, le reste c'est le commandant et les cartons)
+
+## Ce qui manque encore
+- Un **présentateur pour le duty free**. C'est le rôle le plus fun du film, quelqu'un se portera volontaire.
+- Une **amie d'enfance**. Julien couvre l'école, mais il n'y a toujours aucune amie dans le film alors qu'elle est décrite comme très amis.
+- Les **cousins** : combien, et lesquels sont réunissables le même jour.

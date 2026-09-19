@@ -1,75 +1,70 @@
 # Concept — Océane Airlines, vol OC 1996
 
-Version 2 du 19 septembre. Cette version remplace la V1 de 12 minutes : on passe à **7 minutes**, structure resserrée, alternance sincère/gag calée.
+Version 3, avec les vraies personnes et les vraies anecdotes. Les faits de référence sont dans `08-fiche-oceane.md`.
 
 ## L'idée en trois lignes
-Océane embarque sur le vol OC 1996 de la compagnie Océane Airlines, destination : ses 30 ans. La famille et les amis sont l'équipage et les passagers. Le vol suit sa vraie géographie, Nîmes, Blagnac, Marignane, Pointe-à-Pitre, et atterrit sur un compte à rebours collectif.
+Océane embarque sur le vol OC 1996 de la compagnie Océane Airlines, destination : ses 30 ans. La famille et les collègues sont l'équipage et les passagers. Le vol suit sa vraie géographie, Nîmes, l'école, Marignane, Pointe-à-Pitre, et atterrit sur un compte à rebours collectif.
 
-## Pourquoi 7 minutes et pas 12
-Une vidéo d'anniversaire perd la salle vers 8 minutes, quelle que soit sa qualité. À 7 minutes, chaque séquence doit mériter sa place, et personne ne regarde son téléphone. C'est aussi une contrainte utile au montage : quand on doit couper, on coupe.
+## Pourquoi 7 minutes
+Une vidéo d'anniversaire perd la salle vers 8 minutes, quelle que soit sa qualité. À 7 minutes, chaque séquence doit mériter sa place. C'est aussi une contrainte utile au montage : quand on doit couper, on coupe.
 
 ## Le déroulé
 
-| Temps | Séquence | Contenu | Registre |
+| Temps | Séquence | Qui | Registre |
 |---|---|---|---|
-| 0:00 | Générique Océane Airlines | Panneau d'aéroport, destinations qui défilent, annonce d'embarquement | Mise en place |
-| 0:30 | Consignes de sécurité | La fratrie, en gilet jaune. Donne le ton : on va se moquer | 🟡 Gag |
-| 1:15 | Décollage, Nîmes 1996 | Les parents, avec les photos d'archives | 🔵 Sincère |
-| 2:00 | Escale Blagnac | Le collègue de l'alternance | 🟡 Gag |
-| 2:30 | Escale Marignane | Les deux d'Airbus Helicopters | Mixte |
-| 3:00 | Turbulences | Sa conduite, en documentaire animalier | 🟡 Gag |
-| 3:30 | Escale Pointe-à-Pitre | Le beau-frère | 🔵 Sincère |
-| 4:00 | Cabine, classe éco | Les cousins, tous ensemble, dans le bazar | 🟡 Gag |
+| 0:00 | Générique | Panneau des départs, annonce d'embarquement | Mise en place |
+| 0:30 | Consignes de sécurité | Nathan et Coralie, en gilet jaune | 🟡 Gag |
+| 1:15 | Décollage, Nîmes 1996 | Véronique et Serge, clips séparés | 🔵 Sincère |
+| 2:00 | Escale École | Julien, même promotion | 🟡 Gag |
+| 2:30 | Escale Marignane | Hervé et Julien | Mixte |
+| 3:00 | Turbulences | La trilogie du trottoir, en documentaire animalier | 🟡 Gag |
+| 3:30 | Escale Pointe-à-Pitre | Sébastien, chef d'escale | 🔵 Sincère |
+| 4:00 | Cabine, classe éco | Une partie de Uno qui dégénère | 🟡 Gag |
 | 4:30 | Duty free | Téléachat des objets qui la résument | 🟡 Gag |
-| 5:00 | Présidence de la compagnie | Mamie valide le vol | 🔵 Sincère |
-| 5:30 | Perte de signal | Rafale de ses expressions fétiches | 🟡 Gag |
-| 6:00 | Terminal Maternité | Sa fille | 🔵 Sincère |
-| 6:30 | Atterrissage | Tout le monde, compte à rebours à plusieurs voix | Fête |
-| 7:00 | Dernier carton | Prochaine destination | Chute |
+| 5:00 | Présidence de la compagnie | Mamie Christiane | 🔵 Sincère |
+| 5:30 | Perte de signal | Le « Allô », l'anglais, les imitations | 🟡 Gag |
+| 6:00 | Terminal Maternité | Célestin et Joséphine | 🔵 Sincère |
+| 6:30 | Atterrissage | Compte à rebours à plusieurs voix | Fête |
+| 7:00 | Carton final | Pointe-à-Pitre, décembre 2026 | Chute |
 
 ## Les deux principes non négociables
 
-**1. Alternance stricte.** Jamais deux séquences sincères d'affilée, jamais deux gags d'affilée. C'est ce qui empêche la vidéo de retomber : l'émotion ne s'installe pas assez pour devenir pesante, le rire ne s'épuise pas. Si une séquence saute au montage, il faut vérifier que l'alternance tient encore, quitte à réordonner.
+**1. Alternance stricte.** Jamais deux séquences sincères d'affilée, jamais deux gags d'affilée. L'émotion n'a pas le temps de devenir pesante, le rire ne s'épuise pas.
 
-**2. Le gag de la valise.** Chaque intervenant, sans exception, termine son clip par « Et dans sa valise, je mets… ». Trois effets : ça donne une chute à chaque clip au lieu d'un silence gêné, ça crée un rythme reconnaissable, et ça permet de couper n'importe quel clip à la seconde près sans casser le montage. C'est la meilleure idée de la structure : elle doit figurer dans chaque brief, en gras.
+**2. Le gag de la valise.** Chaque intervenant termine son clip par « Et dans sa valise, je mets… ». Trois effets : une chute à chaque clip au lieu d'un silence gêné, un rythme reconnaissable, et un point de coupe qui permet de raccourcir n'importe quel clip sans casser le montage.
 
-## La voix du commandant de bord
-Elle revient **huit fois** et tient toute la vidéo. C'est le seul rôle qu'on ne peut pas rater.
+## La voix du commandant
+C'est **Nathan**, avec un traitement de voix. Elle revient huit fois et tient tout le film.
 
-Ce qu'il faut : un vrai coffre, un débit lent, et surtout quelqu'un qui accepte de jouer **le sérieux absolu**. Pas un clin d'œil, pas un sourire dans la voix, pas un rire à la fin de la prise. C'est le contraste entre le ton d'annonce réelle et le contenu qui fait rire. Quelqu'un qui « joue le drôle » tue la séquence.
+Le ton : **sérieux absolu de compagnie aérienne**. Pas un clin d'œil, pas un sourire dans la voix, pas un rire en fin de prise. Le texte est drôle tout seul. Une voix qui cherche à être drôle tue la séquence.
 
-Test en deux minutes pour choisir : fais lire à la personne une annonce d'aéroport banale, puis une des huit annonces. Si le ton ne change pas entre les deux, c'est la bonne personne.
+Le traitement, trois réglages dans Audacity, détaillés dans `07-montage.md` : filtre passe-haut à 300 Hz, passe-bas à 3400 Hz, un peu de compression. C'est exactement la bande passante d'une radio de cabine. Ça fait aussi un travail invisible : personne ne fera le lien entre le commandant et le Nathan en gilet jaune des consignes de sécurité.
 
-Gag récurrent : Océane Airlines n'opère pas d'hélicoptères, et la compagnie s'en excuse. Exactement trois fois, dans les annonces 4, 6 et 8. Pas une de plus, sinon il s'use.
+Gag récurrent : Océane Airlines n'opère pas d'hélicoptères, et la compagnie s'en excuse. Exactement trois fois, aux annonces 4, 6 et 8.
 
-## Le trou du déroulé, à trancher
+## Les trois pépites du film
 
-Tu m'as dit qu'elle est très famille **et très amis**. Or le déroulé ne contient aucun ami : la famille, deux collègues, un beau-frère, et c'est tout. C'est le seul vrai manque de la structure.
+**La trilogie du trottoir.** Un trottoir en roulant, un deuxième dans un parking qui lui coûte le parallélisme, et le moteur qui s'éteint sur l'autoroute avec l'appel à Célestin en pleurs. Trois actes, c'est exactement la structure d'un documentaire animalier : l'observation, la récidive, l'épilogue.
 
-Une amie d'enfance, quelqu'un qui la connaît depuis avant ses quinze ans, c'est souvent le meilleur clip d'une vidéo comme celle-ci. Trois façons de lui faire une place :
-1. **Lui donner l'escale Blagnac**, si le collègue de l'alternance est difficile à joindre ou si cette période n'est pas un bon souvenir.
-2. **Ouvrir une escale en plus**, et accepter 7 minutes 30.
-3. **La glisser dans la perte de signal et le compte à rebours**, sans escale à elle. C'est le repli, et c'est dommage.
+**La cheminée.** En réunion, son chef lui demande en anglais si elle veut mettre une cheminée. Elle dit oui pour donner le change. Elle n'avait rien compris. C'est la meilleure anecdote du lot, parce qu'elle est visuelle, rejouable, et qu'elle ne blesse personne. Elle est d'autant plus drôle qu'elle est passée experte et qu'elle présente devant presque le PDG.
 
-Dis-moi ce que tu préfères, c'est la question 20 de `17-questions.md`.
+**La boucle Guadeloupe.** Sébastien pose le retour de Noël à 3:30. Le carton final y répond à 7:00. Quatre minutes d'écart, et la vidéo a l'air écrite plutôt que compilée.
 
-## Le numéro de vol
-**OC 1996**, prononcé « O C mille neuf cent quatre-vingt-seize ». Ses initiales et son année de naissance. Une fois les annonces enregistrées, on ne le change plus.
+## Ce qui en fait un film
+- Le « ding » de cabine avant chaque annonce.
+- Les cartons d'escale, même style, avec les codes d'aéroport : NIM, MRS, PTP.
+- La phrase de la valise, treize fois.
+- Une seule voix qui tient tout.
+- Le compte à rebours final, qui donne l'impression que tout le monde est dans la même pièce.
 
-À noter : j'ai écarté le 0911, le 9 novembre écrit à l'américaine, qui paraissait évident. Sur une vidéo d'avion, la salle entend le 11 septembre, et le rire se coupe net.
+## Le trou qui reste
+Océane est décrite comme très famille **et très amis**. Le déroulé ne contient aucune amie : de la famille, deux collègues, un beau-frère. Julien couvre l'école, mais c'est un collègue. Une amie d'enfance, c'est souvent le meilleur clip d'une vidéo comme celle-ci. C'est la question 6 de `17-questions.md`.
 
-## Ce qui en fait un film et pas une compilation
-- Le **« ding »** de cabine avant chaque annonce.
-- Les **cartons de séquence**, tous dans le même style panneau d'aéroport, avec le code de l'aéroport réel : NIM pour Nîmes, TLS pour Blagnac, MRS pour Marignane, PTP pour Pointe-à-Pitre.
-- La **phrase de la valise**, qui revient à chaque clip.
-- Le **commandant**, une seule voix qui tient tout.
-- Le **compte à rebours** final à plusieurs voix, qui donne l'impression que tout le monde est dans la même pièce.
-
-## Les blocs de script détaillés
-- `10-annonces-commandant.md` — les 8 annonces, prêtes à enregistrer
-- `11-consignes-securite.md` — le sketch de la fratrie
+## Les blocs de script
+- `10-annonces-commandant.md` — les 8 annonces, et comment enregistrer
+- `11-consignes-securite.md` — Nathan et Coralie
 - `12-duty-free.md` — le téléachat
 - `13-turbulences-conduite.md` — le documentaire animalier
-- `14-sequences-collectives.md` — cabine éco, perte de signal, atterrissage, carton final
-- `15-briefs-escales.md` — ce qu'on demande à chaque intervenant, escale par escale
-- `16-messages-famille-v2.md` — les messages WhatsApp calés sur cette structure
+- `14-sequences-collectives.md` — Uno, perte de signal, atterrissage, carton final
+- `15-briefs-escales.md` — le message à envoyer à chaque personne
+- `16-messages-famille-v2.md` — les messages WhatsApp
