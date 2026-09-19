@@ -17,7 +17,18 @@
 | `10-carton-perte-signal.png` | Perte de signal, 5:30 |
 | `11-carton-maternite.png` | Terminal Maternité, 6:00 |
 | `12-carton-final.png` | Carton final, 7:00 |
+| `12b-carton-meme-equipage.png` | La toute dernière image, après une seconde de noir |
 | `13-carte-embarquement.png` | Bonus, à imprimer et faire signer |
+
+## La fin en deux temps
+
+Le film ne se termine pas sur un carton mais sur deux, séparés par **une seconde de noir complet**.
+
+1. `12-carton-final.png`, quatre secondes. On sort sur un rire : la compagnie n'a toujours pas d'hélicoptères, et c'est la seule experte en hélicoptères de la salle qui le lit.
+2. Une seconde de noir. Le rire retombe.
+3. `12b-carton-meme-equipage.png`, trois secondes. Deux mots seuls au milieu de l'écran. Ils ne parlent plus du voyage, ils parlent d'eux trois. Ça dit « on sera encore tous là » sans avoir à le dire.
+
+C'est la seule chose du montage où l'ordre compte vraiment. Le rire d'abord, le silence ensuite. Jamais l'inverse.
 
 ## Comment les utiliser dans iMovie
 Glisse le PNG sur la timeline comme une photo. Durée conseillée : **2 secondes pour un carton d'escale**, 3 secondes pour le logo et le panneau des départs, 4 secondes pour le carton final.

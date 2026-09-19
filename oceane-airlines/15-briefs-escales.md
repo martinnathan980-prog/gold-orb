@@ -342,11 +342,16 @@ Il arrive juste après les turbulences, donc juste après le gros gag de la cond
 
 Ils y sont allés une fois, et ils y retournent à Noël. **C'est lui qui ferme le film.** Le dernier carton annonce la prochaine destination, Pointe-à-Pitre, décembre 2026. Donc son clip doit boucler là-dessus.
 
-**Demande-lui deux fins, enregistrées l'une après l'autre**, dans la même prise :
-1. La phrase valise, comme tout le monde.
-2. Puis, séparément, une phrase courte du genre « et de toute façon, en décembre, c'est nous qui vous attendons ici ».
+**Demande-lui trois fins, enregistrées à la suite dans la même prise.** Ça ne lui coûte que trente secondes de plus, et ça te laisse le choix au montage :
+1. **La phrase valise**, comme tout le monde.
+2. **La question**, juste après : « Et toi, tu viens quand ? » Elle reste à sa place, à 3:30.
+3. **La réponse**, séparément : « et de toute façon, en décembre, c'est nous qui vous attendons ici ».
 
-La deuxième, tu la sors de son clip au montage et tu la poses à 7:00, juste avant le dernier carton. C'est la seule voix du film qui revient à la fin, et c'est la meilleure façon d'arriver sur la vraie nouvelle.
+Au montage, deux options. Soit tu gardes la question à 3:30 et tu laisses **le carton final y répondre** trois minutes et demie plus tard, sans revoir Sébastien. Soit tu déplaces sa phrase 3 à 7:00, juste avant le carton, et sa voix est la dernière du film.
+
+La première est plus forte : une question posée au milieu, une réponse à la toute fin, et entre les deux le spectateur a oublié qu'il attendait quelque chose. La deuxième est plus chaleureuse. Tu trancheras à l'ours, quand tu auras le rythme sous les yeux. Comme tu as les deux prises, tu ne peux pas te tromper.
+
+> ⚠️ Si « tu viens quand » ne se dit pas comme ça chez lui, deux variantes sont proposées dans `14-sequences-collectives.md`.
 
 ## L'atout : le décalage et le décor
 

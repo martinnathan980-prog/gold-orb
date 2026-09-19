@@ -178,6 +178,15 @@ def boarding_pass():
     print("  13-carte-embarquement.png")
 
 
+def meme_equipage():
+    """Le second carton final, apres une seconde de noir. Deux mots, rien d'autre."""
+    img = Image.new("RGB", (W, H), (4, 10, 17))
+    d = ImageDraw.Draw(img)
+    draw_tracked(d, (W / 2, H / 2 - 70), "MÊME ÉQUIPAGE", f(FB, 116), GOLD, tracking=14)
+    img.save(os.path.join(OUT, "12b-carton-meme-equipage.png"))
+    print("  12b-carton-meme-equipage.png")
+
+
 print("Generation des cartons :")
 logo()
 board()
@@ -193,6 +202,8 @@ card("08-carton-duty-free.png", "VENTE À BORD", "BOUTIQUE HORS TAXES", "OFFRES 
 card("09-carton-presidence.png", "DIRECTION", "CONSEIL D'ADMINISTRATION", "SÉANCE EXCEPTIONNELLE")
 card("10-carton-perte-signal.png", "", "PERTE DE SIGNAL", "TRANSMISSION INTERROMPUE", accent=RED)
 card("11-carton-maternite.png", "ARRIVÉES", "TERMINAL MATERNITÉ", "PLUS JEUNE PASSAGÈRE")
-card("12-carton-final.png", "PROCHAINE DESTINATION", "POINTE-À-PITRE", "DÉCEMBRE 2026", accent=GOLD)
+card("12-carton-final.png", "PROCHAINE DESTINATION", "POINTE-À-PITRE",
+     "DÉCEMBRE 2026   ///   TOUJOURS PAS D'HÉLICOPTÈRES", accent=GOLD)
+meme_equipage()
 boarding_pass()
 print("Termine.")
