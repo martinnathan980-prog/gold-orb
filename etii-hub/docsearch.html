@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/skin.css">
+  <link rel="stylesheet" href="assets/css/modules.css">
 
   <!-- =======================================================================
        Styles propres à CETTE page uniquement.
@@ -379,10 +380,10 @@
     .ds-tuile {
       inline-size: 100%;
       block-size: 100%;
-      align-items: flex-start;
+      align-items: center;
       gap: var(--e-2);
-      padding: var(--e-4);
-      text-align: start;
+      padding: var(--e-6) var(--e-4) var(--e-5);
+      text-align: center;
       font-family: var(--police);
       font-size: var(--texte-md);
     }
@@ -394,8 +395,9 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      inline-size: var(--e-8);
-      block-size: var(--e-8);
+      inline-size: var(--e-10);
+      block-size: var(--e-10);
+      margin-block-end: var(--e-1);
       background-color: var(--fond-enfonce);
       color: var(--texte-doux);
       border: 1px solid var(--bordure-douce);
@@ -409,8 +411,8 @@
     }
 
     .ds-icone {
-      inline-size: var(--e-5);
-      block-size: var(--e-5);
+      inline-size: var(--e-6);
+      block-size: var(--e-6);
     }
 
     .ds-tuile__nom {
@@ -421,7 +423,8 @@
     }
 
     .ds-tuile__compte {
-      margin-block-start: auto;
+      margin-block-start: 0;
+      font-family: var(--police-mono);
       color: var(--texte-doux);
       font-size: var(--texte-xs);
       font-variant-numeric: tabular-nums;
@@ -528,9 +531,9 @@
 
     .ds-grille {
       display: grid;
-      gap: var(--e-5);
+      gap: var(--e-4);
       grid-template-columns: repeat(
-        auto-fit, minmax(min(calc(var(--e-16) * 5), 100%), 1fr)
+        auto-fit, minmax(min(calc(var(--e-16) * 4.2), 100%), 1fr)
       );
       margin: 0;
       padding: 0;
@@ -538,6 +541,10 @@
     }
 
     .ds-grille[hidden] { display: none; }
+
+    /* La ligne « Correspond dans… » reste dans l'arbre d'accessibilité mais
+       n'occupe plus la carte : l'écran reste épuré. */
+    .ds-carte > .ds-carte__meta { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
     /* --- C3. Carte de résultat ------------------------------------------- */
 

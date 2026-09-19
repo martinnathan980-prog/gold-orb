@@ -5,48 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Espace de pôle — ETII Hub</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Espace d’un pôle du service ETII : la communication du pôle, son organigramme en résumé et ses questions fréquentes.">
+  <meta name="description" content="Espace d’un pôle du service ETII : sa communication, ses réunions, son organigramme et ses questions fréquentes.">
   <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="assets/css/polices.css">
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/skin.css">
+  <link rel="stylesheet" href="assets/css/modules.css">
 
   <!-- =====================================================================
-       Styles du gabarit d'espace de pôle.
-
-       Les trois pages etiia / etiie / etiii partagent ce fichier au
-       caractère près : seuls changent l'attribut data-pole de <body> et le
-       lien de navigation marqué comme courant. Une correction se fait donc
-       une fois, pas trois.
-
-       On ne déclare ici que ce qu'aucune classe de base.css,
-       components.css ou skin.css ne couvre : l'en-tête au filet coloré, la
-       frise de communication, et la mention d'un champ vide. Toutes les
-       valeurs viennent de tokens.css — aucune couleur, aucune dimension,
-       aucune durée en dur.
+       Styles propres aux trois espaces de pôle. Les composants (kiosque,
+       lecteur, arbre, sous-navigation) vivent dans modules.css ; on ne
+       déclare ici que le paramètre de page et l'en-tête au filet coloré.
+       Aucune valeur brute — tout vient de tokens.css.
        ===================================================================== -->
   <style>
-    /* --- Le paramètre de page, en CSS -----------------------------------
-       data-pole est le seul paramètre de ces trois pages. Il fixe ici la
-       couleur du pôle : le filet est donc déjà juste avant le premier
-       octet de JavaScript, et le reste s'il ne vient jamais. La valeur de
-       repli est le gris de niveau service. */
     body { --couleur-pole: var(--pole-etii); }
     body[data-pole="ETIIA"] { --couleur-pole: var(--pole-etiia); }
     body[data-pole="ETIIE"] { --couleur-pole: var(--pole-etiie); }
     body[data-pole="ETIII"] { --couleur-pole: var(--pole-etiii); }
 
-    /* --- En-tête de l'espace --------------------------------------------
-       Un filet dans la couleur du pôle, et son libellé juste à côté : la
-       couleur ne dit jamais rien toute seule. C'est la seule couleur vive
-       de l'écran — tout le reste est en neutres. */
-    .pole-marque {
-      display: flex;
-      align-items: center;
-      gap: var(--e-3);
-    }
+    .pole-marque { display: flex; align-items: center; gap: var(--e-3); }
 
     .pole-marque__filet {
       flex: none;
@@ -57,318 +37,33 @@
     }
 
     .pole-marque__libelle {
-      text-transform: uppercase;
-      letter-spacing: var(--lettrage-etiquette);
+      font-family: var(--police-mono);
       font-size: var(--texte-xs);
-      font-weight: var(--graisse-forte);
-      color: var(--texte-doux);
+      font-weight: var(--graisse-moyenne);
+      letter-spacing: var(--lettrage-etiquette);
+      text-transform: uppercase;
+      color: var(--texte-faible);
     }
 
-    .pole-titre {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: var(--e-2) var(--e-4);
-    }
+    .pole-titre { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--e-2) var(--e-4); }
 
-    /* La métaphore est un sous-titre : même ligne, autre poids. */
     .pole-titre__metaphore {
       font-size: var(--texte-xl);
       font-weight: var(--graisse-normale);
-      letter-spacing: normal;
       color: var(--texte-doux);
     }
 
-    /* Apparition unique de l'en-tête, jamais d'animation permanente : rien
-       ne clignote, rien ne tourne tout seul. Suivant la convention du
-       projet, elle n'existe que si le mouvement est accepté (SPEC §7). */
-    @media (prefers-reduced-motion: no-preference) {
-      .pole-entete {
-        animation: pole-apparition var(--duree) var(--courbe) both;
-      }
+    .accroche { max-width: var(--largeur-texte); color: var(--texte-doux); }
 
-      @keyframes pole-apparition {
-        from { opacity: 0; transform: translateY(calc(var(--e-2) * -1)); }
-        to   { opacity: 1; transform: none; }
-      }
-    }
+    /* La sous-navigation se colle sous la barre du site. */
+    .sous-nav { inset-block-start: calc(var(--cible-tactile) + var(--e-3)); }
 
-    /* --- Champ déclaré mais vide -----------------------------------------
-       Une seule mention, toujours la même, toujours reconnaissable : le
-       hub ne présente jamais une valeur plausible à la place d'un trou. */
-    .champ-manquant {
-      font-style: italic;
-      color: var(--texte-faible);
-    }
-
-    /* Dans une ligne de métadonnées en capitales, la mention garde sa
-       casse : elle doit se reconnaître du premier coup d'œil, partout la
-       même, et ne jamais passer pour une valeur. */
-    .frise__meta .champ-manquant {
-      text-transform: none;
-      letter-spacing: normal;
-      font-weight: var(--graisse-normale);
-    }
-
-    /* --- La frise de communication ---------------------------------------
-       Un rail d'un pixel, un point par entrée, beaucoup d'air. Le point est
-       plein pour ce qui vient, creux pour ce qui est passé : une nuance
-       décorative, puisque l'intitulé du groupe le dit déjà en toutes
-       lettres. */
-    .frise {
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-10);
-    }
-
-    .frise__groupe {
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-5);
-    }
-
-    .frise__entete {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: var(--e-2) var(--e-3);
-    }
-
-    .frise__intitule {
-      font-size: var(--texte-lg);
-    }
-
-    .frise__liste {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    .frise__entree {
-      display: grid;
-      grid-template-columns: var(--e-3) minmax(0, 1fr);
-      column-gap: var(--e-5);
-    }
-
-    /* Le rail relie les points d'une entrée à la suivante. Il s'arrête de
-       lui-même sur la dernière : la frise ne pend pas dans le vide. */
-    .frise__rail {
-      position: relative;
-      display: block;
-    }
-
-    .frise__rail::before {
-      content: "";
-      position: absolute;
-      inset-block: 0;
-      inset-inline-start: 50%;
-      inline-size: 1px;
-      transform: translateX(-50%);
-      background-color: var(--bordure);
-    }
-
-    .frise__entree:first-child .frise__rail::before { inset-block-start: var(--e-3); }
-    .frise__entree:last-child  .frise__rail::before { inset-block-end: calc(100% - var(--e-3)); }
-
-    .frise__point {
-      position: absolute;
-      inset-block-start: var(--e-2);
-      inset-inline-start: 50%;
-      transform: translateX(-50%);
-      inline-size: var(--e-3);
-      block-size: var(--e-3);
-      border-radius: var(--rayon-plein);
-      border: 1px solid var(--bordure-forte);
-      background-color: var(--fond);
-    }
-
-    .frise__entree--a-venir .frise__point {
-      border-color: var(--couleur-pole);
-      background-color: var(--couleur-pole);
-    }
-
-    .frise__corps {
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-2);
-      padding-block-end: var(--e-8);
-    }
-
-    .frise__entree:last-child .frise__corps { padding-block-end: 0; }
-
-    .frise__meta {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: var(--e-2) var(--e-3);
-      font-size: var(--texte-xs);
-      font-weight: var(--graisse-forte);
-      letter-spacing: var(--lettrage-etiquette);
-      text-transform: uppercase;
-      color: var(--texte-faible);
-    }
-
-    /* Séparateur entre la date et le type : un point médian, posé par le
-       CSS, jamais glissé dans le texte de la donnée. */
-    .frise__type::before {
-      content: "·";
-      margin-inline-end: var(--e-3);
-      color: var(--bordure-forte);
-    }
-
-    .frise__titre {
-      font-size: var(--texte-lg);
-      font-weight: var(--graisse-forte);
-      letter-spacing: var(--lettrage-titre);
-      line-height: var(--interligne-serre);
-      text-wrap: balance;
-    }
-
-    /* Le lien du titre reste du texte : pas de soulignement permanent, un
-       soulignement au survol et au focus, et un anneau de focus net. */
-    .frise__lien {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    .frise__lien:hover { text-decoration: underline; }
-
-    .frise__lien:focus-visible {
-      outline: var(--focus-epaisseur) solid var(--focus-couleur);
-      outline-offset: var(--focus-decalage);
-      border-radius: var(--rayon-sm);
-    }
-
-    .frise__resume {
-      max-inline-size: var(--largeur-texte);
-      color: var(--texte-doux);
-    }
-    /* --- L'équipe du pôle : la tête, puis les squads en volets -------------
-       Des <details> natifs. Le chevron est un simple coin tourné ; il
-       pivote à l'ouverture. Identifiants, effectifs et périmètres en mono. */
-    .equipe__tete {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: var(--e-2) var(--e-3);
-      padding: var(--e-3) var(--e-4);
-      background-color: var(--carte-fond);
-      border: 1px solid var(--carte-bord);
-      border-radius: var(--rayon-lg);
-      box-shadow: inset 3px 0 0 var(--couleur-pole);
-    }
-
-    .equipe__id, .equipe__perimetre,
-    .squad__id, .squad__effectif, .squad__membre-perimetre {
-      font-size: var(--texte-xs);
-      color: var(--texte-faible);
-    }
-
-    .equipe__nom { font-weight: var(--graisse-forte); }
-    .equipe__poste { font-size: var(--texte-sm); color: var(--texte-doux); }
-    .equipe__perimetre { margin-inline-start: auto; }
-
-    .equipe__squads { display: grid; gap: var(--e-2); }
-
-    .squad,
-    .faq-apercu__entree {
-      background-color: var(--carte-fond);
-      border: 1px solid var(--carte-bord);
-      border-radius: var(--rayon-lg);
-    }
-
-    .squad__resume,
-    .faq-apercu__question {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: var(--e-2) var(--e-3);
-      padding: var(--e-3) var(--e-4);
-      cursor: pointer;
-      list-style: none;
-      border-radius: var(--rayon-lg);
-    }
-
-    .squad__resume::-webkit-details-marker,
-    .faq-apercu__question::-webkit-details-marker { display: none; }
-
-    .squad__resume:hover,
-    .faq-apercu__question:hover { background-color: var(--carte-survol); }
-
-    .chevron {
-      flex: none;
-      align-self: center;
-      inline-size: var(--e-2);
-      block-size: var(--e-2);
-      margin-inline-end: var(--e-1);
-      border-inline-end: 1px solid var(--texte-faible);
-      border-block-end: 1px solid var(--texte-faible);
-      transform: translateY(-2px) rotate(-45deg);
-    }
-
-    details[open] > summary .chevron { transform: translateY(-3px) rotate(45deg); }
-
-    @media (prefers-reduced-motion: no-preference) {
-      .chevron { transition: transform var(--duree-rapide) var(--courbe); }
-    }
-
-    .squad__nom { font-weight: var(--graisse-forte); }
-
-    .squad__lead {
-      margin-inline-start: auto;
-      font-size: var(--texte-sm);
-      color: var(--texte-doux);
-    }
-
-    .squad__membres {
-      list-style: none;
-      margin: 0;
-      padding: 0 var(--e-4) var(--e-3);
-      border-top: 1px solid var(--bordure-douce);
-    }
-
-    .squad__membre {
-      display: grid;
-      grid-template-columns: calc(var(--e-8) + var(--e-3)) minmax(0, 1.2fr) minmax(0, 1fr) calc(var(--e-16) * 1.2);
-      gap: var(--e-3);
-      align-items: baseline;
-      padding: var(--e-2) 0;
-      border-bottom: 1px solid var(--bordure-douce);
-      font-size: var(--texte-sm);
-    }
-
-    .squad__membre:last-child { border-bottom: 0; }
-    .squad__membre--lead .squad__membre-nom { font-weight: var(--graisse-forte); }
-    .squad__membre-poste { color: var(--texte-doux); }
-    .squad__membre-perimetre { text-align: end; }
-    .squad__vide { padding: 0 var(--e-4) var(--e-3); }
-
-    @media (max-width: 640px) {
-      .squad__membre { grid-template-columns: auto minmax(0, 1fr); }
-      .squad__membre-poste { grid-column: 2; }
-    }
-
-    /* --- Aperçu de la FAQ : des questions qui se déplient ------------------ */
-    .faq-apercu { display: grid; gap: var(--e-2); }
-
-    .faq-apercu__intitule { flex: 1 1 auto; font-weight: var(--graisse-forte); }
-
-    .faq-apercu__reponse {
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-3);
-      padding: 0 var(--e-4) var(--e-4) calc(var(--e-4) + var(--e-2) + var(--e-1) + var(--e-3));
-      font-size: var(--texte-sm);
-      color: var(--texte-doux);
-    }
-
-    .faq-apercu__lien { font-size: var(--texte-sm); }
-
+    /* Une section est repérée par la sous-navigation : on laisse de l'air
+       au-dessus de son titre quand on y saute. */
+    [data-section-pole] { scroll-margin-block-start: calc(var(--cible-tactile) * 2 + var(--e-5)); }
   </style>
 </head>
 
-<!-- Le SEUL paramètre de cette page. assets/js/pole.js le lit, refuse
-     proprement toute valeur inconnue, et construit l'espace correspondant. -->
 <body data-pole="ETIIA">
   <a class="lien-evitement" href="#contenu">Aller au contenu</a>
 
@@ -396,72 +91,46 @@
   <main id="contenu" tabindex="-1">
     <div class="conteneur pile pile--section">
 
-      <!-- ================================================================
-           1. En-tête de l'espace : le code du pôle, sa métaphore, une
-           phrase. Le filet coloré et son libellé sont posés au-dessus.
-
-           Le titre de premier niveau est écrit ici, et non construit en
-           JavaScript : la page en porte donc exactement un, avec ou sans
-           script. pole.js ne fait que le préciser.
-           ================================================================ -->
       <div class="pile pile--serree pole-entete page-entete">
         <p class="pole-marque sans-marge">
           <span class="pole-marque__filet" aria-hidden="true"></span>
           <span class="pole-marque__libelle" id="pole-libelle">Pôle</span>
         </p>
         <h1 class="pole-titre" id="pole-titre">Espace de pôle</h1>
-        <p class="mesure texte-doux sans-marge" id="pole-description">
-          Cet espace rassemble la communication du pôle, son organigramme en
-          résumé et ses questions fréquentes.
+        <p class="accroche sans-marge" id="pole-description">
+          Cet espace rassemble la communication du pôle, ses réunions, son
+          organigramme et ses questions fréquentes.
         </p>
-
-        <!-- Refus d'un paramètre inconnu. Vide et masqué le reste du temps. -->
         <div id="pole-alerte" hidden></div>
       </div>
 
-      <!-- ================================================================
-           2. La communication du pôle — la raison d'être de la page.
-           Frise de l'agenda filtrée sur ce pôle : à venir d'abord, puis
-           les passées en ordre antichronologique.
-           ================================================================ -->
-      <section class="pile" data-section-pole aria-labelledby="titre-communication">
-        <div class="pile pile--serree">
-          <h2 class="sans-marge" id="titre-communication">Communication du pôle</h2>
-          <p class="mesure texte-doux texte-sm sans-marge">
-            Ce qui vient, puis ce qui a été publié. Les communications de
-            niveau service restent sur le tableau de bord ETII.
-          </p>
-        </div>
-        <div class="pile" id="zone-communication"></div>
+      <nav aria-label="Sections de l’espace">
+        <ul class="sous-nav">
+          <li><a href="#section-communication" aria-current="true">Communication</a></li>
+          <li><a href="#section-reunions">Réunions</a></li>
+          <li><a href="#section-organigramme">Organigramme</a></li>
+          <li><a href="#section-faq">FAQ</a></li>
+        </ul>
+      </nav>
+
+      <section class="pile" id="section-communication" data-section-pole aria-labelledby="titre-communication">
+        <h2 class="titre-section" id="titre-communication"><span class="titre-section__texte">Communication</span></h2>
+        <div id="zone-communication"></div>
       </section>
 
-      <!-- ================================================================
-           3. Organigramme en résumé
-           ================================================================ -->
-      <section class="pile" data-section-pole aria-labelledby="titre-organigramme">
-        <div class="pile pile--serree">
-          <h2 class="sans-marge" id="titre-organigramme">Organigramme</h2>
-          <p class="mesure texte-doux texte-sm sans-marge">
-            Le responsable de pôle, ses squads et leur effectif. La vue
-            complète, avec les rôles et les périmètres de chacun, est sur la
-            page dédiée.
-          </p>
-        </div>
-        <div class="pile" id="zone-organigramme"></div>
+      <section class="pile" id="section-reunions" data-section-pole aria-labelledby="titre-reunions">
+        <h2 class="titre-section" id="titre-reunions"><span class="titre-section__texte">Réunions</span></h2>
+        <div id="zone-reunions"></div>
       </section>
 
-      <!-- ================================================================
-           4. Questions fréquentes
-           ================================================================ -->
-      <section class="pile" data-section-pole aria-labelledby="titre-faq">
-        <div class="pile pile--serree">
-          <h2 class="sans-marge" id="titre-faq">Questions fréquentes</h2>
-          <p class="mesure texte-doux texte-sm sans-marge">
-            Les premières questions de la base de connaissances rattachées à
-            ce pôle.
-          </p>
-        </div>
-        <div class="pile" id="zone-faq"></div>
+      <section class="pile" id="section-organigramme" data-section-pole aria-labelledby="titre-organigramme">
+        <h2 class="titre-section" id="titre-organigramme"><span class="titre-section__texte">Organigramme</span></h2>
+        <div id="zone-organigramme"></div>
+      </section>
+
+      <section class="pile" id="section-faq" data-section-pole aria-labelledby="titre-faq">
+        <h2 class="titre-section" id="titre-faq"><span class="titre-section__texte">Questions fréquentes</span></h2>
+        <div id="zone-faq"></div>
       </section>
 
     </div>
@@ -477,6 +146,7 @@
     </div>
   </footer>
 
+  <div class="toasts" data-toasts role="status" aria-live="polite" aria-atomic="false"></div>
   <script type="module" src="assets/js/pole.js"></script>
 </body>
 </html>

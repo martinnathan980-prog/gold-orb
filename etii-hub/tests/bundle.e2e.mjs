@@ -33,29 +33,37 @@ const style = await page.evaluate(() => {
 });
 t('le CSS est appliqué', parseFloat(style.taille) > 30, JSON.stringify(style));
 
-console.log('\n== L\'agenda du service ==');
+console.log('\n== Le Communication Center ==');
 const texte = await f.locator('main').innerText();
-t('la frise est rendue', /agenda/i.test(texte));
+t('le kiosque est rendu', (await f.locator('.kiosque').count()) === 1);
 t('le mot du chef est présent', /trimestre qui se tient/i.test(texte));
-t('le repère « aujourd\'hui » est posé', /aujourd/i.test(texte));
-t('des entrées à venir sont annoncées', /jours?/i.test(texte));
+t('le fil groupe « à venir » et « historique »', /à venir/i.test(texte) && /historique/i.test(texte));
+t('les échéances sont annoncées en J-', /J-\d+/.test(texte));
+t('le bandeau d\'alertes est là', (await f.locator('.kiosque__alertes').count()) === 1);
+const secondeEntree = f.locator('.kiosque__carte').nth(1);
+await secondeEntree.click();
+await page.waitForTimeout(900);
+t('cliquer une entrée la lit dans le projecteur',
+  (await secondeEntree.getAttribute('aria-current')) === 'true'
+  && (await f.locator('.kiosque__projecteur-titre').innerText()).trim() === (await secondeEntree.locator('.kiosque__carte-titre').innerText()).trim());
 
-console.log('\n== La flotte ==');
-t('la grille de flotte est rendue', (await f.locator('.flotte-grille').count()) > 0);
-const cartes = await f.locator('.flotte-grille > *').count();
-t('les onze appareils sont présents', cartes === 11, `(${cartes})`);
+console.log('\n== Les porteurs ==');
+t('la piste des porteurs est rendue', (await f.locator('.porteurs__piste').count()) > 0);
+const fiches = await f.locator('.porteurs__fiche').count();
+t('les onze appareils sont présents', fiches === 11, `(${fiches})`);
 t('les trois catégories sont proposées',
   ['Civil', 'Militaire', 'Prototype'].every(c => texte.includes(c)));
 
-console.log('\n== Une carte se retourne ==');
-const retourner = f.locator('button').filter({ hasText: /Voir les données/ }).first();
-await retourner.scrollIntoViewIfNeeded();
-await retourner.click();
-await page.waitForTimeout(700);
-const apres = await f.locator('main').innerText();
-t('la face arrière montre les deux groupes',
+console.log('\n== La fiche d\'un porteur ==');
+const troisieme = f.locator('.porteurs__fiche').nth(2);
+await troisieme.scrollIntoViewIfNeeded();
+await troisieme.click();
+await page.waitForTimeout(500);
+const apres = await f.locator('.porteurs__detail').innerText();
+t('la fiche montre les deux groupes de données',
   /techniques/i.test(apres) && /conomiques/i.test(apres));
 t('les valeurs absentes sont annoncées comme telles', /à renseigner/i.test(apres));
+t('la fiche suit le porteur choisi', apres.includes(await troisieme.locator('.porteurs__fiche-code').innerText()));
 
 console.log('\n== Le suivi OTQ attend sa source ==');
 t('l\'attente est annoncée honnêtement',
@@ -67,8 +75,10 @@ await f.locator('nav.site-nav a[href="etiia.html"]').first().click();
 await page.waitForTimeout(2200);
 const pole = await f.locator('main').innerText();
 t('ETIIA s\'ouvre', /ETIIA/.test(await f.locator('h1').innerText()));
-t('sa communication est en tête', /communication/i.test(pole));
-t('son organigramme est résumé', /organigramme|squad/i.test(pole));
+t('sa communication est en tête', (await f.locator('.kiosque').count()) === 1);
+t('ses réunions sont lisibles', (await f.locator('#zone-reunions .lecteur').count()) === 1);
+t('son organigramme est un arbre', (await f.locator('.arbre__carte').count()) > 3);
+t('sa FAQ est lisible', (await f.locator('#zone-faq .lecteur').count()) === 1);
 t('aucun indicateur n\'y figure', !/OTQ|OTD/.test(pole));
 
 console.log('\n== La recherche ==');

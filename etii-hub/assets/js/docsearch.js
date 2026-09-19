@@ -37,7 +37,7 @@
    ========================================================================= */
 
 import {
-  el, svg, frag, monter, vider, surlignerVers, deleguer,
+  el, svg, frag, monter, vider, surlignerVers, deleguer, titreSection,
   ouvrirModale, toast, annoncer, copierTexte,
   debounce, etatUrl, stockage, initTheme, initNav
 } from './ui.js';
@@ -917,106 +917,9 @@ function tuile(dataset, libelle, nombre, ornement, etiquetteAria) {
     el('span', { class: 'ds-tuile__compte' }, compteDocuments(nombre))));
 }
 
-/** Les chiffres du fonds, tous comptés sur le JSON. */
-function ligneChiffres() {
-  const total = corpus.documents.length;
-  const chiffre = (nombre, libelle) => el('li', { class: 'ds-chiffre' },
-    el('b', {}, String(nombre)), ' ' + libelle);
 
-  const derniere = corpus.derniereMaj
-    ? el('li', { class: 'ds-chiffre' },
-      'dernière mise à jour le ',
-      el('time', { datetime: corpus.derniereMaj }, formaterDate(corpus.derniereMaj)))
-    : el('li', { class: 'ds-chiffre' },
-      'dernière mise à jour : ', valeurOuManquant(''));
 
-  return el('ul', { class: 'ds-chiffres' },
-    chiffre(total, pluriel(total, 'document référencé', 'documents référencés')),
-    chiffre(corpus.types.length, pluriel(corpus.types.length, 'type', 'types')),
-    chiffre(corpus.valeurs.pole.length, pluriel(corpus.valeurs.pole.length, 'pôle', 'pôles')),
-    chiffre(corpus.valeurs.porteur.length,
-      pluriel(corpus.valeurs.porteur.length, 'porteur', 'porteurs')),
-    derniere);
-}
 
-/** Bloc « Parcourir par type » : une tuile par type déclaré. */
-function blocTypes() {
-  return el('div', { class: 'pile' },
-    el('div', { class: 'pile pile--serree' },
-      el('h3', { class: 'ds-depart__titre' }, 'Parcourir par type'),
-      el('p', { class: 'ds-depart__aide' },
-        'À quoi sert le document que vous cherchez ?')),
-    el('ul', { class: 'ds-tuiles' }, corpus.types.map((type) => {
-      const habillage = habillageType(type);
-      const nombre = corpus.comptesType.get(type) || 0;
-      return tuile(
-        { action: 'filtrer-type', valeur: type },
-        habillage.libelle,
-        nombre,
-        el('span', { class: 'ds-tuile__icone', ariaHidden: 'true' }, habillage.icone()),
-        'Voir les documents de type ' + type + ', ' + compteDocuments(nombre));
-    })));
-}
-
-/** Bloc « Parcourir par pôle » : une tuile par pôle déclaré. */
-function blocPoles() {
-  return el('div', { class: 'pile' },
-    el('div', { class: 'pile pile--serree' },
-      el('h3', { class: 'ds-depart__titre' }, 'Parcourir par pôle'),
-      el('p', { class: 'ds-depart__aide' },
-        'Quelle équipe du service porte ce sujet ?')),
-    el('ul', { class: 'ds-tuiles ds-tuiles--poles' }, corpus.valeurs.pole.map((code) => {
-      const nombre = corpus.comptes.pole.get(code) || 0;
-      return tuile(
-        { action: 'filtrer-pole', valeur: code, pole: code },
-        code,
-        nombre,
-        // Un filet dans la couleur du pôle ; le code écrit juste dessous
-        // porte seul l'information (SPEC §1bis).
-        el('span', { class: 'ds-tuile__filet', ariaHidden: 'true' }),
-        'Voir les documents du pôle ' + code + ', ' + compteDocuments(nombre));
-    })));
-}
-
-/** Bloc « Récemment mis à jour » : les N documents datés les plus récents. */
-function blocRecents() {
-  const liste = corpus.recents.slice(0, NOMBRE_RECENTS);
-
-  const corps = liste.length === 0
-    ? el('p', { class: 'ds-depart__aide' },
-      'Aucun document ne porte de date de mise à jour : ', valeurOuManquant(''), '.')
-    : el('ul', { class: 'ds-recents' }, liste.map((doc) => {
-      const maj = texteOuVide(doc.maj);
-      const titre = texteOuVide(doc.titre);
-      return el('li', {},
-        el('button', {
-          type: 'button',
-          class: 'ds-recent',
-          dataset: { action: 'voir-document', id: String(doc.id) }
-        },
-        el('span', { class: 'ds-recent__titre' },
-          titre !== '' ? titre : valeurOuManquant('')),
-        el('time', { class: 'ds-recent__date', datetime: maj },
-          formaterDate(maj, true))));
-    }));
-
-  const pied = corpus.recents.length > liste.length
-    ? el('div', { class: 'rangee rangee--serree' },
-      el('button', {
-        type: 'button',
-        class: 'bouton bouton--discret bouton--compact',
-        dataset: { action: 'parcourir-recents' }
-      }, 'Tout voir, du plus récent au plus ancien'))
-    : null;
-
-  return el('div', { class: 'pile' },
-    el('div', { class: 'pile pile--serree' },
-      el('h3', { class: 'ds-depart__titre' }, 'Récemment mis à jour'),
-      el('p', { class: 'ds-depart__aide' },
-        'Ce qui a bougé en dernier dans le fonds.')),
-    corps,
-    pied);
-}
 
 /**
  * Bâtit l'écran d'accueil et la section de résultats, puis les monte dans
@@ -1046,20 +949,22 @@ function construireInterface(donnees, cible) {
     class: 'ds-bloc pile pile--lache',
     ariaLabelledby: 'ds-depart-titre'
   },
-  el('div', { class: 'pile pile--serree' },
-    el('h2', { class: 'separateur-titre', id: 'ds-depart-titre' },
-      'Par où commencer ?'),
-    ligneChiffres()),
-  el('div', { class: 'ds-depart' },
-    blocTypes(),
-    el('div', { class: 'ds-depart__duo' }, blocPoles(), blocRecents())),
+  titreSection('Exploration rapide', { id: 'ds-depart-titre' }),
+  el('ul', { class: 'ds-tuiles' }, corpus.types.map((type) => {
+    const habillage = habillageType(type);
+    const nombre = corpus.comptesType.get(type) || 0;
+    return tuile(
+      { action: 'filtrer-type', valeur: type },
+      habillage.libelle,
+      nombre,
+      el('span', { class: 'ds-tuile__icone', ariaHidden: 'true' }, habillage.icone()),
+      'Voir les documents de type ' + type + ', ' + compteDocuments(nombre));
+  })),
   // Sorties de l'accueil : tout parcourir, ou signaler un document absent.
-  // La proposition doit rester atteignable ICI : le seul autre bouton vit
-  // dans le bandeau de résultats, qui n'existe pas sur l'écran d'accueil.
   el('div', { class: 'rangee rangee--centree' },
     el('button', {
       type: 'button',
-      class: 'bouton bouton--secondaire',
+      class: 'bouton bouton--discret',
       dataset: { action: 'parcourir-tout' }
     }, 'Parcourir les ' + total + ' documents'),
     el('button', {

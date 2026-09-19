@@ -1576,3 +1576,24 @@ export function initNav(pageCourante) {
     } catch (_e) { /* ignoré */ }
   }
 }
+
+/* =========================================================================
+   Titre de section « — TITRE — »
+   Le motif des outils du service : un filet, l'intitulé en capitales
+   espacées, un filet. Rendu par une fonction pour que les pages et les
+   modules produisent exactement la même chose.
+   ========================================================================= */
+
+/**
+ * @param {string} intitule
+ * @param {{niveau?: number, id?: string, classe?: string}} [options]
+ * @returns {HTMLElement}
+ */
+export function titreSection(intitule, options) {
+  const opts = options || {};
+  const niveau = Math.min(6, Math.max(1, Number(opts.niveau) || 2));
+  return el('h' + niveau, {
+    class: ['titre-section', opts.classe || null],
+    id: opts.id || null
+  }, el('span', { class: 'titre-section__texte' }, String(intitule || '')));
+}

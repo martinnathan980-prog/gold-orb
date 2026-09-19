@@ -5,344 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tableau de bord — ETII Hub</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Page du service ETII : l’agenda du service en frise chronologique, le mot du chef de service, la flotte suivie, et le suivi OTQ / OTD en attente de raccordement.">
+  <meta name="description" content="Page du service ETII : le Communication Center (le mot du chef, ce qui vient, l’historique), les porteurs suivis, et le suivi OTQ / OTD.">
   <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="assets/css/polices.css">
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/skin.css">
+  <link rel="stylesheet" href="assets/css/modules.css">
 
   <!-- =====================================================================
-       Styles propres à la page du service.
-
-       La page ne porte que trois choses : l'agenda du service, la flotte
-       suivie, et l'encadré du suivi OTQ / OTD en attente de raccordement.
-       On ne déclare donc ici que ce qu'aucune classe de base.css,
-       components.css ou skin.css ne couvre : la frise chronologique, le
-       bloc du mot du chef de service, la mention de la flotte et
-       l'encadré d'attente.
-
-       Parti pris tenu : clair, aéré, sobre. Des surfaces franches, un
-       filet d'un pixel, une ombre très douce, jamais de dégradé ni de
-       lueur. Une seule couleur vive à l'écran — l'accent, réservé à ce qui
-       vient et au mot du chef ; tout le reste est en neutres. Les pastilles
-       de pôle font exception, mais ce sont des points de quelques pixels,
-       toujours doublés de leur libellé.
-
-       Toutes les valeurs viennent de tokens.css — aucune couleur, aucune
-       dimension, aucune durée en dur.
+       Styles propres à la page du service. Le kiosque, la grille des
+       porteurs et le titre de section vivent dans modules.css et dans
+       leurs modules : on ne déclare ici que la mention de flotte et
+       l'encadré d'attente. Aucune valeur brute — tout vient de tokens.css.
        ===================================================================== -->
   <style>
-    /* --- Phrase de situation, un cran au-dessus du texte courant --------- */
     .accroche {
       max-width: var(--largeur-texte);
-      font-size: var(--texte-lg);
-      color: var(--texte-doux);
-    }
-
-    /* --- Champ déclaré mais vide -----------------------------------------
-       Une seule mention, toujours la même, toujours reconnaissable : la
-       page ne présente jamais une valeur plausible à la place d'un trou. */
-    .champ-manquant {
-      font-style: italic;
-      color: var(--texte-faible);
-    }
-
-    /* =====================================================================
-       1. Les filtres de l'agenda
-       Deux groupes de puces : le pôle, puis la période. Chaque puce porte
-       son compteur, relevé sur la donnée et recalculé à chaque changement.
-       ===================================================================== */
-
-    .agenda-filtres {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--e-5) var(--e-10);
-    }
-
-    .agenda-filtres__groupe {
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-3);
-      min-inline-size: 0;
-    }
-
-    .agenda-resume {
-      font-size: var(--texte-sm);
-      color: var(--texte-doux);
-    }
-
-    /* Rattrapage local, sans toucher au socle : sur une puce active, le
-       compteur tient son fond clair de components.css et son texte clair
-       de skin.css — le chiffre disparaît. On lui rend son contraste. */
-    .agenda-filtres .facette[aria-pressed="true"] .facette__compteur {
-      background-color: transparent;
-      color: var(--texte-inverse);
-    }
-
-    /* =====================================================================
-       2. La frise chronologique
-
-       Un seul axe du temps, descendant : ce qui vient en tête, le repère
-       « aujourd'hui » au milieu, le passé en dessous. Un rail d'un pixel,
-       une pastille par entrée portant l'icône de son type.
-       ===================================================================== */
-
-    .chrono {
-      /* Diamètre de la pastille de la frise, et donc largeur de la colonne
-         du rail : une valeur, deux usages, aucune dérive possible. */
-      --chrono-puce: var(--e-6);
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    .chrono__entree,
-    .chrono__jour {
-      display: grid;
-      grid-template-columns: var(--chrono-puce) minmax(0, 1fr);
-      column-gap: var(--e-4);
-    }
-
-    /* Le rail relie la pastille d'une ligne à la suivante. Il s'arrête de
-       lui-même sur la première et la dernière : la frise ne pend pas dans
-       le vide. */
-    .chrono__rail {
-      position: relative;
-      display: block;
-    }
-
-    .chrono__rail::before {
-      content: "";
-      position: absolute;
-      inset-block: 0;
-      inset-inline-start: 50%;
-      inline-size: 1px;
-      transform: translateX(-50%);
-      background-color: var(--bordure);
-    }
-
-    .chrono > :first-child .chrono__rail::before {
-      inset-block-start: calc(var(--chrono-puce) / 2);
-    }
-
-    .chrono > :last-child .chrono__rail::before {
-      inset-block-end: calc(100% - var(--chrono-puce) / 2);
-    }
-
-    /* La pastille masque le rail : elle est donc opaque, au fond de la
-       page et non à celui des cartes. */
-    .chrono__puce {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      inline-size: var(--chrono-puce);
-      block-size: var(--chrono-puce);
-
-      border: 1px solid var(--bordure);
-      border-radius: var(--rayon-plein);
-      background-color: var(--fond);
-      color: var(--texte-faible);
-    }
-
-    .chrono__puce svg {
-      inline-size: var(--e-4);
-      block-size: var(--e-4);
-    }
-
-    /* Ce qui vient se distingue du passé : pastille plus contrastée, et
-       contenu posé sur une carte franche. Le passé, lui, est à plat. */
-    .chrono__entree--a-venir .chrono__puce {
-      border-color: var(--bordure-forte);
-      background-color: var(--fond-eleve);
-      color: var(--texte);
-    }
-
-    .chrono__corps {
-      min-inline-size: 0;
-      padding-block-end: var(--e-8);
-    }
-
-    .chrono > :last-child .chrono__corps {
-      padding-block-end: 0;
-    }
-
-    .chrono__bloc {
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-3);
-      padding-block-start: var(--e-2);
-    }
-
-    .chrono__entree--a-venir .chrono__bloc {
-      padding: var(--e-5);
-      background-color: var(--carte-fond);
-      border: 1px solid var(--carte-bord);
-      border-radius: var(--rayon-lg);
-      box-shadow: var(--ombre-sm);
-    }
-
-    .chrono__meta {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--e-2) var(--e-3);
-      font-size: var(--texte-sm);
-      color: var(--texte-doux);
-    }
-
-    /* Le nombre de jours restants : la seule touche de couleur vive avec
-       le filet du mot du chef, et jamais la seule information — la date
-       complète est juste à côté. */
-    .chrono__delai {
-      display: inline-flex;
-      align-items: center;
-      padding: var(--e-1) var(--e-3);
-      border-radius: var(--rayon-plein);
-      background-color: var(--accent-doux);
-      color: var(--texte-accent);
-      font-size: var(--texte-xs);
-      font-weight: var(--graisse-forte);
-    }
-
-    .chrono__titre {
-      font-size: var(--texte-lg);
-    }
-
-    .chrono__entree--a-venir .chrono__titre {
-      font-size: var(--texte-xl);
-    }
-
-    .chrono__resume {
-      max-width: var(--largeur-texte);
-      color: var(--texte-doux);
-    }
-
-    /* --- Le repère « aujourd'hui » --------------------------------------- */
-
-    .chrono__jour .chrono__puce {
-      border-color: transparent;
-      background-color: transparent;
-    }
-
-    .chrono__point-jour {
-      inline-size: var(--e-3);
-      block-size: var(--e-3);
-      border-radius: var(--rayon-plein);
-      background-color: var(--accent);
-      box-shadow: 0 0 0 var(--e-1) var(--fond);
-    }
-
-    /* Reprend le filet horizontal de .separateur-titre, en un ton plus
-       affirmé : c'est le seul repère de lecture de la frise. */
-    .chrono__jour-texte {
-      padding-block-end: var(--e-8);
-      color: var(--texte);
-    }
-
-    /* --- Survol : discret, et rien d'autre ne bouge ---------------------- */
-
-    @media (prefers-reduced-motion: no-preference) {
-      .chrono__puce,
-      .chrono__bloc {
-        transition:
-          border-color var(--duree-rapide) var(--courbe),
-          box-shadow var(--duree-rapide) var(--courbe);
-      }
-    }
-
-    .chrono__entree:hover .chrono__puce {
-      border-color: var(--bordure-forte);
-      color: var(--texte);
-    }
-
-    .chrono__entree--a-venir:hover .chrono__bloc {
-      border-color: var(--bordure-forte);
-      box-shadow: var(--ombre-md);
-    }
-
-    /* =====================================================================
-       3. Le mot du chef de service
-
-       C'est une parole, pas une brève : elle occupe la frise autrement que
-       les autres entrées. Carte franche, filet d'accent en tête,
-       typographie plus grande, attribution détachée, et de l'air autour.
-       ===================================================================== */
-
-    .chrono__entree--mot .chrono__corps {
-      padding-block: var(--e-5) var(--e-12);
-    }
-
-    .chrono__entree--mot .chrono__puce {
-      border-color: var(--accent);
-      background-color: var(--fond-eleve);
-      color: var(--texte-accent);
-    }
-
-    /* Le sélecteur porte les deux classes à dessein : il doit l'emporter
-       sur la carte des entrées à venir, si un jour le mot en est une. */
-    .chrono__bloc.mot {
-      gap: var(--e-5);
-      padding: var(--e-6);
-      background-color: var(--carte-fond);
-      border: 1px solid var(--carte-bord);
-      border-block-start: calc(var(--e-1) / 2) solid var(--accent);
-      border-radius: var(--rayon-xl);
-      box-shadow: var(--ombre-md);
-    }
-
-    .mot__titre {
-      font-size: var(--texte-2xl);
-    }
-
-    .mot__corps {
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-4);
-      max-width: var(--largeur-texte);
-      font-size: var(--texte-lg);
-      line-height: var(--interligne);
-      color: var(--texte);
-    }
-
-    .mot__signature {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: var(--e-2) var(--e-4);
-      padding-block-start: var(--e-4);
-      border-block-start: 1px solid var(--bordure-douce);
-      font-size: var(--texte-sm);
-      color: var(--texte-doux);
-    }
-
-    .mot__auteur {
       font-size: var(--texte-md);
-      font-weight: var(--graisse-forte);
-      color: var(--texte);
+      color: var(--texte-doux);
     }
-
-    /* =====================================================================
-       4. Pastille de pôle
-       Le point teinté est décoratif : c'est le libellé, juste à côté, qui
-       porte l'information. La couleur ne signale jamais un pôle seule.
-       ===================================================================== */
-
-    .pastille-pole__point {
-      flex: none;
-      inline-size: var(--e-2);
-      block-size: var(--e-2);
-      border-radius: var(--rayon-plein);
-      background-color: var(--couleur-pole, var(--texte-doux));
-    }
-
-    /* =====================================================================
-       5. La flotte — mention de contexte
-       Elle doit être lue, pas proclamée : discrète, mais jamais cachée.
-       ===================================================================== */
 
     .flotte-note {
       display: flex;
@@ -353,19 +36,14 @@
       font-size: var(--texte-xs);
     }
 
-    /* =====================================================================
-       6. L'encadré d'attente du suivi OTQ / OTD
-       Un cadre en pointillé : la forme dit déjà qu'il n'y a rien à lire
-       ici, et surtout aucune donnée à prendre pour vraie.
-       ===================================================================== */
-
+    /* L'encadré d'attente du suivi OTQ / OTD : un cadre en pointillé, la
+       forme dit déjà qu'il n'y a rien à lire ici. */
     .attente {
       display: flex;
       flex-wrap: wrap;
       align-items: flex-start;
       gap: var(--e-5);
-
-      padding: var(--e-8);
+      padding: var(--e-6);
       border: 1px dashed var(--bordure-forte);
       border-radius: var(--rayon-lg);
       background-color: var(--fond-eleve);
@@ -376,55 +54,29 @@
       align-items: center;
       justify-content: center;
       flex: none;
-
       inline-size: var(--e-8);
       block-size: var(--e-8);
-
       border: 1px solid var(--bordure);
       border-radius: var(--rayon-md);
       color: var(--texte-doux);
     }
 
-    .attente__icone svg {
-      inline-size: var(--e-5);
-      block-size: var(--e-5);
-    }
+    .attente__icone svg { inline-size: var(--e-5); block-size: var(--e-5); }
 
     .attente__texte {
       flex: 1 1 calc(var(--e-16) * 4);
       min-inline-size: 0;
-
       display: flex;
       flex-direction: column;
-      gap: var(--e-3);
+      gap: var(--e-2);
       max-width: var(--largeur-texte);
     }
 
     .attente__titre {
-      font-size: var(--texte-lg);
+      font-size: var(--texte-md);
       font-weight: var(--graisse-forte);
       color: var(--texte);
     }
-    /* --- La flotte déborde la colonne de lecture -----------------------
-       Onze appareils en deux colonnes font six rangées. En trois colonnes
-       les cartes descendent sous 330 px, ce qui serre la face arrière —
-       un tableau de douze lignes. On élargit donc la section plutôt que de
-       rétrécir les cartes. */
-    .section-flotte {
-      /* Sortie de conteneur : la largeur voulue peut dépasser celle du
-         parent, la marge devient alors négative et la section déborde
-         symétriquement. Pas de transform, qui créerait un bloc conteneur
-         et piégerait un éventuel élément en position fixe. */
-      --flotte-largeur: min(84rem, calc(100vw - var(--e-8)));
-
-      width: var(--flotte-largeur);
-      max-width: none;
-      margin-inline: calc((100% - var(--flotte-largeur)) / 2);
-    }
-
-    /* La grille de flotte.js se borne à la largeur de lecture ; ici la
-       section est plus large à dessein, la grille la suit. */
-    .section-flotte .flotte-grille { max-width: none; }
 
   </style>
 </head>
@@ -456,74 +108,37 @@
   <main id="contenu" tabindex="-1">
     <div class="conteneur pile pile--section">
 
-      <!-- ================================================================
-           En-tête de page.
-
-           Les trois pôles et la recherche documentaire sont dans la
-           navigation du haut : la page n'en refait pas la liste, elle
-           montre ce qui n'est nulle part ailleurs.
-           ================================================================ -->
       <div class="pile pile--serree page-entete">
         <p class="page-entete__sur-titre">Service</p>
         <h1>ETII</h1>
-        <p class="accroche">
-          La vie du service : ce qui vient, ce qui a été dit, et ce qui est
-          suivi. Les trois pôles et la recherche documentaire sont dans la
+        <p class="accroche sans-marge">
+          La vie du service : ce qui est dit, ce qui vient, ce qui est suivi.
+          Les trois pôles et la recherche documentaire sont dans la
           navigation, en haut de page.
         </p>
       </div>
 
-      <!-- ================================================================
-           1. L'AGENDA DU SERVICE
-           La pièce maîtresse : une frise chronologique unique, filtrable
-           par pôle et par période. Le mot du chef de service y est une
-           entrée à part entière, et la plus importante.
-           ================================================================ -->
-      <section class="pile" aria-labelledby="titre-agenda">
-        <div class="pile pile--serree">
-          <h2 id="titre-agenda">L’agenda du service</h2>
-          <p class="mesure texte-doux sans-marge">
-            Un seul axe du temps : les échéances à venir en tête, le repère
-            du jour, puis ce qui est passé, du plus récent au plus ancien.
-          </p>
-        </div>
-        <div id="zone-agenda"></div>
+      <!-- 1. LE COMMUNICATION CENTER — rendu par kiosque.js -->
+      <section class="pile" aria-labelledby="titre-communication">
+        <h2 class="titre-section" id="titre-communication">
+          <span class="titre-section__texte">Communication center</span>
+        </h2>
+        <div id="zone-communication"></div>
       </section>
 
-      <!-- ================================================================
-           2. LA FLOTTE SUIVIE
-           Rendue par grilleFlotte() de assets/js/flotte.js. L'avertissement
-           du fichier est affiché sous la grille.
-           ================================================================ -->
-      <section class="pile section-flotte" aria-labelledby="titre-flotte">
-        <div class="pile pile--serree">
-          <h2 id="titre-flotte">La flotte suivie</h2>
-          <p class="mesure texte-doux sans-marge">
-            Les appareils sur lesquels travaillent les trois pôles. Chaque
-            fiche se retourne pour montrer ce que le fichier déclare — et
-            dit « à renseigner » pour tout le reste.
-          </p>
-        </div>
+      <!-- 2. LES PORTEURS — rendus par porteurs.js -->
+      <section class="pile" aria-labelledby="titre-porteurs">
+        <h2 class="titre-section" id="titre-porteurs">
+          <span class="titre-section__texte">Porteurs</span>
+        </h2>
         <div id="zone-flotte"></div>
       </section>
 
-      <!-- ================================================================
-           3. LE SUIVI OTQ / OTD — EN ATTENTE
-
-           Le graphe d'origine interrogeait une source en direct dont le
-           code n'a pas été fourni. Rien n'est inventé pour combler le
-           vide : ni graphique, ni valeur, ni indicateur. L'encadré est
-           construit par index.js, qui porte aussi le point de raccordement
-           unique — chargerSuiviOTQ().
-           ================================================================ -->
+      <!-- 3. LE SUIVI OTQ / OTD — en attente de sa source (index.js) -->
       <section class="pile" aria-labelledby="titre-otq">
-        <div class="pile pile--serree">
-          <h2 id="titre-otq">Suivi OTQ / OTD</h2>
-          <p class="mesure texte-doux sans-marge">
-            Cette section attend d’être raccordée à la source du service.
-            Tant qu’elle ne l’est pas, elle n’affiche aucun chiffre.
-          </p>
-        </div>
+        <h2 class="titre-section" id="titre-otq">
+          <span class="titre-section__texte">Suivi OTQ / OTD</span>
+        </h2>
         <div id="zone-otq"></div>
       </section>
 
@@ -540,6 +155,7 @@
     </div>
   </footer>
 
+  <div class="toasts" data-toasts role="status" aria-live="polite" aria-atomic="false"></div>
   <script type="module" src="assets/js/index.js"></script>
 </body>
 </html>
