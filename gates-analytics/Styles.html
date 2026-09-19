@@ -65,15 +65,7 @@ body {
 @media (max-width: 720px) { .feuille { padding: 15px 13px 17px; } }
 
 /* ---------------------------------------------------- Bandeau de titre */
-.masthead {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: 16px;
-  text-align: center; padding-block: 46px 26px; border-bottom: 1px solid var(--filet-fort);
-}
-.masthead .titre-bloc { grid-column: 2; min-width: 0; }
-@media (max-width: 1000px) {
-  .masthead { grid-template-columns: 1fr; row-gap: 16px; }
-  .masthead .titre-bloc { grid-column: 1; }
-}
+.masthead { text-align: center; padding-block: 46px 26px; border-bottom: 1px solid var(--filet-fort); }
 @media (max-width: 720px) { .masthead { padding-block: 30px 20px; } }
 .masthead h1 {
   font-family: Newsreader, Georgia, serif;
@@ -195,14 +187,14 @@ body[data-exemple="true"] .bandeau-mode {
    Sans colonne de domaine, il n'a rien à proposer et reste caché. */
 /* Le périmètre vit sous le titre, au-dessus de la barre : c'est de là qu'on
    choisit ce qu'on regarde, et le bandeau du haut garde sa sobriété. */
-/* Le périmètre, à droite du titre : le mot au-dessus, le choix dessous,
-   alignés sur le bord droit ; sous 1000 px, il passe sous le titre, centré. */
+/* Le périmètre, à droite de la phrase qu'il gouverne : le mot, puis le
+   choix. Quand la ligne manque de place, il passe dessous, à gauche. */
 .perimetre {
-  grid-column: 3; justify-self: end; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
-  font-size: 12px; color: var(--encre-3); min-width: 0; max-width: 100%;
+  display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px 10px;
+  font-size: 12px; color: var(--encre-3); min-width: 0; max-width: 100%; margin-left: auto;
 }
 .perimetre .mot-perimetre { letter-spacing: .08em; text-transform: uppercase; font-size: 10.5px; font-weight: 500; }
-@media (max-width: 1000px) { .perimetre { grid-column: 1; justify-self: center; align-items: center; } }
+@media (max-width: 720px) { .perimetre { justify-content: flex-start; margin-left: 0; } }
 .perimetre[hidden] { display: none; }
 #choix-perimetre button { white-space: nowrap; }
 #choix-perimetre .n {
@@ -423,6 +415,7 @@ select.select:focus { outline: none; border-bottom-color: var(--focus); }
 /* ---------------------------------------------------- Graphique */
 .commandes-graphe { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .segmente { display: inline-flex; border: 1px solid var(--filet-fort); }
+.segmente[hidden] { display: none; }
 .segmente button {
   border: none; border-left: 1px solid var(--filet-fort); background: none;
   font: inherit; font-size: 12px; padding: 3px 10px; color: var(--encre-2); cursor: pointer;
@@ -474,27 +467,57 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
    sobre pour ce qui n'est pas dans le tableau ; une grille pour le détail. */
 .rapprochement[hidden] { display: none; }
 /* ---------------------------------------------------- Rapprochement
-   La barre de l'avancement, à l'identique, pour la seconde question de la
-   page : seules les classes de segment changent, une par verdict. */
-.rapp-phrases { margin-bottom: 12px; }
+   Deux bases face à face : deux cercles qui se recouvrent — ce qu'elles ont
+   en commun au milieu, ce que chacune est seule à connaître sur les côtés —
+   et, au cœur du recouvrement, un anneau qui dit d'un coup d'œil la part
+   d'identiques. À droite, une ligne par verdict, en français, cliquable. */
+.rapp-phrases { margin-bottom: 14px; }
 .rapp-sous { margin: 4px 0 0; font-size: 13px; color: var(--encre-2); max-width: 90ch; }
 .rapp-sous:empty { display: none; }
-/* Les segments : le jeton du verdict, l'encre qui va dessus. */
-.barre .identique { background: var(--fait);   color: var(--sur-plein); }
-.barre .ecart     { background: var(--cours);  color: var(--sur-ambre); }
-.barre .absentLa  { background: var(--alerte); color: var(--sur-plein); }
-/* Un autre indice n'est pas un état : un anneau, comme sa pastille. */
-.barre .emission  { background: transparent; color: var(--encre); box-shadow: inset 0 0 0 1.5px var(--encre-3); }
-/* Ce que la seconde base a en plus : à part, après un blanc, en pointillé
-   comme sa pastille. */
-.barre .seul      { background: transparent; border: 1.5px dashed var(--encre-3); box-sizing: border-box;
-                    margin-left: 10px; min-width: 12px; }
-/* Survoler un bouton éclaire son segment : indispensable quand il fait 5 px. */
-.barre span.survole { outline: 2px solid var(--encre); outline-offset: -2px; }
-/* Un bouton à 0 se lit mais ne se clique pas. */
-.etat-btn:disabled { cursor: default; }
-.etat-btn:disabled:hover .etat-n { color: var(--encre-3); }
-.etat-btn:disabled .pastille { opacity: .45; }
+.rapp-face { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); gap: 18px 32px; align-items: center; }
+@media (max-width: 860px) { .rapp-face { grid-template-columns: 1fr; } }
+.rapp-figure { min-width: 0; }
+.rapp-figure svg { width: 100%; height: auto; display: block; overflow: visible; }
+.rapp-figure text { font-family: "IBM Plex Sans", system-ui, sans-serif; pointer-events: none; }
+/* Seuls les côtés et les parts de l'anneau répondent au pointeur ; le texte
+   au centre les laisse passer. */
+.rapp-figure .cote { pointer-events: all; cursor: default; }
+.rapp-figure .cote text { pointer-events: all; }
+.rapp-figure .donut-seg { pointer-events: stroke; }
+.rapp-figure .base-nom { font-size: 13px; font-weight: 500; fill: var(--encre); letter-spacing: .05em; }
+.rapp-figure .base-compte { font-size: 11.5px; fill: var(--encre-2); }
+.rapp-figure .cercle-ici { fill: var(--r2); fill-opacity: .5; stroke: var(--fait); stroke-width: 1.5; }
+.rapp-figure .cercle-la { fill: none; stroke: var(--encre-3); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.rapp-figure .grand { font-family: "IBM Plex Mono", monospace; font-size: 26px; font-variant-numeric: tabular-nums; fill: var(--encre); }
+.rapp-figure .petit { font-size: 11px; fill: var(--encre-2); }
+.rapp-figure .cote-absent .grand { fill: var(--alerte); }
+.rapp-figure .cote-seul .grand { fill: var(--encre-2); }
+.rapp-figure .donut-fond { fill: none; stroke: var(--filet); stroke-width: 12; }
+.rapp-figure .donut-seg { fill: none; stroke-width: 12; stroke-linecap: butt; transition: stroke-width .12s; }
+.rapp-figure .donut-seg.identique { stroke: var(--fait); }
+.rapp-figure .donut-seg.emission { stroke: var(--encre-3); }
+.rapp-figure .donut-seg.ecart { stroke: var(--cours); }
+/* Survoler un verdict éclaire sa part de la figure. */
+.rapp-figure .donut-seg.survole { stroke-width: 18; }
+.rapp-figure .cote.survole .grand { text-decoration: underline; text-underline-offset: 3px; }
+.rapp-figure .cote.survole .petit { fill: var(--encre); }
+.verdicts { display: grid; gap: 6px; }
+.verdict {
+  display: grid; grid-template-columns: 14px 62px minmax(0, 1fr); align-items: center; column-gap: 10px;
+  text-align: left; background: none; border: 1px solid transparent; border-radius: 4px; padding: 6px 10px 6px 8px;
+  font: inherit; color: var(--encre-2); cursor: pointer;
+}
+.verdict:hover { background: var(--creux); color: var(--encre); }
+.verdict[aria-pressed="true"] { border-color: var(--encre); background: var(--surface); color: var(--encre); }
+.verdict:disabled { cursor: default; opacity: .5; }
+.verdict:disabled:hover { background: none; }
+.verdict .verdict-n {
+  font-family: "IBM Plex Mono", monospace; font-size: 22px; font-variant-numeric: tabular-nums;
+  color: var(--encre); text-align: right; line-height: 1.1;
+}
+.verdict .verdict-mot { font-size: 13px; line-height: 1.3; }
+.verdict .verdict-mot b { font-weight: 500; color: var(--encre); }
+.verdict .pastille { width: 9px; height: 9px; }
 .pastille.identique { background: var(--fait); }
 .pastille.ecart { background: var(--cours); }
 .pastille.absent { background: var(--alerte); }

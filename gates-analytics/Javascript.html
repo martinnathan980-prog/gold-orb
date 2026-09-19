@@ -1193,16 +1193,16 @@
      ============================================================ */
   /* Les lots du rapprochement, dans l'ordre de lecture : d'abord ce qui va,
      puis ce qui diffère, puis ce qui manque de chaque côté. « § » se remplace
-     par le nom de la seconde base. `segment` est la classe du segment de la
-     barre (et la catégorie de la pastille), `teinte` le trait du bouton
-     pressé, `atterrit` la base où le tableau bascule : ce qui n'existe que
-     d'un côté y emmène, le reste laisse l'interrupteur où il est. */
+     par le nom de la seconde base. `segment` est la catégorie de la pastille
+     (et de la part de l'anneau), `atterrit` la base où le tableau bascule :
+     ce qui n'existe que d'un côté y emmène, le reste laisse l'interrupteur
+     où il est. */
   var LOTS_RAPPROCHEMENT = [
-    { cle: 'identiques',      libelle: 'identiques',       segment: 'identique', teinte: 'var(--fait)',    atterrit: '' },
-    { cle: 'indiceDifferent', libelle: 'autre indice',     segment: 'emission',  teinte: 'var(--encre-3)', atterrit: '' },
-    { cle: 'ecarts',          libelle: 'champs différents', segment: 'ecart',    teinte: 'var(--cours)',   atterrit: '' },
-    { cle: 'absentsLa',       libelle: 'absents de §',     segment: 'absentLa',  teinte: 'var(--alerte)',  atterrit: 'ici' },
-    { cle: 'absentsIci',      libelle: 'seulement dans §', segment: 'seul',      teinte: 'var(--encre-3)', atterrit: 'la' }
+    { cle: 'identiques',      libelle: 'identiques',        segment: 'identique', atterrit: '' },
+    { cle: 'indiceDifferent', libelle: 'autre indice',      segment: 'emission',  atterrit: '' },
+    { cle: 'ecarts',          libelle: 'champs différents', segment: 'ecart',     atterrit: '' },
+    { cle: 'absentsLa',       libelle: 'absents de §',      segment: 'absentLa',  atterrit: 'ici' },
+    { cle: 'absentsIci',      libelle: 'seulement dans §',  segment: 'seul',      atterrit: 'la' }
   ];
   /* La catégorie d'un plan d'ici (parPlan) derrière chaque lot, une seule par
      plan, pour que les comptes des boutons soient ceux de la barre. */
@@ -3242,36 +3242,29 @@
           (vue.perimetre ? ' dans le périmètre' : '') + (seuls ? ' · ' + seuls : '') + '.';
     }
 
-    /* La barre : les plans d'ici, puis, après un blanc, ce qui n'existe que
-       là, à la même échelle. La part écrite dans un segment est celle des
-       plans d'ici, comme dans la phrase. */
-    var echelle = Math.max(nP + nSeuls, 1);
-    $('barre-rapprochement').innerHTML = LOTS_RAPPROCHEMENT.map(function (l) {
-      var n = comptes[l.cle];
-      if (!n) return '';
-      var part = 100 * n / echelle;
-      var texte = l.cle !== 'absentsIci' && part >= 6 && nP ? Math.round(100 * n / nP) + '\u202f%' : '';
-      return '\x3Cspan class="' + l.segment + '" data-cle="' + l.cle + '" style="width:' + part.toFixed(2) + '%">' + texte + '\x3C/span>';
-    }).join('');
+    /* La figure : deux cercles, ce qu'ils ont en commun au milieu — avec un
+       anneau pour la part d'identiques — et ce que chacun est seul à
+       connaître sur les côtés. */
+    var nCommun = nP - comptes.absentsLa;
+    var figure = $('venn-rapprochement');
+    figure.innerHTML = figureRapprochement(comptes, nP, nCommun, nom, R.nbLignes, !!vue.perimetre);
     var membres = LOTS_RAPPROCHEMENT.filter(function (l) { return comptes[l.cle] && l.cle !== 'absentsIci'; })
       .map(function (l) { return motLotRapp(l.cle, comptes[l.cle], nom); });
-    $('barre-rapprochement').setAttribute('aria-label', 'Rapprochement avec ' + nom + ' : ' +
+    figure.setAttribute('aria-label', 'Rapprochement avec ' + nom + ' : ' +
       (membres.length ? membres.join(', ') + ', sur ' + nb(nP) + (nP > 1 ? ' plans' : ' plan') : 'aucun plan') +
       (nSeuls ? ' ; ' + motLotRapp('absentsIci', nSeuls, nom) : '') + '.');
 
-    /* Les boutons : le même dessin que sous la barre du haut. Un lot à 0 se
-       lit mais ne se clique pas — la rangée sert aussi de légende. */
+    /* Les verdicts : une ligne par lot, le nombre, le mot, la phrase. Un lot
+       à 0 se lit mais ne se clique pas — la colonne sert aussi de légende. */
     var actif = lotRappActif();
-    $('etats-rapprochement').innerHTML = LOTS_RAPPROCHEMENT.map(function (l) {
+    $('verdicts-rapprochement').innerHTML = LOTS_RAPPROCHEMENT.map(function (l) {
       var n = comptes[l.cle], presse = !!n && actif === l.cle;
       var libelle = libelleRapp(l) + (vue.perimetre && l.cle === 'absentsIci' ? ' · tout le contrat' : '');
-      /* Pas de title : la bulle dit tout à la souris, et le clavier a l'état pressé. */
-      return '\x3Cbutton class="etat-btn" type="button" data-cle="' + l.cle + '" data-rapp="' + l.cle + '" data-atterrit="' + l.atterrit +
-        '" style="--teinte:' + l.teinte + '" aria-pressed="' + presse + '"' + (n ? '' : ' disabled') + '>' +
-        '\x3Cspan class="etat-haut">' + pastilleVerdict(l.segment) + ech(libelle) + '\x3C/span>' +
-        '\x3Cspan class="etat-n">' + nb(n) + '\x3C/span>\x3C/button>';
+      return '\x3Cbutton class="verdict" type="button" data-cle="' + l.cle + '" data-rapp="' + l.cle + '" data-atterrit="' + l.atterrit +
+        '" aria-pressed="' + presse + '"' + (n ? '' : ' disabled') + '>' +
+        pastilleVerdict(l.segment) + '\x3Cspan class="verdict-n">' + nb(n) + '\x3C/span>' +
+        '\x3Cspan class="verdict-mot">\x3Cb>' + ech(libelle) + '\x3C/b> · ' + ech(phraseLot(l.cle, n, nom)) + '\x3C/span>\x3C/button>';
     }).join('');
-    requestAnimationFrame(function () { alignerSousBarre('barre-rapprochement', 'filets-rapprochement', 'etats-rapprochement'); });
 
     var ecarts = ecartsDeLaCase();
     var bouton = $('bouton-detail-rapprochement');
@@ -3344,9 +3337,73 @@
       '\x3Cdiv class="doux" style="margin-top:6px;padding-top:5px;border-top:1px solid var(--filet)">' + ech(fin) + '\x3C/div>';
   }
   function eclairerSegment(cle) {
-    document.querySelectorAll('#barre-rapprochement span[data-cle]').forEach(function (seg) {
-      seg.classList.toggle('survole', !!cle && seg.dataset.cle === cle);
+    document.querySelectorAll('#venn-rapprochement [data-cle]').forEach(function (el) {
+      var lui = !!cle && el.getAttribute('data-cle') === cle;
+      if (lui) el.classList.add('survole'); else el.classList.remove('survole');
     });
+  }
+  /* La phrase d'un verdict, en français de tous les jours : le nombre est
+     déjà écrit à gauche, la phrase dit ce qu'il compte. */
+  function phraseLot(cle, n, nom) {
+    var pl = n > 1;
+    if (cle === 'identiques') return (pl ? 'se retrouvent' : 'se retrouve') + ' à l’identique dans ' + nom;
+    if (cle === 'indiceDifferent') return (pl ? 'sont' : 'est') + ' dans ' + nom + ' sous une autre lettre d’indice';
+    if (cle === 'ecarts') return (pl ? 'ont' : 'a') + ' un champ qui ne dit pas la même chose dans ' + nom;
+    if (cle === 'absentsLa') return (pl ? 'n’existent pas' : 'n’existe pas') + ' dans ' + nom;
+    return (pl ? 'lignes de ' : 'ligne de ') + nom + ' sans plan dans GATES';
+  }
+  /* Un arc d'anneau, de l'angle a0 à l'angle a1 (en degrés, 0 en haut, sens
+     horaire), au rayon r autour de (cx, cy). */
+  function arcAnneau(cx, cy, r, a0, a1) {
+    var rad = function (a) { return (a - 90) * Math.PI / 180; };
+    var x0 = cx + r * Math.cos(rad(a0)), y0 = cy + r * Math.sin(rad(a0));
+    var x1 = cx + r * Math.cos(rad(a1)), y1 = cy + r * Math.sin(rad(a1));
+    return 'M' + x0.toFixed(2) + ' ' + y0.toFixed(2) + ' A' + r + ' ' + r + ' 0 ' + (a1 - a0 > 180 ? 1 : 0) + ' 1 ' + x1.toFixed(2) + ' ' + y1.toFixed(2);
+  }
+  /* La figure du rapprochement : deux cercles qui se recouvrent, le nom et le
+     compte de chaque base au-dessus, le nombre en commun au milieu avec son
+     anneau (identiques, autre indice, champs différents), et sur chaque côté
+     ce que la base est seule à connaître. Les cercles ne sont pas à l'échelle :
+     c'est la structure qu'on lit, les nombres disent le reste. */
+  function figureRapprochement(c, nP, nCommun, nom, nL, perimetre) {
+    var cx1 = 200, cx2 = 330, cy = 172, r = 118, cxm = (cx1 + cx2) / 2, ra = 34;
+    var s = ['\x3Csvg viewBox="0 0 530 330" aria-hidden="true">'];
+    s.push('\x3Ctext class="base-nom" x="' + (cx1 - 56) + '" y="26" text-anchor="middle">GATES\x3C/text>');
+    s.push('\x3Ctext class="base-compte" x="' + (cx1 - 56) + '" y="42" text-anchor="middle">' + nb(nP) + (nP > 1 ? ' plans' : ' plan') + (perimetre ? ' du périmètre' : '') + '\x3C/text>');
+    s.push('\x3Ctext class="base-nom" x="' + (cx2 + 56) + '" y="26" text-anchor="middle">' + ech(nom) + '\x3C/text>');
+    s.push('\x3Ctext class="base-compte" x="' + (cx2 + 56) + '" y="42" text-anchor="middle">' + nb(nL) + (nL > 1 ? ' lignes' : ' ligne') + '\x3C/text>');
+    s.push('\x3Ccircle class="cercle-ici" cx="' + cx1 + '" cy="' + cy + '" r="' + r + '"/>');
+    s.push('\x3Ccircle class="cercle-la" cx="' + cx2 + '" cy="' + cy + '" r="' + r + '"/>');
+    /* Les côtés : ce que chaque base est seule à connaître. */
+    s.push('\x3Cg class="cote cote-absent" data-cle="absentsLa">' +
+      '\x3Ctext class="grand" x="' + (cx1 - 52) + '" y="' + (cy + 4) + '" text-anchor="middle">' + nb(c.absentsLa) + '\x3C/text>' +
+      '\x3Ctext class="petit" x="' + (cx1 - 52) + '" y="' + (cy + 24) + '" text-anchor="middle">' + (c.absentsLa > 1 ? 'absents de ' : 'absent de ') + ech(nom) + '\x3C/text>\x3C/g>');
+    s.push('\x3Cg class="cote cote-seul" data-cle="absentsIci">' +
+      '\x3Ctext class="grand" x="' + (cx2 + 52) + '" y="' + (cy + 4) + '" text-anchor="middle">' + nb(c.absentsIci) + '\x3C/text>' +
+      '\x3Ctext class="petit" x="' + (cx2 + 52) + '" y="' + (cy + 24) + '" text-anchor="middle">seulement dans ' + ech(nom) + '\x3C/text>' +
+      (perimetre ? '\x3Ctext class="petit" x="' + (cx2 + 52) + '" y="' + (cy + 40) + '" text-anchor="middle">tout le contrat\x3C/text>' : '') + '\x3C/g>');
+    /* Le milieu : l'anneau des plans en commun, en trois parts. */
+    s.push('\x3Ccircle class="donut-fond" cx="' + cxm + '" cy="' + cy + '" r="' + ra + '"/>');
+    var parts = [['identiques', 'identique'], ['indiceDifferent', 'emission'], ['ecarts', 'ecart']]
+      .filter(function (p) { return c[p[0]] > 0; });
+    var total = parts.reduce(function (t, p) { return t + c[p[0]]; }, 0);
+    /* Une part, même d'un seul plan sur des centaines, reste visible : on lui
+       garantit quelques degrés, pris sur les grandes parts. */
+    var MIN = 8, portions = parts.map(function (p) { return 360 * c[p[0]] / total; });
+    var manque = 0, grandes = 0;
+    portions.forEach(function (q) { if (q < MIN) manque += MIN - q; else grandes += q; });
+    if (manque > 0 && grandes > 0) portions = portions.map(function (q) { return q < MIN ? MIN : q - manque * q / grandes; });
+    var trou = parts.length > 1 ? 3 : 0, angle = 0;          // un blanc entre les parts, comme entre les segments d'une barre
+    parts.forEach(function (p, i) {
+      var portion = portions[i], a0 = angle + trou / 2, a1 = angle + portion - trou / 2;
+      if (a1 - a0 >= 359.9) s.push('\x3Ccircle class="donut-seg ' + p[1] + '" data-cle="' + p[0] + '" data-n="' + c[p[0]] + '" cx="' + cxm + '" cy="' + cy + '" r="' + ra + '"/>');
+      else if (a1 > a0) s.push('\x3Cpath class="donut-seg ' + p[1] + '" data-cle="' + p[0] + '" data-n="' + c[p[0]] + '" d="' + arcAnneau(cxm, cy, ra, a0, a1) + '"/>');
+      angle += portion;
+    });
+    s.push('\x3Ctext class="grand commun-n" x="' + cxm + '" y="' + (cy + 9) + '" text-anchor="middle">' + nb(nCommun) + '\x3C/text>');
+    s.push('\x3Ctext class="petit commun-mot" x="' + cxm + '" y="' + (cy + ra + 26) + '" text-anchor="middle">en commun\x3C/text>');
+    s.push('\x3C/svg>');
+    return s.join('');
   }
 
   /* ============================================================
@@ -3620,7 +3677,7 @@
       /* Les boutons viennent d'être refaits : le focus revient sur le même,
          la bulle et l'éclairage repartent de zéro. */
       $('bulle').dataset.visible = 'false'; eclairerSegment(null);
-      var repris = document.querySelector('#etats-rapprochement button[data-rapp="' + b.dataset.rapp + '"]');
+      var repris = document.querySelector('#verdicts-rapprochement button[data-rapp="' + b.dataset.rapp + '"]');
       if (repris) repris.focus();
       return;
     }
@@ -3684,11 +3741,12 @@
   /* Survoler un bouton ou un segment du rapprochement éclaire le segment et
      ouvre la bulle ; le focus clavier éclaire seulement. */
   $('rapprochement').addEventListener('mousemove', function (e) {
-    var cible = e.target.closest && e.target.closest('#barre-rapprochement span[data-cle], #etats-rapprochement button[data-cle]:not([disabled])');
+    var cible = e.target.closest && e.target.closest('#venn-rapprochement [data-cle], #verdicts-rapprochement button[data-cle]:not([disabled])');
+    var cle = cible ? cible.getAttribute('data-cle') : null;
     var bulle = $('bulle');
-    eclairerSegment(cible ? cible.dataset.cle : null);
-    if (!cible || !RAPPROCHEMENT) { bulle.dataset.visible = 'false'; return; }
-    bulle.innerHTML = bulleLotRapp(cible.dataset.cle);
+    eclairerSegment(cle);
+    if (!cle || !RAPPROCHEMENT) { bulle.dataset.visible = 'false'; return; }
+    bulle.innerHTML = bulleLotRapp(cle);
     bulle.dataset.visible = 'true';
     bulle.style.left = Math.min(e.clientX + 14, window.innerWidth - bulle.offsetWidth - 12) + 'px';
     bulle.style.top = Math.min(e.clientY + 16, window.innerHeight - bulle.offsetHeight - 12) + 'px';
@@ -3697,11 +3755,11 @@
     eclairerSegment(null);
     $('bulle').dataset.visible = 'false';
   });
-  $('etats-rapprochement').addEventListener('focusin', function (e) {
+  $('verdicts-rapprochement').addEventListener('focusin', function (e) {
     var b = e.target.closest && e.target.closest('button[data-cle]');
     eclairerSegment(b ? b.dataset.cle : null);
   });
-  $('etats-rapprochement').addEventListener('focusout', function () { eclairerSegment(null); });
+  $('verdicts-rapprochement').addEventListener('focusout', function () { eclairerSegment(null); });
 
   $('incomplets').addEventListener('click', function (e) {
     var b = e.target.closest('.puce-vide');
@@ -3932,7 +3990,6 @@
     minuteurTaille = setTimeout(function () {
       rendreGraphique(selection()); ajusterSticky(); majOmbre();
       alignerSousBarre('barre', 'filets', 'etats');
-      alignerSousBarre('barre-rapprochement', 'filets-rapprochement', 'etats-rapprochement');
     }, 160);
   });
 

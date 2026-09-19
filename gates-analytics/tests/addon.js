@@ -23,6 +23,10 @@ function verifier(nom, condition, detail) {
 }
 function section(t) { sectionCourante = t; console.log('\n— ' + t + ' —'); }
 
+/* L'interrupteur exemple / réel est rangé — la lectrice ne le voit plus —
+   mais son mécanisme reste : la batterie le manœuvre comme un clic. */
+const basculerMode = (pg, mode) => pg.evaluate(m => document.querySelector('#mode-donnees button[data-mode="' + m + '"]').click(), mode);
+
 function serveurSur(valeurs, proprietes, fichiers) {
   const classeur = new Classeur([new Feuille('Données', valeurs)]);
   return { contexte: chargerServeur(classeur, proprietes || {}, fichiers), classeur: classeur };
@@ -1265,18 +1269,22 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pg.click('#tout-effacer'); await pg.waitForTimeout(450);
 
   // =================================================================
-  /* La feuille GATES a une colonne « Domaine » : le périmètre est proposé sous
-     le titre, au-dessus de la barre, une puce par valeur avec son compte, et il
-     restreint toute la page.
+  /* La feuille GATES a une colonne « Domaine » : le périmètre est proposé à
+     droite de la phrase d'avancement, au-dessus de la barre — hors de la zone
+     du titre —, une puce par valeur avec son compte, et il restreint toute la
+     page.
      Code.gs n'y est pour rien : la page dérive tout du paquet et des cartes. */
   section('Périmètre par domaine');
   const perim = await pg.evaluate(() => ({
     visible: !document.getElementById('perimetre').hidden &&
              document.getElementById('choix-perimetre').offsetParent !== null,
-    haut: document.getElementById('perimetre').getBoundingClientRect().top >
-          document.querySelector('.masthead').getBoundingClientRect().top &&
+    haut: document.getElementById('perimetre').getBoundingClientRect().top >=
+          document.querySelector('.masthead').getBoundingClientRect().bottom &&
           document.getElementById('perimetre').getBoundingClientRect().bottom <=
-          document.querySelector('.avancement').getBoundingClientRect().top + 1,
+          document.getElementById('barre').getBoundingClientRect().top + 1 &&
+          !document.querySelector('header.masthead #perimetre') &&
+          document.getElementById('perimetre').getBoundingClientRect().left >
+          document.getElementById('phrase').getBoundingClientRect().right,
     boutons: [...document.querySelectorAll('#choix-perimetre button')].map(b => ({
       val: b.dataset.perimetre, n: +b.querySelector('.n').textContent.replace(/\s/g, ''),
       presse: b.getAttribute('aria-pressed')
@@ -1285,7 +1293,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   }));
   const attenduDom = { 'BASE/OPTION': 0, 'PERSO': 0 };
   mGates.plans.forEach(pl => { attenduDom[pl[mGates.cleDomaine]]++; });
-  verifier('le sélecteur est proposé sous le titre, avec une puce par domaine de la feuille',
+  verifier('le sélecteur est proposé hors du titre, à droite de la phrase d\'avancement, avec une puce par domaine de la feuille',
     perim.visible && perim.haut && perim.boutons.map(b => b.val).join(',') === ',BASE/OPTION,PERSO',
     JSON.stringify(perim.boutons));
   verifier('les comptes sont ceux de la feuille, et il démarre sur Tout',
@@ -1471,7 +1479,14 @@ function serveurSur(valeurs, proprietes, fichiers) {
     visible: !document.getElementById('rapprochement').hidden,
     titre: document.getElementById('titre-rapprochement').textContent,
     phrase: document.getElementById('phrase-rapprochement').textContent,
-    puces: [...document.querySelectorAll('#etats-rapprochement button[data-rapp]')].map(b => b.dataset.rapp + '=' + b.querySelector('.etat-n').textContent),
+    puces: [...document.querySelectorAll('#verdicts-rapprochement button[data-rapp]')].map(b => b.dataset.rapp + '=' + b.querySelector('.verdict-n').textContent),
+    figure: (() => { const svg = document.querySelector('#venn-rapprochement svg'); return svg && {
+      cercles: svg.querySelectorAll('circle.cercle-ici, circle.cercle-la').length,
+      bases: [...svg.querySelectorAll('.base-nom')].map(t => t.textContent).join(),
+      commun: +svg.querySelector('.commun-n').textContent,
+      parts: [...svg.querySelectorAll('.donut-seg')].map(x => x.getAttribute('data-cle') + '=' + x.getAttribute('data-n')).join(),
+      cotes: [...svg.querySelectorAll('.cote')].map(g => g.getAttribute('data-cle') + '=' + g.querySelector('.grand').textContent).join() }; })(),
+    sousLeTableau: document.getElementById('rapprochement').getBoundingClientRect().top >= document.getElementById('cadre-tableau').getBoundingClientRect().bottom,
     sous: document.getElementById('sous-rapprochement').textContent,
     plans: document.querySelectorAll('#corps-tableau tr').length,
     seconde: !document.getElementById('choix-base').hidden,
@@ -1488,14 +1503,17 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('les identiques, aucune émission différente (références hors format), les écarts recalculés, 27 plans absents de là, 1 référence seulement là',
     ecran.puces.join(' ') === 'identiques=' + identiquesAttendus + ' indiceDifferent=0 ecarts=' + ecartsAttendus + ' absentsLa=27 absentsIci=1',
     ecran.puces.join(' ') + ' attendu ecarts=' + ecartsAttendus + ', identiques=' + identiquesAttendus);
+  verifier('la figure : deux cercles GATES et Base2, ' + (3 - 0) + ' plans en commun dans l\'anneau, 27 absents d\'un côté, 1 seulement de l\'autre, sous le tableau des plans',
+    ecran.figure && ecran.figure.cercles === 2 && ecran.figure.bases === 'GATES,Base2' && ecran.figure.commun === 3 &&
+    ecran.figure.cotes === 'absentsLa=27,absentsIci=1' && ecran.sousLeTableau, JSON.stringify([ecran.figure, ecran.sousLeTableau]));
   verifier('l\'interrupteur GATES | Base2 est là, nommé d\'après l\'onglet, le tableau de là a ses quatre colonnes et ses quatre lignes, sans vue essentielle',
     ecran.seconde && ecran.titreSeconde === 'Base2' && ecran.entetesSeconde === 'REF_UD|ATA_CODE|STATUT_FWD|Colonne en trop' &&
     ecran.lignesSeconde === 4 && ecran.vueSeconde, JSON.stringify([ecran.titreSeconde, ecran.entetesSeconde, ecran.lignesSeconde]));
-  await pr.click('#etats-rapprochement button[data-rapp="absentsLa"]'); await pr.waitForTimeout(500);
+  await pr.click('#verdicts-rapprochement button[data-rapp="absentsLa"]'); await pr.waitForTimeout(500);
   verifier('cliquer « absents de Base2 » filtre le tableau sur ces 27 plans',
     await pr.evaluate(() => document.querySelectorAll('#corps-tableau tr').length === 27 &&
       [...document.querySelectorAll('.jeton')].some(j => /Rapprochement : absents de Base2/.test(j.textContent))));
-  await pr.click('#etats-rapprochement button[data-rapp="absentsIci"]'); await pr.waitForTimeout(400);
+  await pr.click('#verdicts-rapprochement button[data-rapp="absentsIci"]'); await pr.waitForTimeout(400);
   verifier('« seulement dans Base2 » passe sur Base2, réduit son tableau à UD-99-9999, et celui de GATES dit où la voir',
     await pr.evaluate(() => {
       const l = document.querySelectorAll('#corps-seconde tr[data-i]');
@@ -1516,19 +1534,19 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pp.goto('file://' + path.join(__dirname, '..', 'apercu-premier.html'));
   await pp.waitForTimeout(1600);
 
-  /* L'interrupteur vit en haut de page et porte sur tout : il n'y a plus un
-     bouton par bloc, et on ne peut pas se retrouver a moitie en exemple. */
+  /* L'interrupteur porte sur tout — il n'y a plus un bouton par bloc, et on
+     ne peut pas se retrouver a moitie en exemple — mais il est range : la
+     lectrice ne le voit plus, la batterie le manoeuvre par son mecanisme. */
   const depart = await pp.evaluate(() => ({
     present: !!document.getElementById('mode-donnees'),
-    haut: Math.round(document.getElementById('bandeau-mode').getBoundingClientRect().top) <
-          Math.round(document.querySelector('.masthead').getBoundingClientRect().top),
+    range: document.getElementById('mode-donnees').hidden && document.getElementById('mode-donnees').offsetParent === null,
     presse: [...document.querySelectorAll('#mode-donnees button')]
       .map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')),
     mot: document.getElementById('mot-mode').textContent.trim(),
     marque: document.body.dataset.exemple
   }));
-  verifier('l\'interrupteur est propose, tout en haut de la page',
-    depart.present && depart.haut, JSON.stringify(depart));
+  verifier('l\'interrupteur est la, range hors de vue',
+    depart.present && depart.range, JSON.stringify(depart));
   verifier('il demarre sur les donnees reelles, sans un mot de trop',
     depart.presse.join(' ') === 'reel:true exemple:false' && depart.mot === '' &&
     depart.marque === 'false', JSON.stringify(depart));
@@ -1536,7 +1554,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     await pp.evaluate(() => /deuxième archivage/.test(document.getElementById('zone-journal').textContent)));
 
   const avantEx = await pp.evaluate(() => document.querySelectorAll('.zone-clic').length);
-  await pp.click('#mode-donnees button[data-mode="exemple"]'); await pp.waitForTimeout(900);
+  await basculerMode(pp, 'exemple'); await pp.waitForTimeout(900);
   const ex = await pp.evaluate(() => ({
     mot: document.getElementById('mot-mode').textContent,
     marque: document.body.dataset.exemple,
@@ -1564,7 +1582,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('les plans affiches restent ceux de la feuille',
     ex.plans === 186 && /186 plans/.test(ex.phrase), ex.phrase);
 
-  await pp.click('#mode-donnees button[data-mode="reel"]'); await pp.waitForTimeout(800);
+  await basculerMode(pp, 'reel'); await pp.waitForTimeout(800);
   const revenu = await pp.evaluate(() => ({
     mot: document.getElementById('mot-mode').textContent.trim(),
     marque: document.body.dataset.exemple,
@@ -1583,8 +1601,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
 
   // Dix bascules d'affilee : ni fuite, ni etat coince.
   for (let i = 0; i < 5; i++) {
-    await pp.click('#mode-donnees button[data-mode="exemple"]'); await pp.waitForTimeout(160);
-    await pp.click('#mode-donnees button[data-mode="reel"]'); await pp.waitForTimeout(160);
+    await basculerMode(pp, 'exemple'); await pp.waitForTimeout(160);
+    await basculerMode(pp, 'reel'); await pp.waitForTimeout(160);
   }
   await pp.waitForTimeout(700);
   verifier('dix bascules d\'affilee laissent la page intacte',
@@ -1592,14 +1610,14 @@ function serveurSur(valeurs, proprietes, fichiers) {
       document.querySelectorAll('#corps-tableau tr').length === 186 &&
       document.querySelectorAll('.zone-clic').length > 0));
   // Re-cliquer le mode deja actif ne doit rien recalculer de travers.
-  await pp.click('#mode-donnees button[data-mode="reel"]'); await pp.waitForTimeout(500);
+  await basculerMode(pp, 'reel'); await pp.waitForTimeout(500);
   verifier('re-cliquer le mode actif ne change rien',
     await pp.evaluate(() => document.body.dataset.exemple === 'false' &&
       document.querySelectorAll('#corps-tableau tr').length === 186));
 
-  /* L'interrupteur reste propose meme avec de l'historique : il sert aussi a
-     montrer la page a quelqu'un, pas seulement a combler un vide. */
-  verifier('l\'interrupteur reste propose meme avec de l\'historique',
+  /* Le mecanisme reste meme avec de l'historique : il sert a la batterie, et
+     a montrer la page a quelqu'un le jour ou on le ressort. */
+  verifier('le mecanisme de l\'exemple reste meme avec de l\'historique',
     await pg.evaluate(() => !!document.querySelector('#mode-donnees button[data-mode="exemple"]')));
   await ctxPremier.close();
 

@@ -20,6 +20,10 @@ function verifier(nom, condition, detail) {
 }
 function section(titre) { sectionCourante = titre; console.log('\n— ' + titre + ' —'); }
 
+/* L'interrupteur exemple / réel est rangé — la lectrice ne le voit plus —
+   mais son mécanisme reste : la batterie le manœuvre comme un clic. */
+const basculerMode = (pg, mode) => pg.evaluate(m => document.querySelector('#mode-donnees button[data-mode="' + m + '"]').click(), mode);
+
 /* « tout reinitialiser » est masque quand rien n'est filtre : on ne clique que
    s'il est visible, sinon on remet l'etat a la main. */
 async function reinitialiser(pg) {
@@ -142,13 +146,13 @@ async function reinitialiser(pg) {
   // =================================================================
   section('L\'interrupteur exemple / reel');
   const modeDepart = await p.evaluate(() => ({
-    haut: document.getElementById('bandeau-mode').getBoundingClientRect().top <
-          document.querySelector('.masthead').getBoundingClientRect().top,
+    range: document.getElementById('mode-donnees').hidden && document.getElementById('mode-donnees').offsetParent === null,
+    bandeau: !!document.getElementById('bandeau-mode'),
     presse: [...document.querySelectorAll('#mode-donnees button')]
       .map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')).join(' '),
     marque: document.body.dataset.exemple
   }));
-  verifier('il est tout en haut, avant le titre', modeDepart.haut, JSON.stringify(modeDepart));
+  verifier('il est rangé : présent pour la batterie, hors de vue pour la lectrice', modeDepart.range && modeDepart.bandeau, JSON.stringify(modeDepart));
   verifier('et il demarre sur le reel',
     modeDepart.presse === 'reel:true exemple:false' && modeDepart.marque === 'false',
     JSON.stringify(modeDepart));
@@ -170,7 +174,7 @@ async function reinitialiser(pg) {
   const reelBlocs = await blocsRemplis();
   verifier('en reel, tous les blocs sont remplis',
     Object.keys(reelBlocs).every(k => reelBlocs[k]), JSON.stringify(reelBlocs));
-  await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(900);
+  await basculerMode(p, 'exemple'); await p.waitForTimeout(900);
   const modeEx = await p.evaluate(() => ({
     marque: document.body.dataset.exemple,
     bord: getComputedStyle(document.getElementById('bandeau-mode')).borderStyle,
@@ -221,15 +225,15 @@ async function reinitialiser(pg) {
   verifier('en exemple, filtrer un etat reduit le tableau',
     await p.evaluate(t => { const n = document.querySelectorAll('#corps-tableau tr').length; return n > 0 && n < t; }, TOTAL));
   await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(300);
-  await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(800);
+  await basculerMode(p, 'reel'); await p.waitForTimeout(800);
   verifier('revenir au reel efface la marque et la phrase',
     await p.evaluate(() => document.body.dataset.exemple === 'false' &&
       document.getElementById('mot-mode').textContent.trim() === ''));
   verifier('et retrouve exactement les blocs du depart',
     JSON.stringify(await blocsRemplis()) === JSON.stringify(reelBlocs));
   for (let i = 0; i < 5; i++) {
-    await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(150);
-    await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(150);
+    await basculerMode(p, 'exemple'); await p.waitForTimeout(150);
+    await basculerMode(p, 'reel'); await p.waitForTimeout(150);
   }
   await p.waitForTimeout(700);
   verifier('dix bascules d\'affilee laissent la page intacte',
@@ -299,12 +303,12 @@ async function reinitialiser(pg) {
   // L'exemple d'un autre contrat, puis un changement de contrat : on RESTE en
   // exemple, sur le nouveau contrat — rebasculer sans un mot sur le réel
   // trompait la lectrice.
-  await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(800);
+  await basculerMode(p, 'exemple'); await p.waitForTimeout(800);
   await p.selectOption('#select-contrat', 'HDK'); await p.waitForTimeout(1200);
   const x1ex = await lireContrat();
   verifier('un changement de contrat en exemple reste en exemple, sur le nouveau contrat',
     x1ex.mode === 'true' && x1ex.nom === 'HDK', JSON.stringify({ mode: x1ex.mode, nom: x1ex.nom }));
-  await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(900);
+  await basculerMode(p, 'reel'); await p.waitForTimeout(900);
   const x1 = await lireContrat();
   verifier('revenir a HDK, en donnees reelles, redonne les comptes initiaux',
     x1.plans === TOTAL && x1.etats === etats0 && x1.pied === pied0 && x1.mode === 'false', JSON.stringify(x1));
@@ -334,11 +338,13 @@ async function reinitialiser(pg) {
      extract dont la référence se lit sur trois colonnes (NAME, SOL., Cust.V),
      avec des écarts délibérés — 5 plans absents de SEE, 5 références
      seulement dans SEE, 2 plans sous un autre indice, 10 champs différents.
-     La section vit entre le bloc par groupe et le tableau, et reprend le
-     dessin de la barre d'avancement : une phrase, une barre segmentée, des
-     filets, cinq boutons à grand nombre. Chaque bouton filtre le tableau des
-     plans ; « absents de SEE » l'emmène sur GATES, « seulement dans SEE »
-     sur SEE ; un panneau détaille les écarts de champ. Elle suit le
+     La section vit sous le tableau des plans : une phrase, puis deux cercles
+     face à face — GATES et SEE — avec, dans leur recouvrement, l'anneau des
+     plans en commun en trois parts, et de part et d'autre ce qui n'est que
+     d'un côté ; à droite, cinq verdicts en français, un nombre chacun.
+     Chaque verdict filtre le tableau des plans ; « absents de SEE »
+     l'emmène sur GATES, « seulement dans SEE » sur SEE ; un panneau
+     détaille les écarts de champ. Elle suit le
      périmètre et le contrat, et disparaît sans seconde base. */
   section('Rapprochement avec une seconde base');
   const COLONNES_SEE = ['NAME', 'SOL.', 'Cust.V', 'Int. V', 'ARCHIVE FILE PREFIX', 'VALIDITY PSN FULL',
@@ -356,17 +362,35 @@ async function reinitialiser(pg) {
       phrase: document.getElementById('phrase-rapprochement').textContent,
       sous: document.getElementById('sous-rapprochement').textContent,
       compte: document.getElementById('compte-rapprochement').textContent,
-      jauge: [...document.querySelectorAll('#barre-rapprochement span[data-cle]')].map(s => ({
-        cle: s.dataset.cle, cat: s.className.replace('survole', '').trim(), w: parseFloat(s.style.width), texte: s.textContent.trim() })),
-      filets: document.querySelectorAll('#filets-rapprochement i').length,
-      puces: [...document.querySelectorAll('#etats-rapprochement button[data-rapp]')].map(b => ({
-        cle: b.dataset.rapp, n: +b.querySelector('.etat-n').textContent.replace(/\s/g, ''),
-        libelle: b.querySelector('.etat-haut').textContent.trim(), atterrit: b.dataset.atterrit,
-        pastille: (b.querySelector('.etat-haut .pastille') || { className: '' }).className.replace('pastille', '').trim(),
-        presse: b.getAttribute('aria-pressed'), inactif: b.disabled, gauche: b.style.left
+      figure: (() => {
+        const svg = document.querySelector('#venn-rapprochement svg');
+        if (!svg) return null;
+        const RAYON = 34;
+        return {
+          cercles: [...svg.querySelectorAll('circle.cercle-ici, circle.cercle-la')].map(c => c.getAttribute('class')).join(),
+          bases: [...svg.querySelectorAll('.base-nom')].map(t => t.textContent).join(),
+          comptes: [...svg.querySelectorAll('.base-compte')].map(t => t.textContent).join(' | '),
+          parts: [...svg.querySelectorAll('.donut-seg')].map(x => ({
+            cle: x.getAttribute('data-cle'), n: +x.getAttribute('data-n'),
+            cat: x.getAttribute('class').replace('donut-seg', '').replace('survole', '').trim(),
+            degres: x.tagName === 'circle' ? 360 : Math.round(x.getTotalLength() / (2 * Math.PI * RAYON) * 360) })),
+          cotes: [...svg.querySelectorAll('.cote')].map(g => ({
+            cle: g.getAttribute('data-cle'), n: +g.querySelector('.grand').textContent,
+            mots: [...g.querySelectorAll('.petit')].map(t => t.textContent).join(' · ') })),
+          commun: +svg.querySelector('.commun-n').textContent, motCommun: svg.querySelector('.commun-mot').textContent,
+          aria: document.getElementById('venn-rapprochement').getAttribute('aria-label')
+        };
+      })(),
+      puces: [...document.querySelectorAll('#verdicts-rapprochement button[data-rapp]')].map(b => ({
+        cle: b.dataset.rapp, n: +b.querySelector('.verdict-n').textContent.replace(/\s/g, ''),
+        libelle: b.querySelector('.verdict-mot b').textContent.trim(), atterrit: b.dataset.atterrit,
+        phrase: b.querySelector('.verdict-mot').textContent.replace(/\s+/g, ' ').trim(),
+        pastille: (b.querySelector('.pastille') || { className: '' }).className.replace('pastille', '').trim(),
+        presse: b.getAttribute('aria-pressed'), inactif: b.disabled
       })),
       videIci: (document.querySelector('#corps-tableau .vide-message') || { textContent: '' }).textContent.replace(/\s+/g, ' ').trim(),
-      ordre: top('zone-critique') < top('rapprochement') && top('rapprochement') < top('cadre-tableau'),
+      ordre: top('cadre-tableau') < top('rapprochement') &&
+             top('rapprochement') < Math.round(document.querySelector('.pied').getBoundingClientRect().top + window.scrollY),
       lignes: document.querySelectorAll('#corps-tableau tr').length,
       refsTableau: [...document.querySelectorAll('#corps-tableau tr td.ref')].map(td => td.textContent.trim()),
       jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()),
@@ -398,7 +422,7 @@ async function reinitialiser(pg) {
   const r0 = await lireRapp();
   verifier('la section est là, nommée d\'après la seconde base',
     !r0.cache && r0.titre === 'Rapprochement avec SEE', r0.titre);
-  verifier('entre le bloc par groupe et le tableau', r0.ordre);
+  verifier('sous le tableau des plans, avant le pied', r0.ordre);
   verifier('la phrase dit d\'abord ce qui va, dans le registre de la barre du haut',
     r0.phrase === IDENTIQUES + ' sur ' + TOTAL + ' plans identiques dans SEE', r0.phrase);
   verifier('la sous-phrase dit ce qui reste à vérifier, et ce que SEE est seul à connaître',
@@ -415,22 +439,33 @@ async function reinitialiser(pg) {
     r0.puces.map(x => x.pastille).join() === 'identique,neutre,ecart,absent,seul', r0.puces.map(x => x.pastille).join());
   verifier('et dit d\'avance où ses lignes existent : « absents de SEE » emmène sur GATES, « seulement dans SEE » sur SEE',
     r0.puces.map(x => x.atterrit).join() === ',,,ici,la', r0.puces.map(x => x.atterrit).join());
-  const sommeBarre = r0.jauge.reduce((t, j) => t + j.w, 0);
-  verifier('la barre porte un segment par verdict, dans l\'ordre, à la même échelle — ce qui n\'existe que là en pointillé après un blanc',
-    r0.jauge.map(j => j.cat).join() === 'identique,emission,ecart,absentLa,seul' && Math.abs(sommeBarre - 100) < 0.1 &&
-    Math.abs(r0.jauge[4].w - 100 * 5 / (TOTAL + 5)) < 0.05, JSON.stringify(r0.jauge));
-  verifier('la part écrite dans le segment vert est celle des plans d\'ici, comme dans la phrase',
-    r0.jauge[0].texte === PCT + '\u202f%' && r0.jauge.slice(1).every(j => j.texte === ''), JSON.stringify(r0.jauge.map(j => j.texte)));
-  verifier('les filets prolongent les coupures de la barre, après les segments assez larges pour qu\'un trait dise quelque chose',
-    r0.filets >= 1 && r0.filets <= 4, String(r0.filets));
+  const F = r0.figure;
+  verifier('deux cercles face à face, GATES plein à gauche, SEE en pointillé à droite, chacun avec son compte',
+    F && F.cercles === 'cercle-ici,cercle-la' && F.bases === 'GATES,SEE' &&
+    F.comptes === TOTAL.toLocaleString('fr-FR') + ' plans | ' + TOTAL.toLocaleString('fr-FR') + ' lignes', JSON.stringify(F && [F.cercles, F.bases, F.comptes]));
+  verifier('dans le recouvrement, l\'anneau des plans en commun : ' + (TOTAL - 5) + ', en trois parts vert / gris / ambre, dans l\'ordre des verdicts',
+    F && F.commun === TOTAL - 5 && F.motCommun === 'en commun' &&
+    F.parts.map(x => x.cle + '=' + x.n + ':' + x.cat).join(' ') === 'identiques=' + IDENTIQUES + ':identique indiceDifferent=2:emission ecarts=10:ecart',
+    JSON.stringify(F && F.parts));
+  const degres = F ? F.parts.reduce((t, x) => t + x.degres, 0) : 0;
+  verifier('les parts sont à l\'échelle — le vert domine, ' + PCT + ' % — mais la plus petite reste visible',
+    F && F.parts[0].degres >= 300 && F.parts.every(x => x.degres >= 4) && degres >= 340 && degres <= 360, JSON.stringify(F && F.parts.map(x => x.degres)));
+  verifier('de part et d\'autre, ce qui n\'est que d\'un côté : 5 absents de SEE dans le cercle GATES, 5 seulement dans SEE dans l\'autre',
+    F && F.cotes.map(c => c.cle + '=' + c.n + ' ' + c.mots).join(' | ') === 'absentsLa=5 absents de SEE | absentsIci=5 seulement dans SEE',
+    JSON.stringify(F && F.cotes));
+  verifier('la figure se lit aussi à voix haute',
+    F && new RegExp('^Rapprochement avec SEE : ' + IDENTIQUES + ' identiques, 2 sous un autre indice, 10 avec des champs différents, 5 absents de SEE, sur ' + TOTAL + ' plans ; 5 lignes seulement dans SEE\\.$').test(F.aria), F && F.aria);
+  verifier('chaque verdict se lit en une phrase de tous les jours',
+    r0.puces.map(x => x.phrase).join(' | ') === 'identiques · se retrouvent à l’identique dans SEE | autre indice · sont dans SEE sous une autre lettre d’indice | champs différents · ont un champ qui ne dit pas la même chose dans SEE | absents de SEE · n’existent pas dans SEE | seulement dans SEE · lignes de SEE sans plan dans GATES',
+    r0.puces.map(x => x.phrase).join(' | '));
   const rectsRapp = await p.evaluate(() => {
-    const zone = document.getElementById('etats-rapprochement').getBoundingClientRect();
-    const r = [...document.querySelectorAll('#etats-rapprochement .etat-btn')].map(b => b.getBoundingClientRect());
-    return { chevauche: r.some((a, i) => i > 0 && a.left < r[i - 1].right), dedans: r.every(b => b.left >= zone.left - 1 && b.right <= zone.right + 1), n: r.length };
+    const fig = document.getElementById('venn-rapprochement').getBoundingClientRect();
+    const zone = document.getElementById('verdicts-rapprochement').getBoundingClientRect();
+    const r = [...document.querySelectorAll('#verdicts-rapprochement button')].map(b => b.getBoundingClientRect());
+    return { aDroite: zone.left >= fig.right, chevauche: r.some((a, i) => i > 0 && a.top < r[i - 1].bottom - 1), dedans: r.every(b => b.left >= zone.left - 1 && b.right <= zone.right + 1), n: r.length };
   });
-  verifier('les boutons sont posés sous leurs segments, de gauche à droite, sans se chevaucher ni sortir du cadre',
-    r0.puces.every(x => /px$/.test(x.gauche)) && rectsRapp.n === 5 && !rectsRapp.chevauche && rectsRapp.dedans,
-    JSON.stringify([r0.puces.map(x => x.gauche), rectsRapp]));
+  verifier('les verdicts sont une liste à droite de la figure, une ligne chacun, sans se chevaucher ni sortir du cadre',
+    rectsRapp.n === 5 && rectsRapp.aDroite && !rectsRapp.chevauche && rectsRapp.dedans, JSON.stringify(rectsRapp));
   verifier('aucune n\'est pressée ni inactive au départ, les deux tableaux sont entiers',
     r0.puces.every(x => x.presse === 'false' && !x.inactif) && r0.lignes === TOTAL && r0.seconde === TOTAL && r0.jetons.length === 0,
     JSON.stringify([r0.lignes, r0.seconde, r0.jetons]));
@@ -449,7 +484,7 @@ async function reinitialiser(pg) {
     JSON.stringify(r0.R.indices));
 
   // « champs différents » : les deux tableaux se réduisent aux dix plans concernés.
-  await p.click('#etats-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(500);
+  await p.click('#verdicts-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(500);
   const rEc = await lireRapp();
   verifier('cliquer « champs différents » réduit le tableau d\'ici à 10 plans, et celui de SEE à leurs 10 lignes',
     rEc.lignes === 10 && rEc.seconde === 10, rEc.lignes + ' / ' + rEc.seconde);
@@ -461,33 +496,33 @@ async function reinitialiser(pg) {
     rEc.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'ecarts', JSON.stringify(rEc.jetons));
   verifier('les comptes ne bougent pas : le rapprochement ne se filtre pas lui-même',
     rEc.puces.map(x => x.n).join() === [IDENTIQUES, 2, 10, 5, 5].join());
-  await p.click('#etats-rapprochement button[data-rapp="absentsLa"]'); await p.waitForTimeout(500);
+  await p.click('#verdicts-rapprochement button[data-rapp="absentsLa"]'); await p.waitForTimeout(500);
   const rAb = await lireRapp();
   verifier('« absents de SEE » remplace la sélection : 5 plans ici, et le tableau de SEE le dit vide, avec le chemin du retour',
     rAb.lignes === 5 && rAb.jetons[0] === 'Rapprochement : absents de SEE' && rAb.seconde === 0 &&
     rAb.secondeVide === 'Ces 5 plans n’ont pas de ligne dans SEE. Les voir dans GATES' &&
     rAb.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'absentsLa', JSON.stringify([rAb.jetons, rAb.lignes, rAb.secondeVide]));
-  await p.click('#etats-rapprochement button[data-rapp="indiceDifferent"]'); await p.waitForTimeout(500);
+  await p.click('#verdicts-rapprochement button[data-rapp="indiceDifferent"]'); await p.waitForTimeout(500);
   const rIn = await lireRapp();
   verifier('« indice différent » : 2 plans ici, leurs 2 lignes là, sous l\'autre lettre',
     rIn.lignes === 2 && rIn.refsTableau.sort().join() === r0.R.indices.map(x => x.ici).sort().join() &&
     rIn.secondeRefs.length === 2 && rIn.secondeRefs.every(r => r0.R.indices.some(x => x.la.indexOf(r) === 0)), JSON.stringify([rIn.refsTableau, rIn.secondeRefs]));
-  await p.click('#etats-rapprochement button[data-rapp="identiques"]'); await p.waitForTimeout(500);
+  await p.click('#verdicts-rapprochement button[data-rapp="identiques"]'); await p.waitForTimeout(500);
   const rId = await lireRapp();
   verifier('« identiques » : les ' + IDENTIQUES + ' plans, des deux côtés',
     rId.lignes === IDENTIQUES && rId.seconde === IDENTIQUES && rId.jetons[0] === 'Rapprochement : identiques', JSON.stringify([rId.lignes, rId.seconde]));
-  await p.click('#etats-rapprochement button[data-rapp="identiques"]'); await p.waitForTimeout(500);
+  await p.click('#verdicts-rapprochement button[data-rapp="identiques"]'); await p.waitForTimeout(500);
   const rOff = await lireRapp();
   verifier('re-cliquer le bouton pressé retire le filtre',
     rOff.lignes === TOTAL && rOff.seconde === TOTAL && rOff.jetons.length === 0 && rOff.puces.every(x => x.presse === 'false'));
-  await p.click('#etats-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(400);
+  await p.click('#verdicts-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(400);
   await p.click('.jeton .x'); await p.waitForTimeout(400);
   verifier('la croix du bandeau retire aussi le filtre du rapprochement',
     await p.evaluate(t => document.querySelectorAll('#corps-tableau tr').length === t &&
       document.getElementById('filtres-actifs').hidden, TOTAL));
 
   // « seulement dans SEE » : ces références n'ont pas de plan ici — le tableau passe sur SEE et se filtre.
-  await p.click('#etats-rapprochement button[data-rapp="absentsIci"]'); await p.waitForTimeout(400);
+  await p.click('#verdicts-rapprochement button[data-rapp="absentsIci"]'); await p.waitForTimeout(400);
   const rIci = await lireRapp();
   verifier('« seulement dans SEE » réduit le tableau de SEE à ses 5 lignes ; celui de GATES le dit, avec le chemin vers SEE',
     rIci.seconde === 5 && rIci.videIci === 'Ces 5 lignes n’ont pas de plan dans GATES. Les voir dans SEE' &&
@@ -499,32 +534,60 @@ async function reinitialiser(pg) {
   await p.click('.jeton .x'); await p.waitForTimeout(400);
   const rIci2 = await lireRapp();
   verifier('la croix rend le tableau de SEE entier', rIci2.seconde === TOTAL && rIci2.jetons.length === 0 && rIci2.puces.every(x => x.presse === 'false'));
-  await p.click('#etats-rapprochement button[data-rapp="absentsIci"]'); await p.waitForTimeout(300);
-  await p.click('#etats-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(400);
+  await p.click('#verdicts-rapprochement button[data-rapp="absentsIci"]'); await p.waitForTimeout(300);
+  await p.click('#verdicts-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(400);
   const rBasc = await lireRapp();
   verifier('un lot d\'ici posé après « seulement dans SEE » le remplace : un seul lot à la fois',
     rBasc.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'ecarts' && rBasc.jetons.length === 1 && rBasc.seconde === 10, JSON.stringify(rBasc.jetons));
-  await p.click('#etats-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(400);
+  await p.click('#verdicts-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(400);
 
   // Survoler un bouton éclaire son segment et ouvre la bulle ; le lien « Les voir dans … » change de côté sans toucher aux filtres.
   await p.evaluate(() => document.getElementById('rapprochement').scrollIntoView({ block: 'center' })); await p.waitForTimeout(200);
-  await (await p.$('#etats-rapprochement button[data-rapp="ecarts"]')).hover(); await p.waitForTimeout(250);
+  await (await p.$('#verdicts-rapprochement button[data-rapp="ecarts"]')).hover(); await p.waitForTimeout(250);
   const survolRapp = await p.evaluate(() => ({
     visible: document.getElementById('bulle').dataset.visible,
     texte: document.getElementById('bulle').innerText.replace(/\s+/g, ' '),
-    eclaire: [...document.querySelectorAll('#barre-rapprochement span.survole')].map(x => x.dataset.cle).join()
+    eclaire: [...document.querySelectorAll('#venn-rapprochement .survole')].map(x => x.getAttribute('data-cle')).join()
   }));
-  verifier('survoler « champs différents » éclaire son segment et ouvre la bulle : plans, écarts, ventilation par champ, où mène le clic',
+  verifier('survoler « champs différents » éclaire sa part de l\'anneau et ouvre la bulle : plans, écarts, ventilation par champ, où mène le clic',
     survolRapp.visible === 'true' && survolRapp.eclaire === 'ecarts' && /Des champs diffèrent/.test(survolRapp.texte) &&
     /10 plans/.test(survolRapp.texte) && /10 écarts/.test(survolRapp.texte) && /Validated/.test(survolRapp.texte) &&
     /n’afficher que ceux-là dans le tableau/.test(survolRapp.texte), survolRapp.texte.slice(0, 160));
-  await (await p.$('#etats-rapprochement button[data-rapp="indiceDifferent"]')).hover(); await p.waitForTimeout(250);
+  await (await p.$('#verdicts-rapprochement button[data-rapp="indiceDifferent"]')).hover(); await p.waitForTimeout(250);
   verifier('la bulle d’« autre indice » montre les paires : référence GATES → solution et lettre dans SEE',
     await p.evaluate(() => /[A-Z]{3}\d{4}A\d{6}[A-Z] → \d{3}[A-Z]/.test(document.getElementById('bulle').innerText)));
   await p.mouse.move(5, 5); await p.waitForTimeout(150);
-  verifier('quitter la section referme la bulle et éteint le segment',
-    await p.evaluate(() => document.getElementById('bulle').dataset.visible !== 'true' && !document.querySelector('#barre-rapprochement span.survole')));
-  await p.click('#etats-rapprochement button[data-rapp="absentsLa"]'); await p.waitForTimeout(400);
+  verifier('quitter la section referme la bulle et éteint la figure',
+    await p.evaluate(() => document.getElementById('bulle').dataset.visible !== 'true' && !document.querySelector('#venn-rapprochement .survole')));
+  // La figure elle-même répond : l'anneau sous la souris, un côté sous la souris.
+  const surAnneau = await p.evaluate(() => {
+    const path = document.querySelector('#venn-rapprochement .donut-seg[data-cle="identiques"]');
+    const m = path.getScreenCTM(), q = path.getPointAtLength(path.getTotalLength() / 2);
+    return { x: m.a * q.x + m.c * q.y + m.e, y: m.b * q.x + m.d * q.y + m.f };
+  });
+  await p.mouse.move(surAnneau.x, surAnneau.y); await p.waitForTimeout(250);
+  const survolAnneau = await p.evaluate(() => ({
+    visible: document.getElementById('bulle').dataset.visible, texte: document.getElementById('bulle').innerText.replace(/\s+/g, ' '),
+    eclaire: [...document.querySelectorAll('#venn-rapprochement .survole')].map(x => x.getAttribute('data-cle')).join()
+  }));
+  verifier('survoler la part verte de l\'anneau ouvre la bulle des identiques et l\'épaissit',
+    survolAnneau.visible === 'true' && survolAnneau.eclaire === 'identiques' && /Identiques des deux côtés/.test(survolAnneau.texte) &&
+    new RegExp(IDENTIQUES + ' plans').test(survolAnneau.texte), survolAnneau.texte.slice(0, 120));
+  await (await p.$('#venn-rapprochement .cote[data-cle="absentsIci"] .grand')).hover(); await p.waitForTimeout(250);
+  const survolCote = await p.evaluate(() => ({
+    visible: document.getElementById('bulle').dataset.visible, texte: document.getElementById('bulle').innerText.replace(/\s+/g, ' '),
+    eclaire: [...document.querySelectorAll('#venn-rapprochement .survole')].map(x => x.getAttribute('data-cle')).join()
+  }));
+  verifier('survoler le 5 « seulement dans SEE » ouvre sa bulle et souligne le nombre',
+    survolCote.visible === 'true' && survolCote.eclaire === 'absentsIci' && /Seulement dans SEE/.test(survolCote.texte) && /5 lignes/.test(survolCote.texte), survolCote.texte.slice(0, 120));
+  await p.mouse.move(5, 5); await p.waitForTimeout(150);
+  // Au clavier : le verdict qui a le focus éclaire aussi sa part.
+  await p.focus('#verdicts-rapprochement button[data-rapp="identiques"]'); await p.keyboard.press('Tab'); await p.waitForTimeout(150);
+  verifier('au clavier, le verdict qui a le focus éclaire sa part de la figure',
+    await p.evaluate(() => document.activeElement.dataset.rapp === 'indiceDifferent' &&
+      [...document.querySelectorAll('#venn-rapprochement .survole')].map(x => x.getAttribute('data-cle')).join() === 'indiceDifferent'));
+  await p.evaluate(() => document.activeElement.blur()); await p.waitForTimeout(100);
+  await p.click('#verdicts-rapprochement button[data-rapp="absentsLa"]'); await p.waitForTimeout(400);
   await p.click('#choix-base button[data-base="la"]'); await p.waitForTimeout(400);
   await p.click('#corps-seconde button[data-aller-base="ici"]'); await p.waitForTimeout(400);
   const rLien = await lireRapp();
@@ -569,7 +632,7 @@ async function reinitialiser(pg) {
   await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(600);
   verifier('revenir à Tout redonne les 22 écarts', (await lireRapp()).R.total === 22);
   // Un lot posé suit le périmètre : le bouton et le tableau parlent des mêmes plans.
-  await p.click('#etats-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(400);
+  await p.click('#verdicts-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(400);
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
   const rSuit = await lireRapp();
   verifier('un lot posé suit le périmètre : sous PERSO, le tableau compte ce que le bouton « champs différents » annonce',
@@ -590,11 +653,11 @@ async function reinitialiser(pg) {
   await p.selectOption('#select-contrat', 'HDK'); await p.waitForTimeout(1200);
 
   // L'exemple : la même seconde base, les mêmes comptes.
-  await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(800);
+  await basculerMode(p, 'exemple'); await p.waitForTimeout(800);
   const rEx = await lireRapp();
   verifier('en mode exemple, la section reste et dit la même chose',
     !rEx.cache && rEx.R.total === 22 && rEx.phrase === r0.phrase, rEx.phrase);
-  await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(800);
+  await basculerMode(p, 'reel'); await p.waitForTimeout(800);
 
   // Sans description de seconde base, il n'y a rien à rapprocher.
   await p.evaluate(() => { const s = window.__jeuDExemple('HDK'); delete s.rapprochement; window.__chargerSource(s); });
@@ -750,35 +813,41 @@ async function reinitialiser(pg) {
     sEtat.iciMontre && sEtat.base === 'ici:true la:false' && sEtat.gates < TOTAL && sEtat.gates > 0, JSON.stringify([sEtat.base, sEtat.gates]));
   await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(400);
   await p.click('#choix-base button[data-base="la"]'); await p.waitForTimeout(400);
-  await p.click('#etats-rapprochement button[data-rapp="identiques"]'); await p.waitForTimeout(500);
+  await p.click('#verdicts-rapprochement button[data-rapp="identiques"]'); await p.waitForTimeout(500);
   const sLot = await lireSeconde();
   verifier('mais un lot du rapprochement se lit des deux côtés : posé depuis SEE, le tableau y reste',
     sLot.laMontre && sLot.n === IDENTIQUES, JSON.stringify([sLot.base, sLot.n]));
-  await p.click('#etats-rapprochement button[data-rapp="absentsIci"]'); await p.waitForTimeout(500);
+  await p.click('#verdicts-rapprochement button[data-rapp="absentsIci"]'); await p.waitForTimeout(500);
   await p.click('#reinit'); await p.waitForTimeout(500);
   const sReinit = await lireSeconde();
   verifier('« tout réinitialiser » ramène sur GATES, entier, sans lot',
     sReinit.iciMontre && sReinit.gates === TOTAL && sReinit.jetons.length === 0, JSON.stringify([sReinit.base, sReinit.gates, sReinit.jetons]));
 
   // =================================================================
-  /* Les boutons du rapprochement aux largeurs intermédiaires, périmètre posé
-     (le libellé le plus long, « seulement dans SEE · tout le contrat ») : ou
-     bien la rangée tient, alignée, ou bien elle passe en grille — jamais des
-     boutons qui se recouvrent, jamais hors du cadre, jamais de débord de page. */
-  section('Les boutons du rapprochement à toutes les largeurs');
-  for (const largeur of [681, 700, 740, 800, 960, 1280]) {
+  /* La figure et les verdicts aux largeurs intermédiaires, périmètre posé
+     (la figure gagne une ligne, « tout le contrat ») : côte à côte quand la
+     place le permet, l'un sous l'autre sinon — jamais de recouvrement, jamais
+     hors du cadre, jamais de débord de page. Et la ligne de la phrase, avec
+     le périmètre à sa droite, tient elle aussi. */
+  section('La figure et les verdicts à toutes les largeurs');
+  for (const largeur of [360, 681, 700, 740, 800, 860, 960, 1280]) {
     await p.setViewportSize({ width: largeur, height: 900 }); await p.waitForTimeout(350);
     await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(600);
     const mesure = await p.evaluate(() => {
-      const zone = document.getElementById('etats-rapprochement');
-      const z = zone.getBoundingClientRect();
-      const r = [...zone.querySelectorAll('.etat-btn')].map(b => b.getBoundingClientRect());
-      const grille = zone.classList.contains('en-grille') || getComputedStyle(zone).display === 'grid';
-      const recouvre = r.some((a, i) => r.some((b, j) => i < j && a.right > b.left + 1 && b.right > a.left + 1 && a.bottom > b.top + 1 && b.bottom > a.top + 1));
-      return { grille, recouvre, dedans: r.every(b => b.left >= z.left - 1 && b.right <= z.right + 1), page: document.documentElement.scrollWidth <= window.innerWidth };
+      const sec = document.getElementById('rapprochement').getBoundingClientRect();
+      const fig = document.getElementById('venn-rapprochement').getBoundingClientRect();
+      const ver = document.getElementById('verdicts-rapprochement').getBoundingClientRect();
+      const r = [...document.querySelectorAll('#verdicts-rapprochement button')].map(b => b.getBoundingClientRect());
+      const dedans = x => x.left >= sec.left - 1 && x.right <= sec.right + 1;
+      const recouvre = (a, b) => a.right > b.left + 1 && b.right > a.left + 1 && a.bottom > b.top + 1 && b.bottom > a.top + 1;
+      const per = document.getElementById('perimetre').getBoundingClientRect(), ph = document.getElementById('phrase').getBoundingClientRect();
+      return { coteACote: ver.left >= fig.right - 1, dessous: ver.top >= fig.bottom - 1, recouvre: recouvre(fig, ver) || r.some((a, i) => r.some((b, j) => i < j && recouvre(a, b))),
+        dedans: dedans(fig) && dedans(ver) && r.every(dedans), figureVisible: fig.width > 200,
+        phraseOk: !recouvre(per, ph) && per.right <= document.querySelector('.avancement').getBoundingClientRect().right + 1,
+        page: document.documentElement.scrollWidth <= window.innerWidth };
     });
-    verifier('à ' + largeur + ' px, périmètre posé : ' + (mesure.grille ? 'en grille' : 'alignés') + ', sans recouvrement, dans le cadre, sans débord',
-      !mesure.recouvre && mesure.dedans && mesure.page, JSON.stringify(mesure));
+    verifier('à ' + largeur + ' px, périmètre posé : ' + (mesure.coteACote ? 'côte à côte' : 'l\'un sous l\'autre') + ', sans recouvrement, dans le cadre, sans débord',
+      (mesure.coteACote || mesure.dessous) && !mesure.recouvre && mesure.dedans && mesure.figureVisible && mesure.phraseOk && mesure.page, JSON.stringify(mesure));
     await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(400);
   }
   await p.setViewportSize({ width: 1280, height: 1000 }); await p.waitForTimeout(400);
@@ -861,23 +930,27 @@ async function reinitialiser(pg) {
   const selP = await p.evaluate(() => ({
     visible: !document.getElementById('perimetre').hidden &&
              document.getElementById('choix-perimetre').offsetParent !== null,
-    /* Entre le titre et la barre d'avancement : c'est là qu'on choisit ce
-       qu'on regarde, et le bandeau du haut garde sa sobriété. */
-    haut: document.getElementById('perimetre').getBoundingClientRect().top >
-          document.querySelector('.masthead').getBoundingClientRect().top &&
+    /* Hors de la zone du titre — le titre reste seul, centré — à droite de
+       la phrase « N sur M plans terminés », juste au-dessus de la barre :
+       c'est là qu'on choisit ce qu'on regarde. */
+    haut: document.getElementById('perimetre').getBoundingClientRect().top >=
+          document.querySelector('.masthead').getBoundingClientRect().bottom &&
           document.getElementById('perimetre').getBoundingClientRect().bottom <=
-          document.querySelector('.avancement').getBoundingClientRect().top + 1,
-    dansBandeau: !!document.querySelector('header.masthead #perimetre #choix-perimetre') &&
+          document.getElementById('barre').getBoundingClientRect().top + 1,
+    horsDuTitre: !document.querySelector('header.masthead #perimetre') &&
+                 document.querySelector('.masthead').children.length === 2 &&
+                 document.querySelector('.masthead').textContent.indexOf('Périmètre') === -1,
+    dansLaLigne: !!document.querySelector('.avancement-ligne #perimetre #choix-perimetre') &&
                  document.getElementById('perimetre').getBoundingClientRect().left >
-                 document.querySelector('.masthead h1').getBoundingClientRect().right,
+                 document.getElementById('phrase').getBoundingClientRect().right,
     boutons: [...document.querySelectorAll('#choix-perimetre button')].map(b => ({
       val: b.dataset.perimetre, texte: b.textContent.trim(),
       n: +(b.querySelector('.n') || { textContent: '0' }).textContent.replace(/\s/g, ''),
       presse: b.getAttribute('aria-pressed')
     }))
   }));
-  verifier('le sélecteur est là, dans le bandeau du titre, à sa droite, au-dessus de la barre',
-    selP.visible && selP.haut && selP.dansBandeau, JSON.stringify(selP).slice(0, 120));
+  verifier('le sélecteur est là, hors de la zone du titre : à droite de la phrase, au-dessus de la barre',
+    selP.visible && selP.haut && selP.horsDuTitre && selP.dansLaLigne, JSON.stringify(selP).slice(0, 160));
   verifier('trois boutons : Tout, puis un par domaine de la démo',
     selP.boutons.map(b => b.val).join(',') === ',BASE/OPTION,PERSO' && /^Tout/.test(selP.boutons[0].texte),
     JSON.stringify(selP.boutons));
@@ -967,13 +1040,13 @@ async function reinitialiser(pg) {
   verifier('re-cliquer la puce pressée ne change rien', JSON.stringify(await lirePerimetre()) === JSON.stringify(tout0));
 
   // En exemple, même dérivation : l'historique fabriqué a ses cartes.
-  await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(900);
+  await basculerMode(p, 'exemple'); await p.waitForTimeout(900);
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
   const exPerso = await lirePerimetre();
   verifier('en exemple aussi, la courbe du périmètre est dérivée des cartes',
     exPerso.serie.length >= 5 && exPerso.dernier.total === nPerso && exPerso.dernier.termine === exPerso.etats[0] &&
     exPerso.domainesJournal.join() === 'PERSO', JSON.stringify(exPerso.dernier));
-  await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(800);
+  await basculerMode(p, 'reel'); await p.waitForTimeout(800);
   verifier('revenir au réel rouvre sur Tout', (await lirePerimetre()).presse === ':true BASE/OPTION:false PERSO:false');
 
   // Un relevé sans carte plan par plan ne peut pas être dérivé : il est écarté, et la note le dit.
@@ -2118,7 +2191,7 @@ async function reinitialiser(pg) {
   await reinitialiser(p);
 
   // Le mode « Exemple » ne racontait que des « passés en terminé ».
-  await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(900);
+  await basculerMode(p, 'exemple'); await p.waitForTimeout(900);
   const lotsExemple = await p.evaluate(() => (document.getElementById('comparatif').textContent || '').replace(/\s+/g, ' '));
   verifier('en exemple, le comparatif montre aussi passés en cours, nouveaux, disparus et une réémission',
     /passés en cours/.test(lotsExemple) && /nouveau/.test(lotsExemple) && /disparu/.test(lotsExemple) && /indice/.test(lotsExemple),
@@ -2132,7 +2205,7 @@ async function reinitialiser(pg) {
   verifier('changer de contrat en exemple reste en exemple, sur le nouveau contrat',
     exempleX2.marque === 'true' && /fabriqué/.test(exempleX2.mot) && exempleX2.contrat === 'THS', JSON.stringify(exempleX2));
   await p.selectOption('#select-contrat', 'HDK'); await p.waitForTimeout(900);
-  await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(900);
+  await basculerMode(p, 'reel'); await p.waitForTimeout(900);
 
   // Le pied « Jeu d'exemple » ne se lit que dans la démonstration.
   verifier('la démonstration dit « Jeu d’exemple » dans son pied',

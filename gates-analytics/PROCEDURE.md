@@ -254,28 +254,28 @@ Le bloc figé à gauche couvre tout ce qui précède la référence, elle compri
 Sur l'export réel, la seule colonne qui la précédait est la « Colonne 1 »
 retirée : la référence ouvre donc le tableau et reste seule figée.
 
-### L'interrupteur exemple / réel
+### L'exemple, rangé
 
-**Tout en haut de la page**, avant le titre : un seul interrupteur, qui porte
-sur toute la page. Il n'y a pas un bouton par bloc, et on ne peut pas se
-retrouver à moitié en exemple.
+La page a un mode **Exemple** : elle se borde de tirets et remplit **le
+graphique, le journal et le comparatif** avec un historique fabriqué à partir
+des comptes du jour. Les plans affichés, eux, restent ceux de la feuille — et
+la phrase le dit : c'est l'historique qui est fabriqué, pas les plans. Tout ce
+qui marche en données réelles marche à l'identique en exemple : périmètre,
+groupes, changements d'indice, bulle du graphique, rapprochement.
 
-En mode **Exemple**, la page se borde de tirets et remplit **le graphique, le
-journal et le comparatif** avec un historique fabriqué à partir des comptes du
-jour. Les plans affichés, eux, restent ceux de la feuille — et la phrase le
-dit : c'est l'historique qui est fabriqué, pas les plans. Tout ce qui marche
-en données réelles marche à l'identique en exemple : périmètre, groupes,
-changements d'indice, bulle du graphique.
-
-Il est toujours proposé : au premier import il montre ce que la page dira plus
-tard, et plus tard il sert encore à l'expliquer à quelqu'un.
+L'interrupteur qui y mène est **rangé** : il n'apparaît plus à la lectrice (le
+classeur aura son propre historique dès le deuxième archivage), mais le
+mécanisme reste, et les deux batteries le manœuvrent pour vérifier que les
+deux modes se comportent pareil. Pour le ressortir un jour : retirer
+l'attribut `hidden` de `#mode-donnees` dans le prototype, puis `npm run build`.
 
 ## 8. Le périmètre : Tout / BASE/OPTION / PERSO
 
-Dans le bandeau du titre, à droite de « Suivi FWD » (dessous, centré, sur un
-petit écran) : **« Tout »**, puis une puce par valeur de la colonne de
-domaine, chacune avec son compte de plans. Il est masqué quand l'export n'a
-pas de colonne de domaine.
+Le titre reste seul dans sa zone : le sélecteur est posé **à droite de la
+phrase « N sur M plans terminés »**, juste au-dessus de la barre d'avancement
+qu'il gouverne (à la ligne, à gauche, sur un petit écran) : **« Tout »**, puis
+une puce par valeur de la colonne de domaine, chacune avec son compte de
+plans. Il est masqué quand l'export n'a pas de colonne de domaine.
 
 Le périmètre pilote **toute la page** : la barre et les états, la phrase, le
 comparatif « depuis l'import », la courbe et sa bulle, le journal, le bloc par
@@ -386,21 +386,26 @@ solution, trois chiffres) et **Cust.V** (l'indice, une lettre). Collé tel quel
 dans un onglet de ce classeur et décrit dans la configuration, il donne deux
 choses ; sans description, ni l'une ni l'autre n'existe.
 
-**La section « Rapprochement avec SEE »**, entre le bloc par groupe et le
-tableau, reprend exactement le dessin de la barre d'avancement du haut, pour
-se lire du même geste :
+**La section « Rapprochement avec SEE »**, sous le tableau des plans, se lit
+comme on compare deux bases : deux cercles face à face.
 
 - une phrase : « **623** sur 640 plans identiques dans SEE », et dessous ce
   qu'il reste à regarder : « Il reste 17 plans à vérifier · 5 références que
   SEE est seul à connaître. » ;
-- la barre : chaque plan d'ici dans une seule case — identique (vert), même
-  plan sous un autre indice (anneau), champs différents (ambre), absent de SEE
-  (rouge) — et, à part, après un blanc, en pointillé, ce qui n'existe que
-  dans SEE ;
-- cinq boutons sous la barre, comme les états sous celle du haut, avec leur
-  grand nombre ; un bouton à 0 se lit mais ne se clique pas :
+- la figure : le cercle **GATES** (plein, vert) à gauche, le cercle **SEE**
+  (pointillé) à droite, chacun avec son compte. Dans leur recouvrement, un
+  **anneau** compte les plans en commun, en trois parts à l'échelle — vert
+  identiques, gris autre indice, ambre champs différents ; une part, même
+  d'un seul plan, reste visible. De part et d'autre, ce qui n'est que d'un
+  côté : « 5 absents de SEE » dans le cercle GATES, « 5 seulement dans SEE »
+  dans l'autre (« tout le contrat » sous un périmètre, car ces lignes n'ont
+  pas de domaine) ;
+- à droite, cinq **verdicts**, un par ligne, avec leur grand nombre et une
+  phrase de tous les jours (« se retrouvent à l'identique dans SEE », « sont
+  dans SEE sous une autre lettre d'indice »…) ; un verdict à 0 se lit mais
+  ne se clique pas :
 
-| Bouton | Ce qu'il compte | Le clic |
+| Verdict | Ce qu'il compte | Le clic |
 |---|---|---|
 | **identiques** | même indice, mêmes champs | filtre le tableau, GATES ou SEE |
 | **autre indice** | le même plan (même racine et même solution), connu là sous une autre lettre | idem |
@@ -409,12 +414,13 @@ se lire du même geste :
 | **seulement dans SEE** | des lignes de là dont aucun plan du contrat n'a la racine et la solution | filtre et passe sur SEE |
 
 Un seul lot à la fois ; le bandeau le nomme (« Rapprochement : … »), la croix
-le retire sans changer de côté. Survoler un bouton éclaire son segment et
-ouvre une bulle : les champs comparés, la ventilation des écarts par champ,
-les paires « référence → solution et lettre », et où mène le clic. Quand le
-tableau est du mauvais côté pour le lot posé, il le dit et propose « Les voir
-dans GATES / SEE ». Un bouton **détail des écarts (n)** déplie une grille :
-référence, champ, valeur GATES, valeur SEE.
+le retire sans changer de côté. Survoler un verdict — ou sa part de l'anneau,
+ou un nombre de côté — l'éclaire dans la figure et ouvre une bulle : les
+champs comparés, la ventilation des écarts par champ, les paires « référence
+→ solution et lettre », et où mène le clic. Quand le tableau est du mauvais
+côté pour le lot posé, il le dit et propose « Les voir dans GATES / SEE ». Un
+bouton **détail des écarts (n)** déplie une grille : référence, champ, valeur
+GATES, valeur SEE.
 
 **Le tableau « SEE »**, derrière l'interrupteur **GATES | SEE** de la
 section « Plans » (un seul tableau à la fois, les mêmes outils) : l'extract à

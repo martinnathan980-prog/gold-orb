@@ -38,10 +38,10 @@ ferait perdre au découpage suivant. Tout passe par le prototype (et par
 
 ## Ce que la page montre
 
-- **Un bandeau tout en haut** : l'interrupteur exemple / réel, le
-  **périmètre** (Tout, puis une puce par domaine — `BASE/OPTION`, `PERSO`…)
-  qui pilote toute la page, et le sélecteur de **contrat** quand le classeur
-  en a plusieurs.
+- **Un bandeau tout en haut** avec le sélecteur de **contrat** quand le
+  classeur en a plusieurs ; le titre, seul ; puis, à droite de la phrase
+  d'avancement, le **périmètre** (Tout, puis une puce par domaine —
+  `BASE/OPTION`, `PERSO`…) qui pilote toute la page.
 - **L'avancement du jour** : barre, quatre états, et le comparatif « depuis
   l'import » — passés en terminé, en cours, repassés à faire, nouveaux,
   disparus et **changements d'indice** (le même plan réémis sous un autre
@@ -54,10 +54,11 @@ ferait perdre au découpage suivant. Tout passe par le prototype (et par
   de gauche, et sous chaque ligne toutes ses références, à faire puis
   terminées.
 - **Le rapprochement avec une seconde base** (SEE), quand la configuration en
-  nomme une : la même barre que l'avancement, avec ses boutons — identiques,
-  autre indice, champs différents, absents de SEE, seulement dans SEE — et,
-  derrière l'interrupteur GATES | SEE du tableau, l'extract SEE à l'identique
-  avec le verdict sur chaque ligne.
+  nomme une, sous le tableau : deux cercles face à face, l'anneau des plans
+  en commun dans leur recouvrement, et cinq verdicts en français — identiques,
+  autre indice, champs différents, absents de SEE, seulement dans SEE — qui
+  filtrent le tableau ; derrière l'interrupteur GATES | SEE du tableau,
+  l'extract SEE à l'identique avec le verdict sur chaque ligne.
 - **Le tableau** : l'extract GATES à l'identique — toutes les colonnes, les
   mêmes intitulés, l'ordre exact de la feuille — en deux vues seulement,
   *Toutes les colonnes* et *Vue essentielle*. Seule exception : une colonne
@@ -71,7 +72,7 @@ npm install
 npm test
 ```
 
-- `npm run test:addon` — 310 tests. Le vrai `Code.gs` tourne dans Node contre
+- `npm run test:addon` — 311 tests. Le vrai `Code.gs` tourne dans Node contre
   un classeur en mémoire (`tests/faux-classeur.js`), sur un export
   volontairement pénible : lignes de titre, groupes fusionnés, en-têtes
   accentués ou dupliqués, ligne vide au milieu, avancements de toutes les
@@ -83,7 +84,7 @@ npm test
   (archivage, suppression, diagnostic, ancien onglet d'historique orphelin,
   changement de contrat dans la page, panne du classeur), périmètre dérivé
   des cartes plan par plan, seconde base à rapprocher.
-- `npm run test:interface` — 454 tests sur l'interface elle-même.
+- `npm run test:interface` — 462 tests sur l'interface elle-même.
   Elle n'essaie pas seulement de vérifier que ça marche : recherches avec
   balises, expressions régulières, 3 000 caractères ou émoji, jalon de
   configuration au texte injecté, `localStorage` corrompu puis inaccessible,

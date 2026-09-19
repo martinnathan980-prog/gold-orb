@@ -38,7 +38,9 @@
   <div class="filtres-actifs" id="filtres-actifs" hidden></div>
 
   <div class="bandeau-mode" id="bandeau-mode">
-    <span class="segmente" id="mode-donnees" role="group" aria-label="Source des données">
+    <!-- Rangé : la démonstration se suffit, et le classeur aura bientôt son
+         propre historique. Le mécanisme reste, pour la batterie. -->
+    <span class="segmente" id="mode-donnees" role="group" aria-label="Source des données" hidden>
       <button type="button" data-mode="reel" aria-pressed="true">Données réelles</button>
       <button type="button" data-mode="exemple" aria-pressed="false">Exemple</button>
     </span>
@@ -53,27 +55,26 @@
     </span>
   </div>
 
-  <!-- Le titre au centre ; à sa droite, le périmètre — ce qu'on regarde —
-       sans rien sous le titre qui lui vole sa ligne. Le contrat n'est pas
-       répété : il est déjà choisi en haut. -->
+  <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
+       pas répété, il est déjà choisi en haut. -->
   <header class="masthead">
-    <div class="titre-bloc">
-      <h1>Suivi FWD</h1>
-      <div class="semaine">
-        <span><b id="num-semaine">—</b></span>
-        <span aria-hidden="true">·</span>
-        <span id="dates-semaine">—</span>
-      </div>
-    </div>
-    <div class="perimetre" id="perimetre" hidden>
-      <span class="mot-perimetre" id="mot-perimetre">Périmètre</span>
-      <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
+    <h1>Suivi FWD</h1>
+    <div class="semaine">
+      <span><b id="num-semaine">—</b></span>
+      <span aria-hidden="true">·</span>
+      <span id="dates-semaine">—</span>
     </div>
   </header>
 
   <section class="avancement">
+    <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
+         gouverne, juste au-dessus de la barre. -->
     <div class="avancement-ligne">
       <div class="phrase" id="phrase">—</div>
+      <div class="perimetre" id="perimetre" hidden>
+        <span class="mot-perimetre" id="mot-perimetre">Périmètre</span>
+        <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
+      </div>
     </div>
     <div class="barre" id="barre" role="img" aria-label="Répartition de l'avancement FWD"></div>
     <div class="filets" id="filets" aria-hidden="true"></div>
@@ -144,27 +145,6 @@
     </div>
   </section>
 
-  <!-- Le rapprochement : la barre d'avancement, appliquée à la seconde base.
-       Sur le papier, sans feuille, comme le bloc du haut. Présent seulement
-       quand la source décrit une seconde base. Chaque bouton filtre le
-       tableau des plans ; ceux qui n'existent que d'un côté y basculent. -->
-  <section class="bloc rapprochement" id="rapprochement" hidden>
-    <div class="section-tete">
-      <h2 id="titre-rapprochement">Rapprochement</h2>
-      <span class="compte" id="compte-rapprochement"></span>
-    </div>
-    <div class="rapp-phrases">
-      <div class="phrase" id="phrase-rapprochement"></div>
-      <p class="rapp-sous" id="sous-rapprochement"></p>
-    </div>
-    <div class="barre" id="barre-rapprochement" role="img" aria-label="Rapprochement"></div>
-    <div class="filets" id="filets-rapprochement" aria-hidden="true"></div>
-    <div class="etats" id="etats-rapprochement" role="group" aria-label="Filtrer le tableau des plans par verdict du rapprochement"></div>
-    <button class="journal-plus rapp-detail-bouton" type="button" id="bouton-detail-rapprochement"
-            data-rapp-detail="1" aria-expanded="false" aria-controls="detail-rapprochement">détail des écarts</button>
-    <div id="detail-rapprochement"></div>
-  </section>
-
   <!-- Un seul tableau, deux bases : l'interrupteur GATES | SEE bascule de
        l'extract d'ici à celui de là, avec les mêmes outils. SEE n'existe que
        si la source décrit une seconde base ; sinon l'interrupteur s'efface. -->
@@ -228,6 +208,30 @@
         </table>
       </div>
     </div>
+  </section>
+
+  <!-- Le rapprochement, sous les tableaux : deux bases face à face. Deux
+       cercles qui se recouvrent — ce qu'elles ont en commun au milieu, avec
+       un anneau pour la part d'identiques ; ce que chacune est seule à
+       connaître sur les côtés — et une ligne par verdict, en français, qui
+       filtre le tableau. Présent seulement quand la source décrit une
+       seconde base. -->
+  <section class="bloc rapprochement" id="rapprochement" hidden>
+    <div class="section-tete">
+      <h2 id="titre-rapprochement">Rapprochement</h2>
+      <span class="compte" id="compte-rapprochement"></span>
+    </div>
+    <div class="rapp-phrases">
+      <div class="phrase" id="phrase-rapprochement"></div>
+      <p class="rapp-sous" id="sous-rapprochement"></p>
+    </div>
+    <div class="rapp-face">
+      <div class="rapp-figure" id="venn-rapprochement" role="img" aria-label="Rapprochement"></div>
+      <div class="verdicts" id="verdicts-rapprochement" role="group" aria-label="Filtrer le tableau des plans par verdict du rapprochement"></div>
+    </div>
+    <button class="journal-plus rapp-detail-bouton" type="button" id="bouton-detail-rapprochement"
+            data-rapp-detail="1" aria-expanded="false" aria-controls="detail-rapprochement">détail des écarts</button>
+    <div id="detail-rapprochement"></div>
   </section>
 
   <footer class="pied">

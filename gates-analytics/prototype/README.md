@@ -26,11 +26,11 @@ la page — recherches hostiles (balises, expressions régulières, 3 000 caract
 sans jalon, `localStorage` corrompu puis inaccessible, zoom et déplacement
 extrêmes du graphique, sept largeurs d'écran, clavier seul, contraste dans les
 deux thèmes. Elle vérifie aussi ce que le lot du débrief a apporté : la parité
-entre « Données réelles » et « Exemple », les trois contrats de démonstration,
-le périmètre (PERSO + BASE/OPTION = Tout, graphique compris), les changements
-de solution et d'indice appariés par racine, le rapprochement avec SEE — une
-seconde base aux écarts délibérés, sa jauge, ses tuiles et son tableau à
-l'identique —, l'échelle du graphique, et un paquet vide du classeur qui
-s'affiche vide en le disant. Le
+entre données réelles et exemple (l'interrupteur est rangé, le mécanisme
+reste), les trois contrats de démonstration, le périmètre (PERSO + BASE/OPTION
+= Tout, graphique compris), les changements d'indice appariés par racine et
+solution, le rapprochement avec SEE — une seconde base aux écarts délibérés,
+ses deux cercles, ses verdicts et son tableau à l'identique —, l'échelle du
+graphique, et un paquet vide du classeur qui s'affiche vide en le disant. Le
 compte de tests à jour est dans le README à la racine. Toute erreur JavaScript
 remontée par la console fait échouer le lot.

@@ -68,15 +68,7 @@ body {
 @media (max-width: 720px) { .feuille { padding: 15px 13px 17px; } }
 
 /* ---------------------------------------------------- Bandeau de titre */
-.masthead {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: 16px;
-  text-align: center; padding-block: 46px 26px; border-bottom: 1px solid var(--filet-fort);
-}
-.masthead .titre-bloc { grid-column: 2; min-width: 0; }
-@media (max-width: 1000px) {
-  .masthead { grid-template-columns: 1fr; row-gap: 16px; }
-  .masthead .titre-bloc { grid-column: 1; }
-}
+.masthead { text-align: center; padding-block: 46px 26px; border-bottom: 1px solid var(--filet-fort); }
 @media (max-width: 720px) { .masthead { padding-block: 30px 20px; } }
 .masthead h1 {
   font-family: Newsreader, Georgia, serif;
@@ -198,14 +190,14 @@ body[data-exemple="true"] .bandeau-mode {
    Sans colonne de domaine, il n'a rien à proposer et reste caché. */
 /* Le périmètre vit sous le titre, au-dessus de la barre : c'est de là qu'on
    choisit ce qu'on regarde, et le bandeau du haut garde sa sobriété. */
-/* Le périmètre, à droite du titre : le mot au-dessus, le choix dessous,
-   alignés sur le bord droit ; sous 1000 px, il passe sous le titre, centré. */
+/* Le périmètre, à droite de la phrase qu'il gouverne : le mot, puis le
+   choix. Quand la ligne manque de place, il passe dessous, à gauche. */
 .perimetre {
-  grid-column: 3; justify-self: end; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
-  font-size: 12px; color: var(--encre-3); min-width: 0; max-width: 100%;
+  display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px 10px;
+  font-size: 12px; color: var(--encre-3); min-width: 0; max-width: 100%; margin-left: auto;
 }
 .perimetre .mot-perimetre { letter-spacing: .08em; text-transform: uppercase; font-size: 10.5px; font-weight: 500; }
-@media (max-width: 1000px) { .perimetre { grid-column: 1; justify-self: center; align-items: center; } }
+@media (max-width: 720px) { .perimetre { justify-content: flex-start; margin-left: 0; } }
 .perimetre[hidden] { display: none; }
 #choix-perimetre button { white-space: nowrap; }
 #choix-perimetre .n {
@@ -426,6 +418,7 @@ select.select:focus { outline: none; border-bottom-color: var(--focus); }
 /* ---------------------------------------------------- Graphique */
 .commandes-graphe { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .segmente { display: inline-flex; border: 1px solid var(--filet-fort); }
+.segmente[hidden] { display: none; }
 .segmente button {
   border: none; border-left: 1px solid var(--filet-fort); background: none;
   font: inherit; font-size: 12px; padding: 3px 10px; color: var(--encre-2); cursor: pointer;
@@ -477,27 +470,57 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
    sobre pour ce qui n'est pas dans le tableau ; une grille pour le détail. */
 .rapprochement[hidden] { display: none; }
 /* ---------------------------------------------------- Rapprochement
-   La barre de l'avancement, à l'identique, pour la seconde question de la
-   page : seules les classes de segment changent, une par verdict. */
-.rapp-phrases { margin-bottom: 12px; }
+   Deux bases face à face : deux cercles qui se recouvrent — ce qu'elles ont
+   en commun au milieu, ce que chacune est seule à connaître sur les côtés —
+   et, au cœur du recouvrement, un anneau qui dit d'un coup d'œil la part
+   d'identiques. À droite, une ligne par verdict, en français, cliquable. */
+.rapp-phrases { margin-bottom: 14px; }
 .rapp-sous { margin: 4px 0 0; font-size: 13px; color: var(--encre-2); max-width: 90ch; }
 .rapp-sous:empty { display: none; }
-/* Les segments : le jeton du verdict, l'encre qui va dessus. */
-.barre .identique { background: var(--fait);   color: var(--sur-plein); }
-.barre .ecart     { background: var(--cours);  color: var(--sur-ambre); }
-.barre .absentLa  { background: var(--alerte); color: var(--sur-plein); }
-/* Un autre indice n'est pas un état : un anneau, comme sa pastille. */
-.barre .emission  { background: transparent; color: var(--encre); box-shadow: inset 0 0 0 1.5px var(--encre-3); }
-/* Ce que la seconde base a en plus : à part, après un blanc, en pointillé
-   comme sa pastille. */
-.barre .seul      { background: transparent; border: 1.5px dashed var(--encre-3); box-sizing: border-box;
-                    margin-left: 10px; min-width: 12px; }
-/* Survoler un bouton éclaire son segment : indispensable quand il fait 5 px. */
-.barre span.survole { outline: 2px solid var(--encre); outline-offset: -2px; }
-/* Un bouton à 0 se lit mais ne se clique pas. */
-.etat-btn:disabled { cursor: default; }
-.etat-btn:disabled:hover .etat-n { color: var(--encre-3); }
-.etat-btn:disabled .pastille { opacity: .45; }
+.rapp-face { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); gap: 18px 32px; align-items: center; }
+@media (max-width: 860px) { .rapp-face { grid-template-columns: 1fr; } }
+.rapp-figure { min-width: 0; }
+.rapp-figure svg { width: 100%; height: auto; display: block; overflow: visible; }
+.rapp-figure text { font-family: "IBM Plex Sans", system-ui, sans-serif; pointer-events: none; }
+/* Seuls les côtés et les parts de l'anneau répondent au pointeur ; le texte
+   au centre les laisse passer. */
+.rapp-figure .cote { pointer-events: all; cursor: default; }
+.rapp-figure .cote text { pointer-events: all; }
+.rapp-figure .donut-seg { pointer-events: stroke; }
+.rapp-figure .base-nom { font-size: 13px; font-weight: 500; fill: var(--encre); letter-spacing: .05em; }
+.rapp-figure .base-compte { font-size: 11.5px; fill: var(--encre-2); }
+.rapp-figure .cercle-ici { fill: var(--r2); fill-opacity: .5; stroke: var(--fait); stroke-width: 1.5; }
+.rapp-figure .cercle-la { fill: none; stroke: var(--encre-3); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.rapp-figure .grand { font-family: "IBM Plex Mono", monospace; font-size: 26px; font-variant-numeric: tabular-nums; fill: var(--encre); }
+.rapp-figure .petit { font-size: 11px; fill: var(--encre-2); }
+.rapp-figure .cote-absent .grand { fill: var(--alerte); }
+.rapp-figure .cote-seul .grand { fill: var(--encre-2); }
+.rapp-figure .donut-fond { fill: none; stroke: var(--filet); stroke-width: 12; }
+.rapp-figure .donut-seg { fill: none; stroke-width: 12; stroke-linecap: butt; transition: stroke-width .12s; }
+.rapp-figure .donut-seg.identique { stroke: var(--fait); }
+.rapp-figure .donut-seg.emission { stroke: var(--encre-3); }
+.rapp-figure .donut-seg.ecart { stroke: var(--cours); }
+/* Survoler un verdict éclaire sa part de la figure. */
+.rapp-figure .donut-seg.survole { stroke-width: 18; }
+.rapp-figure .cote.survole .grand { text-decoration: underline; text-underline-offset: 3px; }
+.rapp-figure .cote.survole .petit { fill: var(--encre); }
+.verdicts { display: grid; gap: 6px; }
+.verdict {
+  display: grid; grid-template-columns: 14px 62px minmax(0, 1fr); align-items: center; column-gap: 10px;
+  text-align: left; background: none; border: 1px solid transparent; border-radius: 4px; padding: 6px 10px 6px 8px;
+  font: inherit; color: var(--encre-2); cursor: pointer;
+}
+.verdict:hover { background: var(--creux); color: var(--encre); }
+.verdict[aria-pressed="true"] { border-color: var(--encre); background: var(--surface); color: var(--encre); }
+.verdict:disabled { cursor: default; opacity: .5; }
+.verdict:disabled:hover { background: none; }
+.verdict .verdict-n {
+  font-family: "IBM Plex Mono", monospace; font-size: 22px; font-variant-numeric: tabular-nums;
+  color: var(--encre); text-align: right; line-height: 1.1;
+}
+.verdict .verdict-mot { font-size: 13px; line-height: 1.3; }
+.verdict .verdict-mot b { font-weight: 500; color: var(--encre); }
+.verdict .pastille { width: 9px; height: 9px; }
 .pastille.identique { background: var(--fait); }
 .pastille.ecart { background: var(--cours); }
 .pastille.absent { background: var(--alerte); }
@@ -807,7 +830,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
   <div class="filtres-actifs" id="filtres-actifs" hidden></div>
 
   <div class="bandeau-mode" id="bandeau-mode">
-    <span class="segmente" id="mode-donnees" role="group" aria-label="Source des données">
+    <!-- Rangé : la démonstration se suffit, et le classeur aura bientôt son
+         propre historique. Le mécanisme reste, pour la batterie. -->
+    <span class="segmente" id="mode-donnees" role="group" aria-label="Source des données" hidden>
       <button type="button" data-mode="reel" aria-pressed="true">Données réelles</button>
       <button type="button" data-mode="exemple" aria-pressed="false">Exemple</button>
     </span>
@@ -822,27 +847,26 @@ table.plans thead tr th.col-fige { z-index: 6; }
     </span>
   </div>
 
-  <!-- Le titre au centre ; à sa droite, le périmètre — ce qu'on regarde —
-       sans rien sous le titre qui lui vole sa ligne. Le contrat n'est pas
-       répété : il est déjà choisi en haut. -->
+  <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
+       pas répété, il est déjà choisi en haut. -->
   <header class="masthead">
-    <div class="titre-bloc">
-      <h1>Suivi FWD</h1>
-      <div class="semaine">
-        <span><b id="num-semaine">—</b></span>
-        <span aria-hidden="true">·</span>
-        <span id="dates-semaine">—</span>
-      </div>
-    </div>
-    <div class="perimetre" id="perimetre" hidden>
-      <span class="mot-perimetre" id="mot-perimetre">Périmètre</span>
-      <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
+    <h1>Suivi FWD</h1>
+    <div class="semaine">
+      <span><b id="num-semaine">—</b></span>
+      <span aria-hidden="true">·</span>
+      <span id="dates-semaine">—</span>
     </div>
   </header>
 
   <section class="avancement">
+    <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
+         gouverne, juste au-dessus de la barre. -->
     <div class="avancement-ligne">
       <div class="phrase" id="phrase">—</div>
+      <div class="perimetre" id="perimetre" hidden>
+        <span class="mot-perimetre" id="mot-perimetre">Périmètre</span>
+        <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
+      </div>
     </div>
     <div class="barre" id="barre" role="img" aria-label="Répartition de l'avancement FWD"></div>
     <div class="filets" id="filets" aria-hidden="true"></div>
@@ -913,27 +937,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
     </div>
   </section>
 
-  <!-- Le rapprochement : la barre d'avancement, appliquée à la seconde base.
-       Sur le papier, sans feuille, comme le bloc du haut. Présent seulement
-       quand la source décrit une seconde base. Chaque bouton filtre le
-       tableau des plans ; ceux qui n'existent que d'un côté y basculent. -->
-  <section class="bloc rapprochement" id="rapprochement" hidden>
-    <div class="section-tete">
-      <h2 id="titre-rapprochement">Rapprochement</h2>
-      <span class="compte" id="compte-rapprochement"></span>
-    </div>
-    <div class="rapp-phrases">
-      <div class="phrase" id="phrase-rapprochement"></div>
-      <p class="rapp-sous" id="sous-rapprochement"></p>
-    </div>
-    <div class="barre" id="barre-rapprochement" role="img" aria-label="Rapprochement"></div>
-    <div class="filets" id="filets-rapprochement" aria-hidden="true"></div>
-    <div class="etats" id="etats-rapprochement" role="group" aria-label="Filtrer le tableau des plans par verdict du rapprochement"></div>
-    <button class="journal-plus rapp-detail-bouton" type="button" id="bouton-detail-rapprochement"
-            data-rapp-detail="1" aria-expanded="false" aria-controls="detail-rapprochement">détail des écarts</button>
-    <div id="detail-rapprochement"></div>
-  </section>
-
   <!-- Un seul tableau, deux bases : l'interrupteur GATES | SEE bascule de
        l'extract d'ici à celui de là, avec les mêmes outils. SEE n'existe que
        si la source décrit une seconde base ; sinon l'interrupteur s'efface. -->
@@ -997,6 +1000,30 @@ table.plans thead tr th.col-fige { z-index: 6; }
         </table>
       </div>
     </div>
+  </section>
+
+  <!-- Le rapprochement, sous les tableaux : deux bases face à face. Deux
+       cercles qui se recouvrent — ce qu'elles ont en commun au milieu, avec
+       un anneau pour la part d'identiques ; ce que chacune est seule à
+       connaître sur les côtés — et une ligne par verdict, en français, qui
+       filtre le tableau. Présent seulement quand la source décrit une
+       seconde base. -->
+  <section class="bloc rapprochement" id="rapprochement" hidden>
+    <div class="section-tete">
+      <h2 id="titre-rapprochement">Rapprochement</h2>
+      <span class="compte" id="compte-rapprochement"></span>
+    </div>
+    <div class="rapp-phrases">
+      <div class="phrase" id="phrase-rapprochement"></div>
+      <p class="rapp-sous" id="sous-rapprochement"></p>
+    </div>
+    <div class="rapp-face">
+      <div class="rapp-figure" id="venn-rapprochement" role="img" aria-label="Rapprochement"></div>
+      <div class="verdicts" id="verdicts-rapprochement" role="group" aria-label="Filtrer le tableau des plans par verdict du rapprochement"></div>
+    </div>
+    <button class="journal-plus rapp-detail-bouton" type="button" id="bouton-detail-rapprochement"
+            data-rapp-detail="1" aria-expanded="false" aria-controls="detail-rapprochement">détail des écarts</button>
+    <div id="detail-rapprochement"></div>
   </section>
 
   <footer class="pied">
@@ -2204,16 +2231,16 @@ table.plans thead tr th.col-fige { z-index: 6; }
      ============================================================ */
   /* Les lots du rapprochement, dans l'ordre de lecture : d'abord ce qui va,
      puis ce qui diffère, puis ce qui manque de chaque côté. « § » se remplace
-     par le nom de la seconde base. `segment` est la classe du segment de la
-     barre (et la catégorie de la pastille), `teinte` le trait du bouton
-     pressé, `atterrit` la base où le tableau bascule : ce qui n'existe que
-     d'un côté y emmène, le reste laisse l'interrupteur où il est. */
+     par le nom de la seconde base. `segment` est la catégorie de la pastille
+     (et de la part de l'anneau), `atterrit` la base où le tableau bascule :
+     ce qui n'existe que d'un côté y emmène, le reste laisse l'interrupteur
+     où il est. */
   var LOTS_RAPPROCHEMENT = [
-    { cle: 'identiques',      libelle: 'identiques',       segment: 'identique', teinte: 'var(--fait)',    atterrit: '' },
-    { cle: 'indiceDifferent', libelle: 'autre indice',     segment: 'emission',  teinte: 'var(--encre-3)', atterrit: '' },
-    { cle: 'ecarts',          libelle: 'champs différents', segment: 'ecart',    teinte: 'var(--cours)',   atterrit: '' },
-    { cle: 'absentsLa',       libelle: 'absents de §',     segment: 'absentLa',  teinte: 'var(--alerte)',  atterrit: 'ici' },
-    { cle: 'absentsIci',      libelle: 'seulement dans §', segment: 'seul',      teinte: 'var(--encre-3)', atterrit: 'la' }
+    { cle: 'identiques',      libelle: 'identiques',        segment: 'identique', atterrit: '' },
+    { cle: 'indiceDifferent', libelle: 'autre indice',      segment: 'emission',  atterrit: '' },
+    { cle: 'ecarts',          libelle: 'champs différents', segment: 'ecart',     atterrit: '' },
+    { cle: 'absentsLa',       libelle: 'absents de §',      segment: 'absentLa',  atterrit: 'ici' },
+    { cle: 'absentsIci',      libelle: 'seulement dans §',  segment: 'seul',      atterrit: 'la' }
   ];
   /* La catégorie d'un plan d'ici (parPlan) derrière chaque lot, une seule par
      plan, pour que les comptes des boutons soient ceux de la barre. */
@@ -4253,36 +4280,29 @@ table.plans thead tr th.col-fige { z-index: 6; }
           (vue.perimetre ? ' dans le périmètre' : '') + (seuls ? ' · ' + seuls : '') + '.';
     }
 
-    /* La barre : les plans d'ici, puis, après un blanc, ce qui n'existe que
-       là, à la même échelle. La part écrite dans un segment est celle des
-       plans d'ici, comme dans la phrase. */
-    var echelle = Math.max(nP + nSeuls, 1);
-    $('barre-rapprochement').innerHTML = LOTS_RAPPROCHEMENT.map(function (l) {
-      var n = comptes[l.cle];
-      if (!n) return '';
-      var part = 100 * n / echelle;
-      var texte = l.cle !== 'absentsIci' && part >= 6 && nP ? Math.round(100 * n / nP) + '\u202f%' : '';
-      return '<span class="' + l.segment + '" data-cle="' + l.cle + '" style="width:' + part.toFixed(2) + '%">' + texte + '</span>';
-    }).join('');
+    /* La figure : deux cercles, ce qu'ils ont en commun au milieu — avec un
+       anneau pour la part d'identiques — et ce que chacun est seul à
+       connaître sur les côtés. */
+    var nCommun = nP - comptes.absentsLa;
+    var figure = $('venn-rapprochement');
+    figure.innerHTML = figureRapprochement(comptes, nP, nCommun, nom, R.nbLignes, !!vue.perimetre);
     var membres = LOTS_RAPPROCHEMENT.filter(function (l) { return comptes[l.cle] && l.cle !== 'absentsIci'; })
       .map(function (l) { return motLotRapp(l.cle, comptes[l.cle], nom); });
-    $('barre-rapprochement').setAttribute('aria-label', 'Rapprochement avec ' + nom + ' : ' +
+    figure.setAttribute('aria-label', 'Rapprochement avec ' + nom + ' : ' +
       (membres.length ? membres.join(', ') + ', sur ' + nb(nP) + (nP > 1 ? ' plans' : ' plan') : 'aucun plan') +
       (nSeuls ? ' ; ' + motLotRapp('absentsIci', nSeuls, nom) : '') + '.');
 
-    /* Les boutons : le même dessin que sous la barre du haut. Un lot à 0 se
-       lit mais ne se clique pas — la rangée sert aussi de légende. */
+    /* Les verdicts : une ligne par lot, le nombre, le mot, la phrase. Un lot
+       à 0 se lit mais ne se clique pas — la colonne sert aussi de légende. */
     var actif = lotRappActif();
-    $('etats-rapprochement').innerHTML = LOTS_RAPPROCHEMENT.map(function (l) {
+    $('verdicts-rapprochement').innerHTML = LOTS_RAPPROCHEMENT.map(function (l) {
       var n = comptes[l.cle], presse = !!n && actif === l.cle;
       var libelle = libelleRapp(l) + (vue.perimetre && l.cle === 'absentsIci' ? ' · tout le contrat' : '');
-      /* Pas de title : la bulle dit tout à la souris, et le clavier a l'état pressé. */
-      return '<button class="etat-btn" type="button" data-cle="' + l.cle + '" data-rapp="' + l.cle + '" data-atterrit="' + l.atterrit +
-        '" style="--teinte:' + l.teinte + '" aria-pressed="' + presse + '"' + (n ? '' : ' disabled') + '>' +
-        '<span class="etat-haut">' + pastilleVerdict(l.segment) + ech(libelle) + '</span>' +
-        '<span class="etat-n">' + nb(n) + '</span></button>';
+      return '<button class="verdict" type="button" data-cle="' + l.cle + '" data-rapp="' + l.cle + '" data-atterrit="' + l.atterrit +
+        '" aria-pressed="' + presse + '"' + (n ? '' : ' disabled') + '>' +
+        pastilleVerdict(l.segment) + '<span class="verdict-n">' + nb(n) + '</span>' +
+        '<span class="verdict-mot"><b>' + ech(libelle) + '</b> · ' + ech(phraseLot(l.cle, n, nom)) + '</span></button>';
     }).join('');
-    requestAnimationFrame(function () { alignerSousBarre('barre-rapprochement', 'filets-rapprochement', 'etats-rapprochement'); });
 
     var ecarts = ecartsDeLaCase();
     var bouton = $('bouton-detail-rapprochement');
@@ -4355,9 +4375,73 @@ table.plans thead tr th.col-fige { z-index: 6; }
       '<div class="doux" style="margin-top:6px;padding-top:5px;border-top:1px solid var(--filet)">' + ech(fin) + '</div>';
   }
   function eclairerSegment(cle) {
-    document.querySelectorAll('#barre-rapprochement span[data-cle]').forEach(function (seg) {
-      seg.classList.toggle('survole', !!cle && seg.dataset.cle === cle);
+    document.querySelectorAll('#venn-rapprochement [data-cle]').forEach(function (el) {
+      var lui = !!cle && el.getAttribute('data-cle') === cle;
+      if (lui) el.classList.add('survole'); else el.classList.remove('survole');
     });
+  }
+  /* La phrase d'un verdict, en français de tous les jours : le nombre est
+     déjà écrit à gauche, la phrase dit ce qu'il compte. */
+  function phraseLot(cle, n, nom) {
+    var pl = n > 1;
+    if (cle === 'identiques') return (pl ? 'se retrouvent' : 'se retrouve') + ' à l’identique dans ' + nom;
+    if (cle === 'indiceDifferent') return (pl ? 'sont' : 'est') + ' dans ' + nom + ' sous une autre lettre d’indice';
+    if (cle === 'ecarts') return (pl ? 'ont' : 'a') + ' un champ qui ne dit pas la même chose dans ' + nom;
+    if (cle === 'absentsLa') return (pl ? 'n’existent pas' : 'n’existe pas') + ' dans ' + nom;
+    return (pl ? 'lignes de ' : 'ligne de ') + nom + ' sans plan dans GATES';
+  }
+  /* Un arc d'anneau, de l'angle a0 à l'angle a1 (en degrés, 0 en haut, sens
+     horaire), au rayon r autour de (cx, cy). */
+  function arcAnneau(cx, cy, r, a0, a1) {
+    var rad = function (a) { return (a - 90) * Math.PI / 180; };
+    var x0 = cx + r * Math.cos(rad(a0)), y0 = cy + r * Math.sin(rad(a0));
+    var x1 = cx + r * Math.cos(rad(a1)), y1 = cy + r * Math.sin(rad(a1));
+    return 'M' + x0.toFixed(2) + ' ' + y0.toFixed(2) + ' A' + r + ' ' + r + ' 0 ' + (a1 - a0 > 180 ? 1 : 0) + ' 1 ' + x1.toFixed(2) + ' ' + y1.toFixed(2);
+  }
+  /* La figure du rapprochement : deux cercles qui se recouvrent, le nom et le
+     compte de chaque base au-dessus, le nombre en commun au milieu avec son
+     anneau (identiques, autre indice, champs différents), et sur chaque côté
+     ce que la base est seule à connaître. Les cercles ne sont pas à l'échelle :
+     c'est la structure qu'on lit, les nombres disent le reste. */
+  function figureRapprochement(c, nP, nCommun, nom, nL, perimetre) {
+    var cx1 = 200, cx2 = 330, cy = 172, r = 118, cxm = (cx1 + cx2) / 2, ra = 34;
+    var s = ['<svg viewBox="0 0 530 330" aria-hidden="true">'];
+    s.push('<text class="base-nom" x="' + (cx1 - 56) + '" y="26" text-anchor="middle">GATES</text>');
+    s.push('<text class="base-compte" x="' + (cx1 - 56) + '" y="42" text-anchor="middle">' + nb(nP) + (nP > 1 ? ' plans' : ' plan') + (perimetre ? ' du périmètre' : '') + '</text>');
+    s.push('<text class="base-nom" x="' + (cx2 + 56) + '" y="26" text-anchor="middle">' + ech(nom) + '</text>');
+    s.push('<text class="base-compte" x="' + (cx2 + 56) + '" y="42" text-anchor="middle">' + nb(nL) + (nL > 1 ? ' lignes' : ' ligne') + '</text>');
+    s.push('<circle class="cercle-ici" cx="' + cx1 + '" cy="' + cy + '" r="' + r + '"/>');
+    s.push('<circle class="cercle-la" cx="' + cx2 + '" cy="' + cy + '" r="' + r + '"/>');
+    /* Les côtés : ce que chaque base est seule à connaître. */
+    s.push('<g class="cote cote-absent" data-cle="absentsLa">' +
+      '<text class="grand" x="' + (cx1 - 52) + '" y="' + (cy + 4) + '" text-anchor="middle">' + nb(c.absentsLa) + '</text>' +
+      '<text class="petit" x="' + (cx1 - 52) + '" y="' + (cy + 24) + '" text-anchor="middle">' + (c.absentsLa > 1 ? 'absents de ' : 'absent de ') + ech(nom) + '</text></g>');
+    s.push('<g class="cote cote-seul" data-cle="absentsIci">' +
+      '<text class="grand" x="' + (cx2 + 52) + '" y="' + (cy + 4) + '" text-anchor="middle">' + nb(c.absentsIci) + '</text>' +
+      '<text class="petit" x="' + (cx2 + 52) + '" y="' + (cy + 24) + '" text-anchor="middle">seulement dans ' + ech(nom) + '</text>' +
+      (perimetre ? '<text class="petit" x="' + (cx2 + 52) + '" y="' + (cy + 40) + '" text-anchor="middle">tout le contrat</text>' : '') + '</g>');
+    /* Le milieu : l'anneau des plans en commun, en trois parts. */
+    s.push('<circle class="donut-fond" cx="' + cxm + '" cy="' + cy + '" r="' + ra + '"/>');
+    var parts = [['identiques', 'identique'], ['indiceDifferent', 'emission'], ['ecarts', 'ecart']]
+      .filter(function (p) { return c[p[0]] > 0; });
+    var total = parts.reduce(function (t, p) { return t + c[p[0]]; }, 0);
+    /* Une part, même d'un seul plan sur des centaines, reste visible : on lui
+       garantit quelques degrés, pris sur les grandes parts. */
+    var MIN = 8, portions = parts.map(function (p) { return 360 * c[p[0]] / total; });
+    var manque = 0, grandes = 0;
+    portions.forEach(function (q) { if (q < MIN) manque += MIN - q; else grandes += q; });
+    if (manque > 0 && grandes > 0) portions = portions.map(function (q) { return q < MIN ? MIN : q - manque * q / grandes; });
+    var trou = parts.length > 1 ? 3 : 0, angle = 0;          // un blanc entre les parts, comme entre les segments d'une barre
+    parts.forEach(function (p, i) {
+      var portion = portions[i], a0 = angle + trou / 2, a1 = angle + portion - trou / 2;
+      if (a1 - a0 >= 359.9) s.push('<circle class="donut-seg ' + p[1] + '" data-cle="' + p[0] + '" data-n="' + c[p[0]] + '" cx="' + cxm + '" cy="' + cy + '" r="' + ra + '"/>');
+      else if (a1 > a0) s.push('<path class="donut-seg ' + p[1] + '" data-cle="' + p[0] + '" data-n="' + c[p[0]] + '" d="' + arcAnneau(cxm, cy, ra, a0, a1) + '"/>');
+      angle += portion;
+    });
+    s.push('<text class="grand commun-n" x="' + cxm + '" y="' + (cy + 9) + '" text-anchor="middle">' + nb(nCommun) + '</text>');
+    s.push('<text class="petit commun-mot" x="' + cxm + '" y="' + (cy + ra + 26) + '" text-anchor="middle">en commun</text>');
+    s.push('</svg>');
+    return s.join('');
   }
 
   /* ============================================================
@@ -4631,7 +4715,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       /* Les boutons viennent d'être refaits : le focus revient sur le même,
          la bulle et l'éclairage repartent de zéro. */
       $('bulle').dataset.visible = 'false'; eclairerSegment(null);
-      var repris = document.querySelector('#etats-rapprochement button[data-rapp="' + b.dataset.rapp + '"]');
+      var repris = document.querySelector('#verdicts-rapprochement button[data-rapp="' + b.dataset.rapp + '"]');
       if (repris) repris.focus();
       return;
     }
@@ -4695,11 +4779,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
   /* Survoler un bouton ou un segment du rapprochement éclaire le segment et
      ouvre la bulle ; le focus clavier éclaire seulement. */
   $('rapprochement').addEventListener('mousemove', function (e) {
-    var cible = e.target.closest && e.target.closest('#barre-rapprochement span[data-cle], #etats-rapprochement button[data-cle]:not([disabled])');
+    var cible = e.target.closest && e.target.closest('#venn-rapprochement [data-cle], #verdicts-rapprochement button[data-cle]:not([disabled])');
+    var cle = cible ? cible.getAttribute('data-cle') : null;
     var bulle = $('bulle');
-    eclairerSegment(cible ? cible.dataset.cle : null);
-    if (!cible || !RAPPROCHEMENT) { bulle.dataset.visible = 'false'; return; }
-    bulle.innerHTML = bulleLotRapp(cible.dataset.cle);
+    eclairerSegment(cle);
+    if (!cle || !RAPPROCHEMENT) { bulle.dataset.visible = 'false'; return; }
+    bulle.innerHTML = bulleLotRapp(cle);
     bulle.dataset.visible = 'true';
     bulle.style.left = Math.min(e.clientX + 14, window.innerWidth - bulle.offsetWidth - 12) + 'px';
     bulle.style.top = Math.min(e.clientY + 16, window.innerHeight - bulle.offsetHeight - 12) + 'px';
@@ -4708,11 +4793,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
     eclairerSegment(null);
     $('bulle').dataset.visible = 'false';
   });
-  $('etats-rapprochement').addEventListener('focusin', function (e) {
+  $('verdicts-rapprochement').addEventListener('focusin', function (e) {
     var b = e.target.closest && e.target.closest('button[data-cle]');
     eclairerSegment(b ? b.dataset.cle : null);
   });
-  $('etats-rapprochement').addEventListener('focusout', function () { eclairerSegment(null); });
+  $('verdicts-rapprochement').addEventListener('focusout', function () { eclairerSegment(null); });
 
   $('incomplets').addEventListener('click', function (e) {
     var b = e.target.closest('.puce-vide');
@@ -4943,7 +5028,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
     minuteurTaille = setTimeout(function () {
       rendreGraphique(selection()); ajusterSticky(); majOmbre();
       alignerSousBarre('barre', 'filets', 'etats');
-      alignerSousBarre('barre-rapprochement', 'filets-rapprochement', 'etats-rapprochement');
     }, 160);
   });
 
