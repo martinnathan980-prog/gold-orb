@@ -57,8 +57,8 @@ d'historique (`Historique_FWD…`), l'onglet de la seconde base s'il est nommé
 (voir § 12) et les onglets de service (`Paramètres`, `Config`).
 
 Dans la page, un **sélecteur « Contrat »** dans le bandeau du haut passe de
-l'un à l'autre sans recharger, et le contrat courant est rappelé sous le titre.
-Avec un seul onglet, ni le sélecteur ni le rappel n'apparaissent. La page
+l'un à l'autre sans recharger ; le titre ne le répète pas. Avec un seul
+onglet, le sélecteur n'apparaît pas. La page
 s'ouvre toujours sur le **premier** onglet, dans l'ordre du classeur ; les
 autres se chargent à la demande. Un contrat qui ne peut pas être lu laisse la
 page sur le contrat courant et affiche le message du classeur.
@@ -272,9 +272,10 @@ tard, et plus tard il sert encore à l'expliquer à quelqu'un.
 
 ## 8. Le périmètre : Tout / BASE/OPTION / PERSO
 
-Dans le bandeau du haut, à côté du mode et du contrat : **« Tout »**, puis une
-puce par valeur de la colonne de domaine, chacune avec son compte de plans. Il
-est masqué quand l'export n'a pas de colonne de domaine.
+Dans le bandeau du titre, à droite de « Suivi FWD » (dessous, centré, sur un
+petit écran) : **« Tout »**, puis une puce par valeur de la colonne de
+domaine, chacune avec son compte de plans. Il est masqué quand l'export n'a
+pas de colonne de domaine.
 
 Le périmètre pilote **toute la page** : la barre et les états, la phrase, le
 comparatif « depuis l'import », la courbe et sa bulle, le journal, le bloc par
@@ -299,20 +300,24 @@ page ouvre toujours sur Tout, et un changement de contrat aussi.
 
 ## 9. Les références UD et les changements d'indice
 
-Une référence UD s'écrit **racine + indice + révision** :
+Une référence UD s'écrit **racine + solution + indice** :
 
 | `HEL0225A017` | `001` | `A` |
 |---|---|---|
-| **racine** : 3 lettres, 4 chiffres, `A`, 3 chiffres — l'identité du plan, fixe | **indice** : 3 chiffres, change à chaque réémission | **révision** : une lettre, change aussi |
+| **racine** : 3 lettres, 4 chiffres, `A`, 3 chiffres — fixe | **solution** : 3 chiffres — une autre solution, c'est un autre plan | **indice** : une lettre, change à chaque réémission du même plan |
+
+L'identité d'un plan, c'est **racine + solution**. Seul l'indice bouge sans
+changer de plan.
 
 La page lit cette forme en tolérant les séparateurs (`-`, `_`, espace, point,
 `/`) et la casse : `hel0225a017-001-a` est le même plan. Une référence qui ne
 suit pas ce format garde sa forme entière comme racine et n'est jamais
 appariée à une autre.
 
-Comparer deux relevés par la racine change ce qu'on voit : un plan réémis sous
-un autre indice n'est plus « un disparu plus un nouveau », c'est un
-**changement d'indice**.
+Comparer deux relevés par racine + solution change ce qu'on voit : un plan
+réémis sous un autre indice n'est plus « un disparu plus un nouveau », c'est
+un **changement d'indice**. Une référence qui change de solution reste ce
+qu'elle est : un plan disparu et un nouveau plan.
 
 - **Dans le comparatif** « depuis l'import », un lot *changements d'indice*
   (pastille en anneau), cliquable comme les autres, filtre le tableau sur les
@@ -342,7 +347,8 @@ terminés, puis les passés en cours, puis les repassés à faire.
 
 - La semaine la plus récente est en haut, ouverte ; les autres se déplient
   d'un clic.
-- `Tout / Terminés / En cours / À faire / Changements d'indice` ne garde que
+- `Tout / Terminés / En cours / À faire / Changement d'indice`, chacun avec sa
+  pastille, ne garde que
   les passages voulus, et **chaque compte du résumé est cliquable** :
   « 6 terminés » n'affiche plus que ceux-là, sur toutes les semaines à la fois.
 - Cliquer un plan réduit le tableau du bas à ce plan.
@@ -381,29 +387,38 @@ dans un onglet de ce classeur et décrit dans la configuration, il donne deux
 choses ; sans description, ni l'une ni l'autre n'existe.
 
 **La section « Rapprochement avec SEE »**, entre le bloc par groupe et le
-tableau, faite pour se lire en un coup d'œil :
+tableau, reprend exactement le dessin de la barre d'avancement du haut, pour
+se lire du même geste :
 
-- une phrase : « 640 plans ici, 640 lignes dans SEE : 623 identiques (97 %),
-  22 écarts » ;
-- une jauge : chaque plan d'ici dans une seule case — identique (vert), même
-  plan sous une autre solution ou un autre indice (anneau), champs différents
-  (ambre), absent de SEE (rouge) — et, à part, en pointillé, ce qui n'existe
-  que dans SEE ;
-- cinq tuiles, une par lot, avec son grand nombre :
+- une phrase : « **623** sur 640 plans identiques dans SEE », et dessous ce
+  qu'il reste à regarder : « Il reste 17 plans à vérifier · 5 références que
+  SEE est seul à connaître. » ;
+- la barre : chaque plan d'ici dans une seule case — identique (vert), même
+  plan sous un autre indice (anneau), champs différents (ambre), absent de SEE
+  (rouge) — et, à part, après un blanc, en pointillé, ce qui n'existe que
+  dans SEE ;
+- cinq boutons sous la barre, comme les états sous celle du haut, avec leur
+  grand nombre ; un bouton à 0 se lit mais ne se clique pas :
 
-| Tuile | Ce qu'elle compte | Le clic |
+| Bouton | Ce qu'il compte | Le clic |
 |---|---|---|
-| **identiques des deux côtés** | même émission, mêmes champs | filtre le tableau d'ici, et celui de SEE |
-| **solution ou indice différent** | le même plan (même racine), connu là sous une autre solution ou un autre indice ; le sous-titre dit combien de chaque | idem |
-| **champs différents** | un champ déclaré qui ne dit pas la même chose des deux côtés | idem |
-| **absents de SEE** | des plans d'ici que SEE ne connaît pas | filtre le tableau d'ici ; celui de SEE se dit vide |
-| **seulement dans SEE** | des lignes de là dont aucun plan du contrat n'a la racine | filtre le tableau de SEE, sans toucher à celui d'ici |
+| **identiques** | même indice, mêmes champs | filtre le tableau, GATES ou SEE |
+| **autre indice** | le même plan (même racine et même solution), connu là sous une autre lettre | idem |
+| **champs différents** | un champ comparé qui ne dit pas la même chose des deux côtés | idem |
+| **absents de SEE** | des plans d'ici que SEE ne connaît pas | filtre et passe sur GATES |
+| **seulement dans SEE** | des lignes de là dont aucun plan du contrat n'a la racine et la solution | filtre et passe sur SEE |
 
 Un seul lot à la fois ; le bandeau le nomme (« Rapprochement : … »), la croix
-le retire. Un bouton **détail des écarts (n)** déplie une grille : référence,
-champ, valeur ici, valeur dans SEE.
+le retire sans changer de côté. Survoler un bouton éclaire son segment et
+ouvre une bulle : les champs comparés, la ventilation des écarts par champ,
+les paires « référence → solution et lettre », et où mène le clic. Quand le
+tableau est du mauvais côté pour le lot posé, il le dit et propose « Les voir
+dans GATES / SEE ». Un bouton **détail des écarts (n)** déplie une grille :
+référence, champ, valeur GATES, valeur SEE.
 
-**Le tableau « SEE »**, sous le tableau des plans : l'extract à l'identique —
+**Le tableau « SEE »**, derrière l'interrupteur **GATES | SEE** de la
+section « Plans » (un seul tableau à la fois, les mêmes outils) : l'extract à
+l'identique —
 toutes ses colonnes, dans son ordre, sous leurs intitulés — et une *Vue
 essentielle* si la configuration en désigne une (les colonnes de la référence
 en font toujours partie). Le verdict se lit sur chaque ligne : la pastille
@@ -413,9 +428,9 @@ se lisent ✓ ou –. Une recherche et un tri par intitulé (un clic, un second
 pour inverser, un troisième pour l'ordre de l'extract) qui ne touchent qu'à
 lui ; cliquer une ligne appariée réduit le tableau d'ici à ce plan.
 
-Les lignes de SEE sont appariées aux plans **par la racine** (§ 9), pour qu'un
-plan réémis d'un côté reste le même plan. La solution que l'extract Excel
-aurait réduite à « 1 » est remise sur trois chiffres. Un champ se compare à la
+Les lignes de SEE sont appariées aux plans **par racine + solution** (§ 9),
+pour qu'un plan réémis d'un côté reste le même plan. La solution que l'extract
+Excel aurait réduite à « 1 » est remise sur trois chiffres. Un champ se compare à la
 lettre près, sans tenir compte de la casse ni des accents ; deux cases à cocher
 se comparent cochée à cochée ; l'avancement FWD, lui, se compare **par état**,
 et face à une case à cocher, un plan terminé ici doit être coché là.

@@ -847,7 +847,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const vu = await p.evaluate(() => ({
     semaine: document.getElementById('num-semaine').textContent,
     dates: document.getElementById('dates-semaine').textContent,
-    etats: [...document.querySelectorAll('.etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
+    etats: [...document.querySelectorAll('#etats .etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
     colonnes: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()),
     lignes: document.querySelectorAll('#corps-tableau tr').length,
     dims: [...document.querySelectorAll('#dim-critique option')].map(o => o.value),
@@ -889,16 +889,16 @@ function serveurSur(valeurs, proprietes, fichiers) {
     JSON.stringify(jalonsPage) + ' pour ' + JSON.stringify(attendus.map(x => x.texte)));
   verifier('la configuration livrée en met quatre à l\'écran', jalonsPage.length === 4, String(jalonsPage.length));
 
-  /* Un seul contrat : le sélecteur n'a rien à proposer, il reste caché — et le
-     rappel du contrat sous le titre avec lui. */
+  /* Un seul contrat : le sélecteur n'a rien à proposer, il reste caché — et
+     le titre ne nomme jamais le contrat. */
   const contratAddon = await p.evaluate(() => ({
     selecteur: document.getElementById('choix-contrat').hidden &&
                document.getElementById('select-contrat').offsetParent === null,
-    rappel: document.getElementById('contrat-courant').hidden,
+    rappel: !/contrat/i.test(document.querySelector('.masthead').textContent),
     pont: typeof window.SUIVI_FWD_API.chargerContrat === 'function' && !window.SUIVI_FWD_API.sauverJalons
   }));
   verifier('avec un seul contrat, la page ne montre pas de sélecteur', contratAddon.selecteur);
-  verifier('ni le rappel du contrat sous le titre', contratAddon.rappel);
+  verifier('ni de rappel du contrat sous le titre', contratAddon.rappel);
   verifier('le pont vers le classeur expose chargerContrat, et plus sauverJalons', contratAddon.pont);
   // Hors du classeur, le pont ne peut pas répondre : il rappelle avec null, sans casser la page.
   verifier('hors classeur, chargerContrat rappelle null au lieu de planter',
@@ -921,7 +921,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length === 186 &&
       !!document.querySelector('svg.graphe') &&
       document.querySelectorAll('.critique-ligne').length > 0 &&
-      document.querySelectorAll('.etat-n').length === 4));
+      document.querySelectorAll('#etats .etat-n').length === 4));
   verifier('et elle s\'affiche comme du texte dans le tableau',
     await p.evaluate(() => [...document.querySelectorAll('#corps-tableau td')]
       .some(td => td.textContent.includes('</script>'))));
@@ -939,14 +939,14 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('la recherche fonctionne sur les données de la feuille',
     await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) < 186);
   await p.fill('#recherche', ''); await p.waitForTimeout(400);
-  await p.click('.etat-btn[data-etat="vide"]'); await p.waitForTimeout(400);
+  await p.click('#etats .etat-btn[data-etat="vide"]'); await p.waitForTimeout(400);
   verifier('le filtre « non renseignés » ne garde que des cellules vides',
     await p.evaluate(() => {
       const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => /Avancement FWD/.test(t.textContent));
       return [...document.querySelectorAll('#corps-tableau tr')]
         .every(tr => /^(|—|non renseigné|-)$/i.test(tr.children[i].textContent.trim()));
     }));
-  await p.click('.etat-btn[data-etat="vide"]'); await p.waitForTimeout(300);
+  await p.click('#etats .etat-btn[data-etat="vide"]'); await p.waitForTimeout(300);
   await p.click('button[data-aide] >> nth=0').catch(() => {}); await p.waitForTimeout(400);
   verifier('le panneau d\'explication s\'ouvre sur des chiffres réels',
     await p.evaluate(() => {
@@ -974,7 +974,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pg.waitForTimeout(1800);
 
   const vg = await pg.evaluate(() => ({
-    etats: [...document.querySelectorAll('.etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
+    etats: [...document.querySelectorAll('#etats .etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
     visibles: document.querySelectorAll('tr.titres th').length,
     lignes: document.querySelectorAll('#corps-tableau tr').length,
     debord: document.documentElement.scrollWidth - window.innerWidth,
@@ -1231,7 +1231,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('aucun bandeau tant que rien n\'est filtré',
     await pg.evaluate(() => document.getElementById('filtres-actifs').hidden));
 
-  await pg.click('.etat-btn[data-etat="encours"]'); await pg.waitForTimeout(350);
+  await pg.click('#etats .etat-btn[data-etat="encours"]'); await pg.waitForTimeout(350);
   /* Le domaine se choisit par le périmètre du haut ; le filtre de colonne
      reste une porte d'entrée, et son jeton nomme la colonne. */
   await pg.fill('input[data-filtre="domaine"]', 'PERSO'); await pg.waitForTimeout(400);
@@ -1300,7 +1300,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     return {
       lignes: document.querySelectorAll('#corps-tableau tr').length,
       domaines: [...new Set([...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.children[iDom].textContent.trim()))],
-      etats: [...document.querySelectorAll('.etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
+      etats: [...document.querySelectorAll('#etats .etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
       totalGroupes: [...document.querySelectorAll('.critique-total')].reduce((s, t) => s + (+t.textContent), 0),
       serie: serie.pts,
       note: document.getElementById('note-graphe').textContent,
@@ -1471,33 +1471,37 @@ function serveurSur(valeurs, proprietes, fichiers) {
     visible: !document.getElementById('rapprochement').hidden,
     titre: document.getElementById('titre-rapprochement').textContent,
     phrase: document.getElementById('phrase-rapprochement').textContent,
-    puces: [...document.querySelectorAll('#puces-rapprochement button[data-rapp]')].map(b => b.dataset.rapp + '=' + b.querySelector('b').textContent),
+    puces: [...document.querySelectorAll('#etats-rapprochement button[data-rapp]')].map(b => b.dataset.rapp + '=' + b.querySelector('.etat-n').textContent),
+    sous: document.getElementById('sous-rapprochement').textContent,
     plans: document.querySelectorAll('#corps-tableau tr').length,
-    seconde: !document.getElementById('seconde-base').hidden,
-    titreSeconde: document.getElementById('titre-seconde').textContent,
+    seconde: !document.getElementById('choix-base').hidden,
+    titreSeconde: document.getElementById('bouton-base-la').textContent,
     entetesSeconde: [...document.querySelectorAll('#tete-seconde th')].map(t => t.textContent.trim()).join('|'),
     lignesSeconde: document.querySelectorAll('#corps-seconde tr[data-i]').length,
     vueSeconde: document.getElementById('vue-seconde').hidden
   }));
   verifier('la section est là, nommée d\'après l\'onglet', ecran.visible && ecran.titre === 'Rapprochement avec Base2', ecran.titre);
-  verifier('la phrase compte 30 plans ici et 4 lignes là, les identiques et les écarts',
-    new RegExp('^30 plans ici, 4 lignes dans Base2 : ' + identiquesAttendus + ' identiques? \\(\\d+ %\\), \\d+ écarts\\.$').test(ecran.phrase), ecran.phrase);
+  verifier('la phrase compte les identiques sur 30 plans, la sous-phrase ce qui reste à vérifier et la référence que seule Base2 connaît',
+    ecran.phrase === identiquesAttendus + ' sur 30 plans identique' + (identiquesAttendus > 1 ? 's' : '') + ' dans Base2' &&
+    ecran.sous === 'Il reste ' + (30 - identiquesAttendus) + ' plans à vérifier · 1 référence que Base2 est seul à connaître.',
+    ecran.phrase + ' / ' + ecran.sous);
   verifier('les identiques, aucune émission différente (références hors format), les écarts recalculés, 27 plans absents de là, 1 référence seulement là',
     ecran.puces.join(' ') === 'identiques=' + identiquesAttendus + ' indiceDifferent=0 ecarts=' + ecartsAttendus + ' absentsLa=27 absentsIci=1',
     ecran.puces.join(' ') + ' attendu ecarts=' + ecartsAttendus + ', identiques=' + identiquesAttendus);
-  verifier('le tableau de la seconde base est là, nommé d\'après l\'onglet, avec ses quatre colonnes et ses quatre lignes, sans vue essentielle',
+  verifier('l\'interrupteur GATES | Base2 est là, nommé d\'après l\'onglet, le tableau de là a ses quatre colonnes et ses quatre lignes, sans vue essentielle',
     ecran.seconde && ecran.titreSeconde === 'Base2' && ecran.entetesSeconde === 'REF_UD|ATA_CODE|STATUT_FWD|Colonne en trop' &&
     ecran.lignesSeconde === 4 && ecran.vueSeconde, JSON.stringify([ecran.titreSeconde, ecran.entetesSeconde, ecran.lignesSeconde]));
-  await pr.click('#puces-rapprochement button[data-rapp="absentsLa"]'); await pr.waitForTimeout(500);
+  await pr.click('#etats-rapprochement button[data-rapp="absentsLa"]'); await pr.waitForTimeout(500);
   verifier('cliquer « absents de Base2 » filtre le tableau sur ces 27 plans',
     await pr.evaluate(() => document.querySelectorAll('#corps-tableau tr').length === 27 &&
       [...document.querySelectorAll('.jeton')].some(j => /Rapprochement : absents de Base2/.test(j.textContent))));
-  await pr.click('#puces-rapprochement button[data-rapp="absentsIci"]'); await pr.waitForTimeout(400);
-  verifier('« seulement dans Base2 » réduit le tableau de là à UD-99-9999 et rend celui d\'ici entier',
+  await pr.click('#etats-rapprochement button[data-rapp="absentsIci"]'); await pr.waitForTimeout(400);
+  verifier('« seulement dans Base2 » passe sur Base2, réduit son tableau à UD-99-9999, et celui de GATES dit où la voir',
     await pr.evaluate(() => {
       const l = document.querySelectorAll('#corps-seconde tr[data-i]');
       return l.length === 1 && l[0].querySelector('.verdict .ref').textContent === 'UD-99-9999' &&
-        document.querySelectorAll('#corps-tableau tr').length === 30 &&
+        !document.getElementById('cadre-seconde').hidden &&
+        /Ces 1 ligne n’a pas de plan dans GATES\. Les voir dans Base2/.test((document.querySelector('#corps-tableau .vide-message') || {}).textContent.replace(/\s+/g, ' ')) &&
         [...document.querySelectorAll('.jeton')].some(j => /Rapprochement : seulement dans Base2/.test(j.textContent));
     }));
   await ctxRapp.close();
@@ -1626,10 +1630,10 @@ function serveurSur(valeurs, proprietes, fichiers) {
     courant: document.getElementById('select-contrat').value,
     disabled: document.getElementById('select-contrat').disabled,
     etat: document.getElementById('etat-contrat').textContent,
-    nom: document.getElementById('nom-contrat').textContent,
-    nomVisible: !document.getElementById('contrat-courant').hidden,
+    nom: document.getElementById('select-contrat').value,
+    masthead: document.querySelector('.masthead').textContent,
     plans: document.querySelectorAll('#corps-tableau tr').length,
-    etats: [...document.querySelectorAll('.etat-n')].reduce((s, e) => s + (+e.textContent.replace(/\s/g, '')), 0),
+    etats: [...document.querySelectorAll('#etats .etat-n')].reduce((s, e) => s + (+e.textContent.replace(/\s/g, '')), 0),
     totauxGroupes: [...document.querySelectorAll('.critique-total')].reduce((s, t) => s + (+t.textContent), 0),
     releves: window.__serieAffichee().pts.length,
     phrase: document.getElementById('phrase').textContent,
@@ -1638,7 +1642,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const departM = await etatPage();
   verifier('avec deux contrats, le sélecteur est visible et les liste dans l\'ordre des onglets',
     departM.visible && departM.options === 'X1,X2' && departM.courant === 'X1', JSON.stringify(departM.options));
-  verifier('le contrat courant est rappelé sous le titre', departM.nomVisible && departM.nom === 'X1', departM.nom);
+  verifier('le contrat courant est celui du sélecteur, sans rappel sous le titre', departM.nom === 'X1' && !/contrat/i.test(departM.masthead), departM.nom);
   verifier('la page s\'ouvre sur le premier contrat, avec ses relevés, sans rien demander au classeur',
     departM.plans === 186 && departM.etats === 186 && departM.releves === pM.releves.length && departM.appels.length === 0,
     JSON.stringify([departM.plans, departM.releves, departM.appels]));

@@ -60,9 +60,9 @@
   /* « libelle » compte des plans (« 63 Terminés »), « court » qualifie un plan
      (« À faire → Terminé ») : le pluriel n'a pas sa place dans le second. */
   var ETATS = [
-    { cle: 'termine', libelle: 'Terminés',   court: 'Terminé',   couleur: 'var(--fait)',   teinte: '#286b45' },
-    { cle: 'encours', libelle: 'En cours',   court: 'En cours',  couleur: 'var(--cours)',  teinte: '#bf7f14' },
-    { cle: 'afaire',  libelle: 'À faire',    court: 'À faire',   couleur: 'var(--afaire)', teinte: '#71716a' },
+    { cle: 'termine', libelle: 'Terminés',   court: 'Terminé',   couleur: 'var(--fait)',   teinte: 'var(--fait)' },
+    { cle: 'encours', libelle: 'En cours',   court: 'En cours',  couleur: 'var(--cours)',  teinte: 'var(--cours)' },
+    { cle: 'afaire',  libelle: 'À faire',    court: 'À faire',   couleur: 'var(--afaire)', teinte: 'var(--afaire)' },
     { cle: 'vide',    libelle: 'Non renseignés', court: 'Non renseigné', couleur: 'transparent', teinte: 'var(--filet-fort)', hachure: true }
   ];
   /* Les deux fonds soutenus portent du blanc, l'ambre garde l'encre du texte :
@@ -121,18 +121,21 @@
   /* Le rang d'une émission : sert à choisir, entre deux candidates de même
      racine, la plus proche de celle qui a disparu. */
   function rangUD(ud) { return Number(ud.solution) * 26 + (ud.indice.charCodeAt(0) - 65); }
-  /* Une réémission : changement de solution ou d'indice. */
-  function estReemission(e) { return e.type === 'solution' || e.type === 'indice'; }
+  /* Une réémission : un changement d'indice (la lettre), le plan restant le même. */
+  function estReemission(e) { return e.type === 'indice'; }
+  /* L'identité d'un plan : sa racine ET sa solution. Une autre solution,
+     c'est un autre plan — seul l'indice bouge sans changer de plan. */
+  function clePlan(ud) { return ud.racine + ud.solution; }
   /* Exposée pour la batterie : une fonction pure se vérifie cas par cas. */
   window.__analyserUD = analyserUD;
 
   /* Compare deux cartes plan par plan { ref: avancement } et rend les
      événements : 'change' (même référence, autre état), 'nouveau', 'disparu'
-     'solution' et 'indice'. Les références qui ne se retrouvent pas telles
-     quelles sont appariées par racine : une racine partie d'un côté et
-     revenue de l'autre est le même plan réémis — changement de solution si
-     les trois chiffres ont bougé, changement d'indice si seule la lettre a
-     bougé. Quand plusieurs candidates se présentent, la plus proche l'emporte ; les
+     et 'indice'. Les références qui ne se retrouvent pas telles quelles sont
+     appariées par racine + solution : un plan parti d'un côté et revenu de
+     l'autre sous une autre lettre est le même plan réémis — un changement
+     d'indice. Une autre solution est un autre plan : rien à apparier. Quand
+     plusieurs candidates se présentent, la plus proche l'emporte ; les
      autres restent nouvelles ou disparues. Une référence hors format n'a pas
      de racine au sens propre : elle n'est jamais appariée. */
   function apparier(avant, apres) {
@@ -145,13 +148,13 @@
         return;
       }
       var ud = analyserUD(ref);
-      if (ud.valide) (venus[ud.racine] = venus[ud.racine] || []).push({ ref: ref, rang: rangUD(ud), ud: ud });
+      if (ud.valide) (venus[clePlan(ud)] = venus[clePlan(ud)] || []).push({ ref: ref, rang: rangUD(ud), ud: ud });
       else evenements.push({ ref: ref, type: 'nouveau', apres: classer(apres[ref]) });
     });
     Object.keys(avant).forEach(function (ref) {
       if (a.call(apres, ref)) return;
       var ud = analyserUD(ref);
-      if (ud.valide) (partis[ud.racine] = partis[ud.racine] || []).push({ ref: ref, rang: rangUD(ud), ud: ud });
+      if (ud.valide) (partis[clePlan(ud)] = partis[clePlan(ud)] || []).push({ ref: ref, rang: rangUD(ud), ud: ud });
       else evenements.push({ ref: ref, type: 'disparu', avant: classer(avant[ref]) });
     });
     Object.keys(venus).forEach(function (racine) {
@@ -163,8 +166,7 @@
       paires.forEach(function (pr) {
         if (pr.p.pris || pr.v.pris) return;
         pr.p.pris = pr.v.pris = true;
-        evenements.push({ ref: pr.v.ref, type: pr.p.ud.solution !== pr.v.ud.solution ? 'solution' : 'indice',
-                          ancienne: pr.p.ref,
+        evenements.push({ ref: pr.v.ref, type: 'indice', ancienne: pr.p.ref,
                           avant: classer(avant[pr.p.ref]), apres: classer(apres[pr.v.ref]) });
       });
       venus[racine].forEach(function (v) {
@@ -541,7 +543,7 @@
     var SEMAINES = fiche.semaines;
 
     /* Quelques plans ont été réémis au fil des semaines : leur référence a
-       changé de solution ou d'indice sans que le plan change d'identité. Six
+       changé d'indice sans que le plan change d'identité. Six
        par contrat, à des semaines différentes ; deux d'entre eux changent
        aussi d'état à ce moment-là. Les cartes d'avant portent l'ancienne
        référence, celles d'après la nouvelle — c'est ce que le journal doit
@@ -549,13 +551,8 @@
     var reemissions = [];
     for (var q = 5; reemissions.length < 6 && q < plans.length; q += 53) {
       var pl = plans[q], ud = analyserUD(pl.reference), ancienne;
-      if (reemissions.length % 2 === 0) {
-        if (ud.solution === '001') { ud.solution = '002'; pl.reference = ud.racine + '002' + ud.indice; }
-        ancienne = ud.racine + ('00' + (Number(ud.solution) - 1)).slice(-3) + ud.indice;
-      } else {
-        if (ud.indice === 'A') { ud.indice = 'B'; pl.reference = ud.racine + ud.solution + 'B'; }
-        ancienne = ud.racine + ud.solution + String.fromCharCode(ud.indice.charCodeAt(0) - 1);
-      }
+      if (ud.indice === 'A') { ud.indice = 'B'; pl.reference = ud.racine + ud.solution + 'B'; }
+      ancienne = ud.racine + ud.solution + String.fromCharCode(ud.indice.charCodeAt(0) - 1);
       reemissions.push({ ref: pl.reference, ancienne: ancienne,
                          k: SEMAINES - reemissions.length, avecEtat: reemissions.length % 3 === 0 });
     }
@@ -590,7 +587,7 @@
     /* Une ancienne référence retrouve son plan par la racine : ses comptes
        par dimension ne doivent pas manquer dans les relevés d'avant. */
     var parRef = {}, parRacine = {};
-    plans.forEach(function (x) { parRef[x.reference] = x; parRacine[analyserUD(x.reference).racine] = x; });
+    plans.forEach(function (x) { parRef[x.reference] = x; parRacine[clePlan(analyserUD(x.reference))] = x; });
     var releves = [];
     for (var s = 0; s <= SEMAINES; s++) {
       var carte = instantanes[s];
@@ -600,7 +597,7 @@
       Object.keys(carte).forEach(function (ref) {
         var etat = classer(carte[ref]);
         etats[etat]++;
-        var plan = parRef[ref] || parRacine[analyserUD(ref).racine];
+        var plan = parRef[ref] || parRacine[clePlan(analyserUD(ref))];
         if (!plan) return;
         clesAvecDerivees.forEach(function (d) {
           var v = String(valeurDe(plan, d) || '—');
@@ -662,8 +659,7 @@
        · 5 références présentes dans SEE mais pas ici (racines inédites) ;
        · 10 plans dont un champ diffère (Validated, REDRAW, installation,
          produit, à tour de rôle) ;
-       · 2 plans que SEE connaît sous une autre émission : l'un sous une
-         autre solution, l'autre sous un autre indice.
+       · 2 plans que SEE connaît sous un autre indice.
      Les rangs sont tous inférieurs au plus petit contrat (275 plans) : les
      trois contrats portent le même jeu d'écarts, seuls leurs plans changent.
      Les cases à cocher de l'extract s'y lisent TRUE / FALSE, comme dans un
@@ -721,8 +717,7 @@
       if (absents[i]) return;
       var ud = analyserUD(p.reference);
       var solution = ud.solution, indice = ud.indice;
-      if (autreEmission[i] === 0) solution = ('00' + (Number(ud.solution) + 1)).slice(-3);
-      else if (autreEmission[i] === 1) indice = String.fromCharCode(ud.indice.charCodeAt(0) + 1);
+      if (autreEmission[i] !== undefined) indice = String.fromCharCode(ud.indice.charCodeAt(0) + 1);
       var l = ligneSEE(ud.racine, solution, indice, i, p);
       if (autreChamp[i] !== undefined) {
         switch (autreChamp[i] % 4) {
@@ -885,7 +880,7 @@
 
     PLANS.forEach(function (p) {
       p._etat = classer(p.avancement); p._pct = pourcentDe(p);
-      p._racine = analyserUD(p.reference).racine;
+      p._racine = clePlan(analyserUD(p.reference));   // racine + solution : l'identité du plan
     });
 
     RELEVES_SRC = (src.releves || []).filter(function (r) { return r && lundiDeLibelle(r.semaine); });
@@ -1034,6 +1029,8 @@
       /* Le tableau de la seconde base : sa recherche, ses deux vues, son tri.
          Le tri vide, c'est l'ordre de l'extract. */
       seconde: { recherche: '', vueTable: 'toutes', tri: { cle: null, asc: true } },
+      /* La base montrée dans le tableau : ici (GATES) ou là (la seconde). */
+      base: 'ici',
       exemple: !!SRC.exemple,
       fen: cadrageParDefaut(),
       /* L'ordre de la feuille, sans exception : tout le monde doit voir le même
@@ -1111,8 +1108,6 @@
     sel.value = CONTRAT;
     sel.disabled = false;
     $('etat-contrat').textContent = '';
-    $('contrat-courant').hidden = !plusieurs;
-    $('nom-contrat').textContent = courant ? courant.nom : CONTRAT;
   }
 
   /* ------------------------------------------------------------
@@ -1163,11 +1158,11 @@
   /* Le comparatif affiché : les mêmes événements, restreints au périmètre. */
   function comparatif() {
     if (!EVENEMENTS_IMPORT) return null;
-    var d = { termine: [], encours: [], afaire: [], nouveaux: [], disparus: [], solution: [], indice: [], reemissions: [] };
+    var d = { termine: [], encours: [], afaire: [], nouveaux: [], disparus: [], indice: [], reemissions: [] };
     EVENEMENTS_IMPORT.filter(dansPerimetreEvt).forEach(function (e) {
       if (e.type === 'nouveau') { d.nouveaux.push(e.ref); return; }
       if (e.type === 'disparu') { d.disparus.push(e.ref); return; }
-      if (estReemission(e)) { d[e.type].push(e.ref); d.reemissions.push({ ref: e.ref, ancienne: e.ancienne, type: e.type }); }
+      if (estReemission(e)) { d.indice.push(e.ref); d.reemissions.push({ ref: e.ref, ancienne: e.ancienne, type: e.type }); }
       if (e.avant !== e.apres && d[e.apres]) d[e.apres].push(e.ref);
     });
     return d;
@@ -1187,19 +1182,32 @@
      ============================================================ */
   /* Les lots du rapprochement, dans l'ordre de lecture : d'abord ce qui va,
      puis ce qui diffère, puis ce qui manque de chaque côté. « § » se remplace
-     par le nom de la seconde base. Les quatre premiers filtrent le tableau
-     d'ici ; le dernier n'a de lignes que là, il filtre le tableau de là. */
+     par le nom de la seconde base. `segment` est la classe du segment de la
+     barre (et la catégorie de la pastille), `teinte` le trait du bouton
+     pressé, `atterrit` la base où le tableau bascule : ce qui n'existe que
+     d'un côté y emmène, le reste laisse l'interrupteur où il est. */
   var LOTS_RAPPROCHEMENT = [
-    { cle: 'identiques',      libelle: 'identiques des deux côtés',   pastille: 'identique', cote: 'ici' },
-    { cle: 'indiceDifferent', libelle: 'solution ou indice différent', pastille: 'neutre',    cote: 'ici' },
-    { cle: 'ecarts',          libelle: 'champs différents',           pastille: 'ecart',     cote: 'ici' },
-    { cle: 'absentsLa',       libelle: 'absents de §',                pastille: 'absent',    cote: 'ici' },
-    { cle: 'absentsIci',      libelle: 'seulement dans §',            pastille: 'seul',      cote: 'la' }
+    { cle: 'identiques',      libelle: 'identiques',       segment: 'identique', teinte: 'var(--fait)',    atterrit: '' },
+    { cle: 'indiceDifferent', libelle: 'autre indice',     segment: 'emission',  teinte: 'var(--encre-3)', atterrit: '' },
+    { cle: 'ecarts',          libelle: 'champs différents', segment: 'ecart',    teinte: 'var(--cours)',   atterrit: '' },
+    { cle: 'absentsLa',       libelle: 'absents de §',     segment: 'absentLa',  teinte: 'var(--alerte)',  atterrit: 'ici' },
+    { cle: 'absentsIci',      libelle: 'seulement dans §', segment: 'seul',      teinte: 'var(--encre-3)', atterrit: 'la' }
   ];
   /* La catégorie d'une ligne de là derrière chaque lot ; null : ces plans
-     n'ont pas de ligne là. */
+     n'ont pas de ligne là. Et la catégorie d'un plan d'ici (parPlan), une
+     seule par plan, pour que les comptes des boutons soient ceux de la barre. */
   var CATEGORIE_PAR_LOT = { identiques: 'identique', indiceDifferent: 'emission', ecarts: 'ecart',
                             absentsLa: null, absentsIci: 'seul' };
+  var CATEGORIE_PLAN_PAR_LOT = { identiques: 'identique', indiceDifferent: 'emission', ecarts: 'ecart', absentsLa: 'absentLa' };
+  /* Le compte d'un lot : des plans d'ici, une case chacun ; ou des lignes
+     que la seconde base est seule à connaître. */
+  function compteLotRapp(cle) {
+    if (!RAPPROCHEMENT) return 0;
+    if (cle === 'absentsIci') return RAPPROCHEMENT.absentsIci.length;
+    var cat = CATEGORIE_PLAN_PAR_LOT[cle], n = 0;
+    Object.keys(RAPPROCHEMENT.parPlan).forEach(function (ref) { if (RAPPROCHEMENT.parPlan[ref] === cat) n++; });
+    return n;
+  }
   function nomSeconde() {
     return String((SRC && SRC.rapprochement && SRC.rapprochement.nom) || 'la seconde base');
   }
@@ -1238,8 +1246,8 @@
    * Rapproche `plans` (ceux du périmètre) des lignes de la seconde base.
    * Rend null sans description exploitable. Sinon :
    *   identiques      [plan]                     — même émission, mêmes champs ;
-   *   indiceDifferent [{ plan, ref_la, type }]   — même racine, autre émission
-   *                                                 (type : solution ou indice) ;
+   *   indiceDifferent [{ plan, ref_la, type }]   — même plan (racine et
+   *                                                 solution), autre indice ;
    *   ecarts          [{ plan, champ, ici, la }] — un champ qui ne dit pas
    *                                                 la même chose des deux côtés ;
    *   absentsLa       [plan]                     — ici, pas là ;
@@ -1263,7 +1271,7 @@
       var e = { ligne: l, ref: ref, ud: ud, i: i, cat: 'vide', plan: null, ecarts: {} };
       lignes.push(e);
       if (!ud.racine) return;
-      (parRacine[ud.racine] = parRacine[ud.racine] || []).push(e);
+      (parRacine[clePlan(ud)] = parRacine[clePlan(ud)] || []).push(e);
     });
     var r = { identiques: [], indiceDifferent: [], ecarts: [], absentsLa: [], absentsIci: [],
               parPlan: Object.create(null), lignes: lignes,
@@ -1274,13 +1282,10 @@
       var udIci = analyserUD(p.reference);
       /* Plusieurs lignes de même racine : celle qui porte exactement la même
          émission, sinon la première. */
-      var meme = candidates.filter(function (c) {
-        return c.ud.solution === udIci.solution && c.ud.indice === udIci.indice;
-      })[0] || candidates[0];
+      var meme = candidates.filter(function (c) { return c.ud.indice === udIci.indice; })[0] || candidates[0];
       var cat = 'identique';
-      if (meme.ud.solution !== udIci.solution || meme.ud.indice !== udIci.indice) {
-        r.indiceDifferent.push({ plan: p, ref_la: meme.ref,
-                                 type: meme.ud.solution !== udIci.solution ? 'solution' : 'indice' });
+      if (meme.ud.indice !== udIci.indice) {
+        r.indiceDifferent.push({ plan: p, ref_la: meme.ref, type: 'indice' });
         cat = 'emission';
       }
       champs.forEach(function (c) {
@@ -1293,17 +1298,17 @@
       if (cat === 'identique') r.identiques.push(p);
       r.parPlan[p.reference] = cat;
       meme.cat = cat; meme.plan = p;
-      /* Les autres lignes de même racine : le même plan, sous une autre émission. */
+      /* Les autres lignes du même plan : sous un autre indice. */
       candidates.forEach(function (c) { if (c !== meme && !c.plan) { c.cat = 'emission'; c.plan = p; } });
     });
     /* Une ligne n'a pas de domaine : elle est « seulement là » si aucun plan
-       du contrat, périmètre ou non, ne porte sa racine ; sous un périmètre,
+       du contrat, périmètre ou non, ne porte sa racine et sa solution ; sous un périmètre,
        une ligne d'un plan hors périmètre est simplement hors champ. */
     var racinesIci = Object.create(null);
     PLANS.forEach(function (p) { racinesIci[p._racine] = true; });
     lignes.forEach(function (e) {
       if (e.plan || !e.ud.racine) return;
-      if (racinesIci[e.ud.racine]) { e.cat = 'hors'; return; }
+      if (racinesIci[clePlan(e.ud)]) { e.cat = 'hors'; return; }
       e.cat = 'seul'; r.absentsIci.push(e.ligne);
     });
     /* Les absents d'ici portent sur tout le contrat, jamais sur le seul
@@ -1313,14 +1318,10 @@
     return r;
   }
   /* Les références du tableau derrière un lot : c'est ce que le clic pose en
-     sélection. Un plan qui diffère sur deux champs ne compte qu'une fois. */
+     sélection — les plans de cette case, une case par plan. */
   function refsDuLotRapprochement(cle) {
-    var refs = {};
-    (RAPPROCHEMENT[cle] || []).forEach(function (x) {
-      var p = (cle === 'absentsLa' || cle === 'identiques') ? x : x.plan;
-      refs[p.reference] = true;
-    });
-    return Object.keys(refs);
+    var cat = CATEGORIE_PLAN_PAR_LOT[cle];
+    return Object.keys(RAPPROCHEMENT.parPlan).filter(function (ref) { return RAPPROCHEMENT.parPlan[ref] === cat; });
   }
   /* Poser ou retirer un lot : les lots d'ici passent par la sélection du
      tableau, comme les puces du comparatif ; le lot de là ne filtre que le
@@ -1332,7 +1333,8 @@
     if (vue.refsLibelle.indexOf('rapprochement:') === 0) { vue.refs = null; vue.refsLibelle = ''; }
     vue.lotLa = null;
     if (deja) return;
-    if (lot.cote === 'la') { vue.lotLa = cle; return; }
+    if (lot.atterrit) vue.base = lot.atterrit;
+    if (cle === 'absentsIci') { vue.lotLa = cle; return; }
     vue.refs = {};
     refsDuLotRapprochement(cle).forEach(function (r) { vue.refs[r] = true; });
     vue.refsLibelle = 'rapprochement:' + cle;
@@ -1537,48 +1539,56 @@
      plutôt que de deviner les largeurs à l'avance. */
   /* Les segments vides ne sont pas rendus : on releve les coupures reelles
      dans le DOM plutot que de les recalculer a partir des pourcentages. */
-  function placerFilets() {
-    var zone = $('filets'), barre = $('barre');
-    if (!zone || !barre) return;
-    var segs = Array.prototype.slice.call(barre.children);
-    if (segs.length < 2 || window.matchMedia('(max-width: 680px)').matches) {
-      zone.innerHTML = '';
-      return;
-    }
-    var base = barre.getBoundingClientRect();
-    zone.innerHTML = segs.slice(0, -1).map(function (seg) {
-      var r = seg.getBoundingClientRect();
-      return '\x3Ci style="left:' + (r.right - base.left + 1).toFixed(1) + 'px">\x3C/i>';
-    }).join('');
-  }
-
-  function alignerEtats(c) {
-    placerFilets();
-    var zone = $('etats');
-    var boutons = Array.prototype.slice.call(zone.querySelectorAll('.etat-btn'));
+  /* Sous une barre, les filets prolongent ses coupures et chaque bouton se
+     centre sous son segment — la barre d'avancement et celle du rapprochement
+     partagent ce dessin. Les centres se lisent sur les rectangles réels des
+     segments (data-cle), donc les largeurs minimales et le blanc avant
+     « seulement là » sont honorés ; un bouton dont le compte vaut 0 n'a pas
+     de segment : il se cale au bord droit du précédent. Puis on pousse vers
+     la droite ce qui se chevauche, et on recale vers la gauche si le dernier
+     sort du cadre. Sous 680 px, les boutons passent en grille : rien à poser. */
+  function alignerSousBarre(idBarre, idFilets, idEtats) {
+    var barre = $(idBarre), filets = $(idFilets), zone = $(idEtats);
+    if (!barre || !zone) return;
+    var segs = Array.prototype.slice.call(barre.querySelectorAll('span[data-cle]'));
+    var boutons = Array.prototype.slice.call(zone.querySelectorAll('button[data-cle]'));
+    if (filets) filets.innerHTML = '';
     if (!boutons.length) return;
-    if (window.matchMedia('(max-width: 680px)').matches) {
+    if (window.matchMedia('(max-width: 680px)').matches || barre.offsetParent === null) {
       boutons.forEach(function (b) { b.style.left = ''; });
       return;
     }
+    var base = barre.getBoundingClientRect();
     var largeur = zone.getBoundingClientRect().width;
-    if (!largeur || !c.total) return;
-
-    var cumul = 0;
-    var cibles = ETATS.map(function (e) {
-      var part = (c[e.cle] / c.total) * largeur;
-      var centre = cumul + part / 2;
-      cumul += part;
-      return centre;
+    if (!largeur || !base.width) return;
+    /* Un filet par coupure — sauf après un segment trop étroit pour que le
+       trait dise encore quelque chose : entre trois plans et cinq, il ne
+       ferait que hachurer les nombres. */
+    if (filets && segs.length > 1) {
+      filets.innerHTML = segs.slice(0, -1).map(function (seg) {
+        var r = seg.getBoundingClientRect();
+        if (r.width < 14) return '';
+        return '\x3Ci style="left:' + (r.right - base.left + 1).toFixed(1) + 'px">\x3C/i>';
+      }).join('');
+    }
+    var centreDe = {}, bordDe = {};
+    segs.forEach(function (seg) {
+      var r = seg.getBoundingClientRect();
+      centreDe[seg.dataset.cle] = (r.left + r.right) / 2 - base.left;
+      bordDe[seg.dataset.cle] = r.right - base.left;
     });
-
-    // Placement au centre, puis on pousse vers la droite ce qui se chevauche…
+    var bord = 0;
+    var cibles = boutons.map(function (b) {
+      var c = centreDe[b.dataset.cle];
+      if (c === undefined) return bord;
+      bord = bordDe[b.dataset.cle];
+      return c;
+    });
     var gauches = boutons.map(function (b, i) { return cibles[i] - b.offsetWidth / 2; });
     for (var i = 1; i < boutons.length; i++) {
       var mini = gauches[i - 1] + boutons[i - 1].offsetWidth + 4;
       if (gauches[i] < mini) gauches[i] = mini;
     }
-    // …puis on recale vers la gauche si le dernier sort du cadre.
     var debord = gauches[boutons.length - 1] + boutons[boutons.length - 1].offsetWidth - largeur;
     for (var k = boutons.length - 1; k >= 0 && debord > 0; k--) {
       gauches[k] -= debord;
@@ -1602,8 +1612,8 @@
       var part = (c[e.cle] / (c.total || 1)) * 100;
       var texte = part >= 6 ? Math.round(part) + '\u202f%' : '';
       return e.hachure
-        ? '\x3Cspan class="hachure" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '\x3C/span>'
-        : '\x3Cspan style="width:' + part.toFixed(2) + '%;background:' + e.couleur +
+        ? '\x3Cspan class="hachure" data-cle="' + e.cle + '" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '\x3C/span>'
+        : '\x3Cspan data-cle="' + e.cle + '" style="width:' + part.toFixed(2) + '%;background:' + e.couleur +
           ';color:' + encreSegment(e.cle) + '">' + texte + '\x3C/span>';
     }).join('');
 
@@ -1612,13 +1622,13 @@
         ? '\x3Cspan class="pastille hachure">\x3C/span>'
         : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>';
       var actif = vue.etat === e.cle;
-      return '\x3Cbutton class="etat-btn" type="button" data-etat="' + e.cle + '" style="--teinte:' + e.teinte +
+      return '\x3Cbutton class="etat-btn" type="button" data-etat="' + e.cle + '" data-cle="' + e.cle + '" style="--teinte:' + e.teinte +
         '" aria-pressed="' + actif + '" title="' + (actif ? 'Retirer le filtre' : 'N\u2019afficher que ces plans') + '">' +
         '\x3Cspan class="etat-haut">' + pastille + ech(e.libelle) + '\x3C/span>' +
         '\x3Cspan class="etat-n">' + nb(c[e.cle]) + '\x3C/span>\x3C/button>';
     }).join('');
 
-    requestAnimationFrame(function () { alignerEtats(c); });
+    requestAnimationFrame(function () { alignerSousBarre('barre', 'filets', 'etats'); });
   }
 
   /* ============================================================ GRAPHIQUE */
@@ -2069,7 +2079,6 @@
     { cle: 'vide',    un: 'effacé',             des: 'effacés' },
     { cle: 'nouveau', un: 'nouveau',            des: 'nouveaux' },
     { cle: 'disparu', un: 'disparu',            des: 'disparus' },
-    { cle: 'solution', un: 'changement de solution', des: 'changements de solution' },
     { cle: 'indice',  un: 'changement d’indice', des: 'changements d’indice' }
   ];
   function comptesDeLaSemaine(i) {
@@ -2191,7 +2200,9 @@
       '\x3Cspan>' + nb(plans.length) + ' plan' + (plans.length > 1 ? 's' : '') +
       (restants.length ? ' · \x3Cb>' + nb(restants.length) + '\x3C/b> pas encore terminé' + (restants.length > 1 ? 's' : '')
                        : ' · tout est soldé') +
-      '\x3C/span>\x3Cspan>cliquez une référence pour la retrouver dans le tableau\x3C/span>\x3C/div>' +
+      '\x3C/span>\x3Cspan class="legende-etats" aria-label="Légende des pastilles">' + ETATS.map(function (et) {
+        return '\x3Cspan>' + pastilleDe(et.cle) + ech(et.court) + '\x3C/span>';
+      }).join('') + '\x3C/span>\x3Cspan>cliquez une référence pour la retrouver dans le tableau\x3C/span>\x3C/div>' +
       paquet('Pas encore terminés', restants) +
       paquet('Terminés', termines) +
       '\x3C/div>';
@@ -2552,6 +2563,18 @@
   }
   function rendreCorps(liste) {
     var cols = visibles();
+    /* Le lot « seulement dans la seconde base » n'a aucun plan ici : le
+       tableau de GATES le dit, et propose l'autre côté. La barre du haut, elle,
+       montre toujours la sélection — ce lot n'est pas un filtre sur les plans. */
+    if (vue.lotLa && RAPPROCHEMENT) {
+      var nLa = RAPPROCHEMENT.absentsIci.length, nomLa = nomSeconde();
+      $('corps-tableau').innerHTML = '\x3Ctr>\x3Ctd colspan="' + cols.length + '">\x3Cdiv class="vide-message">Ces ' + nb(nLa) +
+        (nLa > 1 ? ' lignes n’ont pas de plan dans GATES. ' : ' ligne n’a pas de plan dans GATES. ') +
+        '\x3Cbutton class="lien-doux" type="button" data-aller-base="la">Les voir dans ' + ech(nomLa) + '\x3C/button>\x3C/div>\x3C/td>\x3C/tr>';
+      $('compte').textContent = '0 plan sur ' + nb(population().length);
+      majOmbre();
+      return;
+    }
     var rangs = liste.slice().sort(function (a, b) {
       var k = vue.tri.cle, sens = vue.tri.asc ? 1 : -1;
       if (k === 'avancement') return (a._pct - b._pct) * sens || a.reference.localeCompare(b.reference);
@@ -2609,7 +2632,6 @@
     { cle: 'afaire',   un: 'passé à faire',       des: 'passés à faire',       etat: 'afaire' },
     { cle: 'nouveaux', un: 'nouveau',             des: 'nouveaux',             etat: null },
     { cle: 'disparus', un: 'disparu',             des: 'disparus',             etat: null },
-    { cle: 'solution', un: 'changement de solution', des: 'changements de solution', etat: null },
     { cle: 'indice',   un: 'changement d’indice', des: 'changements d’indice', etat: null }
   ];
   function libelleLot(l, n) { return n > 1 ? l.des : l.un; }
@@ -2623,7 +2645,7 @@
     var morceaux = LOTS_DELTA.filter(function (l) { return COMPARATIF[l.cle].length; }).map(function (l) {
       var actif = vue.refsLibelle === l.cle;
       var n = COMPARATIF[l.cle].length;
-      var pastille = l.etat || l.cle === 'indice' || l.cle === 'solution' ? pastilleDe(l.etat || l.cle) : '';
+      var pastille = l.etat || l.cle === 'indice' ? pastilleDe(l.etat || l.cle) : '';
       return '\x3Cbutton class="puce-delta" type="button" data-delta="' + l.cle +
         '" aria-pressed="' + actif + '">' +
         pastille + '\x3Cb>' + nb(n) + '\x3C/b> ' + libelleLot(l, n) + '\x3C/button>';
@@ -2653,10 +2675,10 @@
   }
 
   /* Le plan derrière une référence, même ancienne : une référence qui n'est
-     plus dans la feuille se retrouve par sa racine — c'est le même plan,
-     réémis depuis. */
+     plus dans la feuille se retrouve par sa racine et sa solution — c'est le
+     même plan, réémis sous un autre indice depuis. */
   function planDeRef(ref) {
-    return PLAN_PAR_REF[ref] || PLAN_PAR_RACINE[analyserUD(ref).racine] || null;
+    return PLAN_PAR_REF[ref] || PLAN_PAR_RACINE[clePlan(analyserUD(ref))] || null;
   }
 
   /* Le filtre du journal : un état d'arrivée, ou « indice ». Un changement
@@ -2664,14 +2686,14 @@
      il ne se range sous aucun. */
   function retenuParJournal(e, filtre) {
     if (!filtre) return true;
-    if (filtre === 'indice' || filtre === 'solution') return e.type === filtre;
+    if (filtre === 'indice') return e.type === 'indice';
     return e.apres === filtre && (!estReemission(e) || e.avant !== e.apres);
   }
   /* Les comptes d'une liste d'événements, avec les mots du journal et de la
      bulle : passages par état d'arrivée, nouveaux, disparus, changements
      d'indice. Un plan réémis qui change d'état compte des deux côtés. */
   function comptesEvenements(evts) {
-    var c = { termine: 0, encours: 0, afaire: 0, vide: 0, nouveau: 0, disparu: 0, solution: 0, indice: 0 };
+    var c = { termine: 0, encours: 0, afaire: 0, vide: 0, nouveau: 0, disparu: 0, indice: 0 };
     evts.forEach(function (e) {
       if (e.type === 'nouveau') { c.nouveau++; return; }
       if (e.type === 'disparu') { c.disparu++; return; }
@@ -2685,7 +2707,7 @@
      d'indice et la pastille transparente qui tient la place des autres. */
   function pastilleDe(cle) {
     var e = ETAT_PAR_CLE[cle];
-    if (!e) return '\x3Cspan class="pastille ' + (cle === 'indice' || cle === 'solution' ? 'neutre' : 'sans') + '">\x3C/span>';
+    if (!e) return '\x3Cspan class="pastille ' + (cle === 'indice' ? 'neutre' : 'sans') + '">\x3C/span>';
     return e.hachure
       ? '\x3Cspan class="pastille hachure">\x3C/span>'
       : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>';
@@ -2739,26 +2761,32 @@
         if (!n) return;
         var pluriel = n > 1 ? 's' : '';
         var mot;
-        if (et.cle === 'termine')      mot = nb(n) + ' terminé' + pluriel;
-        else if (et.cle === 'encours') mot = nb(n) + ' passé' + pluriel + ' en cours';
-        else if (et.cle === 'afaire')  mot = nb(n) + ' repassé' + pluriel + ' à faire';
-        else                           mot = nb(n) + ' effacé' + pluriel;
+        if (et.cle === 'termine')      mot = 'terminé' + pluriel;
+        else if (et.cle === 'encours') mot = 'passé' + pluriel + ' en cours';
+        else if (et.cle === 'afaire')  mot = 'repassé' + pluriel + ' à faire';
+        else                           mot = 'effacé' + pluriel;
         resume.push('\x3Cbutton class="compte-passage" type="button" data-passage="' + et.cle +
           '" aria-pressed="' + (vue.journal === et.cle) + '" title="N\u2019afficher que ces passages, sur toutes les semaines">' +
-          ech(mot) + '\x3C/button>');
+          pastilleDe(et.cle) + '\x3Cb>' + nb(n) + '\x3C/b> ' + ech(mot) + '\x3C/button>');
       });
-      if (parType.solution) {
-        resume.push('\x3Cbutton class="compte-passage" type="button" data-passage="solution" aria-pressed="' +
-          (vue.journal === 'solution') + '" title="N\u2019afficher que les changements de solution, sur toutes les semaines">' +
-          nb(parType.solution) + ' changement' + (parType.solution > 1 ? 's' : '') + ' de solution\x3C/button>');
-      }
       if (parType.indice) {
         resume.push('\x3Cbutton class="compte-passage" type="button" data-passage="indice" aria-pressed="' +
           (vue.journal === 'indice') + '" title="N\u2019afficher que les changements d\u2019indice, sur toutes les semaines">' +
-          nb(parType.indice) + ' changement' + (parType.indice > 1 ? 's' : '') + ' d\u2019indice\x3C/button>');
+          pastilleDe('indice') + '\x3Cb>' + nb(parType.indice) + '\x3C/b> changement' + (parType.indice > 1 ? 's' : '') + ' d\u2019indice\x3C/button>');
       }
-      if (parType.nouveau) resume.push('\x3Cspan>' + nb(parType.nouveau) + ' nouveau' + (parType.nouveau > 1 ? 'x' : '') + '\x3C/span>');
-      if (parType.disparu) resume.push('\x3Cspan>' + nb(parType.disparu) + ' disparu' + (parType.disparu > 1 ? 's' : '') + '\x3C/span>');
+      if (parType.nouveau) resume.push('\x3Cspan class="doux-compte">\x3Cb>' + nb(parType.nouveau) + '\x3C/b> nouveau' + (parType.nouveau > 1 ? 'x' : '') + '\x3C/span>');
+      if (parType.disparu) resume.push('\x3Cspan class="doux-compte">\x3Cb>' + nb(parType.disparu) + '\x3C/b> disparu' + (parType.disparu > 1 ? 's' : '') + '\x3C/span>');
+      /* La ligne de couleur de la semaine : une part par compte, dans l'ordre
+         du résumé, sur la largeur d'une petite jauge. */
+      var totalSem = ['termine', 'encours', 'afaire', 'vide', 'indice', 'nouveau', 'disparu']
+        .reduce(function (t, k) { return t + (parType[k] || 0); }, 0);
+      var jauge = totalSem ? '\x3Cspan class="mini-jauge" aria-hidden="true">' +
+        ['termine', 'encours', 'afaire', 'vide', 'indice', 'nouveau', 'disparu'].map(function (k) {
+          if (!parType[k]) return '';
+          var e = ETAT_PAR_CLE[k];
+          var style = 'width:' + (100 * parType[k] / totalSem).toFixed(1) + '%' + (e && !e.hachure ? ';background:' + e.couleur : '');
+          return '\x3Cspan class="' + k + '" style="' + style + '">\x3C/span>';
+        }).join('') + '\x3C/span>' : '';
 
       // La première semaine affichée s'ouvre d'elle-même : c'est celle qu'on vient voir.
       var ouvert = vue.journalOuverts[sem.i] !== undefined ? vue.journalOuverts[sem.i] : premiere;
@@ -2771,7 +2799,7 @@
          seraient les seuls invisibles sans clic. Les nouveaux et les disparus
          ferment la marche. */
       var rangEtat = { termine: 0, encours: 1, afaire: 2, vide: 3 };
-      var rangType = { solution: -2, indice: -1, nouveau: 5, disparu: 6 };
+      var rangType = { indice: -1, nouveau: 5, disparu: 6 };
       evts = evts.slice().sort(function (a, b) {
         var ra = rangType[a.type] !== undefined ? rangType[a.type] : rangEtat[a.apres];
         var rb = rangType[b.type] !== undefined ? rangType[b.type] : rangEtat[b.apres];
@@ -2814,7 +2842,7 @@
         '\x3Csvg class="chevron" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">' +
         '\x3Cpath d="m3.5 1.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\x3C/svg>' +
         '\x3Cspan class="sem">' + etiquette(sem.i) + '\x3C/span>\x3C/button>' +
-        '\x3Cspan class="resume">' + resume.join(' \x3Cspan class="sep">·\x3C/span> ') + '\x3C/span>\x3C/span>' +
+        '\x3Cspan class="resume">' + resume.join('') + '\x3C/span>' + jauge + '\x3C/span>' +
         (ouvert ? '\x3Cul class="journal-liste">' + lignes + '\x3C/ul>' : '') +
         '\x3C/div>';
     }).join('');
@@ -2883,8 +2911,8 @@
       if (i === 3 || i === 11) apparus[p.reference] = semaines - 1;
       else if (i === 19) apparus[p.reference] = semaines - 4;
       var ud = analyserUD(p.reference);
-      if (ud.valide && Number(ud.solution) > 1 && nbReemis < 3 && i % 7 === 2) {
-        reemis[p.reference] = { ancienne: ud.racine + ('00' + (Number(ud.solution) - 1)).slice(-3) + ud.indice,
+      if (ud.valide && ud.indice !== 'A' && nbReemis < 3 && i % 7 === 2) {
+        reemis[p.reference] = { ancienne: ud.racine + ud.solution + String.fromCharCode(ud.indice.charCodeAt(0) - 1),
                                 jusque: nbReemis === 0 ? semaines - 1 : semaines - 3 - nbReemis };
         nbReemis++;
       }
@@ -3131,70 +3159,86 @@
   }
   var MOT_VERDICT = {
     identique: 'Identique des deux côtés',
-    emission: 'Le même plan, sous une autre solution ou un autre indice',
-    ecart: 'Des champs diffèrent d’ici',
-    seul: 'Aucun plan d’ici sous cette racine'
+    emission: 'Le même plan, sous un autre indice',
+    ecart: 'Des champs diffèrent de GATES',
+    seul: 'Aucun plan de GATES sous cette racine'
   };
+  /* Le titre d'un segment ou la ligne de tête d'une bulle : le compte et le mot. */
+  function motLotRapp(cle, n, nom) {
+    var pl = n > 1;
+    if (cle === 'identiques') return nb(n) + (pl ? ' identiques' : ' identique');
+    if (cle === 'indiceDifferent') return nb(n) + ' sous un autre indice';
+    if (cle === 'ecarts') return nb(n) + ' avec des champs différents';
+    if (cle === 'absentsLa') return nb(n) + (pl ? ' absents de ' : ' absent de ') + nom;
+    return nb(n) + (pl ? ' lignes seulement dans ' : ' ligne seulement dans ') + nom;
+  }
   function rendreRapprochement() {
     var zone = $('rapprochement');
     if (!RAPPROCHEMENT) { zone.hidden = true; return; }
     zone.hidden = false;
-    var R = RAPPROCHEMENT, nom = nomSeconde();
+    var R = RAPPROCHEMENT, rap = SRC.rapprochement, nom = nomSeconde();
     $('titre-rapprochement').textContent = 'Rapprochement avec ' + nom;
+    var nL = R.nbLignes;
+    $('compte-rapprochement').textContent = (nL
+      ? nb(nL) + (nL > 1 ? ' lignes dans ' : ' ligne dans ') + nom + (rap.titre ? ' · extract « ' + String(rap.titre) + ' »' : '')
+      : '0 ligne dans ' + nom + ' — l’extract est vide');
 
-    /* La phrase : d'abord ce qui va, en nombre et en part ; puis les écarts.
-       Sous un périmètre, elle ne mélange pas les deux populations : les écarts
-       du périmètre d'un côté, les références seulement là — qui valent pour
-       tout le contrat, la seconde base n'ayant pas de domaine — de l'autre. */
-    var ecarts = function (n) { return n ? nb(n) + (n > 1 ? ' écarts' : ' écart') : 'aucun écart'; };
-    var nId = R.identiques.length;
-    var pct = R.nbPlans ? Math.round(100 * nId / R.nbPlans) : 0;
-    var idem = nb(nId) + (nId > 1 ? ' identiques' : ' identique') + ' (' + pct + ' %)';
-    var seuls = nb(R.absentsIci.length) + (R.absentsIci.length > 1 ? ' références seulement dans ' : ' référence seulement dans ') + nom;
-    $('phrase-rapprochement').textContent = vue.perimetre
-      ? nb(R.nbPlans) + (R.nbPlans > 1 ? ' plans ici' : ' plan ici') + ' (périmètre ' + vue.perimetre + ') : ' +
-        idem + ', ' + ecarts(R.totalPerimetre) + ' dans le périmètre · ' + seuls + ', tout le contrat.'
-      : nb(R.nbPlans) + (R.nbPlans > 1 ? ' plans ici' : ' plan ici') +
-        ', ' + nb(R.nbLignes) + (R.nbLignes > 1 ? ' lignes dans ' : ' ligne dans ') + nom + ' : ' +
-        idem + ', ' + ecarts(R.total) + '.';
+    /* Les comptes : un plan d'ici dans une seule case, et à part ce que la
+       seconde base est seule à connaître. */
+    var comptes = {};
+    LOTS_RAPPROCHEMENT.forEach(function (l) { comptes[l.cle] = compteLotRapp(l.cle); });
+    var nP = R.nbPlans, nId = comptes.identiques, nSeuls = comptes.absentsIci, aVerifier = nP - nId;
 
-    /* La jauge : chaque plan d'ici dans une seule case — identique, réémis,
-       en écart, absent de là — et, à part, ce qui n'existe que là, à la même
-       échelle. */
-    var parCat = { identique: 0, emission: 0, ecart: 0, absentLa: 0 };
-    Object.keys(R.parPlan).forEach(function (ref) { parCat[R.parPlan[ref]]++; });
-    var echelle = Math.max(R.nbPlans, 1);
-    var largeur = function (n) { return (100 * n / echelle).toFixed(2) + '%'; };
-    $('jauge-rapprochement').innerHTML = ['identique', 'emission', 'ecart', 'absentLa'].map(function (cat) {
-      return parCat[cat] ? '\x3Cspan class="' + cat + '" style="width:' + largeur(parCat[cat]) + '">\x3C/span>' : '';
-    }).join('') + (R.absentsIci.length
-      ? '\x3Cspan class="seul" style="width:' + largeur(Math.min(R.absentsIci.length, echelle)) + '">\x3C/span>' : '');
+    /* La phrase, dans le registre de la barre du haut — jamais « terminés » ;
+       dessous, ce qu'il reste à regarder. */
+    if (!nP && vue.perimetre) {
+      $('phrase-rapprochement').textContent = 'Aucun plan dans le périmètre ' + vue.perimetre;
+      $('sous-rapprochement').textContent = '';
+    } else {
+      $('phrase-rapprochement').innerHTML = '\x3Cb>' + nb(nId) + '\x3C/b> sur ' + nb(nP) + (nP > 1 ? ' plans' : ' plan') +
+        (vue.perimetre ? ' du périmètre ' + ech(vue.perimetre) : '') + (nP > 1 ? ' identiques' : ' identique') + ' dans ' + ech(nom);
+      var seuls = nSeuls ? nb(nSeuls) + (nSeuls > 1 ? ' références que ' : ' référence que ') + nom + ' est seul à connaître' +
+        (vue.perimetre ? ', sur tout le contrat' : '') : '';
+      $('sous-rapprochement').textContent = !aVerifier
+        ? 'Rien à vérifier : les deux bases disent la même chose' + (seuls ? ' · ' + seuls : '') + '.'
+        : 'Il reste ' + nb(aVerifier) + (aVerifier > 1 ? ' plans' : ' plan') + ' à vérifier' +
+          (vue.perimetre ? ' dans le périmètre' : '') + (seuls ? ' · ' + seuls : '') + '.';
+    }
 
-    /* Une tuile par lot : le grand nombre, la pastille et le mot ; dessous,
-       le détail qui aide à lire — la part, la répartition solution / indice,
-       le nombre de plans derrière les écarts de champ. */
-    var actif = lotRappActif();
-    var nEmSolution = R.indiceDifferent.filter(function (x) { return x.type === 'solution'; }).length;
-    var plansEcarts = {};
-    R.ecarts.forEach(function (e) { plansEcarts[e.plan.reference] = true; });
-    var nPlansEcarts = Object.keys(plansEcarts).length;
-    $('puces-rapprochement').innerHTML = LOTS_RAPPROCHEMENT.map(function (l) {
-      var n = R[l.cle].length;
-      var presse = n ? actif === l.cle : false;
-      var sous = '';
-      if (l.cle === 'identiques' && n) sous = pct + ' % des plans d’ici';
-      else if (l.cle === 'indiceDifferent' && n) sous = nb(nEmSolution) + ' de solution · ' + nb(n - nEmSolution) + ' d’indice';
-      else if (l.cle === 'ecarts' && n) sous = 'sur ' + nb(nPlansEcarts) + (nPlansEcarts > 1 ? ' plans' : ' plan');
-      else if (l.cle === 'absentsIci' && n) sous = 'aucune racine connue ici';
-      var aide = !n ? 'Aucun' : presse ? 'Cliquez pour retirer le filtre'
-        : l.cote === 'la' ? 'Cliquez pour n’afficher que ces lignes dans le tableau de ' + nom
-        : 'Cliquez pour n’afficher que ces plans dans le tableau';
-      var libelle = libelleRapp(l) + (vue.perimetre && l.cote === 'la' ? ' (tout le contrat)' : '');
-      return '\x3Cbutton class="rapp-tuile" type="button" data-rapp="' + l.cle + '" aria-pressed="' + presse + '"' +
-        (n ? '' : ' disabled') + ' title="' + ech(aide) + '">\x3Cb>' + nb(n) + '\x3C/b>' +
-        '\x3Cspan class="mot">' + pastilleVerdict(l.pastille === 'neutre' ? 'emission' : l.pastille === 'absent' ? 'absentLa' : l.cle === 'identiques' ? 'identique' : l.cle === 'ecarts' ? 'ecart' : 'seul') +
-        ech(libelle) + '\x3C/span>\x3Cspan class="sous">' + ech(sous) + '\x3C/span>\x3C/button>';
+    /* La barre : les plans d'ici, puis, après un blanc, ce qui n'existe que
+       là, à la même échelle. La part écrite dans un segment est celle des
+       plans d'ici, comme dans la phrase. */
+    var echelle = Math.max(nP + nSeuls, 1);
+    $('barre-rapprochement').innerHTML = LOTS_RAPPROCHEMENT.map(function (l) {
+      var n = comptes[l.cle];
+      if (!n) return '';
+      var part = 100 * n / echelle;
+      var texte = l.cle !== 'absentsIci' && part >= 6 && nP ? Math.round(100 * n / nP) + '\u202f%' : '';
+      return '\x3Cspan class="' + l.segment + '" data-cle="' + l.cle + '" style="width:' + part.toFixed(2) + '%" title="' +
+        ech(motLotRapp(l.cle, n, nom)) + '">' + texte + '\x3C/span>';
     }).join('');
+    var membres = LOTS_RAPPROCHEMENT.filter(function (l) { return comptes[l.cle] && l.cle !== 'absentsIci'; })
+      .map(function (l) { return motLotRapp(l.cle, comptes[l.cle], nom); });
+    $('barre-rapprochement').setAttribute('aria-label', 'Rapprochement avec ' + nom + ' : ' +
+      (membres.length ? membres.join(', ') + ', sur ' + nb(nP) + (nP > 1 ? ' plans' : ' plan') : 'aucun plan') +
+      (nSeuls ? ' ; ' + motLotRapp('absentsIci', nSeuls, nom) : '') + '.');
+
+    /* Les boutons : le même dessin que sous la barre du haut. Un lot à 0 se
+       lit mais ne se clique pas — la rangée sert aussi de légende. */
+    var actif = lotRappActif();
+    $('etats-rapprochement').innerHTML = LOTS_RAPPROCHEMENT.map(function (l) {
+      var n = comptes[l.cle], presse = !!n && actif === l.cle;
+      var libelle = libelleRapp(l) + (vue.perimetre && l.cle === 'absentsIci' ? ' · tout le contrat' : '');
+      var aide = !n ? 'Aucun' : presse ? 'Retirer le filtre'
+        : l.atterrit === 'la' ? 'N’afficher que ces lignes, dans ' + nom
+        : l.atterrit === 'ici' ? 'N’afficher que ces plans, dans GATES'
+        : 'N’afficher que ces plans dans le tableau';
+      return '\x3Cbutton class="etat-btn" type="button" data-cle="' + l.cle + '" data-rapp="' + l.cle + '" data-atterrit="' + l.atterrit +
+        '" style="--teinte:' + l.teinte + '" aria-pressed="' + presse + '"' + (n ? '' : ' disabled') + ' title="' + ech(aide) + '">' +
+        '\x3Cspan class="etat-haut">' + pastilleVerdict(l.segment) + ech(libelle) + '\x3C/span>' +
+        '\x3Cspan class="etat-n">' + nb(n) + '\x3C/span>\x3C/button>';
+    }).join('');
+    requestAnimationFrame(function () { alignerSousBarre('barre-rapprochement', 'filets-rapprochement', 'etats-rapprochement'); });
 
     var bouton = $('bouton-detail-rapprochement');
     bouton.setAttribute('aria-expanded', String(!!vue.rappDetail));
@@ -3206,14 +3250,68 @@
         (vue.perimetre ? ' dans ce périmètre' : '') + '.\x3C/p>';
       return;
     }
-    detail.innerHTML = '\x3Cdiv class="rapp-detail" role="region" aria-label="Détail des écarts de champ">' +
+    detail.innerHTML = '\x3Cdiv class="feuille rapp-detail" role="region" aria-label="Détail des écarts de champ">' +
       '\x3Cdiv class="rapp-grille">' +
       '\x3Cdiv class="rapp-entete">Référence\x3C/div>\x3Cdiv class="rapp-entete">Champ\x3C/div>' +
-      '\x3Cdiv class="rapp-entete">Ici\x3C/div>\x3Cdiv class="rapp-entete">' + ech(nom) + '\x3C/div>' +
+      '\x3Cdiv class="rapp-entete">GATES\x3C/div>\x3Cdiv class="rapp-entete">' + ech(nom) + '\x3C/div>' +
       R.ecarts.map(function (e) {
         return '\x3Cdiv class="ref">' + ech(e.plan.reference) + '\x3C/div>\x3Cdiv class="champ">' + ech(e.champ) + '\x3C/div>' +
           '\x3Cdiv>' + valeurRapp(e.ici) + '\x3C/div>\x3Cdiv>' + valeurRapp(e.la) + '\x3C/div>';
       }).join('') + '\x3C/div>\x3C/div>';
+  }
+
+  /* La bulle d'un lot : ce que c'est, combien, le détail qui aide — les
+     champs comparés, la ventilation des écarts, les paires d'indices — et
+     où mène le clic. Rien d'essentiel n'y vit : les comptes sont dans la
+     rangée, la ventilation dans le détail des écarts. */
+  var MAX_PAIRES_RAPP = 10;
+  function bulleLotRapp(cle) {
+    var R = RAPPROCHEMENT, rap = SRC.rapprochement, nom = nomSeconde();
+    var lot = LOTS_RAPPROCHEMENT.filter(function (l) { return l.cle === cle; })[0];
+    if (!lot) return '';
+    var n = compteLotRapp(cle), presse = lotRappActif() === cle;
+    var tete, corps = '';
+    if (cle === 'identiques') {
+      var champs = (Array.isArray(rap.champs) ? rap.champs : []).filter(function (c) { return c && c.la; })
+        .map(function (c) { return String(c.titre || c.la); });
+      tete = 'Identiques des deux côtés';
+      corps = '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille identique">\x3C/span>' + nb(n) + (n > 1 ? ' plans' : ' plan') +
+        '\x3Cspan class="n">' + (R.nbPlans ? Math.round(100 * n / R.nbPlans) : 0) + '\u202f%\x3C/span>\x3C/div>' +
+        (champs.length ? '\x3Cdiv class="doux">même indice, mêmes champs : ' + ech(champs.join(', ')) + '\x3C/div>' : '');
+    } else if (cle === 'indiceDifferent') {
+      tete = 'Le même plan, sous un autre indice';
+      var paires = R.indiceDifferent.map(function (x) { return ech(x.plan.reference) + ' \u2192 ' + ech(x.ref_la.slice(-4)); });
+      corps = '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille neutre">\x3C/span>' + nb(n) + (n > 1 ? ' plans' : ' plan') + '\x3C/div>' +
+        (paires.length ? '\x3Cdiv class="liste-refs">' + paires.slice(0, MAX_PAIRES_RAPP).join('\x3Cbr>') +
+          (paires.length > MAX_PAIRES_RAPP ? '\x3Cbr>\x3Cspan class="doux">et ' + nb(paires.length - MAX_PAIRES_RAPP) + ' autres\u2026\x3C/span>' : '') + '\x3C/div>' : '');
+    } else if (cle === 'ecarts') {
+      tete = 'Des champs diffèrent';
+      var parChamp = {}, ordre = [];
+      R.ecarts.forEach(function (e) { if (!parChamp[e.champ]) { parChamp[e.champ] = 0; ordre.push(e.champ); } parChamp[e.champ]++; });
+      corps = '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille ecart">\x3C/span>' + nb(n) + (n > 1 ? ' plans' : ' plan') +
+        '\x3Cspan class="n">' + nb(R.ecarts.length) + (R.ecarts.length > 1 ? ' écarts' : ' écart') + '\x3C/span>\x3C/div>' +
+        (ordre.length ? '\x3Cdiv class="bulle-comptes">' + ordre.map(function (ch) {
+          return '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille sans">\x3C/span>' + ech(ch) + '\x3Cspan class="n">' + nb(parChamp[ch]) + '\x3C/span>\x3C/div>';
+        }).join('') + '\x3C/div>' : '');
+    } else if (cle === 'absentsLa') {
+      tete = 'Absents de ' + nom;
+      corps = '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille absent">\x3C/span>' + nb(n) + (n > 1 ? ' plans d’ici, aucune ligne dans ' : ' plan d’ici, aucune ligne dans ') + ech(nom) + '\x3C/div>';
+    } else {
+      tete = 'Seulement dans ' + nom;
+      corps = '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille seul">\x3C/span>' + nb(n) + (n > 1 ? ' lignes, aucun plan d’ici sous leur racine' : ' ligne, aucun plan d’ici sous sa racine') +
+        (vue.perimetre ? ' · tout le contrat' : '') + '\x3C/div>';
+    }
+    var fin = !n ? 'aucun' : presse ? '\u2192 retirer le filtre'
+      : lot.atterrit === 'la' ? '\u2192 le tableau passe sur ' + nom
+      : lot.atterrit === 'ici' ? '\u2192 le tableau passe sur GATES'
+      : '\u2192 n’afficher que ceux-là dans le tableau';
+    return '\x3Cdiv class="tete-bulle">' + ech(tete) + '\x3C/div>' + corps +
+      '\x3Cdiv class="doux" style="margin-top:6px;padding-top:5px;border-top:1px solid var(--filet)">' + ech(fin) + '\x3C/div>';
+  }
+  function eclairerSegment(cle) {
+    document.querySelectorAll('#barre-rapprochement span[data-cle]').forEach(function (seg) {
+      seg.classList.toggle('survole', !!cle && seg.dataset.cle === cle);
+    });
   }
 
   /* ============================================================
@@ -3271,13 +3369,27 @@
     }
     return lignes;
   }
+  /* L'interrupteur GATES | SEE et tout ce qui va avec : chaque outil et
+     chaque tableau porte data-base, et seul ce qui appartient à la base
+     montrée reste visible. Sans seconde base, l'interrupteur s'efface et le
+     tableau est celui d'ici. */
+  function refleterBase() {
+    var laDispo = !!(RAPPROCHEMENT && SECONDE);
+    if (!laDispo) vue.base = 'ici';
+    var choix = $('choix-base');
+    choix.hidden = !laDispo;
+    $('bouton-base-la').textContent = laDispo ? nomSeconde() : 'Seconde base';
+    document.querySelectorAll('#choix-base button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.base === vue.base));
+    });
+    document.querySelectorAll('#section-plans [data-base]:not(button)').forEach(function (el) {
+      el.hidden = el.dataset.base !== vue.base ||
+        (el.id === 'vue-seconde' && !(SECONDE && SECONDE.vautEssentielles));
+    });
+  }
   function rendreSeconde() {
-    var zone = $('seconde-base');
-    if (!RAPPROCHEMENT || !SECONDE) { zone.hidden = true; return; }
-    zone.hidden = false;
+    if (!RAPPROCHEMENT || !SECONDE) { $('corps-seconde').innerHTML = ''; $('tete-seconde').innerHTML = ''; return; }
     var R = RAPPROCHEMENT, S = vue.seconde, nom = nomSeconde();
-    $('titre-seconde').textContent = nom;
-    $('vue-seconde').hidden = !SECONDE.vautEssentielles;
     var cols = S.vueTable === 'essentielle' && SECONDE.vautEssentielles ? SECONDE.essentielles : SECONDE.titres;
     var lignes = lignesSecondeAffichees();
     var lot = lotRappActif();
@@ -3294,15 +3406,19 @@
 
     var seul = vue.refs && Object.keys(vue.refs).length === 1 ? Object.keys(vue.refs)[0] : null;
     if (!lignes.length) {
+      var nAbs = R.absentsLa.length;
       $('corps-seconde').innerHTML = '\x3Ctr>\x3Ctd colspan="' + Math.max(cols.length, 1) + '">\x3Cdiv class="vide-message">' +
-        (lot === 'absentsLa' ? 'Ces plans n’ont pas de ligne dans ' + ech(nom) + '.' : 'Aucune ligne ne correspond.') +
+        (lot === 'absentsLa'
+          ? 'Ces ' + nb(nAbs) + (nAbs > 1 ? ' plans n’ont pas de ligne dans ' : ' plan n’a pas de ligne dans ') + ech(nom) + '. ' +
+            '\x3Cbutton class="lien-doux" type="button" data-aller-base="ici">Les voir dans GATES\x3C/button>'
+          : 'Aucune ligne ne correspond.') +
         '\x3C/div>\x3C/td>\x3C/tr>';
     } else {
       $('corps-seconde').innerHTML = lignes.map(function (e) {
         var ref = e.plan ? e.plan.reference : '';
         return '\x3Ctr data-i="' + e.i + '" data-cat="' + e.cat + '"' + (ref ? ' data-plan="' + ech(ref) + '"' : '') +
           (ref && seul === ref ? ' class="choisie"' : '') +
-          (ref ? ' title="' + ech(MOT_VERDICT[e.cat] || '') + ' — cliquez pour ne garder que ce plan ici"' : '') + '>' +
+          (ref ? ' title="' + ech(MOT_VERDICT[e.cat] || '') + ' — cliquez pour retrouver ce plan dans GATES"' : '') + '>' +
           cols.map(function (t) {
             var val = e.ligne[t], s = String(val == null ? '' : val);
             var classes = [], titre = '';
@@ -3323,10 +3439,12 @@
     }
 
     var base = R.nbLignes;
-    $('compte-seconde').textContent = nb(lignes.length) + (lignes.length > 1 ? ' lignes' : ' ligne') +
-      (lignes.length !== base ? ' sur ' + nb(base) : '');
+    if (vue.base === 'la') {
+      $('compte').textContent = nb(lignes.length) + (lignes.length > 1 ? ' lignes' : ' ligne') +
+        (lignes.length !== base ? ' sur ' + nb(base) : '');
+    }
     $('legende-seconde').innerHTML = ['identique', 'emission', 'ecart', 'seul'].map(function (cat) {
-      var mots = { identique: 'identique', emission: 'autre solution ou indice', ecart: 'champs différents', seul: 'seulement ici' };
+      var mots = { identique: 'identique', emission: 'autre indice', ecart: 'champs différents', seul: 'seulement dans ' + nom };
       return '\x3Cspan>' + pastilleVerdict(cat) + ech(mots[cat]) + '\x3C/span>';
     }).join('');
   }
@@ -3336,6 +3454,10 @@
        refait avant tout le reste. */
     COMPARATIF = comparatif();
     RAPPROCHEMENT = rapprocher(SRC.rapprochement, population());
+    /* Un lot posé qui n'a plus rien — autre périmètre, autre source — se
+       retire de lui-même : jamais un bouton grisé qui reste pressé. */
+    var lotPose = lotRappActif();
+    if (lotPose && !compteLotRapp(lotPose)) poserLotRapp(lotPose);
     refleterPerimetre();
     var liste = selection();
     rendreAvancement(liste);
@@ -3347,6 +3469,7 @@
     rendreComparatif();
     rendreRapprochement();
     rendreSeconde();
+    refleterBase();
     rendreIncomplets();
     rendreFiltresActifs();
     $('reinit').hidden = !filtreActif();
@@ -3381,7 +3504,7 @@
     var lot = LOTS_DELTA.filter(function (l) { return l.cle === b.dataset.delta; })[0];
     var refs = COMPARATIF[b.dataset.delta];
     var paires = '';
-    if (b.dataset.delta === 'indice' || b.dataset.delta === 'solution') {
+    if (b.dataset.delta === 'indice') {
       var lignes = COMPARATIF.reemissions.filter(function (r) { return r.type === b.dataset.delta; })
         .map(function (r) { return ech(r.ancienne) + ' \u2192 ' + ech(r.ref); });
       paires = '\x3Cdiv class="liste-refs">' + lignes.slice(0, MAX_PAIRES_INDICE).join('\x3Cbr>') +
@@ -3453,11 +3576,47 @@
     var tr = e.target.closest('tr[data-plan]');
     if (!tr || !RAPPROCHEMENT) return;
     var ref = tr.dataset.plan;
-    var meme = vue.refs && Object.keys(vue.refs).length === 1 && vue.refs[ref];
-    if (meme) { vue.refs = null; vue.refsLibelle = ''; }
-    else { vue.refs = {}; vue.refs[ref] = true; vue.refsLibelle = 'plan ' + ref; }
+    vue.refs = {}; vue.refs[ref] = true; vue.refsLibelle = 'plan ' + ref;
+    vue.base = 'ici';
+    rendre();
+    var cadre = $('cadre-tableau');
+    if (cadre.scrollIntoView) cadre.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+  $('choix-base').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-base]');
+    if (!b || b.dataset.base === vue.base) return;
+    vue.base = b.dataset.base;
     rendre();
   });
+  /* « Les voir dans GATES / SEE » : on change de côté sans toucher aux filtres. */
+  $('section-plans').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-aller-base]');
+    if (!b || b.dataset.allerBase === vue.base) return;
+    vue.base = b.dataset.allerBase;
+    rendre();
+  });
+
+  /* Survoler un bouton ou un segment du rapprochement éclaire le segment et
+     ouvre la bulle ; le focus clavier éclaire seulement. */
+  $('rapprochement').addEventListener('mousemove', function (e) {
+    var cible = e.target.closest && e.target.closest('#barre-rapprochement span[data-cle], #etats-rapprochement button[data-cle]:not([disabled])');
+    var bulle = $('bulle');
+    eclairerSegment(cible ? cible.dataset.cle : null);
+    if (!cible || !RAPPROCHEMENT) { bulle.dataset.visible = 'false'; return; }
+    bulle.innerHTML = bulleLotRapp(cible.dataset.cle);
+    bulle.dataset.visible = 'true';
+    bulle.style.left = Math.min(e.clientX + 14, window.innerWidth - bulle.offsetWidth - 12) + 'px';
+    bulle.style.top = Math.min(e.clientY + 16, window.innerHeight - bulle.offsetHeight - 12) + 'px';
+  });
+  $('rapprochement').addEventListener('mouseleave', function () {
+    eclairerSegment(null);
+    $('bulle').dataset.visible = 'false';
+  });
+  $('etats-rapprochement').addEventListener('focusin', function (e) {
+    var b = e.target.closest && e.target.closest('button[data-cle]');
+    eclairerSegment(b ? b.dataset.cle : null);
+  });
+  $('etats-rapprochement').addEventListener('focusout', function () { eclairerSegment(null); });
 
   $('incomplets').addEventListener('click', function (e) {
     var b = e.target.closest('.puce-vide');
@@ -3677,8 +3836,9 @@
   $('reinit').addEventListener('click', function () { toutEffacer(); rendre(); });
   $('defile').addEventListener('scroll', majOmbre, { passive: true });
   document.addEventListener('keydown', function (e) {
-    if (e.key === '/' && document.activeElement !== $('recherche')) {
-      e.preventDefault(); $('recherche').focus(); $('recherche').select();
+    var champ = vue.base === 'la' ? $('recherche-seconde') : $('recherche');
+    if (e.key === '/' && document.activeElement !== champ) {
+      e.preventDefault(); champ.focus(); champ.select();
     }
   });
   var minuteurTaille = null;
@@ -3686,7 +3846,8 @@
     clearTimeout(minuteurTaille);
     minuteurTaille = setTimeout(function () {
       rendreGraphique(selection()); ajusterSticky(); majOmbre();
-      alignerEtats(compte(selection()));
+      alignerSousBarre('barre', 'filets', 'etats');
+      alignerSousBarre('barre-rapprochement', 'filets-rapprochement', 'etats-rapprochement');
     }, 160);
   });
 

@@ -53,24 +53,23 @@
     </span>
   </div>
 
+  <!-- Le titre au centre ; à sa droite, le périmètre — ce qu'on regarde —
+       sans rien sous le titre qui lui vole sa ligne. Le contrat n'est pas
+       répété : il est déjà choisi en haut. -->
   <header class="masthead">
-    <h1>Suivi FWD</h1>
-    <div class="semaine">
-      <span><b id="num-semaine">—</b></span>
-      <span aria-hidden="true">·</span>
-      <span id="dates-semaine">—</span>
-      <span class="contrat-courant" id="contrat-courant" hidden>
+    <div class="titre-bloc">
+      <h1>Suivi FWD</h1>
+      <div class="semaine">
+        <span><b id="num-semaine">—</b></span>
         <span aria-hidden="true">·</span>
-        <span>contrat <b id="nom-contrat"></b></span>
-      </span>
+        <span id="dates-semaine">—</span>
+      </div>
+    </div>
+    <div class="perimetre" id="perimetre" hidden>
+      <span class="mot-perimetre" id="mot-perimetre">Périmètre</span>
+      <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
     </div>
   </header>
-
-  <!-- Le périmètre : ce qu'on regarde. Sous le titre, avant les chiffres. -->
-  <div class="perimetre" id="perimetre" hidden>
-    <span id="mot-perimetre">Périmètre</span>
-    <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
-  </div>
 
   <section class="avancement">
     <div class="avancement-ligne">
@@ -107,13 +106,12 @@
          dit lesquels. Les séparer obligeait à faire l'aller-retour. -->
     <div class="section-tete section-journal">
       <h3 class="titre-journal">Ce qui a changé, semaine par semaine</h3>
-      <span class="segmente" id="filtre-journal" role="group" aria-label="Ne montrer que certains passages">
+      <span class="filtre-journal" id="filtre-journal" role="group" aria-label="Ne montrer que certains passages">
         <button type="button" data-journal="" aria-pressed="true">Tout</button>
-        <button type="button" data-journal="termine" aria-pressed="false">Terminés</button>
-        <button type="button" data-journal="encours" aria-pressed="false">En cours</button>
-        <button type="button" data-journal="afaire" aria-pressed="false">À faire</button>
-        <button type="button" data-journal="solution" aria-pressed="false">Changements de solution</button>
-        <button type="button" data-journal="indice" aria-pressed="false">Changements d’indice</button>
+        <button type="button" data-journal="termine" aria-pressed="false"><span class="pastille" style="background:var(--fait)"></span>Terminés</button>
+        <button type="button" data-journal="encours" aria-pressed="false"><span class="pastille" style="background:var(--cours)"></span>En cours</button>
+        <button type="button" data-journal="afaire" aria-pressed="false"><span class="pastille" style="background:var(--afaire)"></span>À faire</button>
+        <button type="button" data-journal="indice" aria-pressed="false"><span class="pastille neutre"></span>Changement d’indice</button>
       </span>
     </div>
     <div class="feuille">
@@ -146,31 +144,42 @@
     </div>
   </section>
 
-  <!-- Le rapprochement avec une seconde base : présent seulement quand la
-       source en porte une. Chaque tuile filtre le tableau d'ici, ou celui de
-       la seconde base pour ce qui n'existe que là. -->
+  <!-- Le rapprochement : la barre d'avancement, appliquée à la seconde base.
+       Sur le papier, sans feuille, comme le bloc du haut. Présent seulement
+       quand la source décrit une seconde base. Chaque bouton filtre le
+       tableau des plans ; ceux qui n'existent que d'un côté y basculent. -->
   <section class="bloc rapprochement" id="rapprochement" hidden>
     <div class="section-tete">
       <h2 id="titre-rapprochement">Rapprochement</h2>
+      <span class="compte" id="compte-rapprochement"></span>
     </div>
-    <div class="feuille">
-      <p class="rapp-phrase" id="phrase-rapprochement"></p>
-      <div class="rapp-jauge" id="jauge-rapprochement" aria-hidden="true"></div>
-      <div class="rapp-tuiles" id="puces-rapprochement" role="group" aria-label="Verdict du rapprochement, un lot par tuile"></div>
-      <button class="journal-plus rapp-detail-bouton" type="button" id="bouton-detail-rapprochement"
-              data-rapp-detail="1" aria-expanded="false" aria-controls="detail-rapprochement">détail des écarts</button>
-      <div id="detail-rapprochement"></div>
+    <div class="rapp-phrases">
+      <div class="phrase" id="phrase-rapprochement"></div>
+      <p class="rapp-sous" id="sous-rapprochement"></p>
     </div>
+    <div class="barre" id="barre-rapprochement" role="img" aria-label="Rapprochement"></div>
+    <div class="filets" id="filets-rapprochement" aria-hidden="true"></div>
+    <div class="etats" id="etats-rapprochement" role="group" aria-label="Filtrer le tableau des plans par verdict du rapprochement"></div>
+    <button class="journal-plus rapp-detail-bouton" type="button" id="bouton-detail-rapprochement"
+            data-rapp-detail="1" aria-expanded="false" aria-controls="detail-rapprochement">détail des écarts</button>
+    <div id="detail-rapprochement"></div>
   </section>
 
-  <section class="bloc">
+  <!-- Un seul tableau, deux bases : l'interrupteur GATES | SEE bascule de
+       l'extract d'ici à celui de là, avec les mêmes outils. SEE n'existe que
+       si la source décrit une seconde base ; sinon l'interrupteur s'efface. -->
+  <section class="bloc" id="section-plans">
     <div class="section-tete">
       <h2>Plans</h2>
+      <span class="segmente" id="choix-base" role="group" aria-label="Base affichée" hidden>
+        <button type="button" data-base="ici" aria-pressed="true">GATES</button>
+        <button type="button" data-base="la" aria-pressed="false" id="bouton-base-la">Seconde base</button>
+      </span>
       <span class="compte" id="compte">—</span>
     </div>
 
     <div class="outils">
-      <div class="recherche">
+      <div class="recherche" data-base="ici">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
           <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
@@ -178,15 +187,28 @@
         <label class="masque" for="recherche">Rechercher dans toutes les colonnes</label>
         <input id="recherche" type="search" placeholder="Rechercher dans toutes les colonnes…" autocomplete="off">
       </div>
-      <span class="segmente" id="vue-tableau" role="group" aria-label="Colonnes affichées">
+      <div class="recherche" data-base="la" hidden>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <label class="masque" for="recherche-seconde">Rechercher dans la seconde base</label>
+        <input id="recherche-seconde" type="search" placeholder="Rechercher dans toutes les colonnes…" autocomplete="off">
+      </div>
+      <span class="segmente" id="vue-tableau" role="group" aria-label="Colonnes affichées" data-base="ici">
+        <button type="button" data-vue="toutes" aria-pressed="true">Toutes les colonnes</button>
+        <button type="button" data-vue="essentielle" aria-pressed="false">Vue essentielle</button>
+      </span>
+      <span class="segmente" id="vue-seconde" role="group" aria-label="Colonnes affichées de la seconde base" data-base="la" hidden>
         <button type="button" data-vue="toutes" aria-pressed="true">Toutes les colonnes</button>
         <button type="button" data-vue="essentielle" aria-pressed="false">Vue essentielle</button>
       </span>
       <button class="lien-doux" id="reinit" type="button" hidden>tout réinitialiser</button>
+      <span class="legende-rapp" id="legende-seconde" data-base="la" hidden></span>
     </div>
-    <div class="incomplets" id="incomplets"></div>
+    <div class="incomplets" id="incomplets" data-base="ici"></div>
 
-    <div class="cadre-tableau" id="cadre-tableau">
+    <div class="cadre-tableau" id="cadre-tableau" data-base="ici">
       <div class="defile" id="defile">
         <table class="plans">
           <thead id="tete-tableau"></thead>
@@ -195,32 +217,10 @@
       </div>
       <div class="ombre-defile"></div>
     </div>
-  </section>
-
-  <!-- La seconde base, telle que son extract : toutes ses colonnes, dans son
-       ordre, sous leurs intitulés ; le verdict du rapprochement en pastille
-       dans la cellule de la référence, les cellules qui diffèrent teintées. -->
-  <section class="bloc" id="seconde-base" hidden>
-    <div class="section-tete">
-      <h2 id="titre-seconde">Seconde base</h2>
-      <span class="compte" id="compte-seconde">—</span>
-    </div>
-    <div class="outils">
-      <div class="recherche">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
-          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-        <label class="masque" for="recherche-seconde">Rechercher dans la seconde base</label>
-        <input id="recherche-seconde" type="search" placeholder="Rechercher…" autocomplete="off">
-      </div>
-      <span class="segmente" id="vue-seconde" role="group" aria-label="Colonnes affichées de la seconde base">
-        <button type="button" data-vue="toutes" aria-pressed="true">Toutes les colonnes</button>
-        <button type="button" data-vue="essentielle" aria-pressed="false">Vue essentielle</button>
-      </span>
-      <span class="legende-rapp" id="legende-seconde"></span>
-    </div>
-    <div class="cadre-tableau" id="cadre-seconde">
+    <!-- La seconde base, telle que son extract : toutes ses colonnes, dans son
+         ordre, sous leurs intitulés ; le verdict du rapprochement en pastille
+         dans la cellule de la référence, les cellules qui diffèrent teintées. -->
+    <div class="cadre-tableau" id="cadre-seconde" data-base="la" hidden>
       <div class="defile">
         <table class="plans seconde">
           <thead id="tete-seconde"></thead>
