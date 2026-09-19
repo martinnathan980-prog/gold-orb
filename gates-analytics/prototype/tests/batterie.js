@@ -255,9 +255,9 @@ async function reinitialiser(pg) {
     zones: document.querySelectorAll('.zone-clic').length
   }));
   verifier('le selecteur est la, en haut, et liste les trois contrats',
-    sel0.visible && sel0.haut && sel0.options === 'X1,X2,X3', JSON.stringify(sel0));
-  verifier('il demarre sur X1, rappele sous le titre',
-    sel0.courant === 'X1' && sel0.nom === 'X1' && sel0.nomVisible, JSON.stringify(sel0));
+    sel0.visible && sel0.haut && sel0.options === 'HDK,THS,VRK', JSON.stringify(sel0));
+  verifier('il demarre sur HDK, rappele sous le titre',
+    sel0.courant === 'HDK' && sel0.nom === 'HDK' && sel0.nomVisible, JSON.stringify(sel0));
   verifier('le titre de la page reste « Suivi FWD »', sel0.titre === 'Suivi FWD', sel0.titre);
   const pied0 = await p.evaluate(() => document.getElementById('import').textContent);
   const etats0 = await p.evaluate(() => [...document.querySelectorAll('.etat-n')].map(e => e.textContent).join(' '));
@@ -282,33 +282,33 @@ async function reinitialiser(pg) {
     jalons: document.querySelectorAll('svg.graphe .jalon').length,
     aujourdhui: [...document.querySelectorAll('svg.graphe text')].some(t => /aujourd/.test(t.textContent))
   }));
-  await p.selectOption('#select-contrat', 'X2'); await p.waitForTimeout(1200);
+  await p.selectOption('#select-contrat', 'THS'); await p.waitForTimeout(1200);
   const x2 = await lireContrat();
   verifier('changer de contrat change le nombre de plans', x2.plans > 0 && x2.plans !== TOTAL, String(x2.plans));
   verifier('et le pied de page', x2.pied !== pied0, x2.pied);
-  verifier('le contrat courant est rappele sous le titre', x2.nom === 'X2' && x2.courant === 'X2', x2.nom);
+  verifier('le contrat courant est rappele sous le titre', x2.nom === 'THS' && x2.courant === 'THS', x2.nom);
   verifier('les filtres et le cadrage repartent de zero',
     x2.filtres && x2.presse === 0 && x2.jalons === 4 && x2.aujourdhui, JSON.stringify(x2));
   verifier('le bloc par groupe et le journal suivent le nouveau contrat',
     x2.groupes === x2.plans && x2.journal > 0, x2.groupes + ' / ' + x2.plans);
-  await p.selectOption('#select-contrat', 'X3'); await p.waitForTimeout(1200);
+  await p.selectOption('#select-contrat', 'VRK'); await p.waitForTimeout(1200);
   const x3 = await lireContrat();
   verifier('un troisieme contrat a encore d\'autres comptes',
-    x3.plans > 0 && x3.plans !== x2.plans && x3.plans !== TOTAL && x3.nom === 'X3', String(x3.plans));
+    x3.plans > 0 && x3.plans !== x2.plans && x3.plans !== TOTAL && x3.nom === 'VRK', String(x3.plans));
   // L'exemple d'un autre contrat, puis un changement de contrat : on RESTE en
   // exemple, sur le nouveau contrat — rebasculer sans un mot sur le réel
   // trompait la lectrice.
   await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(800);
-  await p.selectOption('#select-contrat', 'X1'); await p.waitForTimeout(1200);
+  await p.selectOption('#select-contrat', 'HDK'); await p.waitForTimeout(1200);
   const x1ex = await lireContrat();
   verifier('un changement de contrat en exemple reste en exemple, sur le nouveau contrat',
-    x1ex.mode === 'true' && x1ex.nom === 'X1', JSON.stringify({ mode: x1ex.mode, nom: x1ex.nom }));
+    x1ex.mode === 'true' && x1ex.nom === 'HDK', JSON.stringify({ mode: x1ex.mode, nom: x1ex.nom }));
   await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(900);
   const x1 = await lireContrat();
-  verifier('revenir a X1, en donnees reelles, redonne les comptes initiaux',
+  verifier('revenir a HDK, en donnees reelles, redonne les comptes initiaux',
     x1.plans === TOTAL && x1.etats === etats0 && x1.pied === pied0 && x1.mode === 'false', JSON.stringify(x1));
   // Sans liste de contrats — ou avec un seul — rien à choisir : le sélecteur disparaît.
-  await p.evaluate(() => { const s = window.__jeuDExemple('X1'); delete s.contrats; window.__chargerSource(s); });
+  await p.evaluate(() => { const s = window.__jeuDExemple('HDK'); delete s.contrats; window.__chargerSource(s); });
   await p.waitForTimeout(900);
   const seul = await p.evaluate(() => ({
     cache: document.getElementById('choix-contrat').hidden &&
@@ -318,17 +318,17 @@ async function reinitialiser(pg) {
   }));
   verifier('sans liste de contrats, le selecteur et le rappel disparaissent',
     seul.cache && seul.nomCache && seul.plans === TOTAL, JSON.stringify(seul));
-  await p.evaluate(() => { const s = window.__jeuDExemple('X1'); s.contrats = [{ id: 'X1', nom: 'X1' }]; window.__chargerSource(s); });
+  await p.evaluate(() => { const s = window.__jeuDExemple('HDK'); s.contrats = [{ id: 'HDK', nom: 'HDK' }]; window.__chargerSource(s); });
   await p.waitForTimeout(900);
   verifier('avec un seul contrat liste, pareil',
     await p.evaluate(() => document.getElementById('choix-contrat').hidden &&
       document.getElementById('contrat-courant').hidden));
-  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('X1')));
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
   await p.waitForTimeout(900);
   verifier('la liste revenue, le selecteur revient',
     await p.evaluate(() => !document.getElementById('choix-contrat').hidden &&
-      [...document.querySelectorAll('#select-contrat option')].map(o => o.value).join(',') === 'X1,X2,X3' &&
-      document.getElementById('select-contrat').value === 'X1'));
+      [...document.querySelectorAll('#select-contrat option')].map(o => o.value).join(',') === 'HDK,THS,VRK' &&
+      document.getElementById('select-contrat').value === 'HDK'));
 
   // =================================================================
   /* Le rapprochement avec une seconde base : la démonstration en fabrique
@@ -386,7 +386,7 @@ async function reinitialiser(pg) {
     r0.puces.map(x => x.cle + '=' + x.n).join(' ') === 'absentsLa=5 absentsIci=5 indiceDifferent=2 ecarts=10',
     JSON.stringify(r0.puces));
   verifier('et les libellés attendus',
-    r0.puces.map(x => x.libelle).join(' | ') === 'absents de la seconde base | absents d’ici | indice différent | champs différents',
+    r0.puces.map(x => x.libelle).join(' | ') === 'absents de la seconde base | absents d’ici | solution ou indice différent | champs différents',
     r0.puces.map(x => x.libelle).join(' | '));
   verifier('aucun n\'est pressé ni inactif au départ, le tableau est entier',
     r0.puces.every(x => x.presse === 'false' && !x.inactif) && r0.lignes === TOTAL && r0.jetons.length === 0);
@@ -478,14 +478,14 @@ async function reinitialiser(pg) {
   verifier('revenir à Tout redonne les 22 écarts', (await lireRapp()).R.total === 22);
 
   // Le contrat : la seconde base est celle du contrat courant.
-  await p.selectOption('#select-contrat', 'X3'); await p.waitForTimeout(1200);
+  await p.selectOption('#select-contrat', 'VRK'); await p.waitForTimeout(1200);
   const rX3 = await lireRapp();
   verifier('changer de contrat recalcule le rapprochement sur ses plans',
     rX3.R.nbPlans !== TOTAL && rX3.R.nbPlans === rX3.lignes && rX3.R.nbLignes === rX3.R.nbPlans &&
     rX3.phrase.indexOf(rX3.R.nbPlans + ' plans ici') === 0 && rX3.R.total === 22, rX3.phrase);
   verifier('les écarts sont ceux d\'autres plans',
     rX3.R.refsEcarts.every(r => r0.R.refsEcarts.indexOf(r) === -1), JSON.stringify(rX3.R.refsEcarts.slice(0, 2)));
-  await p.selectOption('#select-contrat', 'X1'); await p.waitForTimeout(1200);
+  await p.selectOption('#select-contrat', 'HDK'); await p.waitForTimeout(1200);
 
   // L'exemple : la même seconde base, les mêmes comptes.
   await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(800);
@@ -495,36 +495,36 @@ async function reinitialiser(pg) {
   await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(800);
 
   // Sans description de seconde base, il n'y a rien à rapprocher.
-  await p.evaluate(() => { const s = window.__jeuDExemple('X1'); delete s.rapprochement; window.__chargerSource(s); });
+  await p.evaluate(() => { const s = window.__jeuDExemple('HDK'); delete s.rapprochement; window.__chargerSource(s); });
   await p.waitForTimeout(900);
   const rSans = await lireRapp();
   verifier('sans rapprochement dans la source, la section est absente',
     rSans.cache && rSans.R === null, JSON.stringify([rSans.cache, rSans.R]));
   verifier('et le reste de la page est intact', rSans.lignes === TOTAL);
-  await p.evaluate(() => { const s = window.__jeuDExemple('X1'); s.rapprochement = { nom: 'Vide', cleReference: 'REF', champs: [], lignes: [] }; window.__chargerSource(s); });
+  await p.evaluate(() => { const s = window.__jeuDExemple('HDK'); s.rapprochement = { nom: 'Vide', cleReference: 'REF', champs: [], lignes: [] }; window.__chargerSource(s); });
   await p.waitForTimeout(900);
   const rVide = await lireRapp();
   verifier('une seconde base vide : tous les plans sont absents de là, les autres compteurs inactifs',
     !rVide.cache && rVide.R.absentsLa === TOTAL && rVide.puces[0].n === TOTAL &&
     rVide.puces.slice(1).every(x => x.inactif) && /aucun|écarts\.$/.test(rVide.phrase), rVide.phrase);
-  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('X1')));
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
   await p.waitForTimeout(900);
   verifier('la seconde base revenue, la section revient', !(await lireRapp()).cache && (await lireRapp()).R.total === 22);
 
   // =================================================================
-  /* Le périmètre : tout en haut, à côté du mode. « Tout », puis une puce par
+  /* Le périmètre : sous le titre, au-dessus de la barre. « Tout », puis une puce par
      domaine avec son compte. Il pilote toute la page — barre, tableau, bloc
      par groupe, courbe, journal, comparatif — et, sous un périmètre, la courbe
      est DÉRIVÉE des cartes plan par plan archivées croisées avec le domaine
      courant de chaque plan, jamais des comptes figés. */
-  section('Périmètre par domaine, tout en haut');
+  section('Périmètre par domaine, sous le titre');
   const additionner = l => l.reduce((a, b) => a + b, 0);
   const lirePerimetre = () => p.evaluate(() => {
     const iDom = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'domaine');
     const serie = window.__serieAffichee();
     const evts = window.__journalAffiche().reduce((l, s) => l.concat(s.evenements), []);
     const C = window.__comparatif();
-    const refsComparatif = C ? ['termine', 'encours', 'afaire', 'nouveaux', 'disparus', 'indice']
+    const refsComparatif = C ? ['termine', 'encours', 'afaire', 'nouveaux', 'disparus', 'solution', 'indice']
       .reduce((l, k) => l.concat(C[k]), []) : [];
     return {
       phrase: document.getElementById('phrase').textContent,
@@ -551,16 +551,20 @@ async function reinitialiser(pg) {
   const selP = await p.evaluate(() => ({
     visible: !document.getElementById('perimetre').hidden &&
              document.getElementById('choix-perimetre').offsetParent !== null,
-    haut: document.getElementById('perimetre').getBoundingClientRect().top <
-          document.querySelector('.masthead').getBoundingClientRect().top,
-    dansBandeau: !!document.querySelector('#bandeau-mode #choix-perimetre'),
+    /* Entre le titre et la barre d'avancement : c'est là qu'on choisit ce
+       qu'on regarde, et le bandeau du haut garde sa sobriété. */
+    haut: document.getElementById('perimetre').getBoundingClientRect().top >
+          document.querySelector('.masthead').getBoundingClientRect().top &&
+          document.getElementById('perimetre').getBoundingClientRect().bottom <=
+          document.querySelector('.avancement').getBoundingClientRect().top + 1,
+    dansBandeau: !!document.querySelector('header.masthead + #perimetre #choix-perimetre'),
     boutons: [...document.querySelectorAll('#choix-perimetre button')].map(b => ({
       val: b.dataset.perimetre, texte: b.textContent.trim(),
       n: +(b.querySelector('.n') || { textContent: '0' }).textContent.replace(/\s/g, ''),
       presse: b.getAttribute('aria-pressed')
     }))
   }));
-  verifier('le sélecteur est là, dans le bandeau du haut, avant le titre',
+  verifier('le sélecteur est là, sous le titre et au-dessus de la barre',
     selP.visible && selP.haut && selP.dansBandeau, JSON.stringify(selP).slice(0, 120));
   verifier('trois boutons : Tout, puis un par domaine de la démo',
     selP.boutons.map(b => b.val).join(',') === ',BASE/OPTION,PERSO' && /^Tout/.test(selP.boutons[0].texte),
@@ -662,7 +666,7 @@ async function reinitialiser(pg) {
 
   // Un relevé sans carte plan par plan ne peut pas être dérivé : il est écarté, et la note le dit.
   await p.evaluate(() => {
-    const s = window.__jeuDExemple('X1');
+    const s = window.__jeuDExemple('HDK');
     s.releves[0].plans = null; s.releves[1].plans = null;
     window.__chargerSource(s);
   });
@@ -677,7 +681,7 @@ async function reinitialiser(pg) {
   verifier('et la note le dit', /2 relevés sans détail plan par plan, hors périmètre/.test(sansCarte.note), sansCarte.note);
 
   // Sans colonne de domaine, rien à proposer : le sélecteur se tait.
-  await p.evaluate(() => { const s = window.__jeuDExemple('X1'); delete s.cleDomaine; window.__chargerSource(s); });
+  await p.evaluate(() => { const s = window.__jeuDExemple('HDK'); delete s.cleDomaine; window.__chargerSource(s); });
   await p.waitForTimeout(900);
   const sansDomaine = await p.evaluate(() => ({
     cache: document.getElementById('perimetre').hidden && document.getElementById('choix-perimetre').offsetParent === null,
@@ -688,7 +692,7 @@ async function reinitialiser(pg) {
   verifier('sans colonne de domaine, le sélecteur disparaît et tout est affiché',
     sansDomaine.cache && sansDomaine.boutons === 0 && sansDomaine.lignes === TOTAL && sansDomaine.bandeau,
     JSON.stringify(sansDomaine));
-  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('X1')));
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
   await p.waitForTimeout(900);
   verifier('la colonne revenue, le sélecteur revient, sur Tout',
     await p.evaluate(() => !document.getElementById('perimetre').hidden &&
@@ -704,7 +708,7 @@ async function reinitialiser(pg) {
 
   // =================================================================
   /* Une référence UD = racine (l'identité du plan : 3 lettres, 4 chiffres, A,
-     3 chiffres) + indice (3 chiffres) + révision (une lettre). Le parseur
+     3 chiffres) + solution (3 chiffres) + indice (une lettre). Le parseur
      tolère les séparateurs et la casse ; hors format, la chaîne entière tient
      lieu de racine et la référence n'est jamais appariée. */
   section('Références UD : le parseur');
@@ -716,17 +720,17 @@ async function reinitialiser(pg) {
       .map(r => [r, f(r)]);
   });
   const lu = r => JSON.stringify(r);
-  const canon = lu({ racine: 'HEL0225A017', indice: '001', revision: 'A', valide: true });
+  const canon = lu({ racine: 'HEL0225A017', solution: '001', indice: 'A', valide: true });
   formes.slice(0, 7).forEach(([forme, res]) => {
     verifier('« ' + forme + ' » se lit HEL0225A017 / 001 / A', lu(res) === canon, lu(res));
   });
   verifier('séparateurs mélangés, minuscules et espaces autour : 002 / B',
-    lu(formes[7][1]) === lu({ racine: 'HEL0225A017', indice: '002', revision: 'B', valide: true }), lu(formes[7][1]));
-  verifier('une autre racine, indice 003, révision C',
-    lu(formes[8][1]) === lu({ racine: 'CAB1000A001', indice: '003', revision: 'C', valide: true }), lu(formes[8][1]));
+    lu(formes[7][1]) === lu({ racine: 'HEL0225A017', solution: '002', indice: 'B', valide: true }), lu(formes[7][1]));
+  verifier('une autre racine, solution 003, indice C',
+    lu(formes[8][1]) === lu({ racine: 'CAB1000A001', solution: '003', indice: 'C', valide: true }), lu(formes[8][1]));
   verifier('hors format : la chaîne entière est la racine, et rien d’autre',
     formes[9][1].racine === 'UD-24-1037' && formes[9][1].valide === false &&
-    formes[9][1].indice === '' && formes[9][1].revision === '', lu(formes[9][1]));
+    formes[9][1].solution === '' && formes[9][1].indice === '', lu(formes[9][1]));
   verifier('hors format, épurée : majuscules, sans espaces autour',
     formes[10][1].racine === 'UD-24-1037' && !formes[10][1].valide, lu(formes[10][1]));
   verifier('sans révision, ce n’est pas une référence au format',
@@ -752,7 +756,7 @@ async function reinitialiser(pg) {
     const J = window.__journal(), C = window.__comparatif(), racine = r => window.__analyserUD(r).racine;
     const indices = [], nouveaux = [], disparus = [];
     J.forEach(s => s.evenements.forEach(e => {
-      if (e.type === 'indice') indices.push({ i: s.i, ref: e.ref, ancienne: e.ancienne, avant: e.avant, apres: e.apres });
+      if (e.type === 'indice' || e.type === 'solution') indices.push({ i: s.i, type: e.type, ref: e.ref, ancienne: e.ancienne, avant: e.avant, apres: e.apres });
       else if (e.type === 'nouveau') nouveaux.push(e.ref);
       else if (e.type === 'disparu') disparus.push(e.ref);
     }));
@@ -765,12 +769,15 @@ async function reinitialiser(pg) {
       avecEtat: indices.filter(x => x.avant !== x.apres).length,
       touches: nouveaux.concat(disparus).filter(r => racines.indexOf(racine(r)) !== -1),
       attenduComparatif: indices.filter(x => x.i === derniere).map(x => x.ref).sort(),
-      comparatif: C && C.indice ? C.indice.slice().sort() : null,
+      types: indices.map(x => x.type).sort().join(' '),
+      comparatif: C && C.indice && C.solution ? C.solution.concat(C.indice).sort() : null,
       reemissions: C && C.reemissions ? C.reemissions : null
     };
   });
   verifier('le journal porte les six réémissions fabriquées', app.indices.length === 6, String(app.indices.length));
   verifier('à six semaines différentes', app.semaines === 6, String(app.semaines));
+  verifier('trois changent de solution (les chiffres), trois d’indice (la lettre)',
+    app.types === 'indice indice indice solution solution solution', app.types);
   verifier('chacune garde sa racine et change de référence', app.memeRacine, lu(app.indices.slice(0, 2)));
   verifier('deux d’entre elles changent aussi d’état au passage', app.avecEtat === 2, String(app.avecEtat));
   verifier('aucun de ces plans n’est compté comme nouveau ni disparu', app.touches.length === 0, lu(app.touches));
@@ -778,30 +785,34 @@ async function reinitialiser(pg) {
     app.nouveaux.length === 2 && app.disparus.length === 0, app.nouveaux.length + ' / ' + app.disparus.length);
   verifier('le journal parle des nouvelles références, celles du tableau',
     app.indices.every(x => refsTable.indexOf(x.ref) !== -1 && refsTable.indexOf(x.ancienne) === -1));
-  verifier('le comparatif « depuis l’import » porte le lot des changements d’indice de la dernière semaine',
+  verifier('le comparatif « depuis l’import » porte les réémissions de la dernière semaine',
     app.comparatif && app.comparatif.length >= 1 && lu(app.comparatif) === lu(app.attenduComparatif),
     lu(app.comparatif) + ' vs ' + lu(app.attenduComparatif));
   verifier('avec, pour chacun, l’ancienne et la nouvelle référence',
     app.reemissions && app.reemissions.length === app.comparatif.length &&
     app.reemissions.every(r => r.ancienne && r.ref && r.ancienne !== r.ref), lu(app.reemissions));
 
-  const domIndice = await p.evaluate(() => ({
-    puce: (document.querySelector('.puce-delta[data-delta="indice"]') || { textContent: '' }).textContent,
-    pastille: !!document.querySelector('.puce-delta[data-delta="indice"] .pastille.neutre'),
-    comptes: [...document.querySelectorAll('.compte-passage[data-passage="indice"]')].map(b => b.textContent),
-    bouton: !!document.querySelector('#filtre-journal button[data-journal="indice"]')
-  }));
-  verifier('la puce « changements d’indice » est là, avec une pastille neutre',
-    /changements? d’indice/.test(domIndice.puce) && domIndice.pastille, domIndice.puce);
-  verifier('chaque semaine concernée compte son changement d’indice, en bouton',
-    domIndice.comptes.length === 6 && domIndice.comptes.every(t => /^1 changement d’indice$/.test(t)),
+  /* La dernière semaine porte un changement de solution ; la puce du
+     comparatif est donc celle-là. On lit celle qui existe. */
+  const cleReem = await p.evaluate(() => document.querySelector('.puce-delta[data-delta="solution"]') ? 'solution' : 'indice');
+  const domIndice = await p.evaluate(cle => ({
+    puce: (document.querySelector('.puce-delta[data-delta="' + cle + '"]') || { textContent: '' }).textContent,
+    pastille: !!document.querySelector('.puce-delta[data-delta="' + cle + '"] .pastille.neutre'),
+    comptes: [...document.querySelectorAll('.compte-passage[data-passage="indice"], .compte-passage[data-passage="solution"]')].map(b => b.textContent),
+    boutons: !!document.querySelector('#filtre-journal button[data-journal="indice"]') &&
+             !!document.querySelector('#filtre-journal button[data-journal="solution"]')
+  }), cleReem);
+  verifier('la puce de la réémission est là, avec une pastille neutre',
+    /changements? (d’indice|de solution)/.test(domIndice.puce) && domIndice.pastille, domIndice.puce);
+  verifier('chaque semaine concernée compte sa réémission, en bouton, solution ou indice',
+    domIndice.comptes.length === 6 && domIndice.comptes.every(t => /^1 changement (d’indice|de solution)$/.test(t)),
     lu(domIndice.comptes));
-  verifier('et le filtre du journal propose aussi les changements d’indice', domIndice.bouton);
+  verifier('et le filtre du journal propose les deux', domIndice.boutons);
 
   // Survoler la puce : les deux références, ancienne → nouvelle.
   await p.evaluate(() => document.getElementById('comparatif').scrollIntoView({ block: 'center' }));
   await p.waitForTimeout(250);
-  const bbPuce = await (await p.$('.puce-delta[data-delta="indice"]')).boundingBox();
+  const bbPuce = await (await p.$('.puce-delta[data-delta="' + cleReem + '"]')).boundingBox();
   await p.mouse.move(bbPuce.x + 6, bbPuce.y + bbPuce.height / 2); await p.waitForTimeout(200);
   const survol = await p.evaluate(() => document.getElementById('bulle').textContent);
   verifier('survoler la puce montre « ancienne → nouvelle »',
@@ -809,25 +820,25 @@ async function reinitialiser(pg) {
   await p.mouse.move(5, 5); await p.waitForTimeout(150);
 
   // Cliquer la puce : le tableau ne montre plus que les plans réémis, sous leur nouvelle référence.
-  await p.click('.puce-delta[data-delta="indice"]'); await p.waitForTimeout(500);
-  const filtreIndice = await p.evaluate(() => {
+  await p.click('.puce-delta[data-delta="' + cleReem + '"]'); await p.waitForTimeout(500);
+  const filtreIndice = await p.evaluate(cle => {
     const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'reference');
     return {
       lignes: [...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.children[i].textContent.trim()).sort(),
-      presse: document.querySelector('.puce-delta[data-delta="indice"]').getAttribute('aria-pressed'),
+      presse: document.querySelector('.puce-delta[data-delta="' + cle + '"]').getAttribute('aria-pressed'),
       jeton: document.getElementById('filtres-actifs').textContent
     };
-  });
-  verifier('cliquer « changements d’indice » filtre le tableau sur les nouvelles références',
+  }, cleReem);
+  verifier('cliquer la puce de la réémission filtre le tableau sur les nouvelles références',
     lu(filtreIndice.lignes) === lu(app.comparatif), lu(filtreIndice.lignes));
   verifier('la puce se marque pressée et le bandeau nomme le filtre',
-    filtreIndice.presse === 'true' && /changements d’indice/.test(filtreIndice.jeton), filtreIndice.jeton);
-  await p.click('.puce-delta[data-delta="indice"]'); await p.waitForTimeout(500);
+    filtreIndice.presse === 'true' && /changements (d’indice|de solution)/.test(filtreIndice.jeton), filtreIndice.jeton);
+  await p.click('.puce-delta[data-delta="' + cleReem + '"]'); await p.waitForTimeout(500);
   verifier('re-cliquer rend tous les plans',
     await p.evaluate(t => document.querySelectorAll('#corps-tableau tr').length === t, TOTAL));
 
-  // Le compte du journal filtre sur les changements d'indice ; la ligne se lit ancienne → nouvelle.
-  await p.click('.compte-passage[data-passage="indice"] >> nth=0'); await p.waitForTimeout(400);
+  // Le compte du journal filtre sur les changements de solution ; la ligne se lit ancienne → nouvelle.
+  await p.click('.compte-passage[data-passage="solution"] >> nth=0'); await p.waitForTimeout(400);
   for (let garde = 0; garde < 20; garde++) {
     const plie = await p.$('.journal-plier[aria-expanded="false"]');
     if (!plie) break;
@@ -836,7 +847,7 @@ async function reinitialiser(pg) {
   await p.waitForTimeout(250);
   const lignesIndice = await p.evaluate(() => ({
     total: document.querySelectorAll('.journal-ligne').length,
-    indice: [...document.querySelectorAll('.journal-ligne.indice')].map(b => ({
+    indice: [...document.querySelectorAll('.journal-ligne.reemission')].map(b => ({
       ref: b.dataset.ref, type: b.dataset.type,
       ancienne: (b.querySelector('.ref-indice .ancienne') || { textContent: '' }).textContent,
       nouvelle: (b.querySelector('.ref-indice .nouvelle') || { textContent: '' }).textContent,
@@ -846,23 +857,34 @@ async function reinitialiser(pg) {
     presse: [...document.querySelectorAll('#filtre-journal button')]
       .map(b => b.dataset.journal + ':' + b.getAttribute('aria-pressed')).join(' ')
   }));
-  verifier('sous ce filtre, le journal ne montre que les six réémissions',
-    lignesIndice.total === 6 && lignesIndice.indice.length === 6, lignesIndice.total + ' / ' + lignesIndice.indice.length);
+  verifier('sous ce filtre, le journal ne montre que les trois changements de solution',
+    lignesIndice.total === 3 && lignesIndice.indice.length === 3, lignesIndice.total + ' / ' + lignesIndice.indice.length);
   verifier('chaque ligne se lit « ancienne → nouvelle », puis l’état avant et après',
-    lignesIndice.indice.every(l => l.type === 'indice' && /^[A-Z]{3}\d{4}A\d{6}[A-Z]$/.test(l.ancienne) &&
+    lignesIndice.indice.every(l => l.type === 'solution' && /^[A-Z]{3}\d{4}A\d{6}[A-Z]$/.test(l.ancienne) &&
       l.nouvelle === '→ ' + l.ref && l.etats === 2), lu(lignesIndice.indice[0]));
   verifier('et nomme le plan', lignesIndice.indice.every(l => l.quoi.trim() !== ''));
   verifier('le filtre du journal reflète le choix',
-    lignesIndice.presse === ':false termine:false encours:false afaire:false indice:true', lignesIndice.presse);
-  const refIndice = lignesIndice.indice[0].ref;
-  await p.click('.journal-ligne.indice >> nth=0'); await p.waitForTimeout(500);
+    lignesIndice.presse === ':false termine:false encours:false afaire:false solution:true indice:false', lignesIndice.presse);
+  await p.click('#filtre-journal button[data-journal="indice"]'); await p.waitForTimeout(400);
+  // Le journal se replie à chaque rendu : seule la première semaine reste ouverte.
+  for (let garde = 0; garde < 20; garde++) {
+    const plie = await p.$('.journal-plier[aria-expanded="false"]');
+    if (!plie) break;
+    await plie.click(); await p.waitForTimeout(90);
+  }
+  await p.waitForTimeout(250);
+  const lignesLettre = await p.evaluate(() => [...document.querySelectorAll('.journal-ligne')].map(b => b.dataset.type));
+  verifier('le filtre « changements d’indice » n’en garde que trois, tous d’indice',
+    lignesLettre.length === 3 && lignesLettre.every(t => t === 'indice'), lu(lignesLettre));
+  const refIndice = await p.evaluate(() => document.querySelector('.journal-ligne.reemission').dataset.ref);
+  await p.click('.journal-ligne.reemission >> nth=0'); await p.waitForTimeout(500);
   verifier('cliquer une réémission réduit le tableau au plan, sous sa nouvelle référence',
     await p.evaluate(r => {
       const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'reference');
       const trs = document.querySelectorAll('#corps-tableau tr');
       return trs.length === 1 && trs[0].children[i].textContent.trim() === r;
     }, refIndice), refIndice);
-  await p.click('.journal-ligne.indice >> nth=0'); await p.waitForTimeout(400);
+  await p.click('.journal-ligne.reemission >> nth=0'); await p.waitForTimeout(400);
   await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(400);
   verifier('« Tout » rend le journal entier',
     await p.evaluate(t => document.querySelectorAll('.journal-ligne').length > 6 &&
@@ -906,8 +928,9 @@ async function reinitialiser(pg) {
   verifier('une ligne par compte : pastille, mot, nombre à droite',
     toutesLignes.length >= 6 && toutesLignes.every(l => l.pastille && /^\d+$/.test(l.n.replace(/\s/g, ''))),
     lu(toutesLignes.slice(0, 2)));
-  verifier('les changements d’indice comptés dans les bulles font les six du journal',
-    toutesLignes.filter(l => /changements? d’indice/.test(l.texte)).reduce((s, l) => s + Number(l.n), 0) === 6);
+  verifier('solution et indice comptés dans les bulles font les six réémissions du journal',
+    toutesLignes.filter(l => /changements? (d’indice|de solution)/.test(l.texte)).reduce((s, l) => s + Number(l.n), 0) === 6,
+    lu(toutesLignes.filter(l => /changements? (d’indice|de solution)/.test(l.texte)).map(l => l.texte)));
 
   // =================================================================
   section('Chargement et cohérence des chiffres');
@@ -1335,7 +1358,7 @@ async function reinitialiser(pg) {
   /* Deux cents references d'un coup : une source ou tous les plans partagent
      le meme ATA. La liste doit rester lisible et defilable. */
   await p.evaluate(() => {
-    const src = window.__jeuDExemple('X1');
+    const src = window.__jeuDExemple('HDK');
     src.plans.forEach(p => { p.ata = '21'; });
     window.__chargerSource(src);
   });
@@ -1357,7 +1380,7 @@ async function reinitialiser(pg) {
   verifier('640 references dans un seul groupe : toutes la, en grille, dans un bloc qui defile',
     deuxCents.jetons === TOTAL && deuxCents.defile && deuxCents.dedans && deuxCents.lignes > 20 &&
     deuxCents.hauteur <= 460 && deuxCents.dernierAtteignable, JSON.stringify(deuxCents));
-  await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('X1')); });
+  await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); });
   await p.waitForTimeout(500);
   await reinitialiser(p);
 
@@ -1467,7 +1490,7 @@ async function reinitialiser(pg) {
      l'outil se consulte. */
   await p.click('.segmente button[data-span="0"]'); await p.waitForTimeout(400);
   const fixes = await p.evaluate(() => ({
-    source: window.__jeuDExemple('X1').jalons.length,
+    source: window.__jeuDExemple('HDK').jalons.length,
     dessines: document.querySelectorAll('.jalon').length,
     textes: [...document.querySelectorAll('.jalon-texte')].map(t => t.textContent),
     poignees: document.querySelectorAll('.jalon-poignee, .jalon-supp, [data-glisse-jalon]').length,
@@ -1519,7 +1542,7 @@ async function reinitialiser(pg) {
   /* Une configuration hostile : balise, 400 caractères, texte vide, semaine
      illisible. Rien ne s'exécute, rien ne déborde, l'illisible est écarté. */
   await p.evaluate(() => {
-    const s = window.__jeuDExemple('X1');
+    const s = window.__jeuDExemple('HDK');
     s.jalons = [
       { semaine: s.jalons[0].semaine, texte: '<img src=x onerror="window.__xss=1">' },
       { semaine: s.jalons[1].semaine, texte: 'X'.repeat(400) },
@@ -1544,7 +1567,7 @@ async function reinitialiser(pg) {
   verifier('un jalon sans texte reçoit un libellé, une semaine illisible est écartée',
     hostile.n === 3 && hostile.longueurs.every(l => l > 0), String(hostile.n));
   /* Sans jalon à venir, le bloc par groupe bascule en « rythme actuel ». */
-  await p.evaluate(() => { const s = window.__jeuDExemple('X1'); s.jalons = []; window.__chargerSource(s); });
+  await p.evaluate(() => { const s = window.__jeuDExemple('HDK'); s.jalons = []; window.__chargerSource(s); });
   await p.waitForTimeout(400);
   verifier('sans jalon, aucun n\'est dessiné et le graphique tient toujours debout',
     await p.evaluate(() => document.querySelectorAll('.jalon').length === 0 && document.querySelectorAll('.zone-clic').length > 0));
@@ -1556,7 +1579,7 @@ async function reinitialiser(pg) {
       return !!t && !/cliquez/.test(t);
     }));
   // Retour à la source de démonstration, avec ses quatre jalons.
-  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('X1')));
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
   await p.waitForTimeout(400);
 
   // =================================================================
@@ -1742,24 +1765,24 @@ async function reinitialiser(pg) {
   /* Ce que trois relecteurs ont trouvé après le lot du débrief, et ce qui a
      été corrigé. Chaque test reproduit d'abord la situation qui cassait. */
   section('Relecture : les constats corrigés tiennent');
-  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('X1')));
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
   await reinitialiser(p);
 
   // Le mode « Exemple » ne racontait que des « passés en terminé ».
   await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(900);
   const lotsExemple = await p.evaluate(() => (document.getElementById('comparatif').textContent || '').replace(/\s+/g, ' '));
-  verifier('en exemple, le comparatif montre aussi passés en cours, nouveaux, disparus et changements d’indice',
-    /passés en cours/.test(lotsExemple) && /nouveau/.test(lotsExemple) && /disparu/.test(lotsExemple) && /indice/.test(lotsExemple),
+  verifier('en exemple, le comparatif montre aussi passés en cours, nouveaux, disparus et une réémission',
+    /passés en cours/.test(lotsExemple) && /nouveau/.test(lotsExemple) && /disparu/.test(lotsExemple) && /(indice|solution)/.test(lotsExemple),
     lotsExemple.slice(0, 160));
   // Changer de contrat en exemple ne rebascule plus sans un mot sur les données réelles.
-  await p.selectOption('#select-contrat', 'X2'); await p.waitForTimeout(900);
+  await p.selectOption('#select-contrat', 'THS'); await p.waitForTimeout(900);
   const exempleX2 = await p.evaluate(() => ({
     marque: document.body.dataset.exemple, mot: document.getElementById('mot-mode').textContent,
     contrat: document.getElementById('select-contrat').value
   }));
   verifier('changer de contrat en exemple reste en exemple, sur le nouveau contrat',
-    exempleX2.marque === 'true' && /fabriqué/.test(exempleX2.mot) && exempleX2.contrat === 'X2', JSON.stringify(exempleX2));
-  await p.selectOption('#select-contrat', 'X1'); await p.waitForTimeout(900);
+    exempleX2.marque === 'true' && /fabriqué/.test(exempleX2.mot) && exempleX2.contrat === 'THS', JSON.stringify(exempleX2));
+  await p.selectOption('#select-contrat', 'HDK'); await p.waitForTimeout(900);
   await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(900);
 
   // Le pied « Jeu d'exemple » ne se lit que dans la démonstration.
@@ -1788,7 +1811,7 @@ async function reinitialiser(pg) {
       !/[A-Z]{3}\d{4}A\d{3}/.test(bulleTermine) && /Cliquez/.test(bulleTermine) && !/autres/.test(bulleTermine),
       bulleTermine.replace(/\s+/g, ' ').slice(0, 100));
   }
-  const puceIndice = await p.$('.puce-delta[data-delta="indice"]');
+  const puceIndice = await p.$('.puce-delta[data-delta="solution"], .puce-delta[data-delta="indice"]');
   if (puceIndice) {
     await puceIndice.hover(); await p.waitForTimeout(250);
     verifier('la bulle des changements d’indice montre les paires ancienne → nouvelle',
@@ -1827,7 +1850,7 @@ async function reinitialiser(pg) {
 
   // Un long historique : aujourd'hui, la projection et les jalons restent atteignables.
   await p.evaluate(() => {
-    const s = window.__jeuDExemple('X1');
+    const s = window.__jeuDExemple('HDK');
     const base = s.releves[s.releves.length - 1];
     const precedente = (sem, n) => { let [a, w] = sem.split('-S').map(Number); w -= n; while (w < 1) { a--; w += 52; } return a + '-S' + String(w).padStart(2, '0'); };
     const liste = [];
@@ -1849,7 +1872,7 @@ async function reinitialiser(pg) {
     jalons: document.querySelectorAll('svg.graphe .jalon').length
   }));
   verifier('et « Tout » les garde à l’écran', longTout.aujourdhui && longTout.jalons === 4, JSON.stringify(longTout));
-  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('X1')));
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
   await p.waitForTimeout(500);
 
   // norm() réduit comme le serveur : espaces internes, insécables, accents.
@@ -1916,7 +1939,7 @@ async function reinitialiser(pg) {
   await p.reload(); await p.waitForTimeout(1400);
   const apresRech = await p.evaluate(() => {
     const b = document.querySelector('button[data-trig][data-actif="true"]');
-    return { tri: b ? b.dataset.trig : null, jalons: window.__jeuDExemple('X1').jalons.length,
+    return { tri: b ? b.dataset.trig : null, jalons: window.__jeuDExemple('HDK').jalons.length,
              stockes: /"jalons"/.test(localStorage.getItem('suivi-fwd:v1') || '') };
   });
   verifier('le tri du bloc par groupe survit au rechargement',

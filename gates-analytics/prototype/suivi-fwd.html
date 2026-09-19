@@ -179,11 +179,13 @@ body[data-exemple="true"] .bandeau-mode {
    page — barre, courbe, journal, bloc par groupe, tableau. « Tout », puis une
    puce par valeur de la colonne de domaine, chacune avec son compte de plans.
    Sans colonne de domaine, il n'a rien à proposer et reste caché. */
-.bandeau-mode .perimetre {
-  display: inline-flex; align-items: center; gap: 9px; flex-wrap: wrap; min-width: 0;
-  font-size: 12.5px; color: var(--encre-3);
+/* Le périmètre vit sous le titre, au-dessus de la barre : c'est de là qu'on
+   choisit ce qu'on regarde, et le bandeau du haut garde sa sobriété. */
+.perimetre {
+  display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 16px 0 2px; font-size: 12.5px; color: var(--encre-3);
 }
-.bandeau-mode .perimetre[hidden] { display: none; }
+.perimetre[hidden] { display: none; }
 #choix-perimetre button { white-space: nowrap; }
 #choix-perimetre .n {
   margin-left: 6px; font-family: "IBM Plex Mono", monospace;
@@ -719,10 +721,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
     <!-- Le message du classeur quand il n'a rien pu rendre — feuille vide,
          contrat introuvable, colonne d'avancement absente. -->
     <span class="mot-mode alerte-source" id="alerte-source" role="alert" hidden></span>
-    <span class="perimetre" id="perimetre" hidden>
-      <span id="mot-perimetre">Périmètre</span>
-      <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
-    </span>
     <span class="choix-contrat" id="choix-contrat" hidden>
       <label for="select-contrat">Contrat</label>
       <select class="select" id="select-contrat"></select>
@@ -742,6 +740,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
       </span>
     </div>
   </header>
+
+  <!-- Le périmètre : ce qu'on regarde. Sous le titre, avant les chiffres. -->
+  <div class="perimetre" id="perimetre" hidden>
+    <span id="mot-perimetre">Périmètre</span>
+    <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
+  </div>
 
   <section class="avancement">
     <div class="avancement-ligne">
@@ -783,6 +787,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
         <button type="button" data-journal="termine" aria-pressed="false">Terminés</button>
         <button type="button" data-journal="encours" aria-pressed="false">En cours</button>
         <button type="button" data-journal="afaire" aria-pressed="false">À faire</button>
+        <button type="button" data-journal="solution" aria-pressed="false">Changements de solution</button>
         <button type="button" data-journal="indice" aria-pressed="false">Changements d’indice</button>
       </span>
     </div>
@@ -983,7 +988,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
      REFERENCES UD
      Une référence s'écrit RACINE + INDICE + REVISION : HEL0225A017 001 A.
      La racine (3 lettres, 4 chiffres, A, 3 chiffres) est l'identité du plan ;
-     l'indice (3 chiffres) et la révision (une lettre) bougent quand le plan
+     la solution (3 chiffres) et l'indice (une lettre) bougent quand le plan
      est réémis. Deux relevés successifs ne portent alors plus la même chaîne
      pour le même plan : comparer les chaînes telles quelles ferait de chaque
      réémission un « disparu » plus un « nouveau ».
@@ -994,21 +999,24 @@ table.plans thead tr th.col-fige { z-index: 6; }
   function analyserUD(ref) {
     var brut = String(ref == null ? '' : ref).trim().toUpperCase();
     var m = FORME_UD.exec(brut.replace(/[-_\s.\/]+/g, ''));
-    if (!m) return { racine: brut, indice: '', revision: '', valide: false };
-    return { racine: m[1] + m[2] + 'A' + m[3], indice: m[4], revision: m[5], valide: true };
+    if (!m) return { racine: brut, solution: '', indice: '', valide: false };
+    return { racine: m[1] + m[2] + 'A' + m[3], solution: m[4], indice: m[5], valide: true };
   }
   /* Le rang d'une émission : sert à choisir, entre deux candidates de même
      racine, la plus proche de celle qui a disparu. */
-  function rangUD(ud) { return Number(ud.indice) * 26 + (ud.revision.charCodeAt(0) - 65); }
+  function rangUD(ud) { return Number(ud.solution) * 26 + (ud.indice.charCodeAt(0) - 65); }
+  /* Une réémission : changement de solution ou d'indice. */
+  function estReemission(e) { return e.type === 'solution' || e.type === 'indice'; }
   /* Exposée pour la batterie : une fonction pure se vérifie cas par cas. */
   window.__analyserUD = analyserUD;
 
   /* Compare deux cartes plan par plan { ref: avancement } et rend les
      événements : 'change' (même référence, autre état), 'nouveau', 'disparu'
-     et 'indice'. Les références qui ne se retrouvent pas telles quelles sont
-     appariées par racine : une racine partie d'un côté et revenue de l'autre
-     sous un autre indice est le même plan réémis. Quand plusieurs candidates
-     se présentent, la plus proche par indice puis révision l'emporte ; les
+     'solution' et 'indice'. Les références qui ne se retrouvent pas telles
+     quelles sont appariées par racine : une racine partie d'un côté et
+     revenue de l'autre est le même plan réémis — changement de solution si
+     les trois chiffres ont bougé, changement d'indice si seule la lettre a
+     bougé. Quand plusieurs candidates se présentent, la plus proche l'emporte ; les
      autres restent nouvelles ou disparues. Une référence hors format n'a pas
      de racine au sens propre : elle n'est jamais appariée. */
   function apparier(avant, apres) {
@@ -1021,13 +1029,13 @@ table.plans thead tr th.col-fige { z-index: 6; }
         return;
       }
       var ud = analyserUD(ref);
-      if (ud.valide) (venus[ud.racine] = venus[ud.racine] || []).push({ ref: ref, rang: rangUD(ud) });
+      if (ud.valide) (venus[ud.racine] = venus[ud.racine] || []).push({ ref: ref, rang: rangUD(ud), ud: ud });
       else evenements.push({ ref: ref, type: 'nouveau', apres: classer(apres[ref]) });
     });
     Object.keys(avant).forEach(function (ref) {
       if (a.call(apres, ref)) return;
       var ud = analyserUD(ref);
-      if (ud.valide) (partis[ud.racine] = partis[ud.racine] || []).push({ ref: ref, rang: rangUD(ud) });
+      if (ud.valide) (partis[ud.racine] = partis[ud.racine] || []).push({ ref: ref, rang: rangUD(ud), ud: ud });
       else evenements.push({ ref: ref, type: 'disparu', avant: classer(avant[ref]) });
     });
     Object.keys(venus).forEach(function (racine) {
@@ -1039,7 +1047,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
       paires.forEach(function (pr) {
         if (pr.p.pris || pr.v.pris) return;
         pr.p.pris = pr.v.pris = true;
-        evenements.push({ ref: pr.v.ref, type: 'indice', ancienne: pr.p.ref,
+        evenements.push({ ref: pr.v.ref, type: pr.p.ud.solution !== pr.v.ud.solution ? 'solution' : 'indice',
+                          ancienne: pr.p.ref,
                           avant: classer(avant[pr.p.ref]), apres: classer(apres[pr.v.ref]) });
       });
       venus[racine].forEach(function (v) {
@@ -1293,9 +1302,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
      les comptes, la courbe et le pied de page, sinon on ne verrait pas que
      la page a suivi. */
   var CONTRATS_EXEMPLE = [
-    { id: 'X1', nom: 'X1', plans: 640, graine: 20260920, semaines: 12 },
-    { id: 'X2', nom: 'X2', plans: 410, graine: 20260721, semaines: 9 },
-    { id: 'X3', nom: 'X3', plans: 275, graine: 20260322, semaines: 6 }
+    { id: 'HDK', nom: 'HDK', plans: 640, graine: 20260920, semaines: 12 },
+    { id: 'THS', nom: 'THS', plans: 410, graine: 20260721, semaines: 9 },
+    { id: 'VRK', nom: 'VRK', plans: 275, graine: 20260322, semaines: 6 }
   ];
 
   /** Le jeu d'exemple d'un contrat ; un identifiant inconnu donne le premier. */
@@ -1416,7 +1425,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var SEMAINES = fiche.semaines;
 
     /* Quelques plans ont été réémis au fil des semaines : leur référence a
-       changé d'indice ou de révision sans que le plan change d'identité. Six
+       changé de solution ou d'indice sans que le plan change d'identité. Six
        par contrat, à des semaines différentes ; deux d'entre eux changent
        aussi d'état à ce moment-là. Les cartes d'avant portent l'ancienne
        référence, celles d'après la nouvelle — c'est ce que le journal doit
@@ -1425,11 +1434,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
     for (var q = 5; reemissions.length < 6 && q < plans.length; q += 53) {
       var pl = plans[q], ud = analyserUD(pl.reference), ancienne;
       if (reemissions.length % 2 === 0) {
-        if (ud.indice === '001') { ud.indice = '002'; pl.reference = ud.racine + '002' + ud.revision; }
-        ancienne = ud.racine + ('00' + (Number(ud.indice) - 1)).slice(-3) + ud.revision;
+        if (ud.solution === '001') { ud.solution = '002'; pl.reference = ud.racine + '002' + ud.indice; }
+        ancienne = ud.racine + ('00' + (Number(ud.solution) - 1)).slice(-3) + ud.indice;
       } else {
-        if (ud.revision === 'A') { ud.revision = 'B'; pl.reference = ud.racine + ud.indice + 'B'; }
-        ancienne = ud.racine + ud.indice + String.fromCharCode(ud.revision.charCodeAt(0) - 1);
+        if (ud.indice === 'A') { ud.indice = 'B'; pl.reference = ud.racine + ud.solution + 'B'; }
+        ancienne = ud.racine + ud.solution + String.fromCharCode(ud.indice.charCodeAt(0) - 1);
       }
       reemissions.push({ ref: pl.reference, ancienne: ancienne,
                          k: SEMAINES - reemissions.length, avecEtat: reemissions.length % 3 === 0 });
@@ -1563,9 +1572,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
     plans.forEach(function (p, i) {
       if (absents[i]) return;
       var ud = analyserUD(p.reference);
-      var indice = autreIndice[i] ? ('00' + (Number(ud.indice) + 1)).slice(-3) : ud.indice;
+      var solution = autreIndice[i] ? ('00' + (Number(ud.solution) + 1)).slice(-3) : ud.solution;
       var l = {
-        REF_UD: ud.racine + '-' + indice + ud.revision,
+        REF_UD: ud.racine + '-' + solution + ud.indice,
         ATA_CODE: p.ata,
         ECP: String(p.ecp || '').toLowerCase(),
         STATUT_FWD: STATUT_LA[classer(p.avancement)],
@@ -2005,11 +2014,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
   /* Le comparatif affiché : les mêmes événements, restreints au périmètre. */
   function comparatif() {
     if (!EVENEMENTS_IMPORT) return null;
-    var d = { termine: [], encours: [], afaire: [], nouveaux: [], disparus: [], indice: [], reemissions: [] };
+    var d = { termine: [], encours: [], afaire: [], nouveaux: [], disparus: [], solution: [], indice: [], reemissions: [] };
     EVENEMENTS_IMPORT.filter(dansPerimetreEvt).forEach(function (e) {
       if (e.type === 'nouveau') { d.nouveaux.push(e.ref); return; }
       if (e.type === 'disparu') { d.disparus.push(e.ref); return; }
-      if (e.type === 'indice') { d.indice.push(e.ref); d.reemissions.push({ ref: e.ref, ancienne: e.ancienne }); }
+      if (estReemission(e)) { d[e.type].push(e.ref); d.reemissions.push({ ref: e.ref, ancienne: e.ancienne, type: e.type }); }
       if (e.avant !== e.apres && d[e.apres]) d[e.apres].push(e.ref);
     });
     return d;
@@ -2030,7 +2039,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
   var LOTS_RAPPROCHEMENT = [
     { cle: 'absentsLa',       libelle: 'absents de la seconde base', filtre: true },
     { cle: 'absentsIci',      libelle: 'absents d’ici',              filtre: false },
-    { cle: 'indiceDifferent', libelle: 'indice différent',           filtre: true },
+    { cle: 'indiceDifferent', libelle: 'solution ou indice différent', filtre: true },
     { cle: 'ecarts',          libelle: 'champs différents',          filtre: true }
   ];
   /**
@@ -2066,9 +2075,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
       /* Plusieurs lignes de même racine : celle qui porte exactement la même
          émission, sinon la première. */
       var meme = candidates.filter(function (c) {
-        return c.ud.indice === udIci.indice && c.ud.revision === udIci.revision;
+        return c.ud.solution === udIci.solution && c.ud.indice === udIci.indice;
       })[0] || candidates[0];
-      if (meme.ud.indice !== udIci.indice || meme.ud.revision !== udIci.revision) {
+      if (meme.ud.solution !== udIci.solution || meme.ud.indice !== udIci.indice) {
         r.indiceDifferent.push({ plan: p, ref_la: String(meme.ligne[cleRef]) });
       }
       champs.forEach(function (c) {
@@ -2633,10 +2642,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
     pts.forEach(function (pt) { ptParI[pt.i] = pt; });
     for (var k4 = d0; k4 <= d1; k4++) {
       var ptK = ptParI[k4];
-      /* Une bande par semaine : elle porte le survol (bulle) et se lit au
-         clavier, mais n'est plus un bouton — rien ne se pose sur le graphique. */
+      /* Une bande par semaine : elle porte le survol (bulle) et son libellé
+         pour les lecteurs d'écran. Ni bouton ni focus : rien ne se pose sur
+         le graphique, et un clic n'y dessine plus de contour. */
       s.push('<rect class="zone-clic" x="' + (x(k4) - pasX / 2).toFixed(1) + '" y="' + (mHaut - 6) + '" width="' + pasX.toFixed(1) +
-             '" height="' + (plotH + ecart + bandeH + 6).toFixed(1) + '" fill="transparent" tabindex="0" role="img" data-i="' + k4 + '" ' +
+             '" height="' + (plotH + ecart + bandeH + 6).toFixed(1) + '" fill="transparent" role="img" data-i="' + k4 + '" ' +
              'aria-label="' + etiquette(k4) +
              (k4 > AUJ ? ' (à venir)' : (ptK ? ' : ' + ptK.termine + ' terminés' : ' : pas de relevé')) + '"/>');
     }
@@ -2804,6 +2814,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     { cle: 'vide',    un: 'effacé',             des: 'effacés' },
     { cle: 'nouveau', un: 'nouveau',            des: 'nouveaux' },
     { cle: 'disparu', un: 'disparu',            des: 'disparus' },
+    { cle: 'solution', un: 'changement de solution', des: 'changements de solution' },
     { cle: 'indice',  un: 'changement d’indice', des: 'changements d’indice' }
   ];
   function comptesDeLaSemaine(i) {
@@ -3343,6 +3354,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     { cle: 'afaire',   un: 'passé à faire',       des: 'passés à faire',       etat: 'afaire' },
     { cle: 'nouveaux', un: 'nouveau',             des: 'nouveaux',             etat: null },
     { cle: 'disparus', un: 'disparu',             des: 'disparus',             etat: null },
+    { cle: 'solution', un: 'changement de solution', des: 'changements de solution', etat: null },
     { cle: 'indice',   un: 'changement d’indice', des: 'changements d’indice', etat: null }
   ];
   function libelleLot(l, n) { return n > 1 ? l.des : l.un; }
@@ -3356,7 +3368,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var morceaux = LOTS_DELTA.filter(function (l) { return COMPARATIF[l.cle].length; }).map(function (l) {
       var actif = vue.refsLibelle === l.cle;
       var n = COMPARATIF[l.cle].length;
-      var pastille = l.etat || l.cle === 'indice' ? pastilleDe(l.etat || l.cle) : '';
+      var pastille = l.etat || l.cle === 'indice' || l.cle === 'solution' ? pastilleDe(l.etat || l.cle) : '';
       return '<button class="puce-delta" type="button" data-delta="' + l.cle +
         '" aria-pressed="' + actif + '">' +
         pastille + '<b>' + nb(n) + '</b> ' + libelleLot(l, n) + '</button>';
@@ -3397,18 +3409,18 @@ table.plans thead tr th.col-fige { z-index: 6; }
      il ne se range sous aucun. */
   function retenuParJournal(e, filtre) {
     if (!filtre) return true;
-    if (filtre === 'indice') return e.type === 'indice';
-    return e.apres === filtre && (e.type !== 'indice' || e.avant !== e.apres);
+    if (filtre === 'indice' || filtre === 'solution') return e.type === filtre;
+    return e.apres === filtre && (!estReemission(e) || e.avant !== e.apres);
   }
   /* Les comptes d'une liste d'événements, avec les mots du journal et de la
      bulle : passages par état d'arrivée, nouveaux, disparus, changements
      d'indice. Un plan réémis qui change d'état compte des deux côtés. */
   function comptesEvenements(evts) {
-    var c = { termine: 0, encours: 0, afaire: 0, vide: 0, nouveau: 0, disparu: 0, indice: 0 };
+    var c = { termine: 0, encours: 0, afaire: 0, vide: 0, nouveau: 0, disparu: 0, solution: 0, indice: 0 };
     evts.forEach(function (e) {
       if (e.type === 'nouveau') { c.nouveau++; return; }
       if (e.type === 'disparu') { c.disparu++; return; }
-      if (e.type === 'indice') { c.indice++; if (e.avant === e.apres) return; }
+      if (estReemission(e)) { c[e.type]++; if (e.avant === e.apres) return; }
       c[e.apres]++;
     });
     return c;
@@ -3418,7 +3430,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
      d'indice et la pastille transparente qui tient la place des autres. */
   function pastilleDe(cle) {
     var e = ETAT_PAR_CLE[cle];
-    if (!e) return '<span class="pastille ' + (cle === 'indice' ? 'neutre' : 'sans') + '"></span>';
+    if (!e) return '<span class="pastille ' + (cle === 'indice' || cle === 'solution' ? 'neutre' : 'sans') + '"></span>';
     return e.hachure
       ? '<span class="pastille hachure"></span>'
       : '<span class="pastille" style="background:' + e.couleur + '"></span>';
@@ -3480,6 +3492,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
           '" aria-pressed="' + (vue.journal === et.cle) + '" title="N\u2019afficher que ces passages, sur toutes les semaines">' +
           ech(mot) + '</button>');
       });
+      if (parType.solution) {
+        resume.push('<button class="compte-passage" type="button" data-passage="solution" aria-pressed="' +
+          (vue.journal === 'solution') + '" title="N\u2019afficher que les changements de solution, sur toutes les semaines">' +
+          nb(parType.solution) + ' changement' + (parType.solution > 1 ? 's' : '') + ' de solution</button>');
+      }
       if (parType.indice) {
         resume.push('<button class="compte-passage" type="button" data-passage="indice" aria-pressed="' +
           (vue.journal === 'indice') + '" title="N\u2019afficher que les changements d\u2019indice, sur toutes les semaines">' +
@@ -3499,7 +3516,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
          seraient les seuls invisibles sans clic. Les nouveaux et les disparus
          ferment la marche. */
       var rangEtat = { termine: 0, encours: 1, afaire: 2, vide: 3 };
-      var rangType = { indice: -1, nouveau: 5, disparu: 6 };
+      var rangType = { solution: -2, indice: -1, nouveau: 5, disparu: 6 };
       evts = evts.slice().sort(function (a, b) {
         var ra = rangType[a.type] !== undefined ? rangType[a.type] : rangEtat[a.apres];
         var rb = rangType[b.type] !== undefined ? rangType[b.type] : rangEtat[b.apres];
@@ -3519,11 +3536,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
               '<span class="fleche-etat">\u2192</span>' + etiqEtat(e.apres, 'apres') + '</span>';
         /* Une réémission se lit « ANCIENNE → NOUVELLE », puis l'état avant et
            après : le même plan sous deux références, et ce qu'il est devenu. */
-        var reference = e.type === 'indice'
+        var reference = estReemission(e)
           ? '<span class="ref ref-indice"><span class="ancienne">' + ech(e.ancienne) + '</span>' +
             '<span class="nouvelle">\u2192 ' + ech(e.ref) + '</span></span>'
           : '<span class="ref">' + ech(e.ref) + '</span>';
-        return '<li><button class="journal-ligne' + (e.type === 'indice' ? ' indice' : '') +
+        return '<li><button class="journal-ligne' + (estReemission(e) ? ' reemission ' + e.type : '') +
           '" type="button" data-ref="' + ech(e.ref) + '" data-type="' + e.type +
           '" title="N’afficher que ce plan dans le tableau">' + reference +
           '<span class="quoi">' + ech(quoi) + '</span>' + vers + '</button></li>';
@@ -3611,8 +3628,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
       if (i === 3 || i === 11) apparus[p.reference] = semaines - 1;
       else if (i === 19) apparus[p.reference] = semaines - 4;
       var ud = analyserUD(p.reference);
-      if (ud.valide && Number(ud.indice) > 1 && nbReemis < 3 && i % 7 === 2) {
-        reemis[p.reference] = { ancienne: ud.racine + ('00' + (Number(ud.indice) - 1)).slice(-3) + ud.revision,
+      if (ud.valide && Number(ud.solution) > 1 && nbReemis < 3 && i % 7 === 2) {
+        reemis[p.reference] = { ancienne: ud.racine + ('00' + (Number(ud.solution) - 1)).slice(-3) + ud.indice,
                                 jusque: nbReemis === 0 ? semaines - 1 : semaines - 3 - nbReemis };
         nbReemis++;
       }
@@ -3962,8 +3979,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var lot = LOTS_DELTA.filter(function (l) { return l.cle === b.dataset.delta; })[0];
     var refs = COMPARATIF[b.dataset.delta];
     var paires = '';
-    if (b.dataset.delta === 'indice') {
-      var lignes = COMPARATIF.reemissions.map(function (r) { return ech(r.ancienne) + ' \u2192 ' + ech(r.ref); });
+    if (b.dataset.delta === 'indice' || b.dataset.delta === 'solution') {
+      var lignes = COMPARATIF.reemissions.filter(function (r) { return r.type === b.dataset.delta; })
+        .map(function (r) { return ech(r.ancienne) + ' \u2192 ' + ech(r.ref); });
       paires = '<div class="liste-refs">' + lignes.slice(0, MAX_PAIRES_INDICE).join('<br>') +
         (lignes.length > MAX_PAIRES_INDICE ? '<br><span class="doux">et ' + nb(lignes.length - MAX_PAIRES_INDICE) + ' autres\u2026</span>' : '') +
         '</div>';

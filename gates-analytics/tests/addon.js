@@ -1225,15 +1225,18 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pg.click('#tout-effacer'); await pg.waitForTimeout(450);
 
   // =================================================================
-  /* La feuille GATES a une colonne « Domaine » : le périmètre est proposé en
-     haut, une puce par valeur avec son compte, et il restreint toute la page.
+  /* La feuille GATES a une colonne « Domaine » : le périmètre est proposé sous
+     le titre, au-dessus de la barre, une puce par valeur avec son compte, et il
+     restreint toute la page.
      Code.gs n'y est pour rien : la page dérive tout du paquet et des cartes. */
   section('Périmètre par domaine');
   const perim = await pg.evaluate(() => ({
     visible: !document.getElementById('perimetre').hidden &&
              document.getElementById('choix-perimetre').offsetParent !== null,
-    haut: document.getElementById('perimetre').getBoundingClientRect().top <
-          document.querySelector('.masthead').getBoundingClientRect().top,
+    haut: document.getElementById('perimetre').getBoundingClientRect().top >
+          document.querySelector('.masthead').getBoundingClientRect().top &&
+          document.getElementById('perimetre').getBoundingClientRect().bottom <=
+          document.querySelector('.avancement').getBoundingClientRect().top + 1,
     boutons: [...document.querySelectorAll('#choix-perimetre button')].map(b => ({
       val: b.dataset.perimetre, n: +b.querySelector('.n').textContent.replace(/\s/g, ''),
       presse: b.getAttribute('aria-pressed')
@@ -1242,7 +1245,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   }));
   const attenduDom = { 'BASE/OPTION': 0, 'PERSO': 0 };
   mGates.plans.forEach(pl => { attenduDom[pl[mGates.cleDomaine]]++; });
-  verifier('le sélecteur est proposé, en haut, avec une puce par domaine de la feuille',
+  verifier('le sélecteur est proposé sous le titre, avec une puce par domaine de la feuille',
     perim.visible && perim.haut && perim.boutons.map(b => b.val).join(',') === ',BASE/OPTION,PERSO',
     JSON.stringify(perim.boutons));
   verifier('les comptes sont ceux de la feuille, et il démarre sur Tout',
