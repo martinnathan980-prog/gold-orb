@@ -423,9 +423,14 @@ async function reinitialiser(pg) {
     r0.jauge[0].texte === PCT + '\u202f%' && r0.jauge.slice(1).every(j => j.texte === ''), JSON.stringify(r0.jauge.map(j => j.texte)));
   verifier('les filets prolongent les coupures de la barre, après les segments assez larges pour qu\'un trait dise quelque chose',
     r0.filets >= 1 && r0.filets <= 4, String(r0.filets));
-  verifier('les boutons sont posés sous leurs segments, de gauche à droite, sans se chevaucher',
-    r0.puces.every(x => /px$/.test(x.gauche)) && r0.puces.every((x, i) => i === 0 || parseFloat(x.gauche) > parseFloat(r0.puces[i - 1].gauche)),
-    JSON.stringify(r0.puces.map(x => x.gauche)));
+  const rectsRapp = await p.evaluate(() => {
+    const zone = document.getElementById('etats-rapprochement').getBoundingClientRect();
+    const r = [...document.querySelectorAll('#etats-rapprochement .etat-btn')].map(b => b.getBoundingClientRect());
+    return { chevauche: r.some((a, i) => i > 0 && a.left < r[i - 1].right), dedans: r.every(b => b.left >= zone.left - 1 && b.right <= zone.right + 1), n: r.length };
+  });
+  verifier('les boutons sont posés sous leurs segments, de gauche à droite, sans se chevaucher ni sortir du cadre',
+    r0.puces.every(x => /px$/.test(x.gauche)) && rectsRapp.n === 5 && !rectsRapp.chevauche && rectsRapp.dedans,
+    JSON.stringify([r0.puces.map(x => x.gauche), rectsRapp]));
   verifier('aucune n\'est pressée ni inactive au départ, les deux tableaux sont entiers',
     r0.puces.every(x => x.presse === 'false' && !x.inactif) && r0.lignes === TOTAL && r0.seconde === TOTAL && r0.jetons.length === 0,
     JSON.stringify([r0.lignes, r0.seconde, r0.jetons]));
@@ -563,6 +568,16 @@ async function reinitialiser(pg) {
   verifier('le bouton « seulement dans SEE » le dit aussi', rPe.puces[4].libelle === 'seulement dans SEE · tout le contrat', rPe.puces[4].libelle);
   await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(600);
   verifier('revenir à Tout redonne les 22 écarts', (await lireRapp()).R.total === 22);
+  // Un lot posé suit le périmètre : le bouton et le tableau parlent des mêmes plans.
+  await p.click('#etats-rapprochement button[data-rapp="ecarts"]'); await p.waitForTimeout(400);
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
+  const rSuit = await lireRapp();
+  verifier('un lot posé suit le périmètre : sous PERSO, le tableau compte ce que le bouton « champs différents » annonce',
+    rSuit.puces[2].presse === 'true' && rSuit.lignes === rSuit.puces[2].n && rSuit.lignes < 10 && rSuit.jetons.indexOf('Rapprochement : champs différents') !== -1,
+    JSON.stringify([rSuit.lignes, rSuit.puces[2].n, rSuit.jetons]));
+  await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(600);
+  await p.click('.jeton .x'); await p.waitForTimeout(400);
+  verifier('de retour sur Tout, le lot retiré, le tableau est entier', (await lireRapp()).lignes === TOTAL);
 
   // Le contrat : la seconde base est celle du contrat courant.
   await p.selectOption('#select-contrat', 'VRK'); await p.waitForTimeout(1200);
@@ -706,7 +721,9 @@ async function reinitialiser(pg) {
   verifier('rien trouvé : le tableau le dit', await p.evaluate(() => (document.querySelector('#corps-seconde .vide-message') || {}).textContent === 'Aucune ligne ne correspond.'));
   await p.click('#reinit'); await p.waitForTimeout(500);
   const sRz = await lireSeconde();
-  verifier('« tout réinitialiser » vide aussi cette recherche', sRz.n === TOTAL && await p.evaluate(() => document.getElementById('recherche-seconde').value === ''));
+  verifier('« tout réinitialiser » vide aussi cette recherche, et ramène sur GATES',
+    sRz.n === TOTAL && sRz.iciMontre && await p.evaluate(() => document.getElementById('recherche-seconde').value === ''));
+  await p.click('#choix-base button[data-base="la"]'); await p.waitForTimeout(400);
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
   const sPe = await lireSeconde();
   const rPe2 = await lireRapp();
@@ -725,6 +742,46 @@ async function reinitialiser(pg) {
   const sCl2 = await lireSeconde();
   verifier('la croix rend tous les plans, sans quitter GATES', sCl2.gates === TOTAL && sCl2.choisies === 0 && sCl2.jetons.length === 0 && sCl2.iciMontre);
   verifier('une ligne seulement là ne mène nulle part : pas de plan à montrer ici', s0.seulsSansPlan === 5 && sCl2.seulsSansPlan === 5);
+  // Une sélection posée pendant qu'on regarde SEE ramène sur GATES, où elle a un sens.
+  await p.click('#choix-base button[data-base="la"]'); await p.waitForTimeout(400);
+  await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(500);
+  const sEtat = await lireSeconde();
+  verifier('choisir un état pendant qu’on regarde SEE ramène sur GATES, filtré',
+    sEtat.iciMontre && sEtat.base === 'ici:true la:false' && sEtat.gates < TOTAL && sEtat.gates > 0, JSON.stringify([sEtat.base, sEtat.gates]));
+  await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(400);
+  await p.click('#choix-base button[data-base="la"]'); await p.waitForTimeout(400);
+  await p.click('#etats-rapprochement button[data-rapp="identiques"]'); await p.waitForTimeout(500);
+  const sLot = await lireSeconde();
+  verifier('mais un lot du rapprochement se lit des deux côtés : posé depuis SEE, le tableau y reste',
+    sLot.laMontre && sLot.n === IDENTIQUES, JSON.stringify([sLot.base, sLot.n]));
+  await p.click('#etats-rapprochement button[data-rapp="absentsIci"]'); await p.waitForTimeout(500);
+  await p.click('#reinit'); await p.waitForTimeout(500);
+  const sReinit = await lireSeconde();
+  verifier('« tout réinitialiser » ramène sur GATES, entier, sans lot',
+    sReinit.iciMontre && sReinit.gates === TOTAL && sReinit.jetons.length === 0, JSON.stringify([sReinit.base, sReinit.gates, sReinit.jetons]));
+
+  // =================================================================
+  /* Les boutons du rapprochement aux largeurs intermédiaires, périmètre posé
+     (le libellé le plus long, « seulement dans SEE · tout le contrat ») : ou
+     bien la rangée tient, alignée, ou bien elle passe en grille — jamais des
+     boutons qui se recouvrent, jamais hors du cadre, jamais de débord de page. */
+  section('Les boutons du rapprochement à toutes les largeurs');
+  for (const largeur of [681, 700, 740, 800, 960, 1280]) {
+    await p.setViewportSize({ width: largeur, height: 900 }); await p.waitForTimeout(350);
+    await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(600);
+    const mesure = await p.evaluate(() => {
+      const zone = document.getElementById('etats-rapprochement');
+      const z = zone.getBoundingClientRect();
+      const r = [...zone.querySelectorAll('.etat-btn')].map(b => b.getBoundingClientRect());
+      const grille = zone.classList.contains('en-grille') || getComputedStyle(zone).display === 'grid';
+      const recouvre = r.some((a, i) => r.some((b, j) => i < j && a.right > b.left + 1 && b.right > a.left + 1 && a.bottom > b.top + 1 && b.bottom > a.top + 1));
+      return { grille, recouvre, dedans: r.every(b => b.left >= z.left - 1 && b.right <= z.right + 1), page: document.documentElement.scrollWidth <= window.innerWidth };
+    });
+    verifier('à ' + largeur + ' px, périmètre posé : ' + (mesure.grille ? 'en grille' : 'alignés') + ', sans recouvrement, dans le cadre, sans débord',
+      !mesure.recouvre && mesure.dedans && mesure.page, JSON.stringify(mesure));
+    await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(400);
+  }
+  await p.setViewportSize({ width: 1280, height: 1000 }); await p.waitForTimeout(400);
 
   // =================================================================
   /* Le graphique, plus aérien : une échelle à valeurs rondes (0, 200, 400,
@@ -1011,7 +1068,7 @@ async function reinitialiser(pg) {
     const J = window.__journal(), C = window.__comparatif(), racine = r => window.__analyserUD(r).racine;
     const indices = [], nouveaux = [], disparus = [];
     J.forEach(s => s.evenements.forEach(e => {
-      if (e.type === 'indice' || e.type === 'solution') indices.push({ i: s.i, type: e.type, ref: e.ref, ancienne: e.ancienne, avant: e.avant, apres: e.apres });
+      if (e.type === 'indice') indices.push({ i: s.i, type: e.type, ref: e.ref, ancienne: e.ancienne, avant: e.avant, apres: e.apres });
       else if (e.type === 'nouveau') nouveaux.push(e.ref);
       else if (e.type === 'disparu') disparus.push(e.ref);
     }));
@@ -1059,11 +1116,47 @@ async function reinitialiser(pg) {
              document.querySelectorAll('#filtre-journal button').length === 5
   }), cleReem);
   verifier('la puce de la réémission est là, avec une pastille neutre',
-    /changements? (d’indice|de solution)/.test(domIndice.puce) && domIndice.pastille, domIndice.puce);
+    /changements? d’indice/.test(domIndice.puce) && domIndice.pastille, domIndice.puce);
   verifier('chaque semaine concernée compte son changement d’indice, en bouton',
     domIndice.comptes.length === 6 && domIndice.comptes.every(t => /^1 changement d’indice$/.test(t)),
     lu(domIndice.comptes));
   verifier('et le filtre du journal ne propose que lui, en cinq boutons : Tout, trois états, l’indice', domIndice.boutons);
+
+  /* « Pourtant il est faux » : le journal doit être juste. Chaque semaine, la
+     somme des comptes du résumé est le nombre de lignes ; la mini-jauge fait
+     100 ; et sous chaque filtre, les lignes montrées sont exactement celles
+     que les comptes annoncent — une case par événement, partout. */
+  const toutDeplier = async () => {
+    for (let g = 0; g < 30; g++) { const pl = await p.$('.journal-plier[aria-expanded="false"]'); if (!pl) break; await pl.click(); await p.waitForTimeout(50); }
+    for (let g = 0; g < 30; g++) { const b = await p.$('.journal-plus[data-tout]'); if (!b) break; await b.click(); await p.waitForTimeout(50); }
+  };
+  await toutDeplier();
+  const justesse = await p.evaluate(() => [...document.querySelectorAll('.journal-semaine')].map(sem => ({
+    sem: sem.querySelector('.sem').textContent,
+    comptes: [...sem.querySelectorAll('.resume b')].reduce((t, b) => t + Number(b.textContent.replace(/\s/g, '')), 0),
+    lignes: sem.querySelectorAll('.journal-ligne').length,
+    jauge: Math.round([...sem.querySelectorAll('.mini-jauge span')].reduce((t, x) => t + parseFloat(x.style.width), 0)),
+    effaceBouton: !!sem.querySelector('.compte-passage[data-passage="vide"]')
+  })));
+  verifier('dans chaque semaine, la somme des comptes du résumé est le nombre de lignes',
+    justesse.length >= 5 && justesse.every(x => x.comptes === x.lignes), JSON.stringify(justesse.filter(x => x.comptes !== x.lignes).slice(0, 3)));
+  verifier('et la mini-jauge de chaque semaine fait 100', justesse.every(x => x.jauge === 100), JSON.stringify(justesse.map(x => x.jauge)));
+  verifier('« effacés » se compte mais ne se filtre pas : jamais un bouton que la barre du filtre ne saurait montrer',
+    justesse.every(x => !x.effaceBouton));
+  for (const f of ['termine', 'encours', 'afaire', 'indice']) {
+    await p.click('#filtre-journal button[data-journal="' + f + '"]'); await p.waitForTimeout(300);
+    await toutDeplier();
+    const sousFiltre = await p.evaluate(f => ({
+      lignes: document.querySelectorAll('.journal-ligne').length,
+      comptes: [...document.querySelectorAll('.compte-passage[data-passage="' + f + '"] b')].reduce((t, b) => t + Number(b.textContent.replace(/\s/g, '')), 0),
+      types: [...new Set([...document.querySelectorAll('.journal-ligne')].map(l => l.dataset.type))].join(),
+      arrivees: [...new Set([...document.querySelectorAll('.journal-ligne .etiq-etat.apres')].map(e => e.textContent.trim()))].join()
+    }), f);
+    verifier('sous « ' + f + ' », les lignes sont exactement celles que les comptes annoncent',
+      sousFiltre.lignes === sousFiltre.comptes && (f === 'indice' ? sousFiltre.types === 'indice' || sousFiltre.lignes === 0 : sousFiltre.types === 'change' || sousFiltre.lignes === 0),
+      JSON.stringify(sousFiltre));
+  }
+  await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(300);
 
   // Survoler la puce : les deux références, ancienne → nouvelle.
   await p.evaluate(() => document.getElementById('comparatif').scrollIntoView({ block: 'center' }));
@@ -1088,7 +1181,7 @@ async function reinitialiser(pg) {
   verifier('cliquer la puce de la réémission filtre le tableau sur les nouvelles références',
     lu(filtreIndice.lignes) === lu(app.comparatif), lu(filtreIndice.lignes));
   verifier('la puce se marque pressée et le bandeau nomme le filtre',
-    filtreIndice.presse === 'true' && /changements (d’indice|de solution)/.test(filtreIndice.jeton), filtreIndice.jeton);
+    filtreIndice.presse === 'true' && /changements d’indice/.test(filtreIndice.jeton), filtreIndice.jeton);
   await p.click('.puce-delta[data-delta="' + cleReem + '"]'); await p.waitForTimeout(500);
   verifier('re-cliquer rend tous les plans',
     await p.evaluate(t => document.querySelectorAll('#corps-tableau tr').length === t, TOTAL));
@@ -1184,9 +1277,9 @@ async function reinitialiser(pg) {
   verifier('une ligne par compte : pastille, mot, nombre à droite',
     toutesLignes.length >= 6 && toutesLignes.every(l => l.pastille && /^\d+$/.test(l.n.replace(/\s/g, ''))),
     lu(toutesLignes.slice(0, 2)));
-  verifier('solution et indice comptés dans les bulles font les six réémissions du journal',
-    toutesLignes.filter(l => /changements? (d’indice|de solution)/.test(l.texte)).reduce((s, l) => s + Number(l.n), 0) === 6,
-    lu(toutesLignes.filter(l => /changements? (d’indice|de solution)/.test(l.texte)).map(l => l.texte)));
+  verifier('les changements d’indice comptés dans les bulles font les six réémissions du journal',
+    toutesLignes.filter(l => /changements? d’indice/.test(l.texte)).reduce((s, l) => s + Number(l.n), 0) === 6,
+    lu(toutesLignes.filter(l => /changements? d’indice/.test(l.texte)).map(l => l.texte)));
 
   // =================================================================
   section('Chargement et cohérence des chiffres');
@@ -2028,7 +2121,7 @@ async function reinitialiser(pg) {
   await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(900);
   const lotsExemple = await p.evaluate(() => (document.getElementById('comparatif').textContent || '').replace(/\s+/g, ' '));
   verifier('en exemple, le comparatif montre aussi passés en cours, nouveaux, disparus et une réémission',
-    /passés en cours/.test(lotsExemple) && /nouveau/.test(lotsExemple) && /disparu/.test(lotsExemple) && /(indice|solution)/.test(lotsExemple),
+    /passés en cours/.test(lotsExemple) && /nouveau/.test(lotsExemple) && /disparu/.test(lotsExemple) && /indice/.test(lotsExemple),
     lotsExemple.slice(0, 160));
   // Changer de contrat en exemple ne rebascule plus sans un mot sur les données réelles.
   await p.selectOption('#select-contrat', 'THS'); await p.waitForTimeout(900);
@@ -2067,7 +2160,7 @@ async function reinitialiser(pg) {
       !/[A-Z]{3}\d{4}A\d{3}/.test(bulleTermine) && /Cliquez/.test(bulleTermine) && !/autres/.test(bulleTermine),
       bulleTermine.replace(/\s+/g, ' ').slice(0, 100));
   }
-  const puceIndice = await p.$('.puce-delta[data-delta="solution"], .puce-delta[data-delta="indice"]');
+  const puceIndice = await p.$('.puce-delta[data-delta="indice"]');
   if (puceIndice) {
     await puceIndice.hover(); await p.waitForTimeout(250);
     verifier('la bulle des changements d’indice montre les paires ancienne → nouvelle',

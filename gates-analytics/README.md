@@ -83,7 +83,7 @@ npm test
   (archivage, suppression, diagnostic, ancien onglet d'historique orphelin,
   changement de contrat dans la page, panne du classeur), périmètre dérivé
   des cartes plan par plan, seconde base à rapprocher.
-- `npm run test:interface` — 436 tests sur l'interface elle-même.
+- `npm run test:interface` — 454 tests sur l'interface elle-même.
   Elle n'essaie pas seulement de vérifier que ça marche : recherches avec
   balises, expressions régulières, 3 000 caractères ou émoji, jalon de
   configuration au texte injecté, `localStorage` corrompu puis inaccessible,

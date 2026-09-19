@@ -70,7 +70,7 @@ body {
   text-align: center; padding-block: 46px 26px; border-bottom: 1px solid var(--filet-fort);
 }
 .masthead .titre-bloc { grid-column: 2; min-width: 0; }
-@media (max-width: 900px) {
+@media (max-width: 1000px) {
   .masthead { grid-template-columns: 1fr; row-gap: 16px; }
   .masthead .titre-bloc { grid-column: 1; }
 }
@@ -151,10 +151,14 @@ body {
 /* Sous 680 px les segments sont trop étroits pour porter une étiquette :
    on repasse à une grille régulière. */
 @media (max-width: 680px) {
-  .etats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 0; height: auto; }
-  .etat-btn { position: static; text-align: left; padding: 3px 0; background: none; }
+  .etats { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 0; height: auto; }
+  .etat-btn { position: relative; text-align: left; padding: 3px 0; background: none; white-space: normal; }
   .etat-haut { justify-content: flex-start; }
 }
+/* La même grille quand les boutons ne tiennent pas bout à bout dans la rangée. */
+.etats.en-grille { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 0; height: auto; }
+.etats.en-grille .etat-btn { position: relative; text-align: left; padding: 3px 0; background: none; white-space: normal; }
+.etats.en-grille .etat-haut { justify-content: flex-start; }
 
 /* ---------------------------------------------------- Mode des données */
 /* Un seul interrupteur, tout en haut : la page entière est réelle, ou elle est
@@ -192,13 +196,13 @@ body[data-exemple="true"] .bandeau-mode {
 /* Le périmètre vit sous le titre, au-dessus de la barre : c'est de là qu'on
    choisit ce qu'on regarde, et le bandeau du haut garde sa sobriété. */
 /* Le périmètre, à droite du titre : le mot au-dessus, le choix dessous,
-   alignés sur le bord droit ; sous 900 px, il passe sous le titre, centré. */
+   alignés sur le bord droit ; sous 1000 px, il passe sous le titre, centré. */
 .perimetre {
   grid-column: 3; justify-self: end; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
-  font-size: 12px; color: var(--encre-3);
+  font-size: 12px; color: var(--encre-3); min-width: 0; max-width: 100%;
 }
 .perimetre .mot-perimetre { letter-spacing: .08em; text-transform: uppercase; font-size: 10.5px; font-weight: 500; }
-@media (max-width: 900px) { .perimetre { grid-column: 1; justify-self: center; align-items: center; } }
+@media (max-width: 1000px) { .perimetre { grid-column: 1; justify-self: center; align-items: center; } }
 .perimetre[hidden] { display: none; }
 #choix-perimetre button { white-space: nowrap; }
 #choix-perimetre .n {
@@ -207,7 +211,7 @@ body[data-exemple="true"] .bandeau-mode {
 }
 /* Trois puces et leurs comptes ne tiennent pas sur un téléphone : le groupe
    passe sur deux lignes plutôt que de faire déborder la page. */
-@media (max-width: 480px) { #choix-perimetre { flex-wrap: wrap; } }
+#choix-perimetre { flex-wrap: wrap; justify-content: flex-end; }
 
 
 /* ---------------------------------------------------- Filtres actifs */
@@ -294,8 +298,12 @@ body[data-exemple="true"] .bandeau-mode {
 }
 .journal-tete .mini-jauge span { display: block; min-width: 2px; }
 .journal-tete .mini-jauge .indice { background: transparent; box-shadow: inset 0 0 0 1.5px var(--encre-3); }
-.journal-tete .mini-jauge .nouveau, .journal-tete .mini-jauge .disparu { background: var(--filet-fort); }
-.journal-tete .mini-jauge .vide { background: var(--filet-fort); }
+.journal-tete .mini-jauge .nouveau { background: var(--filet-fort); }
+.journal-tete .mini-jauge .disparu { background: transparent; box-shadow: inset 0 0 0 1.5px var(--filet-fort); }
+.journal-tete .mini-jauge .vide {
+  background-image: repeating-linear-gradient(45deg, var(--filet-fort) 0 1.5px, transparent 1.5px 4px);
+  box-shadow: inset 0 0 0 1px var(--filet-fort);
+}
 @media (max-width: 720px) { .journal-tete .mini-jauge { display: none; } }
 .journal-tete .chevron { color: var(--encre-3); transition: transform .12s; flex: none; }
 .journal-plier[aria-expanded="true"] .chevron { transform: rotate(90deg); }
@@ -345,8 +353,9 @@ body[data-exemple="true"] .bandeau-mode {
 .compte-passage b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; color: var(--encre); }
 .compte-passage:hover { background: var(--creux); color: var(--encre); }
 .compte-passage[aria-pressed="true"] { border-color: var(--filet-fort); background: var(--surface); color: var(--encre); font-weight: 500; }
-.journal-tete .resume .doux-compte { display: inline-flex; align-items: center; gap: 6px; color: var(--encre-3); white-space: nowrap; }
+.journal-tete .resume .doux-compte { display: inline-flex; align-items: center; gap: 6px; color: var(--encre-2); white-space: nowrap; }
 .journal-tete .resume .doux-compte b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; }
+@media (max-width: 480px) { .compte-passage, .journal-tete .resume .doux-compte { white-space: normal; text-align: left; } }
 
 /* La liste des UD d'un groupe, dépliée sous sa ligne : TOUTES les références,
    en deux paquets titrés — ce qui reste à faire d'abord, puis ce qui est
@@ -498,7 +507,10 @@ table.plans td.coche { text-align: center; color: var(--encre-2); }
 table.plans .verdict { display: inline-flex; align-items: center; gap: 8px; }
 table.plans tbody tr.choisie td { background: var(--creux); box-shadow: inset 0 -1px 0 var(--encre); }
 table.plans tbody tr[data-plan] { cursor: pointer; }
-.legende-rapp { display: inline-flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--encre-3); margin-left: auto; }
+/* La référence d'une ligne de là est un bouton : le clavier y arrive aussi. */
+.ref-lien { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.ref-lien:hover { text-decoration: underline; }
+.legende-rapp { display: inline-flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--encre-2); margin-left: auto; }
 .legende-rapp span { display: inline-flex; align-items: center; gap: 6px; }
 .legende-rapp:empty { display: none; }
 .rapp-detail-bouton { margin-top: 18px; display: inline-flex; align-items: baseline; gap: 6px; }

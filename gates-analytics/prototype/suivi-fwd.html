@@ -73,7 +73,7 @@ body {
   text-align: center; padding-block: 46px 26px; border-bottom: 1px solid var(--filet-fort);
 }
 .masthead .titre-bloc { grid-column: 2; min-width: 0; }
-@media (max-width: 900px) {
+@media (max-width: 1000px) {
   .masthead { grid-template-columns: 1fr; row-gap: 16px; }
   .masthead .titre-bloc { grid-column: 1; }
 }
@@ -154,10 +154,14 @@ body {
 /* Sous 680 px les segments sont trop étroits pour porter une étiquette :
    on repasse à une grille régulière. */
 @media (max-width: 680px) {
-  .etats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 0; height: auto; }
-  .etat-btn { position: static; text-align: left; padding: 3px 0; background: none; }
+  .etats { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 0; height: auto; }
+  .etat-btn { position: relative; text-align: left; padding: 3px 0; background: none; white-space: normal; }
   .etat-haut { justify-content: flex-start; }
 }
+/* La même grille quand les boutons ne tiennent pas bout à bout dans la rangée. */
+.etats.en-grille { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 0; height: auto; }
+.etats.en-grille .etat-btn { position: relative; text-align: left; padding: 3px 0; background: none; white-space: normal; }
+.etats.en-grille .etat-haut { justify-content: flex-start; }
 
 /* ---------------------------------------------------- Mode des données */
 /* Un seul interrupteur, tout en haut : la page entière est réelle, ou elle est
@@ -195,13 +199,13 @@ body[data-exemple="true"] .bandeau-mode {
 /* Le périmètre vit sous le titre, au-dessus de la barre : c'est de là qu'on
    choisit ce qu'on regarde, et le bandeau du haut garde sa sobriété. */
 /* Le périmètre, à droite du titre : le mot au-dessus, le choix dessous,
-   alignés sur le bord droit ; sous 900 px, il passe sous le titre, centré. */
+   alignés sur le bord droit ; sous 1000 px, il passe sous le titre, centré. */
 .perimetre {
   grid-column: 3; justify-self: end; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
-  font-size: 12px; color: var(--encre-3);
+  font-size: 12px; color: var(--encre-3); min-width: 0; max-width: 100%;
 }
 .perimetre .mot-perimetre { letter-spacing: .08em; text-transform: uppercase; font-size: 10.5px; font-weight: 500; }
-@media (max-width: 900px) { .perimetre { grid-column: 1; justify-self: center; align-items: center; } }
+@media (max-width: 1000px) { .perimetre { grid-column: 1; justify-self: center; align-items: center; } }
 .perimetre[hidden] { display: none; }
 #choix-perimetre button { white-space: nowrap; }
 #choix-perimetre .n {
@@ -210,7 +214,7 @@ body[data-exemple="true"] .bandeau-mode {
 }
 /* Trois puces et leurs comptes ne tiennent pas sur un téléphone : le groupe
    passe sur deux lignes plutôt que de faire déborder la page. */
-@media (max-width: 480px) { #choix-perimetre { flex-wrap: wrap; } }
+#choix-perimetre { flex-wrap: wrap; justify-content: flex-end; }
 
 
 /* ---------------------------------------------------- Filtres actifs */
@@ -297,8 +301,12 @@ body[data-exemple="true"] .bandeau-mode {
 }
 .journal-tete .mini-jauge span { display: block; min-width: 2px; }
 .journal-tete .mini-jauge .indice { background: transparent; box-shadow: inset 0 0 0 1.5px var(--encre-3); }
-.journal-tete .mini-jauge .nouveau, .journal-tete .mini-jauge .disparu { background: var(--filet-fort); }
-.journal-tete .mini-jauge .vide { background: var(--filet-fort); }
+.journal-tete .mini-jauge .nouveau { background: var(--filet-fort); }
+.journal-tete .mini-jauge .disparu { background: transparent; box-shadow: inset 0 0 0 1.5px var(--filet-fort); }
+.journal-tete .mini-jauge .vide {
+  background-image: repeating-linear-gradient(45deg, var(--filet-fort) 0 1.5px, transparent 1.5px 4px);
+  box-shadow: inset 0 0 0 1px var(--filet-fort);
+}
 @media (max-width: 720px) { .journal-tete .mini-jauge { display: none; } }
 .journal-tete .chevron { color: var(--encre-3); transition: transform .12s; flex: none; }
 .journal-plier[aria-expanded="true"] .chevron { transform: rotate(90deg); }
@@ -348,8 +356,9 @@ body[data-exemple="true"] .bandeau-mode {
 .compte-passage b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; color: var(--encre); }
 .compte-passage:hover { background: var(--creux); color: var(--encre); }
 .compte-passage[aria-pressed="true"] { border-color: var(--filet-fort); background: var(--surface); color: var(--encre); font-weight: 500; }
-.journal-tete .resume .doux-compte { display: inline-flex; align-items: center; gap: 6px; color: var(--encre-3); white-space: nowrap; }
+.journal-tete .resume .doux-compte { display: inline-flex; align-items: center; gap: 6px; color: var(--encre-2); white-space: nowrap; }
 .journal-tete .resume .doux-compte b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; }
+@media (max-width: 480px) { .compte-passage, .journal-tete .resume .doux-compte { white-space: normal; text-align: left; } }
 
 /* La liste des UD d'un groupe, dépliée sous sa ligne : TOUTES les références,
    en deux paquets titrés — ce qui reste à faire d'abord, puis ce qui est
@@ -501,7 +510,10 @@ table.plans td.coche { text-align: center; color: var(--encre-2); }
 table.plans .verdict { display: inline-flex; align-items: center; gap: 8px; }
 table.plans tbody tr.choisie td { background: var(--creux); box-shadow: inset 0 -1px 0 var(--encre); }
 table.plans tbody tr[data-plan] { cursor: pointer; }
-.legende-rapp { display: inline-flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--encre-3); margin-left: auto; }
+/* La référence d'une ligne de là est un bouton : le clavier y arrive aussi. */
+.ref-lien { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.ref-lien:hover { text-decoration: underline; }
+.legende-rapp { display: inline-flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--encre-2); margin-left: auto; }
 .legende-rapp span { display: inline-flex; align-items: center; gap: 6px; }
 .legende-rapp:empty { display: none; }
 .rapp-detail-bouton { margin-top: 18px; display: inline-flex; align-items: baseline; gap: 6px; }
@@ -1018,6 +1030,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
     return s.replace(/\s+/g, ' ').trim();
   }
   function nb(n) { return n.toLocaleString('fr-FR'); }
+  /* Faire défiler jusqu'à un élément : le dictionnaire d'options est récent,
+     pas la méthode — un navigateur ancien reçoit l'appel d'origine. */
+  function defilerVers(el, options) {
+    if (!el || !el.scrollIntoView) return;
+    try { el.scrollIntoView(options); } catch (e) { el.scrollIntoView(true); }
+  }
   /* Exposée pour la batterie : la même réduction que le serveur, vérifiable
      cas par cas (espace insécable, accents, espaces multiples). */
   window.__norm = norm;
@@ -1565,12 +1583,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
     for (var k = SEMAINES; k >= 0; k--) {
       instantanes[k] = JSON.parse(JSON.stringify(etatCourant));
       if (k === 0) break;
-      var recules = 0;
+      var recules = 0, rebonds = 0;
       for (var r = 0; r < refs.length && recules < 26; r++) {
         var ref = refs[(r * 17 + k * 29) % refs.length];
         var v = etatCourant[ref];
         if (v === 'Terminé') { etatCourant[ref] = 'En cours'; recules++; }
         else if (v === 'En cours' && alea() < 0.5) { etatCourant[ref] = 'À faire'; recules++; }
+        /* Deux plans repassés à faire, une semaine : un vrai recul, pour que
+           le journal en montre aussi. */
+        else if (v === 'À faire' && k === SEMAINES - 2 && rebonds < 2) { etatCourant[ref] = 'En cours'; rebonds++; }
       }
       reemissions.forEach(function (re) {
         if (re.k !== k) return;
@@ -2161,7 +2182,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
     EVENEMENTS_IMPORT.filter(dansPerimetreEvt).forEach(function (e) {
       if (e.type === 'nouveau') { d.nouveaux.push(e.ref); return; }
       if (e.type === 'disparu') { d.disparus.push(e.ref); return; }
-      if (estReemission(e)) { d.indice.push(e.ref); d.reemissions.push({ ref: e.ref, ancienne: e.ancienne, type: e.type }); }
+      /* Un plan réémis compte une fois, sous « changement d'indice » — même
+         s'il change d'état au passage : la bulle et le journal le disent. */
+      if (estReemission(e)) { d.indice.push(e.ref); d.reemissions.push({ ref: e.ref, ancienne: e.ancienne, type: e.type }); return; }
       if (e.avant !== e.apres && d[e.apres]) d[e.apres].push(e.ref);
     });
     return d;
@@ -2192,14 +2215,18 @@ table.plans thead tr th.col-fige { z-index: 6; }
     { cle: 'absentsLa',       libelle: 'absents de §',     segment: 'absentLa',  teinte: 'var(--alerte)',  atterrit: 'ici' },
     { cle: 'absentsIci',      libelle: 'seulement dans §', segment: 'seul',      teinte: 'var(--encre-3)', atterrit: 'la' }
   ];
-  /* La catégorie d'une ligne de là derrière chaque lot ; null : ces plans
-     n'ont pas de ligne là. Et la catégorie d'un plan d'ici (parPlan), une
-     seule par plan, pour que les comptes des boutons soient ceux de la barre. */
-  var CATEGORIE_PAR_LOT = { identiques: 'identique', indiceDifferent: 'emission', ecarts: 'ecart',
-                            absentsLa: null, absentsIci: 'seul' };
+  /* La catégorie d'un plan d'ici (parPlan) derrière chaque lot, une seule par
+     plan, pour que les comptes des boutons soient ceux de la barre. */
   var CATEGORIE_PLAN_PAR_LOT = { identiques: 'identique', indiceDifferent: 'emission', ecarts: 'ecart', absentsLa: 'absentLa' };
   /* Le compte d'un lot : des plans d'ici, une case chacun ; ou des lignes
      que la seconde base est seule à connaître. */
+  /* Les écarts de champ des plans de la case « champs différents » — ceux
+     que le bouton compte et que le clic filtre. Un plan sous un autre indice
+     garde ses écarts dans le tableau de là (cellules voilées), pas ici. */
+  function ecartsDeLaCase() {
+    if (!RAPPROCHEMENT) return [];
+    return RAPPROCHEMENT.ecarts.filter(function (e) { return RAPPROCHEMENT.parPlan[e.plan.reference] === 'ecart'; });
+  }
   function compteLotRapp(cle) {
     if (!RAPPROCHEMENT) return 0;
     if (cle === 'absentsIci') return RAPPROCHEMENT.absentsIci.length;
@@ -2310,6 +2337,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
       if (racinesIci[clePlan(e.ud)]) { e.cat = 'hors'; return; }
       e.cat = 'seul'; r.absentsIci.push(e.ligne);
     });
+    /* Une référence en double dans l'extract ne compte qu'une fois : la
+       population, c'est les références distinctes — comme les cases. */
+    r.nbPlans = Object.keys(r.parPlan).length;
     /* Les absents d'ici portent sur tout le contrat, jamais sur le seul
        périmètre : ils se comptent à part, pour ne pas mêler les deux. */
     r.totalPerimetre = r.absentsLa.length + r.indiceDifferent.length + r.ecarts.length;
@@ -2333,7 +2363,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     vue.lotLa = null;
     if (deja) return;
     if (lot.atterrit) vue.base = lot.atterrit;
-    if (cle === 'absentsIci') { vue.lotLa = cle; return; }
+    if (cle === 'absentsIci') { vue.lotLa = cle; vue.clesLotLa = clesSelection(); return; }
     vue.refs = {};
     refsDuLotRapprochement(cle).forEach(function (r) { vue.refs[r] = true; });
     vue.refsLibelle = 'rapprochement:' + cle;
@@ -2440,11 +2470,13 @@ table.plans thead tr th.col-fige { z-index: 6; }
      Le périmètre, lui, se dérive des cartes plan par plan et suit l'historique ;
      filtreActif() réunit les deux pour ce qui se voit à l'écran. */
   function filtreLibre() {
-    return !!(vue.recherche || vue.etat || vue.groupe || vue.refs || vue.lotLa || vue.seconde.recherche ||
+    return !!(vue.recherche || vue.etat || vue.groupe || vue.refs ||
       Object.keys(vue.filtres).some(function (k) { return vue.filtres[k]; }) ||
       Object.keys(vue.vides).some(function (k) { return vue.vides[k]; }));
   }
-  function filtreActif() { return !!vue.perimetre || filtreLibre(); }
+  /* Le lot « seulement dans la seconde base » et la recherche de là ne filtrent
+     pas les plans : ils comptent pour « tout réinitialiser », pas pour la phrase. */
+  function filtreActif() { return !!vue.perimetre || !!vue.lotLa || !!vue.seconde.recherche || filtreLibre(); }
 
   /* ============================================================
      PÉRIMÈTRE
@@ -2560,6 +2592,16 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var base = barre.getBoundingClientRect();
     var largeur = zone.getBoundingClientRect().width;
     if (!largeur || !base.width) return;
+    /* Quand les boutons, mis bout à bout, ne tiennent plus dans la rangée,
+       les pousser ne suffit plus : ils passent en grille, comme sur un petit
+       écran, plutôt que de se recouvrir. */
+    zone.classList.remove('en-grille');          // mesurer les boutons libres, pas étirés par la grille
+    var besoin = boutons.reduce(function (t, b) { return t + b.offsetWidth; }, 0) + 4 * (boutons.length - 1);
+    if (besoin > largeur) {
+      zone.classList.add('en-grille');
+      boutons.forEach(function (b) { b.style.left = ''; });
+      return;
+    }
     /* Un filet par coupure — sauf après un segment trop étroit pour que le
        trait dise encore quelque chose : entre trois plans et cinq, il ne
        ferait que hachurer les nombres. */
@@ -3199,7 +3241,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       '<span>' + nb(plans.length) + ' plan' + (plans.length > 1 ? 's' : '') +
       (restants.length ? ' · <b>' + nb(restants.length) + '</b> pas encore terminé' + (restants.length > 1 ? 's' : '')
                        : ' · tout est soldé') +
-      '</span><span class="legende-etats" aria-label="Légende des pastilles">' + ETATS.map(function (et) {
+      '</span><span class="legende-etats" role="group" aria-label="Légende des pastilles">' + ETATS.map(function (et) {
         return '<span>' + pastilleDe(et.cle) + ech(et.court) + '</span>';
       }).join('') + '</span><span>cliquez une référence pour la retrouver dans le tableau</span></div>' +
       paquet('Pas encore terminés', restants) +
@@ -3680,23 +3722,27 @@ table.plans thead tr th.col-fige { z-index: 6; }
     return PLAN_PAR_REF[ref] || PLAN_PAR_RACINE[clePlan(analyserUD(ref))] || null;
   }
 
-  /* Le filtre du journal : un état d'arrivée, ou « indice ». Un changement
-     d'indice qui a aussi changé l'état se range sous cet état ; sans passage,
-     il ne se range sous aucun. */
+  /* Le filtre du journal : un état d'arrivée, ou « indice » — la même case
+     que dans les comptes, pour que le filtre montre exactement ce que le
+     résumé compte. Un changement d'indice ne se range que sous « indice » ;
+     les nouveaux, les disparus et les effacés ne se voient que sous « Tout ». */
   function retenuParJournal(e, filtre) {
     if (!filtre) return true;
     if (filtre === 'indice') return e.type === 'indice';
-    return e.apres === filtre && (!estReemission(e) || e.avant !== e.apres);
+    if (e.type === 'nouveau' || e.type === 'disparu' || estReemission(e)) return false;
+    return e.apres === filtre;
   }
   /* Les comptes d'une liste d'événements, avec les mots du journal et de la
      bulle : passages par état d'arrivée, nouveaux, disparus, changements
-     d'indice. Un plan réémis qui change d'état compte des deux côtés. */
+     d'indice. Une case par événement, pour que la somme des comptes soit le
+     nombre de lignes : un plan réémis compte sous « changement d'indice »,
+     même s'il change d'état au passage — sa ligne montre l'état avant et après. */
   function comptesEvenements(evts) {
     var c = { termine: 0, encours: 0, afaire: 0, vide: 0, nouveau: 0, disparu: 0, indice: 0 };
     evts.forEach(function (e) {
       if (e.type === 'nouveau') { c.nouveau++; return; }
       if (e.type === 'disparu') { c.disparu++; return; }
-      if (estReemission(e)) { c[e.type]++; if (e.avant === e.apres) return; }
+      if (estReemission(e)) { c.indice++; return; }
       c[e.apres]++;
     });
     return c;
@@ -3763,7 +3809,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
         if (et.cle === 'termine')      mot = 'terminé' + pluriel;
         else if (et.cle === 'encours') mot = 'passé' + pluriel + ' en cours';
         else if (et.cle === 'afaire')  mot = 'repassé' + pluriel + ' à faire';
-        else                           mot = 'effacé' + pluriel;
+        else {
+          /* Une cellule effacée n'est pas un passage qu'on filtre : un compte,
+             comme les nouveaux et les disparus. */
+          resume.push('<span class="doux-compte">' + pastilleDe('vide') + '<b>' + nb(n) + '</b> effacé' + pluriel + '</span>');
+          return;
+        }
         resume.push('<button class="compte-passage" type="button" data-passage="' + et.cle +
           '" aria-pressed="' + (vue.journal === et.cle) + '" title="N\u2019afficher que ces passages, sur toutes les semaines">' +
           pastilleDe(et.cle) + '<b>' + nb(n) + '</b> ' + ech(mot) + '</button>');
@@ -4104,6 +4155,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     vue.refs = null; vue.refsLibelle = '';
     vue.perimetre = '';
     vue.lotLa = null;
+    vue.base = 'ici';
     vue.seconde.recherche = ''; $('recherche-seconde').value = '';
     $('recherche').value = '';
   }
@@ -4190,10 +4242,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
     /* La phrase, dans le registre de la barre du haut — jamais « terminés » ;
        dessous, ce qu'il reste à regarder. */
-    if (!nP && vue.perimetre) {
-      $('phrase-rapprochement').textContent = 'Aucun plan dans le périmètre ' + vue.perimetre;
-      $('sous-rapprochement').textContent = '';
-    } else {
+    {
       $('phrase-rapprochement').innerHTML = '<b>' + nb(nId) + '</b> sur ' + nb(nP) + (nP > 1 ? ' plans' : ' plan') +
         (vue.perimetre ? ' du périmètre ' + ech(vue.perimetre) : '') + (nP > 1 ? ' identiques' : ' identique') + ' dans ' + ech(nom);
       var seuls = nSeuls ? nb(nSeuls) + (nSeuls > 1 ? ' références que ' : ' référence que ') + nom + ' est seul à connaître' +
@@ -4213,8 +4262,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       if (!n) return '';
       var part = 100 * n / echelle;
       var texte = l.cle !== 'absentsIci' && part >= 6 && nP ? Math.round(100 * n / nP) + '\u202f%' : '';
-      return '<span class="' + l.segment + '" data-cle="' + l.cle + '" style="width:' + part.toFixed(2) + '%" title="' +
-        ech(motLotRapp(l.cle, n, nom)) + '">' + texte + '</span>';
+      return '<span class="' + l.segment + '" data-cle="' + l.cle + '" style="width:' + part.toFixed(2) + '%">' + texte + '</span>';
     }).join('');
     var membres = LOTS_RAPPROCHEMENT.filter(function (l) { return comptes[l.cle] && l.cle !== 'absentsIci'; })
       .map(function (l) { return motLotRapp(l.cle, comptes[l.cle], nom); });
@@ -4228,23 +4276,21 @@ table.plans thead tr th.col-fige { z-index: 6; }
     $('etats-rapprochement').innerHTML = LOTS_RAPPROCHEMENT.map(function (l) {
       var n = comptes[l.cle], presse = !!n && actif === l.cle;
       var libelle = libelleRapp(l) + (vue.perimetre && l.cle === 'absentsIci' ? ' · tout le contrat' : '');
-      var aide = !n ? 'Aucun' : presse ? 'Retirer le filtre'
-        : l.atterrit === 'la' ? 'N’afficher que ces lignes, dans ' + nom
-        : l.atterrit === 'ici' ? 'N’afficher que ces plans, dans GATES'
-        : 'N’afficher que ces plans dans le tableau';
+      /* Pas de title : la bulle dit tout à la souris, et le clavier a l'état pressé. */
       return '<button class="etat-btn" type="button" data-cle="' + l.cle + '" data-rapp="' + l.cle + '" data-atterrit="' + l.atterrit +
-        '" style="--teinte:' + l.teinte + '" aria-pressed="' + presse + '"' + (n ? '' : ' disabled') + ' title="' + ech(aide) + '">' +
+        '" style="--teinte:' + l.teinte + '" aria-pressed="' + presse + '"' + (n ? '' : ' disabled') + '>' +
         '<span class="etat-haut">' + pastilleVerdict(l.segment) + ech(libelle) + '</span>' +
         '<span class="etat-n">' + nb(n) + '</span></button>';
     }).join('');
     requestAnimationFrame(function () { alignerSousBarre('barre-rapprochement', 'filets-rapprochement', 'etats-rapprochement'); });
 
+    var ecarts = ecartsDeLaCase();
     var bouton = $('bouton-detail-rapprochement');
     bouton.setAttribute('aria-expanded', String(!!vue.rappDetail));
-    bouton.textContent = 'détail des écarts' + (R.ecarts.length ? ' (' + nb(R.ecarts.length) + ')' : '');
+    bouton.textContent = 'détail des écarts' + (ecarts.length ? ' (' + nb(ecarts.length) + ')' : '');
     var detail = $('detail-rapprochement');
     if (!vue.rappDetail) { detail.innerHTML = ''; return; }
-    if (!R.ecarts.length) {
+    if (!ecarts.length) {
       detail.innerHTML = '<p class="rapp-vide">Aucun champ ne diffère entre les deux bases' +
         (vue.perimetre ? ' dans ce périmètre' : '') + '.</p>';
       return;
@@ -4253,7 +4299,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       '<div class="rapp-grille">' +
       '<div class="rapp-entete">Référence</div><div class="rapp-entete">Champ</div>' +
       '<div class="rapp-entete">GATES</div><div class="rapp-entete">' + ech(nom) + '</div>' +
-      R.ecarts.map(function (e) {
+      ecarts.map(function (e) {
         return '<div class="ref">' + ech(e.plan.reference) + '</div><div class="champ">' + ech(e.champ) + '</div>' +
           '<div>' + valeurRapp(e.ici) + '</div><div>' + valeurRapp(e.la) + '</div>';
       }).join('') + '</div></div>';
@@ -4286,9 +4332,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
     } else if (cle === 'ecarts') {
       tete = 'Des champs diffèrent';
       var parChamp = {}, ordre = [];
-      R.ecarts.forEach(function (e) { if (!parChamp[e.champ]) { parChamp[e.champ] = 0; ordre.push(e.champ); } parChamp[e.champ]++; });
+      var ecartsCase = ecartsDeLaCase();
+      ecartsCase.forEach(function (e) { if (!parChamp[e.champ]) { parChamp[e.champ] = 0; ordre.push(e.champ); } parChamp[e.champ]++; });
       corps = '<div class="bulle-ligne"><span class="pastille ecart"></span>' + nb(n) + (n > 1 ? ' plans' : ' plan') +
-        '<span class="n">' + nb(R.ecarts.length) + (R.ecarts.length > 1 ? ' écarts' : ' écart') + '</span></div>' +
+        '<span class="n">' + nb(ecartsCase.length) + (ecartsCase.length > 1 ? ' écarts' : ' écart') + '</span></div>' +
         (ordre.length ? '<div class="bulle-comptes">' + ordre.map(function (ch) {
           return '<div class="bulle-ligne"><span class="pastille sans"></span>' + ech(ch) + '<span class="n">' + nb(parChamp[ch]) + '</span></div>';
         }).join('') + '</div>' : '');
@@ -4348,11 +4395,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
   function lignesSecondeAffichees() {
     var R = RAPPROCHEMENT, S = vue.seconde;
     var lot = lotRappActif();
-    var voulu = lot ? CATEGORIE_PAR_LOT[lot] : undefined;
+    var casePlan = lot ? CATEGORIE_PLAN_PAR_LOT[lot] : undefined;
     var cherche = norm(S.recherche);
     var lignes = R.lignes.filter(function (e) {
       if (e.cat === 'hors') return false;
-      if (lot && (voulu === null || e.cat !== voulu)) return false;
+      /* Sous un lot, les lignes des plans de cette case — toutes leurs lignes,
+         pour que le compte du bouton et le tableau parlent des mêmes plans ;
+         « seulement là » garde ses lignes à lui. */
+      if (lot === 'absentsIci') { if (e.cat !== 'seul') return false; }
+      else if (lot && (!casePlan || !e.plan || R.parPlan[e.plan.reference] !== casePlan)) return false;
       if (cherche && !SECONDE.titres.some(function (t) { return norm(e.ligne[t]).indexOf(cherche) !== -1; })) return false;
       return true;
     });
@@ -4428,7 +4479,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
             }
             var contenu;
             if (t === SECONDE.premiere) {
-              contenu = '<span class="verdict">' + pastilleVerdict(e.cat) + '<span class="ref">' + ech(s) + '</span></span>';
+              contenu = '<span class="verdict">' + pastilleVerdict(e.cat) + (ref
+                ? '<button type="button" class="ref ref-lien" data-plan="' + ech(ref) + '" title="Retrouver ce plan dans GATES">' + ech(s) + '</button>'
+                : '<span class="ref">' + ech(s) + '</span>') + '</span>';
             } else if (s === '') { classes.push('doux'); contenu = '-'; }
             else if (estBooleen(s)) { classes.push('coche'); contenu = '<span title="' + ech(s) + '">' + (estVrai(s) ? '✓' : '–') + '</span>'; }
             else contenu = ech(s);
@@ -4453,12 +4506,32 @@ table.plans thead tr th.col-fige { z-index: 6; }
        refait avant tout le reste. */
     COMPARATIF = comparatif();
     RAPPROCHEMENT = rapprocher(SRC.rapprochement, population());
-    /* Un lot posé qui n'a plus rien — autre périmètre, autre source — se
-       retire de lui-même : jamais un bouton grisé qui reste pressé. */
+    /* Ce qui vient d'être posé décide de deux choses. Le lot « seulement dans
+       la seconde base » ne survit pas à un autre geste de sélection — un
+       état, un groupe, une ligne du journal, une recherche : il s'efface
+       plutôt que de laisser le tableau de GATES vide sous un filtre qui ne
+       le concerne pas. Et une sélection posée pendant qu'on regarde la
+       seconde base ramène sur GATES, où elle a un sens — sauf un lot du
+       rapprochement, qui se lit des deux côtés. */
+    var cles = clesSelection();
+    var ajoutees = cles.filter(function (c) { return (vue.dernieresCles || []).indexOf(c) === -1; });
+    if (vue.lotLa && cles.some(function (c) { return (vue.clesLotLa || []).indexOf(c) === -1; })) vue.lotLa = null;
+    if (vue.base === 'la' && vue.dernieresCles !== undefined &&
+        ajoutees.some(function (c) { return c.indexOf('refs:rapprochement:') !== 0; })) vue.base = 'ici';
+    /* Un lot posé suit le périmètre : ses références se relisent sur la
+       population du moment ; et s'il n'a plus rien — autre périmètre, autre
+       source — il se retire de lui-même, jamais un bouton grisé qui reste pressé. */
     var lotPose = lotRappActif();
-    if (lotPose && !compteLotRapp(lotPose)) poserLotRapp(lotPose);
+    if (lotPose) {
+      if (!compteLotRapp(lotPose)) poserLotRapp(lotPose);
+      else if (lotPose !== 'absentsIci') {
+        vue.refs = {};
+        refsDuLotRapprochement(lotPose).forEach(function (r) { vue.refs[r] = true; });
+      }
+    }
     refleterPerimetre();
     var liste = selection();
+    refleterBase();                    // avant les tableaux : l'ombre du défilement se mesure sur un cadre visible
     rendreAvancement(liste);
     rendreGraphique(liste);
     rendreJournal();
@@ -4468,11 +4541,25 @@ table.plans thead tr th.col-fige { z-index: 6; }
     rendreComparatif();
     rendreRapprochement();
     rendreSeconde();
-    refleterBase();
     rendreIncomplets();
     rendreFiltresActifs();
     $('reinit').hidden = !filtreActif();
+    vue.dernieresCles = clesSelection();
     planifierSauvegarde();
+  }
+  /* La sélection en une liste de clés — un état, un groupe, une recherche,
+     chaque filtre de colonne, chaque « non renseigné », la sélection de
+     plans avec son libellé. Ce qui apparaît dans la liste, c'est un geste ;
+     le périmètre n'en est pas, il suit le lot posé. */
+  function clesSelection() {
+    var cles = [];
+    if (vue.etat) cles.push('etat:' + vue.etat);
+    if (vue.groupe) cles.push('groupe:' + vue.groupe.dim + '=' + vue.groupe.val);
+    if (vue.recherche) cles.push('recherche:' + vue.recherche);
+    Object.keys(vue.filtres).forEach(function (k) { if (vue.filtres[k]) cles.push('filtre:' + k + '=' + vue.filtres[k]); });
+    Object.keys(vue.vides).forEach(function (k) { if (vue.vides[k]) cles.push('vide:' + k); });
+    if (vue.refs) cles.push('refs:' + vue.refsLibelle + ':' + Object.keys(vue.refs).length);
+    return cles;
   }
 
   /* ============================================================ EVENEMENTS */
@@ -4539,7 +4626,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
      détail se déplie à part. */
   $('rapprochement').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-rapp]');
-    if (b && RAPPROCHEMENT) { poserLotRapp(b.dataset.rapp); rendre(); return; }
+    if (b && RAPPROCHEMENT) {
+      poserLotRapp(b.dataset.rapp); rendre();
+      /* Les boutons viennent d'être refaits : le focus revient sur le même,
+         la bulle et l'éclairage repartent de zéro. */
+      $('bulle').dataset.visible = 'false'; eclairerSegment(null);
+      var repris = document.querySelector('#etats-rapprochement button[data-rapp="' + b.dataset.rapp + '"]');
+      if (repris) repris.focus();
+      return;
+    }
     var d = e.target.closest('button[data-rapp-detail]');
     if (d && RAPPROCHEMENT) { vue.rappDetail = !vue.rappDetail; rendreRapprochement(); }
   });
@@ -4579,7 +4674,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     vue.base = 'ici';
     rendre();
     var cadre = $('cadre-tableau');
-    if (cadre.scrollIntoView) cadre.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    defilerVers(cadre, { block: 'nearest', behavior: 'smooth' });
   });
   $('choix-base').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-base]');
@@ -4593,6 +4688,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
     if (!b || b.dataset.allerBase === vue.base) return;
     vue.base = b.dataset.allerBase;
     rendre();
+    var cible = document.querySelector('#choix-base button[data-base="' + vue.base + '"]');
+    if (cible) cible.focus();
   });
 
   /* Survoler un bouton ou un segment du rapprochement éclaire le segment et
@@ -4683,7 +4780,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       vue.refsLibelle = 'plan ' + ud.dataset.ud;
       rendre();
       var cadre = $('cadre-tableau');
-      if (cadre) cadre.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      defilerVers(cadre, { behavior: 'smooth', block: 'center' });
       return;
     }
     var b = e.target.closest('.critique-ligne');
@@ -4734,7 +4831,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       }
       rendre();
       var cadre = $('cadre-tableau');
-      if (cadre && !meme) cadre.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (!meme) defilerVers(cadre, { behavior: 'smooth', block: 'center' });
       return;
     }
   });

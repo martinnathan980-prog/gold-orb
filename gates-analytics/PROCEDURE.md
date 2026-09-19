@@ -322,8 +322,8 @@ qu'elle est : un plan disparu et un nouveau plan.
 - **Dans le comparatif** « depuis l'import », un lot *changements d'indice*
   (pastille en anneau), cliquable comme les autres, filtre le tableau sur les
   nouvelles références ; son survol montre « ancienne → nouvelle ». Un plan
-  réémis qui change aussi d'état compte en plus dans le lot de son état
-  d'arrivée.
+  réémis compte une fois, sous ce lot, même s'il change aussi d'état : la
+  bulle et le journal montrent l'état avant et après.
 - **Dans le journal**, la ligne se lit « ancienne → nouvelle », avec l'état
   avant et après ; chaque semaine compte ses changements d'indice, et le
   filtre du journal les propose.
