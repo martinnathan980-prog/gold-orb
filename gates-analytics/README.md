@@ -69,7 +69,7 @@ npm install
 npm test
 ```
 
-- `npm run test:addon` — 294 tests. Le vrai `Code.gs` tourne dans Node contre
+- `npm run test:addon` — 302 tests. Le vrai `Code.gs` tourne dans Node contre
   un classeur en mémoire (`tests/faux-classeur.js`), sur un export
   volontairement pénible : lignes de titre, groupes fusionnés, en-têtes
   accentués ou dupliqués, ligne vide au milieu, avancements de toutes les
@@ -81,7 +81,7 @@ npm test
   (archivage, suppression, diagnostic, ancien onglet d'historique orphelin,
   changement de contrat dans la page, panne du classeur), périmètre dérivé
   des cartes plan par plan, seconde base à rapprocher.
-- `npm run test:interface` — 369 tests sur l'interface elle-même.
+- `npm run test:interface` — 388 tests sur l'interface elle-même.
   Elle n'essaie pas seulement de vérifier que ça marche : recherches avec
   balises, expressions régulières, 3 000 caractères ou émoji, jalon de
   configuration au texte injecté, `localStorage` corrompu puis inaccessible,

@@ -43,6 +43,9 @@
       <button type="button" data-mode="exemple" aria-pressed="false">Exemple</button>
     </span>
     <span class="mot-mode" id="mot-mode"></span>
+    <!-- Le message du classeur quand il n'a rien pu rendre — feuille vide,
+         contrat introuvable, colonne d'avancement absente. -->
+    <span class="mot-mode alerte-source" id="alerte-source" role="alert" hidden></span>
     <span class="perimetre" id="perimetre" hidden>
       <span id="mot-perimetre">Périmètre</span>
       <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
@@ -193,7 +196,9 @@
 
   <footer class="pied">
     <span id="import"></span><br>
-    Jeu d'exemple — les chiffres de cette page ne proviennent pas du tableur.
+    <!-- La démonstration seule le dit : sur le classeur, ces chiffres SONT
+         ceux du tableur. Masqué dès qu'un classeur est derrière la page. -->
+    <span id="avertissement-demo">Jeu d'exemple — les chiffres de cette page ne proviennent pas du tableur.</span>
   </footer>
 </div>
 

@@ -152,6 +152,10 @@ body {
 }
 .bandeau-mode .mot-mode { font-size: 12.5px; color: var(--encre-3); }
 .bandeau-mode .mot-mode b { color: var(--cours); font-weight: 500; }
+/* Ce que le classeur a à dire quand il n'a rien pu rendre : en rouge, à la
+   place du mot de mode, et annoncé aux lecteurs d'écran. */
+.bandeau-mode .alerte-source { color: var(--alerte); font-weight: 500; }
+.bandeau-mode .alerte-source[hidden] { display: none; }
 body[data-exemple="true"] .bandeau-mode {
   border: 1px dashed var(--cours); background: var(--creux);
   padding: 10px 13px; margin-top: 12px;
@@ -442,9 +446,10 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 }
 .rapp-grille .champ { color: var(--encre-2); }
 .rapp-vide { color: var(--encre-3); font-size: 13px; padding: 8px 2px 0; }
+/* Les paires « ancienne → nouvelle » d'un changement d'indice : jamais
+   coupées à mi-ligne — la bulle ne liste rien d'autre. */
 .bulle .liste-refs {
   font-family: "IBM Plex Mono", monospace; font-size: 11.5px; line-height: 1.6;
-  max-height: 210px; overflow: hidden;
 }
 
 .legende {

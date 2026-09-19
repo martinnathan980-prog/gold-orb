@@ -173,8 +173,11 @@ Autres points tenus par le code :
   une colonne que le script a dû nommer lui-même faute d'intitulé
   (« Colonne N ») **et** qui ne porte aucune valeur sur aucune ligne est
   retirée de l'affichage. Sur l'export réel c'est « Colonne 1 », vide de bout
-  en bout ; « Colonne 4 » et « Colonne 5 », renseignées, restent. Le modèle
-  du serveur garde ses 138 colonnes : c'est la page qui trie, à l'ouverture.
+  en bout ; « Colonne 4 » et « Colonne 5 » restent tant qu'elles portent au
+  moins une valeur — ce que la feuille de test suppose, et qui reste **à
+  confirmer sur `export_48.xlsx`** : si elles étaient vides elles aussi, la
+  règle les retirerait et le tableau en montrerait 135. Le modèle du serveur
+  garde ses 138 colonnes : c'est la page qui trie, à l'ouverture.
 
 ### Les colonnes analysées
 

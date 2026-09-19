@@ -275,7 +275,12 @@ async function reinitialiser(pg) {
     etats: [...document.querySelectorAll('.etat-n')].map(e => e.textContent).join(' '),
     groupes: [...document.querySelectorAll('.critique-total')].reduce((s, e) => s + (+e.textContent), 0),
     journal: document.querySelectorAll('.journal-ligne').length,
-    mode: document.body.dataset.exemple
+    mode: document.body.dataset.exemple,
+    /* Le cadrage par défaut se reconnaît à ce qu'il montre : aujourd'hui et
+       tous les jalons du contrat — pas à un nombre de bandes, qui dépend de
+       la source. */
+    jalons: document.querySelectorAll('svg.graphe .jalon').length,
+    aujourdhui: [...document.querySelectorAll('svg.graphe text')].some(t => /aujourd/.test(t.textContent))
   }));
   await p.selectOption('#select-contrat', 'X2'); await p.waitForTimeout(1200);
   const x2 = await lireContrat();
@@ -283,20 +288,25 @@ async function reinitialiser(pg) {
   verifier('et le pied de page', x2.pied !== pied0, x2.pied);
   verifier('le contrat courant est rappele sous le titre', x2.nom === 'X2' && x2.courant === 'X2', x2.nom);
   verifier('les filtres et le cadrage repartent de zero',
-    x2.filtres && x2.presse === 0 && x2.zones === sel0.zones, JSON.stringify(x2));
+    x2.filtres && x2.presse === 0 && x2.jalons === 4 && x2.aujourdhui, JSON.stringify(x2));
   verifier('le bloc par groupe et le journal suivent le nouveau contrat',
     x2.groupes === x2.plans && x2.journal > 0, x2.groupes + ' / ' + x2.plans);
   await p.selectOption('#select-contrat', 'X3'); await p.waitForTimeout(1200);
   const x3 = await lireContrat();
   verifier('un troisieme contrat a encore d\'autres comptes',
     x3.plans > 0 && x3.plans !== x2.plans && x3.plans !== TOTAL && x3.nom === 'X3', String(x3.plans));
-  // L'exemple d'un autre contrat, puis un changement de contrat : on revient au réel.
+  // L'exemple d'un autre contrat, puis un changement de contrat : on RESTE en
+  // exemple, sur le nouveau contrat — rebasculer sans un mot sur le réel
+  // trompait la lectrice.
   await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(800);
   await p.selectOption('#select-contrat', 'X1'); await p.waitForTimeout(1200);
+  const x1ex = await lireContrat();
+  verifier('un changement de contrat en exemple reste en exemple, sur le nouveau contrat',
+    x1ex.mode === 'true' && x1ex.nom === 'X1', JSON.stringify({ mode: x1ex.mode, nom: x1ex.nom }));
+  await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(900);
   const x1 = await lireContrat();
-  verifier('revenir a X1 redonne les comptes initiaux',
-    x1.plans === TOTAL && x1.etats === etats0 && x1.pied === pied0, JSON.stringify(x1));
-  verifier('et un changement de contrat ramene aux donnees reelles', x1.mode === 'false', x1.mode);
+  verifier('revenir a X1, en donnees reelles, redonne les comptes initiaux',
+    x1.plans === TOTAL && x1.etats === etats0 && x1.pied === pied0 && x1.mode === 'false', JSON.stringify(x1));
   // Sans liste de contrats — ou avec un seul — rien à choisir : le sélecteur disparaît.
   await p.evaluate(() => { const s = window.__jeuDExemple('X1'); delete s.contrats; window.__chargerSource(s); });
   await p.waitForTimeout(900);
@@ -458,8 +468,12 @@ async function reinitialiser(pg) {
     rPe.puces.map(x => x.n).join() === [rPe.R.absentsLa, rPe.R.absentsIci, rPe.R.indice, rPe.R.ecarts].join(),
     JSON.stringify(rPe.puces.map(x => x.n)));
   verifier('les références absentes d\'ici, sans domaine, restent comptées', rPe.R.absentsIci === 5);
-  verifier('la phrase nomme le périmètre et compte ses plans',
-    new RegExp('^' + rPe.R.nbPlans + ' plans ici \\(périmètre PERSO\\), ' + TOTAL + ' lignes là : ' + rPe.R.total + ' écarts?\\.$').test(rPe.phrase), rPe.phrase);
+  /* Sous périmètre, les absents d'ici (sans domaine, tout le contrat) se
+     comptent à part : la phrase ne les mêle plus aux écarts du périmètre. */
+  const ecartsPerimetre = rPe.R.absentsLa + rPe.R.indice + rPe.R.ecarts;
+  verifier('la phrase nomme le périmètre, compte ses écarts et met à part les absents d’ici',
+    new RegExp('^' + rPe.R.nbPlans + ' plans ici \\(périmètre PERSO\\) : ' + ecartsPerimetre + ' écarts? dans le périmètre · ' +
+               rPe.R.absentsIci + ' références? absentes? d’ici, tout le contrat\\.$').test(rPe.phrase), rPe.phrase);
   await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(600);
   verifier('revenir à Tout redonne les 22 écarts', (await lireRapp()).R.total === 22);
 
@@ -1349,10 +1363,16 @@ async function reinitialiser(pg) {
 
   // =================================================================
   section('Graphique : zoom, déplacement, extrêmes');
+  /* Le cadrage d'ouverture suit aujourd'hui et les jalons (55 semaines sur
+     la démo) : « 1 an » ne l'élargit pas forcément, il donne 52 semaines. */
   const zoom0 = await p.evaluate(() => document.querySelectorAll('.zone-clic').length);
   await p.click('.segmente button[data-span="52"]'); await p.waitForTimeout(350);
-  const zoom1 = await p.evaluate(() => document.querySelectorAll('.zone-clic').length);
-  verifier('le bouton « 1 an » élargit la fenêtre', zoom1 > zoom0, zoom0 + ' → ' + zoom1);
+  const zoom1 = await p.evaluate(() => ({
+    n: document.querySelectorAll('.zone-clic').length,
+    presse: document.querySelector('.segmente button[data-span="52"]').getAttribute('aria-pressed')
+  }));
+  verifier('le bouton « 1 an » cadre 52 semaines et se marque pressé',
+    zoom1.n === 52 && zoom1.presse === 'true', zoom0 + ' → ' + JSON.stringify(zoom1));
   const svg = await p.$('svg.graphe'); const box = await svg.boundingBox();
   await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   for (let i = 0; i < 30; i++) await p.mouse.wheel(0, -400);
@@ -1718,6 +1738,174 @@ async function reinitialiser(pg) {
       document.querySelectorAll('.etat-btn[aria-pressed="true"]').length === 0, TOTAL));
 
   // =================================================================
+  // =================================================================
+  /* Ce que trois relecteurs ont trouvé après le lot du débrief, et ce qui a
+     été corrigé. Chaque test reproduit d'abord la situation qui cassait. */
+  section('Relecture : les constats corrigés tiennent');
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('X1')));
+  await reinitialiser(p);
+
+  // Le mode « Exemple » ne racontait que des « passés en terminé ».
+  await p.click('#mode-donnees button[data-mode="exemple"]'); await p.waitForTimeout(900);
+  const lotsExemple = await p.evaluate(() => (document.getElementById('comparatif').textContent || '').replace(/\s+/g, ' '));
+  verifier('en exemple, le comparatif montre aussi passés en cours, nouveaux, disparus et changements d’indice',
+    /passés en cours/.test(lotsExemple) && /nouveau/.test(lotsExemple) && /disparu/.test(lotsExemple) && /indice/.test(lotsExemple),
+    lotsExemple.slice(0, 160));
+  // Changer de contrat en exemple ne rebascule plus sans un mot sur les données réelles.
+  await p.selectOption('#select-contrat', 'X2'); await p.waitForTimeout(900);
+  const exempleX2 = await p.evaluate(() => ({
+    marque: document.body.dataset.exemple, mot: document.getElementById('mot-mode').textContent,
+    contrat: document.getElementById('select-contrat').value
+  }));
+  verifier('changer de contrat en exemple reste en exemple, sur le nouveau contrat',
+    exempleX2.marque === 'true' && /fabriqué/.test(exempleX2.mot) && exempleX2.contrat === 'X2', JSON.stringify(exempleX2));
+  await p.selectOption('#select-contrat', 'X1'); await p.waitForTimeout(900);
+  await p.click('#mode-donnees button[data-mode="reel"]'); await p.waitForTimeout(900);
+
+  // Le pied « Jeu d'exemple » ne se lit que dans la démonstration.
+  verifier('la démonstration dit « Jeu d’exemple » dans son pied',
+    await p.evaluate(() => !document.getElementById('avertissement-demo').hidden &&
+      /Jeu d'exemple/.test(document.querySelector('.pied').textContent)));
+
+  // Le cadrage d'ouverture montre aujourd'hui et les quatre jalons configurés.
+  const cadrage = await p.evaluate(() => ({
+    jalons: document.querySelectorAll('svg.graphe .jalon').length,
+    aujourdhui: [...document.querySelectorAll('svg.graphe text')].some(t => /aujourd/.test(t.textContent))
+  }));
+  verifier('à l’ouverture, les quatre jalons et « aujourd’hui » sont dans le cadre',
+    cadrage.jalons === 4 && cadrage.aujourdhui, JSON.stringify(cadrage));
+
+  // La ligne « changement d'indice » de la semaine ouverte n'est plus reléguée derrière « voir les autres ».
+  verifier('un changement d’indice se lit dans la semaine ouverte sans déplier « voir les autres »',
+    await p.evaluate(() => !!document.querySelector('.journal-semaine .journal-liste .ref-indice')));
+
+  // La bulle d'une puce du comparatif ne liste plus de références tronquées.
+  const puceTermine = await p.$('.puce-delta[data-delta="termine"]');
+  if (puceTermine) {
+    await puceTermine.hover(); await p.waitForTimeout(250);
+    const bulleTermine = await p.evaluate(() => document.getElementById('bulle').innerText);
+    verifier('la bulle d’un lot compte et invite à cliquer, sans lister de références',
+      !/[A-Z]{3}\d{4}A\d{3}/.test(bulleTermine) && /Cliquez/.test(bulleTermine) && !/autres/.test(bulleTermine),
+      bulleTermine.replace(/\s+/g, ' ').slice(0, 100));
+  }
+  const puceIndice = await p.$('.puce-delta[data-delta="indice"]');
+  if (puceIndice) {
+    await puceIndice.hover(); await p.waitForTimeout(250);
+    verifier('la bulle des changements d’indice montre les paires ancienne → nouvelle',
+      await p.evaluate(() => /→/.test(document.getElementById('bulle').innerText)));
+  }
+  await p.mouse.move(5, 5); await p.waitForTimeout(150);
+
+  // Sous périmètre, le rapprochement sépare ce qui est dans le périmètre de ce qui est absent d'ici (tout contrat).
+  await p.click('#choix-perimetre button:has-text("PERSO")'); await p.waitForTimeout(700);
+  const rappPerso = await p.evaluate(() => (document.getElementById('rapprochement').textContent || '').replace(/\s+/g, ' '));
+  verifier('sous périmètre, la phrase du rapprochement distingue le périmètre des absents d’ici',
+    /périmètre/.test(rappPerso) && /absent/.test(rappPerso) && !/lignes là/.test(rappPerso), rappPerso.slice(0, 160));
+  await p.click('#choix-perimetre button:has-text("Tout")'); await p.waitForTimeout(700);
+
+  // Le journal filtré ouvre la première semaine réellement affichée.
+  await p.click('#filtre-journal button[data-journal="afaire"]'); await p.waitForTimeout(500);
+  const journalFiltre = await p.evaluate(() => {
+    const s = document.querySelector('.journal-semaine');
+    return s ? { ouvert: s.querySelector('.journal-plier').getAttribute('aria-expanded'), lignes: s.querySelectorAll('.journal-ligne').length } : null;
+  });
+  verifier('sous un filtre du journal, la première semaine affichée est dépliée',
+    !!journalFiltre && journalFiltre.ouvert === 'true' && journalFiltre.lignes > 0, JSON.stringify(journalFiltre));
+  await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(400);
+
+  // Un filtre de colonne se voit dans le bandeau, avec sa croix.
+  await p.fill('input[data-filtre="ata"]', '21'); await p.waitForTimeout(500);
+  const bandeauColonne = await p.evaluate(() => ({
+    visible: !document.getElementById('filtres-actifs').hidden,
+    texte: document.getElementById('filtres-actifs').textContent.replace(/\s+/g, ' ')
+  }));
+  verifier('un filtre de colonne apparaît dans le bandeau des filtres actifs',
+    bandeauColonne.visible && /ATA/.test(bandeauColonne.texte) && /21/.test(bandeauColonne.texte), JSON.stringify(bandeauColonne));
+  await p.click('button[data-retirer="filtre:ata"]'); await p.waitForTimeout(500);
+  verifier('sa croix retire le filtre',
+    await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === TOTAL);
+
+  // Un long historique : aujourd'hui, la projection et les jalons restent atteignables.
+  await p.evaluate(() => {
+    const s = window.__jeuDExemple('X1');
+    const base = s.releves[s.releves.length - 1];
+    const precedente = (sem, n) => { let [a, w] = sem.split('-S').map(Number); w -= n; while (w < 1) { a--; w += 52; } return a + '-S' + String(w).padStart(2, '0'); };
+    const liste = [];
+    for (let k = 112; k >= 0; k--) liste.push(Object.assign({}, base, { semaine: precedente(base.semaine, k) }));
+    s.releves = liste;
+    window.__chargerSource(s);
+  });
+  await p.waitForTimeout(500);
+  const longOuverture = await p.evaluate(() => ({
+    releves: /113 relevés/.test(document.getElementById('import').textContent),
+    aujourdhui: [...document.querySelectorAll('svg.graphe text')].some(t => /aujourd/.test(t.textContent)),
+    jalons: document.querySelectorAll('svg.graphe .jalon').length
+  }));
+  verifier('avec 113 relevés, l’ouverture montre encore aujourd’hui et les jalons',
+    longOuverture.releves && longOuverture.aujourdhui && longOuverture.jalons === 4, JSON.stringify(longOuverture));
+  await p.click('.commandes-graphe button[data-span="0"]'); await p.waitForTimeout(400);
+  const longTout = await p.evaluate(() => ({
+    aujourdhui: [...document.querySelectorAll('svg.graphe text')].some(t => /aujourd/.test(t.textContent)),
+    jalons: document.querySelectorAll('svg.graphe .jalon').length
+  }));
+  verifier('et « Tout » les garde à l’écran', longTout.aujourdhui && longTout.jalons === 4, JSON.stringify(longTout));
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('X1')));
+  await p.waitForTimeout(500);
+
+  // norm() réduit comme le serveur : espaces internes, insécables, accents.
+  verifier('norm() réduit les espaces comme le serveur',
+    await p.evaluate(() => window.__norm('Non commencé  ') === 'non commence' && window.__norm(' Non   commencé') === 'non commence' &&
+      window.__norm(' Terminé ') === 'termine'));
+
+  // La page reste ES5 : pas de padStart dans le code expédié, normalize gardé.
+  {
+    const fs = require('fs');
+    const src = fs.readFileSync(path.join(__dirname, '..', 'suivi-fwd.html'), 'utf8');
+    const script = src.slice(src.indexOf('<script>'));
+    verifier('aucun padStart dans le code de la page', !/\.padStart\(/.test(script.replace(/\/\*[\s\S]*?\*\//g, '')));
+    verifier('normalize n’est appelé que s’il existe', /if \(s\.normalize\)/.test(script));
+  }
+
+  // Les préférences : l'ordre mémorisé est celui de la vue complète ; le tri survit au rechargement.
+  {
+    const ctxPrefs = await contexte();
+    const pp = await page(ctxPrefs, 'préférences');
+    await pp.click('#vue-tableau button[data-vue="essentielle"]'); await pp.waitForTimeout(800);
+    await pp.reload(); await pp.waitForTimeout(1400);
+    const apresEssentielle = await pp.evaluate(() => ({
+      toutes: document.querySelector('#vue-tableau button[data-vue="toutes"]').getAttribute('aria-pressed'),
+      n: document.querySelectorAll('tr.titres th').length,
+      tete: [...document.querySelectorAll('tr.titres th')].slice(0, 3).map(t => t.dataset.cle).join(',')
+    }));
+    verifier('après « Vue essentielle » puis rechargement, « Toutes les colonnes » revient dans l’ordre de l’extract',
+      apresEssentielle.toutes === 'true' && apresEssentielle.n === COLONNES_TOTAL && apresEssentielle.tete === 'reference,rpt,colonne_4',
+      JSON.stringify(apresEssentielle));
+    await pp.click('tr.titres button[data-tri="ata"]'); await pp.waitForTimeout(800);
+    await pp.reload(); await pp.waitForTimeout(1400);
+    verifier('le tri d’une colonne survit au rechargement',
+      await pp.evaluate(() => document.querySelector('th[data-cle="ata"]').getAttribute('aria-sort') === 'ascending'));
+    await ctxPrefs.close();
+  }
+
+  // Un paquet que le classeur n'a pas pu remplir : page vide qui l'explique, jamais la démonstration.
+  {
+    const ctxVide = await contexte();
+    await ctxVide.addInitScript(() => {
+      window.SUIVI_FWD_DONNEES = { ok: false, message: 'Feuille vide : aucun plan.', colonnes: [], plans: [], releves: [], jalons: [], contrats: [], contrat: '' };
+    });
+    const pv = await page(ctxVide, 'classeur vide');
+    const vide = await pv.evaluate(() => ({
+      alerte: !document.getElementById('alerte-source').hidden,
+      texte: document.getElementById('alerte-source').textContent,
+      lignes: document.querySelectorAll('#corps-tableau td.ref, #corps-tableau .ref').length,
+      demo: document.getElementById('avertissement-demo').hidden,
+      reel: document.querySelector('#mode-donnees button[data-mode="reel"]').getAttribute('aria-pressed')
+    }));
+    verifier('un paquet vide du classeur affiche son message, sans plan et sans la démonstration',
+      vide.alerte && /Feuille vide/.test(vide.texte) && vide.lignes === 0 && vide.demo && vide.reel === 'true', JSON.stringify(vide));
+    await ctxVide.close();
+  }
+
   section('Persistance (même navigateur, page rechargée)');
   await p.click('button[data-trig="fin"]'); await p.waitForTimeout(300);
   const triAvant = await p.evaluate(() => {
