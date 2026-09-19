@@ -10,6 +10,13 @@ function Feuille(nom, valeurs, cachee, fusions) {
      groupes d'un export GATES en est faite, et c'est elle qui dit à quelle
      famille appartient chaque colonne. */
   this.fusions = fusions || [];
+  /* La largeur de la grille, comme dans Sheets : 26 colonnes à la création,
+     davantage si les données en occupent plus. Lire ou écrire au-delà lève
+     une erreur, comme Sheets ; insertColumnsAfter l'élargit, appendRow aussi. */
+  this.colonnesGrille = Math.max(26, plusLarge(valeurs));
+}
+function plusLarge(lignes) {
+  return (lignes || []).reduce(function (m, l) { return Math.max(m, l.length); }, 0);
 }
 Feuille.prototype.getName = function () { return this.nom; };
 Feuille.prototype.isSheetHidden = function () { return this.cachee; };
@@ -17,7 +24,20 @@ Feuille.prototype.hideSheet = function () { this.cachee = true; };
 Feuille.prototype.showSheet = function () { this.cachee = false; };
 Feuille.prototype.setFrozenRows = function () { return this; };
 Feuille.prototype.getLastRow = function () { return this.valeurs.length; };
-Feuille.prototype.appendRow = function (ligne) { this.valeurs.push(ligne.slice()); };
+/** La dernière colonne qui porte quelque chose, 1-based ; 0 si rien. */
+Feuille.prototype.getLastColumn = function () {
+  return this.valeurs.reduce(function (m, l) {
+    let j = l.length;
+    while (j > 0 && (l[j - 1] === '' || l[j - 1] === null || l[j - 1] === undefined)) j--;
+    return Math.max(m, j);
+  }, 0);
+};
+Feuille.prototype.getMaxColumns = function () { return Math.max(this.colonnesGrille, plusLarge(this.valeurs)); };
+Feuille.prototype.insertColumnsAfter = function (apres, nombre) { this.colonnesGrille = this.getMaxColumns() + nombre; };
+Feuille.prototype.appendRow = function (ligne) {
+  if (ligne.length > this.getMaxColumns()) this.colonnesGrille = ligne.length;
+  this.valeurs.push(ligne.slice());
+};
 Feuille.prototype.deleteRow = function (n) { this.valeurs.splice(n - 1, 1); };
 Feuille.prototype.getDataRange = function () {
   const self = this;
@@ -31,6 +51,9 @@ Feuille.prototype.getDataRange = function () {
 };
 Feuille.prototype.getRange = function (ligne, colonne, nbLignes, nbColonnes) {
   const self = this;
+  if (colonne + nbColonnes - 1 > this.getMaxColumns()) {
+    throw new Error('The coordinates of the range are outside the dimensions of the sheet.');
+  }
   function fusionsDansLaPlage() {
     return self.fusions
       .filter(function (f) {

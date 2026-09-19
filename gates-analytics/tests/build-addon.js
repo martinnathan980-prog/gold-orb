@@ -59,7 +59,9 @@ function etalerHistorique(histo, contexte) {
     l[7] = JSON.stringify(groupes);
     /* L'avancement plan par plan doit vraiment différer d'une semaine à
        l'autre, sinon le journal des changements n'aurait rien à raconter. */
-    const plans = JSON.parse(base[8] || '{}');
+    /* La carte peut occuper plusieurs cellules à partir de la neuvième : on la
+       recolle pour la relire, et on la redécoupe pour la réécrire. */
+    const plans = JSON.parse(base.slice(8).join('') || '{}');
     const refs = Object.keys(plans);
     const aReculer = Math.round(refs.length * (1 - part) * 0.5);
     for (let r = 0; r < aReculer; r++) {
@@ -67,7 +69,9 @@ function etalerHistorique(histo, contexte) {
       plans[ref] = ['À faire', '50%', ''][(r + k) % 3];
     }
     if (k === 0) { delete plans[refs[1]]; delete plans[refs[2]]; }   // deux plans apparus depuis
-    l[8] = JSON.stringify(plans);
+    l.length = 8;
+    contexte.decouper(JSON.stringify(plans), vm.runInContext('MAX_CARACTERES_CELLULE', contexte))
+      .forEach(function (tranche) { l.push(tranche); });
     histo.valeurs.push(l);
   });
 }

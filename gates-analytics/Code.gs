@@ -191,7 +191,14 @@ const ENTETES_HISTORIQUE = [
   'Par dimension', 'Plans'
 ];
 
-/** Une cellule de feuille de calcul ne tient pas plus de 50 000 caractères. */
+/**
+ * Une cellule de feuille de calcul ne tient pas plus de 50 000 caractères.
+ * La carte plan par plan d'un relevé dépasse cette taille dès 1 500 à
+ * 2 000 plans : elle est donc découpée en tranches de cette longueur, écrites
+ * sur autant de cellules qu'il faut à droite de la colonne « Plans », puis
+ * recollées à la lecture (voir enregistrerInstantaneHebdo et getHistorique).
+ * Les comptes par dimension, eux, tiennent dans leur cellule.
+ */
 const MAX_CARACTERES_CELLULE = 45000;
 
 // =====================================================================
@@ -1011,6 +1018,10 @@ function diagnostiquerContrat(classeur, contrat, dire) {
       dire('     Sans relevé, pas de courbe ni de fin estimée.');
     } else {
       dire('  du ' + histo[0].semaine + ' au ' + histo[histo.length - 1].semaine);
+      const cellulesCarte = feuilleHisto.getLastColumn() - ENTETES_HISTORIQUE.length + 1;
+      if (cellulesCarte > 1) {
+        dire('  carte plan par plan sur ' + cellulesCarte + ' cellules par relevé, au plus');
+      }
     }
     return true;
   } catch (err) {
@@ -1045,10 +1056,15 @@ function nomFeuilleHistorique(contrat) {
   return CONFIG.FEUILLE_HISTORIQUE + '_' + String(contrat);
 }
 
-/** L'identifiant d'un contrat : celui qu'on donne, sinon le premier du classeur. */
+/**
+ * L'identifiant d'un contrat : le nom de son onglet de données, résolu comme
+ * partout ailleurs — sans tenir compte de la casse ni des accents, le premier
+ * du classeur si aucun n'est donné. Sinon « x1 » n'aurait pas l'historique de
+ * « X1 ». Un identifiant inconnu est une erreur franche, pas un onglet
+ * d'historique fantôme.
+ */
 function idContrat(classeur, contrat) {
-  const voulu = contrat === undefined || contrat === null ? '' : String(contrat).trim();
-  return voulu || getFeuilleDonnees(classeur).getName();
+  return getFeuilleDonnees(classeur, contrat).getName();
 }
 
 /**
@@ -1088,7 +1104,11 @@ function getHistorique(classeur, contrat) {
   const feuille = getFeuilleHistorique(classeur, contrat, false);
   if (!feuille || feuille.getLastRow() < 2) return [];
 
-  const valeurs = feuille.getRange(2, 1, feuille.getLastRow() - 1, ENTETES_HISTORIQUE.length).getValues();
+  /* La carte plan par plan d'un relevé occupe une cellule ou plusieurs, à
+     partir de la colonne « Plans » : on lit jusqu'à la dernière colonne
+     occupée de l'onglet et on recolle. */
+  const nbColonnes = Math.max(ENTETES_HISTORIQUE.length, feuille.getLastColumn());
+  const valeurs = feuille.getRange(2, 1, feuille.getLastRow() - 1, nbColonnes).getValues();
   const parSemaine = {};
 
   valeurs.forEach(function (ligne) {
@@ -1103,7 +1123,7 @@ function getHistorique(classeur, contrat) {
       afaire: Number(ligne[5]) || 0,
       vide: Number(ligne[6]) || 0,
       groupes: analyserJson(ligne[7]) || {},
-      plans: analyserJson(ligne[8])
+      plans: analyserJson(recoller(ligne.slice(ENTETES_HISTORIQUE.length - 1)))
     };
   });
 
@@ -1113,6 +1133,15 @@ function getHistorique(classeur, contrat) {
 function analyserJson(valeur) {
   if (!valeur) return null;
   try { return JSON.parse(valeur); } catch (err) { return null; }
+}
+
+/**
+ * Recolle les cellules d'une carte plan par plan, dans l'ordre des colonnes.
+ * Une seule cellule (ancien relevé) se lit telle quelle ; des cellules vides
+ * donnent une chaîne vide, donc pas de carte.
+ */
+function recoller(cellules) {
+  return cellules.map(function (v) { return v === null || v === undefined ? '' : String(v); }).join('');
 }
 
 /** Ancienneté d'un plan, en toutes lettres — même découpage que côté page. */
@@ -1158,10 +1187,40 @@ function compterAvancements(contrat) {
   return compte;
 }
 
-/** Sérialise sans jamais dépasser ce qu'une cellule peut contenir. */
+/**
+ * Sérialise ce qui doit tenir dans UNE cellule, sans jamais dépasser ce
+ * qu'elle peut contenir : les comptes par dimension. La carte plan par plan,
+ * elle, ne se jette pas — elle se découpe (decouper).
+ */
 function jsonTenable(valeur) {
   const texte = JSON.stringify(valeur);
   return texte.length > MAX_CARACTERES_CELLULE ? '' : texte;
+}
+
+/**
+ * Découpe un texte en tranches d'au plus `taille` caractères, une par
+ * cellule ; le recollage (recoller) les remet bout à bout. Une tranche ne
+ * commence jamais par « = » : Sheets la prendrait pour une formule.
+ */
+function decouper(texte, taille) {
+  const morceaux = [];
+  let debut = 0;
+  while (debut < texte.length) {
+    let fin = Math.min(debut + taille, texte.length);
+    while (fin < texte.length && fin > debut + 1 && texte.charAt(fin) === '=') fin--;
+    morceaux.push(texte.slice(debut, fin));
+    debut = fin;
+  }
+  return morceaux;
+}
+
+/**
+ * Élargit la grille de l'onglet s'il lui manque des colonnes : écrire au-delà
+ * de la grille est une erreur dans Sheets, pas un agrandissement.
+ */
+function assurerColonnes(feuille, nbColonnes) {
+  const actuelles = feuille.getMaxColumns();
+  if (nbColonnes > actuelles) feuille.insertColumnsAfter(actuelles, nbColonnes - actuelles);
 }
 
 /** La ligne de l'onglet (1-based) qui porte cette semaine, ou -1. */
@@ -1199,16 +1258,28 @@ function enregistrerInstantaneHebdo() {
   contrats.forEach(function (c) {
     try {
       const compte = compterAvancements(c.id);
+      /* La carte plan par plan ne tient plus dans une cellule au-delà de
+         quelques milliers de plans : elle s'étale sur autant de cellules
+         qu'il faut, à partir de la colonne « Plans ». La jeter, comme avant,
+         privait ces relevés de périmètre, de journal et de comparatif. */
       const ligne = [
         semaine, new Date(), compte.total, compte.termine, compte.encours,
         compte.afaire, compte.vide,
-        jsonTenable(compte.groupes),
-        jsonTenable(compte.plans)
-      ];
+        jsonTenable(compte.groupes)
+      ].concat(decouper(JSON.stringify(compte.plans), MAX_CARACTERES_CELLULE));
       const feuille = getFeuilleHistorique(classeur, c.id, true);
       const indexLigne = ligneDeLaSemaine(feuille, semaine);
-      if (indexLigne === -1) feuille.appendRow(ligne);
-      else feuille.getRange(indexLigne, 1, 1, ligne.length).setValues([ligne]);
+      if (indexLigne === -1) {
+        assurerColonnes(feuille, ligne.length);
+        feuille.appendRow(ligne);
+      } else {
+        /* Mise à jour de la semaine : on couvre aussi les colonnes qu'une
+           écriture précédente, plus longue, aurait occupées — sinon la queue
+           de l'ancienne carte resterait collée à la nouvelle. */
+        while (ligne.length < feuille.getLastColumn()) ligne.push('');
+        assurerColonnes(feuille, ligne.length);
+        feuille.getRange(indexLigne, 1, 1, ligne.length).setValues([ligne]);
+      }
       detail.push({ id: c.id, nom: c.nom, historique: feuille.getName(), compte: compte });
     } catch (err) {
       erreurs.push('« ' + c.nom + ' » : ' + (err && err.message ? err.message : err));

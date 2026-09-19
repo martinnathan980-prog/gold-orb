@@ -307,14 +307,88 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const sommeAta = Object.keys(parAta).reduce((s, k) => s + parAta[k].total, 0);
   verifier('la somme par ATA retombe sur le total', sommeAta === 50, String(sommeAta));
 
-  // Une feuille énorme ne doit pas faire exploser la cellule d'historique.
-  const gros = serveurSur(feuilleExemple(4000));
+  /* Une feuille énorme : la carte plan par plan ne tient plus dans une
+     cellule (Sheets : 50 000 caractères). Elle est répartie sur plusieurs
+     cellules à partir de la colonne « Plans », aucune ne dépasse 45 000
+     caractères, et elle se relit entière — la jeter, comme avant, privait
+     ces relevés de périmètre, de journal et de comparatif. Les références
+     font 15 caractères, comme les vraies. */
+  const valeurs4000 = feuilleExemple(4000).map((l, i) => {
+    if (i < 4 || !l[0]) return l;
+    const c = l.slice(); c[0] = 'H225-' + c[0]; return c;
+  });
+  const gros = serveurSur(valeurs4000);
   gros.contexte.enregistrerInstantaneHebdo();
-  const ligneGrosse = gros.classeur.getSheetByName('Historique_FWD_Données').valeurs[1];
-  verifier('4 000 plans s\'archivent sans dépasser la taille d\'une cellule',
-    String(ligneGrosse[7]).length <= 45000 && String(ligneGrosse[8]).length <= 45000,
-    'dimensions ' + String(ligneGrosse[7]).length + ' car., plans ' + String(ligneGrosse[8]).length + ' car.');
+  const feuilleGrosse = gros.classeur.getSheetByName('Historique_FWD_Données');
+  const ligneGrosse = feuilleGrosse.valeurs[1];
+  const cellulesPlans = ligneGrosse.slice(8).filter(v => v !== '' && v !== undefined);
+  verifier('4 000 plans : la carte est répartie sur plusieurs cellules, aucune ne dépasse 45 000 caractères',
+    valeurs4000[4][0].length === 15 && cellulesPlans.length >= 2 &&
+    ligneGrosse.every(v => String(v).length <= 45000) && cellulesPlans.join('').length > 45000,
+    cellulesPlans.length + ' cellule(s) : ' + cellulesPlans.map(v => String(v).length).join(' + ') + ' car.');
   verifier('les comptes restent justes sur 4 000 plans', Number(ligneGrosse[2]) === 4000);
+  const reluGros = gros.contexte.getHistorique(gros.classeur);
+  verifier('la carte se relit entière, plan par plan',
+    reluGros.length === 1 && reluGros[0].plans !== null && Object.keys(reluGros[0].plans).length === 4000 &&
+    Object.prototype.hasOwnProperty.call(reluGros[0].plans, valeurs4000[4][0]),
+    String(reluGros[0] && reluGros[0].plans && Object.keys(reluGros[0].plans).length));
+  verifier('le diagnostic dit sur combien de cellules la carte s\'étale',
+    new RegExp('carte plan par plan sur ' + cellulesPlans.length + ' cellules par relevé').test(gros.contexte.diagnostic()));
+
+  /* Réarchiver la même semaine avec une carte plus courte : la ligne est
+     mise à jour, et les cellules que l'ancienne carte occupait en plus sont
+     vidées — aucun résidu à recoller à la lecture. Puis plus longue à
+     nouveau : elle reprend ses cellules. */
+  const largeurAvant = ligneGrosse.length;
+  gros.classeur.getSheetByName('Données').valeurs = feuilleExemple(50);
+  gros.contexte.enregistrerInstantaneHebdo();
+  const ligneCourte = feuilleGrosse.valeurs[1];
+  const reluCourt = gros.contexte.getHistorique(gros.classeur);
+  verifier('réarchiver la même semaine avec moins de plans vide les cellules en trop',
+    feuilleGrosse.valeurs.length === 2 && largeurAvant >= 11 && ligneCourte.length === largeurAvant &&
+    ligneCourte.slice(9).every(v => v === '') && Number(ligneCourte[2]) === 50 &&
+    reluCourt.length === 1 && reluCourt[0].plans !== null && Object.keys(reluCourt[0].plans).length === 50,
+    largeurAvant + ' → ' + ligneCourte.length + ' colonnes, résidu ' +
+      JSON.stringify(ligneCourte.slice(9).map(v => String(v).length)));
+  gros.classeur.getSheetByName('Données').valeurs = valeurs4000;
+  gros.contexte.enregistrerInstantaneHebdo();
+  verifier('et réarchiver plus de plans la rétale sur plusieurs cellules',
+    feuilleGrosse.valeurs.length === 2 &&
+    feuilleGrosse.valeurs[1].slice(8).filter(v => v !== '').length === cellulesPlans.length &&
+    Object.keys(gros.contexte.getHistorique(gros.classeur)[0].plans).length === 4000);
+
+  /* Une ligne d'un ancien relevé — la carte dans une seule cellule, neuf
+     colonnes — se relit comme avant à côté des lignes étalées ; une cellule
+     « Plans » vide donne toujours « pas de carte ». */
+  feuilleGrosse.valeurs.push(['2026-S02', new Date(2026, 0, 9), 3, 1, 1, 1, 0, '{}', '{"A":"100%","B":"50%","C":""}']);
+  feuilleGrosse.valeurs.push(['2026-S03', new Date(2026, 0, 16), 3, 1, 1, 1, 0, '{}', '']);
+  const reluMixte = gros.contexte.getHistorique(gros.classeur);
+  verifier('une ligne ancienne à neuf colonnes se relit comme avant, une cellule « Plans » vide donne null',
+    reluMixte.length === 3 && reluMixte[0].semaine === '2026-S02' &&
+    JSON.stringify(reluMixte[0].plans) === '{"A":"100%","B":"50%","C":""}' &&
+    reluMixte[1].semaine === '2026-S03' && reluMixte[1].plans === null &&
+    Object.keys(reluMixte[2].plans).length === 4000,
+    JSON.stringify(reluMixte.map(r => [r.semaine, r.plans && Object.keys(r.plans).length])));
+
+  /* La grille de l'onglet n'a plus que neuf colonnes (quelqu'un a supprimé
+     les colonnes vides) : Sheets refuse d'écrire au-delà, donc l'archivage
+     l'élargit d'abord — à l'ajout d'une ligne comme à la mise à jour. */
+  const etroit = serveurSur(valeurs4000);
+  const histoEtroit = etroit.contexte.getFeuilleHistorique(etroit.classeur, undefined, true);
+  histoEtroit.colonnesGrille = 9;
+  let refusGrille = false;
+  try { histoEtroit.getRange(1, 1, 1, 10); } catch (e) { refusGrille = true; }
+  let erreurGrille = '';
+  try { etroit.contexte.enregistrerInstantaneHebdo(); } catch (e) { erreurGrille = e.message; }
+  const largeurAjout = histoEtroit.getMaxColumns();
+  histoEtroit.valeurs[1].length = 9;           // un relevé écrit à l'ancienne, dans une grille étroite
+  histoEtroit.colonnesGrille = 9;
+  try { etroit.contexte.enregistrerInstantaneHebdo(); } catch (e) { erreurGrille += ' ; ' + e.message; }
+  verifier('une grille trop étroite est élargie avant d\'écrire, à l\'ajout comme à la mise à jour',
+    refusGrille && erreurGrille === '' && largeurAjout >= 11 && histoEtroit.getMaxColumns() >= 11 &&
+    histoEtroit.valeurs.length === 2 &&
+    Object.keys(etroit.contexte.getHistorique(etroit.classeur)[0].plans).length === 4000,
+    erreurGrille || (largeurAjout + ' / ' + histoEtroit.getMaxColumns() + ' colonnes'));
 
   // =================================================================
   section('Historique : relecture tolérante');
@@ -389,6 +463,18 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /"contrat":"X1"/.test(cM.donneesJSONPourPage()) && /"contrats":\[\{"id":"X1","nom":"X1"\},\{"id":"X2","nom":"X2"\}\]/.test(cM.donneesJSONPourPage()));
   verifier('un identifiant se retrouve sans tenir compte de la casse ni des accents',
     cM.getDonneesPourClient('x2').contrat === 'X2' && cM.getDonneesPourClient(' X1 ').contrat === 'X1');
+  /* L'historique suit la même résolution : « x1 » est bien l'historique de
+     « X1 », pas un onglet fantôme vide ; et un contrat inconnu est une erreur
+     franche, comme pour les données. */
+  verifier('l\'historique d\'un contrat se retrouve aussi sans tenir compte de la casse',
+    cM.getHistorique(clM, 'x1').length === cM.getHistorique(clM, 'X1').length &&
+    cM.getHistorique(clM, 'X1').length === 5 &&
+    cM.getFeuilleHistorique(clM, ' x1 ', false).getName() === 'Historique_FWD_X1',
+    cM.getHistorique(clM, 'x1').length + ' / ' + cM.getHistorique(clM, 'X1').length);
+  let erreurInconnu = '';
+  try { cM.getHistorique(clM, 'X9'); } catch (e) { erreurInconnu = e.message; }
+  verifier('l\'historique d\'un contrat inconnu est une erreur franche, pas un onglet fantôme',
+    /« X9 » est introuvable/.test(erreurInconnu) && clM.getSheetByName('Historique_FWD_X9') === null, erreurInconnu);
   verifier('deux onglets d\'historique masqués, un par contrat, et pas d\'ancien onglet',
     ['Historique_FWD_X1', 'Historique_FWD_X2'].every(n => clM.getSheetByName(n) !== null && clM.getSheetByName(n).isSheetHidden()) &&
     clM.getSheetByName('Historique_FWD') === null, clM.getSheets().map(x => x.getName()).join(', '));
