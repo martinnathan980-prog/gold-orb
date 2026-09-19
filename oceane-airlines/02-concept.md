@@ -1,9 +1,9 @@
-# Concept — Océane Airlines, vol OA-30
+# Concept — Océane Airlines, vol OC 1996
 
 Version 2 du 19 septembre. Cette version remplace la V1 de 12 minutes : on passe à **7 minutes**, structure resserrée, alternance sincère/gag calée.
 
 ## L'idée en trois lignes
-Océane embarque sur le vol OA-30 de la compagnie Océane Airlines, destination : ses 30 ans. La famille et les amis sont l'équipage et les passagers. Le vol suit sa vraie géographie, Nîmes, Blagnac, Marignane, Pointe-à-Pitre, et atterrit sur un compte à rebours collectif.
+Océane embarque sur le vol OC 1996 de la compagnie Océane Airlines, destination : ses 30 ans. La famille et les amis sont l'équipage et les passagers. Le vol suit sa vraie géographie, Nîmes, Blagnac, Marignane, Pointe-à-Pitre, et atterrit sur un compte à rebours collectif.
 
 ## Pourquoi 7 minutes et pas 12
 Une vidéo d'anniversaire perd la salle vers 8 minutes, quelle que soit sa qualité. À 7 minutes, chaque séquence doit mériter sa place, et personne ne regarde son téléphone. C'est aussi une contrainte utile au montage : quand on doit couper, on coupe.
@@ -40,7 +40,23 @@ Ce qu'il faut : un vrai coffre, un débit lent, et surtout quelqu'un qui accepte
 
 Test en deux minutes pour choisir : fais lire à la personne une annonce d'aéroport banale, puis une des huit annonces. Si le ton ne change pas entre les deux, c'est la bonne personne.
 
-Gag récurrent disponible : Océane Airlines n'opère pas d'hélicoptères, et la compagnie s'en excuse. Deux ou trois fois maximum.
+Gag récurrent : Océane Airlines n'opère pas d'hélicoptères, et la compagnie s'en excuse. Exactement trois fois, dans les annonces 4, 6 et 8. Pas une de plus, sinon il s'use.
+
+## Le trou du déroulé, à trancher
+
+Tu m'as dit qu'elle est très famille **et très amis**. Or le déroulé ne contient aucun ami : la famille, deux collègues, un beau-frère, et c'est tout. C'est le seul vrai manque de la structure.
+
+Une amie d'enfance, quelqu'un qui la connaît depuis avant ses quinze ans, c'est souvent le meilleur clip d'une vidéo comme celle-ci. Trois façons de lui faire une place :
+1. **Lui donner l'escale Blagnac**, si le collègue de l'alternance est difficile à joindre ou si cette période n'est pas un bon souvenir.
+2. **Ouvrir une escale en plus**, et accepter 7 minutes 30.
+3. **La glisser dans la perte de signal et le compte à rebours**, sans escale à elle. C'est le repli, et c'est dommage.
+
+Dis-moi ce que tu préfères, c'est la question 20 de `17-questions.md`.
+
+## Le numéro de vol
+**OC 1996**, prononcé « O C mille neuf cent quatre-vingt-seize ». Ses initiales et son année de naissance. Une fois les annonces enregistrées, on ne le change plus.
+
+À noter : j'ai écarté le 0911, le 9 novembre écrit à l'américaine, qui paraissait évident. Sur une vidéo d'avion, la salle entend le 11 septembre, et le rire se coupe net.
 
 ## Ce qui en fait un film et pas une compilation
 - Le **« ding »** de cabine avant chaque annonce.

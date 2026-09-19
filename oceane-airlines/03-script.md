@@ -1,4 +1,4 @@
-# Conducteur — Vol OA-30
+# Conducteur — Vol OC 1996
 
 Version 2. Le conducteur, c'est la feuille de route du montage : minute par minute, ce qu'on voit, ce qu'on entend, et où trouver le texte. Les textes détaillés sont dans les fichiers `10-` à `16-`.
 
@@ -8,7 +8,7 @@ Légende : 🎙️ commandant · 🎬 clip envoyé par un proche · 🖼️ cart
 
 ### 0:00 — Générique · mise en place · 30 s
 🔊 Ambiance aéroport. 🖼️ Panneau des départs, destinations qui défilent : NÎMES, BLAGNAC, MARIGNANE, POINTE-À-PITRE, puis **30 ANS**. 🔊 *Ding.*
-🎙️ **Annonce 1** : embarquement du vol OA-30. → `10-annonces-commandant.md`
+🎙️ **Annonce 1** : embarquement du vol OC 1996. → `10-annonces-commandant.md`
 
 ### 0:30 — Consignes de sécurité · 🟡 gag · 45 s
 🎬 La fratrie, en gilet jaune. → `11-consignes-securite.md`
