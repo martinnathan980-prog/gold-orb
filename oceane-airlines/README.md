@@ -1,72 +1,65 @@
 # ✈️ Océane Airlines — Vol OC 1996
 
 Vidéo surprise pour les 30 ans d'Océane, le 9 novembre 2026.
-Aujourd'hui : samedi 19 septembre. Il reste 7 semaines.
+**11 minutes. 19 séquences.** Le film survole sa vie, de Nîmes 1996 jusqu'à Joséphine.
 
-**7 minutes. 13 séquences. Alternance stricte sincère / gag.**
-**Règle d'or : chaque intervenant finit par « Et dans sa valise, je mets… ».**
+**Règle d'or :** chaque clip joué finit par « Et dans sa valise, je mets… ».
+**Le cœur du film :** elle fabrique des hélicoptères et elle a peur de l'avion. On lui offre exactement ce qu'elle redoute.
 
-## Les trois choses à faire ce week-end
+## Ce que tu fais maintenant
 
-1. **Briefer Célestin en privé.** Avant tout le monde. Il filme Joséphine, il fournit les archives, il couvre le secret. Message prêt dans `16-messages-famille-v2.md`.
-2. **Briefer Sébastien.** Il est en Guadeloupe, il lui faut trois semaines, pas deux.
-3. **Créer le groupe WhatsApp sans Océane** et envoyer les messages 1 et 2. Liste nominative dans `16-messages-famille-v2.md`. Vérifie trois fois qu'elle n'y est pas.
+1. **Envoyer le message au groupe** pour présenter le projet et obtenir le oui de tout le monde. Tout est dans `21-message-groupe.md`, avec le synoptique `cartons/14-synoptique.png` à joindre.
+2. **Prévenir Célestin, Coralie et Sébastien en privé, avant** le groupe.
+3. **Enregistrer tes 12 annonces** et les traiter dans Audacity. Trois réglages, une heure. Méthode dans `10-annonces-commandant.md`.
+
+## Les deux niveaux de participation
+
+Certains joueront un rôle dans le thème aéronautique, d'autres enverront juste un message d'anniversaire. Les deux sont prévus.
+
+Les messages simples ne sont pas dispersés entre les sketches, ils sont regroupés dans **deux blocs « Messages de la cabine »**, à 3:15 et 8:05, chacun introduit par un mini-carton de siège. Ces deux blocs sont la **variable d'ajustement** : selon le nombre de réponses, le film flexe entre 10:25 et 11:40 sans qu'on touche au reste.
 
 ## Où on en est
 
 | Étape | État |
 |---|---|
 | Fiche personnages et anecdotes | ✅ `08-fiche-oceane.md` |
-| Concept et structure | ✅ `02-concept.md` |
-| Conducteur minute par minute | ✅ `03-script.md` |
-| Les 8 annonces du commandant | ✅ `10-annonces-commandant.md` |
+| Arbitrages, les décisions tranchées | ✅ `09-arbitrages.md` |
+| Concept et conducteur | ✅ `02-concept.md`, `03-script.md` |
+| Les 12 annonces du commandant | ✅ `10-annonces-commandant.md` |
 | Consignes de sécurité | ✅ `11-consignes-securite.md` |
 | Duty free | ✅ `12-duty-free.md` |
 | Turbulences | ✅ `13-turbulences-conduite.md` |
 | Uno, perte de signal, atterrissage | ✅ `14-sequences-collectives.md` |
 | Briefs par escale | ✅ `15-briefs-escales.md` |
-| Messages WhatsApp | ✅ `16-messages-famille-v2.md` |
+| Messages WhatsApp individuels | ✅ `16-messages-famille-v2.md` |
+| Messages de la cabine | ✅ `19-messages-cabine.md` |
+| Enfance, Tecktonik, Avignon | ✅ `20-escales-enfance.md` |
+| Message de présentation au groupe | ✅ `21-message-groupe.md` |
+| Graphismes | ✅ 16 fichiers dans `cartons/` |
 | Guide de montage iMovie | ✅ `07-montage.md` |
-| Rétroplanning | ✅ `01-retroplanning.md` |
 | Casting et suivi | ⬜ à remplir `05-casting.md` |
 | Questions restantes | ⬜ `17-questions.md` |
-| Graphismes, logo, cartons | ✅ 14 PNG dans `cartons/` |
-| Tes 8 annonces enregistrées | ⬜ semaine du 21 septembre |
-| Tournages de groupe | ⬜ week-end du 3-4 octobre |
-| Collecte des vidéos | ⬜ deadline dimanche 11 octobre |
-| Montage | ⬜ 19 octobre au 1er novembre |
-| Diffusion | ⬜ Cévennes, date à confirmer |
 
-## L'équipe
+## L'équipage
 
 | Rôle | Qui |
 |---|---|
 | Commandant de bord, et montage | Nathan |
-| Équipage sécurité | Nathan et Coralie |
+| Équipage sécurité | Coralie parle, Nathan mime |
 | Premiers pilotes | Véronique et Serge |
-| Ancien copilote, promotion | Julien |
-| Équipe technique Marignane | Hervé et Julien |
+| Chef mécanicien | Hervé |
+| Ancien copilote, promo ENAC | Julien |
+| Passager du 30B, puis chef de cabine | Célestin |
 | Chef d'escale Pointe-à-Pitre | Sébastien |
-| Présidente du conseil | Mamie Christiane |
-| Plus jeune passagère | Joséphine, filmée par Célestin |
-| Cabine classe éco | Les cousins, Guy, Marité, Paul |
+| Présidente du conseil | Mamie Christiane et [Papy] |
+| Plus jeune passagère | Joséphine |
+| Classe économique | Les cousins, Guy, Marité, Paul |
 | Présentateur duty free | **à trouver** |
 
 ## Les fichiers
 
-**Référence**
-- `08-fiche-oceane.md` — tous les faits, prénoms, anecdotes. Rien ne s'écrit en dehors.
+**Référence** — `08-fiche-oceane.md` pour les faits, `09-arbitrages.md` pour les décisions. En cas de contradiction, ces deux-là gagnent.
 
-**Pilotage**
-- `01-retroplanning.md` — le calendrier semaine par semaine
-- `02-concept.md` — l'idée, la structure, les trois pépites
-- `03-script.md` — le conducteur et le contrôle d'alternance
-- `05-casting.md` — qui fait quoi, compte à rebours, suivi des vidéos
-- `07-montage.md` — iMovie pas à pas, traitement de la voix, checklist HDMI
-- `17-questions.md` — ce qui reste à savoir
+**Pilotage** — `01-retroplanning.md`, `02-concept.md`, `03-script.md`, `05-casting.md`, `07-montage.md`, `17-questions.md`, `18-presentation.md`
 
-**Présentation**
-- `18-presentation.md` — le synoptique à montrer et le pitch à dire
-
-**Textes à tourner**
-- `10-` à `16-` — les scripts, briefs et messages, prêts à l'emploi
+**Textes à tourner** — `10-` à `16-`, `19-`, `20-`, `21-`
