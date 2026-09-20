@@ -1052,3 +1052,225 @@ ul.kiosque__alertes-liste {
 
 .sous-nav a:hover { background-color: var(--fond-enfonce); color: var(--texte); }
 .sous-nav a[aria-current="true"] { background-color: var(--fond-inverse); color: var(--texte-inverse); }
+
+/* -------------------------------------------------------------------------
+   7. Le suivi OTQ / OTD
+   ---------------------------------------------------------------------- */
+
+.otq { display: flex; flex-direction: column; gap: var(--e-4); }
+
+.otq__origine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-3);
+  padding: var(--e-2) var(--e-3);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-md);
+  background-color: var(--fond-eleve);
+  font-size: var(--texte-sm);
+  color: var(--texte-doux);
+}
+
+.otq__origine--exemple {
+  border-style: dashed;
+  border-color: var(--statut-alerte);
+  background-color: var(--statut-alerte-fond);
+}
+
+.otq__tuiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--e-4);
+}
+
+/* -------------------------------------------------------------------------
+   8. Contrat de classes de assets/js/indicateurs.js
+   Le module de visualisation ne pose que des classes : leur habillage
+   est ici. Sans ces règles, tuiles, figures et tableaux restent lisibles.
+   ---------------------------------------------------------------------- */
+
+.ind-tuile {
+  --carte-espace: var(--e-3);
+}
+
+.ind-tuile__valeur {
+  font-size: var(--texte-2xl);
+  font-weight: var(--graisse-max);
+  line-height: var(--interligne-serre);
+  font-variant-numeric: tabular-nums;
+}
+
+.ind-tuile__unite {
+  font-size: var(--texte-md);
+  font-weight: var(--graisse-moyenne);
+}
+
+.ind-tuile__mesures {
+  margin: 0;
+}
+
+.ind-tuile__spark,
+.ind-spark {
+  display: block;
+  flex: none;
+}
+
+.ind-graphique {
+  margin: 0;
+}
+
+.ind-graphique__titre {
+  font-size: var(--texte-lg);
+}
+
+.ind-legende {
+  margin: 0;
+}
+
+/* Le tracé est redessiné à la largeur réelle : il ne doit jamais
+   imposer sa taille à la grille qui le contient. */
+.ind-graphique__trace {
+  min-inline-size: 0;
+}
+
+.ind-graphique__svg {
+  display: block;
+  max-inline-size: 100%;
+}
+
+/* Le tracé est atteignable au clavier : son anneau de focus doit se
+   voir autant que celui d'un bouton. */
+.ind-graphique__svg:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+  border-radius: var(--rayon-sm);
+}
+
+/* --- Tableau de valeurs replié sous chaque figure ------------------- */
+
+.ind-donnees {
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-md);
+  background-color: var(--fond-enfonce);
+}
+
+.ind-donnees__resume {
+  display: flex;
+  align-items: center;
+  min-block-size: var(--cible-tactile);
+  padding: var(--e-2) var(--e-4);
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
+  color: var(--texte-doux);
+  border-radius: var(--rayon-md);
+}
+
+.ind-donnees__resume:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: calc(var(--focus-decalage) * -1);
+}
+
+/* Sur écran étroit le tableau déborde : la zone défile plutôt que de
+   forcer un défilement horizontal de toute la page. */
+.ind-donnees__defilement {
+  overflow-x: auto;
+  padding: 0 var(--e-4) var(--e-4);
+}
+
+.ind-tableau {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.ind-tableau caption {
+  padding-block-end: var(--e-3);
+  text-align: start;
+}
+
+.ind-tableau th,
+.ind-tableau td {
+  padding: var(--e-2) var(--e-3);
+  text-align: end;
+  white-space: nowrap;
+  border-block-end: 1px solid var(--bordure-douce);
+}
+
+.ind-tableau thead th {
+  color: var(--texte-doux);
+  font-weight: var(--graisse-forte);
+}
+
+/* L'en-tête de colonne porte une pastille de série : elle s'aligne sur
+   les chiffres de la colonne, pas contre le bord opposé. */
+.ind-tableau thead th > .rangee {
+  justify-content: flex-end;
+}
+
+.ind-tableau th[scope="row"] {
+  text-align: start;
+  font-weight: var(--graisse-moyenne);
+  color: var(--texte-doux);
+}
+
+/* --- La fiche détaillée des porteurs, version base de données ------------ */
+
+.porteurs__colonne-visuel { display: flex; flex-direction: column; gap: var(--e-4); }
+
+.porteurs__identite {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--e-2) var(--e-3);
+  margin: 0;
+  padding: var(--e-3) var(--e-4);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-md);
+  background-color: var(--fond-enfonce);
+}
+
+.porteurs__identite dt {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.porteurs__identite dd { margin: 0; font-size: var(--texte-sm); }
+
+.porteurs__ancien-nom { font-size: var(--texte-md); color: var(--texte-faible); font-family: var(--police); }
+.porteurs__resume { max-inline-size: 70ch; font-size: var(--texte-md); color: var(--texte-doux); }
+
+.porteurs__onglets { gap: var(--e-4); }
+.porteurs__onglets .onglets__liste { flex-wrap: wrap; }
+.porteurs__onglets .onglets__panneau { padding-block-start: var(--e-2); }
+
+.porteurs__table td.porteurs__confiance { inline-size: 1%; white-space: nowrap; text-align: end; padding-inline-start: var(--e-3); }
+.porteurs__conf { font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--texte-faible); cursor: help; }
+.porteurs__conf--haute { color: var(--statut-succes); }
+.porteurs__conf--moyenne { color: var(--statut-alerte); }
+
+.porteurs__source {
+  margin-inline-start: var(--e-2);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  color: var(--texte-faible);
+  text-decoration: none;
+}
+.porteurs__source:hover { color: var(--texte-accent); text-decoration: underline; }
+
+.porteurs__insolites { display: grid; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
+.porteurs__insolite {
+  display: flex;
+  gap: var(--e-3);
+  padding: var(--e-3) var(--e-4);
+  border: 1px solid var(--bordure-douce);
+  border-inline-start: 3px solid var(--accent);
+  border-radius: var(--rayon-md);
+  background-color: var(--fond-enfonce);
+  font-size: var(--texte-sm);
+  line-height: 1.55;
+}
+.porteurs__insolite-glyphe { color: var(--accent); flex: none; }
+
+.porteurs__sources { display: grid; gap: var(--e-1); margin: 0; padding: 0; list-style: none; font-size: var(--texte-sm); }

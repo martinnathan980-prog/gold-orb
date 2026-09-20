@@ -43,6 +43,10 @@
   --pole-etiii: #b45309;
   --pole-etii:  var(--texte-doux);
 
+  /* --- Séries du suivi OTQ / OTD : paire validée (clair sur blanc) ---------- */
+  --serie-otq: #2a78d6;
+  --serie-otd: #008300;
+
   /* --- Neutres : un gris choisi, qui tire vers le bleu de l'accent -------- */
   --gris-50:  #fbfbfc;
   --gris-100: #f1f3f6;
@@ -198,6 +202,9 @@
     --pole-etiie: #0ea5c9;
     --pole-etiii: #c47a0c;
 
+    --serie-otq: #3987e5;
+    --serie-otd: #2ea043;
+
     --statut-info:     #6fb1e0;
     --statut-succes:   #6fae82;
     --statut-alerte:   #dda434;
@@ -247,6 +254,9 @@
   --pole-etiia: #8b5cf6;
   --pole-etiie: #0ea5c9;
   --pole-etiii: #c47a0c;
+
+  --serie-otq: #3987e5;
+  --serie-otd: #2ea043;
 
   --statut-info:     #6fb1e0;
   --statut-succes:   #6fae82;

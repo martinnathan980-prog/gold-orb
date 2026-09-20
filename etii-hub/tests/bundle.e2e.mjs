@@ -65,10 +65,11 @@ t('la fiche montre les deux groupes de données',
 t('les valeurs absentes sont annoncées comme telles', /à renseigner/i.test(apres));
 t('la fiche suit le porteur choisi', apres.includes(await troisieme.locator('.porteurs__fiche-code').innerText()));
 
-console.log('\n== Le suivi OTQ attend sa source ==');
-t('l\'attente est annoncée honnêtement',
-  /attente|raccordement|source/i.test(texte) && !/\d+,\d\s*%/.test(texte),
-  'aucun chiffre ne doit être affiché');
+console.log('\n== Le suivi OTQ / OTD ==');
+const zoneOtq = f.locator('#zone-otq');
+t('l\'exemple est annoncé comme tel', /Données d’exemple|Données d'exemple/i.test(await zoneOtq.innerText()));
+t('deux tuiles OTQ et OTD', (await zoneOtq.locator('.ind-tuile').count()) === 2);
+t('le graphique est tracé', (await zoneOtq.locator('.ind-graphique svg').count()) >= 1);
 
 console.log('\n== Un espace de pôle ==');
 await f.locator('nav.site-nav a[href="etiia.html"]').first().click();

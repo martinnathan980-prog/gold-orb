@@ -112,6 +112,12 @@ const cssAssemble = CSS.map(n =>
 const donneesAssemblees = Object.fromEntries(
   DONNEES.map(n => [n, JSON.parse(lire(`assets/data/${n}.json`))]));
 
+// Les fichiers texte lus par fetch() dans le site multi-pages (le CSV
+// d'exemple du suivi OTQ / OTD) sont intégrés eux aussi : sans serveur, un
+// fetch relatif échoue depuis file://.
+const TEXTES = ['assets/data/otq-exemple.csv'];
+const textesAssembles = Object.fromEntries(TEXTES.map(n => [n, lire(n)]));
+
 /* Résolution TRANSITIVE des dépendances.
    Une liste de modules écrite en dur se périme au premier module partagé
    ajouté au projet — et l'échec est silencieux à la construction, visible
@@ -191,6 +197,23 @@ __M["data"].chargerDonnees = function (nomJeu) {
     : Promise.reject(new Error(
         'Jeu de données « ' + nomJeu + ' » absent de la version autonome.'));
 };
+
+// Le suivi OTQ / OTD : si une source réelle est configurée, on la lit
+// comme sur le site ; sinon l'exemple embarqué remplace le fetch.
+const __TEXTES = ${json(textesAssembles)};
+if (__M["otq"] && typeof __M["otq"].chargerSuivi === 'function') {
+  const chargerSuiviReseau = __M["otq"].chargerSuivi;
+  __M["otq"].chargerSuivi = function () {
+    const source = __M["otq"].SOURCE || {};
+    if (String(source.url || '').trim()) return chargerSuiviReseau();
+    const texte = __TEXTES[source.exemple || 'assets/data/otq-exemple.csv'];
+    if (typeof texte !== 'string') {
+      return Promise.reject(new Error('Exemple OTQ / OTD absent de la version autonome.'));
+    }
+    const series = __M["otq"].seriesDepuisLignes(__M["otq"].analyserCsv(texte));
+    return Promise.resolve({ series, origine: 'exemple', maj: '', url: source.exemple || '' });
+  };
+}
 
 ${entrees.map((n) => bloc(n, lire(`assets/js/${n}.js`), { asynchrone: true })).join('\n')}`;
 }

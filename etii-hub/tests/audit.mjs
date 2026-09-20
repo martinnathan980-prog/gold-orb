@@ -29,7 +29,7 @@ function verifier(nom, probleme) {
 const pages = readdirSync(RACINE).filter(f => f.endsWith('.html'));
 const cssFiles = existe('assets/css') ? readdirSync(join(RACINE,'assets/css')).map(f=>`assets/css/${f}`) : [];
 const jsFiles  = existe('assets/js')  ? readdirSync(join(RACINE,'assets/js')).map(f=>`assets/js/${f}`)  : [];
-const jsonFiles= existe('assets/data')? readdirSync(join(RACINE,'assets/data')).map(f=>`assets/data/${f}`): [];
+const jsonFiles= existe('assets/data')? readdirSync(join(RACINE,'assets/data')).filter(f => f.endsWith('.json')).map(f=>`assets/data/${f}`): [];
 const tous = [...pages, ...cssFiles, ...jsFiles];
 
 console.log(`\n== Périmètre : ${pages.length} pages, ${cssFiles.length} CSS, ${jsFiles.length} JS, ${jsonFiles.length} JSON ==\n`);
