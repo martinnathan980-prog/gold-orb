@@ -613,3 +613,34 @@ body[data-pole] .page-entete {
 .site-nav__liste a[data-pole="ETIIA"] { --pole-nav: var(--pole-etiia); }
 .site-nav__liste a[data-pole="ETIIE"] { --pole-nav: var(--pole-etiie); }
 .site-nav__liste a[data-pole="ETIII"] { --pole-nav: var(--pole-etiii); }
+
+/* -------------------------------------------------------------------------
+   14. Écran étroit : la barre reste une barre
+   Sur téléphone, les cinq liens défilent horizontalement sur une ligne
+   au lieu de s'empiler en une colonne de 48 px chacun.
+   ---------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  .site-nav__liste {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    margin-inline: calc(var(--e-4) * -1);
+    padding-inline: var(--e-4);
+    padding-block-end: var(--e-1);
+  }
+
+  .site-nav__liste li { flex: none; }
+
+  .site-nav__liste a {
+    min-height: calc(var(--cible-tactile) - var(--e-1));
+    padding-inline: var(--e-3);
+    font-size: var(--texte-sm);
+    white-space: nowrap;
+  }
+
+  .site-entete__interieur { padding-block: var(--e-1) 0; }
+  .bascule-theme__libelle { display: none; }
+}

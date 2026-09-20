@@ -97,8 +97,8 @@ function reunionsDuPole(donnees, code) {
 function blocListe(titre, classe, entrees, ordonne) {
   const liste = (Array.isArray(entrees) ? entrees : []).map(texte).filter(Boolean);
   if (!liste.length) return null;
-  return el('div', { class: ['lecteur__bloc', classe] },
-    el('p', { class: 'lecteur__bloc-titre' }, titre, el('span', { class: 'mono' }, String(liste.length))),
+  return el('div', { class: ['liseuse__bloc', classe] },
+    el('p', { class: 'liseuse__bloc-titre' }, titre, el('span', { class: 'mono' }, String(liste.length))),
     el(ordonne ? 'ol' : 'ul', {}, liste.map((t) => el('li', {}, t))));
 }
 
@@ -109,12 +109,12 @@ function corpsReunion(r) {
     texte(r.objectif) ? el('div', {}, el('h4', {}, 'Objectif'), el('p', {}, texte(r.objectif))) : null,
     sujets.length
       ? el('div', {}, el('h4', {}, 'Sujets abordés'),
-          el('div', { class: 'lecteur__sujets' }, sujets.map((s) => el('div', { class: 'lecteur__sujet' },
+          el('div', { class: 'liseuse__sujets' }, sujets.map((s) => el('div', { class: 'liseuse__sujet' },
             el('p', { class: 'gras' }, texte(s.titre) || 'Sujet'),
-            texte(s.notes) ? el('p', { class: 'lecteur__sujet-notes' }, texte(s.notes)) : null))))
+            texte(s.notes) ? el('p', { class: 'liseuse__sujet-notes' }, texte(s.notes)) : null))))
       : null,
-    blocListe('Actions', 'lecteur__bloc--actions', r.actions, true),
-    blocListe('Décisions', 'lecteur__bloc--decisions', r.decisions, true));
+    blocListe('Actions', 'liseuse__bloc--actions', r.actions, true),
+    blocListe('Décisions', 'liseuse__bloc--decisions', r.decisions, true));
 }
 
 function rendreReunions(pole, groupes, conteneur) {
@@ -243,19 +243,19 @@ function rendreFaq(pole, groupes, conteneur) {
     corps: () => frag(
       el('p', {}, texte(q.reponse) || 'Réponse à renseigner.'),
       Array.isArray(q.motsCles) && q.motsCles.length
-        ? el('div', { class: 'lecteur__mots' }, q.motsCles.map((m) => el('span', { class: 'badge badge--contour' }, texte(m))))
+        ? el('div', { class: 'liseuse__mots' }, q.motsCles.map((m) => el('span', { class: 'badge badge--contour' }, texte(m))))
         : null)
   });
   const elements = groupes.pole.map((q) => versElement(q, 'pole')).concat(groupes.service.map((q) => versElement(q, 'service')));
 
   const boutonExpert = el('button', { type: 'button', class: 'bouton bouton--principal', onClick: (evt) => {
-    const champ = conteneur.querySelector('.lecteur__recherche');
+    const champ = conteneur.querySelector('.liseuse__recherche');
     ouvrirDemandeExpert(pole, evt.currentTarget, champ ? champ.value : '');
   } }, 'Interroger un expert');
 
-  const pied = el('div', { class: 'lecteur__pied' },
+  const pied = el('div', { class: 'liseuse__pied' },
     el('div', {},
-      el('p', { class: 'lecteur__pied-titre' }, 'Une question spécifique ?'),
+      el('p', { class: 'liseuse__pied-titre' }, 'Une question spécifique ?'),
       el('p', {}, 'Si la base ne couvre pas votre périmètre, sollicitez les référents du pôle.')),
     boutonExpert);
 

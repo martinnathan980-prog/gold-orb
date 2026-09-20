@@ -116,6 +116,23 @@ H175 sont cités.
 Pour brancher de vraies données, remplacez les fichiers JSON en respectant
 leur forme. Rien d'autre n'est à modifier.
 
+Exception : la base des porteurs (`flotte.json`) est constituée depuis des
+sources **publiques** (Wikipédia, site public d'Airbus Helicopters, EASA) et
+chaque valeur porte sa confiance et sa source. Les fiches sont marquées
+« relecture non effectuée » tant qu'elles n'ont pas été relues en
+contradictoire par le service.
+
+### Photos des porteurs
+
+Les photos de `assets/img/porteurs/` viennent de Wikimedia Commons, sous
+licence libre (CC BY, CC BY-SA). La condition de réutilisation est de citer
+l'auteur et la licence : c'est ce que fait la ligne de crédit sous chaque
+photo, alimentée par le champ `credit` de `flotte.json` (`auteur`, `licence`,
+`fichier`, `page`, `note`). Pour remplacer une photo par une photo interne,
+mettez le fichier dans le dossier, changez `photo` et videz `credit` (ou
+renseignez-y la source interne). Les vignettes sont servies à 960 px de
+large ; inutile d'en mettre de plus grandes.
+
 ## Accessibilité
 
 - Navigation clavier complète sur chaque page, y compris le glisser-déposer

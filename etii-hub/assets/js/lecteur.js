@@ -36,20 +36,20 @@ export function lecteur(options) {
   let requete = '';
 
   const champ = el('input', {
-    type: 'search', class: 'lecteur__recherche', id: prefixe + '-recherche',
+    type: 'search', class: 'liseuse__recherche', id: prefixe + '-recherche',
     placeholder: texte(opts.placeholder) || 'Rechercher…', autocomplete: 'off'
   });
-  const zoneListe = el('div', { class: 'lecteur__defile', tabIndex: 0 });
-  const compteur = el('span', { class: 'lecteur__compte mono' }, '');
+  const zoneListe = el('div', { class: 'liseuse__defile', tabIndex: 0 });
+  const compteur = el('span', { class: 'liseuse__compte mono' }, '');
 
-  const titreLecture = el('h3', { class: 'lecteur__titre', id: prefixe + '-titre' }, '');
-  const enteteLecture = el('div', { class: 'lecteur__entete' });
-  const corpsLecture = el('div', { class: 'lecteur__corps' });
-  const actionsLecture = el('div', { class: 'lecteur__actions' });
-  const lecture = el('div', { class: 'lecteur__lecture' }, enteteLecture, titreLecture, corpsLecture);
+  const titreLecture = el('h3', { class: 'liseuse__titre', id: prefixe + '-titre' }, '');
+  const enteteLecture = el('div', { class: 'liseuse__entete' });
+  const corpsLecture = el('div', { class: 'liseuse__corps' });
+  const actionsLecture = el('div', { class: 'liseuse__actions' });
+  const lecture = el('div', { class: 'liseuse__lecture' }, enteteLecture, titreLecture, corpsLecture);
 
   const panneauLecture = el('article', {
-    class: 'lecteur__panneau lecteur__panneau--lecture', 'aria-labelledby': titreLecture.id, tabIndex: -1
+    class: 'liseuse__panneau liseuse__panneau--lecture', 'aria-labelledby': titreLecture.id, tabIndex: -1
   }, actionsLecture, lecture, opts.pied || null);
 
   function score(item) {
@@ -72,25 +72,25 @@ export function lecteur(options) {
   }
 
   function bouton(item) {
-    return el('li', { class: 'lecteur__entree' },
+    return el('li', { class: 'liseuse__entree' },
       el('button', {
-        type: 'button', class: 'lecteur__item', dataset: { id: item.id },
+        type: 'button', class: 'liseuse__item', dataset: { id: item.id },
         id: prefixe + '-item-' + item.id, 'aria-current': 'false'
       },
-      el('span', { class: 'lecteur__item-titre' }, item.titre || 'Sans titre'),
-      item.meta ? el('span', { class: 'lecteur__item-meta' }, item.meta) : null,
+      el('span', { class: 'liseuse__item-titre' }, item.titre || 'Sans titre'),
+      item.meta ? el('span', { class: 'liseuse__item-meta' }, item.meta) : null,
       Array.isArray(item.badges) && item.badges.length
-        ? el('span', { class: 'lecteur__item-badges' },
+        ? el('span', { class: 'liseuse__item-badges' },
             item.badges.map((b) => el('span', { class: ['badge', b.classe || 'badge--neutre'] }, b.texte)))
         : null));
   }
 
   function lire(item) {
     courant = item;
-    zoneListe.querySelectorAll('.lecteur__item').forEach((b) => {
+    zoneListe.querySelectorAll('.liseuse__item').forEach((b) => {
       b.setAttribute('aria-current', b.dataset.id === item.id ? 'true' : 'false');
     });
-    lecture.classList.add('lecteur__lecture--fondu');
+    lecture.classList.add('liseuse__lecture--fondu');
     const appliquer = () => {
       titreLecture.textContent = item.titre || 'Sans titre';
       monter(enteteLecture, typeof opts.entete === 'function' ? opts.entete(item) : null);
@@ -98,7 +98,7 @@ export function lecteur(options) {
       monter(actionsLecture, typeof opts.actions === 'function' ? opts.actions(item) : null);
       actionsLecture.hidden = !actionsLecture.childNodes.length;
       panneauLecture.scrollTo({ top: 0 });
-      lecture.classList.remove('lecteur__lecture--fondu');
+      lecture.classList.remove('liseuse__lecture--fondu');
     };
     setTimeout(appliquer, 120);
   }
@@ -107,7 +107,7 @@ export function lecteur(options) {
     const liste = requete ? classes() : elements;
     compteur.textContent = String(liste.length);
     if (!liste.length) {
-      monter(zoneListe, el('p', { class: 'lecteur__vide' }, requete ? 'Aucun élément ne correspond.' : (texte(opts.vide) || 'Rien à lire pour le moment.')));
+      monter(zoneListe, el('p', { class: 'liseuse__vide' }, requete ? 'Aucun élément ne correspond.' : (texte(opts.vide) || 'Rien à lire pour le moment.')));
       return;
     }
     const enfants = [];
@@ -115,7 +115,7 @@ export function lecteur(options) {
       for (const g of groupes) {
         const membres = liste.filter((i) => i.groupe === g.cle);
         if (!membres.length) continue;
-        enfants.push(el('li', { class: 'lecteur__groupe', role: 'presentation' },
+        enfants.push(el('li', { class: 'liseuse__groupe', role: 'presentation' },
           el('span', {}, g.titre), el('span', { class: 'mono' }, String(membres.length))));
         membres.forEach((m) => enfants.push(bouton(m)));
       }
@@ -123,11 +123,11 @@ export function lecteur(options) {
     } else {
       liste.forEach((m) => enfants.push(bouton(m)));
     }
-    monter(zoneListe, el('ol', { class: 'lecteur__liste', role: 'list' }, enfants));
+    monter(zoneListe, el('ol', { class: 'liseuse__liste', role: 'list' }, enfants));
     const cible = liste.find((i) => courant && i.id === courant.id) || liste[0];
     if (cible && (!courant || cible.id !== courant.id || !titreLecture.textContent)) lire(cible);
     else if (courant) {
-      zoneListe.querySelectorAll('.lecteur__item').forEach((b) => {
+      zoneListe.querySelectorAll('.liseuse__item').forEach((b) => {
         b.setAttribute('aria-current', b.dataset.id === courant.id ? 'true' : 'false');
       });
     }
@@ -136,7 +136,7 @@ export function lecteur(options) {
   champ.addEventListener('input', () => { requete = champ.value; rendreListe(); });
 
   zoneListe.addEventListener('click', (evt) => {
-    const b = evt.target.closest('.lecteur__item');
+    const b = evt.target.closest('.liseuse__item');
     if (!b) return;
     const item = elements.find((i) => i.id === b.dataset.id);
     if (item) { lire(item); annoncer(item.titre); }
@@ -144,7 +144,7 @@ export function lecteur(options) {
 
   zoneListe.addEventListener('keydown', (evt) => {
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(evt.key)) return;
-    const boutons = Array.from(zoneListe.querySelectorAll('.lecteur__item'));
+    const boutons = Array.from(zoneListe.querySelectorAll('.liseuse__item'));
     if (!boutons.length) return;
     const i = boutons.indexOf(document.activeElement);
     let j = i === -1 ? 0 : i;
@@ -156,10 +156,10 @@ export function lecteur(options) {
     boutons[j].focus(); boutons[j].click();
   });
 
-  const racine = el('div', { class: 'lecteur', id: prefixe },
-    el('aside', { class: 'lecteur__panneau lecteur__panneau--liste', 'aria-label': texte(opts.titreListe) || 'Liste' },
-      el('div', { class: 'lecteur__liste-tete' },
-        el('span', { class: 'lecteur__liste-titre' }, texte(opts.titreListe) || 'Liste', ' ', compteur),
+  const racine = el('div', { class: 'liseuse', id: prefixe },
+    el('aside', { class: 'liseuse__panneau liseuse__panneau--liste', 'aria-label': texte(opts.titreListe) || 'Liste' },
+      el('div', { class: 'liseuse__liste-tete' },
+        el('span', { class: 'liseuse__liste-titre' }, texte(opts.titreListe) || 'Liste', ' ', compteur),
         el('label', { class: 'visuellement-cache', for: champ.id }, texte(opts.placeholder) || 'Rechercher'),
         champ),
       zoneListe),

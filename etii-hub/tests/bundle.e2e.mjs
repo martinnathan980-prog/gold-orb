@@ -50,7 +50,7 @@ t('cliquer une entrée la lit dans le projecteur',
 console.log('\n== Les porteurs ==');
 t('la piste des porteurs est rendue', (await f.locator('.porteurs__piste').count()) > 0);
 const fiches = await f.locator('.porteurs__fiche').count();
-t('les onze appareils sont présents', fiches === 11, `(${fiches})`);
+t('les seize appareils sont présents', fiches === 16, `(${fiches})`);
 t('les trois catégories sont proposées',
   ['Civil', 'Militaire', 'Prototype'].every(c => texte.includes(c)));
 
@@ -77,9 +77,9 @@ await page.waitForTimeout(2200);
 const pole = await f.locator('main').innerText();
 t('ETIIA s\'ouvre', /ETIIA/.test(await f.locator('h1').innerText()));
 t('sa communication est en tête', (await f.locator('.kiosque').count()) === 1);
-t('ses réunions sont lisibles', (await f.locator('#zone-reunions .lecteur').count()) === 1);
+t('ses réunions sont lisibles', (await f.locator('#zone-reunions .liseuse').count()) === 1);
 t('son organigramme est un arbre', (await f.locator('.arbre__carte').count()) > 3);
-t('sa FAQ est lisible', (await f.locator('#zone-faq .lecteur').count()) === 1);
+t('sa FAQ est lisible', (await f.locator('#zone-faq .liseuse').count()) === 1);
 t('aucun indicateur n\'y figure', !/OTQ|OTD/.test(pole));
 
 console.log('\n== La recherche ==');

@@ -118,6 +118,25 @@ const donneesAssemblees = Object.fromEntries(
 const TEXTES = ['assets/data/otq-exemple.csv'];
 const textesAssembles = Object.fromEntries(TEXTES.map(n => [n, lire(n)]));
 
+// Les photos des porteurs (flotte.json → `photo`) sont des fichiers image
+// relatifs : dans un cadre srcdoc, rien ne les résout. Elles sont donc
+// intégrées en data URI — mais seulement dans les pages qui affichent la
+// flotte, sinon chaque page en porterait une copie.
+function donneesAvecImages(noms) {
+  if (!noms.includes('porteurs')) return donneesAssemblees;
+  const flotte = JSON.parse(JSON.stringify(donneesAssemblees.flotte));
+  for (const appareil of (Array.isArray(flotte.flotte) ? flotte.flotte : [])) {
+    const chemin = String(appareil.photo || '').trim();
+    if (!/^assets\/img\/[a-z0-9_\-\/]+\.(jpe?g|png|webp|svg)$/i.test(chemin)) continue;
+    const type = /\.svg$/i.test(chemin) ? 'image/svg+xml'
+      : /\.png$/i.test(chemin) ? 'image/png'
+      : /\.webp$/i.test(chemin) ? 'image/webp' : 'image/jpeg';
+    const octets = readFileSync(join(RACINE, chemin));
+    appareil.photo = `data:${type};base64,${octets.toString('base64')}`;
+  }
+  return { ...donneesAssemblees, flotte };
+}
+
 /* Résolution TRANSITIVE des dépendances.
    Une liste de modules écrite en dur se périme au premier module partagé
    ajouté au projet — et l'échec est silencieux à la construction, visible
@@ -186,7 +205,7 @@ function bles(noms) {
   return `const __M = {};
 // Les données sont intégrées : aucun fetch, donc aucune contrainte file://
 // ni d'URL de base. chargerDonnees est remplacée par une lecture directe.
-const __DONNEES = ${json(donneesAssemblees)};
+const __DONNEES = ${json(donneesAvecImages(ordre))};
 
 ${socle}
 

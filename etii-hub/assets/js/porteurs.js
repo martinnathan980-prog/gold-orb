@@ -83,7 +83,9 @@ function fiche(appareil, prefixe) {
       'aria-pressed': 'false'
     },
     el('span', { class: 'porteurs__fiche-visuel', 'aria-hidden': 'true' },
-      silhouette(texte(appareil.silhouette), { titre: '' })),
+      texte(appareil.photo)
+        ? el('img', { src: texte(appareil.photo), alt: '', loading: 'lazy', decoding: 'async', class: 'porteurs__fiche-photo' })
+        : silhouette(texte(appareil.silhouette), { titre: '' })),
     el('span', { class: 'porteurs__fiche-code' }, code),
     el('span', { class: 'porteurs__fiche-segment' }, texte(appareil.segment) || texte(objet(appareil.fiche).segment) || NON_RENSEIGNE),
     el('span', { class: 'porteurs__fiche-poles', 'aria-label': 'Pôles : ' + (Array.isArray(appareil.poles) ? appareil.poles.join(', ') : '') },
@@ -194,6 +196,23 @@ function panneauInsolite(fiche) {
   return el('ul', { class: 'porteurs__insolites' }, faits.map((f) => el('li', { class: 'porteurs__insolite' },
     el('span', { class: 'porteurs__insolite-glyphe', 'aria-hidden': 'true' }, '✦'),
     el('span', {}, texte(f.texte), ' ', lienSource(f.source)))));
+}
+
+/* Le crédit d'une photo. Les photos viennent de Wikimedia Commons sous
+   licence libre (CC BY, CC BY-SA, domaine public) : l'auteur et la licence
+   doivent apparaître, c'est la condition de réutilisation. */
+function creditPhoto(credit) {
+  const c = objet(credit);
+  const auteur = texte(c.auteur);
+  const licence = texte(c.licence);
+  const page = texte(c.page);
+  if (!auteur && !licence && !page) return null;
+  const note = texte(c.note);
+  return el('figcaption', { class: 'porteurs__credit' },
+    'Photo ', auteur ? auteur : 'auteur ' + NON_RENSEIGNE,
+    licence ? [' · ', licence] : null,
+    page ? [' · ', el('a', { href: page, target: '_blank', rel: 'noopener noreferrer' }, 'Wikimedia Commons')] : null,
+    note ? el('span', { class: 'porteurs__credit-note' }, note) : null);
 }
 
 function panneauSources(fiche) {
@@ -380,10 +399,12 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
 
   return el('article', { class: 'porteurs__detail', 'aria-label': 'Fiche ' + code },
     el('div', { class: 'porteurs__colonne-visuel' },
-      el('div', { class: 'porteurs__visuel' },
-        photo
-          ? el('img', { src: photo, alt: 'Photo du ' + code, class: 'porteurs__photo' })
-          : el('div', { class: 'porteurs__silhouette' },
+      photo
+        ? el('figure', { class: 'porteurs__visuel porteurs__visuel--photo' },
+            el('img', { src: photo, alt: 'Photo du ' + code, class: 'porteurs__photo', decoding: 'async' }),
+            creditPhoto(appareil.credit))
+        : el('div', { class: 'porteurs__visuel' },
+            el('div', { class: 'porteurs__silhouette' },
               silhouette(texte(appareil.silhouette), { titre: 'Silhouette du ' + code }),
               el('span', { class: 'porteurs__photo-attente' }, 'Photo à venir'))),
       carteIdentite),

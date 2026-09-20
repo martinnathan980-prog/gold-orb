@@ -1235,7 +1235,7 @@ function rendreSousNav() {
         }, entree.libelle))),
       el('li', null,
         el('a', {
-          class: 'bouton bouton--discret bouton--compact',
+          class: 'bouton bouton--secondaire bouton--compact',
           href: PAGE_DE_POLE[poleActif] || 'index.html'
         }, poleActif === POLE_SERVICE
           ? 'Tableau de bord ETII'

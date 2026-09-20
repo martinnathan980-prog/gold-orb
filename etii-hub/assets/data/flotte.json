@@ -78,7 +78,7 @@
         "ETIII"
       ],
       "silhouette": "patins-monoturbine",
-      "photo": "",
+      "photo": "assets/img/porteurs/h125.jpg",
       "fiche": {
         "code": "H125",
         "nom": "Airbus Helicopters H125 (Écureuil / AStar)",
@@ -362,7 +362,14 @@
         }
       },
       "jalon": null,
-      "avancement": null
+      "avancement": null,
+      "credit": {
+        "auteur": "ZLEA",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:Eurocopter AS350 B3 Écureuil (N911US, cn 2968) (3-25-2023).jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3AEurocopter_AS350_B3_%C3%89cureuil_%28N911US%2C_cn_2968%29_%283-25-2023%29.jpg",
+        "note": "Photo d'un AS350 B3 (l'appareil a été renommé H125 en 2015)."
+      }
     },
     {
       "code": "H130",
@@ -372,7 +379,7 @@
         "ETIIE"
       ],
       "silhouette": "patins-fenestron",
-      "photo": "",
+      "photo": "assets/img/porteurs/h130.jpg",
       "fiche": {
         "code": "H130",
         "nom": "Airbus Helicopters H130",
@@ -642,7 +649,14 @@
         }
       },
       "jalon": null,
-      "avancement": null
+      "avancement": null,
+      "credit": {
+        "auteur": "Hugo LUC",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:Airbus Helicopters H130 - 3A-MHM from Heli Air Monaco.jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_Helicopters_H130_-_3A-MHM_from_Heli_Air_Monaco.jpg",
+        "note": ""
+      }
     },
     {
       "code": "H135",
@@ -653,7 +667,7 @@
         "ETIIE"
       ],
       "silhouette": "patins-fenestron-bi",
-      "photo": "",
+      "photo": "assets/img/porteurs/h135.jpg",
       "fiche": {
         "code": "H135",
         "nom": "Airbus Helicopters H135",
@@ -939,7 +953,14 @@
         }
       },
       "jalon": null,
-      "avancement": null
+      "avancement": null,
+      "credit": {
+        "auteur": "Julian Herzog",
+        "licence": "CC BY 4.0",
+        "fichier": "File:DRF Eurocopter EC135 Christoph 44 D-HDRK Göttingen 2017 03.jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3ADRF_Eurocopter_EC135_Christoph_44_D-HDRK_G%C3%B6ttingen_2017_03.jpg",
+        "note": ""
+      }
     },
     {
       "code": "H145",
@@ -951,7 +972,7 @@
         "ETIII"
       ],
       "silhouette": "patins-fenestron-bi",
-      "photo": "",
+      "photo": "assets/img/porteurs/h145.jpg",
       "fiche": {
         "code": "H145",
         "nom": "Airbus Helicopters H145",
@@ -1227,7 +1248,14 @@
         }
       },
       "jalon": null,
-      "avancement": null
+      "avancement": null,
+      "credit": {
+        "auteur": "Matthias Zepper",
+        "licence": "CC BY-SA 3.0",
+        "fichier": "File:Zepper-BK 117-C2-(EC145)-SchweizerischeRettungsflugwacht.jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3AZepper-BK_117-C2-%28EC145%29-SchweizerischeRettungsflugwacht.jpg",
+        "note": "Photo d'un EC145 (BK117 C-2), génération précédente du H145 actuel."
+      }
     },
     {
       "code": "H160",
@@ -1239,7 +1267,7 @@
         "ETIII"
       ],
       "silhouette": "roues-fenestron-bi",
-      "photo": "",
+      "photo": "assets/img/porteurs/h160.jpg",
       "fiche": {
         "code": "H160",
         "nom": "Airbus H160",
@@ -1521,7 +1549,14 @@
         }
       },
       "jalon": null,
-      "avancement": null
+      "avancement": null,
+      "credit": {
+        "auteur": "Domenjod",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:Airbus H160 Gend1 Domenjod 20 10 2021.jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_H160_Gend1_Domenjod_20_10_2021.jpg",
+        "note": ""
+      }
     },
     {
       "code": "H175",
@@ -1532,7 +1567,7 @@
         "ETIII"
       ],
       "silhouette": "roues-bi",
-      "photo": "",
+      "photo": "assets/img/porteurs/h175.jpg",
       "fiche": {
         "code": "H175",
         "nom": "Airbus Helicopters H175",
@@ -1818,7 +1853,285 @@
         }
       },
       "jalon": null,
-      "avancement": null
+      "avancement": null,
+      "credit": {
+        "auteur": "Matti Blume",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:Paris Air Show 2019, Le Bourget (SIAE1189).jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3AParis_Air_Show_2019%2C_Le_Bourget_%28SIAE1189%29.jpg",
+        "note": ""
+      }
+    },
+    {
+      "code": "H215",
+      "poles": [],
+      "photo": "assets/img/porteurs/h215.jpg",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "civil",
+      "segment": "Bimoteur lourd",
+      "silhouette": "roues-bi-lourd",
+      "fiche": {
+        "nom": "Airbus Helicopters H215 (Super Puma)",
+        "ancienNom": "Aérospatiale / Eurocopter AS332 Super Puma",
+        "segment": "Bimoteur lourd",
+        "statut": "en production (versions C1e / L1e)",
+        "resume": "Le H215 est la désignation, depuis 2014, des versions rénovées de l'AS332 Super Puma, hélicoptère de transport moyen-lourd dérivé du SA330 Puma, agrandi et remotorisé. Plus de mille Super Puma ont été construits ; la famille a donné l'EC225/H225 et sa version militaire H225M.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Aérospatiale, puis Eurocopter, puis Airbus Helicopters",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS332_Super_Puma"
+          },
+          "premierVol": {
+            "valeur": "13 septembre 1978 (AS332)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS332_Super_Puma"
+          },
+          "certification": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": 1980,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          "siteAssemblage": {
+            "valeur": "Marignane (Bouches-du-Rhône) ; chaîne H215 également implantée en Roumanie (Brașov), annoncée en 2016",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS332_Super_Puma"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Turbomeca Makila 1A1 (AS332 L1) ; Makila 1A2/1A4 selon versions",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          "puissance": {
+            "valeur": "1 742 ch (1 280 kW) par moteur (Makila 1A1)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          "rotorPrincipal": {
+            "valeur": "Quatre pales, diamètre 15,58 m",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          "rotorArriere": {
+            "valeur": "Rotor anticouple classique à cinq pales",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": "8 600 à 9 350 kg selon version",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          "masseAVide": {
+            "valeur": 4460,
+            "unite": "kg",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          "chargeUtile": {
+            "valeur": "jusqu’à 4,5 t à l’élingue selon version",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS332_Super_Puma"
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          "passagers": {
+            "valeur": "15 à 19",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": 252,
+            "unite": "km/h",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          "vitesseMax": {
+            "valeur": 278,
+            "unite": "km/h",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          "rayonAction": {
+            "valeur": 840,
+            "unite": "km",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": 6100,
+            "unite": "m",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": 18.7,
+            "unite": "m",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          "hauteur": {
+            "valeur": 4.8,
+            "unite": "m",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          "diametreRotor": {
+            "valeur": 15.58,
+            "unite": "m",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "1 000 Super Puma toutes versions (septembre 2019)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS332_Super_Puma"
+          },
+          "prixIndicatif": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "Transport offshore (mer du Nord, Brésil, Asie), travail aérien lourd, sécurité civile ; version militaire AS532 Cougar / H215M dans de nombreuses armées",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS332_Super_Puma"
+          },
+          "commandesNotables": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Cockpit à écrans (glass cockpit) sur les versions C1e/L1e, pilote automatique quatre axes",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS332_Super_Puma"
+          },
+          "particularites": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le Super Puma est né en 1978 comme version agrandie et remotorisée du SA330 Puma ; quarante-cinq ans plus tard, la lignée est toujours en production sous les noms H215, H225 et H225M.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS332_Super_Puma"
+          },
+          {
+            "texte": "Le KAI Surion, hélicoptère utilitaire de l'armée sud-coréenne, est un dérivé du Super Puma développé avec Eurocopter.",
+            "source": "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma"
+          },
+          {
+            "texte": "La version militaire, d'abord baptisée AS532 Cougar, est devenue H215M lors de la nouvelle nomenclature Airbus Helicopters.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS332_Super_Puma"
+          }
+        ],
+        "sources": [
+          "https://fr.wikipedia.org/wiki/A%C3%A9rospatiale_AS332_Super_Puma",
+          "https://en.wikipedia.org/wiki/Eurocopter_AS332_Super_Puma"
+        ],
+        "code": "H215",
+        "categorie": "civil",
+        "relecture": "non effectuée"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": {
+        "auteur": "Armando Olivo Martín del Campo",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:Eurocopter AS332 Super Puma.jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3AEurocopter_AS332_Super_Puma.jpg",
+        "note": "Photo d'un AS332 Super Puma, dont le H215 est l'évolution."
+      }
     },
     {
       "code": "H225",
@@ -1828,7 +2141,7 @@
         "ETIII"
       ],
       "silhouette": "roues-bi-lourd",
-      "photo": "",
+      "photo": "assets/img/porteurs/h225.jpg",
       "service": {
         "technique": {
           "motorisation": null,
@@ -1848,48 +2161,261 @@
         }
       },
       "jalon": null,
-      "avancement": null
-    },
-    {
-      "code": "H225M",
-      "categorie": "militaire",
-      "segment": "Bimoteur lourd",
-      "poles": [
-        "ETIII"
-      ],
-      "silhouette": "roues-bi-lourd",
-      "photo": "",
-      "service": {
-        "technique": {
-          "motorisation": null,
-          "masseMaxDecollage": null,
-          "capacite": null,
-          "rayonAction": null,
-          "vitesseCroisiere": null,
-          "longueurHarnais": null,
-          "nbConnecteurs": null
+      "avancement": null,
+      "fiche": {
+        "nom": "Airbus Helicopters H225 Super Puma",
+        "ancienNom": "Eurocopter EC225 Super Puma",
+        "segment": "Bimoteur lourd",
+        "statut": "en production",
+        "resume": "Le H225 est le dernier-né de la famille Super Puma : un hélicoptère lourd de transport de passagers à long rayon d'action, en service depuis décembre 2004, conçu pour l'offshore, le transport VIP et les missions de service public. Sa version militaire est le H225M Caracal.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Eurocopter, puis Airbus Helicopters",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          },
+          "premierVol": {
+            "valeur": "novembre 2000 (EC225)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225_Super_Puma"
+          },
+          "certification": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": "décembre 2004",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          },
+          "siteAssemblage": {
+            "valeur": "Marignane (Bouches-du-Rhône)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225_Super_Puma"
+          }
         },
-        "economique": {
-          "heuresIngenierie": null,
-          "chargePersMois": null,
-          "coutRecurrent": null,
-          "volumeSerie": null,
-          "tauxService": null
-        }
+        "motorisation": {
+          "moteur": {
+            "valeur": "Turbomeca (Safran) Makila 2A ou 2A1",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225_Super_Puma"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225_Super_Puma"
+          },
+          "puissance": {
+            "valeur": "1 567 kW (2 101 ch) par moteur",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225_Super_Puma"
+          },
+          "rotorPrincipal": {
+            "valeur": "Cinq pales à profil évolutif Spheriflex",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          },
+          "rotorArriere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": 11000,
+            "unite": "kg",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          },
+          "masseAVide": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "chargeUtile": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225_Super_Puma"
+          },
+          "passagers": {
+            "valeur": "19 (jusqu’à 24 selon configuration)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": 262,
+            "unite": "km/h",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225_Super_Puma"
+          },
+          "vitesseMax": {
+            "valeur": 324,
+            "unite": "km/h",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225_Super_Puma"
+          },
+          "rayonAction": {
+            "valeur": 937,
+            "unite": "km",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225_Super_Puma"
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": 5900,
+            "unite": "m",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225_Super_Puma"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": 19.5,
+            "unite": "m",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          },
+          "hauteur": {
+            "valeur": 4.97,
+            "unite": "m",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          },
+          "diametreRotor": {
+            "valeur": 16.2,
+            "unite": "m",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "plus de 170 (EC225 / H225 civils)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          },
+          "prixIndicatif": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "Compagnies offshore (mer du Nord, Brésil, Asie-Pacifique), transports gouvernementaux et VIP, secours en mer",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          },
+          "commandesNotables": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Glass cockpit avec pilote automatique quatre axes couplé",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          },
+          "particularites": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Après deux accidents en mer du Nord en 2012 liés à l'arbre de la boîte de transmission principale, la flotte H225 a été clouée au sol plusieurs mois : un cas d'école de retour d'expérience sur la surveillance des éléments dynamiques.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          },
+          {
+            "texte": "L'accident de Turøy (Norvège) en avril 2016 a entraîné une interdiction de vol prolongée en Norvège et au Royaume-Uni, dont l'offshore nord-européen n'est jamais vraiment revenu vers le H225.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          },
+          {
+            "texte": "Le H225 peut être équipé d'un système de dégivrage complet des rotors : l'un des rares hélicoptères civils certifiés pour le vol en conditions givrantes connues.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+          }
+        ],
+        "sources": [
+          "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225_Super_Puma",
+          "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma"
+        ],
+        "code": "H225",
+        "categorie": "civil",
+        "relecture": "non effectuée"
       },
-      "jalon": null,
-      "avancement": null
+      "credit": {
+        "auteur": "sparkcyf",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:Airbus Helicopters EC225 COMC.jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_Helicopters_EC225_COMC.jpg",
+        "note": "Photo d'un EC225 (ancienne désignation du H225)."
+      }
     },
     {
       "code": "H145M",
       "categorie": "militaire",
-      "segment": "Bimoteur léger",
+      "segment": "Bimoteur léger militaire",
       "poles": [
         "ETIIA",
         "ETIII"
       ],
       "silhouette": "patins-fenestron-bi",
-      "photo": "",
+      "photo": "assets/img/porteurs/h145m.jpg",
       "service": {
         "technique": {
           "motorisation": null,
@@ -1909,48 +2435,531 @@
         }
       },
       "jalon": null,
-      "avancement": null
-    },
-    {
-      "code": "DEMO-1",
-      "categorie": "prototype",
-      "segment": "Banc d'essai",
-      "poles": [
-        "ETIIA"
-      ],
-      "silhouette": "roues-bi",
-      "photo": "",
-      "service": {
-        "technique": {
-          "motorisation": null,
-          "masseMaxDecollage": null,
-          "capacite": null,
-          "rayonAction": null,
-          "vitesseCroisiere": null,
-          "longueurHarnais": null,
-          "nbConnecteurs": null
+      "avancement": null,
+      "fiche": {
+        "nom": "Airbus Helicopters H145M",
+        "ancienNom": "EC645 T2 (désignation militaire de l’EC145 T2)",
+        "segment": "Bimoteur léger militaire",
+        "statut": "en production",
+        "resume": "Le H145M est la version militaire du H145, hélicoptère léger biturbine issu du BK117 développé par MBB et Kawasaki. Il sert aux forces spéciales, à l'appui léger et à l'évacuation sanitaire, et existe en version rotor cinq pales depuis 2020.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters (base MBB / Kawasaki BK117)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          "premierVol": {
+            "valeur": "H145 / BK117 D-2 : 2014 ; famille BK117 : 1979",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          },
+          "certification": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": "EC145 : 2002 ; H145M : 2015 (Allemagne, forces spéciales)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          },
+          "siteAssemblage": {
+            "valeur": "Donauwörth (Allemagne)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          }
         },
-        "economique": {
-          "heuresIngenierie": null,
-          "chargePersMois": null,
-          "coutRecurrent": null,
-          "volumeSerie": null,
-          "tauxService": null
-        }
+        "motorisation": {
+          "moteur": {
+            "valeur": "Safran Arriel 2E",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          "puissance": {
+            "valeur": "environ 780 ch par moteur (Arriel 1E2 sur BK117 C-2 ; Arriel 2E plus puissant sur D-2/D-3)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          "rotorPrincipal": {
+            "valeur": "Quatre pales (D-2) ou cinq pales sans roulement (D-3, depuis 2020)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          },
+          "rotorArriere": {
+            "valeur": "Fenestron caréné",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": "3 800 kg (BK117 D-3, cinq pales)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          "masseAVide": {
+            "valeur": "1 723 kg (BK117 C-2)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          "chargeUtile": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": "1 ou 2",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          },
+          "passagers": {
+            "valeur": "jusqu’à 10 selon configuration",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": 241,
+            "unite": "km/h",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          "vitesseMax": {
+            "valeur": 254,
+            "unite": "km/h",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          "rayonAction": {
+            "valeur": "650 km (D-3)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "hauteur": {
+            "valeur": "3,45 m (BK117 C-2)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          "diametreRotor": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "plus de 1 600 H145 / EC145 / BK117 toutes versions (juin 2023)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          },
+          "prixIndicatif": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "Forces spéciales allemandes, Thaïlande, Hongrie, Serbie, Luxembourg, Chypre, entre autres",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          },
+          "commandesNotables": {
+            "valeur": "Allemagne : 15 H145M pour le KSK (2013), puis commandes complémentaires ; Hongrie : 20 H145M (2018)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Suite Helionix avec pilote automatique quatre axes",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          },
+          "particularites": {
+            "valeur": "Système d’armes modulaire HForce (canon, roquettes, missiles) proposé en option",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le BK117, ancêtre du H145, est né d'un partenariat germano-japonais entre MBB et Kawasaki en 1979 : l'un des premiers hélicoptères conçus à deux sur deux continents.",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          {
+            "texte": "Le rotor cinq pales sans roulement introduit en 2020 a permis de gagner 150 kg de charge utile tout en réduisant les vibrations.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          },
+          {
+            "texte": "Le H145 est l'hélicoptère de la sécurité civile allemande (DRF, ADAC) : des centaines d'exemplaires volent au secours médical en Europe.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+          }
+        ],
+        "sources": [
+          "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145",
+          "https://en.wikipedia.org/wiki/Eurocopter_EC145"
+        ],
+        "code": "H145M",
+        "categorie": "militaire",
+        "relecture": "non effectuée"
       },
-      "jalon": null,
-      "avancement": null
+      "credit": {
+        "auteur": "Matti Blume",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:Airbus H145M, ILA 2024, Schoenefeld (ILA43976).jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_H145M%2C_ILA_2024%2C_Schoenefeld_%28ILA43976%29.jpg",
+        "note": ""
+      }
     },
     {
-      "code": "DEMO-2",
-      "categorie": "prototype",
-      "segment": "Démonstrateur",
-      "poles": [
-        "ETIIA",
-        "ETIIE"
-      ],
+      "code": "H160M",
+      "poles": [],
+      "photo": "assets/img/porteurs/h160m.jpg",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "militaire",
+      "segment": "Bimoteur moyen militaire",
       "silhouette": "roues-fenestron-bi",
-      "photo": "",
+      "fiche": {
+        "nom": "Airbus Helicopters H160M Guépard",
+        "ancienNom": "HIL — Hélicoptère interarmées léger",
+        "segment": "Bimoteur moyen militaire",
+        "statut": "en développement (premier vol 2025, livraisons attendues à partir de 2028)",
+        "resume": "Le H160M Guépard est la version militaire du H160, retenue en 2017 pour le programme d'hélicoptère interarmées léger (HIL) des armées françaises : 169 appareils prévus pour l'armée de Terre, la Marine nationale et l'armée de l'Air. Il reprend la cellule, les moteurs Arrano et l'avionique Helionix du H160 civil.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "premierVol": {
+            "valeur": "24 juillet 2025 (premier H160M)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "certification": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": "livraisons attendues à partir de 2028",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "siteAssemblage": {
+            "valeur": "Marignane (Bouches-du-Rhône)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Safran Arrano 1A",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "puissance": {
+            "valeur": "environ 955 kW par moteur (Arrano 1A)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "rotorPrincipal": {
+            "valeur": "Cinq pales Blue Edge",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "rotorArriere": {
+            "valeur": "Fenestron incliné",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": "de l’ordre de 6 t (base H160)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "masseAVide": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "chargeUtile": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "passagers": {
+            "valeur": "jusqu’à 12 (base H160)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": "285 km/h (base H160)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "vitesseMax": {
+            "valeur": "315 km/h (base H160)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "rayonAction": {
+            "valeur": "880 km (base H160)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": "13,96 m fuselage (base H160)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "hauteur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "diametreRotor": {
+            "valeur": "13,4 m (base H160)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "prixIndicatif": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "Armée de Terre (ALAT), Marine nationale, armée de l’Air et de l’Espace — France",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "commandesNotables": {
+            "valeur": "Programme HIL : 169 appareils prévus (80 Terre, 49 Marine, 40 Air) ; première tranche ferme de 30 notifiée le 22 décembre 2021",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Helionix (base H160), avec système de mission militaire, boule optronique et liaison de données",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "particularites": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le Guépard remplacera à lui seul cinq types d'hélicoptères des armées françaises (Gazelle, Alouette III, Dauphin, Panther, Fennec) : une flotte unique pour trois armées.",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          {
+            "texte": "Avant l'arrivée du Guépard, la Marine nationale assure ses alertes de sauvetage en mer avec des H160 civils loués : la « flotte intérimaire ».",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          {
+            "texte": "Le nom Guépard a été choisi par les armées en 2019, dans la tradition des félins de l'ALAT (Tigre, Caracal).",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          }
+        ],
+        "sources": [
+          "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160",
+          "https://en.wikipedia.org/wiki/Airbus_Helicopters_H160"
+        ],
+        "code": "H160M",
+        "categorie": "militaire",
+        "relecture": "non effectuée"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": {
+        "auteur": "Gervaisjc",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:H160M Bourget 2019.jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3AH160M_Bourget_2019.jpg",
+        "note": ""
+      }
+    },
+    {
+      "code": "H225M",
+      "categorie": "militaire",
+      "segment": "Bimoteur lourd militaire",
+      "poles": [
+        "ETIII"
+      ],
+      "silhouette": "roues-bi-lourd",
+      "photo": "assets/img/porteurs/h225m.jpg",
       "service": {
         "technique": {
           "motorisation": null,
@@ -1970,7 +2979,1577 @@
         }
       },
       "jalon": null,
-      "avancement": null
+      "avancement": null,
+      "fiche": {
+        "nom": "Airbus Helicopters H225M Caracal",
+        "ancienNom": "Eurocopter EC725 Caracal",
+        "segment": "Bimoteur lourd militaire",
+        "statut": "en production",
+        "resume": "Le H225M Caracal est l'hélicoptère de transport tactique lourd dérivé du Cougar et du Super Puma, en service dans l'armée de l'Air et l'ALAT françaises depuis 2005. Conçu pour le transport de troupes, l'évacuation sanitaire et la recherche et sauvetage au combat, il emporte jusqu'à 28 soldats.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Eurocopter, puis Airbus Helicopters",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          },
+          "premierVol": {
+            "valeur": "27 novembre 2000",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          },
+          "certification": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": "février 2005",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          },
+          "siteAssemblage": {
+            "valeur": "Marignane (Bouches-du-Rhône) ; chaîne également au Brésil (Helibras, Itajubá)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Turbomeca (Safran) Makila 2A1",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225M_Caracal"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225M_Caracal"
+          },
+          "puissance": {
+            "valeur": "1 776 kW par moteur",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225M_Caracal"
+          },
+          "rotorPrincipal": {
+            "valeur": "Cinq pales",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          },
+          "rotorArriere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": 11000,
+            "unite": "kg",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          },
+          "masseAVide": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "chargeUtile": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": "2 pilotes + 1 mécanicien",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225M_Caracal"
+          },
+          "passagers": {
+            "valeur": "28 soldats, ou 10 civières et 4 soignants",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225M_Caracal"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": 285,
+            "unite": "km/h",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225M_Caracal"
+          },
+          "vitesseMax": {
+            "valeur": 325,
+            "unite": "km/h",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225M_Caracal"
+          },
+          "rayonAction": {
+            "valeur": 857,
+            "unite": "km",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225M_Caracal"
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": 19.5,
+            "unite": "m",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          },
+          "hauteur": {
+            "valeur": 4.6,
+            "unite": "m",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          },
+          "diametreRotor": {
+            "valeur": 16.2,
+            "unite": "m",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "environ 350 (toutes versions militaires)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          },
+          "prixIndicatif": {
+            "valeur": "supérieur à 25 M USD (estimation 2013)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225M_Caracal"
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "France (armée de l’Air, ALAT), Brésil, Mexique, Malaisie, Indonésie, Thaïlande, Koweït, Singapour, Hongrie",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          },
+          "commandesNotables": {
+            "valeur": "Brésil : 50 appareils (programme H-XBR, 2008) ; Koweït : 30 (2016) ; Hongrie : 16 (2018)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Glass cockpit, pilote automatique quatre axes, système de mission avec radar et boule optronique",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          },
+          "particularites": {
+            "valeur": "Ravitaillement en vol possible sur certaines versions (perche fixe ou rétractable)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le Caracal a été choisi pour le sauvetage au combat de l'armée de l'Air française après le retour d'expérience du Kosovo, où le Puma avait montré ses limites en blindage et en autonomie.",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225M_Caracal"
+          },
+          {
+            "texte": "Certains Caracal peuvent se ravitailler en vol derrière un C-130 ou un A400M : une rareté pour un hélicoptère européen.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          },
+          {
+            "texte": "Au Brésil, le H225M est assemblé sous licence par Helibras et sert aux trois armées ainsi qu'au transport présidentiel.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+          }
+        ],
+        "sources": [
+          "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H225M_Caracal",
+          "https://en.wikipedia.org/wiki/Eurocopter_EC725"
+        ],
+        "code": "H225M",
+        "categorie": "militaire",
+        "relecture": "non effectuée"
+      },
+      "credit": {
+        "auteur": "Leo za1",
+        "licence": "CC BY-SA 3.0",
+        "fichier": "File:Caracal Caracal-001.jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3ACaracal_Caracal-001.jpg",
+        "note": "Photo d'un EC725 Caracal (ancienne désignation du H225M)."
+      }
+    },
+    {
+      "code": "TIGRE",
+      "poles": [],
+      "photo": "assets/img/porteurs/tigre.jpg",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "militaire",
+      "segment": "Hélicoptère d’attaque",
+      "silhouette": "roues-bi",
+      "fiche": {
+        "nom": "Airbus Helicopters Tigre (Tiger)",
+        "ancienNom": "Eurocopter EC665 Tigre",
+        "segment": "Hélicoptère d’attaque",
+        "statut": "en service, modernisation (standard 3) en cours",
+        "resume": "Le Tigre est l'hélicoptère d'attaque franco-allemand développé par Eurocopter, en service depuis 2003. Il existe en versions appui-protection (HAP), appui-destruction (HAD) et antichar (UHT) ; environ 180 exemplaires ont été produits pour la France, l'Allemagne, l'Espagne et l'Australie.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Eurocopter, puis Airbus Helicopters",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Tiger"
+          },
+          "premierVol": {
+            "valeur": "27 avril 1991",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Tiger"
+          },
+          "certification": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": "2003 (Allemagne) ; 2005 (France)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Tiger"
+          },
+          "siteAssemblage": {
+            "valeur": "Marignane (France), Donauwörth (Allemagne), Albacete (Espagne)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Tiger"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "MTR MTR390-2C (HAP) ; MTR390-E (HAD, version plus puissante)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "puissance": {
+            "valeur": "1 341 ch (MTR390-2C) ; 1 671 ch (MTR390-E) par moteur",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "rotorPrincipal": {
+            "valeur": "Quatre pales composites, moyeu sans roulement, diamètre 13 m",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "rotorArriere": {
+            "valeur": "Rotor anticouple à trois pales",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Tiger"
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": "6 100 kg (HAP/HAD) ; 6 600 kg (UHT)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "masseAVide": {
+            "valeur": 4200,
+            "unite": "kg",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "chargeUtile": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": "2, en tandem (pilote et chef de bord)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "passagers": {
+            "valeur": 0,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": "280 km/h (HAP) ; 260 km/h (UHT)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "vitesseMax": {
+            "valeur": "315 km/h (HAP) ; 370 km/h en piqué",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "rayonAction": {
+            "valeur": 800,
+            "unite": "km",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": 4000,
+            "unite": "m",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": "15,80 m rotors tournants ; fuselage 14,08 m",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "hauteur": {
+            "valeur": "3,83 m (HAP/HAD) ; 5,20 m (UHT, mât viseur)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "diametreRotor": {
+            "valeur": 13,
+            "unite": "m",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "environ 175 à 180 (2020-2026)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Tiger"
+          },
+          "prixIndicatif": {
+            "valeur": "28,2 M€ (HAP) à 37,2 M€ (HAD), coût de décollage 2014",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "France (ALAT), Allemagne (Heer), Espagne (FAMET), Australie (retiré au profit de l’AH-64E)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Tiger"
+          },
+          "commandesNotables": {
+            "valeur": "Standard 3 : modernisation franco-espagnole lancée en 2022 pour prolonger la flotte au-delà de 2040",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Cockpit tandem à écrans, viseur de casque, mât viseur Strix (HAP) ou viseur de toit ; système d’armes intégré",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre"
+          },
+          "particularites": {
+            "valeur": "Cellule à 80 % en composites, conçue pour la furtivité infrarouge et radar et la tolérance aux impacts",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Tiger"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le Tigre a fait ses débuts au cinéma avant l'armée : il apparaît dans GoldenEye (1995), huit ans avant sa mise en service.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Tiger"
+          },
+          {
+            "texte": "Sa cellule est composée à environ 80 % de matériaux composites, ce qui le rend à la fois léger et résistant aux impacts de 23 mm.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Tiger"
+          },
+          {
+            "texte": "L'Australie, cliente depuis 2001, a retiré ses 22 Tigre en 2025 pour des AH-64E Apache, invoquant la disponibilité.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Tiger"
+          },
+          {
+            "texte": "Le nom diffère selon la langue : Tigre en France et en Espagne, Tiger en Allemagne et en Australie — et le constructeur a fini par adopter Tiger.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Tiger"
+          }
+        ],
+        "sources": [
+          "https://fr.wikipedia.org/wiki/Eurocopter_EC665_Tigre",
+          "https://en.wikipedia.org/wiki/Eurocopter_Tiger"
+        ],
+        "code": "TIGRE",
+        "categorie": "militaire",
+        "relecture": "non effectuée"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": {
+        "auteur": "Anna Zvereva from Tallinn, Estonia",
+        "licence": "CC BY-SA 2.0",
+        "fichier": "File:French Army, 6010, Eurocopter EC 665 Tiger HAD (49580123847).jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3AFrench_Army%2C_6010%2C_Eurocopter_EC_665_Tiger_HAD_%2849580123847%29.jpg",
+        "note": ""
+      }
+    },
+    {
+      "code": "NH90",
+      "poles": [],
+      "photo": "assets/img/porteurs/nh90.jpg",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "militaire",
+      "segment": "Bimoteur moyen militaire",
+      "silhouette": "roues-bi",
+      "fiche": {
+        "nom": "NHIndustries NH90",
+        "ancienNom": "NATO Helicopter for the 90s",
+        "segment": "Bimoteur moyen militaire",
+        "statut": "en production",
+        "resume": "Le NH90 est l'hélicoptère militaire européen de manœuvre et d'assaut de la classe 11 t, développé par la France, l'Allemagne, l'Italie et les Pays-Bas et produit par NHIndustries, coentreprise dont Airbus Helicopters est l'actionnaire majoritaire. Premier hélicoptère de série à commandes de vol entièrement électriques, il existe en version terrestre TTH et navale NFH.",
+        "identite": {
+          "constructeur": {
+            "valeur": "NHIndustries (Airbus Helicopters, Leonardo, Fokker)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "premierVol": {
+            "valeur": "18 décembre 1995",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "certification": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": "décembre 2006 (Allemagne) ; 2007",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "siteAssemblage": {
+            "valeur": "Marignane (France), Donauwörth (Allemagne), Tessera (Italie), Albacete (Espagne)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/NHIndustries_NH90"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Rolls-Royce Turbomeca RTM322 ou General Electric T700-T6E",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "puissance": {
+            "valeur": "environ 2 100 ch par moteur (RTM322)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "rotorPrincipal": {
+            "valeur": "Quatre pales composites, diamètre 16,30 m",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "rotorArriere": {
+            "valeur": "Quatre pales",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/NHIndustries_NH90"
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": 10600,
+            "unite": "kg",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "masseAVide": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "chargeUtile": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "passagers": {
+            "valeur": "jusqu’à 20 soldats (TTH)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": 300,
+            "unite": "km/h",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "vitesseMax": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rayonAction": {
+            "valeur": 880,
+            "unite": "km",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": 3500,
+            "unite": "m",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": 19.56,
+            "unite": "m",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "hauteur": {
+            "valeur": 5.31,
+            "unite": "m",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "diametreRotor": {
+            "valeur": 16.3,
+            "unite": "m",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "525 (janvier 2026)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "prixIndicatif": {
+            "valeur": "entre 26 et 39 M€ selon version",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "France, Allemagne, Italie, Pays-Bas, Espagne, Belgique, Finlande, Suède, Grèce, Oman, Qatar, Nouvelle-Zélande, entre autres",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "commandesNotables": {
+            "valeur": "Programme initial des quatre nations fondatrices ; Qatar : 28 appareils (2018)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/NHIndustries_NH90"
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Cockpit tout écran, commandes de vol électriques (fly-by-wire) intégrales — une première sur un hélicoptère de série",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          "particularites": {
+            "valeur": "Emploi massif de composites et de capteurs électroniques ; version NFH avec radar, sonar trempé et systèmes de lutte anti-sous-marine",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/NHIndustries_NH90"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le NH90 est le premier hélicoptère de série au monde à commandes de vol entièrement électriques, sans liaison mécanique entre le manche et les rotors.",
+            "source": "https://en.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          {
+            "texte": "Le programme rassemble jusqu'à neuf pays : lancé à quatre, il a été rejoint par le Portugal, la Finlande, la Norvège, la Suède et la Belgique.",
+            "source": "https://fr.wikipedia.org/wiki/NHIndustries_NH90"
+          },
+          {
+            "texte": "La Norvège a résilié son contrat en 2022 et l'Australie a retiré sa flotte en 2023, tous deux invoquant la disponibilité : un exemple souvent cité des difficultés du soutien multinational.",
+            "source": "https://en.wikipedia.org/wiki/NHIndustries_NH90"
+          }
+        ],
+        "sources": [
+          "https://fr.wikipedia.org/wiki/NHIndustries_NH90",
+          "https://en.wikipedia.org/wiki/NHIndustries_NH90"
+        ],
+        "code": "NH90",
+        "categorie": "militaire",
+        "relecture": "non effectuée"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": {
+        "auteur": "New York-air",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:NHIndustries NH90 EAY 1.jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3ANHIndustries_NH90_EAY_1.jpg",
+        "note": ""
+      }
+    },
+    {
+      "code": "RACER",
+      "poles": [],
+      "photo": "assets/img/porteurs/racer.jpg",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "prototype",
+      "segment": "Démonstrateur haute vitesse (girodyne composé)",
+      "silhouette": "roues-bi",
+      "fiche": {
+        "nom": "Airbus Racer",
+        "ancienNom": "Rapid and Cost-Effective Rotorcraft ; successeur du démonstrateur X3",
+        "segment": "Démonstrateur haute vitesse (girodyne composé)",
+        "statut": "démonstrateur en essais depuis 2024",
+        "resume": "Le Racer est le démonstrateur d'hélicoptère composé haute vitesse d'Airbus Helicopters, développé dans le programme européen Clean Sky 2 et présenté au salon du Bourget en 2017. Il combine rotor principal, ailes en caisson et deux hélices propulsives ; il a volé pour la première fois le 25 avril 2024 et vise 400 km/h avec un coût au kilomètre inférieur de 25 % à un hélicoptère classique.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters, avec une quarantaine de partenaires européens (Clean Sky 2)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          "premierVol": {
+            "valeur": "25 avril 2024",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          "certification": {
+            "valeur": "sans objet (démonstrateur)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          "miseEnService": {
+            "valeur": "sans objet (démonstrateur)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          "siteAssemblage": {
+            "valeur": "Marignane (Bouches-du-Rhône)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_RACER"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Safran Aneto-1X",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_RACER"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_RACER"
+          },
+          "puissance": {
+            "valeur": "environ 2 500 ch par moteur (classe Aneto)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_RACER"
+          },
+          "rotorPrincipal": {
+            "valeur": "Rotor principal à cinq pales, allégé en vol de croisière par la portance des ailes",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          "rotorArriere": {
+            "valeur": "Pas de rotor anticouple : deux hélices propulsives en bout d’aile, l’une d’elles assurant l’anticouple",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": "de l’ordre de 7 à 8 t",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          "masseAVide": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "chargeUtile": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          "passagers": {
+            "valeur": "cabine de démonstrateur (non représentative)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": "objectif 400 km/h ; 420 km/h atteints en essais (2024)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_RACER"
+          },
+          "vitesseMax": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rayonAction": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "hauteur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "diametreRotor": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "1 démonstrateur",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          "prixIndicatif": {
+            "valeur": "sans objet",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          "cadence": {
+            "valeur": "sans objet",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          "principauxOperateurs": {
+            "valeur": "Airbus Helicopters (essais) ; démonstrations pour les armées européennes envisagées",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          "commandesNotables": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Cockpit dérivé du H160 (Helionix)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          "particularites": {
+            "valeur": "Mode « éco » : un moteur peut être mis en veille en croisière et redémarré à la demande, pour réduire la consommation",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le X3, ancêtre du Racer, a battu en 2013 le record de vitesse en palier pour un hélicoptère : 472 km/h.",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          {
+            "texte": "Les ailes en caisson du Racer déchargent le rotor principal en croisière : il tourne moins vite, ce qui repousse la limite du décrochage de pale reculante qui bride tout hélicoptère classique.",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          },
+          {
+            "texte": "Le programme fédère une quarantaine de partenaires de treize pays européens dans le cadre de Clean Sky 2.",
+            "source": "https://en.wikipedia.org/wiki/Airbus_RACER"
+          }
+        ],
+        "sources": [
+          "https://fr.wikipedia.org/wiki/Airbus_Helicopters_RACER",
+          "https://en.wikipedia.org/wiki/Airbus_RACER"
+        ],
+        "code": "RACER",
+        "categorie": "prototype",
+        "relecture": "non effectuée"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": {
+        "auteur": "Marc Lacoste",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:Paris Air Show 2017 Airbus racer (cropped).jpg",
+        "page": "https://commons.wikimedia.org/wiki/File%3AParis_Air_Show_2017_Airbus_racer_%28cropped%29.jpg",
+        "note": ""
+      }
+    },
+    {
+      "code": "DISRUPTIVELAB",
+      "poles": [],
+      "photo": "",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "prototype",
+      "segment": "Démonstrateur technologique",
+      "silhouette": "patins-fenestron",
+      "fiche": {
+        "nom": "Airbus DisruptiveLab",
+        "ancienNom": "",
+        "segment": "Démonstrateur technologique",
+        "statut": "démonstrateur en essais",
+        "resume": "Le DisruptiveLab est un démonstrateur technologique d'Airbus Helicopters présenté fin 2022, conçu pour tester des architectures de rotor et de cellule visant à réduire la consommation, puis à préparer l'hybridation électrique. Aucune source publique lisible automatiquement n'a pu être consultée pour cette fiche : chaque valeur est à confirmer.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "premierVol": {
+            "valeur": "début 2023",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "certification": {
+            "valeur": "sans objet (démonstrateur)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": "sans objet (démonstrateur)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "siteAssemblage": {
+            "valeur": "Marignane (Bouches-du-Rhône)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "nombreMoteurs": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "puissance": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rotorPrincipal": {
+            "valeur": "Rotor principal de nouvelle conception à moyeu intégré, visant une traînée réduite",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rotorArriere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "masseAVide": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "chargeUtile": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "passagers": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "vitesseMax": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rayonAction": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "hauteur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "diametreRotor": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "1 démonstrateur",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "prixIndicatif": {
+            "valeur": "sans objet",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "cadence": {
+            "valeur": "sans objet",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "Airbus Helicopters (essais)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "commandesNotables": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "particularites": {
+            "valeur": "Plateforme prévue pour tester ensuite une propulsion hybride électrique",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "insolites": [
+          {
+            "texte": "À la différence du Flightlab, dérivé d'un appareil de série, le DisruptiveLab est une cellule entièrement nouvelle, construite pour l'essai.",
+            "source": ""
+          }
+        ],
+        "sources": [],
+        "code": "DISRUPTIVELAB",
+        "categorie": "prototype",
+        "relecture": "non effectuée",
+        "fiabilite": "faible"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": null
+    },
+    {
+      "code": "FLIGHTLAB",
+      "poles": [],
+      "photo": "",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "prototype",
+      "segment": "Démonstrateur technologique",
+      "silhouette": "patins-fenestron",
+      "fiche": {
+        "nom": "Airbus Flightlab",
+        "ancienNom": "banc d’essai volant sur base H130",
+        "segment": "Démonstrateur technologique",
+        "statut": "démonstrateur en essais",
+        "resume": "Le Flightlab est un H130 transformé en banc d'essai volant par Airbus Helicopters pour tester rapidement, en conditions réelles, des technologies destinées à toute la gamme : alerte d'obstacle pour le rotor, mode économique avec mise en veille d'un moteur, secours électrique, briques d'autonomie. Aucune source publique lisible automatiquement n'a pu être consultée pour cette fiche : chaque valeur est à confirmer.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters (base H130)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "premierVol": {
+            "valeur": "2020 (annoncé début 2021)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "certification": {
+            "valeur": "sans objet (démonstrateur)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": "sans objet (démonstrateur)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "siteAssemblage": {
+            "valeur": "Marignane (Bouches-du-Rhône)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Safran Arriel 2D (base H130)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "nombreMoteurs": {
+            "valeur": 1,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "puissance": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rotorPrincipal": {
+            "valeur": "Trois pales (base H130)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rotorArriere": {
+            "valeur": "Fenestron (base H130)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "masseAVide": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "chargeUtile": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "passagers": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "vitesseMax": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rayonAction": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "hauteur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "diametreRotor": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "1 banc d’essai",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "prixIndicatif": {
+            "valeur": "sans objet",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "cadence": {
+            "valeur": "sans objet",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "Airbus Helicopters (essais)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "commandesNotables": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": "Système de secours électrique testé en vol (moteur électrique d’appoint)",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Briques d’assistance au pilotage et d’autonomie (projet Vertex) testées à bord",
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "particularites": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le Flightlab a servi à tester des technologies destinées au CityAirbus NextGen, le projet d'aéronef électrique à décollage vertical d'Airbus.",
+            "source": ""
+          }
+        ],
+        "sources": [],
+        "code": "FLIGHTLAB",
+        "categorie": "prototype",
+        "relecture": "non effectuée",
+        "fiabilite": "faible"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": null
     }
   ]
 }
