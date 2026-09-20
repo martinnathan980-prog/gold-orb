@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Réunions — comptes-rendus — ETII Hub</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Comptes-rendus de réunion du service ETII et de ses trois pôles : synthèse, sujets, actions et décisions, avec sélecteur de pôle, recherche et impression.">
+  <meta name="description" content="Comptes-rendus de réunion du service ETII et de ses trois pôles : la synthèse, ce qui reste à faire, ce qui a été décidé — avec sélecteur de pôle, recherche et impression.">
   <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="assets/css/polices.css">
   <link rel="stylesheet" href="assets/css/tokens.css">
@@ -17,12 +17,12 @@
   <!-- =====================================================================
        Styles propres à la page Réunions.
 
-       Uniquement ce qu'aucune classe de base.css, components.css ou
-       skin.css ne couvre : le rattachement d'un code de pôle à son jeton
-       de couleur, la barre d'outils, la disposition en deux volets, l'état
-       sélectionné d'une option de liste, la mise en forme du lecteur, et
-       les blocs « Actions » / « Décisions » qui doivent se détacher
-       nettement du corps du texte (SPEC §6.3).
+       Uniquement ce qu'aucune classe de base.css, components.css, skin.css
+       ou modules.css ne couvre : le rattachement d'un code de pôle à son
+       jeton de couleur, la barre d'outils, la disposition en deux volets
+       et l'impression. La liste et la lecture reprennent le lecteur des
+       espaces de pôle (modules.css §4, classes .liseuse__*) : une réunion
+       se présente pareil ici et dans un espace de pôle.
 
        Aucune valeur brute : tout vient de tokens.css. Seuls les points de
        rupture sont exprimés en pixels, comme dans base.css — une media
@@ -52,14 +52,18 @@
       background-color: var(--pole-teinte, var(--texte-doux));
     }
 
-    /* Pastille ÉTIQUETÉE du pôle d'une réunion : un point teinté et,
-       toujours, le code du pôle écrit. Elle reprend le composant .badge ;
-       seules ses trois variables de teinte sont réaffectées, donc le
-       contraste AA reste celui garanti par components.css. */
-    .badge--pole {
-      --badge-fond: transparent;
-      --badge-teinte: var(--pole-teinte, var(--texte-doux));
-      --badge-bordure: var(--pole-teinte, var(--bordure));
+    /* Pastille ÉTIQUETÉE du pôle d'une réunion : un point teinté et le
+       code du pôle, en petit mono — le même registre que la date qui la
+       précède. Pas de bordure ni de fond : c'est un repère, pas un badge. */
+    .pole-pastille {
+      display: inline-flex;
+      align-items: center;
+      gap: calc(var(--e-1) * 1.5);
+      font-family: var(--police-mono);
+      font-size: var(--texte-xs);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--texte-doux);
     }
 
     /* Intitulé de section discret (sélecteur de pôle, titre de liste). */
@@ -100,7 +104,7 @@
     .reunions {
       display: grid;
       gap: var(--e-6);
-      grid-template-columns: minmax(0, calc(var(--e-16) * 5)) minmax(0, 1fr);
+      grid-template-columns: minmax(0, calc(var(--e-16) * 4)) minmax(0, 1fr);
       align-items: start;
     }
 
@@ -134,53 +138,25 @@
        de base.css, dont la spécificité est identique à celle de la règle
        du navigateur. Un sélecteur ciblé suffit : pas de !important. */
     .pile[hidden],
-    .rangee[hidden] {
+    .rangee[hidden],
+    .reunions__panneau[hidden] {
       display: none;
     }
 
     /* ===================================================================
        4. Options de la liste de réunions
        Ce sont de vraies options de listbox : l'état est porté par
-       aria-selected, jamais par une classe posée en JavaScript.
+       aria-selected, jamais par une classe posée en JavaScript. Leur
+       habillage — date mono, titre, note, état choisi — est celui de
+       .liseuse__item (modules.css §4) ; ne reste ici que ce qui tient à
+       la page : l'espacement de la liste et le décompte sous son titre.
        =================================================================== */
 
     .reunions__options {
       display: flex;
       flex-direction: column;
-      gap: var(--e-3);
+      gap: 2px;
       margin: 0;
-    }
-
-    .reunion-option {
-      cursor: pointer;
-    }
-
-    .reunion-option:hover {
-      border-color: var(--bordure-forte);
-      box-shadow: var(--ombre-md);
-    }
-
-    .reunion-option[aria-selected="true"] {
-      border-color: var(--accent);
-      background-color: var(--accent-doux);
-      box-shadow: var(--ombre-md);
-    }
-
-    .reunion-option[aria-selected="true"] .carte__titre {
-      color: var(--texte-accent);
-    }
-
-    /* Le titre d'une option reste au calibre du texte courant : la liste
-       est dense, ce n'est pas une suite de titres de niveau carte. */
-    .reunion-option .carte__titre {
-      font-size: var(--texte-md);
-      font-weight: var(--graisse-moyenne);
-    }
-
-    .reunion-option__extrait {
-      margin: 0;
-      font-size: var(--texte-sm);
-      color: var(--texte-doux);
     }
 
     /* Décompte affiché sous le titre de liste, mis à jour à chaque frappe. */
@@ -190,16 +166,10 @@
       margin: 0;
     }
 
-    @media (prefers-reduced-motion: no-preference) {
-      .reunion-option {
-        transition: border-color var(--duree-rapide) var(--courbe),
-                    background-color var(--duree-rapide) var(--courbe),
-                    box-shadow var(--duree-rapide) var(--courbe);
-      }
-    }
-
     /* ===================================================================
        5. Lecteur de réunion
+       Le contenu — date, titre Newsreader, synthèse, « À faire »,
+       « Fait / décidé » — est habillé par .liseuse__* (modules.css §4).
        =================================================================== */
 
     .lecteur:focus {
@@ -224,138 +194,8 @@
       }
     }
 
-    .lecteur__titre-section {
-      margin: 0;
-      font-size: var(--texte-md);
-      font-weight: var(--graisse-forte);
-      color: var(--texte);
-    }
-
-    /* --- Sujets : titre + notes ---------------------------------------- */
-
-    ul.sujets {
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-4);
-      margin: 0;
-    }
-
-    .sujet {
-      padding-inline-start: var(--e-4);
-      border-inline-start: var(--e-1) solid var(--bordure);
-    }
-
-    .sujet__titre {
-      margin: 0;
-      font-size: var(--texte-md);
-      font-weight: var(--graisse-moyenne);
-      color: var(--texte);
-    }
-
-    .sujet__notes {
-      margin: 0;
-      max-width: var(--largeur-texte);
-      color: var(--texte-doux);
-    }
-
     /* ===================================================================
-       6. Blocs « Actions » et « Décisions »
-       Ils doivent se distinguer nettement du corps du texte : surface
-       propre, liseré teinté, étiquette explicite et liste numérotée.
-       La teinte du texte d'étiquette est rapprochée de la couleur de texte
-       du thème courant — technique documentée en tête de components.css,
-       qui garantit le contraste AA en clair comme en sombre.
-       =================================================================== */
-
-    .bloc-cle {
-      --bloc-teinte: var(--texte-doux);
-      --bloc-fond: var(--fond-enfonce);
-
-      display: flex;
-      flex-direction: column;
-      gap: var(--e-3);
-
-      padding: var(--e-4) var(--e-5);
-
-      background-color: var(--bloc-fond);
-      border: 1px solid var(--bloc-teinte);
-      border-inline-start-width: var(--e-1);
-      border-radius: var(--rayon-md);
-    }
-
-    .bloc-cle--actions {
-      --bloc-teinte: var(--statut-alerte);
-      --bloc-fond: var(--statut-alerte-fond);
-    }
-
-    .bloc-cle--decisions {
-      --bloc-teinte: var(--statut-succes);
-      --bloc-fond: var(--statut-succes-fond);
-    }
-
-    .bloc-cle__entete {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--e-2) var(--e-3);
-    }
-
-    .bloc-cle__titre {
-      margin: 0;
-      font-size: var(--texte-sm);
-      font-weight: var(--graisse-extra);
-      letter-spacing: calc(var(--e-1) / 2);
-      text-transform: uppercase;
-
-      color: var(--bloc-teinte);
-      color: color-mix(in srgb, var(--bloc-teinte) 72%, var(--texte));
-    }
-
-    /* L'icône est purement décorative : le sens est porté par l'étiquette
-       textuelle qui la suit, jamais par la seule couleur ni le seul glyphe. */
-    .bloc-cle__icone {
-      flex: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-
-      inline-size: var(--e-6);
-      block-size: var(--e-6);
-
-      background-color: var(--fond-eleve);
-      border: 1px solid var(--bloc-teinte);
-      border-radius: var(--rayon-plein);
-
-      color: var(--bloc-teinte);
-      color: color-mix(in srgb, var(--bloc-teinte) 72%, var(--texte));
-
-      font-size: var(--texte-sm);
-      line-height: 1;
-    }
-
-    /* Vraies listes numérotées : le lecteur d'écran annonce « liste de N
-       éléments ». La sélection d'attribut de base.css (`ol[class]`) a la
-       même spécificité ; c'est l'ordre de cascade — cette feuille venant
-       après — qui rétablit le marqueur. */
-    ol.bloc-cle__liste {
-      margin: 0;
-      padding-inline-start: var(--e-6);
-      list-style: decimal;
-      color: var(--texte);
-    }
-
-    ol.bloc-cle__liste li + li {
-      margin-block-start: var(--e-2);
-    }
-
-    ol.bloc-cle__liste li::marker {
-      color: var(--bloc-teinte);
-      color: color-mix(in srgb, var(--bloc-teinte) 72%, var(--texte));
-      font-weight: var(--graisse-forte);
-    }
-
-    /* ===================================================================
-       7. Impression : uniquement la réunion affichée
+       6. Impression : uniquement la réunion affichée
        components.css déplie les panneaux d'onglets masqués pour les pages
        qui veulent tout imprimer ; ici c'est l'inverse qui est demandé —
        seule la réunion ouverte part à l'impression. On rétablit donc le
@@ -371,8 +211,8 @@
         display: none !important;
       }
 
-      /* La barre d'onglets elle-même n'a pas de sens sur le papier : le
-         lecteur imprimé porte déjà la nature de la réunion en badge. */
+      /* Ni barre d'onglets, ni outils, ni liste sur le papier : la
+         réunion imprimée porte sa date, son pôle et son titre. */
       .onglets__liste,
       .barre-outils,
       .reunions__liste {
@@ -396,8 +236,8 @@
         padding: 0;
       }
 
-      .bloc-cle {
-        border: 1px solid var(--gris-400);
+      /* Une liste « À faire » ne se coupe pas entre deux pages. */
+      .liseuse__bloc {
         break-inside: avoid;
         page-break-inside: avoid;
       }

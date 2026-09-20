@@ -4,9 +4,14 @@
    liste avec sa recherche, un panneau de lecture qui affiche l'élément
    choisi. Clavier complet (↑ ↓ Origine Fin dans la liste), recherche par
    score (début de titre, puis titre, puis corps), fondu à la sélection.
+
+   Le fichier porte aussi corpsCompteRendu(), le corps d'un compte-rendu de
+   réunion : la page Réunions et les espaces de pôle le rendent avec la
+   même fonction et les mêmes classes, pour qu'une réunion se lise pareil
+   partout.
    ========================================================================= */
 
-import { el, monter, annoncer } from './ui.js';
+import { el, frag, monter, annoncer } from './ui.js';
 
 function texte(v) { return (v === null || v === undefined) ? '' : String(v).trim(); }
 
@@ -17,7 +22,10 @@ function normaliser(v) {
 /**
  * @param {object} options
  * @param {string} options.id
- * @param {Array<object>} options.elements  { id, titre, meta?, groupe?, badges?: [{texte, classe}], recherche?: string[], corps: () => Node }
+ * @param {Array<object>} options.elements  { id, titre, date?, dateIso?, note?, meta?, groupe?, badges?: [{texte, classe}], recherche?: string[], corps: () => Node }
+ *   `date` est une date courte affichée en mono AVANT le titre (réunions),
+ *   `meta` une étiquette affichée après (catégorie d'une question), `note`
+ *   un petit décompte discret (« 2 actions »).
  * @param {Array<{cle:string, titre:string}>} [options.groupes]
  * @param {string} [options.titreListe]
  * @param {string} [options.placeholder]
@@ -77,8 +85,12 @@ export function lecteur(options) {
         type: 'button', class: 'liseuse__item', dataset: { id: item.id },
         id: prefixe + '-item-' + item.id, 'aria-current': 'false'
       },
+      item.date
+        ? el('time', { class: 'liseuse__item-date', datetime: texte(item.dateIso) || null }, item.date)
+        : null,
       el('span', { class: 'liseuse__item-titre' }, item.titre || 'Sans titre'),
       item.meta ? el('span', { class: 'liseuse__item-meta' }, item.meta) : null,
+      item.note ? el('span', { class: 'liseuse__item-note' }, item.note) : null,
       Array.isArray(item.badges) && item.badges.length
         ? el('span', { class: 'liseuse__item-badges' },
             item.badges.map((b) => el('span', { class: ['badge', b.classe || 'badge--neutre'] }, b.texte)))
@@ -167,4 +179,60 @@ export function lecteur(options) {
 
   rendreListe();
   return racine;
+}
+
+/* -------------------------------------------------------------------------
+   Le corps d'un compte-rendu de réunion
+   Ce que l'équipe a demandé : la synthèse d'abord, en texte lisible — c'est
+   le contenu principal — puis les sujets en liste compacte, puis deux
+   listes sobres, « À faire » et « Fait / décidé ». Pas d'encadré coloré,
+   pas d'icône, pas de lieu : un filet, un titre en gras, une liste.
+   ------------------------------------------------------------------------- */
+
+/**
+ * @param {object} reunion  entrée de reunions.json (synthese, sujets, actions, decisions)
+ * @param {object} [options]
+ * @param {(texte:string) => Node|string} [options.texte]  transformation de chaque
+ *        texte affiché — la page Réunions y passe son surlignage de recherche
+ * @param {number} [options.niveau]  niveau des titres « À faire » / « Fait / décidé »
+ *        (4 par défaut : sous le h3 du lecteur ; 3 sous le h2 de la page Réunions)
+ * @returns {DocumentFragment}
+ */
+export function corpsCompteRendu(reunion, options) {
+  const opts = options || {};
+  const r = reunion && typeof reunion === 'object' ? reunion : {};
+  const rendreTexte = typeof opts.texte === 'function' ? opts.texte : (t) => t;
+  const niveau = Number.isInteger(opts.niveau) && opts.niveau >= 2 && opts.niveau <= 6 ? opts.niveau : 4;
+  const balise = 'h' + niveau;
+
+  /* Un compte-rendu porte une synthèse ; un point préparé, un objectif.
+     L'un ou l'autre ouvre la lecture. */
+  const synthese = texte(r.synthese) || texte(r.objectif);
+
+  const sujets = (Array.isArray(r.sujets) ? r.sujets : [])
+    .filter((s) => s && typeof s === 'object' && (texte(s.titre) || texte(s.notes)));
+
+  /* Une liste sobre : un filet au-dessus, un titre en gras avec son
+     décompte, une liste numérotée. Absente si elle n'a rien à dire. */
+  const listeSobre = (titre, entrees) => {
+    const lignes = (Array.isArray(entrees) ? entrees : []).map(texte).filter(Boolean);
+    if (!lignes.length) return null;
+    return el('section', { class: 'liseuse__bloc' },
+      el(balise, { class: 'liseuse__bloc-titre' }, titre, ' ',
+        el('span', { class: 'liseuse__bloc-compte' }, String(lignes.length))),
+      el('ol', { class: 'liseuse__bloc-liste' }, lignes.map((l) => el('li', {}, rendreTexte(l)))));
+  };
+
+  return frag(
+    synthese
+      ? el('p', { class: 'liseuse__synthese' }, rendreTexte(synthese))
+      : el('p', { class: 'liseuse__synthese liseuse__synthese--absente' }, 'Synthèse à renseigner.'),
+    sujets.length
+      ? el('ul', { class: 'liseuse__sujets' }, sujets.map((s) => el('li', { class: 'liseuse__sujet' },
+          texte(s.titre) ? el('strong', {}, rendreTexte(texte(s.titre))) : null,
+          texte(s.titre) && texte(s.notes) ? ' ' : null,
+          texte(s.notes) ? el('span', { class: 'liseuse__sujet-notes' }, rendreTexte(texte(s.notes))) : null)))
+      : null,
+    listeSobre('À faire', r.actions),
+    listeSobre('Fait / décidé', r.decisions));
 }

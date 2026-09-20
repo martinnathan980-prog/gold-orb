@@ -724,7 +724,6 @@ ul.kiosque__alertes-liste {
   overflow-y: auto;
   padding: var(--e-5) var(--e-6);
   gap: var(--e-4);
-  box-shadow: inset 0 3px 0 var(--accent);
 }
 
 .liseuse__liste-tete {
@@ -796,7 +795,8 @@ ul.kiosque__alertes-liste {
 
 .liseuse__item:hover { background-color: var(--fond-enfonce); border-color: var(--bordure); }
 
-.liseuse__item[aria-current="true"] {
+.liseuse__item[aria-current="true"],
+.liseuse__item[aria-selected="true"] {
   background-color: var(--accent-doux);
   border-color: var(--accent-lueur);
   box-shadow: inset 3px 0 0 var(--accent);
@@ -804,6 +804,9 @@ ul.kiosque__alertes-liste {
 
 .liseuse__item-titre { font-size: var(--texte-sm); font-weight: var(--graisse-forte); line-height: 1.3; }
 
+/* La date d'une réunion, avant le titre, et l'étiquette d'une question,
+   après : la même petite ligne mono. */
+.liseuse__item-date,
 .liseuse__item-meta {
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
@@ -811,6 +814,12 @@ ul.kiosque__alertes-liste {
   text-transform: uppercase;
   color: var(--texte-faible);
 }
+
+/* Une ligne de la liste qui porte plusieurs petits repères (date, pôle). */
+.liseuse__item-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-1) var(--e-3); }
+
+/* Le petit décompte sous le titre : « 2 actions ». */
+.liseuse__item-note { font-size: var(--texte-xs); color: var(--texte-faible); }
 
 .liseuse__item-badges { display: flex; flex-wrap: wrap; gap: var(--e-1); }
 
@@ -829,6 +838,14 @@ ul.kiosque__alertes-liste {
 .liseuse__entete { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-3); }
 .liseuse__entete:empty { display: none; }
 
+.liseuse__date {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
 .liseuse__titre {
   margin: 0;
   font-family: var(--police-titre);
@@ -839,39 +856,69 @@ ul.kiosque__alertes-liste {
 
 .liseuse__corps { display: flex; flex-direction: column; gap: var(--e-4); font-size: var(--texte-md); line-height: 1.6; }
 
-.liseuse__corps h4 { margin: 0; font-size: var(--texte-sm); font-weight: var(--graisse-forte); }
 .liseuse__corps p { margin: 0; }
 
-.liseuse__bloc {
-  padding: var(--e-3) var(--e-4);
-  border: 1px solid var(--bordure);
-  border-inline-start: 3px solid var(--bloc-teinte, var(--bordure-forte));
-  border-radius: var(--rayon-md);
-  background-color: var(--bloc-fond, var(--fond-enfonce));
+/* La synthèse est le contenu principal d'un compte-rendu : un cran plus
+   grande que le texte courant, aérée, sur une mesure de lecture. */
+.liseuse__synthese {
+  max-width: var(--largeur-texte);
+  font-size: var(--texte-lg);
+  line-height: 1.6;
 }
 
-.liseuse__bloc--actions { --bloc-teinte: var(--statut-alerte); --bloc-fond: var(--statut-alerte-fond); }
-.liseuse__bloc--decisions { --bloc-teinte: var(--statut-succes); --bloc-fond: var(--statut-succes-fond); }
+.liseuse__synthese--absente { font-style: italic; color: var(--texte-faible); }
+
+/* Les sujets abordés : une liste compacte, le titre en gras puis la note.
+   Sélecteurs qualifiés par la balise : base.css retire le marqueur de tout
+   `ul[class]` / `ol[class]`, et ces listes-là veulent le leur. */
+ul.liseuse__sujets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  max-width: var(--largeur-texte);
+  margin: 0;
+  padding-inline-start: var(--e-4);
+  list-style: disc;
+}
+
+.liseuse__sujet { font-size: var(--texte-md); line-height: 1.5; }
+.liseuse__sujet::marker { color: var(--texte-faible); }
+.liseuse__sujet-notes { color: var(--texte-doux); }
+
+/* « À faire » et « Fait / décidé » : un filet, un titre en gras, une liste
+   numérotée. Rien de coloré, rien d'encadré : ce sont des listes à lire. */
+.liseuse__bloc {
+  padding-block-start: var(--e-3);
+  border-top: 1px solid var(--bordure);
+}
 
 .liseuse__bloc-titre {
-  display: flex;
-  align-items: baseline;
-  gap: var(--e-2);
-  margin: 0 0 var(--e-2);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  font-weight: var(--graisse-moyenne);
-  letter-spacing: var(--lettrage-etiquette);
-  text-transform: uppercase;
-  color: var(--bloc-teinte, var(--texte-doux));
+  margin: 0 0 var(--e-1);
+  font-size: var(--texte-md);
+  font-weight: var(--graisse-forte);
+  line-height: 1.4;
+  color: var(--texte);
 }
 
-.liseuse__bloc ol, .liseuse__bloc ul { margin: 0; padding-inline-start: var(--e-5); font-size: var(--texte-sm); }
-.liseuse__bloc li + li { margin-block-start: var(--e-1); }
+.liseuse__bloc-compte {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-normale);
+  color: var(--texte-faible);
+}
 
-.liseuse__sujets { display: flex; flex-direction: column; gap: var(--e-3); }
-.liseuse__sujet { padding-inline-start: var(--e-3); border-inline-start: 2px solid var(--bordure); }
-.liseuse__sujet-notes { font-size: var(--texte-sm); color: var(--texte-doux); }
+/* Une action numérotée se cite plus facilement. */
+ol.liseuse__bloc-liste {
+  max-width: var(--largeur-texte);
+  margin: 0;
+  padding-inline-start: var(--e-5);
+  list-style: decimal;
+  font-size: var(--texte-md);
+  line-height: 1.5;
+}
+
+.liseuse__bloc-liste li + li { margin-block-start: var(--e-1); }
+.liseuse__bloc-liste li::marker { color: var(--texte-faible); font-variant-numeric: tabular-nums; }
 
 .liseuse__mots { display: flex; flex-wrap: wrap; gap: var(--e-1); }
 
