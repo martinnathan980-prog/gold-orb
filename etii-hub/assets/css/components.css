@@ -1240,15 +1240,16 @@ select.champ__controle {
 }
 
 /* =========================================================================
-   8. Modale
-   Fonctionne sous deux formes :
-     a) <dialog class="modale"> natif — .modale::backdrop habille le fond ;
-     b) <div class="modale-fond"><div class="modale" role="dialog"> — pour
-        une implémentation maison avec piège de focus (ui.js).
+   8. Modale — la structure construite par ui.js :
+     <div class="modale" data-modale data-etat="entree|ouvert|sortie">
+       <div class="modale__boite [modale--etroite|modale--large|…]" role="dialog">
+         <header class="modale__entete"> h2.modale__titre  button.modale__fermeture
+         <div class="modale__corps"> …
+         <footer class="modale__actions"> boutons
    ========================================================================= */
 
-/* Superposition de la forme (b). */
-.modale-fond {
+/* Le voile : il couvre l'écran et centre la boîte. */
+.modale {
   position: fixed;
   inset: 0;
   z-index: 200;
@@ -1267,17 +1268,10 @@ select.champ__controle {
   overscroll-behavior: contain;
 }
 
-.modale-fond[hidden] {
-  display: none;
-}
+.modale[hidden] { display: none; }
 
-/* Voile de la forme (a). */
-.modale::backdrop {
-  background-color: var(--fond-inverse);
-  background-color: color-mix(in srgb, var(--fond-inverse) 62%, transparent);
-}
-
-.modale {
+/* La boîte. */
+.modale__boite {
   display: flex;
   flex-direction: column;
   /* Marge de sécurité verticale pour ne jamais coller aux bords. */
@@ -1294,18 +1288,10 @@ select.champ__controle {
   overflow: hidden;
 }
 
-/* Sans cette règle, le `display: flex` ci-dessus rendrait visible un
-   <dialog> fermé, que le navigateur masque normalement lui-même. */
-dialog.modale:not([open]) {
-  display: none;
-}
-
 .modale--etroite { inline-size: min(100%, calc(var(--e-16) * 7)); }
 .modale--large   { inline-size: min(100%, calc(var(--e-16) * 15)); }
 
-.modale:focus {
-  outline: none;
-}
+.modale__boite:focus { outline: none; }
 
 /* --- Parties ------------------------------------------------------------- */
 
@@ -1313,8 +1299,7 @@ dialog.modale:not([open]) {
   display: flex;
   align-items: flex-start;
   gap: var(--e-4);
-
-  padding: var(--e-5) var(--e-6);
+  padding: var(--e-4) var(--e-5);
   border-bottom: 1px solid var(--bordure-douce);
 }
 
@@ -1334,19 +1319,34 @@ dialog.modale:not([open]) {
   color: var(--texte-doux);
 }
 
+.modale__fermeture,
 .modale__fermer {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--cible-tactile);
+  block-size: var(--cible-tactile);
   /* Décalage négatif d'un pas : le bouton respecte sa cible tactile sans
      creuser l'en-tête. */
   margin: calc(var(--e-2) * -1) calc(var(--e-2) * -1) 0 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--rayon-md);
+  color: var(--texte-doux);
+  font-size: var(--texte-xl);
+  line-height: 1;
+  cursor: pointer;
 }
+
+.modale__fermeture:hover,
+.modale__fermer:hover { background-color: var(--fond-enfonce); color: var(--texte); }
 
 .modale__corps {
   flex: 1 1 auto;
-  padding: var(--e-6);
+  padding: var(--e-5);
   overflow-y: auto;
   overscroll-behavior: contain;
-
   display: flex;
   flex-direction: column;
   gap: var(--e-4);
@@ -1358,34 +1358,26 @@ dialog.modale:not([open]) {
   color: var(--texte-doux);
 }
 
+.modale__actions,
 .modale__pied {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: var(--e-3);
-
-  padding: var(--e-4) var(--e-6);
+  padding: var(--e-3) var(--e-5);
   background-color: var(--fond-enfonce);
   border-top: 1px solid var(--bordure-douce);
 }
 
 /* Action placée à l'opposé des boutons de validation (« Annuler », aide…). */
-.modale__pied-debut {
-  margin-inline-end: auto;
-}
+.modale__pied-debut { margin-inline-end: auto; }
 
-/* --- Animation d'entrée -------------------------------------------------- */
+/* --- Animation d'entrée et de sortie ------------------------------------- */
 
 @keyframes modale-apparition {
-  from {
-    opacity: 0;
-    transform: translateY(var(--e-3));
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(var(--e-3)); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes voile-apparition {
@@ -1394,34 +1386,9 @@ dialog.modale:not([open]) {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .modale {
-    animation: modale-apparition var(--duree) var(--courbe);
-  }
-
-  .modale-fond,
-  .modale::backdrop {
-    animation: voile-apparition var(--duree-rapide) var(--courbe);
-  }
-}
-
-/* Sous mouvement réduit : apparition immédiate, aucune translation. */
-@media (prefers-reduced-motion: reduce) {
-  .modale,
-  .modale-fond,
-  .modale::backdrop {
-    animation: none;
-  }
-}
-
-@media (max-width: 640px) {
-  .modale__entete { padding: var(--e-4); }
-  .modale__corps  { padding: var(--e-4); }
-  .modale__pied   { padding: var(--e-4); }
-
-  /* Les actions passent en pleine largeur : plus faciles à viser au doigt. */
-  .modale__pied .bouton {
-    flex: 1 1 auto;
-  }
+  .modale[data-etat="entree"] { animation: voile-apparition var(--duree-rapide) var(--courbe); }
+  .modale[data-etat="entree"] .modale__boite { animation: modale-apparition var(--duree) var(--courbe); }
+  .modale[data-etat="sortie"] { opacity: 0; transition: opacity var(--duree-rapide) var(--courbe); }
 }
 
 /* =========================================================================

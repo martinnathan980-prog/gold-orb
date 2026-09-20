@@ -60,8 +60,8 @@ await troisieme.scrollIntoViewIfNeeded();
 await troisieme.click();
 await page.waitForTimeout(500);
 const apres = await f.locator('.porteurs__detail').innerText();
-t('la fiche montre les deux groupes de données',
-  /techniques/i.test(apres) && /conomiques/i.test(apres));
+t('la fiche propose ses rubriques (technique, économie, service, sources)',
+  /Technique/.test(apres) && /économie/i.test(apres) && /Données service/.test(apres) && /Sources/.test(apres));
 t('les valeurs absentes sont annoncées comme telles', /à renseigner/i.test(apres));
 t('la fiche suit le porteur choisi', apres.includes(await troisieme.locator('.porteurs__fiche-code').innerText()));
 

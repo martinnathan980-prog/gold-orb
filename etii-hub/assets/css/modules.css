@@ -1274,3 +1274,105 @@ ul.kiosque__alertes-liste {
 .porteurs__insolite-glyphe { color: var(--accent); flex: none; }
 
 .porteurs__sources { display: grid; gap: var(--e-1); margin: 0; padding: 0; list-style: none; font-size: var(--texte-sm); }
+
+/* -------------------------------------------------------------------------
+   9. La palette « rechercher partout »
+   ---------------------------------------------------------------------- */
+
+.palette-ouvrir {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  min-height: calc(var(--cible-tactile) - var(--e-2));
+  padding-inline: var(--e-3);
+  margin-inline-start: auto;
+  background-color: var(--fond-enfonce);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-md);
+  color: var(--texte-doux);
+  font: inherit;
+  font-size: var(--texte-xs);
+  cursor: pointer;
+}
+
+.palette-ouvrir:hover { border-color: var(--bordure-forte); color: var(--texte); }
+.palette-ouvrir kbd { font-size: var(--texte-xs); padding: 0 var(--e-1); }
+
+@media (max-width: 640px) {
+  .palette-ouvrir { margin-inline-start: 0; }
+  .palette-ouvrir__libelle { display: none; }
+}
+
+.modale--palette { inline-size: min(100%, 44rem); }
+.modale--palette .modale__corps { padding: 0; }
+
+.palette { display: flex; flex-direction: column; }
+
+.palette__barre {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  padding: var(--e-2) var(--e-4);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.palette__loupe { color: var(--texte-faible); font-size: var(--texte-lg); }
+
+.palette__champ {
+  flex: 1;
+  min-height: var(--cible-tactile);
+  border: 0;
+  background: transparent;
+  color: var(--texte);
+  font: inherit;
+  font-size: var(--texte-lg);
+}
+
+.palette__champ:focus { outline: none; }
+.palette__kbd { flex: none; }
+
+.palette__etat {
+  margin: 0;
+  padding: var(--e-2) var(--e-4);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.04em;
+  color: var(--texte-faible);
+  border-bottom: 1px solid var(--bordure-douce);
+}
+
+.palette__resultats {
+  max-block-size: min(60vh, 32rem);
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--e-2);
+  list-style: none;
+}
+
+.palette__groupe {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--e-3) var(--e-3) var(--e-1);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.palette__lien {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--e-2) var(--e-3);
+  border-radius: var(--rayon-md);
+  color: var(--texte);
+  text-decoration: none;
+}
+
+.palette__resultat--actif .palette__lien,
+.palette__lien:hover { background-color: var(--accent-doux); box-shadow: inset 3px 0 0 var(--accent); }
+
+.palette__titre { font-size: var(--texte-sm); font-weight: var(--graisse-forte); }
+.palette__sous-titre { font-size: var(--texte-xs); color: var(--texte-doux); }

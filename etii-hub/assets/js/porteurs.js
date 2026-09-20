@@ -7,7 +7,7 @@
    valeur absente s'écrit « à renseigner », jamais autre chose.
    ========================================================================= */
 
-import { el, monter, annoncer } from './ui.js';
+import { el, monter, annoncer, etatUrl } from './ui.js';
 import { silhouette } from './helicos.js';
 
 const NON_RENSEIGNE = 'à renseigner';
@@ -449,6 +449,25 @@ export function porteurs(donnees, options) {
     if (liste[j]) choisir(liste[j], true);
   });
 
+  /* Arrivée par la palette ou un lien : #porteur=CODE choisit la fiche et
+     l'amène à l'écran. */
+  const suivreHash = () => {
+    const demande = texte(etatUrl.lire().porteur).toUpperCase();
+    if (!demande) return false;
+    const a = appareils.find((x) => texte(x.code).toUpperCase() === demande);
+    if (!a) return false;
+    if (categorie && texte(a.categorie) !== categorie) {
+      categorie = '';
+      puces.querySelectorAll('[data-categorie]').forEach((x) => x.setAttribute('aria-pressed', x.dataset.categorie === '' ? 'true' : 'false'));
+      filtrer();
+    }
+    choisir(a, true);
+    setTimeout(() => { if (typeof racine.scrollIntoView === 'function') racine.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 60);
+    return true;
+  };
+
   filtrer();
+  suivreHash();
+  etatUrl.ecouter(suivreHash);
   return racine;
 }

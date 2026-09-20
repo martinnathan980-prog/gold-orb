@@ -503,19 +503,20 @@ mark, .surlignage {
   box-shadow: var(--ombre-accent) !important;
 }
 
-.modale {
+.modale__boite {
   border-radius: var(--rayon-xl);
   border: 0;
   box-shadow: var(--ombre-lg);
 }
 
-.modale-fond {
+.modale {
   background-color: color-mix(in srgb, var(--gris-900) 42%, transparent);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
 }
 
 .modale__entete { border-bottom: 1px solid var(--bordure); }
+.modale__actions,
 .modale__pied   { border-top: 1px solid var(--bordure); background-color: var(--fond-enfonce); }
 
 .notification {
