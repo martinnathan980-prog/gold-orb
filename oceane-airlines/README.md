@@ -65,5 +65,8 @@ Aujourd'hui : samedi 19 septembre. Il reste 7 semaines.
 - `07-montage.md` — iMovie pas à pas, traitement de la voix, checklist HDMI
 - `17-questions.md` — ce qui reste à savoir
 
+**Présentation**
+- `18-presentation.md` — le synoptique à montrer et le pitch à dire
+
 **Textes à tourner**
 - `10-` à `16-` — les scripts, briefs et messages, prêts à l'emploi
