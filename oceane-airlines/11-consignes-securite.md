@@ -54,9 +54,11 @@
 
 **7. La consigne absurde**
 
-> La compagnie ne transporte pas d'hélicoptères. Nous en avons conscience. Nous nous en excusons.
+> La compagnie rappelle que la passagère du 1A n'aime pas voler. Nous en avons conscience. Nous avons quand même construit un avion autour d'elle.
 
 *Même voix neutre, aucune insistance, aucune pause pour le rire. On enchaîne direct sur la valise.*
+
+> ⚠️ **Le gag hélicoptère a été retiré d'ici.** Il apparaissait quatre fois dans le film : trois dans les annonces du commandant, plus celle-ci. Quatre, il s'use. Il appartient désormais au commandant seul, aux annonces 7, 9 et 12. Cette consigne le remplace par la vraie trouvaille : elle a peur de l'avion, et on lui en a construit un quand même. C'est la première fois que le film le dit, et ça installe le fil affectif dès la première minute.
 
 **8. La chute valise**
 
@@ -74,11 +76,11 @@ Les trois meilleures consignes, plus l'ouverture et la chute. À prendre si le t
 
 > Mesdames et messieurs, voici les consignes de sécurité.
 
-> Votre ceinture reste attachée pendant tout le vol. Y compris sur le trottoir. Y compris sur le deuxième trottoir, celui du parking.
+> Votre ceinture reste attachée pendant tout le vol. La passagère du 1A a déjà monté un trottoir. Nous préférons ne pas prendre de risque.
 
 > En cas de dépressurisation, placez votre masque avant d'aider Joséphine.
 
-> La compagnie ne transporte pas d'hélicoptères. Nous nous en excusons.
+> La compagnie rappelle que la passagère du 1A n'aime pas voler. Nous avons quand même construit un avion autour d'elle.
 
 > Et dans sa valise, nous mettons…
 
@@ -106,7 +108,7 @@ Les deux visibles **à partir de mi-cuisse**, pas plus serré : les gestes sont 
 ### Les gestes, dans l'ordre
 
 1. **Ouverture :** les deux mains à plat, paumes vers le haut, qui désignent la cabine de gauche à droite. Lentement.
-2. **Ceinture :** boucler, tirer la languette, ouvrir. **Un cycle complet par « Y compris »**, donc trois fois, de plus en plus lentement.
+2. **Ceinture :** boucler, tirer la languette, ouvrir. **Un cycle complet et lent**, puis un deuxième, plus lent encore, pendant la phrase sur le trottoir. Deux cycles, pas trois.
 3. **Issues :** les deux index tendus vers l'avant et vers l'arrière. Puis, sur « celle qui n'existe pas », un troisième index pointé vers le plafond, tenu deux secondes.
 4. **Masque :** le masque invisible plaqué sur le nez et la bouche, l'élastique passé derrière la tête, respirer normalement. **Geste parfait, exécuté proprement.** C'est la consigne qu'on ne salit pas.
 5. **Gilet :** enfiler, serrer les sangles, souffler dans le sifflet sans faire de bruit. **C'est ici, et seulement ici, que le mime rate.** Il passe la tête dans une entournure au lieu de l'encolure, se retrouve avec le gilet de travers, et **le garde comme ça jusqu'à la fin du clip**. Il ne le remarque pas. Elle ne le remarque pas non plus.
@@ -114,7 +116,7 @@ Les deux visibles **à partir de mi-cuisse**, pas plus serré : les gestes sont 
 7. **Hélicoptères :** l'index qui tourne au-dessus de la tête, un tour, lentement, puis s'arrête net au milieu du deuxième.
 8. **Valise :** les deux posent une main sur la valise et **disent la phrase ensemble**, en regardant l'objectif. C'est le seul moment du clip où ils sont synchrones.
 
-*Si vous coupez le gilet pour tenir les 45 secondes, déplacez le raté sur la ceinture : au troisième « Y compris », il boucle dans le vide, la languette ne rentre pas, il continue quand même.*
+*Si vous coupez le gilet pour tenir les 45 secondes, déplacez le raté sur la ceinture : au deuxième cycle, il boucle dans le vide, la languette ne rentre pas, il continue quand même.*
 
 ### Le cadre
 

@@ -79,6 +79,12 @@ Une phrase par personne, 3 secondes. À répartir :
 | « J'ai perdu mes clés » | | ⬜ |
 | Autre | | ⬜ |
 
+## Les sièges de la famille proche
+
+Tranché dans `09-arbitrages.md` : **Océane 1A, Célestin 1B, Joséphine 1C.** Océane ne bouge pas, parce que le commandant dit « la passagère du 1A » dans quatre annonces et dans les consignes de sécurité.
+
+Le reste de la famille reçoit un siège dans `19-messages-cabine.md` : le rang dit d'où tu viens, la lettre dit dans quel ordre ta vidéo est arrivée.
+
 ## Compteur
 - Rôles pourvus : 10 sur 12
 - Contactés : 0

@@ -17,6 +17,7 @@ Mise à jour du 19 septembre, d'après les réponses de Nathan. C'est le documen
 | **Serge** | Son père | En couple avec Marité |
 | **Marité** | Sa belle-mère | La compagne de Serge |
 | **Christiane** | Mamie | Se filme chez elle, à Cassargues (orthographe à confirmer) |
+| **[Papy]** | Le compagnon de Christiane | ⚠️ Prénom inconnu. Océane va chez eux tous les mercredis. |
 | **Hervé** | Collègue, Airbus Helicopters Marignane | Travaille sur les hélicoptères avec elle |
 | **Julien** | Collègue à Marignane **et** ami de l'ENAC | Ils y étaient ensemble, ils travaillent ensemble aujourd'hui |
 | **Sébastien** | Le frère de Célestin | Vit en Guadeloupe. Ils y sont allés une fois, ils y retournent à Noël. |
@@ -65,7 +66,7 @@ Elle **gère mal ses émotions** et **pleure quand elle est fatiguée**. Elle **
 Elle travaille dans l'aéronautique et **elle a peur en vol**. C'est le cœur du projet et on ne l'avait pas. Tout le concept d'Océane Airlines repose dessus à partir de maintenant : on lui offre une compagnie aérienne, et elle n'aime pas voler.
 
 Deux prolongements, tous les deux vrais :
-- Quand elle part **pour le boulot, c'est en première classe**, à Dallas notamment, et **elle fait la go**.
+- Quand elle part **pour le boulot, c'est en première classe**, à Dallas notamment, et **elle fait la go**. Ce qu'elle raconte en rentrant, textuellement : la nourriture, le fait qu'elle **pouvait s'allonger**, qu'elle était **« avec les riches »** et **« pas avec les gueux »**, et que c'était bon.
 - Quand elle part **avec la famille, c'est en classe éco**.
 - Et la famille dit que **c'est la plus riche**, parce que tout le monde est pauvre sauf elle. Ils en rigolent ouvertement.
 
@@ -74,7 +75,7 @@ Deux prolongements, tous les deux vrais :
 - **Elle est née avec une touffe de cheveux noirs.** Sortie du ventre avec une tignasse.
 - Bébé **calme et mignonne**.
 - **Le fil de fer du barbecue.** Elle a avalé un fil de fer de brosse à barbecue, qui s'est mis en travers de la gorge. Direction l'hôpital.
-- **Les deux poignets.** Elle s'est cassé un poignet, puis l'autre **deux semaines plus tard**. À l'hôpital, on a fini par demander si elle était bien traitée à la maison. C'était juste de la malchance. La famille en rigole beaucoup.
+- **Les deux poignets, vers 8 ans.** Elle s'est cassé un poignet, puis l'autre **deux semaines plus tard**. À l'hôpital, on a fini par demander si elle était bien traitée à la maison. C'était juste de la malchance. La famille en rigole beaucoup.
 - **La tectonique.** À l'adolescence, elle a eu sa période tecktonik.
 - Elle **ne voulait pas faire de métier précis** enfant. Pas de piste à creuser de ce côté.
 
@@ -86,7 +87,21 @@ Deux prolongements, tous les deux vrais :
 
 ## Joséphine
 
-**Deux ans.** Elle parle un peu. Elle dit tout le temps **« Momo, Momo »**.
+**Deux ans.** Elle parle un peu. Elle dit **« Momo »**, et Momo veut dire **maman**. C'est sa façon à elle de l'appeler.
+
+C'est tout le clip du Terminal Maternité. Pas besoin d'autre chose : Joséphine qui dit « Momo », et Océane comprend avant tout le monde.
+
+## Mamie Christiane, et le mercredi
+
+Voilà enfin la matière, et c'est le plus beau matériel du projet.
+
+- **Océane et Mamie Christiane se ressemblent.** C'est la famille qui le dit.
+- **Tous les mercredis**, Océane va chez Mamie Christiane et Papy.
+- **Elle apporte le petit déjeuner.**
+- Avant, elle y télétravaillait. **Maintenant que Joséphine est petite, le mercredi elle est en off**, elle ne travaille pas.
+- Elle mange là-bas, ils boivent le café, **ils font des potins sur le canapé**, et ils se régalent.
+
+C'est un rituel hebdomadaire, tenu depuis des années. Dans un film qui parle d'une femme qui bouge tout le temps, Nîmes, l'ENAC, Marignane, Dallas, la Guadeloupe, c'est le seul endroit où elle revient chaque semaine. C'est ça, la séquence de la présidence : **la compagnie a beau desservir le monde entier, il y a une escale hebdomadaire obligatoire.**
 
 ## Julien et l'ENAC
 
@@ -114,9 +129,9 @@ Dans les Cévennes, l'après-midi ou le soir. **Écran d'ordinateur relié à la
 **2. La blague sur les juifs aux Deux Alpes.** Je ne l'écris pas. Ce n'est pas une question de politesse : c'est le genre de vanne qui se retrouve sur un téléphone, qui circule, et dont on se souvient à la place du reste de la vidéo. Les Deux Alpes donnent déjà de quoi rire sans ça : ce qu'elle met dans sa valise pour la montagne, son niveau de ski, la voiture chargée, le rituel du même appartement chaque année. Dis-moi ce qu'il y a de vrai là-dedans et j'écris la séquence.
 
 ## Ce qu'il reste à confirmer
-1. Paul est bien le mari de Coralie ?
-2. L'orthographe de Cassargues, et où habite Mamie Christiane.
-3. **Mamie Christiane et Océane** : un souvenir précis, un plat, un rituel, un surnom. C'est le seul clip du film pour lequel je n'ai toujours aucune matière.
+1. **Le prénom de Papy**, le compagnon de Mamie Christiane. Il est dans le rituel du mercredi, donc il est dans le film.
+2. Paul est bien le mari de Coralie ?
+3. L'orthographe de Cassargues, et où habite Mamie Christiane.
 4. Une amie d'enfance. Julien couvre l'ENAC, mais c'est un collègue, et il n'y a toujours aucune amie dans le film.
 5. La date exacte de la projection dans les Cévennes.
 6. La liste des gens qui feront juste un message d'anniversaire, pour dimensionner les deux blocs « Messages de la cabine ».
