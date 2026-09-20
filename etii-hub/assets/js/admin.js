@@ -51,6 +51,10 @@ function brouillonVide() {
    ------------------------------------------------------------------------- */
 
 let etat = brouillonVide();
+/* Les champs déjà touchés : une erreur ne s'affiche que sur un champ que
+   l'on a commencé à remplir — ou partout, après une tentative d'export. */
+let touches = new Set();
+let toutMontrer = false;
 const refs = {};
 
 function chargerBrouillon() {
@@ -65,6 +69,7 @@ function chargerBrouillon() {
     }
   }
   etat = propre;
+  for (const cle of Object.keys(propre)) if (typeof propre[cle] === 'string' && propre[cle] && cle !== 'date') touches.add(cle);
 }
 
 function enregistrerBrouillon() { stockage.ecrire(CLE_BROUILLON, etat); }
@@ -112,16 +117,28 @@ function valider() {
 
 function afficherErreurs(erreurs) {
   for (const [cle, noeud] of Object.entries(refs.erreurs)) {
-    const message = erreurs[cle];
+    const message = (toutMontrer || touches.has(cle)) ? erreurs[cle] : '';
     noeud.textContent = message || '';
     noeud.hidden = !message;
     const controle = refs.controles[cle];
     if (controle) controle.setAttribute('aria-invalid', message ? 'true' : 'false');
   }
   const n = Object.keys(erreurs).length;
-  refs.boutonsExport.forEach((b) => { b.disabled = n > 0; });
-  refs.etatValidation.textContent = n === 0 ? 'Prête à publier.' : (n === 1 ? 'Un champ à corriger.' : n + ' champs à corriger.');
+  refs.etatValidation.textContent = n === 0 ? 'Prête à publier.' : (n === 1 ? 'Un champ à compléter.' : n + ' champs à compléter.');
   refs.etatValidation.dataset.etat = n === 0 ? 'ok' : 'erreur';
+}
+
+/* Avant un export : s'il manque quelque chose, tout est montré et rien
+   n'est copié — on ne colle pas une ligne incomplète dans la feuille. */
+function pretePourExport() {
+  const erreurs = valider();
+  if (!Object.keys(erreurs).length) return true;
+  toutMontrer = true;
+  afficherErreurs(erreurs);
+  const premier = Object.keys(erreurs)[0];
+  if (refs.controles[premier]) refs.controles[premier].focus();
+  toast('Complétez les champs signalés avant de publier.', 'alerte');
+  return false;
 }
 
 /* -------------------------------------------------------------------------
@@ -147,14 +164,14 @@ function champ(cle, libelle, controle, aide, options) {
 function entree(cle, attrs) {
   const n = el('input', Object.assign({ class: 'champ__controle', type: 'text', autocomplete: 'off' }, attrs || {}));
   n.value = etat[cle] || '';
-  n.addEventListener('input', () => { etat[cle] = n.value; surChangement(); });
+  n.addEventListener('input', () => { etat[cle] = n.value; touches.add(cle); surChangement(); });
   return n;
 }
 
 function zone(cle, attrs) {
   const n = el('textarea', Object.assign({ class: 'champ__controle', rows: 4 }, attrs || {}));
   n.value = etat[cle] || '';
-  n.addEventListener('input', () => { etat[cle] = n.value; surChangement(); });
+  n.addEventListener('input', () => { etat[cle] = n.value; touches.add(cle); surChangement(); });
   return n;
 }
 
@@ -169,7 +186,7 @@ function ligneChiffre(i) {
   const c = etat.chiffres[i];
   const lier = (champNom, noeud) => {
     noeud.value = c[champNom] || '';
-    noeud.addEventListener(noeud.tagName === 'SELECT' ? 'change' : 'input', () => { c[champNom] = noeud.value; surChangement(); });
+    noeud.addEventListener(noeud.tagName === 'SELECT' ? 'change' : 'input', () => { c[champNom] = noeud.value; touches.add('chiffre' + i); surChangement(); });
     return noeud;
   };
   const libelle = lier('libelle', el('input', { class: 'champ__controle', type: 'text', placeholder: 'Libellé', 'aria-label': 'Libellé du chiffre ' + (i + 1) }));
@@ -271,6 +288,7 @@ function rendreApercu() {
 }
 
 function copierLigne() {
+  if (!pretePourExport()) return;
   const annonce = annonceCourante();
   const ligne = etat.type === 'alerte'
     ? ligneDepuisAnnonce({ titre: texte(etat.titre) }, 'alerte')
@@ -281,6 +299,7 @@ function copierLigne() {
 }
 
 function copierJson() {
+  if (!pretePourExport()) return;
   const annonce = annonceCourante();
   const valeur = etat.type === 'alerte' ? texte(etat.titre)
     : (etat.type === 'mot' ? Object.assign({ auteur: texte(etat.auteur), fonction: texte(etat.fonction) }, annonce) : annonce);
@@ -290,6 +309,7 @@ function copierJson() {
 }
 
 async function telechargerFichier() {
+  if (!pretePourExport()) return;
   let actuel;
   try { actuel = await chargerDonnees('communications'); }
   catch (_e) { actuel = { motDuChef: null, alertes: [], annonces: [], agenda: [] }; }
@@ -314,6 +334,8 @@ async function telechargerFichier() {
 
 function vider() {
   etat = brouillonVide();
+  touches = new Set();
+  toutMontrer = false;
   stockage.supprimer(CLE_BROUILLON);
   rendreFormulaire();
   surChangement();
