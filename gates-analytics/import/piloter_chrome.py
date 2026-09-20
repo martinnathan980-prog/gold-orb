@@ -218,11 +218,14 @@ def chemin_chrome():
         return impose
     candidats = []
     if platform.system() == 'Windows':
-        for var in ('PROGRAMFILES', 'PROGRAMFILES(X86)', 'LOCALAPPDATA'):
-            base = os.environ.get(var)
-            if base:
-                candidats.append(os.path.join(base, 'Google', 'Chrome', 'Application', 'chrome.exe'))
-                candidats.append(os.path.join(base, 'Microsoft', 'Edge', 'Application', 'msedge.exe'))
+        dossiers = [os.environ.get(var) for var in ('PROGRAMFILES', 'PROGRAMFILES(X86)', 'LOCALAPPDATA')]
+        # Chrome d'abord, partout, AVANT le premier Edge : le poste travaille
+        # sur Chrome, et un Edge trouvé plus tôt lui serait passé devant.
+        for marque in (('Google', 'Chrome', 'Application', 'chrome.exe'),
+                       ('Microsoft', 'Edge', 'Application', 'msedge.exe')):
+            for base in dossiers:
+                if base:
+                    candidats.append(os.path.join(base, *marque))
     else:
         candidats += ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser',
                       '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']
@@ -545,7 +548,10 @@ def etat_du_poste():
     exe = chemin_chrome()
     lignes.append('Chrome  : ' + (exe if exe else 'introuvable — indiquez SUIVI_FWD_CHROME'))
     try:
-        with urllib.request.urlopen('http://127.0.0.1:%d/json/version' % PORT_DEFAUT, timeout=2) as r:
+        # SANS_PROXY, comme le pilote lui-même : sur un poste d'entreprise, une
+        # demande à 127.0.0.1 partie dans le proxy échoue, et le diagnostic
+        # annoncerait « fermé » un canal parfaitement ouvert.
+        with SANS_PROXY.open('http://127.0.0.1:%d/json/version' % PORT_DEFAUT, timeout=2) as r:
             version = json.loads(r.read().decode('utf-8'))
         lignes.append('Canal   : ouvert sur le port %d — %s' % (PORT_DEFAUT, version.get('Browser', '?')))
     except Exception:
