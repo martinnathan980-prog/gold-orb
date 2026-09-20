@@ -44,7 +44,7 @@ function rendreCommunication(donnees, conteneur) {
     id: 'kiosque-service',
     dossiers,
     alertes: alertesDepuisCommunications(donnees),
-    titreFil: 'Historique du service',
+    titreFil: 'Communications',
     filtres: POLES
   }));
 }

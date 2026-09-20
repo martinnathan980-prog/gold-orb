@@ -77,7 +77,7 @@ function rendreCommunication(pole, donnees, conteneur) {
   /* Tout ce que le pôle publie est déjà dans ce kiosque : il n'y a pas
      d'ailleurs où renvoyer. Le niveau service est sur le tableau de bord. */
   monter(conteneur,
-    kiosque({ id: 'kiosque-' + pole.cle.toLowerCase(), dossiers, titreFil: 'Historique du pôle' }));
+    kiosque({ id: 'kiosque-' + pole.cle.toLowerCase(), dossiers, titreFil: 'Communications du pôle' }));
 }
 
 /* -------------------------------------------------------------------------
