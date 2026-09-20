@@ -8,12 +8,13 @@
 // des facettes, du clavier, de l'URL partageable et du surlignage.
 
 import { chromium } from 'playwright';
+const B = process.env.BASE || 'http://localhost:8111';
 const nav = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
 const ctx = await nav.newContext({ viewport:{width:1440,height:900} });
 const page = await ctx.newPage();
 const erreurs = [];
 page.on('pageerror', e => erreurs.push(e.message));
-await page.goto('http://localhost:8111/docsearch.html', {waitUntil:'networkidle'});
+await page.goto(B + '/docsearch.html', {waitUntil:'networkidle'});
 await page.waitForTimeout(600);
 
 let ok=0, ko=0;

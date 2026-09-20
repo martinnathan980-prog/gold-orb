@@ -9,11 +9,12 @@
 // comme du HTML.
 
 import { chromium } from 'playwright';
+const B = process.env.BASE || 'http://localhost:8111';
 const nav = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium' });
 const ctx = await nav.newContext({ viewport:{width:1440,height:900} });
 const page = await ctx.newPage();
 const err=[]; page.on('pageerror',e=>err.push(e.message));
-await page.goto('http://localhost:8111/faq.html',{waitUntil:'networkidle'});
+await page.goto(B + '/faq.html',{waitUntil:'networkidle'});
 await page.waitForTimeout(600);
 let ok=0,ko=0; const t=(n,c,d='')=>{c?(ok++,console.log(`  OK    ${n}`)):(ko++,console.log(`  ÉCHEC ${n} ${d}`))};
 

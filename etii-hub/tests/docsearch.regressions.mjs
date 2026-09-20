@@ -8,10 +8,11 @@
 // corrigé. Ils existent pour que ces défauts ne reviennent pas.
 
 import { chromium } from 'playwright';
+const B = process.env.BASE || 'http://localhost:8111';
 const nav = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium' });
 const page = await (await nav.newContext({viewport:{width:1440,height:900}})).newPage();
 const err=[]; page.on('pageerror',e=>err.push(e.message));
-await page.goto('http://localhost:8111/docsearch.html',{waitUntil:'networkidle'});
+await page.goto(B + '/docsearch.html',{waitUntil:'networkidle'});
 await page.waitForTimeout(600);
 let ok=0,ko=0; const t=(n,c,d='')=>{c?(ok++,console.log(`  OK    ${n}`)):(ko++,console.log(`  ÉCHEC ${n} ${d}`))};
 
