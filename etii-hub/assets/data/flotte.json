@@ -1,5 +1,5 @@
 {
-  "avertissement": "Désignations et segments issus de la gamme publique. Les valeurs techniques et économiques sont à renseigner par le service : elles ne sont pas inventées ici.",
+  "avertissement": "Les fiches des porteurs sont constituées à partir de sources publiques (Wikipédia, site public d’Airbus Helicopters, presse aéronautique) : chaque valeur porte sa confiance et sa source, et une relecture contradictoire reste à faire. Les données propres au service restent « à renseigner » : elles ne sont jamais inventées.",
   "categories": [
     {
       "cle": "civil",
@@ -72,28 +72,294 @@
     {
       "code": "H125",
       "categorie": "civil",
-      "segment": "Monomoteur léger",
+      "segment": "Monomoteur léger (segment « intermediate single »)",
       "poles": [
         "ETIIE",
         "ETIII"
       ],
       "silhouette": "patins-monoturbine",
       "photo": "",
-      "technique": {
-        "motorisation": null,
-        "masseMaxDecollage": null,
-        "capacite": null,
-        "rayonAction": null,
-        "vitesseCroisiere": null,
-        "longueurHarnais": null,
-        "nbConnecteurs": null
+      "fiche": {
+        "code": "H125",
+        "nom": "Airbus Helicopters H125 (Écureuil / AStar)",
+        "ancienNom": "AS350 B3e Écureuil (Eurocopter) ; AStar en Amérique du Nord ; H-50 / UH-50 Esquilo (Helibras, Brésil)",
+        "categorie": "civil",
+        "segment": "Monomoteur léger (segment « intermediate single »)",
+        "statut": "en production",
+        "resume": "Le H125 est la version actuelle de l'AS350 B3e Écureuil, hélicoptère monomoteur léger de la famille Écureuil dont le prototype a volé le 27 juin 1974 et qui a été renommé H125 lors de la nouvelle nomenclature Airbus Helicopters annoncée en 2015. Propulsé par un turbomoteur Safran Arriel 2D de 710 kW à régulation FADEC, il est assemblé à Marignane, Columbus (Mississippi), Itajubá (Brésil) et, depuis février 2026, à Vemagal (Inde), et sert pour le travail aérien, la sécurité publique, le secours médical, le transport de passagers et le tourisme.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters (anciennement Aérospatiale, puis Eurocopter) ; licence Helibras au Brésil ; Tata Advanced Systems en Inde",
+            "confiance": "haute",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H125 ; https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil"
+          },
+          "premierVol": {
+            "valeur": "27 juin 1974 (prototype AS350-001, Marignane) ; variante AS350 B3e (future H125) certifiée en 2011 avec l'Arriel 2D",
+            "confiance": "haute",
+            "unite": "date",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H125 ; https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil"
+          },
+          "miseEnService": {
+            "valeur": "Mars 1978 (premières livraisons AS350 B) ; AS350 B3e fin 2011 ; désignation H125 annoncée à Heli-Expo en mars 2015 et appliquée à partir de 2015-2016",
+            "confiance": "haute",
+            "unite": "date",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil ; https://verticalmag.com/news/newnamesforairbushelicoptersmodels/"
+          },
+          "certification": {
+            "valeur": "Certificat de type EASA R.008 (AS 350 / EC 130), fiche TCDS Issue 19 du 11 décembre 2025 ; moteur Arriel 2D certifié en mai 2011 ; certification FAA également détenue (production à Columbus)",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/document-library/type-certificates ; https://www.easa.europa.eu/sites/default/files/dfu/TCDS_EASA_R008_AH_AS350_EC130_Issue_13.pdf"
+          },
+          "siteAssemblage": {
+            "valeur": "Marignane (France) ; Columbus, Mississippi (États-Unis, assemblage complet depuis fin 2014, premier appareil livré en novembre 2015) ; Itajubá (Brésil, Helibras) ; Vemagal, Karnataka (Inde, Tata Advanced Systems, chaîne inaugurée le 17 février 2026, première livraison prévue début 2027)",
+            "confiance": "haute",
+            "source": "https://verticalmag.com/news/airbus-reaps-reward-of-h125-h130-evolution-with-best-deliveries-for-a-decade/ ; https://www.airbus.com/en/newsroom/press-releases/2026-02-tata-advanced-systems-inaugurates-airbus-h125-helicopter-production-line-to-boost-indias-vertical ; https://www.aviationpros.com/aircraft/rotorcraft/press-release/12145214/airbus-helicopters-ohio-state-highway-patrol-takes-delivery-of-first-h125-astar-produced-on-airbus-helicopters-inc-us-full-assembly-line"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Safran Helicopter Engines (ex-Turbomeca) Arriel 2D, turbomoteur à régulation numérique FADEC bicanal avec canal de secours indépendant ; TBO annoncé 4 000 à 5 000 h selon les sources",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125 ; https://www.safran-group.com/products-services/arriel-2d-airbus-h125-engine"
+          },
+          "nombreMoteurs": {
+            "valeur": 1,
+            "confiance": "haute",
+            "unite": "moteur",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information"
+          },
+          "puissance": {
+            "valeur": "710 kW (952 shp) au décollage",
+            "confiance": "haute",
+            "unite": "kW",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information"
+          },
+          "rotorPrincipal": {
+            "valeur": "Rotor tripale à moyeu Starflex (matériaux composites, sans roulement), diamètre 10,69 m",
+            "confiance": "haute",
+            "unite": "m",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information"
+          },
+          "rotorArriere": {
+            "valeur": "Rotor anticouple bipale classique (le Fenestron a été essayé sur AS350 en 1987 mais n'a été retenu que sur l'EC130/H130) ; diamètre d'environ 1,86 m",
+            "confiance": "moyenne",
+            "unite": "m",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil (diamètre du rotor arrière : valeur de mémoire, non retrouvée sur la page constructeur)"
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": "2 250 kg (standard) ; 2 370 kg avec double circuit hydraulique optionnel ; 2 800 kg avec charge externe à l'élingue",
+            "confiance": "haute",
+            "unite": "kg",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H125"
+          },
+          "masseAVide": {
+            "valeur": "Environ 1 220 kg (Wikipédia FR) ; 1 174 kg indiqué pour l'AS350 B3 (Wikipédia EN) ; Airbus ne publie que la charge utile (1 075 kg à 2 370 kg de MTOW), ce qui correspond à une masse à vide équipée voisine de 1 295 kg",
+            "confiance": "moyenne",
+            "unite": "kg",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H125 ; https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information"
+          },
+          "chargeUtile": {
+            "valeur": "1 075 kg de charge utile (Airbus) ; 1 400 kg à l'élingue ; réservoir standard 425 kg de carburant",
+            "confiance": "haute",
+            "unite": "kg",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125"
+          }
+        },
+        "capacite": {
+          "passagers": {
+            "valeur": "6 (1 pilote + 6 passagers) ou 4 (2 pilotes + 4 passagers) ; 7 occupants au maximum ; volume cabine 3,00 m³ hors poste de pilotage",
+            "confiance": "haute",
+            "unite": "personnes",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information"
+          },
+          "equipage": {
+            "valeur": "1 pilote (2 en configuration double commande)",
+            "confiance": "haute",
+            "unite": "personnes",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": "252 km/h (136 kt) en croisière rapide à la masse maximale",
+            "confiance": "haute",
+            "unite": "km/h",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information"
+          },
+          "vitesseMax": {
+            "valeur": "287 km/h (155 kt, vitesse à ne jamais dépasser VNE)",
+            "confiance": "haute",
+            "unite": "km/h",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H125 ; https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil"
+          },
+          "rayonAction": {
+            "valeur": "630 km de distance franchissable (340 NM) à la masse maximale avec réservoir standard, soit un rayon d'action de l'ordre de 300 km sans réserve spécifique ; Wikipédia indique 660 km",
+            "confiance": "haute",
+            "unite": "km",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H125"
+          },
+          "autonomie": {
+            "valeur": "4 h 27 min à la masse maximale en croisière rapide",
+            "confiance": "haute",
+            "unite": "h",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information"
+          },
+          "plafond": {
+            "valeur": "7 010 m (23 000 ft) altitude maximale de vol ; plafond en vol stationnaire hors effet de sol 3 871 m (12 700 ft) et dans l'effet de sol 4 420 m (14 500 ft) à la masse maximale, ISA ; enveloppe de température -40 °C à ISA +35 °C (limité à 50 °C)",
+            "confiance": "haute",
+            "unite": "m",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": "12,94 m hors tout rotors tournants (« D-value ») ; fuselage 10,93 m",
+            "confiance": "haute",
+            "unite": "m",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H125"
+          },
+          "diametreRotor": {
+            "valeur": 10.69,
+            "confiance": "haute",
+            "unite": "m",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information"
+          },
+          "hauteur": {
+            "valeur": "3,34 m (Wikipédia FR) ; 3,14 m indiqué pour l'AS350 B3 (Wikipédia EN) ; non publié sur la page constructeur",
+            "confiance": "moyenne",
+            "unite": "m",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H125 ; https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "Plus de 7 200 hélicoptères de la famille Écureuil livrés dans 137 pays (site public d’Airbus Helicopters) ; environ 4 200 appareils de la série en service, dont environ 1 500 H125/AS350 B3e ; 3 663 H125/AS350 opérationnels en juin 2020 selon Wikipédia EN (flotte la plus nombreuse de tous les types d'hélicoptères)",
+            "confiance": "moyenne",
+            "unite": "appareils",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125 ; https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil"
+          },
+          "prixIndicatif": {
+            "valeur": "Environ 3,3 millions USD pour un appareil neuf de base (2025, sources marché) ; annonces d'occasion récente (2023-2025) entre 3,2 et 3,7 millions USD ; version assemblée en Inde annoncée à plus de 3,2 millions EUR ; Airbus ne publie pas de prix catalogue",
+            "confiance": "moyenne",
+            "unite": "USD",
+            "source": "https://www.globalair.com/aircraft-for-sale/airbus-h125 ; https://www.controller.com/listings/for-sale/airbus/h125/aircraft ; https://www.avbuyer.com/aircraft/helicopter/turbine/airbus/h125"
+          },
+          "principauxOperateurs": {
+            "valeur": "Flottes nationales AS350/H125 les plus importantes : États-Unis (962), Brésil (368), Australie (210), France (190), Nouvelle-Zélande (183), Italie (156). Opérateurs notables : agences de police et de sécurité publique américaines (dont U.S. Customs and Border Protection, Ohio State Highway Patrol), forces armées brésiliennes (H-50 Esquilo), Air Zermatt (Suisse, secours en montagne), Himalayan Heli Services (Inde, 8 H125), The Helicopter Company (Arabie saoudite), Papillon (tourisme Grand Canyon), opérateurs de travail aérien et de lutte anti-incendie en Australie et au Canada",
+            "confiance": "moyenne",
+            "source": "https://www.avbuyer.com/articles/helicopter-spotlight/helicopter-spotlight-airbus-h125-model-overview-114250 ; https://www.airbus.com/en/newsroom/press-releases/2025-02-himalayan-heli-services-orders-two-airbus-h125-helicopters ; https://www.air-zermatt.ch/en/air-zermatt/technical-department/helicopter-fleet"
+          },
+          "commandesNotables": {
+            "valeur": "155 H125 commandés en 2024 (modèle le plus commandé d'Airbus Helicopters cette année-là, plus haut niveau depuis dix ans) après 108 en 2023 ; 27 H125 pour les forces armées brésiliennes (contrat du 15 septembre 2022, programme TH-X : 12 pour l'armée de l'air, 15 pour la marine, assemblés à Itajubá) ; 10 H125 pour U.S. Customs and Border Protection Air and Marine Operations (juillet 2026, produits à Columbus) ; 2 H125 pour Himalayan Heli Services (février 2025)",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2025-01-airbus-sees-continued-growth-in-helicopter-sales-in-2024 ; https://www.airbus.com/en/newsroom/press-releases/2022-09-the-brazilian-armed-forces-acquire-27-h125-helicopters ; https://www.airbus.com/en/newsroom/press-releases/2026-07-us-customs-and-border-protection-orders-10-airbus-h125-helicopters"
+          },
+          "cadence": {
+            "valeur": "Cadence mondiale H125 non publiée ; H125 + H130 : près de 200 livraisons en 2023 (82 % du segment mondial des monomoteurs intermédiaires) ; Columbus : capacité d'environ 65 appareils par an (12 produits en 2015, objectif 24 en 2016) ; Inde : au moins 10 par an, extensible à 50",
+            "confiance": "moyenne",
+            "unite": "appareils/an",
+            "source": "https://verticalmag.com/news/airbus-reaps-reward-of-h125-h130-evolution-with-best-deliveries-for-a-decade/ ; https://verticalmag.com/news/airbus-aims-to-ramp-up-h125-production-in-mississippi/ ; https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil"
+          }
+        },
+        "electrique": {
+          "avionique": {
+            "valeur": "Planche de bord à écrans tactiles Garmin G500H TXi (standard sur H125 neuf), navigateur GTN 650, nav/com GNC 255, boîtier audio GMA 350c, transpondeur GTX 335R ADS-B Out ; VEMD (Vehicle & Engine Multifunction Display) développé pour Airbus avec indicateur de première limite (FLI) ; pilote automatique 3 axes Garmin GFC 600H en option ; enregistreur de données léger et transfert sans fil des données de vol en fin de vol ; capacité IFR en cours de certification (2024). Le H125 n'utilise pas la suite Helionix d'Airbus (réservée aux H135/H145/H160/H175)",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125 ; https://verticalmag.com/news/h125-h130-get-new-garmin-g500h-cockpit/ ; https://verticalmag.com/news/airbus-reaps-reward-of-h125-h130-evolution-with-best-deliveries-for-a-decade/"
+          },
+          "reseau": {
+            "valeur": "Réseau de bord en courant continu 28 V DC (bus unique alimenté par un démarreur-générateur entraîné par le moteur, batterie en secours) ; prise de parc externe DC",
+            "confiance": "moyenne",
+            "unite": "V DC",
+            "source": "https://www.scribd.com/document/447888581/AS350B3-Technical-information (fiche technique AS350 B3 Eurocopter) ; https://naasco.com/product/starter-generator-dc-515-030/"
+          },
+          "generation": {
+            "valeur": "Un démarreur-générateur DC d'environ 4,5 kW sous 28 V selon la fiche technique AS350 B3 ; référence Thales AES 515-030 montée sur AS350 : 30 V DC, 200 A, 6 kW, plage 8 000 à 12 150 tr/min (fonction démarreur : 400 A sous 20 V DC)",
+            "confiance": "moyenne",
+            "unite": "kW",
+            "source": "https://www.scribd.com/document/447888581/AS350B3-Technical-information ; https://naasco.com/product/starter-generator-dc-515-030/"
+          },
+          "particularites": {
+            "valeur": "Batterie nickel-cadmium d'origine d'environ 15 à 16 Ah ; options batterie lithium-ion certifiées par STC (True Blue Power TB17 et TB20, 20 Ah nominal), notamment approuvées par Transport Canada ; FADEC bicanal avec canal de secours ; double circuit hydraulique en option (permet la MTOW de 2 370 kg) ; système carburant résistant au crash conforme Part 27.952 ; nombreuses STC (crochets d'élingue, treuils, kits mission)",
+            "confiance": "moyenne",
+            "source": "https://www.mcico.com/truebluepower/airbus-helicopters-h125-as350-eurotec-tb20-stc-kit ; https://www.helis.com/database/news/lithium-ion-battery-h125-ca/ ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le 14 mai 2005, un AS350 B3 de série s'est posé au sommet de l'Everest (8 848 m), établissant le record mondial FAI et Guinness d'atterrissage et de décollage les plus hauts pour un hélicoptère, toujours détenu en 2025 ; l'appareil s'y est posé deux fois, environ quatre minutes chaque fois, par -33 °C et vent de 93 km/h.",
+            "source": "https://www.fai.org/news/top-world-20th-anniversary-delsalles-helicopter-record ; https://www.guinnessworldrecords.com/world-records/63069-highest-helicopter-landing"
+          },
+          {
+            "texte": "En mai 2013, un AS350 B3 a réalisé le sauvetage à la longue élingue le plus haut du monde, à 7 800 m sur le Lhotse (Himalaya) ; en 2010, un sauvetage avait déjà été mené à 6 900 m sur l'Annapurna I.",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125 ; https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil"
+          },
+          {
+            "texte": "La famille Écureuil dépasse 40 millions d'heures de vol ; l'appareil le plus ancien encore en service (un AS350 B1) a 46 ans et l'appareil le plus utilisé totalise environ 39 000 heures de vol.",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125"
+          },
+          {
+            "texte": "Aux États-Unis, où le modèle est commercialisé sous le nom AStar, Airbus a vendu au plus fort de la demande environ un H125 par jour ouvré ; en 2012, 783 des 3 300 AS350 en service dans le monde volaient chez des opérateurs américains, et le pays reste la première flotte nationale (962 appareils).",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil ; https://www.avbuyer.com/articles/helicopter-spotlight/helicopter-spotlight-airbus-h125-model-overview-114250"
+          },
+          {
+            "texte": "Le 17 février 2026, la quatrième chaîne d'assemblage final du H125 a été inaugurée à Vemagal (Karnataka) : c'est la première chaîne d'hélicoptères du secteur privé indien, avec une première livraison « Made in India » attendue début 2027 ; le moteur et la boîte de transmission viennent de France, la cellule d'Allemagne et la poutre de queue d'Espagne.",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2026-02-tata-advanced-systems-inaugurates-airbus-h125-helicopter-production-line-to-boost-indias-vertical ; https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil"
+          },
+          {
+            "texte": "Le rotor principal Starflex, moyeu composite sans roulements ni graissage conçu dans les années 1970, est resté la signature technique de l'Écureuil ; un rotor Fenestron a été essayé sur un AS350 en 1987 mais n'a finalement équipé que la déclinaison EC130/H130.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil"
+          }
+        ],
+        "sources": [
+          "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H125",
+          "https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil",
+          "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125",
+          "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h125/h125-technical-information",
+          "https://www.safran-group.com/products-services/arriel-2d-airbus-h125-engine (accès refusé lors de la consultation, données reprises via moteur de recherche)",
+          "https://www.easa.europa.eu/en/document-library/type-certificates (TCDS EASA.R.008 AS 350 / EC 130)",
+          "https://www.airbus.com/en/newsroom/press-releases/2026-07-us-customs-and-border-protection-orders-10-airbus-h125-helicopters",
+          "https://www.airbus.com/en/newsroom/press-releases/2026-01-airbus-reports-strong-helicopter-orders-in-2025",
+          "https://www.airbus.com/en/newsroom/press-releases/2025-01-airbus-sees-continued-growth-in-helicopter-sales-in-2024",
+          "https://www.airbus.com/en/newsroom/press-releases/2026-02-tata-advanced-systems-inaugurates-airbus-h125-helicopter-production-line-to-boost-indias-vertical",
+          "https://www.airbus.com/en/newsroom/press-releases/2022-09-the-brazilian-armed-forces-acquire-27-h125-helicopters",
+          "https://www.airbus.com/en/newsroom/press-releases/2025-02-himalayan-heli-services-orders-two-airbus-h125-helicopters",
+          "https://verticalmag.com/news/airbus-reaps-reward-of-h125-h130-evolution-with-best-deliveries-for-a-decade/",
+          "https://verticalmag.com/news/airbus-aims-to-ramp-up-h125-production-in-mississippi/",
+          "https://verticalmag.com/news/newnamesforairbushelicoptersmodels/",
+          "https://verticalmag.com/news/h125-h130-get-new-garmin-g500h-cockpit/",
+          "https://www.fai.org/news/top-world-20th-anniversary-delsalles-helicopter-record",
+          "https://www.guinnessworldrecords.com/world-records/63069-highest-helicopter-landing",
+          "https://www.avbuyer.com/articles/helicopter-spotlight/helicopter-spotlight-airbus-h125-model-overview-114250",
+          "https://www.globalair.com/aircraft-for-sale/airbus-h125",
+          "https://www.controller.com/listings/for-sale/airbus/h125/aircraft",
+          "https://naasco.com/product/starter-generator-dc-515-030/",
+          "https://www.mcico.com/truebluepower/airbus-helicopters-h125-as350-eurotec-tb20-stc-kit",
+          "https://www.helis.com/database/news/lithium-ion-battery-h125-ca/",
+          "https://www.scribd.com/document/447888581/AS350B3-Technical-information",
+          "https://www.aviationpros.com/aircraft/rotorcraft/press-release/12145214/airbus-helicopters-ohio-state-highway-patrol-takes-delivery-of-first-h125-astar-produced-on-airbus-helicopters-inc-us-full-assembly-line"
+        ],
+        "relecture": "non effectuée"
       },
-      "economique": {
-        "heuresIngenierie": null,
-        "chargePersMois": null,
-        "coutRecurrent": null,
-        "volumeSerie": null,
-        "tauxService": null
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
       },
       "jalon": null,
       "avancement": null
@@ -101,27 +367,279 @@
     {
       "code": "H130",
       "categorie": "civil",
-      "segment": "Monomoteur léger",
+      "segment": "Monomoteur léger (« intermediate single »)",
       "poles": [
         "ETIIE"
       ],
       "silhouette": "patins-fenestron",
       "photo": "",
-      "technique": {
-        "motorisation": null,
-        "masseMaxDecollage": null,
-        "capacite": null,
-        "rayonAction": null,
-        "vitesseCroisiere": null,
-        "longueurHarnais": null,
-        "nbConnecteurs": null
+      "fiche": {
+        "code": "H130",
+        "nom": "Airbus Helicopters H130",
+        "ancienNom": "EC130 T2 (Eurocopter), évolution de l'EC130 B4 (1999)",
+        "categorie": "civil",
+        "segment": "Monomoteur léger (« intermediate single »)",
+        "statut": "en production",
+        "resume": "Le H130 est un hélicoptère monomoteur léger d'Airbus Helicopters, dérivé de l'Écureuil AS350 et doté d'un rotor anticouple Fenestron caréné et d'une cabine large pouvant accueillir un pilote et sept passagers. Mis en service en 2001 sous le nom EC130 B4 puis remotorisé en 2012 en EC130 T2 (Arriel 2D à FADEC), il est principalement utilisé pour le tourisme aérien, le transport de passagers, l'évacuation sanitaire et le travail aérien, et a franchi le cap du 1 000e exemplaire livré en mai 2026.",
+        "identite": {
+          "premierVol": {
+            "valeur": "24 juin 1999 (EC130 B4) ; variante EC130 T2 dévoilée le 12 février 2012 à Heli-Expo (Dallas)",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC130 ; https://skiesmag.com/press-releases/eurocopter-unveils-its-new-ec130-t2-with-optimized-performan-html/"
+          },
+          "miseEnService": {
+            "valeur": "2001 (EC130 B4, client de lancement Blue Hawaiian Helicopters) ; EC130 T2 : première livraison en octobre 2012",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC130 ; https://www.businessairnews.com/hb_aircraftpage.html?recnum=EC130B"
+          },
+          "constructeur": {
+            "valeur": "Airbus Helicopters (ex-Eurocopter), France",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130"
+          },
+          "certification": {
+            "valeur": "Certificat de type EASA R.008 (famille AS350 / EC130) ; EC130 T2 inscrit à la fiche TCDS le 25 mai 2012 ; certification FAA en juillet 2012",
+            "confiance": "moyenne",
+            "source": "https://www.easa.europa.eu/en/downloads/7993/en ; https://www.businessairnews.com/hb_aircraftpage.html?recnum=EC130B"
+          },
+          "siteAssemblage": {
+            "valeur": "Marignane (Bouches-du-Rhône, France), ligne d'assemblage des monomoteurs ; assemblages locaux réalisés aussi par Helibras (Brésil, 2013) et Airbus Australia Pacific (2013) ; fuselage principal sous-traité à Mahindra Aerostructures (Gurugram, Inde), première cabine attendue en mars 2027",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2025-04-airbus-awards-make-in-india-h130-helicopter-fuselage-contract-to"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Safran Helicopter Engines Arriel 2D (turbomoteur) avec FADEC bicanal et troisième canal de secours automatique indépendant",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information"
+          },
+          "nombreMoteurs": {
+            "valeur": 1,
+            "confiance": "haute",
+            "unite": "moteur",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information"
+          },
+          "puissance": {
+            "valeur": 710,
+            "confiance": "haute",
+            "unite": "kW au décollage (952 ch) ; l'EC130 B4 initial disposait d'un Arriel 2B1 de 632 kW (847 ch)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information"
+          },
+          "rotorPrincipal": {
+            "valeur": "Rotor tripale à moyeu Starflex, pales composites, diamètre 10,69 m, surface balayée 89,75 m²",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC130"
+          },
+          "rotorArriere": {
+            "valeur": "Fenestron (rotor anticouple caréné) avec régime rotor variable automatique ; bruit réduit d'environ 50 % par rapport à un rotor de queue classique",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130 ; https://en.wikipedia.org/wiki/Eurocopter_EC130"
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": 2500,
+            "confiance": "haute",
+            "unite": "kg (3 050 kg avec charge externe à l'élingue)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information"
+          },
+          "masseAVide": {
+            "valeur": 1377,
+            "confiance": "moyenne",
+            "unite": "kg (valeur Wikipédia pour l'EC130 T2 ; des fiches distributeur indiquent environ 1 455 kg en version équipée standard)",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC130"
+          },
+          "chargeUtile": {
+            "valeur": 1037,
+            "confiance": "haute",
+            "unite": "kg (charge utile constructeur) ; réservoir standard 425 kg de carburant (540 L)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information"
+          }
+        },
+        "capacite": {
+          "passagers": {
+            "valeur": 7,
+            "confiance": "haute",
+            "unite": "passagers (1 pilote + 7 passagers, ou 2 pilotes + 5 passagers) ; version sanitaire : 1 civière + 3 à 4 soignants",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information"
+          },
+          "equipage": {
+            "valeur": 1,
+            "confiance": "haute",
+            "unite": "pilote (poste de pilotage conçu pour le monopilote ; 2 pilotes possible)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": 237,
+            "confiance": "haute",
+            "unite": "km/h (128 kt, croisière rapide)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information"
+          },
+          "rayonAction": {
+            "valeur": 606,
+            "confiance": "haute",
+            "unite": "km de distance franchissable (327 NM) à la masse max avec réservoir standard ; le rayon d'action aller-retour n'est pas publié par le constructeur",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information"
+          },
+          "vitesseMax": {
+            "valeur": 287,
+            "confiance": "moyenne",
+            "unite": "km/h (155 kt, VNE)",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC130"
+          },
+          "autonomie": {
+            "valeur": 4,
+            "confiance": "haute",
+            "unite": "h (endurance maximale à la masse max au décollage)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information"
+          },
+          "plafond": {
+            "valeur": 7010,
+            "confiance": "haute",
+            "unite": "m (23 000 ft, altitude max de vol) ; plafond de sustentation hors effet de sol 2 957 m, dans l'effet de sol 3 429 m ; vitesse ascensionnelle ≈ 9,1 m/s",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information ; https://en.wikipedia.org/wiki/Eurocopter_EC130"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": 12.64,
+            "confiance": "haute",
+            "unite": "m hors tout, rotors tournants (longueur fuselage ≈ 10,68 m selon Wikipédia FR)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information ; https://fr.wikipedia.org/wiki/Eurocopter_EC130"
+          },
+          "diametreRotor": {
+            "valeur": 10.69,
+            "confiance": "haute",
+            "unite": "m (rotor principal)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information"
+          },
+          "hauteur": {
+            "valeur": 3.34,
+            "confiance": "moyenne",
+            "unite": "m (3,33 m selon Wikipédia FR) ; volume cabine 3,70 m³",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC130 ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": 1000,
+            "confiance": "haute",
+            "unite": "exemplaires EC130 B4 + T2/H130 livrés ; 1 000e exemplaire livré le 12 mai 2026 à Rotorjet Aviation (Kenya)",
+            "source": "https://www.rotorhub.com/airbus-helicopters-delivers-1000th-h130 ; https://www.helis.com/database/news/h130-1000th-delivery/"
+          },
+          "prixIndicatif": {
+            "valeur": "≈ 4 000 000 USD neuf (2025, avant options et aménagement) ; occasion 1,7 à 3,0 M USD selon année et équipement",
+            "confiance": "faible",
+            "unite": "USD (estimation presse/courtiers ; Airbus ne publie pas de prix catalogue ; Wikipédia FR cite 3,3 M USD pour l'EC130 d'origine)",
+            "source": "https://helialaskainc.com/2025/05/understanding-airbus-helicopters-price-a-comprehensive-guide-for-buyers-in-2025/ ; https://fr.wikipedia.org/wiki/Eurocopter_EC130"
+          },
+          "principauxOperateurs": {
+            "valeur": "Tour-opérateurs américains Maverick Helicopters, Papillon Grand Canyon Helicopters et Blue Hawaiian Helicopters (flotte Blue Hawaiian : 14 EC130 + 8 H130 en 2017) ; opérateurs SMUR/HEMS, police et VIP (version ACH130) dans plus de 40 pays ; 279 opérateurs recensés dès 2015",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC130 ; https://verticalmag.com/press-releases/bluehawaiianwelcomeseighthh130ec130t2helicopter/ ; https://www.helis.com/database/news/h130-1000th-delivery/"
+          },
+          "commandesNotables": {
+            "valeur": "Lancement de l'EC130 T2 à Heli-Expo 2012 avec 105 commandes de 7 clients de lancement, dont 50 pour Maverick Helicopters (Las Vegas) ; autres clients de lancement : Papillon, Blue Hawaiian, Scandinavian Helicopter Group, Air Commander, Europavia, Enloe FlightCare",
+            "confiance": "haute",
+            "source": "https://skiesmag.com/press-releases/eurocopter-unveils-its-new-ec130-t2-with-optimized-performan-html/"
+          },
+          "cadence": {
+            "valeur": "Près de 200 H125 + H130 livrés en 2023 (chiffre combiné des deux monomoteurs, meilleure année depuis dix ans) ; cadence propre au H130 non publiée",
+            "confiance": "moyenne",
+            "source": "https://verticalmag.com/news/airbus-reaps-reward-of-h125-h130-evolution-with-best-deliveries-for-a-decade/"
+          }
+        },
+        "electrique": {
+          "avionique": {
+            "valeur": "Écran multifonction véhicule et moteur VEMD (Vehicle and Engine Multifunction Display) de série ; en option planche de bord numérique Garmin G500H TXi (PFD/MFD) avec vision synthétique (SVS) et alerte terrain HTAWS ; navigation VFR jour/nuit avec carte GPS ; transfert sans fil des données de vol. Le H130 n'est PAS équipé de la suite Helionix (réservée aux H135/H145/H160/H175)",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130 ; https://en.wikipedia.org/wiki/Eurocopter_EC130"
+          },
+          "reseau": {
+            "valeur": "Réseau courant continu 28 V (plage nominale 26–29 V, maximum 31,5 V), avec bus d'utilisation dont tension et intensité sont affichées sur le VEMD ; prise de parc extérieure 28 V / 150 A maximum ; trois sources possibles : parc, batterie, générateur",
+            "confiance": "moyenne",
+            "unite": "V DC (données issues d'un cours pilote EC130 B4, architecture supposée identique sur le T2)",
+            "source": "https://slidetodoc.com/ec-130-b-4-initial-pilot-ground-school-7/"
+          },
+          "generation": {
+            "valeur": "Un démarreur-générateur unique entraîné par le moteur, 150 A (option 200 A), avec régulateur de tension, protection surtension et anticourant inverse, relais de réexcitation ; batterie 24 V de secours avec surveillance de température, autonomie sur batterie ≈ 50 min de jour / 20 min de nuit",
+            "confiance": "moyenne",
+            "unite": "A sous 28 V DC",
+            "source": "https://slidetodoc.com/ec-130-b-4-initial-pilot-ground-school-7/"
+          },
+          "particularites": {
+            "valeur": "Système actif de réduction des vibrations (5 accéléromètres + 4 actionneurs linéaires) ; FADEC bicanal Arriel 2D avec 3e canal de secours automatique ; circuit hydraulique double dérivé de l'AS355 ; en 2021, le H130 « Flightlab » d'Airbus a testé en vol, avec la DGAC, un système électrique de secours moteur (moteur électrique 100 kW sur la boîte de transmission principale + batterie lithium-ion 1 kWh) fournissant 30 s de puissance après panne moteur pour faciliter l'autorotation",
+            "confiance": "haute",
+            "source": "https://verticalmag.com/news/airbus-sees-electric-backup-system-as-silver-bullet/ ; https://en.wikipedia.org/wiki/Eurocopter_EC130"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le H130 a été conçu en étroite collaboration avec les tour-opérateurs (Blue Hawaiian Helicopters fut le client de lancement en 2001) : son Fenestron lui confère un niveau de bruit de 84,3 EPNdB, soit environ 6 dB sous les limites OACI, ce qui lui permet de respecter les restrictions sonores du parc national du Grand Canyon.",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130 ; https://en.wikipedia.org/wiki/Eurocopter_EC130"
+          },
+          {
+            "texte": "En mai 2008, l'EC130 a dépassé le Bell 206 comme monomoteur le plus vendu ; sa cabine offre 54 % d'espace dégagé de plus qu'un Bell 407 et est la plus vaste des monomoteurs de sa classe.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC130"
+          },
+          {
+            "texte": "Le concept du Fenestron sur l'Écureuil a été validé bien avant le H130 : le prototype AS350 Z équipé d'un rotor de queue caréné a volé pour la première fois le 6 février 1987, douze ans avant le premier vol de l'EC130.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC130"
+          },
+          {
+            "texte": "Depuis 2019-2021, un H130 sert de « Flightlab » à Airbus Helicopters : il a notamment démontré en vol un système électrique de secours moteur (100 kW, batterie 1 kWh) capable de maintenir le régime rotor pendant 30 secondes après une panne moteur, première étape vers les hélicoptères hybrides.",
+            "source": "https://www.aviationtoday.com/2019/06/26/airbus-helicopters-hybrid-electric-h130/ ; https://verticalmag.com/features/airbus-helicopters-details-electric-backup-system/"
+          },
+          {
+            "texte": "Le 1 000e EC130/H130 a été livré le 12 mai 2026 à la société kenyane Rotorjet Aviation (son troisième appareil), destiné aux missions d'évacuation sanitaire, de relevé, de tourisme et de tournage.",
+            "source": "https://www.rotorhub.com/airbus-helicopters-delivers-1000th-h130"
+          },
+          {
+            "texte": "En avril 2025, Airbus a confié l'assemblage complet du fuselage principal du H130 à Mahindra Aerostructures (Gurugram, Inde) dans le cadre du programme « Make in India », l'assemblage final restant à Marignane ; la première cabine indienne est attendue en mars 2027.",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2025-04-airbus-awards-make-in-india-h130-helicopter-fuselage-contract-to"
+          }
+        ],
+        "sources": [
+          "https://fr.wikipedia.org/wiki/Eurocopter_EC130",
+          "https://en.wikipedia.org/wiki/Eurocopter_EC130",
+          "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130",
+          "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h130/h130-technical-information",
+          "https://www.airbus.com/en/newsroom/press-releases/2025-04-airbus-awards-make-in-india-h130-helicopter-fuselage-contract-to",
+          "https://www.easa.europa.eu/en/downloads/7993/en",
+          "https://www.rotorhub.com/airbus-helicopters-delivers-1000th-h130",
+          "https://www.helis.com/database/news/h130-1000th-delivery/",
+          "https://skiesmag.com/press-releases/eurocopter-unveils-its-new-ec130-t2-with-optimized-performan-html/",
+          "https://verticalmag.com/press-releases/bluehawaiianwelcomeseighthh130ec130t2helicopter/",
+          "https://verticalmag.com/news/airbus-reaps-reward-of-h125-h130-evolution-with-best-deliveries-for-a-decade/",
+          "https://verticalmag.com/news/airbus-sees-electric-backup-system-as-silver-bullet/",
+          "https://verticalmag.com/features/airbus-helicopters-details-electric-backup-system/",
+          "https://www.aviationtoday.com/2019/06/26/airbus-helicopters-hybrid-electric-h130/",
+          "https://www.businessairnews.com/hb_aircraftpage.html?recnum=EC130B",
+          "https://slidetodoc.com/ec-130-b-4-initial-pilot-ground-school-7/",
+          "https://helialaskainc.com/2025/05/understanding-airbus-helicopters-price-a-comprehensive-guide-for-buyers-in-2025/"
+        ],
+        "relecture": "non effectuée"
       },
-      "economique": {
-        "heuresIngenierie": null,
-        "chargePersMois": null,
-        "coutRecurrent": null,
-        "volumeSerie": null,
-        "tauxService": null
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
       },
       "jalon": null,
       "avancement": null
@@ -129,28 +647,296 @@
     {
       "code": "H135",
       "categorie": "civil",
-      "segment": "Bimoteur léger",
+      "segment": "Bimoteur léger (classe 3 t)",
       "poles": [
         "ETIIA",
         "ETIIE"
       ],
       "silhouette": "patins-fenestron-bi",
       "photo": "",
-      "technique": {
-        "motorisation": null,
-        "masseMaxDecollage": null,
-        "capacite": null,
-        "rayonAction": null,
-        "vitesseCroisiere": null,
-        "longueurHarnais": null,
-        "nbConnecteurs": null
+      "fiche": {
+        "code": "H135",
+        "nom": "Airbus Helicopters H135",
+        "ancienNom": "EC135 (Eurocopter) — désignation de type EASA : EC135 T3H / EC135 P3H",
+        "categorie": "civil",
+        "segment": "Bimoteur léger (classe 3 t)",
+        "statut": "en production",
+        "resume": "Le H135 est un hélicoptère bimoteur léger multirôle d'Airbus Helicopters, issu de l'Eurocopter EC135 (premier vol 1994, mise en service 1996), reconnaissable à son rotor principal sans palier et à son rotor de queue caréné Fenestron. Plus de 1 600 exemplaires ont été livrés à plus de 325 opérateurs, principalement pour le secours médical héliporté, la police, la formation militaire et le transport, et la version actuelle (EC135 T3H/P3H) est équipée de la suite avionique Helionix.",
+        "identite": {
+          "premierVol": {
+            "valeur": "15 février 1994 (prototype EC135, Ottobrunn) ; précurseur MBB Bo 108 : 17 octobre 1988",
+            "unite": "date",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC135 ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H135"
+          },
+          "miseEnService": {
+            "valeur": "1996 (premières livraisons en août 1996 à la Deutsche Rettungsflugwacht) ; version H135 à avionique Helionix (EC135 T3H/P3H) : certificat de type EASA du 15 novembre 2016",
+            "unite": "date",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC135 ; TCDS EASA.R.009 Issue 20 (https://www.easa.europa.eu/en/downloads/7943/en)"
+          },
+          "constructeur": {
+            "valeur": "Airbus Helicopters (Eurocopter jusqu'en 2014 ; conception initiale MBB/Eurocopter Deutschland)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC135"
+          },
+          "siteAssemblage": {
+            "valeur": "Donauwörth (Allemagne, chaîne principale) ; Qingdao (Chine, chaîne d'assemblage final ouverte en avril 2019) ; Albacete (Espagne, arrières de fuselage et assemblage des H135 espagnols) ; Fort Erie (Ontario, Canada, complétion des CT-153 Juno) ; prototypes à Ottobrunn",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2019-04-chinas-airbus-h135-final-assembly-line-starts-operations ; https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-delivers-first-h135-for-canadas-future-aircrew-training-program ; https://www.armyrecognition.com/news/aerospace-news/2025/spain-unifies-forces-with-final-airbus-h135-delivery-by-completing-36-helicopter-fleet"
+          },
+          "certification": {
+            "valeur": "Certificat de type EASA.R.009 (type EC135) ; certification initiale LBA 14 juin 1996, JAA juin 1996, FAA juillet 1996 ; EC135 T3/P3 certifiés EASA le 20 octobre 2014 ; EC135 T3H/P3H (H135 Helionix) certifiés EASA le 15 novembre 2016 ; IFR monopilote (Allemagne déc. 1999, Royaume-Uni déc. 2000) ; catégorie A",
+            "unite": "",
+            "confiance": "haute",
+            "source": "TCDS EASA.R.009 Issue 20 (https://www.easa.europa.eu/en/downloads/7943/en) ; https://www.easa.europa.eu/en/newsroom-and-events/news/easa-certifies-airbus-helicopters-ec135-t3 ; https://en.wikipedia.org/wiki/Eurocopter_EC135"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "2 turbomoteurs FADEC au choix : Safran Helicopter Engines Arrius 2B2Plus (version T3/T3H) ou Pratt & Whitney Canada PW206B3 (version P3/P3H). Versions antérieures : Arrius 2B1/2B2 (T1, T2, T2+) et PW206B/B2 (P1, P2, P2+)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135/h135-technical-information ; TCDS EASA.R.009"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "moteurs",
+            "confiance": "haute",
+            "source": "TCDS EASA.R.009"
+          },
+          "puissance": {
+            "valeur": "Puissance certifiée au décollage (5 min, niveau de la mer, TCDS moteur EASA) : PW206B3 336 kW (451 shp) par moteur, OEI 30 s 547 kW ; Arrius 2B2 480 kW, OEI 30 s 557 kW ; Arrius 2B2Plus ≈ 492 kW (660 shp, +5 % au décollage par rapport au 2B2, source Safran/presse). Puissance thermodynamique annoncée par Eurocopter pour les EC135 P2+/T2+ : 498 kW (PW206B2) / 473 kW (Arrius 2B2) au décollage, 609 kW OEI 30 s ; la transmission limite la puissance transmise à 2 × 320 kW au décollage (P2+/T2+)",
+            "unite": "kW",
+            "confiance": "haute",
+            "source": "TCDS EASA IM.E.017 PW206/207 (https://www.easa.europa.eu/en/downloads/7769/en) ; TCDS EASA E.029 Arrius 2 ; Eurocopter EC135 Technical Data 2006 ; https://www.airframer.com/news_story.html?release=20760 ; https://en.wikipedia.org/wiki/Eurocopter_EC135"
+          },
+          "rotorPrincipal": {
+            "valeur": "Rotor sans palier (bearingless) à 4 pales en composite renforcé de fibres, moyeu et mât d'une seule pièce, amortisseurs de traînée élastomères ; diamètre 10,40 m (10,20 m sur les versions antérieures au T3/P3) ; régime rotor 97 à 105,5 % en vol moteur ; système anti-résonance ARIS",
+            "unite": "",
+            "confiance": "haute",
+            "source": "TCDS EASA.R.009 ; Airbus EC135 T3/P3 Technical Data 2015"
+          },
+          "rotorArriere": {
+            "valeur": "Fenestron caréné à 10 pales métalliques à espacement asymétrique, avec stator ; diamètre 1,00 m ; commande par câble flexball avec servocommande hydraulique simple et SAS en lacet",
+            "unite": "",
+            "confiance": "haute",
+            "source": "TCDS EASA.R.009 ; Airbus EC135 T3/P3 Technical Data 2015"
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": "2 980 kg (masse maximale brute) ; 3 000 kg au roulage ; masse brute alternative (AGW) 3 100 kg sous conditions ; masse minimale 1 700 kg",
+            "unite": "kg",
+            "confiance": "haute",
+            "source": "TCDS EASA.R.009 Issue 20, section EC135 T3H ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135/h135-technical-information"
+          },
+          "masseAVide": {
+            "valeur": "≈ 1 562 kg (valeur déduite : 2 980 kg − charge utile de 1 418 kg publiée par Airbus) ; 1 455 kg pour l'EC135 P2+/T2+ en configuration standard (Eurocopter 2006, Wikipédia)",
+            "unite": "kg",
+            "confiance": "moyenne",
+            "source": "Calcul à partir de https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135/h135-technical-information ; Eurocopter EC135 Technical Data 2006 ; https://en.wikipedia.org/wiki/Eurocopter_EC135"
+          },
+          "chargeUtile": {
+            "valeur": "1 418 kg (Airbus, H135) ; charge maximale au plancher cargo 1 130 kg (600 kg/m²) ; carburant utilisable 700,5 l (≈ 560 kg) sur réservoir standard",
+            "unite": "kg",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135/h135-technical-information ; TCDS EASA.R.009"
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": "1 pilote (équipage minimal certifié, siège droit) ; 1 ou 2 pilotes selon exploitation, IFR monopilote possible",
+            "unite": "personnes",
+            "confiance": "haute",
+            "source": "TCDS EASA.R.009 ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135"
+          },
+          "passagers": {
+            "valeur": "Jusqu'à 7 passagers (capacité maximale certifiée) ; configuration standard 5 à 6 passagers, haute densité 6/7 ; EMS : 1 ou 2 civières et jusqu'à 3 personnels médicaux ; volume cabine + soute ≈ 4,9 m³",
+            "unite": "personnes",
+            "confiance": "haute",
+            "source": "TCDS EASA.R.009 (section T3H, « Maximum Passenger Seating Capacity 7 ») ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135 ; Eurocopter EC135 Technical Data 2006"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": "≈ 252 à 259 km/h (136 à 140 kt) selon Airbus (données à la masse maximale) ; 254 km/h (137 kt) selon Wikipédia EN",
+            "unite": "km/h",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135/h135-technical-information ; https://en.wikipedia.org/wiki/Eurocopter_EC135"
+          },
+          "vitesseMax": {
+            "valeur": "278 km/h (VNE 150 KIAS au niveau de la mer pour EC135 T3H/P3H, TCDS) ; 287 km/h (155 kt) pour les EC135 P2+/T2+",
+            "unite": "km/h",
+            "confiance": "haute",
+            "source": "TCDS EASA.R.009 Issue 20 ; https://en.wikipedia.org/wiki/Eurocopter_EC135"
+          },
+          "autonomie": {
+            "valeur": "633 km de distance franchissable avec réservoir standard (342 NM) ; endurance ≈ 3 h 36 min ; réservoirs auxiliaires : + 75 NM (≈ 139 km) et + 40 min environ",
+            "unite": "km",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135/h135-technical-information ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135"
+          },
+          "rayonAction": {
+            "valeur": null,
+            "unite": "km",
+            "confiance": "faible",
+            "source": "Non publié par Airbus (seule la distance franchissable aller simple de 633 km est publiée ; le rayon d'action dépend de la mission, des réserves et de la charge)"
+          },
+          "plafond": {
+            "valeur": "6 096 m (20 000 ft, altitude-pression maximale d'exploitation, TCDS) ; plafond en vol stationnaire hors effet de sol 2 195 m (7 200 ft, ISA, Airbus) ; taux de montée ≈ 7,6 m/s (1 500 ft/min, Wikipédia)",
+            "unite": "m",
+            "confiance": "haute",
+            "source": "TCDS EASA.R.009 Issue 20 ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135/h135-technical-information ; https://en.wikipedia.org/wiki/Eurocopter_EC135"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": "12,26 m hors tout, rotor tournant (« D-value », Airbus) ; 10,20 m de longueur fuselage avec poutre de queue (Wikipédia) ; largeur de coque 1,56 m (TCDS)",
+            "unite": "m",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135/h135-technical-information ; https://en.wikipedia.org/wiki/Eurocopter_EC135 ; TCDS EASA.R.009"
+          },
+          "hauteur": {
+            "valeur": "3,51 m (Wikipédia FR/EN) ; Airbus indique 3,90 m (hors tout) et la TCDS 3,35 m (référence fuselage) — les trois valeurs correspondent à des références de mesure différentes",
+            "unite": "m",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H135 ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135/h135-technical-information ; TCDS EASA.R.009"
+          },
+          "diametreRotor": {
+            "valeur": "10,40 m (rotor principal, EC135 T3/P3 et H135 ; 10,20 m sur les versions antérieures) ; surface balayée ≈ 85 m² ; Fenestron 1,00 m",
+            "unite": "m",
+            "confiance": "haute",
+            "source": "TCDS EASA.R.009 Issue 20 ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135/h135-technical-information"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "Plus de 1 600 EC135/H135 livrés (Airbus, 2026) ; jalons : 100e en juin 1999 (police de Bavière), 1 000e en 2011 (ADAC), 1 400e en septembre 2020, 1 500e le 30 août 2023 (ADAC Luftrettung) ; plus de 1 470 en service, plus de 8 millions d'heures de vol cumulées (Airbus, juillet 2026)",
+            "unite": "exemplaires",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135 ; https://www.airbus.com/en/newsroom/press-releases/2026-07-uk-national-police-air-service-orders-two-additional-airbus-h135s ; https://www.airbus.com/en/newsroom/stories/2023-09-celebrating-the-1500th-delivery-of-the-h135 ; https://en.wikipedia.org/wiki/Eurocopter_EC135"
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "exemplaires/an",
+            "confiance": "faible",
+            "source": "Airbus ne publie pas de cadence de production par type ; ordre de grandeur non vérifié"
+          },
+          "prixIndicatif": {
+            "valeur": "Estimation non officielle (Airbus ne publie pas de prix catalogue) : environ 5,7 à 6,5 M USD pour un appareil neuf de base (2024-2025), jusqu'à environ 8 M USD avec équipements de mission ; occasion 2 à 5 M USD ; Wikipédia FR cite 10,77 M USD (2021, source non précisée, probablement un contrat équipé)",
+            "unite": "M USD",
+            "confiance": "moyenne",
+            "source": "https://boltflight.com/airbus-h135-price-and-operating-costs/ ; https://jettly.com/post/airbus-helicopter-for-sale ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H135"
+          },
+          "principauxOperateurs": {
+            "valeur": "Plus de 325 opérateurs dans plus de 65 pays ; environ 50 % de la flotte en secours médical (plus de 700 appareils EMS) : ADAC Luftrettung (39 EC135/H135), ÖAMTC (Autriche, 40e H135 en 2024), DRF Luftrettung, FinnHEMS, air ambulances britanniques, STAT MedEvac et Boston MedFlight (États-Unis) ; police : NPAS (Royaume-Uni, 16 H135), polices allemandes, Police Scotland, police nationale néerlandaise, police nationale japonaise, Ontario Provincial Police ; militaire/formation : armée de terre allemande, Royal Air Force (29 Juno HT1), forces armées espagnoles et Guardia Civil (36), Force maritime d'autodéfense japonaise (13 TH-135), forces australiennes, aviation de l'armée irakienne, Aviation royale canadienne (CT-153 Juno) ; offshore éolien : HTM (Allemagne), parcs Greater Gabbard et Horns Rev",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135 ; https://en.wikipedia.org/wiki/Eurocopter_EC135 ; https://verticalmag.com/press-releases/adac-luftrettung-receives-1500th-airbus-h135-helicopter/ ; https://www.airbus.com/en/newsroom/press-releases/2026-07-uk-national-police-air-service-orders-two-additional-airbus-h135s"
+          },
+          "commandesNotables": {
+            "valeur": "Accord-cadre de 100 H135 pour le marché chinois (juin 2016), dont 95 assemblés à Qingdao ; 29 Juno HT1 pour la formation militaire britannique (UKMFTS, 2016-2017) ; 19 H135 (CT-153 Juno) pour l'Aviation royale canadienne via SkyAlyne, programme FAcT, premier livré le 17 juin 2026, livraisons jusqu'en 2028 ; 36 H135 pour l'Espagne (armée de l'air et de l'espace, armée de terre, marine, police nationale, Guardia Civil), dernière livraison septembre 2025 ; NPAS Royaume-Uni : renouvellement de flotte porté à 9 H135 (juillet 2026) ; plus de 200 H135 vendus à 13 forces armées pour la formation des pilotes",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2019-04-chinas-airbus-h135-final-assembly-line-starts-operations ; https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-delivers-first-h135-for-canadas-future-aircrew-training-program ; https://www.armyrecognition.com/news/aerospace-news/2025/spain-unifies-forces-with-final-airbus-h135-delivery-by-completing-36-helicopter-fleet ; https://www.airbus.com/en/newsroom/press-releases/2026-07-uk-national-police-air-service-orders-two-additional-airbus-h135s ; https://en.wikipedia.org/wiki/Eurocopter_EC135"
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": "Réseau courant continu 28 V DC (batterie 24 V) ; architecture doublée : deux barres primaires, deux barres délestables (shedding), deux barres essentielles, deux barres forte charge 80 A (équipements optionnels), deux barres forte puissance 200 A et une barre batterie ; prise de parc externe (STANAG 3302 / LN 9064 / SAE AS 25018 / SAE AS 35061) ; prise utilitaire 28 V DC 10 A en soute ; commande d'alimentation DC sur le panneau principal, double ampèremètre génératrices, ampèremètre batterie et double voltmètre affichés sur le CPDS/VEMD",
+            "unite": "V DC",
+            "confiance": "haute",
+            "source": "Airbus Helicopters, EC135 T3/P3 Technical Data 2015 (https://resources.globalair.com/specs/aircraftbrochures/3048_Airbus%20EC135%20T3%20brochure.pdf) ; Eurocopter EC135 Technical Data 2006"
+          },
+          "generation": {
+            "valeur": "Deux démarreurs-génératrices de 160 A sous 28 V DC en standard (soit ≈ 4,5 kW chacune, ≈ 9 kW au total, calcul), option 2 × 200 A (≈ 5,6 kW chacune) ; batterie nickel-cadmium 24 V 17 Ah en standard, options batteries Saft ULM 24 V 27 Ah ou 40 Ah ; pas d'APU",
+            "unite": "A à 28 V DC",
+            "confiance": "haute",
+            "source": "Airbus Helicopters, EC135 T3/P3 Technical Data 2015 ; Eurocopter EC135 Technical Data 2006 (liste d'options) ; TCDS EASA.R.009 (APU : n/a)"
+          },
+          "avionique": {
+            "valeur": "Suite Helionix (H135 / EC135 T3H-P3H, certifiée EASA le 15 novembre 2016) : trois grands écrans multifonctions, pilote automatique 4 axes, protection du domaine de vol, vision synthétique, indicateur de première limite (FLI), cockpit compatible jumelles de vision nocturne, IFR monopilote ; deux GPS/NAV/COM tactiles Garmin GTN 750 ; FADEC sur les deux moteurs avec mode d'entraînement OEI ; calculateur de données air ; versions antérieures : « Avionique Nouvelle » avec CPDS (CAD + VEMD) et pilote automatique 3 axes, glass cockpit MEGHAS/EFIS en option",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135 ; TCDS EASA.R.009 Issue 20 ; Airbus EC135 T3/P3 Technical Data 2015 ; https://en.wikipedia.org/wiki/Eurocopter_EC135"
+          },
+          "particularites": {
+            "valeur": "Double circuit électrique indépendant associé à un double circuit hydraulique tandem (philosophie de redondance bimoteur) ; conditions spéciales de certification « protection contre les champs radioélectriques de forte intensité (HIRF) » et « installations de batteries lithium » inscrites à la TCDS du T3H/P3H ; trim électrique du cyclique ; tube Pitot à réchauffage électrique ; ventilation électrique cockpit/cabine ; phare d'atterrissage 250 W, feux de position et anticollision à LED ; alimentation casques 28 V DC",
+            "unite": "",
+            "confiance": "haute",
+            "source": "Eurocopter EC135 Technical Data 2006 ; Airbus EC135 T3/P3 Technical Data 2015 ; TCDS EASA.R.009 Issue 20"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le Fenestron du H135 compte dix pales à espacement volontairement irrégulier : combiné aux extrémités de pales optimisées du rotor principal, il place l'appareil 6,5 dB(A) sous la limite de bruit OACI, ce qui en a fait l'hélicoptère le plus silencieux de sa catégorie pendant plus de quinze ans selon le constructeur.",
+            "source": "Eurocopter EC135 Technical Data 2006 ; https://en.wikipedia.org/wiki/Eurocopter_EC135 ; https://en.wikipedia.org/wiki/Fenestron"
+          },
+          {
+            "texte": "L'EC135 descend du MBB Bo 108, successeur du Bo 105 qui a volé pour la première fois le 17 octobre 1988 : il fut le premier programme conçu en commun après la fusion franco-allemande formant Eurocopter, en mariant le rotor principal sans palier de MBB et le Fenestron d'Aérospatiale.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC135 ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H135"
+          },
+          {
+            "texte": "L'EC135 immatriculé G-NESV (numéro de série 0067), livré en avril 1999 à une unité de police aérienne du nord-est de l'Angleterre, a été le premier EC135 au monde à franchir 10 000 heures de vol.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC135"
+          },
+          {
+            "texte": "En 2007, Eurocopter a proposé « L'Hélicoptère par Hermès », une édition à cabine quatre places entièrement dessinée avec la maison Hermès, dont le client de lancement était Falcon Aviation Services à Abou Dabi.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC135"
+          },
+          {
+            "texte": "La chaîne d'assemblage final de Qingdao, inaugurée en avril 2019, est la première chaîne d'assemblage d'hélicoptères ouverte en Chine par un constructeur étranger et la première chaîne H135 hors d'Europe : fuselages et kits de boîte de transmission y arrivent de Donauwörth et d'Albacete pour honorer un accord-cadre de 100 appareils.",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2019-04-chinas-airbus-h135-final-assembly-line-starts-operations"
+          },
+          {
+            "texte": "Environ la moitié de la flotte sert au secours médical : l'EC135 assurait vers 2013 près d'un quart des vols médicaux d'urgence dans le monde, l'ADAC a reçu à la fois le 1 000e (2011) et le 1 500e exemplaire (30 août 2023), et un élève pilote autrichien a décrit le cockpit Helionix comme « un ordinateur portable volant avec des pales de rotor dessus ».",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC135 ; https://www.airbus.com/en/newsroom/stories/2023-09-celebrating-the-1500th-delivery-of-the-h135"
+          }
+        ],
+        "sources": [
+          "https://en.wikipedia.org/wiki/Eurocopter_EC135",
+          "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H135",
+          "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135",
+          "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h135/h135-technical-information",
+          "TCDS EASA.R.009 EC135, Issue 20, 9 décembre 2025 : https://www.easa.europa.eu/en/downloads/7943/en",
+          "TCDS EASA IM.E.017 Pratt & Whitney Canada PW206/PW207 : https://www.easa.europa.eu/en/downloads/7769/en",
+          "TCDS EASA E.029 Safran Arrius 2 : https://www.easa.europa.eu/sites/default/files/dfu/EASA%20TCDS%20E.029%20at%20issue%2009.pdf",
+          "Airbus Helicopters, EC135 T3/P3 Technical Data 2015 : https://resources.globalair.com/specs/aircraftbrochures/3048_Airbus%20EC135%20T3%20brochure.pdf",
+          "Eurocopter, EC135 Technical Data 2006 : https://maunaloahelicopters.edu/library/Rotorcraft_Training_Manuals/Airbus_Eurocopter_Helicopter/EC_135/EC_135_Technical_Data.pdf",
+          "https://www.airbus.com/en/newsroom/stories/2023-09-celebrating-the-1500th-delivery-of-the-h135",
+          "https://verticalmag.com/press-releases/adac-luftrettung-receives-1500th-airbus-h135-helicopter/",
+          "https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-delivers-first-h135-for-canadas-future-aircrew-training-program",
+          "https://www.airbus.com/en/newsroom/press-releases/2026-07-uk-national-police-air-service-orders-two-additional-airbus-h135s",
+          "https://www.airbus.com/en/newsroom/press-releases/2019-04-chinas-airbus-h135-final-assembly-line-starts-operations",
+          "https://www.armyrecognition.com/news/aerospace-news/2025/spain-unifies-forces-with-final-airbus-h135-delivery-by-completing-36-helicopter-fleet",
+          "https://www.easa.europa.eu/en/newsroom-and-events/news/easa-certifies-airbus-helicopters-ec135-t3",
+          "https://www.airframer.com/news_story.html?release=20760",
+          "https://boltflight.com/airbus-h135-price-and-operating-costs/",
+          "https://jettly.com/post/airbus-helicopter-for-sale",
+          "Pages non accessibles lors de la collecte (HTTP 403/503) : safran-group.com (fiche Arrius 2B2Plus) et helicopters.site public d’Airbus Helicopters (communiqué certification Helionix H135) ; valeurs correspondantes reprises de sources secondaires"
+        ],
+        "relecture": "non effectuée"
       },
-      "economique": {
-        "heuresIngenierie": null,
-        "chargePersMois": null,
-        "coutRecurrent": null,
-        "volumeSerie": null,
-        "tauxService": null
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
       },
       "jalon": null,
       "avancement": null
@@ -158,7 +944,7 @@
     {
       "code": "H145",
       "categorie": "civil",
-      "segment": "Bimoteur léger",
+      "segment": "Bimoteur léger (classe 3,8 t)",
       "poles": [
         "ETIIA",
         "ETIIE",
@@ -166,21 +952,279 @@
       ],
       "silhouette": "patins-fenestron-bi",
       "photo": "",
-      "technique": {
-        "motorisation": null,
-        "masseMaxDecollage": null,
-        "capacite": null,
-        "rayonAction": null,
-        "vitesseCroisiere": null,
-        "longueurHarnais": null,
-        "nbConnecteurs": null
+      "fiche": {
+        "code": "H145",
+        "nom": "Airbus Helicopters H145",
+        "ancienNom": "EC145 T2 (désignation de type MBB-BK117 D-2) ; version actuelle à rotor cinq pales : MBB-BK117 D-3 ; famille issue du BK117 (MBB/Kawasaki) et de l'EC145 (BK117 C-2)",
+        "categorie": "civil",
+        "segment": "Bimoteur léger (classe 3,8 t)",
+        "statut": "en production",
+        "resume": "Le H145 est un hélicoptère bimoteur léger de la classe 3,8 t produit par Airbus Helicopters à Donauwörth (Allemagne), dérivé du BK117 germano-japonais et de l'EC145 T2, renommé H145 en 2015. Sa version actuelle (BK117 D-3, certifiée par l'EASA le 19 juin 2020) associe un rotor principal cinq pales sans roulement, un Fenestron, deux turbines Safran Arriel 2E à FADEC et la suite avionique Helionix, pour des missions de secours médical, de police, de transport, d'offshore et, en version H145M, militaires.",
+        "identite": {
+          "premierVol": {
+            "valeur": "12 juin 1999 (EC145 / BK117 C-2) ; EC145 T2 : 2010 ; prototype à rotor cinq pales : 2018-2019 (présenté à Heli-Expo en mars 2019)",
+            "confiance": "moyenne",
+            "unite": "date",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H145 (date de 1999 : confiance haute) ; dates T2 et cinq pales de mémoire, recoupées par https://verticalmag.com/news/airbus-helicopters-launches-5-bladed-h145-upgrade/"
+          },
+          "miseEnService": {
+            "valeur": "2002 (EC145) ; 2014 (EC145 T2 / H145, première livraison HEMS en Allemagne) ; 1er octobre 2020 (première livraison de la version cinq pales, secours aérien norvégien)",
+            "confiance": "haute",
+            "unite": "date",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H145 ; https://verticalmag.com/news/airbus-celebrates-first-five-bladed-h145-delivery/"
+          },
+          "constructeur": {
+            "valeur": "Airbus Helicopters (ex-Eurocopter), en coopération avec Kawasaki Heavy Industries (part de travail d'environ 40 % : structure du fuselage, boîte de transmission principale, systèmes électrique et carburant)",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145 ; https://www.easa.europa.eu/en/downloads/7941/en (TCDS EASA.R.010)"
+          },
+          "siteAssemblage": {
+            "valeur": "Donauwörth (Bavière, Allemagne) ; chaîne Kawasaki à Gifu (Japon) pour le BK117 D-3 ; Columbus (Mississippi, États-Unis) pour la version UH-72 Lakota",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H145 ; https://global.kawasaki.com/en/corp/newsroom/news/detail/?f=20210531_4392"
+          },
+          "certification": {
+            "valeur": "EASA (type MBB-BK117 D-3) : 19 juin 2020 ; FAA : novembre 2020 ; JCAB (Japon) : mai 2021 ; EC145 T2 (BK117 D-2) : EASA avril 2014, FAA octobre 2014. Catégorie CS-29 grands giravions, cat. A et B, VFR jour/nuit et IFR, hors givrage.",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/7941/en (TCDS EASA.R.010 Issue 22, section 11) ; https://www.airbus.com/en/newsroom/press-releases/2020-11-five-bladed-airbus-h145-receives-faa-type-certification ; https://global.kawasaki.com/en/corp/newsroom/news/detail/?f=20210531_4392"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "2 × Safran Helicopter Engines Arriel 2E (turbomoteurs à turbine libre), régulation numérique FADEC bi-canal, TBO 5 000 h",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145 ; https://www.easa.europa.eu/en/downloads/7941/en ; https://www.safran-group.com/products-services/arriel-2e-airbus-h145-engine"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "confiance": "haute",
+            "unite": "moteurs",
+            "source": "https://www.easa.europa.eu/en/downloads/7941/en"
+          },
+          "puissance": {
+            "valeur": "667 kW (894 ch) par moteur au décollage ; régimes monomoteur (OEI) : 775 kW (1 039 ch) pendant 2 min, 800 kW (1 072 ch) pendant 30 s",
+            "confiance": "haute",
+            "unite": "kW (ch entre parenthèses)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145/h145-technical-information ; https://www.bk117.com/en/info/d3.html"
+          },
+          "rotorPrincipal": {
+            "valeur": "Rotor cinq pales sans roulement (bearingless) à poutre flexible composite, pales composites à profil de nouvelle génération ; diamètre 10,80 m (11,00 m sur la version quatre pales) ; pales repliables ; limites de régime 94-107,5 % (rotor entraîné)",
+            "confiance": "haute",
+            "unite": "m",
+            "source": "https://www.easa.europa.eu/en/downloads/7941/en ; https://verticalmag.com/news/airbus-helicopters-launches-5-bladed-h145-upgrade/"
+          },
+          "rotorArriere": {
+            "valeur": "Fenestron caréné à 10 pales composites, diamètre 1,15 m (remplace le rotor bipale classique de l'EC145 depuis l'EC145 T2)",
+            "confiance": "haute",
+            "unite": "m",
+            "source": "https://www.easa.europa.eu/en/downloads/7941/en (TCDS section 11, III.2 et III.4.3)"
+          }
+        },
+        "masses": {
+          "masseAVide": {
+            "valeur": 1895,
+            "confiance": "haute",
+            "unite": "kg (définition de base Airbus ; la version cinq pales est annoncée 50 kg plus légère que la version quatre pales)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145/h145-technical-information"
+          },
+          "masseMaxDecollage": {
+            "valeur": 3800,
+            "confiance": "haute",
+            "unite": "kg (identique avec charge externe ; 3 700 kg pour la version quatre pales)",
+            "source": "https://www.easa.europa.eu/en/downloads/7941/en ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145/h145-technical-information"
+          },
+          "chargeUtile": {
+            "valeur": 1905,
+            "confiance": "haute",
+            "unite": "kg (charge utile ; crochet d'élingue simple 1 600 kg, classe D HEC 800 kg, carburant standard 723 kg / 903,8 L utilisables)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145/h145-technical-information ; https://www.easa.europa.eu/en/downloads/7941/en"
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": "1 ou 2 pilotes (équipage minimum certifié : 1 pilote en place droite)",
+            "confiance": "haute",
+            "unite": "personnes",
+            "source": "https://www.easa.europa.eu/en/downloads/7941/en (TCDS section 11, III.16)"
+          },
+          "passagers": {
+            "valeur": "8 en transport standard, jusqu'à 10 en haute densité avec un seul pilote (TCDS EASA : 9 sièges passagers certifiés en cabine, plus la place copilote) ; EMS : 2 civières + 3 soignants",
+            "confiance": "haute",
+            "unite": "personnes",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145 ; https://www.easa.europa.eu/en/downloads/7941/en (III.17)"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": 241,
+            "confiance": "haute",
+            "unite": "km/h (130 kt, croisière recommandée ; croisière maximale environ 263 km/h / 142 kt selon Kawasaki)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145/h145-technical-information ; https://www.bk117.com/en/info/d3.html"
+          },
+          "vitesseMax": {
+            "valeur": 278,
+            "confiance": "haute",
+            "unite": "km/h (VNE 150 kt indiquée, bimoteur ; VNE OEI 110 kt, autorotation 90 kt)",
+            "source": "https://www.easa.europa.eu/en/downloads/7941/en (TCDS section 11, III.8)"
+          },
+          "rayonAction": {
+            "valeur": 650,
+            "confiance": "haute",
+            "unite": "km (distance franchissable maximale, réservoirs standard, niveau de la mer ; rayon d'action non publié, environ la moitié)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145/h145-technical-information"
+          },
+          "autonomie": {
+            "valeur": "3 h 35 min",
+            "confiance": "haute",
+            "unite": "h (réservoirs standard, niveau de la mer)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145/h145-technical-information"
+          },
+          "plafond": {
+            "valeur": 6096,
+            "confiance": "haute",
+            "unite": "m (20 000 ft, altitude maximale d'exploitation et de décollage/atterrissage certifiée ; plafond stationnaire hors effet de sol 2 729 m, dans l'effet de sol 3 807 m)",
+            "source": "https://www.easa.europa.eu/en/downloads/7941/en (III.10) ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145/h145-technical-information"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": 13.54,
+            "confiance": "haute",
+            "unite": "m (hors tout, rotors tournants / D-value ; longueur fuselage 11,69 m, largeur coque 2,73 m)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145/h145-technical-information ; https://www.easa.europa.eu/en/downloads/7941/en (III.4.1)"
+          },
+          "diametreRotor": {
+            "valeur": 10.8,
+            "confiance": "haute",
+            "unite": "m",
+            "source": "https://www.easa.europa.eu/en/downloads/7941/en (III.4.2)"
+          },
+          "hauteur": {
+            "valeur": 3.98,
+            "confiance": "haute",
+            "unite": "m (TCDS EASA ; 4,00 m selon Kawasaki ; volume interne cabine + soute 6,03 m³)",
+            "source": "https://www.easa.europa.eu/en/downloads/7941/en ; https://www.bk117.com/en/info/d3.html"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "Plus de 2 150 appareils livrés pour la famille H145/EC145/BK117 (chiffre Airbus 2026), plus de 8,5 millions d'heures de vol, plus de 350 opérateurs dans environ 70 pays ; Wikipédia indique environ 1 700 exemplaires fin 2024 sur un périmètre différent. Le nombre d'exemplaires de la seule version cinq pales n'est pas publié.",
+            "confiance": "moyenne",
+            "unite": "appareils",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145 ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          "cadence": {
+            "valeur": "Objectif d'environ 70 appareils par an annoncé en 2014 ; cadence actuelle non publiée",
+            "confiance": "moyenne",
+            "unite": "appareils/an",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          "prixIndicatif": {
+            "valeur": "Environ 9 à 10 millions USD pour un H145 civil neuf (presse 2024 : 9,7 M USD ; Wikipédia FR : 9 M USD en 2021) ; version militaire H145M : de l'ordre de 23 M USD par appareil support inclus (contrat irlandais de 4 appareils pour 94,6 M USD, 2025) ; Royaume-Uni : 6 H145 pour environ 152 M USD (2024)",
+            "confiance": "moyenne",
+            "unite": "USD",
+            "source": "https://www.slashgear.com/1933798/h145-helicopter-how-much-cost-price-fast-top-speed-fly/ ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145 ; https://breakingdefense.com/2024/04/airbus-uk-agree-152-million-deal-for-6-h145-overseas-helicopters/"
+          },
+          "principauxOperateurs": {
+            "valeur": "US Army et Garde nationale (environ 485 UH-72 Lakota) ; Bundeswehr (H145M LUH SOF et jusqu'à 82 H145M LKH) ; Sécurité civile française (32 EC145 puis 36 H145) et Gendarmerie nationale ; Rega (Suisse) ; DRF Luftrettung et ADAC Luftrettung (Allemagne) ; Fondation norvégienne d'ambulance aérienne ; Royal Air Force (Jupiter HT1/HC2) ; forces armées hongroises, chypriotes, belges, irlandaises, espagnoles ; nombreux services de police, HEMS, offshore éolien et exploitants japonais via Kawasaki",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H145 ; https://www.airbus.com/en/newsroom/press-releases/2024-11-airbus-delivers-first-of-up-to-82-h145m-helicopters-to-the-german"
+          },
+          "commandesNotables": {
+            "valeur": "Allemagne : 57 H145M commandés en décembre 2023 (jusqu'à 82 avec options), 15 supplémentaires en décembre 2025 ; Espagne : 50 H145M (décembre 2025) ; France : 42 H145 (janvier 2024 : 36 Sécurité civile + 6 Gendarmerie) ; Belgique : 15 H145M (juin 2024) ; Rega : 21 H145 D3 pour renouveler toute sa flotte ; Chypre : 6 H145M (2022) ; Irlande : 4 H145M (2025) ; Royaume-Uni : 6 H145 (2024)",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H145 ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145 ; https://breakingdefense.com/2024/04/airbus-uk-agree-152-million-deal-for-6-h145-overseas-helicopters/"
+          }
+        },
+        "electrique": {
+          "avionique": {
+            "valeur": "Suite avionique modulaire intégrée Helionix (Airbus Helicopters) : écrans multifonctions, pilote automatique 4 axes double-duplex (décollage automatisé, approche stationnaire couplée), protection du domaine de vol, H-TAWS, vision synthétique en option, cockpit compatible jumelles de vision nocturne, serveur de communication sans fil embarqué (wACS) ; version logicielle Helionix V10 approuvée par l'EASA en août 2023. L'EC145 d'origine utilisait un cockpit tout-écran Thales MEGHAS.",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145 ; https://www.easa.europa.eu/en/downloads/7941/en (section 11, III.2 et IV.1) ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          "reseau": {
+            "valeur": "Réseau de bord en courant continu 28 V, architecture électrique double (« dual electrical system » selon Airbus) ; compatibilité avec les groupes de démarrage sol 28 V",
+            "confiance": "moyenne",
+            "unite": "V DC",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145 (architecture double) ; tension 28 V : usage courant de la classe et équipements sol 28 V listés pour le type, détail d'architecture non publié"
+          },
+          "generation": {
+            "valeur": "Deux démarreurs-génératrices entraînées par les moteurs (une par moteur) alimentant deux réseaux 28 V DC redondants ; batterie de bord ; puissance nominale des génératrices non publiée",
+            "confiance": "moyenne",
+            "unite": "-",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145 (système électrique double) ; intensité des génératrices : non trouvée dans les sources publiques"
+          },
+          "particularites": {
+            "valeur": "Le système électrique fait partie du lot Kawasaki (avec le fuselage, la BTP et le circuit carburant) ; la base de certification du BK117 D-3 comprend des conditions spéciales EASA pour les installations de batteries lithium rechargeables et non rechargeables et pour la cybersécurité ; FADEC bi-canal par moteur ; système de surveillance d'usage (UMS) enregistrant les dépassements de limites moteur ; régulation numérique et mode d'entraînement OEI ; avionique et système hydraulique duplex, lubrification BTP redondante",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/7941/en (section 11, II.3 et III.5.3) ; https://en.wikipedia.org/wiki/Eurocopter_EC145 ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le 24 septembre 2019, le prototype du H145 à rotor cinq pales s'est posé au sommet de l'Aconcagua (6 962 m), point culminant des Amériques et de l'hémisphère Sud, par -22 °C : premier atterrissage d'un hélicoptère bimoteur à cette altitude. Le H145 est certifié pour décoller et atterrir jusqu'à 20 000 ft (6 096 m).",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2019-09-the-new-airbus-h145-lands-on-top-of-the-andes ; https://www.easa.europa.eu/en/downloads/7941/en"
+          },
+          {
+            "texte": "Le rotor principal cinq pales est « sans roulement » : la poutre flexible composite remplace articulations et roulements, ce qui réduit les pièces d'usure. Malgré la pale supplémentaire, la masse à vide baisse de 50 kg et la charge utile progresse de 150 kg, tout en réduisant le diamètre rotor de 11,0 m à 10,8 m et en autorisant le repliage des pales.",
+            "source": "https://verticalmag.com/news/airbus-helicopters-launches-5-bladed-h145-upgrade/ ; https://www.airbus.com/en/newsroom/press-releases/2020-06-five-bladed-h145-receives-type-certification-by-easa"
+          },
+          {
+            "texte": "L'EC145, ancêtre direct du H145, est présenté comme le premier hélicoptère civil livré avec un cockpit compatible jumelles de vision nocturne ; le passage au Fenestron et au système VARTOMS (régime rotor variable) rend le type environ 60 % moins bruyant que le BK117 C1 (85,7 dB en palier selon Airbus).",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145 ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145/h145-technical-information"
+          },
+          {
+            "texte": "Le H145 est un programme germano-japonais depuis le BK117 de 1979 : Kawasaki Heavy Industries réalise environ 40 % de l'appareil (fuselage, BTP, systèmes électrique et carburant) et assemble le BK117 D-3 à Gifu pour le marché japonais, où il a été certifié en mai 2021.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145 ; https://global.kawasaki.com/en/corp/newsroom/news/detail/?f=20210531_4392"
+          },
+          {
+            "texte": "La version américaine UH-72 Lakota, dérivée de l'EC145 et assemblée à Columbus (Mississippi), compte environ 485 exemplaires dans l'US Army et la Garde nationale, ce qui en fait l'un des hélicoptères militaires légers les plus nombreux de la famille.",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H145"
+          },
+          {
+            "texte": "Le H145 est certifié pour voler avec 50 % de carburant d'aviation durable (SAF), avec un objectif de 100 % annoncé pour 2030 ; la flotte mondiale de la famille dépasse 8,5 millions d'heures de vol et une disponibilité moyenne supérieure à 95 % selon Airbus.",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145"
+          }
+        ],
+        "sources": [
+          "https://en.wikipedia.org/wiki/Airbus_Helicopters_H145",
+          "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H145",
+          "https://en.wikipedia.org/wiki/Eurocopter_EC145",
+          "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145",
+          "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h145/h145-technical-information",
+          "https://www.easa.europa.eu/en/downloads/7941/en (TCDS EASA.R.010 MBB-BK117, Issue 22, 22 juin 2026, section 11 BK117 D-3)",
+          "https://www.airbus.com/en/newsroom/press-releases/2019-09-the-new-airbus-h145-lands-on-top-of-the-andes",
+          "https://www.airbus.com/en/newsroom/press-releases/2020-06-five-bladed-h145-receives-type-certification-by-easa",
+          "https://www.airbus.com/en/newsroom/press-releases/2020-11-five-bladed-airbus-h145-receives-faa-type-certification",
+          "https://www.airbus.com/en/newsroom/press-releases/2024-11-airbus-delivers-first-of-up-to-82-h145m-helicopters-to-the-german",
+          "https://verticalmag.com/news/airbus-helicopters-launches-5-bladed-h145-upgrade/",
+          "https://verticalmag.com/news/airbus-celebrates-first-five-bladed-h145-delivery/",
+          "https://www.bk117.com/en/info/d3.html",
+          "https://global.kawasaki.com/en/corp/newsroom/news/detail/?f=20210531_4392",
+          "https://www.safran-group.com/products-services/arriel-2e-airbus-h145-engine",
+          "https://www.slashgear.com/1933798/h145-helicopter-how-much-cost-price-fast-top-speed-fly/",
+          "https://breakingdefense.com/2024/04/airbus-uk-agree-152-million-deal-for-6-h145-overseas-helicopters/",
+          "https://www.helicomontage.fr/PDF/DATA%20H145%20-%20BK117%20D3%20-%20AIRBUS%20HELICOPTERS.pdf (reprise de la fiche technique Airbus)"
+        ],
+        "relecture": "non effectuée"
       },
-      "economique": {
-        "heuresIngenierie": null,
-        "chargePersMois": null,
-        "coutRecurrent": null,
-        "volumeSerie": null,
-        "tauxService": null
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
       },
       "jalon": null,
       "avancement": null
@@ -188,7 +1232,7 @@
     {
       "code": "H160",
       "categorie": "civil",
-      "segment": "Bimoteur moyen",
+      "segment": "Bimoteur moyen (classe 6 t)",
       "poles": [
         "ETIIA",
         "ETIIE",
@@ -196,21 +1240,285 @@
       ],
       "silhouette": "roues-fenestron-bi",
       "photo": "",
-      "technique": {
-        "motorisation": null,
-        "masseMaxDecollage": null,
-        "capacite": null,
-        "rayonAction": null,
-        "vitesseCroisiere": null,
-        "longueurHarnais": null,
-        "nbConnecteurs": null
+      "fiche": {
+        "code": "H160",
+        "nom": "Airbus H160",
+        "categorie": "civil",
+        "segment": "Bimoteur moyen (classe 6 t)",
+        "statut": "en production",
+        "ancienNom": "X4 (nom de code du programme, 2011-2015)",
+        "resume": "Le H160 est un hélicoptère bimoteur moyen de la classe 6 t développé par Airbus Helicopters sous le nom de code X4 : premier vol le 13 juin 2015, certification EASA le 1er juillet 2020, première livraison le 10 décembre 2021 à All Nippon Helicopter (Japon). Il associe deux turbomoteurs Safran Arrano 1A, un rotor principal à cinq pales Blue Edge, un Fenestron incliné, un empennage biplan et la suite avionique Helionix, et sert de base au H160M Guépard destiné aux forces armées françaises.",
+        "identite": {
+          "premierVol": {
+            "valeur": "13 juin 2015 (prototype PT1, F-WWOG, Marignane / aéroport Marseille-Provence)",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H160 ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "miseEnService": {
+            "valeur": "Première livraison le 10 décembre 2021 (All Nippon Helicopter, Japon) ; entrée en service opérationnel en 2022",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2021-12-airbus-delivers-worlds-first-h160-in-japan ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "constructeur": {
+            "valeur": "Airbus Helicopters",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160"
+          },
+          "siteAssemblage": {
+            "valeur": "Assemblage final à Marignane (Bouches-du-Rhône, France) ; quatre grands sous-ensembles produits à Donauwörth (Allemagne)",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/stories/2024-07-the-h160m-takes-shape ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "certification": {
+            "valeur": "Certificat de type EASA.R.516 (modèle H160-B) délivré le 1er juillet 2020 ; base CS-29 amendement 3 (grands giravions, catégories A et B) ; monopilote VFR/IFR ; certifications Japon (mai 2021) et Brésil (sept. 2021) ; approuvé pour 50 % de carburant durable (SAF)",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/document-library/type-certificates/rotorcraft-cs-29-cs-27-cs-vlr/easar516-h160 ; https://web.archive.org/web/20200703042324/https://www.easa.europa.eu/sites/default/files/dfu/tcds_easa.r.516_ah_h160_issue_01_01.07.2020.pdf"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Safran Helicopter Engines Arrano 1A (turbomoteur, certificat EASA.E.095) ; consommation annoncée -15 à -18 % par rapport à la génération précédente",
+            "confiance": "haute",
+            "source": "https://web.archive.org/web/20200703042324/https://www.easa.europa.eu/sites/default/files/dfu/tcds_easa.r.516_ah_h160_issue_01_01.07.2020.pdf ; https://web.safran-group.com/safran-on-board/en/h160.html"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160/h160-technical-information"
+          },
+          "puissance": {
+            "valeur": "955 kW (1 280 ch) au décollage, par moteur ; l'Arrano est présenté par Safran dans la classe 1 100-1 300 ch",
+            "confiance": "haute",
+            "unite": "kW (par moteur)",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160/h160-technical-information ; https://web.safran-group.com/safran-on-board/en/h160.html"
+          },
+          "rotorPrincipal": {
+            "valeur": "5 pales composites Blue Edge à double flèche (extrémités en boomerang), moyeu Spheriflex, diamètre 13,40 m ; mât incliné de 4° vers l'avant et 2° à droite",
+            "confiance": "haute",
+            "source": "https://web.archive.org/web/20200703042324/https://www.easa.europa.eu/sites/default/files/dfu/tcds_easa.r.516_ah_h160_issue_01_01.07.2020.pdf ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "rotorArriere": {
+            "valeur": "Fenestron caréné à 10 pales composites, diamètre 1,20 m, incliné (canted) d'environ 12° ; associé à un empennage horizontal biplan",
+            "confiance": "haute",
+            "source": "https://web.archive.org/web/20200703042324/https://www.easa.europa.eu/sites/default/files/dfu/tcds_easa.r.516_ah_h160_issue_01_01.07.2020.pdf ; https://www.aviation.govt.nz/assets/aircraft/type-acceptance-reports/Airbus-Helicopters-H160-B.pdf"
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": 6050,
+            "confiance": "haute",
+            "unite": "kg",
+            "source": "TCDS EASA.R.516 : 6 050 kg en vol, 6 100 kg masse maximale au sol - https://web.archive.org/web/20200703042324/https://www.easa.europa.eu/sites/default/files/dfu/tcds_easa.r.516_ah_h160_issue_01_01.07.2020.pdf"
+          },
+          "masseAVide": {
+            "valeur": null,
+            "confiance": "faible",
+            "unite": "kg",
+            "source": "Non publiée par Airbus ; Wikipédia EN affiche ~4 050 kg mais par simple soustraction MTOW - charge utile, non retenue comme fait"
+          },
+          "chargeUtile": {
+            "valeur": "jusqu'à 2 000 kg ; charge à l'élingue max 1 600 kg (3 527 lb) ; carburant standard 1 120 kg (capacité utilisable max 1 440 l)",
+            "confiance": "haute",
+            "unite": "kg",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160/h160-technical-information ; https://aviationweek.com/business-aviation/aircraft-overview/aircraft-overview-airbus-helicopters-h160"
+          }
+        },
+        "capacite": {
+          "passagers": {
+            "valeur": "jusqu'à 12 passagers en configuration standard (3 rangées de 4) ; 14 personnes maximum à bord pilote compris selon le certificat de type ; ACH160 : 6 à 10 places",
+            "confiance": "haute",
+            "unite": "personnes",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160/h160-technical-information ; https://www.aviation.govt.nz/assets/aircraft/type-acceptance-reports/Airbus-Helicopters-H160-B.pdf"
+          },
+          "equipage": {
+            "valeur": "1 ou 2 pilotes (certifié monopilote VFR et IFR, siège droit)",
+            "confiance": "haute",
+            "unite": "pilotes",
+            "source": "https://web.archive.org/web/20200703042324/https://www.easa.europa.eu/sites/default/files/dfu/tcds_easa.r.516_ah_h160_issue_01_01.07.2020.pdf"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": "255 km/h (138 kt) croisière recommandée ; 278 km/h (150 kt) croisière rapide",
+            "confiance": "haute",
+            "unite": "km/h",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160/h160-technical-information ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160"
+          },
+          "vitesseMax": {
+            "valeur": "315 km/h (VNE 170 kt IAS jusqu'à 5 000 ft ; VNE moteur en panne = VNE - 35 kt)",
+            "confiance": "haute",
+            "unite": "km/h",
+            "source": "https://web.archive.org/web/20200703042324/https://www.easa.europa.eu/sites/default/files/dfu/tcds_easa.r.516_ah_h160_issue_01_01.07.2020.pdf"
+          },
+          "rayonAction": {
+            "valeur": "890 km (480 NM) de distance franchissable maximale avec réservoirs standard (Wikipédia : 880 km / 475 NM) ; valeur de distance franchissable, non de rayon aller-retour",
+            "confiance": "haute",
+            "unite": "km",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160/h160-technical-information ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "autonomie": {
+            "valeur": "4 h 30 avec réservoirs standard",
+            "confiance": "haute",
+            "unite": "h",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160/h160-technical-information"
+          },
+          "plafond": {
+            "valeur": "6 096 m (20 000 ft) altitude-pression maximale de vol ; plafond stationnaire dans l'effet de sol 2 835 m (9 300 ft) ; enveloppe -20 °C à ISA+37 °C (limité à +50 °C)",
+            "confiance": "haute",
+            "unite": "m",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160/h160-technical-information ; TCDS EASA.R.516"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": "13,96 m (fuselage, certificat de type) ; 15,67 m hors tout rotors tournants (D-value Airbus)",
+            "confiance": "haute",
+            "unite": "m",
+            "source": "https://web.archive.org/web/20200703042324/https://www.easa.europa.eu/sites/default/files/dfu/tcds_easa.r.516_ah_h160_issue_01_01.07.2020.pdf ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160/h160-technical-information"
+          },
+          "diametreRotor": {
+            "valeur": 13.4,
+            "confiance": "haute",
+            "unite": "m",
+            "source": "TCDS EASA.R.516 (13,40 m) ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160/h160-technical-information"
+          },
+          "hauteur": {
+            "valeur": 4.91,
+            "confiance": "haute",
+            "unite": "m",
+            "source": "TCDS EASA.R.516 ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "Plus de 50 appareils en service (octobre 2025) ; environ 70 construits prototypes inclus selon Wikipédia FR (date non précisée) ; chaîne d'assemblage arrivée au n° de plateforme 102 en octobre 2025 ; flotte à ~15 000 heures de vol (fin 2025) ; ACH160 : 35 livrés + 18 en commande (octobre 2025)",
+            "confiance": "moyenne",
+            "unite": "appareils",
+            "source": "https://www.flightglobal.com/helicopters/2025/10/h160-ramp-up-on-course-as-airbus-helicopters-touts-growing-customer-interest/ ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "cadence": {
+            "valeur": "Objectif annoncé à terme de 60 appareils par an à Marignane (montée en cadence en cours en 2025-2026) ; durée d'assemblage final d'environ 8 semaines selon Wikipédia FR",
+            "confiance": "moyenne",
+            "unite": "appareils/an",
+            "source": "https://www.flightglobal.com/helicopters/2025/10/h160-ramp-up-on-course-as-airbus-helicopters-touts-growing-customer-interest/ ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          "prixIndicatif": {
+            "valeur": "Environ 14 M USD en version de base (sources secondaires 2019-2025 : 13,5 M USD cité par AIN via Wikipédia FR, ~14 M USD SlashGear/Bolt Flight) ; le contrat GDAT de 50 appareils annoncé à plus de 700 M USD (2023) correspond à ~14 M USD l'unité ; ACH160 équipé jusqu'à ~20 M USD ; pas de prix catalogue officiel publié par Airbus",
+            "confiance": "moyenne",
+            "unite": "M USD",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160 ; https://aiaa.org/2023/04/10/china-s-gdat-buying-50-airbus-h160-helicopters/ ; https://www.slashgear.com/1907083/airbus-ach160-luxury-helicopter-why-special-so-expensive-price/"
+          },
+          "principauxOperateurs": {
+            "valeur": "All Nippon Helicopter (Japon, client de lancement, prises de vues TV) ; Marine nationale via Babcock France (flotte intérimaire SAR, 6 H160 à Lanvéoc-Poulmic, Cherbourg et Hyères depuis 2022) ; Gendarmerie nationale (10 commandés, premier livré le 16 décembre 2025) ; GDAT (Chine, 50 commandés, 5 livrés en août 2025) ; PHI Aviation (offshore, États-Unis) ; Bristow via Milestone (5 appareils, offshore Nigéria, 2026) ; Agence nationale de police du Japon ; Hiroshima City Fire Services Bureau ; Merck Aviation ; Linfox (Australie) ; The Helicopter Company (Arabie saoudite, ACH160) ; entrée en service également signalée au Brésil, Canada, Inde, Malaisie, Philippines, Royaume-Uni",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2026-01-airbus-reports-strong-helicopter-orders-in-2025 ; https://www.airbus.com/en/newsroom/press-releases/2026-03-bristow-receives-first-airbus-h160s-from-milestone-for-offshore-transportation-in-nigeria ; https://www.meretmarine.com/fr/defense/l-aeronautique-navale-prepare-les-alertes-h160-sur-toutes-les-facades"
+          },
+          "commandesNotables": {
+            "valeur": "GDAT (Chine) : 50 H160 signés le 7 avril 2023, plus grosse commande civile du programme (>700 M USD) ; France : programme HIL H160M Guépard, 169 appareils prévus (80 Terre, 49 Marine, 40 Air), première tranche ferme de 30 notifiée le 22 décembre 2021, livraisons désormais attendues à partir de 2028 ; Gendarmerie nationale : 10 H160 (décembre 2021) ; Japon : Nagoya City Fire Bureau (2025) et Fire and Disaster Management Agency (septembre 2026) ; New York State Police : 1 H160 (mars 2025) ; Bristow : 5 via Milestone",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-04-airbus-helicopters-and-chinas-gdat-sign-for-50-h160-helicopters ; https://www.airbus.com/en/newsroom/press-releases/2021-12-france-orders-the-h160m-for-its-joint-light-helicopter-programme ; https://www.ainonline.com/aviation-news/defense/2026-02-22/upcoming-airbus-h160m-track-2028-deliveries ; https://www.airbus.com/en/newsroom/press-releases/2026-09-japans-fire-and-disaster-management-agency-orders-first-airbus-h160-to-bolster-emergency"
+          }
+        },
+        "electrique": {
+          "avionique": {
+            "valeur": "Suite Helionix (Airbus Helicopters, développée avec Esterline CMC) : 4 écrans multifonctions reconfigurables 6 x 8 in, FMS CMA-9000, capteur d'atterrissage GPS CMA-5024, pilote automatique numérique 4 axes dual-duplex « fail passive » avec modes supérieurs (dont stationnaire automatique et modes de récupération), vision synthétique, carte numérique, HUMS ; commonalité avec H145 et H175 ; instrument de secours IESI Thales ; le H160M reçoit la suite Thales FlytX",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H160 ; https://www.aeroasset.com/img/file_pdf_specs/Airbus-H160-sn1042-specs.pdf ; https://www.airframer.com/aircraft_detail.html?model=Airbus_H160"
+          },
+          "reseau": {
+            "valeur": "Réseau principal en courant continu 28 V DC ; prise de parc externe 28 VDC ; distribution par 2 boîtiers maîtres électriques, 1 panneau disjoncteurs en pointe avant, 2 panneaux disjoncteurs en cockpit et 1 panneau de secours",
+            "confiance": "moyenne",
+            "unite": "V DC",
+            "source": "Fiche de spécification publique (courtier) reprenant la définition Airbus : https://www.aeroasset.com/img/file_pdf_specs/Airbus-H160-sn1042-specs.pdf"
+          },
+          "generation": {
+            "valeur": "2 démarreurs-générateurs 300 A / 28 V DC (un par moteur) ; 2 batteries nickel-cadmium 15 Ah avec contacteur thermique et sonde de température ; 1 génératrice de secours DC entraînée par la boîte de transmission principale (l'horizon de secours est alimenté par les 2 batteries et cette génératrice, sans batterie dédiée - ESF F-04)",
+            "confiance": "moyenne",
+            "unite": "A / V DC / Ah",
+            "source": "https://www.aeroasset.com/img/file_pdf_specs/Airbus-H160-sn1042-specs.pdf ; https://www.aviation.govt.nz/assets/aircraft/type-acceptance-reports/Airbus-Helicopters-H160-B.pdf"
+          },
+          "particularites": {
+            "valeur": "Câblage électrique et racks avioniques (baies avant et arrière) fournis par Safran Electrical & Power ; freinage électrique d'origine (Safran Landing Systems, contrôleur de frein électronique) présenté en 2015 comme une première mondiale, mais dérogation DEV D-21 : le frein électrique ne tenait pas l'appareil stationné sur une pente de 10°, tous les appareils sont passés à un freinage hydraulique après la certification ; commandes de vol électriques et dégivrage complet abandonnés en développement pour des raisons de masse et de coût ; paramètres électriques et hydrauliques affichés à temps partiel sur Helionix (ESF F-03) ; surveillance automatique du circuit électrique de détection incendie (ESF E-07) ; condition spéciale HIRF et essais foudre à effets indirects réalisés sur le prototype PT3 ; 68 brevets sur l'appareil",
+            "confiance": "haute",
+            "source": "https://www.aviation.govt.nz/assets/aircraft/type-acceptance-reports/Airbus-Helicopters-H160-B.pdf ; https://web.safran-group.com/safran-on-board/en/h160.html ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Premier hélicoptère de série équipé des pales Blue Edge à double flèche : Airbus annonce une réduction de 50 % du bruit perçu (3 à 4 dB) et un gain de 100 kg de charge utile par rapport à un rotor de type Dauphin mis à l'échelle ; c'est aussi le premier hélicoptère civil à Fenestron incliné (12°), complété par un empennage biplan breveté qui limite le cabré à basse vitesse.",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160 ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          {
+            "texte": "Campagne d'essais climatiques : chambre climatique à Vienne (Autriche), puis essais par grand froid à Yellowknife (Territoires du Nord-Ouest, Canada) en janvier 2017 jusqu'à -40 °C, et essais chaud et haute altitude à Leadville (Colorado) ; au total environ 1 500 heures de vol avec trois prototypes avant la certification, le premier prototype PT1 ayant volé avec des Pratt & Whitney PT6 en attendant les Arrano.",
+            "source": "https://skiesmag.com/news/h160-completes-cold-weather-trials/ ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          {
+            "texte": "La plus grosse commande civile du programme, 50 appareils pour le loueur chinois GDAT (plus de 700 M USD), a été signée le 7 avril 2023 pendant une visite d'État française en Chine ; le premier H160 chinois a été livré le 12 août 2025.",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-04-airbus-helicopters-and-chinas-gdat-sign-for-50-h160-helicopters ; https://www.airbus.com/en/newsroom/press-releases/2025-08-gdat-takes-delivery-of-first-airbus-h160-helicopter-in-china"
+          },
+          {
+            "texte": "Conçu pour être le premier hélicoptère sans hydraulique de train ni de freins (freinage entièrement électrique), le H160 a dû revenir à un freinage hydraulique après la certification : en essais, le frein électrique ne parvenait pas à maintenir l'appareil stationné sur une pente de 10° comme l'exige la CS 29.735, d'où une dérogation temporaire (DEV D-21).",
+            "source": "https://www.aviation.govt.nz/assets/aircraft/type-acceptance-reports/Airbus-Helicopters-H160-B.pdf ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          {
+            "texte": "Le programme X4, d'un coût d'environ 1 Md€, a été volontairement « désinnové » en 2013 : commandes de vol électriques, cockpit futuriste et ailettes avant ont été abandonnés ; Airbus Commercial Aircraft a conseillé le développement sur le modèle de l'A350, avec deux bancs au sol et quatre appareils d'essais, pour éviter les délais rencontrés sur l'EC175.",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160 ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H160"
+          },
+          {
+            "texte": "Avant même l'arrivée du H160M Guépard, la Marine nationale assure depuis 2022 ses alertes de sauvetage en mer à Lanvéoc-Poulmic, Cherbourg et Hyères avec six H160 civils loués via Babcock (« flotte intérimaire ») ; le H160M a volé pour la première fois le 24 juillet 2025 et a réalisé ses premières approches sur un navire de la Marine en janvier 2026.",
+            "source": "https://www.meretmarine.com/fr/defense/l-aeronautique-navale-prepare-les-alertes-h160-sur-toutes-les-facades ; https://www.airbus.com/en/newsroom/press-releases/2025-07-airbus-launches-h160m-flight-test-campaign ; https://www.opex360.com/2026/01/29/lhelicoptere-h160m-guepard-a-effectue-ses-premieres-approches-avec-un-navire-de-la-marine-nationale/"
+          }
+        ],
+        "sources": [
+          "https://en.wikipedia.org/wiki/Airbus_Helicopters_H160",
+          "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H160",
+          "https://fr.wikipedia.org/wiki/H%C3%A9licopt%C3%A8re_interarm%C3%A9es_l%C3%A9ger",
+          "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160",
+          "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h160/h160-technical-information",
+          "https://www.easa.europa.eu/en/document-library/type-certificates/rotorcraft-cs-29-cs-27-cs-vlr/easar516-h160",
+          "https://web.archive.org/web/20200703042324/https://www.easa.europa.eu/sites/default/files/dfu/tcds_easa.r.516_ah_h160_issue_01_01.07.2020.pdf",
+          "https://www.aviation.govt.nz/assets/aircraft/type-acceptance-reports/Airbus-Helicopters-H160-B.pdf",
+          "https://www.aeroasset.com/img/file_pdf_specs/Airbus-H160-sn1042-specs.pdf",
+          "https://web.safran-group.com/safran-on-board/en/h160.html",
+          "https://www.airframer.com/aircraft_detail.html?model=Airbus_H160",
+          "https://aviationweek.com/business-aviation/aircraft-overview/aircraft-overview-airbus-helicopters-h160",
+          "https://www.flightglobal.com/helicopters/2025/10/h160-ramp-up-on-course-as-airbus-helicopters-touts-growing-customer-interest/",
+          "https://www.airbus.com/en/newsroom/press-releases/2026-01-airbus-reports-strong-helicopter-orders-in-2025",
+          "https://www.airbus.com/en/newsroom/stories/2026-06-the-airbus-h160-redefining-mission-readiness-and-support",
+          "https://www.airbus.com/en/newsroom/press-releases/2023-04-airbus-helicopters-and-chinas-gdat-sign-for-50-h160-helicopters",
+          "https://www.airbus.com/en/newsroom/press-releases/2025-08-gdat-takes-delivery-of-first-airbus-h160-helicopter-in-china",
+          "https://aiaa.org/2023/04/10/china-s-gdat-buying-50-airbus-h160-helicopters/",
+          "https://www.airbus.com/en/newsroom/press-releases/2021-12-france-orders-the-h160m-for-its-joint-light-helicopter-programme",
+          "https://www.ainonline.com/aviation-news/defense/2026-02-22/upcoming-airbus-h160m-track-2028-deliveries",
+          "https://www.airbus.com/en/newsroom/press-releases/2025-07-airbus-launches-h160m-flight-test-campaign",
+          "https://www.airbus.com/en/newsroom/press-releases/2025-12-airbus-delivers-first-h160-for-the-gendarmerie-nationale",
+          "https://www.airbus.com/en/newsroom/press-releases/2026-03-bristow-receives-first-airbus-h160s-from-milestone-for-offshore-transportation-in-nigeria",
+          "https://www.airbus.com/en/newsroom/press-releases/2026-09-japans-fire-and-disaster-management-agency-orders-first-airbus-h160-to-bolster-emergency",
+          "https://www.meretmarine.com/fr/defense/l-aeronautique-navale-prepare-les-alertes-h160-sur-toutes-les-facades",
+          "https://www.opex360.com/2026/01/29/lhelicoptere-h160m-guepard-a-effectue-ses-premieres-approches-avec-un-navire-de-la-marine-nationale/",
+          "https://skiesmag.com/news/h160-completes-cold-weather-trials/",
+          "https://www.slashgear.com/1907083/airbus-ach160-luxury-helicopter-why-special-so-expensive-price/",
+          "https://www.airbus.com/en/newsroom/stories/2024-07-the-h160m-takes-shape"
+        ],
+        "relecture": "non effectuée"
       },
-      "economique": {
-        "heuresIngenierie": null,
-        "chargePersMois": null,
-        "coutRecurrent": null,
-        "volumeSerie": null,
-        "tauxService": null
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
       },
       "jalon": null,
       "avancement": null
@@ -218,28 +1526,296 @@
     {
       "code": "H175",
       "categorie": "civil",
-      "segment": "Bimoteur super-moyen",
+      "segment": "Bimoteur super-moyen (classe 7-8 t)",
       "poles": [
         "ETIIE",
         "ETIII"
       ],
       "silhouette": "roues-bi",
       "photo": "",
-      "technique": {
-        "motorisation": null,
-        "masseMaxDecollage": null,
-        "capacite": null,
-        "rayonAction": null,
-        "vitesseCroisiere": null,
-        "longueurHarnais": null,
-        "nbConnecteurs": null
+      "fiche": {
+        "code": "H175",
+        "nom": "Airbus Helicopters H175",
+        "ancienNom": "EC175 (Eurocopter, 2005-2014) ; désignation de type certifié « EC 175 B » ; projet chinois Z-15 (devenu AC352)",
+        "categorie": "civil",
+        "segment": "Bimoteur super-moyen (classe 7-8 t)",
+        "statut": "en production",
+        "resume": "Le H175 est un hélicoptère bimoteur de la classe super-moyenne (7,8 t) développé par Eurocopter, devenu Airbus Helicopters, en coopération avec l'industriel chinois AVIC, certifié par l'EASA le 30 janvier 2014 et mis en service en décembre 2014. Assemblé à Marignane, il est principalement utilisé pour le transport offshore, la recherche et sauvetage et le transport de personnalités ; 71 exemplaires avaient été livrés en juillet 2025 et une version militaire H175M a été commandée par l'Espagne en décembre 2025.",
+        "identite": {
+          "premierVol": {
+            "valeur": "17 décembre 2009 (Marignane, prototype F-WWPB)",
+            "unite": "date",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175 ; https://www.aopa.org/news-and-media/all-news/2009/december/22/eurocopter-flies-its-new-ec175-helicopter"
+          },
+          "certification": {
+            "valeur": "Certificat de type EASA du 30 janvier 2014 (TCDS EASA.R.150, modèle EC 175 B, base CS-29 Amdt 2, catégorie A et B ; demande déposée le 15 février 2007)",
+            "unite": "date",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en"
+          },
+          "miseEnService": {
+            "valeur": "Décembre 2014 (première livraison le 11 décembre 2014 à NHV, Belgique)",
+            "unite": "date",
+            "confiance": "haute",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H175 ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "constructeur": {
+            "valeur": "Airbus Helicopters (ex-Eurocopter), en coopération avec AVIC / Harbin Aircraft Industry Group (Chine) pour le développement et la production",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "siteAssemblage": {
+            "valeur": "Marignane (Bouches-du-Rhône, France) pour le H175 ; Harbin (Chine) pour la version chinoise AC352",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H175 ; https://www.easa.europa.eu/en/downloads/16512/en"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "2 turbomoteurs Pratt & Whitney Canada PT6C-67E à régulation numérique FADEC (TCDS moteur EASA.IM.E.022) ; la version chinoise AC352 utilise le WZ16 / Safran Ardiden 3C",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h175/h175-technical-information"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "moteurs",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en"
+          },
+          "puissance": {
+            "valeur": "1 324 kW (1 776 ch) par moteur au décollage ; 1 227 kW en continu ; jusqu'à 1 541 kW en régime OEI 30 s",
+            "unite": "kW",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h175/h175-technical-information ; https://vertipedia.vtol.org/aircraft/getAircraft/aircraftID/90"
+          },
+          "rotorPrincipal": {
+            "valeur": "Rotor Spheriflex à 5 pales composites (verre/carbone, extrémités paraboliques), diamètre 14,80 m, régime nominal 279 tr/min (100 %)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en ; https://vertipedia.vtol.org/aircraft/getAircraft/aircraftID/90"
+          },
+          "rotorArriere": {
+            "valeur": "Rotor anticouple classique Spheriflex à 3 pales (pas de Fenestron), diamètre 3,20 m, incliné d'environ 20°",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en ; https://vertipedia.vtol.org/aircraft/getAircraft/aircraftID/90"
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": 7800,
+            "unite": "kg",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en (7 500 kg de base ; 7 800 kg en vol et 7 850 kg au sol pour les appareils équipés Helionix Step 2+ ou ultérieur, note 12 du TCDS) ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h175/h175-technical-information"
+          },
+          "masseAVide": {
+            "valeur": 4603,
+            "unite": "kg",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175 (Vertipedia indique 4 701 kg ; la valeur dépend de la configuration)"
+          },
+          "chargeUtile": {
+            "valeur": "Charge à l'élingue 2 700 kg (Airbus) ; charge utile interne d'environ 3 200 kg déduite de 7 800 kg − 4 603 kg (Wikipédia) ; carburant standard 2 067 kg (2 616 L selon TCDS)",
+            "unite": "kg",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h175/h175-technical-information ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": "1 pilote en VFR ; 2 pilotes en IFR (IFR monopilote possible avec la modification 99A05684-00)",
+            "unite": "pilotes",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en"
+          },
+          "passagers": {
+            "valeur": "Jusqu'à 18 passagers certifiés ; configurations typiques : 16-17 en offshore, 12 en corporate, 6-12 en VIP ; cabine de 12 m³, soute de 2,3 m³",
+            "unite": "passagers",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h175"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": "267 km/h (144 kt) en croisière recommandée ; > 287 km/h (155 kt) en croisière rapide",
+            "unite": "km/h",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h175/h175-technical-information ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h175"
+          },
+          "vitesseMax": {
+            "valeur": "VNE 175 KIAS, soit environ 324 km/h (de −1 500 ft à 3 000 ft, décroissante avec l'altitude) ; Wikipédia cite 315 km/h (170 kt)",
+            "unite": "km/h",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "rayonAction": {
+            "valeur": "Non publié séparément pour le H175 civil ; Airbus indique un rayon d'action de près de 300 NM (≈ 555 km) pour le H175M avec réservoirs standard",
+            "unite": "km",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m"
+          },
+          "autonomie": {
+            "valeur": "Distance franchissable 1 160 km (626 NM) avec réservoirs standard ; endurance maximale 6 h 09 min",
+            "unite": "km / h",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h175/h175-technical-information"
+          },
+          "plafond": {
+            "valeur": "Altitude maximale d'exploitation certifiée 15 000 ft (4 572 m) en vol, 13 000 ft au décollage/atterrissage ; Wikipédia cite un plafond pratique de 6 000 m",
+            "unite": "m",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": "18,06 m rotors tournants ; fuselage 15,68 m ; largeur fuselage 3,35 m",
+            "unite": "m",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "diametreRotor": {
+            "valeur": 14.8,
+            "unite": "m",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en"
+          },
+          "hauteur": {
+            "valeur": "5,34 m hors tout (sommet du rotor de queue) ; 4,84 m fuselage",
+            "unite": "m",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": 71,
+            "unite": "exemplaires livrés (au 18 juillet 2025) ; 56 livrés début 2024, 54 construits en septembre 2023",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2025-07-skyco-leasing-orders-six-additional-airbus-h175-helicopters ; https://www.flightglobal.com/helicopters/airbus-helicopters-plans-steep-h175-ramp-up-to-cope-with-booming-offshore-demand/156914.article ; https://fr.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "cadence": {
+            "valeur": "Cadence annuelle non publiée ; Airbus a annoncé en février 2024 vouloir quadrupler la production d'ici 2026 face à la demande offshore ; 15 commandes enregistrées en 2025",
+            "unite": "appareils/an",
+            "confiance": "moyenne",
+            "source": "https://www.flightglobal.com/helicopters/airbus-helicopters-plans-steep-h175-ramp-up-to-cope-with-booming-offshore-demand/156914.article ; https://www.airbus.com/en/newsroom/press-releases/2026-01-airbus-reports-strong-helicopter-orders-in-2025"
+          },
+          "commandesNotables": {
+            "valeur": "NHV : 16 (premier opérateur, 2014) ; Milestone Aviation : 28 (2015) ; Bristow : 22 (annulée lors de la restructuration de 2020) ; Hong Kong Government Flying Service : 7 en version SAR ; SKYCO Leasing : 12 (2024-2025) ; Espagne : 6 H175M pour l'Ejército del Aire y del Espacio (18 décembre 2025, premier client du H175M) ; Ghana Air Force : 1 (livré en mars 2026)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175 ; https://www.airbus.com/en/newsroom/press-releases/2025-12-spanish-ministry-of-defence-orders-100-airbus-helicopters ; https://www.airbus.com/en/newsroom/press-releases/2025-07-skyco-leasing-orders-six-additional-airbus-h175-helicopters"
+          },
+          "principauxOperateurs": {
+            "valeur": "NHV (Belgique/Pays-Bas), CHC Helicopter, Hong Kong Government Flying Service (SAR), Transportes Aéreos Pegaso (Mexique, golfe du Mexique), Heli Holland, Royal Thai Police, Hornbill Skyways (Malaisie), Uzbekistan Airways, Sécurité publique du Guangdong (Chine), Ghana Air Force ; loueurs : Milestone Aviation, LCI, SKYCO Leasing",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175 ; https://www.airbus.com/en/newsroom/stories/2025-04-the-airbus-h175-the-further-the-better"
+          },
+          "prixIndicatif": {
+            "valeur": "Environ 15 à 18 millions USD neuf selon configuration (presse spécialisée : 16,8-17,9 M USD avant aménagement pour 2024-2025 ; Wikipédia FR : 15 M USD)",
+            "unite": "M USD",
+            "confiance": "moyenne",
+            "source": "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H175 ; https://boltflight.com/airbus-h175-eurocopter-ec175-price-and-operating-costs/"
+          }
+        },
+        "electrique": {
+          "avionique": {
+            "valeur": "Suite Helionix (Airbus Helicopters) : 4 écrans multifonctions 6 × 8 pouces + écran mission central optionnel ; pilote automatique 4 axes dual-duplex (AFCS) avec modes SAR certifiés (SUP.5) ; FMS ; HUMS (DMAU) ; HTAWS ; TCAS II ; ADS-B Out ; cockpit compatible jumelles de vision nocturne ; versions logicielles Step 2+ (V5.1), Step 3 (V6.0) et Step 3.2 référencées dans le TCDS ; IFR monopilote approuvé",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en ; https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h175 ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "reseau": {
+            "valeur": "Réseau principal en courant continu 28 V (les groupes de parc 28 V CC du commerce listent le H175 comme compatible) ; architecture détaillée non publiée",
+            "unite": "V CC",
+            "confiance": "moyenne",
+            "source": "https://www.aerospecialties.com/aviation-ground-support-equipment-gse-products/aircraft-ground-power-units/28-volt-dc-gpu/electric-rectifiers/power-king-three-phase-28v-dc-rectifier/ ; https://www.hsmaviation.com/aircraft/airbus-helicopter-eurocopter-h175-ec175/"
+          },
+          "generation": {
+            "valeur": "Génération CC par démarreurs-générateurs entraînés par les moteurs (mention publique d'un « DC starter generator » dans le catalogue outillage H175 ; électronique de puissance Parker Meggitt) ; nombre et puissance nominale non publiés ; 2 batteries nickel Saft ULM (Ultra Low Maintenance) pour le secours et le démarrage",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://saft.com/en/media-resources/press-releases/saft-batteries-equip-new-airbus-helicopters-ec175-1st-aircraft ;  https://meggittpower.com/markets/helicopters/"
+          },
+          "particularites": {
+            "valeur": "Boîte de transmission principale débrayable : un moteur peut tourner rotor arrêté pour alimenter les systèmes au sol, ce qui évite l'installation d'un APU ; conditions spéciales EASA sur les batteries lithium non rechargeables (TCDS issue 10, 2022) et sur la testabilité en vol des circuits de détection incendie (E-07) ; Airbus Helicopters est responsable des systèmes électrique, hydraulique et avionique dans le partage industriel avec AVIC",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175 ; https://www.easa.europa.eu/en/downloads/16512/en"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "En 2013, un prototype EC175 a établi deux records de temps de montée ratifiés par la FAI dans sa catégorie : 3 000 m en 3 min 10 s et 6 000 m en 6 min 54 s, soit environ une minute par kilomètre.",
+            "source": "https://www.helihub.com/2013/11/18/eurocopter-ec175-sets-two-time-to-climb-records/"
+          },
+          {
+            "texte": "Le programme est franco-chinois : le jumeau AC352 (ex-Z-15), assemblé à Harbin avec des moteurs WZ16 (Safran Ardiden 3C), a reçu son certificat de type CAAC le 26 juillet 2022. Pendant le développement, une maquette numérique partagée a permis aux équipes distantes de 10 000 km de travailler sur la même définition, et la boîte de transmission a été la première d'Eurocopter conçue sous CATIA V5.",
+            "source": "http://www.caac.gov.cn/English/News/202305/t20230515_219696.html ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          {
+            "texte": "La boîte de transmission principale est débrayable : le rotor peut rester immobile pendant qu'un moteur alimente les systèmes de bord (électricité, climatisation) au sol, ce qui a permis de se passer d'un groupe auxiliaire de puissance.",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          {
+            "texte": "« H175 » n'est que le nom commercial : le certificat de type EASA reste libellé « EC 175 B », et la masse maximale au décollage est passée de 7 500 kg à 7 800 kg en 2017 uniquement pour les appareils dotés de l'avionique Helionix Step 2+ et d'un fichier de configuration réglé à 7 850 kg.",
+            "source": "https://www.easa.europa.eu/en/downloads/16512/en"
+          },
+          {
+            "texte": "Au 1er janvier 2025, la flotte mondiale totalisait 250 000 heures de vol, dont 225 000 heures en transport maritime : le H175 est avant tout un appareil offshore, certifié pour l'amerrissage, le vol en givrage limité et en neige.",
+            "source": "https://www.airbus.com/en/newsroom/stories/2025-04-the-airbus-h175-the-further-the-better ; https://www.easa.europa.eu/en/downloads/16512/en"
+          },
+          {
+            "texte": "Airbus s'est retiré de la compétition britannique New Medium Helicopter avec le H175M en août 2024, mais a maintenu le développement de la version militaire ; l'Espagne en est devenue le premier client le 18 décembre 2025 avec 6 appareils destinés au transport d'autorités de l'Ala 48.",
+            "source": "https://www.flightglobal.com/helicopters/airbus-helicopters-still-committed-to-h175m-development-despite-nmh-withdrawal/160238.article ; https://www.airbus.com/en/newsroom/press-releases/2025-12-spanish-ministry-of-defence-orders-100-airbus-helicopters"
+          }
+        ],
+        "sources": [
+          "https://fr.wikipedia.org/wiki/Airbus_Helicopters_H175",
+          "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175",
+          "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h175",
+          "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h175/h175-technical-information",
+          "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m",
+          "https://www.easa.europa.eu/en/downloads/16512/en (TCDS EASA.R.150 EC175, issue 12, 28 octobre 2025)",
+          "https://www.airbus.com/en/newsroom/press-releases/2025-07-skyco-leasing-orders-six-additional-airbus-h175-helicopters",
+          "https://www.airbus.com/en/newsroom/press-releases/2025-12-spanish-ministry-of-defence-orders-100-airbus-helicopters",
+          "https://www.airbus.com/en/newsroom/press-releases/2026-01-airbus-reports-strong-helicopter-orders-in-2025",
+          "https://www.airbus.com/en/newsroom/stories/2025-04-the-airbus-h175-the-further-the-better",
+          "https://www.flightglobal.com/helicopters/airbus-helicopters-plans-steep-h175-ramp-up-to-cope-with-booming-offshore-demand/156914.article",
+          "https://www.flightglobal.com/helicopters/airbus-helicopters-still-committed-to-h175m-development-despite-nmh-withdrawal/160238.article",
+          "https://www.helihub.com/2013/11/18/eurocopter-ec175-sets-two-time-to-climb-records/",
+          "https://www.aopa.org/news-and-media/all-news/2009/december/22/eurocopter-flies-its-new-ec175-helicopter",
+          "http://www.caac.gov.cn/English/News/202305/t20230515_219696.html",
+          "https://saft.com/en/media-resources/press-releases/saft-batteries-equip-new-airbus-helicopters-ec175-1st-aircraft",
+          "https://vertipedia.vtol.org/aircraft/getAircraft/aircraftID/90",
+          "https://boltflight.com/airbus-h175-eurocopter-ec175-price-and-operating-costs/",
+          "https://www.modernghana.com/news/1476679/ghana-acquires-airbus-h175-helicopter-from-france.html",
+          "Note : la brochure « H175 Technical Description 2025 » (mediaassets.site public d’Airbus Helicopters) n'a pu être exploitée (pages en image) ; les caractéristiques détaillées du réseau électrique (nombre et puissance des génératrices) ne sont pas publiées."
+        ],
+        "relecture": "non effectuée"
       },
-      "economique": {
-        "heuresIngenierie": null,
-        "chargePersMois": null,
-        "coutRecurrent": null,
-        "volumeSerie": null,
-        "tauxService": null
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
       },
       "jalon": null,
       "avancement": null
@@ -253,21 +1829,23 @@
       ],
       "silhouette": "roues-bi-lourd",
       "photo": "",
-      "technique": {
-        "motorisation": null,
-        "masseMaxDecollage": null,
-        "capacite": null,
-        "rayonAction": null,
-        "vitesseCroisiere": null,
-        "longueurHarnais": null,
-        "nbConnecteurs": null
-      },
-      "economique": {
-        "heuresIngenierie": null,
-        "chargePersMois": null,
-        "coutRecurrent": null,
-        "volumeSerie": null,
-        "tauxService": null
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
       },
       "jalon": null,
       "avancement": null
@@ -281,21 +1859,23 @@
       ],
       "silhouette": "roues-bi-lourd",
       "photo": "",
-      "technique": {
-        "motorisation": null,
-        "masseMaxDecollage": null,
-        "capacite": null,
-        "rayonAction": null,
-        "vitesseCroisiere": null,
-        "longueurHarnais": null,
-        "nbConnecteurs": null
-      },
-      "economique": {
-        "heuresIngenierie": null,
-        "chargePersMois": null,
-        "coutRecurrent": null,
-        "volumeSerie": null,
-        "tauxService": null
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
       },
       "jalon": null,
       "avancement": null
@@ -310,21 +1890,23 @@
       ],
       "silhouette": "patins-fenestron-bi",
       "photo": "",
-      "technique": {
-        "motorisation": null,
-        "masseMaxDecollage": null,
-        "capacite": null,
-        "rayonAction": null,
-        "vitesseCroisiere": null,
-        "longueurHarnais": null,
-        "nbConnecteurs": null
-      },
-      "economique": {
-        "heuresIngenierie": null,
-        "chargePersMois": null,
-        "coutRecurrent": null,
-        "volumeSerie": null,
-        "tauxService": null
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
       },
       "jalon": null,
       "avancement": null
@@ -338,21 +1920,23 @@
       ],
       "silhouette": "roues-bi",
       "photo": "",
-      "technique": {
-        "motorisation": null,
-        "masseMaxDecollage": null,
-        "capacite": null,
-        "rayonAction": null,
-        "vitesseCroisiere": null,
-        "longueurHarnais": null,
-        "nbConnecteurs": null
-      },
-      "economique": {
-        "heuresIngenierie": null,
-        "chargePersMois": null,
-        "coutRecurrent": null,
-        "volumeSerie": null,
-        "tauxService": null
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
       },
       "jalon": null,
       "avancement": null
@@ -367,21 +1951,23 @@
       ],
       "silhouette": "roues-fenestron-bi",
       "photo": "",
-      "technique": {
-        "motorisation": null,
-        "masseMaxDecollage": null,
-        "capacite": null,
-        "rayonAction": null,
-        "vitesseCroisiere": null,
-        "longueurHarnais": null,
-        "nbConnecteurs": null
-      },
-      "economique": {
-        "heuresIngenierie": null,
-        "chargePersMois": null,
-        "coutRecurrent": null,
-        "volumeSerie": null,
-        "tauxService": null
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
       },
       "jalon": null,
       "avancement": null

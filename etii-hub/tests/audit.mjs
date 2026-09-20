@@ -37,7 +37,10 @@ console.log(`\n== Périmètre : ${pages.length} pages, ${cssFiles.length} CSS, $
 // --- 1. Confidentialité -------------------------------------------------
 console.log('== Confidentialité ==');
 const INTERDITS = [
-  [/airbus\.com/i,                'domaine d\'entreprise'],
+  // Le site PUBLIC www.airbus.com est une source citable : les fiches des
+  // porteurs s'appuient dessus. Tout le reste — sous-domaine, adresse de
+  // courriel, chemin interne — reste interdit.
+  [/(?<!https:\/\/www\.)airbus\.com/i, 'domaine d\'entreprise hors site public'],
   [/[a-z0-9._-]+@(?!example\.invalid)[a-z0-9.-]+\.[a-z]{2,}/i, 'adresse e-mail réelle'],
   [/sharepoint|\bplm\b|intranet/i,'référence à un système interne'],
   [/(docs|drive|sites)\.google\.com/i, 'URL Google interne'],

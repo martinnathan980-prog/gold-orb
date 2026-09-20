@@ -33,7 +33,10 @@ function valeurLisible(brut, unite) {
   const t = texte(brut);
   if (!t) return { texte: NON_RENSEIGNE, ok: false };
   const u = texte(unite);
-  return { texte: u ? `${t} ${u}` : t, ok: true };
+  /* Une unité ne s'accole qu'à une valeur courte : sur une phrase, elle est
+     déjà dans le texte, et « … 1 440 l) kg » n'a aucun sens. */
+  const courte = t.length <= 16 && !/\s\S+\s/.test(t);
+  return { texte: (u && courte) ? `${t} ${u}` : t, ok: true };
 }
 
 function categories(donnees, appareils) {
@@ -161,12 +164,16 @@ function ligneFiche(libelle, brut) {
   const conf = CONFIANCES[c.confiance];
   return el('tr', {},
     el('th', { scope: 'row' }, libelle),
-    el('td', { class: ['porteurs__valeur', c.ok ? null : 'porteurs__manquant'] }, c.texte),
-    el('td', { class: 'porteurs__confiance' },
-      c.ok ? el('span', { class: ['porteurs__conf', 'porteurs__conf--' + c.confiance], title: conf.libelle },
-        el('span', { 'aria-hidden': 'true' }, conf.glyphe),
-        el('span', { class: 'visuellement-cache' }, conf.libelle)) : null,
-      c.ok && c.source ? lienSource(c.source) : null));
+    el('td', { class: 'porteurs__cellule' },
+      el('span', { class: ['porteurs__valeur', c.texte.length > 18 ? 'porteurs__valeur--phrase' : null,
+        c.ok ? null : 'porteurs__manquant'] }, c.texte),
+      c.ok
+        ? el('span', { class: 'porteurs__preuve' },
+            el('span', { class: ['porteurs__conf', 'porteurs__conf--' + c.confiance], title: conf.libelle },
+              el('span', { 'aria-hidden': 'true' }, conf.glyphe),
+              el('span', { class: 'visuellement-cache' }, conf.libelle)),
+            c.source ? lienSource(c.source) : null)
+        : null));
 }
 
 function tableFiche(titre, champs, valeurs) {
@@ -332,6 +339,12 @@ function detail(appareil, donnees, categoriesConnues) {
           poles.length ? poles.map(pastillePole)
             : el('span', { class: 'texte-faible texte-xs' }, 'Pôles ' + NON_RENSEIGNE))),
       texte(fiche.resume) ? el('p', { class: 'porteurs__resume sans-marge' }, texte(fiche.resume)) : null,
+      texte(fiche.relecture) === 'non effectuée'
+        ? el('p', { class: 'porteurs__relecture sans-marge' },
+            el('span', { class: 'badge badge--alerte' }, 'Relecture à faire'),
+            el('span', {}, 'Fiche constituée depuis des sources publiques, pas encore relue en contradictoire. '
+              + 'Chaque valeur porte sa confiance et sa source : vérifiez avant de vous en servir.'))
+        : null,
       el('dl', { class: 'porteurs__jalon' },
         el('div', {}, el('dt', {}, 'Jalon en cours'), el('dd', { class: jalon.ok ? null : 'porteurs__manquant' }, jalon.texte)),
         el('div', {}, el('dt', {}, 'Avancement'), el('dd', { class: ['mono', avancement.ok ? null : 'porteurs__manquant'] }, avancement.texte))),

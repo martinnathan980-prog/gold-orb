@@ -43,6 +43,7 @@ import {
 } from './ui.js';
 
 import { creerIndex, rechercher, surligner, suggerer } from './search.js';
+import { blocAssistant } from './assistant.js';
 
 /* -------------------------------------------------------------------------
    0. Accès aux données
@@ -971,7 +972,11 @@ function construireInterface(donnees, cible) {
       type: 'button',
       class: 'bouton bouton--discret',
       dataset: { action: 'proposer' }
-    }, 'Proposer un document')));
+    }, 'Proposer un document')),
+  /* L'assistant : « que dit le document », quand la recherche répond
+     « où est le document ». Tant qu'aucune source n'est raccordée, il se
+     présente comme tel et n'affiche aucune réponse. */
+  blocAssistant());
 
   /* --- Résultats : compteur, tri, grille, messages --------------------- */
 

@@ -618,7 +618,7 @@ ul.kiosque__alertes-liste {
 
 .porteurs__jalon dd { margin: 0; font-size: var(--texte-sm); }
 
-.porteurs__groupes { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: var(--e-5); }
+.porteurs__groupes { display: grid; grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr)); gap: var(--e-5) var(--e-8); }
 
 .porteurs__groupe-tete { display: flex; align-items: baseline; justify-content: space-between; gap: var(--e-2); padding-block-end: var(--e-2); border-bottom: 1px solid var(--bordure-forte); }
 
@@ -626,8 +626,34 @@ ul.kiosque__alertes-liste {
 .porteurs__groupe-compte { font-size: var(--texte-xs); color: var(--texte-faible); }
 
 .porteurs__table { inline-size: 100%; font-size: var(--texte-sm); }
-.porteurs__table th { font-family: var(--police); font-size: var(--texte-sm); font-weight: var(--graisse-normale); letter-spacing: 0; text-transform: none; color: var(--texte-doux); border-bottom: 1px solid var(--bordure-douce); padding: var(--e-1) 0; }
-.porteurs__table td { text-align: end; padding: var(--e-1) 0; font-size: var(--texte-sm); }
+.porteurs__table { table-layout: fixed; }
+
+.porteurs__table th {
+  inline-size: 34%;
+  font-family: var(--police);
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-normale);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--texte-doux);
+  border-bottom: 1px solid var(--bordure-douce);
+  padding: var(--e-2) var(--e-3) var(--e-2) 0;
+  vertical-align: baseline;
+}
+
+.porteurs__table td {
+  text-align: start;
+  padding: var(--e-2) 0;
+  font-size: var(--texte-sm);
+  line-height: 1.5;
+  vertical-align: baseline;
+  overflow-wrap: break-word;
+}
+
+/* Un chiffre seul reste en mono et tabulaire ; une phrase reprend la
+   police de texte, qui se lit mieux sur plusieurs lignes. */
+.porteurs__valeur { font-family: var(--police-mono); font-variant-numeric: tabular-nums; }
+.porteurs__valeur--phrase { font-family: var(--police); }
 .porteurs__manquant { font-style: italic; color: var(--texte-faible); font-family: var(--police); }
 
 /* -------------------------------------------------------------------------
@@ -1245,7 +1271,8 @@ ul.kiosque__alertes-liste {
 .porteurs__onglets .onglets__liste { flex-wrap: wrap; }
 .porteurs__onglets .onglets__panneau { padding-block-start: var(--e-2); }
 
-.porteurs__table td.porteurs__confiance { inline-size: 1%; white-space: nowrap; text-align: end; padding-inline-start: var(--e-3); }
+.porteurs__cellule { display: flex; flex-direction: column; gap: 2px; }
+.porteurs__preuve { display: flex; align-items: baseline; gap: var(--e-2); }
 .porteurs__conf { font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--texte-faible); cursor: help; }
 .porteurs__conf--haute { color: var(--statut-succes); }
 .porteurs__conf--moyenne { color: var(--statut-alerte); }
@@ -1376,3 +1403,114 @@ ul.kiosque__alertes-liste {
 
 .palette__titre { font-size: var(--texte-sm); font-weight: var(--graisse-forte); }
 .palette__sous-titre { font-size: var(--texte-xs); color: var(--texte-doux); }
+
+.porteurs__relecture {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-3);
+  padding: var(--e-2) var(--e-3);
+  border: 1px dashed var(--statut-alerte);
+  border-radius: var(--rayon-md);
+  background-color: var(--statut-alerte-fond);
+  font-size: var(--texte-xs);
+  color: color-mix(in srgb, var(--statut-alerte) 70%, var(--texte));
+}
+
+/* -------------------------------------------------------------------------
+   10. L'assistant documentaire
+   ---------------------------------------------------------------------- */
+
+.assistant {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  padding: var(--e-5) var(--e-6);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+
+.assistant--attente {
+  border-style: dashed;
+  background-color: var(--fond-enfonce);
+  box-shadow: none;
+}
+
+.assistant__tete { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-3); }
+.assistant__titre { font-size: var(--texte-lg); font-weight: var(--graisse-forte); }
+.assistant__texte { max-inline-size: var(--largeur-texte); color: var(--texte-doux); }
+
+.assistant__saisie { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--e-3); }
+
+.assistant__champ {
+  flex: 1 1 24rem;
+  padding: var(--e-2) var(--e-3);
+  background-color: var(--fond-eleve);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-md);
+  color: var(--texte);
+  font: inherit;
+  font-size: var(--texte-md);
+  resize: vertical;
+}
+
+.assistant__champ:focus { outline: none; border-color: var(--accent); box-shadow: var(--ombre-accent); }
+
+.assistant__reponse:empty { display: none; }
+.assistant__attente { font-size: var(--texte-sm); color: var(--texte-faible); }
+
+.assistant__texte-reponse {
+  padding: var(--e-4);
+  background-color: var(--fond-enfonce);
+  border: 1px solid var(--bordure-douce);
+  border-inline-start: 3px solid var(--accent);
+  border-radius: var(--rayon-md);
+  font-size: var(--texte-md);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.assistant__sources { margin-block-start: var(--e-3); }
+
+.assistant__sources-titre {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-faible);
+  margin-block-end: var(--e-2);
+}
+
+.assistant__citations { display: grid; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
+
+.assistant__citation {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--e-2) var(--e-3);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-md);
+  font-size: var(--texte-sm);
+}
+
+.assistant__citation-titre { font-weight: var(--graisse-forte); }
+.assistant__citation-extrait { color: var(--texte-doux); font-size: var(--texte-xs); }
+
+.assistant__sans-source,
+.assistant__erreur {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2);
+  margin-block-start: var(--e-2);
+  padding: var(--e-2) var(--e-3);
+  border: 1px dashed var(--statut-alerte);
+  border-radius: var(--rayon-md);
+  background-color: var(--statut-alerte-fond);
+  font-size: var(--texte-sm);
+  color: color-mix(in srgb, var(--statut-alerte) 70%, var(--texte));
+}
+
+.assistant__erreur { border-color: var(--statut-critique); background-color: var(--statut-critique-fond); color: color-mix(in srgb, var(--statut-critique) 70%, var(--texte)); }
