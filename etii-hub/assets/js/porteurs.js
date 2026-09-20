@@ -139,6 +139,7 @@ const ONGLETS = [
   { cle: 'economie', titre: 'Production & économie', groupes: ['production'] },
   { cle: 'electrique', titre: 'Électrique', groupes: ['electrique'] },
   { cle: 'insolite', titre: 'Insolite' },
+  { cle: 'equipe', titre: 'Équipe & documents' },
   { cle: 'service', titre: 'Données service' },
   { cle: 'sources', titre: 'Sources' }
 ];
@@ -230,6 +231,64 @@ function tableau(titre, descripteurs, valeurs) {
       }))));
 }
 
+/**
+ * L'équipe et les documents rattachés à ce porteur.
+ *
+ * Le lien se fait sur le périmètre : une personne dont le périmètre vaut
+ * « H160 » travaille sur le H160, un document de périmètre « H160 » le
+ * concerne. Les entrées « Transverse » ne sont pas rattachées à un
+ * porteur : elles n'apparaissent donc pas ici.
+ *
+ * @param {object} appareil
+ * @param {{equipe?: object, documents?: object}} contexte
+ * @returns {Node}
+ */
+function panneauEquipe(appareil, contexte) {
+  const code = texte(appareil.code);
+  const ctx = objet(contexte);
+
+  const gens = [];
+  const ajouter = (p, pole, squad) => {
+    if (p && typeof p === 'object' && texte(p.perimetre) === code) {
+      gens.push({ id: texte(p.id), nom: texte(p.nom), poste: texte(p.poste), pole, squad });
+    }
+  };
+  const orga = objet(ctx.equipe);
+  ajouter(orga.direction, 'ETII', '');
+  for (const pole of (Array.isArray(orga.poles) ? orga.poles : [])) {
+    ajouter(pole && pole.responsable, texte(pole && pole.pole), '');
+    for (const squad of (Array.isArray(pole && pole.squads) ? pole.squads : [])) {
+      for (const m of (Array.isArray(squad && squad.membres) ? squad.membres : [])) {
+        ajouter(m, texte(pole.pole), texte(squad.nom));
+      }
+    }
+  }
+
+  const documents = (Array.isArray(objet(ctx.documents).documents) ? ctx.documents.documents : [])
+    .filter((d) => d && texte(d.perimetre) === code);
+
+  const bloc = (titre, compte, contenu) => el('div', { class: 'porteurs__groupe' },
+    el('div', { class: 'porteurs__groupe-tete' },
+      el('h4', { class: 'porteurs__groupe-titre' }, titre),
+      el('span', { class: 'porteurs__groupe-compte mono' }, String(compte))),
+    contenu);
+
+  return el('div', { class: 'porteurs__groupes' },
+    bloc('Qui travaille dessus', gens.length, gens.length
+      ? el('ul', { class: 'porteurs__equipe', role: 'list' }, gens.map((g) => el('li', {},
+          el('a', { class: 'porteurs__personne', href: 'organigramme.html#pole=' + encodeURIComponent(g.pole) + '&personne=' + encodeURIComponent(g.id) },
+            el('span', { class: 'porteurs__personne-nom' }, g.nom),
+            el('span', { class: 'porteurs__personne-poste' }, g.poste),
+            el('span', { class: 'porteurs__personne-pole mono' }, [g.pole, g.squad].filter(Boolean).join(' · '))))))
+      : el('p', { class: 'texte-doux texte-sm sans-marge' }, 'Personne n’a ce porteur pour périmètre dans l’organigramme.')),
+    bloc('Documents concernés', documents.length, documents.length
+      ? el('ul', { class: 'porteurs__documents', role: 'list' }, documents.slice(0, 15).map((d) => el('li', {},
+          el('a', { class: 'porteurs__document', href: 'docsearch.html#q=' + encodeURIComponent(texte(d.reference) || texte(d.titre)) },
+            el('span', {}, texte(d.titre)),
+            el('span', { class: 'porteurs__document-meta mono' }, [texte(d.type), texte(d.reference)].filter(Boolean).join(' · '))))))
+      : el('p', { class: 'texte-doux texte-sm sans-marge' }, 'Aucun document du fonds n’a ce porteur pour périmètre.')));
+}
+
 function panneauService(appareil, donnees) {
   const service = objet(appareil.service);
   const technique = ('technique' in service) ? service.technique : appareil.technique;
@@ -283,7 +342,7 @@ function onglets(prefixe, panneaux) {
   return racine;
 }
 
-function detail(appareil, donnees, categoriesConnues) {
+function detail(appareil, donnees, categoriesConnues, contexte) {
   const code = texte(appareil.code) || '—';
   const fiche = objet(appareil.fiche);
   const avecFiche = Object.keys(fiche).length > 0;
@@ -315,6 +374,7 @@ function detail(appareil, donnees, categoriesConnues) {
     }
     if (o.cle === 'insolite') return { cle: o.cle, titre: o.titre, compte: (Array.isArray(fiche.insolites) ? fiche.insolites.length : 0), contenu: panneauInsolite(fiche) };
     if (o.cle === 'sources') return { cle: o.cle, titre: o.titre, contenu: panneauSources(fiche) };
+    if (o.cle === 'equipe') return { cle: o.cle, titre: o.titre, contenu: panneauEquipe(appareil, contexte) };
     return { cle: o.cle, titre: o.titre, contenu: panneauService(appareil, donnees) };
   });
 
@@ -357,7 +417,9 @@ function detail(appareil, donnees, categoriesConnues) {
 
 /**
  * @param {object} donnees   contenu de flotte.json
- * @param {{id?: string}} [options]
+ * @param {{id?: string, equipe?: object, documents?: object}} [options]
+ *   `equipe` est organigramme.json et `documents` documents.json : ils
+ *   servent à relier le porteur à ceux qui travaillent dessus.
  * @returns {HTMLElement}
  */
 export function porteurs(donnees, options) {
@@ -399,7 +461,7 @@ export function porteurs(donnees, options) {
     piste.querySelectorAll('.porteurs__fiche').forEach((b) => {
       b.setAttribute('aria-pressed', b.dataset.code === texte(appareil.code) ? 'true' : 'false');
     });
-    monter(zoneDetail, detail(appareil, d, cats));
+    monter(zoneDetail, detail(appareil, d, cats, { equipe: opts.equipe, documents: opts.documents }));
     if (defiler) {
       const b = piste.querySelector('.porteurs__fiche[aria-pressed="true"]');
       if (b && typeof b.scrollIntoView === 'function') b.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });

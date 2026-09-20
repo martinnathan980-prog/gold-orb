@@ -1514,3 +1514,418 @@ ul.kiosque__alertes-liste {
 }
 
 .assistant__erreur { border-color: var(--statut-critique); background-color: var(--statut-critique-fond); color: color-mix(in srgb, var(--statut-critique) 70%, var(--texte)); }
+
+/* -------------------------------------------------------------------------
+   11. L'organigramme : barre, repères, arbre, trombinoscope, compétences
+   ---------------------------------------------------------------------- */
+
+.org-barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-3);
+  padding: var(--e-2);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+}
+
+.org-recherche {
+  flex: 1 1 20rem;
+  min-height: calc(var(--cible-tactile) - var(--e-2));
+  padding: var(--e-1) var(--e-3);
+  background-color: var(--fond-enfonce);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-md);
+  color: var(--texte);
+  font: inherit;
+  font-size: var(--texte-sm);
+}
+
+.org-recherche:focus { outline: none; border-color: var(--accent); box-shadow: var(--ombre-accent); background-color: var(--fond-eleve); }
+
+.org-jeton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  padding: var(--e-1) var(--e-3);
+  background-color: var(--fond-inverse);
+  border: 0;
+  border-radius: var(--rayon-plein);
+  color: var(--texte-inverse);
+  font: inherit;
+  font-size: var(--texte-xs);
+  cursor: pointer;
+}
+
+.org-jeton[hidden] { display: none; }
+.org-jeton .texte-faible { color: inherit; opacity: 0.7; }
+
+.org-barre .facettes { margin-inline-start: auto; gap: var(--e-1); }
+
+/* --- Repères ------------------------------------------------------------- */
+
+.org-reperes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--e-3);
+}
+
+.org-repere {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-inline-start: var(--e-3);
+  border-inline-start: 2px solid var(--bordure-forte);
+}
+
+.org-repere__valeur { font-size: var(--texte-2xl); line-height: 1.1; color: var(--texte); }
+
+.org-repere__libelle {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+/* --- Le bouton « personne », commun aux trois vues ----------------------- */
+
+.org-personne {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  inline-size: 100%;
+  padding: var(--e-2) var(--e-3);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-md);
+  color: var(--texte);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color var(--duree-rapide) var(--courbe),
+              background-color var(--duree-rapide) var(--courbe);
+}
+
+.org-personne:hover { border-color: var(--bordure-forte); background-color: var(--carte-survol); }
+
+.org-personne__infos { display: flex; flex-direction: column; gap: 1px; min-inline-size: 0; flex: 1; }
+.org-personne__nom { font-size: var(--texte-sm); font-weight: var(--graisse-forte); }
+.org-personne__poste { font-size: var(--texte-xs); color: var(--texte-doux); }
+.org-personne__squad { font-size: var(--texte-xs); color: var(--texte-faible); }
+
+.org-personne__perimetre {
+  flex: none;
+  padding: 0 var(--e-1);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-sm);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.org-personne--tete,
+.org-personne--responsable { box-shadow: inset 3px 0 0 var(--accent); }
+.org-personne--tete { min-inline-size: 22rem; inline-size: auto; padding: var(--e-3) var(--e-5); }
+.org-personne--carte { flex-direction: column; align-items: flex-start; gap: var(--e-2); padding: var(--e-3); block-size: 100%; }
+.org-personne--carte .org-personne__infos { inline-size: 100%; }
+.org-personne--ligne { background-color: transparent; border-color: transparent; }
+.org-personne--ligne:hover { background-color: var(--fond-enfonce); border-color: var(--bordure); }
+.org-personne__niveau { flex: none; }
+
+/* L'avatar : initiales sur un fond teinté du pôle. */
+.org-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  inline-size: var(--e-8);
+  block-size: var(--e-8);
+  border-radius: var(--rayon-plein);
+  background-color: color-mix(in srgb, var(--org-teinte, var(--accent)) 14%, var(--fond-eleve));
+  border: 1px solid color-mix(in srgb, var(--org-teinte, var(--accent)) 35%, transparent);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  color: var(--texte);
+}
+
+.org-avatar--grand { inline-size: var(--e-12); block-size: var(--e-12); font-size: var(--texte-md); }
+[data-pole="ETIIA"] { --org-teinte: var(--pole-etiia); }
+[data-pole="ETIIE"] { --org-teinte: var(--pole-etiie); }
+[data-pole="ETIII"] { --org-teinte: var(--pole-etiii); }
+
+/* --- Vue arbre ----------------------------------------------------------- */
+
+.org-arbre { display: flex; flex-direction: column; align-items: center; }
+.org-arbre__tete { position: relative; padding-block-end: var(--e-6); }
+
+.org-arbre__tete::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-end: 0;
+  block-size: var(--e-6);
+  inline-size: 1px;
+  background-color: var(--bordure-forte);
+}
+
+.org-arbre__poles {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  gap: var(--e-5);
+  inline-size: 100%;
+  margin: 0;
+  padding: var(--e-5) 0 0;
+  list-style: none;
+}
+
+.org-arbre__poles::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 16%;
+  block-size: 1px;
+  background-color: var(--bordure-forte);
+}
+
+.org-arbre__pole { position: relative; display: flex; flex-direction: column; gap: var(--e-3); }
+
+.org-arbre__pole::before {
+  content: "";
+  position: absolute;
+  inset-block-start: calc(var(--e-5) * -1);
+  inset-inline-start: 50%;
+  block-size: var(--e-5);
+  inline-size: 1px;
+  background-color: var(--bordure-forte);
+}
+
+.org-arbre__pole-tete {
+  display: flex;
+  align-items: baseline;
+  gap: var(--e-2);
+  padding-block-end: var(--e-2);
+  border-bottom: 2px solid var(--org-teinte, var(--accent));
+}
+
+.org-arbre__pole-point {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: var(--rayon-plein);
+  background-color: var(--org-teinte, var(--accent));
+  align-self: center;
+}
+
+.org-arbre__pole-nom {
+  flex: 1;
+  font-family: var(--police-mono);
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte);
+  text-decoration: none;
+}
+
+.org-arbre__pole-nom:hover { color: var(--texte-accent); text-decoration: underline; }
+.org-arbre__pole-compte { font-size: var(--texte-xs); color: var(--texte-faible); }
+
+.org-arbre__squads { display: flex; flex-direction: column; gap: var(--e-3); margin: 0; padding: 0; list-style: none; }
+
+.org-arbre__squad-tete {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--e-2);
+  padding: var(--e-1) 0;
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.org-arbre__membres { display: flex; flex-direction: column; gap: var(--e-1); }
+
+/* --- Vue trombinoscope --------------------------------------------------- */
+
+.org-trombi {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--e-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* --- Vue compétences ----------------------------------------------------- */
+
+.org-competences { display: grid; grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr)); gap: var(--e-5); }
+
+.org-competence {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  padding: var(--e-3) var(--e-4);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+}
+
+.org-competence__tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--e-2);
+  padding-block-end: var(--e-2);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.org-competence__nom { margin: 0; font-size: var(--texte-sm); }
+
+.org-competence__filtre {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px dotted var(--bordure-forte);
+  color: var(--texte);
+  font: inherit;
+  font-weight: var(--graisse-forte);
+  cursor: pointer;
+}
+
+.org-competence__filtre:hover { color: var(--texte-accent); border-bottom-color: var(--accent); }
+.org-competence__filtre[aria-pressed="true"] { color: var(--texte-accent); border-bottom: 1px solid var(--accent); }
+.org-competence__compte { font-size: var(--texte-xs); color: var(--texte-faible); }
+.org-competence__gens { display: flex; flex-direction: column; gap: 1px; margin: 0; padding: 0; list-style: none; }
+
+/* --- La fiche ------------------------------------------------------------ */
+
+.org-fiche__entete { display: flex; align-items: center; gap: var(--e-4); }
+.org-fiche__poste { font-size: var(--texte-md); color: var(--texte-doux); }
+
+.org-fiche__liste { display: grid; gap: var(--e-2); margin: 0; }
+.org-fiche__ligne { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(0, 3fr); gap: var(--e-3); align-items: baseline; }
+
+.org-fiche__ligne dt {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.org-fiche__ligne dd { margin: 0; font-size: var(--texte-sm); }
+.org-vide { font-style: italic; color: var(--texte-faible); }
+.org-lien { font-family: var(--police-mono); font-size: var(--texte-sm); }
+
+.org-fiche__bloc { display: flex; flex-direction: column; gap: var(--e-2); padding-block-start: var(--e-3); border-block-start: 1px solid var(--bordure-douce); }
+
+.org-fiche__intitule {
+  display: flex;
+  align-items: baseline;
+  gap: var(--e-2);
+  margin: 0;
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.org-fiche__competences { display: flex; flex-wrap: wrap; gap: var(--e-2) var(--e-4); margin: 0; padding: 0; list-style: none; }
+.org-fiche__competences li { display: inline-flex; align-items: center; gap: var(--e-2); font-size: var(--texte-sm); }
+
+.org-fiche__documents { display: grid; gap: var(--e-1); margin: 0; padding: 0; list-style: none; }
+
+.org-fiche__document {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--e-2);
+  padding: var(--e-1) var(--e-2);
+  border-radius: var(--rayon-sm);
+  color: var(--texte);
+  text-decoration: none;
+  font-size: var(--texte-sm);
+}
+
+.org-fiche__document:hover { background-color: var(--fond-enfonce); }
+.org-fiche__document-meta { font-size: var(--texte-xs); color: var(--texte-faible); }
+
+.org-fiche__puces { display: flex; flex-wrap: wrap; gap: var(--e-2); }
+
+.org-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  padding: var(--e-1) var(--e-3) var(--e-1) var(--e-1);
+  background-color: var(--fond-enfonce);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-plein);
+  color: var(--texte);
+  font: inherit;
+  font-size: var(--texte-xs);
+  cursor: pointer;
+}
+
+.org-puce:hover { border-color: var(--bordure-forte); background-color: var(--fond-profond); }
+.org-puce .org-avatar { inline-size: var(--e-6); block-size: var(--e-6); font-size: 10px; }
+
+/* --- Porteur : son équipe et ses documents ------------------------------- */
+
+.porteurs__equipe,
+.porteurs__documents { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; }
+
+.porteurs__personne,
+.porteurs__document {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--e-2) var(--e-3);
+  padding: var(--e-2) var(--e-2);
+  border-radius: var(--rayon-sm);
+  color: var(--texte);
+  text-decoration: none;
+  font-size: var(--texte-sm);
+}
+
+.porteurs__personne:hover,
+.porteurs__document:hover { background-color: var(--fond-enfonce); }
+
+.porteurs__personne-nom { font-weight: var(--graisse-forte); }
+.porteurs__personne-poste { flex: 1; color: var(--texte-doux); font-size: var(--texte-xs); }
+.porteurs__personne-pole,
+.porteurs__document-meta { margin-inline-start: auto; font-size: var(--texte-xs); color: var(--texte-faible); }
+
+/* --- Relevé d'usage de la recherche -------------------------------------- */
+
+.ds-usage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-2);
+  font-size: var(--texte-xs);
+  color: var(--texte-faible);
+}
+
+.ds-usage__chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: var(--e-3); margin: 0; }
+
+.ds-usage__chiffres dt {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.ds-usage__chiffres dd { margin: 0; font-size: var(--texte-xl); }
+
+.ds-usage__termes { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; font-size: var(--texte-sm); }
+.ds-usage__termes li { display: flex; justify-content: space-between; gap: var(--e-3); padding: var(--e-1) var(--e-2); border-bottom: 1px solid var(--bordure-douce); }

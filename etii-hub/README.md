@@ -50,7 +50,6 @@ Puis ouvrir <http://localhost:8000>.
 | Page | Rôle |
 |---|---|
 | `index.html` | Dispatcher : accès aux trois pôles et à la recherche |
-| `communication.html` | Annonces du service, par ordre chronologique |
 | `reunions.html` | Comptes-rendus **et** prochains points planifiés |
 | `organigramme.html` | Équipes, rôles, réorganisation |
 | `faq.html` | Base de connaissances |
@@ -154,3 +153,13 @@ Trois détails que l'assemblage doit gérer, et qui sont testés :
 Le script analyse chaque script assemblé avec `node --check` avant de
 sceller le fichier : une erreur de syntaxe échoue à la construction, pas
 dans le navigateur.
+
+## Documents de mise en œuvre
+
+| Fichier | Ce qu'il explique |
+|---|---|
+| `docs/OTQ-GOOGLE-SHEETS.md` | Alimenter le suivi OTQ / OTD chaque nuit depuis un Google Sheet |
+| `docs/ASSISTANT-IA.md` | Brancher un assistant documentaire (Gemini) : chemins, coûts, interlocuteurs, précautions |
+| `docs/RECHERCHE-A-L-ECHELLE.md` | Ce qui fait la qualité d'une recherche sur des milliers de documents |
+
+Les scripts Apps Script correspondants sont dans `tools/apps-script/`.

@@ -21,7 +21,7 @@ const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (p) => readFileSync(join(RACINE, p), 'utf8');
 
 const PAGES = ['index', 'etiia', 'etiie', 'etiii',
-               'communication', 'reunions', 'organigramme', 'faq', 'docsearch'];
+               'reunions', 'organigramme', 'faq', 'docsearch'];
 const CSS = ['polices', 'tokens', 'base', 'components', 'skin', 'modules'];
 const DONNEES = ['communications', 'reunions', 'organigramme', 'faq',
                  'documents', 'indicateurs', 'flotte'];

@@ -5,7 +5,25 @@
     "nom": "Personne 01",
     "poste": "Direction de service",
     "role": "direction",
-    "perimetre": "H160"
+    "perimetre": "H160",
+    "competences": [
+      {
+        "nom": "Pilotage de service",
+        "niveau": "referent"
+      },
+      {
+        "nom": "Suivi OTQ / OTD",
+        "niveau": "confirme"
+      },
+      {
+        "nom": "Gestion des compétences",
+        "niveau": "pratique"
+      },
+      {
+        "nom": "Maquette numérique 3D",
+        "niveau": "pratique"
+      }
+    ]
   },
   "poles": [
     {
@@ -15,7 +33,29 @@
         "nom": "Personne 02",
         "poste": "Responsable de pôle",
         "role": "responsable",
-        "perimetre": "H160"
+        "perimetre": "H160",
+        "competences": [
+          {
+            "nom": "Pilotage d’équipe",
+            "niveau": "confirme"
+          },
+          {
+            "nom": "Revue de configuration",
+            "niveau": "pratique"
+          },
+          {
+            "nom": "Relation programme",
+            "niveau": "pratique"
+          },
+          {
+            "nom": "Tableur avancé",
+            "niveau": "confirme"
+          },
+          {
+            "nom": "Rédaction technique",
+            "niveau": "pratique"
+          }
+        ]
       },
       "squads": [
         {
@@ -26,63 +66,245 @@
               "nom": "Personne 03",
               "poste": "Lead technique",
               "role": "leader",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Pilotage technique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Revue par les pairs",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Architecture électrique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tolérancement",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p04",
               "nom": "Personne 04",
               "poste": "Ingénieur intégration",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Intégration physique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Maquette numérique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Installation équipement",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Anglais technique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p05",
               "nom": "Personne 05",
               "poste": "Ingénieur systèmes",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Interfaces systèmes",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Intégration systèmes",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Bus de communication",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Rédaction technique",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p06",
               "nom": "Personne 06",
               "poste": "Ingénieur harnais",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Routage de harnais",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Cheminement",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Connectique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Protection mécanique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Bilan de masse harnais",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p07",
               "nom": "Personne 07",
               "poste": "Ingénieur essais",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Essais au sol",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Essais en vol",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Dépouillement de mesures",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Banc d’essai",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p08",
               "nom": "Personne 08",
               "poste": "Architecte électrique",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Architecture électrique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Génération et distribution",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Ségrégation des réseaux",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Animation de revue",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Tolérancement",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p09",
               "nom": "Personne 09",
               "poste": "Chargé de configuration",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Gestion de configuration",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Indices et versions",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Revue de configuration",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Maquette numérique 3D",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p10",
               "nom": "Personne 10",
               "poste": "Ingénieur qualité",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Assurance qualité",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Traitement des écarts",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Conformité normative",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tableur avancé",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Rédaction technique",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p11",
               "nom": "Personne 11",
               "poste": "Ingénieur méthodes",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Méthodes d’installation",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Gammes de fabrication",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Industrialisation",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tolérancement",
+                  "niveau": "pratique"
+                }
+              ]
             }
           ]
         },
@@ -94,70 +316,274 @@
               "nom": "Personne 12",
               "poste": "Lead technique",
               "role": "leader",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Pilotage technique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Revue par les pairs",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Architecture électrique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Anglais technique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p13",
               "nom": "Personne 13",
               "poste": "Ingénieur systèmes",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Interfaces systèmes",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Spécification d’interface",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Bus de communication",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Rédaction technique",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p14",
               "nom": "Personne 14",
               "poste": "Ingénieur harnais",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Routage de harnais",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Connectique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Sertissage",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Bilan de masse harnais",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Analyse de données",
+                  "niveau": "confirme"
+                }
+              ]
             },
             {
               "id": "p15",
               "nom": "Personne 15",
               "poste": "Ingénieur essais",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Essais au sol",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Essais en vol",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Instrumentation",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Banc d’essai",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p16",
               "nom": "Personne 16",
               "poste": "Architecte électrique",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Architecture électrique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Bilan de puissance",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Ségrégation des réseaux",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Analyse de sûreté",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Animation de revue",
+                  "niveau": "confirme"
+                }
+              ]
             },
             {
               "id": "p17",
               "nom": "Personne 17",
               "poste": "Chargé de configuration",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Gestion de configuration",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Revue de configuration",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Nomenclature",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Maquette numérique 3D",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p18",
               "nom": "Personne 18",
               "poste": "Ingénieur qualité",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Assurance qualité",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Traitement des écarts",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Audit interne",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tableur avancé",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Rédaction technique",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p19",
               "nom": "Personne 19",
               "poste": "Ingénieur méthodes",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Méthodes d’installation",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Outillage",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Industrialisation",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tolérancement",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p20",
               "nom": "Personne 20",
               "poste": "Ingénieur calcul",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Chute de tension",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Courant de court-circuit",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Calcul thermique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Anglais technique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p21",
               "nom": "Personne 21",
               "poste": "Ingénieur définition",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Définition 3D",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Maquette numérique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Cotation fonctionnelle",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Rédaction technique",
+                  "niveau": "pratique"
+                }
+              ]
             }
           ]
         }
@@ -170,7 +596,29 @@
         "nom": "Personne 22",
         "poste": "Responsable de pôle",
         "role": "responsable",
-        "perimetre": "H160"
+        "perimetre": "H160",
+        "competences": [
+          {
+            "nom": "Pilotage d’équipe",
+            "niveau": "confirme"
+          },
+          {
+            "nom": "Charge et capacité",
+            "niveau": "confirme"
+          },
+          {
+            "nom": "Relation programme",
+            "niveau": "pratique"
+          },
+          {
+            "nom": "Analyse de données",
+            "niveau": "confirme"
+          },
+          {
+            "nom": "Maquette numérique 3D",
+            "niveau": "pratique"
+          }
+        ]
       },
       "squads": [
         {
@@ -181,70 +629,274 @@
               "nom": "Personne 23",
               "poste": "Lead technique",
               "role": "leader",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Pilotage technique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Architecture électrique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Arbitrage technique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p24",
               "nom": "Personne 24",
               "poste": "Ingénieur intégration",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Intégration physique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Maquette numérique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Recherche d’interférences",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Animation de revue",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Tolérancement",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p25",
               "nom": "Personne 25",
               "poste": "Ingénieur systèmes",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Interfaces systèmes",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Spécification d’interface",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Bus de communication",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Maquette numérique 3D",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p26",
               "nom": "Personne 26",
               "poste": "Ingénieur harnais",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Routage de harnais",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Connectique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Sertissage",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Bilan de masse harnais",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tableur avancé",
+                  "niveau": "confirme"
+                }
+              ]
             },
             {
               "id": "p27",
               "nom": "Personne 27",
               "poste": "Ingénieur essais",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Essais au sol",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Essais en vol",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Instrumentation",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Banc d’essai",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tolérancement",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p28",
               "nom": "Personne 28",
               "poste": "Architecte électrique",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Architecture électrique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Bilan de puissance",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Ségrégation des réseaux",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Analyse de sûreté",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Anglais technique",
+                  "niveau": "confirme"
+                }
+              ]
             },
             {
               "id": "p29",
               "nom": "Personne 29",
               "poste": "Chargé de configuration",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Gestion de configuration",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Revue de configuration",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Nomenclature",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Rédaction technique",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p30",
               "nom": "Personne 30",
               "poste": "Ingénieur qualité",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Assurance qualité",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Traitement des écarts",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Audit interne",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Analyse de données",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Maquette numérique 3D",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p31",
               "nom": "Personne 31",
               "poste": "Ingénieur méthodes",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Méthodes d’installation",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Outillage",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Industrialisation",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p32",
               "nom": "Personne 32",
               "poste": "Ingénieur calcul",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Chute de tension",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Courant de court-circuit",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Calcul thermique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Animation de revue",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Tolérancement",
+                  "niveau": "pratique"
+                }
+              ]
             }
           ]
         },
@@ -256,70 +908,278 @@
               "nom": "Personne 33",
               "poste": "Lead technique",
               "role": "leader",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Pilotage technique",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Revue par les pairs",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Architecture électrique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Maquette numérique 3D",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p34",
               "nom": "Personne 34",
               "poste": "Ingénieur systèmes",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Interfaces systèmes",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Spécification d’interface",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Bus de communication",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tableur avancé",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Rédaction technique",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p35",
               "nom": "Personne 35",
               "poste": "Ingénieur harnais",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Routage de harnais",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Connectique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Sertissage",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Bilan de masse harnais",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tolérancement",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p36",
               "nom": "Personne 36",
               "poste": "Ingénieur essais",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Essais au sol",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Essais en vol",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Instrumentation",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Banc d’essai",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Anglais technique",
+                  "niveau": "confirme"
+                }
+              ]
             },
             {
               "id": "p37",
               "nom": "Personne 37",
               "poste": "Architecte électrique",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Architecture électrique",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Bilan de puissance",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Ségrégation des réseaux",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Analyse de sûreté",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Rédaction technique",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p38",
               "nom": "Personne 38",
               "poste": "Chargé de configuration",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Gestion de configuration",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Revue de configuration",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Nomenclature",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Analyse de données",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Maquette numérique 3D",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p39",
               "nom": "Personne 39",
               "poste": "Ingénieur qualité",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Assurance qualité",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Traitement des écarts",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Audit interne",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p40",
               "nom": "Personne 40",
               "poste": "Ingénieur méthodes",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Méthodes d’installation",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Outillage",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Industrialisation",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Animation de revue",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Tolérancement",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p41",
               "nom": "Personne 41",
               "poste": "Ingénieur calcul",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Chute de tension",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Courant de court-circuit",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Calcul thermique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Maquette numérique 3D",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p42",
               "nom": "Personne 42",
               "poste": "Ingénieur définition",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Définition 3D",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Maquette numérique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Cotation fonctionnelle",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tableur avancé",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Rédaction technique",
+                  "niveau": "pratique"
+                }
+              ]
             }
           ]
         }
@@ -332,7 +1192,25 @@
         "nom": "Personne 43",
         "poste": "Responsable de pôle",
         "role": "responsable",
-        "perimetre": "H160"
+        "perimetre": "H160",
+        "competences": [
+          {
+            "nom": "Pilotage d’équipe",
+            "niveau": "confirme"
+          },
+          {
+            "nom": "Charge et capacité",
+            "niveau": "confirme"
+          },
+          {
+            "nom": "Relation programme",
+            "niveau": "pratique"
+          },
+          {
+            "nom": "Tolérancement",
+            "niveau": "pratique"
+          }
+        ]
       },
       "squads": [
         {
@@ -343,77 +1221,307 @@
               "nom": "Personne 44",
               "poste": "Lead technique",
               "role": "leader",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Pilotage technique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Architecture électrique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Arbitrage technique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Anglais technique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p45",
               "nom": "Personne 45",
               "poste": "Ingénieur intégration",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Intégration physique",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Maquette numérique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Recherche d’interférences",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Rédaction technique",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p46",
               "nom": "Personne 46",
               "poste": "Ingénieur systèmes",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Interfaces systèmes",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Spécification d’interface",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Bus de communication",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Analyse de données",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Maquette numérique 3D",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p47",
               "nom": "Personne 47",
               "poste": "Ingénieur harnais",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Routage de harnais",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Connectique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Sertissage",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Bilan de masse harnais",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p48",
               "nom": "Personne 48",
               "poste": "Ingénieur essais",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Essais au sol",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Essais en vol",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Instrumentation",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Banc d’essai",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Animation de revue",
+                  "niveau": "confirme"
+                }
+              ]
             },
             {
               "id": "p49",
               "nom": "Personne 49",
               "poste": "Architecte électrique",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Architecture électrique",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Bilan de puissance",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Ségrégation des réseaux",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Analyse de sûreté",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Maquette numérique 3D",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p50",
               "nom": "Personne 50",
               "poste": "Chargé de configuration",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Gestion de configuration",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Revue de configuration",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Nomenclature",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tableur avancé",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Rédaction technique",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p51",
               "nom": "Personne 51",
               "poste": "Ingénieur qualité",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Assurance qualité",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Traitement des écarts",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Audit interne",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tolérancement",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p52",
               "nom": "Personne 52",
               "poste": "Ingénieur méthodes",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Méthodes d’installation",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Outillage",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Industrialisation",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Anglais technique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p53",
               "nom": "Personne 53",
               "poste": "Ingénieur calcul",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Chute de tension",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Courant de court-circuit",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Calcul thermique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Rédaction technique",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p54",
               "nom": "Personne 54",
               "poste": "Ingénieur définition",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Définition 3D",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Maquette numérique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Cotation fonctionnelle",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Analyse de données",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Maquette numérique 3D",
+                  "niveau": "pratique"
+                }
+              ]
             }
           ]
         },
@@ -425,77 +1533,303 @@
               "nom": "Personne 55",
               "poste": "Lead technique",
               "role": "leader",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Pilotage technique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Revue par les pairs",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Arbitrage technique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p56",
               "nom": "Personne 56",
               "poste": "Ingénieur systèmes",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Interfaces systèmes",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Intégration systèmes",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Bus de communication",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Animation de revue",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Tolérancement",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p57",
               "nom": "Personne 57",
               "poste": "Ingénieur harnais",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Routage de harnais",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Cheminement",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Connectique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Protection mécanique",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Bilan de masse harnais",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p58",
               "nom": "Personne 58",
               "poste": "Ingénieur essais",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Essais au sol",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Essais en vol",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Dépouillement de mesures",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Banc d’essai",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tableur avancé",
+                  "niveau": "confirme"
+                }
+              ]
             },
             {
               "id": "p59",
               "nom": "Personne 59",
               "poste": "Architecte électrique",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Architecture électrique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Génération et distribution",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Ségrégation des réseaux",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Tolérancement",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p60",
               "nom": "Personne 60",
               "poste": "Chargé de configuration",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Gestion de configuration",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Indices et versions",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Revue de configuration",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Anglais technique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p61",
               "nom": "Personne 61",
               "poste": "Ingénieur qualité",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Assurance qualité",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Traitement des écarts",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Conformité normative",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Rédaction technique",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p62",
               "nom": "Personne 62",
               "poste": "Ingénieur méthodes",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Méthodes d’installation",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Gammes de fabrication",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Industrialisation",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Analyse de données",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Maquette numérique 3D",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p63",
               "nom": "Personne 63",
               "poste": "Ingénieur calcul",
               "role": "membre",
-              "perimetre": "H160"
+              "perimetre": "H160",
+              "competences": [
+                {
+                  "nom": "Chute de tension",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Dimensionnement de câble",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Courant de court-circuit",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Bilan de puissance",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Normes aéronautiques",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p64",
               "nom": "Personne 64",
               "poste": "Ingénieur définition",
               "role": "membre",
-              "perimetre": "H175"
+              "perimetre": "H175",
+              "competences": [
+                {
+                  "nom": "Définition 3D",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Maquette numérique",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Lecture de plan",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Animation de revue",
+                  "niveau": "confirme"
+                },
+                {
+                  "nom": "Tolérancement",
+                  "niveau": "pratique"
+                }
+              ]
             },
             {
               "id": "p65",
               "nom": "Personne 65",
               "poste": "Ingénieur intégration",
               "role": "membre",
-              "perimetre": "Transverse"
+              "perimetre": "Transverse",
+              "competences": [
+                {
+                  "nom": "Intégration physique",
+                  "niveau": "referent"
+                },
+                {
+                  "nom": "Recherche d’interférences",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Installation équipement",
+                  "niveau": "pratique"
+                },
+                {
+                  "nom": "Maquette numérique 3D",
+                  "niveau": "pratique"
+                }
+              ]
             }
           ]
         }

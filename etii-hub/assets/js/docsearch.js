@@ -339,6 +339,7 @@ const MARGE_EXTRAIT = 48;
 
 /** Clé de stockage des propositions locales. */
 const CLE_PROPOSITIONS = 'docsearch.propositions';
+const CLE_USAGE = 'docsearch.usage';
 
 /** Mise en forme des dates, une seule instance réutilisée. */
 const FORMAT_DATE = new Intl.DateTimeFormat('fr-FR', {
@@ -730,6 +731,106 @@ const ecrireUrl = debounce(() => {
    6. Squelettes de chargement
    ------------------------------------------------------------------------- */
 
+/* -------------------------------------------------------------------------
+   Mesure d'usage — locale, pour avoir un chiffre à mettre sur la table
+
+   Rien ne part sur le réseau : le compte vit dans CE navigateur, sur CE
+   poste. Il sert à répondre à « combien de fois vous en servez-vous ? »,
+   la question qu'on vous posera avant d'accorder un budget.
+   ------------------------------------------------------------------------- */
+
+function lireUsage() {
+  const brut = stockage.lire(CLE_USAGE, null);
+  const u = (brut && typeof brut === 'object') ? brut : {};
+  return {
+    recherches: Number.isFinite(u.recherches) ? u.recherches : 0,
+    ouvertures: Number.isFinite(u.ouvertures) ? u.ouvertures : 0,
+    sansResultat: Number.isFinite(u.sansResultat) ? u.sansResultat : 0,
+    depuis: typeof u.depuis === 'string' ? u.depuis : new Date().toISOString().slice(0, 10),
+    termes: (u.termes && typeof u.termes === 'object') ? u.termes : {}
+  };
+}
+
+/** Enregistre un geste. `terme` n'est retenu que pour les recherches. */
+function noterUsage(geste, terme) {
+  const u = lireUsage();
+  if (geste === 'recherche') {
+    u.recherches += 1;
+    const t = String(terme || '').trim().toLowerCase();
+    if (t.length >= 3) u.termes[t] = (u.termes[t] || 0) + 1;
+    /* On ne garde que les cinquante termes les plus fréquents : le
+       stockage local est petit, et une liste infinie n'apprend rien. */
+    const cles = Object.keys(u.termes);
+    if (cles.length > 50) {
+      const gardes = cles.sort((a, b) => u.termes[b] - u.termes[a]).slice(0, 50);
+      const propre = {};
+      for (const c of gardes) propre[c] = u.termes[c];
+      u.termes = propre;
+    }
+  } else if (geste === 'ouverture') u.ouvertures += 1;
+  else if (geste === 'sans-resultat') u.sansResultat += 1;
+  stockage.ecrire(CLE_USAGE, u);
+}
+
+/** La ligne discrète en pied d'écran, et sa fenêtre de détail. */
+function blocUsage() {
+  const u = lireUsage();
+  if (u.recherches < 5) return null;
+  return el('p', { class: 'ds-usage sans-marge' },
+    el('span', {}, u.recherches + ' recherche' + (u.recherches > 1 ? 's' : '')
+      + ' depuis le ' + formaterDate(u.depuis) + ' sur ce navigateur.'),
+    el('button', { type: 'button', class: 'bouton bouton--discret bouton--compact',
+      onClick: (evt) => ouvrirUsage(evt.currentTarget) }, 'Voir le détail'));
+}
+
+function ouvrirUsage(declencheur) {
+  const u = lireUsage();
+  const tries = Object.entries(u.termes).sort((a, b) => b[1] - a[1]).slice(0, 12);
+  const resume = [
+    'Usage de la recherche documentaire ETII (relevé local, ce navigateur)',
+    'Depuis le ' + formaterDate(u.depuis),
+    'Recherches : ' + u.recherches,
+    'Documents ouverts : ' + u.ouvertures,
+    'Recherches sans résultat : ' + u.sansResultat,
+    '',
+    'Termes les plus cherchés :'
+  ].concat(tries.map(([t, n]) => '  ' + n + ' x ' + t)).join('\n');
+
+  ouvrirModale({
+    titre: 'Votre usage de la recherche',
+    classe: 'modale--etroite',
+    declencheur: declencheur || null,
+    contenu: () => frag(
+      el('p', { class: 'texte-doux texte-sm sans-marge' },
+        'Ce relevé ne quitte jamais ce navigateur : rien n’est envoyé. Il sert à '
+        + 'répondre avec un chiffre quand on vous demandera combien le service se '
+        + 'sert du fonds documentaire.'),
+      el('dl', { class: 'ds-usage__chiffres' },
+        el('div', {}, el('dt', {}, 'Recherches'), el('dd', { class: 'mono' }, String(u.recherches))),
+        el('div', {}, el('dt', {}, 'Documents ouverts'), el('dd', { class: 'mono' }, String(u.ouvertures))),
+        el('div', {}, el('dt', {}, 'Sans résultat'), el('dd', { class: 'mono' }, String(u.sansResultat))),
+        el('div', {}, el('dt', {}, 'Depuis le'), el('dd', { class: 'mono' }, formaterDate(u.depuis)))),
+      tries.length
+        ? el('div', { class: 'pile pile--serree' },
+            el('p', { class: 'champ__etiquette sans-marge' }, 'Termes les plus cherchés'),
+            el('ul', { class: 'ds-usage__termes' }, tries.map(([t, n]) => el('li', {},
+              el('span', {}, t), el('span', { class: 'mono' }, String(n))))))
+        : null),
+    actions: [
+      { libelle: 'Tout effacer', variante: 'danger-discret', ferme: true, onClick: () => {
+        stockage.supprimer(CLE_USAGE);
+        toast('Relevé effacé.', 'succes');
+      } },
+      { libelle: 'Copier le relevé', variante: 'secondaire', ferme: false, onClick: () => {
+        Promise.resolve(copierTexte(resume)).then((ok) =>
+          toast(ok === false ? 'Copie impossible.' : 'Relevé copié.', ok === false ? 'erreur' : 'succes'));
+        return false;
+      } },
+      { libelle: 'Fermer', variante: 'principal', ferme: true }
+    ]
+  });
+}
+
 /** Une carte grise, gabarit d'un résultat en cours de chargement. */
 function carteSquelette() {
   return el('div', { class: 'carte carte--compacte ds-squelette' },
@@ -973,6 +1074,7 @@ function construireInterface(donnees, cible) {
       class: 'bouton bouton--discret',
       dataset: { action: 'proposer' }
     }, 'Proposer un document')),
+  blocUsage(),
   /* L'assistant : « que dit le document », quand la recherche répond
      « où est le document ». Tant qu'aucune source n'est raccordée, il se
      présente comme tel et n'affiche aucune réponse. */
@@ -1199,6 +1301,7 @@ function afficherResultats() {
 
 /** Aucun résultat : suggestion, retrait des filtres, proposition. */
 function afficherAucunResultat() {
+  noterUsage('sans-resultat');
   vider(refs.grille);
   // Une grille vide laisserait une gouttière béante au-dessus du message.
   refs.grille.hidden = true;
@@ -1654,6 +1757,7 @@ function surActionAccueil(bouton) {
 
 /** Clic sur un bouton d'une carte de résultat. */
 function surActionCarte(evt, bouton) {
+  if (bouton.dataset.action === 'ouvrir') noterUsage('ouverture');
   const carte = bouton.closest('[data-id]');
   if (!carte) return;
   const doc = corpus.documents.find((d) => String(d.id) === carte.dataset.id);
@@ -1818,12 +1922,19 @@ function toutEffacer() {
 
 /** Fixe la requête depuis le code (proposition, suggestion, effacement). */
 function definirRequete(texte) {
+  const avant = etat.requete;
   // Une frappe en attente lirait de nouveau le champ : on la jette.
   annulerFrappe();
   fermerPropositions();
   etat.requete = typeof texte === 'string' ? texte : '';
   refs.champ.value = etat.requete;
   rendre();
+
+  /* Une recherche comptée = une requête différente de la précédente et
+     d'au moins trois caractères : la frappe lettre à lettre n'en fait
+     pas trente. */
+  const q = etat.requete.trim();
+  if (q.length >= 3 && q !== String(avant || '').trim()) noterUsage('recherche', q);
 }
 
 /* -------------------------------------------------------------------------
@@ -2372,9 +2483,15 @@ function demarrer() {
   // propositions sont calculées dans la foulée : le classement de la
   // requête est déjà en cache, elles ne coûtent donc presque rien.
   const surFrappe = debounce(() => {
+    const avant = etat.requete;
     etat.requete = refs.champ.value;
     rendre();
     majPropositions();
+    /* Une recherche comptée = une requête d'au moins trois caractères,
+       différente de la précédente : la frappe lettre à lettre n'en fait
+       pas trente. */
+    const q = etat.requete.trim();
+    if (q.length >= 3 && q !== String(avant || '').trim()) noterUsage('recherche', q);
   }, DELAI_FRAPPE);
 
   annulerFrappe = () => surFrappe.annuler();

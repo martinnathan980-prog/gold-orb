@@ -54,11 +54,12 @@ function rendreCommunication(donnees, conteneur) {
    2. Les porteurs
    ------------------------------------------------------------------------- */
 
-function rendreFlotte(donnees, conteneur) {
+function rendreFlotte(ensemble, conteneur) {
+  const donnees = ensemble.flotte;
   verifierForme(donnees, { flotte: 'tableau' }, 'flotte.json');
   const avertissement = txt(donnees.avertissement);
   monter(conteneur, el('div', { class: 'pile' },
-    porteurs(donnees, { id: 'porteurs-service' }),
+    porteurs(donnees, { id: 'porteurs-service', equipe: ensemble.equipe, documents: ensemble.documents }),
     avertissement
       ? el('p', { class: 'flotte-note sans-marge' },
         el('span', { 'aria-hidden': 'true' }, '※'),
@@ -95,14 +96,21 @@ avecEtat('#zone-communication', () => chargerDonnees('communications'), rendreCo
         && !donnees.motDuChef)
 });
 
-avecEtat('#zone-flotte', () => chargerDonnees('flotte'), rendreFlotte, {
+/* La flotte a besoin de l'organigramme et du fonds documentaire pour
+   relier chaque porteur à son équipe et à ses documents. Les trois
+   fichiers sont déjà en cache pour les autres sections. */
+avecEtat('#zone-flotte', async () => {
+  const [flotte, equipe, documents] = await Promise.all([
+    chargerDonnees('flotte'), chargerDonnees('organigramme'), chargerDonnees('documents')]);
+  return { flotte, equipe, documents };
+}, rendreFlotte, {
   squelette: 2,
   texteChargement: 'Chargement des porteurs…',
   titreErreur: 'Porteurs indisponibles',
   titreVide: 'Aucun porteur suivi',
   texteVide: 'Les appareils suivis par le service apparaîtront ici.',
-  estVide: (donnees) => !donnees || !Array.isArray(donnees.flotte)
-    || donnees.flotte.length === 0
+  estVide: (e) => !e || !e.flotte || !Array.isArray(e.flotte.flotte)
+    || e.flotte.flotte.length === 0
 });
 
 avecEtat('#zone-otq', chargerSuivi, rendreSuiviOTQ, {

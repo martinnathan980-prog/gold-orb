@@ -61,22 +61,22 @@ await page.waitForTimeout(900);
 t('un pôle inconnu retombe sur tout le service',
   (await page.locator('main').innerText()).length > 200 && err.length === 0);
 
-console.log('\n== Communication : filtrage par pôle ==');
-// On compte les annonces réellement rendues plutôt que de chercher des mots
-// dans la page : « aucune » ou « rien » apparaissent en sous-chaîne de mots
-// légitimes — « expérience » contient « rien ».
-for (const code of ['ETII', 'ETIIA', 'ETIIE', 'ETIII']) {
-  const attendu = comms.annonces.filter(a => code === 'ETII' || a.pole === code).length;
-  await page.goto(`${B}/communication.html#pole=${code}`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(800);
-  const rendues = await page.evaluate(() => {
-    const liste = document.querySelector('[data-liste-annonces], [role="listbox"], .liste-annonces')
-      || document.querySelector('main ul, main ol');
-    return liste ? [...liste.children].filter(e => e.textContent.trim().length > 15).length : -1;
-  });
-  t(`#pole=${code} : ${attendu} annonce(s) rendue(s)`, rendues === attendu,
-    `(rendues : ${rendues})`);
+console.log('\n== Communication : le kiosque de chaque pôle ==');
+// La page dédiée a disparu : la communication se lit dans le Communication
+// Center du tableau de bord (tout le service) et dans celui de chaque pôle.
+for (const code of ['ETIIA', 'ETIIE', 'ETIII']) {
+  const attendu = comms.annonces.filter(a => a.pole === code).length
+    + comms.agenda.filter(a => a.pole === code).length;
+  await page.goto(`${B}/${code.toLowerCase()}.html`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1200);
+  const entrees = await page.locator('#zone-communication .kiosque__carte').count();
+  t(`${code} : ${attendu} entrées dans son kiosque`, entrees === attendu, `(${entrees})`);
 }
+await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(1200);
+const toutes = comms.annonces.length + comms.agenda.filter(a => a.type !== 'mot').length + 1;
+const auService = await page.locator('#zone-communication .kiosque__carte').count();
+t(`le service montre ses ${toutes} entrées`, auService === toutes, `(${auService})`);
 
 console.log('\n== Recherche : facette de pôle ==');
 await page.goto(`${B}/docsearch.html`, { waitUntil: 'networkidle' });
@@ -103,14 +103,14 @@ t('les trois menus de filtre sont présents',
   (await page.locator('#ds-metier, #ds-porteur, #ds-pole').count()) === 3);
 
 console.log('\n== Navigation entre les neuf pages ==');
-for (const p of ['index','etiia','etiie','etiii','communication','reunions','organigramme','faq','docsearch']) {
+for (const p of ['index','etiia','etiie','etiii','reunions','organigramme','faq','docsearch']) {
   await page.goto(`${B}/${p}.html`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
   const liens = await page.locator('nav.site-nav a').count();
   const courant = await page.locator('[aria-current="page"]').count();
   if (liens !== 5 || courant !== 1) t(`${p}.html : nav 5 liens, 1 courant`, false, `(${liens} liens, ${courant} courant)`);
 }
-t('les neuf pages ont la même navigation', true);
+t('les huit pages ont la même navigation', true);
 
 t('aucune erreur JavaScript', err.length === 0, err.slice(0, 3).join(' | '));
 console.log(`\n  ${ok} réussis, ${ko} échoués`);

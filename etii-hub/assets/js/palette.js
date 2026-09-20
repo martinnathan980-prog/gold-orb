@@ -35,8 +35,7 @@ const PAGES = [
   { titre: 'Recherche documentaire', sousTitre: 'Le fonds du service, filtres métier, porteur, pôle', href: 'docsearch.html' },
   { titre: 'Base de connaissances', sousTitre: 'Questions fréquentes et demandes aux experts', href: 'faq.html' },
   { titre: 'Réunions', sousTitre: 'Comptes-rendus et prochains points', href: 'reunions.html' },
-  { titre: 'Organigramme', sousTitre: 'Direction, pôles, squads, personnes', href: 'organigramme.html' },
-  { titre: 'Communication', sousTitre: 'Annonces du service et des pôles', href: 'communication.html' }
+  { titre: 'Organigramme', sousTitre: 'Arbre, trombinoscope, compétences', href: 'organigramme.html' }
 ];
 
 const PAR_GROUPE = 4;
@@ -128,6 +127,13 @@ function entreesPorteurs(d) {
   });
 }
 
+/* Une annonce se lit dans le Communication Center : celui du service sur
+   le tableau de bord, celui du pôle dans son espace. */
+function pageDuPole(code) {
+  const c = texte(code).toUpperCase();
+  return (c && c !== 'ETII') ? c.toLowerCase() + '.html' : 'index.html';
+}
+
 function entreesCommunication(d) {
   if (!d) return [];
   const annonces = (Array.isArray(d.annonces) ? d.annonces : []).filter((a) => a && texte(a.titre)).map((a) => ({
@@ -135,14 +141,14 @@ function entreesCommunication(d) {
     titre: texte(a.titre),
     sousTitre: ['annonce', texte(a.date), texte(a.categorie), texte(a.pole) ? (texte(a.pole) === 'ETII' ? 'service' : 'pôle ' + texte(a.pole)) : ''].filter(Boolean).join(' · '),
     texte: [texte(a.resume), (a.corps || []).map((l) => l && l.texte).join(' ')].join(' '),
-    href: 'communication.html#pole=' + encoder(texte(a.pole) || 'ETII') + '&annonce=' + encoder(a.id)
+    href: pageDuPole(a.pole)
   }));
   const agenda = (Array.isArray(d.agenda) ? d.agenda : []).filter((a) => a && texte(a.titre)).map((a) => ({
     id: 'agenda-' + texte(a.id), groupe: 'communication',
     titre: texte(a.titre),
     sousTitre: [texte(a.statut) === 'a-venir' ? 'à venir' : 'passé', texte(a.date), texte(a.type), texte(a.pole) ? (texte(a.pole) === 'ETII' ? 'service' : 'pôle ' + texte(a.pole)) : ''].filter(Boolean).join(' · '),
     texte: texte(a.resume),
-    href: texte(a.pole) && texte(a.pole) !== 'ETII' ? texte(a.pole).toLowerCase() + '.html' : 'index.html'
+    href: pageDuPole(a.pole)
   }));
   return annonces.concat(agenda);
 }

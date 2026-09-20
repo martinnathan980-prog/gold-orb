@@ -78,7 +78,6 @@ const PAGE_DE_POLE = {
 
 /** Les trois autres pages transverses, pour la sous-navigation. */
 const PAGES_TRANSVERSES = [
-  { page: 'communication.html', libelle: 'Communication' },
   { page: 'reunions.html', libelle: 'Réunions' },
   { page: 'organigramme.html', libelle: 'Organigramme' }
 ];

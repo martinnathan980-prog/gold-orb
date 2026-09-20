@@ -55,7 +55,6 @@ Le hub n'est pas plat. Il suit la hiérarchie réelle du service :
   se fait une fois, pas trois.
 - Les quatre pages transverses (communication, réunions, organigramme, FAQ)
   sont **partagées et filtrées** par le pôle actif, porté dans le hash :
-  `communication.html#pole=ETIIA`. La valeur `ETII` signifie « tout le
   service ». Toute valeur inconnue retombe sur `ETII` sans erreur.
 
 ### Couleurs de pôle
@@ -113,7 +112,6 @@ servable par n'importe quel serveur de fichiers.
       etiia.html              Espace du pôle ETIIA  ─┐
       etiie.html              Espace du pôle ETIIE   ├─ même gabarit
       etiii.html              Espace du pôle ETIII  ─┘  (pole.js)
-      communication.html      Communication Center
       reunions.html           Comptes-rendus + points à venir
       organigramme.html       Équipes et rôles
       faq.html                Base de connaissances
@@ -159,7 +157,6 @@ description, lien. Plus un accès proéminent à la recherche documentaire.
 Garder l'effet de relief au survol mais en CSS, léger, désactivé sous
 `prefers-reduced-motion`. Navigation clavier complète.
 
-### 4.2 `communication.html` — Communication Center
 Liste chronologique d'annonces + panneau de détail.
 Chaque annonce : date, statut (`info` | `urgent` | `succes`), catégorie,
 titre, résumé, corps.

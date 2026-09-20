@@ -74,10 +74,10 @@ function lienSuite(page, code, libelle, extra) {
 function rendreCommunication(pole, donnees, conteneur) {
   verifierForme(donnees, { agenda: 'tableau' }, 'communications.json');
   const dossiers = dossiersDepuisCommunications(donnees, { pole: pole.cle });
+  /* Tout ce que le pôle publie est déjà dans ce kiosque : il n'y a pas
+     d'ailleurs où renvoyer. Le niveau service est sur le tableau de bord. */
   monter(conteneur,
-    kiosque({ id: 'kiosque-' + pole.cle.toLowerCase(), dossiers, titreFil: 'Fil du pôle ' + pole.cle }),
-    el('p', { class: 'rangee rangee--fin sans-marge' },
-      lienSuite('communication.html', pole.cle, 'Toute la communication')));
+    kiosque({ id: 'kiosque-' + pole.cle.toLowerCase(), dossiers, titreFil: 'Fil du pôle ' + pole.cle }));
 }
 
 /* -------------------------------------------------------------------------
