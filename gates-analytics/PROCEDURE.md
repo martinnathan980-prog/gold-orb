@@ -85,6 +85,10 @@ archivés.
 L'étape 3 peut se faire toute seule : **Suivi FWD → Activer l'archivage
 automatique**, et un relevé est pris chaque vendredi vers 17 h.
 
+Les étapes 1 et 2 aussi : voir **§ 15, l'automatisation** — un script récupère
+les extracts dans Chrome et les dépose dans le classeur, qui archive la
+semaine dans la foulée.
+
 ## 5. Ce que devient l'historique
 
 GATES ne donne qu'une photo du jour : l'export ne dit pas *quand* un plan est
@@ -145,7 +149,7 @@ groupes fusionnés en ligne 1, données à partir de la ligne 3.
 |---|---|
 | Colonnes | 138, dont **91** sont 13 répétitions du même bloc de 7 (une par variante HDK AA) |
 | Groupes | 16 plages fusionnées + 2 cellules isolées (`Concept Harnais`, colonnes 40 et 41) |
-| Sans intitulé | colonnes 1, 4 et 5 — nommées « Colonne 1 », « Colonne 4 », « Colonne 5 » |
+| Sans intitulé | colonnes 1, 4 et 5 — nommées « Colonne 1 », « Colonne 4 », « Colonne 5 ». Seule la **première** est retirée à l'affichage (c'est Excel qui l'ajoute) ; 4 et 5 restent, même vides : le tableau est la structure exacte de GATES |
 | Référence figée | `Référence UD`, colonne **2** (pas la 1) |
 | **Avancement FWD** | `Avancement`, colonne **42**, groupe `Réalisation FWD` |
 | Domaine | `Domaine` — le périmètre du haut de page |
@@ -211,7 +215,7 @@ Chaque colonne calculée porte un **?** qui ouvre la même explication chiffrée
 Pour changer la liste, une ligne en haut de `Code.gs` :
 
 ```js
-DIMENSIONS: ['ATA', 'CC', 'ECP'],
+DIMENSIONS: ['ATA', 'Séquence', 'CC', 'ECP'],
 ```
 
 La syntaxe `Groupe > Colonne` sert quand plusieurs colonnes portent le même
@@ -300,11 +304,20 @@ page ouvre toujours sur Tout, et un changement de contrat aussi.
 
 ## 9. Les références UD et les changements d'indice
 
-Une référence UD s'écrit **racine + solution + indice** :
+Une référence UD se lit par morceaux. Sur `TFE2130A600001A` :
 
-| `HEL0225A017` | `001` | `A` |
-|---|---|---|
-| **racine** : 3 lettres, 4 chiffres, `A`, 3 chiffres — fixe | **solution** : 3 chiffres — une autre solution, c'est un autre plan | **indice** : une lettre, change à chaque réémission du même plan |
+| `TF` | `E` | `2130` | `A` | `600` | `001` | `A` |
+|---|---|---|---|---|---|---|
+| code circuit | toujours `E` | ATA et sous-ATA | toujours `A` | séquence | solution | indice |
+
+- la **séquence** dit où : `600` côté pilote, `700` côté copilote, `800` les
+  boîtes ;
+- la **solution** (3 chiffres) : une autre solution, c'est un autre plan ;
+- l'**indice** (une lettre) change à chaque réémission du même plan.
+
+La page appelle **racine** les six premiers morceaux jusqu'à la séquence
+(`TFE2130A600`) et lit la référence sur ce gabarit : 3 caractères, 4 chiffres,
+`A`, 3 chiffres, puis la solution et l'indice.
 
 L'identité d'un plan, c'est **racine + solution**. Seul l'indice bouge sans
 changer de plan.
@@ -386,60 +399,68 @@ solution, trois chiffres) et **Cust.V** (l'indice, une lettre). Collé tel quel
 dans un onglet de ce classeur et décrit dans la configuration, il donne deux
 choses ; sans description, ni l'une ni l'autre n'existe.
 
+**Ce que le rapprochement demande.** Dans SEE, un plan n'a pas d'état : soit
+il y est, soit il n'y est pas. **S'il y est, c'est qu'il a été créé** — donc
+terminé. La question posée est donc celle-là : *les plans que GATES dit
+terminés, SEE les connaît-il, et réciproquement ?* La comparaison ne porte que
+sur la **référence** ; les autres colonnes de l'extract s'affichent, elles ne
+se comparent pas.
+
 **La section « Rapprochement avec SEE »**, sous le tableau des plans, se lit
 comme on compare deux bases : deux cercles face à face.
 
-- une phrase : « **623** sur 640 plans identiques dans SEE », et dessous ce
-  qu'il reste à regarder : « Il reste 17 plans à vérifier · 5 références que
-  SEE est seul à connaître. » ;
-- la figure : le cercle **GATES** (plein, vert) à gauche, le cercle **SEE**
-  (pointillé) à droite, chacun avec son compte. Dans leur recouvrement, un
-  **anneau** compte les plans en commun, en trois parts à l'échelle — vert
-  identiques, gris autre indice, ambre champs différents ; une part, même
-  d'un seul plan, reste visible. De part et d'autre, ce qui n'est que d'un
-  côté : « 5 absents de SEE » dans le cercle GATES, « 5 seulement dans SEE »
-  dans l'autre (« tout le contrat » sous un périmètre, car ces lignes n'ont
-  pas de domaine) ;
-- à droite, cinq **verdicts**, un par ligne, avec leur grand nombre et une
-  phrase de tous les jours (« se retrouvent à l'identique dans SEE », « sont
-  dans SEE sous une autre lettre d'indice »…) ; un verdict à 0 se lit mais
-  ne se clique pas :
+- une phrase : « **253** sur 256 plans terminés se retrouvent dans SEE », et
+  dessous ce qu'il reste à regarder : « À vérifier : 3 terminés que SEE ne
+  connaît pas · 12 plans dans SEE que GATES ne dit pas terminés · 2 sous un
+  autre indice · 5 références que SEE est seul à connaître. » ;
+- la figure : le cercle **GATES** (plein, vert) à gauche avec son compte de
+  plans et de terminés, le cercle **SEE** (pointillé) à droite avec ses
+  lignes. Dans leur recouvrement, un **anneau** compte les plans que les deux
+  bases connaissent, en trois parts à l'échelle — vert d'accord, gris autre
+  indice, ambre connus de SEE mais pas terminés ici ; une part, même d'un seul
+  plan, reste visible. À gauche du cercle GATES, en rouge, les **terminés que
+  SEE ignore** — le nombre qui compte —, et dessous, plus discret, ce qui
+  n'est **pas encore** dans SEE (rien d'anormal : ces plans ne sont pas
+  terminés). À droite, ce que SEE est seul à connaître (« tout le contrat »
+  sous un périmètre, car ces lignes n'ont pas de domaine) ;
+- à droite, six **verdicts**, un par ligne, avec leur grand nombre et une
+  phrase de tous les jours ; un verdict à 0 se lit mais ne se clique pas :
 
-| Verdict | Ce qu'il compte | Le clic |
+| Verdict | Ce qu'il compte | Ce qu'il veut dire |
 |---|---|---|
-| **identiques** | même indice, mêmes champs | filtre le tableau, GATES ou SEE |
-| **autre indice** | le même plan (même racine et même solution), connu là sous une autre lettre | idem |
-| **champs différents** | un champ comparé qui ne dit pas la même chose des deux côtés | idem |
-| **absents de SEE** | des plans d'ici que SEE ne connaît pas | filtre et passe sur GATES |
-| **seulement dans SEE** | des lignes de là dont aucun plan du contrat n'a la racine et la solution | filtre et passe sur SEE |
+| **terminés et dans SEE** | terminé ici, présent là sous le même indice | tout va bien |
+| **autre indice** | terminé ici, présent là sous une autre lettre | une réémission d'un côté seulement |
+| **dans SEE, pas terminés ici** | présent là, mais GATES ne le dit pas terminé | l'avancement GATES est peut-être en retard |
+| **terminés, absents de SEE** | terminé ici, inconnu de SEE | à vérifier des deux côtés — c'est le lot qui compte |
+| **pas encore dans SEE** | pas terminé ici, pas encore créé là | rien d'anormal |
+| **seulement dans SEE** | une ligne de là dont aucun plan du contrat n'a la racine et la solution | à regarder de près |
 
-Un seul lot à la fois ; le bandeau le nomme (« Rapprochement : … »), la croix
-le retire sans changer de côté. Survoler un verdict — ou sa part de l'anneau,
-ou un nombre de côté — l'éclaire dans la figure et ouvre une bulle : les
-champs comparés, la ventilation des écarts par champ, les paires « référence
-→ solution et lettre », et où mène le clic. Quand le tableau est du mauvais
-côté pour le lot posé, il le dit et propose « Les voir dans GATES / SEE ». Un
-bouton **détail des écarts (n)** déplie une grille : référence, champ, valeur
-GATES, valeur SEE.
+Cliquer un verdict filtre le tableau des plans ; « terminés, absents de SEE »
+et « pas encore dans SEE » l'emmènent sur GATES, « seulement dans SEE » sur
+SEE. Un seul lot à la fois ; le bandeau le nomme (« Rapprochement : … »), la
+croix le retire sans changer de côté. Un verdict se **combine** avec les
+filtres du haut : « dans SEE, pas terminés ici » plus l'état *En cours* ne
+garde que ceux-là.
+
+Survoler un verdict — ou sa part de l'anneau, ou un nombre de côté —
+l'éclaire dans la figure et ouvre une bulle : le compte, la part des terminés,
+les paires « référence → solution et lettre », la répartition par état de
+GATES, et où mène le clic.
 
 **Le tableau « SEE »**, derrière l'interrupteur **GATES | SEE** de la
 section « Plans » (un seul tableau à la fois, les mêmes outils) : l'extract à
-l'identique —
-toutes ses colonnes, dans son ordre, sous leurs intitulés — et une *Vue
-essentielle* si la configuration en désigne une (les colonnes de la référence
-en font toujours partie). Le verdict se lit sur chaque ligne : la pastille
-dans la cellule NAME, et les cellules qui diffèrent d'ici sous un voile ambre,
-la valeur d'ici en info-bulle. Les cases à cocher de l'extract (TRUE / FALSE)
-se lisent ✓ ou –. Une recherche et un tri par intitulé (un clic, un second
-pour inverser, un troisième pour l'ordre de l'extract) qui ne touchent qu'à
-lui ; cliquer une ligne appariée réduit le tableau d'ici à ce plan.
+l'identique — toutes ses colonnes, dans son ordre, sous leurs intitulés. Pas
+de *Vue essentielle* : l'extract n'a qu'une vingtaine de colonnes, en retirer
+trois n'apporterait rien (elle reparaîtrait si `ESSENTIELLES` en désignait).
+Le verdict se lit sur chaque ligne, en pastille dans la cellule NAME. Les
+cases à cocher de l'extract (TRUE / FALSE) se lisent ✓ ou –. Une recherche et
+un tri par intitulé (un clic, un second pour inverser, un troisième pour
+l'ordre de l'extract) qui ne touchent qu'à lui ; cliquer une ligne appariée
+réduit le tableau d'ici à ce plan.
 
 Les lignes de SEE sont appariées aux plans **par racine + solution** (§ 9),
 pour qu'un plan réémis d'un côté reste le même plan. La solution que l'extract
-Excel aurait réduite à « 1 » est remise sur trois chiffres. Un champ se compare à la
-lettre près, sans tenir compte de la casse ni des accents ; deux cases à cocher
-se comparent cochée à cochée ; l'avancement FWD, lui, se compare **par état**,
-et face à une case à cocher, un plan terminé ici doit être coché là.
+Excel aurait réduite à « 1 » est remise sur trois chiffres.
 
 Le tout suit le périmètre (sous PERSO, les lignes des plans hors périmètre
 s'effacent du tableau de SEE ; ce qui n'est que dans SEE, sans domaine, reste
@@ -448,29 +469,20 @@ mémorisé.
 
 La démonstration en montre un exemple aux écarts délibérés. Dans le classeur,
 la configuration de `Code.gs` décrit déjà SEE tel qu'il a été vu ; il reste à
-**nommer l'onglet** — et à confirmer les champs comparés :
+**nommer l'onglet** :
 
 ```js
 RAPPROCHEMENT: {
-  FEUILLE: '',                                  // nom de l'onglet où SEE est collé (vide = rien)
-  NOM: 'SEE',                                   // nom affiché ; vide = le nom de l'onglet
+  FEUILLE: '',                                 // nom de l'onglet où SEE est collé (vide = rien)
+  NOM: 'SEE',                                  // nom affiché ; vide = le nom de l'onglet
   CLE_REFERENCE: ['NAME', 'SOL.', 'Cust.V'],   // la référence, recomposée dans cet ordre
-  ESSENTIELLES: ['NAME', 'SOL.', 'Cust.V', 'VALIDITY PSN FULL', 'DIAGRAM TYPE',
-                 'PRODUCT FAMILY', 'Validated', 'Released Date', 'REDRAW'],
-  CHAMPS: [                                     // hypothèse à confirmer
-    { ici: 'Réalisation FWD > Avancement', la: 'Validated',          titre: 'Avancement / Validated' },
-    { ici: 'Réalisation FWD > Redraw',     la: 'REDRAW',             titre: 'Redraw' },
-    { ici: 'Nom Installation',             la: 'FG1 TAGDESCRIPTION', titre: 'Installation' }
-  ]
+  ESSENTIELLES: []                             // pas de vue essentielle pour SEE
 },
 ```
 
-`ici` se désigne comme partout dans la configuration (intitulé, ou
-« Groupe > Colonne » en cas de doublon) ; `la` est l'intitulé dans l'onglet,
-retrouvé sans tenir compte de la casse ni des accents. L'en-tête est la ligne
-qui porte tous les intitulés de la référence (la ligne 3 dans SEE), sinon la
-première ligne non vide. Un champ dont l'un des deux côtés est introuvable est
-écarté, pas la section.
+L'en-tête est la ligne qui porte tous les intitulés de la référence (la ligne 3
+dans SEE), sinon la première ligne non vide. Une référence introuvable dans
+l'onglet : pas de section, pas d'erreur — la page s'ouvre.
 
 ## 13. Les jalons
 
@@ -507,3 +519,52 @@ sont retenus dans le navigateur de chacun. Personne n'impose sa mise en page à
 personne — et rien de ce qui se partage (jalons, contrats, historique) n'y
 passe. Le périmètre, les filtres et la vue du tableau repartent de zéro à
 chaque ouverture.
+
+## 15. L'automatisation : récupérer et déposer sans y penser
+
+Tout ce qui précède se fait à la main en trois gestes par semaine. Le dossier
+`import/` permet de s'en passer, **sans rien installer sur le poste** : pas
+d'exécutable, pas de bibliothèque, seulement Python et le Chrome déjà là.
+`import/README.md` donne le détail ; en résumé :
+
+1. **Préparer Chrome une fois.** Fermer Chrome, puis le relancer avec
+   `chrome.exe --remote-debugging-port=9222` (un raccourci suffit). Il ouvre
+   alors un canal local sur lequel un script peut lui dire « va à cette page,
+   clique ce bouton, lis ce tableau ». La session reste la vôtre : vos
+   cookies, votre authentification intranet. **Rien n'est simulé à l'aveugle**
+   — on ne bouge pas la souris, on désigne l'élément et on lui demande de
+   faire ce qu'il ferait sous le doigt. On peut travailler à côté pendant ce
+   temps.
+
+2. **Écrire la recette une fois.** Un fichier JSON qui dit les gestes dans
+   l'ordre — ouvrir, remplir, cliquer, télécharger — avec une variable pour le
+   contrat ou le plan. Trois modèles à compléter sont fournis dans
+   `import/recettes/` : GATES par contrat, SEE par contrat, composants par
+   plan. Le geste `cliquer_texte` ne demande que le texte écrit sur le bouton.
+
+3. **Déposer dans le classeur.** `Code.gs` publie une adresse (Déployer →
+   Application web), protégée par un secret :
+
+   ```js
+   DEPOT: { SECRET: 'une phrase longue et imprévisible', MAX_LIGNES: 20000 },
+   ```
+
+   `python import/deposer.py gates-HDK.csv --onglet HDK --archiver` envoie
+   l'extract, le classeur vide l'onglet, colle les lignes et archive le relevé
+   de la semaine. Sans secret, tout dépôt est refusé ; un onglet d'historique
+   n'est jamais une cible ; redéposer la même semaine met la ligne à jour au
+   lieu d'en empiler une seconde.
+
+4. **Le lundi, un double-clic** sur un `.bat` — ou rien du tout, avec le
+   Planificateur de tâches Windows et la case *Exécuter la tâche dès que
+   possible si un démarrage planifié est manqué* : le PC éteint le lundi
+   rattrape au premier allumage. Rien ne tourne quand la machine dort.
+
+Les composants suivent la même voie, avec une recette qui ouvre chaque plan et
+extrait son tableau. Et quand ils ne sortent d'aucun tableur, ils sont sur le
+**plan** : `import/lire_plan.py` lit un PDF de dessin — pas un scan — et rend
+les équipements, chacun avec le repère électrique écrit dans sa boîte. Il dit
+toujours combien de boîtes il a vues, combien portent un repère unique, et
+lesquelles sont douteuses : **aucun composant n'est inventé**.
+
+À valider avec l'informatique avant mise en place.

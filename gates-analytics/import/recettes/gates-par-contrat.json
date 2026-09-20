@@ -1,0 +1,21 @@
+{
+  "nom": "GATES — un extract par contrat",
+  "_a_completer": [
+    "Remplacer l'adresse, le sélecteur du champ de recherche et le texte du bouton",
+    "par ce qu'on voit à l'écran. Pour un sélecteur : clic droit sur le champ,",
+    "« Inspecter », puis relever son id (#quelque-chose) ou sa classe (.quelque-chose).",
+    "Le plus simple reste cliquer_texte : le texte écrit sur le bouton suffit."
+  ],
+  "telechargements": "C:/Users/VOTRE-COMPTE/Downloads",
+  "variable": "contrat",
+  "valeurs": ["HDK", "THS", "VRK"],
+  "etapes": [
+    { "faire": "ouvrir", "url": "https://intranet/gates/recherche" },
+    { "faire": "attendre", "ou": "#recherche" },
+    { "faire": "remplir", "ou": "#recherche", "texte": "{contrat}" },
+    { "faire": "cliquer_texte", "texte": "Rechercher" },
+    { "faire": "attendre", "ou": "#resultats" },
+    { "faire": "cliquer_texte", "texte": "Tout extraire" },
+    { "faire": "telecharger", "vers": "gates-{contrat}.csv", "delai": 300 }
+  ]
+}

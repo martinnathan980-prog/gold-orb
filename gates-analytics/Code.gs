@@ -113,6 +113,7 @@ const CONFIG = {
    */
   DIMENSIONS: [
     'ATA',
+    'Séquence',
     'CC',
     'ECP'
   ],
@@ -146,6 +147,12 @@ const CONFIG = {
    * est vide : la page n'affiche alors ni le rapprochement ni le tableau de
    * la seconde base.
    *
+   * Un plan présent dans SEE est un plan créé, donc terminé : la page croise
+   * cette présence avec l'avancement FWD de GATES (terminés que SEE ignore,
+   * plans que SEE connaît sans que GATES les dise terminés, indices qui
+   * diffèrent). Seules les colonnes de la référence servent au
+   * rapprochement ; les autres s'affichent, c'est tout.
+   *
    * FEUILLE        : nom de l'onglet qui porte l'extract. L'en-tête est la
    *                  première ligne (parmi les LIGNES_SCAN_ENTETE premières)
    *                  qui porte tous les intitulés de CLE_REFERENCE — dans SEE
@@ -157,38 +164,32 @@ const CONFIG = {
    *                  recomposée dans cet ordre. Dans SEE : NAME (la racine),
    *                  SOL. (la solution, remise sur trois chiffres si Excel
    *                  l'a réduite à « 1 ») et Cust.V (l'indice).
-   * ESSENTIELLES   : les intitulés de la « vue essentielle » du tableau de
+   * ESSENTIELLES   : les intitulés d'une « vue essentielle » du tableau de
    *                  la seconde base, dans l'ordre voulu ; vide = pas de vue
-   *                  essentielle. Les colonnes de la référence y sont toujours.
-   * CHAMPS         : les champs à comparer, [{ ici, la, titre }] :
-   *                    ici   = colonne de l'export GATES, désignée comme
-   *                            ailleurs dans cette configuration (intitulé,
-   *                            ou « Groupe > Colonne » en cas de doublon) ;
-   *                    la    = intitulé de la colonne dans le second onglet ;
-   *                    titre = comment la page nomme ce champ.
-   *                  L'avancement FWD se compare par état (terminé, en
-   *                  cours…) ; face à une case à cocher (TRUE / FALSE), un
-   *                  plan terminé ici doit être coché là, et réciproquement.
-   *                  Deux cases à cocher se comparent cochée à cochée ; les
-   *                  autres champs à la lettre près, sans tenir compte de la
-   *                  casse ni des accents.
-   *
-   * Les valeurs ci-dessous décrivent SEE tel qu'il a été vu ; les CHAMPS
-   * sont une hypothèse à confirmer avant de renseigner FEUILLE (« Validated »
-   * dit-il bien que le plan est terminé côté FWD ?). Un champ dont l'un des
-   * deux côtés est introuvable est écarté, pas la section entière.
+   *                  essentielle — c'est le choix pour SEE, dont l'extract
+   *                  n'a qu'une vingtaine de colonnes.
    */
   RAPPROCHEMENT: {
     FEUILLE: '',
     NOM: 'SEE',
     CLE_REFERENCE: ['NAME', 'SOL.', 'Cust.V'],
-    ESSENTIELLES: ['NAME', 'SOL.', 'Cust.V', 'VALIDITY PSN FULL', 'DIAGRAM TYPE', 'PRODUCT FAMILY',
-                   'Validated', 'Released Date', 'REDRAW'],
-    CHAMPS: [
-      { ici: 'Réalisation FWD > Avancement', la: 'Validated',          titre: 'Avancement / Validated' },
-      { ici: 'Réalisation FWD > Redraw',     la: 'REDRAW',             titre: 'Redraw' },
-      { ici: 'Nom Installation',             la: 'FG1 TAGDESCRIPTION', titre: 'Installation' }
-    ]
+    ESSENTIELLES: []
+  },
+
+  /**
+   * Dépôt automatique des extracts par un script (voir import/deposer.py) :
+   * le script envoie les lignes d'un extract à l'application web (doPost),
+   * qui les écrit dans l'onglet nommé et, si on le lui demande, archive le
+   * relevé de la semaine pour ce contrat. Rien tant que SECRET est vide :
+   * toute requête est refusée. Le même secret se met dans le script.
+   *
+   * SECRET      : une phrase longue et imprévisible, la même des deux côtés.
+   * MAX_LIGNES  : au-delà, le dépôt est refusé — un garde-fou, pas une limite
+   *               métier (un extract GATES fait quelques centaines de lignes).
+   */
+  DEPOT: {
+    SECRET: '',
+    MAX_LIGNES: 20000
   },
 
   /** Intitulés de texte libre : jamais des catégories, quoi qu'en dise le contenu. */
@@ -837,7 +838,7 @@ function getDonneesPourClient(contrat) {
     };
     /* La seconde base, seulement si la configuration en nomme une : la page
        masque la section quand la clé est absente. */
-    const rapprochement = getRapprochement(classeur, modele.colonnes);
+    const rapprochement = getRapprochement(classeur);
     if (rapprochement) paquet.rapprochement = rapprochement;
     return paquet;
   } catch (err) {
@@ -1273,30 +1274,7 @@ function enregistrerInstantaneHebdo() {
   const erreurs = [];
   contrats.forEach(function (c) {
     try {
-      const compte = compterAvancements(c.id);
-      /* La carte plan par plan ne tient plus dans une cellule au-delà de
-         quelques milliers de plans : elle s'étale sur autant de cellules
-         qu'il faut, à partir de la colonne « Plans ». La jeter, comme avant,
-         privait ces relevés de périmètre, de journal et de comparatif. */
-      const ligne = [
-        semaine, new Date(), compte.total, compte.termine, compte.encours,
-        compte.afaire, compte.vide,
-        jsonTenable(compte.groupes)
-      ].concat(decouper(JSON.stringify(compte.plans), MAX_CARACTERES_CELLULE));
-      const feuille = getFeuilleHistorique(classeur, c.id, true);
-      const indexLigne = ligneDeLaSemaine(feuille, semaine);
-      if (indexLigne === -1) {
-        assurerColonnes(feuille, ligne.length);
-        feuille.appendRow(ligne);
-      } else {
-        /* Mise à jour de la semaine : on couvre aussi les colonnes qu'une
-           écriture précédente, plus longue, aurait occupées — sinon la queue
-           de l'ancienne carte resterait collée à la nouvelle. */
-        while (ligne.length < feuille.getLastColumn()) ligne.push('');
-        assurerColonnes(feuille, ligne.length);
-        feuille.getRange(indexLigne, 1, 1, ligne.length).setValues([ligne]);
-      }
-      detail.push({ id: c.id, nom: c.nom, historique: feuille.getName(), compte: compte });
+      detail.push(archiverContrat(classeur, c, semaine));
     } catch (err) {
       erreurs.push('« ' + c.nom + ' » : ' + (err && err.message ? err.message : err));
     }
@@ -1308,6 +1286,39 @@ function enregistrerInstantaneHebdo() {
       erreurs.length + ' en erreur : ' + erreurs.join(' ; '));
   }
   return { ok: true, semaine: semaine, contrats: detail };
+}
+
+/**
+ * Archive le relevé d'UN contrat pour la semaine donnée, dans son onglet
+ * d'historique : la ligne de la semaine est créée ou mise à jour. Renvoie
+ * { id, nom, historique, semaine, compte }. Sert au geste hebdomadaire
+ * (tous les contrats) comme au dépôt automatique (un seul).
+ */
+function archiverContrat(classeur, c, semaine) {
+  const compte = compterAvancements(c.id);
+  /* La carte plan par plan ne tient plus dans une cellule au-delà de
+     quelques milliers de plans : elle s'étale sur autant de cellules
+     qu'il faut, à partir de la colonne « Plans ». La jeter, comme avant,
+     privait ces relevés de périmètre, de journal et de comparatif. */
+  const ligne = [
+    semaine, new Date(), compte.total, compte.termine, compte.encours,
+    compte.afaire, compte.vide,
+    jsonTenable(compte.groupes)
+  ].concat(decouper(JSON.stringify(compte.plans), MAX_CARACTERES_CELLULE));
+  const feuille = getFeuilleHistorique(classeur, c.id, true);
+  const indexLigne = ligneDeLaSemaine(feuille, semaine);
+  if (indexLigne === -1) {
+    assurerColonnes(feuille, ligne.length);
+    feuille.appendRow(ligne);
+  } else {
+    /* Mise à jour de la semaine : on couvre aussi les colonnes qu'une
+       écriture précédente, plus longue, aurait occupées — sinon la queue
+       de l'ancienne carte resterait collée à la nouvelle. */
+    while (ligne.length < feuille.getLastColumn()) ligne.push('');
+    assurerColonnes(feuille, ligne.length);
+    feuille.getRange(indexLigne, 1, 1, ligne.length).setValues([ligne]);
+  }
+  return { id: c.id, nom: c.nom, historique: feuille.getName(), semaine: semaine, compte: compte };
 }
 
 /**
@@ -1395,25 +1406,22 @@ function getJalons() {
 
 /**
  * La description de la seconde base pour la page : { nom, cleReference,
- * champs, lignes, colonnes, essentielles }, ou null tant que
+ * lignes, colonnes, essentielles }, ou null tant que
  * CONFIG.RAPPROCHEMENT.FEUILLE est vide — la page n'affiche alors rien.
  *
  * L'onglet est lu tel quel : l'en-tête est la première ligne qui porte tous
  * les intitulés de la référence (dans SEE, la ligne 3, sous le titre), sinon
  * la première ligne non vide ; les lignes suivantes deviennent des objets
  * { intitulé: valeur }. Les intitulés sont conservés à la lettre, puisque
- * c'est par eux que CHAMPS et ESSENTIELLES désignent les colonnes de la
- * seconde base, et `colonnes` les rend dans l'ordre de l'onglet. Côté
- * GATES, `ici` est une désignation comme ailleurs dans la configuration
- * (intitulé, ou « Groupe > Colonne ») et se résout en clé de colonne ; un
- * champ dont l'un des deux côtés est introuvable est écarté, pas la section
- * entière. La référence : une chaîne quand une colonne la porte entière, la
- * liste des intitulés quand elle se recompose.
+ * c'est par eux que ESSENTIELLES désigne les colonnes de la seconde base, et
+ * `colonnes` les rend dans l'ordre de l'onglet. La référence : une chaîne
+ * quand une colonne la porte entière, la liste des intitulés quand elle se
+ * recompose. C'est la page qui rapproche : présence dans la seconde base
+ * contre avancement FWD d'ici.
  *
  * @param {Spreadsheet} classeur
- * @param {Array} colonnes  les colonnes du modèle GATES ({ cle, titre, groupe })
  */
-function getRapprochement(classeur, colonnes) {
+function getRapprochement(classeur) {
   const cfg = CONFIG.RAPPROCHEMENT;
   if (!cfg || !cfg.FEUILLE) return null;
   const feuille = classeur.getSheetByName(cfg.FEUILLE);
@@ -1461,38 +1469,169 @@ function getRapprochement(classeur, colonnes) {
     }
     return '';
   }
-  function cleIci(designation) {
-    const liste = Array.isArray(colonnes) ? colonnes : [];
-    const voulu = normaliser(designation);
-    if (!voulu) return '';
-    for (let i = 0; i < liste.length; i++) {
-      const c = liste[i];
-      if (c.cle === designation) return c.cle;
-      if (normaliser(c.titre) === voulu) return c.cle;
-      if (normaliser((c.groupe || '') + ' > ' + c.titre) === voulu) return c.cle;
-    }
-    return '';
-  }
 
   const clesReference = clesVoulues.map(enteteLa);
   if (clesReference.some(function (c) { return !c; })) return null;
-  const champs = (Array.isArray(cfg.CHAMPS) ? cfg.CHAMPS : [])
-    .map(function (c) {
-      if (!c) return null;
-      const ici = cleIci(c.ici), la = enteteLa(c.la);
-      if (!ici || !la) return null;
-      return { ici: ici, la: la, titre: String(c.titre || c.la).trim().slice(0, 60) || la };
-    })
-    .filter(function (c) { return c !== null; });
   const essentielles = (Array.isArray(cfg.ESSENTIELLES) ? cfg.ESSENTIELLES : [])
     .map(enteteLa).filter(Boolean);
 
   return {
     nom: String(cfg.NOM || feuille.getName()).trim().slice(0, 80) || feuille.getName(),
     cleReference: clesReference.length === 1 ? clesReference[0] : clesReference,
-    champs: champs,
     lignes: lignes,
     colonnes: entetes.filter(Boolean),
     essentielles: essentielles
   };
+}
+
+// =====================================================================
+//  DÉPÔT AUTOMATIQUE (application web, doPost)
+// =====================================================================
+
+/**
+ * Point d'entrée des dépôts : un script (import/deposer.py) envoie un
+ * extract en JSON, { secret, onglet, lignes: [[…], …], archiver, creer }.
+ * La réponse est du JSON : { ok, onglet, lignes, colonnes, archive } ou
+ * { ok: false, message }. Tout passe par deposer(), testable sans requête.
+ */
+function doPost(e) {
+  let reponse;
+  try {
+    const texte = e && e.postData && e.postData.contents ? String(e.postData.contents) : '';
+    reponse = deposer(texte);
+  } catch (err) {
+    /* Sans ce filet, Apps Script répondrait une page HTML d'erreur : le script
+       appelant n'y comprendrait rien. */
+    reponse = { ok: false, message: err && err.message ? err.message : String(err) };
+  }
+  return ContentService.createTextOutput(JSON.stringify(reponse))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Écrit les lignes reçues dans l'onglet nommé — vidé d'abord, comme le geste
+ * Ctrl+A, Suppr, coller en A1 — puis, si `archiver` est vrai et que l'onglet
+ * est un contrat, archive le relevé de la semaine pour ce contrat. Refuse
+ * tout tant que CONFIG.DEPOT.SECRET est vide, et tout ce qui ne porte pas ce
+ * secret. Un onglet d'historique n'est jamais une cible.
+ */
+function deposer(texte) {
+  const cfg = CONFIG.DEPOT || {};
+  const secret = String(cfg.SECRET || '');
+  if (!secret) return { ok: false, message: 'Dépôt désactivé : CONFIG.DEPOT.SECRET est vide.' };
+  const corps = analyserJson(texte);
+  if (!corps || typeof corps !== 'object' || Array.isArray(corps)) return { ok: false, message: 'Corps illisible : un objet JSON est attendu.' };
+  if (!memeSecret(String(corps.secret === undefined || corps.secret === null ? '' : corps.secret), secret)) {
+    return { ok: false, message: 'Secret refusé.' };
+  }
+  const onglet = String(corps.onglet || '').trim();
+  if (!onglet) return { ok: false, message: 'Onglet non nommé.' };
+  if (!Array.isArray(corps.lignes)) return { ok: false, message: 'Lignes absentes : une liste de lignes est attendue.' };
+  if (!corps.lignes.length) return { ok: false, message: 'Extract vide : rien à déposer. L\'onglet n\'est pas touché.' };
+  /* MAX_LIGNES vaut ce qu'on y a mis, zéro compris : un zéro ferme le dépôt
+     au lieu de rouvrir en grand. Absent ou illisible, la valeur par défaut. */
+  const voulu = Number(cfg.MAX_LIGNES);
+  const maxLignes = isNaN(voulu) || voulu < 0 ? 20000 : voulu;
+  if (corps.lignes.length > maxLignes) return { ok: false, message: 'Trop de lignes : ' + corps.lignes.length + ' (au plus ' + maxLignes + ').' };
+
+  /* Chaque ligne devient une rangée de chaînes, toutes de même largeur. Tout
+     est préparé AVANT de toucher à l'onglet : un extract mal formé ne doit
+     jamais laisser un onglet vidé. */
+  const largeur = corps.lignes.reduce(function (m, l) { return Math.max(m, Array.isArray(l) ? l.length : 0); }, 0);
+  if (!largeur) return { ok: false, message: 'Extract sans aucune colonne : rien à déposer. L\'onglet n\'est pas touché.' };
+  const valeurs = corps.lignes.map(function (l) {
+    const t = Array.isArray(l) ? l : [], out = [];
+    for (let j = 0; j < largeur; j++) {
+      const v = t[j];
+      out.push(v === null || v === undefined || typeof v === 'object' ? '' : String(v));
+    }
+    return out;
+  });
+
+  /* Un onglet protégé n'est jamais une cible — même s'il n'existe pas
+     encore : on ne le crée pas non plus. L'onglet de la seconde base, lui,
+     se dépose comme un contrat. */
+  const protege = ongletProtege(onglet);
+  if (protege) return { ok: false, message: 'On ne dépose pas dans ' + protege + ' : « ' + onglet + ' ».' };
+  const classeur = SpreadsheetApp.getActiveSpreadsheet();
+  /* L'onglet se retrouve comme partout ailleurs : sans tenir compte de la
+     casse ni des accents. Sinon « hdk » créerait un doublon de « HDK ». */
+  let feuille = classeur.getSheetByName(onglet) || ongletNormalise(classeur, onglet);
+  if (!feuille) {
+    if (!corps.creer) return { ok: false, message: 'Onglet introuvable : « ' + onglet + ' ». Passer creer: true pour le créer.' };
+    feuille = classeur.insertSheet(onglet);
+  }
+  feuille.clearContents();
+  assurerColonnes(feuille, largeur);
+  assurerLignes(feuille, valeurs.length);
+  const plage = feuille.getRange(1, 1, valeurs.length, largeur);
+  /* En format texte, une cellule qui commence par « = » reste ce qu'elle est :
+     un extract ne doit pas se transformer en formules. */
+  if (plage.setNumberFormat) plage.setNumberFormat('@');
+  plage.setValues(valeurs);
+  const resultat = { ok: true, onglet: feuille.getName(), lignes: valeurs.length, colonnes: largeur };
+  if (corps.archiver) {
+    const contrat = listerContrats(classeur).filter(function (c) { return c.id === feuille.getName(); })[0];
+    if (!contrat) {
+      resultat.archive = { ok: false, message: '« ' + feuille.getName() + ' » n\'est pas un onglet de contrat : rien à archiver.' };
+    } else {
+      try {
+        const detail = archiverContrat(classeur, contrat, numeroSemaineISO(new Date()));
+        resultat.archive = { ok: true, semaine: detail.semaine, historique: detail.historique,
+                             total: detail.compte.total, termine: detail.compte.termine };
+      } catch (err) {
+        resultat.archive = { ok: false, message: err && err.message ? err.message : String(err) };
+      }
+    }
+  }
+  return resultat;
+}
+
+/**
+ * Deux secrets sont-ils le même ? La comparaison parcourt toujours la même
+ * longueur : le temps de réponse ne dit pas combien de caractères sont justes.
+ */
+function memeSecret(donne, attendu) {
+  if (donne.length !== attendu.length) return false;
+  let ecart = 0;
+  for (let i = 0; i < attendu.length; i++) ecart |= donne.charCodeAt(i) ^ attendu.charCodeAt(i);
+  return ecart === 0;
+}
+
+/** Un onglet d'historique (le préfixe de CONFIG.FEUILLE_HISTORIQUE). */
+function estOngletHistorique(nom) {
+  const prefixe = normaliser(CONFIG.FEUILLE_HISTORIQUE);
+  return !!prefixe && normaliser(nom).indexOf(prefixe) === 0;
+}
+
+/**
+ * Ce qu'un dépôt n'a pas le droit d'écraser, dit en toutes lettres pour le
+ * message d'erreur — ou '' si l'onglet est déposable. L'onglet de la seconde
+ * base est déposable, lui : c'est une des cibles prévues.
+ */
+function ongletProtege(nom) {
+  if (estOngletHistorique(nom)) return 'un onglet d\'historique';
+  const n = normaliser(nom);
+  const seconde = CONFIG.RAPPROCHEMENT && CONFIG.RAPPROCHEMENT.FEUILLE
+    ? normaliser(CONFIG.RAPPROCHEMENT.FEUILLE) : '';
+  if (seconde && n === seconde) return '';
+  const internes = (CONFIG.FEUILLES_INTERNES || []).map(normaliser);
+  return internes.indexOf(n) !== -1 ? 'un onglet réservé au script' : '';
+}
+
+/** L'onglet dont le nom correspond, sans tenir compte de la casse ni des accents. */
+function ongletNormalise(classeur, nom) {
+  const n = normaliser(nom);
+  const feuilles = classeur.getSheets();
+  for (let i = 0; i < feuilles.length; i++) {
+    if (normaliser(feuilles[i].getName()) === n) return feuilles[i];
+  }
+  return null;
+}
+
+/** Élargit la grille en lignes, comme assurerColonnes le fait en colonnes. */
+function assurerLignes(feuille, nbLignes) {
+  if (!feuille.getMaxRows || !feuille.insertRowsAfter) return;
+  const actuelles = feuille.getMaxRows();
+  if (nbLignes > actuelles) feuille.insertRowsAfter(actuelles, nbLignes - actuelles);
 }

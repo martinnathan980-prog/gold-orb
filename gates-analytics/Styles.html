@@ -490,17 +490,20 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .rapp-figure .cercle-la { fill: none; stroke: var(--encre-3); stroke-width: 1.5; stroke-dasharray: 5 4; }
 .rapp-figure .grand { font-family: "IBM Plex Mono", monospace; font-size: 26px; font-variant-numeric: tabular-nums; fill: var(--encre); }
 .rapp-figure .petit { font-size: 11px; fill: var(--encre-2); }
-.rapp-figure .cote-absent .grand { fill: var(--alerte); }
+.rapp-figure .cote-manque .grand { fill: var(--alerte); }
+.rapp-figure .cote-manque.zero .grand { fill: var(--encre-3); }
+.rapp-figure .cote-attente .moyen { font-family: "IBM Plex Mono", monospace; font-size: 14px; font-variant-numeric: tabular-nums; fill: var(--encre); }
 .rapp-figure .cote-seul .grand { fill: var(--encre-2); }
 .rapp-figure .donut-fond { fill: none; stroke: var(--filet); stroke-width: 12; }
 .rapp-figure .donut-seg { fill: none; stroke-width: 12; stroke-linecap: butt; transition: stroke-width .12s; }
-.rapp-figure .donut-seg.identique { stroke: var(--fait); }
+.rapp-figure .donut-seg.accord { stroke: var(--fait); }
 .rapp-figure .donut-seg.emission { stroke: var(--encre-3); }
-.rapp-figure .donut-seg.ecart { stroke: var(--cours); }
+.rapp-figure .donut-seg.avance { stroke: var(--cours); }
 /* Survoler un verdict éclaire sa part de la figure. */
 .rapp-figure .donut-seg.survole { stroke-width: 18; }
 .rapp-figure .cote.survole .grand { text-decoration: underline; text-underline-offset: 3px; }
 .rapp-figure .cote.survole .petit { fill: var(--encre); }
+.rapp-figure .cote.survole .moyen { text-decoration: underline; text-underline-offset: 3px; }
 .verdicts { display: grid; gap: 6px; }
 .verdict {
   display: grid; grid-template-columns: 14px 62px minmax(0, 1fr); align-items: center; column-gap: 10px;
@@ -518,14 +521,13 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .verdict .verdict-mot { font-size: 13px; line-height: 1.3; }
 .verdict .verdict-mot b { font-weight: 500; color: var(--encre); }
 .verdict .pastille { width: 9px; height: 9px; }
-.pastille.identique { background: var(--fait); }
-.pastille.ecart { background: var(--cours); }
-.pastille.absent { background: var(--alerte); }
+.pastille.accord { background: var(--fait); }
+.pastille.avance { background: var(--cours); }
+.pastille.manque { background: var(--alerte); }
+.pastille.attente { background: var(--filet-fort); }
 .pastille.seul { background: transparent; border: 1.5px dashed var(--encre-3); box-sizing: border-box; }
 /* Le tableau de la seconde base : le verdict en pastille dans la cellule de
-   la référence, les cellules qui diffèrent d'ici sous un voile ambre, avec la
-   valeur d'ici en info-bulle ; les cases à cocher de l'extract en ✓ / –. */
-table.plans td.ecart { background: var(--voile-ecart); box-shadow: inset 0 -1px 0 var(--cours); }
+   la référence, les cases à cocher de l'extract en ✓ / –. */
 table.plans td.coche { text-align: center; color: var(--encre-2); }
 table.plans .verdict { display: inline-flex; align-items: center; gap: 8px; }
 table.plans tbody tr.choisie td { background: var(--creux); box-shadow: inset 0 -1px 0 var(--encre); }
@@ -536,23 +538,6 @@ table.plans tbody tr[data-plan] { cursor: pointer; }
 .legende-rapp { display: inline-flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--encre-2); margin-left: auto; }
 .legende-rapp span { display: inline-flex; align-items: center; gap: 6px; }
 .legende-rapp:empty { display: none; }
-.rapp-detail-bouton { margin-top: 18px; display: inline-flex; align-items: baseline; gap: 6px; }
-.rapp-detail-bouton::before { content: "▸"; font-size: 10px; }
-.rapp-detail-bouton[aria-expanded="true"]::before { content: "▾"; }
-.rapp-detail { margin-top: 8px; max-height: 360px; overflow: auto; overscroll-behavior: contain; padding-top: 0; padding-bottom: 0; }
-.rapp-grille {
-  display: grid; grid-template-columns: max-content max-content minmax(90px, 1fr) minmax(90px, 1fr);
-  gap: 0 18px; font-size: 12.5px; min-width: 100%;
-}
-.rapp-grille > div { padding: 5px 0; border-bottom: 1px solid var(--filet); min-width: 0; overflow-wrap: anywhere; }
-.rapp-grille .rapp-entete {
-  position: sticky; top: 0; background: var(--surface);
-  font: 500 10.5px/1.4 "IBM Plex Sans", system-ui, sans-serif;
-  letter-spacing: .09em; text-transform: uppercase; color: var(--encre-2);
-  border-bottom-color: var(--filet-fort);
-}
-.rapp-grille .champ { color: var(--encre-2); }
-.rapp-vide { color: var(--encre-3); font-size: 13px; padding: 8px 2px 0; }
 /* Les paires « ancienne → nouvelle » d'un changement d'indice : jamais
    coupées à mi-ligne — la bulle ne liste rien d'autre. */
 .bulle .liste-refs {

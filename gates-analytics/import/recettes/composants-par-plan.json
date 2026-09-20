@@ -1,0 +1,21 @@
+{
+  "nom": "Composants — un plan après l'autre",
+  "_a_completer": [
+    "Cette recette ouvre un plan, va sur son onglet « Composants » et extrait.",
+    "Les références à parcourir viennent d'un fichier, une par ligne :",
+    "    python3 import/extraire.py import/recettes/composants-par-plan.json \\",
+    "        --valeurs-fichier refs.txt",
+    "Le tableau lu au passage sert quand la page n'offre aucun export."
+  ],
+  "telechargements": "C:/Users/VOTRE-COMPTE/Downloads",
+  "variable": "plan",
+  "etapes": [
+    { "faire": "ouvrir", "url": "https://intranet/see/plan/{plan}" },
+    { "faire": "attendre", "ou": "#onglets" },
+    { "faire": "cliquer_texte", "texte": "Composants" },
+    { "faire": "attendre", "ou": "#composants" },
+    { "faire": "lire_tableau", "ou": "#composants" },
+    { "faire": "cliquer_texte", "texte": "Exporter" },
+    { "faire": "telecharger", "vers": "composants-{plan}.csv", "delai": 180 }
+  ]
+}

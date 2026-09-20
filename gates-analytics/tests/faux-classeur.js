@@ -14,6 +14,10 @@ function Feuille(nom, valeurs, cachee, fusions) {
      davantage si les données en occupent plus. Lire ou écrire au-delà lève
      une erreur, comme Sheets ; insertColumnsAfter l'élargit, appendRow aussi. */
   this.colonnesGrille = Math.max(26, plusLarge(valeurs));
+  /* Et sa hauteur : 1 000 lignes à la création, comme dans Sheets. Écrire
+     au-delà lève une erreur, comme Sheets ; insertRowsAfter l'agrandit. */
+  this.lignesGrille = Math.max(1000, (valeurs || []).length);
+  this.formats = {};              // le format posé par ligne, quand il y en a un
 }
 function plusLarge(lignes) {
   return (lignes || []).reduce(function (m, l) { return Math.max(m, l.length); }, 0);
@@ -34,11 +38,20 @@ Feuille.prototype.getLastColumn = function () {
 };
 Feuille.prototype.getMaxColumns = function () { return Math.max(this.colonnesGrille, plusLarge(this.valeurs)); };
 Feuille.prototype.insertColumnsAfter = function (apres, nombre) { this.colonnesGrille = this.getMaxColumns() + nombre; };
+Feuille.prototype.getMaxRows = function () { return Math.max(this.lignesGrille, this.valeurs.length); };
+Feuille.prototype.insertRowsAfter = function (apres, nombre) { this.lignesGrille = this.getMaxRows() + nombre; };
 Feuille.prototype.appendRow = function (ligne) {
   if (ligne.length > this.getMaxColumns()) this.colonnesGrille = ligne.length;
   this.valeurs.push(ligne.slice());
 };
 Feuille.prototype.deleteRow = function (n) { this.valeurs.splice(n - 1, 1); };
+/** Vide les cellules ; la grille garde sa largeur, comme dans Sheets. */
+Feuille.prototype.clearContents = function () {
+  this.colonnesGrille = this.getMaxColumns();
+  this.lignesGrille = this.getMaxRows();
+  this.valeurs = [];
+  return this;
+};
 Feuille.prototype.getDataRange = function () {
   const self = this;
   return {
@@ -51,7 +64,7 @@ Feuille.prototype.getDataRange = function () {
 };
 Feuille.prototype.getRange = function (ligne, colonne, nbLignes, nbColonnes) {
   const self = this;
-  if (colonne + nbColonnes - 1 > this.getMaxColumns()) {
+  if (colonne + nbColonnes - 1 > this.getMaxColumns() || ligne + nbLignes - 1 > this.getMaxRows()) {
     throw new Error('The coordinates of the range are outside the dimensions of the sheet.');
   }
   function fusionsDansLaPlage() {
@@ -93,7 +106,13 @@ Feuille.prototype.getRange = function (ligne, colonne, nbLignes, nbColonnes) {
         l.forEach(function (v, j) { self.valeurs[cible][colonne - 1 + j] = v; });
       });
     },
-    setFontWeight: function () { return this; }
+    setFontWeight: function () { return this; },
+    /* Le format d'une plage : la batterie vérifie qu'un dépôt passe bien
+       l'onglet en texte, pour qu'une cellule « =… » ne devienne pas formule. */
+    setNumberFormat: function (format) {
+      for (let i = 0; i < nbLignes; i++) self.formats[ligne - 1 + i] = format;
+      return this;
+    }
   };
 };
 
@@ -152,6 +171,17 @@ function poserEnvironnement(contexte, classeur, proprietes, fichiers) {
     getProjectTriggers: function () { return []; },
     deleteTrigger: function () {},
     WeekDay: { FRIDAY: 'FRIDAY' }
+  };
+  /* La réponse d'une application web : le texte et son type, lisibles par la batterie. */
+  contexte.ContentService = {
+    MimeType: { JSON: 'application/json', TEXT: 'text/plain' },
+    createTextOutput: function (texte) {
+      const sortie = { texte: String(texte), mime: 'text/plain',
+        setMimeType: function (m) { sortie.mime = m; return sortie; },
+        getContent: function () { return sortie.texte; },
+        getMimeType: function () { return sortie.mime; } };
+      return sortie;
+    }
   };
   contexte.__alertes = [];
   contexte.__proprietes = props;

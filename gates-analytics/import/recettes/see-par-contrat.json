@@ -1,0 +1,16 @@
+{
+  "nom": "SEE — l'extract « Nommage WD BFLOW »",
+  "_a_completer": [
+    "Même principe que pour GATES. Si l'export arrive en .xlsx, demander le CSV",
+    "dans la page d'export : deposer.py ne lit pas le format Excel."
+  ],
+  "telechargements": "C:/Users/VOTRE-COMPTE/Downloads",
+  "variable": "contrat",
+  "valeurs": ["HDK"],
+  "etapes": [
+    { "faire": "ouvrir", "url": "https://intranet/see/nommage-wd-bflow" },
+    { "faire": "remplir", "ou": "#contrat", "texte": "{contrat}" },
+    { "faire": "cliquer_texte", "texte": "Extraire" },
+    { "faire": "telecharger", "vers": "see-{contrat}.csv", "delai": 300 }
+  ]
+}

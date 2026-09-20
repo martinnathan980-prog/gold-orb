@@ -16,7 +16,7 @@ C'est un outil de **consultation** : la page montre, elle ne modifie rien.
 | `Javascript.html` | Interface |
 | `appsscript.json` | Manifeste (fuseau, portées OAuth) |
 | `prototype/` | La même interface, autonome, avec un jeu d'exemple à trois contrats — c'est la source |
-| `import/releve.py` | Variante hors Google : archive les relevés depuis un CSV |
+| `import/` | L'automatisation : pilote Chrome, recettes d'extraction, dépôt dans le classeur, transport par la messagerie |
 | `tests/` | Batterie de l'add-on (serveur + page rendue) |
 
 ## Une seule interface, deux sources
@@ -49,21 +49,28 @@ ferait perdre au découpage suivant. Tout passe par le prototype (et par
 - **La courbe dans le temps**, avec les jalons de configuration, une bulle
   qui résume chaque semaine en chiffres, et dessous le **journal** de ce qui a
   changé, semaine par semaine, plan par plan.
-- **Avancement FWD par…** : par ATA, CC, ECP ou mois de création, avec la fin
-  estimée et l'effort demandé par le prochain jalon ; un filtre sur la colonne
-  de gauche, et sous chaque ligne toutes ses références, à faire puis
-  terminées.
+- **Avancement FWD par…** : par ATA, Séquence, CC, ECP ou mois de création,
+  avec la fin estimée et l'effort demandé par le prochain jalon ; un filtre
+  sur la colonne de gauche, et sous chaque ligne toutes ses références, à
+  faire puis terminées.
 - **Le rapprochement avec une seconde base** (SEE), quand la configuration en
-  nomme une, sous le tableau : deux cercles face à face, l'anneau des plans
-  en commun dans leur recouvrement, et cinq verdicts en français — identiques,
-  autre indice, champs différents, absents de SEE, seulement dans SEE — qui
-  filtrent le tableau ; derrière l'interrupteur GATES | SEE du tableau,
+  nomme une, sous le tableau. Un plan connu de SEE est un plan créé, donc
+  terminé : la section croise cette présence avec l'avancement de GATES. Deux
+  cercles face à face, l'anneau des plans en commun dans leur recouvrement, et
+  six verdicts en français — terminés et dans SEE, autre indice, dans SEE mais
+  pas terminés ici, terminés absents de SEE, pas encore dans SEE, seulement
+  dans SEE — qui filtrent le tableau ; derrière l'interrupteur GATES | SEE,
   l'extract SEE à l'identique avec le verdict sur chaque ligne.
 - **Le tableau** : l'extract GATES à l'identique — toutes les colonnes, les
   mêmes intitulés, l'ordre exact de la feuille — en deux vues seulement,
-  *Toutes les colonnes* et *Vue essentielle*. Seule exception : une colonne
-  sans intitulé et entièrement vide (« Colonne 1 » sur l'export réel) n'est
-  pas affichée.
+  *Toutes les colonnes* et *Vue essentielle*. Seule exception : la **première**
+  colonne quand elle est sans intitulé et entièrement vide (« Colonne 1 » sur
+  l'export réel, ajoutée par Excel). Les autres colonnes sans intitulé restent,
+  même vides.
+- **L'automatisation**, dans `import/` : un pilote qui parle à Chrome sans rien
+  installer, des recettes d'extraction rejouables, un dépôt qui envoie
+  l'extract au classeur (lequel archive le relevé de la semaine), et un
+  lecteur de plans PDF qui retire les composants de leurs boîtes.
 
 ## Tests
 
@@ -72,7 +79,7 @@ npm install
 npm test
 ```
 
-- `npm run test:addon` — 311 tests. Le vrai `Code.gs` tourne dans Node contre
+- `npm run test:addon` — 325 tests. Le vrai `Code.gs` tourne dans Node contre
   un classeur en mémoire (`tests/faux-classeur.js`), sur un export
   volontairement pénible : lignes de titre, groupes fusionnés, en-têtes
   accentués ou dupliqués, ligne vide au milieu, avancements de toutes les
@@ -83,7 +90,17 @@ npm test
   corrompu, 4 000 plans, jalons de configuration hostiles, deux contrats
   (archivage, suppression, diagnostic, ancien onglet d'historique orphelin,
   changement de contrat dans la page, panne du classeur), périmètre dérivé
-  des cartes plan par plan, seconde base à rapprocher.
+  des cartes plan par plan, seconde base à rapprocher, et le dépôt
+  automatique (secret absent ou refusé, corps illisible, onglet d'historique
+  protégé, archivage de la semaine, réponse JSON de `doPost`).
+- `npm run test:import` — 66 tests en Python pur, sans rien installer : le
+  pilote Chrome (canal WebSocket écrit à la main, gestes, téléchargements,
+  erreurs lisibles) joué contre un vrai Chrome ; la lecture des recettes ; le
+  dépôt joué contre un faux classeur qui répond comme le vrai — y compris
+  quand il refuse ; et le lecteur de plans PDF, joué sur des PDF fabriqués
+  pour l'occasion (boîtes, repères dedans ou à côté, flux compressé,
+  coordonnées transformées, cas douteux, scan refusé). Sans Chrome sur le
+  poste, la partie navigateur est sautée en le disant.
 - `npm run test:interface` — 462 tests sur l'interface elle-même.
   Elle n'essaie pas seulement de vérifier que ça marche : recherches avec
   balises, expressions régulières, 3 000 caractères ou émoji, jalon de

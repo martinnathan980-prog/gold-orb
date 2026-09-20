@@ -12,3 +12,6 @@ download/trop-gros/
 # Relevés produits par le script d'import
 gates-analytics/import/donnees/
 __pycache__/
+
+# Adresse et secret du dépôt automatique : propres au poste, jamais publiés
+gates-analytics/import/depot.json

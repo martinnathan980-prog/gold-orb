@@ -144,7 +144,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
 
   const titresDim = mGates.clesDim.map(c => mGates.colonnes.find(x => x.cle === c).titre);
   verifier('les colonnes d\'analyse sont celles demandées, dans l\'ordre',
-    JSON.stringify(titresDim) === JSON.stringify(['ATA', 'CC', 'ECP']), JSON.stringify(titresDim));
+    JSON.stringify(titresDim) === JSON.stringify(['ATA', 'Séquence', 'CC', 'ECP']), JSON.stringify(titresDim));
   verifier('l\'ATA est ouvert par défaut', mGates.dimParDefaut === 'ata', mGates.dimParDefaut);
   verifier('le mois de création s\'y ajoute côté page, pas côté serveur',
     mGates.cleDate === 'date_creation' && mGates.clesDim.indexOf('_mois') === -1);
@@ -633,19 +633,20 @@ function serveurSur(valeurs, proprietes, fichiers) {
   // =================================================================
   /* La seconde base : rien tant que CONFIG.RAPPROCHEMENT.FEUILLE est vide.
      Nommée, l'onglet est lu (en-tête = la ligne qui porte la référence,
-     sinon la première non vide), les champs sont résolus des deux côtés, et
-     le paquet porte la description que la page attend. On la joue d'abord
+     sinon la première non vide) et le paquet porte la description que la
+     page attend : la référence, les lignes, les colonnes. Rien d'autre ne se
+     compare — c'est la page qui croise présence là et avancement ici. On la joue d'abord
      avec un onglet « Base2 » aux colonnes nommées autrement, puis avec SEE
      tel qu'il se colle : titre en ligne 1, en-tête en ligne 3, référence
      sur trois colonnes. */
   section('Rapprochement avec une seconde base');
   verifier('par défaut, la configuration ne nomme aucune seconde base',
     vm.runInContext('CONFIG.RAPPROCHEMENT.FEUILLE === ""', ctxPaquet));
-  verifier('mais décrit déjà SEE : la référence sur NAME, SOL. et Cust.V, une vue essentielle, des champs à confirmer',
+  verifier('mais décrit déjà SEE : la référence sur NAME, SOL. et Cust.V, sans vue essentielle ni champ à comparer — seule la référence sert',
     vm.runInContext('JSON.stringify(CONFIG.RAPPROCHEMENT.CLE_REFERENCE) === \'["NAME","SOL.","Cust.V"]\' && ' +
-      'CONFIG.RAPPROCHEMENT.ESSENTIELLES.indexOf("NAME") === 0 && CONFIG.RAPPROCHEMENT.CHAMPS.length === 3', ctxPaquet));
+      'CONFIG.RAPPROCHEMENT.ESSENTIELLES.length === 0 && !("CHAMPS" in CONFIG.RAPPROCHEMENT)', ctxPaquet));
   verifier('le paquet ne porte alors pas de clé « rapprochement »', !('rapprochement' in paquet), Object.keys(paquet).join());
-  verifier('getRapprochement rend null', ctxPaquet.getRapprochement(ctxPaquet.SpreadsheetApp.getActiveSpreadsheet(), paquet.colonnes) === null);
+  verifier('getRapprochement rend null', ctxPaquet.getRapprochement(ctxPaquet.SpreadsheetApp.getActiveSpreadsheet()) === null);
 
   const refs = paquet.plans.slice(0, 3).map(p => p.reference);
   /* L'en-tête est la première ligne non vide : une ligne blanche au-dessus
@@ -661,14 +662,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   ]);
   const configRapp = {
     RAPPROCHEMENT: {
-      FEUILLE: 'Base2', NOM: '', CLE_REFERENCE: 'ref_ud',
-      CHAMPS: [
-        { ici: 'ATA', la: 'ata_code', titre: 'ATA' },
-        { ici: 'Avancement FWD', la: 'STATUT_FWD', titre: 'Avancement' },
-        { ici: 'Colonne inconnue', la: 'STATUT_FWD', titre: 'écarté : introuvable ici' },
-        { ici: 'ATA', la: 'Colonne absente là', titre: 'écarté : introuvable là' },
-        null
-      ]
+      FEUILLE: 'Base2', NOM: '', CLE_REFERENCE: 'ref_ud'
     }
   };
   const avecBase2 = construire({ lignes: 30, feuilles: [base2], config: configRapp, sortie: 'apercu-rapprochement.html' });
@@ -679,11 +673,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
     !!rapp && rapp.nom === 'Base2', JSON.stringify(rapp && rapp.nom));
   verifier('la clé de référence est l\'intitulé tel qu\'il est écrit dans l\'onglet',
     rapp && rapp.cleReference === 'REF_UD', rapp && rapp.cleReference);
-  verifier('les champs sont résolus : clé GATES d\'un côté, intitulé de l\'onglet de l\'autre ; les introuvables écartés',
-    rapp && JSON.stringify(rapp.champs) === JSON.stringify([
-      { ici: 'ata', la: 'ATA_CODE', titre: 'ATA' },
-      { ici: 'avancement', la: 'STATUT_FWD', titre: 'Avancement' }
-    ]), JSON.stringify(rapp && rapp.champs));
+  verifier('le paquet ne porte aucun champ à comparer : la référence, les lignes, les colonnes, et c\'est tout',
+    rapp && !('champs' in rapp) && Object.keys(rapp).sort().join() === 'cleReference,colonnes,essentielles,lignes,nom', JSON.stringify(rapp && Object.keys(rapp)));
   verifier('les lignes : celles sous l\'en-tête, sans les vides, valeurs en chaînes',
     rapp && rapp.lignes.length === 4 && rapp.lignes[0].REF_UD === refs[0].toLowerCase() &&
     rapp.lignes[2].STATUT_FWD === '' && rapp.lignes[2]['Colonne en trop'] === '42' &&
@@ -693,11 +684,11 @@ function serveurSur(valeurs, proprietes, fichiers) {
     JSON.stringify(rapp && [rapp.colonnes, rapp.essentielles]));
   verifier('le paquet reste sérialisable pour la page', /"rapprochement":\{/.test(avecBase2.contexte.donneesJSONPourPage()));
   /* Un onglet nommé mais absent : pas de section, pas d'erreur — la page s'ouvre. */
-  const sansOnglet = construire({ lignes: 10, config: { RAPPROCHEMENT: { FEUILLE: 'Nulle part', CLE_REFERENCE: 'REF', CHAMPS: [] } }, sortie: 'apercu-rapprochement-absent.html' });
+  const sansOnglet = construire({ lignes: 10, config: { RAPPROCHEMENT: { FEUILLE: 'Nulle part', CLE_REFERENCE: 'REF' } }, sortie: 'apercu-rapprochement-absent.html' });
   verifier('un onglet nommé mais introuvable : le paquet reste valide, sans rapprochement',
     sansOnglet.paquet.ok === true && !('rapprochement' in sansOnglet.paquet));
   /* Une référence introuvable dans l'en-tête : rien à apparier, donc rien. */
-  const sansCleRef = construire({ lignes: 10, feuilles: [base2], config: { RAPPROCHEMENT: { FEUILLE: 'Base2', CLE_REFERENCE: 'Pas là', CHAMPS: [] } }, sortie: 'apercu-rapprochement-absent.html' });
+  const sansCleRef = construire({ lignes: 10, feuilles: [base2], config: { RAPPROCHEMENT: { FEUILLE: 'Base2', CLE_REFERENCE: 'Pas là' } }, sortie: 'apercu-rapprochement-absent.html' });
   verifier('une clé de référence introuvable dans l\'onglet : pas de rapprochement',
     sansCleRef.paquet.ok === true && !('rapprochement' in sansCleRef.paquet));
   fs.unlinkSync(path.join(__dirname, '..', 'apercu-rapprochement-absent.html'));
@@ -716,8 +707,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   ]);
   const configSEE = { RAPPROCHEMENT: {
     FEUILLE: 'SEE', NOM: '', CLE_REFERENCE: ['name', 'sol.', 'cust.v'],
-    ESSENTIELLES: ['NAME', 'Validated', 'Introuvable'],
-    CHAMPS: [{ ici: 'Avancement FWD', la: 'validated', titre: 'Avancement / Validated' }]
+    ESSENTIELLES: ['NAME', 'Validated', 'Introuvable']
   } };
   const avecSEE = construire({ lignes: 10, feuilles: [see], config: configSEE, sortie: 'apercu-see.html' });
   const rSEE = avecSEE.paquet.rapprochement;
@@ -729,10 +719,124 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('les essentielles sont résolues, l\'introuvable écartée',
     !!rSEE && rSEE.essentielles.join('|') === 'NAME|Validated', JSON.stringify(rSEE && rSEE.essentielles));
   verifier('les valeurs restent celles de l\'onglet — « 1 », « b », TRUE — c\'est la page qui recompose',
-    !!rSEE && rSEE.lignes[0]['SOL.'] === '1' && rSEE.lignes[0]['Cust.V'] === 'b' && rSEE.lignes[1].REDRAW === 'TRUE' &&
-    rSEE.champs.length === 1 && rSEE.champs[0].la === 'Validated', JSON.stringify(rSEE && rSEE.lignes));
+    !!rSEE && rSEE.lignes[0]['SOL.'] === '1' && rSEE.lignes[0]['Cust.V'] === 'b' && rSEE.lignes[1].REDRAW === 'TRUE',
+    JSON.stringify(rSEE && rSEE.lignes));
   verifier('nommée d\'après l\'onglet faute de NOM', !!rSEE && rSEE.nom === 'SEE');
   fs.unlinkSync(path.join(__dirname, '..', 'apercu-see.html'));
+
+  // =================================================================
+  /* Le dépôt automatique : un script envoie un extract à l'application web
+     (doPost → deposer). Refusé tant que la configuration n'a pas de secret,
+     refusé sans le bon secret, refusé vers un onglet d'historique ; sinon
+     l'onglet est vidé et réécrit, et le relevé de la semaine archivé pour ce
+     contrat si on le demande. */
+  section('Dépôt automatique (doPost)');
+  const depotFerme = construire({ lignes: 12, historique: false, sortie: 'apercu-depot.html' });
+  const cD = depotFerme.contexte;
+  const envoi = (ctx, corps) => ctx.deposer(typeof corps === 'string' ? corps : JSON.stringify(corps));
+  verifier('par défaut, aucun secret : tout dépôt est refusé, et le message le dit',
+    envoi(cD, { secret: '', onglet: 'Données', lignes: [] }).ok === false &&
+    /Dépôt désactivé/.test(envoi(cD, { secret: 'x', onglet: 'Données', lignes: [] }).message));
+  const depot = construire({ lignes: 12, historique: false, config: { DEPOT: { SECRET: 'phrase longue et imprévisible', MAX_LIGNES: 50 }, RAPPROCHEMENT: { FEUILLE: 'SEE', NOM: 'SEE', CLE_REFERENCE: ['NAME', 'SOL.', 'Cust.V'], ESSENTIELLES: [] } }, sortie: 'apercu-depot.html' });
+  const cO = depot.contexte, clO = cO.SpreadsheetApp.getActiveSpreadsheet();
+  const S = 'phrase longue et imprévisible';
+  verifier('un mauvais secret est refusé', envoi(cO, { secret: 'autre', onglet: 'Données', lignes: [] }).message === 'Secret refusé.');
+  verifier('un corps illisible est refusé sans planter',
+    /illisible/.test(envoi(cO, 'pas du json').message) && /illisible/.test(envoi(cO, '[1,2]').message) && /illisible/.test(envoi(cO, '').message));
+  verifier('sans onglet, sans lignes : refusés, chacun avec son message',
+    envoi(cO, { secret: S, lignes: [] }).message === 'Onglet non nommé.' &&
+    /Lignes absentes/.test(envoi(cO, { secret: S, onglet: 'Données' }).message));
+  verifier('trop de lignes : refusé (garde-fou MAX_LIGNES)',
+    /Trop de lignes : 51/.test(envoi(cO, { secret: S, onglet: 'Données', lignes: new Array(51).fill(['a']) }).message));
+  /* Le cas qui détruirait tout : un extract vide. L'onglet ne doit PAS être
+     vidé — sinon un export raté effacerait le contrat. */
+  const avantVide = cO.getDonneesPourClient('Données').plans.length;
+  const refusVide = envoi(cO, { secret: S, onglet: 'Données', lignes: [] });
+  const refusSansColonne = envoi(cO, { secret: S, onglet: 'Données', lignes: [[], []] });
+  verifier('un extract vide est refusé AVANT que l\'onglet soit touché : les plans sont toujours là',
+    refusVide.ok === false && /vide/.test(refusVide.message) && /pas touché/.test(refusVide.message) &&
+    refusSansColonne.ok === false && /colonne/.test(refusSansColonne.message) &&
+    cO.getDonneesPourClient('Données').plans.length === avantVide,
+    JSON.stringify([refusVide, refusSansColonne, avantVide]));
+  verifier('un onglet réservé au script n\'est pas une cible non plus',
+    /réservé au script/.test(envoi(cO, { secret: S, onglet: 'Paramètres', creer: true, lignes: [['x']] }).message) &&
+    clO.getSheetByName('Paramètres') === null,
+    envoi(cO, { secret: S, onglet: 'Paramètres', creer: true, lignes: [['x']] }).message);
+  verifier('un onglet introuvable n\'est pas créé sans le demander',
+    /introuvable/.test(envoi(cO, { secret: S, onglet: 'SEE', lignes: [['NAME']] }).message) && clO.getSheetByName('SEE') === null);
+  const creation = envoi(cO, { secret: S, onglet: 'SEE', creer: true, lignes: [['Nommage WD BFLOW'], [], ['NAME', 'SOL.', 'Cust.V'], ['TFE2130A600', 1, 'a', 'en trop']] });
+  verifier('avec creer, l\'onglet est créé et rempli : lignes de longueurs inégales, nombres, cellules vides — tout devient du texte, à la même largeur',
+    creation.ok === true && creation.onglet === 'SEE' && creation.lignes === 4 && creation.colonnes === 4 &&
+    JSON.stringify(clO.getSheetByName('SEE').getDataRange().getDisplayValues()) ===
+      JSON.stringify([['Nommage WD BFLOW', '', '', ''], ['', '', '', ''], ['NAME', 'SOL.', 'Cust.V', ''], ['TFE2130A600', '1', 'a', 'en trop']]),
+    JSON.stringify(creation));
+  const prefixeHisto = vm.runInContext('CONFIG.FEUILLE_HISTORIQUE', cO);
+  verifier('un onglet d\'historique n\'est jamais une cible',
+    /historique/.test(envoi(cO, { secret: S, onglet: prefixeHisto + ' Données', creer: true, lignes: [['x']] }).message) &&
+    /historique/.test(envoi(cO, { secret: S, onglet: prefixeHisto, creer: true, lignes: [['x']] }).message));
+  /* Le nom se retrouve comme partout ailleurs : « données » sans accent ni
+     majuscule désigne le même onglet, et n'en crée pas un second. */
+  const avantNoms = clO.getSheets().length;
+  const casse = envoi(cO, { secret: S, onglet: 'donnees', creer: true, lignes: feuilleExemple(6) });
+  verifier('un nom d\'onglet sans accent ni majuscule retrouve le même onglet, au lieu d\'en créer un doublon',
+    casse.ok && casse.onglet === 'Données' && clO.getSheets().length === avantNoms,
+    JSON.stringify([casse.onglet, avantNoms, clO.getSheets().length]));
+  /* Une cellule qui commence par « = » ne doit pas devenir une formule. */
+  envoi(cO, { secret: S, onglet: 'Données', lignes: [['Réf', 'Note'], ['=1+1', '=SOMME(A:A)']] });
+  verifier('l\'onglet est passé en format texte : une cellule « =… » reste du texte, pas une formule',
+    clO.getSheetByName('Données').formats[0] === '@' && clO.getSheetByName('Données').formats[1] === '@',
+    JSON.stringify(clO.getSheetByName('Données').formats));
+  /* Plus de lignes que la grille n'en a : la grille s'agrandit, comme pour les colonnes. */
+  const grand = envoi(cO, { secret: S, onglet: 'Grand', creer: true, lignes: new Array(40).fill(['a', 'b']) });
+  const feuilleGrande = clO.getSheetByName('Grand');
+  feuilleGrande.lignesGrille = 5;                    // une grille étroite, comme un onglet neuf
+  const encore = envoi(cO, { secret: S, onglet: 'Grand', lignes: new Array(40).fill(['a', 'b']) });
+  verifier('un extract plus long que la grille l\'agrandit au lieu d\'échouer',
+    grand.ok && encore.ok && encore.lignes === 40 && feuilleGrande.getDataRange().getDisplayValues().length === 40,
+    JSON.stringify([grand.ok, encore, feuilleGrande.getMaxRows()]));
+  /* Le geste hebdomadaire par le script : l'onglet du contrat reçoit un
+     nouvel export (8 plans au lieu de 12), puis le relevé de la semaine. */
+  const avantDepot = cO.getDonneesPourClient('Données').plans.length;
+  const hebdo = envoi(cO, { secret: S, onglet: 'Données', lignes: feuilleExemple(8), archiver: true });
+  const apresDepot = cO.getDonneesPourClient('Données');
+  verifier('déposer sur l\'onglet du contrat remplace l\'export : ' + avantDepot + ' plans avant, 8 après, colonnes détectées comme d\'habitude',
+    hebdo.ok === true && avantDepot !== 8 && apresDepot.plans.length === 8 && apresDepot.cleDate === 'date_creation',
+    JSON.stringify([avantDepot, hebdo, apresDepot.plans.length]));
+  verifier('et archive le relevé de la semaine pour ce contrat : une ligne d\'historique, aux comptes du nouvel export',
+    hebdo.archive && hebdo.archive.ok === true && hebdo.archive.total === 8 && /^\d{4}-S\d{2}$/.test(hebdo.archive.semaine) &&
+    apresDepot.releves.length === 1 && apresDepot.releves[0].total === 8 && apresDepot.releves[0].semaine === hebdo.archive.semaine,
+    JSON.stringify([hebdo.archive, apresDepot.releves.length]));
+  const hebdo2 = envoi(cO, { secret: S, onglet: 'Données', lignes: feuilleExemple(9), archiver: true });
+  verifier('redéposer la même semaine met la ligne à jour au lieu d\'en empiler une seconde',
+    hebdo2.ok && hebdo2.archive.total === 9 && cO.getDonneesPourClient('Données').releves.length === 1 &&
+    cO.getDonneesPourClient('Données').releves[0].total === 9, JSON.stringify(hebdo2.archive));
+  const surSEE = envoi(cO, { secret: S, onglet: 'SEE', lignes: [['NAME', 'SOL.', 'Cust.V']], archiver: true });
+  verifier('demander l\'archivage sur l\'onglet de la seconde base — qui n\'est pas un contrat — écrit quand même, mais dit qu\'il n\'y a rien à archiver',
+    surSEE.ok === true && surSEE.archive && surSEE.archive.ok === false && /pas un onglet de contrat/.test(surSEE.archive.message), JSON.stringify(surSEE));
+  const reponse = cO.doPost({ postData: { contents: JSON.stringify({ secret: S, onglet: 'Données', lignes: feuilleExemple(5) }) } });
+  verifier('doPost répond en JSON, avec le même résultat',
+    reponse.getMimeType() === 'application/json' && JSON.parse(reponse.getContent()).ok === true && JSON.parse(reponse.getContent()).lignes === feuilleExemple(5).length,
+    reponse.getContent());
+  verifier('doPost sans corps répond par un refus lisible, jamais une exception',
+    JSON.parse(cO.doPost(undefined).getContent()).ok === false && /illisible/.test(JSON.parse(cO.doPost({}).getContent()).message));
+  /* Même quand le classeur lâche : doPost répond du JSON, jamais une page
+     d'erreur HTML que le script appelant ne saurait pas lire. */
+  const classeurCasse = { getSheetByName: function () { throw new Error('Classeur indisponible'); },
+                          getSheets: function () { throw new Error('Classeur indisponible'); },
+                          insertSheet: function () { throw new Error('Classeur indisponible'); } };
+  const vraiClasseur = cO.SpreadsheetApp.getActiveSpreadsheet;
+  cO.SpreadsheetApp.getActiveSpreadsheet = function () { return classeurCasse; };
+  const panne = cO.doPost({ postData: { contents: JSON.stringify({ secret: S, onglet: 'Données', lignes: [['a']] }) } });
+  cO.SpreadsheetApp.getActiveSpreadsheet = vraiClasseur;
+  verifier('une panne du classeur devient un refus en JSON, jamais une page d\'erreur',
+    panne.getMimeType() === 'application/json' && JSON.parse(panne.getContent()).ok === false &&
+    /indisponible/.test(JSON.parse(panne.getContent()).message), panne.getContent());
+  /* MAX_LIGNES à zéro ferme le dépôt : il ne doit pas rouvrir en grand. */
+  const ferme = construire({ lignes: 8, historique: false, config: { DEPOT: { SECRET: S, MAX_LIGNES: 0 } }, sortie: 'apercu-depot.html' });
+  verifier('MAX_LIGNES à zéro ferme le dépôt au lieu de revenir à la valeur par défaut',
+    /Trop de lignes : 1 \(au plus 0\)/.test(ferme.contexte.deposer(JSON.stringify({ secret: S, onglet: 'Données', lignes: [['a']] })).message),
+    ferme.contexte.deposer(JSON.stringify({ secret: S, onglet: 'Données', lignes: [['a']] })).message);
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-depot.html'));
 
   // =================================================================
   section('Feuilles hostiles');
@@ -994,12 +1098,13 @@ function serveurSur(valeurs, proprietes, fichiers) {
   /* La consigne est explicite : le tableau du bas EST l'extract. Toutes les
      colonnes, les mêmes intitulés, l'ordre de la feuille — c'est ce qui fait
      que tout le monde parle de la même chose. Une seule exception, décidée
-     par l'utilisateur : une colonne sans intitulé (« Colonne N ») ET vide de
-     bout en bout est retirée — « Colonne 1 » ici. Le modèle serveur, lui,
-     garde ses 138 : c'est la page qui trie. */
+     par l'utilisateur : la PREMIÈRE colonne, quand elle est sans intitulé
+     (« Colonne 1 ») et vide de bout en bout — celle qu'Excel ajoute. Les
+     autres colonnes sans intitulé restent, même vides. Le modèle serveur,
+     lui, garde ses 138 : c'est la page qui trie. */
   verifier('le tableau s\'ouvre sur 137 colonnes : les 138 de la feuille, moins « Colonne 1 » vide',
     vg.visibles === 137, String(vg.visibles));
-  verifier('« Colonne 1 » n\'est pas dans les en-têtes ; « Colonne 4 » et « Colonne 5 », renseignées, y sont',
+  verifier('« Colonne 1 » n\'est pas dans les en-têtes ; « Colonne 4 » et « Colonne 5 », sans intitulé elles aussi, y restent — c\'est la structure de GATES',
     vg.ordre.indexOf('Colonne 1') === -1 && vg.ordre.indexOf('Colonne 4') !== -1 && vg.ordre.indexOf('Colonne 5') !== -1,
     vg.ordre.slice(0, 5).join(' | '));
   verifier('la colonne « Avancement » est visible au départ', vg.colFWD !== -1, String(vg.colFWD));
@@ -1468,13 +1573,21 @@ function serveurSur(valeurs, proprietes, fichiers) {
   pr.on('console', m => { if (m.type() === 'error' && !m.text().includes('ERR_FILE')) erreursJS.push('rapprochement : ' + m.text()); });
   await pr.goto('file://' + path.join(__dirname, '..', 'apercu-rapprochement.html'));
   await pr.waitForTimeout(1600);
+  /* Base2 connaît les trois premiers plans (sous leur référence exacte) et
+     une référence inédite. Le verdict de chacun se recalcule à la main : un
+     plan connu de Base2 est d'accord s'il est terminé ici, « pas terminé ici »
+     sinon ; un plan inconnu de Base2 lui manque s'il est terminé ici, attend
+     sinon. */
   const classe = avecBase2.contexte.classerFWD;
   const plans30 = avecBase2.paquet.plans;
-  const ecartsAttendus = (classe(plans30[0].avancement) !== 'termine' ? 1 : 0) +
-    1 + (classe(plans30[1].avancement) !== 'encours' ? 1 : 0) +
-    (classe(plans30[2].avancement) !== 'vide' ? 1 : 0);
-  const identiquesAttendus = 3 - (classe(plans30[0].avancement) !== 'termine' ? 1 : 0) - 1 -
-    (classe(plans30[2].avancement) !== 'vide' ? 1 : 0);
+  const fini = p => classe(p.avancement) === 'termine';
+  const attB2 = { accord: plans30.slice(0, 3).filter(fini).length, avance: plans30.slice(0, 3).filter(p => !fini(p)).length,
+    manque: plans30.slice(3).filter(fini).length, attente: plans30.slice(3).filter(p => !fini(p)).length, termines: plans30.filter(fini).length };
+  const pluriel = (n, un, plus) => n > 1 ? plus : un;
+  const restesB2 = [];
+  if (attB2.manque) restesB2.push(attB2.manque + pluriel(attB2.manque, ' terminé que ', ' terminés que ') + 'Base2 ne connaît pas');
+  if (attB2.avance) restesB2.push(attB2.avance + pluriel(attB2.avance, ' plan dans ', ' plans dans ') + 'Base2 que GATES ne dit pas ' + pluriel(attB2.avance, 'terminé', 'terminés'));
+  restesB2.push('1 référence que Base2 est seul à connaître');
   const ecran = await pr.evaluate(() => ({
     visible: !document.getElementById('rapprochement').hidden,
     titre: document.getElementById('titre-rapprochement').textContent,
@@ -1485,7 +1598,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
       bases: [...svg.querySelectorAll('.base-nom')].map(t => t.textContent).join(),
       commun: +svg.querySelector('.commun-n').textContent,
       parts: [...svg.querySelectorAll('.donut-seg')].map(x => x.getAttribute('data-cle') + '=' + x.getAttribute('data-n')).join(),
-      cotes: [...svg.querySelectorAll('.cote')].map(g => g.getAttribute('data-cle') + '=' + g.querySelector('.grand').textContent).join() }; })(),
+      cotes: [...svg.querySelectorAll('.cote')].map(g => g.getAttribute('data-cle') + '=' + (g.querySelector('.grand') || g.querySelector('.moyen')).textContent).join() }; })(),
     sousLeTableau: document.getElementById('rapprochement').getBoundingClientRect().top >= document.getElementById('cadre-tableau').getBoundingClientRect().bottom,
     sous: document.getElementById('sous-rapprochement').textContent,
     plans: document.querySelectorAll('#corps-tableau tr').length,
@@ -1496,24 +1609,25 @@ function serveurSur(valeurs, proprietes, fichiers) {
     vueSeconde: document.getElementById('vue-seconde').hidden
   }));
   verifier('la section est là, nommée d\'après l\'onglet', ecran.visible && ecran.titre === 'Rapprochement avec Base2', ecran.titre);
-  verifier('la phrase compte les identiques sur 30 plans, la sous-phrase ce qui reste à vérifier et la référence que seule Base2 connaît',
-    ecran.phrase === identiquesAttendus + ' sur 30 plans identique' + (identiquesAttendus > 1 ? 's' : '') + ' dans Base2' &&
-    ecran.sous === 'Il reste ' + (30 - identiquesAttendus) + ' plans à vérifier · 1 référence que Base2 est seul à connaître.',
-    ecran.phrase + ' / ' + ecran.sous);
-  verifier('les identiques, aucune émission différente (références hors format), les écarts recalculés, 27 plans absents de là, 1 référence seulement là',
-    ecran.puces.join(' ') === 'identiques=' + identiquesAttendus + ' indiceDifferent=0 ecarts=' + ecartsAttendus + ' absentsLa=27 absentsIci=1',
-    ecran.puces.join(' ') + ' attendu ecarts=' + ecartsAttendus + ', identiques=' + identiquesAttendus);
-  verifier('la figure : deux cercles GATES et Base2, ' + (3 - 0) + ' plans en commun dans l\'anneau, 27 absents d\'un côté, 1 seulement de l\'autre, sous le tableau des plans',
+  verifier('la phrase compte les terminés que Base2 connaît, la sous-phrase ce qu\'il y a à vérifier et la référence que seule Base2 connaît',
+    ecran.phrase === attB2.accord + ' sur ' + attB2.termines + pluriel(attB2.termines, ' plan terminé', ' plans terminés') + pluriel(attB2.accord, ' se retrouve', ' se retrouvent') + ' dans Base2' &&
+    ecran.sous === 'À vérifier : ' + restesB2.join(' · ') + '.',
+    ecran.phrase + ' / ' + ecran.sous + ' — attB2 : ' + restesB2.join(' · '));
+  verifier('les verdicts recalculés à la main : d\'accord, aucun autre indice, pas terminés ici, terminés absents, en attente, 1 seulement là',
+    ecran.puces.join(' ') === 'accord=' + attB2.accord + ' emission=0 avance=' + attB2.avance + ' manque=' + attB2.manque + ' attente=' + attB2.attente + ' seul=1',
+    ecran.puces.join(' ') + ' attB2 ' + JSON.stringify(attB2));
+  verifier('la figure : deux cercles GATES et Base2, 3 plans en commun dans l\'anneau, les côtés aux mêmes comptes, sous le tableau des plans',
     ecran.figure && ecran.figure.cercles === 2 && ecran.figure.bases === 'GATES,Base2' && ecran.figure.commun === 3 &&
-    ecran.figure.cotes === 'absentsLa=27,absentsIci=1' && ecran.sousLeTableau, JSON.stringify([ecran.figure, ecran.sousLeTableau]));
+    ecran.figure.cotes === 'manque=' + attB2.manque + ',attente=' + attB2.attente + ',seul=1' && ecran.sousLeTableau, JSON.stringify([ecran.figure, ecran.sousLeTableau]));
   verifier('l\'interrupteur GATES | Base2 est là, nommé d\'après l\'onglet, le tableau de là a ses quatre colonnes et ses quatre lignes, sans vue essentielle',
     ecran.seconde && ecran.titreSeconde === 'Base2' && ecran.entetesSeconde === 'REF_UD|ATA_CODE|STATUT_FWD|Colonne en trop' &&
     ecran.lignesSeconde === 4 && ecran.vueSeconde, JSON.stringify([ecran.titreSeconde, ecran.entetesSeconde, ecran.lignesSeconde]));
-  await pr.click('#verdicts-rapprochement button[data-rapp="absentsLa"]'); await pr.waitForTimeout(500);
-  verifier('cliquer « absents de Base2 » filtre le tableau sur ces 27 plans',
-    await pr.evaluate(() => document.querySelectorAll('#corps-tableau tr').length === 27 &&
-      [...document.querySelectorAll('.jeton')].some(j => /Rapprochement : absents de Base2/.test(j.textContent))));
-  await pr.click('#verdicts-rapprochement button[data-rapp="absentsIci"]'); await pr.waitForTimeout(400);
+  const lotB2 = attB2.manque ? 'manque' : 'attente', nLotB2 = attB2[lotB2];
+  await pr.click('#verdicts-rapprochement button[data-rapp="' + lotB2 + '"]'); await pr.waitForTimeout(500);
+  verifier('cliquer un verdict d\'ici filtre le tableau sur ses ' + nLotB2 + ' plans',
+    await pr.evaluate(n => document.querySelectorAll('#corps-tableau tr').length === n &&
+      [...document.querySelectorAll('.jeton')].some(j => /Rapprochement : /.test(j.textContent)), nLotB2));
+  await pr.click('#verdicts-rapprochement button[data-rapp="seul"]'); await pr.waitForTimeout(400);
   verifier('« seulement dans Base2 » passe sur Base2, réduit son tableau à UD-99-9999, et celui de GATES dit où la voir',
     await pr.evaluate(() => {
       const l = document.querySelectorAll('#corps-seconde tr[data-i]');
