@@ -185,11 +185,6 @@ ul.kiosque__alertes-liste {
   align-items: start;
 }
 
-@media (max-width: 900px) {
-  .kiosque__grille { grid-template-columns: minmax(0, 1fr); }
-  .kiosque__flux { position: static; max-block-size: 26rem; }
-}
-
 /* --- La liste ------------------------------------------------------------- */
 
 /* La liste reste sous les yeux pendant qu'on lit : elle se colle sous la
@@ -205,6 +200,13 @@ ul.kiosque__alertes-liste {
   border: 1px solid var(--carte-bord);
   border-radius: var(--rayon-lg);
   box-shadow: var(--ombre-sm);
+}
+
+/* Sur un écran étroit, la liste passe au-dessus de la lecture et ne se
+   colle plus : elle défile avec la page, dans une fenêtre courte. */
+@media (max-width: 900px) {
+  .kiosque__grille { grid-template-columns: minmax(0, 1fr); }
+  .kiosque__flux { position: static; max-block-size: 26rem; }
 }
 
 .kiosque__flux-tete {
