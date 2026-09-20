@@ -527,6 +527,12 @@ Tout ce qui précède se fait à la main en trois gestes par semaine. Le dossier
 d'exécutable, pas de bibliothèque, seulement Python et le Chrome déjà là.
 `import/README.md` donne le détail ; en résumé :
 
+0. **S'entraîner d'abord, sans intranet.** `python import\essai.py --jouer`
+   fabrique un faux GATES sur le PC et joue la chaîne entière — recherche,
+   téléchargement, lecture d'un plan — sans rien préparer. La même commande
+   sans `--jouer` affiche la marche à suivre pas à pas, et dit les trois
+   lignes qui changeront au bureau.
+
 1. **Préparer Chrome une fois.** Fermer Chrome, puis le relancer avec
    `chrome.exe --remote-debugging-port=9222` (un raccourci suffit). Il ouvre
    alors un canal local sur lequel un script peut lui dire « va à cette page,

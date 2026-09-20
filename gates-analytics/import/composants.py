@@ -140,6 +140,8 @@ def interpreter_mots(mots, repere=REPERE, connus=None, confiance_mini=0.5):
             if statut == 'corrige':
                 t['lu'] = m['texte']
             t['texte'] = valeur
+            if connus and valeur in connus:
+                t['dans_base'] = True
         elif statut == 'incertain':
             t['candidats'] = valeur
         textes.append(t)
@@ -173,6 +175,13 @@ def composants(textes, rectangles, repere=REPERE, cote_mini=COTE_MINI,
         interieur = [(i, t) for i, t in enumerate(textes) if i not in pris and dedans(rect, t)]
         reperes = [t for i, t in interieur if not t.get('candidats') and repere.match(t['texte'])]
         incertains = [t for i, t in interieur if t.get('candidats')]
+        if len(reperes) > 1:
+            # Deux repères dans une boîte, mais la base n'en attend qu'un : c'est
+            # l'autre qui est un mot mal lu (« Boîtier » lu « 801TIER »). La base
+            # tranche — et seulement quand elle ne désigne qu'un seul des deux.
+            attendus = [t for t in reperes if t.get('dans_base')]
+            if len(attendus) == 1:
+                reperes = attendus
         if len(reperes) == 1:
             for i, t in interieur:
                 pris.add(i)

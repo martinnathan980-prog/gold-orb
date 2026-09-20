@@ -117,6 +117,15 @@ def main():
         r = co.composants([mot('18AB', 110, 420)], [rect(100, 400, 80, 40), rect(300, 0, 800, 600)])
         verifier('un grand rectangle qui ne contient aucune autre boîte n\'est pas un cadre : une boîte vide, signalée',
                  r['cadres'] == 0 and len(r['douteux']) == 1, (r['cadres'], r['douteux']))
+        textes = co.interpreter_mots([mot('18AB', 110, 420), mot('801TIER', 110, 408)], connus={'18AB'})
+        r = co.composants(textes, [rect(100, 400, 80, 40)])
+        verifier('un mot mal lu qui ressemble à un repère ne rend pas la boîte douteuse : la base tranche',
+                 [c['repere'] for c in r['trouves']] == ['18AB'] and not r['douteux'] and
+                 '801TIER' in r['trouves'][0]['textes'], r)
+        textes = co.interpreter_mots([mot('44XY', 110, 420), mot('45XZ', 150, 420)], connus={'44XY', '45XZ'})
+        r = co.composants(textes, [rect(100, 400, 80, 40)])
+        verifier('… mais si la base attend les deux, on ne tranche pas : la boîte reste à regarder',
+                 not r['trouves'] and r['douteux'][0]['pourquoi'] == 'plusieurs repères dans la même boîte', r)
         r = co.composants([mot('18AB', 110, 420), mot('19CD', 150, 420)], [rect(100, 400, 80, 40), rect(190, 400, 40, 40)])
         verifier('les repères d\'une boîte qui en a deux ne vont pas se rattacher à la boîte vide d\'à côté',
                  not r['trouves'] and not r['orphelins'] and len(r['douteux']) == 2, r)

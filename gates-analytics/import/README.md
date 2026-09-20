@@ -14,6 +14,7 @@ et rien ne tourne quand la machine dort.
 
 | Script | Ce qu'il fait |
 |---|---|
+| `essai.py` | **L'essai à blanc** : un faux GATES sur votre PC, pour apprendre la chaîne sans intranet |
 | `piloter_chrome.py` | Parle à Chrome — va à cette page, clique ce bouton, lis ce tableau |
 | `extraire.py` | Rejoue une **recette** : la suite de gestes de l'extraction |
 | `deposer.py` | Envoie un extract au classeur, qui le colle et archive la semaine |
@@ -23,8 +24,41 @@ et rien ne tourne quand la machine dort.
 | `releve.py` | Variante hors Google : archive les relevés dans des fichiers locaux |
 
 ```bash
-npm run test:import      # les sept batteries de ce dossier
+npm run test:import      # les huit batteries de ce dossier
 ```
+
+## 0. D'abord : l'essai à blanc
+
+Avant de toucher à l'intranet, on s'entraîne sur **un faux GATES qui tourne
+sur le PC**. Une seule commande fabrique tout et joue la chaîne entière :
+
+```bash
+python import\essai.py --jouer
+```
+
+Elle lance son propre Chrome, ouvre une page GATES d'essai, cherche HDK, THS
+et VRK, télécharge trois CSV, puis lit les composants d'un plan d'essai —
+en PDF, en DXF et en scan. Il n'y a **rien à préparer** : ni raccourci de
+débogage, ni recette à écrire, ni intranet.
+
+Sans `--jouer`, la même commande prépare le dossier et affiche la **marche à
+suivre** pas à pas, avec les vrais gestes : ouvrir le canal de Chrome, jouer
+la recette, lire un plan — et ce qui changera au bureau (trois lignes).
+
+Le dossier d'essai contient :
+
+| Fichier | Ce que c'est |
+|---|---|
+| `gates-essai.html` | l'intranet en miniature : un champ, un bouton, un tableau, un lien |
+| `recette-essai.json` | la recette déjà remplie pour cette page — le modèle à copier |
+| `plan-essai.pdf` · `.dxf` · `-scanne.png` | le même plan sous trois formes |
+| `composants-base.csv` | les repères que « la base » attend — dont un absent du plan, exprès |
+
+Le plan d'essai est fait pour **montrer ce que le lecteur refuse d'inventer** :
+cinq composants nets, une boîte où deux repères sont écrits, un repère posé
+loin de toute boîte, et un repère attendu qui n'est pas dessiné. Le compte
+rendu doit dire exactement cela.
+
 
 ## 1. Préparer Chrome (une seule fois)
 

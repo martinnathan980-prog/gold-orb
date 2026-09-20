@@ -93,7 +93,7 @@ npm test
   des cartes plan par plan, seconde base à rapprocher, et le dépôt
   automatique (secret absent ou refusé, corps illisible, onglet d'historique
   protégé, archivage de la semaine, réponse JSON de `doPost`).
-- `npm run test:import` — 211 tests en Python : le pilote Chrome (canal
+- `npm run test:import` — 251 tests en Python : l'essai à blanc (un faux GATES joué de bout en bout dans un vrai Chrome) ; le pilote Chrome (canal
   WebSocket écrit à la main, gestes, téléchargements, erreurs lisibles) joué
   contre un vrai Chrome ; la lecture des recettes ; le dépôt joué contre un
   faux classeur qui répond comme le vrai — y compris quand il refuse ; et les

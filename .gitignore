@@ -15,3 +15,6 @@ __pycache__/
 
 # Adresse et secret du dépôt automatique : propres au poste, jamais publiés
 gates-analytics/import/depot.json
+
+# Le dossier fabriqué par l'essai à blanc (import/essai.py)
+gates-analytics/import/essai/
