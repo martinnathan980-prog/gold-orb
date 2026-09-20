@@ -12,9 +12,9 @@
    gestionnaire en attribut HTML.
    ========================================================================= */
 
-import { el, monter, initTheme, initNav } from './ui.js';
+import { el, monter, initTheme, initNav, deleguer, ouvrirModale } from './ui.js';
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
-import { porteurs } from './porteurs.js';
+import { porteurs, creditsPhotos } from './porteurs.js';
 import { kiosque, dossiersDepuisCommunications, alertesDepuisCommunications } from './kiosque.js';
 import { chargerSuivi, rendreSuivi } from './otq.js';
 
@@ -110,6 +110,22 @@ avecEtat('#zone-flotte', async () => {
   texteVide: 'Les appareils suivis par le service apparaîtront ici.',
   estVide: (e) => !e || !e.flotte || !Array.isArray(e.flotte.flotte)
     || e.flotte.flotte.length === 0
+});
+
+/* Les crédits des photos de la flotte : une obligation de licence, lisible
+   en un seul endroit depuis le pied de page. Les données sont déjà en
+   cache si la section des porteurs s'est affichée ; sinon on les charge. */
+deleguer(document, '[data-credits-photos]', 'click', async (evt, lien) => {
+  evt.preventDefault();
+  let flotte = null;
+  try { flotte = await chargerDonnees('flotte'); } catch (_e) { flotte = null; }
+  ouvrirModale({
+    titre: 'Crédits photos',
+    declencheur: lien,
+    contenu: flotte
+      ? creditsPhotos(flotte)
+      : el('p', { class: 'texte-doux sans-marge' }, 'Les crédits ne peuvent pas être lus pour le moment.')
+  });
 });
 
 avecEtat('#zone-otq', chargerSuivi, rendreSuiviOTQ, {

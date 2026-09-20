@@ -8,7 +8,9 @@
 
 import { chromium } from 'playwright';
 
-const FICHIER = 'file:///home/user/gold-orb/etii-hub/dist/etii-hub.html';
+// Le dist du dépôt où vit ce test, pas un chemin absolu : le test doit
+// tourner tel quel dans un worktree ou un clone ailleurs.
+const FICHIER = new URL('../dist/etii-hub.html', import.meta.url).href;
 const nav = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
 const ctx = await nav.newContext({ viewport: { width: 1440, height: 1000 } });
 const page = await ctx.newPage();
@@ -66,8 +68,18 @@ await page.waitForTimeout(500);
 const apres = await f.locator('.porteurs__detail').innerText();
 t('la fiche propose ses rubriques (technique, économie, service, sources)',
   /Technique/.test(apres) && /économie/i.test(apres) && /Données service/.test(apres) && /Sources/.test(apres));
-t('les valeurs absentes sont annoncées comme telles', /à renseigner/i.test(apres));
 t('la fiche suit le porteur choisi', apres.includes(await troisieme.locator('.porteurs__fiche-code').innerText()));
+// Les données propres au service sont vides dans le fichier public : c'est
+// dans leur onglet qu'une valeur absente doit s'annoncer « à renseigner ».
+await f.locator('.porteurs__detail [data-onglet="service"]').click();
+await page.waitForTimeout(300);
+t('les valeurs absentes sont annoncées comme telles',
+  /à renseigner/i.test(await f.locator('.porteurs__detail').innerText()));
+t('la fiche se replie quand on reclique sa carte', await (async () => {
+  await troisieme.click();
+  await page.waitForTimeout(400);
+  return (await f.locator('.porteurs__detail').count()) === 0;
+})());
 
 console.log('\n== Le suivi OTQ / OTD ==');
 const zoneOtq = f.locator('#zone-otq');
