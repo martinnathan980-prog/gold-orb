@@ -11,18 +11,18 @@
    (SPEC.md §6), et ces correctifs sont conservés intacts :
 
      BUG 4 — la page ne rendait que les comptes-rendus ; les prochains
-             points étaient chargés puis jamais affichés. Ici, DEUX onglets
-             réellement fonctionnels sont construits à partir des deux
-             tableaux du JSON, chacun avec sa liste, son lecteur, sa
-             sélection propre et son état vide.
+             points étaient chargés puis jamais affichés. La table ONGLETS
+             construit un onglet fonctionnel par tableau du JSON, chacun
+             avec sa liste, son lecteur, sa sélection propre et son état
+             vide. Un seul onglet est publié aujourd'hui — les
+             comptes-rendus — et la barre d'onglets n'apparaît alors pas.
 
      BUG 3 — les actions et les décisions existaient dans les données mais
              n'étaient jamais affichées (l'ancien code cherchait des
              marqueurs « ⚡ » / « ✅ » qui n'ont jamais été écrits). Ici,
-             chaque compte-rendu rend sa liste d'ACTIONS et sa liste de
-             DÉCISIONS, et chaque prochain point rend son OBJECTIF et sa
-             liste d'ACTIONS de préparation — dans des blocs visuellement
-             distincts du corps du texte, et étiquetés en toutes lettres.
+             chaque compte-rendu rend sa liste « À faire » et sa liste
+             « Fait / décidé », par corpsCompteRendu() de lecteur.js — le
+             même corps que dans les espaces de pôle.
 
    Responsabilités :
      1. Démarrer le thème et marquer, dans la navigation principale, le
@@ -42,9 +42,15 @@
 
    Points de conception notables :
 
-   - Le pôle n'est jamais signalé par la couleur seule : chaque réunion
-     porte une pastille ÉTIQUETÉE, où le code du pôle est écrit à côté du
-     point teinté, et chaque puce du sélecteur nomme son périmètre.
+   - Le pôle n'est jamais signalé par la couleur seule : au niveau du
+     service, chaque réunion porte une pastille ÉTIQUETÉE, où le code du
+     pôle est écrit à côté du point teinté, et chaque puce du sélecteur
+     nomme son périmètre. Dans le périmètre d'un pôle, la pastille serait
+     redondante : elle disparaît.
+
+   - La liste ne dit que l'essentiel — la date, le titre, le nombre
+     d'actions — et la lecture va droit à la synthèse. Le lieu d'une
+     réunion passée n'intéresse personne : il n'est ni affiché ni indexé.
 
    - L'index de recherche d'un onglet est construit UNE fois, sur toutes
      ses réunions, et n'est jamais reconstruit : changer de pôle ne fait
@@ -66,6 +72,10 @@ import {
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
 
 import { creerIndex, rechercher, surligner } from './search.js';
+
+import { dateCourte } from './kiosque.js';
+
+import { corpsCompteRendu } from './lecteur.js';
 
 /* -------------------------------------------------------------------------
    1. La structure du service
@@ -117,12 +127,9 @@ const PAGES_TRANSVERSES = [
      cle        identifiant court, celui qui part dans le hash de l'URL
      source     clé du tableau correspondant dans reunions.json
      libelle    texte de l'onglet
-     champResume nom du champ de synthèse, et son étiquette affichée
-     badge      libellé de nature, affiché sur chaque entrée
-     etiquetteActions étiquette du bloc d'actions (elle diffère par onglet)
-     avecDecisions true si l'onglet porte aussi un bloc de décisions
      ordre      'recent' (du plus récent au plus ancien) ou 'proche'
                 (du plus proche au plus lointain)
+     titreListe titre du volet de liste
      nom / noms nom de l'entrée au singulier et au pluriel
 */
 const ONGLETS = [
@@ -130,13 +137,8 @@ const ONGLETS = [
     cle: 'cr',
     source: 'comptesRendus',
     libelle: 'Comptes-rendus',
-    champResume: 'synthese',
-    etiquetteResume: 'Synthèse',
-    badge: 'Compte-rendu',
-    etiquetteActions: 'Actions',
-    avecDecisions: true,
     ordre: 'recent',
-    titreListe: 'Comptes-rendus disponibles',
+    titreListe: 'Comptes-rendus',
     nom: 'compte-rendu',
     noms: 'comptes-rendus',
     videTitre: 'Aucun compte-rendu',
@@ -159,7 +161,6 @@ const CHAMPS_INDEXES = [
   { nom: 'sujets',    poids: 4 },   // moyen
   { nom: 'actions',   poids: 3 },   // moyen
   { nom: 'decisions', poids: 3 },   // moyen
-  { nom: 'lieu',      poids: 2 },   // faible
   { nom: 'resume',    poids: 1 }    // faible
 ];
 
@@ -610,7 +611,6 @@ function construireBarreOutils() {
     spellcheck: 'false',
     enterkeyhint: 'search',
     value: requete,
-    'aria-describedby': 'recherche-reunions-aide',
     onInput: function (evt) {
       requete = texteSimple(evt.target.value);
       surFrappe();
@@ -632,7 +632,7 @@ function construireBarreOutils() {
       el('label', {
         class: 'visuellement-cache',
         for: 'recherche-reunions'
-      }, 'Rechercher une réunion dans l’onglet affiché'),
+      }, 'Rechercher une réunion : titre, sujet, action, décision'),
 
       el('div', { class: 'recherche' },
         el('span', { class: 'recherche__icone', 'aria-hidden': 'true' }, '⌕'),
@@ -644,13 +644,7 @@ function construireBarreOutils() {
           'aria-label': 'Effacer la recherche',
           onClick: effacerRecherche
         }, el('span', { 'aria-hidden': 'true' }, '×'))
-      ),
-
-      el('p', {
-        class: 'champ__aide',
-        id: 'recherche-reunions-aide'
-      }, 'La recherche porte sur le titre, le lieu, les sujets, les actions '
-        + 'et les décisions, dans le périmètre choisi.')
+      )
     ),
 
     el('button', {
@@ -699,17 +693,24 @@ function imprimer() {
    ------------------------------------------------------------------------- */
 
 /**
- * Construit le tablist et les deux panneaux.
+ * Construit le tablist et les panneaux.
  *
  * Motif standard : `role="tablist"` / `role="tab"` / `role="tabpanel"`,
  * `aria-controls` et `aria-labelledby` croisés, tabulation glissante — un
  * seul onglet dans l'ordre de tabulation — et activation automatique au
- * déplacement du focus, les deux panneaux étant déjà construits.
+ * déplacement du focus, les panneaux étant déjà construits.
+ *
+ * Un seul onglet publié — c'est le cas aujourd'hui — et il n'y a rien à
+ * choisir : ni barre d'onglets ni rôles d'onglet, le panneau est une
+ * simple région nommée par le titre de sa liste. `vue.onglet` et
+ * `vue.pastille` restent alors nuls, et peindreOnglets() les ignore.
  *
  * @returns {HTMLElement}
  */
 function construireOnglets() {
-  const liste = el('div', {
+  const seul = ONGLETS.length === 1;
+
+  const liste = seul ? null : el('div', {
     class: 'onglets__liste',
     role: 'tablist',
     'aria-label': 'Catégories de réunions',
@@ -720,6 +721,11 @@ function construireOnglets() {
 
   for (const definition of ONGLETS) {
     const vue = vues.get(definition.cle);
+
+    if (seul) {
+      panneaux.push(construirePanneau(vue, true));
+      continue;
+    }
 
     vue.pastille = el('span', {
       class: 'pastille',
@@ -744,7 +750,7 @@ function construireOnglets() {
     );
 
     liste.append(vue.onglet);
-    panneaux.push(construirePanneau(vue));
+    panneaux.push(construirePanneau(vue, false));
   }
 
   return el('div', { class: 'onglets' }, liste, panneaux);
@@ -754,9 +760,11 @@ function construireOnglets() {
  * Le panneau d'un onglet : liste à gauche, lecteur à droite.
  *
  * @param {object} vue
+ * @param {boolean} seul  vrai quand il n'y a pas de barre d'onglets : le
+ *                        panneau est alors une région, pas un tabpanel
  * @returns {HTMLElement}
  */
-function construirePanneau(vue) {
+function construirePanneau(vue, seul) {
   const cle = vue.definition.cle;
 
   vue.compteur = el('p', {
@@ -774,14 +782,24 @@ function construirePanneau(vue) {
     'aria-label': 'Réunion affichée — ' + vue.definition.libelle
   });
 
-  vue.panneau = el('div', {
-    class: 'onglets__panneau',
-    role: 'tabpanel',
-    id: 'panneau-' + cle,
-    'aria-labelledby': 'onglet-' + cle,
-    tabindex: '0',
-    hidden: true
-  },
+  /* Sans onglets, le panneau n'est pas une feuille (skin.css encadre les
+     .onglets__panneau) : la liste se pose sur le papier, seule la lecture
+     est une feuille. */
+  vue.panneau = el('div', seul
+    ? {
+      class: 'reunions__panneau',
+      role: 'region',
+      id: 'panneau-' + cle,
+      'aria-labelledby': 'titre-liste-' + cle
+    }
+    : {
+      class: 'onglets__panneau',
+      role: 'tabpanel',
+      id: 'panneau-' + cle,
+      'aria-labelledby': 'onglet-' + cle,
+      tabindex: '0',
+      hidden: true
+    },
     el('div', { class: 'reunions' },
       el('div', { class: 'reunions__volet reunions__liste pile pile--serree' },
         el('div', { class: 'pile pile--serree' },
@@ -810,9 +828,13 @@ function peindreOnglets(focaliser) {
   for (const vue of vues.values()) {
     const actif = vue.definition.cle === ongletActif;
 
+    vue.panneau.hidden = !actif;
+
+    /* Sans barre d'onglets, il n'y a ni bouton ni pastille à repeindre. */
+    if (!vue.onglet) continue;
+
     vue.onglet.setAttribute('aria-selected', actif ? 'true' : 'false');
     vue.onglet.setAttribute('tabindex', actif ? '0' : '-1');
-    vue.panneau.hidden = !actif;
 
     /* Le décompte accompagne toujours le libellé dans le texte accessible :
        la pastille seule serait muette une fois masquée aux lecteurs. */
@@ -823,7 +845,7 @@ function peindreOnglets(focaliser) {
       + pluriel(n, 'réunion', 'réunions'));
   }
 
-  if (focaliser) vueActive().onglet.focus();
+  if (focaliser && vueActive().onglet) vueActive().onglet.focus();
 }
 
 /**
@@ -1032,19 +1054,22 @@ function etatVideListe(vue) {
 }
 
 /**
- * Une option de la liste : date, lieu, pôle, titre et extrait de synthèse.
- * Aucun élément interactif à l'intérieur — une option de listbox ne
- * contient jamais de lien ni de bouton.
+ * Une option de la liste : la date en mono, le pôle si l'on regarde tout
+ * le service, le titre, et le nombre d'actions. Rien d'autre — la liste
+ * se parcourt, la lecture est à droite. Aucun élément interactif à
+ * l'intérieur : une option de listbox ne contient jamais de lien ni de
+ * bouton. Elle reprend l'habillage `.liseuse__item` des espaces de pôle,
+ * pour que la même liste se reconnaisse d'une page à l'autre.
  *
  * @param {object} vue
  * @param {object} reunion
  * @returns {HTMLElement} <li role="option">
  */
 function construireOption(vue, reunion) {
-  const resume = texteSimple(reunion[vue.definition.champResume]);
+  const nActions = compte(reunion.actions);
 
   return el('li', {
-    class: 'carte carte--compacte reunion-option',
+    class: 'liseuse__item reunion-option',
     role: 'option',
     id: 'option-' + vue.definition.cle + '-' + reunion.id,
     'aria-selected': 'false',
@@ -1052,39 +1077,29 @@ function construireOption(vue, reunion) {
     dataset: { id: String(reunion.id) },
     onClick: function () { selectionner(vue, String(reunion.id), true); }
   },
-    el('p', { class: 'carte__meta' },
-      el('time', { datetime: reunion.date }, formaterDate(reunion.date)),
-      reunion.lieu
-        ? el('span', null, surligne(texteSimple(reunion.lieu)))
-        : null,
-      pastillePole(reunion)
+    el('span', { class: 'liseuse__item-ligne' },
+      el('time', { class: 'liseuse__item-date', datetime: reunion.date },
+        dateCourte(reunion.date) || 'Date à renseigner'),
+      poleActif === POLE_SERVICE ? pastillePole(reunion) : null
     ),
 
-    el('p', { class: 'carte__titre' }, surligne(texteSimple(reunion.titre))),
+    el('span', { class: 'liseuse__item-titre' }, surligne(texteSimple(reunion.titre))),
 
-    resume
-      ? el('p', { class: 'reunion-option__extrait' }, surligne(resume))
-      : null,
-
-    /* Le décompte rappelle, dès la liste, que les actions et les décisions
-       sont bien là — c'est précisément ce que l'ancienne version perdait. */
-    el('p', { class: 'carte__meta' },
-      el('span', { class: 'badge badge--neutre' },
-        compte(reunion.actions) + ' '
-        + pluriel(compte(reunion.actions), 'action', 'actions')),
-      vue.definition.avecDecisions
-        ? el('span', { class: 'badge badge--neutre' },
-          compte(reunion.decisions) + ' '
-          + pluriel(compte(reunion.decisions), 'décision', 'décisions'))
-        : null
-    )
+    /* Le décompte rappelle, dès la liste, qu'il reste des choses à faire —
+       c'est précisément ce que l'ancienne version perdait. */
+    nActions > 0
+      ? el('span', { class: 'liseuse__item-note' },
+        nActions + ' ' + pluriel(nActions, 'action', 'actions'))
+      : null
   );
 }
 
 /**
  * Pastille ÉTIQUETÉE du pôle d'une réunion : le point teinté n'est que
  * décoratif, le code du pôle est toujours écrit à côté. La couleur ne
- * porte donc jamais seule l'information (SPEC §1bis).
+ * porte donc jamais seule l'information (SPEC §1bis). Le mot « pôle »
+ * n'est lu qu'aux lecteurs d'écran : à l'œil, le code suffit, comme dans
+ * la navigation.
  *
  * @param {object} reunion
  * @returns {HTMLElement}
@@ -1093,11 +1108,12 @@ function pastillePole(reunion) {
   const code = poleDe(reunion);
 
   return el('span', {
-    class: 'badge badge--pole',
+    class: 'pole-pastille',
     dataset: { pole: code }
   },
-    el('span', { class: 'badge__point', 'aria-hidden': 'true' }),
-    (code === POLE_SERVICE ? 'Service ' : 'Pôle ') + code
+    el('span', { class: 'pole-point', 'aria-hidden': 'true' }),
+    el('span', { class: 'visuellement-cache' }, code === POLE_SERVICE ? 'Service ' : 'Pôle '),
+    code
   );
 }
 
@@ -1169,138 +1185,31 @@ function peindreLecteur(vue) {
 }
 
 /**
- * Contenu complet d'une réunion : entête, synthèse ou objectif, sujets,
- * puis les blocs d'actions et de décisions.
+ * Contenu complet d'une réunion : la date en petit mono, le pôle si l'on
+ * regarde tout le service, le titre, puis le corps partagé avec les
+ * espaces de pôle — la synthèse d'abord, les sujets, « À faire »,
+ * « Fait / décidé » (corpsCompteRendu() de lecteur.js).
  *
- * C'est ici que le BUG 3 de la SPEC est corrigé : les trois listes du JSON
- * — sujets, actions, decisions — sont rendues, chacune dans une section
- * étiquetée, sans dépendre d'aucun marqueur textuel.
+ * C'est ainsi que le BUG 3 de la SPEC reste corrigé : actions et décisions
+ * sont rendues depuis les tableaux du JSON, sans dépendre d'aucun marqueur
+ * textuel. Le surlignage de la recherche traverse le corps par `texte`.
  *
  * @param {object} vue
  * @param {object} reunion
  * @returns {DocumentFragment}
  */
 function contenuLecteur(vue, reunion) {
-  const definition = vue.definition;
-  const resume = texteSimple(reunion[definition.champResume]);
-
   return frag(
-    el('div', { class: 'lecteur__contenu pile pile--lache' },
-
-      /* --- Entête : date, lieu, pôle, nature --------------------------- */
-      el('div', { class: 'pile pile--serree' },
-        el('p', { class: 'carte__meta' },
-          el('time', { datetime: reunion.date }, formaterDate(reunion.date)),
-          reunion.lieu
-            ? el('span', { class: 'badge badge--neutre' },
-              el('span', { class: 'visuellement-cache' }, 'Lieu : '),
-              surligne(texteSimple(reunion.lieu)))
-            : null,
-          pastillePole(reunion),
-          el('span', { class: 'badge badge--accent' }, definition.badge)
-        ),
-        el('h2', { class: 'sans-marge' }, surligne(texteSimple(reunion.titre)))
+    el('div', { class: 'lecteur__contenu liseuse__lecture' },
+      el('div', { class: 'liseuse__entete' },
+        el('time', { class: 'liseuse__date', datetime: reunion.date },
+          (formaterDate(reunion.date) || 'Date à renseigner').toUpperCase()),
+        poleActif === POLE_SERVICE ? pastillePole(reunion) : null
       ),
-
-      /* --- Synthèse (comptes-rendus) ou objectif (points à venir) ------- */
-      el('section', { class: 'pile pile--serree' },
-        el('h3', { class: 'lecteur__titre-section' }, definition.etiquetteResume),
-        resume
-          ? el('p', { class: 'mesure texte-doux sans-marge' }, surligne(resume))
-          : el('p', { class: 'texte-faible texte-sm sans-marge' },
-            'Aucune ' + definition.etiquetteResume.toLowerCase()
-            + ' n’a été renseignée pour cette réunion.')
-      ),
-
-      /* --- Sujets ------------------------------------------------------- */
-      sectionSujets(reunion),
-
-      /* --- Actions : toujours affichées, même vides --------------------- */
-      blocCle('actions', definition.etiquetteActions, '⚑',
-        'Ce qui reste à faire.', reunion.actions,
-        'Aucune action n’est rattachée à cette réunion.'),
-
-      /* --- Décisions : propres aux comptes-rendus ----------------------- */
-      definition.avecDecisions
-        ? blocCle('decisions', 'Décisions', '✓',
-          'Ce qui a été acté en séance.', reunion.decisions,
-          'Aucune décision n’a été actée lors de cette réunion.')
-        : null
+      el('h2', { class: 'liseuse__titre' }, surligne(texteSimple(reunion.titre))),
+      el('div', { class: 'liseuse__corps' },
+        corpsCompteRendu(reunion, { texte: surligne, niveau: 3 }))
     )
-  );
-}
-
-/**
- * La section des sujets : un titre et des notes par sujet.
- *
- * @param {object} reunion
- * @returns {HTMLElement}
- */
-function sectionSujets(reunion) {
-  const sujets = Array.isArray(reunion.sujets)
-    ? reunion.sujets.filter((sujet) => sujet && typeof sujet === 'object')
-    : [];
-
-  return el('section', { class: 'pile pile--serree' },
-    el('h3', { class: 'lecteur__titre-section' },
-      'Sujets abordés',
-      ' ',
-      sujets.length > 0
-        ? el('span', { class: 'pastille', 'aria-hidden': 'true' },
-          String(sujets.length))
-        : null
-    ),
-
-    sujets.length === 0
-      ? el('p', { class: 'texte-faible texte-sm sans-marge' },
-        'Aucun sujet n’a été détaillé pour cette réunion.')
-      : el('ul', { class: 'sujets' },
-        sujets.map(function (sujet) {
-          const titre = texteSimple(sujet.titre);
-          const notes = texteSimple(sujet.notes);
-          return el('li', { class: 'sujet pile pile--serree' },
-            titre ? el('h4', { class: 'sujet__titre' }, surligne(titre)) : null,
-            notes ? el('p', { class: 'sujet__notes' }, surligne(notes)) : null
-          );
-        })
-      )
-  );
-}
-
-/**
- * Un bloc clé — actions ou décisions. Surface propre, liseré teinté,
- * étiquette en toutes lettres et liste numérotée : impossible de le
- * confondre avec le corps du texte.
- *
- * L'icône est décorative ; le sens est porté par l'étiquette et par le
- * décompte, jamais par la seule couleur (SPEC §7).
- *
- * @param {string} variante  'actions' | 'decisions'
- * @param {string} etiquette libellé affiché
- * @param {string} icone     glyphe décoratif
- * @param {string} aide      une phrase expliquant ce que contient le bloc
- * @param {*} entrees        tableau attendu de chaînes
- * @param {string} texteVide message si le tableau est vide ou absent
- * @returns {HTMLElement}
- */
-function blocCle(variante, etiquette, icone, aide, entrees, texteVide) {
-  const lignes = Array.isArray(entrees)
-    ? entrees.map(texteSimple).filter((texte) => texte !== '')
-    : [];
-
-  return el('section', { class: ['bloc-cle', 'bloc-cle--' + variante] },
-    el('div', { class: 'bloc-cle__entete' },
-      el('span', { class: 'bloc-cle__icone', 'aria-hidden': 'true' }, icone),
-      el('h3', { class: 'bloc-cle__titre' }, etiquette),
-      el('span', { class: 'pastille' }, String(lignes.length)),
-      el('span', { class: 'texte-xs texte-doux' }, aide)
-    ),
-
-    lignes.length === 0
-      ? el('p', { class: 'texte-sm texte-doux sans-marge' }, texteVide)
-      : el('ol', { class: 'bloc-cle__liste' },
-        lignes.map((texte) => el('li', null, surligne(texte)))
-      )
   );
 }
 
@@ -1608,7 +1517,6 @@ function documentIndexable(reunion) {
     id: String(reunion.id),
     date: texteSimple(reunion.date),
     titre: texteSimple(reunion.titre),
-    lieu: texteSimple(reunion.lieu),
     resume: texteSimple(reunion.synthese) || texteSimple(reunion.objectif),
     sujets: sujets
       .filter((sujet) => sujet && typeof sujet === 'object')

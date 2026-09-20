@@ -15,8 +15,8 @@
 
 import { el, frag, monter, initTheme, initNav, ouvrirModale, stockage, toast, annoncer } from './ui.js';
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
-import { kiosque, dossiersDepuisCommunications, dateLongue } from './kiosque.js';
-import { lecteur } from './lecteur.js';
+import { kiosque, dossiersDepuisCommunications, dateCourte, dateLongue } from './kiosque.js';
+import { lecteur, corpsCompteRendu } from './lecteur.js';
 import { arbreEquipe } from './arbre.js';
 
 /* -------------------------------------------------------------------------
@@ -95,49 +95,35 @@ function reunionsDuPole(donnees, code) {
   };
 }
 
-function blocListe(titre, classe, entrees, ordonne) {
-  const liste = (Array.isArray(entrees) ? entrees : []).map(texte).filter(Boolean);
-  if (!liste.length) return null;
-  return el('div', { class: ['liseuse__bloc', classe] },
-    el('p', { class: 'liseuse__bloc-titre' }, titre, el('span', { class: 'mono' }, String(liste.length))),
-    el(ordonne ? 'ol' : 'ul', {}, liste.map((t) => el('li', {}, t))));
-}
-
+/* Le corps est celui de la page Réunions, à l'identique : synthèse, sujets,
+   « À faire », « Fait / décidé ». Une réunion se lit pareil partout. */
 function corpsReunion(r) {
-  const sujets = (Array.isArray(r.sujets) ? r.sujets : []).filter((s) => s && typeof s === 'object');
-  return frag(
-    texte(r.synthese) ? el('div', {}, el('h4', {}, 'Synthèse'), el('p', {}, texte(r.synthese))) : null,
-    texte(r.objectif) ? el('div', {}, el('h4', {}, 'Objectif'), el('p', {}, texte(r.objectif))) : null,
-    sujets.length
-      ? el('div', {}, el('h4', {}, 'Sujets abordés'),
-          el('div', { class: 'liseuse__sujets' }, sujets.map((s) => el('div', { class: 'liseuse__sujet' },
-            el('p', { class: 'gras' }, texte(s.titre) || 'Sujet'),
-            texte(s.notes) ? el('p', { class: 'liseuse__sujet-notes' }, texte(s.notes)) : null))))
-      : null,
-    blocListe('Actions', 'liseuse__bloc--actions', r.actions, true),
-    blocListe('Décisions', 'liseuse__bloc--decisions', r.decisions, true));
+  return corpsCompteRendu(r);
 }
 
 function rendreReunions(pole, groupes, conteneur) {
-  const elements = groupes.comptesRendus.map((r) => ({
-    id: 'cr-' + texte(r.id), groupe: 'cr', titre: texte(r.titre), meta: dateLongue(r.date) || 'Date à renseigner',
-    badges: [{ texte: 'Compte-rendu', classe: 'badge--neutre' }],
-    recherche: [r.synthese, r.lieu].concat((r.sujets || []).map((s) => (s && s.titre) + ' ' + (s && s.notes)), r.actions || [], r.decisions || []).map(texte),
-    source: r, corps: () => corpsReunion(r)
-  }));
+  const elements = groupes.comptesRendus.map((r) => {
+    const nActions = (Array.isArray(r.actions) ? r.actions : []).map(texte).filter(Boolean).length;
+    return {
+      id: 'cr-' + texte(r.id), titre: texte(r.titre),
+      /* La liste ne dit que l'essentiel : quand, quoi, et combien reste à
+         faire. Le lieu n'intéresse personne après coup. */
+      date: dateCourte(r.date) || 'Date à renseigner', dateIso: texte(r.date),
+      note: nActions ? nActions + (nActions > 1 ? ' actions' : ' action') : '',
+      recherche: [r.synthese].concat((r.sujets || []).map((s) => (s && s.titre) + ' ' + (s && s.notes)), r.actions || [], r.decisions || []).map(texte),
+      source: r, corps: () => corpsReunion(r)
+    };
+  });
 
   monter(conteneur,
     lecteur({
       id: 'reunions-' + pole.cle.toLowerCase(),
       elements,
-      groupes: [{ cle: 'cr', titre: 'Comptes-rendus' }],
       titreListe: 'Comptes-rendus du pôle',
       placeholder: 'Rechercher un compte-rendu, un sujet, une action…',
       vide: 'Aucun compte-rendu publié pour ce pôle.',
-      entete: (item) => frag(
-        el('time', { class: 'mono texte-xs texte-faible', datetime: texte(item.source.date) },
-          (dateLongue(item.source.date) || 'Date à renseigner').toUpperCase()),
-        texte(item.source.lieu) ? el('span', { class: 'badge badge--contour' }, texte(item.source.lieu)) : null)
+      entete: (item) => el('time', { class: 'liseuse__date', datetime: texte(item.source.date) },
+        (dateLongue(item.source.date) || 'Date à renseigner').toUpperCase())
     }));
 }
 
