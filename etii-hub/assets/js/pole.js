@@ -18,6 +18,7 @@ import { chargerDonnees, avecEtat, verifierForme } from './data.js';
 import { kiosque, dossiersDepuisCommunications, dateCourte, dateLongue } from './kiosque.js';
 import { lecteur, corpsCompteRendu } from './lecteur.js';
 import { arbreEquipe } from './arbre.js';
+import { chargerCommunications } from './communications.js';
 
 /* -------------------------------------------------------------------------
    1. Les pôles : matière éditoriale, pas de la donnée
@@ -313,7 +314,7 @@ if (!POLE) {
   rendreEntete(POLE);
   suivreSections();
 
-  avecEtat('#zone-communication', () => chargerDonnees('communications'),
+  avecEtat('#zone-communication', chargerCommunications,
     (donnees, conteneur) => rendreCommunication(POLE, donnees, conteneur), {
       squelette: 3,
       texteChargement: 'Chargement de la communication du pôle ' + POLE.cle + '…',

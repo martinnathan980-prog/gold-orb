@@ -2241,3 +2241,122 @@ ol.liseuse__bloc-liste {
 
 .ds-usage__termes { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; font-size: var(--texte-sm); }
 .ds-usage__termes li { display: flex; justify-content: space-between; gap: var(--e-3); padding: var(--e-1) var(--e-2); border-bottom: 1px solid var(--bordure-douce); }
+
+/* -------------------------------------------------------------------------
+   12. Publier une communication (admin.html) : le formulaire à gauche,
+       l'aperçu vivant à droite
+   ---------------------------------------------------------------------- */
+
+.admin__intro { margin: 0 auto; text-align: center; color: var(--texte-doux); }
+
+.admin {
+  display: grid;
+  grid-template-columns: minmax(0, 30rem) minmax(0, 1fr);
+  gap: var(--e-6);
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .admin { grid-template-columns: minmax(0, 1fr); }
+  .admin__colonne--apercu { position: static; }
+}
+
+.admin__colonne { display: flex; flex-direction: column; gap: var(--e-4); min-inline-size: 0; }
+.admin__colonne--apercu { position: sticky; inset-block-start: var(--e-4); }
+
+.admin__apercu-titre {
+  margin: 0;
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+/* Dans l'aperçu, la liste et la lecture s'empilent : on regarde une seule
+   communication, la colonne de droite n'est pas large. */
+.admin__apercu-zone .kiosque__grille { grid-template-columns: minmax(0, 1fr); }
+.admin__apercu-zone .kiosque__flux { position: static; max-block-size: none; }
+.admin__apercu-zone .kiosque__defile { overflow: visible; }
+
+.admin__formulaire { display: flex; flex-direction: column; gap: var(--e-4); }
+
+.admin__types {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e-2);
+}
+
+.admin__type {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--e-3);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-md);
+  cursor: pointer;
+}
+
+.admin__type input { position: absolute; inset-block-start: var(--e-2); inset-inline-end: var(--e-2); margin: 0; }
+.admin__type:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.admin__type:has(input:focus-visible) { outline: var(--focus-epaisseur) solid var(--focus-couleur); outline-offset: var(--focus-decalage); }
+.admin__type-libelle { font-weight: var(--graisse-forte); padding-inline-end: var(--e-5); }
+.admin__type-aide { font-size: var(--texte-xs); line-height: 1.4; color: var(--texte-doux); }
+
+.admin__bloc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  margin: 0;
+  padding: var(--e-4);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
+}
+
+.admin__bloc-titre {
+  padding: 0 var(--e-1);
+  font-family: var(--police-titre);
+  font-size: var(--texte-xl);
+  color: var(--texte);
+}
+
+.admin__rangee { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr)); gap: var(--e-3); }
+
+.admin__chiffres { display: flex; flex-direction: column; gap: var(--e-2); }
+
+.admin__chiffre {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: var(--e-2);
+}
+
+.admin__chiffre .champ__erreur { grid-column: 1 / -1; }
+
+.admin__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  padding: var(--e-4);
+  background-color: var(--fond-enfonce);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-lg);
+}
+
+.admin__validation {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.admin__validation[data-etat="ok"] { color: var(--statut-succes); }
+.admin__validation[data-etat="erreur"] { color: var(--statut-alerte); }
+
+.admin__colonnes summary { cursor: pointer; font-size: var(--texte-sm); color: var(--texte-doux); }
+.admin__colonnes code { font-size: var(--texte-xs); }

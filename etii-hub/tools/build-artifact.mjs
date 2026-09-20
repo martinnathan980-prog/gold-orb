@@ -21,7 +21,7 @@ const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (p) => readFileSync(join(RACINE, p), 'utf8');
 
 const PAGES = ['index', 'etiia', 'etiie', 'etiii',
-               'reunions', 'organigramme', 'faq', 'docsearch'];
+               'reunions', 'organigramme', 'faq', 'docsearch', 'admin'];
 const CSS = ['polices', 'tokens', 'base', 'components', 'skin', 'modules'];
 const DONNEES = ['communications', 'reunions', 'organigramme', 'faq',
                  'documents', 'indicateurs', 'flotte'];
@@ -252,6 +252,17 @@ if (__M["otq"] && typeof __M["otq"].chargerSuivi === 'function') {
     }
     const series = __M["otq"].seriesDepuisLignes(__M["otq"].analyserCsv(texte));
     return Promise.resolve({ series, origine: 'exemple', maj: '', url: source.exemple || '' });
+  };
+}
+
+// Les communications : une feuille configurée se lit comme sur le site ;
+// sinon le fichier intégré, sans fetch.
+if (__M["communications"] && typeof __M["communications"].chargerCommunications === 'function') {
+  const chargerReseau = __M["communications"].chargerCommunications;
+  __M["communications"].chargerCommunications = function () {
+    const source = __M["communications"].SOURCE || {};
+    if (String(source.url || '').trim()) return chargerReseau();
+    return Promise.resolve(Object.assign({}, __DONNEES.communications, { origine: 'fichier' }));
   };
 }
 

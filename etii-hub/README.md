@@ -51,6 +51,7 @@ Puis ouvrir <http://localhost:8000>.
 |---|---|
 | `index.html` | Dispatcher : accès aux trois pôles et à la recherche |
 | `reunions.html` | Les comptes-rendus de réunion, par périmètre |
+| `admin.html` | Publier une communication : formulaire, aperçu vivant, ligne à coller dans la feuille Google (`docs/COMMUNICATIONS-GOOGLE-SHEETS.md`) |
 | `organigramme.html` | Équipes, rôles, réorganisation |
 | `faq.html` | Base de connaissances |
 | `docsearch.html` | **Recherche documentaire — le cœur du site** |
@@ -172,6 +173,10 @@ sceller le fichier : une erreur de syntaxe échoue à la construction, pas
 dans le navigateur.
 
 ## Documents de mise en œuvre
+
+- `docs/COMMUNICATIONS-GOOGLE-SHEETS.md` — la partie administrateur : une
+  feuille Google, une ligne par communication, lue par le site
+  (`assets/js/communications.js`, `SOURCE.url`).
 
 | Fichier | Ce qu'il explique |
 |---|---|

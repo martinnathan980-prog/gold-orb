@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tableau de bord — ETII Hub</title>
+  <title>Publier une communication — ETII Hub</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Page du service ETII : le Communication Center (le mot du chef, ce qui vient, l’historique), les porteurs suivis, et le suivi OTQ / OTD.">
+  <meta name="description" content="Partie administrateur du hub ETII : préparer une communication (mot du chef, annonce, alerte) avec son aperçu, puis la coller dans la feuille de publication.">
+  <meta name="robots" content="noindex">
   <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="assets/css/polices.css">
   <link rel="stylesheet" href="assets/css/tokens.css">
@@ -13,27 +14,9 @@
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/skin.css">
   <link rel="stylesheet" href="assets/css/modules.css">
-
-  <!-- =====================================================================
-       Styles propres à la page du service. Le kiosque, la grille des
-       porteurs et le titre de section vivent dans modules.css et dans
-       leurs modules : on ne déclare ici que la mention de flotte et
-       l'encadré d'attente. Aucune valeur brute — tout vient de tokens.css.
-       ===================================================================== -->
-  <style>
-    .flotte-note {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--e-2);
-      max-width: var(--largeur-texte);
-      color: var(--texte-faible);
-      font-size: var(--texte-xs);
-    }
-
-  </style>
 </head>
 
-<body>
+<body data-hors-navigation>
   <a class="lien-evitement" href="#contenu">Aller au contenu</a>
 
   <header class="site-entete">
@@ -41,7 +24,7 @@
       <a class="site-logo" href="index.html">ETII <span>HUB</span></a>
       <nav class="site-nav" aria-label="Navigation principale">
         <ul class="site-nav__liste">
-          <li><a href="index.html" aria-current="page">Tableau de bord</a></li>
+          <li><a href="index.html">Tableau de bord</a></li>
           <li><a href="etiia.html" data-pole="ETIIA">ETIIA</a></li>
           <li><a href="etiie.html" data-pole="ETIIE">ETIIE</a></li>
           <li><a href="etiii.html" data-pole="ETIII">ETIII</a></li>
@@ -66,32 +49,14 @@
     <div class="conteneur pile pile--section">
 
       <div class="pile pile--serree page-entete">
-        <h1>ETII</h1>
+        <p class="page-entete__sur-titre">Administration</p>
+        <h1>Publier une communication</h1>
       </div>
 
-      <!-- 1. LE COMMUNICATION CENTER — rendu par kiosque.js -->
-      <section class="pile" aria-labelledby="titre-communication">
-        <h2 class="titre-section" id="titre-communication">
-          <span class="titre-section__texte">Communication center</span>
-        </h2>
-        <div id="zone-communication"></div>
-      </section>
-
-      <!-- 2. LES PORTEURS — rendus par porteurs.js -->
-      <section class="pile" aria-labelledby="titre-porteurs">
-        <h2 class="titre-section" id="titre-porteurs">
-          <span class="titre-section__texte">Porteurs</span>
-        </h2>
-        <div id="zone-flotte"></div>
-      </section>
-
-      <!-- 3. LE SUIVI OTQ / OTD — rendu par otq.js -->
-      <section class="pile" aria-labelledby="titre-otq">
-        <h2 class="titre-section" id="titre-otq">
-          <span class="titre-section__texte">Suivi OTQ / OTD</span>
-        </h2>
-        <div id="zone-otq"></div>
-      </section>
+      <!-- Le formulaire, l'aperçu et les actions sont construits par
+           assets/js/admin.js. Rien n'est envoyé nulle part : la page
+           prépare la ligne à coller dans la feuille de publication. -->
+      <div id="zone-admin"></div>
 
     </div>
   </main>
@@ -100,8 +65,7 @@
     <div class="site-pied__interieur">
       <p>ETII Hub — portail de démonstration, sans aucune dépendance externe.</p>
       <p class="site-pied__liens">
-        <a href="#credits-photos" data-credits-photos>Crédits photos</a>
-        · <a href="admin.html">Publier une communication</a>
+        <a href="docs/COMMUNICATIONS-GOOGLE-SHEETS.md">Comment fonctionne la publication</a>
       </p>
       <p class="site-pied__mention">
         <span aria-hidden="true">●</span>
@@ -112,6 +76,6 @@
 
   <div class="toasts" data-toasts role="status" aria-live="polite" aria-atomic="false"></div>
   <script type="module" src="assets/js/palette.js"></script>
-  <script type="module" src="assets/js/index.js"></script>
+  <script type="module" src="assets/js/admin.js"></script>
 </body>
 </html>

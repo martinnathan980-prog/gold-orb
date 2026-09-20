@@ -136,7 +136,10 @@ for (const p of pages) {
   if (!/<title>[^<]+<\/title>/.test(h)) soucis.push('title vide ou absent');
   if (!/<main[\s>]/.test(h)) soucis.push('<main> absent');
   if (!/<nav[\s>]/.test(h)) soucis.push('<nav> absent');
-  if (!/aria-current\s*=\s*["']page["']/.test(h)) soucis.push('aria-current="page" absent de la nav');
+  // Une page hors navigation (admin.html) n'a, par construction, aucune
+  // entrée courante : elle le déclare sur <body data-hors-navigation>.
+  const horsNav = /<body[^>]*\sdata-hors-navigation[\s>]/.test(h);
+  if (!horsNav && !/aria-current\s*=\s*["']page["']/.test(h)) soucis.push('aria-current="page" absent de la nav');
   verifier(`${p} : structure`, soucis.length ? soucis.join(' ; ') : null);
 }
 
@@ -168,8 +171,10 @@ if (pages.length) {
   }
   // Chaque page marque exactement une entrée courante.
   for (const p of pages) {
-    const n = (lire(p).match(/aria-current="page"/g) || []).length;
-    if (n !== 1) verifier(`${p} : une seule entrée courante`, `${n} aria-current="page"`);
+    const h = lire(p);
+    const attendu = /<body[^>]*\sdata-hors-navigation[\s>]/.test(h) ? 0 : 1;
+    const n = (h.match(/aria-current="page"/g) || []).length;
+    if (n !== attendu) verifier(`${p} : ${attendu ? 'une seule' : 'aucune'} entrée courante`, `${n} aria-current="page"`);
   }
 }
 

@@ -17,6 +17,7 @@ import { chargerDonnees, avecEtat, verifierForme } from './data.js';
 import { porteurs, creditsPhotos } from './porteurs.js';
 import { kiosque, dossiersDepuisCommunications, alertesDepuisCommunications } from './kiosque.js';
 import { chargerSuivi, rendreSuivi } from './otq.js';
+import { chargerCommunications } from './communications.js';
 
 const POLES = [
   { cle: 'ETIIA', libelle: 'ETIIA' },
@@ -82,7 +83,7 @@ function rendreSuiviOTQ(suivi, conteneur) {
 initTheme();
 initNav('index.html');
 
-avecEtat('#zone-communication', () => chargerDonnees('communications'), rendreCommunication, {
+avecEtat('#zone-communication', chargerCommunications, rendreCommunication, {
   squelette: 3,
   texteChargement: 'Chargement de la communication du service…',
   titreErreur: 'Communication indisponible',
