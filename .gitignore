@@ -1,1 +1,3 @@
 node_modules
+# Worktrees créés par les agents (outil Workflow) : jamais du contenu du projet.
+.claude/worktrees/
