@@ -1,70 +1,72 @@
 # Concept — Océane Airlines, vol OC 1996
 
-Version 3, avec les vraies personnes et les vraies anecdotes. Les faits de référence sont dans `08-fiche-oceane.md`.
+Version 4. On passe de 7 à environ 11 minutes, et le film accueille désormais deux types de participation : ceux qui jouent le jeu aéronautique, et ceux qui font simplement un message d'anniversaire.
 
 ## L'idée en trois lignes
-Océane embarque sur le vol OC 1996 de la compagnie Océane Airlines, destination : ses 30 ans. La famille et les collègues sont l'équipage et les passagers. Le vol suit sa vraie géographie, Nîmes, l'école, Marignane, Pointe-à-Pitre, et atterrit sur un compte à rebours collectif.
+Océane embarque sur le vol OC 1996 de la compagnie Océane Airlines, destination : ses 30 ans. Le vol survole sa vie, de Nîmes 1996 jusqu'à Joséphine. La famille et les collègues sont l'équipage et les passagers.
 
-## Pourquoi 7 minutes
-Une vidéo d'anniversaire perd la salle vers 8 minutes, quelle que soit sa qualité. À 7 minutes, chaque séquence doit mériter sa place. C'est aussi une contrainte utile au montage : quand on doit couper, on coupe.
+## Ce qui change tout : elle a peur de l'avion
+
+Elle fabrique des hélicoptères et elle n'aime pas voler. C'est le cœur du concept et on vient seulement de le découvrir. On ne lui offre plus juste une compagnie aérienne pour rire du thème : **on lui offre exactement ce qu'elle redoute**, avec le sérieux d'une vraie compagnie. Le commandant peut donc la rassurer tout le long, ce qui devient le fil affectif du film sous le fil comique.
+
+Deux prolongements vrais : elle part en première classe pour le boulot et fait la go, elle part en éco avec la famille, et tout le monde dit qu'elle est la plus riche.
+
+## Le problème du format hétérogène, et comment on le règle
+
+Si les messages simples sont **dispersés** entre les sketches, le film s'affaisse à chaque fois. On passe d'un documentaire animalier à « joyeux anniversaire ma chérie », et le rythme meurt. Trois fois de suite et la salle décroche.
+
+La solution : on ne les disperse pas, on leur donne **un dispositif**. Deux blocs appelés **« Messages de la cabine »**, annoncés par le commandant comme les messages transmis par les passagers depuis leur siège. Chaque message est introduit par un mini-carton de siège, « SIÈGE 14C », ce qui les rend homogènes entre eux et cohérents avec le reste.
+
+Trois bénéfices :
+1. Personne n'a besoin de jouer quoi que ce soit, et pourtant tout le monde est dans le thème.
+2. Les messages ne cassent plus le rythme des sketches, ils font respirer entre deux.
+3. **Ces deux blocs sont la variable d'ajustement du film.** Plus de gens répondent, plus ils s'allongent. Moins de gens répondent, ils rétrécissent. Le film flexe sans qu'on touche à la structure. C'est ce qui rend la durée tenable alors qu'on ne sait pas encore qui enverra quoi.
 
 ## Le déroulé
 
 | Temps | Séquence | Qui | Registre |
 |---|---|---|---|
-| 0:00 | Générique | Panneau des départs, annonce d'embarquement | Mise en place |
-| 0:30 | Consignes de sécurité | Nathan et Coralie, en gilet jaune | 🟡 Gag |
-| 1:15 | Décollage, Nîmes 1996 | Véronique et Serge, clips séparés | 🔵 Sincère |
-| 2:00 | Escale École | Julien, même promotion | 🟡 Gag |
-| 2:30 | Escale Marignane | Hervé et Julien | Mixte |
-| 3:00 | Turbulences | La trilogie du trottoir, en documentaire animalier | 🟡 Gag |
-| 3:30 | Escale Pointe-à-Pitre | Sébastien, chef d'escale | 🔵 Sincère |
-| 4:00 | Cabine, classe éco | Une partie de Uno qui dégénère | 🟡 Gag |
-| 4:30 | Duty free | Téléachat des objets qui la résument | 🟡 Gag |
-| 5:00 | Présidence de la compagnie | Mamie Christiane | 🔵 Sincère |
-| 5:30 | Perte de signal | Le « Allô », l'anglais, les imitations | 🟡 Gag |
-| 6:00 | Terminal Maternité | Célestin et Joséphine | 🔵 Sincère |
-| 6:30 | Atterrissage | Compte à rebours à plusieurs voix | Fête |
-| 7:00 | Carton final | Pointe-à-Pitre, décembre 2026 | Chute |
+| 0:00 | Générique, panneau des départs | Le commandant | Mise en place |
+| 0:35 | Consignes de sécurité | Nathan et Coralie | 🟡 Gag |
+| 1:25 | Décollage, Nîmes 1996 | Véronique, puis Serge | 🔵 Sincère |
+| 2:10 | Rapport d'incidents, l'enfance | Fratrie et parents | 🟡 Gag |
+| 2:45 | Escale Tecktonik | Amis d'ado, fratrie | 🟡 Gag |
+| 3:15 | **Messages de la cabine, 1** | Les passagers | Mixte |
+| 4:10 | Escale ENAC | Julien | Mixte |
+| 4:40 | Escale Avignon, la rencontre | Célestin | 🟡 Gag |
+| 5:15 | Escale Marignane | Hervé et Julien | Mixte |
+| 5:50 | Turbulences, la conduite | Documentaire animalier | 🟡 Gag |
+| 6:30 | Escale Pointe-à-Pitre | Sébastien | 🔵 Sincère |
+| 7:00 | Cabine : première ou éco | Cousins, Guy, Marité, Paul | 🟡 Gag |
+| 7:35 | Duty free | À pourvoir | 🟡 Gag |
+| 8:05 | **Messages de la cabine, 2** | Les passagers | Mixte |
+| 8:50 | Présidence de la compagnie | Mamie Christiane | 🔵 Sincère |
+| 9:20 | Perte de signal | Tout le monde | 🟡 Gag |
+| 9:50 | Terminal Maternité | Célestin et Joséphine | 🔵 Sincère |
+| 10:30 | Atterrissage, compte à rebours | Tout le monde | Fête |
+| 11:00 | Carton final | Pointe-à-Pitre, décembre 2026 | Chute |
 
-## Les deux principes non négociables
+## Les principes, révisés pour 11 minutes
 
-**1. Alternance stricte.** Jamais deux séquences sincères d'affilée, jamais deux gags d'affilée. L'émotion n'a pas le temps de devenir pesante, le rire ne s'épuise pas.
+**1. L'alternance devient une règle souple.** À 7 minutes on pouvait alterner strictement. À 11 minutes avec du contenu hétérogène, c'est impossible et il ne faut pas le forcer. La nouvelle règle : **jamais plus de deux gags de suite, jamais deux sincères de suite.** Les deux blocs de messages, qui sont mixtes par nature, servent de respiration et cassent les séries.
 
-**2. Le gag de la valise.** Chaque intervenant termine son clip par « Et dans sa valise, je mets… ». Trois effets : une chute à chaque clip au lieu d'un silence gêné, un rythme reconnaissable, et un point de coupe qui permet de raccourcir n'importe quel clip sans casser le montage.
+**2. Le gag de la valise reste obligatoire**, pour ceux qui jouent le jeu. Pour les messages simples, il devient facultatif : on ne va pas embêter une tante avec une consigne de scénario. Si elle le dit, c'est un bonus.
 
-## La voix du commandant
-C'est **Nathan**, avec un traitement de voix. Elle revient huit fois et tient tout le film.
+**3. Le commandant est le liant.** C'est lui qui rend homogène un film qui ne l'est pas. Même ton du début à la fin, qu'il annonce une naissance, une boutique hors taxes ou les messages des passagers.
 
-Le ton : **sérieux absolu de compagnie aérienne**. Pas un clin d'œil, pas un sourire dans la voix, pas un rire en fin de prise. Le texte est drôle tout seul. Une voix qui cherche à être drôle tue la séquence.
+## Les pépites du film
 
-Le traitement, trois réglages dans Audacity, détaillés dans `07-montage.md` : filtre passe-haut à 300 Hz, passe-bas à 3400 Hz, un peu de compression. C'est exactement la bande passante d'une radio de cabine. Ça fait aussi un travail invisible : personne ne fera le lien entre le commandant et le Nathan en gilet jaune des consignes de sécurité.
+**La peur de l'avion**, qui retourne tout le concept.
 
-Gag récurrent : Océane Airlines n'opère pas d'hélicoptères, et la compagnie s'en excuse. Exactement trois fois, aux annonces 4, 6 et 8.
+**La trilogie du trottoir.** Un trottoir en roulant, un deuxième au parking qui coûte le parallélisme, et le moteur qui s'éteint sur l'autoroute avec l'appel à Célestin.
 
-## Les trois pépites du film
+**La cheminée.** En réunion, son chef lui demande en anglais si elle veut mettre une cheminée. Elle dit oui pour donner le change.
 
-**La trilogie du trottoir.** Un trottoir en roulant, un deuxième dans un parking qui lui coûte le parallélisme, et le moteur qui s'éteint sur l'autoroute avec l'appel à Célestin en pleurs. Trois actes, c'est exactement la structure d'un documentaire animalier : l'observation, la récidive, l'épilogue.
+**Les deux poignets.** Cassés à quinze jours d'intervalle. Transposé en langage aéronautique : l'appareil immobilisé deux fois, une enquête ouverte, conclusion, absence totale de chance. On ne prononce jamais les mots de l'hôpital.
 
-**La cheminée.** En réunion, son chef lui demande en anglais si elle veut mettre une cheminée. Elle dit oui pour donner le change. Elle n'avait rien compris. C'est la meilleure anecdote du lot, parce qu'elle est visuelle, rejouable, et qu'elle ne blesse personne. Elle est d'autant plus drôle qu'elle est passée experte et qu'elle présente devant presque le PDG.
+**Six mois à se détester** à l'IUT d'Avignon, avant de s'adorer pendant dix ans.
 
-**La boucle Guadeloupe.** Sébastien pose le retour de Noël à 3:30. Le carton final y répond à 7:00. Quatre minutes d'écart, et la vidéo a l'air écrite plutôt que compilée.
-
-## Ce qui en fait un film
-- Le « ding » de cabine avant chaque annonce.
-- Les cartons d'escale, même style, avec les codes d'aéroport : NIM, MRS, PTP.
-- La phrase de la valise, treize fois.
-- Une seule voix qui tient tout.
-- Le compte à rebours final, qui donne l'impression que tout le monde est dans la même pièce.
+**La boucle Guadeloupe.** Sébastien pose le retour de Noël à 7:00, le carton final y répond à 11:00.
 
 ## Le trou qui reste
-Océane est décrite comme très famille **et très amis**. Le déroulé ne contient aucune amie : de la famille, deux collègues, un beau-frère. Julien couvre l'école, mais c'est un collègue. Une amie d'enfance, c'est souvent le meilleur clip d'une vidéo comme celle-ci. C'est la question 6 de `17-questions.md`.
-
-## Les blocs de script
-- `10-annonces-commandant.md` — les 8 annonces, et comment enregistrer
-- `11-consignes-securite.md` — Nathan et Coralie
-- `12-duty-free.md` — le téléachat
-- `13-turbulences-conduite.md` — le documentaire animalier
-- `14-sequences-collectives.md` — Uno, perte de signal, atterrissage, carton final
-- `15-briefs-escales.md` — le message à envoyer à chaque personne
-- `16-messages-famille-v2.md` — les messages WhatsApp
+Aucune amie dans le film. Julien couvre l'ENAC mais c'est un collègue. Et je n'ai toujours aucune matière sur Mamie Christiane.

@@ -7,8 +7,8 @@ Mise à jour du 19 septembre, d'après les réponses de Nathan. C'est le documen
 | Prénom | Lien | Note |
 |---|---|---|
 | **Océane** | 30 ans le 9 novembre 2026, née à Nîmes en 1996 | Experte chez Airbus Helicopters, Marignane |
-| **Célestin** | Son compagnon, ensemble depuis 10 ans | ⚠️ Pas mariés. On ne parle jamais de « mari » ni de mariage. |
-| **Joséphine** | Sa fille | Âge à confirmer |
+| **Célestin** | Son compagnon, ensemble depuis 10 ans | Rencontre à l'IUT d'Avignon. ⚠️ Pas mariés, on ne dit jamais « mari » ni « mariage ». |
+| **Joséphine** | Sa fille, 2 ans | Parle un peu, dit tout le temps « Momo » |
 | **Nathan** | Son frère | C'est toi. Commandant de bord, et monteur. |
 | **Coralie** | Sa sœur | |
 | **Paul** | Le mari de Coralie | À confirmer : Paul est bien le mari de Coralie ? |
@@ -18,7 +18,7 @@ Mise à jour du 19 septembre, d'après les réponses de Nathan. C'est le documen
 | **Marité** | Sa belle-mère | La compagne de Serge |
 | **Christiane** | Mamie | Se filme chez elle, à Cassargues (orthographe à confirmer) |
 | **Hervé** | Collègue, Airbus Helicopters Marignane | Travaille sur les hélicoptères avec elle |
-| **Julien** | Collègue à Marignane **et** ami d'école | A fait l'école avec elle, entre Montpellier et Toulouse. École à confirmer : l'ENAC ? |
+| **Julien** | Collègue à Marignane **et** ami de l'ENAC | Ils y étaient ensemble, ils travaillent ensemble aujourd'hui |
 | **Sébastien** | Le frère de Célestin | Vit en Guadeloupe. Ils y sont allés une fois, ils y retournent à Noël. |
 
 **La fratrie, c'est donc Nathan, Océane et Coralie.** Les consignes de sécurité se tournent à deux, Nathan et Coralie.
@@ -60,6 +60,38 @@ Elle **gère mal ses émotions** et **pleure quand elle est fatiguée**. Elle **
 - Vacances récurrentes : **la montagne, les Deux Alpes**.
 - Elle joue au **tennis**.
 
+## LA pépite : elle a peur de l'avion
+
+Elle travaille dans l'aéronautique et **elle a peur en vol**. C'est le cœur du projet et on ne l'avait pas. Tout le concept d'Océane Airlines repose dessus à partir de maintenant : on lui offre une compagnie aérienne, et elle n'aime pas voler.
+
+Deux prolongements, tous les deux vrais :
+- Quand elle part **pour le boulot, c'est en première classe**, à Dallas notamment, et **elle fait la go**.
+- Quand elle part **avec la famille, c'est en classe éco**.
+- Et la famille dit que **c'est la plus riche**, parce que tout le monde est pauvre sauf elle. Ils en rigolent ouvertement.
+
+## L'enfance et l'adolescence
+
+- **Elle est née avec une touffe de cheveux noirs.** Sortie du ventre avec une tignasse.
+- Bébé **calme et mignonne**.
+- **Le fil de fer du barbecue.** Elle a avalé un fil de fer de brosse à barbecue, qui s'est mis en travers de la gorge. Direction l'hôpital.
+- **Les deux poignets.** Elle s'est cassé un poignet, puis l'autre **deux semaines plus tard**. À l'hôpital, on a fini par demander si elle était bien traitée à la maison. C'était juste de la malchance. La famille en rigole beaucoup.
+- **La tectonique.** À l'adolescence, elle a eu sa période tecktonik.
+- Elle **ne voulait pas faire de métier précis** enfant. Pas de piste à creuser de ce côté.
+
+> ⚠️ **Comment on traite les deux poignets.** On ne prononce jamais les mots de l'hôpital. On le passe entièrement en langage aéronautique : l'appareil a été immobilisé deux fois en quinze jours, une enquête a été ouverte, elle a conclu à une absence totale de chance. Tout le monde comprend, personne n'est mal à l'aise, et c'est plus drôle que la version littérale.
+
+## La rencontre avec Célestin
+
+À l'**IUT d'Avignon**. Lui était en **statistiques**. **Les six premiers mois, ils se sont détestés.** Ensuite ils se sont adorés. Dix ans plus tard, Joséphine.
+
+## Joséphine
+
+**Deux ans.** Elle parle un peu. Elle dit tout le temps **« Momo, Momo »**.
+
+## Julien et l'ENAC
+
+**L'école, c'est l'ENAC.** Julien y était avec elle, et il travaille aujourd'hui avec elle à Airbus Marignane. Hervé est l'autre collègue.
+
 ## Le côté sérieux, la fierté
 Elle est **passée experte chez Airbus**. Elle fait des **réunions devant presque le PDG**. La famille en rigole avec fierté. C'est ce qui rend la vanne de l'anglais irrésistible : elle présente devant la direction, et elle dit oui à une cheminée.
 
@@ -82,9 +114,9 @@ Dans les Cévennes, l'après-midi ou le soir. **Écran d'ordinateur relié à la
 **2. La blague sur les juifs aux Deux Alpes.** Je ne l'écris pas. Ce n'est pas une question de politesse : c'est le genre de vanne qui se retrouve sur un téléphone, qui circule, et dont on se souvient à la place du reste de la vidéo. Les Deux Alpes donnent déjà de quoi rire sans ça : ce qu'elle met dans sa valise pour la montagne, son niveau de ski, la voiture chargée, le rituel du même appartement chaque année. Dis-moi ce qu'il y a de vrai là-dedans et j'écris la séquence.
 
 ## Ce qu'il reste à confirmer
-1. L'âge de Joséphine.
-2. Le nom exact de l'école, entre Montpellier et Toulouse. L'ENAC ?
-3. Paul est bien le mari de Coralie ?
-4. L'orthographe de Cassargues, et où habite Mamie Christiane.
-5. Une amie d'enfance à ajouter ? Julien couvre l'école, mais il n'y a toujours aucune amie dans le film.
-6. La date exacte de la projection dans les Cévennes.
+1. Paul est bien le mari de Coralie ?
+2. L'orthographe de Cassargues, et où habite Mamie Christiane.
+3. **Mamie Christiane et Océane** : un souvenir précis, un plat, un rituel, un surnom. C'est le seul clip du film pour lequel je n'ai toujours aucune matière.
+4. Une amie d'enfance. Julien couvre l'ENAC, mais c'est un collègue, et il n'y a toujours aucune amie dans le film.
+5. La date exacte de la projection dans les Cévennes.
+6. La liste des gens qui feront juste un message d'anniversaire, pour dimensionner les deux blocs « Messages de la cabine ».
