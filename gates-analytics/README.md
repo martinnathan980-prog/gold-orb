@@ -16,7 +16,7 @@ C'est un outil de **consultation** : la page montre, elle ne modifie rien.
 | `Javascript.html` | Interface |
 | `appsscript.json` | Manifeste (fuseau, portées OAuth) |
 | `prototype/` | La même interface, autonome, avec un jeu d'exemple à trois contrats — c'est la source |
-| `import/` | L'automatisation : pilote Chrome, recettes d'extraction, dépôt dans le classeur, transport par la messagerie |
+| `import/` | L'automatisation : pilote Chrome, recettes d'extraction, dépôt dans le classeur, lecture des composants sur les plans (PDF, Visio, DXF, scans), transport par la messagerie |
 | `tests/` | Batterie de l'add-on (serveur + page rendue) |
 
 ## Une seule interface, deux sources
@@ -93,14 +93,19 @@ npm test
   des cartes plan par plan, seconde base à rapprocher, et le dépôt
   automatique (secret absent ou refusé, corps illisible, onglet d'historique
   protégé, archivage de la semaine, réponse JSON de `doPost`).
-- `npm run test:import` — 66 tests en Python pur, sans rien installer : le
-  pilote Chrome (canal WebSocket écrit à la main, gestes, téléchargements,
-  erreurs lisibles) joué contre un vrai Chrome ; la lecture des recettes ; le
-  dépôt joué contre un faux classeur qui répond comme le vrai — y compris
-  quand il refuse ; et le lecteur de plans PDF, joué sur des PDF fabriqués
-  pour l'occasion (boîtes, repères dedans ou à côté, flux compressé,
-  coordonnées transformées, cas douteux, scan refusé). Sans Chrome sur le
-  poste, la partie navigateur est sautée en le disant.
+- `npm run test:import` — 211 tests en Python : le pilote Chrome (canal
+  WebSocket écrit à la main, gestes, téléchargements, erreurs lisibles) joué
+  contre un vrai Chrome ; la lecture des recettes ; le dépôt joué contre un
+  faux classeur qui répond comme le vrai — y compris quand il refuse ; et les
+  lecteurs de plans, joués sur des plans fabriqués pour l'occasion : PDF de
+  dessin (boîtes, repères dedans ou à côté, flux compressé, coordonnées
+  transformées, cas douteux), Visio (groupes, gabarits, connecteurs, deux
+  pages, vieux XML), DXF (polylignes, quatre traits, blocs et attributs,
+  unités), et scans — l'image sortie de chaque emballage de PDF (JPEG,
+  télécopie CCITT, pixels bruts, lignes PNG, LZW), les boîtes trouvées sans
+  lire une lettre, puis les repères lus pour de vrai par RapidOCR et corrigés
+  par la liste de la base, sur papier gris et page couchée. Sans Chrome ou
+  sans RapidOCR sur le poste, ces parties-là sont sautées en le disant.
 - `npm run test:interface` — 462 tests sur l'interface elle-même.
   Elle n'essaie pas seulement de vérifier que ça marche : recherches avec
   balises, expressions régulières, 3 000 caractères ou émoji, jalon de

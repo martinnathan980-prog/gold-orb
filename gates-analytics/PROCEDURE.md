@@ -562,9 +562,15 @@ d'exécutable, pas de bibliothèque, seulement Python et le Chrome déjà là.
 
 Les composants suivent la même voie, avec une recette qui ouvre chaque plan et
 extrait son tableau. Et quand ils ne sortent d'aucun tableur, ils sont sur le
-**plan** : `import/lire_plan.py` lit un PDF de dessin — pas un scan — et rend
-les équipements, chacun avec le repère électrique écrit dans sa boîte. Il dit
-toujours combien de boîtes il a vues, combien portent un repère unique, et
-lesquelles sont douteuses : **aucun composant n'est inventé**.
+**plan**, sous toutes les formes qu'il prend : `import/lire_composants.py`
+lit un PDF de dessin, un Visio, un DXF, ou un **scan** — image ou PDF scanné,
+par reconnaissance de caractères hors ligne, sans exécutable — et rend les
+équipements, chacun avec le repère électrique écrit dans sa boîte. Avec la
+liste des repères que la base attend (`--connus`), il dit ce qui est
+retrouvé, ce qui manque sur le plan et ce qui est en plus ; sur un scan,
+cette liste tranche les lettres qu'une lecture confond. Il dit toujours
+combien de boîtes il a vues, combien portent un repère unique, et lesquelles
+sont douteuses : **aucun composant n'est inventé**. Une image de contrôle par
+page permet la relecture d'un coup d'œil.
 
 À valider avec l'informatique avant mise en place.

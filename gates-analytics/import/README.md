@@ -7,19 +7,23 @@ de lui-même.
 
 Trois contraintes du poste de travail commandent la forme de ces scripts :
 aucun exécutable à installer, aucune bibliothèque à télécharger, et le PC
-n'est allumé que quand on travaille. Les cinq scripts tiennent donc en
-**bibliothèque standard Python**, et rien ne tourne quand la machine dort.
+n'est allumé que quand on travaille. Tout tient donc en **bibliothèque
+standard Python** — sauf la lecture des scans, qui demande trois paquets
+Python ordinaires et un moteur de reconnaissance, eux aussi sans exécutable —
+et rien ne tourne quand la machine dort.
 
 | Script | Ce qu'il fait |
 |---|---|
 | `piloter_chrome.py` | Parle à Chrome — va à cette page, clique ce bouton, lis ce tableau |
 | `extraire.py` | Rejoue une **recette** : la suite de gestes de l'extraction |
 | `deposer.py` | Envoie un extract au classeur, qui le colle et archive la semaine |
-| `lire_plan.py` | Retire les composants d'un plan ELEC au format PDF |
+| `lire_composants.py` | Un plan, ou un dossier de plans, **quel que soit le format** : ses composants, comparés à la base |
+| `lire_plan.py` · `lire_visio.py` · `lire_dxf.py` · `lire_scan.py` | Les lecteurs : PDF de dessin, Visio, DXF, scan |
+| `composants.py` | Le socle commun des lecteurs : la règle « une boîte, un repère », les lectures confondues, la comparaison à la base |
 | `releve.py` | Variante hors Google : archive les relevés dans des fichiers locaux |
 
 ```bash
-npm run test:import      # les trois batteries de ce dossier
+npm run test:import      # les sept batteries de ce dossier
 ```
 
 ## 1. Préparer Chrome (une seule fois)
@@ -182,44 +186,145 @@ avoir été lancé avec son option de débogage.
 
 À valider avec l'informatique avant mise en place.
 
-## 5. Les composants d'un plan : `lire_plan.py`
+## 5. Les composants d'un plan, quel que soit le format
 
-Quand les composants ne sortent d'aucun tableur, ils sont sur le **plan**. Un
-PDF sorti d'un outil de dessin n'est pas une image : le texte y est écrit
-comme du texte, avec ses coordonnées, et les boîtes comme des rectangles. Il
-n'y a donc **rien à reconnaître et rien à deviner** — on lit ce qui est écrit,
-et on regarde ce qui est dans quelle boîte.
+Quand les composants ne sortent d'aucun tableur, ils sont sur le **plan** —
+et le plan arrive sous toutes les formes : un PDF sorti de l'outil de dessin,
+un Visio, un DXF, un scan. Une seule commande les lit tous :
 
 ```bash
-python3 import/lire_plan.py plan.pdf
-python3 import/lire_plan.py plan.pdf --csv composants.csv
-python3 import/lire_plan.py plan.pdf --repere "^EQ-[0-9]{4}$"
+python3 import/lire_composants.py plan.pdf
+python3 import/lire_composants.py dossier-des-plans/ --connus base.csv --csv composants.csv --controle controles/
 ```
 
-Le compte rendu dit toujours trois choses, et c'est ce qui le rend utilisable :
+| Le fichier | Le lecteur | Ce qu'il lit |
+|---|---|---|
+| PDF sorti d'un outil de dessin | `lire_plan.py` | le texte et les rectangles, écrits comme tels |
+| Visio `.vsdx`, `.vsdm`, `.vdx` — et `.vsd` si Visio est sur le poste | `lire_visio.py` | les formes et leur texte, groupes ouverts, gabarits compris |
+| DXF | `lire_dxf.py` | textes, polylignes, traits qui se rejoignent, blocs insérés et leurs attributs |
+| PDF scanné, PNG, JPEG, TIFF | `lire_scan.py` | l'image : les boîtes d'abord, puis les caractères |
+
+Le choix se fait tout seul, sur l'extension puis sur le contenu : un PDF qui
+n'a pas de texte est lu comme un scan.
+
+### La règle, la même partout
+
+Tous les lecteurs ramènent le plan à la même chose — des textes placés, et
+des boîtes — puis appliquent la même règle :
+
+- une boîte, un repère → un composant **sûr** ;
+- une boîte à plusieurs repères, ou sans aucun → **à regarder**, signalée
+  avec ce qu'elle contient ;
+- un repère écrit à côté d'une boîte vide → rattaché, mais seulement si une
+  seule boîte est assez proche ; sinon **sans boîte**, signalé ;
+- le cadre du plan — le rectangle qui contient les autres et couvre la page —
+  est ignoré, et compté comme tel.
+
+**Un composant n'est jamais inventé.** C'est ce qui permet de faire confiance
+aux lignes sûres et de ne relire à la main que la poignée restante :
 
 ```
-plan.pdf : 312 texte(s), 96 rectangle(s), 51 boîte(s) retenue(s)
+plan.pdf (dessin PDF) : 312 texte(s), 96 rectangle(s), 51 boîte(s) retenue(s), 1 cadre(s) ignoré(s)
   50 composant(s) sûr(s)
     18AB       Connecteur · PN-1001
     120PA3     Boîtier · PN-1002
   1 boîte(s) à regarder :
     plusieurs repères dans la même boîte — 44XY, 45XZ
   2 repère(s) sans boîte : 91AA, 92AB
+  la base attend 52 repère(s) : 50 retrouvé(s) sur le plan
+    2 absent(s) du plan : 44XY, 45XZ
 ```
-
-**Un composant n'est jamais inventé** : une boîte avec deux repères, une boîte
-sans repère, un repère écrit entre deux boîtes possibles — tout cela est
-signalé, jamais tranché au hasard. C'est ce qui permet de faire confiance aux
-lignes « sûres » et de ne relire à la main que la poignée restante.
 
 Le motif du repère se règle (`--repere`) ; par défaut quelques chiffres,
 quelques lettres, éventuellement des chiffres : `18AB`, `120PA3`.
 
-**Un plan scanné ne marche pas, et le script le dit.** Une photo de papier ne
-contient aucun texte : il faudrait de la reconnaissance de caractères, donc un
-programme à installer. Dans ce cas, demander le PDF d'origine — celui qui sort
-de l'outil de dessin — plutôt qu'un scan.
+### Les scans : l'image, puis les caractères
+
+Un scan ne contient aucun texte : il faut le reconnaître. `lire_scan.py` s'y
+prend en cinq temps.
+
+1. Il sort l'image du fichier — PNG, JPEG, TIFF, ou l'image enfouie dans le
+   PDF, quel que soit l'emballage du scanner : JPEG, télécopie CCITT, pixels
+   bruts compressés, lignes à la PNG, vieux LZW.
+2. Il trouve les **boîtes** par une analyse d'image classique, sans
+   apprentissage : on ne garde que les traits droits, on ressoude les
+   coupures, et l'intérieur d'une boîte est un trou rectangulaire du dessin.
+   Un fil qui arrive sur la boîte ne la change pas. Un trait franchement
+   coupé fait une boîte qu'on ne voit pas — et le repère qu'elle portait est
+   alors signalé « sans boîte », pas inventé.
+3. Il fait lire les caractères deux fois : la page entière par tuiles, puis
+   **chaque boîte agrandie**, là où le repère est petit.
+4. Il comprend chaque mot lu comme un repère, en corrigeant ce qu'une
+   lecture confond — O et 0, I et 1, S et 5, B et 8, Z et 2, G et 6 — mais
+   jamais plus de lettres qu'il n'en faut, et seulement quand une seule
+   forme est possible. **La liste des repères que la base attend tranche les
+   autres cas** (`--connus`) : c'est elle qui fait la fiabilité.
+5. Une page couchée est tournée jusqu'à ce que les mots soient droits.
+
+Chaque correction est dite (`l8AB → 18AB`) et gardée dans le CSV ; ce qui
+reste incertain est listé avec ses candidats. Et `--controle dossier/` écrit
+**une image de contrôle** par page : le scan, avec en vert les composants
+sûrs, en orange les boîtes à regarder, en rouge les repères sans boîte — la
+relecture d'un coup d'œil.
+
+Deux moteurs de reconnaissance, tous deux **hors ligne**, sans exécutable :
+
+| Moteur | Installation | Remarque |
+|---|---|---|
+| **RapidOCR** | `pip install rapidocr-onnxruntime` | un paquet Python ordinaire, modèles compris ; le plus sûr des deux — c'est lui que la batterie joue |
+| **Windows 10/11 intégré** | rien | `ocr_windows.ps1`, appelé par PowerShell ; la langue doit avoir sa *reconnaissance optique des caractères* (Paramètres › Langue › Options) |
+
+Et trois paquets Python ordinaires pour l'image :
+`pip install numpy pillow opencv-python-headless`. Le moteur se choisit
+tout seul (`--moteur rapidocr` ou `windows` pour l'imposer). Tout le reste du
+dossier reste en bibliothèque standard.
+
+### Comparer à la base : `--connus`
+
+```
+Plan;Repère ELEC;PN
+TFE2130A600001A;18AB;PN-1001
+TFE2130A600001A;19CD;PN-1002
+```
+
+Un CSV avec une colonne plan et une colonne repère — les intitulés sont
+retrouvés par mots-clés, comme partout ailleurs — ou un repère par ligne pour
+un seul plan. Le plan d'un fichier se retrouve par son nom, ou par la
+référence contenue dans le nom du fichier. Le compte rendu dit alors ce que
+la base attend, ce qui est retrouvé, ce qui manque sur le plan, ce qui est en
+plus. Le CSV de sortie met tout sur **une ligne par chose vue** — sûr,
+corrigé, douteux, sans boîte, incertain, attendu absent — à trier dans un
+tableur.
+
+Dans le `.bat` du lundi, une ligne de plus :
+
+```bat
+python import\lire_composants.py "%USERPROFILE%\Plans" --connus composants-base.csv --csv composants-lus.csv --controle controles
+```
+
+### Ce que ces lecteurs ne font pas
+
+- une boîte en pointillés, ou un trait coupé sur un scan : pas de boîte — le
+  repère est signalé sans boîte ;
+- un `.vsd` binaire sans Visio : *Enregistrer sous → Dessin Visio (.vsdx)* ;
+  avec Visio et `pip install pywin32`, la conversion se fait toute seule ;
+- un DWG : *Enregistrer sous → DXF* ;
+- une image JBIG2 dans un PDF : rescanner en JPEG ou en TIFF ;
+- un PDF de dessin dont le texte a été converti en traits : ni texte ni
+  image — demander l'original, ou l'imprimer en image ;
+- les formes Visio tournées et les blocs DXF tournés d'un angle quelconque :
+  la boîte est prise droite.
+
+### Ce qui a été vérifié, et où
+
+La batterie fabrique ses propres plans — PDF, Visio, DXF, images, et PDF
+scannés dans chaque emballage — et RapidOCR y lit vraiment les repères :
+papier gris et grenu, page couchée, télécopie, lettres confondues corrigées
+par la liste de la base. **Aucun vrai plan n'est encore passé dedans** : le
+premier réglera le motif du repère et les tailles, et dira ce que ces plans
+fabriqués n'ont pas prévu. Le moteur intégré à Windows n'a pu être joué
+qu'avec un faux PowerShell : le dialogue est vérifié, pas le moteur lui-même —
+cela demande un poste Windows.
 
 ## 6. La variante hors Google : `releve.py`
 

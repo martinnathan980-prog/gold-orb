@@ -10,10 +10,10 @@ est dedans. C'est pour cela que le résultat est sûr, et surtout
 **vérifiable** : le programme dit toujours combien de boîtes il a trouvées,
 combien portent un repère unique, et lesquelles sont douteuses.
 
-Un PDF **scanné** (une photo de papier), lui, ne contient aucun texte : il
-faudrait de la reconnaissance de caractères, qui demande un programme à
-installer. Ce cas-là n'est pas traité, et le programme le dit franchement au
-lieu de rendre n'importe quoi.
+Un PDF **scanné** (une photo de papier), lui, ne contient aucun texte : ce
+lecteur le dit franchement au lieu de rendre n'importe quoi, et renvoie vers
+`lire_scan.py`, qui reconnaît les caractères. `lire_composants.py` fait ce
+choix tout seul.
 
     python3 import/lire_plan.py plan.pdf
     python3 import/lire_plan.py plan.pdf --csv composants.csv
@@ -23,22 +23,15 @@ Aucune dépendance : bibliothèque standard uniquement.
 """
 
 import argparse
-import csv
 import pathlib
 import re
 import sys
 import zlib
 
-# Un repère électrique, par défaut : quelques chiffres, quelques lettres, et
-# éventuellement des chiffres — « 18AB », « 120PA3 ». Se remplace en ligne de
-# commande le jour où la convention diffère.
-REPERE = re.compile(r'^[0-9]{1,3}[A-Z]{1,4}[0-9]{0,3}$')
-COTE_MINI = 8.0          # une boîte plus petite que cela n'est pas un équipement
-DISTANCE_MAXI = 40.0     # un repère écrit à côté de sa boîte, pas à l'autre bout
-
-
-class ErreurPlan(Exception):
-    """Ce qui empêche de lire le plan, dit en français."""
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from composants import (ErreurPlan, REPERE, COTE_MINI, DISTANCE_MAXI,      # noqa: E402,F401
+                        composants, dedans, distance_au_bord, raconter,
+                        lignes_csv, ecrire_csv)
 
 
 # ---------------------------------------------------------------------------
@@ -237,72 +230,6 @@ def lire_contenu(flux):
     return textes, rectangles
 
 
-# ---------------------------------------------------------------------------
-#  Les composants : une boîte, et le repère qui est dedans ou juste à côté
-# ---------------------------------------------------------------------------
-def dedans(rect, t):
-    return (rect['x'] <= t['x'] <= rect['x'] + rect['largeur'] and
-            rect['y'] <= t['y'] <= rect['y'] + rect['hauteur'])
-
-
-def distance_au_bord(rect, t):
-    dx = max(rect['x'] - t['x'], 0, t['x'] - (rect['x'] + rect['largeur']))
-    dy = max(rect['y'] - t['y'], 0, t['y'] - (rect['y'] + rect['hauteur']))
-    return (dx * dx + dy * dy) ** 0.5
-
-
-def composants(textes, rectangles, repere=REPERE, cote_mini=COTE_MINI,
-               distance_maxi=DISTANCE_MAXI):
-    """Rend { trouves, douteux, orphelins, boites } — et jamais une invention.
-
-    trouves   : [{ repere, x, y, largeur, hauteur, textes }] — une boîte, un repère ;
-    douteux   : les boîtes à plusieurs repères, ou sans aucun ;
-    orphelins : les repères écrits loin de toute boîte.
-    """
-    boites = [r for r in rectangles
-              if r['largeur'] >= cote_mini and r['hauteur'] >= cote_mini]
-    # Une boîte dans une autre (un cadre autour du plan) : on garde la plus petite
-    # qui contient le repère, donc on trie du plus petit au plus grand.
-    boites.sort(key=lambda r: r['largeur'] * r['hauteur'])
-    pris = set()
-    trouves, douteux = [], []
-    for rang, rect in enumerate(boites):
-        interieur = [t for i, t in enumerate(textes) if i not in pris and dedans(rect, t)]
-        reperes = [t for t in interieur if repere.match(t['texte'])]
-        if len(reperes) == 1:
-            for i, t in enumerate(textes):
-                if t in interieur:
-                    pris.add(i)
-            trouves.append({'repere': reperes[0]['texte'], 'x': rect['x'], 'y': rect['y'],
-                            'largeur': rect['largeur'], 'hauteur': rect['hauteur'],
-                            'textes': [t['texte'] for t in interieur]})
-        elif len(reperes) > 1:
-            douteux.append({'pourquoi': 'plusieurs repères dans la même boîte',
-                            'reperes': [t['texte'] for t in reperes], 'rect': rect})
-        else:
-            douteux.append({'pourquoi': 'aucun repère dans la boîte',
-                            'textes': [t['texte'] for t in interieur], 'rect': rect})
-    # Les repères écrits à côté d'une boîte sans repère : on les rattache, mais
-    # seulement si une seule boîte est assez proche — sinon on ne tranche pas.
-    orphelins = []
-    libres = [t for i, t in enumerate(textes) if i not in pris and repere.match(t['texte'])]
-    for t in libres:
-        proches = [d for d in douteux
-                   if d['pourquoi'] == 'aucun repère dans la boîte' and
-                   distance_au_bord(d['rect'], t) <= distance_maxi]
-        if len(proches) == 1:
-            d = proches[0]
-            douteux.remove(d)
-            trouves.append({'repere': t['texte'], 'x': d['rect']['x'], 'y': d['rect']['y'],
-                            'largeur': d['rect']['largeur'], 'hauteur': d['rect']['hauteur'],
-                            'textes': d.get('textes', []) + [t['texte']]})
-        else:
-            orphelins.append(t)
-    trouves.sort(key=lambda c: (-c['y'], c['x']))
-    return {'trouves': trouves, 'douteux': douteux, 'orphelins': orphelins,
-            'boites': len(boites)}
-
-
 def lire(chemin, repere=REPERE):
     """Le plan, de bout en bout. Lève ErreurPlan si le fichier n'est pas lisible."""
     fichier = pathlib.Path(chemin)
@@ -313,9 +240,10 @@ def lire(chemin, repere=REPERE):
     if not dessins:
         raise ErreurPlan(
             '%s ne contient aucun dessin lisible. S\'il s\'agit d\'un scan ou d\'une photo, '
-            'il n\'y a pas de texte dedans : il faudrait de la reconnaissance de caractères, '
-            'qui demande un programme à installer. Demandez le PDF d\'origine, celui qui sort '
-            'de l\'outil de dessin.' % fichier.name)
+            'il n\'y a pas de texte dedans : il faut de la reconnaissance de caractères — '
+            'c\'est le travail de lire_scan.py, que lire_composants.py appelle tout seul. '
+            'Le PDF d\'origine, celui qui sort de l\'outil de dessin, reste la meilleure source.'
+            % fichier.name)
     textes, rectangles = [], []
     for flux in dessins:
         t, r = lire_contenu(flux)
@@ -323,33 +251,14 @@ def lire(chemin, repere=REPERE):
         rectangles += r
     if not textes:
         raise ErreurPlan(
-            '%s porte des traits mais aucun texte : c\'est probablement une image. '
-            'Demandez le PDF d\'origine.' % fichier.name)
+            '%s porte des traits mais aucun texte : soit une image (lire_scan.py la lira), '
+            'soit un dessin dont le texte a été converti en traits — alors demandez le PDF '
+            'd\'origine.' % fichier.name)
     resultat = composants(textes, rectangles, repere)
     resultat['textes'] = len(textes)
     resultat['rectangles'] = len(rectangles)
+    resultat['resume'] = '%d texte(s), %d rectangle(s)' % (len(textes), len(rectangles))
     return resultat
-
-
-def raconter(resultat, nom=''):
-    lignes = ['%s : %d texte(s), %d rectangle(s), %d boîte(s) retenue(s)'
-              % (nom or 'Plan', resultat['textes'], resultat['rectangles'], resultat['boites'])]
-    lignes.append('  %d composant(s) sûr(s)' % len(resultat['trouves']))
-    for c in resultat['trouves'][:20]:
-        autres = [t for t in c['textes'] if t != c['repere']]
-        lignes.append('    %-10s %s' % (c['repere'], ' · '.join(autres[:4])))
-    if len(resultat['trouves']) > 20:
-        lignes.append('    … et %d autre(s)' % (len(resultat['trouves']) - 20))
-    if resultat['douteux']:
-        lignes.append('  %d boîte(s) à regarder :' % len(resultat['douteux']))
-        for d in resultat['douteux'][:10]:
-            lignes.append('    %s — %s' % (d['pourquoi'],
-                                           ', '.join(d.get('reperes') or d.get('textes') or ['(vide)'])[:60]))
-    if resultat['orphelins']:
-        lignes.append('  %d repère(s) sans boîte : %s'
-                      % (len(resultat['orphelins']),
-                         ', '.join(t['texte'] for t in resultat['orphelins'][:10])))
-    return '\n'.join(lignes)
 
 
 def main(argv=None):
@@ -363,12 +272,7 @@ def main(argv=None):
         resultat = lire(args.plan, motif)
         print(raconter(resultat, pathlib.Path(args.plan).name))
         if args.csv:
-            with open(args.csv, 'w', encoding='utf-8-sig', newline='') as sortie:
-                plume = csv.writer(sortie, delimiter=';')
-                plume.writerow(['Repère', 'X', 'Y', 'Largeur', 'Hauteur', 'Textes de la boîte'])
-                for c in resultat['trouves']:
-                    plume.writerow([c['repere'], c['x'], c['y'], c['largeur'], c['hauteur'],
-                                    ' | '.join(c['textes'])])
+            ecrire_csv(args.csv, lignes_csv(resultat, pathlib.Path(args.plan).name))
             print('  → %s' % args.csv)
         return 0
     except ErreurPlan as err:
