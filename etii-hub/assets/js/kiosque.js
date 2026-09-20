@@ -140,7 +140,9 @@ function imageDepuis(brut) {
   const o = objet(brut);
   if (!o) return null;
   const src = texte(o.src);
-  if (!/^(https:\/\/|assets\/)/.test(src)) return null;
+  /* Une URL publique, un fichier du site, ou l'image intégrée par la
+     version autonome (data:) — rien d'autre. */
+  if (!/^(https:\/\/|assets\/|data:image\/)/.test(src)) return null;
   return { src, alt: texte(o.alt), legende: texte(o.legende) };
 }
 
