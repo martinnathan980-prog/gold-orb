@@ -395,52 +395,84 @@ ul.kiosque__alertes-liste {
 }
 
 /* -------------------------------------------------------------------------
-   3. Les porteurs : une piste de fiches compactes, puis la fiche détaillée
+   3. Les porteurs : une galerie centrée de cartes, et la fiche qui se
+      déplie sous la rangée de la carte ouverte
    ---------------------------------------------------------------------- */
 
-.porteurs { display: flex; flex-direction: column; gap: var(--e-4); }
+.porteurs { display: flex; flex-direction: column; gap: var(--e-6); }
 
-.porteurs__barre {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--e-2) var(--e-4);
-}
+/* Les filtres, centrés comme le reste de la galerie. */
+.porteurs__barre { display: flex; justify-content: center; }
+.porteurs__facettes { justify-content: center; }
 
-.porteurs__compte { font-size: var(--texte-xs); color: var(--texte-faible); }
-
-.porteurs__galerie { display: flex; flex-direction: column; gap: var(--e-5); }
+.porteurs__galerie { display: flex; flex-direction: column; gap: var(--e-8); }
 .porteurs__groupe-galerie[hidden] { display: none; }
 
+/* L'en-tête d'un groupe : le nom en Newsreader, le compte en retrait. */
 .porteurs__groupe-galerie-titre {
   display: flex;
   align-items: baseline;
-  gap: var(--e-2);
-  margin: 0 0 var(--e-3);
-  padding-block-end: var(--e-2);
-  border-bottom: 1px solid var(--bordure);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  font-weight: var(--graisse-moyenne);
-  letter-spacing: var(--lettrage-etiquette);
-  text-transform: uppercase;
-  color: var(--texte-doux);
+  justify-content: center;
+  gap: var(--e-3);
+  margin: 0 0 var(--e-5);
+  font-family: var(--police-titre);
+  font-size: var(--texte-2xl);
+  font-weight: var(--graisse-normale);
+  line-height: 1.1;
+  color: var(--texte);
 }
 
-.porteurs__groupe-galerie-compte { color: var(--texte-faible); letter-spacing: 0; }
+.porteurs__groupe-galerie-compte {
+  font-size: var(--texte-xs);
+  letter-spacing: 0.06em;
+  color: var(--texte-faible);
+}
 
+/* La grille est un flux centré : chaque rangée se centre, y compris la
+   dernière, et la fiche dépliée (un item sur toute la largeur) s'insère
+   après la dernière carte de sa rangée. Sur téléphone : deux par rangée. */
 .porteurs__grille {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(9.5rem, 100%), 1fr));
-  gap: var(--e-3);
+  --porteurs-carte: 13.5rem;
+  --porteurs-espace: var(--e-4);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--porteurs-espace);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.porteurs__item { display: flex; }
+.porteurs__item {
+  position: relative;
+  display: flex;
+  flex: 0 0 var(--porteurs-carte);
+  max-inline-size: 100%;
+  /* Amenée à l'écran, la carte reste sous la barre du haut, pas derrière. */
+  scroll-margin-block-start: calc(var(--e-12) + var(--e-4));
+}
 .porteurs__item[hidden] { display: none; }
+
+@media (max-width: 40rem) {
+  .porteurs__grille { --porteurs-espace: var(--e-3); --porteurs-carte: calc(50% - var(--porteurs-espace) / 2); }
+}
+
+/* Le repère sous la carte ouverte : un losange aux couleurs de la fiche,
+   posé à cheval sur le filet supérieur de celle-ci. */
+.porteurs__item--ouvert::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  inset-inline-start: 50%;
+  inset-block-start: calc(100% + var(--porteurs-espace));
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background-color: var(--carte-fond);
+  border-top: 1px solid var(--carte-bord);
+  border-left: 1px solid var(--carte-bord);
+  pointer-events: none;
+}
 
 .porteurs__fiche {
   display: flex;
@@ -455,6 +487,7 @@ ul.kiosque__alertes-liste {
   box-shadow: var(--ombre-sm);
   color: var(--texte);
   font: inherit;
+  text-align: center;
   cursor: pointer;
   transition: border-color var(--duree-rapide) var(--courbe),
               transform var(--duree-rapide) var(--courbe),
@@ -484,14 +517,20 @@ ul.kiosque__alertes-liste {
 .porteurs__fiche:hover .porteurs__fiche-photo { filter: none; }
 .porteurs__fiche[aria-pressed="true"] .porteurs__fiche-visuel { color: var(--texte); }
 
-.porteurs__fiche-code { font-size: var(--texte-md); font-weight: var(--graisse-forte); letter-spacing: 0.02em; }
+/* Le code en gros, le segment en petit. */
+.porteurs__fiche-code {
+  margin-block-start: var(--e-1);
+  font-size: var(--texte-xl);
+  font-weight: var(--graisse-forte);
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+}
 
 .porteurs__fiche-segment {
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  text-align: center;
   color: var(--texte-faible);
   /* Deux lignes au plus : le segment complet est dans la fiche détaillée. */
   display: -webkit-box;
@@ -500,7 +539,7 @@ ul.kiosque__alertes-liste {
   overflow: hidden;
 }
 
-.porteurs__fiche-poles { display: inline-flex; gap: var(--e-1); min-block-size: var(--e-2); }
+.porteurs__fiche-poles { display: inline-flex; gap: var(--e-1); min-block-size: var(--e-2); margin-block-start: var(--e-1); }
 
 .porteurs__pole { display: inline-flex; align-items: center; gap: var(--e-1); font-family: var(--police-mono); font-size: var(--texte-xs); letter-spacing: 0.06em; text-transform: uppercase; color: var(--texte-doux); }
 
@@ -515,29 +554,48 @@ ul.kiosque__alertes-liste {
 .porteurs__pole-point[data-pole="ETIIE"], .porteurs__pole[data-pole="ETIIE"] .porteurs__pole-point { background-color: var(--pole-etiie); }
 .porteurs__pole-point[data-pole="ETIII"], .porteurs__pole[data-pole="ETIII"] .porteurs__pole-point { background-color: var(--pole-etiii); }
 
-/* --- La fiche détaillée : bannière, bandeau, onglets --------------------- */
+/* --- La fiche dépliée : un item sur toute la largeur de la rangée -------- */
+
+.porteurs__item--detail {
+  flex: 1 1 100%;
+  max-inline-size: none;
+  min-inline-size: 0;
+  /* La marge du haut fait la place du losange-repère. */
+  margin-block: var(--e-1) var(--e-3);
+  scroll-margin-block-start: var(--e-6);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .porteurs__item--detail[data-etat="entree"] { animation: porteurs-depli var(--duree) var(--courbe) both; }
+}
+
+@keyframes porteurs-depli {
+  from { opacity: 0; transform: translateY(-0.5rem); }
+  to   { opacity: 1; transform: none; }
+}
 
 .porteurs__detail {
   display: flex;
   flex-direction: column;
+  inline-size: 100%;
+  min-inline-size: 0;
   overflow: hidden;
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
   border-radius: var(--rayon-xl);
   box-shadow: var(--ombre-md);
-  scroll-margin-block-start: var(--e-6);
 }
 
 .porteurs__banniere {
   position: relative;
   margin: 0;
-  min-block-size: 16rem;
+  min-block-size: 14rem;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
 }
 
-.porteurs__banniere--photo { block-size: clamp(16rem, 34vw, 26rem); background-color: var(--fond-inverse); }
+.porteurs__banniere--photo { block-size: clamp(14rem, 30vw, 24rem); background-color: var(--fond-profond); }
 
 .porteurs__photo {
   position: absolute;
@@ -548,13 +606,13 @@ ul.kiosque__alertes-liste {
   object-position: center;
 }
 
-/* Le voile : du transparent en haut vers un marine profond en bas, pour
-   que le titre se lise sur n'importe quelle photo. */
+/* Le voile : du transparent en haut vers un voile sombre en bas, pour que
+   le titre se lise sur n'importe quelle photo — un voile neutre, pas un
+   aplat de couleur, et le même dans les deux thèmes. */
 .porteurs__banniere-voile {
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(to top, var(--entete-fond) 0%, var(--voile) 45%, transparent 75%);
-  opacity: 0.92;
+  background-image: linear-gradient(to top, var(--voile-fort) 0%, var(--voile-fort) 18%, var(--voile) 50%, transparent 78%);
 }
 
 .porteurs__banniere-texte {
@@ -568,8 +626,6 @@ ul.kiosque__alertes-liste {
 .porteurs__banniere--photo .porteurs__banniere-texte { color: var(--entete-texte); }
 .porteurs__banniere--photo .porteurs__sur-titre { color: var(--entete-texte-doux); }
 .porteurs__banniere--photo .porteurs__titre { color: var(--entete-texte); }
-.porteurs__banniere--photo .porteurs__ancien-nom { color: var(--entete-texte-doux); }
-.porteurs__banniere--photo .porteurs__pole { color: var(--entete-texte); }
 
 .porteurs__banniere--silhouette {
   background-color: var(--fond-enfonce);
@@ -578,7 +634,7 @@ ul.kiosque__alertes-liste {
 
 .porteurs__banniere--silhouette .porteurs__silhouette {
   position: relative;
-  max-inline-size: 22rem;
+  max-inline-size: 20rem;
   margin: var(--e-5) auto 0;
   padding: var(--e-4) var(--e-6);
   background: none;
@@ -599,28 +655,27 @@ ul.kiosque__alertes-liste {
   color: var(--texte-faible);
 }
 
-.porteurs__credit {
-  position: absolute;
-  inset-block-start: var(--e-2);
-  inset-inline-end: var(--e-3);
-  max-inline-size: 60%;
-  padding: 2px var(--e-2);
-  border-radius: var(--rayon-sm);
-  background-color: var(--voile-fort);
+.porteurs__sur-titre {
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
-  letter-spacing: 0.02em;
-  line-height: 1.5;
-  text-align: end;
-  color: var(--entete-texte-doux);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-faible);
 }
 
-.porteurs__credit a { color: inherit; }
-.porteurs__credit-note { display: block; font-family: var(--police); letter-spacing: 0; }
+.porteurs__titre-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-4); }
+.porteurs__titre { font-family: var(--police-titre); font-size: clamp(1.75rem, 1.8vw + 1.1rem, 2.5rem); font-weight: var(--graisse-normale); line-height: 1.1; }
+.porteurs__relecture { cursor: help; }
+
+.porteurs__contenu { display: flex; flex-direction: column; gap: var(--e-6); min-inline-size: 0; padding: var(--e-5) clamp(var(--e-4), 4vw, var(--e-8)) var(--e-6); }
+
+.porteurs__resume { max-width: var(--largeur-texte); font-size: var(--texte-md); line-height: var(--interligne); }
+
+/* --- Le bandeau d'identité : les essentiels, en cases -------------------- */
 
 .porteurs__bandeau {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
   gap: var(--e-4) var(--e-6);
   margin: 0;
   padding: var(--e-4) var(--e-5);
@@ -640,60 +695,136 @@ ul.kiosque__alertes-liste {
 
 .porteurs__bandeau dd { margin: 0; font-size: var(--texte-sm); line-height: 1.45; }
 
-.porteurs__contenu { display: flex; flex-direction: column; gap: var(--e-4); min-inline-size: 0; padding: var(--e-5) clamp(var(--e-4), 4vw, var(--e-8)) var(--e-6); }
-
-.porteurs__entete { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--e-3); }
-
-.porteurs__sur-titre {
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: var(--lettrage-etiquette);
-  text-transform: uppercase;
-  color: var(--texte-faible);
-}
-
-.porteurs__titre { font-family: var(--police-titre); font-size: clamp(1.75rem, 1.8vw + 1.1rem, 2.5rem); font-weight: var(--graisse-normale); line-height: 1.1; }
-.porteurs__ancien-nom { font-size: var(--texte-md); font-family: var(--police); color: var(--texte-doux); }
+/* Une donnée longue garde tout son texte : en paragraphe, sur la largeur. */
+.porteurs__bandeau-item--long { grid-column: 1 / -1; }
+.porteurs__bandeau-item--long dd { max-width: var(--largeur-texte); line-height: var(--interligne); }
 
 .porteurs__poles { display: flex; flex-wrap: wrap; gap: var(--e-2) var(--e-3); }
 
-.porteurs__groupes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr)); gap: var(--e-5) var(--e-8); }
+/* --- Les onglets et leurs groupes ---------------------------------------- */
 
-.porteurs__groupe-tete { display: flex; align-items: baseline; justify-content: space-between; gap: var(--e-2); padding-block-end: var(--e-2); border-bottom: 1px solid var(--bordure-forte); }
+.porteurs__groupes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr)); gap: var(--e-6) var(--e-10); }
 
-.porteurs__groupe-titre { margin: 0; font-size: var(--texte-sm); font-weight: var(--graisse-forte); }
-.porteurs__groupe-compte { font-size: var(--texte-xs); color: var(--texte-faible); }
-
-.porteurs__table { inline-size: 100%; font-size: var(--texte-sm); }
-.porteurs__table { table-layout: fixed; }
-
-.porteurs__table th {
-  inline-size: 34%;
-  font-family: var(--police);
-  font-size: var(--texte-sm);
-  font-weight: var(--graisse-normale);
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--texte-doux);
-  border-bottom: 1px solid var(--bordure-douce);
-  padding: var(--e-2) var(--e-3) var(--e-2) 0;
-  vertical-align: baseline;
+/* Le titre de groupe : gras net, un filet accent court dessous. */
+.porteurs__groupe-titre {
+  margin: 0 0 var(--e-3);
+  padding-block-end: var(--e-2);
+  font-size: var(--texte-lg);
+  font-weight: var(--graisse-forte);
+  line-height: 1.2;
+  border-bottom: 2px solid var(--accent);
 }
 
-.porteurs__table td {
-  text-align: start;
-  padding: var(--e-2) 0;
+.porteurs__lignes { margin: 0; }
+
+.porteurs__ligne {
+  display: grid;
+  grid-template-columns: minmax(8rem, 30%) 1fr;
+  gap: var(--e-1) var(--e-4);
+  align-items: baseline;
+  padding-block: var(--e-2);
+  border-bottom: 1px solid var(--bordure-douce);
+}
+.porteurs__ligne:last-child { border-bottom: 0; }
+
+.porteurs__libelle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
   font-size: var(--texte-sm);
   line-height: 1.5;
-  vertical-align: baseline;
-  overflow-wrap: break-word;
+  color: var(--texte-doux);
 }
 
-/* Un chiffre seul reste en mono et tabulaire ; une phrase reprend la
-   police de texte, qui se lit mieux sur plusieurs lignes. */
-.porteurs__valeur { font-family: var(--police-mono); font-variant-numeric: tabular-nums; }
-.porteurs__valeur--phrase { font-family: var(--police); }
-.porteurs__manquant { font-style: italic; color: var(--texte-faible); font-family: var(--police); }
+.porteurs__cellule {
+  margin: 0;
+  min-inline-size: 0;
+  font-size: var(--texte-sm);
+  line-height: 1.5;
+}
+
+.porteurs__valeur { overflow-wrap: anywhere; }
+
+/* Un chiffre se lit en mono et tabulaire ; sa précision en retrait. */
+.porteurs__valeur--chiffre { font-family: var(--police-mono); font-variant-numeric: tabular-nums; font-weight: var(--graisse-moyenne); }
+.porteurs__complement { font-family: var(--police); font-weight: var(--graisse-normale); color: var(--texte-doux); }
+.porteurs__manquant { font-style: italic; color: var(--texte-faible); font-family: var(--police); font-weight: var(--graisse-normale); }
+
+/* La preuve (confiance, source) : petite, grise, à droite, plus nette au
+   survol de la ligne — la valeur se lit d'abord. */
+.porteurs__preuve {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--e-2);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  line-height: 1.4;
+  color: var(--texte-faible);
+  opacity: 0.75;
+  transition: opacity var(--duree-rapide) var(--courbe);
+}
+.porteurs__ligne:hover .porteurs__preuve,
+.porteurs__ligne:focus-within .porteurs__preuve { opacity: 1; }
+
+.porteurs__conf { cursor: help; }
+.porteurs__source { color: var(--texte-faible); text-decoration: none; }
+.porteurs__source:hover, .porteurs__source:focus-visible { color: var(--texte-accent); text-decoration: underline; }
+
+@media (max-width: 40rem) {
+  .porteurs__ligne { grid-template-columns: 1fr; gap: 0; }
+  .porteurs__libelle { flex-direction: row; flex-wrap: wrap; justify-content: space-between; column-gap: var(--e-3); }
+}
+
+/* --- Insolite, sources, crédits, équipe --------------------------------- */
+
+.porteurs__insolites { display: grid; gap: var(--e-3); margin: 0; padding: 0; list-style: none; max-width: var(--largeur-texte); }
+.porteurs__insolite { display: flex; gap: var(--e-3); font-size: var(--texte-sm); line-height: var(--interligne); }
+.porteurs__insolite-glyphe { flex: 0 0 auto; color: var(--chaud); }
+
+.porteurs__legende { font-size: var(--texte-xs); margin-block-end: var(--e-3); }
+.porteurs__sources { display: grid; gap: var(--e-2); margin: 0; padding: 0; list-style: none; font-size: var(--texte-sm); }
+.porteurs__sources li { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--e-2); min-inline-size: 0; }
+.porteurs__sources .porteurs__source { color: var(--texte-accent); }
+.porteurs__source-url { font-size: var(--texte-xs); color: var(--texte-faible); overflow-wrap: anywhere; }
+
+.porteurs__credit { font-size: var(--texte-sm); line-height: var(--interligne); color: var(--texte-doux); }
+.porteurs__credit-mot { color: var(--texte-faible); }
+.porteurs__credit-note { display: block; font-size: var(--texte-xs); color: var(--texte-faible); }
+
+.porteurs__credits { display: grid; gap: var(--e-3); margin: 0; padding: 0; list-style: none; }
+.porteurs__credits-item { display: flex; align-items: center; gap: var(--e-3); padding-block: var(--e-2); border-bottom: 1px solid var(--bordure-douce); }
+.porteurs__credits-item:last-child { border-bottom: 0; }
+.porteurs__credits-vignette { flex: 0 0 4.5rem; inline-size: 4.5rem; aspect-ratio: 3 / 2; object-fit: cover; border-radius: var(--rayon-sm); background-color: var(--fond-enfonce); }
+.porteurs__credits-texte { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; }
+.porteurs__credits-nom { font-weight: var(--graisse-forte); font-size: var(--texte-sm); }
+
+.porteurs__equipe, .porteurs__documents { display: grid; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
+.porteurs__personne, .porteurs__document {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--e-1) var(--e-3);
+  padding-block: var(--e-1);
+  font-size: var(--texte-sm);
+  color: var(--texte);
+  text-decoration: none;
+}
+.porteurs__personne:hover .porteurs__personne-nom, .porteurs__document:hover > span:first-child { text-decoration: underline; color: var(--texte-accent); }
+.porteurs__personne-nom { font-weight: var(--graisse-moyenne); }
+.porteurs__personne-poste { color: var(--texte-doux); }
+.porteurs__personne-pole, .porteurs__document-meta { font-size: var(--texte-xs); color: var(--texte-faible); }
+
+/* --- Les onglets de la fiche et la confiance ----------------------------- */
+
+.porteurs__onglets { gap: var(--e-5); }
+.porteurs__onglets .onglets__liste { flex-wrap: wrap; }
+.porteurs__onglets .onglets__panneau { padding-block-start: var(--e-1); }
+
+.porteurs__conf--haute { color: var(--statut-succes); }
+.porteurs__conf--moyenne { color: var(--statut-alerte); }
+
 
 /* -------------------------------------------------------------------------
    4. Le lecteur : liste à gauche, lecture à droite
@@ -1267,46 +1398,6 @@ ul.kiosque__alertes-liste {
   font-weight: var(--graisse-moyenne);
   color: var(--texte-doux);
 }
-
-/* --- La fiche détaillée des porteurs, version base de données ------------ */
-
-.porteurs__ancien-nom { font-size: var(--texte-md); color: var(--texte-faible); font-family: var(--police); }
-.porteurs__resume { max-inline-size: 70ch; font-size: var(--texte-md); color: var(--texte-doux); }
-
-.porteurs__onglets { gap: var(--e-4); }
-.porteurs__onglets .onglets__liste { flex-wrap: wrap; }
-.porteurs__onglets .onglets__panneau { padding-block-start: var(--e-2); }
-
-.porteurs__cellule { display: flex; flex-direction: column; gap: 2px; }
-.porteurs__preuve { display: flex; align-items: baseline; gap: var(--e-2); }
-.porteurs__conf { font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--texte-faible); cursor: help; }
-.porteurs__conf--haute { color: var(--statut-succes); }
-.porteurs__conf--moyenne { color: var(--statut-alerte); }
-
-.porteurs__source {
-  margin-inline-start: var(--e-2);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  color: var(--texte-faible);
-  text-decoration: none;
-}
-.porteurs__source:hover { color: var(--texte-accent); text-decoration: underline; }
-
-.porteurs__insolites { display: grid; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
-.porteurs__insolite {
-  display: flex;
-  gap: var(--e-3);
-  padding: var(--e-3) var(--e-4);
-  border: 1px solid var(--bordure-douce);
-  border-inline-start: 3px solid var(--accent);
-  border-radius: var(--rayon-md);
-  background-color: var(--fond-enfonce);
-  font-size: var(--texte-sm);
-  line-height: 1.55;
-}
-.porteurs__insolite-glyphe { color: var(--accent); flex: none; }
-
-.porteurs__sources { display: grid; gap: var(--e-1); margin: 0; padding: 0; list-style: none; font-size: var(--texte-sm); }
 
 /* -------------------------------------------------------------------------
    9. La palette « rechercher partout »
@@ -1923,32 +2014,6 @@ ul.kiosque__alertes-liste {
 
 .org-puce:hover { border-color: var(--bordure-forte); background-color: var(--fond-profond); }
 .org-puce .org-avatar { inline-size: var(--e-6); block-size: var(--e-6); font-size: 10px; }
-
-/* --- Porteur : son équipe et ses documents ------------------------------- */
-
-.porteurs__equipe,
-.porteurs__documents { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; }
-
-.porteurs__personne,
-.porteurs__document {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--e-2) var(--e-3);
-  padding: var(--e-2) var(--e-2);
-  border-radius: var(--rayon-sm);
-  color: var(--texte);
-  text-decoration: none;
-  font-size: var(--texte-sm);
-}
-
-.porteurs__personne:hover,
-.porteurs__document:hover { background-color: var(--fond-enfonce); }
-
-.porteurs__personne-nom { font-weight: var(--graisse-forte); }
-.porteurs__personne-poste { flex: 1; color: var(--texte-doux); font-size: var(--texte-xs); }
-.porteurs__personne-pole,
-.porteurs__document-meta { margin-inline-start: auto; font-size: var(--texte-xs); color: var(--texte-faible); }
 
 /* --- Relevé d'usage de la recherche -------------------------------------- */
 
