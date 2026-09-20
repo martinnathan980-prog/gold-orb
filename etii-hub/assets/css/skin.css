@@ -3,13 +3,13 @@
    Charge APRÈS components.css. Ne change aucune structure : pose la
    matière du portail.
 
-   Parti pris : LE DOCUMENT TECHNIQUE. Une feuille blanche sur un papier
-   gris, des filets d'un pixel, des angles à peine cassés, aucune ombre
-   portée hors des fenêtres. Le marine est la seule couleur : liens, onglet
-   courant, bouton principal, filet de tête. Les intitulés de colonne, les
-   étiquettes, les compteurs, les dates et les codes sont en mono et en
-   capitales espacées ; les titres en Newsreader ; tout le reste en Plex
-   Sans, à 14 px. Tout provient des jetons de tokens.css.
+   Parti pris : PAPIER & ENCRE. Des feuilles blanches à ombre courte sur un
+   papier blanc cassé, des filets fins, des angles à peine cassés. Le
+   marine n'est qu'un accent : liens, lien courant, bouton principal ; la
+   terre cuite marque ce qui doit attirer l'œil. Les intitulés de colonne,
+   les étiquettes, les compteurs, les dates et les codes sont en mono et
+   en capitales espacées ; les titres en Newsreader ; tout le reste en
+   Plex Sans, à 14 px. Tout provient des jetons de tokens.css.
    ========================================================================= */
 
 /* -------------------------------------------------------------------------
@@ -150,19 +150,21 @@ a:hover { text-decoration-color: currentColor; }
 .carte__titre { font-size: var(--texte-md); }
 
 /* -------------------------------------------------------------------------
-   4. La barre du haut : marine profond, texte blanc, un liseré dessous
-   Le seul aplat sombre de la page clair : il donne l'assise et le
-   contraste ; en sombre, il reste un marine plus profond que le papier.
+   4. La barre du haut : une feuille blanche, un filet fin, une ombre douce
+   Plus d'aplat : la barre est du même papier que la page, à peine plus
+   blanche, tenue par un filet et une ombre courte. Le logo est en
+   Newsreader, à l'encre ; le lien courant est souligné d'un trait marine
+   fin — c'est le seul endroit où l'accent apparaît dans la barre.
    ---------------------------------------------------------------------- */
 
 .site-entete {
-  background-color: var(--entete-fond);
-  background-image: linear-gradient(90deg, var(--entete-fond) 0%, var(--entete-fond-2) 100%);
+  background-color: var(--barre-fond);
+  background-image: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  border-bottom: 1px solid var(--entete-bordure);
-  box-shadow: var(--ombre-md);
-  color: var(--entete-texte);
+  border-bottom: 1px solid var(--barre-bordure);
+  box-shadow: var(--barre-ombre);
+  color: var(--barre-texte);
 }
 
 .site-entete__interieur {
@@ -172,14 +174,14 @@ a:hover { text-decoration-color: currentColor; }
 
 .site-logo {
   gap: var(--e-2);
-  color: var(--entete-texte);
+  color: var(--barre-texte);
   font-family: var(--police-titre);
   font-size: var(--texte-xl);
-  font-weight: var(--graisse-normale);
+  font-weight: var(--graisse-moyenne);
   letter-spacing: 0.01em;
 }
 
-.site-logo:hover { color: var(--entete-texte); }
+.site-logo:hover { color: var(--texte-accent); }
 
 /* Le « HUB » : une mention mono, en retrait, séparée par un filet. */
 .site-logo span {
@@ -187,8 +189,8 @@ a:hover { text-decoration-color: currentColor; }
   margin-inline-start: var(--e-1);
   background: none;
   border-radius: 0;
-  border-inline-start: 1px solid var(--entete-bordure);
-  color: var(--entete-texte-doux);
+  border-inline-start: 1px solid var(--barre-bordure);
+  color: var(--barre-texte-doux);
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
   font-weight: var(--graisse-normale);
@@ -199,51 +201,57 @@ a:hover { text-decoration-color: currentColor; }
 .site-nav__liste { gap: var(--e-1); }
 
 .site-nav__liste a {
-  border-radius: var(--rayon-md);
-  border-bottom-width: 0;
+  border-radius: var(--rayon-sm) var(--rayon-sm) 0 0;
+  border-bottom: 2px solid transparent;
   min-height: calc(var(--cible-tactile) - var(--e-1));
   padding-inline: var(--e-3);
-  color: var(--entete-texte-doux);
+  color: var(--barre-texte-doux);
   font-size: var(--texte-sm);
   font-weight: var(--graisse-moyenne);
 }
 
 .site-nav__liste a:hover {
-  color: var(--entete-texte);
-  background-color: var(--entete-surface);
+  color: var(--barre-texte);
+  background-color: var(--barre-surface);
 }
 
+/* Le lien courant : à l'encre, souligné d'un trait marine fin. */
 .site-nav__liste a[aria-current="page"] {
-  color: var(--entete-texte);
-  background-color: var(--entete-surface-forte);
+  color: var(--barre-texte);
+  background-color: transparent;
+  border-bottom-color: var(--accent);
   font-weight: var(--graisse-forte);
 }
 
-.bascule-theme,
-.palette-ouvrir {
+.site-nav__liste a[aria-current="page"]:hover { background-color: var(--barre-surface); }
+
+/* Les deux boutons de la barre : un cadre léger sur le papier. La règle
+   est ancrée sur .site-entete pour passer devant celle de modules.css. */
+.site-entete .bascule-theme,
+.site-entete .palette-ouvrir {
   min-height: calc(var(--cible-tactile) - var(--e-2));
   padding-inline: var(--e-3);
   border-radius: var(--rayon-md);
-  border: 1px solid var(--entete-bordure);
-  background-color: var(--entete-surface);
-  color: var(--entete-texte-doux);
+  border: 1px solid var(--barre-bordure);
+  background-color: var(--barre-surface);
+  color: var(--barre-texte-doux);
   font-size: var(--texte-xs);
 }
 
-.bascule-theme:hover,
-.palette-ouvrir:hover {
-  background-color: var(--entete-surface-forte);
-  border-color: var(--entete-texte-doux);
-  color: var(--entete-texte);
+.site-entete .bascule-theme:hover,
+.site-entete .palette-ouvrir:hover {
+  background-color: var(--barre-surface-forte);
+  border-color: var(--bordure-forte);
+  color: var(--barre-texte);
 }
 
-.palette-ouvrir kbd {
-  border-color: var(--entete-bordure);
+.site-entete .palette-ouvrir kbd {
+  border-color: var(--barre-bordure);
   background: none;
-  color: var(--entete-texte-doux);
+  color: var(--barre-texte-doux);
 }
 
-.site-entete :focus-visible { outline-color: var(--entete-texte); }
+.site-entete :focus-visible { outline-color: var(--focus-couleur); }
 
 /* -------------------------------------------------------------------------
    5. Titres de section : l'étiquette mono, puis le filet
@@ -588,15 +596,16 @@ mark, .surlignage {
 }
 
 /* -------------------------------------------------------------------------
-   12. Cartouche de page : centré, l'étiquette mono, le titre, un filet court
-   Rien d'autre : la page se présente par son titre. Le filet est marine ;
-   sur une page de pôle il prend la couleur du pôle.
+   12. Cartouche de page : le titre seul, centré, à l'encre
+   Rien d'autre : ni étiquette au-dessus, ni filet dessous. La page se
+   présente par son titre. Sur une page de pôle, la petite mention
+   « Pôle · métaphore » (remplie par pole.js) reste, dans la teinte du pôle.
    ---------------------------------------------------------------------- */
 
 .page-entete {
   align-items: center;
   text-align: center;
-  padding-block: var(--e-4) var(--e-2);
+  padding-block: var(--e-6) var(--e-2);
   border-bottom: 0;
 }
 
@@ -604,24 +613,18 @@ mark, .surlignage {
   font-size: clamp(2.5rem, 3.4vw + 1.6rem, 4rem);
   font-weight: 300;
   letter-spacing: 0.01em;
+  color: var(--texte);
 }
 
-.page-entete::after {
-  content: "";
-  display: block;
-  inline-size: var(--e-12);
-  block-size: 3px;
-  margin-block-start: var(--e-3);
-  border-radius: var(--rayon-plein);
-  background-color: var(--accent);
-}
-
-body[data-pole] .page-entete::after { background-color: var(--couleur-pole, var(--accent)); }
+.page-entete::after { content: none; }
 
 .page-entete .accroche,
 .page-entete .mesure { display: none; }
 
-.page-entete__sur-titre {
+.page-entete__sur-titre { display: none; }
+
+.page-entete__sur-titre#pole-libelle {
+  display: block;
   margin: 0;
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
@@ -642,13 +645,12 @@ body[data-pole] .page-entete::after { background-color: var(--couleur-pole, var(
   block-size: var(--e-2);
   margin-inline-end: var(--e-2);
   border-radius: var(--rayon-plein);
-  background-color: var(--pole-nav, var(--entete-texte-doux));
-  box-shadow: 0 0 0 2px var(--entete-surface-forte);
+  background-color: var(--pole-nav, var(--barre-texte-doux));
 }
 
-.site-nav__liste a[data-pole="ETIIA"] { --pole-nav: var(--pole-etiia-sur-marine); }
-.site-nav__liste a[data-pole="ETIIE"] { --pole-nav: var(--pole-etiie-sur-marine); }
-.site-nav__liste a[data-pole="ETIII"] { --pole-nav: var(--pole-etiii-sur-marine); }
+.site-nav__liste a[data-pole="ETIIA"] { --pole-nav: var(--pole-etiia); }
+.site-nav__liste a[data-pole="ETIIE"] { --pole-nav: var(--pole-etiie); }
+.site-nav__liste a[data-pole="ETIII"] { --pole-nav: var(--pole-etiii); }
 
 /* -------------------------------------------------------------------------
    14. Écran étroit : la barre reste une barre
