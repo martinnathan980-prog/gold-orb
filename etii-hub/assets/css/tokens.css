@@ -3,23 +3,24 @@
    Source unique de vérité. Aucune valeur brute (couleur, espacement, durée)
    ne doit apparaître ailleurs que dans ce fichier.
 
-   Parti pris : LE DOCUMENT TECHNIQUE. Le registre des outils du service :
-   un papier gris très légèrement froid, des feuilles blanches posées
-   dessus, des filets d'un pixel, aucune ombre portée digne de ce nom, des
-   angles à peine cassés. L'encre est presque noire ; le marine Airbus est
-   la seule couleur d'accent, réservée à ce qui se clique et à ce qui
-   compte. Les chiffres, les codes, les dates et les intitulés de colonne
-   sont en IBM Plex Mono ; le texte courant en IBM Plex Sans, dense et
-   petit ; les titres en Newsreader, la seule fantaisie autorisée.
-   Le thème sombre est travaillé pour lui-même, pas inversé.
+   Parti pris : PAPIER & ENCRE. Un papier blanc cassé, chaud, comme une
+   feuille de carnet ; des feuilles blanches posées dessus, à ombre courte ;
+   une encre presque noire. Le marine Airbus n'est plus un aplat : c'est un
+   accent — liens, état actif, bouton principal, un filet fin. La seconde
+   couleur est une terre cuite assourdie : le bandeau d'alertes, le repère
+   de la communication en vedette, une valeur qui compte. Les chiffres, les
+   codes, les dates et les intitulés de colonne sont en IBM Plex Mono ; le
+   texte courant en IBM Plex Sans, dense et petit ; les titres en
+   Newsreader, la seule fantaisie autorisée.
+   Le thème sombre est un graphite chaud, travaillé pour lui-même.
    ========================================================================= */
 
 :root {
   color-scheme: light dark;
 
   /* --- Marque ---------------------------------------------------------- */
-  --marque-bleu:        #00205b;   /* marine Airbus : l'accent, unique      */
-  --marque-bleu-clair:  #0b3c96;   /* marine éclairci : survol, actif       */
+  --marque-bleu:        #00205b;   /* marine Airbus : l'accent              */
+  --marque-bleu-clair:  #123b8f;   /* marine éclairci : survol, actif       */
   --marque-cyan:        #0090c8;   /* réservé aux visualisations            */
 
   /* --- Statuts --------------------------------------------------------- */
@@ -42,7 +43,7 @@
   --pole-etiie: #0e8aa8;
   --pole-etiii: #b45309;
   --pole-etii:  var(--texte-doux);
-  /* Les mêmes teintes, éclaircies pour tenir sur la barre marine. */
+  /* Les mêmes teintes, éclaircies pour tenir sur un fond sombre (voiles). */
   --pole-etiia-sur-marine: #a78bfa;
   --pole-etiie-sur-marine: #38bdf8;
   --pole-etiii-sur-marine: #fb923c;
@@ -51,22 +52,23 @@
   --serie-otq: #2a78d6;
   --serie-otd: #008300;
 
-  /* --- Neutres : un gris choisi, qui tire vers le bleu de l'accent -------- */
-  --gris-50:  #fafaf8;
-  --gris-100: #f0efea;
-  --gris-200: #e6e4dd;
-  --gris-300: #d6d3ca;
-  --gris-400: #b9b5aa;
-  --gris-500: #837f76;
-  --gris-600: #56534d;
-  --gris-700: #3a3834;
-  --gris-800: #26252a;
-  --gris-900: #15161c;
+  /* --- Neutres : un gris chaud, qui tire vers le papier ------------------- */
+  --gris-50:  #fbfaf7;
+  --gris-100: #f4f1ea;
+  --gris-200: #eae6dc;
+  --gris-300: #dad5c8;
+  --gris-400: #bcb6a8;
+  --gris-500: #837d71;
+  --gris-600: #56524a;
+  --gris-700: #3a3732;
+  --gris-800: #262421;
+  --gris-900: #1a1916;
 
   /* --- Rôles sémantiques ------------------------------------------------
-     Le papier est le fond de page ; la feuille (fond-eleve) est blanche et
-     s'en détache par un filet, jamais par une ombre. Le creux (fond-enfonce)
-     est la surface en retrait : champ au repos, bouton, ligne survolée. */
+     Le papier est le fond de page : blanc cassé, chaud. La feuille
+     (fond-eleve) est blanche et s'en détache par une ombre courte et un
+     filet léger. Le creux (fond-enfonce) est la surface en retrait : champ
+     au repos, bouton, ligne survolée. */
   --fond:          var(--gris-100);
   --fond-profond:  var(--gris-200);
   --fond-eleve:    #ffffff;
@@ -77,41 +79,56 @@
   --texte-doux:    var(--gris-600);
   --texte-faible:  var(--gris-500);
   --texte-inverse: #ffffff;
-  --texte-accent:  var(--marque-bleu);
+  --texte-accent:  #17367f;
 
   --bordure:       var(--gris-300);
-  --bordure-douce: #e9e7e1;
+  --bordure-douce: #e7e3d9;
   --bordure-forte: var(--gris-400);
 
   --accent:          var(--marque-bleu);
   --accent-vif:      var(--marque-bleu-clair);
   --accent-contenu:  #ffffff;
-  --accent-doux:     #e6ebf6;
-  --accent-lueur:    rgb(0 32 91 / 0.18);
+  --accent-doux:     #e7ecf6;
+  --accent-lueur:    rgb(0 32 91 / 0.16);
   --surlignage:      #fbeec4;
   --surlignage-texte: #3d2e00;
 
-  /* Le chaud : la seconde couleur, pour ce qui doit attirer l'œil sans
-     être une alerte — le mot du chef, une valeur qui compte. */
-  --chaud:           #c2410c;
-  --chaud-doux:      #fdebe0;
+  /* Le chaud : la seconde couleur. Une terre cuite assourdie, pour ce qui
+     doit attirer l'œil sans être une alerte — le bandeau qui défile, le
+     repère de la vedette, une valeur qui compte. */
+  --chaud:           #b4542f;   /* la teinte pleine : filet, puce, bouton  */
+  --chaud-vif:       #c9643c;   /* survol                                  */
+  --chaud-encre:     #7d3417;   /* le texte écrit en terre cuite           */
+  --chaud-contenu:   #ffffff;   /* le texte posé sur un aplat chaud        */
+  --chaud-doux:      #f8e8de;   /* la teinte diluée : fond de bandeau      */
+  --chaud-lueur:     rgb(180 84 47 / 0.18);
 
-  /* La barre du haut et les bandeaux : marine profond, texte blanc. */
-  --entete-fond:     var(--marque-bleu);
-  --entete-fond-2:   #0a2f78;
+  /* La barre du haut : blanc cassé, un filet fin, une ombre douce. */
+  --barre-fond:          #fdfcf9;
+  --barre-texte:         var(--gris-900);
+  --barre-texte-doux:    var(--gris-600);
+  --barre-bordure:       var(--gris-300);
+  --barre-surface:       var(--gris-100);
+  --barre-surface-forte: var(--gris-200);
+  --barre-ombre:         0 1px 0 rgb(40 35 25 / 0.04), 0 6px 20px rgb(40 35 25 / 0.06);
+
+  /* Les surfaces sombres posées sur une photo (bannières, voiles) : un
+     graphite chaud, jamais du marine. */
+  --entete-fond:     #1f1e1b;
+  --entete-fond-2:   #2b2925;
   --entete-texte:    #ffffff;
-  --entete-texte-doux: rgb(255 255 255 / 0.72);
+  --entete-texte-doux: rgb(255 255 255 / 0.74);
   --entete-surface:  rgb(255 255 255 / 0.10);
   --entete-surface-forte: rgb(255 255 255 / 0.18);
   --entete-bordure:  rgb(255 255 255 / 0.16);
 
   /* Voiles posés sur une photo, pour y écrire. */
-  --voile:           rgb(0 0 0 / 0.25);
-  --voile-fort:      rgb(0 0 0 / 0.45);
+  --voile:           rgb(20 18 14 / 0.28);
+  --voile-fort:      rgb(20 18 14 / 0.48);
 
   /* --- Surfaces -------------------------------------------------------- */
   --carte-fond:   var(--fond-eleve);
-  --carte-bord:   var(--bordure);
+  --carte-bord:   var(--bordure-douce);
   --carte-survol: var(--fond-enfonce);
 
   /* --- Typographie ------------------------------------------------------
@@ -162,10 +179,10 @@
   --rayon-xl:    8px;
   --rayon-plein: 999px;
 
-  /* --- Profondeur : le filet fait le travail, l'ombre est l'exception ----- */
-  --ombre-sm: 0 1px 2px rgb(21 22 28 / 0.06);
-  --ombre-md: 0 1px 2px rgb(21 22 28 / 0.06), 0 6px 18px rgb(21 22 28 / 0.07);
-  --ombre-lg: 0 18px 50px rgb(18 26 35 / 0.22), 0 0 0 1px var(--bordure);
+  /* --- Profondeur : l'ombre est courte et chaude, comme sous une feuille --- */
+  --ombre-sm: 0 1px 1px rgb(40 35 25 / 0.05), 0 2px 6px rgb(40 35 25 / 0.05);
+  --ombre-md: 0 1px 2px rgb(40 35 25 / 0.06), 0 8px 22px rgb(40 35 25 / 0.09);
+  --ombre-lg: 0 18px 50px rgb(35 30 22 / 0.22), 0 0 0 1px var(--bordure);
   --ombre-accent: 0 0 0 3px var(--accent-doux);
 
   /* --- Mouvement : court, jamais décoratif ------------------------------- */
@@ -186,54 +203,71 @@
 }
 
 /* =========================================================================
-   Thème sombre — un atelier de nuit : mêmes filets, même densité, l'encre
-   et le papier échangés avec soin et non inversés.
+   Thème sombre — un graphite chaud, pas un noir : mêmes filets, même
+   densité, des feuilles nettement plus claires que le fond, l'accent
+   marine et la terre cuite éclaircis pour tenir sur le graphite. Les deux
+   blocs ci-dessous sont identiques et doivent le rester.
    ========================================================================= */
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="clair"]) {
-    --fond:         #1c1f26;
-    --fond-profond: #15181e;
-    --fond-eleve:   #262a33;
-    --fond-enfonce: #2d323c;
-    --fond-inverse: #eceef2;
+    --fond:         #1f1e1b;
+    --fond-profond: #181714;
+    --fond-eleve:   #2a2925;
+    --fond-enfonce: #33312c;
+    --fond-inverse: #f1ede4;
 
-    --texte:         #eceef2;
-    --texte-doux:    #b3b9c6;
-    --texte-faible:  #8b93a3;
-    --texte-inverse: #15181e;
-    --texte-accent:  #9dbcf7;
+    --texte:         #ece8df;
+    --texte-doux:    #b9b3a6;
+    --texte-faible:  #8f897b;
+    --texte-inverse: #1f1e1b;
+    --texte-accent:  #a3bff5;
 
-    --bordure:       #363b47;
-    --bordure-douce: #2f343e;
-    --bordure-forte: #4a5160;
+    --bordure:       #3d3b35;
+    --bordure-douce: #34322d;
+    --bordure-forte: #514e46;
 
-    --accent:         #9dbcf7;
-    --accent-vif:     #b9cffa;
-    --accent-contenu: #0b1530;
-    --accent-doux:    rgb(157 188 247 / 0.16);
-    --accent-lueur:   rgb(157 188 247 / 0.30);
+    --accent:         #a3bff5;
+    --accent-vif:     #bfd2f8;
+    --accent-contenu: #0c1730;
+    --accent-doux:    rgb(163 191 245 / 0.16);
+    --accent-lueur:   rgb(163 191 245 / 0.30);
     --surlignage:     #5a4300;
     --surlignage-texte: #ffe9b0;
 
-    --chaud:          #f2925f;
-    --chaud-doux:     rgb(242 146 95 / 0.16);
+    --chaud:          #e0906a;
+    --chaud-vif:      #eba884;
+    --chaud-encre:    #f2b797;
+    --chaud-contenu:  #2b130a;
+    --chaud-doux:     rgb(224 144 106 / 0.16);
+    --chaud-lueur:    rgb(224 144 106 / 0.30);
 
-    --entete-fond:    #0f1a36;
-    --entete-fond-2:  #16255a;
+    --barre-fond:          #262521;
+    --barre-texte:         #ece8df;
+    --barre-texte-doux:    #b9b3a6;
+    --barre-bordure:       #3d3b35;
+    --barre-surface:       rgb(255 255 255 / 0.06);
+    --barre-surface-forte: rgb(255 255 255 / 0.11);
+    --barre-ombre:         0 1px 0 rgb(0 0 0 / 0.25), 0 6px 20px rgb(0 0 0 / 0.30);
+
+    --entete-fond:    #14130f;
+    --entete-fond-2:  #1f1e1b;
     --entete-texte:   #ffffff;
-    --entete-texte-doux: rgb(255 255 255 / 0.70);
+    --entete-texte-doux: rgb(255 255 255 / 0.72);
     --entete-surface: rgb(255 255 255 / 0.08);
     --entete-surface-forte: rgb(255 255 255 / 0.16);
     --entete-bordure: rgb(255 255 255 / 0.14);
 
-    --carte-fond:   #262a33;
-    --carte-bord:   #363b47;
-    --carte-survol: #2d323c;
+    --voile:          rgb(10 9 7 / 0.32);
+    --voile-fort:     rgb(10 9 7 / 0.52);
 
-    --pole-etiia: #8b5cf6;
-    --pole-etiie: #0ea5c9;
-    --pole-etiii: #c47a0c;
+    --carte-fond:   #2a2925;
+    --carte-bord:   #3d3b35;
+    --carte-survol: #33312c;
+
+    --pole-etiia: #a78bfa;
+    --pole-etiie: #38bdf8;
+    --pole-etiii: #f0a04b;
 
     --serie-otq: #3987e5;
     --serie-otd: #2ea043;
@@ -248,57 +282,72 @@
     --statut-alerte-fond:   rgb(221 164 52 / 0.14);
     --statut-critique-fond: rgb(224 116 92 / 0.14);
 
-    --ombre-sm: 0 1px 2px rgb(0 0 0 / 0.3);
-    --ombre-md: 0 1px 2px rgb(0 0 0 / 0.35), 0 8px 22px rgb(0 0 0 / 0.30);
+    --ombre-sm: 0 1px 2px rgb(0 0 0 / 0.35), 0 2px 6px rgb(0 0 0 / 0.25);
+    --ombre-md: 0 1px 2px rgb(0 0 0 / 0.40), 0 8px 22px rgb(0 0 0 / 0.35);
     --ombre-lg: 0 18px 50px rgb(0 0 0 / 0.6), 0 0 0 1px var(--bordure-forte);
 
-    --focus-couleur: #8fb0f0;
+    --focus-couleur: #9db8f0;
   }
 }
 
 :root[data-theme="sombre"] {
-  --fond:         #1c1f26;
-  --fond-profond: #15181e;
-  --fond-eleve:   #262a33;
-  --fond-enfonce: #2d323c;
-  --fond-inverse: #eceef2;
+  --fond:         #1f1e1b;
+  --fond-profond: #181714;
+  --fond-eleve:   #2a2925;
+  --fond-enfonce: #33312c;
+  --fond-inverse: #f1ede4;
 
-  --texte:         #eceef2;
-  --texte-doux:    #b3b9c6;
-  --texte-faible:  #8b93a3;
-  --texte-inverse: #15181e;
-  --texte-accent:  #9dbcf7;
+  --texte:         #ece8df;
+  --texte-doux:    #b9b3a6;
+  --texte-faible:  #8f897b;
+  --texte-inverse: #1f1e1b;
+  --texte-accent:  #a3bff5;
 
-  --bordure:       #363b47;
-  --bordure-douce: #2f343e;
-  --bordure-forte: #4a5160;
+  --bordure:       #3d3b35;
+  --bordure-douce: #34322d;
+  --bordure-forte: #514e46;
 
-  --accent:         #9dbcf7;
-  --accent-vif:     #b9cffa;
-  --accent-contenu: #0b1530;
-  --accent-doux:    rgb(157 188 247 / 0.16);
-  --accent-lueur:   rgb(157 188 247 / 0.30);
+  --accent:         #a3bff5;
+  --accent-vif:     #bfd2f8;
+  --accent-contenu: #0c1730;
+  --accent-doux:    rgb(163 191 245 / 0.16);
+  --accent-lueur:   rgb(163 191 245 / 0.30);
   --surlignage:     #5a4300;
   --surlignage-texte: #ffe9b0;
 
-  --chaud:          #f2925f;
-  --chaud-doux:     rgb(242 146 95 / 0.16);
+  --chaud:          #e0906a;
+  --chaud-vif:      #eba884;
+  --chaud-encre:    #f2b797;
+  --chaud-contenu:  #2b130a;
+  --chaud-doux:     rgb(224 144 106 / 0.16);
+  --chaud-lueur:    rgb(224 144 106 / 0.30);
 
-  --entete-fond:    #0f1a36;
-  --entete-fond-2:  #16255a;
+  --barre-fond:          #262521;
+  --barre-texte:         #ece8df;
+  --barre-texte-doux:    #b9b3a6;
+  --barre-bordure:       #3d3b35;
+  --barre-surface:       rgb(255 255 255 / 0.06);
+  --barre-surface-forte: rgb(255 255 255 / 0.11);
+  --barre-ombre:         0 1px 0 rgb(0 0 0 / 0.25), 0 6px 20px rgb(0 0 0 / 0.30);
+
+  --entete-fond:    #14130f;
+  --entete-fond-2:  #1f1e1b;
   --entete-texte:   #ffffff;
-  --entete-texte-doux: rgb(255 255 255 / 0.70);
+  --entete-texte-doux: rgb(255 255 255 / 0.72);
   --entete-surface: rgb(255 255 255 / 0.08);
   --entete-surface-forte: rgb(255 255 255 / 0.16);
   --entete-bordure: rgb(255 255 255 / 0.14);
 
-  --carte-fond:   #262a33;
-  --carte-bord:   #363b47;
-  --carte-survol: #2d323c;
+  --voile:          rgb(10 9 7 / 0.32);
+  --voile-fort:     rgb(10 9 7 / 0.52);
 
-  --pole-etiia: #8b5cf6;
-  --pole-etiie: #0ea5c9;
-  --pole-etiii: #c47a0c;
+  --carte-fond:   #2a2925;
+  --carte-bord:   #3d3b35;
+  --carte-survol: #33312c;
+
+  --pole-etiia: #a78bfa;
+  --pole-etiie: #38bdf8;
+  --pole-etiii: #f0a04b;
 
   --serie-otq: #3987e5;
   --serie-otd: #2ea043;
@@ -313,9 +362,9 @@
   --statut-alerte-fond:   rgb(221 164 52 / 0.14);
   --statut-critique-fond: rgb(224 116 92 / 0.14);
 
-  --ombre-sm: 0 1px 2px rgb(0 0 0 / 0.3);
-  --ombre-md: 0 1px 2px rgb(0 0 0 / 0.35), 0 8px 22px rgb(0 0 0 / 0.30);
+  --ombre-sm: 0 1px 2px rgb(0 0 0 / 0.35), 0 2px 6px rgb(0 0 0 / 0.25);
+  --ombre-md: 0 1px 2px rgb(0 0 0 / 0.40), 0 8px 22px rgb(0 0 0 / 0.35);
   --ombre-lg: 0 18px 50px rgb(0 0 0 / 0.6), 0 0 0 1px var(--bordure-forte);
 
-  --focus-couleur: #8fb0f0;
+  --focus-couleur: #9db8f0;
 }

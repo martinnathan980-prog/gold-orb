@@ -6,7 +6,12 @@
    ========================================================================= */
 
 /* -------------------------------------------------------------------------
-   1. Titre de section : un filet, l'intitulé, un filet
+   1. Titre de section : un filet, l'intitulé en Newsreader, un filet
+   Le titre de section est la respiration entre deux blocs : grand, à
+   l'encre, en Newsreader, tenu de part et d'autre par un filet fin — comme
+   un intertitre de revue. Un sous-titre optionnel (span
+   .titre-section__sous-titre placé dans le span texte) le précise en une
+   phrase courte, en Plex Sans doux.
    ---------------------------------------------------------------------- */
 
 .titre-section {
@@ -14,13 +19,16 @@
   align-items: center;
   gap: var(--e-5);
   margin: 0;
-  font-family: var(--police-mono);
-  font-size: var(--texte-sm);
-  font-weight: var(--graisse-moyenne);
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
+  padding-block-start: var(--e-2);
+  font-family: var(--police-titre);
+  font-size: clamp(1.625rem, 0.9vw + 1.35rem, 2rem);
+  font-weight: var(--graisse-normale);
+  letter-spacing: 0.005em;
+  line-height: var(--interligne-serre);
+  text-transform: none;
   text-align: center;
-  color: var(--texte-doux);
+  text-wrap: balance;
+  color: var(--texte);
 }
 
 .titre-section::before,
@@ -28,10 +36,32 @@
   content: "";
   flex: 1;
   height: 1px;
-  background-color: var(--bordure-forte);
+  background-color: var(--bordure);
 }
 
-.titre-section__texte { flex: none; }
+.titre-section__texte {
+  flex: none;
+  max-inline-size: min(100%, 28ch);
+  padding-inline: var(--e-2);
+}
+
+.titre-section__sous-titre {
+  display: block;
+  margin-block-start: var(--e-1);
+  font-family: var(--police);
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-normale);
+  letter-spacing: 0;
+  line-height: var(--interligne);
+  color: var(--texte-doux);
+}
+
+/* Sur un écran étroit, les filets se retirent : le titre seul, centré. */
+@media (max-width: 640px) {
+  .titre-section::before,
+  .titre-section::after { display: none; }
+  .titre-section { justify-content: center; }
+}
 
 /* -------------------------------------------------------------------------
    2. Le kiosque de communication
@@ -43,40 +73,53 @@
   gap: var(--e-4);
 }
 
-/* --- Bandeau d'alertes ------------------------------------------------- */
+/* --- Bandeau d'alertes : en terre cuite, vivant, lisible ---------------- */
 
 .kiosque__alertes {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: var(--e-3);
-  padding: var(--e-2) var(--e-3);
-  background-color: var(--statut-alerte-fond);
-  border: 1px solid color-mix(in srgb, var(--statut-alerte) 35%, transparent);
-  border-inline-start: 3px solid var(--statut-alerte);
+  padding: 0 var(--e-3) 0 0;
+  background-color: var(--chaud-doux);
+  border: 1px solid color-mix(in srgb, var(--chaud) 28%, transparent);
   border-radius: var(--rayon-md);
+  overflow: hidden;
 }
 
+/* L'étiquette est un cartouche plein, à gauche : c'est lui qui donne la
+   couleur au bandeau, le reste est une teinte diluée. */
 .kiosque__alertes-etiquette {
   display: inline-flex;
   align-items: center;
   gap: var(--e-2);
   flex: none;
+  padding: var(--e-2) var(--e-3);
+  background-color: var(--chaud);
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
   font-weight: var(--graisse-moyenne);
   letter-spacing: var(--lettrage-etiquette);
   text-transform: uppercase;
-  color: var(--statut-alerte);
+  color: var(--chaud-contenu);
 }
 
 .kiosque__alertes-point {
   inline-size: 7px;
   block-size: 7px;
   border-radius: var(--rayon-plein);
-  background-color: var(--statut-alerte);
+  background-color: var(--chaud-contenu);
 }
 
-.kiosque__alertes-fenetre { flex: 1; min-inline-size: 0; overflow: hidden; }
+.kiosque__alertes-fenetre {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  /* Un fondu aux deux bords : les messages entrent et sortent en douceur. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, var(--fond-inverse) var(--e-4), var(--fond-inverse) calc(100% - var(--e-4)), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, var(--fond-inverse) var(--e-4), var(--fond-inverse) calc(100% - var(--e-4)), transparent 100%);
+}
 
 .kiosque__alertes-piste { display: flex; inline-size: max-content; }
 
@@ -84,14 +127,28 @@ ul.kiosque__alertes-liste {
   display: flex;
   gap: var(--e-8);
   margin: 0;
-  padding: 0 var(--e-8) 0 0;
+  padding: 0 var(--e-8) 0 var(--e-4);
   list-style: none;
 }
 
 .kiosque__alerte {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
   white-space: nowrap;
   font-size: var(--texte-sm);
-  color: color-mix(in srgb, var(--statut-alerte) 70%, var(--texte));
+  font-weight: var(--graisse-moyenne);
+  color: var(--chaud-encre);
+}
+
+/* Une puce terre cuite ouvre chaque message : le rythme se lit de loin. */
+.kiosque__alerte::before {
+  content: "";
+  flex: none;
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: var(--rayon-plein);
+  background-color: var(--chaud);
 }
 
 @keyframes kiosque-defile {
@@ -467,7 +524,7 @@ ul.kiosque__alertes-liste {
   block-size: 1em;
   margin-inline-start: 2px;
   vertical-align: -0.15em;
-  background-color: var(--accent);
+  background-color: var(--chaud);
 }
 
 .kiosque__curseur[hidden] { display: none; }
