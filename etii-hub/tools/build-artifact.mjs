@@ -122,19 +122,40 @@ const textesAssembles = Object.fromEntries(TEXTES.map(n => [n, lire(n)]));
 // relatifs : dans un cadre srcdoc, rien ne les résout. Elles sont donc
 // intégrées en data URI — mais seulement dans les pages qui affichent la
 // flotte, sinon chaque page en porterait une copie.
-function donneesAvecImages(noms) {
-  if (!noms.includes('porteurs')) return donneesAssemblees;
-  const flotte = JSON.parse(JSON.stringify(donneesAssemblees.flotte));
-  for (const appareil of (Array.isArray(flotte.flotte) ? flotte.flotte : [])) {
-    const chemin = String(appareil.photo || '').trim();
-    if (!/^assets\/img\/[a-z0-9_\-\/]+\.(jpe?g|png|webp|svg)$/i.test(chemin)) continue;
+const imagesLues = new Map();
+function dataUri(chemin) {
+  if (!/^assets\/img\/[a-z0-9_\-\/]+\.(jpe?g|png|webp|svg)$/i.test(chemin)) return null;
+  if (!imagesLues.has(chemin)) {
     const type = /\.svg$/i.test(chemin) ? 'image/svg+xml'
       : /\.png$/i.test(chemin) ? 'image/png'
       : /\.webp$/i.test(chemin) ? 'image/webp' : 'image/jpeg';
     const octets = readFileSync(join(RACINE, chemin));
-    appareil.photo = `data:${type};base64,${octets.toString('base64')}`;
+    imagesLues.set(chemin, `data:${type};base64,${octets.toString('base64')}`);
   }
-  return { ...donneesAssemblees, flotte };
+  return imagesLues.get(chemin);
+}
+
+function donneesAvecImages(noms) {
+  const copie = { ...donneesAssemblees };
+  if (noms.includes('porteurs')) {
+    const flotte = JSON.parse(JSON.stringify(donneesAssemblees.flotte));
+    for (const appareil of (Array.isArray(flotte.flotte) ? flotte.flotte : [])) {
+      const uri = dataUri(String(appareil.photo || '').trim());
+      if (uri) appareil.photo = uri;
+    }
+    copie.flotte = flotte;
+  }
+  if (noms.includes('kiosque')) {
+    const comms = JSON.parse(JSON.stringify(donneesAssemblees.communications));
+    const entrees = [comms.motDuChef].concat(comms.annonces || [], comms.agenda || []).filter(Boolean);
+    for (const e of entrees) {
+      if (!e.image || typeof e.image !== 'object') continue;
+      const uri = dataUri(String(e.image.src || '').trim());
+      if (uri) e.image.src = uri;
+    }
+    copie.communications = comms;
+  }
+  return copie;
 }
 
 /* Résolution TRANSITIVE des dépendances.

@@ -119,100 +119,48 @@ ul.kiosque__alertes-liste {
   .kiosque__alerte { white-space: normal; }
 }
 
-/* --- La vedette : le mot du chef, sur fond marine ---------------------- */
+/* --- La grille : la liste à gauche, la lecture à droite ---------------- */
 
-.kiosque__vedette {
-  position: relative;
-  overflow: hidden;
-  padding: var(--e-8) clamp(var(--e-5), 5vw, var(--e-12));
-  background-color: var(--entete-fond);
-  background-image:
-    radial-gradient(60rem 30rem at 100% 0%, var(--entete-surface-forte), transparent 60%),
-    linear-gradient(120deg, var(--entete-fond) 0%, var(--entete-fond-2) 100%);
-  border-radius: var(--rayon-xl);
-  box-shadow: var(--ombre-md);
-  color: var(--entete-texte);
-  cursor: default;
+.kiosque__grille {
+  display: grid;
+  grid-template-columns: minmax(0, 23rem) minmax(0, 1fr);
+  gap: var(--e-5);
+  align-items: start;
 }
 
-.kiosque__vedette-sur-titre {
+@media (max-width: 900px) {
+  .kiosque__grille { grid-template-columns: minmax(0, 1fr); }
+  .kiosque__flux { position: static; max-block-size: 26rem; }
+}
+
+/* --- La liste ------------------------------------------------------------- */
+
+/* La liste reste sous les yeux pendant qu'on lit : elle se colle sous la
+   barre du site, et défile dans sa propre fenêtre. */
+.kiosque__flux {
+  position: sticky;
+  inset-block-start: var(--e-4);
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--e-2) var(--e-4);
-  margin: 0 0 var(--e-3);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: var(--lettrage-etiquette);
-  text-transform: uppercase;
-  color: var(--entete-texte-doux);
+  flex-direction: column;
+  max-block-size: clamp(28rem, calc(100vh - var(--e-12)), 44rem);
+  min-block-size: 0;
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
 }
 
-.kiosque__vedette-sur-titre > span:first-child {
-  padding: 2px var(--e-2);
-  border: 1px solid var(--entete-bordure);
-  border-radius: var(--rayon-sm);
-  background-color: var(--entete-surface);
-  color: var(--entete-texte);
-}
-
-.kiosque__vedette-titre {
-  margin: 0 0 var(--e-4);
-  font-family: var(--police-titre);
-  font-size: clamp(1.75rem, 1.6vw + 1.2rem, 2.5rem);
-  font-weight: var(--graisse-normale);
-  line-height: 1.15;
-  color: var(--entete-texte);
-  text-wrap: balance;
-}
-
-.kiosque__vedette-texte {
-  max-inline-size: 70ch;
-  font-size: var(--texte-lg);
-  line-height: 1.65;
-}
-
-.kiosque__vedette-corps { display: flex; flex-direction: column; gap: var(--e-2); }
-
-.kiosque__vedette-signature {
-  margin: var(--e-5) 0 0;
-  padding-block-start: var(--e-3);
-  border-top: 1px solid var(--entete-bordure);
-  font-size: var(--texte-sm);
-  color: var(--entete-texte-doux);
-}
-
-.kiosque__vedette-signature strong { color: var(--entete-texte); }
-
-.kiosque__curseur {
-  display: inline-block;
-  inline-size: 0.55em;
-  block-size: 1em;
-  margin-inline-start: 2px;
-  vertical-align: -0.15em;
-  background-color: currentColor;
-}
-
-.kiosque__curseur[hidden] { display: none; }
-
-@keyframes kiosque-clignote { 50% { opacity: 0; } }
-
-@media (prefers-reduced-motion: no-preference) {
-  .kiosque__curseur { animation: kiosque-clignote calc(var(--duree-lente) * 2) steps(1) infinite; }
-}
-
-/* --- La barre de l'historique ------------------------------------------ */
-
-.kiosque__barre {
+.kiosque__flux-tete {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--e-2) var(--e-4);
-  margin-block-start: var(--e-2);
+  gap: var(--e-2) var(--e-3);
+  padding: var(--e-3) var(--e-4);
+  border-bottom: 1px solid var(--bordure);
 }
 
-.kiosque__titre-fil {
+.kiosque__flux-titre {
   margin: 0;
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
@@ -225,52 +173,103 @@ ul.kiosque__alertes-liste {
 .kiosque__compte { color: var(--texte-faible); letter-spacing: 0; }
 
 .kiosque__filtres { gap: var(--e-1); }
-.kiosque__filtres .facette { min-height: calc(var(--cible-tactile) - var(--e-3)); padding-inline: var(--e-3); font-size: var(--texte-xs); }
+.kiosque__filtres .facette { min-height: calc(var(--cible-tactile) - var(--e-3)); padding-inline: var(--e-2); font-size: var(--texte-xs); }
 
-/* --- Les cartes ---------------------------------------------------------- */
+.kiosque__defile {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+  padding: var(--e-2);
+}
 
-.kiosque__grille {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr));
-  gap: var(--e-4);
+.kiosque__defile:focus-visible { outline-offset: -2px; }
+
+.kiosque__liste {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.kiosque__item { display: flex; }
+.kiosque__groupe {
+  padding: var(--e-3) var(--e-2) var(--e-1);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
 
 .kiosque__carte {
-  --kiosque-teinte: var(--accent);
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-2);
+  --kiosque-teinte: var(--bordure-forte);
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  gap: var(--e-3);
   inline-size: 100%;
-  padding: var(--e-4) var(--e-4) var(--e-3);
-  background-color: var(--carte-fond);
-  border: 1px solid var(--carte-bord);
-  border-top: 3px solid var(--kiosque-teinte);
-  border-radius: var(--rayon-lg);
-  box-shadow: var(--ombre-sm);
+  padding: var(--e-2) var(--e-3) var(--e-2) var(--e-2);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--rayon-md);
+  box-shadow: inset 3px 0 0 transparent;
   color: var(--texte);
   font: inherit;
   text-align: start;
   cursor: pointer;
-  transition: transform var(--duree-rapide) var(--courbe),
-              box-shadow var(--duree-rapide) var(--courbe),
-              border-color var(--duree-rapide) var(--courbe);
+  transition: background-color var(--duree-rapide) var(--courbe),
+              border-color var(--duree-rapide) var(--courbe),
+              box-shadow var(--duree-rapide) var(--courbe);
 }
 
-.kiosque__item[data-pole="ETIIA"] .kiosque__carte { --kiosque-teinte: var(--pole-etiia); }
-.kiosque__item[data-pole="ETIIE"] .kiosque__carte { --kiosque-teinte: var(--pole-etiie); }
-.kiosque__item[data-pole="ETIII"] .kiosque__carte { --kiosque-teinte: var(--pole-etiii); }
+.kiosque__entree[data-pole="ETIIA"] .kiosque__carte { --kiosque-teinte: var(--pole-etiia); }
+.kiosque__entree[data-pole="ETIIE"] .kiosque__carte { --kiosque-teinte: var(--pole-etiie); }
+.kiosque__entree[data-pole="ETIII"] .kiosque__carte { --kiosque-teinte: var(--pole-etiii); }
 
-.kiosque__carte:hover,
-.kiosque__carte:focus-visible {
-  transform: translateY(-2px);
-  box-shadow: var(--ombre-md);
-  border-color: var(--bordure-forte);
-  border-top-color: var(--kiosque-teinte);
+.kiosque__carte:hover { background-color: var(--fond-enfonce); }
+
+.kiosque__carte[aria-current="true"] {
+  background-color: var(--accent-doux);
+  border-color: transparent;
+  box-shadow: inset 3px 0 0 var(--kiosque-teinte);
+}
+
+.kiosque__quand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-block: var(--e-1);
+  border-inline-end: 1px solid var(--bordure-douce);
+  color: var(--texte-doux);
+}
+
+.kiosque__jour {
+  font-family: var(--police-titre);
+  font-size: var(--texte-xl);
+  line-height: 1;
+  color: var(--texte);
+}
+
+.kiosque__mois {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.kiosque__carte-corps { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; }
+
+.kiosque__carte-titre { font-size: var(--texte-sm); font-weight: var(--graisse-forte); line-height: 1.3; }
+
+.kiosque__carte-resume {
+  font-size: var(--texte-xs);
+  line-height: 1.45;
+  color: var(--texte-doux);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .kiosque__carte-meta {
@@ -278,6 +277,7 @@ ul.kiosque__alertes-liste {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--e-2);
+  margin-block-start: 2px;
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
   letter-spacing: 0.04em;
@@ -285,42 +285,9 @@ ul.kiosque__alertes-liste {
   color: var(--texte-faible);
 }
 
-.kiosque__carte-statut { margin-inline-start: auto; }
+.kiosque__carte-glyphe { color: var(--accent); }
 
-.kiosque__carte-titre {
-  font-size: var(--texte-lg);
-  font-weight: var(--graisse-forte);
-  line-height: 1.3;
-  color: var(--texte);
-}
-
-.kiosque__carte-resume {
-  font-size: var(--texte-sm);
-  line-height: 1.55;
-  color: var(--texte-doux);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.kiosque__carte-lire {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--e-2);
-  margin-block-start: auto;
-  padding-block-start: var(--e-2);
-  border-top: 1px solid var(--bordure-douce);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--texte-faible);
-}
-
-.kiosque__carte-lire > span:last-child { color: var(--texte-accent); }
-
-.kiosque__vide { grid-column: 1 / -1; padding: var(--e-6); text-align: center; }
+.kiosque__vide { padding: var(--e-6) var(--e-4); text-align: center; }
 
 .kiosque__pole {
   display: inline-flex;
@@ -344,7 +311,174 @@ ul.kiosque__alertes-liste {
 .kiosque__pole[data-pole="ETIIE"] .kiosque__pole-point { background-color: var(--pole-etiie); }
 .kiosque__pole[data-pole="ETIII"] .kiosque__pole-point { background-color: var(--pole-etiii); }
 
-/* --- Les lignes typées (vedette et fenêtre de lecture) ------------------ */
+/* --- La lecture ---------------------------------------------------------- */
+
+.kiosque__lecture {
+  min-inline-size: 0;
+  overflow: hidden;
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
+}
+
+@keyframes kiosque-entre {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .kiosque__lecture--entre .kiosque__lecture-interieur { animation: kiosque-entre var(--duree) var(--courbe) both; }
+}
+
+.kiosque__image {
+  position: relative;
+  margin: 0;
+  background-color: var(--fond-enfonce);
+}
+
+.kiosque__image[hidden] { display: none; }
+
+.kiosque__image img {
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 21 / 9;
+  object-fit: cover;
+}
+
+.kiosque__image figcaption {
+  position: absolute;
+  inset-block-end: var(--e-2);
+  inset-inline-end: var(--e-3);
+  max-inline-size: 70%;
+  padding: 2px var(--e-2);
+  border-radius: var(--rayon-sm);
+  background-color: var(--voile-fort);
+  color: var(--entete-texte);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  text-align: end;
+}
+
+.kiosque__lecture-interieur {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-4);
+  padding: var(--e-6) clamp(var(--e-4), 4vw, var(--e-8)) var(--e-8);
+}
+
+.kiosque__lecture-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-3);
+  margin: 0;
+  font-size: var(--texte-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.kiosque__lecture-titre {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: clamp(1.6rem, 1.4vw + 1.1rem, 2.25rem);
+  font-weight: var(--graisse-normale);
+  line-height: 1.15;
+  text-wrap: balance;
+  color: var(--texte);
+}
+
+.kiosque__chapeau {
+  margin: 0;
+  max-inline-size: 64ch;
+  font-size: var(--texte-lg);
+  line-height: 1.55;
+  color: var(--texte-doux);
+}
+
+.kiosque__chapeau[hidden] { display: none; }
+.kiosque__extras { display: flex; flex-direction: column; gap: var(--e-4); }
+.kiosque__extras[hidden] { display: none; }
+
+/* Les chiffres clés : des tuiles sobres, la valeur d'abord. */
+.kiosque__chiffres {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+  gap: var(--e-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kiosque__chiffre {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--e-3) var(--e-4);
+  background-color: var(--fond-enfonce);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-md);
+}
+
+.kiosque__chiffre-valeur { font-size: var(--texte-2xl); line-height: 1.1; color: var(--texte); }
+.kiosque__chiffre-unite { font-size: var(--texte-md); color: var(--texte-doux); }
+
+.kiosque__chiffre-libelle {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.kiosque__chiffre-tendance { font-size: var(--texte-xs); color: var(--texte-doux); }
+.kiosque__chiffre-tendance > span { color: var(--accent); }
+
+/* La série : la courbe validée, étirée sur la largeur disponible. */
+.kiosque__serie {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  margin: 0;
+  padding: var(--e-3) var(--e-4);
+  max-inline-size: 30rem;
+  background-color: var(--fond-enfonce);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-md);
+}
+
+.kiosque__serie-tete { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--e-2); font-size: var(--texte-sm); }
+.kiosque__serie-libelle { font-weight: var(--graisse-forte); }
+.kiosque__serie-bornes { font-size: var(--texte-xs); color: var(--texte-doux); }
+.kiosque__serie .ind-spark { inline-size: 100%; block-size: auto; }
+.kiosque__serie-periode { font-size: var(--texte-xs); color: var(--texte-faible); }
+
+.kiosque__lecture-corps {
+  font-size: var(--texte-md);
+  line-height: 1.65;
+}
+
+.kiosque__corps { display: flex; flex-direction: column; gap: var(--e-2); }
+
+.kiosque__curseur {
+  display: inline-block;
+  inline-size: 0.55em;
+  block-size: 1em;
+  margin-inline-start: 2px;
+  vertical-align: -0.15em;
+  background-color: var(--accent);
+}
+
+.kiosque__curseur[hidden] { display: none; }
+
+@keyframes kiosque-clignote { 50% { opacity: 0; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .kiosque__curseur { animation: kiosque-clignote calc(var(--duree-lente) * 2) steps(1) infinite; }
+}
+
+/* --- Les lignes typées --------------------------------------------------- */
 
 .kiosque__ligne { display: flex; gap: var(--e-2); margin: 0; }
 .kiosque__ligne--vide { block-size: var(--e-2); }
@@ -353,46 +487,6 @@ ul.kiosque__alertes-liste {
 .kiosque__ligne--valide .kiosque__glyphe { color: var(--statut-succes); }
 .kiosque__ligne--alerte .kiosque__glyphe { color: var(--statut-alerte); }
 .kiosque__glyphe { flex: none; inline-size: 1.2em; text-align: center; font-family: var(--police-mono); }
-.kiosque__vedette .kiosque__ligne--valide .kiosque__glyphe,
-.kiosque__vedette .kiosque__ligne--alerte .kiosque__glyphe { color: inherit; }
-
-/* --- La fenêtre de lecture ---------------------------------------------- */
-
-.kiosque__lecture-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--e-2) var(--e-3);
-  margin: 0 0 var(--e-4);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--texte-faible);
-}
-
-.kiosque__lecture-lede {
-  margin: 0 0 var(--e-4);
-  font-size: var(--texte-lg);
-  line-height: 1.5;
-  color: var(--texte);
-}
-
-.kiosque__lecture-corps {
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-2);
-  padding: var(--e-4) var(--e-5);
-  background-color: var(--fond-enfonce);
-  border-inline-start: 3px solid var(--accent);
-  border-radius: var(--rayon-md);
-  font-size: var(--texte-md);
-  line-height: 1.6;
-}
-
-.kiosque__lecture-signature {
-  margin: var(--e-4) 0 0;
-  font-size: var(--texte-sm);
-}
 
 /* -------------------------------------------------------------------------
    3. Les porteurs : une piste de fiches compactes, puis la fiche détaillée

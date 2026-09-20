@@ -36,20 +36,20 @@ t('le CSS est appliqué', parseFloat(style.taille) > 30, JSON.stringify(style));
 console.log('\n== Le Communication Center ==');
 const texte = await f.locator('main').innerText();
 t('le kiosque est rendu', (await f.locator('.kiosque').count()) === 1);
-t('le mot du chef est en vedette', (await f.locator('.kiosque__vedette').count()) === 1 && /trimestre qui se tient/i.test(texte));
-t('l\'historique est en cartes', (await f.locator('.kiosque__carte').count()) >= 3 && /historique/i.test(texte));
+t('le mot du chef ouvre la lecture', (await f.locator('.kiosque__lecture').count()) === 1
+  && /trimestre qui se tient/i.test(await f.locator('.kiosque__lecture-titre').innerText()));
+t('la liste est à côté de la lecture', (await f.locator('.kiosque__flux .kiosque__carte').count()) >= 3);
 t('rien d\'« à venir » dans la communication', !/à venir/i.test(texte));
 t('le bandeau d\'alertes est là', (await f.locator('.kiosque__alertes').count()) === 1);
+t('les chiffres clés et la courbe sont rendus', (await f.locator('.kiosque__chiffre').count()) >= 3 && (await f.locator('.kiosque__serie .ind-spark').count()) === 1);
+t('l\'image de la communication est intégrée', /^data:image/.test((await f.locator('.kiosque__image img').first().getAttribute('src')) || ''));
 const secondeEntree = f.locator('.kiosque__carte').nth(1);
 const titreCarte = (await secondeEntree.locator('.kiosque__carte-titre').innerText()).trim();
 await secondeEntree.click();
 await page.waitForTimeout(600);
-t('cliquer une carte ouvre sa lecture en fenêtre',
-  (await f.locator('.modale .modale__titre').count()) === 1
-  && (await f.locator('.modale .modale__titre').innerText()).trim() === titreCarte);
-await page.keyboard.press('Escape');
-await page.waitForTimeout(400);
-t('Échap referme la lecture', (await f.locator('.modale').count()) === 0);
+t('cliquer une entrée la lit à droite',
+  (await secondeEntree.getAttribute('aria-current')) === 'true'
+  && (await f.locator('.kiosque__lecture-titre').innerText()).trim() === titreCarte);
 
 console.log('\n== Les porteurs ==');
 t('la galerie des porteurs est rendue', (await f.locator('.porteurs__galerie').count()) > 0 && (await f.locator('.porteurs__groupe-galerie').count()) === 3);

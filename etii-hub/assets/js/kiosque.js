@@ -1,17 +1,21 @@
 /* =========================================================================
    ETII Hub — Le kiosque de communication
    Le « Communication Center » du service : un bandeau d'alertes qui
-   défile, le mot du chef en vedette (écrit ligne à ligne, à la machine à
-   écrire), puis l'historique en cartes — date, pôle, titre, chapeau. Une
-   carte s'ouvre en fenêtre pour lire le texte complet. On ne montre que
-   ce qui a été dit : l'agenda à venir n'est pas de la communication.
+   défile, puis deux panneaux côte à côte — à gauche la liste de tout ce
+   qui a été communiqué (la plus récente d'abord, par mois), à droite la
+   lecture de la communication choisie : son image si elle en a une, sa
+   date, son titre, son résumé, ses chiffres clés, sa courbe, puis le corps
+   écrit ligne à ligne. On ne montre que ce qui a été dit : l'agenda à
+   venir n'est pas de la communication.
 
-   Rien n'est inventé : chaque entrée vient de communications.json (le mot
-   du chef, l'agenda, les annonces). Tout le DOM est construit avec el() —
-   aucun innerHTML, aucun gestionnaire en attribut.
+   Rien n'est inventé : chaque entrée vient du fichier ou de la feuille de
+   communications (le mot du chef, les annonces, les alertes). Tout le DOM
+   est construit avec el() — aucun innerHTML, aucun gestionnaire en
+   attribut.
    ========================================================================= */
 
-import { el, frag, monter, mouvementReduit, annoncer, ouvrirModale } from './ui.js';
+import { el, monter, mouvementReduit, annoncer, etatUrl } from './ui.js';
+import { sparkline } from './indicateurs.js';
 
 const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
                      'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -30,8 +34,7 @@ const STATUTS = {
   succes: { libelle: 'Validé', classe: 'badge--succes' },
   urgent: { libelle: 'Urgent', classe: 'badge--alerte' },
   info:   { libelle: 'Information', classe: 'badge--info' },
-  'a-venir': { libelle: 'À venir', classe: 'badge--accent' },
-  mot:    { libelle: 'Le mot du chef', classe: 'badge--accent' }
+  mot:    { libelle: 'Direction', classe: 'badge--accent' }
 };
 
 /* Glyphe posé devant chaque ligne du corps, selon son type. C'est le
@@ -39,6 +42,12 @@ const STATUTS = {
    « -> » titre, « • » puce. */
 const GLYPHES = {
   titre: '→', puce: '•', valide: '✓', alerte: '⚠', texte: '', vide: ''
+};
+
+const TENDANCES = {
+  hausse: { glyphe: '↗', libelle: 'en hausse' },
+  baisse: { glyphe: '↘', libelle: 'en baisse' },
+  stable: { glyphe: '→', libelle: 'stable' }
 };
 
 /* -------------------------------------------------------------------------
@@ -50,6 +59,8 @@ function texte(valeur) {
   return String(valeur).trim();
 }
 
+function objet(v) { return (v && typeof v === 'object' && !Array.isArray(v)) ? v : null; }
+
 function partiesDate(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(texte(iso));
   if (!m) return null;
@@ -58,18 +69,26 @@ function partiesDate(iso) {
   return { annee, mois, jour };
 }
 
-/** « 12 SEPT. 2026 » — la date courte du fil, en capitales mono. */
+/** « 12 sept. 2026 » — la date courte, en mono. */
 export function dateCourte(iso) {
   const p = partiesDate(iso);
   if (!p) return '';
   return `${p.jour} ${MOIS_COURTS[p.mois - 1]} ${p.annee}`;
 }
 
-/** « jeudi 12 septembre 2026 » — la date longue du projecteur. */
+/** « 12 septembre 2026 » — la date longue de la lecture. */
 export function dateLongue(iso) {
   const p = partiesDate(iso);
   if (!p) return '';
   return `${p.jour} ${MOIS_LONGS[p.mois - 1]} ${p.annee}`;
+}
+
+/** « Septembre 2026 » — l'intitulé de groupe de la liste. */
+function moisLong(iso) {
+  const p = partiesDate(iso);
+  if (!p) return 'Sans date';
+  const m = MOIS_LONGS[p.mois - 1];
+  return m[0].toUpperCase() + m.slice(1) + ' ' + p.annee;
 }
 
 function aujourdhui() {
@@ -83,6 +102,15 @@ export function joursRestants(iso) {
   if (!p) return null;
   const cible = new Date(p.annee, p.mois - 1, p.jour);
   return Math.round((cible - aujourdhui()) / 86400000);
+}
+
+/* Les nombres s'écrivent à la française : espace fine des milliers,
+   virgule décimale. Une valeur illisible est rendue telle quelle. */
+function nombreLisible(v) {
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    return v.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+  }
+  return texte(v);
 }
 
 /* -------------------------------------------------------------------------
@@ -107,12 +135,61 @@ function lignesDepuis(brut) {
   return t.split('\n').map((l) => ({ type: l.trim() ? 'texte' : 'vide', texte: l.trim() }));
 }
 
+/** L'image d'une communication : { src, alt, legende } ou null. */
+function imageDepuis(brut) {
+  const o = objet(brut);
+  if (!o) return null;
+  const src = texte(o.src);
+  if (!/^(https:\/\/|assets\/)/.test(src)) return null;
+  return { src, alt: texte(o.alt), legende: texte(o.legende) };
+}
+
+/** Les chiffres clés : au plus quatre tuiles { libelle, valeur, unite, tendance }. */
+function chiffresDepuis(brut) {
+  if (!Array.isArray(brut)) return [];
+  return brut
+    .map(objet).filter(Boolean)
+    .filter((c) => texte(c.libelle) && (typeof c.valeur === 'number' || texte(c.valeur)))
+    .slice(0, 4)
+    .map((c) => ({
+      libelle: texte(c.libelle),
+      valeur: typeof c.valeur === 'number' ? c.valeur : texte(c.valeur),
+      unite: texte(c.unite),
+      tendance: TENDANCES[texte(c.tendance)] ? texte(c.tendance) : ''
+    }));
+}
+
+/** Une petite série mensuelle : { libelle, mois[], valeurs[], unite } ou null. */
+function serieDepuis(brut) {
+  const o = objet(brut);
+  if (!o || !Array.isArray(o.valeurs) || !o.valeurs.length) return null;
+  const valeurs = o.valeurs.map((v) => (typeof v === 'number' && Number.isFinite(v) ? v : null));
+  if (!valeurs.some((v) => v !== null)) return null;
+  const mois = Array.isArray(o.mois) ? o.mois.map(texte) : [];
+  return { libelle: texte(o.libelle) || 'Série', mois, valeurs, unite: texte(o.unite) };
+}
+
+function dossierDepuis(e, base) {
+  return Object.assign({
+    date: texte(e.date),
+    titre: texte(e.titre),
+    resume: texte(e.resume),
+    pole: texte(e.pole).toUpperCase() || 'ETII',
+    lignes: lignesDepuis(e.corps),
+    image: imageDepuis(e.image),
+    chiffres: chiffresDepuis(e.chiffres),
+    serie: serieDepuis(e.serie)
+  }, base);
+}
+
 /**
  * Construit la liste des dossiers du kiosque à partir de communications.json.
  *
- * - le mot du chef, en vedette (seulement au niveau service) ;
- * - l'historique : annonces et agenda passé, du plus récent au plus ancien.
- *   L'agenda à venir est ignoré : on communique sur ce qui s'est passé.
+ * - le mot du chef en premier (seulement au niveau service) ;
+ * - puis l'historique : annonces et agenda passé, du plus récent au plus
+ *   ancien. L'agenda à venir est ignoré : on communique sur ce qui s'est
+ *   passé. Un même événement saisi deux fois (annonce et agenda, même titre
+ *   à la même date) ne compte qu'une fois : l'annonce, qui porte le texte.
  *
  * @param {object} donnees  contenu de communications.json
  * @param {{pole?: string}} [options]  code de pôle ; absent ou 'ETII' : tout le service
@@ -127,61 +204,37 @@ export function dossiersDepuisCommunications(donnees, options) {
   const dossiers = [];
   const d = (donnees && typeof donnees === 'object') ? donnees : {};
 
-  const mot = (d.motDuChef && typeof d.motDuChef === 'object') ? d.motDuChef : null;
+  const mot = objet(d.motDuChef);
   if (mot && niveauService && texte(mot.titre)) {
-    dossiers.push({
-      id: 'mot-du-chef',
-      groupe: 'mot',
-      date: texte(mot.date),
-      titre: texte(mot.titre),
-      resume: '',
-      programme: 'Service ETII',
-      statut: 'mot',
-      pole: 'ETII',
-      lignes: lignesDepuis(mot.corps),
-      auteur: texte(mot.auteur),
-      fonction: texte(mot.fonction)
-    });
+    dossiers.push(dossierDepuis(mot, {
+      id: 'mot-du-chef', groupe: 'mot', programme: 'Service ETII', statut: 'mot', pole: 'ETII'
+    }));
   }
 
   const agenda = Array.isArray(d.agenda) ? d.agenda.filter((e) => e && typeof e === 'object') : [];
   const annonces = Array.isArray(d.annonces) ? d.annonces.filter((e) => e && typeof e === 'object') : [];
 
   const historique = [
-    ...annonces.filter(garder).map((e) => ({
+    ...annonces.filter(garder).map((e) => dossierDepuis(e, {
       id: 'annonce-' + texte(e.id),
       groupe: 'historique',
-      date: texte(e.date),
-      titre: texte(e.titre),
-      resume: texte(e.resume),
       programme: texte(e.categorie) || 'Général',
-      statut: STATUTS[texte(e.statut)] ? texte(e.statut) : 'info',
-      pole: texte(e.pole).toUpperCase(),
-      lede: texte(e.resume),
-      lignes: lignesDepuis(e.corps)
+      statut: STATUTS[texte(e.statut)] ? texte(e.statut) : 'info'
     })),
     ...agenda
       .filter((e) => texte(e.statut) !== 'a-venir' && texte(e.type) !== 'mot' && garder(e))
-      .map((e) => ({
+      .map((e) => dossierDepuis(e, {
         id: 'agenda-' + texte(e.id),
         groupe: 'historique',
-        date: texte(e.date),
-        titre: texte(e.titre),
-        resume: texte(e.resume),
         programme: TYPES_AGENDA[texte(e.type)] || texte(e.type) || 'Agenda',
         statut: STATUTS[texte(e.type)] ? texte(e.type) : 'info',
-        pole: texte(e.pole).toUpperCase(),
-        lede: e.corps ? texte(e.resume) : '',
         lignes: lignesDepuis(e.corps || e.resume)
       }))
   ].sort((a, b) => b.date.localeCompare(a.date));
 
-  /* Un même événement peut être saisi deux fois — comme annonce détaillée
-     et comme entrée d'agenda. Même titre à la même date : on garde la
-     première venue, l'annonce, qui porte le texte complet. */
   const vus = new Set();
-  const uniques = historique.filter((d) => {
-    const cle = d.date + '|' + d.titre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const uniques = historique.filter((x) => {
+    const cle = x.date + '|' + x.titre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
     if (vus.has(cle)) return false;
     vus.add(cle);
     return true;
@@ -216,7 +269,7 @@ function bandeauAlertes(alertes) {
 }
 
 /* -------------------------------------------------------------------------
-   4. Le corps d'une entrée et la machine à écrire
+   4. La liste (à gauche) : par mois, la plus récente d'abord
    ------------------------------------------------------------------------- */
 
 function pastillePole(code) {
@@ -226,12 +279,54 @@ function pastillePole(code) {
     code);
 }
 
-function ligneCorps(ligne, differe) {
+function carteListe(dossier, prefixe) {
+  const p = partiesDate(dossier.date);
+  return el('li', { class: 'kiosque__entree', dataset: { pole: dossier.pole || 'ETII' } },
+    el('button', {
+      type: 'button',
+      class: 'kiosque__carte',
+      id: prefixe + '-entree-' + dossier.id,
+      dataset: { id: dossier.id },
+      'aria-current': 'false'
+    },
+    el('span', { class: 'kiosque__quand', 'aria-hidden': 'true' },
+      el('span', { class: 'kiosque__jour' }, p ? String(p.jour) : '—'),
+      el('span', { class: 'kiosque__mois' }, p ? MOIS_COURTS[p.mois - 1] : '')),
+    el('span', { class: 'kiosque__carte-corps' },
+      el('span', { class: 'kiosque__carte-titre' }, dossier.titre || 'Sans titre'),
+      dossier.resume ? el('span', { class: 'kiosque__carte-resume' }, dossier.resume) : null,
+      el('span', { class: 'kiosque__carte-meta' },
+        el('time', { class: 'visuellement-cache', datetime: dossier.date || null }, dateLongue(dossier.date)),
+        pastillePole(dossier.pole),
+        el('span', {}, dossier.programme || 'Général'),
+        dossier.image ? el('span', { class: 'kiosque__carte-glyphe', title: 'Avec image', 'aria-hidden': 'true' }, '▣') : null,
+        dossier.chiffres.length || dossier.serie ? el('span', { class: 'kiosque__carte-glyphe', title: 'Avec chiffres', 'aria-hidden': 'true' }, '▮') : null))));
+}
+
+function liste(dossiers, prefixe) {
+  const enfants = [];
+  let moisCourant = null;
+  for (const d of dossiers) {
+    const m = moisLong(d.date);
+    if (m !== moisCourant) {
+      moisCourant = m;
+      enfants.push(el('li', { class: 'kiosque__groupe', role: 'presentation' }, m));
+    }
+    enfants.push(carteListe(d, prefixe));
+  }
+  return el('ol', { class: 'kiosque__liste', role: 'list' }, enfants);
+}
+
+/* -------------------------------------------------------------------------
+   5. La lecture (à droite) et la machine à écrire
+   ------------------------------------------------------------------------- */
+
+function ligneCorps(ligne) {
   if (ligne.type === 'vide') return el('div', { class: 'kiosque__ligne kiosque__ligne--vide' });
   const glyphe = GLYPHES[ligne.type] || '';
   return el('p', { class: ['kiosque__ligne', 'kiosque__ligne--' + ligne.type] },
     glyphe ? el('span', { class: 'kiosque__glyphe', 'aria-hidden': 'true' }, glyphe) : null,
-    el('span', { class: 'kiosque__ligne-texte', dataset: { texte: ligne.texte } }, differe ? '' : ligne.texte));
+    el('span', { class: 'kiosque__ligne-texte', dataset: { texte: ligne.texte } }, ''));
 }
 
 /**
@@ -263,104 +358,74 @@ function machineAEcrire(conteneur, curseur) {
       const suivant = cible.indexOf(' ', c + 1);
       c = suivant === -1 ? cible.length : suivant;
       spans[i].textContent = cible.slice(0, c);
-      minuteur = setTimeout(pas, 22);
+      minuteur = setTimeout(pas, 18);
     } else {
       i += 1; c = 0;
-      minuteur = setTimeout(pas, 90);
+      minuteur = setTimeout(pas, 70);
     }
   };
   pas();
   return terminer;
 }
 
-/* -------------------------------------------------------------------------
-   5. La vedette : le mot du chef, sur fond marine
-   ------------------------------------------------------------------------- */
+/* Les chiffres clés : une tuile par chiffre, la valeur en grand. */
+function blocChiffres(chiffres) {
+  if (!chiffres.length) return null;
+  return el('ul', { class: 'kiosque__chiffres', role: 'list', 'aria-label': 'Chiffres clés' },
+    chiffres.map((c) => {
+      const t = TENDANCES[c.tendance];
+      return el('li', { class: 'kiosque__chiffre' },
+        el('span', { class: 'kiosque__chiffre-valeur mono' },
+          nombreLisible(c.valeur),
+          c.unite ? el('span', { class: 'kiosque__chiffre-unite' }, ' ' + c.unite) : null),
+        el('span', { class: 'kiosque__chiffre-libelle' }, c.libelle),
+        t ? el('span', { class: ['kiosque__chiffre-tendance', 'kiosque__chiffre-tendance--' + c.tendance] },
+              el('span', { 'aria-hidden': 'true' }, t.glyphe), ' ', t.libelle) : null);
+    }));
+}
 
-function vedette(dossier) {
-  const corps = el('div', { class: 'kiosque__vedette-corps' },
-    dossier.lignes.length ? dossier.lignes.map((l) => ligneCorps(l, true))
-      : el('p', { class: 'kiosque__ligne' }, 'Aucun texte publié.'));
+/* La petite série : la courbe validée d'indicateurs.js, avec son libellé,
+   sa première et sa dernière valeur — assez pour lire une tendance. */
+function blocSerie(serie) {
+  if (!serie) return null;
+  const premiere = serie.valeurs.find((v) => v !== null);
+  const derniere = serie.valeurs.slice().reverse().find((v) => v !== null);
+  const debut = serie.mois[0] ? dateCourte(serie.mois[0] + '-01').replace(/^1 /, '') : '';
+  const fin = serie.mois[serie.mois.length - 1] ? dateCourte(serie.mois[serie.mois.length - 1] + '-01').replace(/^1 /, '') : '';
+  return el('figure', { class: 'kiosque__serie' },
+    el('figcaption', { class: 'kiosque__serie-tete' },
+      el('span', { class: 'kiosque__serie-libelle' }, serie.libelle),
+      el('span', { class: 'kiosque__serie-bornes mono' },
+        nombreLisible(premiere), serie.unite ? ' ' + serie.unite : '', ' → ',
+        el('strong', {}, nombreLisible(derniere), serie.unite ? ' ' + serie.unite : ''))),
+    sparkline(serie.valeurs, { couleur: 'var(--accent)' }),
+    debut || fin ? el('span', { class: 'kiosque__serie-periode mono' }, debut, ' – ', fin) : null);
+}
+
+function lecture(prefixe) {
+  const image = el('figure', { class: 'kiosque__image', hidden: true });
+  const meta = el('p', { class: 'kiosque__lecture-meta' });
+  const titre = el('h3', { class: 'kiosque__lecture-titre', id: prefixe + '-lecture-titre' }, '');
+  const chapeau = el('p', { class: 'kiosque__chapeau', hidden: true });
+  const extras = el('div', { class: 'kiosque__extras' });
+  const corps = el('div', { class: 'kiosque__corps' });
   const curseur = el('span', { class: 'kiosque__curseur', 'aria-hidden': 'true', hidden: true });
-  const racine = el('article', { class: 'kiosque__vedette', 'aria-label': 'Le mot du chef' },
-    el('p', { class: 'kiosque__vedette-sur-titre' },
-      el('span', {}, 'Le mot du chef'),
-      dossier.date ? el('time', { datetime: dossier.date }, dateLongue(dossier.date)) : null),
-    el('h3', { class: 'kiosque__vedette-titre' }, dossier.titre || 'Sans titre'),
-    el('div', { class: 'kiosque__vedette-texte' }, corps, curseur),
-    dossier.auteur
-      ? el('p', { class: 'kiosque__vedette-signature' },
-          el('strong', {}, dossier.auteur),
-          dossier.fonction ? el('span', {}, ' — ' + dossier.fonction) : null)
-      : null);
-  let terminer = () => {};
-  /* L'écriture démarre quand la vedette entre à l'écran, pas au chargement. */
-  const demarrer = () => { terminer = machineAEcrire(corps, curseur); };
-  if (typeof IntersectionObserver === 'function') {
-    const obs = new IntersectionObserver((entrees) => {
-      if (entrees.some((e) => e.isIntersecting)) { obs.disconnect(); demarrer(); }
-    }, { threshold: 0.2 });
-    obs.observe(racine);
-  } else {
-    demarrer();
-  }
-  racine.addEventListener('click', () => terminer());
-  return racine;
+
+  const racine = el('article', {
+    class: 'kiosque__lecture',
+    'aria-labelledby': titre.id,
+    tabIndex: -1
+  },
+  image,
+  el('div', { class: 'kiosque__lecture-interieur' },
+    meta, titre, chapeau, extras,
+    el('div', { class: 'kiosque__lecture-corps' }, corps, curseur)));
+
+  return { racine, image, meta, titre, chapeau, extras, corps, curseur };
 }
 
 /* -------------------------------------------------------------------------
-   6. Les cartes de l'historique et leur fenêtre de lecture
-   ------------------------------------------------------------------------- */
-
-function carte(dossier, prefixe) {
-  const statut = STATUTS[dossier.statut] || STATUTS.info;
-  const lede = dossier.lede !== undefined && dossier.lede !== '' ? dossier.lede : dossier.resume;
-  return el('li', { class: 'kiosque__item', dataset: { pole: dossier.pole || 'ETII' } },
-    el('button', {
-      type: 'button',
-      class: 'kiosque__carte',
-      id: prefixe + '-entree-' + dossier.id,
-      dataset: { id: dossier.id },
-      'aria-haspopup': 'dialog'
-    },
-    el('span', { class: 'kiosque__carte-meta' },
-      el('time', { class: 'kiosque__date', datetime: dossier.date || null },
-        dateCourte(dossier.date) || 'Date à renseigner'),
-      pastillePole(dossier.pole),
-      el('span', { class: ['badge', statut.classe, 'kiosque__carte-statut'] }, statut.libelle)),
-    el('span', { class: 'kiosque__carte-titre' }, dossier.titre || 'Sans titre'),
-    lede ? el('span', { class: 'kiosque__carte-resume' }, lede) : null,
-    el('span', { class: 'kiosque__carte-lire', 'aria-hidden': 'true' },
-      el('span', {}, dossier.programme || 'Général'), el('span', {}, 'Lire →'))));
-}
-
-function ouvrirLecture(dossier, declencheur) {
-  const statut = STATUTS[dossier.statut] || STATUTS.info;
-  const lede = dossier.lede !== undefined && dossier.lede !== '' ? dossier.lede : dossier.resume;
-  ouvrirModale({
-    titre: dossier.titre || 'Sans titre',
-    classe: 'modale--large modale--lecture',
-    declencheur: declencheur || null,
-    contenu: () => frag(
-      el('p', { class: 'kiosque__lecture-meta' },
-        el('time', { class: 'mono', datetime: dossier.date || null }, dateLongue(dossier.date) || 'Date à renseigner'),
-        el('span', { class: 'badge badge--accent' }, dossier.programme || 'Général'),
-        el('span', { class: ['badge', statut.classe] }, statut.libelle),
-        pastillePole(dossier.pole)),
-      lede ? el('p', { class: 'kiosque__lecture-lede' }, lede) : null,
-      el('div', { class: 'kiosque__lecture-corps' },
-        dossier.lignes.length ? dossier.lignes.map((l) => ligneCorps(l, false))
-          : el('p', { class: 'texte-doux sans-marge' }, 'Aucun détail publié pour cette entrée.')),
-      dossier.auteur
-        ? el('p', { class: 'kiosque__lecture-signature' }, el('strong', {}, dossier.auteur),
-            dossier.fonction ? el('span', { class: 'texte-doux' }, ' — ' + dossier.fonction) : null)
-        : null),
-    actions: [{ libelle: 'Fermer', variante: 'principal', ferme: true }]
-  });
-}
-
-/* -------------------------------------------------------------------------
-   7. Le kiosque complet
+   6. Le kiosque complet
    ------------------------------------------------------------------------- */
 
 /**
@@ -368,7 +433,7 @@ function ouvrirLecture(dossier, declencheur) {
  * @param {object[]} options.dossiers      voir dossiersDepuisCommunications()
  * @param {string[]} [options.alertes]
  * @param {string} [options.id]            préfixe d'identifiants (défaut 'kiosque')
- * @param {string} [options.titreFil]      intitulé de l'historique (défaut « Historique »)
+ * @param {string} [options.titreFil]      intitulé de la liste (défaut « Communications »)
  * @param {Array<{cle:string, libelle:string}>} [options.filtres]  puces de pôle
  * @param {(dossier:object)=>void} [options.surSelection]
  * @returns {HTMLElement}
@@ -379,16 +444,17 @@ export function kiosque(options) {
   const tous = Array.isArray(opts.dossiers) ? opts.dossiers : [];
   const alertes = Array.isArray(opts.alertes) ? opts.alertes : [];
   const filtres = Array.isArray(opts.filtres) ? opts.filtres : [];
-  const mot = tous.find((d) => d.groupe === 'mot') || null;
-  const historique = tous.filter((d) => d.groupe !== 'mot');
 
   let filtre = '';
+  let courant = null;
+  let arreterEcriture = () => {};
 
+  const lect = lecture(prefixe);
+  const zoneListe = el('div', { class: 'kiosque__defile', tabIndex: 0 });
   const compteur = el('span', { class: 'kiosque__compte mono' }, '');
-  const grille = el('ul', { class: 'kiosque__grille', role: 'list' });
 
   const puces = filtres.length
-    ? el('ul', { class: 'facettes kiosque__filtres', 'aria-label': 'Filtrer l’historique par pôle' },
+    ? el('ul', { class: 'facettes kiosque__filtres', 'aria-label': 'Filtrer les communications par pôle' },
         [{ cle: '', libelle: 'Tout' }].concat(filtres).map((f) => el('li', {},
           el('button', {
             type: 'button', class: 'facette facette--compacte',
@@ -397,24 +463,88 @@ export function kiosque(options) {
           }, f.libelle))))
     : null;
 
-  const visibles = () => historique.filter((d) => !filtre || d.pole === filtre);
+  const visibles = () => tous.filter((d) => !filtre || d.pole === filtre || d.groupe === 'mot');
 
-  function rendre() {
-    const liste = visibles();
-    compteur.textContent = String(liste.length);
-    monter(grille, liste.length
-      ? liste.map((d) => carte(d, prefixe))
-      : el('li', { class: 'kiosque__vide texte-doux' }, 'Rien à lire pour ce pôle pour le moment.'));
+  function lire(dossier) {
+    courant = dossier;
+    arreterEcriture();
+    zoneListe.querySelectorAll('.kiosque__carte').forEach((b) => {
+      b.setAttribute('aria-current', b.dataset.id === dossier.id ? 'true' : 'false');
+    });
+    const statut = STATUTS[dossier.statut] || STATUTS.info;
+
+    if (dossier.image) {
+      monter(lect.image,
+        el('img', { src: dossier.image.src, alt: dossier.image.alt, loading: 'lazy', decoding: 'async' }),
+        dossier.image.legende ? el('figcaption', {}, dossier.image.legende) : null);
+      lect.image.hidden = false;
+    } else {
+      monter(lect.image);
+      lect.image.hidden = true;
+    }
+
+    monter(lect.meta,
+      el('time', { class: 'mono', datetime: dossier.date || null }, dateLongue(dossier.date) || 'Date à renseigner'),
+      el('span', { class: 'badge badge--accent' }, dossier.programme || 'Général'),
+      dossier.groupe === 'mot' ? null : el('span', { class: ['badge', statut.classe] }, statut.libelle),
+      pastillePole(dossier.pole));
+    lect.titre.textContent = dossier.titre || 'Sans titre';
+    lect.chapeau.textContent = dossier.resume || '';
+    lect.chapeau.hidden = !dossier.resume;
+    monter(lect.extras, blocChiffres(dossier.chiffres), blocSerie(dossier.serie));
+    lect.extras.hidden = !lect.extras.childNodes.length;
+    monter(lect.corps, dossier.lignes.length
+      ? dossier.lignes.map(ligneCorps)
+      : el('p', { class: 'kiosque__ligne texte-doux' }, 'Aucun détail publié pour cette communication.'));
+
+    lect.racine.classList.remove('kiosque__lecture--entre');
+    void lect.racine.offsetWidth; // relance la transition d'entrée
+    lect.racine.classList.add('kiosque__lecture--entre');
+    arreterEcriture = machineAEcrire(lect.corps, lect.curseur);
+    if (typeof opts.surSelection === 'function') opts.surSelection(dossier);
   }
 
-  grille.addEventListener('click', (evt) => {
+  function viderLecture() {
+    courant = null;
+    monter(lect.image); lect.image.hidden = true;
+    monter(lect.meta);
+    lect.titre.textContent = 'Aucune communication';
+    lect.chapeau.hidden = true;
+    monter(lect.extras); lect.extras.hidden = true;
+    monter(lect.corps, el('p', { class: 'texte-doux sans-marge' }, 'Rien à lire pour ce pôle pour le moment.'));
+  }
+
+  function rendreListe(cibleDemandee) {
+    const dossiers = visibles();
+    compteur.textContent = dossiers.length ? String(dossiers.length) : '';
+    monter(zoneListe, dossiers.length
+      ? liste(dossiers, prefixe)
+      : el('p', { class: 'kiosque__vide texte-doux' }, 'Rien à lire pour ce pôle pour le moment.'));
+    const cible = (cibleDemandee && dossiers.find((d) => d.id === cibleDemandee))
+      || dossiers.find((d) => courant && d.id === courant.id) || dossiers[0];
+    if (cible) lire(cible); else viderLecture();
+  }
+
+  zoneListe.addEventListener('click', (evt) => {
     const bouton = evt.target.closest('.kiosque__carte');
     if (!bouton) return;
-    const dossier = historique.find((d) => d.id === bouton.dataset.id);
-    if (!dossier) return;
-    ouvrirLecture(dossier, bouton);
-    annoncer(dossier.titre);
-    if (typeof opts.surSelection === 'function') opts.surSelection(dossier);
+    const dossier = tous.find((d) => d.id === bouton.dataset.id);
+    if (dossier) { lire(dossier); annoncer(dossier.titre); }
+  });
+
+  zoneListe.addEventListener('keydown', (evt) => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(evt.key)) return;
+    const boutons = Array.from(zoneListe.querySelectorAll('.kiosque__carte'));
+    if (!boutons.length) return;
+    const position = boutons.findIndex((b) => b === document.activeElement);
+    let suivant = position;
+    if (evt.key === 'ArrowDown') suivant = Math.min(boutons.length - 1, position + 1);
+    if (evt.key === 'ArrowUp') suivant = Math.max(0, position - 1);
+    if (evt.key === 'Home') suivant = 0;
+    if (evt.key === 'End') suivant = boutons.length - 1;
+    evt.preventDefault();
+    boutons[suivant].focus();
+    boutons[suivant].click();
   });
 
   if (puces) {
@@ -425,18 +555,25 @@ export function kiosque(options) {
       puces.querySelectorAll('[data-filtre]').forEach((b) => {
         b.setAttribute('aria-pressed', b === bouton ? 'true' : 'false');
       });
-      rendre();
+      rendreListe();
     });
   }
 
+  /* Un clic dans la lecture termine l'écriture : on veut lire, pas attendre. */
+  lect.racine.addEventListener('click', () => arreterEcriture());
+
   const racine = el('section', { class: 'kiosque', id: prefixe },
     bandeauAlertes(alertes),
-    mot ? vedette(mot) : null,
-    el('div', { class: 'kiosque__barre' },
-      el('h3', { class: 'kiosque__titre-fil' }, texte(opts.titreFil) || 'Historique', ' ', compteur),
-      puces),
-    grille);
+    el('div', { class: 'kiosque__grille' },
+      el('aside', { class: 'kiosque__flux', 'aria-label': texte(opts.titreFil) || 'Communications' },
+        el('div', { class: 'kiosque__flux-tete' },
+          el('h3', { class: 'kiosque__flux-titre' }, texte(opts.titreFil) || 'Communications', ' ', compteur),
+          puces),
+        zoneListe),
+      lect.racine));
 
-  rendre();
+  /* Arrivée par un lien : #communication=ID lit cette entrée. */
+  const demandee = texte(etatUrl.lire().communication);
+  rendreListe(demandee || null);
   return racine;
 }

@@ -17,7 +17,56 @@
         "type": "texte",
         "texte": "Merci à chacun pour la rigueur tenue sur le lot 3."
       }
-    ]
+    ],
+    "resume": "Trois mois de progrès sur l'OTQ, une campagne d'essais close sans point bloquant, et deux points d'attention pour la rentrée.",
+    "image": {
+      "src": "assets/img/porteurs/h160.jpg",
+      "alt": "Un H160 de la Gendarmerie présenté sur un salon",
+      "legende": "Le H160 — programme phare du trimestre (photo Domenjod, CC BY-SA 4.0, Wikimedia Commons)"
+    },
+    "chiffres": [
+      {
+        "libelle": "OTQ du service",
+        "valeur": 95.4,
+        "unite": "%",
+        "tendance": "hausse"
+      },
+      {
+        "libelle": "Semaines d'essais",
+        "valeur": 6,
+        "tendance": "stable"
+      },
+      {
+        "libelle": "Points bloquants",
+        "valeur": 0,
+        "tendance": "baisse"
+      },
+      {
+        "libelle": "Écarts à solder",
+        "valeur": 3,
+        "tendance": "baisse"
+      }
+    ],
+    "serie": {
+      "libelle": "OTQ mensuel (données d'exemple)",
+      "unite": "%",
+      "mois": [
+        "2026-04",
+        "2026-05",
+        "2026-06",
+        "2026-07",
+        "2026-08",
+        "2026-09"
+      ],
+      "valeurs": [
+        92.1,
+        92.8,
+        93.6,
+        94.2,
+        94.9,
+        95.4
+      ]
+    }
   },
   "alertes": [
     "Maintenance planifiée de la plateforme documentaire mercredi soir.",
@@ -53,7 +102,12 @@
           "texte": "Conclusion : passage en fabrication autorisé."
         }
       ],
-      "pole": "ETII"
+      "pole": "ETII",
+      "image": {
+        "src": "assets/img/porteurs/h160.jpg",
+        "alt": "Un H160 sur un salon",
+        "legende": "Lot 3 du H160 (photo Domenjod, CC BY-SA 4.0, Wikimedia Commons)"
+      }
     },
     {
       "id": "c02",
@@ -173,7 +227,22 @@
           "texte": "Tous les écarts relevés ont été traités."
         }
       ],
-      "pole": "ETIII"
+      "pole": "ETIII",
+      "chiffres": [
+        {
+          "libelle": "Vols réalisés",
+          "valeur": 42
+        },
+        {
+          "libelle": "Écarts relevés",
+          "valeur": 7
+        },
+        {
+          "libelle": "Écarts soldés",
+          "valeur": 7,
+          "tendance": "hausse"
+        }
+      ]
     }
   ],
   "agenda": [
@@ -212,51 +281,6 @@
       "type": "mot",
       "titre": "Un trimestre qui se tient",
       "resume": "Le mot de la direction sur l'OTQ, la charge et la revue à venir."
-    },
-    {
-      "id": "a05",
-      "date": "2026-09-12",
-      "statut": "passee",
-      "pole": "ETII",
-      "type": "succes",
-      "titre": "Validation du jalon de définition",
-      "resume": "L'architecture électrique du lot 3 est validée."
-    },
-    {
-      "id": "a06",
-      "date": "2026-09-08",
-      "statut": "passee",
-      "pole": "ETIIE",
-      "type": "alerte",
-      "titre": "Migration de la plateforme documentaire",
-      "resume": "Interruption de service mercredi de 19h45 à 23h00."
-    },
-    {
-      "id": "a07",
-      "date": "2026-09-02",
-      "statut": "passee",
-      "pole": "ETIIA",
-      "type": "info",
-      "titre": "Nouvelle procédure de revue par les pairs",
-      "resume": "Deux relecteurs indépendants requis avant diffusion."
-    },
-    {
-      "id": "a08",
-      "date": "2026-08-26",
-      "statut": "passee",
-      "pole": "ETIII",
-      "type": "info",
-      "titre": "Ouverture du portail de recherche documentaire",
-      "resume": "Un point d'entrée unique pour retrouver les documents du service."
-    },
-    {
-      "id": "a09",
-      "date": "2026-08-19",
-      "statut": "passee",
-      "pole": "ETIII",
-      "type": "succes",
-      "titre": "Clôture de la campagne d'essais",
-      "resume": "Tous les écarts relevés ont été traités."
     }
   ]
 }

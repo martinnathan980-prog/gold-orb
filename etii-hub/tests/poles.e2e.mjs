@@ -81,8 +81,8 @@ await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1200);
 const toutes = dedup(comms.annonces.concat(comms.agenda.filter(a => a.statut !== 'a-venir' && a.type !== 'mot'))).length;
 const auService = await page.locator('#zone-communication .kiosque__carte').count();
-t(`le service montre ses ${toutes} entrées passées`, auService === toutes, `(${auService})`);
-t('le mot du chef est en vedette au niveau service', (await page.locator('#zone-communication .kiosque__vedette').count()) === 1);
+t(`le service liste le mot du chef et ses ${toutes} entrées passées`, auService === toutes + 1, `(${auService})`);
+t('la lecture s\'ouvre sur le mot du chef', /trimestre qui se tient/i.test(await page.locator('#zone-communication .kiosque__lecture-titre').innerText()));
 
 console.log('\n== Recherche : facette de pôle ==');
 await page.goto(`${B}/docsearch.html`, { waitUntil: 'networkidle' });
