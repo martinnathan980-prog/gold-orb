@@ -42,22 +42,26 @@
   --pole-etiie: #0e8aa8;
   --pole-etiii: #b45309;
   --pole-etii:  var(--texte-doux);
+  /* Les mêmes teintes, éclaircies pour tenir sur la barre marine. */
+  --pole-etiia-sur-marine: #a78bfa;
+  --pole-etiie-sur-marine: #38bdf8;
+  --pole-etiii-sur-marine: #fb923c;
 
   /* --- Séries du suivi OTQ / OTD : paire validée (clair sur blanc) ---------- */
   --serie-otq: #2a78d6;
   --serie-otd: #008300;
 
   /* --- Neutres : un gris choisi, qui tire vers le bleu de l'accent -------- */
-  --gris-50:  #fbfbfc;
-  --gris-100: #f1f3f6;
-  --gris-200: #e8eaee;
-  --gris-300: #dfe3e9;
-  --gris-400: #c3c9d3;
-  --gris-500: #8d97a3;
-  --gris-600: #5b6874;
-  --gris-700: #3d4854;
-  --gris-800: #26303a;
-  --gris-900: #16202b;
+  --gris-50:  #fafaf8;
+  --gris-100: #f0efea;
+  --gris-200: #e6e4dd;
+  --gris-300: #d6d3ca;
+  --gris-400: #b9b5aa;
+  --gris-500: #837f76;
+  --gris-600: #56534d;
+  --gris-700: #3a3834;
+  --gris-800: #26252a;
+  --gris-900: #15161c;
 
   /* --- Rôles sémantiques ------------------------------------------------
      Le papier est le fond de page ; la feuille (fond-eleve) est blanche et
@@ -76,16 +80,34 @@
   --texte-accent:  var(--marque-bleu);
 
   --bordure:       var(--gris-300);
-  --bordure-douce: #edf0f4;
+  --bordure-douce: #e9e7e1;
   --bordure-forte: var(--gris-400);
 
   --accent:          var(--marque-bleu);
   --accent-vif:      var(--marque-bleu-clair);
   --accent-contenu:  #ffffff;
-  --accent-doux:     #e9eef7;
+  --accent-doux:     #e6ebf6;
   --accent-lueur:    rgb(0 32 91 / 0.18);
   --surlignage:      #fbeec4;
   --surlignage-texte: #3d2e00;
+
+  /* Le chaud : la seconde couleur, pour ce qui doit attirer l'œil sans
+     être une alerte — le mot du chef, une valeur qui compte. */
+  --chaud:           #c2410c;
+  --chaud-doux:      #fdebe0;
+
+  /* La barre du haut et les bandeaux : marine profond, texte blanc. */
+  --entete-fond:     var(--marque-bleu);
+  --entete-fond-2:   #0a2f78;
+  --entete-texte:    #ffffff;
+  --entete-texte-doux: rgb(255 255 255 / 0.72);
+  --entete-surface:  rgb(255 255 255 / 0.10);
+  --entete-surface-forte: rgb(255 255 255 / 0.18);
+  --entete-bordure:  rgb(255 255 255 / 0.16);
+
+  /* Voiles posés sur une photo, pour y écrire. */
+  --voile:           rgb(0 0 0 / 0.25);
+  --voile-fort:      rgb(0 0 0 / 0.45);
 
   /* --- Surfaces -------------------------------------------------------- */
   --carte-fond:   var(--fond-eleve);
@@ -141,8 +163,8 @@
   --rayon-plein: 999px;
 
   /* --- Profondeur : le filet fait le travail, l'ombre est l'exception ----- */
-  --ombre-sm: none;
-  --ombre-md: 0 1px 3px rgb(22 32 43 / 0.07);
+  --ombre-sm: 0 1px 2px rgb(21 22 28 / 0.06);
+  --ombre-md: 0 1px 2px rgb(21 22 28 / 0.06), 0 6px 18px rgb(21 22 28 / 0.07);
   --ombre-lg: 0 18px 50px rgb(18 26 35 / 0.22), 0 0 0 1px var(--bordure);
   --ombre-accent: 0 0 0 3px var(--accent-doux);
 
@@ -170,33 +192,44 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="clair"]) {
-    --fond:         #101318;
-    --fond-profond: #0b0d11;
-    --fond-eleve:   #171b22;
-    --fond-enfonce: #1d222b;
-    --fond-inverse: #e9eaee;
+    --fond:         #1c1f26;
+    --fond-profond: #15181e;
+    --fond-eleve:   #262a33;
+    --fond-enfonce: #2d323c;
+    --fond-inverse: #eceef2;
 
-    --texte:         #e9eaee;
-    --texte-doux:    #a3aab7;
-    --texte-faible:  #7a8391;
-    --texte-inverse: #101318;
-    --texte-accent:  #8fb0f0;
+    --texte:         #eceef2;
+    --texte-doux:    #b3b9c6;
+    --texte-faible:  #8b93a3;
+    --texte-inverse: #15181e;
+    --texte-accent:  #9dbcf7;
 
-    --bordure:       #262c37;
-    --bordure-douce: #1e242d;
-    --bordure-forte: #3a4250;
+    --bordure:       #363b47;
+    --bordure-douce: #2f343e;
+    --bordure-forte: #4a5160;
 
-    --accent:         #8fb0f0;
-    --accent-vif:     #aac3f5;
+    --accent:         #9dbcf7;
+    --accent-vif:     #b9cffa;
     --accent-contenu: #0b1530;
-    --accent-doux:    rgb(143 176 240 / 0.14);
-    --accent-lueur:   rgb(143 176 240 / 0.30);
+    --accent-doux:    rgb(157 188 247 / 0.16);
+    --accent-lueur:   rgb(157 188 247 / 0.30);
     --surlignage:     #5a4300;
     --surlignage-texte: #ffe9b0;
 
-    --carte-fond:   #171b22;
-    --carte-bord:   #262c37;
-    --carte-survol: #1d222b;
+    --chaud:          #f2925f;
+    --chaud-doux:     rgb(242 146 95 / 0.16);
+
+    --entete-fond:    #0f1a36;
+    --entete-fond-2:  #16255a;
+    --entete-texte:   #ffffff;
+    --entete-texte-doux: rgb(255 255 255 / 0.70);
+    --entete-surface: rgb(255 255 255 / 0.08);
+    --entete-surface-forte: rgb(255 255 255 / 0.16);
+    --entete-bordure: rgb(255 255 255 / 0.14);
+
+    --carte-fond:   #262a33;
+    --carte-bord:   #363b47;
+    --carte-survol: #2d323c;
 
     --pole-etiia: #8b5cf6;
     --pole-etiie: #0ea5c9;
@@ -215,7 +248,8 @@
     --statut-alerte-fond:   rgb(221 164 52 / 0.14);
     --statut-critique-fond: rgb(224 116 92 / 0.14);
 
-    --ombre-md: 0 1px 3px rgb(0 0 0 / 0.4);
+    --ombre-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+    --ombre-md: 0 1px 2px rgb(0 0 0 / 0.35), 0 8px 22px rgb(0 0 0 / 0.30);
     --ombre-lg: 0 18px 50px rgb(0 0 0 / 0.6), 0 0 0 1px var(--bordure-forte);
 
     --focus-couleur: #8fb0f0;
@@ -223,33 +257,44 @@
 }
 
 :root[data-theme="sombre"] {
-  --fond:         #101318;
-  --fond-profond: #0b0d11;
-  --fond-eleve:   #171b22;
-  --fond-enfonce: #1d222b;
-  --fond-inverse: #e9eaee;
+  --fond:         #1c1f26;
+  --fond-profond: #15181e;
+  --fond-eleve:   #262a33;
+  --fond-enfonce: #2d323c;
+  --fond-inverse: #eceef2;
 
-  --texte:         #e9eaee;
-  --texte-doux:    #a3aab7;
-  --texte-faible:  #7a8391;
-  --texte-inverse: #101318;
-  --texte-accent:  #8fb0f0;
+  --texte:         #eceef2;
+  --texte-doux:    #b3b9c6;
+  --texte-faible:  #8b93a3;
+  --texte-inverse: #15181e;
+  --texte-accent:  #9dbcf7;
 
-  --bordure:       #262c37;
-  --bordure-douce: #1e242d;
-  --bordure-forte: #3a4250;
+  --bordure:       #363b47;
+  --bordure-douce: #2f343e;
+  --bordure-forte: #4a5160;
 
-  --accent:         #8fb0f0;
-  --accent-vif:     #aac3f5;
+  --accent:         #9dbcf7;
+  --accent-vif:     #b9cffa;
   --accent-contenu: #0b1530;
-  --accent-doux:    rgb(143 176 240 / 0.14);
-  --accent-lueur:   rgb(143 176 240 / 0.30);
+  --accent-doux:    rgb(157 188 247 / 0.16);
+  --accent-lueur:   rgb(157 188 247 / 0.30);
   --surlignage:     #5a4300;
   --surlignage-texte: #ffe9b0;
 
-  --carte-fond:   #171b22;
-  --carte-bord:   #262c37;
-  --carte-survol: #1d222b;
+  --chaud:          #f2925f;
+  --chaud-doux:     rgb(242 146 95 / 0.16);
+
+  --entete-fond:    #0f1a36;
+  --entete-fond-2:  #16255a;
+  --entete-texte:   #ffffff;
+  --entete-texte-doux: rgb(255 255 255 / 0.70);
+  --entete-surface: rgb(255 255 255 / 0.08);
+  --entete-surface-forte: rgb(255 255 255 / 0.16);
+  --entete-bordure: rgb(255 255 255 / 0.14);
+
+  --carte-fond:   #262a33;
+  --carte-bord:   #363b47;
+  --carte-survol: #2d323c;
 
   --pole-etiia: #8b5cf6;
   --pole-etiie: #0ea5c9;
@@ -268,7 +313,8 @@
   --statut-alerte-fond:   rgb(221 164 52 / 0.14);
   --statut-critique-fond: rgb(224 116 92 / 0.14);
 
-  --ombre-md: 0 1px 3px rgb(0 0 0 / 0.4);
+  --ombre-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --ombre-md: 0 1px 2px rgb(0 0 0 / 0.35), 0 8px 22px rgb(0 0 0 / 0.30);
   --ombre-lg: 0 18px 50px rgb(0 0 0 / 0.6), 0 0 0 1px var(--bordure-forte);
 
   --focus-couleur: #8fb0f0;

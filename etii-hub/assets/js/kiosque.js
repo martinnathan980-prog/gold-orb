@@ -1,17 +1,17 @@
 /* =========================================================================
    ETII Hub — Le kiosque de communication
-   Reprend la structure du « Communication Center » d'origine du service :
-   à gauche, l'historique en fil chronologique ; à droite, le projecteur
-   qui lit l'entrée choisie — badge de programme, titre, puis le corps
-   écrit ligne à ligne, à la machine à écrire. Un bandeau d'alertes court
-   au-dessus quand il y a des alertes.
+   Le « Communication Center » du service : un bandeau d'alertes qui
+   défile, le mot du chef en vedette (écrit ligne à ligne, à la machine à
+   écrire), puis l'historique en cartes — date, pôle, titre, chapeau. Une
+   carte s'ouvre en fenêtre pour lire le texte complet. On ne montre que
+   ce qui a été dit : l'agenda à venir n'est pas de la communication.
 
    Rien n'est inventé : chaque entrée vient de communications.json (le mot
    du chef, l'agenda, les annonces). Tout le DOM est construit avec el() —
    aucun innerHTML, aucun gestionnaire en attribut.
    ========================================================================= */
 
-import { el, monter, mouvementReduit, annoncer, copierTexte, toast } from './ui.js';
+import { el, frag, monter, mouvementReduit, annoncer, ouvrirModale } from './ui.js';
 
 const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
                      'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -85,14 +85,6 @@ export function joursRestants(iso) {
   return Math.round((cible - aujourdhui()) / 86400000);
 }
 
-function libelleDelai(jours) {
-  if (jours === null) return '';
-  if (jours === 0) return 'Aujourd’hui';
-  if (jours === 1) return 'Demain';
-  if (jours > 1) return 'J-' + jours;
-  return '';
-}
-
 /* -------------------------------------------------------------------------
    2. De communications.json aux dossiers du kiosque
    ------------------------------------------------------------------------- */
@@ -118,9 +110,9 @@ function lignesDepuis(brut) {
 /**
  * Construit la liste des dossiers du kiosque à partir de communications.json.
  *
- * - le mot du chef, épinglé en tête (seulement au niveau service) ;
- * - l'agenda à venir, le plus proche d'abord ;
+ * - le mot du chef, en vedette (seulement au niveau service) ;
  * - l'historique : annonces et agenda passé, du plus récent au plus ancien.
+ *   L'agenda à venir est ignoré : on communique sur ce qui s'est passé.
  *
  * @param {object} donnees  contenu de communications.json
  * @param {{pole?: string}} [options]  code de pôle ; absent ou 'ETII' : tout le service
@@ -155,22 +147,6 @@ export function dossiersDepuisCommunications(donnees, options) {
   const agenda = Array.isArray(d.agenda) ? d.agenda.filter((e) => e && typeof e === 'object') : [];
   const annonces = Array.isArray(d.annonces) ? d.annonces.filter((e) => e && typeof e === 'object') : [];
 
-  const aVenir = agenda
-    .filter((e) => texte(e.statut) === 'a-venir' && garder(e))
-    .sort((a, b) => texte(a.date).localeCompare(texte(b.date)))
-    .map((e) => ({
-      id: 'agenda-' + texte(e.id),
-      groupe: 'a-venir',
-      date: texte(e.date),
-      titre: texte(e.titre),
-      resume: texte(e.resume),
-      programme: TYPES_AGENDA[texte(e.type)] || texte(e.type) || 'Agenda',
-      statut: 'a-venir',
-      pole: texte(e.pole).toUpperCase(),
-      lede: e.corps ? texte(e.resume) : '',
-      lignes: lignesDepuis(e.corps || e.resume)
-    }));
-
   const historique = [
     ...annonces.filter(garder).map((e) => ({
       id: 'annonce-' + texte(e.id),
@@ -200,7 +176,18 @@ export function dossiersDepuisCommunications(donnees, options) {
       }))
   ].sort((a, b) => b.date.localeCompare(a.date));
 
-  return dossiers.concat(aVenir, historique);
+  /* Un même événement peut être saisi deux fois — comme annonce détaillée
+     et comme entrée d'agenda. Même titre à la même date : on garde la
+     première venue, l'annonce, qui porte le texte complet. */
+  const vus = new Set();
+  const uniques = historique.filter((d) => {
+    const cle = d.date + '|' + d.titre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (vus.has(cle)) return false;
+    vus.add(cle);
+    return true;
+  });
+
+  return dossiers.concat(uniques);
 }
 
 /** Les alertes en cours, sous forme de chaînes. */
@@ -229,14 +216,8 @@ function bandeauAlertes(alertes) {
 }
 
 /* -------------------------------------------------------------------------
-   4. Le fil (à gauche)
+   4. Le corps d'une entrée et la machine à écrire
    ------------------------------------------------------------------------- */
-
-const GROUPES = [
-  { cle: 'mot', titre: 'Le mot du chef' },
-  { cle: 'a-venir', titre: 'À venir' },
-  { cle: 'historique', titre: 'Historique' }
-];
 
 function pastillePole(code) {
   if (!code || code === 'ETII') return null;
@@ -245,58 +226,17 @@ function pastillePole(code) {
     code);
 }
 
-function carteFil(dossier, prefixe) {
-  const delai = dossier.groupe === 'a-venir' ? libelleDelai(joursRestants(dossier.date)) : '';
-  return el('li', { class: 'kiosque__entree', dataset: { id: dossier.id } },
-    el('button', {
-      type: 'button',
-      class: 'kiosque__carte',
-      id: prefixe + '-entree-' + dossier.id,
-      dataset: { id: dossier.id },
-      'aria-current': 'false'
-    },
-    el('span', { class: 'kiosque__carte-meta' },
-      el('time', { class: 'kiosque__date', datetime: dossier.date || null },
-        dateCourte(dossier.date) || 'Date à renseigner'),
-      delai ? el('span', { class: 'kiosque__delai' }, delai) : null,
-      pastillePole(dossier.pole)),
-    el('span', { class: 'kiosque__carte-titre' }, dossier.titre || 'Sans titre'),
-    dossier.resume
-      ? el('span', { class: 'kiosque__carte-resume' }, dossier.resume)
-      : null));
-}
-
-function fil(dossiers, prefixe) {
-  const enfants = [];
-  for (const groupe of GROUPES) {
-    const membres = dossiers.filter((d) => d.groupe === groupe.cle);
-    if (!membres.length) continue;
-    if (groupe.cle !== 'mot') {
-      enfants.push(el('li', { class: 'kiosque__groupe', role: 'presentation' },
-        el('span', { class: 'kiosque__groupe-titre' }, groupe.titre),
-        el('span', { class: 'kiosque__groupe-compte mono' }, String(membres.length))));
-    }
-    for (const d of membres) enfants.push(carteFil(d, prefixe));
-  }
-  return el('ol', { class: 'kiosque__liste', role: 'list' }, enfants);
-}
-
-/* -------------------------------------------------------------------------
-   5. Le projecteur (à droite) et la machine à écrire
-   ------------------------------------------------------------------------- */
-
-function ligneCorps(ligne) {
+function ligneCorps(ligne, differe) {
   if (ligne.type === 'vide') return el('div', { class: 'kiosque__ligne kiosque__ligne--vide' });
   const glyphe = GLYPHES[ligne.type] || '';
   return el('p', { class: ['kiosque__ligne', 'kiosque__ligne--' + ligne.type] },
     glyphe ? el('span', { class: 'kiosque__glyphe', 'aria-hidden': 'true' }, glyphe) : null,
-    el('span', { class: 'kiosque__ligne-texte', dataset: { texte: ligne.texte } }, ''));
+    el('span', { class: 'kiosque__ligne-texte', dataset: { texte: ligne.texte } }, differe ? '' : ligne.texte));
 }
 
 /**
- * Écrit les lignes une à une, caractère par caractère. Sous « mouvement
- * réduit », tout s'affiche d'un coup. Un clic dans le projecteur termine
- * l'écriture immédiatement. Renvoie une fonction d'annulation.
+ * Écrit les lignes une à une, mot par mot. Sous « mouvement réduit », tout
+ * s'affiche d'un coup. Renvoie une fonction qui termine l'écriture.
  */
 function machineAEcrire(conteneur, curseur) {
   const spans = Array.from(conteneur.querySelectorAll('.kiosque__ligne-texte'));
@@ -320,7 +260,6 @@ function machineAEcrire(conteneur, curseur) {
     if (i >= spans.length) { if (curseur) curseur.hidden = true; return; }
     const cible = textes[i];
     if (c < cible.length) {
-      // Par mots plutôt que par lettre : plus rapide, même effet.
       const suivant = cible.indexOf(' ', c + 1);
       c = suivant === -1 ? cible.length : suivant;
       spans[i].textContent = cible.slice(0, c);
@@ -334,44 +273,94 @@ function machineAEcrire(conteneur, curseur) {
   return terminer;
 }
 
-function projecteur(prefixe) {
-  const badgeProgramme = el('span', { class: 'badge badge--accent kiosque__programme' }, '');
-  const badgeStatut = el('span', { class: 'badge' }, '');
-  const date = el('time', { class: 'kiosque__projecteur-date mono' }, '');
-  const titre = el('h3', { class: 'kiosque__projecteur-titre', id: prefixe + '-projecteur-titre' }, '');
-  const resume = el('p', { class: 'kiosque__projecteur-resume' }, '');
-  const corps = el('div', { class: 'kiosque__corps' });
+/* -------------------------------------------------------------------------
+   5. La vedette : le mot du chef, sur fond marine
+   ------------------------------------------------------------------------- */
+
+function vedette(dossier) {
+  const corps = el('div', { class: 'kiosque__vedette-corps' },
+    dossier.lignes.length ? dossier.lignes.map((l) => ligneCorps(l, true))
+      : el('p', { class: 'kiosque__ligne' }, 'Aucun texte publié.'));
   const curseur = el('span', { class: 'kiosque__curseur', 'aria-hidden': 'true', hidden: true });
-  const signature = el('p', { class: 'kiosque__signature', hidden: true });
-  const pole = el('span', { class: 'kiosque__projecteur-pole' });
-
-  const boutonCopier = el('button', {
-    type: 'button', class: 'bouton bouton--discret bouton--compact',
-    dataset: { action: 'copier' }
-  }, 'Copier le texte');
-  const lienPartager = el('a', {
-    class: 'bouton bouton--secondaire bouton--compact', href: '#', dataset: { action: 'partager' }
-  }, 'Partager');
-
-  const racine = el('article', {
-    class: 'kiosque__projecteur',
-    'aria-labelledby': titre.id,
-    tabIndex: -1
-  },
-  el('div', { class: 'kiosque__projecteur-tete' },
-    el('span', { class: 'rangee rangee--serree' }, badgeProgramme, badgeStatut, pole),
-    date),
-  titre,
-  resume,
-  el('div', { class: 'kiosque__projecteur-corps' }, corps, curseur),
-  signature,
-  el('div', { class: 'kiosque__projecteur-pied' }, lienPartager, boutonCopier));
-
-  return { racine, badgeProgramme, badgeStatut, date, titre, resume, corps, curseur, signature, pole, lienPartager };
+  const racine = el('article', { class: 'kiosque__vedette', 'aria-label': 'Le mot du chef' },
+    el('p', { class: 'kiosque__vedette-sur-titre' },
+      el('span', {}, 'Le mot du chef'),
+      dossier.date ? el('time', { datetime: dossier.date }, dateLongue(dossier.date)) : null),
+    el('h3', { class: 'kiosque__vedette-titre' }, dossier.titre || 'Sans titre'),
+    el('div', { class: 'kiosque__vedette-texte' }, corps, curseur),
+    dossier.auteur
+      ? el('p', { class: 'kiosque__vedette-signature' },
+          el('strong', {}, dossier.auteur),
+          dossier.fonction ? el('span', {}, ' — ' + dossier.fonction) : null)
+      : null);
+  let terminer = () => {};
+  /* L'écriture démarre quand la vedette entre à l'écran, pas au chargement. */
+  const demarrer = () => { terminer = machineAEcrire(corps, curseur); };
+  if (typeof IntersectionObserver === 'function') {
+    const obs = new IntersectionObserver((entrees) => {
+      if (entrees.some((e) => e.isIntersecting)) { obs.disconnect(); demarrer(); }
+    }, { threshold: 0.2 });
+    obs.observe(racine);
+  } else {
+    demarrer();
+  }
+  racine.addEventListener('click', () => terminer());
+  return racine;
 }
 
 /* -------------------------------------------------------------------------
-   6. Le kiosque complet
+   6. Les cartes de l'historique et leur fenêtre de lecture
+   ------------------------------------------------------------------------- */
+
+function carte(dossier, prefixe) {
+  const statut = STATUTS[dossier.statut] || STATUTS.info;
+  const lede = dossier.lede !== undefined && dossier.lede !== '' ? dossier.lede : dossier.resume;
+  return el('li', { class: 'kiosque__item', dataset: { pole: dossier.pole || 'ETII' } },
+    el('button', {
+      type: 'button',
+      class: 'kiosque__carte',
+      id: prefixe + '-entree-' + dossier.id,
+      dataset: { id: dossier.id },
+      'aria-haspopup': 'dialog'
+    },
+    el('span', { class: 'kiosque__carte-meta' },
+      el('time', { class: 'kiosque__date', datetime: dossier.date || null },
+        dateCourte(dossier.date) || 'Date à renseigner'),
+      pastillePole(dossier.pole),
+      el('span', { class: ['badge', statut.classe, 'kiosque__carte-statut'] }, statut.libelle)),
+    el('span', { class: 'kiosque__carte-titre' }, dossier.titre || 'Sans titre'),
+    lede ? el('span', { class: 'kiosque__carte-resume' }, lede) : null,
+    el('span', { class: 'kiosque__carte-lire', 'aria-hidden': 'true' },
+      el('span', {}, dossier.programme || 'Général'), el('span', {}, 'Lire →'))));
+}
+
+function ouvrirLecture(dossier, declencheur) {
+  const statut = STATUTS[dossier.statut] || STATUTS.info;
+  const lede = dossier.lede !== undefined && dossier.lede !== '' ? dossier.lede : dossier.resume;
+  ouvrirModale({
+    titre: dossier.titre || 'Sans titre',
+    classe: 'modale--large modale--lecture',
+    declencheur: declencheur || null,
+    contenu: () => frag(
+      el('p', { class: 'kiosque__lecture-meta' },
+        el('time', { class: 'mono', datetime: dossier.date || null }, dateLongue(dossier.date) || 'Date à renseigner'),
+        el('span', { class: 'badge badge--accent' }, dossier.programme || 'Général'),
+        el('span', { class: ['badge', statut.classe] }, statut.libelle),
+        pastillePole(dossier.pole)),
+      lede ? el('p', { class: 'kiosque__lecture-lede' }, lede) : null,
+      el('div', { class: 'kiosque__lecture-corps' },
+        dossier.lignes.length ? dossier.lignes.map((l) => ligneCorps(l, false))
+          : el('p', { class: 'texte-doux sans-marge' }, 'Aucun détail publié pour cette entrée.')),
+      dossier.auteur
+        ? el('p', { class: 'kiosque__lecture-signature' }, el('strong', {}, dossier.auteur),
+            dossier.fonction ? el('span', { class: 'texte-doux' }, ' — ' + dossier.fonction) : null)
+        : null),
+    actions: [{ libelle: 'Fermer', variante: 'principal', ferme: true }]
+  });
+}
+
+/* -------------------------------------------------------------------------
+   7. Le kiosque complet
    ------------------------------------------------------------------------- */
 
 /**
@@ -379,7 +368,7 @@ function projecteur(prefixe) {
  * @param {object[]} options.dossiers      voir dossiersDepuisCommunications()
  * @param {string[]} [options.alertes]
  * @param {string} [options.id]            préfixe d'identifiants (défaut 'kiosque')
- * @param {string} [options.titreFil]      intitulé du fil (défaut « Fil du service »)
+ * @param {string} [options.titreFil]      intitulé de l'historique (défaut « Historique »)
  * @param {Array<{cle:string, libelle:string}>} [options.filtres]  puces de pôle
  * @param {(dossier:object)=>void} [options.surSelection]
  * @returns {HTMLElement}
@@ -390,18 +379,17 @@ export function kiosque(options) {
   const tous = Array.isArray(opts.dossiers) ? opts.dossiers : [];
   const alertes = Array.isArray(opts.alertes) ? opts.alertes : [];
   const filtres = Array.isArray(opts.filtres) ? opts.filtres : [];
+  const mot = tous.find((d) => d.groupe === 'mot') || null;
+  const historique = tous.filter((d) => d.groupe !== 'mot');
 
   let filtre = '';
-  let courant = null;
-  let arreterEcriture = () => {};
 
-  const proj = projecteur(prefixe);
-  const zoneFil = el('div', { class: 'kiosque__defile', tabIndex: 0 });
-  const compteur = el('span', { class: 'kiosque__flux-compte mono' }, '');
+  const compteur = el('span', { class: 'kiosque__compte mono' }, '');
+  const grille = el('ul', { class: 'kiosque__grille', role: 'list' });
 
   const puces = filtres.length
-    ? el('ul', { class: 'facettes kiosque__filtres', 'aria-label': 'Filtrer le fil par pôle' },
-        [{ cle: '', libelle: 'Tous' }].concat(filtres).map((f) => el('li', {},
+    ? el('ul', { class: 'facettes kiosque__filtres', 'aria-label': 'Filtrer l’historique par pôle' },
+        [{ cle: '', libelle: 'Tout' }].concat(filtres).map((f) => el('li', {},
           el('button', {
             type: 'button', class: 'facette facette--compacte',
             'aria-pressed': f.cle === '' ? 'true' : 'false',
@@ -409,89 +397,24 @@ export function kiosque(options) {
           }, f.libelle))))
     : null;
 
-  const visibles = () => tous.filter((d) => !filtre || d.pole === filtre || d.groupe === 'mot');
+  const visibles = () => historique.filter((d) => !filtre || d.pole === filtre);
 
-  function lire(dossier) {
-    courant = dossier;
-    arreterEcriture();
-    zoneFil.querySelectorAll('.kiosque__carte').forEach((b) => {
-      b.setAttribute('aria-current', b.dataset.id === dossier.id ? 'true' : 'false');
-    });
-    const statut = STATUTS[dossier.statut] || STATUTS.info;
-    proj.badgeProgramme.textContent = dossier.programme || 'Général';
-    proj.badgeStatut.className = 'badge ' + statut.classe;
-    proj.badgeStatut.textContent = statut.libelle;
-    monter(proj.pole, pastillePole(dossier.pole));
-    proj.date.textContent = dateLongue(dossier.date) || 'Date à renseigner';
-    proj.date.setAttribute('datetime', dossier.date || '');
-    proj.titre.textContent = dossier.titre || 'Sans titre';
-    const lede = dossier.lede !== undefined ? dossier.lede : dossier.resume;
-    proj.resume.textContent = lede || '';
-    proj.resume.hidden = !lede;
-    monter(proj.corps, dossier.lignes.length
-      ? dossier.lignes.map(ligneCorps)
-      : el('p', { class: 'kiosque__ligne texte-doux' }, 'Aucun détail publié pour cette entrée.'));
-    if (dossier.auteur) {
-      monter(proj.signature,
-        el('strong', {}, dossier.auteur),
-        dossier.fonction ? el('span', { class: 'texte-doux' }, ' — ' + dossier.fonction) : null);
-      proj.signature.hidden = false;
-    } else {
-      proj.signature.hidden = true;
-    }
-    const sujet = encodeURIComponent('[ETII] ' + (dossier.titre || ''));
-    const corpsMail = encodeURIComponent(
-      (dossier.titre || '') + '\n' + (dateLongue(dossier.date) || '') + '\n\n'
-      + dossier.lignes.map((l) => (GLYPHES[l.type] ? GLYPHES[l.type] + ' ' : '') + l.texte).join('\n'));
-    proj.lienPartager.href = 'mailto:?subject=' + sujet + '&body=' + corpsMail;
-    proj.racine.classList.remove('kiosque__projecteur--entre');
-    void proj.racine.offsetWidth; // relance la transition d'entrée
-    proj.racine.classList.add('kiosque__projecteur--entre');
-    arreterEcriture = machineAEcrire(proj.corps, proj.curseur);
-    if (typeof opts.surSelection === 'function') opts.surSelection(dossier);
-  }
-
-  function rendreFil() {
+  function rendre() {
     const liste = visibles();
-    compteur.textContent = liste.length ? String(liste.length) : '';
-    monter(zoneFil, liste.length
-      ? fil(liste, prefixe)
-      : el('p', { class: 'kiosque__vide texte-doux' }, 'Rien à lire pour ce pôle pour le moment.'));
-    const cible = liste.find((d) => courant && d.id === courant.id) || liste[0];
-    if (cible) lire(cible); else viderProjecteur();
+    compteur.textContent = String(liste.length);
+    monter(grille, liste.length
+      ? liste.map((d) => carte(d, prefixe))
+      : el('li', { class: 'kiosque__vide texte-doux' }, 'Rien à lire pour ce pôle pour le moment.'));
   }
 
-  function viderProjecteur() {
-    courant = null;
-    proj.titre.textContent = 'Aucune communication';
-    proj.resume.hidden = true;
-    proj.badgeProgramme.textContent = '—';
-    proj.badgeStatut.textContent = '';
-    proj.date.textContent = '';
-    monter(proj.corps);
-    proj.signature.hidden = true;
-  }
-
-  zoneFil.addEventListener('click', (evt) => {
+  grille.addEventListener('click', (evt) => {
     const bouton = evt.target.closest('.kiosque__carte');
     if (!bouton) return;
-    const dossier = tous.find((d) => d.id === bouton.dataset.id);
-    if (dossier) { lire(dossier); annoncer(dossier.titre); }
-  });
-
-  zoneFil.addEventListener('keydown', (evt) => {
-    if (evt.key !== 'ArrowDown' && evt.key !== 'ArrowUp' && evt.key !== 'Home' && evt.key !== 'End') return;
-    const boutons = Array.from(zoneFil.querySelectorAll('.kiosque__carte'));
-    if (!boutons.length) return;
-    const position = boutons.findIndex((b) => b === document.activeElement);
-    let suivant = position;
-    if (evt.key === 'ArrowDown') suivant = Math.min(boutons.length - 1, position + 1);
-    if (evt.key === 'ArrowUp') suivant = Math.max(0, position - 1);
-    if (evt.key === 'Home') suivant = 0;
-    if (evt.key === 'End') suivant = boutons.length - 1;
-    evt.preventDefault();
-    boutons[suivant].focus();
-    boutons[suivant].click();
+    const dossier = historique.find((d) => d.id === bouton.dataset.id);
+    if (!dossier) return;
+    ouvrirLecture(dossier, bouton);
+    annoncer(dossier.titre);
+    if (typeof opts.surSelection === 'function') opts.surSelection(dossier);
   });
 
   if (puces) {
@@ -502,34 +425,18 @@ export function kiosque(options) {
       puces.querySelectorAll('[data-filtre]').forEach((b) => {
         b.setAttribute('aria-pressed', b === bouton ? 'true' : 'false');
       });
-      rendreFil();
+      rendre();
     });
   }
 
-  proj.racine.addEventListener('click', (evt) => {
-    const bouton = evt.target.closest('[data-action]');
-    if (!bouton) { arreterEcriture(); return; }
-    if (bouton.dataset.action === 'copier' && courant) {
-      const brut = [courant.titre, dateLongue(courant.date), '']
-        .concat(courant.lignes.map((l) => (GLYPHES[l.type] ? GLYPHES[l.type] + ' ' : '') + l.texte))
-        .join('\n');
-      Promise.resolve(copierTexte(brut)).then((ok) => {
-        toast(ok === false ? 'Copie impossible dans ce navigateur.' : 'Texte copié.',
-              ok === false ? 'erreur' : 'succes');
-      });
-    }
-  });
-
   const racine = el('section', { class: 'kiosque', id: prefixe },
     bandeauAlertes(alertes),
-    el('div', { class: 'kiosque__grille' },
-      el('aside', { class: 'kiosque__flux', 'aria-label': texte(opts.titreFil) || 'Fil du service' },
-        el('div', { class: 'kiosque__flux-tete' },
-          el('span', { class: 'kiosque__flux-titre' }, texte(opts.titreFil) || 'Fil du service', ' ', compteur),
-          puces),
-        zoneFil),
-      proj.racine));
+    mot ? vedette(mot) : null,
+    el('div', { class: 'kiosque__barre' },
+      el('h3', { class: 'kiosque__titre-fil' }, texte(opts.titreFil) || 'Historique', ' ', compteur),
+      puces),
+    grille);
 
-  rendreFil();
+  rendre();
   return racine;
 }

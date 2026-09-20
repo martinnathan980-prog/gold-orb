@@ -110,7 +110,7 @@ a:hover { text-decoration-color: currentColor; }
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
   border-radius: var(--rayon-lg);
-  box-shadow: none;
+  box-shadow: var(--ombre-sm);
 }
 
 .carte {
@@ -119,13 +119,13 @@ a:hover { text-decoration-color: currentColor; }
     border-color var(--duree-rapide) var(--courbe);
 }
 
-/* Le survol ne soulève rien : le filet se renforce, la feuille se teinte. */
+/* Le survol soulève d'un cran : l'ombre s'allonge, le filet se renforce. */
 .carte--cliquable:hover,
 .carte--cliquable:focus-within {
-  transform: none;
-  box-shadow: none;
+  transform: translateY(-1px);
+  box-shadow: var(--ombre-md);
   border-color: var(--bordure-forte);
-  background-color: var(--carte-survol);
+  background-color: var(--carte-fond);
 }
 
 /* La feuille mise en avant porte un filet marine dans sa marge : c'est la
@@ -150,40 +150,45 @@ a:hover { text-decoration-color: currentColor; }
 .carte__titre { font-size: var(--texte-md); }
 
 /* -------------------------------------------------------------------------
-   4. La barre du haut : 52 px, blanche, un filet dessous
+   4. La barre du haut : marine profond, texte blanc, un liseré dessous
+   Le seul aplat sombre de la page clair : il donne l'assise et le
+   contraste ; en sombre, il reste un marine plus profond que le papier.
    ---------------------------------------------------------------------- */
 
 .site-entete {
-  background-color: var(--fond-eleve);
+  background-color: var(--entete-fond);
+  background-image: linear-gradient(90deg, var(--entete-fond) 0%, var(--entete-fond-2) 100%);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  border-bottom: 1px solid var(--bordure);
-  box-shadow: none;
+  border-bottom: 1px solid var(--entete-bordure);
+  box-shadow: var(--ombre-md);
+  color: var(--entete-texte);
 }
 
 .site-entete__interieur {
-  padding-block: var(--e-1);
+  padding-block: var(--e-2);
   gap: var(--e-2) var(--e-5);
 }
 
 .site-logo {
   gap: var(--e-2);
-  color: var(--texte);
-  font-family: var(--police);
-  font-size: var(--texte-md);
-  font-weight: var(--graisse-forte);
-  letter-spacing: -0.01em;
+  color: var(--entete-texte);
+  font-family: var(--police-titre);
+  font-size: var(--texte-xl);
+  font-weight: var(--graisse-normale);
+  letter-spacing: 0.01em;
 }
 
-/* Le « HUB » n'est plus un aplat : une mention mono, en retrait, séparée
-   par un filet — comme le contexte dans la barre d'un outil. */
+.site-logo:hover { color: var(--entete-texte); }
+
+/* Le « HUB » : une mention mono, en retrait, séparée par un filet. */
 .site-logo span {
   padding: 0 0 0 var(--e-2);
   margin-inline-start: var(--e-1);
   background: none;
   border-radius: 0;
-  border-inline-start: 1px solid var(--bordure);
-  color: var(--texte-faible);
+  border-inline-start: 1px solid var(--entete-bordure);
+  color: var(--entete-texte-doux);
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
   font-weight: var(--graisse-normale);
@@ -194,41 +199,51 @@ a:hover { text-decoration-color: currentColor; }
 .site-nav__liste { gap: var(--e-1); }
 
 .site-nav__liste a {
-  border-radius: 0;
-  border-bottom-width: 2px;
-  min-height: calc(var(--cible-tactile) + var(--e-2));
-  color: var(--texte-doux);
+  border-radius: var(--rayon-md);
+  border-bottom-width: 0;
+  min-height: calc(var(--cible-tactile) - var(--e-1));
+  padding-inline: var(--e-3);
+  color: var(--entete-texte-doux);
   font-size: var(--texte-sm);
   font-weight: var(--graisse-moyenne);
 }
 
 .site-nav__liste a:hover {
-  color: var(--texte);
-  background: none;
+  color: var(--entete-texte);
+  background-color: var(--entete-surface);
 }
 
 .site-nav__liste a[aria-current="page"] {
-  color: var(--texte-accent);
-  background: none;
-  border-bottom-color: var(--accent);
+  color: var(--entete-texte);
+  background-color: var(--entete-surface-forte);
   font-weight: var(--graisse-forte);
 }
 
-.bascule-theme {
+.bascule-theme,
+.palette-ouvrir {
   min-height: calc(var(--cible-tactile) - var(--e-2));
   padding-inline: var(--e-3);
   border-radius: var(--rayon-md);
-  border: 1px solid var(--bordure);
-  background-color: var(--fond-enfonce);
-  color: var(--texte-doux);
+  border: 1px solid var(--entete-bordure);
+  background-color: var(--entete-surface);
+  color: var(--entete-texte-doux);
   font-size: var(--texte-xs);
 }
 
-.bascule-theme:hover {
-  background-color: var(--fond-profond);
-  border-color: var(--bordure-forte);
-  color: var(--texte);
+.bascule-theme:hover,
+.palette-ouvrir:hover {
+  background-color: var(--entete-surface-forte);
+  border-color: var(--entete-texte-doux);
+  color: var(--entete-texte);
 }
+
+.palette-ouvrir kbd {
+  border-color: var(--entete-bordure);
+  background: none;
+  color: var(--entete-texte-doux);
+}
+
+.site-entete :focus-visible { outline-color: var(--entete-texte); }
 
 /* -------------------------------------------------------------------------
    5. Titres de section : l'étiquette mono, puis le filet
@@ -573,18 +588,38 @@ mark, .surlignage {
 }
 
 /* -------------------------------------------------------------------------
-   12. Cartouche de page : l'étiquette mono, le titre, la phrase, le filet
-   Le filet est marine ; sur une page de pôle il prend la couleur du pôle.
+   12. Cartouche de page : centré, l'étiquette mono, le titre, un filet court
+   Rien d'autre : la page se présente par son titre. Le filet est marine ;
+   sur une page de pôle il prend la couleur du pôle.
    ---------------------------------------------------------------------- */
 
 .page-entete {
-  padding-block-end: var(--e-5);
-  border-bottom: 2px solid var(--accent);
+  align-items: center;
+  text-align: center;
+  padding-block: var(--e-4) var(--e-2);
+  border-bottom: 0;
 }
 
-body[data-pole] .page-entete {
-  border-bottom-color: var(--couleur-pole, var(--accent));
+.page-entete h1 {
+  font-size: clamp(2.5rem, 3.4vw + 1.6rem, 4rem);
+  font-weight: 300;
+  letter-spacing: 0.01em;
 }
+
+.page-entete::after {
+  content: "";
+  display: block;
+  inline-size: var(--e-12);
+  block-size: 3px;
+  margin-block-start: var(--e-3);
+  border-radius: var(--rayon-plein);
+  background-color: var(--accent);
+}
+
+body[data-pole] .page-entete::after { background-color: var(--couleur-pole, var(--accent)); }
+
+.page-entete .accroche,
+.page-entete .mesure { display: none; }
 
 .page-entete__sur-titre {
   margin: 0;
@@ -607,12 +642,13 @@ body[data-pole] .page-entete {
   block-size: var(--e-2);
   margin-inline-end: var(--e-2);
   border-radius: var(--rayon-plein);
-  background-color: var(--pole-nav, var(--texte-faible));
+  background-color: var(--pole-nav, var(--entete-texte-doux));
+  box-shadow: 0 0 0 2px var(--entete-surface-forte);
 }
 
-.site-nav__liste a[data-pole="ETIIA"] { --pole-nav: var(--pole-etiia); }
-.site-nav__liste a[data-pole="ETIIE"] { --pole-nav: var(--pole-etiie); }
-.site-nav__liste a[data-pole="ETIII"] { --pole-nav: var(--pole-etiii); }
+.site-nav__liste a[data-pole="ETIIA"] { --pole-nav: var(--pole-etiia-sur-marine); }
+.site-nav__liste a[data-pole="ETIIE"] { --pole-nav: var(--pole-etiie-sur-marine); }
+.site-nav__liste a[data-pole="ETIII"] { --pole-nav: var(--pole-etiii-sur-marine); }
 
 /* -------------------------------------------------------------------------
    14. Écran étroit : la barre reste une barre

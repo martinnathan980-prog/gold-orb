@@ -4,7 +4,7 @@
    Une seule page, trois fois, paramétrée par <body data-pole="…">. Quatre
    sections, celles de l'accord d'équipe et de l'outil d'origine :
      1. COMMUNICATION — le kiosque du pôle (kiosque.js) ;
-     2. RÉUNIONS      — comptes-rendus et prochains points, liste + lecteur ;
+     2. RÉUNIONS      — les comptes-rendus, liste + lecteur ;
      3. ORGANIGRAMME  — l'arbre d'équipe du pôle (arbre.js) ;
      4. FAQ           — la base de connaissances du pôle, liste + lecteur,
                         et la demande aux experts.
@@ -77,20 +77,21 @@ function rendreCommunication(pole, donnees, conteneur) {
   /* Tout ce que le pôle publie est déjà dans ce kiosque : il n'y a pas
      d'ailleurs où renvoyer. Le niveau service est sur le tableau de bord. */
   monter(conteneur,
-    kiosque({ id: 'kiosque-' + pole.cle.toLowerCase(), dossiers, titreFil: 'Fil du pôle ' + pole.cle }));
+    kiosque({ id: 'kiosque-' + pole.cle.toLowerCase(), dossiers, titreFil: 'Historique du pôle' }));
 }
 
 /* -------------------------------------------------------------------------
    3. Réunions
    ------------------------------------------------------------------------- */
 
+/* Seuls les comptes-rendus sont montrés : une réunion à venir n'a rien à
+   lire, et l'agenda vit ailleurs. */
 function reunionsDuPole(donnees, code) {
-  verifierForme(donnees, { comptesRendus: 'tableau', prochainsPoints: 'tableau' }, 'reunions.json');
+  verifierForme(donnees, { comptesRendus: 'tableau' }, 'reunions.json');
   const du = (liste) => (Array.isArray(liste) ? liste : [])
     .filter((r) => r && typeof r === 'object' && texte(r.pole).toUpperCase() === code);
   return {
-    comptesRendus: du(donnees.comptesRendus).sort((a, b) => texte(b.date).localeCompare(texte(a.date))),
-    prochainsPoints: du(donnees.prochainsPoints).sort((a, b) => texte(a.date).localeCompare(texte(b.date)))
+    comptesRendus: du(donnees.comptesRendus).sort((a, b) => texte(b.date).localeCompare(texte(a.date)))
   };
 }
 
@@ -123,35 +124,20 @@ function rendreReunions(pole, groupes, conteneur) {
     badges: [{ texte: 'Compte-rendu', classe: 'badge--neutre' }],
     recherche: [r.synthese, r.lieu].concat((r.sujets || []).map((s) => (s && s.titre) + ' ' + (s && s.notes)), r.actions || [], r.decisions || []).map(texte),
     source: r, corps: () => corpsReunion(r)
-  })).concat(groupes.prochainsPoints.map((r) => ({
-    id: 'pp-' + texte(r.id), groupe: 'pp', titre: texte(r.titre), meta: dateLongue(r.date) || 'Date à renseigner',
-    badges: [{ texte: 'À venir', classe: 'badge--accent' }],
-    recherche: [r.objectif, r.lieu].concat((r.sujets || []).map((s) => (s && s.titre) + ' ' + (s && s.notes)), r.actions || []).map(texte),
-    source: r, corps: () => corpsReunion(r)
-  })));
+  }));
 
   monter(conteneur,
     lecteur({
       id: 'reunions-' + pole.cle.toLowerCase(),
       elements,
-      groupes: [{ cle: 'pp', titre: 'Prochains points' }, { cle: 'cr', titre: 'Comptes-rendus' }],
-      titreListe: 'Réunions du pôle',
+      groupes: [{ cle: 'cr', titre: 'Comptes-rendus' }],
+      titreListe: 'Comptes-rendus du pôle',
       placeholder: 'Rechercher un compte-rendu, un sujet, une action…',
-      vide: 'Aucune réunion publiée pour ce pôle.',
+      vide: 'Aucun compte-rendu publié pour ce pôle.',
       entete: (item) => frag(
-        el('span', { class: ['badge', item.groupe === 'pp' ? 'badge--accent' : 'badge--neutre'] },
-          item.groupe === 'pp' ? 'Prochain point' : 'Compte-rendu'),
         el('time', { class: 'mono texte-xs texte-faible', datetime: texte(item.source.date) },
           (dateLongue(item.source.date) || 'Date à renseigner').toUpperCase()),
-        texte(item.source.lieu) ? el('span', { class: 'badge badge--contour' }, texte(item.source.lieu)) : null),
-      actions: (item) => {
-        const sujet = encodeURIComponent((item.groupe === 'pp' ? 'Prochain point : ' : 'Compte-rendu : ') + item.titre);
-        const corps = encodeURIComponent('Bonjour,\n\n' + item.titre + ' — ' + (dateLongue(item.source.date) || '')
-          + '\n\n(Détails sur le Hub ETII, espace ' + pole.cle + '.)\n\nCordialement.');
-        return frag(
-          el('a', { class: 'bouton bouton--discret bouton--compact', href: 'mailto:?subject=' + sujet + '&body=' + corps }, 'Partager'),
-          el('a', { class: 'bouton bouton--secondaire bouton--compact', href: lienPole('reunions.html', pole.cle) }, 'Ouvrir dans le hub réunions'));
-      }
+        texte(item.source.lieu) ? el('span', { class: 'badge badge--contour' }, texte(item.source.lieu)) : null)
     }));
 }
 
@@ -257,7 +243,9 @@ function rendreFaq(pole, groupes, conteneur) {
     el('div', {},
       el('p', { class: 'liseuse__pied-titre' }, 'Une question spécifique ?'),
       el('p', {}, 'Si la base ne couvre pas votre périmètre, sollicitez les référents du pôle.')),
-    boutonExpert);
+    el('div', { class: 'rangee rangee--serree' },
+      lienSuite('faq.html', pole.cle, 'Toute la base'),
+      boutonExpert));
 
   monter(conteneur,
     lecteur({
@@ -270,8 +258,6 @@ function rendreFaq(pole, groupes, conteneur) {
       entete: (item) => frag(
         el('span', { class: 'badge badge--neutre' }, item.groupe === 'pole' ? 'Pôle ' + pole.cle : 'Service ETII'),
         item.meta ? el('span', { class: 'badge badge--contour' }, item.meta) : null),
-      actions: (item) => el('a', { class: 'bouton bouton--secondaire bouton--compact',
-        href: lienPole('faq.html', pole.cle, { question: texte(item.source.id) }) }, 'Ouvrir dans la base'),
       pied
     }));
 }
@@ -282,11 +268,9 @@ function rendreFaq(pole, groupes, conteneur) {
 
 function rendreEntete(pole) {
   const libelle = document.getElementById('pole-libelle');
-  if (libelle) libelle.textContent = 'Pôle ' + pole.cle;
+  if (libelle) libelle.textContent = 'Pôle · ' + pole.metaphore;
   const titre = document.getElementById('pole-titre');
-  if (titre) monter(titre, el('span', null, pole.cle), el('span', { class: 'pole-titre__metaphore' }, pole.metaphore));
-  const description = document.getElementById('pole-description');
-  if (description) description.textContent = pole.description;
+  if (titre) titre.textContent = pole.cle;
   try { document.title = pole.cle + ' — ' + pole.metaphore + ' — ETII Hub'; } catch (_e) { /* ignoré */ }
 }
 
@@ -358,9 +342,9 @@ if (!POLE) {
       squelette: 2, compact: true,
       texteChargement: 'Chargement des réunions du pôle…',
       titreErreur: 'Réunions indisponibles',
-      titreVide: 'Aucune réunion publiée',
-      texteVide: 'Les comptes-rendus et les prochains points de ce pôle apparaîtront ici.',
-      estVide: (g) => !g || (g.comptesRendus.length + g.prochainsPoints.length) === 0
+      titreVide: 'Aucun compte-rendu publié',
+      texteVide: 'Les comptes-rendus des réunions de ce pôle apparaîtront ici.',
+      estVide: (g) => !g || g.comptesRendus.length === 0
     });
 
   avecEtat('#zone-organigramme', async () => blocOrganigramme(await chargerDonnees('organigramme'), POLE.cle),

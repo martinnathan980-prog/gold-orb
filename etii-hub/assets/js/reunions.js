@@ -110,9 +110,9 @@ const PAGES_TRANSVERSES = [
    ------------------------------------------------------------------------- */
 
 /*
-   Les deux onglets, décrits une seule fois. Tout le reste du module boucle
-   sur cette table : ajouter un troisième onglet ne demanderait qu'une
-   entrée de plus, jamais une branche supplémentaire dans le code.
+   Un seul onglet aujourd'hui — les comptes-rendus : une réunion à venir
+   n'a rien à lire. Tout le module boucle sur cette table : en rajouter un
+   ne demanderait qu'une entrée de plus, jamais une branche dans le code.
 
      cle        identifiant court, celui qui part dans le hash de l'URL
      source     clé du tableau correspondant dans reunions.json
@@ -142,23 +142,6 @@ const ONGLETS = [
     videTitre: 'Aucun compte-rendu',
     videTexte: 'Aucune réunion passée n’a encore été publiée. Cet onglet '
       + 'se remplira dès le premier compte-rendu diffusé.'
-  },
-  {
-    cle: 'pp',
-    source: 'prochainsPoints',
-    libelle: 'Prochains points',
-    champResume: 'objectif',
-    etiquetteResume: 'Objectif',
-    badge: 'Point à venir',
-    etiquetteActions: 'Actions de préparation',
-    avecDecisions: false,
-    ordre: 'proche',
-    titreListe: 'Points à venir',
-    nom: 'point à venir',
-    noms: 'points à venir',
-    videTitre: 'Aucun point programmé',
-    videTexte: 'Aucune réunion à venir n’est inscrite à l’ordre du jour. '
-      + 'Cet onglet se remplira dès le prochain point planifié.'
   }
 ];
 
@@ -281,10 +264,6 @@ function demarrer() {
       comptesRendus: {
         type: 'tableau',
         elements: { id: 'chaine', titre: 'chaine', date: 'chaine' }
-      },
-      prochainsPoints: {
-        type: 'tableau',
-        elements: { id: 'chaine', titre: 'chaine', date: 'chaine' }
       }
     }, 'reunions.json')),
 
@@ -295,14 +274,13 @@ function demarrer() {
       texteChargement: 'Chargement des réunions du service…',
       titreErreur: 'Réunions indisponibles',
       titreVide: 'Aucune réunion enregistrée',
-      texteVide: 'Ni compte-rendu, ni point à venir pour l’instant. '
+      texteVide: 'Aucun compte-rendu pour l’instant. '
         + 'Cette page se remplira dès la première réunion publiée.',
 
       /* Vacuité du FICHIER, tous pôles et tous onglets confondus. Un pôle
          sans réunion n'est pas un fichier vide : il a son propre état
          vide, qui sait proposer le retour à tout le service. */
       estVide: (brut) => reunionsValides(brut, 'comptesRendus').length === 0
-        && reunionsValides(brut, 'prochainsPoints').length === 0
     }
   );
 }
@@ -672,8 +650,7 @@ function construireBarreOutils() {
         class: 'champ__aide',
         id: 'recherche-reunions-aide'
       }, 'La recherche porte sur le titre, le lieu, les sujets, les actions '
-        + 'et les décisions, et ne filtre que l’onglet affiché, dans le '
-        + 'périmètre choisi.')
+        + 'et les décisions, dans le périmètre choisi.')
     ),
 
     el('button', {

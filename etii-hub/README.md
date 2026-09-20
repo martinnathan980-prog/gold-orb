@@ -50,7 +50,7 @@ Puis ouvrir <http://localhost:8000>.
 | Page | Rôle |
 |---|---|
 | `index.html` | Dispatcher : accès aux trois pôles et à la recherche |
-| `reunions.html` | Comptes-rendus **et** prochains points planifiés |
+| `reunions.html` | Les comptes-rendus de réunion, par périmètre |
 | `organigramme.html` | Équipes, rôles, réorganisation |
 | `faq.html` | Base de connaissances |
 | `docsearch.html` | **Recherche documentaire — le cœur du site** |

@@ -2,7 +2,8 @@
    ETII Hub — L'organigramme du service
 
    Trois vues sur les mêmes personnes, choisies par onglets :
-     ARBRE          la hiérarchie, direction → pôles → squads → personnes
+     ARBRE          la hiérarchie, direction → pôles → squads (des volets
+                    qu'on ouvre : lead, visages, effectif) → personnes
      TROMBINOSCOPE  une grille de fiches, pour balayer et reconnaître
      COMPÉTENCES    « qui sait faire ça ? » — l'annuaire du service
 
@@ -118,6 +119,7 @@ let poleActif = SERVICE;
 let requete = '';
 let competenceActive = '';
 let fiche = null;
+let ouvrirTout = false;
 const refs = {};
 
 function visibles() {
@@ -175,13 +177,43 @@ function boutonPersonne(g, options) {
    4. Vue « arbre »
    ------------------------------------------------------------------------- */
 
+/* Une pile d'avatars : les premiers visages d'une squad, puis « +N ». */
+function pileAvatars(gens, max) {
+  const visibles = gens.slice(0, max);
+  const reste = gens.length - visibles.length;
+  return el('span', { class: 'org-pile', 'aria-hidden': 'true' },
+    visibles.map((g) => avatar(g)),
+    reste > 0 ? el('span', { class: 'org-pile__reste' }, '+' + reste) : null);
+}
+
+/* Une squad est un volet : fermé, on voit son nom, son effectif, son lead
+   et une pile de visages ; ouvert, toute l'équipe. Une recherche ou un
+   filtre de compétence ouvre les volets qui contiennent une réponse. */
+function volatSquad(s, ouvert) {
+  const membres = s.membres.slice()
+    .sort((a, b) => (b.role === 'leader') - (a.role === 'leader') || a.nom.localeCompare(b.nom));
+  const lead = membres.find((g) => g.role === 'leader') || null;
+  const details = el('details', { class: 'org-squad', open: ouvert ? true : null, dataSquad: s.nom },
+    el('summary', { class: 'org-squad__tete' },
+      el('span', { class: 'org-squad__chevron', 'aria-hidden': 'true' }),
+      el('span', { class: 'org-squad__infos' },
+        el('span', { class: 'org-squad__nom' }, s.nom),
+        el('span', { class: 'org-squad__lead' }, lead ? 'Lead : ' + lead.nom : 'Lead ' + MENTION_VIDE)),
+      pileAvatars(membres, 5),
+      el('span', { class: 'org-squad__compte mono' }, membres.length)),
+    el('div', { class: 'org-squad__membres' }, membres.map((g) => boutonPersonne(g))));
+  return details;
+}
+
 function rendreArbre(gens) {
   const parmi = (predicat) => gens.filter(predicat);
   const direction = parmi((g) => g.role === 'direction');
+  const filtreActif = Boolean(normaliser(requete)) || Boolean(competenceActive);
   const poles = (poleActif === SERVICE ? CODES : [poleActif]).map((code) => {
     const membres = parmi((g) => g.pole === code);
     const responsable = membres.find((g) => g.role === 'responsable') || null;
-    const squads = [...new Set(membres.filter((g) => g.squad).map((g) => g.squad))].sort();
+    const squads = [...new Set(membres.filter((g) => g.squad).map((g) => g.squad))]
+      .sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
     return { code, responsable, squads: squads.map((nom) => ({ nom, membres: membres.filter((g) => g.squad === nom) })), effectif: membres.length };
   }).filter((p) => p.effectif > 0);
 
@@ -189,7 +221,11 @@ function rendreArbre(gens) {
     return el('p', { class: 'texte-doux' }, 'Personne ne correspond à cette recherche.');
   }
 
-  return el('div', { class: 'org-arbre' },
+  /* Au niveau service, un seul pôle affiché tient sur toute la largeur :
+     ses squads passent alors en grille. */
+  const unSeul = poles.length === 1;
+
+  return el('div', { class: ['org-arbre', unSeul ? 'org-arbre--seul' : null] },
     direction.length
       ? el('div', { class: 'org-arbre__tete' }, direction.map((g) => boutonPersonne(g, { classe: 'org-personne--tete' })))
       : null,
@@ -197,15 +233,9 @@ function rendreArbre(gens) {
       el('div', { class: 'org-arbre__pole-tete' },
         el('span', { class: 'org-arbre__pole-point', 'aria-hidden': 'true' }),
         el('a', { class: 'org-arbre__pole-nom', href: PAGE_DE_POLE[p.code] || '#' }, p.code),
-        el('span', { class: 'org-arbre__pole-compte mono' }, p.effectif + ' pers.')),
+        el('span', { class: 'org-arbre__pole-compte mono' }, p.effectif + ' pers. · ' + p.squads.length + (p.squads.length > 1 ? ' squads' : ' squad'))),
       p.responsable ? boutonPersonne(p.responsable, { classe: 'org-personne--responsable' }) : null,
-      el('ul', { class: 'org-arbre__squads', role: 'list' }, p.squads.map((s) => el('li', { class: 'org-arbre__squad' },
-        el('div', { class: 'org-arbre__squad-tete' },
-          el('span', {}, s.nom),
-          el('span', { class: 'mono' }, s.membres.length)),
-        el('div', { class: 'org-arbre__membres' }, s.membres
-          .sort((a, b) => (b.role === 'leader') - (a.role === 'leader') || a.nom.localeCompare(b.nom))
-          .map((g) => boutonPersonne(g)))))))))); 
+      el('div', { class: 'org-arbre__squads' }, p.squads.map((s) => volatSquad(s, filtreActif || ouvrirTout)))))));
 }
 
 /* -------------------------------------------------------------------------
@@ -451,6 +481,7 @@ function construire(donnees, cible) {
       el('label', { class: 'visuellement-cache', for: 'org-recherche' }, 'Rechercher dans l’organigramme'),
       refs.recherche,
       refs.jeton,
+      el('button', { type: 'button', class: 'bouton bouton--secondaire bouton--compact', dataDeplier: '', 'aria-pressed': 'false' }, 'Tout déplier'),
       el('button', { type: 'button', class: 'bouton bouton--secondaire bouton--compact', dataExport: '' }, 'Exporter'),
       refs.filtres),
     refs.reperes,
@@ -475,6 +506,13 @@ function construire(donnees, cible) {
   deleguer(cible, '[data-pole-filtre]', 'click', (evt, b) => { poleActif = b.dataset.poleFiltre; ecrireUrl(); rendre(); });
   deleguer(cible, '[data-vue]', 'click', (evt, b) => { vue = b.dataset.vue; ecrireUrl(); rendre(); });
   deleguer(cible, '[data-export]', 'click', exporterCsv);
+  deleguer(cible, '[data-deplier]', 'click', (evt, b) => {
+    ouvrirTout = !ouvrirTout;
+    b.setAttribute('aria-pressed', ouvrirTout ? 'true' : 'false');
+    b.textContent = ouvrirTout ? 'Tout replier' : 'Tout déplier';
+    if (vue !== 'arbre') { vue = 'arbre'; ecrireUrl(); }
+    rendre();
+  });
 
   refs.onglets.addEventListener('keydown', (evt) => {
     const boutons = Array.from(refs.onglets.querySelectorAll('[data-vue]'));

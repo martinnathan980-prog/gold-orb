@@ -26,34 +26,8 @@
     body[data-pole="ETIIE"] { --couleur-pole: var(--pole-etiie); }
     body[data-pole="ETIII"] { --couleur-pole: var(--pole-etiii); }
 
-    .pole-marque { display: flex; align-items: center; gap: var(--e-3); }
-
-    .pole-marque__filet {
-      flex: none;
-      inline-size: var(--e-8);
-      block-size: 3px;
-      border-radius: var(--rayon-plein);
-      background-color: var(--couleur-pole);
-    }
-
-    .pole-marque__libelle {
-      font-family: var(--police-mono);
-      font-size: var(--texte-xs);
-      font-weight: var(--graisse-moyenne);
-      letter-spacing: var(--lettrage-etiquette);
-      text-transform: uppercase;
-      color: var(--texte-faible);
-    }
-
-    .pole-titre { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--e-2) var(--e-4); }
-
-    .pole-titre__metaphore {
-      font-size: var(--texte-xl);
-      font-weight: var(--graisse-normale);
-      color: var(--texte-doux);
-    }
-
-    .accroche { max-width: var(--largeur-texte); color: var(--texte-doux); }
+    /* L'étiquette au-dessus du titre porte la couleur du pôle. */
+    body[data-pole] .page-entete__sur-titre { color: var(--couleur-pole); }
 
     /* La sous-navigation se colle sous la barre du site. */
     .sous-nav { inset-block-start: calc(var(--cible-tactile) + var(--e-3)); }
@@ -97,15 +71,8 @@
     <div class="conteneur pile pile--section">
 
       <div class="pile pile--serree pole-entete page-entete">
-        <p class="pole-marque sans-marge">
-          <span class="pole-marque__filet" aria-hidden="true"></span>
-          <span class="pole-marque__libelle" id="pole-libelle">Pôle</span>
-        </p>
+        <p class="page-entete__sur-titre" id="pole-libelle">Pôle</p>
         <h1 class="pole-titre" id="pole-titre">Espace de pôle</h1>
-        <p class="accroche sans-marge" id="pole-description">
-          Cet espace rassemble la communication du pôle, ses réunions, son
-          organigramme et ses questions fréquentes.
-        </p>
         <div id="pole-alerte" hidden></div>
       </div>
 

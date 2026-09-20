@@ -34,7 +34,7 @@ const PAGES = [
   { titre: 'ETIII — Structure & harnais', sousTitre: 'Espace du pôle', href: 'etiii.html' },
   { titre: 'Recherche documentaire', sousTitre: 'Le fonds du service, filtres métier, porteur, pôle', href: 'docsearch.html' },
   { titre: 'Base de connaissances', sousTitre: 'Questions fréquentes et demandes aux experts', href: 'faq.html' },
-  { titre: 'Réunions', sousTitre: 'Comptes-rendus et prochains points', href: 'reunions.html' },
+  { titre: 'Réunions', sousTitre: 'Les comptes-rendus du service et des pôles', href: 'reunions.html' },
   { titre: 'Organigramme', sousTitre: 'Arbre, trombinoscope, compétences', href: 'organigramme.html' }
 ];
 

@@ -64,9 +64,14 @@ t('un pôle inconnu retombe sur tout le service',
 console.log('\n== Communication : le kiosque de chaque pôle ==');
 // La page dédiée a disparu : la communication se lit dans le Communication
 // Center du tableau de bord (tout le service) et dans celui de chaque pôle.
+// Seul le passé se lit : l'agenda « à venir » n'est plus de la
+// communication. Un même événement saisi en annonce ET en agenda (même
+// titre, même date) ne compte qu'une fois.
+const cleUnique = (e) => e.date + '|' + String(e.titre || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const dedup = (liste) => { const vus = new Set(); return liste.filter((e) => { const k = cleUnique(e); if (vus.has(k)) return false; vus.add(k); return true; }); };
 for (const code of ['ETIIA', 'ETIIE', 'ETIII']) {
-  const attendu = comms.annonces.filter(a => a.pole === code).length
-    + comms.agenda.filter(a => a.pole === code).length;
+  const attendu = dedup(comms.annonces.filter(a => a.pole === code)
+    .concat(comms.agenda.filter(a => a.pole === code && a.statut !== 'a-venir' && a.type !== 'mot'))).length;
   await page.goto(`${B}/${code.toLowerCase()}.html`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200);
   const entrees = await page.locator('#zone-communication .kiosque__carte').count();
@@ -74,9 +79,10 @@ for (const code of ['ETIIA', 'ETIIE', 'ETIII']) {
 }
 await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1200);
-const toutes = comms.annonces.length + comms.agenda.filter(a => a.type !== 'mot').length + 1;
+const toutes = dedup(comms.annonces.concat(comms.agenda.filter(a => a.statut !== 'a-venir' && a.type !== 'mot'))).length;
 const auService = await page.locator('#zone-communication .kiosque__carte').count();
-t(`le service montre ses ${toutes} entrées`, auService === toutes, `(${auService})`);
+t(`le service montre ses ${toutes} entrées passées`, auService === toutes, `(${auService})`);
+t('le mot du chef est en vedette au niveau service', (await page.locator('#zone-communication .kiosque__vedette').count()) === 1);
 
 console.log('\n== Recherche : facette de pôle ==');
 await page.goto(`${B}/docsearch.html`, { waitUntil: 'networkidle' });

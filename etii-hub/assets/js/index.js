@@ -2,9 +2,8 @@
    ETII Hub — Page du service (index.html)
 
    Trois sections, dans l'ordre voulu par le service :
-     1. LE COMMUNICATION CENTER — le fil du service à gauche (le mot du
-        chef, ce qui vient, l'historique), le projecteur à droite, le
-        bandeau des alertes au-dessus. Rendu par kiosque.js.
+     1. LE COMMUNICATION CENTER — le bandeau des alertes, le mot du chef
+        en vedette, l'historique en cartes. Rendu par kiosque.js.
      2. LES PORTEURS — les appareils suivis, rendus par porteurs.js.
      3. LE SUIVI OTQ / OTD — lu dans un CSV : la feuille publiée du service,
         ou l'exemple embarqué, toujours annoncé comme tel (otq.js).
@@ -45,7 +44,7 @@ function rendreCommunication(donnees, conteneur) {
     id: 'kiosque-service',
     dossiers,
     alertes: alertesDepuisCommunications(donnees),
-    titreFil: 'Fil du service',
+    titreFil: 'Historique du service',
     filtres: POLES
   }));
 }

@@ -1,10 +1,11 @@
 /* =========================================================================
    ETII Hub — Les porteurs
-   La flotte suivie par le service, comme un carrousel : une piste de
-   fiches compactes qu'on fait défiler, et sous la piste, la fiche du
-   porteur choisi — silhouette ou photo, pôles concernés, données
-   techniques et économiques telles que le fichier les déclare. Une
-   valeur absente s'écrit « à renseigner », jamais autre chose.
+   La flotte suivie par le service, en galerie : toutes les fiches
+   compactes visibles d'un coup, groupées par catégorie (civil, militaire,
+   prototype), et sous la galerie, la fiche du porteur choisi — la photo
+   en bannière, l'identité en bandeau, puis les onglets de données telles
+   que le fichier les déclare. Une valeur absente s'écrit « à renseigner »,
+   jamais autre chose.
    ========================================================================= */
 
 import { el, monter, annoncer, etatUrl } from './ui.js';
@@ -373,14 +374,6 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
   const prefixe = 'porteur-' + code.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
   const identite = objet(fiche.identite);
-  const carteIdentite = avecFiche
-    ? el('dl', { class: 'porteurs__identite' },
-        el('div', {}, el('dt', {}, 'Statut'), el('dd', {}, texte(fiche.statut) || NON_RENSEIGNE)),
-        IDENTITE.map(([cle, libelle]) => {
-          const c = champFiche(identite[cle]);
-          return el('div', {}, el('dt', {}, libelle), el('dd', { class: c.ok ? null : 'porteurs__manquant' }, c.texte));
-        }))
-    : null;
 
   const panneaux = ONGLETS.map((o) => {
     if (o.groupes) {
@@ -397,28 +390,42 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
     return { cle: o.cle, titre: o.titre, contenu: panneauService(appareil, donnees) };
   });
 
+  const titreBloc = el('div', { class: 'porteurs__banniere-texte' },
+    el('p', { class: 'porteurs__sur-titre sans-marge' },
+      categorie ? categorie.libelle : (texte(appareil.categorie) || 'Catégorie ' + NON_RENSEIGNE),
+      ' · ', texte(appareil.segment) || texte(fiche.segment) || NON_RENSEIGNE),
+    el('h3', { class: 'porteurs__titre sans-marge' }, texte(fiche.nom) || code,
+      texte(fiche.ancienNom) ? el('span', { class: 'porteurs__ancien-nom' }, ' ex-' + texte(fiche.ancienNom)) : null),
+    el('div', { class: 'porteurs__poles' },
+      poles.length ? poles.map(pastillePole)
+        : el('span', { class: 'texte-faible texte-xs' }, 'Pôles ' + NON_RENSEIGNE)));
+
+  const banniere = photo
+    ? el('figure', { class: 'porteurs__banniere porteurs__banniere--photo' },
+        el('img', { src: photo, alt: 'Photo du ' + code, class: 'porteurs__photo', decoding: 'async' }),
+        el('div', { class: 'porteurs__banniere-voile', 'aria-hidden': 'true' }),
+        titreBloc,
+        creditPhoto(appareil.credit))
+    : el('div', { class: 'porteurs__banniere porteurs__banniere--silhouette' },
+        el('div', { class: 'porteurs__silhouette' },
+          silhouette(texte(appareil.silhouette), { titre: 'Silhouette du ' + code }),
+          el('span', { class: 'porteurs__photo-attente' }, 'Photo à venir')),
+        titreBloc);
+
+  /* L'identité en bandeau : statut, constructeur, dates, site, jalon et
+     avancement — une colonne par donnée, sur toute la largeur. */
+  const bandeau = el('dl', { class: 'porteurs__bandeau' },
+    el('div', {}, el('dt', {}, 'Statut'), el('dd', {}, (avecFiche && texte(fiche.statut)) || NON_RENSEIGNE)),
+    IDENTITE.map(([cle, libelle]) => {
+      const c = champFiche(identite[cle]);
+      return el('div', {}, el('dt', {}, libelle), el('dd', { class: c.ok ? null : 'porteurs__manquant' }, c.texte));
+    }),
+    el('div', {}, el('dt', {}, 'Jalon en cours'), el('dd', { class: jalon.ok ? null : 'porteurs__manquant' }, jalon.texte)),
+    el('div', {}, el('dt', {}, 'Avancement'), el('dd', { class: ['mono', avancement.ok ? null : 'porteurs__manquant'] }, avancement.texte)));
+
   return el('article', { class: 'porteurs__detail', 'aria-label': 'Fiche ' + code },
-    el('div', { class: 'porteurs__colonne-visuel' },
-      photo
-        ? el('figure', { class: 'porteurs__visuel porteurs__visuel--photo' },
-            el('img', { src: photo, alt: 'Photo du ' + code, class: 'porteurs__photo', decoding: 'async' }),
-            creditPhoto(appareil.credit))
-        : el('div', { class: 'porteurs__visuel' },
-            el('div', { class: 'porteurs__silhouette' },
-              silhouette(texte(appareil.silhouette), { titre: 'Silhouette du ' + code }),
-              el('span', { class: 'porteurs__photo-attente' }, 'Photo à venir'))),
-      carteIdentite),
+    banniere,
     el('div', { class: 'porteurs__contenu' },
-      el('div', { class: 'porteurs__entete' },
-        el('div', { class: 'pile pile--serree' },
-          el('p', { class: 'porteurs__sur-titre sans-marge' },
-            categorie ? categorie.libelle : (texte(appareil.categorie) || 'Catégorie ' + NON_RENSEIGNE),
-            ' · ', texte(appareil.segment) || texte(fiche.segment) || NON_RENSEIGNE),
-          el('h3', { class: 'porteurs__titre sans-marge' }, texte(fiche.nom) || code,
-            texte(fiche.ancienNom) ? el('span', { class: 'porteurs__ancien-nom' }, ' ex-' + texte(fiche.ancienNom)) : null)),
-        el('div', { class: 'porteurs__poles' },
-          poles.length ? poles.map(pastillePole)
-            : el('span', { class: 'texte-faible texte-xs' }, 'Pôles ' + NON_RENSEIGNE))),
       texte(fiche.resume) ? el('p', { class: 'porteurs__resume sans-marge' }, texte(fiche.resume)) : null,
       texte(fiche.relecture) === 'non effectuée'
         ? el('p', { class: 'porteurs__relecture sans-marge' },
@@ -426,9 +433,7 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
             el('span', {}, 'Fiche constituée depuis des sources publiques, pas encore relue en contradictoire. '
               + 'Chaque valeur porte sa confiance et sa source : vérifiez avant de vous en servir.'))
         : null,
-      el('dl', { class: 'porteurs__jalon' },
-        el('div', {}, el('dt', {}, 'Jalon en cours'), el('dd', { class: jalon.ok ? null : 'porteurs__manquant' }, jalon.texte)),
-        el('div', {}, el('dt', {}, 'Avancement'), el('dd', { class: ['mono', avancement.ok ? null : 'porteurs__manquant'] }, avancement.texte))),
+      bandeau,
       onglets(prefixe, panneaux)));
 }
 
@@ -454,8 +459,23 @@ export function porteurs(donnees, options) {
   let courant = appareils[0] || null;
 
   const zoneDetail = el('div', { class: 'porteurs__zone-detail', 'aria-live': 'polite' });
-  const piste = el('ul', { class: 'porteurs__piste', role: 'list' }, appareils.map((a) => fiche(a, prefixe)));
   const compteur = el('span', { class: 'porteurs__compte mono' }, '');
+
+  /* La galerie : un groupe par catégorie, toutes les fiches visibles d'un
+     coup — pas de piste à faire défiler. */
+  const groupesGalerie = cats.map((c) => {
+    const membres = appareils.filter((a) => texte(a.categorie) === c.cle);
+    return { cle: c.cle, libelle: c.libelle, membres };
+  }).filter((g) => g.membres.length);
+  const horsCategorie = appareils.filter((a) => !cats.some((c) => c.cle === texte(a.categorie)));
+  if (horsCategorie.length) groupesGalerie.push({ cle: '', libelle: 'Autres', membres: horsCategorie });
+
+  const piste = el('div', { class: 'porteurs__galerie' }, groupesGalerie.map((g) =>
+    el('section', { class: 'porteurs__groupe-galerie', dataset: { categorie: g.cle }, 'aria-label': g.libelle },
+      el('h3', { class: 'porteurs__groupe-galerie-titre' },
+        el('span', {}, g.libelle),
+        el('span', { class: 'mono porteurs__groupe-galerie-compte' }, String(g.membres.length))),
+      el('ul', { class: 'porteurs__grille', role: 'list' }, g.membres.map((a) => fiche(a, prefixe))))));
 
   const puces = el('ul', { class: 'facettes', 'aria-label': 'Filtrer les porteurs par catégorie' },
     [{ cle: '', libelle: 'Tous' }].concat(cats).map((c) => el('li', {},
@@ -467,12 +487,6 @@ export function porteurs(donnees, options) {
       el('span', { class: 'facette__compteur' },
         String(c.cle ? appareils.filter((a) => texte(a.categorie) === c.cle).length : appareils.length))))));
 
-  const fleche = (sens) => el('button', {
-    type: 'button', class: 'bouton bouton--icone bouton--compact porteurs__fleche',
-    'aria-label': sens < 0 ? 'Porteurs précédents' : 'Porteurs suivants',
-    dataset: { sens: String(sens) }
-  }, sens < 0 ? '‹' : '›');
-
   function visibles() {
     return appareils.filter((a) => !categorie || texte(a.categorie) === categorie);
   }
@@ -483,9 +497,8 @@ export function porteurs(donnees, options) {
       b.setAttribute('aria-pressed', b.dataset.code === texte(appareil.code) ? 'true' : 'false');
     });
     monter(zoneDetail, detail(appareil, d, cats, { equipe: opts.equipe, documents: opts.documents }));
-    if (defiler) {
-      const b = piste.querySelector('.porteurs__fiche[aria-pressed="true"]');
-      if (b && typeof b.scrollIntoView === 'function') b.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+    if (defiler && typeof zoneDetail.scrollIntoView === 'function') {
+      zoneDetail.scrollIntoView({ block: 'start', behavior: 'smooth' });
     }
   }
 
@@ -493,6 +506,9 @@ export function porteurs(donnees, options) {
     const liste = visibles();
     piste.querySelectorAll('.porteurs__item').forEach((li) => {
       li.hidden = Boolean(categorie) && li.dataset.categorie !== categorie;
+    });
+    piste.querySelectorAll('.porteurs__groupe-galerie').forEach((g) => {
+      g.hidden = Boolean(categorie) && g.dataset.categorie !== categorie;
     });
     compteur.textContent = liste.length + (liste.length > 1 ? ' appareils' : ' appareil');
     if (!liste.length) { monter(zoneDetail, el('p', { class: 'texte-doux' }, 'Aucun porteur dans cette catégorie.')); return; }
@@ -503,7 +519,7 @@ export function porteurs(donnees, options) {
     const b = evt.target.closest('.porteurs__fiche');
     if (!b) return;
     const a = appareils.find((x) => texte(x.code) === b.dataset.code);
-    if (a) { choisir(a, false); annoncer('Porteur ' + b.dataset.code); }
+    if (a) { choisir(a, true); annoncer('Porteur ' + b.dataset.code); }
   });
 
   piste.addEventListener('keydown', (evt) => {
@@ -530,20 +546,8 @@ export function porteurs(donnees, options) {
 
   const racine = el('section', { class: 'porteurs', id: prefixe },
     el('div', { class: 'porteurs__barre' }, puces, compteur),
-    el('div', { class: 'porteurs__carrousel' },
-      fleche(-1),
-      el('div', { class: 'porteurs__fenetre' }, piste),
-      fleche(1)),
+    piste,
     zoneDetail);
-
-  racine.addEventListener('click', (evt) => {
-    const f = evt.target.closest('.porteurs__fleche');
-    if (!f) return;
-    const liste = visibles();
-    const i = liste.indexOf(courant);
-    const j = Math.min(liste.length - 1, Math.max(0, i + Number(f.dataset.sens)));
-    if (liste[j]) choisir(liste[j], true);
-  });
 
   /* Arrivée par la palette ou un lien : #porteur=CODE choisit la fiche et
      l'amène à l'écran. */
