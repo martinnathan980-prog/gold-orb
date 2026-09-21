@@ -188,16 +188,14 @@ ul.kiosque__alertes-liste {
 /* --- La liste ------------------------------------------------------------- */
 
 /* La liste et la lecture partagent la même hauteur : c'est la lecture qui
-   la fixe, la liste s'y ajuste et défile dans sa propre fenêtre. Astuce de
-   grille : une hauteur nulle et une hauteur minimale de 100 % — l'élément
-   ne contribue pas à la rangée, mais la remplit. */
-.kiosque__grille { align-items: stretch; }
-
+   la donne. Aucune astuce de pourcentage : kiosque.js mesure la lecture
+   (ResizeObserver) et pose sa hauteur en style en ligne sur la liste, qui
+   défile dans sa propre fenêtre. Sans cette mesure (avant le premier
+   rendu), la liste est simplement bornée. */
 .kiosque__flux {
   display: flex;
   flex-direction: column;
-  block-size: 0;
-  min-block-size: 100%;
+  max-block-size: 40rem;
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
   border-radius: var(--rayon-lg);
@@ -207,10 +205,10 @@ ul.kiosque__alertes-liste {
 .kiosque__lecture { min-block-size: 28rem; }
 
 /* Sur un écran étroit, la liste passe au-dessus de la lecture, dans une
-   fenêtre courte. */
+   fenêtre courte à hauteur fixe ; l'observateur ne pose rien. */
 @media (max-width: 900px) {
   .kiosque__grille { grid-template-columns: minmax(0, 1fr); }
-  .kiosque__flux { block-size: auto; min-block-size: 0; max-block-size: 26rem; }
+  .kiosque__flux { max-block-size: 26rem; }
   .kiosque__lecture { min-block-size: 0; }
 }
 
@@ -241,26 +239,57 @@ ul.kiosque__alertes-liste {
 .kiosque__carte-local { text-transform: none; letter-spacing: 0; }
 .kiosque__filtres .facette { min-height: calc(var(--cible-tactile) - var(--e-3)); padding-inline: var(--e-2); font-size: var(--texte-xs); }
 
+/* La fenêtre qui défile. Pas de marge haute : l'en-tête de mois collant se
+   pose au ras du bord, rien ne passe au-dessus de lui. */
 .kiosque__defile {
   flex: 1;
   min-block-size: 0;
   overflow-y: auto;
-  padding: var(--e-2);
+  padding: 0 var(--e-2) var(--e-2);
 }
 
 .kiosque__defile:focus-visible { outline-offset: -2px; }
 
-.kiosque__liste {
+/* --- La frise : un rail, un point par entrée, les mois en repères ------- */
+
+/* Le rail : un fin filet vertical à gauche des cartes, sur toute la liste.
+   Les cartes sont décalées vers la droite pour lui laisser la place ; les
+   points des entrées et les en-têtes de mois se posent dessus. Sélecteur
+   qualifié par la balise : base.css retire le retrait de tout `ol[class]`,
+   et cette liste-là veut le sien. */
+ol.kiosque__liste {
+  --kiosque-rail: 0.9rem;        /* abscisse du rail, depuis la gauche  */
+  --kiosque-point: 9px;          /* diamètre d'un point                  */
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 2px;
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 calc(var(--kiosque-rail) + 0.9rem);
   list-style: none;
 }
 
+/* L'espace entre deux cartes est porté par la carte, pas par la liste :
+   ainsi rien ne transparaît dans une fente sous l'en-tête de mois collant. */
+.kiosque__entree + .kiosque__entree { margin-block-start: 2px; }
+
+.kiosque__liste::before {
+  content: "";
+  position: absolute;
+  inset-block: var(--e-2);
+  inset-inline-start: calc(var(--kiosque-rail) - 0.5px);
+  inline-size: 1px;
+  background-color: var(--bordure-forte);
+}
+
+/* Le mois : un repère collant en haut de la fenêtre, sur fond de carte
+   pour couvrir le rail et les cartes qui passent dessous. */
 .kiosque__groupe {
-  padding: var(--e-3) var(--e-2) var(--e-1);
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+  margin-inline-start: calc(-1 * (var(--kiosque-rail) + 0.9rem));
+  padding: var(--e-3) var(--e-2) var(--e-1) calc(var(--kiosque-rail) + 0.9rem);
+  background-color: var(--carte-fond);
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
   letter-spacing: var(--lettrage-etiquette);
@@ -268,8 +297,68 @@ ul.kiosque__alertes-liste {
   color: var(--texte-faible);
 }
 
+/* Un petit trait sur le rail, devant le mois : la frise est graduée. */
+.kiosque__groupe::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(var(--kiosque-rail) - 3px);
+  inset-block-start: calc(50% + var(--e-1));
+  inline-size: 7px;
+  block-size: 1px;
+  background-color: var(--bordure-forte);
+}
+
+/* L'entrée porte le point sur le rail, coloré selon son statut : un
+   anneau au repos, un disque plein — relié à la carte par un court filet —
+   quand elle est lue. */
+.kiosque__entree {
+  --kiosque-teinte: var(--statut-info);
+  position: relative;
+}
+
+.kiosque__entree[data-statut="succes"] { --kiosque-teinte: var(--statut-succes); }
+.kiosque__entree[data-statut="urgent"] { --kiosque-teinte: var(--chaud); }
+.kiosque__entree[data-statut="mot"]    { --kiosque-teinte: var(--accent); }
+
+/* Le point est à mi-hauteur de la carte, en face du bloc jour/mois. */
+.kiosque__entree::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset-inline-start: calc(-0.9rem - var(--kiosque-point) / 2);
+  inset-block-start: 50%;
+  inline-size: var(--kiosque-point);
+  block-size: var(--kiosque-point);
+  border-radius: var(--rayon-plein);
+  background-color: var(--carte-fond);
+  box-shadow: inset 0 0 0 2px var(--kiosque-teinte);
+  transform: translateY(-50%);
+  transition: background-color var(--duree-rapide) var(--courbe),
+              transform var(--duree-rapide) var(--courbe);
+}
+
+/* Le filet qui relie le point à la carte lue. */
+.kiosque__entree::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(-0.9rem + var(--kiosque-point) / 2);
+  inset-block-start: calc(50% - 1px);
+  inline-size: calc(0.9rem - var(--kiosque-point) / 2);
+  block-size: 2px;
+  background-color: var(--kiosque-teinte);
+  opacity: 0;
+  transition: opacity var(--duree-rapide) var(--courbe);
+}
+
+.kiosque__entree--active::before {
+  background-color: var(--kiosque-teinte);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--kiosque-teinte) 22%, transparent);
+  transform: translateY(-50%) scale(1.15);
+}
+
+.kiosque__entree--active::after { opacity: 1; }
+
 .kiosque__carte {
-  --kiosque-teinte: var(--bordure-forte);
   display: grid;
   grid-template-columns: 2.75rem minmax(0, 1fr);
   gap: var(--e-3);
@@ -278,26 +367,37 @@ ul.kiosque__alertes-liste {
   background: none;
   border: 1px solid transparent;
   border-radius: var(--rayon-md);
-  box-shadow: inset 3px 0 0 transparent;
+  box-shadow: 0 0 0 transparent;
   color: var(--texte);
   font: inherit;
   text-align: start;
   cursor: pointer;
   transition: background-color var(--duree-rapide) var(--courbe),
               border-color var(--duree-rapide) var(--courbe),
-              box-shadow var(--duree-rapide) var(--courbe);
+              box-shadow var(--duree-rapide) var(--courbe),
+              transform var(--duree-rapide) var(--courbe);
 }
 
-.kiosque__entree[data-pole="ETIIA"] .kiosque__carte { --kiosque-teinte: var(--pole-etiia); }
-.kiosque__entree[data-pole="ETIIE"] .kiosque__carte { --kiosque-teinte: var(--pole-etiie); }
-.kiosque__entree[data-pole="ETIII"] .kiosque__carte { --kiosque-teinte: var(--pole-etiii); }
-
-.kiosque__carte:hover { background-color: var(--fond-enfonce); }
+/* Le survol soulève la carte ; la carte lue reste soulevée, posée sur un
+   fond accent, avec le point plein et le filet du rail. */
+.kiosque__carte:hover {
+  background-color: var(--fond-enfonce);
+  border-color: var(--bordure-douce);
+  box-shadow: var(--ombre-sm);
+  transform: translateY(-1px);
+}
 
 .kiosque__carte[aria-current="true"] {
   background-color: var(--accent-doux);
-  border-color: transparent;
-  box-shadow: inset 3px 0 0 var(--kiosque-teinte);
+  border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: var(--ombre-md);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosque__carte:hover,
+  .kiosque__carte[aria-current="true"] { transform: none; }
+  .kiosque__entree--active::before { transform: translateY(-50%); }
 }
 
 .kiosque__quand {
@@ -379,9 +479,11 @@ ul.kiosque__alertes-liste {
 
 /* --- La lecture ---------------------------------------------------------- */
 
+/* La lecture ne cache jamais rien : son contenu donne sa hauteur, et la
+   liste s'y ajuste (kiosque.js). Seule la figure de bannière rogne, pour
+   ses coins. */
 .kiosque__lecture {
   min-inline-size: 0;
-  overflow: hidden;
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
   border-radius: var(--rayon-lg);
@@ -400,6 +502,9 @@ ul.kiosque__alertes-liste {
 .kiosque__image {
   position: relative;
   margin: 0;
+  overflow: hidden;
+  border-start-start-radius: calc(var(--rayon-lg) - 1px);
+  border-start-end-radius: calc(var(--rayon-lg) - 1px);
   background-color: var(--fond-enfonce);
 }
 
@@ -590,6 +695,24 @@ ul.kiosque__alertes-liste {
 }
 
 .kiosque__curseur[hidden] { display: none; }
+
+/* La marque de fin : un court filet terre cuite, centré, un peu d'air
+   au-dessus — la lecture est finie. */
+.kiosque__fin {
+  display: flex;
+  justify-content: center;
+  padding-block-start: var(--e-3);
+}
+
+.kiosque__fin::before {
+  content: "";
+  inline-size: 2.5rem;
+  block-size: 2px;
+  border-radius: var(--rayon-plein);
+  background-color: var(--chaud);
+}
+
+.kiosque__fin[hidden] { display: none; }
 
 @keyframes kiosque-clignote { 50% { opacity: 0; } }
 
