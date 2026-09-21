@@ -115,8 +115,7 @@ etapes:
     assert "enregistrée" in ws.cell(row=4, column=entetes.index("Message") + 1).value
 
 
-def test_assistant_construit_l_export(bac, navigateur_ok):
-    dossier, url = bac
+def _relever_connecte(dossier: Path, url: str, nom: str, apres_connexion: str = "#liste"):
     nav = Navigateur(ConfigNavigateur(canal="auto", visible=False), dossier, visible=False)
     page = nav.ouvrir()
     try:
@@ -124,10 +123,66 @@ def test_assistant_construit_l_export(bac, navigateur_ok):
         page.fill("#utilisateur", "demo")
         page.fill("#mot-de-passe", "demo")
         page.click("#btn-connexion")
-        page.wait_for_selector("#liste")
-        releve = charger_releve(relever(page, dossier / "releves", nom="export contrat"))
+        page.wait_for_selector(apres_connexion)
+        return charger_releve(relever(page, dossier / "releves", nom=nom))
     finally:
         nav.fermer()
+
+
+def test_assistant_construit_les_fiches_avec_adresse_variable(bac, navigateur_ok):
+    """PARTIE D de l'exercice : l'adresse contient {{Numéro}} (variable + colonne)."""
+    dossier, url = bac
+    releve = _relever_connecte(dossier, url + "#fiche=HDK-ARC-001", "modifier fiche", "#formulaire-fiche")
+    colonnes = ["Numéro", "Nouveau statut", "Indice", "Commentaire"]
+    reponses = [
+        "1",                                  # remplir un formulaire
+        url + "#fiche={{Numéro}}",            # adresse par ligne
+        "0",                                  # Titre : ne pas toucher
+        "",                                   # Statut -> « Nouveau statut » proposé
+        "",                                   # Indice
+        "",                                   # Commentaire
+        "",                                   # bouton Enregistrer
+        "n",                                  # pas de pause
+        "enregistrée",                        # texte de succès
+        "",                                   # pas de référence à relever
+        "n",                                  # pas de connexion manuelle
+        "n",                                  # pas de capture
+    ]
+    texte = construire(releve, colonnes, Dialogue(reponses), nom="modifier fiche",
+                       fichier_excel="fiches.xlsx", feuille="Fiches")
+    assert 'url: "' + url + '#fiche={{Numéro}}"' in texte
+    assert 'choisir: {selecteur: "#fiche-statut", valeur: "{{Nouveau statut}}"}' in texte
+    assert '"#fiche-titre"' not in texte
+    assert 'verifier: {texte_page: "enregistrée"}' in texte
+
+    texte = texte.replace("etapes:\n", AVANT + "etapes:\n")
+    (dossier / "fiches_assistant.yaml").write_text(texte, encoding="utf-8")
+    bilan = lancer(charger(dossier / "fiches_assistant.yaml"), Options(visible=False, interactif=False))
+    assert (bilan.ok, bilan.erreurs) == (2, 1)
+    ws = load_workbook(dossier / "fiches.xlsx")["Fiches"]
+    entetes = [c.value for c in ws[1]]
+    statut = entetes.index("Statut") + 1
+    assert [ws.cell(row=r, column=statut).value for r in (2, 3, 4)] == ["OK", "OK", "ERREUR"]
+
+
+def test_variable_utilisant_une_colonne_absente_est_signalee(bac, navigateur_ok):
+    dossier, url = bac
+    (dossier / "faux.yaml").write_text(f"""
+nom: faux
+navigateur: {{canal: auto, visible: false}}
+excel: {{fichier: fiches.xlsx, feuille: Fiches}}
+variables: {{url: "{url}#fiche={{{{Reference}}}}"}}
+etapes:
+  - aller: "{{{{url}}}}"
+""", encoding="utf-8")
+    from autoweb.erreurs import ErreurAutoweb
+    with pytest.raises(ErreurAutoweb, match="Reference"):
+        lancer(charger(dossier / "faux.yaml"), Options(visible=False, interactif=False))
+
+
+def test_assistant_construit_l_export(bac, navigateur_ok):
+    dossier, url = bac
+    releve = _relever_connecte(dossier, url, "export contrat")
 
     reponses = [
         "2",     # filtres + export

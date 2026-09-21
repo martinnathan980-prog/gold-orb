@@ -1,0 +1,277 @@
+ROBOT-WEB SUR MAC : TOUT, PAS A PAS
+===================================
+Duree : environ 40 minutes. Rien a installer manuellement, rien a acheter.
+Ce que vous faites ce soir est EXACTEMENT ce que vous ferez demain au bureau.
+
+Deux remarques avant de commencer :
+ - Dans le Finder, le dossier "Bureau" s'appelle "Desktop" pour l'ordinateur.
+   Quand vous tapez ~/Desktop, c'est bien votre Bureau.
+ - Tapez les commandes une par une, puis Entree. Respectez les espaces.
+   Vous pouvez copier-coller (Cmd+C puis Cmd+V dans le Terminal).
+
+
+=====================================================================
+ PARTIE A - INSTALLATION (une seule fois, environ 10 minutes)
+=====================================================================
+
+A1. Telechargez le fichier robot-web-installeur.txt depuis la conversation.
+    Il arrive normalement dans le dossier Telechargements.
+
+A2. Faites-le glisser sur le Bureau (ou copiez-collez-le sur le Bureau).
+
+A3. Ouvrez le Terminal :
+    appuyez sur Cmd + Espace, tapez   terminal   puis Entree.
+    Une fenetre avec du texte et un curseur s'ouvre. C'est la que tout se passe.
+
+A4. Placez-vous sur le Bureau. Tapez :
+
+        cd ~/Desktop
+
+    Rien ne s'affiche : c'est normal, c'est bon signe.
+
+A5. Verifiez que le fichier est bien la. Tapez :
+
+        ls robot-web-installeur.txt
+
+    ATTENDU :   robot-web-installeur.txt
+    SI "No such file or directory" : le fichier est reste dans Telechargements.
+    Tapez alors :   mv ~/Downloads/robot-web-installeur.txt ~/Desktop/
+    puis refaites A5.
+
+A6. Verifiez que Python est present. Tapez :
+
+        python3 --version
+
+    ATTENDU :   Python 3.9.6  (ou 3.10, 3.11, 3.12... peu importe)
+    SI UNE FENETRE S'OUVRE et propose d'installer des "outils de developpement" :
+    cliquez sur Installer, acceptez, attendez la fin (quelques minutes),
+    puis refermez et refaites A6.
+
+A7. Lancez l'installation. Tapez (tout sur une seule ligne) :
+
+        python3 -c "exec(open('robot-web-installeur.txt', encoding='utf-8').read())"
+
+    Le programme travaille tout seul pendant 2 a 5 minutes et affiche :
+        === 1/4  Extraction des fichiers ===
+        === 2/4  Environnement Python ===
+        === 3/4  Installation des bibliotheques ===   (beaucoup de lignes, c'est normal)
+        === 4/4  Verification avec un faux outil web ===
+        ...
+        4/4 ligne(s) traitee(s) : 3 OK, 1 ERREUR, 0 IGNORE.
+        TOUT EST PRET.
+
+    L'ERREUR sur 1 ligne est VOLONTAIRE : c'est une fiche sans numero, pour vous
+    montrer comment une erreur est signalee. C'est donc le bon resultat.
+
+    SI le message dit que la verification a echoue : copiez les dernieres lignes
+    affichees et envoyez-les a Claude. Ne continuez pas.
+
+A8. Entrez dans le dossier du robot. Tapez :
+
+        cd ~/Desktop/robot-web
+
+    Vous resterez dans ce dossier pour toute la suite.
+
+
+=====================================================================
+ PARTIE B - LANCER LE FAUX LOGICIEL (votre terrain d'entrainement)
+=====================================================================
+
+B1. Toujours dans le Terminal, tapez :
+
+        ./robot.command base-demo
+
+    ATTENDU :
+        Fausse base documentaire en ligne : http://127.0.0.1:8765/base_demo.html
+        ...
+        Appuyez sur Entree (ou Ctrl+C) pour arreter le serveur...
+
+    CETTE FENETRE EST MAINTENANT OCCUPEE. NE LA FERMEZ PAS, NE TAPEZ RIEN DEDANS.
+    C'est elle qui fait tourner le faux logiciel.
+
+B2. Ouvrez Chrome (ou Safari) et allez a l'adresse :
+
+        http://127.0.0.1:8765/base_demo.html
+
+    Connectez-vous :  identifiant  demo   mot de passe  demo
+    Regardez l'outil quelques minutes, comme si vous le decouvriez :
+      - des filtres en haut (Contrat, Type de plan, Statut, Numero contient)
+      - un bouton Rechercher, un bouton Exporter CSV
+      - un tableau de 60 plans ; cliquez sur un numero : sa fiche s'ouvre et se modifie.
+    C'est votre "logiciel du bureau" pour ce soir. Le robot, lui, ne le connait pas :
+    c'est vous qui allez le lui faire decouvrir.
+
+B3. Ouvrez une DEUXIEME fenetre de Terminal : appuyez sur Cmd + N.
+    Dans cette nouvelle fenetre, tapez :
+
+        cd ~/Desktop/robot-web
+
+    C'est dans CETTE fenetre que vous travaillerez desormais.
+
+
+=====================================================================
+ PARTIE C - TACHE 1 : "contrat HDK, tous ses plans dans un Excel"
+=====================================================================
+
+C1. Regardez d'abord l'Excel qui pilote la tache. Tapez :
+
+        open bac_a_sable/contrats.xlsx
+
+    Il s'ouvre dans Excel (ou Numbers) : une colonne "Contrat", deux lignes, HDK et QRS.
+    Une ligne = un export a faire. Fermez le fichier sans le modifier.
+    IMPORTANT : un fichier Excel ouvert empeche le robot d'ecrire dedans. Fermez-le.
+
+C2. Lancez l'assistant. Tapez (tout sur une seule ligne) :
+
+        ./robot.command assistant http://127.0.0.1:8765/base_demo.html --excel bac_a_sable/contrats.xlsx --nom "export contrat" --sortie bac_a_sable/export_contrat.yaml
+
+C3. Un navigateur s'ouvre sur la fausse base.
+    Connectez-vous dedans (demo / demo) jusqu'a voir les filtres et le tableau.
+    Puis revenez dans le Terminal et appuyez sur Entree.
+    Le robot photographie l'ecran et liste tous ses champs.
+
+C4. Repondez aux questions (Entree = accepter ce qui est propose entre crochets) :
+
+    "Que doit faire ce scenario ?"                  tapez  2   puis Entree
+                                                    (2 = filtres puis export)
+    "Adresse ouverte pour chaque ligne"             Entree
+    Filtre "Contrat"                                Entree   (il propose la colonne Contrat)
+    Filtre "Type de plan"                           Entree   (0 = on n'y touche pas)
+    Filtre "Statut"                                 Entree
+    Filtre "Numero contient"                        Entree
+    "Quel bouton applique les filtres"              Entree   (il propose Rechercher)
+    "Quel bouton exporte"                           Entree   (il propose Exporter CSV)
+    "Dossier ou enregistrer les fichiers"           Entree   (exports)
+    "Nom du fichier"                                Entree
+    "Convertir un export CSV en Excel"              Entree   (oui)
+    "Colonne ou ecrire le chemin du fichier"        Entree
+    "Faut-il se connecter a la main au debut"       Entree   (oui)
+
+    ATTENDU a la fin :
+        Scenario ecrit : bac_a_sable/export_contrat.yaml
+
+C5. Lisez ce que le robot a compris. Tapez :
+
+        ./robot.command simuler bac_a_sable/export_contrat.yaml
+
+    Il affiche, sans rien faire, les etapes ligne par ligne (contrat HDK, puis QRS).
+
+C6. Lancez pour de vrai. Tapez :
+
+        ./robot.command lancer bac_a_sable/export_contrat.yaml
+
+    Le navigateur s'ouvre, et le Terminal vous demande :
+        "Connectez-vous dans le navigateur si necessaire, puis appuyez sur Entree"
+    Connectez-vous dans la fenetre du navigateur (demo / demo), revenez au Terminal, Entree.
+    Le robot fait alors tout seul : filtre HDK, Rechercher, Exporter, conversion en Excel,
+    puis la meme chose pour QRS.
+
+    ATTENDU :   2/2 ligne(s) traitee(s) : 2 OK, 0 ERREUR, 0 IGNORE.
+
+C7. Regardez le resultat. Tapez :
+
+        open bac_a_sable/exports
+
+    Vous y trouvez export_HDK.csv et export_HDK.xlsx (15 plans du contrat HDK),
+    plus export_QRS.csv et export_QRS.xlsx.
+    Puis :   open bac_a_sable/contrats.xlsx
+    Les colonnes Statut, Message, Horodatage et Fichier export ont ete remplies par le robot.
+
+C8. Pour ajouter des contrats : ouvrez contrats.xlsx, ajoutez LMN et TUV dans la
+    colonne Contrat (lignes suivantes), laissez la colonne Statut VIDE pour ces lignes,
+    enregistrez, FERMEZ le fichier, puis retapez la commande C6.
+    Le robot ne refait pas les lignes deja OK : il ne traite que les nouvelles.
+
+C9. Pour supprimer la pause de connexion (une fois que ca marche) :
+    tapez   open -e bac_a_sable/export_contrat.yaml   (ouvre le fichier dans TextEdit),
+    supprimez les 3 lignes qui suivent "avant:", enregistrez (Cmd+S), fermez.
+
+
+=====================================================================
+ PARTIE D - TACHE 2 : modifier des fiches a partir d'un Excel
+=====================================================================
+
+D1. Regardez l'Excel :   open bac_a_sable/fiches.xlsx
+    Colonnes : Numero, Nouveau statut, Indice, Commentaire. Trois lignes, dont une
+    volontairement fausse (indice "12" alors que l'outil veut une seule lettre).
+    Fermez le fichier.
+
+D2. Dans le navigateur, sur la fausse base, cliquez sur un numero de plan.
+    Regardez l'adresse en haut : elle se termine par   #fiche=HDK-ARC-001
+    Le numero du plan est donc dans l'adresse : c'est ce qui permet au robot
+    d'ouvrir directement la bonne fiche pour chaque ligne de l'Excel.
+
+D3. Lancez l'assistant sur cette fiche. Tapez (une seule ligne) :
+
+        ./robot.command assistant "http://127.0.0.1:8765/base_demo.html#fiche=HDK-ARC-001" --excel bac_a_sable/fiches.xlsx --nom "modifier fiche" --sortie bac_a_sable/modifier_fiche.yaml
+
+    Connectez-vous si demande, affichez bien la fiche, revenez au Terminal, Entree.
+
+D4. Reponses :
+
+    "Que doit faire ce scenario ?"            tapez  1   (remplir un formulaire)
+    "Adresse ouverte pour chaque ligne"       tapez exactement :
+            http://127.0.0.1:8765/base_demo.html#fiche={{Numéro}}
+       (les doubles accolades disent : "mets ici la valeur de la colonne Numero")
+    Champ "Titre"                             tapez  0   (on ne touche pas au titre)
+    Champ "Statut"                            Entree     (il propose Nouveau statut)
+    Champ "Indice"                            Entree
+    Champ "Commentaire"                       Entree
+    "Quel bouton enregistre"                  Entree     (Enregistrer)
+    "Garder une pause de verification"        Entree     (oui, pour la premiere fois)
+    "Texte affiche quand ca a reussi"         tapez  enregistrée
+    "Reference a relever"                     Entree     (aucune)
+    "Se connecter a la main au debut"         Entree
+    "Capture d'ecran apres chaque ligne"      Entree
+
+D5. Essai sur UNE SEULE ligne. Tapez :
+
+        ./robot.command lancer bac_a_sable/modifier_fiche.yaml --limite 1
+
+    Le robot remplit la fiche puis s'arrete et demande :
+        "Verifiez le formulaire a l'ecran puis appuyez sur Entree"
+    Regardez le navigateur : la fiche est remplie mais PAS encore enregistree.
+    Si tout est bon, Entree dans le Terminal : il clique sur Enregistrer.
+    ATTENDU :   1/1 ligne(s) traitee(s) : 1 OK, 0 ERREUR, 0 IGNORE.
+
+D6. Enlevez la pause et lancez tout :
+        open -e bac_a_sable/modifier_fiche.yaml
+    supprimez la ligne qui commence par   - pause:   (celle qui contient "Verifiez le
+    formulaire"), enregistrez (Cmd+S), fermez. Puis tapez :
+
+        ./robot.command lancer bac_a_sable/modifier_fiche.yaml
+
+    ATTENDU :   2 OK, 1 ERREUR   (la ligne 3, avec l'indice "12", est refusee par l'outil)
+    Ouvrez   open bac_a_sable/fiches.xlsx   : la ligne en erreur porte, dans la colonne
+    Message, la phrase exacte affichee par l'outil, et le nom d'une capture d'ecran
+    rangee dans bac_a_sable/captures/erreurs/.
+
+D7. Corrigez : dans fiches.xlsx, remplacez l'indice "12" par  D  , VIDEZ la cellule
+    Statut de cette ligne, enregistrez, fermez, puis :
+
+        ./robot.command lancer bac_a_sable/modifier_fiche.yaml --reprendre-erreurs
+
+    ATTENDU :   1 OK.
+
+
+=====================================================================
+ POUR ARRETER
+=====================================================================
+Revenez dans la PREMIERE fenetre du Terminal (celle du faux logiciel) et appuyez
+sur Entree. Le serveur s'arrete. Vous pouvez fermer les deux fenetres.
+
+
+=====================================================================
+ CE QUI CHANGERA DEMAIN AU BUREAU
+=====================================================================
+ - Les commandes commencent par   robot   au lieu de   ./robot.command
+   (exemple :  robot assistant https://... --excel suivi.xlsx --nom "ma tache")
+   et les chemins s'ecrivent avec \\ au lieu de /.
+ - L'adresse http://127.0.0.1:8765/... est remplacee par l'adresse de votre outil.
+ - L'Excel d'exercice est remplace par le votre.
+ - Le reste est identique : relever l'ecran, repondre aux questions, simuler,
+   lancer sur 1 ligne, puis lancer sur tout.
+
+En cas de blocage, envoyez a Claude UNIQUEMENT la ligne d'erreur affichee par le
+Terminal (ou la colonne Message de l'Excel). Aucune donnee de votre entreprise
+n'est necessaire : ni capture, ni fichier, ni nom de contrat.

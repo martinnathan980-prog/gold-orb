@@ -84,7 +84,7 @@ def test_assistant_bout_en_bout(tmp_path, dossier_modeles, navigateur_ok):
     chemin = tmp_path / "nouveau_plan.yaml"
     chemin.write_text(texte, encoding="utf-8")
     scenario = charger(chemin)
-    assert scenario.navigateur.canal == "chrome" and scenario.excel.feuille == "Plans"
+    assert scenario.excel.feuille == "Plans"
 
     bilan = lancer(scenario, Options(visible=False, interactif=False))
     assert (bilan.ok, bilan.erreurs) == (2, 1)

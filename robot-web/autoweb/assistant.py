@@ -173,6 +173,7 @@ def construire(
     nom: Optional[str] = None,
     fichier_excel: str = "suivi.xlsx",
     feuille: Optional[str] = None,
+    canal: str = "chrome",
 ) -> str:
     """Pose les questions et renvoie le texte YAML du scénario."""
     elements = [e for e in releve["elements"] if e.get("visible")]
@@ -194,7 +195,11 @@ def construire(
     d.dire("     1. Remplir un formulaire et enregistrer (une ligne Excel = une fiche)")
     d.dire("     2. Appliquer des filtres puis exporter / télécharger un fichier (une ligne Excel = un export)")
     export = d.demander("   Choix", "1").startswith("2")
-    url = d.demander(f"{S.FLECHE} Adresse ouverte pour chaque ligne (vous pouvez y insérer {{{{Colonne}}}})", releve.get("url", ""))
+    d.dire()
+    d.dire(f"{S.FLECHE} Adresse ouverte pour chaque ligne de l'Excel.")
+    if colonnes:
+        d.dire(f"   Vous pouvez y insérer une colonne, par exemple : .../fiche={{{{{colonnes[0]}}}}}")
+    url = d.demander("   Adresse", releve.get("url", ""))
 
     d.dire()
     if export:
@@ -251,7 +256,8 @@ def construire(
         "#   python -m autoweb lancer <ce fichier> --limite 1",
         f"nom: {_yaml_chaine(nom)}",
         "navigateur:",
-        "  canal: chrome",
+        f"  canal: {canal if canal in ('chrome', 'msedge', 'chromium', 'auto') else 'auto'}"
+        "            # chrome | msedge | chromium | auto",
         f"  profil: profils/{base}",
         "  visible: true",
         "  delai_max: 15000",

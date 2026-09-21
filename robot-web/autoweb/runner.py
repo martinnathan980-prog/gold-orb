@@ -25,7 +25,7 @@ from .erreurs import (
     ArretDemande, ErreurAutoweb, ErreurEtape, ErreurExcel, ErreurGabarit, LigneIgnoree, NavigateurFerme,
 )
 from .excel import STATUT_ERREUR, STATUT_IGNORE, STATUT_OK, ClasseurSuivi, Ligne
-from .gabarit import manquants, normaliser_cle, rendre_structure
+from .gabarit import manquants, normaliser_cle, rendre, rendre_structure
 from .navigateur import Navigateur
 from .scenario import Etape, Scenario, masquer_secrets, toutes_les_etapes
 
@@ -158,12 +158,27 @@ def contexte_de_base(scenario: Scenario, options: Options) -> Dict[str, Any]:
     return contexte
 
 
-def contexte_ligne(base: Dict[str, Any], ligne: Ligne, n: int, total: int) -> Dict[str, Any]:
+def contexte_ligne(
+    base: Dict[str, Any], ligne: Ligne, n: int, total: int, noms_variables: Iterable[str] = ()
+) -> Dict[str, Any]:
     contexte = dict(base)
     contexte.update(ligne.valeurs)
     contexte["ligne"] = ligne.numero
     contexte["n"] = n
     contexte["total"] = total
+    # Une variable du scénario peut contenir un gabarit, par exemple
+    #   variables: {url: "https://outil/fiche={{Numéro}}"}
+    # On la développe ici ; les valeurs des cellules, elles, ne sont jamais relues.
+    for nom in noms_variables:
+        valeur = contexte.get(nom)
+        for _ in range(3):
+            if not isinstance(valeur, str) or "{{" not in valeur:
+                break
+            rendu = rendre(valeur, contexte, strict=False)
+            if rendu == valeur:
+                break
+            valeur = rendu
+        contexte[nom] = valeur
     return contexte
 
 
@@ -185,7 +200,9 @@ def verifier_colonnes(scenario: Scenario, classeur: ClasseurSuivi, options: Opti
     for etape in toutes_les_etapes(scenario.avant + scenario.etapes):
         if etape.action in ("lire", "executer_js", "telecharger") and etape.args.get("vers"):
             disponibles.append(str(etape.args["vers"]))
-    return sorted(manquants(scenario.etapes, disponibles))
+    # les variables peuvent elles-mêmes utiliser des colonnes
+    a_verifier = [scenario.etapes, [v for v in scenario.variables.values() if isinstance(v, str)]]
+    return sorted(manquants(a_verifier, disponibles))
 
 
 def verifier_avant_apres(scenario: Scenario, options: Options) -> List[str]:
@@ -222,8 +239,9 @@ def simuler(scenario: Scenario, classeur: ClasseurSuivi, options: Options) -> Bi
         journal.info("Étapes « avant » (une fois) :")
         for texte in _decrire_etapes(scenario.avant, base):
             journal.info(texte)
+    noms_variables = list(scenario.variables) + list(options.variables)
     for n, ligne in enumerate(lignes, start=1):
-        contexte = contexte_ligne(base, ligne, n, len(lignes))
+        contexte = contexte_ligne(base, ligne, n, len(lignes), noms_variables)
         journal.info("Ligne Excel %d (%d/%d) %s", ligne.numero, n, len(lignes), libelle_ligne(ligne, scenario, classeur))
         try:
             for texte in _decrire_etapes(scenario.etapes, contexte):
@@ -335,10 +353,11 @@ def _boucle(
     bilan: Bilan,
 ) -> None:
     total = len(lignes)
+    noms_variables = list(scenario.variables) + list(options.variables)
     for n, ligne in enumerate(lignes, start=1):
         libelle = libelle_ligne(ligne, scenario, classeur)
         journal.info("%s Ligne Excel %d (%d/%d) %s", S.LIGNE, ligne.numero, n, total, libelle)
-        contexte = contexte_ligne(base, ligne, n, total)
+        contexte = contexte_ligne(base, ligne, n, total, noms_variables)
         executeur = Executeur(navigateur, scenario, contexte, classeur, ligne.numero, interactif=options.interactif)
         debut = time.monotonic()
         try:

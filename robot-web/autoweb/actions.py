@@ -357,7 +357,11 @@ class Executeur:
         timeout = self._delai(args, delai)
         if args.get("texte_page") is not None:
             attendu = str(args["texte_page"])
-            expect(self.page.locator("body")).to_contain_text(attendu, timeout=timeout, ignore_case=True)
+            # use_inner_text : seul le texte VISIBLE compte (un message masqué de la
+            # ligne précédente ne doit pas faire passer la vérification).
+            expect(self.page.locator("body")).to_contain_text(
+                attendu, timeout=timeout, ignore_case=True, use_inner_text=True
+            )
             return
         loc = self.localiser(args["selecteur"], args)
         if args.get("absent"):
@@ -368,7 +372,10 @@ class Executeur:
             return
         expect(loc.first).to_be_visible(timeout=timeout)
         if args.get("contient") is not None:
-            expect(loc.first).to_contain_text(str(args["contient"]), timeout=timeout, ignore_case=not args.get("exact", False))
+            expect(loc.first).to_contain_text(
+                str(args["contient"]), timeout=timeout,
+                ignore_case=not args.get("exact", False), use_inner_text=True,
+            )
         if args.get("egal") is not None:
             expect(loc.first).to_have_text(str(args["egal"]), timeout=timeout, use_inner_text=True)
         if args.get("valeur") is not None:

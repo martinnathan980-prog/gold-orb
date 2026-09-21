@@ -1,5 +1,7 @@
 # Les scripts Windows doivent garder des fins de ligne CRLF
 *.bat text eol=crlf
+# Les scripts Mac/Linux doivent garder des fins de ligne LF
+*.command text eol=lf
 # Le reste en LF
 *.py text eol=lf
 *.yaml text eol=lf

@@ -29,6 +29,16 @@ from .excel import creer_classeur
 
 journal = logging.getLogger("autoweb")
 DOSSIER_MODELES = Path(__file__).parent / "modeles"
+DOSSIER_PROJET = Path(__file__).resolve().parent.parent
+
+
+def prefixe_commande() -> str:
+    """Comment l'utilisateur lance le robot : ./robot.command (Mac), robot (Windows) ou python -m autoweb."""
+    if sys.platform == "win32":
+        return "robot" if (DOSSIER_PROJET / "robot.bat").exists() else "python -m autoweb"
+    if (DOSSIER_PROJET / "robot.command").exists():
+        return "./robot.command"
+    return "python3 -m autoweb"
 
 
 # ----------------------------------------------------------------------------- journalisation
@@ -189,13 +199,14 @@ def cmd_initialiser(args: argparse.Namespace) -> int:
         encoding="utf-8",
     )
     print(f"{S.OK} Scénario modèle créé : {scenario}")
+    prefixe = prefixe_commande()
     print()
     print("Prochaines étapes :")
     print(f"  1. Remplissez {excel.name} (une ligne par élément à saisir).")
-    print(f"  2. Trouvez les sélecteurs de votre outil :  python -m autoweb inspecter https://votre-outil/...")
-    print(f"  3. Adaptez les étapes dans {scenario.name}.")
-    print(f"  4. Testez à blanc :  python -m autoweb simuler {scenario}")
-    print(f"  5. Lancez pour de vrai :  python -m autoweb lancer {scenario} --limite 1")
+    print(f"  2. Construisez le scénario :  {prefixe} assistant https://votre-outil/... --excel {excel}")
+    print(f"     (ou adaptez à la main les étapes de {scenario.name})")
+    print(f"  3. Testez à blanc :  {prefixe} simuler {scenario}")
+    print(f"  4. Lancez pour de vrai :  {prefixe} lancer {scenario} --limite 1")
     return 0
 
 
@@ -291,10 +302,12 @@ def cmd_assistant(args: argparse.Namespace) -> int:
     configurer_journal(None, args.verbeux)
     interactif = sys.stdin is not None and sys.stdin.isatty()
     dossier_releve: Optional[Path] = Path(args.releve) if args.releve else None
+    canal = args.canal or "chrome"
     if args.url:
         # relevé de l'écran d'abord, dans la même session
         nav = _lancer_navigateur_libre(args)
         page = nav.ouvrir()
+        canal = nav.canal_utilise or canal
         try:
             page.goto(_normaliser_url(args.url))
             if interactif and not args.sans_pause:
@@ -332,7 +345,11 @@ def cmd_assistant(args: argparse.Namespace) -> int:
         print(f"{S.ATTENTION} Pas d'Excel indiqué (--excel suivi.xlsx) : vous taperez les noms de colonnes à la main.")
 
     dialogue = Dialogue()
-    texte = construire(releve, colonnes, dialogue, nom=args.nom, fichier_excel=(Path(args.excel).name if args.excel else "suivi.xlsx"), feuille=feuille)
+    texte = construire(
+        releve, colonnes, dialogue, nom=args.nom,
+        fichier_excel=(Path(args.excel).name if args.excel else "suivi.xlsx"),
+        feuille=feuille, canal=canal,
+    )
     nom = args.nom or releve.get("nom") or "scenario"
     base = "".join(c if c.isalnum() or c in "-_" else "_" for c in nom.strip().lower().replace(" ", "_")) or "scenario"
     sortie = Path(args.sortie) if args.sortie else Path(f"{base}.yaml")
@@ -343,10 +360,11 @@ def cmd_assistant(args: argparse.Namespace) -> int:
     sortie.write_text(texte, encoding="utf-8")
     print()
     print(f"{S.OK} Scénario écrit : {sortie}")
+    prefixe = prefixe_commande()
     print("Prochaines étapes :")
-    print(f"  python -m autoweb verifier \"{sortie}\"")
-    print(f"  python -m autoweb simuler \"{sortie}\"")
-    print(f"  python -m autoweb lancer \"{sortie}\" --limite 1")
+    print(f"  {prefixe} verifier \"{sortie}\"")
+    print(f"  {prefixe} simuler \"{sortie}\"")
+    print(f"  {prefixe} lancer \"{sortie}\" --limite 1")
     return 0
 
 
@@ -493,8 +511,8 @@ def cmd_base_demo(args: argparse.Namespace) -> int:
     print("   Identifiant demo / mot de passe demo. 60 plans répartis sur les contrats HDK, LMN, QRS, TUV.")
     print("   Excel d'exercice : contrats.xlsx (exports par contrat) et fiches.xlsx (modification de fiches).")
     print()
-    print("Laissez cette fenêtre ouverte et travaillez dans une AUTRE invite de commandes, par exemple :")
-    print(f"   python -m autoweb assistant {url} --excel {dossier / 'contrats.xlsx'} --nom \"export contrat\"")
+    print("Laissez cette fenêtre ouverte et travaillez dans une AUTRE fenêtre de terminal, par exemple :")
+    print(f"   {prefixe_commande()} assistant {url} --excel {dossier / 'contrats.xlsx'} --nom \"export contrat\"")
     print()
     if args.sans_attente:
         serveur.shutdown()

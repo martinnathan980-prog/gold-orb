@@ -69,6 +69,7 @@ class Navigateur:
         self.page: Optional[Page] = None
         self.attache = False
         self.description = ""
+        self.canal_utilise: Optional[str] = None  # msedge / chrome / chromium / executable
 
     # ------------------------------------------------------------------ ouverture
     def ouvrir(self) -> Page:
@@ -144,6 +145,7 @@ class Navigateur:
         for canal, executable in self._candidats():
             try:
                 self._lancer_canal(canal, executable)
+                self.canal_utilise = canal
                 return
             except PlaywrightError as e:
                 erreurs.append(f"  - {canal}{' (' + executable + ')' if executable else ''} : {premiere_ligne(e)}")
