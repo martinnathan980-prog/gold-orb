@@ -23,7 +23,7 @@ function verifier(nom, condition, detail) {
 }
 function section(t) { sectionCourante = t; console.log('\n— ' + t + ' —'); }
 
-/* L'interrupteur exemple / réel est rangé — la lectrice ne le voit plus —
+/* L'interrupteur exemple / réel est visible devant un classeur ;
    mais son mécanisme reste : la batterie le manœuvre comme un clic. */
 const basculerMode = (pg, mode) => pg.evaluate(m => document.querySelector('#mode-donnees button[data-mode="' + m + '"]').click(), mode);
 
@@ -710,6 +710,15 @@ function serveurSur(valeurs, proprietes, fichiers) {
     ESSENTIELLES: ['NAME', 'Validated', 'Introuvable']
   } };
   const avecSEE = construire({ lignes: 10, feuilles: [see], config: configSEE, sortie: 'apercu-see.html' });
+  /* Sans rien configurer, un onglet nommé comme la base — « SEE » — est pris
+     pour la seconde base, et n'est pas compté comme un contrat. C'est ainsi
+     qu'on la met en place sans toucher au code. */
+  const seeParNom = construire({ lignes: 10, feuilles: [see], sortie: 'apercu-see-nom.html' });
+  verifier('un onglet « SEE » est reconnu par son nom, sans toucher à la configuration',
+    !!seeParNom.paquet.rapprochement && seeParNom.paquet.rapprochement.lignes.length === 2,
+    JSON.stringify(seeParNom.paquet.rapprochement && seeParNom.paquet.rapprochement.lignes.length));
+  verifier('et il n\'apparaît pas dans la liste des contrats',
+    !seeParNom.paquet.contrats.some(c => /^see$/i.test(c.id)), JSON.stringify(seeParNom.paquet.contrats));
   const rSEE = avecSEE.paquet.rapprochement;
   verifier('SEE : l\'en-tête est la ligne 3, celle qui porte NAME, SOL. et Cust.V — pas le titre « Nommage WD BFLOW »',
     !!rSEE && rSEE.lignes.length === 2 && rSEE.colonnes.join('|') === 'NAME|SOL.|Cust.V|Validated|REDRAW',
@@ -1649,18 +1658,18 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pp.waitForTimeout(1600);
 
   /* L'interrupteur porte sur tout — il n'y a plus un bouton par bloc, et on
-     ne peut pas se retrouver a moitie en exemple — mais il est range : la
-     lectrice ne le voit plus, la batterie le manoeuvre par son mecanisme. */
+     ne peut pas se retrouver a moitie en exemple. Devant un classeur, il est
+     visible : il y a de quoi comparer. */
   const depart = await pp.evaluate(() => ({
     present: !!document.getElementById('mode-donnees'),
-    range: document.getElementById('mode-donnees').hidden && document.getElementById('mode-donnees').offsetParent === null,
+    visible: !document.getElementById('mode-donnees').hidden && document.getElementById('mode-donnees').offsetParent !== null,
     presse: [...document.querySelectorAll('#mode-donnees button')]
       .map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')),
     mot: document.getElementById('mot-mode').textContent.trim(),
     marque: document.body.dataset.exemple
   }));
-  verifier('l\'interrupteur est la, range hors de vue',
-    depart.present && depart.range, JSON.stringify(depart));
+  verifier('l\'interrupteur est la, visible devant le classeur',
+    depart.present && depart.visible, JSON.stringify(depart));
   verifier('il demarre sur les donnees reelles, sans un mot de trop',
     depart.presse.join(' ') === 'reel:true exemple:false' && depart.mot === '' &&
     depart.marque === 'false', JSON.stringify(depart));
@@ -1729,8 +1738,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
     await pp.evaluate(() => document.body.dataset.exemple === 'false' &&
       document.querySelectorAll('#corps-tableau tr').length === 186));
 
-  /* Le mecanisme reste meme avec de l'historique : il sert a la batterie, et
-     a montrer la page a quelqu'un le jour ou on le ressort. */
+  /* Le mecanisme reste meme avec de l'historique : il sert a montrer la page
+     a quelqu'un, avec une courbe, avant que les releves se soient accumules. */
   verifier('le mecanisme de l\'exemple reste meme avec de l\'historique',
     await pg.evaluate(() => !!document.querySelector('#mode-donnees button[data-mode="exemple"]')));
   await ctxPremier.close();

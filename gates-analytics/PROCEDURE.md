@@ -258,20 +258,25 @@ Le bloc figé à gauche couvre tout ce qui précède la référence, elle compri
 Sur l'export réel, la seule colonne qui la précédait est la « Colonne 1 »
 retirée : la référence ouvre donc le tableau et reste seule figée.
 
-### L'exemple, rangé
+### L'exemple
 
-La page a un mode **Exemple** : elle se borde de tirets et remplit **le
-graphique, le journal et le comparatif** avec un historique fabriqué à partir
-des comptes du jour. Les plans affichés, eux, restent ceux de la feuille — et
-la phrase le dit : c'est l'historique qui est fabriqué, pas les plans. Tout ce
-qui marche en données réelles marche à l'identique en exemple : périmètre,
-groupes, changements d'indice, bulle du graphique, rapprochement.
+La page a un mode **Exemple**, et l'interrupteur **Données réelles / Exemple**
+est visible en haut de page dès qu'un classeur est derrière elle (dans la
+démonstration seule, il n'a pas d'objet et reste caché). Il fait deux choses,
+selon ce que le classeur a donné :
 
-L'interrupteur qui y mène est **rangé** : il n'apparaît plus à la lectrice (le
-classeur aura son propre historique dès le deuxième archivage), mais le
-mécanisme reste, et les deux batteries le manœuvrent pour vérifier que les
-deux modes se comportent pareil. Pour le ressortir un jour : retirer
-l'attribut `hidden` de `#mode-donnees` dans le prototype, puis `npm run build`.
+- **le classeur a des plans** : l'exemple se borde de tirets et remplit **le
+  graphique, le journal et le comparatif** avec un historique fabriqué à
+  partir des comptes du jour. Les plans affichés restent ceux de la feuille —
+  et la phrase le dit : c'est l'historique qui est fabriqué, pas les plans ;
+- **le classeur n'a encore rien donné** — pas d'onglet de contrat, feuille
+  vide — : la page **s'ouvre d'elle-même sur la démonstration**, trois
+  contrats fictifs avec leur seconde base, pour voir la page entière. Le
+  bandeau le dit, l'alerte dit ce qui manque au classeur, et « Données
+  réelles » ramène à la page vide qui l'explique.
+
+Tout ce qui marche en données réelles marche à l'identique en exemple :
+périmètre, groupes, changements d'indice, bulle du graphique, rapprochement.
 
 ## 8. Le périmètre : Tout / BASE/OPTION / PERSO
 

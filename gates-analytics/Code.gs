@@ -153,7 +153,10 @@ const CONFIG = {
    * diffèrent). Seules les colonnes de la référence servent au
    * rapprochement ; les autres s'affichent, c'est tout.
    *
-   * FEUILLE        : nom de l'onglet qui porte l'extract. L'en-tête est la
+   * FEUILLE        : nom de l'onglet qui porte l'extract. Vide, c'est
+   *                  l'onglet qui porte le NOM de la base (« SEE ») qui est
+   *                  pris, s'il existe : on le crée, on colle, rien à régler.
+   *                  L'en-tête est la
    *                  première ligne (parmi les LIGNES_SCAN_ENTETE premières)
    *                  qui porte tous les intitulés de CLE_REFERENCE — dans SEE
    *                  la ligne 3, sous le titre ; à défaut, la première ligne
@@ -344,11 +347,22 @@ function cleDepuisEntete(titre, deja) {
 // =====================================================================
 
 /** Vrai si l'onglet est un onglet de service, jamais un contrat. */
+/**
+ * L'onglet de la seconde base : celui que nomme FEUILLE, sinon un onglet qui
+ * porte le NOM de la base (« SEE ») — c'est ainsi qu'on le crée sans toucher
+ * au code. Vide quand rien n'est configuré.
+ */
+function feuilleRapprochement() {
+  const cfg = CONFIG.RAPPROCHEMENT;
+  if (!cfg) return '';
+  return String(cfg.FEUILLE || cfg.NOM || '').trim();
+}
+
 function estOngletInterne(nom) {
   const n = normaliser(nom);
-  /* L'onglet de la seconde base, s'il est nommé, n'est pas un contrat non plus. */
+  /* L'onglet de la seconde base n'est pas un contrat non plus. */
   const internes = CONFIG.FEUILLES_INTERNES
-    .concat(CONFIG.RAPPROCHEMENT && CONFIG.RAPPROCHEMENT.FEUILLE ? [CONFIG.RAPPROCHEMENT.FEUILLE] : [])
+    .concat(feuilleRapprochement() ? [feuilleRapprochement()] : [])
     .map(normaliser);
   if (internes.indexOf(n) !== -1) return true;
   const prefixe = normaliser(CONFIG.FEUILLE_HISTORIQUE);
@@ -1406,8 +1420,8 @@ function getJalons() {
 
 /**
  * La description de la seconde base pour la page : { nom, cleReference,
- * lignes, colonnes, essentielles }, ou null tant que
- * CONFIG.RAPPROCHEMENT.FEUILLE est vide — la page n'affiche alors rien.
+ * lignes, colonnes, essentielles }, ou null tant qu'aucun onglet ne porte
+ * le nom configuré (FEUILLE, sinon NOM) — la page n'affiche alors rien.
  *
  * L'onglet est lu tel quel : l'en-tête est la première ligne qui porte tous
  * les intitulés de la référence (dans SEE, la ligne 3, sous le titre), sinon
@@ -1423,8 +1437,9 @@ function getJalons() {
  */
 function getRapprochement(classeur) {
   const cfg = CONFIG.RAPPROCHEMENT;
-  if (!cfg || !cfg.FEUILLE) return null;
-  const feuille = classeur.getSheetByName(cfg.FEUILLE);
+  const nomFeuille = feuilleRapprochement();
+  if (!cfg || !nomFeuille) return null;
+  const feuille = classeur.getSheetByName(nomFeuille);
   if (!feuille) return null;
 
   const clesVoulues = [].concat(cfg.CLE_REFERENCE === undefined || cfg.CLE_REFERENCE === null ? [] : cfg.CLE_REFERENCE)
@@ -1612,8 +1627,7 @@ function estOngletHistorique(nom) {
 function ongletProtege(nom) {
   if (estOngletHistorique(nom)) return 'un onglet d\'historique';
   const n = normaliser(nom);
-  const seconde = CONFIG.RAPPROCHEMENT && CONFIG.RAPPROCHEMENT.FEUILLE
-    ? normaliser(CONFIG.RAPPROCHEMENT.FEUILLE) : '';
+  const seconde = feuilleRapprochement() ? normaliser(feuilleRapprochement()) : '';
   if (seconde && n === seconde) return '';
   const internes = (CONFIG.FEUILLES_INTERNES || []).map(normaliser);
   return internes.indexOf(n) !== -1 ? 'un onglet réservé au script' : '';

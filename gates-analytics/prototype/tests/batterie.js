@@ -2366,22 +2366,50 @@ async function reinitialiser(pg) {
     await ctxPrefs.close();
   }
 
-  // Un paquet que le classeur n'a pas pu remplir : page vide qui l'explique, jamais la démonstration.
+  // Un paquet que le classeur n'a pas pu remplir : la page s'ouvre sur la
+  // démonstration — et le dit —, et « Données réelles » montre la page vide
+  // avec le message du classeur. L'interrupteur est visible : il y a de quoi
+  // comparer.
   {
     const ctxVide = await contexte();
     await ctxVide.addInitScript(() => {
       window.SUIVI_FWD_DONNEES = { ok: false, message: 'Feuille vide : aucun plan.', colonnes: [], plans: [], releves: [], jalons: [], contrats: [], contrat: '' };
     });
     const pv = await page(ctxVide, 'classeur vide');
-    const vide = await pv.evaluate(() => ({
+    const lire = () => pv.evaluate(() => ({
+      visible: !document.getElementById('mode-donnees').hidden && document.getElementById('mode-donnees').offsetParent !== null,
       alerte: !document.getElementById('alerte-source').hidden,
       texte: document.getElementById('alerte-source').textContent,
+      mot: document.getElementById('mot-mode').textContent,
       lignes: document.querySelectorAll('#corps-tableau td.ref, #corps-tableau .ref').length,
-      demo: document.getElementById('avertissement-demo').hidden,
-      reel: document.querySelector('#mode-donnees button[data-mode="reel"]').getAttribute('aria-pressed')
+      demo: !document.getElementById('avertissement-demo').hidden,
+      marque: document.body.dataset.exemple,
+      presse: [...document.querySelectorAll('#mode-donnees button')].map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')).join(' '),
+      contrats: [...document.querySelectorAll('#select-contrat option')].map(o => o.value).join(','),
+      rapprochement: !document.getElementById('rapprochement').hidden
     }));
-    verifier('un paquet vide du classeur affiche son message, sans plan et sans la démonstration',
-      vide.alerte && /Feuille vide/.test(vide.texte) && vide.lignes === 0 && vide.demo && vide.reel === 'true', JSON.stringify(vide));
+    const ouverture = await lire();
+    verifier('un classeur vide ouvre la page sur la démonstration, et le dit',
+      ouverture.marque === 'true' && /Démonstration/.test(ouverture.mot) && ouverture.presse === 'reel:false exemple:true' &&
+      ouverture.lignes > 0 && ouverture.demo, JSON.stringify(ouverture));
+    verifier('… avec le message du classeur à côté, pour dire pourquoi',
+      ouverture.alerte && /Feuille vide/.test(ouverture.texte), ouverture.texte);
+    verifier('… l’interrupteur visible, les trois contrats fictifs et le rapprochement',
+      ouverture.visible && ouverture.contrats === 'HDK,THS,VRK' && ouverture.rapprochement, JSON.stringify(ouverture));
+    await basculerMode(pv, 'reel'); await pv.waitForTimeout(600);
+    const reel = await lire();
+    verifier('« Données réelles » montre alors la page vide, avec le message, sans plan ni démonstration',
+      reel.marque === 'false' && reel.lignes === 0 && reel.alerte && /Feuille vide/.test(reel.texte) && !reel.demo && reel.mot === '',
+      JSON.stringify(reel));
+    await basculerMode(pv, 'exemple'); await pv.waitForTimeout(600);
+    await pv.selectOption('#select-contrat', 'THS'); await pv.waitForTimeout(900);
+    const ths = await lire();
+    verifier('changer de contrat sous la démonstration reste dans la démonstration',
+      ths.marque === 'true' && /Démonstration/.test(ths.mot) && ths.lignes > 0 && ths.lignes !== ouverture.lignes && ths.alerte,
+      JSON.stringify([ths.lignes, ouverture.lignes, ths.mot]));
+    await basculerMode(pv, 'reel'); await pv.waitForTimeout(600);
+    verifier('et revenir au réel après cela retrouve la page vide du classeur, intacte',
+      (await lire()).lignes === 0);
     await ctxVide.close();
   }
 

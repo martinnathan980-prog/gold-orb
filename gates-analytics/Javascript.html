@@ -980,9 +980,10 @@
     DERNIER = RELEVES[RELEVES.length - 1];
     $('import').textContent = 'Dernier import : semaine ' + etiquette(DERNIER.i).slice(5) + ' · ' +
       RELEVES.length + (RELEVES.length > 1 ? ' relevés archivés' : ' relevé archivé');
-    /* « Jeu d'exemple » ne se lit que dans la démonstration : sur le classeur,
-       ces chiffres sont ceux du tableur, et le pied ne doit pas dire le contraire. */
-    $('avertissement-demo').hidden = SERVEUR;
+    /* « Jeu d'exemple » ne se lit que dans la démonstration — seule, ou
+       montrée à la place d'un classeur vide. Sur les chiffres du tableur, le
+       pied ne doit pas dire le contraire. */
+    $('avertissement-demo').hidden = SERVEUR && !src.demonstration;
 
     /* Ce qui a bougé entre les deux derniers imports, plan par plan. Le
        comparatif affiché en découle, restreint au périmètre courant. */
@@ -1108,16 +1109,20 @@
      fait prendre en défaut et on ne croit plus rien. */
   function afficherMode() {
     var actif = !!vue.exemple;
+    var demo = actif && !!(SRC && SRC.demonstration);
     document.body.dataset.exemple = String(actif);
     document.querySelectorAll('#mode-donnees button').forEach(function (b) {
       b.setAttribute('aria-pressed', String((b.dataset.mode === 'exemple') === actif));
     });
-    $('mot-mode').innerHTML = actif
-      ? '\x3Cb>Historique fabriqué\x3C/b> — un aperçu de ce que la page montrera quand les relevés se seront accumulés.'
-      : '';
-    /* Hors exemple, ce que le classeur a à dire — feuille vide, colonne
-       d'avancement absente — s'affiche à côté, en alerte. */
-    var message = !actif && SRC && SRC.message ? String(SRC.message) : '';
+    $('mot-mode').innerHTML = demo
+      ? '\x3Cb>Démonstration\x3C/b> — le classeur n\'a pas encore de données : trois contrats fictifs, pour voir la page entière.'
+      : actif
+        ? '\x3Cb>Historique fabriqué\x3C/b> — un aperçu de ce que la page montrera quand les relevés se seront accumulés.'
+        : '';
+    /* Ce que le classeur a à dire — feuille vide, colonne d'avancement
+       absente — s'affiche à côté, en alerte : hors exemple, et sous la
+       démonstration aussi, puisque c'est la raison d'y être. */
+    var message = SRC && SRC.message && (!actif || demo) ? String(SRC.message) : '';
     $('alerte-source').hidden = !message;
     $('alerte-source').textContent = message;
   }
@@ -2983,17 +2988,32 @@
      montre exactement ce que la page fera, ni plus ni moins. */
   function basculerExemple(actif) {
     if (actif === !!vue.exemple) return;
-    if (actif) {
-      var exemple = {};
-      Object.keys(SRC_REELLE).forEach(function (k) { exemple[k] = SRC_REELLE[k]; });
-      exemple.releves = relevesDExemple();
-      exemple.exemple = true;
-      chargerSource(exemple);
-    } else {
-      chargerSource(SRC_REELLE);
-    }
+    chargerSource(actif ? exempleDe(SRC_REELLE) : SRC_REELLE);
     remplirDims();
     rendre();
+  }
+
+  /* L'exemple d'une source réelle. Devant des plans, c'est leur historique
+     fabriqué : les plans restent les vrais, seule la courbe est inventée.
+     Devant un classeur qui n'a rien donné — pas encore d'onglet, feuille
+     vide —, c'est la démonstration entière, trois contrats fictifs : la page
+     se montre au lieu de s'ouvrir vide, et dit pourquoi. */
+  function exempleDe(reelle) {
+    if (!reelle.plans.length) return demonstration(jeuDExemple(), reelle.message);
+    var exemple = {};
+    Object.keys(reelle).forEach(function (k) { exemple[k] = reelle[k]; });
+    exemple.releves = relevesDExemple();
+    exemple.exemple = true;
+    return exemple;
+  }
+
+  /* Un jeu d'exemple marqué comme démonstration, avec ce que le classeur
+     avait à dire — c'est la raison d'être là. */
+  function demonstration(jeu, message) {
+    jeu.exemple = true;
+    jeu.demonstration = true;
+    jeu.message = message || '';
+    return jeu;
   }
 
   /* L'interrupteur vit en haut de page : il porte sur tout, pas sur un bloc.
@@ -3034,6 +3054,14 @@
         etat.textContent = paquet && paquet.message ? paquet.message : 'Contrat impossible à charger.';
         return;
       }
+      /* Sous la démonstration, le contrat suivant est fictif lui aussi, et
+         la source réelle — vide — n'est pas touchée. */
+      if (SRC && SRC.demonstration) {
+        chargerSource(demonstration(paquet, SRC.message));
+        remplirDims();
+        rendre();
+        return;
+      }
       /* En mode « Exemple », le nouveau contrat arrive en exemple aussi —
          son historique fabriqué à lui — au lieu de rebasculer sans un mot
          sur les données réelles. */
@@ -3043,7 +3071,7 @@
       remplirDims();
       rendre();
     }
-    if (API && API.chargerContrat) {
+    if (API && API.chargerContrat && !(SRC && SRC.demonstration)) {
       sel.disabled = true;
       etat.textContent = 'Chargement…';
       API.chargerContrat(id, poser);
@@ -4015,5 +4043,10 @@
   chargerPrefs();
   remplirDims();
   rendre();
+  /* L'interrupteur n'a d'objet que devant un classeur. Et quand celui-ci n'a
+     encore rien donné, la page s'ouvre sur la démonstration plutôt que vide :
+     on voit ce qu'elle sera, et l'alerte dit ce qui manque. */
+  $('mode-donnees').hidden = !SERVEUR;
+  if (SERVEUR && !PLANS.length) basculerExemple(true);
 })();
 </script>

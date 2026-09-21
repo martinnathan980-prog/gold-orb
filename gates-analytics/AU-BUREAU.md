@@ -85,7 +85,7 @@ le serveur et le classeur répondent — sans rien ouvrir.
 | « Le dépôt a répondu 404 » | La branche a changé de nom : me le dire |
 | « Le dépôt a répondu 403 / délai dépassé » | Google n'a pas joint le dépôt → **plan C** |
 | Le menu n'apparaît pas | F5. Sinon : Apps Script → fonction `onOpen` → ▶ |
-| La page s'ouvre mais dit qu'elle ne trouve pas de données | Normal tant qu'aucun onglet de contrat n'est rempli |
+| La page s'ouvre sur la démonstration, bordée de tirets | Normal tant qu'aucun onglet de contrat n'est rempli : voir « Ce que vous verrez » |
 
 **Première ouverture : 3 à 5 secondes** (il lit 280 Ko sur le dépôt). Ensuite
 c'est immédiat : il garde le code six heures.
@@ -261,14 +261,26 @@ les permissions du code.
 
 ### Ce que vous verrez, et ce qui est normal
 
-Au premier lancement, le classeur est vide : la page s'ouvre et **dit qu'elle
-ne trouve pas de données**. C'est normal — elle attend un onglet de contrat.
+Au premier lancement, le classeur est vide : la page **s'ouvre sur la
+démonstration** — trois contrats fictifs (HDK, THS, VRK), le graphique, le
+journal, et le rapprochement avec la seconde base en deux cercles. Le bandeau
+du haut le dit, et l'alerte à côté dit ce qui manque au classeur. C'est toute
+la page, telle qu'elle sera avec vos données.
+
+L'interrupteur **Données réelles / Exemple**, en haut, fait passer de l'une à
+l'autre. « Données réelles » sur un classeur vide montre une page sans plan,
+avec le message qui l'explique : c'est normal.
 
 Pour la nourrir : exporter un contrat depuis GATES, ouvrir un onglet du
 classeur, le nommer du nom du contrat (`HDK`), **Ctrl+A, Suppr**, cliquer en
-**A1** et coller. Puis **Suivi FWD → Diagnostic** : la page dit ce qu'elle a
-compris de vos colonnes. **Ce texte-là m'intéresse énormément** — c'est lui
-qui me dira si le modèle de colonnes tombe juste.
+**A1** et coller. Rouvrir le tableau de bord : il est sur vos plans. Puis
+**Suivi FWD → Diagnostic** : la page dit ce qu'elle a compris de vos colonnes.
+**Ce texte-là m'intéresse énormément** — c'est lui qui me dira si le modèle
+de colonnes tombe juste.
+
+Pour le rapprochement avec SEE : un onglet nommé **`SEE`**, et l'extract
+« Nommage WD BFLOW » collé dedans en A1. Rien d'autre à configurer : l'onglet
+est reconnu par son nom, et les deux cercles apparaissent sous le tableau.
 
 ---
 
