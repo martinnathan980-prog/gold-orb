@@ -9,7 +9,7 @@ Il y a **trois chantiers indépendants**. Aucun n'empêche les autres :
 | # | Chantier | Durée | Ce que ça donne |
 |---|---|---|---|
 | 1 | Le mail à l'informatique | 5 min | Débloque la suite. **À faire en premier : la réponse met des jours.** |
-| 2 | Le tableau de bord dans le classeur | 20 min | La page, sur vos vraies données |
+| 2 | Le tableau de bord dans le classeur | 5 min | La page, sur vos vraies données |
 | 3 | La fiche de votre vrai extract | 10 min | Ce qu'il me faut pour régler le reste |
 
 Si le temps manque : **1, puis 3.** Le chantier 2 peut attendre demain.
@@ -61,13 +61,42 @@ passerelle mail. D'où les deux plans.
 `suivi-fwd-outils.py.txt`, qui se déballe tout seul — voir le chantier 3.
 C'est le tableau de bord, et lui seul, qui demande ce qui suit.)*
 
-### Le plan A — l'installateur (20 minutes, c'est la voie normale)
+### Le plan A — le chargeur (3 gestes, 5 minutes)
 
-**L'idée** : on colle un petit fichier de 200 lignes, on le lance, et c'est
-**Google** qui va chercher les quatre gros fichiers sur le dépôt public et les
-écrit dans le projet. Le téléchargement se fait **de serveur Google à serveur
-GitHub** — votre PC et le réseau de l'entreprise ne sont pas concernés. Même
-si GitHub est bloqué depuis votre poste, cela passe.
+**Un seul fichier à coller, et rien d'autre.** Pas de manifeste à modifier,
+pas d'API à activer. Ce fichier ne contient pas le tableau de bord : il va le
+chercher sur le dépôt **au moment où on l'ouvre**, et le fait tourner. C'est
+Google qui télécharge, depuis ses serveurs — le réseau de l'entreprise n'est
+pas concerné.
+
+1. Dans le classeur : **Extensions → Apps Script**.
+2. Dans `Code.gs`, **tout effacer**, coller `Chargeur.gs.txt`, **Ctrl + S**.
+3. Recharger le classeur (**F5**) → menu **Suivi FWD** → **Ouvrir le tableau
+   de bord**. Autoriser quand Google le demande.
+
+Le menu offre aussi **Diagnostic** (ce que le script voit du classeur) et
+**Recharger le code** (après une mise à jour de ma part).
+
+Depuis l'éditeur, la fonction **`verifier`** dit en trois lignes si la page,
+le serveur et le classeur répondent — sans rien ouvrir.
+
+| Ce qui s'affiche | Quoi faire |
+|---|---|
+| « Le dépôt a répondu 404 » | La branche a changé de nom : me le dire |
+| « Le dépôt a répondu 403 / délai dépassé » | Google n'a pas joint le dépôt → **plan C** |
+| Le menu n'apparaît pas | F5. Sinon : Apps Script → fonction `onOpen` → ▶ |
+| La page s'ouvre mais dit qu'elle ne trouve pas de données | Normal tant qu'aucun onglet de contrat n'est rempli |
+
+**Première ouverture : 3 à 5 secondes** (il lit 280 Ko sur le dépôt). Ensuite
+c'est immédiat : il garde le code six heures.
+
+---
+
+### Le plan B — l'installateur (20 minutes, pour poser le code pour de bon)
+
+À faire **plus tard**, quand l'outil aura fait ses preuves : au lieu d'aller
+chercher le code à chaque ouverture, il l'**écrit dans le projet**. La page
+s'ouvre alors instantanément, et ne dépend plus d'aucun réseau.
 
 #### A.1 — Ouvrir l'éditeur de script
 
@@ -123,7 +152,7 @@ si GitHub est bloqué depuis votre poste, cela passe.
 3. Attendre une minute — le temps que Google s'en aperçoive.
 
 > **Si l'interrupteur est grisé** : c'est l'administrateur qui l'a fermé.
-> → passer au **plan B**.
+> → rester au **plan A**, ou passer au **plan C**.
 
 #### A.5 — Lancer l'installation
 
@@ -166,10 +195,10 @@ TERMINÉ. Il reste deux gestes :
 | Ce qui s'affiche | Ce que ça veut dire | Quoi faire |
 |---|---|---|
 | « L'API Apps Script n'est pas activée » | L'étape A.4 n'a pas pris | Refaire A.4, attendre 1 min, relancer |
-| Le même message, et l'interrupteur est grisé | L'administrateur l'a fermé | **Plan B** |
+| Le même message, et l'interrupteur est grisé | L'administrateur l'a fermé | **Plan A** ou **plan C** |
 | « Autorisation refusée » (401) | Le manifeste n'a pas les 5 permissions | Refaire A.3, relancer, réautoriser |
 | « Le projet est introuvable » (404) | L'API vient d'être activée | Attendre 1 minute, relancer |
-| « Le dépôt a répondu 403 / délai dépassé » | Google n'a pas pu joindre GitHub | **Plan B** |
+| « Le dépôt a répondu 403 / délai dépassé » | Google n'a pas pu joindre GitHub | **Plan C** |
 | « Cet installateur est dans un fichier nommé Code » | Collé au mauvais endroit | Refaire A.2 avec le bon nom |
 | Le menu « Suivi FWD » n'apparaît pas | Le classeur n'a pas été rechargé | F5. Si rien : Apps Script → fonction `onOpen` → Exécuter |
 
@@ -178,10 +207,10 @@ TERMINÉ. Il reste deux gestes :
 
 ---
 
-### Le plan B — à la main (15 minutes, marche toujours)
+### Le plan C — à la main (15 minutes, marche toujours)
 
-À utiliser si l'API Apps Script est fermée, ou si Google ne peut pas joindre
-le dépôt. Ici, **c'est vous** qui apportez les fichiers.
+À utiliser si Google ne peut joindre le dépôt ni à l'ouverture (plan A) ni à
+l'installation (plan B). Ici, **c'est vous** qui apportez les fichiers.
 
 #### B.1 — Récupérer les quatre fichiers
 

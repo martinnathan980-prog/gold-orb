@@ -18,3 +18,6 @@ gates-analytics/import/depot.json
 
 # Le dossier fabriqué par l'essai à blanc (import/essai.py)
 gates-analytics/import/essai/
+
+# Aperçus fabriqués par les batteries
+gates-analytics/prototype/apercu-chargeur.html

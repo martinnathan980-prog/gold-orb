@@ -17,7 +17,7 @@ C'est un outil de **consultation** : la page montre, elle ne modifie rien.
 | `appsscript.json` | Manifeste (fuseau, portées OAuth) |
 | `prototype/` | La même interface, autonome, avec un jeu d'exemple à trois contrats — c'est la source |
 | `import/` | L'automatisation : pilote Chrome, recettes d'extraction, dépôt dans le classeur, lecture des composants sur les plans (PDF, Visio, DXF, scans), transport par la messagerie |
-| `apps-script/` | L'installateur à coller dans Apps Script : il fait télécharger les quatre fichiers par Google |
+| `apps-script/` | Ce qu'on colle dans Apps Script : le **chargeur** (un fichier, qui va chercher le reste à l'ouverture) et l'**installateur** (qui écrit les quatre fichiers dans le projet) |
 | `AU-BUREAU.md` | La marche à suivre, pas à pas, pour tout installer sur le poste de travail |
 | `tests/` | Batterie de l'add-on (serveur + page rendue) |
 
@@ -108,6 +108,11 @@ npm test
   lire une lettre, puis les repères lus pour de vrai par RapidOCR et corrigés
   par la liste de la base, sur papier gris et page couchée. Sans Chrome ou
   sans RapidOCR sur le poste, ces parties-là sont sautées en le disant.
+- `npm run test:chargeur` — 29 tests sur le chargeur : un faux Apps Script en
+  mémoire (classeur, UrlFetchApp qui sert le dépôt depuis le disque, cache,
+  menus, fenêtres), le vrai `Chargeur.gs` lancé dedans, et la page qu'il
+  fabrique ouverte dans un vrai navigateur — les états, les colonnes, le
+  graphe et le journal comparés au paquet du classeur.
 - `npm run test:interface` — 462 tests sur l'interface elle-même.
   Elle n'essaie pas seulement de vérifier que ça marche : recherches avec
   balises, expressions régulières, 3 000 caractères ou émoji, jalon de
