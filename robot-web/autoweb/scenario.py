@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
+from . import symboles as S
 from .erreurs import ErreurScenario
 
 # ----------------------------------------------------------------------------- actions
@@ -144,7 +145,7 @@ class Etape:
                 texte = str(valeur)
                 if len(texte) > 40:
                     texte = texte[:37] + "..."
-                morceaux.append(f"{selecteur} ← « {texte} »")
+                morceaux.append(f"{selecteur} {S.GAUCHE} « {texte} »")
         return f"{self.action} " + ", ".join(morceaux) if morceaux else self.action
 
 

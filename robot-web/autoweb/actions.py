@@ -23,6 +23,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from playwright.sync_api import Error as PlaywrightError, TimeoutError as PlaywrightTimeout, expect
 
+from . import symboles as S
 from .erreurs import ArretDemande, ErreurEtape, ErreurGabarit, LigneIgnoree, NavigateurFerme
 from .excel import ClasseurSuivi
 from .gabarit import est_vrai, formater, rendre_structure
@@ -131,7 +132,7 @@ class Executeur:
             raise ErreurEtape(f"{etape.position} : {e}")
         libelle = etape.nom or Etape(etape.action, masquer_secrets(args, etape)).resume()
         self.derniere_etape = libelle
-        journal.info("    → %s", libelle)
+        journal.info("    %s %s", S.FLECHE, libelle)
         methode: Optional[Callable] = getattr(self, "act_" + etape.action, None)
         if methode is None:
             raise ErreurEtape(f"{etape.position} : action non implémentée « {etape.action} ».")
@@ -170,7 +171,9 @@ class Executeur:
             url = self._chemin(args["fichier"]).resolve().as_uri()
         else:
             url = str(args["url"]).strip()
-            if not re.match(r"^[a-z][a-z0-9+.-]*:", url, re.I):
+            if url.lower().startswith("fichier:"):
+                url = self._chemin(url[len("fichier:"):].strip()).resolve().as_uri()
+            elif not re.match(r"^[a-z][a-z0-9+.-]*:", url, re.I):
                 url = "https://" + url
         attendre = str(args.get("attendre_chargement", "load"))
         self.page.goto(url, wait_until=attendre, timeout=self._delai(args, delai))
@@ -403,7 +406,7 @@ class Executeur:
     def act_pause(self, args: Dict[str, Any], delai: Optional[int]) -> None:
         message = str(args.get("message") or "Action manuelle requise")
         if self.interactif and sys.stdin is not None and sys.stdin.isatty():
-            print(f"\n⏸  {message}\n   Appuyez sur Entrée pour continuer (ou tapez « stop » puis Entrée pour arrêter) : ", end="", flush=True)
+            print(f"\n{S.PAUSE}  {message}\n   Appuyez sur Entrée pour continuer (ou tapez « stop » puis Entrée pour arrêter) : ", end="", flush=True)
             reponse = input().strip().lower()
             if reponse in ("stop", "arreter", "arrêter", "q", "quit"):
                 raise ArretDemande("arrêt demandé par l'utilisateur pendant une pause.")

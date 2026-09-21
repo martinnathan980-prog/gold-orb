@@ -1,0 +1,32 @@
+ROBOT-WEB (autoweb) - DEMARRAGE AU BUREAU
+=========================================
+
+1. Decompressez le zip dans un dossier a vous, par exemple :
+      C:\Users\<votre nom>\Documents\robot-web
+
+2. Ouvrez une invite de commandes DANS ce dossier :
+      dans l'explorateur, cliquez dans la barre d'adresse, tapez  cmd  puis Entree
+
+3. Installez les bibliotheques (une seule fois) :
+      py -m pip install --user -r requirements.txt
+   Si "py" n'existe pas, remplacez  py  par  python  dans toutes les commandes.
+   Si pip echoue (proxy), essayez :
+      py -m pip install --user --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt
+
+4. Testez : le robot ouvre votre Edge sur un faux outil et remplit 4 lignes d'Excel
+      py -m autoweb demo
+   Resultat attendu a la fin :  "3 OK, 1 ERREUR"  puis  "votre poste est pret".
+   (l'erreur est volontaire : une ligne sans numero de plan)
+
+5. Si le navigateur ne se lance pas ("Aucun navigateur n'a pu etre lance") :
+      py -m playwright install chromium
+   puis relancez  py -m autoweb demo
+   Si ca echoue encore, copiez le message d'erreur et le fichier demo\journal\autoweb-*.log
+   et envoyez-les a Claude.
+
+6. Ensuite, pour votre premier vrai outil :
+      py -m autoweb inspecter https://adresse-de-votre-outil
+   (le navigateur s'ouvre avec l'inspecteur : cliquez sur "Pick locator" puis sur un champ,
+   notez les selecteurs affiches et envoyez-les a Claude avec ce que vous voulez saisir)
+
+Mode d'emploi complet : README.md (ouvrable avec le Bloc-notes).

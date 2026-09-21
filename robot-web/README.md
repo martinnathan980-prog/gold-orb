@@ -140,7 +140,7 @@ etapes:                    # pour CHAQUE ligne de l'Excel
 
 | Action | Exemple | Ce que ça fait |
 |---|---|---|
-| `aller` | `aller: "{{url_base}}/x"` / `aller: {fichier: page.html}` | ouvre une adresse (ou un fichier local) |
+| `aller` | `aller: "{{url_base}}/x"` / `aller: "fichier:page.html"` | ouvre une adresse (ou un fichier local, relatif au dossier du scénario) |
 | `attendre` | `attendre: "#form"` / `{selecteur: ".spinner", etat: cache}` / `attendre: 500` | attend un élément (visible / cache / present / absent), une URL (`url:`), le chargement (`chargement: reseau`) ou N ms |
 | `remplir` | `remplir: {"#a": "{{A}}", "#b": "{{B}}"}` ou `{selecteur, valeur, appuyer: Tab}` | vide le champ et écrit la valeur |
 | `taper` | `taper: {selecteur: "#ville", valeur: "{{Ville}}", appuyer: Enter}` | tape touche par touche (champs à suggestions) |

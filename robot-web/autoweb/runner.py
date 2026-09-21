@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set
 
+from . import symboles as S
 from .actions import Executeur
 from .erreurs import (
     ArretDemande, ErreurAutoweb, ErreurEtape, ErreurExcel, ErreurGabarit, LigneIgnoree, NavigateurFerme,
@@ -247,7 +248,7 @@ def _sauvegarder_avec_reessai(classeur: ClasseurSuivi, options: Options) -> None
             return
         except ErreurExcel as e:
             if options.interactif and sys.stdin is not None and sys.stdin.isatty():
-                print(f"\n⚠  {e}\n   Fermez le fichier puis appuyez sur Entrée pour réessayer : ", end="", flush=True)
+                print(f"\n{S.ATTENTION}  {e}\n   Fermez le fichier puis appuyez sur Entrée pour réessayer : ", end="", flush=True)
                 input()
                 continue
             raise
@@ -336,7 +337,7 @@ def _boucle(
     total = len(lignes)
     for n, ligne in enumerate(lignes, start=1):
         libelle = libelle_ligne(ligne, scenario, classeur)
-        journal.info("━━ Ligne Excel %d (%d/%d) %s", ligne.numero, n, total, libelle)
+        journal.info("%s Ligne Excel %d (%d/%d) %s", S.LIGNE, ligne.numero, n, total, libelle)
         contexte = contexte_ligne(base, ligne, n, total)
         executeur = Executeur(navigateur, scenario, contexte, classeur, ligne.numero, interactif=options.interactif)
         debut = time.monotonic()
@@ -344,11 +345,11 @@ def _boucle(
             executeur.executer(scenario.etapes)
             classeur.marquer(ligne.numero, STATUT_OK, "")
             bilan.ok += 1
-            journal.info("   ✔ OK (%.1f s)", time.monotonic() - debut)
+            journal.info("   %s OK (%.1f s)", S.OK, time.monotonic() - debut)
         except LigneIgnoree as e:
             classeur.marquer(ligne.numero, STATUT_IGNORE, str(e))
             bilan.ignorees += 1
-            journal.info("   ↷ IGNORE : %s", e)
+            journal.info("   %s IGNORE : %s", S.IGNORE, e)
         except ErreurEtape as e:
             capture = _capture_erreur(navigateur, scenario, ligne.numero)
             message = str(e)
@@ -356,7 +357,7 @@ def _boucle(
                 message += f" [capture : {capture.name}]"
             classeur.marquer(ligne.numero, STATUT_ERREUR, message)
             bilan.erreurs += 1
-            journal.error("   ✘ ERREUR : %s", message)
+            journal.error("   %s ERREUR : %s", S.ERREUR, message)
             if options.inspecter_si_erreur and navigateur.visible:
                 journal.info("   Inspecteur ouvert (--inspecter-si-erreur) : cliquez sur Resume pour continuer.")
                 try:

@@ -15,9 +15,13 @@ excel:
   feuille: Plans
   colonne_libelle: Numéro plan
 
+variables:
+  # « python -m autoweb demo » remplace cette valeur par une adresse http locale
+  url_demo: "fichier:formulaire_demo.html"
+
 # Une fois au début : connexion (la session est mémorisée par l'outil ensuite)
 avant:
-  - aller: {fichier: formulaire_demo.html}
+  - aller: "{{url_demo}}"
   - si:
       visible: "#btn-connexion"
       alors:
@@ -29,7 +33,7 @@ avant:
 
 # Pour CHAQUE ligne de l'Excel
 etapes:
-  - aller: {fichier: formulaire_demo.html}
+  - aller: "{{url_demo}}"
   - attendre: "#formulaire-plan"
   - remplir:
       "#numero": "{{Numéro plan}}"

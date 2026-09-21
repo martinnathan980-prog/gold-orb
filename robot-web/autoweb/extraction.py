@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 import yaml
 
+from . import symboles as S
 from .erreurs import ErreurAutoweb
 from .excel import creer_classeur
 
@@ -261,14 +262,14 @@ def extraire(regles: Regles, dossier: Path, sortie: Path, ecraser: bool = False)
             bilan.illisibles += 1
             bilan.details.append(f"{relatif} : {e}")
             ligne += [""] * len(regles.champs) + ["ERREUR", f"lecture impossible : {e}", _horodatage()]
-            journal.warning("  ✘ %s : %s", relatif, e)
+            journal.warning("  %s %s : %s", S.ERREUR, relatif, e)
             lignes.append(ligne)
             continue
         except Exception as e:
             bilan.illisibles += 1
             bilan.details.append(f"{relatif} : {e}")
             ligne += [""] * len(regles.champs) + ["ERREUR", f"lecture impossible : {e.__class__.__name__} {e}", _horodatage()]
-            journal.warning("  ✘ %s : %s", relatif, e)
+            journal.warning("  %s %s : %s", S.ERREUR, relatif, e)
             lignes.append(ligne)
             continue
         valeurs = extraire_champs(texte, regles.champs)
@@ -278,11 +279,11 @@ def extraire(regles: Regles, dossier: Path, sortie: Path, ecraser: bool = False)
         if manquants:
             bilan.incomplets += 1
             ligne += ["A verifier", "champs obligatoires non trouvés : " + ", ".join(manquants), _horodatage()]
-            journal.info("  ⚠ %s : champs obligatoires manquants (%s)", relatif, ", ".join(manquants))
+            journal.info("  %s %s : champs obligatoires manquants (%s)", S.ATTENTION, relatif, ", ".join(manquants))
         else:
             bilan.reussis += 1
             ligne += ["", ("non trouvés : " + ", ".join(vides)) if vides else "", ""]
-            journal.info("  ✔ %s", relatif)
+            journal.info("  %s %s", S.OK, relatif)
         lignes.append(ligne)
     creer_classeur(sortie, colonnes, lignes, feuille=regles.feuille)
     return bilan

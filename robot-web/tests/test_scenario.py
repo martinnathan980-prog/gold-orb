@@ -20,7 +20,7 @@ def test_chargement_demo(dossier_modeles):
     assert s.navigateur.canal == "auto"
     actions = [e.action for e in s.etapes]
     assert actions == ["aller", "attendre", "remplir", "choisir", "cocher", "cliquer", "verifier", "lire", "capture"]
-    assert s.etapes[0].args == {"fichier": "formulaire_demo.html"}
+    assert s.etapes[0].args == {"url": "{{url_demo}}"} and s.variables["url_demo"] == "fichier:formulaire_demo.html"
     assert "champs" in s.etapes[2].args and "#numero" in s.etapes[2].args["champs"]
     assert s.avant[1].action == "si" and s.avant[1].args["alors"][0].action == "remplir"
     assert len(toutes_les_etapes(s.avant)) == 5

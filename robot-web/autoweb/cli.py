@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from . import __version__
+from . import symboles as S
 from .erreurs import ErreurAutoweb
 from .excel import creer_classeur
 
@@ -32,15 +33,13 @@ DOSSIER_MODELES = Path(__file__).parent / "modeles"
 
 # ----------------------------------------------------------------------------- journalisation
 class _FormatConsole(logging.Formatter):
-    SYMBOLES = ("✔", "✘", "⚠", "↷", "━", "→", "⏸")
-
     def format(self, record: logging.LogRecord) -> str:
         heure = dt.datetime.fromtimestamp(record.created).strftime("%H:%M:%S")
         message = record.getMessage()
         texte = message.lstrip(" ")
         indentation = message[: len(message) - len(texte)]
-        prefixe = {"WARNING": "⚠ ", "ERROR": "✘ ", "CRITICAL": "✘ "}.get(record.levelname, "")
-        if texte.startswith(self.SYMBOLES):
+        prefixe = {"WARNING": f"{S.ATTENTION} ", "ERROR": f"{S.ERREUR} ", "CRITICAL": f"{S.ERREUR} "}.get(record.levelname, "")
+        if texte.startswith(S.TOUS):
             prefixe = ""  # le message porte déjà son symbole
         return f"{heure}  {indentation}{prefixe}{texte}"
 
@@ -134,26 +133,26 @@ def cmd_verifier(args: argparse.Namespace) -> int:
 
     scenario = charger(Path(args.scenario))
     configurer_journal(None, args.verbeux)
-    print(f"✔ Scénario « {scenario.nom} » valide ({len(scenario.etapes)} étape(s) par ligne, "
+    print(f"{S.OK} Scénario « {scenario.nom} » valide ({len(scenario.etapes)} étape(s) par ligne, "
           f"{len(scenario.avant)} avant, {len(scenario.apres)} après).")
     actions = sorted({e.action for e in toutes_les_etapes(scenario.avant + scenario.etapes + scenario.apres)})
     print(f"  Actions utilisées : {', '.join(actions)}")
     options = Options(excel=Path(args.excel) if args.excel else None, simuler=True)
     problemes = verifier_avant_apres(scenario, options)
     if problemes:
-        print(f"✘ Variables absentes dans avant/apres : {', '.join(problemes)}")
+        print(f"{S.ERREUR} Variables absentes dans avant/apres : {', '.join(problemes)}")
     code = 0
     try:
         classeur = ouvrir_classeur(scenario, options)
     except ErreurAutoweb as e:
-        print(f"⚠ Excel non vérifié : {e}")
+        print(f"{S.ATTENTION} Excel non vérifié : {e}")
         return 1 if problemes else 0
     try:
-        print(f"✔ Excel {classeur.chemin.name}, feuille « {classeur.nom_feuille} » : {len(classeur.lignes())} ligne(s) de données.")
+        print(f"{S.OK} Excel {classeur.chemin.name}, feuille « {classeur.nom_feuille} » : {len(classeur.lignes())} ligne(s) de données.")
         print(f"  Colonnes : {', '.join(classeur.entetes)}")
         absentes = verifier_colonnes(scenario, classeur, options)
         if absentes:
-            print(f"✘ Colonnes utilisées par le scénario mais absentes de l'Excel : {', '.join(absentes)}")
+            print(f"{S.ERREUR} Colonnes utilisées par le scénario mais absentes de l'Excel : {', '.join(absentes)}")
             code = 1
         a_traiter = selectionner(classeur, scenario, options)
         print(f"  {len(a_traiter)} ligne(s) seraient traitées (statut {' / '.join(repr(s) for s in scenario.excel.traiter_si)}).")
@@ -181,7 +180,7 @@ def cmd_initialiser(args: argparse.Namespace) -> int:
     colonnes = [c.strip() for c in (args.colonnes or "Numéro plan,Titre,Type,Date,Urgent,Commentaire").split(",") if c.strip()]
     if not excel.exists() or args.ecraser:
         creer_classeur(excel, colonnes, feuille="Suivi")
-        print(f"✔ Excel créé : {excel} (colonnes : {', '.join(colonnes)} + Statut/Message/Horodatage)")
+        print(f"{S.OK} Excel créé : {excel} (colonnes : {', '.join(colonnes)} + Statut/Message/Horodatage)")
     else:
         print(f"  Excel conservé : {excel}")
     (dossier / ".gitignore").write_text(
@@ -189,7 +188,7 @@ def cmd_initialiser(args: argparse.Namespace) -> int:
         "profils/\ncaptures/\njournal/\nsauvegardes/\ntelechargements/\n",
         encoding="utf-8",
     )
-    print(f"✔ Scénario modèle créé : {scenario}")
+    print(f"{S.OK} Scénario modèle créé : {scenario}")
     print()
     print("Prochaines étapes :")
     print(f"  1. Remplissez {excel.name} (une ligne par élément à saisir).")
@@ -225,9 +224,9 @@ def cmd_inspecter(args: argparse.Namespace) -> int:
             page.goto(url)
         print()
         print("Inspecteur Playwright ouvert.")
-        print("  • Cliquez sur « Pick locator » (icône de visée) puis sur un élément de la page : le sélecteur s'affiche.")
-        print("  • Préférez les sélecteurs stables : #id, [name=...], libelle=..., role=button:Texte, texte=...")
-        print("  • Pour finir : cliquez sur « Resume » (▶) ou fermez le navigateur.")
+        print("  - Cliquez sur « Pick locator » (icône de visée) puis sur un élément de la page : le sélecteur s'affiche.")
+        print("  - Préférez les sélecteurs stables : #id, [name=...], libelle=..., role=button:Texte, texte=...")
+        print("  - Pour finir : cliquez sur « Resume » (bouton lecture) ou fermez le navigateur.")
         page.pause()
     finally:
         nav.fermer()
@@ -239,7 +238,7 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
     commande: List[str] = [sys.executable, "-m", "playwright", "codegen", "--target", "python"]
     canal = args.canal or "msedge"
     if args.executable:
-        print("⚠ codegen ne prend pas de chemin d'exécutable ; utilisation du canal", canal)
+        print(f"{S.ATTENTION} codegen ne prend pas de chemin d'exécutable ; utilisation du canal", canal)
     if canal != "chromium":
         commande += ["--channel", canal]
     if args.profil:
@@ -301,13 +300,44 @@ def cmd_demo(args: argparse.Namespace) -> int:
     print(f"Démo dans {dossier.resolve()} : 4 lignes, dont 1 en erreur volontaire (numéro manquant).")
     visible = not args.cache
     options = Options(visible=visible, interactif=not args.sans_pause)
-    bilan = lancer(scenario, options)
+    serveur = None
+    if not args.fichier:
+        # page servie en http local : plus proche d'un vrai outil, et certaines
+        # politiques d'entreprise bloquent les adresses file://
+        serveur, url = _servir_dossier(dossier)
+        options.variables = {"url_demo": url}
+        print(f"Formulaire de démonstration servi sur {url}")
+    try:
+        bilan = lancer(scenario, options)
+    finally:
+        if serveur is not None:
+            serveur.shutdown()
+            serveur.server_close()
     print()
     print(bilan.resume())
     print(f"Ouvrez {excel} : les colonnes Statut / Message / Référence outil ont été remplies.")
     attendu = bilan.ok == 3 and bilan.erreurs == 1
-    print("✔ La démo s'est déroulée comme prévu : votre poste est prêt." if attendu else "⚠ Résultat inattendu : envoyez le contenu du dossier journal/ à Claude.")
+    if attendu:
+        print(f"{S.OK} La démo s'est déroulée comme prévu : votre poste est prêt.")
+    else:
+        print(f"{S.ATTENTION} Résultat inattendu : envoyez le contenu du dossier journal/ à Claude.")
     return 0 if attendu else 1
+
+
+def _servir_dossier(dossier: Path):
+    """Sert `dossier` sur http://127.0.0.1:<port libre>/ dans un thread (démo)."""
+    import threading
+    from functools import partial
+    from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+    class _Silencieux(SimpleHTTPRequestHandler):
+        def log_message(self, *args) -> None:  # pas de bruit dans la console
+            pass
+
+    serveur = ThreadingHTTPServer(("127.0.0.1", 0), partial(_Silencieux, directory=str(dossier)))
+    threading.Thread(target=serveur.serve_forever, daemon=True).start()
+    port = serveur.server_address[1]
+    return serveur, f"http://127.0.0.1:{port}/formulaire_demo.html"
 
 
 # ----------------------------------------------------------------------------- analyseur
@@ -397,6 +427,7 @@ def construire_parseur() -> argparse.ArgumentParser:
     p.add_argument("--dossier", help="dossier de la démo (défaut : ./demo)")
     p.add_argument("--cache", action="store_true", help="navigateur invisible")
     p.add_argument("--sans-pause", action="store_true")
+    p.add_argument("--fichier", action="store_true", help="ouvrir la page en file:// au lieu d'un serveur http local")
     commun(p)
     p.set_defaults(fonction=cmd_demo)
     return parseur
