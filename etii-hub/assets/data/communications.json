@@ -22,7 +22,12 @@
     "image": {
       "src": "assets/img/porteurs/h160.jpg",
       "alt": "Un H160 de la Gendarmerie présenté sur un salon",
-      "legende": "Le H160 — programme phare du trimestre (photo Domenjod, CC BY-SA 4.0, Wikimedia Commons)"
+      "legende": "",
+      "credit": {
+        "auteur": "Domenjod",
+        "licence": "CC BY-SA 4.0",
+        "page": "https://commons.wikimedia.org/wiki/File:Airbus_H160_Gend1_Domenjod_20_10_2021.jpg"
+      }
     },
     "chiffres": [
       {
@@ -106,7 +111,12 @@
       "image": {
         "src": "assets/img/porteurs/h160.jpg",
         "alt": "Un H160 sur un salon",
-        "legende": "Lot 3 du H160 (photo Domenjod, CC BY-SA 4.0, Wikimedia Commons)"
+        "legende": "",
+        "credit": {
+          "auteur": "Domenjod",
+          "licence": "CC BY-SA 4.0",
+          "page": "https://commons.wikimedia.org/wiki/File:Airbus_H160_Gend1_Domenjod_20_10_2021.jpg"
+        }
       }
     },
     {

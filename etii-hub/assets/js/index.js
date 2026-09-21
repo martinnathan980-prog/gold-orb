@@ -125,16 +125,49 @@ avecEtat('#zone-flotte', async () => {
    cache si la section des porteurs s'est affichée ; sinon on les charge. */
 deleguer(document, '[data-credits-photos]', 'click', async (evt, lien) => {
   evt.preventDefault();
-  let flotte = null;
+  let flotte = null; let communications = null;
   try { flotte = await chargerDonnees('flotte'); } catch (_e) { flotte = null; }
+  try { communications = await chargerCommunications(); } catch (_e) { communications = null; }
   ouvrirModale({
     titre: 'Crédits photos',
     declencheur: lien,
-    contenu: flotte
-      ? creditsPhotos(flotte)
-      : el('p', { class: 'texte-doux sans-marge' }, 'Les crédits ne peuvent pas être lus pour le moment.')
+    contenu: el('div', { class: 'pile' },
+      flotte
+        ? creditsPhotos(flotte)
+        : el('p', { class: 'texte-doux sans-marge' }, 'Les crédits des porteurs ne peuvent pas être lus pour le moment.'),
+      creditsCommunications(communications))
   });
 });
+
+/* Les images des communications qui portent un crédit (photos sous licence
+   libre) : même obligation, même fenêtre. Une photo du service, sans
+   crédit, n'a rien à déclarer. */
+function creditsCommunications(communications) {
+  const c = (communications && typeof communications === 'object') ? communications : {};
+  const entrees = [c.motDuChef].concat(Array.isArray(c.annonces) ? c.annonces : []).filter((e) => e && typeof e === 'object');
+  const images = [];
+  for (const e of entrees) {
+    const blocs = Array.isArray(e.blocs) ? e.blocs : [];
+    const candidates = [e.image].concat(blocs.filter((b) => b && b.type === 'image'), blocs.filter((b) => b && b.type === 'galerie').flatMap((b) => b.images || []));
+    for (const im of candidates) {
+      if (!im || typeof im !== 'object' || !im.credit || typeof im.credit !== 'object') continue;
+      if (images.some((x) => x.src === im.src)) continue;
+      images.push({ src: im.src, alt: im.alt, credit: im.credit, titre: txt(e.titre) });
+    }
+  }
+  if (!images.length) return null;
+  return el('div', { class: 'pile pile--serree' },
+    el('h3', { class: 'sans-marge' }, 'Images des communications'),
+    el('ul', { class: 'porteurs__credits', role: 'list' }, images.map((im) => el('li', { class: 'porteurs__credits-item' },
+      el('img', { src: im.src, alt: '', loading: 'lazy', decoding: 'async', class: 'porteurs__credits-vignette' }),
+      el('div', { class: 'porteurs__credits-texte' },
+        el('span', { class: 'porteurs__credits-nom' }, im.titre),
+        el('p', { class: 'porteurs__credit sans-marge' },
+          el('span', { class: 'porteurs__credit-mot' }, 'Photo : '),
+          txt(im.credit.auteur) || 'auteur à renseigner',
+          txt(im.credit.licence) ? ' · ' + txt(im.credit.licence) : '',
+          txt(im.credit.page) ? [' · ', el('a', { href: im.credit.page, target: '_blank', rel: 'noopener noreferrer' }, 'Wikimedia Commons')] : null))))));
+}
 
 avecEtat('#zone-otq', chargerSuivi, rendreSuiviOTQ, {
   squelette: 2,

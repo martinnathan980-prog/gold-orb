@@ -2301,6 +2301,10 @@ ol.liseuse__bloc-liste {
 }
 
 .editeur__colonne { display: flex; flex-direction: column; gap: var(--e-4); min-inline-size: 0; }
+/* L'aperçu reste en vue pendant qu'on descend dans le formulaire : il se
+   colle en haut du corps de la fenêtre, qui est ce qui défile. */
+.editeur__colonne--apercu { position: sticky; inset-block-start: 0; }
+@media (max-width: 1000px) { .editeur__colonne--apercu { position: static; } }
 .editeur__intro { margin: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
 
 .editeur__apercu-titre {

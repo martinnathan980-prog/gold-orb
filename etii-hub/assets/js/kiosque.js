@@ -151,7 +151,9 @@ function imageDepuis(brut) {
   /* Une URL publique, un fichier du site, ou l'image intégrée par la
      version autonome (data:) — rien d'autre. */
   if (!/^(https:\/\/|assets\/|data:image\/)/.test(src)) return null;
-  return { src, alt: texte(o.alt), legende: texte(o.legende) };
+  const credit = objet(o.credit);
+  return { src, alt: texte(o.alt), legende: texte(o.legende),
+    credit: credit ? { auteur: texte(credit.auteur), licence: texte(credit.licence), page: texte(credit.page) } : null };
 }
 
 /** Les chiffres clés : au plus quatre tuiles { libelle, valeur, unite, tendance }. */

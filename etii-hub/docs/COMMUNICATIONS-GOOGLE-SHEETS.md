@@ -1,23 +1,55 @@
-# Communications — publier depuis une feuille Google
+# Communications — publier depuis le site, stocker dans une feuille Google
 
-Le site est statique : il ne publie rien, il **lit**. La « partie
-administrateur » est donc une feuille Google : le chef y ajoute **une ligne
-par communication**, et le site la lit à l'ouverture de la page. Aucun
-serveur, aucun compte, aucun déploiement.
+Tout se joue dans le site : le bouton **« Ajouter une communication »**
+du Communication Center ouvre l'éditeur — le chef compose sa communication
+en blocs (texte, image, galerie, chiffres clés, courbe, pastilles,
+encadré), la voit à droite telle que le site la rendra, et clique
+**Publier**. Le site étant statique, ce qui est publié doit être stocké
+quelque part : une feuille Google, invisible pour tout le monde sauf pour
+celui qui la branche.
 
 ```
-admin.html (le formulaire + l'aperçu)        Feuille de PUBLICATION (la vôtre)
-┌────────────────────────────────┐  coller   ┌──────────────────────────────┐
-│ titre, résumé, texte, image,   │ ────────▶ │ onglet « communications »    │
-│ chiffres clés, courbe → LIGNE  │           │ une ligne = une communication│
-└────────────────────────────────┘           └──────────────┬───────────────┘
-                                                            │ publié sur le web (CSV)
-                                                            ▼
-                                       ETII Hub — assets/js/communications.js (SOURCE.url)
+site — bouton « Ajouter une communication » (assets/js/editeur.js)
+        │  Publier  (POST JSON vers la web app, SOURCE.publication)
+        ▼
+Apps Script doPost (tools/apps-script/communications-sync.gs)
+        │  ajoute une ligne à l'onglet « communications »
+        ▼
+Feuille de PUBLICATION ──── publiée en CSV ────▶ le site la lit à l'ouverture
+                                                  (SOURCE.url, assets/js/communications.js)
 ```
 
-Tant que `SOURCE.url` est vide, le site lit `assets/data/communications.json`
-(et la version autonome lit toujours le fichier intégré).
+Tant que `SOURCE.publication` est vide, ce que l'on publie reste **dans le
+navigateur** de l'auteur, marqué « brouillon » dans la liste (et se retire
+depuis l'éditeur) : c'est le mode démonstration. Tant que `SOURCE.url` est
+vide, le site lit `assets/data/communications.json`.
+
+## 0. Brancher la publication, en cinq minutes
+
+1. Créez un Google Sheet (par exemple `ETII Hub — publication`) avec un
+   onglet `communications` dont la ligne 1 porte les en-têtes de la
+   section 2 (le script les écrit lui-même si l'onglet est vide).
+2. Extensions → Apps Script, collez `tools/apps-script/communications-sync.gs`.
+   Renseignez `CLE_PUBLICATION` (une phrase de votre choix).
+3. Déployer → Nouveau déploiement → **Application web**, exécuter en tant
+   que « Moi », accès « Toute personne du domaine » (ou « disposant du
+   lien », la clé fait alors le garde-fou). Copiez l'URL `/exec`.
+4. Fichier → Partager → Publier sur le web → onglet `communications`,
+   format **CSV** → Publier. Copiez l'URL (`output=csv`). Si la publication
+   est interdite, l'URL `/exec` sert aussi le CSV (`doGet`).
+5. Dans `assets/js/communications.js` :
+
+   ```js
+   export const SOURCE = {
+     url: 'https://…output=csv',          // lecture
+     publication: 'https://…/exec',       // écriture (bouton Publier)
+     cle: 'la même phrase que CLE_PUBLICATION'
+   };
+   ```
+
+À partir de là, « Publier » ajoute une ligne à la feuille et tout le monde
+voit la communication à la prochaine ouverture du site. Une annonce
+publiée avec l'identifiant d'une ligne existante la remplace.
 
 ## 1. Préparer la feuille
 
@@ -31,10 +63,9 @@ Tant que `SOURCE.url` est vide, le site lit `assets/data/communications.json`
    type | id | date | pole | categorie | statut | titre | resume | corps | image | imageAlt | imageLegende | chiffres | serie | auteur | fonction
    ```
 
-3. Chaque ligne suivante est une communication. Le plus simple : ouvrir
-   `admin.html`, remplir le formulaire, cliquer **Copier la ligne pour la
-   feuille Google**, puis coller dans la première ligne vide de l'onglet
-   (Ctrl V : Sheets répartit les colonnes tout seul).
+3. Chaque ligne suivante est une communication. En temps normal c'est le
+   bouton **Publier** de l'éditeur qui les écrit ; on peut aussi les saisir
+   à la main, ou les faire venir d'un Google Form (script `synchroniser`).
 
 ## 2. Ce que le site attend
 
@@ -55,6 +86,7 @@ Tant que `SOURCE.url` est vide, le site lit `assets/data/communications.json`
 | `chiffres`     | jusqu'à quatre tuiles : `Libellé = valeur unité tendance ; …` (voir plus bas)                  |
 | `serie`        | une courbe : `Libellé (unité) \| 2026-04 = 92,1 ; 2026-05 = 92,8 ; …`                          |
 | `auteur`, `fonction` | pour le mot du chef seulement                                                           |
+| `blocs`        | les blocs libres de l'éditeur, en JSON — écrits par le bouton Publier ; les colonnes à plat restent renseignées pour la lecture ailleurs |
 
 ### Les préfixes du corps
 
@@ -84,7 +116,7 @@ Un texte sans préfixe.        → un paragraphe
 
 Un mois sans valeur laisse un **trou** : le site n'interpole jamais.
 
-## 3. Exposer la feuille au site
+## 3. Exposer la feuille au site (lecture)
 
 **Option A — publication sur le web (le plus simple)**
 Fichier → Partager → Publier sur le web → choisir l'onglet `communications`
