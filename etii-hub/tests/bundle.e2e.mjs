@@ -137,6 +137,21 @@ for (const [lien, attendu] of [['organigramme.html', 'Organigramme'],
 }
 
 t('aucune erreur JavaScript', err.length === 0, err.slice(0, 3).join(' | '));
+
+console.log('\n== Rechercher partout, depuis une page qui n\'affiche pas la flotte ==');
+// La version autonome n'embarque par page que les jeux que ses modules
+// lisent ; le sélecteur doit pourtant trouver un porteur depuis la FAQ.
+await f.locator('.palette-ouvrir').first().click();
+await page.waitForTimeout(600);
+await f.locator('.palette__champ').fill('H160');
+await page.waitForTimeout(900);
+const resultats = await f.locator('.palette__resultat').allInnerTexts();
+t('un porteur ressort depuis la FAQ', resultats.some((r) => /H160/.test(r) && /porteur|pôle/i.test(r)), `(${resultats.slice(0, 3).join(' / ')})`);
+await f.locator('.palette__champ').fill('Personne 22');
+await page.waitForTimeout(900);
+t('une personne aussi', (await f.locator('.palette__resultat').allInnerTexts()).some((r) => /Personne 22/.test(r)));
+await page.keyboard.press('Escape');
+
 console.log(`\n  ${ok} réussis, ${ko} échoués`);
 await nav.close();
 process.exit(ko ? 1 : 0);

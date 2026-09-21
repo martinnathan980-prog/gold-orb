@@ -106,8 +106,17 @@ function verifierSyntaxe(nom, code) {
    2. Assemblage d'une page complète et autonome
    -------------------------------------------------------------------- */
 
+// Les feuilles sont recopiées dans CHAQUE page intégrée : on retire les
+// commentaires et l'indentation, qui n'ont de sens que dans les sources.
+// Les règles restent une par ligne, lisibles dans l'inspecteur.
+function alleger(css) {
+  return css
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n').map((l) => l.trim()).filter(Boolean).join('\n');
+}
+
 const cssAssemble = CSS.map(n =>
-  `/* ---- ${n}.css ---- */\n` + lire(`assets/css/${n}.css`)).join('\n\n');
+  `/* ---- ${n}.css ---- */\n` + alleger(lire(`assets/css/${n}.css`))).join('\n');
 
 const donneesAssemblees = Object.fromEntries(
   DONNEES.map(n => [n, JSON.parse(lire(`assets/data/${n}.json`))]));
@@ -136,11 +145,48 @@ function dataUri(chemin) {
   return imagesLues.get(chemin);
 }
 
+// Une page n'embarque que les jeux de données que ses modules lisent
+// (chargerDonnees('…') dans leurs sources) : la recherche n'a que faire de
+// la flotte, la FAQ de l'organigramme. Les communications suivent leur
+// module, qui les lit par sa propre fonction.
+// Le sélecteur « Rechercher partout » (palette.js) lit ses jeux par une
+// liste, pas par des appels littéraux : on la reprend telle quelle.
+const JEUX_PALETTE = ['documents', 'faq', 'organigramme', 'reunions', 'flotte', 'communications'];
+
+function jeuxUtilises(noms) {
+  const jeux = new Set();
+  for (const n of noms) {
+    const source = lire(`assets/js/${n}.js`);
+    for (const m of source.matchAll(/chargerDonnees\(\s*['"]([a-z0-9_-]+)['"]/g)) jeux.add(m[1]);
+    if (n === 'communications') jeux.add('communications');
+    if (n === 'palette') JEUX_PALETTE.forEach((j) => jeux.add(j));
+  }
+  return jeux;
+}
+
+// La flotte pèse surtout par ses fiches détaillées, que seul le tableau de
+// bord (porteurs.js) déplie. Ailleurs — un espace de pôle, le sélecteur —
+// on ne garde de la fiche que ce qui se lit ou se cherche.
+function flotteAllegee(flotte) {
+  const copie = JSON.parse(JSON.stringify(flotte));
+  copie.flotte = (Array.isArray(copie.flotte) ? copie.flotte : []).map((a) => {
+    if (!a || typeof a !== 'object' || !a.fiche || typeof a.fiche !== 'object') return a;
+    const f = a.fiche;
+    return { ...a, fiche: {
+      nom: f.nom, segment: f.segment, ancienNom: f.ancienNom, resume: f.resume,
+      insolites: (Array.isArray(f.insolites) ? f.insolites : []).map((i) => ({ texte: i && i.texte }))
+    } };
+  });
+  return copie;
+}
+
 function donneesAvecImages(noms, page) {
-  const copie = { ...donneesAssemblees };
+  const utiles = jeuxUtilises(noms);
+  const copie = Object.fromEntries(Object.entries(donneesAssemblees).filter(([n]) => utiles.has(n)));
+  if (copie.flotte && !noms.includes('porteurs')) copie.flotte = flotteAllegee(copie.flotte);
   const codePole = noms.includes('pole') ? String(page || '').toUpperCase() : '';
   if (noms.includes('porteurs') || codePole) {
-    const flotte = JSON.parse(JSON.stringify(donneesAssemblees.flotte));
+    const flotte = JSON.parse(JSON.stringify(copie.flotte || donneesAssemblees.flotte));
     for (const appareil of (Array.isArray(flotte.flotte) ? flotte.flotte : [])) {
       if (codePole && !noms.includes('porteurs')
           && !(Array.isArray(appareil.poles) ? appareil.poles : []).includes(codePole)) continue;
