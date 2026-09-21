@@ -93,16 +93,24 @@ await page.waitForTimeout(2200);
 const pole = await f.locator('main').innerText();
 t('ETIIA s\'ouvre', /ETIIA/.test(await f.locator('h1').innerText()));
 t('sa communication est en tête', (await f.locator('.kiosque').count()) === 1);
-t('plus de section Réunions', (await f.locator('#section-reunions, #zone-reunions').count()) === 0);
-t('ses repères sont calculés', (await f.locator('#zone-reperes .pole-repere').count()) === 5);
-t('ses référents par compétence sont là',
-  (await f.locator('#zone-referents .pole-expertise').count()) > 3
-  && (await f.locator('#zone-referents .pole-expertise__personne').count()) > 0);
-t('ses porteurs sont des cartes photo vers la fiche',
-  (await f.locator('#zone-porteurs .porteurs__fiche').count()) > 0
-  && /#porteur=/.test((await f.locator('#zone-porteurs .porteurs__fiche').first().getAttribute('href')) || ''));
-t('son organigramme est un arbre', (await f.locator('.arbre__carte').count()) > 3);
-t('sa FAQ est lisible', (await f.locator('#zone-faq .liseuse').count()) === 1);
+t('son sommaire a quatre entrées', (await f.locator('.sous-nav a').count()) === 4);
+t('plus de section Réunions ni Porteurs du pôle', (await f.locator('#section-reunions, #zone-reunions, #section-porteurs, #zone-porteurs').count()) === 0);
+t('ses repères sont calculés', (await f.locator('#zone-reperes .pole-repere').count()) === 4);
+t('« à qui s\'adresser » et « par porteur » sont là',
+  (await f.locator('#zone-reperes .pole-personne').count()) >= 2
+  && (await f.locator('#zone-reperes .pole-porteur-groupe .pole-jeton').count()) > 0);
+t('son équipe est en cartes de squad, avec portraits et pastilles',
+  (await f.locator('#zone-equipe .pole-squad').count()) > 3
+  && (await f.locator('#zone-equipe .pole-membre .portrait').count()) > 10
+  && (await f.locator('#zone-equipe .pole-competence--referent').count()) > 0);
+t('le commutateur ouvre la vue par compétence', await (async () => {
+  await f.locator('#zone-equipe .pole-experts__vue[data-vue="competence"]').click();
+  await page.waitForTimeout(300);
+  return (await f.locator('#zone-equipe .pole-expertise:visible').count()) > 3
+    && (await f.locator('#zone-equipe .pole-expertise__personne').count()) > 0;
+})());
+t('l\'image de sa communication est intégrée', /^data:image/.test((await f.locator('.kiosque__image img, .kiosque__figure img').first().getAttribute('src')) || ''));
+t('sa FAQ est lisible, sans « Toute la base »', (await f.locator('#zone-faq .liseuse').count()) === 1 && !/Toute la base/i.test(pole));
 t('aucun indicateur n\'y figure', !/OTQ|OTD/.test(pole));
 
 console.log('\n== La recherche ==');
@@ -123,17 +131,32 @@ for (const [lien, attendu] of [['etiie.html', 'ETIIE'], ['etiii.html', 'ETIII'],
   await page.waitForTimeout(1900);
   t(lien, new RegExp(attendu).test(await f.locator('h1').innerText()));
 }
-for (const [lien, attendu] of [['organigramme.html', 'Organigramme'],
-                               ['faq.html', 'question|connaissance|FAQ']]) {
-  await f.locator('nav.site-nav a[href="etiia.html"]').first().click();
-  await page.waitForTimeout(1900);
-  // « :visible » : les liens de FAQ vivent désormais dans des volets fermés.
-  const cible = f.locator(`a[href^="${lien}"]:visible`).first();
-  if (await cible.count() === 0) { t(`${lien} accessible depuis ETIIA`, false); continue; }
-  await cible.click();
+// L'organigramme se rejoint depuis le pied de l'équipe d'un pôle ; la base
+// de connaissances n'a plus de lien dans un espace de pôle (ses questions y
+// sont, avec l'expert) : on y va par « Rechercher partout ».
+await f.locator('nav.site-nav a[href="etiia.html"]').first().click();
+await page.waitForTimeout(1900);
+const versOrganigramme = f.locator('a[href^="organigramme.html"]:visible').first();
+if (await versOrganigramme.count() === 0) { t('organigramme.html accessible depuis ETIIA', false); }
+else {
+  await versOrganigramme.click();
   await page.waitForTimeout(1900);
   const titre = await f.locator('h1').innerText();
-  t(`${lien} depuis l'espace ETIIA`, new RegExp(attendu, 'i').test(titre), `("${titre}")`);
+  t('organigramme.html depuis l\'espace ETIIA', /Organigramme/i.test(titre), `("${titre}")`);
+}
+await f.locator('nav.site-nav a[href="etiia.html"]').first().click();
+await page.waitForTimeout(1900);
+await f.locator('.palette-ouvrir').first().click();
+await page.waitForTimeout(600);
+await f.locator('.palette__champ').fill('Base de connaissances');
+await page.waitForTimeout(900);
+const versFaq = f.locator('.palette__resultat[data-href^="faq.html"]').first();
+if (await versFaq.count() === 0) { t('faq.html accessible depuis « Rechercher partout »', false); }
+else {
+  await versFaq.click();
+  await page.waitForTimeout(1900);
+  const titre = await f.locator('h1').innerText();
+  t('faq.html depuis « Rechercher partout »', /question|connaissance|FAQ/i.test(titre), `("${titre}")`);
 }
 
 t('aucune erreur JavaScript', err.length === 0, err.slice(0, 3).join(' | '));

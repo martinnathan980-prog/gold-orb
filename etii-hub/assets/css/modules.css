@@ -2795,19 +2795,22 @@ ol.liseuse__bloc-liste {
   border-block: 1px solid var(--bordure-douce);
 }
 
-.pile--section > section:first-of-type { padding-block-start: 0; }
+/* La première section suit la bande de l'en-tête (§15) : elle garde un
+   peu d'air au-dessus de son titre, moins qu'entre deux sections. */
+.pile--section > section:first-of-type { padding-block-start: var(--e-6); }
 
 /* ----------------------------------------------------------------------
-   14. Espace de pôle : repères, référents, porteurs du pôle
-       (etiia / etiie / etiii, rendus par pole.js). Les cartes de porteur
-       réutilisent la carte de la galerie (§3) ; les portraits, ceux de
-       l'organigramme (§11, portraits.js).
+   14. Espace de pôle : repères et contacts, équipe & référents
+       (etiia / etiie / etiii, rendus par pole.js). Les portraits sont
+       ceux de l'organigramme (§5, portraits.js) ; la carte se soulève au
+       survol comme partout ailleurs.
    ---------------------------------------------------------------------- */
 
 /* --- Repères : « le pôle en un coup d'œil » ----------------------------- */
 
-/* Cinq chiffres, chacun un lien vers la section ou la page qui le détaille.
-   Le filet de gauche porte la couleur du pôle : c'est le seul aplat. */
+/* Quatre chiffres, chacun un lien vers la section ou la page qui le
+   détaille. Le filet de gauche porte la couleur du pôle : c'est le seul
+   aplat. */
 .pole-reperes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
@@ -2862,12 +2865,163 @@ ol.liseuse__bloc-liste {
 
 .pole-repere__detail { font-size: var(--texte-xs); line-height: 1.4; color: var(--texte-faible); }
 
-/* --- Référents & expertises --------------------------------------------- */
+/* --- Qui contacter : « à qui s'adresser » et « par porteur » ------------ */
+
+.pole-coup-oeil { display: flex; flex-direction: column; gap: var(--e-5); }
+
+.pole-contacts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+  gap: var(--e-4);
+  align-items: start;
+}
+
+/* Le bloc « Par porteur » a plus à dire : il prend deux parts sur trois. */
+@media (min-width: 900px) {
+  .pole-contacts { grid-template-columns: 1fr 2fr; }
+}
+
+.pole-contacts__bloc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  padding: var(--e-4) var(--e-5);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
+}
+
+.pole-contacts__titre {
+  margin: 0;
+  padding-block-end: var(--e-2);
+  border-bottom: 1px solid var(--bordure);
+  font-family: var(--police-titre);
+  font-size: var(--texte-lg);
+  font-weight: var(--graisse-normale);
+  line-height: 1.25;
+  color: var(--texte);
+}
+
+.pole-contacts__aide { margin: 0; font-size: var(--texte-sm); line-height: 1.5; color: var(--texte-doux); }
+
+/* Une personne à contacter : portrait, nom en gras, sous-ligne. Toute la
+   ligne est le lien vers sa fiche dans l'organigramme. */
+.pole-contacts__liste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pole-personne {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  margin-inline: calc(var(--e-2) * -1);
+  padding: var(--e-1) var(--e-2);
+  border-radius: var(--rayon-md);
+  color: var(--texte);
+  text-decoration: none;
+}
+
+.pole-personne:hover { background-color: var(--fond-enfonce); }
+.pole-personne:hover .pole-personne__nom { color: var(--texte-accent); }
+
+.pole-personne__infos { display: flex; flex-direction: column; min-inline-size: 0; }
+.pole-personne__nom { font-size: var(--texte-sm); font-weight: var(--graisse-forte); line-height: 1.3; }
+.pole-personne__sous { font-size: var(--texte-xs); line-height: 1.3; color: var(--texte-doux); }
+
+/* Le responsable ouvre la liste, un peu plus grand, séparé des leads. */
+.pole-personne--responsable {
+  padding-block: var(--e-2);
+  margin-block-end: var(--e-1);
+  border-bottom: 1px solid var(--bordure-douce);
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.pole-personne--responsable .pole-personne__nom { font-size: var(--texte-md); }
+
+/* Par porteur : le code en mono, le segment en retrait, puis les gens en
+   ligne — le lead d'abord, marqué. */
+.pole-porteur-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  padding-block: var(--e-2) var(--e-3);
+  border-top: 1px solid var(--bordure-douce);
+}
+
+.pole-porteur-groupe:first-of-type { border-top: 0; padding-block-start: 0; }
+
+.pole-porteur-groupe__tete { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--e-1) var(--e-2); }
+
+.pole-porteur-groupe__code {
+  font-family: var(--police-mono);
+  font-size: var(--texte-md);
+  font-weight: var(--graisse-forte);
+  letter-spacing: 0.04em;
+  color: var(--texte);
+  text-decoration: none;
+}
+
+.pole-porteur-groupe__code:hover { color: var(--texte-accent); text-decoration: underline; }
+.pole-porteur-groupe__segment { font-size: var(--texte-xs); color: var(--texte-faible); }
+
+.pole-porteur-groupe__compte {
+  margin-inline-start: auto;
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.pole-porteur-groupe__gens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-1) var(--e-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Une pastille-personne : le portrait et le nom, sur fond en creux. */
+.pole-jeton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  padding: 2px var(--e-3) 2px 2px;
+  background-color: var(--fond-enfonce);
+  border: 1px solid transparent;
+  border-radius: var(--rayon-plein);
+  color: var(--texte);
+  font-size: var(--texte-sm);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pole-jeton:hover { border-color: var(--bordure-forte); background-color: var(--fond-eleve); color: var(--texte-accent); }
+.pole-jeton--lead { font-weight: var(--graisse-forte); }
+
+.pole-jeton__role {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--chaud-encre);
+}
+
+.pole-porteur-groupe__aucun { margin: 0; font-size: var(--texte-sm); font-style: italic; color: var(--texte-faible); }
+
+/* --- Équipe & référents ------------------------------------------------- */
 
 .pole-experts { display: flex; flex-direction: column; gap: var(--e-4); }
 
-.pole-experts__aide,
-.pole-porteurs__aide {
+.pole-experts__aide {
   margin: 0;
   max-inline-size: var(--largeur-texte);
   font-size: var(--texte-md);
@@ -2882,7 +3036,7 @@ ol.liseuse__bloc-liste {
   gap: var(--e-2) var(--e-4);
 }
 
-/* Le champ de recherche : le même que celui du lecteur et de l'arbre. */
+/* Le champ de recherche : le même que celui du lecteur et de l'organigramme. */
 .pole-experts__recherche {
   flex: 1 1 18rem;
   min-height: calc(var(--cible-tactile) - var(--e-2));
@@ -2902,6 +3056,32 @@ ol.liseuse__bloc-liste {
   background-color: var(--fond-eleve);
 }
 
+/* Le commutateur « Par squad | Par compétence » : deux boutons soudés,
+   l'état lu sur aria-pressed. */
+.pole-experts__vues {
+  display: inline-flex;
+  padding: 2px;
+  background-color: var(--fond-enfonce);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-plein);
+}
+
+.pole-experts__vue {
+  min-height: calc(var(--cible-tactile) - var(--e-3));
+  padding: 0 var(--e-4);
+  background-color: transparent;
+  border: 0;
+  border-radius: var(--rayon-plein);
+  color: var(--texte-doux);
+  font: inherit;
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
+  cursor: pointer;
+}
+
+.pole-experts__vue:hover { color: var(--texte); }
+.pole-experts__vue[aria-pressed="true"] { background-color: var(--fond-eleve); color: var(--texte); box-shadow: var(--ombre-sm); }
+
 .pole-experts__compte {
   margin: 0;
   font-size: var(--texte-xs);
@@ -2910,6 +3090,164 @@ ol.liseuse__bloc-liste {
   color: var(--texte-doux);
   white-space: nowrap;
 }
+
+.pole-experts__panneau[hidden] { display: none; }
+
+/* --- Vue par squad : le responsable, puis une carte par squad ----------- */
+
+.pole-squads {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(26rem, 100%), 1fr));
+  gap: var(--e-4);
+  align-items: start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pole-squad {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  padding: var(--e-3) var(--e-4) var(--e-4);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
+  transition: border-color var(--duree-rapide) var(--courbe),
+              transform var(--duree-rapide) var(--courbe),
+              box-shadow var(--duree-rapide) var(--courbe);
+}
+
+.pole-squad:hover { border-color: var(--bordure-forte); transform: translateY(-2px); box-shadow: var(--ombre-md); }
+.pole-squad[hidden] { display: none; }
+
+/* La carte du responsable ouvre la grille sur toute la largeur : portrait
+   en grand, nom, poste, ses compétences. Le filet de gauche est celui du
+   pôle. */
+.pole-squad--responsable {
+  grid-column: 1 / -1;
+  padding: var(--e-4) var(--e-5);
+  border-inline-start: 3px solid var(--org-teinte, var(--accent));
+}
+
+.pole-squad--responsable .pole-membre { margin: 0; padding: 0; align-items: center; gap: var(--e-5); }
+.pole-squad--responsable .pole-membre:hover { background-color: transparent; }
+.pole-squad--responsable .pole-membre__nom { font-family: var(--police-titre); font-size: var(--texte-xl); font-weight: var(--graisse-normale); }
+.pole-squad--responsable .pole-membre__poste { font-size: var(--texte-sm); }
+
+.pole-squad__tete {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--e-1) var(--e-3);
+  padding-block-end: var(--e-2);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.pole-squad__nom {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: var(--texte-lg);
+  font-weight: var(--graisse-normale);
+  line-height: 1.25;
+  color: var(--texte);
+}
+
+.pole-squad__lead { font-size: var(--texte-xs); color: var(--texte-doux); }
+
+.pole-squad__compte {
+  margin-inline-start: auto;
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+  white-space: nowrap;
+}
+
+.pole-squad__membres {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pole-squad__membres > li[hidden] { display: none; }
+
+/* Un membre : portrait, nom (le lien vers sa fiche), poste, puis ses
+   compétences en pastilles — RÉFÉRENT en terre cuite, le reste en gris. */
+.pole-membre {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e-3);
+  margin-inline: calc(var(--e-2) * -1);
+  padding: var(--e-2);
+  border-radius: var(--rayon-md);
+}
+
+.pole-membre:hover { background-color: var(--fond-enfonce); }
+.pole-membre .portrait { margin-block-start: 2px; }
+.pole-membre__infos { display: flex; flex-direction: column; gap: var(--e-1); min-inline-size: 0; flex: 1; }
+.pole-membre__ligne { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 var(--e-2); }
+.pole-membre__nom { font-size: var(--texte-sm); font-weight: var(--graisse-forte); line-height: 1.3; color: var(--texte); text-decoration: none; }
+.pole-membre__nom:hover { color: var(--texte-accent); text-decoration: underline; }
+.pole-membre__poste { font-size: var(--texte-xs); line-height: 1.3; color: var(--texte-doux); }
+
+.pole-membre__porteur {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.pole-membre__competences {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pole-competence {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  padding: 1px var(--e-2);
+  background-color: var(--fond-enfonce);
+  border: 1px solid transparent;
+  border-radius: var(--rayon-plein);
+  font-size: var(--texte-xs);
+  line-height: 1.5;
+  color: var(--texte-doux);
+}
+
+.pole-competence--referent { background-color: var(--chaud-doux); border-color: var(--chaud-lueur); color: var(--chaud-encre); font-weight: var(--graisse-forte); }
+.pole-competence--pratique { background-color: transparent; border-color: var(--bordure); color: var(--texte-faible); }
+
+.pole-competence__niveau {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* La légende des pastilles, une fois, au-dessus des cartes. */
+.pole-experts__legende {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2);
+  margin: 0;
+  font-size: var(--texte-xs);
+  color: var(--texte-faible);
+}
+
+/* --- Vue par compétence : une carte par compétence, ses référents ------- */
 
 .pole-experts__grille {
   display: grid;
@@ -2920,8 +3258,6 @@ ol.liseuse__bloc-liste {
   list-style: none;
 }
 
-/* Une compétence : son nom en Newsreader, ses référents, puis le compte
-   des autres niveaux. La carte se soulève au survol, comme les porteurs. */
 .pole-expertise {
   display: flex;
   flex-direction: column;
@@ -2959,8 +3295,8 @@ ol.liseuse__bloc-liste {
   list-style: none;
 }
 
-/* La personne : avatar, nom en gras, poste en dessous. Toute la ligne est
-   le lien, avec une marge négative pour que le survol couvre la carte. */
+/* La personne : portrait, nom en gras, poste en dessous. Toute la ligne
+   est le lien, avec une marge négative pour que le survol couvre la carte. */
 .pole-expertise__personne {
   display: flex;
   align-items: center;
@@ -3008,11 +3344,62 @@ ol.liseuse__bloc-liste {
 
 .pole-experts__suite .bouton[hidden] { display: none; }
 
-/* --- Porteurs du pôle --------------------------------------------------- */
+/* ----------------------------------------------------------------------
+   15. En-tête de page et sommaire
+       Le titre de la page et son sommaire se posent sur la bande — le ton
+       de --fond-bande, en pleine largeur, fermé par un filet fin — pour
+       que l'entrée de la page se distingue du papier de la première
+       section. Le sommaire (la « petite barre » .sous-nav, §6) reste
+       collé sous la barre du site et garde la couleur de la bande en
+       défilant ; le lien courant suit la lecture (ui.js, suivreSommaire).
+   ---------------------------------------------------------------------- */
 
-.pole-porteurs { display: flex; flex-direction: column; gap: var(--e-5); }
+.page-tete {
+  background-color: var(--fond-bande);
+}
 
-/* La carte de la galerie (§3) est un bouton ; ici c'est un lien vers la
-   fiche du tableau de bord : on retire le soulignement, le reste suit. */
-.pole-porteur { text-decoration: none; }
-.pole-porteur:hover .porteurs__fiche-code { color: var(--texte-accent); }
+.page-tete .page-entete {
+  padding-block: var(--e-8) var(--e-4);
+}
+
+.page-sommaire {
+  position: sticky;
+  inset-block-start: var(--hauteur-barre-site);
+  z-index: 5;
+  background-color: var(--fond-bande);
+  border-bottom: 1px solid var(--bordure-douce);
+}
+
+/* Dans son bandeau, la liste n'est plus collante ni bordée elle-même :
+   c'est le bandeau qui l'est. Elle garde le conteneur pour s'aligner sur
+   le contenu, et se centre comme le titre au-dessus. */
+.page-sommaire .sous-nav {
+  position: static;
+  justify-content: center;
+  padding-block: var(--e-2);
+  background-color: transparent;
+  border-bottom: 0;
+}
+
+/* Une section visée par le sommaire garde de l'air au-dessus de son
+   titre quand on y saute : la barre du site et le sommaire collés. */
+.page-sommaire ~ .pile--section > section {
+  scroll-margin-block-start: calc(var(--hauteur-barre-site) + var(--cible-tactile) + var(--e-4));
+}
+
+/* Sur téléphone, le sommaire défile sur une ligne plutôt que de
+   s'enrouler sur trois : la barre reste une barre. */
+@media (max-width: 640px) {
+  .page-sommaire .sous-nav {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .page-sommaire .sous-nav li { flex: none; }
+  .page-sommaire .sous-nav a { white-space: nowrap; }
+
+  /* La barre du site tient sur deux rangs sur téléphone. */
+  :root { --hauteur-barre-site: var(--hauteur-barre-site-etroite); }
+}

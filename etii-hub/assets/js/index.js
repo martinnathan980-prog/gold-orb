@@ -8,11 +8,14 @@
      3. LE SUIVI OTQ / OTD — lu dans un CSV : la feuille publiée du service,
         ou l'exemple embarqué, toujours annoncé comme tel (otq.js).
 
+   Au-dessus, sur la bande de l'en-tête, le sommaire collant (la même
+   « petite barre » que sur un espace de pôle) suit la lecture.
+
    Tout le DOM est construit avec el() : aucun innerHTML, aucun
    gestionnaire en attribut HTML.
    ========================================================================= */
 
-import { el, monter, initTheme, initNav, deleguer, ouvrirModale } from './ui.js';
+import { el, monter, initTheme, initNav, deleguer, ouvrirModale, suivreSommaire } from './ui.js';
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
 import { porteurs, creditsPhotos } from './porteurs.js';
 import { kiosque, dossiersDepuisCommunications, alertesDepuisCommunications } from './kiosque.js';
@@ -86,6 +89,9 @@ function rendreSuiviOTQ(suivi, conteneur) {
 
 initTheme();
 initNav('index.html');
+/* Le sommaire : Communication · Porteurs · Suivi OTQ / OTD, le lien
+   courant marqué au fil du défilement (le mécanisme des espaces de pôle). */
+suivreSommaire();
 
 function chargerCommunicationCenter() {
   avecEtat('#zone-communication', chargerCommunications, rendreCommunication, {

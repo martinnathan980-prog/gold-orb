@@ -50,31 +50,42 @@ Puis ouvrir <http://localhost:8000>.
 | Page | Rôle |
 |---|---|
 | `index.html` | Dispatcher : accès aux trois pôles et à la recherche |
-| `etiia.html`, `etiie.html`, `etiii.html` | L'espace d'un pôle : sa communication, ses repères, ses référents, ses porteurs, son organigramme, sa FAQ (voir ci-dessous) |
+| `etiia.html`, `etiie.html`, `etiii.html` | L'espace d'un pôle : sa communication, le pôle en un coup d'œil (repères, à qui s'adresser, par porteur), son équipe et ses référents, sa FAQ (voir ci-dessous) |
 | `reunions.html` | Les comptes-rendus de réunion, par périmètre |
 | `organigramme.html` | Équipes, rôles, réorganisation |
 | `faq.html` | Base de connaissances |
 | `docsearch.html` | **Recherche documentaire — le cœur du site** |
 
+### L'en-tête de page et le sommaire
+
+Sur le tableau de bord comme sur un espace de pôle, le titre de la page et
+son sommaire se posent sur la bande (`--fond-bande`, pleine largeur, un
+filet en bas) : l'entrée de la page se distingue du papier de la première
+section, puis les bandes alternent une section sur deux. Le sommaire (la
+« petite barre » `.sous-nav`) reste collé sous la barre du site et son lien
+courant suit la lecture (`suivreSommaire()` de `assets/js/ui.js`, un
+`IntersectionObserver` partagé par `index.js` et `pole.js`). Sur le tableau
+de bord : Communication · Porteurs · Suivi OTQ / OTD.
+
 ### Les espaces de pôle
 
 Les trois pages de pôle sont une seule page (`assets/js/pole.js`),
-paramétrée par `<body data-pole="ETIIA|ETIIE|ETIII">`. Une sous-navigation
-collante (Communication, Référents, Porteurs, Organigramme, FAQ) suit la
+paramétrée par `<body data-pole="ETIIA|ETIIE|ETIII">`. Le sommaire
+collant (Communication, En un coup d'œil, Équipe & référents, FAQ) suit la
 lecture. Aucune section n'invente rien : chacune est calculée depuis les
 fichiers de `assets/data/` pour ce pôle.
 
 | Section | Source | Ce qu'elle montre |
 |---|---|---|
-| Communication | `communications.json` (`pole`) | Le kiosque du pôle, identique à celui du tableau de bord |
-| Le pôle en un coup d'œil | `organigramme.json`, `flotte.json`, `documents.json` | Cinq repères cliquables : personnes, squads, référents, porteurs, documents portés par ses membres (`documents.json` → `porteur` ∈ noms des membres) |
-| Référents & expertises | `organigramme.json` (`competences`) | Une carte par compétence du pôle : ses référents (niveau `referent`, liens vers `organigramme.html#pole=CODE&personne=ID`), puis le nombre de confirmés et de pratiquants ; un champ filtre les compétences et les noms, un compteur dit « N compétences · M référents » |
-| Porteurs du pôle | `flotte.json` (`poles`) | Les appareils dont `poles` cite le pôle, en cartes photo (la carte de la galerie du tableau de bord) vers `index.html#porteur=CODE` |
-| Organigramme | `organigramme.json` | L'arbre d'équipe du pôle : responsable, squads repliables |
-| Questions fréquentes | `faq.json` (`pole`) | Les questions du pôle puis celles du service, et la demande aux experts |
+| Communication | `communications.json` (`pole`) | Le kiosque du pôle, identique à celui du tableau de bord : chaque pôle y a au moins une annonce riche en blocs (image d'un de ses porteurs avec son crédit, chiffres clés, courbe, pastilles, encadré) — des données d'exemple |
+| Le pôle en un coup d'œil | `organigramme.json`, `flotte.json`, `documents.json` | Quatre repères cliquables (personnes et squads → l'équipe, référents → la vue par compétence, documents portés par ses membres → la recherche filtrée sur le pôle), puis **À qui s'adresser** (le responsable, le lead de chaque squad) et **Par porteur** : pour chaque porteur suivi par le pôle (`flotte.json` → `poles`, puis les codes que ses membres déclarent), les personnes du pôle dont le champ `porteur` (ou `perimetre`) est ce code, le lead d'abord — chaque nom ouvre sa fiche |
+| Équipe & référents | `organigramme.json` (`squads`, `competences`) | **Par squad** : la carte du responsable, puis une carte par squad (nom, lead, effectif) qui liste ses membres — portrait, nom vers `organigramme.html#pole=CODE&personne=ID`, poste, porteur, et ses compétences en pastilles (référent en terre cuite, confirmé et pratique en gris). **Par compétence** : une carte par compétence du pôle avec ses référents, puis le nombre de confirmés et de pratiquants. Un seul champ « Qui sait faire… ? » filtre les deux vues ; un compteur dit « N personnes · M squads » ou « N compétences · M référents » |
+| Questions fréquentes | `faq.json` (`pole`) | Les questions du pôle puis celles du service, et « Interroger un expert » |
 
 Un pôle n'a pas de section Réunions : ce qui vaut d'être dit se publie en
 communication. Les comptes-rendus restent lisibles dans `reunions.html`.
+Il n'a pas non plus de galerie de porteurs : tout le pôle travaille sur les
+porteurs du service, qui sont sur le tableau de bord.
 
 ## Architecture
 
