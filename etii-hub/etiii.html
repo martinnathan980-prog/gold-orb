@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Espace de pôle — ETII Hub</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Espace d’un pôle du service ETII : sa communication, ses repères, ses référents par compétence, ses porteurs, son organigramme et ses questions fréquentes.">
+  <meta name="description" content="Espace d’un pôle du service ETII : sa communication, le pôle en un coup d’œil et à qui s’adresser, son équipe et ses référents, ses questions fréquentes.">
   <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="assets/css/polices.css">
   <link rel="stylesheet" href="assets/css/tokens.css">
@@ -16,8 +16,8 @@
 
   <!-- =====================================================================
        Styles propres aux trois espaces de pôle. Les composants (kiosque,
-       lecteur, arbre, sous-navigation) vivent dans modules.css ; on ne
-       déclare ici que le paramètre de page et l'en-tête au filet coloré.
+       lecteur, équipe, sommaire) vivent dans modules.css ; on ne déclare
+       ici que le paramètre de page et la teinte de l'en-tête.
        Aucune valeur brute — tout vient de tokens.css.
        ===================================================================== -->
   <style>
@@ -26,15 +26,9 @@
     body[data-pole="ETIIE"] { --couleur-pole: var(--pole-etiie); }
     body[data-pole="ETIII"] { --couleur-pole: var(--pole-etiii); }
 
-    /* L'étiquette au-dessus du titre porte la couleur du pôle. */
+    /* L'étiquette au-dessus du titre porte la couleur du pôle. L'en-tête
+       sur la bande et le sommaire collant vivent dans modules.css §15. */
     body[data-pole] .page-entete__sur-titre { color: var(--couleur-pole); }
-
-    /* La sous-navigation se colle sous la barre du site. */
-    .sous-nav { inset-block-start: calc(var(--cible-tactile) + var(--e-3)); }
-
-    /* Une section est repérée par la sous-navigation : on laisse de l'air
-       au-dessus de son titre quand on y saute. */
-    [data-section-pole] { scroll-margin-block-start: calc(var(--cible-tactile) * 2 + var(--e-5)); }
   </style>
 </head>
 
@@ -68,51 +62,49 @@
   </header>
 
   <main id="contenu" tabindex="-1">
-    <div class="conteneur pile pile--section">
 
-      <div class="pile pile--serree pole-entete page-entete">
+    <!-- L'en-tête de page : le titre et le sommaire, sur la bande — un
+         ton à part du papier des sections (modules.css §15). Le sommaire
+         reste collé sous la barre du site et suit la lecture (pole.js). -->
+    <div class="page-tete">
+      <div class="conteneur pile pile--serree pole-entete page-entete">
         <p class="page-entete__sur-titre" id="pole-libelle">Pôle</p>
         <h1 class="pole-titre" id="pole-titre">Espace de pôle</h1>
         <div id="pole-alerte" hidden></div>
       </div>
+    </div>
+    <nav class="page-sommaire" aria-label="Sections de l’espace">
+      <ul class="sous-nav sous-nav--page conteneur">
+        <li><a href="#section-communication" aria-current="true">Communication</a></li>
+        <li><a href="#section-reperes">En un coup d’œil</a></li>
+        <li><a href="#section-equipe">Équipe &amp; référents</a></li>
+        <li><a href="#section-faq">FAQ</a></li>
+      </ul>
+    </nav>
 
-      <nav aria-label="Sections de l’espace">
-        <ul class="sous-nav">
-          <li><a href="#section-communication" aria-current="true">Communication</a></li>
-          <li><a href="#section-referents">Référents</a></li>
-          <li><a href="#section-porteurs">Porteurs</a></li>
-          <li><a href="#section-organigramme">Organigramme</a></li>
-          <li><a href="#section-faq">FAQ</a></li>
-        </ul>
-      </nav>
+    <div class="conteneur pile pile--section">
 
       <section class="pile" id="section-communication" data-section-pole aria-labelledby="titre-communication">
         <h2 class="titre-section" id="titre-communication"><span class="titre-section__texte">Communication</span></h2>
         <div id="zone-communication"></div>
       </section>
 
-      <!-- Les repères, puis les référents et les porteurs : trois sections
-           calculées depuis organigramme.json, flotte.json et documents.json
-           (pole.js). Les repères ne sont pas dans la sous-navigation : c'est
-           une ligne de chiffres, pas une destination. -->
+      <!-- Le pôle en un coup d'œil : les repères chiffrés, puis à qui
+           s'adresser — le responsable, les leads — et, porteur par
+           porteur, les personnes du pôle qui y travaillent. Tout est
+           calculé par pole.js depuis organigramme.json, flotte.json et
+           documents.json. -->
       <section class="pile" id="section-reperes" data-section-pole aria-labelledby="titre-reperes">
         <h2 class="titre-section" id="titre-reperes"><span class="titre-section__texte">Le pôle en un coup d’œil</span></h2>
         <div id="zone-reperes"></div>
       </section>
 
-      <section class="pile" id="section-referents" data-section-pole aria-labelledby="titre-referents">
-        <h2 class="titre-section" id="titre-referents"><span class="titre-section__texte">Référents &amp; expertises</span></h2>
-        <div id="zone-referents"></div>
-      </section>
-
-      <section class="pile" id="section-porteurs" data-section-pole aria-labelledby="titre-porteurs">
-        <h2 class="titre-section" id="titre-porteurs"><span class="titre-section__texte">Porteurs du pôle</span></h2>
-        <div id="zone-porteurs"></div>
-      </section>
-
-      <section class="pile" id="section-organigramme" data-section-pole aria-labelledby="titre-organigramme">
-        <h2 class="titre-section" id="titre-organigramme"><span class="titre-section__texte">Organigramme</span></h2>
-        <div id="zone-organigramme"></div>
+      <!-- L'équipe et ses référents : le responsable, puis une carte par
+           squad avec ses membres et leurs compétences ; ou, au choix, une
+           carte par compétence avec ses référents. -->
+      <section class="pile" id="section-equipe" data-section-pole aria-labelledby="titre-equipe">
+        <h2 class="titre-section" id="titre-equipe"><span class="titre-section__texte">Équipe &amp; référents</span></h2>
+        <div id="zone-equipe"></div>
       </section>
 
       <section class="pile" id="section-faq" data-section-pole aria-labelledby="titre-faq">

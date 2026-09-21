@@ -1577,6 +1577,50 @@ export function initNav(pageCourante) {
   }
 }
 
+/* -------------------------------------------------------------------------
+   15. Sommaire de page : le lien courant suit la lecture
+   ------------------------------------------------------------------------- */
+
+/**
+ * Fait suivre au sommaire collant (`.sous-nav`) la section que l'on lit :
+ * l'ancre de la section visible reçoit `aria-current="true"`, les autres
+ * `"false"`. Partagé par le tableau de bord et les espaces de pôle, pour
+ * que la « petite barre » se comporte partout de la même façon.
+ *
+ * La section courante est celle qui occupe la bande de lecture — le tiers
+ * haut de la fenêtre, sous la barre du site — ce qui évite qu'une section
+ * très longue reste « courante » quand la suivante est déjà bien entamée.
+ * Sans IntersectionObserver, le lien courant initial reste tel quel.
+ *
+ * @param {{selecteur?: string}} [options] sélecteur des liens (par défaut
+ *   `.sous-nav a[href^="#"]`)
+ * @returns {{arreter: () => void}}
+ */
+export function suivreSommaire(options) {
+  const inerte = { arreter: () => {} };
+  if (!AVEC_DOM) return inerte;
+  const opts = options || {};
+  let liens;
+  try { liens = Array.from(document.querySelectorAll(opts.selecteur || '.sous-nav a[href^="#"]')); }
+  catch (_e) { return inerte; }
+  if (!liens.length || typeof IntersectionObserver !== 'function') return inerte;
+
+  const cibles = liens
+    .map((a) => document.getElementById((a.getAttribute('href') || '').slice(1)))
+    .filter(Boolean);
+  const marquer = (id) => liens.forEach((a) =>
+    a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'true' : 'false'));
+
+  const obs = new IntersectionObserver((entrees) => {
+    const visible = entrees
+      .filter((e) => e.isIntersecting)
+      .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+    if (visible) marquer(visible.target.id);
+  }, { rootMargin: '-30% 0px -55% 0px', threshold: [0, 0.2, 0.5] });
+  cibles.forEach((c) => obs.observe(c));
+  return { arreter: () => obs.disconnect() };
+}
+
 /* =========================================================================
    Titre de section « — TITRE — »
    Le motif des outils du service : un filet, l'intitulé en capitales

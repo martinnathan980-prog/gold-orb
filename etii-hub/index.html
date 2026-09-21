@@ -63,14 +63,28 @@
   </header>
 
   <main id="contenu" tabindex="-1">
-    <div class="conteneur pile pile--section">
 
-      <div class="pile pile--serree page-entete">
+    <!-- L'en-tête de page : le titre et le sommaire, sur la bande — un
+         ton à part du papier des sections, pour que l'œil sépare l'entrée
+         de la page du Communication Center (modules.css §15). Le sommaire
+         reste collé sous la barre du site et suit la lecture (index.js). -->
+    <div class="page-tete">
+      <div class="conteneur pile pile--serree page-entete">
         <h1>ETII</h1>
       </div>
+    </div>
+    <nav class="page-sommaire" aria-label="Sections de la page">
+      <ul class="sous-nav sous-nav--page conteneur">
+        <li><a href="#section-communication" aria-current="true">Communication</a></li>
+        <li><a href="#section-porteurs">Porteurs</a></li>
+        <li><a href="#section-otq">Suivi OTQ / OTD</a></li>
+      </ul>
+    </nav>
+
+    <div class="conteneur pile pile--section">
 
       <!-- 1. LE COMMUNICATION CENTER — rendu par kiosque.js -->
-      <section class="pile" aria-labelledby="titre-communication">
+      <section class="pile" id="section-communication" aria-labelledby="titre-communication">
         <h2 class="titre-section" id="titre-communication">
           <span class="titre-section__texte">Communication center</span>
         </h2>
@@ -78,7 +92,7 @@
       </section>
 
       <!-- 2. LES PORTEURS — rendus par porteurs.js -->
-      <section class="pile" aria-labelledby="titre-porteurs">
+      <section class="pile" id="section-porteurs" aria-labelledby="titre-porteurs">
         <h2 class="titre-section" id="titre-porteurs">
           <span class="titre-section__texte">Porteurs</span>
         </h2>
@@ -86,7 +100,7 @@
       </section>
 
       <!-- 3. LE SUIVI OTQ / OTD — rendu par otq.js -->
-      <section class="pile" aria-labelledby="titre-otq">
+      <section class="pile" id="section-otq" aria-labelledby="titre-otq">
         <h2 class="titre-section" id="titre-otq">
           <span class="titre-section__texte">Suivi OTQ / OTD</span>
         </h2>

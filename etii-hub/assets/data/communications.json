@@ -79,6 +79,129 @@
   ],
   "annonces": [
     {
+      "id": "c07",
+      "date": "2026-09-16",
+      "statut": "info",
+      "categorie": "H175",
+      "titre": "Campagne de mesure des interfaces H175 : résultats",
+      "resume": "Deux cent douze interfaces mesurées sur cinq jours, quatre hors tolérance, reprises affectées (données d’exemple).",
+      "pole": "ETIIE",
+      "blocs": [
+        {
+          "type": "texte",
+          "largeur": "moitie",
+          "cote": "",
+          "lignes": [
+            {
+              "type": "titre",
+              "texte": "Ce qui a été mesuré"
+            },
+            {
+              "type": "puce",
+              "texte": "Les signaux des trois bus de communication du lot avionique."
+            },
+            {
+              "type": "puce",
+              "texte": "Les niveaux et les temps de réponse aux interfaces entre systèmes."
+            },
+            {
+              "type": "vide",
+              "texte": ""
+            },
+            {
+              "type": "titre",
+              "texte": "Ce qu’on en retient"
+            },
+            {
+              "type": "puce",
+              "texte": "La cohérence des échanges tient d’un bout à l’autre de la définition."
+            },
+            {
+              "type": "alerte",
+              "texte": "Quatre interfaces sortent de la tolérance : reprise en cours."
+            }
+          ]
+        },
+        {
+          "type": "image",
+          "src": "assets/img/porteurs/h175.jpg",
+          "alt": "Un H175 en démonstration sur un salon aéronautique",
+          "legende": "",
+          "credit": {
+            "auteur": "Matti Blume",
+            "licence": "CC BY-SA 4.0",
+            "page": "https://commons.wikimedia.org/wiki/File%3AParis_Air_Show_2019%2C_Le_Bourget_%28SIAE1189%29.jpg"
+          },
+          "largeur": "moitie",
+          "cote": "droite"
+        },
+        {
+          "type": "chiffres",
+          "chiffres": [
+            {
+              "libelle": "Interfaces mesurées",
+              "valeur": 212
+            },
+            {
+              "libelle": "Hors tolérance",
+              "valeur": 4,
+              "tendance": "baisse"
+            },
+            {
+              "libelle": "Bus testés",
+              "valeur": 3
+            },
+            {
+              "libelle": "Jours d’essai",
+              "valeur": 5
+            }
+          ]
+        },
+        {
+          "type": "courbe",
+          "serie": {
+            "libelle": "Interfaces conformes (données d’exemple)",
+            "unite": "%",
+            "mois": [
+              "2026-04",
+              "2026-05",
+              "2026-06",
+              "2026-07",
+              "2026-08",
+              "2026-09"
+            ],
+            "valeurs": [
+              88.5,
+              90.2,
+              93.1,
+              95.4,
+              97.0,
+              98.1
+            ]
+          },
+          "largeur": "deux-tiers",
+          "cote": ""
+        },
+        {
+          "type": "encadre",
+          "ton": "alerte",
+          "titre": "Quatre écarts à reprendre",
+          "texte": "Les quatre interfaces hors tolérance sont affectées à la squad 3 ; la reprise est attendue avant la prochaine revue.",
+          "largeur": "tiers",
+          "cote": "droite"
+        },
+        {
+          "type": "pastilles",
+          "pastilles": [
+            "H175",
+            "Interfaces systèmes",
+            "Bus de communication",
+            "Mesures"
+          ]
+        }
+      ]
+    },
+    {
       "id": "c01",
       "date": "2026-09-12",
       "statut": "succes",
@@ -120,6 +243,125 @@
       }
     },
     {
+      "id": "c06",
+      "date": "2026-09-10",
+      "statut": "succes",
+      "categorie": "H145M",
+      "titre": "Revue d’architecture H145M : le lot 2 est figé",
+      "resume": "Cent quarante-huit exigences revues en trois jours, aucun écart ouvert : le lot 2 passe en définition détaillée (données d’exemple).",
+      "pole": "ETIIA",
+      "blocs": [
+        {
+          "type": "image",
+          "src": "assets/img/porteurs/h145m.jpg",
+          "alt": "Un H145M présenté au sol sur un salon aéronautique",
+          "legende": "",
+          "credit": {
+            "auteur": "Matti Blume",
+            "licence": "CC BY-SA 4.0",
+            "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_H145M%2C_ILA_2024%2C_Schoenefeld_%28ILA43976%29.jpg"
+          }
+        },
+        {
+          "type": "texte",
+          "largeur": "deux-tiers",
+          "cote": "",
+          "lignes": [
+            {
+              "type": "titre",
+              "texte": "Ce qui a été revu"
+            },
+            {
+              "type": "puce",
+              "texte": "Le découpage fonctionnel des sous-ensembles du lot 2."
+            },
+            {
+              "type": "puce",
+              "texte": "Les conventions de nommage, alignées sur le référentiel du service."
+            },
+            {
+              "type": "puce",
+              "texte": "Les principes d’architecture repris par les trois squads concernées."
+            },
+            {
+              "type": "vide",
+              "texte": ""
+            },
+            {
+              "type": "valide",
+              "texte": "Aucune exigence ouverte à l’issue de la revue."
+            }
+          ]
+        },
+        {
+          "type": "encadre",
+          "ton": "succes",
+          "titre": "À retenir",
+          "texte": "Le lot 2 passe en définition détaillée. Les remarques mineures sont tracées dans le compte rendu de revue, à relire avant la prochaine revue de configuration.",
+          "largeur": "tiers",
+          "cote": "droite"
+        },
+        {
+          "type": "chiffres",
+          "chiffres": [
+            {
+              "libelle": "Exigences revues",
+              "valeur": 148
+            },
+            {
+              "libelle": "Écarts ouverts",
+              "valeur": 0,
+              "tendance": "baisse"
+            },
+            {
+              "libelle": "Relecteurs mobilisés",
+              "valeur": 6
+            },
+            {
+              "libelle": "Jours de revue",
+              "valeur": 3
+            }
+          ]
+        },
+        {
+          "type": "courbe",
+          "serie": {
+            "libelle": "Exigences validées (données d’exemple)",
+            "unite": "%",
+            "mois": [
+              "2026-04",
+              "2026-05",
+              "2026-06",
+              "2026-07",
+              "2026-08",
+              "2026-09"
+            ],
+            "valeurs": [
+              41,
+              58,
+              72,
+              83,
+              94,
+              100
+            ]
+          },
+          "largeur": "moitie",
+          "cote": ""
+        },
+        {
+          "type": "pastilles",
+          "pastilles": [
+            "H145M",
+            "Lot 2",
+            "Architecture",
+            "Revue par les pairs"
+          ],
+          "largeur": "moitie",
+          "cote": "droite"
+        }
+      ]
+    },
+    {
       "id": "c02",
       "date": "2026-09-08",
       "statut": "urgent",
@@ -153,6 +395,120 @@
         }
       ],
       "pole": "ETIIE"
+    },
+    {
+      "id": "c08",
+      "date": "2026-09-04",
+      "statut": "succes",
+      "categorie": "H225",
+      "titre": "Routage des harnais H225 : maquette numérique figée",
+      "resume": "Les cheminements de la zone arrière sont figés, les douze interférences levées ; deux reprises de fixation restent à instruire (données d’exemple).",
+      "pole": "ETIII",
+      "blocs": [
+        {
+          "type": "image",
+          "src": "assets/img/porteurs/h225.jpg",
+          "alt": "Un H225 en vol, vu du sol",
+          "legende": "",
+          "credit": {
+            "auteur": "sparkcyf",
+            "licence": "CC BY-SA 4.0",
+            "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_Helicopters_EC225_COMC.jpg"
+          }
+        },
+        {
+          "type": "chiffres",
+          "chiffres": [
+            {
+              "libelle": "Cheminements figés",
+              "valeur": 96
+            },
+            {
+              "libelle": "Interférences levées",
+              "valeur": 12,
+              "tendance": "baisse"
+            },
+            {
+              "libelle": "Fixations validées",
+              "valeur": 340
+            },
+            {
+              "libelle": "Reprises en attente",
+              "valeur": 2
+            }
+          ]
+        },
+        {
+          "type": "texte",
+          "largeur": "deux-tiers",
+          "cote": "",
+          "lignes": [
+            {
+              "type": "titre",
+              "texte": "Ce qui change"
+            },
+            {
+              "type": "puce",
+              "texte": "Les cheminements de la zone arrière sont figés dans la maquette numérique."
+            },
+            {
+              "type": "puce",
+              "texte": "Les douze interférences relevées à la revue précédente sont levées."
+            },
+            {
+              "type": "vide",
+              "texte": ""
+            },
+            {
+              "type": "alerte",
+              "texte": "Deux reprises de fixation restent à instruire avant fabrication."
+            }
+          ]
+        },
+        {
+          "type": "courbe",
+          "serie": {
+            "libelle": "Interférences ouvertes (données d’exemple)",
+            "mois": [
+              "2026-04",
+              "2026-05",
+              "2026-06",
+              "2026-07",
+              "2026-08",
+              "2026-09"
+            ],
+            "valeurs": [
+              27,
+              21,
+              16,
+              9,
+              4,
+              2
+            ]
+          },
+          "largeur": "tiers",
+          "cote": "droite"
+        },
+        {
+          "type": "encadre",
+          "ton": "info",
+          "titre": "Prochaine étape",
+          "texte": "Lancement de la fabrication des harnais de la zone arrière, une fois les deux reprises instruites.",
+          "largeur": "moitie",
+          "cote": ""
+        },
+        {
+          "type": "pastilles",
+          "pastilles": [
+            "H225",
+            "Harnais",
+            "Maquette numérique",
+            "Cheminements"
+          ],
+          "largeur": "moitie",
+          "cote": "droite"
+        }
+      ]
     },
     {
       "id": "c03",

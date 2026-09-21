@@ -3,7 +3,8 @@
 //   1. python3 -m http.server 8111      2. node tests/poles.e2e.mjs
 //
 // Vérifie ce que l'audit statique ne voit pas : le filtrage par pôle sur
-// les pages transverses, la cohérence des effectifs, et la facette de pôle
+// les pages transverses, la cohérence des effectifs, les sections d'un
+// espace de pôle, le sommaire du tableau de bord, et la facette de pôle
 // de la recherche documentaire.
 
 import { chromium } from 'playwright';
@@ -79,70 +80,159 @@ for (const code of ['ETIIA', 'ETIIE', 'ETIII']) {
   t(`${code} : ${attendu} entrées dans son kiosque`, entrees === attendu, `(${entrees})`);
 }
 
-console.log('\n== Espace de pôle : repères, référents, porteurs ==');
-// Plus de réunions dans un espace de pôle : entre la communication et
-// l'organigramme, le pôle en un coup d'œil, ses référents par compétence
-// et ses porteurs — tout calculé depuis organigramme.json, flotte.json et
+console.log('\n== Espace de pôle : en un coup d’œil, équipe & référents, FAQ ==');
+// Plus de réunions ni de « porteurs du pôle » dans un espace de pôle : entre
+// la communication et la FAQ, le pôle en un coup d'œil (repères, à qui
+// s'adresser, par porteur) et l'équipe & ses référents (par squad ou par
+// compétence) — tout calculé depuis organigramme.json, flotte.json et
 // documents.json, sans rien d'inventé.
 const membresDe = (bloc) => [bloc.responsable].concat(...bloc.squads.map(s => s.membres));
+const porteurDe = (m) => String(m.porteur || m.perimetre || '').toUpperCase();
 for (const bloc of orga.poles) {
   const code = bloc.pole;
   const membres = membresDe(bloc);
   const competences = new Set(membres.flatMap(m => (m.competences || []).map(c => c.nom)));
   const referents = new Set(membres.filter(m => (m.competences || []).some(c => c.niveau === 'referent')).map(m => m.id));
-  const porteurs = flotte.flotte.filter(a => (a.poles || []).includes(code));
+  const leads = bloc.squads.map(s => s.membres.find(m => m.role === 'leader')).filter(Boolean);
   const noms = new Set(membres.map(m => m.nom));
   const documents = docs.documents.filter(d => noms.has(d.porteur)).length;
+  const codesFlotte = flotte.flotte.filter(a => (a.poles || []).includes(code)).map(a => a.code.toUpperCase());
+  const codesMembres = new Set(membres.map(porteurDe).filter(c => c && c !== 'TRANSVERSE'));
+  const codesAttendus = new Set([...codesFlotte, ...codesMembres]);
 
   await page.goto(`${B}/${code.toLowerCase()}.html`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200);
   // textContent : innerText rendrait les capitales du CSS.
   const sousNav = await page.locator('.sous-nav a').evaluateAll(l => l.map(a => a.textContent.trim()));
-  t(`${code} : sous-navigation Communication, Référents, Porteurs, Organigramme, FAQ`,
-    sousNav.join('|') === 'Communication|Référents|Porteurs|Organigramme|FAQ', `(${sousNav.join('|')})`);
-  t(`${code} : plus de section Réunions`, (await page.locator('#section-reunions, #zone-reunions').count()) === 0);
+  t(`${code} : sommaire Communication, En un coup d’œil, Équipe & référents, FAQ`,
+    sousNav.join('|') === 'Communication|En un coup d’œil|Équipe & référents|FAQ', `(${sousNav.join('|')})`);
+  t(`${code} : l’en-tête est sur la bande, le sommaire collant en dessous`,
+    (await page.locator('.page-tete h1').count()) === 1
+    && (await page.locator('.page-sommaire').evaluate(e => getComputedStyle(e).position)) === 'sticky');
+  t(`${code} : plus de section Réunions, Porteurs ni Organigramme`,
+    (await page.locator('#section-reunions, #zone-reunions, #section-porteurs, #zone-porteurs, #section-organigramme, #zone-organigramme, .arbre').count()) === 0);
 
   const reperes = await page.locator('#zone-reperes .pole-repere__valeur').allInnerTexts();
-  t(`${code} : repères ${membres.length} personnes, ${bloc.squads.length} squads, ${referents.size} référents, ${porteurs.length} porteurs, ${documents} documents`,
-    reperes.join(' ') === [membres.length, bloc.squads.length, referents.size, porteurs.length, documents].join(' '),
+  t(`${code} : repères ${membres.length} personnes, ${bloc.squads.length} squads, ${referents.size} référents, ${documents} documents`,
+    reperes.join(' ') === [membres.length, bloc.squads.length, referents.size, documents].join(' '),
     `(${reperes.join(' ')})`);
+  t(`${code} : le repère « documents » mène à la recherche filtrée sur le pôle`,
+    (await page.locator('#zone-reperes .pole-repere__lien').last().getAttribute('href')) === `docsearch.html#pole=${code}`);
 
-  const cartes = await page.locator('#zone-referents .pole-expertise').count();
+  // À qui s'adresser : le responsable puis les leads, chacun vers sa fiche.
+  const contacts = await page.locator('#zone-reperes .pole-contacts__bloc').first().locator('.pole-personne').evaluateAll(
+    l => l.map(a => ({ nom: a.querySelector('.pole-personne__nom').textContent.trim(), href: a.getAttribute('href') })));
+  t(`${code} : « À qui s’adresser » liste le responsable et les ${leads.length} leads`,
+    contacts.length === 1 + leads.length && contacts[0].nom === bloc.responsable.nom
+    && leads.every((l, i) => contacts[i + 1].nom === l.nom)
+    && contacts.every(c => c.href.startsWith(`organigramme.html#pole=${code}&personne=`)), JSON.stringify(contacts.slice(0, 2)));
+
+  // Par porteur : un groupe par porteur, les gens du pôle qui y travaillent.
+  const groupes = await page.locator('#zone-reperes .pole-porteur-groupe').evaluateAll(
+    l => l.map(g => ({ code: g.querySelector('.pole-porteur-groupe__code').textContent.trim().toUpperCase(),
+                       gens: [...g.querySelectorAll('.pole-jeton')].map(j => j.textContent.trim()) })));
+  const codesRendus = new Set(groupes.map(g => g.code));
+  t(`${code} : « Par porteur » couvre ${codesAttendus.size} porteurs (flotte et périmètres des membres)`,
+    codesRendus.size === codesAttendus.size && [...codesAttendus].every(c => codesRendus.has(c)), `(${[...codesRendus].join(',')})`);
+  t(`${code} : les groupes commencent par les porteurs déclarés dans flotte.json`,
+    codesFlotte.every((c, i) => groupes[i] && groupes[i].code === c));
+  const groupeH160 = groupes.find(g => g.code === 'H160');
+  const gensH160 = membres.filter(m => porteurDe(m) === 'H160');
+  t(`${code} : le groupe H160 compte ${gensH160.length} personnes, le lead d’abord`,
+    Boolean(groupeH160) && groupeH160.gens.length === gensH160.length
+    && (!gensH160.some(m => m.role === 'leader') || /Lead$/.test(groupeH160.gens[0])), JSON.stringify(groupeH160 && groupeH160.gens.slice(0, 2)));
+
+  // Équipe & référents : par squad d'abord.
+  const vues = await page.locator('#zone-equipe .pole-experts__vue').evaluateAll(l => l.map(b => b.textContent.trim() + ':' + b.getAttribute('aria-pressed')));
+  t(`${code} : le commutateur propose Par squad (actif) et Par compétence`, vues.join('|') === 'Par squad:true|Par compétence:false', `(${vues.join('|')})`);
+  t(`${code} : le responsable ouvre la vue par squad, avec son portrait`,
+    (await page.locator('#zone-equipe .pole-squad--responsable .portrait').count()) === 1
+    && (await page.locator('#zone-equipe .pole-squad--responsable .pole-membre__nom').innerText()).trim() === bloc.responsable.nom);
+  const squadsRendues = await page.locator('#zone-equipe .pole-squad:not(.pole-squad--responsable)').count();
+  t(`${code} : une carte par squad (${bloc.squads.length})`, squadsRendues === bloc.squads.length, `(${squadsRendues})`);
+  const membresRendus = await page.locator('#zone-equipe .pole-squad__membres .pole-membre').count();
+  t(`${code} : chaque membre est listé avec son portrait (${membres.length - 1})`,
+    membresRendus === membres.length - 1
+    && (await page.locator('#zone-equipe .pole-squad__membres .pole-membre .portrait').count()) === membresRendus, `(${membresRendus})`);
+  const nbReferentsPastilles = membres.flatMap(m => (m.competences || [])).filter(c => c.niveau === 'referent').length;
+  t(`${code} : ${nbReferentsPastilles} pastilles « référent » en terre cuite`,
+    (await page.locator('#zone-equipe .pole-squad .pole-competence--referent').count()) === nbReferentsPastilles);
+  t(`${code} : le compteur dit ${membres.length} personnes · ${bloc.squads.length} squads`,
+    (await page.locator('#zone-equipe .pole-experts__compte').evaluate(e => e.textContent)).trim()
+      === `${membres.length} personnes · ${bloc.squads.length} squads`);
+  const premierLien = (await page.locator('#zone-equipe .pole-squad__membres .pole-membre__nom').first().getAttribute('href')) || '';
+  t(`${code} : les membres mènent à organigramme.html#pole=${code}&personne=…`,
+    premierLien.startsWith(`organigramme.html#pole=${code}&personne=p`), `(${premierLien})`);
+
+  // La recherche filtre les membres ; une squad sans réponse se replie.
+  await page.fill('#zone-equipe .pole-experts__recherche', 'harnais');
+  await page.waitForTimeout(400);
+  const attendusHarnais = membres.filter(m => [m.nom, m.poste, porteurDe(m)].concat((m.competences || []).map(c => c.nom))
+    .join(' ').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes('harnais')).length;
+  const visiblesHarnais = await page.locator('#zone-equipe .pole-membre:visible').count();
+  t(`${code} : « harnais » ne garde que ${attendusHarnais} personnes`, visiblesHarnais === attendusHarnais, `(${visiblesHarnais})`);
+  await page.fill('#zone-equipe .pole-experts__recherche', 'zzzz-rien');
+  await page.waitForTimeout(400);
+  t(`${code} : une recherche sans réponse l’annonce`, await page.locator('#zone-equipe .pole-experts__vide').isVisible());
+  await page.fill('#zone-equipe .pole-experts__recherche', '');
+  await page.waitForTimeout(400);
+
+  // Par compétence : l'ancienne grille, une carte par compétence.
+  await page.click('#zone-equipe .pole-experts__vue[data-vue="competence"]');
+  await page.waitForTimeout(300);
+  const cartes = await page.locator('#zone-equipe .pole-expertise').count();
   t(`${code} : une carte par compétence (${competences.size})`, cartes === competences.size, `(${cartes})`);
   t(`${code} : le compteur dit ${competences.size} compétences · ${referents.size} référents`,
-    (await page.locator('#zone-referents .pole-experts__compte').evaluate(e => e.textContent)).trim()
+    (await page.locator('#zone-equipe .pole-experts__compte').evaluate(e => e.textContent)).trim()
       === `${competences.size} compétences · ${referents.size} référents`);
-  const liensPersonne = page.locator('#zone-referents .pole-expertise__personne');
-  const premierLien = (await liensPersonne.first().getAttribute('href')) || '';
+  const liensPersonne = page.locator('#zone-equipe .pole-expertise__personne');
+  const premierReferent = (await liensPersonne.first().getAttribute('href')) || '';
   t(`${code} : les référents mènent à organigramme.html#pole=${code}&personne=…`,
-    (await liensPersonne.count()) > 0 && premierLien.startsWith(`organigramme.html#pole=${code}&personne=p`), `(${premierLien})`);
-
-  // La recherche filtre les compétences ; une requête sans réponse le dit.
-  const premiereCompetence = (await page.locator('#zone-referents .pole-expertise__nom').first().innerText()).trim();
-  await page.fill('#zone-referents .pole-experts__recherche', premiereCompetence);
+    (await liensPersonne.count()) > 0 && premierReferent.startsWith(`organigramme.html#pole=${code}&personne=p`), `(${premierReferent})`);
+  const premiereCompetence = (await page.locator('#zone-equipe .pole-expertise__nom').first().innerText()).trim();
+  await page.fill('#zone-equipe .pole-experts__recherche', premiereCompetence);
   await page.waitForTimeout(400);
-  const visibles = await page.locator('#zone-referents .pole-expertise:visible').count();
+  const visibles = await page.locator('#zone-equipe .pole-expertise:visible').count();
   t(`${code} : la recherche « ${premiereCompetence} » filtre les cartes`, visibles >= 1 && visibles < cartes, `(${visibles})`);
-  await page.fill('#zone-referents .pole-experts__recherche', 'zzzz-rien');
-  await page.waitForTimeout(400);
-  t(`${code} : une recherche sans réponse l'annonce`, await page.locator('#zone-referents .pole-experts__vide').isVisible());
-  await page.fill('#zone-referents .pole-experts__recherche', '');
+  await page.fill('#zone-equipe .pole-experts__recherche', '');
   await page.waitForTimeout(400);
 
-  const fiches = page.locator('#zone-porteurs .porteurs__fiche');
-  const codes = (await fiches.locator('.porteurs__fiche-code').allInnerTexts()).map(s => s.trim()).sort();
-  t(`${code} : ${porteurs.length} porteurs en cartes photo`,
-    codes.join(',') === porteurs.map(a => a.code).sort().join(','), `(${codes.join(',')})`);
-  const hrefs = await fiches.evaluateAll(l => l.map(a => a.getAttribute('href')));
-  t(`${code} : chaque carte mène à index.html#porteur=CODE`,
-    hrefs.length > 0 && hrefs.every(h => /^index\.html#porteur=[A-Z0-9]+$/.test(h)), `(${hrefs.join(' ')})`);
+  // Le repère « référents » ouvre la vue par compétence.
+  await page.click('#zone-equipe .pole-experts__vue[data-vue="squad"]');
+  await page.click('#zone-reperes .pole-repere__lien[data-vue-equipe="competence"]');
+  await page.waitForTimeout(400);
+  t(`${code} : le repère « référents » ouvre la vue par compétence`,
+    (await page.locator('#zone-equipe .pole-experts__vue[data-vue="competence"]').getAttribute('aria-pressed')) === 'true');
+
+  // FAQ : les questions et l'expert, sans « Toute la base ».
+  const pied = await page.locator('#zone-faq .liseuse__pied').innerText();
+  t(`${code} : la FAQ propose « Interroger un expert » sans « Toute la base »`,
+    /Interroger un expert/.test(pied) && !/Toute la base/i.test(pied));
 }
+
+console.log('\n== Tableau de bord : en-tête sur la bande et sommaire ==');
 await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1200);
 const toutes = dedup(comms.annonces.concat(comms.agenda.filter(a => a.statut !== 'a-venir' && a.type !== 'mot'))).length;
 const auService = await page.locator('#zone-communication .kiosque__carte').count();
 t(`le service liste le mot du chef et ses ${toutes} entrées passées`, auService === toutes + 1, `(${auService})`);
 t('la lecture s\'ouvre sur le mot du chef', /trimestre qui se tient/i.test(await page.locator('#zone-communication .kiosque__lecture-titre').innerText()));
+const sommaireService = await page.locator('.sous-nav a').evaluateAll(l => l.map(a => a.textContent.trim() + ':' + a.getAttribute('aria-current')));
+t('le sommaire du service : Communication (courant), Porteurs, Suivi OTQ / OTD',
+  sommaireService.join('|') === 'Communication:true|Porteurs:false|Suivi OTQ / OTD:false', `(${sommaireService.join('|')})`);
+t('l\'en-tête ETII est sur la bande, sur toute la largeur',
+  (await page.locator('.page-tete h1').innerText()).trim() === 'ETII'
+  && (await page.evaluate(() => {
+    const tete = document.querySelector('.page-tete');
+    const fond = getComputedStyle(tete).backgroundColor;
+    // La largeur du corps : la gouttière de barre de défilement est réservée.
+    return tete.getBoundingClientRect().width >= document.body.clientWidth - 1
+      && fond !== getComputedStyle(document.body).backgroundColor;
+  })));
+await page.evaluate(() => document.getElementById('section-porteurs').scrollIntoView());
+await page.waitForTimeout(900);
+const courantApres = await page.locator('.sous-nav a[aria-current="true"]').innerText();
+t('le lien courant suit le défilement (Porteurs)', /porteurs/i.test(courantApres), `(${courantApres})`);
 
 console.log('\n== Recherche : facette de pôle ==');
 await page.goto(`${B}/docsearch.html`, { waitUntil: 'networkidle' });

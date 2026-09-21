@@ -198,10 +198,22 @@ function donneesAvecImages(noms, page) {
   if (noms.includes('kiosque')) {
     const comms = JSON.parse(JSON.stringify(donneesAssemblees.communications));
     const entrees = [comms.motDuChef].concat(comms.annonces || [], comms.agenda || []).filter(Boolean);
+    // L'image à plat d'une entrée, et celles de ses blocs libres (une
+    // image, ou les diapositives d'une galerie) : toutes deviennent des
+    // data URI, sinon rien ne les résout dans un cadre srcdoc.
     for (const e of entrees) {
-      if (!e.image || typeof e.image !== 'object') continue;
-      const uri = dataUri(String(e.image.src || '').trim());
-      if (uri) e.image.src = uri;
+      const blocs = Array.isArray(e.blocs) ? e.blocs : [];
+      const images = [e.image].concat(blocs.flatMap((b) => {
+        if (!b || typeof b !== 'object') return [];
+        if (b.type === 'image') return [b];
+        if (b.type === 'galerie') return Array.isArray(b.images) ? b.images : [];
+        return [];
+      }));
+      for (const im of images) {
+        if (!im || typeof im !== 'object') continue;
+        const uri = dataUri(String(im.src || '').trim());
+        if (uri) im.src = uri;
+      }
     }
     copie.communications = comms;
   }

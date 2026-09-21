@@ -218,6 +218,11 @@
   --largeur-contenu: 75rem;
   --largeur-texte:   72ch;
   --cible-tactile:   40px;
+  /* La hauteur de la barre du site (collante) : ce que le sommaire de
+     page et les ancres de section laissent au-dessus d'eux. Sur écran
+     étroit, la barre tient sur deux rangs. */
+  --hauteur-barre-site:         57px;
+  --hauteur-barre-site-etroite: 89px;
 
   /* --- Focus ------------------------------------------------------------- */
   --focus-couleur:   var(--marque-bleu);
