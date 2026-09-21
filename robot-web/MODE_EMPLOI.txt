@@ -59,11 +59,13 @@ Le menu demande trois choses :
    - le fichier Excel de pilotage ;
    - un nom pour la tache (ex : "export plans par contrat").
 
-Un navigateur s'ouvre, avec un BANDEAU ROUGE en haut a droite.
+Un navigateur s'ouvre, avec un BANDEAU ROUGE en bas a gauche.
    1. Faites votre tache normalement, UNE SEULE FOIS, du debut a la fin,
       en utilisant les valeurs de la PREMIERE ligne de votre Excel.
       Connectez-vous, cliquez, filtrez, exportez, enregistrez : comme d'habitude.
    2. Quand c'est termine, cliquez sur le bandeau rouge.
+      Si le bandeau gene un bouton de l'outil, ou ne reagit pas : revenez au
+      Terminal et appuyez sur Entree, cela termine aussi l'enregistrement.
 
 Le robot affiche alors la liste de ce qu'il a note, puis pose ses questions :
    - "Etapes a retirer" : Entree si tout est bon. Sinon, les numeros a jeter.
@@ -75,11 +77,15 @@ Le robot affiche alors la liste de ce qu'il a note, puis pose ses questions :
    - Les dernieres questions concernent le dossier des fichiers telecharges,
      la capture d'ecran, etc. Entree partout convient tres bien.
 
-Le robot ecrit alors un fichier .yaml a cote de votre Excel : c'est la tache.
-C'est un fichier texte lisible, que vous pouvez ouvrir et modifier.
+Le robot ecrit alors un fichier .yaml dans le dossier robot-web\taches\ : c'est la
+tache. C'est un fichier texte lisible, que vous pouvez ouvrir et modifier.
 
-MOT DE PASSE : il n'est jamais ecrit dans le fichier. Le robot met a la place
-{{mot_de_passe}} et vous le fournissez au lancement (voir la fin de ce document).
+MOT DE PASSE : il n'est jamais ecrit dans le fichier, ni affiche dans la console.
+Le robot met a la place {{mot_de_passe}} et vous le demande au lancement (la frappe
+ne s'affiche pas). Vous pouvez aussi le donner dans la commande avec
+--var mot_de_passe=VOTRE_MOT_DE_PASSE.
+CODE RECU PAR SMS : le robot ne peut pas l'inventer. Il met une pause a cet
+endroit : vous tapez le code dans le navigateur, puis Entree dans le Terminal.
 
 
 =====================================================================

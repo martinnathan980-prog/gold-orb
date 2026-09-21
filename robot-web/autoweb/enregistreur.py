@@ -6,9 +6,12 @@ Principe : un petit script est injecté dans chaque page du navigateur piloté. 
 action, avec un sélecteur stable pour l'élément concerné. Rien n'est envoyé ailleurs :
 tout reste sur le poste.
 
-Le résultat est une liste d'étapes (mêmes actions que les scénarios écrits à la main),
-que l'assistant transforme ensuite en scénario YAML en demandant d'où viennent les
-valeurs (quelle colonne de l'Excel).
+Deux précautions importantes :
+- le script ne renvoie JAMAIS le contenu d'un champ de saisie comme « texte » de
+  l'élément (sinon un mot de passe finirait dans un sélecteur ou dans la console) ;
+- côté Python, le gestionnaire d'événements n'appelle aucune fonction Playwright :
+  il est exécuté dans la boucle interne de Playwright, où tout appel bloquerait
+  définitivement le programme. Les sélecteurs d'iframe sont résolus à la fin.
 """
 
 from __future__ import annotations
@@ -39,6 +42,7 @@ JS_ENREGISTREUR = """
   window.__autoweb_enregistre = true;
   const attente = [];
   let compteur = 0;
+
   function envoyer(e) {
     const texte = JSON.stringify(e);
     if (e.type_evenement === 'clic' || e.type_evenement === 'saisie' || e.type_evenement === 'touche') {
@@ -54,22 +58,26 @@ JS_ENREGISTREUR = """
     }, 100);
   }
 
-  // Bandeau rouge : il reste affiché pendant tout l'enregistrement et sert à l'arrêter.
+  const court = (s, n) => (s || '').replace(/\\s+/g, ' ').trim().slice(0, n || 60);
+  const idOk = (id) => !!id && /^[A-Za-z_][\\w-]*$/.test(id) && !/\\d{4,}/.test(id) && id.length <= 40;
+  const echapper = (s) => (s || '').replace(/\\\\/g, '\\\\\\\\').replace(/"/g, '\\\\"');
+
+  // --- bandeau d'arrêt, en bas à gauche (coin le moins utilisé par les outils) ---
   const ID_BADGE = '__autoweb_badge';
   function majBadge() {
     const b = document.getElementById(ID_BADGE);
     if (b && !b.dataset.fini)
-      b.textContent = compteur ? ('Enregistrement : ' + compteur + ' action(s) - cliquez ici pour terminer')
-                               : 'Enregistrement en cours - cliquez ici pour terminer';
+      b.textContent = compteur ? ('Enregistrement : ' + compteur + ' action(s) - cliquez pour terminer')
+                               : 'Enregistrement en cours - cliquez pour terminer';
   }
   function badge() {
     if (document.getElementById(ID_BADGE) || !document.documentElement) return;
     const b = document.createElement('div');
     b.id = ID_BADGE;
-    b.setAttribute('style', 'position:fixed;top:10px;right:10px;z-index:2147483647;background:#dc2626;' +
-      'color:#fff;font:600 13px/1.3 system-ui,-apple-system,Arial;padding:9px 13px;border-radius:6px;' +
-      'box-shadow:0 2px 10px rgba(0,0,0,.35);cursor:pointer;user-select:none;max-width:320px');
-    b.textContent = 'Enregistrement en cours - cliquez ici pour terminer';
+    b.setAttribute('style', 'position:fixed;bottom:12px;left:12px;z-index:2147483647;background:#dc2626;' +
+      'color:#fff;font:600 12px/1.2 system-ui,-apple-system,Arial;padding:8px 11px;border-radius:6px;' +
+      'box-shadow:0 2px 10px rgba(0,0,0,.35);cursor:pointer;user-select:none;max-width:300px;opacity:.93');
+    b.textContent = 'Enregistrement en cours - cliquez pour terminer';
     b.addEventListener('click', function (ev) {
       ev.stopPropagation(); ev.preventDefault();
       b.dataset.fini = '1';
@@ -84,8 +92,14 @@ JS_ENREGISTREUR = """
   else badge();
   setTimeout(badge, 500);
   const surBadge = (n) => !!(n && n.closest && n.closest('#' + ID_BADGE));
-  const court = (s, n) => (s || '').replace(/\\s+/g, ' ').trim().slice(0, n || 60);
-  const idOk = (id) => !!id && /^[A-Za-z_][\\w-]*$/.test(id) && !/\\d{4,}/.test(id) && id.length <= 40;
+
+  // --- description des éléments ---
+  function estChampSaisie(e) {
+    const tag = e.tagName.toLowerCase();
+    const type = (e.getAttribute('type') || '').toLowerCase();
+    if (tag === 'textarea' || e.isContentEditable) return true;
+    return tag === 'input' && !['submit', 'button', 'reset', 'image', 'checkbox', 'radio', 'file'].includes(type);
+  }
 
   function libelleDe(e) {
     if (idOk(e.id)) {
@@ -98,10 +112,22 @@ JS_ENREGISTREUR = """
     if (al) return court(al, 80);
     const lb = e.getAttribute('aria-labelledby');
     if (lb) { const t = document.getElementById(lb.split(' ')[0]); if (t) return court(t.innerText, 80); }
+    const ph = e.getAttribute('placeholder');
+    if (ph) return court(ph, 80);
     const prev = e.previousElementSibling;
     if (prev && ['LABEL','SPAN','TD','TH','DIV'].includes(prev.tagName) && court(prev.innerText, 61).length < 60)
       return court(prev.innerText, 80);
     return '';
+  }
+
+  // Texte visible d'un element : JAMAIS la valeur d'un champ de saisie.
+  function texteDe(e) {
+    if (estChampSaisie(e)) return '';
+    const tag = e.tagName.toLowerCase();
+    const type = (e.getAttribute('type') || '').toLowerCase();
+    if (tag === 'input' && ['submit', 'button', 'reset'].includes(type)) return court(e.value || '', 60);
+    // aria-label d'abord : c'est le nom que Playwright utilisera (bouton à icône)
+    return court(e.getAttribute('aria-label') || e.innerText || e.getAttribute('title') || '', 60);
   }
 
   function cheminCss(e) {
@@ -119,27 +145,63 @@ JS_ENREGISTREUR = """
     return parts.join(' > ');
   }
 
+  // Un element dans une ligne de tableau ou de liste : on l'ancre sur le texte de
+  // la ligne (numero de plan...) plutot que sur sa position, qui change tout le temps.
+  function ancreLigne(e) {
+    const ligne = e.closest('tr, [role="row"], li');
+    if (!ligne || ligne.contains(document.getElementById(ID_BADGE))) return '';
+    let texte = '';
+    const cellules = ligne.querySelectorAll('td, th, [role="cell"], [role="gridcell"], a');
+    for (let i = 0; i < cellules.length; i++) {
+      const t = court(cellules[i].innerText, 60);
+      if (t && t.length >= 3 && t.length <= 60) { texte = t; break; }
+    }
+    if (!texte) texte = court(ligne.innerText, 60);
+    if (!texte || texte.length > 60 || texte.length < 3) return '';
+    const tagLigne = ligne.tagName.toLowerCase();
+    let descripteur = e.tagName.toLowerCase();
+    const al = e.getAttribute('aria-label');
+    const ti = e.getAttribute('title');
+    if (al) descripteur = '[aria-label="' + echapper(court(al, 40)) + '"]';
+    else if (ti) descripteur = '[title="' + echapper(court(ti, 40)) + '"]';
+    let base = tagLigne + ':has-text("' + echapper(texte) + '") ' + descripteur;
+    try {
+      const memes = Array.from(ligne.querySelectorAll(descripteur));
+      if (memes.length > 1) {
+        const rang = memes.indexOf(e);
+        if (rang >= 0) base += ' >> nth=' + rang;
+      }
+    } catch (err) {}
+    return base;
+  }
+
   function selecteurDe(e) {
     const tid = e.getAttribute('data-testid') || e.getAttribute('data-test') || e.getAttribute('data-qa');
     if (tid) return 'test=' + tid;
     if (idOk(e.id)) return '#' + e.id;
     const tag = e.tagName.toLowerCase();
     const type = (e.getAttribute('type') || '').toLowerCase();
+    const role = e.getAttribute('role') || '';
+    const estBouton = tag === 'button' || role === 'button' || (tag === 'input' && ['submit','button','reset'].includes(type));
+    const texte = texteDe(e);
+    // Dans un tableau ou une liste, le texte et le name se répètent d'une ligne à
+    // l'autre : on ancre sur le texte de la ligne (numéro de plan, référence...).
+    const ancreDansLigne = ancreLigne(e);
+    if (ancreDansLigne) return ancreDansLigne;
+    // Pour un bouton ou un lien, le texte visible est plus sûr que l'attribut name
+    // (deux boutons d'un même formulaire partagent souvent le même name).
+    if (estBouton && texte) return 'role=button:' + texte;
+    if ((tag === 'a' || role === 'link') && texte) return 'role=link:' + texte;
     const nom = e.getAttribute('name');
     if (nom) {
       if (tag === 'input' && (type === 'radio' || type === 'checkbox') && e.value)
-        return tag + '[name="' + nom + '"][value="' + e.value + '"]';
-      return tag + '[name="' + nom + '"]';
+        return tag + '[name="' + echapper(nom) + '"][value="' + echapper(e.value) + '"]';
+      return tag + '[name="' + echapper(nom) + '"]';
     }
-    const role = e.getAttribute('role') || '';
-    const estBouton = tag === 'button' || role === 'button' || (tag === 'input' && ['submit','button','reset'].includes(type));
-    const texte = court(e.innerText || e.value || e.getAttribute('title') || '', 60);
-    if (estBouton && texte) return 'role=button:' + texte;
-    if ((tag === 'a' || role === 'link') && texte) return 'role=link:' + texte;
     const lib = libelleDe(e);
     if (lib && ['input','select','textarea'].includes(tag)) return 'libelle=' + lib;
-    const ph = e.getAttribute('placeholder');
-    if (ph) return 'placeholder=' + ph;
+    const ancre = ancreLigne(e);
+    if (ancre) return ancre;
     if (texte && texte.length <= 40) return 'texte=' + texte;
     return cheminCss(e);
   }
@@ -161,21 +223,43 @@ JS_ENREGISTREUR = """
       selecteur: selecteurDe(e),
       tag: e.tagName.toLowerCase(),
       type: (e.getAttribute('type') || '').toLowerCase(),
-      libelle: libelleDe(e) || court(e.innerText || e.getAttribute('title') || '', 60),
-      texte: court(e.innerText || e.value || '', 60)
+      libelle: libelleDe(e) || texteDe(e),
+      texte: texteDe(e)
     };
   }
 
-  document.addEventListener('click', (ev) => {
-    // isTrusted : uniquement les vrais clics. Les pages qui fabriquent un lien
-    // invisible pour declencher un telechargement emettent un clic factice.
-    if (!ev.isTrusted || surBadge(ev.target)) return;
-    const e = cible(ev.target);
-    if (!e) return;
+  // --- saisies : « change » n'est pas toujours emis (champs a suggestion, editeurs) ---
+  let enAttente = null;   // {element, minuteur}
+  function decrireSaisie(e) {
     const d = decrire(e);
-    d.type_evenement = 'clic';
-    d.bouton_droit = false;
-    envoyer(d);
+    d.type_evenement = 'saisie';
+    const tag = d.tag;
+    if (tag === 'select') {
+      const opt = e.options[e.selectedIndex];
+      d.valeur = e.value;
+      d.libelle_valeur = opt ? court(opt.text, 80) : '';
+    } else if (d.type === 'checkbox' || d.type === 'radio') {
+      d.valeur = e.checked ? 'oui' : 'non';
+    } else if (e.isContentEditable) {
+      d.valeur = court(e.innerText, 500);
+    } else {
+      d.valeur = e.value !== undefined && e.value !== null ? String(e.value) : '';
+    }
+    return d;
+  }
+  function viderEnAttente() {
+    if (!enAttente) return;
+    const e = enAttente.element;
+    clearTimeout(enAttente.minuteur);
+    enAttente = null;
+    try { if (e && e.isConnected) envoyer(decrireSaisie(e)); } catch (err) {}
+  }
+  document.addEventListener('input', (ev) => {
+    const e = ev.target;
+    if (!e || e.nodeType !== 1 || surBadge(e) || !estChampSaisie(e)) return;
+    if (enAttente && enAttente.element !== e) viderEnAttente();
+    if (enAttente) clearTimeout(enAttente.minuteur);
+    enAttente = { element: e, minuteur: setTimeout(viderEnAttente, 600) };
   }, true);
 
   document.addEventListener('change', (ev) => {
@@ -183,32 +267,34 @@ JS_ENREGISTREUR = """
     if (!e || e.nodeType !== 1 || surBadge(e)) return;
     const tag = e.tagName.toLowerCase();
     if (!['input','select','textarea'].includes(tag) && !e.isContentEditable) return;
+    if (enAttente && enAttente.element === e) { clearTimeout(enAttente.minuteur); enAttente = null; }
+    envoyer(decrireSaisie(e));
+  }, true);
+
+  document.addEventListener('click', (ev) => {
+    // isTrusted : uniquement les vrais clics. Les pages qui fabriquent un lien
+    // invisible pour declencher un telechargement emettent un clic factice.
+    if (!ev.isTrusted || surBadge(ev.target)) return;
+    viderEnAttente();   // ce qui vient d'etre tape doit etre note AVANT le clic
+    const e = cible(ev.target);
+    if (!e) return;
     const d = decrire(e);
-    d.type_evenement = 'saisie';
-    if (tag === 'select') {
-      const opt = e.options[e.selectedIndex];
-      d.valeur = e.value;
-      d.libelle_valeur = opt ? court(opt.text, 80) : '';
-    } else if (d.type === 'checkbox' || d.type === 'radio') {
-      d.valeur = e.checked ? 'oui' : 'non';
-    } else {
-      d.valeur = e.value !== undefined ? String(e.value) : court(e.innerText, 200);
-    }
+    d.type_evenement = 'clic';
     envoyer(d);
   }, true);
 
   document.addEventListener('keydown', (ev) => {
-    if (ev.key !== 'Enter' && ev.key !== 'Tab' && ev.key !== 'Escape') return;
+    if (ev.key !== 'Enter' || !ev.isTrusted) return;
     const e = ev.target;
-    if (!e || e.nodeType !== 1) return;
-    if (ev.key === 'Tab') return;
+    if (!e || e.nodeType !== 1 || surBadge(e)) return;
+    viderEnAttente();   // la valeur tapee doit precéder la touche Entree
     const d = decrire(e);
     d.type_evenement = 'touche';
-    d.touche = ev.key;
+    d.touche = 'Enter';
     envoyer(d);
   }, true);
 
-  envoyer({ type_evenement: 'page', url: location.href, titre: document.title });
+  window.addEventListener('beforeunload', viderEnAttente, true);
 }
 """
 
@@ -218,6 +304,7 @@ class Evenement:
     type: str
     donnees: Dict[str, Any]
     cadre: str = ""  # sélecteur de l'iframe, vide si page principale
+    frame: Any = None  # objet Playwright, résolu en fin d'enregistrement seulement
 
 
 @dataclass
@@ -233,19 +320,20 @@ class EtapeEnregistree:
     type_champ: str = ""  # text, password, checkbox... pour traiter les mots de passe à part
 
     def resume(self) -> str:
+        libelle = self.libelle or self.args.get("selecteur") or ""
         if self.action == "aller":
             return f"ouvrir {self.args.get('url', '')}"
         if self.action == "attendre":
             return "attendre le chargement de la page"
         if self.action == "cliquer":
-            return f"cliquer sur {self.libelle or self.args.get('selecteur')}"
+            return f"cliquer sur {libelle}"
         if self.action == "choisir":
-            return f"choisir « {self.args.get('valeur')} » dans {self.libelle or self.args.get('selecteur')}"
+            return f"choisir « {self.args.get('valeur')} » dans {libelle}"
         if self.action == "cocher":
-            return f"{'cocher' if self.args.get('valeur') == 'oui' else 'décocher'} {self.libelle or self.args.get('selecteur')}"
+            return f"{'cocher' if self.args.get('valeur') == 'oui' else 'décocher'} {libelle}"
         if self.action == "remplir":
             valeur = "•••••" if self.type_champ == "password" else self.args.get("valeur")
-            return f"écrire « {valeur} » dans {self.libelle or self.args.get('selecteur')}"
+            return f"écrire « {valeur} » dans {libelle}"
         if self.action == "touche":
             return f"appuyer sur {self.args.get('touche')}"
         if self.action == "telecharger":
@@ -281,6 +369,9 @@ class Enregistreur:
             page.goto(url)
         else:
             self._injecter(page)
+        # Page de départ notée ici, et non par le script injecté : celui-ci peut être
+        # servi quelques dizaines de millisecondes plus tard, après les premières actions.
+        self.evenements.insert(0, Evenement("page", {"url": url or page.url, "titre": ""}))
         return page
 
     def _suivre_page(self, page: Page) -> None:
@@ -295,35 +386,23 @@ class Enregistreur:
         except PlaywrightError:
             pass
 
-    def _selecteur_cadre(self, frame: Any) -> str:
-        if frame in self._cadres:
-            return self._cadres[frame]
-        selecteur = ""
-        try:
-            page = self.nav.page_courante()
-            if frame is not page.main_frame:
-                selecteur = frame.frame_element().evaluate(JS_SELECTEUR_IFRAME) or ""
-        except Exception:
-            selecteur = ""
-        self._cadres[frame] = selecteur
-        return selecteur
-
     def _recevoir(self, source: Dict[str, Any], charge: str) -> None:
+        """Appelé par Playwright depuis sa propre boucle : AUCUN appel Playwright ici,
+        sinon le programme se bloque définitivement (l'iframe suffirait à tout figer)."""
         if not self._actif:
             return
         try:
             donnees = json.loads(charge)
         except (TypeError, ValueError):
             return
-        cadre = self._selecteur_cadre(source.get("frame")) if source else ""
         type_evenement = donnees.pop("type_evenement", "")
         if not type_evenement:
             return
         if type_evenement == "fin":
             self._actif = False
             return
-        self.evenements.append(Evenement(type_evenement, donnees, cadre))
-        journal.debug("enregistré : %s %s", type_evenement, donnees.get("selecteur", donnees.get("url", "")))
+        frame = source.get("frame") if source else None
+        self.evenements.append(Evenement(type_evenement, donnees, "", frame))
 
     def _telechargement(self, telechargement: Any) -> None:
         if not self._actif:
@@ -338,6 +417,27 @@ class Enregistreur:
         except Exception:
             pass
 
+    # ------------------------------------------------------------------ iframes
+    def _selecteur_cadre(self, frame: Any) -> str:
+        """À n'appeler QUE depuis le fil principal (jamais depuis _recevoir)."""
+        if frame is None:
+            return ""
+        if frame in self._cadres:
+            return self._cadres[frame]
+        selecteur = ""
+        try:
+            page = self.nav.page_courante()
+            if frame is page.main_frame:
+                selecteur = ""
+            elif frame.parent_frame is not page.main_frame:
+                selecteur = ""  # iframe dans une iframe : un seul niveau est géré
+            else:
+                selecteur = frame.frame_element().evaluate(JS_SELECTEUR_IFRAME) or ""
+        except Exception:
+            selecteur = ""
+        self._cadres[frame] = selecteur
+        return selecteur
+
     @property
     def actif(self) -> bool:
         return self._actif
@@ -348,7 +448,9 @@ class Enregistreur:
 
     def attendre_fin(self, duree_max_ms: int = 3600000) -> None:
         """Laisse l'utilisateur travailler dans le navigateur ; revient quand il a
-        cliqué sur le bandeau « terminer » ou fermé le navigateur."""
+        cliqué sur le bandeau, tapé Entrée dans le terminal, ou fermé le navigateur."""
+        from .console import touche_entree_disponible
+
         ecoule = 0
         while self._actif and ecoule < duree_max_ms:
             try:
@@ -356,10 +458,16 @@ class Enregistreur:
             except Exception:  # navigateur ou onglet fermé : l'enregistrement s'arrête
                 break
             ecoule += 300
+            if touche_entree_disponible():
+                break
         self._actif = False
 
     def arreter(self) -> List[EtapeEnregistree]:
         self._actif = False
+        for evenement in self.evenements:  # résolution des iframes, hors boucle Playwright
+            if evenement.frame is not None:
+                evenement.cadre = self._selecteur_cadre(evenement.frame)
+                evenement.frame = None
         for page in self._pages_suivies:
             try:
                 page.remove_listener("download", self._telechargement)
@@ -370,31 +478,49 @@ class Enregistreur:
 
 
 # ---------------------------------------------------------------------- traduction
+MOTIF_HAS_TEXT = re.compile(r':has-text\("((?:[^"\\]|\\.)*)"\)')
+
+
 def _texte_du_selecteur(selecteur: str) -> Optional[str]:
+    """Texte figé dans le sélecteur, qui vient peut-être d'une colonne de l'Excel."""
     for prefixe in ("role=button:", "role=link:", "texte=", "texte_exact="):
         if selecteur.startswith(prefixe):
             return selecteur[len(prefixe):]
+    m = MOTIF_HAS_TEXT.search(selecteur)
+    if m:
+        return m.group(1).replace('\\"', '"').replace("\\\\", "\\")
     return None
 
 
-def construire_etapes(evenements: List[Evenement]) -> List[EtapeEnregistree]:
+def remplacer_texte_selecteur(selecteur: str, ancien: str, nouveau: str) -> str:
+    """Remplace le texte repéré par _texte_du_selecteur, et lui seul."""
+    for prefixe in ("role=button:", "role=link:", "texte=", "texte_exact="):
+        if selecteur.startswith(prefixe) and selecteur[len(prefixe):] == ancien:
+            return prefixe + nouveau
+    m = MOTIF_HAS_TEXT.search(selecteur)
+    if m:
+        echappe = nouveau.replace("\\", "\\\\").replace('"', '\\"')
+        return selecteur[:m.start()] + f':has-text("{echappe}")' + selecteur[m.end():]
+    return selecteur
+
+
+def construire_etapes(evenements: List[Evenement], url_depart: str = "") -> List[EtapeEnregistree]:
     """Transforme les événements bruts en étapes propres (fusion, nettoyage)."""
     etapes: List[EtapeEnregistree] = []
-    premiere_page = True
-    for i, ev in enumerate(evenements):
+    derniere_url: Optional[str] = None
+    for ev in evenements:
         d = ev.donnees
         if ev.type == "page":
             url = str(d.get("url", ""))
-            if premiere_page:
+            if url and url == derniere_url:
+                continue  # même page : le script injecté l'annonce une seconde fois
+            derniere_url = url
+            if not etapes:
                 etapes.append(EtapeEnregistree("aller", {"url": url}, libelle=str(d.get("titre", ""))))
-                premiere_page = False
-            else:
-                # une nouvelle page est apparue : on laisse le temps au chargement
-                if not (etapes and etapes[-1].action == "attendre"):
-                    etapes.append(EtapeEnregistree("attendre", {"chargement": "reseau", "delai": 8000}))
+            elif etapes[-1].action != "attendre":
+                etapes.append(EtapeEnregistree("attendre", {"chargement": "reseau", "delai": 8000}))
             continue
         if ev.type == "telechargement":
-            # le clic précédent a déclenché un téléchargement
             for etape in reversed(etapes):
                 if etape.action == "cliquer":
                     etape.action = "telecharger"
@@ -419,26 +545,32 @@ def construire_etapes(evenements: List[Evenement]) -> List[EtapeEnregistree]:
         elif ev.type == "saisie":
             valeur = "" if d.get("valeur") is None else str(d["valeur"])
             if tag == "select":
-                action, args = "choisir", {"selecteur": selecteur, "valeur": valeur or str(d.get("libelle_valeur") or "")}
+                action = "choisir"
+                args = {"selecteur": selecteur, "valeur": valeur or str(d.get("libelle_valeur") or "")}
             elif type_champ in ("checkbox", "radio"):
-                action, args = ("cocher", {"selecteur": selecteur, "valeur": valeur})
+                action, args = "cocher", {"selecteur": selecteur, "valeur": valeur}
             else:
                 action, args = "remplir", {"selecteur": selecteur, "valeur": valeur}
-            # une nouvelle saisie sur le même champ remplace la précédente
-            for etape in reversed(etapes):
-                if etape.action in ("remplir", "choisir", "cocher") and etape.args.get("selecteur") == selecteur:
-                    etape.args = args
-                    etape.valeur_brute = args.get("valeur")
-                    break
+            # On ne fusionne qu'avec la saisie qui précède IMMÉDIATEMENT sur le même
+            # champ (l'utilisateur corrige ce qu'il vient de taper). Deux champs
+            # éloignés qui partagent un sélecteur restent deux étapes distinctes.
+            precedente = etapes[-1] if etapes else None
+            if (precedente is not None and precedente.action in ("remplir", "choisir", "cocher")
+                    and precedente.args.get("selecteur") == selecteur and precedente.cadre == ev.cadre):
+                precedente.action = action
+                precedente.args = args
+                precedente.valeur_brute = args.get("valeur")
+                precedente.type_champ = type_champ
             else:
                 etapes.append(EtapeEnregistree(action, args, libelle=libelle, cadre=ev.cadre,
                                                valeur_brute=args.get("valeur"), type_champ=type_champ))
-        elif ev.type == "touche":
-            touche = str(d.get("touche") or "")
-            if touche == "Enter":
-                etapes.append(EtapeEnregistree("touche", {"selecteur": selecteur, "touche": "Enter"},
-                                               libelle=libelle, cadre=ev.cadre))
-    # un « attendre » en toute fin n'apporte rien
+        elif ev.type == "touche" and str(d.get("touche") or "") == "Enter":
+            etapes.append(EtapeEnregistree("touche", {"selecteur": selecteur, "touche": "Enter"},
+                                           libelle=libelle, cadre=ev.cadre))
     while etapes and etapes[-1].action == "attendre":
         etapes.pop()
+    if etapes and etapes[0].action != "aller":
+        depart = url_depart or (derniere_url or "")
+        if depart:
+            etapes.insert(0, EtapeEnregistree("aller", {"url": depart}))
     return etapes

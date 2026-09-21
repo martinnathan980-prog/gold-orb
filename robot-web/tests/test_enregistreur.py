@@ -99,7 +99,9 @@ def test_enregistrement_export_par_contrat(bac, navigateur_ok):
     assert connexion[1]["remplir"]["valeur"] == "{{mot_de_passe}}"   # jamais le vrai mot de passe
     ligne_mdp = [l for l in texte.splitlines() if "#mot-de-passe" in l and "remplir" in l][0]
     assert "demo" not in ligne_mdp and "{{mot_de_passe}}" in ligne_mdp
-    assert "--var mot_de_passe=" in ligne_mdp  # le scénario dit comment le fournir
+    # la variable est déclarée (sinon « verifier » la signalerait comme inconnue)
+    assert 'mot_de_passe: ""' in texte and "--var mot_de_passe=" in texte
+    assert donnees["variables"]["mot_de_passe"] == ""
     # la tâche répétée par ligne : filtre, recherche, export
     etapes_yaml = donnees["etapes"]
     assert etapes_yaml[0] == {"aller": "{{url}}"}
@@ -147,7 +149,8 @@ def test_enregistrement_modification_de_fiche(bac, navigateur_ok):
 
     etapes = _enregistrer(dossier, url, tache)
     clics = [e for e in etapes if e.action == "cliquer"]
-    assert any(e.args["selecteur"] == "role=link:HDK-ARC-001" for e in clics), [e.args for e in clics]
+    # le clic dans le tableau est ancré sur le texte de la ligne, pas sur sa position
+    assert any('tr:has-text("HDK-ARC-001")' in e.args["selecteur"] for e in clics), [e.args for e in clics]
     assert any(e.action == "remplir" and e.args["selecteur"] == "#fiche-indice" for e in etapes)
 
     colonnes = ["Numéro", "Nouveau statut", "Indice"]
@@ -170,7 +173,8 @@ def test_enregistrement_modification_de_fiche(bac, navigateur_ok):
         etapes, colonnes, lignes_excel, Dialogue(reponses), nom="modifier fiche",
         fichier_excel="fiches.xlsx", feuille="Fiches", canal="chromium", url_depart=url,
     )
-    assert '- cliquer: "role=link:{{Numéro}}"' in texte
+    donnees = yaml.safe_load(texte)
+    assert {"cliquer": 'tr:has-text("{{Numéro}}") a'} in donnees["etapes"]
     assert '{selecteur: "#fiche-indice", valeur: "{{Indice}}"}' in texte
     assert '{selecteur: "#fiche-statut", valeur: "{{Nouveau statut}}"}' in texte
     assert '- verifier: {texte_page: "enregistrée"}' in texte

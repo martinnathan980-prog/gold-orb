@@ -15,6 +15,8 @@ import re
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 from . import symboles as S
+from .enregistreur import remplacer_texte_selecteur
+from .erreurs import ErreurAutoweb
 from .gabarit import normaliser_cle
 from .releve import selecteur_suggere
 
@@ -72,7 +74,31 @@ def _nom_colonne_propose(etiquette: str, colonnes: Sequence[str]) -> Optional[in
 
 
 def _yaml_chaine(texte: str) -> str:
-    return '"' + texte.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    """Chaîne YAML entre guillemets, avec les sauts de ligne et tabulations échappés."""
+    texte = str(texte)
+    texte = texte.replace("\\", "\\\\").replace('"', '\\"')
+    texte = texte.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n").replace("\t", "\\t")
+    return '"' + texte + '"'
+
+
+# Champs dont la valeur ne doit JAMAIS être écrite dans le scénario.
+MOTIF_CHAMP_SECRET = re.compile(r"pass|pwd|mdp|mot.?de.?passe|secret|token|jeton|credential", re.I)
+# Codes à usage unique : une variable serait inutile, il faut les saisir sur le moment.
+MOTIF_CODE_UNIQUE = re.compile(r"\botp\b|\bsms\b|2fa|mfa|usage.?unique|one.?time|totp|code.?(recu|reçu|envoye|envoyé)", re.I)
+
+
+def _texte_identifiant(etape: Any) -> str:
+    return f"{etape.args.get('selecteur', '')} {getattr(etape, 'libelle', '')}"
+
+
+def _est_secret(etape: Any) -> bool:
+    if getattr(etape, "type_champ", "") == "password":
+        return True
+    return bool(MOTIF_CHAMP_SECRET.search(_texte_identifiant(etape)))
+
+
+def _est_code_unique(etape: Any) -> bool:
+    return bool(MOTIF_CODE_UNIQUE.search(_texte_identifiant(etape)))
 
 
 def _bouton_par_defaut(boutons: List[Dict[str, Any]], mots: Sequence[str]) -> Optional[int]:
@@ -170,13 +196,29 @@ def deviner_colonne(valeur: Any, colonnes: Sequence[str], lignes: Sequence[Dict[
     """Colonne de l'Excel dont une cellule vaut exactement `valeur` (index 0, None si aucune ou plusieurs)."""
     from .gabarit import formater
 
-    cible = normaliser_cle(formater(valeur))
-    if not cible:
+    import datetime as _dt
+
+    def formes(v: Any) -> set:
+        """Écritures possibles d'une valeur : « 21/09/2026 » et « 2026-09-21 » sont la même date."""
+        resultat = {normaliser_cle(formater(v))}
+        if isinstance(v, (_dt.datetime, _dt.date)):
+            resultat.add(normaliser_cle(v.strftime("%Y-%m-%d")))
+        elif isinstance(v, str):
+            from .gabarit import parser_date
+
+            date = parser_date(v)
+            if date is not None:
+                resultat.add(normaliser_cle(date.strftime("%Y-%m-%d")))
+                resultat.add(normaliser_cle(date.strftime("%d/%m/%Y")))
+        return {f for f in resultat if f}
+
+    cibles = formes(valeur)
+    if not cibles:
         return None
     trouvees = set()
     for ligne in lignes:
         for i, colonne in enumerate(colonnes):
-            if normaliser_cle(formater(ligne.get(colonne))) == cible:
+            if formes(ligne.get(colonne)) & cibles:
                 trouvees.add(i)
     if len(trouvees) == 1:
         return trouvees.pop()
@@ -185,7 +227,7 @@ def deviner_colonne(valeur: Any, colonnes: Sequence[str], lignes: Sequence[Dict[
 
 def _entete_scenario(
     nom: str, base: str, canal: str, fichier_excel: str, feuille: Optional[str],
-    colonnes: Sequence[str], url: str,
+    colonnes: Sequence[str], url: str, secrets: Sequence[str] = (),
 ) -> List[str]:
     lignes = [
         "# Scénario autoweb — à relire, puis :",
@@ -207,6 +249,8 @@ def _entete_scenario(
     if colonnes:
         lignes.append(f"  colonne_libelle: {_yaml_chaine(colonnes[0])}")
     lignes += ["variables:", f"  url: {_yaml_chaine(url)}"]
+    for secret in secrets:
+        lignes.append(f'  {secret}: ""   # demandé au lancement, ou --var {secret}=...')
     return lignes
 
 
@@ -219,6 +263,7 @@ def _bloc_etapes(
     indent: str,
     question_valeur,
     telechargements: List[Any],
+    secrets: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     """Traduit des étapes enregistrées en lignes YAML, en gérant les iframes."""
     lignes: List[str] = []
@@ -245,19 +290,31 @@ def _bloc_etapes(
             if e.texte_selecteur:
                 colonne = question_valeur(e.texte_selecteur, "Vous avez cliqué sur")
                 if colonne:
-                    selecteur = selecteur.replace(e.texte_selecteur, "{{" + colonne + "}}")
+                    selecteur = remplacer_texte_selecteur(selecteur, e.texte_selecteur, "{{" + colonne + "}}")
             lignes.append(f"{i}- cliquer: {_yaml_chaine(selecteur)}")
         elif e.action in ("remplir", "choisir", "cocher"):
             selecteur = str(e.args["selecteur"])
             valeur = str(e.args.get("valeur", ""))
-            if e.type_champ == "password":
-                valeur_finale = "{{mot_de_passe}}"
-                commentaire = "   # au lancement : --var mot_de_passe=VOTRE_MOT_DE_PASSE"
+            commentaire = ""
+            if _est_code_unique(e):
+                # code à usage unique : il change à chaque fois, on le demande sur le moment
+                lignes.append(
+                    f'{i}- pause: "Saisissez le code dans le navigateur ({e.libelle or selecteur}), '
+                    'puis appuyez sur Entrée"')
+                continue
+            if _est_secret(e):
+                registre = secrets if secrets is not None else {}
+                if selecteur not in registre:
+                    registre[selecteur] = "mot_de_passe" if not registre else f"mot_de_passe_{len(registre) + 1}"
+                valeur_finale = "{{" + registre[selecteur] + "}}"
+                commentaire = "   # jamais écrit ici : demandé au lancement"
             else:
                 contexte = {"remplir": "Vous avez écrit", "choisir": "Vous avez choisi", "cocher": "Vous avez coché"}[e.action]
                 colonne = question_valeur(valeur, f"{contexte}, dans « {e.libelle or selecteur} » :")
                 valeur_finale = "{{" + colonne + "}}" if colonne else valeur
-                commentaire = ""
+                if colonne and e.type_champ == "date":
+                    valeur_finale = "{{" + colonne + " | date:%Y-%m-%d}}"
+                    commentaire = "   # champ date : format AAAA-MM-JJ attendu par le navigateur"
             lignes.append(
                 f"{i}- {e.action}: {{selecteur: {_yaml_chaine(selecteur)}, valeur: {_yaml_chaine(valeur_finale)}}}{commentaire}"
             )
@@ -340,8 +397,14 @@ def construire_depuis_enregistrement(
         return None
 
     telechargements: List[Any] = []
-    lignes_etapes = _bloc_etapes(etapes, "  ", question_valeur, telechargements)
-    lignes_connexion = _bloc_etapes(etapes_connexion, "        ", lambda v, c: None, telechargements)
+    secrets: Dict[str, str] = {}
+    lignes_etapes = _bloc_etapes(etapes, "  ", question_valeur, telechargements, secrets)
+    lignes_connexion = _bloc_etapes(etapes_connexion, "        ", lambda v, c: None, telechargements, secrets)
+    if not [l for l in lignes_etapes if l.strip() and not l.strip().startswith("- aller")]:
+        raise ErreurAutoweb(
+            "Il ne reste aucune action à rejouer : le scénario ne ferait rien.\n"
+            "Recommencez l'enregistrement (menu, choix 1) en faisant la tâche complète."
+        )
 
     d.dire()
     premiere = colonnes[0] if colonnes else "ligne"
@@ -371,15 +434,15 @@ def construire_depuis_enregistrement(
         texte_succes = d.demander(
             f"{S.FLECHE} Texte affiché par l'outil quand tout s'est bien passé (vide = pas de contrôle)", "")
 
-    pause_connexion = True
     if etapes_connexion:
         pause_connexion = d.oui_non(
-            f"{S.FLECHE} Ajouter aussi une pause au début, au cas où l'outil demande autre chose (code, carte) ?", False)
+            f"{S.FLECHE} Ajouter une pause au début, pour vérifier la connexion (code, carte, écran en deux temps) ?", True)
     else:
         pause_connexion = d.oui_non(f"{S.FLECHE} Faut-il se connecter à la main au début (SSO, mot de passe) ?", True)
     capture = d.oui_non(f"{S.FLECHE} Faire une capture d'écran à la fin de chaque ligne ?", True)
 
-    lignes = _entete_scenario(nom, base, canal, fichier_excel, feuille, colonnes, url_depart)
+    lignes = _entete_scenario(nom, base, canal, fichier_excel, feuille, colonnes, url_depart,
+                              secrets=sorted(set(secrets.values())))
     if etapes_connexion or pause_connexion:
         lignes.append("avant:")
         lignes.append('  - aller: "{{url}}"')
@@ -397,7 +460,7 @@ def construire_depuis_enregistrement(
     if texte_succes:
         lignes.append(f"  - verifier: {{texte_page: {_yaml_chaine(texte_succes)}}}")
     if capture:
-        lignes.append(f'  - capture: "captures/{{{{{premiere}}}}}.png"')
+        lignes.append(f"  - capture: {_yaml_chaine('captures/{{' + premiere + '}}.png')}")
     return "\n".join(lignes) + "\n"
 
 

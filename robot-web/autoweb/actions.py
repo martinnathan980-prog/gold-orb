@@ -34,6 +34,8 @@ from .scenario import Etape, Scenario, masquer_secrets
 journal = logging.getLogger("autoweb")
 
 PREFIXES = ("texte=", "texte_exact=", "libelle=", "placeholder=", "titre=", "role=", "test=", "alt=")
+# « role=button:Exporter [CSV] » : le nom peut contenir n'importe quoi, y compris des crochets.
+MOTIF_ROLE = re.compile(r"^role=([a-zA-Z]+)(?::(.*))?$", re.S)
 
 
 def nom_fichier_sur(texte: str) -> str:
@@ -94,9 +96,14 @@ class Executeur:
             loc = portee.get_by_alt_text(sel[len("alt="):], exact=exact)
         elif sel.startswith("test="):
             loc = portee.get_by_test_id(sel[len("test="):])
-        elif sel.startswith("role=") and "[" not in sel:
-            role, _, nom = sel[len("role="):].partition(":")
-            loc = portee.get_by_role(role.strip(), name=nom.strip() or None, exact=exact) if nom else portee.get_by_role(role.strip())
+        elif MOTIF_ROLE.match(sel):
+            m = MOTIF_ROLE.match(sel)
+            role, nom = m.group(1), (m.group(2) or "").strip()
+            if nom:
+                # exact par défaut : « Valider » ne doit pas attraper « Valider et fermer »
+                loc = portee.get_by_role(role, name=nom, exact=bool(args.get("exact", True)))
+            else:
+                loc = portee.get_by_role(role)
         else:
             loc = portee.locator(sel)
         if args.get("nieme") is not None:

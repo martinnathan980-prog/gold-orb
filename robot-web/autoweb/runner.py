@@ -158,6 +158,29 @@ def contexte_de_base(scenario: Scenario, options: Options) -> Dict[str, Any]:
     return contexte
 
 
+def completer_secrets(scenario: Scenario, options: Options, contexte: Dict[str, Any]) -> None:
+    """Demande à l'écran les mots de passe du scénario qui n'ont pas été fournis.
+
+    Ils ne sont ni affichés, ni enregistrés, ni écrits dans le journal.
+    """
+    from .console import demander_secret
+    from .scenario import MOTIF_SECRET
+
+    for nom in scenario.variables:
+        if not MOTIF_SECRET.search(nom):
+            continue
+        if str(contexte.get(nom) or "").strip():
+            continue
+        if not options.interactif:
+            journal.warning("La variable « %s » est vide : ajoutez --var %s=... au lancement.", nom, nom)
+            continue
+        valeur = demander_secret(f"Mot de passe pour « {nom} » (il ne s'affiche pas) : ")
+        if valeur:
+            contexte[nom] = valeur
+        else:
+            journal.warning("Aucun mot de passe saisi pour « %s » : la connexion échouera probablement.", nom)
+
+
 def contexte_ligne(
     base: Dict[str, Any], ligne: Ligne, n: int, total: int, noms_variables: Iterable[str] = ()
 ) -> Dict[str, Any]:
@@ -300,6 +323,8 @@ def lancer(scenario: Scenario, options: Options) -> Bilan:
         lignes = selectionner(classeur, scenario, options)
         bilan = Bilan(total=len(lignes))
         base = contexte_de_base(scenario, options)
+        if lignes:
+            completer_secrets(scenario, options, base)
         journal.info("Scénario « %s » — Excel %s — %d ligne(s) à traiter", scenario.nom, classeur.chemin.name, len(lignes))
         if classeur.chemin_sauvegarde:
             journal.info("Copie de sauvegarde : %s", classeur.chemin_sauvegarde)

@@ -22,10 +22,13 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
+from playwright.sync_api import Error as PlaywrightError
+
 from . import __version__
 from . import symboles as S
 from .erreurs import ErreurAutoweb
 from .excel import creer_classeur
+from .navigateur import premiere_ligne
 
 journal = logging.getLogger("autoweb")
 DOSSIER_MODELES = Path(__file__).parent / "modeles"
@@ -374,7 +377,7 @@ def _colonnes_et_lignes(chemin_excel: Optional[str], feuille: Optional[str]):
 
     if not chemin_excel:
         return [], [], None
-    classeur = ClasseurSuivi(Path(chemin_excel), feuille=feuille, sauvegarde=False).ouvrir()
+    classeur = ClasseurSuivi(Path(nettoyer_chemin(chemin_excel)), feuille=feuille, sauvegarde=False).ouvrir()
     try:
         suivi = {classeur.colonne_statut, classeur.colonne_message, classeur.colonne_horodatage}
         colonnes = [c for c in classeur.entetes if c not in suivi]
@@ -384,14 +387,18 @@ def _colonnes_et_lignes(chemin_excel: Optional[str], feuille: Optional[str]):
         classeur.fermer()
 
 
+def nettoyer_chemin(texte: str) -> str:
+    """Enlève les guillemets ajoutés par l'explorateur Windows autour d'un chemin collé."""
+    texte = (texte or "").strip()
+    if len(texte) >= 2 and texte[0] == texte[-1] and texte[0] in "\"'":
+        texte = texte[1:-1].strip()
+    return texte
+
+
 def _chemin_scenario(nom: str, excel: Optional[str], sortie: Optional[str], ecraser: bool) -> Path:
+    """Les tâches vivent toujours dans robot-web/taches/ : elles y sont retrouvées par le menu."""
     base = "".join(c if c.isalnum() or c in "-_" else "_" for c in nom.strip().lower().replace(" ", "_")) or "tache"
-    if sortie:
-        chemin = Path(sortie)
-    elif excel:
-        chemin = Path(excel).resolve().parent / f"{base}.yaml"
-    else:
-        chemin = Path(f"{base}.yaml")
+    chemin = Path(sortie) if sortie else DOSSIER_PROJET / "taches" / f"{base}.yaml"
     if chemin.exists() and not ecraser:
         chemin = chemin.with_name(f"{chemin.stem}-{dt.datetime.now():%Y%m%d-%H%M%S}{chemin.suffix}")
     return chemin
@@ -416,16 +423,24 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
     canal = nav.canal_utilise or (args.canal or "chrome")
     enregistreur = Enregistreur(nav)
     try:
-        enregistreur.demarrer(url)
+        try:
+            enregistreur.demarrer(url)
+        except PlaywrightError as e:
+            raise ErreurAutoweb(
+                f"Impossible d'ouvrir {url} :\n   {premiere_ligne(e)}\n"
+                "Vérifiez l'adresse (elle doit commencer par http), votre connexion au réseau de\n"
+                "l'entreprise, et que la page s'ouvre bien dans votre navigateur habituel."
+            )
         print()
         print(f"{S.LIGNE} ENREGISTREMENT EN COURS")
         print("   1. Dans le navigateur qui vient de s'ouvrir, faites votre tâche normalement,")
         print("      une seule fois, avec les valeurs de la PREMIÈRE ligne de votre Excel.")
-        print("   2. Quand c'est fini, cliquez sur le bandeau rouge en haut à droite de la page")
-        print("      (« Enregistrement ... cliquez ici pour terminer »).")
+        print("   2. Quand c'est fini, cliquez sur le bandeau rouge en bas à gauche de la page")
+        print("      (« Enregistrement ... cliquez pour terminer »).")
         print("   Le robot note chaque clic et chaque saisie. Rien ne sort de votre poste.")
         print()
-        print("   (en cas de besoin, fermer la fenêtre du navigateur arrête aussi l'enregistrement)")
+        print("   Si le bandeau gêne ou ne répond pas : appuyez simplement sur Entrée ICI,")
+        print("   dans le Terminal. Fermer la fenêtre du navigateur arrête aussi l'enregistrement.")
         enregistreur.attendre_fin()
         etapes = enregistreur.arreter()
     finally:
@@ -434,13 +449,18 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
     if not etapes:
         print(f"{S.ATTENTION} Aucune action enregistrée : rien à écrire.")
         return 1
-    texte = construire_depuis_enregistrement(
-        etapes, colonnes, lignes_excel, Dialogue(), nom=nom,
-        fichier_excel=(Path(args.excel).name if args.excel else "suivi.xlsx"),
-        feuille=feuille, canal=canal, url_depart=url,
-    )
     sortie = _chemin_scenario(nom, args.excel, args.sortie, args.ecraser)
     sortie.parent.mkdir(parents=True, exist_ok=True)
+    # chemin de l'Excel : relatif s'il est à côté du scénario, absolu sinon
+    if args.excel:
+        excel_absolu = Path(nettoyer_chemin(args.excel)).resolve()
+        reference = excel_absolu.name if excel_absolu.parent == sortie.parent.resolve() else str(excel_absolu)
+    else:
+        reference = "suivi.xlsx"
+    texte = construire_depuis_enregistrement(
+        etapes, colonnes, lignes_excel, Dialogue(), nom=nom,
+        fichier_excel=reference, feuille=feuille, canal=canal, url_depart=url,
+    )
     sortie.write_text(texte, encoding="utf-8")
     prefixe = prefixe_commande()
     print()
@@ -454,20 +474,25 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
 
 
 def lister_scenarios(racine: Optional[Path] = None) -> List[Path]:
-    """Fichiers .yaml qui sont des scénarios, dans le dossier de travail (2 niveaux)."""
-    racine = Path(racine or Path.cwd())
+    """Scénarios trouvés dans robot-web/taches/, puis dans le dossier de travail (2 niveaux)."""
     ignores = {"venv", "releves", "profils", "captures", "journal", "sauvegardes", "modeles",
                "corbeille", "__pycache__", "demo"}  # « demo » : le scénario de vérification, pas une tâche
+    dossiers = [DOSSIER_PROJET / "taches", Path(racine or Path.cwd())]
     trouves: List[Path] = []
-    for chemin in sorted(racine.glob("*.yaml")) + sorted(racine.glob("*/*.yaml")):
-        if any(part in ignores for part in chemin.parts):
+    vus = set()
+    for dossier in dossiers:
+        if not dossier.is_dir():
             continue
-        try:
-            texte = chemin.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
-            continue
-        if "etapes:" in texte:
-            trouves.append(chemin)
+        for chemin in sorted(dossier.glob("*.yaml")) + sorted(dossier.glob("*/*.yaml")):
+            if any(part in ignores for part in chemin.parts) or chemin.resolve() in vus:
+                continue
+            try:
+                texte = chemin.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                continue
+            if "etapes:" in texte:
+                vus.add(chemin.resolve())
+                trouves.append(chemin)
     return trouves
 
 
@@ -588,6 +613,8 @@ def _choisir_scenario(action: str) -> Optional[Path]:
     reponse = _demander("  Numéro (0 = revenir au menu)", "1")
     if reponse.isdigit() and 1 <= int(reponse) <= len(scenarios):
         return scenarios[int(reponse) - 1]
+    if reponse not in ("0", ""):
+        print(f"   {S.ATTENTION} « {reponse} » ne correspond à aucune tâche de la liste : retour au menu.")
     return None
 
 
@@ -610,12 +637,20 @@ def cmd_menu(args: argparse.Namespace) -> int:
         choix = _demander("   Votre choix", "0")
         try:
             if choix == "1":
-                url = _demander("   Adresse de l'outil (elle commence par http)")
+                url = nettoyer_chemin(_demander("   Adresse de l'outil (elle commence par http)"))
                 if not url:
                     continue
-                excel = _demander("   Fichier Excel qui pilote la tache (vide = aucun)", "")
+                print("   Le fichier Excel qui pilote la tache : une ligne = une execution.")
+                print("   (si vous n'en avez pas encore, revenez au menu et choisissez 5)")
+                excel = nettoyer_chemin(_demander("   Chemin du fichier Excel"))
+                if not excel:
+                    print(f"   {S.ATTENTION} Sans Excel, la tache ne pourrait pas etre lancee : abandon.")
+                    continue
+                if not Path(excel).exists():
+                    print(f"   {S.ERREUR} Fichier introuvable : {excel}")
+                    continue
                 nom = _demander("   Nom de cette tache", "ma tache")
-                cmd_enregistrer(_ns(url=url, excel=excel or None, nom=nom))
+                cmd_enregistrer(_ns(url=url, excel=excel, nom=nom))
             elif choix == "2":
                 chemin = _choisir_scenario("lancer")
                 if chemin is None:
@@ -636,7 +671,7 @@ def cmd_menu(args: argparse.Namespace) -> int:
                 if _demander(f"   Confirmer la suppression de {chemin.name} ? (o/n)", "n").lower().startswith("o"):
                     cmd_supprimer(_ns(scenario=str(chemin)))
             elif choix == "5":
-                nom_fichier = _demander("   Nom du fichier Excel à créer", "suivi.xlsx")
+                nom_fichier = nettoyer_chemin(_demander("   Nom du fichier Excel à créer", "suivi.xlsx"))
                 if not nom_fichier.lower().endswith((".xlsx", ".xlsm")):
                     nom_fichier += ".xlsx"
                 colonnes = _demander("   Colonnes, séparées par des virgules", "Numéro,Titre,Date")
