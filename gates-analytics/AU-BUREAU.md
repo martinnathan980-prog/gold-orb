@@ -57,6 +57,10 @@ Le tableau de bord tient en **quatre fichiers**, dont un de 222 Ko : personne
 ne recopie cela à la main, et une pièce jointe de code se fait manger par la
 passerelle mail. D'où les deux plans.
 
+*(Les outils Python, eux, sont déjà arrivés : un seul fichier,
+`suivi-fwd-outils.py.txt`, qui se déballe tout seul — voir le chantier 3.
+C'est le tableau de bord, et lui seul, qui demande ce qui suit.)*
+
 ### Le plan A — l'installateur (20 minutes, c'est la voie normale)
 
 **L'idée** : on colle un petit fichier de 200 lignes, on le lance, et c'est
@@ -83,8 +87,8 @@ si GitHub est bloqué depuis votre poste, cela passe.
    > de son travail. Il le détecte et refuse, mais autant ne pas y aller.
 
 3. Effacer tout ce qu'il y a dedans et **coller le contenu de
-   `Installateur.gs`** (il est dans votre Drive, dossier
-   « Suivi FWD — code à coller »).
+   `Installateur.gs.txt`** (reçu dans la conversation ; il est aussi dans le
+   dossier `apps-script/` du paquet déballé).
 4. **Ctrl + S** pour enregistrer.
 
 #### A.3 — Ouvrir le manifeste et y mettre les permissions
@@ -188,8 +192,9 @@ le dépôt. Ici, **c'est vous** qui apportez les fichiers.
 4. Les fichiers sont dans `gold-orb-…\gates-analytics\` :
    `Code.gs`, `Index.html`, `Styles.html`, `Javascript.html`.
 
-> **Si GitHub est bloqué** : dites-le-moi, je dépose les quatre fichiers dans
-> votre Drive — Google est forcément joignable, puisque le classeur l'est.
+> **Si GitHub est bloqué** : dites-le-moi, je vous envoie les quatre fichiers
+> directement dans la conversation, en `.txt`. C'est ainsi que vous avez reçu
+> `suivi-fwd-outils.py.txt` : rien ne dépend d'un site à joindre.
 
 #### B.2 — Les coller un par un
 
@@ -256,16 +261,23 @@ python --version
   Si aucun ne répond, Python n'est pas installé : passer ce chantier et me le
   dire.
 
-### C.2 — Récupérer `diagnostic.py`
+### C.2 — Récupérer les outils : un seul fichier
 
-Il est dans votre **Drive**, dossier « Suivi FWD — code à coller ».
-Le télécharger dans **Téléchargements** (clic droit → Télécharger), ou :
-l'ouvrir, **Ctrl+A**, **Ctrl+C**, puis Bloc-notes → coller →
-**Enregistrer sous** → `diagnostic.py`, en choisissant
-**Type : Tous les fichiers** et **Encodage : UTF-8**.
+Le fichier **`suivi-fwd-outils.py.txt`** contient tout le dossier
+d'automatisation, compressé — et c'est lui-même un programme Python. Le
+mettre dans **Téléchargements**, puis :
 
-> ⚠️ Le Bloc-notes ajoute `.txt` si on ne choisit pas « Tous les fichiers ».
-> Le fichier doit s'appeler `diagnostic.py`, pas `diagnostic.py.txt`.
+```
+cd %USERPROFILE%\Downloads
+python suivi-fwd-outils.py.txt
+```
+
+**Rien à renommer** : Python se moque de l'extension. Un dossier `suivi-fwd`
+apparaît, avec les 30 fichiers dedans, et le programme affiche les trois
+commandes qui comptent.
+
+> Si seul `diagnostic.py` vous intéresse, il est aussi fourni seul, en
+> `diagnostic.py.txt` : il se lance tel quel, sans renommage, lui aussi.
 
 ### C.3 — Exporter un contrat depuis GATES
 
@@ -276,16 +288,17 @@ se lisent.
 
 ```
 cd %USERPROFILE%\Downloads
-python diagnostic.py extract-HDK.xlsx
+python suivi-fwd\import\diagnostic.py extract-HDK.xlsx
 ```
 
-(en remplaçant `extract-HDK.xlsx` par le vrai nom du fichier)
+(en remplaçant `extract-HDK.xlsx` par le vrai nom du fichier ; avec des
+guillemets s'il contient des espaces)
 
 Si le classeur a plusieurs onglets et que ce n'est pas le premier qui
 compte :
 
 ```
-python diagnostic.py extract-HDK.xlsx --onglet "Nom de l'onglet"
+python suivi-fwd\import\diagnostic.py extract-HDK.xlsx --onglet "Nom de l'onglet"
 ```
 
 ### C.5 — Ce qui s'affiche
@@ -330,7 +343,7 @@ libre, **aucune ligne entière**.
 **Relisez-le avant de l'envoyer.** Et s'il y a le moindre doute :
 
 ```
-python diagnostic.py extract-HDK.xlsx --anonyme
+python suivi-fwd\import\diagnostic.py extract-HDK.xlsx --anonyme
 ```
 
 remplace chaque valeur par sa **forme** (`TFE2130A600001A` devient
@@ -340,7 +353,7 @@ remplace chaque valeur par sa **forme** (`TFE2130A600001A` devient
 
 | Ce qui s'affiche | Quoi faire |
 |---|---|
-| `python n'est pas reconnu` | Essayer `py diagnostic.py …` |
+| `python n'est pas reconnu` | Essayer `py` à la place de `python` |
 | `Fichier introuvable` | `dir` pour voir les noms ; mettre le nom entre guillemets s'il a des espaces |
 | `est un vieux classeur Excel (.xls)` | Ouvrir dans Excel → Enregistrer sous → `.xlsx` |
 | `n'est pas un vrai .xlsx` | Le fichier est un `.csv` renommé, ou abîmé : réexporter |
@@ -354,10 +367,10 @@ remplace chaque valeur par sa **forme** (`TFE2130A600001A` devient
 ### L'essai à blanc (10 minutes, sans intranet)
 
 Il y a un faux GATES qui tourne sur le PC, pour apprendre la chaîne sans
-risque. Depuis le dossier du ZIP (plan B, étape B.1) :
+risque. Depuis le dossier déballé à l'étape C.2 :
 
 ```
-cd C:\chemin\vers\gold-orb-…\gates-analytics
+cd %USERPROFILE%\Downloads\suivi-fwd
 python import\essai.py --jouer
 ```
 

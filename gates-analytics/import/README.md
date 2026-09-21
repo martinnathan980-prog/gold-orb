@@ -15,6 +15,7 @@ et rien ne tourne quand la machine dort.
 | Script | Ce qu'il fait |
 |---|---|
 | `essai.py` | **L'essai à blanc** : un faux GATES sur votre PC, pour apprendre la chaîne sans intranet |
+| `paquet.py` | Fabrique **le fichier unique qui se déballe tout seul** : tout ce dossier, en un `.txt` qui est aussi un programme |
 | `diagnostic.py` | **La fiche d'un vrai extract** : colonnes, valeurs d'avancement, anatomie des références — lit les .xlsx sans rien installer |
 | `piloter_chrome.py` | Parle à Chrome — va à cette page, clique ce bouton, lis ce tableau |
 | `extraire.py` | Rejoue une **recette** : la suite de gestes de l'extraction |
@@ -25,10 +26,32 @@ et rien ne tourne quand la machine dort.
 | `releve.py` | Variante hors Google : archive les relevés dans des fichiers locaux |
 
 ```bash
-npm run test:import      # les neuf batteries de ce dossier
+npm run test:import      # les dix batteries de ce dossier
 ```
 
-## 0. D'abord : l'essai à blanc
+## 0. Porter tout cela sur le poste : `paquet.py`
+
+La messagerie d'entreprise mange les pièces jointes de code, le Drive
+personnel est fermé, et le dépôt n'est pas toujours joignable. D'où un seul
+fichier qui passe partout :
+
+```bash
+python3 import/paquet.py
+```
+
+Il écrit `suivi-fwd-outils.py.txt` : tout le dossier compressé **dans un
+programme Python**. Sur le poste, une seule commande — et **rien à
+renommer**, Python se moque de l'extension :
+
+```
+python suivi-fwd-outils.py.txt
+```
+
+Le dossier `suivi-fwd` apparaît, et le programme dit les trois commandes qui
+comptent. Refabriqué sans changement, le paquet est identique à l'octet près :
+on voit donc tout de suite ce qui a bougé.
+
+## 1. D'abord : l'essai à blanc
 
 Avant de toucher à l'intranet, on s'entraîne sur **un faux GATES qui tourne
 sur le PC**. Une seule commande fabrique tout et joue la chaîne entière :
@@ -61,7 +84,7 @@ loin de toute boîte, et un repère attendu qui n'est pas dessiné. Le compte
 rendu doit dire exactement cela.
 
 
-## 1. Préparer Chrome (une seule fois)
+## 2. Préparer Chrome (une seule fois)
 
 Chrome sait obéir à des ordres, à condition d'avoir été lancé avec une option
 de débogage. **Fermer Chrome entièrement**, puis le relancer ainsi :
@@ -91,7 +114,7 @@ rien, et rien ne se dérègle si une fenêtre passe devant : le pilote **ouvre
 son propre onglet** au lieu de détourner celui qui est sous vos yeux, et le
 referme en partant.
 
-## 2. Écrire la recette, une fois
+## 3. Écrire la recette, une fois
 
 Une recette est un fichier JSON qui dit les gestes, dans l'ordre. Trois
 modèles sont fournis dans `recettes/`, à compléter avec ce qu'on voit à
@@ -149,7 +172,7 @@ Rien n'est deviné : tant que la recette ne dit pas quoi cliquer, le script ne
 clique rien. Une étape qui échoue arrête le tour en disant laquelle et
 pourquoi.
 
-## 3. Déposer dans le classeur
+## 4. Déposer dans le classeur
 
 Le classeur peut publier une petite adresse qui reçoit les extracts. Dans
 `Code.gs`, renseigner un secret :
@@ -188,7 +211,7 @@ sans BOM, en UTF-8 ou en ANSI. Il ne lit pas le format Excel — cela demanderai
 une bibliothèque que le poste ne peut pas installer. Demander le CSV à
 l'export, ou enregistrer le `.xlsx` en CSV.
 
-## 4. La semaine, d'un seul geste
+## 5. La semaine, d'un seul geste
 
 Un fichier `.bat` sur le Bureau, à double-cliquer le lundi :
 
@@ -221,7 +244,7 @@ avoir été lancé avec son option de débogage.
 
 À valider avec l'informatique avant mise en place.
 
-## 5. Les composants d'un plan, quel que soit le format
+## 6. Les composants d'un plan, quel que soit le format
 
 Quand les composants ne sortent d'aucun tableur, ils sont sur le **plan** —
 et le plan arrive sous toutes les formes : un PDF sorti de l'outil de dessin,
@@ -361,7 +384,7 @@ fabriqués n'ont pas prévu. Le moteur intégré à Windows n'a pu être joué
 qu'avec un faux PowerShell : le dialogue est vérifié, pas le moteur lui-même —
 cela demande un poste Windows.
 
-## 6. La variante hors Google : `releve.py`
+## 7. La variante hors Google : `releve.py`
 
 Elle ne dépend d'aucun classeur : elle archive les relevés dans des fichiers
 locaux, pour travailler sans le tableau de bord.
@@ -415,7 +438,7 @@ Identiques à ceux du tableau de bord :
 « À faire » est une valeur saisie ; une cellule vide est un **défaut de saisie**.
 Les confondre masquerait le second — c'est précisément ce qu'on veut voir.
 
-## 7. Le transport par la messagerie
+## 8. Le transport par la messagerie
 
 La passerelle mail retient ce qui ressemble à du code. `empaqueter.py` le rend
 méconnaissable (gzip puis base64), `decoder.py` le reconstruit et vérifie son
