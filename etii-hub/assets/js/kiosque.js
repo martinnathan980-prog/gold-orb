@@ -1,13 +1,18 @@
 /* =========================================================================
    ETII Hub — Le kiosque de communication
    Le « Communication Center » du service : un bandeau d'alertes qui
-   défile, puis deux panneaux côte à côte — à gauche la liste de tout ce
-   qui a été communiqué (la plus récente d'abord, par mois), à droite la
-   lecture de la communication choisie. Une communication est composée de
-   BLOCS libres, dans l'ordre voulu par son auteur : texte (écrit ligne à
-   ligne), image, galerie, chiffres clés, courbe, pastilles, encadré. On ne
+   défile, puis deux panneaux côte à côte — à gauche la frise de tout ce
+   qui a été communiqué (la plus récente d'abord, par mois, le long d'un
+   rail), à droite la lecture de la communication choisie. Une
+   communication est composée de BLOCS libres, dans l'ordre voulu par son
+   auteur : texte (écrit ligne à ligne), image, galerie, chiffres clés,
+   courbe, pastilles, encadré ; une marque de fin ferme la lecture. On ne
    montre que ce qui a été dit : l'agenda à venir n'est pas de la
    communication.
+
+   Les deux panneaux ont la même hauteur, et c'est la lecture qui la
+   donne : un ResizeObserver la recopie sur la liste, qui défile dans sa
+   fenêtre. Rien n'est jamais coupé ni ne déborde sur la section suivante.
 
    Rien n'est inventé : chaque entrée vient du fichier, de la feuille de
    publication ou de l'éditeur (editeur.js). Tout le DOM est construit
@@ -380,7 +385,10 @@ function pastillePole(code) {
 
 function carteListe(dossier, prefixe) {
   const p = partiesDate(dossier.date);
-  return el('li', { class: 'kiosque__entree', dataset: { pole: dossier.pole || 'ETII' } },
+  return el('li', {
+    class: 'kiosque__entree',
+    dataset: { pole: dossier.pole || 'ETII', statut: STATUTS[dossier.statut] ? dossier.statut : 'info' }
+  },
     el('button', {
       type: 'button',
       class: 'kiosque__carte',
@@ -403,6 +411,8 @@ function carteListe(dossier, prefixe) {
         dossier.local ? el('span', { class: 'badge badge--alerte kiosque__carte-local', title: 'Enregistrée dans ce navigateur seulement' }, 'brouillon') : null))));
 }
 
+/* La frise : un rail vertical à gauche, un point par entrée (coloré selon
+   son statut, en CSS), et le libellé du mois en en-tête collant. */
 function liste(dossiers, prefixe) {
   const enfants = [];
   let moisCourant = null;
@@ -589,6 +599,9 @@ function lecture(prefixe) {
   const chapeau = el('p', { class: 'kiosque__chapeau', hidden: true });
   const blocs = el('div', { class: 'kiosque__blocs' });
   const curseur = el('span', { class: 'kiosque__curseur', 'aria-hidden': 'true', hidden: true });
+  /* La marque de fin : un court filet terre cuite, centré, après le
+     dernier bloc — le lecteur sait qu'il a tout lu. Pas de signature. */
+  const fin = el('div', { class: 'kiosque__fin', 'aria-hidden': 'true', hidden: true });
 
   const racine = el('article', {
     class: 'kiosque__lecture',
@@ -596,9 +609,9 @@ function lecture(prefixe) {
     tabIndex: -1
   },
   image,
-  el('div', { class: 'kiosque__lecture-interieur' }, meta, titre, chapeau, blocs, curseur));
+  el('div', { class: 'kiosque__lecture-interieur' }, meta, titre, chapeau, blocs, curseur, fin));
 
-  return { racine, image, meta, titre, chapeau, blocs, curseur };
+  return { racine, image, meta, titre, chapeau, blocs, curseur, fin };
 }
 
 /* Remplit une lecture avec un dossier. La première image ouvre la lecture
@@ -628,6 +641,7 @@ function remplirLecture(lect, dossier) {
   monter(lect.blocs, blocs.length
     ? blocs.map(rendreBloc)
     : el('p', { class: 'kiosque__ligne texte-doux' }, 'Aucun détail publié pour cette communication.'));
+  lect.fin.hidden = false;
 }
 
 /**
@@ -692,13 +706,47 @@ export function kiosque(options) {
 
   const visibles = () => tous.filter((d) => !filtre || d.pole === filtre || d.groupe === 'mot');
 
-  function lire(dossier) {
+  /* Fait défiler la liste — et seulement elle, jamais la page — pour que la
+     carte soit visible, sous l'en-tête de mois collant. */
+  function montrerCarte(bouton) {
+    if (!bouton) return;
+    const zone = zoneListe.getBoundingClientRect();
+    const carte = bouton.getBoundingClientRect();
+    const groupe = zoneListe.querySelector('.kiosque__groupe');
+    const marge = (groupe ? groupe.getBoundingClientRect().height : 0) + 8;
+    let decalage = 0;
+    if (carte.top < zone.top + marge) decalage = carte.top - zone.top - marge;
+    else if (carte.bottom > zone.bottom - 8) decalage = carte.bottom - zone.bottom + 8;
+    if (!decalage) return;
+    zoneListe.scrollTo({ top: zoneListe.scrollTop + decalage, behavior: mouvementReduit() ? 'auto' : 'smooth' });
+  }
+
+  /* La carte à faire défiler en vue dès que la liste a pris la hauteur de
+     la nouvelle lecture (voir suivreHauteur) : mesurer avant serait mesurer
+     une fenêtre qui va changer. */
+  let carteAMontrer = null;
+  const montrerEnAttente = () => {
+    if (!carteAMontrer) return;
+    const bouton = carteAMontrer;
+    carteAMontrer = null;
+    montrerCarte(bouton);
+  };
+
+  function lire(dossier, options) {
+    const o = options || {};
     courant = dossier;
     arreterEcriture();
     zoneListe.querySelectorAll('.kiosque__carte').forEach((b) => {
-      b.setAttribute('aria-current', b.dataset.id === dossier.id ? 'true' : 'false');
+      const actif = b.dataset.id === dossier.id;
+      b.setAttribute('aria-current', actif ? 'true' : 'false');
+      const entree = b.closest('.kiosque__entree');
+      if (entree) entree.classList.toggle('kiosque__entree--active', actif);
+      if (actif && o.montrer) carteAMontrer = b;
     });
     remplirLecture(lect, dossier);
+    /* Déjà dans la page : on ajuste tout de suite, puis on montre la carte.
+       Pas encore montée (arrivée par un lien) : l'observateur le fera. */
+    if (racine.isConnected) ajusterHauteur();
     lect.racine.classList.remove('kiosque__lecture--entre');
     void lect.racine.offsetWidth; // relance la transition d'entrée
     lect.racine.classList.add('kiosque__lecture--entre');
@@ -713,6 +761,7 @@ export function kiosque(options) {
     lect.titre.textContent = 'Aucune communication';
     lect.chapeau.hidden = true;
     monter(lect.blocs, el('p', { class: 'texte-doux sans-marge' }, 'Rien à lire pour ce pôle pour le moment.'));
+    lect.fin.hidden = true;
   }
 
   function rendreListe(cibleDemandee) {
@@ -723,14 +772,14 @@ export function kiosque(options) {
       : el('p', { class: 'kiosque__vide texte-doux' }, 'Rien à lire pour ce pôle pour le moment.'));
     const cible = (cibleDemandee && dossiers.find((d) => d.id === cibleDemandee))
       || dossiers.find((d) => courant && d.id === courant.id) || dossiers[0];
-    if (cible) lire(cible); else viderLecture();
+    if (cible) lire(cible, { montrer: !!cibleDemandee }); else viderLecture();
   }
 
   zoneListe.addEventListener('click', (evt) => {
     const bouton = evt.target.closest('.kiosque__carte');
     if (!bouton) return;
     const dossier = tous.find((d) => d.id === bouton.dataset.id);
-    if (dossier) { lire(dossier); annoncer(dossier.titre); }
+    if (dossier) { lire(dossier, { montrer: true }); annoncer(dossier.titre); }
   });
 
   zoneListe.addEventListener('keydown', (evt) => {
@@ -744,7 +793,9 @@ export function kiosque(options) {
     if (evt.key === 'Home') suivant = 0;
     if (evt.key === 'End') suivant = boutons.length - 1;
     evt.preventDefault();
-    boutons[suivant].focus();
+    /* Le focus ne fait pas sauter la page : c'est lire() qui fait défiler
+       la liste, et elle seule, jusqu'à la carte. */
+    boutons[suivant].focus({ preventScroll: true });
     boutons[suivant].click();
   });
 
@@ -763,19 +814,73 @@ export function kiosque(options) {
   /* Un clic dans la lecture termine l'écriture : on veut lire, pas attendre. */
   lect.racine.addEventListener('click', () => arreterEcriture());
 
+  const flux = el('aside', { class: 'kiosque__flux', 'aria-label': texte(opts.titreFil) || 'Communications' },
+    el('div', { class: 'kiosque__flux-tete' },
+      el('h3', { class: 'kiosque__flux-titre' }, texte(opts.titreFil) || 'Communications', ' ', compteur),
+      puces,
+      boutonAjout),
+    zoneListe);
+
   const racine = el('section', { class: 'kiosque', id: prefixe },
     bandeauAlertes(alertes),
-    el('div', { class: 'kiosque__grille' },
-      el('aside', { class: 'kiosque__flux', 'aria-label': texte(opts.titreFil) || 'Communications' },
-        el('div', { class: 'kiosque__flux-tete' },
-          el('h3', { class: 'kiosque__flux-titre' }, texte(opts.titreFil) || 'Communications', ' ', compteur),
-          puces,
-          boutonAjout),
-        zoneListe),
-      lect.racine));
+    el('div', { class: 'kiosque__grille' }, flux, lect.racine));
+
+  const ajusterHauteur = suivreHauteur(flux, lect.racine, montrerEnAttente);
 
   /* Arrivée par un lien : #communication=ID lit cette entrée. */
   const demandee = texte(etatUrl.lire().communication);
   rendreListe(demandee || null);
   return racine;
+}
+
+/* -------------------------------------------------------------------------
+   8. La même hauteur pour la liste et la lecture
+   ------------------------------------------------------------------------- */
+
+/* Sous cette largeur, la grille passe sur une colonne (voir modules.css §2) :
+   la liste a alors une hauteur bornée fixe et l'observateur ne fait rien. */
+const REQUETE_UNE_COLONNE = '(max-width: 900px)';
+
+/**
+ * La lecture donne sa hauteur ; la liste la recopie et défile à l'intérieur.
+ * Déterministe et sans pourcentage : la hauteur mesurée de la lecture est
+ * posée en style en ligne sur la liste, à chaque changement — nouvelle
+ * entrée, image chargée, texte qui s'écrit, fenêtre redimensionnée. La
+ * liste ne peut donc ni dépasser la lecture ni la laisser seule. Sans
+ * ResizeObserver (très vieux navigateur), on mesure une fois puis à
+ * chaque redimensionnement.
+ * @param {HTMLElement} flux     la liste (.kiosque__flux)
+ * @param {HTMLElement} lecture  la lecture (.kiosque__lecture)
+ * @param {() => void} [apres]   appelé après chaque ajustement
+ * @returns {() => void} la fonction d'ajustement, pour l'appeler soi-même
+ */
+function suivreHauteur(flux, lecture, apres) {
+  if (!flux || !lecture || typeof window === 'undefined') return () => {};
+  const uneColonne = typeof window.matchMedia === 'function' ? window.matchMedia(REQUETE_UNE_COLONNE) : null;
+
+  const ajuster = () => {
+    if (uneColonne && uneColonne.matches) {
+      flux.style.removeProperty('block-size');
+      flux.style.removeProperty('max-block-size');
+    } else {
+      const hauteur = Math.round(lecture.getBoundingClientRect().height);
+      if (hauteur > 0) {
+        flux.style.setProperty('block-size', hauteur + 'px');
+        flux.style.setProperty('max-block-size', hauteur + 'px');
+      }
+    }
+    if (typeof apres === 'function') apres();
+  };
+
+  if (typeof ResizeObserver === 'function') {
+    new ResizeObserver(ajuster).observe(lecture);
+  } else {
+    window.addEventListener('resize', ajuster, { passive: true });
+    setTimeout(ajuster, 0);
+  }
+  if (uneColonne) {
+    if (typeof uneColonne.addEventListener === 'function') uneColonne.addEventListener('change', ajuster);
+    else if (typeof uneColonne.addListener === 'function') uneColonne.addListener(ajuster);
+  }
+  return ajuster;
 }
