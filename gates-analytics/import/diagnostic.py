@@ -27,7 +27,6 @@ standard sait ouvrir les deux.
 import argparse
 import csv
 import io
-import os
 import pathlib
 import re
 import sys
@@ -221,11 +220,6 @@ def separateur_de(texte):
         if note > note_max:
             meilleur, note_max = candidat, note
     return meilleur
-
-
-NOMS_ENCODAGES = {'utf-8-sig': 'UTF-8 avec BOM', 'cp1252': 'ANSI (Windows-1252)',
-                  'utf-16': 'UTF-16', 'utf-16-le': 'UTF-16', 'utf-16-be': 'UTF-16',
-                  'utf-32': 'UTF-32', 'latin-1': 'ISO-8859-1'}
 
 
 def lire_csv(chemin):
