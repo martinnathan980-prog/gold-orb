@@ -109,14 +109,12 @@ t('les trois menus de filtre sont présents',
   (await page.locator('#ds-metier, #ds-porteur, #ds-pole').count()) === 3);
 
 console.log('\n== Navigation entre les neuf pages ==');
-for (const p of ['index','etiia','etiie','etiii','reunions','organigramme','faq','docsearch','admin']) {
+for (const p of ['index','etiia','etiie','etiii','reunions','organigramme','faq','docsearch']) {
   await page.goto(`${B}/${p}.html`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
   const liens = await page.locator('nav.site-nav a').count();
   const courant = await page.locator('[aria-current="page"]').count();
-  // admin.html est hors navigation : aucune entrée courante, par construction.
-  const attendu = p === 'admin' ? 0 : 1;
-  if (liens !== 5 || courant !== attendu) t(`${p}.html : nav 5 liens, ${attendu} courant`, false, `(${liens} liens, ${courant} courant)`);
+  if (liens !== 5 || courant !== 1) t(`${p}.html : nav 5 liens, 1 courant`, false, `(${liens} liens, ${courant} courant)`);
 }
 t('les huit pages ont la même navigation', true);
 

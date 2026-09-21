@@ -19,6 +19,7 @@ import { kiosque, dossiersDepuisCommunications, dateCourte, dateLongue } from '.
 import { lecteur, corpsCompteRendu } from './lecteur.js';
 import { arbreEquipe } from './arbre.js';
 import { chargerCommunications } from './communications.js';
+import { ouvrirEditeur } from './editeur.js';
 
 /* -------------------------------------------------------------------------
    1. Les pôles : matière éditoriale, pas de la donnée
@@ -78,7 +79,22 @@ function rendreCommunication(pole, donnees, conteneur) {
   /* Tout ce que le pôle publie est déjà dans ce kiosque : il n'y a pas
      d'ailleurs où renvoyer. Le niveau service est sur le tableau de bord. */
   monter(conteneur,
-    kiosque({ id: 'kiosque-' + pole.cle.toLowerCase(), dossiers, titreFil: 'Communications du pôle' }));
+    kiosque({
+      id: 'kiosque-' + pole.cle.toLowerCase(), dossiers, titreFil: 'Communications du pôle',
+      surAjout: (bouton) => ouvrirEditeur({ pole: pole.cle, declencheur: bouton, surPublication: () => chargerCommunicationDuPole(pole) })
+    }));
+}
+
+function chargerCommunicationDuPole(pole) {
+  avecEtat('#zone-communication', chargerCommunications,
+    (donnees, conteneur) => rendreCommunication(pole, donnees, conteneur), {
+      squelette: 3,
+      texteChargement: 'Chargement de la communication du pôle ' + pole.cle + '…',
+      titreErreur: 'Communication indisponible',
+      titreVide: 'Aucune communication',
+      texteVide: 'Les communications publiées par ce pôle apparaîtront ici.',
+      estVide: (d) => !d || dossiersDepuisCommunications(d, { pole: pole.cle }).length === 0
+    });
 }
 
 /* -------------------------------------------------------------------------
@@ -314,15 +330,7 @@ if (!POLE) {
   rendreEntete(POLE);
   suivreSections();
 
-  avecEtat('#zone-communication', chargerCommunications,
-    (donnees, conteneur) => rendreCommunication(POLE, donnees, conteneur), {
-      squelette: 3,
-      texteChargement: 'Chargement de la communication du pôle ' + POLE.cle + '…',
-      titreErreur: 'Communication indisponible',
-      titreVide: 'Aucune communication',
-      texteVide: 'Les communications publiées par ce pôle apparaîtront ici.',
-      estVide: (d) => !d || dossiersDepuisCommunications(d, { pole: POLE.cle }).length === 0
-    });
+  chargerCommunicationDuPole(POLE);
 
   avecEtat('#zone-reunions', async () => reunionsDuPole(await chargerDonnees('reunions'), POLE.cle),
     (groupes, conteneur) => rendreReunions(POLE, groupes, conteneur), {

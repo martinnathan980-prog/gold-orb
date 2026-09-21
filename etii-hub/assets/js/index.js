@@ -18,6 +18,7 @@ import { porteurs, creditsPhotos } from './porteurs.js';
 import { kiosque, dossiersDepuisCommunications, alertesDepuisCommunications } from './kiosque.js';
 import { chargerSuivi, rendreSuivi } from './otq.js';
 import { chargerCommunications } from './communications.js';
+import { ouvrirEditeur } from './editeur.js';
 
 const POLES = [
   { cle: 'ETIIA', libelle: 'ETIIA' },
@@ -46,7 +47,10 @@ function rendreCommunication(donnees, conteneur) {
     dossiers,
     alertes: alertesDepuisCommunications(donnees),
     titreFil: 'Communications',
-    filtres: POLES
+    filtres: POLES,
+    /* « Ajouter une communication » : l'éditeur s'ouvre ici, et la
+       section se recharge une fois la communication publiée. */
+    surAjout: (bouton) => ouvrirEditeur({ pole: 'ETII', declencheur: bouton, surPublication: chargerCommunicationCenter })
   }));
 }
 
@@ -83,18 +87,21 @@ function rendreSuiviOTQ(suivi, conteneur) {
 initTheme();
 initNav('index.html');
 
-avecEtat('#zone-communication', chargerCommunications, rendreCommunication, {
-  squelette: 3,
-  texteChargement: 'Chargement de la communication du service…',
-  titreErreur: 'Communication indisponible',
-  titreVide: 'Aucune communication publiée',
-  texteVide: 'Le mot du chef, les jalons et les annonces du service '
-    + 'apparaîtront ici dès qu’ils auront été publiés.',
-  estVide: (donnees) => !donnees
-    || ((!Array.isArray(donnees.agenda) || donnees.agenda.length === 0)
-        && (!Array.isArray(donnees.annonces) || donnees.annonces.length === 0)
-        && !donnees.motDuChef)
-});
+function chargerCommunicationCenter() {
+  avecEtat('#zone-communication', chargerCommunications, rendreCommunication, {
+    squelette: 3,
+    texteChargement: 'Chargement de la communication du service…',
+    titreErreur: 'Communication indisponible',
+    titreVide: 'Aucune communication publiée',
+    texteVide: 'Le mot du chef, les jalons et les annonces du service '
+      + 'apparaîtront ici dès qu’ils auront été publiés.',
+    estVide: (donnees) => !donnees
+      || ((!Array.isArray(donnees.agenda) || donnees.agenda.length === 0)
+          && (!Array.isArray(donnees.annonces) || donnees.annonces.length === 0)
+          && !donnees.motDuChef)
+  });
+}
+chargerCommunicationCenter();
 
 /* La flotte a besoin de l'organigramme et du fonds documentaire pour
    relier chaque porteur à son équipe et à ses documents. Les trois

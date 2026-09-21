@@ -3,15 +3,15 @@
    Le « Communication Center » du service : un bandeau d'alertes qui
    défile, puis deux panneaux côte à côte — à gauche la liste de tout ce
    qui a été communiqué (la plus récente d'abord, par mois), à droite la
-   lecture de la communication choisie : son image si elle en a une, sa
-   date, son titre, son résumé, ses chiffres clés, sa courbe, puis le corps
-   écrit ligne à ligne. On ne montre que ce qui a été dit : l'agenda à
-   venir n'est pas de la communication.
+   lecture de la communication choisie. Une communication est composée de
+   BLOCS libres, dans l'ordre voulu par son auteur : texte (écrit ligne à
+   ligne), image, galerie, chiffres clés, courbe, pastilles, encadré. On ne
+   montre que ce qui a été dit : l'agenda à venir n'est pas de la
+   communication.
 
-   Rien n'est inventé : chaque entrée vient du fichier ou de la feuille de
-   communications (le mot du chef, les annonces, les alertes). Tout le DOM
-   est construit avec el() — aucun innerHTML, aucun gestionnaire en
-   attribut.
+   Rien n'est inventé : chaque entrée vient du fichier, de la feuille de
+   publication ou de l'éditeur (editeur.js). Tout le DOM est construit
+   avec el() — aucun innerHTML, aucun gestionnaire en attribut.
    ========================================================================= */
 
 import { el, monter, mouvementReduit, annoncer, etatUrl } from './ui.js';
@@ -49,6 +49,14 @@ const TENDANCES = {
   baisse: { glyphe: '↘', libelle: 'en baisse' },
   stable: { glyphe: '→', libelle: 'stable' }
 };
+
+/** Les types de bloc connus et leur libellé humain (l'éditeur les liste). */
+export const TYPES_BLOC = {
+  texte: 'Texte', image: 'Image', galerie: 'Galerie', chiffres: 'Chiffres clés',
+  courbe: 'Courbe', pastilles: 'Pastilles', encadre: 'Encadré'
+};
+
+const TONS_ENCADRE = ['info', 'succes', 'alerte'];
 
 /* -------------------------------------------------------------------------
    1. Lecture prudente
@@ -135,7 +143,7 @@ function lignesDepuis(brut) {
   return t.split('\n').map((l) => ({ type: l.trim() ? 'texte' : 'vide', texte: l.trim() }));
 }
 
-/** L'image d'une communication : { src, alt, legende } ou null. */
+/** Une image : { src, alt, legende } ou null. */
 function imageDepuis(brut) {
   const o = objet(brut);
   if (!o) return null;
@@ -171,16 +179,82 @@ function serieDepuis(brut) {
   return { libelle: texte(o.libelle) || 'Série', mois, valeurs, unite: texte(o.unite) };
 }
 
+/**
+ * Normalise un bloc : un objet { type, … } propre, ou null s'il est vide.
+ * @param {*} brut
+ */
+export function blocDepuis(brut) {
+  const b = objet(brut);
+  if (!b) return null;
+  const type = texte(b.type);
+  switch (type) {
+    case 'texte': {
+      const lignes = lignesDepuis(b.lignes !== undefined ? b.lignes : b.texte);
+      return lignes.length ? { type, lignes } : null;
+    }
+    case 'image': {
+      const image = imageDepuis(b.src !== undefined ? b : b.image);
+      return image ? Object.assign({ type }, image) : null;
+    }
+    case 'galerie': {
+      const images = (Array.isArray(b.images) ? b.images : []).map(imageDepuis).filter(Boolean);
+      return images.length ? { type, images } : null;
+    }
+    case 'chiffres': {
+      const chiffres = chiffresDepuis(b.chiffres);
+      return chiffres.length ? { type, chiffres } : null;
+    }
+    case 'courbe': {
+      const serie = serieDepuis(b.serie || b);
+      return serie ? { type, serie } : null;
+    }
+    case 'pastilles': {
+      const pastilles = (Array.isArray(b.pastilles) ? b.pastilles : texte(b.pastilles).split(/\s*[;,]\s*/))
+        .map(texte).filter(Boolean).slice(0, 12);
+      return pastilles.length ? { type, pastilles } : null;
+    }
+    case 'encadre': {
+      const t = texte(b.texte);
+      return t ? { type, ton: TONS_ENCADRE.includes(texte(b.ton)) ? texte(b.ton) : 'info', titre: texte(b.titre), texte: t } : null;
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * Les blocs d'une entrée. Une entrée écrite avant les blocs (image,
+ * chiffres, serie, corps à plat) est convertie dans le même ordre que
+ * l'ancien rendu : image, chiffres, courbe, texte.
+ * @param {object} e
+ * @returns {Array<object>}
+ */
+export function blocsDepuis(e) {
+  if (Array.isArray(e.blocs)) return e.blocs.map(blocDepuis).filter(Boolean);
+  const blocs = [];
+  const image = imageDepuis(e.image);
+  if (image) blocs.push(Object.assign({ type: 'image' }, image));
+  const chiffres = chiffresDepuis(e.chiffres);
+  if (chiffres.length) blocs.push({ type: 'chiffres', chiffres });
+  const serie = serieDepuis(e.serie);
+  if (serie) blocs.push({ type: 'courbe', serie });
+  const lignes = lignesDepuis(e.corps);
+  if (lignes.length) blocs.push({ type: 'texte', lignes });
+  return blocs;
+}
+
 function dossierDepuis(e, base) {
+  const blocs = blocsDepuis(e);
   return Object.assign({
     date: texte(e.date),
     titre: texte(e.titre),
     resume: texte(e.resume),
     pole: texte(e.pole).toUpperCase() || 'ETII',
-    lignes: lignesDepuis(e.corps),
-    image: imageDepuis(e.image),
-    chiffres: chiffresDepuis(e.chiffres),
-    serie: serieDepuis(e.serie)
+    blocs,
+    /* Repères pour la liste : y a-t-il une image, des chiffres ? */
+    avecImage: blocs.some((b) => b.type === 'image' || b.type === 'galerie'),
+    avecChiffres: blocs.some((b) => b.type === 'chiffres' || b.type === 'courbe'),
+    local: e.local === true
   }, base);
 }
 
@@ -225,12 +299,11 @@ export function dossiersDepuisCommunications(donnees, options) {
     })),
     ...agenda
       .filter((e) => texte(e.statut) !== 'a-venir' && texte(e.type) !== 'mot' && garder(e))
-      .map((e) => dossierDepuis(e, {
+      .map((e) => dossierDepuis(Object.assign({}, e, { corps: e.corps || e.resume }), {
         id: 'agenda-' + texte(e.id),
         groupe: 'historique',
         programme: TYPES_AGENDA[texte(e.type)] || texte(e.type) || 'Agenda',
-        statut: STATUTS[texte(e.type)] ? texte(e.type) : 'info',
-        lignes: lignesDepuis(e.corps || e.resume)
+        statut: STATUTS[texte(e.type)] ? texte(e.type) : 'info'
       }))
   ].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -254,6 +327,9 @@ export function alertesDepuisCommunications(donnees) {
 /* -------------------------------------------------------------------------
    3. Le bandeau d'alertes
    ------------------------------------------------------------------------- */
+
+/** Le bandeau seul, pour l'aperçu de l'éditeur. */
+export function apercuAlertes(alertes) { return bandeauAlertes(Array.isArray(alertes) ? alertes : []); }
 
 function bandeauAlertes(alertes) {
   if (!alertes.length) return null;
@@ -301,8 +377,9 @@ function carteListe(dossier, prefixe) {
         el('time', { class: 'visuellement-cache', datetime: dossier.date || null }, dateLongue(dossier.date)),
         pastillePole(dossier.pole),
         el('span', {}, dossier.programme || 'Général'),
-        dossier.image ? el('span', { class: 'kiosque__carte-glyphe', title: 'Avec image', 'aria-hidden': 'true' }, '▣') : null,
-        dossier.chiffres.length || dossier.serie ? el('span', { class: 'kiosque__carte-glyphe', title: 'Avec chiffres', 'aria-hidden': 'true' }, '▮') : null))));
+        dossier.avecImage ? el('span', { class: 'kiosque__carte-glyphe', title: 'Avec image', 'aria-hidden': 'true' }, '▣') : null,
+        dossier.avecChiffres ? el('span', { class: 'kiosque__carte-glyphe', title: 'Avec chiffres', 'aria-hidden': 'true' }, '▮') : null,
+        dossier.local ? el('span', { class: 'badge badge--alerte kiosque__carte-local', title: 'Enregistrée dans ce navigateur seulement' }, 'brouillon') : null))));
 }
 
 function liste(dossiers, prefixe) {
@@ -320,7 +397,7 @@ function liste(dossiers, prefixe) {
 }
 
 /* -------------------------------------------------------------------------
-   5. La lecture (à droite) et la machine à écrire
+   5. Les blocs et la machine à écrire
    ------------------------------------------------------------------------- */
 
 function ligneCorps(ligne) {
@@ -372,7 +449,6 @@ function machineAEcrire(conteneur, curseur) {
 
 /* Les chiffres clés : une tuile par chiffre, la valeur en grand. */
 function blocChiffres(chiffres) {
-  if (!chiffres.length) return null;
   return el('ul', { class: 'kiosque__chiffres', role: 'list', 'aria-label': 'Chiffres clés' },
     chiffres.map((c) => {
       const t = TENDANCES[c.tendance];
@@ -386,10 +462,9 @@ function blocChiffres(chiffres) {
     }));
 }
 
-/* La petite série : la courbe validée d'indicateurs.js, avec son libellé,
-   sa première et sa dernière valeur — assez pour lire une tendance. */
+/* La série : la courbe validée d'indicateurs.js, avec son libellé, sa
+   première et sa dernière valeur — assez pour lire une tendance. */
 function blocSerie(serie) {
-  if (!serie) return null;
   const premiere = serie.valeurs.find((v) => v !== null);
   const derniere = serie.valeurs.slice().reverse().find((v) => v !== null);
   const debut = serie.mois[0] ? dateCourte(serie.mois[0] + '-01').replace(/^1 /, '') : '';
@@ -404,13 +479,83 @@ function blocSerie(serie) {
     debut || fin ? el('span', { class: 'kiosque__serie-periode mono' }, debut, ' – ', fin) : null);
 }
 
+/* Une image dans le fil du texte : sa légende sous elle, jamais dessus. */
+function blocImage(image) {
+  return el('figure', { class: 'kiosque__figure' },
+    el('img', { src: image.src, alt: image.alt, loading: 'lazy', decoding: 'async' }),
+    image.legende ? el('figcaption', {}, image.legende) : null);
+}
+
+/* La galerie : des diapositives qu'on fait défiler, avec leurs repères. */
+function blocGalerie(images) {
+  const piste = el('div', { class: 'kiosque__galerie-piste', tabIndex: 0, role: 'group', 'aria-label': 'Galerie de ' + images.length + ' images' },
+    images.map((img, i) => el('figure', { class: 'kiosque__diapo', dataset: { rang: String(i) } },
+      el('img', { src: img.src, alt: img.alt, loading: 'lazy', decoding: 'async' }),
+      img.legende ? el('figcaption', {}, img.legende) : null)));
+  const points = el('div', { class: 'kiosque__galerie-points', 'aria-hidden': 'true' },
+    images.map((_i, i) => el('span', { class: ['kiosque__galerie-point', i === 0 ? 'kiosque__galerie-point--actif' : null] })));
+  const racine = el('div', { class: 'kiosque__galerie' }, piste,
+    el('div', { class: 'kiosque__galerie-barre' },
+      el('button', { type: 'button', class: 'bouton bouton--icone bouton--compact', 'aria-label': 'Image précédente', dataset: { sens: '-1' } }, '‹'),
+      points,
+      el('button', { type: 'button', class: 'bouton bouton--icone bouton--compact', 'aria-label': 'Image suivante', dataset: { sens: '1' } }, '›')));
+  const aller = (rang) => {
+    const diapo = piste.querySelector('.kiosque__diapo[data-rang="' + rang + '"]');
+    if (diapo) piste.scrollTo({ left: diapo.offsetLeft - piste.offsetLeft, behavior: mouvementReduit() ? 'auto' : 'smooth' });
+  };
+  const courant = () => Math.round(piste.scrollLeft / Math.max(1, piste.clientWidth));
+  racine.addEventListener('click', (evt) => {
+    const b = evt.target.closest('[data-sens]');
+    if (!b) return;
+    aller(Math.max(0, Math.min(images.length - 1, courant() + Number(b.dataset.sens))));
+  });
+  piste.addEventListener('scroll', () => {
+    const c = courant();
+    points.querySelectorAll('.kiosque__galerie-point').forEach((p, i) => p.classList.toggle('kiosque__galerie-point--actif', i === c));
+  }, { passive: true });
+  return racine;
+}
+
+function blocPastilles(pastilles) {
+  return el('ul', { class: 'kiosque__pastilles', role: 'list', 'aria-label': 'Mots-clés' },
+    pastilles.map((p) => el('li', { class: 'badge badge--accent' }, p)));
+}
+
+function blocEncadre(bloc) {
+  return el('div', { class: ['kiosque__encadre', 'kiosque__encadre--' + bloc.ton], role: bloc.ton === 'alerte' ? 'note' : null },
+    bloc.titre ? el('p', { class: 'kiosque__encadre-titre' }, bloc.titre) : null,
+    el('p', { class: 'kiosque__encadre-texte' }, bloc.texte));
+}
+
+/**
+ * Rend un bloc. Un bloc de texte s'écrit à la machine ; les autres
+ * s'affichent d'un coup.
+ * @param {object} bloc
+ * @returns {Node|null}
+ */
+export function rendreBloc(bloc) {
+  switch (bloc.type) {
+    case 'texte': return el('div', { class: 'kiosque__corps' }, bloc.lignes.map(ligneCorps));
+    case 'image': return blocImage(bloc);
+    case 'galerie': return blocGalerie(bloc.images);
+    case 'chiffres': return blocChiffres(bloc.chiffres);
+    case 'courbe': return blocSerie(bloc.serie);
+    case 'pastilles': return blocPastilles(bloc.pastilles);
+    case 'encadre': return blocEncadre(bloc);
+    default: return null;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   6. La lecture (à droite)
+   ------------------------------------------------------------------------- */
+
 function lecture(prefixe) {
   const image = el('figure', { class: 'kiosque__image', hidden: true });
   const meta = el('p', { class: 'kiosque__lecture-meta' });
   const titre = el('h3', { class: 'kiosque__lecture-titre', id: prefixe + '-lecture-titre' }, '');
   const chapeau = el('p', { class: 'kiosque__chapeau', hidden: true });
-  const extras = el('div', { class: 'kiosque__extras' });
-  const corps = el('div', { class: 'kiosque__corps' });
+  const blocs = el('div', { class: 'kiosque__blocs' });
   const curseur = el('span', { class: 'kiosque__curseur', 'aria-hidden': 'true', hidden: true });
 
   const racine = el('article', {
@@ -419,15 +564,55 @@ function lecture(prefixe) {
     tabIndex: -1
   },
   image,
-  el('div', { class: 'kiosque__lecture-interieur' },
-    meta, titre, chapeau, extras,
-    el('div', { class: 'kiosque__lecture-corps' }, corps, curseur)));
+  el('div', { class: 'kiosque__lecture-interieur' }, meta, titre, chapeau, blocs, curseur));
 
-  return { racine, image, meta, titre, chapeau, extras, corps, curseur };
+  return { racine, image, meta, titre, chapeau, blocs, curseur };
+}
+
+/* Remplit une lecture avec un dossier. La première image ouvre la lecture
+   en bannière, sans légende dessus ; les autres blocs suivent dans l'ordre. */
+function remplirLecture(lect, dossier) {
+  const statut = STATUTS[dossier.statut] || STATUTS.info;
+  const blocs = dossier.blocs.slice();
+  const premiere = blocs.findIndex((b) => b.type === 'image');
+  const hero = premiere === 0 ? blocs.shift() : null;
+
+  if (hero) {
+    monter(lect.image, el('img', { src: hero.src, alt: hero.alt, loading: 'lazy', decoding: 'async' }));
+    lect.image.hidden = false;
+  } else {
+    monter(lect.image);
+    lect.image.hidden = true;
+  }
+
+  monter(lect.meta,
+    el('time', { class: 'mono', datetime: dossier.date || null }, dateLongue(dossier.date) || 'Date à renseigner'),
+    el('span', { class: 'badge badge--accent' }, dossier.programme || 'Général'),
+    dossier.groupe === 'mot' ? null : el('span', { class: ['badge', statut.classe] }, statut.libelle),
+    pastillePole(dossier.pole));
+  lect.titre.textContent = dossier.titre || 'Sans titre';
+  lect.chapeau.textContent = dossier.resume || '';
+  lect.chapeau.hidden = !dossier.resume;
+  monter(lect.blocs, blocs.length
+    ? blocs.map(rendreBloc)
+    : el('p', { class: 'kiosque__ligne texte-doux' }, 'Aucun détail publié pour cette communication.'));
+}
+
+/**
+ * Une lecture autonome, telle que le kiosque la rend, texte écrit d'un
+ * coup : l'aperçu de l'éditeur.
+ * @param {object} dossier  un dossier de dossiersDepuisCommunications()
+ * @returns {HTMLElement}
+ */
+export function apercuLecture(dossier) {
+  const lect = lecture('apercu');
+  remplirLecture(lect, dossier);
+  lect.racine.querySelectorAll('.kiosque__ligne-texte').forEach((s) => { s.textContent = s.dataset.texte || ''; });
+  return lect.racine;
 }
 
 /* -------------------------------------------------------------------------
-   6. Le kiosque complet
+   7. Le kiosque complet
    ------------------------------------------------------------------------- */
 
 /**
@@ -438,6 +623,8 @@ function lecture(prefixe) {
  * @param {string} [options.titreFil]      intitulé de la liste (défaut « Communications »)
  * @param {Array<{cle:string, libelle:string}>} [options.filtres]  puces de pôle
  * @param {(dossier:object)=>void} [options.surSelection]
+ * @param {(declencheur:HTMLElement)=>void} [options.surAjout]  ouvre l'éditeur ;
+ *        absent, pas de bouton « Ajouter une communication »
  * @returns {HTMLElement}
  */
 export function kiosque(options) {
@@ -465,6 +652,12 @@ export function kiosque(options) {
           }, f.libelle))))
     : null;
 
+  const boutonAjout = typeof opts.surAjout === 'function'
+    ? el('button', { type: 'button', class: 'bouton bouton--principal bouton--compact kiosque__ajout',
+        onClick: (evt) => opts.surAjout(evt.currentTarget) },
+        el('span', { 'aria-hidden': 'true' }, '+ '), 'Ajouter une communication')
+    : null;
+
   const visibles = () => tous.filter((d) => !filtre || d.pole === filtre || d.groupe === 'mot');
 
   function lire(dossier) {
@@ -473,36 +666,11 @@ export function kiosque(options) {
     zoneListe.querySelectorAll('.kiosque__carte').forEach((b) => {
       b.setAttribute('aria-current', b.dataset.id === dossier.id ? 'true' : 'false');
     });
-    const statut = STATUTS[dossier.statut] || STATUTS.info;
-
-    if (dossier.image) {
-      monter(lect.image,
-        el('img', { src: dossier.image.src, alt: dossier.image.alt, loading: 'lazy', decoding: 'async' }),
-        dossier.image.legende ? el('figcaption', {}, dossier.image.legende) : null);
-      lect.image.hidden = false;
-    } else {
-      monter(lect.image);
-      lect.image.hidden = true;
-    }
-
-    monter(lect.meta,
-      el('time', { class: 'mono', datetime: dossier.date || null }, dateLongue(dossier.date) || 'Date à renseigner'),
-      el('span', { class: 'badge badge--accent' }, dossier.programme || 'Général'),
-      dossier.groupe === 'mot' ? null : el('span', { class: ['badge', statut.classe] }, statut.libelle),
-      pastillePole(dossier.pole));
-    lect.titre.textContent = dossier.titre || 'Sans titre';
-    lect.chapeau.textContent = dossier.resume || '';
-    lect.chapeau.hidden = !dossier.resume;
-    monter(lect.extras, blocChiffres(dossier.chiffres), blocSerie(dossier.serie));
-    lect.extras.hidden = !lect.extras.childNodes.length;
-    monter(lect.corps, dossier.lignes.length
-      ? dossier.lignes.map(ligneCorps)
-      : el('p', { class: 'kiosque__ligne texte-doux' }, 'Aucun détail publié pour cette communication.'));
-
+    remplirLecture(lect, dossier);
     lect.racine.classList.remove('kiosque__lecture--entre');
     void lect.racine.offsetWidth; // relance la transition d'entrée
     lect.racine.classList.add('kiosque__lecture--entre');
-    arreterEcriture = machineAEcrire(lect.corps, lect.curseur);
+    arreterEcriture = machineAEcrire(lect.blocs, lect.curseur);
     if (typeof opts.surSelection === 'function') opts.surSelection(dossier);
   }
 
@@ -512,8 +680,7 @@ export function kiosque(options) {
     monter(lect.meta);
     lect.titre.textContent = 'Aucune communication';
     lect.chapeau.hidden = true;
-    monter(lect.extras); lect.extras.hidden = true;
-    monter(lect.corps, el('p', { class: 'texte-doux sans-marge' }, 'Rien à lire pour ce pôle pour le moment.'));
+    monter(lect.blocs, el('p', { class: 'texte-doux sans-marge' }, 'Rien à lire pour ce pôle pour le moment.'));
   }
 
   function rendreListe(cibleDemandee) {
@@ -570,7 +737,8 @@ export function kiosque(options) {
       el('aside', { class: 'kiosque__flux', 'aria-label': texte(opts.titreFil) || 'Communications' },
         el('div', { class: 'kiosque__flux-tete' },
           el('h3', { class: 'kiosque__flux-titre' }, texte(opts.titreFil) || 'Communications', ' ', compteur),
-          puces),
+          puces,
+          boutonAjout),
         zoneListe),
       lect.racine));
 

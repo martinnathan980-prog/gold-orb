@@ -33,10 +33,20 @@ import { chargerDonnees } from './data.js';
    ------------------------------------------------------------------------- */
 
 export const SOURCE = {
-  /* URL du CSV publié (Fichier → Partager → Publier sur le web → CSV) ou
-     URL d'une web app Apps Script qui renvoie le même CSV. Vide : le site
-     lit assets/data/communications.json. Voir docs/COMMUNICATIONS-GOOGLE-SHEETS.md. */
-  url: ''
+  /* LECTURE — URL du CSV publié (Fichier → Partager → Publier sur le web →
+     CSV) ou URL de la web app Apps Script (/exec) qui renvoie le même CSV.
+     Vide : le site lit assets/data/communications.json. */
+  url: '',
+  /* ÉCRITURE — URL de la web app Apps Script (/exec) qui reçoit une
+     communication publiée depuis l'éditeur du site et l'ajoute à la
+     feuille (doPost de tools/apps-script/communications-sync.gs). Vide :
+     ce que l'on publie reste dans le navigateur, marqué « brouillon ». */
+  publication: '',
+  /* Clé partagée entre l'éditeur et le script : le script refuse tout ce
+     qui n'a pas la bonne clé. Ce n'est pas un secret fort — c'est un
+     garde-fou contre l'erreur, pas contre l'attaque ; l'accès réel se
+     règle sur la web app (domaine). */
+  cle: ''
 };
 
 /* Les colonnes de la feuille, dans l'ordre. L'en-tête de la feuille les
@@ -44,7 +54,7 @@ export const SOURCE = {
    n'a pas d'importance. */
 export const COLONNES = [
   'type', 'id', 'date', 'pole', 'categorie', 'statut', 'titre', 'resume',
-  'corps', 'image', 'imageAlt', 'imageLegende', 'chiffres', 'serie', 'auteur', 'fonction'
+  'corps', 'image', 'imageAlt', 'imageLegende', 'chiffres', 'serie', 'auteur', 'fonction', 'blocs'
 ];
 
 const POLES = ['ETII', 'ETIIA', 'ETIIE', 'ETIII'];
@@ -283,7 +293,23 @@ export function annonceDepuisLigne(ligne, rang) {
   if (chiffres.length) annonce.chiffres = chiffres;
   const serie = analyserSerie(l.serie);
   if (serie) annonce.serie = serie;
+  /* Les blocs libres de l'éditeur voyagent en JSON dans leur colonne. Un
+     JSON illisible est ignoré : les colonnes à plat restent la base. */
+  const blocs = blocsDepuisTexte(l.blocs);
+  if (blocs) annonce.blocs = blocs;
   return annonce;
+}
+
+/** Le JSON de la colonne « blocs » → tableau, ou null s'il est absent ou illisible. */
+export function blocsDepuisTexte(brut) {
+  const t = texte(brut);
+  if (!t) return null;
+  try {
+    const v = JSON.parse(t);
+    return Array.isArray(v) && v.length ? v.filter((b) => b && typeof b === 'object' && texte(b.type)) : null;
+  } catch (_e) {
+    return null;
+  }
 }
 
 /**
@@ -323,6 +349,7 @@ export function communicationsDepuisLignes(lignes) {
     if (m.image) resultat.motDuChef.image = m.image;
     if (m.chiffres) resultat.motDuChef.chiffres = m.chiffres;
     if (m.serie) resultat.motDuChef.serie = m.serie;
+    if (m.blocs) resultat.motDuChef.blocs = m.blocs;
   }
   resultat.annonces.sort((a, b) => b.date.localeCompare(a.date));
   return resultat;
@@ -342,7 +369,8 @@ export function ligneDepuisAnnonce(annonce, type) {
     type: type || 'annonce', id: texte(a.id), date: texte(a.date), pole: texte(a.pole),
     categorie: texte(a.categorie), statut: texte(a.statut), titre: texte(a.titre), resume: texte(a.resume),
     corps: corpsEnTexte(a.corps), image: texte(image.src), imageAlt: texte(image.alt), imageLegende: texte(image.legende),
-    chiffres: chiffresEnTexte(a.chiffres), serie: serieEnTexte(a.serie), auteur: texte(a.auteur), fonction: texte(a.fonction)
+    chiffres: chiffresEnTexte(a.chiffres), serie: serieEnTexte(a.serie), auteur: texte(a.auteur), fonction: texte(a.fonction),
+    blocs: Array.isArray(a.blocs) && a.blocs.length ? JSON.stringify(a.blocs) : ''
   };
   /* Une cellule qui contient un retour à la ligne ou une tabulation est
      mise entre guillemets, comme Sheets s'y attend au collage. */
@@ -353,14 +381,105 @@ export function ligneDepuisAnnonce(annonce, type) {
 }
 
 /* -------------------------------------------------------------------------
-   6. Le chargement
+   6. Ce qui est publié depuis ce navigateur, tant que rien n'est branché
+   ------------------------------------------------------------------------- */
+
+const CLE_LOCALE = 'etii:communications.locales';
+
+function lireLocales() {
+  try {
+    const brut = typeof localStorage !== 'undefined' ? localStorage.getItem(CLE_LOCALE) : null;
+    const v = brut ? JSON.parse(brut) : null;
+    return v && typeof v === 'object' ? { motDuChef: v.motDuChef || null, alertes: Array.isArray(v.alertes) ? v.alertes : [], annonces: Array.isArray(v.annonces) ? v.annonces : [] } : { motDuChef: null, alertes: [], annonces: [] };
+  } catch (_e) {
+    return { motDuChef: null, alertes: [], annonces: [] };
+  }
+}
+
+function ecrireLocales(v) {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    localStorage.setItem(CLE_LOCALE, JSON.stringify(v));
+    return true;
+  } catch (_e) {
+    return false;
+  }
+}
+
+/** Ce qui a été publié depuis ce navigateur (lecture seule). */
+export function communicationsLocales() { return lireLocales(); }
+
+/** Retire une entrée locale (id d'annonce, 'mot-du-chef', ou 'alerte:<texte>'). */
+export function supprimerLocale(id) {
+  const v = lireLocales();
+  if (id === 'mot-du-chef') v.motDuChef = null;
+  else if (String(id).startsWith('alerte:')) v.alertes = v.alertes.filter((a) => a !== String(id).slice(7));
+  else v.annonces = v.annonces.filter((a) => a && a.id !== id);
+  return ecrireLocales(v);
+}
+
+/* Fusionne le local dans l'objet lu : les entrées locales portent
+   `local: true`, ce qui les signale « brouillon » dans le kiosque. */
+function avecLocales(objet) {
+  const l = lireLocales();
+  if (!l.motDuChef && !l.alertes.length && !l.annonces.length) return objet;
+  const copie = Object.assign({}, objet);
+  if (l.motDuChef) copie.motDuChef = Object.assign({}, l.motDuChef, { local: true });
+  copie.alertes = (Array.isArray(objet.alertes) ? objet.alertes : []).concat(l.alertes);
+  const ids = new Set(l.annonces.map((a) => a.id));
+  copie.annonces = l.annonces.map((a) => Object.assign({}, a, { local: true }))
+    .concat((Array.isArray(objet.annonces) ? objet.annonces : []).filter((a) => !ids.has(a.id)))
+    .sort((a, b) => texte(b.date).localeCompare(texte(a.date)));
+  return copie;
+}
+
+/**
+ * Publie une communication. Avec SOURCE.publication, elle part vers la
+ * web app Apps Script qui l'ajoute à la feuille (le site la lira à la
+ * prochaine ouverture) ; sans, elle est gardée dans ce navigateur et
+ * marquée « brouillon ». Le corps est envoyé en text/plain : Apps Script
+ * ne répond pas aux requêtes préliminaires CORS, et text/plain n'en
+ * déclenche pas.
+ * @param {'annonce'|'mot'|'alerte'} type
+ * @param {object|string} contenu  l'annonce (ou le mot), ou le texte de l'alerte
+ * @returns {Promise<{ok: boolean, ou: 'feuille'|'navigateur', message: string}>}
+ */
+export async function publierCommunication(type, contenu) {
+  const url = texte(SOURCE.publication);
+  if (url) {
+    const reponse = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ cle: texte(SOURCE.cle), type, contenu, ligne: type === 'alerte'
+        ? ligneDepuisAnnonce({ titre: contenu }, 'alerte')
+        : ligneDepuisAnnonce(contenu, type) })
+    });
+    if (!reponse.ok) throw new Error('réponse ' + reponse.status);
+    let retour = null;
+    try { retour = await reponse.json(); } catch (_e) { retour = null; }
+    if (!retour || retour.ok !== true) throw new Error((retour && retour.erreur) || 'réponse inattendue du script');
+    return { ok: true, ou: 'feuille', message: 'Publiée : la feuille est mise à jour, le site la lira à la prochaine ouverture.' };
+  }
+  const v = lireLocales();
+  if (type === 'alerte') v.alertes = v.alertes.filter((a) => a !== contenu).concat([texte(contenu)]);
+  else if (type === 'mot') v.motDuChef = contenu;
+  else v.annonces = v.annonces.filter((a) => a && a.id !== contenu.id).concat([contenu]);
+  const ok = ecrireLocales(v);
+  return { ok, ou: 'navigateur', message: ok
+    ? 'Enregistrée dans ce navigateur (brouillon). Pour la partager à tous, branchez la publication : docs/COMMUNICATIONS-GOOGLE-SHEETS.md.'
+    : 'Ce navigateur refuse le stockage local : rien n’a pu être enregistré.' };
+}
+
+/* -------------------------------------------------------------------------
+   7. Le chargement
    ------------------------------------------------------------------------- */
 
 /**
  * Lit les communications : la feuille publiée si SOURCE.url est renseignée,
- * sinon le fichier du site. La feuille injoignable ou vide retombe sur le
- * fichier, avec un avertissement en console — le service ne doit jamais
- * voir une page blanche à cause d'une URL.
+ * sinon le fichier du site ; puis ce qui a été publié depuis ce navigateur.
+ * La feuille injoignable ou vide retombe sur le fichier, avec un
+ * avertissement en console — le service ne doit jamais voir une page
+ * blanche à cause d'une URL.
  * @returns {Promise<object>} objet de la forme de communications.json,
  *   avec `origine` : 'feuille' ou 'fichier'
  */
@@ -373,11 +492,11 @@ export async function chargerCommunications() {
       const objet = communicationsDepuisLignes(analyserCsv(await reponse.text()));
       if (!objet.motDuChef && !objet.annonces.length && !objet.alertes.length) throw new Error('aucune ligne lisible');
       objet.origine = 'feuille';
-      return objet;
+      return avecLocales(objet);
     } catch (e) {
       if (typeof console !== 'undefined') console.warn('[communications] feuille illisible (' + (e && e.message) + ') : lecture du fichier du site.');
     }
   }
   const local = await chargerDonnees('communications');
-  return Object.assign({}, local, { origine: 'fichier' });
+  return avecLocales(Object.assign({}, local, { origine: 'fichier' }));
 }

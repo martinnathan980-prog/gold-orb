@@ -20,9 +20,15 @@
  *   3. Exécuter une fois `installerDeclencheur` : déclencheur quotidien
  *      entre minuit et 1 h (fuseau : Paramètres du projet).
  *
+ *   C. `doPost` reçoit une communication publiée depuis l'ÉDITEUR du site
+ *      (bouton « Ajouter une communication ») et l'ajoute à l'onglet
+ *      « communications ». L'URL /exec se colle dans SOURCE.publication.
+ *      Déploiement : exécuter en tant que « Moi », accès « Toute personne
+ *      du domaine » (ou « disposant du lien » avec CLE_PUBLICATION).
+ *
  * Colonnes attendues par le site (en-tête en ligne 1) :
  *   type,id,date,pole,categorie,statut,titre,resume,corps,image,imageAlt,
- *   imageLegende,chiffres,serie,auteur,fonction
+ *   imageLegende,chiffres,serie,auteur,fonction,blocs
  */
 
 var ID_FEUILLE_SOURCE = '';                      // vide : un onglet de ce classeur
@@ -30,7 +36,12 @@ var NOM_ONGLET_SOURCE = 'Réponses au formulaire 1';
 var NOM_ONGLET_PUBLICATION = 'communications';
 
 var COLONNES = ['type', 'id', 'date', 'pole', 'categorie', 'statut', 'titre', 'resume',
-  'corps', 'image', 'imageAlt', 'imageLegende', 'chiffres', 'serie', 'auteur', 'fonction'];
+  'corps', 'image', 'imageAlt', 'imageLegende', 'chiffres', 'serie', 'auteur', 'fonction', 'blocs'];
+
+/* La clé que l'éditeur du site envoie avec chaque publication (SOURCE.cle
+   dans assets/js/communications.js). Vide : toute publication est acceptée
+   — réservez alors l'accès de la web app au domaine. */
+var CLE_PUBLICATION = '';
 
 /* En-tête de l'onglet source (tel qu'un Google Form le nomme) → colonne du
    site. Les en-têtes sont comparés sans casse ni accents. */
@@ -132,4 +143,76 @@ function doGet() {
     }).join(',');
   }).join('\n');
   return ContentService.createTextOutput(csv).setMimeType(ContentService.MimeType.CSV);
+}
+
+/* Option C : une publication envoyée par l'éditeur du site.
+   Corps : JSON { cle, type, contenu, ligne } — `ligne` est la ligne prête
+   (colonnes dans l'ordre, séparées par des tabulations) ; on l'écrit telle
+   quelle, après vérification de la clé et de l'en-tête. Une annonce qui
+   porte l'identifiant d'une ligne existante la remplace. */
+function doPost(e) {
+  var reponse = function (objet) {
+    return ContentService.createTextOutput(JSON.stringify(objet)).setMimeType(ContentService.MimeType.JSON);
+  };
+  var corps;
+  try { corps = JSON.parse(e && e.postData && e.postData.contents ? e.postData.contents : '{}'); }
+  catch (err) { return reponse({ ok: false, erreur: 'JSON illisible' }); }
+  if (CLE_PUBLICATION && String(corps.cle || '') !== CLE_PUBLICATION) return reponse({ ok: false, erreur: 'clé refusée' });
+  var ligne = String(corps.ligne || '');
+  if (!ligne) return reponse({ ok: false, erreur: 'ligne absente' });
+
+  var cellules = decouperTsv(ligne);
+  while (cellules.length < COLONNES.length) cellules.push('');
+  cellules = cellules.slice(0, COLONNES.length);
+  if (!cellules[6] && cellules[0] !== 'alerte') return reponse({ ok: false, erreur: 'titre absent' });
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var classeur = SpreadsheetApp.getActiveSpreadsheet();
+    var feuille = classeur.getSheetByName(NOM_ONGLET_PUBLICATION) || classeur.insertSheet(NOM_ONGLET_PUBLICATION);
+    if (feuille.getLastRow() === 0) feuille.getRange(1, 1, 1, COLONNES.length).setValues([COLONNES]);
+    var id = cellules[1];
+    var remplacee = false;
+    if (id) {
+      var ids = feuille.getLastRow() > 1 ? feuille.getRange(2, 2, feuille.getLastRow() - 1, 1).getValues() : [];
+      for (var i = 0; i < ids.length; i += 1) {
+        if (String(ids[i][0]) === id) {
+          feuille.getRange(i + 2, 1, 1, COLONNES.length).setValues([cellules]);
+          remplacee = true;
+          break;
+        }
+      }
+    }
+    if (!remplacee) feuille.appendRow(cellules);
+    return reponse({ ok: true, remplacee: remplacee });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/* Découpe une ligne « tabulations », avec des cellules entre guillemets
+   qui peuvent contenir des tabulations et des retours à la ligne. */
+function decouperTsv(ligne) {
+  var cellules = [];
+  var cellule = '';
+  var entreGuillemets = false;
+  for (var i = 0; i < ligne.length; i += 1) {
+    var c = ligne[i];
+    if (entreGuillemets) {
+      if (c === '"') {
+        if (ligne[i + 1] === '"') { cellule += '"'; i += 1; } else { entreGuillemets = false; }
+      } else {
+        cellule += c;
+      }
+    } else if (c === '"' && cellule === '') {
+      entreGuillemets = true;
+    } else if (c === '\t') {
+      cellules.push(cellule); cellule = '';
+    } else {
+      cellule += c;
+    }
+  }
+  cellules.push(cellule);
+  return cellules;
 }

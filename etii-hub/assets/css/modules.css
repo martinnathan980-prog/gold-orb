@@ -187,26 +187,31 @@ ul.kiosque__alertes-liste {
 
 /* --- La liste ------------------------------------------------------------- */
 
-/* La liste reste sous les yeux pendant qu'on lit : elle se colle sous la
-   barre du site, et défile dans sa propre fenêtre. */
+/* La liste et la lecture partagent la même hauteur : c'est la lecture qui
+   la fixe, la liste s'y ajuste et défile dans sa propre fenêtre. Astuce de
+   grille : une hauteur nulle et une hauteur minimale de 100 % — l'élément
+   ne contribue pas à la rangée, mais la remplit. */
+.kiosque__grille { align-items: stretch; }
+
 .kiosque__flux {
-  position: sticky;
-  inset-block-start: var(--e-4);
   display: flex;
   flex-direction: column;
-  max-block-size: clamp(28rem, calc(100vh - var(--e-12)), 44rem);
-  min-block-size: 0;
+  block-size: 0;
+  min-block-size: 100%;
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
   border-radius: var(--rayon-lg);
   box-shadow: var(--ombre-sm);
 }
 
-/* Sur un écran étroit, la liste passe au-dessus de la lecture et ne se
-   colle plus : elle défile avec la page, dans une fenêtre courte. */
+.kiosque__lecture { min-block-size: 28rem; }
+
+/* Sur un écran étroit, la liste passe au-dessus de la lecture, dans une
+   fenêtre courte. */
 @media (max-width: 900px) {
   .kiosque__grille { grid-template-columns: minmax(0, 1fr); }
-  .kiosque__flux { position: static; max-block-size: 26rem; }
+  .kiosque__flux { block-size: auto; min-block-size: 0; max-block-size: 26rem; }
+  .kiosque__lecture { min-block-size: 0; }
 }
 
 .kiosque__flux-tete {
@@ -232,6 +237,8 @@ ul.kiosque__alertes-liste {
 .kiosque__compte { color: var(--texte-faible); letter-spacing: 0; }
 
 .kiosque__filtres { gap: var(--e-1); }
+.kiosque__ajout { margin-inline-start: auto; }
+.kiosque__carte-local { text-transform: none; letter-spacing: 0; }
 .kiosque__filtres .facette { min-height: calc(var(--cible-tactile) - var(--e-3)); padding-inline: var(--e-2); font-size: var(--texte-xs); }
 
 .kiosque__defile {
@@ -405,19 +412,6 @@ ul.kiosque__alertes-liste {
   object-fit: cover;
 }
 
-.kiosque__image figcaption {
-  position: absolute;
-  inset-block-end: var(--e-2);
-  inset-inline-end: var(--e-3);
-  max-inline-size: 70%;
-  padding: 2px var(--e-2);
-  border-radius: var(--rayon-sm);
-  background-color: var(--voile-fort);
-  color: var(--entete-texte);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  text-align: end;
-}
 
 .kiosque__lecture-interieur {
   display: flex;
@@ -513,12 +507,58 @@ ul.kiosque__alertes-liste {
 .kiosque__serie .ind-spark { inline-size: 100%; block-size: auto; }
 .kiosque__serie-periode { font-size: var(--texte-xs); color: var(--texte-faible); }
 
-.kiosque__lecture-corps {
+.kiosque__blocs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-5);
   font-size: var(--texte-md);
   line-height: 1.65;
 }
 
 .kiosque__corps { display: flex; flex-direction: column; gap: var(--e-2); }
+
+/* Une image dans le fil : sa légende dessous. */
+.kiosque__figure { margin: 0; }
+.kiosque__figure img { display: block; inline-size: 100%; border-radius: var(--rayon-md); background-color: var(--fond-enfonce); }
+.kiosque__figure figcaption { margin-block-start: var(--e-2); font-size: var(--texte-sm); color: var(--texte-doux); }
+
+/* La galerie : des diapositives qu'on fait défiler, aimantées. */
+.kiosque__galerie { display: flex; flex-direction: column; gap: var(--e-2); }
+
+.kiosque__galerie-piste {
+  display: flex;
+  gap: var(--e-3);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  border-radius: var(--rayon-md);
+}
+
+.kiosque__diapo { flex: 0 0 100%; margin: 0; scroll-snap-align: start; }
+.kiosque__diapo img { display: block; inline-size: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--rayon-md); background-color: var(--fond-enfonce); }
+.kiosque__diapo figcaption { margin-block-start: var(--e-2); font-size: var(--texte-sm); color: var(--texte-doux); }
+
+.kiosque__galerie-barre { display: flex; align-items: center; justify-content: center; gap: var(--e-3); }
+.kiosque__galerie-points { display: inline-flex; gap: var(--e-1); }
+.kiosque__galerie-point { inline-size: 7px; block-size: 7px; border-radius: var(--rayon-plein); background-color: var(--bordure-forte); transition: background-color var(--duree-rapide) var(--courbe); }
+.kiosque__galerie-point--actif { background-color: var(--chaud); }
+
+.kiosque__pastilles { display: flex; flex-wrap: wrap; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
+
+/* L'encadré : un ton, un filet, pas de gros aplat. */
+.kiosque__encadre {
+  --encadre-teinte: var(--statut-info);
+  padding: var(--e-3) var(--e-4);
+  background-color: var(--fond-enfonce);
+  border: 1px solid var(--bordure-douce);
+  border-inline-start: 3px solid var(--encadre-teinte);
+  border-radius: var(--rayon-md);
+}
+
+.kiosque__encadre--succes { --encadre-teinte: var(--statut-succes); }
+.kiosque__encadre--alerte { --encadre-teinte: var(--chaud); }
+.kiosque__encadre-titre { margin: 0 0 var(--e-1); font-weight: var(--graisse-forte); color: var(--encadre-teinte); }
+.kiosque__encadre-texte { margin: 0; }
 
 .kiosque__curseur {
   display: inline-block;
@@ -2243,13 +2283,13 @@ ol.liseuse__bloc-liste {
 .ds-usage__termes li { display: flex; justify-content: space-between; gap: var(--e-3); padding: var(--e-1) var(--e-2); border-bottom: 1px solid var(--bordure-douce); }
 
 /* -------------------------------------------------------------------------
-   12. Publier une communication (admin.html) : le formulaire à gauche,
-       l'aperçu vivant à droite
+   12. L'éditeur de communication : dans une fenêtre, le formulaire à
+       gauche, l'aperçu vivant à droite
    ---------------------------------------------------------------------- */
 
-.admin__intro { margin: 0 auto; text-align: center; color: var(--texte-doux); }
+.modale--editeur { inline-size: min(100%, 88rem); }
 
-.admin {
+.editeur {
   display: grid;
   grid-template-columns: minmax(0, 30rem) minmax(0, 1fr);
   gap: var(--e-6);
@@ -2257,14 +2297,13 @@ ol.liseuse__bloc-liste {
 }
 
 @media (max-width: 1000px) {
-  .admin { grid-template-columns: minmax(0, 1fr); }
-  .admin__colonne--apercu { position: static; }
+  .editeur { grid-template-columns: minmax(0, 1fr); }
 }
 
-.admin__colonne { display: flex; flex-direction: column; gap: var(--e-4); min-inline-size: 0; }
-.admin__colonne--apercu { position: sticky; inset-block-start: var(--e-4); }
+.editeur__colonne { display: flex; flex-direction: column; gap: var(--e-4); min-inline-size: 0; }
+.editeur__intro { margin: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
 
-.admin__apercu-titre {
+.editeur__apercu-titre {
   margin: 0;
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
@@ -2274,21 +2313,13 @@ ol.liseuse__bloc-liste {
   color: var(--texte-faible);
 }
 
-/* Dans l'aperçu, la liste et la lecture s'empilent : on regarde une seule
-   communication, la colonne de droite n'est pas large. */
-.admin__apercu-zone .kiosque__grille { grid-template-columns: minmax(0, 1fr); }
-.admin__apercu-zone .kiosque__flux { position: static; max-block-size: none; }
-.admin__apercu-zone .kiosque__defile { overflow: visible; }
+.editeur__apercu-zone .kiosque__lecture { min-block-size: 0; }
 
-.admin__formulaire { display: flex; flex-direction: column; gap: var(--e-4); }
+.editeur__formulaire { display: flex; flex-direction: column; gap: var(--e-3); }
 
-.admin__types {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--e-2);
-}
+.editeur__types { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--e-2); }
 
-.admin__type {
+.editeur__type {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -2300,63 +2331,107 @@ ol.liseuse__bloc-liste {
   cursor: pointer;
 }
 
-.admin__type input { position: absolute; inset-block-start: var(--e-2); inset-inline-end: var(--e-2); margin: 0; }
-.admin__type:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.admin__type:has(input:focus-visible) { outline: var(--focus-epaisseur) solid var(--focus-couleur); outline-offset: var(--focus-decalage); }
-.admin__type-libelle { font-weight: var(--graisse-forte); padding-inline-end: var(--e-5); }
-.admin__type-aide { font-size: var(--texte-xs); line-height: 1.4; color: var(--texte-doux); }
+.editeur__type input { position: absolute; inset-block-start: var(--e-2); inset-inline-end: var(--e-2); margin: 0; }
+.editeur__type:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.editeur__type:has(input:focus-visible) { outline: var(--focus-epaisseur) solid var(--focus-couleur); outline-offset: var(--focus-decalage); }
+.editeur__type-libelle { font-weight: var(--graisse-forte); padding-inline-end: var(--e-5); }
+.editeur__type-aide { font-size: var(--texte-xs); line-height: 1.4; color: var(--texte-doux); }
 
-.admin__bloc {
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-3);
-  margin: 0;
-  padding: var(--e-4);
+.editeur__rangee { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr)); gap: var(--e-3); }
+
+.editeur__sous-titre {
+  margin: var(--e-2) 0 0;
+  font-family: var(--police-titre);
+  font-size: var(--texte-xl);
+  font-weight: var(--graisse-normale);
+}
+
+.editeur__blocs { display: flex; flex-direction: column; gap: var(--e-3); }
+
+.editeur__bloc {
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
   border-radius: var(--rayon-lg);
   box-shadow: var(--ombre-sm);
 }
 
-.admin__bloc-titre {
-  padding: 0 var(--e-1);
-  font-family: var(--police-titre);
-  font-size: var(--texte-xl);
-  color: var(--texte);
-}
-
-.admin__rangee { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr)); gap: var(--e-3); }
-
-.admin__chiffres { display: flex; flex-direction: column; gap: var(--e-2); }
-
-.admin__chiffre {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
-  gap: var(--e-2);
-}
-
-.admin__chiffre .champ__erreur { grid-column: 1 / -1; }
-
-.admin__actions {
+.editeur__bloc-tete {
   display: flex;
-  flex-direction: column;
-  gap: var(--e-3);
-  padding: var(--e-4);
-  background-color: var(--fond-enfonce);
-  border: 1px solid var(--bordure-douce);
+  align-items: center;
+  gap: var(--e-2);
+  padding: var(--e-2) var(--e-3);
+  border-bottom: 1px solid var(--bordure-douce);
+}
+
+.editeur__bloc-rang { font-size: var(--texte-xs); color: var(--texte-faible); }
+.editeur__bloc-type { flex: 1; font-weight: var(--graisse-forte); font-size: var(--texte-sm); }
+.editeur__bloc-outils { display: inline-flex; gap: var(--e-1); }
+.editeur__bloc-corps { display: flex; flex-direction: column; gap: var(--e-3); padding: var(--e-3); }
+
+.editeur__chiffre { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr); gap: var(--e-2); }
+.editeur__diapo { display: grid; grid-template-columns: auto minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1.2fr) auto; gap: var(--e-2); align-items: center; }
+.editeur__diapo-rang { font-size: var(--texte-xs); color: var(--texte-faible); }
+
+.editeur__ajout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2);
+  padding: var(--e-3);
+  border: 1px dashed var(--bordure-forte);
   border-radius: var(--rayon-lg);
 }
 
-.admin__validation {
+.editeur__ajout-libelle {
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--lettrage-etiquette);
   text-transform: uppercase;
   color: var(--texte-faible);
 }
 
-.admin__validation[data-etat="ok"] { color: var(--statut-succes); }
-.admin__validation[data-etat="erreur"] { color: var(--statut-alerte); }
+.editeur__erreurs {
+  margin: 0;
+  padding: var(--e-3) var(--e-4) var(--e-3) var(--e-6);
+  background-color: var(--statut-alerte-fond);
+  border: 1px solid var(--statut-alerte);
+  border-radius: var(--rayon-md);
+  color: var(--statut-alerte);
+  font-size: var(--texte-sm);
+}
 
-.admin__colonnes summary { cursor: pointer; font-size: var(--texte-sm); color: var(--texte-doux); }
-.admin__colonnes code { font-size: var(--texte-xs); }
+.editeur__erreurs[hidden] { display: none; }
+
+.editeur__locaux-titre {
+  margin: 0 0 var(--e-2);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.editeur__locaux-liste { display: flex; flex-direction: column; gap: var(--e-1); margin: 0; padding: 0; list-style: none; font-size: var(--texte-sm); }
+.editeur__locaux-liste li { display: flex; align-items: center; justify-content: space-between; gap: var(--e-3); padding: var(--e-1) 0; border-bottom: 1px solid var(--bordure-douce); }
+
+/* -------------------------------------------------------------------------
+   13. Les bandes de section : une section sur deux se pose sur un ton à
+       peine différent, en pleine largeur, pour que l'œil sépare les parties
+       de la page sans y penser
+   ---------------------------------------------------------------------- */
+
+.pile--section > section {
+  padding-block: var(--e-8) var(--e-10);
+  margin-block: 0;
+}
+
+.pile--section > section:nth-of-type(even) {
+  /* Pleine largeur depuis un conteneur centré : on déborde de la moitié
+     de la fenêtre de chaque côté, puis on rend l'espace en marge interne. */
+  margin-inline: calc(50% - 50vw);
+  padding-inline: calc(50vw - 50%);
+  background-color: var(--fond-bande);
+  border-block: 1px solid var(--bordure-douce);
+}
+
+.pile--section > section:first-of-type { padding-block-start: 0; }
