@@ -1,0 +1,29 @@
+# --- Ne JAMAIS versionner : sessions du navigateur (cookies, mots de passe mémorisés)
+profils/
+**/profils/
+
+# --- Fichiers générés par le robot
+captures/
+**/captures/
+journal/
+**/journal/
+sauvegardes/
+**/sauvegardes/
+telechargements/
+**/telechargements/
+demo/
+
+# --- Données métier (vos Excel de suivi ne concernent que vous)
+*.xlsx
+*.xlsm
+~$*
+
+# --- Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/

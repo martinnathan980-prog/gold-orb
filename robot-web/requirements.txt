@@ -1,0 +1,7 @@
+# Installation : pip install -r requirements.txt
+# Derrière un proxy d'entreprise, voir README (section Installation).
+playwright>=1.40
+openpyxl>=3.1
+PyYAML>=6.0
+pypdf>=4.0
+python-docx>=1.1

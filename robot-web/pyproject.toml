@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autoweb"
+version = "0.1.0"
+description = "Robot de saisie web piloté par Excel (Playwright + openpyxl), pensé pour un poste d'entreprise."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "playwright>=1.40",
+    "openpyxl>=3.1",
+    "PyYAML>=6.0",
+    "pypdf>=4.0",
+    "python-docx>=1.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+autoweb = "autoweb.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["autoweb*"]
+
+[tool.setuptools.package-data]
+autoweb = ["modeles/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

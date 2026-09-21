@@ -1,0 +1,27 @@
+# =============================================================================
+#  Règles d'extraction autoweb : documents (PDF / Word / texte) -> Excel
+#  Lancer : python -m autoweb extraire regles.yaml --dossier "C:\mes\documents" --sortie suivi.xlsx
+#  Chaque champ est une expression régulière ; le 1er groupe entre parenthèses est la valeur.
+#  Testez vos expressions sur https://regex101.com (saveur Python).
+# =============================================================================
+fichiers: ["*.pdf", "*.docx"]     # motifs de fichiers à lire (sous-dossiers inclus)
+# dossier: "C:\\mes\\documents"   # dossier par défaut si --dossier n'est pas donné
+# pages: "1-2"                    # ne lire que les premières pages des PDF (plus rapide)
+feuille: Suivi
+colonne_fichier: Fichier
+
+champs:
+  Numéro plan:
+    regex: 'N[°o]\s*(?:de\s+)?plan\s*[:=]?\s*([A-Z0-9][A-Z0-9\-/_.]+)'
+    obligatoire: true             # si absent : la ligne est marquée « A verifier »
+  Titre:
+    regex: '^\s*Titre\s*[:=]\s*(.+?)\s*$'
+    defaut: ""
+  Date:
+    regex: '(\d{1,2}/\d{1,2}/\d{4})'          # première date trouvée
+  Indice:
+    regex: '\bIndice\s*[:=]?\s*([A-Z0-9]{1,3})\b'
+  Références citées:
+    regex: '\b(REF-\d{3,6})\b'
+    tous: true                    # toutes les occurrences, séparées par « ; »
+    separateur: "; "

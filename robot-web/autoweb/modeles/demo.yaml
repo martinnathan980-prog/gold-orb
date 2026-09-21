@@ -1,0 +1,44 @@
+# Scénario de démonstration : saisie de plans dans l'outil fictif formulaire_demo.html
+# Lancement : python -m autoweb demo        (crée demo/ avec ce fichier + l'Excel de démo)
+nom: Démo — saisie de plans dans l'outil fictif
+description: >
+  Remplit le formulaire local formulaire_demo.html à partir de demo_suivi.xlsx,
+  relève la référence attribuée par l'outil et l'écrit dans l'Excel.
+
+navigateur:
+  canal: auto          # msedge (Edge installé) -> chrome -> chromium Playwright
+  visible: true
+  delai_max: 10000
+
+excel:
+  fichier: demo_suivi.xlsx
+  feuille: Plans
+  colonne_libelle: Numéro plan
+
+# Une fois au début : connexion (la session est mémorisée par l'outil ensuite)
+avant:
+  - aller: {fichier: formulaire_demo.html}
+  - si:
+      visible: "#btn-connexion"
+      alors:
+        - remplir:
+            "#utilisateur": demo
+            "#mot-de-passe": demo
+        - cliquer: "#btn-connexion"
+  - attendre: "#formulaire-plan"
+
+# Pour CHAQUE ligne de l'Excel
+etapes:
+  - aller: {fichier: formulaire_demo.html}
+  - attendre: "#formulaire-plan"
+  - remplir:
+      "#numero": "{{Numéro plan}}"
+      "#titre": "{{Titre}}"
+      "#date": "{{Date | date:%d/%m/%Y}}"
+      "#commentaire": "{{Commentaire | defaut:Saisi automatiquement}} ({{aujourdhui}})"
+  - choisir: {selecteur: "#type", valeur: "{{Type}}"}      # valeur (STR) ou libellé (Structure)
+  - cocher: {selecteur: "#urgent", valeur: "{{Urgent}}"}   # oui/non/x/1/vrai...
+  - cliquer: "role=button:Enregistrer"
+  - verifier: {selecteur: "#message", contient: "enregistré"}
+  - lire: {selecteur: "#reference", vers: "Référence outil"}
+  - capture: "captures/{{Numéro plan}}.png"

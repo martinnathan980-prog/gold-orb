@@ -1,0 +1,80 @@
+# =============================================================================
+#  Scénario autoweb : __NOM__
+#  Lancer  :  python -m autoweb lancer <ce fichier>            (toutes les lignes « A faire »)
+#  Tester  :  python -m autoweb simuler <ce fichier>           (sans navigateur)
+#             python -m autoweb lancer <ce fichier> --limite 1 (une seule ligne, pour valider)
+#  Aide    :  README.md, section « Écrire un scénario »
+# =============================================================================
+nom: __NOM__
+description: Saisie automatique dans __NOM__ à partir de l'Excel de suivi.
+
+navigateur:
+  canal: auto              # auto = Edge installé, sinon Chrome, sinon chromium Playwright
+  profil: __PROFIL__       # dossier de session : connectez-vous une fois, le robot reste connecté
+  visible: true            # false = navigateur invisible (une fois le scénario fiable)
+  delai_max: 15000         # attente maximale d'un élément (millisecondes)
+  # attacher: 9222         # pour piloter un Edge DÉJÀ ouvert avec --remote-debugging-port=9222
+  # executable: "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  # lenteur: 300           # ralentit chaque action (ms), pratique pour observer
+
+excel:
+  fichier: __EXCEL__
+  feuille: Suivi
+  colonne_libelle: Numéro plan     # colonne affichée dans le journal pour repérer la ligne
+  traiter_si: ["", "A faire"]      # statuts à traiter (les OK sont laissés tranquilles)
+  # entre_lignes_ms: 500           # petite pause entre deux lignes
+
+variables:
+  url_base: https://mon-outil.entreprise.local
+
+# ---- Une fois au début : ouverture de l'outil, connexion si besoin -----------
+avant:
+  - aller: "{{url_base}}/plans"
+  - si:
+      visible: "texte=Se connecter"       # page de connexion affichée ?
+      alors:
+        - pause: "Connectez-vous dans le navigateur, puis revenez ici et appuyez sur Entrée"
+  - attendre: "texte=Nouveau plan"
+
+# ---- Pour CHAQUE ligne de l'Excel -------------------------------------------
+etapes:
+  - aller: "{{url_base}}/plans/nouveau"
+  - attendre: "#formulaire"
+  - remplir:
+      "libelle=Numéro de plan": "{{Numéro plan}}"
+      "libelle=Titre": "{{Titre}}"
+      "#date": "{{Date | date:%d/%m/%Y}}"
+      "#commentaire": "{{Commentaire | defaut:-}}"
+  - choisir: {selecteur: "#type", valeur: "{{Type}}"}
+  - cocher: {selecteur: "#urgent", valeur: "{{Urgent}}"}
+  # - televerser: {selecteur: "input[type=file]", fichier: "plans/{{Numéro plan}}.pdf"}
+  # - pause: "Vérifiez le formulaire puis Entrée"      # utile lors des premiers essais
+  - cliquer: "role=button:Enregistrer"
+  - verifier: {selecteur: ".alert-success", contient: "enregistré"}
+  - lire: {selecteur: ".reference", vers: "Référence outil"}    # écrit dans l'Excel
+  - capture: "captures/{{Numéro plan}}.png"
+
+# ---- Une fois à la fin (facultatif) ------------------------------------------
+# apres:
+#   - journal: "Terminé"
+
+# =============================================================================
+#  Aide-mémoire des actions (paramètre principal en forme courte)
+#    aller: url | {fichier: chemin.html}            attendre: sélecteur | {selecteur, etat: visible/cache/present/absent}
+#    remplir: {sél: val, ...} | {selecteur, valeur, appuyer: Tab}
+#    taper: {selecteur, valeur}  (touche par touche, pour les champs à suggestion)
+#    cliquer: sélecteur | {selecteur, si_present: true, nouvel_onglet: true, double: true}
+#    choisir: {selecteur, valeur | libelle | index}  cocher/decocher: {selecteur, valeur}
+#    touche: Enter | {selecteur, touche: Tab}       survoler: sélecteur
+#    televerser: {selecteur, fichier}               telecharger: {cliquer: sél, vers: dossier/ou/fichier}
+#    lire: {selecteur, vers: Colonne, attribut: auto|valeur|href, regex: "REF-(\\d+)"}
+#    verifier: {selecteur, contient|egal|valeur|coche|absent|cache}   verifier_url: texte
+#    capture: chemin.png   journal: message   pause: message   inspecter   patienter: 500
+#    si: {present|absent|visible|cache: sél  ou  valeur: "{{Col}}", egal|different|contient|vide|non_vide|vrai, alors: [...], sinon: [...]}
+#    cadre: {selecteur: iframe, etapes: [...]}     onglet: 2 | dernier | {titre: ...}   fermer_onglet
+#    ignorer: message (ligne IGNORE)   echouer: message (ligne ERREUR)   arreter: message (stop)
+#  Options sur toute étape :  nom: "libellé"   optionnel: true   delai_max: 30000
+#  Sélecteurs : #id  .classe  [name=x]  libelle=Texte  texte=Texte  placeholder=...  role=button:Texte  test=id
+#  Gabarits : {{Colonne}}  {{Col | defaut:x}}  {{Date | date:%d/%m/%Y}}  {{Nb | entier}}  {{X | majuscules}}
+#             variables spéciales : {{aujourdhui}} {{maintenant}} {{ligne}} {{n}} {{total}}
+# =============================================================================
