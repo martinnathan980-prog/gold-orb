@@ -1,7 +1,9 @@
 // L'éditeur de communication — exécuter depuis etii-hub/ avec un serveur :
 //   python3 -m http.server 8111 &   puis   node tests/editeur.e2e.mjs
-// Compose une communication de cinq blocs, vérifie l'aperçu, publie dans
-// le navigateur (aucune feuille branchée), recharge, retire.
+// Compose une communication de cinq blocs, vérifie l'aperçu, met en page
+// les blocs (listes de gauche, poignées de l'aperçu, clavier), publie dans
+// le navigateur (aucune feuille branchée), recharge, retrouve la mise en
+// page dans la lecture, retire.
 
 import { chromium } from 'playwright';
 
@@ -15,8 +17,17 @@ const page = await ctx.newPage();
 const err = [];
 page.on('pageerror', (e) => err.push(e.message));
 
+/* Le centre d'une poignée, en coordonnées de la fenêtre. */
+async function centre(selecteur) {
+  await page.locator(selecteur).scrollIntoViewIfNeeded();
+  const r = await page.locator(selecteur).boundingBox();
+  return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+}
+
 console.log('== Le Communication Center ==');
 await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
+await page.evaluate(() => { try { localStorage.removeItem('etii:editeur.communication'); } catch (_e) { /* sans stockage */ } });
+await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(1000);
 const h = await page.evaluate(() => ({
   flux: document.querySelector('.kiosque__flux').getBoundingClientRect().height,
@@ -32,6 +43,8 @@ await page.waitForTimeout(500);
 t('la fenêtre s’ouvre avec le formulaire et l’aperçu',
   (await page.locator('.modale--editeur .editeur__formulaire').count()) === 1
   && (await page.locator('.modale--editeur .editeur__apercu-zone .kiosque__lecture').count()) === 1);
+const typesTexte = await page.locator('.editeur__types').innerText();
+t('le type « mot » s’appelle Édito, plus de « chef »', /Édito/.test(typesTexte) && !/chef/i.test(typesTexte));
 await page.click('.modale__actions button:has-text("Publier")');
 await page.waitForTimeout(400);
 t('publier sans titre est refusé, avec les raisons', (await page.locator('.editeur__erreurs li').count()) >= 2 && (await page.locator('.modale').count()) === 1);
@@ -63,8 +76,105 @@ t('le texte est typé (titre, puce, validé)',
   && (await apercu.locator('.kiosque__ligne--valide').count()) === 1);
 await page.click('.editeur__bloc:nth-of-type(5) [aria-label="Monter le bloc"]');
 await page.waitForTimeout(200);
-t('un bloc se déplace', (await page.locator('.editeur__bloc').nth(3).innerText()).includes('Encadré'));
+t('un bloc se déplace depuis la carte de gauche', (await page.locator('.editeur__bloc').nth(3).innerText()).includes('Encadré'));
 
+console.log('\n== La mise en page ==');
+t('chaque bloc rendu porte un cadre d’édition avec ses poignées',
+  (await apercu.locator('.kiosque__bloc.editeur__cadre').count()) === 5
+  && (await apercu.locator('.editeur__cadre .editeur__poignee--deplacer').count()) === 5
+  && (await apercu.locator('.editeur__cadre .editeur__poignee--largeur').count()) === 5
+  && (await apercu.locator('.editeur__cadre .editeur__poignee--cote').count()) === 10);
+t('les cadres portent l’indice de leur carte de gauche',
+  (await apercu.locator('.editeur__cadre').evaluateAll((n) => n.map((c) => c.dataset.index).join(','))) === '0,1,2,3,4');
+
+/* Depuis la liste de gauche : l'image (bloc 2) en moitié, à droite. */
+await page.locator('.editeur__bloc').nth(1).locator('.editeur__segment[aria-label="Moitié"]').click();
+await page.locator('.editeur__bloc').nth(1).locator('.editeur__segment[aria-label="Calé à droite"]').click();
+await page.waitForTimeout(300);
+t('la liste de gauche règle la largeur et le côté ; l’aperçu suit',
+  (await apercu.locator('.kiosque__bloc--moitie.kiosque__bloc--droite[data-type="image"][data-largeur="moitie"][data-cote="droite"]').count()) === 1
+  && (await page.locator('.editeur__bloc').nth(1).locator('.editeur__segment[aria-pressed="true"]').allInnerTexts()).join('|') === '½|Droite');
+t('la poignée de largeur d’un bloc calé à droite passe sur son bord gauche',
+  (await apercu.locator('.editeur__cadre[data-index="1"]').evaluate((n) => n.classList.contains('editeur__cadre--ancre-droite'))));
+
+/* Depuis l'aperçu, à la souris : la poignée des chiffres (bloc 3) tirée
+   jusqu'au milieu de la grille → moitié. */
+const grille = await apercu.locator('.kiosque__blocs').boundingBox();
+let p = await centre('.editeur__cadre[data-index="2"] .editeur__poignee--largeur');
+await page.mouse.move(p.x, p.y);
+await page.mouse.down();
+for (let i = 1; i <= 8; i += 1) await page.mouse.move(p.x + (grille.x + grille.width * 0.52 - p.x) * (i / 8), p.y);
+await page.mouse.up();
+await page.waitForTimeout(300);
+t('tirer la poignée de largeur aimante le bloc sur la moitié',
+  (await apercu.locator('.editeur__cadre[data-index="2"]').getAttribute('data-largeur')) === 'moitie'
+  && (await page.locator('.editeur__bloc').nth(2).locator('.editeur__segment[aria-pressed="true"]').first().innerText()) === '½');
+t('la poignée garde le clavier après le geste',
+  await page.evaluate(() => document.activeElement && document.activeElement.classList.contains('editeur__poignee--largeur')));
+
+/* Les boutons de côté : gauche, puis retour dans le flux. */
+await apercu.locator('.editeur__cadre[data-index="2"] .editeur__poignee--cote[data-cote="gauche"]').click();
+await page.waitForTimeout(250);
+t('◧ cale le bloc à gauche', (await apercu.locator('.editeur__cadre[data-index="2"]').getAttribute('data-cote')) === 'gauche');
+await apercu.locator('.editeur__cadre[data-index="2"] .editeur__poignee--cote[data-cote="gauche"]').click();
+await page.waitForTimeout(250);
+t('◧ une seconde fois le remet dans le flux', (await apercu.locator('.editeur__cadre[data-index="2"]').getAttribute('data-cote')) === '');
+
+/* Au clavier : ← rétrécit, → élargit ; ↑ ↓ déplacent. */
+await centre('.editeur__cadre[data-index="2"] .editeur__poignee--largeur');
+await apercu.locator('.editeur__cadre[data-index="2"] .editeur__poignee--largeur').focus();
+await page.keyboard.press('ArrowLeft');
+await page.waitForTimeout(250);
+t('← rétrécit d’un cran (moitié → tiers)', (await apercu.locator('.editeur__cadre[data-index="2"]').getAttribute('data-largeur')) === 'tiers');
+await page.keyboard.press('ArrowRight');
+await page.waitForTimeout(250);
+await page.keyboard.press('ArrowRight');
+await page.waitForTimeout(250);
+t('→ → élargit (tiers → deux tiers)', (await apercu.locator('.editeur__cadre[data-index="2"]').getAttribute('data-largeur')) === 'deux-tiers');
+await apercu.locator('.editeur__cadre[data-index="2"] .editeur__poignee--deplacer').focus();
+await page.keyboard.press('ArrowUp');
+await page.waitForTimeout(250);
+t('↑ remonte le bloc, à droite comme à gauche',
+  (await apercu.locator('.editeur__cadre[data-index="1"]').getAttribute('data-type')) === 'chiffres'
+  && (await page.locator('.editeur__bloc').nth(1).innerText()).includes('Chiffres clés')
+  && await page.evaluate(() => document.activeElement && document.activeElement.closest('.editeur__cadre') && document.activeElement.closest('.editeur__cadre').dataset.index === '1'));
+await page.keyboard.press('ArrowDown');
+await page.waitForTimeout(250);
+t('↓ le redescend', (await apercu.locator('.editeur__cadre[data-index="2"]').getAttribute('data-type')) === 'chiffres');
+
+/* Glisser-déposer dans l'aperçu : l'encadré (bloc 4) posé sur la moitié
+   haute des chiffres (bloc 3) passe devant eux. */
+p = await centre('.editeur__cadre[data-index="3"] .editeur__poignee--deplacer');
+const chiffresBloc = await apercu.locator('.editeur__cadre[data-index="2"]').boundingBox();
+await page.mouse.move(p.x, p.y);
+await page.mouse.down();
+for (let i = 1; i <= 8; i += 1) await page.mouse.move(p.x + (chiffresBloc.x + 60 - p.x) * (i / 8), p.y + (chiffresBloc.y + 12 - p.y) * (i / 8));
+await page.waitForTimeout(100);
+const repere = await apercu.locator('.editeur__repere:not([hidden])').count();
+await page.mouse.up();
+await page.waitForTimeout(300);
+t('un repère d’insertion apparaît pendant le glissement', repere === 1);
+t('glisser un bloc dans l’aperçu le réordonne, et la carte de gauche suit',
+  (await apercu.locator('.editeur__cadre[data-index="2"]').getAttribute('data-type')) === 'encadre'
+  && (await apercu.locator('.editeur__cadre[data-index="3"]').getAttribute('data-type')) === 'chiffres'
+  && (await page.locator('.editeur__bloc').nth(2).innerText()).includes('Encadré')
+  && (await page.locator('.editeur__bloc').nth(3).innerText()).includes('Chiffres clés'));
+t('le repère a disparu', (await apercu.locator('.editeur__repere').count()) === 0);
+
+/* Remise en ordre attendue pour la publication : chiffres en moitié
+   (dans le flux), image en moitié à droite. */
+await apercu.locator('.editeur__cadre[data-index="3"] .editeur__poignee--largeur').focus();
+await page.keyboard.press('ArrowLeft');
+await page.waitForTimeout(250);
+t('le brouillon local conserve largeur et côté',
+  await page.evaluate(() => {
+    const b = JSON.parse(localStorage.getItem('etii:editeur.communication')).blocs;
+    const image = b.find((x) => x.type === 'image');
+    const chiffres = b.find((x) => x.type === 'chiffres');
+    return image.largeur === 'moitie' && image.cote === 'droite' && chiffres.largeur === 'moitie' && chiffres.cote === '';
+  }));
+
+console.log('\n== La publication ==');
 await page.click('.modale__actions button:has-text("Publier")');
 await page.waitForTimeout(1200);
 t('la publication ferme la fenêtre et recharge la liste',
@@ -74,6 +184,13 @@ t('l’entrée publiée est marquée « brouillon » (aucune feuille branchée)'
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(1000);
 t('elle survit au rechargement', (await page.locator('.kiosque__carte-local').count()) === 1);
+await page.locator('.kiosque__carte-local').first().click();
+await page.waitForTimeout(800);
+const lecture = page.locator('.kiosque__lecture').first();
+t('la lecture retrouve la mise en page : image en moitié à droite, chiffres en moitié',
+  (await lecture.locator('.kiosque__bloc--moitie.kiosque__bloc--droite[data-type="image"]').count()) === 1
+  && (await lecture.locator('.kiosque__bloc--moitie[data-type="chiffres"]:not(.kiosque__bloc--droite)').count()) === 1
+  && (await lecture.locator('.editeur__cadre').count()) === 0);
 await page.click('.kiosque__ajout');
 await page.waitForTimeout(400);
 await page.click('.editeur__locaux-liste button:has-text("Retirer")');

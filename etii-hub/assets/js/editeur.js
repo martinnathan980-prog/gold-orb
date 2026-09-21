@@ -1,7 +1,7 @@
 /* =========================================================================
    ETII Hub — L'éditeur de communication (« Ajouter une communication »)
 
-   C'est ici que tout se joue : le chef compose sa communication dans le
+   C'est ici que tout se joue : l'auteur compose sa communication dans le
    site, comme il veut — du texte écrit ligne à ligne, des images, une
    galerie, des chiffres clés, une courbe, des pastilles, un encadré — dans
    l'ordre qu'il choisit, et la voit à droite exactement comme le kiosque
@@ -9,23 +9,71 @@
    est branchée (SOURCE.publication) ; sinon elle reste dans ce navigateur,
    marquée « brouillon », le temps de brancher la publication.
 
+   La mise en page se fait à la souris, dans l'aperçu : chaque bloc rendu
+   est pris dans un cadre d'édition — une poignée pour le déplacer entre
+   les autres, une poignée sur son bord pour le rétrécir ou l'élargir (la
+   largeur s'aimante sur tiers, moitié, deux tiers, pleine), deux boutons
+   pour le caler à gauche ou à droite. Le formulaire de gauche montre les
+   mêmes réglages en listes : les deux parlent au même état, tout se voit
+   en temps réel.
+
    Le brouillon en cours est conservé dans ce navigateur. Tout le DOM est
    construit avec el() ; les blocs sont normalisés par kiosque.js — une
    seule vérité pour l'aperçu et la publication.
    ========================================================================= */
 
 import { el, frag, monter, ouvrirModale, stockage, toast, debounce, annoncer } from './ui.js';
-import { dossiersDepuisCommunications, apercuLecture, apercuAlertes, blocDepuis, TYPES_BLOC } from './kiosque.js';
+import { dossiersDepuisCommunications, apercuLecture, apercuAlertes, blocDepuis, TYPES_BLOC,
+  LARGEURS_BLOC, COTES_BLOC } from './kiosque.js';
 import { analyserCorps, corpsEnTexte, analyserSerie, serieEnTexte, publierCommunication,
   communicationsLocales, supprimerLocale, SOURCE } from './communications.js';
 
 const CLE_BROUILLON = 'editeur.communication';
 
+/* Le type `mot` s'appelle « Édito » pour qui écrit : la clé ne change pas
+   (données, feuille), seul le mot change. */
 const TYPES = [
   { cle: 'annonce', libelle: 'Annonce', aide: 'Une nouvelle du service ou d’un pôle.' },
-  { cle: 'mot', libelle: 'Mot du chef', aide: 'Le message de la direction, en tête de liste.' },
+  { cle: 'mot', libelle: 'Édito', aide: 'Le message de la direction, en tête de liste.' },
   { cle: 'alerte', libelle: 'Alerte', aide: 'Une phrase pour le bandeau qui défile.' }
 ];
+
+/* La mise en page d'un bloc, dans les mots de kiosque.js : sa largeur dans
+   la grille de six colonnes (et la fraction qu'elle occupe, pour aimanter
+   la poignée) et le côté où il se cale. */
+const LARGEURS = [
+  { cle: 'pleine', libelle: 'Pleine largeur', court: 'Pleine', fraction: 1 },
+  { cle: 'deux-tiers', libelle: 'Deux tiers', court: '2⁄3', fraction: 2 / 3 },
+  { cle: 'moitie', libelle: 'Moitié', court: '½', fraction: 1 / 2 },
+  { cle: 'tiers', libelle: 'Un tiers', court: '⅓', fraction: 1 / 3 }
+];
+const COTES = [
+  { cle: '', libelle: 'Dans le flux', court: 'Flux' },
+  { cle: 'gauche', libelle: 'Calé à gauche', court: 'Gauche' },
+  { cle: 'droite', libelle: 'Calé à droite', court: 'Droite' }
+];
+/* De la plus étroite à la plus large : c'est l'ordre des flèches ← →. */
+const ORDRE_LARGEURS = ['tiers', 'moitie', 'deux-tiers', 'pleine'];
+
+function largeurDe(b) { return LARGEURS_BLOC.includes(b.largeur) ? b.largeur : 'pleine'; }
+function coteDe(b) { return COTES_BLOC.includes(b.cote) ? b.cote : ''; }
+function libelleLargeur(cle) { return (LARGEURS.find((l) => l.cle === cle) || LARGEURS[0]).libelle; }
+function courtLargeur(cle) { return (LARGEURS.find((l) => l.cle === cle) || LARGEURS[0]).court; }
+function libelleCote(cle) { return (COTES.find((c) => c.cle === cle) || COTES[0]).libelle; }
+
+/* La largeur la plus proche d'une fraction de la grille : c'est l'aimant
+   de la poignée de redimensionnement. */
+function largeurAimantee(fraction) {
+  let choix = LARGEURS[0];
+  LARGEURS.forEach((l) => { if (Math.abs(l.fraction - fraction) < Math.abs(choix.fraction - fraction)) choix = l; });
+  return choix.cle;
+}
+
+/* Un cran plus large (+1) ou plus étroit (−1), sans sortir de l'échelle. */
+function largeurVoisine(cle, delta) {
+  const i = ORDRE_LARGEURS.indexOf(largeurDe({ largeur: cle }));
+  return ORDRE_LARGEURS[Math.min(ORDRE_LARGEURS.length - 1, Math.max(0, i + delta))];
+}
 const POLES = [['ETII', 'Tout le service'], ['ETIIA', 'ETIIA'], ['ETIIE', 'ETIIE'], ['ETIII', 'ETIII']];
 const STATUTS = [['info', 'Information'], ['succes', 'Validé'], ['urgent', 'Urgent']];
 const TENDANCES = [['', '—'], ['hausse', 'En hausse ↗'], ['baisse', 'En baisse ↘'], ['stable', 'Stable →']];
@@ -43,8 +91,14 @@ function identifiant() {
 }
 
 /* Un bloc vide de chaque type, tel que l'éditeur le manipule (champs en
-   texte, jamais normalisés avant l'aperçu). */
+   texte, jamais normalisés avant l'aperçu). Il naît en pleine largeur,
+   dans le flux. */
 function blocVide(type) {
+  const b = contenuVide(type);
+  return b ? Object.assign(b, { largeur: 'pleine', cote: '' }) : null;
+}
+
+function contenuVide(type) {
   switch (type) {
     case 'texte': return { type, texte: '' };
     case 'image': return { type, src: '', alt: '', legende: '' };
@@ -55,6 +109,30 @@ function blocVide(type) {
     case 'encadre': return { type, ton: 'info', titre: '', texte: '' };
     default: return null;
   }
+}
+
+/* -------------------------------------------------------------------------
+   0. Les gestes sur l'état : les mêmes depuis la carte de gauche et depuis
+      l'aperçu
+   ------------------------------------------------------------------------- */
+
+/* Déplace le bloc `de` avant (ou après, si `apres`) le bloc `cible`. Les
+   deux sont des indices de etat.blocs ; rend l'indice d'arrivée. */
+function deplacerBloc(etat, de, cible, apres) {
+  if (de === cible) return de;
+  const [b] = etat.blocs.splice(de, 1);
+  let vers = cible > de ? cible - 1 : cible;
+  if (apres) vers += 1;
+  etat.blocs.splice(vers, 0, b);
+  return vers;
+}
+
+/* Échange le bloc avec son voisin (delta −1 ou +1) ; rend l'indice d'arrivée. */
+function decalerBloc(etat, index, delta) {
+  const j = index + delta;
+  if (j < 0 || j >= etat.blocs.length) return index;
+  [etat.blocs[index], etat.blocs[j]] = [etat.blocs[j], etat.blocs[index]];
+  return j;
 }
 
 function brouillonVide(pole) {
@@ -69,8 +147,18 @@ function brouillonVide(pole) {
    1. De l'état de l'éditeur à la communication publiable
    ------------------------------------------------------------------------- */
 
-/* Un bloc de l'éditeur → un bloc de données (forme de communications.json). */
+/* Un bloc de l'éditeur → un bloc de données (forme de communications.json),
+   avec sa mise en page : `largeur` et `cote` voyagent tels quels dans le
+   JSON des blocs, jusqu'à la feuille et retour. */
 function blocPublie(b) {
+  const publie = contenuPublie(b);
+  if (!publie) return null;
+  publie.largeur = largeurDe(b);
+  publie.cote = coteDe(b);
+  return publie;
+}
+
+function contenuPublie(b) {
   switch (b.type) {
     case 'texte': return { type: 'texte', lignes: analyserCorps(b.texte) };
     case 'image': return { type: 'image', src: texte(b.src), alt: texte(b.alt), legende: texte(b.legende) };
@@ -227,14 +315,34 @@ function corpsBloc(b, surChangement, rendre) {
   }
 }
 
-function carteBloc(etat, index, surChangement, rendre) {
+/* Un groupe de boutons à état (aria-pressed) : la largeur ou le côté d'un
+   bloc, pour qui préfère les listes aux poignées. */
+function segments(libelle, choix, valeur, surChoix) {
+  return el('div', { class: 'editeur__segments', role: 'group', 'aria-label': libelle },
+    el('span', { class: 'editeur__segments-libelle' }, libelle),
+    el('span', { class: 'editeur__segments-boutons' },
+      choix.map((c) => el('button', {
+        type: 'button', class: 'editeur__segment', 'aria-pressed': c.cle === valeur ? 'true' : 'false',
+        'aria-label': c.libelle, title: c.libelle, onClick: () => { if (c.cle !== valeur) surChoix(c.cle); }
+      }, c.court))));
+}
+
+/* La rangée « mise en page » d'une carte : largeur puis côté. Une image en
+   premier bloc est la bannière : sa mise en page ne s'applique pas. */
+function miseEnPageCarte(etat, index, appliquer) {
   const b = etat.blocs[index];
-  const deplacer = (delta) => {
-    const j = index + delta;
-    if (j < 0 || j >= etat.blocs.length) return;
-    [etat.blocs[index], etat.blocs[j]] = [etat.blocs[j], etat.blocs[index]];
-    rendre(); surChangement();
-  };
+  if (index === 0 && b.type === 'image') {
+    return el('p', { class: 'editeur__mise-en-page editeur__mise-en-page--note champ__aide' },
+      'En premier bloc, l’image ouvre la communication en bannière, sur toute la largeur.');
+  }
+  return el('div', { class: 'editeur__mise-en-page' },
+    segments('Largeur', LARGEURS, largeurDe(b), (cle) => { b.largeur = cle; appliquer(); }),
+    segments('Côté', COTES, coteDe(b), (cle) => { b.cote = cle; appliquer(); }));
+}
+
+function carteBloc(etat, index, surChangement, rendre, appliquer) {
+  const b = etat.blocs[index];
+  const deplacer = (delta) => { decalerBloc(etat, index, delta); appliquer(); };
   return el('section', { class: 'editeur__bloc', 'aria-label': 'Bloc ' + (index + 1) + ' : ' + (TYPES_BLOC[b.type] || b.type) },
     el('header', { class: 'editeur__bloc-tete' },
       el('span', { class: 'editeur__bloc-rang mono' }, String(index + 1)),
@@ -243,16 +351,190 @@ function carteBloc(etat, index, surChangement, rendre) {
         el('button', { type: 'button', class: 'bouton bouton--icone bouton--compact', 'aria-label': 'Monter le bloc', disabled: index === 0 ? true : null, onClick: () => deplacer(-1) }, '↑'),
         el('button', { type: 'button', class: 'bouton bouton--icone bouton--compact', 'aria-label': 'Descendre le bloc', disabled: index === etat.blocs.length - 1 ? true : null, onClick: () => deplacer(1) }, '↓'),
         el('button', { type: 'button', class: 'bouton bouton--icone bouton--compact', 'aria-label': 'Supprimer le bloc',
-          onClick: () => { etat.blocs.splice(index, 1); rendre(); surChangement(); } }, '×'))),
+          onClick: () => { etat.blocs.splice(index, 1); appliquer(); } }, '×'))),
+    miseEnPageCarte(etat, index, appliquer),
     el('div', { class: 'editeur__bloc-corps' }, corpsBloc(b, surChangement, rendre)));
 }
 
-function barreAjout(etat, rendre, surChangement) {
+/* -------------------------------------------------------------------------
+   3 bis. Le cadre d'édition d'un bloc dans l'aperçu
+   ------------------------------------------------------------------------- */
+
+/* Les indices (dans etat.blocs) des blocs que l'aperçu rend réellement, dans
+   l'ordre du DOM : les blocs vides n'y sont pas, et une première image est
+   la bannière, hors de la grille. C'est ce qui relie chaque enveloppe
+   .kiosque__bloc de l'aperçu à sa carte de gauche. */
+function indicesRendus(etat) {
+  const indices = [];
+  etat.blocs.forEach((b, i) => { if (blocDepuis(blocPublie(b))) indices.push(i); });
+  if (indices.length && etat.blocs[indices[0]].type === 'image') indices.shift();
+  return indices;
+}
+
+/* Recopie la mise en page d'un bloc sur son enveloppe, comme rendreBloc
+   (kiosque.js) le ferait : c'est ce qui rend le glissement instantané,
+   sans reconstruire tout l'aperçu à chaque cran. */
+function appliquerMiseEnPage(enveloppe, b) {
+  const largeur = largeurDe(b);
+  const cote = coteDe(b);
+  LARGEURS.forEach((l) => enveloppe.classList.toggle('kiosque__bloc--' + l.cle, l.cle === largeur));
+  ['gauche', 'droite'].forEach((c) => enveloppe.classList.toggle('kiosque__bloc--' + c, c === cote));
+  enveloppe.dataset.largeur = largeur;
+  enveloppe.dataset.cote = cote;
+  enveloppe.classList.toggle('editeur__cadre--ancre-droite', cote === 'droite');
+  const libelle = enveloppe.querySelector('.editeur__cadre-mise-en-page');
+  if (libelle) libelle.textContent = courtLargeur(largeur) + (cote ? ' · ' + libelleCote(cote).toLowerCase() : '');
+  const poignee = enveloppe.querySelector('.editeur__poignee--largeur');
+  if (poignee) poignee.setAttribute('aria-label', 'Largeur du bloc : ' + libelleLargeur(largeur).toLowerCase() + ' (glisser, ou flèches ← →)');
+  enveloppe.querySelectorAll('.editeur__poignee--cote').forEach((btn) => btn.setAttribute('aria-pressed', btn.dataset.cote === cote ? 'true' : 'false'));
+}
+
+/**
+ * Pose sur chaque bloc rendu de l'aperçu son cadre d'édition : la poignée
+ * de déplacement (glisser entre les blocs, ou ↑ ↓ ; ← → pour la largeur),
+ * les deux boutons de côté, et la poignée de largeur sur le bord libre du
+ * bloc (le bord droit ; le gauche quand le bloc est calé à droite), qui
+ * aimante la largeur sur tiers / moitié / deux tiers / pleine.
+ * @param {HTMLElement} zone        la zone d'aperçu
+ * @param {object} etat
+ * @param {(focus?: {index:number, poignee:string}) => void} appliquer
+ *        enregistre l'état et reconstruit formulaire et aperçu
+ */
+function poserCadres(zone, etat, appliquer) {
+  const grille = zone.querySelector('.kiosque__blocs');
+  if (!grille) return;
+  const enveloppes = Array.from(grille.children).filter((n) => n.classList && n.classList.contains('kiosque__bloc'));
+  const indices = indicesRendus(etat);
+  enveloppes.forEach((enveloppe, k) => {
+    const index = indices[k];
+    if (index === undefined) return;
+    const b = etat.blocs[index];
+    enveloppe.classList.add('editeur__cadre');
+    enveloppe.dataset.index = String(index);
+    const nom = 'Bloc ' + (index + 1) + ' (' + (TYPES_BLOC[b.type] || b.type) + ')';
+
+    const poigneeDeplacer = el('button', {
+      type: 'button', class: 'editeur__poignee editeur__poignee--deplacer', dataset: { poignee: 'deplacer' },
+      'aria-label': 'Déplacer le ' + nom.toLowerCase() + ' : glisser, ou flèches ↑ ↓ ; ← → pour la largeur',
+      title: 'Déplacer (glisser ou ↑ ↓)'
+    }, el('span', { 'aria-hidden': 'true' }, '⇅'));
+    const boutonsCote = ['gauche', 'droite'].map((cote) => el('button', {
+      type: 'button', class: 'editeur__poignee editeur__poignee--cote', dataset: { poignee: cote, cote },
+      'aria-label': (cote === 'gauche' ? 'Caler à gauche' : 'Caler à droite') + ' (' + nom.toLowerCase() + ')',
+      title: cote === 'gauche' ? 'Caler à gauche' : 'Caler à droite',
+      onClick: () => { b.cote = coteDe(b) === cote ? '' : cote; appliquer({ index, poignee: cote }); }
+    }, el('span', { 'aria-hidden': 'true' }, cote === 'gauche' ? '◧' : '◨')));
+    const poigneeLargeur = el('button', {
+      type: 'button', class: 'editeur__poignee editeur__poignee--largeur', dataset: { poignee: 'largeur' },
+      title: 'Largeur (glisser ou ← →)'
+    }, el('span', { 'aria-hidden': 'true' }, '⋮'));
+
+    enveloppe.append(
+      el('div', { class: 'editeur__cadre-outils' },
+        poigneeDeplacer,
+        el('span', { class: 'editeur__cadre-libelle' },
+          el('span', { class: 'editeur__cadre-nom' }, String(index + 1) + ' · ' + (TYPES_BLOC[b.type] || b.type)),
+          el('span', { class: 'editeur__cadre-mise-en-page' })),
+        boutonsCote),
+      poigneeLargeur);
+    appliquerMiseEnPage(enveloppe, b);
+
+    /* Clavier, sur les deux poignées : ↑ ↓ déplacent, ← → changent la largeur. */
+    const auClavier = (evt, poignee) => {
+      if (evt.key === 'ArrowUp' || evt.key === 'ArrowDown') {
+        evt.preventDefault();
+        const vers = decalerBloc(etat, index, evt.key === 'ArrowUp' ? -1 : 1);
+        if (vers !== index) annoncer('Bloc déplacé en position ' + (vers + 1) + '.');
+        appliquer({ index: vers, poignee });
+      } else if (evt.key === 'ArrowLeft' || evt.key === 'ArrowRight') {
+        evt.preventDefault();
+        const largeur = largeurVoisine(largeurDe(b), evt.key === 'ArrowRight' ? 1 : -1);
+        if (largeur === largeurDe(b)) return;
+        b.largeur = largeur;
+        annoncer('Largeur : ' + libelleLargeur(largeur).toLowerCase() + '.');
+        appliquer({ index, poignee });
+      }
+    };
+    poigneeDeplacer.addEventListener('keydown', (evt) => auClavier(evt, 'deplacer'));
+    poigneeLargeur.addEventListener('keydown', (evt) => auClavier(evt, 'largeur'));
+
+    /* La largeur, à la souris : la fraction de la grille couverte par le
+       bloc, depuis son bord ancré jusqu'au pointeur, aimantée. */
+    poigneeLargeur.addEventListener('pointerdown', (evt) => {
+      if (evt.button !== 0) return;
+      evt.preventDefault();
+      poigneeLargeur.setPointerCapture(evt.pointerId);
+      enveloppe.classList.add('editeur__cadre--redimension');
+      const g = grille.getBoundingClientRect();
+      const ancreDroite = coteDe(b) === 'droite';
+      const depart = largeurDe(b);
+      const surMouvement = (ev) => {
+        if (!g.width) return;
+        const fraction = ancreDroite ? (g.right - ev.clientX) / g.width : (ev.clientX - g.left) / g.width;
+        const largeur = largeurAimantee(Math.min(1, Math.max(0, fraction)));
+        if (largeur !== largeurDe(b)) { b.largeur = largeur; appliquerMiseEnPage(enveloppe, b); }
+      };
+      const fin = () => {
+        poigneeLargeur.removeEventListener('pointermove', surMouvement);
+        poigneeLargeur.removeEventListener('pointerup', fin);
+        poigneeLargeur.removeEventListener('pointercancel', fin);
+        enveloppe.classList.remove('editeur__cadre--redimension');
+        if (largeurDe(b) !== depart) annoncer('Largeur : ' + libelleLargeur(largeurDe(b)).toLowerCase() + '.');
+        appliquer({ index, poignee: 'largeur' });
+      };
+      poigneeLargeur.addEventListener('pointermove', surMouvement);
+      poigneeLargeur.addEventListener('pointerup', fin);
+      poigneeLargeur.addEventListener('pointercancel', fin);
+    });
+
+    /* Le déplacement, à la souris : le bloc survolé reçoit un repère
+       d'insertion, au-dessus ou au-dessous selon la moitié survolée. */
+    poigneeDeplacer.addEventListener('pointerdown', (evt) => {
+      if (evt.button !== 0) return;
+      evt.preventDefault();
+      poigneeDeplacer.setPointerCapture(evt.pointerId);
+      enveloppe.classList.add('editeur__cadre--saisi');
+      const repere = el('div', { class: 'editeur__repere', 'aria-hidden': 'true', hidden: true });
+      grille.append(repere);
+      let cible = null;
+      const surMouvement = (ev) => {
+        const sous = document.elementFromPoint(ev.clientX, ev.clientY);
+        const autre = sous && sous.closest ? sous.closest('.editeur__cadre') : null;
+        if (!autre || autre === enveloppe || autre.parentNode !== grille) { cible = null; repere.hidden = true; return; }
+        const r = autre.getBoundingClientRect();
+        const g = grille.getBoundingClientRect();
+        const apres = ev.clientY > r.top + r.height / 2;
+        cible = { index: Number(autre.dataset.index), apres };
+        repere.hidden = false;
+        /* Des valeurs calculées, posées en ligne : le seul usage admis. */
+        repere.style.setProperty('inset-block-start', ((apres ? r.bottom : r.top) - g.top) + 'px');
+        repere.style.setProperty('inset-inline-start', (r.left - g.left) + 'px');
+        repere.style.setProperty('inline-size', r.width + 'px');
+      };
+      const fin = () => {
+        poigneeDeplacer.removeEventListener('pointermove', surMouvement);
+        poigneeDeplacer.removeEventListener('pointerup', fin);
+        poigneeDeplacer.removeEventListener('pointercancel', fin);
+        enveloppe.classList.remove('editeur__cadre--saisi');
+        repere.remove();
+        if (!cible) return;
+        const vers = deplacerBloc(etat, index, cible.index, cible.apres);
+        if (vers !== index) annoncer('Bloc déplacé en position ' + (vers + 1) + '.');
+        appliquer({ index: vers, poignee: 'deplacer' });
+      };
+      poigneeDeplacer.addEventListener('pointermove', surMouvement);
+      poigneeDeplacer.addEventListener('pointerup', fin);
+      poigneeDeplacer.addEventListener('pointercancel', fin);
+    });
+  });
+}
+
+function barreAjout(etat, appliquer) {
   return el('div', { class: 'editeur__ajout', role: 'group', 'aria-label': 'Ajouter un bloc' },
     el('span', { class: 'editeur__ajout-libelle' }, 'Ajouter'),
     Object.entries(TYPES_BLOC).map(([type, libelle]) => el('button', {
       type: 'button', class: 'bouton bouton--secondaire bouton--compact',
-      onClick: () => { etat.blocs.push(blocVide(type)); rendre(); surChangement(); }
+      onClick: () => { etat.blocs.push(blocVide(type)); appliquer(); }
     }, libelle)));
 }
 
@@ -289,11 +571,26 @@ export function ouvrirEditeur(options) {
     return { motDuChef: null, alertes: [], annonces: [com], agenda: [] };
   }
 
-  function rendreApercu() {
+  /* La poignée qui a le clavier dans l'aperçu, pour la retrouver après
+     une reconstruction : { index, poignee }. */
+  function focusApercu() {
+    const actif = document.activeElement;
+    if (!actif || !zoneApercu.contains(actif) || !actif.dataset || !actif.dataset.poignee) return null;
+    const cadre = actif.closest('.editeur__cadre');
+    return cadre ? { index: Number(cadre.dataset.index), poignee: actif.dataset.poignee } : null;
+  }
+
+  function rendreApercu(focus) {
+    const aRetrouver = focus || focusApercu();
     const objet = objetApercu();
     if (etat.type === 'alerte') { monter(zoneApercu, apercuAlertes(objet.alertes)); return; }
     const dossier = dossiersDepuisCommunications(objet, { pole: 'ETII' })[0];
     monter(zoneApercu, dossier ? apercuLecture(dossier) : null);
+    poserCadres(zoneApercu, etat, appliquer);
+    if (aRetrouver) {
+      const poignee = zoneApercu.querySelector('.editeur__cadre[data-index="' + aRetrouver.index + '"] [data-poignee="' + aRetrouver.poignee + '"]');
+      if (poignee) poignee.focus();
+    }
   }
 
   function rendreErreurs() {
@@ -309,10 +606,20 @@ export function ouvrirEditeur(options) {
     if (!zoneErreurs.hidden) rendreErreurs();
   }, 120);
 
+  /* Un geste de structure (ordre, largeur, côté, ajout, retrait) : tout se
+     reconstruit tout de suite, formulaire et aperçu, depuis le même état. */
+  function appliquer(focus) {
+    surChangement.annuler();
+    stockage.ecrire(CLE_BROUILLON, etat);
+    rendreFormulaire();
+    rendreApercu(focus);
+    if (!zoneErreurs.hidden) rendreErreurs();
+  }
+
   function rendreLocaux() {
     const l = communicationsLocales();
     const entrees = [];
-    if (l.motDuChef) entrees.push({ id: 'mot-du-chef', libelle: 'Mot du chef : ' + texte(l.motDuChef.titre) });
+    if (l.motDuChef) entrees.push({ id: 'mot-du-chef', libelle: 'Édito : ' + texte(l.motDuChef.titre) });
     l.annonces.forEach((a) => entrees.push({ id: a.id, libelle: texte(a.date) + ' — ' + texte(a.titre) }));
     l.alertes.forEach((a) => entrees.push({ id: 'alerte:' + a, libelle: 'Alerte : ' + a }));
     if (!entrees.length) { monter(zoneLocaux); return; }
@@ -357,8 +664,9 @@ export function ouvrirEditeur(options) {
                 champ('Fonction', entree(etat, 'fonction', { placeholder: 'Direction du service' }, surChangement)))
             : champ('Catégorie', entree(etat, 'categorie', { placeholder: 'H160, Outils, Transverse…' }, surChangement), 'Un programme ou un thème, affiché en étiquette.'),
           el('h3', { class: 'editeur__sous-titre' }, 'Le contenu, bloc par bloc'),
-          el('div', { class: 'editeur__blocs' }, etat.blocs.map((_b, i) => carteBloc(etat, i, surChangement, rendreFormulaire))),
-          barreAjout(etat, rendreFormulaire, surChangement)));
+          el('p', { class: 'champ__aide sans-marge' }, 'Dans l’aperçu, chaque bloc a ses poignées : glissez-le entre les autres, tirez son bord pour le rétrécir ou l’élargir, calez-le à gauche ou à droite. Les mêmes réglages sont ici, sur chaque carte.'),
+          el('div', { class: 'editeur__blocs' }, etat.blocs.map((_b, i) => carteBloc(etat, i, surChangement, rendreFormulaire, appliquer))),
+          barreAjout(etat, appliquer)));
   }
 
   async function publier() {
