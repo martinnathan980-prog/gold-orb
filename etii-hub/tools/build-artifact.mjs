@@ -180,16 +180,16 @@ function flotteAllegee(flotte) {
   return copie;
 }
 
-function donneesAvecImages(noms, page) {
+function donneesAvecImages(noms) {
   const utiles = jeuxUtilises(noms);
   const copie = Object.fromEntries(Object.entries(donneesAssemblees).filter(([n]) => utiles.has(n)));
   if (copie.flotte && !noms.includes('porteurs')) copie.flotte = flotteAllegee(copie.flotte);
-  const codePole = noms.includes('pole') ? String(page || '').toUpperCase() : '';
-  if (noms.includes('porteurs') || codePole) {
+  // Seul le tableau de bord (porteurs.js) montre les photos de la flotte :
+  // un espace de pôle n'en affiche plus depuis que « Porteurs du pôle » a
+  // disparu, il n'a donc rien à embarquer.
+  if (noms.includes('porteurs')) {
     const flotte = JSON.parse(JSON.stringify(copie.flotte || donneesAssemblees.flotte));
     for (const appareil of (Array.isArray(flotte.flotte) ? flotte.flotte : [])) {
-      if (codePole && !noms.includes('porteurs')
-          && !(Array.isArray(appareil.poles) ? appareil.poles : []).includes(codePole)) continue;
       const uri = dataUri(String(appareil.photo || '').trim());
       if (uri) appareil.photo = uri;
     }
@@ -288,7 +288,7 @@ function bles(noms, page) {
   return `const __M = {};
 // Les données sont intégrées : aucun fetch, donc aucune contrainte file://
 // ni d'URL de base. chargerDonnees est remplacée par une lecture directe.
-const __DONNEES = ${json(donneesAvecImages(ordre, page))};
+const __DONNEES = ${json(donneesAvecImages(ordre))};
 
 ${socle}
 
