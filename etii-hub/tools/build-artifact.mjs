@@ -121,7 +121,8 @@ const textesAssembles = Object.fromEntries(TEXTES.map(n => [n, lire(n)]));
 // Les photos des porteurs (flotte.json → `photo`) sont des fichiers image
 // relatifs : dans un cadre srcdoc, rien ne les résout. Elles sont donc
 // intégrées en data URI — mais seulement dans les pages qui affichent la
-// flotte, sinon chaque page en porterait une copie.
+// flotte, sinon chaque page en porterait une copie. Un espace de pôle
+// (pole.js) ne montre que ses propres porteurs : il n'embarque qu'eux.
 const imagesLues = new Map();
 function dataUri(chemin) {
   if (!/^assets\/img\/[a-z0-9_\-\/]+\.(jpe?g|png|webp|svg)$/i.test(chemin)) return null;
@@ -135,11 +136,14 @@ function dataUri(chemin) {
   return imagesLues.get(chemin);
 }
 
-function donneesAvecImages(noms) {
+function donneesAvecImages(noms, page) {
   const copie = { ...donneesAssemblees };
-  if (noms.includes('porteurs')) {
+  const codePole = noms.includes('pole') ? String(page || '').toUpperCase() : '';
+  if (noms.includes('porteurs') || codePole) {
     const flotte = JSON.parse(JSON.stringify(donneesAssemblees.flotte));
     for (const appareil of (Array.isArray(flotte.flotte) ? flotte.flotte : [])) {
+      if (codePole && !noms.includes('porteurs')
+          && !(Array.isArray(appareil.poles) ? appareil.poles : []).includes(codePole)) continue;
       const uri = dataUri(String(appareil.photo || '').trim());
       if (uri) appareil.photo = uri;
     }
@@ -201,7 +205,7 @@ function construirePage(nom) {
     `$1\n  <style>\n${cssAssemble}\n  </style>`);
 
   // Le module de page devient un script intégré, dépendances comprises.
-  const moduleDePage = bles(modulesDeLaPage(nom, html));
+  const moduleDePage = bles(modulesDeLaPage(nom, html), nom);
   // Tous les modules sont fondus dans un seul script ; les balises
   // d'origine disparaissent.
   html = html.replace(
@@ -214,7 +218,7 @@ function construirePage(nom) {
   return html;
 }
 
-function bles(noms) {
+function bles(noms, page) {
   // Les modules d'entrée viennent en dernier ; leurs dépendances les
   // précèdent, chacune une seule fois, dans l'ordre d'évaluation.
   const entrees = Array.isArray(noms) ? noms : [noms];
@@ -226,7 +230,7 @@ function bles(noms) {
   return `const __M = {};
 // Les données sont intégrées : aucun fetch, donc aucune contrainte file://
 // ni d'URL de base. chargerDonnees est remplacée par une lecture directe.
-const __DONNEES = ${json(donneesAvecImages(ordre))};
+const __DONNEES = ${json(donneesAvecImages(ordre, page))};
 
 ${socle}
 

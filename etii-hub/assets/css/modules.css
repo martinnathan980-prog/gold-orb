@@ -2360,3 +2360,223 @@ ol.liseuse__bloc-liste {
 
 .admin__colonnes summary { cursor: pointer; font-size: var(--texte-sm); color: var(--texte-doux); }
 .admin__colonnes code { font-size: var(--texte-xs); }
+
+/* ----------------------------------------------------------------------
+   13. Espace de pôle : repères, référents, porteurs du pôle
+       (etiia / etiie / etiii, rendus par pole.js). Les cartes de porteur
+       réutilisent la carte de la galerie (§3) ; les avatars, ceux de
+       l'organigramme (§11).
+   ---------------------------------------------------------------------- */
+
+/* --- Repères : « le pôle en un coup d'œil » ----------------------------- */
+
+/* Cinq chiffres, chacun un lien vers la section ou la page qui le détaille.
+   Le filet de gauche porte la couleur du pôle : c'est le seul aplat. */
+.pole-reperes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
+  gap: var(--e-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pole-repere { display: flex; }
+
+.pole-repere__lien {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  inline-size: 100%;
+  padding: var(--e-3) var(--e-4);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-inline-start: 3px solid var(--org-teinte, var(--accent));
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
+  color: var(--texte);
+  text-decoration: none;
+  transition: border-color var(--duree-rapide) var(--courbe),
+              transform var(--duree-rapide) var(--courbe),
+              box-shadow var(--duree-rapide) var(--courbe);
+}
+
+.pole-repere__lien:hover {
+  border-color: var(--bordure-forte);
+  border-inline-start-color: var(--org-teinte, var(--accent));
+  transform: translateY(-2px);
+  box-shadow: var(--ombre-md);
+}
+
+.pole-repere__valeur {
+  font-family: var(--police-titre);
+  font-size: var(--texte-3xl);
+  font-weight: var(--graisse-normale);
+  line-height: 1;
+  color: var(--texte);
+}
+
+.pole-repere__libelle {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+
+.pole-repere__detail { font-size: var(--texte-xs); line-height: 1.4; color: var(--texte-faible); }
+
+/* --- Référents & expertises --------------------------------------------- */
+
+.pole-experts { display: flex; flex-direction: column; gap: var(--e-4); }
+
+.pole-experts__aide,
+.pole-porteurs__aide {
+  margin: 0;
+  max-inline-size: var(--largeur-texte);
+  font-size: var(--texte-md);
+  line-height: 1.6;
+  color: var(--texte-doux);
+}
+
+.pole-experts__barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-4);
+}
+
+/* Le champ de recherche : le même que celui du lecteur et de l'arbre. */
+.pole-experts__recherche {
+  flex: 1 1 18rem;
+  min-height: calc(var(--cible-tactile) - var(--e-2));
+  padding: var(--e-1) var(--e-3);
+  background-color: var(--fond-enfonce);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-md);
+  color: var(--texte);
+  font: inherit;
+  font-size: var(--texte-sm);
+}
+
+.pole-experts__recherche:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ombre-accent);
+  background-color: var(--fond-eleve);
+}
+
+.pole-experts__compte {
+  margin: 0;
+  font-size: var(--texte-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  white-space: nowrap;
+}
+
+.pole-experts__grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
+  gap: var(--e-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Une compétence : son nom en Newsreader, ses référents, puis le compte
+   des autres niveaux. La carte se soulève au survol, comme les porteurs. */
+.pole-expertise {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  padding: var(--e-3) var(--e-4);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
+  transition: border-color var(--duree-rapide) var(--courbe),
+              transform var(--duree-rapide) var(--courbe),
+              box-shadow var(--duree-rapide) var(--courbe);
+}
+
+.pole-expertise:hover { border-color: var(--bordure-forte); transform: translateY(-2px); box-shadow: var(--ombre-md); }
+.pole-expertise[hidden] { display: none; }
+
+.pole-expertise__nom {
+  margin: 0;
+  padding-block-end: var(--e-2);
+  border-bottom: 1px solid var(--bordure);
+  font-family: var(--police-titre);
+  font-size: var(--texte-lg);
+  font-weight: var(--graisse-normale);
+  line-height: 1.25;
+  color: var(--texte);
+}
+
+.pole-expertise__referents {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* La personne : avatar, nom en gras, poste en dessous. Toute la ligne est
+   le lien, avec une marge négative pour que le survol couvre la carte. */
+.pole-expertise__personne {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  margin-inline: calc(var(--e-2) * -1);
+  padding: var(--e-1) var(--e-2);
+  border-radius: var(--rayon-md);
+  color: var(--texte);
+  text-decoration: none;
+}
+
+.pole-expertise__personne:hover { background-color: var(--fond-enfonce); }
+.pole-expertise__personne:hover .pole-expertise__personne-nom { color: var(--texte-accent); }
+
+.pole-expertise__identite { display: flex; flex-direction: column; min-inline-size: 0; }
+.pole-expertise__personne-nom { font-size: var(--texte-sm); font-weight: var(--graisse-forte); line-height: 1.3; }
+.pole-expertise__personne-poste { font-size: var(--texte-xs); line-height: 1.3; color: var(--texte-doux); }
+
+.pole-expertise__aucun { margin: 0; font-size: var(--texte-sm); font-style: italic; color: var(--texte-faible); }
+
+/* Le compte : le nombre de référents est la valeur qui compte, en terre
+   cuite ; le reste en retrait. */
+.pole-expertise__compte {
+  margin: auto 0 0;
+  padding-block-start: var(--e-2);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.pole-expertise__compte-item { white-space: nowrap; }
+.pole-expertise__compte strong { font-weight: var(--graisse-forte); color: var(--chaud-encre); }
+
+.pole-experts__vide { margin: 0; padding: var(--e-4); text-align: center; color: var(--texte-doux); }
+.pole-experts__vide[hidden] { display: none; }
+
+.pole-experts__suite {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--e-3);
+}
+
+.pole-experts__suite .bouton[hidden] { display: none; }
+
+/* --- Porteurs du pôle --------------------------------------------------- */
+
+.pole-porteurs { display: flex; flex-direction: column; gap: var(--e-5); }
+
+/* La carte de la galerie (§3) est un bouton ; ici c'est un lien vers la
+   fiche du tableau de bord : on retire le soulignement, le reste suit. */
+.pole-porteur { text-decoration: none; }
+.pole-porteur:hover .porteurs__fiche-code { color: var(--texte-accent); }
