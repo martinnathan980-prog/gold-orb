@@ -599,9 +599,14 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const j = serveurSur(feuilleExemple(10));
   const configurer = (liste) => vm.runInContext('CONFIG.JALONS = ' + JSON.stringify(liste), j.contexte);
   const parDefaut = j.contexte.getJalons();
-  verifier('la configuration livrée porte quatre jalons, triés et normalisés',
-    parDefaut.length === 4 && parDefaut.every(x => /^\d{4}-S\d{2}$/.test(x.semaine) && x.texte) &&
+  verifier('la configuration livrée porte les cinq jalons du programme, triés et normalisés',
+    parDefaut.length === 5 && parDefaut.every(x => /^\d{4}-S\d{2}$/.test(x.semaine) && x.texte) &&
     parDefaut.every((x, i) => i === 0 || parDefaut[i - 1].semaine <= x.semaine), JSON.stringify(parDefaut));
+  verifier('le solde FWD en tête (2026-S51, pour tous), puis les diffusions PH et TO, Base et Perso, chacune à son périmètre',
+    parDefaut[0].texte === 'Solde FWD' && parDefaut[0].semaine === '2026-S51' && !('perimetre' in parDefaut[0]) &&
+    parDefaut.slice(1).map(x => x.texte + '@' + x.semaine + '/' + x.perimetre).join() ===
+      'Diffusion PH Base@2027-S02/BASE/OPTION,Diffusion PH Perso@2027-S03/PERSO,Diffusion TO Base@2027-S05/BASE/OPTION,Diffusion TO Perso@2027-S08/PERSO',
+    JSON.stringify(parDefaut));
   verifier('aucune fonction de sauvegarde ni de propriété de document ne subsiste',
     typeof j.contexte.sauverJalons === 'undefined' && !/PropertiesService|CLE_JALONS/.test(fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8')));
   configurer([
@@ -622,6 +627,40 @@ function serveurSur(valeurs, proprietes, fichiers) {
     lus.every(x => Object.keys(x).sort().join(',') === 'semaine,texte'));
   verifier('le paquet envoyé à la page reprend ces jalons',
     JSON.stringify(j.contexte.getDonneesPourClient().jalons) === JSON.stringify(lus));
+  configurer([
+    { semaine: '2026-S50', texte: 'Base', perimetre: '  BASE/OPTION ' },
+    { semaine: '2026-S52', texte: 'Tous', perimetre: '' },
+    { semaine: '2027-S01', texte: 'Nul', perimetre: null },
+    { semaine: '2027-S02', texte: 'Long', perimetre: 'P'.repeat(80) }
+  ]);
+  const avecPer = j.contexte.getJalons();
+  verifier('le périmètre d\'un jalon voyage, épuré ; vide ou absent, la clé n\'existe pas ; à rallonge, coupé à 40',
+    avecPer[0].perimetre === 'BASE/OPTION' && !('perimetre' in avecPer[1]) && !('perimetre' in avecPer[2]) && avecPer[3].perimetre.length === 40,
+    JSON.stringify(avecPer));
+  verifier('et le paquet envoyé à la page porte ce périmètre tel quel',
+    JSON.stringify(j.contexte.getDonneesPourClient().jalons) === JSON.stringify(avecPer));
+  /* Le diagnostic confronte les périmètres des jalons à la colonne de domaine
+     du premier contrat. La feuille d'exemple n'en a pas : il le dit. La vraie
+     structure d'export en a une, « Domaine », à BASE/OPTION et PERSO. */
+  configurer([{ semaine: '2026-S50', texte: 'Base', perimetre: 'BASE/OPTION' }]);
+  verifier('sans colonne de domaine, le diagnostic prévient que les jalons à périmètre ne feront l\'échéance que sur « Tout »',
+    /⚠ 1 jalon\(s\) à périmètre, mais l'onglet « Données » n'a pas de colonne de domaine/.test(j.contexte.diagnostic()), j.contexte.diagnostic());
+  configurer(parDefaut);
+  const gJal = construire({ gates: true, lignes: 40, historique: false, sortie: 'apercu-gates-jalons.html' });
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-gates-jalons.html'));
+  const diagConnu = gJal.contexte.diagnostic();
+  verifier('sur la vraie structure, les périmètres livrés (BASE/OPTION, PERSO) sont connus de la colonne « Domaine »',
+    /périmètres des jalons : BASE\/OPTION, PERSO — tous connus de la colonne « Domaine »/.test(diagConnu), diagConnu);
+  vm.runInContext('CONFIG.JALONS = ' + JSON.stringify([
+    { semaine: '2026-S50', texte: 'Ailleurs', perimetre: 'MARS' },
+    { semaine: '2026-S51', texte: 'Perso', perimetre: 'perso' },
+    { semaine: '2026-S52', texte: 'Tous' }
+  ]), gJal.contexte);
+  const diagPer = gJal.contexte.diagnostic();
+  verifier('un périmètre inconnu de la colonne : le diagnostic le dit, jalon par jalon, et donne les valeurs vues ; la casse est indifférente',
+    /⚠ Jalon « Ailleurs » : périmètre « MARS » inconnu de la colonne « Domaine »/.test(diagPer) &&
+    /→ valeurs vues dans « Domaine » : (BASE\/OPTION, PERSO|PERSO, BASE\/OPTION) — à recopier dans perimetre/.test(diagPer) &&
+    !/Jalon « Perso »/.test(diagPer) && !/Jalon « Tous »/.test(diagPer), diagPer);
   const trop = [];
   for (let i = 1; i <= 60; i++) trop.push({ semaine: '2026-S' + String((i % 52) + 1).padStart(2, '0'), texte: 'j' + i });
   configurer(trop);
@@ -719,6 +758,68 @@ function serveurSur(valeurs, proprietes, fichiers) {
     JSON.stringify(seeParNom.paquet.rapprochement && seeParNom.paquet.rapprochement.lignes.length));
   verifier('et il n\'apparaît pas dans la liste des contrats',
     !seeParNom.paquet.contrats.some(c => /^see$/i.test(c.id)), JSON.stringify(seeParNom.paquet.contrats));
+  /* Le diagnostic dit ce que le script voit de la seconde base — c'est la
+     réponse à « je ne vois pas les deux cercles » : l'onglet lu et compté,
+     l'onglet absent (et le geste qui manque), l'onglet vide, l'onglet dont
+     l'en-tête ne porte pas la référence (et les en-têtes lus). */
+  const diagSEE = seeParNom.contexte.diagnostic();
+  verifier('le diagnostic compte la seconde base : onglet, lignes, référence, ligne d\'en-têtes',
+    /✓ Seconde base « SEE » : onglet « SEE », 2 ligne\(s\), référence NAME \+ SOL\. \+ Cust\.V \(ligne d'en-têtes : 3\)/.test(diagSEE), diagSEE);
+  const diagSans = ctxPaquet.diagnostic();
+  verifier('sans onglet SEE, le diagnostic le dit, et dit le geste : un onglet « SEE », l\'extract en A1, ses colonnes',
+    /– Seconde base « SEE » : aucun onglet « SEE » — pas de rapprochement\./.test(diagSans) &&
+    /→ un onglet nommé « SEE », l'extract collé en A1 tel quel, avec ses colonnes NAME, SOL\., Cust\.V\./.test(diagSans) &&
+    /Tout est en place : Suivi FWD/.test(diagSans), diagSans);
+  const seeVide = construire({ lignes: 10, feuilles: [new Feuille('SEE', [])], historique: false, sortie: 'apercu-see-vide.html' });
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-see-vide.html'));
+  const diagVide = seeVide.contexte.diagnostic();
+  verifier('un onglet SEE vide : pas de rapprochement, le diagnostic le dit, et le bilan ne conclut pas « tout est en place » sans réserve',
+    !('rapprochement' in seeVide.paquet) && /⚠ Seconde base « SEE » : l'onglet « SEE » est vide — pas de rapprochement\./.test(diagVide) &&
+    /Tout est en place pour GATES .* La seconde base, elle, ne se lit pas/.test(diagVide) && !/Tout est en place : Suivi/.test(diagVide), diagVide);
+  const diagRef = sansCleRef.contexte.diagnostic();
+  verifier('une référence introuvable, et aucun intitulé voulu dans la ligne prise pour en-tête : le diagnostic nomme l\'onglet et la référence cherchée, compte les cellules sans les recopier',
+    /⚠ Seconde base « Base2 » : onglet « Base2 » trouvé, mais la référence \(Pas là\) est introuvable dans ses 8 premières lignes/.test(diagRef) &&
+    /ligne 2 prise pour en-tête : 4 cellule\(s\), aucune ne porte Pas là — l'extract est-il collé avec ses en-têtes \?/.test(diagRef) &&
+    !/en-têtes lus|REF_UD/.test(diagRef), diagRef);
+  /* Une référence à moitié trouvée (une colonne renommée) : la ligne est
+     bien un en-tête, le diagnostic la recopie pour qu'on voie ce qui manque. */
+  const moitie = construire({ lignes: 10, feuilles: [base2], historique: false, config: { RAPPROCHEMENT: { FEUILLE: 'Base2', CLE_REFERENCE: ['REF_UD', 'Pas là'] } }, sortie: 'apercu-see-moitie.html' });
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-see-moitie.html'));
+  const diagMoitie = moitie.contexte.diagnostic();
+  verifier('une référence à moitié trouvée : la ligne d\'en-têtes est recopiée, pour voir l\'intitulé qui manque',
+    !('rapprochement' in moitie.paquet) &&
+    /⚠ Seconde base « Base2 » : onglet « Base2 » trouvé, mais la référence \(REF_UD \+ Pas là\) est introuvable/.test(diagMoitie) &&
+    /en-têtes lus \(ligne 2\) : REF_UD \| ATA_CODE \| STATUT_FWD \| Colonne en trop/.test(diagMoitie), diagMoitie);
+  /* L'extract collé SANS ses en-têtes : la ligne prise pour en-tête est une
+     ligne de données. Le diagnostic n'en recopie aucune cellule — il compte,
+     et pose la question. */
+  const seeSansEntetes = construire({ lignes: 10, historique: false, sortie: 'apercu-see-sans-entetes.html', feuilles: [new Feuille('SEE', [
+    ['CAB1810A005', '1', 'b', 'Libellé confidentiel du plan', 'TRUE'],
+    ['HAR2530A011', '002', 'C', 'Un autre libellé', 'FALSE']
+  ])] });
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-see-sans-entetes.html'));
+  const diagNu = seeSansEntetes.contexte.diagnostic();
+  verifier('collé sans en-têtes : le diagnostic compte les cellules de la ligne prise pour en-tête, sans en recopier une seule',
+    /⚠ Seconde base « SEE » : onglet « SEE » trouvé, mais la référence \(NAME \+ SOL\. \+ Cust\.V\) est introuvable/.test(diagNu) &&
+    /ligne 1 prise pour en-tête : 5 cellule\(s\), aucune ne porte NAME, SOL\., Cust\.V — l'extract est-il collé avec ses en-têtes \?/.test(diagNu) &&
+    !/CAB1810A005|Libellé confidentiel|en-têtes lus/.test(diagNu), diagNu);
+  /* Une configuration à moitié faite : le diagnostic nomme ce qui manque. */
+  const cfgSansRef = construire({ lignes: 10, feuilles: [see], historique: false, config: { RAPPROCHEMENT: { FEUILLE: '', NOM: 'SEE', CLE_REFERENCE: [] } }, sortie: 'apercu-see-sans-ref.html' });
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-see-sans-ref.html'));
+  const cfgSansNom = construire({ lignes: 10, feuilles: [see], historique: false, config: { RAPPROCHEMENT: { FEUILLE: '', NOM: '', CLE_REFERENCE: ['NAME'] } }, sortie: 'apercu-see-sans-nom.html' });
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-see-sans-nom.html'));
+  verifier('sans référence configurée, ou sans nom d\'onglet : pas de rapprochement, et le diagnostic dit lequel des deux manque',
+    !('rapprochement' in cfgSansRef.paquet) && /– Seconde base : aucune référence \(RAPPROCHEMENT\.CLE_REFERENCE vide\) — pas de rapprochement\./.test(cfgSansRef.contexte.diagnostic()) &&
+    !('rapprochement' in cfgSansNom.paquet) && /– Seconde base : aucun nom d'onglet \(RAPPROCHEMENT\.FEUILLE et NOM vides\) — pas de rapprochement\./.test(cfgSansNom.contexte.diagnostic()),
+    cfgSansRef.contexte.diagnostic() + '\n' + cfgSansNom.contexte.diagnostic());
+  /* La forme rendue par lireSecondeBase, dans deux états. */
+  const formeOk = seeParNom.contexte.lireSecondeBase(seeParNom.contexte.SpreadsheetApp.getActiveSpreadsheet());
+  const formeVide = seeVide.contexte.lireSecondeBase(seeVide.contexte.SpreadsheetApp.getActiveSpreadsheet());
+  verifier('lireSecondeBase rend { etat, onglet, cles, entetes, ligneEntete, rapprochement } — ligneEntete à 3 pour SEE, null pour un onglet vide',
+    Object.keys(formeOk).sort().join() === 'cles,entetes,etat,ligneEntete,onglet,rapprochement' &&
+    formeOk.etat === 'ok' && formeOk.onglet === 'SEE' && formeOk.ligneEntete === 3 && formeOk.entetes.join('|') === 'NAME|SOL.|Cust.V|Validated|REDRAW' &&
+    formeVide.etat === 'vide' && formeVide.ligneEntete === null && formeVide.rapprochement === null && formeVide.cles.join() === 'NAME,SOL.,Cust.V',
+    JSON.stringify([Object.keys(formeOk), formeOk.etat, formeOk.ligneEntete, formeVide]));
   const rSEE = avecSEE.paquet.rapprochement;
   verifier('SEE : l\'en-tête est la ligne 3, celle qui porte NAME, SOL. et Cust.V — pas le titre « Nommage WD BFLOW »',
     !!rSEE && rSEE.lignes.length === 2 && rSEE.colonnes.join('|') === 'NAME|SOL.|Cust.V|Validated|REDRAW',
@@ -1004,7 +1105,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('la page affiche les jalons de la configuration',
     jalonsPage.length === attendus.length && attendus.every(x => jalonsPage.indexOf(x.texte) !== -1),
     JSON.stringify(jalonsPage) + ' pour ' + JSON.stringify(attendus.map(x => x.texte)));
-  verifier('la configuration livrée en met quatre à l\'écran', jalonsPage.length === 4, String(jalonsPage.length));
+  verifier('la configuration livrée en met cinq à l\'écran', jalonsPage.length === 5, String(jalonsPage.length));
 
   /* Un seul contrat : le sélecteur n'a rien à proposer, il reste caché — et
      le titre ne nomme jamais le contrat. */
@@ -1202,6 +1303,35 @@ function serveurSur(valeurs, proprietes, fichiers) {
     document.querySelectorAll('#corps-tableau tr').length === 186));
 
   // =================================================================
+  /* Les jalons du programme sur la vraie structure — colonne « Domaine » à
+     BASE/OPTION et PERSO. Sous PERSO, les deux jalons Base passent en retrait
+     et l'échéance affichée (data-jalon, en-tête de l'effort demandé) est
+     celle que la page calcule ; sous BASE/OPTION, l'inverse. Le solde FWD,
+     sans périmètre, reste l'échéance tant qu'il est à venir. */
+  const lireJalons = () => pg.evaluate(() => ({
+    retrait: [...document.querySelectorAll('.jalon.hors-perimetre .jalon-texte')].map(t => t.textContent).sort(),
+    dessines: document.querySelectorAll('svg.graphe .jalon').length,
+    zone: document.getElementById('zone-critique').getAttribute('data-jalon'),
+    prochain: window.__prochainJalon() && window.__prochainJalon().texte,
+    entete: (document.querySelector('.critique-tete button[data-trig="tension"]') || {}).title || ''
+  }));
+  await pg.click('.segmente button[data-span="0"]'); await pg.waitForTimeout(400);
+  const jTout = await lireJalons();
+  verifier('sur « Tout », les cinq jalons de la configuration sont dessinés, aucun en retrait, et l\'en-tête de l\'effort demandé nomme l\'échéance',
+    jTout.dessines === 5 && jTout.retrait.length === 0 && !!jTout.prochain && jTout.zone === jTout.prochain &&
+    jTout.entete.indexOf('«\u00a0' + jTout.prochain + '\u00a0»') !== -1, JSON.stringify(jTout));
+  await pg.click('#choix-perimetre button[data-perimetre="PERSO"]'); await pg.waitForTimeout(700);
+  const jPerso = await lireJalons();
+  verifier('sous PERSO, les deux jalons Base sont en retrait, et l\'échéance affichée est celle que la page calcule',
+    jPerso.retrait.join('|') === 'Diffusion PH Base|Diffusion TO Base' && !!jPerso.prochain && jPerso.zone === jPerso.prochain &&
+    !/Base$/.test(jPerso.prochain) && jPerso.entete.indexOf('«\u00a0' + jPerso.prochain + '\u00a0»') !== -1, JSON.stringify(jPerso));
+  await pg.click('#choix-perimetre button[data-perimetre="BASE/OPTION"]'); await pg.waitForTimeout(700);
+  const jBase = await lireJalons();
+  verifier('sous BASE/OPTION, les deux jalons Perso sont en retrait',
+    jBase.retrait.join('|') === 'Diffusion PH Perso|Diffusion TO Perso' && !!jBase.prochain && jBase.zone === jBase.prochain &&
+    !/Perso$/.test(jBase.prochain), JSON.stringify(jBase));
+  await pg.click('#choix-perimetre button[data-perimetre=""]'); await pg.waitForTimeout(500);
+
   section('Journal des changements');
   const jrn = await pg.evaluate(() => ({
     semaines: [...document.querySelectorAll('.journal-tete .sem')].map(e => e.textContent.trim()),

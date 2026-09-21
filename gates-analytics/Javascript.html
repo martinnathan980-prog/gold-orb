@@ -659,14 +659,16 @@
       dimParDefaut: 'ata',
       plans: plans,
       releves: releves,
-      /* Quatre jalons par contrat, relatifs à la semaine courante du contrat
-         (le dernier relevé). DATES PROVISOIRES, tirées au hasard : à remplacer
-         par les vraies échéances du programme quand elles seront connues. */
+      /* Les jalons du programme, les mêmes que CONFIG.JALONS de Code.gs
+         (échéances transmises le 17/09/2026) : le solde FWD, puis les
+         diffusions PH et TO, chacune pour un périmètre. La semaine courante
+         de la démonstration est la 38 de 2026 : tous sont à venir. */
       jalons: [
-        { semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 6)),  texte: 'Gel de la définition' },
-        { semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 14)), texte: 'Revue critique' },
-        { semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 26)), texte: 'Livraison plateau' },
-        { semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), SEMAINES + 40)), texte: 'Premier vol' }
+        { semaine: '2026-S51', texte: 'Solde FWD' },
+        { semaine: '2027-S02', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },
+        { semaine: '2027-S03', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },
+        { semaine: '2027-S05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION' },
+        { semaine: '2027-S08', texte: 'Diffusion TO Perso', perimetre: 'PERSO' }
       ],
       /* La liste des contrats et celui-ci : c'est ce que le sélecteur affiche. */
       contrats: CONTRATS_EXEMPLE.map(function (c) { return { id: c.id, nom: c.nom }; }),
@@ -856,14 +858,35 @@
      viennent de la configuration et ne s'éditent pas à l'écran. Ceux qui ne
      tombent sur aucune semaine lisible sont écartés ; le texte est coupé à
      60 caractères, la même règle que le serveur, pour qu'une configuration
-     bavarde ne fasse pas déborder la frise. */
+     bavarde ne fasse pas déborder la frise. Un jalon peut porter un
+     périmètre — la valeur de la colonne de domaine à laquelle il s'applique
+     (« Diffusion PH Perso » ne vaut que pour PERSO) ; sans périmètre, il vaut
+     pour tous les plans. */
   function jalonsDe(liste) {
     return (Array.isArray(liste) ? liste : []).map(function (j) {
       if (!j) return null;
       var texte = String(j.texte || 'Jalon').trim().slice(0, 60) || 'Jalon';
-      return { i: indexDe(j.semaine), texte: texte };
+      return { i: indexDe(j.semaine), texte: texte, perimetre: String(j.perimetre || '').trim().slice(0, 40) };
     }).filter(function (j) { return j && j.i !== null; })
       .sort(function (a, b) { return a.i - b.i; });
+  }
+
+  /* Un jalon compte-t-il sous le périmètre choisi ? Sans périmètre choisi
+     (« Tout »), tous comptent ; sinon ceux du périmètre et ceux qui n'en ont
+     pas. Casse et accents indifférents, comme partout ailleurs. */
+  function jalonDansPerimetre(j) {
+    return !j.perimetre || !vue.perimetre || norm(j.perimetre) === norm(vue.perimetre);
+  }
+  /* L'échéance : le premier jalon à venir qui compte ici. C'est lui qui
+     pilote l'« effort demandé » et la droite « requis pour … ». */
+  function prochainJalon() {
+    return jalons.filter(function (j) { return j.i > AUJ && jalonDansPerimetre(j); })
+      .sort(function (a, b) { return a.i - b.i; })[0];
+  }
+  /* Y a-t-il des jalons à venir, mais d'un autre périmètre ? Pour le dire
+     quand il n'y en a aucun ici. */
+  function jalonsAVenirAilleurs() {
+    return jalons.some(function (j) { return j.i > AUJ && !jalonDansPerimetre(j); });
   }
 
   /* Une colonne « Colonne N » — le nom que le serveur donne à une colonne sans
@@ -1742,7 +1765,7 @@
         ' sans détail plan par plan, hors périmètre';
     }
     $('note-graphe').textContent = note;
-    var prochain = jalons.filter(function (j) { return j.i > AUJ; }).sort(function (a, b) { return a.i - b.i; })[0];
+    var prochain = prochainJalon();
 
     var d0 = vue.fen.debut, span = vue.fen.span, d1 = d0 + span - 1;
     var pasX = LARGEUR / (span - 1);
@@ -1868,14 +1891,23 @@
     places.forEach(function (pl) {
       if (pl.aujourdhui) return;
       var j = pl.j, idx = pl.idx, jx = pl.jx;
-      var critique = prochain && j.i === prochain.i && enRetard;
+      /* Un jalon ne se peint en rouge que s'il fait l'échéance ici : la même
+         semaine que l'échéance, mais d'un autre périmètre, il reste en
+         retrait. Deux jalons de la même semaine qui comptent tous deux sont
+         rouges tous deux — l'un est aussi manqué que l'autre. */
+      var hors = !jalonDansPerimetre(j);
+      var critique = prochain && j.i === prochain.i && !hors && enRetard;
       var couleur = critique ? 'var(--alerte)' : 'var(--encre-3)';
+      var mention = j.perimetre
+        ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) + (hors ? ' \u2014 hors du p\u00e9rim\u00e8tre choisi, ne compte pas ici' : '')
+        : '';
       var yBase = mHaut - 8 - pl.niveau * HAUTEUR_ETIQUETTE;   // haut du trait pour ce niveau
       var yTexte = yBase - 5;
       var xTexte = pl.versGauche ? jx - 10 : jx + 10;
 
-      s.push('\x3Cg class="jalon" data-jalon="' + idx + '" role="img" aria-label="Jalon ' + ech(j.texte) + ' en ' + etiquette(j.i) + '">');
-      s.push('\x3Ctitle>' + ech(j.texte) + ' \u2014 ' + etiquette(j.i) + '\x3C/title>');
+      s.push('\x3Cg class="jalon' + (hors ? ' hors-perimetre' : '') + '" data-jalon="' + idx + '" role="img" aria-label="Jalon ' +
+             ech(j.texte) + ' en ' + etiquette(j.i) + mention + '">');
+      s.push('\x3Ctitle>' + ech(j.texte) + ' \u2014 ' + etiquette(j.i) + mention + '\x3C/title>');
       s.push('\x3Cline x1="' + jx.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" y2="' + basTotal.toFixed(1) +
              '" stroke="' + couleur + '" stroke-width="1" stroke-dasharray="3 4" opacity=".8"/>');
       s.push('\x3Cpath d="M' + jx.toFixed(1) + ' ' + yBase.toFixed(1) + ' l-4 -5.5 l8 0 Z" fill="' + couleur + '"/>');
@@ -1886,7 +1918,8 @@
     if (!prochain && d1 > AUJ + 2) {
       var xv = x(AUJ + Math.round((d1 - AUJ) / 2));
       s.push('\x3Ctext class="grad" x="' + xv.toFixed(1) + '" y="' + (mHaut + plotH * 0.86).toFixed(1) +
-             '" text-anchor="middle">Aucun jalon \u00e0 venir\x3C/text>');
+             '" text-anchor="middle">Aucun jalon \u00e0 venir' +
+             (jalonsAVenirAilleurs() ? ' dans ce p\u00e9rim\u00e8tre' : '') + '\x3C/text>');
     }
 
     // Rythme hebdomadaire
@@ -2258,6 +2291,11 @@
 
   function rendreCritique(liste) {
     var dim = vue.dimCritique;
+    /* L'échéance — le jalon qui pilote l'effort demandé sous le périmètre
+       choisi — se pose d'abord, quoi que le bloc affiche ensuite : elle ne
+       dépend ni de la sélection ni de la colonne analysée. */
+    var prochain = prochainJalon();
+    $('zone-critique').setAttribute('data-jalon', prochain ? prochain.texte : '');
     /* Aucune colonne à analyser — source vide, ou feuille sans catégorie
        reconnue : le bloc le dit au lieu de chercher un titre qui n'existe pas. */
     if (!dim || !TITRE_DIM[dim]) {
@@ -2269,8 +2307,6 @@
       $('zone-critique').innerHTML = '\x3Cdiv class="vide-message">Aucune colonne à analyser dans cette source.\x3C/div>';
       return;
     }
-    var prochain = jalons.filter(function (j) { return j.i > AUJ; })
-      .sort(function (a, b) { return a.i - b.i; })[0];
 
     // Répartition : état du jour, filtrée comme le reste de la page.
     var groupes = {};
@@ -2397,7 +2433,7 @@
       entete('pct', 'répartition FWD', 'Trier par part de plans terminés.', 'a-gauche') + '\x3C/span>' +
       entete('fin', 'fin estimée', 'Date d’arrivée si le rythme actuel se maintient.') + aide('la fin estimée') + '\x3C/span>' +
       (prochain
-        ? entete('tension', 'effort demandé', 'Ce qu\'il faudrait solder chaque semaine pour tenir le jalon, comparé au rythme réellement tenu.') + aide('l’effort demandé') + '\x3C/span>'
+        ? entete('tension', 'effort demandé', 'Ce qu\'il faudrait solder chaque semaine pour tenir \u00ab\u00a0' + prochain.texte + '\u00a0\u00bb (' + etiquette(prochain.i) + '), comparé au rythme réellement tenu.') + aide('l’effort demandé') + '\x3C/span>'
         : entete('tension', 'rythme actuel', 'Plans terminés par semaine depuis le premier relevé.') + aide('le rythme actuel') + '\x3C/span>') +
       '\x3C/div>';
 
@@ -4038,6 +4074,12 @@
   window.__journalAffiche = function () { return journalAffiche(); };
   window.__serieAffichee = function () { return serieAffichee(); };
   window.__domaineDe = function (ref) { var p = planDeRef(ref); return p ? domaineDe(p) : null; };
+  /* L'échéance courante — le jalon qui pilote l'effort demandé sous le
+     périmètre choisi. */
+  window.__prochainJalon = function () {
+    var j = prochainJalon();
+    return j ? { texte: j.texte, semaine: etiquette(j.i), perimetre: j.perimetre } : null;
+  };
 
   chargerSource(SERVEUR ? sourceDuClasseur(window.SUIVI_FWD_DONNEES) : jeuDExemple());
   chargerPrefs();

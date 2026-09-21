@@ -71,13 +71,22 @@ const CONFIG = {
    * l'échéance). Ils ne s'éditent pas à l'écran : c'est ici qu'on les
    * change. Semaine ISO « AAAA-SNN », texte de 60 caractères au plus.
    *
-   * DATES PROVISOIRES, à remplacer par les vraies échéances du programme.
+   * perimetre (facultatif) : la valeur de la colonne de domaine à laquelle
+   * le jalon s'applique — « BASE/OPTION » ou « PERSO », écrite comme dans
+   * l'extract (casse et accents indifférents). Sous ce périmètre, c'est ce
+   * jalon qui fait l'échéance ; sous l'autre, il est dessiné en retrait et
+   * ne compte pas ; sur « Tout », tous comptent. Sans perimetre, le jalon
+   * vaut pour tous les plans. Le Diagnostic dit si chaque valeur est bien
+   * l'une de celles de la colonne.
+   *
+   * Les échéances du programme, telles que transmises le 17/09/2026.
    */
   JALONS: [
-    { semaine: '2026-S44', texte: 'Gel de la définition' },
-    { semaine: '2026-S52', texte: 'Revue critique' },
-    { semaine: '2027-S12', texte: 'Livraison plateau' },
-    { semaine: '2027-S26', texte: 'Premier vol' }
+    { semaine: '2026-S51', texte: 'Solde FWD' },                                    // 15/12/2026
+    { semaine: '2027-S02', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },  // 15/01/2027
+    { semaine: '2027-S03', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },        // 22/01/2027
+    { semaine: '2027-S05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION' },  // 05/02/2027
+    { semaine: '2027-S08', texte: 'Diffusion TO Perso', perimetre: 'PERSO' }         // 26/02/2027
   ],
 
   /** Nombre maximum de jalons transmis à la page. */
@@ -143,9 +152,10 @@ const CONFIG = {
   /**
    * Rapprochement avec une seconde base : SEE, l'extract Excel de l'intranet
    * (« Nommage WD BFLOW »), collé tel quel dans un onglet du classeur — titre
-   * en ligne 1, en-têtes en ligne 3, données dessous. Rien tant que FEUILLE
-   * est vide : la page n'affiche alors ni le rapprochement ni le tableau de
-   * la seconde base.
+   * en ligne 1, en-têtes en ligne 3, données dessous. Rien tant qu'aucun
+   * onglet ne porte le nom configuré (FEUILLE, sinon NOM) : la page
+   * n'affiche alors ni le rapprochement ni le tableau de la seconde base —
+   * le Diagnostic dit pourquoi.
    *
    * Un plan présent dans SEE est un plan créé, donc terminé : la page croise
    * cette présence avec l'avancement FWD de GATES (terminés que SEE ignore,
@@ -963,7 +973,11 @@ function diagnostic() {
   }
 
   dire('');
-  dire('✓ Jalons de configuration : ' + getJalons().length);
+  const jalons = getJalons();
+  dire('✓ Jalons de configuration : ' + jalons.length);
+  diagnostiquerPerimetresDesJalons(contrats[0], jalons, dire);
+  dire('');
+  const secondeLisible = diagnostiquerSecondeBase(classeur, dire);
   try {
     const poids = donneesJSONPourPage().length;
     dire('✓ Paquet envoyé à la page : ' + Math.round(poids / 1024) + ' Ko' +
@@ -978,9 +992,107 @@ function diagnostic() {
   dire('');
   if (nomsFichiers.length !== 3) dire('Il manque des fichiers HTML (voir ci-dessus).');
   else if (!tousLisibles) dire('Un contrat au moins n\'est pas lisible (voir ci-dessus).');
+  else if (!secondeLisible) dire('Tout est en place pour GATES : Suivi FWD → Ouvrir le tableau de bord. La seconde base, elle, ne se lit pas (voir ci-dessus).');
   else dire('Tout est en place : Suivi FWD → Ouvrir le tableau de bord.');
 
   return terminerDiagnostic(lignes);
+}
+
+/**
+ * Les périmètres des jalons contre la colonne de domaine du premier contrat.
+ * Un jalon dont le périmètre n'est aucune des valeurs de la colonne ne
+ * ferait jamais l'échéance sous un périmètre : on le dit, avec les valeurs
+ * vues, pour corriger `perimetre` dans CONFIG.JALONS. Rien à dire tant
+ * qu'aucun jalon n'a de périmètre, ni quand le contrat ne se lit pas (son
+ * propre diagnostic l'a déjà dit).
+ */
+function diagnostiquerPerimetresDesJalons(contrat, jalons, dire) {
+  const avecPerimetre = jalons.filter(function (j) { return j.perimetre; });
+  if (!avecPerimetre.length || !contrat) return;
+  let modele;
+  try {
+    modele = construireModele(contrat.id);
+  } catch (err) {
+    return;
+  }
+  if (!modele.cleDomaine) {
+    dire('⚠ ' + avecPerimetre.length + ' jalon(s) à périmètre, mais l\'onglet « ' + modele.feuille +
+         ' » n\'a pas de colonne de domaine : ils ne feront l\'échéance que sur « Tout ».');
+    return;
+  }
+  const vues = {};
+  modele.plans.forEach(function (p) {
+    const v = String(p[modele.cleDomaine] === undefined || p[modele.cleDomaine] === null ? '' : p[modele.cleDomaine]).trim();
+    if (v && !vues[normaliser(v)]) vues[normaliser(v)] = v;
+  });
+  const valeurs = Object.keys(vues).map(function (k) { return vues[k]; });
+  const inconnus = avecPerimetre.filter(function (j) { return !vues[normaliser(j.perimetre)]; });
+  const colonne = modele.colonnes.filter(function (c) { return c.cle === modele.cleDomaine; })[0];
+  const titre = colonne ? colonne.titre : modele.cleDomaine;
+  if (!inconnus.length) {
+    dire('  périmètres des jalons : ' + avecPerimetre.map(function (j) { return j.perimetre; })
+      .filter(function (v, i, t) { return t.indexOf(v) === i; }).join(', ') +
+      ' — tous connus de la colonne « ' + titre + ' »');
+    return;
+  }
+  inconnus.forEach(function (j) {
+    dire('⚠ Jalon « ' + j.texte + ' » : périmètre « ' + j.perimetre + ' » inconnu de la colonne « ' + titre + ' »');
+  });
+  dire('   → valeurs vues dans « ' + titre + ' » : ' + (valeurs.length ? valeurs.slice(0, 8).join(', ') : 'aucune') +
+       (valeurs.length > 8 ? ', …' : '') + ' — à recopier dans perimetre (CONFIG.JALONS).');
+}
+
+/**
+ * La seconde base telle que le script la voit — c'est la réponse à « je ne
+ * vois pas les deux cercles » : l'onglet manque, il est vide, ou sa
+ * référence ne s'y trouve pas. Renvoie faux quand un onglet est là mais ne
+ * se lit pas : le bilan final le redit, pour ne pas conclure « tout est en
+ * place » sous un avertissement.
+ */
+function diagnostiquerSecondeBase(classeur, dire) {
+  const base = lireSecondeBase(classeur);
+  const cfg = CONFIG.RAPPROCHEMENT || {};
+  const nom = '« ' + (String(cfg.NOM || base.onglet || '').trim() || 'seconde base') + ' »';
+  switch (base.etat) {
+    case 'sans-configuration':
+      dire('– Seconde base : ' + (!base.onglet
+        ? 'aucun nom d\'onglet (RAPPROCHEMENT.FEUILLE et NOM vides)'
+        : 'aucune référence (RAPPROCHEMENT.CLE_REFERENCE vide)') + ' — pas de rapprochement.');
+      return true;
+    case 'absent':
+      dire('– Seconde base ' + nom + ' : aucun onglet « ' + base.onglet + ' » — pas de rapprochement.');
+      dire('   → un onglet nommé « ' + base.onglet + ' », l\'extract collé en A1 tel quel, avec ses colonnes ' +
+           base.cles.join(', ') + '.');
+      return true;
+    case 'vide':
+      dire('⚠ Seconde base ' + nom + ' : l\'onglet « ' + base.onglet + ' » est vide — pas de rapprochement.');
+      dire('   → coller l\'extract en A1.');
+      return false;
+    case 'sans-reference': {
+      dire('⚠ Seconde base ' + nom + ' : onglet « ' + base.onglet + ' » trouvé, mais la référence (' +
+           base.cles.join(' + ') + ') est introuvable dans ses ' + CONFIG.LIGNES_SCAN_ENTETE + ' premières lignes — pas de rapprochement.');
+      /* La ligne prise pour en-tête ne s'imprime que si elle en est une —
+         au moins un des intitulés voulus s'y lit (une colonne renommée, une
+         autre manquante). Sinon c'est peut-être la première ligne de
+         DONNÉES d'un extract collé sans ses en-têtes : des valeurs, qu'on
+         ne recopie pas ici. */
+      const enTete = base.cles.some(function (k) {
+        return base.entetes.some(function (e) { return normaliser(e) === normaliser(k); });
+      });
+      dire(enTete
+        ? '   en-têtes lus (ligne ' + base.ligneEntete + ') : ' + base.entetes.slice(0, 12).join(' | ') +
+          (base.entetes.length > 12 ? ' | …' : '')
+        : '   ligne ' + base.ligneEntete + ' prise pour en-tête : ' + base.entetes.length +
+          ' cellule(s), aucune ne porte ' + base.cles.join(', ') + ' — l\'extract est-il collé avec ses en-têtes ?');
+      dire('   → vérifier que l\'extract est collé entier, en-têtes compris.');
+      return false;
+    }
+    default:
+      dire('✓ Seconde base « ' + base.rapprochement.nom + ' » : onglet « ' + base.onglet + ' », ' +
+           base.rapprochement.lignes.length + ' ligne(s), référence ' +
+           [].concat(base.rapprochement.cleReference).join(' + ') + ' (ligne d\'en-têtes : ' + base.ligneEntete + ')');
+      return true;
+  }
 }
 
 /**
@@ -1394,9 +1506,11 @@ function desinstallerSuiviHebdomadaire() {
 
 /**
  * Les jalons de CONFIG.JALONS, validés : semaine normalisée, texte épuré et
- * coupé à 60 caractères, entrées illisibles écartées, tri par semaine,
- * plafond MAX_JALONS. Une faute de frappe dans la configuration ne fait
- * donc jamais tomber la page — le jalon fautif est simplement absent.
+ * coupé à 60 caractères, périmètre épuré (et absent quand il n'est pas
+ * donné : un jalon sans périmètre vaut pour tous les plans, et n'a pas de
+ * clé de plus), entrées illisibles écartées, tri par semaine, plafond
+ * MAX_JALONS. Une faute de frappe dans la configuration ne fait donc jamais
+ * tomber la page — le jalon fautif est simplement absent.
  */
 function getJalons() {
   const liste = Array.isArray(CONFIG.JALONS) ? CONFIG.JALONS : [];
@@ -1404,10 +1518,13 @@ function getJalons() {
     .map(function (j) {
       const semaine = normaliserSemaine(j && j.semaine);
       if (!semaine) return null;
-      return {
+      const jalon = {
         semaine: semaine,
         texte: String((j && j.texte) || 'Jalon').trim().slice(0, 60) || 'Jalon'
       };
+      const perimetre = String((j && j.perimetre) || '').trim().slice(0, 40);
+      if (perimetre) jalon.perimetre = perimetre;
+      return jalon;
     })
     .filter(function (j) { return j !== null; })
     .sort(function (a, b) { return a.semaine < b.semaine ? -1 : (a.semaine > b.semaine ? 1 : 0); })
@@ -1422,6 +1539,24 @@ function getJalons() {
  * La description de la seconde base pour la page : { nom, cleReference,
  * lignes, colonnes, essentielles }, ou null tant qu'aucun onglet ne porte
  * le nom configuré (FEUILLE, sinon NOM) — la page n'affiche alors rien.
+ * Tout est dans lireSecondeBase(), qui dit aussi POURQUOI il n'y a rien.
+ *
+ * @param {Spreadsheet} classeur
+ */
+function getRapprochement(classeur) {
+  return lireSecondeBase(classeur).rapprochement;
+}
+
+/**
+ * La seconde base, lue, et son état — pour le paquet comme pour le
+ * diagnostic :
+ *   { etat, onglet, cles, entetes, ligneEntete, rapprochement }
+ * etat : 'sans-configuration' (pas de nom d'onglet, ou pas de référence
+ *        configurée), 'absent' (aucun onglet de ce nom), 'vide' (l'onglet
+ *        ne porte rien), 'sans-reference' (l'en-tête ne porte pas la
+ *        référence), 'ok' — et alors `rapprochement` est la description
+ *        pour la page. ligneEntete : le numéro (à partir de 1) de la ligne
+ *        prise pour en-tête, null tant qu'aucune ne l'est.
  *
  * L'onglet est lu tel quel : l'en-tête est la première ligne qui porte tous
  * les intitulés de la référence (dans SEE, la ligne 3, sous le titre), sinon
@@ -1435,16 +1570,16 @@ function getJalons() {
  *
  * @param {Spreadsheet} classeur
  */
-function getRapprochement(classeur) {
+function lireSecondeBase(classeur) {
   const cfg = CONFIG.RAPPROCHEMENT;
   const nomFeuille = feuilleRapprochement();
-  if (!cfg || !nomFeuille) return null;
-  const feuille = classeur.getSheetByName(nomFeuille);
-  if (!feuille) return null;
-
-  const clesVoulues = [].concat(cfg.CLE_REFERENCE === undefined || cfg.CLE_REFERENCE === null ? [] : cfg.CLE_REFERENCE)
+  const clesVoulues = !cfg ? [] : [].concat(cfg.CLE_REFERENCE === undefined || cfg.CLE_REFERENCE === null ? [] : cfg.CLE_REFERENCE)
     .map(function (c) { return String(c).trim(); }).filter(Boolean);
-  if (!clesVoulues.length) return null;
+  const rendu = { etat: 'sans-configuration', onglet: nomFeuille, cles: clesVoulues, entetes: [], ligneEntete: null, rapprochement: null };
+  if (!cfg || !nomFeuille || !clesVoulues.length) return rendu;
+  const feuille = classeur.getSheetByName(nomFeuille);
+  if (!feuille) { rendu.etat = 'absent'; return rendu; }
+  rendu.onglet = feuille.getName();
 
   const donnees = feuille.getDataRange().getDisplayValues();
   let indexEntete = -1, premiereNonVide = -1;
@@ -1461,8 +1596,10 @@ function getRapprochement(classeur) {
       if (ligneNonVide(donnees[i])) { indexEntete = i; break; }
     }
   }
-  if (indexEntete === -1) return null;
+  if (indexEntete === -1) { rendu.etat = 'vide'; return rendu; }
   const entetes = donnees[indexEntete].map(function (e) { return String(e).trim(); });
+  rendu.entetes = entetes.filter(Boolean);
+  rendu.ligneEntete = indexEntete + 1;
 
   const lignes = [];
   for (let i = indexEntete + 1; i < donnees.length; i++) {
@@ -1486,17 +1623,19 @@ function getRapprochement(classeur) {
   }
 
   const clesReference = clesVoulues.map(enteteLa);
-  if (clesReference.some(function (c) { return !c; })) return null;
+  if (clesReference.some(function (c) { return !c; })) { rendu.etat = 'sans-reference'; return rendu; }
   const essentielles = (Array.isArray(cfg.ESSENTIELLES) ? cfg.ESSENTIELLES : [])
     .map(enteteLa).filter(Boolean);
 
-  return {
+  rendu.etat = 'ok';
+  rendu.rapprochement = {
     nom: String(cfg.NOM || feuille.getName()).trim().slice(0, 80) || feuille.getName(),
     cleReference: clesReference.length === 1 ? clesReference[0] : clesReference,
     lignes: lignes,
     colonnes: entetes.filter(Boolean),
     essentielles: essentielles
   };
+  return rendu;
 }
 
 // =====================================================================

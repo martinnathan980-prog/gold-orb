@@ -278,9 +278,26 @@ classeur, le nommer du nom du contrat (`HDK`), **Ctrl+A, Suppr**, cliquer en
 **Ce texte-là m'intéresse énormément** — c'est lui qui me dira si le modèle
 de colonnes tombe juste.
 
-Pour le rapprochement avec SEE : un onglet nommé **`SEE`**, et l'extract
-« Nommage WD BFLOW » collé dedans en A1. Rien d'autre à configurer : l'onglet
-est reconnu par son nom, et les deux cercles apparaissent sous le tableau.
+**Brancher SEE** (les deux cercles) : dans le classeur, **+** pour un nouvel
+onglet, le nommer exactement **`SEE`** ; ouvrir l'extract « Nommage WD BFLOW »
+dans Excel, **Ctrl+A, Ctrl+C** ; dans l'onglet `SEE`, cliquer en **A1**,
+**Ctrl+V** — tel quel, titre en ligne 1 et en-têtes en ligne 3 compris, sans
+rien retoucher. Rouvrir le tableau de bord : les deux cercles sont sous le
+tableau, et l'interrupteur **GATES | SEE** au-dessus. Rien à configurer :
+l'onglet est reconnu par son nom, et la référence est recomposée à partir des
+colonnes **NAME**, **SOL.** et **Cust.V**.
+
+Si les cercles ne viennent pas : **Suivi FWD → Diagnostic**, ligne
+« Seconde base ». Elle dit ce que le script voit — pas d'onglet `SEE` (une
+faute de frappe dans le nom), un onglet vide, ou un onglet dont les en-têtes
+lus ne portent pas NAME / SOL. / Cust.V (l'extract collé sans ses en-têtes,
+ou un autre extract que celui-là). **Ce texte-là aussi m'intéresse.**
+
+Les **jalons** sont ceux du message du 17/09 (solde FWD au 15/12, diffusions
+PH et TO Base / Perso de janvier à février 2027) : ils sont dans `Code.gs`,
+en haut, et se lisent sur le graphique. Si la colonne de domaine de votre
+extract n'écrit pas `BASE/OPTION` et `PERSO` (casse et accents mis à part),
+le Diagnostic le dit et donne les valeurs à recopier.
 
 ---
 

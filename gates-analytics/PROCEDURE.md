@@ -472,14 +472,20 @@ s'effacent du tableau de SEE ; ce qui n'est que dans SEE, sans domaine, reste
 compté à part, tout contrat) et le contrat. Rien n'est modifiable, rien n'est
 mémorisé.
 
-La démonstration en montre un exemple aux écarts délibérés. Dans le classeur,
-la configuration de `Code.gs` décrit déjà SEE tel qu'il a été vu ; il reste à
-**nommer l'onglet** :
+La démonstration en montre un exemple aux écarts délibérés.
+
+**Brancher SEE, en trois gestes.** Dans le classeur, un onglet nommé
+**`SEE`** (le nom configuré, `NOM`) ; l'extract « Nommage WD BFLOW » ouvert
+dans Excel, **Ctrl+A, Ctrl+C** ; dans l'onglet, **A1, Ctrl+V**, tel quel —
+titre en ligne 1, en-têtes en ligne 3, sans rien retoucher. Rouvrir le tableau
+de bord : les deux cercles sont sous le tableau, et l'interrupteur **GATES |
+SEE** apparaît. Rien à configurer : la configuration de `Code.gs` décrit déjà
+SEE tel qu'il a été vu, et l'onglet est reconnu par son nom.
 
 ```js
 RAPPROCHEMENT: {
-  FEUILLE: '',                                 // nom de l'onglet où SEE est collé (vide = rien)
-  NOM: 'SEE',                                  // nom affiché ; vide = le nom de l'onglet
+  FEUILLE: '',                                 // pour un onglet nommé autrement que NOM (vide = NOM)
+  NOM: 'SEE',                                  // nom affiché, et nom de l'onglet cherché
   CLE_REFERENCE: ['NAME', 'SOL.', 'Cust.V'],   // la référence, recomposée dans cet ordre
   ESSENTIELLES: []                             // pas de vue essentielle pour SEE
 },
@@ -487,7 +493,14 @@ RAPPROCHEMENT: {
 
 L'en-tête est la ligne qui porte tous les intitulés de la référence (la ligne 3
 dans SEE), sinon la première ligne non vide. Une référence introuvable dans
-l'onglet : pas de section, pas d'erreur — la page s'ouvre.
+l'onglet : pas de section, pas d'erreur — la page s'ouvre. **Si les cercles
+manquent, Suivi FWD → Diagnostic** : sa ligne « Seconde base » dit ce que le
+script voit — aucun onglet `SEE`, un onglet vide, un onglet dont les
+en-têtes lus ne portent pas NAME, SOL. et Cust.V (l'extract collé sans ses
+en-têtes, ou un autre extract — sans recopier ses cellules), ou bien
+`✓ Seconde base « SEE » : onglet « SEE », 312 ligne(s), référence NAME +
+SOL. + Cust.V (ligne d'en-têtes : 3)`. Un onglet là mais illisible ne fait
+pas conclure « tout est en place » : le bilan final le redit.
 
 ## 13. Les jalons
 
@@ -496,26 +509,37 @@ montre, personne ne les modifie à l'écran. Plus de clic sur une semaine pour e
 poser, plus de poignée ni de croix — c'est un outil de consultation, et deux
 lectrices ne peuvent plus se les déplacer l'une à l'autre.
 
-Ils se règlent en haut de `Code.gs`, une semaine ISO et un texte de 60
-caractères au plus :
+Ils se règlent en haut de `Code.gs` : une semaine ISO, un texte de 60
+caractères au plus et, quand le jalon ne vaut que pour une partie des plans,
+son **périmètre** — la valeur de la colonne de domaine (§ 8), écrite comme
+dans l'extract. Ce sont les échéances du programme, transmises le 17/09/2026 :
 
 ```js
 JALONS: [
-  { semaine: '2026-S44', texte: 'Gel de la définition' },
-  { semaine: '2026-S52', texte: 'Revue critique' },
-  { semaine: '2027-S12', texte: 'Livraison plateau' },
-  { semaine: '2027-S26', texte: 'Premier vol' }
+  { semaine: '2026-S51', texte: 'Solde FWD' },                                    // 15/12/2026
+  { semaine: '2027-S02', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },  // 15/01/2027
+  { semaine: '2027-S03', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },        // 22/01/2027
+  { semaine: '2027-S05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION' },  // 05/02/2027
+  { semaine: '2027-S08', texte: 'Diffusion TO Perso', perimetre: 'PERSO' }         // 26/02/2027
 ],
 ```
 
-**Ces quatre entrées sont provisoires** : à remplacer par les vraies échéances
-du programme. Une entrée illisible est simplement absente, elle ne fait pas
-tomber la page ; le **Diagnostic** dit combien de jalons sont retenus.
+Le jalon à venir le plus proche fait l'**échéance** : il pilote la colonne
+**effort demandé** du bloc par groupe (ce qu'il faudrait solder chaque semaine
+pour le tenir, comparé au rythme réellement tenu — l'en-tête de la colonne le
+nomme) et la droite « requis pour … » du graphique. Sous un périmètre, seuls
+comptent les jalons de ce périmètre et ceux qui n'en ont pas : sous PERSO,
+une fois le solde passé, l'échéance est « Diffusion PH Perso », pas
+« Diffusion PH Base » ; les jalons de l'autre périmètre restent dessinés, en
+retrait, et leur bulle le dit. Sur « Tout », tous comptent. Sans jalon à
+venir, la colonne laisse la place au **rythme actuel** et le graphique dit
+« Aucun jalon à venir » (« … dans ce périmètre » quand il en reste ailleurs).
 
-Le jalon à venir le plus proche pilote la colonne **effort demandé** du bloc par
-groupe (ce qu'il faudrait solder chaque semaine pour le tenir, comparé au
-rythme réellement tenu). Sans jalon à venir, la colonne laisse la place au
-**rythme actuel** et le graphique dit « Aucun jalon à venir ».
+Une entrée illisible est simplement absente, elle ne fait pas tomber la page.
+Le **Diagnostic** dit combien de jalons sont retenus, et si le périmètre de
+chacun est bien l'une des valeurs de la colonne de domaine du premier contrat
+— sinon il nomme le jalon et donne les valeurs vues, à recopier dans
+`perimetre`.
 
 ## 14. Ce qui reste local à chaque personne
 

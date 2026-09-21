@@ -294,7 +294,7 @@ async function reinitialiser(pg) {
   verifier('le contrat courant est celui du sélecteur, et le titre ne le répète pas',
     x2.nom === 'THS' && x2.courant === 'THS' && !/contrat/i.test(x2.masthead), x2.nom);
   verifier('les filtres et le cadrage repartent de zero',
-    x2.filtres && x2.presse === 0 && x2.jalons === 4 && x2.aujourdhui, JSON.stringify(x2));
+    x2.filtres && x2.presse === 0 && x2.jalons === 5 && x2.aujourdhui, JSON.stringify(x2));
   verifier('le bloc par groupe et le journal suivent le nouveau contrat',
     x2.groupes === x2.plans && x2.journal > 0, x2.groupes + ' / ' + x2.plans);
   await p.selectOption('#select-contrat', 'VRK'); await p.waitForTimeout(1200);
@@ -1842,8 +1842,9 @@ async function reinitialiser(pg) {
 
   // =================================================================
   section('Graphique : zoom, déplacement, extrêmes');
-  /* Le cadrage d'ouverture suit aujourd'hui et les jalons (55 semaines sur
-     la démo) : « 1 an » ne l'élargit pas forcément, il donne 52 semaines. */
+  /* Le cadrage d'ouverture suit aujourd'hui et les jalons (38 semaines sur
+     HDK, dont l'historique court est tout entier dans le cadre) : « 1 an »
+     l'élargit à 52 semaines. */
   const zoom0 = await p.evaluate(() => document.querySelectorAll('.zone-clic').length);
   await p.click('.segmente button[data-span="52"]'); await p.waitForTimeout(350);
   const zoom1 = await p.evaluate(() => ({
@@ -1941,9 +1942,9 @@ async function reinitialiser(pg) {
 
   // =================================================================
   section('Jalons fixes');
-  /* Les jalons viennent de la source, et d'elle seule : quatre par contrat en
-     démonstration. Rien ne permet d'en poser, d'en déplacer ni d'en retirer —
-     l'outil se consulte. */
+  /* Les jalons viennent de la source, et d'elle seule : cinq par contrat en
+     démonstration — ceux du programme. Rien ne permet d'en poser, d'en
+     déplacer ni d'en retirer — l'outil se consulte. */
   await p.click('.segmente button[data-span="0"]'); await p.waitForTimeout(400);
   const fixes = await p.evaluate(() => ({
     source: window.__jeuDExemple('HDK').jalons.length,
@@ -1957,15 +1958,109 @@ async function reinitialiser(pg) {
     indice: document.querySelector('.commandes-graphe .indice').textContent,
     pont: !(window.SUIVI_FWD_API && window.SUIVI_FWD_API.sauverJalons)
   }));
-  verifier('la démonstration a quatre jalons', fixes.source === 4, String(fixes.source));
-  verifier('les quatre sont dessinés, avec leur texte',
-    fixes.dessines === 4 && fixes.textes.length === 4 && fixes.textes.every(t => t.trim().length > 0),
+  verifier('la démonstration a cinq jalons — ceux du programme, le solde FWD en tête',
+    fixes.source === 5 && fixes.textes[0] === 'Solde FWD', JSON.stringify([fixes.source, fixes.textes]));
+  verifier('les cinq sont dessinés, avec leur texte',
+    fixes.dessines === 5 && fixes.textes.length === 5 && fixes.textes.every(t => t.trim().length > 0),
     JSON.stringify(fixes.textes));
   verifier('aucune poignée, croix ni formulaire dans le DOM', fixes.poignees === 0 && !fixes.formulaire);
   verifier('aucun bouton dans le graphique', fixes.boutons === 0, String(fixes.boutons));
   verifier('le curseur du cadre reste la main du panoramique', fixes.curseur === 'grab', fixes.curseur);
   verifier('l\'indice ne promet plus de poser un jalon', !/poser/.test(fixes.indice), fixes.indice);
   verifier('aucun pont de sauvegarde des jalons', fixes.pont);
+
+  /* Un jalon peut porter un périmètre : sous ce périmètre, il fait
+     l'échéance ; sous l'autre, il est dessiné en retrait et ne compte pas.
+     Sans périmètre choisi (« Tout »), tous comptent. La démonstration en
+     porte quatre sur cinq (Base / Perso), comme la configuration livrée. */
+  const per = await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    return { avec: s.jalons.filter(j => j.perimetre).length, valeurs: [...new Set(s.jalons.map(j => j.perimetre || ''))].sort() };
+  });
+  verifier('la démonstration porte quatre jalons à périmètre, Base et Perso, et un pour tous',
+    per.avec === 4 && per.valeurs.join('|') === '|BASE/OPTION|PERSO', JSON.stringify(per));
+  await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    s.jalons = [
+      { semaine: s.jalons[0].semaine, texte: 'Base seul', perimetre: 'BASE/OPTION' },
+      { semaine: s.jalons[1].semaine, texte: 'Perso seul', perimetre: 'perso' },
+      { semaine: s.jalons[2].semaine, texte: 'Tous' }
+    ];
+    window.__chargerSource(s);
+  });
+  await p.waitForTimeout(500);
+  const lireEcheance = () => p.evaluate(() => ({
+    prochain: window.__prochainJalon() && window.__prochainJalon().texte,
+    entete: (document.querySelector('.critique-tete button[data-trig="tension"]') || {}).title || '',
+    zone: document.getElementById('zone-critique').getAttribute('data-jalon'),
+    retrait: [...document.querySelectorAll('.jalon.hors-perimetre .jalon-texte')].map(t => t.textContent),
+    legende: document.getElementById('legende').textContent,
+    aucun: [...document.querySelectorAll('svg.graphe text')].filter(t => /Aucun jalon/.test(t.textContent)).map(t => t.textContent).join('')
+  }));
+  const eTout = await lireEcheance();
+  verifier('sur « Tout », le premier jalon à venir fait l\'échéance, périmètre ou pas, et l\'en-tête le nomme',
+    eTout.prochain === 'Base seul' && /«\u00a0Base seul\u00a0» \(2026-S51\)/.test(eTout.entete) && eTout.zone === 'Base seul' && eTout.retrait.length === 0 &&
+    /requis pour «\u00a0Base seul\u00a0»/.test(eTout.legende), JSON.stringify(eTout));
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
+  const ePerso = await lireEcheance();
+  verifier('sous PERSO, l\'échéance saute au jalon Perso (casse indifférente) ; le jalon Base est dessiné en retrait',
+    ePerso.prochain === 'Perso seul' && /«\u00a0Perso seul\u00a0» \(2027-S02\)/.test(ePerso.entete) && ePerso.zone === 'Perso seul' &&
+    ePerso.retrait.join('|') === 'Base seul' && /requis pour «\u00a0Perso seul\u00a0»/.test(ePerso.legende) && ePerso.aucun === '',
+    JSON.stringify(ePerso));
+  await p.click('#choix-perimetre button[data-perimetre="BASE/OPTION"]'); await p.waitForTimeout(700);
+  const eBase = await lireEcheance();
+  verifier('sous BASE/OPTION, l\'échéance est le jalon Base ; le jalon Perso est en retrait, « Tous » ne l\'est pas',
+    eBase.prochain === 'Base seul' && eBase.retrait.join('|') === 'Perso seul', JSON.stringify(eBase));
+  const bulle = await p.evaluate(() => (document.querySelector('.jalon.hors-perimetre title') || {}).textContent || '');
+  verifier('la bulle d\'un jalon en retrait dit son périmètre et qu\'il ne compte pas ici',
+    /périmètre perso/.test(bulle) && /ne compte pas ici/.test(bulle), bulle);
+  /* Un jalon sans périmètre compte sous tout périmètre : placé avant celui
+     du périmètre choisi, c'est lui l'échéance. Et deux jalons la même
+     semaine, dont un hors périmètre : seul celui qui compte peut être peint
+     en rouge. */
+  await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    s.jalons = [
+      { semaine: s.jalons[0].semaine, texte: 'Base seul', perimetre: 'BASE/OPTION' },
+      { semaine: s.jalons[1].semaine, texte: 'Tous' },
+      { semaine: s.jalons[1].semaine, texte: 'Perso même semaine', perimetre: 'PERSO' },
+      { semaine: s.jalons[2].semaine, texte: 'Perso seul', perimetre: 'PERSO' }
+    ];
+    window.__chargerSource(s);
+  });
+  await p.waitForTimeout(500);
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
+  const eTous = await lireEcheance();
+  verifier('sous PERSO, un jalon sans périmètre placé avant fait l\'échéance : « Tous »',
+    eTous.prochain === 'Tous' && eTous.zone === 'Tous' && eTous.retrait.join('|') === 'Base seul', JSON.stringify(eTous));
+  await p.click('#choix-perimetre button[data-perimetre="BASE/OPTION"]'); await p.waitForTimeout(700);
+  const rouge = await p.evaluate(() => ({
+    prochain: window.__prochainJalon() && window.__prochainJalon().texte,
+    critiques: [...document.querySelectorAll('.jalon')].filter(g => /alerte/.test(g.querySelector('line').getAttribute('stroke'))).map(g => g.querySelector('.jalon-texte').textContent),
+    retrait: [...document.querySelectorAll('.jalon.hors-perimetre .jalon-texte')].map(t => t.textContent)
+  }));
+  verifier('sous BASE/OPTION, le jalon Perso de la même semaine que « Tous » est en retrait, jamais peint en rouge',
+    rouge.prochain === 'Base seul' && rouge.retrait.join('|') === 'Perso même semaine|Perso seul' && rouge.critiques.indexOf('Perso même semaine') === -1,
+    JSON.stringify(rouge));
+  /* Sous un périmètre sans jalon à venir : la colonne redevient « rythme
+     actuel », et le graphique dit que c'est dans ce périmètre qu'il n'y a
+     rien — le jalon de l'autre reste dessiné. */
+  await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    s.jalons = [{ semaine: s.jalons[0].semaine, texte: 'Base seul', perimetre: 'BASE/OPTION' }];
+    window.__chargerSource(s);
+  });
+  await p.waitForTimeout(500);
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
+  const eRien = await lireEcheance();
+  verifier('sous PERSO sans jalon à venir : « rythme actuel », et le graphique dit « dans ce périmètre »',
+    eRien.prochain === null && /Plans terminés par semaine/.test(eRien.entete) && eRien.zone === '' &&
+    eRien.retrait.join('|') === 'Base seul' && eRien.aucun === 'Aucun jalon à venir dans ce périmètre',
+    JSON.stringify(eRien));
+  await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(500);
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
+  await p.waitForTimeout(500);
+  await p.click('.segmente button[data-span="0"]'); await p.waitForTimeout(400);
   /* Un clic sur une semaine, à venir ou passée, ne pose rien. */
   const zonesClic = await p.$$('.zone-clic');
   for (const k of [5, Math.round(zonesClic.length / 2)]) {
@@ -1975,7 +2070,7 @@ async function reinitialiser(pg) {
   }
   await p.keyboard.press('Enter'); await p.keyboard.press('Delete'); await p.waitForTimeout(300);
   verifier('un clic sur une semaine ne pose rien, Entrée et Suppr ne changent rien',
-    await p.evaluate(() => document.querySelectorAll('.jalon').length === 4 && !document.getElementById('champ-jalon')));
+    await p.evaluate(() => document.querySelectorAll('.jalon').length === 5 && !document.getElementById('champ-jalon')));
   verifier('aucune étiquette de jalon n\'en chevauche une autre',
     await p.evaluate(() => {
       const r = [...document.querySelectorAll('.jalon-texte')].map(t => t.getBoundingClientRect())
@@ -2034,7 +2129,7 @@ async function reinitialiser(pg) {
       const t = [...document.querySelectorAll('svg.graphe text')].map(x => x.textContent).find(x => /Aucun jalon/.test(x));
       return !!t && !/cliquez/.test(t);
     }));
-  // Retour à la source de démonstration, avec ses quatre jalons.
+  // Retour à la source de démonstration, avec ses cinq jalons.
   await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
   await p.waitForTimeout(400);
 
@@ -2246,13 +2341,13 @@ async function reinitialiser(pg) {
     await p.evaluate(() => !document.getElementById('avertissement-demo').hidden &&
       /Jeu d'exemple/.test(document.querySelector('.pied').textContent)));
 
-  // Le cadrage d'ouverture montre aujourd'hui et les quatre jalons configurés.
+  // Le cadrage d'ouverture montre aujourd'hui et les cinq jalons configurés.
   const cadrage = await p.evaluate(() => ({
     jalons: document.querySelectorAll('svg.graphe .jalon').length,
     aujourdhui: [...document.querySelectorAll('svg.graphe text')].some(t => /aujourd/.test(t.textContent))
   }));
-  verifier('à l’ouverture, les quatre jalons et « aujourd’hui » sont dans le cadre',
-    cadrage.jalons === 4 && cadrage.aujourdhui, JSON.stringify(cadrage));
+  verifier('à l’ouverture, les cinq jalons et « aujourd’hui » sont dans le cadre',
+    cadrage.jalons === 5 && cadrage.aujourdhui, JSON.stringify(cadrage));
 
   // La ligne « changement d'indice » de la semaine ouverte n'est plus reléguée derrière « voir les autres ».
   verifier('un changement d’indice se lit dans la semaine ouverte sans déplier « voir les autres »',
@@ -2321,13 +2416,13 @@ async function reinitialiser(pg) {
     jalons: document.querySelectorAll('svg.graphe .jalon').length
   }));
   verifier('avec 113 relevés, l’ouverture montre encore aujourd’hui et les jalons',
-    longOuverture.releves && longOuverture.aujourdhui && longOuverture.jalons === 4, JSON.stringify(longOuverture));
+    longOuverture.releves && longOuverture.aujourdhui && longOuverture.jalons === 5, JSON.stringify(longOuverture));
   await p.click('.commandes-graphe button[data-span="0"]'); await p.waitForTimeout(400);
   const longTout = await p.evaluate(() => ({
     aujourdhui: [...document.querySelectorAll('svg.graphe text')].some(t => /aujourd/.test(t.textContent)),
     jalons: document.querySelectorAll('svg.graphe .jalon').length
   }));
-  verifier('et « Tout » les garde à l’écran', longTout.aujourdhui && longTout.jalons === 4, JSON.stringify(longTout));
+  verifier('et « Tout » les garde à l’écran', longTout.aujourdhui && longTout.jalons === 5, JSON.stringify(longTout));
   await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
   await p.waitForTimeout(500);
 
@@ -2429,7 +2524,7 @@ async function reinitialiser(pg) {
   verifier('le tri du bloc par groupe survit au rechargement',
     apresRech.tri === triAvant, triAvant + ' → ' + apresRech.tri);
   verifier('les jalons ne passent pas par le stockage : ils viennent de la source',
-    apresRech.jalons === 4 && !apresRech.stockes, JSON.stringify(apresRech));
+    apresRech.jalons === 5 && !apresRech.stockes, JSON.stringify(apresRech));
 
   // =================================================================
   section('Stockage local corrompu ou indisponible');
@@ -2457,7 +2552,7 @@ async function reinitialiser(pg) {
   }));
   verifier('des préférences absurdes sont ignorées sans plantage', survie.lignes === TOTAL, survie.lignes + ' lignes');
   verifier('des jalons laissés dans un ancien stockage ne sont pas relus',
-    survie.jalons.length === 4 && !survie.jalons.some(t => /stock/.test(t)), JSON.stringify(survie.jalons));
+    survie.jalons.length === 5 && !survie.jalons.some(t => /stock/.test(t)), JSON.stringify(survie.jalons));
   verifier('une ancienne clé « cachees » est ignorée : les 137 colonnes restent présentes',
     survie.colonnes === COLONNES_TOTAL, survie.colonnes + ' colonnes');
   verifier('la référence UD ne peut pas être masquée par le stockage', survie.refVisible);
