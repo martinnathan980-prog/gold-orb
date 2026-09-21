@@ -20,6 +20,7 @@ const lire = async (n) => {
 const orga = await lire('organigramme');
 const comms = await lire('communications');
 const docs = await lire('documents');
+const flotte = await lire('flotte');
 
 const EFFECTIFS = Object.fromEntries(orga.poles.map(p =>
   [p.pole, 1 + p.squads.reduce((n, s) => n + s.membres.length, 0)]));
@@ -76,6 +77,65 @@ for (const code of ['ETIIA', 'ETIIE', 'ETIII']) {
   await page.waitForTimeout(1200);
   const entrees = await page.locator('#zone-communication .kiosque__carte').count();
   t(`${code} : ${attendu} entrées dans son kiosque`, entrees === attendu, `(${entrees})`);
+}
+
+console.log('\n== Espace de pôle : repères, référents, porteurs ==');
+// Plus de réunions dans un espace de pôle : entre la communication et
+// l'organigramme, le pôle en un coup d'œil, ses référents par compétence
+// et ses porteurs — tout calculé depuis organigramme.json, flotte.json et
+// documents.json, sans rien d'inventé.
+const membresDe = (bloc) => [bloc.responsable].concat(...bloc.squads.map(s => s.membres));
+for (const bloc of orga.poles) {
+  const code = bloc.pole;
+  const membres = membresDe(bloc);
+  const competences = new Set(membres.flatMap(m => (m.competences || []).map(c => c.nom)));
+  const referents = new Set(membres.filter(m => (m.competences || []).some(c => c.niveau === 'referent')).map(m => m.id));
+  const porteurs = flotte.flotte.filter(a => (a.poles || []).includes(code));
+  const noms = new Set(membres.map(m => m.nom));
+  const documents = docs.documents.filter(d => noms.has(d.porteur)).length;
+
+  await page.goto(`${B}/${code.toLowerCase()}.html`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1200);
+  // textContent : innerText rendrait les capitales du CSS.
+  const sousNav = await page.locator('.sous-nav a').evaluateAll(l => l.map(a => a.textContent.trim()));
+  t(`${code} : sous-navigation Communication, Référents, Porteurs, Organigramme, FAQ`,
+    sousNav.join('|') === 'Communication|Référents|Porteurs|Organigramme|FAQ', `(${sousNav.join('|')})`);
+  t(`${code} : plus de section Réunions`, (await page.locator('#section-reunions, #zone-reunions').count()) === 0);
+
+  const reperes = await page.locator('#zone-reperes .pole-repere__valeur').allInnerTexts();
+  t(`${code} : repères ${membres.length} personnes, ${bloc.squads.length} squads, ${referents.size} référents, ${porteurs.length} porteurs, ${documents} documents`,
+    reperes.join(' ') === [membres.length, bloc.squads.length, referents.size, porteurs.length, documents].join(' '),
+    `(${reperes.join(' ')})`);
+
+  const cartes = await page.locator('#zone-referents .pole-expertise').count();
+  t(`${code} : une carte par compétence (${competences.size})`, cartes === competences.size, `(${cartes})`);
+  t(`${code} : le compteur dit ${competences.size} compétences · ${referents.size} référents`,
+    (await page.locator('#zone-referents .pole-experts__compte').evaluate(e => e.textContent)).trim()
+      === `${competences.size} compétences · ${referents.size} référents`);
+  const liensPersonne = page.locator('#zone-referents .pole-expertise__personne');
+  const premierLien = (await liensPersonne.first().getAttribute('href')) || '';
+  t(`${code} : les référents mènent à organigramme.html#pole=${code}&personne=…`,
+    (await liensPersonne.count()) > 0 && premierLien.startsWith(`organigramme.html#pole=${code}&personne=p`), `(${premierLien})`);
+
+  // La recherche filtre les compétences ; une requête sans réponse le dit.
+  const premiereCompetence = (await page.locator('#zone-referents .pole-expertise__nom').first().innerText()).trim();
+  await page.fill('#zone-referents .pole-experts__recherche', premiereCompetence);
+  await page.waitForTimeout(400);
+  const visibles = await page.locator('#zone-referents .pole-expertise:visible').count();
+  t(`${code} : la recherche « ${premiereCompetence} » filtre les cartes`, visibles >= 1 && visibles < cartes, `(${visibles})`);
+  await page.fill('#zone-referents .pole-experts__recherche', 'zzzz-rien');
+  await page.waitForTimeout(400);
+  t(`${code} : une recherche sans réponse l'annonce`, await page.locator('#zone-referents .pole-experts__vide').isVisible());
+  await page.fill('#zone-referents .pole-experts__recherche', '');
+  await page.waitForTimeout(400);
+
+  const fiches = page.locator('#zone-porteurs .porteurs__fiche');
+  const codes = (await fiches.locator('.porteurs__fiche-code').allInnerTexts()).map(s => s.trim()).sort();
+  t(`${code} : ${porteurs.length} porteurs en cartes photo`,
+    codes.join(',') === porteurs.map(a => a.code).sort().join(','), `(${codes.join(',')})`);
+  const hrefs = await fiches.evaluateAll(l => l.map(a => a.getAttribute('href')));
+  t(`${code} : chaque carte mène à index.html#porteur=CODE`,
+    hrefs.length > 0 && hrefs.every(h => /^index\.html#porteur=[A-Z0-9]+$/.test(h)), `(${hrefs.join(' ')})`);
 }
 await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1200);

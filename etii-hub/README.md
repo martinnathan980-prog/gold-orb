@@ -50,10 +50,31 @@ Puis ouvrir <http://localhost:8000>.
 | Page | Rôle |
 |---|---|
 | `index.html` | Dispatcher : accès aux trois pôles et à la recherche |
+| `etiia.html`, `etiie.html`, `etiii.html` | L'espace d'un pôle : sa communication, ses repères, ses référents, ses porteurs, son organigramme, sa FAQ (voir ci-dessous) |
 | `reunions.html` | Les comptes-rendus de réunion, par périmètre |
 | `organigramme.html` | Équipes, rôles, réorganisation |
 | `faq.html` | Base de connaissances |
 | `docsearch.html` | **Recherche documentaire — le cœur du site** |
+
+### Les espaces de pôle
+
+Les trois pages de pôle sont une seule page (`assets/js/pole.js`),
+paramétrée par `<body data-pole="ETIIA|ETIIE|ETIII">`. Une sous-navigation
+collante (Communication, Référents, Porteurs, Organigramme, FAQ) suit la
+lecture. Aucune section n'invente rien : chacune est calculée depuis les
+fichiers de `assets/data/` pour ce pôle.
+
+| Section | Source | Ce qu'elle montre |
+|---|---|---|
+| Communication | `communications.json` (`pole`) | Le kiosque du pôle, identique à celui du tableau de bord |
+| Le pôle en un coup d'œil | `organigramme.json`, `flotte.json`, `documents.json` | Cinq repères cliquables : personnes, squads, référents, porteurs, documents portés par ses membres (`documents.json` → `porteur` ∈ noms des membres) |
+| Référents & expertises | `organigramme.json` (`competences`) | Une carte par compétence du pôle : ses référents (niveau `referent`, liens vers `organigramme.html#pole=CODE&personne=ID`), puis le nombre de confirmés et de pratiquants ; un champ filtre les compétences et les noms, un compteur dit « N compétences · M référents » |
+| Porteurs du pôle | `flotte.json` (`poles`) | Les appareils dont `poles` cite le pôle, en cartes photo (la carte de la galerie du tableau de bord) vers `index.html#porteur=CODE` |
+| Organigramme | `organigramme.json` | L'arbre d'équipe du pôle : responsable, squads repliables |
+| Questions fréquentes | `faq.json` (`pole`) | Les questions du pôle puis celles du service, et la demande aux experts |
+
+Un pôle n'a pas de section Réunions : ce qui vaut d'être dit se publie en
+communication. Les comptes-rendus restent lisibles dans `reunions.html`.
 
 ## Architecture
 

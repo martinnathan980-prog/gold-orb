@@ -93,7 +93,14 @@ await page.waitForTimeout(2200);
 const pole = await f.locator('main').innerText();
 t('ETIIA s\'ouvre', /ETIIA/.test(await f.locator('h1').innerText()));
 t('sa communication est en tête', (await f.locator('.kiosque').count()) === 1);
-t('ses réunions sont lisibles', (await f.locator('#zone-reunions .liseuse').count()) === 1);
+t('plus de section Réunions', (await f.locator('#section-reunions, #zone-reunions').count()) === 0);
+t('ses repères sont calculés', (await f.locator('#zone-reperes .pole-repere').count()) === 5);
+t('ses référents par compétence sont là',
+  (await f.locator('#zone-referents .pole-expertise').count()) > 3
+  && (await f.locator('#zone-referents .pole-expertise__personne').count()) > 0);
+t('ses porteurs sont des cartes photo vers la fiche',
+  (await f.locator('#zone-porteurs .porteurs__fiche').count()) > 0
+  && /#porteur=/.test((await f.locator('#zone-porteurs .porteurs__fiche').first().getAttribute('href')) || ''));
 t('son organigramme est un arbre', (await f.locator('.arbre__carte').count()) > 3);
 t('sa FAQ est lisible', (await f.locator('#zone-faq .liseuse').count()) === 1);
 t('aucun indicateur n\'y figure', !/OTQ|OTD/.test(pole));

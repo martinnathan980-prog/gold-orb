@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Espace de pôle — ETII Hub</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300205b'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Espace d’un pôle du service ETII : sa communication, ses réunions, son organigramme et ses questions fréquentes.">
+  <meta name="description" content="Espace d’un pôle du service ETII : sa communication, ses repères, ses référents par compétence, ses porteurs, son organigramme et ses questions fréquentes.">
   <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="assets/css/polices.css">
   <link rel="stylesheet" href="assets/css/tokens.css">
@@ -79,7 +79,8 @@
       <nav aria-label="Sections de l’espace">
         <ul class="sous-nav">
           <li><a href="#section-communication" aria-current="true">Communication</a></li>
-          <li><a href="#section-reunions">Réunions</a></li>
+          <li><a href="#section-referents">Référents</a></li>
+          <li><a href="#section-porteurs">Porteurs</a></li>
           <li><a href="#section-organigramme">Organigramme</a></li>
           <li><a href="#section-faq">FAQ</a></li>
         </ul>
@@ -90,9 +91,23 @@
         <div id="zone-communication"></div>
       </section>
 
-      <section class="pile" id="section-reunions" data-section-pole aria-labelledby="titre-reunions">
-        <h2 class="titre-section" id="titre-reunions"><span class="titre-section__texte">Réunions</span></h2>
-        <div id="zone-reunions"></div>
+      <!-- Les repères, puis les référents et les porteurs : trois sections
+           calculées depuis organigramme.json, flotte.json et documents.json
+           (pole.js). Les repères ne sont pas dans la sous-navigation : c'est
+           une ligne de chiffres, pas une destination. -->
+      <section class="pile" id="section-reperes" data-section-pole aria-labelledby="titre-reperes">
+        <h2 class="titre-section" id="titre-reperes"><span class="titre-section__texte">Le pôle en un coup d’œil</span></h2>
+        <div id="zone-reperes"></div>
+      </section>
+
+      <section class="pile" id="section-referents" data-section-pole aria-labelledby="titre-referents">
+        <h2 class="titre-section" id="titre-referents"><span class="titre-section__texte">Référents &amp; expertises</span></h2>
+        <div id="zone-referents"></div>
+      </section>
+
+      <section class="pile" id="section-porteurs" data-section-pole aria-labelledby="titre-porteurs">
+        <h2 class="titre-section" id="titre-porteurs"><span class="titre-section__texte">Porteurs du pôle</span></h2>
+        <div id="zone-porteurs"></div>
       </section>
 
       <section class="pile" id="section-organigramme" data-section-pole aria-labelledby="titre-organigramme">
