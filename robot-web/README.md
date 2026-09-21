@@ -215,22 +215,28 @@ l'inspecteur Playwright ; cliquez sur « Pick locator » puis sur un élément.
 
 ---
 
-## 4 bis. Travailler avec Claude sans lui donner accès à vos applications
+## 4 bis. Construire un scénario sans rien envoyer à l'extérieur : l'assistant
 
-Claude n'a accès ni à votre réseau ni à vos outils. La boucle de travail est donc :
+Vos écrans et vos données restent sur votre poste. L'assistant construit le scénario par questions/réponses :
 
-1. **Vous relevez l'écran** : `python -m autoweb releve URL --canal chrome --nom "écran"`.
-   Vous vous connectez, vous naviguez jusqu'à l'écran voulu, Entrée. Le dossier `releves/<date>-<écran>/`
-   contient `champs.txt` (chaque champ, bouton et liste déroulante avec son sélecteur), `brouillon.yaml`
-   (début de scénario), `capture.png` et `page.html`. Vous pouvez relever plusieurs écrans à la suite
-   (page de recherche, formulaire, page de confirmation…).
-2. **Vous envoyez** `champs.txt` et `brouillon.yaml` (et la capture si elle ne montre rien de sensible), avec
-   la description de ce qu'il faut faire et les colonnes de votre Excel.
-3. **Claude écrit le scénario complet**, vous le testez : `simuler`, puis `lancer --limite 1` avec une étape
-   `pause` avant le clic final pour vérifier à l'écran.
-4. **En cas d'erreur**, vous envoyez la ligne d'erreur de la console (ou la colonne Message de l'Excel) et la
-   capture `captures/erreurs/ligne-N-….png` : Claude corrige, vous relancez avec `--reprendre-erreurs`.
+```bat
+python -m autoweb assistant https://votre-outil/plans/nouveau --canal chrome --excel mon_outil\suivi.xlsx --nom "nouveau plan"
+```
 
+1. Le navigateur s'ouvre : vous vous connectez, vous affichez le formulaire vide, vous revenez dans la console et
+   appuyez sur Entrée. L'écran est **relevé** dans `releves/<date>-<nom>/` (`champs.txt` : chaque champ, liste et
+   bouton avec son sélecteur ; `capture.png` ; `page.html` ; `brouillon.yaml`).
+2. Pour chaque champ visible, l'assistant propose la colonne Excel la plus proche (Entrée pour accepter, un autre
+   numéro pour changer, `0` pour ignorer, `v` pour une valeur fixe). Puis : quel bouton enregistre, quel texte
+   confirme le succès, quelle référence relever dans l'Excel, faut-il se connecter à la main au début.
+3. Il écrit `mon_outil/nouveau_plan.yaml`. Enchaînez `verifier`, `simuler`, puis `lancer --limite 1` : une étape
+   `pause` avant le clic final vous laisse vérifier à l'écran.
+
+Pour un écran déjà relevé : `python -m autoweb assistant --releve releves\<date>-<nom> --excel suivi.xlsx`.
+Le relevé seul (sans assistant) : `python -m autoweb releve URL --canal chrome --nom "écran"`.
+
+Si vous demandez de l'aide à Claude, décrivez l'écran avec des noms neutres (champ 1, liste 2, bouton
+Enregistrer) et copiez uniquement la ligne d'erreur de la console ou de la colonne Message : c'est suffisant.
 Testez de préférence sur un enregistrement de test (un plan fictif que vous pouvez supprimer ensuite).
 
 ## 5. Mettre au point sans casser quoi que ce soit

@@ -24,19 +24,27 @@ ROBOT-WEB (autoweb) - DEMARRAGE AU BUREAU
    Si ca echoue encore, copiez le message d'erreur et le fichier demo\journal\autoweb-*.log
    et envoyez-les a Claude.
 
-6. Ensuite, pour votre premier vrai outil, faites un RELEVE de l'ecran a automatiser :
-      py -m autoweb releve https://adresse-de-votre-outil --canal chrome --nom "nom de l'ecran"
-   Chrome s'ouvre : connectez-vous, naviguez jusqu'a l'ecran voulu, revenez dans la
-   console et appuyez sur Entree. Le robot cree un dossier releves\<date>-<nom>\ avec :
-      champs.txt      la liste des champs et boutons avec les selecteurs a utiliser
-      brouillon.yaml  un debut de scenario
-      capture.png     la capture de l'ecran (a relire : peut contenir des donnees)
-      page.html       le code de la page (idem)
-   Envoyez champs.txt + brouillon.yaml (+ la capture si possible) a Claude en expliquant
-   ce qu'il faut saisir et d'ou viennent les valeurs (colonnes Excel).
-   Claude renvoie le scenario complet ; vous le testez avec :
-      py -m autoweb simuler mon_outil\scenario.yaml
-      py -m autoweb lancer mon_outil\scenario.yaml --limite 1
+6. Votre premier vrai outil, SANS rien envoyer a l'exterieur : l'ASSISTANT construit
+   le scenario sur votre poste, par questions/reponses.
+   a) Preparez votre Excel de suivi (une ligne par element, les noms de colonnes en ligne 1),
+      ou creez-en un vide :   py -m autoweb initialiser mon_outil --colonnes "Numero plan,Titre,Type"
+   b) Lancez l'assistant sur l'ecran a automatiser :
+      py -m autoweb assistant https://adresse-de-votre-outil --canal chrome --excel mon_outil\suivi.xlsx --nom "nouveau plan"
+      Chrome s'ouvre : connectez-vous, affichez le formulaire vide, revenez dans la console, Entree.
+      L'assistant liste chaque champ de l'ecran et vous demande quelle colonne Excel le remplit
+      (il propose la plus probable : Entree pour accepter, 0 pour ignorer, v pour une valeur fixe),
+      puis quel bouton enregistre, quel texte confirme le succes, etc.
+   c) Il ecrit mon_outil\nouveau_plan.yaml. Testez-le :
+      py -m autoweb verifier mon_outil\nouveau_plan.yaml
+      py -m autoweb simuler  mon_outil\nouveau_plan.yaml
+      py -m autoweb lancer   mon_outil\nouveau_plan.yaml --limite 1
+      (le scenario contient une pause avant le clic final : vous verifiez a l'ecran)
+   d) Pour ajuster a la main : ouvrez le .yaml avec le Bloc-notes, l'aide-memoire des actions est
+      dans README.md. Le dossier releves\<date>-<nom>\champs.txt liste tous les selecteurs.
+
+   Le dossier releves\ et vos fichiers restent sur votre poste. Si vous demandez de l'aide a
+   Claude, decrivez l'ecran avec des noms neutres (champ 1, liste 2, bouton Enregistrer) et
+   copiez seulement la ligne d'erreur de la console.
 
 7. Vos sessions (SSO) : pour que le robot travaille dans un Chrome ou vous etes deja
    connecte, lancez chrome_debug.bat, connectez-vous, et mettez dans le scenario :

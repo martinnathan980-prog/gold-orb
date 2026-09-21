@@ -275,6 +275,74 @@ def cmd_inspecter(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_assistant(args: argparse.Namespace) -> int:
+    from .assistant import Dialogue, construire
+    from .excel import ClasseurSuivi
+    from .releve import charger_releve, dernier_releve, relever
+
+    configurer_journal(None, args.verbeux)
+    interactif = sys.stdin is not None and sys.stdin.isatty()
+    dossier_releve: Optional[Path] = Path(args.releve) if args.releve else None
+    if args.url:
+        # relevé de l'écran d'abord, dans la même session
+        nav = _lancer_navigateur_libre(args)
+        page = nav.ouvrir()
+        try:
+            url = args.url if args.url.startswith(("http", "file:")) else "https://" + args.url
+            page.goto(url)
+            if interactif and not args.sans_pause:
+                print()
+                print("Dans le navigateur : connectez-vous si besoin et affichez l'écran à automatiser (le formulaire vide).")
+                print("Puis revenez ici et appuyez sur Entrée : ", end="", flush=True)
+                input()
+            dossier_releve = relever(nav.page_courante(), Path(args.sortie_releve or "releves"), nom=args.nom)
+            print(f"{S.OK} Relevé enregistré dans {dossier_releve}")
+        finally:
+            nav.fermer()
+    if dossier_releve is None:
+        dossier_releve = dernier_releve(Path(args.sortie_releve or "releves"))
+        if dossier_releve is None:
+            raise ErreurAutoweb(
+                "Aucun relevé trouvé. Lancez d'abord :  python -m autoweb releve https://adresse-de-l-outil --canal chrome\n"
+                "ou donnez l'adresse directement :  python -m autoweb assistant https://adresse-de-l-outil --excel suivi.xlsx"
+            )
+        print(f"Relevé utilisé : {dossier_releve}")
+    try:
+        releve = charger_releve(dossier_releve)
+    except FileNotFoundError as e:
+        raise ErreurAutoweb(str(e))
+
+    colonnes: List[str] = []
+    feuille = None
+    if args.excel:
+        classeur = ClasseurSuivi(Path(args.excel), feuille=args.feuille, sauvegarde=False).ouvrir()
+        try:
+            colonnes = [c for c in classeur.entetes if c not in ("Statut", "Message", "Horodatage")]
+            feuille = classeur.nom_feuille
+        finally:
+            classeur.fermer()
+    else:
+        print(f"{S.ATTENTION} Pas d'Excel indiqué (--excel suivi.xlsx) : vous taperez les noms de colonnes à la main.")
+
+    dialogue = Dialogue()
+    texte = construire(releve, colonnes, dialogue, nom=args.nom, fichier_excel=(Path(args.excel).name if args.excel else "suivi.xlsx"), feuille=feuille)
+    nom = args.nom or releve.get("nom") or "scenario"
+    base = "".join(c if c.isalnum() or c in "-_" else "_" for c in nom.strip().lower().replace(" ", "_")) or "scenario"
+    sortie = Path(args.sortie) if args.sortie else Path(f"{base}.yaml")
+    if args.excel and not args.sortie:
+        sortie = Path(args.excel).resolve().parent / f"{base}.yaml"
+    if sortie.exists() and not args.ecraser:
+        sortie = sortie.with_name(f"{sortie.stem}-{dt.datetime.now():%Y%m%d-%H%M%S}{sortie.suffix}")
+    sortie.write_text(texte, encoding="utf-8")
+    print()
+    print(f"{S.OK} Scénario écrit : {sortie}")
+    print("Prochaines étapes :")
+    print(f"  python -m autoweb verifier \"{sortie}\"")
+    print(f"  python -m autoweb simuler \"{sortie}\"")
+    print(f"  python -m autoweb lancer \"{sortie}\" --limite 1")
+    return 0
+
+
 def cmd_enregistrer(args: argparse.Namespace) -> int:
     configurer_journal(None, args.verbeux)
     commande: List[str] = [sys.executable, "-m", "playwright", "codegen", "--target", "python"]
@@ -458,6 +526,21 @@ def construire_parseur() -> argparse.ArgumentParser:
     options_navigateur(p)
     commun(p)
     p.set_defaults(fonction=cmd_releve)
+
+    p = sous.add_parser("assistant", help="construire un scénario par questions/réponses (relevé + colonnes Excel)")
+    p.add_argument("url", nargs="?", help="adresse de l'écran à relever d'abord (sinon : dernier relevé de releves/)")
+    p.add_argument("--releve", help="dossier d'un relevé existant (releves/<date>-<nom>)")
+    p.add_argument("--excel", help="Excel de suivi : ses colonnes sont proposées pour chaque champ")
+    p.add_argument("--feuille", help="feuille de l'Excel")
+    p.add_argument("--sortie", help="fichier YAML à écrire (défaut : <nom>.yaml à côté de l'Excel)")
+    p.add_argument("--sortie-releve", help="dossier des relevés (défaut : releves/)")
+    p.add_argument("--nom", help="nom du scénario")
+    p.add_argument("--ecraser", action="store_true")
+    p.add_argument("--sans-pause", action="store_true", help="relever l'écran immédiatement (tests)")
+    p.add_argument("--cache", action="store_true", help="navigateur invisible (tests)")
+    options_navigateur(p)
+    commun(p)
+    p.set_defaults(fonction=cmd_assistant)
 
     p = sous.add_parser("enregistrer", help="enregistrer vos actions (playwright codegen)")
     p.add_argument("url", nargs="?")

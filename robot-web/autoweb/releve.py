@@ -12,6 +12,7 @@ Attention : `page.html` et `capture.png` peuvent contenir des données métier ;
 from __future__ import annotations
 
 import datetime as dt
+import json
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -267,4 +268,25 @@ def relever(page: Page, dossier_sortie: Path, nom: Optional[str] = None) -> Path
     elements = inventaire(page)
     (dossier / "champs.txt").write_text(_texte_inventaire(page, elements), encoding="utf-8")
     (dossier / "brouillon.yaml").write_text(_brouillon_yaml(page, elements, nom or base), encoding="utf-8")
+    (dossier / "champs.json").write_text(
+        json.dumps({"url": page.url, "titre": titre, "nom": nom or base, "elements": elements}, ensure_ascii=False, indent=1),
+        encoding="utf-8",
+    )
     return dossier
+
+
+def charger_releve(dossier: Path) -> Dict[str, Any]:
+    """Relit champs.json d'un dossier de relevé."""
+    chemin = Path(dossier) / "champs.json"
+    if not chemin.exists():
+        raise FileNotFoundError(f"{chemin} introuvable : refaites « python -m autoweb releve »")
+    return json.loads(chemin.read_text(encoding="utf-8"))
+
+
+def dernier_releve(racine: Path) -> Optional[Path]:
+    """Le dossier de relevé le plus récent sous `racine` (releves/)."""
+    racine = Path(racine)
+    if not racine.is_dir():
+        return None
+    candidats = sorted(d for d in racine.iterdir() if d.is_dir() and (d / "champs.json").exists())
+    return candidats[-1] if candidats else None
