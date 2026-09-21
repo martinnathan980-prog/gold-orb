@@ -39,6 +39,11 @@ set HTTPS_PROXY=http://proxy.entreprise:8080
 python -m pip install --user --proxy %HTTPS_PROXY% --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt
 ```
 
+**Sur Mac** : `python3` au lieu de `py`, et les commandes passent par le lanceur `./robot.command`
+(exemple : `./robot.command demo`). Sur macOS 12 et antérieur, Google Chrome ne s'installe plus
+(il exige macOS 13) : `requirements.txt` y installe Playwright 1.57, la dernière version qui fournit
+encore un navigateur compatible, téléchargé par `python -m playwright install chromium`.
+
 **Si aucun navigateur n'est trouvé** (message « Aucun navigateur n'a pu être lancé ») :
 - indiquez le chemin de votre Edge dans le scénario (`navigateur: executable: ...`), ou
 - installez le navigateur de Playwright, qui est un simple dossier décompressé

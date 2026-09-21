@@ -1,6 +1,14 @@
 # Installation : pip install -r requirements.txt
 # Derrière un proxy d'entreprise, voir README (section Installation).
-playwright>=1.40
+
+# Playwright pilote le navigateur.
+# Sur les Mac en macOS 12 (Monterey) et antérieurs, les versions récentes ne
+# fournissent plus de navigateur compatible : on y reste en 1.57, la dernière
+# qui en propose un. platform_release est la version du noyau Darwin
+# (21.x = macOS 12, 22.x = macOS 13...).
+playwright>=1.40 ; sys_platform != "darwin" or platform_release >= "22"
+playwright==1.57.0 ; sys_platform == "darwin" and platform_release < "22"
+
 openpyxl>=3.1
 PyYAML>=6.0
 pypdf>=4.0
