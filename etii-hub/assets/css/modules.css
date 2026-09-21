@@ -1302,6 +1302,37 @@ ol.liseuse__bloc-liste {
    5. L'arbre d'équipe : le responsable, puis les squads en volets
    ---------------------------------------------------------------------- */
 
+/* --- Le portrait (portraits.js) : commun à l'arbre d'un pôle, à
+       l'organigramme et à l'onglet Équipe d'un porteur. Un rond, le fond
+       teinté du pôle — la teinte vient de `--org-teinte` (organigramme,
+       posée par [data-pole]) ou de `--couleur-pole` (page de pôle). ------ */
+
+.portrait {
+  --portrait-teinte: var(--org-teinte, var(--couleur-pole, var(--accent)));
+  --portrait-fond: color-mix(in srgb, var(--portrait-teinte) 24%, var(--fond-eleve));
+  display: inline-block;
+  flex: none;
+  inline-size: var(--portrait-taille, var(--e-8));
+  block-size: var(--portrait-taille, var(--e-8));
+  border-radius: var(--rayon-plein);
+  background-color: var(--portrait-fond);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--portrait-teinte) 40%, transparent);
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.portrait--photo { object-fit: cover; object-position: center top; }
+.portrait--xs { --portrait-taille: var(--e-6); }
+.portrait--sm { --portrait-taille: var(--e-8); }
+.portrait--md { --portrait-taille: var(--e-10); }
+.portrait--lg { --portrait-taille: var(--portrait-grand); }
+.portrait--xl { --portrait-taille: var(--portrait-fiche); }
+
+/* Dans l'onglet Équipe d'un porteur (§3), la ligne d'une personne
+   commence par son portrait ; le texte s'aligne à côté. */
+.porteurs__personne { align-items: center; flex-wrap: nowrap; }
+.porteurs__personne-infos { display: flex; flex: 1; flex-wrap: wrap; align-items: baseline; gap: var(--e-1) var(--e-3); min-inline-size: 0; }
+
 .arbre { display: flex; flex-direction: column; gap: var(--e-5); }
 
 .arbre__dock {
@@ -1393,8 +1424,8 @@ ol.liseuse__bloc-liste {
 .arbre__squad-compte { flex: none; font-size: var(--texte-xs); color: var(--texte-faible); }
 
 .arbre__pile { display: inline-flex; align-items: center; flex: none; }
-.arbre__pile .arbre__avatar { inline-size: var(--e-8); block-size: var(--e-8); margin-inline-start: calc(var(--e-3) * -1); font-size: 0.6rem; letter-spacing: -0.03em; box-shadow: 0 0 0 2px var(--carte-fond); }
-.arbre__pile .arbre__avatar:first-child { margin-inline-start: 0; }
+.arbre__pile .portrait { margin-inline-start: calc(var(--e-3) * -1); box-shadow: 0 0 0 2px var(--carte-fond); }
+.arbre__pile .portrait:first-child { margin-inline-start: 0; }
 .arbre__pile-reste { margin-inline-start: var(--e-1); font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--texte-faible); }
 
 .arbre__membres {
@@ -1414,10 +1445,17 @@ ol.liseuse__bloc-liste {
   padding: var(--e-2) var(--e-3);
   border: 1px solid transparent;
   border-radius: var(--rayon-md);
-  transition: opacity var(--duree-rapide) var(--courbe), background-color var(--duree-rapide) var(--courbe);
 }
 
-.arbre__carte:hover { background-color: var(--fond-enfonce); border-color: var(--bordure-douce); }
+/* Le survol soulève la carte : une ombre plus longue, un léger décalage. */
+.arbre__carte:hover { background-color: var(--fond-enfonce); border-color: var(--bordure-douce); box-shadow: var(--ombre-md); transform: translateY(-1px); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .arbre__carte {
+    transition: opacity var(--duree-rapide) var(--courbe), background-color var(--duree-rapide) var(--courbe),
+                box-shadow var(--duree-rapide) var(--courbe), transform var(--duree-rapide) var(--courbe);
+  }
+}
 .arbre__carte--estompee { opacity: 0.25; }
 .arbre__carte--lead { background-color: var(--fond-enfonce); }
 
@@ -1429,23 +1467,7 @@ ol.liseuse__bloc-liste {
   box-shadow: inset 3px 0 0 var(--couleur-pole, var(--accent)), var(--ombre-md);
 }
 
-.arbre__avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  inline-size: var(--e-8);
-  block-size: var(--e-8);
-  border-radius: var(--rayon-plein);
-  background-color: color-mix(in srgb, var(--couleur-pole, var(--accent)) 18%, var(--fond-eleve));
-  border: 1px solid color-mix(in srgb, var(--couleur-pole, var(--accent)) 45%, transparent);
-  color: var(--texte);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  font-weight: var(--graisse-moyenne);
-}
-
-.arbre__carte--tete .arbre__avatar { inline-size: var(--e-10); block-size: var(--e-10); font-size: var(--texte-sm); }
+.arbre__carte--tete:hover { box-shadow: inset 3px 0 0 var(--couleur-pole, var(--accent)), var(--ombre-lg); }
 
 .arbre__infos { display: flex; flex-direction: column; gap: 1px; min-inline-size: 0; }
 .arbre__nom { font-size: var(--texte-sm); font-weight: var(--graisse-forte); }
@@ -1966,11 +1988,19 @@ ol.liseuse__bloc-liste {
   font: inherit;
   text-align: start;
   cursor: pointer;
-  transition: border-color var(--duree-rapide) var(--courbe),
-              background-color var(--duree-rapide) var(--courbe);
 }
 
-.org-personne:hover { border-color: var(--bordure-forte); background-color: var(--carte-survol); }
+/* Le survol soulève la carte : une ombre plus longue, un léger décalage. */
+.org-personne:hover { border-color: var(--bordure-forte); background-color: var(--carte-survol); box-shadow: var(--ombre-md); transform: translateY(-2px); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .org-personne {
+    transition: border-color var(--duree-rapide) var(--courbe),
+                background-color var(--duree-rapide) var(--courbe),
+                box-shadow var(--duree-rapide) var(--courbe),
+                transform var(--duree-rapide) var(--courbe);
+  }
+}
 
 .org-personne__infos { display: flex; flex-direction: column; gap: 1px; min-inline-size: 0; flex: 1; }
 .org-personne__nom { font-size: var(--texte-sm); font-weight: var(--graisse-forte); }
@@ -1990,31 +2020,21 @@ ol.liseuse__bloc-liste {
 
 .org-personne--tete,
 .org-personne--responsable { box-shadow: inset 3px 0 0 var(--org-teinte, var(--accent)), var(--ombre-sm); }
+.org-personne--tete:hover,
+.org-personne--responsable:hover { box-shadow: inset 3px 0 0 var(--org-teinte, var(--accent)), var(--ombre-md); }
 .org-personne--tete { min-inline-size: 22rem; inline-size: auto; padding: var(--e-3) var(--e-5); }
-.org-personne--carte { flex-direction: column; align-items: flex-start; gap: var(--e-2); padding: var(--e-3); block-size: 100%; }
-.org-personne--carte .org-personne__infos { inline-size: 100%; }
+
+/* La carte du trombinoscope : le portrait en grand, le nom dessous, tout
+   centré — une fiche qu'on reconnaît de loin. */
+.org-personne--carte { flex-direction: column; align-items: center; gap: var(--e-3); padding: var(--e-5) var(--e-3) var(--e-4); block-size: 100%; text-align: center; }
+.org-personne--carte .org-personne__infos { inline-size: 100%; align-items: center; gap: 2px; }
+.org-personne--carte .org-personne__nom { font-size: var(--texte-md); }
+.org-personne--carte .org-personne__perimetre { margin-block-start: var(--e-1); }
 .org-personne--ligne { background-color: transparent; border-color: transparent; }
-.org-personne--ligne:hover { background-color: var(--fond-enfonce); border-color: var(--bordure); }
+.org-personne--ligne:hover { background-color: var(--fond-enfonce); border-color: var(--bordure); box-shadow: none; transform: none; }
 .org-personne__niveau { flex: none; }
 
-/* L'avatar : initiales sur un fond teinté du pôle. */
-.org-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  inline-size: var(--e-8);
-  block-size: var(--e-8);
-  border-radius: var(--rayon-plein);
-  background-color: color-mix(in srgb, var(--org-teinte, var(--accent)) 18%, var(--fond-eleve));
-  border: 1px solid color-mix(in srgb, var(--org-teinte, var(--accent)) 45%, transparent);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  font-weight: var(--graisse-moyenne);
-  color: var(--texte);
-}
-
-.org-avatar--grand { inline-size: var(--e-12); block-size: var(--e-12); font-size: var(--texte-md); }
+/* La teinte du pôle, lue par le portrait et par les filets. */
 [data-pole="ETIIA"] { --org-teinte: var(--pole-etiia); }
 [data-pole="ETIIE"] { --org-teinte: var(--pole-etiie); }
 [data-pole="ETIII"] { --org-teinte: var(--pole-etiii); }
@@ -2145,13 +2165,13 @@ ol.liseuse__bloc-liste {
 .org-squad__compte { flex: none; font-size: var(--texte-xs); color: var(--texte-faible); }
 
 .org-pile { display: inline-flex; align-items: center; flex: none; }
-.org-pile .org-avatar { inline-size: var(--e-8); block-size: var(--e-8); margin-inline-start: calc(var(--e-3) * -1); font-size: 0.6rem; letter-spacing: -0.03em; box-shadow: 0 0 0 2px var(--carte-fond); }
-.org-pile .org-avatar:first-child { margin-inline-start: 0; }
+.org-pile .portrait { margin-inline-start: calc(var(--e-3) * -1); box-shadow: 0 0 0 2px var(--carte-fond); }
+.org-pile .portrait:first-child { margin-inline-start: 0; }
 .org-pile__reste { margin-inline-start: var(--e-1); font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--texte-faible); }
 
 .org-squad__membres { display: flex; flex-direction: column; gap: var(--e-1); padding: var(--e-2) var(--e-2) var(--e-3); }
 .org-squad__membres .org-personne { border-color: transparent; box-shadow: none; }
-.org-squad__membres .org-personne:hover { border-color: var(--bordure-douce); background-color: var(--fond-enfonce); }
+.org-squad__membres .org-personne:hover { border-color: var(--bordure-douce); background-color: var(--fond-enfonce); box-shadow: var(--ombre-md); }
 
 /* --- Vue trombinoscope --------------------------------------------------- */
 
@@ -2207,7 +2227,8 @@ ol.liseuse__bloc-liste {
 
 /* --- La fiche ------------------------------------------------------------ */
 
-.org-fiche__entete { display: flex; align-items: center; gap: var(--e-4); }
+.org-fiche__entete { display: flex; align-items: center; gap: var(--e-5); }
+.org-fiche__entete .portrait { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--portrait-teinte) 40%, transparent), var(--ombre-md); }
 .org-fiche__poste { font-size: var(--texte-md); color: var(--texte-doux); }
 
 .org-fiche__liste { display: grid; gap: var(--e-2); margin: 0; }
@@ -2278,7 +2299,6 @@ ol.liseuse__bloc-liste {
 }
 
 .org-puce:hover { border-color: var(--bordure-forte); background-color: var(--fond-profond); }
-.org-puce .org-avatar { inline-size: var(--e-6); block-size: var(--e-6); font-size: 10px; }
 
 /* --- Relevé d'usage de la recherche -------------------------------------- */
 
