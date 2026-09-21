@@ -15,6 +15,7 @@ et rien ne tourne quand la machine dort.
 | Script | Ce qu'il fait |
 |---|---|
 | `essai.py` | **L'essai à blanc** : un faux GATES sur votre PC, pour apprendre la chaîne sans intranet |
+| `diagnostic.py` | **La fiche d'un vrai extract** : colonnes, valeurs d'avancement, anatomie des références — lit les .xlsx sans rien installer |
 | `piloter_chrome.py` | Parle à Chrome — va à cette page, clique ce bouton, lis ce tableau |
 | `extraire.py` | Rejoue une **recette** : la suite de gestes de l'extraction |
 | `deposer.py` | Envoie un extract au classeur, qui le colle et archive la semaine |
@@ -24,7 +25,7 @@ et rien ne tourne quand la machine dort.
 | `releve.py` | Variante hors Google : archive les relevés dans des fichiers locaux |
 
 ```bash
-npm run test:import      # les huit batteries de ce dossier
+npm run test:import      # les neuf batteries de ce dossier
 ```
 
 ## 0. D'abord : l'essai à blanc

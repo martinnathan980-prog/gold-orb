@@ -17,6 +17,8 @@ C'est un outil de **consultation** : la page montre, elle ne modifie rien.
 | `appsscript.json` | Manifeste (fuseau, portées OAuth) |
 | `prototype/` | La même interface, autonome, avec un jeu d'exemple à trois contrats — c'est la source |
 | `import/` | L'automatisation : pilote Chrome, recettes d'extraction, dépôt dans le classeur, lecture des composants sur les plans (PDF, Visio, DXF, scans), transport par la messagerie |
+| `apps-script/` | L'installateur à coller dans Apps Script : il fait télécharger les quatre fichiers par Google |
+| `AU-BUREAU.md` | La marche à suivre, pas à pas, pour tout installer sur le poste de travail |
 | `tests/` | Batterie de l'add-on (serveur + page rendue) |
 
 ## Une seule interface, deux sources
@@ -93,7 +95,7 @@ npm test
   des cartes plan par plan, seconde base à rapprocher, et le dépôt
   automatique (secret absent ou refusé, corps illisible, onglet d'historique
   protégé, archivage de la semaine, réponse JSON de `doPost`).
-- `npm run test:import` — 251 tests en Python : l'essai à blanc (un faux GATES joué de bout en bout dans un vrai Chrome) ; le pilote Chrome (canal
+- `npm run test:import` — 289 tests en Python : la fiche d'extract (classeurs .xlsx fabriqués à la main, CSV de tous encodages, détection de l'en-tête et des groupes, confidentialité de la fiche) ; l'essai à blanc (un faux GATES joué de bout en bout dans un vrai Chrome) ; le pilote Chrome (canal
   WebSocket écrit à la main, gestes, téléchargements, erreurs lisibles) joué
   contre un vrai Chrome ; la lecture des recettes ; le dépôt joué contre un
   faux classeur qui répond comme le vrai — y compris quand il refuse ; et les

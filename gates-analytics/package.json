@@ -5,10 +5,10 @@
   "description": "Suivi FWD — tableau de bord des plans d'intégration électrique (Google Apps Script)",
   "scripts": {
     "build": "node tests/split-prototype.js",
-    "test": "node tests/split-prototype.js && node tests/build-addon.js && node tests/addon.js && node prototype/tests/build-apercu.js && node prototype/tests/batterie.js && python3 import/tests_pilote.py && python3 import/tests_import.py && python3 import/tests_essai.py && python3 import/tests_composants.py && python3 import/tests_plan.py && python3 import/tests_visio.py && python3 import/tests_dxf.py && python3 import/tests_scan.py",
+    "test": "node tests/split-prototype.js && node tests/build-addon.js && node tests/addon.js && node prototype/tests/build-apercu.js && node prototype/tests/batterie.js && python3 import/tests_pilote.py && python3 import/tests_import.py && python3 import/tests_essai.py && python3 import/tests_diagnostic.py && python3 import/tests_composants.py && python3 import/tests_plan.py && python3 import/tests_visio.py && python3 import/tests_dxf.py && python3 import/tests_scan.py",
     "test:addon": "node tests/build-addon.js && node tests/addon.js",
     "test:interface": "node prototype/tests/build-apercu.js && node prototype/tests/batterie.js",
-    "test:import": "python3 import/tests_pilote.py && python3 import/tests_import.py && python3 import/tests_essai.py && python3 import/tests_composants.py && python3 import/tests_plan.py && python3 import/tests_visio.py && python3 import/tests_dxf.py && python3 import/tests_scan.py"
+    "test:import": "python3 import/tests_pilote.py && python3 import/tests_import.py && python3 import/tests_essai.py && python3 import/tests_diagnostic.py && python3 import/tests_composants.py && python3 import/tests_plan.py && python3 import/tests_visio.py && python3 import/tests_dxf.py && python3 import/tests_scan.py"
   },
   "devDependencies": {
     "playwright": "^1.47.0"
