@@ -19,6 +19,7 @@
 import { el, frag, monter, deleguer, debounce, etatUrl, initTheme, initNav,
          ouvrirModale, annoncer, toast, copierTexte } from './ui.js';
 import { chargerDonnees, avecEtat } from './data.js';
+import { portrait } from './portraits.js';
 
 const SERVICE = 'ETII';
 const CODES = ['ETIIA', 'ETIIE', 'ETIII'];
@@ -41,14 +42,6 @@ function texte(v) { return (v === null || v === undefined) ? '' : String(v).trim
 function normaliser(v) { return texte(v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 function valeurOuVide(v) { return texte(v) || MENTION_VIDE; }
 
-function initiales(nom) {
-  const parts = texte(nom).split(/\s+/).filter(Boolean);
-  if (!parts.length) return '?';
-  const dernier = parts[parts.length - 1];
-  if (parts.length > 1 && /^\d+$/.test(dernier)) return parts[0][0].toUpperCase() + dernier;
-  return parts.slice(0, 2).map((p) => p[0].toUpperCase()).join('');
-}
-
 /** Un modèle plat : une entrée par personne, tout ce qu'il faut pour filtrer. */
 function construireModele(orga, docs) {
   const gens = [];
@@ -60,7 +53,7 @@ function construireModele(orga, docs) {
     gens.push({
       id: texte(p.id) || ('sans-id-' + gens.length),
       nom: texte(p.nom), poste: texte(p.poste), role, pole, squad,
-      perimetre: texte(p.perimetre), competences,
+      perimetre: texte(p.perimetre), photo: texte(p.photo), competences,
       recherche: normaliser([p.nom, p.poste, p.perimetre, squad, pole, p.id,
         competences.map((c) => c.nom).join(' ')].join(' '))
     });
@@ -141,11 +134,6 @@ function ecrireUrl() {
    3. Briques communes
    ------------------------------------------------------------------------- */
 
-function avatar(g, grand) {
-  return el('span', { class: ['org-avatar', grand ? 'org-avatar--grand' : null], dataPole: g.pole,
-    'aria-hidden': 'true' }, initiales(g.nom));
-}
-
 function badgeRole(role) {
   if (role === 'direction') return el('span', { class: 'badge badge--accent' }, 'Direction');
   if (role === 'responsable') return el('span', { class: 'badge badge--accent' }, 'Responsable');
@@ -153,7 +141,9 @@ function badgeRole(role) {
   return null;
 }
 
-/** Le bouton qui ouvre une fiche. Même balisage dans les trois vues. */
+/** Le bouton qui ouvre une fiche. Même balisage dans les trois vues ;
+    le portrait (portraits.js) prend la taille demandée — grand dans le
+    trombinoscope, moyen pour la direction et les responsables. */
 function boutonPersonne(g, options) {
   const opts = options || {};
   return el('button', {
@@ -163,7 +153,7 @@ function boutonPersonne(g, options) {
     dataPole: g.pole,
     'aria-haspopup': 'dialog'
   },
-  avatar(g),
+  portrait(g, { taille: opts.taille || 'sm' }),
   el('span', { class: 'org-personne__infos' },
     el('span', { class: 'org-personne__nom' }, g.nom),
     el('span', { class: 'org-personne__poste' }, valeurOuVide(g.poste)),
@@ -177,12 +167,13 @@ function boutonPersonne(g, options) {
    4. Vue « arbre »
    ------------------------------------------------------------------------- */
 
-/* Une pile d'avatars : les premiers visages d'une squad, puis « +N ». */
+/* Une pile de portraits : les premiers visages d'une squad, puis « +N ».
+   Décorative : l'effectif est écrit à côté, les noms sont dans le volet. */
 function pileAvatars(gens, max) {
   const visibles = gens.slice(0, max);
   const reste = gens.length - visibles.length;
   return el('span', { class: 'org-pile', 'aria-hidden': 'true' },
-    visibles.map((g) => avatar(g)),
+    visibles.map((g) => portrait(g, { decoratif: true })),
     reste > 0 ? el('span', { class: 'org-pile__reste' }, '+' + reste) : null);
 }
 
@@ -227,14 +218,14 @@ function rendreArbre(gens) {
 
   return el('div', { class: ['org-arbre', unSeul ? 'org-arbre--seul' : null] },
     direction.length
-      ? el('div', { class: 'org-arbre__tete' }, direction.map((g) => boutonPersonne(g, { classe: 'org-personne--tete' })))
+      ? el('div', { class: 'org-arbre__tete' }, direction.map((g) => boutonPersonne(g, { classe: 'org-personne--tete', taille: 'md' })))
       : null,
     el('ul', { class: 'org-arbre__poles', role: 'list' }, poles.map((p) => el('li', { class: 'org-arbre__pole', dataPole: p.code },
       el('div', { class: 'org-arbre__pole-tete' },
         el('span', { class: 'org-arbre__pole-point', 'aria-hidden': 'true' }),
         el('a', { class: 'org-arbre__pole-nom', href: PAGE_DE_POLE[p.code] || '#' }, p.code),
         el('span', { class: 'org-arbre__pole-compte mono' }, p.effectif + ' pers. · ' + p.squads.length + (p.squads.length > 1 ? ' squads' : ' squad'))),
-      p.responsable ? boutonPersonne(p.responsable, { classe: 'org-personne--responsable' }) : null,
+      p.responsable ? boutonPersonne(p.responsable, { classe: 'org-personne--responsable', taille: 'md' }) : null,
       el('div', { class: 'org-arbre__squads' }, p.squads.map((s) => volatSquad(s, filtreActif || ouvrirTout)))))));
 }
 
@@ -246,7 +237,7 @@ function rendreTrombinoscope(gens) {
   if (!gens.length) return el('p', { class: 'texte-doux' }, 'Personne ne correspond à cette recherche.');
   const tries = gens.slice().sort((a, b) => a.nom.localeCompare(b.nom));
   return el('ul', { class: 'org-trombi', role: 'list' }, tries.map((g) => el('li', {},
-    boutonPersonne(g, { classe: 'org-personne--carte', avecSquad: true }))));
+    boutonPersonne(g, { classe: 'org-personne--carte', avecSquad: true, taille: 'lg' }))));
 }
 
 /* -------------------------------------------------------------------------
@@ -303,16 +294,17 @@ function ouvrirFiche(id, declencheur) {
          || modele.gens.find((x) => x.pole === g.pole && x.role === 'responsable')));
   const collegues = modele.gens.filter((x) => x.pole === g.pole && x.squad === g.squad && x.id !== g.id && g.squad);
 
-  const puce = (autre) => el('button', { type: 'button', class: 'org-puce', dataPersonne: autre.id },
-    avatar(autre), el('span', {}, autre.nom));
+  const puce = (autre) => el('button', { type: 'button', class: 'org-puce', dataPersonne: autre.id, dataPole: autre.pole },
+    portrait(autre, { taille: 'xs' }), el('span', {}, autre.nom));
 
   ouvrirModale({
     titre: g.nom,
     classe: 'modale--large',
     declencheur: declencheur || null,
     contenu: () => frag(
-      el('div', { class: 'org-fiche__entete' },
-        avatar(g, true),
+      /* La modale vit hors de la zone : la teinte du pôle se pose ici. */
+      el('div', { class: 'org-fiche__entete', dataPole: g.pole },
+        portrait(g, { taille: 'xl' }),
         el('div', { class: 'pile pile--serree' },
           el('p', { class: 'org-fiche__poste sans-marge' }, valeurOuVide(g.poste)),
           el('p', { class: 'rangee rangee--serree sans-marge' },

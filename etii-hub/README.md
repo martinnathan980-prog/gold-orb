@@ -117,6 +117,19 @@ H175 sont cités.
 Pour brancher de vraies données, remplacez les fichiers JSON en respectant
 leur forme. Rien d'autre n'est à modifier.
 
+### Photos des personnes
+
+Chaque personne de `organigramme.json` accepte un champ `photo`, facultatif :
+ajoutez `"photo": "assets/img/personnes/p03.jpg"` sur une personne (un
+chemin sous `assets/` ou une URL `https`) et sa photo remplace son portrait
+partout — arbre d'un pôle, organigramme, trombinoscope, fiche, onglet
+Équipe d'un porteur. Sans `photo`, `assets/js/portraits.js` dessine un
+portrait illustré (plat, sobre, fond teinté du pôle), choisi de façon
+déterministe depuis l'identifiant : ce sont les « photos test » du site,
+jamais des visages réels. Les initiales restent le texte accessible du
+portrait. Un carré d'environ 256 px suffit ; l'image est cadrée sur le
+haut.
+
 Exception : la base des porteurs (`flotte.json`) est constituée depuis des
 sources **publiques** (Wikipédia, site public d'Airbus Helicopters, EASA) et
 chaque valeur porte sa confiance et sa source. Les fiches sont marquées

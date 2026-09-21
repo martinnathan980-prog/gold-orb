@@ -11,6 +11,7 @@
 
 import { el, monter, annoncer, etatUrl, rafThrottle, mouvementReduit } from './ui.js';
 import { silhouette } from './helicos.js';
+import { portrait } from './portraits.js';
 
 const NON_RENSEIGNE = 'à renseigner';
 
@@ -325,7 +326,7 @@ function panneauEquipe(appareil, contexte) {
   const gens = [];
   const ajouter = (p, pole, squad) => {
     if (p && typeof p === 'object' && texte(p.perimetre) === code) {
-      gens.push({ id: texte(p.id), nom: texte(p.nom), poste: texte(p.poste), pole, squad });
+      gens.push({ id: texte(p.id), nom: texte(p.nom), poste: texte(p.poste), photo: texte(p.photo), pole, squad });
     }
   };
   const orga = objet(ctx.equipe);
@@ -349,10 +350,13 @@ function panneauEquipe(appareil, contexte) {
   return el('div', { class: 'porteurs__groupes' },
     bloc('Qui travaille dessus', gens.length
       ? el('ul', { class: 'porteurs__equipe', role: 'list' }, gens.map((g) => el('li', {},
-          el('a', { class: 'porteurs__personne', href: 'organigramme.html#pole=' + encodeURIComponent(g.pole) + '&personne=' + encodeURIComponent(g.id) },
-            el('span', { class: 'porteurs__personne-nom' }, g.nom),
-            el('span', { class: 'porteurs__personne-poste' }, g.poste),
-            el('span', { class: 'porteurs__personne-pole mono' }, [g.pole, g.squad].filter(Boolean).join(' · '))))))
+          /* data-pole donne au portrait la teinte du pôle (modules.css §11). */
+          el('a', { class: 'porteurs__personne', dataPole: g.pole, href: 'organigramme.html#pole=' + encodeURIComponent(g.pole) + '&personne=' + encodeURIComponent(g.id) },
+            portrait(g),
+            el('span', { class: 'porteurs__personne-infos' },
+              el('span', { class: 'porteurs__personne-nom' }, g.nom),
+              el('span', { class: 'porteurs__personne-poste' }, g.poste),
+              el('span', { class: 'porteurs__personne-pole mono' }, [g.pole, g.squad].filter(Boolean).join(' · ')))))))
       : el('p', { class: 'texte-doux texte-sm sans-marge' }, 'Personne n’a ce porteur pour périmètre dans l’organigramme.')),
     bloc('Documents concernés', documents.length
       ? el('ul', { class: 'porteurs__documents', role: 'list' }, documents.slice(0, 15).map((d) => el('li', {},

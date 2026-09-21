@@ -2,29 +2,17 @@
    ETII Hub — L'arbre d'équipe
    L'organigramme d'un pôle : le responsable en tête, puis les squads en
    volets — fermé, un volet montre le nom de la squad, son lead, une pile
-   de visages et l'effectif ; ouvert, toute l'équipe, avatar aux initiales,
-   nom, poste, porteur. Une recherche ouvre les volets qui répondent et
-   estompe le reste. Avec soixante personnes par pôle, c'est ce qui reste
-   lisible d'un coup d'œil.
+   de visages et l'effectif ; ouvert, toute l'équipe, portrait (photo ou
+   visage illustré, portraits.js), nom, poste, porteur. Une recherche
+   ouvre les volets qui répondent et estompe le reste. Avec soixante
+   personnes par pôle, c'est ce qui reste lisible d'un coup d'œil.
    ========================================================================= */
 
 import { el } from './ui.js';
+import { portrait } from './portraits.js';
 
 function texte(v) { return (v === null || v === undefined) ? '' : String(v).trim(); }
 function normaliser(v) { return texte(v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
-
-function initiales(nom) {
-  const parts = texte(nom).split(/\s+/).filter(Boolean);
-  if (!parts.length) return '?';
-  const dernier = parts[parts.length - 1];
-  // « Personne 03 » donne P03 : un numéro vaut mieux qu'un chiffre isolé.
-  if (parts.length > 1 && /^\d+$/.test(dernier)) return parts[0][0].toUpperCase() + dernier;
-  return [parts[0], dernier].slice(0, parts.length > 1 ? 2 : 1).map((p) => p[0].toUpperCase()).join('');
-}
-
-function avatar(p) {
-  return el('span', { class: 'arbre__avatar', 'aria-hidden': 'true' }, initiales(p && p.nom));
-}
 
 function cartePersonne(personne, options) {
   const opts = options || {};
@@ -38,7 +26,7 @@ function cartePersonne(personne, options) {
       role === 'responsable' || role === 'direction' ? 'arbre__carte--tete' : null],
     dataset: { recherche, id: texte(p.id) }
   },
-  avatar(p),
+  portrait(p, { taille: role === 'responsable' || role === 'direction' ? 'md' : 'sm' }),
   el('span', { class: 'arbre__infos' },
     el('span', { class: 'arbre__nom' }, nom),
     el('span', { class: 'arbre__poste' }, texte(p.poste) || 'Poste à renseigner'),
@@ -51,7 +39,7 @@ function pile(membres, max) {
   const visibles = membres.slice(0, max);
   const reste = membres.length - visibles.length;
   return el('span', { class: 'arbre__pile', 'aria-hidden': 'true' },
-    visibles.map(avatar),
+    visibles.map((m) => portrait(m, { decoratif: true })),
     reste > 0 ? el('span', { class: 'arbre__pile-reste' }, '+' + reste) : null);
 }
 

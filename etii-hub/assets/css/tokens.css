@@ -48,6 +48,26 @@
   --pole-etiie-sur-marine: #38bdf8;
   --pole-etiii-sur-marine: #fb923c;
 
+  /* --- Portraits illustrés (portraits.js) -------------------------------
+     Les « photos test » : des visages plats, jamais réels. Quatre teintes
+     de peau, quatre de cheveux, quatre de tenue, tirées depuis
+     l'identifiant. Le fond, lui, prend la teinte du pôle (modules.css). */
+  --portrait-peau-1:    #f2cfae;
+  --portrait-peau-2:    #d9a67a;
+  --portrait-peau-3:    #a9714b;
+  --portrait-peau-4:    #6e4630;
+  --portrait-cheveux-1: #2f2219;
+  --portrait-cheveux-2: #6b3f22;
+  --portrait-cheveux-3: #c9a26a;
+  --portrait-cheveux-4: #8d8a84;
+  --portrait-tenue-1:   #3f5a7a;
+  --portrait-tenue-2:   #6b7a5a;
+  --portrait-tenue-3:   #8a4a3c;
+  --portrait-tenue-4:   #55504a;
+  --portrait-trait:     #2f2219;   /* la monture des lunettes            */
+  --portrait-grand:     5rem;      /* trombinoscope                      */
+  --portrait-fiche:     8rem;      /* la fiche d'une personne            */
+
   /* --- Séries du suivi OTQ / OTD : paire validée (clair sur blanc) ---------- */
   --serie-otq: #2a78d6;
   --serie-otd: #008300;
@@ -273,6 +293,20 @@
     --pole-etiie: #38bdf8;
     --pole-etiii: #f0a04b;
 
+    --portrait-peau-1:    #e9c3a0;
+    --portrait-peau-2:    #d2a077;
+    --portrait-peau-3:    #a9714b;
+    --portrait-peau-4:    #7a5138;
+    --portrait-cheveux-1: #3d2e24;
+    --portrait-cheveux-2: #7a4a2a;
+    --portrait-cheveux-3: #d3ad78;
+    --portrait-cheveux-4: #b5b1a8;
+    --portrait-tenue-1:   #6b88ad;
+    --portrait-tenue-2:   #8b9b78;
+    --portrait-tenue-3:   #b36a5b;
+    --portrait-tenue-4:   #8a847c;
+    --portrait-trait:     #2a1f18;
+
     --serie-otq: #3987e5;
     --serie-otd: #2ea043;
 
@@ -352,6 +386,20 @@
   --pole-etiia: #a78bfa;
   --pole-etiie: #38bdf8;
   --pole-etiii: #f0a04b;
+
+  --portrait-peau-1:    #e9c3a0;
+  --portrait-peau-2:    #d2a077;
+  --portrait-peau-3:    #a9714b;
+  --portrait-peau-4:    #7a5138;
+  --portrait-cheveux-1: #3d2e24;
+  --portrait-cheveux-2: #7a4a2a;
+  --portrait-cheveux-3: #d3ad78;
+  --portrait-cheveux-4: #b5b1a8;
+  --portrait-tenue-1:   #6b88ad;
+  --portrait-tenue-2:   #8b9b78;
+  --portrait-tenue-3:   #b36a5b;
+  --portrait-tenue-4:   #8a847c;
+  --portrait-trait:     #2a1f18;
 
   --serie-otq: #3987e5;
   --serie-otd: #2ea043;
