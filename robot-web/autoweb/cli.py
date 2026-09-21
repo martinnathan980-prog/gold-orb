@@ -203,13 +203,55 @@ def _lancer_navigateur_libre(args: argparse.Namespace):
     from .navigateur import Navigateur
     from .scenario import ConfigNavigateur
 
-    cfg = ConfigNavigateur(canal=args.canal or "auto", profil=args.profil, visible=True)
+    visible = not getattr(args, "cache", False)
+    cfg = ConfigNavigateur(canal=args.canal or "auto", profil=args.profil, visible=visible)
     if args.executable:
         cfg.executable = args.executable
     if args.attacher:
         cfg.attacher = args.attacher
-    nav = Navigateur(cfg, Path.cwd(), visible=True)
+    nav = Navigateur(cfg, Path.cwd(), visible=visible)
     return nav
+
+
+def cmd_releve(args: argparse.Namespace) -> int:
+    from .releve import relever
+
+    configurer_journal(None, args.verbeux)
+    interactif = not args.sans_pause and sys.stdin is not None and sys.stdin.isatty()
+    nav = _lancer_navigateur_libre(args)
+    page = nav.ouvrir()
+    dossiers: List[Path] = []
+    try:
+        url = args.url
+        if url and not url.startswith(("http", "file:")):
+            url = "https://" + url
+        if url:
+            page.goto(url)
+        while True:
+            if interactif:
+                print()
+                print("Dans le navigateur : connectez-vous si besoin et naviguez jusqu'à l'écran à automatiser.")
+                print("Puis revenez ici et appuyez sur Entrée pour relever cet écran (ou tapez « stop ») : ", end="", flush=True)
+                if input().strip().lower() in ("stop", "q", "quit"):
+                    break
+            page = nav.page_courante()
+            dossier = relever(page, Path(args.sortie or "releves"), nom=args.nom)
+            dossiers.append(dossier)
+            print(f"{S.OK} Relevé enregistré dans {dossier}")
+            print("     champs.txt      : liste des champs avec les sélecteurs à utiliser")
+            print("     brouillon.yaml  : début de scénario à compléter")
+            print("     capture.png / page.html : à relire avant envoi (peuvent contenir des données)")
+            if not interactif:
+                break
+            print("Relever un autre écran ? (o/N) : ", end="", flush=True)
+            if input().strip().lower() not in ("o", "oui", "y"):
+                break
+    finally:
+        nav.fermer()
+    if dossiers:
+        print()
+        print(f"Envoyez à Claude le contenu de : {', '.join(str(d) for d in dossiers)}")
+    return 0
 
 
 def cmd_inspecter(args: argparse.Namespace) -> int:
@@ -406,6 +448,16 @@ def construire_parseur() -> argparse.ArgumentParser:
     options_navigateur(p)
     commun(p)
     p.set_defaults(fonction=cmd_inspecter)
+
+    p = sous.add_parser("releve", help="relever un écran (capture + champs + brouillon de scénario) pour Claude")
+    p.add_argument("url", nargs="?")
+    p.add_argument("--sortie", help="dossier des relevés (défaut : releves/)")
+    p.add_argument("--nom", help="nom de l'écran (utilisé dans le nom du dossier et du scénario)")
+    p.add_argument("--sans-pause", action="store_true", help="relever immédiatement sans attendre l'utilisateur")
+    p.add_argument("--cache", action="store_true", help="navigateur invisible (tests)")
+    options_navigateur(p)
+    commun(p)
+    p.set_defaults(fonction=cmd_releve)
 
     p = sous.add_parser("enregistrer", help="enregistrer vos actions (playwright codegen)")
     p.add_argument("url", nargs="?")

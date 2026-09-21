@@ -24,9 +24,23 @@ ROBOT-WEB (autoweb) - DEMARRAGE AU BUREAU
    Si ca echoue encore, copiez le message d'erreur et le fichier demo\journal\autoweb-*.log
    et envoyez-les a Claude.
 
-6. Ensuite, pour votre premier vrai outil :
-      py -m autoweb inspecter https://adresse-de-votre-outil
-   (le navigateur s'ouvre avec l'inspecteur : cliquez sur "Pick locator" puis sur un champ,
-   notez les selecteurs affiches et envoyez-les a Claude avec ce que vous voulez saisir)
+6. Ensuite, pour votre premier vrai outil, faites un RELEVE de l'ecran a automatiser :
+      py -m autoweb releve https://adresse-de-votre-outil --canal chrome --nom "nom de l'ecran"
+   Chrome s'ouvre : connectez-vous, naviguez jusqu'a l'ecran voulu, revenez dans la
+   console et appuyez sur Entree. Le robot cree un dossier releves\<date>-<nom>\ avec :
+      champs.txt      la liste des champs et boutons avec les selecteurs a utiliser
+      brouillon.yaml  un debut de scenario
+      capture.png     la capture de l'ecran (a relire : peut contenir des donnees)
+      page.html       le code de la page (idem)
+   Envoyez champs.txt + brouillon.yaml (+ la capture si possible) a Claude en expliquant
+   ce qu'il faut saisir et d'ou viennent les valeurs (colonnes Excel).
+   Claude renvoie le scenario complet ; vous le testez avec :
+      py -m autoweb simuler mon_outil\scenario.yaml
+      py -m autoweb lancer mon_outil\scenario.yaml --limite 1
+
+7. Vos sessions (SSO) : pour que le robot travaille dans un Chrome ou vous etes deja
+   connecte, lancez chrome_debug.bat, connectez-vous, et mettez dans le scenario :
+      navigateur:
+        attacher: 9222
 
 Mode d'emploi complet : README.md (ouvrable avec le Bloc-notes).

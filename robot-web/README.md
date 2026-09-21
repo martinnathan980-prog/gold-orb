@@ -60,7 +60,8 @@ Ensuite :
 
 | Étape | Commande |
 |---|---|
-| Trouver les sélecteurs des champs de votre outil | `python -m autoweb inspecter https://votre-outil/...` |
+| **Relever** l'écran à automatiser (capture + champs + brouillon de scénario) pour le décrire à Claude | `python -m autoweb releve https://votre-outil/... --canal chrome --nom "nouveau plan"` |
+| Trouver un sélecteur précis à la main | `python -m autoweb inspecter https://votre-outil/...` |
 | Ou enregistrer vos clics pour vous en inspirer | `python -m autoweb enregistrer https://votre-outil/...` |
 | Vérifier scénario + colonnes Excel | `python -m autoweb verifier mon_outil/saisie_des_plans.yaml` |
 | Voir ce qui serait fait, sans navigateur | `python -m autoweb simuler mon_outil/saisie_des_plans.yaml` |
@@ -214,6 +215,24 @@ l'inspecteur Playwright ; cliquez sur « Pick locator » puis sur un élément.
 
 ---
 
+## 4 bis. Travailler avec Claude sans lui donner accès à vos applications
+
+Claude n'a accès ni à votre réseau ni à vos outils. La boucle de travail est donc :
+
+1. **Vous relevez l'écran** : `python -m autoweb releve URL --canal chrome --nom "écran"`.
+   Vous vous connectez, vous naviguez jusqu'à l'écran voulu, Entrée. Le dossier `releves/<date>-<écran>/`
+   contient `champs.txt` (chaque champ, bouton et liste déroulante avec son sélecteur), `brouillon.yaml`
+   (début de scénario), `capture.png` et `page.html`. Vous pouvez relever plusieurs écrans à la suite
+   (page de recherche, formulaire, page de confirmation…).
+2. **Vous envoyez** `champs.txt` et `brouillon.yaml` (et la capture si elle ne montre rien de sensible), avec
+   la description de ce qu'il faut faire et les colonnes de votre Excel.
+3. **Claude écrit le scénario complet**, vous le testez : `simuler`, puis `lancer --limite 1` avec une étape
+   `pause` avant le clic final pour vérifier à l'écran.
+4. **En cas d'erreur**, vous envoyez la ligne d'erreur de la console (ou la colonne Message de l'Excel) et la
+   capture `captures/erreurs/ligne-N-….png` : Claude corrige, vous relancez avec `--reprendre-erreurs`.
+
+Testez de préférence sur un enregistrement de test (un plan fictif que vous pouvez supprimer ensuite).
+
 ## 5. Mettre au point sans casser quoi que ce soit
 
 1. `simuler` : affiche pour chaque ligne les étapes avec les valeurs réelles, sans ouvrir de navigateur.
@@ -232,8 +251,8 @@ Trois façons, de la plus simple à la plus robuste :
 1. **Profil persistant** (`navigateur: profil: profils/mon_outil`) : le robot ouvre son propre Edge avec un
    profil dédié. La première fois, une étape `pause` dans `avant:` vous laisse vous connecter à la main ;
    les fois suivantes la session est mémorisée. *Ne partagez jamais le dossier `profils/` (cookies).*
-2. **Se brancher sur votre Edge déjà ouvert** : lancez `edge_debug.bat` (ouvre Edge avec
-   `--remote-debugging-port=9222`), connectez-vous à vos outils, puis dans le scénario :
+2. **Se brancher sur votre Chrome (ou Edge) déjà ouvert** : lancez `chrome_debug.bat` (ou `edge_debug.bat`),
+   qui ouvre le navigateur avec `--remote-debugging-port=9222`, connectez-vous à vos outils, puis dans le scénario :
    ```yaml
    navigateur:
      attacher: 9222

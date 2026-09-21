@@ -9,7 +9,7 @@ nom: __NOM__
 description: Saisie automatique dans __NOM__ à partir de l'Excel de suivi.
 
 navigateur:
-  canal: auto              # auto = Edge installé, sinon Chrome, sinon chromium Playwright
+  canal: chrome            # chrome | msedge | auto (Edge, sinon Chrome, sinon chromium Playwright)
   profil: __PROFIL__       # dossier de session : connectez-vous une fois, le robot reste connecté
   visible: true            # false = navigateur invisible (une fois le scénario fiable)
   delai_max: 15000         # attente maximale d'un élément (millisecondes)
