@@ -1,0 +1,160 @@
+ROBOT WEB - MODE D'EMPLOI
+=========================
+Le robot refait tout seul, autant de fois que necessaire, une tache que vous lui
+avez montree UNE fois dans le navigateur. Chaque ligne de votre fichier Excel
+donne une execution : une ligne = un export, ou une fiche a remplir.
+
+Vous n'avez rien a programmer. Vous montrez, il note, il rejoue.
+
+
+=====================================================================
+ 1. OUVRIR LE ROBOT
+=====================================================================
+MAC
+   Ouvrez le Terminal (Cmd+Espace, tapez "terminal", Entree), puis :
+       cd ~/Desktop/robot-web
+       ./robot.command
+WINDOWS
+   Ouvrez le dossier robot-web dans l'explorateur, cliquez dans la barre
+   d'adresse, tapez  cmd  puis Entree, puis :
+       robot
+
+Un menu s'affiche :
+   1. Enregistrer une nouvelle tache (vous la montrez au robot)
+   2. Lancer une tache enregistree
+   3. Voir mes taches
+   4. Supprimer une tache
+   5. Creer un fichier Excel de pilotage
+   6. M'entrainer sur la fausse base de demonstration
+   7. Verifier que tout fonctionne
+   0. Quitter
+Tapez le chiffre, Entree. C'est tout ce qu'il y a a retenir.
+
+
+=====================================================================
+ 2. PREPARER L'EXCEL (une fois par tache)
+=====================================================================
+Une ligne = une execution. Les colonnes portent les valeurs qui changent
+d'une execution a l'autre : un numero de contrat, un numero de plan, un indice...
+
+Exemple pour "extraire les plans d'un contrat" :
+       Contrat
+       HDK
+       QRS
+       LMN
+
+Choix 5 du menu cree ce fichier pour vous. Vous pouvez aussi utiliser un Excel
+que vous avez deja : le robot ajoutera a droite trois colonnes de suivi
+(Statut, Message, Horodatage) sans toucher au reste.
+
+REGLE IMPORTANTE : fermez le fichier Excel avant de lancer le robot.
+Un fichier ouvert dans Excel ne peut pas etre modifie par le robot.
+
+
+=====================================================================
+ 3. MONTRER LA TACHE AU ROBOT (choix 1)
+=====================================================================
+Le menu demande trois choses :
+   - l'adresse de l'outil (celle qui s'affiche dans la barre du navigateur) ;
+   - le fichier Excel de pilotage ;
+   - un nom pour la tache (ex : "export plans par contrat").
+
+Un navigateur s'ouvre, avec un BANDEAU ROUGE en haut a droite.
+   1. Faites votre tache normalement, UNE SEULE FOIS, du debut a la fin,
+      en utilisant les valeurs de la PREMIERE ligne de votre Excel.
+      Connectez-vous, cliquez, filtrez, exportez, enregistrez : comme d'habitude.
+   2. Quand c'est termine, cliquez sur le bandeau rouge.
+
+Le robot affiche alors la liste de ce qu'il a note, puis pose ses questions :
+   - "Etapes a retirer" : Entree si tout est bon. Sinon, les numeros a jeter.
+   - "Les premieres etapes ressemblent a une connexion, la faire une seule fois
+     au debut ?" : repondez o. La connexion ne sera pas refaite a chaque ligne.
+   - "Vous avez choisi HDK... Colonne ?" : il propose la colonne de votre Excel
+     qui contient cette valeur. Entree pour accepter, ou le numero d'une autre
+     colonne, ou 0 pour garder la meme valeur a chaque ligne.
+   - Les dernieres questions concernent le dossier des fichiers telecharges,
+     la capture d'ecran, etc. Entree partout convient tres bien.
+
+Le robot ecrit alors un fichier .yaml a cote de votre Excel : c'est la tache.
+C'est un fichier texte lisible, que vous pouvez ouvrir et modifier.
+
+MOT DE PASSE : il n'est jamais ecrit dans le fichier. Le robot met a la place
+{{mot_de_passe}} et vous le fournissez au lancement (voir la fin de ce document).
+
+
+=====================================================================
+ 4. TESTER SUR UNE SEULE LIGNE (choix 2, puis "1")
+=====================================================================
+Toujours commencer par la. Le robot traite UNE ligne, vous regardez l'ecran.
+A la fin, la console affiche :
+       1/1 ligne(s) traitee(s) : 1 OK, 0 ERREUR, 0 IGNORE.
+Ouvrez votre Excel : la ligne porte OK, l'heure, et ce que le robot a releve.
+
+Si c'est 1 ERREUR : la colonne Message dit ce qui s'est passe, et une photo de
+l'ecran au moment du probleme est rangee dans captures/erreurs/.
+
+
+=====================================================================
+ 5. LANCER SUR TOUTES LES LIGNES (choix 2, puis "2")
+=====================================================================
+Le robot ne traite que les lignes dont la colonne Statut est vide ou "A faire".
+Les lignes deja OK sont laissees tranquilles : vous pouvez ajouter des lignes
+et relancer sans rien casser.
+
+Le fichier Excel est enregistre apres CHAQUE ligne. Vous pouvez arreter en
+cours (Ctrl+C) : rien n'est perdu, relancez et il reprend ou il en etait.
+
+Choix 2 puis "3" reprend aussi les lignes en ERREUR (apres correction).
+
+
+=====================================================================
+ 6. QUAND CA NE MARCHE PAS
+=====================================================================
+ - Lisez la colonne Message de l'Excel : elle nomme l'etape et la cause.
+ - Regardez la capture dans captures/erreurs/ : l'ecran au moment du probleme.
+ - "delai depasse : element introuvable" : l'outil a change, ou la page etait
+   plus lente que d'habitude. Refaites un enregistrement (choix 1), ou
+   augmentez delai_max dans le fichier .yaml.
+ - "le fichier est ouvert dans Excel" : fermez-le, le robot reprend tout seul.
+ - Si vous ne vous en sortez pas : envoyez a Claude la ligne d'erreur affichee
+   par la console (ou la colonne Message). Aucune donnee de votre entreprise
+   n'est necessaire : ni capture, ni fichier, ni nom de contrat.
+
+
+=====================================================================
+ 7. PLUSIEURS TACHES
+=====================================================================
+Vous pouvez enregistrer autant de taches que vous voulez : une par type de
+travail (export par contrat, mise a jour d'indice, depot de document...).
+   - Choix 3 : la liste de vos taches.
+   - Choix 4 : en retirer une (le fichier part dans corbeille/, rien n'est perdu).
+   - Rate ? Refaites simplement un enregistrement, l'ancien est conserve avec la
+     date dans son nom.
+
+
+=====================================================================
+ 8. REGLES D'OR
+=====================================================================
+ 1. Toujours tester sur une ligne avant de lancer un lot.
+ 2. Toujours fermer l'Excel avant de lancer.
+ 3. Faire le premier essai sur un enregistrement de test, pas sur un vrai dossier.
+ 4. Le robot ne fait QUE ce que vous lui avez montre. Il n'invente rien.
+    S'il ne trouve pas un bouton, il s'arrete et l'ecrit dans l'Excel.
+ 5. Rien ne sort de votre poste : ni vos donnees, ni vos mots de passe,
+    ni les pages visitees.
+
+
+=====================================================================
+ 9. QUELQUES COMMANDES, SI VOUS PREFEREZ TAPER
+=====================================================================
+(Mac : ./robot.command ...   Windows : robot ...)
+
+   robot                                      le menu
+   robot enregistrer ADRESSE --excel suivi.xlsx --nom "ma tache"
+   robot lancer ma_tache.yaml --limite 1      essai sur une ligne
+   robot lancer ma_tache.yaml                 toutes les lignes a faire
+   robot lancer ma_tache.yaml --reprendre-erreurs
+   robot lancer ma_tache.yaml --var mot_de_passe=MONMOTDEPASSE
+   robot simuler ma_tache.yaml                montre les etapes sans rien faire
+   robot scenarios                            la liste des taches
+   robot base-demo                            la fausse base d'entrainement

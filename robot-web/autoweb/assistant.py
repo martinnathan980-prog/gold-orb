@@ -166,6 +166,241 @@ def _questions_champs(d: Dialogue, champs: List[Dict[str, Any]], colonnes: Seque
     return etapes
 
 
+def deviner_colonne(valeur: Any, colonnes: Sequence[str], lignes: Sequence[Dict[str, Any]]) -> Optional[int]:
+    """Colonne de l'Excel dont une cellule vaut exactement `valeur` (index 0, None si aucune ou plusieurs)."""
+    from .gabarit import formater
+
+    cible = normaliser_cle(formater(valeur))
+    if not cible:
+        return None
+    trouvees = set()
+    for ligne in lignes:
+        for i, colonne in enumerate(colonnes):
+            if normaliser_cle(formater(ligne.get(colonne))) == cible:
+                trouvees.add(i)
+    if len(trouvees) == 1:
+        return trouvees.pop()
+    return None
+
+
+def _entete_scenario(
+    nom: str, base: str, canal: str, fichier_excel: str, feuille: Optional[str],
+    colonnes: Sequence[str], url: str,
+) -> List[str]:
+    lignes = [
+        "# Scénario autoweb — à relire, puis :",
+        "#   ./robot.command verifier <ce fichier>     (robot verifier ... sous Windows)",
+        "#   ./robot.command simuler  <ce fichier>",
+        "#   ./robot.command lancer   <ce fichier> --limite 1",
+        f"nom: {_yaml_chaine(nom)}",
+        "navigateur:",
+        f"  canal: {canal if canal in ('chrome', 'msedge', 'chromium', 'auto') else 'auto'}"
+        "            # chrome | msedge | chromium | auto",
+        f"  profil: profils/{base}",
+        "  visible: true",
+        "  delai_max: 15000",
+        "excel:",
+        f"  fichier: {_yaml_chaine(fichier_excel)}",
+    ]
+    if feuille:
+        lignes.append(f"  feuille: {_yaml_chaine(feuille)}")
+    if colonnes:
+        lignes.append(f"  colonne_libelle: {_yaml_chaine(colonnes[0])}")
+    lignes += ["variables:", f"  url: {_yaml_chaine(url)}"]
+    return lignes
+
+
+def _remplacer_valeur(texte: str, colonne: Optional[str]) -> str:
+    return "{{" + colonne + "}}" if colonne else texte
+
+
+def _bloc_etapes(
+    etapes: List[Any],
+    indent: str,
+    question_valeur,
+    telechargements: List[Any],
+) -> List[str]:
+    """Traduit des étapes enregistrées en lignes YAML, en gérant les iframes."""
+    lignes: List[str] = []
+    cadre_courant = ""
+    indent_courant = indent
+    for e in etapes:
+        if e.cadre != cadre_courant:
+            cadre_courant = e.cadre
+            indent_courant = indent
+            if cadre_courant:
+                lignes.append(f"{indent}- cadre:")
+                lignes.append(f"{indent}    selecteur: {_yaml_chaine(cadre_courant)}")
+                lignes.append(f"{indent}    etapes:")
+                indent_courant = indent + "      "
+
+        i = indent_courant
+        if e.action == "aller":
+            lignes.append(f'{i}- aller: "{{{{url}}}}"')
+        elif e.action == "attendre":
+            lignes.append(f"{i}- attendre: {{chargement: reseau, delai: {int(e.args.get('delai', 8000))}}}")
+            lignes.append(f"{i}  optionnel: true")
+        elif e.action == "cliquer":
+            selecteur = str(e.args["selecteur"])
+            if e.texte_selecteur:
+                colonne = question_valeur(e.texte_selecteur, "Vous avez cliqué sur")
+                if colonne:
+                    selecteur = selecteur.replace(e.texte_selecteur, "{{" + colonne + "}}")
+            lignes.append(f"{i}- cliquer: {_yaml_chaine(selecteur)}")
+        elif e.action in ("remplir", "choisir", "cocher"):
+            selecteur = str(e.args["selecteur"])
+            valeur = str(e.args.get("valeur", ""))
+            if e.type_champ == "password":
+                valeur_finale = "{{mot_de_passe}}"
+                commentaire = "   # au lancement : --var mot_de_passe=VOTRE_MOT_DE_PASSE"
+            else:
+                contexte = {"remplir": "Vous avez écrit", "choisir": "Vous avez choisi", "cocher": "Vous avez coché"}[e.action]
+                colonne = question_valeur(valeur, f"{contexte}, dans « {e.libelle or selecteur} » :")
+                valeur_finale = "{{" + colonne + "}}" if colonne else valeur
+                commentaire = ""
+            lignes.append(
+                f"{i}- {e.action}: {{selecteur: {_yaml_chaine(selecteur)}, valeur: {_yaml_chaine(valeur_finale)}}}{commentaire}"
+            )
+        elif e.action == "touche":
+            lignes.append(
+                f"{i}- touche: {{selecteur: {_yaml_chaine(str(e.args['selecteur']))}, touche: {e.args.get('touche', 'Enter')}}}"
+            )
+        elif e.action == "telecharger":
+            telechargements.append(e)
+            lignes.append(f"{i}__TELECHARGEMENT_{len(telechargements) - 1}__")
+    return lignes
+
+
+def construire_depuis_enregistrement(
+    etapes: List[Any],
+    colonnes: Sequence[str],
+    lignes_excel: Sequence[Dict[str, Any]],
+    dialogue: Dialogue,
+    nom: str,
+    fichier_excel: str = "suivi.xlsx",
+    feuille: Optional[str] = None,
+    canal: str = "chrome",
+    url_depart: str = "",
+) -> str:
+    """Transforme un enregistrement (liste d'EtapeEnregistree) en scénario YAML,
+    en demandant d'où vient chaque valeur saisie."""
+    d = dialogue
+    base = re.sub(r"[^a-z0-9_-]+", "_", nom.lower()).strip("_") or "tache"
+
+    d.dire()
+    d.dire(f"{S.LIGNE} Enregistrement terminé : {len(etapes)} étape(s)")
+    for i, e in enumerate(etapes, start=1):
+        d.dire(f"   {i:2}. {e.resume()}")
+    d.dire()
+    retirer = d.demander("Étapes à retirer (numéros séparés par des virgules, Entrée = tout garder)", "")
+    if retirer.strip():
+        a_retirer = {int(m.strip()) for m in retirer.replace(";", ",").split(",") if m.strip().isdigit()}
+        etapes = [e for i, e in enumerate(etapes, start=1) if i not in a_retirer]
+        d.dire(f"   {len(etapes)} étape(s) conservée(s).")
+
+    # Connexion : à faire une fois au début, pas à chaque ligne de l'Excel.
+    etapes_connexion: List[Any] = []
+    selecteur_connexion = ""
+    index_mdp = next((i for i, e in enumerate(etapes) if getattr(e, "type_champ", "") == "password"), None)
+    if index_mdp is not None:
+        fin = index_mdp
+        for j in range(index_mdp + 1, len(etapes)):
+            if etapes[j].action == "cliquer":
+                fin = j
+                break
+        debut = 1 if etapes and etapes[0].action == "aller" else 0
+        d.dire()
+        d.dire(f"{S.FLECHE} Les premières étapes ressemblent à une connexion :")
+        for e in etapes[debut:fin + 1]:
+            d.dire(f"     - {e.resume()}")
+        if d.oui_non("   La faire une seule fois au début, et non à chaque ligne (recommandé) ?", True):
+            etapes_connexion = etapes[debut:fin + 1]
+            selecteur_connexion = str(etapes[index_mdp].args.get("selecteur", ""))
+            etapes = etapes[:debut] + etapes[fin + 1:]
+
+    if colonnes:
+        d.dire()
+        d.dire("Pour chaque valeur que vous avez saisie, indiquez la colonne de l'Excel qui la donne.")
+        d.dire("Entrée accepte la proposition ; 0 garde la valeur telle quelle à chaque ligne.")
+
+    def question_valeur(valeur: str, contexte: str) -> Optional[str]:
+        if not colonnes or not str(valeur).strip():
+            return None
+        propose = deviner_colonne(valeur, colonnes, lignes_excel)
+        if propose is None and contexte.startswith("Vous avez cliqué"):
+            return None  # texte de bouton : il ne change pas d'une ligne à l'autre
+        d.dire()
+        d.dire(f"{S.FLECHE} {contexte} « {valeur} »")
+        for i, c in enumerate(colonnes, start=1):
+            d.dire(f"     {i}. {c}")
+        defaut = str(propose + 1) if propose is not None else "0"
+        reponse = d.demander("   Colonne (numéro), 0 = valeur toujours identique", defaut)
+        if reponse.isdigit() and 1 <= int(reponse) <= len(colonnes):
+            return colonnes[int(reponse) - 1]
+        return None
+
+    telechargements: List[Any] = []
+    lignes_etapes = _bloc_etapes(etapes, "  ", question_valeur, telechargements)
+    lignes_connexion = _bloc_etapes(etapes_connexion, "        ", lambda v, c: None, telechargements)
+
+    d.dire()
+    premiere = colonnes[0] if colonnes else "ligne"
+    texte_succes = ""
+    if telechargements:
+        dossier = d.demander(f"{S.FLECHE} Dossier où ranger les fichiers téléchargés", "exports")
+        nom_fichier = d.demander(
+            f"{S.FLECHE} Nom du fichier, sans extension (vide = nom donné par l'outil)",
+            f"export_{{{{{premiere}}}}}" if colonnes else "")
+        convertir = d.oui_non(f"{S.FLECHE} Convertir un export CSV en Excel (.xlsx) ?", True)
+        colonne_fichier = d.demander(
+            f"{S.FLECHE} Colonne où écrire le chemin du fichier obtenu (vide = aucune)", "Fichier export")
+        for numero, e in enumerate(telechargements):
+            options = [f"cliquer: {_yaml_chaine(str(e.args['cliquer']))}",
+                       f"vers: {_yaml_chaine(dossier.rstrip('/') + '/')}"]
+            if nom_fichier:
+                options.append(f"renommer: {_yaml_chaine(nom_fichier)}")
+            if convertir:
+                options.append("convertir_excel: true")
+            if colonne_fichier:
+                options.append(f"vers_colonne: {_yaml_chaine(colonne_fichier)}")
+            remplacement = "- telecharger: {" + ", ".join(options) + "}"
+            marque = f"__TELECHARGEMENT_{numero}__"
+            lignes_etapes = [l.replace(marque, remplacement) for l in lignes_etapes]
+            lignes_connexion = [l.replace(marque, remplacement) for l in lignes_connexion]
+    else:
+        texte_succes = d.demander(
+            f"{S.FLECHE} Texte affiché par l'outil quand tout s'est bien passé (vide = pas de contrôle)", "")
+
+    pause_connexion = True
+    if etapes_connexion:
+        pause_connexion = d.oui_non(
+            f"{S.FLECHE} Ajouter aussi une pause au début, au cas où l'outil demande autre chose (code, carte) ?", False)
+    else:
+        pause_connexion = d.oui_non(f"{S.FLECHE} Faut-il se connecter à la main au début (SSO, mot de passe) ?", True)
+    capture = d.oui_non(f"{S.FLECHE} Faire une capture d'écran à la fin de chaque ligne ?", True)
+
+    lignes = _entete_scenario(nom, base, canal, fichier_excel, feuille, colonnes, url_depart)
+    if etapes_connexion or pause_connexion:
+        lignes.append("avant:")
+        lignes.append('  - aller: "{{url}}"')
+        if etapes_connexion:
+            lignes.append("  - si:")
+            lignes.append(f"      visible: {_yaml_chaine(selecteur_connexion)}   # seulement si l'écran de connexion est là")
+            lignes.append("      alors:")
+            lignes += lignes_connexion
+        if pause_connexion:
+            lignes.append('  - pause: "Vérifiez que vous êtes bien connecté dans le navigateur, puis appuyez sur Entrée"')
+    lignes.append("etapes:")
+    if not lignes_etapes or not lignes_etapes[0].strip().startswith("- aller"):
+        lignes.append('  - aller: "{{url}}"')
+    lignes += lignes_etapes
+    if texte_succes:
+        lignes.append(f"  - verifier: {{texte_page: {_yaml_chaine(texte_succes)}}}")
+    if capture:
+        lignes.append(f'  - capture: "captures/{{{{{premiere}}}}}.png"')
+    return "\n".join(lignes) + "\n"
+
+
 def construire(
     releve: Dict[str, Any],
     colonnes: Sequence[str],
@@ -249,26 +484,7 @@ def construire(
         connexion = d.oui_non(f"{S.FLECHE} Faut-il se connecter à la main au début (SSO, mot de passe) ?", True)
         capture = d.oui_non(f"{S.FLECHE} Faire une capture d'écran après chaque ligne ?", True)
 
-    lignes = [
-        "# Scénario généré par « autoweb assistant » — à relire, puis :",
-        "#   python -m autoweb verifier <ce fichier>",
-        "#   python -m autoweb simuler <ce fichier>",
-        "#   python -m autoweb lancer <ce fichier> --limite 1",
-        f"nom: {_yaml_chaine(nom)}",
-        "navigateur:",
-        f"  canal: {canal if canal in ('chrome', 'msedge', 'chromium', 'auto') else 'auto'}"
-        "            # chrome | msedge | chromium | auto",
-        f"  profil: profils/{base}",
-        "  visible: true",
-        "  delai_max: 15000",
-        "excel:",
-        f"  fichier: {_yaml_chaine(fichier_excel)}",
-    ]
-    if feuille:
-        lignes.append(f"  feuille: {_yaml_chaine(feuille)}")
-    if colonnes:
-        lignes.append(f"  colonne_libelle: {_yaml_chaine(colonnes[0])}")
-    lignes += ["variables:", f"  url: {_yaml_chaine(url)}"]
+    lignes = _entete_scenario(nom, base, canal, fichier_excel, feuille, colonnes, url)
     if connexion:
         lignes += [
             "avant:",

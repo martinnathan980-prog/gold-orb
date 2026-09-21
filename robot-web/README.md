@@ -52,6 +52,23 @@ encore un navigateur compatible, téléchargé par `python -m playwright install
 
 ---
 
+## 1 bis. La façon la plus simple : montrer la tâche au robot
+
+```bat
+robot                     (Windows)        ./robot.command      (Mac)
+```
+
+Le menu s'ouvre. Choix 1 : vous donnez l'adresse de l'outil et votre Excel, un navigateur
+s'ouvre avec un bandeau rouge, **vous faites la tâche une fois**, vous cliquez sur le bandeau.
+Le robot a noté chaque clic et chaque saisie ; il demande seulement de quelle colonne vient
+chaque valeur, puis écrit la tâche dans un fichier `.yaml` prêt à rejouer.
+
+La connexion repérée au début est placée dans `avant:` et conditionnée à l'écran de connexion,
+donc elle n'est pas rejouée à chaque ligne. Un mot de passe n'est jamais écrit dans le fichier :
+il devient `{{mot_de_passe}}`, à fournir au lancement avec `--var mot_de_passe=...`.
+
+Mode d'emploi complet et pas-à-pas : `MODE_EMPLOI.txt`.
+
 ## 2. Démarrer votre premier outil
 
 ```bat

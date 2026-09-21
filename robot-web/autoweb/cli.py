@@ -368,7 +368,149 @@ def cmd_assistant(args: argparse.Namespace) -> int:
     return 0
 
 
+def _colonnes_et_lignes(chemin_excel: Optional[str], feuille: Optional[str]):
+    """Colonnes utiles de l'Excel (hors colonnes de suivi) et valeurs des premières lignes."""
+    from .excel import ClasseurSuivi
+
+    if not chemin_excel:
+        return [], [], None
+    classeur = ClasseurSuivi(Path(chemin_excel), feuille=feuille, sauvegarde=False).ouvrir()
+    try:
+        suivi = {classeur.colonne_statut, classeur.colonne_message, classeur.colonne_horodatage}
+        colonnes = [c for c in classeur.entetes if c not in suivi]
+        lignes = [l.valeurs for l in classeur.lignes()[:30]]
+        return colonnes, lignes, classeur.nom_feuille
+    finally:
+        classeur.fermer()
+
+
+def _chemin_scenario(nom: str, excel: Optional[str], sortie: Optional[str], ecraser: bool) -> Path:
+    base = "".join(c if c.isalnum() or c in "-_" else "_" for c in nom.strip().lower().replace(" ", "_")) or "tache"
+    if sortie:
+        chemin = Path(sortie)
+    elif excel:
+        chemin = Path(excel).resolve().parent / f"{base}.yaml"
+    else:
+        chemin = Path(f"{base}.yaml")
+    if chemin.exists() and not ecraser:
+        chemin = chemin.with_name(f"{chemin.stem}-{dt.datetime.now():%Y%m%d-%H%M%S}{chemin.suffix}")
+    return chemin
+
+
 def cmd_enregistrer(args: argparse.Namespace) -> int:
+    """Le robot regarde l'utilisateur faire la tâche, puis écrit le scénario."""
+    from .assistant import Dialogue, construire_depuis_enregistrement
+    from .enregistreur import Enregistreur
+
+    configurer_journal(None, args.verbeux)
+    colonnes, lignes_excel, feuille = _colonnes_et_lignes(args.excel, args.feuille)
+    if not args.excel:
+        print(f"{S.ATTENTION} Aucun Excel indiqué (--excel suivi.xlsx) : les valeurs saisies resteront figées.")
+    nom = args.nom or "ma tache"
+    url = _normaliser_url(args.url)
+    if not url:
+        raise ErreurAutoweb("Indiquez l'adresse de l'outil : autoweb enregistrer https://mon-outil/...")
+
+    nav = _lancer_navigateur_libre(args)
+    nav.ouvrir()
+    canal = nav.canal_utilise or (args.canal or "chrome")
+    enregistreur = Enregistreur(nav)
+    try:
+        enregistreur.demarrer(url)
+        print()
+        print(f"{S.LIGNE} ENREGISTREMENT EN COURS")
+        print("   1. Dans le navigateur qui vient de s'ouvrir, faites votre tâche normalement,")
+        print("      une seule fois, avec les valeurs de la PREMIÈRE ligne de votre Excel.")
+        print("   2. Quand c'est fini, cliquez sur le bandeau rouge en haut à droite de la page")
+        print("      (« Enregistrement ... cliquez ici pour terminer »).")
+        print("   Le robot note chaque clic et chaque saisie. Rien ne sort de votre poste.")
+        print()
+        print("   (en cas de besoin, fermer la fenêtre du navigateur arrête aussi l'enregistrement)")
+        enregistreur.attendre_fin()
+        etapes = enregistreur.arreter()
+    finally:
+        nav.fermer()
+
+    if not etapes:
+        print(f"{S.ATTENTION} Aucune action enregistrée : rien à écrire.")
+        return 1
+    texte = construire_depuis_enregistrement(
+        etapes, colonnes, lignes_excel, Dialogue(), nom=nom,
+        fichier_excel=(Path(args.excel).name if args.excel else "suivi.xlsx"),
+        feuille=feuille, canal=canal, url_depart=url,
+    )
+    sortie = _chemin_scenario(nom, args.excel, args.sortie, args.ecraser)
+    sortie.parent.mkdir(parents=True, exist_ok=True)
+    sortie.write_text(texte, encoding="utf-8")
+    prefixe = prefixe_commande()
+    print()
+    print(f"{S.OK} Tâche enregistrée : {sortie}")
+    print()
+    print("Pour la tester sur UNE seule ligne de l'Excel :")
+    print(f"   {prefixe} lancer \"{sortie}\" --limite 1")
+    print("Puis, si tout est bon, sur toutes les lignes :")
+    print(f"   {prefixe} lancer \"{sortie}\"")
+    return 0
+
+
+def lister_scenarios(racine: Optional[Path] = None) -> List[Path]:
+    """Fichiers .yaml qui sont des scénarios, dans le dossier de travail (2 niveaux)."""
+    racine = Path(racine or Path.cwd())
+    ignores = {"venv", "releves", "profils", "captures", "journal", "sauvegardes", "modeles", "corbeille", "__pycache__"}
+    trouves: List[Path] = []
+    for chemin in sorted(racine.glob("*.yaml")) + sorted(racine.glob("*/*.yaml")):
+        if any(part in ignores for part in chemin.parts):
+            continue
+        try:
+            texte = chemin.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if "etapes:" in texte:
+            trouves.append(chemin)
+    return trouves
+
+
+def _decrire_scenario(chemin: Path) -> str:
+    from .scenario import charger
+
+    try:
+        scenario = charger(chemin)
+    except ErreurAutoweb as e:
+        return f"(scénario illisible : {str(e)[:60]})"
+    morceaux = [f"{len(scenario.etapes)} étape(s)"]
+    if scenario.excel.fichier:
+        morceaux.append(f"Excel {scenario.excel.fichier}")
+    return ", ".join(morceaux)
+
+
+def cmd_scenarios(args: argparse.Namespace) -> int:
+    configurer_journal(None, args.verbeux)
+    scenarios = lister_scenarios(Path(args.dossier) if args.dossier else None)
+    if not scenarios:
+        print("Aucune tâche enregistrée pour l'instant.")
+        print(f"Pour en créer une :  {prefixe_commande()} enregistrer https://mon-outil/... --excel suivi.xlsx --nom \"ma tache\"")
+        return 0
+    print(f"{len(scenarios)} tâche(s) :")
+    for i, chemin in enumerate(scenarios, start=1):
+        print(f"  {i}. {chemin}")
+        print(f"     {_decrire_scenario(chemin)}")
+    return 0
+
+
+def cmd_supprimer(args: argparse.Namespace) -> int:
+    configurer_journal(None, args.verbeux)
+    chemin = Path(args.scenario)
+    if not chemin.exists():
+        raise ErreurAutoweb(f"Fichier introuvable : {chemin}")
+    corbeille = chemin.parent / "corbeille"
+    corbeille.mkdir(exist_ok=True)
+    cible = corbeille / f"{chemin.stem}-{dt.datetime.now():%Y%m%d-%H%M%S}{chemin.suffix}"
+    shutil.move(str(chemin), str(cible))
+    print(f"{S.OK} Tâche retirée. Le fichier est conservé dans {cible} au cas où.")
+    return 0
+
+
+def cmd_codegen(args: argparse.Namespace) -> int:
     configurer_journal(None, args.verbeux)
     commande: List[str] = [sys.executable, "-m", "playwright", "codegen", "--target", "python"]
     canal = args.canal or "msedge"
@@ -407,6 +549,123 @@ def cmd_extraire(args: argparse.Namespace) -> int:
     print(f"{bilan.fichiers} document(s) : {bilan.reussis} extrait(s), {bilan.incomplets} à vérifier, {bilan.illisibles} illisible(s).")
     print(f"Résultat : {sortie}")
     return 0 if bilan.illisibles == 0 else 1
+
+
+def _ns(**kw) -> argparse.Namespace:
+    """Namespace avec toutes les options connues, pour appeler les commandes depuis le menu."""
+    defauts = dict(
+        verbeux=False, canal=None, profil=None, executable=None, attacher=None, cache=False,
+        visible=False, excel=None, feuille=None, sortie=None, nom=None, ecraser=False, url=None,
+        dossier=None, limite=None, lignes=None, reprendre_erreurs=False, tout=False, var=None,
+        sans_avant=False, sans_apres=False, inspecter_si_erreur=False, arret_premiere_erreur=False,
+        sans_pause=False, simuler=False, scenario=None, port=8765, sans_attente=False, fichier=False,
+        releve=None, sortie_releve=None, colonnes=None, regles=None, journal=False,
+    )
+    defauts.update(kw)
+    return argparse.Namespace(**defauts)
+
+
+def _demander(question: str, defaut: str = "") -> str:
+    invite = f"{question} [{defaut}] : " if defaut else f"{question} : "
+    print(invite, end="", flush=True)
+    try:
+        reponse = input().strip()
+    except EOFError:
+        return defaut
+    return reponse or defaut
+
+
+def _choisir_scenario(action: str) -> Optional[Path]:
+    scenarios = lister_scenarios()
+    if not scenarios:
+        print("Aucune tâche enregistrée. Choisissez d'abord « 1 » pour en créer une.")
+        return None
+    print()
+    print(f"Quelle tâche voulez-vous {action} ?")
+    for i, chemin in enumerate(scenarios, start=1):
+        print(f"  {i}. {chemin}   ({_decrire_scenario(chemin)})")
+    reponse = _demander("  Numéro (0 = revenir au menu)", "1")
+    if reponse.isdigit() and 1 <= int(reponse) <= len(scenarios):
+        return scenarios[int(reponse) - 1]
+    return None
+
+
+def cmd_menu(args: argparse.Namespace) -> int:
+    configurer_journal(None, getattr(args, "verbeux", False))
+    while True:
+        print()
+        print("=" * 62)
+        print("   ROBOT WEB   -   que voulez-vous faire ?")
+        print("=" * 62)
+        print("   1. Enregistrer une nouvelle tache (vous la montrez au robot)")
+        print("   2. Lancer une tache enregistree")
+        print("   3. Voir mes taches")
+        print("   4. Supprimer une tache")
+        print("   5. Creer un fichier Excel de pilotage (vide, avec vos colonnes)")
+        print("   6. M'entrainer sur la fausse base de demonstration")
+        print("   7. Verifier que tout fonctionne")
+        print("   0. Quitter")
+        print()
+        choix = _demander("   Votre choix", "0")
+        try:
+            if choix == "1":
+                url = _demander("   Adresse de l'outil (elle commence par http)")
+                if not url:
+                    continue
+                excel = _demander("   Fichier Excel qui pilote la tache (vide = aucun)", "")
+                nom = _demander("   Nom de cette tache", "ma tache")
+                cmd_enregistrer(_ns(url=url, excel=excel or None, nom=nom))
+            elif choix == "2":
+                chemin = _choisir_scenario("lancer")
+                if chemin is None:
+                    continue
+                print()
+                print("   1. Une seule ligne, pour tester")
+                print("   2. Toutes les lignes a faire")
+                print("   3. Reprendre aussi les lignes en erreur")
+                mode = _demander("   Votre choix", "1")
+                options = {"1": dict(limite=1), "2": {}, "3": dict(reprendre_erreurs=True)}.get(mode, dict(limite=1))
+                cmd_lancer(_ns(scenario=str(chemin), **options))
+            elif choix == "3":
+                cmd_scenarios(_ns())
+            elif choix == "4":
+                chemin = _choisir_scenario("supprimer")
+                if chemin is None:
+                    continue
+                if _demander(f"   Confirmer la suppression de {chemin.name} ? (o/n)", "n").lower().startswith("o"):
+                    cmd_supprimer(_ns(scenario=str(chemin)))
+            elif choix == "5":
+                nom_fichier = _demander("   Nom du fichier Excel à créer", "suivi.xlsx")
+                if not nom_fichier.lower().endswith((".xlsx", ".xlsm")):
+                    nom_fichier += ".xlsx"
+                colonnes = _demander("   Colonnes, séparées par des virgules", "Numéro,Titre,Date")
+                liste = [c.strip() for c in colonnes.split(",") if c.strip()]
+                chemin = Path(nom_fichier)
+                if chemin.exists():
+                    print(f"   {S.ATTENTION} {chemin} existe déjà : il n'a pas été touché.")
+                else:
+                    creer_classeur(chemin, liste, feuille="Suivi")
+                    print(f"   {S.OK} Créé : {chemin.resolve()}")
+                    print("   Remplissez-le (une ligne = une exécution), enregistrez, fermez-le, puis choix 1.")
+            elif choix == "6":
+                print()
+                print("   La fausse base va demarrer. Suivez ensuite DEMARRAGE_MAC.txt (Mac)")
+                print("   ou EXERCICE_MAISON.txt (Windows), partie « fausse base documentaire ».")
+                cmd_base_demo(_ns())
+            elif choix == "7":
+                cmd_demo(_ns(sans_pause=True))
+            elif choix in ("0", "q", "quitter"):
+                print("   A bientot.")
+                return 0
+            else:
+                print("   Tapez un chiffre de 0 a 7.")
+        except ErreurAutoweb as e:
+            print()
+            print(f"{S.ERREUR} {e}")
+        except KeyboardInterrupt:
+            print()
+            print("   Interrompu.")
+    return 0
 
 
 def cmd_demo(args: argparse.Namespace) -> int:
@@ -622,12 +881,37 @@ def construire_parseur() -> argparse.ArgumentParser:
     commun(p)
     p.set_defaults(fonction=cmd_assistant)
 
-    p = sous.add_parser("enregistrer", help="enregistrer vos actions (playwright codegen)")
+    p = sous.add_parser("menu", help="menu simple : tout faire sans retenir de commande")
+    commun(p)
+    p.set_defaults(fonction=cmd_menu)
+
+    p = sous.add_parser("enregistrer", help="montrer une tâche au robot : il la refera seul")
+    p.add_argument("url", help="adresse de l'outil (ou chemin d'un fichier local)")
+    p.add_argument("--excel", help="Excel qui pilote la tâche (une ligne = une exécution)")
+    p.add_argument("--feuille", help="feuille de l'Excel")
+    p.add_argument("--nom", help="nom de la tâche")
+    p.add_argument("--sortie", help="fichier YAML à écrire (défaut : <nom>.yaml à côté de l'Excel)")
+    p.add_argument("--ecraser", action="store_true")
+    options_navigateur(p)
+    commun(p)
+    p.set_defaults(fonction=cmd_enregistrer)
+
+    p = sous.add_parser("scenarios", help="lister les tâches enregistrées")
+    p.add_argument("--dossier", help="dossier où chercher (défaut : le dossier courant)")
+    commun(p)
+    p.set_defaults(fonction=cmd_scenarios)
+
+    p = sous.add_parser("supprimer", help="retirer une tâche (le fichier part dans corbeille/)")
+    p.add_argument("scenario")
+    commun(p)
+    p.set_defaults(fonction=cmd_supprimer)
+
+    p = sous.add_parser("codegen", help="enregistreur Playwright (avancé, produit du code Python)")
     p.add_argument("url", nargs="?")
     p.add_argument("--sortie", help="fichier .py où écrire le code généré")
     options_navigateur(p)
     commun(p)
-    p.set_defaults(fonction=cmd_enregistrer)
+    p.set_defaults(fonction=cmd_codegen)
 
     p = sous.add_parser("extraire", help="extraire des champs de documents vers un Excel")
     p.add_argument("regles", help="fichier YAML des règles d'extraction")
@@ -658,7 +942,10 @@ def construire_parseur() -> argparse.ArgumentParser:
 def main(argv: Optional[List[str]] = None) -> int:
     _preparer_console()
     parseur = construire_parseur()
-    args = parseur.parse_args(argv)
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if not arguments:  # sans rien taper : le menu, pour ne rien avoir à retenir
+        arguments = ["menu"]
+    args = parseur.parse_args(arguments)
     try:
         return int(args.fonction(args) or 0)
     except ErreurAutoweb as e:
