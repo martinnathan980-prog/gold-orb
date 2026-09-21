@@ -456,7 +456,8 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
 def lister_scenarios(racine: Optional[Path] = None) -> List[Path]:
     """Fichiers .yaml qui sont des scénarios, dans le dossier de travail (2 niveaux)."""
     racine = Path(racine or Path.cwd())
-    ignores = {"venv", "releves", "profils", "captures", "journal", "sauvegardes", "modeles", "corbeille", "__pycache__"}
+    ignores = {"venv", "releves", "profils", "captures", "journal", "sauvegardes", "modeles",
+               "corbeille", "__pycache__", "demo"}  # « demo » : le scénario de vérification, pas une tâche
     trouves: List[Path] = []
     for chemin in sorted(racine.glob("*.yaml")) + sorted(racine.glob("*/*.yaml")):
         if any(part in ignores for part in chemin.parts):
