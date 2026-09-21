@@ -3,6 +3,14 @@ ROBOT-WEB SUR MAC : TOUT, PAS A PAS
 Duree : environ 40 minutes. Rien a installer manuellement, rien a acheter.
 Ce que vous faites ce soir est EXACTEMENT ce que vous ferez demain au bureau.
 
+PREALABLE : GOOGLE CHROME DOIT ETRE INSTALLE SUR LE MAC.
+Le robot pilote le navigateur que vous avez deja ; il ne peut pas piloter Safari.
+Verifiez dans le dossier Applications que "Google Chrome" est present. Sinon,
+telechargez-le (gratuit, pas de mot de passe administrateur) sur
+https://www.google.com/chrome puis glissez Google Chrome dans Applications.
+(Sur les Mac en macOS 12 ou plus ancien, c'est indispensable : le navigateur de
+secours fourni par Playwright n'existe pas pour ces versions.)
+
 Deux remarques avant de commencer :
  - Dans le Finder, le dossier "Bureau" s'appelle "Desktop" pour l'ordinateur.
    Quand vous tapez ~/Desktop, c'est bien votre Bureau.

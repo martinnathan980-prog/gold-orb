@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -30,16 +31,46 @@ journal = logging.getLogger("autoweb")
 VAR_EXECUTABLE = "AUTOWEB_EXECUTABLE"
 
 CHEMINS_WINDOWS = {
-    "msedge": [
-        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
-    ],
     "chrome": [
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
         r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
         os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
     ],
+    "msedge": [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
+    ],
+    "chromium": [
+        os.path.expandvars(r"%LOCALAPPDATA%\Chromium\Application\chrome.exe"),
+        r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
+    ],
 }
+
+CHEMINS_MAC = {
+    "chrome": [
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        os.path.expanduser("~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+        "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta",
+    ],
+    "msedge": [
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+        os.path.expanduser("~/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"),
+    ],
+    "chromium": [
+        "/Applications/Chromium.app/Contents/MacOS/Chromium",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "/Applications/Vivaldi.app/Contents/MacOS/Vivaldi",
+    ],
+}
+
+CHEMINS_LINUX = {
+    "chrome": ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/opt/google/chrome/chrome"],
+    "msedge": ["/usr/bin/microsoft-edge", "/usr/bin/microsoft-edge-stable"],
+    "chromium": ["/usr/bin/chromium", "/usr/bin/chromium-browser", "/snap/bin/chromium"],
+}
+
+NOM_NAVIGATEUR = {"msedge": "Microsoft Edge", "chrome": "Google Chrome", "chromium": "Chromium"}
 
 
 def premiere_ligne(e: BaseException) -> str:
@@ -130,15 +161,39 @@ class Navigateur:
         self.attache = True
         self.description = f"attaché à {url}"
 
+    def _chemins_connus(self, canaux: List[str]) -> List[Tuple[str, str]]:
+        """Navigateurs réellement présents sur ce poste, aux emplacements habituels."""
+        if sys.platform == "darwin":
+            table = CHEMINS_MAC
+        elif sys.platform == "win32":
+            table = CHEMINS_WINDOWS
+        else:
+            table = CHEMINS_LINUX
+        trouves: List[Tuple[str, str]] = []
+        vus = set()
+        for canal in canaux:
+            for chemin in table.get(canal, []):
+                if chemin and chemin not in vus and Path(chemin).exists():
+                    vus.add(chemin)
+                    trouves.append((canal, chemin))
+        return trouves
+
     def _candidats(self) -> List[Tuple[str, Optional[str]]]:
-        """Liste (canal, executable) à essayer dans l'ordre."""
+        """Liste (canal, executable) à essayer dans l'ordre. executable=None : canal Playwright."""
         executable = os.environ.get(VAR_EXECUTABLE) or self.config.executable
         if executable:
             return [("executable", executable)]
         canal = self.config.canal
         if canal == "auto":
-            return [("msedge", None), ("chrome", None), ("chromium", None)]
-        return [(canal, None)]
+            # Chrome d'abord : c'est le navigateur de travail le plus répandu.
+            candidats: List[Tuple[str, Optional[str]]] = [("chrome", None), ("msedge", None)]
+            candidats += list(self._chemins_connus(["chrome", "msedge", "chromium"]))
+            candidats.append(("chromium", None))
+            return candidats
+        candidats = [(canal, None)]
+        if canal != "chromium":
+            candidats += list(self._chemins_connus([canal]))
+        return candidats
 
     def _lancer(self) -> None:
         erreurs: List[str] = []
@@ -157,17 +212,45 @@ class Navigateur:
                     )
             except (FileNotFoundError, OSError) as e:
                 erreurs.append(f"  - {canal} : {premiere_ligne(e)}")
-        conseils = (
-            "Aucun navigateur n'a pu être lancé :\n" + "\n".join(erreurs) + "\n"
-            "Pistes :\n"
-            "  1. Indiquez le chemin de votre Edge dans le scénario :\n"
-            '       navigateur:\n         executable: "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"\n'
-            f"     (ou variable d'environnement {VAR_EXECUTABLE}).\n"
-            "  2. Ou installez le chromium de Playwright (téléchargement d'un dossier, pas d'un .exe d'installation) :\n"
-            "       python -m playwright install chromium\n"
-            "  3. Ou branchez-vous sur un Edge déjà ouvert : navigateur.attacher: 9222 (voir README)."
+        raise ErreurAutoweb(
+            "Aucun navigateur n'a pu être lancé :\n" + "\n".join(erreurs) + "\n" + self._pistes()
         )
-        raise ErreurAutoweb(conseils)
+
+    def _pistes(self) -> str:
+        """Conseils adaptés au système : ce qui débloque la situation ici."""
+        if sys.platform == "darwin":
+            return (
+                "Ce Mac n'a ni Google Chrome ni Microsoft Edge installé, aux emplacements habituels.\n"
+                "Pistes, de la plus simple à la plus technique :\n"
+                "  1. Installez Google Chrome (gratuit, aucune autorisation spéciale) :\n"
+                "       https://www.google.com/chrome\n"
+                "     Glissez Google Chrome dans le dossier Applications, puis relancez le robot.\n"
+                "  2. Si Chrome est installé ailleurs, donnez son chemin dans le scénario :\n"
+                "       navigateur:\n"
+                '         executable: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"\n'
+                f"     (ou variable d'environnement {VAR_EXECUTABLE}).\n"
+                "  3. Le navigateur de secours de Playwright (python -m playwright install chromium)\n"
+                "     n'existe pas pour macOS 12 et antérieur : sur ces Mac, il faut installer Chrome.\n"
+                "  4. Ou branchez-vous sur un Chrome déjà ouvert : lancez chrome_debug.command,\n"
+                "     puis dans le scénario : navigateur: attacher: 9222"
+            )
+        if sys.platform == "win32":
+            return (
+                "Pistes :\n"
+                "  1. Indiquez le chemin de votre navigateur dans le scénario :\n"
+                '       navigateur:\n         executable: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"\n'
+                f"     (ou variable d'environnement {VAR_EXECUTABLE}).\n"
+                "  2. Ou installez le chromium de Playwright (un dossier, pas un programme à installer) :\n"
+                "       python -m playwright install chromium\n"
+                "  3. Ou branchez-vous sur un Chrome déjà ouvert : lancez chrome_debug.bat,\n"
+                "     puis dans le scénario : navigateur: attacher: 9222"
+            )
+        return (
+            "Pistes :\n"
+            "  1. Installez un navigateur (google-chrome, chromium) ou donnez son chemin :\n"
+            f"       navigateur: executable: /usr/bin/google-chrome   (ou {VAR_EXECUTABLE}).\n"
+            "  2. Ou : python -m playwright install chromium"
+        )
 
     def _options_communes(self) -> dict:
         args = list(self.config.arguments)
@@ -198,12 +281,12 @@ class Navigateur:
             if not Path(executable).exists():
                 raise FileNotFoundError(f"exécutable introuvable : {executable}")
             options["executable_path"] = executable
-            libelle = f"exécutable {executable}"
+            libelle = f"{NOM_NAVIGATEUR.get(canal, canal)} ({executable})"
         elif canal == "chromium":
             libelle = "chromium de Playwright"
         else:
             options["channel"] = canal
-            libelle = {"msedge": "Microsoft Edge", "chrome": "Google Chrome"}.get(canal, canal)
+            libelle = NOM_NAVIGATEUR.get(canal, canal)
         if self.config.ignorer_https:
             options["ignore_https_errors"] = True
 
