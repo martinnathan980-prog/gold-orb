@@ -270,9 +270,11 @@ retirée : la référence ouvre donc le tableau et reste seule figée.
 ### L'exemple
 
 La page a un mode **Exemple**, et l'interrupteur **Données réelles / Exemple**
-est visible en haut de page dès qu'un classeur est derrière elle (dans la
-démonstration seule, il n'a pas d'objet et reste caché). Il fait deux choses,
-selon ce que le classeur a donné :
+est toujours visible en haut de page — devant un classeur comme dans la
+démonstration seule, où « Données réelles » montre les trois contrats fictifs
+tels quels (un mot « Démonstration » le dit à côté) et « Exemple »
+l'historique fabriqué. Il fait deux choses, selon ce que le classeur a
+donné :
 
 - **le classeur a des plans** : l'exemple se borde de tirets et remplit **le
   graphique, le journal et le comparatif** avec un historique fabriqué à
@@ -347,7 +349,7 @@ un **changement d'indice**. Une référence qui change de solution reste ce
 qu'elle est : un plan disparu et un nouveau plan.
 
 - **Dans le comparatif** « depuis l'import », un lot *changements d'indice*
-  (pastille en anneau), cliquable comme les autres, filtre le tableau sur les
+  (pastille violette), cliquable comme les autres, filtre le tableau sur les
   nouvelles références ; son survol montre « ancienne → nouvelle ». Un plan
   réémis compte une fois, sous ce lot, même s'il change aussi d'état : la
   bulle et le journal montrent l'état avant et après.
@@ -390,6 +392,11 @@ terminés, puis les passés en cours, puis les repassés à faire.
 Le journal se remplit au **deuxième** archivage : il faut deux relevés pour
 savoir ce qui a changé entre les deux.
 
+Le **changement d'indice** a sa couleur, un violet — ni un état ni une
+alerte —, sur sa pastille (journal, filtre du journal, puce du comparatif) et
+sur la nouvelle référence de la ligne ; la même couleur dit « autre indice »
+dans la comparaison des bases.
+
 ## 11. Les quatre états
 
 | État | Ce qui le déclenche |
@@ -422,22 +429,22 @@ se comparent pas.
 
 **La section « Comparaison des bases de données »**, sous le tableau des
 plans, se lit comme on compare deux bases : deux cercles face à face, puis
-plan par plan.
+plan par plan. Le titre suffit — plus de phrase ni de compte au-dessus, la
+figure et les verdicts disent tout.
 
-- une phrase : « **253** sur 256 plans terminés se retrouvent dans SEE », et
-  dessous ce qu'il reste à regarder : « À vérifier : 3 terminés que SEE ne
-  connaît pas · 12 plans dans SEE que GATES ne dit pas terminés · 2 sous un
-  autre indice · 5 références que SEE est seul à connaître. » ;
 - la figure : le cercle **GATES** (plein, vert) à gauche avec son compte de
   plans et de terminés, le cercle **SEE** (pointillé) à droite avec ses
   lignes. Dans leur recouvrement, un **anneau** compte les plans que les deux
-  bases connaissent, en trois parts à l'échelle — vert d'accord, gris autre
+  bases connaissent, en trois parts à l'échelle — vert d'accord, violet autre
   indice, ambre connus de SEE mais pas terminés ici ; une part, même d'un seul
-  plan, reste visible. À gauche du cercle GATES, en rouge, les **terminés que
-  SEE ignore** — le nombre qui compte —, et dessous, plus discret, ce qui
-  n'est **pas encore** dans SEE (rien d'anormal : ces plans ne sont pas
-  terminés). À droite, ce que SEE est seul à connaître (« tout le contrat »
-  sous un périmètre, car ces lignes n'ont pas de domaine) ;
+  plan, reste visible. À la première apparition d'une source, quand la section
+  entre dans l'écran, les cercles s'installent et l'anneau se trace (rien de
+  tout cela si le système demande moins de mouvement). À gauche du cercle
+  GATES, en rouge, les **terminés que SEE ignore** — le nombre qui compte —,
+  et dessous, dans le cercle, plus discret, ce qui n'est **pas encore** dans
+  SEE (rien d'anormal : ces plans ne sont pas terminés). À droite, ce que SEE
+  est seul à connaître (« tout le contrat » sous un périmètre, car ces lignes
+  n'ont pas de domaine) ;
 - à droite, six **verdicts**, un par ligne, avec leur grand nombre et une
   phrase de tous les jours ; un verdict à 0 se lit mais ne se clique pas :
 
@@ -466,12 +473,16 @@ GATES, et où mène le clic.
 des priorités — d'abord ce qui est à vérifier (terminés absents de SEE, dans
 SEE pas terminés ici, autre indice, seulement dans SEE), **dépliés** ; puis ce
 qui va (pas encore dans SEE, terminés et dans SEE), **repliés** — un clic sur
-la tête du groupe plie ou déplie. Chaque ligne : la référence, l'état GATES
-avec sa pastille, ce que SEE en dit (absent, présent, ou sous quel indice) ;
-pour « seulement dans SEE », la référence recomposée et « aucun plan ». Les
-références sont triées ; au-delà de 80 lignes, le groupe renvoie au tableau
-(« les voir tous dans le tableau »). Un clic sur une référence d'ici réduit
-le tableau GATES à ce plan (bandeau « Sélection : plan … ») ; sur une
+la tête du groupe plie ou déplie. Dans un groupe, **une puce par plan** : sa
+pastille d'état GATES, sa référence, et pour une réémission la lettre sous
+laquelle SEE le connaît (« → B », en violet) ; douze plans tiennent en deux
+lignes. La légende des pastilles (Terminé, En cours, À faire, Non renseigné)
+est en tête de la liste, à droite du titre quand la place le permet, dessous
+sinon. La bulle du survol dit le reste (« Terminé dans GATES · absent dans
+SEE »). Pour « seulement dans SEE », la référence recomposée, sans pastille.
+Les références sont triées ; au-delà de 80 puces, le groupe renvoie au
+tableau (« les voir tous dans le tableau »). Un clic sur une référence d'ici
+réduit le tableau GATES à ce plan (bandeau « Sélection : plan … ») ; sur une
 référence seulement là, le tableau passe sur SEE, cherché sur elle (le
 bandeau porte alors un jeton « Recherche dans SEE », qui se retire d'une
 croix). Un clic sur un plan efface les filtres libres (état, groupe,
@@ -551,6 +562,19 @@ JALONS: [
   { semaine: '2027-S08', texte: 'Diffusion TO Perso', perimetre: 'PERSO' }         // 26/02/2027
 ],
 ```
+
+Sur le graphique, chaque jalon se marque d'un **numéro** en tête de son
+trait — tous sur une même ligne, sauf deux marqueurs qui se toucheraient —
+et son texte ne s'écrit à côté que s'il a la place, mesurée sur le dessin
+(à droite jusqu'au jalon suivant, sinon à gauche) ; la **légende des
+jalons**, sous celle du graphique, redit chaque numéro en clair avec sa
+semaine et son périmètre. La survoler (ou y passer au clavier) éclaire le
+trait et fait paraître le texte masqué, par-dessus les voisins. Un jalon
+hors du périmètre choisi garde son numéro, dans un marqueur creux ; son
+trait s'estompe. Un jalon sorti de la fenêtre affichée (zoom serré) reste
+dans la légende, en retrait, avec « hors fenêtre ». L'échéance manquée est
+rouge partout : marqueur, texte, trait, et son entrée dans la légende. Cinq
+jalons en dix semaines restent lisibles.
 
 Le jalon à venir le plus proche fait l'**échéance** : il pilote la colonne
 **effort demandé** du bloc par groupe (ce qu'il faudrait solder chaque semaine

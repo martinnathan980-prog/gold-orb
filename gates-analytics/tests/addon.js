@@ -1730,16 +1730,11 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const plans30 = avecBase2.paquet.plans;
   const fini = p => classe(p.avancement) === 'termine';
   const attB2 = { accord: plans30.slice(0, 3).filter(fini).length, avance: plans30.slice(0, 3).filter(p => !fini(p)).length,
-    manque: plans30.slice(3).filter(fini).length, attente: plans30.slice(3).filter(p => !fini(p)).length, termines: plans30.filter(fini).length };
-  const pluriel = (n, un, plus) => n > 1 ? plus : un;
-  const restesB2 = [];
-  if (attB2.manque) restesB2.push(attB2.manque + pluriel(attB2.manque, ' terminé que ', ' terminés que ') + 'Base2 ne connaît pas');
-  if (attB2.avance) restesB2.push(attB2.avance + pluriel(attB2.avance, ' plan dans ', ' plans dans ') + 'Base2 que GATES ne dit pas ' + pluriel(attB2.avance, 'terminé', 'terminés'));
-  restesB2.push('1 référence que Base2 est seul à connaître');
+    manque: plans30.slice(3).filter(fini).length, attente: plans30.slice(3).filter(p => !fini(p)).length };
   const ecran = await pr.evaluate(() => ({
     visible: !document.getElementById('rapprochement').hidden,
     titre: document.getElementById('titre-rapprochement').textContent,
-    phrase: document.getElementById('phrase-rapprochement').textContent,
+    phrase: !!document.getElementById('phrase-rapprochement'),
     puces: [...document.querySelectorAll('#verdicts-rapprochement button[data-rapp]')].map(b => b.dataset.rapp + '=' + b.querySelector('.verdict-n').textContent),
     figure: (() => { const svg = document.querySelector('#venn-rapprochement svg'); return svg && {
       cercles: svg.querySelectorAll('circle.cercle-ici, circle.cercle-la').length,
@@ -1748,7 +1743,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
       parts: [...svg.querySelectorAll('.donut-seg')].map(x => x.getAttribute('data-cle') + '=' + x.getAttribute('data-n')).join(),
       cotes: [...svg.querySelectorAll('.cote')].map(g => g.getAttribute('data-cle') + '=' + (g.querySelector('.grand') || g.querySelector('.moyen')).textContent).join() }; })(),
     sousLeTableau: document.getElementById('rapprochement').getBoundingClientRect().top >= document.getElementById('cadre-tableau').getBoundingClientRect().bottom,
-    sous: document.getElementById('sous-rapprochement').textContent,
+    sous: !!document.getElementById('sous-rapprochement'),
     plans: document.querySelectorAll('#corps-tableau tr').length,
     seconde: !document.getElementById('choix-base').hidden,
     titreSeconde: document.getElementById('bouton-base-la').textContent,
@@ -1757,10 +1752,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     vueSeconde: document.getElementById('vue-seconde').hidden
   }));
   verifier('la section est là, sous son titre', ecran.visible && ecran.titre === 'Comparaison des bases de données', ecran.titre);
-  verifier('la phrase compte les terminés que Base2 connaît, la sous-phrase ce qu\'il y a à vérifier et la référence que seule Base2 connaît',
-    ecran.phrase === attB2.accord + ' sur ' + attB2.termines + pluriel(attB2.termines, ' plan terminé', ' plans terminés') + pluriel(attB2.accord, ' se retrouve', ' se retrouvent') + ' dans Base2' &&
-    ecran.sous === 'À vérifier : ' + restesB2.join(' · ') + '.',
-    ecran.phrase + ' / ' + ecran.sous + ' — attB2 : ' + restesB2.join(' · '));
+  verifier('la tête de la section ne porte que le titre : ni phrase ni sous-phrase', !ecran.phrase && !ecran.sous);
   verifier('les verdicts recalculés à la main : d\'accord, aucun autre indice, pas terminés ici, terminés absents, en attente, 1 seulement là',
     ecran.puces.join(' ') === 'accord=' + attB2.accord + ' emission=0 avance=' + attB2.avance + ' manque=' + attB2.manque + ' attente=' + attB2.attente + ' seul=1',
     ecran.puces.join(' ') + ' attB2 ' + JSON.stringify(attB2));
@@ -1789,15 +1781,15 @@ function serveurSur(valeurs, proprietes, fichiers) {
      seulement là s'ouvre dans le tableau de Base2, cherchée sur REF_UD. */
   const listeB2 = await pr.evaluate(() => ({
     groupes: [...document.querySelectorAll('#liste-rapprochement .rapp-groupe')].map(g => g.dataset.cle + '=' + g.querySelector('.rapp-groupe-tete b').textContent.replace(/\s/g, '')),
-    seul: [...document.querySelectorAll('#liste-rapprochement .rapp-groupe[data-cle="seul"] tbody tr')].map(tr => ({
-      ref: tr.querySelector('button').textContent, la: tr.querySelector('button').dataset.ligneLa, gates: tr.children[1].textContent.trim()
+    seul: [...document.querySelectorAll('#liste-rapprochement .rapp-groupe[data-cle="seul"] .rapp-puce')].map(b => ({
+      ref: b.querySelector('.rapp-puce-ref').textContent, la: b.dataset.ligneLa, gates: b.dataset.etat || '', bulle: b.title
     }))
   }));
   const attendusB2 = ['manque', 'avance', 'emission', 'seul', 'attente', 'accord']
     .map(c => [c, c === 'seul' ? 1 : (attB2[c] || 0)]).filter(x => x[1] > 0).map(x => x[0] + '=' + x[1]);
   verifier('plan par plan sur Base2 : les groupes non vides des verdicts, dans l\'ordre des priorités, et la ligne seulement là avec REF_UD',
     listeB2.groupes.join(' ') === attendusB2.join(' ') && listeB2.seul.length === 1 && listeB2.seul[0].ref === 'UD-99-9999' &&
-    listeB2.seul[0].la === 'UD-99-9999' && listeB2.seul[0].gates === 'aucun plan', JSON.stringify([listeB2, attendusB2]));
+    listeB2.seul[0].la === 'UD-99-9999' && listeB2.seul[0].gates === '' && /^aucun plan dans GATES/.test(listeB2.seul[0].bulle), JSON.stringify([listeB2, attendusB2]));
   await pr.click('#liste-rapprochement .rapp-groupe[data-cle="seul"] button[data-ligne-la]'); await pr.waitForTimeout(500);
   verifier('un clic sur cette référence ouvre le tableau de Base2 cherché sur UD-99-9999, le lot retiré, le jeton de recherche posé',
     await pr.evaluate(() => {

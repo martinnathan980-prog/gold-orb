@@ -136,8 +136,9 @@ A1, Ctrl+V), sans rien archiver.
   des quatre états (terminés, en cours, à faire, non renseignés) et, dès le
   second relevé, ce qui a bougé depuis le dernier.
 - **Avancement dans le temps** : la courbe des terminés relevé après relevé,
-  les jalons du programme, la fin estimée au rythme actuel et le rythme
-  requis pour tenir le prochain jalon. La molette zoome, la souris déplace.
+  les jalons du programme (numérotés sur le graphique, en clair dans la
+  légende dessous), la fin estimée au rythme actuel et le rythme requis pour
+  tenir le prochain jalon. La molette zoome, la souris déplace.
 - **Ce qui a changé, semaine par semaine** : le journal — quels plans sont
   passés terminés, lesquels ont changé d'indice, lesquels sont apparus ou ont
   disparu de l'extract.
@@ -151,8 +152,8 @@ A1, Ctrl+V), sans rien archiver.
   l'extract.
 - **Comparaison des bases de données** (si l'onglet `SEE` est là) : ce que
   GATES dit terminé et que SEE connaît, et les écarts — en cercles, en
-  verdicts, puis plan par plan, les écarts d'abord. Un clic sur une référence
-  la montre dans le tableau.
+  verdicts, puis plan par plan en puces, les écarts d'abord. Un clic sur une
+  référence la montre dans le tableau.
 
 ## 7. Si quelque chose ne va pas
 

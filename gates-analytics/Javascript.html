@@ -793,6 +793,28 @@
   var COLONNES, PAR_CLE, CLE_DATE, PLANS, RELEVES_SRC, BASE, AUJ;
   var CLES_DIM, CLE_DOMAINE, CLES_ESSENTIELLES, VAUT_ESSENTIELLES, CLE_LIBELLE;
   var RELEVES, DERNIER, EVENEMENTS_IMPORT, COMPARATIF, RAPPROCHEMENT, jalons;
+  /* La figure de la comparaison s'anime une fois par source : le drapeau se
+     lève au chargement, le premier rendu le consomme. */
+  var ANIMER_FIGURE = false, GUETTEUR_FIGURE = null;
+  /* On guette le cadre de la figure, pas son SVG : un filtre ou un
+     périmètre touché avant d'arriver là redessine le SVG, et le cadre, lui,
+     demeure. À l'apparition, c'est le SVG du moment qui s'anime. */
+  function animerALApparition(cadre) {
+    if (!cadre) return;
+    if (GUETTEUR_FIGURE) { GUETTEUR_FIGURE.disconnect(); GUETTEUR_FIGURE = null; }
+    var animer = function () { var svg = cadre.querySelector('svg'); if (svg) svg.classList.add('anime'); };
+    if (!window.IntersectionObserver) { animer(); return; }
+    var obs = new IntersectionObserver(function (entrees) {
+      entrees.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        animer();
+        obs.disconnect();
+        if (GUETTEUR_FIGURE === obs) GUETTEUR_FIGURE = null;
+      });
+    }, { threshold: 0.35 });
+    GUETTEUR_FIGURE = obs;
+    obs.observe(cadre);
+  }
   var DIMENSIONS, TITRE_DIM, ORDRE_FEUILLE, PLAN_PAR_REF, PLAN_PAR_RACINE, JOURNAL;
   var RELEVES_REELS, AUJ_REEL, BASE_REELLE;
   var CONTRATS, CONTRAT;
@@ -913,6 +935,7 @@
   function chargerSource(src) {
     SRC = src;
     if (!src.exemple) SRC_REELLE = src;
+    ANIMER_FIGURE = true;
 
     PLANS = src.plans;
     /* Le tableau est l'extract, à une exception près, décidée par l'utilisateur :
@@ -1145,7 +1168,7 @@
       ? '\x3Cb>Démonstration\x3C/b> — le classeur n\'a pas encore de données : trois contrats fictifs, pour voir la page entière.'
       : actif
         ? '\x3Cb>Historique fabriqué\x3C/b> — un aperçu de ce que la page montrera quand les relevés se seront accumulés.'
-        : '';
+        : SERVEUR ? '' : '\x3Cb>Démonstration\x3C/b> — trois contrats fictifs ; devant votre classeur, ce mode montre vos données.';
     /* Ce que le classeur a à dire — feuille vide, colonne d'avancement
        absente — s'affiche à côté, en alerte : hors exemple, et sous la
        démonstration aussi, puisque c'est la raison d'y être. */
@@ -1735,7 +1758,54 @@
   }
   var L = 980, mG = 36, mD = 72, plotH = 176, ecart = 16, bandeH = 30, mBas = 34;
   var mHaut = 44, H = mHaut + plotH + ecart + bandeH + mBas;
-  var HAUTEUR_ETIQUETTE = 17;
+  var HAUTEUR_ETIQUETTE = 23;   // un niveau de marqueurs (rayon 10) et son interligne
+  /* Le texte d'un jalon ne se dessine que s'il tient, mesuré sur le dessin
+     lui-même — les polices diffèrent d'un poste à l'autre, une estimation
+     au caractère trompe. Il doit tenir jusqu'au marqueur du jalon visible
+     suivant, jusqu'au mot « aujourd'hui » s'il vient après, et jusqu'au bord
+     droit du cadre — ou, à défaut, à gauche du marqueur. Sinon il se masque :
+     la légende le redit, et le survol le fait paraître. */
+  /* Une police web qui arrive après le premier dessin change la largeur
+     des textes : la décision « tient / ne tient pas » se rejoue alors sur
+     le dessin du moment. Un seul écouteur, posé une fois. */
+  var POLICES_GUETTEES = false;
+  function guetterLesPolices() {
+    if (POLICES_GUETTEES || !document.fonts || !document.fonts.addEventListener) return;
+    POLICES_GUETTEES = true;
+    document.fonts.addEventListener('loadingdone', function () {
+      var svg = $('zone-graphe').querySelector('svg.graphe');
+      if (svg && svg.__ajusterJalons) svg.__ajusterJalons();
+    });
+  }
+  function ajusterTextesJalons(svg, bordGauche, bordDroit, xAuj) {
+    if (!svg) return;
+    var reperes = [].slice.call(svg.querySelectorAll('.jalon[data-jalon]')).map(function (g) {
+      return { texte: g.querySelector('.jalon-texte'), jx: +g.querySelector('.jalon-marque').getAttribute('cx') };
+    }).sort(function (a, b) { return a.jx - b.jx; });
+    reperes.forEach(function (r, k) {
+      var t = r.texte, largeur = 0;
+      if (!t) return;
+      t.classList.remove('masque');
+      t.setAttribute('text-anchor', 'start'); t.setAttribute('x', (r.jx + 14).toFixed(1));
+      try { largeur = t.getComputedTextLength(); } catch (e) { largeur = 0; }
+      if (!(largeur > 0)) largeur = t.textContent.length * 6.1;
+      var droite = bordDroit + 30;
+      if (reperes[k + 1]) droite = Math.min(droite, reperes[k + 1].jx - 11);
+      if (xAuj !== null && xAuj > r.jx) droite = Math.min(droite, xAuj - 72);
+      if (r.jx + 14 + largeur + 6 <= droite) { r.finTexte = r.jx + 14 + largeur; return; }
+      /* Pas la place à droite : à gauche, alors, s'il y tient — après le
+         marqueur précédent et le texte qu'il a pu écrire à sa droite, ou
+         après le trait d'aujourd'hui. */
+      var gauche = bordGauche;
+      if (k > 0) gauche = Math.max(gauche, reperes[k - 1].finTexte !== undefined ? reperes[k - 1].finTexte + 6 : reperes[k - 1].jx + 11);
+      if (xAuj !== null && xAuj < r.jx) gauche = Math.max(gauche, xAuj + 4);
+      if (r.jx - 14 - largeur - 6 >= gauche) {
+        t.setAttribute('text-anchor', 'end'); t.setAttribute('x', (r.jx - 14).toFixed(1));
+        return;
+      }
+      t.classList.add('masque');
+    });
+  }
   var LARGEUR = L - mG - mD;
   var MAX_IDX = 104;                       // deux ans, ou un an au-delà d'aujourd'hui : voir chargerSource()
   var derniereAnalyse = null;
@@ -1775,28 +1845,26 @@
     var pasX = LARGEUR / (span - 1);
     var x = function (i) { return mG + pasX * (i - d0); };
 
-    /* Deux jalons proches ecrivaient l'un sur l'autre. On calcule l'emprise de
-       chaque etiquette, puis on les repartit sur le plus petit nombre de
-       niveaux ou aucune ne touche sa voisine. */
+    /* Cinq jalons en dix semaines écrivaient les uns sur les autres. Chaque
+       jalon se marque d'un numéro en tête de son trait — tous sur une même
+       ligne, sauf deux marqueurs qui se toucheraient — et son texte ne
+       s'écrit à côté que s'il a la place jusqu'au jalon suivant (mesuré sur
+       le dessin, voir ajusterTextesJalons). La légende, sous le graphique,
+       redit chaque numéro en clair. */
     var places = [];
+    var xAuj = null;
     if (AUJ >= d0 && AUJ <= d1) {
-      var xAuj = mG + pasX * (AUJ - d0);
+      xAuj = mG + pasX * (AUJ - d0);
       places.push({ aujourdhui: true, jx: xAuj, xa: xAuj - 72, xb: xAuj - 4 });
     }
     jalons.forEach(function (j, idx) {
-      if (j.i < d0 || j.i > d1) return;
-      var jx = x(j.i);
-      var largeur = j.texte.length * 6.1 + 34;
-      var versGauche = jx + largeur + 14 > L - mD;
-      places.push({ j: j, idx: idx, jx: jx, largeur: largeur, versGauche: versGauche,
-                    xa: versGauche ? jx - largeur - 4 : jx + 4,
-                    xb: versGauche ? jx - 4 : jx + largeur + 4 });
+      if (j.i >= d0 && j.i <= d1) places.push({ j: j, idx: idx, jx: x(j.i), xa: x(j.i) - 11, xb: x(j.i) + 11 });
     });
     places.sort(function (a, b) { return a.xa - b.xa; });
     var finDeNiveau = [];
     places.forEach(function (pl) {
       var n = 0;
-      while (n < finDeNiveau.length && pl.xa < finDeNiveau[n] + 10) n++;
+      while (n < finDeNiveau.length && pl.xa < finDeNiveau[n] + 4) n++;
       pl.niveau = n;
       finDeNiveau[n] = pl.xb;
     });
@@ -1901,21 +1969,24 @@
          rouges tous deux — l'un est aussi manqué que l'autre. */
       var hors = !jalonDansPerimetre(j);
       var critique = prochain && j.i === prochain.i && !hors && enRetard;
-      var couleur = critique ? 'var(--alerte)' : 'var(--encre-3)';
+      var couleur = critique ? 'var(--alerte)' : 'var(--encre-2)';
       var mention = j.perimetre
         ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) + (hors ? ' \u2014 hors du p\u00e9rim\u00e8tre choisi, ne compte pas ici' : '')
         : '';
       var yBase = mHaut - 8 - pl.niveau * HAUTEUR_ETIQUETTE;   // haut du trait pour ce niveau
-      var yTexte = yBase - 5;
-      var xTexte = pl.versGauche ? jx - 10 : jx + 10;
+      var yMarque = yBase - 9;
 
-      s.push('\x3Cg class="jalon' + (hors ? ' hors-perimetre' : '') + '" data-jalon="' + idx + '" role="img" aria-label="Jalon ' +
+      s.push('\x3Cg class="jalon' + (hors ? ' hors-perimetre' : '') + (critique ? ' critique' : '') + '" data-jalon="' + idx + '" role="img" aria-label="Jalon ' + (idx + 1) + ', ' +
              ech(j.texte) + ' en ' + etiquette(j.i) + mention + '">');
-      s.push('\x3Ctitle>' + ech(j.texte) + ' \u2014 ' + etiquette(j.i) + mention + '\x3C/title>');
+      s.push('\x3Ctitle>' + (idx + 1) + ' \u2014 ' + ech(j.texte) + ' \u2014 ' + etiquette(j.i) + mention + '\x3C/title>');
       s.push('\x3Cline x1="' + jx.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" y2="' + basTotal.toFixed(1) +
              '" stroke="' + couleur + '" stroke-width="1" stroke-dasharray="3 4" opacity=".8"/>');
-      s.push('\x3Cpath d="M' + jx.toFixed(1) + ' ' + yBase.toFixed(1) + ' l-4 -5.5 l8 0 Z" fill="' + couleur + '"/>');
-      s.push('\x3Ctext class="jalon-texte" x="' + xTexte.toFixed(1) + '" y="' + yTexte.toFixed(1) + '" text-anchor="' + (pl.versGauche ? 'end' : 'start') + '" fill="' + couleur + '">' + ech(j.texte) + '\x3C/text>');
+      s.push('\x3Ccircle class="jalon-marque" cx="' + jx.toFixed(1) + '" cy="' + yMarque.toFixed(1) + '" r="10" fill="' + couleur + '"/>');
+      s.push('\x3Ctext class="jalon-num" x="' + jx.toFixed(1) + '" y="' + (yMarque + 4).toFixed(1) + '" text-anchor="middle">' + (idx + 1) + '\x3C/text>');
+      /* Le texte est toujours là — la batterie et les lecteurs d'écran le
+         lisent — mais ne se dessine que s'il a la place (décidé après coup,
+         mesure faite). */
+      s.push('\x3Ctext class="jalon-texte" x="' + (jx + 14).toFixed(1) + '" y="' + (yMarque + 4).toFixed(1) + '" text-anchor="start" fill="' + couleur + '">' + ech(j.texte) + '\x3C/text>');
       s.push('\x3C/g>');
     });
 
@@ -1958,6 +2029,8 @@
     var anneeEcrite = '';
     for (var k3 = d0; k3 <= d1; k3++) {
       if ((k3 - d0) % saut !== 0 && k3 !== AUJ) continue;
+      // La semaine d'aujourd'hui s'écrit toujours ; une graduation régulière trop proche lui cède la place.
+      if (k3 !== AUJ && Math.abs(k3 - AUJ) * pasX < 34) continue;
       var lib = etiquette(k3);
       var annee = lib.slice(0, 4), semaine = lib.slice(5);
       s.push('\x3Ctext class="grad" x="' + x(k3).toFixed(1) + '" y="' + (H - 19) + '" text-anchor="middle"' + (k3 > AUJ ? ' opacity=".7"' : '') + '>' +
@@ -1987,6 +2060,10 @@
 
     s.push('\x3C/svg>');
     $('zone-graphe').innerHTML = s.join('');
+    var svgGraphe = $('zone-graphe').querySelector('svg.graphe');
+    svgGraphe.__ajusterJalons = function () { ajusterTextesJalons(svgGraphe, mG, L - mD, xAuj); };
+    svgGraphe.__ajusterJalons();
+    guetterLesPolices();
 
     var items = ['\x3Cspan class="legende-item">\x3Csvg width="20" height="8" aria-hidden="true">\x3Cline x1="0" y1="4" x2="20" y2="4" stroke="var(--fait)" stroke-width="2.2"/>\x3C/svg>' +
       '\x3Cspan title="Nombre de plans pass\u00e9s \u00e0 100 %, cumul\u00e9 semaine apr\u00e8s semaine.">r\u00e9alis\u00e9\x3C/span>\x3C/span>'];
@@ -2011,6 +2088,19 @@
         requis.toFixed(1).replace('.', ',') + '/sem.\x3C/span>\x3C/span>');
     }
     $('legende').innerHTML = items.join('');
+    /* La légende des jalons : chaque numéro en clair, sa semaine, son
+       périmètre ; en retrait hors périmètre, en rouge s'il est l'échéance
+       manquée. Survoler un jalon ici l'éclaire sur le graphique. */
+    $('legende-jalons').innerHTML = jalons.length ? '\x3Cspan class="legende-jalons-mot">Jalons\x3C/span>' + jalons.map(function (j, idx) {
+      var hors = !jalonDansPerimetre(j), rouge = prochain && j.i === prochain.i && !hors && enRetard;
+      var horsFenetre = j.i < d0 || j.i > d1;   // dans la légende, mais pas dans la fenêtre affichée
+      return '\x3Cspan class="legende-jalon' + (hors ? ' hors-perimetre' : '') + (rouge ? ' critique' : '') + (horsFenetre ? ' hors-fenetre' : '') +
+        '" data-jalon="' + idx + '" tabindex="0" title="' +
+        ech(j.texte) + ' \u2014 ' + etiquette(j.i) + (j.perimetre ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) : '') +
+        (hors ? ' \u2014 hors du p\u00e9rim\u00e8tre choisi' : '') + (horsFenetre ? ' \u2014 hors de la fen\u00eatre affich\u00e9e' : '') + '">' +
+        '\x3Cb class="num">' + (idx + 1) + '\x3C/b>\x3Cspan class="mot">' + ech(j.texte) + '\x3C/span>' +
+        '\x3Cspan class="quand">' + etiquette(j.i) + (j.perimetre ? ' \u00b7 ' + ech(j.perimetre) : '') + (horsFenetre ? ' \u00b7 hors fen\u00eatre' : '') + '\x3C/span>\x3C/span>';
+    }).join('') : '';
 
     derniereAnalyse = { pts: pts, total: total, atteint: atteint, restants: restants, vitesse: vitesse,
                         projIdx: projIdx, prochain: prochain, requis: requis, enRetard: enRetard, span: span, d0: d0 };
@@ -2779,11 +2869,11 @@
     return c;
   }
 
-  /* La pastille d'un état — ou, hors des états, l'anneau neutre du changement
+  /* La pastille d'un état — ou, hors des états, le violet du changement
      d'indice et la pastille transparente qui tient la place des autres. */
   function pastilleDe(cle) {
     var e = ETAT_PAR_CLE[cle];
-    if (!e) return '\x3Cspan class="pastille ' + (cle === 'indice' ? 'neutre' : 'sans') + '">\x3C/span>';
+    if (!e) return '\x3Cspan class="pastille ' + (cle === 'indice' ? 'indice' : 'sans') + '">\x3C/span>';
     return e.hachure
       ? '\x3Cspan class="pastille hachure">\x3C/span>'
       : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>';
@@ -3259,7 +3349,7 @@
      liste dépliable de ce qui n'est pas dans le tableau, le détail des écarts.
      Absente quand la source ne décrit aucune seconde base. */
   function pastilleVerdict(cat) {
-    var classe = { accord: 'accord', emission: 'neutre', avance: 'avance', manque: 'manque', attente: 'attente', seul: 'seul' }[cat];
+    var classe = { accord: 'accord', emission: 'indice', avance: 'avance', manque: 'manque', attente: 'attente', seul: 'seul' }[cat];
     if (!classe) return '\x3Cspan class="pastille sans">\x3C/span>';
     return '\x3Cspan class="pastille ' + classe + '">\x3C/span>';
   }
@@ -3284,41 +3374,24 @@
     if (!RAPPROCHEMENT) { zone.hidden = true; return; }
     zone.hidden = false;
     var R = RAPPROCHEMENT, rap = SRC.rapprochement, nom = nomSeconde();
+    /* Le titre suffit : la phrase et le compte redisaient ce que la figure
+       et les verdicts montrent, et personne ne les lisait. */
     $('titre-rapprochement').textContent = 'Comparaison des bases de données';
-    var nL = R.nbLignes;
-    $('compte-rapprochement').textContent = (nL
-      ? nb(nL) + (nL > 1 ? ' lignes dans ' : ' ligne dans ') + nom + (rap.titre ? ' · extract « ' + String(rap.titre) + ' »' : '')
-      : '0 ligne dans ' + nom + ' — l’extract est vide');
 
     /* Les comptes : un plan d'ici dans une seule case, et à part ce que la
        seconde base est seule à connaître. */
     var comptes = {};
     LOTS_RAPPROCHEMENT.forEach(function (l) { comptes[l.cle] = compteLotRapp(l.cle); });
-    var nP = R.nbPlans, nT = R.nbTermines, nConnus = comptes.accord + comptes.emission, nSeuls = comptes.seul;
-    var ou = vue.perimetre ? ' du périmètre ' + ech(vue.perimetre) : '';
-
-    /* La phrase : les terminés d'ici que la seconde base connaît — c'est la
-       question que pose le rapprochement. Dessous, ce qu'il reste à regarder. */
-    {
-      $('phrase-rapprochement').innerHTML = nT
-        ? '\x3Cb>' + nb(nConnus) + '\x3C/b> sur ' + nb(nT) + (nT > 1 ? ' plans terminés' : ' plan terminé') + ou +
-          (nConnus > 1 ? ' se retrouvent' : ' se retrouve') + ' dans ' + ech(nom)
-        : 'Aucun plan terminé' + ou + ' à retrouver dans ' + ech(nom);
-      var restes = [];
-      if (comptes.manque) restes.push(nb(comptes.manque) + (comptes.manque > 1 ? ' terminés que ' : ' terminé que ') + nom + ' ne connaît pas');
-      if (comptes.avance) restes.push(nb(comptes.avance) + (comptes.avance > 1 ? ' plans dans ' : ' plan dans ') + nom + ' que GATES ne dit pas ' + (comptes.avance > 1 ? 'terminés' : 'terminé'));
-      if (comptes.emission) restes.push(nb(comptes.emission) + ' sous un autre indice');
-      if (nSeuls) restes.push(nb(nSeuls) + (nSeuls > 1 ? ' références que ' : ' référence que ') + nom + ' est seul à connaître' + (vue.perimetre ? ', sur tout le contrat' : ''));
-      $('sous-rapprochement').textContent = !restes.length
-        ? 'Rien à vérifier : GATES et ' + nom + ' disent la même chose' + (vue.perimetre ? ' dans le périmètre' : '') + '.'
-        : 'À vérifier' + (vue.perimetre ? ' dans le périmètre' : '') + ' : ' + restes.join(' · ') + '.';
-    }
+    var nP = R.nbPlans, nSeuls = comptes.seul;
 
     /* La figure : deux cercles, ce qu'ils ont en commun au milieu — avec un
        anneau pour la part de plans d'accord — et ce que chacun est seul à
-       connaître sur les côtés. */
+       connaître sur les côtés. À la première apparition d'une source,
+       l'anneau se trace sous les yeux du lecteur — quand la section entre
+       dans l'écran, pas avant. */
     var figure = $('venn-rapprochement');
     figure.innerHTML = figureRapprochement(comptes, R, nom, !!vue.perimetre);
+    if (ANIMER_FIGURE) { ANIMER_FIGURE = false; animerALApparition(figure); }
     var membres = LOTS_RAPPROCHEMENT.filter(function (l) { return comptes[l.cle] && l.cle !== 'seul'; })
       .map(function (l) { return motLotRapp(l.cle, comptes[l.cle], nom); });
     figure.setAttribute('aria-label', 'Comparaison GATES / ' + nom + ' : ' +
@@ -3372,7 +3445,7 @@
     }
     if (cle === 'emission') {
       return R.emission.map(function (x) {
-        return { ref: x.plan.reference, plan: x.plan, see: 'sous l\u2019indice ' + x.indice_la + ' (' + x.ref_la + ')' };
+        return { ref: x.plan.reference, plan: x.plan, vers: x.indice_la, see: 'sous l\u2019indice ' + x.indice_la + ' (' + x.ref_la + ')' };
       });
     }
     var see = cle === 'manque' || cle === 'attente' ? 'absent' : 'présent';
@@ -3382,8 +3455,14 @@
     var zone = $('liste-rapprochement');
     var total = ORDRE_LISTE_RAPP.reduce(function (t, cle) { return t + (comptes[cle] || 0); }, 0);
     if (!total) { zone.innerHTML = ''; return; }
+    /* En tête : le titre, le mode d'emploi en un mot, et la légende des
+       pastilles d'état — la pastille de chaque puce dit l'état du plan dans
+       GATES, il faut pouvoir la lire sans survoler. */
     var html = '\x3Cdiv class="rapp-liste-tete">\x3Ch3 class="rapp-liste-titre">Plan par plan\x3C/h3>' +
-      '\x3Cspan class="indice">d\u2019abord ce qui est \u00e0 v\u00e9rifier, puis ce qui va \u2014 un clic sur une r\u00e9f\u00e9rence la montre dans le tableau\x3C/span>\x3C/div>';
+      '\x3Cspan class="indice">d\u2019abord ce qui est \u00e0 v\u00e9rifier, puis ce qui va \u2014 un clic sur une r\u00e9f\u00e9rence la montre dans le tableau\x3C/span>' +
+      '\x3Cspan class="rapp-puces-legende" aria-label="Pastilles : \u00e9tat du plan dans GATES">' + ETATS.map(function (e) {
+        return '\x3Cspan>' + pastilleDe(e.cle) + ech(e.court) + '\x3C/span>';
+      }).join('') + '\x3C/span>\x3C/div>';
     ORDRE_LISTE_RAPP.forEach(function (cle) {
       var n = comptes[cle];
       if (!n) return;
@@ -3399,17 +3478,23 @@
       if (ouvert) {
         var rangees = rangeesLotRapp(cle).sort(function (a, b) { return COMPARER_REF(a.ref, b.ref); });
         var montrees = rangees.slice(0, MAX_LIGNES_LISTE_RAPP);
-        html += '\x3Cdiv class="rapp-groupe-corps' + (montrees.length > 12 ? ' defile-liste' : '') + '">' +
-          '\x3Ctable class="rapp-table">\x3Cthead>\x3Ctr>\x3Cth scope="col">R\u00e9f\u00e9rence\x3C/th>\x3Cth scope="col">GATES\x3C/th>\x3Cth scope="col">' + ech(nom) + '\x3C/th>\x3C/tr>\x3C/thead>\x3Ctbody>' +
+        /* Une puce par plan : sa pastille d'état, sa référence, et pour une
+           réémission la lettre sous laquelle SEE le connaît. Le détail tient
+           dans la bulle du survol ; un clic mène au tableau. */
+        html += '\x3Cdiv class="rapp-groupe-corps">\x3Cdiv class="rapp-puces">' +
           montrees.map(function (r) {
-            var ici = r.plan
-              ? pastilleDe(r.plan._etat) + ech(ETAT_PAR_CLE[r.plan._etat] ? ETAT_PAR_CLE[r.plan._etat].court : '\u2014')
-              : '\x3Cspan class="doux">aucun plan\x3C/span>';
-            var bouton = r.plan
-              ? '\x3Cbutton class="rapp-plan" type="button" data-plan-rapp="' + ech(r.ref) + '" title="Ne montrer que ce plan dans le tableau">' + ech(r.ref) + '\x3C/button>'
-              : '\x3Cbutton class="rapp-plan" type="button" data-ligne-la="' + ech(r.la) + '" title="Voir cette ligne dans le tableau de ' + ech(nom) + '">' + ech(r.ref) + '\x3C/button>';
-            return '\x3Ctr>\x3Ctd>' + bouton + '\x3C/td>\x3Ctd>' + ici + '\x3C/td>\x3Ctd>' + ech(r.see) + '\x3C/td>\x3C/tr>';
-          }).join('') + '\x3C/tbody>\x3C/table>' +
+            var etat = r.plan ? r.plan._etat : '';
+            var motEtat = r.plan ? (ETAT_PAR_CLE[etat] ? ETAT_PAR_CLE[etat].court : '\u2014') + ' dans GATES' : 'aucun plan dans GATES';
+            var bulle = motEtat + ' \u00b7 ' + r.see + ' dans ' + nom +
+              (r.plan ? ' \u2014 ne montrer que ce plan dans le tableau' : ' \u2014 voir cette ligne dans le tableau de ' + nom);
+            var attrs = r.plan
+              ? ' data-plan-rapp="' + ech(r.ref) + '" data-etat="' + ech(etat) + '"'
+              : ' data-ligne-la="' + ech(r.la) + '"';
+            return '\x3Cbutton class="rapp-puce" type="button"' + attrs + ' data-see="' + ech(r.see) + '" title="' + ech(bulle) + '">' +
+              (r.plan ? pastilleDe(etat) : '') +
+              '\x3Cspan class="rapp-puce-ref">' + ech(r.ref) + '\x3C/span>' +
+              (r.vers ? '\x3Cspan class="rapp-puce-vers">\u2192 ' + ech(r.vers) + '\x3C/span>' : '') + '\x3C/button>';
+          }).join('') + '\x3C/div>' +
           (rangees.length > montrees.length
             ? '\x3Cdiv class="rapp-groupe-suite">et ' + nb(rangees.length - montrees.length) + ' autres \u2014 \x3Cbutton type="button" class="lien-doux" data-rapp-tout="' + cle + '">les voir tous dans le tableau\x3C/button>\x3C/div>'
             : '') +
@@ -3451,7 +3536,7 @@
     } else if (cle === 'emission') {
       tete = 'Le même plan, sous un autre indice';
       var paires = R.emission.map(function (x) { return ech(x.plan.reference) + ' \u2192 ' + ech(x.ref_la.slice(-4)); });
-      corps = '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille neutre">\x3C/span>' + nb(n) + (pl ? ' plans' : ' plan') + '\x3C/div>' +
+      corps = '\x3Cdiv class="bulle-ligne">\x3Cspan class="pastille indice">\x3C/span>' + nb(n) + (pl ? ' plans' : ' plan') + '\x3C/div>' +
         (paires.length ? '\x3Cdiv class="liste-refs">' + paires.slice(0, MAX_PAIRES_RAPP).join('\x3Cbr>') +
           (paires.length > MAX_PAIRES_RAPP ? '\x3Cbr>\x3Cspan class="doux">et ' + nb(paires.length - MAX_PAIRES_RAPP) + ' autres\u2026\x3C/span>' : '') + '\x3C/div>' : '');
     } else if (cle === 'avance') {
@@ -3514,8 +3599,8 @@
      nombres disent le reste. */
   function figureRapprochement(c, R, nom, perimetre) {
     var nP = R.nbPlans, nT = R.nbTermines, nL = R.nbLignes, nCommun = c.accord + c.emission + c.avance;
-    var cx1 = 200, cx2 = 330, cy = 172, r = 118, cxm = (cx1 + cx2) / 2, ra = 34;
-    var s = ['\x3Csvg viewBox="0 0 530 336" aria-hidden="true">'];
+    var cx1 = 206, cx2 = 344, cy = 186, r = 132, cxm = (cx1 + cx2) / 2, ra = 40;
+    var s = ['\x3Csvg viewBox="0 0 550 368" aria-hidden="true">'];
     s.push('\x3Ctext class="base-nom" x="' + (cx1 - 56) + '" y="26" text-anchor="middle">GATES\x3C/text>');
     s.push('\x3Ctext class="base-compte" x="' + (cx1 - 56) + '" y="42" text-anchor="middle">' + nb(nP) + (nP > 1 ? ' plans' : ' plan') + (perimetre ? ' du périmètre' : '') +
       ' · ' + nb(nT) + (nT > 1 ? ' terminés' : ' terminé') + '\x3C/text>');
@@ -3527,17 +3612,23 @@
     /* Les côtés : ce que chaque base est seule à connaître. À gauche, le
        nombre qui compte — des terminés sans plan là — et, dessous, ceux qui
        attendent simplement leur tour. */
+    /* Les mots des côtés tiennent sur deux lignes, pour rester dans le
+       croissant de leur cercle sans en toucher les bords. */
     s.push('\x3Cg class="cote cote-manque' + (c.manque ? '' : ' zero') + '" data-cle="manque">' +
-      '\x3Ctext class="grand" x="' + (cx1 - 52) + '" y="' + (cy - 2) + '" text-anchor="middle">' + nb(c.manque) + '\x3C/text>' +
-      '\x3Ctext class="petit" x="' + (cx1 - 52) + '" y="' + (cy + 18) + '" text-anchor="middle">' + (c.manque > 1 ? 'terminés sans ' : 'terminé sans ') + ech(nom) + '\x3C/text>\x3C/g>');
-    /* Ce qui attend son tour se lit sous le cercle : c'est un renseignement,
-       pas un écart — il ne doit pas encombrer l'intérieur. */
+      '\x3Ctext class="grand" x="' + (cx1 - 60) + '" y="' + (cy - 4) + '" text-anchor="middle">' + nb(c.manque) + '\x3C/text>' +
+      '\x3Ctext class="petit" x="' + (cx1 - 60) + '" y="' + (cy + 16) + '" text-anchor="middle">\x3Ctspan>' + (c.manque > 1 ? 'terminés ' : 'terminé ') + '\x3C/tspan>' +
+      '\x3Ctspan x="' + (cx1 - 60) + '" dy="15">sans ' + ech(nom) + '\x3C/tspan>\x3C/text>\x3C/g>');
+    /* Ce qui attend son tour se lit dans le cercle aussi — ces plans sont
+       de GATES —, sous les terminés sans SEE, plus discret : un
+       renseignement, pas un écart. */
     s.push('\x3Cg class="cote cote-attente" data-cle="attente">' +
-      '\x3Ctext class="petit" x="' + cx1 + '" y="' + (cy + r + 26) + '" text-anchor="middle">\x3Ctspan class="moyen">' + nb(c.attente) + '\x3C/tspan> pas encore dans ' + ech(nom) + '\x3C/text>\x3C/g>');
+      '\x3Ctext class="petit" x="' + (cx1 - 60) + '" y="' + (cy + 62) + '" text-anchor="middle">\x3Ctspan class="moyen">' + nb(c.attente) + '\x3C/tspan>\x3Ctspan> pas encore \x3C/tspan>' +
+      '\x3Ctspan x="' + (cx1 - 60) + '" dy="15">dans ' + ech(nom) + '\x3C/tspan>\x3C/text>\x3C/g>');
     s.push('\x3Cg class="cote cote-seul" data-cle="seul">' +
-      '\x3Ctext class="grand" x="' + (cx2 + 52) + '" y="' + (cy + 4) + '" text-anchor="middle">' + nb(c.seul) + '\x3C/text>' +
-      '\x3Ctext class="petit" x="' + (cx2 + 52) + '" y="' + (cy + 24) + '" text-anchor="middle">seulement dans ' + ech(nom) + '\x3C/text>' +
-      (perimetre ? '\x3Ctext class="petit" x="' + (cx2 + 52) + '" y="' + (cy + 40) + '" text-anchor="middle">tout le contrat\x3C/text>' : '') + '\x3C/g>');
+      '\x3Ctext class="grand" x="' + (cx2 + 60) + '" y="' + (cy - 4) + '" text-anchor="middle">' + nb(c.seul) + '\x3C/text>' +
+      '\x3Ctext class="petit" x="' + (cx2 + 60) + '" y="' + (cy + 16) + '" text-anchor="middle">\x3Ctspan>seulement \x3C/tspan>' +
+      '\x3Ctspan x="' + (cx2 + 60) + '" dy="15">dans ' + ech(nom) + '\x3C/tspan>\x3C/text>' +
+      (perimetre ? '\x3Ctext class="petit" x="' + (cx2 + 60) + '" y="' + (cy + 47) + '" text-anchor="middle">tout le contrat\x3C/text>' : '') + '\x3C/g>');
     /* Le milieu : l'anneau des plans en commun, en trois parts. */
     s.push('\x3Ccircle class="donut-fond" cx="' + cxm + '" cy="' + cy + '" r="' + ra + '"/>');
     var parts = [['accord', 'accord'], ['emission', 'emission'], ['avance', 'avance']]
@@ -3556,7 +3647,7 @@
       else if (a1 > a0) s.push('\x3Cpath class="donut-seg ' + p[1] + '" data-cle="' + p[0] + '" data-n="' + c[p[0]] + '" d="' + arcAnneau(cxm, cy, ra, a0, a1) + '"/>');
       angle += portion;
     });
-    s.push('\x3Ctext class="grand commun-n" x="' + cxm + '" y="' + (cy + 9) + '" text-anchor="middle">' + nb(nCommun) + '\x3C/text>');
+    s.push('\x3Ctext class="grand commun-n' + (nb(nCommun).length > 3 ? ' serre' : '') + '" x="' + cxm + '" y="' + (cy + (nb(nCommun).length > 3 ? 7 : 9)) + '" text-anchor="middle">' + nb(nCommun) + '\x3C/text>');
     s.push('\x3Ctext class="petit commun-mot" x="' + cxm + '" y="' + (cy + ra + 26) + '" text-anchor="middle">en commun\x3C/text>');
     s.push('\x3C/svg>');
     return s.join('');
@@ -3944,6 +4035,35 @@
 
   /* Survoler un bouton ou un segment du rapprochement éclaire le segment et
      ouvre la bulle ; le focus clavier éclaire seulement. */
+  /* Survoler un jalon dans la légende l'éclaire sur le graphique, et fait
+     paraître son texte s'il était masqué faute de place. */
+  /* Le jalon éclairé passe au-dessus de ses voisins — son texte, révélé,
+     ne doit pas se lire sous leurs marqueurs — et reprend sa place ensuite,
+     pour que l'ordre du dessin reste celui des jalons. */
+  function eclairerJalon(idx, allume) {
+    var g = document.querySelector('svg.graphe .jalon[data-jalon="' + idx + '"]');
+    if (!g) return;
+    if (allume) {
+      g.classList.add('survole');
+      if (!g.__suivant) { g.__suivant = g.nextSibling; g.parentNode.appendChild(g); }
+    } else {
+      g.classList.remove('survole');
+      if (g.__suivant !== undefined) { g.parentNode.insertBefore(g, g.__suivant); g.__suivant = undefined; }
+    }
+  }
+  ['mouseover', 'focusin'].forEach(function (ev) {
+    $('legende-jalons').addEventListener(ev, function (e) {
+      var el = e.target.closest('[data-jalon]');
+      if (el) eclairerJalon(el.dataset.jalon, true);
+    });
+  });
+  ['mouseout', 'focusout'].forEach(function (ev) {
+    $('legende-jalons').addEventListener(ev, function (e) {
+      var el = e.target.closest('[data-jalon]');
+      if (el) eclairerJalon(el.dataset.jalon, false);
+    });
+  });
+
   $('rapprochement').addEventListener('mousemove', function (e) {
     var cible = e.target.closest && e.target.closest('#venn-rapprochement [data-cle], #verdicts-rapprochement button[data-cle]:not([disabled])');
     var cle = cible ? cible.getAttribute('data-cle') : null;
@@ -4228,10 +4348,9 @@
   chargerPrefs();
   remplirDims();
   rendre();
-  /* L'interrupteur n'a d'objet que devant un classeur. Et quand celui-ci n'a
-     encore rien donné, la page s'ouvre sur la démonstration plutôt que vide :
-     on voit ce qu'elle sera, et l'alerte dit ce qui manque. */
-  $('mode-donnees').hidden = !SERVEUR;
+  /* Quand le classeur n'a encore rien donné, la page s'ouvre sur la
+     démonstration plutôt que vide : on voit ce qu'elle sera, et l'alerte dit
+     ce qui manque. */
   if (SERVEUR && !PLANS.length) basculerExemple(true);
 })();
 </script>

@@ -38,10 +38,10 @@
   <div class="filtres-actifs" id="filtres-actifs" hidden></div>
 
   <div class="bandeau-mode" id="bandeau-mode">
-    <!-- Visible devant un classeur seulement (voir l'initialisation) : c'est
-         là qu'il y a deux choses à comparer. La démonstration seule n'a rien
-         de « réel » à montrer, l'interrupteur y resterait sans objet. -->
-    <span class="segmente" id="mode-donnees" role="group" aria-label="Source des données" hidden>
+    <!-- Toujours visible : devant un classeur, il compare les données réelles
+         à un historique fabriqué ; dans la démonstration seule, il montre le
+         même geste — c'est ainsi qu'on l'explique à quelqu'un. -->
+    <span class="segmente" id="mode-donnees" role="group" aria-label="Source des données">
       <button type="button" data-mode="reel" aria-pressed="true">Données réelles</button>
       <button type="button" data-mode="exemple" aria-pressed="false">Exemple</button>
     </span>
@@ -102,6 +102,7 @@
       </div>
       <p class="note-graphe" id="note-graphe"></p>
       <div class="legende" id="legende"></div>
+      <div class="legende legende-jalons" id="legende-jalons"></div>
     </div>
 
     <!-- Le journal appartient au graphe : la courbe dit combien, le journal
@@ -113,7 +114,7 @@
         <button type="button" data-journal="termine" aria-pressed="false"><span class="pastille" style="background:var(--fait)"></span>Terminés</button>
         <button type="button" data-journal="encours" aria-pressed="false"><span class="pastille" style="background:var(--cours)"></span>En cours</button>
         <button type="button" data-journal="afaire" aria-pressed="false"><span class="pastille" style="background:var(--afaire)"></span>À faire</button>
-        <button type="button" data-journal="indice" aria-pressed="false"><span class="pastille neutre"></span>Changement d’indice</button>
+        <button type="button" data-journal="indice" aria-pressed="false"><span class="pastille indice"></span>Changement d’indice</button>
       </span>
     </div>
     <div class="feuille">
@@ -221,11 +222,6 @@
   <section class="bloc rapprochement" id="rapprochement" hidden>
     <div class="section-tete">
       <h2 id="titre-rapprochement">Comparaison des bases de données</h2>
-      <span class="compte" id="compte-rapprochement"></span>
-    </div>
-    <div class="rapp-phrases">
-      <div class="phrase" id="phrase-rapprochement"></div>
-      <p class="rapp-sous" id="sous-rapprochement"></p>
     </div>
     <div class="rapp-face">
       <div class="rapp-figure" id="venn-rapprochement" role="img" aria-label="Comparaison GATES / seconde base"></div>

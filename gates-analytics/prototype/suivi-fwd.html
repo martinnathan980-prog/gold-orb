@@ -16,6 +16,10 @@
   --cours:  #bf7f14;
   --afaire: #71716a;
   --alerte: #a13b2a;
+  /* Le changement d'indice : ni un état ni une alerte, une couleur à lui —
+     un violet, distinct des trois états et du rouge, validé sur les deux
+     fonds. */
+  --indice: #5b4fcf;
   /* Encre posee sur un aplat plein : claire sur les verts et gris soutenus du
      mode clair, sombre sur les memes aplats eclaircis du mode sombre. */
   --sur-plein: #ffffff;
@@ -34,7 +38,7 @@
     --papier: #0d0d0c; --surface: #16161a; --creux: #1c1c20;
     --encre: #f1f0ea; --encre-2: #a6a49a; --encre-3: #7b7970;
     --filet: #272725; --filet-fort: #3d3c37;
-    --fait: #6fae82; --cours: #dda434; --afaire: #8f8f88; --alerte: #e0745c;
+    --fait: #6fae82; --cours: #dda434; --afaire: #8f8f88; --alerte: #e0745c; --indice: #9d8cff;
     --sur-plein: #11110f;
     --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
     --focus: #6fae82;
@@ -45,7 +49,7 @@
   --papier: #0d0d0c; --surface: #16161a; --creux: #1c1c20;
   --encre: #f1f0ea; --encre-2: #a6a49a; --encre-3: #7b7970;
   --filet: #272725; --filet-fort: #3d3c37;
-  --fait: #6fae82; --cours: #dda434; --afaire: #8f8f88; --alerte: #e0745c;
+  --fait: #6fae82; --cours: #dda434; --afaire: #8f8f88; --alerte: #e0745c; --indice: #9d8cff;
   --sur-plein: #11110f;
   --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
   --focus: #6fae82;
@@ -141,7 +145,7 @@ body {
 .pastille { width: 9px; height: 9px; border-radius: 2px; flex: none; }
 /* Un changement d'indice n'est pas un état : sa pastille est un anneau, pas
    un aplat. « sans » tient la place d'une pastille pour garder l'alignement. */
-.pastille.neutre { background: transparent; box-shadow: inset 0 0 0 1.5px var(--encre-3); }
+.pastille.indice { background: var(--indice); }
 .pastille.sans { background: transparent; }
 /* Sous 680 px les segments sont trop étroits pour porter une étiquette :
    on repasse à une grille régulière. */
@@ -293,7 +297,7 @@ body[data-exemple="true"] .bandeau-mode {
   display: flex; gap: 2px; height: 6px; width: 96px; flex: none; margin-left: auto;
 }
 .journal-tete .mini-jauge span { display: block; min-width: 2px; }
-.journal-tete .mini-jauge .indice { background: transparent; box-shadow: inset 0 0 0 1.5px var(--encre-3); }
+.journal-tete .mini-jauge .indice { background: var(--indice); }   /* le changement d'indice, en violet ici aussi */
 .journal-tete .mini-jauge .nouveau { background: var(--filet-fort); }
 .journal-tete .mini-jauge .disparu { background: transparent; box-shadow: inset 0 0 0 1.5px var(--filet-fort); }
 .journal-tete .mini-jauge .vide {
@@ -322,7 +326,7 @@ body[data-exemple="true"] .bandeau-mode {
 /* Une réémission : l'ancienne référence au-dessus, effacée, la nouvelle dessous. */
 .journal-ligne .ref-indice { display: grid; gap: 1px; }
 .journal-ligne .ref-indice .ancienne { color: var(--encre-3); }
-.journal-ligne .ref-indice .nouvelle { white-space: nowrap; }
+.journal-ligne .ref-indice .nouvelle { white-space: nowrap; color: var(--indice); }
 .journal-ligne .quoi {
   color: var(--encre-3); font-size: 12.5px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -446,10 +450,44 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 /* Survoler une semaine l'éclaire d'une bande discrète, sous la bulle. */
 .zone-clic:hover { fill: var(--filet); fill-opacity: .55; }
 .annee { font-size: 10px; fill: var(--encre-3); font-family: "IBM Plex Mono", monospace; letter-spacing: .04em; }
-.jalon-texte { font-size: 11.5px; fill: var(--encre-2); font-weight: 500; }
+.jalon-texte {
+  font-size: 11.5px; fill: var(--encre-2); font-weight: 500;
+  paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round;   /* un halo : lisible sur un trait ou un marqueur voisin */
+}
+.jalon-texte.masque { display: none; }
+.jalon-num { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600; fill: var(--surface); pointer-events: none; }
+.jalon.survole line { stroke-width: 2; opacity: 1; }
+.jalon.survole .jalon-marque { stroke: var(--encre); stroke-width: 2; }
+.jalon.survole .jalon-texte.masque { display: block; transform: translateY(24px); }   /* révélé sous la rangée des marqueurs, pas par-dessus les voisins */
+.jalon.critique .jalon-texte { fill: var(--alerte); }   /* l'échéance manquée : rouge sur le graphique comme dans la légende */
+/* La ligne des jalons prolonge la légende du graphique : même rangée, sans second filet. */
+.legende.legende-jalons { gap: 6px 18px; margin-top: 4px; padding-top: 0; border-top: 0; }
+.legende-jalons:empty { display: none; }
+.legende-jalons-mot { color: var(--encre-3); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.legende-jalon { display: inline-flex; align-items: center; gap: 6px; cursor: default; border-radius: 4px; }
+.legende-jalon:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
+.legende-jalon .num {
+  display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--encre-2); color: var(--surface); font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600;
+}
+.legende-jalon .mot { color: var(--encre); }
+.legende-jalon .quand { color: var(--encre-2); font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+/* Hors du périmètre choisi : le numéro reste net (c'est le lien avec le
+   graphique), seul le reste s'efface un peu. */
+.legende-jalon.hors-perimetre .num { background: var(--surface); color: var(--encre-2); box-shadow: inset 0 0 0 1.5px var(--encre-3); }
+.legende-jalon.hors-perimetre .mot, .legende-jalon.hors-perimetre .quand { opacity: .7; }
+/* Hors de la fenêtre affichée : dans la légende, mais nulle part sur le dessin. */
+.legende-jalon.hors-fenetre { opacity: .55; }
+.legende-jalon.critique .num { background: var(--alerte); }
+.legende-jalon.critique .mot { color: var(--alerte); }
+.legende-jalon:hover .mot, .legende-jalon:focus-visible .mot { text-decoration: underline; text-underline-offset: 3px; }
 /* Un jalon d'un autre périmètre que celui choisi : dessiné, mais en retrait —
-   il ne fait pas l'échéance ici. */
-.jalon.hors-perimetre { opacity: .38; }
+   il ne fait pas l'échéance ici. Le marqueur se creuse et garde son numéro
+   lisible ; le trait et le texte s'estompent. */
+.jalon.hors-perimetre line { opacity: .35; }
+.jalon.hors-perimetre .jalon-marque { fill: var(--surface); stroke: var(--encre-3); stroke-width: 1.5; }
+.jalon.hors-perimetre .jalon-num { fill: var(--encre-2); }
+.jalon.hors-perimetre .jalon-texte { fill: var(--encre-3); }
 
 .note-graphe { margin: 12px 0 0; text-align: center; font-size: 12px; color: var(--encre-3); }
 .note-graphe:empty { display: none; }
@@ -478,10 +516,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
    en commun au milieu, ce que chacune est seule à connaître sur les côtés —
    et, au cœur du recouvrement, un anneau qui dit d'un coup d'œil la part
    d'identiques. À droite, une ligne par verdict, en français, cliquable. */
-.rapp-phrases { margin-bottom: 14px; }
-.rapp-sous { margin: 4px 0 0; font-size: 13px; color: var(--encre-2); max-width: 90ch; }
-.rapp-sous:empty { display: none; }
-.rapp-face { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); gap: 18px 32px; align-items: center; }
+.rapp-face { display: grid; grid-template-columns: minmax(0, 12fr) minmax(0, 8fr); gap: 18px 36px; align-items: center; }
 @media (max-width: 860px) { .rapp-face { grid-template-columns: 1fr; } }
 .rapp-figure { min-width: 0; }
 .rapp-figure svg { width: 100%; height: auto; display: block; overflow: visible; }
@@ -491,23 +526,36 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .rapp-figure .cote { pointer-events: all; cursor: default; }
 .rapp-figure .cote text { pointer-events: all; }
 .rapp-figure .donut-seg { pointer-events: stroke; }
-.rapp-figure .base-nom { font-size: 13px; font-weight: 500; fill: var(--encre); letter-spacing: .05em; }
-.rapp-figure .base-compte { font-size: 11.5px; fill: var(--encre-2); }
+.rapp-figure .base-nom { font-size: 14px; font-weight: 500; fill: var(--encre); letter-spacing: .05em; }
+.rapp-figure .base-compte { font-size: 12px; fill: var(--encre-2); }
 .rapp-figure .cercle-ici { fill: var(--r2); fill-opacity: .5; stroke: var(--fait); stroke-width: 1.5; }
 .rapp-figure .cercle-la { fill: none; stroke: var(--encre-3); stroke-width: 1.5; stroke-dasharray: 5 4; }
-.rapp-figure .grand { font-family: "IBM Plex Mono", monospace; font-size: 26px; font-variant-numeric: tabular-nums; fill: var(--encre); }
-.rapp-figure .petit { font-size: 11px; fill: var(--encre-2); }
+.rapp-figure .grand { font-family: "IBM Plex Mono", monospace; font-size: 30px; font-variant-numeric: tabular-nums; fill: var(--encre); }
+.rapp-figure .petit { font-size: 12px; fill: var(--encre-2); }
+.rapp-figure .commun-n { font-size: 34px; }
+.rapp-figure .commun-n.serre { font-size: 24px; }
 .rapp-figure .cote-manque .grand { fill: var(--alerte); }
 .rapp-figure .cote-manque.zero .grand { fill: var(--encre-3); }
 .rapp-figure .cote-attente .moyen { font-family: "IBM Plex Mono", monospace; font-size: 14px; font-variant-numeric: tabular-nums; fill: var(--encre); }
 .rapp-figure .cote-seul .grand { fill: var(--encre-2); }
-.rapp-figure .donut-fond { fill: none; stroke: var(--filet); stroke-width: 12; }
-.rapp-figure .donut-seg { fill: none; stroke-width: 12; stroke-linecap: butt; transition: stroke-width .12s; }
+.rapp-figure .donut-fond { fill: none; stroke: var(--filet); stroke-width: 14; }
+.rapp-figure .donut-seg { fill: none; stroke-width: 14; stroke-linecap: butt; transition: stroke-width .12s; }
+/* À l'apparition : les cercles s'installent, l'anneau se trace. Rien de tout
+   cela si le lecteur préfère moins de mouvement. */
+.rapp-figure svg.anime .cercle-ici, .rapp-figure svg.anime .cercle-la { animation: rapp-arrive .55s ease-out both; transform-origin: center; transform-box: fill-box; }
+.rapp-figure svg.anime .donut-seg { stroke-dasharray: 400; stroke-dashoffset: 400; animation: rapp-trace .9s cubic-bezier(.2, .7, .2, 1) .25s forwards; }
+.rapp-figure svg.anime .grand, .rapp-figure svg.anime .petit, .rapp-figure svg.anime .base-nom, .rapp-figure svg.anime .base-compte { animation: rapp-fondu .5s ease-out .45s both; }
+@keyframes rapp-arrive { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes rapp-trace { to { stroke-dashoffset: 0; } }
+@keyframes rapp-fondu { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .rapp-figure svg.anime * { animation: none !important; stroke-dashoffset: 0 !important; }
+}
 .rapp-figure .donut-seg.accord { stroke: var(--fait); }
-.rapp-figure .donut-seg.emission { stroke: var(--encre-3); }
+.rapp-figure .donut-seg.emission { stroke: var(--indice); }
 .rapp-figure .donut-seg.avance { stroke: var(--cours); }
 /* Survoler un verdict éclaire sa part de la figure. */
-.rapp-figure .donut-seg.survole { stroke-width: 18; }
+.rapp-figure .donut-seg.survole { stroke-width: 20; }
 .rapp-figure .cote.survole .grand { text-decoration: underline; text-underline-offset: 3px; }
 .rapp-figure .cote.survole .petit { fill: var(--encre); }
 .rapp-figure .cote.survole .moyen { text-decoration: underline; text-underline-offset: 3px; }
@@ -535,6 +583,9 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .rapp-liste:empty { display: none; }
 .rapp-liste-tete { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
 .rapp-liste-titre { font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 17px; margin: 0; }
+.rapp-puces-legende { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; margin-left: auto; font-size: 12.5px; color: var(--encre-2); }
+.rapp-puces-legende > span { display: inline-flex; align-items: center; gap: 5px; }
+.rapp-puces-legende .pastille { width: 8px; height: 8px; }
 .rapp-groupe { border-top: 1px solid var(--filet); }
 .rapp-groupe:last-child { border-bottom: 1px solid var(--filet); }
 .rapp-groupe-tete {
@@ -551,24 +602,26 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
    téléphone, la troisième colonne se replie sur plusieurs lignes, la
    référence entre parenthèses comprise. */
 .rapp-groupe-corps { padding: 0 4px 10px; overflow-x: auto; }
-.rapp-groupe-corps.defile-liste { max-height: 340px; }
-.rapp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.rapp-table th { text-align: left; font-weight: 500; color: var(--encre-3); font-size: 11.5px; padding: 2px 10px 5px 0; }
-.rapp-table td { padding: 4px 10px 4px 0; border-top: 1px solid var(--filet); white-space: nowrap; vertical-align: middle; }
-.rapp-table td:last-child { white-space: normal; overflow-wrap: anywhere; padding-right: 0; }
-.rapp-table td .pastille { display: inline-block; vertical-align: -1px; margin-right: 6px; }
-.rapp-plan {
-  font-family: "IBM Plex Mono", monospace; font-size: 12.5px; background: none; border: 0; padding: 0;
-  color: var(--encre); cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px;
+/* Les puces : une référence par puce, sa pastille d'état à gauche, la
+   lettre d'une réémission à droite. Elles coulent sur la ligne — douze
+   plans tiennent en deux lignes, pas en douze. */
+.rapp-puces { display: flex; flex-wrap: wrap; gap: 6px 8px; padding: 2px 4px 12px; }
+.rapp-puce {
+  display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--filet-fort); border-radius: 999px;
+  background: var(--surface); padding: 4px 11px 4px 9px; font-family: "IBM Plex Mono", monospace; font-size: 12px;
+  color: var(--encre); cursor: pointer; line-height: 1.2;
 }
-.rapp-plan:hover { color: var(--accent, var(--encre)); text-decoration-style: solid; }
+.rapp-puce:hover { border-color: var(--encre); background: var(--creux); }
+.rapp-puce:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
+.rapp-puce .pastille { width: 8px; height: 8px; }
+.rapp-puce-vers { color: var(--indice); font-weight: 600; }
 .rapp-groupe-suite { font-size: 12.5px; color: var(--encre-2); padding-top: 8px; }
 @media (max-width: 720px) { .rapp-groupe-tete .rapp-groupe-phrase { display: none; } }
 .pastille.accord { background: var(--fait); }
 .pastille.avance { background: var(--cours); }
 .pastille.manque { background: var(--alerte); }
 .pastille.attente { background: var(--filet-fort); }
-.pastille.seul { background: transparent; border: 1.5px dashed var(--encre-3); box-sizing: border-box; }
+.pastille.seul { background: transparent; border: 2px solid var(--encre-2); box-sizing: border-box; }
 /* Le tableau de la seconde base : le verdict en pastille dans la cellule de
    la référence, les cases à cocher de l'extract en ✓ / –. */
 table.plans td.coche { text-align: center; color: var(--encre-2); }
@@ -855,10 +908,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
   <div class="filtres-actifs" id="filtres-actifs" hidden></div>
 
   <div class="bandeau-mode" id="bandeau-mode">
-    <!-- Visible devant un classeur seulement (voir l'initialisation) : c'est
-         là qu'il y a deux choses à comparer. La démonstration seule n'a rien
-         de « réel » à montrer, l'interrupteur y resterait sans objet. -->
-    <span class="segmente" id="mode-donnees" role="group" aria-label="Source des données" hidden>
+    <!-- Toujours visible : devant un classeur, il compare les données réelles
+         à un historique fabriqué ; dans la démonstration seule, il montre le
+         même geste — c'est ainsi qu'on l'explique à quelqu'un. -->
+    <span class="segmente" id="mode-donnees" role="group" aria-label="Source des données">
       <button type="button" data-mode="reel" aria-pressed="true">Données réelles</button>
       <button type="button" data-mode="exemple" aria-pressed="false">Exemple</button>
     </span>
@@ -919,6 +972,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       </div>
       <p class="note-graphe" id="note-graphe"></p>
       <div class="legende" id="legende"></div>
+      <div class="legende legende-jalons" id="legende-jalons"></div>
     </div>
 
     <!-- Le journal appartient au graphe : la courbe dit combien, le journal
@@ -930,7 +984,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
         <button type="button" data-journal="termine" aria-pressed="false"><span class="pastille" style="background:var(--fait)"></span>Terminés</button>
         <button type="button" data-journal="encours" aria-pressed="false"><span class="pastille" style="background:var(--cours)"></span>En cours</button>
         <button type="button" data-journal="afaire" aria-pressed="false"><span class="pastille" style="background:var(--afaire)"></span>À faire</button>
-        <button type="button" data-journal="indice" aria-pressed="false"><span class="pastille neutre"></span>Changement d’indice</button>
+        <button type="button" data-journal="indice" aria-pressed="false"><span class="pastille indice"></span>Changement d’indice</button>
       </span>
     </div>
     <div class="feuille">
@@ -1038,11 +1092,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
   <section class="bloc rapprochement" id="rapprochement" hidden>
     <div class="section-tete">
       <h2 id="titre-rapprochement">Comparaison des bases de données</h2>
-      <span class="compte" id="compte-rapprochement"></span>
-    </div>
-    <div class="rapp-phrases">
-      <div class="phrase" id="phrase-rapprochement"></div>
-      <p class="rapp-sous" id="sous-rapprochement"></p>
     </div>
     <div class="rapp-face">
       <div class="rapp-figure" id="venn-rapprochement" role="img" aria-label="Comparaison GATES / seconde base"></div>
@@ -1861,6 +1910,28 @@ table.plans thead tr th.col-fige { z-index: 6; }
   var COLONNES, PAR_CLE, CLE_DATE, PLANS, RELEVES_SRC, BASE, AUJ;
   var CLES_DIM, CLE_DOMAINE, CLES_ESSENTIELLES, VAUT_ESSENTIELLES, CLE_LIBELLE;
   var RELEVES, DERNIER, EVENEMENTS_IMPORT, COMPARATIF, RAPPROCHEMENT, jalons;
+  /* La figure de la comparaison s'anime une fois par source : le drapeau se
+     lève au chargement, le premier rendu le consomme. */
+  var ANIMER_FIGURE = false, GUETTEUR_FIGURE = null;
+  /* On guette le cadre de la figure, pas son SVG : un filtre ou un
+     périmètre touché avant d'arriver là redessine le SVG, et le cadre, lui,
+     demeure. À l'apparition, c'est le SVG du moment qui s'anime. */
+  function animerALApparition(cadre) {
+    if (!cadre) return;
+    if (GUETTEUR_FIGURE) { GUETTEUR_FIGURE.disconnect(); GUETTEUR_FIGURE = null; }
+    var animer = function () { var svg = cadre.querySelector('svg'); if (svg) svg.classList.add('anime'); };
+    if (!window.IntersectionObserver) { animer(); return; }
+    var obs = new IntersectionObserver(function (entrees) {
+      entrees.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        animer();
+        obs.disconnect();
+        if (GUETTEUR_FIGURE === obs) GUETTEUR_FIGURE = null;
+      });
+    }, { threshold: 0.35 });
+    GUETTEUR_FIGURE = obs;
+    obs.observe(cadre);
+  }
   var DIMENSIONS, TITRE_DIM, ORDRE_FEUILLE, PLAN_PAR_REF, PLAN_PAR_RACINE, JOURNAL;
   var RELEVES_REELS, AUJ_REEL, BASE_REELLE;
   var CONTRATS, CONTRAT;
@@ -1981,6 +2052,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
   function chargerSource(src) {
     SRC = src;
     if (!src.exemple) SRC_REELLE = src;
+    ANIMER_FIGURE = true;
 
     PLANS = src.plans;
     /* Le tableau est l'extract, à une exception près, décidée par l'utilisateur :
@@ -2213,7 +2285,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       ? '<b>Démonstration</b> — le classeur n\'a pas encore de données : trois contrats fictifs, pour voir la page entière.'
       : actif
         ? '<b>Historique fabriqué</b> — un aperçu de ce que la page montrera quand les relevés se seront accumulés.'
-        : '';
+        : SERVEUR ? '' : '<b>Démonstration</b> — trois contrats fictifs ; devant votre classeur, ce mode montre vos données.';
     /* Ce que le classeur a à dire — feuille vide, colonne d'avancement
        absente — s'affiche à côté, en alerte : hors exemple, et sous la
        démonstration aussi, puisque c'est la raison d'y être. */
@@ -2803,7 +2875,54 @@ table.plans thead tr th.col-fige { z-index: 6; }
   }
   var L = 980, mG = 36, mD = 72, plotH = 176, ecart = 16, bandeH = 30, mBas = 34;
   var mHaut = 44, H = mHaut + plotH + ecart + bandeH + mBas;
-  var HAUTEUR_ETIQUETTE = 17;
+  var HAUTEUR_ETIQUETTE = 23;   // un niveau de marqueurs (rayon 10) et son interligne
+  /* Le texte d'un jalon ne se dessine que s'il tient, mesuré sur le dessin
+     lui-même — les polices diffèrent d'un poste à l'autre, une estimation
+     au caractère trompe. Il doit tenir jusqu'au marqueur du jalon visible
+     suivant, jusqu'au mot « aujourd'hui » s'il vient après, et jusqu'au bord
+     droit du cadre — ou, à défaut, à gauche du marqueur. Sinon il se masque :
+     la légende le redit, et le survol le fait paraître. */
+  /* Une police web qui arrive après le premier dessin change la largeur
+     des textes : la décision « tient / ne tient pas » se rejoue alors sur
+     le dessin du moment. Un seul écouteur, posé une fois. */
+  var POLICES_GUETTEES = false;
+  function guetterLesPolices() {
+    if (POLICES_GUETTEES || !document.fonts || !document.fonts.addEventListener) return;
+    POLICES_GUETTEES = true;
+    document.fonts.addEventListener('loadingdone', function () {
+      var svg = $('zone-graphe').querySelector('svg.graphe');
+      if (svg && svg.__ajusterJalons) svg.__ajusterJalons();
+    });
+  }
+  function ajusterTextesJalons(svg, bordGauche, bordDroit, xAuj) {
+    if (!svg) return;
+    var reperes = [].slice.call(svg.querySelectorAll('.jalon[data-jalon]')).map(function (g) {
+      return { texte: g.querySelector('.jalon-texte'), jx: +g.querySelector('.jalon-marque').getAttribute('cx') };
+    }).sort(function (a, b) { return a.jx - b.jx; });
+    reperes.forEach(function (r, k) {
+      var t = r.texte, largeur = 0;
+      if (!t) return;
+      t.classList.remove('masque');
+      t.setAttribute('text-anchor', 'start'); t.setAttribute('x', (r.jx + 14).toFixed(1));
+      try { largeur = t.getComputedTextLength(); } catch (e) { largeur = 0; }
+      if (!(largeur > 0)) largeur = t.textContent.length * 6.1;
+      var droite = bordDroit + 30;
+      if (reperes[k + 1]) droite = Math.min(droite, reperes[k + 1].jx - 11);
+      if (xAuj !== null && xAuj > r.jx) droite = Math.min(droite, xAuj - 72);
+      if (r.jx + 14 + largeur + 6 <= droite) { r.finTexte = r.jx + 14 + largeur; return; }
+      /* Pas la place à droite : à gauche, alors, s'il y tient — après le
+         marqueur précédent et le texte qu'il a pu écrire à sa droite, ou
+         après le trait d'aujourd'hui. */
+      var gauche = bordGauche;
+      if (k > 0) gauche = Math.max(gauche, reperes[k - 1].finTexte !== undefined ? reperes[k - 1].finTexte + 6 : reperes[k - 1].jx + 11);
+      if (xAuj !== null && xAuj < r.jx) gauche = Math.max(gauche, xAuj + 4);
+      if (r.jx - 14 - largeur - 6 >= gauche) {
+        t.setAttribute('text-anchor', 'end'); t.setAttribute('x', (r.jx - 14).toFixed(1));
+        return;
+      }
+      t.classList.add('masque');
+    });
+  }
   var LARGEUR = L - mG - mD;
   var MAX_IDX = 104;                       // deux ans, ou un an au-delà d'aujourd'hui : voir chargerSource()
   var derniereAnalyse = null;
@@ -2843,28 +2962,26 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var pasX = LARGEUR / (span - 1);
     var x = function (i) { return mG + pasX * (i - d0); };
 
-    /* Deux jalons proches ecrivaient l'un sur l'autre. On calcule l'emprise de
-       chaque etiquette, puis on les repartit sur le plus petit nombre de
-       niveaux ou aucune ne touche sa voisine. */
+    /* Cinq jalons en dix semaines écrivaient les uns sur les autres. Chaque
+       jalon se marque d'un numéro en tête de son trait — tous sur une même
+       ligne, sauf deux marqueurs qui se toucheraient — et son texte ne
+       s'écrit à côté que s'il a la place jusqu'au jalon suivant (mesuré sur
+       le dessin, voir ajusterTextesJalons). La légende, sous le graphique,
+       redit chaque numéro en clair. */
     var places = [];
+    var xAuj = null;
     if (AUJ >= d0 && AUJ <= d1) {
-      var xAuj = mG + pasX * (AUJ - d0);
+      xAuj = mG + pasX * (AUJ - d0);
       places.push({ aujourdhui: true, jx: xAuj, xa: xAuj - 72, xb: xAuj - 4 });
     }
     jalons.forEach(function (j, idx) {
-      if (j.i < d0 || j.i > d1) return;
-      var jx = x(j.i);
-      var largeur = j.texte.length * 6.1 + 34;
-      var versGauche = jx + largeur + 14 > L - mD;
-      places.push({ j: j, idx: idx, jx: jx, largeur: largeur, versGauche: versGauche,
-                    xa: versGauche ? jx - largeur - 4 : jx + 4,
-                    xb: versGauche ? jx - 4 : jx + largeur + 4 });
+      if (j.i >= d0 && j.i <= d1) places.push({ j: j, idx: idx, jx: x(j.i), xa: x(j.i) - 11, xb: x(j.i) + 11 });
     });
     places.sort(function (a, b) { return a.xa - b.xa; });
     var finDeNiveau = [];
     places.forEach(function (pl) {
       var n = 0;
-      while (n < finDeNiveau.length && pl.xa < finDeNiveau[n] + 10) n++;
+      while (n < finDeNiveau.length && pl.xa < finDeNiveau[n] + 4) n++;
       pl.niveau = n;
       finDeNiveau[n] = pl.xb;
     });
@@ -2969,21 +3086,24 @@ table.plans thead tr th.col-fige { z-index: 6; }
          rouges tous deux — l'un est aussi manqué que l'autre. */
       var hors = !jalonDansPerimetre(j);
       var critique = prochain && j.i === prochain.i && !hors && enRetard;
-      var couleur = critique ? 'var(--alerte)' : 'var(--encre-3)';
+      var couleur = critique ? 'var(--alerte)' : 'var(--encre-2)';
       var mention = j.perimetre
         ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) + (hors ? ' \u2014 hors du p\u00e9rim\u00e8tre choisi, ne compte pas ici' : '')
         : '';
       var yBase = mHaut - 8 - pl.niveau * HAUTEUR_ETIQUETTE;   // haut du trait pour ce niveau
-      var yTexte = yBase - 5;
-      var xTexte = pl.versGauche ? jx - 10 : jx + 10;
+      var yMarque = yBase - 9;
 
-      s.push('<g class="jalon' + (hors ? ' hors-perimetre' : '') + '" data-jalon="' + idx + '" role="img" aria-label="Jalon ' +
+      s.push('<g class="jalon' + (hors ? ' hors-perimetre' : '') + (critique ? ' critique' : '') + '" data-jalon="' + idx + '" role="img" aria-label="Jalon ' + (idx + 1) + ', ' +
              ech(j.texte) + ' en ' + etiquette(j.i) + mention + '">');
-      s.push('<title>' + ech(j.texte) + ' \u2014 ' + etiquette(j.i) + mention + '</title>');
+      s.push('<title>' + (idx + 1) + ' \u2014 ' + ech(j.texte) + ' \u2014 ' + etiquette(j.i) + mention + '</title>');
       s.push('<line x1="' + jx.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" y2="' + basTotal.toFixed(1) +
              '" stroke="' + couleur + '" stroke-width="1" stroke-dasharray="3 4" opacity=".8"/>');
-      s.push('<path d="M' + jx.toFixed(1) + ' ' + yBase.toFixed(1) + ' l-4 -5.5 l8 0 Z" fill="' + couleur + '"/>');
-      s.push('<text class="jalon-texte" x="' + xTexte.toFixed(1) + '" y="' + yTexte.toFixed(1) + '" text-anchor="' + (pl.versGauche ? 'end' : 'start') + '" fill="' + couleur + '">' + ech(j.texte) + '</text>');
+      s.push('<circle class="jalon-marque" cx="' + jx.toFixed(1) + '" cy="' + yMarque.toFixed(1) + '" r="10" fill="' + couleur + '"/>');
+      s.push('<text class="jalon-num" x="' + jx.toFixed(1) + '" y="' + (yMarque + 4).toFixed(1) + '" text-anchor="middle">' + (idx + 1) + '</text>');
+      /* Le texte est toujours là — la batterie et les lecteurs d'écran le
+         lisent — mais ne se dessine que s'il a la place (décidé après coup,
+         mesure faite). */
+      s.push('<text class="jalon-texte" x="' + (jx + 14).toFixed(1) + '" y="' + (yMarque + 4).toFixed(1) + '" text-anchor="start" fill="' + couleur + '">' + ech(j.texte) + '</text>');
       s.push('</g>');
     });
 
@@ -3026,6 +3146,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var anneeEcrite = '';
     for (var k3 = d0; k3 <= d1; k3++) {
       if ((k3 - d0) % saut !== 0 && k3 !== AUJ) continue;
+      // La semaine d'aujourd'hui s'écrit toujours ; une graduation régulière trop proche lui cède la place.
+      if (k3 !== AUJ && Math.abs(k3 - AUJ) * pasX < 34) continue;
       var lib = etiquette(k3);
       var annee = lib.slice(0, 4), semaine = lib.slice(5);
       s.push('<text class="grad" x="' + x(k3).toFixed(1) + '" y="' + (H - 19) + '" text-anchor="middle"' + (k3 > AUJ ? ' opacity=".7"' : '') + '>' +
@@ -3055,6 +3177,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
     s.push('</svg>');
     $('zone-graphe').innerHTML = s.join('');
+    var svgGraphe = $('zone-graphe').querySelector('svg.graphe');
+    svgGraphe.__ajusterJalons = function () { ajusterTextesJalons(svgGraphe, mG, L - mD, xAuj); };
+    svgGraphe.__ajusterJalons();
+    guetterLesPolices();
 
     var items = ['<span class="legende-item"><svg width="20" height="8" aria-hidden="true"><line x1="0" y1="4" x2="20" y2="4" stroke="var(--fait)" stroke-width="2.2"/></svg>' +
       '<span title="Nombre de plans pass\u00e9s \u00e0 100 %, cumul\u00e9 semaine apr\u00e8s semaine.">r\u00e9alis\u00e9</span></span>'];
@@ -3079,6 +3205,19 @@ table.plans thead tr th.col-fige { z-index: 6; }
         requis.toFixed(1).replace('.', ',') + '/sem.</span></span>');
     }
     $('legende').innerHTML = items.join('');
+    /* La légende des jalons : chaque numéro en clair, sa semaine, son
+       périmètre ; en retrait hors périmètre, en rouge s'il est l'échéance
+       manquée. Survoler un jalon ici l'éclaire sur le graphique. */
+    $('legende-jalons').innerHTML = jalons.length ? '<span class="legende-jalons-mot">Jalons</span>' + jalons.map(function (j, idx) {
+      var hors = !jalonDansPerimetre(j), rouge = prochain && j.i === prochain.i && !hors && enRetard;
+      var horsFenetre = j.i < d0 || j.i > d1;   // dans la légende, mais pas dans la fenêtre affichée
+      return '<span class="legende-jalon' + (hors ? ' hors-perimetre' : '') + (rouge ? ' critique' : '') + (horsFenetre ? ' hors-fenetre' : '') +
+        '" data-jalon="' + idx + '" tabindex="0" title="' +
+        ech(j.texte) + ' \u2014 ' + etiquette(j.i) + (j.perimetre ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) : '') +
+        (hors ? ' \u2014 hors du p\u00e9rim\u00e8tre choisi' : '') + (horsFenetre ? ' \u2014 hors de la fen\u00eatre affich\u00e9e' : '') + '">' +
+        '<b class="num">' + (idx + 1) + '</b><span class="mot">' + ech(j.texte) + '</span>' +
+        '<span class="quand">' + etiquette(j.i) + (j.perimetre ? ' \u00b7 ' + ech(j.perimetre) : '') + (horsFenetre ? ' \u00b7 hors fen\u00eatre' : '') + '</span></span>';
+    }).join('') : '';
 
     derniereAnalyse = { pts: pts, total: total, atteint: atteint, restants: restants, vitesse: vitesse,
                         projIdx: projIdx, prochain: prochain, requis: requis, enRetard: enRetard, span: span, d0: d0 };
@@ -3847,11 +3986,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
     return c;
   }
 
-  /* La pastille d'un état — ou, hors des états, l'anneau neutre du changement
+  /* La pastille d'un état — ou, hors des états, le violet du changement
      d'indice et la pastille transparente qui tient la place des autres. */
   function pastilleDe(cle) {
     var e = ETAT_PAR_CLE[cle];
-    if (!e) return '<span class="pastille ' + (cle === 'indice' ? 'neutre' : 'sans') + '"></span>';
+    if (!e) return '<span class="pastille ' + (cle === 'indice' ? 'indice' : 'sans') + '"></span>';
     return e.hachure
       ? '<span class="pastille hachure"></span>'
       : '<span class="pastille" style="background:' + e.couleur + '"></span>';
@@ -4327,7 +4466,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
      liste dépliable de ce qui n'est pas dans le tableau, le détail des écarts.
      Absente quand la source ne décrit aucune seconde base. */
   function pastilleVerdict(cat) {
-    var classe = { accord: 'accord', emission: 'neutre', avance: 'avance', manque: 'manque', attente: 'attente', seul: 'seul' }[cat];
+    var classe = { accord: 'accord', emission: 'indice', avance: 'avance', manque: 'manque', attente: 'attente', seul: 'seul' }[cat];
     if (!classe) return '<span class="pastille sans"></span>';
     return '<span class="pastille ' + classe + '"></span>';
   }
@@ -4352,41 +4491,24 @@ table.plans thead tr th.col-fige { z-index: 6; }
     if (!RAPPROCHEMENT) { zone.hidden = true; return; }
     zone.hidden = false;
     var R = RAPPROCHEMENT, rap = SRC.rapprochement, nom = nomSeconde();
+    /* Le titre suffit : la phrase et le compte redisaient ce que la figure
+       et les verdicts montrent, et personne ne les lisait. */
     $('titre-rapprochement').textContent = 'Comparaison des bases de données';
-    var nL = R.nbLignes;
-    $('compte-rapprochement').textContent = (nL
-      ? nb(nL) + (nL > 1 ? ' lignes dans ' : ' ligne dans ') + nom + (rap.titre ? ' · extract « ' + String(rap.titre) + ' »' : '')
-      : '0 ligne dans ' + nom + ' — l’extract est vide');
 
     /* Les comptes : un plan d'ici dans une seule case, et à part ce que la
        seconde base est seule à connaître. */
     var comptes = {};
     LOTS_RAPPROCHEMENT.forEach(function (l) { comptes[l.cle] = compteLotRapp(l.cle); });
-    var nP = R.nbPlans, nT = R.nbTermines, nConnus = comptes.accord + comptes.emission, nSeuls = comptes.seul;
-    var ou = vue.perimetre ? ' du périmètre ' + ech(vue.perimetre) : '';
-
-    /* La phrase : les terminés d'ici que la seconde base connaît — c'est la
-       question que pose le rapprochement. Dessous, ce qu'il reste à regarder. */
-    {
-      $('phrase-rapprochement').innerHTML = nT
-        ? '<b>' + nb(nConnus) + '</b> sur ' + nb(nT) + (nT > 1 ? ' plans terminés' : ' plan terminé') + ou +
-          (nConnus > 1 ? ' se retrouvent' : ' se retrouve') + ' dans ' + ech(nom)
-        : 'Aucun plan terminé' + ou + ' à retrouver dans ' + ech(nom);
-      var restes = [];
-      if (comptes.manque) restes.push(nb(comptes.manque) + (comptes.manque > 1 ? ' terminés que ' : ' terminé que ') + nom + ' ne connaît pas');
-      if (comptes.avance) restes.push(nb(comptes.avance) + (comptes.avance > 1 ? ' plans dans ' : ' plan dans ') + nom + ' que GATES ne dit pas ' + (comptes.avance > 1 ? 'terminés' : 'terminé'));
-      if (comptes.emission) restes.push(nb(comptes.emission) + ' sous un autre indice');
-      if (nSeuls) restes.push(nb(nSeuls) + (nSeuls > 1 ? ' références que ' : ' référence que ') + nom + ' est seul à connaître' + (vue.perimetre ? ', sur tout le contrat' : ''));
-      $('sous-rapprochement').textContent = !restes.length
-        ? 'Rien à vérifier : GATES et ' + nom + ' disent la même chose' + (vue.perimetre ? ' dans le périmètre' : '') + '.'
-        : 'À vérifier' + (vue.perimetre ? ' dans le périmètre' : '') + ' : ' + restes.join(' · ') + '.';
-    }
+    var nP = R.nbPlans, nSeuls = comptes.seul;
 
     /* La figure : deux cercles, ce qu'ils ont en commun au milieu — avec un
        anneau pour la part de plans d'accord — et ce que chacun est seul à
-       connaître sur les côtés. */
+       connaître sur les côtés. À la première apparition d'une source,
+       l'anneau se trace sous les yeux du lecteur — quand la section entre
+       dans l'écran, pas avant. */
     var figure = $('venn-rapprochement');
     figure.innerHTML = figureRapprochement(comptes, R, nom, !!vue.perimetre);
+    if (ANIMER_FIGURE) { ANIMER_FIGURE = false; animerALApparition(figure); }
     var membres = LOTS_RAPPROCHEMENT.filter(function (l) { return comptes[l.cle] && l.cle !== 'seul'; })
       .map(function (l) { return motLotRapp(l.cle, comptes[l.cle], nom); });
     figure.setAttribute('aria-label', 'Comparaison GATES / ' + nom + ' : ' +
@@ -4440,7 +4562,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }
     if (cle === 'emission') {
       return R.emission.map(function (x) {
-        return { ref: x.plan.reference, plan: x.plan, see: 'sous l\u2019indice ' + x.indice_la + ' (' + x.ref_la + ')' };
+        return { ref: x.plan.reference, plan: x.plan, vers: x.indice_la, see: 'sous l\u2019indice ' + x.indice_la + ' (' + x.ref_la + ')' };
       });
     }
     var see = cle === 'manque' || cle === 'attente' ? 'absent' : 'présent';
@@ -4450,8 +4572,14 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var zone = $('liste-rapprochement');
     var total = ORDRE_LISTE_RAPP.reduce(function (t, cle) { return t + (comptes[cle] || 0); }, 0);
     if (!total) { zone.innerHTML = ''; return; }
+    /* En tête : le titre, le mode d'emploi en un mot, et la légende des
+       pastilles d'état — la pastille de chaque puce dit l'état du plan dans
+       GATES, il faut pouvoir la lire sans survoler. */
     var html = '<div class="rapp-liste-tete"><h3 class="rapp-liste-titre">Plan par plan</h3>' +
-      '<span class="indice">d\u2019abord ce qui est \u00e0 v\u00e9rifier, puis ce qui va \u2014 un clic sur une r\u00e9f\u00e9rence la montre dans le tableau</span></div>';
+      '<span class="indice">d\u2019abord ce qui est \u00e0 v\u00e9rifier, puis ce qui va \u2014 un clic sur une r\u00e9f\u00e9rence la montre dans le tableau</span>' +
+      '<span class="rapp-puces-legende" aria-label="Pastilles : \u00e9tat du plan dans GATES">' + ETATS.map(function (e) {
+        return '<span>' + pastilleDe(e.cle) + ech(e.court) + '</span>';
+      }).join('') + '</span></div>';
     ORDRE_LISTE_RAPP.forEach(function (cle) {
       var n = comptes[cle];
       if (!n) return;
@@ -4467,17 +4595,23 @@ table.plans thead tr th.col-fige { z-index: 6; }
       if (ouvert) {
         var rangees = rangeesLotRapp(cle).sort(function (a, b) { return COMPARER_REF(a.ref, b.ref); });
         var montrees = rangees.slice(0, MAX_LIGNES_LISTE_RAPP);
-        html += '<div class="rapp-groupe-corps' + (montrees.length > 12 ? ' defile-liste' : '') + '">' +
-          '<table class="rapp-table"><thead><tr><th scope="col">R\u00e9f\u00e9rence</th><th scope="col">GATES</th><th scope="col">' + ech(nom) + '</th></tr></thead><tbody>' +
+        /* Une puce par plan : sa pastille d'état, sa référence, et pour une
+           réémission la lettre sous laquelle SEE le connaît. Le détail tient
+           dans la bulle du survol ; un clic mène au tableau. */
+        html += '<div class="rapp-groupe-corps"><div class="rapp-puces">' +
           montrees.map(function (r) {
-            var ici = r.plan
-              ? pastilleDe(r.plan._etat) + ech(ETAT_PAR_CLE[r.plan._etat] ? ETAT_PAR_CLE[r.plan._etat].court : '\u2014')
-              : '<span class="doux">aucun plan</span>';
-            var bouton = r.plan
-              ? '<button class="rapp-plan" type="button" data-plan-rapp="' + ech(r.ref) + '" title="Ne montrer que ce plan dans le tableau">' + ech(r.ref) + '</button>'
-              : '<button class="rapp-plan" type="button" data-ligne-la="' + ech(r.la) + '" title="Voir cette ligne dans le tableau de ' + ech(nom) + '">' + ech(r.ref) + '</button>';
-            return '<tr><td>' + bouton + '</td><td>' + ici + '</td><td>' + ech(r.see) + '</td></tr>';
-          }).join('') + '</tbody></table>' +
+            var etat = r.plan ? r.plan._etat : '';
+            var motEtat = r.plan ? (ETAT_PAR_CLE[etat] ? ETAT_PAR_CLE[etat].court : '\u2014') + ' dans GATES' : 'aucun plan dans GATES';
+            var bulle = motEtat + ' \u00b7 ' + r.see + ' dans ' + nom +
+              (r.plan ? ' \u2014 ne montrer que ce plan dans le tableau' : ' \u2014 voir cette ligne dans le tableau de ' + nom);
+            var attrs = r.plan
+              ? ' data-plan-rapp="' + ech(r.ref) + '" data-etat="' + ech(etat) + '"'
+              : ' data-ligne-la="' + ech(r.la) + '"';
+            return '<button class="rapp-puce" type="button"' + attrs + ' data-see="' + ech(r.see) + '" title="' + ech(bulle) + '">' +
+              (r.plan ? pastilleDe(etat) : '') +
+              '<span class="rapp-puce-ref">' + ech(r.ref) + '</span>' +
+              (r.vers ? '<span class="rapp-puce-vers">\u2192 ' + ech(r.vers) + '</span>' : '') + '</button>';
+          }).join('') + '</div>' +
           (rangees.length > montrees.length
             ? '<div class="rapp-groupe-suite">et ' + nb(rangees.length - montrees.length) + ' autres \u2014 <button type="button" class="lien-doux" data-rapp-tout="' + cle + '">les voir tous dans le tableau</button></div>'
             : '') +
@@ -4519,7 +4653,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     } else if (cle === 'emission') {
       tete = 'Le même plan, sous un autre indice';
       var paires = R.emission.map(function (x) { return ech(x.plan.reference) + ' \u2192 ' + ech(x.ref_la.slice(-4)); });
-      corps = '<div class="bulle-ligne"><span class="pastille neutre"></span>' + nb(n) + (pl ? ' plans' : ' plan') + '</div>' +
+      corps = '<div class="bulle-ligne"><span class="pastille indice"></span>' + nb(n) + (pl ? ' plans' : ' plan') + '</div>' +
         (paires.length ? '<div class="liste-refs">' + paires.slice(0, MAX_PAIRES_RAPP).join('<br>') +
           (paires.length > MAX_PAIRES_RAPP ? '<br><span class="doux">et ' + nb(paires.length - MAX_PAIRES_RAPP) + ' autres\u2026</span>' : '') + '</div>' : '');
     } else if (cle === 'avance') {
@@ -4582,8 +4716,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
      nombres disent le reste. */
   function figureRapprochement(c, R, nom, perimetre) {
     var nP = R.nbPlans, nT = R.nbTermines, nL = R.nbLignes, nCommun = c.accord + c.emission + c.avance;
-    var cx1 = 200, cx2 = 330, cy = 172, r = 118, cxm = (cx1 + cx2) / 2, ra = 34;
-    var s = ['<svg viewBox="0 0 530 336" aria-hidden="true">'];
+    var cx1 = 206, cx2 = 344, cy = 186, r = 132, cxm = (cx1 + cx2) / 2, ra = 40;
+    var s = ['<svg viewBox="0 0 550 368" aria-hidden="true">'];
     s.push('<text class="base-nom" x="' + (cx1 - 56) + '" y="26" text-anchor="middle">GATES</text>');
     s.push('<text class="base-compte" x="' + (cx1 - 56) + '" y="42" text-anchor="middle">' + nb(nP) + (nP > 1 ? ' plans' : ' plan') + (perimetre ? ' du périmètre' : '') +
       ' · ' + nb(nT) + (nT > 1 ? ' terminés' : ' terminé') + '</text>');
@@ -4595,17 +4729,23 @@ table.plans thead tr th.col-fige { z-index: 6; }
     /* Les côtés : ce que chaque base est seule à connaître. À gauche, le
        nombre qui compte — des terminés sans plan là — et, dessous, ceux qui
        attendent simplement leur tour. */
+    /* Les mots des côtés tiennent sur deux lignes, pour rester dans le
+       croissant de leur cercle sans en toucher les bords. */
     s.push('<g class="cote cote-manque' + (c.manque ? '' : ' zero') + '" data-cle="manque">' +
-      '<text class="grand" x="' + (cx1 - 52) + '" y="' + (cy - 2) + '" text-anchor="middle">' + nb(c.manque) + '</text>' +
-      '<text class="petit" x="' + (cx1 - 52) + '" y="' + (cy + 18) + '" text-anchor="middle">' + (c.manque > 1 ? 'terminés sans ' : 'terminé sans ') + ech(nom) + '</text></g>');
-    /* Ce qui attend son tour se lit sous le cercle : c'est un renseignement,
-       pas un écart — il ne doit pas encombrer l'intérieur. */
+      '<text class="grand" x="' + (cx1 - 60) + '" y="' + (cy - 4) + '" text-anchor="middle">' + nb(c.manque) + '</text>' +
+      '<text class="petit" x="' + (cx1 - 60) + '" y="' + (cy + 16) + '" text-anchor="middle"><tspan>' + (c.manque > 1 ? 'terminés ' : 'terminé ') + '</tspan>' +
+      '<tspan x="' + (cx1 - 60) + '" dy="15">sans ' + ech(nom) + '</tspan></text></g>');
+    /* Ce qui attend son tour se lit dans le cercle aussi — ces plans sont
+       de GATES —, sous les terminés sans SEE, plus discret : un
+       renseignement, pas un écart. */
     s.push('<g class="cote cote-attente" data-cle="attente">' +
-      '<text class="petit" x="' + cx1 + '" y="' + (cy + r + 26) + '" text-anchor="middle"><tspan class="moyen">' + nb(c.attente) + '</tspan> pas encore dans ' + ech(nom) + '</text></g>');
+      '<text class="petit" x="' + (cx1 - 60) + '" y="' + (cy + 62) + '" text-anchor="middle"><tspan class="moyen">' + nb(c.attente) + '</tspan><tspan> pas encore </tspan>' +
+      '<tspan x="' + (cx1 - 60) + '" dy="15">dans ' + ech(nom) + '</tspan></text></g>');
     s.push('<g class="cote cote-seul" data-cle="seul">' +
-      '<text class="grand" x="' + (cx2 + 52) + '" y="' + (cy + 4) + '" text-anchor="middle">' + nb(c.seul) + '</text>' +
-      '<text class="petit" x="' + (cx2 + 52) + '" y="' + (cy + 24) + '" text-anchor="middle">seulement dans ' + ech(nom) + '</text>' +
-      (perimetre ? '<text class="petit" x="' + (cx2 + 52) + '" y="' + (cy + 40) + '" text-anchor="middle">tout le contrat</text>' : '') + '</g>');
+      '<text class="grand" x="' + (cx2 + 60) + '" y="' + (cy - 4) + '" text-anchor="middle">' + nb(c.seul) + '</text>' +
+      '<text class="petit" x="' + (cx2 + 60) + '" y="' + (cy + 16) + '" text-anchor="middle"><tspan>seulement </tspan>' +
+      '<tspan x="' + (cx2 + 60) + '" dy="15">dans ' + ech(nom) + '</tspan></text>' +
+      (perimetre ? '<text class="petit" x="' + (cx2 + 60) + '" y="' + (cy + 47) + '" text-anchor="middle">tout le contrat</text>' : '') + '</g>');
     /* Le milieu : l'anneau des plans en commun, en trois parts. */
     s.push('<circle class="donut-fond" cx="' + cxm + '" cy="' + cy + '" r="' + ra + '"/>');
     var parts = [['accord', 'accord'], ['emission', 'emission'], ['avance', 'avance']]
@@ -4624,7 +4764,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       else if (a1 > a0) s.push('<path class="donut-seg ' + p[1] + '" data-cle="' + p[0] + '" data-n="' + c[p[0]] + '" d="' + arcAnneau(cxm, cy, ra, a0, a1) + '"/>');
       angle += portion;
     });
-    s.push('<text class="grand commun-n" x="' + cxm + '" y="' + (cy + 9) + '" text-anchor="middle">' + nb(nCommun) + '</text>');
+    s.push('<text class="grand commun-n' + (nb(nCommun).length > 3 ? ' serre' : '') + '" x="' + cxm + '" y="' + (cy + (nb(nCommun).length > 3 ? 7 : 9)) + '" text-anchor="middle">' + nb(nCommun) + '</text>');
     s.push('<text class="petit commun-mot" x="' + cxm + '" y="' + (cy + ra + 26) + '" text-anchor="middle">en commun</text>');
     s.push('</svg>');
     return s.join('');
@@ -5012,6 +5152,35 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
   /* Survoler un bouton ou un segment du rapprochement éclaire le segment et
      ouvre la bulle ; le focus clavier éclaire seulement. */
+  /* Survoler un jalon dans la légende l'éclaire sur le graphique, et fait
+     paraître son texte s'il était masqué faute de place. */
+  /* Le jalon éclairé passe au-dessus de ses voisins — son texte, révélé,
+     ne doit pas se lire sous leurs marqueurs — et reprend sa place ensuite,
+     pour que l'ordre du dessin reste celui des jalons. */
+  function eclairerJalon(idx, allume) {
+    var g = document.querySelector('svg.graphe .jalon[data-jalon="' + idx + '"]');
+    if (!g) return;
+    if (allume) {
+      g.classList.add('survole');
+      if (!g.__suivant) { g.__suivant = g.nextSibling; g.parentNode.appendChild(g); }
+    } else {
+      g.classList.remove('survole');
+      if (g.__suivant !== undefined) { g.parentNode.insertBefore(g, g.__suivant); g.__suivant = undefined; }
+    }
+  }
+  ['mouseover', 'focusin'].forEach(function (ev) {
+    $('legende-jalons').addEventListener(ev, function (e) {
+      var el = e.target.closest('[data-jalon]');
+      if (el) eclairerJalon(el.dataset.jalon, true);
+    });
+  });
+  ['mouseout', 'focusout'].forEach(function (ev) {
+    $('legende-jalons').addEventListener(ev, function (e) {
+      var el = e.target.closest('[data-jalon]');
+      if (el) eclairerJalon(el.dataset.jalon, false);
+    });
+  });
+
   $('rapprochement').addEventListener('mousemove', function (e) {
     var cible = e.target.closest && e.target.closest('#venn-rapprochement [data-cle], #verdicts-rapprochement button[data-cle]:not([disabled])');
     var cle = cible ? cible.getAttribute('data-cle') : null;
@@ -5296,10 +5465,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
   chargerPrefs();
   remplirDims();
   rendre();
-  /* L'interrupteur n'a d'objet que devant un classeur. Et quand celui-ci n'a
-     encore rien donné, la page s'ouvre sur la démonstration plutôt que vide :
-     on voit ce qu'elle sera, et l'alerte dit ce qui manque. */
-  $('mode-donnees').hidden = !SERVEUR;
+  /* Quand le classeur n'a encore rien donné, la page s'ouvre sur la
+     démonstration plutôt que vide : on voit ce qu'elle sera, et l'alerte dit
+     ce qui manque. */
   if (SERVEUR && !PLANS.length) basculerExemple(true);
 })();
 </script>
