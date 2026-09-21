@@ -58,6 +58,21 @@ export const TYPES_BLOC = {
 
 const TONS_ENCADRE = ['info', 'succes', 'alerte'];
 
+/* La mise en page d'un bloc : sa largeur dans la grille de six colonnes de
+   la lecture, et le côté où il se cale. 'pleine' et '' (dans le flux) sont
+   les valeurs par défaut ; tout autre mot est ramené à elles. */
+export const LARGEURS_BLOC = ['pleine', 'deux-tiers', 'moitie', 'tiers'];
+export const COTES_BLOC = ['', 'gauche', 'droite'];
+
+function miseEnPage(brut, bloc) {
+  if (!bloc) return null;
+  const largeur = texte(brut.largeur);
+  const cote = texte(brut.cote);
+  bloc.largeur = LARGEURS_BLOC.includes(largeur) ? largeur : 'pleine';
+  bloc.cote = COTES_BLOC.includes(cote) ? cote : '';
+  return bloc;
+}
+
 /* -------------------------------------------------------------------------
    1. Lecture prudente
    ------------------------------------------------------------------------- */
@@ -188,6 +203,10 @@ function serieDepuis(brut) {
 export function blocDepuis(brut) {
   const b = objet(brut);
   if (!b) return null;
+  return miseEnPage(b, blocSansMiseEnPage(b));
+}
+
+function blocSansMiseEnPage(b) {
   const type = texte(b.type);
   switch (type) {
     case 'texte': {
@@ -536,6 +555,17 @@ function blocEncadre(bloc) {
  * @returns {Node|null}
  */
 export function rendreBloc(bloc) {
+  const contenu = rendreContenuBloc(bloc);
+  if (!contenu) return null;
+  const largeur = LARGEURS_BLOC.includes(bloc.largeur) ? bloc.largeur : 'pleine';
+  const cote = COTES_BLOC.includes(bloc.cote) ? bloc.cote : '';
+  return el('div', {
+    class: ['kiosque__bloc', 'kiosque__bloc--' + largeur, cote ? 'kiosque__bloc--' + cote : null],
+    dataset: { type: bloc.type, largeur, cote }
+  }, contenu);
+}
+
+function rendreContenuBloc(bloc) {
   switch (bloc.type) {
     case 'texte': return el('div', { class: 'kiosque__corps' }, bloc.lignes.map(ligneCorps));
     case 'image': return blocImage(bloc);

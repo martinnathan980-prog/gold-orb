@@ -507,12 +507,32 @@ ul.kiosque__alertes-liste {
 .kiosque__serie .ind-spark { inline-size: 100%; block-size: auto; }
 .kiosque__serie-periode { font-size: var(--texte-xs); color: var(--texte-faible); }
 
+/* Les blocs d'une lecture : une grille de six colonnes. Chaque bloc porte
+   sa largeur (pleine = 6, deux tiers = 4, moitié = 3, tiers = 2) et,
+   s'il le demande, le côté où il se cale ; le reste coule à la suite.
+   Sous 700 px, tout repasse en pleine largeur. */
 .kiosque__blocs {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-auto-flow: row dense;
   gap: var(--e-5);
   font-size: var(--texte-md);
   line-height: 1.65;
+}
+
+.kiosque__bloc { grid-column: span 6; min-inline-size: 0; }
+.kiosque__bloc--deux-tiers { grid-column: span 4; }
+.kiosque__bloc--moitie { grid-column: span 3; }
+.kiosque__bloc--tiers { grid-column: span 2; }
+.kiosque__bloc--gauche { grid-column-start: 1; }
+.kiosque__bloc--droite.kiosque__bloc--deux-tiers { grid-column: 3 / -1; }
+.kiosque__bloc--droite.kiosque__bloc--moitie { grid-column: 4 / -1; }
+.kiosque__bloc--droite.kiosque__bloc--tiers { grid-column: 5 / -1; }
+
+@media (max-width: 700px) {
+  .kiosque__bloc, .kiosque__bloc--deux-tiers, .kiosque__bloc--moitie, .kiosque__bloc--tiers,
+  .kiosque__bloc--droite.kiosque__bloc--deux-tiers, .kiosque__bloc--droite.kiosque__bloc--moitie,
+  .kiosque__bloc--droite.kiosque__bloc--tiers { grid-column: 1 / -1; }
 }
 
 .kiosque__corps { display: flex; flex-direction: column; gap: var(--e-2); }
