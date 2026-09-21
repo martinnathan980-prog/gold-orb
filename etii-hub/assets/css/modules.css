@@ -589,7 +589,9 @@ ul.kiosque__alertes-liste {
 
 /* -------------------------------------------------------------------------
    3. Les porteurs : une galerie centrée de cartes, et la fiche qui se
-      déplie sous la rangée de la carte ouverte
+      déplie sous la rangée de la carte ouverte — le code seul en titre
+      de bannière, le résumé sur toute la largeur, le bandeau de rappel,
+      puis les onglets où le libellé (gras) se distingue de la valeur
    ---------------------------------------------------------------------- */
 
 .porteurs { display: flex; flex-direction: column; gap: var(--e-6); }
@@ -817,7 +819,6 @@ ul.kiosque__alertes-liste {
 }
 
 .porteurs__banniere--photo .porteurs__banniere-texte { color: var(--entete-texte); }
-.porteurs__banniere--photo .porteurs__sur-titre { color: var(--entete-texte-doux); }
 .porteurs__banniere--photo .porteurs__titre { color: var(--entete-texte); }
 
 .porteurs__banniere--silhouette {
@@ -848,21 +849,24 @@ ul.kiosque__alertes-liste {
   color: var(--texte-faible);
 }
 
-.porteurs__sur-titre {
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: var(--lettrage-etiquette);
-  text-transform: uppercase;
-  color: var(--texte-faible);
-}
-
+/* Le titre de la bannière : le code seul, en Newsreader, grand — rien
+   au-dessus. Le nom complet et le segment sont dans le bandeau. */
 .porteurs__titre-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-4); }
-.porteurs__titre { font-family: var(--police-titre); font-size: clamp(1.75rem, 1.8vw + 1.1rem, 2.5rem); font-weight: var(--graisse-normale); line-height: 1.1; }
+.porteurs__titre {
+  font-family: var(--police-titre);
+  font-size: clamp(2.25rem, 2.6vw + 1.4rem, 3.5rem);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
 .porteurs__relecture { cursor: help; }
 
 .porteurs__contenu { display: flex; flex-direction: column; gap: var(--e-6); min-inline-size: 0; padding: var(--e-5) clamp(var(--e-4), 4vw, var(--e-8)) var(--e-6); }
 
-.porteurs__resume { max-width: var(--largeur-texte); font-size: var(--texte-md); line-height: var(--interligne); }
+/* Le résumé : un court discours sur TOUTE la largeur de la boîte, en
+   corps lisible et interligne aéré. */
+.porteurs__resume { max-width: none; font-size: var(--texte-lg); line-height: 1.6; }
 
 /* --- Le bandeau d'identité : les essentiels, en cases -------------------- */
 
@@ -886,7 +890,7 @@ ul.kiosque__alertes-liste {
   color: var(--texte-faible);
 }
 
-.porteurs__bandeau dd { margin: 0; font-size: var(--texte-sm); line-height: 1.45; }
+.porteurs__bandeau dd { margin: 0; font-size: var(--texte-md); line-height: 1.45; }
 
 /* Une donnée longue garde tout son texte : en paragraphe, sur la largeur. */
 .porteurs__bandeau-item--long { grid-column: 1 / -1; }
@@ -898,21 +902,36 @@ ul.kiosque__alertes-liste {
 
 .porteurs__groupes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr)); gap: var(--e-6) var(--e-10); }
 
-/* Le titre de groupe : gras net, un filet accent court dessous. */
+/* Le titre de groupe (Motorisation, Masses…) : en Newsreader, plus
+   marqué, avec un court trait terre cuite dessous — c'est lui qui
+   découpe la lecture, pas un filet sur toute la largeur. */
 .porteurs__groupe-titre {
   margin: 0 0 var(--e-3);
   padding-block-end: var(--e-2);
-  font-size: var(--texte-lg);
-  font-weight: var(--graisse-forte);
+  font-family: var(--police-titre);
+  font-size: 1.25rem;
+  font-weight: var(--graisse-moyenne);
   line-height: 1.2;
-  border-bottom: 2px solid var(--accent);
+  color: var(--texte);
+  position: relative;
+}
+.porteurs__groupe-titre::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-end: 0;
+  inline-size: var(--e-8);
+  block-size: 2px;
+  background-color: var(--chaud);
 }
 
 .porteurs__lignes { margin: 0; }
 
+/* Une ligne : le libellé à gauche, la valeur à droite, un filet léger
+   entre deux lignes. */
 .porteurs__ligne {
   display: grid;
-  grid-template-columns: minmax(8rem, 30%) 1fr;
+  grid-template-columns: minmax(8rem, 13rem) 1fr;
   gap: var(--e-1) var(--e-4);
   align-items: baseline;
   padding-block: var(--e-2);
@@ -920,6 +939,7 @@ ul.kiosque__alertes-liste {
 }
 .porteurs__ligne:last-child { border-bottom: 0; }
 
+/* Le libellé : Plex gras, encre — c'est lui qu'on cherche du regard. */
 .porteurs__libelle {
   display: flex;
   flex-direction: column;
@@ -929,19 +949,24 @@ ul.kiosque__alertes-liste {
   line-height: 1.5;
   color: var(--texte-doux);
 }
+.porteurs__libelle-texte { font-weight: var(--graisse-forte); color: var(--texte); }
 
+/* La valeur : en regular, jamais en gras, pour que le libellé reste le
+   repère ; un chiffre passe en mono. */
 .porteurs__cellule {
   margin: 0;
   min-inline-size: 0;
-  font-size: var(--texte-sm);
+  font-size: var(--texte-md);
+  font-weight: var(--graisse-normale);
   line-height: 1.5;
+  color: var(--texte);
 }
 
 .porteurs__valeur { overflow-wrap: anywhere; }
 
 /* Un chiffre se lit en mono et tabulaire ; sa précision en retrait. */
-.porteurs__valeur--chiffre { font-family: var(--police-mono); font-variant-numeric: tabular-nums; font-weight: var(--graisse-moyenne); }
-.porteurs__complement { font-family: var(--police); font-weight: var(--graisse-normale); color: var(--texte-doux); }
+.porteurs__valeur--chiffre { font-family: var(--police-mono); font-size: var(--texte-sm); font-variant-numeric: tabular-nums; }
+.porteurs__complement { font-family: var(--police); font-size: var(--texte-sm); font-weight: var(--graisse-normale); color: var(--texte-doux); }
 .porteurs__manquant { font-style: italic; color: var(--texte-faible); font-family: var(--police); font-weight: var(--graisse-normale); }
 
 /* La preuve (confiance, source) : petite, grise, à droite, plus nette au

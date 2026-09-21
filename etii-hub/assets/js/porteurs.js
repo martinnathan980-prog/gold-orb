@@ -4,8 +4,9 @@
    compactes visibles d'un coup, groupées par catégorie (civil, militaire,
    prototype). Cliquer une carte la DÉPLIE : la fiche détaillée s'ouvre
    juste sous la rangée de la carte, jamais en bas de page — la photo en
-   bannière, le résumé, l'identité en bandeau, puis les onglets de données
-   telles que le fichier les déclare. Une valeur absente s'écrit
+   bannière avec le code seul en titre, le résumé sur toute la largeur,
+   le rappel d'identité en bandeau, puis les onglets de données telles
+   que le fichier les déclare. Une valeur absente s'écrit
    « à renseigner », jamais autre chose.
    ========================================================================= */
 
@@ -203,10 +204,11 @@ function lienSource(url, classe) {
     hote, el('span', { 'aria-hidden': 'true' }, ' ↗'));
 }
 
-/* Une ligne libellé / valeur. La confiance et la source sont là — c'est
-   ce qui rend la fiche honnête — mais en retrait : petites, grises, sous
-   le libellé, dans l'espace que la colonne de gauche laisse libre. La
-   valeur se lit d'abord, sur toute sa colonne. */
+/* Une ligne libellé / valeur. Le libellé est en gras net, la valeur en
+   regular (un chiffre en mono) : l'œil sépare d'un coup ce qui nomme et
+   ce qui répond. La confiance et la source sont là — c'est ce qui rend
+   la fiche honnête — mais en retrait : petites, grises, sous le libellé,
+   dans l'espace que la colonne de gauche laisse libre. */
 function ligneFiche(libelle, brut) {
   const c = champFiche(brut);
   const conf = CONFIANCES[c.confiance];
@@ -215,7 +217,7 @@ function ligneFiche(libelle, brut) {
   const premiereSource = c.source.split(/\s*;\s*/)[0];
   return el('div', { class: 'porteurs__ligne' },
     el('dt', { class: 'porteurs__libelle' },
-      el('span', {}, libelle),
+      el('span', { class: 'porteurs__libelle-texte' }, libelle),
       c.ok
         ? el('span', { class: 'porteurs__preuve' },
             el('span', { class: ['porteurs__conf', 'porteurs__conf--' + c.confiance], title: conf.libelle },
@@ -299,7 +301,7 @@ function tableau(titre, descripteurs, valeurs) {
   return groupeFiche(titre, lignes.map((d) => {
     const v = valeurLisible(source[d.cle], d.unite);
     return el('div', { class: 'porteurs__ligne' },
-      el('dt', { class: 'porteurs__libelle' }, d.libelle),
+      el('dt', { class: 'porteurs__libelle' }, el('span', { class: 'porteurs__libelle-texte' }, d.libelle)),
       el('dd', { class: 'porteurs__cellule' },
         el('span', { class: ['porteurs__valeur', v.chiffre ? 'porteurs__valeur--chiffre' : null, v.ok ? null : 'porteurs__manquant'] },
           v.principal, v.complement ? el('span', { class: 'porteurs__complement' }, ' ', v.complement) : null)));
@@ -419,11 +421,18 @@ function onglets(prefixe, panneaux) {
   return racine;
 }
 
-/* Le bandeau d'identité : une case par donnée courte ; une donnée longue
-   garde tout son texte mais passe en paragraphe, sur toute la largeur. */
-function bandeauIdentite(appareil, fiche, avecFiche) {
+/* Le bandeau de rappel : le nom complet, la catégorie et le segment, le
+   statut, les pôles, puis l'identité (constructeur, premier vol, mise en
+   service, site d'assemblage) — une case par donnée courte ; une donnée
+   longue garde tout son texte mais passe en paragraphe, sur la largeur. */
+function bandeauIdentite(appareil, fiche, avecFiche, categorie) {
   const identite = objet(fiche.identite);
+  const code = texte(appareil.code) || '—';
   const poles = Array.isArray(appareil.poles) ? appareil.poles.map(texte).filter(Boolean) : [];
+  const nom = texte(fiche.nom);
+  const segment = texte(appareil.segment) || texte(fiche.segment);
+  const libelleCategorie = categorie ? categorie.libelle : texte(appareil.categorie);
+  const categorieSegment = [libelleCategorie, segment].filter(Boolean).join(' · ');
   const item = (libelle, valeur, ok, mono) => {
     const long = valeur.length > LONGUEUR_CASE;
     return el('div', { class: ['porteurs__bandeau-item', long ? 'porteurs__bandeau-item--long' : null] },
@@ -431,6 +440,8 @@ function bandeauIdentite(appareil, fiche, avecFiche) {
       el('dd', { class: [ok ? null : 'porteurs__manquant', mono && !long ? 'mono' : null] }, valeur));
   };
   return el('dl', { class: 'porteurs__bandeau' },
+    item('Nom', nom || code, true, false),
+    item('Catégorie', categorieSegment || NON_RENSEIGNE, !!categorieSegment, false),
     item('Statut', (avecFiche && texte(fiche.statut)) || NON_RENSEIGNE, avecFiche && !!texte(fiche.statut), false),
     el('div', { class: 'porteurs__bandeau-item' },
       el('dt', {}, 'Pôles'),
@@ -480,12 +491,12 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
       }, 'Relecture à faire')
     : null;
 
+  /* Le titre de la bannière, c'est le code seul — « H125 », en grand. Le
+     nom complet, la catégorie et le segment se lisent dans le bandeau de
+     rappel, sous le résumé. */
   const titreBloc = el('div', { class: 'porteurs__banniere-texte' },
-    el('p', { class: 'porteurs__sur-titre sans-marge' },
-      categorie ? categorie.libelle : (texte(appareil.categorie) || 'Catégorie ' + NON_RENSEIGNE),
-      ' · ', texte(appareil.segment) || texte(fiche.segment) || NON_RENSEIGNE),
     el('div', { class: 'porteurs__titre-ligne' },
-      el('h3', { class: 'porteurs__titre sans-marge' }, texte(fiche.nom) || code),
+      el('h3', { class: 'porteurs__titre sans-marge' }, code),
       relecture));
 
   const banniere = photo
@@ -503,7 +514,7 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
     banniere,
     el('div', { class: 'porteurs__contenu' },
       texte(fiche.resume) ? el('p', { class: 'porteurs__resume sans-marge' }, texte(fiche.resume)) : null,
-      bandeauIdentite(appareil, fiche, avecFiche),
+      bandeauIdentite(appareil, fiche, avecFiche, categorie),
       onglets(prefixe, panneaux)));
 }
 
