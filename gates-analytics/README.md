@@ -2,7 +2,8 @@
 
 Tableau de bord de l'avancement FWD des plans d'intégration électrique, à
 poser dans un classeur Google Sheets. La mise en place et le geste
-hebdomadaire sont dans **[PROCEDURE.md](PROCEDURE.md)**.
+hebdomadaire sont dans **[MODE-D-EMPLOI.md](MODE-D-EMPLOI.md)** ; les règles, dans
+**[PROCEDURE.md](PROCEDURE.md)**.
 
 C'est un outil de **consultation** : la page montre, elle ne modifie rien.
 
@@ -18,7 +19,8 @@ C'est un outil de **consultation** : la page montre, elle ne modifie rien.
 | `prototype/` | La même interface, autonome, avec un jeu d'exemple à trois contrats — c'est la source |
 | `import/` | L'automatisation : pilote Chrome, recettes d'extraction, dépôt dans le classeur, lecture des composants sur les plans (PDF, Visio, DXF, scans), transport par la messagerie |
 | `apps-script/` | Ce qu'on colle dans Apps Script : le **chargeur** (un fichier, qui va chercher le reste à l'ouverture) et l'**installateur** (qui écrit les quatre fichiers dans le projet) |
-| `AU-BUREAU.md` | La marche à suivre, pas à pas, pour tout installer sur le poste de travail |
+| `MODE-D-EMPLOI.md` | Ce qu'on fait dans le classeur, concrètement : coller un extract, un onglet par contrat, archiver la semaine, brancher SEE, lire la page |
+| `AU-BUREAU.md` | La marche à suivre, pas à pas, pour installer sur le poste de travail — et, pour plus tard, l'automatisation |
 | `tests/` | Batterie de l'add-on (serveur + page rendue) |
 
 ## Une seule interface, deux sources
@@ -55,14 +57,17 @@ ferait perdre au découpage suivant. Tout passe par le prototype (et par
   avec la fin estimée et l'effort demandé par le prochain jalon ; un filtre
   sur la colonne de gauche, et sous chaque ligne toutes ses références, à
   faire puis terminées.
-- **Le rapprochement avec une seconde base** (SEE), quand la configuration en
-  nomme une, sous le tableau. Un plan connu de SEE est un plan créé, donc
+- **La comparaison des bases de données** (GATES et SEE), dès qu'un onglet
+  `SEE` est là, sous le tableau. Un plan connu de SEE est un plan créé, donc
   terminé : la section croise cette présence avec l'avancement de GATES. Deux
-  cercles face à face, l'anneau des plans en commun dans leur recouvrement, et
+  cercles face à face, l'anneau des plans en commun dans leur recouvrement,
   six verdicts en français — terminés et dans SEE, autre indice, dans SEE mais
   pas terminés ici, terminés absents de SEE, pas encore dans SEE, seulement
-  dans SEE — qui filtrent le tableau ; derrière l'interrupteur GATES | SEE,
-  l'extract SEE à l'identique avec le verdict sur chaque ligne.
+  dans SEE — qui filtrent le tableau, puis **plan par plan** : un groupe par
+  verdict dans l'ordre des priorités, les écarts dépliés, ce qui va replié,
+  et un clic sur une référence la montre dans le tableau ; derrière
+  l'interrupteur GATES | SEE, l'extract SEE à l'identique avec le verdict sur
+  chaque ligne.
 - **Le tableau** : l'extract GATES à l'identique — toutes les colonnes, les
   mêmes intitulés, l'ordre exact de la feuille — en deux vues seulement,
   *Toutes les colonnes* et *Vue essentielle*. Seule exception : la **première**

@@ -49,8 +49,8 @@ def main():
         verifier('les recettes et le moteur Windows aussi',
                  'import/recettes/gates-par-contrat.json' in noms and
                  'import/ocr_windows.ps1' in noms)
-        verifier('l\'installateur Apps Script et la marche à suivre voyagent avec',
-                 'apps-script/Installateur.gs' in noms and 'AU-BUREAU.md' in noms)
+        verifier('l\'installateur Apps Script, la marche à suivre et le mode d\'emploi voyagent avec',
+                 'apps-script/Installateur.gs' in noms and 'AU-BUREAU.md' in noms and 'MODE-D-EMPLOI.md' in noms)
         verifier('les caches, le dossier d\'essai et le secret du dépôt restent ici',
                  not any('__pycache__' in n or '/essai/' in n or n.endswith('depot.json')
                          for n in noms), [n for n in noms if '__pycache__' in n])

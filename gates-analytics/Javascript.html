@@ -1074,6 +1074,10 @@
       vides: {}, perimetre: '',
       journal: '', journalOuverts: {}, groupesTout: false,
       aideFin: false,
+      /* Plan par plan : les groupes que le lecteur a pliés ou dépliés
+         lui-même ; les autres suivent la règle (à vérifier : déplié ; ce qui
+         va : replié). */
+      plisRapp: {},
       /* Le rapprochement : le lot « seulement là » posé sur le tableau de
          là. Rien n'est mémorisé. */
       lotLa: null,
@@ -1334,7 +1338,7 @@
       var meme = candidates.filter(function (c) { return c.ud.indice === udIci.indice; })[0] || candidates[0];
       var cat;
       if (!fini) { cat = 'avance'; r.avance.push(p); }
-      else if (meme.ud.indice !== udIci.indice) { cat = 'emission'; r.emission.push({ plan: p, ref_la: meme.ref }); }
+      else if (meme.ud.indice !== udIci.indice) { cat = 'emission'; r.emission.push({ plan: p, ref_la: meme.ref, indice_la: meme.ud.indice }); }
       else { cat = 'accord'; r.accord.push(p); }
       r.parPlan[p.reference] = cat;
       meme.cat = cat; meme.plan = p;
@@ -3172,12 +3176,12 @@
       /* Un compteur du rapprochement se nomme de même, sous son propre mot :
          on sait d'où vient le filtre sans remonter le chercher. */
       var lotRapp = LOTS_RAPPROCHEMENT.filter(function (l) { return 'rapprochement:' + l.cle === vue.refsLibelle; })[0];
-      if (lotRapp) liste.push({ cle: 'refs', mot: 'Rapprochement', valeur: libelleRapp(lotRapp) });
+      if (lotRapp) liste.push({ cle: 'refs', mot: 'Comparaison', valeur: libelleRapp(lotRapp) });
       else liste.push({ cle: 'refs', mot: 'Sélection', valeur: lot ? lot.des : (vue.refsLibelle || (n + ' plans')) });
     }
     if (vue.lotLa) {
       var lotLa = LOTS_RAPPROCHEMENT.filter(function (l) { return l.cle === vue.lotLa; })[0];
-      if (lotLa) liste.push({ cle: 'lotLa', mot: 'Rapprochement', valeur: libelleRapp(lotLa) });
+      if (lotLa) liste.push({ cle: 'lotLa', mot: 'Comparaison', valeur: libelleRapp(lotLa) });
     }
     Object.keys(vue.vides).forEach(function (k) {
       if (vue.vides[k]) liste.push({ cle: 'vide:' + k, mot: PAR_CLE[k].titre, valeur: 'non renseigné' });
@@ -3186,6 +3190,9 @@
       if (vue.filtres[k]) liste.push({ cle: 'filtre:' + k, mot: PAR_CLE[k].titre, valeur: vue.filtres[k] });
     });
     if (vue.recherche) liste.push({ cle: 'recherche', mot: 'Recherche', valeur: vue.recherche });
+    /* La recherche dans le tableau de là, posée par un clic sur une référence
+       seulement là : elle se voit et se retire comme les autres. */
+    if (RAPPROCHEMENT && vue.seconde.recherche) liste.push({ cle: 'rechercheLa', mot: 'Recherche dans ' + nomSeconde(), valeur: vue.seconde.recherche });
     return liste;
   }
 
@@ -3196,6 +3203,7 @@
     else if (cle === 'refs') { vue.refs = null; vue.refsLibelle = ''; }
     else if (cle === 'lotLa') vue.lotLa = null;
     else if (cle === 'recherche') { vue.recherche = ''; $('recherche').value = ''; }
+    else if (cle === 'rechercheLa') { vue.seconde.recherche = ''; $('recherche-seconde').value = ''; }
     else if (cle.indexOf('vide:') === 0) delete vue.vides[cle.slice(5)];
     else if (cle.indexOf('filtre:') === 0) delete vue.filtres[cle.slice(7)];
   }
@@ -3246,7 +3254,8 @@
     $('cadre-tableau').dataset.deborde = (d.scrollWidth - d.clientWidth - d.scrollLeft) > 4 ? 'true' : 'false';
   }
 
-  /* La section « Rapprochement avec … » : une phrase, quatre compteurs, la
+  /* La section « Comparaison des bases de données » : une phrase, deux
+     cercles, six verdicts, puis plan par plan. Historiquement : une phrase, quatre compteurs, la
      liste dépliable de ce qui n'est pas dans le tableau, le détail des écarts.
      Absente quand la source ne décrit aucune seconde base. */
   function pastilleVerdict(cat) {
@@ -3275,7 +3284,7 @@
     if (!RAPPROCHEMENT) { zone.hidden = true; return; }
     zone.hidden = false;
     var R = RAPPROCHEMENT, rap = SRC.rapprochement, nom = nomSeconde();
-    $('titre-rapprochement').textContent = 'Rapprochement avec ' + nom;
+    $('titre-rapprochement').textContent = 'Comparaison des bases de données';
     var nL = R.nbLignes;
     $('compte-rapprochement').textContent = (nL
       ? nb(nL) + (nL > 1 ? ' lignes dans ' : ' ligne dans ') + nom + (rap.titre ? ' · extract « ' + String(rap.titre) + ' »' : '')
@@ -3312,7 +3321,7 @@
     figure.innerHTML = figureRapprochement(comptes, R, nom, !!vue.perimetre);
     var membres = LOTS_RAPPROCHEMENT.filter(function (l) { return comptes[l.cle] && l.cle !== 'seul'; })
       .map(function (l) { return motLotRapp(l.cle, comptes[l.cle], nom); });
-    figure.setAttribute('aria-label', 'Rapprochement avec ' + nom + ' : ' +
+    figure.setAttribute('aria-label', 'Comparaison GATES / ' + nom + ' : ' +
       (membres.length ? membres.join(', ') + ', sur ' + nb(nP) + (nP > 1 ? ' plans' : ' plan') : 'aucun plan') +
       (nSeuls ? ' ; ' + motLotRapp('seul', nSeuls, nom) : '') + '.');
 
@@ -3327,6 +3336,88 @@
         pastilleVerdict(l.segment) + '\x3Cspan class="verdict-n">' + nb(n) + '\x3C/span>' +
         '\x3Cspan class="verdict-mot">\x3Cb>' + ech(libelle) + '\x3C/b> · ' + ech(phraseLot(l.cle, n, nom)) + '\x3C/span>\x3C/button>';
     }).join('');
+
+    rendreListeRapprochement(comptes, nom);
+  }
+
+  /* Plan par plan, sous les cercles : les lots dans l'ordre des priorités —
+     ce qu'il faut regarder d'abord (terminés que la seconde base ignore,
+     connus d'elle mais pas terminés ici, autre indice, seulement là), puis
+     ce qui va (pas encore là, d'accord), replié. Une ligne par plan : la
+     référence, l'état GATES, ce que la seconde base en dit. */
+  var ORDRE_LISTE_RAPP = ['manque', 'avance', 'emission', 'seul', 'attente', 'accord'];
+  /* Le tri des références se rejoue à chaque rendu : un comparateur
+     construit une fois (Intl.Collator, quand le navigateur l'a) coûte vingt
+     fois moins que localeCompare avec ses options à chaque paire. */
+  var COMPARER_REF = (window.Intl && Intl.Collator)
+    ? new Intl.Collator('fr', { numeric: true, sensitivity: 'base' }).compare
+    : function (a, b) { return a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' }); };
+  var DEPLIES_PAR_DEFAUT = { manque: true, avance: true, emission: true, seul: true };
+  var MAX_LIGNES_LISTE_RAPP = 80;
+  function groupeRappOuvert(cle) {
+    return vue.plisRapp[cle] !== undefined ? !!vue.plisRapp[cle] : !!DEPLIES_PAR_DEFAUT[cle];
+  }
+  /* Les rangées d'un lot. Pour un plan d'ici : sa référence, son état, et
+     ce que la seconde base en dit — absent, présent, ou sous quel indice.
+     Pour une ligne seulement là : sa référence recomposée, et la valeur de
+     sa première colonne de référence (NAME), qui sert à la retrouver dans le
+     tableau de là. */
+  function rangeesLotRapp(cle) {
+    var R = RAPPROCHEMENT, rap = SRC.rapprochement;
+    if (cle === 'seul') {
+      var premiere = Array.isArray(rap.cleReference) ? rap.cleReference[0] : rap.cleReference;
+      return R.lignes.filter(function (e) { return e.cat === 'seul'; }).map(function (e) {
+        return { ref: e.ref, plan: null, la: String(e.ligne[premiere] == null ? '' : e.ligne[premiere]).trim() || e.ref, see: 'présent' };
+      });
+    }
+    if (cle === 'emission') {
+      return R.emission.map(function (x) {
+        return { ref: x.plan.reference, plan: x.plan, see: 'sous l\u2019indice ' + x.indice_la + ' (' + x.ref_la + ')' };
+      });
+    }
+    var see = cle === 'manque' || cle === 'attente' ? 'absent' : 'présent';
+    return R[cle].map(function (p) { return { ref: p.reference, plan: p, see: see }; });
+  }
+  function rendreListeRapprochement(comptes, nom) {
+    var zone = $('liste-rapprochement');
+    var total = ORDRE_LISTE_RAPP.reduce(function (t, cle) { return t + (comptes[cle] || 0); }, 0);
+    if (!total) { zone.innerHTML = ''; return; }
+    var html = '\x3Cdiv class="rapp-liste-tete">\x3Ch3 class="rapp-liste-titre">Plan par plan\x3C/h3>' +
+      '\x3Cspan class="indice">d\u2019abord ce qui est \u00e0 v\u00e9rifier, puis ce qui va \u2014 un clic sur une r\u00e9f\u00e9rence la montre dans le tableau\x3C/span>\x3C/div>';
+    ORDRE_LISTE_RAPP.forEach(function (cle) {
+      var n = comptes[cle];
+      if (!n) return;
+      var lot = LOTS_RAPPROCHEMENT.filter(function (l) { return l.cle === cle; })[0];
+      var ouvert = groupeRappOuvert(cle);
+      var libelle = libelleRapp(lot) + (vue.perimetre && cle === 'seul' ? ' · tout le contrat' : '');
+      html += '\x3Cdiv class="rapp-groupe" data-cle="' + cle + '" data-ouvert="' + ouvert + '">' +
+        '\x3Cbutton class="rapp-groupe-tete" type="button" data-plier="' + cle + '" aria-expanded="' + ouvert + '">' +
+        pastilleVerdict(lot.segment) + '\x3Cb>' + nb(n) + '\x3C/b>' +
+        '\x3Cspan class="rapp-groupe-mot">' + ech(libelle) + '\x3C/span>' +
+        '\x3Cspan class="rapp-groupe-phrase">' + ech(phraseLot(cle, n, nom)) + '\x3C/span>' +
+        '\x3Cspan class="chevron" aria-hidden="true">\x3C/span>\x3C/button>';
+      if (ouvert) {
+        var rangees = rangeesLotRapp(cle).sort(function (a, b) { return COMPARER_REF(a.ref, b.ref); });
+        var montrees = rangees.slice(0, MAX_LIGNES_LISTE_RAPP);
+        html += '\x3Cdiv class="rapp-groupe-corps' + (montrees.length > 12 ? ' defile-liste' : '') + '">' +
+          '\x3Ctable class="rapp-table">\x3Cthead>\x3Ctr>\x3Cth scope="col">R\u00e9f\u00e9rence\x3C/th>\x3Cth scope="col">GATES\x3C/th>\x3Cth scope="col">' + ech(nom) + '\x3C/th>\x3C/tr>\x3C/thead>\x3Ctbody>' +
+          montrees.map(function (r) {
+            var ici = r.plan
+              ? pastilleDe(r.plan._etat) + ech(ETAT_PAR_CLE[r.plan._etat] ? ETAT_PAR_CLE[r.plan._etat].court : '\u2014')
+              : '\x3Cspan class="doux">aucun plan\x3C/span>';
+            var bouton = r.plan
+              ? '\x3Cbutton class="rapp-plan" type="button" data-plan-rapp="' + ech(r.ref) + '" title="Ne montrer que ce plan dans le tableau">' + ech(r.ref) + '\x3C/button>'
+              : '\x3Cbutton class="rapp-plan" type="button" data-ligne-la="' + ech(r.la) + '" title="Voir cette ligne dans le tableau de ' + ech(nom) + '">' + ech(r.ref) + '\x3C/button>';
+            return '\x3Ctr>\x3Ctd>' + bouton + '\x3C/td>\x3Ctd>' + ici + '\x3C/td>\x3Ctd>' + ech(r.see) + '\x3C/td>\x3C/tr>';
+          }).join('') + '\x3C/tbody>\x3C/table>' +
+          (rangees.length > montrees.length
+            ? '\x3Cdiv class="rapp-groupe-suite">et ' + nb(rangees.length - montrees.length) + ' autres \u2014 \x3Cbutton type="button" class="lien-doux" data-rapp-tout="' + cle + '">les voir tous dans le tableau\x3C/button>\x3C/div>'
+            : '') +
+          '\x3C/div>';
+      }
+      html += '\x3C/div>';
+    });
+    zone.innerHTML = html;
   }
 
   /* La bulle d'un lot : ce que c'est, combien, le détail qui aide — la part
@@ -3734,6 +3825,44 @@
      les puces du comparatif ; « seulement là » filtre le tableau de là. Le
      détail se déplie à part. */
   $('rapprochement').addEventListener('click', function (e) {
+    var pli = e.target.closest('button[data-plier]');
+    if (pli && RAPPROCHEMENT) {
+      vue.plisRapp[pli.dataset.plier] = !groupeRappOuvert(pli.dataset.plier);
+      rendreRapprochement();
+      var repli = document.querySelector('#liste-rapprochement button[data-plier="' + pli.dataset.plier + '"]');
+      if (repli) repli.focus();
+      return;
+    }
+    var pr = e.target.closest('button[data-plan-rapp]');
+    if (pr && RAPPROCHEMENT) {
+      /* Comme un clic sur une ligne de la seconde base : le tableau d'ici se
+         réduit à ce plan, et le bandeau le dit. */
+      montrerCePlan(pr.dataset.planRapp);
+      return;
+    }
+    var la = e.target.closest('button[data-ligne-la]');
+    if (la && RAPPROCHEMENT) {
+      /* Une ligne que la seconde base est seule à connaître : son tableau,
+         cherché sur sa référence. Un lot posé sur les plans d'ici la
+         cacherait : il est retiré. Le périmètre reste. */
+      if (vue.refsLibelle.indexOf('rapprochement:') === 0) { vue.refs = null; vue.refsLibelle = ''; }
+      vue.lotLa = null;
+      vue.base = 'la';
+      vue.seconde.recherche = la.dataset.ligneLa;
+      $('recherche-seconde').value = vue.seconde.recherche;
+      rendre();
+      allerAuTableau();
+      return;
+    }
+    var tout = e.target.closest('button[data-rapp-tout]');
+    if (tout && RAPPROCHEMENT) {
+      /* « Les voir tous dans le tableau » pose le lot s'il ne l'est pas déjà —
+         jamais l'inverse — et descend au tableau. */
+      if (lotRappActif() !== tout.dataset.rappTout) poserLotRapp(tout.dataset.rappTout);
+      rendre();
+      allerAuTableau();
+      return;
+    }
     var b = e.target.closest('button[data-rapp]');
     if (b && RAPPROCHEMENT) {
       poserLotRapp(b.dataset.rapp); rendre();
@@ -3776,13 +3905,27 @@
   $('corps-seconde').addEventListener('click', function (e) {
     var tr = e.target.closest('tr[data-plan]');
     if (!tr || !RAPPROCHEMENT) return;
-    var ref = tr.dataset.plan;
-    vue.refs = {}; vue.refs[ref] = true; vue.refsLibelle = 'plan ' + ref;
-    vue.base = 'ici';
-    rendre();
-    var cadre = $('cadre-tableau');
-    defilerVers(cadre, { block: 'nearest', behavior: 'smooth' });
+    montrerCePlan(tr.dataset.plan);
   });
+  /* Ne montrer que ce plan dans le tableau d'ici : les filtres libres — état,
+     groupe, recherche, colonnes — s'effacent, sinon un plan terminé sous le
+     filtre « En cours » donnerait un tableau vide malgré la promesse ; le
+     périmètre, lui, reste. Puis on descend au tableau, et le focus se pose
+     sur le bouton de base, qui survit au rendu. */
+  function montrerCePlan(ref) {
+    vue.etat = ''; vue.groupe = null; vue.filtres = {}; vue.vides = {};
+    vue.recherche = ''; $('recherche').value = '';
+    vue.refs = {}; vue.refs[ref] = true; vue.refsLibelle = 'plan ' + ref;
+    vue.lotLa = null; vue.base = 'ici';
+    rendre();
+    allerAuTableau();
+  }
+  function allerAuTableau() {
+    var cadre = $(vue.base === 'la' ? 'cadre-seconde' : 'cadre-tableau');
+    defilerVers(cadre, { block: 'nearest', behavior: 'smooth' });
+    var bouton = document.querySelector('#choix-base button[data-base="' + vue.base + '"]');
+    if (bouton && !bouton.closest('[hidden]')) bouton.focus();
+  }
   $('choix-base').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-base]');
     if (!b || b.dataset.base === vue.base) return;

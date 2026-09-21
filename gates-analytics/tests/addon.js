@@ -547,21 +547,27 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /renommer « Historique_FWD_<nom du contrat> »/.test(rapOrphelin),
     rapOrphelin.split('\n').find(l => /rattaché/.test(l)));
 
-  /* Un onglet de contrat illisible n'empêche pas les autres d'être archivés ;
-     l'erreur est quand même relancée, pour que le déclencheur la signale. */
-  const clV = new Classeur([new Feuille('X1', feuilleExemple(20)), new Feuille('Vide', [])], 'Avec un onglet vide');
+  /* Un onglet visible mais VIDE n'est pas un contrat : c'est la « Feuille 1 »
+     d'un classeur neuf, restée en tête à côté de l'onglet du premier
+     contrat. Il ne compte pas, n'est pas archivé, ne fait pas d'erreur, et
+     la page s'ouvre sur le contrat rempli — même quand le vide est premier. */
+  const clV = new Classeur([new Feuille('Feuille 1', []), new Feuille('X1', feuilleExemple(20))], 'Avec un onglet vide en tête');
   const cV = chargerServeur(clV, {});
   let erreurV = '';
   try { cV.enregistrerInstantaneHebdo(); } catch (e) { erreurV = e.message; }
-  verifier('un contrat illisible n\'empêche pas l\'archivage des autres, mais l\'erreur est relancée',
-    cV.getHistorique(clV, 'X1').length === 1 && /1 contrat\(s\) archivé\(s\), 1 en erreur/.test(erreurV) &&
-    /« Vide » : La feuille « Vide » est vide/.test(erreurV), erreurV);
-  verifier('le paquet de ce contrat est un paquet d\'erreur, le premier reste servi',
-    cV.getDonneesPourClient('Vide').ok === false && cV.getDonneesPourClient().ok === true &&
-    cV.getDonneesPourClient().contrats.length === 2);
-  verifier('le diagnostic le dit et ne conclut pas que tout va bien',
-    /— Contrat « Vide » —/.test(cV.diagnostic()) && /L'onglet est vide/.test(cV.diagnostic()) &&
-    /Un contrat au moins n'est pas lisible/.test(cV.diagnostic()));
+  const boite = cV.__alertes[cV.__alertes.length - 1];
+  verifier('un onglet vide en tête n\'est pas un contrat : l\'archivage passe sur l\'autre seul, sans erreur',
+    erreurV === '' && cV.getHistorique(clV, 'X1').length === 1 && cV.listerContrats(clV).length === 1 &&
+    cV.listerContrats(clV)[0].id === 'X1', erreurV || JSON.stringify(cV.listerContrats(clV)));
+  verifier('la page s\'ouvre sur le contrat rempli ; l\'onglet vide, demandé par son nom, est introuvable',
+    cV.getDonneesPourClient().ok === true && cV.getDonneesPourClient().contrat === 'X1' &&
+    cV.getDonneesPourClient().contrats.length === 1 && cV.getDonneesPourClient('Feuille 1').ok === false);
+  verifier('le diagnostic ne le mentionne pas et conclut que tout est en place',
+    !/Feuille 1/.test(cV.diagnostic()) && /Tout est en place/.test(cV.diagnostic()), cV.diagnostic());
+  /* Lancé du menu, l'archivage se confirme dans une boîte : la semaine, les
+     contrats et leurs comptes, et le fait qu'un second archivage remplace. */
+  verifier('l\'archivage se confirme dans une boîte : « Relevé <semaine> archivé : X1 (20 plans). »',
+    /^Relevé \d{4}-S\d{2} archivé : X1 \(20 plans\)\. Un second archivage dans la semaine remplace celui-ci\.$/.test(boite), boite);
 
   /* Ce qui n'est pas un contrat : un onglet masqué, un onglet de service, la
      seconde base. CONFIG.FEUILLE_DONNEES, lui, impose un contrat unique. */
@@ -964,8 +970,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
 
   const vide = serveurSur([]);
   const pVide = vide.contexte.getDonneesPourClient();
-  verifier('une feuille vide renvoie une erreur lisible, pas une exception',
-    pVide.ok === false && /vide/i.test(pVide.message), pVide.message);
+  verifier('une feuille vide renvoie une erreur lisible, pas une exception — qui nomme l\'onglet vide et dit le geste',
+    pVide.ok === false && /« Données » est vide — coller l'export GATES en A1/.test(pVide.message), pVide.message);
   verifier('et le paquet d\'erreur porte une liste de contrats vide',
     Array.isArray(pVide.contrats) && pVide.contrats.length === 0 && pVide.contrat === '');
 
@@ -1017,7 +1023,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('il compte les relevés archivés', /Relevés archivés : 1/.test(rapportOk));
   verifier('il donne le poids du paquet', /Paquet envoyé à la page : \d+ Ko/.test(rapportOk));
   verifier('il conclut que tout est en place', /Tout est en place/.test(rapportOk));
-  verifier('il passe aussi par l\'alerte à l\'écran', dOk.contexte.__alertes.length === 1);
+  verifier('il passe aussi par l\'alerte à l\'écran (après celle de l\'archivage)',
+    dOk.contexte.__alertes.length === 2 && dOk.contexte.__alertes[1] === rapportOk && /^Relevé .* archivé : Données \(30 plans\)/.test(dOk.contexte.__alertes[0]),
+    JSON.stringify(dOk.contexte.__alertes.map(a => a.slice(0, 60))));
 
   const dSansFichiers = serveurSur(feuilleExemple(10), {}, ['Index']);
   const rapportSansFichiers = dSansFichiers.contexte.diagnostic();
@@ -1030,8 +1038,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /Il manque des fichiers/.test(rapportSansFichiers));
 
   const dVide = serveurSur([]);
-  verifier('une feuille vide est diagnostiquée',
-    /L'onglet est vide/.test(dVide.contexte.diagnostic()));
+  verifier('un classeur dont le seul onglet est vide est diagnostiqué : l\'onglet nommé, et le geste',
+    /Onglet de données : Aucun onglet de données exploitable dans ce classeur : « Données » est vide — coller l'export GATES en A1/.test(dVide.contexte.diagnostic()),
+    dVide.contexte.diagnostic());
 
   const dSansFWD = serveurSur([['Réf', 'Truc'], ['A-1', 'x']]);
   const rapportSansFWD = dSansFWD.contexte.diagnostic();
@@ -1747,7 +1756,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     lignesSeconde: document.querySelectorAll('#corps-seconde tr[data-i]').length,
     vueSeconde: document.getElementById('vue-seconde').hidden
   }));
-  verifier('la section est là, nommée d\'après l\'onglet', ecran.visible && ecran.titre === 'Rapprochement avec Base2', ecran.titre);
+  verifier('la section est là, sous son titre', ecran.visible && ecran.titre === 'Comparaison des bases de données', ecran.titre);
   verifier('la phrase compte les terminés que Base2 connaît, la sous-phrase ce qu\'il y a à vérifier et la référence que seule Base2 connaît',
     ecran.phrase === attB2.accord + ' sur ' + attB2.termines + pluriel(attB2.termines, ' plan terminé', ' plans terminés') + pluriel(attB2.accord, ' se retrouve', ' se retrouvent') + ' dans Base2' &&
     ecran.sous === 'À vérifier : ' + restesB2.join(' · ') + '.',
@@ -1765,7 +1774,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pr.click('#verdicts-rapprochement button[data-rapp="' + lotB2 + '"]'); await pr.waitForTimeout(500);
   verifier('cliquer un verdict d\'ici filtre le tableau sur ses ' + nLotB2 + ' plans',
     await pr.evaluate(n => document.querySelectorAll('#corps-tableau tr').length === n &&
-      [...document.querySelectorAll('.jeton')].some(j => /Rapprochement : /.test(j.textContent)), nLotB2));
+      [...document.querySelectorAll('.jeton')].some(j => /Comparaison : /.test(j.textContent)), nLotB2));
   await pr.click('#verdicts-rapprochement button[data-rapp="seul"]'); await pr.waitForTimeout(400);
   verifier('« seulement dans Base2 » passe sur Base2, réduit son tableau à UD-99-9999, et celui de GATES dit où la voir',
     await pr.evaluate(() => {
@@ -1773,7 +1782,29 @@ function serveurSur(valeurs, proprietes, fichiers) {
       return l.length === 1 && l[0].querySelector('.verdict .ref').textContent === 'UD-99-9999' &&
         !document.getElementById('cadre-seconde').hidden &&
         /Ces 1 ligne n’a pas de plan dans GATES\. Les voir dans Base2/.test((document.querySelector('#corps-tableau .vide-message') || {}).textContent.replace(/\s+/g, ' ')) &&
-        [...document.querySelectorAll('.jeton')].some(j => /Rapprochement : seulement dans Base2/.test(j.textContent));
+        [...document.querySelectorAll('.jeton')].some(j => /Comparaison : seulement dans Base2/.test(j.textContent));
+    }));
+  /* Plan par plan, sur une référence à une seule colonne : les groupes
+     suivent les verdicts (les lots à zéro n'apparaissent pas), et la ligne
+     seulement là s'ouvre dans le tableau de Base2, cherchée sur REF_UD. */
+  const listeB2 = await pr.evaluate(() => ({
+    groupes: [...document.querySelectorAll('#liste-rapprochement .rapp-groupe')].map(g => g.dataset.cle + '=' + g.querySelector('.rapp-groupe-tete b').textContent.replace(/\s/g, '')),
+    seul: [...document.querySelectorAll('#liste-rapprochement .rapp-groupe[data-cle="seul"] tbody tr')].map(tr => ({
+      ref: tr.querySelector('button').textContent, la: tr.querySelector('button').dataset.ligneLa, gates: tr.children[1].textContent.trim()
+    }))
+  }));
+  const attendusB2 = ['manque', 'avance', 'emission', 'seul', 'attente', 'accord']
+    .map(c => [c, c === 'seul' ? 1 : (attB2[c] || 0)]).filter(x => x[1] > 0).map(x => x[0] + '=' + x[1]);
+  verifier('plan par plan sur Base2 : les groupes non vides des verdicts, dans l\'ordre des priorités, et la ligne seulement là avec REF_UD',
+    listeB2.groupes.join(' ') === attendusB2.join(' ') && listeB2.seul.length === 1 && listeB2.seul[0].ref === 'UD-99-9999' &&
+    listeB2.seul[0].la === 'UD-99-9999' && listeB2.seul[0].gates === 'aucun plan', JSON.stringify([listeB2, attendusB2]));
+  await pr.click('#liste-rapprochement .rapp-groupe[data-cle="seul"] button[data-ligne-la]'); await pr.waitForTimeout(500);
+  verifier('un clic sur cette référence ouvre le tableau de Base2 cherché sur UD-99-9999, le lot retiré, le jeton de recherche posé',
+    await pr.evaluate(() => {
+      const l = document.querySelectorAll('#corps-seconde tr[data-i]');
+      const jetons = [...document.querySelectorAll('.jeton')].map(j => j.textContent);
+      return document.getElementById('recherche-seconde').value === 'UD-99-9999' && l.length === 1 && !document.getElementById('cadre-seconde').hidden &&
+        jetons.some(j => /Recherche dans Base2 : UD-99-9999/.test(j)) && !jetons.some(j => /Comparaison : /.test(j));
     }));
   await ctxRapp.close();
 

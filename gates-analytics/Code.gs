@@ -391,9 +391,28 @@ function listerContrats(classeur) {
     }
     return [{ id: nommee.getName(), nom: nommee.getName() }];
   }
+  /* Un onglet visible et VIDE n'est pas un contrat : c'est la « Feuille 1 »
+     d'un classeur neuf, restée en tête quand on a ajouté l'onglet du premier
+     contrat à côté. Sans cela, la page s'ouvrirait sur elle. */
   return classeur.getSheets()
-    .filter(function (f) { return !f.isSheetHidden() && !estOngletInterne(f.getName()); })
+    .filter(function (f) { return !f.isSheetHidden() && !estOngletInterne(f.getName()) && f.getLastRow() > 0; })
     .map(function (f) { return { id: f.getName(), nom: f.getName() }; });
+}
+
+/**
+ * Pourquoi il n'y a aucun contrat : des onglets visibles mais vides — le
+ * cas d'un classeur neuf, « Feuille 1 » —, ou aucun onglet visible du tout.
+ * Le message nomme les onglets vides et dit le geste.
+ */
+function messageSansContrat(classeur) {
+  const vides = classeur.getSheets()
+    .filter(function (f) { return !f.isSheetHidden() && !estOngletInterne(f.getName()) && f.getLastRow() === 0; })
+    .map(function (f) { return '« ' + f.getName() + ' »'; });
+  return 'Aucun onglet de données exploitable dans ce classeur : ' +
+    (vides.length
+      ? vides.join(', ') + (vides.length > 1 ? ' sont vides' : ' est vide') +
+        ' — coller l\'export GATES en A1 d\'un onglet nommé du contrat.'
+      : 'aucun onglet visible.');
 }
 
 /**
@@ -406,7 +425,7 @@ function listerContrats(classeur) {
 function getFeuilleDonnees(classeur, contrat) {
   const contrats = listerContrats(classeur);
   if (contrats.length === 0) {
-    throw new Error('Aucun onglet de données exploitable dans ce classeur.');
+    throw new Error(messageSansContrat(classeur));
   }
   const voulu = contrat === undefined || contrat === null ? '' : String(contrat).trim();
   if (!voulu) return classeur.getSheetByName(contrats[0].id);
@@ -943,7 +962,7 @@ function diagnostic() {
   try {
     contrats = listerContrats(classeur);
     if (contrats.length === 0) {
-      throw new Error('Aucun onglet de données exploitable dans ce classeur.');
+      throw new Error(messageSansContrat(classeur));
     }
   } catch (err) {
     dire('✗ Onglet de données : ' + err.message);
@@ -1393,7 +1412,7 @@ function enregistrerInstantaneHebdo() {
   const semaine = numeroSemaineISO(new Date());
   const contrats = listerContrats(classeur);
   if (contrats.length === 0) {
-    throw new Error('Aucun onglet de données exploitable dans ce classeur.');
+    throw new Error(messageSansContrat(classeur));
   }
 
   const detail = [];
@@ -1410,6 +1429,18 @@ function enregistrerInstantaneHebdo() {
     throw new Error('Relevé ' + semaine + ' — ' +
       (detail.length ? detail.length + ' contrat(s) archivé(s), ' : '') +
       erreurs.length + ' en erreur : ' + erreurs.join(' ; '));
+  }
+  /* Lancé du menu, le geste doit se voir : sans cela, Sheets n'affiche que
+     « Script terminé », et on ne sait pas si c'est fait. Lancé par le
+     déclencheur du vendredi, il n'y a personne devant : pas d'interface, et
+     l'appel ci-dessous échoue en silence. */
+  const mot = 'Relevé ' + semaine + ' archivé : ' + detail.map(function (d) {
+    return d.nom + ' (' + d.compte.total + ' plans)';
+  }).join(', ') + '.' + (detail.length ? ' Un second archivage dans la semaine remplace celui-ci.' : '');
+  try {
+    SpreadsheetApp.getUi().alert('Suivi FWD', mot, SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (e) {
+    /* Pas d'interface (déclencheur, test) : rien à montrer. */
   }
   return { ok: true, semaine: semaine, contrats: detail };
 }

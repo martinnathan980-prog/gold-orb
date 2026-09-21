@@ -107,7 +107,7 @@
     <!-- Le journal appartient au graphe : la courbe dit combien, le journal
          dit lesquels. Les séparer obligeait à faire l'aller-retour. -->
     <div class="section-tete section-journal">
-      <h3 class="titre-journal">Ce qui a changé, semaine par semaine</h3>
+      <h2 class="titre-journal">Ce qui a changé, semaine par semaine</h2>
       <span class="filtre-journal" id="filtre-journal" role="group" aria-label="Ne montrer que certains passages">
         <button type="button" data-journal="" aria-pressed="true">Tout</button>
         <button type="button" data-journal="termine" aria-pressed="false"><span class="pastille" style="background:var(--fait)"></span>Terminés</button>
@@ -220,7 +220,7 @@
        Présent seulement quand la source décrit une seconde base. -->
   <section class="bloc rapprochement" id="rapprochement" hidden>
     <div class="section-tete">
-      <h2 id="titre-rapprochement">Rapprochement</h2>
+      <h2 id="titre-rapprochement">Comparaison des bases de données</h2>
       <span class="compte" id="compte-rapprochement"></span>
     </div>
     <div class="rapp-phrases">
@@ -228,9 +228,15 @@
       <p class="rapp-sous" id="sous-rapprochement"></p>
     </div>
     <div class="rapp-face">
-      <div class="rapp-figure" id="venn-rapprochement" role="img" aria-label="Rapprochement"></div>
-      <div class="verdicts" id="verdicts-rapprochement" role="group" aria-label="Filtrer le tableau des plans par verdict du rapprochement"></div>
+      <div class="rapp-figure" id="venn-rapprochement" role="img" aria-label="Comparaison GATES / seconde base"></div>
+      <div class="verdicts" id="verdicts-rapprochement" role="group" aria-label="Filtrer le tableau des plans par verdict de la comparaison"></div>
     </div>
+    <!-- Sous les cercles, plan par plan : un lot après l'autre, dans l'ordre
+         des priorités — ce qui est à vérifier d'abord, déplié ; ce qui va
+         ensuite, replié. Chaque ligne : la référence, l'état GATES, ce que la
+         seconde base en dit. Un clic sur une référence la montre dans le
+         tableau. -->
+    <div class="rapp-liste" id="liste-rapprochement"></div>
   </section>
 
   <footer class="pied">

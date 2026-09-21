@@ -53,8 +53,11 @@ Rien à configurer : ajouter un onglet, y coller un export, c'est un contrat de
 plus.
 
 Ne sont jamais pris pour des contrats : les onglets masqués, les onglets
+**vides** (la « Feuille 1 » d'un classeur neuf, restée à côté), les onglets
 d'historique (`Historique_FWD…`), l'onglet de la seconde base s'il est nommé
-(voir § 12) et les onglets de service (`Paramètres`, `Config`).
+(voir § 12) et les onglets de service (`Paramètres`, `Config`). Sans aucun
+contrat, le message nomme les onglets vides et dit le geste : coller l'export
+GATES en A1 d'un onglet nommé du contrat.
 
 Dans la page, un **sélecteur « Contrat »** dans le bandeau du haut passe de
 l'un à l'autre sans recharger ; le titre ne le répète pas. Avec un seul
@@ -72,10 +75,15 @@ FEUILLE_DONNEES: 'Données',
 
 ## 4. Le geste de chaque semaine
 
-1. Dans GATES, exporter la liste de chaque contrat en CSV.
+1. Dans GATES, exporter la liste de chaque contrat — en Excel de préférence :
+   les cellules fusionnées de la ligne des groupes voyagent avec, et c'est
+   par le groupe « Réalisation FWD » que la bonne colonne « Avancement » se
+   reconnaît (§ 7).
 2. Ouvrir l'onglet du contrat, `Ctrl+A`, `Suppr`, puis coller l'export
    en **A1**. Même chose pour chaque contrat.
-3. **Suivi FWD → Archiver le relevé de cette semaine.**
+3. **Suivi FWD → Archiver le relevé de cette semaine.** Une boîte confirme :
+   « Relevé 2026-S39 archivé : HDK (186 plans), THS (93 plans). Un second
+   archivage dans la semaine remplace celui-ci. »
 
 C'est tout. L'archivage passe sur **tous les contrats d'un coup**, une ligne
 par contrat dans son propre onglet d'historique. Un onglet illisible n'empêche
@@ -83,7 +91,8 @@ pas les autres d'être relevés : l'erreur le nomme, et les autres sont
 archivés.
 
 L'étape 3 peut se faire toute seule : **Suivi FWD → Activer l'archivage
-automatique**, et un relevé est pris chaque vendredi vers 17 h.
+automatique (vendredi 17 h)**, et un relevé est pris chaque vendredi entre
+17 h et 18 h (heure du fuseau du projet Apps Script).
 
 Les étapes 1 et 2 aussi : voir **§ 15, l'automatisation** — un script récupère
 les extracts dans Chrome et les dépose dans le classeur, qui archive la
@@ -394,7 +403,7 @@ savoir ce qui a changé entre les deux.
 saisie*. Les confondre masquerait le second, qui est précisément ce qu'on
 cherche à voir : le bouton « non renseignés » sous la barre sort la liste.
 
-## 12. Rapprochement avec une seconde base : SEE
+## 12. Comparaison des bases de données : GATES et SEE
 
 Une autre base suit les mêmes plans sous une autre structure. La seconde base
 prévue est **SEE**, l'extract Excel de l'intranet (« Nommage WD BFLOW ») : un
@@ -411,8 +420,9 @@ terminés, SEE les connaît-il, et réciproquement ?* La comparaison ne porte qu
 sur la **référence** ; les autres colonnes de l'extract s'affichent, elles ne
 se comparent pas.
 
-**La section « Rapprochement avec SEE »**, sous le tableau des plans, se lit
-comme on compare deux bases : deux cercles face à face.
+**La section « Comparaison des bases de données »**, sous le tableau des
+plans, se lit comme on compare deux bases : deux cercles face à face, puis
+plan par plan.
 
 - une phrase : « **253** sur 256 plans terminés se retrouvent dans SEE », et
   dessous ce qu'il reste à regarder : « À vérifier : 3 terminés que SEE ne
@@ -442,7 +452,7 @@ comme on compare deux bases : deux cercles face à face.
 
 Cliquer un verdict filtre le tableau des plans ; « terminés, absents de SEE »
 et « pas encore dans SEE » l'emmènent sur GATES, « seulement dans SEE » sur
-SEE. Un seul lot à la fois ; le bandeau le nomme (« Rapprochement : … »), la
+SEE. Un seul lot à la fois ; le bandeau le nomme (« Comparaison : … »), la
 croix le retire sans changer de côté. Un verdict se **combine** avec les
 filtres du haut : « dans SEE, pas terminés ici » plus l'état *En cours* ne
 garde que ceux-là.
@@ -451,6 +461,24 @@ Survoler un verdict — ou sa part de l'anneau, ou un nombre de côté —
 l'éclaire dans la figure et ouvre une bulle : le compte, la part des terminés,
 les paires « référence → solution et lettre », la répartition par état de
 GATES, et où mène le clic.
+
+**Plan par plan**, sous les cercles : un groupe par verdict, dans l'ordre
+des priorités — d'abord ce qui est à vérifier (terminés absents de SEE, dans
+SEE pas terminés ici, autre indice, seulement dans SEE), **dépliés** ; puis ce
+qui va (pas encore dans SEE, terminés et dans SEE), **repliés** — un clic sur
+la tête du groupe plie ou déplie. Chaque ligne : la référence, l'état GATES
+avec sa pastille, ce que SEE en dit (absent, présent, ou sous quel indice) ;
+pour « seulement dans SEE », la référence recomposée et « aucun plan ». Les
+références sont triées ; au-delà de 80 lignes, le groupe renvoie au tableau
+(« les voir tous dans le tableau »). Un clic sur une référence d'ici réduit
+le tableau GATES à ce plan (bandeau « Sélection : plan … ») ; sur une
+référence seulement là, le tableau passe sur SEE, cherché sur elle (le
+bandeau porte alors un jeton « Recherche dans SEE », qui se retire d'une
+croix). Un clic sur un plan efface les filtres libres (état, groupe,
+recherche, colonnes) — sans quoi un plan terminé sous le filtre « En cours »
+donnerait un tableau vide — et garde le périmètre. Tout suit le périmètre,
+sauf « seulement dans SEE », compté sur tout le contrat et étiqueté ainsi,
+comme dans les cercles.
 
 **Le tableau « SEE »**, derrière l'interrupteur **GATES | SEE** de la
 section « Plans » (un seul tableau à la fois, les mêmes outils) : l'extract à

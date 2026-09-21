@@ -46,7 +46,7 @@ def a_emporter(racine=RACINE):
         if f.suffix == '.txt' and 'gz.b64' in f.name:
             continue              # l'interface emballée : elle ne sert pas ici
         fichiers.append((f, 'import/' + str(f.relative_to(dossier)).replace('\\', '/')))
-    for extra in ('apps-script/Installateur.gs', 'AU-BUREAU.md'):
+    for extra in ('apps-script/Installateur.gs', 'AU-BUREAU.md', 'MODE-D-EMPLOI.md'):
         chemin = racine / extra
         if chemin.exists():
             fichiers.append((chemin, extra))
@@ -115,6 +115,7 @@ def main(argv=None):
     print('  import\\\\extraire.py          rejoue une recette d\\'extraction dans Chrome')
     print('  import\\\\deposer.py           envoie un extract au classeur')
     print('  apps-script\\\\Installateur.gs  à coller dans Apps Script')
+    print('  MODE-D-EMPLOI.md            ce qu\\'on fait dans le classeur, semaine après semaine')
     print('  AU-BUREAU.md                la marche à suivre, en entier')
     print('')
     print('LES TROIS COMMANDES QUI COMPTENT')

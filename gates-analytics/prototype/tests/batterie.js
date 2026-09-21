@@ -423,7 +423,160 @@ async function reinitialiser(pg) {
   });
   const r0 = await lireRapp();
   verifier('la section est là, nommée d\'après la seconde base',
-    !r0.cache && r0.titre === 'Rapprochement avec SEE', r0.titre);
+    !r0.cache && r0.titre === 'Comparaison des bases de données', r0.titre);
+
+  /* Sous les cercles, plan par plan : les lots dans l'ordre des priorités —
+     à vérifier d'abord, dépliés ; ce qui va ensuite, replié. Un clic sur une
+     référence réduit le tableau d'ici à ce plan ; une ligne seulement là
+     ouvre le tableau de SEE sur elle. */
+  const lireListe = () => p.evaluate(() => ({
+    titre: (document.querySelector('#liste-rapprochement .rapp-liste-titre') || {}).textContent,
+    groupes: [...document.querySelectorAll('#liste-rapprochement .rapp-groupe')].map(g => ({
+      cle: g.dataset.cle, ouvert: g.dataset.ouvert,
+      n: +g.querySelector('.rapp-groupe-tete b').textContent.replace(/\s/g, ''),
+      expanded: g.querySelector('.rapp-groupe-tete').getAttribute('aria-expanded'),
+      lignes: g.querySelectorAll('tbody tr').length
+    }))
+  }));
+  const li0 = await lireListe();
+  verifier('sous les cercles, « Plan par plan » range les lots dans l\'ordre des priorités, avec les comptes des verdicts',
+    li0.titre === 'Plan par plan' && li0.groupes.map(g => g.cle).join() === 'manque,avance,emission,seul,attente,accord' &&
+    li0.groupes.map(g => g.n).join() === [MANQUE, AVANCE, EMISSION, SEUL, ATTENTE, ACCORD].join(), JSON.stringify(li0));
+  verifier('les lots à vérifier sont dépliés, une ligne par plan ; « pas encore » et « d\'accord » sont repliés',
+    li0.groupes.slice(0, 4).every(g => g.ouvert === 'true' && g.expanded === 'true' && g.lignes === g.n) &&
+    li0.groupes.slice(4).every(g => g.ouvert === 'false' && g.expanded === 'false' && g.lignes === 0), JSON.stringify(li0));
+  const rangees = await p.evaluate(() => {
+    const lire = cle => [...document.querySelectorAll('#liste-rapprochement .rapp-groupe[data-cle="' + cle + '"] tbody tr')]
+      .map(tr => ({ ref: tr.querySelector('button').textContent, gates: tr.children[1].textContent.trim(), see: tr.children[2].textContent.trim() }));
+    return { manque: lire('manque'), avance: lire('avance'), emission: lire('emission'), seul: lire('seul') };
+  });
+  verifier('« terminés, absents de SEE » : la référence, Terminé côté GATES, absent côté SEE',
+    rangees.manque.length === MANQUE && rangees.manque.every(r => /^[A-Z]{2}E\d{4}A\d{6}[A-Z]$/.test(r.ref) && r.gates === 'Terminé' && r.see === 'absent'),
+    JSON.stringify(rangees.manque));
+  verifier('« dans SEE, pas terminés ici » : jamais Terminé côté GATES, présent côté SEE ; « autre indice » dit sous quelle lettre ; « seulement dans SEE » n\'a aucun plan',
+    rangees.avance.every(r => r.gates !== 'Terminé' && r.see === 'présent') &&
+    rangees.emission.every(r => r.gates === 'Terminé' && /^sous l’indice [A-Z] \([A-Z]{2}E\d{4}A\d{6}[A-Z]\)$/.test(r.see)) &&
+    rangees.seul.length === SEUL && rangees.seul.every(r => r.gates === 'aucun plan' && r.see === 'présent'),
+    JSON.stringify([rangees.avance[0], rangees.emission[0], rangees.seul[0]]));
+  verifier('les références d\'un lot sont triées', rangees.avance.map(r => r.ref).join() === rangees.avance.map(r => r.ref).sort((a, b) => a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' })).join());
+  await p.click('#liste-rapprochement .rapp-groupe[data-cle="accord"] button[data-plier]'); await p.waitForTimeout(300);
+  const li1 = await lireListe();
+  verifier('déplier « terminés et dans SEE » montre ses lignes (80 au plus, le reste renvoyé au tableau) ; les autres ne bougent pas',
+    li1.groupes[5].ouvert === 'true' && li1.groupes[5].lignes === Math.min(ACCORD, 80) && li1.groupes[0].ouvert === 'true' && li1.groupes[4].ouvert === 'false' &&
+    (ACCORD <= 80 || await p.evaluate(() => /et \d+ autres/.test(document.querySelector('#liste-rapprochement .rapp-groupe[data-cle="accord"] .rapp-groupe-suite').textContent))),
+    JSON.stringify(li1.groupes));
+  await p.click('#liste-rapprochement .rapp-groupe[data-cle="accord"] button[data-plier]'); await p.waitForTimeout(300);
+  verifier('replier le referme', (await lireListe()).groupes[5].ouvert === 'false');
+  await p.click('#liste-rapprochement .rapp-groupe[data-cle="manque"] button[data-plan-rapp]'); await p.waitForTimeout(500);
+  const clicPlan = await p.evaluate(() => ({
+    lignes: document.querySelectorAll('#corps-tableau tr').length,
+    ref: (document.querySelector('#corps-tableau td.ref, #corps-tableau .ref') || {}).textContent,
+    jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').replace(/\s+/g, ' ').trim()),
+    base: document.querySelector('#choix-base button[aria-pressed="true"]').dataset.base,
+    liste: document.querySelectorAll('#liste-rapprochement .rapp-groupe').length
+  }));
+  verifier('un clic sur une référence réduit le tableau GATES à ce plan, le bandeau le dit, et la liste reste entière',
+    clicPlan.lignes === 1 && clicPlan.ref === rangees.manque[0].ref && clicPlan.base === 'ici' &&
+    clicPlan.jetons.some(j => /Sélection : plan /.test(j)) && clicPlan.liste === 6, JSON.stringify(clicPlan));
+  await p.click('.jeton .x'); await p.waitForTimeout(400);
+  /* Un lot posé sur les plans d'ici cacherait toute ligne seulement là :
+     le clic le retire. Le tableau de SEE se montre, cherché sur la ligne, le
+     bandeau porte le jeton de cette recherche, et le focus se pose sur le
+     bouton de base — qui survit au rendu. */
+  await p.click('#verdicts-rapprochement button[data-rapp="accord"]'); await p.waitForTimeout(400);
+  await p.evaluate(() => { window.__valeurLa = document.querySelector('#liste-rapprochement .rapp-groupe[data-cle="seul"] button[data-ligne-la]').dataset.ligneLa; });
+  await p.click('#liste-rapprochement .rapp-groupe[data-cle="seul"] button[data-ligne-la]'); await p.waitForTimeout(600);
+  const clicLa = await p.evaluate(() => ({
+    base: document.querySelector('#choix-base button[aria-pressed="true"]').dataset.base,
+    lignes: document.querySelectorAll('#corps-seconde tr[data-i]').length,
+    recherche: document.getElementById('recherche-seconde').value,
+    jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').replace(/\s+/g, ' ').trim()),
+    presses: document.querySelectorAll('#verdicts-rapprochement button[aria-pressed="true"]').length,
+    cherche: window.__valeurLa,
+    lignesAvecLaValeur: [...document.querySelectorAll('#corps-seconde tr[data-i]')].filter(tr => tr.textContent.indexOf(window.__valeurLa) !== -1).length,
+    haut: Math.round(document.getElementById('cadre-seconde').getBoundingClientRect().top),
+    focus: document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.base : null
+  }));
+  verifier('un clic sur une référence seulement dans SEE retire le lot posé, ouvre le tableau de SEE cherché sur elle, et le bandeau le dit',
+    clicLa.base === 'la' && clicLa.lignes >= 1 && clicLa.lignes <= 2 && clicLa.recherche === clicLa.cherche && clicLa.cherche.length > 0 &&
+    clicLa.lignesAvecLaValeur === clicLa.lignes && clicLa.presses === 0 &&
+    clicLa.jetons.some(j => j === 'Recherche dans SEE : ' + clicLa.cherche) && !clicLa.jetons.some(j => /^Comparaison : /.test(j)), JSON.stringify(clicLa));
+  verifier('la page est descendue sur le tableau de SEE, et le focus est sur son bouton de base',
+    clicLa.haut >= -2 && clicLa.focus === 'la', JSON.stringify([clicLa.haut, clicLa.focus]));
+  await p.click('.jeton .x'); await p.waitForTimeout(400);
+  const apresCroix = await p.evaluate(() => ({
+    recherche: document.getElementById('recherche-seconde').value,
+    lignes: document.querySelectorAll('#corps-seconde tr[data-i]').length,
+    jetons: document.querySelectorAll('.jeton').length
+  }));
+  verifier('la croix du jeton vide la recherche de SEE et rend son tableau entier',
+    apresCroix.recherche === '' && apresCroix.lignes === LIGNES_SEE && apresCroix.jetons === 0, JSON.stringify(apresCroix));
+  await p.click('#choix-base button[data-base="ici"]'); await p.waitForTimeout(400);
+  verifier('de retour sur GATES, le tableau est entier', await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === TOTAL);
+  /* Sous un filtre du haut, « ne montrer que ce plan » tient sa promesse :
+     les filtres libres s'effacent, le plan est là, le périmètre reste. */
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(600);
+  /* Le premier plan d'un lot déplié sous ce périmètre — quel qu'il soit —,
+     et un filtre d'état qui l'exclut. */
+  const cible = await p.evaluate(() => {
+    const b = document.querySelector('#liste-rapprochement .rapp-groupe[data-ouvert="true"] button[data-plan-rapp]');
+    if (!b) return null;
+    return { ref: b.textContent, groupe: b.closest('.rapp-groupe').dataset.cle, etat: b.closest('tr').children[1].textContent.trim() };
+  });
+  verifier('sous PERSO, un lot déplié a encore des plans à cliquer', !!cible, JSON.stringify(cible));
+  const suitPerimetre = await p.evaluate(() => {
+    const groupes = [...document.querySelectorAll('#liste-rapprochement .rapp-groupe')].map(g => ({
+      cle: g.dataset.cle, n: +g.querySelector('.rapp-groupe-tete b').textContent.replace(/\s/g, ''),
+      mot: g.querySelector('.rapp-groupe-mot').textContent
+    }));
+    const puces = [...document.querySelectorAll('#verdicts-rapprochement button[data-rapp]')].map(b => ({
+      cle: b.dataset.rapp, n: +b.querySelector('.verdict-n').textContent.replace(/\s/g, '')
+    }));
+    return { groupes, puces };
+  });
+  verifier('sous PERSO, la liste suit le périmètre : mêmes comptes que les verdicts, aucun groupe à zéro, « seulement dans SEE · tout le contrat »',
+    suitPerimetre.groupes.every(g => g.n > 0 && suitPerimetre.puces.some(pu => pu.cle === g.cle && pu.n === g.n)) &&
+    suitPerimetre.puces.filter(pu => pu.n > 0).length === suitPerimetre.groupes.length &&
+    suitPerimetre.groupes.some(g => g.cle === 'seul' && g.mot === 'seulement dans SEE · tout le contrat'), JSON.stringify(suitPerimetre));
+  const titres = await p.evaluate(() => {
+    const j = document.querySelector('.titre-journal'), r = document.getElementById('titre-rapprochement');
+    const cj = getComputedStyle(j), cr = getComputedStyle(r);
+    return { tag: j.tagName, memePolice: cj.fontFamily === cr.fontFamily, memeTaille: cj.fontSize === cr.fontSize, taille: cj.fontSize };
+  });
+  verifier('le titre du journal est un h2, de la même police et de la même taille que les autres sections',
+    titres.tag === 'H2' && titres.memePolice && titres.memeTaille, JSON.stringify(titres));
+  const etatQuiExclut = cible && cible.etat === 'Terminé' ? 'encours' : 'termine';
+  await p.click('#etats .etat-btn[data-etat="' + etatQuiExclut + '"]'); await p.waitForTimeout(400);
+  await p.click('#liste-rapprochement .rapp-groupe[data-cle="' + (cible ? cible.groupe : 'manque') + '"] button[data-plan-rapp]'); await p.waitForTimeout(600);
+  const sousFiltre = await p.evaluate(() => ({
+    lignes: document.querySelectorAll('#corps-tableau tr').length,
+    ref: (document.querySelector('#corps-tableau td.ref, #corps-tableau .ref') || {}).textContent,
+    jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').replace(/\s+/g, ' ').trim()),
+    focus: document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.base : null
+  }));
+  verifier('sous un filtre d\'état qui l\'exclut et le périmètre PERSO, le clic sur un plan de la liste l\'affiche seul : l\'état s\'efface, le périmètre reste',
+    !!cible && sousFiltre.lignes === 1 && sousFiltre.ref === cible.ref && sousFiltre.focus === 'ici' &&
+    sousFiltre.jetons.some(j => /^Périmètre : PERSO$/.test(j)) && !sousFiltre.jetons.some(j => /^État/.test(j)) &&
+    sousFiltre.jetons.some(j => /^Sélection : plan /.test(j)), JSON.stringify([cible, sousFiltre]));
+  await p.evaluate(() => { const b = document.getElementById('tout-effacer'); if (b) b.click(); });
+  await p.waitForTimeout(500);
+  /* « Les voir tous dans le tableau », quand le lot est déjà posé, ne le
+     retire pas. */
+  if (ACCORD > 80) {
+    await p.click('#verdicts-rapprochement button[data-rapp="accord"]'); await p.waitForTimeout(400);
+    await p.click('#liste-rapprochement .rapp-groupe[data-cle="accord"] button[data-plier]'); await p.waitForTimeout(300);
+    await p.click('#liste-rapprochement .rapp-groupe[data-cle="accord"] button[data-rapp-tout]'); await p.waitForTimeout(500);
+    const voirTous = await p.evaluate(() => ({
+      lignes: document.querySelectorAll('#corps-tableau tr').length,
+      presse: (document.querySelector('#verdicts-rapprochement button[data-rapp="accord"]') || {}).getAttribute('aria-pressed'),
+      haut: Math.round(document.getElementById('cadre-tableau').getBoundingClientRect().top)
+    }));
+    verifier('« les voir tous dans le tableau » garde le lot déjà posé et descend au tableau',
+      voirTous.lignes === ACCORD && voirTous.presse === 'true' && voirTous.haut >= -2, JSON.stringify(voirTous));
+    await p.click('#liste-rapprochement .rapp-groupe[data-cle="accord"] button[data-plier]'); await p.waitForTimeout(300);
+    await p.evaluate(() => { const b = document.getElementById('tout-effacer'); if (b) b.click(); });
+    await p.waitForTimeout(500);
+  }
   verifier('sous le tableau des plans, avant le pied', r0.ordre);
   verifier('la phrase pose la question du rapprochement : les terminés d\'ici que SEE connaît',
     r0.phrase === CONNUS + ' sur ' + TERMINES + ' plans terminés se retrouvent dans SEE', r0.phrase);
@@ -459,7 +612,7 @@ async function reinitialiser(pg) {
     F && F.cotes.map(c => c.cle + '=' + c.n + ' ' + c.mots + (c.zero ? ' (zéro)' : '')).join(' | ') === 'manque=3 terminés sans SEE | attente=' + ATTENTE + ' pas encore dans SEE | seul=5 seulement dans SEE',
     JSON.stringify(F && F.cotes));
   verifier('la figure se lit aussi à voix haute',
-    F && F.aria === 'Rapprochement avec SEE : ' + ACCORD + ' terminés et dans SEE, 2 sous un autre indice, 12 dans SEE sans être terminés ici, 3 terminés absents de SEE, ' + ATTENTE + ' pas encore dans SEE, sur ' + TOTAL + ' plans ; 5 lignes seulement dans SEE.', F && F.aria);
+    F && F.aria === 'Comparaison GATES / SEE : ' + ACCORD + ' terminés et dans SEE, 2 sous un autre indice, 12 dans SEE sans être terminés ici, 3 terminés absents de SEE, ' + ATTENTE + ' pas encore dans SEE, sur ' + TOTAL + ' plans ; 5 lignes seulement dans SEE.', F && F.aria);
   const rectsRapp = await p.evaluate(() => {
     const fig = document.getElementById('venn-rapprochement').getBoundingClientRect();
     const zone = document.getElementById('verdicts-rapprochement').getBoundingClientRect();
@@ -492,8 +645,8 @@ async function reinitialiser(pg) {
   verifier('ce sont bien ces plans, des deux côtés',
     rAv.refsTableau.length === 12 && rAv.refsTableau.every(r => r0.R.refsAvance.indexOf(r) !== -1) &&
     rAv.secondeRefs.length === 12 && rAv.secondeRefs.every(r => r0.R.refsAvance.some(f => f.indexOf(r) === 0)), JSON.stringify(rAv.secondeRefs.slice(0, 3)));
-  verifier('le bandeau nomme le filtre « Rapprochement : dans SEE, pas terminés ici », le verdict est pressé',
-    rAv.jetons.length === 1 && rAv.jetons[0] === 'Rapprochement : dans SEE, pas terminés ici' &&
+  verifier('le bandeau nomme le filtre « Comparaison : dans SEE, pas terminés ici », le verdict est pressé',
+    rAv.jetons.length === 1 && rAv.jetons[0] === 'Comparaison : dans SEE, pas terminés ici' &&
     rAv.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'avance', JSON.stringify(rAv.jetons));
   verifier('les comptes ne bougent pas : le rapprochement ne se filtre pas lui-même',
     rAv.puces.map(x => x.n).join() === [ACCORD, 2, 12, 3, ATTENTE, 5].join());
@@ -507,7 +660,7 @@ async function reinitialiser(pg) {
   await p.click('#verdicts-rapprochement button[data-rapp="manque"]'); await p.waitForTimeout(500);
   const rMa = await lireRapp();
   verifier('« terminés, absents de SEE » remplace la sélection : 3 plans ici, et le tableau de SEE le dit vide, avec le chemin du retour',
-    rMa.lignes === 3 && rMa.jetons[0] === 'Rapprochement : terminés, absents de SEE' && rMa.seconde === 0 &&
+    rMa.lignes === 3 && rMa.jetons[0] === 'Comparaison : terminés, absents de SEE' && rMa.seconde === 0 &&
     rMa.secondeVide === 'Ces 3 plans n’ont pas de ligne dans SEE. Les voir dans GATES' &&
     rMa.refsTableau.every(r => r0.R.refsManque.indexOf(r) !== -1) &&
     rMa.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'manque', JSON.stringify([rMa.jetons, rMa.lignes, rMa.secondeVide]));
@@ -519,7 +672,7 @@ async function reinitialiser(pg) {
   await p.click('#verdicts-rapprochement button[data-rapp="accord"]'); await p.waitForTimeout(500);
   const rId = await lireRapp();
   verifier('« terminés et dans SEE » : les ' + ACCORD + ' plans, des deux côtés',
-    rId.lignes === ACCORD && rId.seconde === ACCORD && rId.jetons[0] === 'Rapprochement : terminés et dans SEE', JSON.stringify([rId.lignes, rId.seconde]));
+    rId.lignes === ACCORD && rId.seconde === ACCORD && rId.jetons[0] === 'Comparaison : terminés et dans SEE', JSON.stringify([rId.lignes, rId.seconde]));
   await p.click('#verdicts-rapprochement button[data-rapp="accord"]'); await p.waitForTimeout(500);
   const rOff = await lireRapp();
   verifier('re-cliquer le verdict pressé retire le filtre',
@@ -528,7 +681,7 @@ async function reinitialiser(pg) {
   const rAt = await lireRapp();
   verifier('« pas encore dans SEE » : les ' + ATTENTE + ' plans qui attendent, et le tableau de SEE le dit vide',
     rAt.lignes === ATTENTE && rAt.seconde === 0 && rAt.secondeVide === 'Ces ' + fr(ATTENTE) + ' plans n’ont pas de ligne dans SEE. Les voir dans GATES' &&
-    rAt.jetons[0] === 'Rapprochement : pas encore dans SEE', JSON.stringify([rAt.lignes, rAt.secondeVide]));
+    rAt.jetons[0] === 'Comparaison : pas encore dans SEE', JSON.stringify([rAt.lignes, rAt.secondeVide]));
   await p.click('.jeton .x'); await p.waitForTimeout(400);
   verifier('la croix du bandeau retire aussi le filtre du rapprochement',
     await p.evaluate(t => document.querySelectorAll('#corps-tableau tr').length === t &&
@@ -543,7 +696,7 @@ async function reinitialiser(pg) {
   verifier('chaque référence est inédite ici',
     rIci.secondeRefs.length === 5 && rIci.secondeRefs.every(r => /^ZZE99\d{2}A800$/.test(r) && r0.R.refsAccord.indexOf(r) === -1), JSON.stringify(rIci.secondeRefs));
   verifier('le bandeau le nomme, avec sa croix',
-    rIci.jetons.length === 1 && rIci.jetons[0] === 'Rapprochement : seulement dans SEE', JSON.stringify(rIci.jetons));
+    rIci.jetons.length === 1 && rIci.jetons[0] === 'Comparaison : seulement dans SEE', JSON.stringify(rIci.jetons));
   await p.click('.jeton .x'); await p.waitForTimeout(400);
   const rIci2 = await lireRapp();
   verifier('la croix rend le tableau de SEE entier', rIci2.seconde === LIGNES_SEE && rIci2.jetons.length === 0 && rIci2.puces.every(x => x.presse === 'false'));
@@ -613,7 +766,7 @@ async function reinitialiser(pg) {
   await p.click('#corps-seconde button[data-aller-base="ici"]'); await p.waitForTimeout(400);
   const rLien = await lireRapp();
   verifier('« Les voir dans GATES » repasse sur GATES sans retirer le lot : 3 plans, jeton intact',
-    rLien.lignes === 3 && rLien.jetons[0] === 'Rapprochement : terminés, absents de SEE' &&
+    rLien.lignes === 3 && rLien.jetons[0] === 'Comparaison : terminés, absents de SEE' &&
     await p.evaluate(() => !document.getElementById('cadre-tableau').hidden), JSON.stringify([rLien.lignes, rLien.jetons]));
   await p.click('.jeton .x'); await p.waitForTimeout(400);
 
@@ -639,7 +792,7 @@ async function reinitialiser(pg) {
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
   const rSuit = await lireRapp();
   verifier('un lot posé suit le périmètre : sous PERSO, le tableau compte ce que le verdict annonce',
-    rSuit.puces[2].presse === 'true' && rSuit.lignes === rSuit.puces[2].n && rSuit.lignes < 12 && rSuit.jetons.indexOf('Rapprochement : dans SEE, pas terminés ici') !== -1,
+    rSuit.puces[2].presse === 'true' && rSuit.lignes === rSuit.puces[2].n && rSuit.lignes < 12 && rSuit.jetons.indexOf('Comparaison : dans SEE, pas terminés ici') !== -1,
     JSON.stringify([rSuit.lignes, rSuit.puces[2].n, rSuit.jetons]));
   await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(600);
   await p.click('.jeton .x'); await p.waitForTimeout(400);
