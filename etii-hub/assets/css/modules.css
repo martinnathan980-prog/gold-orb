@@ -2490,9 +2490,18 @@ ol.liseuse__bloc-liste {
 
 .editeur__colonne { display: flex; flex-direction: column; gap: var(--e-4); min-inline-size: 0; }
 /* L'aperçu reste en vue pendant qu'on descend dans le formulaire : il se
-   colle en haut du corps de la fenêtre, qui est ce qui défile. */
-.editeur__colonne--apercu { position: sticky; inset-block-start: 0; }
-@media (max-width: 1000px) { .editeur__colonne--apercu { position: static; } }
+   colle en haut du corps de la fenêtre, qui est ce qui défile. Comme il
+   peut être plus haut que la fenêtre (une longue communication), il est
+   borné à ce qui reste sous l'en-tête et au-dessus des actions, et défile
+   à l'intérieur — sa fin est toujours atteignable. */
+.editeur__colonne--apercu {
+  position: sticky;
+  inset-block-start: 0;
+  max-block-size: calc(100dvh - 15rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@media (max-width: 1000px) { .editeur__colonne--apercu { position: static; max-block-size: none; overflow: visible; } }
 .editeur__intro { margin: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
 
 .editeur__apercu-titre {
@@ -2605,6 +2614,166 @@ ol.liseuse__bloc-liste {
 
 .editeur__locaux-liste { display: flex; flex-direction: column; gap: var(--e-1); margin: 0; padding: 0; list-style: none; font-size: var(--texte-sm); }
 .editeur__locaux-liste li { display: flex; align-items: center; justify-content: space-between; gap: var(--e-3); padding: var(--e-1) 0; border-bottom: 1px solid var(--bordure-douce); }
+
+/* --- La mise en page, en listes, sur la carte de gauche ------------------- */
+
+.editeur__mise-en-page {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2) var(--e-4);
+  padding: var(--e-2) var(--e-3);
+  border-bottom: 1px solid var(--bordure-douce);
+  background-color: var(--fond-enfonce);
+}
+
+.editeur__mise-en-page--note { margin: 0; font-size: var(--texte-xs); }
+
+.editeur__segments { display: inline-flex; align-items: center; gap: var(--e-2); }
+
+.editeur__segments-libelle {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+
+.editeur__segments-boutons { display: inline-flex; }
+
+.editeur__segment {
+  appearance: none;
+  margin: 0 0 0 -1px;
+  padding: 2px var(--e-2);
+  min-inline-size: 2.25rem;
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  line-height: 1.4;
+  color: var(--texte-doux);
+  background-color: var(--fond-eleve);
+  border: 1px solid var(--bordure);
+  cursor: pointer;
+}
+
+.editeur__segment:first-child { margin-inline-start: 0; border-start-start-radius: var(--rayon-sm); border-end-start-radius: var(--rayon-sm); }
+.editeur__segment:last-child { border-start-end-radius: var(--rayon-sm); border-end-end-radius: var(--rayon-sm); }
+.editeur__segment:hover { color: var(--texte); background-color: var(--fond-enfonce); }
+.editeur__segment[aria-pressed="true"] { position: relative; z-index: 1; color: var(--accent-contenu); background-color: var(--accent); border-color: var(--accent); }
+.editeur__segment:focus-visible { position: relative; z-index: 2; outline: var(--focus-epaisseur) solid var(--focus-couleur); outline-offset: var(--focus-decalage); }
+
+/* --- Le cadre d'édition de chaque bloc, dans l'aperçu ---------------------
+   L'aperçu est rendu par kiosque.js tel que le site le rendra ; l'éditeur
+   pose par-dessus, sur chaque enveloppe .kiosque__bloc, une barre d'outils
+   (poignée de déplacement, nom du bloc et sa mise en page, boutons de
+   côté) et une poignée de largeur sur le bord libre du bloc. Le cadre
+   ménage sa place en haut ; il s'affirme au survol ou au clavier. */
+
+.editeur__apercu-zone .kiosque__blocs { position: relative; }
+.editeur__apercu-zone .kiosque__bloc { position: relative; }
+
+.editeur__cadre {
+  padding: calc(var(--e-6) + var(--e-2)) var(--e-3) var(--e-3);
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon-md);
+  transition: border-color var(--duree-rapide) var(--courbe), box-shadow var(--duree-rapide) var(--courbe), opacity var(--duree-rapide);
+}
+
+.editeur__cadre:hover,
+.editeur__cadre:focus-within { border-color: var(--accent); border-style: solid; box-shadow: var(--ombre-accent); }
+.editeur__cadre--saisi { opacity: 0.45; }
+.editeur__cadre--redimension { border-color: var(--chaud); border-style: solid; box-shadow: 0 0 0 3px var(--chaud-doux); }
+
+.editeur__cadre-outils {
+  position: absolute;
+  inset-block-start: var(--e-1);
+  inset-inline: var(--e-1);
+  display: flex;
+  align-items: center;
+  gap: var(--e-1);
+}
+
+.editeur__cadre-libelle {
+  flex: 1;
+  min-inline-size: 0;
+  display: flex;
+  gap: var(--e-2);
+  overflow: hidden;
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-faible);
+  white-space: nowrap;
+}
+
+.editeur__cadre-nom { overflow: hidden; text-overflow: ellipsis; }
+.editeur__cadre-mise-en-page { color: var(--chaud-encre); flex-shrink: 0; }
+
+.editeur__poignee {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 1.5rem;
+  block-size: 1.5rem;
+  margin: 0;
+  padding: 0 var(--e-1);
+  font-size: var(--texte-sm);
+  line-height: 1;
+  color: var(--texte-doux);
+  background-color: var(--fond-eleve);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-sm);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+}
+
+.editeur__poignee:hover { color: var(--texte); border-color: var(--bordure-forte); }
+.editeur__poignee[aria-pressed="true"] { color: var(--accent-contenu); background-color: var(--accent); border-color: var(--accent); }
+.editeur__poignee:focus-visible { outline: var(--focus-epaisseur) solid var(--focus-couleur); outline-offset: var(--focus-decalage); }
+.editeur__poignee--deplacer { cursor: grab; }
+.editeur__cadre--saisi .editeur__poignee--deplacer { cursor: grabbing; }
+
+/* La poignée de largeur : une pastille verticale à cheval sur le bord droit
+   du bloc, ou sur le bord gauche quand il est calé à droite. */
+.editeur__poignee--largeur {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: calc(-1 * var(--e-2));
+  transform: translateY(-50%);
+  inline-size: var(--e-4);
+  min-inline-size: 0;
+  block-size: 2.5rem;
+  padding: 0;
+  border-radius: var(--rayon-plein);
+  cursor: ew-resize;
+  box-shadow: var(--ombre-sm);
+}
+
+.editeur__cadre--ancre-droite .editeur__poignee--largeur { inset-inline-end: auto; inset-inline-start: calc(-1 * var(--e-2)); }
+.editeur__cadre--redimension .editeur__poignee--largeur { color: var(--chaud-contenu); background-color: var(--chaud); border-color: var(--chaud); }
+
+/* Le repère d'insertion pendant un déplacement : un filet terre cuite
+   posé sur le bord du bloc survolé, positionné par l'éditeur. */
+.editeur__repere {
+  position: absolute;
+  block-size: 3px;
+  margin-block-start: -1.5px;
+  background-color: var(--chaud);
+  border-radius: var(--rayon-plein);
+  box-shadow: 0 0 0 2px var(--chaud-doux);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.editeur__repere[hidden] { display: none; }
+
+/* Sous 700 px, la grille de lecture repasse en une colonne : la largeur et
+   le côté n'ont plus de sens à l'écran, seules les poignées de déplacement
+   restent. */
+@media (max-width: 700px) {
+  .editeur__poignee--largeur, .editeur__poignee--cote { display: none; }
+}
 
 /* -------------------------------------------------------------------------
    13. Les bandes de section : une section sur deux se pose sur un ton à

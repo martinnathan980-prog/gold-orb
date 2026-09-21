@@ -1,10 +1,10 @@
 # Communications — publier depuis le site, stocker dans une feuille Google
 
 Tout se joue dans le site : le bouton **« Ajouter une communication »**
-du Communication Center ouvre l'éditeur — le chef compose sa communication
+du Communication Center ouvre l'éditeur — l'auteur compose sa communication
 en blocs (texte, image, galerie, chiffres clés, courbe, pastilles,
-encadré), la voit à droite telle que le site la rendra, et clique
-**Publier**. Le site étant statique, ce qui est publié doit être stocké
+encadré), les met en page à la souris dans l'aperçu, la voit à droite
+telle que le site la rendra, et clique **Publier**. Le site étant statique, ce qui est publié doit être stocké
 quelque part : une feuille Google, invisible pour tout le monde sauf pour
 celui qui la branche.
 
@@ -71,7 +71,7 @@ publiée avec l'identifiant d'une ligne existante la remplace.
 
 | colonne        | contenu                                                                                       |
 |----------------|-----------------------------------------------------------------------------------------------|
-| `type`         | `annonce` (ou vide), `mot` (le mot du chef : le plus récent est affiché), `alerte` (bandeau)   |
+| `type`         | `annonce` (ou vide), `mot` (l'édito de la direction : le plus récent est affiché), `alerte` (bandeau) |
 | `id`           | facultatif ; sert à **remplacer** une communication (même id) ; fabriqué sinon                |
 | `date`         | `AAAA-MM-JJ` ou `JJ/MM/AAAA` ; obligatoire sauf pour une alerte                               |
 | `pole`         | `ETII` (tout le service), `ETIIA`, `ETIIE`, `ETIII`                                           |
@@ -85,8 +85,33 @@ publiée avec l'identifiant d'une ligne existante la remplace.
 | `imageLegende` | la légende posée sur l'image                                                                   |
 | `chiffres`     | jusqu'à quatre tuiles : `Libellé = valeur unité tendance ; …` (voir plus bas)                  |
 | `serie`        | une courbe : `Libellé (unité) \| 2026-04 = 92,1 ; 2026-05 = 92,8 ; …`                          |
-| `auteur`, `fonction` | pour le mot du chef seulement                                                           |
+| `auteur`, `fonction` | pour l'édito seulement                                                                  |
 | `blocs`        | les blocs libres de l'éditeur, en JSON — écrits par le bouton Publier ; les colonnes à plat restent renseignées pour la lecture ailleurs |
+
+### Mise en page
+
+Chaque bloc de la colonne `blocs` porte, en plus de son contenu, deux
+attributs de mise en page que l'éditeur règle dans l'aperçu (poignée de
+largeur sur le bord du bloc, boutons ◧ ◨ pour le côté, poignée ⇅ pour
+l'ordre) ou dans les listes de chaque carte du formulaire :
+
+- `largeur` : `pleine` (défaut), `deux-tiers`, `moitie` ou `tiers` — la
+  place du bloc dans la grille de six colonnes de la lecture ;
+- `cote` : vide (défaut, le bloc coule à la suite du précédent), `gauche`
+  ou `droite` — le bord contre lequel il se cale ; deux blocs qui tiennent
+  sur une même ligne se posent côte à côte.
+
+```json
+[{ "type": "image", "src": "assets/img/porteurs/h145.jpg", "alt": "Un H145 en vol",
+   "largeur": "moitie", "cote": "droite" },
+ { "type": "chiffres", "chiffres": [{ "libelle": "Harnais qualifiés", "valeur": 3 }],
+   "largeur": "moitie" }]
+```
+
+Un attribut absent ou inconnu vaut la valeur par défaut. Une image en
+premier bloc est la bannière de la communication : sa mise en page ne
+s'applique pas. Sur un écran de moins de 700 px, tout repasse en pleine
+largeur, dans l'ordre des blocs.
 
 ### Les préfixes du corps
 
