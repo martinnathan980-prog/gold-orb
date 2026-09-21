@@ -72,6 +72,9 @@
   --fond:          var(--gris-100);
   --fond-profond:  var(--gris-200);
   --fond-eleve:    #ffffff;
+  /* La bande : une section sur deux se pose sur un ton à peine différent,
+     pour que l'œil sépare les parties de la page sans y penser. */
+  --fond-bande:    var(--gris-50);
   --fond-enfonce:  var(--gris-50);
   --fond-inverse:  var(--gris-900);
 
@@ -214,6 +217,7 @@
     --fond:         #1f1e1b;
     --fond-profond: #181714;
     --fond-eleve:   #2a2925;
+    --fond-bande:   #23221f;
     --fond-enfonce: #33312c;
     --fond-inverse: #f1ede4;
 
