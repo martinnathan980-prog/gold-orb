@@ -50,6 +50,8 @@ def test_assistant_bout_en_bout(tmp_path, dossier_modeles, navigateur_ok):
     # réponses scriptées : les propositions par défaut sont acceptées (Entrée = "")
     # champs visibles dans l'ordre : numero, titre, type, date, urgent, commentaire
     reponses = [
+        "",            # type de scénario : 1 (formulaire)
+        "",            # adresse : celle du relevé
         "",            # Numéro de plan -> proposition « Numéro plan »
         "",            # Titre -> Titre
         "",            # Type -> Type
@@ -98,6 +100,8 @@ def test_assistant_sans_excel_et_valeur_fixe(tmp_path, dossier_modeles, navigate
     shutil.copyfile(dossier_modeles / "formulaire_demo.html", tmp_path / "formulaire_demo.html")
     releve = charger_releve(_releve_connecte(tmp_path))
     reponses = [
+        "1",           # formulaire
+        "",            # adresse
         "Numéro",      # numero -> {{Numéro}}
         "",            # titre ignoré
         "v", "STR",    # type : valeur fixe

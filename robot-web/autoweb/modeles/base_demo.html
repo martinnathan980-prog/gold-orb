@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>GED démo — Base documentaire</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: Segoe UI, Arial, sans-serif; margin: 0; background: #eef1f5; color: #1f2937; }
+  header { background: #0f3d5e; color: white; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { font-size: 18px; margin: 0; }
+  header button { margin: 0; background: #1b5e8c; }
+  main { max-width: 1000px; margin: 20px auto; padding: 0 16px; }
+  section { background: white; border-radius: 8px; padding: 18px 22px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  label { display: block; margin: 10px 0 4px; font-weight: 600; font-size: 13px; }
+  input[type=text], input[type=password], select, textarea { width: 100%; box-sizing: border-box; padding: 7px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
+  textarea { min-height: 56px; }
+  button { margin-top: 12px; background: #1d4ed8; color: white; border: 0; padding: 9px 16px; border-radius: 4px; font-size: 14px; cursor: pointer; }
+  button:hover { background: #1e40af; }
+  button:disabled { background: #9ca3af; cursor: not-allowed; }
+  button.secondaire { background: #64748b; }
+  .filtres { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 14px; align-items: end; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #e5e7eb; }
+  th { background: #f8fafc; }
+  tbody tr:hover { background: #f1f5f9; }
+  a { color: #1d4ed8; }
+  .alerte { margin-top: 14px; padding: 10px 12px; border-radius: 4px; font-size: 14px; }
+  .alerte-succes, .message-succes { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+  .alerte-erreur { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  #chargement { color: #92400e; font-weight: 600; }
+  .aide { color: #64748b; font-size: 13px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>GED démo — Base documentaire</h1>
+  <div>
+    <span id="etat-connexion">Non connecté</span>
+    <button id="btn-deconnexion" type="button" hidden>Se déconnecter</button>
+  </div>
+</header>
+<main>
+  <section id="connexion">
+    <h2>Connexion</h2>
+    <p class="aide">Identifiant <b>demo</b>, mot de passe <b>demo</b>.</p>
+    <label for="utilisateur">Identifiant</label>
+    <input id="utilisateur" name="utilisateur" type="text" autocomplete="off">
+    <label for="mot-de-passe">Mot de passe</label>
+    <input id="mot-de-passe" name="mot-de-passe" type="password" autocomplete="off">
+    <button id="btn-connexion" type="button">Se connecter</button>
+    <div id="message-connexion" class="alerte alerte-erreur" hidden></div>
+  </section>
+
+  <section id="liste" hidden>
+    <h2>Plans</h2>
+    <div class="filtres">
+      <div>
+        <label for="filtre-contrat">Contrat</label>
+        <select id="filtre-contrat" name="contrat">
+          <option value="">Tous</option>
+          <option value="HDK">HDK</option>
+          <option value="LMN">LMN</option>
+          <option value="QRS">QRS</option>
+          <option value="TUV">TUV</option>
+        </select>
+      </div>
+      <div>
+        <label for="filtre-type">Type de plan</label>
+        <select id="filtre-type" name="type">
+          <option value="">Tous</option>
+          <option value="Architecture">Architecture</option>
+          <option value="Structure">Structure</option>
+          <option value="Électricité">Électricité</option>
+          <option value="Plomberie">Plomberie</option>
+        </select>
+      </div>
+      <div>
+        <label for="filtre-statut">Statut</label>
+        <select id="filtre-statut" name="statut">
+          <option value="">Tous</option>
+          <option value="En cours">En cours</option>
+          <option value="Diffusé">Diffusé</option>
+          <option value="Archivé">Archivé</option>
+        </select>
+      </div>
+      <div>
+        <label for="recherche">Numéro contient</label>
+        <input id="recherche" name="recherche" type="text" placeholder="ex. HDK-ARC">
+      </div>
+    </div>
+    <div class="actions">
+      <button id="btn-rechercher" type="button">Rechercher</button>
+      <button id="btn-reinitialiser" type="button" class="secondaire">Réinitialiser</button>
+      <button id="btn-exporter" type="button" disabled>Exporter CSV</button>
+    </div>
+    <p id="chargement" hidden>Chargement des résultats…</p>
+    <p id="nb-resultats" class="aide">Choisissez des filtres puis cliquez sur Rechercher.</p>
+    <table id="resultats">
+      <thead><tr><th>Numéro</th><th>Contrat</th><th>Titre</th><th>Type</th><th>Statut</th><th>Indice</th><th>Date</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="fiche" hidden>
+    <h2>Fiche plan <span id="fiche-numero"></span></h2>
+    <form id="formulaire-fiche" autocomplete="off">
+      <label for="fiche-titre">Titre</label>
+      <input id="fiche-titre" name="titre" type="text">
+      <label for="fiche-statut">Statut</label>
+      <select id="fiche-statut" name="statut">
+        <option value="En cours">En cours</option>
+        <option value="Diffusé">Diffusé</option>
+        <option value="Archivé">Archivé</option>
+      </select>
+      <label for="fiche-indice">Indice</label>
+      <input id="fiche-indice" name="indice" type="text">
+      <label for="fiche-commentaire">Commentaire</label>
+      <textarea id="fiche-commentaire" name="commentaire"></textarea>
+      <div class="actions">
+        <button type="submit" id="btn-enregistrer">Enregistrer</button>
+        <button type="button" id="btn-retour" class="secondaire">Retour à la liste</button>
+      </div>
+    </form>
+    <div id="message-fiche" class="alerte" hidden></div>
+  </section>
+</main>
+<script>
+(function () {
+  var CONTRATS = ['HDK', 'LMN', 'QRS', 'TUV'];
+  var TYPES = [['ARC', 'Architecture'], ['STR', 'Structure'], ['ELE', 'Électricité'], ['PLB', 'Plomberie']];
+  var STATUTS = ['En cours', 'Diffusé', 'Archivé'];
+  var stockage = window.sessionStorage;
+  function lire(cle, defaut) { try { var v = stockage.getItem(cle); return v === null ? defaut : JSON.parse(v); } catch (e) { return defaut; } }
+  function ecrire(cle, valeur) { try { stockage.setItem(cle, JSON.stringify(valeur)); } catch (e) {} }
+
+  // 60 plans générés de façon déterministe (les mêmes à chaque ouverture)
+  function generer() {
+    var plans = [], compteurs = {};
+    for (var i = 0; i < 60; i++) {
+      var c = CONTRATS[i % 4], t = TYPES[Math.floor(i / 4) % 4], cle = c + '-' + t[0];
+      compteurs[cle] = (compteurs[cle] || 0) + 1;
+      plans.push({
+        numero: cle + '-' + String(compteurs[cle]).padStart(3, '0'),
+        contrat: c, titre: t[1] + ' niveau ' + ((i % 5) + 1), type: t[1],
+        statut: STATUTS[i % 3], indice: String.fromCharCode(65 + (i % 4)),
+        date: '0' + ((i % 9) + 1) + '/0' + ((i % 6) + 1) + '/2026', commentaire: ''
+      });
+    }
+    return plans;
+  }
+  var connecte = lire('ged_connecte', false);
+  var plans = lire('ged_plans', null) || generer();
+  var resultats = [];
+  var $ = function (id) { return document.getElementById(id); };
+
+  function afficherSection(nom) {
+    $('connexion').hidden = nom !== 'connexion';
+    $('liste').hidden = nom !== 'liste';
+    $('fiche').hidden = nom !== 'fiche';
+    $('etat-connexion').textContent = connecte ? 'Connecté : demo' : 'Non connecté';
+    $('btn-deconnexion').hidden = !connecte;
+  }
+
+  function rendreResultats() {
+    var corps = document.querySelector('#resultats tbody');
+    corps.innerHTML = '';
+    resultats.forEach(function (p) {
+      var tr = document.createElement('tr');
+      var td = document.createElement('td');
+      var a = document.createElement('a');
+      a.href = '#fiche=' + p.numero; a.textContent = p.numero;
+      td.appendChild(a); tr.appendChild(td);
+      [p.contrat, p.titre, p.type, p.statut, p.indice, p.date].forEach(function (v) {
+        var c = document.createElement('td'); c.textContent = v; tr.appendChild(c);
+      });
+      corps.appendChild(tr);
+    });
+    $('nb-resultats').textContent = resultats.length + ' plan(s) trouvé(s)';
+    $('btn-exporter').disabled = resultats.length === 0;
+  }
+
+  function rechercher() {
+    var contrat = $('filtre-contrat').value, type = $('filtre-type').value, statut = $('filtre-statut').value;
+    var texte = $('recherche').value.trim().toUpperCase();
+    $('chargement').hidden = false; $('btn-exporter').disabled = true;
+    document.querySelector('#resultats tbody').innerHTML = '';
+    $('nb-resultats').textContent = '';
+    window.setTimeout(function () {   // les vrais outils mettent du temps à répondre
+      resultats = plans.filter(function (p) {
+        return (!contrat || p.contrat === contrat) && (!type || p.type === type) &&
+               (!statut || p.statut === statut) && (!texte || p.numero.indexOf(texte) >= 0);
+      });
+      $('chargement').hidden = true;
+      rendreResultats();
+    }, 700);
+  }
+
+  function exporter() {
+    var lignes = ['Numéro;Contrat;Titre;Type;Statut;Indice;Date'];
+    resultats.forEach(function (p) {
+      lignes.push([p.numero, p.contrat, p.titre, p.type, p.statut, p.indice, p.date].join(';'));
+    });
+    var contenu = '﻿' + lignes.join('\r\n') + '\r\n';
+    var blob = new Blob([contenu], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    var contrat = $('filtre-contrat').value || 'tous';
+    a.href = URL.createObjectURL(blob);
+    a.download = 'export_plans_' + contrat + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+
+  var courant = null;
+  function ouvrirFiche(numero) {
+    courant = plans.filter(function (p) { return p.numero === numero; })[0];
+    if (!courant) { afficherSection('liste'); $('nb-resultats').textContent = 'Plan ' + numero + ' introuvable.'; return; }
+    $('fiche-numero').textContent = courant.numero;
+    $('fiche-titre').value = courant.titre;
+    $('fiche-statut').value = courant.statut;
+    $('fiche-indice').value = courant.indice;
+    $('fiche-commentaire').value = courant.commentaire;
+    $('message-fiche').hidden = true;
+    afficherSection('fiche');
+  }
+
+  function router() {
+    if (!connecte) { afficherSection('connexion'); return; }
+    var h = window.location.hash;
+    if (h.indexOf('#fiche=') === 0) { ouvrirFiche(decodeURIComponent(h.substring(7))); }
+    else { afficherSection('liste'); }
+  }
+
+  $('btn-connexion').addEventListener('click', function () {
+    var u = $('utilisateur').value.trim(), m = $('mot-de-passe').value, msg = $('message-connexion');
+    if (u === 'demo' && m === 'demo') { connecte = true; ecrire('ged_connecte', true); msg.hidden = true; router(); }
+    else { msg.textContent = 'Identifiant ou mot de passe incorrect.'; msg.hidden = false; }
+  });
+  $('btn-deconnexion').addEventListener('click', function () {
+    connecte = false; ecrire('ged_connecte', false); window.location.hash = ''; router();
+  });
+  $('btn-rechercher').addEventListener('click', rechercher);
+  $('btn-reinitialiser').addEventListener('click', function () {
+    ['filtre-contrat', 'filtre-type', 'filtre-statut', 'recherche'].forEach(function (id) { $(id).value = ''; });
+    resultats = []; rendreResultats();
+    $('nb-resultats').textContent = 'Choisissez des filtres puis cliquez sur Rechercher.';
+  });
+  $('btn-exporter').addEventListener('click', exporter);
+  $('btn-retour').addEventListener('click', function () { window.location.hash = ''; });
+  $('formulaire-fiche').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    if (!courant) return;
+    var msg = $('message-fiche');
+    msg.hidden = true; msg.className = 'alerte';
+    var indice = $('fiche-indice').value.trim().toUpperCase();
+    window.setTimeout(function () {
+      if (!/^[A-Z]$/.test(indice)) {
+        msg.textContent = "L'indice doit être une lettre (A, B, C...)."; msg.className = 'alerte alerte-erreur'; msg.hidden = false; return;
+      }
+      courant.titre = $('fiche-titre').value.trim();
+      courant.statut = $('fiche-statut').value;
+      courant.indice = indice;
+      courant.commentaire = $('fiche-commentaire').value.trim();
+      ecrire('ged_plans', plans);
+      msg.textContent = 'Fiche ' + courant.numero + ' enregistrée.';
+      msg.className = 'alerte message-succes'; msg.hidden = false;
+    }, 500);
+  });
+  window.addEventListener('hashchange', router);
+  router();
+})();
+</script>
+</body>
+</html>

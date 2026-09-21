@@ -78,6 +78,8 @@ l'Excel et relancer la même commande autant de fois que nécessaire.
 
 - Ligne 1 = noms de colonnes (n'importe lesquels : ce sont eux que vous utilisez dans le scénario avec `{{Nom de colonne}}`).
 - Colonnes gérées par le robot (créées si absentes) : **Statut** (`OK`, `ERREUR`, `IGNORE`), **Message** (cause de l'erreur, avec le nom de la capture d'écran), **Horodatage**.
+  Si votre fichier a déjà une colonne « Statut » métier, renommez-la, ou dites au robot d'en utiliser une autre :
+  `excel: {colonne_statut: Robot, colonne_message: Robot message, colonne_horodatage: Robot date}`.
 - Les colonnes relevées par l'étape `lire` (ex. `Référence outil`) sont créées à droite.
 - Une copie de sauvegarde est faite dans `sauvegardes/` à chaque lancement (10 dernières conservées).
 - **Fermez le fichier dans Excel pendant le traitement** : Excel verrouille le fichier ; si c'est le cas le robot vous demande de le fermer et réessaie.
@@ -238,6 +240,28 @@ Le relevé seul (sans assistant) : `python -m autoweb releve URL --canal chrome 
 Si vous demandez de l'aide à Claude, décrivez l'écran avec des noms neutres (champ 1, liste 2, bouton
 Enregistrer) et copiez uniquement la ligne d'erreur de la console ou de la colonne Message : c'est suffisant.
 Testez de préférence sur un enregistrement de test (un plan fictif que vous pouvez supprimer ensuite).
+
+## 4 ter. S'entraîner sur une fausse base documentaire (bac à sable)
+
+`python -m autoweb base-demo` lance en local un faux outil « GED » : connexion (demo / demo), filtres
+(contrat, type, statut, numéro), bouton Rechercher, export CSV des résultats, fiches modifiables (adresse
+`...#fiche=NUMÉRO`). Le dossier `bac_a_sable/` reçoit deux Excel d'exercice : `contrats.xlsx` (un export par
+contrat) et `fiches.xlsx` (une fiche à modifier par ligne). Le pas-à-pas complet est dans `EXERCICE_MAISON.txt`.
+
+Le scénario d'export construit par l'assistant ressemble à :
+
+```yaml
+etapes:
+  - aller: "{{url}}"
+  - choisir: {selecteur: "#filtre-contrat", valeur: "{{Contrat}}"}
+  - cliquer: "#btn-rechercher"
+  - attendre: {chargement: reseau, delai: 5000}
+    optionnel: true
+  - telecharger: {cliquer: "#btn-exporter", vers: "exports/", renommer: "export_{{Contrat}}", convertir_excel: true, vers_colonne: "Fichier export"}
+```
+
+`telecharger` accepte `vers` (dossier ou fichier ; `%USERPROFILE%\Desktop` fonctionne), `renommer` (sans
+extension), `convertir_excel: true` (un CSV devient aussi un `.xlsx`) et `vers_colonne` (chemin écrit dans l'Excel).
 
 ## 5. Mettre au point sans casser quoi que ce soit
 

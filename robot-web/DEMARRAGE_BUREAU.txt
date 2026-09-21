@@ -18,7 +18,9 @@ ROBOT-WEB (autoweb) - DEMARRAGE AU BUREAU
    Resultat attendu a la fin :  "3 OK, 1 ERREUR"  puis  "votre poste est pret".
    (l'erreur est volontaire : une ligne sans numero de plan)
 
-4 bis. Pour s'entrainer (a la maison ou au bureau) sur le faux outil de la demo :
+4 bis. Pour s'entrainer sur une fausse base documentaire (filtres, export CSV, fiches) : suivez
+   EXERCICE_MAISON.txt (commande  py -m autoweb base-demo). Pour un essai rapide sur le petit
+   formulaire de la demo :
       py -m autoweb assistant demo\formulaire_demo.html --excel demo\demo_suivi.xlsx --nom essai
    Connectez-vous dans la page (demo / demo), revenez dans la console, Entree, puis repondez
    aux questions. Le scenario demo\essai.yaml est cree ; testez-le :

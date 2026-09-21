@@ -441,8 +441,8 @@ def cmd_demo(args: argparse.Namespace) -> int:
     return 0 if attendu else 1
 
 
-def _servir_dossier(dossier: Path):
-    """Sert `dossier` sur http://127.0.0.1:<port libre>/ dans un thread (démo)."""
+def _servir_dossier(dossier: Path, fichier: str = "formulaire_demo.html", port: int = 0):
+    """Sert `dossier` sur http://127.0.0.1:<port>/ dans un thread ; renvoie (serveur, url du fichier)."""
     import threading
     from functools import partial
     from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -451,10 +451,65 @@ def _servir_dossier(dossier: Path):
         def log_message(self, *args) -> None:  # pas de bruit dans la console
             pass
 
-    serveur = ThreadingHTTPServer(("127.0.0.1", 0), partial(_Silencieux, directory=str(dossier)))
+    serveur = ThreadingHTTPServer(("127.0.0.1", port), partial(_Silencieux, directory=str(dossier)))
     threading.Thread(target=serveur.serve_forever, daemon=True).start()
     port = serveur.server_address[1]
-    return serveur, f"http://127.0.0.1:{port}/formulaire_demo.html"
+    return serveur, f"http://127.0.0.1:{port}/{fichier}"
+
+
+def preparer_bac_a_sable(dossier: Path) -> None:
+    """Copie la fausse base documentaire et crée les Excel d'exercice (sans écraser les existants)."""
+    dossier.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(DOSSIER_MODELES / "base_demo.html", dossier / "base_demo.html")
+    (dossier / "exports").mkdir(exist_ok=True)
+    if not (dossier / "contrats.xlsx").exists():
+        creer_classeur(dossier / "contrats.xlsx", ["Contrat"], [["HDK"], ["QRS"]], feuille="Contrats")
+    if not (dossier / "fiches.xlsx").exists():
+        creer_classeur(
+            dossier / "fiches.xlsx",
+            ["Numéro", "Nouveau statut", "Indice", "Commentaire"],  # « Statut » est réservé au suivi du robot
+            [
+                ["HDK-ARC-001", "Diffusé", "B", "Vérifié par le robot"],
+                ["HDK-STR-002", "Archivé", "C", "Ancien indice"],
+                ["LMN-ELE-001", "En cours", "12", "Indice volontairement faux : erreur attendue"],
+            ],
+            feuille="Fiches",
+        )
+
+
+def cmd_base_demo(args: argparse.Namespace) -> int:
+    configurer_journal(None, args.verbeux)
+    dossier = Path(args.dossier or "bac_a_sable")
+    preparer_bac_a_sable(dossier)
+    try:
+        serveur, url = _servir_dossier(dossier, "base_demo.html", port=args.port)
+    except OSError as e:
+        raise ErreurAutoweb(
+            f"Impossible d'ouvrir le port {args.port} ({e}). Un autre serveur tourne peut-être déjà : "
+            "fermez-le ou relancez avec --port 8766."
+        )
+    print(f"{S.OK} Fausse base documentaire en ligne : {url}")
+    print(f"   Dossier de travail : {dossier.resolve()}")
+    print("   Identifiant demo / mot de passe demo. 60 plans répartis sur les contrats HDK, LMN, QRS, TUV.")
+    print("   Excel d'exercice : contrats.xlsx (exports par contrat) et fiches.xlsx (modification de fiches).")
+    print()
+    print("Laissez cette fenêtre ouverte et travaillez dans une AUTRE invite de commandes, par exemple :")
+    print(f"   python -m autoweb assistant {url} --excel {dossier / 'contrats.xlsx'} --nom \"export contrat\"")
+    print()
+    if args.sans_attente:
+        serveur.shutdown()
+        serveur.server_close()
+        return 0
+    try:
+        print("Appuyez sur Entrée (ou Ctrl+C) pour arrêter le serveur... ", end="", flush=True)
+        input()
+    except (KeyboardInterrupt, EOFError):
+        pass
+    finally:
+        serveur.shutdown()
+        serveur.server_close()
+    print("Serveur arrêté.")
+    return 0
 
 
 # ----------------------------------------------------------------------------- analyseur
@@ -564,6 +619,13 @@ def construire_parseur() -> argparse.ArgumentParser:
     p.add_argument("--journal", action="store_true", help="écrire aussi un fichier journal/")
     commun(p)
     p.set_defaults(fonction=cmd_extraire)
+
+    p = sous.add_parser("base-demo", help="lancer la fausse base documentaire (bac à sable pour s'entraîner)")
+    p.add_argument("--dossier", help="dossier de travail (défaut : ./bac_a_sable)")
+    p.add_argument("--port", type=int, default=8765, help="port local (défaut : 8765)")
+    p.add_argument("--sans-attente", action="store_true", help="préparer le dossier et s'arrêter (tests)")
+    commun(p)
+    p.set_defaults(fonction=cmd_base_demo)
 
     p = sous.add_parser("demo", help="vérifier l'installation avec un formulaire local")
     p.add_argument("--dossier", help="dossier de la démo (défaut : ./demo)")

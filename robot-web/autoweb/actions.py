@@ -16,6 +16,7 @@ Paramètre `nieme: 2` pour prendre le 2e élément correspondant.
 from __future__ import annotations
 
 import logging
+import os
 import re
 import sys
 from pathlib import Path
@@ -25,7 +26,7 @@ from playwright.sync_api import Error as PlaywrightError, TimeoutError as Playwr
 
 from . import symboles as S
 from .erreurs import ArretDemande, ErreurEtape, ErreurGabarit, LigneIgnoree, NavigateurFerme
-from .excel import ClasseurSuivi
+from .excel import ClasseurSuivi, csv_vers_excel
 from .gabarit import est_vrai, formater, rendre_structure
 from .navigateur import Navigateur, navigateur_ferme, premiere_ligne
 from .scenario import Etape, Scenario, masquer_secrets
@@ -33,6 +34,12 @@ from .scenario import Etape, Scenario, masquer_secrets
 journal = logging.getLogger("autoweb")
 
 PREFIXES = ("texte=", "texte_exact=", "libelle=", "placeholder=", "titre=", "role=", "test=", "alt=")
+
+
+def nom_fichier_sur(texte: str) -> str:
+    """Retire les caractères interdits dans un nom de fichier Windows."""
+    nom = re.sub(r'[\\/:*?"<>|\r\n\t]+', "_", texte).strip(" .")
+    return nom or "fichier"
 
 
 class Executeur:
@@ -105,7 +112,8 @@ class Executeur:
         return loc
 
     def _chemin(self, chemin: Any, sous_dossier: Optional[str] = None) -> Path:
-        p = Path(str(chemin))
+        # %USERPROFILE%\Desktop, ~/Documents... sont acceptés
+        p = Path(os.path.expandvars(os.path.expanduser(str(chemin).strip())))
         if not p.is_absolute():
             base = self.dossier / sous_dossier if sous_dossier else self.dossier
             p = base / p
@@ -385,20 +393,40 @@ class Executeur:
         journal.info("      capture -> %s", chemin)
 
     def act_telecharger(self, args: Dict[str, Any], delai: Optional[int]) -> None:
+        """Clique et enregistre le fichier téléchargé.
+
+        vers            : dossier (finit par / ou sans extension) ou chemin complet du fichier
+        renommer        : nouveau nom (sans extension : celle du téléchargement est conservée)
+        convertir_excel : true -> un .csv/.txt est aussi converti en .xlsx (chemin final = le .xlsx)
+        vers_colonne    : colonne Excel où écrire le chemin du fichier obtenu
+        """
         timeout = self._delai(args, delai)
         loc = self.localiser(args["cliquer"], args)
         with self.page.expect_download(timeout=timeout) as info:
             loc.click(timeout=timeout)
         telechargement = info.value
-        cible = self._chemin(args["vers"], None) if args.get("vers") else self.nav._dossier_telechargements()
-        if cible.suffix == "" or str(args.get("vers", "")).endswith(("/", "\\")):
-            cible = cible / telechargement.suggested_filename
+        suggere = telechargement.suggested_filename or "telechargement"
+        if args.get("vers"):
+            cible = self._chemin(args["vers"])
+            if str(args["vers"]).rstrip().endswith(("/", "\\")) or cible.suffix == "" or cible.is_dir():
+                cible = cible / suggere
+        else:
+            cible = self.nav._dossier_telechargements() / suggere
+        if args.get("renommer"):
+            nom = nom_fichier_sur(str(args["renommer"]))
+            if not Path(nom).suffix:
+                nom += cible.suffix
+            cible = cible.with_name(nom)
         cible.parent.mkdir(parents=True, exist_ok=True)
         telechargement.save_as(str(cible))
         journal.info("      téléchargé -> %s", cible)
-        self.contexte["fichier_telecharge"] = str(cible)
+        resultat = cible
+        if est_vrai(args.get("convertir_excel", False)) and cible.suffix.lower() in (".csv", ".txt", ".tsv"):
+            resultat = csv_vers_excel(cible)
+            journal.info("      converti en Excel -> %s", resultat)
+        self.contexte["fichier_telecharge"] = str(resultat)
         if args.get("vers_colonne") and self.classeur is not None and self.numero_ligne is not None:
-            self.classeur.ecrire(self.numero_ligne, str(args["vers_colonne"]), str(cible))
+            self.classeur.ecrire(self.numero_ligne, str(args["vers_colonne"]), str(resultat))
 
     def act_journal(self, args: Dict[str, Any], delai: Optional[int]) -> None:
         journal.info("      %s", args["message"])

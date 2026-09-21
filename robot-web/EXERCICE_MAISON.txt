@@ -1,0 +1,95 @@
+EXERCICE A LA MAISON : DECOUVRIR UNE BASE INCONNUE, COMME DEMAIN AU BUREAU
+=========================================================================
+Duree : 30 a 45 minutes. Tout se fait dans des invites de commandes Windows.
+Convention : "py" ; si "py" est inconnu, utilisez "python" a la place.
+
+------------------------------------------------------------------------
+ETAPE 0 - Installation (une seule fois)
+------------------------------------------------------------------------
+ 1. Enregistrez robot-web-installeur.txt dans  Documents  (pas sur le bureau, pas dans Telechargements).
+ 2. Ouvrez l'explorateur dans Documents, cliquez dans la barre d'adresse, tapez  cmd  puis Entree.
+    -> une fenetre noire s'ouvre, positionnee dans Documents.
+ 3. Tapez (Entree apres chaque ligne) :
+        py -c "exec(open('robot-web-installeur.txt', encoding='utf-8').read())"
+    Attendu : "OK : NN fichiers installes dans ...\Documents\robot-web"
+        cd robot-web
+        py -m pip install --user -r requirements.txt
+    Attendu : plusieurs lignes "Successfully installed ..." (1 a 3 minutes). Des avertissements jaunes sont normaux.
+        py -m autoweb demo
+    Attendu : Chrome (ou Edge) s'ouvre, remplit 4 fiches tout seul, se ferme ; la console finit par
+              "3 OK, 1 ERREUR" puis "votre poste est pret".
+    Si "Aucun navigateur n'a pu etre lance" :  py -m playwright install chromium   puis relancez la demo.
+
+------------------------------------------------------------------------
+ETAPE 1 - Lancer la fausse base documentaire (le "logiciel du bureau")
+------------------------------------------------------------------------
+ 4. Dans la MEME fenetre (vous etes dans robot-web) :
+        py -m autoweb base-demo
+    Attendu : "Fausse base documentaire en ligne : http://127.0.0.1:8765/base_demo.html"
+    Cette fenetre reste occupee : c'est le serveur. NE LA FERMEZ PAS.
+ 5. Ouvrez Chrome vous-meme sur  http://127.0.0.1:8765/base_demo.html  et regardez l'outil
+    comme si vous le decouvriez : connexion (demo / demo), filtres, Rechercher, Exporter CSV,
+    clic sur un numero de plan = fiche modifiable. C'est votre "logiciel" pour ce soir.
+    Le robot, lui, ne le connait pas : il va le decouvrir exactement comme demain au bureau.
+
+------------------------------------------------------------------------
+ETAPE 2 - Tache n°1 : "selectionner mon contrat HDK et extraire tous ses plans en Excel"
+------------------------------------------------------------------------
+ 6. Ouvrez une DEUXIEME invite de commandes dans Documents\robot-web (explorateur -> barre d'adresse -> cmd).
+ 7. Regardez l'Excel qui pilote la tache :  bac_a_sable\contrats.xlsx  -> une colonne "Contrat", lignes HDK et QRS.
+    (une ligne = un export ; vous pourrez en ajouter autant que vous voulez)
+ 8. Lancez l'assistant sur l'ecran des filtres :
+        py -m autoweb assistant http://127.0.0.1:8765/base_demo.html --excel bac_a_sable\contrats.xlsx --nom "export contrat" --sortie bac_a_sable\export_contrat.yaml
+    a) Chrome s'ouvre sur la base. Connectez-vous (demo / demo) : la liste et les filtres s'affichent.
+    b) Revenez dans la console, appuyez sur Entree : l'ecran est releve (dossier releves\...).
+    c) Repondez aux questions :
+         - "Que doit faire ce scenario ?"            -> 2   (filtres puis export)
+         - "Adresse ouverte pour chaque ligne"        -> Entree
+         - Filtre "Contrat"                           -> Entree (il propose la colonne Contrat)
+         - Filtre "Type de plan", "Statut", "Numero"  -> Entree (0 = on n'y touche pas)
+         - "Quel bouton applique les filtres"         -> Entree (Rechercher)
+         - "Quel bouton exporte"                      -> Entree (Exporter CSV)
+         - Dossier, nom du fichier, conversion Excel, colonne "Fichier export" -> Entree
+         - "Se connecter a la main au debut ?"        -> o
+    Attendu : "Scenario ecrit : bac_a_sable\export_contrat.yaml"
+ 9. Ouvrez bac_a_sable\export_contrat.yaml avec le Bloc-notes : lisez-le, c'est du texte clair.
+10. Controle sans navigateur :
+        py -m autoweb verifier bac_a_sable\export_contrat.yaml
+        py -m autoweb simuler  bac_a_sable\export_contrat.yaml
+11. Pour de vrai :
+        py -m autoweb lancer bac_a_sable\export_contrat.yaml
+    Attendu : Chrome s'ouvre, une pause vous demande de vous connecter (demo / demo, puis Entree dans la
+    console), puis le robot filtre HDK, exporte, convertit ; idem QRS. Console : "2 OK, 0 ERREUR".
+    Resultat : bac_a_sable\exports\export_HDK.xlsx (15 plans) et export_QRS.xlsx, et dans contrats.xlsx
+    les colonnes Statut / Fichier export remplies.
+    Pour ne plus avoir la pause de connexion : dans le .yaml, supprimez les 3 lignes sous "avant:".
+
+------------------------------------------------------------------------
+ETAPE 3 - Tache n°2 : modifier des fiches a partir d'un Excel (une ligne = une fiche)
+------------------------------------------------------------------------
+12. L'Excel : bac_a_sable\fiches.xlsx (Numero, Nouveau statut, Indice, Commentaire ; 3 lignes dont 1 fausse expres).
+    Remarque : la colonne "Statut" est reservee au robot (OK / ERREUR) ; si votre propre Excel a deja une
+    colonne "Statut", renommez-la, ou indiquez au robot une autre colonne de suivi (README, section 3).
+13. Dans Chrome, ouvrez une fiche (cliquez sur un numero de plan) : l'adresse devient
+    http://127.0.0.1:8765/base_demo.html#fiche=HDK-ARC-001  -> le numero est dans l'adresse.
+14. Assistant sur l'ecran de la fiche :
+        py -m autoweb assistant "http://127.0.0.1:8765/base_demo.html#fiche=HDK-ARC-001" --excel bac_a_sable\fiches.xlsx --nom "modifier fiche" --sortie bac_a_sable\modifier_fiche.yaml
+         - "Que doit faire ce scenario ?"     -> 1
+         - "Adresse ouverte pour chaque ligne" -> tapez :  http://127.0.0.1:8765/base_demo.html#fiche={{Numéro}}
+         - Champs : Titre -> 0 (on ne change pas le titre), Statut -> Entree (il propose "Nouveau statut"),
+                    Indice -> Entree, Commentaire -> Entree
+         - Bouton qui enregistre -> Entree (Enregistrer)
+         - Pause de verification -> o (la premiere fois)
+         - Texte de succes -> enregistrée
+         - Reference a relever -> Entree (aucune) ; connexion a la main -> o ; capture -> o
+15.     py -m autoweb lancer bac_a_sable\modifier_fiche.yaml --limite 1
+    puis, si c'est bon, retirez la ligne "pause" du .yaml et :
+        py -m autoweb lancer bac_a_sable\modifier_fiche.yaml
+    Attendu : "2 OK, 1 ERREUR" ; la ligne 3 (indice "12") est en erreur avec le message de l'outil dans
+    la colonne Message, et une capture dans captures\erreurs\.
+
+------------------------------------------------------------------------
+Ce que vous venez de faire, c'est exactement le geste de demain :
+  relever l'ecran -> repondre aux questions -> verifier/simuler -> lancer sur 1 ligne -> lancer sur tout.
+Au bureau, remplacez l'adresse 127.0.0.1 par celle de votre outil, et l'Excel par le votre.
+Pour arreter le serveur : Entree dans la premiere fenetre.

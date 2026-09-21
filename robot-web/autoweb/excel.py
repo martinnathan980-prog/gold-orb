@@ -15,7 +15,9 @@ Détails importants :
 
 from __future__ import annotations
 
+import csv
 import datetime as dt
+import io
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -296,3 +298,51 @@ def creer_classeur(
     except PermissionError:
         raise ErreurExcel(f"Impossible de créer {chemin.name} : fichier ouvert dans Excel ou dossier protégé.")
     return chemin
+
+
+def lire_csv(chemin: Path) -> List[List[str]]:
+    """Lit un CSV « à la française » ou autre : encodage et séparateur détectés."""
+    brut = Path(chemin).read_bytes()
+    texte = None
+    for encodage in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
+        try:
+            texte = brut.decode(encodage)
+            break
+        except UnicodeDecodeError:
+            continue
+    if texte is None:
+        texte = brut.decode("utf-8", errors="replace")
+    echantillon = texte[:8192]
+    try:
+        separateur = csv.Sniffer().sniff(echantillon, delimiters=";,\t|").delimiter
+    except csv.Error:
+        separateur = ";" if echantillon.count(";") >= echantillon.count(",") else ","
+    return [ligne for ligne in csv.reader(io.StringIO(texte), delimiter=separateur)]
+
+
+def csv_vers_excel(chemin_csv: Path, chemin_xlsx: Optional[Path] = None, feuille: str = "Export") -> Path:
+    """Convertit un export CSV en classeur Excel (toutes les valeurs en texte, en-tête en gras)."""
+    chemin_csv = Path(chemin_csv)
+    cible = Path(chemin_xlsx) if chemin_xlsx else chemin_csv.with_suffix(".xlsx")
+    lignes = lire_csv(chemin_csv)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = feuille[:31]
+    for ligne in lignes:
+        ws.append([cellule.strip() for cellule in ligne])
+    if ws.max_row >= 1:
+        for cellule in ws[1]:
+            cellule.font = Font(bold=True)
+        ws.freeze_panes = "A2"
+    largeurs: Dict[int, int] = {}
+    for ligne_cellules in ws.iter_rows(min_row=1, max_row=min(ws.max_row, 200)):
+        for cellule in ligne_cellules:
+            if cellule.value is not None:
+                largeurs[cellule.column] = max(largeurs.get(cellule.column, 8), min(60, len(str(cellule.value)) + 2))
+    for col, largeur in largeurs.items():
+        ws.column_dimensions[get_column_letter(col)].width = largeur
+    try:
+        wb.save(cible)
+    except PermissionError:
+        raise ErreurExcel(f"Impossible d'écrire {cible.name} : fichier ouvert dans Excel ?")
+    return cible
