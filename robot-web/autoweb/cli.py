@@ -199,6 +199,18 @@ def cmd_initialiser(args: argparse.Namespace) -> int:
     return 0
 
 
+def _normaliser_url(url: Optional[str]) -> Optional[str]:
+    """Adresse web, ou chemin d'un fichier local (ex. demo\\formulaire_demo.html) -> URL."""
+    if not url:
+        return None
+    if url.lower().startswith(("http://", "https://", "file:")):
+        return url
+    chemin = Path(url)
+    if chemin.exists():
+        return chemin.resolve().as_uri()
+    return "https://" + url
+
+
 def _lancer_navigateur_libre(args: argparse.Namespace):
     from .navigateur import Navigateur
     from .scenario import ConfigNavigateur
@@ -222,9 +234,7 @@ def cmd_releve(args: argparse.Namespace) -> int:
     page = nav.ouvrir()
     dossiers: List[Path] = []
     try:
-        url = args.url
-        if url and not url.startswith(("http", "file:")):
-            url = "https://" + url
+        url = _normaliser_url(args.url)
         if url:
             page.goto(url)
         while True:
@@ -259,9 +269,7 @@ def cmd_inspecter(args: argparse.Namespace) -> int:
     nav = _lancer_navigateur_libre(args)
     page = nav.ouvrir()
     try:
-        url = args.url
-        if url and not url.startswith(("http", "file:")):
-            url = "https://" + url
+        url = _normaliser_url(args.url)
         if url:
             page.goto(url)
         print()
@@ -288,8 +296,7 @@ def cmd_assistant(args: argparse.Namespace) -> int:
         nav = _lancer_navigateur_libre(args)
         page = nav.ouvrir()
         try:
-            url = args.url if args.url.startswith(("http", "file:")) else "https://" + args.url
-            page.goto(url)
+            page.goto(_normaliser_url(args.url))
             if interactif and not args.sans_pause:
                 print()
                 print("Dans le navigateur : connectez-vous si besoin et affichez l'écran à automatiser (le formulaire vide).")
@@ -356,7 +363,7 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
     if args.sortie:
         commande += ["-o", str(args.sortie)]
     if args.url:
-        commande.append(args.url)
+        commande.append(_normaliser_url(args.url))
     print("Enregistreur Playwright : faites vos actions dans le navigateur, le code Python apparaît dans la fenêtre.")
     print("Les sélecteurs affichés (get_by_label, get_by_role...) se traduisent dans le scénario par :")
     print("  page.get_by_label('Titre')            -> libelle=Titre")

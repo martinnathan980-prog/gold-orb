@@ -12,8 +12,8 @@ from autoweb.scenario import charger
 def test_releve_sur_la_demo(tmp_path, dossier_modeles, navigateur_ok, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     shutil.copyfile(dossier_modeles / "formulaire_demo.html", tmp_path / "formulaire_demo.html")
-    url = (tmp_path / "formulaire_demo.html").resolve().as_uri()
-    code = main(["releve", url, "--cache", "--sans-pause", "--nom", "demo plans", "--sortie", "releves"])
+    # un chemin de fichier local est accepté à la place d'une adresse web
+    code = main(["releve", "formulaire_demo.html", "--cache", "--sans-pause", "--nom", "demo plans", "--sortie", "releves"])
     sortie = capsys.readouterr().out
     assert code == 0, sortie
     dossiers = list((tmp_path / "releves").iterdir())
