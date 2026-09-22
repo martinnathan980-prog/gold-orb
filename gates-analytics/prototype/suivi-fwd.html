@@ -1843,8 +1843,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
      l'intranet — titre « Nommage WD BFLOW » en ligne 1, en-têtes en ligne 3,
      données dessous. Ses colonnes sont celles de l'extract, dans son ordre.
      La référence UD s'y lit sur trois colonnes : NAME (la racine, écrite
-     avec le A un cran plus loin que dans GATES — GBE31236A00 pour le plan
-     GBE3123A600), SOL. (la solution, trois chiffres) et Cust.V (l'indice,
+     avec le A un cran trop tôt par rapport à GATES — GBE312A3600 pour le
+     plan GBE3123A600), SOL. (la solution, trois chiffres) et Cust.V (l'indice,
      une lettre). Un plan qui
      est dans SEE est un plan créé — donc terminé : l'extract porte les plans
      terminés du contrat, avec des écarts DÉLIBÉRÉS et déterministes — les
@@ -1869,7 +1869,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var lignes = [];
     function ligneSEE(racine, solution, indice, i, p, enCours) {
       var l = {};
-      var nom = racineSEE(racine);   // l'extract écrit le A un cran plus loin
+      var nom = racineSEE(racine);   // l'extract écrit le A un cran trop tôt
       l['NAME'] = nom;
       l['SOL.'] = solution;
       l['Cust.V'] = indice;

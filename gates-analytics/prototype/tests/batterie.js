@@ -444,8 +444,8 @@ async function reinitialiser(pg) {
       lignes: g.querySelectorAll('.rapp-puce').length
     }))
   }));
-  /* La colonne NAME de SEE porte l'écriture de SEE — le A un cran plus loin.
-     Pour la comparer aux références de GATES, on remet le A à sa place. */
+  /* La colonne NAME de SEE porte l'écriture de SEE — le A un cran trop tôt.
+     Pour la comparer aux références de GATES, on décale le A d'un cran. */
   const deSEE = n => /^[A-Z]{3}\d{3}A\d{4}$/.test(n) ? n.slice(0, 6) + n.charAt(7) + 'A' + n.slice(8) : n;
   const li0 = await lireListe();
   verifier('sous les cercles, « Plan par plan » range les lots dans l\'ordre des priorités, avec les comptes des verdicts',
@@ -916,14 +916,15 @@ async function reinitialiser(pg) {
   verifier('la référence se recompose de NAME, SOL. et Cust.V : code circuit, E, ATA, A, séquence, trois chiffres, une lettre',
     s0.refs.every(r => /^[A-Z]{2}E\d{4}A[678]00\d{3}[A-Z]$/.test(r)) && s0.refsPlans.every(r => /^[A-Z]{2}E\d{4}A[678]00\d{3}[A-Z]$/.test(r)),
     JSON.stringify([s0.premieres[0].slice(0, 3), s0.refs[0]]));
-  /* SEE n'écrit pas la référence comme GATES : son A tombe un cran plus
-     loin. La colonne NAME porte donc cette écriture-là — l'extract tel
-     quel — et c'est la page qui remet le A à sa place pour apparier. */
-  verifier('la colonne NAME porte l’écriture de SEE, le A un cran plus loin que dans GATES',
-    s0.premieres.every(l => /^[A-Z]{3}\d{5}A\d{2}$/.test(l[0])),
+  /* SEE n'écrit pas la référence comme GATES : son A tombe un cran trop
+     tôt — trois chiffres avant lui au lieu de quatre. La colonne NAME porte
+     donc cette écriture-là — l'extract tel quel — et c'est la page qui
+     décale le A pour apparier. */
+  verifier('la colonne NAME porte l’écriture de SEE, le A un cran trop tôt : trois chiffres avant lui',
+    s0.premieres.every(l => /^[A-Z]{3}\d{3}A\d{4}$/.test(l[0])),
     JSON.stringify(s0.premieres.map(l => l[0])));
-  verifier('et la référence recomposée remet le A à sa place : NAME + SOL. + Cust.V, le A décalé d’un cran',
-    s0.premieres[0][0].slice(0, 7) + 'A' + s0.premieres[0][0].charAt(7) + s0.premieres[0][0].slice(9) +
+  verifier('et la référence recomposée décale le A d’un cran : NAME + SOL. + Cust.V se lit comme dans GATES',
+    s0.premieres[0][0].slice(0, 6) + s0.premieres[0][0].charAt(7) + 'A' + s0.premieres[0][0].slice(8) +
       s0.premieres[0][1] + s0.premieres[0][2] === s0.refs[0],
     JSON.stringify([s0.premieres[0].slice(0, 3), s0.refs[0]]));
   verifier('la colonne NAME est figée à gauche', s0.figee);
