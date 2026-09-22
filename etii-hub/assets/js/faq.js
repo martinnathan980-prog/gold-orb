@@ -68,7 +68,9 @@ const CODES_POLE = POLES.map((pole) => pole.cle);
  */
 const POLE_SERVICE = 'ETII';
 
-/** Page d'espace correspondant à chaque pôle, pour marquer la navigation. */
+/** Page d'espace correspondant à chaque pôle, pour le lien de retour de la
+    rangée transverse. La barre du site, elle, ne marque plus rien ici : cette
+    page ne figure pas dedans (`<body data-hors-navigation>`). */
 const PAGE_DE_POLE = {
   ETII: 'index.html',
   ETIIA: 'etiia.html',
@@ -404,7 +406,7 @@ function choisirPole(code) {
   if (cible === poleActif) return;
   poleActif = cible;
   rafraichir({ annonce: true, focusFacette: 'pole', valeurFacette: cible });
-  initNav(PAGE_DE_POLE[poleActif] || 'index.html');
+  initNav();
   rendreSousNav();
 }
 
@@ -426,7 +428,7 @@ function toutEffacer() {
   categoriesActives.clear();
   if (refs.champ) refs.champ.value = '';
   rafraichir({ annonce: true });
-  initNav(PAGE_DE_POLE[poleActif] || 'index.html');
+  initNav();
   rendreSousNav();
   if (refs.champ) refs.champ.focus();
 }
@@ -1271,7 +1273,7 @@ function rendreDonnees(donnees, conteneur) {
   appliquerUrl(etatUrl.lire());
   if (refs.champ) refs.champ.value = requete;
 
-  initNav(PAGE_DE_POLE[poleActif] || 'index.html');
+  initNav();
   rendreSousNav();
   rafraichir({ annonce: false });
 
@@ -1297,7 +1299,7 @@ function demarrer() {
   const etatInitial = etatUrl.lire();
   const poleInitial = typeof etatInitial[CLE_POLE] === 'string' ? etatInitial[CLE_POLE] : '';
   poleActif = CODES_POLE.includes(poleInitial) ? poleInitial : POLE_SERVICE;
-  initNav(PAGE_DE_POLE[poleActif] || 'index.html');
+  initNav();
   rendreSousNav();
 
   // Ces deux sections vivent hors de la zone de données : elles restent
@@ -1337,7 +1339,7 @@ function demarrer() {
   etatUrl.ecouter((etat) => {
     if (!index) return;
     appliquerUrl(etat);
-    initNav(PAGE_DE_POLE[poleActif] || 'index.html');
+    initNav();
     rendreSousNav();
     rafraichir({ annonce: false });
   });

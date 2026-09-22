@@ -29,12 +29,9 @@
           section « Vos questions en attente ». Aucun composant de
           components.css ne couvre ces cas.
        B. Le pont entre le contrat de classes de `ui.js` et la feuille de
-          composants : `ui.js` fabrique `.modale / .modale__boite / .toast…`
-          alors que components.css stylise `.modale-fond / .modale /
-          .notification…`. Sans ces règles, la modale « Poser une question
-          aux experts » et les notifications s'afficheraient sans mise en
-          forme. Le socle n'est pas modifié : le pont vit ici, dans la page
-          qui en a besoin (même approche que docsearch.html).
+          composants, pour la seule modale « Poser une question aux
+          experts ». Les notifications ne sont plus ici : components.css §9
+          les stylise pour les huit pages, une seule source.
        C. L'impression.
 
        Aucune valeur brute : uniquement des var(--…) de tokens.css, ou des
@@ -514,8 +511,7 @@
       line-height: var(--interligne-serre);
     }
 
-    .modale__fermeture,
-    .toast__fermeture {
+    .modale__fermeture {
       flex: none;
       display: inline-flex;
       align-items: center;
@@ -533,8 +529,7 @@
       cursor: pointer;
     }
 
-    .modale__fermeture:hover,
-    .toast__fermeture:hover {
+    .modale__fermeture:hover {
       background-color: var(--fond-enfonce);
       color: var(--texte);
     }
@@ -566,10 +561,6 @@
     .modale[data-etat="sortie"] { opacity: 0; }
     .modale[data-etat="ouvert"] { opacity: 1; }
 
-    /* Le fond ne défile pas derrière la modale. Sans !important, et levé
-       dès la fermeture : le défilement natif n'est jamais confisqué. */
-    :root[data-modale-ouverte] { overflow: hidden; }
-
     @media (max-width: 640px) {
       .modale__entete,
       .modale__corps,
@@ -578,69 +569,8 @@
       .modale__actions .bouton { flex: 1 1 auto; }
     }
 
-    /* --- B2. Notifications éphémères ------------------------------------- */
-
-    .toasts {
-      position: fixed;
-      inset-block-end: var(--e-6);
-      inset-inline-end: var(--e-6);
-      z-index: 300;
-
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: var(--e-3);
-
-      inline-size: min(100% - var(--e-8), calc(var(--e-16) * 6));
-      pointer-events: none;
-    }
-
-    .toast {
-      --faq-toast-teinte: var(--texte-doux);
-
-      display: flex;
-      align-items: flex-start;
-      gap: var(--e-3);
-      padding: var(--e-2) var(--e-2) var(--e-2) var(--e-4);
-
-      background-color: var(--fond-eleve);
-      color: var(--texte);
-      border: 1px solid var(--bordure);
-      border-inline-start: var(--e-1) solid var(--faq-toast-teinte);
-      border-radius: var(--rayon-md);
-      box-shadow: var(--ombre-lg);
-
-      font-size: var(--texte-sm);
-      pointer-events: auto;
-    }
-
-    .toast--succes   { --faq-toast-teinte: var(--statut-succes); }
-    .toast--info     { --faq-toast-teinte: var(--statut-info); }
-    .toast--alerte   { --faq-toast-teinte: var(--statut-alerte); }
-    .toast--critique { --faq-toast-teinte: var(--statut-critique); }
-
-    .toast__texte {
-      flex: 1 1 auto;
-      min-inline-size: 0;
-      align-self: center;
-      line-height: var(--interligne);
-    }
-
-    .toast[data-etat="entree"],
-    .toast[data-etat="sortie"] { opacity: 0; }
-    .toast[data-etat="visible"] { opacity: 1; }
-
-    @media (max-width: 640px) {
-      .toasts {
-        inset-inline: var(--e-4);
-        inset-block-end: var(--e-4);
-        inline-size: auto;
-      }
-    }
-
     @media (prefers-reduced-motion: no-preference) {
-      .modale,
-      .toast { transition: opacity var(--duree) var(--courbe); }
+      .modale { transition: opacity var(--duree) var(--courbe); }
     }
 
     /* =====================================================================
@@ -664,7 +594,7 @@
   </style>
 </head>
 
-<body>
+<body data-hors-navigation>
   <a class="lien-evitement" href="#contenu">Aller au contenu</a>
 
   <header class="site-entete">
@@ -672,11 +602,12 @@
       <a class="site-logo" href="index.html">ETII <span>HUB</span></a>
       <nav class="site-nav" aria-label="Navigation principale">
         <ul class="site-nav__liste">
-          <li><a href="index.html" aria-current="page">Tableau de bord</a></li>
+          <li><a href="index.html">Tableau de bord</a></li>
           <li><a href="etiia.html" data-pole="ETIIA">ETIIA</a></li>
           <li><a href="etiie.html" data-pole="ETIIE">ETIIE</a></li>
           <li><a href="etiii.html" data-pole="ETIII">ETIII</a></li>
           <li><a href="docsearch.html">Recherche</a></li>
+          <li><a href="organigramme.html">Organigramme</a></li>
         </ul>
       </nav>
       <button class="palette-ouvrir" type="button" data-palette>
