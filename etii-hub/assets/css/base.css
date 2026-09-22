@@ -687,9 +687,8 @@ html {
     margin-inline-start: auto;
   }
 
-  /* Repli sous 640px : la barre reste une ligne (skin.css §14 la met en
-     flex). Les liens doivent y tenir sans défilement — si un lien s'ajoute,
-     revoir padding-inline et font-size dans skin.css, pas ici. */
+  /* Repli sous 640px : la barre passe sur deux rangées centrées (skin.css
+     §14). Rien à régler ici. */
   .site-nav__liste {
     gap: var(--e-1);
   }

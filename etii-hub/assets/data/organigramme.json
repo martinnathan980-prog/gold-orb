@@ -979,7 +979,7 @@
               "nom": "Personne 81",
               "poste": "Chargé de configuration",
               "role": "membre",
-              "perimetre": "Tigre",
+              "perimetre": "TIGRE",
               "competences": [
                 {
                   "nom": "Sertissage",
@@ -1037,7 +1037,7 @@
               "nom": "Personne 83",
               "poste": "Ingénieur qualité",
               "role": "membre",
-              "perimetre": "Tigre",
+              "perimetre": "TIGRE",
               "competences": [
                 {
                   "nom": "Charge et capacité",
@@ -2235,7 +2235,7 @@
               "nom": "Personne 106",
               "poste": "Lead technique",
               "role": "leader",
-              "perimetre": "Tigre",
+              "perimetre": "TIGRE",
               "competences": [
                 {
                   "nom": "Pilotage technique",
@@ -2623,7 +2623,7 @@
               "nom": "Personne 121",
               "poste": "Dessinateur-projeteur",
               "role": "membre",
-              "perimetre": "Tigre",
+              "perimetre": "TIGRE",
               "competences": [
                 {
                   "nom": "Sertissage",
@@ -4279,7 +4279,7 @@
               "nom": "Personne 159",
               "poste": "Ingénieur calcul",
               "role": "membre",
-              "perimetre": "Racer",
+              "perimetre": "RACER",
               "competences": [
                 {
                   "nom": "Bilan de puissance",
@@ -4764,7 +4764,7 @@
               "nom": "Personne 178",
               "poste": "Ingénieur qualité",
               "role": "membre",
-              "perimetre": "Racer",
+              "perimetre": "RACER",
               "competences": [
                 {
                   "nom": "Protection mécanique",

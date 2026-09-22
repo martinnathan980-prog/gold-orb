@@ -106,7 +106,7 @@
   --texte-doux:    var(--gris-600);
   /* En littéral et non via --gris-500 : ce gris-là sert aussi de
      --bordure-forte, qu'on ne veut pas foncer. */
-  --texte-faible:  #6c675d;
+  --texte-faible:  #686359;
   --texte-inverse: #ffffff;
   --texte-accent:  #17367f;
 

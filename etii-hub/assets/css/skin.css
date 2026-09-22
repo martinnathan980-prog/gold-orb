@@ -552,11 +552,6 @@ mark, .surlignage {
 .modale__actions,
 .modale__pied   { border-top: 1px solid var(--bordure); background-color: var(--fond-enfonce); }
 
-.notification {
-  border-radius: var(--rayon-md);
-  box-shadow: var(--ombre-lg);
-}
-
 .site-pied {
   border-top: 1px solid var(--bordure);
   background: none;
@@ -674,29 +669,31 @@ mark, .surlignage {
 .site-nav__liste a[data-pole="ETIII"] { --pole-nav: var(--pole-etiii); }
 
 /* -------------------------------------------------------------------------
-   14. Écran étroit : la barre reste une barre
-   Sur téléphone, les cinq liens défilent horizontalement sur une ligne
-   au lieu de s'empiler en une colonne de 48 px chacun.
+   14. Écran étroit : la barre s'enroule
+   Sur téléphone, les six liens tiennent sur deux rangées centrées, au lieu
+   de s'empiler en une colonne de 48 px chacun.
    ---------------------------------------------------------------------- */
 
 @media (max-width: 640px) {
+  /* Cette barre a d'abord défilé horizontalement, pour cinq liens. Le
+     sixième — « Organigramme » — sortait alors du cadre sans que rien ne le
+     signale, ce qui annulait le bénéfice de l'y avoir mis : un lien qu'on ne
+     voit pas n'existe pas. Elle s'enroule donc, et la seconde rangée coûte
+     28 px de hauteur sur le seul téléphone. Un septième lien tiendra sans
+     qu'on ait à revenir ici. */
   .site-nav__liste {
     display: flex;
-    flex-wrap: nowrap;
-    gap: 0;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    margin-inline: calc(var(--e-4) * -1);
-    padding-inline: var(--e-4);
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--e-1);
     padding-block-end: var(--e-1);
   }
 
   .site-nav__liste li { flex: none; }
 
-  /* Serré au plus juste : avec --e-3 et --texte-sm, les cinq liens faisaient
-     427 px pour 390 px d'écran et « Recherche » — le cœur du site — sortait
-     du cadre sans que rien ne le dise. Ici, plus de débordement de 360 à
-     412 px. Si un lien s'ajoute, c'est ces deux valeurs qu'on revoit. */
+  /* Serré au plus juste : avec --e-3 et --texte-sm, les liens faisaient
+     427 px pour 390 px d'écran. Ces deux valeurs tiennent deux liens longs
+     par rangée de 390 px. */
   .site-nav__liste a {
     min-height: calc(var(--cible-tactile) - var(--e-1));
     padding-inline: var(--e-1);
