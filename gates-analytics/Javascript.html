@@ -88,10 +88,15 @@
      archiver les relevés, le client pour les compteurs filtrés. Toute
      modification de l'un OU de l'autre doit être reportée des deux côtés,
      sinon le dernier point de la courbe ne vaut plus la barre du jour. */
+  /* Les valeurs qui veulent dire « fini », écrites comme dans l'extract —
+     CONFIG.VALEURS_FINIES côté serveur, transmises par le paquet. Comparées
+     entières : « Non validé » n'est pas « Validé ». */
+  var VALEURS_FINIES_N = ['valide'];
   function classer(valeur) {
     var s = norm(valeur);
     if (s === '' || s === '-') return 'vide';
-    if (s.indexOf('a faire') !== -1 || s === 'non commence') return 'afaire';
+    if (VALEURS_FINIES_N.indexOf(s) !== -1) return 'termine';
+    if (s.indexOf('a faire') !== -1 || s.indexOf('a traiter') !== -1 || s === 'non commence') return 'afaire';
     var n = parseFloat(s.replace(/[\s%]/g, '').replace(',', '.'));
     if (!isNaN(n)) {
       if (n >= 100) return 'termine';
@@ -185,8 +190,11 @@
     var evenements = [], partis = {}, venus = {};
     Object.keys(apres).forEach(function (ref) {
       if (a.call(avant, ref)) {
-        var ea = classer(avant[ref]), eb = classer(apres[ref]);
-        if (ea !== eb) evenements.push({ ref: ref, type: 'change', avant: ea, apres: eb });
+        /* Un passage, c'est une autre valeur — « A traiter » → « Check »
+           compte, même si les deux sont « en cours ». */
+        if (cleValeur(avant[ref]) !== cleValeur(apres[ref])) {
+          evenements.push({ ref: ref, type: 'change', avant: classer(avant[ref]), apres: classer(apres[ref]) });
+        }
         return;
       }
       var ud = analyserUD(ref);
@@ -219,6 +227,14 @@
       partis[racine].forEach(function (p) {
         if (!p.pris) evenements.push({ ref: p.ref, type: 'disparu', avant: classer(avant[p.ref]) });
       });
+    });
+    /* Chaque événement garde les valeurs elles-mêmes, écrites comme dans
+       l'extract : le journal et la fiche les disent telles quelles. */
+    evenements.forEach(function (e) {
+      var va = e.type === 'nouveau' ? undefined : avant[e.type === 'indice' ? e.ancienne : e.ref];
+      var vb = e.type === 'disparu' ? undefined : apres[e.ref];
+      if (va !== undefined) { e.cAvant = cleValeur(va); e.vAvant = libelleValeur(va); }
+      if (vb !== undefined) { e.cApres = cleValeur(vb); e.vApres = libelleValeur(vb); }
     });
     return evenements;
   }
@@ -1027,6 +1043,54 @@
    * initiale, l'exemple fabriqué et chaque contrat passent par ici.
    * Ne dessine rien : l'appelant enchaîne remplirDims() puis rendre().
    */
+  /* ============================================================
+     LES VALEURS DE LA COLONNE SUIVIE
+     La page ne connaît pas d'avance les valeurs de la colonne : elle les lit.
+     Chaque valeur distincte est un état affiché — écrit comme dans l'extract,
+     avec son compte — et se range dans l'une des quatre familles (fini, en
+     cours, à faire, non renseigné) qui donnent sa couleur et font la courbe.
+     Une colonne qui change de vocabulaire change la page avec elle.
+     ============================================================ */
+  var VALEURS_COLONNE = [], VALEUR_PAR_CLE = {};
+  /* La clé d'une valeur : sans accents, sans espaces, en minuscules — « En
+     cours », « en  cours » et « EN COURS » sont la même. Vide ou tiret :
+     « vide ». */
+  function cleValeur(v) {
+    var n = norm(v);
+    return (n === '' || n === '-') ? 'vide' : n.replace(/\s+/g, '');
+  }
+  function libelleValeur(v) {
+    var brut = String(v == null ? '' : v).trim();
+    return cleValeur(brut) === 'vide' ? 'Non renseigné' : brut;
+  }
+  var RANG_FAMILLE = { termine: 0, encours: 1, afaire: 2, vide: 3 };
+  function lireValeurs(plans) {
+    var par = {}, liste = [];
+    plans.forEach(function (p) {
+      var k = cleValeur(p[CLE_SUIVIE]);
+      if (!par[k]) { par[k] = { cle: k, libelle: libelleValeur(p[CLE_SUIVIE]), famille: classer(p[CLE_SUIVIE]), n: 0 }; liste.push(par[k]); }
+      par[k].n++;
+    });
+    liste.sort(function (a, b) {
+      return RANG_FAMILLE[a.famille] - RANG_FAMILLE[b.famille] || b.n - a.n || COMPARER_REF(a.libelle, b.libelle);
+    });
+    /* Plusieurs valeurs dans une même famille : la plus fréquente prend la
+       couleur de la famille, les suivantes s'éclaircissent. */
+    var rangs = {};
+    liste.forEach(function (v) {
+      var r = rangs[v.famille] = (rangs[v.famille] || 0) + 1;
+      var base = ETAT_PAR_CLE[v.famille];
+      v.hachure = !!base.hachure;
+      v.teinte = base.teinte;
+      v.couleur = r === 1 ? base.couleur
+        : 'color-mix(in srgb, ' + base.couleur + ' ' + Math.max(38, 100 - 24 * (r - 1)) + '%, var(--surface))';
+      v.encre = r === 1 ? encreSegment(v.famille) : 'var(--encre)';
+    });
+    VALEUR_PAR_CLE = par;
+    return liste;
+  }
+  function valeurDeCle(k) { return VALEUR_PAR_CLE[k] || null; }
+
   /* Un relevé lu sous le concept harnais : sa carte du concept, et des
      comptes refaits dessus — ceux de la ligne d'historique sont ceux de la
      définition. Les groupes se refont sur les plans d'aujourd'hui, comme
@@ -1077,11 +1141,14 @@
        sinon l'interrupteur s'efface et la page revient à la définition. */
     if (INDICATEUR === 'concept' && !(src.cleConcept && PAR_CLE[src.cleConcept])) INDICATEUR = 'def';
     CLE_SUIVIE = INDICATEUR === 'concept' ? src.cleConcept : 'avancement';
+    VALEURS_FINIES_N = (Array.isArray(src.valeursFinies) && src.valeursFinies.length ? src.valeursFinies : ['Validé'])
+      .map(function (v) { return norm(v); }).filter(Boolean);
 
     PLANS.forEach(function (p) {
       p._etat = classer(p[CLE_SUIVIE]); p._pct = pourcentDe(p);
       p._racine = cleAppariement(analyserUD(p.reference));   // racine + solution : l'identité du plan
     });
+    VALEURS_COLONNE = lireValeurs(PLANS);
 
     RELEVES_SRC = (src.releves || []).filter(function (r) { return r && lundiDeLibelle(r.semaine); });
     RELEVES_SRC.sort(function (a, b) { return lundiDeLibelle(a.semaine) - lundiDeLibelle(b.semaine); });
@@ -1376,15 +1443,22 @@
   /* Le comparatif affiché : les mêmes événements, restreints au périmètre. */
   function comparatif() {
     if (!EVENEMENTS_IMPORT) return null;
-    var d = { termine: [], encours: [], afaire: [], nouveaux: [], disparus: [], indice: [], reemissions: [] };
+    var d = { nouveaux: [], disparus: [], indice: [], reemissions: [], parValeur: {}, valeurs: [] };
     EVENEMENTS_IMPORT.filter(dansPerimetreEvt).forEach(function (e) {
       if (e.type === 'nouveau') { d.nouveaux.push(e.ref); return; }
       if (e.type === 'disparu') { d.disparus.push(e.ref); return; }
       /* Un plan réémis compte une fois, sous « changement d'indice » — même
          s'il change d'état au passage : la bulle et le journal le disent. */
       if (estReemission(e)) { d.indice.push(e.ref); d.reemissions.push({ ref: e.ref, ancienne: e.ancienne, type: e.type }); return; }
-      if (e.avant !== e.apres && d[e.apres]) d[e.apres].push(e.ref);
+      if (e.type === 'change' && e.cApres && e.cApres !== 'vide') {
+        if (!d.parValeur[e.cApres]) {
+          d.parValeur[e.cApres] = [];
+          d.valeurs.push({ cle: e.cApres, libelle: e.vApres, famille: e.apres });
+        }
+        d.parValeur[e.cApres].push(e.ref);
+      }
     });
+    d.valeurs.sort(function (a, b) { return RANG_FAMILLE[a.famille] - RANG_FAMILLE[b.famille] || COMPARER_REF(a.libelle, b.libelle); });
     return d;
   }
 
@@ -1625,7 +1699,7 @@
     var cols = Object.keys(vue.filtres).filter(function (k) { return vue.filtres[k]; });
     return PLANS.filter(function (p) {
       if (!dansPerimetre(p)) return false;
-      if (vue.etat && p._etat !== vue.etat) return false;
+      if (vue.etat && cleValeur(p[CLE_SUIVIE]) !== vue.etat) return false;
       if (vue.groupe && String(valeurDim(p, vue.groupe.dim)) !== vue.groupe.val) return false;
       if (vue.refs && !vue.refs[p.reference]) return false;
       for (var kv in vue.vides) {
@@ -1859,25 +1933,31 @@
 
     /* Le pourcentage se lit dans la barre : les chiffres du dessous n'ont plus
        qu'un sens possible, un nombre de plans. */
-    $('barre').innerHTML = ETATS.map(function (e) {
-      if (!c[e.cle]) return '';
-      var part = (c[e.cle] / (c.total || 1)) * 100;
+    /* Une part par valeur de la colonne, telle qu'elle est écrite : la page
+       ne range pas les valeurs dans des cases qu'elle aurait prévues. */
+    var parValeur = {};
+    liste.forEach(function (p) { var k = cleValeur(p[CLE_SUIVIE]); parValeur[k] = (parValeur[k] || 0) + 1; });
+    $('barre').innerHTML = VALEURS_COLONNE.map(function (v) {
+      var n = parValeur[v.cle] || 0;
+      if (!n) return '';
+      var part = (n / (c.total || 1)) * 100;
       var texte = part >= 6 ? Math.round(part) + '\u202f%' : '';
-      return e.hachure
-        ? '\x3Cspan class="hachure" data-cle="' + e.cle + '" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)">' + texte + '\x3C/span>'
-        : '\x3Cspan data-cle="' + e.cle + '" style="width:' + part.toFixed(2) + '%;background:' + e.couleur +
-          ';color:' + encreSegment(e.cle) + '">' + texte + '\x3C/span>';
+      return v.hachure
+        ? '\x3Cspan class="hachure" data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;color:var(--encre-2)" title="' + ech(v.libelle) + '">' + texte + '\x3C/span>'
+        : '\x3Cspan data-cle="' + ech(v.cle) + '" style="width:' + part.toFixed(2) + '%;background:' + v.couleur +
+          ';color:' + v.encre + '" title="' + ech(v.libelle) + '">' + texte + '\x3C/span>';
     }).join('');
 
-    $('etats').innerHTML = ETATS.map(function (e) {
-      var pastille = e.hachure
+    $('etats').innerHTML = VALEURS_COLONNE.map(function (v) {
+      var pastille = v.hachure
         ? '\x3Cspan class="pastille hachure">\x3C/span>'
-        : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>';
-      var actif = vue.etat === e.cle;
-      return '\x3Cbutton class="etat-btn" type="button" data-etat="' + e.cle + '" data-cle="' + e.cle + '" style="--teinte:' + e.teinte +
+        : '\x3Cspan class="pastille" style="background:' + v.couleur + '">\x3C/span>';
+      var actif = vue.etat === v.cle;
+      return '\x3Cbutton class="etat-btn" type="button" data-etat="' + ech(v.cle) + '" data-cle="' + ech(v.cle) + '" data-famille="' + v.famille +
+        '" style="--teinte:' + v.teinte +
         '" aria-pressed="' + actif + '" title="' + (actif ? 'Retirer le filtre' : 'N\u2019afficher que ces plans') + '">' +
-        '\x3Cspan class="etat-haut">' + pastille + ech(e.libelle) + '\x3C/span>' +
-        '\x3Cspan class="etat-n">' + nb(c[e.cle]) + '\x3C/span>\x3C/button>';
+        '\x3Cspan class="etat-haut">' + pastille + ech(v.libelle) + '\x3C/span>' +
+        '\x3Cspan class="etat-n">' + nb(parValeur[v.cle] || 0) + '\x3C/span>\x3C/button>';
     }).join('');
 
     requestAnimationFrame(function () { alignerSousBarre('barre', 'filets', 'etats'); });
@@ -2928,15 +3008,32 @@
      peut le voir à l'œil ; c'est pourtant la question de chaque semaine. */
   /* « un » et « des » : le libellé s'accorde au compte — « 1 passé en
      terminé », « 20 passés en terminé ». */
-  var LOTS_DELTA = [
-    { cle: 'termine',  un: 'passé en terminé',    des: 'passés en terminé',    etat: 'termine' },
-    { cle: 'encours',  un: 'passé en cours',      des: 'passés en cours',      etat: 'encours' },
-    { cle: 'afaire',   un: 'passé à faire',       des: 'passés à faire',       etat: 'afaire' },
+  /* Un lot par valeur d'arrivée — « passés à « Validé » », « passés à
+     « Check » » —, puis les nouveaux, les disparus et les changements
+     d'indice. */
+  var LOTS_FIXES = [
     { cle: 'nouveaux', un: 'nouveau',             des: 'nouveaux',             etat: null },
     { cle: 'disparus', un: 'disparu',             des: 'disparus',             etat: null },
     { cle: 'indice',   un: 'changement d’indice', des: 'changements d’indice', etat: null }
   ];
+  function lotsDelta() {
+    var vals = COMPARATIF ? COMPARATIF.valeurs : [];
+    return vals.map(function (v) {
+      return { cle: v.cle, un: 'passé à « ' + v.libelle + ' »', des: 'passés à « ' + v.libelle + ' »', etat: v.famille, couleur: v.cle };
+    }).concat(LOTS_FIXES);
+  }
+  function lotDelta(cle) { return lotsDelta().filter(function (l) { return l.cle === cle; })[0] || null; }
+  function refsDelta(cle) {
+    if (!COMPARATIF) return [];
+    return COMPARATIF.parValeur[cle] || (LOTS_FIXES.some(function (l) { return l.cle === cle; }) ? COMPARATIF[cle] : []) || [];
+  }
   function libelleLot(l, n) { return n > 1 ? l.des : l.un; }
+  /* La pastille d'une valeur : la couleur que lui donne la barre. */
+  function pastilleValeur(cle, famille) {
+    var v = valeurDeCle(cle);
+    if (!v) return pastilleDe(famille || 'sans');
+    return v.hachure ? '\x3Cspan class="pastille hachure">\x3C/span>' : '\x3Cspan class="pastille" style="background:' + v.couleur + '">\x3C/span>';
+  }
 
   function rendreComparatif() {
     var zone = $('comparatif');
@@ -2944,10 +3041,10 @@
       zone.innerHTML = '\x3Cspan>Premier import : le comparatif appara\u00eetra au prochain.\x3C/span>';
       return;
     }
-    var morceaux = LOTS_DELTA.filter(function (l) { return COMPARATIF[l.cle].length; }).map(function (l) {
+    var morceaux = lotsDelta().filter(function (l) { return refsDelta(l.cle).length; }).map(function (l) {
       var actif = vue.refsLibelle === l.cle;
-      var n = COMPARATIF[l.cle].length;
-      var pastille = l.etat || l.cle === 'indice' ? pastilleDe(l.etat || l.cle) : '';
+      var n = refsDelta(l.cle).length;
+      var pastille = l.couleur ? pastilleValeur(l.cle, l.etat) : (l.cle === 'indice' ? pastilleDe('indice') : '');
       return '\x3Cbutton class="puce-delta" type="button" data-delta="' + l.cle +
         '" aria-pressed="' + actif + '">' +
         pastille + '\x3Cb>' + nb(n) + '\x3C/b> ' + libelleLot(l, n) + '\x3C/button>';
@@ -2991,7 +3088,7 @@
     if (!filtre) return true;
     if (filtre === 'indice') return e.type === 'indice';
     if (e.type === 'nouveau' || e.type === 'disparu' || estReemission(e)) return false;
-    return e.apres === filtre;
+    return e.cApres === filtre;
   }
   /* Les comptes d'une liste d'événements, avec les mots du journal et de la
      bulle : passages par état d'arrivée, nouveaux, disparus, changements
@@ -3018,10 +3115,13 @@
       ? '\x3Cspan class="pastille hachure">\x3C/span>'
       : '\x3Cspan class="pastille" style="background:' + e.couleur + '">\x3C/span>';
   }
-  function etiqEtat(cle, role) {
+  /* L'étiquette d'une valeur dans le journal : sa pastille, et la valeur
+     écrite comme dans l'extract (à défaut, le nom de sa famille). */
+  function etiqEtat(cle, role, cleV, libelle) {
     var e = ETAT_PAR_CLE[cle];
     if (!e) return '';
-    return '\x3Cspan class="etiq-etat ' + (role || '') + '">' + pastilleDe(cle) + ech(e.court) + '\x3C/span>';
+    return '\x3Cspan class="etiq-etat ' + (role || '') + '">' + (cleV ? pastilleValeur(cleV, cle) : pastilleDe(cle)) +
+      ech(libelle || e.court) + '\x3C/span>';
   }
 
   var MAX_JOURNAL = 12;                // lignes affichées avant « voir tout »
@@ -3048,6 +3148,24 @@
         ech(vue.perimetre) + '.\x3C/div>';
       return;
     }
+    /* Les filtres du journal : une valeur d'arrivée par bouton — celles que
+       le journal contient —, puis les changements d'indice. */
+    var arrivees = {}, listeArrivees = [];
+    journal.forEach(function (sem) {
+      sem.evenements.forEach(function (e) {
+        if (e.type !== 'change' || !e.cApres || e.cApres === 'vide' || arrivees[e.cApres]) return;
+        arrivees[e.cApres] = { cle: e.cApres, libelle: e.vApres, famille: e.apres };
+        listeArrivees.push(arrivees[e.cApres]);
+      });
+    });
+    listeArrivees.sort(function (a, b) { return RANG_FAMILLE[a.famille] - RANG_FAMILLE[b.famille] || COMPARER_REF(a.libelle, b.libelle); });
+    if (vue.journal && vue.journal !== 'indice' && !arrivees[vue.journal]) vue.journal = '';
+    $('filtre-journal').innerHTML = '\x3Cbutton type="button" data-journal="" aria-pressed="' + !vue.journal + '">Tout\x3C/button>' +
+      listeArrivees.map(function (v) {
+        return '\x3Cbutton type="button" data-journal="' + ech(v.cle) + '" aria-pressed="' + (vue.journal === v.cle) + '">' +
+          pastilleValeur(v.cle, v.famille) + ech(v.libelle) + '\x3C/button>';
+      }).join('') +
+      '\x3Cbutton type="button" data-journal="indice" aria-pressed="' + (vue.journal === 'indice') + '">\x3Cspan class="pastille indice">\x3C/span>Changement d\u2019indice\x3C/button>';
     var filtre = vue.journal;
     var visibles = 0;
     var html = journal.map(function (sem) {
@@ -3062,23 +3180,24 @@
          Et chaque compte est un bouton : cliquer « 4 terminés » n'affiche plus
          que ceux-là, pour toutes les semaines à la fois. */
       var resume = [];
-      ETATS.forEach(function (et) {
-        var n = parType[et.cle];
-        if (!n) return;
-        var pluriel = n > 1 ? 's' : '';
-        var mot;
-        if (et.cle === 'termine')      mot = 'terminé' + pluriel;
-        else if (et.cle === 'encours') mot = 'passé' + pluriel + ' en cours';
-        else if (et.cle === 'afaire')  mot = 'repassé' + pluriel + ' à faire';
-        else {
-          /* Une cellule effacée n'est pas un passage qu'on filtre : un compte,
-             comme les nouveaux et les disparus. */
-          resume.push('\x3Cspan class="doux-compte">' + pastilleDe('vide') + '\x3Cb>' + nb(n) + '\x3C/b> effacé' + pluriel + '\x3C/span>');
+      /* Un compte par valeur d'arrivée, écrite comme dans l'extract ; les
+         cellules effacées se comptent à part, comme les nouveaux. */
+      var parArrivee = {}, ordreArrivee = [];
+      evts.forEach(function (e) {
+        if (e.type !== 'change' || !e.cApres) return;
+        if (!parArrivee[e.cApres]) { parArrivee[e.cApres] = { cle: e.cApres, libelle: e.vApres, famille: e.apres, n: 0 }; ordreArrivee.push(parArrivee[e.cApres]); }
+        parArrivee[e.cApres].n++;
+      });
+      ordreArrivee.sort(function (a, b) { return RANG_FAMILLE[a.famille] - RANG_FAMILLE[b.famille] || b.n - a.n; });
+      ordreArrivee.forEach(function (v) {
+        var pluriel = v.n > 1 ? 's' : '';
+        if (v.cle === 'vide') {
+          resume.push('\x3Cspan class="doux-compte">' + pastilleDe('vide') + '\x3Cb>' + nb(v.n) + '\x3C/b> effacé' + pluriel + '\x3C/span>');
           return;
         }
-        resume.push('\x3Cbutton class="compte-passage" type="button" data-passage="' + et.cle +
-          '" aria-pressed="' + (vue.journal === et.cle) + '" title="N\u2019afficher que ces passages, sur toutes les semaines">' +
-          pastilleDe(et.cle) + '\x3Cb>' + nb(n) + '\x3C/b> ' + ech(mot) + '\x3C/button>');
+        resume.push('\x3Cbutton class="compte-passage" type="button" data-passage="' + ech(v.cle) +
+          '" aria-pressed="' + (vue.journal === v.cle) + '" title="N\u2019afficher que ces passages, sur toutes les semaines">' +
+          pastilleValeur(v.cle, v.famille) + '\x3Cb>' + nb(v.n) + '\x3C/b> ' + ech('passé' + pluriel + ' à « ' + v.libelle + ' »') + '\x3C/button>');
       });
       if (parType.indice) {
         resume.push('\x3Cbutton class="compte-passage" type="button" data-passage="indice" aria-pressed="' +
@@ -3122,12 +3241,12 @@
         var quoi = plan && CLE_LIBELLE ? String(plan[CLE_LIBELLE] || '') : '';
         var vers = e.type === 'nouveau'
           ? '\x3Cspan class="vers">\x3Cspan class="etiq-etat avant">nouveau\x3C/span>' +
-            '\x3Cspan class="fleche-etat">\u2192\x3C/span>' + etiqEtat(e.apres, 'apres') + '\x3C/span>'
+            '\x3Cspan class="fleche-etat">\u2192\x3C/span>' + etiqEtat(e.apres, 'apres', e.cApres, e.vApres) + '\x3C/span>'
           : e.type === 'disparu'
-            ? '\x3Cspan class="vers">' + etiqEtat(e.avant, 'avant') +
+            ? '\x3Cspan class="vers">' + etiqEtat(e.avant, 'avant', e.cAvant, e.vAvant) +
               '\x3Cspan class="fleche-etat">\u2192\x3C/span>\x3Cspan class="etiq-etat apres">retiré\x3C/span>\x3C/span>'
-            : '\x3Cspan class="vers">' + etiqEtat(e.avant, 'avant') +
-              '\x3Cspan class="fleche-etat">\u2192\x3C/span>' + etiqEtat(e.apres, 'apres') + '\x3C/span>';
+            : '\x3Cspan class="vers">' + etiqEtat(e.avant, 'avant', e.cAvant, e.vAvant) +
+              '\x3Cspan class="fleche-etat">\u2192\x3C/span>' + etiqEtat(e.apres, 'apres', e.cApres, e.vApres) + '\x3C/span>';
         /* Une réémission se lit « ANCIENNE → NOUVELLE », puis l'état avant et
            après : le même plan sous deux références, et ce qu'il est devenu. */
         var reference = estReemission(e)
@@ -3234,20 +3353,35 @@
       if (i === 5 || i === 13) disparus.push('XXX' + p.reference.slice(3));
     });
     function terminesDe(cle) { return PLANS.filter(function (p) { return classer(p[cle]) === 'termine'; }).length; }
+    /* Les valeurs que l'historique fabriqué emprunte sont celles de la
+       colonne elle-même — la plus fréquente de chaque famille —, jamais des
+       mots qu'elle n'emploie pas : « Validé » reste « Validé ». */
+    function motDe(cle, famille, defaut) {
+      var n = {}, meilleur = null;
+      PLANS.forEach(function (p) {
+        var v = String(p[cle] == null ? '' : p[cle]).trim();
+        if (!v || classer(v) !== famille) return;
+        n[v] = (n[v] || 0) + 1;
+        if (!meilleur || n[v] > n[meilleur]) meilleur = v;
+      });
+      return meilleur || defaut;
+    }
     /* La carte d'une semaine pour une colonne : les terminés montent
        régulièrement jusqu'aux comptes du jour. */
     function carteDe(k, cle, nbTermines) {
       var part = 0.25 + (0.75 * k) / semaines;      // montée régulière jusqu'à aujourd'hui
       var termine = Math.round(nbTermines * part);
       var carte = {}, atteint = 0;
+      var enCours = motDe(cle, 'encours', motDe(cle, 'afaire', 'En cours'));
+      var fini = motDe(cle, 'termine', 'Terminé');
       PLANS.forEach(function (p) {
         var ref = p.reference;
         if (apparus[ref] !== undefined && k <= apparus[ref]) return;
-        var valeur = (classer(p[cle]) === 'termine' && atteint++ >= termine) ? 'En cours' : p[cle];
-        if (cle === 'avancement' && retours[ref] && k <= retours[ref].jusque) valeur = retours[ref].avant;
+        var valeur = (classer(p[cle]) === 'termine' && atteint++ >= termine) ? enCours : p[cle];
+        if (cle === 'avancement' && retours[ref] && k <= retours[ref].jusque) valeur = retours[ref].avant === 'Terminé' ? fini : enCours;
         carte[(reemis[ref] && k <= reemis[ref].jusque) ? reemis[ref].ancienne : ref] = valeur;
       });
-      if (k < semaines) disparus.forEach(function (ref) { carte[ref] = 'En cours'; });
+      if (k < semaines) disparus.forEach(function (ref) { carte[ref] = enCours; });
       return carte;
     }
     var nDef = terminesDe('avancement'), nConcept = cleConcept ? terminesDe(cleConcept) : 0;
@@ -3400,7 +3534,7 @@
     var liste = [];
     /* Le périmètre d'abord : c'est le plus large, et il se retire comme les autres. */
     if (vue.perimetre) liste.push({ cle: 'perimetre', mot: 'Périmètre', valeur: vue.perimetre });
-    if (vue.etat) liste.push({ cle: 'etat', mot: 'État', valeur: ETAT_PAR_CLE[vue.etat].libelle });
+    if (vue.etat) liste.push({ cle: 'etat', mot: 'État', valeur: valeurDeCle(vue.etat) ? valeurDeCle(vue.etat).libelle : vue.etat });
     if (vue.groupe) {
       liste.push({
         cle: 'groupe',
@@ -3412,7 +3546,7 @@
       var n = Object.keys(vue.refs).length;
       /* Un lot du comparatif se nomme par son libellé, pas par sa clé — et au
          pluriel : le bandeau nomme une catégorie, il ne compte pas. */
-      var lot = LOTS_DELTA.filter(function (l) { return l.cle === vue.refsLibelle; })[0];
+      var lot = lotDelta(vue.refsLibelle);
       /* Un lot de la comparaison se nomme par la phrase même du verdict :
          le jeton redit ce qu'on vient de cliquer, mot pour mot. */
       var lotRapp = LOTS_RAPPROCHEMENT.filter(function (l) { return 'rapprochement:' + l.cle === vue.refsLibelle; })[0];
@@ -4038,8 +4172,8 @@
     var b = e.target.closest('.puce-delta');
     var bulle = $('bulle');
     if (!b || !COMPARATIF) { bulle.dataset.visible = 'false'; return; }
-    var lot = LOTS_DELTA.filter(function (l) { return l.cle === b.dataset.delta; })[0];
-    var refs = COMPARATIF[b.dataset.delta];
+    var lot = lotDelta(b.dataset.delta);
+    var refs = refsDelta(b.dataset.delta);
     var paires = '';
     if (b.dataset.delta === 'indice') {
       var lignes = COMPARATIF.reemissions.filter(function (r) { return r.type === b.dataset.delta; })
@@ -4066,7 +4200,7 @@
     if (vue.refsLibelle === cle) { vue.refs = null; vue.refsLibelle = ''; }
     else {
       vue.refs = {};
-      COMPARATIF[cle].forEach(function (r) { vue.refs[r] = true; });
+      refsDelta(cle).forEach(function (r) { vue.refs[r] = true; });
       vue.refsLibelle = cle;
     }
     rendre();
@@ -4334,9 +4468,8 @@
       var av = analyserUD(e.ancienne), ap = analyserUD(e.ref);
       return 'changement d’indice : ' + (av.indice || '?') + ' → ' + (ap.indice || '?');
     }
-    if (e.apres === 'vide') return 'avancement effacé';
-    var l = LOTS_DELTA.filter(function (x) { return x.etat === e.apres; })[0];
-    return l ? l.un : 'changé';
+    if (e.cApres === 'vide') return 'avancement effacé';
+    return 'passé à « ' + (e.vApres || '?') + ' »';
   }
   function semaineCourte(i) { return 'S' + numeroSemaine(i); }
   function brutDeLigneLa(e) {
@@ -4386,7 +4519,8 @@
     if (evts.length) {
       h += '\x3Cul class="fiche-evts">' + evts.map(function (x) {
         var e = x.e, cle = e.type === 'indice' ? 'indice' : (e.type === 'change' ? e.apres : (e.apres || e.avant || 'sans'));
-        return '\x3Cli>\x3Cspan class="sem">' + semaineCourte(x.i) + '\x3C/span>' + pastilleDe(cle) + '\x3Cspan>' + ech(motEvenement(e)) + '\x3C/span>\x3C/li>';
+        var pastille = e.type === 'change' && e.cApres ? pastilleValeur(e.cApres, e.apres) : pastilleDe(cle);
+        return '\x3Cli>\x3Cspan class="sem">' + semaineCourte(x.i) + '\x3C/span>' + pastille + '\x3Cspan>' + ech(motEvenement(e)) + '\x3C/span>\x3C/li>';
       }).join('') + '\x3C/ul>';
     } else {
       h += '\x3Cp class="doux" style="margin-top:8px">Aucun changement depuis le premier relevé.\x3C/p>';
@@ -4860,6 +4994,8 @@
              titre: document.querySelector('.masthead').textContent.replace(/\s+/g, ' '),
              iAuj: semaineDAujourdhui(), auj: AUJ, etiquetteAuj: etiquette(AUJ) };
   };
+  window.__valeurs = function () { return VALEURS_COLONNE.map(function (v) { return { cle: v.cle, libelle: v.libelle, famille: v.famille, n: v.n }; }); };
+  window.__classer = function (v) { return classer(v); };
   window.__indicateur = function () { return { indicateur: INDICATEUR, cle: CLE_SUIVIE, releves: RELEVES.length }; };
   window.__chercherPlan = function (t) { return chercherPlans(t).map(function (c) { return c.ref; }); };
   window.__trajectoire = function (ref) { return trajectoire(ref); };

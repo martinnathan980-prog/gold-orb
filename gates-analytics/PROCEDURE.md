@@ -442,18 +442,38 @@ alerte —, sur sa pastille (journal, filtre du journal, puce du comparatif) et
 sur la nouvelle référence de la ligne ; la même couleur dit « autre indice »
 dans la comparaison des bases.
 
-## 11. Les quatre états
+## 11. Les valeurs de la colonne suivie
 
-| État | Ce qui le déclenche |
+La page ne connaît pas d'avance les valeurs de la colonne : **elle les lit**.
+Chaque valeur distincte — « Validé », « Check », « En cours », « A traiter »…
+— devient un état affiché, **écrit comme dans l'extract**, avec son compte :
+une part de la barre, un bouton de filtre, un bouton du journal. Un passage
+d'une valeur à une autre compte comme un changement (« A traiter » → « Check »
+aussi), et le journal comme la fiche d'un plan le disent avec ces mots-là
+(« passé à « Check » »). Une colonne qui change de vocabulaire change la page
+avec elle, sans rien toucher.
+
+Chaque valeur se range dans l'une de quatre **familles**, qui donnent sa
+couleur et font la courbe :
+
+| Famille | Ce qui l'y range |
 |---|---|
-| **Terminé** | `100 %`, `terminé`, `achevé`, `clôturé`, `soldé`, `fini`, `ok` |
-| **En cours** | tout pourcentage strictement entre 0 et 100, `en cours`, ou tout autre texte |
-| **À faire** | `à faire`, `non commencé`, `0 %` |
+| **Fini** | une valeur de `CONFIG.VALEURS_FINIES` (par défaut **`Validé`**), comparée entière — « Non validé » n'en est pas —, ou `100 %`, `terminé`, `achevé`, `clôturé`, `soldé`, `fini`, `ok` |
+| **À faire** | `à faire`, `à traiter`, `non commencé`, `0 %` |
+| **En cours** | tout pourcentage strictement entre 0 et 100, ou toute autre valeur (« Check », « En cours »…) |
 | **Non renseigné** | cellule vide, ou `-` |
 
-« À faire » est une valeur *saisie*. Une cellule vide est un *défaut de
-saisie*. Les confondre masquerait le second, qui est précisément ce qu'on
-cherche à voir : le bouton « non renseignés » sous la barre sort la liste.
+Plusieurs valeurs d'une même famille prennent la couleur de la famille, de
+plus en plus claire. Seule la famille **fini** a un poids : c'est elle que
+compte la courbe, le rythme requis par jalon, la comparaison avec SEE. Une
+autre valeur qui voudrait dire « fini » s'ajoute à `VALEURS_FINIES`, en haut
+de `Code.gs`. Le **Diagnostic** donne, pour chaque colonne suivie, les valeurs
+lues avec leur compte et la mention « = fini » — de quoi vérifier d'un coup
+d'œil (seulement des valeurs d'état : au-delà de vingt valeurs différentes,
+ou de trente caractères, rien n'est recopié).
+
+Une cellule vide reste un *défaut de saisie*, distinct de toute valeur : le
+bouton « non renseigné » sous la barre sort la liste.
 
 ## 12. Comparaison des bases de données : GATES et SEE
 

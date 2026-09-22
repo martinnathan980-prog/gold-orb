@@ -118,6 +118,14 @@ const CONFIG = {
   COLONNE_FWD: 'HDK AA 011 > Avancement Définition Electrique',
   COLONNE_CONCEPT: 'HDK AA 011 > Avancement Concept Harnais',
 
+  /* Les valeurs qui veulent dire « fini » dans la colonne suivie, écrites
+     comme dans l'extract (accents et majuscules indifférents, valeur
+     entière : « Non validé » n'en fait pas partie). S'ajoutent aux mots
+     reconnus d'eux-mêmes : Terminé, Fini, Soldé, Clôturé, OK, 100 %. Les
+     autres valeurs de la colonne s'affichent telles quelles, sans rien
+     déclarer : la page les lit. */
+  VALEURS_FINIES: ['Validé'],
+
   /*
    * Les colonnes proposées dans « Avancement FWD par… », dans l'ordre du
    * sélecteur. Relevées sur l'export réel : le découpage métier (ATA,
@@ -316,7 +324,9 @@ function normaliser(valeur) {
 function classerFWD(valeur) {
   const s = normaliser(valeur);
   if (s === '' || s === '-') return 'vide';
-  if (s.indexOf('a faire') !== -1 || s === 'non commence') return 'afaire';
+  const finies = (CONFIG.VALEURS_FINIES && CONFIG.VALEURS_FINIES.length ? CONFIG.VALEURS_FINIES : ['Validé']).map(normaliser);
+  if (finies.indexOf(s) !== -1) return 'termine';
+  if (s.indexOf('a faire') !== -1 || s.indexOf('a traiter') !== -1 || s === 'non commence') return 'afaire';
   const n = parseFloat(s.replace(/[\s%]/g, '').replace(',', '.'));
   if (!isNaN(n)) {
     if (n >= 100) return 'termine';
@@ -891,6 +901,7 @@ function getDonneesPourClient(contrat) {
       clesEssentielles: modele.clesEssentielles,
       cleDomaine: modele.cleDomaine,
       cleConcept: modele.cleConcept,
+      valeursFinies: CONFIG.VALEURS_FINIES,
       dimParDefaut: modele.dimParDefaut,
       lignesIgnorees: modele.lignesIgnorees,
       plans: modele.plans,
@@ -945,6 +956,28 @@ function donneesJSONPourPage() {
 function diagnostic() {
   const lignes = [];
   function dire(texte) { lignes.push(texte); }
+  /* Les valeurs d'une colonne suivie, avec leur compte et ce qu'elles
+     valent pour la page (fini ou pas) : c'est ce qui permet de vérifier que
+     « Validé » compte bien comme fini. Seulement des valeurs d'état — peu
+     nombreuses et courtes ; une colonne de texte libre ne se recopie pas. */
+  function direValeurs(plans, cle) {
+    const par = {}, ordre = [];
+    plans.forEach(function (p) {
+      const brut = String(p[cle] === null || p[cle] === undefined ? '' : p[cle]).trim();
+      const k = normaliser(brut);
+      if (!(k in par)) { par[k] = { brut: brut, n: 0 }; ordre.push(k); }
+      par[k].n++;
+    });
+    if (ordre.length > 20 || ordre.some(function (k) { return par[k].brut.length > 30; })) {
+      dire('  ' + ordre.length + ' valeurs différentes : trop, ou trop longues, pour être des états — rien n\'est recopié.');
+      return;
+    }
+    ordre.sort(function (a, b) { return par[b].n - par[a].n; });
+    dire('  valeurs lues : ' + ordre.map(function (k) {
+      const v = par[k];
+      return (v.brut === '' ? '(vide)' : '« ' + v.brut + ' »') + ' ' + v.n + (classerFWD(v.brut) === 'termine' ? ' = fini' : '');
+    }).join(' · '));
+  }
 
   let classeur = null;
   try {
@@ -1183,6 +1216,7 @@ function diagnostiquerContrat(classeur, contrat, dire) {
       modele.plans.forEach(function (p) { compte[classerFWD(p.avancement)]++; });
       dire('  ' + compte.termine + ' terminés, ' + compte.encours + ' en cours, ' +
            compte.afaire + ' à faire, ' + compte.vide + ' non renseignés');
+      direValeurs(modele.plans, 'avancement');
     }
     if (CONFIG.COLONNE_CONCEPT) {
       const colConcept = modele.cleConcept ? modele.colonnes.filter(function (c) { return c.cle === modele.cleConcept; })[0] : null;
@@ -1192,6 +1226,7 @@ function diagnostiquerContrat(classeur, contrat, dire) {
         dire('✓ Concept harnais : colonne « ' + colConcept.titre + ' »' + (colConcept.groupe ? ', groupe « ' + colConcept.groupe + ' »' : ''));
         dire('  ' + compteC.termine + ' terminés, ' + compteC.encours + ' en cours, ' +
              compteC.afaire + ' à faire, ' + compteC.vide + ' non renseignés');
+        direValeurs(modele.plans, modele.cleConcept);
       } else {
         dire('– Concept harnais : colonne « ' + CONFIG.COLONNE_CONCEPT + ' » introuvable dans cet extract — pas d\'interrupteur.');
       }

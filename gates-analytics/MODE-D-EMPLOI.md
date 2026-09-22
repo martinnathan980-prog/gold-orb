@@ -173,8 +173,11 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
 - **Le périmètre** : Tout / BASE/OPTION / PERSO — les valeurs de la colonne
   « Domaine » de l'extract, telles quelles. Il restreint toute la page.
 - **En haut, sans titre** : la phrase « N sur M plans terminés », la barre
-  des quatre états (terminés, en cours, à faire, non renseignés) et, dès le
-  second relevé, ce qui a bougé depuis le dernier.
+  des valeurs de la colonne telles qu'elles sont écrites (Validé, Check, En
+  cours, A traiter, non renseigné…) avec leur nombre, et, dès le second
+  relevé, ce qui a bougé depuis le dernier. « Validé » compte comme fini ;
+  une autre valeur qui voudrait dire fini se déclare dans `Code`
+  (`VALEURS_FINIES`).
 - **Avancement dans le temps** : la courbe des terminés relevé après relevé,
   les jalons du programme (numérotés 1 à 5 sur une rangée, en clair dans la
   légende dessous), la fin estimée au rythme actuel et le rythme requis pour

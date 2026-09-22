@@ -1703,7 +1703,7 @@ async function reinitialiser(pg) {
     const seul = R.lignes.filter(l => l.cat === 'seul')[0];
     let bouge = null;
     window.__journal().some(sem => sem.evenements.some(e => {
-      if (e.type === 'change' && R.parPlan[e.ref]) { bouge = { ref: e.ref, apres: e.apres }; return true; }
+      if (e.type === 'change' && R.parPlan[e.ref]) { bouge = { ref: e.ref, apres: e.apres, cApres: e.cApres, vApres: e.vApres }; return true; }
       return false;
     }));
     return { accord, seul: seul ? seul.ref : null, bouge };
@@ -1775,9 +1775,9 @@ async function reinitialiser(pg) {
     await p.keyboard.press('Enter'); await p.waitForTimeout(400);
     const evts = await p.evaluate(() => [...document.querySelectorAll('#fiche-plan .fiche-evts li')]
       .map(li => li.querySelector('.sem').textContent.trim() + ' ' + li.lastElementChild.textContent.trim()));
-    const motAttendu = { termine: 'passé en terminé', encours: 'passé en cours', afaire: 'passé à faire', vide: 'avancement effacé' }[cibles.bouge.apres];
+    const motAttendu = cibles.bouge.cApres === 'vide' ? 'avancement effacé' : 'passé à « ' + cibles.bouge.vApres + ' »';
     verifier('un plan qui a bougé : la fiche liste son passage, semaine en tête (« S… ' + motAttendu + ' »)',
-      evts.some(t => new RegExp('^S\\d{1,2} ' + motAttendu).test(t)), JSON.stringify(evts));
+      evts.some(t => /^S\d{1,2} /.test(t) && t.slice(t.indexOf(' ') + 1) === motAttendu), JSON.stringify([evts, motAttendu]));
   }
   if (cibles.seul) {
     await p.fill('#champ-plan', ''); await p.keyboard.type(cibles.seul); await p.waitForTimeout(250);
