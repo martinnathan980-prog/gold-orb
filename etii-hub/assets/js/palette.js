@@ -10,7 +10,8 @@
    Les liens produits respectent les contrats d'URL des pages :
      docsearch.html#q=…            faq.html#pole=…&question=…
      organigramme.html#pole=…&personne=…   reunions.html#pole=…&onglet=…&reunion=…
-     communication.html#pole=…&annonce=…   index.html#porteur=…
+     index.html#communication=…    etiia.html#communication=…
+     index.html#porteur=…
    ========================================================================= */
 
 import { el, monter, ouvrirModale, surlignerVers, annoncer, debounce } from './ui.js';
@@ -29,9 +30,18 @@ const GROUPES = [
 
 const PAGES = [
   { titre: 'Tableau de bord ETII', sousTitre: 'Communication Center, porteurs, suivi OTQ / OTD', href: 'index.html' },
-  { titre: 'ETIIA — Squelette & ADN', sousTitre: 'Espace du pôle', href: 'etiia.html' },
-  { titre: 'ETIIE — Système nerveux', sousTitre: 'Espace du pôle', href: 'etiie.html' },
-  { titre: 'ETIII — Structure & harnais', sousTitre: 'Espace du pôle', href: 'etiii.html' },
+  /* Le sous-titre et le texte d'un pôle reprennent sa description (pole.js) :
+     les deux champs sont indexés, donc l'espace devient trouvable par son
+     sujet (« nommage », « routage ») et plus seulement par son code. */
+  { titre: 'ETIIA — Squelette & ADN', sousTitre: 'Logique et règles d’architecture', href: 'etiia.html',
+    texte: 'Logique et règles d’architecture : découpage fonctionnel, conventions de nommage '
+      + 'et principes que tous les autres travaux appliquent ensuite.' },
+  { titre: 'ETIIE — Système nerveux', sousTitre: 'Schémas électriques et communication entre systèmes', href: 'etiie.html',
+    texte: 'Schémas électriques et communication entre systèmes : signaux, interfaces '
+      + 'et cohérence des échanges d’un bout à l’autre de la définition.' },
+  { titre: 'ETIII — Structure & harnais', sousTitre: 'Intégration physique et routage dans la maquette numérique', href: 'etiii.html',
+    texte: 'Intégration physique et routage dans la maquette numérique : cheminements, '
+      + 'fixations et vérification des interférences avant fabrication.' },
   { titre: 'Recherche documentaire', sousTitre: 'Le fonds du service, filtres métier, porteur, pôle', href: 'docsearch.html' },
   { titre: 'Base de connaissances', sousTitre: 'Questions fréquentes et demandes aux experts', href: 'faq.html' },
   { titre: 'Réunions', sousTitre: 'Les comptes-rendus du service et des pôles', href: 'reunions.html' },
@@ -39,7 +49,6 @@ const PAGES = [
 ];
 
 const PAR_GROUPE = 4;
-const LIMITE = 40;
 
 function texte(v) { return (v === null || v === undefined) ? '' : String(v).trim(); }
 function liste(v) { return Array.isArray(v) ? v.map(texte).filter(Boolean) : (texte(v) ? [texte(v)] : []); }
@@ -49,17 +58,13 @@ function encoder(v) { return encodeURIComponent(texte(v)); }
    1. Le corpus : une entrée par chose atteignable
    ------------------------------------------------------------------------- */
 
-let corpus = null;      // Promise<{ index, entrees }>
-
-async function jeu(nom) {
-  try { return await chargerDonnees(nom); } catch (_e) { return null; }
-}
+let corpus = null;      // Promise<{ index, entrees, echecs }>
 
 function entreesDocuments(d) {
   return (d && Array.isArray(d.documents) ? d.documents : []).filter((x) => x && texte(x.titre)).map((x) => ({
     id: 'document-' + texte(x.id), groupe: 'document',
     titre: texte(x.titre),
-    sousTitre: [texte(x.type), texte(x.reference), texte(x.porteur) ? 'porteur : ' + texte(x.porteur) : ''].filter(Boolean).join(' · '),
+    sousTitre: [texte(x.type), texte(x.reference), texte(x.porteur) ? 'porteur du document : ' + texte(x.porteur) : ''].filter(Boolean).join(' · '),
     texte: [texte(x.description), liste(x.motsCles).join(' '), liste(x.metier).join(' '), texte(x.perimetre)].join(' '),
     href: 'docsearch.html#q=' + encoder(texte(x.reference) || texte(x.titre))
   }));
@@ -134,38 +139,115 @@ function pageDuPole(code) {
   return (c && c !== 'ETII') ? c.toLowerCase() + '.html' : 'index.html';
 }
 
-function entreesCommunication(d) {
-  if (!d) return [];
-  const annonces = (Array.isArray(d.annonces) ? d.annonces : []).filter((a) => a && texte(a.titre)).map((a) => ({
-    id: 'annonce-' + texte(a.id), groupe: 'communication',
-    titre: texte(a.titre),
-    sousTitre: ['annonce', texte(a.date), texte(a.categorie), texte(a.pole) ? (texte(a.pole) === 'ETII' ? 'service' : 'pôle ' + texte(a.pole)) : ''].filter(Boolean).join(' · '),
-    texte: [texte(a.resume), (a.corps || []).map((l) => l && l.texte).join(' ')].join(' '),
-    href: pageDuPole(a.pole)
-  }));
-  const agenda = (Array.isArray(d.agenda) ? d.agenda : []).filter((a) => a && texte(a.titre)).map((a) => ({
-    id: 'agenda-' + texte(a.id), groupe: 'communication',
-    titre: texte(a.titre),
-    sousTitre: [texte(a.statut) === 'a-venir' ? 'à venir' : 'passé', texte(a.date), texte(a.type), texte(a.pole) ? (texte(a.pole) === 'ETII' ? 'service' : 'pôle ' + texte(a.pole)) : ''].filter(Boolean).join(' · '),
-    texte: texte(a.resume),
-    href: pageDuPole(a.pole)
-  }));
-  return annonces.concat(agenda);
+/** « service » ou « pôle ETIIA », pour le sous-titre d'une entrée. */
+function perimetreLisible(code) {
+  const c = texte(code).toUpperCase();
+  return (!c || c === 'ETII') ? 'service' : 'pôle ' + c;
 }
 
+/* Les lignes d'un bloc, ou d'un corps à plat : les deux formes cohabitent
+   dans communications.json et kiosque.js les rend toutes les deux. Une
+   annonce écrite en blocs n'était cherchable que par son titre. */
+function lignesLisibles(brut) {
+  if (Array.isArray(brut)) return brut.map((l) => (l && typeof l === 'object') ? texte(l.texte) : texte(l));
+  return [texte(brut)];
+}
+
+/** Tout ce qui se lit dans une entrée de communication, mis à plat. */
+function texteCommunication(e) {
+  const morceaux = lignesLisibles(e.corps);
+  for (const b of (Array.isArray(e.blocs) ? e.blocs : [])) {
+    if (!b || typeof b !== 'object') continue;
+    morceaux.push(texte(b.titre), texte(b.texte), texte(b.legende));
+    morceaux.push(...lignesLisibles(b.lignes), ...liste(b.pastilles));
+    for (const i of (Array.isArray(b.images) ? b.images : [])) morceaux.push(i ? texte(i.legende) : '');
+  }
+  return morceaux.filter(Boolean).join(' ');
+}
+
+/* Une entrée porte le fragment que le kiosque sait sélectionner :
+   « mot-du-chef », « annonce-<id> », « agenda-<id> » — les identifiants que
+   dossiersDepuisCommunications() (kiosque.js) fabrique. Ne PAS importer cette
+   fonction : mesuré, l'import fait entrer les photos des communications dans
+   les trois pages qui ne les affichent pas (+2,8 Mo dans le fichier autonome,
+   au-delà de la limite). tests/palette.e2e.mjs ouvre chaque lien et vérifie
+   la carte obtenue : les deux conventions ne peuvent plus diverger en silence. */
+function entreeCommunication(e, cle, sousTitre) {
+  return {
+    id: 'communication-' + cle, groupe: 'communication',
+    titre: texte(e.titre), sousTitre,
+    texte: [texte(e.resume), texteCommunication(e)].filter(Boolean).join(' '),
+    href: pageDuPole(e.pole) + '#communication=' + encoder(cle)
+  };
+}
+
+function entreesCommunication(d) {
+  if (!d) return [];
+  const sorties = [];
+
+  const mot = (d.motDuChef && typeof d.motDuChef === 'object') ? d.motDuChef : null;
+  if (mot && texte(mot.titre)) {
+    /* L'édito ne se lit qu'au niveau service, quoi que dise son champ pôle. */
+    sorties.push(entreeCommunication(Object.assign({}, mot, { pole: 'ETII' }), 'mot-du-chef',
+      ['Édito', texte(mot.date), 'service'].filter(Boolean).join(' · ')));
+  }
+
+  for (const a of (Array.isArray(d.annonces) ? d.annonces : [])) {
+    if (!a || !texte(a.titre)) continue;
+    sorties.push(entreeCommunication(a, 'annonce-' + texte(a.id),
+      [texte(a.categorie) || 'annonce', texte(a.date), perimetreLisible(a.pole)].filter(Boolean).join(' · ')));
+  }
+
+  for (const a of (Array.isArray(d.agenda) ? d.agenda : [])) {
+    if (!a || !texte(a.titre)) continue;
+    /* L'agenda à venir n'est affiché nulle part dans le site : son titre et
+       sa date se lisent ici, et le lien mène à la page, sans fragment. */
+    if (texte(a.statut) === 'a-venir') {
+      sorties.push({
+        id: 'agenda-' + texte(a.id), groupe: 'communication',
+        titre: texte(a.titre),
+        sousTitre: ['à venir', texte(a.date), texte(a.type), perimetreLisible(a.pole)].filter(Boolean).join(' · '),
+        texte: texte(a.resume),
+        href: pageDuPole(a.pole)
+      });
+      continue;
+    }
+    /* Le jumeau d'agenda de l'édito est écarté comme le kiosque l'écarte :
+       sans ça, « Un trimestre qui se tient » sortirait deux fois. */
+    if (texte(a.type) === 'mot') continue;
+    sorties.push(entreeCommunication(Object.assign({}, a, { corps: a.corps || a.resume }),
+      'agenda-' + texte(a.id),
+      [texte(a.type) || 'agenda', texte(a.date), perimetreLisible(a.pole)].filter(Boolean).join(' · ')));
+  }
+
+  return sorties;
+}
+
+const JEUX = ['documents', 'faq', 'organigramme', 'reunions', 'flotte', 'communications'];
+
 async function construireCorpus() {
-  const [documents, faq, organigramme, reunions, flotte, communications] = await Promise.all(
-    ['documents', 'faq', 'organigramme', 'reunions', 'flotte', 'communications'].map(jeu));
+  /* allSettled et non all : un jeu absent ne doit pas faire tomber les cinq
+     autres — mais il ne doit pas non plus passer inaperçu, d'où `echecs`. */
+  const issues = await Promise.allSettled(JEUX.map((nom) => chargerDonnees(nom)));
+  const [documents, faq, organigramme, reunions, flotte, communications] =
+    issues.map((r) => (r.status === 'fulfilled' ? r.value : null));
+  const echecs = JEUX.filter((nom, i) => issues[i].status === 'rejected');
   const entrees = PAGES.map((p, i) => Object.assign({ id: 'page-' + i, groupe: 'page', texte: '' }, p))
     .concat(entreesDocuments(documents), entreesFaq(faq), entreesPersonnes(organigramme),
             entreesReunions(reunions), entreesPorteurs(flotte), entreesCommunication(communications));
   const index = creerIndex(entrees, [
     { nom: 'titre', poids: 6 }, { nom: 'sousTitre', poids: 2 }, { nom: 'texte', poids: 1 }]);
-  return { index, entrees };
+  return { index, entrees, echecs };
 }
 
 function corpusPret() {
-  if (!corpus) corpus = construireCorpus();
+  if (!corpus) {
+    const promesse = construireCorpus();
+    /* Un corpus incomplet ne se mémoïse pas : la prochaine ouverture retente,
+       comme data.js purge ses promesses rejetées. */
+    promesse.then((d) => { if (d.echecs.length) corpus = null; }, () => { corpus = null; });
+    corpus = promesse;
+  }
   return corpus;
 }
 
@@ -200,23 +282,39 @@ function ouvrirPalette(declencheur) {
     if (!q) {
       retenus = donnees.entrees.filter((e) => e.groupe === 'page');
     } else {
-      retenus = rechercher(donnees.index, q, { limite: LIMITE }).map((r) => r.doc);
+      /* Sans limite : la coupe se fait par groupe, après le comptage, sinon
+         le « / n » affiché est la limite et non un total. Le classement
+         portait déjà sur tout le corpus. */
+      retenus = rechercher(donnees.index, q).map((r) => r.doc);
     }
     visibles = [];
     const enfants = [];
-    for (const g of GROUPES) {
+    /* `retenus` est trié par score décroissant : l'ordre de PREMIÈRE
+       apparition des groupes est donc leur ordre par meilleur score. Le
+       premier résultat de la fenêtre est le meilleur, et Entrée l'ouvre. À
+       requête vide, `retenus` ne contient que des pages : écran inchangé. */
+    const ordre = Array.from(new Set(retenus.map((e) => e.groupe)))
+      .map((cle) => GROUPES.find((g) => g.cle === cle)).filter(Boolean);
+    for (const g of ordre) {
       const membres = retenus.filter((e) => e.groupe === g.cle);
       if (!membres.length) continue;
+      const total = membres.length;
       const montres = q ? membres.slice(0, PAR_GROUPE) : membres;
       enfants.push(el('li', { class: 'palette__groupe', role: 'presentation' },
-        el('span', {}, g.titre), membres.length > montres.length
-          ? el('span', { class: 'mono' }, montres.length + ' / ' + membres.length) : el('span', { class: 'mono' }, String(membres.length))));
+        el('span', {}, g.titre),
+        el('span', { class: 'mono' }, total > montres.length ? montres.length + ' / ' + total : String(total))));
       for (const e of montres) { visibles.push(e); enfants.push(ligneResultat(e, q, visibles.length - 1 === position)); }
     }
     monter(resultats, enfants);
-    etat.textContent = q ? (visibles.length ? visibles.length + ' résultat' + (visibles.length > 1 ? 's' : '') + ' — ↑ ↓ pour choisir, Entrée pour ouvrir'
+    /* Un jeu de données absent se dit ici : palette__etat est déjà la région
+       live de la fenêtre, donc le message est relu à chaque frappe. */
+    const prefixe = donnees.echecs.length
+      ? 'Résultats incomplets (' + donnees.echecs.join(', ') + ' non chargé'
+        + (donnees.echecs.length > 1 ? 's' : '') + ') — '
+      : '';
+    etat.textContent = prefixe + (q ? (visibles.length ? visibles.length + ' résultat' + (visibles.length > 1 ? 's' : '') + ' — ↑ ↓ pour choisir, Entrée pour ouvrir'
                                             : 'Aucun résultat pour « ' + q + ' »')
-                         : 'Tapez pour chercher partout. ↑ ↓ pour choisir, Entrée pour ouvrir.';
+                         : 'Tapez pour chercher partout. ↑ ↓ pour choisir, Entrée pour ouvrir.');
     champ.setAttribute('aria-activedescendant', visibles[position] ? 'palette-' + visibles[position].id : '');
   };
 
@@ -267,7 +365,12 @@ function ouvrirPalette(declencheur) {
       ouvrirCourant();
     });
     annoncer('Recherche prête : ' + donnees.entrees.length + ' entrées.');
-  }).catch(() => { etat.textContent = 'Les données n’ont pas pu être chargées.'; });
+  }).catch(() => {
+    /* Garde-fou : un jeu qui ne se charge pas passe désormais par `echecs`.
+       Il reste ce catch si construireCorpus lève (index, entrée malformée) :
+       sans lui la fenêtre resterait figée sur « Chargement des données… ». */
+    etat.textContent = 'Les données n’ont pas pu être chargées.';
+  });
 
   setTimeout(() => champ.focus(), 30);
 }

@@ -37,8 +37,20 @@ t('"harnais" renvoie des résultats', r1.length > 0, `(${r1.length})`);
 t('le 1er contient bien "harnais"',
   /harnais/i.test(r1[0]?.doc.titre + JSON.stringify(r1[0]?.doc.metier) + r1[0]?.doc.description));
 const r2 = rechercher(idx, 'routage harnais', {limite:5});
-t('multi-termes : score du 1er > score du dernier',
-  r2.length > 1 && r2[0].score > r2[r2.length-1].score);
+// Inégalité LARGE : depuis que le moteur ne garde que le meilleur palier de
+// termes touchés, les trois documents restants portent les deux termes et
+// peuvent être à égalité de score. Une inégalité stricte ne tenait que grâce
+// au bruit faiblement scoré de l'union.
+t('multi-termes : score du 1er >= score du dernier',
+  r2.length > 1 && r2[0].score >= r2[r2.length-1].score);
+
+// Une référence collée doit ramener SON document, pas tout le fonds : le site
+// fabrique lui-même ces liens (organigramme, fiche porteur, palette).
+const rRef = rechercher(idx, 'ETII-TEC-001', {limite:1000});
+t('une référence ne ramène qu\'un document', rRef.length === 1, `(${rRef.length})`);
+t('et c\'est le bon', rRef[0]?.doc.reference === 'ETII-TEC-001', `(${rRef[0]?.doc.reference})`);
+const rChute = rechercher(idx, 'chute de tension', {limite:1000});
+t('"chute de tension" reste une poignée de résultats', rChute.length <= 5, `(${rChute.length})`);
 const rAcc = rechercher(idx, 'integration', {limite:5});
 const rAcc2 = rechercher(idx, 'intégration', {limite:5});
 t('accent indifférent sur la requête',
@@ -48,6 +60,11 @@ console.log(`\n== Tolérance aux fautes ==`);
 const rf = rechercher(idx, 'conecteur', {limite:5});   // connecteur, 1 faute
 t('"conecteur" retrouve "connecteur"',
   rf.some(r => /connecteur/i.test(r.doc.titre + r.doc.motsCles.join(' '))), `(${rf.length} rés.)`);
+// Non-régression du palier : un terme unique n'est jamais filtré, faute ou pas.
+const rf1 = rechercher(idx, 'conecteur', {limite:1000});
+t('"conecteur" ramène toujours ses 6 documents', rf1.length === 6, `(${rf1.length})`);
+const rUn = rechercher(idx, 'harnais', {limite:1000});
+t('"harnais" (un seul terme) ramène toujours ses 21 documents', rUn.length === 21, `(${rUn.length})`);
 const rf2 = rechercher(idx, 'corossion', {limite:5});  // corrosion
 t('"corossion" retrouve "corrosion"',
   rf2.some(r => /corrosion/i.test(r.doc.titre + r.doc.motsCles.join(' '))), `(${rf2.length} rés.)`);
