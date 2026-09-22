@@ -317,19 +317,29 @@ a:hover { text-decoration-color: currentColor; }
 }
 .bouton--discret:hover { background-color: var(--fond-enfonce); color: var(--texte); }
 
+/* Ici, la peau n'ajoute que le mouvement : la boîte des champs (fond, filet,
+   rayon, couleur, police) est posée par components.css. Y redéclarer ces
+   propriétés, c'est les figer une seconde fois après coup — et faire qu'un
+   correctif écrit dans components.css n'ait plus aucun effet à l'écran. */
 .champ__controle,
 .champ__select,
 .recherche {
-  background-color: var(--fond-eleve);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-md);
-  color: var(--texte);
-  font-family: var(--police);
   transition: border-color var(--duree-rapide) var(--courbe),
               box-shadow var(--duree-rapide) var(--courbe);
 }
 
 .champ__select { border: 0; }
+
+/* Un seul gabarit pose .champ__select directement sur un <select> (la modale
+   « Poser une question » de la FAQ) au lieu de la coquille + .champ__controle
+   attendue par components.css. Privé de la boîte d'un champ, il retombait sur
+   l'apparence du navigateur — un gris moyen au milieu d'une modale sombre.
+   On lui rend sa surface et son rayon, la flèche native restant son seul
+   indice de menu. À retirer le jour où ce gabarit emploie la coquille. */
+select.champ__select {
+  background-color: var(--fond-eleve);
+  border-radius: var(--rayon-md);
+}
 
 .champ__controle {
   min-height: calc(var(--cible-tactile) - var(--e-1));
@@ -621,9 +631,11 @@ mark, .surlignage {
 .page-entete .accroche,
 .page-entete .mesure { display: none; }
 
-.page-entete__sur-titre { display: none; }
-
-.page-entete__sur-titre#pole-libelle {
+/* Le sur-titre : une étiquette en petites capitales monospace au-dessus du
+   titre. Elle valait jusqu'ici pour les seules pages de pôle ; elle vaut
+   maintenant partout, pour la page qui a quelque chose à dire avant son
+   titre. Une page qui n'en a rien à dire n'écrit pas le paragraphe. */
+.page-entete__sur-titre {
   display: block;
   margin: 0;
   font-family: var(--police-mono);
@@ -632,6 +644,15 @@ mark, .surlignage {
   letter-spacing: var(--lettrage-etiquette);
   text-transform: uppercase;
   color: var(--texte-faible);
+}
+
+/* Sur une page de pôle, l'étiquette porte la teinte du pôle, assombrie vers
+   l'encre : la teinte pleine tomberait à 3,5:1 pour ETIIE, alors que le
+   mélange tient 5:1 à 6,7:1 dans les deux thèmes, sans dépendre du thème.
+   L'identifiant est ici pour battre en spécificité la règle en ligne des
+   pages de pôle (body[data-pole] …), qui pose la teinte pleine. */
+.page-entete__sur-titre#pole-libelle {
+  color: color-mix(in srgb, var(--couleur-pole, var(--texte-faible)) 75%, var(--texte));
 }
 
 /* -------------------------------------------------------------------------
@@ -672,13 +693,16 @@ mark, .surlignage {
 
   .site-nav__liste li { flex: none; }
 
+  /* Serré au plus juste : avec --e-3 et --texte-sm, les cinq liens faisaient
+     427 px pour 390 px d'écran et « Recherche » — le cœur du site — sortait
+     du cadre sans que rien ne le dise. Ici, plus de débordement de 360 à
+     412 px. Si un lien s'ajoute, c'est ces deux valeurs qu'on revoit. */
   .site-nav__liste a {
     min-height: calc(var(--cible-tactile) - var(--e-1));
-    padding-inline: var(--e-3);
-    font-size: var(--texte-sm);
+    padding-inline: var(--e-1);
+    font-size: var(--texte-xs);
     white-space: nowrap;
   }
 
   .site-entete__interieur { padding-block: var(--e-1) 0; }
-  .bascule-theme__libelle { display: none; }
 }
