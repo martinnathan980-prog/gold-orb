@@ -329,10 +329,22 @@ def lancer(scenario: Scenario, options: Options) -> Bilan:
         if classeur.chemin_sauvegarde:
             journal.info("Copie de sauvegarde : %s", classeur.chemin_sauvegarde)
         if not lignes:
-            journal.info(
-                "Rien à faire : aucune ligne avec le statut %s (utilisez --reprendre-erreurs ou --tout pour retraiter).",
-                " / ".join(f"« {s} »" for s in scenario.excel.traiter_si),
-            )
+            toutes = classeur.lignes()
+            if not toutes:
+                journal.warning(
+                    "Votre fichier Excel ne contient aucune ligne de données, seulement les titres "
+                    "de colonnes.\n   Ouvrez %s, écrivez au moins une ligne SOUS les titres "
+                    "(une ligne = une exécution),\n   enregistrez, fermez le fichier, puis relancez.",
+                    classeur.chemin,
+                )
+            else:
+                faits = sum(1 for l in toutes if str(l.valeur(scenario.excel.colonne_statut) or "").strip())
+                journal.info(
+                    "Rien à faire : les %d ligne(s) du fichier sont déjà traitées (colonne %s remplie).\n"
+                    "   Ajoutez de nouvelles lignes, ou videz la colonne %s de celles à refaire.\n"
+                    "   Depuis le menu, le choix « Reprendre aussi les lignes en erreur » traite les ERREUR.",
+                    faits, scenario.excel.colonne_statut, scenario.excel.colonne_statut,
+                )
             return bilan
 
         navigateur = Navigateur(scenario.navigateur, scenario.dossier, visible=options.visible)

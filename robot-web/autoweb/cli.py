@@ -413,6 +413,14 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
     colonnes, lignes_excel, feuille = _colonnes_et_lignes(args.excel, args.feuille)
     if not args.excel:
         print(f"{S.ATTENTION} Aucun Excel indiqué (--excel suivi.xlsx) : les valeurs saisies resteront figées.")
+    elif not lignes_excel:
+        raise ErreurAutoweb(
+            f"Le fichier {Path(args.excel).name} ne contient aucune ligne de données, seulement les titres.\n"
+            "   Sans exemple, le robot ne peut pas deviner quelle colonne remplit quel champ,\n"
+            "   et il n'aurait de toute façon rien à traiter.\n"
+            f"   Ouvrez le fichier, écrivez au moins une ligne SOUS les titres (par exemple le contrat\n"
+            "   que vous allez utiliser pendant l'enregistrement), enregistrez, fermez-le, puis recommencez."
+        )
     nom = args.nom or "ma tache"
     url = _normaliser_url(args.url)
     if not url:
@@ -649,8 +657,11 @@ def cmd_menu(args: argparse.Namespace) -> int:
                 if not excel:
                     print(f"   {S.ATTENTION} Sans Excel, la tache ne pourrait pas etre lancee : abandon.")
                     continue
+                if not Path(excel).exists() and Path(excel + ".xlsx").exists():
+                    excel += ".xlsx"   # « contrats » au lieu de « contrats.xlsx »
                 if not Path(excel).exists():
                     print(f"   {S.ERREUR} Fichier introuvable : {excel}")
+                    print("   Donnez son nom complet avec .xlsx, ou son chemin entier.")
                     continue
                 nom = _demander("   Nom de cette tache", "ma tache")
                 cmd_enregistrer(_ns(url=url, excel=excel, nom=nom))
