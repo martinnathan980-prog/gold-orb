@@ -8,6 +8,7 @@
 
    API publique :
      chargerDonnees(nom, options)            -> Promise<objet>
+     recupererReponse(url, options)          -> Promise<Response>
      avecEtat(conteneur, source, rendu, opt) -> Promise<resultat>  (ne rejette jamais)
      verifierForme(objet, forme, contexte)   -> objet  (ou lève une erreur)
      viderCache(nom)                         -> void
@@ -42,6 +43,11 @@ import { el as creerElement, vider } from './ui.js';
 
 /** Délai maximal par défaut d'un chargement, en millisecondes. */
 const DELAI_DEFAUT = 8000;
+
+/** Délai maximal d'un ENVOI : un appel qui écrit dans la feuille du service
+    passe par un intermédiaire Apps Script, qui dépasse facilement huit
+    secondes. Mieux vaut attendre que de perdre une publication. */
+export const DELAI_ENVOI = 30000;
 
 /** Noms de jeux de données acceptés : pas de chemin, pas de traversée. */
 const NOM_VALIDE = /^[a-z0-9][a-z0-9_-]*$/;
@@ -169,6 +175,61 @@ export function viderCache(nom) {
     CACHE.delete(nom);
   } else {
     CACHE.clear();
+  }
+}
+
+/**
+ * Un fetch BORNÉ DANS LE TEMPS, pour les appels réseau qui ne sont pas un
+ * jeu de données du site : la feuille publiée du service, le CSV du suivi,
+ * l'intermédiaire de publication. Renvoie la RÉPONSE telle quelle — chaque
+ * appelant lit son corps à sa façon (.text() pour un CSV, .json() pour un
+ * POST). Sans lui, une URL qui ne répond jamais fige sa section pour
+ * toujours : c'était le cas de tous les appels écrits hors de ce module.
+ *
+ * Les messages sont volontairement courts et neutres : ceux de
+ * traduireEchecReseau() parlent de « fichier » et de file://, ce qui serait
+ * faux pour une URL distante.
+ *
+ * Résidu assumé : le minuteur est levé dès l'arrivée des EN-TÊTES ; un
+ * corps qui se bloque ensuite n'est pas borné.
+ *
+ * @param {string} url
+ * @param {object} [options]  les options de fetch, plus `delai` en ms
+ *        (défaut DELAI_DEFAUT ; 0 ou négatif : aucun délai)
+ * @returns {Promise<Response>}
+ * @throws {Error} « délai de N s dépassé » ou « réseau injoignable »
+ */
+export async function recupererReponse(url, options) {
+  const reglages = Object.assign({}, options);
+  const delai = typeof reglages.delai === 'number' ? reglages.delai : DELAI_DEFAUT;
+  delete reglages.delai;
+
+  const controleur =
+    typeof AbortController === 'function' ? new AbortController() : null;
+  let expire = false;
+  let minuteur = null;
+
+  if (controleur && delai > 0) {
+    minuteur = setTimeout(function () {
+      expire = true;
+      controleur.abort();
+    }, delai);
+  }
+
+  try {
+    return await fetch(url, Object.assign({}, reglages, {
+      signal: controleur ? controleur.signal : undefined
+    }));
+  } catch (cause) {
+    const erreur = new Error(expire
+      ? 'délai de ' + formaterDelai(delai) + ' dépassé'
+      : 'réseau injoignable');
+    erreur.cause = cause;
+    throw erreur;
+  } finally {
+    if (minuteur !== null) {
+      clearTimeout(minuteur);
+    }
   }
 }
 

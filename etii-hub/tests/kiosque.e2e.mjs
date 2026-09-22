@@ -174,6 +174,26 @@ const m = await mobile.evaluate(() => {
 t('sur une colonne, la liste a une hauteur bornée fixe et l’observateur ne pose rien', !/block-size/.test(m.style) && m.hauteur <= m.borne + 2, JSON.stringify(m));
 t('la liste est au-dessus de la lecture, la lecture n’est pas coupée, pas de défilement horizontal', m.empiles && m.dedans && m.largeur, JSON.stringify(m));
 
+// Sur une colonne, la lecture est SOUS la liste : toucher une carte doit
+// l'amener à l'écran, sinon rien ne se passe visiblement.
+await mobile.evaluate(() => window.scrollTo(0, 0));
+await mobile.waitForTimeout(200);
+await mobile.locator('.kiosque__carte').nth(2).click();
+await mobile.waitForTimeout(700);
+const venue = await mobile.evaluate(() => ({
+  haut: document.querySelector('.kiosque__lecture').getBoundingClientRect().top,
+  barre: document.querySelector('.site-entete').getBoundingClientRect().height,
+  scrollY: window.scrollY
+}));
+t('toucher une communication amène la lecture sous la barre du site',
+  venue.haut >= 0 && venue.haut <= venue.barre + 16, JSON.stringify(venue));
+const navEntiere = await mobile.evaluate(() => {
+  const u = document.querySelector('.site-nav__liste');
+  return { scrollWidth: u.scrollWidth, clientWidth: u.clientWidth };
+});
+t('les liens de la barre tiennent à l’écran sur téléphone',
+  navEntiere.scrollWidth <= navEntiere.clientWidth + 1, JSON.stringify(navEntiere));
+
 console.log('\n== Sombre ==');
 const sombre = await (await nav.newContext({ viewport: { width: 1366, height: 900 }, colorScheme: 'dark' })).newPage();
 sombre.on('pageerror', (e) => err.push('sombre: ' + e.message));

@@ -18,7 +18,8 @@
 import { el, monter, initTheme, initNav, deleguer, ouvrirModale, suivreSommaire } from './ui.js';
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
 import { porteurs, creditsPhotos } from './porteurs.js';
-import { kiosque, dossiersDepuisCommunications, alertesDepuisCommunications } from './kiosque.js';
+import { creditPhoto } from './credits.js';
+import { kiosque, dossiersDepuisCommunications, alertesDepuisCommunications, noteOrigine } from './kiosque.js';
 import { chargerSuivi, rendreSuivi } from './otq.js';
 import { chargerCommunications } from './communications.js';
 import { ouvrirEditeur } from './editeur.js';
@@ -45,7 +46,9 @@ function txt(valeur) {
 function rendreCommunication(donnees, conteneur) {
   verifierForme(donnees, { agenda: 'tableau' }, 'communications.json');
   const dossiers = dossiersDepuisCommunications(donnees, { pole: 'ETII' });
-  monter(conteneur, kiosque({
+  /* Une ligne, seulement s'il y a quelque chose à dire sur la source : la
+     feuille du service n'a pas répondu, ou des lignes n'ont pas été lues. */
+  monter(conteneur, noteOrigine(donnees), kiosque({
     id: 'kiosque-service',
     dossiers,
     alertes: alertesDepuisCommunications(donnees),
@@ -168,11 +171,7 @@ function creditsCommunications(communications) {
       el('img', { src: im.src, alt: '', loading: 'lazy', decoding: 'async', class: 'porteurs__credits-vignette' }),
       el('div', { class: 'porteurs__credits-texte' },
         el('span', { class: 'porteurs__credits-nom' }, im.titre),
-        el('p', { class: 'porteurs__credit sans-marge' },
-          el('span', { class: 'porteurs__credit-mot' }, 'Photo : '),
-          txt(im.credit.auteur) || 'auteur à renseigner',
-          txt(im.credit.licence) ? ' · ' + txt(im.credit.licence) : '',
-          txt(im.credit.page) ? [' · ', el('a', { href: im.credit.page, target: '_blank', rel: 'noopener noreferrer' }, 'Wikimedia Commons')] : null))))));
+        creditPhoto(im.credit))))));
 }
 
 avecEtat('#zone-otq', chargerSuivi, rendreSuiviOTQ, {

@@ -11,6 +11,7 @@
    ========================================================================= */
 
 import { el, monter, annoncer, etatUrl, rafThrottle, mouvementReduit } from './ui.js';
+import { creditPhoto } from './credits.js';
 import { silhouette } from './helicos.js';
 import { portrait } from './portraits.js';
 
@@ -109,6 +110,19 @@ function pastillePole(code) {
    La carte de la galerie
    ------------------------------------------------------------------------- */
 
+/* Une photo introuvable — une adresse qui a changé, un réseau d'entreprise
+   qui filtre l'extérieur — ne laisse jamais d'icône cassée : la silhouette
+   reprend simplement sa place. */
+function vignettePhoto(appareil) {
+  const repli = () => silhouette(texte(appareil.silhouette), { titre: '' });
+  if (!texte(appareil.photo)) return repli();
+  const img = el('img', {
+    src: texte(appareil.photo), alt: '', loading: 'lazy', decoding: 'async',
+    class: 'porteurs__fiche-photo', onError: () => img.replaceWith(repli())
+  });
+  return img;
+}
+
 function fiche(appareil, prefixe) {
   const code = texte(appareil.code) || '—';
   return el('li', { class: 'porteurs__item', dataset: { categorie: texte(appareil.categorie), code } },
@@ -121,9 +135,7 @@ function fiche(appareil, prefixe) {
       'aria-expanded': 'false'
     },
     el('span', { class: 'porteurs__fiche-visuel', 'aria-hidden': 'true' },
-      texte(appareil.photo)
-        ? el('img', { src: texte(appareil.photo), alt: '', loading: 'lazy', decoding: 'async', class: 'porteurs__fiche-photo' })
-        : silhouette(texte(appareil.silhouette), { titre: '' })),
+      vignettePhoto(appareil)),
     el('span', { class: 'porteurs__fiche-code' }, code),
     el('span', { class: 'porteurs__fiche-segment' }, texte(appareil.segment) || texte(objet(appareil.fiche).segment) || NON_RENSEIGNE),
     el('span', { class: 'porteurs__fiche-poles', 'aria-label': 'Pôles : ' + (Array.isArray(appareil.poles) ? appareil.poles.join(', ') : '') },
@@ -251,25 +263,10 @@ function panneauInsolite(fiche) {
     el('span', {}, texte(f.texte), ' ', lienSource(texte(f.source).split(/\s*;\s*/)[0])))));
 }
 
-/* Le crédit d'une photo : « Photo : auteur · licence · Wikimedia Commons ».
-   Les photos viennent de Wikimedia Commons sous licence libre (CC BY,
-   CC BY-SA) : l'auteur et la licence doivent apparaître, c'est la
-   condition de réutilisation. Il ne s'affiche plus sur la photo — il vit
-   dans l'onglet Sources et dans la fenêtre « Crédits photos ». */
-function creditPhoto(credit) {
-  const c = objet(credit);
-  const auteur = texte(c.auteur);
-  const licence = texte(c.licence);
-  const page = texte(c.page);
-  if (!auteur && !licence && !page) return null;
-  const note = texte(c.note);
-  return el('p', { class: 'porteurs__credit sans-marge' },
-    el('span', { class: 'porteurs__credit-mot' }, 'Photo : '),
-    auteur || 'auteur ' + NON_RENSEIGNE,
-    licence ? [' · ', licence] : null,
-    page ? [' · ', el('a', { href: page, target: '_blank', rel: 'noopener noreferrer' }, 'Wikimedia Commons')] : null,
-    note ? el('span', { class: 'porteurs__credit-note' }, note) : null);
-}
+/* Le crédit d'une photo vit désormais dans credits.js : la fiche d'un
+   porteur, le pied d'une communication et la fenêtre « Crédits photos »
+   écrivaient la même ligne trois fois. Il ne s'affiche jamais sur la
+   photo — il vit dans l'onglet Sources et dans cette fenêtre. */
 
 function panneauSources(appareil, fiche) {
   const liste = (Array.isArray(fiche.sources) ? fiche.sources : []).map(texte).filter((u) => /^https?:\/\//.test(u));
@@ -503,16 +500,23 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
       el('h3', { class: 'porteurs__titre sans-marge' }, code),
       relecture));
 
+  /* La bannière de repli, fabriquée à la demande : c'est elle qui prend la
+     place de la photo si celle-ci ne se charge pas — sinon l'icône cassée
+     et le voile se posent sur 384 px de vide, le défaut le plus voyant du
+     site. */
+  const banniereSilhouette = () => el('div', { class: 'porteurs__banniere porteurs__banniere--silhouette' },
+    el('div', { class: 'porteurs__silhouette' },
+      silhouette(texte(appareil.silhouette), { titre: 'Silhouette du ' + code }),
+      el('span', { class: 'porteurs__photo-attente' }, 'Photo à venir')),
+    titreBloc);
+
   const banniere = photo
     ? el('figure', { class: 'porteurs__banniere porteurs__banniere--photo' },
-        el('img', { src: photo, alt: 'Photo du ' + code, class: 'porteurs__photo', decoding: 'async' }),
+        el('img', { src: photo, alt: 'Photo du ' + code, class: 'porteurs__photo', decoding: 'async',
+          onError: () => banniere.replaceWith(banniereSilhouette()) }),
         el('div', { class: 'porteurs__banniere-voile', 'aria-hidden': 'true' }),
         titreBloc)
-    : el('div', { class: 'porteurs__banniere porteurs__banniere--silhouette' },
-        el('div', { class: 'porteurs__silhouette' },
-          silhouette(texte(appareil.silhouette), { titre: 'Silhouette du ' + code }),
-          el('span', { class: 'porteurs__photo-attente' }, 'Photo à venir')),
-        titreBloc);
+    : banniereSilhouette();
 
   return el('article', { class: 'porteurs__detail', 'aria-label': 'Fiche ' + code, id: prefixe + '-detail' },
     banniere,

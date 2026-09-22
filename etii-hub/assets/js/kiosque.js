@@ -21,6 +21,7 @@
 
 import { el, monter, mouvementReduit, annoncer, etatUrl } from './ui.js';
 import { sparkline } from './indicateurs.js';
+import { creditPhoto, creditsDistincts } from './credits.js';
 
 const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
                      'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -122,6 +123,12 @@ function moisLong(iso) {
 function aujourdhui() {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/* La clé de dédoublonnage d'une entrée : sa date et son titre, casse et
+   accents ôtés. Le même événement saisi deux fois ne se lit qu'une fois. */
+function cleEntree(date, titre) {
+  return texte(date) + '|' + texte(titre).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
 /** Jours restants jusqu'à la date, ou null si elle est illisible. */
@@ -280,7 +287,10 @@ function dossierDepuis(e, base) {
     /* Repères pour la liste : y a-t-il une image, des chiffres ? */
     avecImage: blocs.some((b) => b.type === 'image' || b.type === 'galerie'),
     avecChiffres: blocs.some((b) => b.type === 'chiffres' || b.type === 'courbe'),
-    local: e.local === true
+    local: e.local === true,
+    /* Le jeu d'exemple du dépôt porte ce drapeau : la mention se pose une
+       fois, au niveau de l'entrée, au lieu d'être écrite dans la prose. */
+    exemple: e.exemple === true
   }, base);
 }
 
@@ -306,25 +316,40 @@ export function dossiersDepuisCommunications(donnees, options) {
   const dossiers = [];
   const d = (donnees && typeof donnees === 'object') ? donnees : {};
 
+  /* La déduplication commence au dossier du mot : un édito rétrogradé en
+     annonce (voir versAnnonceEdito) ne doit pas se lire deux fois, en
+     vedette puis dans la frise. */
+  const vus = new Set();
+
   const mot = objet(d.motDuChef);
   if (mot && niveauService && texte(mot.titre)) {
     dossiers.push(dossierDepuis(mot, {
       id: 'mot-du-chef', groupe: 'mot', programme: 'Service ETII', statut: 'mot', pole: 'ETII'
     }));
+    vus.add(cleEntree(mot.date, mot.titre));
   }
 
   const agenda = Array.isArray(d.agenda) ? d.agenda.filter((e) => e && typeof e === 'object') : [];
   const annonces = Array.isArray(d.annonces) ? d.annonces.filter((e) => e && typeof e === 'object') : [];
 
+  /* Écarté par la DATE, et pas seulement par le statut : une faute de frappe
+     sur l'année (2062 pour 2026) épinglait sinon la communication juste sous
+     l'édito pour toujours, et coupait la frise en deux. Une date illisible
+     passe : la carte « Sans date » vaut mieux qu'une disparition muette. */
+  const passee = (e) => {
+    const j = joursRestants(e.date);
+    return j === null || j <= 0;
+  };
+
   const historique = [
-    ...annonces.filter(garder).map((e) => dossierDepuis(e, {
+    ...annonces.filter((e) => garder(e) && passee(e)).map((e) => dossierDepuis(e, {
       id: 'annonce-' + texte(e.id),
       groupe: 'historique',
       programme: texte(e.categorie) || 'Général',
       statut: STATUTS[texte(e.statut)] ? texte(e.statut) : 'info'
     })),
     ...agenda
-      .filter((e) => texte(e.statut) !== 'a-venir' && texte(e.type) !== 'mot' && garder(e))
+      .filter((e) => texte(e.statut) !== 'a-venir' && texte(e.type) !== 'mot' && garder(e) && passee(e))
       .map((e) => dossierDepuis(Object.assign({}, e, { corps: e.corps || e.resume }), {
         id: 'agenda-' + texte(e.id),
         groupe: 'historique',
@@ -333,15 +358,41 @@ export function dossiersDepuisCommunications(donnees, options) {
       }))
   ].sort((a, b) => b.date.localeCompare(a.date));
 
-  const vus = new Set();
   const uniques = historique.filter((x) => {
-    const cle = x.date + '|' + x.titre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const cle = cleEntree(x.date, x.titre);
     if (vus.has(cle)) return false;
     vus.add(cle);
     return true;
   });
 
   return dossiers.concat(uniques);
+}
+
+/**
+ * La ligne d'avertissement à poser sous le titre de la section
+ * Communication, ou null s'il n'y a rien à dire. Deux cas seulement, et
+ * jamais en configuration de démonstration (aucune feuille branchée) :
+ * la feuille est injoignable, ou elle a été lue mais des lignes n'ont pas
+ * pu l'être. Le second nomme le REMÈDE : c'est ce qui permet au chef d'agir
+ * seul au lieu d'ouvrir la console.
+ *
+ * @param {object} donnees  le retour de chargerCommunications()
+ * @returns {HTMLElement|null}
+ */
+export function noteOrigine(donnees) {
+  const d = objet(donnees);
+  if (!d) return null;
+  const ligne = (t) => el('p', { class: 'kiosque-note texte-sm texte-doux', role: 'note' }, t);
+  if (d.echecFeuille === true) {
+    return ligne('Feuille du service injoignable : voici la dernière version embarquée.');
+  }
+  const ecartees = Number(d.ecartees) || 0;
+  if (ecartees > 0) {
+    return ligne(ecartees === 1
+      ? 'Une ligne de la feuille n\u2019a pas été lue : la colonne date doit être au format AAAA-MM-JJ.'
+      : ecartees + ' lignes de la feuille n\u2019ont pas été lues : la colonne date doit être au format AAAA-MM-JJ.');
+  }
+  return null;
 }
 
 /** Les alertes en cours, sous forme de chaînes. */
@@ -359,17 +410,18 @@ export function apercuAlertes(alertes) { return bandeauAlertes(Array.isArray(ale
 
 function bandeauAlertes(alertes) {
   if (!alertes.length) return null;
-  const liste = (copie) => el('ul', {
-    class: ['kiosque__alertes-liste', copie ? 'kiosque__alertes-liste--copie' : null],
-    'aria-hidden': copie ? 'true' : null
-  }, alertes.map((a) => el('li', { class: 'kiosque__alerte' }, a)));
+  /* Une seule liste : la copie masquée ne servait qu'à boucler un
+     défilement que le bandeau n'a plus — il est statique et lisible à
+     toutes les largeurs. */
+  const liste = () => el('ul', { class: 'kiosque__alertes-liste' },
+    alertes.map((a) => el('li', { class: 'kiosque__alerte' }, a)));
 
   return el('div', { class: 'kiosque__alertes', role: 'region', 'aria-label': 'Alertes en cours' },
     el('span', { class: 'kiosque__alertes-etiquette' },
       el('span', { class: 'kiosque__alertes-point', 'aria-hidden': 'true' }),
       alertes.length > 1 ? 'Alertes' : 'Alerte'),
     el('div', { class: 'kiosque__alertes-fenetre' },
-      el('div', { class: 'kiosque__alertes-piste' }, liste(false), liste(true))));
+      el('div', { class: 'kiosque__alertes-piste' }, liste())));
 }
 
 /* -------------------------------------------------------------------------
@@ -510,19 +562,35 @@ function blocSerie(serie) {
     debut || fin ? el('span', { class: 'kiosque__serie-periode mono' }, debut, ' – ', fin) : null);
 }
 
+/* Une image introuvable ne laisse jamais d'icône cassée : l'absence se met
+   en mots. L'adresse d'une photo est souvent distante (l'éditeur invite une
+   URL) et un réseau qui filtre l'extérieur casserait l'en-tête pour tous
+   les lecteurs d'un coup. */
+function ligneImageAbsente() {
+  return el('p', { class: 'kiosque__ligne texte-doux' }, 'Image introuvable à cette adresse.');
+}
+
 /* Une image dans le fil du texte : sa légende sous elle, jamais dessus. */
 function blocImage(image) {
-  return el('figure', { class: 'kiosque__figure' },
-    el('img', { src: image.src, alt: image.alt, loading: 'lazy', decoding: 'async' }),
+  const figure = el('figure', { class: 'kiosque__figure' },
+    el('img', { src: image.src, alt: image.alt, loading: 'lazy', decoding: 'async',
+      onError: () => figure.replaceWith(ligneImageAbsente()) }),
     image.legende ? el('figcaption', {}, image.legende) : null);
+  return figure;
 }
 
 /* La galerie : des diapositives qu'on fait défiler, avec leurs repères. */
 function blocGalerie(images) {
   const piste = el('div', { class: 'kiosque__galerie-piste', tabIndex: 0, role: 'group', 'aria-label': 'Galerie de ' + images.length + ' images' },
-    images.map((img, i) => el('figure', { class: 'kiosque__diapo', dataset: { rang: String(i) } },
-      el('img', { src: img.src, alt: img.alt, loading: 'lazy', decoding: 'async' }),
-      img.legende ? el('figcaption', {}, img.legende) : null)));
+    images.map((img, i) => {
+      /* La diapositive reste dans la piste, avec son rang : c'est lui que
+         les boutons et les points de repère suivent. */
+      const diapo = el('figure', { class: 'kiosque__diapo', dataset: { rang: String(i) } },
+        el('img', { src: img.src, alt: img.alt, loading: 'lazy', decoding: 'async',
+          onError: () => monter(diapo, ligneImageAbsente()) }),
+        img.legende ? el('figcaption', {}, img.legende) : null);
+      return diapo;
+    }));
   const points = el('div', { class: 'kiosque__galerie-points', 'aria-hidden': 'true' },
     images.map((_i, i) => el('span', { class: ['kiosque__galerie-point', i === 0 ? 'kiosque__galerie-point--actif' : null] })));
   const racine = el('div', { class: 'kiosque__galerie' }, piste,
@@ -594,11 +662,25 @@ function rendreContenuBloc(bloc) {
 
 function lecture(prefixe) {
   const image = el('figure', { class: 'kiosque__image', hidden: true });
+  /* La bannière ne se charge pas toujours (une adresse distante, un réseau
+     qui filtre l'extérieur) : plutôt qu'une icône cassée, la figure se
+     masque et l'absence se lit en toutes lettres, alignée sur le texte. */
+  const avisImage = el('p', { class: 'kiosque__ligne texte-doux', hidden: true },
+    'Image introuvable à cette adresse.');
   const meta = el('p', { class: 'kiosque__lecture-meta' });
   const titre = el('h3', { class: 'kiosque__lecture-titre', id: prefixe + '-lecture-titre' }, '');
   const chapeau = el('p', { class: 'kiosque__chapeau', hidden: true });
+  /* La mention des données d'exemple, posée une fois pour toute la lecture :
+     la phrase est celle du suivi OTQ, pour dire pourquoi et pas seulement quoi. */
+  const exemple = el('p', { class: 'kiosque__ligne texte-doux', hidden: true },
+    'Ces chiffres illustrent le rendu. Ils ne mesurent rien.');
   const blocs = el('div', { class: 'kiosque__blocs' });
   const curseur = el('span', { class: 'kiosque__curseur', 'aria-hidden': 'true', hidden: true });
+  /* Les crédits des photos de la lecture. Une photo sous CC BY-SA affichée
+     en pleine largeur doit créditer son auteur LÀ où elle s'affiche : la
+     fenêtre « Crédits photos » n'existe que sur le tableau de bord, et un
+     espace de pôle n'y donne aucun accès. */
+  const credits = el('div', { class: 'pile pile--serree', hidden: true });
   /* La marque de fin : un court filet terre cuite, centré, après le
      dernier bloc — le lecteur sait qu'il a tout lu. Pas de signature. */
   const fin = el('div', { class: 'kiosque__fin', 'aria-hidden': 'true', hidden: true });
@@ -609,9 +691,9 @@ function lecture(prefixe) {
     tabIndex: -1
   },
   image,
-  el('div', { class: 'kiosque__lecture-interieur' }, meta, titre, chapeau, blocs, curseur, fin));
+  el('div', { class: 'kiosque__lecture-interieur' }, avisImage, meta, titre, chapeau, exemple, blocs, curseur, credits, fin));
 
-  return { racine, image, meta, titre, chapeau, blocs, curseur, fin };
+  return { racine, image, avisImage, meta, titre, chapeau, exemple, blocs, curseur, credits, fin };
 }
 
 /* Remplit une lecture avec un dossier. La première image ouvre la lecture
@@ -622,8 +704,19 @@ function remplirLecture(lect, dossier) {
   const premiere = blocs.findIndex((b) => b.type === 'image');
   const hero = premiere === 0 ? blocs.shift() : null;
 
+  lect.avisImage.hidden = true;
   if (hero) {
-    monter(lect.image, el('img', { src: hero.src, alt: hero.alt, loading: 'lazy', decoding: 'async' }));
+    /* lect.image est créée une seule fois et resservie à chaque sélection :
+       on remplace son CONTENU, jamais la figure — sinon une seule photo
+       cassée priverait d'en-tête toutes les lectures suivantes. Le test du
+       parent écarte l'échec d'une image déjà remplacée par une autre. */
+    const photo = el('img', { src: hero.src, alt: hero.alt, loading: 'lazy', decoding: 'async',
+      onError: () => {
+        if (photo.parentNode !== lect.image) return;
+        lect.image.hidden = true;
+        lect.avisImage.hidden = false;
+      } });
+    monter(lect.image, photo);
     lect.image.hidden = false;
   } else {
     monter(lect.image);
@@ -634,13 +727,21 @@ function remplirLecture(lect, dossier) {
     el('time', { class: 'mono', datetime: dossier.date || null }, dateLongue(dossier.date) || 'Date à renseigner'),
     el('span', { class: 'badge badge--accent' }, dossier.programme || 'Général'),
     dossier.groupe === 'mot' ? null : el('span', { class: ['badge', statut.classe] }, statut.libelle),
-    pastillePole(dossier.pole));
+    pastillePole(dossier.pole),
+    dossier.exemple ? el('span', { class: ['badge', 'badge--alerte'] }, 'Données d’exemple') : null);
   lect.titre.textContent = dossier.titre || 'Sans titre';
   lect.chapeau.textContent = dossier.resume || '';
   lect.chapeau.hidden = !dossier.resume;
+  lect.exemple.hidden = !dossier.exemple;
   monter(lect.blocs, blocs.length
     ? blocs.map(rendreBloc)
     : el('p', { class: 'kiosque__ligne texte-doux' }, 'Aucun détail publié pour cette communication.'));
+  /* Un seul passage sur tous les blocs images de la lecture, bannière
+     comprise : elle est le premier bloc « image » du dossier. */
+  const credits = creditsDistincts(dossier.blocs.flatMap((b) =>
+    b.type === 'image' ? [b] : (b.type === 'galerie' ? b.images : [])));
+  monter(lect.credits, credits.map(creditPhoto));
+  lect.credits.hidden = !credits.length;
   lect.fin.hidden = false;
 }
 
@@ -707,9 +808,10 @@ export function kiosque(options) {
   const visibles = () => tous.filter((d) => !filtre || d.pole === filtre || d.groupe === 'mot');
 
   /* Fait défiler la liste — et seulement elle, jamais la page — pour que la
-     carte soit visible, sous l'en-tête de mois collant. */
+     carte soit visible, sous l'en-tête de mois collant. Renvoie vrai quand
+     il n'y avait plus rien à faire défiler. */
   function montrerCarte(bouton) {
-    if (!bouton) return;
+    if (!bouton) return true;
     const zone = zoneListe.getBoundingClientRect();
     const carte = bouton.getBoundingClientRect();
     const groupe = zoneListe.querySelector('.kiosque__groupe');
@@ -717,8 +819,9 @@ export function kiosque(options) {
     let decalage = 0;
     if (carte.top < zone.top + marge) decalage = carte.top - zone.top - marge;
     else if (carte.bottom > zone.bottom - 8) decalage = carte.bottom - zone.bottom + 8;
-    if (!decalage) return;
+    if (!decalage) return true;
     zoneListe.scrollTo({ top: zoneListe.scrollTop + decalage, behavior: mouvementReduit() ? 'auto' : 'smooth' });
+    return false;
   }
 
   /* La carte à faire défiler en vue dès que la liste a pris la hauteur de
@@ -727,14 +830,17 @@ export function kiosque(options) {
   let carteAMontrer = null;
   const montrerEnAttente = () => {
     if (!carteAMontrer) return;
-    const bouton = carteAMontrer;
-    carteAMontrer = null;
-    montrerCarte(bouton);
+    /* La lecture peut encore grandir après le premier ajustement (image
+       chargée, texte qui s'écrit) : on garde la carte en attente jusqu'à
+       ce qu'elle soit vraiment dans la fenêtre, sinon un défilement
+       mesuré trop tôt la laisse à quelques pixels du bord. */
+    if (montrerCarte(carteAMontrer)) carteAMontrer = null;
   };
 
   function lire(dossier, options) {
     const o = options || {};
     courant = dossier;
+    carteAMontrer = null;   // chaque sélection décide seule de ce qu'elle montre
     arreterEcriture();
     zoneListe.querySelectorAll('.kiosque__carte').forEach((b) => {
       const actif = b.dataset.id === dossier.id;
@@ -757,10 +863,13 @@ export function kiosque(options) {
   function viderLecture() {
     courant = null;
     monter(lect.image); lect.image.hidden = true;
+    lect.avisImage.hidden = true;
     monter(lect.meta);
     lect.titre.textContent = 'Aucune communication';
     lect.chapeau.hidden = true;
+    lect.exemple.hidden = true;
     monter(lect.blocs, el('p', { class: 'texte-doux sans-marge' }, 'Rien à lire pour ce pôle pour le moment.'));
+    monter(lect.credits); lect.credits.hidden = true;
     lect.fin.hidden = true;
   }
 
@@ -775,11 +884,32 @@ export function kiosque(options) {
     if (cible) lire(cible, { montrer: !!cibleDemandee }); else viderLecture();
   }
 
+  /* Sur une colonne, la lecture est SOUS la liste : toucher une carte
+     changeait le contenu sans que rien n'arrive à l'écran. On amène donc la
+     lecture sous la barre du site, dont on MESURE la hauteur réelle — le
+     jeton --hauteur-barre-site vaut 57 px là où la barre en mesure 97. */
+  const uneColonne = () => typeof window.matchMedia === 'function'
+    && window.matchMedia(REQUETE_UNE_COLONNE).matches;
+  let auClavier = false;
+
+  function amenerLecture() {
+    const barre = document.querySelector('.site-entete');
+    const marge = (barre ? barre.getBoundingClientRect().height : 0) + 8;
+    const cible = lect.racine.getBoundingClientRect().top + window.scrollY - marge;
+    window.scrollTo({ top: Math.max(0, cible), behavior: mouvementReduit() ? 'auto' : 'smooth' });
+  }
+
   zoneListe.addEventListener('click', (evt) => {
     const bouton = evt.target.closest('.kiosque__carte');
     if (!bouton) return;
     const dossier = tous.find((d) => d.id === bouton.dataset.id);
-    if (dossier) { lire(dossier, { montrer: true }); annoncer(dossier.titre); }
+    if (dossier) {
+      lire(dossier, { montrer: true });
+      annoncer(dossier.titre);
+      /* Au clavier, non : chaque flèche arracherait la liste de l'écran et
+         rendrait le parcours impraticable. */
+      if (!auClavier && uneColonne()) amenerLecture();
+    }
   });
 
   zoneListe.addEventListener('keydown', (evt) => {
@@ -796,7 +926,9 @@ export function kiosque(options) {
     /* Le focus ne fait pas sauter la page : c'est lire() qui fait défiler
        la liste, et elle seule, jusqu'à la carte. */
     boutons[suivant].focus({ preventScroll: true });
+    auClavier = true;
     boutons[suivant].click();
+    auClavier = false;
   });
 
   if (puces) {
@@ -830,6 +962,12 @@ export function kiosque(options) {
   /* Arrivée par un lien : #communication=ID lit cette entrée. */
   const demandee = texte(etatUrl.lire().communication);
   rendreListe(demandee || null);
+  /* …et un lien suivi alors qu'on est DÉJÀ sur la page, ou le bouton
+     Précédent : sans cette écoute, ni l'un ni l'autre n'avait d'effet. */
+  etatUrl.ecouter((e) => {
+    const id = texte(e.communication);
+    if (id) rendreListe(id);
+  });
   return racine;
 }
 

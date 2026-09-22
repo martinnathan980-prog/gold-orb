@@ -25,7 +25,7 @@
 
 import { el, frag, monter, debounce, deleguer, initTheme, initNav, suivreSommaire, ouvrirModale, stockage, toast, annoncer } from './ui.js';
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
-import { kiosque, dossiersDepuisCommunications } from './kiosque.js';
+import { kiosque, dossiersDepuisCommunications, noteOrigine } from './kiosque.js';
 import { lecteur } from './lecteur.js';
 import { chargerCommunications } from './communications.js';
 import { ouvrirEditeur } from './editeur.js';
@@ -109,6 +109,8 @@ function rendreCommunication(pole, donnees, conteneur) {
   /* Tout ce que le pôle publie est déjà dans ce kiosque : il n'y a pas
      d'ailleurs où renvoyer. Le niveau service est sur le tableau de bord. */
   monter(conteneur,
+    /* Une ligne, seulement s'il y a quelque chose à dire sur la source. */
+    noteOrigine(donnees),
     kiosque({
       id: 'kiosque-' + pole.cle.toLowerCase(), dossiers, titreFil: 'Communications du pôle',
       surAjout: (bouton) => ouvrirEditeur({ pole: pole.cle, declencheur: bouton, surPublication: () => chargerCommunicationDuPole(pole) })
