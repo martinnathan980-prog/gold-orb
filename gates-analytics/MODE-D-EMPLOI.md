@@ -124,7 +124,8 @@ A1, Ctrl+V), sans rien archiver.
 ## 6. Lire la page, de haut en bas
 
 - **Le bandeau** : l'interrupteur **Données réelles / Exemple** et, dès deux
-  contrats, le sélecteur **Contrat** ; la semaine est sous le titre.
+  contrats, le sélecteur **Contrat** ; sous le titre, la semaine où l'on est
+  et, si le dernier archivage est plus vieux, « dernier relevé : semaine … ».
   « Exemple » montre, sur vos vrais plans, un historique fabriqué — pour
   voir ce que donneront les courbes quand les relevés se seront accumulés ;
   « Données réelles » revient à ce que le classeur contient. Le bandeau dit
@@ -152,8 +153,8 @@ A1, Ctrl+V), sans rien archiver.
   l'extract.
 - **Comparaison des bases de données** (si l'onglet `SEE` est là) : ce que
   GATES dit terminé et que SEE connaît, et les écarts — en cercles, en
-  verdicts, puis plan par plan en puces, les écarts d'abord. Un clic sur une
-  référence la montre dans le tableau.
+  verdicts, puis plan par plan en puces, les écarts d'abord — un lot déplié
+  montre tous ses plans. Un clic sur une référence la montre dans le tableau.
 
 ## 7. Si quelque chose ne va pas
 

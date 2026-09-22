@@ -64,6 +64,9 @@
       <span><b id="num-semaine">—</b></span>
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
+      <!-- Quand le dernier relevé n'est pas de cette semaine, la page le dit :
+           le titre donne la date du jour, pas celle des chiffres. -->
+      <span class="semaine-releve" id="releve-semaine" hidden>—</span>
     </div>
   </header>
 
@@ -102,7 +105,7 @@
       </div>
       <p class="note-graphe" id="note-graphe"></p>
       <div class="legende" id="legende"></div>
-      <div class="legende legende-jalons" id="legende-jalons"></div>
+      <div class="legende-jalons" id="legende-jalons"></div>
     </div>
 
     <!-- Le journal appartient au graphe : la courbe dit combien, le journal

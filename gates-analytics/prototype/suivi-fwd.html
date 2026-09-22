@@ -79,7 +79,16 @@ body {
   font-weight: 300; font-size: clamp(34px, 6vw, 52px);
   letter-spacing: .015em; margin: 0 0 12px; line-height: 1.05;
 }
-.masthead .semaine {
+.masthead .semaine-releve { color: var(--encre-2); }
+/* Le point médian est un ornement : il ne se lit pas à voix haute, et il
+   disparaît quand la mention passe à la ligne — un séparateur n'ouvre pas
+   une ligne. */
+.semaine-releve::before { content: "\00b7"; margin-right: 8px; }
+@media (max-width: 430px) {
+  .semaine-releve { flex-basis: 100%; }
+  .semaine-releve::before { content: none; }
+}
+.semaine {
   font-size: 15px; color: var(--encre-2);
   display: flex; justify-content: center; align-items: baseline; gap: 9px; flex-wrap: wrap;
 }
@@ -460,18 +469,25 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .jalon.survole .jalon-marque { stroke: var(--encre); stroke-width: 2; }
 .jalon.survole .jalon-texte.masque { display: block; transform: translateY(24px); }   /* révélé sous la rangée des marqueurs, pas par-dessus les voisins */
 .jalon.critique .jalon-texte { fill: var(--alerte); }   /* l'échéance manquée : rouge sur le graphique comme dans la légende */
-/* La ligne des jalons prolonge la légende du graphique : même rangée, sans second filet. */
-.legende.legende-jalons { gap: 6px 18px; margin-top: 4px; padding-top: 0; border-top: 0; }
+/* Les jalons se lisent sous la légende des courbes, en colonnes : un jalon
+   par case, son numéro, son nom, et dessous sa semaine — plutôt qu'une
+   longue ligne où tout se touche. */
+.legende-jalons { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--filet); font-size: 12.5px; color: var(--encre-2); }
 .legende-jalons:empty { display: none; }
-.legende-jalons-mot { color: var(--encre-3); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
-.legende-jalon { display: inline-flex; align-items: center; gap: 6px; cursor: default; border-radius: 4px; }
+.legende-jalons-mot { display: block; color: var(--encre-3); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
+.legende-jalons-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 22px; }
+.legende-jalon {
+  display: grid; grid-template-columns: 18px 1fr; grid-template-rows: auto auto;
+  column-gap: 8px; row-gap: 1px; align-items: center; cursor: default; border-radius: 4px;
+}
 .legende-jalon:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
 .legende-jalon .num {
   display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
   background: var(--encre-2); color: var(--surface); font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600;
+  grid-row: span 2; align-self: center;
 }
-.legende-jalon .mot { color: var(--encre); }
-.legende-jalon .quand { color: var(--encre-2); font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+.legende-jalon .mot { color: var(--encre); align-self: end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legende-jalon .quand { grid-column: 2; color: var(--encre-2); font-family: "IBM Plex Mono", monospace; font-size: 12px; align-self: start; }
 /* Hors du périmètre choisi : le numéro reste net (c'est le lien avec le
    graphique), seul le reste s'efface un peu. */
 .legende-jalon.hors-perimetre .num { background: var(--surface); color: var(--encre-2); box-shadow: inset 0 0 0 1.5px var(--encre-3); }
@@ -573,8 +589,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
   font-family: "IBM Plex Mono", monospace; font-size: 22px; font-variant-numeric: tabular-nums;
   color: var(--encre); text-align: right; line-height: 1.1;
 }
-.verdict .verdict-mot { font-size: 13px; line-height: 1.3; }
-.verdict .verdict-mot b { font-weight: 500; color: var(--encre); }
+.verdict .verdict-mot { font-size: 13px; line-height: 1.35; color: var(--encre); }
 .verdict .pastille { width: 9px; height: 9px; }
 /* Plan par plan : un groupe par lot, une tête cliquable qui plie et déplie,
    un tableau de trois colonnes dessous. Les groupes se suivent séparés d'un
@@ -593,15 +608,17 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
   padding: 9px 4px; font: inherit; font-size: 13.5px; color: var(--encre); cursor: pointer; text-align: left;
 }
 .rapp-groupe-tete:hover { background: var(--creux); }
-.rapp-groupe-tete b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; min-width: 2.2ch; text-align: right; }
-.rapp-groupe-tete .rapp-groupe-mot { font-weight: 500; }
-.rapp-groupe-tete .rapp-groupe-phrase { color: var(--encre-3); font-size: 12.5px; }
+.rapp-groupe-tete b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; min-width: 3.4ch; text-align: right; }
+.rapp-groupe-tete .rapp-groupe-phrase { color: var(--encre); font-size: 13px; text-align: left; }
 .rapp-groupe-tete .chevron { margin-left: auto; width: 8px; height: 8px; flex: none; border-right: 1.5px solid var(--encre-3); border-bottom: 1.5px solid var(--encre-3); transform: rotate(45deg); transition: transform .15s; }
 .rapp-groupe[data-ouvert="true"] .rapp-groupe-tete .chevron { transform: rotate(225deg); }
-/* Le corps défile de côté plutôt que de pousser la page : sur un écran de
-   téléphone, la troisième colonne se replie sur plusieurs lignes, la
-   référence entre parenthèses comprise. */
-.rapp-groupe-corps { padding: 0 4px 10px; overflow-x: auto; }
+/* Un lot déplié montre tous ses plans : plutôt que de pousser la page sur
+   des centaines de puces, le corps se donne une hauteur et défile — comme
+   le journal et le bloc par groupe, avec leur barre et leur retenue. */
+.rapp-groupe-corps { padding: 4px 4px 10px; max-height: 46vh; overflow-y: auto; overscroll-behavior: contain; }
+.rapp-groupe-corps::-webkit-scrollbar { width: 9px; }
+.rapp-groupe-corps::-webkit-scrollbar-thumb { background: var(--filet-fort); border-radius: 5px; }
+.rapp-groupe-corps::-webkit-scrollbar-track { background: transparent; }
 /* Les puces : une référence par puce, sa pastille d'état à gauche, la
    lettre d'une réémission à droite. Elles coulent sur la ligne — douze
    plans tiennent en deux lignes, pas en douze. */
@@ -615,8 +632,6 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .rapp-puce:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
 .rapp-puce .pastille { width: 8px; height: 8px; }
 .rapp-puce-vers { color: var(--indice); font-weight: 600; }
-.rapp-groupe-suite { font-size: 12.5px; color: var(--encre-2); padding-top: 8px; }
-@media (max-width: 720px) { .rapp-groupe-tete .rapp-groupe-phrase { display: none; } }
 .pastille.accord { background: var(--fait); }
 .pastille.avance { background: var(--cours); }
 .pastille.manque { background: var(--alerte); }
@@ -934,6 +949,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
       <span><b id="num-semaine">—</b></span>
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
+      <!-- Quand le dernier relevé n'est pas de cette semaine, la page le dit :
+           le titre donne la date du jour, pas celle des chiffres. -->
+      <span class="semaine-releve" id="releve-semaine" hidden>—</span>
     </div>
   </header>
 
@@ -972,7 +990,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       </div>
       <p class="note-graphe" id="note-graphe"></p>
       <div class="legende" id="legende"></div>
-      <div class="legende legende-jalons" id="legende-jalons"></div>
+      <div class="legende-jalons" id="legende-jalons"></div>
     </div>
 
     <!-- Le journal appartient au graphe : la courbe dit combien, le journal
@@ -1159,7 +1177,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
     return lundi;
   }
   function etiquetteISO(d) {
-    var t = new Date(d.getTime());
+    /* Minuit UTC d'abord : avec une heure dans la date, le quantième du jeudi
+       devient fractionnaire et Math.ceil bascule d'une semaine — visible
+       toutes les semaines des années qui commencent un vendredi (2027). */
+    var t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
     var jour = t.getUTCDay() || 7;
     t.setUTCDate(t.getUTCDate() + 4 - jour);
     var debut = Date.UTC(t.getUTCFullYear(), 0, 1);
@@ -1966,14 +1987,55 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
   var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
               'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  /** Le numéro de semaine, sans son zéro : « 2026-S08 » -> « 8 ». */
+  function numeroSemaine(i) { return etiquette(i).slice(6).replace(/^0/, ''); }
+  /** Aujourd'hui, tel que l'affiche le calendrier du poste, ramené à minuit UTC :
+      les calculs de semaine se font en UTC, l'horloge de la lectrice est locale. */
+  function aujourdhuiCivil() {
+    var n = new Date();
+    return new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()));
+  }
+  /** L'index de la semaine où l'on est aujourd'hui — pas celle du dernier relevé. */
+  function semaineDAujourdhui() {
+    var i = indexDe(etiquetteISO(aujourdhuiCivil()));
+    return i === null ? AUJ : i;
+  }
+  /* Ce que dit la ligne quand le dernier relevé n'est pas de cette semaine :
+     sa semaine, son année si ce n'est plus la même, et l'âge — en semaines
+     tant que le compte parle, en mois au-delà. Un relevé postérieur à
+     aujourd'hui (horloge du poste en retard, semaine saisie à la main) se
+     dit aussi, plutôt que de laisser la page se contredire en silence. */
+  function motDuDernierReleve(iAuj) {
+    if (!(RELEVES_SRC && RELEVES_SRC.length) || iAuj === AUJ) return '';
+    var lib = etiquette(AUJ), annee = lib.slice(0, 4);
+    var mot = 'dernier relevé : semaine ' + numeroSemaine(AUJ) +
+      (annee !== etiquette(iAuj).slice(0, 4) ? ' de ' + annee : '');
+    var retard = iAuj - AUJ;
+    if (retard < 0) return mot + ' — à venir';
+    if (retard > 8) {
+      var mois = Math.round(retard / 4.345);
+      return mot + ', il y a ' + (mois > 11 ? 'plus d’un an' : mois + ' mois');
+    }
+    return mot + (retard > 1 ? ', il y a ' + retard + ' semaines' : '');
+  }
+
+  /* Sous le titre : la semaine où l'on est, avec ses dates. Les chiffres de
+     la page, eux, sont ceux du dernier relevé archivé : quand il est plus
+     ancien, la ligne le dit, pour que personne ne lise des chiffres de la
+     semaine dernière en croyant qu'ils sont d'aujourd'hui. */
+  var SEMAINE_AFFICHEE = null;
   function afficherSemaine() {
-    var lundi = dateDe(AUJ);
+    var iAuj = semaineDAujourdhui();
+    SEMAINE_AFFICHEE = iAuj;
+    var lundi = dateDe(iAuj);
     var dimanche = new Date(lundi.getTime()); dimanche.setUTCDate(lundi.getUTCDate() + 6);
     var m1 = MOIS[lundi.getUTCMonth()], m2 = MOIS[dimanche.getUTCMonth()];
     $('dates-semaine').textContent = m1 === m2
       ? 'du ' + lundi.getUTCDate() + ' au ' + dimanche.getUTCDate() + ' ' + m2 + ' ' + dimanche.getUTCFullYear()
       : 'du ' + lundi.getUTCDate() + ' ' + m1 + ' au ' + dimanche.getUTCDate() + ' ' + m2 + ' ' + dimanche.getUTCFullYear();
-    $('num-semaine').textContent = 'Semaine ' + etiquette(AUJ).slice(6).replace(/^0/, '');
+    $('num-semaine').textContent = 'Semaine ' + numeroSemaine(iAuj);
+    $('releve-semaine').hidden = !(RELEVES_SRC && RELEVES_SRC.length) || iAuj === AUJ;
+    $('releve-semaine').textContent = motDuDernierReleve(iAuj);
   }
 
   function valeurDim(p, cle) {
@@ -2076,7 +2138,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     RELEVES_SRC = (src.releves || []).filter(function (r) { return r && lundiDeLibelle(r.semaine); });
     RELEVES_SRC.sort(function (a, b) { return lundiDeLibelle(a.semaine) - lundiDeLibelle(b.semaine); });
     BASE = RELEVES_SRC.length ? lundiDeLibelle(RELEVES_SRC[0].semaine)
-                              : lundiDeLibelle(etiquetteISO(new Date()));
+                              : lundiDeLibelle(etiquetteISO(aujourdhuiCivil()));
     AUJ = RELEVES_SRC.length ? indexDe(RELEVES_SRC[RELEVES_SRC.length - 1].semaine) : 0;
     /* Le plafond de l'axe suit l'historique : deux ans, ou un an au-delà
        d'aujourd'hui — sinon, passé deux ans d'archivage, aujourd'hui, la
@@ -3068,7 +3130,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
       s.push('<line x1="' + x(AUJ).toFixed(1) + '" x2="' + x(AUJ).toFixed(1) + '" y1="' + (mHaut - 6) + '" y2="' + basTotal.toFixed(1) + '" stroke="var(--encre-3)" stroke-width="1"/>');
       var plAuj = places.filter(function (q) { return q.aujourdhui; })[0];
       var yAuj = mHaut - 13 - (plAuj ? plAuj.niveau : 0) * HAUTEUR_ETIQUETTE;
-      s.push('<text class="grad" x="' + (x(AUJ) - 6).toFixed(1) + '" y="' + yAuj.toFixed(1) + '" text-anchor="end">aujourd’hui</text>');
+      /* Le trait marque le dernier relevé. Il ne s'appelle « aujourd'hui »
+         que si ce relevé est de cette semaine — sinon la page dirait deux
+         « aujourd'hui » différents, l'un au titre, l'autre sur la courbe. */
+      s.push('<text class="grad repere-auj" x="' + (x(AUJ) - 6).toFixed(1) + '" y="' + yAuj.toFixed(1) + '" text-anchor="end">' +
+             (AUJ === semaineDAujourdhui() ? 'aujourd’hui' : 'dernier relevé') + '</text>');
       s.push('<circle cx="' + x(AUJ).toFixed(1) + '" cy="' + y(atteint).toFixed(1) + '" r="4.5" fill="var(--fait)" stroke="var(--surface)" stroke-width="2"/>');
       s.push('<text class="grad" x="' + (x(AUJ) - 9).toFixed(1) + '" y="' + (y(atteint) - 8).toFixed(1) + '" text-anchor="end" fill="var(--encre)" font-weight="500">' + atteint + '</text>');
     }
@@ -3208,7 +3274,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     /* La légende des jalons : chaque numéro en clair, sa semaine, son
        périmètre ; en retrait hors périmètre, en rouge s'il est l'échéance
        manquée. Survoler un jalon ici l'éclaire sur le graphique. */
-    $('legende-jalons').innerHTML = jalons.length ? '<span class="legende-jalons-mot">Jalons</span>' + jalons.map(function (j, idx) {
+    $('legende-jalons').innerHTML = jalons.length ? '<span class="legende-jalons-mot">Jalons</span><div class="legende-jalons-grille">' + jalons.map(function (j, idx) {
       var hors = !jalonDansPerimetre(j), rouge = prochain && j.i === prochain.i && !hors && enRetard;
       var horsFenetre = j.i < d0 || j.i > d1;   // dans la légende, mais pas dans la fenêtre affichée
       return '<span class="legende-jalon' + (hors ? ' hors-perimetre' : '') + (rouge ? ' critique' : '') + (horsFenetre ? ' hors-fenetre' : '') +
@@ -3217,7 +3283,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
         (hors ? ' \u2014 hors du p\u00e9rim\u00e8tre choisi' : '') + (horsFenetre ? ' \u2014 hors de la fen\u00eatre affich\u00e9e' : '') + '">' +
         '<b class="num">' + (idx + 1) + '</b><span class="mot">' + ech(j.texte) + '</span>' +
         '<span class="quand">' + etiquette(j.i) + (j.perimetre ? ' \u00b7 ' + ech(j.perimetre) : '') + (horsFenetre ? ' \u00b7 hors fen\u00eatre' : '') + '</span></span>';
-    }).join('') : '';
+    }).join('') + '</div>' : '';
 
     derniereAnalyse = { pts: pts, total: total, atteint: atteint, restants: restants, vitesse: vitesse,
                         projIdx: projIdx, prochain: prochain, requis: requis, enRetard: enRetard, span: span, d0: d0 };
@@ -4515,16 +4581,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
       (membres.length ? membres.join(', ') + ', sur ' + nb(nP) + (nP > 1 ? ' plans' : ' plan') : 'aucun plan') +
       (nSeuls ? ' ; ' + motLotRapp('seul', nSeuls, nom) : '') + '.');
 
-    /* Les verdicts : une ligne par lot, le nombre, le mot, la phrase. Un lot
+    /* Les verdicts : une ligne par lot, le nombre puis la phrase. Un lot
        à 0 se lit mais ne se clique pas — la colonne sert aussi de légende. */
     var actif = lotRappActif();
     $('verdicts-rapprochement').innerHTML = LOTS_RAPPROCHEMENT.map(function (l) {
       var n = comptes[l.cle], presse = !!n && actif === l.cle;
-      var libelle = libelleRapp(l) + (vue.perimetre && l.cle === 'seul' ? ' · tout le contrat' : '');
       return '<button class="verdict" type="button" data-cle="' + l.cle + '" data-rapp="' + l.cle + '" data-atterrit="' + l.atterrit +
         '" aria-pressed="' + presse + '"' + (n ? '' : ' disabled') + '>' +
         pastilleVerdict(l.segment) + '<span class="verdict-n">' + nb(n) + '</span>' +
-        '<span class="verdict-mot"><b>' + ech(libelle) + '</b> · ' + ech(phraseLot(l.cle, n, nom)) + '</span></button>';
+        '<span class="verdict-mot">' + ech(phraseLot(l.cle, n, nom)) + '</span></button>';
     }).join('');
 
     rendreListeRapprochement(comptes, nom);
@@ -4543,7 +4608,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
     ? new Intl.Collator('fr', { numeric: true, sensitivity: 'base' }).compare
     : function (a, b) { return a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' }); };
   var DEPLIES_PAR_DEFAUT = { manque: true, avance: true, emission: true, seul: true };
-  var MAX_LIGNES_LISTE_RAPP = 80;
   function groupeRappOuvert(cle) {
     return vue.plisRapp[cle] !== undefined ? !!vue.plisRapp[cle] : !!DEPLIES_PAR_DEFAUT[cle];
   }
@@ -4571,6 +4635,14 @@ table.plans thead tr th.col-fige { z-index: 6; }
   function rendreListeRapprochement(comptes, nom) {
     var zone = $('liste-rapprochement');
     var total = ORDRE_LISTE_RAPP.reduce(function (t, cle) { return t + (comptes[cle] || 0); }, 0);
+    /* La liste se refait entière à chaque rendu : on retient où en était
+       chaque lot déplié pour l'y remettre — sur 251 puces, un clic ne doit
+       pas tout faire remonter. */
+    var defilements = {};
+    [].slice.call(zone.querySelectorAll('.rapp-groupe[data-cle]')).forEach(function (g) {
+      var corps = g.querySelector('.rapp-groupe-corps');
+      if (corps && corps.scrollTop) defilements[g.dataset.cle] = corps.scrollTop;
+    });
     if (!total) { zone.innerHTML = ''; return; }
     /* En tête : le titre, le mode d'emploi en un mot, et la légende des
        pastilles d'état — la pastille de chaque puce dit l'état du plan dans
@@ -4585,21 +4657,20 @@ table.plans thead tr th.col-fige { z-index: 6; }
       if (!n) return;
       var lot = LOTS_RAPPROCHEMENT.filter(function (l) { return l.cle === cle; })[0];
       var ouvert = groupeRappOuvert(cle);
-      var libelle = libelleRapp(lot) + (vue.perimetre && cle === 'seul' ? ' · tout le contrat' : '');
       html += '<div class="rapp-groupe" data-cle="' + cle + '" data-ouvert="' + ouvert + '">' +
         '<button class="rapp-groupe-tete" type="button" data-plier="' + cle + '" aria-expanded="' + ouvert + '">' +
         pastilleVerdict(lot.segment) + '<b>' + nb(n) + '</b>' +
-        '<span class="rapp-groupe-mot">' + ech(libelle) + '</span>' +
         '<span class="rapp-groupe-phrase">' + ech(phraseLot(cle, n, nom)) + '</span>' +
         '<span class="chevron" aria-hidden="true"></span></button>';
       if (ouvert) {
         var rangees = rangeesLotRapp(cle).sort(function (a, b) { return COMPARER_REF(a.ref, b.ref); });
-        var montrees = rangees.slice(0, MAX_LIGNES_LISTE_RAPP);
-        /* Une puce par plan : sa pastille d'état, sa référence, et pour une
+        /* Une puce par plan — tous, sans coupure : un lot déplié montre ce
+           qu'il contient. Sa pastille d'état, sa référence, et pour une
            réémission la lettre sous laquelle SEE le connaît. Le détail tient
-           dans la bulle du survol ; un clic mène au tableau. */
+           dans la bulle du survol ; un clic mène au tableau. Au-delà de la
+           hauteur d'un écran, la zone défile plutôt que de pousser la page. */
         html += '<div class="rapp-groupe-corps"><div class="rapp-puces">' +
-          montrees.map(function (r) {
+          rangees.map(function (r) {
             var etat = r.plan ? r.plan._etat : '';
             var motEtat = r.plan ? (ETAT_PAR_CLE[etat] ? ETAT_PAR_CLE[etat].court : '\u2014') + ' dans GATES' : 'aucun plan dans GATES';
             var bulle = motEtat + ' \u00b7 ' + r.see + ' dans ' + nom +
@@ -4611,15 +4682,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
               (r.plan ? pastilleDe(etat) : '') +
               '<span class="rapp-puce-ref">' + ech(r.ref) + '</span>' +
               (r.vers ? '<span class="rapp-puce-vers">\u2192 ' + ech(r.vers) + '</span>' : '') + '</button>';
-          }).join('') + '</div>' +
-          (rangees.length > montrees.length
-            ? '<div class="rapp-groupe-suite">et ' + nb(rangees.length - montrees.length) + ' autres \u2014 <button type="button" class="lien-doux" data-rapp-tout="' + cle + '">les voir tous dans le tableau</button></div>'
-            : '') +
-          '</div>';
+          }).join('') + '</div></div>';
       }
       html += '</div>';
     });
     zone.innerHTML = html;
+    Object.keys(defilements).forEach(function (cle) {
+      var corps = zone.querySelector('.rapp-groupe[data-cle="' + cle + '"] .rapp-groupe-corps');
+      if (corps) corps.scrollTop = defilements[cle];
+    });
   }
 
   /* La bulle d'un lot : ce que c'est, combien, le détail qui aide — la part
@@ -4690,14 +4761,17 @@ table.plans thead tr th.col-fige { z-index: 6; }
   }
   /* La phrase d'un verdict, en français de tous les jours : le nombre est
      déjà écrit à gauche, la phrase dit ce qu'il compte. */
+  /* La phrase d'un lot se lit seule, derrière son nombre : plus de mot court
+     en gras devant, il ne disait rien de plus. Sous un périmètre, « seulement
+     dans la seconde base » compte tout le contrat, et le dit. */
   function phraseLot(cle, n, nom) {
-    var pl = n > 1;
-    if (cle === 'accord') return (pl ? 'sont terminés' : 'est terminé') + ' dans GATES et ' + (pl ? 'connus' : 'connu') + ' de ' + nom;
-    if (cle === 'emission') return (pl ? 'sont' : 'est') + ' dans ' + nom + ' sous une autre lettre d’indice';
-    if (cle === 'avance') return (pl ? 'sont' : 'est') + ' dans ' + nom + ', mais GATES ne ' + (pl ? 'les' : 'le') + ' dit pas ' + (pl ? 'terminés' : 'terminé');
-    if (cle === 'manque') return (pl ? 'sont terminés' : 'est terminé') + ' dans GATES, mais ' + nom + ' ne ' + (pl ? 'les' : 'le') + ' connaît pas';
-    if (cle === 'attente') return (pl ? 'ne sont pas terminés' : 'n’est pas terminé') + ', et pas encore dans ' + nom + ' : rien d’anormal';
-    return (pl ? 'lignes de ' : 'ligne de ') + nom + ' sans plan dans GATES';
+    var pl = n > 1, tout = vue.perimetre && cle === 'seul' ? ' \u2014 tout le contrat' : '';
+    if (cle === 'accord') return (pl ? 'terminés' : 'terminé') + ' dans GATES et ' + (pl ? 'connus' : 'connu') + ' de ' + nom;
+    if (cle === 'emission') return 'dans ' + nom + ' sous une autre lettre d’indice';
+    if (cle === 'avance') return 'dans ' + nom + ', mais GATES ne ' + (pl ? 'les' : 'le') + ' dit pas ' + (pl ? 'terminés' : 'terminé');
+    if (cle === 'manque') return (pl ? 'terminés' : 'terminé') + ' dans GATES, mais ' + nom + ' ne ' + (pl ? 'les' : 'le') + ' connaît pas';
+    if (cle === 'attente') return (pl ? 'pas terminés' : 'pas terminé') + ', et pas encore dans ' + nom + ' : rien d’anormal';
+    return (pl ? 'lignes de ' : 'ligne de ') + nom + ' sans plan dans GATES' + tout;
   }
   /* Un arc d'anneau, de l'angle a0 à l'angle a1 (en degrés, 0 en haut, sens
      horaire), au rayon r autour de (cx, cy). */
@@ -5058,15 +5132,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
       vue.base = 'la';
       vue.seconde.recherche = la.dataset.ligneLa;
       $('recherche-seconde').value = vue.seconde.recherche;
-      rendre();
-      allerAuTableau();
-      return;
-    }
-    var tout = e.target.closest('button[data-rapp-tout]');
-    if (tout && RAPPROCHEMENT) {
-      /* « Les voir tous dans le tableau » pose le lot s'il ne l'est pas déjà —
-         jamais l'inverse — et descend au tableau. */
-      if (lotRappActif() !== tout.dataset.rappTout) poserLotRapp(tout.dataset.rappTout);
       rendre();
       allerAuTableau();
       return;
@@ -5434,12 +5499,34 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }, 160);
   });
 
+  /* Une page de consultation reste ouverte des jours durant : la semaine se
+     reprend au retour sur l'onglet et une fois par heure, et quand elle a
+     changé, la page entière se redessine — sinon le titre dirait lundi et
+     la courbe vendredi. */
+  function reprendreLaSemaine() {
+    if (!BASE) return;
+    var avant = SEMAINE_AFFICHEE;
+    afficherSemaine();
+    if (avant !== null && SEMAINE_AFFICHEE !== avant) rendre();
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) reprendreLaSemaine(); });
+  setInterval(reprendreLaSemaine, 3600000);
+
   /* Exposés pour la batterie : recharger une source arbitraire — par exemple
      un jeu sans liste de contrats — sans passer par l'interface. */
   window.__jeuDExemple = jeuDExemple;
   window.__chargerSource = function (src) { chargerSource(src); remplirDims(); rendre(); };
   /* Et lire ce que la page a déduit : le journal et le comparatif, tels
      quels, pour vérifier l'appariement sans passer par le rendu. */
+
+  window.__etiquetteISO = function (d) { return etiquetteISO(d); };
+  window.__phraseLot = function (cle, n) { return phraseLot(cle, n, nomSeconde()); };
+  window.__reprendreLaSemaine = function () { reprendreLaSemaine(); };
+  window.__semaineDuTitre = function () {
+    return { num: $('num-semaine').textContent, dates: $('dates-semaine').textContent,
+             releve: $('releve-semaine').textContent, cache: $('releve-semaine').hidden,
+             iAuj: semaineDAujourdhui(), auj: AUJ, etiquetteAuj: etiquette(AUJ) };
+  };
   window.__journal = function () { return JOURNAL; };
   window.__comparatif = function () { return COMPARATIF; };
   /* Le rapprochement tel qu'il est calculé, sur le périmètre courant. */

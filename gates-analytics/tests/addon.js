@@ -1074,6 +1074,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const vu = await p.evaluate(() => ({
     semaine: document.getElementById('num-semaine').textContent,
     dates: document.getElementById('dates-semaine').textContent,
+    releve: document.getElementById('releve-semaine').textContent,
+    releveCache: document.getElementById('releve-semaine').hidden,
+    repere: ([...document.querySelectorAll('svg.graphe .repere-auj')].map(x => x.textContent)[0]) || '',
     etats: [...document.querySelectorAll('#etats .etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
     colonnes: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()),
     lignes: document.querySelectorAll('#corps-tableau tr').length,
@@ -1086,7 +1089,17 @@ function serveurSur(valeurs, proprietes, fichiers) {
     releves: document.querySelectorAll('.zone-clic').length > 0,
     importe: document.getElementById('import').textContent
   }));
-  verifier('la semaine affichée vient du dernier relevé', /^Semaine \d+$/.test(vu.semaine), vu.semaine);
+  /* Le gabarit archive la semaine en cours : la page doit donc afficher
+     cette semaine-là, se taire sur le dernier relevé, et dire « aujourd'hui »
+     sur la courbe. Le numéro attendu est recalculé ici, pas lu dans la page. */
+  const semAttendue = (() => {
+    const n = new Date(), j = new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()));
+    const jour = j.getUTCDay() || 7, t = new Date(j.getTime() + (4 - jour) * 86400000);
+    return 'Semaine ' + Math.ceil(((t.getTime() - Date.UTC(t.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7);
+  })();
+  verifier('la semaine affichée est celle d’aujourd’hui, au numéro près', vu.semaine === semAttendue, vu.semaine + ' vs ' + semAttendue);
+  verifier('le classeur venant d’archiver cette semaine, la mention du dernier relevé se tait et la courbe dit « aujourd’hui »',
+    vu.releveCache && vu.releve === '' && vu.repere === 'aujourd’hui', JSON.stringify([vu.releveCache, vu.releve, vu.repere]));
   verifier('les dates de la semaine sont écrites en toutes lettres',
     /^du \d+ .* \d{4}$/.test(vu.dates), vu.dates);
   verifier('les quatre états totalisent les 186 plans',

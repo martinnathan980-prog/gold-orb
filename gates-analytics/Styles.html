@@ -76,7 +76,16 @@ body {
   font-weight: 300; font-size: clamp(34px, 6vw, 52px);
   letter-spacing: .015em; margin: 0 0 12px; line-height: 1.05;
 }
-.masthead .semaine {
+.masthead .semaine-releve { color: var(--encre-2); }
+/* Le point médian est un ornement : il ne se lit pas à voix haute, et il
+   disparaît quand la mention passe à la ligne — un séparateur n'ouvre pas
+   une ligne. */
+.semaine-releve::before { content: "\00b7"; margin-right: 8px; }
+@media (max-width: 430px) {
+  .semaine-releve { flex-basis: 100%; }
+  .semaine-releve::before { content: none; }
+}
+.semaine {
   font-size: 15px; color: var(--encre-2);
   display: flex; justify-content: center; align-items: baseline; gap: 9px; flex-wrap: wrap;
 }
@@ -457,18 +466,25 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .jalon.survole .jalon-marque { stroke: var(--encre); stroke-width: 2; }
 .jalon.survole .jalon-texte.masque { display: block; transform: translateY(24px); }   /* révélé sous la rangée des marqueurs, pas par-dessus les voisins */
 .jalon.critique .jalon-texte { fill: var(--alerte); }   /* l'échéance manquée : rouge sur le graphique comme dans la légende */
-/* La ligne des jalons prolonge la légende du graphique : même rangée, sans second filet. */
-.legende.legende-jalons { gap: 6px 18px; margin-top: 4px; padding-top: 0; border-top: 0; }
+/* Les jalons se lisent sous la légende des courbes, en colonnes : un jalon
+   par case, son numéro, son nom, et dessous sa semaine — plutôt qu'une
+   longue ligne où tout se touche. */
+.legende-jalons { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--filet); font-size: 12.5px; color: var(--encre-2); }
 .legende-jalons:empty { display: none; }
-.legende-jalons-mot { color: var(--encre-3); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
-.legende-jalon { display: inline-flex; align-items: center; gap: 6px; cursor: default; border-radius: 4px; }
+.legende-jalons-mot { display: block; color: var(--encre-3); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
+.legende-jalons-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 22px; }
+.legende-jalon {
+  display: grid; grid-template-columns: 18px 1fr; grid-template-rows: auto auto;
+  column-gap: 8px; row-gap: 1px; align-items: center; cursor: default; border-radius: 4px;
+}
 .legende-jalon:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
 .legende-jalon .num {
   display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
   background: var(--encre-2); color: var(--surface); font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600;
+  grid-row: span 2; align-self: center;
 }
-.legende-jalon .mot { color: var(--encre); }
-.legende-jalon .quand { color: var(--encre-2); font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+.legende-jalon .mot { color: var(--encre); align-self: end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legende-jalon .quand { grid-column: 2; color: var(--encre-2); font-family: "IBM Plex Mono", monospace; font-size: 12px; align-self: start; }
 /* Hors du périmètre choisi : le numéro reste net (c'est le lien avec le
    graphique), seul le reste s'efface un peu. */
 .legende-jalon.hors-perimetre .num { background: var(--surface); color: var(--encre-2); box-shadow: inset 0 0 0 1.5px var(--encre-3); }
@@ -570,8 +586,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
   font-family: "IBM Plex Mono", monospace; font-size: 22px; font-variant-numeric: tabular-nums;
   color: var(--encre); text-align: right; line-height: 1.1;
 }
-.verdict .verdict-mot { font-size: 13px; line-height: 1.3; }
-.verdict .verdict-mot b { font-weight: 500; color: var(--encre); }
+.verdict .verdict-mot { font-size: 13px; line-height: 1.35; color: var(--encre); }
 .verdict .pastille { width: 9px; height: 9px; }
 /* Plan par plan : un groupe par lot, une tête cliquable qui plie et déplie,
    un tableau de trois colonnes dessous. Les groupes se suivent séparés d'un
@@ -590,15 +605,17 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
   padding: 9px 4px; font: inherit; font-size: 13.5px; color: var(--encre); cursor: pointer; text-align: left;
 }
 .rapp-groupe-tete:hover { background: var(--creux); }
-.rapp-groupe-tete b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; min-width: 2.2ch; text-align: right; }
-.rapp-groupe-tete .rapp-groupe-mot { font-weight: 500; }
-.rapp-groupe-tete .rapp-groupe-phrase { color: var(--encre-3); font-size: 12.5px; }
+.rapp-groupe-tete b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; min-width: 3.4ch; text-align: right; }
+.rapp-groupe-tete .rapp-groupe-phrase { color: var(--encre); font-size: 13px; text-align: left; }
 .rapp-groupe-tete .chevron { margin-left: auto; width: 8px; height: 8px; flex: none; border-right: 1.5px solid var(--encre-3); border-bottom: 1.5px solid var(--encre-3); transform: rotate(45deg); transition: transform .15s; }
 .rapp-groupe[data-ouvert="true"] .rapp-groupe-tete .chevron { transform: rotate(225deg); }
-/* Le corps défile de côté plutôt que de pousser la page : sur un écran de
-   téléphone, la troisième colonne se replie sur plusieurs lignes, la
-   référence entre parenthèses comprise. */
-.rapp-groupe-corps { padding: 0 4px 10px; overflow-x: auto; }
+/* Un lot déplié montre tous ses plans : plutôt que de pousser la page sur
+   des centaines de puces, le corps se donne une hauteur et défile — comme
+   le journal et le bloc par groupe, avec leur barre et leur retenue. */
+.rapp-groupe-corps { padding: 4px 4px 10px; max-height: 46vh; overflow-y: auto; overscroll-behavior: contain; }
+.rapp-groupe-corps::-webkit-scrollbar { width: 9px; }
+.rapp-groupe-corps::-webkit-scrollbar-thumb { background: var(--filet-fort); border-radius: 5px; }
+.rapp-groupe-corps::-webkit-scrollbar-track { background: transparent; }
 /* Les puces : une référence par puce, sa pastille d'état à gauche, la
    lettre d'une réémission à droite. Elles coulent sur la ligne — douze
    plans tiennent en deux lignes, pas en douze. */
@@ -612,8 +629,6 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .rapp-puce:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
 .rapp-puce .pastille { width: 8px; height: 8px; }
 .rapp-puce-vers { color: var(--indice); font-weight: 600; }
-.rapp-groupe-suite { font-size: 12.5px; color: var(--encre-2); padding-top: 8px; }
-@media (max-width: 720px) { .rapp-groupe-tete .rapp-groupe-phrase { display: none; } }
 .pastille.accord { background: var(--fait); }
 .pastille.avance { background: var(--cours); }
 .pastille.manque { background: var(--alerte); }

@@ -289,6 +289,33 @@ donné :
 Tout ce qui marche en données réelles marche à l'identique en exemple :
 périmètre, groupes, changements d'indice, bulle du graphique, rapprochement.
 
+## 7 bis. La semaine sous le titre
+
+Sous « Suivi FWD », la page écrit la semaine **où l'on est**, avec ses dates :
+« Semaine 39 · du 21 au 27 septembre 2026 ». Elle vient de la date du jour,
+pas des données — il n'y a rien à tenir à la main.
+
+Les chiffres de la page, eux, sont ceux du **dernier relevé archivé**. Quand
+ce relevé n'est pas de la semaine en cours, la ligne le dit à la suite :
+« · dernier relevé : semaine 38 » ; « , il y a 4 semaines » dès deux
+semaines d'écart ; « , il y a 5 mois » passé huit semaines, puis « , il y a
+plus d'un an » ; « de 2026 » s'ajoute au numéro quand l'année a changé ; et
+« — à venir » si le relevé est postérieur à aujourd'hui (horloge du poste en
+retard, semaine saisie à la main). Personne ne lit donc des chiffres d'il y
+a trois semaines en les croyant d'aujourd'hui. La mention disparaît dès que
+l'archivage de la semaine est fait.
+
+Le graphique suit : son trait vertical ne s'appelle « aujourd'hui » que si
+le dernier relevé est de cette semaine — sinon il dit « dernier relevé ».
+Une page laissée ouverte reprend tout cela au retour sur l'onglet, et une
+fois par heure.
+
+La démonstration, elle, est **datée** : son historique s'arrête à la semaine
+38 de 2026, en face des jalons du programme, qui sont des dates fixes. La
+mention vieillira donc avec elle (« il y a 3 mois », puis « plus d'un an ») —
+c'est exact, et c'est le signe qu'il faut rafraîchir le jeu d'exemple en même
+temps que les jalons.
+
 ## 8. Le périmètre : Tout / BASE/OPTION / PERSO
 
 Le titre reste seul dans sa zone : le sélecteur est posé **à droite de la
@@ -445,24 +472,29 @@ figure et les verdicts disent tout.
   SEE (rien d'anormal : ces plans ne sont pas terminés). À droite, ce que SEE
   est seul à connaître (« tout le contrat » sous un périmètre, car ces lignes
   n'ont pas de domaine) ;
-- à droite, six **verdicts**, un par ligne, avec leur grand nombre et une
-  phrase de tous les jours ; un verdict à 0 se lit mais ne se clique pas :
+- à droite, six **verdicts**, un par ligne : la pastille, le grand nombre,
+  puis une phrase de tous les jours qui se suffit à elle-même — plus de mot
+  court en gras devant, il ne disait rien de plus. Un verdict à 0 se lit mais
+  ne se clique pas :
 
-| Verdict | Ce qu'il compte | Ce qu'il veut dire |
+| Ce que dit la page | Ce qu'il compte | Ce qu'il veut dire |
 |---|---|---|
-| **terminés et dans SEE** | terminé ici, présent là sous le même indice | tout va bien |
-| **autre indice** | terminé ici, présent là sous une autre lettre | une réémission d'un côté seulement |
-| **dans SEE, pas terminés ici** | présent là, mais GATES ne le dit pas terminé | l'avancement GATES est peut-être en retard |
-| **terminés, absents de SEE** | terminé ici, inconnu de SEE | à vérifier des deux côtés — c'est le lot qui compte |
-| **pas encore dans SEE** | pas terminé ici, pas encore créé là | rien d'anormal |
-| **seulement dans SEE** | une ligne de là dont aucun plan du contrat n'a la racine et la solution | à regarder de près |
+| terminés dans GATES et connus de SEE | terminé ici, présent là sous le même indice | tout va bien |
+| dans SEE sous une autre lettre d'indice | terminé ici, présent là sous une autre lettre | une réémission d'un côté seulement |
+| dans SEE, mais GATES ne les dit pas terminés | présent là, mais GATES ne le dit pas terminé | l'avancement GATES est peut-être en retard |
+| terminés dans GATES, mais SEE ne les connaît pas | terminé ici, inconnu de SEE | à vérifier des deux côtés — c'est le lot qui compte |
+| pas terminés, et pas encore dans SEE : rien d'anormal | pas terminé ici, pas encore créé là | rien d'anormal |
+| lignes de SEE sans plan dans GATES | une ligne de là dont aucun plan du contrat n'a la racine et la solution | à regarder de près |
 
-Cliquer un verdict filtre le tableau des plans ; « terminés, absents de SEE »
-et « pas encore dans SEE » l'emmènent sur GATES, « seulement dans SEE » sur
-SEE. Un seul lot à la fois ; le bandeau le nomme (« Comparaison : … »), la
-croix le retire sans changer de côté. Un verdict se **combine** avec les
-filtres du haut : « dans SEE, pas terminés ici » plus l'état *En cours* ne
-garde que ceux-là.
+Le bandeau des filtres, lui, garde le mot court (« Comparaison : terminés,
+absents de SEE ») : un jeton n'a pas la place d'une phrase.
+
+Cliquer un verdict filtre le tableau des plans ; les deux lots de plans que
+SEE ne connaît pas l'emmènent sur GATES, celui des lignes que SEE est seule
+à connaître sur SEE. Un seul lot à la fois ; le bandeau le nomme
+(« Comparaison : … »), la croix le retire sans changer de côté. Un verdict se
+**combine** avec les filtres du haut : « dans SEE, pas terminés ici » plus
+l'état *En cours* ne garde que ceux-là.
 
 Survoler un verdict — ou sa part de l'anneau, ou un nombre de côté —
 l'éclaire dans la figure et ouvre une bulle : le compte, la part des terminés,
@@ -473,15 +505,18 @@ GATES, et où mène le clic.
 des priorités — d'abord ce qui est à vérifier (terminés absents de SEE, dans
 SEE pas terminés ici, autre indice, seulement dans SEE), **dépliés** ; puis ce
 qui va (pas encore dans SEE, terminés et dans SEE), **repliés** — un clic sur
-la tête du groupe plie ou déplie. Dans un groupe, **une puce par plan** : sa
-pastille d'état GATES, sa référence, et pour une réémission la lettre sous
-laquelle SEE le connaît (« → B », en violet) ; douze plans tiennent en deux
-lignes. La légende des pastilles (Terminé, En cours, À faire, Non renseigné)
-est en tête de la liste, à droite du titre quand la place le permet, dessous
-sinon. La bulle du survol dit le reste (« Terminé dans GATES · absent dans
-SEE »). Pour « seulement dans SEE », la référence recomposée, sans pastille.
-Les références sont triées ; au-delà de 80 puces, le groupe renvoie au
-tableau (« les voir tous dans le tableau »). Un clic sur une référence d'ici
+la tête du groupe plie ou déplie. Cette tête porte la pastille, le nombre et
+la même phrase que le verdict — rien d'autre. Dans un groupe, **une puce par
+plan** : sa pastille d'état GATES, sa référence, et pour une réémission la
+lettre sous laquelle SEE le connaît (« → B », en violet) ; douze plans
+tiennent en deux lignes. La légende des pastilles (Terminé, En cours, À
+faire, Non renseigné) est en tête de la liste, à droite du titre quand la
+place le permet, dessous sinon. La bulle du survol dit le reste (« Terminé
+dans GATES · absent dans SEE »). Pour « seulement dans SEE », la référence
+recomposée, sans pastille. Les références sont triées, et un groupe déplié
+montre **tous** ses plans — aucune coupure, aucun renvoi au tableau : quand
+la liste dépasse la hauteur d'un écran, c'est la zone du groupe qui défile.
+Un clic sur une référence d'ici
 réduit le tableau GATES à ce plan (bandeau « Sélection : plan … ») ; sur une
 référence seulement là, le tableau passe sur SEE, cherché sur elle (le
 bandeau porte alors un jeton « Recherche dans SEE », qui se retire d'une
