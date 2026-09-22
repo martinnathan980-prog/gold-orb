@@ -354,7 +354,16 @@ function json(valeur) {
 const pagesAssemblees = Object.fromEntries(
   PAGES.map(n => [n, construirePage(n)]));
 
-const coquille = `<title>ETII Hub</title>
+// Le charset vient EN TÊTE, avant tout le reste. Sans lui, le document ne
+// se décode en UTF-8 que par chance : le premier <meta charset> du fichier
+// est celui de la page index intégrée, et il ne tombe dans la fenêtre de
+// pré-analyse de 1024 octets du navigateur que tant que rien de volumineux
+// ne le précède. Servi en HTTP sans en-tête de charset, l'artefact
+// mojibake — et la classe de caractères combinants écrite en clair dans
+// sept modules devient une expression régulière invalide, ce qui tue tout
+// le JavaScript du fichier.
+const coquille = `<meta charset="utf-8">
+<title>ETII Hub</title>
 <style>
   html, body { height: 100%; margin: 0; background: #06080f; }
   #cadre { display: block; width: 100%; height: 100%; border: 0; }
