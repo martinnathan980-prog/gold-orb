@@ -150,18 +150,13 @@ function fiche(appareil, prefixe) {
    Deux formes de données cohabitent :
    - `fiche` : la base d'information PUBLIQUE constituée par le service
      (identité, motorisation, masses, capacité, performances, dimensions,
-     production et économie, électrique et avionique, insolite, sources).
-     Chaque champ porte sa valeur, son unité, sa confiance et sa source.
+     production et économie, électrique et avionique, insolite). Chaque
+     champ porte sa valeur et son unité ; la fiche n'affiche ni sa
+     confiance ni sa source, qui restent dans le fichier pour la relecture.
    - `service` (ou l'ancien couple technique / economique) : les données
      INTERNES au service, jamais inventées — « à renseigner » tant que le
      fichier ne les donne pas.
    ------------------------------------------------------------------------- */
-
-const CONFIANCES = {
-  haute:   { glyphe: '●', libelle: 'confiance haute — valeur confirmée par au moins une source publique' },
-  moyenne: { glyphe: '◐', libelle: 'confiance moyenne — valeur publique non recoupée' },
-  faible:  { glyphe: '○', libelle: 'confiance faible — à vérifier' }
-};
 
 const GROUPES_FICHE = [
   { cle: 'motorisation', titre: 'Motorisation', champs: [
@@ -200,64 +195,88 @@ const IDENTITE = [
   ['constructeur', 'Constructeur'], ['premierVol', 'Premier vol'],
   ['miseEnService', 'Mise en service'], ['siteAssemblage', 'Site d’assemblage']];
 
+/* Pas d'onglet « Sources » : la fiche ne renvoie vers aucun site
+   extérieur. Les crédits des photos, eux, restent dans la fenêtre
+   « Crédits photos » du pied de page — c'est une obligation de licence. */
 const ONGLETS = [
-  { cle: 'technique', titre: 'Technique', groupes: ['motorisation', 'masses', 'capacite', 'dimensions', 'identite'] },
+  { cle: 'technique', titre: 'Technique', groupes: ['motorisation', 'masses', 'capacite', 'dimensions', 'identite'], chiffres: true },
   { cle: 'performances', titre: 'Performances', groupes: ['performances'] },
   { cle: 'electrique', titre: 'Électrique', groupes: ['electrique'] },
   { cle: 'economie', titre: 'Production & économie', groupes: ['production'] },
   { cle: 'insolite', titre: 'Insolite' },
   { cle: 'equipe', titre: 'Équipe & documents' },
-  { cle: 'service', titre: 'Données service' },
-  { cle: 'sources', titre: 'Sources' }
+  { cle: 'service', titre: 'Données service' }
 ];
+
+/* Les chiffres clés en tête de l'onglet Technique : seulement les valeurs
+   que le fichier donne en nombre. */
+const CHIFFRES_CLES = [
+  ['masses', 'masseMaxDecollage', 'Masse max. au décollage'],
+  ['motorisation', 'nombreMoteurs', 'Moteurs'],
+  ['motorisation', 'puissance', 'Puissance'],
+  ['capacite', 'passagers', 'Passagers'],
+  ['performances', 'vitesseCroisiere', 'Vitesse de croisière'],
+  ['performances', 'rayonAction', 'Rayon d’action'],
+  ['dimensions', 'diametreRotor', 'Diamètre du rotor']
+];
+
+/* Une phrase longue se lit mieux en deux temps : l'essentiel, puis sa
+   précision en retrait. On coupe au premier « ; », sinon à la première
+   parenthèse, et seulement quand le texte est long. */
+function scinder(v) {
+  if (!v.ok || v.complement || v.chiffre || v.principal.length <= 64) return v;
+  const t = v.principal;
+  let coupe = t.search(/\s*;\s/);
+  let saut = coupe === -1 ? 0 : (t.slice(coupe).match(/^\s*;\s*/) || [''])[0].length;
+  if (coupe === -1) {
+    coupe = t.indexOf(' (');
+    saut = 1;
+    if (coupe < 12) return v;
+  }
+  return Object.assign({}, v, { principal: t.slice(0, coupe).trim(), complement: t.slice(coupe + saut).trim() });
+}
 
 function champFiche(brut) {
   const c = (brut && typeof brut === 'object' && !Array.isArray(brut)) ? brut : { valeur: brut };
-  const v = valeurLisible(c.valeur, c.unite);
-  const confiance = CONFIANCES[texte(c.confiance)] ? texte(c.confiance) : (v.ok ? 'moyenne' : 'faible');
-  return { ...v, confiance, source: texte(c.source) };
+  return scinder(valeurLisible(c.valeur, c.unite));
 }
 
-function lienSource(url, classe) {
-  const u = texte(url);
-  if (!/^https?:\/\//.test(u)) return null;
-  let hote = u;
-  try { hote = new URL(u).hostname.replace(/^www\./, ''); } catch (_e) { /* on garde l'URL */ }
-  return el('a', { class: classe || 'porteurs__source', href: u, target: '_blank', rel: 'noopener noreferrer', title: u },
-    hote, el('span', { 'aria-hidden': 'true' }, ' ↗'));
-}
-
-/* Une ligne libellé / valeur. Le libellé est en gras net, la valeur en
-   regular (un chiffre en mono) : l'œil sépare d'un coup ce qui nomme et
-   ce qui répond. La confiance et la source sont là — c'est ce qui rend
-   la fiche honnête — mais en retrait : petites, grises, sous le libellé,
-   dans l'espace que la colonne de gauche laisse libre. */
+/* Une ligne : le libellé dans une colonne étroite, grise, en petites
+   capitales ; la valeur à côté, l'essentiel d'abord, la précision dessous
+   en plus petit. Toutes les lignes de la fiche ont cette forme. */
 function ligneFiche(libelle, brut) {
   const c = champFiche(brut);
-  const conf = CONFIANCES[c.confiance];
-  /* Une source peut en citer plusieurs, séparées par « ; » : on ne garde
-     que la première en lien, les autres sont dans l'onglet Sources. */
-  const premiereSource = c.source.split(/\s*;\s*/)[0];
   return el('div', { class: 'porteurs__ligne' },
-    el('dt', { class: 'porteurs__libelle' },
-      el('span', { class: 'porteurs__libelle-texte' }, libelle),
-      c.ok
-        ? el('span', { class: 'porteurs__preuve' },
-            el('span', { class: ['porteurs__conf', 'porteurs__conf--' + c.confiance], title: conf.libelle },
-              el('span', { 'aria-hidden': 'true' }, conf.glyphe),
-              el('span', { class: 'visuellement-cache' }, conf.libelle)),
-            premiereSource ? lienSource(premiereSource) : null)
-        : null),
+    el('dt', { class: 'porteurs__libelle' }, libelle),
     el('dd', { class: 'porteurs__cellule' },
-      el('span', { class: ['porteurs__valeur', c.chiffre ? 'porteurs__valeur--chiffre' : null, c.ok ? null : 'porteurs__manquant'] },
-        c.principal,
-        c.complement ? el('span', { class: 'porteurs__complement' }, ' ', c.complement) : null)));
+      el('span', { class: ['porteurs__valeur', c.chiffre ? 'porteurs__valeur--chiffre' : null, c.ok ? null : 'porteurs__manquant'] }, c.principal),
+      c.complement ? el('span', { class: 'porteurs__complement' }, c.complement) : null));
 }
 
 function groupeFiche(titre, lignes) {
   return el('section', { class: 'porteurs__groupe' },
     el('h4', { class: 'porteurs__groupe-titre' }, titre),
     el('dl', { class: 'porteurs__lignes' }, lignes));
+}
+
+/* Les chiffres clés : trois à cinq tuiles, quand le fichier les donne en
+   nombre. Rien ne s'affiche s'il n'y en a pas au moins deux. */
+function chiffresCles(fiche) {
+  const tuiles = [];
+  for (const [groupe, cle, libelle] of CHIFFRES_CLES) {
+    const brut = objet(fiche[groupe])[cle];
+    const c = (brut && typeof brut === 'object') ? brut : { valeur: brut };
+    if (typeof c.valeur !== 'number' || !Number.isFinite(c.valeur)) continue;
+    const v = valeurLisible(c.valeur, c.unite);
+    const [nombre, ...unite] = v.principal.split(' ');
+    tuiles.push(el('div', { class: 'porteurs__chiffre' },
+      el('dt', { class: 'porteurs__chiffre-libelle' }, libelle),
+      el('dd', { class: 'porteurs__chiffre-valeur' },
+        el('span', { class: 'porteurs__chiffre-nombre' }, nombre),
+        unite.length ? el('span', { class: 'porteurs__chiffre-unite' }, ' ' + unite.join(' ')) : null)));
+    if (tuiles.length === 5) break;
+  }
+  return tuiles.length >= 2 ? el('dl', { class: 'porteurs__chiffres' }, tuiles) : null;
 }
 
 function tableFiche(titre, champsDuGroupe, valeurs) {
@@ -270,31 +289,7 @@ function panneauInsolite(fiche) {
   if (!faits.length) return el('p', { class: 'texte-doux sans-marge' }, 'Aucun fait remarquable renseigné.');
   return el('ul', { class: 'porteurs__insolites' }, faits.map((f) => el('li', { class: 'porteurs__insolite' },
     el('span', { class: 'porteurs__insolite-glyphe', 'aria-hidden': 'true' }, '✦'),
-    el('span', {}, texte(f.texte), ' ', lienSource(texte(f.source).split(/\s*;\s*/)[0])))));
-}
-
-/* Le crédit d'une photo vit désormais dans credits.js : la fiche d'un
-   porteur, le pied d'une communication et la fenêtre « Crédits photos »
-   écrivaient la même ligne trois fois. Il ne s'affiche jamais sur la
-   photo — il vit dans l'onglet Sources et dans cette fenêtre. */
-
-function panneauSources(appareil, fiche) {
-  const liste = (Array.isArray(fiche.sources) ? fiche.sources : []).map(texte).filter((u) => /^https?:\/\//.test(u));
-  const credit = texte(appareil.photo) ? creditPhoto(appareil.credit) : null;
-  return el('div', { class: 'porteurs__groupes' },
-    el('section', { class: 'porteurs__groupe' },
-      el('h4', { class: 'porteurs__groupe-titre' }, 'Sources publiques'),
-      el('p', { class: 'porteurs__legende texte-doux sans-marge' },
-        'Légende de confiance : ',
-        el('span', { class: 'mono' }, '●'), ' confirmée · ', el('span', { class: 'mono' }, '◐'), ' non recoupée · ',
-        el('span', { class: 'mono' }, '○'), ' à vérifier.'),
-      liste.length
-        ? el('ul', { class: 'porteurs__sources' }, liste.map((u) => el('li', {}, lienSource(u), ' ',
-            el('span', { class: 'porteurs__source-url mono' }, u.length > 80 ? u.slice(0, 77) + '…' : u))))
-        : el('p', { class: 'texte-doux sans-marge' }, 'Aucune source enregistrée.')),
-    credit ? el('section', { class: 'porteurs__groupe' },
-      el('h4', { class: 'porteurs__groupe-titre' }, 'Photo'),
-      credit) : null);
+    el('span', {}, texte(f.texte)))));
 }
 
 function tableau(titre, descripteurs, valeurs) {
@@ -306,14 +301,7 @@ function tableau(titre, descripteurs, valeurs) {
       el('h4', { class: 'porteurs__groupe-titre' }, titre),
       el('p', { class: 'texte-doux texte-sm sans-marge' }, 'Aucun champ déclaré.'));
   }
-  return groupeFiche(titre, lignes.map((d) => {
-    const v = valeurLisible(source[d.cle], d.unite);
-    return el('div', { class: 'porteurs__ligne' },
-      el('dt', { class: 'porteurs__libelle' }, el('span', { class: 'porteurs__libelle-texte' }, d.libelle)),
-      el('dd', { class: 'porteurs__cellule' },
-        el('span', { class: ['porteurs__valeur', v.chiffre ? 'porteurs__valeur--chiffre' : null, v.ok ? null : 'porteurs__manquant'] },
-          v.principal, v.complement ? el('span', { class: 'porteurs__complement' }, ' ', v.complement) : null)));
-  }));
+  return groupeFiche(titre, lignes.map((d) => ligneFiche(d.libelle, { valeur: source[d.cle], unite: d.unite })));
 }
 
 /**
@@ -432,10 +420,11 @@ function onglets(prefixe, panneaux) {
   return racine;
 }
 
-/* Le bandeau de rappel : le nom complet, la catégorie et le segment, le
+/* La carte d'identité : le nom complet, la catégorie et le segment, le
    statut, les pôles, puis l'identité (constructeur, premier vol, mise en
-   service, site d'assemblage) — une case par donnée courte ; une donnée
-   longue garde tout son texte mais passe en paragraphe, sur la largeur. */
+   service, site d'assemblage). Les mêmes lignes que les groupes de la
+   fiche — libellé à gauche, valeur à côté, précision dessous — sur deux
+   colonnes quand la place le permet. */
 function bandeauIdentite(appareil, fiche, avecFiche, categorie) {
   const identite = objet(fiche.identite);
   const code = texte(appareil.code) || '—';
@@ -444,24 +433,16 @@ function bandeauIdentite(appareil, fiche, avecFiche, categorie) {
   const segment = texte(appareil.segment) || texte(fiche.segment);
   const libelleCategorie = categorie ? categorie.libelle : texte(appareil.categorie);
   const categorieSegment = [libelleCategorie, segment].filter(Boolean).join(' · ');
-  const item = (libelle, valeur, ok, mono) => {
-    const long = valeur.length > LONGUEUR_CASE;
-    return el('div', { class: ['porteurs__bandeau-item', long ? 'porteurs__bandeau-item--long' : null] },
-      el('dt', {}, libelle),
-      el('dd', { class: [ok ? null : 'porteurs__manquant', mono && !long ? 'mono' : null] }, valeur));
-  };
-  return el('dl', { class: 'porteurs__bandeau' },
-    item('Nom', nom || code, true, false),
-    item('Catégorie', categorieSegment || NON_RENSEIGNE, !!categorieSegment, false),
-    item('Statut', (avecFiche && texte(fiche.statut)) || NON_RENSEIGNE, avecFiche && !!texte(fiche.statut), false),
-    el('div', { class: 'porteurs__bandeau-item' },
-      el('dt', {}, 'Pôles'),
-      el('dd', { class: 'porteurs__poles' }, poles.length ? poles.map(pastillePole)
-        : el('span', { class: 'porteurs__manquant' }, NON_RENSEIGNE))),
-    IDENTITE.map(([cle, libelle]) => {
-      const c = champFiche(identite[cle]);
-      return item(libelle, c.principal, c.ok, c.chiffre);
-    }));
+  return el('section', { class: 'porteurs__identite', 'aria-label': 'Identité du ' + code },
+    el('dl', { class: 'porteurs__lignes porteurs__lignes--identite' },
+      ligneFiche('Nom', nom || code),
+      ligneFiche('Catégorie', categorieSegment),
+      ligneFiche('Statut', avecFiche ? texte(fiche.statut) : ''),
+      el('div', { class: 'porteurs__ligne' },
+        el('dt', { class: 'porteurs__libelle' }, 'Pôles'),
+        el('dd', { class: 'porteurs__cellule porteurs__poles' }, poles.length ? poles.map(pastillePole)
+          : el('span', { class: 'porteurs__manquant' }, NON_RENSEIGNE))),
+      IDENTITE.map(([cle, libelle]) => ligneFiche(libelle, identite[cle]))));
 }
 
 function detail(appareil, donnees, categoriesConnues, contexte) {
@@ -483,11 +464,12 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
       const groupes = o.groupes.map((g) => GROUPES_FICHE.find((x) => x.cle === g)).filter(Boolean);
       return { cle: o.cle, titre: o.titre,
         contenu: avecFiche
-          ? el('div', { class: 'porteurs__groupes' }, groupes.map((g) => tableFiche(g.titre, g.champs, valeursGroupe(g.cle))))
+          ? el('div', { class: 'porteurs__panneau' },
+              o.chiffres ? chiffresCles(fiche) : null,
+              el('div', { class: 'porteurs__groupes' }, groupes.map((g) => tableFiche(g.titre, g.champs, valeursGroupe(g.cle)))))
           : el('p', { class: 'texte-doux sans-marge' }, 'Fiche publique non encore constituée pour ce porteur.') };
     }
     if (o.cle === 'insolite') return { cle: o.cle, titre: o.titre, contenu: panneauInsolite(fiche) };
-    if (o.cle === 'sources') return { cle: o.cle, titre: o.titre, contenu: panneauSources(appareil, fiche) };
     if (o.cle === 'equipe') return { cle: o.cle, titre: o.titre, contenu: panneauEquipe(appareil, contexte) };
     return { cle: o.cle, titre: o.titre, contenu: panneauService(appareil, donnees) };
   });
@@ -497,8 +479,8 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
   const relecture = texte(fiche.relecture) === 'non effectuée'
     ? el('span', {
         class: 'badge badge--alerte porteurs__relecture',
-        title: 'Fiche constituée depuis des sources publiques, pas encore relue en contradictoire : '
-          + 'chaque valeur porte sa confiance et sa source, vérifiez avant de vous en servir.'
+        title: 'Fiche constituée depuis des sources publiques, pas encore relue par le service : '
+          + 'vérifiez une valeur avant de vous en servir.'
       }, 'Relecture à faire')
     : null;
 

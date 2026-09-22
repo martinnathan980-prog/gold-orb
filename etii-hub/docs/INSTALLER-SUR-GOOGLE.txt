@@ -1,0 +1,552 @@
+================================================================================
+  ETII HUB — INSTALLER LE SITE SUR GOOGLE (Google Drive + Sheets + Apps Script)
+================================================================================
+
+Ce document dit EXACTEMENT quoi faire, clic par clic, pour que le site tourne
+chez Airbus, sur Google, avec :
+  - une adresse du type https://script.google.com/a/macros/.../exec,
+    réservée aux comptes Google de l'entreprise ;
+  - le bouton « Modifier » pour les personnes que VOUS choisissez, et pour
+    elles seules ;
+  - toutes les modifications faites dans le site (communications, alertes,
+    rendez-vous, porteurs, personnes, squads, référents, documents, FAQ,
+    comptes rendus) enregistrées pour tout le monde, sans que personne
+    n'ait jamais à ouvrir une feuille Google.
+
+Durée : 20 à 30 minutes, une seule fois.
+
+
+--------------------------------------------------------------------------------
+ CE QU'IL Y A À INSTALLER — trois choses, pas une de plus
+--------------------------------------------------------------------------------
+
+  1. etii-hub.html   Le site entier dans un seul fichier (pages, styles,
+                     données, photos). Il va sur Google DRIVE. On ne le colle
+                     nulle part : il est trop gros pour l'éditeur de script,
+                     et le script le lit directement sur Drive.
+                     -> fichier fourni : etii-hub/dist/etii-hub.html
+
+  2. Code.gs         TOUT le code serveur (environ 250 lignes). Il se colle
+                     dans l'éditeur Apps Script. Une seule ligne à modifier.
+                     -> fichier fourni : etii-hub/tools/apps-script/site/Code.gs
+                        (recopié intégralement en ANNEXE A, à la fin)
+
+  3. Une feuille Google « ETII Hub — base »
+                     La base des modifications. Le script la remplit seul ;
+                     vous n'y touchez que pour la liste des éditeurs.
+
+Il n'y a PAS d'index.html à créer dans Apps Script, PAS de fichier .js à
+coller, PAS de bibliothèque à ajouter : le site est déjà complet dans
+etii-hub.html, et Code.gs se contente de le servir et de garder les
+modifications.
+
+
+--------------------------------------------------------------------------------
+ ÉTAPE 1 — Déposer le site sur Google Drive
+--------------------------------------------------------------------------------
+
+  1. Ouvrez Google Drive (drive.google.com) avec votre compte Airbus.
+  2. « Nouveau »  ›  « Importer un fichier »  ›  choisissez etii-hub.html.
+  3. Clic droit sur le fichier importé  ›  « Partager »  ›  « Copier le lien ».
+     Le lien ressemble à :
+        https://drive.google.com/file/d/1AbCdEfGh...XyZ/view?usp=sharing
+     L'IDENTIFIANT est la partie entre « /d/ » et « /view » :
+        1AbCdEfGh...XyZ
+     Gardez-le sous la main (étape 4).
+  4. Ne partagez PAS ce fichier avec d'autres personnes : le script le lit
+     avec vos droits, les lecteurs n'en ont pas besoin.
+
+
+--------------------------------------------------------------------------------
+ ÉTAPE 2 — Créer la feuille « ETII Hub — base »
+--------------------------------------------------------------------------------
+
+  1. Ouvrez Google Sheets (sheets.new) : un classeur vide s'ouvre.
+  2. Renommez-le « ETII Hub — base » (clic sur « Feuille de calcul sans
+     titre », en haut à gauche).
+  3. Ne créez aucun onglet vous-même : le script s'en charge (étape 5).
+
+
+--------------------------------------------------------------------------------
+ ÉTAPE 3 — Ouvrir l'éditeur Apps Script de CETTE feuille
+--------------------------------------------------------------------------------
+
+  1. Dans la feuille : menu « Extensions »  ›  « Apps Script ».
+     Un nouvel onglet s'ouvre sur l'éditeur, avec un fichier « Code.gs ».
+  2. En haut à gauche, cliquez sur « Projet sans titre » et renommez-le
+     « ETII Hub ».
+  3. (Conseillé) Roue dentée « Paramètres du projet » à gauche  ›
+     « Fuseau horaire » : (GMT+01:00) Paris.
+
+  Important : le script DOIT être créé depuis la feuille (Extensions ›
+  Apps Script), pas depuis script.google.com : c'est ainsi qu'il sait où
+  ranger les modifications.
+
+
+--------------------------------------------------------------------------------
+ ÉTAPE 4 — Coller le code
+--------------------------------------------------------------------------------
+
+  1. Dans Code.gs : tout sélectionner (Ctrl+A), supprimer.
+  2. Collez le contenu COMPLET du fichier Code.gs fourni (ANNEXE A).
+  3. Cherchez la ligne :
+        var ID_FICHIER_SITE = 'COLLEZ_ICI_L_IDENTIFIANT_DU_FICHIER';
+     et remplacez COLLEZ_ICI_L_IDENTIFIANT_DU_FICHIER par l'identifiant de
+     l'étape 1, en gardant les apostrophes :
+        var ID_FICHIER_SITE = '1AbCdEfGh...XyZ';
+  4. Enregistrez : icône disquette, ou Ctrl+S.
+
+  C'est la SEULE ligne à modifier.
+
+
+--------------------------------------------------------------------------------
+ ÉTAPE 5 — Lancer l'installation (une seule fois)
+--------------------------------------------------------------------------------
+
+  1. Dans la barre d'outils de l'éditeur, la liste déroulante des fonctions :
+     choisissez « installer ».
+  2. Cliquez « Exécuter ».
+  3. Google demande l'autorisation (lire le fichier sur Drive, écrire dans
+     la feuille, connaître l'adresse de la personne connectée) :
+        « Examiner les autorisations »  ›  votre compte Airbus  ›  « Autoriser ».
+     Si un écran « Google n'a pas validé cette application » apparaît :
+        « Paramètres avancés »  ›  « Accéder à ETII Hub (non sécurisé) »
+     — c'est votre propre script, il ne sort pas de votre compte.
+  4. En bas, le « Journal d'exécution » affiche :
+        Onglets prêts. Premier éditeur : votre.adresse@airbus.com
+        Fichier du site trouvé : etii-hub.html (6… Ko).
+  5. Revenez sur la feuille : trois onglets sont apparus :
+        modifications   (rempli par le site — n'y touchez pas)
+        journal         (qui a changé quoi, et quand — pour information)
+        Éditeurs        (la liste des personnes qui peuvent modifier)
+     Votre adresse est déjà dans « Éditeurs ».
+
+
+--------------------------------------------------------------------------------
+ ÉTAPE 6 — Publier le site (déploiement en application web)
+--------------------------------------------------------------------------------
+
+  1. En haut à droite de l'éditeur : bouton bleu « Déployer »  ›
+     « Nouveau déploiement ».
+  2. Roue dentée à côté de « Sélectionner le type »  ›  « Application Web ».
+  3. Remplissez :
+        Description        : ETII Hub
+        Exécuter en tant que : Moi (votre.adresse@airbus.com)
+        Qui a accès        : Tous les utilisateurs de votre organisation
+                             (libellé exact selon la console : « Toute
+                             personne de Airbus » / « Anyone within … »)
+  4. « Déployer ». Si Google redemande l'autorisation : « Autoriser ».
+  5. Copiez l'« URL de l'application Web » (elle finit par /exec).
+     C'est L'ADRESSE DU SITE.
+
+  Pourquoi « Exécuter en tant que : Moi » : la feuille reste privée (seul
+  le script y écrit, avec vos droits), et le site connaît l'adresse de la
+  personne connectée parce qu'elle est du même domaine que vous.
+
+
+--------------------------------------------------------------------------------
+ ÉTAPE 7 — Vérifier
+--------------------------------------------------------------------------------
+
+  1. Ouvrez l'adresse /exec. Le premier affichage prend quelques secondes
+     (le fichier pèse environ 6,5 Mo) ; ensuite, la navigation entre les
+     pages est immédiate.
+  2. Vous voyez le bouton « ✎ Modifier » dans la barre du haut.
+  3. Cliquez-le : un bandeau dit « Mode édition. Ce que vous ajoutez,
+     modifiez ou supprimez est enregistré pour tous les lecteurs du site.
+     Connecté : votre.adresse@airbus.com. »
+  4. Ajoutez un rendez-vous d'essai dans « À venir », rechargez la page :
+     il est toujours là, et une ligne est apparue dans l'onglet
+     « modifications » de la feuille. Supprimez-le ensuite depuis le site.
+  5. Demandez à un collègue (qui n'est PAS dans « Éditeurs ») d'ouvrir
+     l'adresse : il voit tout, mais n'a pas de bouton « Modifier ».
+
+
+--------------------------------------------------------------------------------
+ ÉTAPE 8 — Donner (ou retirer) le droit de modifier
+--------------------------------------------------------------------------------
+
+  Onglet « Éditeurs » de la feuille :
+     colonne A : une adresse Airbus par ligne (ex. prenom.nom@airbus.com)
+     colonne B : un nom, facultatif
+  C'est tout. L'effet est immédiat : la personne a le bouton « Modifier »
+  au prochain chargement du site. Pour retirer le droit : supprimez sa
+  ligne.
+
+  Le serveur vérifie l'adresse à CHAQUE enregistrement : quelqu'un qui
+  n'est pas dans la liste ne peut rien écrire, même en bricolant sa page.
+
+
+--------------------------------------------------------------------------------
+ ÉTAPE 9 — Mettre le site dans Google Sites (facultatif)
+--------------------------------------------------------------------------------
+
+  Dans l'éditeur Google Sites de votre portail :
+     « Insérer »  ›  « Intégrer »  ›  onglet « Par URL »  ›  collez
+     l'adresse /exec  ›  « Insérer », puis agrandissez le cadre à toute la
+     largeur et à une grande hauteur.
+  Ou plus simple : un lien « ETII Hub » dans le menu du portail, qui ouvre
+  l'adresse /exec dans un nouvel onglet (le site a alors tout l'écran).
+
+
+--------------------------------------------------------------------------------
+ METTRE À JOUR LE SITE PLUS TARD
+--------------------------------------------------------------------------------
+
+  Nouvelle version d'etii-hub.html (nouvelles pages, nouvelles données de
+  base) :
+     Drive  ›  clic droit sur etii-hub.html  ›  « Informations sur le
+     fichier »  ›  « Gérer les versions »  ›  « Importer une nouvelle
+     version ».
+     L'identifiant ne change pas : rien à faire dans le script, rien à
+     redéployer. Rechargez simplement le site.
+     Les modifications faites dans le site sont CONSERVÉES : elles sont
+     dans la feuille, pas dans le fichier.
+
+  Nouvelle version de Code.gs (rare) :
+     collez le nouveau code (gardez votre ligne ID_FICHIER_SITE), enregistrez,
+     puis « Déployer »  ›  « Gérer les déploiements »  ›  crayon  ›
+     « Version : Nouvelle version »  ›  « Déployer ». L'adresse /exec ne
+     change pas.
+
+
+--------------------------------------------------------------------------------
+ LA FEUILLE, EN DEUX MOTS
+--------------------------------------------------------------------------------
+
+  - « modifications » : une ligne par élément ajouté, modifié ou supprimé
+    dans le site. Ne la modifiez pas à la main. Seule exception : supprimer
+    une ligne annule la modification (l'élément redevient celui d'origine).
+  - « journal » : l'historique (date, adresse, quoi). Rien à y faire.
+  - « Éditeurs » : la seule chose que vous gérez.
+  - Sauvegarde : « Fichier »  ›  « Historique des versions » de la feuille
+    permet de revenir à n'importe quel état passé.
+
+
+--------------------------------------------------------------------------------
+ SI QUELQUE CHOSE NE VA PAS
+--------------------------------------------------------------------------------
+
+  « Exception: … No item with the given ID could be found » (ou page
+  d'erreur à l'ouverture)
+     -> l'identifiant de l'étape 4 est faux, ou le fichier a été supprimé
+        ou déplacé dans une corbeille. Recopiez l'identifiant.
+
+  Le bouton « Modifier » n'apparaît pas pour un éditeur
+     -> son adresse n'est pas exactement dans la colonne A d'« Éditeurs »
+        (espace en trop, autre alias) ; ou le déploiement n'est pas en
+        « Exécuter en tant que : Moi ».
+
+  « Cette application a été bloquée par votre administrateur » /
+  « Apps Script est désactivé »
+     -> la DSI encadre Apps Script ou les applications web. Demandez
+        l'autorisation pour une application web interne : exécutée par
+        vous, accès limité au domaine Airbus, données internes au service,
+        aucun appel vers l'extérieur.
+
+  Un collègue ne voit pas une modification
+     -> il doit recharger la page (le site lit les modifications à
+        l'ouverture).
+
+  Le premier chargement est lent
+     -> normal : tout le site (photos comprises) arrive d'un coup, puis
+        plus rien ne se recharge d'une page à l'autre.
+
+
+--------------------------------------------------------------------------------
+ LES PROFILS : QUI VOIT, QUI MODIFIE
+--------------------------------------------------------------------------------
+
+  Oui, c'est possible dans l'environnement Airbus, et c'est ce que ce
+  montage fait : le site sait QUI est connecté.
+
+  - Tout le monde s'identifie déjà : pour ouvrir l'adresse /exec, il faut
+    être connecté à son compte Google Airbus (c'est le cas de toute
+    personne qui ouvre Gmail ou Drive). Aucun mot de passe de plus.
+  - Le serveur (Code.gs) lit l'adresse de la personne connectée
+    (Session.getActiveUser), la compare à l'onglet « Éditeurs », et
+    répond au site : « peut modifier » ou « lecture seule ».
+  - Le bouton « Modifier » n'apparaît que pour les éditeurs. Surtout, le
+    serveur refuse toute écriture d'une adresse absente de la liste :
+    ce n'est pas qu'un bouton caché.
+  - Chaque modification est signée : l'onglet « journal » dit qui a changé
+    quoi, et quand.
+  - On peut aller plus loin plus tard (un rôle par pôle : les éditeurs
+    d'ETIIA ne modifient que la page ETIIA…) : il suffira d'une colonne
+    « pôle » dans « Éditeurs ». Dites-le si c'est utile.
+
+  Condition : le déploiement « Exécuter en tant que : Moi » + « Tous les
+  utilisateurs de votre organisation ». Une personne hors du domaine Airbus
+  (ou avec un compte Gmail personnel) n'ouvre pas le site.
+
+
+================================================================================
+ ANNEXE A — Code.gs (à coller tel quel, en remplaçant UNE ligne)
+================================================================================
+
+/**
+ * ETII Hub — le site, servi par Google Apps Script
+ * ------------------------------------------------
+ * Ce fichier est TOUT le code serveur du site. À coller dans l'éditeur
+ * Apps Script d'une feuille Google (Extensions › Apps Script), à la place
+ * du contenu de « Code.gs ». Le guide pas à pas est dans
+ * docs/INSTALLER-SUR-GOOGLE.txt.
+ *
+ * Ce qu'il fait :
+ *   1. doGet — sert le site : le fichier etii-hub.html (déposé sur Google
+ *      Drive) est lu et renvoyé tel quel. Le site entier tient dans ce
+ *      fichier : pages, styles, données, photos.
+ *   2. La base des modifications — tout ce qu'on ajoute, modifie ou
+ *      supprime dans le site (bouton « Modifier ») est rangé dans l'onglet
+ *      « modifications » de cette feuille. Les lecteurs ne voient jamais la
+ *      feuille : le site la lit et l'écrit pour eux.
+ *   3. Les profils — le serveur sait qui est connecté (son compte Google de
+ *      l'entreprise). Seules les adresses de l'onglet « Éditeurs », et le
+ *      propriétaire du script, peuvent modifier ; les autres lisent.
+ *   4. Le journal — chaque modification laisse une ligne dans l'onglet
+ *      « journal » : quoi, qui, quand.
+ *
+ * Déploiement : Déployer › Nouveau déploiement › Application web
+ *   - Exécuter en tant que : Moi
+ *   - Qui a accès : tous les utilisateurs de votre organisation
+ * « Exécuter en tant que Moi » : la feuille reste privée (seul le script y
+ * écrit) et l'adresse de la personne connectée est connue, puisqu'elle est
+ * du même domaine que vous.
+ */
+
+/* ======================================================================
+   À RENSEIGNER — une seule ligne
+   L'identifiant du fichier etii-hub.html déposé sur Google Drive : dans
+   son lien de partage, la suite de lettres et de chiffres entre « /d/ »
+   et « /view ».
+   ====================================================================== */
+var ID_FICHIER_SITE = 'COLLEZ_ICI_L_IDENTIFIANT_DU_FICHIER';
+
+/* ----------------------------------------------------------------------
+   Rien à modifier en dessous
+   ---------------------------------------------------------------------- */
+
+var ONGLET_MODIFICATIONS = 'modifications';
+var ONGLET_EDITEURS = 'Éditeurs';
+var ONGLET_JOURNAL = 'journal';
+var JEUX = ['communications', 'flotte', 'organigramme', 'faq', 'documents', 'reunions'];
+/* Une cellule de feuille Google tient 50 000 caractères : un élément plus
+   long (une communication riche, une fiche de porteur) est découpé sur
+   plusieurs colonnes. Chaque morceau commence par « ~ », retiré à la
+   lecture : ainsi la feuille ne prend jamais un morceau pour une formule,
+   un nombre ou une date. */
+var TRANCHE = 40000;
+var MARQUE = '~';
+var EN_TETE = ['jeu', 'cle', 'type', 'id', 'op', 'le', 'par', 'donnees'];
+
+/* ======================================================================
+   1. Servir le site
+   ====================================================================== */
+
+function doGet() {
+  var html = DriveApp.getFileById(ID_FICHIER_SITE).getBlob().getDataAsString('UTF-8');
+  return HtmlService.createHtmlOutput(html)
+    .setTitle('ETII Hub')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    // Permet d'intégrer le site dans une page Google Sites.
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+/* ======================================================================
+   2. Ce que le site appelle (google.script.run)
+   ====================================================================== */
+
+/**
+ * Au chargement de chaque page : qui est connecté, peut-il modifier, et
+ * toutes les modifications, jeu par jeu.
+ */
+function etiiDemarrer() {
+  var email = emailConnecte_();
+  return {
+    email: email,
+    peutModifier: peutModifier_(email),
+    modifications: lireModifications_()
+  };
+}
+
+/**
+ * Enregistre un élément ajouté, modifié ou supprimé.
+ * @param {string} jeu    communications, flotte, organigramme, faq, documents, reunions
+ * @param {Object} modif  { type, id, op: 'maj'|'suppr', donnees }
+ * @return {{le: string, par: string}}
+ */
+function etiiPoser(jeu, modif) {
+  var email = emailConnecte_();
+  if (!peutModifier_(email)) throw new Error('NON_AUTORISE');
+  verifierJeu_(jeu);
+  if (!modif || typeof modif !== 'object') throw new Error('Modification illisible.');
+  var type = String(modif.type || '').trim();
+  var id = String(modif.id || '').trim();
+  var op = modif.op === 'suppr' ? 'suppr' : (modif.op === 'maj' ? 'maj' : '');
+  if (!type || !id || !op) throw new Error('Modification illisible.');
+  var donnees = op === 'maj' ? JSON.stringify(modif.donnees || {}) : '';
+  var le = new Date().toISOString();
+
+  var verrou = LockService.getScriptLock();
+  verrou.waitLock(20000);
+  try {
+    var feuille = onglet_(ONGLET_MODIFICATIONS, EN_TETE);
+    var cle = type + '~' + id;
+    var ligne = trouverLigne_(feuille, jeu, cle);
+    var valeurs = [jeu, cle, type, id, op, le, email].concat(decouper_(donnees));
+    if (ligne) {
+      // L'ancienne version peut avoir occupé plus de colonnes : on les vide.
+      var largeur = Math.max(feuille.getLastColumn(), valeurs.length);
+      feuille.getRange(ligne, 1, 1, largeur).clearContent();
+      feuille.getRange(ligne, 1, 1, valeurs.length).setValues([valeurs]);
+    } else {
+      feuille.appendRow(valeurs);
+    }
+    onglet_(ONGLET_JOURNAL, ['le', 'par', 'jeu', 'type', 'id', 'op', 'titre'])
+      .appendRow([le, email, jeu, type, id, op, titreDe_(modif.donnees)]);
+  } finally {
+    verrou.releaseLock();
+  }
+  return { le: le, par: email };
+}
+
+/**
+ * Annule une modification : l'élément redevient celui du fichier d'origine.
+ */
+function etiiRetirer(jeu, type, id) {
+  var email = emailConnecte_();
+  if (!peutModifier_(email)) throw new Error('NON_AUTORISE');
+  verifierJeu_(jeu);
+  var cle = String(type || '').trim() + '~' + String(id || '').trim();
+  var verrou = LockService.getScriptLock();
+  verrou.waitLock(20000);
+  try {
+    var feuille = onglet_(ONGLET_MODIFICATIONS, EN_TETE);
+    var ligne = trouverLigne_(feuille, jeu, cle);
+    if (ligne) feuille.deleteRow(ligne);
+    onglet_(ONGLET_JOURNAL, ['le', 'par', 'jeu', 'type', 'id', 'op', 'titre'])
+      .appendRow([new Date().toISOString(), email, jeu, type, id, 'annulation', '']);
+  } finally {
+    verrou.releaseLock();
+  }
+  return { ok: true };
+}
+
+/* ======================================================================
+   3. Mise en place — à exécuter UNE fois depuis l'éditeur (▶ Exécuter)
+   ====================================================================== */
+
+/**
+ * Crée les onglets, s'inscrit comme premier éditeur et vérifie que le
+ * fichier du site est lisible. Le journal d'exécution dit ce qui a été fait.
+ */
+function installer() {
+  PropertiesService.getScriptProperties().setProperty('ID_CLASSEUR', SpreadsheetApp.getActiveSpreadsheet().getId());
+  onglet_(ONGLET_MODIFICATIONS, EN_TETE);
+  onglet_(ONGLET_JOURNAL, ['le', 'par', 'jeu', 'type', 'id', 'op', 'titre']);
+  var editeurs = onglet_(ONGLET_EDITEURS, ['adresse', 'nom (facultatif)']);
+  var moi = Session.getEffectiveUser().getEmail();
+  if (moi && listeEditeurs_().indexOf(moi.toLowerCase()) === -1) editeurs.appendRow([moi, 'propriétaire']);
+  var fichier = DriveApp.getFileById(ID_FICHIER_SITE);
+  Logger.log('Onglets prêts. Premier éditeur : ' + moi);
+  Logger.log('Fichier du site trouvé : ' + fichier.getName() + ' (' + Math.round(fichier.getSize() / 1024) + ' Ko).');
+}
+
+/* ======================================================================
+   4. Outils internes (le « _ » final les rend invisibles depuis le site)
+   ====================================================================== */
+
+function emailConnecte_() {
+  var email = '';
+  try { email = Session.getActiveUser().getEmail() || ''; } catch (e) { email = ''; }
+  return String(email).trim().toLowerCase();
+}
+
+function peutModifier_(email) {
+  if (!email) return false;
+  var proprietaire = String(Session.getEffectiveUser().getEmail() || '').toLowerCase();
+  if (email === proprietaire) return true;
+  return listeEditeurs_().indexOf(email) !== -1;
+}
+
+function listeEditeurs_() {
+  var feuille = classeur_().getSheetByName(ONGLET_EDITEURS);
+  if (!feuille || feuille.getLastRow() < 2) return [];
+  return feuille.getRange(2, 1, feuille.getLastRow() - 1, 1).getValues()
+    .map(function (l) { return String(l[0] || '').trim().toLowerCase(); })
+    .filter(function (a) { return a.indexOf('@') > 0; });
+}
+
+function lireModifications_() {
+  var resultat = {};
+  JEUX.forEach(function (j) { resultat[j] = []; });
+  var feuille = classeur_().getSheetByName(ONGLET_MODIFICATIONS);
+  if (!feuille || feuille.getLastRow() < 2) return resultat;
+  var lignes = feuille.getRange(2, 1, feuille.getLastRow() - 1, feuille.getLastColumn()).getValues();
+  lignes.forEach(function (l) {
+    var jeu = String(l[0] || '');
+    if (!resultat[jeu]) return;
+    var op = String(l[4] || '');
+    var donnees = null;
+    if (op === 'maj') {
+      var json = l.slice(7).map(function (c) {
+        var t = String(c === null || c === undefined ? '' : c);
+        return t.charAt(0) === MARQUE ? t.substring(1) : t;
+      }).join('');
+      try { donnees = JSON.parse(json); } catch (e) { return; }
+    }
+    resultat[jeu].push({ type: String(l[2]), id: String(l[3]), op: op, donnees: donnees, le: String(l[5] || ''), par: String(l[6] || '') });
+  });
+  return resultat;
+}
+
+function trouverLigne_(feuille, jeu, cle) {
+  var n = feuille.getLastRow();
+  if (n < 2) return 0;
+  var valeurs = feuille.getRange(2, 1, n - 1, 2).getValues();
+  for (var i = 0; i < valeurs.length; i++) {
+    if (String(valeurs[i][0]) === jeu && String(valeurs[i][1]) === cle) return i + 2;
+  }
+  return 0;
+}
+
+function decouper_(texte) {
+  if (!texte) return [''];
+  var morceaux = [];
+  for (var i = 0; i < texte.length; i += TRANCHE) morceaux.push(MARQUE + texte.substring(i, i + TRANCHE));
+  return morceaux;
+}
+
+function titreDe_(donnees) {
+  if (!donnees || typeof donnees !== 'object') return '';
+  return String(donnees.titre || donnees.nom || donnees.question || donnees.code || donnees.texte || '').slice(0, 120);
+}
+
+function verifierJeu_(jeu) {
+  if (JEUX.indexOf(jeu) === -1) throw new Error('Jeu de données inconnu : ' + jeu);
+}
+
+/* La feuille où vit ce script. Son identifiant est retenu par
+   installer() : l'application web la retrouve ainsi à coup sûr. */
+function classeur_() {
+  var id = PropertiesService.getScriptProperties().getProperty('ID_CLASSEUR');
+  return id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActiveSpreadsheet();
+}
+
+function onglet_(nom, entete) {
+  var classeur = classeur_();
+  var feuille = classeur.getSheetByName(nom);
+  if (!feuille) {
+    feuille = classeur.insertSheet(nom);
+    feuille.getRange(1, 1, 1, entete.length).setValues([entete]).setFontWeight('bold');
+    feuille.setFrozenRows(1);
+    // Tout en texte brut : un identifiant « 007 » reste « 007 », une date
+    // reste la chaîne écrite par le site.
+    if (nom === ONGLET_MODIFICATIONS) feuille.getRange(1, 1, feuille.getMaxRows(), feuille.getMaxColumns()).setNumberFormat('@');
+  }
+  return feuille;
+}
+
+================================================================================
+ FIN
+================================================================================

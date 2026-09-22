@@ -24,7 +24,8 @@
 import { el, frag, monter, debounce, deleguer, initTheme, initNav, suivreSommaire, ouvrirModale, stockage, toast, annoncer } from './ui.js';
 import { installerEdition, barreEdition, boutonAjouter } from './edition.js';
 import { abonnerModifications, supprimerElement, aplatirOrganigramme } from './modifications.js';
-import { modifierCommunication, supprimerDossier, ouvrirAlertes, ouvrirPersonne, ouvrirSquad, ouvrirDocument, ouvrirQuestion } from './edition-contenus.js';
+import { modifierCommunication, supprimerDossier, ouvrirAlertes, ouvrirPersonne, ouvrirSquad, ouvrirDocument, ouvrirQuestion,
+         ouvrirReferent, retirerReferent, ouvrirAffectation, affecter } from './edition-contenus.js';
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
 import { kiosque, dossiersDepuisCommunications, noteOrigine } from './kiosque.js';
 import { lecteur } from './lecteur.js';
@@ -296,6 +297,7 @@ async function chargerAnnuaire(code) {
     squads: squadsDuBloc(bloc),
     membres,
     expertises: expertises.filter((e) => e.referents.length),
+    toutesCompetences: expertises.map((e) => e.nom),
     nbCompetences: expertises.length,
     nbReferents,
     parPorteur: gensParPorteur(bloc, laFlotte),
@@ -305,7 +307,9 @@ async function chargerAnnuaire(code) {
 
 /* Une personne, en une ligne : son nom, son rôle, et — en mode édition —
    de quoi la modifier. `placement` dit où elle est dans l'organigramme,
-   pour le formulaire. */
+   pour le formulaire. Selon le volet, « retirer » n'a pas le même sens :
+   de l'organigramme, du rôle de référent pour une compétence, ou d'un
+   porteur. */
 function lignePersonne(pole, m, personne, placement, options) {
   const o = options || {};
   const cle = normaliser([personne.nom, personne.poste, porteurDe(personne), o.competence || '']
@@ -317,10 +321,20 @@ function lignePersonne(pole, m, personne, placement, options) {
       estLead(personne) && o.badgeLead !== false ? el('span', { class: 'annuaire__badge' }, 'lead') : null),
     o.edition === false ? null : barreEdition({
       classe: 'barre-edition--compacte',
-      quoi: texte(personne.nom),
+      quoi: texte(personne.nom) + (o.edition === 'referent' ? ', référent ' + o.competence : (o.edition === 'porteur' ? ', sur le ' + o.porteur : '')),
       surModifier: (b) => ouvrirPersonne({ existant: Object.assign({}, personne, placement), organigramme: m.organigramme, flotte: m.flotte, declencheur: b }),
-      surSupprimer: () => retirer('organigramme', 'personne', texte(personne.id), '« ' + texte(personne.nom) + ' » ne figure plus dans l’organigramme.')
+      surSupprimer: o.edition === 'referent'
+        ? () => agir(retirerReferent(Object.assign({}, personne, placement), o.competence), '« ' + texte(personne.nom) + ' » n’est plus référent en ' + o.competence + '.')
+        : o.edition === 'porteur'
+          ? () => agir(affecter(Object.assign({}, personne, placement), ''), '« ' + texte(personne.nom) + ' » ne suit plus le ' + o.porteur + '.')
+          : () => retirer('organigramme', 'personne', texte(personne.id), '« ' + texte(personne.nom) + ' » ne figure plus dans l’organigramme.')
     }));
+}
+
+/* Une modification de l'annuaire ; le toast dit ce qui s'est passé. */
+async function agir(promesse, message) {
+  try { await promesse; toast(message, 'succes'); }
+  catch (e) { toast((e && e.message) || 'La modification a échoué.', 'erreur'); }
 }
 
 /** Retire un élément ; le toast dit ce qui s'est passé, dans les deux cas. */
@@ -382,22 +396,28 @@ function rendreAnnuaire(pole, m, conteneur) {
     boutonAjouter('Une personne', (b) => ouvrirPersonne({ organigramme: m.organigramme, flotte: m.flotte, pole: code, squad: m.squads.length ? m.squads[0].id : '', declencheur: b })),
     boutonAjouter('Une squad', (b) => ouvrirSquad({ pole: code, declencheur: b })));
 
-  /* Les référents : une compétence, ses référents. */
+  /* Les référents : une compétence, ses référents. En mode édition, on en
+     nomme un de plus, ou on retire le titre à quelqu'un. */
+  const competencesConnues = m.toutesCompetences;
   const groupesRef = m.expertises.map((e) => groupeAnnuaire(e.nom, e.referents.length,
-    e.referents.map((p) => lignePersonne(pole, m, p, placementDe(m, p), { competence: e.nom, edition: false }))));
+    e.referents.map((p) => lignePersonne(pole, m, p, placementDe(m, p), { competence: e.nom, edition: 'referent' })),
+    boutonAjouter('Un référent', (b) => ouvrirReferent({ organigramme: m.organigramme, pole: code, competence: e.nom, competences: competencesConnues, declencheur: b }))));
+  const piedRef = el('div', { class: 'annuaire__ajouts edition-seulement' },
+    boutonAjouter('Nommer un référent', (b) => ouvrirReferent({ organigramme: m.organigramme, pole: code, competences: competencesConnues, declencheur: b })));
 
-  /* Par porteur : qui travaille sur quoi. */
+  /* Par porteur : qui travaille sur quoi. En mode édition, on y affecte
+     quelqu'un, ou on l'en retire. */
   const groupesPorteur = m.parPorteur.map((g) => groupeAnnuaire(
     frag(el('a', { class: 'annuaire__porteur', href: 'index.html#porteur=' + encodeURIComponent(g.code) }, g.code),
       g.segment ? el('span', { class: 'annuaire__segment' }, ' · ' + g.segment) : null),
     g.gens.length,
-    g.gens.map((p) => lignePersonne(pole, m, p, placementDe(m, p), { edition: false })),
-    null,
+    g.gens.map((p) => lignePersonne(pole, m, p, placementDe(m, p), { edition: 'porteur', porteur: g.code })),
+    boutonAjouter('Quelqu’un', (b) => ouvrirAffectation({ organigramme: m.organigramme, pole: code, code: g.code, declencheur: b })),
     'Contact à renseigner'));
 
   const volets = el('div', { class: 'annuaire__volets' },
     volet(prefixe + '-organigramme', 'Organigramme', pluriel(m.membres.length, 'personne') + ' · ' + pluriel(m.squads.length, 'squad'), groupesOrga, piedOrga),
-    volet(prefixe + '-referents', 'Référents', 'La personne à solliciter en premier, par compétence', groupesRef),
+    volet(prefixe + '-referents', 'Référents', 'La personne à solliciter en premier, par compétence', groupesRef, piedRef),
     volet(prefixe + '-porteurs', 'Par porteur', 'Qui travaille sur quel appareil', groupesPorteur));
 
   /* Un seul champ filtre les trois volets. */
@@ -499,8 +519,10 @@ function rendreDocuments(pole, m, conteneur) {
               ? el('a', { href: lienFiche(pole, porteur) }, texte(porteur.nom))
               : (texte(d.porteur) || 'Porteur à renseigner')),
             el('time', { class: 'pole-doc__date', datetime: texte(d.maj) || null }, dateCourte(d.maj) || 'date à renseigner'),
+            /* Une ligne de document a la place : « Modifier » et
+               « Supprimer » s'y écrivent en toutes lettres. */
             barreEdition({
-              classe: 'barre-edition--compacte',
+              classe: 'pole-doc__edition',
               quoi: texte(d.titre),
               surModifier: (b) => ouvrirDocument({ existant: d, documents: m.docs, personnes: m.tousMembres, pole: pole.cle, declencheur: b }),
               surSupprimer: () => retirer('documents', 'document', texte(d.id), 'Document retiré du fonds.')
@@ -631,8 +653,6 @@ function rendreFaq(pole, groupes, conteneur) {
    ------------------------------------------------------------------------- */
 
 function rendreEntete(pole) {
-  const libelle = document.getElementById('pole-libelle');
-  if (libelle) libelle.textContent = 'Pôle · ' + pole.metaphore;
   const titre = document.getElementById('pole-titre');
   if (titre) titre.textContent = pole.cle;
   try { document.title = pole.cle + ' — ' + pole.metaphore + ' — ETII Hub'; } catch (_e) { /* ignoré */ }

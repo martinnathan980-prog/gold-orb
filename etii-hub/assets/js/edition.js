@@ -61,7 +61,10 @@ function appliquer(actif, magasin, bouton) {
         el('strong', {}, 'Mode édition. '),
         magasin.mode === 'partage'
           ? 'Ce que vous ajoutez, modifiez ou supprimez est enregistré pour tous les lecteurs du site.'
-          : 'Ce que vous modifiez est enregistré dans ce navigateur seulement : ouvrez le site depuis son lien publié pour le partager.'));
+          : 'Ce que vous modifiez est enregistré dans ce navigateur seulement : ouvrez le site depuis son lien publié pour le partager.',
+        /* Quand l'hôte dit qui est connecté (Google), on le montre : on
+           sait sous quel nom partent les modifications. */
+        magasin.identite ? el('span', { class: 'edition-bandeau__identite' }, ' Connecté : ' + magasin.identite + '.') : null));
     const entete = document.querySelector('.site-entete');
     if (entete && entete.parentNode) entete.parentNode.insertBefore(bandeau, entete.nextSibling);
     else document.body.prepend(bandeau);
@@ -190,6 +193,7 @@ function construireChamp(desc, valeurs) {
   const decrit = [aide ? id + '-aide' : null, id + '-erreur'].filter(Boolean).join(' ');
   const commun = { id, class: 'champ__controle', 'aria-describedby': decrit, required: desc.requis ? true : null, placeholder: desc.placeholder || null };
   let controle;
+  let propositions = null;
 
   switch (desc.type) {
     case 'long': {
@@ -275,11 +279,22 @@ function construireChamp(desc, valeurs) {
     }
     default: {
       const type = desc.type === 'date' ? 'date' : (desc.type === 'url' ? 'url' : 'text');
-      controle = el('input', Object.assign({ type, autocomplete: 'off', inputmode: desc.type === 'nombre' ? 'decimal' : null }, commun));
+      /* Des suggestions (les compétences déjà citées, par exemple) : une
+         liste proposée à la frappe, sans interdire une valeur neuve. */
+      const suggestions = Array.isArray(desc.suggestions) ? desc.suggestions.map(texte).filter(Boolean) : [];
+      controle = el('input', Object.assign({ type, autocomplete: 'off', inputmode: desc.type === 'nombre' ? 'decimal' : null,
+        list: suggestions.length ? id + '-suggestions' : null }, commun));
       controle.value = texte(brut);
+      if (suggestions.length) {
+        propositions = el('datalist', { id: id + '-suggestions' }, [...new Set(suggestions)].map((v) => el('option', { value: v })));
+      }
       controle.addEventListener('input', () => {
         const v = controle.value;
-        ecrireChemin(valeurs, desc.cle, desc.type === 'nombre' && v.trim() !== '' && !Number.isNaN(Number(v.replace(',', '.'))) ? Number(v.replace(',', '.')) : v);
+        /* « nombre » et « valeur » : un nombre saisi (« 6050 », « 13,4 »)
+           est rangé en nombre — la fiche l'écrit alors à la française et
+           en fait un chiffre clé ; une phrase reste une phrase. */
+        const numerique = (desc.type === 'nombre' || desc.type === 'valeur') && /^\s*-?\d+(?:[.,]\d+)?\s*$/.test(v);
+        ecrireChemin(valeurs, desc.cle, numerique ? Number(v.replace(',', '.')) : v);
       });
     }
   }
@@ -296,7 +311,7 @@ function construireChamp(desc, valeurs) {
     return !message;
   };
   return {
-    noeud: el('div', { class: ['champ', desc.large ? 'formulaire-edition__large' : null] }, etiquette, controle, aide, erreur),
+    noeud: el('div', { class: ['champ', desc.large ? 'formulaire-edition__large' : null] }, etiquette, controle, propositions, aide, erreur),
     valider,
     controle
   };
@@ -309,8 +324,9 @@ function construireChamp(desc, valeurs) {
  * @param {string} o.titre
  * @param {Array<object>} o.champs     descripteurs : { cle, libelle, type,
  *        requis, aide, placeholder, options, lignes, large, valider, champs }
- *        types : texte · long · date · nombre · url · choix · plusieurs ·
- *        liste (virgules) · lignes (une par ligne) · competences · groupe
+ *        types : texte · long · date · nombre · valeur (nombre ou phrase) ·
+ *        url · choix · plusieurs · liste (virgules) · lignes (une par ligne) ·
+ *        competences · groupe
  * @param {object} [o.valeurs]         l'élément à modifier (copié, jamais muté)
  * @param {(valeurs:object)=>Promise} o.surEnregistrer
  * @param {()=>Promise} [o.surSupprimer]   absent : pas de bouton Supprimer

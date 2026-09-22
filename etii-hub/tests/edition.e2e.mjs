@@ -419,6 +419,90 @@ t('la page s’affiche sur ses fichiers', (await page.locator('#zone-communicati
 t('sans bouton « Modifier »', (await page.locator('.bascule-edition').count()) === 0);
 await page.close();
 
+/* =========================================================================
+   4. Servi par Google Apps Script (serveur simulé)
+   ========================================================================= */
+
+/* Un google.script.run de poche, qui reprend le contrat de
+   tools/apps-script/site/Code.gs : etiiDemarrer, etiiPoser, etiiRetirer,
+   et le refus « NON_AUTORISE » d'une adresse absente des éditeurs. La
+   base vit dans le localStorage du contexte. */
+const fauxGoogle = (reglages) => {
+  if (window !== window.top) return;
+  const CLE = 'faux-google:base';
+  const lire = () => { try { return JSON.parse(localStorage.getItem(CLE) || '{}'); } catch (_e) { return {}; } };
+  const ecrire = (b) => localStorage.setItem(CLE, JSON.stringify(b));
+  window.__APPELS_GOOGLE = [];
+  const serveur = {
+    etiiDemarrer() {
+      const b = lire();
+      const modifications = {};
+      for (const [jeu, table] of Object.entries(b)) modifications[jeu] = Object.values(table);
+      return { email: reglages.email, peutModifier: reglages.peut, modifications };
+    },
+    etiiPoser(jeu, modif) {
+      if (!reglages.peut) throw new Error('NON_AUTORISE');
+      const b = lire();
+      (b[jeu] = b[jeu] || {})[modif.type + '~' + modif.id] = Object.assign({}, modif, { par: reglages.email });
+      ecrire(b);
+      return { le: new Date().toISOString(), par: reglages.email };
+    },
+    etiiRetirer(jeu, type, id) {
+      if (!reglages.peut) throw new Error('NON_AUTORISE');
+      const b = lire();
+      if (b[jeu]) delete b[jeu][type + '~' + id];
+      ecrire(b);
+      return { ok: true };
+    }
+  };
+  const coureur = (succes, echec) => new Proxy({}, {
+    get(_c, nom) {
+      if (nom === 'withSuccessHandler') return (f) => coureur(f, echec);
+      if (nom === 'withFailureHandler') return (f) => coureur(succes, f);
+      return (...args) => {
+        window.__APPELS_GOOGLE.push(nom);
+        setTimeout(() => {
+          try { const r = serveur[nom](...JSON.parse(JSON.stringify(args))); if (succes) succes(r); }
+          catch (e) { if (echec) echec(e); }
+        }, 60);
+      };
+    }
+  });
+  window.google = { script: { run: coureur(null, null) } };
+};
+const scriptGoogle = (reglages) => 'const fauxGoogle = ' + fauxGoogle.toString() + ';\nfauxGoogle(' + JSON.stringify(reglages) + ');';
+
+console.log('\n== Servi par Google (serveur simulé) ==');
+page = await nouvellePage(scriptGoogle({ email: 'prenom.nom@exemple.fr', peut: true }));
+o = outils(page);
+await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
+await o.attendre(900);
+t('un éditeur voit le bouton « Modifier »', (await page.locator('.bascule-edition').count()) === 1);
+await o.basculer();
+t('le bandeau dit qui est connecté, et que tout le site verra les modifications',
+  /Connecté : prenom\.nom@exemple\.fr/.test(await page.locator('.edition-bandeau').innerText())
+  && /pour tous les lecteurs/.test(await page.locator('.edition-bandeau').innerText()));
+await o.centrer(page.locator('#zone-agenda .edition-ajout'));
+await page.locator('#zone-agenda .edition-ajout').click();
+await o.remplir('Titre', 'Rendez-vous servi par Google');
+await o.remplir('Date', jourIso(3));
+await o.enregistrer();
+const baseGoogle = await page.evaluate(() => JSON.parse(localStorage.getItem('faux-google:base') || '{}'));
+const docsGoogle = Object.values(baseGoogle.communications || {});
+t('l’écriture part au serveur, signée de l’adresse connectée',
+  docsGoogle.length === 1 && docsGoogle[0].type === 'agenda' && docsGoogle[0].par === 'prenom.nom@exemple.fr', JSON.stringify(docsGoogle).slice(0, 160));
+t('et rien dans ce navigateur', await page.evaluate(() => localStorage.getItem('etii:modifications:communications') === null));
+t('le rendez-vous s’affiche', (await page.locator('#zone-agenda .agenda__rdv', { hasText: 'servi par Google' }).count()) === 1);
+t('un seul appel au démarrage pour tous les jeux', await page.evaluate(() => window.__APPELS_GOOGLE.filter((n) => n === 'etiiDemarrer').length === 1));
+await page.close();
+
+page = await nouvellePage(scriptGoogle({ email: 'lecteur@exemple.fr', peut: false }));
+o = outils(page);
+await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
+await o.attendre(900);
+t('un lecteur n’a pas de bouton « Modifier »', (await page.locator('.bascule-edition').count()) === 0);
+await page.close();
+
 t('aucune erreur JavaScript', err.length === 0, err.slice(0, 3).join(' | '));
 console.log(`\n  ${ok} réussis, ${ko} échoués`);
 await nav.close();

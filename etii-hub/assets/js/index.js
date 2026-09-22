@@ -80,7 +80,7 @@ function rendreCommunication(donnees, conteneur) {
 function rendreAgenda(donnees, conteneur) {
   monter(conteneur, agenda(donnees, {
     pole: 'ETII',
-    limite: 6,
+    limite: 8,
     surAjouter: (b) => ouvrirRendezVous({ pole: 'ETII', declencheur: b }),
     surModifier: (entree, b) => ouvrirRendezVous({ existant: entree, declencheur: b }),
     surSupprimer: (entree) => supprimerElement('communications', 'agenda', entree.id)

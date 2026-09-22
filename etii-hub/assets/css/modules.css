@@ -1057,48 +1057,81 @@ ol.kiosque__liste {
    corps lisible et interligne aéré. */
 .porteurs__resume { max-width: none; font-size: var(--texte-lg); line-height: 1.6; }
 
-/* --- Le bandeau d'identité : les essentiels, en cases -------------------- */
+/* --- La carte d'identité ------------------------------------------------ */
 
-.porteurs__bandeau {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
-  gap: var(--e-4) var(--e-6);
-  margin: 0;
-  padding: var(--e-4) var(--e-5);
+/* Les mêmes lignes que les groupes, sur deux colonnes quand la place le
+   permet, dans un cadre à peine teinté : c'est le rappel, avant le
+   détail. */
+.porteurs__identite {
+  padding: var(--e-4) var(--e-6);
   background-color: var(--fond-enfonce);
   border: 1px solid var(--bordure-douce);
-  border-radius: var(--rayon-md);
+  border-radius: var(--rayon-lg);
 }
-
-.porteurs__bandeau dt {
-  margin-block-end: 2px;
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--texte-faible);
-}
-
-.porteurs__bandeau dd { margin: 0; font-size: var(--texte-md); line-height: 1.45; }
-
-/* Une donnée longue garde tout son texte : en paragraphe, sur la largeur. */
-.porteurs__bandeau-item--long { grid-column: 1 / -1; }
-.porteurs__bandeau-item--long dd { max-width: var(--largeur-texte); line-height: var(--interligne); }
+.porteurs__lignes--identite { columns: 2 22rem; column-gap: var(--e-10); }
+.porteurs__lignes--identite .porteurs__ligne { break-inside: avoid; }
+/* En colonnes, chaque ligne garde son filet : la dernière de chaque
+   colonne n'est pas connue du CSS. */
+.porteurs__lignes--identite .porteurs__ligne:last-child { border-bottom: 1px solid var(--bordure-douce); }
 
 .porteurs__poles { display: flex; flex-wrap: wrap; gap: var(--e-2) var(--e-3); }
+.porteurs__cellule.porteurs__poles { flex-direction: row; align-items: baseline; }
 
 /* --- Les onglets et leurs groupes ---------------------------------------- */
 
-.porteurs__groupes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr)); gap: var(--e-6) var(--e-10); }
+.porteurs__panneau { display: flex; flex-direction: column; gap: var(--e-5); }
 
-/* Le titre de groupe (Motorisation, Masses…) : en Newsreader, plus
-   marqué, avec un court trait terre cuite dessous — c'est lui qui
-   découpe la lecture, pas un filet sur toute la largeur. */
+/* Les chiffres clés : des tuiles, le nombre en grand. */
+.porteurs__chiffres {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(8.5rem, 100%), 1fr));
+  gap: var(--e-3);
+  margin: 0;
+}
+.porteurs__chiffre {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: var(--e-1);
+  padding: var(--e-3) var(--e-4);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-block-start: 3px solid var(--chaud);
+  border-radius: var(--rayon-md);
+}
+.porteurs__chiffre-libelle {
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+.porteurs__chiffre-valeur { margin: 0; line-height: 1.1; color: var(--texte); }
+.porteurs__chiffre-nombre { font-family: var(--police-titre); font-size: var(--texte-2xl); font-variant-numeric: tabular-nums; }
+.porteurs__chiffre-unite { font-family: var(--police-mono); font-size: var(--texte-sm); color: var(--texte-doux); }
+
+/* Les groupes : des cartes, deux par rangée sur un écran large. */
+.porteurs__groupes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr));
+  gap: var(--e-4);
+  align-items: start;
+}
+.porteurs__groupe {
+  padding: var(--e-4) var(--e-5) var(--e-2);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
+}
+
+/* Le titre de groupe (Motorisation, Masses…) : en Newsreader, avec un
+   court trait terre cuite dessous. */
 .porteurs__groupe-titre {
-  margin: 0 0 var(--e-3);
+  margin: 0 0 var(--e-2);
   padding-block-end: var(--e-2);
   font-family: var(--police-titre);
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: var(--graisse-moyenne);
   line-height: 1.2;
   color: var(--texte);
@@ -1116,11 +1149,11 @@ ol.kiosque__liste {
 
 .porteurs__lignes { margin: 0; }
 
-/* Une ligne : le libellé à gauche, la valeur à droite, un filet léger
-   entre deux lignes. */
+/* Une ligne : le libellé dans une colonne étroite, gris, en petites
+   capitales ; la valeur à côté ; un filet léger entre deux lignes. */
 .porteurs__ligne {
   display: grid;
-  grid-template-columns: minmax(8rem, 13rem) 1fr;
+  grid-template-columns: minmax(7.5rem, 11rem) minmax(0, 1fr);
   gap: var(--e-1) var(--e-4);
   align-items: baseline;
   padding-block: var(--e-2);
@@ -1128,73 +1161,44 @@ ol.kiosque__liste {
 }
 .porteurs__ligne:last-child { border-bottom: 0; }
 
-/* Le libellé : Plex gras, encre — c'est lui qu'on cherche du regard. */
 .porteurs__libelle {
+  min-inline-size: 0;
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.05em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+
+/* La valeur : l'essentiel en corps normal (un chiffre en mono), sa
+   précision dessous, plus petite et plus grise. */
+.porteurs__cellule {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  min-inline-size: 0;
-  font-size: var(--texte-sm);
-  line-height: 1.5;
-  color: var(--texte-doux);
-}
-.porteurs__libelle-texte { font-weight: var(--graisse-forte); color: var(--texte); }
-
-/* La valeur : en regular, jamais en gras, pour que le libellé reste le
-   repère ; un chiffre passe en mono. */
-.porteurs__cellule {
   margin: 0;
   min-inline-size: 0;
   font-size: var(--texte-md);
-  font-weight: var(--graisse-normale);
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--texte);
 }
-
 .porteurs__valeur { overflow-wrap: anywhere; }
-
-/* Un chiffre se lit en mono et tabulaire ; sa précision en retrait. */
 .porteurs__valeur--chiffre { font-family: var(--police-mono); font-size: var(--texte-sm); font-variant-numeric: tabular-nums; }
-.porteurs__complement { font-family: var(--police); font-size: var(--texte-sm); font-weight: var(--graisse-normale); color: var(--texte-doux); }
+.porteurs__complement { font-size: var(--texte-sm); line-height: 1.45; color: var(--texte-doux); }
 .porteurs__manquant { font-style: italic; color: var(--texte-faible); font-family: var(--police); font-weight: var(--graisse-normale); }
 
-/* La preuve (confiance, source) : petite, grise, à droite, plus nette au
-   survol de la ligne — la valeur se lit d'abord. */
-.porteurs__preuve {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--e-2);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  line-height: 1.4;
-  color: var(--texte-faible);
-  opacity: 0.75;
-  transition: opacity var(--duree-rapide) var(--courbe);
-}
-.porteurs__ligne:hover .porteurs__preuve,
-.porteurs__ligne:focus-within .porteurs__preuve { opacity: 1; }
-
-.porteurs__conf { cursor: help; }
-.porteurs__source { color: var(--texte-faible); text-decoration: none; }
-.porteurs__source:hover, .porteurs__source:focus-visible { color: var(--texte-accent); text-decoration: underline; }
-
 @media (max-width: 40rem) {
-  .porteurs__ligne { grid-template-columns: 1fr; gap: 0; }
-  .porteurs__libelle { flex-direction: row; flex-wrap: wrap; justify-content: space-between; column-gap: var(--e-3); }
+  .porteurs__ligne { grid-template-columns: 1fr; gap: 2px; }
+  .porteurs__identite { padding: var(--e-3) var(--e-4); }
 }
 
-/* --- Insolite, sources, crédits, équipe --------------------------------- */
+/* --- Insolite, crédits, équipe ------------------------------------------ */
 
 .porteurs__insolites { display: grid; gap: var(--e-3); margin: 0; padding: 0; list-style: none; max-width: var(--largeur-texte); }
 .porteurs__insolite { display: flex; gap: var(--e-3); font-size: var(--texte-sm); line-height: var(--interligne); }
 .porteurs__insolite-glyphe { flex: 0 0 auto; color: var(--chaud); }
 
-.porteurs__legende { font-size: var(--texte-xs); margin-block-end: var(--e-3); }
-.porteurs__sources { display: grid; gap: var(--e-2); margin: 0; padding: 0; list-style: none; font-size: var(--texte-sm); }
-.porteurs__sources li { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--e-2); min-inline-size: 0; }
-.porteurs__sources .porteurs__source { color: var(--texte-accent); }
-.porteurs__source-url { font-size: var(--texte-xs); color: var(--texte-faible); overflow-wrap: anywhere; }
 
 .porteurs__credit { font-size: var(--texte-sm); line-height: var(--interligne); color: var(--texte-doux); }
 .porteurs__credit-mot { color: var(--texte-faible); }
@@ -1223,14 +1227,12 @@ ol.kiosque__liste {
 .porteurs__personne-poste { color: var(--texte-doux); }
 .porteurs__personne-pole, .porteurs__document-meta { font-size: var(--texte-xs); color: var(--texte-faible); }
 
-/* --- Les onglets de la fiche et la confiance ----------------------------- */
+/* --- Les onglets de la fiche --------------------------------------------- */
 
 .porteurs__onglets { gap: var(--e-5); }
 .porteurs__onglets .onglets__liste { flex-wrap: wrap; }
 .porteurs__onglets .onglets__panneau { padding-block-start: var(--e-1); }
 
-.porteurs__conf--haute { color: var(--statut-succes); }
-.porteurs__conf--moyenne { color: var(--statut-alerte); }
 
 
 /* -------------------------------------------------------------------------
@@ -3031,6 +3033,8 @@ ol.liseuse__bloc-liste {
 .annuaire__segment { font-weight: var(--graisse-normale); font-size: var(--texte-xs); color: var(--texte-doux); }
 
 .annuaire__ajouts { display: flex; flex-wrap: wrap; gap: var(--e-2); padding-block-start: var(--e-3); }
+/* « + Un référent », « + Quelqu'un » : au bout de la tête du groupe. */
+.annuaire__groupe-tete .edition-ajout { min-block-size: 1.625rem; padding: 0 var(--e-2); font-size: var(--texte-xs); }
 .annuaire__rien { margin: var(--e-3) 0 0; font-size: var(--texte-sm); color: var(--texte-doux); }
 .annuaire__vide { padding: var(--e-1) var(--e-2); font-size: var(--texte-sm); font-style: italic; color: var(--texte-faible); }
 .annuaire__rien[hidden] { display: none; }
@@ -3154,13 +3158,17 @@ ol.liseuse__bloc-liste {
 }
 
 /* -------------------------------------------------------------------------
-   15 bis. « À venir » (agenda.js) : les prochains rendez-vous
-       Une carte par rendez-vous : le jour en grand à gauche, puis le type,
-       le pôle et l'échéance, le titre, deux lignes de contexte. Le filet
-       de gauche porte la couleur du pôle (terre cuite pour le service).
+   15 bis. « À venir » (agenda.js) : la frise des prochains rendez-vous
+       Écran large : un axe du temps (aujourd'hui, semaines, mois) et une
+       carte par rendez-vous, au-dessus ou au-dessous, reliée à son repère
+       par une tige — agenda.js calcule les positions. Écran étroit : une
+       liste de cartes. Le filet de gauche et le repère portent la couleur
+       du pôle (terre cuite pour tout le service).
    ---------------------------------------------------------------------- */
 
 .agenda { display: flex; flex-direction: column; gap: var(--e-4); }
+
+.agenda__cadre { position: relative; }
 
 .agenda__liste {
   display: grid;
@@ -3173,6 +3181,7 @@ ol.liseuse__bloc-liste {
 
 .agenda__rdv {
   --rdv-teinte: var(--chaud);
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--e-2) var(--e-4);
@@ -3188,11 +3197,6 @@ ol.liseuse__bloc-liste {
 .agenda__rdv[data-pole="ETIIE"] { --rdv-teinte: var(--pole-etiie); }
 .agenda__rdv[data-pole="ETIII"] { --rdv-teinte: var(--pole-etiii); }
 
-@media (prefers-reduced-motion: no-preference) {
-  .agenda__rdv { transition: transform var(--duree-rapide) var(--courbe), box-shadow var(--duree-rapide) var(--courbe); }
-  .agenda__rdv:hover { transform: translateY(-2px); box-shadow: var(--ombre-md); }
-}
-
 .agenda__date {
   display: flex;
   flex-direction: column;
@@ -3202,6 +3206,7 @@ ol.liseuse__bloc-liste {
   border-radius: var(--rayon-md);
   background-color: var(--fond-enfonce);
 }
+.agenda__jour-semaine { font-family: var(--police-mono); font-size: var(--texte-xs); text-transform: uppercase; color: var(--texte-doux); }
 .agenda__jour { font-family: var(--police-titre); font-size: var(--texte-2xl); line-height: 1.05; color: var(--texte); }
 .agenda__mois { font-family: var(--police-mono); font-size: var(--texte-xs); letter-spacing: var(--lettrage-etiquette); text-transform: uppercase; color: var(--texte-doux); }
 
@@ -3241,6 +3246,124 @@ ol.liseuse__bloc-liste {
 
 .agenda__edition { grid-column: 1 / -1; justify-content: flex-end; }
 .agenda__vide, .agenda__suite { margin: 0; color: var(--texte-doux); font-size: var(--texte-sm); }
+
+/* L'axe et les traits n'existent que sur la frise. */
+.agenda__axe:empty, .agenda__traits:empty { display: none; }
+
+/* --- La frise ------------------------------------------------------------ */
+
+.agenda--frise .agenda__liste { display: block; }
+.agenda--frise .agenda__rdv {
+  position: absolute;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--e-2);
+  padding: var(--e-3) var(--e-4) var(--e-3) var(--e-3);
+  z-index: 1;
+}
+.agenda--frise .agenda__rdv:hover, .agenda--frise .agenda__rdv:focus-within { z-index: 2; box-shadow: var(--ombre-md); }
+
+/* La date, en une ligne au-dessus du titre : « JEU. 24 SEPT. ». */
+.agenda--frise .agenda__date {
+  flex-direction: row;
+  align-items: baseline;
+  justify-self: start;
+  gap: var(--e-1);
+  min-inline-size: 0;
+  padding: 2px var(--e-2);
+}
+.agenda--frise .agenda__jour { font-family: var(--police-mono); font-size: var(--texte-xs); font-weight: var(--graisse-forte); line-height: 1.4; }
+.agenda--frise .agenda__titre { font-size: var(--texte-md); }
+.agenda--frise .agenda__meta { gap: var(--e-1) var(--e-2); }
+
+/* L'axe : une ligne, « Aujourd'hui », les semaines dessous, les mois
+   dessus. */
+.agenda--frise .agenda__axe { display: block; position: absolute; inset-inline: 0; pointer-events: none; }
+.agenda__ligne {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  block-size: 2px;
+  margin-block-start: -1px;
+  border-radius: 1px;
+  background: linear-gradient(to right, var(--texte-doux), var(--bordure-forte) 85%, transparent);
+}
+.agenda__semaine {
+  position: absolute;
+  top: 50%;
+  inline-size: 1px;
+  block-size: 8px;
+  background-color: var(--bordure-forte);
+}
+.agenda__semaine-libelle {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  transform: translateX(-50%);
+  font-family: var(--police-mono);
+  font-size: 0.6875rem;
+  color: var(--texte-faible);
+  white-space: nowrap;
+}
+.agenda__mois-axe {
+  position: absolute;
+  bottom: calc(50% + 10px);
+  padding-inline-start: var(--e-1);
+  border-inline-start: 1px solid var(--bordure-forte);
+  font-family: var(--police-mono);
+  font-size: 0.6875rem;
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  white-space: nowrap;
+}
+.agenda__aujourdhui {
+  position: absolute;
+  top: calc(50% - 7px);
+  inline-size: 14px;
+  block-size: 14px;
+  margin-inline-start: -7px;
+  border-radius: var(--rayon-plein);
+  background-color: var(--texte);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--texte) 15%, transparent);
+}
+.agenda__aujourdhui-libelle {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  font-family: var(--police-mono);
+  font-size: 0.6875rem;
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte);
+  white-space: nowrap;
+}
+
+/* Les traits, du repère à la carte : sous les cartes, à la couleur du
+   pôle. */
+.agenda__traits { position: absolute; inset: 0; pointer-events: none; }
+.agenda__traits-dessin { display: block; overflow: visible; }
+.agenda__trait { stroke: var(--chaud); stroke-width: 1.5; stroke-dasharray: 3 3; opacity: 0.8; }
+.agenda__trait[data-pole="ETIIA"] { stroke: var(--pole-etiia); }
+.agenda__trait[data-pole="ETIIE"] { stroke: var(--pole-etiie); }
+.agenda__trait[data-pole="ETIII"] { stroke: var(--pole-etiii); }
+
+/* Le repère sur l'axe : un losange pour un jalon, un rond sinon. */
+.agenda__repere {
+  --rdv-teinte: var(--chaud);
+  position: absolute;
+  top: calc(50% - 7px);
+  inline-size: 14px;
+  block-size: 14px;
+  margin-inline-start: -7px;
+  border: 3px solid var(--rdv-teinte);
+  border-radius: var(--rayon-plein);
+  background-color: var(--fond);
+}
+.agenda__repere[data-pole="ETIIA"] { --rdv-teinte: var(--pole-etiia); }
+.agenda__repere[data-pole="ETIIE"] { --rdv-teinte: var(--pole-etiie); }
+.agenda__repere[data-pole="ETIII"] { --rdv-teinte: var(--pole-etiii); }
+.agenda__repere[data-type="jalon"] { border-radius: 2px; background-color: var(--rdv-teinte); transform: rotate(45deg); }
 
 /* La liste des alertes, dans leur fenêtre de modification. */
 .edition-liste { display: flex; flex-direction: column; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
@@ -3293,6 +3416,15 @@ ol.liseuse__bloc-liste {
 
 @media (max-width: 640px) {
   .bascule-edition__libelle { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+
+/* Entre la tablette et le grand écran, la barre porte le logo, cinq liens
+   et trois boutons : le thème passe en icône seule (son nom reste pour les
+   lecteurs d'écran) et le raccourci clavier se tait, pour que « Modifier »
+   garde son libellé sans que la barre passe sur deux rangs. */
+@media (max-width: 1240px) {
+  .site-entete .bascule-theme__libelle { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .site-entete .palette-ouvrir kbd { display: none; }
 }
 
 /* Le bandeau, sous la barre : une ligne, dans la teinte chaude. */

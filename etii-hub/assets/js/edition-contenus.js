@@ -199,6 +199,84 @@ export function ouvrirPersonne(o) {
   });
 }
 
+/* Les personnes d'un pôle, telles que l'organigramme les range (avec pôle
+   et squad) : ce que les formulaires ci-dessous enregistrent. */
+function personnesDuPole(organigramme, pole) {
+  return aplatirOrganigramme(organigramme).personnes
+    .filter((p) => texte(p.pole) === texte(pole) && texte(p.id))
+    .sort((a, b) => texte(a.nom).localeCompare(texte(b.nom), 'fr', { numeric: true }));
+}
+
+function normaliser(v) { return texte(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+
+/**
+ * Nommer un référent : une personne du pôle, une compétence. La compétence
+ * passe au niveau « Référent » dans la fiche de la personne (ou s'y
+ * ajoute).
+ * @param {{organigramme: object, pole: string, competence?: string, competences?: string[], declencheur?: Element}} o
+ */
+export function ouvrirReferent(o) {
+  const personnes = personnesDuPole(o.organigramme, o.pole);
+  return ouvrirFormulaire({
+    titre: o.competence ? 'Un référent pour « ' + o.competence + ' »' : 'Nommer un référent',
+    declencheur: o.declencheur,
+    valeurs: { competence: o.competence || '', personne: personnes.length ? texte(personnes[0].id) : '' },
+    champs: [
+      { cle: 'personne', libelle: 'Personne', type: 'choix', requis: true,
+        options: personnes.map((p) => [texte(p.id), texte(p.nom) + (texte(p.poste) ? ' — ' + texte(p.poste) : '')]) },
+      { cle: 'competence', libelle: 'Compétence', type: 'texte', requis: true, suggestions: o.competences || [],
+        aide: 'Une compétence déjà citée dans le pôle, ou une nouvelle.' }
+    ],
+    surEnregistrer: (v) => {
+      const p = personnes.find((x) => texte(x.id) === texte(v.personne));
+      if (!p) throw new Error('Choisissez une personne du pôle.');
+      const nom = texte(v.competence);
+      const competences = tableau(p.competences).filter((c) => normaliser(c && c.nom) !== normaliser(nom));
+      competences.unshift({ nom, niveau: 'referent' });
+      return enregistrerModification('organigramme', 'personne', texte(p.id), Object.assign({}, p, { competences }));
+    }
+  });
+}
+
+/** Retirer le statut de référent : la compétence reste, au niveau « Confirmé ». */
+export function retirerReferent(personne, competence) {
+  const competences = tableau(personne.competences).map((c) => (normaliser(c && c.nom) === normaliser(competence)
+    ? Object.assign({}, c, { niveau: 'confirme' }) : c));
+  return enregistrerModification('organigramme', 'personne', texte(personne.id), Object.assign({}, personne, { competences }));
+}
+
+/**
+ * Affecter quelqu'un du pôle à un porteur : son « porteur suivi » devient
+ * ce code.
+ * @param {{organigramme: object, pole: string, code: string, declencheur?: Element}} o
+ */
+export function ouvrirAffectation(o) {
+  const personnes = personnesDuPole(o.organigramme, o.pole);
+  const libre = personnes.find((p) => !texte(p.perimetre) || texte(p.perimetre) === 'Transverse') || personnes[0];
+  return ouvrirFormulaire({
+    titre: 'Qui travaille sur le ' + texte(o.code) + ' ?',
+    declencheur: o.declencheur,
+    valeurs: { personne: libre ? texte(libre.id) : '' },
+    champs: [
+      { cle: 'personne', libelle: 'Personne', type: 'choix', requis: true,
+        options: personnes.map((p) => [texte(p.id), texte(p.nom) + (texte(p.perimetre) ? ' — suit aujourd’hui ' + texte(p.perimetre) : '')]),
+        aide: 'Une personne suit un seul porteur : elle quitte celui qu’elle suivait.' }
+    ],
+    surEnregistrer: (v) => {
+      const p = personnes.find((x) => texte(x.id) === texte(v.personne));
+      if (!p) throw new Error('Choisissez une personne du pôle.');
+      return affecter(p, texte(o.code));
+    }
+  });
+}
+
+/** Le porteur suivi d'une personne ; vide pour la retirer d'un porteur. */
+export function affecter(personne, code) {
+  const p = Object.assign({}, personne, { perimetre: code });
+  if ('porteur' in p) p.porteur = code;
+  return enregistrerModification('organigramme', 'personne', texte(personne.id), p);
+}
+
 /** Ajouter ou renommer une squad. */
 export function ouvrirSquad(o) {
   const existant = o.existant || null;
@@ -306,19 +384,44 @@ export function ouvrirPorteur(o) {
   const categories = tableau(o.flotte && o.flotte.categories).map((c) => [texte(c.cle), texte(c.libelle)]);
   const fiche = (existant && existant.fiche) || {};
   const libelles = o.libelles || {};
-  const champsFiche = GROUPES_FICHE
-    .filter(([g]) => fiche[g] && typeof fiche[g] === 'object' && Object.keys(fiche[g]).length)
-    .map(([g, titre]) => ({
+  /* Tous les champs que la fiche affiche, remplis ou non : on complète
+     une valeur « à renseigner » ici même. L'ancien nom vit à la racine de
+     la fiche : il a son propre champ, plus bas. */
+  const champsFiche = GROUPES_FICHE.map(([g, titre]) => {
+    const cles = [...new Set([
+      ...Object.keys(libelles[g] || {}),
+      ...Object.keys((fiche[g] && typeof fiche[g] === 'object') ? fiche[g] : {})
+    ])].filter((cle) => !(g === 'identite' && cle === 'ancienNom'));
+    return {
       type: 'groupe', libelle: titre,
-      champs: Object.keys(fiche[g]).flatMap((cle) => {
+      champs: cles.flatMap((cle) => {
         const nom = (libelles[g] && libelles[g][cle]) || libelleCle(cle);
         return [
-          { cle: 'fiche.' + g + '.' + cle + '.valeur', libelle: nom, type: 'texte' },
+          { cle: 'fiche.' + g + '.' + cle + '.valeur', libelle: nom, type: 'valeur' },
           { cle: 'fiche.' + g + '.' + cle + '.unite', libelle: 'Unité', type: 'texte', placeholder: 'kg, km/h…' }
         ];
       })
-    }));
-  const valeurs = existant || { categorie: categories.length ? categories[0][0] : 'civil', poles: [], fiche: { statut: 'à renseigner' } };
+    };
+  }).filter((g) => g.champs.length);
+  /* Les données propres au service : le suivi, puis les champs que
+     flotte.json déclare (technique, économique). */
+  const descripteurs = (famille) => tableau(o.flotte && o.flotte.champs && o.flotte.champs[famille])
+    .filter((d) => d && texte(d.cle))
+    .map((d) => ({ cle: 'service.' + famille + '.' + texte(d.cle), libelle: texte(d.libelle) || libelleCle(d.cle), type: 'valeur' }));
+  const champsService = [
+    { type: 'groupe', libelle: 'Suivi par le service', champs: [
+      { cle: 'jalon', libelle: 'Jalon en cours', type: 'texte' },
+      { cle: 'avancement', libelle: 'Avancement (%)', type: 'nombre' }] },
+    { type: 'groupe', libelle: 'Données techniques du service', champs: descripteurs('technique') },
+    { type: 'groupe', libelle: 'Données économiques du service', champs: descripteurs('economique') }
+  ].filter((g) => g.champs.length);
+  const valeurs = existant
+    ? JSON.parse(JSON.stringify(existant))
+    : { categorie: categories.length ? categories[0][0] : 'civil', poles: [], fiche: { statut: 'à renseigner' } };
+  /* L'ancienne forme gardait ces données à la racine : on les reprend. */
+  if (existant && !(existant.service && typeof existant.service === 'object') && (existant.technique || existant.economique)) {
+    valeurs.service = { technique: existant.technique || {}, economique: existant.economique || {} };
+  }
   return ouvrirFormulaire({
     titre: existant ? 'Modifier la fiche ' + texte(existant.code) : 'Ajouter un porteur',
     declencheur: o.declencheur,
@@ -331,10 +434,15 @@ export function ouvrirPorteur(o) {
       { cle: 'segment', libelle: 'Segment', type: 'texte', placeholder: 'Bimoteur léger' },
       { cle: 'fiche.statut', libelle: 'Statut', type: 'texte', placeholder: 'en production' },
       { cle: 'poles', libelle: 'Pôles qui le suivent', type: 'plusieurs', options: POLES_SEULS },
+      { cle: 'fiche.ancienNom', libelle: 'Ancien nom', type: 'texte', placeholder: 'EC175' },
       { cle: 'photo', libelle: 'Photo', type: 'texte', large: true, placeholder: 'https://… ou assets/img/porteurs/…', aide: 'Une adresse publique, ou un fichier du site. Une photo sous licence libre doit garder son crédit.' },
+      { type: 'groupe', libelle: 'Crédit de la photo', champs: [
+        { cle: 'credit.auteur', libelle: 'Auteur', type: 'texte' },
+        { cle: 'credit.licence', libelle: 'Licence', type: 'texte', placeholder: 'CC BY-SA 4.0' }] },
       { cle: 'fiche.resume', libelle: 'Présentation', type: 'long', lignes: 5 },
       ...champsFiche,
-      { cle: 'fiche.insolites', libelle: 'Le saviez-vous ?', type: 'lignes', objets: true, aide: 'Une anecdote par ligne.' }
+      { cle: 'fiche.insolites', libelle: 'Le saviez-vous ?', type: 'lignes', objets: true, aide: 'Une anecdote par ligne.' },
+      ...champsService
     ],
     surEnregistrer: (v) => {
       const code = texte(v.code).toUpperCase();

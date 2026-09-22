@@ -626,30 +626,6 @@ mark, .surlignage {
 .page-entete .accroche,
 .page-entete .mesure { display: none; }
 
-/* Le sur-titre : une étiquette en petites capitales monospace au-dessus du
-   titre. Elle valait jusqu'ici pour les seules pages de pôle ; elle vaut
-   maintenant partout, pour la page qui a quelque chose à dire avant son
-   titre. Une page qui n'en a rien à dire n'écrit pas le paragraphe. */
-.page-entete__sur-titre {
-  display: block;
-  margin: 0;
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  font-weight: var(--graisse-moyenne);
-  letter-spacing: var(--lettrage-etiquette);
-  text-transform: uppercase;
-  color: var(--texte-faible);
-}
-
-/* Sur une page de pôle, l'étiquette porte la teinte du pôle, assombrie vers
-   l'encre : la teinte pleine tomberait à 3,5:1 pour ETIIE, alors que le
-   mélange tient 5:1 à 6,7:1 dans les deux thèmes, sans dépendre du thème.
-   L'identifiant est ici pour battre en spécificité la règle en ligne des
-   pages de pôle (body[data-pole] …), qui pose la teinte pleine. */
-.page-entete__sur-titre#pole-libelle {
-  color: color-mix(in srgb, var(--couleur-pole, var(--texte-faible)) 75%, var(--texte));
-}
-
 /* -------------------------------------------------------------------------
    13. La barre : chaque pôle porte sa pastille, toujours avec son libellé
    ---------------------------------------------------------------------- */

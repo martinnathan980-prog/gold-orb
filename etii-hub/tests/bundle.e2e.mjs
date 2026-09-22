@@ -78,8 +78,9 @@ await troisieme.scrollIntoViewIfNeeded();
 await troisieme.click();
 await page.waitForTimeout(500);
 const apres = await f.locator('.porteurs__detail').innerText();
-t('la fiche propose ses rubriques (technique, économie, service, sources)',
-  /Technique/.test(apres) && /économie/i.test(apres) && /Données service/.test(apres) && /Sources/.test(apres));
+t('la fiche propose ses rubriques (technique, économie, service), sans lien vers l’extérieur',
+  /Technique/.test(apres) && /économie/i.test(apres) && /Données service/.test(apres) && !/Sources/.test(apres)
+  && (await f.locator('.porteurs__detail a[href^="http"]').count()) === 0);
 t('la fiche suit le porteur choisi', apres.includes(await troisieme.locator('.porteurs__fiche-code').innerText()));
 // Les données propres au service sont vides dans le fichier public : c'est
 // dans leur onglet qu'une valeur absente doit s'annoncer « à renseigner ».
@@ -151,6 +152,10 @@ else {
   await page.waitForTimeout(1900);
   const titre = await f.locator('h1').innerText();
   t('organigramme.html depuis l\'espace ETIIA', /Organigramme/i.test(titre), `("${titre}")`);
+  // Le lien d'une personne garde son ancre : sa fiche s'ouvre.
+  t('le lien d’une personne ouvre sa fiche dans l’organigramme', (await f.locator('.modale .org-fiche__entete').count()) === 1);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(400);
 }
 await f.locator('nav.site-nav a[href="etiia.html"]').first().click();
 await page.waitForTimeout(1900);
@@ -201,6 +206,18 @@ await page.waitForTimeout(300);
 
 t('aucune erreur JavaScript', err.length === 0, err.slice(0, 3).join(' | '));
 
+console.log('\n== Un lien avec ancre garde son ancre ==');
+await f.locator('nav.site-nav a[href="etiia.html"]').first().click();
+await page.waitForTimeout(1900);
+const lienPorteur = f.locator('#zone-reperes .annuaire__porteur').first();
+const codeLien = (await lienPorteur.innerText()).trim();
+await lienPorteur.evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
+await lienPorteur.click();
+await page.waitForTimeout(2200);
+t(`« ${codeLien} » dans l’annuaire d’un pôle ouvre sa fiche sur le tableau de bord`,
+  (await f.locator('.porteurs__detail').count()) === 1
+  && (await f.locator('.porteurs__detail .porteurs__titre').innerText()).trim() === codeLien, `(${codeLien})`);
+
 console.log('\n== Rechercher partout, depuis une page qui n\'affiche pas la flotte ==');
 // La version autonome n'embarque par page que les jeux que ses modules
 // lisent ; le sélecteur doit pourtant trouver un porteur depuis la FAQ.
@@ -217,6 +234,39 @@ await page.waitForTimeout(900);
 t('la personne d\'abord', /Personne 22/.test(await f.locator('.palette__resultat').first().innerText()),
   `("${(await f.locator('.palette__resultat').first().innerText()).replace(/\n/g, ' | ')}")`);
 await page.keyboard.press('Escape');
+
+console.log('\n== Servi par Google Apps Script (serveur simulé) ==');
+// Déployé en application web, le fichier est servi tel quel : google.script.run
+// existe dans la coquille, et les pages, dans leurs cadres, le trouvent chez
+// leur parent.
+const ctxGoogle = await nav.newContext({ viewport: { width: 1440, height: 1000 } });
+await ctxGoogle.addInitScript(() => {
+  if (window !== window.top) return;
+  const serveur = {
+    etiiDemarrer: () => ({ email: 'editeur@exemple.fr', peutModifier: true, modifications: { communications: [
+      { type: 'alerte', id: 'alerte-google', op: 'maj', donnees: { texte: 'Alerte venue du serveur Google.' }, le: '', par: 'editeur@exemple.fr' }] } })
+  };
+  const coureur = (ok) => new Proxy({}, { get: (_c, nom) => {
+    if (nom === 'withSuccessHandler') return (f) => coureur(f);
+    if (nom === 'withFailureHandler') return () => coureur(ok);
+    return (...args) => setTimeout(() => ok && ok(serveur[nom](...args)), 50);
+  } });
+  window.google = { script: { run: coureur(null) } };
+});
+const pageGoogle = await ctxGoogle.newPage();
+pageGoogle.on('pageerror', (e) => err.push('GOOGLE: ' + e.message));
+await pageGoogle.goto(FICHIER);
+await pageGoogle.waitForTimeout(3500);
+const fg = pageGoogle.frameLocator('#cadre');
+t('les pages trouvent le serveur chez la coquille : les modifications de la feuille s’affichent',
+  /Alerte venue du serveur Google/.test(await fg.locator('.kiosque__alertes').innerText()));
+t('l’éditeur connecté a son bouton « Modifier »', (await fg.locator('.bascule-edition').count()) === 1);
+await fg.locator('.bascule-edition').click();
+await pageGoogle.waitForTimeout(400);
+t('et le bandeau dit qui il est', /Connecté : editeur@exemple\.fr/.test(await fg.locator('.edition-bandeau').innerText()));
+await fg.locator('.bascule-edition').click();
+await ctxGoogle.close();
+t('aucune erreur JavaScript côté Google', !err.some((e) => e.startsWith('GOOGLE')), err.filter((e) => e.startsWith('GOOGLE')).slice(0, 2).join(' | '));
 
 console.log(`\n  ${ok} réussis, ${ko} échoués`);
 await nav.close();

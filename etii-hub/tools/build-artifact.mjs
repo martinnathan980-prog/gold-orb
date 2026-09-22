@@ -344,10 +344,25 @@ const coquille = `<meta charset="utf-8">
   function afficher(nom, ancre) {
     if (!PAGES[nom]) nom = 'index';
     courante = nom;
-    try { history.replaceState(null, '', '#' + nom + (ancre || '')); } catch (e) {}
+    ancre = ancre && ancre.charAt(0) === '#' ? ancre : '';
+    try { history.replaceState(null, '', '#' + nom + ancre); } catch (e) {}
     // Fonction de remplacement, et non chaîne : un « $& » dans la feuille
     // serait interprété par String.replace s'il s'agissait d'une chaîne.
-    cadre.srcdoc = PAGES[nom].replace('${JETON_CSS}', function () { return CSS; });
+    var html = PAGES[nom].replace('${JETON_CSS}', function () { return CSS; });
+    // Un lien vers « index.html#porteur=H160 » garde son ancre : elle est
+    // posée dans l'adresse de la page avant que ses modules ne la lisent.
+    // Pas de history.replaceState : dans un srcdoc, l'adresse relative se
+    // résout contre celle de la coquille et le navigateur refuse ; un
+    // location.replace vers « about:srcdoc#… » n'est qu'un saut d'ancre.
+    // L'ancre attend chez la coquille : aucun texte venu d'un lien n'est
+    // recopié dans un script.
+    window.__ETII_ANCRE = ancre;
+    if (ancre) {
+      html = html.replace('<head>', function () {
+        return '<head><script>try{var a=parent.__ETII_ANCRE;if(a)location.replace(location.href.split("#")[0]+a)}catch(e){}<\\/script>';
+      });
+    }
+    cadre.srcdoc = html;
   }
 
   // Les liens internes du site changent de page sans quitter le fichier.
@@ -359,17 +374,34 @@ const coquille = `<meta charset="utf-8">
     doc.addEventListener('click', function (evt) {
       var lien = evt.target && evt.target.closest && evt.target.closest('a[href]');
       if (!lien) return;
-      var nom = nomDepuisHref(lien.getAttribute('href'));
+      var href = lien.getAttribute('href');
+      var nom = nomDepuisHref(href);
       if (!nom) return;
       evt.preventDefault();
-      if (nom !== courante) afficher(nom);
+      var i = href.indexOf('#');
+      var ancre = i >= 0 ? href.slice(i) : '';
+      if (nom !== courante) { afficher(nom, ancre); return; }
+      // Même page, autre ancre : la page suit son adresse (hashchange).
+      if (ancre) { try { cadre.contentWindow.location.hash = ancre; } catch (e) {} }
     });
   });
 
-  var depart = (location.hash || '').replace('#', '').split('?')[0];
-  afficher(PAGES[depart] ? depart : 'index');
+  var brut = (location.hash || '').replace(/^#/, '');
+  var coupe = brut.indexOf('#');
+  var depart = (coupe >= 0 ? brut.slice(0, coupe) : brut).split('?')[0];
+  afficher(PAGES[depart] ? depart : 'index', coupe >= 0 ? brut.slice(coupe) : '');
 })();
 </script>`;
+
+/* La coquille elle-même : un « </script> » venu d'une chaîne la couperait
+   en deux sans erreur de construction. On vérifie qu'elle tient d'un bloc
+   et qu'elle se lit. */
+{
+  const debut = coquille.indexOf('<script>') + '<script>'.length;
+  const corps = coquille.slice(debut, coquille.lastIndexOf('</script>'));
+  if (/<\/script/i.test(corps)) throw new Error('La coquille contient un « </script> » : il faut l’échapper.');
+  try { new Function(corps); } catch (e) { throw new Error('Script de la coquille invalide : ' + e.message); }
+}
 
 mkdirSync(join(RACINE, 'dist'), { recursive: true });
 writeFileSync(join(RACINE, 'dist/etii-hub.html'), coquille);

@@ -1,33 +1,56 @@
 /* =========================================================================
-   ETII Hub — « À venir » : les prochains rendez-vous du service
+   ETII Hub — « À venir » : la frise des prochains rendez-vous
 
-   Le Communication center raconte ce qui s'est passé ; ce bloc dit ce qui
-   arrive. Les rendez-vous sont les entrées d'agenda de
-   communications.json dont la date n'est pas passée, de la plus proche à
-   la plus lointaine : un jalon, une revue, un atelier, une formation.
-   Chaque carte dit quand (le jour en grand, puis « dans 3 jours »), quoi,
-   pour qui (le service ou un pôle), où, et en deux lignes ce qui s'y
-   joue.
+   Le Communication center raconte ce qui s'est passé ; ce bloc montre ce
+   qui arrive, sur une frise : un axe du temps qui part d'aujourd'hui,
+   graduée en semaines (S39, S40…) et en mois, et chaque rendez-vous posé
+   à sa date — un losange pour un jalon, un rond pour le reste, à la
+   couleur du pôle concerné (terre cuite pour tout le service). Sa carte,
+   au-dessus ou au-dessous de l'axe en alternance, dit quoi, quand, pour
+   qui, où, et en deux lignes ce qui s'y joue. On voit d'un coup d'œil ce
+   qui est proche, ce qui se tasse, ce qui est encore loin.
+
+   Une seule liste dans le document, dans l'ordre des dates : c'est elle
+   que lisent les lecteurs d'écran. Sur un écran large, disposer() la pose
+   sur la frise : deux rangées de cartes, une au-dessus de l'axe et une
+   au-dessous, les rendez-vous alternant de l'une à l'autre ; dans une
+   rangée, une carte se décale pour ne pas chevaucher sa voisine, et un
+   trait la relie à son repère sur l'axe. La frise garde ainsi toujours la
+   même hauteur, même quand les dates se serrent. Sur un écran étroit,
+   c'est une simple liste de cartes. L'axe et les traits sont décoratifs.
 
    En mode édition (edition.js), chaque carte se modifie ou se retire, et
-   un bouton en ajoute une. Un rendez-vous passé quitte le bloc de
+   un bouton en ajoute une. Un rendez-vous passé quitte la frise de
    lui-même, le lendemain.
 
    API :
      agenda(donnees, options)  -> HTMLElement
        options.pole            'ETII' (tout le service) ou un code de pôle
-       options.limite          nombre de cartes au plus (défaut 6)
+       options.limite          nombre de rendez-vous au plus (défaut 8)
        options.surAjouter(b), options.surModifier(entree, b), options.surSupprimer(entree)
    ========================================================================= */
 
-import { el } from './ui.js';
+import { el, svg } from './ui.js';
 import { joursRestants, TYPES_AGENDA } from './kiosque.js';
 import { barreEdition, boutonAjouter } from './edition.js';
 
 function texte(v) { return (v === null || v === undefined) ? '' : String(v).trim(); }
 
 const MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+const MOIS_LONGS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const JOURS_COURTS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+const JOUR_MS = 86400000;
+
+/* La frise, en pixels : largeur d'une carte, écart entre deux couloirs,
+   hauteur de la bande de l'axe, marges. En dessous de LARGEUR_MIN, la
+   liste simple lit mieux qu'une frise écrasée. */
+const FRISE = { carte: 248, ecart: 14, axe: 64, marge: 28, largeurMin: 880, horizonMin: 21 };
+
+function dateDe(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(texte(iso));
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+}
 
 /* « aujourd'hui », « demain », « dans 5 jours », « dans 3 semaines ». */
 function echeance(n) {
@@ -39,40 +62,193 @@ function echeance(n) {
   return 'dans ' + Math.round(n / 30) + ' mois';
 }
 
+/** Le numéro de semaine ISO (lundi premier jour), comme dans les plannings. */
+function semaineIso(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const jour = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - jour);
+  const debut = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d - debut) / JOUR_MS + 1) / 7);
+}
+
+function aujourdhui() {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/* -------------------------------------------------------------------------
+   1. Une carte
+   ------------------------------------------------------------------------- */
+
 function carte(entree, options) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(texte(entree.date));
-  const date = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+  const date = dateDe(entree.date);
   const n = joursRestants(entree.date);
   const pole = texte(entree.pole).toUpperCase() || 'ETII';
-  const type = TYPES_AGENDA[texte(entree.type)] || texte(entree.type) || 'Rendez-vous';
-  return el('li', { class: ['agenda__rdv', n !== null && n <= 7 ? 'agenda__rdv--proche' : null], dataset: { pole } },
-    el('div', { class: 'agenda__date', 'aria-hidden': 'true' },
-      el('span', { class: 'agenda__jour' }, date ? String(date.getDate()) : '—'),
-      el('span', { class: 'agenda__mois' }, date ? MOIS[date.getMonth()] : '')),
-    el('div', { class: 'agenda__corps' },
-      el('p', { class: 'agenda__meta' },
-        el('span', { class: 'agenda__type' }, type),
-        el('span', { class: 'agenda__pole', dataset: { pole } }, pole === 'ETII' ? 'Service' : pole),
-        el('span', { class: 'agenda__echeance' }, echeance(n))),
-      el('h3', { class: 'agenda__titre' },
-        /* La date complète pour les lecteurs d'écran : le jour en grand est
-           décoratif. */
-        el('span', { class: 'visuellement-cache' }, date ? JOURS[date.getDay()] + ' ' + date.getDate() + ' ' + MOIS[date.getMonth()] + ' : ' : ''),
-        texte(entree.titre)),
-      texte(entree.resume) ? el('p', { class: 'agenda__resume' }, texte(entree.resume)) : null,
-      texte(entree.lieu) ? el('p', { class: 'agenda__lieu' }, el('span', { 'aria-hidden': 'true' }, '⌖ '), texte(entree.lieu)) : null),
-    (typeof options.surModifier === 'function' || typeof options.surSupprimer === 'function')
-      ? barreEdition({
-          classe: 'agenda__edition',
-          quoi: texte(entree.titre),
-          surModifier: typeof options.surModifier === 'function' ? (b) => options.surModifier(entree, b) : null,
-          surSupprimer: typeof options.surSupprimer === 'function' ? () => options.surSupprimer(entree) : null
-        })
-      : null);
+  const cleType = texte(entree.type);
+  const type = TYPES_AGENDA[cleType] || cleType || 'Rendez-vous';
+  const li = el('li', {
+    class: ['agenda__rdv', n !== null && n <= 7 ? 'agenda__rdv--proche' : null],
+    dataset: { pole, type: cleType === 'jalon' ? 'jalon' : 'rdv', date: texte(entree.date) }
+  },
+  el('div', { class: 'agenda__date', 'aria-hidden': 'true' },
+    el('span', { class: 'agenda__jour-semaine' }, date ? JOURS_COURTS[date.getDay()] : ''),
+    el('span', { class: 'agenda__jour' }, date ? String(date.getDate()) : '—'),
+    el('span', { class: 'agenda__mois' }, date ? MOIS[date.getMonth()] : '')),
+  el('div', { class: 'agenda__corps' },
+    el('p', { class: 'agenda__meta' },
+      el('span', { class: 'agenda__type' }, type),
+      el('span', { class: 'agenda__pole', dataset: { pole } }, pole === 'ETII' ? 'Service' : pole),
+      el('span', { class: 'agenda__echeance' }, echeance(n))),
+    el('h3', { class: 'agenda__titre' },
+      /* La date complète pour les lecteurs d'écran : le jour en grand est
+         décoratif. */
+      el('span', { class: 'visuellement-cache' }, date ? JOURS[date.getDay()] + ' ' + date.getDate() + ' ' + MOIS_LONGS[date.getMonth()] + ' : ' : ''),
+      texte(entree.titre)),
+    texte(entree.resume) ? el('p', { class: 'agenda__resume' }, texte(entree.resume)) : null,
+    texte(entree.lieu) ? el('p', { class: 'agenda__lieu' }, el('span', { 'aria-hidden': 'true' }, '⌖ '), texte(entree.lieu)) : null),
+  (typeof options.surModifier === 'function' || typeof options.surSupprimer === 'function')
+    ? barreEdition({
+        classe: 'agenda__edition barre-edition--compacte',
+        quoi: texte(entree.titre),
+        surModifier: typeof options.surModifier === 'function' ? (b) => options.surModifier(entree, b) : null,
+        surSupprimer: typeof options.surSupprimer === 'function' ? () => options.surSupprimer(entree) : null
+      })
+    : null);
+  return li;
+}
+
+/* -------------------------------------------------------------------------
+   2. La frise : où va chaque carte
+   ------------------------------------------------------------------------- */
+
+/* L'axe : aujourd'hui, les semaines, les mois, et le repère de chaque
+   rendez-vous. Recalculé à chaque mise en page : les positions dépendent
+   de la largeur. */
+function dessinerAxe(axe, debut, fin, versX, reperes) {
+  const marques = [];
+  marques.push(el('span', { class: 'agenda__aujourdhui', style: { left: versX(debut) + 'px' } },
+    el('span', { class: 'agenda__aujourdhui-libelle' }, 'Aujourd’hui')));
+  /* Chaque lundi : un trait et le numéro de semaine. */
+  const lundi = new Date(debut);
+  lundi.setDate(lundi.getDate() + ((8 - (lundi.getDay() || 7)) % 7));
+  for (let d = lundi; d <= fin; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7)) {
+    marques.push(el('span', { class: 'agenda__semaine', style: { left: versX(d) + 'px' } },
+      el('span', { class: 'agenda__semaine-libelle' }, 'S' + semaineIso(d))));
+  }
+  /* Chaque premier du mois : le nom du mois, au-dessus de l'axe. */
+  for (let d = new Date(debut.getFullYear(), debut.getMonth() + 1, 1); d <= fin; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
+    marques.push(el('span', { class: 'agenda__mois-axe', style: { left: versX(d) + 'px' } }, MOIS_LONGS[d.getMonth()]));
+  }
+  /* Les repères : un losange pour un jalon, un rond sinon. */
+  for (const r of reperes) {
+    marques.push(el('span', { class: 'agenda__repere', dataset: { pole: r.pole, type: r.type }, style: { left: r.x + 'px' } }));
+  }
+  axe.replaceChildren(el('span', { class: 'agenda__ligne' }), ...marques);
+}
+
+/* Une rangée de cartes, dans l'ordre des dates : chacune se pose sous sa
+   date, se décale à droite si la précédente la gêne, puis toute la rangée
+   recule si la dernière déborde. */
+function rangee(desirs, largeur, carte, ecart) {
+  const gauches = [];
+  desirs.forEach((x, i) => {
+    let g = Math.max(x - carte / 2, 0);
+    if (i > 0) g = Math.max(g, gauches[i - 1] + carte + ecart);
+    gauches.push(g);
+  });
+  for (let i = gauches.length - 1; i >= 0; i -= 1) {
+    const plafond = i === gauches.length - 1 ? largeur - carte : gauches[i + 1] - carte - ecart;
+    gauches[i] = Math.max(Math.min(gauches[i], plafond), 0);
+  }
+  return gauches;
 }
 
 /**
- * Les prochains rendez-vous.
+ * Pose les cartes sur la frise, ou les rend à la liste simple quand la
+ * place manque. Idempotent : appelé à chaque changement de taille.
+ */
+function disposer(racine) {
+  const cadre = racine.querySelector('.agenda__cadre');
+  const liste = racine.querySelector('.agenda__liste');
+  const axe = racine.querySelector('.agenda__axe');
+  const traits = racine.querySelector('.agenda__traits');
+  if (!cadre || !liste || !axe || !traits) return;
+  const cartes = Array.from(liste.children);
+  const largeur = cadre.clientWidth;
+  /* Deux rangées : chacune doit pouvoir tenir sa moitié des cartes. */
+  const parRangee = Math.ceil(cartes.length / 2);
+  const carteL = Math.min(FRISE.carte, Math.floor((largeur - (parRangee - 1) * FRISE.ecart) / Math.max(parRangee, 1)));
+  const frise = largeur >= FRISE.largeurMin && cartes.length > 0 && carteL >= 190;
+  racine.classList.toggle('agenda--frise', frise);
+  if (!frise) {
+    cadre.style.removeProperty('block-size');
+    axe.replaceChildren();
+    traits.replaceChildren();
+    for (const c of cartes) c.removeAttribute('style');
+    return;
+  }
+
+  /* Le temps : d'aujourd'hui au dernier rendez-vous, trois semaines au
+     moins, et un peu d'air après le dernier. */
+  const debut = aujourdhui();
+  const dates = cartes.map((c) => dateDe(c.dataset.date) || debut);
+  const dernier = Math.max(...dates.map((d) => d.getTime()), debut.getTime() + FRISE.horizonMin * JOUR_MS);
+  const fin = new Date(dernier + 3 * JOUR_MS);
+  const utile = largeur - 2 * FRISE.marge;
+  const versX = (d) => Math.round(FRISE.marge + ((d.getTime() - debut.getTime()) / (fin.getTime() - debut.getTime())) * utile);
+  const xs = dates.map(versX);
+
+  /* Les cartes prennent leur largeur de frise avant d'être mesurées. */
+  for (const c of cartes) c.style.inlineSize = carteL + 'px';
+  const hauteurs = cartes.map((c) => c.offsetHeight);
+
+  /* Un rendez-vous sur deux au-dessus : la frise alterne. */
+  const rangs = { haut: [], bas: [] };
+  cartes.forEach((c, i) => rangs[i % 2 === 0 ? 'bas' : 'haut'].push(i));
+  const hHaut = Math.max(0, ...rangs.haut.map((i) => hauteurs[i]));
+  const hBas = Math.max(0, ...rangs.bas.map((i) => hauteurs[i]));
+  const y0 = hHaut + FRISE.ecart;            // haut de la bande de l'axe
+  const yAxe = y0 + FRISE.axe / 2;
+  cadre.style.blockSize = (y0 + FRISE.axe + FRISE.ecart + hBas) + 'px';
+  axe.style.top = y0 + 'px';
+  axe.style.blockSize = FRISE.axe + 'px';
+
+  const lignes = [];
+  for (const cote of ['haut', 'bas']) {
+    const indices = rangs[cote];
+    const gauches = rangee(indices.map((i) => xs[i]), largeur, carteL, FRISE.ecart);
+    indices.forEach((i, k) => {
+      const c = cartes[i];
+      const gauche = gauches[k];
+      const haut = cote === 'haut' ? hHaut - hauteurs[i] : y0 + FRISE.axe + FRISE.ecart;
+      c.classList.toggle('agenda__rdv--haut', cote === 'haut');
+      c.classList.toggle('agenda__rdv--bas', cote === 'bas');
+      c.style.left = gauche + 'px';
+      c.style.top = haut + 'px';
+      /* Le trait : du repère sur l'axe au bord de la carte, au plus près
+         de la date. */
+      const ancre = Math.min(Math.max(xs[i], gauche + 18), gauche + carteL - 18);
+      const bord = cote === 'haut' ? haut + hauteurs[i] : haut;
+      lignes.push(svg('line', {
+        x1: xs[i], y1: yAxe + (cote === 'haut' ? -8 : 8), x2: ancre, y2: bord,
+        class: 'agenda__trait', dataset: { pole: c.dataset.pole }
+      }));
+    });
+  }
+  traits.replaceChildren(svg('svg', {
+    class: 'agenda__traits-dessin', width: largeur, height: cadre.offsetHeight || (y0 + FRISE.axe + FRISE.ecart + hBas),
+    'aria-hidden': 'true', focusable: 'false'
+  }, lignes));
+
+  dessinerAxe(axe, debut, fin, versX, cartes.map((c, i) => ({ x: xs[i], pole: c.dataset.pole, type: c.dataset.type })));
+}
+
+/* -------------------------------------------------------------------------
+   3. Le bloc
+   ------------------------------------------------------------------------- */
+
+/**
+ * Les prochains rendez-vous, sur leur frise.
  * @param {object} donnees  communications.json (modifié)
  * @param {object} [options]
  * @returns {HTMLElement}
@@ -80,19 +256,53 @@ function carte(entree, options) {
 export function agenda(donnees, options) {
   const o = options || {};
   const pole = texte(o.pole).toUpperCase() || 'ETII';
-  const limite = Number(o.limite) > 0 ? Number(o.limite) : 6;
+  const limite = Number(o.limite) > 0 ? Number(o.limite) : 8;
   const entrees = (Array.isArray(donnees && donnees.agenda) ? donnees.agenda : [])
     .filter((e) => e && typeof e === 'object' && texte(e.titre) && texte(e.type) !== 'mot')
     .filter((e) => { const n = joursRestants(e.date); return n !== null && n >= 0; })
     .filter((e) => pole === 'ETII' || texte(e.pole).toUpperCase() === pole || texte(e.pole).toUpperCase() === 'ETII')
     .sort((a, b) => texte(a.date).localeCompare(texte(b.date)));
   const visibles = entrees.slice(0, limite);
-  return el('div', { class: 'agenda' },
+
+  const racine = el('div', { class: 'agenda' },
     visibles.length
-      ? el('ol', { class: 'agenda__liste', role: 'list' }, visibles.map((e) => carte(e, o)))
+      ? el('div', { class: 'agenda__cadre' },
+          el('div', { class: 'agenda__traits', 'aria-hidden': 'true' }),
+          el('div', { class: 'agenda__axe', 'aria-hidden': 'true' }),
+          el('ol', { class: 'agenda__liste', role: 'list' }, visibles.map((e) => carte(e, o))))
       : el('p', { class: 'agenda__vide' }, 'Aucun rendez-vous à venir pour le moment.'),
     entrees.length > visibles.length
       ? el('p', { class: 'agenda__suite' }, 'Et ' + (entrees.length - visibles.length) + ' autre' + (entrees.length - visibles.length > 1 ? 's' : '') + ' plus tard.')
       : null,
     typeof o.surAjouter === 'function' ? boutonAjouter('Ajouter un rendez-vous', o.surAjouter) : null);
+
+  /* La mise en page suit la largeur du bloc, et la hauteur des cartes (une
+     police qui arrive, le mode édition qui ajoute ses boutons). Une seule
+     mesure par image. */
+  if (visibles.length && typeof ResizeObserver === 'function') {
+    let demande = false;
+    let largeurVue = -1;
+    const planifier = () => {
+      if (demande) return;
+      demande = true;
+      requestAnimationFrame(() => { demande = false; if (racine.isConnected) disposer(racine); });
+    };
+    const observateur = new ResizeObserver((entrees2) => {
+      /* Le cadre change de hauteur quand on le dispose : seul un changement
+         de largeur, ou de taille d'une carte, relance la mise en page. */
+      for (const e of entrees2) {
+        if (e.target.classList.contains('agenda__cadre')) {
+          const l = Math.round(e.contentRect.width);
+          if (l === largeurVue) continue;
+          largeurVue = l;
+        }
+        planifier();
+        return;
+      }
+    });
+    const cadre = racine.querySelector('.agenda__cadre');
+    observateur.observe(cadre);
+    racine.querySelectorAll('.agenda__rdv').forEach((c) => observateur.observe(c));
+  }
+  return racine;
 }

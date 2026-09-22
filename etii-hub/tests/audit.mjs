@@ -484,6 +484,23 @@ for (const j of jsFiles) {
 }
 
 
+// --- 7a. Le guide d'installation Google porte le code du serveur ---------
+// Le guide recopie Code.gs en annexe : c'est lui qu'on colle. Une copie qui
+// ne suit plus le fichier installerait un serveur que le site ne comprend
+// plus, sans que rien ne le signale.
+{
+  const guide = 'docs/INSTALLER-SUR-GOOGLE.txt';
+  const code = 'tools/apps-script/site/Code.gs';
+  verifier(`${guide} : recopie à l'identique ${code}`,
+    !existe(guide) || !existe(code) ? 'fichier absent'
+      : (lire(guide).includes(lire(code)) ? null : 'l’annexe A ne correspond plus au fichier : régénérez le guide'));
+  const fonctions = [...lire(code).matchAll(/^function (etii[A-Za-z]+)\(/gm)].map((m) => m[1]);
+  const appelees = [...lire('assets/js/magasin.js').matchAll(/'(etii[A-Za-z]+)'/g)].map((m) => m[1]);
+  const manquantes = [...new Set(appelees)].filter((f) => !fonctions.includes(f));
+  verifier(`magasin.js n'appelle que des fonctions que Code.gs définit (${[...new Set(appelees)].join(', ')})`,
+    manquantes.length ? 'absentes du serveur : ' + manquantes.join(', ') : null);
+}
+
 // --- 7b. Symboles importés -----------------------------------------------
 // Vérifier que le FICHIER importé existe ne suffit pas : un import portant
 // sur un symbole que le module n'exporte pas casse la page entière au

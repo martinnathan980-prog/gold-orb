@@ -26,9 +26,8 @@
     body[data-pole="ETIIE"] { --couleur-pole: var(--pole-etiie); }
     body[data-pole="ETIII"] { --couleur-pole: var(--pole-etiii); }
 
-    /* L'étiquette au-dessus du titre porte la couleur du pôle. L'en-tête
-       sur la bande et le sommaire collant vivent dans modules.css §15. */
-    body[data-pole] .page-entete__sur-titre { color: var(--couleur-pole); }
+    /* L'en-tête sur la bande et le sommaire collant vivent dans
+       modules.css §15. */
   </style>
 </head>
 
@@ -68,7 +67,6 @@
          reste collé sous la barre du site et suit la lecture (pole.js). -->
     <div class="page-tete">
       <div class="conteneur pile pile--serree pole-entete page-entete">
-        <p class="page-entete__sur-titre" id="pole-libelle">Pôle</p>
         <h1 class="pole-titre" id="pole-titre">Espace de pôle</h1>
         <div id="pole-alerte" hidden></div>
       </div>

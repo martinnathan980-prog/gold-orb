@@ -164,6 +164,11 @@ par-dessus au chargement (`assets/js/modifications.js`, appelé par
 `chargerDonnees()`), si bien que toutes les pages voient les mêmes données.
 Elle est rangée par `assets/js/magasin.js` :
 
+- **servi par Google** (application web Apps Script, voir
+  `docs/INSTALLER-SUR-GOOGLE.txt`), dans la feuille Google de
+  l'application : le serveur (`tools/apps-script/site/Code.gs`) sait qui
+  est connecté et n'accepte d'écriture que des adresses de l'onglet
+  « Éditeurs » ; chaque modification est signée dans l'onglet « journal » ;
 - **sur le lien publié** (claude.ai), dans la base de la page, partagée par
   tous ses lecteurs — une collection `modifications_<jeu>` par fichier ;
   seuls ceux qui ont le droit de modifier la page voient le bouton ;
@@ -283,6 +288,7 @@ dans le navigateur.
 
 | Fichier | Ce qu'il explique |
 |---|---|
+| `docs/INSTALLER-SUR-GOOGLE.txt` | **Faire tourner le site chez Google** (Drive + Sheets + Apps Script), clic par clic, avec les profils : qui lit, qui modifie. Le code serveur est recopié en annexe (l'audit vérifie qu'il suit `tools/apps-script/site/Code.gs`, et `node tests/apps-script.test.mjs` l'exécute contre une feuille simulée) |
 | `docs/OTQ-GOOGLE-SHEETS.md` | Alimenter le suivi OTQ / OTD chaque nuit depuis un Google Sheet |
 | `docs/ASSISTANT-IA.md` | Brancher un assistant documentaire (Gemini) : chemins, coûts, interlocuteurs, précautions |
 | `docs/RECHERCHE-A-L-ECHELLE.md` | Ce qui fait la qualité d'une recherche sur des milliers de documents |
