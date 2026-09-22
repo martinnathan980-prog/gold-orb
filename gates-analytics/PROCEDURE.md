@@ -583,14 +583,20 @@ reconnaître. Une référence déjà écrite à la mode de GATES porte quatre
 chiffres avant son A : elle est lue telle quelle.
 
 Une référence introuvable dans l'onglet : pas de section, pas d'erreur — la
-page s'ouvre. **Si les cercles manquent, Suivi FWD → Diagnostic** : sa
-ligne « Seconde base » dit ce que le script voit — aucun onglet `SEE`, un
-onglet vide,
-un onglet dont les en-têtes lus ne portent pas NAME, SOL. et Cust.V (l'extract
-collé sans ses en-têtes, ou un autre extract — sans recopier ses cellules), ou
-bien `✓ Seconde base « SEE » : onglet « SEE », 312 ligne(s), référence NAME +
-SOL. + Cust.V (ligne d'en-têtes : 3)`. Un onglet là mais illisible ne fait pas
-conclure « tout est en place » : le bilan final le redit.
+page s'ouvre. **Si les cercles manquent, Suivi FWD → Diagnostic** : sa ligne
+« Seconde base » dit ce que le script voit — aucun onglet `SEE`, un onglet
+vide, un onglet dont les en-têtes lus ne portent pas NAME, SOL. et Cust.V
+(l'extract collé sans ses en-têtes, ou un autre extract — sans recopier ses
+cellules), ou bien `✓ Seconde base « SEE » : onglet « SEE », 312 ligne(s),
+référence NAME + SOL. + Cust.V (ligne d'en-têtes : 3)`. Un onglet là mais
+illisible ne fait pas conclure « tout est en place » : le bilan final le redit.
+
+Quand aucune ligne ne porte les trois intitulés, la ligne retenue est celle
+qui en porte le **plus**, et non la première ligne non vide — celle-là, dans
+SEE, est le titre « Nommage WD BFLOW », qui ne dit rien. Une colonne renommée
+dans l'export donne donc `en-têtes lus (ligne 3)` puis `il manque Cust.V —
+cette colonne a-t-elle un autre intitulé dans l'export ?`, au lieu d'envoyer
+recoller un extract qui est déjà là, entier.
 
 ## 13. Les jalons
 
