@@ -118,7 +118,7 @@ npm test
   menus, fenêtres), le vrai `Chargeur.gs` lancé dedans, et la page qu'il
   fabrique ouverte dans un vrai navigateur — les états, les colonnes, le
   graphe et le journal comparés au paquet du classeur.
-- `npm run test:interface` — 539 tests sur l'interface elle-même.
+- `npm run test:interface` — 542 tests sur l'interface elle-même.
   Elle n'essaie pas seulement de vérifier que ça marche : recherches avec
   balises, expressions régulières, 3 000 caractères ou émoji, jalon de
   configuration au texte injecté, `localStorage` corrompu puis inaccessible,
