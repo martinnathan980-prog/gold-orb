@@ -1594,6 +1594,42 @@ export function initNav(pageCourante) {
     } catch (_e) { /* ignoré */ }
   }
 
+  mesurerBarre();
+}
+
+/** Vrai dès que la barre est sous observation : initNav() est appelé plusieurs
+    fois par page (changement de pôle, retour arrière), et un observateur par
+    appel serait une fuite. */
+let barreObservee = false;
+
+/**
+ * Recopie la hauteur réelle de la barre du site dans `--hauteur-barre-site`.
+ *
+ * La barre est en `flex-wrap` : elle se replie sur deux rangs à une largeur
+ * qu'aucun point de rupture ne déclare (mesuré : dès 993 px). Le jeton figé
+ * de tokens.css vaut alors 40 px de moins que la barre, et le sommaire
+ * collant des quatre pages qui en ont un s'enterre dessous — il n'en restait
+ * que 2 px visibles sur 42. On mesure donc au lieu de deviner, comme le font
+ * déjà kiosque.js, porteurs.js et indicateurs.js pour leurs propres hauteurs.
+ * Sans JavaScript, le jeton statique reste le repli : c'est l'état d'avant.
+ */
+function mesurerBarre() {
+  try {
+    const barre = document.querySelector('.site-entete');
+    if (!barre) return;
+    const poser = () => {
+      try {
+        document.documentElement.style.setProperty(
+          '--hauteur-barre-site',
+          Math.round(barre.getBoundingClientRect().height) + 'px');
+      } catch (_e) { /* ignoré */ }
+    };
+    poser();
+    if (barreObservee) return;
+    barreObservee = true;
+    if (typeof ResizeObserver === 'function') new ResizeObserver(poser).observe(barre);
+    else window.addEventListener('resize', rafThrottle(poser), { passive: true });
+  } catch (_e) { /* ignoré : le jeton statique de tokens.css reste le repli */ }
 }
 
 /* -------------------------------------------------------------------------
