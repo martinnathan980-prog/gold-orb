@@ -17,9 +17,11 @@
       "id": "f02",
       "question": "Où trouver la dernière version d'un document ?",
       "categorie": "Outils",
-      "reponse": "Utilisez la recherche documentaire du hub. Chaque fiche affiche sa date de mise à jour. En cas de doute, le porteur indiqué sur la fiche fait autorité.",
+      "reponse": "Utilisez la recherche documentaire du hub. Chaque fiche affiche sa date de mise à jour, et la recherche écarte les versions remplacées : sur la fiche d'une version remplacée, une ligne indique celle qui fait foi. En cas de doute, le porteur indiqué sur la fiche fait autorité.",
       "motsCles": [
         "version",
+        "indice",
+        "remplacé",
         "document",
         "recherche",
         "porteur"
