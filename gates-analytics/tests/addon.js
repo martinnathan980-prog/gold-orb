@@ -1191,22 +1191,21 @@ function serveurSur(valeurs, proprietes, fichiers) {
     vu.colonnes[0] === 'Référence UD' && vu.colonnes.indexOf('Avancement FWD') !== -1,
     JSON.stringify(vu.colonnes));
   verifier('les 186 lignes sont dans le tableau', vu.lignes === 186, String(vu.lignes));
-  /* La recherche du haut, sur les données du classeur : même barre, même
-     fiche que dans la démonstration. La référence est lue dans la première
-     cellule du tableau, pas fabriquée. */
+  /* Chercher un plan dans une section, sur les données du classeur : le
+     champ du bloc par groupe trouve un plan comme un groupe. La référence est
+     lue dans la première cellule du tableau, pas fabriquée. */
   const refReelle = await p.evaluate(() => document.querySelector('#corps-tableau tr td').textContent.trim());
-  await p.click('#champ-plan'); await p.keyboard.type(refReelle); await p.waitForTimeout(250);
-  await p.keyboard.press('Enter'); await p.waitForTimeout(400);
-  const ficheReelle = await p.evaluate(() => {
-    const f = document.getElementById('fiche-plan');
-    return { visible: !f.hidden, ref: f.querySelector('.fiche-ref') ? f.querySelector('.fiche-ref').textContent.replace(/\s+/g, '') : '',
-             titres: [...f.querySelectorAll('.fiche-bloc h3')].map(h => h.textContent) };
-  });
-  verifier('données réelles : la recherche du haut trouve un plan du classeur et ouvre sa fiche, semaine par semaine comprise',
-    ficheReelle.visible && ficheReelle.ref === refReelle.replace(/\s+/g, '') && ficheReelle.titres.indexOf('Semaine par semaine') !== -1,
-    JSON.stringify([refReelle, ficheReelle]));
-  await p.click('#fiche-plan [data-fiche-fermer]'); await p.waitForTimeout(150);
-  await p.fill('#champ-plan', ''); await p.keyboard.press('Escape');
+  await p.fill('#filtre-groupe', refReelle); await p.waitForTimeout(450);
+  const trouveReel = await p.evaluate(() => ({
+    groupes: document.querySelectorAll('#zone-critique .critique-ligne').length,
+    trouves: [...document.querySelectorAll('#zone-critique .groupe-refs.trouves .jeton-ud')].map(b => b.dataset.ud),
+    lignes: document.querySelectorAll('#corps-tableau tr').length,
+    global: !!document.getElementById('champ-plan')
+  }));
+  verifier('données réelles : le champ du bloc par groupe trouve un plan du classeur, sous son groupe, sans toucher au tableau',
+    !trouveReel.global && trouveReel.groupes === 1 && trouveReel.trouves.length === 1 && trouveReel.trouves[0] === refReelle &&
+    trouveReel.lignes === 186, JSON.stringify([refReelle, trouveReel]));
+  await p.focus('#filtre-groupe'); await p.keyboard.press('Escape'); await p.waitForTimeout(350);
   verifier('le sélecteur de dimension propose les colonnes détectées', vu.dims.length >= 3, JSON.stringify(vu.dims));
   verifier('l\'ATA est ouvert par défaut', vu.dimActive === 'ata', vu.dimActive);
   verifier('le titre nomme la dimension', /par ATA/.test(vu.titre), vu.titre);
@@ -1933,7 +1932,14 @@ function serveurSur(valeurs, proprietes, fichiers) {
     }));
   /* Plan par plan, sur une référence à une seule colonne : les groupes
      suivent les verdicts (les lots à zéro n'apparaissent pas), et la ligne
-     seulement là s'ouvre dans le tableau de Base2, cherchée sur REF_UD. */
+     seulement là s'ouvre dans le tableau de Base2, cherchée sur REF_UD.
+     Les lots s'ouvrent repliés : on déplie « seulement dans Base2 ». */
+  const seulOuvert = await pr.evaluate(() => {
+    const t = document.querySelector('#liste-rapprochement button[data-plier="seul"]');
+    return t ? t.getAttribute('aria-expanded') : null;
+  });
+  verifier('plan par plan sur Base2 : les lots s\'ouvrent repliés', seulOuvert === 'false', String(seulOuvert));
+  await pr.click('#liste-rapprochement button[data-plier="seul"]'); await pr.waitForTimeout(300);
   const listeB2 = await pr.evaluate(() => ({
     groupes: [...document.querySelectorAll('#liste-rapprochement .rapp-groupe')].map(g => g.dataset.cle + '=' + g.querySelector('.rapp-groupe-tete b').textContent.replace(/\s/g, '')),
     seul: [...document.querySelectorAll('#liste-rapprochement .rapp-groupe[data-cle="seul"] .rapp-puce')].map(b => ({
@@ -1996,11 +2002,12 @@ function serveurSur(valeurs, proprietes, fichiers) {
       .map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')),
     plans: document.querySelectorAll('#corps-tableau tr').length,
     journal: document.getElementById('zone-journal').textContent,
+    semainesJournal: document.querySelectorAll('#zone-journal .journal-semaine').length,
     phrase: document.getElementById('phrase').textContent
   }));
   verifier('l\'apercu trace une vraie courbe', ex.points >= 5, String(ex.points));
-  verifier('et remplit aussi le journal des changements',
-    /UD-/.test(ex.journal) && !/deuxième archivage/.test(ex.journal), ex.journal.slice(0, 90));
+  verifier('et remplit aussi le journal des changements (des semaines, repliées)',
+    ex.semainesJournal >= 2 && /passés? à/.test(ex.journal) && !/deuxième archivage/.test(ex.journal), ex.journal.slice(0, 90));
   verifier('la page se marque en exemple, cadre compris',
     ex.marque === 'true' && /dashed/.test(ex.encadre), ex.marque + ' / ' + ex.encadre);
   verifier('l\'interrupteur montre ou l\'on est',

@@ -2925,8 +2925,9 @@ async function reinitialiser(pg) {
   verifier('à l’ouverture, les cinq jalons et le repère du dernier relevé sont dans le cadre',
     cadrage.jalons === 5 && cadrage.aujourdhui, JSON.stringify(cadrage));
 
-  // La ligne « changement d'indice » de la semaine ouverte n'est plus reléguée derrière « voir les autres ».
-  verifier('un changement d’indice se lit dans la semaine ouverte sans déplier « voir les autres »',
+  // La ligne « changement d'indice » d'une semaine dépliée n'est plus reléguée derrière « voir les autres ».
+  await p.click('.journal-semaine .journal-plier >> nth=0'); await p.waitForTimeout(300);
+  verifier('un changement d’indice se lit dans la semaine dépliée sans ouvrir « voir les autres »',
     await p.evaluate(() => !!document.querySelector('.journal-semaine .journal-liste .ref-indice')));
 
   // La bulle d'une puce du comparatif ne liste plus de références tronquées.
