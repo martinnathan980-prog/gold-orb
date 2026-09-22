@@ -260,6 +260,7 @@ body[data-exemple="true"] .bandeau-mode {
 .titre-journal { margin: 0; }
 /* Le filtre du journal : des mots avec leur pastille, pas une barre noire.
    Le choix courant se cerne d'un filet ; le reste s'efface. */
+.commandes-journal { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-width: 0; }
 .filtre-journal { display: inline-flex; flex-wrap: wrap; gap: 2px 4px; }
 .filtre-journal button {
   display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; background: none;
@@ -587,6 +588,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
    filet, comme les semaines du journal. */
 .rapp-liste { margin-top: 24px; }
 .rapp-liste:empty { display: none; }
+.rapp-sur { font-size: 12px; color: var(--encre-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .rapp-liste-tete { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
 .rapp-liste-titre { font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 17px; margin: 0; }
 .rapp-puces-legende { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; margin-left: auto; font-size: 12.5px; color: var(--encre-2); }
@@ -907,74 +909,4 @@ table.plans thead tr th.col-fige { z-index: 6; }
 .pied { padding: 20px 0 42px; margin-top: 32px; border-top: 1px solid var(--filet); color: var(--encre-3); font-size: 11.5px; line-height: 1.8; }
 .masque { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 @media (prefers-reduced-motion: reduce) { .barre span, .ombre-defile, .poignee { transition: none; } }
-
-/* ---------------------------------------------------- Chercher un plan */
-/* Une seule barre, sous le titre : elle cherche partout, et répond par la
-   fiche du plan plutôt que par une liste d'endroits où aller voir. */
-.chercher-plan { max-width: 720px; margin: 0 auto 26px; }
-.chercher-champ { position: relative; }
-.chercher-champ input {
-  width: 100%; border: 1px solid var(--filet-fort); border-radius: 999px;
-  background: var(--surface); color: var(--encre); font: inherit; font-size: 15px;
-  padding: 11px 16px 11px 42px;
-}
-.chercher-champ input::placeholder { color: var(--encre-3); }
-.chercher-champ input:hover { border-color: var(--encre-3); }
-.chercher-champ input:focus { outline: none; border-color: var(--encre); box-shadow: 0 0 0 3px var(--creux); }
-.chercher-champ > svg { position: absolute; left: 16px; top: 50%; margin-top: -8px; color: var(--encre-3); pointer-events: none; }
-.chercher-champ input:focus ~ svg, .chercher-champ input:not(:placeholder-shown) ~ svg { color: var(--encre); }
-.suggestions-plan {
-  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30;
-  list-style: none; margin: 0; padding: 6px; background: var(--surface);
-  border: 1px solid var(--filet-fort); border-radius: 10px; box-shadow: 0 10px 28px rgba(0, 0, 0, .12);
-  max-height: 340px; overflow-y: auto; overscroll-behavior: contain;
-}
-.suggestion-plan {
-  display: grid; grid-template-columns: 12px auto 1fr auto; align-items: center; gap: 4px 10px;
-  padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13.5px;
-}
-.suggestion-plan[aria-selected="true"], .suggestion-plan:hover { background: var(--creux); box-shadow: inset 0 0 0 1px var(--filet-fort); }
-.suggestion-plan .ref { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--encre); }
-.suggestion-plan .ref mark { background: var(--r2); color: inherit; border-radius: 2px; padding: 0 1px; }
-.suggestion-plan .nom { color: var(--encre-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.suggestion-plan .marque { font-size: 11.5px; color: var(--encre-3); white-space: nowrap; }
-.suggestion-vide, .suggestion-plus { padding: 9px 10px; font-size: 13px; color: var(--encre-3); list-style: none; }
-
-.fiche-plan {
-  margin-top: 14px; background: var(--surface); border: 1px solid var(--filet-fort); border-radius: 12px;
-  padding: 18px 20px 16px; text-align: left;
-}
-.fiche-tete { display: flex; align-items: flex-start; gap: 14px; }
-.fiche-tete > div { flex: 1 1 auto; min-width: 0; }
-.fiche-ref { font-family: "IBM Plex Mono", monospace; font-size: 19px; color: var(--encre); letter-spacing: .01em; }
-.fiche-ref .suite { color: var(--encre-2); }
-.fiche-nom { margin-top: 3px; color: var(--encre-2); font-size: 14px; }
-.fiche-cles { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--encre-2); }
-.fiche-cles b { font-weight: 500; color: var(--encre); }
-.fiche-fermer {
-  flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--filet-fort);
-  background: none; color: var(--encre-2); font: inherit; font-size: 17px; line-height: 1; cursor: pointer;
-}
-.fiche-fermer:hover { color: var(--encre); border-color: var(--encre-3); }
-.fiche-blocs { margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px 22px; }
-.fiche-bloc { border-top: 1px solid var(--filet); padding-top: 10px; min-width: 0; }
-.fiche-bloc h3 { margin: 0 0 7px; font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--encre-3); }
-.fiche-bloc p { margin: 0 0 6px; font-size: 14px; color: var(--encre); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.fiche-bloc .doux { color: var(--encre-2); font-size: 13px; }
-.fiche-frise { display: flex; gap: 2px; margin: 6px 0 3px; }
-.frise-case { flex: 1 1 0; min-width: 5px; max-width: 28px; height: 16px; border-radius: 2px; }
-.frise-case.absent { background: transparent; box-shadow: inset 0 0 0 1px var(--filet-fort); }
-.frise-bornes { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--encre-3); max-width: 100%; }
-.fiche-evts { list-style: none; margin: 8px 0 0; padding: 0; font-size: 13px; color: var(--encre-2); max-height: 150px; overflow-y: auto; }
-.fiche-evts li { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
-.fiche-evts .sem { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--encre-3); min-width: 34px; }
-.fiche-lien { border: none; background: none; padding: 2px 0; font: inherit; font-size: 13px; cursor: pointer; color: var(--encre-2); text-decoration: underline; text-underline-offset: 3px; }
-.fiche-lien:hover { color: var(--encre); }
-.fiche-actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 20px; }
-@media (max-width: 520px) {
-  .fiche-plan { padding: 14px 14px 12px; }
-  .fiche-ref { font-size: 16px; }
-  .suggestion-plan { grid-template-columns: 12px 1fr; }
-  .suggestion-plan .nom, .suggestion-plan .marque { grid-column: 2; }
-}
 </style>

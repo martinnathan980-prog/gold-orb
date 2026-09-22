@@ -1476,6 +1476,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pg.click('#choix-perimetre button[data-perimetre=""]'); await pg.waitForTimeout(500);
 
   section('Journal des changements');
+  const ouvertesDEmblee = await pg.evaluate(() => [...document.querySelectorAll('.journal-plier')].map(e => e.getAttribute('aria-expanded')));
+  // On déplie la plus récente pour lire ses lignes.
+  await pg.click('.journal-plier >> nth=0'); await pg.waitForTimeout(300);
   const jrn = await pg.evaluate(() => ({
     semaines: [...document.querySelectorAll('.journal-tete .sem')].map(e => e.textContent.trim()),
     resumes: [...document.querySelectorAll('.journal-tete .resume')].map(e => e.textContent.trim()),
@@ -1487,7 +1490,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     jrn.semaines.length >= 2, String(jrn.semaines.length));
   verifier('la semaine la plus récente est en tête',
     jrn.semaines[0] > jrn.semaines[jrn.semaines.length - 1], JSON.stringify(jrn.semaines));
-  verifier('elle est la seule ouverte d\'emblée',
+  verifier('toutes les semaines sont repliées d\'emblée',
+    ouvertesDEmblee.length >= 2 && ouvertesDEmblee.every(v => v === 'false'), JSON.stringify(ouvertesDEmblee));
+  verifier('un clic déplie la plus récente, et elle seule',
     jrn.ouvertes[0] === 'true' && jrn.ouvertes.slice(1).every(v => v === 'false'),
     JSON.stringify(jrn.ouvertes));
   verifier('le résumé est écrit en français correct',

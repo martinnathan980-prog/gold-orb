@@ -64,7 +64,7 @@ ferait perdre au découpage suivant. Tout passe par le prototype (et par
   six verdicts en français — terminés et dans SEE, autre indice, dans SEE mais
   pas terminés ici, terminés absents de SEE, pas encore dans SEE, seulement
   dans SEE — qui filtrent le tableau, puis **plan par plan** : un groupe par
-  verdict dans l'ordre des priorités, les écarts dépliés, ce qui va replié,
+  verdict dans l'ordre des priorités, tous repliés à l'ouverture,
   et un clic sur une référence la montre dans le tableau ; derrière
   l'interrupteur GATES | SEE, l'extract SEE à l'identique avec le verdict sur
   chaque ligne.

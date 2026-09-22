@@ -182,9 +182,12 @@ affiche en haut l'interrupteur **Définition électrique | Concept harnais**,
 et **toute la page suit** la colonne choisie : la barre, la courbe et son
 historique, le journal, le bloc par groupe (« Concept harnais par ATA »), le
 filtre des états, le tableau (c'est la colonne suivie qui porte la pastille
-d'état), la comparaison avec SEE et la fiche d'un plan. Changer d'avancement
-retire les filtres posés — un « terminé » n'a plus le même sens — et garde
-le cadre : périmètre, fenêtre du graphique, regroupement.
+d'état). Le titre devient **« Suivi concept harnais »**. SEE ne connaît pas
+le concept harnais : sous lui, la **comparaison avec SEE disparaît** — la
+section comme l'interrupteur GATES | SEE du tableau — et revient avec la
+définition électrique. Changer d'avancement retire les filtres posés — un
+« terminé » n'a plus le même sens — et garde le cadre : périmètre, fenêtre du
+graphique, regroupement.
 
 L'archivage garde **les deux valeurs de chaque plan** : la carte d'un relevé
 porte `[définition, concept]` par référence. Les relevés d'avant n'ont que
@@ -449,7 +452,7 @@ Chaque valeur distincte — « Validé », « Check », « En cours », « A tra
 — devient un état affiché, **écrit comme dans l'extract**, avec son compte :
 une part de la barre, un bouton de filtre, un bouton du journal. Un passage
 d'une valeur à une autre compte comme un changement (« A traiter » → « Check »
-aussi), et le journal comme la fiche d'un plan le disent avec ces mots-là
+aussi), et le journal le dit avec ces mots-là
 (« passé à « Check » »). Une colonne qui change de vocabulaire change la page
 avec elle, sans rien toucher.
 
@@ -542,9 +545,9 @@ GATES, et où mène le clic.
 
 **Plan par plan**, sous les cercles : un groupe par verdict, dans l'ordre
 des priorités — d'abord ce qui est à vérifier (terminés absents de SEE, dans
-SEE pas terminés ici, autre indice, seulement dans SEE), **dépliés** ; puis ce
-qui va (pas encore dans SEE, terminés et dans SEE), **repliés** — un clic sur
-la tête du groupe plie ou déplie. Cette tête porte la pastille, le nombre et
+SEE pas terminés ici, autre indice, seulement dans SEE), puis ce qui va (pas
+encore dans SEE, terminés et dans SEE). À l'ouverture, **tous sont repliés** —
+un clic sur la tête du groupe plie ou déplie. Cette tête porte la pastille, le nombre et
 la même phrase que le verdict — rien d'autre. Dans un groupe, **une puce par
 plan** : sa pastille d'état GATES, sa référence, et pour une réémission la
 lettre sous laquelle SEE le connaît (« → B », en violet) ; douze plans
@@ -689,33 +692,38 @@ chacun est bien l'une des valeurs de la colonne de domaine du premier contrat
 — sinon il nomme le jalon et donne les valeurs vues, à recopier dans
 `perimetre`.
 
-## 13 bis. Chercher un plan
+## 13 bis. Chercher un plan dans une section
 
-Sous le titre, **une seule barre** cherche un plan partout. Trois caractères
-d'une référence suffisent (`TFE3110…`) ; en minuscules, avec des tirets ou des
-espaces, et même **écrite à la mode de SEE** (le A un cran trop tôt), elle
-mène au même plan. Trois lettres d'un nom d'installation marchent aussi.
-Une ancienne émission tapée en entier mène au plan d'aujourd'hui ; un plan
-sorti de l'extract se retrouve par ses relevés ; une ligne que SEE est seule
-à connaître se trouve aussi.
+Pas de barre qui cherche partout : chaque section qui montre des plans a
+**son propre petit champ**, à droite de son titre, qui ne cherche **que chez
+elle** — on regarde son plan dans le carré qu'on veut, sans remonter en haut
+de la page :
 
-La réponse n'est pas une liste d'endroits où aller voir — on risquerait de
-n'en regarder qu'un : c'est la **fiche du plan**, qui rassemble tout ce que la
-page sait de lui :
+- **Ce qui a changé, semaine par semaine** : le journal ne garde que les
+  passages du plan cherché ; ses semaines — et elles seules — restent,
+  dépliées sur lui.
+- **Avancement par ATA** (ou la dimension ouverte) : le champ « ATA ou
+  plan… » filtre les groupes par leur nom, comme avant, et trouve aussi un
+  plan : son groupe reste, et sous lui le plan trouvé, seul. Un clic le
+  montre dans le tableau.
+- **Comparaison des bases de données** : chaque lot ne garde que les plans
+  cherchés, déplié sur eux, avec « sur N » pour le total du lot ; une ligne
+  que SEE est seule à connaître se trouve aussi.
+- **Plans** : la recherche du tableau, dans toutes les colonnes, comme avant.
 
-- **Aujourd'hui** : son état, et la valeur de l'extract quand elle apprend
-  quelque chose (« 45 % ») ;
-- **Semaine par semaine** : une case par relevé archivé, à la couleur de son
-  état ce jour-là, et la liste de ses passages (« S34 passé en terminé »,
-  « changement d'indice : B → C ») ;
-- **Avancement par ATA** (ou la dimension ouverte) : son groupe, en nombres ;
-- **Comparaison avec SEE** : son verdict, et sa ligne telle que SEE l'écrit.
+Trois caractères d'une référence suffisent (`TFE3110…`) ; en minuscules, avec
+des tirets ou des espaces, et même **écrite à la mode de SEE** (le A un cran
+trop tôt), elle mène au même plan. En deçà de trois caractères, les champs du
+journal et de la comparaison ne filtrent rien. Échap vide le champ. Ces
+champs ne touchent qu'à leur section : ni le tableau, ni la barre, ni le
+bandeau des filtres ne bougent.
 
-Chaque bloc mène à sa section : « Voir dans le tableau des plans » (le
-tableau réduit à ce plan), « Voir ce groupe », « Voir dans le tableau de
-SEE », « Voir le journal ». Clavier : flèches pour choisir, Entrée pour
-ouvrir, Échap pour refermer la liste puis la fiche. La fiche suit le
-périmètre et l'avancement suivi du moment.
+## 13 ter. Ce qui est replié à l'ouverture
+
+La page s'ouvre **tout replié** : les semaines du journal, les lots « plan par
+plan » de la comparaison et les groupes (ATA, ECP…) ; le lecteur déplie ce
+qu'il veut voir. Le graphique s'ouvre sur **un an** (le bouton « 1 an »),
+élargi s'il le faut pour garder tous les jalons dans le champ.
 
 ## 14. Ce qui reste local à chaque personne
 

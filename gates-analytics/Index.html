@@ -66,31 +66,13 @@
   <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
        pas répété, il est déjà choisi en haut. -->
   <header class="masthead">
-    <h1>Suivi FWD</h1>
+    <h1 id="titre-page">Suivi FWD</h1>
     <div class="semaine">
       <span><b id="num-semaine">—</b></span>
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
     </div>
   </header>
-
-  <!-- Chercher un plan : une seule barre, qui cherche partout. Elle répond
-       par la fiche du plan — tout ce que la page sait de lui, au même endroit,
-       avec un lien vers chaque section où il paraît. -->
-  <section class="chercher-plan" id="chercher-plan">
-    <div class="chercher-champ">
-      <label class="masque" for="champ-plan">Chercher un plan</label>
-      <input id="champ-plan" type="search" autocomplete="off" spellcheck="false"
-             placeholder="Chercher un plan — ex. TFE3110…"
-             role="combobox" aria-expanded="false" aria-controls="suggestions-plan" aria-autocomplete="list">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
-        <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-      </svg>
-      <ul class="suggestions-plan" id="suggestions-plan" role="listbox" aria-label="Plans trouvés" hidden></ul>
-    </div>
-    <div class="fiche-plan" id="fiche-plan" role="region" aria-label="Fiche du plan" hidden></div>
-  </section>
 
   <section class="avancement">
     <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
@@ -134,9 +116,21 @@
          dit lesquels. Les séparer obligeait à faire l'aller-retour. -->
     <div class="section-tete section-journal">
       <h2 class="titre-journal">Ce qui a changé, semaine par semaine</h2>
-      <span class="filtre-journal" id="filtre-journal" role="group" aria-label="Ne montrer que certains passages">
-        <button type="button" data-journal="" aria-pressed="true">Tout</button>
-      </span>
+      <div class="commandes-journal">
+        <span class="filtre-journal" id="filtre-journal" role="group" aria-label="Ne montrer que certains passages">
+          <button type="button" data-journal="" aria-pressed="true">Tout</button>
+        </span>
+        <!-- Chercher un plan dans le journal seulement : ses semaines
+             s'ouvrent sur lui, les autres s'effacent. -->
+        <div class="recherche recherche-groupe">
+          <label class="masque" for="recherche-journal">Chercher un plan dans le journal</label>
+          <input id="recherche-journal" type="search" placeholder="Chercher un plan…" autocomplete="off" spellcheck="false">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+            <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
     </div>
     <div class="feuille">
       <div class="defile-liste" id="zone-journal"></div>
@@ -243,6 +237,16 @@
   <section class="bloc rapprochement" id="rapprochement" hidden>
     <div class="section-tete">
       <h2 id="titre-rapprochement">Comparaison des bases de données</h2>
+      <!-- Chercher un plan dans la comparaison seulement : les lots qui le
+           contiennent s'ouvrent sur lui, les autres s'effacent. -->
+      <div class="recherche recherche-groupe">
+        <label class="masque" for="recherche-rapp">Chercher un plan dans la comparaison</label>
+        <input id="recherche-rapp" type="search" placeholder="Chercher un plan…" autocomplete="off" spellcheck="false">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </div>
     </div>
     <div class="rapp-face">
       <div class="rapp-figure" id="venn-rapprochement" role="img" aria-label="Comparaison GATES / seconde base"></div>

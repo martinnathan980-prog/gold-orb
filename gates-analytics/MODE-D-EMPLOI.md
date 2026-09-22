@@ -158,18 +158,14 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
 - **Le bandeau** : l'interrupteur **Données réelles / Exemple**, dès deux
   contrats le sélecteur **Contrat**, et l'interrupteur **Définition
   électrique | Concept harnais** — les deux avancements du bloc HDK AA 011 ;
-  toute la page suit celui qui est choisi. Sous le titre, la semaine où l'on
-  est, et rien d'autre.
+  toute la page suit celui qui est choisi, le titre aussi (« Suivi FWD » ou
+  « Suivi concept harnais »). Sous le titre, la semaine où l'on est, et rien
+  d'autre.
   « Exemple » montre, sur vos vrais plans, un historique fabriqué — pour
   voir ce que donneront les courbes quand les relevés se seront accumulés ;
   « Données réelles » revient à ce que le classeur contient. Le bandeau dit
   lequel est affiché (« Historique fabriqué ») et la page se borde de
   tirets ; le nombre de relevés du pied est alors celui de l'exemple.
-- **Chercher un plan**, sous le titre : taper trois caractères de sa
-  référence (même écrite à la mode de SEE), choisir, Entrée. La **fiche du
-  plan** s'ouvre : son état aujourd'hui, une case par semaine archivée et
-  ses passages, son groupe (ATA…), son verdict face à SEE — et un lien vers
-  chaque section où il paraît. Échap referme.
 - **Le périmètre** : Tout / BASE/OPTION / PERSO — les valeurs de la colonne
   « Domaine » de l'extract, telles quelles. Il restreint toute la page.
 - **En haut, sans titre** : la phrase « N sur M plans terminés », la barre
@@ -181,13 +177,15 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
 - **Avancement dans le temps** : la courbe des terminés relevé après relevé,
   les jalons du programme (numérotés 1 à 5 sur une rangée, en clair dans la
   légende dessous), la fin estimée au rythme actuel et le rythme requis pour
-  tenir le prochain jalon. La molette zoome, la souris déplace.
+  tenir le prochain jalon. Il s'ouvre sur un an ; la molette zoome, la
+  souris déplace.
 - **Ce qui a changé, semaine par semaine** : le journal — quels plans sont
   passés terminés, lesquels ont changé d'indice, lesquels sont apparus ou ont
-  disparu de l'extract.
+  disparu de l'extract. Les semaines s'ouvrent repliées ; le petit champ
+  « Chercher un plan… » à droite ne cherche que dans le journal.
 - **Avancement FWD par…** (ou **Concept harnais par…**) : le même avancement découpé par ATA, séquence,
   CC, ECP, ou par mois de création, avec la fin estimée et l'effort demandé
-  par groupe.
+  par groupe. Son champ « ATA ou plan… » trouve un groupe ou un plan.
 - **Plans** : l'extract, à l'identique, avec ses colonnes ; recherche, tri,
   filtres. « Vue essentielle » n'en garde qu'une poignée — référence, nom
   d'installation, ECP, ATA, séquence, validation définition électrique, date
@@ -195,8 +193,11 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   l'extract.
 - **Comparaison des bases de données** (si l'onglet `SEE` est là) : ce que
   GATES dit terminé et que SEE connaît, et les écarts — en cercles, en
-  verdicts, puis plan par plan en puces, les écarts d'abord — un lot déplié
-  montre tous ses plans. Un clic sur une référence la montre dans le tableau.
+  verdicts, puis plan par plan en puces, les écarts d'abord, tous repliés à
+  l'ouverture — un lot déplié montre tous ses plans. Un clic sur une
+  référence la montre dans le tableau ; le petit champ à droite du titre ne
+  cherche que dans la comparaison. Elle n'existe que pour la définition
+  électrique : SEE ne connaît pas le concept harnais.
 
 ## 7. Si quelque chose ne va pas
 
