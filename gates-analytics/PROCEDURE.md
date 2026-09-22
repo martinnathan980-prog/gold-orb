@@ -461,7 +461,7 @@ couleur et font la courbe :
 | **Fini** | une valeur de `CONFIG.VALEURS_FINIES` (par défaut **`Validé`**), comparée entière — « Non validé » n'en est pas —, ou `100 %`, `terminé`, `achevé`, `clôturé`, `soldé`, `fini`, `ok` |
 | **À faire** | `à faire`, `à traiter`, `non commencé`, `0 %` |
 | **En cours** | tout pourcentage strictement entre 0 et 100, ou toute autre valeur (« Check », « En cours »…) |
-| **Non renseigné** | cellule vide, ou `-` |
+| **Non renseigné** | cellule vide, `-`, ou `EMPTY` (tel que l'extract l'écrit) |
 
 Plusieurs valeurs d'une même famille prennent la couleur de la famille, de
 plus en plus claire. Seule la famille **fini** a un poids : c'est elle que

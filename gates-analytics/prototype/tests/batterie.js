@@ -1072,8 +1072,10 @@ async function reinitialiser(pg) {
     const serie = window.__serieAffichee();
     const evts = window.__journalAffiche().reduce((l, s) => l.concat(s.evenements), []);
     const C = window.__comparatif();
-    const refsComparatif = C ? ['termine', 'encours', 'afaire', 'nouveaux', 'disparus', 'indice']
-      .reduce((l, k) => l.concat(C[k]), []) : [];
+    /* Le comparatif range ses passages par valeur d'arrivée (parValeur),
+       puis les nouveaux, les disparus et les changements d'indice. */
+    const refsComparatif = C ? Object.keys(C.parValeur).reduce((l, k) => l.concat(C.parValeur[k]), [])
+      .concat(['nouveaux', 'disparus', 'indice'].reduce((l, k) => l.concat(C[k]), [])) : [];
     return {
       phrase: document.getElementById('phrase').textContent,
       etats: [...document.querySelectorAll('#etats .etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
@@ -2891,7 +2893,7 @@ async function reinitialiser(pg) {
   await basculerMode(p, 'exemple'); await p.waitForTimeout(900);
   const lotsExemple = await p.evaluate(() => (document.getElementById('comparatif').textContent || '').replace(/\s+/g, ' '));
   verifier('en exemple, le comparatif montre aussi passés en cours, nouveaux, disparus et une réémission',
-    /passés en cours/.test(lotsExemple) && /nouveau/.test(lotsExemple) && /disparu/.test(lotsExemple) && /indice/.test(lotsExemple),
+    /passés? à « En cours »/.test(lotsExemple) && /nouveau/.test(lotsExemple) && /disparu/.test(lotsExemple) && /indice/.test(lotsExemple),
     lotsExemple.slice(0, 160));
   // Changer de contrat en exemple ne rebascule plus sans un mot sur les données réelles.
   await p.selectOption('#select-contrat', 'THS'); await p.waitForTimeout(900);

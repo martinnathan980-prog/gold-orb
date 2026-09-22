@@ -94,7 +94,7 @@
   var VALEURS_FINIES_N = ['valide'];
   function classer(valeur) {
     var s = norm(valeur);
-    if (s === '' || s === '-') return 'vide';
+    if (s === '' || s === '-' || s === 'empty') return 'vide';
     if (VALEURS_FINIES_N.indexOf(s) !== -1) return 'termine';
     if (s.indexOf('a faire') !== -1 || s.indexOf('a traiter') !== -1 || s === 'non commence') return 'afaire';
     var n = parseFloat(s.replace(/[\s%]/g, '').replace(',', '.'));
@@ -1057,7 +1057,7 @@
      « vide ». */
   function cleValeur(v) {
     var n = norm(v);
-    if (n === '' || n === '-') return 'vide';
+    if (n === '' || n === '-' || n === 'empty') return 'vide';
     /* Un pourcentage n'est pas un état à lui seul : « 20 % », « 45 % »… se
        rangent ensemble, entre 0 et 100 ; 0 % et 100 % chacun à part. Les
        mots, eux, restent chacun le leur. */
@@ -3174,7 +3174,7 @@
     if (vue.journal && vue.journal !== 'indice' && !arrivees[vue.journal]) vue.journal = '';
     $('filtre-journal').innerHTML = '\x3Cbutton type="button" data-journal="" aria-pressed="' + !vue.journal + '">Tout\x3C/button>' +
       listeArrivees.map(function (v) {
-        return '\x3Cbutton type="button" data-journal="' + ech(v.cle) + '" aria-pressed="' + (vue.journal === v.cle) + '">' +
+        return '\x3Cbutton type="button" data-journal="' + ech(v.cle) + '" data-famille="' + v.famille + '" aria-pressed="' + (vue.journal === v.cle) + '">' +
           pastilleValeur(v.cle, v.famille) + ech(v.libelle) + '\x3C/button>';
       }).join('') +
       '\x3Cbutton type="button" data-journal="indice" aria-pressed="' + (vue.journal === 'indice') + '">\x3Cspan class="pastille indice">\x3C/span>Changement d\u2019indice\x3C/button>';

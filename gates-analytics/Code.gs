@@ -323,7 +323,7 @@ function normaliser(valeur) {
  */
 function classerFWD(valeur) {
   const s = normaliser(valeur);
-  if (s === '' || s === '-') return 'vide';
+  if (s === '' || s === '-' || s === 'empty') return 'vide';
   const finies = (CONFIG.VALEURS_FINIES && CONFIG.VALEURS_FINIES.length ? CONFIG.VALEURS_FINIES : ['Validé']).map(normaliser);
   if (finies.indexOf(s) !== -1) return 'termine';
   if (s.indexOf('a faire') !== -1 || s.indexOf('a traiter') !== -1 || s === 'non commence') return 'afaire';

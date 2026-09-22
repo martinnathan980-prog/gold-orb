@@ -86,7 +86,7 @@ npm install
 npm test
 ```
 
-- `npm run test:addon` — 362 tests. Le vrai `Code.gs` tourne dans Node contre
+- `npm run test:addon` — 367 tests. Le vrai `Code.gs` tourne dans Node contre
   un classeur en mémoire (`tests/faux-classeur.js`), sur un export
   volontairement pénible : lignes de titre, groupes fusionnés, en-têtes
   accentués ou dupliqués, ligne vide au milieu, avancements de toutes les

@@ -286,6 +286,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
     ['À faire', 'afaire'], ['à faire', 'afaire'], ['A FAIRE', 'afaire'], ['0%', 'afaire'],
     ['Non commencé', 'afaire'],
     ['', 'vide'], ['   ', 'vide'], ['-', 'vide'], [null, 'vide'], [undefined, 'vide'],
+    // « EMPTY », tel que l'extract l'écrit dans une case vide, est une case vide.
+    ['EMPTY', 'vide'], ['empty', 'vide'],
     /* Le vocabulaire de l'extract : « Validé » est fini (CONFIG.VALEURS_FINIES),
        comparé entier ; « à traiter » est à faire ; le reste est en cours. */
     ['Validé', 'termine'], ['VALIDE', 'termine'], ['  validé ', 'termine'],
@@ -297,7 +299,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     const obtenu = contexte.classerFWD(valeur);
     if (obtenu !== attendu) { tousBons = false; mauvais += ' ' + JSON.stringify(valeur) + '→' + obtenu; }
   });
-  verifier('les vingt-huit cas de classement tombent juste, « Validé » compris', tousBons, mauvais);
+  verifier('les trente cas de classement tombent juste, « Validé » compris', tousBons, mauvais);
   /* La page classe exactement comme le serveur : la même table, côté client. */
   const pageClasse = await (async () => {
     const nav0 = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -1528,13 +1530,20 @@ function serveurSur(valeurs, proprietes, fichiers) {
     await pg.evaluate(() => document.querySelectorAll('.journal-liste').length === 1));
 
   // Filtrer par type de passage
-  await pg.click('#filtre-journal button[data-journal="termine"]'); await pg.waitForTimeout(400);
-  verifier('le filtre « Terminés » ne laisse que des passages en terminé',
-    await pg.evaluate(() => [...document.querySelectorAll('.journal-ligne .vers')]
-      .every(v => /Terminé/.test(v.textContent))));
-  verifier('et les résumés ne parlent plus que de terminés',
-    await pg.evaluate(() => [...document.querySelectorAll('.journal-tete .resume')]
-      .every(r => !/passé|repassé|effacé/.test(r.textContent))));
+  /* Les boutons du journal sont les valeurs d'arrivée de la colonne : on
+     prend le premier de la famille « fini », quel que soit son nom. */
+  const boutonFini = await pg.evaluate(() => {
+    const b = document.querySelector('#filtre-journal button[data-famille="termine"]');
+    return b ? { cle: b.dataset.journal, mot: b.textContent.trim() } : null;
+  });
+  await pg.click('#filtre-journal button[data-famille="termine"]'); await pg.waitForTimeout(400);
+  verifier('le filtre d’une valeur finie (« ' + (boutonFini && boutonFini.mot) + ' ») ne laisse que des passages vers elle',
+    !!boutonFini && await pg.evaluate(m => [...document.querySelectorAll('.journal-ligne .vers')]
+      .every(v => v.querySelector('.etiq-etat.apres').textContent.trim() === m), boutonFini.mot));
+  verifier('et les résumés ne parlent plus que d’elle',
+    !!boutonFini && await pg.evaluate(k => [...document.querySelectorAll('.journal-tete .resume .compte-passage')]
+      .every(b => b.dataset.passage === k) &&
+      [...document.querySelectorAll('.journal-tete .resume')].every(r => !/effacé/.test(r.textContent)), boutonFini.cle));
   await pg.click('#filtre-journal button[data-journal=""]'); await pg.waitForTimeout(400);
 
   // Cliquer un plan filtre le tableau sur lui
@@ -1621,7 +1630,15 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('aucun bandeau tant que rien n\'est filtré',
     await pg.evaluate(() => document.getElementById('filtres-actifs').hidden));
 
-  await pg.click('#etats .etat-btn[data-etat="encours"]'); await pg.waitForTimeout(350);
+  /* Les boutons d'état sont les valeurs trouvées dans la colonne suivie :
+     on prend la première qui n'est pas « non renseigné ». */
+  const etatPose = await pg.evaluate(() => {
+    const b = document.querySelector('#etats .etat-btn:not([data-famille="vide"])');
+    return b ? { cle: b.dataset.etat } : null;
+  });
+  verifier('la colonne suivie propose au moins une valeur renseignée', !!etatPose);
+  await pg.click('#etats .etat-btn[data-etat="' + etatPose.cle + '"]'); await pg.waitForTimeout(350);
+  const libelleEtat = await pg.evaluate(k => window.__valeurs().filter(v => v.cle === k).map(v => v.libelle)[0], etatPose.cle);
   /* Le domaine se choisit par le périmètre du haut ; le filtre de colonne
      reste une porte d'entrée, et son jeton nomme la colonne. */
   await pg.fill('input[data-filtre="domaine"]', 'PERSO'); await pg.waitForTimeout(400);
@@ -1629,7 +1646,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const jetons = await pg.evaluate(() => [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').trim()));
   verifier('chaque filtre posé devient un jeton nommé', jetons.length === 3, JSON.stringify(jetons));
   verifier('le jeton dit quelle colonne et quelle valeur',
-    jetons.some(t => /État : En cours/.test(t)) && jetons.some(t => /Domaine : PERSO/.test(t)) &&
+    jetons.some(t => t.indexOf('État : ' + libelleEtat) !== -1) && jetons.some(t => /Domaine : PERSO/.test(t)) &&
     jetons.some(t => /Recherche : UD-24/.test(t)), JSON.stringify(jetons));
   verifier('le bandeau reste visible en haut de page',
     await pg.evaluate(() => getComputedStyle(document.getElementById('filtres-actifs')).position === 'sticky'));
