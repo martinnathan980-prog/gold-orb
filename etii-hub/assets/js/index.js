@@ -19,7 +19,7 @@ import { el, monter, initTheme, initNav, deleguer, ouvrirModale, suivreSommaire 
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
 import { porteurs, creditsPhotos } from './porteurs.js';
 import { creditPhoto } from './credits.js';
-import { kiosque, dossiersDepuisCommunications, alertesDepuisCommunications } from './kiosque.js';
+import { kiosque, dossiersDepuisCommunications, alertesDepuisCommunications, noteOrigine } from './kiosque.js';
 import { chargerSuivi, rendreSuivi } from './otq.js';
 import { chargerCommunications } from './communications.js';
 import { ouvrirEditeur } from './editeur.js';
@@ -46,7 +46,9 @@ function txt(valeur) {
 function rendreCommunication(donnees, conteneur) {
   verifierForme(donnees, { agenda: 'tableau' }, 'communications.json');
   const dossiers = dossiersDepuisCommunications(donnees, { pole: 'ETII' });
-  monter(conteneur, kiosque({
+  /* Une ligne, seulement s'il y a quelque chose à dire sur la source : la
+     feuille du service n'a pas répondu, ou des lignes n'ont pas été lues. */
+  monter(conteneur, noteOrigine(donnees), kiosque({
     id: 'kiosque-service',
     dossiers,
     alertes: alertesDepuisCommunications(donnees),

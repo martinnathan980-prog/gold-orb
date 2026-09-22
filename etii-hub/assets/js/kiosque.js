@@ -332,15 +332,24 @@ export function dossiersDepuisCommunications(donnees, options) {
   const agenda = Array.isArray(d.agenda) ? d.agenda.filter((e) => e && typeof e === 'object') : [];
   const annonces = Array.isArray(d.annonces) ? d.annonces.filter((e) => e && typeof e === 'object') : [];
 
+  /* Écarté par la DATE, et pas seulement par le statut : une faute de frappe
+     sur l'année (2062 pour 2026) épinglait sinon la communication juste sous
+     l'édito pour toujours, et coupait la frise en deux. Une date illisible
+     passe : la carte « Sans date » vaut mieux qu'une disparition muette. */
+  const passee = (e) => {
+    const j = joursRestants(e.date);
+    return j === null || j <= 0;
+  };
+
   const historique = [
-    ...annonces.filter(garder).map((e) => dossierDepuis(e, {
+    ...annonces.filter((e) => garder(e) && passee(e)).map((e) => dossierDepuis(e, {
       id: 'annonce-' + texte(e.id),
       groupe: 'historique',
       programme: texte(e.categorie) || 'Général',
       statut: STATUTS[texte(e.statut)] ? texte(e.statut) : 'info'
     })),
     ...agenda
-      .filter((e) => texte(e.statut) !== 'a-venir' && texte(e.type) !== 'mot' && garder(e))
+      .filter((e) => texte(e.statut) !== 'a-venir' && texte(e.type) !== 'mot' && garder(e) && passee(e))
       .map((e) => dossierDepuis(Object.assign({}, e, { corps: e.corps || e.resume }), {
         id: 'agenda-' + texte(e.id),
         groupe: 'historique',
@@ -359,6 +368,33 @@ export function dossiersDepuisCommunications(donnees, options) {
   return dossiers.concat(uniques);
 }
 
+/**
+ * La ligne d'avertissement à poser sous le titre de la section
+ * Communication, ou null s'il n'y a rien à dire. Deux cas seulement, et
+ * jamais en configuration de démonstration (aucune feuille branchée) :
+ * la feuille est injoignable, ou elle a été lue mais des lignes n'ont pas
+ * pu l'être. Le second nomme le REMÈDE : c'est ce qui permet au chef d'agir
+ * seul au lieu d'ouvrir la console.
+ *
+ * @param {object} donnees  le retour de chargerCommunications()
+ * @returns {HTMLElement|null}
+ */
+export function noteOrigine(donnees) {
+  const d = objet(donnees);
+  if (!d) return null;
+  const ligne = (t) => el('p', { class: 'kiosque-note texte-sm texte-doux', role: 'note' }, t);
+  if (d.echecFeuille === true) {
+    return ligne('Feuille du service injoignable : voici la dernière version embarquée.');
+  }
+  const ecartees = Number(d.ecartees) || 0;
+  if (ecartees > 0) {
+    return ligne(ecartees === 1
+      ? 'Une ligne de la feuille n\u2019a pas été lue : la colonne date doit être au format AAAA-MM-JJ.'
+      : ecartees + ' lignes de la feuille n\u2019ont pas été lues : la colonne date doit être au format AAAA-MM-JJ.');
+  }
+  return null;
+}
+
 /** Les alertes en cours, sous forme de chaînes. */
 export function alertesDepuisCommunications(donnees) {
   const d = (donnees && typeof donnees === 'object') ? donnees : {};
@@ -374,17 +410,18 @@ export function apercuAlertes(alertes) { return bandeauAlertes(Array.isArray(ale
 
 function bandeauAlertes(alertes) {
   if (!alertes.length) return null;
-  const liste = (copie) => el('ul', {
-    class: ['kiosque__alertes-liste', copie ? 'kiosque__alertes-liste--copie' : null],
-    'aria-hidden': copie ? 'true' : null
-  }, alertes.map((a) => el('li', { class: 'kiosque__alerte' }, a)));
+  /* Une seule liste : la copie masquée ne servait qu'à boucler un
+     défilement que le bandeau n'a plus — il est statique et lisible à
+     toutes les largeurs. */
+  const liste = () => el('ul', { class: 'kiosque__alertes-liste' },
+    alertes.map((a) => el('li', { class: 'kiosque__alerte' }, a)));
 
   return el('div', { class: 'kiosque__alertes', role: 'region', 'aria-label': 'Alertes en cours' },
     el('span', { class: 'kiosque__alertes-etiquette' },
       el('span', { class: 'kiosque__alertes-point', 'aria-hidden': 'true' }),
       alertes.length > 1 ? 'Alertes' : 'Alerte'),
     el('div', { class: 'kiosque__alertes-fenetre' },
-      el('div', { class: 'kiosque__alertes-piste' }, liste(false), liste(true))));
+      el('div', { class: 'kiosque__alertes-piste' }, liste())));
 }
 
 /* -------------------------------------------------------------------------
@@ -847,11 +884,32 @@ export function kiosque(options) {
     if (cible) lire(cible, { montrer: !!cibleDemandee }); else viderLecture();
   }
 
+  /* Sur une colonne, la lecture est SOUS la liste : toucher une carte
+     changeait le contenu sans que rien n'arrive à l'écran. On amène donc la
+     lecture sous la barre du site, dont on MESURE la hauteur réelle — le
+     jeton --hauteur-barre-site vaut 57 px là où la barre en mesure 97. */
+  const uneColonne = () => typeof window.matchMedia === 'function'
+    && window.matchMedia(REQUETE_UNE_COLONNE).matches;
+  let auClavier = false;
+
+  function amenerLecture() {
+    const barre = document.querySelector('.site-entete');
+    const marge = (barre ? barre.getBoundingClientRect().height : 0) + 8;
+    const cible = lect.racine.getBoundingClientRect().top + window.scrollY - marge;
+    window.scrollTo({ top: Math.max(0, cible), behavior: mouvementReduit() ? 'auto' : 'smooth' });
+  }
+
   zoneListe.addEventListener('click', (evt) => {
     const bouton = evt.target.closest('.kiosque__carte');
     if (!bouton) return;
     const dossier = tous.find((d) => d.id === bouton.dataset.id);
-    if (dossier) { lire(dossier, { montrer: true }); annoncer(dossier.titre); }
+    if (dossier) {
+      lire(dossier, { montrer: true });
+      annoncer(dossier.titre);
+      /* Au clavier, non : chaque flèche arracherait la liste de l'écran et
+         rendrait le parcours impraticable. */
+      if (!auClavier && uneColonne()) amenerLecture();
+    }
   });
 
   zoneListe.addEventListener('keydown', (evt) => {
@@ -868,7 +926,9 @@ export function kiosque(options) {
     /* Le focus ne fait pas sauter la page : c'est lire() qui fait défiler
        la liste, et elle seule, jusqu'à la carte. */
     boutons[suivant].focus({ preventScroll: true });
+    auClavier = true;
     boutons[suivant].click();
+    auClavier = false;
   });
 
   if (puces) {
@@ -902,6 +962,12 @@ export function kiosque(options) {
   /* Arrivée par un lien : #communication=ID lit cette entrée. */
   const demandee = texte(etatUrl.lire().communication);
   rendreListe(demandee || null);
+  /* …et un lien suivi alors qu'on est DÉJÀ sur la page, ou le bouton
+     Précédent : sans cette écoute, ni l'un ni l'autre n'avait d'effet. */
+  etatUrl.ecouter((e) => {
+    const id = texte(e.communication);
+    if (id) rendreListe(id);
+  });
   return racine;
 }
 

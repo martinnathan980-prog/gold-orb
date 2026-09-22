@@ -5,6 +5,9 @@
 import { analyserCorps, corpsEnTexte, analyserCsv, analyserChiffres, analyserSerie,
   chiffresEnTexte, serieEnTexte, communicationsDepuisLignes, annonceDepuisLigne, ligneDepuisAnnonce, COLONNES }
   from '../assets/js/communications.js';
+// kiosque.js ne touche au DOM qu'à l'appel : ses fonctions de tri sont
+// lisibles sous Node, et c'est là que la date d'une entrée est jugée.
+import { dossiersDepuisCommunications } from '../assets/js/kiosque.js';
 
 let ok = 0, ko = 0;
 const t = (nom, cond, detail = '') => {
@@ -55,7 +58,7 @@ console.log('\n== Des lignes à l’objet communications ==');
 const objet = communicationsDepuisLignes([
   { type: 'mot', date: '2026-09-15', titre: 'Un trimestre qui se tient', resume: 'Trois mois de progrès.', corps: 'Merci à tous.', auteur: 'Personne 01', fonction: 'Direction', chiffres: 'OTQ = 95,4 %' },
   { type: 'mot', date: '2026-06-01', titre: 'Ancien mot', corps: '…' },
-  { type: 'annonce', id: 'c9', date: '12/09/2026', pole: 'etiie', categorie: 'Outils', statut: 'URGENT', titre: 'Migration', resume: 'Interruption.', corps: '! Sauvegardez.', image: 'https://exemple.invalid/photo.jpg', imageAlt: 'Une photo', serie: 'Charge (h) | 2026-08 = 10 ; 2026-09 = 12' },
+  { type: 'annonce', id: 'c9', date: '2026-09-12', pole: 'etiie', categorie: 'Outils', statut: 'URGENT', titre: 'Migration', resume: 'Interruption.', corps: '! Sauvegardez.', image: 'https://exemple.invalid/photo.jpg', imageAlt: 'Une photo', serie: 'Charge (h) | 2026-08 = 10 ; 2026-09 = 12' },
   { type: 'alerte', titre: 'Maintenance mercredi soir.' },
   { type: 'annonce', date: 'pas une date', titre: 'Illisible' },
   { type: '', date: '2026-08-19', titre: 'Sans type ni id', pole: 'ETIII' }
@@ -70,13 +73,40 @@ t('l’édito précédent reprend sa place dans la frise, daté et identifié',
   && ancienEdito.date === '2026-06-01' && !!ancienEdito.id,
   JSON.stringify(ancienEdito && { id: ancienEdito.id, categorie: ancienEdito.categorie }));
 const migration = objet.annonces.find((a) => a.id === 'c9');
-t('date française convertie, pôle et statut normalisés', migration.date === '2026-09-12' && migration.pole === 'ETIIE' && migration.statut === 'urgent');
+t('date conservée, pôle et statut normalisés', migration.date === '2026-09-12' && migration.pole === 'ETIIE' && migration.statut === 'urgent');
 t('image, corps typé, série', migration.image.src === 'https://exemple.invalid/photo.jpg' && migration.corps[0].type === 'alerte' && migration.serie.valeurs[1] === 12);
 const sansId = objet.annonces.find((a) => a.titre === 'Sans type ni id');
 t('un identifiant est fabriqué quand il manque', /^f20260819-\d+$/.test(sansId.id) && sansId.categorie === 'Général' && sansId.statut === 'info');
 t('les annonces sont triées, la plus récente d’abord', objet.annonces[0].date >= objet.annonces[1].date);
 t('agenda vide, jamais absent', Array.isArray(objet.agenda) && objet.agenda.length === 0);
 t('entrée nulle → objet vide', communicationsDepuisLignes(null).annonces.length === 0);
+
+console.log('\n== Les dates : AAAA-MM-JJ, et rien d’autre ==');
+const strict = communicationsDepuisLignes([
+  { type: 'annonce', date: '09/21/2026', titre: 'Date à l’américaine' },
+  { type: 'annonce', date: '12/09/2026', titre: 'Date à la française' },
+  { type: 'annonce', date: '2026-09-12', titre: 'Date ISO' }
+]);
+t('une date JJ/MM/AAAA n’est plus devinée : la ligne est refusée',
+  strict.annonces.length === 1 && strict.annonces[0].titre === 'Date ISO', `(${strict.annonces.length})`);
+t('les lignes écartées sont comptées, pour pouvoir le dire dans la page',
+  strict.ecartees === 2, `(${strict.ecartees})`);
+
+console.log('\n== Le kiosque n’affiche que ce qui a eu lieu ==');
+const dossiers = dossiersDepuisCommunications({
+  annonces: [
+    { id: 'f1', date: '2062-09-12', titre: 'Faute de frappe sur l’année' },
+    { id: 'f2', date: '2026-01-05', titre: 'Une communication réelle' }
+  ],
+  agenda: [
+    { id: 'a1', date: '2062-10-08', statut: 'passee', type: 'reunion', titre: 'Passée, mais datée dans le futur' }
+  ]
+});
+t('une annonce datée d’une année future ne coupe plus la frise en deux',
+  !dossiers.some((x) => x.id === 'annonce-f1'), JSON.stringify(dossiers.map((x) => x.id)));
+t('une entrée d’agenda « passee » datée dans le futur ne passe plus le filtre',
+  !dossiers.some((x) => x.id === 'agenda-a1'));
+t('la communication réelle, elle, reste', dossiers.some((x) => x.id === 'annonce-f2'));
 
 console.log('\n== Une alerte ne survit pas à sa quinzaine ==');
 const jourIso = (recul) => { const d = new Date(); d.setDate(d.getDate() - recul); return d.toISOString().slice(0, 10); };

@@ -260,13 +260,18 @@ export function serieEnTexte(serie) {
    5. Des lignes de la feuille à l'objet de communications.json
    ------------------------------------------------------------------------- */
 
+/* AAAA-MM-JJ, et rien d'autre. La forme JJ/MM/AAAA a été retirée : Sheets
+   exporte la valeur AFFICHÉE, selon la locale du classeur (États-Unis par
+   défaut), et le mode d'emploi recommande précisément « Publier sur le web
+   → CSV ». « 09/21/2026 » devenait alors le mois 21, mais surtout
+   « 09/05/2026 » devenait le 9 mai EN SILENCE — dix-neuf jours du mois sur
+   trente et un tombaient dans ce cas muet, et le portail fabriquait une
+   date fausse. Refuser la ligne et le DIRE (voir les lignes écartées, plus
+   bas) vaut mieux qu'inventer un mois. Les deux écrivains du site
+   produisent déjà de l'ISO. */
 function dateIso(brut) {
-  const t = texte(brut);
-  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
-  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
-  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(t); // 12/09/2026, tel que Google Sheets l'exporte en français
-  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-  return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(texte(brut));
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : '';
 }
 
 /* Une alerte dit « en ce moment ». Passé ce délai elle quitte le bandeau
@@ -352,10 +357,13 @@ function versAnnonceEdito(mot) {
  * - type « annonce » (ou vide) : une annonce.
  * Une ligne illisible est ignorée avec un avertissement, jamais une exception.
  * @param {Array<object>} lignes
- * @returns {{motDuChef: object|null, alertes: string[], annonces: object[], agenda: object[]}}
+ * @returns {{motDuChef: object|null, alertes: string[], annonces: object[], agenda: object[], ecartees: number}}
  */
 export function communicationsDepuisLignes(lignes) {
-  const resultat = { motDuChef: null, alertes: [], annonces: [], agenda: [] };
+  /* `ecartees` est la contrepartie de la lecture stricte des dates : une
+     feuille mal formatée ne perd plus une date, elle perd sa ligne — il
+     faut donc pouvoir le dire au chef, dans la page (voir noteOrigine). */
+  const resultat = { motDuChef: null, alertes: [], annonces: [], agenda: [], ecartees: 0 };
   const mots = [];
   (Array.isArray(lignes) ? lignes : []).forEach((ligne, i) => {
     const type = normaliser(ligne && ligne.type) || 'annonce';
@@ -371,7 +379,8 @@ export function communicationsDepuisLignes(lignes) {
     }
     const annonce = annonceDepuisLigne(ligne, i);
     if (!annonce) {
-      if (typeof console !== 'undefined') console.warn('[communications] ligne ' + (i + 2) + ' ignorée : titre ou date manquant.');
+      resultat.ecartees += 1;
+      if (typeof console !== 'undefined') console.warn('[communications] ligne ' + (i + 2) + ' ignorée : titre manquant, ou date hors du format AAAA-MM-JJ.');
       return;
     }
     if (type === 'mot' || type === 'motduchef') {
@@ -531,10 +540,12 @@ export async function publierCommunication(type, contenu) {
  * avertissement en console — le service ne doit jamais voir une page
  * blanche à cause d'une URL.
  * @returns {Promise<object>} objet de la forme de communications.json,
- *   avec `origine` : 'feuille' ou 'fichier'
+ *   avec `origine` ('feuille' ou 'fichier'), `echecFeuille` (la feuille était
+ *   renseignée mais illisible) et `ecartees` (lignes de la feuille non lues)
  */
 export async function chargerCommunications() {
   const url = texte(SOURCE.url);
+  let echecFeuille = false;
   if (url) {
     try {
       /* Borné : une feuille qui ne répond jamais figeait le Communication
@@ -547,9 +558,13 @@ export async function chargerCommunications() {
       objet.origine = 'feuille';
       return avecLocales(objet);
     } catch (e) {
+      /* Le repli sur le fichier du site est silencieux depuis toujours : la
+         page affiche une version ancienne sans que personne ne le sache.
+         Le drapeau permet de le dire en une ligne (noteOrigine). */
+      echecFeuille = true;
       if (typeof console !== 'undefined') console.warn('[communications] feuille illisible (' + (e && e.message) + ') : lecture du fichier du site.');
     }
   }
   const local = await chargerDonnees('communications');
-  return avecLocales(Object.assign({}, local, { origine: 'fichier' }));
+  return avecLocales(Object.assign({}, local, { origine: 'fichier', echecFeuille }));
 }
