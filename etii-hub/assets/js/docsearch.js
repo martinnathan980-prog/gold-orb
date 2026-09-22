@@ -23,7 +23,10 @@
    Invariants tenus ici :
    - aucun `innerHTML`, aucun `onclick=` : tout passe par el()/svg()/
      frag()/monter() et par la délégation d'événements de ui.js ;
-   - aucun appel réseau autre que le chargement de assets/data/documents.json ;
+   - un seul chargement indispensable, assets/data/documents.json ; celui de
+     assets/data/organigramme.json vient À CÔTÉ, sans bloquer le premier
+     rendu, et sert uniquement à faire du nom du porteur un lien vers sa
+     fiche : s'il échoue, la page se comporte comme s'il n'existait pas ;
    - RIEN n'est inventé : un champ vide s'écrit « à renseigner », jamais une
      valeur plausible. Tous les chiffres affichés sont comptés sur le JSON ;
    - l'index n'est jamais reconstruit à la frappe ;
@@ -490,6 +493,8 @@ const etat = {
 /** Données dérivées du JSON, remplies une fois au chargement. */
 const corpus = {
   documents: [],
+  /** Identifiant -> document, pour résoudre `remplacePar` sans balayage. */
+  parId: new Map(),
   index: null,
   valeurs: parDimension(() => []),
   connues: parDimension(() => new Set()),
@@ -620,6 +625,60 @@ function correspondFiltres(doc) {
     if (!valeursDoc(doc, dimension).includes(choisie)) return false;
   }
   return true;
+}
+
+/* -------------------------------------------------------------------------
+   4bis. La chaîne de remplacement
+
+   `documents.json` porte un champ FACULTATIF, `remplacePar` : l'identifiant
+   de la révision en vigueur. Le besoin numéro un du service est « retrouver
+   un document ET sa dernière version » ; sans ce champ, trois révisions du
+   même guide sortaient à égalité et le départage par date remontait, une
+   fois sur deux, la version périmée.
+
+   Ce que le portail fait, et ce qu'il ne fait pas : une révision remplacée
+   sort du CHEMIN NATUREL — le classement d'une requête en langage naturel
+   et la liste de propositions du champ — mais elle n'est jamais niée. Le
+   portail indexe des liens vers des documents qui vivent ailleurs : il ne
+   peut pas certifier ce qui est applicable, donc aucune carte ne porte
+   « en vigueur » (règle 6), et c'est le porteur qui reste l'autorité.
+
+   Trois chemins la ramènent, parce que les trois la demandent
+   explicitement : sa référence exacte (« je cherche ETII-PRO-035 » est un
+   geste légitime — justifier une décision passée), « parcourir tout le
+   fonds », et un parcours sans requête, par facettes ou par tuile, où les
+   chiffres affichés comptent le fonds entier et où la liste doit donc le
+   montrer entier. Quatrième garde-fou, dans `rendre()` : si l'écart vidait
+   la liste, on la rend quand même — « je sais que le document existe et le
+   portail ne me le montre pas » est le pire échec d'un moteur de recherche.
+   ------------------------------------------------------------------------- */
+
+/**
+ * Révision en vigueur qui remplace ce document, ou null s'il n'est pas
+ * remplacé (cas de la très grande majorité des documents).
+ *
+ * @param {object} doc
+ * @returns {object|null}
+ */
+function versionEnVigueur(doc) {
+  const cible = texteOuVide(doc && doc.remplacePar);
+  if (cible === '') return null;
+  return corpus.parId.get(cible) || null;
+}
+
+/**
+ * Cette révision remplacée doit-elle quitter la liste courante ?
+ *
+ * @param {object} doc
+ * @param {string} requete requête en cours (celle du champ, non rognée)
+ * @returns {boolean}
+ */
+function ecarteCarRemplace(doc, requete) {
+  if (!versionEnVigueur(doc)) return false;
+  if (etat.tout) return false;
+  const texte = String(requete === undefined ? etat.requete : requete).trim();
+  if (texte === '') return false;
+  return texte.toLowerCase() !== texteOuVide(doc.reference).toLowerCase();
 }
 
 /**
@@ -869,6 +928,8 @@ function preparerCorpus(donnees) {
   corpus.documents = donnees.documents.filter(
     (doc) => doc && typeof doc === 'object' && doc.id !== undefined
   );
+
+  corpus.parId = new Map(corpus.documents.map((doc) => [String(doc.id), doc]));
 
   // L'index est construit ICI, une fois pour toutes : jamais à la frappe.
   corpus.index = creerIndex(corpus.documents, CHAMPS_INDEXES);
@@ -1172,11 +1233,18 @@ function rendre() {
     .filter((resultat) => correspondFiltres(resultat.doc))
     .map((resultat) => resultat.doc);
 
+  /* Les révisions remplacées quittent le classement d'une requête — sauf
+     si elles en sont la seule réponse. Cacher le seul document qui
+     corresponde est un échec plus grave qu'en montrer un périmé, qui dit
+     lui-même, en tête de carte, laquelle fait foi. */
+  const enVigueur = retenus.filter((doc) => !ecarteCarRemplace(doc, etat.requete));
+  const liste = enVigueur.length > 0 ? enVigueur : retenus;
+
   // L'accueil ne rend aucune liste : `affiches` doit donc rester vide,
   // sinon ↑/↓ désigneraient des cartes détachées du DOM et Entrée ouvrirait
   // un document que la page n'affiche nulle part.
   const accueil = surAccueil();
-  etat.affiches = accueil ? [] : ordonner(retenus);
+  etat.affiches = accueil ? [] : ordonner(liste);
 
   majMenus();
   majTri();
@@ -1346,11 +1414,16 @@ function afficherAucunResultat() {
       dataset: { action: 'tout-effacer' }
     }, 'Tout effacer'));
   }
+  /* Quand une requête vient d'échouer, le bouton dit ce qu'il fait
+     vraiment : signaler CE document-là, dont le titre est déjà pré-rempli.
+     Sans requête (des facettes seules), il reste générique. */
   actions.append(el('button', {
     type: 'button',
     class: 'bouton bouton--principal',
     dataset: { action: 'proposer' }
-  }, 'Proposer un document'));
+  }, etat.requete.trim() === ''
+    ? 'Proposer un document'
+    : 'Signaler ce document manquant'));
   bloc.append(actions);
 
   monter(refs.messages, bloc);
@@ -1405,9 +1478,12 @@ function calculerPropositions(requete) {
   const sorties = [];
 
   // (a) Documents dont le titre correspond. Le classement du moteur est
-  //     déjà calculé pour cette requête : on ne relance rien.
+  //     déjà calculé pour cette requête : on ne relance rien. Les révisions
+  //     remplacées n'y figurent pas : c'est ici que se fait le clic le plus
+  //     rapide, donc le pire endroit pour proposer une version périmée.
   for (const resultat of classement()) {
     if (sorties.length >= MAX_SUGGESTIONS_DOCUMENT) break;
+    if (ecarteCarRemplace(resultat.doc, texte)) continue;
     const titre = texteOuVide(resultat.doc.titre);
     if (titre === '') continue;
     const segments = surligner(titre, texte);
@@ -1649,6 +1725,37 @@ function obtenirFiche(doc) {
   const porteur = texteOuVide(doc.porteur);
   const type = texteOuVide(doc.type);
 
+  /* Le porteur : un nœud retenu dans la fiche, pour que le nom devienne un
+     lien dès que l'organigramme est là — sans attendre au premier rendu. */
+  const noeudPorteur = el('span', {}, 'Porteur : ', valeurOuManquant(porteur));
+
+  /* Une révision remplacée le dit en tête de carte, et rien de plus : une
+     ligne, la référence de la version en vigueur, le lien qui y mène. Les
+     jetons terre cuite sont posés ici parce que les styles de cette page
+     vivent dans docsearch.html, qui n'est pas modifiée par ce chantier. */
+  const remplacant = versionEnVigueur(doc);
+  const referenceEnVigueur = remplacant === null
+    ? ''
+    : (texteOuVide(remplacant.reference) || texteOuVide(remplacant.titre));
+  const remplace = remplacant === null ? null : el('p', {
+    class: 'texte-sm sans-marge',
+    style: {
+      display: 'flex',
+      alignItems: 'baseline',
+      gap: 'var(--e-2)',
+      padding: 'var(--e-2) var(--e-3)',
+      borderRadius: 'var(--rayon-sm)',
+      backgroundColor: 'var(--chaud-doux)',
+      color: 'var(--chaud-encre)'
+    }
+  },
+  'Remplacé par ',
+  el('a', {
+    class: 'ds-carte__remplacant',
+    href: '#q=' + encodeURIComponent(referenceEnVigueur),
+    style: { color: 'inherit' }
+  }, referenceEnVigueur));
+
   // Un élément de liste, focalisable par programme seulement : le parcours
   // ↑/↓ y déplace un tabindex glissant, sans imposer d'arrêt de tabulation
   // supplémentaire. Aucun aria-label global : il masquerait l'extrait, les
@@ -1659,6 +1766,7 @@ function obtenirFiche(doc) {
     dataset: { id },
     tabIndex: -1
   },
+  remplace,
   el('div', { class: 'carte__meta' },
     el('span', { class: 'badge badge--neutre' },
       el('span', { class: 'visuellement-cache' }, 'Type : '),
@@ -1670,7 +1778,7 @@ function obtenirFiche(doc) {
   el('ul', { class: 'facettes' }, poles, metiers),
   el('div', { class: 'carte__pied ds-carte__pied' },
     el('p', { class: 'ds-carte__meta' },
-      el('span', {}, 'Porteur : ', valeurOuManquant(porteur)),
+      noeudPorteur,
       maj !== ''
         ? el('span', {}, 'Mis à jour le ',
           el('time', { datetime: maj }, formaterDate(maj)))
@@ -1678,9 +1786,93 @@ function obtenirFiche(doc) {
     sansLien,
     actions));
 
-  const fiche = { doc, carte, titre, reference, extrait, raison, requete: null };
+  const fiche = {
+    doc, carte, titre, reference, extrait, raison,
+    porteur: noeudPorteur, requete: null
+  };
   fiches.set(id, fiche);
+  majLienPorteur(fiche);
   return fiche;
+}
+
+/* -------------------------------------------------------------------------
+   12bis. Le porteur mène à sa fiche
+
+   Partout ailleurs le site fait d'un nom de personne un lien vers
+   l'organigramme (porteurs.js, pole.js, palette.js) ; sur une carte de
+   document, c'était le seul nom qui ne menait nulle part — alors que c'est
+   exactement là qu'on se demande « à qui je demande pour celui-là ».
+
+   `documents.json` ne connaît que le NOM du porteur : c'est la convention
+   du dépôt (organigramme.js, pole.js), et un identifiant recopié à la main
+   dans un second fichier pourrirait en silence. L'identifiant se résout
+   donc en lisant l'organigramme, chargé À CÔTÉ du corpus : le premier
+   rendu ne l'attend pas, et un nom que l'organigramme ne connaît pas
+   reste un texte inerte — jamais un lien mort.
+   ------------------------------------------------------------------------- */
+
+/** Nom de personne -> identifiant de fiche. `null` tant que rien n'est lu. */
+let fichesPersonnes = null;
+
+/** Parcourt l'organigramme et retient, pour chaque nom, son identifiant. */
+function tablePersonnes(orga) {
+  const table = new Map();
+
+  const ajouter = (personne) => {
+    if (!personne || typeof personne !== 'object') return;
+    const nom = texteOuVide(personne.nom);
+    const identifiant = texteOuVide(personne.id);
+    // Un homonyme ne doit pas rendre le lien arbitraire : le premier vu
+    // gagne, et l'ambiguïté se règle dans l'organigramme, pas ici.
+    if (nom !== '' && identifiant !== '' && !table.has(nom)) table.set(nom, identifiant);
+  };
+
+  if (!orga || typeof orga !== 'object') return table;
+  ajouter(orga.direction);
+  for (const pole of (Array.isArray(orga.poles) ? orga.poles : [])) {
+    if (!pole || typeof pole !== 'object') continue;
+    ajouter(pole.responsable);
+    for (const squad of (Array.isArray(pole.squads) ? pole.squads : [])) {
+      if (!squad || typeof squad !== 'object') continue;
+      for (const membre of (Array.isArray(squad.membres) ? squad.membres : [])) ajouter(membre);
+    }
+  }
+  return table;
+}
+
+/** Fait du nom du porteur un lien, si — et seulement si — il se résout. */
+function majLienPorteur(fiche) {
+  if (fichesPersonnes === null || !fiche || !fiche.porteur) return;
+  const nom = texteOuVide(fiche.doc.porteur);
+  if (nom === '') return;
+  const identifiant = fichesPersonnes.get(nom);
+  if (!identifiant) return;
+
+  monter(fiche.porteur, 'Porteur : ',
+    el('a', {
+      class: 'ds-carte__porteur',
+      href: 'organigramme.html#personne=' + encodeURIComponent(identifiant)
+    }, nom));
+}
+
+/**
+ * Charge l'organigramme sans bloquer, puis met à niveau les cartes déjà
+ * construites en une passe. Un échec est silencieux pour la personne : la
+ * recherche fonctionne alors exactement comme avant ce chantier.
+ */
+async function chargerFichesPersonnes() {
+  let table;
+  try {
+    table = tablePersonnes(await chargerDonnees('organigramme'));
+  } catch (cause) {
+    console.warn('[docsearch] organigramme.json indisponible : '
+      + 'le porteur reste un texte, sans lien.', cause);
+    return;
+  }
+  if (table.size === 0) return;
+
+  fichesPersonnes = table;
+  for (const fiche of fiches.values()) majLienPorteur(fiche);
 }
 
 /**
@@ -1791,7 +1983,8 @@ function surActionMessage(evt, bouton) {
   }
   if (action === 'retirer-filtre') { retirerFiltre(bouton.dataset.cle); return; }
   if (action === 'tout-effacer') { toutEffacer(); return; }
-  if (action === 'proposer') ouvrirModaleProposition(bouton);
+  // Cette zone n'existe qu'en cas d'échec : la requête amorce le titre.
+  if (action === 'proposer') ouvrirModaleProposition(bouton, etat.requete);
 }
 
 /**
@@ -2194,9 +2387,15 @@ function enregistrerPropositions() {
   stockage.ecrire(CLE_PROPOSITIONS, propositions);
 }
 
-/** Construit le formulaire de la modale et renvoie ses accès. */
-function formulaireProposition() {
+/**
+ * Construit le formulaire de la modale et renvoie ses accès.
+ *
+ * @param {string} [requeteEchouee] requête qui vient de ne rien trouver :
+ *   elle amorce le titre, pour ne pas la faire retaper.
+ */
+function formulaireProposition(requeteEchouee) {
   const idBase = 'ds-prop-' + Date.now().toString(36);
+  const amorce = String(requeteEchouee || '').trim();
 
   const champTitre = el('input', {
     class: 'champ__controle',
@@ -2204,7 +2403,10 @@ function formulaireProposition() {
     type: 'text',
     required: true,
     autocomplete: 'off',
-    ariaDescribedby: idBase + '-titre-erreur'
+    ariaDescribedby: idBase + '-titre-erreur',
+    // Ce qu'on vient de chercher en vain est le meilleur titre disponible.
+    // Reste modifiable : c'est une amorce, pas une valeur imposée.
+    value: amorce
   });
 
   const erreurTitre = el('p', {
@@ -2320,12 +2522,17 @@ function formulaireProposition() {
   };
 }
 
-/** Ouvre la modale « Proposer un document » (enregistrement LOCAL). */
-function ouvrirModaleProposition(declencheur) {
+/**
+ * Ouvre la modale « Proposer un document » (enregistrement LOCAL).
+ *
+ * @param {HTMLElement} declencheur bouton d'où vient l'ouverture
+ * @param {string} [requeteEchouee] requête restée sans résultat, s'il y en a
+ */
+function ouvrirModaleProposition(declencheur, requeteEchouee) {
   // Le panneau de propositions ne doit pas rester ouvert derrière le voile.
   fermerPropositions();
 
-  const champs = formulaireProposition();
+  const champs = formulaireProposition(requeteEchouee);
 
   const valider = () => {
     const valeurs = champs.lire();
@@ -2359,7 +2566,11 @@ function ouvrirModaleProposition(declencheur) {
   });
 
   const instance = ouvrirModale({
-    titre: 'Proposer un document',
+    // Le titre reprend le bouton d'où l'on vient : un bouton « Signaler ce
+    // document manquant » n'ouvre pas une fenêtre qui parle d'autre chose.
+    titre: String(requeteEchouee || '').trim() === ''
+      ? 'Proposer un document'
+      : 'Signaler ce document manquant',
     declencheur,
     contenu: champs.formulaire,
     actions: [
@@ -2465,6 +2676,10 @@ function demarrer() {
   rendrePropositions();
   deleguer(refs.propositionsListe, '[data-action="supprimer-proposition"]', 'click',
     (evt, bouton) => confirmerSuppression(bouton.dataset.id, bouton));
+
+  // L'organigramme se charge à côté du corpus, sans être attendu : il ne
+  // sert qu'à faire du nom du porteur un lien vers sa fiche.
+  chargerFichesPersonnes();
 
   // La requête de l'URL est appliquée avant même le chargement : le champ
   // est déjà rempli quand les squelettes s'affichent.

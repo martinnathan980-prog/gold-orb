@@ -69,9 +69,17 @@ Cela demande des **métadonnées propres** sur chaque document :
   type (norme, process, outil…) · indice · date · pôle
 ```
 
-**C'est exactement ce que ton portail gère déjà.** Ce n'est pas un
-hasard : ces facettes sont ce qui rend la recherche fine, aujourd'hui
-sans IA et demain avec.
+**Le portail en gère six sur sept** — métier, porteur, périmètre, type,
+date et pôle sont des champs de `documents.json`, filtrables. L'indice,
+lui, n'a jamais été un champ : il vit dans la chaîne du titre
+(« — indice C »), donc aucun code ne peut s'en servir. Ce qui a été
+ajouté à la place, et qui suffit, c'est **la chaîne de remplacement** :
+un champ facultatif `remplacePar` qui désigne la version en vigueur. La
+recherche écarte alors les versions remplacées, et leur fiche dit
+laquelle fait foi (voir §④).
+
+Ces facettes sont ce qui rend la recherche fine, aujourd'hui sans IA et
+demain avec.
 
 ### ③ Le découpage compte plus que le modèle
 

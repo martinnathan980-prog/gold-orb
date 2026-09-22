@@ -52,7 +52,8 @@
       "maj": "2026-02-02",
       "pole": [
         "ETIII"
-      ]
+      ],
+      "remplacePar": "d032"
     },
     {
       "id": "d002",
@@ -77,7 +78,8 @@
       "pole": [
         "ETIIE",
         "ETIII"
-      ]
+      ],
+      "remplacePar": "d034"
     },
     {
       "id": "d003",
@@ -98,11 +100,12 @@
         "trimestre",
         "critères"
       ],
-      "maj": "2026-04-04",
+      "maj": "2026-01-10",
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d036"
     },
     {
       "id": "d004",
@@ -123,11 +126,12 @@
         "criticité",
         "distance"
       ],
-      "maj": "2026-05-05",
+      "maj": "2026-02-11",
       "pole": [
         "ETIIA",
         "ETIII"
-      ]
+      ],
+      "remplacePar": "d038"
     },
     {
       "id": "d005",
@@ -147,10 +151,11 @@
         "formation",
         "initiation"
       ],
-      "maj": "2026-06-06",
+      "maj": "2026-04-13",
       "pole": [
         "ETIII"
-      ]
+      ],
+      "remplacePar": "d040"
     },
     {
       "id": "d006",
@@ -171,11 +176,12 @@
         "calcul",
         "suivi"
       ],
-      "maj": "2026-07-07",
+      "maj": "2026-06-15",
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d042"
     },
     {
       "id": "d007",
@@ -197,7 +203,8 @@
       "maj": "2026-08-08",
       "pole": [
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d044"
     },
     {
       "id": "d008",
@@ -218,11 +225,12 @@
         "convention",
         "identification"
       ],
-      "maj": "2026-09-09",
+      "maj": "2026-01-19",
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d046"
     },
     {
       "id": "d009",
@@ -245,7 +253,8 @@
       "maj": "2026-01-10",
       "pole": [
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d048"
     },
     {
       "id": "d010",
@@ -270,7 +279,8 @@
       "pole": [
         "ETIIE",
         "ETIII"
-      ]
+      ],
+      "remplacePar": "d050"
     },
     {
       "id": "d011",
@@ -293,7 +303,8 @@
       "maj": "2026-03-12",
       "pole": [
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d052"
     },
     {
       "id": "d012",
@@ -313,10 +324,11 @@
         "ségrégation",
         "source"
       ],
-      "maj": "2026-04-13",
+      "maj": "2026-01-01",
       "pole": [
         "ETIIA"
-      ]
+      ],
+      "remplacePar": "d054"
     },
     {
       "id": "d013",
@@ -336,10 +348,11 @@
         "symbolique",
         "formation"
       ],
-      "maj": "2026-05-14",
+      "maj": "2026-02-02",
       "pole": [
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d056"
     },
     {
       "id": "d014",
@@ -360,11 +373,12 @@
         "analyse",
         "traitement"
       ],
-      "maj": "2026-06-15",
+      "maj": "2026-04-04",
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d058"
     },
     {
       "id": "d015",
@@ -385,11 +399,12 @@
         "exigence",
         "vérification"
       ],
-      "maj": "2026-07-16",
+      "maj": "2026-06-06",
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d060"
     },
     {
       "id": "d016",
@@ -410,11 +425,12 @@
         "section",
         "calcul"
       ],
-      "maj": "2026-08-17",
+      "maj": "2026-08-08",
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d062"
     },
     {
       "id": "d017",
@@ -435,10 +451,11 @@
         "implantation",
         "point"
       ],
-      "maj": "2026-09-18",
+      "maj": "2026-01-10",
       "pole": [
         "ETIII"
-      ]
+      ],
+      "remplacePar": "d064"
     },
     {
       "id": "d018",
@@ -463,7 +480,8 @@
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d066"
     },
     {
       "id": "d019",
@@ -776,7 +794,8 @@
       "maj": "2026-05-05",
       "pole": [
         "ETIII"
-      ]
+      ],
+      "remplacePar": "d032"
     },
     {
       "id": "d032",
@@ -830,7 +849,8 @@
       "pole": [
         "ETIIE",
         "ETIII"
-      ]
+      ],
+      "remplacePar": "d034"
     },
     {
       "id": "d034",
@@ -880,11 +900,12 @@
         "révision",
         "indice b"
       ],
-      "maj": "2026-09-09",
+      "maj": "2026-04-04",
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d036"
     },
     {
       "id": "d036",
@@ -907,7 +928,7 @@
         "révision",
         "indice c"
       ],
-      "maj": "2026-01-10",
+      "maj": "2026-09-09",
       "pole": [
         "ETIIA",
         "ETIIE"
@@ -934,11 +955,12 @@
         "révision",
         "indice b"
       ],
-      "maj": "2026-02-11",
+      "maj": "2026-03-12",
       "pole": [
         "ETIIA",
         "ETIII"
-      ]
+      ],
+      "remplacePar": "d038"
     },
     {
       "id": "d038",
@@ -961,7 +983,7 @@
         "révision",
         "indice c"
       ],
-      "maj": "2026-03-12",
+      "maj": "2026-05-05",
       "pole": [
         "ETIIA",
         "ETIII"
@@ -987,10 +1009,11 @@
         "révision",
         "indice b"
       ],
-      "maj": "2026-04-13",
+      "maj": "2026-05-14",
       "pole": [
         "ETIII"
-      ]
+      ],
+      "remplacePar": "d040"
     },
     {
       "id": "d040",
@@ -1012,7 +1035,7 @@
         "révision",
         "indice c"
       ],
-      "maj": "2026-05-14",
+      "maj": "2026-06-06",
       "pole": [
         "ETIII"
       ]
@@ -1038,11 +1061,12 @@
         "révision",
         "indice b"
       ],
-      "maj": "2026-06-15",
+      "maj": "2026-07-07",
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d042"
     },
     {
       "id": "d042",
@@ -1093,7 +1117,8 @@
       "maj": "2026-08-17",
       "pole": [
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d044"
     },
     {
       "id": "d044",
@@ -1140,11 +1165,12 @@
         "révision",
         "indice b"
       ],
-      "maj": "2026-01-19",
+      "maj": "2026-02-20",
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d046"
     },
     {
       "id": "d046",
@@ -1167,7 +1193,7 @@
         "révision",
         "indice c"
       ],
-      "maj": "2026-02-20",
+      "maj": "2026-09-09",
       "pole": [
         "ETIIA",
         "ETIIE"
@@ -1196,7 +1222,8 @@
       "maj": "2026-03-21",
       "pole": [
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d048"
     },
     {
       "id": "d048",
@@ -1248,7 +1275,8 @@
       "pole": [
         "ETIIE",
         "ETIII"
-      ]
+      ],
+      "remplacePar": "d050"
     },
     {
       "id": "d050",
@@ -1300,7 +1328,8 @@
       "maj": "2026-07-25",
       "pole": [
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d052"
     },
     {
       "id": "d052",
@@ -1347,10 +1376,11 @@
         "révision",
         "indice b"
       ],
-      "maj": "2026-09-27",
+      "maj": "2026-04-13",
       "pole": [
         "ETIIA"
-      ]
+      ],
+      "remplacePar": "d054"
     },
     {
       "id": "d054",
@@ -1372,7 +1402,7 @@
         "révision",
         "indice c"
       ],
-      "maj": "2026-01-01",
+      "maj": "2026-09-27",
       "pole": [
         "ETIIA"
       ]
@@ -1397,10 +1427,11 @@
         "révision",
         "indice b"
       ],
-      "maj": "2026-02-02",
+      "maj": "2026-03-03",
       "pole": [
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d056"
     },
     {
       "id": "d056",
@@ -1422,7 +1453,7 @@
         "révision",
         "indice c"
       ],
-      "maj": "2026-03-03",
+      "maj": "2026-05-14",
       "pole": [
         "ETIIE"
       ]
@@ -1448,11 +1479,12 @@
         "révision",
         "indice b"
       ],
-      "maj": "2026-04-04",
+      "maj": "2026-05-05",
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d058"
     },
     {
       "id": "d058",
@@ -1475,7 +1507,7 @@
         "révision",
         "indice c"
       ],
-      "maj": "2026-05-05",
+      "maj": "2026-06-15",
       "pole": [
         "ETIIA",
         "ETIIE"
@@ -1502,11 +1534,12 @@
         "révision",
         "indice b"
       ],
-      "maj": "2026-06-06",
+      "maj": "2026-07-07",
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d060"
     },
     {
       "id": "d060",
@@ -1529,7 +1562,7 @@
         "révision",
         "indice c"
       ],
-      "maj": "2026-07-07",
+      "maj": "2026-07-16",
       "pole": [
         "ETIIA",
         "ETIIE"
@@ -1556,11 +1589,12 @@
         "révision",
         "indice b"
       ],
-      "maj": "2026-08-08",
+      "maj": "2026-08-17",
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d062"
     },
     {
       "id": "d062",
@@ -1610,10 +1644,11 @@
         "révision",
         "indice b"
       ],
-      "maj": "2026-01-10",
+      "maj": "2026-02-11",
       "pole": [
         "ETIII"
-      ]
+      ],
+      "remplacePar": "d064"
     },
     {
       "id": "d064",
@@ -1636,7 +1671,7 @@
         "révision",
         "indice c"
       ],
-      "maj": "2026-02-11",
+      "maj": "2026-09-18",
       "pole": [
         "ETIII"
       ]
@@ -1666,7 +1701,8 @@
       "pole": [
         "ETIIA",
         "ETIIE"
-      ]
+      ],
+      "remplacePar": "d066"
     },
     {
       "id": "d066",
