@@ -1,5 +1,6 @@
 {
   "motDuChef": {
+    "exemple": true,
     "auteur": "Personne 01",
     "fonction": "Direction du service ETII",
     "date": "2026-09-15",
@@ -53,7 +54,7 @@
       }
     ],
     "serie": {
-      "libelle": "OTQ mensuel (données d'exemple)",
+      "libelle": "OTQ mensuel",
       "unite": "%",
       "mois": [
         "2026-04",
@@ -74,17 +75,18 @@
     }
   },
   "alertes": [
-    "Maintenance planifiée de la plateforme documentaire mercredi soir.",
-    "Rappel : revue de configuration trimestrielle la semaine prochaine."
+    "Les comptes rendus de revue se versent dans la base documentaire avant la fin de la semaine.",
+    "La dernière version d’un document se lit dans la base documentaire, jamais dans une copie reçue en pièce jointe."
   ],
   "annonces": [
     {
+      "exemple": true,
       "id": "c07",
       "date": "2026-09-16",
       "statut": "info",
       "categorie": "H175",
       "titre": "Campagne de mesure des interfaces H175 : résultats",
-      "resume": "Deux cent douze interfaces mesurées sur cinq jours, quatre hors tolérance, reprises affectées (données d’exemple).",
+      "resume": "Deux cent douze interfaces mesurées sur cinq jours, quatre hors tolérance, reprises affectées.",
       "pole": "ETIIE",
       "blocs": [
         {
@@ -160,7 +162,7 @@
         {
           "type": "courbe",
           "serie": {
-            "libelle": "Interfaces conformes (données d’exemple)",
+            "libelle": "Interfaces conformes",
             "unite": "%",
             "mois": [
               "2026-04",
@@ -202,6 +204,7 @@
       ]
     },
     {
+      "exemple": true,
       "id": "c01",
       "date": "2026-09-12",
       "statut": "succes",
@@ -243,12 +246,13 @@
       }
     },
     {
+      "exemple": true,
       "id": "c06",
       "date": "2026-09-10",
       "statut": "succes",
       "categorie": "H145M",
       "titre": "Revue d’architecture H145M : le lot 2 est figé",
-      "resume": "Cent quarante-huit exigences revues en trois jours, aucun écart ouvert : le lot 2 passe en définition détaillée (données d’exemple).",
+      "resume": "Cent quarante-huit exigences revues en trois jours, aucun écart ouvert : le lot 2 passe en définition détaillée.",
       "pole": "ETIIA",
       "blocs": [
         {
@@ -326,7 +330,7 @@
         {
           "type": "courbe",
           "serie": {
-            "libelle": "Exigences validées (données d’exemple)",
+            "libelle": "Exigences validées",
             "unite": "%",
             "mois": [
               "2026-04",
@@ -362,6 +366,7 @@
       ]
     },
     {
+      "exemple": true,
       "id": "c02",
       "date": "2026-09-08",
       "statut": "urgent",
@@ -397,12 +402,13 @@
       "pole": "ETIIE"
     },
     {
+      "exemple": true,
       "id": "c08",
       "date": "2026-09-04",
       "statut": "succes",
       "categorie": "H225",
       "titre": "Routage des harnais H225 : maquette numérique figée",
-      "resume": "Les cheminements de la zone arrière sont figés, les douze interférences levées ; deux reprises de fixation restent à instruire (données d’exemple).",
+      "resume": "Les cheminements de la zone arrière sont figés, les douze interférences levées ; deux reprises de fixation restent à instruire.",
       "pole": "ETIII",
       "blocs": [
         {
@@ -468,7 +474,7 @@
         {
           "type": "courbe",
           "serie": {
-            "libelle": "Interférences ouvertes (données d’exemple)",
+            "libelle": "Interférences ouvertes",
             "mois": [
               "2026-04",
               "2026-05",
@@ -511,6 +517,7 @@
       ]
     },
     {
+      "exemple": true,
       "id": "c03",
       "date": "2026-09-02",
       "statut": "info",
@@ -546,6 +553,7 @@
       "pole": "ETII"
     },
     {
+      "exemple": true,
       "id": "c04",
       "date": "2026-08-26",
       "statut": "info",
@@ -577,6 +585,7 @@
       "pole": "ETIIA"
     },
     {
+      "exemple": true,
       "id": "c05",
       "date": "2026-08-19",
       "statut": "succes",

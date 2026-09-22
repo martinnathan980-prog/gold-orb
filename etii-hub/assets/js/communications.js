@@ -263,6 +263,21 @@ function dateIso(brut) {
   return '';
 }
 
+/* Une alerte dit « en ce moment ». Passé ce délai elle quitte le bandeau
+   toute seule : le chef n'a rien à retenir et rien à nettoyer. */
+const DUREE_ALERTE = 14;
+
+/** La date ISO du jour, ou de J-n : de quoi comparer un âge à une date. */
+function ilYA(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - (Number(n) || 0));
+  const deuxChiffres = (v) => String(v).padStart(2, '0');
+  return d.getFullYear() + '-' + deuxChiffres(d.getMonth() + 1) + '-' + deuxChiffres(d.getDate());
+}
+
+/** La date ISO d'aujourd'hui. */
+function aujourdhuiIso() { return ilYA(0); }
+
 /**
  * Convertit une ligne de la feuille en annonce (forme de communications.json).
  * Renvoie null si la ligne n'a ni titre ni date lisible.
@@ -312,6 +327,18 @@ export function blocsDepuisTexte(brut) {
   }
 }
 
+/* Un seul édito est en vedette ; tous les autres reprennent leur place
+   dans la frise, en annonce datée. L'identifiant est forgé ici et nulle
+   part ailleurs : l'édito de communications.json n'en a pas, et sans lui
+   le kiosque fabriquerait un identifiant de dossier vide. */
+function versAnnonceEdito(mot) {
+  return Object.assign({}, mot, {
+    id: texte(mot.id) || ('edito-' + texte(mot.date)),
+    pole: texte(mot.pole) || 'ETII',
+    categorie: 'Édito'
+  });
+}
+
 /**
  * L'objet complet à partir des lignes de la feuille :
  * - type « mot » : le mot du chef — le plus récent l'emporte ;
@@ -328,7 +355,12 @@ export function communicationsDepuisLignes(lignes) {
     const type = normaliser(ligne && ligne.type) || 'annonce';
     if (type === 'alerte') {
       const t = texte(ligne.titre) || texte(ligne.resume);
-      if (t) resultat.alertes.push(t);
+      /* Une alerte reste une chaîne : on ne fait que lire la date que la
+         colonne portait déjà. Date absente — ligne saisie à la main qu'on
+         ne peut pas dater — l'alerte monte : on ne fait disparaître le
+         bandeau de personne en silence. */
+      const jour = dateIso(ligne.date);
+      if (t && !(jour && jour < ilYA(DUREE_ALERTE))) resultat.alertes.push(t);
       return;
     }
     const annonce = annonceDepuisLigne(ligne, i);
@@ -350,6 +382,7 @@ export function communicationsDepuisLignes(lignes) {
     if (m.chiffres) resultat.motDuChef.chiffres = m.chiffres;
     if (m.serie) resultat.motDuChef.serie = m.serie;
     if (m.blocs) resultat.motDuChef.blocs = m.blocs;
+    mots.slice(1).forEach((precedent) => resultat.annonces.push(versAnnonceEdito(precedent)));
   }
   resultat.annonces.sort((a, b) => b.date.localeCompare(a.date));
   return resultat;
@@ -424,11 +457,16 @@ function avecLocales(objet) {
   const l = lireLocales();
   if (!l.motDuChef && !l.alertes.length && !l.annonces.length) return objet;
   const copie = Object.assign({}, objet);
+  /* Un édito publié ici prend la vedette, mais celui du site n'est pas
+     perdu pour autant : il rejoint la frise à sa date. */
+  const retrogrades = (l.motDuChef && objet.motDuChef && texte(objet.motDuChef.titre))
+    ? [versAnnonceEdito(objet.motDuChef)] : [];
   if (l.motDuChef) copie.motDuChef = Object.assign({}, l.motDuChef, { local: true });
   copie.alertes = (Array.isArray(objet.alertes) ? objet.alertes : []).concat(l.alertes);
   const ids = new Set(l.annonces.map((a) => a.id));
   copie.annonces = l.annonces.map((a) => Object.assign({}, a, { local: true }))
     .concat((Array.isArray(objet.annonces) ? objet.annonces : []).filter((a) => !ids.has(a.id)))
+    .concat(retrogrades)
     .sort((a, b) => texte(b.date).localeCompare(texte(a.date)));
   return copie;
 }
@@ -451,7 +489,7 @@ export async function publierCommunication(type, contenu) {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ cle: texte(SOURCE.cle), type, contenu, ligne: type === 'alerte'
-        ? ligneDepuisAnnonce({ titre: contenu }, 'alerte')
+        ? ligneDepuisAnnonce({ titre: contenu, date: aujourdhuiIso() }, 'alerte')
         : ligneDepuisAnnonce(contenu, type) })
     });
     if (!reponse.ok) throw new Error('réponse ' + reponse.status);
@@ -462,7 +500,10 @@ export async function publierCommunication(type, contenu) {
   }
   const v = lireLocales();
   if (type === 'alerte') v.alertes = v.alertes.filter((a) => a !== contenu).concat([texte(contenu)]);
-  else if (type === 'mot') v.motDuChef = contenu;
+  else if (type === 'mot') {
+    if (v.motDuChef && texte(v.motDuChef.titre)) v.annonces = v.annonces.concat([versAnnonceEdito(v.motDuChef)]);
+    v.motDuChef = contenu;
+  }
   else v.annonces = v.annonces.filter((a) => a && a.id !== contenu.id).concat([contenu]);
   const ok = ecrireLocales(v);
   return { ok, ou: 'navigateur', message: ok

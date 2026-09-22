@@ -63,7 +63,12 @@ const objet = communicationsDepuisLignes([
 t('le mot du chef le plus récent l’emporte', objet.motDuChef && objet.motDuChef.titre === 'Un trimestre qui se tient');
 t('le mot porte auteur, résumé, chiffres', objet.motDuChef.auteur === 'Personne 01' && objet.motDuChef.resume === 'Trois mois de progrès.' && objet.motDuChef.chiffres.length === 1);
 t('une alerte, un texte', egal(objet.alertes, ['Maintenance mercredi soir.']));
-t('deux annonces (la ligne illisible est ignorée)', objet.annonces.length === 2, `(${objet.annonces.length})`);
+t('deux annonces + l’ancien édito (la ligne illisible est ignorée)', objet.annonces.length === 3, `(${objet.annonces.length})`);
+const ancienEdito = objet.annonces.find((a) => a.titre === 'Ancien mot');
+t('l’édito précédent reprend sa place dans la frise, daté et identifié',
+  !!ancienEdito && ancienEdito.categorie === 'Édito' && ancienEdito.pole === 'ETII'
+  && ancienEdito.date === '2026-06-01' && !!ancienEdito.id,
+  JSON.stringify(ancienEdito && { id: ancienEdito.id, categorie: ancienEdito.categorie }));
 const migration = objet.annonces.find((a) => a.id === 'c9');
 t('date française convertie, pôle et statut normalisés', migration.date === '2026-09-12' && migration.pole === 'ETIIE' && migration.statut === 'urgent');
 t('image, corps typé, série', migration.image.src === 'https://exemple.invalid/photo.jpg' && migration.corps[0].type === 'alerte' && migration.serie.valeurs[1] === 12);
@@ -72,6 +77,16 @@ t('un identifiant est fabriqué quand il manque', /^f20260819-\d+$/.test(sansId.
 t('les annonces sont triées, la plus récente d’abord', objet.annonces[0].date >= objet.annonces[1].date);
 t('agenda vide, jamais absent', Array.isArray(objet.agenda) && objet.agenda.length === 0);
 t('entrée nulle → objet vide', communicationsDepuisLignes(null).annonces.length === 0);
+
+console.log('\n== Une alerte ne survit pas à sa quinzaine ==');
+const jourIso = (recul) => { const d = new Date(); d.setDate(d.getDate() - recul); return d.toISOString().slice(0, 10); };
+const bandeau = communicationsDepuisLignes([
+  { type: 'alerte', titre: 'Alerte du jour.', date: jourIso(0) },
+  { type: 'alerte', titre: 'Alerte d’il y a un mois.', date: jourIso(30) },
+  { type: 'alerte', titre: 'Alerte sans date.' }
+]).alertes;
+t('une alerte datée de plus de quatorze jours ne monte plus au bandeau',
+  egal(bandeau, ['Alerte du jour.', 'Alerte sans date.']), JSON.stringify(bandeau));
 
 console.log('\n== La ligne à coller dans la feuille ==');
 const ligne = ligneDepuisAnnonce(migration);

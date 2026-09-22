@@ -71,13 +71,13 @@ publiée avec l'identifiant d'une ligne existante la remplace.
 
 | colonne        | contenu                                                                                       |
 |----------------|-----------------------------------------------------------------------------------------------|
-| `type`         | `annonce` (ou vide), `mot` (l'édito de la direction : le plus récent est affiché), `alerte` (bandeau) |
+| `type`         | `annonce` (ou vide), `mot` (l'édito de la direction : le plus récent est en vedette, les précédents reprennent leur place dans la frise à leur date), `alerte` (bandeau) |
 | `id`           | facultatif ; sert à **remplacer** une communication (même id) ; fabriqué sinon                |
-| `date`         | `AAAA-MM-JJ` ou `JJ/MM/AAAA` ; obligatoire sauf pour une alerte                               |
+| `date`         | `AAAA-MM-JJ`, et rien d'autre ; obligatoire — pour une alerte, c'est sa date de mise en ligne. Mettez la colonne au format Texte (Format → Nombre → Texte) : sinon Sheets réécrit la date dans la locale du classeur à l'export CSV (`09/21/2026`), et le site refuse la ligne plutôt que d'inventer un mois |
 | `pole`         | `ETII` (tout le service), `ETIIA`, `ETIIE`, `ETIII`                                           |
 | `categorie`    | un programme ou un thème (`H160`, `Outils`, `Transverse`…), affiché en étiquette              |
 | `statut`       | `info`, `succes`, `urgent`                                                                    |
-| `titre`        | obligatoire ; pour une alerte, c'est le texte du bandeau                                      |
+| `titre`        | obligatoire ; pour une alerte, c'est le texte du bandeau — une alerte quitte le bandeau 14 jours après sa `date` ; laissez `date` vide pour un bandeau qui reste jusqu'à ce que vous supprimiez la ligne |
 | `resume`       | une ou deux phrases : la liste et le chapeau de la lecture                                     |
 | `corps`        | le texte, une ligne par idée, avec les préfixes ci-dessous                                     |
 | `image`        | une URL `https://` publique, ou un chemin `assets/img/communications/…` du site               |

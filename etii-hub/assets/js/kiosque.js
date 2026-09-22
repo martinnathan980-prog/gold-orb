@@ -124,6 +124,12 @@ function aujourdhui() {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+/* La clé de dédoublonnage d'une entrée : sa date et son titre, casse et
+   accents ôtés. Le même événement saisi deux fois ne se lit qu'une fois. */
+function cleEntree(date, titre) {
+  return texte(date) + '|' + texte(titre).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
 /** Jours restants jusqu'à la date, ou null si elle est illisible. */
 export function joursRestants(iso) {
   const p = partiesDate(iso);
@@ -280,7 +286,10 @@ function dossierDepuis(e, base) {
     /* Repères pour la liste : y a-t-il une image, des chiffres ? */
     avecImage: blocs.some((b) => b.type === 'image' || b.type === 'galerie'),
     avecChiffres: blocs.some((b) => b.type === 'chiffres' || b.type === 'courbe'),
-    local: e.local === true
+    local: e.local === true,
+    /* Le jeu d'exemple du dépôt porte ce drapeau : la mention se pose une
+       fois, au niveau de l'entrée, au lieu d'être écrite dans la prose. */
+    exemple: e.exemple === true
   }, base);
 }
 
@@ -306,11 +315,17 @@ export function dossiersDepuisCommunications(donnees, options) {
   const dossiers = [];
   const d = (donnees && typeof donnees === 'object') ? donnees : {};
 
+  /* La déduplication commence au dossier du mot : un édito rétrogradé en
+     annonce (voir versAnnonceEdito) ne doit pas se lire deux fois, en
+     vedette puis dans la frise. */
+  const vus = new Set();
+
   const mot = objet(d.motDuChef);
   if (mot && niveauService && texte(mot.titre)) {
     dossiers.push(dossierDepuis(mot, {
       id: 'mot-du-chef', groupe: 'mot', programme: 'Service ETII', statut: 'mot', pole: 'ETII'
     }));
+    vus.add(cleEntree(mot.date, mot.titre));
   }
 
   const agenda = Array.isArray(d.agenda) ? d.agenda.filter((e) => e && typeof e === 'object') : [];
@@ -333,9 +348,8 @@ export function dossiersDepuisCommunications(donnees, options) {
       }))
   ].sort((a, b) => b.date.localeCompare(a.date));
 
-  const vus = new Set();
   const uniques = historique.filter((x) => {
-    const cle = x.date + '|' + x.titre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const cle = cleEntree(x.date, x.titre);
     if (vus.has(cle)) return false;
     vus.add(cle);
     return true;
@@ -597,6 +611,10 @@ function lecture(prefixe) {
   const meta = el('p', { class: 'kiosque__lecture-meta' });
   const titre = el('h3', { class: 'kiosque__lecture-titre', id: prefixe + '-lecture-titre' }, '');
   const chapeau = el('p', { class: 'kiosque__chapeau', hidden: true });
+  /* La mention des données d'exemple, posée une fois pour toute la lecture :
+     la phrase est celle du suivi OTQ, pour dire pourquoi et pas seulement quoi. */
+  const exemple = el('p', { class: 'kiosque__ligne texte-doux', hidden: true },
+    'Ces chiffres illustrent le rendu. Ils ne mesurent rien.');
   const blocs = el('div', { class: 'kiosque__blocs' });
   const curseur = el('span', { class: 'kiosque__curseur', 'aria-hidden': 'true', hidden: true });
   /* La marque de fin : un court filet terre cuite, centré, après le
@@ -609,9 +627,9 @@ function lecture(prefixe) {
     tabIndex: -1
   },
   image,
-  el('div', { class: 'kiosque__lecture-interieur' }, meta, titre, chapeau, blocs, curseur, fin));
+  el('div', { class: 'kiosque__lecture-interieur' }, meta, titre, chapeau, exemple, blocs, curseur, fin));
 
-  return { racine, image, meta, titre, chapeau, blocs, curseur, fin };
+  return { racine, image, meta, titre, chapeau, exemple, blocs, curseur, fin };
 }
 
 /* Remplit une lecture avec un dossier. La première image ouvre la lecture
@@ -634,10 +652,12 @@ function remplirLecture(lect, dossier) {
     el('time', { class: 'mono', datetime: dossier.date || null }, dateLongue(dossier.date) || 'Date à renseigner'),
     el('span', { class: 'badge badge--accent' }, dossier.programme || 'Général'),
     dossier.groupe === 'mot' ? null : el('span', { class: ['badge', statut.classe] }, statut.libelle),
-    pastillePole(dossier.pole));
+    pastillePole(dossier.pole),
+    dossier.exemple ? el('span', { class: ['badge', 'badge--alerte'] }, 'Données d’exemple') : null);
   lect.titre.textContent = dossier.titre || 'Sans titre';
   lect.chapeau.textContent = dossier.resume || '';
   lect.chapeau.hidden = !dossier.resume;
+  lect.exemple.hidden = !dossier.exemple;
   monter(lect.blocs, blocs.length
     ? blocs.map(rendreBloc)
     : el('p', { class: 'kiosque__ligne texte-doux' }, 'Aucun détail publié pour cette communication.'));
@@ -707,9 +727,10 @@ export function kiosque(options) {
   const visibles = () => tous.filter((d) => !filtre || d.pole === filtre || d.groupe === 'mot');
 
   /* Fait défiler la liste — et seulement elle, jamais la page — pour que la
-     carte soit visible, sous l'en-tête de mois collant. */
+     carte soit visible, sous l'en-tête de mois collant. Renvoie vrai quand
+     il n'y avait plus rien à faire défiler. */
   function montrerCarte(bouton) {
-    if (!bouton) return;
+    if (!bouton) return true;
     const zone = zoneListe.getBoundingClientRect();
     const carte = bouton.getBoundingClientRect();
     const groupe = zoneListe.querySelector('.kiosque__groupe');
@@ -717,8 +738,9 @@ export function kiosque(options) {
     let decalage = 0;
     if (carte.top < zone.top + marge) decalage = carte.top - zone.top - marge;
     else if (carte.bottom > zone.bottom - 8) decalage = carte.bottom - zone.bottom + 8;
-    if (!decalage) return;
+    if (!decalage) return true;
     zoneListe.scrollTo({ top: zoneListe.scrollTop + decalage, behavior: mouvementReduit() ? 'auto' : 'smooth' });
+    return false;
   }
 
   /* La carte à faire défiler en vue dès que la liste a pris la hauteur de
@@ -727,14 +749,17 @@ export function kiosque(options) {
   let carteAMontrer = null;
   const montrerEnAttente = () => {
     if (!carteAMontrer) return;
-    const bouton = carteAMontrer;
-    carteAMontrer = null;
-    montrerCarte(bouton);
+    /* La lecture peut encore grandir après le premier ajustement (image
+       chargée, texte qui s'écrit) : on garde la carte en attente jusqu'à
+       ce qu'elle soit vraiment dans la fenêtre, sinon un défilement
+       mesuré trop tôt la laisse à quelques pixels du bord. */
+    if (montrerCarte(carteAMontrer)) carteAMontrer = null;
   };
 
   function lire(dossier, options) {
     const o = options || {};
     courant = dossier;
+    carteAMontrer = null;   // chaque sélection décide seule de ce qu'elle montre
     arreterEcriture();
     zoneListe.querySelectorAll('.kiosque__carte').forEach((b) => {
       const actif = b.dataset.id === dossier.id;
@@ -760,6 +785,7 @@ export function kiosque(options) {
     monter(lect.meta);
     lect.titre.textContent = 'Aucune communication';
     lect.chapeau.hidden = true;
+    lect.exemple.hidden = true;
     monter(lect.blocs, el('p', { class: 'texte-doux sans-marge' }, 'Rien à lire pour ce pôle pour le moment.'));
     lect.fin.hidden = true;
   }
