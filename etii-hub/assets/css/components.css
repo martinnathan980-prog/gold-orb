@@ -551,18 +551,21 @@ a.bouton:hover {
 
   background-color: var(--fond-eleve);
   color: var(--texte);
-  border: 1px solid var(--bordure);
+  /* Un champ posé sur une surface élevée (modale, carte) a exactement le fond
+     de cette surface : c'est son filet, et lui seul, qui dit où écrire. D'où
+     un jeton dédié, plus contrasté que --bordure. Le repli garde ce fichier
+     autonome si tokens.css ne déclare pas encore le jeton. */
+  border: 1px solid var(--champ-bordure, var(--bordure));
   border-radius: var(--rayon-md);
 
   font-family: var(--police);
-  /* Taille pleine et non réduite : sous 16px, iOS zoome à la prise de
-     focus et casse la mise en page. La densité se gagne sur les marges. */
+  /* Taille dense, pensée pour la souris ; skin.css la resserre encore. */
   font-size: var(--texte-md);
   line-height: var(--interligne);
 }
 
 .champ__controle::placeholder {
-  /* --texte-faible ne passerait pas AA en thème sombre : on reste sur doux. */
+  /* Plus doux que le texte saisi, pour qu'on distingue l'invite de la valeur. */
   color: var(--texte-doux);
   opacity: 1;
 }
@@ -1319,8 +1322,11 @@ select.champ__controle {
   color: var(--texte-doux);
 }
 
+/* La croix de la notification (§9) est le même bouton, au même format : une
+   seule règle pour les deux, plutôt que deux blocs à faire vivre ensemble. */
 .modale__fermeture,
-.modale__fermer {
+.modale__fermer,
+.toast__fermeture {
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -1340,7 +1346,13 @@ select.champ__controle {
 }
 
 .modale__fermeture:hover,
-.modale__fermer:hover { background-color: var(--fond-enfonce); color: var(--texte); }
+.modale__fermer:hover,
+.toast__fermeture:hover { background-color: var(--fond-enfonce); color: var(--texte); }
+
+/* Le décalage négatif ci-dessus creuse l'en-tête d'une modale ; dans une
+   notification il n'y a pas d'en-tête à creuser, la croix reste dans la
+   marge intérieure de la carte. */
+.toast__fermeture { margin: 0; }
 
 .modale__corps {
   flex: 1 1 auto;
@@ -1389,15 +1401,30 @@ select.champ__controle {
   .modale[data-etat="entree"] { animation: voile-apparition var(--duree-rapide) var(--courbe); }
   .modale[data-etat="entree"] .modale__boite { animation: modale-apparition var(--duree) var(--courbe); }
   .modale[data-etat="sortie"] { opacity: 0; transition: opacity var(--duree-rapide) var(--courbe); }
+  /* La notification de la §9 se fond par la même mécanique d'opacité : sa
+     transition est ici, avec le reste du mouvement de cette section. */
+  .toast { transition: opacity var(--duree) var(--courbe); }
 }
 
+/* Le fond ne défile pas derrière une modale : c'est `ouvrirModale()` qui pose
+   l'attribut, et qui le lève à la fermeture. Sans !important, pour ne jamais
+   confisquer le défilement natif. */
+:root[data-modale-ouverte] { overflow: hidden; }
+
 /* =========================================================================
-   9. Notifications éphémères (toasts)
-   Le conteneur est une région live (role="status" / aria-live="polite")
-   posée une fois par page ; ui.js n'y ajoute que des éléments.
+   9. Notifications éphémères (toasts) — la structure construite par ui.js :
+     <div class="toasts" data-toasts role="status" aria-live="polite">
+       <div class="toast toast--succes|--info|--alerte|--critique"
+            data-etat="entree|visible|sortie">
+         <span class="toast__texte">…</span>
+         <button class="toast__fermeture">×</button>
+   Le conteneur est une région live posée une fois par page ; ui.js n'y
+   ajoute que des éléments. Ces règles vivaient en double dans le <style>
+   de docsearch.html et de faq.html, et manquaient aux six autres pages :
+   la confirmation de publication y tombait invisible en bas du flux.
    ========================================================================= */
 
-.notifications {
+.toasts {
   position: fixed;
   inset-block-end: var(--e-6);
   inset-inline-end: var(--e-6);
@@ -1415,21 +1442,20 @@ select.champ__controle {
   pointer-events: none;
 }
 
-.notification {
-  --notif-teinte: var(--texte-doux);
+.toast {
+  --toast-teinte: var(--texte-doux);
 
   display: flex;
   align-items: flex-start;
   gap: var(--e-3);
-
-  padding: var(--e-3) var(--e-4);
+  padding: var(--e-2) var(--e-2) var(--e-2) var(--e-4);
 
   background-color: var(--fond-eleve);
   color: var(--texte);
   border: 1px solid var(--bordure);
   /* Liseré de couleur au bord de départ : le statut reste lisible même
      pour une personne qui ne distingue pas les teintes. */
-  border-inline-start: var(--e-1) solid var(--notif-teinte);
+  border-inline-start: var(--e-1) solid var(--toast-teinte);
   border-radius: var(--rayon-md);
   box-shadow: var(--ombre-lg);
 
@@ -1437,69 +1463,37 @@ select.champ__controle {
   pointer-events: auto;
 }
 
-.notification--succes { --notif-teinte: var(--statut-succes); }
-.notification--info   { --notif-teinte: var(--statut-info); }
-.notification--erreur { --notif-teinte: var(--statut-critique); }
+.toast--succes   { --toast-teinte: var(--statut-succes); }
+.toast--info     { --toast-teinte: var(--statut-info); }
+.toast--alerte   { --toast-teinte: var(--statut-alerte); }
+.toast--critique { --toast-teinte: var(--statut-critique); }
 
-.notification__icone {
-  flex: none;
-  display: inline-flex;
-  line-height: var(--interligne);
-  color: var(--notif-teinte);
-  color: color-mix(in srgb, var(--notif-teinte) 72%, var(--texte));
-}
-
-.notification__contenu {
+.toast__texte {
   flex: 1 1 auto;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-1);
-}
-
-.notification__titre {
-  margin: 0;
-  font-size: var(--texte-sm);
-  font-weight: var(--graisse-forte);
-  line-height: var(--interligne-serre);
-}
-
-.notification__texte {
-  margin: 0;
-  color: var(--texte-doux);
+  align-self: center;
   line-height: var(--interligne);
 }
 
-.notification__fermer {
-  flex: none;
-  margin: calc(var(--e-2) * -1) calc(var(--e-2) * -1) 0 0;
-}
+/* Sans ces trois états, la notification naît et meurt à opacité 1 :
+   l'apparition comme la disparition sont des à-coups. */
+.toast[data-etat="entree"],
+.toast[data-etat="sortie"] { opacity: 0; }
+.toast[data-etat="visible"] { opacity: 1; }
 
-@keyframes notification-apparition {
-  from {
-    opacity: 0;
-    transform: translateY(var(--e-3));
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .notification {
-    animation: notification-apparition var(--duree) var(--courbe);
-  }
-}
-
+/* base.css coupe déjà tout mouvement sous `reduce` ; la règle ci-dessous le
+   garantit même si ce socle venait à changer. */
 @media (prefers-reduced-motion: reduce) {
-  .notification {
+  .toast {
     animation: none;
+    transition: none;
   }
 }
 
+/* Sur téléphone, la notification se recolle aux deux bords : la place
+   manque pour une carte flottante. */
 @media (max-width: 640px) {
-  .notifications {
+  .toasts {
     inset-inline: var(--e-4);
     inset-block-end: var(--e-4);
     inline-size: auto;
@@ -1790,7 +1784,7 @@ select.champ__controle {
    ========================================================================= */
 
 @media print {
-  .notifications,
+  .toasts,
   .modale-fond,
   .recherche,
   .facettes,

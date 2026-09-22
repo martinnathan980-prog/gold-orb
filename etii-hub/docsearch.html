@@ -33,12 +33,9 @@
        C. Les résultats : bandeau (compteur + tri), grille, carte.
        D. Le gabarit de chargement.
        E. Le pont entre le contrat de classes de ui.js et la feuille de
-          composants. `ui.js` fabrique `.modale / .modale__boite / .toast…`
-          (cf. son en-tête de fichier) alors que components.css stylise
-          `.modale-fond / .modale / .notification…`. Sans ces règles, la
-          modale « Proposer un document » et les notifications de copie
-          s'afficheraient sans mise en forme. Le socle n'est pas modifié :
-          le pont vit ici, dans la page qui en a besoin.
+          composants, pour la modale « Proposer un document ». Les
+          notifications, elles, ne sont plus ici : components.css §9 les
+          stylise pour les huit pages, une seule source.
 
        Aucune valeur brute : uniquement des var(--…) de tokens.css, ou des
        calculs dérivés de ces jetons.
@@ -90,6 +87,15 @@
        autour. Le reste de l'écran attend qu'on ait lu cette ligne. */
 
     .ds-entete {
+      /* L'animation d'apparition posée plus bas (section F) fait de cette
+         section un contexte d'empilement : sans position + z-index ici, le
+         z-index 90 du panneau de suggestions y reste prisonnier et le
+         panneau passe SOUS le menu « Trier par » et sous les cartes de
+         résultats, à toutes les largeurs. 10 reste loin sous le 100 de
+         l'en-tête collant. Ne pas retirer sans retirer l'animation. */
+      position: relative;
+      z-index: 10;
+
       align-items: center;
       text-align: center;
       padding-block-start: var(--e-6);
@@ -722,8 +728,7 @@
       line-height: var(--interligne-serre);
     }
 
-    .modale__fermeture,
-    .toast__fermeture {
+    .modale__fermeture {
       flex: none;
       display: inline-flex;
       align-items: center;
@@ -740,8 +745,7 @@
       line-height: 1;
     }
 
-    .modale__fermeture:hover,
-    .toast__fermeture:hover {
+    .modale__fermeture:hover {
       background-color: var(--fond-enfonce);
       color: var(--texte);
     }
@@ -773,76 +777,12 @@
     .modale[data-etat="sortie"] { opacity: 0; }
     .modale[data-etat="ouvert"] { opacity: 1; }
 
-    /* Le fond ne défile pas derrière la modale. Sans !important, et levé
-       dès la fermeture : le défilement natif n'est jamais confisqué. */
-    :root[data-modale-ouverte] { overflow: hidden; }
-
     @media (max-width: 640px) {
       .modale__entete,
       .modale__corps,
       .modale__actions { padding: var(--e-4); }
 
       .modale__actions .bouton { flex: 1 1 auto; }
-    }
-
-    /* --- E2. Notifications éphémères -------------------------------------- */
-
-    .toasts {
-      position: fixed;
-      inset-block-end: var(--e-6);
-      inset-inline-end: var(--e-6);
-      z-index: 300;
-
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: var(--e-3);
-
-      inline-size: min(100% - var(--e-8), calc(var(--e-16) * 6));
-      pointer-events: none;
-    }
-
-    .toast {
-      --ds-toast-teinte: var(--texte-doux);
-
-      display: flex;
-      align-items: flex-start;
-      gap: var(--e-3);
-      padding: var(--e-2) var(--e-2) var(--e-2) var(--e-4);
-
-      background-color: var(--fond-eleve);
-      color: var(--texte);
-      border: 1px solid var(--bordure);
-      border-inline-start: var(--e-1) solid var(--ds-toast-teinte);
-      border-radius: var(--rayon-md);
-      box-shadow: var(--ombre-lg);
-
-      font-size: var(--texte-sm);
-      pointer-events: auto;
-    }
-
-    .toast--succes   { --ds-toast-teinte: var(--statut-succes); }
-    .toast--info     { --ds-toast-teinte: var(--statut-info); }
-    .toast--alerte   { --ds-toast-teinte: var(--statut-alerte); }
-    .toast--critique { --ds-toast-teinte: var(--statut-critique); }
-
-    .toast__texte {
-      flex: 1 1 auto;
-      min-width: 0;
-      align-self: center;
-      line-height: var(--interligne);
-    }
-
-    .toast[data-etat="entree"],
-    .toast[data-etat="sortie"] { opacity: 0; }
-    .toast[data-etat="visible"] { opacity: 1; }
-
-    @media (max-width: 640px) {
-      .toasts {
-        inset-inline: var(--e-4);
-        inset-block-end: var(--e-4);
-        inline-size: auto;
-      }
     }
 
     /* =====================================================================
@@ -855,10 +795,7 @@
        ===================================================================== */
 
     @media (prefers-reduced-motion: no-preference) {
-      .modale,
-      .toast {
-        transition: opacity var(--duree) var(--courbe);
-      }
+      .modale { transition: opacity var(--duree) var(--courbe); }
 
       .ds-suggestion,
       .ds-recent,
@@ -880,7 +817,6 @@
 
     @media (prefers-reduced-motion: reduce) {
       .modale,
-      .toast,
       .ds-suggestion,
       .ds-recent,
       .ds-tuile__icone,
@@ -905,6 +841,7 @@
           <li><a href="etiie.html" data-pole="ETIIE">ETIIE</a></li>
           <li><a href="etiii.html" data-pole="ETIII">ETIII</a></li>
           <li><a href="docsearch.html" aria-current="page">Recherche</a></li>
+          <li><a href="organigramme.html">Organigramme</a></li>
         </ul>
       </nav>
       <button class="palette-ouvrir" type="button" data-palette>
@@ -1006,11 +943,11 @@
             </span>
 
             <label class="visuellement-cache" for="ds-porteur">
-              Filtrer par porteur
+              Filtrer par porteur du document
             </label>
             <span class="champ__select ds-menu">
               <select class="champ__controle" id="ds-porteur" name="porteur" disabled>
-                <option value="">Tous les porteurs</option>
+                <option value="">Tous les porteurs de document</option>
               </select>
             </span>
 

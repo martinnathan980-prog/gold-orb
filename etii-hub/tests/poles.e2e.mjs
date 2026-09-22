@@ -259,12 +259,17 @@ t('les trois menus de filtre sont présents',
   (await page.locator('#ds-metier, #ds-porteur, #ds-pole').count()) === 3);
 
 console.log('\n== Navigation entre les neuf pages ==');
+// faq.html et reunions.html ne figurent pas dans la barre : elles le
+// déclarent sur <body data-hors-navigation> et n'ont donc AUCUNE entrée
+// courante. Marquer « Tableau de bord » y serait un mensonge.
+const HORS_BARRE = new Set(['faq', 'reunions']);
 for (const p of ['index','etiia','etiie','etiii','reunions','organigramme','faq','docsearch']) {
   await page.goto(`${B}/${p}.html`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
   const liens = await page.locator('nav.site-nav a').count();
   const courant = await page.locator('[aria-current="page"]').count();
-  if (liens !== 5 || courant !== 1) t(`${p}.html : nav 5 liens, 1 courant`, false, `(${liens} liens, ${courant} courant)`);
+  const attendu = HORS_BARRE.has(p) ? 0 : 1;
+  if (liens !== 6 || courant !== attendu) t(`${p}.html : nav 6 liens, ${attendu} courant`, false, `(${liens} liens, ${courant} courant)`);
 }
 t('les huit pages ont la même navigation', true);
 

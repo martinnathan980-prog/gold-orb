@@ -25,8 +25,9 @@
              même corps que dans les espaces de pôle.
 
    Responsabilités :
-     1. Démarrer le thème et marquer, dans la navigation principale, le
-        lien du PÔLE ACTIF (celui du tableau de bord si le pôle est ETII).
+     1. Démarrer le thème. La barre du site ne marque aucune entrée
+        courante : cette page n'y figure pas, et le périmètre affiché est
+        porté par le sélecteur de pôle, à l'intérieur de la page.
      2. Charger reunions.json et en rendre les trois états — chargement,
         erreur, vide — via avecEtat() de data.js.
      3. Offrir un sélecteur de pôle à quatre puces, chacune avec son
@@ -101,7 +102,9 @@ const CODES_POLE = POLES.map((pole) => pole.cle);
 /** Le niveau service : « tout le service », et le repli de toute erreur. */
 const POLE_SERVICE = 'ETII';
 
-/** Page d'espace correspondant à chaque pôle, pour marquer la navigation. */
+/** Page d'espace correspondant à chaque pôle, pour le lien de retour de la
+    rangée transverse. La barre du site, elle, ne marque plus rien ici : cette
+    page ne figure pas dedans (`<body data-hors-navigation>`). */
 const PAGE_DE_POLE = {
   ETII: 'index.html',
   ETIIA: 'etiia.html',
@@ -1279,16 +1282,18 @@ function surClavierListe(evt, vue) {
    ------------------------------------------------------------------------- */
 
 /**
- * Reporte le pôle actif sur la navigation principale et la
- * sous-navigation.
+ * Met à jour la sous-navigation, et n'annonce aucune page courante dans la
+ * barre du site.
  *
- * Sur une page transverse, c'est le lien du PÔLE ACTIF qui porte
- * `aria-current="page"` — celui du tableau de bord quand le pôle est
- * « ETII ». initNav() se charge de poser l'attribut sur ce seul lien et de
- * le retirer partout ailleurs : il n'y en a jamais deux.
+ * Cette page ne figure pas dans la barre : elle le déclare sur
+ * `<body data-hors-navigation>`. initNav() sans argument déduit la page de
+ * l'URL, ne trouve aucun lien qui corresponde, et retire donc tous les
+ * `aria-current`. La règle précédente — la barre portait le PÉRIMÈTRE
+ * affiché — soulignait « Tableau de bord » alors qu'on est ailleurs.
+ * Le périmètre reste porté par les pastilles, à l'intérieur de la page.
  */
 function majNavigation() {
-  initNav(PAGE_DE_POLE[poleActif] || 'index.html');
+  initNav();
   rendreSousNav();
 }
 

@@ -91,6 +91,43 @@ if (contraste) {
   t(`contraste de la ligne d'aide : ${contraste.ratio}:1 (seuil AA ${seuil}:1)`, contraste.ratio >= seuil, JSON.stringify(contraste));
 } else t('ligne d\'aide #ds-aide trouvée', false);
 
+console.log('\n== Défaut 8 : le panneau de suggestions reste cliquable ==');
+// L'animation d'apparition de .ds-entete en fait un contexte d'empilement,
+// qui emprisonnait le z-index du panneau : le menu « Trier par » et les
+// cartes de résultats se dessinaient par-dessus, et un clic sur les
+// dernières propositions ouvrait le tri. Le piège revient dès qu'on animera
+// une autre section : on vérifie donc le résultat, pas la règle CSS.
+for (const [larg, haut] of [[390, 844], [1280, 900]]) {
+  const ctx = await nav.newContext({ viewport: { width: larg, height: haut } });
+  const p2 = await ctx.newPage();
+  await p2.goto(B + '/docsearch.html', { waitUntil: 'networkidle' });
+  await p2.waitForTimeout(600);
+  await p2.fill('#ds-champ', 'procedure');
+  await p2.waitForTimeout(700);
+  const vol = await p2.evaluate(() => {
+    const panneau = document.querySelector('.ds-suggestions');
+    if (!panneau || !panneau.getClientRects().length) return { absent: true };
+    const b = panneau.getBoundingClientRect();
+    // On balaie la MOITIÉ BASSE du panneau : c'est là que le menu de tri et
+    // les cartes mordaient, et la hauteur exacte du recouvrement varie avec
+    // la largeur de la fenêtre.
+    let voles = 0; const coupables = new Set();
+    for (let y = Math.round(b.top + b.height / 2); y < b.bottom - 2; y += 8) {
+      for (let x = Math.round(b.left) + 6; x < b.right - 6; x += 24) {
+        const e = document.elementFromPoint(x, y);
+        if (!e) continue;
+        if (e !== panneau && !panneau.contains(e)) {
+          voles++; coupables.add(e.tagName + '.' + (e.className || ''));
+        }
+      }
+    }
+    return { voles, coupables: [...coupables] };
+  });
+  t(`${larg}×${haut} : la moitié basse du panneau de suggestions reçoit le clic`,
+    !vol.absent && vol.voles === 0, JSON.stringify(vol));
+  await ctx.close();
+}
+
 t('aucune erreur JavaScript', err.length===0, err.join(' | '));
 console.log(`\n  ${ok} réussis, ${ko} échoués`);
 await nav.close(); process.exit(ko?1:0);
