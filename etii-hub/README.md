@@ -49,7 +49,7 @@ Puis ouvrir <http://localhost:8000>.
 
 | Page | Rôle |
 |---|---|
-| `index.html` | Dispatcher : accès aux trois pôles et à la recherche |
+| `index.html` | Tableau de bord : Communication center (kiosque + éditeur), Porteurs, Suivi OTQ / OTD |
 | `etiia.html`, `etiie.html`, `etiii.html` | L'espace d'un pôle : sa communication, le pôle en un coup d'œil (repères, à qui s'adresser, par porteur), son équipe et ses référents, sa FAQ (voir ci-dessous) |
 | `reunions.html` | Les comptes-rendus de réunion, par périmètre |
 | `organigramme.html` | Équipes, rôles, réorganisation |
@@ -148,6 +148,30 @@ H175 sont cités.
 Pour brancher de vraies données, remplacez les fichiers JSON en respectant
 leur forme. Rien d'autre n'est à modifier.
 
+### Qui met à jour quoi
+
+Après toute modification d'un fichier de `assets/data/`, lancer
+`node tests/audit.mjs` ; pour les communications aussi
+`node tests/communications.test.mjs`, pour `documents.json` aussi
+`node tests/search.test.mjs`.
+
+| Fichier | Ce qu'il alimente | Ce qui le vérifie |
+|---|---|---|
+| `communications.json` | Le Communication center du tableau de bord et la communication de chaque espace de pôle | `node tests/audit.mjs`, `node tests/communications.test.mjs` |
+| `documents.json` | La recherche documentaire, et les documents portés affichés sur la fiche d'une personne | `node tests/audit.mjs`, `node tests/search.test.mjs` |
+| `faq.json` | La page FAQ et la FAQ de chaque espace de pôle | `node tests/audit.mjs` |
+| `flotte.json` | La galerie Porteurs du tableau de bord, les fiches d'appareil et les crédits photo | `node tests/audit.mjs` |
+| `indicateurs.json` | Les repères chiffrés des espaces de pôle | `node tests/audit.mjs` |
+| `organigramme.json` | L'organigramme, le trombinoscope, les compétences, les équipes et référents des pôles | `node tests/audit.mjs` |
+| `reunions.json` | Les comptes-rendus de réunion | `node tests/audit.mjs` |
+| `otq-exemple.csv` | Le Suivi OTQ / OTD tant que `SOURCE.url` d'`assets/js/otq.js` est vide | `node tests/audit.mjs` |
+
+L'audit vérifie aussi la cohérence *entre* ces fichiers : qu'un document est
+bien porté par quelqu'un qui existe dans l'organigramme, que ses valeurs de
+filtre sont déclarées dans les facettes, qu'aucune référence n'est en double.
+Il distingue l'erreur, qui fait perdre une donnée en silence, de
+l'avertissement, qui signale une dérive sans rien casser.
+
 ### Photos des personnes
 
 Chaque personne de `organigramme.json` accepte un champ `photo`, facultatif :
@@ -178,10 +202,19 @@ mettez le fichier dans le dossier, changez `photo` et videz `credit` (ou
 renseignez-y la source interne). Les vignettes sont servies à 960 px de
 large ; inutile d'en mettre de plus grandes.
 
+`credit` porte un dernier champ, `vu` : **une phrase qui décrit ce qu'on voit
+sur l'image**, écrite en l'ouvrant. `node tests/audit.mjs` refuse un appareil
+qui a une `photo` sans ce champ. Ce n'est pas une formalité : une récupération
+automatique depuis Commons a déjà apparié le H225M sur son surnom et rapporté
+la photo d'un caracal — le félin. Un nom de fichier ne permet pas de trancher
+(une photo authentique a le droit de ne porter qu'un nom de salon), une phrase
+descriptive ne s'écrit pas sans avoir regardé, et elle se relit dans un diff.
+
 ## Accessibilité
 
-- Navigation clavier complète sur chaque page, y compris le glisser-déposer
-  de l'organigramme, qui dispose d'un équivalent clavier.
+- Navigation clavier complète sur chaque page, y compris la mise en page des
+  blocs de l'éditeur de communication : ↑ ↓ déplacent un bloc, ← → règlent sa
+  largeur, chaque geste porte son libellé ARIA (`assets/js/editeur.js`).
 - Anneau de focus visible sur tout élément interactif.
 - Barres de défilement natives conservées.
 - Thème clair et sombre, suivant le système par défaut, avec choix manuel
@@ -228,5 +261,6 @@ dans le navigateur.
 | `docs/OTQ-GOOGLE-SHEETS.md` | Alimenter le suivi OTQ / OTD chaque nuit depuis un Google Sheet |
 | `docs/ASSISTANT-IA.md` | Brancher un assistant documentaire (Gemini) : chemins, coûts, interlocuteurs, précautions |
 | `docs/RECHERCHE-A-L-ECHELLE.md` | Ce qui fait la qualité d'une recherche sur des milliers de documents |
+| `SPEC.md` | Le cahier des charges de la réécriture ; les en-têtes de modules y renvoient par numéro de section |
 
 Les scripts Apps Script correspondants sont dans `tools/apps-script/`.

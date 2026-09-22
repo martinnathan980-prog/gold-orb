@@ -367,6 +367,7 @@
         "auteur": "ZLEA",
         "licence": "CC BY-SA 4.0",
         "fichier": "File:Eurocopter AS350 B3 Écureuil (N911US, cn 2968) (3-25-2023).jpg",
+        "vu": "AS350 rouge et blanc en vol au-dessus d'une piste, un seau bombardier d'eau pendu sous le fuselage",
         "page": "https://commons.wikimedia.org/wiki/File%3AEurocopter_AS350_B3_%C3%89cureuil_%28N911US%2C_cn_2968%29_%283-25-2023%29.jpg",
         "note": "Photo d'un AS350 B3 (l'appareil a été renommé H125 en 2015)."
       }
@@ -654,6 +655,7 @@
         "auteur": "Hugo LUC",
         "licence": "CC BY-SA 4.0",
         "fichier": "File:Airbus Helicopters H130 - 3A-MHM from Heli Air Monaco.jpg",
+        "vu": "H130 rouge et gris en vol, profil gauche sur ciel voilé, Fenestron bien visible",
         "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_Helicopters_H130_-_3A-MHM_from_Heli_Air_Monaco.jpg",
         "note": ""
       }
@@ -958,6 +960,7 @@
         "auteur": "Julian Herzog",
         "licence": "CC BY 4.0",
         "fichier": "File:DRF Eurocopter EC135 Christoph 44 D-HDRK Göttingen 2017 03.jpg",
+        "vu": "EC135 rouge et blanc d'un service de secours posé dans une prairie, profil gauche",
         "page": "https://commons.wikimedia.org/wiki/File%3ADRF_Eurocopter_EC135_Christoph_44_D-HDRK_G%C3%B6ttingen_2017_03.jpg",
         "note": ""
       }
@@ -1253,6 +1256,7 @@
         "auteur": "Matthias Zepper",
         "licence": "CC BY-SA 3.0",
         "fichier": "File:Zepper-BK 117-C2-(EC145)-SchweizerischeRettungsflugwacht.jpg",
+        "vu": "EC145 rouge et blanc en vol au-dessus de montagnes enneigées, trois quarts avant droit",
         "page": "https://commons.wikimedia.org/wiki/File%3AZepper-BK_117-C2-%28EC145%29-SchweizerischeRettungsflugwacht.jpg",
         "note": "Photo d'un EC145 (BK117 C-2), génération précédente du H145 actuel."
       }
@@ -1554,6 +1558,7 @@
         "auteur": "Domenjod",
         "licence": "CC BY-SA 4.0",
         "fichier": "File:Airbus H160 Gend1 Domenjod 20 10 2021.jpg",
+        "vu": "H160 bleu de gendarmerie exposé sur un stand de salon, profil gauche, posé sur socle",
         "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_H160_Gend1_Domenjod_20_10_2021.jpg",
         "note": ""
       }
@@ -1858,6 +1863,7 @@
         "auteur": "Matti Blume",
         "licence": "CC BY-SA 4.0",
         "fichier": "File:Paris Air Show 2019, Le Bourget (SIAE1189).jpg",
+        "vu": "H175 jaune au sol sur un salon, trois quarts arrière gauche, portes latérales ouvertes",
         "page": "https://commons.wikimedia.org/wiki/File%3AParis_Air_Show_2019%2C_Le_Bourget_%28SIAE1189%29.jpg",
         "note": ""
       }
@@ -2129,6 +2135,7 @@
         "auteur": "Armando Olivo Martín del Campo",
         "licence": "CC BY-SA 4.0",
         "fichier": "File:Eurocopter AS332 Super Puma.jpg",
+        "vu": "AS332 Super Puma vert militaire exposé derrière une barrière, vue de face",
         "page": "https://commons.wikimedia.org/wiki/File%3AEurocopter_AS332_Super_Puma.jpg",
         "note": "Photo d'un AS332 Super Puma, dont le H215 est l'évolution."
       }
@@ -2402,6 +2409,7 @@
         "auteur": "sparkcyf",
         "licence": "CC BY-SA 4.0",
         "fichier": "File:Airbus Helicopters EC225 COMC.jpg",
+        "vu": "EC225 rouge et blanc en vol, vu de dessous dans la brume ; la photo porte la signature du photographe en bas à droite",
         "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_Helicopters_EC225_COMC.jpg",
         "note": "Photo d'un EC225 (ancienne désignation du H225)."
       }
@@ -2676,6 +2684,7 @@
         "auteur": "Matti Blume",
         "licence": "CC BY-SA 4.0",
         "fichier": "File:Airbus H145M, ILA 2024, Schoenefeld (ILA43976).jpg",
+        "vu": "H145M gris militaire au sol sur un salon, profil gauche, un second appareil derrière lui",
         "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_H145M%2C_ILA_2024%2C_Schoenefeld_%28ILA43976%29.jpg",
         "note": ""
       }
@@ -2947,6 +2956,7 @@
         "auteur": "Gervaisjc",
         "licence": "CC BY-SA 4.0",
         "fichier": "File:H160M Bourget 2019.jpg",
+        "vu": "maquette grandeur du H160M sur un salon, vue arrière rapprochée, le Fenestron au premier plan",
         "page": "https://commons.wikimedia.org/wiki/File%3AH160M_Bourget_2019.jpg",
         "note": ""
       }
@@ -2959,7 +2969,6 @@
         "ETIII"
       ],
       "silhouette": "roues-bi-lourd",
-      "photo": "assets/img/porteurs/h225m.jpg",
       "service": {
         "technique": {
           "motorisation": null,
@@ -3216,13 +3225,7 @@
         "categorie": "militaire",
         "relecture": "non effectuée"
       },
-      "credit": {
-        "auteur": "Leo za1",
-        "licence": "CC BY-SA 3.0",
-        "fichier": "File:Caracal Caracal-001.jpg",
-        "page": "https://commons.wikimedia.org/wiki/File%3ACaracal_Caracal-001.jpg",
-        "note": "Photo d'un EC725 Caracal (ancienne désignation du H225M)."
-      }
+      "credit": null
     },
     {
       "code": "TIGRE",
@@ -3495,6 +3498,7 @@
         "auteur": "Anna Zvereva from Tallinn, Estonia",
         "licence": "CC BY-SA 2.0",
         "fichier": "File:French Army, 6010, Eurocopter EC 665 Tiger HAD (49580123847).jpg",
+        "vu": "EC665 Tigre camouflé vert et brun en vol à basse hauteur devant un hangar, profil gauche",
         "page": "https://commons.wikimedia.org/wiki/File%3AFrench_Army%2C_6010%2C_Eurocopter_EC_665_Tiger_HAD_%2849580123847%29.jpg",
         "note": ""
       }
@@ -3766,6 +3770,7 @@
         "auteur": "New York-air",
         "licence": "CC BY-SA 4.0",
         "fichier": "File:NHIndustries NH90 EAY 1.jpg",
+        "vu": "NH90 camouflé posé sur une piste, profil gauche, deux militaires assis dans la porte latérale",
         "page": "https://commons.wikimedia.org/wiki/File%3ANHIndustries_NH90_EAY_1.jpg",
         "note": ""
       }
@@ -4037,6 +4042,7 @@
         "auteur": "Marc Lacoste",
         "licence": "CC BY-SA 4.0",
         "fichier": "File:Paris Air Show 2017 Airbus racer (cropped).jpg",
+        "vu": "maquette du Racer détourée sur fond blanc, trois quarts avant, ailes et hélices propulsives visibles",
         "page": "https://commons.wikimedia.org/wiki/File%3AParis_Air_Show_2017_Airbus_racer_%28cropped%29.jpg",
         "note": ""
       }
