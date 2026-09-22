@@ -160,13 +160,39 @@ groupes fusionnés en ligne 1, données à partir de la ligne 3.
 | Groupes | 16 plages fusionnées + 2 cellules isolées (`Concept Harnais`, colonnes 40 et 41) |
 | Sans intitulé | colonnes 1, 4 et 5 — nommées « Colonne 1 », « Colonne 4 », « Colonne 5 ». Seule la **première** est retirée à l'affichage (c'est Excel qui l'ajoute) ; 4 et 5 restent, même vides : le tableau est la structure exacte de GATES |
 | Référence figée | `Référence UD`, colonne **2** (pas la 1) |
-| **Avancement FWD** | `Avancement`, colonne **42**, groupe `Réalisation FWD` |
+| **Avancement FWD** | `Avancement Définition Electrique`, groupe `HDK AA 011` (`CONFIG.COLONNE_FWD`) |
+| **Concept harnais** | `Avancement Concept Harnais`, groupe `HDK AA 011` (`CONFIG.COLONNE_CONCEPT`) |
 | Domaine | `Domaine` — le périmètre du haut de page |
 
-**Vingt-sept colonnes ont un intitulé contenant « avancement ».** Une seule est
-celle du FWD ; les autres sont `Avancement Définition Electrique` et
-`Avancement Concept Harnais`, treize fois chacune. C'est le groupe fusionné
-au-dessus qui départage, et le script lit les **vraies fusions** de la feuille.
+**Vingt-sept colonnes ont un intitulé contenant « avancement ».** Le FWD se
+suit dans **`HDK AA 011 > Avancement Définition Electrique`** — et non plus
+dans `Réalisation FWD > Avancement`, qui reste une colonne du tableau comme
+les autres. C'est `CONFIG.COLONNE_FWD` qui le dit, groupe compris : les
+treize blocs HDK AA portent tous les mêmes intitulés, et c'est le groupe
+fusionné au-dessus qui départage — le script lit les **vraies fusions** de
+la feuille. Un extract sans bloc `HDK AA 011` retombe sur la détection
+(`Réalisation FWD > Avancement`), et le **Diagnostic** le dit en toutes
+lettres : « ⚠ La colonne demandée … est introuvable ».
+
+### Définition électrique ou concept harnais
+
+`CONFIG.COLONNE_CONCEPT` nomme le second avancement suivi,
+`HDK AA 011 > Avancement Concept Harnais`. Quand l'extract le porte, la page
+affiche en haut l'interrupteur **Définition électrique | Concept harnais**,
+et **toute la page suit** la colonne choisie : la barre, la courbe et son
+historique, le journal, le bloc par groupe (« Concept harnais par ATA »), le
+filtre des états, le tableau (c'est la colonne suivie qui porte la pastille
+d'état), la comparaison avec SEE et la fiche d'un plan. Changer d'avancement
+retire les filtres posés — un « terminé » n'a plus le même sens — et garde
+le cadre : périmètre, fenêtre du graphique, regroupement.
+
+L'archivage garde **les deux valeurs de chaque plan** : la carte d'un relevé
+porte `[définition, concept]` par référence. Les relevés d'avant n'ont que
+la définition ; ils se relisent tels quels, et **la courbe du concept
+commence au premier archivage qui l'a gardé** — un historique ne se
+reconstitue pas. Les deux colonnes se lisent avec les mêmes règles que
+l'avancement FWD (§ 11) : `Terminé`, `En cours`, `À faire`, les
+pourcentages ; une autre façon d'écrire se range en « en cours ».
 
 Autres points tenus par le code :
 
@@ -295,26 +321,18 @@ Sous « Suivi FWD », la page écrit la semaine **où l'on est**, avec ses dates
 « Semaine 39 · du 21 au 27 septembre 2026 ». Elle vient de la date du jour,
 pas des données — il n'y a rien à tenir à la main.
 
-Les chiffres de la page, eux, sont ceux du **dernier relevé archivé**. Quand
-ce relevé n'est pas de la semaine en cours, la ligne le dit à la suite :
-« · dernier relevé : semaine 38 » ; « , il y a 4 semaines » dès deux
-semaines d'écart ; « , il y a 5 mois » passé huit semaines, puis « , il y a
-plus d'un an » ; « de 2026 » s'ajoute au numéro quand l'année a changé ; et
-« — à venir » si le relevé est postérieur à aujourd'hui (horloge du poste en
-retard, semaine saisie à la main). Personne ne lit donc des chiffres d'il y
-a trois semaines en les croyant d'aujourd'hui. La mention disparaît dès que
-l'archivage de la semaine est fait.
-
-Le graphique suit : son trait vertical ne s'appelle « aujourd'hui » que si
-le dernier relevé est de cette semaine — sinon il dit « dernier relevé ».
+Le titre ne dit **que** la semaine en cours : pas de mention du dernier
+relevé à côté. Les chiffres de la page, eux, sont ceux du **dernier relevé
+archivé** — c'est le graphique qui le dit : son trait vertical ne s'appelle
+« aujourd'hui » que si ce relevé est de cette semaine, sinon il dit
+« dernier relevé ».
 Une page laissée ouverte reprend tout cela au retour sur l'onglet, et une
 fois par heure.
 
 La démonstration, elle, est **datée** : son historique s'arrête à la semaine
-38 de 2026, en face des jalons du programme, qui sont des dates fixes. La
-mention vieillira donc avec elle (« il y a 3 mois », puis « plus d'un an ») —
-c'est exact, et c'est le signe qu'il faut rafraîchir le jeu d'exemple en même
-temps que les jalons.
+38 de 2026, en face des jalons du programme, qui sont des dates fixes. Son
+trait dira donc « dernier relevé » — c'est exact, et c'est le signe qu'il
+faudra rafraîchir le jeu d'exemple en même temps que les jalons.
 
 ## 8. Le périmètre : Tout / BASE/OPTION / PERSO
 
@@ -620,18 +638,19 @@ JALONS: [
 ],
 ```
 
-Sur le graphique, chaque jalon se marque d'un **numéro** en tête de son
-trait — tous sur une même ligne, sauf deux marqueurs qui se toucheraient —
-et son texte ne s'écrit à côté que s'il a la place, mesurée sur le dessin
-(à droite jusqu'au jalon suivant, sinon à gauche) ; la **légende des
-jalons**, sous celle du graphique, redit chaque numéro en clair avec sa
-semaine et son périmètre. La survoler (ou y passer au clavier) éclaire le
-trait et fait paraître le texte masqué, par-dessus les voisins. Un jalon
+Sur le graphique, chaque jalon se marque d'un **numéro**, 1 à 5, en tête de
+son trait — **tous sur une seule rangée**, jamais étagés, et sans texte
+collé : deux jalons de semaines voisines se serrent côte à côte sur la
+rangée, un court trait reliant le numéro à sa vraie semaine. La **légende
+des jalons**, sous celle du graphique, les nomme — sur une ligne dès qu'il y
+a la place — avec leur semaine telle qu'on la dit (« S2 · janv. 2027 ») et
+leur périmètre. La survoler (ou y passer au clavier) éclaire le trait et
+fait paraître le nom sous la rangée. Un jalon
 hors du périmètre choisi garde son numéro, dans un marqueur creux ; son
 trait s'estompe. Un jalon sorti de la fenêtre affichée (zoom serré) reste
 dans la légende, en retrait, avec « hors fenêtre ». L'échéance manquée est
-rouge partout : marqueur, texte, trait, et son entrée dans la légende. Cinq
-jalons en dix semaines restent lisibles.
+rouge partout : marqueur, trait, et son entrée dans la légende. Cinq jalons
+en dix semaines restent lisibles.
 
 Le jalon à venir le plus proche fait l'**échéance** : il pilote la colonne
 **effort demandé** du bloc par groupe (ce qu'il faudrait solder chaque semaine
@@ -649,6 +668,34 @@ Le **Diagnostic** dit combien de jalons sont retenus, et si le périmètre de
 chacun est bien l'une des valeurs de la colonne de domaine du premier contrat
 — sinon il nomme le jalon et donne les valeurs vues, à recopier dans
 `perimetre`.
+
+## 13 bis. Chercher un plan
+
+Sous le titre, **une seule barre** cherche un plan partout. Trois caractères
+d'une référence suffisent (`TFE3110…`) ; en minuscules, avec des tirets ou des
+espaces, et même **écrite à la mode de SEE** (le A un cran trop tôt), elle
+mène au même plan. Trois lettres d'un nom d'installation marchent aussi.
+Une ancienne émission tapée en entier mène au plan d'aujourd'hui ; un plan
+sorti de l'extract se retrouve par ses relevés ; une ligne que SEE est seule
+à connaître se trouve aussi.
+
+La réponse n'est pas une liste d'endroits où aller voir — on risquerait de
+n'en regarder qu'un : c'est la **fiche du plan**, qui rassemble tout ce que la
+page sait de lui :
+
+- **Aujourd'hui** : son état, et la valeur de l'extract quand elle apprend
+  quelque chose (« 45 % ») ;
+- **Semaine par semaine** : une case par relevé archivé, à la couleur de son
+  état ce jour-là, et la liste de ses passages (« S34 passé en terminé »,
+  « changement d'indice : B → C ») ;
+- **Avancement par ATA** (ou la dimension ouverte) : son groupe, en nombres ;
+- **Comparaison avec SEE** : son verdict, et sa ligne telle que SEE l'écrit.
+
+Chaque bloc mène à sa section : « Voir dans le tableau des plans » (le
+tableau réduit à ce plan), « Voir ce groupe », « Voir dans le tableau de
+SEE », « Voir le journal ». Clavier : flèches pour choisir, Entrée pour
+ouvrir, Échap pour refermer la liste puis la fiche. La fiche suit le
+périmètre et l'avancement suivi du moment.
 
 ## 14. Ce qui reste local à chaque personne
 

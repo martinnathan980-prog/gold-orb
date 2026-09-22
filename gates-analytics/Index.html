@@ -54,6 +54,13 @@
       <select class="select" id="select-contrat"></select>
       <span class="attente" id="etat-contrat" role="status" aria-live="polite"></span>
     </span>
+    <!-- L'avancement suivi, lu dans le bloc HDK AA 011 de l'extract : la
+         définition électrique (le FWD) ou le concept harnais. Toute la page
+         suit — barre, courbe, journal, groupes, tableau, comparaison. -->
+    <span class="segmente choix-indicateur" id="choix-indicateur" role="group" aria-label="Avancement suivi" hidden>
+      <button type="button" data-indicateur="def" aria-pressed="true">Définition électrique</button>
+      <button type="button" data-indicateur="concept" aria-pressed="false">Concept harnais</button>
+    </span>
   </div>
 
   <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
@@ -64,11 +71,26 @@
       <span><b id="num-semaine">—</b></span>
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
-      <!-- Quand le dernier relevé n'est pas de cette semaine, la page le dit :
-           le titre donne la date du jour, pas celle des chiffres. -->
-      <span class="semaine-releve" id="releve-semaine" hidden>—</span>
     </div>
   </header>
+
+  <!-- Chercher un plan : une seule barre, qui cherche partout. Elle répond
+       par la fiche du plan — tout ce que la page sait de lui, au même endroit,
+       avec un lien vers chaque section où il paraît. -->
+  <section class="chercher-plan" id="chercher-plan">
+    <div class="chercher-champ">
+      <label class="masque" for="champ-plan">Chercher un plan</label>
+      <input id="champ-plan" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Chercher un plan — ex. TFE3110…"
+             role="combobox" aria-expanded="false" aria-controls="suggestions-plan" aria-autocomplete="list">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+        <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <ul class="suggestions-plan" id="suggestions-plan" role="listbox" aria-label="Plans trouvés" hidden></ul>
+    </div>
+    <div class="fiche-plan" id="fiche-plan" role="region" aria-label="Fiche du plan" hidden></div>
+  </section>
 
   <section class="avancement">
     <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il

@@ -155,27 +155,34 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
 
 ## 6. Lire la page, de haut en bas
 
-- **Le bandeau** : l'interrupteur **Données réelles / Exemple** et, dès deux
-  contrats, le sélecteur **Contrat** ; sous le titre, la semaine où l'on est
-  et, si le dernier archivage est plus vieux, « dernier relevé : semaine … ».
+- **Le bandeau** : l'interrupteur **Données réelles / Exemple**, dès deux
+  contrats le sélecteur **Contrat**, et l'interrupteur **Définition
+  électrique | Concept harnais** — les deux avancements du bloc HDK AA 011 ;
+  toute la page suit celui qui est choisi. Sous le titre, la semaine où l'on
+  est, et rien d'autre.
   « Exemple » montre, sur vos vrais plans, un historique fabriqué — pour
   voir ce que donneront les courbes quand les relevés se seront accumulés ;
   « Données réelles » revient à ce que le classeur contient. Le bandeau dit
   lequel est affiché (« Historique fabriqué ») et la page se borde de
   tirets ; le nombre de relevés du pied est alors celui de l'exemple.
+- **Chercher un plan**, sous le titre : taper trois caractères de sa
+  référence (même écrite à la mode de SEE), choisir, Entrée. La **fiche du
+  plan** s'ouvre : son état aujourd'hui, une case par semaine archivée et
+  ses passages, son groupe (ATA…), son verdict face à SEE — et un lien vers
+  chaque section où il paraît. Échap referme.
 - **Le périmètre** : Tout / BASE/OPTION / PERSO — les valeurs de la colonne
   « Domaine » de l'extract, telles quelles. Il restreint toute la page.
 - **En haut, sans titre** : la phrase « N sur M plans terminés », la barre
   des quatre états (terminés, en cours, à faire, non renseignés) et, dès le
   second relevé, ce qui a bougé depuis le dernier.
 - **Avancement dans le temps** : la courbe des terminés relevé après relevé,
-  les jalons du programme (numérotés sur le graphique, en clair dans la
+  les jalons du programme (numérotés 1 à 5 sur une rangée, en clair dans la
   légende dessous), la fin estimée au rythme actuel et le rythme requis pour
   tenir le prochain jalon. La molette zoome, la souris déplace.
 - **Ce qui a changé, semaine par semaine** : le journal — quels plans sont
   passés terminés, lesquels ont changé d'indice, lesquels sont apparus ou ont
   disparu de l'extract.
-- **Avancement FWD par…** : le même avancement découpé par ATA, séquence,
+- **Avancement FWD par…** (ou **Concept harnais par…**) : le même avancement découpé par ATA, séquence,
   CC, ECP, ou par mois de création, avec la fin estimée et l'effort demandé
   par groupe.
 - **Plans** : l'extract, à l'identique, avec ses colonnes ; recherche, tri,

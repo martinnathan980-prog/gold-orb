@@ -79,15 +79,6 @@ body {
   font-weight: 300; font-size: clamp(34px, 6vw, 52px);
   letter-spacing: .015em; margin: 0 0 12px; line-height: 1.05;
 }
-.masthead .semaine-releve { color: var(--encre-2); }
-/* Le point médian est un ornement : il ne se lit pas à voix haute, et il
-   disparaît quand la mention passe à la ligne — un séparateur n'ouvre pas
-   une ligne. */
-.semaine-releve::before { content: "\00b7"; margin-right: 8px; }
-@media (max-width: 430px) {
-  .semaine-releve { flex-basis: 100%; }
-  .semaine-releve::before { content: none; }
-}
 .semaine {
   font-size: 15px; color: var(--encre-2);
   display: flex; justify-content: center; align-items: baseline; gap: 9px; flex-wrap: wrap;
@@ -196,6 +187,7 @@ body[data-exemple="true"] .bandeau-mode {
 .bandeau-mode .choix-contrat select { font-size: 13px; min-width: 64px; }
 .bandeau-mode .choix-contrat select:disabled { color: var(--encre-3); cursor: progress; }
 .bandeau-mode .attente { font-size: 12px; color: var(--encre-3); }
+.bandeau-mode .choix-indicateur[hidden] { display: none; }
 .bandeau-mode .attente:empty { display: none; }
 /* Le périmètre : tout en haut, à côté du mode, parce qu'il porte sur toute la
    page — barre, courbe, journal, bloc par groupe, tableau. « Tout », puis une
@@ -469,7 +461,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .jalon-num { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600; fill: var(--surface); pointer-events: none; }
 .jalon.survole line { stroke-width: 2; opacity: 1; }
 .jalon.survole .jalon-marque { stroke: var(--encre); stroke-width: 2; }
-.jalon.survole .jalon-texte.masque { display: block; transform: translateY(24px); }   /* révélé sous la rangée des marqueurs, pas par-dessus les voisins */
+.jalon.survole .jalon-texte.masque { display: block; transform: translateY(26px); }   /* révélé sous la rangée des numéros, pas par-dessus les voisins */
 .jalon.critique .jalon-texte { fill: var(--alerte); }   /* l'échéance manquée : rouge sur le graphique comme dans la légende */
 /* Les jalons se lisent sous la légende des courbes, en colonnes : un jalon
    par case, son numéro, son nom, et dessous sa semaine — plutôt qu'une
@@ -477,7 +469,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .legende-jalons { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--filet); font-size: 12.5px; color: var(--encre-2); }
 .legende-jalons:empty { display: none; }
 .legende-jalons-mot { display: block; color: var(--encre-3); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
-.legende-jalons-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 22px; }
+.legende-jalons-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 10px 18px; }
 .legende-jalon {
   display: grid; grid-template-columns: 18px 1fr; grid-template-rows: auto auto;
   column-gap: 8px; row-gap: 1px; align-items: center; cursor: default; border-radius: 4px;
@@ -489,7 +481,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
   grid-row: span 2; align-self: center;
 }
 .legende-jalon .mot { color: var(--encre); align-self: end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.legende-jalon .quand { grid-column: 2; color: var(--encre-2); font-family: "IBM Plex Mono", monospace; font-size: 12px; align-self: start; }
+.legende-jalon .quand { grid-column: 2; color: var(--encre-2); font-size: 12px; align-self: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Hors du périmètre choisi : le numéro reste net (c'est le lien avec le
    graphique), seul le reste s'efface un peu. */
 .legende-jalon.hors-perimetre .num { background: var(--surface); color: var(--encre-2); box-shadow: inset 0 0 0 1.5px var(--encre-3); }
@@ -918,6 +910,76 @@ table.plans thead tr th.col-fige { z-index: 6; }
 .pied { padding: 20px 0 42px; margin-top: 32px; border-top: 1px solid var(--filet); color: var(--encre-3); font-size: 11.5px; line-height: 1.8; }
 .masque { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 @media (prefers-reduced-motion: reduce) { .barre span, .ombre-defile, .poignee { transition: none; } }
+
+/* ---------------------------------------------------- Chercher un plan */
+/* Une seule barre, sous le titre : elle cherche partout, et répond par la
+   fiche du plan plutôt que par une liste d'endroits où aller voir. */
+.chercher-plan { max-width: 720px; margin: 0 auto 26px; }
+.chercher-champ { position: relative; }
+.chercher-champ input {
+  width: 100%; border: 1px solid var(--filet-fort); border-radius: 999px;
+  background: var(--surface); color: var(--encre); font: inherit; font-size: 15px;
+  padding: 11px 16px 11px 42px;
+}
+.chercher-champ input::placeholder { color: var(--encre-3); }
+.chercher-champ input:hover { border-color: var(--encre-3); }
+.chercher-champ input:focus { outline: none; border-color: var(--encre); box-shadow: 0 0 0 3px var(--creux); }
+.chercher-champ > svg { position: absolute; left: 16px; top: 50%; margin-top: -8px; color: var(--encre-3); pointer-events: none; }
+.chercher-champ input:focus ~ svg, .chercher-champ input:not(:placeholder-shown) ~ svg { color: var(--encre); }
+.suggestions-plan {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30;
+  list-style: none; margin: 0; padding: 6px; background: var(--surface);
+  border: 1px solid var(--filet-fort); border-radius: 10px; box-shadow: 0 10px 28px rgba(0, 0, 0, .12);
+  max-height: 340px; overflow-y: auto; overscroll-behavior: contain;
+}
+.suggestion-plan {
+  display: grid; grid-template-columns: 12px auto 1fr auto; align-items: center; gap: 4px 10px;
+  padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13.5px;
+}
+.suggestion-plan[aria-selected="true"], .suggestion-plan:hover { background: var(--creux); box-shadow: inset 0 0 0 1px var(--filet-fort); }
+.suggestion-plan .ref { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--encre); }
+.suggestion-plan .ref mark { background: var(--r2); color: inherit; border-radius: 2px; padding: 0 1px; }
+.suggestion-plan .nom { color: var(--encre-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.suggestion-plan .marque { font-size: 11.5px; color: var(--encre-3); white-space: nowrap; }
+.suggestion-vide, .suggestion-plus { padding: 9px 10px; font-size: 13px; color: var(--encre-3); list-style: none; }
+
+.fiche-plan {
+  margin-top: 14px; background: var(--surface); border: 1px solid var(--filet-fort); border-radius: 12px;
+  padding: 18px 20px 16px; text-align: left;
+}
+.fiche-tete { display: flex; align-items: flex-start; gap: 14px; }
+.fiche-tete > div { flex: 1 1 auto; min-width: 0; }
+.fiche-ref { font-family: "IBM Plex Mono", monospace; font-size: 19px; color: var(--encre); letter-spacing: .01em; }
+.fiche-ref .suite { color: var(--encre-2); }
+.fiche-nom { margin-top: 3px; color: var(--encre-2); font-size: 14px; }
+.fiche-cles { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--encre-2); }
+.fiche-cles b { font-weight: 500; color: var(--encre); }
+.fiche-fermer {
+  flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--filet-fort);
+  background: none; color: var(--encre-2); font: inherit; font-size: 17px; line-height: 1; cursor: pointer;
+}
+.fiche-fermer:hover { color: var(--encre); border-color: var(--encre-3); }
+.fiche-blocs { margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px 22px; }
+.fiche-bloc { border-top: 1px solid var(--filet); padding-top: 10px; min-width: 0; }
+.fiche-bloc h3 { margin: 0 0 7px; font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--encre-3); }
+.fiche-bloc p { margin: 0 0 6px; font-size: 14px; color: var(--encre); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fiche-bloc .doux { color: var(--encre-2); font-size: 13px; }
+.fiche-frise { display: flex; gap: 2px; margin: 6px 0 3px; }
+.frise-case { flex: 1 1 0; min-width: 5px; max-width: 28px; height: 16px; border-radius: 2px; }
+.frise-case.absent { background: transparent; box-shadow: inset 0 0 0 1px var(--filet-fort); }
+.frise-bornes { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--encre-3); max-width: 100%; }
+.fiche-evts { list-style: none; margin: 8px 0 0; padding: 0; font-size: 13px; color: var(--encre-2); max-height: 150px; overflow-y: auto; }
+.fiche-evts li { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+.fiche-evts .sem { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--encre-3); min-width: 34px; }
+.fiche-lien { border: none; background: none; padding: 2px 0; font: inherit; font-size: 13px; cursor: pointer; color: var(--encre-2); text-decoration: underline; text-underline-offset: 3px; }
+.fiche-lien:hover { color: var(--encre); }
+.fiche-actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 20px; }
+@media (max-width: 520px) {
+  .fiche-plan { padding: 14px 14px 12px; }
+  .fiche-ref { font-size: 16px; }
+  .suggestion-plan { grid-template-columns: 12px 1fr; }
+  .suggestion-plan .nom, .suggestion-plan .marque { grid-column: 2; }
+}
 </style>
 
 <div class="page">
@@ -941,6 +1003,13 @@ table.plans thead tr th.col-fige { z-index: 6; }
       <select class="select" id="select-contrat"></select>
       <span class="attente" id="etat-contrat" role="status" aria-live="polite"></span>
     </span>
+    <!-- L'avancement suivi, lu dans le bloc HDK AA 011 de l'extract : la
+         définition électrique (le FWD) ou le concept harnais. Toute la page
+         suit — barre, courbe, journal, groupes, tableau, comparaison. -->
+    <span class="segmente choix-indicateur" id="choix-indicateur" role="group" aria-label="Avancement suivi" hidden>
+      <button type="button" data-indicateur="def" aria-pressed="true">Définition électrique</button>
+      <button type="button" data-indicateur="concept" aria-pressed="false">Concept harnais</button>
+    </span>
   </div>
 
   <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
@@ -951,11 +1020,26 @@ table.plans thead tr th.col-fige { z-index: 6; }
       <span><b id="num-semaine">—</b></span>
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
-      <!-- Quand le dernier relevé n'est pas de cette semaine, la page le dit :
-           le titre donne la date du jour, pas celle des chiffres. -->
-      <span class="semaine-releve" id="releve-semaine" hidden>—</span>
     </div>
   </header>
+
+  <!-- Chercher un plan : une seule barre, qui cherche partout. Elle répond
+       par la fiche du plan — tout ce que la page sait de lui, au même endroit,
+       avec un lien vers chaque section où il paraît. -->
+  <section class="chercher-plan" id="chercher-plan">
+    <div class="chercher-champ">
+      <label class="masque" for="champ-plan">Chercher un plan</label>
+      <input id="champ-plan" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Chercher un plan — ex. TFE3110…"
+             role="combobox" aria-expanded="false" aria-controls="suggestions-plan" aria-autocomplete="list">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+        <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <ul class="suggestions-plan" id="suggestions-plan" role="listbox" aria-label="Plans trouvés" hidden></ul>
+    </div>
+    <div class="fiche-plan" id="fiche-plan" role="region" aria-label="Fiche du plan" hidden></div>
+  </section>
 
   <section class="avancement">
     <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
@@ -1239,10 +1323,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
     return 'encours';
   }
   function pourcentDe(p) {
-    var c = classer(p.avancement);
+    var c = classer(p[CLE_SUIVIE]);
     if (c === 'termine') return 100;
     if (c === 'vide' || c === 'afaire') return 0;
-    var n = parseFloat(norm(p.avancement).replace(/[\s%]/g, '').replace(',', '.'));
+    var n = parseFloat(norm(p[CLE_SUIVIE]).replace(/[\s%]/g, '').replace(',', '.'));
     return isNaN(n) ? 50 : n;
   }
 
@@ -1437,7 +1521,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     });
     if (avecPlans) {
       r.plans = {};
-      plans.forEach(function (p) { r.plans[p.reference] = p.avancement; });
+      plans.forEach(function (p) { r.plans[p.reference] = p[CLE_SUIVIE]; });
     }
     return r;
   }
@@ -1495,7 +1579,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     { cle: "panier_a_cartes_16ww", groupe: "Définition du plan", titre: "Panier à cartes 16WW" },
     { cle: "commentaire_3", groupe: "Concept Harnais", titre: "Commentaire" },
     { cle: "geometrical_harness", groupe: "Concept Harnais", titre: "GEOMETRICAL HARNESS" },
-    { cle: "avancement", groupe: "Réalisation FWD", titre: "Avancement" },
+    { cle: "avancement_fwd", groupe: "Réalisation FWD", titre: "Avancement" },
     { cle: "date_de_depart", groupe: "Réalisation FWD", titre: "Date de départ" },
     { cle: "date_de_retour", groupe: "Réalisation FWD", titre: "Date de retour" },
     { cle: "redraw", groupe: "Réalisation FWD", titre: "Redraw" },
@@ -1511,7 +1595,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     { cle: "validite_2", groupe: "HDK AA 011", titre: "Validité" },
     { cle: "quantite_2", groupe: "HDK AA 011", titre: "Quantité" },
     { cle: "configuration_officielle_2", groupe: "HDK AA 011", titre: "Configuration officielle" },
-    { cle: "avancement_definition_electrique_2", groupe: "HDK AA 011", titre: "Avancement Définition Electrique" },
+    { cle: "avancement", groupe: "HDK AA 011", titre: "Avancement Définition Electrique" },
     { cle: "a_traiter_par_2", groupe: "HDK AA 011", titre: "A traiter par" },
     { cle: "commentaire_5", groupe: "HDK AA 011", titre: "Commentaire" },
     { cle: "avancement_concept_harnais_2", groupe: "HDK AA 011", titre: "Avancement Concept Harnais" },
@@ -1713,6 +1797,23 @@ table.plans thead tr th.col-fige { z-index: 6; }
         else if (/^a_traiter_par/.test(c.cle)) p[c.cle] = tire(['MR', 'AB', 'CM']);
         else p[c.cle] = tire(['EMPTY', 'V']);
       });
+      /* Le bloc HDK AA 011 porte les deux avancements suivis : la définition
+         électrique (le FWD) et le concept harnais, qui la précède le plus
+         souvent. Tirés sans toucher au générateur — un tirage de plus
+         décalerait tout le jeu d'essai — et posés après la boucle des
+         variantes, qui passe aussi sur leurs colonnes. L'ancienne colonne
+         « Réalisation FWD > Avancement » reste, un pas derrière. */
+      var uHdk = ((i + 1) * 7919 % 997) / 997;
+      p.avancement = avancement;
+      p.avancement_concept_harnais_2 =
+        e0 === 'termine' ? (uHdk < 0.9 ? 'Terminé' : 'En cours')
+        : e0 === 'encours' ? (uHdk < 0.55 ? 'Terminé' : 'En cours')
+        : e0 === 'afaire' ? (uHdk < 0.45 ? 'En cours' : 'À faire')
+        : (uHdk < 0.5 ? '' : 'À faire');
+      p.avancement_fwd =
+        e0 === 'termine' ? (uHdk < 0.7 ? 'Terminé' : 'En cours')
+        : e0 === 'encours' ? (uHdk < 0.3 ? 'En cours' : 'À faire')
+        : e0 === 'afaire' ? 'À faire' : '';
       plans.push(p);
     }
     plans.forEach(function (x) { x._etat = classer(x.avancement); x._pct = pourcentDe(x); });
@@ -1776,6 +1877,31 @@ table.plans thead tr th.col-fige { z-index: 6; }
       if (k === 1) { delete etatCourant[refs[3]]; delete etatCourant[refs[11]]; }
     }
 
+    /* Le concept harnais a son historique à lui, remonté de la même façon —
+       sans le générateur, par rang — et ses cartes changent de référence
+       aux mêmes semaines que celles de la définition. */
+    var conceptCourant = {};
+    plans.forEach(function (x) { conceptCourant[x.reference] = x.avancement_concept_harnais_2; });
+    var instantanesConcept = [];
+    for (var kc = SEMAINES; kc >= 0; kc--) {
+      instantanesConcept[kc] = JSON.parse(JSON.stringify(conceptCourant));
+      if (kc === 0) break;
+      var recC = 0;
+      for (var rc = 0; rc < refs.length && recC < 20; rc++) {
+        var refc = refs[(rc * 13 + kc * 31) % refs.length];
+        var vc = conceptCourant[refc];
+        if (vc === 'Terminé') { conceptCourant[refc] = 'En cours'; recC++; }
+        else if (vc === 'En cours' && (rc + kc) % 2 === 0) { conceptCourant[refc] = 'À faire'; recC++; }
+      }
+      reemissions.forEach(function (re) {
+        if (re.k !== kc) return;
+        var valc = conceptCourant[re.ref];
+        delete conceptCourant[re.ref];
+        conceptCourant[re.ancienne] = valc;
+      });
+      if (kc === 1) { delete conceptCourant[refs[3]]; delete conceptCourant[refs[11]]; }
+    }
+
     /* Une ancienne référence retrouve son plan par la racine : ses comptes
        par dimension ne doivent pas manquer dans les relevés d'avant. */
     var parRef = {}, parRacine = {};
@@ -1803,7 +1929,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
         total: Object.keys(carte).length,
         termine: etats.termine, encours: etats.encours, afaire: etats.afaire, vide: etats.vide,
         groupes: groupes,
-        plans: carte
+        plans: carte,
+        plansConcept: instantanesConcept[s]
       });
     }
 
@@ -1811,9 +1938,13 @@ table.plans thead tr th.col-fige { z-index: 6; }
       colonnes: colonnes,
       cleDate: 'date_creation',
       cleDomaine: 'domaine',
+      /* Comme CONFIG.COLONNE_CONCEPT de Code.gs : HDK AA 011 > Avancement
+         Concept Harnais. */
+      cleConcept: 'avancement_concept_harnais_2',
       clesDim: clesDim,
       clesEssentielles: ['reference', 'nom_installation', 'ecp', 'ata', 'sequence',
-                         'validation_definition_electrique', 'date_creation', 'avancement'],
+                         'validation_definition_electrique', 'date_creation', 'avancement',
+                         'avancement_concept_harnais_2'],
       dimParDefaut: 'ata',
       plans: plans,
       releves: releves,
@@ -1952,6 +2083,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
   var SRC = null;                  // la source affichée : réelle, ou son exemple
   var SRC_REELLE = null;           // la dernière source réelle chargée
   var COLONNES, PAR_CLE, CLE_DATE, PLANS, RELEVES_SRC, BASE, AUJ;
+  /* L'avancement suivi : la définition électrique — la colonne « avancement »
+     du paquet, le FWD — ou le concept harnais (SRC.cleConcept). Toute la page
+     lit la colonne suivie, jamais une clé en dur : barre, courbe, journal,
+     groupes, tableau, comparaison, fiche. */
+  var INDICATEUR = 'def', CLE_SUIVIE = 'avancement';
   var CLES_DIM, CLE_DOMAINE, CLES_ESSENTIELLES, VAUT_ESSENTIELLES, CLE_LIBELLE;
   var RELEVES, DERNIER, EVENEMENTS_IMPORT, COMPARATIF, RAPPROCHEMENT, jalons;
   /* La figure de la comparaison s'anime une fois par source : le drapeau se
@@ -2023,29 +2159,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var i = indexDe(etiquetteISO(aujourdhuiCivil()));
     return i === null ? AUJ : i;
   }
-  /* Ce que dit la ligne quand le dernier relevé n'est pas de cette semaine :
-     sa semaine, son année si ce n'est plus la même, et l'âge — en semaines
-     tant que le compte parle, en mois au-delà. Un relevé postérieur à
-     aujourd'hui (horloge du poste en retard, semaine saisie à la main) se
-     dit aussi, plutôt que de laisser la page se contredire en silence. */
-  function motDuDernierReleve(iAuj) {
-    if (!(RELEVES_SRC && RELEVES_SRC.length) || iAuj === AUJ) return '';
-    var lib = etiquette(AUJ), annee = lib.slice(0, 4);
-    var mot = 'dernier relevé : semaine ' + numeroSemaine(AUJ) +
-      (annee !== etiquette(iAuj).slice(0, 4) ? ' de ' + annee : '');
-    var retard = iAuj - AUJ;
-    if (retard < 0) return mot + ' — à venir';
-    if (retard > 8) {
-      var mois = Math.round(retard / 4.345);
-      return mot + ', il y a ' + (mois > 11 ? 'plus d’un an' : mois + ' mois');
-    }
-    return mot + (retard > 1 ? ', il y a ' + retard + ' semaines' : '');
-  }
-
-  /* Sous le titre : la semaine où l'on est, avec ses dates. Les chiffres de
-     la page, eux, sont ceux du dernier relevé archivé : quand il est plus
-     ancien, la ligne le dit, pour que personne ne lise des chiffres de la
-     semaine dernière en croyant qu'ils sont d'aujourd'hui. */
+  /* Sous le titre : la semaine où l'on est, avec ses dates — et rien d'autre.
+     L'âge du dernier relevé se lit sur la courbe, où le repère dit
+     « dernier relevé » tant que l'archivage n'est pas de cette semaine. */
   var SEMAINE_AFFICHEE = null;
   function afficherSemaine() {
     var iAuj = semaineDAujourdhui();
@@ -2057,8 +2173,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
       ? 'du ' + lundi.getUTCDate() + ' au ' + dimanche.getUTCDate() + ' ' + m2 + ' ' + dimanche.getUTCFullYear()
       : 'du ' + lundi.getUTCDate() + ' ' + m1 + ' au ' + dimanche.getUTCDate() + ' ' + m2 + ' ' + dimanche.getUTCFullYear();
     $('num-semaine').textContent = 'Semaine ' + numeroSemaine(iAuj);
-    $('releve-semaine').hidden = !(RELEVES_SRC && RELEVES_SRC.length) || iAuj === AUJ;
-    $('releve-semaine').textContent = motDuDernierReleve(iAuj);
   }
 
   function valeurDim(p, cle) {
@@ -2134,6 +2248,34 @@ table.plans thead tr th.col-fige { z-index: 6; }
    * initiale, l'exemple fabriqué et chaque contrat passent par ici.
    * Ne dessine rien : l'appelant enchaîne remplirDims() puis rendre().
    */
+  /* Un relevé lu sous le concept harnais : sa carte du concept, et des
+     comptes refaits dessus — ceux de la ligne d'historique sont ceux de la
+     définition. Les groupes se refont sur les plans d'aujourd'hui, comme
+     pour un relevé fabriqué (une ancienne référence retrouve son plan par
+     sa racine). */
+  function releveDuConcept(r) {
+    var carte = r.plansConcept, e = { termine: 0, encours: 0, afaire: 0, vide: 0 }, g = {};
+    var parRef = {}, parRacine = {};
+    PLANS.forEach(function (p) { parRef[p.reference] = p; parRacine[p._racine] = p; });
+    CLES_DIM.forEach(function (d) { g[d] = {}; });
+    Object.keys(carte).forEach(function (ref) {
+      var etat = classer(carte[ref]);
+      e[etat]++;
+      var p = parRef[ref] || parRacine[cleAppariement(analyserUD(ref))];
+      if (!p) return;
+      CLES_DIM.forEach(function (d) {
+        var v = String(valeurDim(p, d) || '\u2014');
+        if (!g[d][v]) g[d][v] = { total: 0, termine: 0 };
+        g[d][v].total++;
+        if (etat === 'termine') g[d][v].termine++;
+      });
+    });
+    return { i: indexDe(r.semaine), total: Object.keys(carte).length, termine: e.termine, encours: e.encours,
+             afaire: e.afaire, vide: e.vide, groupes: g, plans: carte };
+  }
+  /* Le nom de ce qu'on suit, pour les titres. */
+  function motSuivi() { return CLE_SUIVIE === 'avancement' ? 'Avancement FWD' : 'Concept harnais'; }
+
   function chargerSource(src) {
     SRC = src;
     if (!src.exemple) SRC_REELLE = src;
@@ -2152,9 +2294,13 @@ table.plans thead tr th.col-fige { z-index: 6; }
     PAR_CLE = Object.create(null);
     COLONNES.forEach(function (c) { PAR_CLE[c.cle] = c; });
     CLE_DATE = src.cleDate || null;
+    /* Le concept harnais ne se suit que si la source en nomme la colonne ;
+       sinon l'interrupteur s'efface et la page revient à la définition. */
+    if (INDICATEUR === 'concept' && !(src.cleConcept && PAR_CLE[src.cleConcept])) INDICATEUR = 'def';
+    CLE_SUIVIE = INDICATEUR === 'concept' ? src.cleConcept : 'avancement';
 
     PLANS.forEach(function (p) {
-      p._etat = classer(p.avancement); p._pct = pourcentDe(p);
+      p._etat = classer(p[CLE_SUIVIE]); p._pct = pourcentDe(p);
       p._racine = cleAppariement(analyserUD(p.reference));   // racine + solution : l'identité du plan
     });
 
@@ -2197,7 +2343,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
        est passé à 100 %. L'historique ne peut donc pas être reconstitué —
        il s'accumule, un relevé par semaine. Le dernier est recalculé à partir
        de la feuille pour que la page colle toujours à ce qu'on y lit. */
-    RELEVES = RELEVES_SRC.map(function (r) {
+    /* Sous le concept harnais, seuls comptent les relevés qui l'ont gardé :
+       ceux d'avant l'interrupteur n'ont que la définition, et un historique
+       ne se reconstitue pas. Leurs comptes se refont sur leur carte. */
+    var enConcept = CLE_SUIVIE !== 'avancement';
+    RELEVES = RELEVES_SRC.filter(function (r) { return !enConcept || r.plansConcept; }).map(function (r) {
+      if (enConcept) return releveDuConcept(r);
       return {
         i: indexDe(r.semaine),
         total: r.total, termine: r.termine, encours: r.encours, afaire: r.afaire, vide: r.vide,
@@ -2251,6 +2402,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
     ORDRE_FEUILLE = COLONNES.map(function (c) { return c.cle; });
 
+    INDEX_PLANS = null;
     PLAN_PAR_REF = {};
     PLAN_PAR_RACINE = {};
     PLANS.forEach(function (p) { PLAN_PAR_REF[p.reference] = p; PLAN_PAR_RACINE[p._racine] = p; });
@@ -2267,6 +2419,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       ? String(src.contrat) : (CONTRATS.length ? CONTRATS[0].id : '');
 
     remettreVue();
+    if ($('champ-plan')) { $('champ-plan').value = ''; fermerSuggestions(); }
     rendrePerimetre();
     COMPARATIF = comparatif();
     afficherContrat();
@@ -2295,6 +2448,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var avant = vue;
     vue = {
       recherche: '', etat: '', filtres: {},
+      /* La fiche d'un plan ouverte par la recherche du haut, ou rien. */
+      fiche: null,
       groupe: null, refs: null, refsLibelle: '',
       vides: {}, perimetre: '',
       journal: '', journalOuverts: {}, groupesTout: false,
@@ -2552,7 +2707,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
          compte qu'une fois, sinon les lots ne totaliseraient plus la
          population. */
       if (r.parPlan[p.reference] !== undefined) return;
-      var fini = classer(p[COLONNE_SUIVIE]) === 'termine';
+      var fini = classer(p[CLE_SUIVIE]) === 'termine';
       if (fini) r.nbTermines++;
       var candidates = parRacine[p._racine];
       if (!candidates) {
@@ -2801,6 +2956,37 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }).join('');
     zone.hidden = false;
   }
+  /* L'interrupteur de l'avancement suivi : seulement si la source nomme la
+     colonne du concept harnais. */
+  function refleterIndicateur() {
+    var b = $('choix-indicateur');
+    b.hidden = !(SRC && SRC.cleConcept && PAR_CLE[SRC.cleConcept]);
+    [].forEach.call(b.querySelectorAll('button[data-indicateur]'), function (x) {
+      x.setAttribute('aria-pressed', String(x.dataset.indicateur === INDICATEUR));
+    });
+  }
+  /* Changer d'avancement suivi, c'est relire la même source sous l'autre
+     colonne : les filtres tombent (un « terminé » n'a plus le même sens), le
+     cadre de lecture reste — périmètre, fenêtre du graphique, regroupement,
+     base du tableau. */
+  function changerIndicateur(ind) {
+    if (ind === INDICATEUR || !SRC) return;
+    INDICATEUR = ind;
+    var garde = { perimetre: vue.perimetre, fen: vue.fen, dimCritique: vue.dimCritique, base: vue.base, vueTable: vue.vueTable };
+    chargerSource(SRC);
+    vue.perimetre = garde.perimetre;
+    vue.fen = garde.fen;
+    if (CLES_DIM.indexOf(garde.dimCritique) !== -1) vue.dimCritique = garde.dimCritique;
+    vue.base = garde.base;
+    vue.vueTable = garde.vueTable;
+    remplirDims();
+    rendre();
+  }
+  $('choix-indicateur').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-indicateur]');
+    if (b) changerIndicateur(b.dataset.indicateur);
+  });
+
   function refleterPerimetre() {
     document.querySelectorAll('#choix-perimetre button').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.dataset.perimetre === vue.perimetre));
@@ -2964,53 +3150,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
   var L = 980, mG = 36, mD = 72, plotH = 176, ecart = 16, bandeH = 30, mBas = 34;
   var mHaut = 44, H = mHaut + plotH + ecart + bandeH + mBas;
   var HAUTEUR_ETIQUETTE = 23;   // un niveau de marqueurs (rayon 10) et son interligne
-  /* Le texte d'un jalon ne se dessine que s'il tient, mesuré sur le dessin
-     lui-même — les polices diffèrent d'un poste à l'autre, une estimation
-     au caractère trompe. Il doit tenir jusqu'au marqueur du jalon visible
-     suivant, jusqu'au mot « aujourd'hui » s'il vient après, et jusqu'au bord
-     droit du cadre — ou, à défaut, à gauche du marqueur. Sinon il se masque :
-     la légende le redit, et le survol le fait paraître. */
-  /* Une police web qui arrive après le premier dessin change la largeur
-     des textes : la décision « tient / ne tient pas » se rejoue alors sur
-     le dessin du moment. Un seul écouteur, posé une fois. */
-  var POLICES_GUETTEES = false;
-  function guetterLesPolices() {
-    if (POLICES_GUETTEES || !document.fonts || !document.fonts.addEventListener) return;
-    POLICES_GUETTEES = true;
-    document.fonts.addEventListener('loadingdone', function () {
-      var svg = $('zone-graphe').querySelector('svg.graphe');
-      if (svg && svg.__ajusterJalons) svg.__ajusterJalons();
-    });
-  }
-  function ajusterTextesJalons(svg, bordGauche, bordDroit, xAuj) {
-    if (!svg) return;
-    var reperes = [].slice.call(svg.querySelectorAll('.jalon[data-jalon]')).map(function (g) {
-      return { texte: g.querySelector('.jalon-texte'), jx: +g.querySelector('.jalon-marque').getAttribute('cx') };
-    }).sort(function (a, b) { return a.jx - b.jx; });
-    reperes.forEach(function (r, k) {
-      var t = r.texte, largeur = 0;
-      if (!t) return;
-      t.classList.remove('masque');
-      t.setAttribute('text-anchor', 'start'); t.setAttribute('x', (r.jx + 14).toFixed(1));
-      try { largeur = t.getComputedTextLength(); } catch (e) { largeur = 0; }
-      if (!(largeur > 0)) largeur = t.textContent.length * 6.1;
-      var droite = bordDroit + 30;
-      if (reperes[k + 1]) droite = Math.min(droite, reperes[k + 1].jx - 11);
-      if (xAuj !== null && xAuj > r.jx) droite = Math.min(droite, xAuj - 72);
-      if (r.jx + 14 + largeur + 6 <= droite) { r.finTexte = r.jx + 14 + largeur; return; }
-      /* Pas la place à droite : à gauche, alors, s'il y tient — après le
-         marqueur précédent et le texte qu'il a pu écrire à sa droite, ou
-         après le trait d'aujourd'hui. */
-      var gauche = bordGauche;
-      if (k > 0) gauche = Math.max(gauche, reperes[k - 1].finTexte !== undefined ? reperes[k - 1].finTexte + 6 : reperes[k - 1].jx + 11);
-      if (xAuj !== null && xAuj < r.jx) gauche = Math.max(gauche, xAuj + 4);
-      if (r.jx - 14 - largeur - 6 >= gauche) {
-        t.setAttribute('text-anchor', 'end'); t.setAttribute('x', (r.jx - 14).toFixed(1));
-        return;
-      }
-      t.classList.add('masque');
-    });
-  }
   var LARGEUR = L - mG - mD;
   var MAX_IDX = 104;                       // deux ans, ou un an au-delà d'aujourd'hui : voir chargerSource()
   var derniereAnalyse = null;
@@ -3050,31 +3189,34 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var pasX = LARGEUR / (span - 1);
     var x = function (i) { return mG + pasX * (i - d0); };
 
-    /* Cinq jalons en dix semaines écrivaient les uns sur les autres. Chaque
-       jalon se marque d'un numéro en tête de son trait — tous sur une même
-       ligne, sauf deux marqueurs qui se toucheraient — et son texte ne
-       s'écrit à côté que s'il a la place jusqu'au jalon suivant (mesuré sur
-       le dessin, voir ajusterTextesJalons). La légende, sous le graphique,
-       redit chaque numéro en clair. */
+    /* Les jalons se marquent d'un numéro, 1 à 5, tous sur une même rangée
+       en tête du graphique — jamais étagés, jamais de texte collé : la
+       légende, dessous, les nomme. Deux jalons trop proches (deux semaines
+       voisines) se serrent l'un contre l'autre sur la rangée ; le trait
+       pointillé part toujours de la vraie semaine, et un court trait le
+       relie au numéro quand celui-ci a dû s'écarter. */
+    var ESPACE_MARQUEURS = 23;   // un diamètre de 20 px et un jour de 3 px
     var places = [];
     var xAuj = null;
-    if (AUJ >= d0 && AUJ <= d1) {
-      xAuj = mG + pasX * (AUJ - d0);
-      places.push({ aujourdhui: true, jx: xAuj, xa: xAuj - 72, xb: xAuj - 4 });
+    if (AUJ >= d0 && AUJ <= d1) xAuj = mG + pasX * (AUJ - d0);
+    var dernierCx = -Infinity;
+    jalons.map(function (j, idx) { return { j: j, idx: idx }; })
+      .filter(function (o) { return o.j.i >= d0 && o.j.i <= d1; })
+      .sort(function (a, b) { return a.j.i - b.j.i || a.idx - b.idx; })
+      .forEach(function (o) {
+        var jx = x(o.j.i), cx = Math.max(jx, dernierCx + ESPACE_MARQUEURS);
+        places.push({ j: o.j, idx: o.idx, jx: jx, cx: cx, niveau: 0 });
+        dernierCx = cx;
+      });
+    /* Le mot « aujourd'hui » s'écrit à gauche de son trait, dans la même
+       rangée ; s'il y croiserait un numéro, il passe au-dessus. */
+    var niveauAuj = 0;
+    if (xAuj !== null) {
+      var motG = xAuj - 72, motD = xAuj - 4;
+      if (places.some(function (pl) { return pl.cx + 11 > motG && pl.cx - 11 < motD; })) niveauAuj = 1;
+      places.push({ aujourdhui: true, jx: xAuj, niveau: niveauAuj });
     }
-    jalons.forEach(function (j, idx) {
-      if (j.i >= d0 && j.i <= d1) places.push({ j: j, idx: idx, jx: x(j.i), xa: x(j.i) - 11, xb: x(j.i) + 11 });
-    });
-    places.sort(function (a, b) { return a.xa - b.xa; });
-    var finDeNiveau = [];
-    places.forEach(function (pl) {
-      var n = 0;
-      while (n < finDeNiveau.length && pl.xa < finDeNiveau[n] + 4) n++;
-      pl.niveau = n;
-      finDeNiveau[n] = pl.xb;
-    });
-    var niveaux = Math.max(1, finDeNiveau.length);
-    mHaut = 26 + niveaux * HAUTEUR_ETIQUETTE;
+    mHaut = 26 + (1 + niveauAuj) * HAUTEUR_ETIQUETTE;
     H = mHaut + plotH + ecart + bandeH + mBas;
 
     var y = function (v) { return mHaut + plotH - (v / total) * plotH; };
@@ -3182,20 +3324,27 @@ table.plans thead tr th.col-fige { z-index: 6; }
       var mention = j.perimetre
         ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) + (hors ? ' \u2014 hors du p\u00e9rim\u00e8tre choisi, ne compte pas ici' : '')
         : '';
-      var yBase = mHaut - 8 - pl.niveau * HAUTEUR_ETIQUETTE;   // haut du trait pour ce niveau
-      var yMarque = yBase - 9;
+      var yBase = mHaut - 8;          // haut du trait pointillé
+      var yMarque = yBase - 9;        // centre du numéro
+      var cx = pl.cx;
 
       s.push('<g class="jalon' + (hors ? ' hors-perimetre' : '') + (critique ? ' critique' : '') + '" data-jalon="' + idx + '" role="img" aria-label="Jalon ' + (idx + 1) + ', ' +
              ech(j.texte) + ' en ' + etiquette(j.i) + mention + '">');
       s.push('<title>' + (idx + 1) + ' \u2014 ' + ech(j.texte) + ' \u2014 ' + etiquette(j.i) + mention + '</title>');
       s.push('<line x1="' + jx.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" y2="' + basTotal.toFixed(1) +
              '" stroke="' + couleur + '" stroke-width="1" stroke-dasharray="3 4" opacity=".8"/>');
-      s.push('<circle class="jalon-marque" cx="' + jx.toFixed(1) + '" cy="' + yMarque.toFixed(1) + '" r="10" fill="' + couleur + '"/>');
-      s.push('<text class="jalon-num" x="' + jx.toFixed(1) + '" y="' + (yMarque + 4).toFixed(1) + '" text-anchor="middle">' + (idx + 1) + '</text>');
-      /* Le texte est toujours là — la batterie et les lecteurs d'écran le
-         lisent — mais ne se dessine que s'il a la place (décidé après coup,
-         mesure faite). */
-      s.push('<text class="jalon-texte" x="' + (jx + 14).toFixed(1) + '" y="' + (yMarque + 4).toFixed(1) + '" text-anchor="start" fill="' + couleur + '">' + ech(j.texte) + '</text>');
+      if (Math.abs(cx - jx) > 0.5) {
+        s.push('<line class="jalon-lien" x1="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" x2="' + cx.toFixed(1) + '" y2="' + (yMarque + 10).toFixed(1) +
+               '" stroke="' + couleur + '" stroke-width="1"/>');
+      }
+      s.push('<circle class="jalon-marque" cx="' + cx.toFixed(1) + '" cy="' + yMarque.toFixed(1) + '" r="10" fill="' + couleur + '"/>');
+      s.push('<text class="jalon-num" x="' + cx.toFixed(1) + '" y="' + (yMarque + 4).toFixed(1) + '" text-anchor="middle">' + (idx + 1) + '</text>');
+      /* Le nom ne s'écrit pas sur le dessin — la légende le porte. Il reste
+         dans le groupe pour les lecteurs d'écran, et paraît sous la rangée
+         quand on survole le jalon, centré sur son numéro sans sortir du cadre. */
+      var demiLargeur = ech(j.texte).length * 3.2;
+      var xTexte = Math.max(mG + demiLargeur, Math.min(cx, L - mD + 30 - demiLargeur));
+      s.push('<text class="jalon-texte masque" x="' + xTexte.toFixed(1) + '" y="' + (yMarque + 4).toFixed(1) + '" text-anchor="middle" fill="' + couleur + '">' + ech(j.texte) + '</text>');
       s.push('</g>');
     });
 
@@ -3269,10 +3418,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
     s.push('</svg>');
     $('zone-graphe').innerHTML = s.join('');
-    var svgGraphe = $('zone-graphe').querySelector('svg.graphe');
-    svgGraphe.__ajusterJalons = function () { ajusterTextesJalons(svgGraphe, mG, L - mD, xAuj); };
-    svgGraphe.__ajusterJalons();
-    guetterLesPolices();
 
     var items = ['<span class="legende-item"><svg width="20" height="8" aria-hidden="true"><line x1="0" y1="4" x2="20" y2="4" stroke="var(--fait)" stroke-width="2.2"/></svg>' +
       '<span title="Nombre de plans pass\u00e9s \u00e0 100 %, cumul\u00e9 semaine apr\u00e8s semaine.">r\u00e9alis\u00e9</span></span>'];
@@ -3300,6 +3445,14 @@ table.plans thead tr th.col-fige { z-index: 6; }
     /* La légende des jalons : chaque numéro en clair, sa semaine, son
        périmètre ; en retrait hors périmètre, en rouge s'il est l'échéance
        manquée. Survoler un jalon ici l'éclaire sur le graphique. */
+    /* Sous chaque nom, sa semaine telle qu'on la dit — « S51 · déc. 2026 »,
+       le mois de son lundi — plutôt que l'étiquette technique 2026-S51, qui
+       reste dans la bulle. */
+    var MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    var quandJalon = function (i) {
+      var lundi = dateDe(i);
+      return 'S' + String(numeroSemaine(i)).replace(/^0/, '') + ' \u00b7 ' + MOIS_COURTS[lundi.getUTCMonth()] + ' ' + lundi.getUTCFullYear();
+    };
     $('legende-jalons').innerHTML = jalons.length ? '<span class="legende-jalons-mot">Jalons</span><div class="legende-jalons-grille">' + jalons.map(function (j, idx) {
       var hors = !jalonDansPerimetre(j), rouge = prochain && j.i === prochain.i && !hors && enRetard;
       var horsFenetre = j.i < d0 || j.i > d1;   // dans la légende, mais pas dans la fenêtre affichée
@@ -3308,7 +3461,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
         ech(j.texte) + ' \u2014 ' + etiquette(j.i) + (j.perimetre ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) : '') +
         (hors ? ' \u2014 hors du p\u00e9rim\u00e8tre choisi' : '') + (horsFenetre ? ' \u2014 hors de la fen\u00eatre affich\u00e9e' : '') + '">' +
         '<b class="num">' + (idx + 1) + '</b><span class="mot">' + ech(j.texte) + '</span>' +
-        '<span class="quand">' + etiquette(j.i) + (j.perimetre ? ' \u00b7 ' + ech(j.perimetre) : '') + (horsFenetre ? ' \u00b7 hors fen\u00eatre' : '') + '</span></span>';
+        '<span class="quand">' + quandJalon(j.i) + (j.perimetre ? ' \u00b7 ' + ech(j.perimetre) : '') + (horsFenetre ? ' \u00b7 hors fen\u00eatre' : '') + '</span></span>';
     }).join('') + '</div>' : '';
 
     derniereAnalyse = { pts: pts, total: total, atteint: atteint, restants: restants, vitesse: vitesse,
@@ -3602,7 +3755,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     /* Aucune colonne à analyser — source vide, ou feuille sans catégorie
        reconnue : le bloc le dit au lieu de chercher un titre qui n'existe pas. */
     if (!dim || !TITRE_DIM[dim]) {
-      $('titre-groupe').textContent = 'Avancement FWD';
+      $('titre-groupe').textContent = motSuivi();
       $('indice-dim').textContent = '';
       $('compte-groupes').textContent = '';
       libellerFiltreGroupe(dim);
@@ -3694,7 +3847,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }
 
     // « par groupe » ne parlait à personne : le titre nomme la dimension choisie.
-    $('titre-groupe').textContent = 'Avancement FWD par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '');
+    $('titre-groupe').textContent = motSuivi() + ' par ' + TITRE_DIM[dim].replace(/ \(.*\)$/, '');
     $('indice-dim').textContent = NOTE_DIM(dim);
     libellerFiltreGroupe(dim);
 
@@ -3948,7 +4101,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }
     var rangs = liste.slice().sort(function (a, b) {
       var k = vue.tri.cle, sens = vue.tri.asc ? 1 : -1;
-      if (k === 'avancement') return (a._pct - b._pct) * sens || a.reference.localeCompare(b.reference);
+      if (k === CLE_SUIVIE) return (a._pct - b._pct) * sens || a.reference.localeCompare(b.reference);
       var va = String(a[k] == null ? '' : a[k]), vb = String(b[k] == null ? '' : b[k]);
       if (va === '' && vb === '') return 0;
       if (va === '') return 1;
@@ -3967,12 +4120,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
     $('corps-tableau').innerHTML = rangs.map(function (p) {
       return '<tr>' + cols.map(function (c, i) {
         var fige = classeFige(i, nFige);
-        if (c.cle === 'avancement') {
+        if (c.cle === CLE_SUIVIE) {
           var e = ETAT_PAR_CLE[p._etat];
           var past = e.hachure ? '<span class="pastille hachure"></span>'
             : '<span class="pastille" style="background:' + e.couleur + '"></span>';
           return '<td class="' + fige + '"><span class="etat-cellule">' + past +
-            (p.avancement ? '<span class="num">' + ech(p.avancement) + '</span>' : '<span class="doux">non renseigné</span>') +
+            (p[CLE_SUIVIE] ? '<span class="num">' + ech(p[CLE_SUIVIE]) + '</span>' : '<span class="doux">non renseigné</span>') +
             '</span></td>';
         }
         var val = p[c.cle];
@@ -3992,7 +4145,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
   }
   /* Seule la colonne d'avancement FWD interesse le suivi : une cellule vide
      ailleurs n'est pas un defaut a traquer. */
-  var COLONNE_SUIVIE = 'avancement';
   /* Ce qui a bougé depuis l'import précédent. Sur 186 lignes, personne ne
      peut le voir à l'œil ; c'est pourtant la question de chaque semaine. */
   /* « un » et « des » : le libellé s'accorde au compte — « 1 passé en
@@ -4280,14 +4432,16 @@ table.plans thead tr th.col-fige { z-index: 6; }
      Les écarts sont posés sur la dernière transition pour que le comparatif
      « depuis l'import » les montre tous, et quelques-uns plus tôt pour que
      le journal en ait à plusieurs semaines. */
-  function relevesDExemple() {
-    var c = compte(PLANS);
+  function relevesDExemple(cleConcept) {
     var semaines = 8;
     var retours = {}, apparus = {}, reemis = {}, disparus = [];
     var nbReemis = 0;
+    /* Les écarts se posent sur la définition, quelle que soit la colonne
+       suivie à l'écran : l'historique fabriqué est le même des deux côtés. */
     PLANS.forEach(function (p, i) {
-      if (p._etat === 'encours' && i % 53 === 7) retours[p.reference] = { avant: 'Terminé', jusque: semaines - 1 };
-      else if (p._etat === 'afaire' && i % 59 === 11) retours[p.reference] = { avant: 'En cours', jusque: semaines - 1 };
+      var etatDef = classer(p.avancement);
+      if (etatDef === 'encours' && i % 53 === 7) retours[p.reference] = { avant: 'Terminé', jusque: semaines - 1 };
+      else if (etatDef === 'afaire' && i % 59 === 11) retours[p.reference] = { avant: 'En cours', jusque: semaines - 1 };
       if (i === 3 || i === 11) apparus[p.reference] = semaines - 1;
       else if (i === 19) apparus[p.reference] = semaines - 4;
       var ud = analyserUD(p.reference);
@@ -4300,23 +4454,31 @@ table.plans thead tr th.col-fige { z-index: 6; }
          changées, elle ne partage sa racine avec aucun plan — jamais appariée. */
       if (i === 5 || i === 13) disparus.push('XXX' + p.reference.slice(3));
     });
-    var faux = [];
-    for (var k = 0; k <= semaines; k++) {
+    function terminesDe(cle) { return PLANS.filter(function (p) { return classer(p[cle]) === 'termine'; }).length; }
+    /* La carte d'une semaine pour une colonne : les terminés montent
+       régulièrement jusqu'aux comptes du jour. */
+    function carteDe(k, cle, nbTermines) {
       var part = 0.25 + (0.75 * k) / semaines;      // montée régulière jusqu'à aujourd'hui
-      var termine = Math.round(c.termine * part);
-      /* Un avancement plan par plan, sinon le journal resterait vide et
-         l'exemple ne montrerait que la moitié de ce que fera la page. */
-      var carte = {};
-      var atteint = 0;
+      var termine = Math.round(nbTermines * part);
+      var carte = {}, atteint = 0;
       PLANS.forEach(function (p) {
         var ref = p.reference;
         if (apparus[ref] !== undefined && k <= apparus[ref]) return;
-        var valeur = (p._etat === 'termine' && atteint++ >= termine) ? 'En cours' : p.avancement;
-        if (retours[ref] && k <= retours[ref].jusque) valeur = retours[ref].avant;
+        var valeur = (classer(p[cle]) === 'termine' && atteint++ >= termine) ? 'En cours' : p[cle];
+        if (cle === 'avancement' && retours[ref] && k <= retours[ref].jusque) valeur = retours[ref].avant;
         carte[(reemis[ref] && k <= reemis[ref].jusque) ? reemis[ref].ancienne : ref] = valeur;
       });
       if (k < semaines) disparus.forEach(function (ref) { carte[ref] = 'En cours'; });
-      faux.push(releveDeCarte(etiquetteISO(dateDeBase(BASE_REELLE, AUJ_REEL - semaines + k)), carte));
+      return carte;
+    }
+    var nDef = terminesDe('avancement'), nConcept = cleConcept ? terminesDe(cleConcept) : 0;
+    var faux = [];
+    for (var k = 0; k <= semaines; k++) {
+      /* Un avancement plan par plan, sinon le journal resterait vide et
+         l'exemple ne montrerait que la moitié de ce que fera la page. */
+      var r = releveDeCarte(etiquetteISO(dateDeBase(BASE_REELLE, AUJ_REEL - semaines + k)), carteDe(k, 'avancement', nDef));
+      if (cleConcept) r.plansConcept = carteDe(k, cleConcept, nConcept);
+      faux.push(r);
     }
     return faux;
   }
@@ -4341,7 +4503,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     if (!reelle.plans.length) return demonstration(jeuDExemple(), reelle.message);
     var exemple = {};
     Object.keys(reelle).forEach(function (k) { exemple[k] = reelle[k]; });
-    exemple.releves = relevesDExemple();
+    exemple.releves = relevesDExemple(reelle.cleConcept && PAR_CLE[reelle.cleConcept] ? reelle.cleConcept : null);
     exemple.exemple = true;
     return exemple;
   }
@@ -4533,17 +4695,17 @@ table.plans thead tr th.col-fige { z-index: 6; }
   }
 
   function rendreIncomplets() {
-    var col = PAR_CLE[COLONNE_SUIVIE];
+    var col = PAR_CLE[CLE_SUIVIE];
     var plans = population();
     var n = 0;
     for (var i = 0; i < plans.length; i++) {
-      if (String(plans[i][COLONNE_SUIVIE] == null ? '' : plans[i][COLONNE_SUIVIE]).trim() === '') n++;
+      if (String(plans[i][CLE_SUIVIE] == null ? '' : plans[i][CLE_SUIVIE]).trim() === '') n++;
     }
     /* Sans colonne d'avancement reconnue (le serveur prévient, la page
        s'affiche tout en « non renseigné »), il n'y a rien à filtrer. */
     if (!col || !n) { $('incomplets').innerHTML = ''; return; }
     $('incomplets').innerHTML =
-      '<button class="puce-vide" type="button" data-vide="' + COLONNE_SUIVIE + '" aria-pressed="' + !!vue.vides[COLONNE_SUIVIE] +
+      '<button class="puce-vide" type="button" data-vide="' + CLE_SUIVIE + '" aria-pressed="' + !!vue.vides[CLE_SUIVIE] +
       '" title="N\u2019afficher que les plans dont ' + ech(col.titre) + ' est vide">' +
       ech(col.titre) + ' non renseign\u00e9 <b>' + nb(n) + '</b></button>';
   }
@@ -5038,6 +5200,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       }
     }
     refleterPerimetre();
+    refleterIndicateur();
     var liste = selection();
     refleterBase();                    // avant les tableaux : l'ombre du défilement se mesure sur un cadre visible
     rendreAvancement(liste);
@@ -5051,6 +5214,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     rendreSeconde();
     rendreIncomplets();
     rendreFiltresActifs();
+    rendreFiche();
     $('reinit').hidden = !filtreActif();
     vue.dernieresCles = clesSelection();
     planifierSauvegarde();
@@ -5225,6 +5389,370 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var bouton = document.querySelector('#choix-base button[data-base="' + vue.base + '"]');
     if (bouton && !bouton.closest('[hidden]')) bouton.focus();
   }
+
+  /* ============================================================
+     CHERCHER UN PLAN
+     Une seule barre, sous le titre, qui cherche partout. La réponse n'est
+     pas une liste d'endroits où aller voir — on risquerait de n'en regarder
+     qu'un : c'est la fiche du plan. Son état, sa trajectoire semaine après
+     semaine, son groupe, son verdict dans la comparaison, au même endroit,
+     avec un lien vers chaque section où il paraît.
+     ============================================================ */
+  var MAX_SUGGESTIONS = 8;
+  var INDEX_PLANS = null;               // refait à chaque source
+  var TROUVES = [], CHOISI = -1;
+  /* Une référence tapée se lit comme les autres : sans séparateurs, en
+     capitales, et à la mode de GATES si elle est écrite à celle de SEE. */
+  function refCherchee(t) {
+    return remettreLeA(String(t == null ? '' : t).toUpperCase().replace(/[-_\s.\/]+/g, ''));
+  }
+  function libelleDe(p) {
+    return p && CLE_LIBELLE ? String(p[CLE_LIBELLE] == null ? '' : p[CLE_LIBELLE]).trim() : '';
+  }
+  function indexDesPlans() {
+    if (INDEX_PLANS) return INDEX_PLANS;
+    var vus = Object.create(null), index = [];
+    PLANS.forEach(function (p) {
+      if (vus[p.reference]) return;
+      vus[p.reference] = true;
+      index.push({ ref: p.reference, cle: refCherchee(p.reference), plan: p, libelle: libelleDe(p), nom: norm(libelleDe(p)) });
+    });
+    /* Un plan sorti de l'extract se retrouve encore par ses relevés ; une
+       ancienne émission d'un plan toujours là, elle, mène à ce plan. */
+    (RELEVES || []).forEach(function (r) {
+      if (!r.plans) return;
+      Object.keys(r.plans).forEach(function (ref) {
+        if (vus[ref]) return;
+        vus[ref] = true;
+        if (planDeRef(ref)) return;
+        index.push({ ref: ref, cle: refCherchee(ref), plan: null, disparu: true, libelle: '', nom: '' });
+      });
+    });
+    INDEX_PLANS = index;
+    return index;
+  }
+  /* Assez tapé pour chercher : trois caractères d'une référence, ou trois
+     lettres d'un nom d'installation. */
+  function assezPourChercher(texte) { return refCherchee(texte).length >= 3 || norm(texte).length >= 3; }
+  function chercherPlans(texte) {
+    if (!assezPourChercher(texte)) return [];
+    var q = refCherchee(texte), mot = norm(texte), res = [];
+    indexDesPlans().forEach(function (c) {
+      var pos = q.length >= 3 ? c.cle.indexOf(q) : -1;
+      if (pos !== -1) res.push({ c: c, rang: pos === 0 ? 0 : 1 });
+      else if (mot.length >= 3 && c.nom && c.nom.indexOf(mot) !== -1) res.push({ c: c, rang: 2 });
+    });
+    /* Les lignes que SEE est seule à connaître se cherchent aussi. */
+    if (RAPPROCHEMENT && q.length >= 3) {
+      RAPPROCHEMENT.lignes.forEach(function (e) {
+        if (e.cat !== 'seul') return;
+        var cle = refCherchee(e.ref), pos = cle.indexOf(q);
+        if (pos !== -1) res.push({ c: { ref: e.ref, cle: cle, plan: null, seul: e, libelle: '' }, rang: pos === 0 ? 0 : 1 });
+      });
+    }
+    /* Une ancienne émission tapée en entier mène au plan d'aujourd'hui. */
+    if (!res.length && q.length >= 9) {
+      var p = planDeRef(q);
+      if (p) res.push({ c: { ref: p.reference, cle: refCherchee(p.reference), plan: p, ancienne: q, libelle: libelleDe(p) }, rang: 0 });
+    }
+    res.sort(function (a, b) { return a.rang - b.rang || COMPARER_REF(a.c.ref, b.c.ref); });
+    return res.map(function (r) { return r.c; });
+  }
+
+  function marquerRef(ref, q) {
+    var R = String(ref), pos = q ? R.toUpperCase().indexOf(q) : -1;
+    if (pos === -1) return ech(R);
+    return ech(R.slice(0, pos)) + '<mark>' + ech(R.slice(pos, pos + q.length)) + '</mark>' + ech(R.slice(pos + q.length));
+  }
+  function marqueDe(c) {
+    if (c.seul) return 'seulement dans ' + nomSeconde();
+    if (c.disparu) return 'n’est plus dans l’extract';
+    if (c.ancienne) return 'ancienne émission ' + c.ancienne;
+    return c.plan && ETAT_PAR_CLE[c.plan._etat] ? ETAT_PAR_CLE[c.plan._etat].court : '';
+  }
+  function fermerSuggestions() {
+    var ul = $('suggestions-plan');
+    ul.hidden = true; ul.innerHTML = '';
+    TROUVES = []; CHOISI = -1;
+    $('champ-plan').setAttribute('aria-expanded', 'false');
+    $('champ-plan').removeAttribute('aria-activedescendant');
+  }
+  function rendreSuggestions() {
+    var champ = $('champ-plan'), ul = $('suggestions-plan'), texte = champ.value;
+    if (!assezPourChercher(texte)) { fermerSuggestions(); return; }
+    TROUVES = chercherPlans(texte);
+    CHOISI = TROUVES.length ? 0 : -1;
+    var q = refCherchee(texte);
+    if (!TROUVES.length) {
+      ul.innerHTML = '<li class="suggestion-vide">Aucun plan ne correspond à « ' + ech(texte.trim()) + ' ».</li>';
+    } else {
+      ul.innerHTML = TROUVES.slice(0, MAX_SUGGESTIONS).map(function (c, k) {
+        var pastille = c.plan ? pastilleDe(c.plan._etat) : '<span class="pastille ' + (c.seul ? 'seul' : 'sans') + '"></span>';
+        return '<li class="suggestion-plan" role="option" id="suggestion-' + k + '" data-k="' + k + '" aria-selected="' + (k === CHOISI) + '">' +
+          pastille + '<span class="ref">' + marquerRef(c.ref, q) + '</span>' +
+          '<span class="nom">' + ech(c.libelle) + '</span><span class="marque">' + ech(marqueDe(c)) + '</span></li>';
+      }).join('') + (TROUVES.length > MAX_SUGGESTIONS
+        ? '<li class="suggestion-plus">et ' + nb(TROUVES.length - MAX_SUGGESTIONS) + ' autre' + (TROUVES.length - MAX_SUGGESTIONS > 1 ? 's' : '') + ' — précisez la référence</li>'
+        : '');
+    }
+    ul.hidden = false;
+    champ.setAttribute('aria-expanded', 'true');
+    if (CHOISI >= 0) champ.setAttribute('aria-activedescendant', 'suggestion-' + CHOISI);
+  }
+  function surlignerSuggestion(k) {
+    var n = Math.min(TROUVES.length, MAX_SUGGESTIONS);
+    if (!n) return;
+    CHOISI = (k + n) % n;
+    [].forEach.call($('suggestions-plan').querySelectorAll('.suggestion-plan'), function (li) {
+      li.setAttribute('aria-selected', String(+li.dataset.k === CHOISI));
+    });
+    $('champ-plan').setAttribute('aria-activedescendant', 'suggestion-' + CHOISI);
+    var li = $('suggestion-' + CHOISI);
+    if (li && li.scrollIntoView) li.scrollIntoView({ block: 'nearest' });
+  }
+
+  /* ---- la fiche ------------------------------------------------ */
+  /* La trajectoire d'un plan : un point par relevé détaillé — son état ce
+     jour-là, sous la référence qu'il portait alors (une réémission se suit
+     par sa racine et sa solution). */
+  function trajectoire(ref) {
+    var ud = analyserUD(ref), cle = ud.valide ? clePlan(ud) : null, a = Object.prototype.hasOwnProperty;
+    var pts = [];
+    (RELEVES || []).forEach(function (r) {
+      if (!r.plans) return;
+      var trouve = null;
+      if (a.call(r.plans, ref)) trouve = ref;
+      else if (cle) {
+        var ks = Object.keys(r.plans);
+        for (var k = 0; k < ks.length; k++) {
+          var u = analyserUD(ks[k]);
+          if (u.valide && clePlan(u) === cle) { trouve = ks[k]; break; }
+        }
+      }
+      pts.push({ i: r.i, ref: trouve, valeur: trouve ? r.plans[trouve] : '', etat: trouve ? classer(r.plans[trouve]) : null });
+    });
+    return pts;
+  }
+  function memePlan(ref, cle) {
+    if (!ref) return false;
+    if (!cle) return false;
+    var u = analyserUD(ref);
+    return u.valide && clePlan(u) === cle;
+  }
+  function evenementsDuPlan(ref) {
+    var ud = analyserUD(ref), cle = ud.valide ? clePlan(ud) : null, out = [];
+    (JOURNAL || []).forEach(function (sem) {
+      sem.evenements.forEach(function (e) {
+        if (e.ref === ref || e.ancienne === ref || memePlan(e.ref, cle) || memePlan(e.ancienne, cle)) out.push({ i: sem.i, e: e });
+      });
+    });
+    return out;              // du plus récent au plus ancien, comme le journal
+  }
+  function motEvenement(e) {
+    if (e.type === 'nouveau') return 'apparu dans l’extract';
+    if (e.type === 'disparu') return 'sorti de l’extract';
+    if (e.type === 'indice') {
+      var av = analyserUD(e.ancienne), ap = analyserUD(e.ref);
+      return 'changement d’indice : ' + (av.indice || '?') + ' → ' + (ap.indice || '?');
+    }
+    if (e.apres === 'vide') return 'avancement effacé';
+    var l = LOTS_DELTA.filter(function (x) { return x.etat === e.apres; })[0];
+    return l ? l.un : 'changé';
+  }
+  function semaineCourte(i) { return 'S' + numeroSemaine(i); }
+  function brutDeLigneLa(e) {
+    if (!SRC.rapprochement) return e.ref;
+    var cle = SRC.rapprochement.cleReference;
+    var cles = Array.isArray(cle) ? cle : [cle];
+    return cles.map(function (k) { return String(e.ligne[k] == null ? '' : e.ligne[k]).trim(); }).join(' ').trim() || e.ref;
+  }
+  function premiereValeurLa(e) {
+    var cle = SRC.rapprochement ? SRC.rapprochement.cleReference : null;
+    var k = Array.isArray(cle) ? cle[0] : cle;
+    return (k && String(e.ligne[k] == null ? '' : e.ligne[k]).trim()) || e.ref;
+  }
+
+  function blocAujourdhui(p, pts) {
+    var h = '<div class="fiche-bloc"><h3>Aujourd’hui</h3>';
+    if (!p) {
+      var dernier = pts.filter(function (x) { return x.ref; }).pop();
+      h += '<p>Ce plan n’est plus dans l’extract' + (dernier ? ' — vu pour la dernière fois en ' + semaineCourte(dernier.i) + ', ' +
+        (ETAT_PAR_CLE[dernier.etat] ? ETAT_PAR_CLE[dernier.etat].court.toLowerCase() : '—') : '') + '.</p>';
+      return h + '</div>';
+    }
+    var e = ETAT_PAR_CLE[p._etat];
+    /* La valeur de l'extract ne se redit que si elle apprend quelque chose :
+       « 45 % », oui ; « Terminé » sous « Terminé », non. */
+    var brut = String(p[CLE_SUIVIE] == null ? '' : p[CLE_SUIVIE]).trim();
+    var redit = brut && e && norm(brut) !== norm(e.court);
+    h += '<p>' + pastilleDe(p._etat) + '<b>' + ech(e ? e.court : '—') + '</b>' +
+      (redit ? ' <span class="doux">· ' + ech(brut) + '</span>' : '') + '</p>';
+    if (vue.perimetre && !dansPerimetre(p)) h += '<p class="doux">Hors du périmètre choisi : les chiffres de la page ne le comptent pas.</p>';
+    return h + '</div>';
+  }
+  function blocTrajectoire(pts, evts) {
+    var h = '<div class="fiche-bloc"><h3>Semaine par semaine</h3>';
+    if (!pts.length) return h + '<p class="doux">Pas encore de relevé archivé plan par plan.</p></div>';
+    h += '<div class="fiche-frise" role="img" aria-label="' + ech(pts.map(function (x) {
+      return semaineCourte(x.i) + ' : ' + (x.ref ? (ETAT_PAR_CLE[x.etat] ? ETAT_PAR_CLE[x.etat].court : '—') : 'absent');
+    }).join(', ')) + '">' + pts.map(function (x) {
+      var e = ETAT_PAR_CLE[x.etat];
+      var titre = semaineCourte(x.i) + ' — ' + (x.ref ? (e ? e.court : '—') + (x.valeur ? ' (' + x.valeur + ')' : '') : 'pas dans l’extract');
+      if (!x.ref) return '<span class="frise-case absent" title="' + ech(titre) + '"></span>';
+      return e && e.hachure
+        ? '<span class="frise-case hachure" title="' + ech(titre) + '"></span>'
+        : '<span class="frise-case" style="background:' + (e ? e.couleur : 'var(--filet-fort)') + '" title="' + ech(titre) + '"></span>';
+    }).join('') + '</div>';
+    h += '<div class="frise-bornes"><span>' + semaineCourte(pts[0].i) + '</span><span>' + semaineCourte(pts[pts.length - 1].i) + '</span></div>';
+    if (evts.length) {
+      h += '<ul class="fiche-evts">' + evts.map(function (x) {
+        var e = x.e, cle = e.type === 'indice' ? 'indice' : (e.type === 'change' ? e.apres : (e.apres || e.avant || 'sans'));
+        return '<li><span class="sem">' + semaineCourte(x.i) + '</span>' + pastilleDe(cle) + '<span>' + ech(motEvenement(e)) + '</span></li>';
+      }).join('') + '</ul>';
+    } else {
+      h += '<p class="doux" style="margin-top:8px">Aucun changement depuis le premier relevé.</p>';
+    }
+    return h + '</div>';
+  }
+  function blocGroupe(p) {
+    var dim = vue.dimCritique;
+    if (!p || !dim || !TITRE_DIM[dim]) return '';
+    var val = valeurDim(p, dim), titre = TITRE_DIM[dim].replace(/ \(.*\)$/, '');
+    var membres = population().filter(function (q) { return valeurDim(q, dim) === val; });
+    var faits = membres.filter(function (q) { return q._etat === 'termine'; }).length;
+    var h = '<div class="fiche-bloc"><h3>Avancement par ' + ech(titre) + '</h3>';
+    if (!membres.length) return h + '<p class="doux">Son groupe n’est pas dans le périmètre choisi.</p></div>';
+    h += '<p><b>' + ech(val === '' ? 'non renseigné' : val) + '</b> <span class="doux">· ' + nb(faits) + ' / ' + nb(membres.length) +
+      ' terminés · ' + Math.round(100 * faits / membres.length) + ' %</span></p>';
+    h += '<button type="button" class="fiche-lien" data-fiche-aller="groupe" data-valeur="' + ech(val) + '">Voir ce groupe</button>';
+    return h + '</div>';
+  }
+  function blocComparaison(c, p) {
+    if (!RAPPROCHEMENT || !SRC.rapprochement) return '';
+    var nom = nomSeconde();
+    var h = '<div class="fiche-bloc"><h3>Comparaison avec ' + ech(nom) + '</h3>';
+    if (c.seul) {
+      h += '<p>' + '<span class="pastille seul"></span>' + ech(phraseLot('seul', 1, nom)) + '</p>';
+      h += '<p class="doux">Ligne de ' + ech(nom) + ' : ' + ech(brutDeLigneLa(c.seul)) + '</p>';
+      h += '<button type="button" class="fiche-lien" data-fiche-aller="la" data-valeur="' + ech(premiereValeurLa(c.seul)) + '">Voir cette ligne dans ' + ech(nom) + '</button>';
+      return h + '</div>';
+    }
+    if (!p) return h + '<p class="doux">Plus dans l’extract : il ne se compare plus.</p></div>';
+    var cat = RAPPROCHEMENT.parPlan[p.reference];
+    if (!cat) return h + '<p class="doux">Hors du périmètre choisi : la comparaison ne le compte pas.</p></div>';
+    var classePastille = cat === 'emission' ? 'indice' : cat;
+    h += '<p><span class="pastille ' + classePastille + '"></span>' + ech(phraseLot(cat, 1, nom)) + '</p>';
+    var lignes = RAPPROCHEMENT.lignes.filter(function (e) { return e.plan === p; });
+    if (lignes.length) {
+      h += lignes.map(function (e) { return '<p class="doux">Ligne de ' + ech(nom) + ' : ' + ech(brutDeLigneLa(e)) + '</p>'; }).join('');
+      h += '<button type="button" class="fiche-lien" data-fiche-aller="la" data-valeur="' + ech(premiereValeurLa(lignes[0])) + '">Voir dans le tableau de ' + ech(nom) + '</button>';
+    }
+    return h + '</div>';
+  }
+
+  function rendreFiche() {
+    var zone = $('fiche-plan');
+    if (!vue || !vue.fiche) { zone.hidden = true; zone.innerHTML = ''; return; }
+    var c = vue.fiche, p = c.plan ? (PLAN_PAR_REF[c.plan.reference] || c.plan) : null;
+    if (c.seul && RAPPROCHEMENT) {
+      /* La ligne se relit sur le rapprochement du moment. */
+      var k = refCherchee(c.ref);
+      c.seul = RAPPROCHEMENT.lignes.filter(function (e) { return refCherchee(e.ref) === k && e.cat === 'seul'; })[0] || c.seul;
+    }
+    var ref = p ? p.reference : c.ref;
+    var ud = analyserUD(ref);
+    var pts = c.seul ? [] : trajectoire(ref), evts = c.seul ? [] : evenementsDuPlan(ref);
+    var tete = ud.valide
+      ? ech(ud.racine) + ' <span class="suite">' + ech(ud.solution) + ' ' + ech(ud.indice) + '</span>'
+      : ech(ref);
+    var cles = p ? CLES_DIM.map(function (d) {
+      var v = valeurDim(p, d);
+      return v === '' || v == null ? '' : '<span>' + ech(TITRE_DIM[d].replace(/ \(.*\)$/, '')) + ' <b>' + ech(v) + '</b></span>';
+    }).join('') : '';
+    var h = '<div class="fiche-tete"><div>' +
+      '<div class="fiche-ref">' + tete + '</div>' +
+      (libelleDe(p) ? '<div class="fiche-nom">' + ech(libelleDe(p)) + '</div>' : '') +
+      (c.ancienne ? '<div class="fiche-nom">Cherché sous l’ancienne émission ' + ech(c.ancienne) + '</div>' : '') +
+      (cles ? '<div class="fiche-cles">' + cles + '</div>' : '') +
+      '</div><button type="button" class="fiche-fermer" data-fiche-fermer aria-label="Fermer la fiche">×</button></div>';
+    h += '<div class="fiche-blocs">';
+    if (!c.seul) h += blocAujourdhui(p, pts) + blocTrajectoire(pts, evts);
+    h += blocGroupe(p) + blocComparaison(c, p);
+    h += '</div>';
+    if (p) {
+      h += '<div class="fiche-actions"><button type="button" class="fiche-lien" data-fiche-aller="tableau">Voir dans le tableau des plans</button>' +
+        (evts.length ? '<button type="button" class="fiche-lien" data-fiche-aller="journal">Voir le journal de la semaine ' + ech(semaineCourte(evts[0].i)) + '</button>' : '') +
+        '</div>';
+    }
+    zone.innerHTML = h;
+    zone.hidden = false;
+  }
+  function ouvrirFiche(c) {
+    if (!c) return;
+    vue.fiche = c;
+    fermerSuggestions();
+    $('champ-plan').value = c.ref;
+    rendreFiche();
+    defilerVers($('fiche-plan'), { block: 'nearest', behavior: 'smooth' });
+  }
+  function fermerFiche() {
+    vue.fiche = null;
+    rendreFiche();
+  }
+
+  $('champ-plan').addEventListener('input', rendreSuggestions);
+  $('champ-plan').addEventListener('focus', function () { if ($('champ-plan').value) rendreSuggestions(); });
+  $('champ-plan').addEventListener('keydown', function (e) {
+    var ouvert = !$('suggestions-plan').hidden;
+    if (e.key === 'ArrowDown' && ouvert) { e.preventDefault(); surlignerSuggestion(CHOISI + 1); }
+    else if (e.key === 'ArrowUp' && ouvert) { e.preventDefault(); surlignerSuggestion(CHOISI - 1); }
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (!ouvert) rendreSuggestions();
+      if (TROUVES.length && CHOISI >= 0) ouvrirFiche(TROUVES[CHOISI]);
+    }
+    else if (e.key === 'Escape') {
+      if (ouvert) fermerSuggestions();
+      else if (vue.fiche) fermerFiche();
+      else $('champ-plan').value = '';
+    }
+  });
+  /* mousedown plutôt que click : le champ perd le focus au clic, et la liste
+     se refermerait avant que le clic n'arrive. */
+  $('suggestions-plan').addEventListener('mousedown', function (e) {
+    var li = e.target.closest('.suggestion-plan');
+    if (!li) return;
+    e.preventDefault();
+    ouvrirFiche(TROUVES[+li.dataset.k]);
+  });
+  document.addEventListener('mousedown', function (e) {
+    if (!e.target.closest('.chercher-champ')) fermerSuggestions();
+  });
+  $('fiche-plan').addEventListener('click', function (e) {
+    if (e.target.closest('[data-fiche-fermer]')) { fermerFiche(); $('champ-plan').focus(); return; }
+    var b = e.target.closest('[data-fiche-aller]');
+    if (!b || !vue.fiche) return;
+    var c = vue.fiche, p = c.plan ? (PLAN_PAR_REF[c.plan.reference] || c.plan) : null;
+    var ou = b.dataset.ficheAller;
+    if (ou === 'tableau' && p) { montrerCePlan(p.reference); return; }
+    if (ou === 'groupe') {
+      vue.filtreGroupe = b.dataset.valeur; $('filtre-groupe').value = vue.filtreGroupe;
+      rendre();
+      defilerVers($('zone-critique'), { block: 'center', behavior: 'smooth' });
+      return;
+    }
+    if (ou === 'la') {
+      if (vue.refsLibelle.indexOf('rapprochement:') === 0) { vue.refs = null; vue.refsLibelle = ''; }
+      vue.lotLa = null; vue.base = 'la';
+      vue.seconde.recherche = b.dataset.valeur; $('recherche-seconde').value = vue.seconde.recherche;
+      rendre();
+      allerAuTableau();
+      return;
+    }
+    if (ou === 'journal') {
+      defilerVers($('zone-journal'), { block: 'start', behavior: 'smooth' });
+    }
+  });
   $('choix-base').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-base]');
     if (!b || b.dataset.base === vue.base) return;
@@ -5550,9 +6078,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
   window.__reprendreLaSemaine = function () { reprendreLaSemaine(); };
   window.__semaineDuTitre = function () {
     return { num: $('num-semaine').textContent, dates: $('dates-semaine').textContent,
-             releve: $('releve-semaine').textContent, cache: $('releve-semaine').hidden,
+             titre: document.querySelector('.masthead').textContent.replace(/\s+/g, ' '),
              iAuj: semaineDAujourdhui(), auj: AUJ, etiquetteAuj: etiquette(AUJ) };
   };
+  window.__indicateur = function () { return { indicateur: INDICATEUR, cle: CLE_SUIVIE, releves: RELEVES.length }; };
+  window.__chercherPlan = function (t) { return chercherPlans(t).map(function (c) { return c.ref; }); };
+  window.__trajectoire = function (ref) { return trajectoire(ref); };
   window.__journal = function () { return JOURNAL; };
   window.__comparatif = function () { return COMPARATIF; };
   /* Le rapprochement tel qu'il est calculé, sur le périmètre courant. */

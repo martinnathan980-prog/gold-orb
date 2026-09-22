@@ -104,11 +104,19 @@ const CONFIG = {
    *
    * COLONNE_FWD : intitulé exact de la colonne d'avancement FWD. Si deux
    *   colonnes portent le même intitulé, préfixer par le groupe :
-   *   'Réalisation FWD > Avancement'.
+   *   'Réalisation FWD > Avancement'. Introuvable dans un extract, la
+   *   détection reprend la main — et le Diagnostic le dit.
+   * COLONNE_CONCEPT : la colonne du second avancement suivi, le concept
+   *   harnais. La page propose alors l'interrupteur « Définition électrique |
+   *   Concept harnais », et l'archivage garde les deux valeurs plan par plan.
+   *   Vide, ou introuvable : pas d'interrupteur, rien d'autre ne change.
    * DIMENSIONS : intitulés des colonnes proposées dans « Avancement FWD par… »,
    *   dans l'ordre voulu. Même syntaxe « Groupe > Colonne » en cas de doublon.
    */
-  COLONNE_FWD: '',
+  /* Le FWD se suit dans le bloc HDK AA 011, colonne « Avancement Définition
+     Electrique » — et non plus dans « Réalisation FWD > Avancement ». */
+  COLONNE_FWD: 'HDK AA 011 > Avancement Définition Electrique',
+  COLONNE_CONCEPT: 'HDK AA 011 > Avancement Concept Harnais',
 
   /*
    * Les colonnes proposées dans « Avancement FWD par… », dans l'ordre du
@@ -139,7 +147,8 @@ const CONFIG = {
     'Séquence',
     'Validation Définition Electrique',
     'Date création',
-    'Réalisation FWD > Avancement'
+    'HDK AA 011 > Avancement Définition Electrique',
+    'HDK AA 011 > Avancement Concept Harnais'
   ],
 
   /**
@@ -637,6 +646,9 @@ function construireModele(contrat) {
     : new Array(nbColonnes).fill('');
 
   const iFWD = trouverIndexFWD(entetes, groupes);
+  const fwdDemandeeAbsente = !!CONFIG.COLONNE_FWD && indexParDesignation(CONFIG.COLONNE_FWD, entetes, groupes) === -1;
+  let iConcept = CONFIG.COLONNE_CONCEPT ? indexParDesignation(CONFIG.COLONNE_CONCEPT, entetes, groupes) : -1;
+  if (iConcept === iFWD) iConcept = -1;
   const iRef = trouverIndexReference(entetes);
   const iDomaine = trouverIndexDomaine(entetes, groupes);
   const lignesBrutes = donnees.slice(indexEntete + 1);
@@ -688,6 +700,7 @@ function construireModele(contrat) {
   const colonnes = [];
   let cleFWD = null;
   let cleDate = null;
+  let cleConcept = null;
 
   for (let i = 0; i < nbColonnes; i++) {
     const titre = entetes[i] || ('Colonne ' + (i + 1));
@@ -696,6 +709,7 @@ function construireModele(contrat) {
               : cleDepuisEntete(titre, deja);
     if (i === iFWD) cleFWD = cle;
     if (i === iDate) cleDate = cle;
+    if (i === iConcept) cleConcept = cle;
 
     const s = stats[i];
     let classe = '';
@@ -761,6 +775,8 @@ function construireModele(contrat) {
        cent trente-huit colonnes de l'export. */
     clesEssentielles: choisirEssentielles(colonnes, entetes, groupes, cleDate),
     cleDomaine: iDomaine === -1 ? null : colonnes[iDomaine].cle,
+    cleConcept: cleConcept,
+    fwdDemandeeAbsente: fwdDemandeeAbsente,
     avertissement: cleFWD === null
       ? 'Aucune colonne d\'avancement FWD n\'a été reconnue dans l\'en-tête.'
       : '',
@@ -817,6 +833,9 @@ function choisirEssentielles(colonnes, entetes, groupes, cleDate) {
       .map(function (d) { return indexParDesignation(d, entetes, groupes); })
       .filter(function (i) { return i !== -1; })
       .map(function (i) { return colonnes[i].cle; });
+    /* La colonne suivie est toujours de la vue essentielle, même si la
+       liste ne la nomme pas (ou nomme une colonne absente de l'extract). */
+    if (reste.indexOf('avancement') === -1 && colonnes.some(function (c) { return c.cle === 'avancement'; })) reste.push('avancement');
   } else {
     reste = colonnes
       .filter(function (c) { return c.cle === 'avancement' || c.cle === cleDate || c.dim; })
@@ -871,6 +890,7 @@ function getDonneesPourClient(contrat) {
       clesDim: modele.clesDim,
       clesEssentielles: modele.clesEssentielles,
       cleDomaine: modele.cleDomaine,
+      cleConcept: modele.cleConcept,
       dimParDefaut: modele.dimParDefaut,
       lignesIgnorees: modele.lignesIgnorees,
       plans: modele.plans,
@@ -1155,10 +1175,26 @@ function diagnostiquerContrat(classeur, contrat, dire) {
     } else {
       dire('✓ Avancement FWD : colonne « ' + colFWD.titre + ' »' +
            (colFWD.groupe ? ', groupe « ' + colFWD.groupe + ' »' : ''));
+      if (modele.fwdDemandeeAbsente) {
+        dire('⚠ La colonne demandée (CONFIG.COLONNE_FWD « ' + CONFIG.COLONNE_FWD + ' ») est introuvable dans cet extract :');
+        dire('   la page suit celle ci-dessus, trouvée d\'elle-même. Vérifier le nom du groupe et de la colonne.');
+      }
       const compte = { termine: 0, encours: 0, afaire: 0, vide: 0 };
       modele.plans.forEach(function (p) { compte[classerFWD(p.avancement)]++; });
       dire('  ' + compte.termine + ' terminés, ' + compte.encours + ' en cours, ' +
            compte.afaire + ' à faire, ' + compte.vide + ' non renseignés');
+    }
+    if (CONFIG.COLONNE_CONCEPT) {
+      const colConcept = modele.cleConcept ? modele.colonnes.filter(function (c) { return c.cle === modele.cleConcept; })[0] : null;
+      if (colConcept) {
+        const compteC = { termine: 0, encours: 0, afaire: 0, vide: 0 };
+        modele.plans.forEach(function (p) { compteC[classerFWD(p[modele.cleConcept])]++; });
+        dire('✓ Concept harnais : colonne « ' + colConcept.titre + ' »' + (colConcept.groupe ? ', groupe « ' + colConcept.groupe + ' »' : ''));
+        dire('  ' + compteC.termine + ' terminés, ' + compteC.encours + ' en cours, ' +
+             compteC.afaire + ' à faire, ' + compteC.vide + ' non renseignés');
+      } else {
+        dire('– Concept harnais : colonne « ' + CONFIG.COLONNE_CONCEPT + ' » introuvable dans cet extract — pas d\'interrupteur.');
+      }
     }
 
     const colRef = modele.colonnes.filter(function (c) { return c.fige; })[0];
@@ -1289,12 +1325,37 @@ function getHistorique(classeur, contrat) {
       encours: Number(ligne[4]) || 0,
       afaire: Number(ligne[5]) || 0,
       vide: Number(ligne[6]) || 0,
-      groupes: analyserJson(ligne[7]) || {},
-      plans: analyserJson(recoller(ligne.slice(ENTETES_HISTORIQUE.length - 1)))
+      groupes: analyserJson(ligne[7]) || {}
     };
+    const cartes = separerCartes(analyserJson(recoller(ligne.slice(ENTETES_HISTORIQUE.length - 1))));
+    parSemaine[semaine].plans = cartes.plans;
+    if (cartes.plansConcept) parSemaine[semaine].plansConcept = cartes.plansConcept;
   });
 
   return Object.keys(parSemaine).sort().map(function (s) { return parSemaine[s]; });
+}
+
+/**
+ * Une carte archivée, en deux cartes : la définition électrique (plans) et,
+ * si le relevé l'a gardé, le concept harnais (plansConcept). Un relevé
+ * d'avant l'interrupteur porte des chaînes : il n'a pas de concept, et ne
+ * s'invente pas.
+ */
+function separerCartes(carte) {
+  if (!carte || typeof carte !== 'object' || Array.isArray(carte)) return { plans: carte || null, plansConcept: null };
+  const def = {}, concept = {};
+  let avecConcept = false;
+  Object.keys(carte).forEach(function (ref) {
+    const v = carte[ref];
+    if (Array.isArray(v)) {
+      def[ref] = String(v[0] === null || v[0] === undefined ? '' : v[0]);
+      concept[ref] = String(v[1] === null || v[1] === undefined ? '' : v[1]);
+      avecConcept = true;
+    } else {
+      def[ref] = v;
+    }
+  });
+  return { plans: def, plansConcept: avecConcept ? concept : null };
 }
 
 function analyserJson(valeur) {
@@ -1340,7 +1401,12 @@ function compterAvancements(contrat) {
   modele.plans.forEach(function (p) {
     const etat = classerFWD(p.avancement);
     compte[etat]++;
-    compte.plans[p.reference] = String(p.avancement || '');
+    /* Avec le concept harnais, chaque plan garde ses deux avancements :
+       [définition électrique, concept harnais]. Les relevés d'avant n'en
+       ont qu'un, une chaîne : les deux formes se relisent (separerCartes). */
+    compte.plans[p.reference] = modele.cleConcept
+      ? [String(p.avancement || ''), String(p[modele.cleConcept] || '')]
+      : String(p.avancement || '');
     clesDim.forEach(function (d) {
       const v = String((d === '_anciennete'
         ? ancienneteDepuis(p[modele.cleDate], reference)

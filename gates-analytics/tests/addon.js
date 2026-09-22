@@ -103,13 +103,23 @@ function serveurSur(valeurs, proprietes, fichiers) {
     hGates.filter(t => /avancement/i.test(t)).length === 27,
     String(hGates.filter(t => /avancement/i.test(t)).length));
 
+  /* Par défaut, le FWD se suit dans HDK AA 011 > Avancement Définition
+     Electrique, et le concept harnais dans le même bloc. */
   const colFwd = mGates.colonnes.find(c => c.cle === 'avancement');
-  verifier('la bonne colonne d\'avancement est retenue',
-    colFwd && colFwd.titre === 'Avancement', colFwd && colFwd.titre);
-  verifier('elle est bien celle du groupe « Réalisation FWD »',
-    colFwd && colFwd.groupe === 'Réalisation FWD', colFwd && colFwd.groupe);
-  verifier('ni « Avancement Définition Electrique » ni « Avancement Concept Harnais »',
-    colFwd && !/Définition|Concept/.test(colFwd.titre));
+  verifier('par défaut, le FWD se lit dans HDK AA 011 > Avancement Définition Electrique',
+    colFwd && colFwd.titre === 'Avancement Définition Electrique' && colFwd.groupe === 'HDK AA 011',
+    colFwd && (colFwd.groupe + ' > ' + colFwd.titre));
+  const colConcept = mGates.colonnes.find(c => c.cle === mGates.cleConcept);
+  verifier('et le concept harnais dans HDK AA 011 > Avancement Concept Harnais — une autre colonne',
+    !!colConcept && colConcept.titre === 'Avancement Concept Harnais' && colConcept.groupe === 'HDK AA 011' && mGates.cleConcept !== 'avancement',
+    colConcept && (colConcept.groupe + ' > ' + colConcept.titre));
+  /* Sans forçage, la détection d'avant reste juste : « Réalisation FWD >
+     Avancement », jamais une colonne d'un bloc de variante. */
+  const detecte = serveurGates(40, { COLONNE_FWD: '', COLONNE_CONCEPT: '' }).contexte.construireModele();
+  const colDetectee = detecte.colonnes.find(c => c.cle === 'avancement');
+  verifier('sans forçage, la détection retient « Avancement » du groupe « Réalisation FWD », et pas de concept',
+    colDetectee && colDetectee.titre === 'Avancement' && colDetectee.groupe === 'Réalisation FWD' && detecte.cleConcept === null,
+    colDetectee && (colDetectee.groupe + ' > ' + colDetectee.titre));
 
   verifier('les groupes fusionnés couvrent leur vraie largeur',
     mGates.colonnes[1].groupe === 'Informations principales' &&   // col 2
@@ -151,8 +161,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('la vue essentielle tient en moins de dix colonnes',
     mGates.clesEssentielles.length <= 10 && mGates.clesEssentielles.length >= 5,
     String(mGates.clesEssentielles.length));
-  verifier('elle contient la référence, l\'avancement et la date',
-    ['reference', 'avancement', mGates.cleDate].every(c => mGates.clesEssentielles.indexOf(c) !== -1),
+  verifier('elle contient la référence, l\'avancement suivi, le concept harnais et la date',
+    ['reference', 'avancement', mGates.cleConcept, mGates.cleDate].every(c => c && mGates.clesEssentielles.indexOf(c) !== -1),
     JSON.stringify(mGates.clesEssentielles));
   verifier('la colonne de domaine est repérée',
     mGates.cleDomaine && mGates.colonnes.find(c => c.cle === mGates.cleDomaine).titre === 'Domaine',
@@ -219,8 +229,11 @@ function serveurSur(valeurs, proprietes, fichiers) {
     JSON.stringify(mForce.colonnes.filter(c => /^(avancement|reference)/.test(c.cle)).map(c => c.cle + ':' + c.titre)));
 
   const forceInconnu = serveurGates(20, { COLONNE_FWD: 'Colonne qui n\'existe pas' });
-  verifier('un forçage qui ne tombe sur rien retombe sur la détection',
-    forceInconnu.contexte.construireModele().colonnes.find(c => c.cle === 'avancement').titre === 'Avancement');
+  const mInconnu = forceInconnu.contexte.construireModele();
+  verifier('un forçage qui ne tombe sur rien retombe sur la détection — et le modèle le sait',
+    mInconnu.colonnes.find(c => c.cle === 'avancement').titre === 'Avancement' && mInconnu.fwdDemandeeAbsente === true);
+  verifier('le diagnostic le dit : la colonne demandée est introuvable, la page suit celle trouvée d’elle-même',
+    /⚠ La colonne demandée \(CONFIG\.COLONNE_FWD « Colonne qui n'existe pas »\) est introuvable/.test(forceInconnu.contexte.diagnostic()));
 
   // L'archivage doit tenir sur 137 colonnes et treize blocs répétés.
   gates.contexte.enregistrerInstantaneHebdo();
@@ -231,11 +244,26 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('les comptes par ATA sont archivés',
     hg[0].groupes.ata && Object.keys(hg[0].groupes.ata).length >= 5,
     JSON.stringify(Object.keys(hg[0].groupes.ata || {})));
+  /* Le concept harnais s'archive avec la définition : deux cartes relues,
+     chacune sur les 186 plans, aux valeurs de leur colonne. */
+  const valeursConcept = {}, valeursDef = {};
+  mGates.plans.forEach(p => { valeursConcept[p.reference] = String(p[mGates.cleConcept] || ''); valeursDef[p.reference] = String(p.avancement || ''); });
+  verifier('le relevé garde les deux avancements, relus en deux cartes : définition (plans) et concept (plansConcept)',
+    !!hg[0].plans && !!hg[0].plansConcept &&
+    Object.keys(hg[0].plansConcept).length === 186 && Object.keys(hg[0].plans).length === 186 &&
+    Object.keys(hg[0].plans).every(r => typeof hg[0].plans[r] === 'string' && hg[0].plans[r] === valeursDef[r]) &&
+    Object.keys(hg[0].plansConcept).every(r => hg[0].plansConcept[r] === valeursConcept[r]),
+    JSON.stringify(Object.keys(hg[0].plansConcept || {}).slice(0, 2)));
 
   const rapportGates = gates.contexte.diagnostic();
   verifier('le diagnostic nomme la colonne FWD et son groupe',
-    /Avancement FWD : colonne « Avancement », groupe « Réalisation FWD »/.test(rapportGates),
+    /Avancement FWD : colonne « Avancement Définition Electrique », groupe « HDK AA 011 »/.test(rapportGates) &&
+    !/⚠ La colonne demandée/.test(rapportGates),
     rapportGates.split('\n').find(l => /Avancement FWD/.test(l)));
+  verifier('et celle du concept harnais, avec ses comptes',
+    /✓ Concept harnais : colonne « Avancement Concept Harnais », groupe « HDK AA 011 »/.test(rapportGates) &&
+    /✓ Concept harnais[^\n]*\n  \d+ terminés, \d+ en cours, \d+ à faire, \d+ non renseignés/.test(rapportGates),
+    rapportGates.split('\n').filter(l => /Concept harnais/.test(l)).join(' / '));
   verifier('il liste les colonnes d\'analyse en clair',
     /Analyse par : .*ATA/.test(rapportGates), rapportGates.split('\n').find(l => /Analyse par/.test(l)));
   verifier('il signale les lignes ignorées et annonce l\'extract entier',
@@ -425,6 +453,18 @@ function serveurSur(valeurs, proprietes, fichiers) {
     cAncien.getFeuilleHistorique(ancien, 'Données', false) === ancienHisto &&
     cAncien.getHistorique(ancien, 'Données').length === 1 &&
     cAncien.getHistorique(ancien, 'Données')[0].semaine === '2026-S30');
+  /* Un relevé d'avant le concept harnais ne porte que des chaînes : il se
+     relit tel quel, sans carte du concept — rien ne s'invente. */
+  const ancienAvecCarte = new Feuille('Historique_FWD', [
+    ENTETES_H.slice(),
+    ['2026-S29', new Date(2026, 6, 17), 2, 1, 1, 0, 0, '{}', '{"TFE3110A600003C":"Terminé","MBE3411A800001A":"En cours"}']
+  ], true);
+  const classeurCarte = new Classeur([new Feuille('Données', feuilleExemple(10)), ancienAvecCarte], 'Carte ancienne');
+  const cCarte = chargerServeur(classeurCarte, {});
+  const hCarte = cCarte.getHistorique(classeurCarte, 'Données');
+  verifier('un relevé d’avant le concept se relit tel quel : sa carte, et pas de carte du concept',
+    hCarte.length === 1 && hCarte[0].plans && hCarte[0].plans.TFE3110A600003C === 'Terminé' && !('plansConcept' in hCarte[0]),
+    JSON.stringify(hCarte[0]));
   const rAncien = cAncien.enregistrerInstantaneHebdo();
   verifier('l\'archivage écrit dedans, sans créer « Historique_FWD_Données »',
     rAncien.contrats[0].historique === 'Historique_FWD' && ancienHisto.valeurs.length === 3 &&
@@ -1090,8 +1130,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const vu = await p.evaluate(() => ({
     semaine: document.getElementById('num-semaine').textContent,
     dates: document.getElementById('dates-semaine').textContent,
-    releve: document.getElementById('releve-semaine').textContent,
-    releveCache: document.getElementById('releve-semaine').hidden,
+    titreSemaine: document.querySelector('.masthead').textContent.replace(/\s+/g, ' '),
+    sansMention: !document.getElementById('releve-semaine'),
     repere: ([...document.querySelectorAll('svg.graphe .repere-auj')].map(x => x.textContent)[0]) || '',
     etats: [...document.querySelectorAll('#etats .etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
     colonnes: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()),
@@ -1114,8 +1154,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
     return 'Semaine ' + Math.ceil(((t.getTime() - Date.UTC(t.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7);
   })();
   verifier('la semaine affichée est celle d’aujourd’hui, au numéro près', vu.semaine === semAttendue, vu.semaine + ' vs ' + semAttendue);
-  verifier('le classeur venant d’archiver cette semaine, la mention du dernier relevé se tait et la courbe dit « aujourd’hui »',
-    vu.releveCache && vu.releve === '' && vu.repere === 'aujourd’hui', JSON.stringify([vu.releveCache, vu.releve, vu.repere]));
+  verifier('le titre ne porte que la semaine d’aujourd’hui, sans mention du dernier relevé, et la courbe dit « aujourd’hui »',
+    vu.sansMention && !/dernier relevé/.test(vu.titreSemaine) && vu.repere === 'aujourd’hui', JSON.stringify([vu.sansMention, vu.repere]));
   verifier('les dates de la semaine sont écrites en toutes lettres',
     /^du \d+ .* \d{4}$/.test(vu.dates), vu.dates);
   verifier('les quatre états totalisent les 186 plans',
@@ -1125,6 +1165,22 @@ function serveurSur(valeurs, proprietes, fichiers) {
     vu.colonnes[0] === 'Référence UD' && vu.colonnes.indexOf('Avancement FWD') !== -1,
     JSON.stringify(vu.colonnes));
   verifier('les 186 lignes sont dans le tableau', vu.lignes === 186, String(vu.lignes));
+  /* La recherche du haut, sur les données du classeur : même barre, même
+     fiche que dans la démonstration. La référence est lue dans la première
+     cellule du tableau, pas fabriquée. */
+  const refReelle = await p.evaluate(() => document.querySelector('#corps-tableau tr td').textContent.trim());
+  await p.click('#champ-plan'); await p.keyboard.type(refReelle); await p.waitForTimeout(250);
+  await p.keyboard.press('Enter'); await p.waitForTimeout(400);
+  const ficheReelle = await p.evaluate(() => {
+    const f = document.getElementById('fiche-plan');
+    return { visible: !f.hidden, ref: f.querySelector('.fiche-ref') ? f.querySelector('.fiche-ref').textContent.replace(/\s+/g, '') : '',
+             titres: [...f.querySelectorAll('.fiche-bloc h3')].map(h => h.textContent) };
+  });
+  verifier('données réelles : la recherche du haut trouve un plan du classeur et ouvre sa fiche, semaine par semaine comprise',
+    ficheReelle.visible && ficheReelle.ref === refReelle.replace(/\s+/g, '') && ficheReelle.titres.indexOf('Semaine par semaine') !== -1,
+    JSON.stringify([refReelle, ficheReelle]));
+  await p.click('#fiche-plan [data-fiche-fermer]'); await p.waitForTimeout(150);
+  await p.fill('#champ-plan', ''); await p.keyboard.press('Escape');
   verifier('le sélecteur de dimension propose les colonnes détectées', vu.dims.length >= 3, JSON.stringify(vu.dims));
   verifier('l\'ATA est ouvert par défaut', vu.dimActive === 'ata', vu.dimActive);
   verifier('le titre nomme la dimension', /par ATA/.test(vu.titre), vu.titre);
@@ -1260,6 +1316,21 @@ function serveurSur(valeurs, proprietes, fichiers) {
     JSON.stringify(vg.ordre) === JSON.stringify(mGates.colonnes.filter(c => c.titre !== 'Colonne 1').map(c => c.titre)),
     vg.ordre.slice(0, 6).join(' | '));
   verifier('pas de débordement horizontal de la page', vg.debord <= 2, vg.debord + ' px');
+
+  /* Données réelles, sur l'en-tête réel : l'interrupteur de l'avancement
+     suivi est là, et le concept harnais se compte sur sa colonne du bloc
+     HDK AA 011 — recomptée ici dans le modèle serveur, pas dans la page. */
+  const mConceptTermine = mGates.plans.filter(x => gates.contexte.classerFWD(x[mGates.cleConcept]) === 'termine').length;
+  const interrupteurReel = await pg.evaluate(() => !document.getElementById('choix-indicateur').hidden);
+  await pg.click('#choix-indicateur button[data-indicateur="concept"]'); await pg.waitForTimeout(800);
+  const vgConcept = await pg.evaluate(() => ({
+    etats: [...document.querySelectorAll('#etats .etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
+    titre: document.getElementById('titre-groupe').textContent
+  }));
+  verifier('données réelles : l’interrupteur est là, et le concept harnais compte ses terminés sur sa colonne (' + mConceptTermine + ')',
+    interrupteurReel && vgConcept.etats[0] === mConceptTermine && vgConcept.etats.reduce((x, y) => x + y, 0) === 186 && /^Concept harnais par /.test(vgConcept.titre),
+    JSON.stringify([interrupteurReel, vgConcept, mConceptTermine]));
+  await pg.click('#choix-indicateur button[data-indicateur="def"]'); await pg.waitForTimeout(700);
 
   /* Le bloc figé couvre tout ce qui précède la référence, elle comprise — et
      se pose colonne après colonne, sinon la référence recouvrirait ce qui la
