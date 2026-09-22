@@ -1,62 +1,221 @@
-ROBOT-WEB (autoweb) - DEMARRAGE AU BUREAU
-=========================================
+ROBOT WEB - DEMARRAGE AU BUREAU (WINDOWS), PAS A PAS
+====================================================
+Tout est ecrit ici, dans l'ordre, avec ce que vous devez voir a chaque etape.
+Si ce que vous voyez ne correspond pas, arretez-vous et regardez la partie E
+(« si ca coince ») a la fin : les cas frequents y sont, avec la solution.
 
-1. Decompressez le zip dans un dossier a vous, par exemple :
-      C:\Users\<votre nom>\Documents\robot-web
+Convention : les commandes commencent par py.
+Si Windows repond que « py » est introuvable, remplacez py par python PARTOUT.
 
-2. Ouvrez une invite de commandes DANS ce dossier :
-      dans l'explorateur, cliquez dans la barre d'adresse, tapez  cmd  puis Entree
 
-3. Installez les bibliotheques (une seule fois) :
-      py -m pip install --user -r requirements.txt
-   Si "py" n'existe pas, remplacez  py  par  python  dans toutes les commandes.
-   Si pip echoue (proxy), essayez :
-      py -m pip install --user --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt
+=====================================================================
+ A. INSTALLER (une seule fois, 5 a 10 minutes)
+=====================================================================
 
-4. Testez : le robot ouvre votre Edge sur un faux outil et remplit 4 lignes d'Excel
-      py -m autoweb demo
-   Resultat attendu a la fin :  "3 OK, 1 ERREUR"  puis  "votre poste est pret".
-   (l'erreur est volontaire : une ligne sans numero de plan)
+A1. Dans votre messagerie, telechargez la piece jointe robot-web-installeur.txt.
+    Elle arrive normalement dans le dossier Telechargements.
 
-4 bis. Pour s'entrainer sur une fausse base documentaire (filtres, export CSV, fiches) : suivez
-   EXERCICE_MAISON.txt (commande  py -m autoweb base-demo). Pour un essai rapide sur le petit
-   formulaire de la demo :
-      py -m autoweb assistant demo\formulaire_demo.html --excel demo\demo_suivi.xlsx --nom essai
-   Connectez-vous dans la page (demo / demo), revenez dans la console, Entree, puis repondez
-   aux questions. Le scenario demo\essai.yaml est cree ; testez-le :
-      py -m autoweb lancer demo\essai.yaml --tout --limite 1
+A2. Ouvrez une invite de commandes :
+    appuyez sur la touche Windows, tapez   cmd   puis Entree.
+    Une fenetre noire s'ouvre.
 
-5. Si le navigateur ne se lance pas ("Aucun navigateur n'a pu etre lance") :
-      py -m playwright install chromium
-   puis relancez  py -m autoweb demo
-   Si ca echoue encore, copiez le message d'erreur et le fichier demo\journal\autoweb-*.log
-   et envoyez-les a Claude.
+A3. Preparez un dossier de travail et mettez le fichier dedans.
+    Tapez ces 4 lignes, une par une (Entree apres chaque) :
 
-6. Votre premier vrai outil, SANS rien envoyer a l'exterieur : l'ASSISTANT construit
-   le scenario sur votre poste, par questions/reponses.
-   a) Preparez votre Excel de suivi (une ligne par element, les noms de colonnes en ligne 1),
-      ou creez-en un vide :   py -m autoweb initialiser mon_outil --colonnes "Numero plan,Titre,Type"
-   b) Lancez l'assistant sur l'ecran a automatiser :
-      py -m autoweb assistant https://adresse-de-votre-outil --canal chrome --excel mon_outil\suivi.xlsx --nom "nouveau plan"
-      Chrome s'ouvre : connectez-vous, affichez le formulaire vide, revenez dans la console, Entree.
-      L'assistant liste chaque champ de l'ecran et vous demande quelle colonne Excel le remplit
-      (il propose la plus probable : Entree pour accepter, 0 pour ignorer, v pour une valeur fixe),
-      puis quel bouton enregistre, quel texte confirme le succes, etc.
-   c) Il ecrit mon_outil\nouveau_plan.yaml. Testez-le :
-      py -m autoweb verifier mon_outil\nouveau_plan.yaml
-      py -m autoweb simuler  mon_outil\nouveau_plan.yaml
-      py -m autoweb lancer   mon_outil\nouveau_plan.yaml --limite 1
-      (le scenario contient une pause avant le clic final : vous verifiez a l'ecran)
-   d) Pour ajuster a la main : ouvrez le .yaml avec le Bloc-notes, l'aide-memoire des actions est
-      dans README.md. Le dossier releves\<date>-<nom>\champs.txt liste tous les selecteurs.
+        cd /d %USERPROFILE%
+        mkdir robot
+        move "%USERPROFILE%\Downloads\robot-web-installeur.txt" robot\
+        cd robot
 
-   Le dossier releves\ et vos fichiers restent sur votre poste. Si vous demandez de l'aide a
-   Claude, decrivez l'ecran avec des noms neutres (champ 1, liste 2, bouton Enregistrer) et
-   copiez seulement la ligne d'erreur de la console.
+    ATTENDU apres la 3e ligne :   1 fichier(s) deplace(s).
+    SI « Le fichier specifie est introuvable » : le fichier est ailleurs.
+    Tapez   dir "%USERPROFILE%\Downloads\robot*"   pour voir son vrai nom, puis
+    refaites la commande move avec ce nom exact.
 
-7. Vos sessions (SSO) : pour que le robot travaille dans un Chrome ou vous etes deja
-   connecte, lancez chrome_debug.bat, connectez-vous, et mettez dans le scenario :
-      navigateur:
-        attacher: 9222
+    REMARQUE : on evite volontairement le Bureau et Documents, souvent synchronises
+    avec OneDrive, ce qui peut bloquer les fichiers pendant que le robot travaille.
 
-Mode d'emploi complet : README.md (ouvrable avec le Bloc-notes).
+A4. Verifiez que Python repond. Tapez :
+
+        py --version
+
+    ATTENDU :   Python 3.9.x   (ou 3.10, 3.11, 3.12, 3.13 : peu importe)
+    SI « py n'est pas reconnu » : essayez   python --version
+    SI aucun des deux ne repond : Python n'est pas installe sur le poste ;
+    dites-le moi, il existe d'autres solutions sans installation.
+
+A5. Lancez l'installation. Tapez (tout sur une seule ligne) :
+
+        py -c "exec(open('robot-web-installeur.txt', encoding='utf-8').read())"
+
+    Ca travaille tout seul 2 a 5 minutes et affiche 4 etapes numerotees.
+    Beaucoup de lignes defilent pendant l'etape 3 : c'est normal.
+
+    ATTENDU a la fin :
+        4/4 ligne(s) traitee(s) : 3 OK, 1 ERREUR, 0 IGNORE.
+        TOUT EST PRET.
+
+    L'ERREUR sur 1 ligne est VOULUE : c'est une fiche sans numero, qui vous montre
+    comment un probleme est signale. C'est donc le bon resultat.
+
+    SI « ECHEC de l'installation des bibliotheques » : c'est le proxy de l'entreprise.
+    Essayez cette commande (une seule ligne), puis reprenez A5 :
+
+        py -m pip install --user --trusted-host pypi.org --trusted-host files.pythonhosted.org -r robot-web\requirements.txt
+
+    SI « LA VERIFICATION A ECHOUE » : copiez les 15 dernieres lignes affichees et
+    envoyez-les moi. N'allez pas plus loin.
+
+
+=====================================================================
+ B. OUVRIR LE ROBOT (a refaire a chaque fois)
+=====================================================================
+
+B1. Dans l'invite de commandes :
+
+        cd /d %USERPROFILE%\robot\robot-web
+        robot
+
+    ATTENDU : un menu
+
+        ==============================================================
+           ROBOT WEB   -   que voulez-vous faire ?
+        ==============================================================
+           1. Enregistrer une nouvelle tache (vous la montrez au robot)
+           2. Lancer une tache enregistree
+           3. Voir mes taches
+           4. Supprimer une tache
+           5. Creer un fichier Excel de pilotage (vide, avec vos colonnes)
+           6. M'entrainer sur la fausse base de demonstration
+           7. Verifier que tout fonctionne
+           0. Quitter
+
+    On tape un chiffre, Entree. C'est tout ce qu'il y a a retenir.
+    Pour revenir plus tard : refaites les deux lignes ci-dessus.
+
+
+=====================================================================
+ C. S'ENTRAINER 10 MINUTES (fortement conseille avant la vraie tache)
+=====================================================================
+Le but : faire une fois le geste complet sur un faux outil, sans aucun risque.
+
+C1. Menu, choix 6. Le faux outil demarre et affiche :
+        Fausse base documentaire en ligne : http://127.0.0.1:8765/base_demo.html
+    CETTE FENETRE EST OCCUPEE : ne la fermez pas, ne tapez rien dedans.
+
+C2. Ouvrez Chrome sur   http://127.0.0.1:8765/base_demo.html
+    Connectez-vous avec   demo / demo   et regardez : filtres, bouton Rechercher,
+    bouton Exporter CSV, 60 plans, fiche modifiable en cliquant sur un numero.
+
+C3. Ouvrez une DEUXIEME invite de commandes (touche Windows, cmd, Entree) et tapez :
+
+        cd /d %USERPROFILE%\robot\robot-web
+        robot
+
+C4. Choix 1. Repondez :
+        Adresse de l'outil      ->  http://127.0.0.1:8765/base_demo.html
+        Chemin du fichier Excel ->  bac_a_sable\contrats.xlsx
+        Nom de cette tache      ->  essai export
+
+C5. Un navigateur s'ouvre, avec un bandeau rouge en bas a gauche.
+    Connectez-vous (demo / demo), choisissez le contrat HDK dans le filtre,
+    cliquez Rechercher, attendez le tableau, cliquez Exporter CSV.
+    Puis cliquez sur le bandeau rouge (ou Entree dans l'invite de commandes).
+
+C6. Le robot liste ce qu'il a note et pose ses questions. Entree partout suffit :
+    il propose deja la bonne colonne (Contrat) et le bon dossier.
+    ATTENDU :   Tache enregistree : ...\taches\essai_export.yaml
+
+C7. Menu, choix 2, votre tache, puis « 1 » (une seule ligne).
+    ATTENDU :   1/1 ligne(s) traitee(s) : 1 OK, 0 ERREUR, 0 IGNORE.
+    Puis choix 2, la meme tache, puis « 2 » (toutes les lignes) : 2 OK.
+    Les fichiers arrivent dans un dossier exports\ cree a cote de l'Excel utilise
+    (ici bac_a_sable\exports\), et l'Excel contrats.xlsx porte maintenant le statut,
+    l'heure et le chemin exact du fichier produit.
+
+C8. Pour arreter le faux outil : revenez dans la PREMIERE fenetre, Entree.
+
+Si C1 a C7 se sont bien passes, votre poste sait tout faire. La suite est
+exactement le meme geste, avec l'adresse de votre outil et votre Excel.
+
+
+=====================================================================
+ D. VOTRE PREMIERE VRAIE TACHE
+=====================================================================
+
+D1. PREPAREZ L'EXCEL. Une ligne = une execution. Les colonnes contiennent ce qui
+    change d'une execution a l'autre (un numero de contrat, un numero de plan...).
+    Pour commencer, mettez UNE SEULE LIGNE, avec une valeur sans consequence
+    (un dossier de test, un contrat que vous pouvez exporter sans risque).
+    Si vous n'avez pas de fichier : menu, choix 5, il le cree avec vos colonnes.
+
+    Pour connaitre le chemin d'un Excel existant : dans l'explorateur, clic droit
+    sur le fichier en maintenant Maj, puis « Copier comme chemin d'acces ».
+    Vous pourrez le coller tel quel, avec ses guillemets.
+
+    IMPORTANT : fermez le fichier dans Excel avant de lancer le robot.
+
+D2. Menu, choix 1. Adresse de votre outil, chemin de l'Excel, nom de la tache.
+
+D3. Le navigateur s'ouvre. FAITES VOTRE TACHE UNE FOIS, normalement, du debut a la
+    fin, avec les valeurs de la PREMIERE ligne de l'Excel. Connectez-vous, cliquez,
+    filtrez, exportez ou remplissez, validez. Puis cliquez sur le bandeau rouge.
+
+D4. Repondez aux questions. Les deux qui comptent :
+     - « Les premieres etapes ressemblent a une connexion, la faire une seule fois
+       au debut ? »  ->  o   (sinon il se reconnecterait a chaque ligne)
+     - « Vous avez choisi HDK... Colonne ? »  ->  Entree si la colonne proposee est
+       la bonne, sinon le numero de la bonne colonne, ou 0 pour garder la valeur
+       toujours identique.
+    Un mot de passe n'est jamais ecrit dans le fichier : il vous sera demande au
+    lancement, sans s'afficher.
+
+D5. Menu, choix 2, votre tache, « 1 » (une seule ligne). REGARDEZ L'ECRAN pendant
+    que le robot travaille. A la fin, ouvrez votre Excel : la ligne porte OK, l'heure,
+    et ce que le robot a releve.
+    Si c'est ERREUR : la colonne Message dit ou ca a bloque, et donne le nom d'une
+    photo de l'ecran, rangee dans   taches\captures\erreurs\   (a cote du fichier
+    de la tache).
+
+D6. Quand une ligne passe : ajoutez vos autres lignes dans l'Excel (colonne Statut
+    VIDE pour les nouvelles), enregistrez, fermez, puis menu choix 2, « 2 ».
+    Le robot ne refait jamais une ligne deja OK.
+
+
+=====================================================================
+ E. SI CA COINCE
+=====================================================================
+ « py n'est pas reconnu »
+     -> remplacez py par python dans la commande.
+ « robot n'est pas reconnu »
+     -> vous n'etes pas dans le bon dossier. Refaites :
+        cd /d %USERPROFILE%\robot\robot-web
+ « Aucun navigateur n'a pu etre lance »
+     -> le message indique quoi faire. Au bureau, Chrome est normalement trouve tout
+        seul. Sinon : py -m playwright install chromium   puis recommencez.
+ « le fichier est ouvert dans Excel »
+     -> fermez le fichier, appuyez sur Entree, le robot reprend tout seul.
+ « delai depasse : element introuvable »
+     -> la page etait plus lente que d'habitude, ou l'ecran a change.
+        Relancez ; si ca recommence, refaites un enregistrement (choix 1).
+ Le bandeau rouge gene un bouton de l'outil
+     -> appuyez sur Entree dans l'invite de commandes : ca termine aussi
+        l'enregistrement.
+ La fenetre du navigateur se ferme toute seule / rien ne se passe
+     -> notez ce qui est ecrit dans l'invite de commandes et envoyez-le moi.
+ Le robot a fait quelque chose d'inattendu
+     -> Ctrl+C dans l'invite de commandes arrete tout immediatement. L'Excel est
+        enregistre apres chaque ligne : rien n'est perdu, et vous voyez ou il en etait.
+
+
+=====================================================================
+ F. CE QUE VOUS POUVEZ M'ENVOYER SANS RISQUE
+=====================================================================
+Pour que je corrige, ceci suffit et ne contient aucune donnee de l'entreprise :
+ - la ligne d'erreur affichee dans l'invite de commandes (la ligne qui commence
+   par X ERREUR, ou le message en francais) ;
+ - ou la colonne Message de l'Excel pour la ligne qui a echoue ;
+ - le nom de l'etape concernee (etapes[4], par exemple).
+Pas besoin de capture d'ecran, de fichier, ni du nom de vos contrats.
+
+Mode d'emploi complet et plus detaille : MODE_EMPLOI.txt (meme dossier).

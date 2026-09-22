@@ -338,6 +338,7 @@ def construire_depuis_enregistrement(
     feuille: Optional[str] = None,
     canal: str = "chrome",
     url_depart: str = "",
+    dossier_exports: str = "exports",
 ) -> str:
     """Transforme un enregistrement (liste d'EtapeEnregistree) en scénario YAML,
     en demandant d'où vient chaque valeur saisie."""
@@ -410,7 +411,7 @@ def construire_depuis_enregistrement(
     premiere = colonnes[0] if colonnes else "ligne"
     texte_succes = ""
     if telechargements:
-        dossier = d.demander(f"{S.FLECHE} Dossier où ranger les fichiers téléchargés", "exports")
+        dossier = d.demander(f"{S.FLECHE} Dossier où ranger les fichiers téléchargés", dossier_exports)
         nom_fichier = d.demander(
             f"{S.FLECHE} Nom du fichier, sans extension (vide = nom donné par l'outil)",
             f"export_{{{{{premiere}}}}}" if colonnes else "")

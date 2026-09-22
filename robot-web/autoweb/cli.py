@@ -457,9 +457,12 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
         reference = excel_absolu.name if excel_absolu.parent == sortie.parent.resolve() else str(excel_absolu)
     else:
         reference = "suivi.xlsx"
+    # les fichiers téléchargés arrivent à côté de l'Excel, là où l'utilisateur les cherche
+    base_exports = Path(nettoyer_chemin(args.excel)).resolve().parent if args.excel else DOSSIER_PROJET
     texte = construire_depuis_enregistrement(
         etapes, colonnes, lignes_excel, Dialogue(), nom=nom,
         fichier_excel=reference, feuille=feuille, canal=canal, url_depart=url,
+        dossier_exports=str(base_exports / "exports"),
     )
     sortie.write_text(texte, encoding="utf-8")
     prefixe = prefixe_commande()
