@@ -1939,9 +1939,10 @@ async function reinitialiser(pg) {
   verifier('re-cliquer retire le filtre',
     await p.evaluate(t => (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length) === t, TOTAL));
   await p.click('#etats .etat-btn[data-etat="vide"]'); await p.waitForTimeout(350);
-  verifier('« non renseignés » ne laisse que des cellules FWD vides',
+  verifier('« non renseignés » ne laisse que des cellules vides dans la colonne suivie',
     await p.evaluate(() => {
-      const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => /^Avancement$/.test(t.textContent.trim()));
+      const cle = window.__indicateur().cle;
+      const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === cle);
       if (i < 0) return false;
       return [...document.querySelectorAll('#corps-tableau tr')]
         .every(tr => /^(|—|non renseigné)$/i.test(tr.children[i].textContent.trim()));
