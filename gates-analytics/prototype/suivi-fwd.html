@@ -1262,12 +1262,24 @@ table.plans thead tr th.col-fige { z-index: 6; }
      c'est la partie qui ne bouge pas. Le gabarit ci-dessous la lit en trois
      morceaux — 3 caractères, 4 chiffres, puis 3 après le A. */
   var FORME_UD = /^([A-Z]{3})(\d{4})A(\d{3})(\d{3})([A-Z])$/;
+  /* SEE écrit la même référence autrement : son A tombe un cran plus loin —
+     GBE31236A00002B là où GATES écrit GBE3123A600002B. Les deux bases
+     parlent du même plan ; on remet le A à sa place avant de lire, sinon
+     elles ne se reconnaîtraient jamais. */
+  var FORME_UD_SEE = /^[A-Z]{3}\d{5}A\d{5}[A-Z]$/;
+  function remettreLeA(brut) {
+    return FORME_UD_SEE.test(brut) ? brut.slice(0, 7) + 'A' + brut.charAt(7) + brut.slice(9) : brut;
+  }
+  /** L'écriture de SEE, depuis la racine de GATES : GBE3123A600 -> GBE31236A00. */
+  function racineSEE(racine) {
+    return /^[A-Z]{3}\d{4}A\d{3}$/.test(racine) ? racine.slice(0, 7) + racine.charAt(8) + 'A' + racine.slice(9) : racine;
+  }
   /** Tolérant aux séparateurs (-, _, espace, point, /) et à la casse. Une
       référence hors format garde sa forme entière — sans espaces autour, en
       capitales — comme racine ; elle n'est jamais appariée à une autre. */
   function analyserUD(ref) {
     var brut = String(ref == null ? '' : ref).trim().toUpperCase();
-    var m = FORME_UD.exec(brut.replace(/[-_\s.\/]+/g, ''));
+    var m = FORME_UD.exec(remettreLeA(brut.replace(/[-_\s.\/]+/g, '')));
     if (!m) return { racine: brut, solution: '', indice: '', valide: false };
     return { racine: m[1] + m[2] + 'A' + m[3], solution: m[4], indice: m[5], valide: true };
   }
@@ -1287,6 +1299,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
   function cleAppariement(ud) { return ud.valide ? clePlan(ud) : '?' + ud.racine; }
   /* Exposée pour la batterie : une fonction pure se vérifie cas par cas. */
   window.__analyserUD = analyserUD;
+  window.__racineSEE = racineSEE;
 
   /* Compare deux cartes plan par plan { ref: avancement } et rend les
      événements : 'change' (même référence, autre état), 'nouveau', 'disparu'
@@ -1824,8 +1837,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
   /* La seconde base, en attendant la vraie : « SEE », l'extract Excel de
      l'intranet — titre « Nommage WD BFLOW » en ligne 1, en-têtes en ligne 3,
      données dessous. Ses colonnes sont celles de l'extract, dans son ordre.
-     La référence UD s'y lit sur trois colonnes : NAME (la racine), SOL. (la
-     solution, trois chiffres) et Cust.V (l'indice, une lettre). Un plan qui
+     La référence UD s'y lit sur trois colonnes : NAME (la racine, écrite
+     avec le A un cran plus loin que dans GATES — GBE31236A00 pour le plan
+     GBE3123A600), SOL. (la solution, trois chiffres) et Cust.V (l'indice,
+     une lettre). Un plan qui
      est dans SEE est un plan créé — donc terminé : l'extract porte les plans
      terminés du contrat, avec des écarts DÉLIBÉRÉS et déterministes — les
      mêmes à chaque ouverture, pour que la section ait toujours quelque chose
@@ -1849,11 +1864,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var lignes = [];
     function ligneSEE(racine, solution, indice, i, p, enCours) {
       var l = {};
-      l['NAME'] = racine;
+      var nom = racineSEE(racine);   // l'extract écrit le A un cran plus loin
+      l['NAME'] = nom;
       l['SOL.'] = solution;
       l['Cust.V'] = indice;
       l['Int. V'] = String(1 + (i % 3));
-      l['ARCHIVE FILE PREFIX'] = 'WD_' + racine + '_' + solution + indice;
+      l['ARCHIVE FILE PREFIX'] = 'WD_' + nom + '_' + solution + indice;
       l['VALIDITY PSN FULL'] = AVIONS_SEE[i % AVIONS_SEE.length];
       l['User Status'] = enCours ? 'In Work' : 'Released';
       l['DIAGRAM TYPE'] = ['WD', 'HD', 'SD'][i % 3];
@@ -2484,7 +2500,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
       if (/^\d{1,3}$/.test(parts[1])) parts[1] = ('00' + parts[1]).slice(-3);
       parts[2] = parts[2].toUpperCase();
     }
-    return parts.join('');
+    /* Recomposer, c'est aussi remettre le A à sa place : SEE l'écrit un cran
+       plus loin que GATES, et c'est la référence de GATES qu'on montre. */
+    return remettreLeA(parts.join('').toUpperCase());
   }
   /* Les cases à cocher d'un extract : TRUE / FALSE, VRAI / FAUX, oui / non… */
   var VRAI = /^(true|vrai|oui|yes|x|✓|☑)$/i, FAUX = /^(false|faux|non|no|☐)$/i;
@@ -4446,15 +4464,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
       /* Un lot du comparatif se nomme par son libellé, pas par sa clé — et au
          pluriel : le bandeau nomme une catégorie, il ne compte pas. */
       var lot = LOTS_DELTA.filter(function (l) { return l.cle === vue.refsLibelle; })[0];
-      /* Un compteur du rapprochement se nomme de même, sous son propre mot :
-         on sait d'où vient le filtre sans remonter le chercher. */
+      /* Un lot de la comparaison se nomme par la phrase même du verdict :
+         le jeton redit ce qu'on vient de cliquer, mot pour mot. */
       var lotRapp = LOTS_RAPPROCHEMENT.filter(function (l) { return 'rapprochement:' + l.cle === vue.refsLibelle; })[0];
-      if (lotRapp) liste.push({ cle: 'refs', mot: 'Comparaison', valeur: libelleRapp(lotRapp) });
+      if (lotRapp) liste.push({ cle: 'refs', mot: 'Comparaison', valeur: phraseLot(lotRapp.cle, compteLotRapp(lotRapp.cle), nomSeconde()) });
       else liste.push({ cle: 'refs', mot: 'Sélection', valeur: lot ? lot.des : (vue.refsLibelle || (n + ' plans')) });
     }
     if (vue.lotLa) {
       var lotLa = LOTS_RAPPROCHEMENT.filter(function (l) { return l.cle === vue.lotLa; })[0];
-      if (lotLa) liste.push({ cle: 'lotLa', mot: 'Comparaison', valeur: libelleRapp(lotLa) });
+      if (lotLa) liste.push({ cle: 'lotLa', mot: 'Comparaison', valeur: phraseLot(lotLa.cle, compteLotRapp(lotLa.cle), nomSeconde()) });
     }
     Object.keys(vue.vides).forEach(function (k) {
       if (vue.vides[k]) liste.push({ cle: 'vide:' + k, mot: PAR_CLE[k].titre, valeur: 'non renseigné' });

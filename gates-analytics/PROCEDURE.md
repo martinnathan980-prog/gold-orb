@@ -486,8 +486,9 @@ figure et les verdicts disent tout.
 | pas terminés, et pas encore dans SEE : rien d'anormal | pas terminé ici, pas encore créé là | rien d'anormal |
 | lignes de SEE sans plan dans GATES | une ligne de là dont aucun plan du contrat n'a la racine et la solution | à regarder de près |
 
-Le bandeau des filtres, lui, garde le mot court (« Comparaison : terminés,
-absents de SEE ») : un jeton n'a pas la place d'une phrase.
+Le bandeau des filtres redit la même phrase (« Comparaison : terminés dans
+GATES, mais SEE ne les connaît pas ») : ce qu'on vient de cliquer se relit
+mot pour mot.
 
 Cliquer un verdict filtre le tableau des plans ; les deux lots de plans que
 SEE ne connaît pas l'emmènent sur GATES, celui des lignes que SEE est seule
@@ -565,16 +566,28 @@ RAPPROCHEMENT: {
 },
 ```
 
-L'en-tête est la ligne qui porte tous les intitulés de la référence (la ligne 3
-dans SEE), sinon la première ligne non vide. Une référence introuvable dans
-l'onglet : pas de section, pas d'erreur — la page s'ouvre. **Si les cercles
-manquent, Suivi FWD → Diagnostic** : sa ligne « Seconde base » dit ce que le
-script voit — aucun onglet `SEE`, un onglet vide, un onglet dont les
-en-têtes lus ne portent pas NAME, SOL. et Cust.V (l'extract collé sans ses
-en-têtes, ou un autre extract — sans recopier ses cellules), ou bien
-`✓ Seconde base « SEE » : onglet « SEE », 312 ligne(s), référence NAME +
-SOL. + Cust.V (ligne d'en-têtes : 3)`. Un onglet là mais illisible ne fait
-pas conclure « tout est en place » : le bilan final le redit.
+L'en-tête est la ligne qui porte tous les intitulés de la référence (la
+ligne 3 dans SEE, sous le titre « Nommage WD BFLOW » et une ligne vide),
+sinon la première ligne non vide. Le script la cherche dans les huit
+premières lignes : l'extract se colle en A1 tel quel, titre compris.
+
+**SEE n'écrit pas la référence comme GATES.** Son `NAME` place le A un cran
+plus loin : `TFE31106A00` pour le plan que GATES appelle `TFE3110A600`. La
+page garde la colonne telle qu'elle est dans l'extract — c'est l'extract —
+et remet le A à sa place pour recomposer la référence de GATES,
+`NAME + SOL. + Cust.V` donnant `TFE3110A600003C`. Les deux écritures se
+lisent donc comme le même plan, dans un sens comme dans l'autre ; une
+référence déjà écrite à la mode de GATES est lue telle quelle.
+
+Une référence introuvable dans l'onglet : pas de section, pas d'erreur — la
+page s'ouvre. **Si les cercles manquent, Suivi FWD → Diagnostic** : sa
+ligne « Seconde base » dit ce que le script voit — aucun onglet `SEE`, un
+onglet vide,
+un onglet dont les en-têtes lus ne portent pas NAME, SOL. et Cust.V (l'extract
+collé sans ses en-têtes, ou un autre extract — sans recopier ses cellules), ou
+bien `✓ Seconde base « SEE » : onglet « SEE », 312 ligne(s), référence NAME +
+SOL. + Cust.V (ligne d'en-têtes : 3)`. Un onglet là mais illisible ne fait pas
+conclure « tout est en place » : le bilan final le redit.
 
 ## 13. Les jalons
 

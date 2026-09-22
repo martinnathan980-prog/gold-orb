@@ -444,6 +444,9 @@ async function reinitialiser(pg) {
       lignes: g.querySelectorAll('.rapp-puce').length
     }))
   }));
+  /* La colonne NAME de SEE porte l'écriture de SEE — le A un cran plus loin.
+     Pour la comparer aux références de GATES, on remet le A à sa place. */
+  const deSEE = n => /^[A-Z]{3}\d{5}A\d{2}$/.test(n) ? n.slice(0, 7) + 'A' + n.charAt(7) + n.slice(9) : n;
   const li0 = await lireListe();
   verifier('sous les cercles, « Plan par plan » range les lots dans l\'ordre des priorités, avec les comptes des verdicts',
     li0.titre === 'Plan par plan' && li0.groupes.map(g => g.cle).join() === 'manque,avance,emission,seul,attente,accord' &&
@@ -471,6 +474,16 @@ async function reinitialiser(pg) {
     JSON.stringify([rangees.avance[0], rangees.emission[0], rangees.seul[0]]));
   const legendePuces = await p.evaluate(() => [...document.querySelectorAll('#liste-rapprochement .rapp-puces-legende > span')].map(s => s.textContent.trim()).join(','));
   verifier('en tête du plan par plan, la légende des pastilles d\'état', legendePuces === 'Terminé,En cours,À faire,Non renseigné', legendePuces);
+  const deuxEcritures = await p.evaluate(() => {
+    const a = window.__analyserUD('GBE3123A600002B'), b = window.__analyserUD('GBE31236A00002B');
+    const c = window.__analyserUD('ZZE99108A00001A');
+    return { a, b, c, seeDepuisGates: window.__racineSEE('GBE3123A600') };
+  });
+  verifier('une référence écrite à la mode de SEE — le A un cran plus loin — se lit comme celle de GATES : même racine, même solution, même indice',
+    deuxEcritures.a.valide && deuxEcritures.b.valide &&
+    deuxEcritures.a.racine === deuxEcritures.b.racine && deuxEcritures.a.solution === deuxEcritures.b.solution &&
+    deuxEcritures.a.indice === deuxEcritures.b.indice && deuxEcritures.c.racine === 'ZZE9910A800' &&
+    deuxEcritures.seeDepuisGates === 'GBE31236A00', JSON.stringify(deuxEcritures));
   verifier('les références d\'un lot sont triées', rangees.avance.map(r => r.ref).join() === rangees.avance.map(r => r.ref).sort((a, b) => a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' })).join());
   await p.click('#liste-rapprochement .rapp-groupe[data-cle="accord"] button[data-plier]'); await p.waitForTimeout(300);
   const li1 = await lireListe();
@@ -647,9 +660,9 @@ async function reinitialiser(pg) {
     rAv.lignes === 12 && rAv.seconde === 12, rAv.lignes + ' / ' + rAv.seconde);
   verifier('ce sont bien ces plans, des deux côtés',
     rAv.refsTableau.length === 12 && rAv.refsTableau.every(r => r0.R.refsAvance.indexOf(r) !== -1) &&
-    rAv.secondeRefs.length === 12 && rAv.secondeRefs.every(r => r0.R.refsAvance.some(f => f.indexOf(r) === 0)), JSON.stringify(rAv.secondeRefs.slice(0, 3)));
+    rAv.secondeRefs.length === 12 && rAv.secondeRefs.every(r => r0.R.refsAvance.some(f => f.indexOf(deSEE(r)) === 0)), JSON.stringify(rAv.secondeRefs.slice(0, 3)));
   verifier('le bandeau nomme le filtre « Comparaison : dans SEE, pas terminés ici », le verdict est pressé',
-    rAv.jetons.length === 1 && rAv.jetons[0] === 'Comparaison : dans SEE, pas terminés ici' &&
+    rAv.jetons.length === 1 && rAv.jetons[0] === 'Comparaison : dans SEE, mais GATES ne les dit pas terminés' &&
     rAv.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'avance', JSON.stringify(rAv.jetons));
   verifier('les comptes ne bougent pas : le rapprochement ne se filtre pas lui-même',
     rAv.puces.map(x => x.n).join() === [ACCORD, 2, 12, 3, ATTENTE, 5].join());
@@ -663,7 +676,7 @@ async function reinitialiser(pg) {
   await p.click('#verdicts-rapprochement button[data-rapp="manque"]'); await p.waitForTimeout(500);
   const rMa = await lireRapp();
   verifier('« terminés, absents de SEE » remplace la sélection : 3 plans ici, et le tableau de SEE le dit vide, avec le chemin du retour',
-    rMa.lignes === 3 && rMa.jetons[0] === 'Comparaison : terminés, absents de SEE' && rMa.seconde === 0 &&
+    rMa.lignes === 3 && rMa.jetons[0] === 'Comparaison : terminés dans GATES, mais SEE ne les connaît pas' && rMa.seconde === 0 &&
     rMa.secondeVide === 'Ces 3 plans n’ont pas de ligne dans SEE. Les voir dans GATES' &&
     rMa.refsTableau.every(r => r0.R.refsManque.indexOf(r) !== -1) &&
     rMa.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'manque', JSON.stringify([rMa.jetons, rMa.lignes, rMa.secondeVide]));
@@ -671,11 +684,11 @@ async function reinitialiser(pg) {
   const rIn = await lireRapp();
   verifier('« autre indice » : 2 plans ici, leurs 2 lignes là, sous l\'autre lettre',
     rIn.lignes === 2 && rIn.refsTableau.sort().join() === r0.R.paires.map(x => x.ici).sort().join() &&
-    rIn.secondeRefs.length === 2 && rIn.secondeRefs.every(r => r0.R.paires.some(x => x.la.indexOf(r) === 0)), JSON.stringify([rIn.refsTableau, rIn.secondeRefs]));
+    rIn.secondeRefs.length === 2 && rIn.secondeRefs.every(r => r0.R.paires.some(x => x.la.indexOf(deSEE(r)) === 0)), JSON.stringify([rIn.refsTableau, rIn.secondeRefs]));
   await p.click('#verdicts-rapprochement button[data-rapp="accord"]'); await p.waitForTimeout(500);
   const rId = await lireRapp();
   verifier('« terminés et dans SEE » : les ' + ACCORD + ' plans, des deux côtés',
-    rId.lignes === ACCORD && rId.seconde === ACCORD && rId.jetons[0] === 'Comparaison : terminés et dans SEE', JSON.stringify([rId.lignes, rId.seconde]));
+    rId.lignes === ACCORD && rId.seconde === ACCORD && rId.jetons[0] === 'Comparaison : terminés dans GATES et connus de SEE', JSON.stringify([rId.lignes, rId.seconde]));
   await p.click('#verdicts-rapprochement button[data-rapp="accord"]'); await p.waitForTimeout(500);
   const rOff = await lireRapp();
   verifier('re-cliquer le verdict pressé retire le filtre',
@@ -684,7 +697,7 @@ async function reinitialiser(pg) {
   const rAt = await lireRapp();
   verifier('« pas encore dans SEE » : les ' + ATTENTE + ' plans qui attendent, et le tableau de SEE le dit vide',
     rAt.lignes === ATTENTE && rAt.seconde === 0 && rAt.secondeVide === 'Ces ' + fr(ATTENTE) + ' plans n’ont pas de ligne dans SEE. Les voir dans GATES' &&
-    rAt.jetons[0] === 'Comparaison : pas encore dans SEE', JSON.stringify([rAt.lignes, rAt.secondeVide]));
+    rAt.jetons[0] === 'Comparaison : pas terminés, et pas encore dans SEE : rien d’anormal', JSON.stringify([rAt.lignes, rAt.secondeVide]));
   await p.click('.jeton .x'); await p.waitForTimeout(400);
   verifier('la croix du bandeau retire aussi le filtre du rapprochement',
     await p.evaluate(t => document.querySelectorAll('#corps-tableau tr').length === t &&
@@ -697,9 +710,9 @@ async function reinitialiser(pg) {
     rIci.seconde === 5 && rIci.videIci === 'Ces 5 lignes n’ont pas de plan dans GATES. Les voir dans SEE' &&
     rIci.puces.filter(x => x.presse === 'true').map(x => x.cle).join() === 'seul', JSON.stringify([rIci.seconde, rIci.videIci]));
   verifier('chaque référence est inédite ici',
-    rIci.secondeRefs.length === 5 && rIci.secondeRefs.every(r => /^ZZE99\d{2}A800$/.test(r) && r0.R.refsAccord.indexOf(r) === -1), JSON.stringify(rIci.secondeRefs));
+    rIci.secondeRefs.length === 5 && rIci.secondeRefs.every(r => /^ZZE99\d{2}A800$/.test(deSEE(r)) && r0.R.refsAccord.indexOf(deSEE(r)) === -1), JSON.stringify(rIci.secondeRefs));
   verifier('le bandeau le nomme, avec sa croix',
-    rIci.jetons.length === 1 && rIci.jetons[0] === 'Comparaison : seulement dans SEE', JSON.stringify(rIci.jetons));
+    rIci.jetons.length === 1 && rIci.jetons[0] === 'Comparaison : lignes de SEE sans plan dans GATES', JSON.stringify(rIci.jetons));
   await p.click('.jeton .x'); await p.waitForTimeout(400);
   const rIci2 = await lireRapp();
   verifier('la croix rend le tableau de SEE entier', rIci2.seconde === LIGNES_SEE && rIci2.jetons.length === 0 && rIci2.puces.every(x => x.presse === 'false'));
@@ -769,7 +782,7 @@ async function reinitialiser(pg) {
   await p.click('#corps-seconde button[data-aller-base="ici"]'); await p.waitForTimeout(400);
   const rLien = await lireRapp();
   verifier('« Les voir dans GATES » repasse sur GATES sans retirer le lot : 3 plans, jeton intact',
-    rLien.lignes === 3 && rLien.jetons[0] === 'Comparaison : terminés, absents de SEE' &&
+    rLien.lignes === 3 && rLien.jetons[0] === 'Comparaison : terminés dans GATES, mais SEE ne les connaît pas' &&
     await p.evaluate(() => !document.getElementById('cadre-tableau').hidden), JSON.stringify([rLien.lignes, rLien.jetons]));
   await p.click('.jeton .x'); await p.waitForTimeout(400);
 
@@ -792,7 +805,7 @@ async function reinitialiser(pg) {
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
   const rSuit = await lireRapp();
   verifier('un lot posé suit le périmètre : sous PERSO, le tableau compte ce que le verdict annonce',
-    rSuit.puces[2].presse === 'true' && rSuit.lignes === rSuit.puces[2].n && rSuit.lignes < 12 && rSuit.jetons.indexOf('Comparaison : dans SEE, pas terminés ici') !== -1,
+    rSuit.puces[2].presse === 'true' && rSuit.lignes === rSuit.puces[2].n && rSuit.lignes < 12 && rSuit.jetons.indexOf('Comparaison : dans SEE, mais GATES ne les dit pas terminés') !== -1,
     JSON.stringify([rSuit.lignes, rSuit.puces[2].n, rSuit.jetons]));
   await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(600);
   await p.click('.jeton .x'); await p.waitForTimeout(400);
@@ -901,8 +914,17 @@ async function reinitialiser(pg) {
     s0.pastilles.accord === ACCORD && s0.pastilles.indice === 2 && s0.pastilles.avance === 12 && s0.pastilles.seul === 5,
     JSON.stringify(s0.pastilles));
   verifier('la référence se recompose de NAME, SOL. et Cust.V : code circuit, E, ATA, A, séquence, trois chiffres, une lettre',
-    s0.refs.every(r => /^[A-Z]{2}E\d{4}A[678]00\d{3}[A-Z]$/.test(r)) && s0.refsPlans.every(r => /^[A-Z]{2}E\d{4}A[678]00\d{3}[A-Z]$/.test(r)) &&
-    s0.premieres[0][0] + s0.premieres[0][1] + s0.premieres[0][2] === s0.refs[0],
+    s0.refs.every(r => /^[A-Z]{2}E\d{4}A[678]00\d{3}[A-Z]$/.test(r)) && s0.refsPlans.every(r => /^[A-Z]{2}E\d{4}A[678]00\d{3}[A-Z]$/.test(r)),
+    JSON.stringify([s0.premieres[0].slice(0, 3), s0.refs[0]]));
+  /* SEE n'écrit pas la référence comme GATES : son A tombe un cran plus
+     loin. La colonne NAME porte donc cette écriture-là — l'extract tel
+     quel — et c'est la page qui remet le A à sa place pour apparier. */
+  verifier('la colonne NAME porte l’écriture de SEE, le A un cran plus loin que dans GATES',
+    s0.premieres.every(l => /^[A-Z]{3}\d{5}A\d{2}$/.test(l[0])),
+    JSON.stringify(s0.premieres.map(l => l[0])));
+  verifier('et la référence recomposée remet le A à sa place : NAME + SOL. + Cust.V, le A décalé d’un cran',
+    s0.premieres[0][0].slice(0, 7) + 'A' + s0.premieres[0][0].charAt(7) + s0.premieres[0][0].slice(9) +
+      s0.premieres[0][1] + s0.premieres[0][2] === s0.refs[0],
     JSON.stringify([s0.premieres[0].slice(0, 3), s0.refs[0]]));
   verifier('la colonne NAME est figée à gauche', s0.figee);
   verifier('les cases à cocher de l\'extract se lisent ✓ ou – : cinq colonnes, ' + (5 * LIGNES_SEE) + ' cellules',
