@@ -118,6 +118,10 @@ function alleger(css) {
 const cssAssemble = CSS.map(n =>
   `/* ---- ${n}.css ---- */\n` + alleger(lire(`assets/css/${n}.css`))).join('\n');
 
+// La feuille assemblée est publiée UNE fois dans la coquille ; chaque page
+// n'en porte que ce jeton, remplacé juste avant d'être posée en srcdoc.
+const JETON_CSS = '/*__CSS__*/';
+
 const donneesAssemblees = Object.fromEntries(
   DONNEES.map(n => [n, JSON.parse(lire(`assets/data/${n}.json`))]));
 
@@ -256,11 +260,13 @@ function modulesDeLaPage(nom, html) {
 function construirePage(nom) {
   let html = lire(`${nom}.html`);
 
-  // Les quatre feuilles deviennent un seul bloc de style intégré.
+  // Les six feuilles deviennent un seul bloc de style intégré. Le style
+  // n'est pas recopié ici : le jeton est remplacé par la coquille au moment
+  // de poser le srcdoc, sinon les huit pages porteraient huit copies de la
+  // même feuille — plus de 3 Mo.
   html = html.replace(
     /[ \t]*<link rel="stylesheet" href="assets\/css\/[a-z]+\.css">\n?/g, '');
-  html = html.replace(/(<\/title>)/,
-    `$1\n  <style>\n${cssAssemble}\n  </style>`);
+  html = html.replace(/(<\/title>)/, `$1\n  <style>${JETON_CSS}</style>`);
 
   // Le module de page devient un script intégré, dépendances comprises.
   const moduleDePage = bles(modulesDeLaPage(nom, html), nom);
@@ -374,6 +380,8 @@ const coquille = `<meta charset="utf-8">
 <script>
 (function () {
   var PAGES = ${json(pagesAssemblees)};
+  // La feuille de style, une seule fois pour les huit pages.
+  var CSS = ${json(cssAssemble)};
   var cadre = document.getElementById('cadre');
   var courante = null;
 
@@ -387,7 +395,9 @@ const coquille = `<meta charset="utf-8">
     if (!PAGES[nom]) nom = 'index';
     courante = nom;
     try { history.replaceState(null, '', '#' + nom + (ancre || '')); } catch (e) {}
-    cadre.srcdoc = PAGES[nom];
+    // Fonction de remplacement, et non chaîne : un « $& » dans la feuille
+    // serait interprété par String.replace s'il s'agissait d'une chaîne.
+    cadre.srcdoc = PAGES[nom].replace('${JETON_CSS}', function () { return CSS; });
   }
 
   // Les liens internes du site changent de page sans quitter le fichier.
@@ -414,5 +424,13 @@ const coquille = `<meta charset="utf-8">
 mkdirSync(join(RACINE, 'dist'), { recursive: true });
 writeFileSync(join(RACINE, 'dist/etii-hub.html'), coquille);
 
-const ko = (Buffer.byteLength(coquille) / 1024).toFixed(0);
-console.log(`dist/etii-hub.html écrit — ${ko} ko, ${PAGES.length} pages intégrées`);
+// La taille est le seul chiffre qui compte au moment de publier : la limite
+// est de 16 Mo et le projet se donne 15 Mo. Elle s'affiche ici, pas au pire
+// moment, et l'alerte tombe à 13 Mo pour laisser deux photos de marge.
+const octets = Buffer.byteLength(coquille);
+const mo = octets / 1048576;
+console.log(`dist/etii-hub.html : ${mo.toFixed(2)} Mo, ${PAGES.length} pages intégrées`);
+if (mo > 13) {
+  console.log(`\n  ⚠  ATTENTION — le fichier dépasse 13 Mo (plafond de publication : 15 Mo).`);
+  console.log(`     Allégez avant de publier : les photos pèsent le plus lourd.\n`);
+}
