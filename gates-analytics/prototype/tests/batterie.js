@@ -446,7 +446,7 @@ async function reinitialiser(pg) {
   }));
   /* La colonne NAME de SEE porte l'écriture de SEE — le A un cran plus loin.
      Pour la comparer aux références de GATES, on remet le A à sa place. */
-  const deSEE = n => /^[A-Z]{3}\d{5}A\d{2}$/.test(n) ? n.slice(0, 7) + 'A' + n.charAt(7) + n.slice(9) : n;
+  const deSEE = n => /^[A-Z]{3}\d{3}A\d{4}$/.test(n) ? n.slice(0, 6) + n.charAt(7) + 'A' + n.slice(8) : n;
   const li0 = await lireListe();
   verifier('sous les cercles, « Plan par plan » range les lots dans l\'ordre des priorités, avec les comptes des verdicts',
     li0.titre === 'Plan par plan' && li0.groupes.map(g => g.cle).join() === 'manque,avance,emission,seul,attente,accord' &&
@@ -475,15 +475,15 @@ async function reinitialiser(pg) {
   const legendePuces = await p.evaluate(() => [...document.querySelectorAll('#liste-rapprochement .rapp-puces-legende > span')].map(s => s.textContent.trim()).join(','));
   verifier('en tête du plan par plan, la légende des pastilles d\'état', legendePuces === 'Terminé,En cours,À faire,Non renseigné', legendePuces);
   const deuxEcritures = await p.evaluate(() => {
-    const a = window.__analyserUD('GBE3123A600002B'), b = window.__analyserUD('GBE31236A00002B');
-    const c = window.__analyserUD('ZZE99108A00001A');
+    const a = window.__analyserUD('GBE3123A600002B'), b = window.__analyserUD('GBE312A3600002B');
+    const c = window.__analyserUD('ZZE991A0800001A');
     return { a, b, c, seeDepuisGates: window.__racineSEE('GBE3123A600') };
   });
-  verifier('une référence écrite à la mode de SEE — le A un cran plus loin — se lit comme celle de GATES : même racine, même solution, même indice',
+  verifier('une référence écrite à la mode de SEE — le A un cran trop tôt — se lit comme celle de GATES : même racine, même solution, même indice',
     deuxEcritures.a.valide && deuxEcritures.b.valide &&
     deuxEcritures.a.racine === deuxEcritures.b.racine && deuxEcritures.a.solution === deuxEcritures.b.solution &&
     deuxEcritures.a.indice === deuxEcritures.b.indice && deuxEcritures.c.racine === 'ZZE9910A800' &&
-    deuxEcritures.seeDepuisGates === 'GBE31236A00', JSON.stringify(deuxEcritures));
+    deuxEcritures.seeDepuisGates === 'GBE312A3600', JSON.stringify(deuxEcritures));
   verifier('les références d\'un lot sont triées', rangees.avance.map(r => r.ref).join() === rangees.avance.map(r => r.ref).sort((a, b) => a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' })).join());
   await p.click('#liste-rapprochement .rapp-groupe[data-cle="accord"] button[data-plier]'); await p.waitForTimeout(300);
   const li1 = await lireListe();

@@ -572,12 +572,15 @@ sinon la première ligne non vide. Le script la cherche dans les huit
 premières lignes : l'extract se colle en A1 tel quel, titre compris.
 
 **SEE n'écrit pas la référence comme GATES.** Son `NAME` place le A un cran
-plus loin : `TFE31106A00` pour le plan que GATES appelle `TFE3110A600`. La
+trop tôt — trois lettres, **trois** chiffres, A, le reste — là où GATES en
+met quatre : `TFE311A0600` pour le plan que GATES appelle `TFE3110A600`. La
 page garde la colonne telle qu'elle est dans l'extract — c'est l'extract —
-et remet le A à sa place pour recomposer la référence de GATES,
-`NAME + SOL. + Cust.V` donnant `TFE3110A600003C`. Les deux écritures se
-lisent donc comme le même plan, dans un sens comme dans l'autre ; une
-référence déjà écrite à la mode de GATES est lue telle quelle.
+et décale le A d'un cran pour recomposer la référence de GATES,
+`NAME + SOL. + Cust.V` donnant `TFE3110A600003C`. Seul l'endroit du A fait
+la règle : ce qui suit — solution, indice — n'y entre pas, si bien qu'une
+solution ou un indice écrits autrement n'empêchent pas les deux bases de se
+reconnaître. Une référence déjà écrite à la mode de GATES porte quatre
+chiffres avant son A : elle est lue telle quelle.
 
 Une référence introuvable dans l'onglet : pas de section, pas d'erreur — la
 page s'ouvre. **Si les cercles manquent, Suivi FWD → Diagnostic** : sa

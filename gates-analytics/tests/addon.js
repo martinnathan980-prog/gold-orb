@@ -746,9 +746,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     ['Nommage WD BFLOW', '', '', '', ''],
     ['', '', '', '', ''],
     ['NAME', 'SOL.', 'Cust.V', 'Validated', 'REDRAW'],
-    ['CAB18100A05', '1', 'b', 'TRUE', 'FALSE'],
+    ['CAB181A0005', '1', 'b', 'TRUE', 'FALSE'],
     ['', '', '', '', ''],
-    ['HAR25300A11', '002', 'C', 'FALSE', 'TRUE']
+    ['HAR253A0011', '002', 'C', 'FALSE', 'TRUE']
   ]);
   const configSEE = { RAPPROCHEMENT: {
     FEUILLE: 'SEE', NOM: '', CLE_REFERENCE: ['name', 'sol.', 'cust.v'],
@@ -800,15 +800,15 @@ function serveurSur(valeurs, proprietes, fichiers) {
      ligne de données. Le diagnostic n'en recopie aucune cellule — il compte,
      et pose la question. */
   const seeSansEntetes = construire({ lignes: 10, historique: false, sortie: 'apercu-see-sans-entetes.html', feuilles: [new Feuille('SEE', [
-    ['CAB18100A05', '1', 'b', 'Libellé confidentiel du plan', 'TRUE'],
-    ['HAR25300A11', '002', 'C', 'Un autre libellé', 'FALSE']
+    ['CAB181A0005', '1', 'b', 'Libellé confidentiel du plan', 'TRUE'],
+    ['HAR253A0011', '002', 'C', 'Un autre libellé', 'FALSE']
   ])] });
   fs.unlinkSync(path.join(__dirname, '..', 'apercu-see-sans-entetes.html'));
   const diagNu = seeSansEntetes.contexte.diagnostic();
   verifier('collé sans en-têtes : le diagnostic compte les cellules de la ligne prise pour en-tête, sans en recopier une seule',
     /⚠ Seconde base « SEE » : onglet « SEE » trouvé, mais la référence \(NAME \+ SOL\. \+ Cust\.V\) est introuvable/.test(diagNu) &&
     /ligne 1 prise pour en-tête : 5 cellule\(s\), aucune ne porte NAME, SOL\., Cust\.V — l'extract est-il collé avec ses en-têtes \?/.test(diagNu) &&
-    !/CAB18100A05|Libellé confidentiel|en-têtes lus/.test(diagNu), diagNu);
+    !/CAB181A0005|Libellé confidentiel|en-têtes lus/.test(diagNu), diagNu);
   /* Une configuration à moitié faite : le diagnostic nomme ce qui manque. */
   const cfgSansRef = construire({ lignes: 10, feuilles: [see], historique: false, config: { RAPPROCHEMENT: { FEUILLE: '', NOM: 'SEE', CLE_REFERENCE: [] } }, sortie: 'apercu-see-sans-ref.html' });
   fs.unlinkSync(path.join(__dirname, '..', 'apercu-see-sans-ref.html'));

@@ -116,8 +116,8 @@ ce qu'il faut regarder. Au-dessus du tableau, l'interrupteur **GATES | SEE**
 montre l'un ou l'autre extract. Rien à configurer : l'onglet est reconnu par
 son nom (les en-têtes sont trouvés seuls, ligne 3 dans l'extract), et la
 référence est recomposée à partir des colonnes NAME, SOL. et Cust.V — le A
-du NAME, que SEE écrit un cran plus loin, est remis à sa place pour
-retrouver le plan dans GATES.
+du NAME, que SEE écrit un cran trop tôt (`TFE311A0600` pour le plan que
+GATES appelle `TFE3110A600`), est décalé pour retrouver le plan dans GATES.
 
 SEE n'a pas d'historique : la comparaison porte toujours sur l'extract qui
 est dans l'onglet. On le recolle quand on en a un plus récent (Ctrl+A, Suppr,

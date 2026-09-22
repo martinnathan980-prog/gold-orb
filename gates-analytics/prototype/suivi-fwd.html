@@ -1262,17 +1262,22 @@ table.plans thead tr th.col-fige { z-index: 6; }
      c'est la partie qui ne bouge pas. Le gabarit ci-dessous la lit en trois
      morceaux — 3 caractères, 4 chiffres, puis 3 après le A. */
   var FORME_UD = /^([A-Z]{3})(\d{4})A(\d{3})(\d{3})([A-Z])$/;
-  /* SEE écrit la même référence autrement : son A tombe un cran plus loin —
-     GBE31236A00002B là où GATES écrit GBE3123A600002B. Les deux bases
-     parlent du même plan ; on remet le A à sa place avant de lire, sinon
-     elles ne se reconnaîtraient jamais. */
-  var FORME_UD_SEE = /^[A-Z]{3}\d{5}A\d{5}[A-Z]$/;
+  /* SEE écrit la même référence autrement : son A tombe un cran trop tôt —
+     3 lettres, 3 chiffres, A, le reste ; GATES veut 3 lettres, 4 chiffres,
+     A, le reste. GBE312A3600002B là où GATES écrit GBE3123A600002B. Les
+     deux bases parlent du même plan ; on décale le A d'un cran avant de
+     lire, sinon elles ne se reconnaîtraient jamais. Seul l'endroit du A
+     fait la règle : ce qui suit — solution, indice — n'y entre pas, une
+     solution ou un indice écrits autrement ne doivent pas empêcher les
+     deux bases de se reconnaître. Une référence déjà écrite à la mode de
+     GATES porte quatre chiffres avant son A : elle ne bouge pas. */
+  var FORME_UD_SEE = /^[A-Z]{3}\d{3}A\d/;
   function remettreLeA(brut) {
-    return FORME_UD_SEE.test(brut) ? brut.slice(0, 7) + 'A' + brut.charAt(7) + brut.slice(9) : brut;
+    return FORME_UD_SEE.test(brut) ? brut.slice(0, 6) + brut.charAt(7) + 'A' + brut.slice(8) : brut;
   }
-  /** L'écriture de SEE, depuis la racine de GATES : GBE3123A600 -> GBE31236A00. */
+  /** L'écriture de SEE, depuis la racine de GATES : GBE3123A600 -> GBE312A3600. */
   function racineSEE(racine) {
-    return /^[A-Z]{3}\d{4}A\d{3}$/.test(racine) ? racine.slice(0, 7) + racine.charAt(8) + 'A' + racine.slice(9) : racine;
+    return /^[A-Z]{3}\d{4}A\d{3}$/.test(racine) ? racine.slice(0, 6) + 'A' + racine.charAt(6) + racine.slice(8) : racine;
   }
   /** Tolérant aux séparateurs (-, _, espace, point, /) et à la casse. Une
       référence hors format garde sa forme entière — sans espaces autour, en
