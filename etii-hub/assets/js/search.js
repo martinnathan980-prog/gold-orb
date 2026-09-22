@@ -668,6 +668,19 @@ export function rechercher(index, requete, options) {
 
   if (cumul.size === 0) return [];
 
+  // Un document qui touche moins de termes de la requête qu'un autre n'est
+  // pas un résultat : c'est du bruit. On ne garde que le meilleur palier.
+  // Le palier s'adapte de lui-même — si aucun document ne porte les trois
+  // termes, ceux qui en portent deux restent : jamais de résultat vide.
+  // Le filtre est appliqué AVANT les bonus : il ne touche pas au score.
+  if (termes.length > 1) {
+    let maxTermes = 0;
+    for (const c of cumul.values()) if (c.termes > maxTermes) maxTermes = c.termes;
+    if (maxTermes > 1) {
+      for (const [id, c] of cumul) if (c.termes < maxTermes) cumul.delete(id);
+    }
+  }
+
   // --- Bonus de requête complète et de titre ------------------------------
   const resultats = [];
   for (const c of cumul.values()) {
