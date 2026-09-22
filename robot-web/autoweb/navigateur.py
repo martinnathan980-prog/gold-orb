@@ -78,6 +78,32 @@ def premiere_ligne(e: BaseException) -> str:
     return texte.splitlines()[0] if texte else e.__class__.__name__
 
 
+MESSAGE_STRATEGIE = (
+    "Le poste interdit d'exécuter les programmes rangés dans votre compte utilisateur\n"
+    "(stratégie de groupe, erreur 1260). Playwright s'appuie sur un petit programme de ce\n"
+    "type, il ne peut donc pas démarrer ici.\n"
+    "Deux pistes :\n"
+    "  1. Demander au service informatique d'autoriser ces deux dossiers :\n"
+    "       %LOCALAPPDATA%\\ms-playwright\n"
+    "       le dossier « playwright\\driver » des bibliothèques Python\n"
+    "     (ce sont des fichiers déposés dans votre profil, sans installation ni droits admin).\n"
+    "  2. En attendant, dites-le moi : il existe une solution qui pilote votre Chrome\n"
+    "     déjà installé, sans aucun programme supplémentaire."
+)
+
+
+def blocage_strategie(e: BaseException) -> bool:
+    """Vrai si l'erreur vient d'une stratégie d'entreprise qui interdit d'exécuter un programme."""
+    texte = f"{e}".lower()
+    return (
+        "1260" in texte
+        or "stratégie de groupe" in texte
+        or "strategie de groupe" in texte
+        or "blocked by group policy" in texte
+        or "this program is blocked" in texte
+    )
+
+
 def navigateur_ferme(e: BaseException) -> bool:
     """Vrai si l'erreur Playwright signifie que la page / le navigateur a été fermé."""
     texte = str(e)
@@ -104,7 +130,12 @@ class Navigateur:
 
     # ------------------------------------------------------------------ ouverture
     def ouvrir(self) -> Page:
-        self._pw = sync_playwright().start()
+        try:
+            self._pw = sync_playwright().start()
+        except Exception as e:
+            if blocage_strategie(e):
+                raise ErreurAutoweb(MESSAGE_STRATEGIE)
+            raise
         try:
             if self.config.attacher:
                 self._attacher(self.config.attacher)
