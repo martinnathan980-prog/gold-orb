@@ -7,10 +7,12 @@
 // navigation entre les neuf pages.
 
 import { chromium } from 'playwright';
+import { statSync } from 'node:fs';
 
 // Le dist du dépôt où vit ce test, pas un chemin absolu : le test doit
 // tourner tel quel dans un worktree ou un clone ailleurs.
-const FICHIER = new URL('../dist/etii-hub.html', import.meta.url).href;
+const CHEMIN = new URL('../dist/etii-hub.html', import.meta.url);
+const FICHIER = CHEMIN.href;
 const nav = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
 const ctx = await nav.newContext({ viewport: { width: 1440, height: 1000 } });
 const page = await ctx.newPage();
@@ -26,7 +28,16 @@ const t = (n, c, d = '') => { c ? (ok++, console.log(`  OK    ${n}`))
                                 : (ko++, console.log(`  ÉCHEC ${n} ${d}`)); };
 const f = page.frameLocator('#cadre');
 
-console.log('== Page du service, en file:// ==');
+// Le plafond de publication est de 16 Mo ; la marge de 15 Mo est la règle du
+// projet. Le poids est surtout fait d'images intégrées, et un module ajouté à
+// palette.js — chargée par les huit pages — peut faire entrer les photos d'un
+// jeu dans des pages qui ne les affichent pas : mesuré une fois à +2,8 Mo.
+// Sans ce contrôle, le dépassement ne se voit qu'au refus de publication.
+console.log('== Poids du fichier autonome ==');
+const mo = statSync(CHEMIN).size / (1024 * 1024);
+t(`le fichier autonome pèse ${mo.toFixed(1)} Mo`, mo < 15, '(plafond du projet : 15 Mo)');
+
+console.log('\n== Page du service, en file:// ==');
 t('le titre s\'affiche', (await f.locator('h1').innerText()).includes('ETII'));
 const style = await page.evaluate(() => {
   const d = document.getElementById('cadre').contentDocument;
@@ -172,7 +183,10 @@ const resultats = await f.locator('.palette__resultat').allInnerTexts();
 t('un porteur ressort depuis la FAQ', resultats.some((r) => /H160/.test(r) && /porteur|pôle/i.test(r)), `(${resultats.slice(0, 3).join(' / ')})`);
 await f.locator('.palette__champ').fill('Personne 22');
 await page.waitForTimeout(900);
-t('une personne aussi', (await f.locator('.palette__resultat').allInnerTexts()).some((r) => /Personne 22/.test(r)));
+// PREMIÈRE ligne, et non « quelque part dans la liste » : c'est le seul test
+// d'ordre de la palette, et Entrée ouvre cette ligne-là.
+t('la personne d\'abord', /Personne 22/.test(await f.locator('.palette__resultat').first().innerText()),
+  `("${(await f.locator('.palette__resultat').first().innerText()).replace(/\n/g, ' | ')}")`);
 await page.keyboard.press('Escape');
 
 console.log(`\n  ${ok} réussis, ${ko} échoués`);
