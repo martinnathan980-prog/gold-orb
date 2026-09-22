@@ -18,6 +18,10 @@ import { el, monter, annoncer } from './ui.js';
    LE POINT DE RACCORDEMENT — la seule chose à modifier en production
    ------------------------------------------------------------------------- */
 
+/* Ce dépôt est public. Ne collez rien ici : renseignez la copie locale,
+   puis ne commitez ni ce fichier ni le dist/ fabriqué depuis lui.
+   tests/audit.mjs refuse une URL de raccordement commitée ; sur une copie
+   raccordée, lancez ETII_RACCORDE=1 node tests/audit.mjs. */
 export const SOURCE = {
   /* URL /exec de l'application web Apps Script (ou du service Cloud Run).
      Elle reçoit { question } en POST et renvoie { reponse, citations }.
@@ -29,7 +33,43 @@ export const SOURCE = {
 
 const LIMITE_QUESTION = 2000;
 
+/* Délai maximal d'un envoi : un appel de modèle passé par Apps Script
+   dépasse facilement huit secondes. Sans borne du tout, un intermédiaire
+   muet laisse le bouton « Demander » désactivé et le message d'attente
+   affichés pour toujours — la promesse ne se règle jamais. */
+const DELAI_ENVOI = 30000;
+
 function texte(v) { return (v === null || v === undefined) ? '' : String(v).trim(); }
+
+/**
+ * fetch() borné dans le temps. Le délai est levé dès l'arrivée des en-têtes ;
+ * un corps qui se bloque ensuite n'est pas couvert — cas bien plus rare,
+ * assumé.
+ * @param {string} url
+ * @param {object} [options] options de fetch(), plus `delai` en millisecondes
+ * @returns {Promise<Response>}
+ */
+async function recupererReponse(url, options) {
+  const opt = options || {};
+  const delai = typeof opt.delai === 'number' ? opt.delai : DELAI_ENVOI;
+  const controleur = typeof AbortController === 'function' ? new AbortController() : null;
+  let expire = false;
+  const minuteur = controleur && delai > 0
+    ? setTimeout(() => { expire = true; controleur.abort(); }, delai)
+    : null;
+  try {
+    return await fetch(url, Object.assign({}, opt, {
+      delai: undefined,
+      signal: controleur ? controleur.signal : undefined
+    }));
+  } catch (cause) {
+    throw new Error(expire
+      ? 'délai de ' + Math.round(delai / 1000) + ' s dépassé'
+      : 'réseau injoignable');
+  } finally {
+    if (minuteur !== null) clearTimeout(minuteur);
+  }
+}
 
 /** L'assistant est-il raccordé ? */
 export function raccorde() {
@@ -47,12 +87,13 @@ export async function demander(question) {
   if (q.length > LIMITE_QUESTION) throw new Error('La question dépasse ' + LIMITE_QUESTION + ' caractères.');
   if (!raccorde()) throw new Error('Aucune source n’est raccordée.');
 
-  const reponse = await fetch(SOURCE.url, {
+  const reponse = await recupererReponse(SOURCE.url, {
     method: 'POST',
     /* text/plain : évite la requête préalable CORS, qu'Apps Script ne
        traite pas. Le corps reste du JSON, lu tel quel côté script. */
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ question: q })
+    body: JSON.stringify({ question: q }),
+    delai: DELAI_ENVOI
   });
   if (!reponse.ok) throw new Error('L’assistant a répondu ' + reponse.status + '.');
 
