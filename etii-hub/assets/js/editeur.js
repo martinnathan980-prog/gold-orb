@@ -23,11 +23,13 @@
    ========================================================================= */
 
 import { el, frag, monter, ouvrirModale, stockage, toast, debounce, annoncer } from './ui.js';
-import { dossiersDepuisCommunications, apercuLecture, apercuAlertes, blocDepuis, TYPES_BLOC,
-  LARGEURS_BLOC, COTES_BLOC } from './kiosque.js';
+import { dossiersDepuisCommunications, apercuLecture, apercuAlertes, blocDepuis, dateLongue,
+  TYPES_BLOC, LARGEURS_BLOC, COTES_BLOC } from './kiosque.js';
 import { analyserCorps, corpsEnTexte, analyserSerie, serieEnTexte, publierCommunication,
   communicationsLocales, supprimerLocale, SOURCE } from './communications.js';
 
+/* Le préfixe du brouillon : la clé réelle y ajoute le pôle de la page d'où
+   l'éditeur est ouvert (voir ouvrirEditeur). */
 const CLE_BROUILLON = 'editeur.communication';
 
 /* Le type `mot` s'appelle « Édito » pour qui écrit : la clé ne change pas
@@ -137,7 +139,12 @@ function decalerBloc(etat, index, delta) {
 
 function brouillonVide(pole) {
   return {
-    type: 'annonce', id: '', date: aujourdhui(), pole: POLES.some(([c]) => c === pole) ? pole : 'ETII',
+    /* L'identifiant naît avec le brouillon et ne change plus : republier
+       remplace alors la ligne de la feuille au lieu d'en ajouter une (la
+       recherche par identifiant du script de synchronisation ne trouvait
+       jamais rien, puisqu'un id neuf était tiré à chaque envoi). */
+    type: 'annonce', id: identifiant(), publiee: false,
+    date: aujourdhui(), pole: POLES.some(([c]) => c === pole) ? pole : 'ETII',
     categorie: '', statut: 'info', titre: '', resume: '', auteur: '', fonction: '',
     blocs: [blocVide('texte')]
   };
@@ -158,11 +165,19 @@ function blocPublie(b) {
   return publie;
 }
 
+/* L'attribution d'une photo libre (CC BY-SA) voyage telle quelle. L'éditeur
+   ne la saisit pas, mais il ne doit pas l'effacer d'une communication qu'on
+   reprend : sans elle, la licence n'est plus respectée. */
+function creditDe(o) {
+  const c = o && o.credit;
+  return c ? { auteur: texte(c.auteur), licence: texte(c.licence), page: texte(c.page) } : undefined;
+}
+
 function contenuPublie(b) {
   switch (b.type) {
     case 'texte': return { type: 'texte', lignes: analyserCorps(b.texte) };
-    case 'image': return { type: 'image', src: texte(b.src), alt: texte(b.alt), legende: texte(b.legende) };
-    case 'galerie': return { type: 'galerie', images: b.images.map((i) => ({ src: texte(i.src), alt: texte(i.alt), legende: texte(i.legende) })).filter((i) => i.src) };
+    case 'image': return { type: 'image', src: texte(b.src), alt: texte(b.alt), legende: texte(b.legende), credit: creditDe(b) };
+    case 'galerie': return { type: 'galerie', images: b.images.map((i) => ({ src: texte(i.src), alt: texte(i.alt), legende: texte(i.legende), credit: creditDe(i) })).filter((i) => i.src) };
     case 'chiffres': return { type: 'chiffres', chiffres: b.chiffres.filter((c) => texte(c.libelle) && texte(c.valeur) !== '')
       .map((c) => ({ libelle: texte(c.libelle), valeur: Number(texte(c.valeur).replace(/\s/g, '').replace('%', '').replace(',', '.')), unite: texte(c.unite), tendance: texte(c.tendance) })) };
     case 'courbe': {
@@ -210,6 +225,15 @@ function valider(etat) {
   if (!texte(etat.titre)) erreurs.push('Le titre est obligatoire.');
   if (!texte(etat.resume)) erreurs.push('Le résumé est obligatoire : c’est ce qu’on lit dans la liste.');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(texte(etat.date)) || Number.isNaN(Date.parse(etat.date))) erreurs.push('La date doit être au format AAAA-MM-JJ.');
+  /* « 2062 » au lieu de « 2026 » épinglerait la communication en tête du
+     fil pour toujours : le kiosque trie les dates comme des chaînes, et il
+     ne montre que ce qui a eu lieu. Comparaison ISO, donc ni fuseau ni
+     Date à manipuler ; le message répète la date fautive, c'est ce qui la
+     rend visible à celui qui vient de la taper. */
+  if (/^\d{4}-\d{2}-\d{2}$/.test(texte(etat.date)) && texte(etat.date) > aujourdhui()) {
+    erreurs.push('Une communication se publie le jour même ou après coup ; le '
+      + (dateLongue(etat.date) || texte(etat.date)) + ' est dans le futur.');
+  }
   etat.blocs.forEach((b, i) => {
     const n = 'Bloc ' + (i + 1) + ' (' + (TYPES_BLOC[b.type] || b.type) + ')';
     if (b.type === 'image' && texte(b.src) && !/^https:\/\/|^assets\//.test(texte(b.src))) erreurs.push(n + ' : l’adresse doit commencer par https:// ou assets/.');
@@ -263,6 +287,13 @@ function selection(objet, cle, paires, surChangement, attrs) {
    3. Les blocs
    ------------------------------------------------------------------------- */
 
+/* Les id des champs sont régénérés à chaque rendu ; l'indice d'une carte,
+   lui, ne bouge pas. C'est par là qu'on rend le clavier au contrôle qui
+   vient de servir après une reconstruction du formulaire. */
+function ciblerDansBloc(index, selecteur) {
+  return '.editeur__bloc[data-index="' + index + '"] ' + selecteur;
+}
+
 function corpsBloc(b, surChangement, rendre) {
   switch (b.type) {
     case 'texte':
@@ -284,9 +315,11 @@ function corpsBloc(b, surChangement, rendre) {
           entree(im, 'alt', { placeholder: 'Description', 'aria-label': 'Description de l’image ' + (i + 1) }, surChangement),
           entree(im, 'legende', { placeholder: 'Légende', 'aria-label': 'Légende de l’image ' + (i + 1) }, surChangement),
           el('button', { type: 'button', class: 'bouton bouton--icone bouton--compact', 'aria-label': 'Retirer l’image ' + (i + 1),
-            onClick: () => { b.images.splice(i, 1); if (!b.images.length) b.images.push({ src: '', alt: '', legende: '' }); rendre(); surChangement(); } }, '×'))),
+            onClick: () => { b.images.splice(i, 1); if (!b.images.length) b.images.push({ src: '', alt: '', legende: '' });
+              rendre('[aria-label="Retirer l’image ' + Math.min(i + 1, b.images.length) + '"]'); surChangement(); } }, '×'))),
         b.images.length < 8 ? el('button', { type: 'button', class: 'bouton bouton--secondaire bouton--compact',
-          onClick: () => { b.images.push({ src: '', alt: '', legende: '' }); rendre(); } }, '+ Une image') : null);
+          onClick: () => { b.images.push({ src: '', alt: '', legende: '' });
+            rendre('[aria-label="Adresse de l’image ' + b.images.length + '"]'); } }, '+ Une image') : null);
     case 'chiffres':
       return el('div', { class: 'pile pile--serree' },
         el('p', { class: 'champ__aide sans-marge' }, 'Jusqu’à quatre tuiles : libellé, valeur, unité, tendance.'),
@@ -335,15 +368,28 @@ function miseEnPageCarte(etat, index, appliquer) {
     return el('p', { class: 'editeur__mise-en-page editeur__mise-en-page--note champ__aide' },
       'En premier bloc, l’image ouvre la communication en bannière, sur toute la largeur.');
   }
+  const garder = (libelle) => ciblerDansBloc(index, '.editeur__segment[aria-label="' + libelle + '"]');
   return el('div', { class: 'editeur__mise-en-page' },
-    segments('Largeur', LARGEURS, largeurDe(b), (cle) => { b.largeur = cle; appliquer(); }),
-    segments('Côté', COTES, coteDe(b), (cle) => { b.cote = cle; appliquer(); }));
+    segments('Largeur', LARGEURS, largeurDe(b), (cle) => { b.largeur = cle; appliquer(null, garder(libelleLargeur(cle))); }),
+    segments('Côté', COTES, coteDe(b), (cle) => { b.cote = cle; appliquer(null, garder(libelleCote(cle))); }));
 }
 
 function carteBloc(etat, index, surChangement, rendre, appliquer) {
   const b = etat.blocs[index];
-  const deplacer = (delta) => { decalerBloc(etat, index, delta); appliquer(); };
-  return el('section', { class: 'editeur__bloc', 'aria-label': 'Bloc ' + (index + 1) + ' : ' + (TYPES_BLOC[b.type] || b.type) },
+  /* Le bouton qui vient de servir garde le clavier — ou son voisin quand le
+     bloc arrive en bout de liste et que ce bouton devient inactif : sinon
+     une seule pression est possible, puis le focus part sur le document. */
+  const deplacer = (delta) => {
+    const vers = decalerBloc(etat, index, delta);
+    const monte = vers === 0 ? false : (vers === etat.blocs.length - 1 ? true : delta < 0);
+    appliquer(null, ciblerDansBloc(vers, '[aria-label="' + (monte ? 'Monter' : 'Descendre') + ' le bloc"]'));
+  };
+  /* Le rappel de rendu porte l'indice de sa carte : un sélecteur de focus
+     demandé par le corps du bloc vise la bonne carte, même quand deux
+     galeries se suivent. */
+  const rendreIci = (selecteur) => rendre(selecteur ? ciblerDansBloc(index, selecteur) : undefined);
+  return el('section', { class: 'editeur__bloc', dataset: { index: String(index) },
+    'aria-label': 'Bloc ' + (index + 1) + ' : ' + (TYPES_BLOC[b.type] || b.type) },
     el('header', { class: 'editeur__bloc-tete' },
       el('span', { class: 'editeur__bloc-rang mono' }, String(index + 1)),
       el('span', { class: 'editeur__bloc-type' }, TYPES_BLOC[b.type] || b.type),
@@ -351,9 +397,10 @@ function carteBloc(etat, index, surChangement, rendre, appliquer) {
         el('button', { type: 'button', class: 'bouton bouton--icone bouton--compact', 'aria-label': 'Monter le bloc', disabled: index === 0 ? true : null, onClick: () => deplacer(-1) }, '↑'),
         el('button', { type: 'button', class: 'bouton bouton--icone bouton--compact', 'aria-label': 'Descendre le bloc', disabled: index === etat.blocs.length - 1 ? true : null, onClick: () => deplacer(1) }, '↓'),
         el('button', { type: 'button', class: 'bouton bouton--icone bouton--compact', 'aria-label': 'Supprimer le bloc',
-          onClick: () => { etat.blocs.splice(index, 1); appliquer(); } }, '×'))),
+          onClick: () => { etat.blocs.splice(index, 1);
+            appliquer(null, ciblerDansBloc(Math.min(index, etat.blocs.length - 1), '[aria-label="Supprimer le bloc"]')); } }, '×'))),
     miseEnPageCarte(etat, index, appliquer),
-    el('div', { class: 'editeur__bloc-corps' }, corpsBloc(b, surChangement, rendre)));
+    el('div', { class: 'editeur__bloc-corps' }, corpsBloc(b, surChangement, rendreIci)));
 }
 
 /* -------------------------------------------------------------------------
@@ -534,7 +581,7 @@ function barreAjout(etat, appliquer) {
     el('span', { class: 'editeur__ajout-libelle' }, 'Ajouter'),
     Object.entries(TYPES_BLOC).map(([type, libelle]) => el('button', {
       type: 'button', class: 'bouton bouton--secondaire bouton--compact',
-      onClick: () => { etat.blocs.push(blocVide(type)); appliquer(); }
+      onClick: () => { etat.blocs.push(blocVide(type)); appliquer(null, etat.blocs.length - 1); }
     }, libelle)));
 }
 
@@ -551,7 +598,12 @@ function barreAjout(etat, appliquer) {
  */
 export function ouvrirEditeur(options) {
   const opts = options || {};
-  const brouillon = stockage.lire(CLE_BROUILLON, null);
+  /* Un brouillon par page d'où l'on écrit. Le pôle est alors toujours celui
+     de la page — un début de communication commencé sur le tableau de bord
+     ne repart plus sous l'étiquette d'un pôle, et l'inverse non plus — et on
+     ne retrouve plus par surprise le début d'une autre communication. */
+  const CLE = CLE_BROUILLON + ':' + (POLES.some(([c]) => c === opts.pole) ? opts.pole : 'ETII');
+  const brouillon = stockage.lire(CLE, null);
   const etat = (brouillon && typeof brouillon === 'object' && Array.isArray(brouillon.blocs))
     ? Object.assign(brouillonVide(opts.pole), brouillon)
     : brouillonVide(opts.pole);
@@ -559,9 +611,17 @@ export function ouvrirEditeur(options) {
 
   const zoneFormulaire = el('div', { class: 'editeur__formulaire' });
   const zoneApercu = el('div', { class: 'editeur__apercu-zone', 'aria-live': 'polite' });
-  const zoneErreurs = el('ul', { class: 'editeur__erreurs', hidden: true });
+  const zoneErreurs = el('ul', { class: 'editeur__erreurs', hidden: true, tabindex: '-1' });
+  const zoneStockage = el('p', { class: 'editeur__erreurs', hidden: true, role: 'status' },
+    'Ce navigateur n’enregistre pas les brouillons. Ne fermez pas cette fenêtre avant d’avoir publié.');
   const zoneLocaux = el('div', { class: 'editeur__locaux' });
   let modale = null;
+
+  /* stockage.ecrire rend false quand le navigateur refuse d'écrire (quota
+     plein en cours de rédaction, cookies bloqués) : sans ce retour, vingt
+     minutes de rédaction disparaissent sans un mot. L'avertissement est en
+     ligne et non en toast, parce qu'il doit tenir toute la rédaction. */
+  function noterEcriture(ok) { if (!ok) zoneStockage.hidden = false; }
 
   function objetApercu() {
     const com = communicationPubliable(etat);
@@ -601,17 +661,20 @@ export function ouvrirEditeur(options) {
   }
 
   const surChangement = debounce(() => {
-    stockage.ecrire(CLE_BROUILLON, etat);
+    noterEcriture(stockage.ecrire(CLE, etat));
     rendreApercu();
     if (!zoneErreurs.hidden) rendreErreurs();
   }, 120);
 
   /* Un geste de structure (ordre, largeur, côté, ajout, retrait) : tout se
-     reconstruit tout de suite, formulaire et aperçu, depuis le même état. */
-  function appliquer(focus) {
+     reconstruit tout de suite, formulaire et aperçu, depuis le même état.
+     `focus` retrouve une poignée de l'aperçu ; `cible` désigne ce qu'il faut
+     retrouver dans le formulaire — un sélecteur de contrôle, ou l'indice
+     d'une carte à amener à l'écran. */
+  function appliquer(focus, cible) {
     surChangement.annuler();
-    stockage.ecrire(CLE_BROUILLON, etat);
-    rendreFormulaire();
+    noterEcriture(stockage.ecrire(CLE, etat));
+    rendreFormulaire(cible);
     rendreApercu(focus);
     if (!zoneErreurs.hidden) rendreErreurs();
   }
@@ -633,18 +696,26 @@ export function ouvrirEditeur(options) {
         } }, 'Retirer')))));
   }
 
-  function rendreFormulaire() {
+  function rendreFormulaire(cible) {
     const estAlerte = etat.type === 'alerte';
     const estMot = etat.type === 'mot';
     const types = el('div', { class: 'editeur__types', role: 'radiogroup', 'aria-label': 'Type de communication' },
       TYPES.map((t) => {
         const id = idChamp();
         const radio = el('input', { type: 'radio', name: 'editeur-type', id, value: t.cle, checked: etat.type === t.cle ? true : null });
-        radio.addEventListener('change', () => { if (radio.checked) { etat.type = t.cle; rendreFormulaire(); surChangement(); } });
+        radio.addEventListener('change', () => { if (radio.checked) { etat.type = t.cle;
+          rendreFormulaire('input[name="editeur-type"][value="' + t.cle + '"]'); surChangement(); } });
         return el('label', { class: 'editeur__type', for: id }, radio,
           el('span', { class: 'editeur__type-libelle' }, t.libelle),
           el('span', { class: 'editeur__type-aide' }, t.aide));
       }));
+
+    /* Le formulaire est un sous-arbre du conteneur qui défile : le remplacer
+       remet ce conteneur en haut. On note où l'on était, on y revient après
+       (le rAF rattrape le recalcul de mise en page), sinon chaque geste
+       éjecte l'auteur hors de l'écran — à l'écran, cliquer ne fait rien. */
+    const corps = zoneFormulaire.closest('.modale__corps');
+    const y = corps ? corps.scrollTop : 0;
 
     monter(zoneFormulaire,
       types,
@@ -653,7 +724,10 @@ export function ouvrirEditeur(options) {
             'Une phrase courte. Le bandeau en fait défiler plusieurs.')
         : frag(
           el('div', { class: 'editeur__rangee' },
-            champ('Date', entree(etat, 'date', { type: 'date' }, surChangement)),
+            /* Le sélecteur grise les jours à venir ; la borne ne suffit pas
+               seule, on peut taper une valeur hors borne — d'où le contrôle
+               de valider() en plus. */
+            champ('Date', entree(etat, 'date', { type: 'date', max: aujourdhui() }, surChangement)),
             estMot ? null : champ('Pôle', selection(etat, 'pole', POLES, surChangement)),
             estMot ? null : champ('Statut', selection(etat, 'statut', STATUTS, surChangement))),
           champ('Titre', entree(etat, 'titre', { placeholder: estMot ? 'Un trimestre qui se tient' : 'Validation du jalon de définition' }, surChangement)),
@@ -667,18 +741,50 @@ export function ouvrirEditeur(options) {
           el('p', { class: 'champ__aide sans-marge' }, 'Dans l’aperçu, chaque bloc a ses poignées : glissez-le entre les autres, tirez son bord pour le rétrécir ou l’élargir, calez-le à gauche ou à droite. Les mêmes réglages sont ici, sur chaque carte.'),
           el('div', { class: 'editeur__blocs' }, etat.blocs.map((_b, i) => carteBloc(etat, i, surChangement, rendreFormulaire, appliquer))),
           barreAjout(etat, appliquer)));
+
+    /* Un bloc qui vient d'être ajouté naît en bas du formulaire, souvent très
+       loin sous la ligne de flottaison : on l'amène à l'écran au lieu de
+       revenir où l'on était. Les deux gestes ne doivent pas se battre. */
+    const carte = typeof cible === 'number' ? zoneFormulaire.querySelectorAll('.editeur__bloc')[cible] : null;
+    if (carte) carte.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    else if (corps) { corps.scrollTop = y; requestAnimationFrame(() => { corps.scrollTop = y; }); }
+    /* Après la restauration du défilement, jamais avant : un focus()
+       programmatique refait défiler tout seul. */
+    const aRetrouver = carte ? carte.querySelector('.champ__controle')
+      : (typeof cible === 'string' ? zoneFormulaire.querySelector(cible) : null);
+    if (aRetrouver) aRetrouver.focus();
   }
 
   async function publier() {
     const erreurs = rendreErreurs();
-    if (erreurs.length) { toast('Complétez ce qui est signalé avant de publier.', 'alerte'); return false; }
+    if (erreurs.length) {
+      toast('Complétez ce qui est signalé avant de publier.', 'alerte');
+      /* La liste des raisons est sous un formulaire long : sans ça, un refus
+         de publication ne se voit pas depuis le pied de la fenêtre. */
+      zoneErreurs.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+      zoneErreurs.focus();
+      annoncer(erreurs.length + ' point' + (erreurs.length > 1 ? 's' : '') + ' à compléter avant de publier.');
+      return false;
+    }
     const com = communicationPubliable(etat);
+    /* L'identifiant retenu dans l'état : un second envoi — après un échec
+       réseau, ou pour corriger une coquille — porte le même, donc il
+       remplace la ligne au lieu d'en ajouter une seconde. */
+    etat.id = com.id;
+    const corrige = etat.publiee === true;
     try {
       const retour = await publierCommunication(etat.type, etat.type === 'alerte' ? texte(etat.titre) : com);
       if (!retour.ok) { toast(retour.message, 'erreur'); return false; }
-      toast(retour.message, 'succes');
-      annoncer('Communication publiée.');
-      stockage.supprimer(CLE_BROUILLON);
+      /* En mode branché, la feuille est à jour mais la page affichée ne l'est
+         pas : le message le dit, au lieu de le laisser croire. */
+      toast(corrige && retour.ou === 'feuille'
+        ? 'Corrigée dans la feuille. Rechargez pour la voir à jour.'
+        : retour.message, 'succes');
+      annoncer(corrige ? 'Communication corrigée.' : 'Communication publiée.');
+      /* Le brouillon n'est plus jeté : il devient la communication qu'on peut
+         corriger dix secondes plus tard, sans rien retaper. */
+      etat.publiee = true;
+      noterEcriture(stockage.ecrire(CLE, etat));
       if (typeof opts.surPublication === 'function') opts.surPublication();
       return true;
     } catch (e) {
@@ -687,9 +793,36 @@ export function ouvrirEditeur(options) {
     }
   }
 
+  /* Une communication déjà partie se corrige dans la même fenêtre : le titre
+     et les deux libellés disent lequel des deux gestes on est en train de
+     faire, et « Nouvelle communication » repasse de l'un à l'autre sans
+     refermer la fenêtre. */
+  function titreModale() { return etat.publiee ? 'Corriger la dernière communication' : 'Ajouter une communication'; }
+
+  /* Repartir de zéro : le même geste que « Vider », mais son nom dit alors
+     ce qu'il fait vraiment — quitter la correction pour une communication
+     neuve, avec un identifiant neuf. */
+  const boutonRepartir = el('button', { type: 'button', class: 'bouton bouton--discret', onClick: () => {
+    Object.assign(etat, brouillonVide(opts.pole)); stockage.supprimer(CLE);
+    rendreFormulaire(); rendreApercu(); zoneErreurs.hidden = true; majMode();
+  } }, 'Vider');
+  const boutonPublier = el('button', { type: 'button', class: 'bouton bouton--principal', onClick: () => {
+    publier().then((ok) => { if (ok && modale) modale.fermer('publie'); });
+  } }, 'Publier');
+
+  function majMode() {
+    const h = modale && modale.boite ? modale.boite.querySelector('.modale__titre') : null;
+    if (h) h.textContent = titreModale();
+    boutonRepartir.textContent = etat.publiee ? 'Nouvelle communication' : 'Vider';
+    boutonPublier.textContent = etat.publiee ? 'Republier' : 'Publier';
+  }
+
   modale = ouvrirModale({
-    titre: 'Ajouter une communication',
+    titre: titreModale(),
     classe: 'modale--editeur',
+    /* Un clic à côté d'une fenêtre de rédaction ne la ferme pas ; Échap
+       reste, lui est volontaire. */
+    fermetureFond: false,
     declencheur: opts.declencheur || null,
     contenu: () => el('div', { class: 'editeur' },
       el('div', { class: 'editeur__colonne' },
@@ -698,6 +831,14 @@ export function ouvrirEditeur(options) {
             ? 'Ce que vous publiez est ajouté à la feuille de publication : tout le monde le voit à la prochaine ouverture.'
             : 'La publication n’est pas encore branchée : ce que vous publiez reste dans ce navigateur, marqué « brouillon ». ',
           texte(SOURCE.publication) ? null : el('a', { href: 'docs/COMMUNICATIONS-GOOGLE-SHEETS.md' }, 'Comment brancher la publication')),
+        /* Le retrait n'a aucun chemin dans le site : le dire, plutôt que de
+           laisser chercher un bouton qui n'existe pas. */
+        texte(SOURCE.publication)
+          ? el('p', { class: 'editeur__intro' }, 'Pour retirer une communication déjà partie, supprimez sa ligne dans la feuille.')
+          : null,
+        /* Avant le formulaire, pas après : c'est une consigne qui doit tenir
+           toute la rédaction, elle ne sert à rien en bas d'une page longue. */
+        zoneStockage,
         zoneFormulaire,
         zoneErreurs,
         zoneLocaux),
@@ -705,17 +846,15 @@ export function ouvrirEditeur(options) {
         el('p', { class: 'editeur__apercu-titre' }, 'Aperçu'),
         zoneApercu)),
     actions: [
-      { libelle: 'Vider', variante: 'discret', ferme: false, onClick: () => {
-        Object.assign(etat, brouillonVide(opts.pole)); stockage.supprimer(CLE_BROUILLON);
-        rendreFormulaire(); rendreApercu(); zoneErreurs.hidden = true; return false;
-      } },
+      boutonRepartir,
       { libelle: 'Fermer', variante: 'secondaire', ferme: true },
-      { libelle: 'Publier', variante: 'principal', ferme: false, onClick: () => { publier().then((ok) => { if (ok && modale) modale.fermer('publie'); }); return false; } }
+      boutonPublier
     ]
   });
 
   rendreFormulaire();
   rendreApercu();
   rendreLocaux();
+  majMode();
   return modale;
 }

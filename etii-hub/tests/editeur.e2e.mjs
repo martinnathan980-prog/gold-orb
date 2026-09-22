@@ -3,7 +3,8 @@
 // Compose une communication de cinq blocs, vérifie l'aperçu, met en page
 // les blocs (listes de gauche, poignées de l'aperçu, clavier), publie dans
 // le navigateur (aucune feuille branchée), recharge, retrouve la mise en
-// page dans la lecture, retire.
+// page dans la lecture, corrige la communication publiée, retire.
+// Le brouillon est rangé par page : la clé porte le pôle (ici ETII).
 
 import { chromium } from 'playwright';
 
@@ -26,7 +27,7 @@ async function centre(selecteur) {
 
 console.log('== Le Communication Center ==');
 await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
-await page.evaluate(() => { try { localStorage.removeItem('etii:editeur.communication'); } catch (_e) { /* sans stockage */ } });
+await page.evaluate(() => { try { localStorage.removeItem('etii:editeur.communication:ETII'); } catch (_e) { /* sans stockage */ } });
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(1000);
 const h = await page.evaluate(() => ({
@@ -49,9 +50,53 @@ await page.click('.modale__actions button:has-text("Publier")');
 await page.waitForTimeout(400);
 t('publier sans titre est refusé, avec les raisons', (await page.locator('.editeur__erreurs li').count()) >= 2 && (await page.locator('.modale').count()) === 1);
 
+/* Le geste central de l'éditeur : cliquer un type de bloc ne doit ni rendre
+   la main en haut du formulaire ni perdre le clavier. */
+await page.locator('.editeur__ajout button:has-text("Chiffres clés")').scrollIntoViewIfNeeded();
+const yAvant = await page.evaluate(() => document.querySelector('.modale--editeur .modale__corps').scrollTop);
+await page.click('.editeur__ajout button:has-text("Chiffres clés")');
+await page.waitForTimeout(400);
+const apresAjout = await page.evaluate(() => ({
+  y: document.querySelector('.modale--editeur .modale__corps').scrollTop,
+  actif: document.activeElement ? document.activeElement.tagName : 'aucun',
+  dansLaCarte: !!(document.activeElement && document.activeElement.closest('.editeur__bloc[data-index="1"]'))
+}));
+t('ajouter un bloc garde la place dans le formulaire et donne le clavier à la nouvelle carte',
+  yAvant > 0 && apresAjout.y > 0 && apresAjout.actif !== 'BODY' && apresAjout.dansLaCarte,
+  JSON.stringify({ yAvant, ...apresAjout }));
+await page.click('.editeur__bloc[data-index="1"] [aria-label="Supprimer le bloc"]');
+await page.waitForTimeout(250);
+t('le bloc d’essai se retire', (await page.locator('.editeur__bloc').count()) === 1);
+
+/* Le radiogroupe des types : après un changement, le clavier reste sur le
+   radio coché — sinon une seule flèche fonctionne, puis le focus s'en va. */
+await page.locator('input[name="editeur-type"][value="annonce"]').focus();
+await page.keyboard.press('ArrowDown');
+await page.waitForTimeout(300);
+await page.keyboard.press('ArrowDown');
+await page.waitForTimeout(300);
+t('les flèches parcourent les types sans perdre le clavier',
+  await page.evaluate(() => document.activeElement && document.activeElement.name === 'editeur-type'
+    && document.activeElement.value === 'alerte'),
+  await page.evaluate(() => (document.activeElement ? document.activeElement.value || document.activeElement.tagName : 'aucun')));
+await page.locator('input[name="editeur-type"][value="annonce"]').check();
+await page.waitForTimeout(300);
+
 await page.fill('input[placeholder="Validation du jalon de définition"]', 'Nouveau banc d’essais harnais');
 await page.fill('textarea[placeholder^="Une ou deux phrases"]', 'Le banc est opérationnel depuis lundi.');
 await page.fill('textarea[placeholder^="-> Ce qui change"]', '-> Ce que ça change\n• Un banc dédié.\n\nV Trois harnais conformes.');
+/* « 2062 » au lieu de « 2026 » épinglerait la communication en tête du fil. */
+const borneDate = await page.locator('input[type="date"]').getAttribute('max');
+await page.fill('input[type="date"]', '2062-09-18');
+await page.click('.modale__actions button:has-text("Publier")');
+await page.waitForTimeout(400);
+const erreursDate = await page.locator('.editeur__erreurs li').allInnerTexts();
+t('une date dans le futur est refusée, en répétant la date fautive, et le champ est borné au jour même',
+  /^\d{4}-\d{2}-\d{2}$/.test(borneDate || '') && erreursDate.some((e) => /futur/.test(e) && /2062/.test(e)),
+  JSON.stringify({ borneDate, erreursDate }));
+await page.fill('input[type="date"]', borneDate);
+await page.waitForTimeout(300);
+
 await page.click('.editeur__ajout button:has-text("Image")');
 await page.locator('input[placeholder^="https://… ou assets/img/communications"]').last().fill('assets/img/porteurs/h145.jpg');
 await page.locator('input[placeholder="Un H160 sur un salon"]').last().fill('Un H145 en vol');
@@ -168,7 +213,7 @@ await page.keyboard.press('ArrowLeft');
 await page.waitForTimeout(250);
 t('le brouillon local conserve largeur et côté',
   await page.evaluate(() => {
-    const b = JSON.parse(localStorage.getItem('etii:editeur.communication')).blocs;
+    const b = JSON.parse(localStorage.getItem('etii:editeur.communication:ETII')).blocs;
     const image = b.find((x) => x.type === 'image');
     const chiffres = b.find((x) => x.type === 'chiffres');
     return image.largeur === 'moitie' && image.cote === 'droite' && chiffres.largeur === 'moitie' && chiffres.cote === '';
@@ -191,6 +236,22 @@ t('la lecture retrouve la mise en page : image en moitié à droite, chiffres en
   (await lecture.locator('.kiosque__bloc--moitie.kiosque__bloc--droite[data-type="image"]').count()) === 1
   && (await lecture.locator('.kiosque__bloc--moitie[data-type="chiffres"]:not(.kiosque__bloc--droite)').count()) === 1
   && (await lecture.locator('.editeur__cadre').count()) === 0);
+await page.click('.kiosque__ajout');
+await page.waitForTimeout(600);
+t('après publication, la fenêtre propose de corriger sans rien retaper',
+  /Corriger/.test(await page.locator('.modale__titre').innerText())
+  && (await page.locator('.modale__actions button:text-is("Republier")').count()) === 1
+  && (await page.locator('.modale__actions button:text-is("Nouvelle communication")').count()) === 1
+  && (await page.inputValue('input[placeholder="Validation du jalon de définition"]')) === 'Nouveau banc d’essais harnais');
+await page.fill('input[placeholder="Validation du jalon de définition"]', 'Nouveau banc d’essais harnais (corrigé)');
+await page.waitForTimeout(300);
+await page.click('.modale__actions button:text-is("Republier")');
+await page.waitForTimeout(1200);
+t('republier corrige la carte au lieu d’en ajouter une seconde',
+  (await page.locator('.kiosque__carte-local').count()) === 1
+  && (await page.locator('.kiosque__carte').count()) === avant + 1
+  && /corrigé/.test(await page.locator('.kiosque__carte:has(.kiosque__carte-local)').first().innerText()));
+
 await page.click('.kiosque__ajout');
 await page.waitForTimeout(400);
 await page.click('.editeur__locaux-liste button:has-text("Retirer")');
