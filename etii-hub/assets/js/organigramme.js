@@ -9,7 +9,7 @@
 
    Une seule barre de recherche et un seul jeu de filtres commandent les
    trois. Une personne s'ouvre en fiche : son rattachement, ses
-   compétences, les documents qu'elle porte, ses collègues, son porteur.
+   compétences, les documents qu'elle porte, ses collègues, son périmètre.
 
    Contrat d'URL : organigramme.html#pole=…&vue=…&personne=…&competence=…
    « pole » vaut ETII (tout le service) ou un code de pôle ; une valeur
@@ -24,6 +24,10 @@ import { portrait } from './portraits.js';
 const SERVICE = 'ETII';
 const CODES = ['ETIIA', 'ETIIE', 'ETIII'];
 const VUES = ['arbre', 'trombinoscope', 'competences'];
+/* Les clés que cette page possède dans le hash. Un hash qui n'en porte
+   aucune n'est pas un état de page — le « #contenu » du lien d'évitement,
+   par exemple — et le relire effacerait le pôle et le filtre en cours. */
+const CLES_URL = ['pole', 'vue', 'competence', 'personne'];
 const MENTION_VIDE = 'à renseigner';
 
 const NIVEAUX = {
@@ -112,6 +116,7 @@ let poleActif = SERVICE;
 let requete = '';
 let competenceActive = '';
 let fiche = null;
+let ficheApi = null;
 let ouvrirTout = false;
 const refs = {};
 
@@ -179,17 +184,18 @@ function pileAvatars(gens, max) {
 
 /* Une squad est un volet : fermé, on voit son nom, son effectif, son lead
    et une pile de visages ; ouvert, toute l'équipe. Une recherche ou un
-   filtre de compétence ouvre les volets qui contiennent une réponse. */
+   filtre de compétence ouvre les volets qui contiennent une réponse.
+   Le lead affiché est celui de la squad (posé par rendreArbre depuis le
+   modèle complet), pas celui des membres retenus par le filtre. */
 function volatSquad(s, ouvert) {
   const membres = s.membres.slice()
     .sort((a, b) => (b.role === 'leader') - (a.role === 'leader') || a.nom.localeCompare(b.nom));
-  const lead = membres.find((g) => g.role === 'leader') || null;
   const details = el('details', { class: 'org-squad', open: ouvert ? true : null, dataSquad: s.nom },
     el('summary', { class: 'org-squad__tete' },
       el('span', { class: 'org-squad__chevron', 'aria-hidden': 'true' }),
       el('span', { class: 'org-squad__infos' },
         el('span', { class: 'org-squad__nom' }, s.nom),
-        el('span', { class: 'org-squad__lead' }, lead ? 'Lead : ' + lead.nom : 'Lead ' + MENTION_VIDE)),
+        el('span', { class: 'org-squad__lead' }, s.lead ? 'Lead : ' + s.lead.nom : 'Lead ' + MENTION_VIDE)),
       pileAvatars(membres, 5),
       el('span', { class: 'org-squad__compte mono' }, membres.length)),
     el('div', { class: 'org-squad__membres' }, membres.map((g) => boutonPersonne(g))));
@@ -205,7 +211,14 @@ function rendreArbre(gens) {
     const responsable = membres.find((g) => g.role === 'responsable') || null;
     const squads = [...new Set(membres.filter((g) => g.squad).map((g) => g.squad))]
       .sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
-    return { code, responsable, squads: squads.map((nom) => ({ nom, membres: membres.filter((g) => g.squad === nom) })), effectif: membres.length };
+    /* Le lead se lit dans le modèle COMPLET : cherché dans `membres`, il
+       disparaîtrait dès qu'un filtre le laisse dehors et la squad
+       annoncerait « Lead à renseigner » alors que le lead existe. */
+    return { code, responsable, squads: squads.map((nom) => ({
+      nom,
+      lead: modele.gens.find((g) => g.role === 'leader' && g.pole === code && g.squad === nom) || null,
+      membres: membres.filter((g) => g.squad === nom)
+    })), effectif: membres.length };
   }).filter((p) => p.effectif > 0);
 
   if (!poles.length && !direction.length) {
@@ -297,7 +310,7 @@ function ouvrirFiche(id, declencheur) {
   const puce = (autre) => el('button', { type: 'button', class: 'org-puce', dataPersonne: autre.id, dataPole: autre.pole },
     portrait(autre, { taille: 'xs' }), el('span', {}, autre.nom));
 
-  ouvrirModale({
+  ficheApi = ouvrirModale({
     titre: g.nom,
     classe: 'modale--large',
     declencheur: declencheur || null,
@@ -314,7 +327,7 @@ function ouvrirFiche(id, declencheur) {
 
       el('dl', { class: 'org-fiche__liste' },
         ligneFiche('Identifiant', el('span', { class: 'mono' }, g.id.toUpperCase())),
-        ligneFiche('Porteur', g.perimetre
+        ligneFiche('Périmètre', g.perimetre
           ? (g.perimetre === 'Transverse'
             ? el('span', {}, 'Transverse')
             : el('a', { class: 'org-lien', href: 'index.html#porteur=' + encodeURIComponent(g.perimetre) }, g.perimetre))
@@ -352,16 +365,19 @@ function ouvrirFiche(id, declencheur) {
         const lignes = [g.nom, valeurOuVide(g.poste),
           g.pole !== SERVICE ? 'Pôle ' + g.pole : 'Direction du service',
           g.squad ? 'Squad : ' + g.squad : '',
-          'Porteur : ' + valeurOuVide(g.perimetre),
+          'Périmètre : ' + valeurOuVide(g.perimetre),
           'Compétences : ' + (g.competences.map((c) => c.nom + ' (' + NIVEAUX[c.niveau].libelle.toLowerCase() + ')').join(', ') || MENTION_VIDE),
-          'Documents portés : ' + g.documents.length].filter(Boolean);
+          'Documents portés : ' + g.documents.length,
+          /* La fiche l'affiche et l'export CSV l'inclut : c'est la clé qui
+             ramène à la personne dans le portail, pas un matricule. */
+          'Identifiant dans le portail : ' + g.id.toUpperCase()].filter(Boolean);
         Promise.resolve(copierTexte(lignes.join('\n')))
           .then((ok) => toast(ok === false ? 'Copie impossible dans ce navigateur.' : 'Fiche copiée.', ok === false ? 'erreur' : 'succes'));
         return false;
       } },
       { libelle: 'Fermer', variante: 'principal', ferme: true }
     ],
-    onFermeture: () => { fiche = null; ecrireUrl(); }
+    onFermeture: () => { fiche = null; ficheApi = null; ecrireUrl(); }
   });
   annoncer('Fiche de ' + g.nom + ' ouverte.');
 }
@@ -371,7 +387,7 @@ function ouvrirFiche(id, declencheur) {
    ------------------------------------------------------------------------- */
 
 function exporterCsv() {
-  const lignes = [['identifiant', 'nom', 'poste', 'role', 'pole', 'squad', 'porteur', 'competences', 'documents_portes']];
+  const lignes = [['identifiant', 'nom', 'poste', 'role', 'pole', 'squad', 'perimetre', 'competences', 'documents_portes']];
   for (const g of visibles()) {
     lignes.push([g.id, g.nom, g.poste, g.role, g.pole, g.squad, g.perimetre,
       g.competences.map((c) => c.nom + ':' + c.niveau).join(' | '), String(g.documents.length)]);
@@ -435,16 +451,36 @@ function appliquerUrl() {
   const v = texte(etat.vue);
   vue = VUES.includes(v) ? v : 'arbre';
   competenceActive = texte(etat.competence);
-  /* La page est transverse : le lien courant est celui du périmètre
-     affiché — le tableau de bord au niveau service, sinon le pôle. */
-  initNav(PAGE_DE_POLE[poleActif] || 'index.html');
+  /* Un lien reçu repart d'une liste propre : le filtre tapé avant
+     l'arrivée n'a rien à voir avec la personne qu'on nous envoie voir.
+     Le garde sur refs.recherche est obligatoire : appliquerUrl() tourne
+     aussi au démarrage, avant que construire() n'ait créé le champ. */
+  requete = '';
+  if (refs.recherche) refs.recherche.value = requete;
+  initNav('organigramme.html');
+}
+
+/* Arrivée par la palette, par un lien collé : #personne=… ouvre la fiche,
+   remplace celle qui est déjà ouverte, la referme si l'identifiant
+   disparaît. Même geste que porteurs.js pour #porteur=.
+
+   L'identifiant demandé est lu AVANT la fermeture : onFermeture remet
+   `personne` à vide dans l'URL de façon synchrone, et ouvrirFiche() le
+   réécrit aussitôt. etatUrl.ecrire passe par history.replaceState, donc
+   aucun hashchange et pas de boucle. */
+function suivrePersonne() {
+  if (!modele) return;
+  const demandee = texte(etatUrl.lire().personne);
+  if (demandee === (fiche || '')) return;
+  if (ficheApi) ficheApi.fermer('url');
+  if (demandee) ouvrirFiche(demandee, null);
 }
 
 function construire(donnees, cible) {
   modele = construireModele(donnees.orga, donnees.docs);
 
   refs.recherche = el('input', { type: 'search', class: 'org-recherche', id: 'org-recherche',
-    placeholder: 'Un nom, un poste, une compétence, un porteur…', autocomplete: 'off' });
+    placeholder: 'Un nom, un poste, une compétence, un périmètre…', autocomplete: 'off' });
   refs.recherche.value = requete;
 
   refs.jetonTexte = el('b', {});
@@ -519,9 +555,7 @@ function construire(donnees, cible) {
   });
 
   rendre();
-
-  const demandee = texte(etatUrl.lire().personne);
-  if (demandee) ouvrirFiche(demandee, null);
+  suivrePersonne();
 }
 
 /* -------------------------------------------------------------------------
@@ -545,8 +579,10 @@ avecEtat('#zone-organigramme',
     estVide: (d) => !d || !d.orga || (!d.orga.direction && !(d.orga.poles || []).length)
   });
 
-etatUrl.ecouter(() => {
+etatUrl.ecouter((etat) => {
   if (!modele) return;
+  if (!CLES_URL.some((cle) => cle in etat)) return;
   appliquerUrl();
   rendre();
+  suivrePersonne();
 });

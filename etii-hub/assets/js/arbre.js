@@ -78,7 +78,7 @@ export function arbreEquipe(bloc, options) {
 
   const champ = el('input', {
     type: 'search', class: 'arbre__recherche', id: prefixe + '-recherche',
-    placeholder: 'Rechercher un nom, un poste, un porteur…', autocomplete: 'off'
+    placeholder: 'Rechercher un nom, un poste, un périmètre…', autocomplete: 'off'
   });
   const resultat = el('span', { class: 'arbre__resultat mono' }, '');
   const bascule = el('button', { type: 'button', class: 'bouton bouton--secondaire bouton--compact', 'aria-pressed': 'false' }, 'Tout déplier');
