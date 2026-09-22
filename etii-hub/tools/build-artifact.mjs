@@ -138,15 +138,37 @@ const textesAssembles = Object.fromEntries(TEXTES.map(n => [n, lire(n)]));
 // (pole.js) ne montre que ses propres porteurs : il n'embarque qu'eux.
 const imagesLues = new Map();
 function dataUri(chemin) {
-  if (!/^assets\/img\/[a-z0-9_\-\/]+\.(jpe?g|png|webp|svg)$/i.test(chemin)) return null;
+  if (!/^assets\/(img|polices)\/[a-z0-9_\-\/]+\.(jpe?g|png|webp|svg|woff2)$/i.test(chemin)) return null;
   if (!imagesLues.has(chemin)) {
     const type = /\.svg$/i.test(chemin) ? 'image/svg+xml'
       : /\.png$/i.test(chemin) ? 'image/png'
-      : /\.webp$/i.test(chemin) ? 'image/webp' : 'image/jpeg';
+      : /\.webp$/i.test(chemin) ? 'image/webp'
+      : /\.woff2$/i.test(chemin) ? 'font/woff2' : 'image/jpeg';
     const octets = readFileSync(join(RACINE, chemin));
     imagesLues.set(chemin, `data:${type};base64,${octets.toString('base64')}`);
   }
   return imagesLues.get(chemin);
+}
+
+// Les url() des feuilles de style pointent vers des fichiers voisins
+// (assets/polices/*.woff2, appelés en ../polices/ depuis assets/css/). Dans
+// un cadre srcdoc, qui n'a AUCUNE URL de base, rien ne les résout : sans
+// cette passe, l'artefact perdrait ses quatre polices sans le moindre
+// message. Elles sont donc intégrées, comme les images.
+const cssIntegre = cssAssemble.replace(
+  /url\(\s*(['"]?)([^'")]+)\1\s*\)/g,
+  (tout, _guillemet, brut) => {
+    if (/^(data:|https?:|#)/i.test(brut)) return tout;
+    const uri = dataUri(brut.replace(/^\.\.\//, 'assets/'));
+    return uri ? `url(${uri})` : tout;
+  });
+
+// Aucun chemin relatif ne doit survivre : il serait muet dans un srcdoc.
+const restant = cssIntegre.match(/url\(\s*['"]?(?!data:)[^'")]+\)/);
+if (restant) {
+  throw new Error(
+    `feuille de style : ${restant[0]} n'a pas pu être intégré — un cadre `
+    + `srcdoc ne le résoudrait pas. Élargissez le garde-fou de dataUri().`);
 }
 
 // Une page n'embarque que les jeux de données que ses modules lisent
@@ -381,7 +403,7 @@ const coquille = `<meta charset="utf-8">
 (function () {
   var PAGES = ${json(pagesAssemblees)};
   // La feuille de style, une seule fois pour les huit pages.
-  var CSS = ${json(cssAssemble)};
+  var CSS = ${json(cssIntegre)};
   var cadre = document.getElementById('cadre');
   var courante = null;
 
