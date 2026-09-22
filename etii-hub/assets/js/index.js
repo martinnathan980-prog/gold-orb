@@ -18,6 +18,7 @@
 import { el, monter, initTheme, initNav, deleguer, ouvrirModale, suivreSommaire } from './ui.js';
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
 import { porteurs, creditsPhotos } from './porteurs.js';
+import { creditPhoto } from './credits.js';
 import { kiosque, dossiersDepuisCommunications, alertesDepuisCommunications } from './kiosque.js';
 import { chargerSuivi, rendreSuivi } from './otq.js';
 import { chargerCommunications } from './communications.js';
@@ -168,11 +169,7 @@ function creditsCommunications(communications) {
       el('img', { src: im.src, alt: '', loading: 'lazy', decoding: 'async', class: 'porteurs__credits-vignette' }),
       el('div', { class: 'porteurs__credits-texte' },
         el('span', { class: 'porteurs__credits-nom' }, im.titre),
-        el('p', { class: 'porteurs__credit sans-marge' },
-          el('span', { class: 'porteurs__credit-mot' }, 'Photo : '),
-          txt(im.credit.auteur) || 'auteur à renseigner',
-          txt(im.credit.licence) ? ' · ' + txt(im.credit.licence) : '',
-          txt(im.credit.page) ? [' · ', el('a', { href: im.credit.page, target: '_blank', rel: 'noopener noreferrer' }, 'Wikimedia Commons')] : null))))));
+        creditPhoto(im.credit))))));
 }
 
 avecEtat('#zone-otq', chargerSuivi, rendreSuiviOTQ, {

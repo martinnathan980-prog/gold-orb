@@ -26,12 +26,16 @@
    fonction. Une alerte est un texte.
    ========================================================================= */
 
-import { chargerDonnees } from './data.js';
+import { chargerDonnees, recupererReponse, DELAI_ENVOI } from './data.js';
 
 /* -------------------------------------------------------------------------
    1. LE POINT DE RACCORDEMENT — la seule chose à modifier en production
    ------------------------------------------------------------------------- */
 
+/* AVERTISSEMENT — CE DÉPÔT EST PUBLIC. Ne collez rien dans ce bloc :
+   renseignez la copie locale du site, puis ne commitez ni ce fichier ni le
+   dist/ fabriqué depuis lui. Tout ce qui est écrit ici est lisible par
+   quiconque ouvre le dépôt ou le fichier autonome. */
 export const SOURCE = {
   /* LECTURE — URL du CSV publié (Fichier → Partager → Publier sur le web →
      CSV) ou URL de la web app Apps Script (/exec) qui renvoie le même CSV.
@@ -40,7 +44,9 @@ export const SOURCE = {
   /* ÉCRITURE — URL de la web app Apps Script (/exec) qui reçoit une
      communication publiée depuis l'éditeur du site et l'ajoute à la
      feuille (doPost de tools/apps-script/communications-sync.gs). Vide :
-     ce que l'on publie reste dans le navigateur, marqué « brouillon ». */
+     ce que l'on publie reste dans le navigateur, marqué « brouillon ».
+     Attention : cet endpoint ÉCRIT dans la feuille du service, et l'URL
+     comme la clé partent aussi dans dist/etii-hub.html, qui est publié. */
   publication: '',
   /* Clé partagée entre l'éditeur et le script : le script refuse tout ce
      qui n'a pas la bonne clé. Ce n'est pas un secret fort — c'est un
@@ -485,8 +491,11 @@ function avecLocales(objet) {
 export async function publierCommunication(type, contenu) {
   const url = texte(SOURCE.publication);
   if (url) {
-    const reponse = await fetch(url, {
+    /* Borné : sans délai maximal, un intermédiaire qui ne répond pas
+       laisserait le bouton « Publier » mort, sans un mot. */
+    const reponse = await recupererReponse(url, {
       method: 'POST',
+      delai: DELAI_ENVOI,
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ cle: texte(SOURCE.cle), type, contenu, ligne: type === 'alerte'
         ? ligneDepuisAnnonce({ titre: contenu, date: aujourdhuiIso() }, 'alerte')
@@ -528,7 +537,10 @@ export async function chargerCommunications() {
   const url = texte(SOURCE.url);
   if (url) {
     try {
-      const reponse = await fetch(url, { cache: 'no-store' });
+      /* Borné : une feuille qui ne répond jamais figeait le Communication
+         center de l'accueil et des trois pages de pôle pour toujours. Le
+         catch ci-dessous relit déjà le fichier du site. */
+      const reponse = await recupererReponse(url, { cache: 'no-store' });
       if (!reponse.ok) throw new Error('réponse ' + reponse.status);
       const objet = communicationsDepuisLignes(analyserCsv(await reponse.text()));
       if (!objet.motDuChef && !objet.annonces.length && !objet.alertes.length) throw new Error('aucune ligne lisible');

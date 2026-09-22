@@ -21,6 +21,7 @@
 
 import { el, monter, mouvementReduit, annoncer, etatUrl } from './ui.js';
 import { sparkline } from './indicateurs.js';
+import { creditPhoto, creditsDistincts } from './credits.js';
 
 const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
                      'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -524,19 +525,35 @@ function blocSerie(serie) {
     debut || fin ? el('span', { class: 'kiosque__serie-periode mono' }, debut, ' – ', fin) : null);
 }
 
+/* Une image introuvable ne laisse jamais d'icône cassée : l'absence se met
+   en mots. L'adresse d'une photo est souvent distante (l'éditeur invite une
+   URL) et un réseau qui filtre l'extérieur casserait l'en-tête pour tous
+   les lecteurs d'un coup. */
+function ligneImageAbsente() {
+  return el('p', { class: 'kiosque__ligne texte-doux' }, 'Image introuvable à cette adresse.');
+}
+
 /* Une image dans le fil du texte : sa légende sous elle, jamais dessus. */
 function blocImage(image) {
-  return el('figure', { class: 'kiosque__figure' },
-    el('img', { src: image.src, alt: image.alt, loading: 'lazy', decoding: 'async' }),
+  const figure = el('figure', { class: 'kiosque__figure' },
+    el('img', { src: image.src, alt: image.alt, loading: 'lazy', decoding: 'async',
+      onError: () => figure.replaceWith(ligneImageAbsente()) }),
     image.legende ? el('figcaption', {}, image.legende) : null);
+  return figure;
 }
 
 /* La galerie : des diapositives qu'on fait défiler, avec leurs repères. */
 function blocGalerie(images) {
   const piste = el('div', { class: 'kiosque__galerie-piste', tabIndex: 0, role: 'group', 'aria-label': 'Galerie de ' + images.length + ' images' },
-    images.map((img, i) => el('figure', { class: 'kiosque__diapo', dataset: { rang: String(i) } },
-      el('img', { src: img.src, alt: img.alt, loading: 'lazy', decoding: 'async' }),
-      img.legende ? el('figcaption', {}, img.legende) : null)));
+    images.map((img, i) => {
+      /* La diapositive reste dans la piste, avec son rang : c'est lui que
+         les boutons et les points de repère suivent. */
+      const diapo = el('figure', { class: 'kiosque__diapo', dataset: { rang: String(i) } },
+        el('img', { src: img.src, alt: img.alt, loading: 'lazy', decoding: 'async',
+          onError: () => monter(diapo, ligneImageAbsente()) }),
+        img.legende ? el('figcaption', {}, img.legende) : null);
+      return diapo;
+    }));
   const points = el('div', { class: 'kiosque__galerie-points', 'aria-hidden': 'true' },
     images.map((_i, i) => el('span', { class: ['kiosque__galerie-point', i === 0 ? 'kiosque__galerie-point--actif' : null] })));
   const racine = el('div', { class: 'kiosque__galerie' }, piste,
@@ -608,6 +625,11 @@ function rendreContenuBloc(bloc) {
 
 function lecture(prefixe) {
   const image = el('figure', { class: 'kiosque__image', hidden: true });
+  /* La bannière ne se charge pas toujours (une adresse distante, un réseau
+     qui filtre l'extérieur) : plutôt qu'une icône cassée, la figure se
+     masque et l'absence se lit en toutes lettres, alignée sur le texte. */
+  const avisImage = el('p', { class: 'kiosque__ligne texte-doux', hidden: true },
+    'Image introuvable à cette adresse.');
   const meta = el('p', { class: 'kiosque__lecture-meta' });
   const titre = el('h3', { class: 'kiosque__lecture-titre', id: prefixe + '-lecture-titre' }, '');
   const chapeau = el('p', { class: 'kiosque__chapeau', hidden: true });
@@ -617,6 +639,11 @@ function lecture(prefixe) {
     'Ces chiffres illustrent le rendu. Ils ne mesurent rien.');
   const blocs = el('div', { class: 'kiosque__blocs' });
   const curseur = el('span', { class: 'kiosque__curseur', 'aria-hidden': 'true', hidden: true });
+  /* Les crédits des photos de la lecture. Une photo sous CC BY-SA affichée
+     en pleine largeur doit créditer son auteur LÀ où elle s'affiche : la
+     fenêtre « Crédits photos » n'existe que sur le tableau de bord, et un
+     espace de pôle n'y donne aucun accès. */
+  const credits = el('div', { class: 'pile pile--serree', hidden: true });
   /* La marque de fin : un court filet terre cuite, centré, après le
      dernier bloc — le lecteur sait qu'il a tout lu. Pas de signature. */
   const fin = el('div', { class: 'kiosque__fin', 'aria-hidden': 'true', hidden: true });
@@ -627,9 +654,9 @@ function lecture(prefixe) {
     tabIndex: -1
   },
   image,
-  el('div', { class: 'kiosque__lecture-interieur' }, meta, titre, chapeau, exemple, blocs, curseur, fin));
+  el('div', { class: 'kiosque__lecture-interieur' }, avisImage, meta, titre, chapeau, exemple, blocs, curseur, credits, fin));
 
-  return { racine, image, meta, titre, chapeau, exemple, blocs, curseur, fin };
+  return { racine, image, avisImage, meta, titre, chapeau, exemple, blocs, curseur, credits, fin };
 }
 
 /* Remplit une lecture avec un dossier. La première image ouvre la lecture
@@ -640,8 +667,19 @@ function remplirLecture(lect, dossier) {
   const premiere = blocs.findIndex((b) => b.type === 'image');
   const hero = premiere === 0 ? blocs.shift() : null;
 
+  lect.avisImage.hidden = true;
   if (hero) {
-    monter(lect.image, el('img', { src: hero.src, alt: hero.alt, loading: 'lazy', decoding: 'async' }));
+    /* lect.image est créée une seule fois et resservie à chaque sélection :
+       on remplace son CONTENU, jamais la figure — sinon une seule photo
+       cassée priverait d'en-tête toutes les lectures suivantes. Le test du
+       parent écarte l'échec d'une image déjà remplacée par une autre. */
+    const photo = el('img', { src: hero.src, alt: hero.alt, loading: 'lazy', decoding: 'async',
+      onError: () => {
+        if (photo.parentNode !== lect.image) return;
+        lect.image.hidden = true;
+        lect.avisImage.hidden = false;
+      } });
+    monter(lect.image, photo);
     lect.image.hidden = false;
   } else {
     monter(lect.image);
@@ -661,6 +699,12 @@ function remplirLecture(lect, dossier) {
   monter(lect.blocs, blocs.length
     ? blocs.map(rendreBloc)
     : el('p', { class: 'kiosque__ligne texte-doux' }, 'Aucun détail publié pour cette communication.'));
+  /* Un seul passage sur tous les blocs images de la lecture, bannière
+     comprise : elle est le premier bloc « image » du dossier. */
+  const credits = creditsDistincts(dossier.blocs.flatMap((b) =>
+    b.type === 'image' ? [b] : (b.type === 'galerie' ? b.images : [])));
+  monter(lect.credits, credits.map(creditPhoto));
+  lect.credits.hidden = !credits.length;
   lect.fin.hidden = false;
 }
 
@@ -782,11 +826,13 @@ export function kiosque(options) {
   function viderLecture() {
     courant = null;
     monter(lect.image); lect.image.hidden = true;
+    lect.avisImage.hidden = true;
     monter(lect.meta);
     lect.titre.textContent = 'Aucune communication';
     lect.chapeau.hidden = true;
     lect.exemple.hidden = true;
     monter(lect.blocs, el('p', { class: 'texte-doux sans-marge' }, 'Rien à lire pour ce pôle pour le moment.'));
+    monter(lect.credits); lect.credits.hidden = true;
     lect.fin.hidden = true;
   }
 
