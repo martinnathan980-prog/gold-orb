@@ -260,6 +260,11 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /Avancement FWD : colonne « Avancement Définition Electrique », groupe « HDK AA 011 »/.test(rapportGates) &&
     !/⚠ La colonne demandée/.test(rapportGates),
     rapportGates.split('\n').find(l => /Avancement FWD/.test(l)));
+  verifier('pour chaque colonne suivie, le diagnostic donne les valeurs lues et leur compte',
+    (rapportGates.match(/^  valeurs lues : /gm) || []).length === 2, rapportGates.split('\n').filter(l => /valeurs lues/.test(l)).join(' / '));
+  const rapportValide = serveurSur(feuilleExemple(10).map((l, i) => i === 4 ? l.map((c, j) => j === 8 ? 'Validé' : c) : l)).contexte.diagnostic();
+  verifier('« Validé » y est marqué « = fini »', /« Validé » 1 = fini/.test(rapportValide),
+    rapportValide.split('\n').filter(l => /valeurs lues/.test(l)).join(' / '));
   verifier('et celle du concept harnais, avec ses comptes',
     /✓ Concept harnais : colonne « Avancement Concept Harnais », groupe « HDK AA 011 »/.test(rapportGates) &&
     /✓ Concept harnais[^\n]*\n  \d+ terminés, \d+ en cours, \d+ à faire, \d+ non renseignés/.test(rapportGates),
@@ -280,14 +285,31 @@ function serveurSur(valeurs, proprietes, fichiers) {
     ['50%', 'encours'], ['75 %', 'encours'], ['En cours', 'encours'], ['0,5', 'encours'],
     ['À faire', 'afaire'], ['à faire', 'afaire'], ['A FAIRE', 'afaire'], ['0%', 'afaire'],
     ['Non commencé', 'afaire'],
-    ['', 'vide'], ['   ', 'vide'], ['-', 'vide'], [null, 'vide'], [undefined, 'vide']
+    ['', 'vide'], ['   ', 'vide'], ['-', 'vide'], [null, 'vide'], [undefined, 'vide'],
+    /* Le vocabulaire de l'extract : « Validé » est fini (CONFIG.VALEURS_FINIES),
+       comparé entier ; « à traiter » est à faire ; le reste est en cours. */
+    ['Validé', 'termine'], ['VALIDE', 'termine'], ['  validé ', 'termine'],
+    ['Non validé', 'encours'], ['Invalidé', 'encours'],
+    ['A traiter', 'afaire'], ['à traiter', 'afaire'], ['Check', 'encours']
   ];
   let tousBons = true, mauvais = '';
   cas.forEach(([valeur, attendu]) => {
     const obtenu = contexte.classerFWD(valeur);
     if (obtenu !== attendu) { tousBons = false; mauvais += ' ' + JSON.stringify(valeur) + '→' + obtenu; }
   });
-  verifier('les vingt cas de classement tombent juste', tousBons, mauvais);
+  verifier('les vingt-huit cas de classement tombent juste, « Validé » compris', tousBons, mauvais);
+  /* La page classe exactement comme le serveur : la même table, côté client. */
+  const pageClasse = await (async () => {
+    const nav0 = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+    const p0 = await (await nav0.newContext()).newPage();
+    await p0.goto('file://' + path.join(__dirname, '..', 'prototype', 'apercu.html'));
+    await p0.waitForTimeout(900);
+    const r = await p0.evaluate(c => c.map(([v]) => window.__classer(v)), cas);
+    await nav0.close();
+    return r;
+  })();
+  verifier('la page classe chaque cas comme le serveur',
+    cas.every(([v, att], i) => pageClasse[i] === att), JSON.stringify(cas.filter(([v, att], i) => pageClasse[i] !== att)));
   verifier('« à faire » n\'est pas confondu avec une cellule vide',
     contexte.classerFWD('À faire') !== contexte.classerFWD(''));
 
@@ -1134,6 +1156,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
     sansMention: !document.getElementById('releve-semaine'),
     repere: ([...document.querySelectorAll('svg.graphe .repere-auj')].map(x => x.textContent)[0]) || '',
     etats: [...document.querySelectorAll('#etats .etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
+    familles: [...document.querySelectorAll('#etats .etat-btn')].map(b => b.dataset.famille),
+    libelles: [...document.querySelectorAll('#etats .etat-haut')].map(b => b.textContent.trim()),
     colonnes: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim()),
     lignes: document.querySelectorAll('#corps-tableau tr').length,
     dims: [...document.querySelectorAll('#dim-critique option')].map(o => o.value),
@@ -1233,7 +1257,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length === 186 &&
       !!document.querySelector('svg.graphe') &&
       document.querySelectorAll('.critique-ligne').length > 0 &&
-      document.querySelectorAll('#etats .etat-n').length === 4));
+      [...document.querySelectorAll('#etats .etat-n')].reduce((t, e) => t + (+e.textContent.replace(/\s/g, '')), 0) === 186));
   verifier('et elle s\'affiche comme du texte dans le tableau',
     await p.evaluate(() => [...document.querySelectorAll('#corps-tableau td')]
       .some(td => td.textContent.includes('</script>'))));
@@ -1241,10 +1265,17 @@ function serveurSur(valeurs, proprietes, fichiers) {
   // Le chiffre affiché doit correspondre à ce que le serveur a compté.
   const attendu = { termine: 0, encours: 0, afaire: 0, vide: 0 };
   paquet.plans.forEach(pl => { attendu[contexte.classerFWD(pl.avancement)]++; });
-  verifier('l\'écran et le serveur comptent pareil',
-    vu.etats[0] === attendu.termine && vu.etats[1] === attendu.encours &&
-    vu.etats[2] === attendu.afaire && vu.etats[3] === attendu.vide,
-    JSON.stringify(vu.etats) + ' vs ' + JSON.stringify(attendu));
+  /* L'écran montre les valeurs de la colonne ; rangées par famille, elles
+     retombent sur les comptes du serveur. */
+  const parFamille = { termine: 0, encours: 0, afaire: 0, vide: 0 };
+  vu.familles.forEach((f, i) => { parFamille[f] += vu.etats[i]; });
+  verifier('l\'écran et le serveur comptent pareil : les valeurs affichées, rangées par famille, font les comptes du serveur',
+    JSON.stringify(parFamille) === JSON.stringify(attendu),
+    JSON.stringify([vu.libelles, vu.etats]) + ' vs ' + JSON.stringify(attendu));
+  verifier('les pourcentages se regroupent — 100 %, entre 0 et 100 %, 0 % — et les mots restent chacun le leur',
+    vu.libelles.indexOf('100 %') !== -1 && vu.libelles.indexOf('Entre 0 et 100 %') !== -1 &&
+    vu.libelles.indexOf('Terminé') !== -1 && !vu.libelles.some(l => /^\d+\s?%$/.test(l) && l !== '100 %' && l !== '0 %'),
+    JSON.stringify(vu.libelles));
 
   // Les interactions essentielles marchent-elles sur des données réelles ?
   await p.fill('#recherche', 'UD-24'); await p.waitForTimeout(400);
@@ -1325,10 +1356,11 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pg.click('#choix-indicateur button[data-indicateur="concept"]'); await pg.waitForTimeout(800);
   const vgConcept = await pg.evaluate(() => ({
     etats: [...document.querySelectorAll('#etats .etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
+    termines: +document.querySelector('#phrase b').textContent.replace(/\s/g, ''),
     titre: document.getElementById('titre-groupe').textContent
   }));
   verifier('données réelles : l’interrupteur est là, et le concept harnais compte ses terminés sur sa colonne (' + mConceptTermine + ')',
-    interrupteurReel && vgConcept.etats[0] === mConceptTermine && vgConcept.etats.reduce((x, y) => x + y, 0) === 186 && /^Concept harnais par /.test(vgConcept.titre),
+    interrupteurReel && vgConcept.termines === mConceptTermine && vgConcept.etats.reduce((x, y) => x + y, 0) === 186 && /^Concept harnais par /.test(vgConcept.titre),
     JSON.stringify([interrupteurReel, vgConcept, mConceptTermine]));
   await pg.click('#choix-indicateur button[data-indicateur="def"]'); await pg.waitForTimeout(700);
 
@@ -1458,7 +1490,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     JSON.stringify(jrn.ouvertes));
   verifier('le résumé est écrit en français correct',
     jrn.resumes.every(r => !/en en cour|passés en terminé/.test(r)) &&
-    jrn.resumes.some(r => /terminés?|passés? en cours|repassés? à faire/.test(r)),
+    jrn.resumes.some(r => /passés? à « [^»]+ »/.test(r)),
     JSON.stringify(jrn.resumes[0]));
   verifier('chaque ligne nomme le plan et son passage',
     /UD-/.test(jrn.premiere || ''), jrn.premiere);

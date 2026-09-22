@@ -1057,11 +1057,23 @@
      « vide ». */
   function cleValeur(v) {
     var n = norm(v);
-    return (n === '' || n === '-') ? 'vide' : n.replace(/\s+/g, '');
+    if (n === '' || n === '-') return 'vide';
+    /* Un pourcentage n'est pas un état à lui seul : « 20 % », « 45 % »… se
+       rangent ensemble, entre 0 et 100 ; 0 % et 100 % chacun à part. Les
+       mots, eux, restent chacun le leur. */
+    if (/^[\d\s.,%]+$/.test(n)) {
+      var x = parseFloat(n.replace(/[\s%]/g, '').replace(',', '.'));
+      if (!isNaN(x)) return x >= 100 ? 'pct100' : x <= 0 ? 'pct0' : 'pct';
+    }
+    return n.replace(/\s+/g, '');
   }
   function libelleValeur(v) {
-    var brut = String(v == null ? '' : v).trim();
-    return cleValeur(brut) === 'vide' ? 'Non renseigné' : brut;
+    var k = cleValeur(v);
+    if (k === 'vide') return 'Non renseigné';
+    if (k === 'pct100') return '100 %';
+    if (k === 'pct0') return '0 %';
+    if (k === 'pct') return 'Entre 0 et 100 %';
+    return String(v == null ? '' : v).trim();
   }
   var RANG_FAMILLE = { termine: 0, encours: 1, afaire: 2, vide: 3 };
   function lireValeurs(plans) {

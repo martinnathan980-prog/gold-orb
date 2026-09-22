@@ -956,28 +956,6 @@ function donneesJSONPourPage() {
 function diagnostic() {
   const lignes = [];
   function dire(texte) { lignes.push(texte); }
-  /* Les valeurs d'une colonne suivie, avec leur compte et ce qu'elles
-     valent pour la page (fini ou pas) : c'est ce qui permet de vérifier que
-     « Validé » compte bien comme fini. Seulement des valeurs d'état — peu
-     nombreuses et courtes ; une colonne de texte libre ne se recopie pas. */
-  function direValeurs(plans, cle) {
-    const par = {}, ordre = [];
-    plans.forEach(function (p) {
-      const brut = String(p[cle] === null || p[cle] === undefined ? '' : p[cle]).trim();
-      const k = normaliser(brut);
-      if (!(k in par)) { par[k] = { brut: brut, n: 0 }; ordre.push(k); }
-      par[k].n++;
-    });
-    if (ordre.length > 20 || ordre.some(function (k) { return par[k].brut.length > 30; })) {
-      dire('  ' + ordre.length + ' valeurs différentes : trop, ou trop longues, pour être des états — rien n\'est recopié.');
-      return;
-    }
-    ordre.sort(function (a, b) { return par[b].n - par[a].n; });
-    dire('  valeurs lues : ' + ordre.map(function (k) {
-      const v = par[k];
-      return (v.brut === '' ? '(vide)' : '« ' + v.brut + ' »') + ' ' + v.n + (classerFWD(v.brut) === 'termine' ? ' = fini' : '');
-    }).join(' · '));
-  }
 
   let classeur = null;
   try {
@@ -1177,6 +1155,29 @@ function diagnostiquerSecondeBase(classeur, dire) {
  * historique. Renvoie faux quand l'onglet n'est pas exploitable — le
  * diagnostic continue avec les autres contrats plutôt que de s'arrêter.
  */
+/* Les valeurs d'une colonne suivie, avec leur compte et ce qu'elles
+   valent pour la page (fini ou pas) : c'est ce qui permet de vérifier que
+   « Validé » compte bien comme fini. Seulement des valeurs d'état — peu
+   nombreuses et courtes ; une colonne de texte libre ne se recopie pas. */
+function direValeurs(dire, plans, cle) {
+  const par = {}, ordre = [];
+  plans.forEach(function (p) {
+    const brut = String(p[cle] === null || p[cle] === undefined ? '' : p[cle]).trim();
+    const k = normaliser(brut);
+    if (!(k in par)) { par[k] = { brut: brut, n: 0 }; ordre.push(k); }
+    par[k].n++;
+  });
+  if (ordre.length > 20 || ordre.some(function (k) { return par[k].brut.length > 30; })) {
+    dire('  ' + ordre.length + ' valeurs différentes : trop, ou trop longues, pour être des états — rien n\'est recopié.');
+    return;
+  }
+  ordre.sort(function (a, b) { return par[b].n - par[a].n; });
+  dire('  valeurs lues : ' + ordre.map(function (k) {
+    const v = par[k];
+    return (v.brut === '' ? '(vide)' : '« ' + v.brut + ' »') + ' ' + v.n + (classerFWD(v.brut) === 'termine' ? ' = fini' : '');
+  }).join(' · '));
+}
+
 function diagnostiquerContrat(classeur, contrat, dire) {
   let feuille = null;
   try {
@@ -1216,7 +1217,7 @@ function diagnostiquerContrat(classeur, contrat, dire) {
       modele.plans.forEach(function (p) { compte[classerFWD(p.avancement)]++; });
       dire('  ' + compte.termine + ' terminés, ' + compte.encours + ' en cours, ' +
            compte.afaire + ' à faire, ' + compte.vide + ' non renseignés');
-      direValeurs(modele.plans, 'avancement');
+      direValeurs(dire, modele.plans, 'avancement');
     }
     if (CONFIG.COLONNE_CONCEPT) {
       const colConcept = modele.cleConcept ? modele.colonnes.filter(function (c) { return c.cle === modele.cleConcept; })[0] : null;
@@ -1226,7 +1227,7 @@ function diagnostiquerContrat(classeur, contrat, dire) {
         dire('✓ Concept harnais : colonne « ' + colConcept.titre + ' »' + (colConcept.groupe ? ', groupe « ' + colConcept.groupe + ' »' : ''));
         dire('  ' + compteC.termine + ' terminés, ' + compteC.encours + ' en cours, ' +
              compteC.afaire + ' à faire, ' + compteC.vide + ' non renseignés');
-        direValeurs(modele.plans, modele.cleConcept);
+        direValeurs(dire, modele.plans, modele.cleConcept);
       } else {
         dire('– Concept harnais : colonne « ' + CONFIG.COLONNE_CONCEPT + ' » introuvable dans cet extract — pas d\'interrupteur.');
       }
