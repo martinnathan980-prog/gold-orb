@@ -118,6 +118,10 @@ function alleger(css) {
 const cssAssemble = CSS.map(n =>
   `/* ---- ${n}.css ---- */\n` + alleger(lire(`assets/css/${n}.css`))).join('\n');
 
+// La feuille assemblée est publiée UNE fois dans la coquille ; chaque page
+// n'en porte que ce jeton, remplacé juste avant d'être posée en srcdoc.
+const JETON_CSS = '/*__CSS__*/';
+
 const donneesAssemblees = Object.fromEntries(
   DONNEES.map(n => [n, JSON.parse(lire(`assets/data/${n}.json`))]));
 
@@ -134,15 +138,37 @@ const textesAssembles = Object.fromEntries(TEXTES.map(n => [n, lire(n)]));
 // (pole.js) ne montre que ses propres porteurs : il n'embarque qu'eux.
 const imagesLues = new Map();
 function dataUri(chemin) {
-  if (!/^assets\/img\/[a-z0-9_\-\/]+\.(jpe?g|png|webp|svg)$/i.test(chemin)) return null;
+  if (!/^assets\/(img|polices)\/[a-z0-9_\-\/]+\.(jpe?g|png|webp|svg|woff2)$/i.test(chemin)) return null;
   if (!imagesLues.has(chemin)) {
     const type = /\.svg$/i.test(chemin) ? 'image/svg+xml'
       : /\.png$/i.test(chemin) ? 'image/png'
-      : /\.webp$/i.test(chemin) ? 'image/webp' : 'image/jpeg';
+      : /\.webp$/i.test(chemin) ? 'image/webp'
+      : /\.woff2$/i.test(chemin) ? 'font/woff2' : 'image/jpeg';
     const octets = readFileSync(join(RACINE, chemin));
     imagesLues.set(chemin, `data:${type};base64,${octets.toString('base64')}`);
   }
   return imagesLues.get(chemin);
+}
+
+// Les url() des feuilles de style pointent vers des fichiers voisins
+// (assets/polices/*.woff2, appelés en ../polices/ depuis assets/css/). Dans
+// un cadre srcdoc, qui n'a AUCUNE URL de base, rien ne les résout : sans
+// cette passe, l'artefact perdrait ses quatre polices sans le moindre
+// message. Elles sont donc intégrées, comme les images.
+const cssIntegre = cssAssemble.replace(
+  /url\(\s*(['"]?)([^'")]+)\1\s*\)/g,
+  (tout, _guillemet, brut) => {
+    if (/^(data:|https?:|#)/i.test(brut)) return tout;
+    const uri = dataUri(brut.replace(/^\.\.\//, 'assets/'));
+    return uri ? `url(${uri})` : tout;
+  });
+
+// Aucun chemin relatif ne doit survivre : il serait muet dans un srcdoc.
+const restant = cssIntegre.match(/url\(\s*['"]?(?!data:)[^'")]+\)/);
+if (restant) {
+  throw new Error(
+    `feuille de style : ${restant[0]} n'a pas pu être intégré — un cadre `
+    + `srcdoc ne le résoudrait pas. Élargissez le garde-fou de dataUri().`);
 }
 
 // Une page n'embarque que les jeux de données que ses modules lisent
@@ -256,11 +282,13 @@ function modulesDeLaPage(nom, html) {
 function construirePage(nom) {
   let html = lire(`${nom}.html`);
 
-  // Les quatre feuilles deviennent un seul bloc de style intégré.
+  // Les six feuilles deviennent un seul bloc de style intégré. Le style
+  // n'est pas recopié ici : le jeton est remplacé par la coquille au moment
+  // de poser le srcdoc, sinon les huit pages porteraient huit copies de la
+  // même feuille — plus de 3 Mo.
   html = html.replace(
     /[ \t]*<link rel="stylesheet" href="assets\/css\/[a-z]+\.css">\n?/g, '');
-  html = html.replace(/(<\/title>)/,
-    `$1\n  <style>\n${cssAssemble}\n  </style>`);
+  html = html.replace(/(<\/title>)/, `$1\n  <style>${JETON_CSS}</style>`);
 
   // Le module de page devient un script intégré, dépendances comprises.
   const moduleDePage = bles(modulesDeLaPage(nom, html), nom);
@@ -354,7 +382,16 @@ function json(valeur) {
 const pagesAssemblees = Object.fromEntries(
   PAGES.map(n => [n, construirePage(n)]));
 
-const coquille = `<title>ETII Hub</title>
+// Le charset vient EN TÊTE, avant tout le reste. Sans lui, le document ne
+// se décode en UTF-8 que par chance : le premier <meta charset> du fichier
+// est celui de la page index intégrée, et il ne tombe dans la fenêtre de
+// pré-analyse de 1024 octets du navigateur que tant que rien de volumineux
+// ne le précède. Servi en HTTP sans en-tête de charset, l'artefact
+// mojibake — et la classe de caractères combinants écrite en clair dans
+// sept modules devient une expression régulière invalide, ce qui tue tout
+// le JavaScript du fichier.
+const coquille = `<meta charset="utf-8">
+<title>ETII Hub</title>
 <style>
   html, body { height: 100%; margin: 0; background: #06080f; }
   #cadre { display: block; width: 100%; height: 100%; border: 0; }
@@ -365,6 +402,8 @@ const coquille = `<title>ETII Hub</title>
 <script>
 (function () {
   var PAGES = ${json(pagesAssemblees)};
+  // La feuille de style, une seule fois pour les huit pages.
+  var CSS = ${json(cssIntegre)};
   var cadre = document.getElementById('cadre');
   var courante = null;
 
@@ -378,7 +417,9 @@ const coquille = `<title>ETII Hub</title>
     if (!PAGES[nom]) nom = 'index';
     courante = nom;
     try { history.replaceState(null, '', '#' + nom + (ancre || '')); } catch (e) {}
-    cadre.srcdoc = PAGES[nom];
+    // Fonction de remplacement, et non chaîne : un « $& » dans la feuille
+    // serait interprété par String.replace s'il s'agissait d'une chaîne.
+    cadre.srcdoc = PAGES[nom].replace('${JETON_CSS}', function () { return CSS; });
   }
 
   // Les liens internes du site changent de page sans quitter le fichier.
@@ -405,5 +446,13 @@ const coquille = `<title>ETII Hub</title>
 mkdirSync(join(RACINE, 'dist'), { recursive: true });
 writeFileSync(join(RACINE, 'dist/etii-hub.html'), coquille);
 
-const ko = (Buffer.byteLength(coquille) / 1024).toFixed(0);
-console.log(`dist/etii-hub.html écrit — ${ko} ko, ${PAGES.length} pages intégrées`);
+// La taille est le seul chiffre qui compte au moment de publier : la limite
+// est de 16 Mo et le projet se donne 15 Mo. Elle s'affiche ici, pas au pire
+// moment, et l'alerte tombe à 13 Mo pour laisser deux photos de marge.
+const octets = Buffer.byteLength(coquille);
+const mo = octets / 1048576;
+console.log(`dist/etii-hub.html : ${mo.toFixed(2)} Mo, ${PAGES.length} pages intégrées`);
+if (mo > 13) {
+  console.log(`\n  ⚠  ATTENTION — le fichier dépasse 13 Mo (plafond de publication : 15 Mo).`);
+  console.log(`     Allégez avant de publier : les photos pèsent le plus lourd.\n`);
+}

@@ -1,5 +1,11 @@
 # ETII Hub — Spécification de reconstruction
 
+Cahier des charges de la réécriture de septembre 2026. Les §0, §1, §1bis, §2
+et §6 disent ce qu'on voulait construire et ne se relisent que pour
+comprendre une décision. Les §3, §5, §7 et §8 restent le contrat que le code
+respecte, et les en-têtes de modules y renvoient. Le §4 décrit un inventaire
+de pages périmé : sur l'état réel du site, la référence est le README.
+
 Portail métier d'un service d'ingénierie. Remplace une implémentation
 Google Sites + Google Apps Script jugée trop lourde et non optimisée.
 
@@ -108,21 +114,24 @@ Site statique. Aucune étape de build. Ouvrable par double-clic ou
 servable par n'importe quel serveur de fichiers.
 
     etii-hub/
-      index.html              Tableau de bord ETII (indicateurs, OTQ)
+      index.html              Tableau de bord : Communication center, Porteurs, Suivi OTQ / OTD
       etiia.html              Espace du pôle ETIIA  ─┐
       etiie.html              Espace du pôle ETIIE   ├─ même gabarit
       etiii.html              Espace du pôle ETIII  ─┘  (pole.js)
-      reunions.html           Comptes-rendus + points à venir
+      reunions.html           Comptes-rendus de réunion
       organigramme.html       Équipes et rôles
       faq.html                Base de connaissances
       docsearch.html          Recherche documentaire  <-- LE CŒUR
       assets/
         css/
-          polices.css         Polices embarquées (Plex Sans, Plex Mono, Newsreader)
+          polices.css         Déclarations @font-face (Plex Sans, Plex Mono, Newsreader)
           tokens.css          Variables : couleurs, espacements, typo, ombres
           base.css            Reset, typographie, primitives, utilitaires
           components.css      Cartes, boutons, champs, badges, modales
+          modules.css         Les blocs propres à une page
           skin.css            Matière : papier, filets, mono, marine
+        polices/              Les quatre fichiers .woff2
+        img/porteurs/         Photos des appareils (Wikimedia Commons)
         js/
           data.js             Chargement JSON + cache + erreurs
           search.js           Moteur de recherche (§5)
@@ -136,7 +145,11 @@ servable par n'importe quel serveur de fichiers.
           organigramme.json
           faq.json
           documents.json      Corpus du moteur de recherche
+          flotte.json         Les appareils portés, leurs fiches et crédits photo
           indicateurs.json    OTQ, OTD, écarts, charge — 12 mois
+          otq-exemple.csv     Suivi OTQ / OTD tant qu'aucune feuille n'est branchée
+      tools/build-artifact.mjs  Fabrique dist/etii-hub.html, le fichier autonome
+      tests/                  audit.mjs + les suites Node et Playwright
       SPEC.md
       README.md
 
@@ -145,29 +158,49 @@ Chaque page : un seul `<script type="module">`. Pas de global partagé.
 ### Contrat de données
 
 Le JSON est la source de vérité. `data.js` expose
-`loadData(nom)` → `Promise<objet>`, avec cache mémoire, timeout, et un
+`chargerDonnees(nom)` → `Promise<objet>`, avec cache mémoire, timeout, et un
 état d'erreur affichable. Toute page doit rester utilisable (état vide
 explicite) si son JSON manque ou est invalide.
 
-## 4. Les six pages
+## 4. Les pages
 
-### 4.1 `index.html` — Dispatcher
-Trois cartes (ETIIA / ETIIE / ETIII) : titre, sous-titre métaphorique,
-description, lien. Plus un accès proéminent à la recherche documentaire.
-Garder l'effet de relief au survol mais en CSS, léger, désactivé sous
-`prefers-reduced-motion`. Navigation clavier complète.
+> Section périmée sur l'inventaire. Elle a été écrite avant que le tableau
+> de bord et les espaces de pôle ne prennent leur forme actuelle. Ce qui
+> suit est corrigé au mieux ; sur l'état réel du site, la référence est le
+> README.
 
+### 4.1 `index.html` — Tableau de bord
+Trois sections, dans cet ordre : **Communication center** (le kiosque, plus
+l'accès à l'éditeur « Ajouter une communication »), **Porteurs** (la galerie
+des appareils par catégorie, chaque tuile ouvrant sa fiche) et **Suivi
+OTQ / OTD**. Les trois pôles ne sont pas des cartes de cette page : ils
+vivent dans la barre de navigation, présente sur toutes les pages. Un
+sommaire collant suit la lecture. Navigation clavier complète.
+
+### 4.2 Les communications
 Liste chronologique d'annonces + panneau de détail.
 Chaque annonce : date, statut (`info` | `urgent` | `succes`), catégorie,
-titre, résumé, corps.
-Le corps est un tableau de lignes typées — **le format legacy à base de
-préfixes `!`, `V `, `->` est remplacé par des types explicites** :
-`{ "type": "alerte" | "valide" | "titre" | "puce" | "vide", "texte": "..." }`.
+titre, résumé, et son contenu.
+Ce contenu s'écrit de deux façons, toutes deux lues par `kiosque.js` :
+`corps`, un tableau de lignes typées — **le format legacy à base de préfixes
+`!`, `V `, `->` est remplacé par des types explicites** :
+`{ "type": "alerte" | "valide" | "titre" | "puce" | "vide", "texte": "..." }` ;
+ou `blocs`, la forme riche de l'éditeur (texte, image, chiffres, courbe,
+encadré, pastilles), qui porte en plus une largeur et un côté.
 Bandeau d'alertes défilant : conserver l'idée, mais en CSS pur, en pause
 au survol et au focus, et masqué sous `prefers-reduced-motion`.
 
+### 4.2 bis `etiia.html` / `etiie.html` / `etiii.html` — Les espaces de pôle
+Une seule page (`pole.js`), paramétrée par `<body data-pole="…">`, et la
+deuxième surface du site. Quatre sections : la communication du pôle, « en
+un coup d'œil » (repères chiffrés, à qui s'adresser, par porteur),
+« Équipe & référents » avec un commutateur « Par squad / Par compétence »,
+et la FAQ du pôle. Rien n'y est saisi à la main : chaque section est
+calculée depuis les mêmes JSON que le reste du site.
+
 ### 4.3 `reunions.html` — Réunions
-**Deux onglets** : « Comptes-rendus » et « Prochains points ».
+**Un seul onglet est publié**, « Comptes-rendus » ; la barre d'onglets ne
+s'affiche donc pas (`reunions.js`, table `ONGLETS`).
 Chaque entrée : titre, date, lieu, objectif/synthèse, liste de sujets
 (titre + notes), **liste d'actions**, et pour les CR **liste de décisions**.
 Recherche dans la liste. Export : impression via CSS `@media print`
@@ -183,6 +216,10 @@ obligatoire** (menu « Déplacer vers… » sur chaque carte). Les changements
 sont locaux (mémoire + `localStorage`), avec un bouton de réinitialisation.
 Recherche/filtre qui met en retrait les non-correspondances.
 Zoom et panoramique conservés, au clavier également.
+
+> Non retenu : la réorganisation par glisser-déposer n'a pas été construite,
+> ni donc son équivalent clavier. L'organigramme se lit, il ne se réarrange
+> pas. Ne pas reprendre ce paragraphe comme une promesse tenue.
 
 ### 4.5 `faq.html` — Base de connaissances
 Liste de questions + réponse affichée. Recherche avec classement par

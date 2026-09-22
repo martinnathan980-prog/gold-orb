@@ -23,6 +23,10 @@ import { tuileIndicateur, graphiqueLignes } from './indicateurs.js';
    1. LE POINT DE RACCORDEMENT — la seule chose à modifier en production
    ------------------------------------------------------------------------- */
 
+/* Ce dépôt est public. Ne collez rien ici : renseignez la copie locale,
+   puis ne commitez ni ce fichier ni le dist/ fabriqué depuis lui.
+   tests/audit.mjs refuse une URL de raccordement commitée ; sur une copie
+   raccordée, lancez ETII_RACCORDE=1 node tests/audit.mjs. */
 export const SOURCE = {
   /* URL du CSV publié (Fichier → Partager → Publier sur le web → CSV) ou
      URL d'une web app Apps Script qui renvoie le même CSV. Vide : exemple. */
@@ -38,8 +42,47 @@ const DEFINITIONS = {
     aide: 'Part des livrables remis à la date engagée.', unite: '%', sens: 'haut' }
 };
 
+/* Même borne que les chargements de data.js : une feuille de calcul publiée
+   qui met plus de huit secondes à répondre est de fait injoignable. */
+const DELAI_LECTURE = 8000;
+
 const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
                      'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+
+/* -------------------------------------------------------------------------
+   1bis. Le seul appel réseau du module, borné dans le temps
+   ------------------------------------------------------------------------- */
+
+/**
+ * fetch() borné dans le temps. Sans borne, une feuille qui ne répond jamais
+ * laisse la section en squelette pour toujours : avecEtat() attend la
+ * promesse sans minuteur. Le délai est levé dès l'arrivée des en-têtes ; un
+ * corps qui se bloque ensuite n'est pas couvert — cas bien plus rare, assumé.
+ * @param {string} url
+ * @param {object} [options] options de fetch(), plus `delai` en millisecondes
+ * @returns {Promise<Response>}
+ */
+async function recupererReponse(url, options) {
+  const opt = options || {};
+  const delai = typeof opt.delai === 'number' ? opt.delai : DELAI_LECTURE;
+  const controleur = typeof AbortController === 'function' ? new AbortController() : null;
+  let expire = false;
+  const minuteur = controleur && delai > 0
+    ? setTimeout(() => { expire = true; controleur.abort(); }, delai)
+    : null;
+  try {
+    return await fetch(url, Object.assign({}, opt, {
+      delai: undefined,
+      signal: controleur ? controleur.signal : undefined
+    }));
+  } catch (cause) {
+    throw new Error(expire
+      ? 'délai de ' + Math.round(delai / 1000) + ' s dépassé'
+      : 'réseau injoignable');
+  } finally {
+    if (minuteur !== null) clearTimeout(minuteur);
+  }
+}
 
 /* -------------------------------------------------------------------------
    2. Lecture du CSV
@@ -113,12 +156,25 @@ export function seriesDepuisLignes(lignes) {
 export async function chargerSuivi() {
   const url = String(SOURCE.url || '').trim();
   const cible = url || SOURCE.exemple;
-  const reponse = await fetch(cible, { cache: 'no-store' });
-  if (!reponse.ok) throw new Error('Suivi OTQ / OTD : réponse ' + reponse.status + ' pour ' + cible);
+  /* Un message d'erreur ne doit jamais porter l'URL de la feuille : cent
+     caractères illisibles à l'écran de tout le service, qui partent dans la
+     première capture — et une URL-capacité si l'intermédiaire est branché. */
+  const nomCible = url ? 'la feuille du service' : 'le fichier ' + SOURCE.exemple;
+  const atteint = url ? 'n’a pas pu être atteinte' : 'n’a pas pu être atteint';
+  let reponse;
+  try {
+    reponse = await recupererReponse(cible, { cache: 'no-store' });
+  } catch (cause) {
+    console.error('[otq] ' + cible + ' injoignable', cause);
+    throw new Error('Impossible de lire le suivi OTQ / OTD : ' + nomCible + ' '
+      + atteint + '. Vérifiez votre connexion, puis réessayez.');
+  }
+  if (!reponse.ok) throw new Error('Suivi OTQ / OTD : réponse ' + reponse.status + ' pour ' + nomCible);
   const texte = await reponse.text();
   const lignes = analyserCsv(texte);
   const series = seriesDepuisLignes(lignes);
-  if (!series.mois.length) throw new Error('Suivi OTQ / OTD : aucune ligne mensuelle lisible dans ' + cible);
+  /* Aucune levée sur une série vide : l'état vide d'avecEtat dit déjà
+     « Aucune mesure », et il le dit sans citer l'URL. */
   let maj = reponse.headers.get('last-modified') || '';
   if (maj) { const d = new Date(maj); maj = Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10); }
   return { series, origine: url ? 'source' : 'exemple', maj, url: cible };
