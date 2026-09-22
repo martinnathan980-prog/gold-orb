@@ -403,25 +403,9 @@ export function ouvrirPorteur(o) {
       })
     };
   }).filter((g) => g.champs.length);
-  /* Les données propres au service : le suivi, puis les champs que
-     flotte.json déclare (technique, économique). */
-  const descripteurs = (famille) => tableau(o.flotte && o.flotte.champs && o.flotte.champs[famille])
-    .filter((d) => d && texte(d.cle))
-    .map((d) => ({ cle: 'service.' + famille + '.' + texte(d.cle), libelle: texte(d.libelle) || libelleCle(d.cle), type: 'valeur' }));
-  const champsService = [
-    { type: 'groupe', libelle: 'Suivi par le service', champs: [
-      { cle: 'jalon', libelle: 'Jalon en cours', type: 'texte' },
-      { cle: 'avancement', libelle: 'Avancement (%)', type: 'nombre' }] },
-    { type: 'groupe', libelle: 'Données techniques du service', champs: descripteurs('technique') },
-    { type: 'groupe', libelle: 'Données économiques du service', champs: descripteurs('economique') }
-  ].filter((g) => g.champs.length);
   const valeurs = existant
     ? JSON.parse(JSON.stringify(existant))
     : { categorie: categories.length ? categories[0][0] : 'civil', poles: [], fiche: { statut: 'à renseigner' } };
-  /* L'ancienne forme gardait ces données à la racine : on les reprend. */
-  if (existant && !(existant.service && typeof existant.service === 'object') && (existant.technique || existant.economique)) {
-    valeurs.service = { technique: existant.technique || {}, economique: existant.economique || {} };
-  }
   return ouvrirFormulaire({
     titre: existant ? 'Modifier la fiche ' + texte(existant.code) : 'Ajouter un porteur',
     declencheur: o.declencheur,
@@ -441,8 +425,7 @@ export function ouvrirPorteur(o) {
         { cle: 'credit.licence', libelle: 'Licence', type: 'texte', placeholder: 'CC BY-SA 4.0' }] },
       { cle: 'fiche.resume', libelle: 'Présentation', type: 'long', lignes: 5 },
       ...champsFiche,
-      { cle: 'fiche.insolites', libelle: 'Le saviez-vous ?', type: 'lignes', objets: true, aide: 'Une anecdote par ligne.' },
-      ...champsService
+      { cle: 'fiche.insolites', libelle: 'Le saviez-vous ?', type: 'lignes', objets: true, aide: 'Un fait par ligne ; sa première phrase sert d’accroche.' }
     ],
     surEnregistrer: (v) => {
       const code = texte(v.code).toUpperCase();

@@ -50,6 +50,7 @@
      Magasin.hote                    'google' | 'claude' | null
      Magasin.identite                l'adresse de la personne connectée, si l'hôte la donne
      Magasin.peutEcrire              booléen
+     Magasin.base(jeu)               -> une base tenue ailleurs (Google), ou null
      Magasin.lire(jeu)               -> Promise<Modification[]>
      Magasin.poser(jeu, modif)       -> Promise<void>
      Magasin.retirer(jeu, type, id)  -> Promise<void>   (annule la modification)
@@ -170,6 +171,7 @@ function magasinNavigateur() {
 
   return {
     mode: 'navigateur',
+    base: () => null,
     hote: null,
     identite: null,
     peutEcrire: disponible,
@@ -209,6 +211,7 @@ function magasinPartage(db, peutEcrire, auteur) {
   };
   return {
     mode: 'partage',
+    base: () => null,
     hote: 'claude',
     identite: null,
     peutEcrire,
@@ -302,6 +305,12 @@ function magasinGoogle(run, depart) {
     parJeu.set(jeu, table);
   }
   const identite = texte(depart && depart.email) || null;
+  /* Les listes tenues dans une autre feuille (les documents) : le site les
+     prend pour base, facettes recalculées sur ce qu'elles contiennent. */
+  const bases = {};
+  const docs = depart && depart.bases && Array.isArray(depart.bases.documents) ? depart.bases.documents : null;
+  if (docs) bases.documents = { facettes: facettesDepuis(docs), documents: docs, source: 'feuille' };
+  if (depart && depart.basesErreur && typeof console !== 'undefined') console.warn('[magasin] ' + depart.basesErreur);
   /* Le serveur a le dernier mot : il vérifie lui-même l'adresse à chaque
      écriture. Ce drapeau ne sert qu'à montrer, ou non, le bouton. */
   const traduire = (e) => {
@@ -311,6 +320,7 @@ function magasinGoogle(run, depart) {
   };
   return {
     mode: 'partage',
+    base: (jeu) => (bases[jeu] ? JSON.parse(JSON.stringify(bases[jeu])) : null),
     hote: 'google',
     identite,
     peutEcrire: depart && depart.peutModifier === true,
@@ -340,11 +350,22 @@ function magasinGoogle(run, depart) {
   };
 }
 
+/* Les valeurs des menus de la recherche documentaire, tirées des
+   documents eux-mêmes : une feuille externe ne déclare pas ses facettes. */
+function facettesDepuis(documents) {
+  const valeurs = (champ) => [...new Set(documents.flatMap((d) => {
+    const v = d && d[champ];
+    return (Array.isArray(v) ? v : [v]).map(texte).filter(Boolean);
+  }))].sort((a, b) => a.localeCompare(b, 'fr'));
+  return { types: valeurs('type'), metiers: valeurs('metier'), porteurs: valeurs('porteur'), perimetres: valeurs('perimetre'), poles: valeurs('pole') };
+}
+
 /* Le runtime est là mais ne répond pas : lecture des fichiers seuls. */
 function magasinMuet() {
   const refuser = async () => { throw new Error('Le site ne joint pas sa base : rechargez la page pour modifier.'); };
   return {
     mode: 'indisponible',
+    base: () => null,
     hote: null,
     identite: null,
     peutEcrire: false,

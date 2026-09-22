@@ -438,7 +438,7 @@ const fauxGoogle = (reglages) => {
       const b = lire();
       const modifications = {};
       for (const [jeu, table] of Object.entries(b)) modifications[jeu] = Object.values(table);
-      return { email: reglages.email, peutModifier: reglages.peut, modifications };
+      return { email: reglages.email, peutModifier: reglages.peut, modifications, bases: reglages.bases || {} };
     },
     etiiPoser(jeu, modif) {
       if (!reglages.peut) throw new Error('NON_AUTORISE');
@@ -501,6 +501,30 @@ o = outils(page);
 await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
 await o.attendre(900);
 t('un lecteur n’a pas de bouton « Modifier »', (await page.locator('.bascule-edition').count()) === 0);
+await page.close();
+
+/* La liste des documents tenue dans la feuille du service : le serveur la
+   renvoie, le site la prend pour base à la place des exemples. */
+const externes = [
+  { id: 'EXT-001', titre: 'Guide externe de câblage', reference: 'EXT-001', type: 'Guide maison', metier: ['Harnais'], porteur: 'Personne 08', perimetre: 'H160', pole: ['ETIIA'], maj: '2026-09-01' },
+  { id: 'EXT-002', titre: 'Procédure externe de revue', reference: 'EXT-002', type: 'Processus', metier: [], porteur: 'Personne 150', perimetre: 'Transverse', pole: ['ETIIE'], maj: '2026-08-15' }
+];
+page = await nouvellePage(scriptGoogle({ email: 'lecteur@exemple.fr', peut: false, bases: { documents: externes } }));
+o = outils(page);
+await page.goto(`${B}/docsearch.html#q=externe`, { waitUntil: 'networkidle' });
+await o.attendre(1200);
+t('la recherche documentaire lit la liste de la feuille du service',
+  (await page.locator('.ds-carte').count()) === 2 && (await page.locator('.ds-carte', { hasText: 'Guide externe de câblage' }).count()) === 1);
+await page.fill('#ds-champ', 'Guide de routage des harnais');
+await o.attendre(700);
+t('les documents d’exemple ne s’y mêlent plus', (await page.locator('.ds-carte', { hasText: 'Guide de routage des harnais' }).count()) === 0);
+await page.fill('#ds-champ', '');
+await o.attendre(700);
+t('l’exploration rapide propose les types de la feuille', /Guide maison/.test(await page.locator('.ds-tuiles').innerText()));
+await page.goto(`${B}/etiia.html`, { waitUntil: 'networkidle' });
+await o.attendre(1200);
+t('les documents du pôle viennent aussi de la feuille', /Guide externe de câblage/.test(await page.locator('#zone-documents').innerText())
+  && !/Procédure externe de revue/.test(await page.locator('#zone-documents').innerText()));
 await page.close();
 
 t('aucune erreur JavaScript', err.length === 0, err.slice(0, 3).join(' | '));

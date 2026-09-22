@@ -120,8 +120,8 @@ for (const bloc of orga.poles) {
   t(`${code} : repères ${membres.length} personnes, ${bloc.squads.length} squads, ${referents.size} référents, ${enVigueur.length} documents`,
     reperes.join(' ') === [membres.length, bloc.squads.length, referents.size, enVigueur.length].join(' '),
     `(${reperes.join(' ')})`);
-  t(`${code} : le repère « documents » mène aux documents du pôle`,
-    (await page.locator('#zone-reperes .pole-repere__lien').last().getAttribute('href')) === '#section-documents');
+  t(`${code} : les repères se lisent, ils ne se cliquent pas`,
+    (await page.locator('#zone-reperes .pole-repere a').count()) === 0);
 
   // Trois volets, côte à côte et de même hauteur, dans une section courte.
   const volets = await page.locator('#zone-reperes .annuaire__volet').evaluateAll(l => l.map(v => {

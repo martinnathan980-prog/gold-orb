@@ -375,6 +375,22 @@ const coquille = `<meta charset="utf-8">
       var lien = evt.target && evt.target.closest && evt.target.closest('a[href]');
       if (!lien) return;
       var href = lien.getAttribute('href');
+      // Une ancre de la page (« #section-documents », « #q=… »). Dans un
+      // srcdoc, elle se résout contre l'adresse de la COQUILLE : laissé
+      // faire, le navigateur chargerait le fichier entier dans le cadre.
+      // On fait donc le geste nous-mêmes : défiler jusqu'à l'élément s'il
+      // existe, sinon poser l'ancre (la page suit son adresse).
+      if (href && href.charAt(0) === '#') {
+        if (evt.defaultPrevented) return;
+        evt.preventDefault();
+        var fragment = href.slice(1);
+        if (!fragment) return;
+        var cible = null;
+        try { cible = doc.getElementById(decodeURIComponent(fragment)); } catch (e) { cible = null; }
+        if (cible) { cible.scrollIntoView({ block: 'start' }); return; }
+        try { cadre.contentWindow.location.hash = fragment; } catch (e) {}
+        return;
+      }
       var nom = nomDepuisHref(href);
       if (!nom) return;
       evt.preventDefault();

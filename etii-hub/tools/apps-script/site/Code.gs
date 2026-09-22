@@ -36,6 +36,20 @@
    ====================================================================== */
 var ID_FICHIER_SITE = 'COLLEZ_ICI_L_IDENTIFIANT_DU_FICHIER';
 
+/* ======================================================================
+   FACULTATIF — votre liste de documents existante
+   Si vos documents sont déjà tenus dans une feuille Google, le site peut
+   les lire là, à chaque ouverture, à la place des documents d'exemple.
+   Collez l'identifiant de cette feuille (dans son adresse, entre « /d/ »
+   et « /edit ») et, si les documents ne sont pas dans le premier onglet,
+   le nom de l'onglet. Laissez vide pour garder les documents du fichier.
+   Les colonnes sont reconnues par leur titre (Titre, Référence, Type,
+   Métier, Porteur, Périmètre, Pôle, Mise à jour, Lien, Description,
+   Mots-clés, Remplacé par) : voir le guide.
+   ====================================================================== */
+var DOCUMENTS_ID_FEUILLE = '';
+var DOCUMENTS_ONGLET = '';
+
 /* ----------------------------------------------------------------------
    Rien à modifier en dessous
    ---------------------------------------------------------------------- */
@@ -76,11 +90,19 @@ function doGet() {
  */
 function etiiDemarrer() {
   var email = emailConnecte_();
-  return {
+  var reponse = {
     email: email,
     peutModifier: peutModifier_(email),
-    modifications: lireModifications_()
+    modifications: lireModifications_(),
+    bases: {}
   };
+  /* La liste des documents tenue ailleurs, si elle est branchée. Une
+     feuille illisible ne bloque pas le site : il garde ses documents. */
+  if (DOCUMENTS_ID_FEUILLE) {
+    try { reponse.bases.documents = lireDocumentsExternes_(); }
+    catch (e) { reponse.basesErreur = 'Liste des documents illisible : ' + e.message; }
+  }
+  return reponse;
 }
 
 /**
@@ -169,6 +191,81 @@ function installer() {
 /* ======================================================================
    4. Outils internes (le « _ » final les rend invisibles depuis le site)
    ====================================================================== */
+
+/* Les titres de colonne reconnus pour chaque champ d'un document, écrits
+   sans accents, sans espaces ni ponctuation, en minuscules. */
+var COLONNES_DOCUMENTS = {
+  id: ['id', 'identifiantunique'],
+  titre: ['titre', 'title', 'intitule', 'nomdudocument', 'document', 'nom', 'libelle'],
+  reference: ['reference', 'ref', 'numero', 'no', 'code', 'identifiant'],
+  type: ['type', 'typedocument', 'typededocument', 'nature', 'categorie'],
+  metier: ['metier', 'metiers', 'domaine', 'discipline'],
+  porteur: ['porteur', 'responsable', 'auteur', 'proprietaire', 'redacteur'],
+  perimetre: ['perimetre', 'programme', 'appareil', 'produit', 'helicoptere'],
+  pole: ['pole', 'poles', 'equipe'],
+  maj: ['maj', 'miseajour', 'datemaj', 'datedemiseajour', 'derniereversion', 'modifiele', 'date'],
+  lien: ['lien', 'url', 'link', 'adresse', 'chemin'],
+  description: ['description', 'resume', 'objet', 'commentaire'],
+  motsCles: ['motscles', 'motcle', 'tags', 'keywords'],
+  remplacePar: ['remplacepar', 'supersededby']
+};
+var CHAMPS_LISTES = ['metier', 'pole', 'motsCles'];
+
+function cleColonne_(t) {
+  return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Lit la feuille des documents : une ligne par document, les colonnes
+ * reconnues par leur titre (ligne 1). Les autres colonnes sont ignorées.
+ */
+function lireDocumentsExternes_() {
+  var classeur = SpreadsheetApp.openById(DOCUMENTS_ID_FEUILLE);
+  var feuille = DOCUMENTS_ONGLET ? classeur.getSheetByName(DOCUMENTS_ONGLET) : classeur.getSheets()[0];
+  if (!feuille) throw new Error('onglet « ' + DOCUMENTS_ONGLET + ' » introuvable');
+  if (feuille.getLastRow() < 2) return [];
+  var valeurs = feuille.getRange(1, 1, feuille.getLastRow(), feuille.getLastColumn()).getValues();
+  var entetes = valeurs[0].map(cleColonne_);
+  var position = {};
+  Object.keys(COLONNES_DOCUMENTS).forEach(function (champ) {
+    var noms = COLONNES_DOCUMENTS[champ];
+    for (var i = 0; i < noms.length; i++) {
+      var j = entetes.indexOf(noms[i]);
+      if (j !== -1) { position[champ] = j; return; }
+    }
+  });
+  if (position.titre === undefined) throw new Error('aucune colonne « Titre »');
+  var fuseau = Session.getScriptTimeZone ? Session.getScriptTimeZone() : 'Europe/Paris';
+  var vus = {};
+  var documents = [];
+  for (var r = 1; r < valeurs.length; r++) {
+    var ligne = valeurs[r];
+    var doc = {};
+    Object.keys(position).forEach(function (champ) {
+      var v = ligne[position[champ]];
+      if (Object.prototype.toString.call(v) === '[object Date]') v = Utilities.formatDate(v, fuseau, 'yyyy-MM-dd');
+      v = String(v === null || v === undefined ? '' : v).trim();
+      if (champ === 'maj') {
+        var fr = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(v);
+        if (fr) v = fr[3] + '-' + ('0' + fr[2]).slice(-2) + '-' + ('0' + fr[1]).slice(-2);
+      }
+      if (CHAMPS_LISTES.indexOf(champ) !== -1) {
+        doc[champ] = v ? v.split(/\s*[,;\n]\s*/).filter(function (x) { return x; }) : [];
+      } else if (v) {
+        doc[champ] = v;
+      }
+    });
+    if (!doc.titre) continue;
+    /* L'identifiant : la colonne « id », sinon la référence, sinon la
+       ligne. C'est lui qui relie une modification faite dans le site. */
+    var id = doc.id || doc.reference || ('ligne-' + (r + 1));
+    while (vus[id]) id = id + '-' + (r + 1);
+    vus[id] = true;
+    doc.id = id;
+    documents.push(doc);
+  }
+  return documents;
+}
 
 function emailConnecte_() {
   var email = '';

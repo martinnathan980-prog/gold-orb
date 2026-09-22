@@ -85,16 +85,18 @@
   --gris-900: #1a1916;
 
   /* --- Rôles sémantiques ------------------------------------------------
-     Le papier est le fond de page : blanc cassé, chaud. La feuille
-     (fond-eleve) est blanche et s'en détache par une ombre courte et un
+     Le papier est le fond de page : un beige clair, chaud. La feuille
+     (fond-eleve) est crème et s'en détache par une ombre courte et un
      filet léger. Le creux (fond-enfonce) est la surface en retrait : champ
      au repos, bouton, ligne survolée. */
-  --fond:          var(--gris-100);
+  --fond:          #f0ece4;
   --fond-profond:  var(--gris-200);
-  --fond-eleve:    #ffffff;
+  /* La feuille n'est pas blanche : un crème à peine plus clair que le
+     papier. Le blanc pur, sur écran, éblouit. */
+  --fond-eleve:    #faf8f3;
   /* La bande : une section sur deux se pose sur un ton à peine différent,
      pour que l'œil sépare les parties de la page sans y penser. */
-  --fond-bande:    var(--gris-50);
+  --fond-bande:    #f6f3ec;
   /* Le creux est un lavis d'encre translucide, pas un gris de plus : posé
      sur le papier, sur la bande ou sur une feuille blanche, il assombrit
      toujours ce qu'il recouvre du même cran. Un gris fixe, lui, devenait
@@ -111,7 +113,7 @@
   --texte-accent:  #17367f;
 
   --bordure:       var(--gris-300);
-  --bordure-douce: #e7e3d9;
+  --bordure-douce: #e2ddd1;
   --bordure-forte: var(--gris-400);
   /* Le filet d'un champ de saisie : plus marqué que --bordure, c'est le
      seul indice qui dise « on écrit ici ». Le fond du champ, lui, reste
@@ -137,7 +139,7 @@
   --chaud-lueur:     rgb(180 84 47 / 0.18);
 
   /* La barre du haut : blanc cassé, un filet fin, une ombre douce. */
-  --barre-fond:          #fdfcf9;
+  --barre-fond:          #f6f3ec;
   --barre-texte:         var(--gris-900);
   --barre-texte-doux:    var(--gris-600);
   --barre-bordure:       var(--gris-300);
@@ -249,22 +251,22 @@
 
 @media screen and (prefers-color-scheme: dark) {
   :root:not([data-theme="clair"]) {
-    --fond:         #1f1e1b;
-    --fond-profond: #181714;
-    --fond-eleve:   #2a2925;
-    --fond-bande:   #23221f;
-    --fond-enfonce: #33312c;
+    --fond:         #282622;
+    --fond-profond: #201f1b;
+    --fond-eleve:   #33312c;
+    --fond-bande:   #2d2b27;
+    --fond-enfonce: #3b3934;
     --fond-inverse: #f1ede4;
 
     --texte:         #ece8df;
-    --texte-doux:    #b9b3a6;
-    --texte-faible:  #9f9889;
-    --texte-inverse: #1f1e1b;
+    --texte-doux:    #c3bdb0;
+    --texte-faible:  #aaa394;
+    --texte-inverse: #282622;
     --texte-accent:  #a3bff5;
 
-    --bordure:       #3d3b35;
-    --bordure-douce: #34322d;
-    --bordure-forte: #514e46;
+    --bordure:       #46433c;
+    --bordure-douce: #3d3a34;
+    --bordure-forte: #5a564d;
     --champ-bordure: #8f897b;
 
     --accent:         #a3bff5;
@@ -282,16 +284,16 @@
     --chaud-doux:     rgb(224 144 106 / 0.16);
     --chaud-lueur:    rgb(224 144 106 / 0.30);
 
-    --barre-fond:          #262521;
+    --barre-fond:          #2f2d29;
     --barre-texte:         #ece8df;
-    --barre-texte-doux:    #b9b3a6;
-    --barre-bordure:       #3d3b35;
+    --barre-texte-doux:    #c3bdb0;
+    --barre-bordure:       #46433c;
     --barre-surface:       rgb(255 255 255 / 0.06);
     --barre-surface-forte: rgb(255 255 255 / 0.11);
     --barre-ombre:         0 1px 0 rgb(0 0 0 / 0.25), 0 6px 20px rgb(0 0 0 / 0.30);
 
-    --entete-fond:    #14130f;
-    --entete-fond-2:  #1f1e1b;
+    --entete-fond:    #1c1b17;
+    --entete-fond-2:  #282622;
     --entete-texte:   #ffffff;
     --entete-texte-doux: rgb(255 255 255 / 0.72);
     --entete-surface: rgb(255 255 255 / 0.08);
@@ -301,9 +303,9 @@
     --voile:          rgb(10 9 7 / 0.32);
     --voile-fort:     rgb(10 9 7 / 0.52);
 
-    --carte-fond:   #2a2925;
-    --carte-bord:   #3d3b35;
-    --carte-survol: #33312c;
+    --carte-fond:   #33312c;
+    --carte-bord:   #46433c;
+    --carte-survol: #3b3934;
 
     --pole-etiia: #a78bfa;
     --pole-etiie: #38bdf8;
@@ -351,22 +353,22 @@
    claire, juste par construction sur une feuille blanche. */
 @media screen {
 :root[data-theme="sombre"] {
-  --fond:         #1f1e1b;
-  --fond-profond: #181714;
-  --fond-eleve:   #2a2925;
-  --fond-bande:   #23221f;
-  --fond-enfonce: #33312c;
+  --fond:         #282622;
+  --fond-profond: #201f1b;
+  --fond-eleve:   #33312c;
+  --fond-bande:   #2d2b27;
+  --fond-enfonce: #3b3934;
   --fond-inverse: #f1ede4;
 
   --texte:         #ece8df;
-  --texte-doux:    #b9b3a6;
-  --texte-faible:  #9f9889;
-  --texte-inverse: #1f1e1b;
+  --texte-doux:    #c3bdb0;
+  --texte-faible:  #aaa394;
+  --texte-inverse: #282622;
   --texte-accent:  #a3bff5;
 
-  --bordure:       #3d3b35;
-  --bordure-douce: #34322d;
-  --bordure-forte: #514e46;
+  --bordure:       #46433c;
+  --bordure-douce: #3d3a34;
+  --bordure-forte: #5a564d;
   --champ-bordure: #8f897b;
 
   --accent:         #a3bff5;
@@ -384,16 +386,16 @@
   --chaud-doux:     rgb(224 144 106 / 0.16);
   --chaud-lueur:    rgb(224 144 106 / 0.30);
 
-  --barre-fond:          #262521;
+  --barre-fond:          #2f2d29;
   --barre-texte:         #ece8df;
-  --barre-texte-doux:    #b9b3a6;
-  --barre-bordure:       #3d3b35;
+  --barre-texte-doux:    #c3bdb0;
+  --barre-bordure:       #46433c;
   --barre-surface:       rgb(255 255 255 / 0.06);
   --barre-surface-forte: rgb(255 255 255 / 0.11);
   --barre-ombre:         0 1px 0 rgb(0 0 0 / 0.25), 0 6px 20px rgb(0 0 0 / 0.30);
 
-  --entete-fond:    #14130f;
-  --entete-fond-2:  #1f1e1b;
+  --entete-fond:    #1c1b17;
+  --entete-fond-2:  #282622;
   --entete-texte:   #ffffff;
   --entete-texte-doux: rgb(255 255 255 / 0.72);
   --entete-surface: rgb(255 255 255 / 0.08);
@@ -403,9 +405,9 @@
   --voile:          rgb(10 9 7 / 0.32);
   --voile-fort:     rgb(10 9 7 / 0.52);
 
-  --carte-fond:   #2a2925;
-  --carte-bord:   #3d3b35;
-  --carte-survol: #33312c;
+  --carte-fond:   #33312c;
+  --carte-bord:   #46433c;
+  --carte-survol: #3b3934;
 
   --pole-etiia: #a78bfa;
   --pole-etiie: #38bdf8;

@@ -97,7 +97,7 @@ function rendreFlotte(ensemble, conteneur) {
   const avertissement = txt(donnees.avertissement);
   monter(conteneur, el('div', { class: 'pile' },
     porteurs(donnees, {
-      id: 'porteurs-service', equipe: ensemble.equipe, documents: ensemble.documents,
+      id: 'porteurs-service',
       surAjouter: (b) => ouvrirPorteur({ flotte: donnees, libelles: libellesFiche(), declencheur: b }),
       surModifier: (appareil, b) => ouvrirPorteur({ existant: appareil, flotte: donnees, libelles: libellesFiche(), declencheur: b }),
       surSupprimer: (appareil) => supprimerElement('flotte', 'porteur', appareil.code)
@@ -151,15 +151,9 @@ function chargerAgenda() {
 }
 chargerAgenda();
 
-/* La flotte a besoin de l'organigramme et du fonds documentaire pour
-   relier chaque porteur à son équipe et à ses documents. Les trois
-   fichiers sont déjà en cache pour les autres sections. */
+/* La fiche d'un porteur ne parle que de l'appareil : flotte.json suffit. */
 function chargerFlotte() {
-avecEtat('#zone-flotte', async () => {
-  const [flotte, equipe, documents] = await Promise.all([
-    chargerDonnees('flotte'), chargerDonnees('organigramme'), chargerDonnees('documents')]);
-  return { flotte, equipe, documents };
-}, rendreFlotte, {
+avecEtat('#zone-flotte', async () => ({ flotte: await chargerDonnees('flotte') }), rendreFlotte, {
   squelette: 2,
   texteChargement: 'Chargement des porteurs…',
   titreErreur: 'Porteurs indisponibles',
@@ -174,7 +168,7 @@ chargerFlotte();
    data.js a déjà oublié le jeu, la section le relit. */
 abonnerModifications((jeu) => {
   if (jeu === 'communications') { chargerCommunicationCenter(); chargerAgenda(); }
-  if (jeu === 'flotte' || jeu === 'organigramme' || jeu === 'documents') chargerFlotte();
+  if (jeu === 'flotte') chargerFlotte();
 });
 
 /* Les crédits des photos de la flotte : une obligation de licence, lisible

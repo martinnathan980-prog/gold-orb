@@ -26,8 +26,10 @@ Durée : 20 à 30 minutes, une seule fois.
                      et le script le lit directement sur Drive.
                      -> fichier fourni : etii-hub/dist/etii-hub.html
 
-  2. Code.gs         TOUT le code serveur (environ 250 lignes). Il se colle
-                     dans l'éditeur Apps Script. Une seule ligne à modifier.
+  2. Code.gs         TOUT le code serveur (environ 350 lignes). Il se colle
+                     dans l'éditeur Apps Script. Une seule ligne à modifier
+                     (deux de plus, facultatives, pour brancher votre liste
+                     de documents — étape 10).
                      -> fichier fourni : etii-hub/tools/apps-script/site/Code.gs
                         (recopié intégralement en ANNEXE A, à la fin)
 
@@ -190,6 +192,82 @@ modifications.
 
 
 --------------------------------------------------------------------------------
+ ÉTAPE 10 (facultatif) — Lire vos documents dans VOTRE feuille existante
+--------------------------------------------------------------------------------
+
+  Sans cette étape, la « Recherche » et les « Documents du pôle » montrent
+  les documents intégrés au fichier (des EXEMPLES, fictifs). Si votre liste
+  de documents est déjà tenue dans une feuille Google, le site peut la lire
+  là, à chaque ouverture — vous n'avez rien à recopier.
+
+  1. Ouvrez votre feuille de documents. Son adresse ressemble à :
+        https://docs.google.com/spreadsheets/d/1XyZ…AbC/edit#gid=0
+     L'identifiant est entre « /d/ » et « /edit ».
+  2. Vérifiez la ligne 1 (les titres de colonnes). Le site reconnaît, sans
+     tenir compte des accents ni des majuscules :
+        Titre (ou Intitulé, Nom du document)   — OBLIGATOIRE
+        Référence (ou Réf, Numéro, Code)
+        Type (ou Type de document, Nature, Catégorie)
+        Métier (ou Domaine)                    — plusieurs : séparés par « , » ou « ; »
+        Porteur (ou Responsable, Auteur, Propriétaire)
+        Périmètre (ou Programme, Appareil)     — H160, Transverse…
+        Pôle                                   — ETIIA, ETIIE, ETIII ; plusieurs possibles
+        Mise à jour (ou Date)                  — une date, ou « 15/07/2026 »
+        Lien (ou URL)
+        Description (ou Résumé, Objet)
+        Mots-clés (ou Tags)
+        Remplacé par                           — la référence de la nouvelle version
+     Les autres colonnes sont ignorées. Renommez un titre si besoin : c'est
+     tout ce qu'il y a à adapter.
+  3. Dans Code.gs, remplissez :
+        var DOCUMENTS_ID_FEUILLE = '1XyZ…AbC';
+        var DOCUMENTS_ONGLET = '';       (le nom de l'onglet, si ce n'est
+                                          pas le premier)
+  4. Enregistrez, puis « Déployer » › « Gérer les déploiements » › crayon ›
+     « Nouvelle version » › « Déployer ».
+  5. Rechargez le site : la Recherche montre vos documents ; chaque pôle,
+     les siens (colonne Pôle, ou porteur membre du pôle).
+
+  Bon à savoir :
+  - Le script lit cette feuille avec VOS droits : les lecteurs n'ont pas
+    besoin d'y avoir accès.
+  - La feuille reste la référence. Un document modifié dans le site (bouton
+    « Modifier ») garde la version du site : pour que la feuille reprenne
+    la main sur ce document, supprimez sa ligne dans l'onglet
+    « modifications » de « ETII Hub — base ».
+  - Si la feuille devient illisible (supprimée, droits retirés), le site
+    s'affiche quand même, avec les documents du fichier.
+
+
+--------------------------------------------------------------------------------
+ OÙ VIVENT LES DONNÉES — en une page
+--------------------------------------------------------------------------------
+
+  Ce qui s'affiche au départ (la BASE)
+     Dans etii-hub.html : communications, rendez-vous, porteurs,
+     organigramme, FAQ, comptes rendus, documents. Ce sont les fichiers de
+     données du projet (assets/data/*.json), intégrés au fichier. Pour
+     changer la base en profondeur (reprendre tout l'organigramme réel, par
+     exemple), on régénère etii-hub.html et on le remplace sur Drive.
+     Exception : les documents, s'ils sont branchés sur votre feuille
+     (étape 10), viennent de cette feuille.
+
+  Ce qu'on change dans le site (les MODIFICATIONS)
+     Bouton « Modifier » › Ajouter / Modifier / Supprimer : une nouvelle
+     communication, une alerte, un rendez-vous, un porteur, une personne,
+     un référent, un document, une question, un compte rendu…
+     Tout part dans l'onglet « modifications » de « ETII Hub — base », et
+     s'affiche par-dessus la base, pour tout le monde, au chargement
+     suivant. Personne n'ouvre la feuille : le site l'écrit et la lit.
+
+  Ce qui vient de l'extérieur (les SOURCES)
+     - La liste des documents : votre feuille existante (étape 10).
+     - Le suivi OTQ / OTD : une feuille publiée ou un fichier CSV (voir
+       docs/OTQ-GOOGLE-SHEETS.md) — à brancher quand vous aurez le lien.
+     Le reste n'a pas de source extérieure : il se tient dans le site.
+
+
+--------------------------------------------------------------------------------
  METTRE À JOUR LE SITE PLUS TARD
 --------------------------------------------------------------------------------
 
@@ -322,6 +400,20 @@ modifications.
    ====================================================================== */
 var ID_FICHIER_SITE = 'COLLEZ_ICI_L_IDENTIFIANT_DU_FICHIER';
 
+/* ======================================================================
+   FACULTATIF — votre liste de documents existante
+   Si vos documents sont déjà tenus dans une feuille Google, le site peut
+   les lire là, à chaque ouverture, à la place des documents d'exemple.
+   Collez l'identifiant de cette feuille (dans son adresse, entre « /d/ »
+   et « /edit ») et, si les documents ne sont pas dans le premier onglet,
+   le nom de l'onglet. Laissez vide pour garder les documents du fichier.
+   Les colonnes sont reconnues par leur titre (Titre, Référence, Type,
+   Métier, Porteur, Périmètre, Pôle, Mise à jour, Lien, Description,
+   Mots-clés, Remplacé par) : voir le guide.
+   ====================================================================== */
+var DOCUMENTS_ID_FEUILLE = '';
+var DOCUMENTS_ONGLET = '';
+
 /* ----------------------------------------------------------------------
    Rien à modifier en dessous
    ---------------------------------------------------------------------- */
@@ -362,11 +454,19 @@ function doGet() {
  */
 function etiiDemarrer() {
   var email = emailConnecte_();
-  return {
+  var reponse = {
     email: email,
     peutModifier: peutModifier_(email),
-    modifications: lireModifications_()
+    modifications: lireModifications_(),
+    bases: {}
   };
+  /* La liste des documents tenue ailleurs, si elle est branchée. Une
+     feuille illisible ne bloque pas le site : il garde ses documents. */
+  if (DOCUMENTS_ID_FEUILLE) {
+    try { reponse.bases.documents = lireDocumentsExternes_(); }
+    catch (e) { reponse.basesErreur = 'Liste des documents illisible : ' + e.message; }
+  }
+  return reponse;
 }
 
 /**
@@ -455,6 +555,81 @@ function installer() {
 /* ======================================================================
    4. Outils internes (le « _ » final les rend invisibles depuis le site)
    ====================================================================== */
+
+/* Les titres de colonne reconnus pour chaque champ d'un document, écrits
+   sans accents, sans espaces ni ponctuation, en minuscules. */
+var COLONNES_DOCUMENTS = {
+  id: ['id', 'identifiantunique'],
+  titre: ['titre', 'title', 'intitule', 'nomdudocument', 'document', 'nom', 'libelle'],
+  reference: ['reference', 'ref', 'numero', 'no', 'code', 'identifiant'],
+  type: ['type', 'typedocument', 'typededocument', 'nature', 'categorie'],
+  metier: ['metier', 'metiers', 'domaine', 'discipline'],
+  porteur: ['porteur', 'responsable', 'auteur', 'proprietaire', 'redacteur'],
+  perimetre: ['perimetre', 'programme', 'appareil', 'produit', 'helicoptere'],
+  pole: ['pole', 'poles', 'equipe'],
+  maj: ['maj', 'miseajour', 'datemaj', 'datedemiseajour', 'derniereversion', 'modifiele', 'date'],
+  lien: ['lien', 'url', 'link', 'adresse', 'chemin'],
+  description: ['description', 'resume', 'objet', 'commentaire'],
+  motsCles: ['motscles', 'motcle', 'tags', 'keywords'],
+  remplacePar: ['remplacepar', 'supersededby']
+};
+var CHAMPS_LISTES = ['metier', 'pole', 'motsCles'];
+
+function cleColonne_(t) {
+  return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Lit la feuille des documents : une ligne par document, les colonnes
+ * reconnues par leur titre (ligne 1). Les autres colonnes sont ignorées.
+ */
+function lireDocumentsExternes_() {
+  var classeur = SpreadsheetApp.openById(DOCUMENTS_ID_FEUILLE);
+  var feuille = DOCUMENTS_ONGLET ? classeur.getSheetByName(DOCUMENTS_ONGLET) : classeur.getSheets()[0];
+  if (!feuille) throw new Error('onglet « ' + DOCUMENTS_ONGLET + ' » introuvable');
+  if (feuille.getLastRow() < 2) return [];
+  var valeurs = feuille.getRange(1, 1, feuille.getLastRow(), feuille.getLastColumn()).getValues();
+  var entetes = valeurs[0].map(cleColonne_);
+  var position = {};
+  Object.keys(COLONNES_DOCUMENTS).forEach(function (champ) {
+    var noms = COLONNES_DOCUMENTS[champ];
+    for (var i = 0; i < noms.length; i++) {
+      var j = entetes.indexOf(noms[i]);
+      if (j !== -1) { position[champ] = j; return; }
+    }
+  });
+  if (position.titre === undefined) throw new Error('aucune colonne « Titre »');
+  var fuseau = Session.getScriptTimeZone ? Session.getScriptTimeZone() : 'Europe/Paris';
+  var vus = {};
+  var documents = [];
+  for (var r = 1; r < valeurs.length; r++) {
+    var ligne = valeurs[r];
+    var doc = {};
+    Object.keys(position).forEach(function (champ) {
+      var v = ligne[position[champ]];
+      if (Object.prototype.toString.call(v) === '[object Date]') v = Utilities.formatDate(v, fuseau, 'yyyy-MM-dd');
+      v = String(v === null || v === undefined ? '' : v).trim();
+      if (champ === 'maj') {
+        var fr = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(v);
+        if (fr) v = fr[3] + '-' + ('0' + fr[2]).slice(-2) + '-' + ('0' + fr[1]).slice(-2);
+      }
+      if (CHAMPS_LISTES.indexOf(champ) !== -1) {
+        doc[champ] = v ? v.split(/\s*[,;\n]\s*/).filter(function (x) { return x; }) : [];
+      } else if (v) {
+        doc[champ] = v;
+      }
+    });
+    if (!doc.titre) continue;
+    /* L'identifiant : la colonne « id », sinon la référence, sinon la
+       ligne. C'est lui qui relie une modification faite dans le site. */
+    var id = doc.id || doc.reference || ('ligne-' + (r + 1));
+    while (vus[id]) id = id + '-' + (r + 1);
+    vus[id] = true;
+    doc.id = id;
+    documents.push(doc);
+  }
+  return documents;
+}
 
 function emailConnecte_() {
   var email = '';

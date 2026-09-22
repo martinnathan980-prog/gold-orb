@@ -1084,26 +1084,37 @@ ol.kiosque__liste {
 /* Les chiffres clés : des tuiles, le nombre en grand. */
 .porteurs__chiffres {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(8.5rem, 100%), 1fr));
+  /* Autant de colonnes que de tuiles : la rangée est pleine, les tuiles
+     identiques (porteurs.js pose --nb). */
+  --nb: 4;
+  grid-template-columns: repeat(var(--nb), minmax(0, 1fr));
   gap: var(--e-3);
   margin: 0;
+}
+@media (max-width: 40rem) {
+  .porteurs__chiffres { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 .porteurs__chiffre {
   display: flex;
   flex-direction: column-reverse;
   justify-content: flex-end;
   gap: var(--e-1);
+  min-inline-size: 0;
   padding: var(--e-3) var(--e-4);
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
   border-block-start: 3px solid var(--chaud);
   border-radius: var(--rayon-md);
+  box-shadow: var(--ombre-sm);
 }
 .porteurs__chiffre-libelle {
+  overflow: hidden;
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
   letter-spacing: 0.06em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--texte-doux);
 }
 .porteurs__chiffre-valeur { margin: 0; line-height: 1.1; color: var(--texte); }
@@ -1113,37 +1124,50 @@ ol.kiosque__liste {
 /* Les groupes : des cartes, deux par rangée sur un écran large. */
 .porteurs__groupes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--e-4);
-  align-items: start;
+  align-items: stretch;
+}
+@media (max-width: 56rem) {
+  .porteurs__groupes { grid-template-columns: minmax(0, 1fr); }
 }
 .porteurs__groupe {
-  padding: var(--e-4) var(--e-5) var(--e-2);
+  overflow: hidden;
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
   border-radius: var(--rayon-lg);
   box-shadow: var(--ombre-sm);
 }
+/* Seul sur sa rangée (un groupe, ou le dernier d'un nombre impair) : il
+   prend toute la largeur, et ses lignes passent sur deux colonnes. */
+.porteurs__groupe:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.porteurs__groupe:last-child:nth-child(odd) .porteurs__lignes { columns: 2 22rem; column-gap: var(--e-10); }
+.porteurs__groupe:last-child:nth-child(odd) .porteurs__ligne { break-inside: avoid; }
+.porteurs__groupe .porteurs__lignes { padding: var(--e-1) var(--e-5) var(--e-2); }
 
-/* Le titre de groupe (Motorisation, Masses…) : en Newsreader, avec un
-   court trait terre cuite dessous. */
+/* Le titre de groupe (Motorisation, Masses…) : une tête de carte teintée
+   terre cuite, le titre en Newsreader — on voit d'un coup où commence
+   chaque groupe. */
 .porteurs__groupe-titre {
-  margin: 0 0 var(--e-2);
-  padding-block-end: var(--e-2);
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  margin: 0;
+  padding: var(--e-3) var(--e-5);
+  background-color: var(--chaud-doux);
+  border-block-end: 1px solid color-mix(in srgb, var(--chaud) 25%, transparent);
   font-family: var(--police-titre);
   font-size: 1.2rem;
   font-weight: var(--graisse-moyenne);
   line-height: 1.2;
-  color: var(--texte);
-  position: relative;
+  color: var(--chaud-encre);
 }
-.porteurs__groupe-titre::after {
+.porteurs__groupe-titre::before {
   content: '';
-  position: absolute;
-  inset-inline-start: 0;
-  inset-block-end: 0;
-  inline-size: var(--e-8);
-  block-size: 2px;
+  flex: none;
+  inline-size: 4px;
+  block-size: 1.1em;
+  border-radius: 2px;
   background-color: var(--chaud);
 }
 
@@ -1195,9 +1219,44 @@ ol.kiosque__liste {
 
 /* --- Insolite, crédits, équipe ------------------------------------------ */
 
-.porteurs__insolites { display: grid; gap: var(--e-3); margin: 0; padding: 0; list-style: none; max-width: var(--largeur-texte); }
-.porteurs__insolite { display: flex; gap: var(--e-3); font-size: var(--texte-sm); line-height: var(--interligne); }
-.porteurs__insolite-glyphe { flex: 0 0 auto; color: var(--chaud); }
+.porteurs__insolites {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
+  gap: var(--e-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* Un fait : son numéro en grand, l'accroche en Newsreader, la suite en
+   petit. Quatre teintes qui alternent : la terre cuite et les trois
+   pôles. */
+.porteurs__insolite {
+  --insolite-teinte: var(--chaud);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  padding: var(--e-5) var(--e-5) var(--e-4);
+  background-color: color-mix(in srgb, var(--insolite-teinte) 9%, var(--carte-fond));
+  border: 1px solid color-mix(in srgb, var(--insolite-teinte) 28%, transparent);
+  border-radius: var(--rayon-lg);
+  overflow: hidden;
+}
+.porteurs__insolite[data-teinte="1"] { --insolite-teinte: var(--pole-etiia); }
+.porteurs__insolite[data-teinte="2"] { --insolite-teinte: var(--pole-etiie); }
+.porteurs__insolite[data-teinte="3"] { --insolite-teinte: var(--pole-etiii); }
+.porteurs__insolite-numero {
+  font-family: var(--police-titre);
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--insolite-teinte);
+}
+.porteurs__insolite-accroche { margin: 0; font-family: var(--police-titre); font-size: var(--texte-lg); line-height: 1.35; color: var(--texte); }
+.porteurs__insolite-suite { margin: 0; font-size: var(--texte-sm); line-height: 1.55; color: var(--texte-doux); }
+@media (prefers-reduced-motion: no-preference) {
+  .porteurs__insolite { transition: transform var(--duree-rapide) var(--courbe), box-shadow var(--duree-rapide) var(--courbe); }
+  .porteurs__insolite:hover { transform: translateY(-2px); box-shadow: var(--ombre-md); }
+}
 
 
 .porteurs__credit { font-size: var(--texte-sm); line-height: var(--interligne); color: var(--texte-doux); }
@@ -1210,22 +1269,6 @@ ol.kiosque__liste {
 .porteurs__credits-vignette { flex: 0 0 4.5rem; inline-size: 4.5rem; aspect-ratio: 3 / 2; object-fit: cover; border-radius: var(--rayon-sm); background-color: var(--fond-enfonce); }
 .porteurs__credits-texte { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; }
 .porteurs__credits-nom { font-weight: var(--graisse-forte); font-size: var(--texte-sm); }
-
-.porteurs__equipe, .porteurs__documents { display: grid; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
-.porteurs__personne, .porteurs__document {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--e-1) var(--e-3);
-  padding-block: var(--e-1);
-  font-size: var(--texte-sm);
-  color: var(--texte);
-  text-decoration: none;
-}
-.porteurs__personne:hover .porteurs__personne-nom, .porteurs__document:hover > span:first-child { text-decoration: underline; color: var(--texte-accent); }
-.porteurs__personne-nom { font-weight: var(--graisse-moyenne); }
-.porteurs__personne-poste { color: var(--texte-doux); }
-.porteurs__personne-pole, .porteurs__document-meta { font-size: var(--texte-xs); color: var(--texte-faible); }
 
 /* --- Les onglets de la fiche --------------------------------------------- */
 
@@ -2906,12 +2949,6 @@ ol.liseuse__bloc-liste {
               box-shadow var(--duree-rapide) var(--courbe);
 }
 
-.pole-repere__lien:hover {
-  border-color: var(--bordure-forte);
-  border-inline-start-color: var(--org-teinte, var(--accent));
-  transform: translateY(-2px);
-  box-shadow: var(--ombre-md);
-}
 
 .pole-repere__valeur {
   font-family: var(--police-titre);
@@ -3287,30 +3324,24 @@ ol.liseuse__bloc-liste {
   border-radius: 1px;
   background: linear-gradient(to right, var(--texte-doux), var(--bordure-forte) 85%, transparent);
 }
-.agenda__semaine {
+/* Les mois : une bande de part et d'autre de la ligne, une sur deux
+   teintée, le nom au milieu sous la ligne ; un trait marque le 1er. */
+.agenda__mois-bande {
   position: absolute;
-  top: 50%;
-  inline-size: 1px;
-  block-size: 8px;
-  background-color: var(--bordure-forte);
+  top: 12%;
+  bottom: 12%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  border-radius: var(--rayon-sm);
 }
-.agenda__semaine-libelle {
-  position: absolute;
-  top: 12px;
-  left: 0;
-  transform: translateX(-50%);
+.agenda__mois-bande--teinte { background-color: color-mix(in srgb, var(--texte) 5%, transparent); }
+.agenda__mois-bande--debut { border-inline-start: 1px solid var(--bordure-forte); border-start-start-radius: 0; border-end-start-radius: 0; }
+.agenda__mois-libelle {
+  padding-block-end: 2px;
   font-family: var(--police-mono);
   font-size: 0.6875rem;
-  color: var(--texte-faible);
-  white-space: nowrap;
-}
-.agenda__mois-axe {
-  position: absolute;
-  bottom: calc(50% + 10px);
-  padding-inline-start: var(--e-1);
-  border-inline-start: 1px solid var(--bordure-forte);
-  font-family: var(--police-mono);
-  font-size: 0.6875rem;
+  font-weight: var(--graisse-moyenne);
   letter-spacing: var(--lettrage-etiquette);
   text-transform: uppercase;
   color: var(--texte-doux);

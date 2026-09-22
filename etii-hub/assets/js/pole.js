@@ -453,10 +453,10 @@ function rendreAnnuaire(pole, m, conteneur) {
   monter(conteneur,
     el('div', { class: 'annuaire' },
       el('ul', { class: 'pole-reperes', role: 'list', 'aria-label': 'Le pôle ' + code + ' en chiffres' },
-        repere(m.membres.length, 'personnes', 'responsable compris', '#' + prefixe + '-organigramme'),
-        repere(m.squads.length, 'squads', 'chacune avec son lead', '#' + prefixe + '-organigramme'),
-        repere(m.nbReferents, 'référents', 'sur ' + pluriel(m.nbCompetences, 'compétence'), '#' + prefixe + '-referents'),
-        repere(m.documents, 'documents', 'en vigueur, portés par le pôle', '#section-documents')),
+        repere(m.membres.length, 'personnes', 'responsable compris'),
+        repere(m.squads.length, 'squads', 'chacune avec son lead'),
+        repere(m.nbReferents, 'référents', 'sur ' + pluriel(m.nbCompetences, 'compétence')),
+        repere(m.documents, 'documents', 'en vigueur, portés par le pôle')),
       el('div', { class: 'annuaire__barre', role: 'search' },
         el('label', { class: 'visuellement-cache', for: champ.id }, 'Rechercher une personne, un rôle, un porteur ou une compétence du pôle'),
         champ, compteur),
@@ -472,10 +472,12 @@ function placementDe(m, personne) {
   return { pole: m.code, squad: s ? s.id : '' };
 }
 
-function repere(valeur, libelle, detail, href) {
+/* Un repère se lit, il ne se clique pas : ce qu'il résume est juste
+   dessous. */
+function repere(valeur, libelle, detail) {
   const nombre = (valeur === null || valeur === undefined) ? '—' : String(valeur);
   return el('li', { class: 'pole-repere' },
-    el('a', { class: 'pole-repere__lien', href },
+    el('div', { class: 'pole-repere__lien' },
       el('span', { class: 'pole-repere__valeur' }, nombre),
       el('span', { class: 'pole-repere__libelle' }, libelle),
       el('span', { class: 'pole-repere__detail' }, valeur === null ? 'donnée indisponible' : detail)));

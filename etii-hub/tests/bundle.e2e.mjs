@@ -78,16 +78,15 @@ await troisieme.scrollIntoViewIfNeeded();
 await troisieme.click();
 await page.waitForTimeout(500);
 const apres = await f.locator('.porteurs__detail').innerText();
-t('la fiche propose ses rubriques (technique, économie, service), sans lien vers l’extérieur',
-  /Technique/.test(apres) && /économie/i.test(apres) && /Données service/.test(apres) && !/Sources/.test(apres)
+t('la fiche propose ses cinq rubriques, sans données du service ni lien vers l’extérieur',
+  /Technique/.test(apres) && /Performances/.test(apres) && /Électrique/.test(apres) && /économie/i.test(apres) && /Insolite/.test(apres)
+  && !/Données service|Équipe & documents|Sources/.test(apres)
   && (await f.locator('.porteurs__detail a[href^="http"]').count()) === 0);
 t('la fiche suit le porteur choisi', apres.includes(await troisieme.locator('.porteurs__fiche-code').innerText()));
-// Les données propres au service sont vides dans le fichier public : c'est
-// dans leur onglet qu'une valeur absente doit s'annoncer « à renseigner ».
-await f.locator('.porteurs__detail [data-onglet="service"]').click();
-await page.waitForTimeout(300);
+// Une valeur absente de la fiche publique s'annonce « à renseigner »,
+// dans l'onglet où elle se trouve (textContent : tous les onglets).
 t('les valeurs absentes sont annoncées comme telles',
-  /à renseigner/i.test(await f.locator('.porteurs__detail').innerText()));
+  /à renseigner/i.test(await f.locator('.porteurs__detail').textContent()));
 t('la fiche se replie quand on reclique sa carte', await (async () => {
   await troisieme.click();
   await page.waitForTimeout(400);
@@ -205,6 +204,23 @@ await f.locator('.bascule-edition').click();
 await page.waitForTimeout(300);
 
 t('aucune erreur JavaScript', err.length === 0, err.slice(0, 3).join(' | '));
+
+console.log('\n== Les ancres de la page restent dans la page ==');
+// Dans un cadre srcdoc, « #section-documents » se résoudrait contre
+// l'adresse de la coquille : sans la coquille, le cadre rechargerait le
+// fichier entier (le « renvoi vers ETII Hub »).
+await f.locator('nav.site-nav a[href="etiie.html"]').first().click();
+await page.waitForTimeout(1900);
+await f.locator('.sous-nav a[href="#section-documents"]').click();
+await page.waitForTimeout(900);
+t('un lien du sommaire fait défiler la page, sans la quitter',
+  /ETIIE/.test(await f.locator('h1').innerText())
+  && await page.evaluate(() => {
+    const d = document.getElementById('cadre').contentDocument;
+    const r = d.getElementById('section-documents').getBoundingClientRect();
+    return r.top >= -2 && r.top < 260 && d.location.href.startsWith('about:srcdoc');
+  }));
+t('les repères du pôle ne sont plus des liens', (await f.locator('#zone-reperes .pole-repere a').count()) === 0);
 
 console.log('\n== Un lien avec ancre garde son ancre ==');
 await f.locator('nav.site-nav a[href="etiia.html"]').first().click();

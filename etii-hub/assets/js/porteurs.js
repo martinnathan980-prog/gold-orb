@@ -14,7 +14,6 @@ import { el, monter, annoncer, etatUrl, rafThrottle, mouvementReduit } from './u
 import { barreEdition, boutonAjouter } from './edition.js';
 import { creditPhoto } from './credits.js';
 import { silhouette } from './helicos.js';
-import { portrait } from './portraits.js';
 
 const NON_RENSEIGNE = 'à renseigner';
 
@@ -91,14 +90,6 @@ function categories(donnees, appareils) {
     if (cle && !vues.has(cle)) vues.set(cle, { cle, libelle: cle });
   }
   return [...vues.values()];
-}
-
-function champs(donnees, groupe) {
-  const c = objet(objet(donnees.champs)[groupe]);
-  const liste = Array.isArray(objet(donnees.champs)[groupe]) ? objet(donnees.champs)[groupe]
-    : (Array.isArray(c.champs) ? c.champs : []);
-  return liste.filter((d) => d && typeof d === 'object' && texte(d.cle))
-    .map((d) => ({ cle: texte(d.cle), libelle: texte(d.libelle) || texte(d.cle), unite: texte(d.unite) }));
 }
 
 function pastillePole(code) {
@@ -195,7 +186,8 @@ const IDENTITE = [
   ['constructeur', 'Constructeur'], ['premierVol', 'Premier vol'],
   ['miseEnService', 'Mise en service'], ['siteAssemblage', 'Site d’assemblage']];
 
-/* Pas d'onglet « Sources » : la fiche ne renvoie vers aucun site
+/* Cinq onglets, rien que sur l'appareil : ni sources, ni équipe, ni
+   données du service. La fiche ne renvoie vers aucun site
    extérieur. Les crédits des photos, eux, restent dans la fenêtre
    « Crédits photos » du pied de page — c'est une obligation de licence. */
 const ONGLETS = [
@@ -203,21 +195,19 @@ const ONGLETS = [
   { cle: 'performances', titre: 'Performances', groupes: ['performances'] },
   { cle: 'electrique', titre: 'Électrique', groupes: ['electrique'] },
   { cle: 'economie', titre: 'Production & économie', groupes: ['production'] },
-  { cle: 'insolite', titre: 'Insolite' },
-  { cle: 'equipe', titre: 'Équipe & documents' },
-  { cle: 'service', titre: 'Données service' }
+  { cle: 'insolite', titre: 'Insolite' }
 ];
 
 /* Les chiffres clés en tête de l'onglet Technique : seulement les valeurs
    que le fichier donne en nombre. */
 const CHIFFRES_CLES = [
-  ['masses', 'masseMaxDecollage', 'Masse max. au décollage'],
+  ['masses', 'masseMaxDecollage', 'Masse max.'],
   ['motorisation', 'nombreMoteurs', 'Moteurs'],
   ['motorisation', 'puissance', 'Puissance'],
   ['capacite', 'passagers', 'Passagers'],
-  ['performances', 'vitesseCroisiere', 'Vitesse de croisière'],
+  ['performances', 'vitesseCroisiere', 'Croisière'],
   ['performances', 'rayonAction', 'Rayon d’action'],
-  ['dimensions', 'diametreRotor', 'Diamètre du rotor']
+  ['dimensions', 'diametreRotor', 'Rotor principal']
 ];
 
 /* Une phrase longue se lit mieux en deux temps : l'essentiel, puis sa
@@ -276,7 +266,7 @@ function chiffresCles(fiche) {
         unite.length ? el('span', { class: 'porteurs__chiffre-unite' }, ' ' + unite.join(' ')) : null)));
     if (tuiles.length === 5) break;
   }
-  return tuiles.length >= 2 ? el('dl', { class: 'porteurs__chiffres' }, tuiles) : null;
+  return tuiles.length >= 2 ? el('dl', { class: 'porteurs__chiffres', style: { '--nb': String(tuiles.length) } }, tuiles) : null;
 }
 
 function tableFiche(titre, champsDuGroupe, valeurs) {
@@ -284,100 +274,22 @@ function tableFiche(titre, champsDuGroupe, valeurs) {
   return groupeFiche(titre, champsDuGroupe.map(([cle, libelle]) => ligneFiche(libelle, source[cle])));
 }
 
+/* « Le saviez-vous ? » : une carte par fait, numérotée en grand, dans
+   des teintes qui alternent. La première phrase du fait sert d'accroche,
+   la suite se lit dessous. */
 function panneauInsolite(fiche) {
   const faits = (Array.isArray(fiche.insolites) ? fiche.insolites : []).filter((f) => f && texte(f.texte));
   if (!faits.length) return el('p', { class: 'texte-doux sans-marge' }, 'Aucun fait remarquable renseigné.');
-  return el('ul', { class: 'porteurs__insolites' }, faits.map((f) => el('li', { class: 'porteurs__insolite' },
-    el('span', { class: 'porteurs__insolite-glyphe', 'aria-hidden': 'true' }, '✦'),
-    el('span', {}, texte(f.texte)))));
-}
-
-function tableau(titre, descripteurs, valeurs) {
-  const source = objet(valeurs);
-  const lignes = descripteurs.length ? descripteurs
-    : Object.keys(source).map((cle) => ({ cle, libelle: cle, unite: '' }));
-  if (!lignes.length) {
-    return el('section', { class: 'porteurs__groupe' },
-      el('h4', { class: 'porteurs__groupe-titre' }, titre),
-      el('p', { class: 'texte-doux texte-sm sans-marge' }, 'Aucun champ déclaré.'));
-  }
-  return groupeFiche(titre, lignes.map((d) => ligneFiche(d.libelle, { valeur: source[d.cle], unite: d.unite })));
-}
-
-/**
- * L'équipe et les documents rattachés à ce porteur.
- *
- * Le lien se fait sur le périmètre : une personne dont le périmètre vaut
- * « H160 » travaille sur le H160, un document de périmètre « H160 » le
- * concerne. Les entrées « Transverse » ne sont pas rattachées à un
- * porteur : elles n'apparaissent donc pas ici.
- *
- * @param {object} appareil
- * @param {{equipe?: object, documents?: object}} contexte
- * @returns {Node}
- */
-function panneauEquipe(appareil, contexte) {
-  const code = texte(appareil.code);
-  const ctx = objet(contexte);
-
-  const gens = [];
-  const ajouter = (p, pole, squad) => {
-    if (p && typeof p === 'object' && texte(p.perimetre) === code) {
-      gens.push({ id: texte(p.id), nom: texte(p.nom), poste: texte(p.poste), photo: texte(p.photo), pole, squad });
-    }
-  };
-  const orga = objet(ctx.equipe);
-  ajouter(orga.direction, 'ETII', '');
-  for (const pole of (Array.isArray(orga.poles) ? orga.poles : [])) {
-    ajouter(pole && pole.responsable, texte(pole && pole.pole), '');
-    for (const squad of (Array.isArray(pole && pole.squads) ? pole.squads : [])) {
-      for (const m of (Array.isArray(squad && squad.membres) ? squad.membres : [])) {
-        ajouter(m, texte(pole.pole), texte(squad.nom));
-      }
-    }
-  }
-
-  const documents = (Array.isArray(objet(ctx.documents).documents) ? ctx.documents.documents : [])
-    .filter((d) => d && texte(d.perimetre) === code);
-
-  const bloc = (titre, contenu) => el('section', { class: 'porteurs__groupe' },
-    el('h4', { class: 'porteurs__groupe-titre' }, titre),
-    contenu);
-
-  return el('div', { class: 'porteurs__groupes' },
-    bloc('Qui travaille dessus', gens.length
-      ? el('ul', { class: 'porteurs__equipe', role: 'list' }, gens.map((g) => el('li', {},
-          /* data-pole donne au portrait la teinte du pôle (modules.css §11). */
-          el('a', { class: 'porteurs__personne', dataPole: g.pole, href: 'organigramme.html#pole=' + encodeURIComponent(g.pole) + '&personne=' + encodeURIComponent(g.id) },
-            portrait(g),
-            el('span', { class: 'porteurs__personne-infos' },
-              el('span', { class: 'porteurs__personne-nom' }, g.nom),
-              el('span', { class: 'porteurs__personne-poste' }, g.poste),
-              el('span', { class: 'porteurs__personne-pole mono' }, [g.pole, g.squad].filter(Boolean).join(' · ')))))))
-      : el('p', { class: 'texte-doux texte-sm sans-marge' }, 'Personne n’a ce porteur pour périmètre dans l’organigramme.')),
-    bloc('Documents concernés', documents.length
-      ? el('ul', { class: 'porteurs__documents', role: 'list' }, documents.slice(0, 15).map((d) => el('li', {},
-          el('a', { class: 'porteurs__document', href: 'docsearch.html#q=' + encodeURIComponent(texte(d.reference) || texte(d.titre)) },
-            el('span', {}, texte(d.titre)),
-            el('span', { class: 'porteurs__document-meta mono' }, [texte(d.type), texte(d.reference)].filter(Boolean).join(' · '))))))
-      : el('p', { class: 'texte-doux texte-sm sans-marge' }, 'Aucun document du fonds n’a ce porteur pour périmètre.')));
-}
-
-function panneauService(appareil, donnees) {
-  const service = objet(appareil.service);
-  const technique = ('technique' in service) ? service.technique : appareil.technique;
-  const economique = ('economique' in service) ? service.economique : appareil.economique;
-  return el('div', { class: 'pile' },
-    el('p', { class: 'texte-doux texte-sm sans-marge mesure' },
-      'Les données propres au service (harnais, connecteurs, charge, coûts) ne sont jamais '
-      + 'inventées : elles restent « à renseigner » tant que le fichier ne les donne pas.'),
-    el('div', { class: 'porteurs__groupes' },
-      /* Le jalon et l'avancement sont des données du service : ils se
-         lisent ici, pas dans le bandeau, tant qu'ils sont vides. */
-      tableau('Suivi', [{ cle: 'jalon', libelle: 'Jalon en cours', unite: '' }, { cle: 'avancement', libelle: 'Avancement', unite: '%' }],
-        { jalon: appareil.jalon, avancement: appareil.avancement }),
-      tableau('Données techniques du service', champs(donnees, 'technique'), technique),
-      tableau('Données économiques du service', champs(donnees, 'economique'), economique)));
+  return el('ol', { class: 'porteurs__insolites', role: 'list' }, faits.map((f, i) => {
+    const t = texte(f.texte);
+    const coupe = t.search(/[.!?:;](\s|$)/);
+    const accroche = coupe > 20 && coupe < t.length - 1 ? t.slice(0, coupe + 1) : t;
+    const suite = accroche === t ? '' : t.slice(accroche.length).trim();
+    return el('li', { class: 'porteurs__insolite', dataset: { teinte: String(i % 4) } },
+      el('span', { class: 'porteurs__insolite-numero', 'aria-hidden': 'true' }, String(i + 1).padStart(2, '0')),
+      el('p', { class: 'porteurs__insolite-accroche' }, accroche),
+      suite ? el('p', { class: 'porteurs__insolite-suite' }, suite) : null);
+  }));
 }
 
 function onglets(prefixe, panneaux) {
@@ -469,9 +381,7 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
               el('div', { class: 'porteurs__groupes' }, groupes.map((g) => tableFiche(g.titre, g.champs, valeursGroupe(g.cle)))))
           : el('p', { class: 'texte-doux sans-marge' }, 'Fiche publique non encore constituée pour ce porteur.') };
     }
-    if (o.cle === 'insolite') return { cle: o.cle, titre: o.titre, contenu: panneauInsolite(fiche) };
-    if (o.cle === 'equipe') return { cle: o.cle, titre: o.titre, contenu: panneauEquipe(appareil, contexte) };
-    return { cle: o.cle, titre: o.titre, contenu: panneauService(appareil, donnees) };
+    return { cle: o.cle, titre: o.titre, contenu: panneauInsolite(fiche) };
   });
 
   /* La relecture contradictoire non faite : un badge discret, expliqué au
@@ -567,11 +477,9 @@ export function creditsPhotos(donnees) {
 
 /**
  * @param {object} donnees   contenu de flotte.json
- * @param {{id?: string, equipe?: object, documents?: object,
- *          surAjouter?: Function, surModifier?: Function, surSupprimer?: Function}} [options]
- *   `equipe` est organigramme.json et `documents` documents.json : ils
- *   servent à relier le porteur à ceux qui travaillent dessus. Les trois
- *   commandes d'édition ne se voient qu'en mode édition (edition.js).
+ * @param {{id?: string, surAjouter?: Function, surModifier?: Function, surSupprimer?: Function}} [options]
+ *   Les trois commandes d'édition ne se voient qu'en mode édition
+ *   (edition.js).
  * @returns {HTMLElement}
  */
 export function porteurs(donnees, options) {
@@ -675,7 +583,7 @@ export function porteurs(donnees, options) {
     if (itemDetail && itemDetail.parentNode) itemDetail.parentNode.removeChild(itemDetail);
     courant = appareil;
     itemDetail = el('li', { class: 'porteurs__item porteurs__item--detail' },
-      detail(appareil, d, cats, { equipe: opts.equipe, documents: opts.documents, surModifier: opts.surModifier, surSupprimer: opts.surSupprimer }));
+      detail(appareil, d, cats, { surModifier: opts.surModifier, surSupprimer: opts.surSupprimer }));
     if (!mouvementReduit()) {
       itemDetail.dataset.etat = 'entree';
       itemDetail.addEventListener('animationend', () => { delete itemDetail.dataset.etat; }, { once: true });

@@ -72,11 +72,12 @@ function creerFeuille(nom) {
   return feuille;
 }
 
-function creerClasseur() {
+function creerClasseur(id = 'classeur-essai') {
   const onglets = new Map();
   return {
-    getId: () => 'classeur-essai',
+    getId: () => id,
     getSheetByName: (n) => onglets.get(n) || null,
+    getSheets: () => [...onglets.values()],
     insertSheet: (n) => { const f = creerFeuille(n); onglets.set(n, f); return f; },
     _onglets: onglets
   };
@@ -86,16 +87,25 @@ function creerClasseur() {
 
 function environnement(options) {
   const classeur = creerClasseur();
+  const documents = options.documents || null;
   const proprietes = new Map();
   const etat = { connecte: options.connecte, journal: [], verrou: 0 };
   const contexte = {
     SpreadsheetApp: {
       getActiveSpreadsheet: () => classeur,
-      openById: (id) => { if (id !== 'classeur-essai') throw new Error('classeur inconnu'); return classeur; }
+      openById: (id) => {
+        if (id === 'classeur-essai') return classeur;
+        if (documents && id === 'feuille-documents') return documents;
+        throw new Error('classeur inconnu');
+      }
     },
     Session: {
       getActiveUser: () => ({ getEmail: () => etat.connecte }),
-      getEffectiveUser: () => ({ getEmail: () => options.proprietaire })
+      getEffectiveUser: () => ({ getEmail: () => options.proprietaire }),
+      getScriptTimeZone: () => 'Europe/Paris'
+    },
+    Utilities: {
+      formatDate: (d, _fuseau, _motif) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
     },
     PropertiesService: {
       getScriptProperties: () => ({ getProperty: (k) => proprietes.get(k) || null, setProperty: (k, v) => proprietes.set(k, v) })
@@ -121,8 +131,9 @@ function environnement(options) {
     console
   };
   vm.createContext(contexte);
-  const code = readFileSync(new URL('../tools/apps-script/site/Code.gs', import.meta.url), 'utf8')
+  let code = readFileSync(new URL('../tools/apps-script/site/Code.gs', import.meta.url), 'utf8')
     .replace("var ID_FICHIER_SITE = 'COLLEZ_ICI_L_IDENTIFIANT_DU_FICHIER';", "var ID_FICHIER_SITE = 'fichier-site';");
+  if (documents) code = code.replace("var DOCUMENTS_ID_FEUILLE = '';", "var DOCUMENTS_ID_FEUILLE = 'feuille-documents';");
   vm.runInContext(code, contexte, { filename: 'Code.gs' });
   return { contexte, classeur, etat };
 }
@@ -200,6 +211,29 @@ etat.connecte = PROPRIETAIRE;
 refus = '';
 try { gs.etiiPoser('inconnu', rdv); } catch (e) { refus = e.message; }
 t('même pour le propriétaire', /inconnu/.test(refus));
+
+console.log('\n== La liste des documents tenue dans une autre feuille ==');
+t('non branchée, le site garde ses documents', gs.etiiDemarrer().bases.documents === undefined);
+const feuilleDocs = creerClasseur('feuille-documents');
+const onglet = feuilleDocs.insertSheet('Documents');
+onglet.appendRow(['Référence', 'Titre', 'Type de document', 'Métier', 'Responsable', 'Programme', 'Pôle', 'Mise à jour', 'Lien', 'Mots-clés', 'Colonne ignorée']);
+onglet.appendRow(['ETII-TEC-100', 'Guide de câblage', 'Technique', 'Harnais; Intégration 3D', 'Personne 08', 'H160', 'ETIIA, ETIIE', new Date(2026, 8, 3), 'https://example.invalid/100', 'câblage, harnais', 'x']);
+onglet.appendRow(['ETII-PRO-007', 'Procédure de revue', 'Processus', '', 'Personne 12', 'Transverse', 'ETIII', '15/07/2026', '', '', '']);
+onglet.appendRow(['', '', 'Technique', '', '', '', '', '', '', '', '']);
+onglet.appendRow(['ETII-TEC-100', 'Doublon de référence', 'Technique', '', '', '', '', '', '', '', '']);
+const avecDocs = environnement({ proprietaire: PROPRIETAIRE, connecte: 'lecteur@exemple.fr', documents: feuilleDocs });
+const lus = avecDocs.contexte.etiiDemarrer().bases.documents;
+t('branchée, elle est lue ligne à ligne, sans les lignes sans titre', Array.isArray(lus) && lus.length === 3, JSON.stringify(lus && lus.length));
+t('les colonnes sont reconnues par leur titre, accents et variantes compris',
+  lus[0].titre === 'Guide de câblage' && lus[0].reference === 'ETII-TEC-100' && lus[0].type === 'Technique'
+  && lus[0].porteur === 'Personne 08' && lus[0].perimetre === 'H160' && lus[0].lien === 'https://example.invalid/100', JSON.stringify(lus[0]));
+t('les listes se découpent (virgules, points-virgules)',
+  JSON.stringify(lus[0].metier) === '["Harnais","Intégration 3D"]' && JSON.stringify(lus[0].pole) === '["ETIIA","ETIIE"]' && JSON.stringify(lus[0].motsCles) === '["câblage","harnais"]');
+t('les dates deviennent AAAA-MM-JJ (cellule date comme « 15/07/2026 »)', lus[0].maj === '2026-09-03' && lus[1].maj === '2026-07-15');
+t('l’identifiant est la référence, et reste unique', lus[0].id === 'ETII-TEC-100' && lus[2].id !== 'ETII-TEC-100' && new Set(lus.map((d) => d.id)).size === 3);
+const casse = environnement({ proprietaire: PROPRIETAIRE, connecte: PROPRIETAIRE, documents: creerClasseur('feuille-documents') });
+const r = casse.contexte.etiiDemarrer();
+t('une feuille illisible ne bloque pas le site : il garde ses documents, et le dit', r.bases.documents === undefined && /illisible/.test(r.basesErreur || ''), JSON.stringify(r.basesErreur));
 
 console.log(`\n  ${ok} réussis, ${ko} échoués`);
 process.exit(ko ? 1 : 0);

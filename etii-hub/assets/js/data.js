@@ -39,6 +39,7 @@
 
 import { el as creerElement, vider, ressourceIntegree } from './ui.js';
 import { appliquerModifications, abonnerModifications } from './modifications.js';
+import { ouvrirMagasin } from './magasin.js';
 
 /* -------------------------------------------------------------------------
    Constantes de réglage
@@ -249,6 +250,14 @@ export async function recupererReponse(url, options) {
  * @returns {Promise<object>}
  */
 async function recuperer(nom, delai) {
+  /* Une base tenue ailleurs : servi par Google, le site peut lire la liste
+     des documents dans la feuille où le service la tient déjà
+     (Code.gs, DOCUMENTS_ID_FEUILLE). Elle remplace alors les exemples. */
+  try {
+    const externe = (await ouvrirMagasin()).base(nom);
+    if (externe) return externe;
+  } catch (_e) { /* pas de base externe : on continue */ }
+
   /* Le fichier autonome (dist/etii-hub.html) embarque ses jeux de données :
      un cadre srcdoc n'a pas d'URL de base, un fetch relatif y échouerait.
      On en rend une COPIE, pour qu'aucune page ne modifie la base d'une

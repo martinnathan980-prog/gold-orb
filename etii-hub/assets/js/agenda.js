@@ -3,7 +3,8 @@
 
    Le Communication center raconte ce qui s'est passé ; ce bloc montre ce
    qui arrive, sur une frise : un axe du temps qui part d'aujourd'hui,
-   graduée en semaines (S39, S40…) et en mois, et chaque rendez-vous posé
+   découpé en mois (une bande par mois, son nom au milieu), et chaque
+   rendez-vous posé
    à sa date — un losange pour un jalon, un rond pour le reste, à la
    couleur du pôle concerné (terre cuite pour tout le service). Sa carte,
    au-dessus ou au-dessous de l'axe en alternance, dit quoi, quand, pour
@@ -45,7 +46,7 @@ const JOUR_MS = 86400000;
 /* La frise, en pixels : largeur d'une carte, écart entre deux couloirs,
    hauteur de la bande de l'axe, marges. En dessous de LARGEUR_MIN, la
    liste simple lit mieux qu'une frise écrasée. */
-const FRISE = { carte: 248, ecart: 14, axe: 64, marge: 28, largeurMin: 880, horizonMin: 21 };
+const FRISE = { carte: 248, ecart: 14, axe: 64, marge: 28, largeurMin: 880, horizonMin: 35 };
 
 function dateDe(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(texte(iso));
@@ -60,15 +61,6 @@ function echeance(n) {
   if (n < 14) return 'dans ' + n + ' jours';
   if (n < 60) return 'dans ' + Math.round(n / 7) + ' semaines';
   return 'dans ' + Math.round(n / 30) + ' mois';
-}
-
-/** Le numéro de semaine ISO (lundi premier jour), comme dans les plannings. */
-function semaineIso(date) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const jour = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - jour);
-  const debut = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil(((d - debut) / JOUR_MS + 1) / 7);
 }
 
 function aujourdhui() {
@@ -121,24 +113,33 @@ function carte(entree, options) {
    2. La frise : où va chaque carte
    ------------------------------------------------------------------------- */
 
-/* L'axe : aujourd'hui, les semaines, les mois, et le repère de chaque
-   rendez-vous. Recalculé à chaque mise en page : les positions dépendent
-   de la largeur. */
+/* L'axe : aujourd'hui, une bande par mois avec son nom, et le repère de
+   chaque rendez-vous. Recalculé à chaque mise en page : les positions
+   dépendent de la largeur. */
 function dessinerAxe(axe, debut, fin, versX, reperes) {
   const marques = [];
+  /* Les mois : de la date de départ (ou du 1er) à la fin du mois (ou de
+     la frise). Une bande sur deux est teintée ; le nom se pose au milieu,
+     en abrégé si la bande est étroite. */
+  let rang = 0;
+  for (let d = new Date(debut.getFullYear(), debut.getMonth(), 1); d <= fin; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
+    const de = d < debut ? debut : d;
+    const suivant = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    const a = suivant > fin ? fin : suivant;
+    const x1 = versX(de);
+    const x2 = versX(a);
+    const largeur = x2 - x1;
+    if (largeur > 4) {
+      const libelle = largeur >= 110 ? MOIS_LONGS[d.getMonth()] + (d.getMonth() === 0 ? ' ' + d.getFullYear() : '') : MOIS[d.getMonth()];
+      marques.push(el('span', {
+        class: ['agenda__mois-bande', rang % 2 ? 'agenda__mois-bande--teinte' : null, d >= debut ? 'agenda__mois-bande--debut' : null],
+        style: { left: x1 + 'px', width: largeur + 'px' }
+      }, largeur >= 44 ? el('span', { class: 'agenda__mois-libelle' }, libelle) : null));
+    }
+    rang += 1;
+  }
   marques.push(el('span', { class: 'agenda__aujourdhui', style: { left: versX(debut) + 'px' } },
     el('span', { class: 'agenda__aujourdhui-libelle' }, 'Aujourd’hui')));
-  /* Chaque lundi : un trait et le numéro de semaine. */
-  const lundi = new Date(debut);
-  lundi.setDate(lundi.getDate() + ((8 - (lundi.getDay() || 7)) % 7));
-  for (let d = lundi; d <= fin; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7)) {
-    marques.push(el('span', { class: 'agenda__semaine', style: { left: versX(d) + 'px' } },
-      el('span', { class: 'agenda__semaine-libelle' }, 'S' + semaineIso(d))));
-  }
-  /* Chaque premier du mois : le nom du mois, au-dessus de l'axe. */
-  for (let d = new Date(debut.getFullYear(), debut.getMonth() + 1, 1); d <= fin; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
-    marques.push(el('span', { class: 'agenda__mois-axe', style: { left: versX(d) + 'px' } }, MOIS_LONGS[d.getMonth()]));
-  }
   /* Les repères : un losange pour un jalon, un rond sinon. */
   for (const r of reperes) {
     marques.push(el('span', { class: 'agenda__repere', dataset: { pole: r.pole, type: r.type }, style: { left: r.x + 'px' } }));
