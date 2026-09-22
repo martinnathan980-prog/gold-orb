@@ -2111,8 +2111,9 @@ async function reinitialiser(pg) {
   verifier('« toutes » = 137 colonnes', deuxVues.n === COLONNES_TOTAL, String(deuxVues.n));
   await p.click('#vue-tableau button[data-vue="essentielle"]'); await p.waitForTimeout(500);
   const essentielle = await p.evaluate(() => [...document.querySelectorAll('tr.titres th')].map(t => t.dataset.cle));
-  verifier('« essentielle » = 8 colonnes, la reference en tete',
-    essentielle.length === 8 && essentielle[0] === 'reference', essentielle.join(','));
+  verifier('« essentielle » = 9 colonnes, la référence en tête, les deux avancements de HDK AA 011 dedans',
+    essentielle.length === 9 && essentielle[0] === 'reference' &&
+    essentielle.indexOf('avancement') !== -1 && essentielle.indexOf('avancement_concept_harnais_2') !== -1, essentielle.join(','));
   await p.click('#vue-tableau button[data-vue="toutes"]'); await p.waitForTimeout(500);
   const retourToutes = await p.evaluate(() => ({
     n: document.querySelectorAll('tr.titres th').length,
