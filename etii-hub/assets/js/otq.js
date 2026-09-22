@@ -159,14 +159,15 @@ export async function chargerSuivi() {
   /* Un message d'erreur ne doit jamais porter l'URL de la feuille : cent
      caractères illisibles à l'écran de tout le service, qui partent dans la
      première capture — et une URL-capacité si l'intermédiaire est branché. */
-  const nomCible = url ? 'la feuille du service' : SOURCE.exemple;
+  const nomCible = url ? 'la feuille du service' : 'le fichier ' + SOURCE.exemple;
+  const atteint = url ? 'n’a pas pu être atteinte' : 'n’a pas pu être atteint';
   let reponse;
   try {
     reponse = await recupererReponse(cible, { cache: 'no-store' });
   } catch (cause) {
     console.error('[otq] ' + cible + ' injoignable', cause);
-    throw new Error('Impossible de lire le suivi OTQ / OTD : ' + nomCible
-      + ' n’a pas pu être atteinte. Vérifiez votre connexion, puis réessayez.');
+    throw new Error('Impossible de lire le suivi OTQ / OTD : ' + nomCible + ' '
+      + atteint + '. Vérifiez votre connexion, puis réessayez.');
   }
   if (!reponse.ok) throw new Error('Suivi OTQ / OTD : réponse ' + reponse.status + ' pour ' + nomCible);
   const texte = await reponse.text();
