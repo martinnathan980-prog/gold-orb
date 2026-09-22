@@ -796,6 +796,22 @@ function serveurSur(valeurs, proprietes, fichiers) {
     !('rapprochement' in moitie.paquet) &&
     /⚠ Seconde base « Base2 » : onglet « Base2 » trouvé, mais la référence \(REF_UD \+ Pas là\) est introuvable/.test(diagMoitie) &&
     /en-têtes lus \(ligne 2\) : REF_UD \| ATA_CODE \| STATUT_FWD \| Colonne en trop/.test(diagMoitie), diagMoitie);
+  /* La vraie forme de l'extract SEE — titre en ligne 1, ligne vide, en-têtes
+     en ligne 3 — avec une colonne renommée dans l'export. L'en-tête est bien
+     là : le diagnostic doit montrer la ligne 3 et l'intitulé qui manque, et
+     non le titre de la ligne 1 en demandant si l'extract est collé entier. */
+  const seeRenommee = construire({ lignes: 10, historique: false, sortie: 'apercu-see-renommee.html', feuilles: [new Feuille('SEE', [
+    ['Nommage WD BFLOW', '', '', '', ''],
+    ['', '', '', '', ''],
+    ['NAME', 'SOL.', 'Cust. Version', 'Validated', 'REDRAW'],
+    ['CAB181A0005', '1', 'b', 'TRUE', 'FALSE']
+  ])] });
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-see-renommee.html'));
+  const diagRenommee = seeRenommee.contexte.diagnostic();
+  verifier('une colonne renommée dans l\'export : le diagnostic montre la ligne des en-têtes, pas le titre, et nomme l\'intitulé qui manque',
+    /en-têtes lus \(ligne 3\) : NAME \| SOL\. \| Cust\. Version \| Validated \| REDRAW/.test(diagRenommee) &&
+    /il manque Cust\.V — cette colonne a-t-elle un autre intitulé dans l'export \?/.test(diagRenommee) &&
+    !/collé avec ses en-têtes|Nommage WD BFLOW/.test(diagRenommee), diagRenommee);
   /* L'extract collé SANS ses en-têtes : la ligne prise pour en-tête est une
      ligne de données. Le diagnostic n'en recopie aucune cellule — il compte,
      et pose la question. */

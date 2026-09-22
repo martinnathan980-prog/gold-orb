@@ -236,7 +236,9 @@ body[data-exemple="true"] .bandeau-mode {
 }
 .jeton b { font-weight: 500; }
 .jeton .x {
-  display: inline-flex; align-items: center; justify-content: center;
+  /* flex: none : la phrase du verdict est longue ; sans cela elle comprime la
+     croix, qui devient une ellipse de 10 px sur un écran étroit. */
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
   width: 17px; height: 17px; border-radius: 50%; border: none; padding: 0;
   background: rgba(255, 255, 255, .18); color: inherit; cursor: pointer; font: inherit; font-size: 13px; line-height: 1;
 }

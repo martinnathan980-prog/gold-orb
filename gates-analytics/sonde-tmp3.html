@@ -1,4 +1,1170 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Suivi FWD</title>
+    <link rel="stylesheet" href="prototype/fonts/local.css">
+    <style>
+:root {
+  --papier:     #f4f2ed;
+  --surface:    #ffffff;
+  --creux:      #faf9f6;
+  --encre:      #191915;
+  --encre-2:    #57564e;
+  --encre-3:    #86847a;
+  --filet:      #e5e3dc;
+  --filet-fort: #cfccc2;
+
+  --fait:   #286b45;
+  --cours:  #bf7f14;
+  --afaire: #71716a;
+  --alerte: #a13b2a;
+  /* Le changement d'indice : ni un état ni une alerte, une couleur à lui —
+     un violet, distinct des trois états et du rouge, validé sur les deux
+     fonds. */
+  --indice: #5b4fcf;
+  /* Encre posee sur un aplat plein : claire sur les verts et gris soutenus du
+     mode clair, sombre sur les memes aplats eclaircis du mode sombre. */
+  --sur-plein: #ffffff;
+  /* L'ambre reste clair dans les deux themes : son encre ne bascule pas. */
+  --sur-ambre: #2c2208;
+
+  /* Rampe séquentielle (clair → foncé), luminance strictement décroissante */
+  --r1: #eef4f0; --r2: #d6e6dc; --r3: #b3d2c1; --r4: #86b8a0; --r5: #52997a; --r6: #286b45;
+
+  --focus: #286b45;
+  /* Le voile ambre d'une cellule qui diffère de l'autre base. */
+  --voile-ecart: rgba(191, 127, 20, .14);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --papier: #0d0d0c; --surface: #16161a; --creux: #1c1c20;
+    --encre: #f1f0ea; --encre-2: #a6a49a; --encre-3: #7b7970;
+    --filet: #272725; --filet-fort: #3d3c37;
+    --fait: #6fae82; --cours: #dda434; --afaire: #8f8f88; --alerte: #e0745c; --indice: #9d8cff;
+    --sur-plein: #11110f;
+    --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
+    --focus: #6fae82;
+    --voile-ecart: rgba(221, 164, 52, .2);
+  }
+}
+:root[data-theme="dark"] {
+  --papier: #0d0d0c; --surface: #16161a; --creux: #1c1c20;
+  --encre: #f1f0ea; --encre-2: #a6a49a; --encre-3: #7b7970;
+  --filet: #272725; --filet-fort: #3d3c37;
+  --fait: #6fae82; --cours: #dda434; --afaire: #8f8f88; --alerte: #e0745c; --indice: #9d8cff;
+  --sur-plein: #11110f;
+  --r1: #1a241e; --r2: #23382c; --r3: #2e4f3c; --r4: #3d6b51; --r5: #558a6b; --r6: #6fae82;
+  --focus: #6fae82;
+  --voile-ecart: rgba(221, 164, 52, .2);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--papier); color: var(--encre);
+  font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+}
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+
+.page { max-width: 1200px; margin: 0 auto; padding-inline: 30px; padding-block: 0 0; }
+@media (max-width: 720px) { .page { padding-inline: 15px; } }
+
+.feuille { background: var(--surface); border: 1px solid var(--filet); padding: 20px 22px 22px; }
+@media (max-width: 720px) { .feuille { padding: 15px 13px 17px; } }
+
+/* ---------------------------------------------------- Bandeau de titre */
+.masthead { text-align: center; padding-block: 46px 26px; border-bottom: 1px solid var(--filet-fort); }
+@media (max-width: 720px) { .masthead { padding-block: 30px 20px; } }
+.masthead h1 {
+  font-family: Newsreader, Georgia, serif;
+  font-weight: 300; font-size: clamp(34px, 6vw, 52px);
+  letter-spacing: .015em; margin: 0 0 12px; line-height: 1.05;
+}
+.masthead .semaine-releve { color: var(--encre-2); }
+/* Le point médian est un ornement : il ne se lit pas à voix haute, et il
+   disparaît quand la mention passe à la ligne — un séparateur n'ouvre pas
+   une ligne. */
+.semaine-releve::before { content: "\00b7"; margin-right: 8px; }
+@media (max-width: 430px) {
+  .semaine-releve { flex-basis: 100%; }
+  .semaine-releve::before { content: none; }
+}
+.semaine {
+  font-size: 15px; color: var(--encre-2);
+  display: flex; justify-content: center; align-items: baseline; gap: 9px; flex-wrap: wrap;
+}
+.masthead .semaine b { font-weight: 600; color: var(--encre); }
+.masthead .import {
+  margin-top: 7px; font-size: 12.5px; color: var(--encre-3);
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.point-frais { width: 6px; height: 6px; border-radius: 50%; background: var(--fait); flex: none; }
+
+/* ---------------------------------------------------- Avancement */
+.avancement { padding-block: 30px 0; }
+.avancement-ligne {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.phrase { font-size: 20px; }
+.phrase b { font-weight: 600; }
+
+.barre { display: flex; gap: 2px; height: 26px; margin-bottom: 0; }
+.barre span {
+  min-width: 4px;                 /* 3 plans sur 640 restent visibles, en haut comme au rapprochement */
+  transition: width .3s ease;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  font-size: 11.5px; line-height: 1; white-space: nowrap;
+}
+/* Filets pointilles : ils prolongent les coupures de la barre pour delimiter
+   les quatre zones de chiffres sans passer derriere les etiquettes. */
+.filets { position: relative; height: 12px; }
+/* Les traits descendent derriere les chiffres : les etiquettes, opaques, les
+   interrompent proprement au lieu de se battre avec eux. */
+.filets i {
+  position: absolute; top: 0; width: 2px; height: 76px;
+  background-image: linear-gradient(var(--encre-3) 55%, transparent 0);
+  background-size: 2px 7px; background-repeat: repeat-y;
+  opacity: .5;
+}
+@media (max-width: 680px) { .filets { display: none; } }
+.hachure {
+  background-image: repeating-linear-gradient(45deg, var(--filet-fort) 0 1.5px, transparent 1.5px 5px);
+  border: 1px solid var(--filet-fort);
+}
+
+.etats { position: relative; height: 64px; }
+.etat-btn {
+  position: absolute; top: 0; left: 0;
+  background: var(--papier); border: none; padding: 3px 11px; font: inherit;
+  text-align: center; cursor: pointer; display: grid; gap: 1px; white-space: nowrap;
+}
+.etat-haut { display: flex; align-items: center; gap: 7px; color: var(--encre-2); font-size: 12.5px; }
+.etat-n {
+  font-family: "IBM Plex Mono", monospace; font-size: 26px; font-variant-numeric: tabular-nums;
+  line-height: 1.15; font-weight: 400; color: var(--encre-3); transition: color .12s;
+}
+.etat-btn:hover .etat-n { color: var(--encre); }
+.etat-btn[aria-pressed="true"] .etat-n { color: var(--encre); }
+.etat-btn[aria-pressed="true"] .etat-haut { color: var(--encre); font-weight: 500; }
+.etat-haut { justify-content: center; }
+.etat-btn[aria-pressed="true"]::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--teinte);
+}
+.pastille { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+/* Un changement d'indice n'est pas un état : sa pastille est un anneau, pas
+   un aplat. « sans » tient la place d'une pastille pour garder l'alignement. */
+.pastille.indice { background: var(--indice); }
+.pastille.sans { background: transparent; }
+/* Sous 680 px les segments sont trop étroits pour porter une étiquette :
+   on repasse à une grille régulière. */
+@media (max-width: 680px) {
+  .etats { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 0; height: auto; }
+  .etat-btn { position: relative; text-align: left; padding: 3px 0; background: none; white-space: normal; }
+  .etat-haut { justify-content: flex-start; }
+}
+/* La même grille quand les boutons ne tiennent pas bout à bout dans la rangée. */
+.etats.en-grille { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 0; height: auto; }
+.etats.en-grille .etat-btn { position: relative; text-align: left; padding: 3px 0; background: none; white-space: normal; }
+.etats.en-grille .etat-haut { justify-content: flex-start; }
+
+/* ---------------------------------------------------- Mode des données */
+/* Un seul interrupteur, tout en haut : la page entière est réelle, ou elle est
+   un exemple. Pas de demi-mesure au milieu de l'écran. */
+.bandeau-mode {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 0 0;
+}
+.bandeau-mode .mot-mode { font-size: 12.5px; color: var(--encre-3); }
+.bandeau-mode .mot-mode b { color: var(--cours); font-weight: 500; }
+/* Ce que le classeur a à dire quand il n'a rien pu rendre : en rouge, à la
+   place du mot de mode, et annoncé aux lecteurs d'écran. */
+.bandeau-mode .alerte-source { color: var(--alerte); font-weight: 500; }
+.bandeau-mode .alerte-source[hidden] { display: none; }
+body[data-exemple="true"] .bandeau-mode {
+  border: 1px dashed var(--cours); background: var(--creux);
+  padding: 10px 13px; margin-top: 12px;
+}
+/* Le choix du contrat : à droite du même bandeau, dans le même registre
+   discret. Il n'apparaît que s'il y a vraiment plusieurs contrats entre
+   lesquels choisir — avec un seul, il n'aurait rien à dire. */
+.bandeau-mode .choix-contrat {
+  margin-left: auto; display: inline-flex; align-items: baseline; gap: 8px;
+  font-size: 12.5px; color: var(--encre-3);
+}
+.bandeau-mode .choix-contrat[hidden] { display: none; }
+.bandeau-mode .choix-contrat select { font-size: 13px; min-width: 64px; }
+.bandeau-mode .choix-contrat select:disabled { color: var(--encre-3); cursor: progress; }
+.bandeau-mode .attente { font-size: 12px; color: var(--encre-3); }
+.bandeau-mode .attente:empty { display: none; }
+/* Le périmètre : tout en haut, à côté du mode, parce qu'il porte sur toute la
+   page — barre, courbe, journal, bloc par groupe, tableau. « Tout », puis une
+   puce par valeur de la colonne de domaine, chacune avec son compte de plans.
+   Sans colonne de domaine, il n'a rien à proposer et reste caché. */
+/* Le périmètre vit sous le titre, au-dessus de la barre : c'est de là qu'on
+   choisit ce qu'on regarde, et le bandeau du haut garde sa sobriété. */
+/* Le périmètre, à droite de la phrase qu'il gouverne : le mot, puis le
+   choix. Quand la ligne manque de place, il passe dessous, à gauche. */
+.perimetre {
+  display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px 10px;
+  font-size: 12px; color: var(--encre-3); min-width: 0; max-width: 100%; margin-left: auto;
+}
+.perimetre .mot-perimetre { letter-spacing: .08em; text-transform: uppercase; font-size: 10.5px; font-weight: 500; }
+@media (max-width: 720px) { .perimetre { justify-content: flex-start; margin-left: 0; } }
+.perimetre[hidden] { display: none; }
+#choix-perimetre button { white-space: nowrap; }
+#choix-perimetre .n {
+  margin-left: 6px; font-family: "IBM Plex Mono", monospace;
+  font-variant-numeric: tabular-nums; opacity: .75;
+}
+/* Trois puces et leurs comptes ne tiennent pas sur un téléphone : le groupe
+   passe sur deux lignes plutôt que de faire déborder la page. */
+#choix-perimetre { flex-wrap: wrap; justify-content: flex-end; }
+
+
+/* ---------------------------------------------------- Filtres actifs */
+/* Un bandeau qui suit la page : quoi qu'on ait cliqué, la sortie est visible. */
+.filtres-actifs {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 0 0 4px; padding: 9px 0;
+  background: var(--papier); border-bottom: 1px solid var(--filet-fort);
+}
+.filtres-actifs[hidden] { display: none; }
+.filtres-actifs .mot { font-size: 12px; color: var(--encre-3); letter-spacing: .05em; text-transform: uppercase; }
+.jeton {
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid var(--encre); background: var(--encre); color: var(--papier);
+  border-radius: 999px; padding: 4px 6px 4px 12px; font: inherit; font-size: 12.5px;
+}
+.jeton b { font-weight: 500; }
+.jeton .x {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 17px; height: 17px; border-radius: 50%; border: none; padding: 0;
+  background: rgba(255, 255, 255, .18); color: inherit; cursor: pointer; font: inherit; font-size: 13px; line-height: 1;
+}
+.jeton .x:hover { background: rgba(255, 255, 255, .35); }
+.tout-effacer {
+  border: 1px solid var(--filet-fort); background: none; color: var(--encre-2);
+  border-radius: 999px; padding: 4px 13px; font: inherit; font-size: 12.5px; cursor: pointer;
+}
+.tout-effacer:hover { border-color: var(--encre); color: var(--encre); }
+
+/* ---------------------------------------------------- Journal */
+.indice-dim { margin: -6px 0 12px; font-size: 12.5px; color: var(--encre-3); max-width: 76ch; }
+.indice-dim:empty { display: none; }
+/* Deux listes qui peuvent s'allonger sans fin : on leur donne une hauteur et
+   un défilement, plutôt que de laisser la page grandir jusqu'à l'illisible. */
+.defile-liste { max-height: 430px; overflow-y: auto; overscroll-behavior: contain; }
+#zone-journal.defile-liste { max-height: 330px; }
+.defile-liste::-webkit-scrollbar { width: 9px; }
+.defile-liste::-webkit-scrollbar-thumb { background: var(--filet-fort); border-radius: 5px; }
+.defile-liste::-webkit-scrollbar-track { background: transparent; }
+@media (max-width: 720px) { .defile-liste { max-height: 380px; } }
+
+.section-journal { margin-top: 26px; }
+/* Le même titre que les autres sections : une seule police, une seule
+   taille, pour qu'on lise « ce qui a changé » comme on lit « avancement dans
+   le temps ». */
+.titre-journal { margin: 0; }
+/* Le filtre du journal : des mots avec leur pastille, pas une barre noire.
+   Le choix courant se cerne d'un filet ; le reste s'efface. */
+.filtre-journal { display: inline-flex; flex-wrap: wrap; gap: 2px 4px; }
+.filtre-journal button {
+  display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; background: none;
+  padding: 4px 10px; font: inherit; font-size: 12.5px; color: var(--encre-2); cursor: pointer; border-radius: 999px;
+  white-space: nowrap;
+}
+.filtre-journal button:hover { background: var(--creux); color: var(--encre); }
+.filtre-journal button[aria-pressed="true"] { border-color: var(--filet-fort); background: var(--surface); color: var(--encre); font-weight: 500; }
+.filtre-journal .pastille { width: 8px; height: 8px; }
+.journal-semaine {
+  border-bottom: 1px solid var(--filet);
+}
+.journal-semaine:last-child { border-bottom: none; }
+.journal-tete {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 11px 2px;
+}
+.journal-plier {
+  display: flex; align-items: baseline; gap: 10px; flex: none;
+  background: none; border: none; font: inherit; color: var(--encre);
+  padding: 2px 4px 2px 2px; cursor: pointer; border-radius: 3px;
+}
+.journal-plier:hover { background: var(--creux); }
+.journal-tete .sem {
+  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  font-size: 13.5px; font-weight: 500; min-width: 72px; text-align: left; color: var(--encre);
+}
+.journal-tete .resume {
+  color: var(--encre-2); font-size: 13px; flex: 1; min-width: 0;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+}
+/* La semaine en une ligne de couleur : chaque passage y a sa part, dans
+   l'ordre des comptes — on voit d'un coup quelle semaine a bougé et comment. */
+.journal-tete .mini-jauge {
+  display: flex; gap: 2px; height: 6px; width: 96px; flex: none; margin-left: auto;
+}
+.journal-tete .mini-jauge span { display: block; min-width: 2px; }
+.journal-tete .mini-jauge .indice { background: var(--indice); }   /* le changement d'indice, en violet ici aussi */
+.journal-tete .mini-jauge .nouveau { background: var(--filet-fort); }
+.journal-tete .mini-jauge .disparu { background: transparent; box-shadow: inset 0 0 0 1.5px var(--filet-fort); }
+.journal-tete .mini-jauge .vide {
+  background-image: repeating-linear-gradient(45deg, var(--filet-fort) 0 1.5px, transparent 1.5px 4px);
+  box-shadow: inset 0 0 0 1px var(--filet-fort);
+}
+@media (max-width: 720px) { .journal-tete .mini-jauge { display: none; } }
+.journal-tete .chevron { color: var(--encre-3); transition: transform .12s; flex: none; }
+.journal-plier[aria-expanded="true"] .chevron { transform: rotate(90deg); }
+.journal-liste { margin: 0 0 12px; padding: 0 0 0 78px; list-style: none; }
+@media (max-width: 720px) { .journal-liste { padding-left: 0; } }
+/* Trois colonnes alignées : la référence, ce que c'est, où ça va. Le regard
+   descend une colonne au lieu de chercher la flèche au milieu du texte. */
+.journal-ligne {
+  display: grid; grid-template-columns: 136px minmax(0, 1fr) 190px;
+  align-items: baseline; gap: 12px; width: 100%;
+  background: none; border: none; font: inherit; color: inherit;
+  padding: 6px 6px; text-align: left; cursor: pointer; border-radius: 3px;
+}
+@media (max-width: 720px) {
+  .journal-ligne { grid-template-columns: 1fr auto; gap: 3px 10px; padding: 8px 4px; }
+  .journal-ligne .quoi { grid-column: 1 / -1; }
+}
+.journal-ligne:hover { background: var(--creux); }
+.journal-ligne .ref { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
+/* Une réémission : l'ancienne référence au-dessus, effacée, la nouvelle dessous. */
+.journal-ligne .ref-indice { display: grid; gap: 1px; }
+.journal-ligne .ref-indice .ancienne { color: var(--encre-3); }
+.journal-ligne .ref-indice .nouvelle { white-space: nowrap; color: var(--indice); }
+.journal-ligne .quoi {
+  color: var(--encre-3); font-size: 12.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Le passage : l'état de départ s'efface, seule l'arrivée porte la couleur. */
+.journal-ligne .vers {
+  display: grid; grid-template-columns: 1fr 12px 1fr; align-items: center; gap: 4px;
+  font-size: 12px;
+}
+@media (max-width: 720px) { .journal-ligne .vers { justify-self: end; } }
+.fleche-etat { color: var(--filet-fort); text-align: center; }
+.etiq-etat { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; }
+.etiq-etat.avant { color: var(--encre-3); justify-self: end; }
+.etiq-etat.avant .pastille { opacity: .4; }
+.etiq-etat.apres { color: var(--encre); font-weight: 500; }
+/* Les compteurs du résumé sont des boutons, avec leur pastille : un clic
+   isole ce passage-là sur toutes les semaines. */
+.compte-passage {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid transparent; background: none; padding: 2px 8px; margin: 0 -4px; font: inherit;
+  color: inherit; cursor: pointer; border-radius: 999px; white-space: nowrap;
+}
+.compte-passage .pastille { width: 8px; height: 8px; }
+.compte-passage b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; color: var(--encre); }
+.compte-passage:hover { background: var(--creux); color: var(--encre); }
+.compte-passage[aria-pressed="true"] { border-color: var(--filet-fort); background: var(--surface); color: var(--encre); font-weight: 500; }
+.journal-tete .resume .doux-compte { display: inline-flex; align-items: center; gap: 6px; color: var(--encre-2); white-space: nowrap; }
+.journal-tete .resume .doux-compte b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; }
+@media (max-width: 480px) { .compte-passage, .journal-tete .resume .doux-compte { white-space: normal; text-align: left; } }
+
+/* La liste des UD d'un groupe, dépliée sous sa ligne : TOUTES les références,
+   en deux paquets titrés — ce qui reste à faire d'abord, puis ce qui est
+   soldé. Le conteneur du bloc a sa hauteur et son défilement : deux cents
+   références se parcourent, elles ne poussent pas le reste de la page. */
+.groupe-refs {
+  padding: 6px 0 16px 16px; border-left: 2px solid var(--filet);
+  margin: 2px 0 8px 14px;
+}
+.groupe-refs .entete {
+  font-size: 11.5px; color: var(--encre-3); margin-bottom: 4px;
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+}
+.groupe-refs .sous-groupe { margin-top: 10px; }
+/* La légende des pastilles, à côté du compte : les carrés ne se devinent pas. */
+.groupe-refs .legende-etats { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; color: var(--encre-2); }
+.groupe-refs .legende-etats span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.groupe-refs .legende-etats .pastille { width: 7px; height: 7px; }
+.groupe-refs .sous-titre {
+  margin: 0 0 7px; font: 500 10.5px/1.4 "IBM Plex Sans", system-ui, sans-serif;
+  letter-spacing: .09em; text-transform: uppercase; color: var(--encre-2);
+  display: flex; align-items: baseline; gap: 7px;
+}
+.groupe-refs .sous-titre .n {
+  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  letter-spacing: 0; color: var(--encre-3);
+}
+.groupe-refs .grille {
+  display: flex; flex-wrap: wrap; gap: 6px 7px;
+}
+.jeton-ud {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--filet); background: var(--surface); color: var(--encre-2);
+  border-radius: 3px; padding: 3px 9px 3px 8px; font-family: "IBM Plex Mono", monospace;
+  font-size: 11.5px; line-height: 1.3; cursor: pointer; white-space: nowrap;
+}
+.jeton-ud:hover { border-color: var(--encre-3); color: var(--encre); background: var(--creux); }
+.jeton-ud .pastille { width: 7px; height: 7px; margin: 0; flex: none; }
+.journal-vide { color: var(--encre-3); font-size: 13px; padding: 14px 2px; }
+.journal-plus {
+  background: none; border: none; font: inherit; font-size: 12.5px; color: var(--encre-3);
+  cursor: pointer; padding: 5px 2px; text-decoration: underline; text-underline-offset: 3px;
+}
+.journal-plus:hover { color: var(--encre); }
+
+/* ---------------------------------------------------- Sections */
+.bloc { margin-top: 34px; }
+.section-tete { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 13px; }
+/* L'interrupteur des bases, collé au titre « Plans » ; le compte reste à droite. */
+#choix-base { margin-right: auto; align-self: center; }
+#choix-base[hidden] { display: none; }
+#section-plans [data-base][hidden] { display: none; }
+h2 { font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 21px; margin: 0; }
+.indice { color: var(--encre-3); font-size: 12.5px; }
+
+select.select {
+  border: none; border-bottom: 1px solid var(--filet-fort); background: none;
+  color: var(--encre); font: inherit; font-size: 13px; padding: 2px 18px 3px 0; cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'><path d='M2 4.5 6 8.5 10 4.5' fill='none' stroke='%2386847a' stroke-width='1.5' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat; background-position: right center;
+}
+select.select:focus { outline: none; border-bottom-color: var(--focus); }
+
+/* ---------------------------------------------------- Graphique */
+.commandes-graphe { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.segmente { display: inline-flex; border: 1px solid var(--filet-fort); }
+.segmente[hidden] { display: none; }
+.segmente button {
+  border: none; border-left: 1px solid var(--filet-fort); background: none;
+  font: inherit; font-size: 12px; padding: 3px 10px; color: var(--encre-2); cursor: pointer;
+}
+.segmente button:first-child { border-left: none; }
+.segmente button:hover { background: var(--creux); color: var(--encre); }
+.segmente button[aria-pressed="true"] { background: var(--encre); color: var(--surface); }
+/* Cinq boutons ne tiennent pas sur un téléphone : le filtre du journal passe
+   sur deux lignes plutôt que de faire déborder la page. */
+@media (max-width: 480px) { #filtre-journal { flex-wrap: wrap; } }
+
+.cadre-graphe { position: relative; }
+svg.graphe { width: 100%; height: auto; display: block; overflow: visible; }
+svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
+.grad { font-size: 11px; fill: var(--encre-3); font-family: "IBM Plex Mono", monospace; }
+.cadre-graphe {
+  cursor: grab;
+  user-select: none; -webkit-user-select: none;
+  touch-action: none;             /* sinon le navigateur prend le geste pour un defilement */
+}
+.cadre-graphe[data-glisse="true"] { cursor: grabbing; }
+.cadre-graphe svg text { user-select: none; }
+.zone-clic { cursor: inherit; }
+/* Survoler une semaine l'éclaire d'une bande discrète, sous la bulle. */
+.zone-clic:hover { fill: var(--filet); fill-opacity: .55; }
+.annee { font-size: 10px; fill: var(--encre-3); font-family: "IBM Plex Mono", monospace; letter-spacing: .04em; }
+.jalon-texte {
+  font-size: 11.5px; fill: var(--encre-2); font-weight: 500;
+  paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round;   /* un halo : lisible sur un trait ou un marqueur voisin */
+}
+.jalon-texte.masque { display: none; }
+.jalon-num { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600; fill: var(--surface); pointer-events: none; }
+.jalon.survole line { stroke-width: 2; opacity: 1; }
+.jalon.survole .jalon-marque { stroke: var(--encre); stroke-width: 2; }
+.jalon.survole .jalon-texte.masque { display: block; transform: translateY(24px); }   /* révélé sous la rangée des marqueurs, pas par-dessus les voisins */
+.jalon.critique .jalon-texte { fill: var(--alerte); }   /* l'échéance manquée : rouge sur le graphique comme dans la légende */
+/* Les jalons se lisent sous la légende des courbes, en colonnes : un jalon
+   par case, son numéro, son nom, et dessous sa semaine — plutôt qu'une
+   longue ligne où tout se touche. */
+.legende-jalons { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--filet); font-size: 12.5px; color: var(--encre-2); }
+.legende-jalons:empty { display: none; }
+.legende-jalons-mot { display: block; color: var(--encre-3); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
+.legende-jalons-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 22px; }
+.legende-jalon {
+  display: grid; grid-template-columns: 18px 1fr; grid-template-rows: auto auto;
+  column-gap: 8px; row-gap: 1px; align-items: center; cursor: default; border-radius: 4px;
+}
+.legende-jalon:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
+.legende-jalon .num {
+  display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--encre-2); color: var(--surface); font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600;
+  grid-row: span 2; align-self: center;
+}
+.legende-jalon .mot { color: var(--encre); align-self: end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legende-jalon .quand { grid-column: 2; color: var(--encre-2); font-family: "IBM Plex Mono", monospace; font-size: 12px; align-self: start; }
+/* Hors du périmètre choisi : le numéro reste net (c'est le lien avec le
+   graphique), seul le reste s'efface un peu. */
+.legende-jalon.hors-perimetre .num { background: var(--surface); color: var(--encre-2); box-shadow: inset 0 0 0 1.5px var(--encre-3); }
+.legende-jalon.hors-perimetre .mot, .legende-jalon.hors-perimetre .quand { opacity: .7; }
+/* Hors de la fenêtre affichée : dans la légende, mais nulle part sur le dessin. */
+.legende-jalon.hors-fenetre { opacity: .55; }
+.legende-jalon.critique .num { background: var(--alerte); }
+.legende-jalon.critique .mot { color: var(--alerte); }
+.legende-jalon:hover .mot, .legende-jalon:focus-visible .mot { text-decoration: underline; text-underline-offset: 3px; }
+/* Un jalon d'un autre périmètre que celui choisi : dessiné, mais en retrait —
+   il ne fait pas l'échéance ici. Le marqueur se creuse et garde son numéro
+   lisible ; le trait et le texte s'estompent. */
+.jalon.hors-perimetre line { opacity: .35; }
+.jalon.hors-perimetre .jalon-marque { fill: var(--surface); stroke: var(--encre-3); stroke-width: 1.5; }
+.jalon.hors-perimetre .jalon-num { fill: var(--encre-2); }
+.jalon.hors-perimetre .jalon-texte { fill: var(--encre-3); }
+
+.note-graphe { margin: 12px 0 0; text-align: center; font-size: 12px; color: var(--encre-3); }
+.note-graphe:empty { display: none; }
+
+.comparatif {
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--filet);
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 18px; font-size: 13px; color: var(--encre-3);
+}
+.comparatif:empty { display: none; }
+.comparatif > span:first-child { color: var(--encre-2); }
+.puce-delta {
+  border: none; background: none; font: inherit; cursor: pointer; padding: 1px 0;
+  color: var(--encre-2); border-bottom: 1px dotted var(--filet-fort);
+  display: inline-flex; align-items: baseline; gap: 6px;
+}
+.puce-delta:hover { color: var(--encre); border-bottom-color: var(--encre); }
+.puce-delta[aria-pressed="true"] { color: var(--encre); font-weight: 500; border-bottom: 1px solid var(--encre); }
+.puce-delta b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; }
+
+/* ---------------------------------------------------- Rapprochement
+   Quatre compteurs dans le registre des puces du comparatif ; une liste
+   sobre pour ce qui n'est pas dans le tableau ; une grille pour le détail. */
+.rapprochement[hidden] { display: none; }
+/* ---------------------------------------------------- Rapprochement
+   Deux bases face à face : deux cercles qui se recouvrent — ce qu'elles ont
+   en commun au milieu, ce que chacune est seule à connaître sur les côtés —
+   et, au cœur du recouvrement, un anneau qui dit d'un coup d'œil la part
+   d'identiques. À droite, une ligne par verdict, en français, cliquable. */
+.rapp-face { display: grid; grid-template-columns: minmax(0, 12fr) minmax(0, 8fr); gap: 18px 36px; align-items: center; }
+@media (max-width: 860px) { .rapp-face { grid-template-columns: 1fr; } }
+.rapp-figure { min-width: 0; }
+.rapp-figure svg { width: 100%; height: auto; display: block; overflow: visible; }
+.rapp-figure text { font-family: "IBM Plex Sans", system-ui, sans-serif; pointer-events: none; }
+/* Seuls les côtés et les parts de l'anneau répondent au pointeur ; le texte
+   au centre les laisse passer. */
+.rapp-figure .cote { pointer-events: all; cursor: default; }
+.rapp-figure .cote text { pointer-events: all; }
+.rapp-figure .donut-seg { pointer-events: stroke; }
+.rapp-figure .base-nom { font-size: 14px; font-weight: 500; fill: var(--encre); letter-spacing: .05em; }
+.rapp-figure .base-compte { font-size: 12px; fill: var(--encre-2); }
+.rapp-figure .cercle-ici { fill: var(--r2); fill-opacity: .5; stroke: var(--fait); stroke-width: 1.5; }
+.rapp-figure .cercle-la { fill: none; stroke: var(--encre-3); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.rapp-figure .grand { font-family: "IBM Plex Mono", monospace; font-size: 30px; font-variant-numeric: tabular-nums; fill: var(--encre); }
+.rapp-figure .petit { font-size: 12px; fill: var(--encre-2); }
+.rapp-figure .commun-n { font-size: 34px; }
+.rapp-figure .commun-n.serre { font-size: 24px; }
+.rapp-figure .cote-manque .grand { fill: var(--alerte); }
+.rapp-figure .cote-manque.zero .grand { fill: var(--encre-3); }
+.rapp-figure .cote-attente .moyen { font-family: "IBM Plex Mono", monospace; font-size: 14px; font-variant-numeric: tabular-nums; fill: var(--encre); }
+.rapp-figure .cote-seul .grand { fill: var(--encre-2); }
+.rapp-figure .donut-fond { fill: none; stroke: var(--filet); stroke-width: 14; }
+.rapp-figure .donut-seg { fill: none; stroke-width: 14; stroke-linecap: butt; transition: stroke-width .12s; }
+/* À l'apparition : les cercles s'installent, l'anneau se trace. Rien de tout
+   cela si le lecteur préfère moins de mouvement. */
+.rapp-figure svg.anime .cercle-ici, .rapp-figure svg.anime .cercle-la { animation: rapp-arrive .55s ease-out both; transform-origin: center; transform-box: fill-box; }
+.rapp-figure svg.anime .donut-seg { stroke-dasharray: 400; stroke-dashoffset: 400; animation: rapp-trace .9s cubic-bezier(.2, .7, .2, 1) .25s forwards; }
+.rapp-figure svg.anime .grand, .rapp-figure svg.anime .petit, .rapp-figure svg.anime .base-nom, .rapp-figure svg.anime .base-compte { animation: rapp-fondu .5s ease-out .45s both; }
+@keyframes rapp-arrive { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes rapp-trace { to { stroke-dashoffset: 0; } }
+@keyframes rapp-fondu { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .rapp-figure svg.anime * { animation: none !important; stroke-dashoffset: 0 !important; }
+}
+.rapp-figure .donut-seg.accord { stroke: var(--fait); }
+.rapp-figure .donut-seg.emission { stroke: var(--indice); }
+.rapp-figure .donut-seg.avance { stroke: var(--cours); }
+/* Survoler un verdict éclaire sa part de la figure. */
+.rapp-figure .donut-seg.survole { stroke-width: 20; }
+.rapp-figure .cote.survole .grand { text-decoration: underline; text-underline-offset: 3px; }
+.rapp-figure .cote.survole .petit { fill: var(--encre); }
+.rapp-figure .cote.survole .moyen { text-decoration: underline; text-underline-offset: 3px; }
+.verdicts { display: grid; gap: 6px; }
+.verdict {
+  display: grid; grid-template-columns: 14px 62px minmax(0, 1fr); align-items: center; column-gap: 10px;
+  text-align: left; background: none; border: 1px solid transparent; border-radius: 4px; padding: 6px 10px 6px 8px;
+  font: inherit; color: var(--encre-2); cursor: pointer;
+}
+.verdict:hover { background: var(--creux); color: var(--encre); }
+.verdict[aria-pressed="true"] { border-color: var(--encre); background: var(--surface); color: var(--encre); }
+.verdict:disabled { cursor: default; opacity: .5; }
+.verdict:disabled:hover { background: none; }
+.verdict .verdict-n {
+  font-family: "IBM Plex Mono", monospace; font-size: 22px; font-variant-numeric: tabular-nums;
+  color: var(--encre); text-align: right; line-height: 1.1;
+}
+.verdict .verdict-mot { font-size: 13px; line-height: 1.35; color: var(--encre); }
+.verdict .pastille { width: 9px; height: 9px; }
+/* Plan par plan : un groupe par lot, une tête cliquable qui plie et déplie,
+   un tableau de trois colonnes dessous. Les groupes se suivent séparés d'un
+   filet, comme les semaines du journal. */
+.rapp-liste { margin-top: 24px; }
+.rapp-liste:empty { display: none; }
+.rapp-liste-tete { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.rapp-liste-titre { font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 17px; margin: 0; }
+.rapp-puces-legende { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; margin-left: auto; font-size: 12.5px; color: var(--encre-2); }
+.rapp-puces-legende > span { display: inline-flex; align-items: center; gap: 5px; }
+.rapp-puces-legende .pastille { width: 8px; height: 8px; }
+.rapp-groupe { border-top: 1px solid var(--filet); }
+.rapp-groupe:last-child { border-bottom: 1px solid var(--filet); }
+.rapp-groupe-tete {
+  width: 100%; display: flex; align-items: center; gap: 10px; background: none; border: 0;
+  padding: 9px 4px; font: inherit; font-size: 13.5px; color: var(--encre); cursor: pointer; text-align: left;
+}
+.rapp-groupe-tete:hover { background: var(--creux); }
+.rapp-groupe-tete b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; min-width: 3.4ch; text-align: right; }
+.rapp-groupe-tete .rapp-groupe-phrase { color: var(--encre); font-size: 13px; text-align: left; }
+.rapp-groupe-tete .chevron { margin-left: auto; width: 8px; height: 8px; flex: none; border-right: 1.5px solid var(--encre-3); border-bottom: 1.5px solid var(--encre-3); transform: rotate(45deg); transition: transform .15s; }
+.rapp-groupe[data-ouvert="true"] .rapp-groupe-tete .chevron { transform: rotate(225deg); }
+/* Un lot déplié montre tous ses plans : plutôt que de pousser la page sur
+   des centaines de puces, le corps se donne une hauteur et défile — comme
+   le journal et le bloc par groupe, avec leur barre et leur retenue. */
+.rapp-groupe-corps { padding: 4px 4px 10px; max-height: 46vh; overflow-y: auto; overscroll-behavior: contain; }
+.rapp-groupe-corps::-webkit-scrollbar { width: 9px; }
+.rapp-groupe-corps::-webkit-scrollbar-thumb { background: var(--filet-fort); border-radius: 5px; }
+.rapp-groupe-corps::-webkit-scrollbar-track { background: transparent; }
+/* Les puces : une référence par puce, sa pastille d'état à gauche, la
+   lettre d'une réémission à droite. Elles coulent sur la ligne — douze
+   plans tiennent en deux lignes, pas en douze. */
+.rapp-puces { display: flex; flex-wrap: wrap; gap: 6px 8px; padding: 2px 4px 12px; }
+.rapp-puce {
+  display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--filet-fort); border-radius: 999px;
+  background: var(--surface); padding: 4px 11px 4px 9px; font-family: "IBM Plex Mono", monospace; font-size: 12px;
+  color: var(--encre); cursor: pointer; line-height: 1.2;
+}
+.rapp-puce:hover { border-color: var(--encre); background: var(--creux); }
+.rapp-puce:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
+.rapp-puce .pastille { width: 8px; height: 8px; }
+.rapp-puce-vers { color: var(--indice); font-weight: 600; }
+.pastille.accord { background: var(--fait); }
+.pastille.avance { background: var(--cours); }
+.pastille.manque { background: var(--alerte); }
+.pastille.attente { background: var(--filet-fort); }
+.pastille.seul { background: transparent; border: 2px solid var(--encre-2); box-sizing: border-box; }
+/* Le tableau de la seconde base : le verdict en pastille dans la cellule de
+   la référence, les cases à cocher de l'extract en ✓ / –. */
+table.plans td.coche { text-align: center; color: var(--encre-2); }
+table.plans .verdict { display: inline-flex; align-items: center; gap: 8px; }
+table.plans tbody tr.choisie td { background: var(--creux); box-shadow: inset 0 -1px 0 var(--encre); }
+table.plans tbody tr[data-plan] { cursor: pointer; }
+/* La référence d'une ligne de là est un bouton : le clavier y arrive aussi. */
+.ref-lien { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.ref-lien:hover { text-decoration: underline; }
+.legende-rapp { display: inline-flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--encre-2); margin-left: auto; }
+.legende-rapp span { display: inline-flex; align-items: center; gap: 6px; }
+.legende-rapp:empty { display: none; }
+/* Les paires « ancienne → nouvelle » d'un changement d'indice : jamais
+   coupées à mi-ligne — la bulle ne liste rien d'autre. */
+.bulle .liste-refs {
+  font-family: "IBM Plex Mono", monospace; font-size: 11.5px; line-height: 1.6;
+}
+
+.legende {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 24px;
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--filet);
+  font-size: 12.5px; color: var(--encre-2);
+}
+.legende-item { display: inline-flex; align-items: center; gap: 7px; }
+.legende-item span { border-bottom: 1px dotted var(--filet-fort); cursor: help; }
+
+.bulle {
+  position: fixed; z-index: 40; pointer-events: none; background: var(--surface);
+  border: 1px solid var(--filet-fort); padding: 8px 10px; font-size: 12.5px; min-width: 160px;
+  opacity: 0; transition: opacity .1s;
+}
+.bulle[data-visible="true"] { opacity: 1; }
+.bulle .tete-bulle { color: var(--encre-3); font-size: 11px; margin-bottom: 5px; }
+/* Les comptes de la semaine, sous les deux lignes de tête : même dessin
+   qu'elles — une pastille, un mot, un nombre à droite. */
+.bulle-comptes { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--filet); display: grid; gap: 1px; }
+.bulle-ligne { display: flex; align-items: center; gap: 7px; }
+.bulle-ligne .n { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------- Avancement par groupe */
+
+/* Les commandes du bloc : le choix de la dimension, puis le filtre de la
+   colonne de gauche — un champ compact, dérivé de la recherche du tableau
+   mais plus bas et plus court, et son compte « n sur m » quand il agit. */
+.commandes-groupe { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; min-width: 0; }
+.recherche.recherche-groupe { flex: none; width: 200px; min-width: 0; }
+.recherche-groupe input {
+  height: 30px; padding: 4px 10px 4px 30px; font-size: 13px; border-radius: 15px;
+}
+.recherche-groupe input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.recherche-groupe svg { left: 11px; margin-top: -7px; }
+.compte-groupes {
+  font-size: 12px; color: var(--encre-3); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.compte-groupes:empty { display: none; }
+@media (max-width: 480px) { .recherche.recherche-groupe { width: 100%; } }
+
+/* Une seule definition de colonnes, portee par le conteneur : l'en-tete et les
+   lignes ne peuvent pas diverger, et la variante sans jalon n'a qu'a la redefinir. */
+#zone-critique { --cols: 96px 58px minmax(0, 1fr) 126px minmax(0, 150px); }
+#zone-critique.sans-jalon { --cols: 104px 62px minmax(0, 1fr) 126px minmax(0, 150px); }
+.critique-tete, .critique-ligne {
+  display: grid; grid-template-columns: var(--cols);
+  gap: 14px; align-items: center;
+}
+.critique-tete {
+  font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-3);
+  padding-bottom: 6px; border-bottom: 1px solid var(--filet); margin-bottom: 3px;
+}
+.critique-tete > span { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
+.critique-tete > span.a-gauche { justify-content: flex-start; }
+button.tri-groupe {
+  border: none; background: none; padding: 2px 0; margin: 0; color: inherit; cursor: pointer;
+  font: inherit; letter-spacing: inherit; text-transform: inherit;
+  display: inline-flex; align-items: center; gap: 5px; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+button.tri-groupe:hover { color: var(--encre); }
+button.tri-groupe[data-actif="true"] { color: var(--encre); }
+button.aide {
+  border: 1px solid var(--filet-fort); background: none; color: var(--encre-3);
+  width: 15px; height: 15px; border-radius: 50%; padding: 0; flex: none; cursor: pointer;
+  font: 500 10px/1 "IBM Plex Sans", system-ui, sans-serif; letter-spacing: 0;
+}
+button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre); color: var(--encre); }
+
+.critique-ligne { padding: 7px 0; border: none; background: none; width: 100%; text-align: center; font: inherit; color: var(--encre); cursor: pointer; }
+.critique-ligne:hover { background: var(--creux); }
+.critique-ligne[aria-pressed="true"] { background: var(--creux); box-shadow: inset 3px 0 0 var(--encre); }
+.critique-nom { font-size: 13px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.critique-total {
+  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  font-size: 13px; color: var(--encre-2); text-align: center;
+}
+.critique-effort, .critique-date { text-align: center; min-width: 0; }
+.critique-effort .v, .critique-date .v { display: block; }
+.critique-date .v {
+  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-size: 12.5px;
+}
+
+/* Le panneau d'explication : la formule, puis la meme formule avec les chiffres
+   d'une ligne reelle, pour qu'on puisse la refaire de tete. */
+.aide-panneau {
+  margin: 10px 0 14px; padding: 15px 17px; background: var(--creux);
+  border-left: 2px solid var(--filet-fort); font-size: 13px; line-height: 1.55;
+}
+.aide-panneau h3 { margin: 0 0 8px; font: 500 13px/1.3 "IBM Plex Sans", system-ui, sans-serif; }
+.aide-panneau p { margin: 0 0 10px; color: var(--encre-2); max-width: 66ch; }
+.aide-panneau p:last-child { margin-bottom: 0; }
+.aide-formule {
+  font-family: "IBM Plex Mono", monospace; font-size: 12px; line-height: 1.85;
+  background: var(--surface); border: 1px solid var(--filet); padding: 10px 13px;
+  margin: 0 0 11px; overflow-x: auto; white-space: pre; color: var(--encre);
+}
+.aide-formule b { font-weight: 500; color: var(--fait); }
+.aide-panneau .exemple { color: var(--encre-3); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; display: block; margin-bottom: 5px; }
+/* Meme langage visuel que la barre du haut : les quatre etats, decoupes par groupe. */
+.critique-barre { display: flex; gap: 2px; height: 17px; }
+.critique-barre span {
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  font-size: 10.5px; line-height: 1; white-space: nowrap;
+}
+.critique-fin {
+  font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  text-align: center; font-size: 14px; color: var(--encre);
+}
+.critique-ecart { font-size: 13px; color: var(--encre); line-height: 1.25; font-variant-numeric: tabular-nums; }
+.critique-ecart small { display: block; font-size: 10.5px; color: var(--encre-3); margin-top: 3px; font-weight: 400; letter-spacing: .01em; }
+.critique-ecart b.tard { color: var(--alerte); font-weight: 600; }
+.critique-ecart.arret { color: var(--alerte); font-weight: 500; font-size: 12px; }
+.critique-fin.doux, .critique-date.doux .v { color: var(--encre-3); }
+@media (max-width: 720px) {
+  /* En colonne, l'en-tete ne peut plus coiffer les valeurs : il se replie en
+     une barre de tri, sinon le classement deviendrait inaccessible au telephone. */
+  .critique-tete {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px;
+    grid-template-columns: none; padding-bottom: 9px;
+  }
+  .critique-tete::before {
+    content: "Trier"; color: var(--encre-3); flex: none;
+  }
+  .critique-tete > span, .critique-tete > span.a-gauche { justify-content: flex-start; }
+  /* Chaque valeur reprend son libelle a gauche. */
+  #zone-critique, #zone-critique.sans-jalon { --cols: 1fr; }
+  .critique-ligne { gap: 7px; padding: 13px 0; border-bottom: 1px solid var(--filet); }
+  .critique-nom { text-align: left; font-weight: 600; font-size: 15px; }
+  .critique-total, .critique-fin, .critique-effort, .critique-date {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px; text-align: right;
+  }
+  .critique-total::before, .critique-fin::before, .critique-effort::before, .critique-date::before {
+    content: attr(data-libelle); flex: none;
+    font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 11px;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--encre-3);
+  }
+  .critique-effort .v, .critique-date .v { text-align: right; }
+  .critique-ecart { text-align: right; }
+}
+
+/* ---------------------------------------------------- Point hebdo */
+.point-corps {
+  margin-top: 12px; padding: 14px 16px; background: var(--creux);
+  border: 1px solid var(--filet); font-size: 14px; line-height: 1.65; white-space: pre-wrap;
+}
+.point-corps[hidden] { display: none; }
+.bouton {
+  border: 1px solid var(--filet-fort); background: var(--surface); color: var(--encre);
+  font: inherit; font-size: 13px; padding: 7px 14px; cursor: pointer;
+}
+.bouton:hover { background: var(--creux); }
+.bouton:disabled { color: var(--encre-3); cursor: default; }
+
+/* ---------------------------------------------------- Tableau */
+.outils { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding-bottom: 12px; }
+.recherche { position: relative; flex: 1 1 320px; min-width: 200px; }
+.recherche input {
+  width: 100%; border: 1px solid var(--filet-fort); border-radius: 4px;
+  background: var(--surface); color: var(--encre); font: inherit; font-size: 14px;
+  padding: 9px 12px 9px 36px;
+}
+.recherche input::placeholder { color: var(--encre-3); }
+.recherche input:hover { border-color: var(--encre-3); }
+.recherche input:focus { outline: none; border-color: var(--encre); box-shadow: 0 0 0 3px var(--creux); }
+.recherche svg { position: absolute; left: 12px; top: 50%; margin-top: -8px; color: var(--encre-3); }
+.recherche input:focus + svg, .recherche input:not(:placeholder-shown) + svg { color: var(--encre); }
+
+.lien-doux { border: none; background: none; padding: 3px 0; font: inherit; cursor: pointer; color: var(--encre-3); text-decoration: underline; text-underline-offset: 3px; }
+.lien-doux:hover { color: var(--encre); }
+.lien-doux[hidden] { display: none; }
+
+.incomplets {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px;
+  font-size: 12.5px; color: var(--encre-3); padding-bottom: 12px;
+}
+.incomplets:empty { display: none; }
+.incomplets > span:first-child { color: var(--encre-2); }
+.puce-vide {
+  border: none; background: none; font: inherit; cursor: pointer; padding: 1px 0;
+  color: var(--encre-2); border-bottom: 1px dotted var(--filet-fort);
+  display: inline-flex; align-items: baseline; gap: 6px;
+}
+.puce-vide:hover { color: var(--encre); border-bottom-color: var(--encre); }
+.puce-vide[aria-pressed="true"] { color: var(--encre); font-weight: 500; border-bottom: 1px solid var(--encre); }
+.puce-vide b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; }
+
+.cadre-tableau { position: relative; border: 1px solid var(--filet); background: var(--surface); }
+.defile { overflow: auto; max-height: 68vh; }
+.ombre-defile {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 46px; pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--surface)); opacity: 0; transition: opacity .15s;
+}
+.cadre-tableau[data-deborde="true"] .ombre-defile { opacity: 1; }
+
+table.plans { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
+table.plans thead th { background: var(--surface); text-align: left; }
+table.plans thead .groupes th {
+  font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-3);
+  font-weight: 500; padding: 9px 14px 5px; white-space: nowrap;
+  position: sticky; top: 0; z-index: 4; border-bottom: 1px solid var(--filet);
+}
+table.plans thead .titres th, table.plans thead .titres-la th {
+  font-weight: 500; font-size: 12.5px; color: var(--encre-2); padding: 6px 14px 7px;
+  white-space: nowrap; border-bottom: 1px solid var(--filet-fort); position: sticky; z-index: 4;
+}
+/* Le tableau de la seconde base : mêmes en-têtes, mais sous d'autres noms de
+   classe, pour que ce qui vise le tableau d'ici ne l'atteigne pas. Sa
+   première colonne, la référence, reste collée à gauche. */
+table.plans thead .titres-la th { top: 0; }
+table.plans thead .titres-la th button {
+  border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+table.plans thead .titres-la th button:hover { color: var(--encre); }
+.col-fige-la { position: sticky; left: 0; background: var(--surface); z-index: 2; box-shadow: inset -1px 0 0 var(--filet-fort); }
+table.plans tbody tr:hover .col-fige-la { background: var(--creux); }
+table.plans thead tr th.col-fige-la { z-index: 6; }
+table.plans thead .filtres th { padding: 0 14px 7px; position: sticky; z-index: 4; border-bottom: 1px solid var(--filet); }
+table.plans thead .filtres input {
+  width: 100%; min-width: 78px; border: none; border-bottom: 1px solid var(--filet);
+  background: none; color: var(--encre); font: inherit; font-size: 12px; padding: 2px 0;
+}
+table.plans thead .filtres input::placeholder { color: var(--filet-fort); }
+table.plans thead .filtres input:focus { outline: none; border-bottom-color: var(--focus); }
+table.plans thead .filtres input[data-actif="true"] { border-bottom-color: var(--encre); color: var(--encre); }
+
+table.plans thead .titres th.glisse { opacity: .4; }
+table.plans thead .titres th.cible { box-shadow: inset 2px 0 0 var(--fait); }
+table.plans thead .titres th button {
+  border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+table.plans thead .titres th button:hover { color: var(--encre); }
+.poignee { color: var(--filet-fort); cursor: grab; margin-right: 6px; opacity: 0; transition: opacity .12s; }
+table.plans thead .titres:hover .poignee, table.plans thead .titres:focus-within .poignee { opacity: 1; }
+.fleche { color: var(--encre); }
+
+table.plans tbody td { padding: 8px 14px; border-bottom: 1px solid var(--filet); vertical-align: middle; white-space: nowrap; }
+table.plans tbody tr:hover td { background: var(--creux); }
+/* Le decalage gauche est mesure au rendu : dans l'ordre de la feuille la
+   reference n'est pas la premiere colonne, et tout ce qui la precede reste
+   colle avec elle plutot que de passer dessous. */
+.col-fige { position: sticky; left: 0; background: var(--surface); z-index: 2; }
+table.plans tbody tr:hover .col-fige { background: var(--creux); }
+/* La specificite de `.titres th` ecrasait ce z-index : les entetes figees
+   passaient sous les colonnes qui defilent. Un selecteur plus precis. */
+table.plans thead tr th.col-fige { z-index: 6; }
+.fige-fin { box-shadow: inset -1px 0 0 var(--filet-fort); }
+
+.ref { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
+.large { max-width: 230px; overflow: hidden; text-overflow: ellipsis; }
+.doux { color: var(--encre-3); }
+.etat-cellule { display: inline-flex; align-items: center; gap: 8px; }
+
+.vide-message { padding: 44px 16px; color: var(--encre-3); }
+.compte { color: var(--encre-3); font-size: 12.5px; }
+.pied { padding: 20px 0 42px; margin-top: 32px; border-top: 1px solid var(--filet); color: var(--encre-3); font-size: 11.5px; line-height: 1.8; }
+.masque { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+@media (prefers-reduced-motion: reduce) { .barre span, .ombre-defile, .poignee { transition: none; } }
+</style>
+
+  </head>
+  <body>
+
+<!-- Les données sont posées dans la page au moment où le modèle est évalué :
+     pas d'écran de chargement, pas d'aller-retour. -->
 <script>
+  window.SUIVI_FWD_DONNEES = {"ok":true,"message":"","feuille":"Données","genereLe":"2026-09-22T11:33:03.091Z","colonnes":[{"cle":"reference","groupe":"Informations principales","titre":"Référence UD","classe":"ref","fige":true},{"cle":"nom_installation","groupe":"Informations principales","titre":"Nom installation","classe":""},{"cle":"ata","groupe":"Informations principales","titre":"ATA","classe":"num","dim":true},{"cle":"sequence","groupe":"Informations principales","titre":"Séquence","classe":"num","dim":true},{"cle":"ecp","groupe":"Définition du plan","titre":"ECP","classe":"num","dim":true},{"cle":"validation_definition_electrique","groupe":"Définition du plan","titre":"Validation définition électrique","classe":"num"},{"cle":"statut_ibg","groupe":"Définition du plan","titre":"Statut IBG","classe":"num"},{"cle":"date_creation","groupe":"Définition du plan","titre":"Date création","classe":"num"},{"cle":"avancement","groupe":"FWD","titre":"Avancement FWD","classe":"num"},{"cle":"resp","groupe":"FWD","titre":"Resp.","classe":"num"},{"cle":"commentaire","groupe":"FWD","titre":"Commentaire","classe":"large"}],"cleDate":"date_creation","clesDim":["ata","sequence","ecp"],"clesEssentielles":["reference","nom_installation","ecp","ata","sequence","validation_definition_electrique","date_creation"],"cleDomaine":null,"dimParDefaut":"ata","lignesIgnorees":0,"plans":[{"reference":"UD-24-1000","nom_installation":"Antenne VHF dorsale","ata":"24","sequence":"S2","ecp":"ECP-2360","validation_definition_electrique":"Validée","statut_ibg":"En revue","date_creation":"2026-01-05","avancement":"100%","resp":"CM","commentaire":""},{"reference":"UD-25-1007","nom_installation":"Faisceau treuil de sauvetage","ata":"25","sequence":"S4","ecp":"","validation_definition_electrique":"Validée","statut_ibg":"En revue","date_creation":"2026-03-09","avancement":"En cours","resp":"CM","commentaire":""},{"reference":"UD-34-1014","nom_installation":"Éclairage de soute","ata":"34","sequence":"S2","ecp":"ECP-2643","validation_definition_electrique":"Validée","statut_ibg":"À contrôler","date_creation":"2026-03-21","avancement":"","resp":"AB","commentaire":""},{"reference":"UD-33-1021","nom_installation":"Antenne VHF dorsale","ata":"33","sequence":"S2","ecp":"ECP-2212","validation_definition_electrique":"En attente","statut_ibg":"Validé","date_creation":"2026-03-26","avancement":"-","resp":"MR","commentaire":""},{"reference":"UD-92-1028","nom_installation":"Câblage siège pilote","ata":"92","sequence":"S1","ecp":"ECP-2636","validation_definition_electrique":"En attente","statut_ibg":"Validé","date_creation":"2026-03-24","avancement":"Terminé","resp":"TL","commentaire":""},{"reference":"UD-39-1035","nom_installation":"Câblage siège pilote","ata":"39","sequence":"S4","ecp":"ECP-2314","validation_definition_electrique":"Validée","statut_ibg":"Validé","date_creation":"2026-08-24","avancement":"20%","resp":"TL","commentaire":""},{"reference":"UD-25-1042","nom_installation":"Câblage siège pilote","ata":"25","sequence":"S1","ecp":"ECP-2287","validation_definition_electrique":"Validée","statut_ibg":"Validé","date_creation":"2026-02-21","avancement":"à faire","resp":"AB","commentaire":""},{"reference":"UD-39-1049","nom_installation":"Antenne VHF dorsale","ata":"39","sequence":"S3","ecp":"ECP-2686","validation_definition_electrique":"Validée","statut_ibg":"En revue","date_creation":"2026-02-20","avancement":"50%","resp":"AB","commentaire":"Attente d’accès & \u003cvalidation\u003e \u003c/script\u003e \u003c!--"},{"reference":"UD-92-1056","nom_installation":"Faisceau treuil de sauvetage","ata":"92","sequence":"S2","ecp":"ECP-2415","validation_definition_electrique":"Sans objet","statut_ibg":"Non lancé","date_creation":"2026-08-13","avancement":"20%","resp":"TL","commentaire":"Attente d’accès & \u003cvalidation\u003e \u003c/script\u003e \u003c!--"},{"reference":"UD-31-1063","nom_installation":"Câblage siège pilote","ata":"31","sequence":"S3","ecp":"ECP-2109","validation_definition_electrique":"En attente","statut_ibg":"À contrôler","date_creation":"2026-08-22","avancement":"","resp":"MR","commentaire":""},{"reference":"UD-92-1070","nom_installation":"Harnais alimentation cabine","ata":"92","sequence":"S4","ecp":"ECP-2678","validation_definition_electrique":"Sans objet","statut_ibg":"Validé","date_creation":"2026-06-15","avancement":"100 %","resp":"MR","commentaire":""},{"reference":"UD-92-1077","nom_installation":"Éclairage de soute","ata":"92","sequence":"S3","ecp":"ECP-2119","validation_definition_electrique":"Sans objet","statut_ibg":"Validé","date_creation":"2026-05-17","avancement":"50%","resp":"AB","commentaire":""}],"releves":[],"jalons":[{"semaine":"2026-S51","texte":"Solde FWD"},{"semaine":"2027-S02","texte":"Diffusion PH Base","perimetre":"BASE/OPTION"},{"semaine":"2027-S03","texte":"Diffusion PH Perso","perimetre":"PERSO"},{"semaine":"2027-S05","texte":"Diffusion TO Base","perimetre":"BASE/OPTION"},{"semaine":"2027-S08","texte":"Diffusion TO Perso","perimetre":"PERSO"}],"contrats":[{"id":"Données","nom":"Données"}],"contrat":"Données"};
+
+  /* Pont vers le classeur : la page demande le paquet d'un autre contrat sans
+     se recharger. Le rappel reçoit le paquet, ou null si le classeur n'a pas
+     répondu — la page garde alors le contrat courant et le dit. */
+  window.SUIVI_FWD_API = {
+    chargerContrat: function (id, cb) {
+      try {
+        google.script.run
+          .withSuccessHandler(cb)
+          .withFailureHandler(function (e) {
+            console.error('Contrat non chargé :', e && e.message);
+            cb(null);
+          })
+          .getDonneesPourClient(id);
+      } catch (e) { cb(null); /* page ouverte hors classeur : sans conséquence */ }
+    }
+  };
+</script>
+
+<div class="page">
+
+  <div class="filtres-actifs" id="filtres-actifs" hidden></div>
+
+  <div class="bandeau-mode" id="bandeau-mode">
+    <!-- Toujours visible : devant un classeur, il compare les données réelles
+         à un historique fabriqué ; dans la démonstration seule, il montre le
+         même geste — c'est ainsi qu'on l'explique à quelqu'un. -->
+    <span class="segmente" id="mode-donnees" role="group" aria-label="Source des données">
+      <button type="button" data-mode="reel" aria-pressed="true">Données réelles</button>
+      <button type="button" data-mode="exemple" aria-pressed="false">Exemple</button>
+    </span>
+    <span class="mot-mode" id="mot-mode"></span>
+    <!-- Le message du classeur quand il n'a rien pu rendre — feuille vide,
+         contrat introuvable, colonne d'avancement absente. -->
+    <span class="mot-mode alerte-source" id="alerte-source" role="alert" hidden></span>
+    <span class="choix-contrat" id="choix-contrat" hidden>
+      <label for="select-contrat">Contrat</label>
+      <select class="select" id="select-contrat"></select>
+      <span class="attente" id="etat-contrat" role="status" aria-live="polite"></span>
+    </span>
+  </div>
+
+  <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
+       pas répété, il est déjà choisi en haut. -->
+  <header class="masthead">
+    <h1>Suivi FWD</h1>
+    <div class="semaine">
+      <span><b id="num-semaine">—</b></span>
+      <span aria-hidden="true">·</span>
+      <span id="dates-semaine">—</span>
+      <!-- Quand le dernier relevé n'est pas de cette semaine, la page le dit :
+           le titre donne la date du jour, pas celle des chiffres. -->
+      <span class="semaine-releve" id="releve-semaine" hidden>—</span>
+    </div>
+  </header>
+
+  <section class="avancement">
+    <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
+         gouverne, juste au-dessus de la barre. -->
+    <div class="avancement-ligne">
+      <div class="phrase" id="phrase">—</div>
+      <div class="perimetre" id="perimetre" hidden>
+        <span class="mot-perimetre" id="mot-perimetre">Périmètre</span>
+        <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
+      </div>
+    </div>
+    <div class="barre" id="barre" role="img" aria-label="Répartition de l'avancement FWD"></div>
+    <div class="filets" id="filets" aria-hidden="true"></div>
+    <div class="etats" id="etats" role="group" aria-label="Filtrer par état d'avancement FWD"></div>
+    <div class="comparatif" id="comparatif"></div>
+  </section>
+
+  <section class="bloc">
+    <div class="section-tete">
+      <h2>Avancement dans le temps</h2>
+      <div class="commandes-graphe">
+        <span class="indice">Glissez pour vous déplacer · molette pour zoomer</span>
+        <span class="segmente" role="group" aria-label="Période affichée">
+          <button type="button" data-span="13">3 mois</button>
+          <button type="button" data-span="26">6 mois</button>
+          <button type="button" data-span="52">1 an</button>
+          <button type="button" data-span="0">Tout</button>
+        </span>
+      </div>
+    </div>
+    <div class="feuille">
+      <div class="cadre-graphe" id="cadre-graphe">
+        <div id="zone-graphe"></div>
+      </div>
+      <p class="note-graphe" id="note-graphe"></p>
+      <div class="legende" id="legende"></div>
+      <div class="legende-jalons" id="legende-jalons"></div>
+    </div>
+
+    <!-- Le journal appartient au graphe : la courbe dit combien, le journal
+         dit lesquels. Les séparer obligeait à faire l'aller-retour. -->
+    <div class="section-tete section-journal">
+      <h2 class="titre-journal">Ce qui a changé, semaine par semaine</h2>
+      <span class="filtre-journal" id="filtre-journal" role="group" aria-label="Ne montrer que certains passages">
+        <button type="button" data-journal="" aria-pressed="true">Tout</button>
+        <button type="button" data-journal="termine" aria-pressed="false"><span class="pastille" style="background:var(--fait)"></span>Terminés</button>
+        <button type="button" data-journal="encours" aria-pressed="false"><span class="pastille" style="background:var(--cours)"></span>En cours</button>
+        <button type="button" data-journal="afaire" aria-pressed="false"><span class="pastille" style="background:var(--afaire)"></span>À faire</button>
+        <button type="button" data-journal="indice" aria-pressed="false"><span class="pastille indice"></span>Changement d’indice</button>
+      </span>
+    </div>
+    <div class="feuille">
+      <div class="defile-liste" id="zone-journal"></div>
+    </div>
+  </section>
+
+  <section class="bloc">
+    <div class="section-tete">
+      <h2 id="titre-groupe">Avancement FWD</h2>
+      <div class="commandes-groupe">
+        <label class="masque" for="dim-critique">Grouper par</label>
+        <select class="select" id="dim-critique"></select>
+        <!-- Le filtre de la colonne de gauche : il ne touche qu'aux lignes de
+             ce bloc, jamais au reste de la page. Rien n'en est mémorisé. -->
+        <div class="recherche recherche-groupe">
+          <label class="masque" for="filtre-groupe">Filtrer les groupes</label>
+          <input id="filtre-groupe" type="search" placeholder="Filtrer…" autocomplete="off">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+            <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="compte-groupes" id="compte-groupes" role="status" aria-live="polite"></span>
+      </div>
+    </div>
+    <p class="indice-dim" id="indice-dim"></p>
+    <div class="feuille">
+      <div class="defile-liste" id="zone-critique"></div>
+    </div>
+  </section>
+
+  <!-- Un seul tableau, deux bases : l'interrupteur GATES | SEE bascule de
+       l'extract d'ici à celui de là, avec les mêmes outils. SEE n'existe que
+       si la source décrit une seconde base ; sinon l'interrupteur s'efface. -->
+  <section class="bloc" id="section-plans">
+    <div class="section-tete">
+      <h2>Plans</h2>
+      <span class="segmente" id="choix-base" role="group" aria-label="Base affichée" hidden>
+        <button type="button" data-base="ici" aria-pressed="true">GATES</button>
+        <button type="button" data-base="la" aria-pressed="false" id="bouton-base-la">Seconde base</button>
+      </span>
+      <span class="compte" id="compte">—</span>
+    </div>
+
+    <div class="outils">
+      <div class="recherche" data-base="ici">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <label class="masque" for="recherche">Rechercher dans toutes les colonnes</label>
+        <input id="recherche" type="search" placeholder="Rechercher dans toutes les colonnes…" autocomplete="off">
+      </div>
+      <div class="recherche" data-base="la" hidden>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <label class="masque" for="recherche-seconde">Rechercher dans la seconde base</label>
+        <input id="recherche-seconde" type="search" placeholder="Rechercher dans toutes les colonnes…" autocomplete="off">
+      </div>
+      <span class="segmente" id="vue-tableau" role="group" aria-label="Colonnes affichées" data-base="ici">
+        <button type="button" data-vue="toutes" aria-pressed="true">Toutes les colonnes</button>
+        <button type="button" data-vue="essentielle" aria-pressed="false">Vue essentielle</button>
+      </span>
+      <span class="segmente" id="vue-seconde" role="group" aria-label="Colonnes affichées de la seconde base" data-base="la" hidden>
+        <button type="button" data-vue="toutes" aria-pressed="true">Toutes les colonnes</button>
+        <button type="button" data-vue="essentielle" aria-pressed="false">Vue essentielle</button>
+      </span>
+      <button class="lien-doux" id="reinit" type="button" hidden>tout réinitialiser</button>
+      <span class="legende-rapp" id="legende-seconde" data-base="la" hidden></span>
+    </div>
+    <div class="incomplets" id="incomplets" data-base="ici"></div>
+
+    <div class="cadre-tableau" id="cadre-tableau" data-base="ici">
+      <div class="defile" id="defile">
+        <table class="plans">
+          <thead id="tete-tableau"></thead>
+          <tbody id="corps-tableau"></tbody>
+        </table>
+      </div>
+      <div class="ombre-defile"></div>
+    </div>
+    <!-- La seconde base, telle que son extract : toutes ses colonnes, dans son
+         ordre, sous leurs intitulés ; le verdict du rapprochement en pastille
+         dans la cellule de la référence, les cellules qui diffèrent teintées. -->
+    <div class="cadre-tableau" id="cadre-seconde" data-base="la" hidden>
+      <div class="defile">
+        <table class="plans seconde">
+          <thead id="tete-seconde"></thead>
+          <tbody id="corps-seconde"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Le rapprochement, sous les tableaux : deux bases face à face. Deux
+       cercles qui se recouvrent — ce qu'elles ont en commun au milieu, avec
+       un anneau pour la part de plans d'accord ; ce que chacune est seule à
+       connaître sur les côtés — et une ligne par verdict, en français, qui
+       filtre le tableau. Un plan connu de SEE est un plan créé, donc terminé :
+       le rapprochement croise cette présence avec l'avancement de GATES.
+       Présent seulement quand la source décrit une seconde base. -->
+  <section class="bloc rapprochement" id="rapprochement" hidden>
+    <div class="section-tete">
+      <h2 id="titre-rapprochement">Comparaison des bases de données</h2>
+    </div>
+    <div class="rapp-face">
+      <div class="rapp-figure" id="venn-rapprochement" role="img" aria-label="Comparaison GATES / seconde base"></div>
+      <div class="verdicts" id="verdicts-rapprochement" role="group" aria-label="Filtrer le tableau des plans par verdict de la comparaison"></div>
+    </div>
+    <!-- Sous les cercles, plan par plan : un lot après l'autre, dans l'ordre
+         des priorités — ce qui est à vérifier d'abord, déplié ; ce qui va
+         ensuite, replié. Chaque ligne : la référence, l'état GATES, ce que la
+         seconde base en dit. Un clic sur une référence la montre dans le
+         tableau. -->
+    <div class="rapp-liste" id="liste-rapprochement"></div>
+  </section>
+
+  <footer class="pied">
+    <span id="import"></span><br>
+    <!-- La démonstration seule le dit : sur le classeur, ces chiffres SONT
+         ceux du tableur. Masqué dès qu'un classeur est derrière la page. -->
+    <span id="avertissement-demo">Jeu d'exemple — les chiffres de cette page ne proviennent pas du tableur.</span>
+  </footer>
+</div>
+
+<div class="bulle" id="bulle" role="status" aria-live="polite"></div>
+
+    <script>
 (function () {
   'use strict';
 
@@ -1370,9 +2536,8 @@
       if (/^\d{1,3}$/.test(parts[1])) parts[1] = ('00' + parts[1]).slice(-3);
       parts[2] = parts[2].toUpperCase();
     }
-    /* Recomposer, c'est aussi décaler le A : SEE l'écrit un cran trop tôt
-       — trois chiffres avant lui au lieu de quatre — et c'est la référence
-       de GATES qu'on montre. */
+    /* Recomposer, c'est aussi remettre le A à sa place : SEE l'écrit un cran
+       plus loin que GATES, et c'est la référence de GATES qu'on montre. */
     return remettreLeA(parts.join('').toUpperCase());
   }
   /* Les cases à cocher d'un extract : TRUE / FALSE, VRAI / FAUX, oui / non… */
@@ -4447,3 +5612,6 @@
   if (SERVEUR && !PLANS.length) basculerExemple(true);
 })();
 </script>
+
+  </body>
+</html>

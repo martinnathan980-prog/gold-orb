@@ -1095,15 +1095,20 @@ function diagnostiquerSecondeBase(classeur, dire) {
          autre manquante). Sinon c'est peut-être la première ligne de
          DONNÉES d'un extract collé sans ses en-têtes : des valeurs, qu'on
          ne recopie pas ici. */
-      const enTete = base.cles.some(function (k) {
-        return base.entetes.some(function (e) { return normaliser(e) === normaliser(k); });
+      const manquantes = base.cles.filter(function (k) {
+        return !base.entetes.some(function (e) { return normaliser(e) === normaliser(k); });
       });
+      const enTete = manquantes.length < base.cles.length;
       dire(enTete
         ? '   en-têtes lus (ligne ' + base.ligneEntete + ') : ' + base.entetes.slice(0, 12).join(' | ') +
           (base.entetes.length > 12 ? ' | …' : '')
         : '   ligne ' + base.ligneEntete + ' prise pour en-tête : ' + base.entetes.length +
           ' cellule(s), aucune ne porte ' + base.cles.join(', ') + ' — l\'extract est-il collé avec ses en-têtes ?');
-      dire('   → vérifier que l\'extract est collé entier, en-têtes compris.');
+      /* Une colonne renommée dans l'export est le cas courant : le dire, plutôt
+         que d'envoyer recoller un extract qui est déjà là, entier. */
+      dire(enTete
+        ? '   il manque ' + manquantes.join(', ') + ' — cette colonne a-t-elle un autre intitulé dans l\'export ?'
+        : '   → vérifier que l\'extract est collé entier, en-têtes compris.');
       return false;
     }
     default:
@@ -1613,15 +1618,23 @@ function lireSecondeBase(classeur) {
   rendu.onglet = feuille.getName();
 
   const donnees = feuille.getDataRange().getDisplayValues();
-  let indexEntete = -1, premiereNonVide = -1;
+  let indexEntete = -1, premiereNonVide = -1, presque = -1, mieuxPortes = 0;
   const limite = Math.min(CONFIG.LIGNES_SCAN_ENTETE, donnees.length);
   for (let i = 0; i < limite && indexEntete === -1; i++) {
     if (!ligneNonVide(donnees[i])) continue;
     if (premiereNonVide === -1) premiereNonVide = i;
     const cellules = donnees[i].map(function (c) { return normaliser(String(c).trim()); });
-    if (clesVoulues.every(function (k) { return cellules.indexOf(normaliser(k)) !== -1; })) indexEntete = i;
+    const portes = clesVoulues.filter(function (k) { return cellules.indexOf(normaliser(k)) !== -1; }).length;
+    if (portes === clesVoulues.length) indexEntete = i;
+    else if (portes > mieuxPortes) { mieuxPortes = portes; presque = i; }
   }
-  if (indexEntete === -1) indexEntete = premiereNonVide;
+  /* Aucune ligne ne porte toute la référence. On retient alors celle qui en
+     porte le plus, et non la première ligne non vide : dans SEE, celle-là est
+     le titre « Nommage WD BFLOW », qui ne dit rien. Il suffit qu'une colonne
+     ait été renommée dans l'export pour que le diagnostic montre le titre et
+     conclue à un collage sans en-têtes — alors que l'en-tête est bien là,
+     deux lignes plus bas, avec un intitulé de moins. */
+  if (indexEntete === -1) indexEntete = presque !== -1 ? presque : premiereNonVide;
   if (indexEntete === -1) {
     for (let i = 0; i < donnees.length; i++) {
       if (ligneNonVide(donnees[i])) { indexEntete = i; break; }

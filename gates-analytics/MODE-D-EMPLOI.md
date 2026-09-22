@@ -145,9 +145,11 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
 5. **Onglet `SEE` nu** — pas de mise en forme conditionnelle, pas de filtre, pas
    de volet figé, et surtout aucune formule d'un autre onglet qui pointe dessus :
    elle se recalculerait à chaque collage.
-6. **Si l'export existe en `.csv`** — Fichier → Importer → le fichier →
-   « Remplacer la feuille de calcul », onglet SEE sélectionné. Sheets lit un
-   fichier bien plus vite qu'il n'avale un collage.
+6. **Si l'export existe en `.csv`** — onglet `SEE` sélectionné, Fichier →
+   Importer → le fichier, puis **« Remplacer la feuille actuelle »**. Sheets
+   lit un fichier bien plus vite qu'il n'avale un collage. ⚠️ Surtout pas
+   « Remplacer la feuille de calcul » : celle-là remplace **tout le
+   classeur**, contrats et historique compris.
 7. Fermer les autres onglets Chrome lourds, et le tableau de bord pendant
    l'opération : il ne recalcule rien, mais il occupe la mémoire.
 
