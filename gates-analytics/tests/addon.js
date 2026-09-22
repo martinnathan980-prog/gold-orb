@@ -1548,7 +1548,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   }));
   verifier('la vue essentielle est exactement celle demandee',
     JSON.stringify(ess.titres) === JSON.stringify(['Référence UD', 'Nom Installation', 'ECP',
-      'ATA', 'Séquence', 'Validation Définition Electrique', 'Date création', 'Avancement']),
+      'ATA', 'Séquence', 'Validation Définition Electrique', 'Date création',
+      'Avancement Définition Electrique', 'Avancement Concept Harnais']),
     JSON.stringify(ess.titres));
   verifier('ni Statut iBG ni les blocs repetes n\'y entrent',
     ess.titres.indexOf('Statut iBG') === -1 && ess.titres.indexOf('Validité') === -1);
