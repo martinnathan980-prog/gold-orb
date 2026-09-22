@@ -1773,7 +1773,8 @@ async function reinitialiser(pg) {
     await p.evaluate(() => window.scrollTo(0, 0));
     await p.fill('#champ-plan', ''); await p.keyboard.type(cibles.bouge.ref); await p.waitForTimeout(250);
     await p.keyboard.press('Enter'); await p.waitForTimeout(400);
-    const evts = await p.evaluate(() => [...document.querySelectorAll('#fiche-plan .fiche-evts li')].map(li => li.textContent.replace(/\s+/g, ' ').trim()));
+    const evts = await p.evaluate(() => [...document.querySelectorAll('#fiche-plan .fiche-evts li')]
+      .map(li => li.querySelector('.sem').textContent.trim() + ' ' + li.lastElementChild.textContent.trim()));
     const motAttendu = { termine: 'passé en terminé', encours: 'passé en cours', afaire: 'passé à faire', vide: 'avancement effacé' }[cibles.bouge.apres];
     verifier('un plan qui a bougé : la fiche liste son passage, semaine en tête (« S… ' + motAttendu + ' »)',
       evts.some(t => new RegExp('^S\\d{1,2} ' + motAttendu).test(t)), JSON.stringify(evts));
