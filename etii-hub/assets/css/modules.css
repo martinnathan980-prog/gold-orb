@@ -110,50 +110,53 @@
   background-color: var(--chaud-contenu);
 }
 
+/* Les messages ne défilent plus : ils s'écrivent. Un ruban qui glissait
+   mettait 36 s à passer, ne s'arrêtait pas au doigt, et sur téléphone la
+   fenêtre faisait 237 px pour un message de 417 px — la seule information
+   du portail qu'on ne pouvait pas lire en entier. Tout tient maintenant,
+   sur une ligne à 1366 px et sur trois à 390 px. */
 .kiosque__alertes-fenetre {
   flex: 1;
   min-inline-size: 0;
-  overflow: hidden;
   display: flex;
   align-items: center;
-  /* Un fondu aux deux bords : les messages entrent et sortent en douceur. */
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, var(--fond-inverse) var(--e-4), var(--fond-inverse) calc(100% - var(--e-4)), transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, var(--fond-inverse) var(--e-4), var(--fond-inverse) calc(100% - var(--e-4)), transparent 100%);
 }
 
-.kiosque__alertes-piste { display: flex; inline-size: max-content; }
+.kiosque__alertes-piste { display: flex; }
 
 ul.kiosque__alertes-liste {
   display: flex;
-  gap: var(--e-8);
+  flex-wrap: wrap;
+  gap: var(--e-2) var(--e-6);
   margin: 0;
-  padding: 0 var(--e-8) 0 var(--e-4);
+  padding: 0;
   list-style: none;
 }
 
+/* La seconde liste n'existait que pour boucler le défilement. Tant que le
+   gabarit l'émet encore, elle ne doit pas doubler les messages — et le
+   sélecteur porte son `ul` pour gagner contre la règle ci-dessus. */
+ul.kiosque__alertes-liste--copie { display: none; }
+
 .kiosque__alerte {
   display: inline-flex;
-  align-items: center;
+  align-items: start;
   gap: var(--e-2);
-  white-space: nowrap;
   font-size: var(--texte-sm);
   font-weight: var(--graisse-moyenne);
   color: var(--chaud-encre);
 }
 
-/* Une puce terre cuite ouvre chaque message : le rythme se lit de loin. */
+/* Une puce terre cuite ouvre chaque message : le rythme se lit de loin.
+   Sur un message qui passe à la ligne, elle s'aligne sur la première. */
 .kiosque__alerte::before {
   content: "";
   flex: none;
   inline-size: 6px;
   block-size: 6px;
+  margin-block-start: 0.45em;
   border-radius: var(--rayon-plein);
   background-color: var(--chaud);
-}
-
-@keyframes kiosque-defile {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
 }
 
 @keyframes kiosque-pulse {
@@ -162,18 +165,7 @@ ul.kiosque__alertes-liste {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .kiosque__alertes-piste { animation: kiosque-defile calc(var(--duree-lente) * 90) linear infinite; }
-  .kiosque__alertes:hover .kiosque__alertes-piste,
-  .kiosque__alertes:focus-within .kiosque__alertes-piste { animation-play-state: paused; }
   .kiosque__alertes-point { animation: kiosque-pulse calc(var(--duree-lente) * 3) ease-in-out infinite alternate; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .kiosque__alertes-fenetre { overflow: visible; }
-  .kiosque__alertes-piste { inline-size: auto; }
-  ul.kiosque__alertes-liste { flex-wrap: wrap; gap: var(--e-2) var(--e-6); padding: 0; }
-  .kiosque__alertes-liste--copie { display: none; }
-  .kiosque__alerte { white-space: normal; }
 }
 
 /* --- La grille : la liste à gauche, la lecture à droite ---------------- */
@@ -1853,8 +1845,9 @@ ol.liseuse__bloc-liste {
 .palette-ouvrir kbd { font-size: var(--texte-xs); padding: 0 var(--e-1); border-color: var(--entete-bordure); background: none; color: inherit; }
 
 @media (max-width: 640px) {
+  /* Le libellé est retiré de l'œil sans l'être du lecteur d'écran, en §8 de
+     base.css : `display: none` ici emportait le nom du bouton avec le texte. */
   .palette-ouvrir { margin-inline-start: 0; }
-  .palette-ouvrir__libelle { display: none; }
 }
 
 .modale--palette { inline-size: min(100%, 44rem); }
@@ -3402,4 +3395,45 @@ ol.liseuse__bloc-liste {
 
   /* La barre du site tient sur deux rangs sur téléphone. */
   :root { --hauteur-barre-site: var(--hauteur-barre-site-etroite); }
+}
+
+/* -------------------------------------------------------------------------
+   16. Écrans tactiles
+   Ces deux blocs ferment le fichier, et modules.css est la dernière feuille
+   chargée : à spécificité égale — et un @media n'en ajoute pas — une règle
+   posée plus haut serait écrasée par la peau ou par les modules eux-mêmes.
+   C'est mesuré : remontés, ils ne font plus rien.
+   ---------------------------------------------------------------------- */
+
+/* Sous 16px, Safari iOS agrandit la page à chaque prise de focus dans un
+   champ et ne la remet jamais droite. On remonte donc tous les champs de
+   saisie au doigt. Toute nouvelle classe de champ est à ajouter ici.
+   `pointer: coarse` et non `any-pointer` : un portable à écran tactile garde
+   ses vues de bureau, validées telles quelles. */
+@media (pointer: coarse) {
+  .champ__controle,
+  select.champ__select,
+  .recherche__champ,
+  .org-recherche,
+  .pole-experts__recherche,
+  .liseuse__recherche,
+  .arbre__recherche {
+    font-size: var(--texte-lg);
+    min-block-size: var(--cible-tactile);
+  }
+}
+
+/* Ces liens-ci sont petits par choix typographique — un lien de sommaire, un
+   jeton de pôle, un code de porteur, un nom de pôle dans l'arbre. Au doigt,
+   on leur pose un plancher de 44px sans toucher à --cible-tactile, dont
+   dépend la hauteur de la barre du site : la rehausser mangerait le
+   sommaire collant. */
+@media (pointer: coarse) {
+  .sous-nav a,
+  .pole-jeton,
+  .pole-porteur-groupe__code,
+  .org-arbre__pole-nom,
+  .kiosque__filtres .facette {
+    min-block-size: 44px;
+  }
 }

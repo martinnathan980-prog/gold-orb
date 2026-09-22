@@ -456,6 +456,29 @@ html {
   border: 0;
 }
 
+/* Sur téléphone, les deux boutons de la barre n'ont plus la place d'afficher
+   leur libellé. Le masquer à l'œil ne doit pas l'effacer pour un lecteur
+   d'écran : `display: none` emporte le nom accessible du bouton avec le
+   texte, et la bascule de thème se retrouvait sans nom du tout. */
+@media (max-width: 640px) {
+  .bascule-theme__libelle,
+  .palette-ouvrir__libelle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Le badge « Ctrl K » n'a pas de sens sans clavier : masqué à l'écran
+     comme à l'oreille, le bouton s'appelle enfin « Rechercher partout ». */
+  .palette-ouvrir kbd { display: none; }
+}
+
 /* Variante qui réapparaît au focus (utile sur un lien ou un bouton). */
 .visuellement-cache--focusable:focus,
 .visuellement-cache--focusable:focus-visible {
@@ -664,28 +687,16 @@ html {
     margin-inline-start: auto;
   }
 
-  /* Les six liens se répartissent en grille fluide : tous restent visibles,
-     atteignables au clavier, et respectent la cible tactile de 44px. */
+  /* Repli sous 640px : la barre reste une ligne (skin.css §14 la met en
+     flex). Les liens doivent y tenir sans défilement — si un lien s'ajoute,
+     revoir padding-inline et font-size dans skin.css, pas ici. */
   .site-nav__liste {
-    display: grid;
-    grid-template-columns: repeat(
-      auto-fit,
-      minmax(min(calc(var(--e-16) * 2.25), 100%), 1fr)
-    );
     gap: var(--e-1);
   }
 
   .site-nav__liste a {
     padding-inline: var(--e-2);
     font-size: var(--texte-xs);
-    text-align: center;
-  }
-}
-
-/* Écrans très étroits : la grille retombe naturellement sur deux colonnes. */
-@media (max-width: 360px) {
-  .site-nav__liste {
-    grid-template-columns: repeat(2, 1fr);
   }
 }
 

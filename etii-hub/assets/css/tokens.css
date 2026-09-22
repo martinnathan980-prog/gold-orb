@@ -95,18 +95,28 @@
   /* La bande : une section sur deux se pose sur un ton à peine différent,
      pour que l'œil sépare les parties de la page sans y penser. */
   --fond-bande:    var(--gris-50);
-  --fond-enfonce:  var(--gris-50);
+  /* Le creux est un lavis d'encre translucide, pas un gris de plus : posé
+     sur le papier, sur la bande ou sur une feuille blanche, il assombrit
+     toujours ce qu'il recouvre du même cran. Un gris fixe, lui, devenait
+     invisible dès que la surface d'accueil valait la même chose. */
+  --fond-enfonce:  rgb(40 35 25 / 0.06);
   --fond-inverse:  var(--gris-900);
 
   --texte:         var(--gris-900);
   --texte-doux:    var(--gris-600);
-  --texte-faible:  var(--gris-500);
+  /* En littéral et non via --gris-500 : ce gris-là sert aussi de
+     --bordure-forte, qu'on ne veut pas foncer. */
+  --texte-faible:  #6c675d;
   --texte-inverse: #ffffff;
   --texte-accent:  #17367f;
 
   --bordure:       var(--gris-300);
   --bordure-douce: #e7e3d9;
   --bordure-forte: var(--gris-400);
+  /* Le filet d'un champ de saisie : plus marqué que --bordure, c'est le
+     seul indice qui dise « on écrit ici ». Le fond du champ, lui, reste
+     celui de la feuille. */
+  --champ-bordure: var(--gris-500);
 
   --accent:          var(--marque-bleu);
   --accent-vif:      var(--marque-bleu-clair);
@@ -237,7 +247,7 @@
    blocs ci-dessous sont identiques et doivent le rester.
    ========================================================================= */
 
-@media (prefers-color-scheme: dark) {
+@media screen and (prefers-color-scheme: dark) {
   :root:not([data-theme="clair"]) {
     --fond:         #1f1e1b;
     --fond-profond: #181714;
@@ -248,13 +258,14 @@
 
     --texte:         #ece8df;
     --texte-doux:    #b9b3a6;
-    --texte-faible:  #8f897b;
+    --texte-faible:  #9f9889;
     --texte-inverse: #1f1e1b;
     --texte-accent:  #a3bff5;
 
     --bordure:       #3d3b35;
     --bordure-douce: #34322d;
     --bordure-forte: #514e46;
+    --champ-bordure: #8f897b;
 
     --accent:         #a3bff5;
     --accent-vif:     #bfd2f8;
@@ -333,22 +344,30 @@
   }
 }
 
+/* Les deux blocs sombres sont enfermés dans @media screen : sur papier, il
+   n'y a pas de thème sombre, et une liste de jetons à remettre à zéro dans
+   @media print s'oublie toujours à moitié (les statuts, les cartes, les
+   pôles…). Ici, les 51 jetons sombres retombent d'un coup sur leur valeur
+   claire, juste par construction sur une feuille blanche. */
+@media screen {
 :root[data-theme="sombre"] {
   --fond:         #1f1e1b;
   --fond-profond: #181714;
   --fond-eleve:   #2a2925;
+  --fond-bande:   #23221f;
   --fond-enfonce: #33312c;
   --fond-inverse: #f1ede4;
 
   --texte:         #ece8df;
   --texte-doux:    #b9b3a6;
-  --texte-faible:  #8f897b;
+  --texte-faible:  #9f9889;
   --texte-inverse: #1f1e1b;
   --texte-accent:  #a3bff5;
 
   --bordure:       #3d3b35;
   --bordure-douce: #34322d;
   --bordure-forte: #514e46;
+  --champ-bordure: #8f897b;
 
   --accent:         #a3bff5;
   --accent-vif:     #bfd2f8;
@@ -424,4 +443,5 @@
   --ombre-lg: 0 18px 50px rgb(0 0 0 / 0.6), 0 0 0 1px var(--bordure-forte);
 
   --focus-couleur: #9db8f0;
+}
 }
