@@ -11,6 +11,7 @@
    ========================================================================= */
 
 import { el, monter, annoncer, etatUrl, rafThrottle, mouvementReduit } from './ui.js';
+import { barreEdition, boutonAjouter } from './edition.js';
 import { creditPhoto } from './credits.js';
 import { silhouette } from './helicos.js';
 import { portrait } from './portraits.js';
@@ -184,6 +185,15 @@ const GROUPES_FICHE = [
   { cle: 'electrique', titre: 'Électrique & avionique', champs: [
     ['reseau', 'Réseau électrique'], ['generation', 'Génération'], ['avionique', 'Avionique'], ['particularites', 'Particularités']] }
 ];
+
+/* Les libellés de la fiche, par groupe et par champ : le formulaire de
+   modification (edition-contenus.js) nomme les champs comme la fiche. */
+export function libellesFiche() {
+  const r = {};
+  for (const g of GROUPES_FICHE) r[g.cle] = Object.fromEntries(g.champs);
+  r.identite = Object.assign({}, r.identite || {}, Object.fromEntries(IDENTITE));
+  return r;
+}
 
 /* Le bandeau d'identité : les essentiels, rien d'autre. */
 const IDENTITE = [
@@ -518,9 +528,21 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
         titreBloc)
     : banniereSilhouette();
 
+  /* En mode édition : modifier la fiche, ou retirer le porteur. */
+  const ctx = contexte || {};
+  const commandes = (typeof ctx.surModifier === 'function' || typeof ctx.surSupprimer === 'function')
+    ? barreEdition({
+        classe: 'porteurs__edition',
+        quoi: code,
+        surModifier: typeof ctx.surModifier === 'function' ? (b) => ctx.surModifier(appareil, b) : null,
+        surSupprimer: typeof ctx.surSupprimer === 'function' ? () => ctx.surSupprimer(appareil) : null
+      })
+    : null;
+
   return el('article', { class: 'porteurs__detail', 'aria-label': 'Fiche ' + code, id: prefixe + '-detail' },
     banniere,
     el('div', { class: 'porteurs__contenu' },
+      commandes,
       texte(fiche.resume) ? el('p', { class: 'porteurs__resume sans-marge' }, texte(fiche.resume)) : null,
       bandeauIdentite(appareil, fiche, avecFiche, categorie),
       onglets(prefixe, panneaux)));
@@ -563,9 +585,11 @@ export function creditsPhotos(donnees) {
 
 /**
  * @param {object} donnees   contenu de flotte.json
- * @param {{id?: string, equipe?: object, documents?: object}} [options]
+ * @param {{id?: string, equipe?: object, documents?: object,
+ *          surAjouter?: Function, surModifier?: Function, surSupprimer?: Function}} [options]
  *   `equipe` est organigramme.json et `documents` documents.json : ils
- *   servent à relier le porteur à ceux qui travaillent dessus.
+ *   servent à relier le porteur à ceux qui travaillent dessus. Les trois
+ *   commandes d'édition ne se voient qu'en mode édition (edition.js).
  * @returns {HTMLElement}
  */
 export function porteurs(donnees, options) {
@@ -669,7 +693,7 @@ export function porteurs(donnees, options) {
     if (itemDetail && itemDetail.parentNode) itemDetail.parentNode.removeChild(itemDetail);
     courant = appareil;
     itemDetail = el('li', { class: 'porteurs__item porteurs__item--detail' },
-      detail(appareil, d, cats, { equipe: opts.equipe, documents: opts.documents }));
+      detail(appareil, d, cats, { equipe: opts.equipe, documents: opts.documents, surModifier: opts.surModifier, surSupprimer: opts.surSupprimer }));
     if (!mouvementReduit()) {
       itemDetail.dataset.etat = 'entree';
       itemDetail.addEventListener('animationend', () => { delete itemDetail.dataset.etat; }, { once: true });
@@ -732,7 +756,8 @@ export function porteurs(donnees, options) {
   });
 
   const racine = el('section', { class: 'porteurs', id: prefixe },
-    el('div', { class: 'porteurs__barre' }, puces),
+    el('div', { class: 'porteurs__barre' }, puces,
+      typeof opts.surAjouter === 'function' ? boutonAjouter('Ajouter un porteur', opts.surAjouter) : null),
     piste);
 
   /* La rangée d'une carte change avec la largeur : la fiche dépliée suit. */

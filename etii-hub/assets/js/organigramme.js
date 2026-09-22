@@ -14,12 +14,20 @@
    Contrat d'URL : organigramme.html#pole=…&vue=…&personne=…&competence=…
    « pole » vaut ETII (tout le service) ou un code de pôle ; une valeur
    inconnue retombe sur ETII sans erreur.
+
+   En mode édition (edition.js), une fiche se modifie ou se retire, une
+   squad se renomme ou se retire, et chaque pôle de l'arbre offre d'ajouter
+   une personne ou une squad. L'arbre se redessine seul après chaque
+   enregistrement (modifications.js).
    ========================================================================= */
 
 import { el, frag, monter, deleguer, debounce, etatUrl, initTheme, initNav,
          ouvrirModale, annoncer, toast, copierTexte } from './ui.js';
 import { chargerDonnees, avecEtat } from './data.js';
 import { portrait } from './portraits.js';
+import { installerEdition, barreEdition, boutonAjouter } from './edition.js';
+import { ouvrirPersonne, ouvrirSquad } from './edition-contenus.js';
+import { abonnerModifications, supprimerElement, aplatirOrganigramme } from './modifications.js';
 
 const SERVICE = 'ETII';
 const CODES = ['ETIIA', 'ETIIE', 'ETIII'];
@@ -49,14 +57,14 @@ function valeurOuVide(v) { return texte(v) || MENTION_VIDE; }
 /** Un modèle plat : une entrée par personne, tout ce qu'il faut pour filtrer. */
 function construireModele(orga, docs) {
   const gens = [];
-  const ajouter = (p, role, pole, squad) => {
+  const ajouter = (p, role, pole, squad, squadId) => {
     if (!p || typeof p !== 'object' || !texte(p.nom)) return;
     const competences = (Array.isArray(p.competences) ? p.competences : [])
       .filter((c) => c && texte(c.nom))
       .map((c) => ({ nom: texte(c.nom), niveau: NIVEAUX[texte(c.niveau)] ? texte(c.niveau) : 'pratique' }));
     gens.push({
       id: texte(p.id) || ('sans-id-' + gens.length),
-      nom: texte(p.nom), poste: texte(p.poste), role, pole, squad,
+      nom: texte(p.nom), poste: texte(p.poste), role, pole, squad, squadId: squadId || '',
       perimetre: texte(p.perimetre), photo: texte(p.photo), competences,
       recherche: normaliser([p.nom, p.poste, p.perimetre, squad, pole, p.id,
         competences.map((c) => c.nom).join(' ')].join(' '))
@@ -67,12 +75,15 @@ function construireModele(orga, docs) {
   for (const pole of (Array.isArray(orga.poles) ? orga.poles : [])) {
     const code = texte(pole && pole.pole);
     ajouter(pole && pole.responsable, 'responsable', code, '');
-    for (const squad of (Array.isArray(pole && pole.squads) ? pole.squads : [])) {
+    /* L'identifiant d'une squad suit la règle d'aplatirOrganigramme() :
+       le sien, sinon « <pôle>-<rang> ». C'est par lui qu'on la modifie. */
+    (Array.isArray(pole && pole.squads) ? pole.squads : []).forEach((squad, i) => {
       const nomSquad = texte(squad && squad.nom);
+      const idSquad = texte(squad && squad.id) || (code + '-' + (i + 1));
       for (const m of (Array.isArray(squad && squad.membres) ? squad.membres : [])) {
-        ajouter(m, texte(m && m.role) === 'leader' ? 'leader' : 'membre', code, nomSquad);
+        ajouter(m, texte(m && m.role) === 'leader' ? 'leader' : 'membre', code, nomSquad, idSquad);
       }
-    }
+    });
   }
 
   /* Les documents portés : documents.json nomme son porteur. Le lien se
@@ -103,7 +114,12 @@ function construireModele(orga, docs) {
     }))
     .sort((a, b) => a.nom.localeCompare(b.nom));
 
-  return { gens, competences, orga };
+  /* Les squads telles que l'organigramme les déclare, vides comprises :
+     une squad qu'on vient de créer doit apparaître avant d'avoir un
+     membre, sinon on ne saurait où elle est passée. */
+  const squads = aplatirOrganigramme(orga).squads;
+
+  return { gens, competences, squads, orga };
 }
 
 /* -------------------------------------------------------------------------
@@ -118,6 +134,9 @@ let competenceActive = '';
 let fiche = null;
 let ficheApi = null;
 let ouvrirTout = false;
+/* Les volets que la personne a ouverts elle-même : ils le restent quand
+   l'arbre se redessine (un filtre de pôle, une modification enregistrée). */
+const squadsOuvertes = new Set();
 const refs = {};
 
 function visibles() {
@@ -190,7 +209,10 @@ function pileAvatars(gens, max) {
 function volatSquad(s, ouvert) {
   const membres = s.membres.slice()
     .sort((a, b) => (b.role === 'leader') - (a.role === 'leader') || a.nom.localeCompare(b.nom));
-  const details = el('details', { class: 'org-squad', open: ouvert ? true : null, dataSquad: s.nom },
+  /* « À affecter » n'est pas une squad : c'est l'attente des personnes
+     dont la squad a été retirée. On ne la renomme pas. */
+  const modifiable = s.id && !/-a-affecter$/.test(s.id);
+  const details = el('details', { class: 'org-squad', open: ouvert ? true : null, dataSquad: s.nom, dataSquadId: s.id },
     el('summary', { class: 'org-squad__tete' },
       el('span', { class: 'org-squad__chevron', 'aria-hidden': 'true' }),
       el('span', { class: 'org-squad__infos' },
@@ -198,7 +220,19 @@ function volatSquad(s, ouvert) {
         el('span', { class: 'org-squad__lead' }, s.lead ? 'Lead : ' + s.lead.nom : 'Lead ' + MENTION_VIDE)),
       pileAvatars(membres, 5),
       el('span', { class: 'org-squad__compte mono' }, membres.length)),
-    el('div', { class: 'org-squad__membres' }, membres.map((g) => boutonPersonne(g))));
+    membres.length
+      ? el('div', { class: 'org-squad__membres' }, membres.map((g) => boutonPersonne(g)))
+      : el('p', { class: 'org-squad__vide texte-doux' }, 'Personne dans cette squad pour le moment.'),
+    modifiable
+      ? el('div', { class: 'org-squad__edition edition-seulement' },
+          boutonAjouter('Une personne ici', (b) => editerPersonne({ pole: s.pole, squad: s.id, declencheur: b })),
+          barreEdition({
+            classe: 'barre-edition--compacte',
+            quoi: s.nom,
+            surModifier: (b) => ouvrirSquad({ existant: { id: s.id, pole: s.pole, nom: s.nom, rang: s.rang }, pole: s.pole, declencheur: b }),
+            surSupprimer: () => retirer('squad', s.id, '« ' + s.nom + ' » retirée : ses membres attendent dans « À affecter ».')
+          }))
+      : null);
   return details;
 }
 
@@ -209,17 +243,18 @@ function rendreArbre(gens) {
   const poles = (poleActif === SERVICE ? CODES : [poleActif]).map((code) => {
     const membres = parmi((g) => g.pole === code);
     const responsable = membres.find((g) => g.role === 'responsable') || null;
-    const squads = [...new Set(membres.filter((g) => g.squad).map((g) => g.squad))]
-      .sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
-    /* Le lead se lit dans le modèle COMPLET : cherché dans `membres`, il
-       disparaîtrait dès qu'un filtre le laisse dehors et la squad
-       annoncerait « Lead à renseigner » alors que le lead existe. */
-    return { code, responsable, squads: squads.map((nom) => ({
-      nom,
-      lead: modele.gens.find((g) => g.role === 'leader' && g.pole === code && g.squad === nom) || null,
-      membres: membres.filter((g) => g.squad === nom)
-    })), effectif: membres.length };
-  }).filter((p) => p.effectif > 0);
+    /* Les squads de l'organigramme, dans son ordre ; filtrées, seules
+       celles qui ont une réponse restent. Le lead se lit dans le modèle
+       COMPLET : cherché dans `membres`, il disparaîtrait dès qu'un filtre
+       le laisse dehors et la squad annoncerait « Lead à renseigner » alors
+       que le lead existe. */
+    const squads = modele.squads.filter((s) => s.pole === code).map((s) => ({
+      id: s.id, pole: code, nom: s.nom, rang: s.rang,
+      lead: modele.gens.find((g) => g.role === 'leader' && g.pole === code && g.squadId === s.id) || null,
+      membres: membres.filter((g) => g.squadId === s.id)
+    })).filter((s) => s.membres.length || !filtreActif);
+    return { code, responsable, squads, effectif: membres.length };
+  }).filter((p) => p.effectif > 0 || !filtreActif);
 
   if (!poles.length && !direction.length) {
     return el('p', { class: 'texte-doux' }, 'Personne ne correspond à cette recherche.');
@@ -239,7 +274,10 @@ function rendreArbre(gens) {
         el('a', { class: 'org-arbre__pole-nom', href: PAGE_DE_POLE[p.code] || '#' }, p.code),
         el('span', { class: 'org-arbre__pole-compte mono' }, p.effectif + ' pers. · ' + p.squads.length + (p.squads.length > 1 ? ' squads' : ' squad'))),
       p.responsable ? boutonPersonne(p.responsable, { classe: 'org-personne--responsable', taille: 'md' }) : null,
-      el('div', { class: 'org-arbre__squads' }, p.squads.map((s) => volatSquad(s, filtreActif || ouvrirTout)))))));
+      el('div', { class: 'org-arbre__squads' }, p.squads.map((s) => volatSquad(s, filtreActif || ouvrirTout || squadsOuvertes.has(s.id)))),
+      el('div', { class: 'org-arbre__ajouts edition-seulement' },
+        boutonAjouter('Une personne', (b) => editerPersonne({ pole: p.code, squad: p.squads.length ? p.squads[0].id : '', declencheur: b })),
+        boutonAjouter('Une squad', (b) => ouvrirSquad({ pole: p.code, declencheur: b })))))));
 }
 
 /* -------------------------------------------------------------------------
@@ -310,11 +348,31 @@ function ouvrirFiche(id, declencheur) {
   const puce = (autre) => el('button', { type: 'button', class: 'org-puce', dataPersonne: autre.id, dataPole: autre.pole },
     portrait(autre, { taille: 'xs' }), el('span', {}, autre.nom));
 
+  /* La personne telle que l'organigramme la range (pôle, squad) : c'est
+     elle que le formulaire reçoit. La fiche se referme d'abord ; l'arbre
+     se redessine après l'enregistrement. */
+  const place = aplatirOrganigramme(modele.orga).personnes.find((p) => texte(p.id) === g.id) || null;
+  const edition = place
+    ? barreEdition({
+        classe: 'org-fiche__edition',
+        quoi: g.nom,
+        surModifier: () => {
+          const retour = declencheur || null;
+          if (ficheApi) ficheApi.fermer('modifier');
+          editerPersonne({ existant: place, declencheur: retour });
+        },
+        surSupprimer: async () => {
+          if (await retirer('personne', g.id, '« ' + g.nom + ' » ne figure plus dans l’organigramme.') && ficheApi) ficheApi.fermer('supprime');
+        }
+      })
+    : null;
+
   ficheApi = ouvrirModale({
     titre: g.nom,
     classe: 'modale--large',
     declencheur: declencheur || null,
     contenu: () => frag(
+      edition,
       /* La modale vit hors de la zone : la teinte du pôle se pose ici. */
       el('div', { class: 'org-fiche__entete', dataPole: g.pole },
         portrait(g, { taille: 'xl' }),
@@ -383,7 +441,41 @@ function ouvrirFiche(id, declencheur) {
 }
 
 /* -------------------------------------------------------------------------
-   8. Export
+   8. Modifier (mode édition)
+   ------------------------------------------------------------------------- */
+
+/* Le formulaire d'une personne propose le porteur qu'elle suit : la liste
+   des porteurs se charge à la demande, jamais pour un simple lecteur. */
+async function editerPersonne(options) {
+  let flotte = null;
+  try { flotte = await chargerDonnees('flotte'); } catch (_e) { flotte = null; }
+  ouvrirPersonne(Object.assign({
+    organigramme: modele.orga,
+    flotte,
+    /* La squad où la personne vient d'être placée s'ouvre : on la voit
+       arriver. L'arbre se redessine aussi quand les données relues
+       arrivent ; les deux rendus finissent sur la même image. */
+    apres: (personne) => {
+      if (personne && personne.squad) squadsOuvertes.add(personne.squad);
+      rendre();
+    }
+  }, options));
+}
+
+/** Retire une personne ou une squad ; vrai si c'est fait. */
+async function retirer(type, id, message) {
+  try {
+    await supprimerElement('organigramme', type, id);
+    toast(message, 'succes');
+    return true;
+  } catch (e) {
+    toast((e && e.message) || 'La suppression a échoué.', 'erreur');
+    return false;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   9. Export
    ------------------------------------------------------------------------- */
 
 function exporterCsv() {
@@ -406,7 +498,7 @@ function exporterCsv() {
 }
 
 /* -------------------------------------------------------------------------
-   9. Rendu et câblage
+   10. Rendu et câblage
    ------------------------------------------------------------------------- */
 
 function rendreReperes() {
@@ -457,7 +549,10 @@ function appliquerUrl() {
      aussi au démarrage, avant que construire() n'ait créé le champ. */
   requete = '';
   if (refs.recherche) refs.recherche.value = requete;
-  initNav('organigramme.html');
+  /* L'organigramme n'a pas d'entrée dans la barre : on l'atteint depuis
+     l'espace d'un pôle. Filtré sur un pôle, c'est ce pôle que la barre
+     désigne comme page courante ; pour tout le service, aucune. */
+  initNav(poleActif !== SERVICE ? poleActif.toLowerCase() + '.html' : 'organigramme.html');
 }
 
 /* Arrivée par la palette, par un lien collé : #personne=… ouvre la fiche,
@@ -511,6 +606,11 @@ function construire(donnees, cible) {
       refs.jeton,
       el('button', { type: 'button', class: 'bouton bouton--secondaire bouton--compact', dataDeplier: '', 'aria-pressed': 'false' }, 'Tout déplier'),
       el('button', { type: 'button', class: 'bouton bouton--secondaire bouton--compact', dataExport: '' }, 'Exporter'),
+      boutonAjouter('Ajouter une personne', (b) => {
+        const pole = poleActif !== SERVICE ? poleActif : CODES[0];
+        const premiere = modele.squads.find((s) => s.pole === pole);
+        editerPersonne({ pole, squad: premiere ? premiere.id : '', declencheur: b });
+      }),
       refs.filtres),
     refs.reperes,
     el('div', { class: 'onglets' }, refs.onglets, refs.zone));
@@ -518,6 +618,14 @@ function construire(donnees, cible) {
   refs.recherche.addEventListener('input', debounce(() => { requete = refs.recherche.value; rendre(); }, 120));
 
   deleguer(cible, '[data-personne]', 'click', (evt, b) => ouvrirFiche(b.dataset.personne, b));
+  /* Un volet ouvert ou fermé à la main (souris, Entrée, Espace : tous
+     passent par un clic sur le résumé) est retenu, avant qu'il bascule. */
+  deleguer(cible, '.org-squad__tete', 'click', (evt, tete) => {
+    const volet = tete.parentElement;
+    const id = volet && volet.dataset.squadId;
+    if (!id) return;
+    if (volet.open) squadsOuvertes.delete(id); else squadsOuvertes.add(id);
+  });
   deleguer(document.body, '[data-personne]', 'click', (evt, b) => {
     /* Les puces d'une fiche ouvrent la fiche suivante : la délégation
        vit sur le corps, la modale n'étant pas dans la zone. */
@@ -559,17 +667,19 @@ function construire(donnees, cible) {
 }
 
 /* -------------------------------------------------------------------------
-   10. Démarrage
+   11. Démarrage
    ------------------------------------------------------------------------- */
 
 initTheme();
 appliquerUrl();
+installerEdition();
 
-avecEtat('#zone-organigramme',
-  async () => {
-    const [orga, docs] = await Promise.all([chargerDonnees('organigramme'), chargerDonnees('documents')]);
-    return { orga, docs };
-  },
+async function chargerOrganigramme() {
+  const [orga, docs] = await Promise.all([chargerDonnees('organigramme'), chargerDonnees('documents')]);
+  return { orga, docs };
+}
+
+avecEtat('#zone-organigramme', chargerOrganigramme,
   construire, {
     squelette: 4,
     texteChargement: 'Chargement de l’organigramme du service…',
@@ -578,6 +688,17 @@ avecEtat('#zone-organigramme',
     texteVide: 'Le fichier de l’organigramme ne contient encore personne.',
     estVide: (d) => !d || !d.orga || (!d.orga.direction && !(d.orga.poles || []).length)
   });
+
+/* Une modification enregistrée : data.js a déjà oublié le jeu, on relit
+   et on redessine la vue en cours, filtres et recherche compris. */
+abonnerModifications(async (jeu) => {
+  if (!modele || (jeu !== 'organigramme' && jeu !== 'documents')) return;
+  try {
+    const d = await chargerOrganigramme();
+    modele = construireModele(d.orga, d.docs);
+    rendre();
+  } catch (_e) { /* la page garde ce qu'elle montrait */ }
+});
 
 etatUrl.ecouter((etat) => {
   if (!modele) return;

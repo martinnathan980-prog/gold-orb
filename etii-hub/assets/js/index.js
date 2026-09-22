@@ -1,12 +1,17 @@
 /* =========================================================================
    ETII Hub — Page du service (index.html)
 
-   Trois sections, dans l'ordre voulu par le service :
-     1. LE COMMUNICATION CENTER — le bandeau des alertes, le mot du chef
-        en vedette, l'historique en cartes. Rendu par kiosque.js.
-     2. LES PORTEURS — les appareils suivis, rendus par porteurs.js.
-     3. LE SUIVI OTQ / OTD — lu dans un CSV : la feuille publiée du service,
+   Quatre sections, dans l'ordre voulu par le service :
+     1. LE COMMUNICATION CENTER — le bandeau des alertes, l'édito en
+        vedette, l'historique en frise. Rendu par kiosque.js.
+     2. À VENIR — les prochains rendez-vous du service (agenda.js).
+     3. LES PORTEURS — les appareils suivis, rendus par porteurs.js.
+     4. LE SUIVI OTQ / OTD — lu dans un CSV : la feuille publiée du service,
         ou l'exemple embarqué, toujours annoncé comme tel (otq.js).
+
+   Tout se modifie dans la page, en mode édition (edition.js) : les
+   communications, les alertes, les rendez-vous, les porteurs. Chaque
+   section se redessine seule après un enregistrement.
 
    Au-dessus, sur la bande de l'en-tête, le sommaire collant (la même
    « petite barre » que sur un espace de pôle) suit la lecture.
@@ -17,12 +22,16 @@
 
 import { el, monter, initTheme, initNav, deleguer, ouvrirModale, suivreSommaire } from './ui.js';
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
-import { porteurs, creditsPhotos } from './porteurs.js';
-import { creditPhoto } from './credits.js';
+import { porteurs, creditsPhotos, libellesFiche } from './porteurs.js';
+import { creditsCommunications } from './credits.js';
 import { kiosque, dossiersDepuisCommunications, alertesDepuisCommunications, noteOrigine } from './kiosque.js';
 import { chargerSuivi, rendreSuivi } from './otq.js';
 import { chargerCommunications } from './communications.js';
 import { ouvrirEditeur } from './editeur.js';
+import { installerEdition } from './edition.js';
+import { abonnerModifications, supprimerElement } from './modifications.js';
+import { agenda } from './agenda.js';
+import { modifierCommunication, supprimerDossier, ouvrirAlertes, ouvrirRendezVous, ouvrirPorteur } from './edition-contenus.js';
 
 const POLES = [
   { cle: 'ETIIA', libelle: 'ETIIA' },
@@ -54,9 +63,27 @@ function rendreCommunication(donnees, conteneur) {
     alertes: alertesDepuisCommunications(donnees),
     titreFil: 'Communications',
     filtres: POLES,
-    /* « Ajouter une communication » : l'éditeur s'ouvre ici, et la
-       section se recharge une fois la communication publiée. */
-    surAjout: (bouton) => ouvrirEditeur({ pole: 'ETII', declencheur: bouton, surPublication: chargerCommunicationCenter })
+    /* Les commandes d'édition : visibles en mode édition seulement. La
+       section se redessine d'elle-même après un enregistrement (voir
+       abonnerModifications, plus bas). */
+    surAjout: (bouton) => ouvrirEditeur({ pole: 'ETII', declencheur: bouton }),
+    surModifier: (dossier, bouton) => modifierCommunication(dossier, bouton, 'ETII'),
+    surSupprimer: (dossier) => supprimerDossier(dossier),
+    surAlertes: (bouton) => ouvrirAlertes({ alertes: donnees.alertesDetail, declencheur: bouton })
+  }));
+}
+
+/* -------------------------------------------------------------------------
+   1 bis. À venir
+   ------------------------------------------------------------------------- */
+
+function rendreAgenda(donnees, conteneur) {
+  monter(conteneur, agenda(donnees, {
+    pole: 'ETII',
+    limite: 6,
+    surAjouter: (b) => ouvrirRendezVous({ pole: 'ETII', declencheur: b }),
+    surModifier: (entree, b) => ouvrirRendezVous({ existant: entree, declencheur: b }),
+    surSupprimer: (entree) => supprimerElement('communications', 'agenda', entree.id)
   }));
 }
 
@@ -69,7 +96,12 @@ function rendreFlotte(ensemble, conteneur) {
   verifierForme(donnees, { flotte: 'tableau' }, 'flotte.json');
   const avertissement = txt(donnees.avertissement);
   monter(conteneur, el('div', { class: 'pile' },
-    porteurs(donnees, { id: 'porteurs-service', equipe: ensemble.equipe, documents: ensemble.documents }),
+    porteurs(donnees, {
+      id: 'porteurs-service', equipe: ensemble.equipe, documents: ensemble.documents,
+      surAjouter: (b) => ouvrirPorteur({ flotte: donnees, libelles: libellesFiche(), declencheur: b }),
+      surModifier: (appareil, b) => ouvrirPorteur({ existant: appareil, flotte: donnees, libelles: libellesFiche(), declencheur: b }),
+      surSupprimer: (appareil) => supprimerElement('flotte', 'porteur', appareil.code)
+    }),
     avertissement
       ? el('p', { class: 'flotte-note sans-marge' },
         el('span', { 'aria-hidden': 'true' }, '※'),
@@ -92,6 +124,7 @@ function rendreSuiviOTQ(suivi, conteneur) {
 
 initTheme();
 initNav('index.html');
+installerEdition();
 /* Le sommaire : Communication · Porteurs · Suivi OTQ / OTD, le lien
    courant marqué au fil du défilement (le mécanisme des espaces de pôle). */
 suivreSommaire();
@@ -101,20 +134,27 @@ function chargerCommunicationCenter() {
     squelette: 3,
     texteChargement: 'Chargement de la communication du service…',
     titreErreur: 'Communication indisponible',
-    titreVide: 'Aucune communication publiée',
-    texteVide: 'Le mot du chef, les jalons et les annonces du service '
-      + 'apparaîtront ici dès qu’ils auront été publiés.',
-    estVide: (donnees) => !donnees
-      || ((!Array.isArray(donnees.agenda) || donnees.agenda.length === 0)
-          && (!Array.isArray(donnees.annonces) || donnees.annonces.length === 0)
-          && !donnees.motDuChef)
+    /* Jamais « vide » : un kiosque sans communication garde, en mode
+       édition, son bouton « Ajouter une communication ». */
+    estVide: () => false
   });
 }
 chargerCommunicationCenter();
 
+function chargerAgenda() {
+  avecEtat('#zone-agenda', chargerCommunications, rendreAgenda, {
+    squelette: 1,
+    texteChargement: 'Chargement des prochains rendez-vous…',
+    titreErreur: 'Agenda indisponible',
+    estVide: () => false
+  });
+}
+chargerAgenda();
+
 /* La flotte a besoin de l'organigramme et du fonds documentaire pour
    relier chaque porteur à son équipe et à ses documents. Les trois
    fichiers sont déjà en cache pour les autres sections. */
+function chargerFlotte() {
 avecEtat('#zone-flotte', async () => {
   const [flotte, equipe, documents] = await Promise.all([
     chargerDonnees('flotte'), chargerDonnees('organigramme'), chargerDonnees('documents')]);
@@ -125,8 +165,16 @@ avecEtat('#zone-flotte', async () => {
   titreErreur: 'Porteurs indisponibles',
   titreVide: 'Aucun porteur suivi',
   texteVide: 'Les appareils suivis par le service apparaîtront ici.',
-  estVide: (e) => !e || !e.flotte || !Array.isArray(e.flotte.flotte)
-    || e.flotte.flotte.length === 0
+  estVide: () => false
+});
+}
+chargerFlotte();
+
+/* Une modification enregistrée redessine les sections qui en dépendent :
+   data.js a déjà oublié le jeu, la section le relit. */
+abonnerModifications((jeu) => {
+  if (jeu === 'communications') { chargerCommunicationCenter(); chargerAgenda(); }
+  if (jeu === 'flotte' || jeu === 'organigramme' || jeu === 'documents') chargerFlotte();
 });
 
 /* Les crédits des photos de la flotte : une obligation de licence, lisible
@@ -147,32 +195,6 @@ deleguer(document, '[data-credits-photos]', 'click', async (evt, lien) => {
       creditsCommunications(communications))
   });
 });
-
-/* Les images des communications qui portent un crédit (photos sous licence
-   libre) : même obligation, même fenêtre. Une photo du service, sans
-   crédit, n'a rien à déclarer. */
-function creditsCommunications(communications) {
-  const c = (communications && typeof communications === 'object') ? communications : {};
-  const entrees = [c.motDuChef].concat(Array.isArray(c.annonces) ? c.annonces : []).filter((e) => e && typeof e === 'object');
-  const images = [];
-  for (const e of entrees) {
-    const blocs = Array.isArray(e.blocs) ? e.blocs : [];
-    const candidates = [e.image].concat(blocs.filter((b) => b && b.type === 'image'), blocs.filter((b) => b && b.type === 'galerie').flatMap((b) => b.images || []));
-    for (const im of candidates) {
-      if (!im || typeof im !== 'object' || !im.credit || typeof im.credit !== 'object') continue;
-      if (images.some((x) => x.src === im.src)) continue;
-      images.push({ src: im.src, alt: im.alt, credit: im.credit, titre: txt(e.titre) });
-    }
-  }
-  if (!images.length) return null;
-  return el('div', { class: 'pile pile--serree' },
-    el('h3', { class: 'sans-marge' }, 'Images des communications'),
-    el('ul', { class: 'porteurs__credits', role: 'list' }, images.map((im) => el('li', { class: 'porteurs__credits-item' },
-      el('img', { src: im.src, alt: '', loading: 'lazy', decoding: 'async', class: 'porteurs__credits-vignette' }),
-      el('div', { class: 'porteurs__credits-texte' },
-        el('span', { class: 'porteurs__credits-nom' }, im.titre),
-        creditPhoto(im.credit))))));
-}
 
 avecEtat('#zone-otq', chargerSuivi, rendreSuiviOTQ, {
   squelette: 2,

@@ -20,8 +20,8 @@
    ========================================================================= */
 
 import { el, monter, mouvementReduit, annoncer, etatUrl } from './ui.js';
+import { barreEdition, boutonAjouter } from './edition.js';
 import { sparkline } from './indicateurs.js';
-import { creditPhoto, creditsDistincts } from './credits.js';
 
 const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
                      'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -31,9 +31,9 @@ const MOIS_LONGS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
 
 /* Libellé humain des types d'entrée d'agenda : de la matière éditoriale,
    pas de la donnée. Un type inconnu est affiché tel quel. */
-const TYPES_AGENDA = {
-  jalon: 'Jalon', atelier: 'Atelier', reunion: 'Réunion', mot: 'Mot du chef',
-  succes: 'Succès', alerte: 'Alerte', info: 'Information'
+export const TYPES_AGENDA = {
+  jalon: 'Jalon', revue: 'Revue', atelier: 'Atelier', reunion: 'Réunion', formation: 'Formation',
+  evenement: 'Événement', mot: 'Édito', succes: 'Succès', alerte: 'Alerte', info: 'Information'
 };
 
 const STATUTS = {
@@ -287,7 +287,6 @@ function dossierDepuis(e, base) {
     /* Repères pour la liste : y a-t-il une image, des chiffres ? */
     avecImage: blocs.some((b) => b.type === 'image' || b.type === 'galerie'),
     avecChiffres: blocs.some((b) => b.type === 'chiffres' || b.type === 'courbe'),
-    local: e.local === true,
     /* Le jeu d'exemple du dépôt porte ce drapeau : la mention se pose une
        fois, au niveau de l'entrée, au lieu d'être écrite dans la prose. */
     exemple: e.exemple === true
@@ -324,7 +323,8 @@ export function dossiersDepuisCommunications(donnees, options) {
   const mot = objet(d.motDuChef);
   if (mot && niveauService && texte(mot.titre)) {
     dossiers.push(dossierDepuis(mot, {
-      id: 'mot-du-chef', groupe: 'mot', programme: 'Service ETII', statut: 'mot', pole: 'ETII'
+      id: 'mot-du-chef', groupe: 'mot', programme: 'Service ETII', statut: 'mot', pole: 'ETII',
+      source: { type: 'edito', id: texte(mot.id) || 'mot-du-chef', entree: mot }
     }));
     vus.add(cleEntree(mot.date, mot.titre));
   }
@@ -346,7 +346,10 @@ export function dossiersDepuisCommunications(donnees, options) {
       id: 'annonce-' + texte(e.id),
       groupe: 'historique',
       programme: texte(e.categorie) || 'Général',
-      statut: STATUTS[texte(e.statut)] ? texte(e.statut) : 'info'
+      statut: STATUTS[texte(e.statut)] ? texte(e.statut) : 'info',
+      /* Un édito rétrogradé dans la frise reste un édito : on le modifie
+         comme tel. */
+      source: { type: e.typeSource === 'edito' ? 'edito' : 'annonce', id: texte(e.id), entree: e }
     })),
     ...agenda
       .filter((e) => texte(e.statut) !== 'a-venir' && texte(e.type) !== 'mot' && garder(e) && passee(e))
@@ -354,7 +357,8 @@ export function dossiersDepuisCommunications(donnees, options) {
         id: 'agenda-' + texte(e.id),
         groupe: 'historique',
         programme: TYPES_AGENDA[texte(e.type)] || texte(e.type) || 'Agenda',
-        statut: STATUTS[texte(e.type)] ? texte(e.type) : 'info'
+        statut: STATUTS[texte(e.type)] ? texte(e.type) : 'info',
+        source: { type: 'agenda', id: texte(e.id), entree: e }
       }))
   ].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -408,20 +412,53 @@ export function alertesDepuisCommunications(donnees) {
 /** Le bandeau seul, pour l'aperçu de l'éditeur. */
 export function apercuAlertes(alertes) { return bandeauAlertes(Array.isArray(alertes) ? alertes : []); }
 
-function bandeauAlertes(alertes) {
-  if (!alertes.length) return null;
-  /* Une seule liste : la copie masquée ne servait qu'à boucler un
-     défilement que le bandeau n'a plus — il est statique et lisible à
-     toutes les largeurs. */
-  const liste = () => el('ul', { class: 'kiosque__alertes-liste' },
-    alertes.map((a) => el('li', { class: 'kiosque__alerte' }, a)));
+function bandeauAlertes(alertes, surAlertes) {
+  /* Sans alerte, le bandeau n'existe pas ; en mode édition, un bouton
+     permet d'en écrire une. */
+  if (!alertes.length) {
+    return typeof surAlertes === 'function'
+      ? el('div', { class: 'kiosque__alertes-vide edition-seulement' }, boutonAjouter('Ajouter une alerte', surAlertes))
+      : null;
+  }
+  /* Une ligne qui défile : la piste porte deux fois la liste, et glisser
+     d'une demi-piste ramène exactement au départ — la boucle est sans
+     couture. La copie est cachée aux lecteurs d'écran, qui lisent la
+     liste une fois. Sous « mouvement réduit », la feuille arrête tout et
+     masque la copie : les messages s'écrivent alors sur plusieurs lignes. */
+  const liste = (copie) => el('ul', {
+    class: ['kiosque__alertes-liste', copie ? 'kiosque__alertes-liste--copie' : null],
+    'aria-hidden': copie ? 'true' : null
+  }, alertes.map((a) => el('li', { class: 'kiosque__alerte' }, a)));
 
-  return el('div', { class: 'kiosque__alertes', role: 'region', 'aria-label': 'Alertes en cours' },
+  /* Le survol arrête le défilement ; au doigt et au clavier, il faut un
+     bouton : un texte qui bouge plus de cinq secondes doit pouvoir être
+     arrêté (WCAG 2.2.2), et c'est le seul moyen de lire une alerte longue
+     sur un téléphone. */
+  const racine = el('div', { class: 'kiosque__alertes', role: 'region', 'aria-label': 'Alertes en cours' });
+  const pause = el('button', {
+    type: 'button', class: 'kiosque__alertes-pause',
+    'aria-pressed': 'false', 'aria-label': 'Mettre le défilement en pause', title: 'Mettre en pause'
+  }, el('span', { 'aria-hidden': 'true' }, '❚❚'));
+  pause.addEventListener('click', () => {
+    const arrete = pause.getAttribute('aria-pressed') !== 'true';
+    pause.setAttribute('aria-pressed', arrete ? 'true' : 'false');
+    pause.title = arrete ? 'Reprendre le défilement' : 'Mettre en pause';
+    monter(pause, el('span', { 'aria-hidden': 'true' }, arrete ? '▶' : '❚❚'));
+    racine.classList.toggle('kiosque__alertes--pause', arrete);
+  });
+
+  const modifier = typeof surAlertes === 'function'
+    ? el('button', { type: 'button', class: 'kiosque__alertes-modifier edition-seulement', 'aria-label': 'Modifier les alertes', title: 'Modifier les alertes',
+        onClick: (evt) => surAlertes(evt.currentTarget) }, el('span', { 'aria-hidden': 'true' }, '✎'))
+    : null;
+
+  return monter(racine,
     el('span', { class: 'kiosque__alertes-etiquette' },
       el('span', { class: 'kiosque__alertes-point', 'aria-hidden': 'true' }),
       alertes.length > 1 ? 'Alertes' : 'Alerte'),
     el('div', { class: 'kiosque__alertes-fenetre' },
-      el('div', { class: 'kiosque__alertes-piste' }, liste())));
+      el('div', { class: 'kiosque__alertes-piste' }, liste(false), liste(true))),
+    pause, modifier);
 }
 
 /* -------------------------------------------------------------------------
@@ -459,8 +496,7 @@ function carteListe(dossier, prefixe) {
         pastillePole(dossier.pole),
         el('span', {}, dossier.programme || 'Général'),
         dossier.avecImage ? el('span', { class: 'kiosque__carte-glyphe', title: 'Avec image', 'aria-hidden': 'true' }, '▣') : null,
-        dossier.avecChiffres ? el('span', { class: 'kiosque__carte-glyphe', title: 'Avec chiffres', 'aria-hidden': 'true' }, '▮') : null,
-        dossier.local ? el('span', { class: 'badge badge--alerte kiosque__carte-local', title: 'Enregistrée dans ce navigateur seulement' }, 'brouillon') : null))));
+        dossier.avecChiffres ? el('span', { class: 'kiosque__carte-glyphe', title: 'Avec chiffres', 'aria-hidden': 'true' }, '▮') : null))));
 }
 
 /* La frise : un rail vertical à gauche, un point par entrée (coloré selon
@@ -676,11 +712,10 @@ function lecture(prefixe) {
     'Ces chiffres illustrent le rendu. Ils ne mesurent rien.');
   const blocs = el('div', { class: 'kiosque__blocs' });
   const curseur = el('span', { class: 'kiosque__curseur', 'aria-hidden': 'true', hidden: true });
-  /* Les crédits des photos de la lecture. Une photo sous CC BY-SA affichée
-     en pleine largeur doit créditer son auteur LÀ où elle s'affiche : la
-     fenêtre « Crédits photos » n'existe que sur le tableau de bord, et un
-     espace de pôle n'y donne aucun accès. */
-  const credits = el('div', { class: 'pile pile--serree', hidden: true });
+  /* Pas de crédit sous la lecture : l'utilisateur ne veut pas de mention
+     au pied de chaque communication. L'obligation de licence (CC BY,
+     CC BY-SA) est tenue par la fenêtre « Crédits photos » du pied de page,
+     présente sur le tableau de bord ET sur les trois espaces de pôle. */
   /* La marque de fin : un court filet terre cuite, centré, après le
      dernier bloc — le lecteur sait qu'il a tout lu. Pas de signature. */
   const fin = el('div', { class: 'kiosque__fin', 'aria-hidden': 'true', hidden: true });
@@ -691,9 +726,9 @@ function lecture(prefixe) {
     tabIndex: -1
   },
   image,
-  el('div', { class: 'kiosque__lecture-interieur' }, avisImage, meta, titre, chapeau, exemple, blocs, curseur, credits, fin));
+  el('div', { class: 'kiosque__lecture-interieur' }, avisImage, meta, titre, chapeau, exemple, blocs, curseur, fin));
 
-  return { racine, image, avisImage, meta, titre, chapeau, exemple, blocs, curseur, credits, fin };
+  return { racine, image, avisImage, meta, titre, chapeau, exemple, blocs, curseur, fin };
 }
 
 /* Remplit une lecture avec un dossier. La première image ouvre la lecture
@@ -736,12 +771,6 @@ function remplirLecture(lect, dossier) {
   monter(lect.blocs, blocs.length
     ? blocs.map(rendreBloc)
     : el('p', { class: 'kiosque__ligne texte-doux' }, 'Aucun détail publié pour cette communication.'));
-  /* Un seul passage sur tous les blocs images de la lecture, bannière
-     comprise : elle est le premier bloc « image » du dossier. */
-  const credits = creditsDistincts(dossier.blocs.flatMap((b) =>
-    b.type === 'image' ? [b] : (b.type === 'galerie' ? b.images : [])));
-  monter(lect.credits, credits.map(creditPhoto));
-  lect.credits.hidden = !credits.length;
   lect.fin.hidden = false;
 }
 
@@ -772,6 +801,10 @@ export function apercuLecture(dossier) {
  * @param {(dossier:object)=>void} [options.surSelection]
  * @param {(declencheur:HTMLElement)=>void} [options.surAjout]  ouvre l'éditeur ;
  *        absent, pas de bouton « Ajouter une communication »
+ * @param {(dossier:object, declencheur:HTMLElement)=>void} [options.surModifier]
+ * @param {(dossier:object)=>void} [options.surSupprimer]
+ * @param {(declencheur:HTMLElement)=>void} [options.surAlertes]  modifie les alertes
+ *        Les quatre commandes ne se voient qu'en mode édition (edition.js).
  * @returns {HTMLElement}
  */
 export function kiosque(options) {
@@ -800,10 +833,26 @@ export function kiosque(options) {
     : null;
 
   const boutonAjout = typeof opts.surAjout === 'function'
-    ? el('button', { type: 'button', class: 'bouton bouton--principal bouton--compact kiosque__ajout',
+    ? el('button', { type: 'button', class: 'bouton bouton--principal bouton--compact kiosque__ajout edition-seulement',
         onClick: (evt) => opts.surAjout(evt.currentTarget) },
         el('span', { 'aria-hidden': 'true' }, '+ '), 'Ajouter une communication')
     : null;
+
+  /* « Modifier » et « Supprimer » la communication lue, en haut de la
+     lecture, en mode édition seulement. Elles visent toujours la lecture
+     du moment. */
+  const barreLecture = (typeof opts.surModifier === 'function' || typeof opts.surSupprimer === 'function')
+    ? barreEdition({
+        classe: 'kiosque__edition',
+        quoi: 'cette communication',
+        surModifier: typeof opts.surModifier === 'function' ? (b) => { if (courant) opts.surModifier(courant, b); } : null,
+        surSupprimer: typeof opts.surSupprimer === 'function' ? () => { if (courant) opts.surSupprimer(courant); } : null
+      })
+    : null;
+  if (barreLecture) {
+    const interieur = lect.racine.querySelector('.kiosque__lecture-interieur');
+    if (interieur) interieur.prepend(barreLecture);
+  }
 
   const visibles = () => tous.filter((d) => !filtre || d.pole === filtre || d.groupe === 'mot');
 
@@ -850,6 +899,10 @@ export function kiosque(options) {
       if (actif && o.montrer) carteAMontrer = b;
     });
     remplirLecture(lect, dossier);
+    if (barreLecture) barreLecture.hidden = false;
+    /* La lecture défile dans son cadre : une nouvelle communication se lit
+       depuis son début, pas depuis là où la précédente avait été laissée. */
+    lect.racine.scrollTop = 0;
     /* Déjà dans la page : on ajuste tout de suite, puis on montre la carte.
        Pas encore montée (arrivée par un lien) : l'observateur le fera. */
     if (racine.isConnected) ajusterHauteur();
@@ -862,6 +915,7 @@ export function kiosque(options) {
 
   function viderLecture() {
     courant = null;
+    if (barreLecture) barreLecture.hidden = true;
     monter(lect.image); lect.image.hidden = true;
     lect.avisImage.hidden = true;
     monter(lect.meta);
@@ -869,7 +923,6 @@ export function kiosque(options) {
     lect.chapeau.hidden = true;
     lect.exemple.hidden = true;
     monter(lect.blocs, el('p', { class: 'texte-doux sans-marge' }, 'Rien à lire pour ce pôle pour le moment.'));
-    monter(lect.credits); lect.credits.hidden = true;
     lect.fin.hidden = true;
   }
 
@@ -954,7 +1007,7 @@ export function kiosque(options) {
     zoneListe);
 
   const racine = el('section', { class: 'kiosque', id: prefixe },
-    bandeauAlertes(alertes),
+    bandeauAlertes(alertes, opts.surAlertes),
     el('div', { class: 'kiosque__grille' }, flux, lect.racine));
 
   const ajusterHauteur = suivreHauteur(flux, lect.racine, montrerEnAttente);

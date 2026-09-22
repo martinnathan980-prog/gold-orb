@@ -3,10 +3,12 @@
 
    Les photos du site viennent de Wikimedia Commons sous licence libre
    (CC BY, CC BY-SA) : l'auteur et la licence DOIVENT apparaître, c'est la
-   condition de réutilisation. Trois endroits en ont besoin — la fiche d'un
-   porteur (porteurs.js), le pied d'une communication (kiosque.js) et la
-   fenêtre « Crédits photos » (index.js) — d'où ce module d'une fonction
-   plutôt que trois écritures du même paragraphe.
+   condition de réutilisation. Deux endroits en ont besoin — la fiche d'un
+   porteur (porteurs.js) et la fenêtre « Crédits photos » du pied de page,
+   ouverte depuis le tableau de bord (index.js) comme depuis un espace de
+   pôle (pole.js) — d'où ce module plutôt que plusieurs écritures du même
+   paragraphe. Aucune communication ne porte son crédit sous elle : c'est
+   un choix de l'utilisateur, et la fenêtre tient l'obligation.
 
    Il ne dépend que de ui.js : le kiosque peut l'importer sans tirer avec
    lui la galerie des porteurs et ses silhouettes.
@@ -58,4 +60,39 @@ export function creditsDistincts(images) {
     credits.push(c);
   }
   return credits;
+}
+
+/**
+ * La section « Images des communications » de la fenêtre « Crédits
+ * photos » : chaque image d'une communication qui porte un crédit (photo
+ * sous licence libre), une seule fois. Une photo du service, sans crédit,
+ * n'a rien à déclarer.
+ *
+ * @param {object|null} communications  le retour de chargerCommunications()
+ * @returns {HTMLElement|null} null si aucune image n'est créditée
+ */
+export function creditsCommunications(communications) {
+  const c = (communications && typeof communications === 'object') ? communications : {};
+  const entrees = [c.motDuChef].concat(Array.isArray(c.annonces) ? c.annonces : [])
+    .filter((e) => e && typeof e === 'object');
+  const images = [];
+  for (const e of entrees) {
+    const blocs = Array.isArray(e.blocs) ? e.blocs : [];
+    const candidates = [e.image]
+      .concat(blocs.filter((b) => b && b.type === 'image'),
+        blocs.filter((b) => b && b.type === 'galerie').flatMap((b) => b.images || []));
+    for (const im of candidates) {
+      if (!im || typeof im !== 'object' || !im.credit || typeof im.credit !== 'object') continue;
+      if (images.some((x) => x.src === im.src)) continue;
+      images.push({ src: texte(im.src), credit: im.credit, titre: texte(e.titre) });
+    }
+  }
+  if (!images.length) return null;
+  return el('div', { class: 'pile pile--serree' },
+    el('h3', { class: 'sans-marge' }, 'Images des communications'),
+    el('ul', { class: 'porteurs__credits', role: 'list' }, images.map((im) => el('li', { class: 'porteurs__credits-item' },
+      el('img', { src: im.src, alt: '', loading: 'lazy', decoding: 'async', class: 'porteurs__credits-vignette' }),
+      el('div', { class: 'porteurs__credits-texte' },
+        el('span', { class: 'porteurs__credits-nom' }, im.titre),
+        creditPhoto(im.credit))))));
 }

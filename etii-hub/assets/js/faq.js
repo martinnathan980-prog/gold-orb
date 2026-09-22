@@ -27,6 +27,10 @@
       destination écrite en dur — ni courriel, ni `mailto:`, ni serveur. La
       page le dit en toutes lettres à l'endroit où la question se pose.
 
+   En mode édition (edition.js), chaque question dépliée se modifie ou se
+   retire, et « Ajouter une question » en publie une nouvelle pour tous
+   (modifications.js) : la liste se redessine d'elle-même.
+
    Tout le DOM passe par el()/svg()/frag()/monter() : aucun innerHTML, aucun
    gestionnaire en attribut. Les classes nouvelles sont déclarées dans le
    <style> de faq.html, à partir des seuls jetons de tokens.css.
@@ -38,6 +42,9 @@ import {
   el, svg, frag, monter, surlignerVers, deleguer, debounce,
   etatUrl, stockage, initTheme, initNav, ouvrirModale, toast, annoncer
 } from './ui.js';
+import { installerEdition, barreEdition, boutonAjouter } from './edition.js';
+import { ouvrirQuestion } from './edition-contenus.js';
+import { abonnerModifications, supprimerElement } from './modifications.js';
 
 /* -------------------------------------------------------------------------
    1. Périmètres — l'accord d'équipe, pas une donnée
@@ -183,7 +190,10 @@ function vueDeQuestion(entree, rang) {
     // Un code de pôle inconnu n'est pas corrigé en silence : il est traité
     // comme absent, et la question reste visible au niveau service.
     pole: (pole && CODES_POLE.includes(pole)) ? pole : null,
-    motsCles: motsCles
+    motsCles: motsCles,
+    // L'entrée telle qu'elle est écrite : c'est elle que le formulaire
+    // d'édition reçoit, champs inconnus de cette page compris.
+    source: entree
   };
 }
 
@@ -509,7 +519,18 @@ function itemQuestion(vue) {
   el('p', { class: 'faq__meta' },
     pastillePole(vue.pole),
     vue.categorie ? el('span', null, vue.categorie) : manquant('Catégorie'),
-    motsCles));
+    motsCles),
+  texteNet(vue.source && vue.source.id)
+    ? barreEdition({
+        classe: 'faq__edition',
+        quoi: vue.question || '',
+        surModifier: (b) => ouvrirQuestion({ existant: vue.source, declencheur: b }),
+        surSupprimer: async () => {
+          try { await supprimerElement('faq', 'question', vue.id); toast('Question retirée de la base.', 'succes'); }
+          catch (e) { toast((e && e.message) || 'La suppression a échoué.', 'erreur'); }
+        }
+      })
+    : null);
 
   const item = el('li', {
     class: 'faq__item',
@@ -763,7 +784,12 @@ function blocResume() {
     onClick: () => toutEffacer()
   }, 'Effacer les filtres');
 
-  return el('div', { class: 'faq__resume' }, refs.compte, refs.effacer);
+  const ajouter = boutonAjouter('Ajouter une question', (b) => ouvrirQuestion({
+    pole: poleActif !== POLE_SERVICE ? poleActif : POLE_SERVICE,
+    declencheur: b
+  }));
+
+  return el('div', { class: 'faq__resume' }, refs.compte, refs.effacer, ajouter);
 }
 
 /**
@@ -1253,7 +1279,7 @@ function rendreSousNav() {
  * @param {object} donnees contenu de faq.json
  * @param {Element} conteneur
  */
-function rendreDonnees(donnees, conteneur) {
+function poserQuestions(donnees) {
   verifierForme(donnees, { questions: 'tableau' }, 'faq.json');
 
   questions = donnees.questions
@@ -1265,6 +1291,10 @@ function rendreDonnees(donnees, conteneur) {
   )).sort((a, b) => a.localeCompare(b, 'fr'));
 
   index = creerIndex(questions, CHAMPS_INDEX);
+}
+
+function rendreDonnees(donnees, conteneur) {
+  poserQuestions(donnees);
 
   construireColonne(conteneur);
 
@@ -1320,6 +1350,7 @@ function demarrer() {
   });
 
   raccourciGlobal();
+  installerEdition();
 
   avecEtat('#zone-faq', () => chargerDonnees('faq'), rendreDonnees, {
     squelette: 4,
@@ -1329,9 +1360,20 @@ function demarrer() {
     texteVide: 'Le fichier ne contient encore aucune question. Vous pouvez '
       + 'tout de même poser la vôtre : elle sera conservée dans ce '
       + 'navigateur.',
-    estVide: (donnees) => !donnees
-      || !Array.isArray(donnees.questions)
-      || donnees.questions.length === 0
+    // Une base sans question reste une colonne : en mode édition, c'est là
+    // qu'on ajoute la première.
+    estVide: (donnees) => !donnees || !Array.isArray(donnees.questions)
+  });
+
+  // Une question ajoutée, modifiée ou retirée : data.js a déjà oublié
+  // faq.json, on le relit et on repeint la liste, filtres et recherche
+  // conservés. La question qu'on vient de modifier reste dépliée.
+  abonnerModifications(async (jeu) => {
+    if (jeu !== 'faq' || !index) return;
+    try {
+      poserQuestions(await chargerDonnees('faq'));
+      rafraichir({ annonce: false });
+    } catch (_e) { /* la page garde ce qu'elle montrait */ }
   });
 
   // « Précédent », « Suivant », lien collé : replaceState ne déclenche pas

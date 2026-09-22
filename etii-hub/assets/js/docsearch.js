@@ -37,6 +37,11 @@
      des boutons et des liens, ce qu'ARIA interdit dans une option ;
    - tout bouton qui disparaît en se déclenchant rend le focus à un
      élément vivant — jamais à <body>.
+
+   En mode édition (edition.js), chaque carte se modifie ou se retire et
+   « Ajouter un document » en crée un, pour tous les lecteurs du site
+   (modifications.js) ; l'interface se rebâtit alors sur le fonds modifié,
+   recherche et filtres conservés.
    ========================================================================= */
 
 import {
@@ -83,6 +88,25 @@ try {
 if (!avecEtat) {
   avecEtat = avecEtatLocal;
   chargerDonnees = chargerDonneesLocal;
+}
+
+/* Le mode édition, chargé de la même façon : s'il ne se lie pas, la
+   recherche reste entière, sans commandes d'édition. */
+let edition = null;
+
+try {
+  const [moduleEdition, moduleContenus, moduleModifications] = await Promise.all([
+    import('./edition.js'), import('./edition-contenus.js'), import('./modifications.js')]);
+  edition = {
+    installer: moduleEdition.installerEdition,
+    barre: moduleEdition.barreEdition,
+    ajouter: moduleEdition.boutonAjouter,
+    ouvrirDocument: moduleContenus.ouvrirDocument,
+    abonner: moduleModifications.abonnerModifications,
+    supprimer: moduleModifications.supprimerElement
+  };
+} catch (cause) {
+  console.warn('[docsearch] mode édition indisponible.', cause);
 }
 
 /**
@@ -928,6 +952,7 @@ function preparerCorpus(donnees) {
   corpus.documents = donnees.documents.filter(
     (doc) => doc && typeof doc === 'object' && doc.id !== undefined
   );
+  corpus.donnees = donnees;
 
   corpus.parId = new Map(corpus.documents.map((doc) => [String(doc.id), doc]));
 
@@ -1134,7 +1159,8 @@ function construireInterface(donnees, cible) {
       type: 'button',
       class: 'bouton bouton--discret',
       dataset: { action: 'proposer' }
-    }, 'Proposer un document')),
+    }, 'Proposer un document'),
+    edition ? edition.ajouter('Ajouter un document', (bouton) => editerDocument(null, bouton)) : null),
   blocUsage(),
   /* L'assistant : « que dit le document », quand la recherche répond
      « où est le document ». Tant qu'aucune source n'est raccordée, il se
@@ -1184,7 +1210,8 @@ function construireInterface(donnees, cible) {
     hidden: true
   },
   el('div', { class: 'rangee rangee--serree' },
-    refs.compteur, bandeauTri, proposer),
+    refs.compteur, bandeauTri, proposer,
+    edition ? edition.ajouter('Ajouter un document', (bouton) => editerDocument(null, bouton)) : null),
   el('div', { class: 'separateur', role: 'presentation' }),
   refs.grille,
   refs.messages);
@@ -1717,6 +1744,22 @@ function obtenirFiche(doc) {
       }, 'Copier la référence'));
   }
 
+  if (edition) {
+    actions.append(edition.barre({
+      classe: 'barre-edition--compacte ds-carte__edition',
+      quoi: texteOuVide(doc.titre),
+      surModifier: (bouton) => editerDocument(doc, bouton),
+      surSupprimer: async () => {
+        try {
+          await edition.supprimer('documents', 'document', String(doc.id));
+          toast('Document retiré du fonds.', 'succes');
+        } catch (cause) {
+          toast((cause && cause.message) || 'La suppression a échoué.', 'erreur');
+        }
+      }
+    }));
+  }
+
   const sansLien = lien !== '' ? null : el('p', { class: 'ds-sans-lien' },
     el('span', { ariaHidden: 'true' }, '✉'),
     'Lien : ', valeurOuManquant(''));
@@ -1945,6 +1988,23 @@ function surActionAccueil(bouton) {
   if (action === 'parcourir-tout') { parcourirTout('pertinence'); return; }
   if (action === 'parcourir-recents') { parcourirTout('maj'); return; }
   if (action === 'proposer') ouvrirModaleProposition(bouton);
+}
+
+/**
+ * Le formulaire d'un document, prérempli avec le pôle filtré pour un
+ * document neuf. Les porteurs proposés sont les noms de l'organigramme,
+ * quand il a pu être lu.
+ */
+function editerDocument(doc, declencheur) {
+  if (!edition) return;
+  const personnes = fichesPersonnes ? Array.from(fichesPersonnes.keys()).map((nom) => ({ nom })) : [];
+  edition.ouvrirDocument({
+    existant: doc || null,
+    documents: corpus.donnees || { documents: corpus.documents },
+    personnes,
+    pole: doc ? '' : (etat.filtres.pole || ''),
+    declencheur
+  });
 }
 
 /** Clic sur un bouton d'une carte de résultat. */
@@ -2781,6 +2841,23 @@ function demarrer() {
         + 'Vous pouvez néanmoins préparer une proposition ci-dessous.'
     }
   );
+
+  // Le mode édition : le bouton de la barre, puis, à chaque modification
+  // enregistrée, le fonds relu et l'interface rebâtie — l'état (requête,
+  // filtres, tri) n'est pas touché, il décrit toujours ce qu'on cherche.
+  if (edition) {
+    edition.installer();
+    edition.abonner(async (jeu) => {
+      if (jeu === 'organigramme') { chargerFichesPersonnes(); return; }
+      if (jeu !== 'documents' || !pretARendre) return;
+      try {
+        construireInterface(await chargerDonnees('documents'), refs.zone);
+        rendre();
+      } catch (cause) {
+        console.warn('[docsearch] fonds modifié illisible, affichage conservé.', cause);
+      }
+    });
+  }
 
   // Navigation « Précédent » / « Suivant » et liens partagés.
   etatUrl.ecouter((brut) => {

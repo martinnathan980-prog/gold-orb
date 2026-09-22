@@ -27,15 +27,18 @@
      affiche une erreur propre ; elle ne casse ni la navigation, ni le
      reste du site.
 
-   Dépendance : uniquement ./ui.js, dont on n'utilise que deux helpers —
+   Dépendances : ./ui.js, dont on n'utilise que deux helpers —
      el(balise, { classe, texte })  -> Element  (importé sous le nom creerElement)
      vider(noeud)                             -> void
+   — et ./modifications.js : ce qui a été modifié dans le site se pose sur
+   chaque jeu au chargement, si bien qu'aucune page n'a à s'en soucier.
    Tout le reste (attributs, enfants) est posé ici avec les API DOM
    natives. Aucun innerHTML : l'injection HTML est structurellement
    impossible (SPEC §8).
    ========================================================================= */
 
-import { el as creerElement, vider } from './ui.js';
+import { el as creerElement, vider, ressourceIntegree } from './ui.js';
+import { appliquerModifications, abonnerModifications } from './modifications.js';
 
 /* -------------------------------------------------------------------------
    Constantes de réglage
@@ -148,7 +151,7 @@ export function chargerDonnees(nom, options) {
   }
 
   const delai = typeof reglages.delai === 'number' ? reglages.delai : DELAI_DEFAUT;
-  const promesse = recuperer(nom, delai);
+  const promesse = recuperer(nom, delai).then((base) => appliquerModifications(nom, base));
 
   CACHE.set(nom, promesse);
 
@@ -170,6 +173,10 @@ export function chargerDonnees(nom, options) {
  *
  * @param {string} [nom] si omis, le cache est entièrement vidé
  */
+/* Une modification enregistrée dans le site rend le jeu périmé : la page
+   qui le redemande le relit, avec la modification. */
+abonnerModifications(function (jeu) { CACHE.delete(jeu); });
+
 export function viderCache(nom) {
   if (typeof nom === 'string') {
     CACHE.delete(nom);
@@ -242,6 +249,18 @@ export async function recupererReponse(url, options) {
  * @returns {Promise<object>}
  */
 async function recuperer(nom, delai) {
+  /* Le fichier autonome (dist/etii-hub.html) embarque ses jeux de données :
+     un cadre srcdoc n'a pas d'URL de base, un fetch relatif y échouerait.
+     On en rend une COPIE, pour qu'aucune page ne modifie la base d'une
+     autre en la lisant. */
+  const integres = ressourceIntegree('__DONNEES_INTEGREES');
+  if (integres && Object.prototype.hasOwnProperty.call(integres, nom)) {
+    return JSON.parse(JSON.stringify(integres[nom]));
+  }
+  if (integres) {
+    throw erreurDonnees('introuvable', 'Jeu de données « ' + nom + ' » absent de la version autonome.');
+  }
+
   const fichier = nom + '.json';
   const url = new URL(fichier, DOSSIER_DONNEES);
   const chemin = 'assets/data/' + fichier;

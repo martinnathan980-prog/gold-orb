@@ -301,6 +301,38 @@ function ajouterEnfant(parent, enfant) {
  * @param {Array} enfants
  * @returns {Element}
  */
+/**
+ * Un chemin d'image du site, résolu en son contenu intégré quand la page
+ * tourne dans le fichier autonome ; tel quel partout ailleurs.
+ * @param {string} src
+ * @returns {string}
+ */
+export function resoudreImage(src) {
+  const table = ressourceIntegree('__IMAGES_INTEGREES');
+  if (table && typeof src === 'string' && Object.prototype.hasOwnProperty.call(table, src)) return table[src];
+  return src;
+}
+
+/**
+ * Une ressource que le fichier autonome intègre (ses jeux de données, ses
+ * images) : dans la page elle-même, ou chez son parent — la coquille qui
+ * montre chaque page dans un cadre de même origine. Hors du fichier
+ * autonome : null. Un parent d'une autre origine (un site qui embarquerait
+ * le hub) n'est jamais lu.
+ * @param {string} nom
+ * @returns {object|null}
+ */
+export function ressourceIntegree(nom) {
+  try { if (globalThis[nom] && typeof globalThis[nom] === 'object') return globalThis[nom]; } catch (_e) { /* rien */ }
+  try {
+    if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
+      const r = window.parent[nom];
+      if (r && typeof r === 'object') return r;
+    }
+  } catch (_e) { /* parent d'une autre origine */ }
+  return null;
+}
+
 function creer(ns, balise, props, enfants) {
   if (!AVEC_DOM) return null;
 
@@ -313,6 +345,16 @@ function creer(ns, balise, props, enfants) {
     noeud = ns ? document.createElementNS(NS_SVG, 'g') : document.createElement('div');
   }
   const estSvg = !!ns;
+
+  /* Le fichier autonome (dist/etii-hub.html) n'a aucune URL de base : une
+     image écrite « assets/img/… » ne s'y résout pas. Il fournit donc la
+     table des images qu'il embarque, et c'est ici — au rendu, pas dans les
+     données — qu'un chemin devient son contenu intégré. Les données
+     restent des chemins : ce qu'on modifie et enregistre n'embarque jamais
+     une photo encodée. Sur le site servi, la table n'existe pas. */
+  if (nom === 'img' && props && typeof props === 'object' && typeof props.src === 'string') {
+    props = Object.assign({}, props, { src: resoudreImage(props.src) });
+  }
 
   if (props && typeof props === 'object') {
     for (const cle of Object.keys(props)) {
@@ -1642,10 +1684,15 @@ function mesurerBarre() {
  * `"false"`. Partagé par le tableau de bord et les espaces de pôle, pour
  * que la « petite barre » se comporte partout de la même façon.
  *
- * La section courante est celle qui occupe la bande de lecture — le tiers
- * haut de la fenêtre, sous la barre du site — ce qui évite qu'une section
- * très longue reste « courante » quand la suivante est déjà bien entamée.
- * Sans IntersectionObserver, le lien courant initial reste tel quel.
+ * La section courante est celle qui passe sous la ligne de lecture, au
+ * tiers haut de la fenêtre : la dernière dont le haut l'a franchie. Une
+ * section courte (« À venir ») rend donc la main dès que la suivante
+ * atteint la ligne, quelle que soit la hauteur de celle-ci. Tout en bas de
+ * la page, c'est la dernière section, même courte, qui est courante.
+ *
+ * La position est relue à chaque défilement, une fois par image : une
+ * mesure par IntersectionObserver ne dit rien tant qu'un seuil n'est pas
+ * franchi, et une longue section n'en franchit presque aucun.
  *
  * @param {{selecteur?: string}} [options] sélecteur des liens (par défaut
  *   `.sous-nav a[href^="#"]`)
@@ -1658,22 +1705,56 @@ export function suivreSommaire(options) {
   let liens;
   try { liens = Array.from(document.querySelectorAll(opts.selecteur || '.sous-nav a[href^="#"]')); }
   catch (_e) { return inerte; }
-  if (!liens.length || typeof IntersectionObserver !== 'function') return inerte;
+  if (!liens.length) return inerte;
 
   const cibles = liens
     .map((a) => document.getElementById((a.getAttribute('href') || '').slice(1)))
     .filter(Boolean);
-  const marquer = (id) => liens.forEach((a) =>
-    a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'true' : 'false'));
+  if (!cibles.length) return inerte;
+  let courant = null;
+  const marquer = (id) => {
+    if (id === courant) return;
+    courant = id;
+    liens.forEach((a) => a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'true' : 'false'));
+  };
 
-  const obs = new IntersectionObserver((entrees) => {
-    const visible = entrees
-      .filter((e) => e.isIntersecting)
-      .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-    if (visible) marquer(visible.target.id);
-  }, { rootMargin: '-30% 0px -55% 0px', threshold: [0, 0.2, 0.5] });
-  cibles.forEach((c) => obs.observe(c));
-  return { arreter: () => obs.disconnect() };
+  const mesurer = () => {
+    const racine = document.documentElement;
+    const hauteur = window.innerHeight || racine.clientHeight || 0;
+    const auBout = (window.scrollY || racine.scrollTop || 0) + hauteur >= racine.scrollHeight - 2;
+    if (auBout && (window.scrollY || racine.scrollTop || 0) > 0) { marquer(cibles[cibles.length - 1].id); return; }
+    const ligne = hauteur * 0.3;
+    let choisie = cibles[0];
+    for (const c of cibles) {
+      if (c.getBoundingClientRect().top <= ligne) choisie = c;
+    }
+    marquer(choisie.id);
+  };
+
+  let demande = false;
+  const planifier = () => {
+    if (demande) return;
+    demande = true;
+    requestAnimationFrame(() => { demande = false; mesurer(); });
+  };
+  window.addEventListener('scroll', planifier, { passive: true });
+  window.addEventListener('resize', planifier, { passive: true });
+  /* Les sections se remplissent après coup (chargements) : leur hauteur
+     change sans défilement. Une mesure au premier rendu, puis à chaque
+     changement de taille du document. */
+  let observateur = null;
+  if (typeof ResizeObserver === 'function') {
+    observateur = new ResizeObserver(planifier);
+    observateur.observe(document.body);
+  }
+  planifier();
+  return {
+    arreter: () => {
+      window.removeEventListener('scroll', planifier);
+      window.removeEventListener('resize', planifier);
+      if (observateur) observateur.disconnect();
+    }
+  };
 }
 
 /* =========================================================================

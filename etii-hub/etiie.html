@@ -45,7 +45,6 @@
           <li><a href="etiie.html" data-pole="ETIIE" aria-current="page">ETIIE</a></li>
           <li><a href="etiii.html" data-pole="ETIII">ETIII</a></li>
           <li><a href="docsearch.html">Recherche</a></li>
-          <li><a href="organigramme.html">Organigramme</a></li>
         </ul>
       </nav>
       <button class="palette-ouvrir" type="button" data-palette>
@@ -78,7 +77,7 @@
       <ul class="sous-nav sous-nav--page conteneur">
         <li><a href="#section-communication" aria-current="true">Communication</a></li>
         <li><a href="#section-reperes">En un coup d’œil</a></li>
-        <li><a href="#section-equipe">Équipe &amp; référents</a></li>
+        <li><a href="#section-documents">Documents</a></li>
         <li><a href="#section-faq">FAQ</a></li>
       </ul>
     </nav>
@@ -90,22 +89,21 @@
         <div id="zone-communication"></div>
       </section>
 
-      <!-- Le pôle en un coup d'œil : les repères chiffrés, puis à qui
-           s'adresser — le responsable, les leads — et, porteur par
-           porteur, les personnes du pôle qui y travaillent. Tout est
-           calculé par pole.js depuis organigramme.json, flotte.json et
-           documents.json. -->
+      <!-- Le pôle en un coup d'œil : les repères chiffrés, puis
+           l'organigramme, les référents par compétence et les personnes
+           par porteur, côte à côte, sous un seul champ de recherche. Tout
+           est calculé par pole.js depuis organigramme.json, flotte.json et
+           documents.json, et se modifie ici en mode édition. -->
       <section class="pile" id="section-reperes" data-section-pole aria-labelledby="titre-reperes">
         <h2 class="titre-section" id="titre-reperes"><span class="titre-section__texte">Le pôle en un coup d’œil</span></h2>
         <div id="zone-reperes"></div>
       </section>
 
-      <!-- L'équipe et ses référents : le responsable, puis une carte par
-           squad avec ses membres et leurs compétences ; ou, au choix, une
-           carte par compétence avec ses référents. -->
-      <section class="pile" id="section-equipe" data-section-pole aria-labelledby="titre-equipe">
-        <h2 class="titre-section" id="titre-equipe"><span class="titre-section__texte">Équipe &amp; référents</span></h2>
-        <div id="zone-equipe"></div>
+      <!-- Les documents du pôle : les plus récents, en vigueur, et le lien
+           vers la recherche filtrée sur le pôle. -->
+      <section class="pile" id="section-documents" data-section-pole aria-labelledby="titre-documents">
+        <h2 class="titre-section" id="titre-documents"><span class="titre-section__texte">Documents du pôle</span></h2>
+        <div id="zone-documents"></div>
       </section>
 
       <section class="pile" id="section-faq" data-section-pole aria-labelledby="titre-faq">
@@ -119,6 +117,9 @@
   <footer class="site-pied">
     <div class="site-pied__interieur">
       <p>ETII Hub — portail de démonstration, sans aucune dépendance externe.</p>
+      <p class="site-pied__liens">
+        <a href="#credits-photos" data-credits-photos>Crédits photos</a>
+      </p>
       <p class="site-pied__mention">
         <span aria-hidden="true">●</span>
         Toutes les données de ce site sont fictives

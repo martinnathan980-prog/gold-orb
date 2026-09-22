@@ -26,7 +26,9 @@
    fonction. Une alerte est un texte.
    ========================================================================= */
 
-import { chargerDonnees, recupererReponse, DELAI_ENVOI } from './data.js';
+import { chargerDonnees, recupererReponse } from './data.js';
+import { appliquerModifications, enregistrerModification, supprimerElement, nouvelIdentifiant } from './modifications.js';
+import { ouvrirMagasin } from './magasin.js';
 
 /* -------------------------------------------------------------------------
    1. LE POINT DE RACCORDEMENT — la seule chose à modifier en production
@@ -429,104 +431,45 @@ export function ligneDepuisAnnonce(annonce, type) {
 }
 
 /* -------------------------------------------------------------------------
-   6. Ce qui est publié depuis ce navigateur, tant que rien n'est branché
+   6. Publier, modifier, supprimer — dans le magasin du site
    ------------------------------------------------------------------------- */
 
-const CLE_LOCALE = 'etii:communications.locales';
-
-function lireLocales() {
-  try {
-    const brut = typeof localStorage !== 'undefined' ? localStorage.getItem(CLE_LOCALE) : null;
-    const v = brut ? JSON.parse(brut) : null;
-    return v && typeof v === 'object' ? { motDuChef: v.motDuChef || null, alertes: Array.isArray(v.alertes) ? v.alertes : [], annonces: Array.isArray(v.annonces) ? v.annonces : [] } : { motDuChef: null, alertes: [], annonces: [] };
-  } catch (_e) {
-    return { motDuChef: null, alertes: [], annonces: [] };
+/**
+ * Publie une communication, ou remplace celle qui porte le même
+ * identifiant. Tout part dans le magasin du site (magasin.js) : la base
+ * partagée de la page publiée, ou ce navigateur quand elle n'en a pas.
+ * @param {'annonce'|'mot'|'alerte'} type
+ * @param {object|string} contenu  l'annonce (ou l'édito), ou l'alerte
+ *        ({ id?, texte, jusqua? } ou son texte)
+ * @returns {Promise<{ok: boolean, id: string, ou: 'partage'|'navigateur', message: string}>}
+ */
+export async function publierCommunication(type, contenu) {
+  const magasin = await ouvrirMagasin();
+  let id;
+  if (type === 'alerte') {
+    const a = (typeof contenu === 'string') ? { texte: contenu } : (contenu || {});
+    id = texte(a.id) || nouvelIdentifiant('alerte');
+    await enregistrerModification('communications', 'alerte', id, { id, texte: texte(a.texte), jusqua: texte(a.jusqua) });
+  } else {
+    const typeMagasin = type === 'mot' ? 'edito' : 'annonce';
+    id = texte(contenu && contenu.id) || nouvelIdentifiant(typeMagasin);
+    await enregistrerModification('communications', typeMagasin, id, Object.assign({}, contenu, { id }));
   }
-}
-
-function ecrireLocales(v) {
-  try {
-    if (typeof localStorage === 'undefined') return false;
-    localStorage.setItem(CLE_LOCALE, JSON.stringify(v));
-    return true;
-  } catch (_e) {
-    return false;
-  }
-}
-
-/** Ce qui a été publié depuis ce navigateur (lecture seule). */
-export function communicationsLocales() { return lireLocales(); }
-
-/** Retire une entrée locale (id d'annonce, 'mot-du-chef', ou 'alerte:<texte>'). */
-export function supprimerLocale(id) {
-  const v = lireLocales();
-  if (id === 'mot-du-chef') v.motDuChef = null;
-  else if (String(id).startsWith('alerte:')) v.alertes = v.alertes.filter((a) => a !== String(id).slice(7));
-  else v.annonces = v.annonces.filter((a) => a && a.id !== id);
-  return ecrireLocales(v);
-}
-
-/* Fusionne le local dans l'objet lu : les entrées locales portent
-   `local: true`, ce qui les signale « brouillon » dans le kiosque. */
-function avecLocales(objet) {
-  const l = lireLocales();
-  if (!l.motDuChef && !l.alertes.length && !l.annonces.length) return objet;
-  const copie = Object.assign({}, objet);
-  /* Un édito publié ici prend la vedette, mais celui du site n'est pas
-     perdu pour autant : il rejoint la frise à sa date. */
-  const retrogrades = (l.motDuChef && objet.motDuChef && texte(objet.motDuChef.titre))
-    ? [versAnnonceEdito(objet.motDuChef)] : [];
-  if (l.motDuChef) copie.motDuChef = Object.assign({}, l.motDuChef, { local: true });
-  copie.alertes = (Array.isArray(objet.alertes) ? objet.alertes : []).concat(l.alertes);
-  const ids = new Set(l.annonces.map((a) => a.id));
-  copie.annonces = l.annonces.map((a) => Object.assign({}, a, { local: true }))
-    .concat((Array.isArray(objet.annonces) ? objet.annonces : []).filter((a) => !ids.has(a.id)))
-    .concat(retrogrades)
-    .sort((a, b) => texte(b.date).localeCompare(texte(a.date)));
-  return copie;
+  return {
+    ok: true, id, ou: magasin.mode,
+    message: magasin.mode === 'partage'
+      ? 'Publiée : tous les lecteurs du site la voient.'
+      : 'Enregistrée dans ce navigateur seulement.'
+  };
 }
 
 /**
- * Publie une communication. Avec SOURCE.publication, elle part vers la
- * web app Apps Script qui l'ajoute à la feuille (le site la lira à la
- * prochaine ouverture) ; sans, elle est gardée dans ce navigateur et
- * marquée « brouillon ». Le corps est envoyé en text/plain : Apps Script
- * ne répond pas aux requêtes préliminaires CORS, et text/plain n'en
- * déclenche pas.
- * @param {'annonce'|'mot'|'alerte'} type
- * @param {object|string} contenu  l'annonce (ou le mot), ou le texte de l'alerte
- * @returns {Promise<{ok: boolean, ou: 'feuille'|'navigateur', message: string}>}
+ * Retire une communication du site.
+ * @param {'annonce'|'edito'|'agenda'|'alerte'} type  le type du magasin
+ * @param {string} id
  */
-export async function publierCommunication(type, contenu) {
-  const url = texte(SOURCE.publication);
-  if (url) {
-    /* Borné : sans délai maximal, un intermédiaire qui ne répond pas
-       laisserait le bouton « Publier » mort, sans un mot. */
-    const reponse = await recupererReponse(url, {
-      method: 'POST',
-      delai: DELAI_ENVOI,
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ cle: texte(SOURCE.cle), type, contenu, ligne: type === 'alerte'
-        ? ligneDepuisAnnonce({ titre: contenu, date: aujourdhuiIso() }, 'alerte')
-        : ligneDepuisAnnonce(contenu, type) })
-    });
-    if (!reponse.ok) throw new Error('réponse ' + reponse.status);
-    let retour = null;
-    try { retour = await reponse.json(); } catch (_e) { retour = null; }
-    if (!retour || retour.ok !== true) throw new Error((retour && retour.erreur) || 'réponse inattendue du script');
-    return { ok: true, ou: 'feuille', message: 'Publiée : la feuille est mise à jour, le site la lira à la prochaine ouverture.' };
-  }
-  const v = lireLocales();
-  if (type === 'alerte') v.alertes = v.alertes.filter((a) => a !== contenu).concat([texte(contenu)]);
-  else if (type === 'mot') {
-    if (v.motDuChef && texte(v.motDuChef.titre)) v.annonces = v.annonces.concat([versAnnonceEdito(v.motDuChef)]);
-    v.motDuChef = contenu;
-  }
-  else v.annonces = v.annonces.filter((a) => a && a.id !== contenu.id).concat([contenu]);
-  const ok = ecrireLocales(v);
-  return { ok, ou: 'navigateur', message: ok
-    ? 'Enregistrée dans ce navigateur (brouillon). Pour la partager à tous, branchez la publication : docs/COMMUNICATIONS-GOOGLE-SHEETS.md.'
-    : 'Ce navigateur refuse le stockage local : rien n’a pu être enregistré.' };
+export async function supprimerCommunication(type, id) {
+  await supprimerElement('communications', type, id);
 }
 
 /* -------------------------------------------------------------------------
@@ -556,7 +499,7 @@ export async function chargerCommunications() {
       const objet = communicationsDepuisLignes(analyserCsv(await reponse.text()));
       if (!objet.motDuChef && !objet.annonces.length && !objet.alertes.length) throw new Error('aucune ligne lisible');
       objet.origine = 'feuille';
-      return avecLocales(objet);
+      return appliquerModifications('communications', objet);
     } catch (e) {
       /* Le repli sur le fichier du site est silencieux depuis toujours : la
          page affiche une version ancienne sans que personne ne le sache.
@@ -565,6 +508,6 @@ export async function chargerCommunications() {
       if (typeof console !== 'undefined') console.warn('[communications] feuille illisible (' + (e && e.message) + ') : lecture du fichier du site.');
     }
   }
-  const local = await chargerDonnees('communications');
-  return avecLocales(Object.assign({}, local, { origine: 'fichier', echecFeuille }));
+  const donnees = await chargerDonnees('communications');
+  return Object.assign({}, donnees, { origine: 'fichier', echecFeuille });
 }

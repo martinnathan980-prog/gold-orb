@@ -1,7 +1,8 @@
 // Le kiosque de communication — exécuter depuis etii-hub/ avec un serveur :
 //   python3 -m http.server 8111 &   puis   node tests/kiosque.e2e.mjs
 // Clique chaque carte et vérifie que rien n'est jamais coupé : la lecture
-// contient son intérieur, reste dans sa section, et la liste a la même
+// ne dépasse pas son plafond, et ce qu'elle ne montre pas d'un coup se lit
+// en la faisant défiler ; elle reste dans sa section, et la liste a la même
 // hauteur qu'elle. Puis la marque de fin, la frise (rail, points, mois
 // collants), le clavier, le mobile et le sombre.
 
@@ -30,7 +31,9 @@ const mesurer = () => page.evaluate(() => {
     section: r(section),
     suivante: suivante ? r(suivante) : null,
     blocs: Array.from(lecture.querySelectorAll('.kiosque__bloc, .kiosque__image:not([hidden]), .kiosque__fin')).map(r),
-    fluxStyle: document.querySelector('.kiosque__flux').getAttribute('style') || ''
+    fluxStyle: document.querySelector('.kiosque__flux').getAttribute('style') || '',
+    defile: { hauteur: lecture.scrollHeight, visible: lecture.clientHeight, debordement: getComputedStyle(lecture).overflowY },
+    plafond: parseFloat(getComputedStyle(document.documentElement).fontSize) * 44
   };
 });
 
@@ -39,20 +42,24 @@ await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1000);
 const cartes = await page.locator('.kiosque__carte').count();
 t('la liste a plusieurs cartes', cartes >= 3, `(${cartes})`);
-const soucis = { interieur: [], section: [], suivante: [], liste: [], blocs: [] };
+const soucis = { interieur: [], section: [], suivante: [], liste: [], blocs: [], plafond: [] };
 for (let i = 0; i < cartes; i++) {
   await page.locator('.kiosque__carte').nth(i).click();
   await page.waitForTimeout(1500);
   const m = await mesurer();
   const dedans = (a, b) => a.top >= b.top - 1 && a.bottom <= b.bottom + 1 && a.left >= b.left - 1 && a.right <= b.right + 1;
-  if (!dedans(m.interieur, m.lecture)) soucis.interieur.push(i);
+  /* Ce que la lecture défile : sa boîte, prolongée de ce qui dépasse. */
+  const deroule = Object.assign({}, m.lecture, { bottom: m.lecture.top + m.defile.hauteur + 2 });
+  if (!dedans(m.interieur, deroule)) soucis.interieur.push(i);
+  if (m.lecture.height > m.plafond + 2 || (m.defile.hauteur > m.defile.visible + 1 && m.defile.debordement !== 'auto')) soucis.plafond.push(i);
   if (!dedans(m.lecture, m.section)) soucis.section.push(i);
   if (m.suivante && m.suivante.top < m.lecture.bottom - 1) soucis.suivante.push(i);
   if (Math.abs(m.flux.height - m.lecture.height) >= 2 || !/block-size:\s*\d+px/.test(m.fluxStyle)) soucis.liste.push(i);
-  if (m.blocs.some((b) => !dedans(b, m.lecture))) soucis.blocs.push(i);
+  if (m.blocs.some((b) => !dedans(b, deroule))) soucis.blocs.push(i);
 }
-t('l’intérieur de la lecture est entièrement dans la lecture', !soucis.interieur.length, `cartes ${soucis.interieur}`);
-t('chaque bloc (bannière, blocs, marque de fin) est dans la lecture', !soucis.blocs.length, `cartes ${soucis.blocs}`);
+t('la lecture ne dépasse pas 44 rem ; au-delà, elle défile dans son cadre', !soucis.plafond.length, `cartes ${soucis.plafond}`);
+t('l’intérieur de la lecture se lit en entier en la faisant défiler', !soucis.interieur.length, `cartes ${soucis.interieur}`);
+t('chaque bloc (bannière, blocs, marque de fin) est dans ce que la lecture défile', !soucis.blocs.length, `cartes ${soucis.blocs}`);
 t('la lecture reste dans sa section', !soucis.section.length, `cartes ${soucis.section}`);
 t('rien ne chevauche la section suivante', !soucis.suivante.length, `cartes ${soucis.suivante}`);
 t('la liste a la même hauteur que la lecture, posée en style en ligne', !soucis.liste.length, `cartes ${soucis.liste}`);

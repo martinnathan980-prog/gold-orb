@@ -1,9 +1,10 @@
 // L'éditeur de communication — exécuter depuis etii-hub/ avec un serveur :
 //   python3 -m http.server 8111 &   puis   node tests/editeur.e2e.mjs
-// Compose une communication de cinq blocs, vérifie l'aperçu, met en page
-// les blocs (listes de gauche, poignées de l'aperçu, clavier), publie dans
-// le navigateur (aucune feuille branchée), recharge, retrouve la mise en
-// page dans la lecture, corrige la communication publiée, retire.
+// Passe en mode édition, compose une communication de cinq blocs, vérifie
+// l'aperçu, met en page les blocs (listes de gauche, poignées de l'aperçu,
+// clavier), publie (le serveur de test n'a pas de base partagée : la
+// publication reste dans ce navigateur), recharge, retrouve la mise en
+// page dans la lecture, la modifie depuis sa lecture, la supprime.
 // Le brouillon est rangé par page : la clé porte le pôle (ici ETII).
 
 import { chromium } from 'playwright';
@@ -27,7 +28,15 @@ async function centre(selecteur) {
 
 console.log('== Le Communication Center ==');
 await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
-await page.evaluate(() => { try { localStorage.removeItem('etii:editeur.communication:ETII'); } catch (_e) { /* sans stockage */ } });
+/* Un départ propre : ni brouillon, ni modification, ni mode édition
+   restés d'un passage précédent. */
+await page.evaluate(() => {
+  try {
+    for (const k of Object.keys(localStorage)) {
+      if (/^etii:(editeur\.communication|modifications:|edition\.)/.test(k)) localStorage.removeItem(k);
+    }
+  } catch (_e) { /* sans stockage */ }
+});
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(1000);
 const h = await page.evaluate(() => ({
@@ -37,6 +46,19 @@ const h = await page.evaluate(() => ({
 t('la liste et la lecture ont la même hauteur', Math.abs(h.flux - h.lecture) < 2, JSON.stringify(h));
 t('aucune légende posée sur l’image de bannière', (await page.locator('.kiosque__image figcaption').count()) === 0);
 const avant = await page.locator('.kiosque__carte').count();
+
+console.log('\n== Le mode édition ==');
+t('hors mode édition, aucune commande : ni « Ajouter une communication », ni « Modifier »',
+  !(await page.locator('.kiosque__ajout').isVisible()) && !(await page.locator('.kiosque__edition').isVisible())
+  && (await page.locator('.bascule-edition').innerText()).includes('Modifier'));
+await page.click('.bascule-edition');
+await page.waitForTimeout(300);
+t('« Modifier » allume le mode édition, et le bandeau dit où partent les modifications',
+  await page.evaluate(() => document.documentElement.classList.contains('mode-edition'))
+  && /navigateur seulement/.test(await page.locator('.edition-bandeau').innerText())
+  && (await page.locator('.bascule-edition').getAttribute('aria-pressed')) === 'true');
+t('les commandes apparaissent : ajouter, et modifier la communication lue',
+  (await page.locator('.kiosque__ajout').isVisible()) && (await page.locator('.kiosque__edition').isVisible()));
 
 console.log('\n== L’éditeur ==');
 await page.click('.kiosque__ajout');
@@ -224,40 +246,73 @@ await page.click('.modale__actions button:has-text("Publier")');
 await page.waitForTimeout(1200);
 t('la publication ferme la fenêtre et recharge la liste',
   (await page.locator('.modale').count()) === 0 && (await page.locator('.kiosque__carte').count()) === avant + 1);
-t('l’entrée publiée est marquée « brouillon » (aucune feuille branchée)', (await page.locator('.kiosque__carte-local').count()) === 1);
+const carte = () => page.locator('.kiosque__carte', { hasText: 'Nouveau banc d’essais harnais' });
+t('la communication publiée est dans la liste, sans étiquette de brouillon',
+  (await carte().count()) === 1 && (await page.locator('.kiosque__carte .badge--alerte').count()) === 0);
+t('elle est rangée dans ce navigateur, comme une modification du jeu « communications »',
+  await page.evaluate(() => {
+    const brut = JSON.parse(localStorage.getItem('etii:modifications:communications') || '{}');
+    return Object.values(brut).some((m) => m.type === 'annonce' && m.op === 'maj' && /banc d’essais/.test(m.donnees.titre));
+  }));
 
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(1000);
-t('elle survit au rechargement', (await page.locator('.kiosque__carte-local').count()) === 1);
-await page.locator('.kiosque__carte-local').first().click();
+t('elle survit au rechargement, et le mode édition aussi',
+  (await carte().count()) === 1 && await page.evaluate(() => document.documentElement.classList.contains('mode-edition')));
+await carte().first().click();
 await page.waitForTimeout(800);
 const lecture = page.locator('.kiosque__lecture').first();
 t('la lecture retrouve la mise en page : image en moitié à droite, chiffres en moitié',
   (await lecture.locator('.kiosque__bloc--moitie.kiosque__bloc--droite[data-type="image"]').count()) === 1
   && (await lecture.locator('.kiosque__bloc--moitie[data-type="chiffres"]:not(.kiosque__bloc--droite)').count()) === 1
   && (await lecture.locator('.editeur__cadre').count()) === 0);
-await page.click('.kiosque__ajout');
+
+console.log('\n== Modifier, supprimer ==');
+await page.click('.kiosque__edition button:has-text("Modifier")');
 await page.waitForTimeout(600);
-t('après publication, la fenêtre propose de corriger sans rien retaper',
-  /Corriger/.test(await page.locator('.modale__titre').innerText())
-  && (await page.locator('.modale__actions button:text-is("Republier")').count()) === 1
-  && (await page.locator('.modale__actions button:text-is("Nouvelle communication")').count()) === 1
-  && (await page.inputValue('input[placeholder="Validation du jalon de définition"]')) === 'Nouveau banc d’essais harnais');
+t('« Modifier » rouvre l’éditeur sur la communication, sans rien retaper',
+  /Modifier la communication/.test(await page.locator('.modale__titre').innerText())
+  && (await page.locator('.modale__actions button:text-is("Enregistrer")').count()) === 1
+  && (await page.inputValue('input[placeholder="Validation du jalon de définition"]')) === 'Nouveau banc d’essais harnais'
+  && (await page.locator('.modale--editeur .editeur__bloc').count()) === 5);
 await page.fill('input[placeholder="Validation du jalon de définition"]', 'Nouveau banc d’essais harnais (corrigé)');
 await page.waitForTimeout(300);
-await page.click('.modale__actions button:text-is("Republier")');
+await page.click('.modale__actions button:text-is("Enregistrer")');
 await page.waitForTimeout(1200);
-t('republier corrige la carte au lieu d’en ajouter une seconde',
-  (await page.locator('.kiosque__carte-local').count()) === 1
-  && (await page.locator('.kiosque__carte').count()) === avant + 1
-  && /corrigé/.test(await page.locator('.kiosque__carte:has(.kiosque__carte-local)').first().innerText()));
+t('enregistrer corrige la carte au lieu d’en ajouter une seconde',
+  (await page.locator('.kiosque__carte').count()) === avant + 1
+  && (await page.locator('.kiosque__carte', { hasText: '(corrigé)' }).count()) === 1);
 
-await page.click('.kiosque__ajout');
+await page.locator('.kiosque__carte', { hasText: '(corrigé)' }).first().click();
+await page.waitForTimeout(600);
+await page.click('.kiosque__edition .barre-edition__bouton--danger');
 await page.waitForTimeout(400);
-await page.click('.editeur__locaux-liste button:has-text("Retirer")');
-await page.waitForTimeout(700);
-t('elle se retire depuis l’éditeur', (await page.locator('.kiosque__carte-local').count()) === 0);
+t('« Supprimer » demande confirmation', /sera retiré/.test(await page.locator('.modale__boite').last().innerText()));
+await page.locator('.modale__boite').last().locator('.modale__actions .bouton--danger').click();
+await page.waitForTimeout(1200);
+t('confirmée, la suppression retire la carte',
+  (await page.locator('.kiosque__carte').count()) === avant
+  && (await page.locator('.kiosque__carte', { hasText: 'banc d’essais' }).count()) === 0);
+
+/* Une communication du fichier se modifie de la même façon : on l'édite,
+   puis on revient en arrière en retirant la modification. */
+await page.locator('.kiosque__carte').first().click();
+await page.waitForTimeout(600);
+const titreBase = await page.locator('.kiosque__lecture-titre').first().innerText();
+await page.click('.kiosque__edition button:has-text("Modifier")');
+await page.waitForTimeout(600);
+/* Le titre d'un édito a son propre exemple : on prend l'un ou l'autre. */
+const champTitre = page.locator('.modale--editeur input[placeholder="Validation du jalon de définition"], .modale--editeur input[placeholder="Un trimestre qui se tient"]');
+t('une communication du fichier s’ouvre aussi dans l’éditeur', (await champTitre.count()) === 1 && (await champTitre.inputValue()) === titreBase,
+  JSON.stringify({ titreBase, champ: await champTitre.inputValue().catch(() => null) }));
 await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
+
+await page.click('.bascule-edition');
+await page.waitForTimeout(300);
+t('« Terminer » éteint le mode édition : les commandes disparaissent',
+  !(await page.evaluate(() => document.documentElement.classList.contains('mode-edition')))
+  && (await page.locator('.edition-bandeau').count()) === 0 && !(await page.locator('.kiosque__ajout').isVisible()));
 
 t('aucune erreur JavaScript', err.length === 0, err.join(' | '));
 console.log(`\n  ${ok} réussis, ${ko} échoués`);

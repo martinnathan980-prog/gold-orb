@@ -110,53 +110,74 @@
   background-color: var(--chaud-contenu);
 }
 
-/* Les messages ne défilent plus : ils s'écrivent. Un ruban qui glissait
-   mettait 36 s à passer, ne s'arrêtait pas au doigt, et sur téléphone la
-   fenêtre faisait 237 px pour un message de 417 px — la seule information
-   du portail qu'on ne pouvait pas lire en entier. Tout tient maintenant,
-   sur une ligne à 1366 px et sur trois à 390 px. */
+/* Une seule ligne, qui défile. La piste porte la liste deux fois et
+   glisse d'une demi-piste : on revient exactement au départ, la boucle ne
+   se voit pas. Le survol l'arrête, le bouton de droite aussi (au doigt,
+   au clavier) ; sous « mouvement réduit », elle ne bouge pas et les
+   messages s'écrivent sur autant de lignes qu'il faut (voir plus bas). */
 .kiosque__alertes-fenetre {
   flex: 1;
   min-inline-size: 0;
   display: flex;
   align-items: center;
+  overflow: hidden;
 }
 
-.kiosque__alertes-piste { display: flex; }
+.kiosque__alertes-piste { display: flex; inline-size: max-content; }
 
 ul.kiosque__alertes-liste {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--e-2) var(--e-6);
+  flex-wrap: nowrap;
+  gap: var(--e-10);
   margin: 0;
-  padding: 0;
+  padding: var(--e-2) var(--e-10) var(--e-2) 0;
   list-style: none;
 }
 
-/* La seconde liste n'existait que pour boucler le défilement. Tant que le
-   gabarit l'émet encore, elle ne doit pas doubler les messages — et le
-   sélecteur porte son `ul` pour gagner contre la règle ci-dessus. */
-ul.kiosque__alertes-liste--copie { display: none; }
-
 .kiosque__alerte {
   display: inline-flex;
-  align-items: start;
+  align-items: center;
   gap: var(--e-2);
+  white-space: nowrap;
   font-size: var(--texte-sm);
   font-weight: var(--graisse-moyenne);
   color: var(--chaud-encre);
 }
 
+/* Le bouton pause : discret, au bout de la ligne, dans la teinte du
+   bandeau. Une cible pleine hauteur, facile à toucher. */
+.kiosque__alertes-pause {
+  flex: none;
+  align-self: center;
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--e-8);
+  block-size: var(--e-8);
+  padding: 0;
+  border: 0;
+  border-radius: var(--rayon-sm);
+  background: transparent;
+  color: var(--chaud-encre);
+  font-size: var(--texte-xs);
+  letter-spacing: -0.1em;
+  cursor: pointer;
+}
+.kiosque__alertes-pause:hover { background-color: color-mix(in srgb, var(--chaud) 14%, transparent); }
+.kiosque__alertes-pause:focus-visible { outline: 2px solid var(--chaud); outline-offset: 1px; }
+
 /* Une puce terre cuite ouvre chaque message : le rythme se lit de loin.
-   Sur un message qui passe à la ligne, elle s'aligne sur la première. */
+   Sur une ligne qui défile, elle est centrée ; quand les messages passent
+   à la ligne (mouvement réduit), elle s'aligne sur la première. */
 .kiosque__alerte::before {
   content: "";
   flex: none;
   inline-size: 6px;
   block-size: 6px;
-  margin-block-start: 0.45em;
   border-radius: var(--rayon-plein);
   background-color: var(--chaud);
+}
+@media (prefers-reduced-motion: reduce) {
+  .kiosque__alerte::before { margin-block-start: 0.45em; }
 }
 
 @keyframes kiosque-pulse {
@@ -164,8 +185,27 @@ ul.kiosque__alertes-liste--copie { display: none; }
   to   { opacity: 1; }
 }
 
+@keyframes kiosque-defile {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .kiosque__alertes-point { animation: kiosque-pulse calc(var(--duree-lente) * 3) ease-in-out infinite alternate; }
+  .kiosque__alertes-piste { animation: kiosque-defile calc(var(--duree-lente) * 90) linear infinite; }
+  .kiosque__alertes:hover .kiosque__alertes-piste,
+  .kiosque__alertes--pause .kiosque__alertes-piste { animation-play-state: paused; }
+}
+
+/* Mouvement réduit : rien ne bouge, tout se lit. La copie de la boucle
+   disparaît, les messages passent à la ligne, le bouton pause n'a plus
+   rien à arrêter. */
+@media (prefers-reduced-motion: reduce) {
+  .kiosque__alertes-piste { inline-size: auto; }
+  ul.kiosque__alertes-liste { flex-wrap: wrap; gap: var(--e-2) var(--e-6); padding-inline-end: 0; }
+  ul.kiosque__alertes-liste--copie,
+  .kiosque__alertes-pause { display: none; }
+  .kiosque__alerte { white-space: normal; align-items: start; }
 }
 
 /* --- La grille : la liste à gauche, la lecture à droite ---------------- */
@@ -194,14 +234,28 @@ ul.kiosque__alertes-liste--copie { display: none; }
   box-shadow: var(--ombre-sm);
 }
 
-.kiosque__lecture { min-block-size: 28rem; }
+/* La lecture ne dépasse jamais la hauteur d'un écran : au-delà, elle
+   défile dans son cadre. Une communication riche (photo, chiffres,
+   courbe, encadré) faisait plus de 1 100 px et poussait les porteurs deux
+   écrans plus bas. Le plafond suit la fenêtre — la barre du site, le
+   sommaire collé et le bandeau d'alertes en retirent environ 14 rem — et
+   reste entre 30 et 44 rem. La liste, elle, prend la hauteur de la
+   lecture (kiosque.js) : les deux cadres restent alignés. */
+.kiosque__lecture {
+  min-block-size: 28rem;
+  max-block-size: clamp(30rem, calc(100vh - 14rem), 44rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 
 /* Sur un écran étroit, la liste passe au-dessus de la lecture, dans une
-   fenêtre courte à hauteur fixe ; l'observateur ne pose rien. */
+   fenêtre courte à hauteur fixe ; l'observateur ne pose rien, et la
+   lecture n'est pas plafonnée : un cadre qui défile dans une page qui
+   défile, au doigt, est un piège. */
 @media (max-width: 900px) {
   .kiosque__grille { grid-template-columns: minmax(0, 1fr); }
   .kiosque__flux { max-block-size: 26rem; }
-  .kiosque__lecture { min-block-size: 0; }
+  .kiosque__lecture { min-block-size: 0; max-block-size: none; overflow-y: visible; }
 }
 
 .kiosque__flux-tete {
@@ -228,7 +282,6 @@ ul.kiosque__alertes-liste--copie { display: none; }
 
 .kiosque__filtres { gap: var(--e-1); }
 .kiosque__ajout { margin-inline-start: auto; }
-.kiosque__carte-local { text-transform: none; letter-spacing: 0; }
 .kiosque__filtres .facette { min-height: calc(var(--cible-tactile) - var(--e-3)); padding-inline: var(--e-2); font-size: var(--texte-xs); }
 
 /* La fenêtre qui défile. Pas de marge haute : l'en-tête de mois collant se
@@ -471,7 +524,8 @@ ol.kiosque__liste {
 
 /* --- La lecture ---------------------------------------------------------- */
 
-/* La lecture ne cache jamais rien : son contenu donne sa hauteur, et la
+/* La lecture ne coupe jamais rien : sous son plafond (plus haut), son
+   contenu donne sa hauteur ; au-delà, elle défile dans son cadre. La
    liste s'y ajuste (kiosque.js). Seule la figure de bannière rogne, pour
    ses coins. */
 .kiosque__lecture {
@@ -2309,6 +2363,21 @@ ol.liseuse__bloc-liste {
 .org-squad__membres .org-personne { border-color: transparent; box-shadow: none; }
 .org-squad__membres .org-personne:hover { border-color: var(--bordure-douce); background-color: var(--fond-enfonce); box-shadow: var(--ombre-md); }
 
+/* Mode édition : sous l'équipe, ajouter quelqu'un ici, renommer ou
+   retirer la squad ; sous les squads d'un pôle, en créer une. */
+.org-squad__vide { margin: 0; padding: var(--e-3); font-size: var(--texte-sm); }
+.org-squad__edition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2);
+  padding: var(--e-2) var(--e-3) var(--e-3);
+  border-top: 1px dashed var(--bordure-douce);
+}
+.org-arbre__ajouts { display: flex; flex-wrap: wrap; gap: var(--e-2); }
+.org-fiche__edition { display: flex; justify-content: flex-end; margin-block-end: calc(var(--e-2) * -1); }
+
 /* --- Vue trombinoscope --------------------------------------------------- */
 
 .org-trombi {
@@ -2507,7 +2576,10 @@ ol.liseuse__bloc-liste {
   color: var(--texte-faible);
 }
 
-.editeur__apercu-zone .kiosque__lecture { min-block-size: 0; }
+/* L'aperçu montre la communication en entier : c'est sa colonne qui
+   défile, pas la lecture (sinon deux barres de défilement l'une dans
+   l'autre). */
+.editeur__apercu-zone .kiosque__lecture { min-block-size: 0; max-block-size: none; overflow-y: visible; }
 
 .editeur__formulaire { display: flex; flex-direction: column; gap: var(--e-3); }
 
@@ -2793,13 +2865,12 @@ ol.liseuse__bloc-liste {
 .pile--section > section:first-of-type { padding-block-start: var(--e-6); }
 
 /* ----------------------------------------------------------------------
-   14. Espace de pôle : repères et contacts, équipe & référents
-       (etiia / etiie / etiii, rendus par pole.js). Les portraits sont
-       ceux de l'organigramme (§5, portraits.js) ; la carte se soulève au
-       survol comme partout ailleurs.
+   14. Espace de pôle : « le pôle en un coup d'œil » et ses documents
+       (pole.js). Les repères chiffrés, puis l'annuaire : trois volets côte
+       à côte — organigramme, référents, par porteur — de même hauteur,
+       qui défilent chacun dans leur cadre. Une personne s'y lit en une
+       ligne : son nom, son rôle. Puis les documents du pôle.
    ---------------------------------------------------------------------- */
-
-/* --- Repères : « le pôle en un coup d'œil » ----------------------------- */
 
 /* Quatre chiffres, chacun un lien vers la section ou la page qui le
    détaille. Le filet de gauche porte la couleur du pôle : c'est le seul
@@ -2858,149 +2929,96 @@ ol.liseuse__bloc-liste {
 
 .pole-repere__detail { font-size: var(--texte-xs); line-height: 1.4; color: var(--texte-faible); }
 
-/* --- Qui contacter : « à qui s'adresser » et « par porteur » ------------ */
 
-.pole-coup-oeil { display: flex; flex-direction: column; gap: var(--e-5); }
+/* --- L'annuaire ------------------------------------------------------ */
 
-.pole-contacts {
+.annuaire { display: flex; flex-direction: column; gap: var(--e-4); }
+
+.annuaire__barre { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-4); }
+.annuaire__recherche {
+  flex: 1 1 22rem;
+  min-height: calc(var(--cible-tactile) - var(--e-2));
+  padding: var(--e-1) var(--e-3);
+  background-color: var(--fond-eleve);
+  border: 1px solid var(--champ-bordure, var(--bordure));
+  border-radius: var(--rayon-md);
+  color: var(--texte);
+  font: inherit;
+  font-size: var(--texte-sm);
+}
+.annuaire__recherche:focus { outline: none; border-color: var(--accent); box-shadow: var(--ombre-accent); }
+.annuaire__resultat { margin: 0; font-size: var(--texte-xs); color: var(--texte-doux); }
+
+.annuaire__volets {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--e-4);
-  align-items: start;
 }
 
-/* Le bloc « Par porteur » a plus à dire : il prend deux parts sur trois. */
-@media (min-width: 900px) {
-  .pole-contacts { grid-template-columns: 1fr 2fr; }
-}
-
-.pole-contacts__bloc {
+.annuaire__volet {
   display: flex;
   flex-direction: column;
-  gap: var(--e-3);
-  padding: var(--e-4) var(--e-5);
+  min-inline-size: 0;
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
   border-radius: var(--rayon-lg);
   box-shadow: var(--ombre-sm);
+  overflow: hidden;
 }
 
-.pole-contacts__titre {
-  margin: 0;
-  padding-block-end: var(--e-2);
-  border-bottom: 1px solid var(--bordure);
-  font-family: var(--police-titre);
-  font-size: var(--texte-lg);
-  font-weight: var(--graisse-normale);
-  line-height: 1.25;
-  color: var(--texte);
+.annuaire__volet-tete { padding: var(--e-3) var(--e-4) var(--e-2); border-bottom: 1px solid var(--bordure); }
+.annuaire__volet-titre { margin: 0; font-family: var(--police-titre); font-size: var(--texte-lg); font-weight: var(--graisse-normale); color: var(--texte); }
+.annuaire__volet-sous-titre { margin: 2px 0 0; font-size: var(--texte-xs); color: var(--texte-doux); }
+
+/* Le cadre qui défile : même hauteur pour les trois volets. */
+.annuaire__defile {
+  block-size: 26rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--e-4) var(--e-3);
 }
+.annuaire__defile:focus-visible { outline: 2px solid var(--focus-couleur); outline-offset: -2px; }
 
-.pole-contacts__aide { margin: 0; font-size: var(--texte-sm); line-height: 1.5; color: var(--texte-doux); }
+.annuaire__groupes { display: flex; flex-direction: column; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
+.annuaire__groupe[hidden], .annuaire__personne[hidden] { display: none; }
 
-/* Une personne à contacter : portrait, nom en gras, sous-ligne. Toute la
-   ligne est le lien vers sa fiche dans l'organigramme. */
-.pole-contacts__liste {
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pole-personne {
+/* L'intitulé d'un groupe reste collé en haut du cadre pendant qu'on fait
+   défiler ses membres : on sait toujours dans quelle squad on est. */
+.annuaire__groupe-tete {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: var(--e-3);
-  margin-inline: calc(var(--e-2) * -1);
-  padding: var(--e-1) var(--e-2);
-  border-radius: var(--rayon-md);
-  color: var(--texte);
-  text-decoration: none;
-}
-
-.pole-personne:hover { background-color: var(--fond-enfonce); }
-.pole-personne:hover .pole-personne__nom { color: var(--texte-accent); }
-
-.pole-personne__infos { display: flex; flex-direction: column; min-inline-size: 0; }
-.pole-personne__nom { font-size: var(--texte-sm); font-weight: var(--graisse-forte); line-height: 1.3; }
-.pole-personne__sous { font-size: var(--texte-xs); line-height: 1.3; color: var(--texte-doux); }
-
-/* Le responsable ouvre la liste, un peu plus grand, séparé des leads. */
-.pole-personne--responsable {
-  padding-block: var(--e-2);
-  margin-block-end: var(--e-1);
+  gap: var(--e-2);
+  padding: var(--e-2) 0 var(--e-1);
+  background-color: var(--carte-fond);
   border-bottom: 1px solid var(--bordure-douce);
-  border-end-start-radius: 0;
-  border-end-end-radius: 0;
 }
+.annuaire__groupe-titre { flex: 1; min-inline-size: 0; margin: 0; font-size: var(--texte-sm); font-weight: var(--graisse-forte); color: var(--texte); }
+.annuaire__compte { font-size: var(--texte-xs); color: var(--texte-faible); }
 
-.pole-personne--responsable .pole-personne__nom { font-size: var(--texte-md); }
+.annuaire__personnes { margin: 0; padding: 0; list-style: none; }
+.annuaire__personne { display: flex; align-items: center; gap: var(--e-2); }
 
-/* Par porteur : le code en mono, le segment en retrait, puis les gens en
-   ligne — le lead d'abord, marqué. */
-.pole-porteur-groupe {
+.annuaire__lien {
+  flex: 1;
+  min-inline-size: 0;
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
   gap: var(--e-2);
-  padding-block: var(--e-2) var(--e-3);
-  border-top: 1px solid var(--bordure-douce);
-}
-
-.pole-porteur-groupe:first-of-type { border-top: 0; padding-block-start: 0; }
-
-.pole-porteur-groupe__tete { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--e-1) var(--e-2); }
-
-.pole-porteur-groupe__code {
-  font-family: var(--police-mono);
-  font-size: var(--texte-md);
-  font-weight: var(--graisse-forte);
-  letter-spacing: 0.04em;
+  padding: 3px var(--e-2);
+  margin-inline: calc(var(--e-2) * -1);
+  border-radius: var(--rayon-sm);
   color: var(--texte);
   text-decoration: none;
 }
-
-.pole-porteur-groupe__code:hover { color: var(--texte-accent); text-decoration: underline; }
-.pole-porteur-groupe__segment { font-size: var(--texte-xs); color: var(--texte-faible); }
-
-.pole-porteur-groupe__compte {
-  margin-inline-start: auto;
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--texte-faible);
-}
-
-.pole-porteur-groupe__gens {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--e-1) var(--e-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* Une pastille-personne : le portrait et le nom, sur fond en creux. */
-.pole-jeton {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e-2);
-  padding: 2px var(--e-3) 2px 2px;
-  background-color: var(--fond-enfonce);
-  border: 1px solid transparent;
-  border-radius: var(--rayon-plein);
-  color: var(--texte);
-  font-size: var(--texte-sm);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.pole-jeton:hover { border-color: var(--bordure-forte); background-color: var(--fond-eleve); color: var(--texte-accent); }
-.pole-jeton--lead { font-weight: var(--graisse-forte); }
-
-.pole-jeton__role {
+.annuaire__lien:hover { background-color: var(--fond-enfonce); }
+.annuaire__lien:hover .annuaire__nom { color: var(--texte-accent); }
+.annuaire__nom { flex: none; font-size: var(--texte-sm); font-weight: var(--graisse-moyenne); white-space: nowrap; }
+.annuaire__role { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--texte-xs); color: var(--texte-doux); }
+.annuaire__badge {
+  flex: none;
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
   letter-spacing: 0.04em;
@@ -3008,334 +3026,66 @@ ol.liseuse__bloc-liste {
   color: var(--chaud-encre);
 }
 
-.pole-porteur-groupe__aucun { margin: 0; font-size: var(--texte-sm); font-style: italic; color: var(--texte-faible); }
+.annuaire__porteur { font-family: var(--police-mono); color: var(--texte); text-decoration: none; }
+.annuaire__porteur:hover { text-decoration: underline; }
+.annuaire__segment { font-weight: var(--graisse-normale); font-size: var(--texte-xs); color: var(--texte-doux); }
 
-/* --- Équipe & référents ------------------------------------------------- */
+.annuaire__ajouts { display: flex; flex-wrap: wrap; gap: var(--e-2); padding-block-start: var(--e-3); }
+.annuaire__rien { margin: var(--e-3) 0 0; font-size: var(--texte-sm); color: var(--texte-doux); }
+.annuaire__vide { padding: var(--e-1) var(--e-2); font-size: var(--texte-sm); font-style: italic; color: var(--texte-faible); }
+.annuaire__rien[hidden] { display: none; }
+.annuaire__suite { display: flex; justify-content: center; margin: 0; }
 
-.pole-experts { display: flex; flex-direction: column; gap: var(--e-4); }
-
-.pole-experts__aide {
-  margin: 0;
-  max-inline-size: var(--largeur-texte);
-  font-size: var(--texte-md);
-  line-height: 1.6;
-  color: var(--texte-doux);
+@media (max-width: 980px) {
+  .annuaire__volets { grid-template-columns: minmax(0, 1fr); }
+  .annuaire__defile { block-size: auto; max-block-size: 22rem; }
 }
 
-.pole-experts__barre {
-  display: flex;
-  flex-wrap: wrap;
+/* Des commandes d'édition serrées, pour une ligne d'annuaire : l'icône
+   seule, le mot reste pour les lecteurs d'écran. */
+.barre-edition--compacte { flex: none; gap: 2px; }
+.barre-edition--compacte .barre-edition__bouton { min-block-size: 1.625rem; padding: 0 var(--e-1); }
+.barre-edition--compacte .barre-edition__libelle {
+  position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+/* --- Les documents du pôle --------------------------------------------- */
+
+.pole-docs { display: flex; flex-direction: column; gap: var(--e-4); }
+
+.pole-docs__liste {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
+}
+
+.pole-doc {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) auto auto auto auto;
   align-items: center;
   gap: var(--e-2) var(--e-4);
-}
-
-/* Le champ de recherche : le même que celui du lecteur et de l'organigramme. */
-.pole-experts__recherche {
-  flex: 1 1 18rem;
-  min-height: calc(var(--cible-tactile) - var(--e-2));
-  padding: var(--e-1) var(--e-3);
-  background-color: var(--fond-enfonce);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-md);
-  color: var(--texte);
-  font: inherit;
-  font-size: var(--texte-sm);
-}
-
-.pole-experts__recherche:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: var(--ombre-accent);
-  background-color: var(--fond-eleve);
-}
-
-/* Le commutateur « Par squad | Par compétence » : deux boutons soudés,
-   l'état lu sur aria-pressed. */
-.pole-experts__vues {
-  display: inline-flex;
-  padding: 2px;
-  background-color: var(--fond-enfonce);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-plein);
-}
-
-.pole-experts__vue {
-  min-height: calc(var(--cible-tactile) - var(--e-3));
-  padding: 0 var(--e-4);
-  background-color: transparent;
-  border: 0;
-  border-radius: var(--rayon-plein);
-  color: var(--texte-doux);
-  font: inherit;
-  font-size: var(--texte-sm);
-  font-weight: var(--graisse-moyenne);
-  cursor: pointer;
-}
-
-.pole-experts__vue:hover { color: var(--texte); }
-.pole-experts__vue[aria-pressed="true"] { background-color: var(--fond-eleve); color: var(--texte); box-shadow: var(--ombre-sm); }
-
-.pole-experts__compte {
-  margin: 0;
-  font-size: var(--texte-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--texte-doux);
-  white-space: nowrap;
-}
-
-.pole-experts__panneau[hidden] { display: none; }
-
-/* --- Vue par squad : le responsable, puis une carte par squad ----------- */
-
-.pole-squads {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(26rem, 100%), 1fr));
-  gap: var(--e-4);
-  align-items: start;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pole-squad {
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-2);
-  padding: var(--e-3) var(--e-4) var(--e-4);
-  background-color: var(--carte-fond);
-  border: 1px solid var(--carte-bord);
-  border-radius: var(--rayon-lg);
-  box-shadow: var(--ombre-sm);
-  transition: border-color var(--duree-rapide) var(--courbe),
-              transform var(--duree-rapide) var(--courbe),
-              box-shadow var(--duree-rapide) var(--courbe);
-}
-
-.pole-squad:hover { border-color: var(--bordure-forte); transform: translateY(-2px); box-shadow: var(--ombre-md); }
-.pole-squad[hidden] { display: none; }
-
-/* La carte du responsable ouvre la grille sur toute la largeur : portrait
-   en grand, nom, poste, ses compétences. Le filet de gauche est celui du
-   pôle. */
-.pole-squad--responsable {
-  grid-column: 1 / -1;
-  padding: var(--e-4) var(--e-5);
-  border-inline-start: 3px solid var(--org-teinte, var(--accent));
-}
-
-.pole-squad--responsable .pole-membre { margin: 0; padding: 0; align-items: center; gap: var(--e-5); }
-.pole-squad--responsable .pole-membre:hover { background-color: transparent; }
-.pole-squad--responsable .pole-membre__nom { font-family: var(--police-titre); font-size: var(--texte-xl); font-weight: var(--graisse-normale); }
-.pole-squad--responsable .pole-membre__poste { font-size: var(--texte-sm); }
-
-.pole-squad__tete {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: var(--e-1) var(--e-3);
-  padding-block-end: var(--e-2);
-  border-bottom: 1px solid var(--bordure);
-}
-
-.pole-squad__nom {
-  margin: 0;
-  font-family: var(--police-titre);
-  font-size: var(--texte-lg);
-  font-weight: var(--graisse-normale);
-  line-height: 1.25;
-  color: var(--texte);
-}
-
-.pole-squad__lead { font-size: var(--texte-xs); color: var(--texte-doux); }
-
-.pole-squad__compte {
-  margin-inline-start: auto;
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--texte-faible);
-  white-space: nowrap;
-}
-
-.pole-squad__membres {
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pole-squad__membres > li[hidden] { display: none; }
-
-/* Un membre : portrait, nom (le lien vers sa fiche), poste, puis ses
-   compétences en pastilles — RÉFÉRENT en terre cuite, le reste en gris. */
-.pole-membre {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--e-3);
-  margin-inline: calc(var(--e-2) * -1);
-  padding: var(--e-2);
-  border-radius: var(--rayon-md);
-}
-
-.pole-membre:hover { background-color: var(--fond-enfonce); }
-.pole-membre .portrait { margin-block-start: 2px; }
-.pole-membre__infos { display: flex; flex-direction: column; gap: var(--e-1); min-inline-size: 0; flex: 1; }
-.pole-membre__ligne { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 var(--e-2); }
-.pole-membre__nom { font-size: var(--texte-sm); font-weight: var(--graisse-forte); line-height: 1.3; color: var(--texte); text-decoration: none; }
-.pole-membre__nom:hover { color: var(--texte-accent); text-decoration: underline; }
-.pole-membre__poste { font-size: var(--texte-xs); line-height: 1.3; color: var(--texte-doux); }
-
-.pole-membre__porteur {
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--texte-faible);
-}
-
-.pole-membre__competences {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--e-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pole-competence {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e-1);
-  padding: 1px var(--e-2);
-  background-color: var(--fond-enfonce);
-  border: 1px solid transparent;
-  border-radius: var(--rayon-plein);
-  font-size: var(--texte-xs);
-  line-height: 1.5;
-  color: var(--texte-doux);
-}
-
-.pole-competence--referent { background-color: var(--chaud-doux); border-color: var(--chaud-lueur); color: var(--chaud-encre); font-weight: var(--graisse-forte); }
-.pole-competence--pratique { background-color: transparent; border-color: var(--bordure); color: var(--texte-faible); }
-
-.pole-competence__niveau {
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-/* La légende des pastilles, une fois, au-dessus des cartes. */
-.pole-experts__legende {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--e-2);
-  margin: 0;
-  font-size: var(--texte-xs);
-  color: var(--texte-faible);
-}
-
-/* --- Vue par compétence : une carte par compétence, ses référents ------- */
-
-.pole-experts__grille {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
-  gap: var(--e-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pole-expertise {
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-2);
   padding: var(--e-3) var(--e-4);
-  background-color: var(--carte-fond);
-  border: 1px solid var(--carte-bord);
-  border-radius: var(--rayon-lg);
-  box-shadow: var(--ombre-sm);
-  transition: border-color var(--duree-rapide) var(--courbe),
-              transform var(--duree-rapide) var(--courbe),
-              box-shadow var(--duree-rapide) var(--courbe);
+  border-bottom: 1px solid var(--bordure-douce);
 }
+.pole-doc:last-child { border-bottom: 0; }
+.pole-doc__type { justify-self: start; }
+.pole-doc__titre { min-inline-size: 0; font-weight: var(--graisse-moyenne); color: var(--texte); text-decoration: none; }
+.pole-doc__titre:hover { color: var(--texte-accent); text-decoration: underline; }
+.pole-doc__ref { font-size: var(--texte-xs); color: var(--texte-doux); white-space: nowrap; }
+.pole-doc__porteur { font-size: var(--texte-sm); color: var(--texte-doux); white-space: nowrap; }
+.pole-doc__porteur a { color: inherit; }
+.pole-doc__date { font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--texte-faible); white-space: nowrap; }
 
-.pole-expertise:hover { border-color: var(--bordure-forte); transform: translateY(-2px); box-shadow: var(--ombre-md); }
-.pole-expertise[hidden] { display: none; }
+.pole-docs__pied { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--e-3); }
 
-.pole-expertise__nom {
-  margin: 0;
-  padding-block-end: var(--e-2);
-  border-bottom: 1px solid var(--bordure);
-  font-family: var(--police-titre);
-  font-size: var(--texte-lg);
-  font-weight: var(--graisse-normale);
-  line-height: 1.25;
-  color: var(--texte);
+@media (max-width: 800px) {
+  .pole-doc { grid-template-columns: minmax(0, 1fr) auto; }
+  .pole-doc__type, .pole-doc__titre { grid-column: 1 / -1; }
 }
-
-.pole-expertise__referents {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* La personne : portrait, nom en gras, poste en dessous. Toute la ligne
-   est le lien, avec une marge négative pour que le survol couvre la carte. */
-.pole-expertise__personne {
-  display: flex;
-  align-items: center;
-  gap: var(--e-2);
-  margin-inline: calc(var(--e-2) * -1);
-  padding: var(--e-1) var(--e-2);
-  border-radius: var(--rayon-md);
-  color: var(--texte);
-  text-decoration: none;
-}
-
-.pole-expertise__personne:hover { background-color: var(--fond-enfonce); }
-.pole-expertise__personne:hover .pole-expertise__personne-nom { color: var(--texte-accent); }
-
-.pole-expertise__identite { display: flex; flex-direction: column; min-inline-size: 0; }
-.pole-expertise__personne-nom { font-size: var(--texte-sm); font-weight: var(--graisse-forte); line-height: 1.3; }
-.pole-expertise__personne-poste { font-size: var(--texte-xs); line-height: 1.3; color: var(--texte-doux); }
-
-.pole-expertise__aucun { margin: 0; font-size: var(--texte-sm); font-style: italic; color: var(--texte-faible); }
-
-/* Le compte : le nombre de référents est la valeur qui compte, en terre
-   cuite ; le reste en retrait. */
-.pole-expertise__compte {
-  margin: auto 0 0;
-  padding-block-start: var(--e-2);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--texte-faible);
-}
-
-.pole-expertise__compte-item { white-space: nowrap; }
-.pole-expertise__compte strong { font-weight: var(--graisse-forte); color: var(--chaud-encre); }
-
-.pole-experts__vide { margin: 0; padding: var(--e-4); text-align: center; color: var(--texte-doux); }
-.pole-experts__vide[hidden] { display: none; }
-
-.pole-experts__suite {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--e-3);
-}
-
-.pole-experts__suite .bouton[hidden] { display: none; }
 
 /* ----------------------------------------------------------------------
    15. En-tête de page et sommaire
@@ -3347,12 +3097,18 @@ ol.liseuse__bloc-liste {
        défilant ; le lien courant suit la lecture (ui.js, suivreSommaire).
    ---------------------------------------------------------------------- */
 
+/* La bande part de la barre du site, sans rien entre les deux : `main`
+   porte un rembourrage haut de --e-8 que la bande ne recouvrait pas, et
+   une lisière du papier beige restait visible entre la barre blanche et
+   la bande. On la remonte d'autant ; le titre garde son air par le
+   rembourrage de .page-entete. */
 .page-tete {
+  margin-block-start: calc(var(--e-8) * -1);
   background-color: var(--fond-bande);
 }
 
 .page-tete .page-entete {
-  padding-block: var(--e-8) var(--e-4);
+  padding-block: var(--e-10) var(--e-4);
 }
 
 .page-sommaire {
@@ -3398,7 +3154,261 @@ ol.liseuse__bloc-liste {
 }
 
 /* -------------------------------------------------------------------------
-   16. Écrans tactiles
+   15 bis. « À venir » (agenda.js) : les prochains rendez-vous
+       Une carte par rendez-vous : le jour en grand à gauche, puis le type,
+       le pôle et l'échéance, le titre, deux lignes de contexte. Le filet
+       de gauche porte la couleur du pôle (terre cuite pour le service).
+   ---------------------------------------------------------------------- */
+
+.agenda { display: flex; flex-direction: column; gap: var(--e-4); }
+
+.agenda__liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr));
+  gap: var(--e-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda__rdv {
+  --rdv-teinte: var(--chaud);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--e-2) var(--e-4);
+  align-items: start;
+  padding: var(--e-4) var(--e-4) var(--e-4) var(--e-3);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-inline-start: 3px solid var(--rdv-teinte);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
+}
+.agenda__rdv[data-pole="ETIIA"] { --rdv-teinte: var(--pole-etiia); }
+.agenda__rdv[data-pole="ETIIE"] { --rdv-teinte: var(--pole-etiie); }
+.agenda__rdv[data-pole="ETIII"] { --rdv-teinte: var(--pole-etiii); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .agenda__rdv { transition: transform var(--duree-rapide) var(--courbe), box-shadow var(--duree-rapide) var(--courbe); }
+  .agenda__rdv:hover { transform: translateY(-2px); box-shadow: var(--ombre-md); }
+}
+
+.agenda__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-inline-size: 3.25rem;
+  padding: var(--e-1) var(--e-2);
+  border-radius: var(--rayon-md);
+  background-color: var(--fond-enfonce);
+}
+.agenda__jour { font-family: var(--police-titre); font-size: var(--texte-2xl); line-height: 1.05; color: var(--texte); }
+.agenda__mois { font-family: var(--police-mono); font-size: var(--texte-xs); letter-spacing: var(--lettrage-etiquette); text-transform: uppercase; color: var(--texte-doux); }
+
+.agenda__corps { display: flex; flex-direction: column; gap: var(--e-1); min-inline-size: 0; }
+
+.agenda__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-1) var(--e-3);
+  margin: 0;
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+.agenda__pole { display: inline-flex; align-items: center; gap: var(--e-1); }
+.agenda__pole::before { content: ""; inline-size: 7px; block-size: 7px; border-radius: var(--rayon-plein); background-color: var(--rdv-teinte); }
+.agenda__echeance { color: var(--chaud-encre); font-weight: var(--graisse-moyenne); }
+
+.agenda__titre { margin: 0; font-family: var(--police-titre); font-size: var(--texte-lg); font-weight: var(--graisse-normale); line-height: 1.25; color: var(--texte); }
+.agenda__resume {
+  margin: 0;
+  font-size: var(--texte-sm);
+  line-height: 1.5;
+  color: var(--texte-doux);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.agenda__lieu { margin: 0; font-size: var(--texte-xs); color: var(--texte-doux); }
+
+/* Un rendez-vous de la semaine se remarque : un fond à peine teinté. */
+.agenda__rdv--proche { background-color: color-mix(in srgb, var(--rdv-teinte) 5%, var(--carte-fond)); }
+
+.agenda__edition { grid-column: 1 / -1; justify-content: flex-end; }
+.agenda__vide, .agenda__suite { margin: 0; color: var(--texte-doux); font-size: var(--texte-sm); }
+
+/* La liste des alertes, dans leur fenêtre de modification. */
+.edition-liste { display: flex; flex-direction: column; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
+.edition-liste__element {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+  padding: var(--e-2) var(--e-3);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-md);
+}
+.edition-liste__texte { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; font-size: var(--texte-sm); }
+.edition-liste__detail { font-size: var(--texte-xs); color: var(--texte-doux); }
+
+/* -------------------------------------------------------------------------
+   16. Le mode édition (edition.js)
+       Un bouton « Modifier » dans la barre, un bandeau qui dit où partent
+       les modifications, et des commandes posées partout mais cachées tant
+       que html n'a pas la classe .mode-edition : les lecteurs ne voient
+       jamais une commande qu'ils ne peuvent pas utiliser.
+   ---------------------------------------------------------------------- */
+
+:root:not(.mode-edition) .edition-seulement { display: none !important; }
+
+/* Le bouton de la barre, habillé comme ses voisins ; allumé, il prend la
+   terre cuite : on sait d'un coup d'œil qu'on est en train de modifier. */
+.site-entete .bascule-edition {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  min-height: calc(var(--cible-tactile) - var(--e-2));
+  padding-inline: var(--e-3);
+  border: 1px solid var(--barre-bordure);
+  border-radius: var(--rayon-md);
+  background-color: var(--barre-surface);
+  color: var(--barre-texte-doux);
+  font: inherit;
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  cursor: pointer;
+}
+.site-entete .bascule-edition:hover { background-color: var(--barre-surface-forte); border-color: var(--bordure-forte); color: var(--barre-texte); }
+.site-entete .bascule-edition[aria-pressed="true"] {
+  background-color: var(--chaud);
+  border-color: var(--chaud);
+  color: var(--chaud-contenu);
+}
+.bascule-edition__icone { font-size: var(--texte-sm); line-height: 1; }
+
+@media (max-width: 640px) {
+  .bascule-edition__libelle { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+
+/* Le bandeau, sous la barre : une ligne, dans la teinte chaude. */
+.edition-bandeau {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-2);
+  padding: var(--e-2) var(--e-4);
+  background-color: var(--chaud-doux);
+  border-bottom: 1px solid color-mix(in srgb, var(--chaud) 30%, transparent);
+  color: var(--chaud-encre);
+  font-size: var(--texte-sm);
+  text-align: center;
+}
+.edition-bandeau__marque { font-size: var(--texte-md); }
+
+/* Les commandes d'un élément : deux petits boutons, discrets mais nets. */
+.barre-edition {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--e-1);
+}
+
+.barre-edition__bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  min-block-size: var(--e-8);
+  padding: 0 var(--e-2);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-sm);
+  background-color: var(--carte-fond);
+  color: var(--texte-doux);
+  font: inherit;
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  cursor: pointer;
+}
+.barre-edition__bouton:hover { border-color: var(--chaud); color: var(--chaud-encre); background-color: var(--chaud-doux); }
+.barre-edition__bouton--danger:hover { border-color: var(--statut-critique); color: var(--statut-critique); background-color: var(--statut-critique-fond); }
+.barre-edition__bouton:focus-visible { outline: 2px solid var(--focus-couleur); outline-offset: 1px; }
+
+.edition-ajout { align-self: flex-start; }
+.barre-edition[hidden] { display: none !important; }
+
+/* Dans une réponse de la FAQ, sous ses mots-clés. */
+.faq__edition { margin-block-start: var(--e-3); }
+
+/* En tête d'un compte-rendu, à droite ; au pied d'une carte de document. */
+.reunions__edition { align-self: flex-end; }
+.ds-carte__edition { margin-inline-start: auto; }
+
+/* Dans le Communication center : les commandes en haut de la lecture, à
+   droite ; un crayon au bout du bandeau d'alertes ; et, quand il n'y a
+   aucune alerte, de quoi en écrire une. */
+.kiosque__edition { display: flex; justify-content: flex-end; margin-block-end: calc(var(--e-2) * -1); }
+.kiosque__alertes-modifier {
+  flex: none;
+  align-self: center;
+  inline-size: var(--e-8);
+  block-size: var(--e-8);
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--chaud) 40%, transparent);
+  border-radius: var(--rayon-sm);
+  background-color: var(--carte-fond);
+  color: var(--chaud-encre);
+  cursor: pointer;
+}
+.kiosque__alertes-modifier:hover { background-color: var(--chaud-doux); }
+.kiosque__alertes-vide { display: flex; }
+
+/* --- Le formulaire générique -------------------------------------------- */
+
+.modale--formulaire { inline-size: min(100%, 52rem); }
+
+.formulaire-edition { display: flex; flex-direction: column; gap: var(--e-4); }
+
+.formulaire-edition__grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+  gap: var(--e-3) var(--e-4);
+}
+
+/* Un texte long, une liste, un groupe : sur toute la largeur. */
+.formulaire-edition__grille > .champ:has(textarea),
+.formulaire-edition__grille > .formulaire-edition__large,
+.formulaire-edition__grille > .formulaire-edition__groupe,
+.formulaire-edition__grille > .champ:has(.formulaire-edition__competences) { grid-column: 1 / -1; }
+
+.formulaire-edition__groupe {
+  margin: 0;
+  padding: var(--e-3) var(--e-4) var(--e-4);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-md);
+}
+
+.formulaire-edition__cases { display: flex; flex-wrap: wrap; gap: var(--e-2) var(--e-4); }
+.formulaire-edition__case { display: inline-flex; align-items: center; gap: var(--e-1); font-size: var(--texte-sm); }
+
+.formulaire-edition__competences { display: flex; flex-direction: column; gap: var(--e-2); align-items: flex-start; }
+.formulaire-edition__competence {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 10rem auto;
+  gap: var(--e-2);
+  inline-size: 100%;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .formulaire-edition__competence { grid-template-columns: minmax(0, 1fr) auto; }
+  .formulaire-edition__competence select { grid-column: 1; }
+}
+
+/* -------------------------------------------------------------------------
+   17. Écrans tactiles
    Ces deux blocs ferment le fichier, et modules.css est la dernière feuille
    chargée : à spécificité égale — et un @media n'en ajoute pas — une règle
    posée plus haut serait écrasée par la peau ou par les modules eux-mêmes.
@@ -3415,7 +3425,7 @@ ol.liseuse__bloc-liste {
   select.champ__select,
   .recherche__champ,
   .org-recherche,
-  .pole-experts__recherche,
+  .annuaire__recherche,
   .liseuse__recherche,
   .arbre__recherche {
     font-size: var(--texte-lg);
@@ -3423,17 +3433,20 @@ ol.liseuse__bloc-liste {
   }
 }
 
-/* Ces liens-ci sont petits par choix typographique — un lien de sommaire, un
-   jeton de pôle, un code de porteur, un nom de pôle dans l'arbre. Au doigt,
-   on leur pose un plancher de 44px sans toucher à --cible-tactile, dont
-   dépend la hauteur de la barre du site : la rehausser mangerait le
-   sommaire collant. */
+/* Ces liens-ci sont petits par choix typographique — un lien de sommaire,
+   une personne ou un code de porteur de l'annuaire d'un pôle, un nom de
+   pôle dans l'arbre. Au doigt, on leur pose un plancher de 44px sans
+   toucher à --cible-tactile, dont dépend la hauteur de la barre du site :
+   la rehausser mangerait le sommaire collant. Les volets de l'annuaire
+   défilent dans leur cadre : des lignes plus hautes ne l'allongent pas. */
 @media (pointer: coarse) {
   .sous-nav a,
-  .pole-jeton,
-  .pole-porteur-groupe__code,
+  .annuaire__lien,
+  .annuaire__porteur,
   .org-arbre__pole-nom,
   .kiosque__filtres .facette {
     min-block-size: 44px;
   }
+  /* Un lien en ligne n'a pas de hauteur à lui : il en prend une. */
+  .annuaire__porteur { display: inline-flex; align-items: center; }
 }

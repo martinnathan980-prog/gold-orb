@@ -3,20 +3,18 @@
 
    Une seule page, trois fois, paramétrée par <body data-pole="…">. Quatre
    sections, dans l'ordre de lecture :
-     1. COMMUNICATION — le kiosque du pôle (kiosque.js), le même qu'au
-                        niveau service ;
-     2. EN UN COUP D'ŒIL — les repères chiffrés (effectif, squads,
-                        référents, documents portés), puis QUI CONTACTER :
-                        le responsable et les leads, et, porteur par
-                        porteur, les personnes du pôle qui y travaillent ;
-     3. ÉQUIPE & RÉFÉRENTS — le responsable, puis une carte par squad
-                        avec ses membres et leurs compétences ; ou, au
-                        choix, une carte par compétence avec ses
-                        référents. Un seul champ filtre les deux vues :
-                        « qui sait faire ça ? », la question de tous les
-                        jours dans une équipe de soixante personnes ;
-     4. FAQ           — les questions du pôle, liste + lecteur, et la
-                        demande aux experts.
+     1. COMMUNICATION  — le kiosque du pôle (kiosque.js), le même qu'au
+                         niveau service ;
+     2. EN UN COUP D'ŒIL — les repères chiffrés, puis l'organigramme, les
+                         référents par compétence et les personnes par
+                         porteur, côte à côte, sous un seul champ de
+                         recherche ;
+     3. DOCUMENTS      — les documents du pôle les plus récents, en vigueur ;
+     4. FAQ            — les questions du pôle, et la demande aux experts.
+
+   Tout se modifie dans la page, en mode édition (edition.js) : les
+   communications, l'organigramme (personnes, squads), les documents, les
+   questions. Chaque section se redessine seule après un enregistrement.
 
    Rien n'est inventé : chaque section ne montre que ce que les fichiers
    déclarent pour ce pôle (organigramme.json, flotte.json, documents.json).
@@ -24,12 +22,15 @@
    ========================================================================= */
 
 import { el, frag, monter, debounce, deleguer, initTheme, initNav, suivreSommaire, ouvrirModale, stockage, toast, annoncer } from './ui.js';
+import { installerEdition, barreEdition, boutonAjouter } from './edition.js';
+import { abonnerModifications, supprimerElement, aplatirOrganigramme } from './modifications.js';
+import { modifierCommunication, supprimerDossier, ouvrirAlertes, ouvrirPersonne, ouvrirSquad, ouvrirDocument, ouvrirQuestion } from './edition-contenus.js';
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
 import { kiosque, dossiersDepuisCommunications, noteOrigine } from './kiosque.js';
 import { lecteur } from './lecteur.js';
 import { chargerCommunications } from './communications.js';
 import { ouvrirEditeur } from './editeur.js';
-import { portrait } from './portraits.js';
+import { creditsCommunications } from './credits.js';
 
 /* -------------------------------------------------------------------------
    1. Les pôles : matière éditoriale, pas de la donnée
@@ -60,10 +61,6 @@ const POLES = {
 };
 
 const CLE_STOCKAGE_FAQ = 'faq-questions';
-
-/* Au-delà de ce nombre, les compétences sans recherche en cours se
-   replient derrière un bouton : la grille reste lisible d'un coup d'œil. */
-const COMPETENCES_VISIBLES = 12;
 
 /* Les niveaux de compétence, dans l'ordre où ils comptent, et leur libellé. */
 const NIVEAUX = { referent: 'référent', confirme: 'confirmé', pratique: 'en pratique' };
@@ -113,7 +110,11 @@ function rendreCommunication(pole, donnees, conteneur) {
     noteOrigine(donnees),
     kiosque({
       id: 'kiosque-' + pole.cle.toLowerCase(), dossiers, titreFil: 'Communications du pôle',
-      surAjout: (bouton) => ouvrirEditeur({ pole: pole.cle, declencheur: bouton, surPublication: () => chargerCommunicationDuPole(pole) })
+      /* En mode édition : ajouter, modifier, supprimer. La section se
+         redessine d'elle-même après un enregistrement. */
+      surAjout: (bouton) => ouvrirEditeur({ pole: pole.cle, declencheur: bouton }),
+      surModifier: (dossier, bouton) => modifierCommunication(dossier, bouton, pole.cle),
+      surSupprimer: (dossier) => supprimerDossier(dossier)
     }));
 }
 
@@ -123,9 +124,10 @@ function chargerCommunicationDuPole(pole) {
       squelette: 3,
       texteChargement: 'Chargement de la communication du pôle ' + pole.cle + '…',
       titreErreur: 'Communication indisponible',
-      titreVide: 'Aucune communication',
-      texteVide: 'Les communications publiées par ce pôle apparaîtront ici.',
-      estVide: (d) => !d || dossiersDepuisCommunications(d, { pole: pole.cle }).length === 0
+      /* Jamais « vide » : le kiosque sait dire qu'il n'a rien à lire, et
+         garde en mode édition son bouton d'ajout ; la note de source, elle,
+         doit pouvoir s'afficher justement quand la feuille n'a rien rendu. */
+      estVide: () => false
     });
 }
 
@@ -143,9 +145,12 @@ function squadsDuBloc(bloc) {
   if (!bloc || typeof bloc !== 'object') return [];
   return (Array.isArray(bloc.squads) ? bloc.squads : [])
     .filter((s) => s && typeof s === 'object')
-    .map((s) => {
+    .map((s, i) => {
       const membres = (Array.isArray(s.membres) ? s.membres : []).filter((m) => m && typeof m === 'object');
-      return { nom: texte(s.nom) || 'Squad à nommer', lead: membres.find(estLead) || null, membres };
+      /* L'identifiant d'une squad : le sien, ou « <pôle>-<rang> » — la règle
+         de modifications.js, pour qu'une squad se modifie sous le même nom. */
+      const id = texte(s.id) || (texte(bloc.pole).toUpperCase() + '-' + (i + 1));
+      return { id, rang: i, nom: texte(s.nom) || 'Squad à nommer', lead: membres.find(estLead) || null, membres };
     });
 }
 
@@ -202,7 +207,17 @@ function expertisesDuBloc(bloc) {
 }
 
 /* -------------------------------------------------------------------------
-   4. En un coup d'œil : repères, à qui s'adresser, par porteur
+   4. Le pôle en un coup d'œil : l'organigramme, les référents, les porteurs
+
+   Une seule section, pas trop haute : quatre repères chiffrés, un champ
+   de recherche, puis trois volets côte à côte, de même hauteur, qui
+   défilent chacun dans leur cadre :
+     - l'organigramme : le responsable, puis chaque squad et ses membres ;
+     - les référents : pour chaque compétence, qui solliciter en premier ;
+     - par porteur : qui travaille sur quel appareil, le lead d'abord.
+   Une personne s'y lit en une ligne : son nom et son rôle, rien de plus —
+   on n'a pas davantage d'informations sur elle, et le nom mène à sa fiche.
+   En mode édition, l'organigramme se modifie ici même.
    ------------------------------------------------------------------------- */
 
 function porteursDuPole(flotte, code) {
@@ -211,19 +226,21 @@ function porteursDuPole(flotte, code) {
     && (Array.isArray(a.poles) ? a.poles : []).some((p) => texte(p).toUpperCase() === code));
 }
 
-/* Les documents dont le porteur est un membre du pôle : documents.json ne
-   connaît que le nom, on rapproche donc par le nom. */
-function documentsDuPole(docs, membres) {
+/* Les documents du pôle : ceux que documents.json rattache au pôle
+   (`pole`), et, à défaut, ceux dont le porteur est un membre du pôle. */
+function documentsDuPole(docs, code, membres) {
   verifierForme(docs, { documents: 'tableau' }, 'documents.json');
   const noms = new Set(membres.map((m) => normaliser(m.nom)).filter(Boolean));
-  return docs.documents.filter((d) => d && typeof d === 'object' && noms.has(normaliser(d.porteur)));
+  return docs.documents.filter((d) => d && typeof d === 'object' && texte(d.titre) && (
+    (Array.isArray(d.pole) ? d.pole : [d.pole]).some((p) => texte(p).toUpperCase() === code)
+    || noms.has(normaliser(d.porteur))));
 }
 
 /**
  * Les personnes du pôle, porteur par porteur : d'abord les appareils que
- * flotte.json rattache au pôle, dans son ordre, puis les autres codes que
- * les membres déclarent (un porteur suivi par quelques personnes sans que
- * la flotte le dise encore). Dans chaque groupe, le lead d'abord, puis le
+ * flotte.json rattache au pôle — même quand personne n'y est encore
+ * affecté : le groupe dit alors « à renseigner » —, puis les autres codes
+ * que les membres déclarent. Dans chaque groupe, le lead d'abord, puis le
  * responsable, puis les autres par nom. Le périmètre transverse n'est pas
  * un porteur.
  */
@@ -237,33 +254,30 @@ function gensParPorteur(bloc, flotte) {
     parCode.get(code).push(m);
   }
   const rang = (p) => (estLead(p) ? 0 : texte(p.role) === 'responsable' ? 1 : 2);
-  const trier = (liste) => liste.slice().sort((a, b) => rang(a) - rang(b) || texte(a.nom).localeCompare(texte(b.nom), 'fr'));
-
+  const trier = (liste) => liste.slice().sort((a, b) => rang(a) - rang(b) || texte(a.nom).localeCompare(texte(b.nom), 'fr', { numeric: true }));
   const appareils = flotte ? flotte.flotte.filter((a) => a && typeof a === 'object' && texte(a.code)) : [];
   const parCodeFlotte = new Map(appareils.map((a) => [texte(a.code).toUpperCase(), a]));
   const groupes = [];
   const vus = new Set();
-  const ajouter = (code, declare) => {
-    if (vus.has(code)) return;
+  const ajouter = (code, meme) => {
+    if (vus.has(code) || (!parCode.has(code) && !meme)) return;
     vus.add(code);
     const appareil = parCodeFlotte.get(code) || null;
     const fiche = appareil && appareil.fiche && typeof appareil.fiche === 'object' ? appareil.fiche : {};
     groupes.push({
       code: appareil ? texte(appareil.code) : code,
       segment: appareil ? (texte(appareil.segment) || texte(fiche.segment)) : '',
-      declare,
       gens: trier(parCode.get(code) || [])
     });
   };
   if (flotte) porteursDuPole(flotte, texte(bloc.pole).toUpperCase()).forEach((a) => ajouter(texte(a.code).toUpperCase(), true));
-  [...parCode.keys()].sort().forEach((code) => ajouter(code, false));
+  [...parCode.keys()].sort().forEach(ajouter);
   return groupes;
 }
 
-/* Trois fichiers alimentent la section ; l'organigramme est indispensable,
-   les deux autres se passent d'un chiffre plutôt que de faire tomber la
-   section entière. */
-async function chargerCoupOeil(code) {
+/* L'organigramme est indispensable ; la flotte et les documents se passent
+   d'un chiffre plutôt que de faire tomber la section. */
+async function chargerAnnuaire(code) {
   const [orga, flotte, docs] = await Promise.allSettled([
     chargerDonnees('organigramme'), chargerDonnees('flotte'), chargerDonnees('documents')
   ]);
@@ -271,349 +285,233 @@ async function chargerCoupOeil(code) {
   const bloc = blocOrganigramme(orga.value, code);
   if (!bloc) return null;
   const membres = membresDuBloc(bloc);
-  const squads = squadsDuBloc(bloc);
-  const { expertises, nbReferents } = expertisesDuBloc(bloc);
   const laFlotte = flotte.status === 'fulfilled' ? flotte.value : null;
   if (laFlotte) verifierForme(laFlotte, { flotte: 'tableau' }, 'flotte.json');
+  const { expertises, nbReferents } = expertisesDuBloc(bloc);
   return {
-    effectif: membres.length,
-    squads: squads.length,
-    referents: nbReferents,
-    competences: expertises.length,
-    documents: docs.status === 'fulfilled' ? documentsDuPole(docs.value, membres).length : null,
+    code,
+    organigramme: orga.value,
+    flotte: laFlotte,
     responsable: bloc.responsable && typeof bloc.responsable === 'object' ? bloc.responsable : null,
-    leads: squads.filter((s) => s.lead).map((s) => ({ personne: s.lead, squad: s.nom })),
+    squads: squadsDuBloc(bloc),
+    membres,
+    expertises: expertises.filter((e) => e.referents.length),
+    nbCompetences: expertises.length,
+    nbReferents,
     parPorteur: gensParPorteur(bloc, laFlotte),
-    flotteLue: Boolean(laFlotte)
+    documents: docs.status === 'fulfilled' ? documentsDuPole(docs.value, code, membres).filter((d) => !texte(d.remplacePar)).length : null
   };
 }
 
-function repere(valeur, libelle, detail, href, extra) {
+/* Une personne, en une ligne : son nom, son rôle, et — en mode édition —
+   de quoi la modifier. `placement` dit où elle est dans l'organigramme,
+   pour le formulaire. */
+function lignePersonne(pole, m, personne, placement, options) {
+  const o = options || {};
+  const cle = normaliser([personne.nom, personne.poste, porteurDe(personne), o.competence || '']
+    .concat(competencesDe(personne).map((c) => c.nom)).join(' '));
+  return el('li', { class: 'annuaire__personne', dataset: { recherche: cle } },
+    el('a', { class: 'annuaire__lien', href: lienFiche(pole, personne) },
+      el('span', { class: 'annuaire__nom' }, texte(personne.nom) || 'Nom à renseigner'),
+      el('span', { class: 'annuaire__role' }, texte(personne.poste) || 'Rôle à renseigner'),
+      estLead(personne) && o.badgeLead !== false ? el('span', { class: 'annuaire__badge' }, 'lead') : null),
+    o.edition === false ? null : barreEdition({
+      classe: 'barre-edition--compacte',
+      quoi: texte(personne.nom),
+      surModifier: (b) => ouvrirPersonne({ existant: Object.assign({}, personne, placement), organigramme: m.organigramme, flotte: m.flotte, declencheur: b }),
+      surSupprimer: () => retirer('organigramme', 'personne', texte(personne.id), '« ' + texte(personne.nom) + ' » ne figure plus dans l’organigramme.')
+    }));
+}
+
+/** Retire un élément ; le toast dit ce qui s'est passé, dans les deux cas. */
+async function retirer(jeu, type, id, message) {
+  try {
+    await supprimerElement(jeu, type, id);
+    toast(message, 'succes');
+  } catch (e) {
+    toast((e && e.message) || 'La suppression a échoué.', 'erreur');
+  }
+}
+
+/* Un groupe sans personne le dit, sans rien inventer ; sa ligne n'est pas
+   une personne : la recherche ne la compte pas. */
+function groupeAnnuaire(titre, compte, lignes, commandes, vide) {
+  return el('li', { class: 'annuaire__groupe' },
+    el('div', { class: 'annuaire__groupe-tete' },
+      el('h4', { class: 'annuaire__groupe-titre' }, titre),
+      compte !== null ? el('span', { class: 'annuaire__compte mono' }, String(compte)) : null,
+      commandes || null),
+    el('ul', { class: 'annuaire__personnes', role: 'list' },
+      lignes.length ? lignes : el('li', { class: 'annuaire__vide' }, vide || 'À renseigner')));
+}
+
+function volet(id, titre, sousTitre, groupes, pied) {
+  return el('section', { class: 'annuaire__volet', id, 'aria-labelledby': id + '-titre' },
+    el('header', { class: 'annuaire__volet-tete' },
+      el('h3', { class: 'annuaire__volet-titre', id: id + '-titre' }, titre),
+      el('p', { class: 'annuaire__volet-sous-titre' }, sousTitre)),
+    el('div', { class: 'annuaire__defile', tabIndex: 0, 'aria-label': titre },
+      el('ul', { class: 'annuaire__groupes', role: 'list' }, groupes),
+      el('p', { class: 'annuaire__rien', hidden: true }, 'Personne ne correspond.'),
+      pied || null));
+}
+
+function rendreAnnuaire(pole, m, conteneur) {
+  const code = pole.cle;
+  const prefixe = 'annuaire-' + code.toLowerCase();
+
+  /* L'organigramme : le responsable, puis les squads. */
+  const groupesOrga = [];
+  if (m.responsable) {
+    groupesOrga.push(groupeAnnuaire('Responsable du pôle', null,
+      [lignePersonne(pole, m, m.responsable, { pole: code, squad: '' }, { badgeLead: false })]));
+  }
+  m.squads.forEach((s) => {
+    groupesOrga.push(groupeAnnuaire(s.nom, s.membres.length,
+      s.membres.slice().sort((a, b) => (estLead(b) ? 1 : 0) - (estLead(a) ? 1 : 0))
+        .map((p) => lignePersonne(pole, m, p, { pole: code, squad: s.id })),
+      barreEdition({
+        classe: 'barre-edition--compacte',
+        quoi: s.nom,
+        surModifier: (b) => ouvrirSquad({ existant: { id: s.id, pole: code, nom: s.nom, rang: s.rang }, pole: code, declencheur: b }),
+        surSupprimer: () => retirer('organigramme', 'squad', s.id, '« ' + s.nom + ' » retirée : ses membres attendent dans « À affecter ».')
+      }),
+      'Personne dans cette squad pour le moment.'));
+  });
+  const piedOrga = el('div', { class: 'annuaire__ajouts edition-seulement' },
+    boutonAjouter('Une personne', (b) => ouvrirPersonne({ organigramme: m.organigramme, flotte: m.flotte, pole: code, squad: m.squads.length ? m.squads[0].id : '', declencheur: b })),
+    boutonAjouter('Une squad', (b) => ouvrirSquad({ pole: code, declencheur: b })));
+
+  /* Les référents : une compétence, ses référents. */
+  const groupesRef = m.expertises.map((e) => groupeAnnuaire(e.nom, e.referents.length,
+    e.referents.map((p) => lignePersonne(pole, m, p, placementDe(m, p), { competence: e.nom, edition: false }))));
+
+  /* Par porteur : qui travaille sur quoi. */
+  const groupesPorteur = m.parPorteur.map((g) => groupeAnnuaire(
+    frag(el('a', { class: 'annuaire__porteur', href: 'index.html#porteur=' + encodeURIComponent(g.code) }, g.code),
+      g.segment ? el('span', { class: 'annuaire__segment' }, ' · ' + g.segment) : null),
+    g.gens.length,
+    g.gens.map((p) => lignePersonne(pole, m, p, placementDe(m, p), { edition: false })),
+    null,
+    'Contact à renseigner'));
+
+  const volets = el('div', { class: 'annuaire__volets' },
+    volet(prefixe + '-organigramme', 'Organigramme', pluriel(m.membres.length, 'personne') + ' · ' + pluriel(m.squads.length, 'squad'), groupesOrga, piedOrga),
+    volet(prefixe + '-referents', 'Référents', 'La personne à solliciter en premier, par compétence', groupesRef),
+    volet(prefixe + '-porteurs', 'Par porteur', 'Qui travaille sur quel appareil', groupesPorteur));
+
+  /* Un seul champ filtre les trois volets. */
+  const champ = el('input', {
+    type: 'search', class: 'annuaire__recherche', id: prefixe + '-recherche', autocomplete: 'off',
+    placeholder: 'Qui sait faire… ? Un nom, un rôle, un porteur, une compétence'
+  });
+  const compteur = el('p', { class: 'annuaire__resultat mono', 'aria-live': 'polite' }, '');
+  function filtrer() {
+    const q = normaliser(champ.value);
+    let trouves = 0;
+    volets.querySelectorAll('.annuaire__volet').forEach((v) => {
+      let visiblesVolet = 0;
+      v.querySelectorAll('.annuaire__groupe').forEach((g) => {
+        let visibles = 0;
+        g.querySelectorAll('.annuaire__personne').forEach((li) => {
+          const ok = !q || li.dataset.recherche.includes(q) || normaliser(g.querySelector('.annuaire__groupe-titre').textContent).includes(q);
+          li.hidden = !ok;
+          if (ok) visibles += 1;
+        });
+        g.hidden = visibles === 0 && Boolean(q);
+        visiblesVolet += visibles;
+      });
+      const rien = v.querySelector('.annuaire__rien');
+      if (rien) rien.hidden = visiblesVolet > 0 || !q;
+      if (v.id.endsWith('-organigramme')) trouves = visiblesVolet;
+    });
+    compteur.textContent = q ? pluriel(trouves, 'personne') + ' dans l’organigramme' : '';
+  }
+  champ.addEventListener('input', debounce(filtrer, 100));
+  champ.addEventListener('search', filtrer);
+
+  monter(conteneur,
+    el('div', { class: 'annuaire' },
+      el('ul', { class: 'pole-reperes', role: 'list', 'aria-label': 'Le pôle ' + code + ' en chiffres' },
+        repere(m.membres.length, 'personnes', 'responsable compris', '#' + prefixe + '-organigramme'),
+        repere(m.squads.length, 'squads', 'chacune avec son lead', '#' + prefixe + '-organigramme'),
+        repere(m.nbReferents, 'référents', 'sur ' + pluriel(m.nbCompetences, 'compétence'), '#' + prefixe + '-referents'),
+        repere(m.documents, 'documents', 'en vigueur, portés par le pôle', '#section-documents')),
+      el('div', { class: 'annuaire__barre', role: 'search' },
+        el('label', { class: 'visuellement-cache', for: champ.id }, 'Rechercher une personne, un rôle, un porteur ou une compétence du pôle'),
+        champ, compteur),
+      volets,
+      el('p', { class: 'annuaire__suite' },
+        lienSuite('organigramme.html', code, 'L’organigramme complet, avec les fiches'))));
+}
+
+/* Où est une personne dans l'organigramme du pôle : pour le formulaire. */
+function placementDe(m, personne) {
+  if (m.responsable && texte(m.responsable.id) === texte(personne.id)) return { pole: m.code, squad: '' };
+  const s = m.squads.find((x) => x.membres.includes(personne));
+  return { pole: m.code, squad: s ? s.id : '' };
+}
+
+function repere(valeur, libelle, detail, href) {
   const nombre = (valeur === null || valeur === undefined) ? '—' : String(valeur);
   return el('li', { class: 'pole-repere' },
-    el('a', Object.assign({ class: 'pole-repere__lien', href }, extra || {}),
+    el('a', { class: 'pole-repere__lien', href },
       el('span', { class: 'pole-repere__valeur' }, nombre),
       el('span', { class: 'pole-repere__libelle' }, libelle),
       el('span', { class: 'pole-repere__detail' }, valeur === null ? 'donnée indisponible' : detail)));
 }
 
-/** Une personne à contacter : portrait, nom, sous-ligne — le lien vers sa fiche. */
-function personneContact(pole, personne, sousLigne, options) {
-  const opts = options || {};
-  return el('a', { class: ['pole-personne', opts.classe || null], href: lienFiche(pole, personne) },
-    portrait(personne, { taille: opts.taille || 'sm', decoratif: true }),
-    el('span', { class: 'pole-personne__infos' },
-      el('span', { class: 'pole-personne__nom' }, texte(personne.nom) || 'Nom à renseigner'),
-      el('span', { class: 'pole-personne__sous' }, sousLigne)));
-}
-
-function blocAQuiSAdresser(pole, r) {
-  return el('div', { class: 'pole-contacts__bloc', 'aria-labelledby': 'contacts-' + pole.cle.toLowerCase() + '-titre' },
-    el('h3', { class: 'pole-contacts__titre', id: 'contacts-' + pole.cle.toLowerCase() + '-titre' }, 'À qui s’adresser'),
-    el('p', { class: 'pole-contacts__aide' }, 'Le responsable du pôle, puis le lead de chaque squad. Un nom ouvre sa fiche.'),
-    el('ul', { class: 'pole-contacts__liste', role: 'list' },
-      r.responsable
-        ? el('li', {}, personneContact(pole, r.responsable, texte(r.responsable.poste) || 'Responsable de pôle', { classe: 'pole-personne--responsable', taille: 'md' }))
-        : el('li', { class: 'pole-porteur-groupe__aucun' }, 'Responsable de pôle à renseigner'),
-      r.leads.length
-        ? r.leads.map((l) => el('li', {}, personneContact(pole, l.personne, 'Lead · ' + l.squad)))
-        : el('li', { class: 'pole-porteur-groupe__aucun' }, 'Aucun lead de squad déclaré')));
-}
-
-/** Une personne en jeton : le portrait et le nom, le rôle s'il compte. */
-function jetonPersonne(pole, personne) {
-  const lead = estLead(personne);
-  const responsable = texte(personne.role) === 'responsable';
-  return el('li', {},
-    el('a', { class: ['pole-jeton', lead ? 'pole-jeton--lead' : null], href: lienFiche(pole, personne),
-      title: texte(personne.poste) || null },
-    portrait(personne, { taille: 'xs', decoratif: true }),
-    el('span', {}, texte(personne.nom) || 'Nom à renseigner'),
-    lead ? el('span', { class: 'pole-jeton__role' }, 'Lead') : null,
-    responsable ? el('span', { class: 'pole-jeton__role' }, 'Resp.') : null));
-}
-
-function groupePorteur(pole, g) {
-  return el('div', { class: 'pole-porteur-groupe' },
-    el('div', { class: 'pole-porteur-groupe__tete' },
-      el('a', { class: 'pole-porteur-groupe__code', href: 'index.html#porteur=' + encodeURIComponent(g.code) }, g.code),
-      g.segment ? el('span', { class: 'pole-porteur-groupe__segment' }, g.segment) : null,
-      el('span', { class: 'pole-porteur-groupe__compte' }, g.gens.length ? pluriel(g.gens.length, 'personne') : 'personne à renseigner')),
-    g.gens.length
-      ? el('ul', { class: 'pole-porteur-groupe__gens', role: 'list' }, g.gens.map((p) => jetonPersonne(pole, p)))
-      : el('p', { class: 'pole-porteur-groupe__aucun' }, 'Aucune personne du pôle rattachée à ce porteur dans l’organigramme.'));
-}
-
-function blocParPorteur(pole, r) {
-  const id = 'porteurs-' + pole.cle.toLowerCase() + '-titre';
-  return el('div', { class: 'pole-contacts__bloc', 'aria-labelledby': id },
-    el('h3', { class: 'pole-contacts__titre', id }, 'Par porteur'),
-    el('p', { class: 'pole-contacts__aide' },
-      'Pour chaque porteur, les personnes du pôle qui y travaillent : le lead d’abord. '
-      + 'Le code ouvre la fiche du porteur, un nom ouvre celle de la personne.'),
-    r.parPorteur.length
-      ? el('div', { class: 'pole-porteur-groupes' }, r.parPorteur.map((g) => groupePorteur(pole, g)))
-      : el('p', { class: 'pole-porteur-groupe__aucun' },
-        r.flotteLue ? 'Aucun porteur n’est rattaché à ce pôle pour le moment.' : 'La flotte ne peut pas être lue pour le moment.'));
-}
-
-function rendreCoupOeil(pole, r, conteneur) {
-  monter(conteneur,
-    el('div', { class: 'pole-coup-oeil' },
-      el('ul', { class: 'pole-reperes', role: 'list', 'aria-label': 'Le pôle ' + pole.cle + ' en chiffres' },
-        repere(r.effectif, 'personnes', 'responsable compris', '#section-equipe', { dataset: { vueEquipe: 'squad' } }),
-        repere(r.squads, 'squads', 'chacune avec son lead', '#section-equipe', { dataset: { vueEquipe: 'squad' } }),
-        repere(r.referents, 'référents', 'sur ' + pluriel(r.competences, 'compétence'), '#section-equipe', { dataset: { vueEquipe: 'competence' } }),
-        repere(r.documents, 'documents', 'portés par ses membres', 'docsearch.html#pole=' + encodeURIComponent(pole.cle))),
-      el('div', { class: 'pole-contacts' },
-        blocAQuiSAdresser(pole, r),
-        blocParPorteur(pole, r))));
-}
-
 /* -------------------------------------------------------------------------
-   5. Équipe & référents : par squad, ou par compétence
+   5. Les documents du pôle : les plus récents, en vigueur
    ------------------------------------------------------------------------- */
 
-/* Le choix de vue est exposé au reste de la page (un repère « référents »
-   ouvre la vue par compétence) une fois la section rendue. */
-let choisirVueEquipe = null;
-
-function pastilleCompetence(c) {
-  const niveau = niveauDe(c);
-  return el('li', { class: ['pole-competence', 'pole-competence--' + niveau] },
-    texte(c.nom),
-    niveau === 'referent' ? el('span', { class: 'pole-competence__niveau' }, 'référent') : null);
+async function chargerDocuments(code) {
+  const [docs, orga] = await Promise.allSettled([chargerDonnees('documents'), chargerDonnees('organigramme')]);
+  if (docs.status !== 'fulfilled') throw docs.reason;
+  const bloc = orga.status === 'fulfilled' ? blocOrganigramme(orga.value, code) : null;
+  const membres = bloc ? membresDuBloc(bloc) : [];
+  const liste = documentsDuPole(docs.value, code, membres);
+  const enVigueur = liste.filter((d) => !texte(d.remplacePar))
+    .sort((a, b) => texte(b.maj).localeCompare(texte(a.maj)));
+  return { code, docs: docs.value, enVigueur, membres, tousMembres: orga.status === 'fulfilled' ? aplatirOrganigramme(orga.value).personnes : membres };
 }
 
-/** Un membre d'une squad : portrait, nom (lien vers sa fiche), poste, porteur, compétences. */
-function ligneMembre(pole, personne, options) {
-  const opts = options || {};
-  const porteur = porteurDe(personne);
-  const competences = competencesDe(personne).slice().sort((a, b) => rangNiveau(a) - rangNiveau(b));
-  return el('div', { class: 'pole-membre' },
-    portrait(personne, { taille: opts.taille || 'sm', decoratif: true }),
-    el('div', { class: 'pole-membre__infos' },
-      el('div', { class: 'pole-membre__ligne' },
-        el('a', { class: 'pole-membre__nom', href: lienFiche(pole, personne) }, texte(personne.nom) || 'Nom à renseigner'),
-        el('span', { class: 'pole-membre__poste' }, texte(personne.poste) || 'Poste à renseigner'),
-        porteur ? el('span', { class: 'pole-membre__porteur' }, porteur) : null),
-      competences.length
-        ? el('ul', { class: 'pole-membre__competences', role: 'list', 'aria-label': 'Compétences' }, competences.map(pastilleCompetence))
-        : null));
+const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+function dateCourte(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(texte(iso));
+  return m ? Number(m[3]) + ' ' + MOIS_COURTS[Number(m[2]) - 1] + ' ' + m[1] : '';
 }
 
-function rangNiveau(c) { return niveauDe(c) === 'referent' ? 0 : niveauDe(c) === 'confirme' ? 1 : 2; }
-
-/** La clé de recherche d'une personne : nom, poste, porteur, compétences, identifiant. */
-function cleMembre(personne) {
-  return normaliser([personne.nom, personne.poste, porteurDe(personne), personne.id]
-    .concat(competencesDe(personne).map((c) => c.nom)).map(texte).join(' '));
-}
-
-function carteResponsable(pole, responsable) {
-  return el('li', { class: ['pole-squad', 'pole-squad--responsable'] },
-    ligneMembre(pole, responsable, { taille: 'lg' }));
-}
-
-function carteSquad(pole, squad) {
-  const membres = squad.membres.slice().sort((a, b) => (estLead(b) - estLead(a)) || texte(a.nom).localeCompare(texte(b.nom), 'fr'));
-  return el('li', { class: 'pole-squad' },
-    el('div', { class: 'pole-squad__tete' },
-      el('h3', { class: 'pole-squad__nom' }, squad.nom),
-      el('span', { class: 'pole-squad__lead' }, squad.lead ? 'Lead : ' + texte(squad.lead.nom) : 'Lead à renseigner'),
-      el('span', { class: 'pole-squad__compte' }, pluriel(membres.length, 'personne'))),
-    el('ul', { class: 'pole-squad__membres', role: 'list' },
-      membres.map((m) => el('li', { dataset: { cle: cleMembre(m) } }, ligneMembre(pole, m)))));
-}
-
-function carteExpertise(pole, e) {
-  const nbRef = e.referents.length;
-  /* Chaque compte est insécable : la ligne se replie entre deux comptes,
-     jamais au milieu de « 2 en pratique ». Le nombre de référents est la
-     valeur qui compte ; sans référent, on ne l'écrit pas deux fois. */
-  const comptes = [];
-  if (nbRef) comptes.push(el('strong', { class: 'pole-expertise__compte-item' }, pluriel(nbRef, 'référent')));
-  if (e.confirmes) comptes.push(el('span', { class: 'pole-expertise__compte-item' }, pluriel(e.confirmes, 'confirmé')));
-  if (e.pratiquants) comptes.push(el('span', { class: 'pole-expertise__compte-item' }, e.pratiquants + ' en pratique'));
-  const ligne = [];
-  comptes.forEach((c, i) => { if (i) ligne.push(' · '); ligne.push(c); });
-
-  return el('li', { class: ['pole-expertise', nbRef ? null : 'pole-expertise--sans-referent'] },
-    el('h3', { class: 'pole-expertise__nom' }, e.nom),
-    nbRef
-      ? el('ul', { class: 'pole-expertise__referents', role: 'list' }, e.referents.map((r) =>
-        el('li', {},
-          el('a', { class: 'pole-expertise__personne', href: lienFiche(pole, r) },
-            portrait(r, { taille: 'sm', decoratif: true }),
-            el('span', { class: 'pole-expertise__identite' },
-              el('span', { class: 'pole-expertise__personne-nom' }, texte(r.nom) || 'Nom à renseigner'),
-              el('span', { class: 'pole-expertise__personne-poste' }, texte(r.poste) || 'Poste à renseigner'))))))
-      : el('p', { class: 'pole-expertise__aucun' }, 'Pas de référent désigné'),
-    el('p', { class: 'pole-expertise__compte' }, ligne));
-}
-
-async function chargerEquipe(code) {
-  const bloc = blocOrganigramme(await chargerDonnees('organigramme'), code);
-  if (!bloc) return null;
-  const { expertises, nbReferents } = expertisesDuBloc(bloc);
-  return {
-    responsable: bloc.responsable && typeof bloc.responsable === 'object' ? bloc.responsable : null,
-    squads: squadsDuBloc(bloc),
-    effectif: membresDuBloc(bloc).length,
-    expertises, nbReferents
-  };
-}
-
-function rendreEquipe(pole, modele, conteneur) {
-  const { expertises, nbReferents, squads, responsable } = modele;
-  const prefixe = 'equipe-' + pole.cle.toLowerCase();
-
-  const champ = el('input', {
-    type: 'search', class: 'pole-experts__recherche', id: prefixe + '-recherche',
-    placeholder: 'Qui sait faire… ? Une compétence, un nom, un porteur', autocomplete: 'off'
-  });
-  const compteur = el('p', { class: 'pole-experts__compte mono', id: prefixe + '-compte', 'aria-live': 'polite' });
-  const vide = el('p', { class: 'pole-experts__vide', hidden: true });
-
-  /* --- Vue par squad --------------------------------------------------- */
-  const carteResp = responsable ? carteResponsable(pole, responsable) : null;
-  const cleResp = responsable ? cleMembre(responsable) : '';
-  const cartesSquads = squads.map((s) => ({ nom: normaliser(s.nom), noeud: carteSquad(pole, s) }));
-  const grilleSquads = el('ul', { class: 'pole-squads', role: 'list' }, carteResp, cartesSquads.map((c) => c.noeud));
-  const panneauSquads = el('div', { class: 'pole-experts__panneau', id: prefixe + '-squads', role: 'region', 'aria-label': 'Par squad' },
-    el('p', { class: 'pole-experts__legende' },
-      el('span', { class: ['pole-competence', 'pole-competence--referent'] }, 'référent'),
-      el('span', { class: ['pole-competence', 'pole-competence--confirme'] }, 'confirmé'),
-      el('span', { class: ['pole-competence', 'pole-competence--pratique'] }, 'en pratique'),
-      ' — les compétences de chacun, le référent en terre cuite.'),
-    grilleSquads);
-
-  /* --- Vue par compétence --------------------------------------------- */
-  const grilleExpertises = el('ul', { class: 'pole-experts__grille', role: 'list' });
-  const suite = el('button', { type: 'button', class: 'bouton bouton--secondaire bouton--compact', hidden: true });
-  const cartesExpertises = expertises.map((e) => ({
-    cle: normaliser([e.nom].concat(e.referents.map((r) => r.nom)).join(' ')),
-    noeud: carteExpertise(pole, e)
-  }));
-  monter(grilleExpertises, cartesExpertises.map((c) => c.noeud));
-  const panneauExpertises = el('div', { class: 'pole-experts__panneau', id: prefixe + '-competences', role: 'region', 'aria-label': 'Par compétence', hidden: true },
-    grilleExpertises);
-
-  /* --- Le commutateur ---------------------------------------------------- */
-  const boutonSquad = el('button', { type: 'button', class: 'pole-experts__vue', 'aria-pressed': 'true', 'aria-controls': panneauSquads.id, dataset: { vue: 'squad' } }, 'Par squad');
-  const boutonCompetence = el('button', { type: 'button', class: 'pole-experts__vue', 'aria-pressed': 'false', 'aria-controls': panneauExpertises.id, dataset: { vue: 'competence' } }, 'Par compétence');
-  const vues = el('div', { class: 'pole-experts__vues', role: 'group', 'aria-label': 'Présentation de l’équipe' }, boutonSquad, boutonCompetence);
-
-  let vue = 'squad';
-  let toutMontrer = false;
-  let requete = '';
-
-  function appliquerSquads(q) {
-    let personnes = 0;
-    let total = 0;
-    if (carteResp) {
-      total += 1;
-      const ok = !q || cleResp.includes(q);
-      if (ok) personnes += 1;
-      carteResp.hidden = !ok;
-    }
-    cartesSquads.forEach((c) => {
-      const squadOk = Boolean(q) && c.nom.includes(q);
-      let visibles = 0;
-      c.noeud.querySelectorAll('.pole-squad__membres > li').forEach((li) => {
-        total += 1;
-        const ok = !q || squadOk || li.dataset.cle.includes(q);
-        if (ok) visibles += 1;
-        li.hidden = !ok;
-      });
-      personnes += visibles;
-      c.noeud.hidden = visibles === 0;
-    });
-    compteur.textContent = q
-      ? personnes + ' sur ' + pluriel(total, 'personne')
-      : pluriel(total, 'personne') + ' · ' + pluriel(squads.length, 'squad');
-    return personnes;
-  }
-
-  function appliquerExpertises(q) {
-    let correspondantes = 0;
-    let repliees = 0;
-    cartesExpertises.forEach((c) => {
-      const ok = !q || c.cle.includes(q);
-      if (ok) correspondantes += 1;
-      const visible = ok && (Boolean(q) || toutMontrer || correspondantes <= COMPETENCES_VISIBLES);
-      if (ok && !visible) repliees += 1;
-      c.noeud.hidden = !visible;
-    });
-    compteur.textContent = q
-      ? correspondantes + ' sur ' + pluriel(expertises.length, 'compétence') + ' · ' + pluriel(nbReferents, 'référent')
-      : pluriel(expertises.length, 'compétence') + ' · ' + pluriel(nbReferents, 'référent');
-    if (q) { suite.hidden = true; }
-    else if (toutMontrer && expertises.length > COMPETENCES_VISIBLES) {
-      suite.hidden = false; suite.textContent = 'Réduire à ' + pluriel(COMPETENCES_VISIBLES, 'compétence');
-    } else if (repliees > 0) {
-      suite.hidden = false; suite.textContent = 'Voir les ' + repliees + ' autres compétences';
-    } else { suite.hidden = true; }
-    return correspondantes;
-  }
-
-  function appliquer() {
-    const q = normaliser(requete);
-    const trouvees = vue === 'squad' ? appliquerSquads(q) : appliquerExpertises(q);
-    if (vue === 'squad') suite.hidden = true;
-    vide.hidden = trouvees > 0;
-    if (!vide.hidden) {
-      vide.textContent = vue === 'squad'
-        ? 'Personne ne correspond à « ' + requete.trim() + ' » dans le pôle.'
-        : 'Aucune compétence ni personne ne correspond à « ' + requete.trim() + ' » dans le pôle.';
-    }
-  }
-
-  function choisir(nouvelle) {
-    vue = nouvelle === 'competence' ? 'competence' : 'squad';
-    boutonSquad.setAttribute('aria-pressed', vue === 'squad' ? 'true' : 'false');
-    boutonCompetence.setAttribute('aria-pressed', vue === 'competence' ? 'true' : 'false');
-    panneauSquads.hidden = vue !== 'squad';
-    panneauExpertises.hidden = vue !== 'competence';
-    appliquer();
-  }
-  vues.addEventListener('click', (evt) => {
-    const b = evt.target.closest('[data-vue]');
-    if (b) choisir(b.dataset.vue);
-  });
-  choisirVueEquipe = choisir;
-
-  suite.addEventListener('click', () => {
-    toutMontrer = !toutMontrer;
-    appliquer();
-    if (!toutMontrer) champ.focus();
-  });
-  const filtrer = debounce(() => { requete = champ.value; appliquer(); }, 120);
-  champ.addEventListener('input', filtrer);
-  champ.addEventListener('search', () => { filtrer.annuler(); requete = champ.value; appliquer(); });
-
-  appliquer();
-
+function rendreDocuments(pole, m, conteneur) {
+  const MAX = 8;
+  const visibles = m.enVigueur.slice(0, MAX);
+  const porteurDuDoc = (d) => m.tousMembres.find((p) => normaliser(p.nom) === normaliser(d.porteur)) || null;
   monter(conteneur,
-    el('div', { class: 'pole-experts' },
-      el('p', { class: 'pole-experts__aide' },
-        'Le responsable, puis chaque squad avec ses membres et ce qu’ils savent faire — ou, par compétence, '
-        + 'le ou les référents du pôle : la personne à solliciter en premier. Un nom ouvre sa fiche dans l’organigramme.'),
-      el('div', { class: 'pole-experts__barre', role: 'search' },
-        el('label', { class: 'visuellement-cache', for: champ.id }, 'Rechercher une compétence, une personne ou un porteur du pôle'),
-        champ, vues, compteur),
-      panneauSquads, panneauExpertises, vide,
-      el('div', { class: 'pole-experts__suite' },
-        suite,
-        lienSuite('organigramme.html', pole.cle, 'L’organigramme complet du service'),
-        lienSuite('organigramme.html', pole.cle, 'Toutes les compétences du service', { vue: 'competences' }))));
+    el('div', { class: 'pole-docs' },
+      visibles.length
+        ? el('ul', { class: 'pole-docs__liste', role: 'list' }, visibles.map((d) => {
+          const porteur = porteurDuDoc(d);
+          return el('li', { class: 'pole-doc' },
+            el('span', { class: 'pole-doc__type badge badge--contour' }, texte(d.type) || 'Document'),
+            el('a', { class: 'pole-doc__titre', href: 'docsearch.html#q=' + encodeURIComponent(texte(d.reference) || texte(d.titre)) }, texte(d.titre)),
+            el('span', { class: 'pole-doc__ref mono' }, texte(d.reference)),
+            el('span', { class: 'pole-doc__porteur' }, porteur
+              ? el('a', { href: lienFiche(pole, porteur) }, texte(porteur.nom))
+              : (texte(d.porteur) || 'Porteur à renseigner')),
+            el('time', { class: 'pole-doc__date', datetime: texte(d.maj) || null }, dateCourte(d.maj) || 'date à renseigner'),
+            barreEdition({
+              classe: 'barre-edition--compacte',
+              quoi: texte(d.titre),
+              surModifier: (b) => ouvrirDocument({ existant: d, documents: m.docs, personnes: m.tousMembres, pole: pole.cle, declencheur: b }),
+              surSupprimer: () => retirer('documents', 'document', texte(d.id), 'Document retiré du fonds.')
+            }));
+        }))
+        : el('p', { class: 'texte-doux sans-marge' }, 'Aucun document rattaché à ce pôle pour le moment.'),
+      el('div', { class: 'pole-docs__pied' },
+        el('a', { class: 'bouton bouton--secondaire bouton--compact', href: 'docsearch.html#pole=' + encodeURIComponent(pole.cle) },
+          'Tous les documents du pôle' + (m.enVigueur.length ? ' (' + m.enVigueur.length + ')' : '')),
+        boutonAjouter('Ajouter un document', (b) => ouvrirDocument({ documents: m.docs, personnes: m.tousMembres, pole: pole.cle, declencheur: b })))));
 }
-
-/* Un repère du coup d'œil ouvre la section équipe dans la vue qui lui
-   correspond (les référents : par compétence). L'ancre fait le défilement. */
-deleguer(document, '[data-vue-equipe]', 'click', (_evt, lien) => {
-  if (choisirVueEquipe) choisirVueEquipe(lien.dataset.vueEquipe);
-});
 
 /* -------------------------------------------------------------------------
    6. FAQ
@@ -703,8 +601,10 @@ function rendreFaq(pole, groupes, conteneur) {
     el('div', {},
       el('p', { class: 'liseuse__pied-titre' }, 'Une question spécifique ?'),
       el('p', {}, 'Si ces questions ne couvrent pas votre périmètre, sollicitez ',
-        el('a', { href: '#section-equipe' }, 'les référents du pôle'), ' ou posez-la aux experts.')),
-    el('div', { class: 'rangee rangee--serree' }, boutonExpert));
+        el('a', { href: '#section-reperes' }, 'les référents du pôle'), ' ou posez-la aux experts.')),
+    el('div', { class: 'rangee rangee--serree' },
+      boutonAjouter('Ajouter une question', (b) => ouvrirQuestion({ pole: pole.cle, declencheur: b })),
+      boutonExpert));
 
   monter(conteneur,
     lecteur({
@@ -717,6 +617,11 @@ function rendreFaq(pole, groupes, conteneur) {
       entete: (item) => frag(
         el('span', { class: 'badge badge--neutre' }, item.groupe === 'pole' ? 'Pôle ' + pole.cle : 'Service ETII'),
         item.meta ? el('span', { class: 'badge badge--contour' }, item.meta) : null),
+      actions: (item) => barreEdition({
+        quoi: item.titre,
+        surModifier: (b) => ouvrirQuestion({ existant: item.source, declencheur: b }),
+        surSupprimer: () => retirer('faq', 'question', texte(item.source.id), 'Question retirée de la base.')
+      }),
       pied
     }));
 }
@@ -766,6 +671,20 @@ initTheme();
 const PARAMETRE = (document.body && document.body.dataset ? String(document.body.dataset.pole || '') : '').trim();
 const POLE = Object.prototype.hasOwnProperty.call(POLES, PARAMETRE.toUpperCase()) ? POLES[PARAMETRE.toUpperCase()] : null;
 
+/* Les crédits des photos : une obligation de licence, tenue par une seule
+   fenêtre au pied de page plutôt que sous chaque communication. */
+deleguer(document, '[data-credits-photos]', 'click', async (evt, lien) => {
+  evt.preventDefault();
+  let communications = null;
+  try { communications = await chargerCommunications(); } catch (_e) { communications = null; }
+  ouvrirModale({
+    titre: 'Crédits photos',
+    declencheur: lien,
+    contenu: creditsCommunications(communications)
+      || el('p', { class: 'texte-doux sans-marge' }, 'Aucune photo créditée dans les communications pour le moment.')
+  });
+});
+
 initNav(POLE ? POLE.cle.toLowerCase() + '.html' : '');
 
 if (!POLE) {
@@ -776,32 +695,44 @@ if (!POLE) {
 
   chargerCommunicationDuPole(POLE);
 
-  avecEtat('#zone-reperes', () => chargerCoupOeil(POLE.cle),
-    (modele, conteneur) => rendreCoupOeil(POLE, modele, conteneur), {
-      squelette: 2, compact: true,
-      texteChargement: 'Calcul des repères du pôle…',
-      titreErreur: 'Repères indisponibles',
-      titreVide: 'Aucune équipe déclarée',
-      texteVide: 'Les repères du pôle se calculent depuis son organigramme, encore vide.'
-    });
-
-  avecEtat('#zone-equipe', () => chargerEquipe(POLE.cle),
-    (modele, conteneur) => rendreEquipe(POLE, modele, conteneur), {
+  const chargerSectionAnnuaire = () => avecEtat('#zone-reperes', () => chargerAnnuaire(POLE.cle),
+    (modele, conteneur) => rendreAnnuaire(POLE, modele, conteneur), {
       squelette: 3, compact: true,
       texteChargement: 'Chargement de l’équipe du pôle…',
       titreErreur: 'Équipe indisponible',
       titreVide: 'Aucune équipe déclarée',
-      texteVide: 'Ce pôle n’a encore ni responsable ni squad dans l’organigramme du service.',
-      estVide: (m) => !m || (m.squads.length === 0 && !m.responsable)
+      texteVide: 'Ce pôle n’a encore ni responsable ni squad dans l’organigramme du service.'
     });
+  chargerSectionAnnuaire();
 
-  avecEtat('#zone-faq', async () => questionsDuPole(await chargerDonnees('faq'), POLE.cle),
+  const chargerSectionDocuments = () => avecEtat('#zone-documents', () => chargerDocuments(POLE.cle),
+    (modele, conteneur) => rendreDocuments(POLE, modele, conteneur), {
+      squelette: 2, compact: true,
+      texteChargement: 'Chargement des documents du pôle…',
+      titreErreur: 'Documents indisponibles',
+      estVide: () => false
+    });
+  chargerSectionDocuments();
+
+  const chargerSectionFaq = () => avecEtat('#zone-faq', async () => questionsDuPole(await chargerDonnees('faq'), POLE.cle),
     (groupes, conteneur) => rendreFaq(POLE, groupes, conteneur), {
       squelette: 3, compact: true,
       texteChargement: 'Chargement des questions du pôle…',
       titreErreur: 'Questions indisponibles',
       titreVide: 'Aucune question',
       texteVide: 'Les questions fréquentes de ce pôle apparaîtront ici.',
-      estVide: (g) => !g || (g.pole.length + g.service.length) === 0
+      /* Jamais « vide » : en mode édition, la FAQ garde son bouton d'ajout. */
+      estVide: () => false
     });
+  chargerSectionFaq();
+
+  installerEdition();
+  /* Une modification enregistrée redessine les sections qui en dépendent :
+     data.js a déjà oublié le jeu, la section le relit. */
+  abonnerModifications((jeu) => {
+    if (jeu === 'communications') chargerCommunicationDuPole(POLE);
+    if (jeu === 'organigramme' || jeu === 'flotte') { chargerSectionAnnuaire(); chargerSectionDocuments(); }
+    if (jeu === 'documents') { chargerSectionDocuments(); chargerSectionAnnuaire(); }
+    if (jeu === 'faq') chargerSectionFaq();
+  });
 }

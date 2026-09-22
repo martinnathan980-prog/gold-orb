@@ -49,10 +49,10 @@ Puis ouvrir <http://localhost:8000>.
 
 | Page | Rôle |
 |---|---|
-| `index.html` | Tableau de bord : Communication center (kiosque + éditeur), Porteurs, Suivi OTQ / OTD |
-| `etiia.html`, `etiie.html`, `etiii.html` | L'espace d'un pôle : sa communication, le pôle en un coup d'œil (repères, à qui s'adresser, par porteur), son équipe et ses référents, sa FAQ (voir ci-dessous) |
+| `index.html` | Tableau de bord : Communication center (kiosque + éditeur), À venir (les prochains rendez-vous), Porteurs, Suivi OTQ / OTD |
+| `etiia.html`, `etiie.html`, `etiii.html` | L'espace d'un pôle : sa communication, le pôle en un coup d'œil (repères, organigramme, référents, par porteur), ses documents récents, sa FAQ (voir ci-dessous) |
 | `reunions.html` | Les comptes-rendus de réunion, par périmètre |
-| `organigramme.html` | Équipes, rôles, réorganisation |
+| `organigramme.html` | Équipes, rôles, compétences ; hors de la barre du site, on y arrive depuis un pôle |
 | `faq.html` | Base de connaissances |
 | `docsearch.html` | **Recherche documentaire — le cœur du site** |
 
@@ -63,23 +63,24 @@ son sommaire se posent sur la bande (`--fond-bande`, pleine largeur, un
 filet en bas) : l'entrée de la page se distingue du papier de la première
 section, puis les bandes alternent une section sur deux. Le sommaire (la
 « petite barre » `.sous-nav`) reste collé sous la barre du site et son lien
-courant suit la lecture (`suivreSommaire()` de `assets/js/ui.js`, un
-`IntersectionObserver` partagé par `index.js` et `pole.js`). Sur le tableau
-de bord : Communication · Porteurs · Suivi OTQ / OTD.
+courant suit la lecture (`suivreSommaire()` de `assets/js/ui.js`, partagé
+par `index.js` et `pole.js` : est courante la dernière section dont le haut
+a passé la ligne de lecture, au tiers haut de la fenêtre). Sur le tableau
+de bord : Communication · À venir · Porteurs · Suivi OTQ / OTD.
 
 ### Les espaces de pôle
 
 Les trois pages de pôle sont une seule page (`assets/js/pole.js`),
 paramétrée par `<body data-pole="ETIIA|ETIIE|ETIII">`. Le sommaire
-collant (Communication, En un coup d'œil, Équipe & référents, FAQ) suit la
+collant (Communication, En un coup d'œil, Documents, FAQ) suit la
 lecture. Aucune section n'invente rien : chacune est calculée depuis les
 fichiers de `assets/data/` pour ce pôle.
 
 | Section | Source | Ce qu'elle montre |
 |---|---|---|
 | Communication | `communications.json` (`pole`) | Le kiosque du pôle, identique à celui du tableau de bord : chaque pôle y a au moins une annonce riche en blocs (image d'un de ses porteurs avec son crédit, chiffres clés, courbe, pastilles, encadré) — des données d'exemple |
-| Le pôle en un coup d'œil | `organigramme.json`, `flotte.json`, `documents.json` | Quatre repères cliquables (personnes et squads → l'équipe, référents → la vue par compétence, documents portés par ses membres → la recherche filtrée sur le pôle), puis **À qui s'adresser** (le responsable, le lead de chaque squad) et **Par porteur** : pour chaque porteur suivi par le pôle (`flotte.json` → `poles`, puis les codes que ses membres déclarent), les personnes du pôle dont le champ `porteur` (ou `perimetre`) est ce code, le lead d'abord — chaque nom ouvre sa fiche |
-| Équipe & référents | `organigramme.json` (`squads`, `competences`) | **Par squad** : la carte du responsable, puis une carte par squad (nom, lead, effectif) qui liste ses membres — portrait, nom vers `organigramme.html#pole=CODE&personne=ID`, poste, porteur, et ses compétences en pastilles (référent en terre cuite, confirmé et pratique en gris). **Par compétence** : une carte par compétence du pôle avec ses référents, puis le nombre de confirmés et de pratiquants. Un seul champ « Qui sait faire… ? » filtre les deux vues ; un compteur dit « N personnes · M squads » ou « N compétences · M référents » |
+| Le pôle en un coup d'œil | `organigramme.json`, `flotte.json`, `documents.json` | Quatre repères cliquables (personnes, squads, référents, documents en vigueur), un champ « Qui sait faire… ? », puis trois volets côte à côte qui défilent chacun dans leur cadre : **Organigramme** (le responsable, puis chaque squad et ses membres, le lead d'abord), **Référents** (pour chaque compétence, qui solliciter en premier) et **Par porteur** (pour chaque porteur suivi par le pôle — `flotte.json` → `poles`, puis les codes que ses membres déclarent —, les personnes dont le champ `porteur` ou `perimetre` est ce code ; un porteur sans personne dit « Contact à renseigner »). Une personne tient en une ligne : son nom, vers sa fiche, et son rôle |
+| Documents du pôle | `documents.json` (`pole`, `porteur`) | Les huit documents en vigueur les plus récents du pôle, puis « Tous les documents du pôle (N) » vers la recherche filtrée |
 | Questions fréquentes | `faq.json` (`pole`) | Les questions du pôle puis celles du service, et « Interroger un expert » |
 
 Un pôle n'a pas de section Réunions : ce qui vaut d'être dit se publie en
@@ -141,12 +142,36 @@ la recherche documentaire, la FAQ et les réunions.
 
 Les fichiers de `assets/data/` sont **entièrement fictifs** et servent de
 démonstration. Aucune donnée réelle n'y figure : les personnes sont
-identifiées par `Personne 01` … `Personne 65`, les liens pointent vers le
-domaine réservé `example.invalid`, et seuls les programmes publics H160 et
-H175 sont cités.
+identifiées par `Personne 01`, `Personne 02`…, les liens pointent vers le
+domaine réservé `example.invalid`, et seuls des programmes publics d'Airbus
+Helicopters sont cités (les fiches des porteurs s'appuient sur des sources
+publiques, citées dans chaque fiche).
 
 Pour brancher de vraies données, remplacez les fichiers JSON en respectant
-leur forme. Rien d'autre n'est à modifier.
+leur forme, ou saisissez-les dans le site en mode édition (ci-dessous).
+
+### Modifier le contenu dans le site
+
+Tout ce que le site affiche se modifie depuis le site lui-même, sans
+toucher aux fichiers : un bouton **Modifier** dans la barre allume le mode
+édition (`assets/js/edition.js`) et fait apparaître partout « Ajouter »,
+« Modifier » et « Supprimer » — communications et alertes, rendez-vous,
+porteurs, personnes et squads, documents, questions, comptes-rendus.
+« Terminer » l'éteint ; les lecteurs ne voient aucune commande.
+
+Les fichiers de `assets/data/` restent la base. Une modification est posée
+par-dessus au chargement (`assets/js/modifications.js`, appelé par
+`chargerDonnees()`), si bien que toutes les pages voient les mêmes données.
+Elle est rangée par `assets/js/magasin.js` :
+
+- **sur le lien publié** (claude.ai), dans la base de la page, partagée par
+  tous ses lecteurs — une collection `modifications_<jeu>` par fichier ;
+  seuls ceux qui ont le droit de modifier la page voient le bouton ;
+- **partout ailleurs** (fichier ouvert en local, serveur de test), dans ce
+  navigateur seulement, et le bandeau du mode édition le dit.
+
+Un élément supprimé du fichier de base est masqué, jamais effacé du
+fichier ; une personne dont la squad est retirée attend dans « À affecter ».
 
 ### Qui met à jour quoi
 

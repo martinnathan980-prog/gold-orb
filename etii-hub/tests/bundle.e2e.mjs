@@ -52,7 +52,8 @@ t('le kiosque est rendu', (await f.locator('.kiosque').count()) === 1);
 t('le mot du chef ouvre la lecture', (await f.locator('.kiosque__lecture').count()) === 1
   && /trimestre qui se tient/i.test(await f.locator('.kiosque__lecture-titre').innerText()));
 t('la liste est à côté de la lecture', (await f.locator('.kiosque__flux .kiosque__carte').count()) >= 3);
-t('rien d\'« à venir » dans la communication', !/à venir/i.test(texte));
+t('rien d\'« à venir » dans la communication', !/à venir/i.test(await f.locator('#zone-communication').innerText()));
+t('les prochains rendez-vous ont leur bloc, « À venir »', (await f.locator('#zone-agenda .agenda__rdv').count()) >= 1);
 t('le bandeau d\'alertes est là', (await f.locator('.kiosque__alertes').count()) === 1);
 t('les chiffres clés et la courbe sont rendus', (await f.locator('.kiosque__chiffre').count()) >= 3 && (await f.locator('.kiosque__serie .ind-spark').count()) === 1);
 t('l\'image de la communication est intégrée', /^data:image/.test((await f.locator('.kiosque__image img').first().getAttribute('src')) || ''));
@@ -107,19 +108,15 @@ t('sa communication est en tête', (await f.locator('.kiosque').count()) === 1);
 t('son sommaire a quatre entrées', (await f.locator('.sous-nav a').count()) === 4);
 t('plus de section Réunions ni Porteurs du pôle', (await f.locator('#section-reunions, #zone-reunions, #section-porteurs, #zone-porteurs').count()) === 0);
 t('ses repères sont calculés', (await f.locator('#zone-reperes .pole-repere').count()) === 4);
-t('« à qui s\'adresser » et « par porteur » sont là',
-  (await f.locator('#zone-reperes .pole-personne').count()) >= 2
-  && (await f.locator('#zone-reperes .pole-porteur-groupe .pole-jeton').count()) > 0);
-t('son équipe est en cartes de squad, avec portraits et pastilles',
-  (await f.locator('#zone-equipe .pole-squad').count()) > 3
-  && (await f.locator('#zone-equipe .pole-membre .portrait').count()) > 10
-  && (await f.locator('#zone-equipe .pole-competence--referent').count()) > 0);
-t('le commutateur ouvre la vue par compétence', await (async () => {
-  await f.locator('#zone-equipe .pole-experts__vue[data-vue="competence"]').click();
-  await page.waitForTimeout(300);
-  return (await f.locator('#zone-equipe .pole-expertise:visible').count()) > 3
-    && (await f.locator('#zone-equipe .pole-expertise__personne').count()) > 0;
-})());
+t('l’organigramme, les référents et « par porteur » sont côte à côte',
+  (await f.locator('#zone-reperes .annuaire__volet').count()) === 3
+  && (await f.locator('#zone-reperes [id$="-organigramme"] .annuaire__personne').count()) > 50
+  && (await f.locator('#zone-reperes [id$="-referents"] .annuaire__groupe').count()) > 3
+  && (await f.locator('#zone-reperes [id$="-porteurs"] .annuaire__groupe').count()) > 3);
+t('une personne s’y lit en une ligne : nom et rôle, sans portrait',
+  (await f.locator('#zone-reperes .annuaire__personne .annuaire__role').count()) > 50
+  && (await f.locator('#zone-reperes .portrait').count()) === 0);
+t('ses documents récents sont listés', (await f.locator('#zone-documents .pole-doc').count()) === 8);
 t('l\'image de sa communication est intégrée', /^data:image/.test((await f.locator('.kiosque__image img, .kiosque__figure img').first().getAttribute('src')) || ''));
 t('sa FAQ est lisible, sans « Toute la base »', (await f.locator('#zone-faq .liseuse').count()) === 1 && !/Toute la base/i.test(pole));
 t('aucun indicateur n\'y figure', !/OTQ|OTD/.test(pole));
@@ -169,6 +166,38 @@ else {
   const titre = await f.locator('h1').innerText();
   t('faq.html depuis « Rechercher partout »', /question|connaissance|FAQ/i.test(titre), `("${titre}")`);
 }
+
+console.log('\n== Le mode édition, hors ligne ==');
+// Ouvert depuis le disque, le fichier n'a pas de base partagée : ce qu'on
+// modifie reste dans ce navigateur, et le bandeau le dit.
+await f.locator('nav.site-nav a[href="index.html"]').first().click();
+await page.waitForTimeout(1900);
+t('le bouton « Modifier » est dans la barre', (await f.locator('.bascule-edition').count()) === 1);
+await f.locator('.bascule-edition').click();
+await page.waitForTimeout(300);
+t('le bandeau dit que les modifications restent dans ce navigateur',
+  /navigateur seulement/.test(await f.locator('.edition-bandeau').innerText()));
+const rdvAvant = await f.locator('#zone-agenda .agenda__rdv').count();
+await f.locator('#zone-agenda .edition-ajout').click();
+await page.waitForTimeout(300);
+await f.locator('.modale--formulaire input').first().fill('Rendez-vous d’essai du fichier autonome');
+const demain = (() => { const d = new Date(Date.now() + 86400000); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
+await f.locator('.modale--formulaire input[type="date"]').fill(demain);
+await f.locator('.modale--formulaire .modale__actions .bouton--principal').click();
+await page.waitForTimeout(1200);
+t('un rendez-vous ajouté apparaît dans « À venir »',
+  (await f.locator('#zone-agenda .agenda__rdv', { hasText: 'Rendez-vous d’essai' }).count()) === 1, `(${rdvAvant} avant)`);
+/* Au milieu de la fenêtre : collée en haut, la carte passerait sous la
+   barre du site, qui recevrait le clic. */
+await f.locator('#zone-agenda .agenda__rdv', { hasText: 'Rendez-vous d’essai' }).evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
+await page.waitForTimeout(300);
+await f.locator('#zone-agenda .agenda__rdv', { hasText: 'Rendez-vous d’essai' }).locator('.barre-edition__bouton--danger').click();
+await page.waitForTimeout(400);
+await f.locator('.modale__boite').last().locator('.modale__actions .bouton--danger').click();
+await page.waitForTimeout(1200);
+t('supprimé, il disparaît', (await f.locator('#zone-agenda .agenda__rdv', { hasText: 'Rendez-vous d’essai' }).count()) === 0);
+await f.locator('.bascule-edition').click();
+await page.waitForTimeout(300);
 
 t('aucune erreur JavaScript', err.length === 0, err.slice(0, 3).join(' | '));
 

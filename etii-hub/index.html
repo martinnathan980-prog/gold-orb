@@ -46,7 +46,6 @@
           <li><a href="etiie.html" data-pole="ETIIE">ETIIE</a></li>
           <li><a href="etiii.html" data-pole="ETIII">ETIII</a></li>
           <li><a href="docsearch.html">Recherche</a></li>
-          <li><a href="organigramme.html">Organigramme</a></li>
         </ul>
       </nav>
       <button class="palette-ouvrir" type="button" data-palette>
@@ -83,6 +82,7 @@
     <nav class="page-sommaire" aria-label="Sections de la page">
       <ul class="sous-nav sous-nav--page conteneur">
         <li><a href="#section-communication" aria-current="true">Communication</a></li>
+        <li><a href="#section-agenda">À venir</a></li>
         <li><a href="#section-porteurs">Porteurs</a></li>
         <li><a href="#section-otq">Suivi OTQ / OTD</a></li>
       </ul>
@@ -98,7 +98,16 @@
         <div id="zone-communication"></div>
       </section>
 
-      <!-- 2. LES PORTEURS — rendus par porteurs.js -->
+      <!-- 2. À VENIR — les prochains rendez-vous du service, rendus par
+           agenda.js depuis l'agenda de communications.json. -->
+      <section class="pile" id="section-agenda" aria-labelledby="titre-agenda">
+        <h2 class="titre-section" id="titre-agenda">
+          <span class="titre-section__texte">À venir</span>
+        </h2>
+        <div id="zone-agenda"></div>
+      </section>
+
+      <!-- 3. LES PORTEURS — rendus par porteurs.js -->
       <section class="pile" id="section-porteurs" aria-labelledby="titre-porteurs">
         <h2 class="titre-section" id="titre-porteurs">
           <span class="titre-section__texte">Porteurs</span>
@@ -106,7 +115,7 @@
         <div id="zone-flotte"></div>
       </section>
 
-      <!-- 3. LE SUIVI OTQ / OTD — rendu par otq.js -->
+      <!-- 4. LE SUIVI OTQ / OTD — rendu par otq.js -->
       <section class="pile" id="section-otq" aria-labelledby="titre-otq">
         <h2 class="titre-section" id="titre-otq">
           <span class="titre-section__texte">Suivi OTQ / OTD</span>

@@ -11,7 +11,7 @@
 // Le site multi-pages de la racine reste la source de vérité. Ce script ne
 // le modifie jamais : il lit et assemble.
 
-import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -131,11 +131,12 @@ const donneesAssemblees = Object.fromEntries(
 const TEXTES = ['assets/data/otq-exemple.csv'];
 const textesAssembles = Object.fromEntries(TEXTES.map(n => [n, lire(n)]));
 
-// Les photos des porteurs (flotte.json → `photo`) sont des fichiers image
-// relatifs : dans un cadre srcdoc, rien ne les résout. Elles sont donc
-// intégrées en data URI — mais seulement dans les pages qui affichent la
-// flotte, sinon chaque page en porterait une copie. Un espace de pôle
-// (pole.js) ne montre que ses propres porteurs : il n'embarque qu'eux.
+// Les images du site (assets/img/…) sont des fichiers relatifs : dans un
+// cadre srcdoc, rien ne les résout. Elles sont donc intégrées en data URI,
+// UNE fois, dans la coquille (voir plus bas) : chaque page les trouve chez
+// son parent, et ui.js les résout au rendu d'un <img>. Les données, elles,
+// gardent leurs chemins — ce qu'on modifie dans le site n'embarque jamais
+// une photo encodée.
 const imagesLues = new Map();
 function dataUri(chemin) {
   if (!/^assets\/(img|polices)\/[a-z0-9_\-\/]+\.(jpe?g|png|webp|svg|woff2)$/i.test(chemin)) return null;
@@ -171,79 +172,21 @@ if (restant) {
     + `srcdoc ne le résoudrait pas. Élargissez le garde-fou de dataUri().`);
 }
 
-// Une page n'embarque que les jeux de données que ses modules lisent
-// (chargerDonnees('…') dans leurs sources) : la recherche n'a que faire de
-// la flotte, la FAQ de l'organigramme. Les communications suivent leur
-// module, qui les lit par sa propre fonction.
-// Le sélecteur « Rechercher partout » (palette.js) lit ses jeux par une
-// liste, pas par des appels littéraux : on la reprend telle quelle.
-const JEUX_PALETTE = ['documents', 'faq', 'organigramme', 'reunions', 'flotte', 'communications'];
-
-function jeuxUtilises(noms) {
-  const jeux = new Set();
-  for (const n of noms) {
-    const source = lire(`assets/js/${n}.js`);
-    for (const m of source.matchAll(/chargerDonnees\(\s*['"]([a-z0-9_-]+)['"]/g)) jeux.add(m[1]);
-    if (n === 'communications') jeux.add('communications');
-    if (n === 'palette') JEUX_PALETTE.forEach((j) => jeux.add(j));
-  }
-  return jeux;
-}
-
-// La flotte pèse surtout par ses fiches détaillées, que seul le tableau de
-// bord (porteurs.js) déplie. Ailleurs — un espace de pôle, le sélecteur —
-// on ne garde de la fiche que ce qui se lit ou se cherche.
-function flotteAllegee(flotte) {
-  const copie = JSON.parse(JSON.stringify(flotte));
-  copie.flotte = (Array.isArray(copie.flotte) ? copie.flotte : []).map((a) => {
-    if (!a || typeof a !== 'object' || !a.fiche || typeof a.fiche !== 'object') return a;
-    const f = a.fiche;
-    return { ...a, fiche: {
-      nom: f.nom, segment: f.segment, ancienNom: f.ancienNom, resume: f.resume,
-      insolites: (Array.isArray(f.insolites) ? f.insolites : []).map((i) => ({ texte: i && i.texte }))
-    } };
-  });
-  return copie;
-}
-
-function donneesAvecImages(noms) {
-  const utiles = jeuxUtilises(noms);
-  const copie = Object.fromEntries(Object.entries(donneesAssemblees).filter(([n]) => utiles.has(n)));
-  if (copie.flotte && !noms.includes('porteurs')) copie.flotte = flotteAllegee(copie.flotte);
-  // Seul le tableau de bord (porteurs.js) montre les photos de la flotte :
-  // un espace de pôle n'en affiche plus depuis que « Porteurs du pôle » a
-  // disparu, il n'a donc rien à embarquer.
-  if (noms.includes('porteurs')) {
-    const flotte = JSON.parse(JSON.stringify(copie.flotte || donneesAssemblees.flotte));
-    for (const appareil of (Array.isArray(flotte.flotte) ? flotte.flotte : [])) {
-      const uri = dataUri(String(appareil.photo || '').trim());
-      if (uri) appareil.photo = uri;
-    }
-    copie.flotte = flotte;
-  }
-  if (noms.includes('kiosque')) {
-    const comms = JSON.parse(JSON.stringify(donneesAssemblees.communications));
-    const entrees = [comms.motDuChef].concat(comms.annonces || [], comms.agenda || []).filter(Boolean);
-    // L'image à plat d'une entrée, et celles de ses blocs libres (une
-    // image, ou les diapositives d'une galerie) : toutes deviennent des
-    // data URI, sinon rien ne les résout dans un cadre srcdoc.
-    for (const e of entrees) {
-      const blocs = Array.isArray(e.blocs) ? e.blocs : [];
-      const images = [e.image].concat(blocs.flatMap((b) => {
-        if (!b || typeof b !== 'object') return [];
-        if (b.type === 'image') return [b];
-        if (b.type === 'galerie') return Array.isArray(b.images) ? b.images : [];
-        return [];
-      }));
-      for (const im of images) {
-        if (!im || typeof im !== 'object') continue;
-        const uri = dataUri(String(im.src || '').trim());
-        if (uri) im.src = uri;
+// Toutes les images de assets/img/, une seule fois pour les huit pages.
+function imagesDuSite() {
+  const table = {};
+  const parcourir = (dossier) => {
+    for (const entree of readdirSync(join(RACINE, dossier), { withFileTypes: true })) {
+      const chemin = dossier + '/' + entree.name;
+      if (entree.isDirectory()) parcourir(chemin);
+      else {
+        const uri = dataUri(chemin);
+        if (uri) table[chemin] = uri;
       }
     }
-    copie.communications = comms;
-  }
-  return copie;
+  };
+  if (existsSync(join(RACINE, 'assets/img'))) parcourir('assets/img');
+  return table;
 }
 
 /* Résolution TRANSITIVE des dépendances.
@@ -313,20 +256,12 @@ function bles(noms, page) {
   for (const entree of entrees) dependances(entree, vues, ordre);
   const socle = ordre.filter((n) => !entrees.includes(n))
     .map(n => bloc(n, lire(`assets/js/${n}.js`))).join('\n');
+  // Les jeux de données et les images sont dans la coquille, une seule
+  // fois : data.js lit window.parent.__DONNEES_INTEGREES au lieu de faire
+  // un fetch, et applique par-dessus les modifications faites dans le site.
   return `const __M = {};
-// Les données sont intégrées : aucun fetch, donc aucune contrainte file://
-// ni d'URL de base. chargerDonnees est remplacée par une lecture directe.
-const __DONNEES = ${json(donneesAvecImages(ordre))};
 
 ${socle}
-
-__M["data"].chargerDonnees = function (nomJeu) {
-  const jeu = __DONNEES[nomJeu];
-  return jeu
-    ? Promise.resolve(jeu)
-    : Promise.reject(new Error(
-        'Jeu de données « ' + nomJeu + ' » absent de la version autonome.'));
-};
 
 // Le suivi OTQ / OTD : si une source réelle est configurée, on la lit
 // comme sur le site ; sinon l'exemple embarqué remplace le fetch.
@@ -342,17 +277,6 @@ if (__M["otq"] && typeof __M["otq"].chargerSuivi === 'function') {
     }
     const series = __M["otq"].seriesDepuisLignes(__M["otq"].analyserCsv(texte));
     return Promise.resolve({ series, origine: 'exemple', maj: '', url: source.exemple || '' });
-  };
-}
-
-// Les communications : une feuille configurée se lit comme sur le site ;
-// sinon le fichier intégré, sans fetch.
-if (__M["communications"] && typeof __M["communications"].chargerCommunications === 'function') {
-  const chargerReseau = __M["communications"].chargerCommunications;
-  __M["communications"].chargerCommunications = function () {
-    const source = __M["communications"].SOURCE || {};
-    if (String(source.url || '').trim()) return chargerReseau();
-    return Promise.resolve(Object.assign({}, __DONNEES.communications, { origine: 'fichier' }));
   };
 }
 
@@ -404,6 +328,10 @@ const coquille = `<meta charset="utf-8">
   var PAGES = ${json(pagesAssemblees)};
   // La feuille de style, une seule fois pour les huit pages.
   var CSS = ${json(cssIntegre)};
+  // Les jeux de données et les images, une seule fois : chaque page les lit
+  // chez son parent (data.js, ui.js). Même origine, pas de copie.
+  window.__DONNEES_INTEGREES = ${json(donneesAssemblees)};
+  window.__IMAGES_INTEGREES = ${json(imagesDuSite())};
   var cadre = document.getElementById('cadre');
   var courante = null;
 

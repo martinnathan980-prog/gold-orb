@@ -60,6 +60,12 @@
    - L'impression ne laisse passer que la réunion affichée, par les seuls
      styles @media print de la page : aucune bibliothèque PDF (SPEC §4.3).
 
+   - En mode édition (edition.js), le compte-rendu affiché se modifie ou se
+     retire, et « Ajouter un compte rendu » en publie un pour tous
+     (modifications.js). La page se redessine alors sur les données
+     modifiées, dans l'état que porte l'URL : même pôle, même recherche,
+     même réunion ouverte.
+
    Tout le DOM produit ici passe par el() / frag() / monter() : le texte est
    inséré en textContent, jamais en innerHTML, et aucun gestionnaire n'est
    écrit en attribut HTML (SPEC §8).
@@ -67,7 +73,7 @@
 
 import {
   el, frag, monter, surlignerVers, annoncer, debounce,
-  etatUrl, initTheme, initNav
+  etatUrl, initTheme, initNav, toast
 } from './ui.js';
 
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
@@ -77,6 +83,12 @@ import { creerIndex, rechercher, surligner } from './search.js';
 import { dateCourte } from './kiosque.js';
 
 import { corpsCompteRendu } from './lecteur.js';
+
+import { installerEdition, barreEdition, boutonAjouter } from './edition.js';
+
+import { ouvrirCompteRendu } from './edition-contenus.js';
+
+import { abonnerModifications, supprimerElement } from './modifications.js';
 
 /* -------------------------------------------------------------------------
    1. La structure du service
@@ -253,23 +265,45 @@ document.addEventListener('keydown', function (evt) {
 
 demarrer();
 
+installerEdition();
+
+/* Une modification enregistrée : data.js a déjà oublié reunions.json. On
+   relit, puis on redessine dans l'état que porte l'URL — un compte-rendu
+   modifié reste ouvert. Un échec de lecture repasse par le cycle complet,
+   qui sait afficher l'erreur. */
+abonnerModifications(async (jeu) => {
+  if (jeu !== 'reunions') return;
+  try {
+    const donnees = await chargerReunions();
+    if (!reunionsValides(donnees, 'comptesRendus').length
+        && !document.documentElement.classList.contains('mode-edition')) { demarrer(); return; }
+    rendre(donnees, refs.zone);
+  } catch (_cause) {
+    demarrer();
+  }
+});
+
 /**
  * Lance le cycle chargement -> succès | vide | erreur sur la zone de page.
  * avecEtat() ne rejette jamais : quelle que soit l'issue, la page reste
  * navigable et l'erreur est lisible et actionnable.
  */
+function chargerReunions() {
+  return chargerDonnees('reunions').then((brut) => verifierForme(brut, {
+    comptesRendus: {
+      type: 'tableau',
+      elements: { id: 'chaine', titre: 'chaine', date: 'chaine' }
+    }
+  }, 'reunions.json'));
+}
+
 function demarrer() {
   avecEtat(
     refs.zone,
 
     /* Fabrique de promesse, et non promesse : le bouton « Réessayer » de
        l'état d'erreur peut ainsi relancer un vrai chargement. */
-    () => chargerDonnees('reunions').then((brut) => verifierForme(brut, {
-      comptesRendus: {
-        type: 'tableau',
-        elements: { id: 'chaine', titre: 'chaine', date: 'chaine' }
-      }
-    }, 'reunions.json')),
+    chargerReunions,
 
     rendre,
 
@@ -283,8 +317,11 @@ function demarrer() {
 
       /* Vacuité du FICHIER, tous pôles et tous onglets confondus. Un pôle
          sans réunion n'est pas un fichier vide : il a son propre état
-         vide, qui sait proposer le retour à tout le service. */
+         vide, qui sait proposer le retour à tout le service. En mode
+         édition, un fichier vide garde la page entière : c'est là qu'on
+         écrit le premier compte-rendu. */
       estVide: (brut) => reunionsValides(brut, 'comptesRendus').length === 0
+        && !document.documentElement.classList.contains('mode-edition')
     }
   );
 }
@@ -657,7 +694,12 @@ function construireBarreOutils() {
     },
       el('span', { class: 'bouton__icone', 'aria-hidden': 'true' }, '⎙'),
       'Imprimer'
-    )
+    ),
+
+    boutonAjouter('Ajouter un compte rendu', (bouton) => ouvrirCompteRendu({
+      pole: poleActif,
+      declencheur: bouton
+    }))
   );
 }
 
@@ -1204,6 +1246,19 @@ function peindreLecteur(vue) {
 function contenuLecteur(vue, reunion) {
   return frag(
     el('div', { class: 'lecteur__contenu liseuse__lecture' },
+      barreEdition({
+        classe: 'reunions__edition sans-impression',
+        quoi: texteSimple(reunion.titre),
+        surModifier: (bouton) => ouvrirCompteRendu({ existant: reunion, declencheur: bouton }),
+        surSupprimer: async () => {
+          try {
+            await supprimerElement('reunions', 'compte-rendu', String(reunion.id));
+            toast('Compte-rendu retiré.', 'succes');
+          } catch (cause) {
+            toast((cause && cause.message) || 'La suppression a échoué.', 'erreur');
+          }
+        }
+      }),
       el('div', { class: 'liseuse__entete' },
         el('time', { class: 'liseuse__date', datetime: reunion.date },
           (formaterDate(reunion.date) || 'Date à renseigner').toUpperCase()),

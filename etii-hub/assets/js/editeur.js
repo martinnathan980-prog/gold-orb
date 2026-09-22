@@ -5,9 +5,9 @@
    site, comme il veut — du texte écrit ligne à ligne, des images, une
    galerie, des chiffres clés, une courbe, des pastilles, un encadré — dans
    l'ordre qu'il choisit, et la voit à droite exactement comme le kiosque
-   la rendra. « Publier » l'envoie à la feuille de publication quand elle
-   est branchée (SOURCE.publication) ; sinon elle reste dans ce navigateur,
-   marquée « brouillon », le temps de brancher la publication.
+   la rendra. « Publier » l'enregistre dans le site (magasin.js) : tous les
+   lecteurs la voient sur le lien publié. La même fenêtre rouvre une
+   communication déjà publiée pour la modifier (option `existant`).
 
    La mise en page se fait à la souris, dans l'aperçu : chaque bloc rendu
    est pris dans un cadre d'édition — une poignée pour le déplacer entre
@@ -23,10 +23,11 @@
    ========================================================================= */
 
 import { el, frag, monter, ouvrirModale, stockage, toast, debounce, annoncer } from './ui.js';
-import { dossiersDepuisCommunications, apercuLecture, apercuAlertes, blocDepuis, dateLongue,
+import { dossiersDepuisCommunications, apercuLecture, apercuAlertes, blocDepuis, blocsDepuis, dateLongue,
   TYPES_BLOC, LARGEURS_BLOC, COTES_BLOC } from './kiosque.js';
 import { analyserCorps, corpsEnTexte, analyserSerie, serieEnTexte, publierCommunication,
-  communicationsLocales, supprimerLocale, SOURCE } from './communications.js';
+  supprimerCommunication } from './communications.js';
+import { ouvrirMagasin } from './magasin.js';
 
 /* Le préfixe du brouillon : la clé réelle y ajoute le pôle de la page d'où
    l'éditeur est ouvert (voir ouvrirEditeur). */
@@ -148,6 +149,57 @@ function brouillonVide(pole) {
     categorie: '', statut: 'info', titre: '', resume: '', auteur: '', fonction: '',
     blocs: [blocVide('texte')]
   };
+}
+
+/* Le chemin inverse : une communication publiée redevient un état
+   d'éditeur, bloc par bloc, pour être modifiée. Une entrée ancienne (sans
+   blocs : image, chiffres, courbe et corps à plat) passe par blocsDepuis. */
+function blocEditeur(b) {
+  const mise = { largeur: largeurDe(b), cote: coteDe(b) };
+  switch (b.type) {
+    case 'texte': return Object.assign({ type: 'texte', texte: corpsEnTexte(b.lignes || []) }, mise);
+    case 'image': return Object.assign({ type: 'image', src: texte(b.src), alt: texte(b.alt), legende: texte(b.legende), credit: b.credit }, mise);
+    case 'galerie': return Object.assign({ type: 'galerie', images: (b.images || []).map((i) => ({ src: texte(i.src), alt: texte(i.alt), legende: texte(i.legende), credit: i.credit })) }, mise);
+    case 'chiffres': {
+      const chiffres = (b.chiffres || []).map((c) => ({ libelle: texte(c.libelle), valeur: c.valeur === null || c.valeur === undefined ? '' : String(c.valeur).replace('.', ','), unite: texte(c.unite), tendance: texte(c.tendance) }));
+      while (chiffres.length < 4) chiffres.push({ libelle: '', valeur: '', unite: '', tendance: '' });
+      return Object.assign({ type: 'chiffres', chiffres: chiffres.slice(0, 4) }, mise);
+    }
+    case 'courbe': {
+      const s = b.serie || {};
+      const points = serieEnTexte(s).split(' | ').slice(1).join(' | ');
+      return Object.assign({ type: 'courbe', libelle: texte(s.libelle), unite: texte(s.unite), points }, mise);
+    }
+    case 'pastilles': return Object.assign({ type: 'pastilles', pastilles: (b.pastilles || []).join(', ') }, mise);
+    case 'encadre': return Object.assign({ type: 'encadre', ton: texte(b.ton) || 'info', titre: texte(b.titre), texte: texte(b.texte) }, mise);
+    default: return null;
+  }
+}
+
+/**
+ * L'état de l'éditeur pour modifier une communication existante.
+ * @param {{type: 'annonce'|'edito'|'alerte', id: string, entree: object}} existant
+ */
+function etatDepuisExistant(existant, pole) {
+  const e = existant.entree || {};
+  if (existant.type === 'alerte') {
+    return Object.assign(brouillonVide(pole), { type: 'alerte', id: existant.id, titre: texte(e.texte), jusqua: texte(e.jusqua), publiee: true, blocs: [] });
+  }
+  const blocs = blocsDepuis(e).map(blocEditeur).filter(Boolean);
+  return Object.assign(brouillonVide(pole), {
+    type: existant.type === 'edito' ? 'mot' : 'annonce',
+    id: existant.id,
+    publiee: true,
+    date: texte(e.date) || aujourdhui(),
+    pole: texte(e.pole).toUpperCase() || 'ETII',
+    categorie: texte(e.categorie) === 'Édito' ? '' : texte(e.categorie),
+    statut: texte(e.statut) || 'info',
+    titre: texte(e.titre),
+    resume: texte(e.resume),
+    auteur: texte(e.auteur),
+    fonction: texte(e.fonction),
+    blocs: blocs.length ? blocs : [blocVide('texte')]
+  });
 }
 
 /* -------------------------------------------------------------------------
@@ -594,27 +646,38 @@ function barreAjout(etat, appliquer) {
  * @param {object} [options]
  * @param {string} [options.pole]         pôle présélectionné (ETIIA…) ; ETII par défaut
  * @param {HTMLElement} [options.declencheur]
+ * @param {{type: 'annonce'|'edito'|'alerte', id: string, entree: object}} [options.existant]
+ *        la communication à modifier ; absente, on en écrit une nouvelle
+ * @param {'annonce'|'mot'|'alerte'} [options.type]  le type d'une nouvelle communication
  * @param {() => void} [options.surPublication]  appelé après une publication réussie
  */
 export function ouvrirEditeur(options) {
   const opts = options || {};
+  const existant = (opts.existant && opts.existant.id) ? opts.existant : null;
   /* Un brouillon par page d'où l'on écrit. Le pôle est alors toujours celui
      de la page — un début de communication commencé sur le tableau de bord
      ne repart plus sous l'étiquette d'un pôle, et l'inverse non plus — et on
-     ne retrouve plus par surprise le début d'une autre communication. */
-  const CLE = CLE_BROUILLON + ':' + (POLES.some(([c]) => c === opts.pole) ? opts.pole : 'ETII');
-  const brouillon = stockage.lire(CLE, null);
-  const etat = (brouillon && typeof brouillon === 'object' && Array.isArray(brouillon.blocs))
-    ? Object.assign(brouillonVide(opts.pole), brouillon)
-    : brouillonVide(opts.pole);
-  if (!etat.blocs.length) etat.blocs = [blocVide('texte')];
+     ne retrouve plus par surprise le début d'une autre communication. Une
+     communication qu'on MODIFIE repart toujours de sa version publiée : son
+     brouillon a sa propre clé, et ne sert qu'à ne rien perdre en route. */
+  const CLE = existant
+    ? CLE_BROUILLON + ':modif:' + existant.type + ':' + existant.id
+    : CLE_BROUILLON + ':' + (POLES.some(([c]) => c === opts.pole) ? opts.pole : 'ETII');
+  const brouillon = existant ? null : stockage.lire(CLE, null);
+  const etat = existant
+    ? etatDepuisExistant(existant, opts.pole)
+    : ((brouillon && typeof brouillon === 'object' && Array.isArray(brouillon.blocs))
+      ? Object.assign(brouillonVide(opts.pole), brouillon)
+      : brouillonVide(opts.pole));
+  if (!existant && ['annonce', 'mot', 'alerte'].includes(opts.type)) etat.type = opts.type;
+  if (!etat.blocs.length && etat.type !== 'alerte') etat.blocs = [blocVide('texte')];
 
   const zoneFormulaire = el('div', { class: 'editeur__formulaire' });
   const zoneApercu = el('div', { class: 'editeur__apercu-zone', 'aria-live': 'polite' });
   const zoneErreurs = el('ul', { class: 'editeur__erreurs', hidden: true, tabindex: '-1' });
   const zoneStockage = el('p', { class: 'editeur__erreurs', hidden: true, role: 'status' },
     'Ce navigateur n’enregistre pas les brouillons. Ne fermez pas cette fenêtre avant d’avoir publié.');
-  const zoneLocaux = el('div', { class: 'editeur__locaux' });
+  const zoneIntro = el('p', { class: 'editeur__intro' }, '');
   let modale = null;
 
   /* stockage.ecrire rend false quand le navigateur refuse d'écrire (quota
@@ -679,23 +742,6 @@ export function ouvrirEditeur(options) {
     if (!zoneErreurs.hidden) rendreErreurs();
   }
 
-  function rendreLocaux() {
-    const l = communicationsLocales();
-    const entrees = [];
-    if (l.motDuChef) entrees.push({ id: 'mot-du-chef', libelle: 'Édito : ' + texte(l.motDuChef.titre) });
-    l.annonces.forEach((a) => entrees.push({ id: a.id, libelle: texte(a.date) + ' — ' + texte(a.titre) }));
-    l.alertes.forEach((a) => entrees.push({ id: 'alerte:' + a, libelle: 'Alerte : ' + a }));
-    if (!entrees.length) { monter(zoneLocaux); return; }
-    monter(zoneLocaux,
-      el('p', { class: 'editeur__locaux-titre' }, 'Publié dans ce navigateur seulement'),
-      el('ul', { class: 'editeur__locaux-liste', role: 'list' }, entrees.map((e) => el('li', {},
-        el('span', {}, e.libelle),
-        el('button', { type: 'button', class: 'bouton bouton--discret bouton--compact', onClick: () => {
-          supprimerLocale(e.id); rendreLocaux(); toast('Retirée de ce navigateur.', 'succes');
-          if (typeof opts.surPublication === 'function') opts.surPublication();
-        } }, 'Retirer')))));
-  }
-
   function rendreFormulaire(cible) {
     const estAlerte = etat.type === 'alerte';
     const estMot = etat.type === 'mot';
@@ -720,8 +766,11 @@ export function ouvrirEditeur(options) {
     monter(zoneFormulaire,
       types,
       estAlerte
-        ? champ('Texte de l’alerte', entree(etat, 'titre', { placeholder: 'Maintenance de la plateforme documentaire mercredi soir.' }, surChangement),
-            'Une phrase courte. Le bandeau en fait défiler plusieurs.')
+        ? frag(
+          champ('Texte de l’alerte', entree(etat, 'titre', { placeholder: 'Maintenance de la plateforme documentaire mercredi soir.' }, surChangement),
+            'Une phrase courte. Le bandeau en fait défiler plusieurs.'),
+          champ('Jusqu’au (facultatif)', entree(etat, 'jusqua', { type: 'date', min: aujourdhui() }, surChangement),
+            'Le lendemain de cette date, l’alerte quitte le bandeau d’elle-même.'))
         : frag(
           el('div', { class: 'editeur__rangee' },
             /* Le sélecteur grise les jours à venir ; la borne ne suffit pas
@@ -773,13 +822,15 @@ export function ouvrirEditeur(options) {
     etat.id = com.id;
     const corrige = etat.publiee === true;
     try {
-      const retour = await publierCommunication(etat.type, etat.type === 'alerte' ? texte(etat.titre) : com);
+      const retour = await publierCommunication(etat.type, etat.type === 'alerte'
+        ? { id: etat.id, texte: texte(etat.titre), jusqua: texte(etat.jusqua) }
+        : com);
       if (!retour.ok) { toast(retour.message, 'erreur'); return false; }
-      /* En mode branché, la feuille est à jour mais la page affichée ne l'est
-         pas : le message le dit, au lieu de le laisser croire. */
-      toast(corrige && retour.ou === 'feuille'
-        ? 'Corrigée dans la feuille. Rechargez pour la voir à jour.'
-        : retour.message, 'succes');
+      /* Une annonce devenue édito (ou l'inverse) change de liste : l'ancienne
+         version est retirée, sinon elle se lirait deux fois. */
+      const typeMagasin = etat.type === 'mot' ? 'edito' : etat.type;
+      if (existant && existant.type !== typeMagasin) await supprimerCommunication(existant.type, existant.id);
+      toast(corrige ? 'Modification enregistrée.' : retour.message, 'succes');
       annoncer(corrige ? 'Communication corrigée.' : 'Communication publiée.');
       /* Le brouillon n'est plus jeté : il devient la communication qu'on peut
          corriger dix secondes plus tard, sans rien retaper. */
@@ -797,7 +848,10 @@ export function ouvrirEditeur(options) {
      et les deux libellés disent lequel des deux gestes on est en train de
      faire, et « Nouvelle communication » repasse de l'un à l'autre sans
      refermer la fenêtre. */
-  function titreModale() { return etat.publiee ? 'Corriger la dernière communication' : 'Ajouter une communication'; }
+  function titreModale() {
+    if (existant) return etat.type === 'alerte' ? 'Modifier l’alerte' : 'Modifier la communication';
+    return etat.publiee ? 'Corriger la dernière communication' : 'Ajouter une communication';
+  }
 
   /* Repartir de zéro : le même geste que « Vider », mais son nom dit alors
      ce qu'il fait vraiment — quitter la correction pour une communication
@@ -814,7 +868,8 @@ export function ouvrirEditeur(options) {
     const h = modale && modale.boite ? modale.boite.querySelector('.modale__titre') : null;
     if (h) h.textContent = titreModale();
     boutonRepartir.textContent = etat.publiee ? 'Nouvelle communication' : 'Vider';
-    boutonPublier.textContent = etat.publiee ? 'Republier' : 'Publier';
+    boutonRepartir.hidden = !!existant;
+    boutonPublier.textContent = existant ? 'Enregistrer' : (etat.publiee ? 'Republier' : 'Publier');
   }
 
   modale = ouvrirModale({
@@ -826,22 +881,12 @@ export function ouvrirEditeur(options) {
     declencheur: opts.declencheur || null,
     contenu: () => el('div', { class: 'editeur' },
       el('div', { class: 'editeur__colonne' },
-        el('p', { class: 'editeur__intro' },
-          texte(SOURCE.publication)
-            ? 'Ce que vous publiez est ajouté à la feuille de publication : tout le monde le voit à la prochaine ouverture.'
-            : 'La publication n’est pas encore branchée : ce que vous publiez reste dans ce navigateur, marqué « brouillon ». ',
-          texte(SOURCE.publication) ? null : el('a', { href: 'docs/COMMUNICATIONS-GOOGLE-SHEETS.md' }, 'Comment brancher la publication')),
-        /* Le retrait n'a aucun chemin dans le site : le dire, plutôt que de
-           laisser chercher un bouton qui n'existe pas. */
-        texte(SOURCE.publication)
-          ? el('p', { class: 'editeur__intro' }, 'Pour retirer une communication déjà partie, supprimez sa ligne dans la feuille.')
-          : null,
+        zoneIntro,
         /* Avant le formulaire, pas après : c'est une consigne qui doit tenir
            toute la rédaction, elle ne sert à rien en bas d'une page longue. */
         zoneStockage,
         zoneFormulaire,
-        zoneErreurs,
-        zoneLocaux),
+        zoneErreurs),
       el('div', { class: 'editeur__colonne editeur__colonne--apercu' },
         el('p', { class: 'editeur__apercu-titre' }, 'Aperçu'),
         zoneApercu)),
@@ -854,7 +899,13 @@ export function ouvrirEditeur(options) {
 
   rendreFormulaire();
   rendreApercu();
-  rendreLocaux();
   majMode();
+  /* Où part ce qu'on publie : dit une fois, en tête, dans les mots du
+     magasin. */
+  ouvrirMagasin().then((m) => {
+    zoneIntro.textContent = m.mode === 'partage'
+      ? 'Ce que vous publiez est enregistré dans le site : tous les lecteurs le voient à leur prochaine ouverture. Une communication se modifie ou se supprime ensuite depuis sa lecture, en mode édition.'
+      : 'Ce que vous publiez est enregistré dans ce navigateur seulement. Ouvrez le site depuis son lien publié pour le partager avec le service.';
+  }, () => {});
   return modale;
 }
