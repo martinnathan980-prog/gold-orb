@@ -123,6 +123,34 @@ SEE n'a pas d'historique : la comparaison porte toujours sur l'extract qui
 est dans l'onglet. On le recolle quand on en a un plus récent (Ctrl+A, Suppr,
 A1, Ctrl+V), sans rien archiver.
 
+### Si le collage rame
+
+C'est Sheets qui peine sous le volume, pas le tableau de bord : aucun calcul
+n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
+
+1. **Coller les valeurs seules** — **Ctrl+Maj+V** au lieu de Ctrl+V. C'est le
+   plus gros gain : sans la mise en forme qui vient d'Excel (polices, bordures,
+   couleurs, largeurs), Sheets a bien moins à écrire.
+2. **Vider pour de vrai avant de recoller** — sélectionner les lignes par leurs
+   numéros à gauche, clic droit, **Supprimer les lignes**. Un simple **Suppr**
+   efface le texte mais laisse les lignes et leur mise en forme, qui
+   s'accumulent d'une semaine sur l'autre. Même chose pour les colonnes vides à
+   droite de l'extract.
+3. **Coller par paquets** de deux ou trois mille lignes plutôt que tout d'un
+   coup : la fenêtre reste utilisable pendant ce temps.
+4. **Ne garder que les colonnes utiles.** La comparaison n'en lit que trois :
+   **NAME**, **SOL.** et **Cust.V**. Les autres ne servent qu'à regarder
+   l'extract dans le tableau SEE. Si c'est trop lourd, ne coller que ces trois
+   colonnes : la page dit exactement la même chose, en beaucoup plus léger.
+5. **Onglet `SEE` nu** — pas de mise en forme conditionnelle, pas de filtre, pas
+   de volet figé, et surtout aucune formule d'un autre onglet qui pointe dessus :
+   elle se recalculerait à chaque collage.
+6. **Si l'export existe en `.csv`** — Fichier → Importer → le fichier →
+   « Remplacer la feuille de calcul », onglet SEE sélectionné. Sheets lit un
+   fichier bien plus vite qu'il n'avale un collage.
+7. Fermer les autres onglets Chrome lourds, et le tableau de bord pendant
+   l'opération : il ne recalcule rien, mais il occupe la mémoire.
+
 ## 6. Lire la page, de haut en bas
 
 - **Le bandeau** : l'interrupteur **Données réelles / Exemple** et, dès deux
