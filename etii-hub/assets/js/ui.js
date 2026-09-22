@@ -40,10 +40,17 @@
    Contrat de classes attendu par components.css :
      .modale  .modale__boite  .modale__entete  .modale__titre
      .modale__fermeture  .modale__corps  .modale__actions
-     .toasts  .toast  .toast--info|--succes|--alerte|--critique  .toast__texte
+     .toasts  .toast  .toast--info|--succes|--alerte|--critique
+     .toast__texte  .toast__fermeture
      .bouton  .bouton--primaire|--discret|--danger
-   Les états transitoires passent par `data-etat="entree|ouvert|sortie"`,
-   et l'ouverture d'une modale pose `data-modale-ouverte` sur <html>.
+   Les états transitoires diffèrent d'un composant à l'autre : la modale
+   passe par `data-etat="entree|ouvert|sortie"`, la notification par
+   `data-etat="entree|visible|sortie"`. L'ouverture d'une modale pose
+   `data-modale-ouverte` sur <html>.
+   Cette liste est un contrat, pas un commentaire d'intention : une classe
+   qui y figure sans être stylée dans assets/css/ est une panne silencieuse
+   — c'est ainsi qu'un renommage .notification* → .toast* est resté
+   invisible sur six pages.
 
    Code défensif : chaque fonction tolère un argument manquant ou nul, et
    ne lève jamais d'exception pour une entrée malformée. Le module est
@@ -80,6 +87,15 @@ const TOAST_DUREE_MAX = 10000;
 
 /** Nombre maximal de notifications empilées : au-delà, la plus ancienne part. */
 const TOAST_MAX = 4;
+
+/**
+ * Variantes de notification réellement stylées par components.css §9, et
+ * synonymes tolérés. On normalise au lieu de concaténer 'toast--' + nom en
+ * aveugle : un nom hors contrat donnait une carte sans teinte, donc une
+ * erreur grise indistinguable d'une information.
+ */
+const TOAST_VARIANTES = new Set(['info', 'succes', 'alerte', 'critique']);
+const TOAST_ALIAS = { erreur: 'critique', warning: 'alerte' };
 
 /* -------------------------------------------------------------------------
    1. Construction d'éléments
@@ -954,7 +970,8 @@ const toastsVisibles = [];
  *
  * @param {string} message
  * @param {string|object} [variante] 'info' | 'succes' | 'alerte' | 'critique',
- *        ou un objet { variante, duree }
+ *        ou un objet { variante, duree }. 'erreur' et 'warning' sont tolérés
+ *        comme synonymes ; tout autre nom retombe sur 'info'.
  * @returns {{fermer: Function}}
  */
 export function toast(message, variante) {
@@ -966,6 +983,7 @@ export function toast(message, variante) {
   const nom = typeof variante === 'string' && variante
     ? variante
     : (typeof opts.variante === 'string' && opts.variante ? opts.variante : 'info');
+  const teinte = TOAST_ALIAS[nom] || (TOAST_VARIANTES.has(nom) ? nom : 'info');
 
   const hote = region();
   if (!hote) return inerte;
@@ -980,8 +998,8 @@ export function toast(message, variante) {
   let minuteur = null;
 
   const noeud = el('div', {
-    class: ['toast', 'toast--' + nom],
-    dataset: { etat: 'entree', variante: nom }
+    class: ['toast', 'toast--' + teinte],
+    dataset: { etat: 'entree', variante: teinte }
   },
   el('span', { class: 'toast__texte' }, texte),
   el('button', {
@@ -1575,6 +1593,7 @@ export function initNav(pageCourante) {
       else if (lien.getAttribute('aria-current') === 'page') lien.removeAttribute('aria-current');
     } catch (_e) { /* ignoré */ }
   }
+
 }
 
 /* -------------------------------------------------------------------------
