@@ -5,13 +5,18 @@
 Ce document dit EXACTEMENT quoi faire, clic par clic, pour que le site tourne
 chez Airbus, sur Google, avec :
   - une adresse du type https://script.google.com/a/macros/.../exec,
-    réservée aux comptes Google de l'entreprise ;
+    réservée aux comptes Google de l'entreprise. CETTE ADRESSE EST LE SITE :
+    on l'ouvre directement, on la met en favori, on la partage. Aucun
+    Google Sites n'est nécessaire ;
   - le bouton « Modifier » pour les personnes que VOUS choisissez, et pour
     elles seules ;
-  - toutes les modifications faites dans le site (communications, alertes,
-    rendez-vous, porteurs, personnes, squads, référents, documents, FAQ,
-    comptes rendus) enregistrées pour tout le monde, sans que personne
-    n'ait jamais à ouvrir une feuille Google.
+  - TOUT se fait depuis le site : communications, alertes, rendez-vous,
+    porteurs, organigramme, référents, documents, FAQ. Personne n'a besoin
+    d'ouvrir une feuille Google pour changer le contenu ;
+  - un JOURNAL propre de tout ce qui se passe sur le site, rubrique par
+    rubrique (qui, quand, quoi, ce qui a changé) ;
+  - une seule source extérieure : votre classeur de documents, un onglet
+    par pôle (ETIIA, ETIIE, ETIII), avec les liens vers les documents.
 
 Durée : 20 à 30 minutes, une seule fois.
 
@@ -26,21 +31,21 @@ Durée : 20 à 30 minutes, une seule fois.
                      et le script le lit directement sur Drive.
                      -> fichier fourni : etii-hub/dist/etii-hub.html
 
-  2. Code.gs         TOUT le code serveur (environ 350 lignes). Il se colle
-                     dans l'éditeur Apps Script. Une seule ligne à modifier
-                     (deux de plus, facultatives, pour brancher votre liste
-                     de documents — étape 10).
+  2. Code.gs         TOUT le code serveur (environ 530 lignes). Il se colle
+                     dans l'éditeur Apps Script. Une ligne à modifier, plus
+                     une pour brancher votre classeur de documents (étape 9).
                      -> fichier fourni : etii-hub/tools/apps-script/site/Code.gs
                         (recopié intégralement en ANNEXE A, à la fin)
 
   3. Une feuille Google « ETII Hub — base »
-                     La base des modifications. Le script la remplit seul ;
-                     vous n'y touchez que pour la liste des éditeurs.
+                     La base des modifications et le journal. Le script la
+                     remplit seul ; vous n'y touchez que pour la liste des
+                     éditeurs — et pour lire le journal quand vous voulez.
 
 Il n'y a PAS d'index.html à créer dans Apps Script, PAS de fichier .js à
 coller, PAS de bibliothèque à ajouter : le site est déjà complet dans
-etii-hub.html, et Code.gs se contente de le servir et de garder les
-modifications.
+etii-hub.html, et Code.gs se contente de le servir, de garder les
+modifications et de tenir le journal.
 
 
 --------------------------------------------------------------------------------
@@ -78,7 +83,8 @@ modifications.
   2. En haut à gauche, cliquez sur « Projet sans titre » et renommez-le
      « ETII Hub ».
   3. (Conseillé) Roue dentée « Paramètres du projet » à gauche  ›
-     « Fuseau horaire » : (GMT+01:00) Paris.
+     « Fuseau horaire » : (GMT+01:00) Paris. Les heures du journal
+     seront à l'heure de Paris.
 
   Important : le script DOIT être créé depuis la feuille (Extensions ›
   Apps Script), pas depuis script.google.com : c'est ainsi qu'il sait où
@@ -98,7 +104,8 @@ modifications.
         var ID_FICHIER_SITE = '1AbCdEfGh...XyZ';
   4. Enregistrez : icône disquette, ou Ctrl+S.
 
-  C'est la SEULE ligne à modifier.
+  C'est la seule ligne OBLIGATOIRE. La ligne des documents se remplit à
+  l'étape 9.
 
 
 --------------------------------------------------------------------------------
@@ -117,11 +124,19 @@ modifications.
   4. En bas, le « Journal d'exécution » affiche :
         Onglets prêts. Premier éditeur : votre.adresse@airbus.com
         Fichier du site trouvé : etii-hub.html (6… Ko).
-  5. Revenez sur la feuille : trois onglets sont apparus :
-        modifications   (rempli par le site — n'y touchez pas)
-        journal         (qui a changé quoi, et quand — pour information)
-        Éditeurs        (la liste des personnes qui peuvent modifier)
-     Votre adresse est déjà dans « Éditeurs ».
+  5. Revenez sur la feuille. Les onglets sont prêts, dans cet ordre :
+        Éditeurs                          la liste des personnes qui modifient
+        Journal complet                   tout ce qui se passe, le plus récent en haut
+        Journal · Communication center    les communications, le mot du chef, les alertes
+        Journal · À venir                 les rendez-vous de la frise
+        Journal · Porteurs                les fiches des appareils
+        Journal · Organigramme            personnes, squads, référents
+        Journal · Documents               les documents ajoutés ou modifiés dans le site
+        Journal · Questions fréquentes    la FAQ des pôles
+        Journal · Réunions                les comptes rendus
+        modifications                     la mémoire du site (n'y touchez pas)
+     L'onglet vide « Feuille 1 » a été retiré. Votre adresse est déjà dans
+     « Éditeurs ».
 
 
 --------------------------------------------------------------------------------
@@ -139,7 +154,9 @@ modifications.
                              personne de Airbus » / « Anyone within … »)
   4. « Déployer ». Si Google redemande l'autorisation : « Autoriser ».
   5. Copiez l'« URL de l'application Web » (elle finit par /exec).
-     C'est L'ADRESSE DU SITE.
+     C'est L'ADRESSE DU SITE. Mettez-la en favori, envoyez-la à l'équipe :
+     c'est tout. (Pas de Google Sites : le site s'ouvre en plein écran,
+     directement.)
 
   Pourquoi « Exécuter en tant que : Moi » : la feuille reste privée (seul
   le script y écrit, avec vos droits), et le site connaît l'adresse de la
@@ -156,10 +173,12 @@ modifications.
   2. Vous voyez le bouton « ✎ Modifier » dans la barre du haut.
   3. Cliquez-le : un bandeau dit « Mode édition. Ce que vous ajoutez,
      modifiez ou supprimez est enregistré pour tous les lecteurs du site.
-     Connecté : votre.adresse@airbus.com. »
+     Connecté : votre.adresse@airbus.com. », avec un bouton « Historique ».
   4. Ajoutez un rendez-vous d'essai dans « À venir », rechargez la page :
-     il est toujours là, et une ligne est apparue dans l'onglet
-     « modifications » de la feuille. Supprimez-le ensuite depuis le site.
+     il est toujours là. Dans la feuille, l'onglet « Journal · À venir »
+     a une ligne : la date, votre adresse, « Ajout », le titre du
+     rendez-vous et ses champs. Supprimez-le ensuite depuis le site : une
+     ligne « Suppression » s'ajoute au-dessus.
   5. Demandez à un collègue (qui n'est PAS dans « Éditeurs ») d'ouvrir
      l'adresse : il voit tout, mais n'a pas de bouton « Modifier ».
 
@@ -180,63 +199,100 @@ modifications.
 
 
 --------------------------------------------------------------------------------
- ÉTAPE 9 — Mettre le site dans Google Sites (facultatif)
+ ÉTAPE 9 — Brancher vos documents : un classeur, un onglet par pôle
 --------------------------------------------------------------------------------
 
-  Dans l'éditeur Google Sites de votre portail :
-     « Insérer »  ›  « Intégrer »  ›  onglet « Par URL »  ›  collez
-     l'adresse /exec  ›  « Insérer », puis agrandissez le cadre à toute la
-     largeur et à une grande hauteur.
-  Ou plus simple : un lien « ETII Hub » dans le menu du portail, qui ouvre
-  l'adresse /exec dans un nouvel onglet (le site a alors tout l'écran).
+  C'est la SEULE chose que le site va chercher à l'extérieur : la liste de
+  vos documents, avec leurs liens. Sans cette étape, la « Recherche » et
+  les « Documents du pôle » montrent des EXEMPLES fictifs.
 
+  Le classeur attendu : UN classeur Google Sheets, avec TROIS onglets
+  nommés ETIIA, ETIIE et ETIII. Chaque onglet liste les documents de son
+  pôle, une ligne par document. Le nom de l'onglet suffit à dire le pôle.
 
---------------------------------------------------------------------------------
- ÉTAPE 10 (facultatif) — Lire vos documents dans VOTRE feuille existante
---------------------------------------------------------------------------------
-
-  Sans cette étape, la « Recherche » et les « Documents du pôle » montrent
-  les documents intégrés au fichier (des EXEMPLES, fictifs). Si votre liste
-  de documents est déjà tenue dans une feuille Google, le site peut la lire
-  là, à chaque ouverture — vous n'avez rien à recopier.
-
-  1. Ouvrez votre feuille de documents. Son adresse ressemble à :
+  1. Ouvrez votre classeur de documents. Son adresse ressemble à :
         https://docs.google.com/spreadsheets/d/1XyZ…AbC/edit#gid=0
      L'identifiant est entre « /d/ » et « /edit ».
-  2. Vérifiez la ligne 1 (les titres de colonnes). Le site reconnaît, sans
-     tenir compte des accents ni des majuscules :
+  2. Vérifiez les noms des onglets : ETIIA, ETIIE, ETIII. S'ils
+     s'appellent autrement (« Documents ETIIA »…), soit vous les renommez,
+     soit vous changez la ligne DOCUMENTS_ONGLETS dans Code.gs — le code du
+     pôle doit rester dans le nom.
+  3. Vérifiez la ligne 1 de chaque onglet (les titres de colonnes). Le site
+     reconnaît, sans tenir compte des accents ni des majuscules :
         Titre (ou Intitulé, Nom du document)   — OBLIGATOIRE
+        Lien (ou URL)                          — l'adresse du document
         Référence (ou Réf, Numéro, Code)
         Type (ou Type de document, Nature, Catégorie)
         Métier (ou Domaine)                    — plusieurs : séparés par « , » ou « ; »
         Porteur (ou Responsable, Auteur, Propriétaire)
         Périmètre (ou Programme, Appareil)     — H160, Transverse…
-        Pôle                                   — ETIIA, ETIIE, ETIII ; plusieurs possibles
         Mise à jour (ou Date)                  — une date, ou « 15/07/2026 »
-        Lien (ou URL)
         Description (ou Résumé, Objet)
         Mots-clés (ou Tags)
         Remplacé par                           — la référence de la nouvelle version
+        Pôle                                   — facultatif : l'onglet le dit déjà
      Les autres colonnes sont ignorées. Renommez un titre si besoin : c'est
-     tout ce qu'il y a à adapter.
-  3. Dans Code.gs, remplissez :
+     tout ce qu'il y a à adapter. Les trois onglets n'ont pas besoin
+     d'avoir les mêmes colonnes, ni dans le même ordre.
+  4. Dans Code.gs, remplissez :
         var DOCUMENTS_ID_FEUILLE = '1XyZ…AbC';
-        var DOCUMENTS_ONGLET = '';       (le nom de l'onglet, si ce n'est
-                                          pas le premier)
-  4. Enregistrez, puis « Déployer » › « Gérer les déploiements » › crayon ›
-     « Nouvelle version » › « Déployer ».
-  5. Rechargez le site : la Recherche montre vos documents ; chaque pôle,
-     les siens (colonne Pôle, ou porteur membre du pôle).
+     (la ligne DOCUMENTS_ONGLETS, juste en dessous, vaut déjà
+      ['ETIIA', 'ETIIE', 'ETIII'])
+  5. Enregistrez. Pour vérifier tout de suite : relancez « installer » —
+     le journal d'exécution dit « Documents lus : 143 » (ou signale
+     l'onglet qui manque).
+  6. « Déployer » › « Gérer les déploiements » › crayon › « Version :
+     Nouvelle version » › « Déployer ».
+  7. Rechargez le site : la Recherche montre vos documents ; chaque page
+     de pôle, ceux de son onglet.
 
   Bon à savoir :
-  - Le script lit cette feuille avec VOS droits : les lecteurs n'ont pas
+  - Le script lit ce classeur avec VOS droits : les lecteurs n'ont pas
     besoin d'y avoir accès.
-  - La feuille reste la référence. Un document modifié dans le site (bouton
-    « Modifier ») garde la version du site : pour que la feuille reprenne
-    la main sur ce document, supprimez sa ligne dans l'onglet
-    « modifications » de « ETII Hub — base ».
-  - Si la feuille devient illisible (supprimée, droits retirés), le site
-    s'affiche quand même, avec les documents du fichier.
+  - Il le lit à chaque ouverture du site : un document ajouté dans le
+    classeur apparaît au prochain chargement.
+  - Le site ne modifie JAMAIS votre classeur. Un document ajouté ou
+    modifié depuis le site (bouton « Modifier ») est gardé par le site
+    (onglet « modifications »), s'affiche par-dessus le classeur, et se
+    lit dans « Journal · Documents ». Pour que le classeur reprenne la
+    main sur un document modifié dans le site, supprimez sa ligne dans
+    l'onglet « modifications ».
+  - Un onglet manquant n'empêche pas les deux autres de s'afficher. Si
+    tout le classeur devient illisible (supprimé, droits retirés), le site
+    s'affiche quand même, avec les documents d'exemple.
+
+
+--------------------------------------------------------------------------------
+ LE JOURNAL — suivre tout ce qui se passe sur le site
+--------------------------------------------------------------------------------
+
+  Chaque ajout, modification ou suppression faite dans le site écrit une
+  ligne, LA PLUS RÉCENTE EN HAUT, à deux endroits :
+     « Journal complet »            tout, toutes rubriques confondues ;
+     « Journal · <la rubrique> »    le même geste, dans l'onglet de sa
+                                    rubrique.
+
+  Les colonnes :
+     Date             jour et heure (heure de Paris, si réglée à l'étape 3)
+     Qui              l'adresse de la personne
+     Rubrique         Communication center, À venir, Porteurs,
+                      Organigramme, Documents, Questions fréquentes,
+                      Réunions (dans « Journal complet » seulement)
+     Pôle             ETIIA, ETIIE, ETIII — quand l'élément en a un
+     Action           Ajout (vert), Modification (jaune), Suppression
+                      (rouge), Annulation (violet)
+     Élément          le titre, le nom ou le code de ce qui a changé
+     Ce qui a changé  une ligne par champ, avant → après :
+                         Date : « 2026-10-02 » → « 2026-10-09 »
+                         Lieu : (vide) → « Salle Gouverneur »
+                      pour un ajout, les premiers champs remplis.
+
+  Dans la feuille, un filtre (« Données » › « Créer un filtre ») sur la
+  colonne Pôle ou Qui isole un pôle ou une personne.
+
+  Dans le site aussi : en mode édition, le bouton « Historique » du
+  bandeau ouvre les 300 derniers gestes, jour par jour, avec un filtre par
+  rubrique. Il n'est visible que des éditeurs.
 
 
 --------------------------------------------------------------------------------
@@ -245,34 +301,28 @@ modifications.
 
   Ce qui s'affiche au départ (la BASE)
      Dans etii-hub.html : communications, rendez-vous, porteurs,
-     organigramme, FAQ, comptes rendus, documents. Ce sont les fichiers de
-     données du projet (assets/data/*.json), intégrés au fichier. Pour
-     changer la base en profondeur (reprendre tout l'organigramme réel, par
-     exemple), on régénère etii-hub.html et on le remplace sur Drive.
-     Exception : les documents, s'ils sont branchés sur votre feuille
-     (étape 10), viennent de cette feuille.
+     organigramme, FAQ, comptes rendus. Ce sont les fichiers de données du
+     projet (assets/data/*.json), intégrés au fichier.
 
   Ce qu'on change dans le site (les MODIFICATIONS)
-     Bouton « Modifier » › Ajouter / Modifier / Supprimer : une nouvelle
+     Bouton « Modifier » › Ajouter / Modifier / Supprimer : une
      communication, une alerte, un rendez-vous, un porteur, une personne,
-     un référent, un document, une question, un compte rendu…
+     une squad, un référent, un document, une question, un compte rendu…
      Tout part dans l'onglet « modifications » de « ETII Hub — base », et
      s'affiche par-dessus la base, pour tout le monde, au chargement
-     suivant. Personne n'ouvre la feuille : le site l'écrit et la lit.
+     suivant. Chaque geste est raconté dans les onglets Journal.
 
-  Ce qui vient de l'extérieur (les SOURCES)
-     - La liste des documents : votre feuille existante (étape 10).
-     - Le suivi OTQ / OTD : une feuille publiée ou un fichier CSV (voir
-       docs/OTQ-GOOGLE-SHEETS.md) — à brancher quand vous aurez le lien.
-     Le reste n'a pas de source extérieure : il se tient dans le site.
+  Ce qui vient de l'extérieur (la SEULE source)
+     La liste des documents et leurs liens : votre classeur, un onglet par
+     pôle (étape 9). Plus tard, si vous le souhaitez : le suivi OTQ / OTD
+     (voir docs/OTQ-GOOGLE-SHEETS.md).
 
 
 --------------------------------------------------------------------------------
  METTRE À JOUR LE SITE PLUS TARD
 --------------------------------------------------------------------------------
 
-  Nouvelle version d'etii-hub.html (nouvelles pages, nouvelles données de
-  base) :
+  Nouvelle version d'etii-hub.html (nouvelles pages, nouveau design) :
      Drive  ›  clic droit sur etii-hub.html  ›  « Informations sur le
      fichier »  ›  « Gérer les versions »  ›  « Importer une nouvelle
      version ».
@@ -282,8 +332,10 @@ modifications.
      dans la feuille, pas dans le fichier.
 
   Nouvelle version de Code.gs (rare) :
-     collez le nouveau code (gardez votre ligne ID_FICHIER_SITE), enregistrez,
-     puis « Déployer »  ›  « Gérer les déploiements »  ›  crayon  ›
+     collez le nouveau code (gardez vos lignes ID_FICHIER_SITE et
+     DOCUMENTS_ID_FEUILLE), enregistrez, relancez « installer » (il
+     n'abîme rien : il complète les onglets qui manquent), puis
+     « Déployer »  ›  « Gérer les déploiements »  ›  crayon  ›
      « Version : Nouvelle version »  ›  « Déployer ». L'adresse /exec ne
      change pas.
 
@@ -292,11 +344,13 @@ modifications.
  LA FEUILLE, EN DEUX MOTS
 --------------------------------------------------------------------------------
 
-  - « modifications » : une ligne par élément ajouté, modifié ou supprimé
-    dans le site. Ne la modifiez pas à la main. Seule exception : supprimer
-    une ligne annule la modification (l'élément redevient celui d'origine).
-  - « journal » : l'historique (date, adresse, quoi). Rien à y faire.
   - « Éditeurs » : la seule chose que vous gérez.
+  - « Journal complet » et « Journal · … » : l'historique lisible. Rien à
+    y faire, sauf le lire (et filtrer).
+  - « modifications » : la mémoire du site, une ligne par élément ajouté,
+    modifié ou supprimé. Ne la modifiez pas à la main. Seule exception :
+    supprimer une ligne annule la modification (l'élément redevient celui
+    d'origine).
   - Sauvegarde : « Fichier »  ›  « Historique des versions » de la feuille
     permet de revenir à n'importe quel état passé.
 
@@ -314,6 +368,15 @@ modifications.
      -> son adresse n'est pas exactement dans la colonne A d'« Éditeurs »
         (espace en trop, autre alias) ; ou le déploiement n'est pas en
         « Exécuter en tant que : Moi ».
+
+  Les documents d'exemple restent affichés
+     -> DOCUMENTS_ID_FEUILLE est vide, ou le déploiement n'a pas été
+        mis à jour (« Nouvelle version », étape 9.6). Relancez
+        « installer » : le journal d'exécution dit ce qu'il a lu.
+
+  Un pôle n'a pas ses documents
+     -> son onglet ne s'appelle pas ETIIA / ETIIE / ETIII, ou sa ligne 1
+        n'a pas de colonne « Titre ».
 
   « Cette application a été bloquée par votre administrateur » /
   « Apps Script est désactivé »
@@ -347,8 +410,8 @@ modifications.
   - Le bouton « Modifier » n'apparaît que pour les éditeurs. Surtout, le
     serveur refuse toute écriture d'une adresse absente de la liste :
     ce n'est pas qu'un bouton caché.
-  - Chaque modification est signée : l'onglet « journal » dit qui a changé
-    quoi, et quand.
+  - Chaque modification est signée : les onglets Journal disent qui a
+    changé quoi, et quand. L'Historique du site aussi (éditeurs seuls).
   - On peut aller plus loin plus tard (un rôle par pôle : les éditeurs
     d'ETIIA ne modifient que la page ETIIA…) : il suffira d'une colonne
     « pôle » dans « Éditeurs ». Dites-le si c'est utile.
@@ -359,7 +422,8 @@ modifications.
 
 
 ================================================================================
- ANNEXE A — Code.gs (à coller tel quel, en remplaçant UNE ligne)
+ ANNEXE A — Code.gs (à coller tel quel ; remplir ID_FICHIER_SITE, étape 4,
+            et DOCUMENTS_ID_FEUILLE, étape 9)
 ================================================================================
 
 /**
@@ -373,7 +437,8 @@ modifications.
  * Ce qu'il fait :
  *   1. doGet — sert le site : le fichier etii-hub.html (déposé sur Google
  *      Drive) est lu et renvoyé tel quel. Le site entier tient dans ce
- *      fichier : pages, styles, données, photos.
+ *      fichier : pages, styles, données, photos. L'adresse /exec du
+ *      déploiement EST le site : aucun Google Sites n'est nécessaire.
  *   2. La base des modifications — tout ce qu'on ajoute, modifie ou
  *      supprime dans le site (bouton « Modifier ») est rangé dans l'onglet
  *      « modifications » de cette feuille. Les lecteurs ne voient jamais la
@@ -381,8 +446,14 @@ modifications.
  *   3. Les profils — le serveur sait qui est connecté (son compte Google de
  *      l'entreprise). Seules les adresses de l'onglet « Éditeurs », et le
  *      propriétaire du script, peuvent modifier ; les autres lisent.
- *   4. Le journal — chaque modification laisse une ligne dans l'onglet
- *      « journal » : quoi, qui, quand.
+ *   4. Le journal — chaque modification laisse une ligne lisible, la plus
+ *      récente en haut : dans « Journal complet », et dans l'onglet de sa
+ *      rubrique (« Journal · Communication center », « Journal · À venir »,
+ *      « Journal · Porteurs »…). Date, qui, pôle, action, élément, et ce
+ *      qui a changé. Le site l'affiche aussi à ses éditeurs (Historique).
+ *   5. Les documents — la seule source extérieure : votre classeur de
+ *      documents, un onglet par pôle (ETIIA, ETIIE, ETIII), lu à chaque
+ *      ouverture.
  *
  * Déploiement : Déployer › Nouveau déploiement › Application web
  *   - Exécuter en tant que : Moi
@@ -401,18 +472,19 @@ modifications.
 var ID_FICHIER_SITE = 'COLLEZ_ICI_L_IDENTIFIANT_DU_FICHIER';
 
 /* ======================================================================
-   FACULTATIF — votre liste de documents existante
-   Si vos documents sont déjà tenus dans une feuille Google, le site peut
-   les lire là, à chaque ouverture, à la place des documents d'exemple.
-   Collez l'identifiant de cette feuille (dans son adresse, entre « /d/ »
-   et « /edit ») et, si les documents ne sont pas dans le premier onglet,
-   le nom de l'onglet. Laissez vide pour garder les documents du fichier.
+   VOS DOCUMENTS — le classeur qui les liste, un onglet par pôle
+   Collez l'identifiant du classeur (dans son adresse, entre « /d/ » et
+   « /edit »). Le site lit les trois onglets ci-dessous à chaque
+   ouverture ; le nom de l'onglet donne le pôle des documents qu'il liste.
+   Renommez les onglets ici s'ils s'appellent autrement chez vous (le code
+   du pôle doit figurer dans le nom : « Documents ETIIA » convient).
+   Laissez l'identifiant vide pour garder les documents d'exemple.
    Les colonnes sont reconnues par leur titre (Titre, Référence, Type,
-   Métier, Porteur, Périmètre, Pôle, Mise à jour, Lien, Description,
-   Mots-clés, Remplacé par) : voir le guide.
+   Métier, Porteur, Périmètre, Mise à jour, Lien, Description, Mots-clés,
+   Remplacé par) : voir le guide, étape 9.
    ====================================================================== */
 var DOCUMENTS_ID_FEUILLE = '';
-var DOCUMENTS_ONGLET = '';
+var DOCUMENTS_ONGLETS = ['ETIIA', 'ETIIE', 'ETIII'];
 
 /* ----------------------------------------------------------------------
    Rien à modifier en dessous
@@ -420,8 +492,25 @@ var DOCUMENTS_ONGLET = '';
 
 var ONGLET_MODIFICATIONS = 'modifications';
 var ONGLET_EDITEURS = 'Éditeurs';
-var ONGLET_JOURNAL = 'journal';
+var ONGLET_JOURNAL = 'Journal complet';
+var PREFIXE_JOURNAL = 'Journal · ';
+var ENTETE_JOURNAL = ['Date', 'Qui', 'Rubrique', 'Pôle', 'Action', 'Élément', 'Ce qui a changé'];
+var ENTETE_RUBRIQUE = ['Date', 'Qui', 'Pôle', 'Action', 'Élément', 'Ce qui a changé'];
 var JEUX = ['communications', 'flotte', 'organigramme', 'faq', 'documents', 'reunions'];
+/* La rubrique d'une modification, décidée ici d'après le jeu et le type :
+   c'est elle qui choisit l'onglet du journal. */
+var RUBRIQUES = {
+  communications: { annonce: 'Communication center', edito: 'Communication center', alerte: 'Communication center', agenda: 'À venir' },
+  flotte: { porteur: 'Porteurs' },
+  organigramme: { personne: 'Organigramme', squad: 'Organigramme' },
+  documents: { document: 'Documents' },
+  faq: { question: 'Questions fréquentes' },
+  reunions: { 'compte-rendu': 'Réunions' }
+};
+var ORDRE_RUBRIQUES = ['Communication center', 'À venir', 'Porteurs', 'Organigramme', 'Documents', 'Questions fréquentes', 'Réunions'];
+var ACTIONS = ['Ajout', 'Modification', 'Suppression', 'Annulation'];
+var COULEURS_ACTION = { 'Ajout': '#e2efe3', 'Modification': '#f7ecd4', 'Suppression': '#f6dfdb', 'Annulation': '#e6e2ef' };
+var POLES = ['ETIIA', 'ETIIE', 'ETIII'];
 /* Une cellule de feuille Google tient 50 000 caractères : un élément plus
    long (une communication riche, une fiche de porteur) est découpé sur
    plusieurs colonnes. Chaque morceau commence par « ~ », retiré à la
@@ -440,8 +529,9 @@ function doGet() {
   return HtmlService.createHtmlOutput(html)
     .setTitle('ETII Hub')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    // Permet d'intégrer le site dans une page Google Sites.
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    // Le site s'ouvre par son adresse /exec. Pour l'intégrer un jour dans
+    // une autre page (Google Sites), remplacer DEFAULT par ALLOWALL.
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
 }
 
 /* ======================================================================
@@ -460,11 +550,17 @@ function etiiDemarrer() {
     modifications: lireModifications_(),
     bases: {}
   };
-  /* La liste des documents tenue ailleurs, si elle est branchée. Une
-     feuille illisible ne bloque pas le site : il garde ses documents. */
+  /* Les documents, lus dans leur classeur, s'il est branché. Un classeur
+     illisible ne bloque pas le site : il garde ses documents. Un onglet
+     manquant n'empêche pas de lire les autres ; le site le signale. */
   if (DOCUMENTS_ID_FEUILLE) {
-    try { reponse.bases.documents = lireDocumentsExternes_(); }
-    catch (e) { reponse.basesErreur = 'Liste des documents illisible : ' + e.message; }
+    try {
+      var lecture = lireDocumentsExternes_();
+      reponse.bases.documents = lecture.documents;
+      if (lecture.avertissements.length) reponse.basesErreur = 'Documents : ' + lecture.avertissements.join(' ; ');
+    } catch (e) {
+      reponse.basesErreur = 'Liste des documents illisible : ' + e.message;
+    }
   }
   return reponse;
 }
@@ -472,7 +568,9 @@ function etiiDemarrer() {
 /**
  * Enregistre un élément ajouté, modifié ou supprimé.
  * @param {string} jeu    communications, flotte, organigramme, faq, documents, reunions
- * @param {Object} modif  { type, id, op: 'maj'|'suppr', donnees }
+ * @param {Object} modif  { type, id, op: 'maj'|'suppr', donnees, journal }
+ *   journal : ce que le site a vu changer, en clair —
+ *   { action: 'Ajout'|'Modification'|'Suppression', element, pole, detail }
  * @return {{le: string, par: string}}
  */
 function etiiPoser(jeu, modif) {
@@ -502,8 +600,7 @@ function etiiPoser(jeu, modif) {
     } else {
       feuille.appendRow(valeurs);
     }
-    onglet_(ONGLET_JOURNAL, ['le', 'par', 'jeu', 'type', 'id', 'op', 'titre'])
-      .appendRow([le, email, jeu, type, id, op, titreDe_(modif.donnees)]);
+    journaliser_(email, jeu, type, id, op, modif.journal, modif.donnees);
   } finally {
     verrou.releaseLock();
   }
@@ -524,12 +621,38 @@ function etiiRetirer(jeu, type, id) {
     var feuille = onglet_(ONGLET_MODIFICATIONS, EN_TETE);
     var ligne = trouverLigne_(feuille, jeu, cle);
     if (ligne) feuille.deleteRow(ligne);
-    onglet_(ONGLET_JOURNAL, ['le', 'par', 'jeu', 'type', 'id', 'op', 'titre'])
-      .appendRow([new Date().toISOString(), email, jeu, type, id, 'annulation', '']);
+    journaliser_(email, jeu, String(type || ''), String(id || ''), 'annulation',
+      { detail: 'L’élément redevient celui du fichier d’origine.' }, null);
   } finally {
     verrou.releaseLock();
   }
   return { ok: true };
+}
+
+/**
+ * Les dernières lignes du journal, la plus récente d'abord : l'Historique
+ * du site. Réservé aux éditeurs (il porte des adresses).
+ * @param {number} limite  combien de lignes (200 par défaut, 1000 au plus)
+ */
+function etiiJournal(limite) {
+  var email = emailConnecte_();
+  if (!peutModifier_(email)) throw new Error('NON_AUTORISE');
+  var n = Math.min(Math.max(Number(limite) || 200, 1), 1000);
+  var feuille = classeur_().getSheetByName(ONGLET_JOURNAL);
+  if (!feuille || feuille.getLastRow() < 2) return [];
+  var lignes = feuille.getRange(2, 1, Math.min(n, feuille.getLastRow() - 1), ENTETE_JOURNAL.length).getValues();
+  return lignes.map(function (l) {
+    var quand = l[0];
+    return {
+      le: estDate_(quand) ? quand.toISOString() : String(quand || ''),
+      par: String(l[1] || ''),
+      rubrique: String(l[2] || ''),
+      pole: String(l[3] || ''),
+      action: String(l[4] || ''),
+      element: String(l[5] || ''),
+      detail: String(l[6] || '')
+    };
+  });
 }
 
 /* ======================================================================
@@ -542,14 +665,30 @@ function etiiRetirer(jeu, type, id) {
  */
 function installer() {
   PropertiesService.getScriptProperties().setProperty('ID_CLASSEUR', SpreadsheetApp.getActiveSpreadsheet().getId());
-  onglet_(ONGLET_MODIFICATIONS, EN_TETE);
-  onglet_(ONGLET_JOURNAL, ['le', 'par', 'jeu', 'type', 'id', 'op', 'titre']);
   var editeurs = onglet_(ONGLET_EDITEURS, ['adresse', 'nom (facultatif)']);
+  ongletJournal_(ONGLET_JOURNAL, ENTETE_JOURNAL);
+  ORDRE_RUBRIQUES.forEach(function (r) { ongletJournal_(PREFIXE_JOURNAL + r, ENTETE_RUBRIQUE); });
+  onglet_(ONGLET_MODIFICATIONS, EN_TETE);
+  /* L'onglet vide que Google crée avec le classeur (« Feuille 1 ») ne
+     sert à rien : on le retire, la feuille ne montre que les nôtres. */
+  var classeur = classeur_();
+  classeur.getSheets().forEach(function (f) {
+    if (/^(Feuille|Sheet)\s*\d+$/i.test(f.getName()) && f.getLastRow() === 0 && classeur.getSheets().length > 1) classeur.deleteSheet(f);
+  });
   var moi = Session.getEffectiveUser().getEmail();
   if (moi && listeEditeurs_().indexOf(moi.toLowerCase()) === -1) editeurs.appendRow([moi, 'propriétaire']);
   var fichier = DriveApp.getFileById(ID_FICHIER_SITE);
   Logger.log('Onglets prêts. Premier éditeur : ' + moi);
   Logger.log('Fichier du site trouvé : ' + fichier.getName() + ' (' + Math.round(fichier.getSize() / 1024) + ' Ko).');
+  if (DOCUMENTS_ID_FEUILLE) {
+    try {
+      var lecture = lireDocumentsExternes_();
+      Logger.log('Documents lus : ' + lecture.documents.length
+        + (lecture.avertissements.length ? ' (' + lecture.avertissements.join(' ; ') + ')' : '') + '.');
+    } catch (e) {
+      Logger.log('Documents illisibles : ' + e.message);
+    }
+  }
 }
 
 /* ======================================================================
@@ -580,14 +719,34 @@ function cleColonne_(t) {
 }
 
 /**
- * Lit la feuille des documents : une ligne par document, les colonnes
- * reconnues par leur titre (ligne 1). Les autres colonnes sont ignorées.
+ * Lit le classeur des documents : un onglet par pôle (DOCUMENTS_ONGLETS),
+ * une ligne par document, les colonnes reconnues par leur titre (ligne 1).
+ * Les autres colonnes sont ignorées. Un onglet absent ou sans colonne
+ * « Titre » est signalé et sauté ; si aucun ne se lit, c'est une erreur.
+ * @return {{documents: Object[], avertissements: string[]}}
  */
 function lireDocumentsExternes_() {
   var classeur = SpreadsheetApp.openById(DOCUMENTS_ID_FEUILLE);
-  var feuille = DOCUMENTS_ONGLET ? classeur.getSheetByName(DOCUMENTS_ONGLET) : classeur.getSheets()[0];
-  if (!feuille) throw new Error('onglet « ' + DOCUMENTS_ONGLET + ' » introuvable');
-  if (feuille.getLastRow() < 2) return [];
+  var documents = [];
+  var avertissements = [];
+  var vus = {};
+  var lus = 0;
+  DOCUMENTS_ONGLETS.forEach(function (nom) {
+    var feuille = classeur.getSheetByName(nom);
+    if (!feuille) { avertissements.push('onglet « ' + nom + ' » introuvable'); return; }
+    try {
+      lireOngletDocuments_(feuille, nom, documents, vus);
+      lus += 1;
+    } catch (e) {
+      avertissements.push('onglet « ' + nom + ' » : ' + e.message);
+    }
+  });
+  if (!lus) throw new Error(avertissements.join(' ; ') || 'aucun onglet de documents');
+  return { documents: documents, avertissements: avertissements };
+}
+
+function lireOngletDocuments_(feuille, nom, documents, vus) {
+  if (feuille.getLastRow() < 1 || feuille.getLastColumn() < 1) return;
   var valeurs = feuille.getRange(1, 1, feuille.getLastRow(), feuille.getLastColumn()).getValues();
   var entetes = valeurs[0].map(cleColonne_);
   var position = {};
@@ -599,15 +758,17 @@ function lireDocumentsExternes_() {
     }
   });
   if (position.titre === undefined) throw new Error('aucune colonne « Titre »');
+  /* Le pôle de l'onglet : son nom contient le code (« ETIIA »,
+     « Documents ETIIE »). Une colonne Pôle remplie a le dernier mot. */
+  var trouve = /ETII[AEI]/i.exec(String(nom));
+  var poleOnglet = trouve ? trouve[0].toUpperCase() : '';
   var fuseau = Session.getScriptTimeZone ? Session.getScriptTimeZone() : 'Europe/Paris';
-  var vus = {};
-  var documents = [];
   for (var r = 1; r < valeurs.length; r++) {
     var ligne = valeurs[r];
     var doc = {};
     Object.keys(position).forEach(function (champ) {
       var v = ligne[position[champ]];
-      if (Object.prototype.toString.call(v) === '[object Date]') v = Utilities.formatDate(v, fuseau, 'yyyy-MM-dd');
+      if (estDate_(v)) v = Utilities.formatDate(v, fuseau, 'yyyy-MM-dd');
       v = String(v === null || v === undefined ? '' : v).trim();
       if (champ === 'maj') {
         var fr = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(v);
@@ -620,15 +781,16 @@ function lireDocumentsExternes_() {
       }
     });
     if (!doc.titre) continue;
-    /* L'identifiant : la colonne « id », sinon la référence, sinon la
-       ligne. C'est lui qui relie une modification faite dans le site. */
-    var id = doc.id || doc.reference || ('ligne-' + (r + 1));
+    if ((!doc.pole || !doc.pole.length) && poleOnglet) doc.pole = [poleOnglet];
+    /* L'identifiant : la colonne « id », sinon la référence, sinon
+       l'onglet et la ligne. C'est lui qui relie une modification faite
+       dans le site. */
+    var id = doc.id || doc.reference || (nom + '-ligne-' + (r + 1));
     while (vus[id]) id = id + '-' + (r + 1);
     vus[id] = true;
     doc.id = id;
     documents.push(doc);
   }
-  return documents;
 }
 
 function emailConnecte_() {
@@ -695,6 +857,74 @@ function decouper_(texte) {
 function titreDe_(donnees) {
   if (!donnees || typeof donnees !== 'object') return '';
   return String(donnees.titre || donnees.nom || donnees.question || donnees.code || donnees.texte || '').slice(0, 120);
+}
+
+function poleDe_(donnees) {
+  if (!donnees || typeof donnees !== 'object') return '';
+  var v = donnees.poles !== undefined ? donnees.poles : donnees.pole;
+  return (Array.isArray(v) ? v : [v]).map(function (x) { return String(x === null || x === undefined ? '' : x).trim(); })
+    .filter(function (x) { return x; }).join(', ');
+}
+
+function court_(v, n) {
+  var t = String(v === null || v === undefined ? '' : v).trim();
+  return t.length > n ? t.substring(0, n - 1) + '…' : t;
+}
+
+function estDate_(v) {
+  return Object.prototype.toString.call(v) === '[object Date]';
+}
+
+/* Une cellule qui commence par « = », « + », « - » ou « @ » serait lue
+   comme une formule : l'apostrophe la garde en texte (elle ne s'affiche
+   pas). */
+function enTexte_(v) {
+  return (typeof v === 'string' && /^[=+\-@]/.test(v)) ? "'" + v : v;
+}
+
+/**
+ * Une ligne de journal, la plus récente en haut, dans « Journal complet »
+ * et dans l'onglet de sa rubrique. La rubrique est décidée ici ; le site
+ * ne fournit que le récit (action, élément, pôle, ce qui a changé).
+ */
+function journaliser_(email, jeu, type, id, op, infos, donnees) {
+  var j = (infos && typeof infos === 'object') ? infos : {};
+  var rubrique = (RUBRIQUES[jeu] && RUBRIQUES[jeu][type]) || 'Autres';
+  var action = op === 'annulation' ? 'Annulation'
+    : (op === 'suppr' ? 'Suppression' : (j.action === 'Ajout' ? 'Ajout' : 'Modification'));
+  var element = court_(j.element, 200) || titreDe_(donnees) || id;
+  var pole = court_(j.pole, 60) || poleDe_(donnees);
+  var detail = court_(j.detail, 3000);
+  var quand = new Date();
+  ecrireJournal_(ONGLET_JOURNAL, ENTETE_JOURNAL, [quand, email, rubrique, pole, action, element, detail]);
+  ecrireJournal_(PREFIXE_JOURNAL + rubrique, ENTETE_RUBRIQUE, [quand, email, pole, action, element, detail]);
+}
+
+function ecrireJournal_(nom, entete, ligne) {
+  var feuille = ongletJournal_(nom, entete);
+  feuille.insertRowAfter(1);
+  var plage = feuille.getRange(2, 1, 1, ligne.length);
+  plage.setValues([ligne.map(enTexte_)]);
+  plage.setFontWeight('normal').setBackground(null).setFontColor('#2a251f');
+  feuille.getRange(2, 1).setNumberFormat('dd/MM/yyyy HH:mm');
+  var colonneAction = entete.indexOf('Action') + 1;
+  feuille.getRange(2, colonneAction).setBackground(COULEURS_ACTION[ligne[colonneAction - 1]] || null);
+}
+
+/* Un onglet de journal, mis en forme à sa création : en-tête figé et
+   teinté, colonnes à leur largeur, le détail qui passe à la ligne. */
+function ongletJournal_(nom, entete) {
+  var classeur = classeur_();
+  var feuille = classeur.getSheetByName(nom);
+  if (feuille) return feuille;
+  feuille = classeur.insertSheet(nom);
+  feuille.getRange(1, 1, 1, entete.length).setValues([entete])
+    .setFontWeight('bold').setBackground('#e9e1d3').setFontColor('#2a251f');
+  feuille.setFrozenRows(1);
+  var largeurs = { 'Date': 130, 'Qui': 210, 'Rubrique': 170, 'Pôle': 90, 'Action': 110, 'Élément': 300, 'Ce qui a changé': 560 };
+  entete.forEach(function (t, i) { if (largeurs[t]) feuille.setColumnWidth(i + 1, largeurs[t]); });
+  feuille.getRange(1, entete.length, feuille.getMaxRows(), 1).setWrap(true);
+  return feuille;
 }
 
 function verifierJeu_(jeu) {

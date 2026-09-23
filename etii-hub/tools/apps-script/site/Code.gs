@@ -9,7 +9,8 @@
  * Ce qu'il fait :
  *   1. doGet — sert le site : le fichier etii-hub.html (déposé sur Google
  *      Drive) est lu et renvoyé tel quel. Le site entier tient dans ce
- *      fichier : pages, styles, données, photos.
+ *      fichier : pages, styles, données, photos. L'adresse /exec du
+ *      déploiement EST le site : aucun Google Sites n'est nécessaire.
  *   2. La base des modifications — tout ce qu'on ajoute, modifie ou
  *      supprime dans le site (bouton « Modifier ») est rangé dans l'onglet
  *      « modifications » de cette feuille. Les lecteurs ne voient jamais la
@@ -17,8 +18,14 @@
  *   3. Les profils — le serveur sait qui est connecté (son compte Google de
  *      l'entreprise). Seules les adresses de l'onglet « Éditeurs », et le
  *      propriétaire du script, peuvent modifier ; les autres lisent.
- *   4. Le journal — chaque modification laisse une ligne dans l'onglet
- *      « journal » : quoi, qui, quand.
+ *   4. Le journal — chaque modification laisse une ligne lisible, la plus
+ *      récente en haut : dans « Journal complet », et dans l'onglet de sa
+ *      rubrique (« Journal · Communication center », « Journal · À venir »,
+ *      « Journal · Porteurs »…). Date, qui, pôle, action, élément, et ce
+ *      qui a changé. Le site l'affiche aussi à ses éditeurs (Historique).
+ *   5. Les documents — la seule source extérieure : votre classeur de
+ *      documents, un onglet par pôle (ETIIA, ETIIE, ETIII), lu à chaque
+ *      ouverture.
  *
  * Déploiement : Déployer › Nouveau déploiement › Application web
  *   - Exécuter en tant que : Moi
@@ -37,18 +44,19 @@
 var ID_FICHIER_SITE = 'COLLEZ_ICI_L_IDENTIFIANT_DU_FICHIER';
 
 /* ======================================================================
-   FACULTATIF — votre liste de documents existante
-   Si vos documents sont déjà tenus dans une feuille Google, le site peut
-   les lire là, à chaque ouverture, à la place des documents d'exemple.
-   Collez l'identifiant de cette feuille (dans son adresse, entre « /d/ »
-   et « /edit ») et, si les documents ne sont pas dans le premier onglet,
-   le nom de l'onglet. Laissez vide pour garder les documents du fichier.
+   VOS DOCUMENTS — le classeur qui les liste, un onglet par pôle
+   Collez l'identifiant du classeur (dans son adresse, entre « /d/ » et
+   « /edit »). Le site lit les trois onglets ci-dessous à chaque
+   ouverture ; le nom de l'onglet donne le pôle des documents qu'il liste.
+   Renommez les onglets ici s'ils s'appellent autrement chez vous (le code
+   du pôle doit figurer dans le nom : « Documents ETIIA » convient).
+   Laissez l'identifiant vide pour garder les documents d'exemple.
    Les colonnes sont reconnues par leur titre (Titre, Référence, Type,
-   Métier, Porteur, Périmètre, Pôle, Mise à jour, Lien, Description,
-   Mots-clés, Remplacé par) : voir le guide.
+   Métier, Porteur, Périmètre, Mise à jour, Lien, Description, Mots-clés,
+   Remplacé par) : voir le guide, étape 9.
    ====================================================================== */
 var DOCUMENTS_ID_FEUILLE = '';
-var DOCUMENTS_ONGLET = '';
+var DOCUMENTS_ONGLETS = ['ETIIA', 'ETIIE', 'ETIII'];
 
 /* ----------------------------------------------------------------------
    Rien à modifier en dessous
@@ -56,8 +64,25 @@ var DOCUMENTS_ONGLET = '';
 
 var ONGLET_MODIFICATIONS = 'modifications';
 var ONGLET_EDITEURS = 'Éditeurs';
-var ONGLET_JOURNAL = 'journal';
+var ONGLET_JOURNAL = 'Journal complet';
+var PREFIXE_JOURNAL = 'Journal · ';
+var ENTETE_JOURNAL = ['Date', 'Qui', 'Rubrique', 'Pôle', 'Action', 'Élément', 'Ce qui a changé'];
+var ENTETE_RUBRIQUE = ['Date', 'Qui', 'Pôle', 'Action', 'Élément', 'Ce qui a changé'];
 var JEUX = ['communications', 'flotte', 'organigramme', 'faq', 'documents', 'reunions'];
+/* La rubrique d'une modification, décidée ici d'après le jeu et le type :
+   c'est elle qui choisit l'onglet du journal. */
+var RUBRIQUES = {
+  communications: { annonce: 'Communication center', edito: 'Communication center', alerte: 'Communication center', agenda: 'À venir' },
+  flotte: { porteur: 'Porteurs' },
+  organigramme: { personne: 'Organigramme', squad: 'Organigramme' },
+  documents: { document: 'Documents' },
+  faq: { question: 'Questions fréquentes' },
+  reunions: { 'compte-rendu': 'Réunions' }
+};
+var ORDRE_RUBRIQUES = ['Communication center', 'À venir', 'Porteurs', 'Organigramme', 'Documents', 'Questions fréquentes', 'Réunions'];
+var ACTIONS = ['Ajout', 'Modification', 'Suppression', 'Annulation'];
+var COULEURS_ACTION = { 'Ajout': '#e2efe3', 'Modification': '#f7ecd4', 'Suppression': '#f6dfdb', 'Annulation': '#e6e2ef' };
+var POLES = ['ETIIA', 'ETIIE', 'ETIII'];
 /* Une cellule de feuille Google tient 50 000 caractères : un élément plus
    long (une communication riche, une fiche de porteur) est découpé sur
    plusieurs colonnes. Chaque morceau commence par « ~ », retiré à la
@@ -76,8 +101,9 @@ function doGet() {
   return HtmlService.createHtmlOutput(html)
     .setTitle('ETII Hub')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    // Permet d'intégrer le site dans une page Google Sites.
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    // Le site s'ouvre par son adresse /exec. Pour l'intégrer un jour dans
+    // une autre page (Google Sites), remplacer DEFAULT par ALLOWALL.
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
 }
 
 /* ======================================================================
@@ -96,11 +122,17 @@ function etiiDemarrer() {
     modifications: lireModifications_(),
     bases: {}
   };
-  /* La liste des documents tenue ailleurs, si elle est branchée. Une
-     feuille illisible ne bloque pas le site : il garde ses documents. */
+  /* Les documents, lus dans leur classeur, s'il est branché. Un classeur
+     illisible ne bloque pas le site : il garde ses documents. Un onglet
+     manquant n'empêche pas de lire les autres ; le site le signale. */
   if (DOCUMENTS_ID_FEUILLE) {
-    try { reponse.bases.documents = lireDocumentsExternes_(); }
-    catch (e) { reponse.basesErreur = 'Liste des documents illisible : ' + e.message; }
+    try {
+      var lecture = lireDocumentsExternes_();
+      reponse.bases.documents = lecture.documents;
+      if (lecture.avertissements.length) reponse.basesErreur = 'Documents : ' + lecture.avertissements.join(' ; ');
+    } catch (e) {
+      reponse.basesErreur = 'Liste des documents illisible : ' + e.message;
+    }
   }
   return reponse;
 }
@@ -108,7 +140,9 @@ function etiiDemarrer() {
 /**
  * Enregistre un élément ajouté, modifié ou supprimé.
  * @param {string} jeu    communications, flotte, organigramme, faq, documents, reunions
- * @param {Object} modif  { type, id, op: 'maj'|'suppr', donnees }
+ * @param {Object} modif  { type, id, op: 'maj'|'suppr', donnees, journal }
+ *   journal : ce que le site a vu changer, en clair —
+ *   { action: 'Ajout'|'Modification'|'Suppression', element, pole, detail }
  * @return {{le: string, par: string}}
  */
 function etiiPoser(jeu, modif) {
@@ -138,8 +172,7 @@ function etiiPoser(jeu, modif) {
     } else {
       feuille.appendRow(valeurs);
     }
-    onglet_(ONGLET_JOURNAL, ['le', 'par', 'jeu', 'type', 'id', 'op', 'titre'])
-      .appendRow([le, email, jeu, type, id, op, titreDe_(modif.donnees)]);
+    journaliser_(email, jeu, type, id, op, modif.journal, modif.donnees);
   } finally {
     verrou.releaseLock();
   }
@@ -160,12 +193,38 @@ function etiiRetirer(jeu, type, id) {
     var feuille = onglet_(ONGLET_MODIFICATIONS, EN_TETE);
     var ligne = trouverLigne_(feuille, jeu, cle);
     if (ligne) feuille.deleteRow(ligne);
-    onglet_(ONGLET_JOURNAL, ['le', 'par', 'jeu', 'type', 'id', 'op', 'titre'])
-      .appendRow([new Date().toISOString(), email, jeu, type, id, 'annulation', '']);
+    journaliser_(email, jeu, String(type || ''), String(id || ''), 'annulation',
+      { detail: 'L’élément redevient celui du fichier d’origine.' }, null);
   } finally {
     verrou.releaseLock();
   }
   return { ok: true };
+}
+
+/**
+ * Les dernières lignes du journal, la plus récente d'abord : l'Historique
+ * du site. Réservé aux éditeurs (il porte des adresses).
+ * @param {number} limite  combien de lignes (200 par défaut, 1000 au plus)
+ */
+function etiiJournal(limite) {
+  var email = emailConnecte_();
+  if (!peutModifier_(email)) throw new Error('NON_AUTORISE');
+  var n = Math.min(Math.max(Number(limite) || 200, 1), 1000);
+  var feuille = classeur_().getSheetByName(ONGLET_JOURNAL);
+  if (!feuille || feuille.getLastRow() < 2) return [];
+  var lignes = feuille.getRange(2, 1, Math.min(n, feuille.getLastRow() - 1), ENTETE_JOURNAL.length).getValues();
+  return lignes.map(function (l) {
+    var quand = l[0];
+    return {
+      le: estDate_(quand) ? quand.toISOString() : String(quand || ''),
+      par: String(l[1] || ''),
+      rubrique: String(l[2] || ''),
+      pole: String(l[3] || ''),
+      action: String(l[4] || ''),
+      element: String(l[5] || ''),
+      detail: String(l[6] || '')
+    };
+  });
 }
 
 /* ======================================================================
@@ -178,14 +237,30 @@ function etiiRetirer(jeu, type, id) {
  */
 function installer() {
   PropertiesService.getScriptProperties().setProperty('ID_CLASSEUR', SpreadsheetApp.getActiveSpreadsheet().getId());
-  onglet_(ONGLET_MODIFICATIONS, EN_TETE);
-  onglet_(ONGLET_JOURNAL, ['le', 'par', 'jeu', 'type', 'id', 'op', 'titre']);
   var editeurs = onglet_(ONGLET_EDITEURS, ['adresse', 'nom (facultatif)']);
+  ongletJournal_(ONGLET_JOURNAL, ENTETE_JOURNAL);
+  ORDRE_RUBRIQUES.forEach(function (r) { ongletJournal_(PREFIXE_JOURNAL + r, ENTETE_RUBRIQUE); });
+  onglet_(ONGLET_MODIFICATIONS, EN_TETE);
+  /* L'onglet vide que Google crée avec le classeur (« Feuille 1 ») ne
+     sert à rien : on le retire, la feuille ne montre que les nôtres. */
+  var classeur = classeur_();
+  classeur.getSheets().forEach(function (f) {
+    if (/^(Feuille|Sheet)\s*\d+$/i.test(f.getName()) && f.getLastRow() === 0 && classeur.getSheets().length > 1) classeur.deleteSheet(f);
+  });
   var moi = Session.getEffectiveUser().getEmail();
   if (moi && listeEditeurs_().indexOf(moi.toLowerCase()) === -1) editeurs.appendRow([moi, 'propriétaire']);
   var fichier = DriveApp.getFileById(ID_FICHIER_SITE);
   Logger.log('Onglets prêts. Premier éditeur : ' + moi);
   Logger.log('Fichier du site trouvé : ' + fichier.getName() + ' (' + Math.round(fichier.getSize() / 1024) + ' Ko).');
+  if (DOCUMENTS_ID_FEUILLE) {
+    try {
+      var lecture = lireDocumentsExternes_();
+      Logger.log('Documents lus : ' + lecture.documents.length
+        + (lecture.avertissements.length ? ' (' + lecture.avertissements.join(' ; ') + ')' : '') + '.');
+    } catch (e) {
+      Logger.log('Documents illisibles : ' + e.message);
+    }
+  }
 }
 
 /* ======================================================================
@@ -216,14 +291,34 @@ function cleColonne_(t) {
 }
 
 /**
- * Lit la feuille des documents : une ligne par document, les colonnes
- * reconnues par leur titre (ligne 1). Les autres colonnes sont ignorées.
+ * Lit le classeur des documents : un onglet par pôle (DOCUMENTS_ONGLETS),
+ * une ligne par document, les colonnes reconnues par leur titre (ligne 1).
+ * Les autres colonnes sont ignorées. Un onglet absent ou sans colonne
+ * « Titre » est signalé et sauté ; si aucun ne se lit, c'est une erreur.
+ * @return {{documents: Object[], avertissements: string[]}}
  */
 function lireDocumentsExternes_() {
   var classeur = SpreadsheetApp.openById(DOCUMENTS_ID_FEUILLE);
-  var feuille = DOCUMENTS_ONGLET ? classeur.getSheetByName(DOCUMENTS_ONGLET) : classeur.getSheets()[0];
-  if (!feuille) throw new Error('onglet « ' + DOCUMENTS_ONGLET + ' » introuvable');
-  if (feuille.getLastRow() < 2) return [];
+  var documents = [];
+  var avertissements = [];
+  var vus = {};
+  var lus = 0;
+  DOCUMENTS_ONGLETS.forEach(function (nom) {
+    var feuille = classeur.getSheetByName(nom);
+    if (!feuille) { avertissements.push('onglet « ' + nom + ' » introuvable'); return; }
+    try {
+      lireOngletDocuments_(feuille, nom, documents, vus);
+      lus += 1;
+    } catch (e) {
+      avertissements.push('onglet « ' + nom + ' » : ' + e.message);
+    }
+  });
+  if (!lus) throw new Error(avertissements.join(' ; ') || 'aucun onglet de documents');
+  return { documents: documents, avertissements: avertissements };
+}
+
+function lireOngletDocuments_(feuille, nom, documents, vus) {
+  if (feuille.getLastRow() < 1 || feuille.getLastColumn() < 1) return;
   var valeurs = feuille.getRange(1, 1, feuille.getLastRow(), feuille.getLastColumn()).getValues();
   var entetes = valeurs[0].map(cleColonne_);
   var position = {};
@@ -235,15 +330,17 @@ function lireDocumentsExternes_() {
     }
   });
   if (position.titre === undefined) throw new Error('aucune colonne « Titre »');
+  /* Le pôle de l'onglet : son nom contient le code (« ETIIA »,
+     « Documents ETIIE »). Une colonne Pôle remplie a le dernier mot. */
+  var trouve = /ETII[AEI]/i.exec(String(nom));
+  var poleOnglet = trouve ? trouve[0].toUpperCase() : '';
   var fuseau = Session.getScriptTimeZone ? Session.getScriptTimeZone() : 'Europe/Paris';
-  var vus = {};
-  var documents = [];
   for (var r = 1; r < valeurs.length; r++) {
     var ligne = valeurs[r];
     var doc = {};
     Object.keys(position).forEach(function (champ) {
       var v = ligne[position[champ]];
-      if (Object.prototype.toString.call(v) === '[object Date]') v = Utilities.formatDate(v, fuseau, 'yyyy-MM-dd');
+      if (estDate_(v)) v = Utilities.formatDate(v, fuseau, 'yyyy-MM-dd');
       v = String(v === null || v === undefined ? '' : v).trim();
       if (champ === 'maj') {
         var fr = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(v);
@@ -256,15 +353,16 @@ function lireDocumentsExternes_() {
       }
     });
     if (!doc.titre) continue;
-    /* L'identifiant : la colonne « id », sinon la référence, sinon la
-       ligne. C'est lui qui relie une modification faite dans le site. */
-    var id = doc.id || doc.reference || ('ligne-' + (r + 1));
+    if ((!doc.pole || !doc.pole.length) && poleOnglet) doc.pole = [poleOnglet];
+    /* L'identifiant : la colonne « id », sinon la référence, sinon
+       l'onglet et la ligne. C'est lui qui relie une modification faite
+       dans le site. */
+    var id = doc.id || doc.reference || (nom + '-ligne-' + (r + 1));
     while (vus[id]) id = id + '-' + (r + 1);
     vus[id] = true;
     doc.id = id;
     documents.push(doc);
   }
-  return documents;
 }
 
 function emailConnecte_() {
@@ -331,6 +429,74 @@ function decouper_(texte) {
 function titreDe_(donnees) {
   if (!donnees || typeof donnees !== 'object') return '';
   return String(donnees.titre || donnees.nom || donnees.question || donnees.code || donnees.texte || '').slice(0, 120);
+}
+
+function poleDe_(donnees) {
+  if (!donnees || typeof donnees !== 'object') return '';
+  var v = donnees.poles !== undefined ? donnees.poles : donnees.pole;
+  return (Array.isArray(v) ? v : [v]).map(function (x) { return String(x === null || x === undefined ? '' : x).trim(); })
+    .filter(function (x) { return x; }).join(', ');
+}
+
+function court_(v, n) {
+  var t = String(v === null || v === undefined ? '' : v).trim();
+  return t.length > n ? t.substring(0, n - 1) + '…' : t;
+}
+
+function estDate_(v) {
+  return Object.prototype.toString.call(v) === '[object Date]';
+}
+
+/* Une cellule qui commence par « = », « + », « - » ou « @ » serait lue
+   comme une formule : l'apostrophe la garde en texte (elle ne s'affiche
+   pas). */
+function enTexte_(v) {
+  return (typeof v === 'string' && /^[=+\-@]/.test(v)) ? "'" + v : v;
+}
+
+/**
+ * Une ligne de journal, la plus récente en haut, dans « Journal complet »
+ * et dans l'onglet de sa rubrique. La rubrique est décidée ici ; le site
+ * ne fournit que le récit (action, élément, pôle, ce qui a changé).
+ */
+function journaliser_(email, jeu, type, id, op, infos, donnees) {
+  var j = (infos && typeof infos === 'object') ? infos : {};
+  var rubrique = (RUBRIQUES[jeu] && RUBRIQUES[jeu][type]) || 'Autres';
+  var action = op === 'annulation' ? 'Annulation'
+    : (op === 'suppr' ? 'Suppression' : (j.action === 'Ajout' ? 'Ajout' : 'Modification'));
+  var element = court_(j.element, 200) || titreDe_(donnees) || id;
+  var pole = court_(j.pole, 60) || poleDe_(donnees);
+  var detail = court_(j.detail, 3000);
+  var quand = new Date();
+  ecrireJournal_(ONGLET_JOURNAL, ENTETE_JOURNAL, [quand, email, rubrique, pole, action, element, detail]);
+  ecrireJournal_(PREFIXE_JOURNAL + rubrique, ENTETE_RUBRIQUE, [quand, email, pole, action, element, detail]);
+}
+
+function ecrireJournal_(nom, entete, ligne) {
+  var feuille = ongletJournal_(nom, entete);
+  feuille.insertRowAfter(1);
+  var plage = feuille.getRange(2, 1, 1, ligne.length);
+  plage.setValues([ligne.map(enTexte_)]);
+  plage.setFontWeight('normal').setBackground(null).setFontColor('#2a251f');
+  feuille.getRange(2, 1).setNumberFormat('dd/MM/yyyy HH:mm');
+  var colonneAction = entete.indexOf('Action') + 1;
+  feuille.getRange(2, colonneAction).setBackground(COULEURS_ACTION[ligne[colonneAction - 1]] || null);
+}
+
+/* Un onglet de journal, mis en forme à sa création : en-tête figé et
+   teinté, colonnes à leur largeur, le détail qui passe à la ligne. */
+function ongletJournal_(nom, entete) {
+  var classeur = classeur_();
+  var feuille = classeur.getSheetByName(nom);
+  if (feuille) return feuille;
+  feuille = classeur.insertSheet(nom);
+  feuille.getRange(1, 1, 1, entete.length).setValues([entete])
+    .setFontWeight('bold').setBackground('#e9e1d3').setFontColor('#2a251f');
+  feuille.setFrozenRows(1);
+  var largeurs = { 'Date': 130, 'Qui': 210, 'Rubrique': 170, 'Pôle': 90, 'Action': 110, 'Élément': 300, 'Ce qui a changé': 560 };
+  entete.forEach(function (t, i) { if (largeurs[t]) feuille.setColumnWidth(i + 1, largeurs[t]); });
+  feuille.getRange(1, entete.length, feuille.getMaxRows(), 1).setWrap(true);
+  return feuille;
 }
 
 function verifierJeu_(jeu) {

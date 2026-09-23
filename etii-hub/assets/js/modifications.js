@@ -24,9 +24,15 @@
      abonnerModifications(fn)                      -> () => void
      nouvelIdentifiant(prefixe)                    -> string
      aplatirOrganigramme(donnees)                  -> { personnes, squads }
+     definirLecteur(fn)                            data.js y branche chargerDonnees
+
+   Chaque enregistrement porte son récit pour le journal (journal.js) :
+   l'élément tel qu'il était avant, relu dans les données du site, et tel
+   qu'il est après.
    ========================================================================= */
 
 import { ouvrirMagasin, JEUX_MODIFIABLES } from './magasin.js';
+import { resumerModification } from './journal.js';
 
 function texte(v) { return (v === null || v === undefined) ? '' : String(v).trim(); }
 function cloner(v) { return v === undefined ? v : JSON.parse(JSON.stringify(v)); }
@@ -217,6 +223,52 @@ function prevenir(jeu) {
   for (const fn of abonnes) { try { fn(jeu); } catch (_e) { /* un abonné ne casse pas les autres */ } }
 }
 
+/* Les données du site, déjà modifiées : data.js y branche chargerDonnees
+   (pas d'import dans ce sens, data.js importe déjà ce module). */
+let lecteur = null;
+
+export function definirLecteur(fn) { lecteur = typeof fn === 'function' ? fn : null; }
+
+function trouverElement(jeu, type, id, d) {
+  const chercher = (liste, champ) => tableau(liste).find((e) => texte(e && e[champ || 'id']) === id) || null;
+  if (jeu === 'communications') {
+    if (type === 'agenda') return chercher(d.agenda);
+    if (type === 'alerte') return chercher(d.alertesDetail);
+    if (type === 'edito') {
+      const une = objet(d.motDuChef);
+      if (une && (texte(une.id) || 'mot-du-chef') === id) return une;
+      return chercher(tableau(d.annonces).filter((a) => a && a.typeSource === 'edito'));
+    }
+    return chercher(tableau(d.annonces).filter((a) => a && a.typeSource !== 'edito'));
+  }
+  if (jeu === 'flotte') return chercher(d.flotte, 'code');
+  if (jeu === 'organigramme') {
+    const plat = aplatirOrganigramme(d);
+    return type === 'squad' ? chercher(plat.squads) : chercher(plat.personnes);
+  }
+  if (jeu === 'faq') return chercher(d.questions);
+  if (jeu === 'documents') return chercher(d.documents);
+  if (jeu === 'reunions') return chercher(d.comptesRendus);
+  return null;
+}
+
+/* L'élément tel que le site le montre maintenant, ou null (un ajout). Ne
+   bloque jamais un enregistrement : au pire, le récit dit « Ajout ». */
+async function elementActuel(jeu, type, id) {
+  if (!lecteur) return null;
+  try {
+    const d = await Promise.race([lecteur(jeu), new Promise((r) => setTimeout(() => r(null), 4000))]);
+    return objet(d) ? (cloner(trouverElement(jeu, type, texte(id), d)) || null) : null;
+  } catch (_e) { return null; }
+}
+
+async function recit(jeu, type, id, op, apres) {
+  try {
+    const avant = await elementActuel(jeu, type, id);
+    return resumerModification({ jeu, type, id: texte(id), op, avant, apres });
+  } catch (_e) { return null; }
+}
+
 /* Les champs de travail que le site ajoute en lisant (placement dans
    l'organigramme mis à part) ne partent jamais dans le magasin. */
 function nettoyer(donnees) {
@@ -234,7 +286,9 @@ function nettoyer(donnees) {
  */
 export async function enregistrerModification(jeu, type, id, donnees) {
   const magasin = await ouvrirMagasin();
-  await magasin.poser(jeu, { type, id: texte(id), op: 'maj', donnees: nettoyer(donnees), le: new Date().toISOString(), par: magasin.auteur });
+  const propres = nettoyer(donnees);
+  const journal = await recit(jeu, type, id, 'maj', propres);
+  await magasin.poser(jeu, { type, id: texte(id), op: 'maj', donnees: propres, le: new Date().toISOString(), par: magasin.auteur, journal });
   prevenir(jeu);
 }
 
@@ -245,7 +299,8 @@ export async function enregistrerModification(jeu, type, id, donnees) {
  */
 export async function supprimerElement(jeu, type, id) {
   const magasin = await ouvrirMagasin();
-  await magasin.poser(jeu, { type, id: texte(id), op: 'suppr', donnees: null, le: new Date().toISOString(), par: magasin.auteur });
+  const journal = await recit(jeu, type, id, 'suppr', null);
+  await magasin.poser(jeu, { type, id: texte(id), op: 'suppr', donnees: null, le: new Date().toISOString(), par: magasin.auteur, journal });
   prevenir(jeu);
 }
 

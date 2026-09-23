@@ -54,9 +54,20 @@
      Magasin.lire(jeu)               -> Promise<Modification[]>
      Magasin.poser(jeu, modif)       -> Promise<void>
      Magasin.retirer(jeu, type, id)  -> Promise<void>   (annule la modification)
+     Magasin.journal()               -> Promise<Entree[]>  l'historique, le plus récent d'abord
+
+   Une modification peut porter son récit (journal.js) :
+     modif.journal = { rubrique, action, element, pole, detail }
+   Chaque magasin le range à sa façon : la feuille Google (un onglet par
+   rubrique, écrit par Code.gs), la collection « journal » de la base du
+   lien publié, ou ce navigateur.
    ========================================================================= */
 
 const PREFIXE_LOCAL = 'etii:modifications:';
+const CLE_JOURNAL_LOCAL = 'etii:journal';
+
+/** L'historique gardé : au-delà, les plus anciens gestes s'effacent. */
+const JOURNAL_MAX = 500;
 
 /** Au-delà, le runtime ne répond plus : on n'attend pas davantage. */
 const DELAI_RUNTIME = 6000;
@@ -149,6 +160,22 @@ function normaliser(brut) {
   return { type, id, op, donnees, le: texte(brut.le), par: texte(brut.par) || null };
 }
 
+/* Une entrée de journal bien formée : des textes, bornés. Ce qui revient
+   de la base partagée est une donnée, jamais une consigne. */
+function entreeJournal(brut, le, par) {
+  const b = (brut && typeof brut === 'object') ? brut : {};
+  const borne = (v, n) => texte(v).slice(0, n);
+  return {
+    le: borne(b.le || le, 40),
+    par: borne(b.par || par, 200),
+    rubrique: borne(b.rubrique, 60) || 'Autres',
+    pole: borne(b.pole, 60),
+    action: borne(b.action, 20) || 'Modification',
+    element: borne(b.element, 200),
+    detail: borne(b.detail, 3000)
+  };
+}
+
 /* -------------------------------------------------------------------------
    2. Les deux magasins
    ------------------------------------------------------------------------- */
@@ -188,14 +215,29 @@ function magasinNavigateur() {
       const tout = lireTout(jeu);
       tout[cleDocument(m.type, m.id)] = m;
       ecrireTout(jeu, tout);
+      if (modif.journal) {
+        try {
+          const liste = lireJournal();
+          liste.unshift(entreeJournal(modif.journal, m.le || new Date().toISOString(), m.par));
+          localStorage.setItem(CLE_JOURNAL_LOCAL, JSON.stringify(liste.slice(0, JOURNAL_MAX)));
+        } catch (_e) { /* le journal ne fait jamais échouer un enregistrement */ }
+      }
     },
     async retirer(jeu, type, id) {
       verifierJeu(jeu);
       const tout = lireTout(jeu);
       delete tout[cleDocument(type, id)];
       ecrireTout(jeu, tout);
-    }
+    },
+    async journal() { return lireJournal(); }
   };
+}
+
+function lireJournal() {
+  try {
+    const brut = JSON.parse(localStorage.getItem(CLE_JOURNAL_LOCAL) || '[]');
+    return Array.isArray(brut) ? brut.map((e) => entreeJournal(e)) : [];
+  } catch (_e) { return []; }
 }
 
 function magasinPartage(db, peutEcrire, auteur) {
@@ -233,11 +275,21 @@ function magasinPartage(db, peutEcrire, auteur) {
       verifierPoids(m);
       try { await collection(jeu).doc(cleDocument(m.type, m.id)).set(m); }
       catch (e) { throw traduire(e); }
+      if (modif.journal) {
+        const entree = entreeJournal(modif.journal, m.le || new Date().toISOString(), m.par);
+        const cle = cleDocument('journal', entree.le + '-' + Math.random().toString(36).slice(2, 8));
+        try { await db.collection('journal').doc(cle).set(entree); }
+        catch (e) { if (typeof console !== 'undefined') console.warn('[magasin] journal non écrit :', e && (e.code || e.message)); }
+      }
     },
     async retirer(jeu, type, id) {
       verifierJeu(jeu);
       try { await collection(jeu).doc(cleDocument(type, id)).delete(); }
       catch (e) { throw traduire(e); }
+    },
+    async journal() {
+      const instantane = await db.collection('journal').orderBy('le', 'desc').limit(JOURNAL_MAX).get();
+      return instantane.docs.map((d) => entreeJournal(d.data()));
     }
   };
 }
@@ -335,7 +387,8 @@ function magasinGoogle(run, depart) {
       if (!m) throw new Error('Modification illisible.');
       verifierPoids(m);
       let retour;
-      try { retour = await appelerGoogle(run, 'etiiPoser', [jeu, m]); }
+      const envoi = modif.journal ? Object.assign({}, m, { journal: entreeJournal(modif.journal) }) : m;
+      try { retour = await appelerGoogle(run, 'etiiPoser', [jeu, envoi]); }
       catch (e) { throw traduire(e); }
       oublierDemarrage();
       parJeu.get(jeu).set(cleDocument(m.type, m.id), normaliser(Object.assign({}, m, retour || {})) || m);
@@ -346,6 +399,12 @@ function magasinGoogle(run, depart) {
       catch (e) { throw traduire(e); }
       oublierDemarrage();
       parJeu.get(jeu).delete(cleDocument(type, id));
+    },
+    async journal() {
+      let lignes;
+      try { lignes = await appelerGoogle(run, 'etiiJournal', [300]); }
+      catch (e) { throw traduire(e); }
+      return (Array.isArray(lignes) ? lignes : []).map((e) => entreeJournal(e));
     }
   };
 }
@@ -372,7 +431,8 @@ function magasinMuet() {
     auteur: null,
     async lire(jeu) { verifierJeu(jeu); return []; },
     poser: refuser,
-    retirer: refuser
+    retirer: refuser,
+    async journal() { return []; }
   };
 }
 

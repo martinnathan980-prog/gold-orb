@@ -385,13 +385,13 @@ export function ouvrirPorteur(o) {
   const fiche = (existant && existant.fiche) || {};
   const libelles = o.libelles || {};
   /* Tous les champs que la fiche affiche, remplis ou non : on complète
-     une valeur « à renseigner » ici même. L'ancien nom vit à la racine de
-     la fiche : il a son propre champ, plus bas. */
+     une valeur « à renseigner » ici même. L'ancien nom et le statut vivent
+     à la racine de la fiche : ils ont leur propre champ, plus haut. */
   const champsFiche = GROUPES_FICHE.map(([g, titre]) => {
     const cles = [...new Set([
       ...Object.keys(libelles[g] || {}),
       ...Object.keys((fiche[g] && typeof fiche[g] === 'object') ? fiche[g] : {})
-    ])].filter((cle) => !(g === 'identite' && cle === 'ancienNom'));
+    ])].filter((cle) => !(g === 'identite' && (cle === 'ancienNom' || cle === 'statut')));
     return {
       type: 'groupe', libelle: titre,
       champs: cles.flatMap((cle) => {

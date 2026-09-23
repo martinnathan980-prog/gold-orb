@@ -21,7 +21,7 @@
   margin: 0;
   padding-block-start: var(--e-2);
   font-family: var(--police-titre);
-  font-size: clamp(1.625rem, 0.9vw + 1.35rem, 2rem);
+  font-size: var(--texte-section);
   font-weight: var(--graisse-normale);
   letter-spacing: 0.005em;
   line-height: var(--interligne-serre);
@@ -483,44 +483,7 @@ ol.kiosque__liste {
   overflow: hidden;
 }
 
-.kiosque__carte-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--e-2);
-  margin-block-start: 2px;
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--texte-faible);
-}
-
-.kiosque__carte-glyphe { color: var(--accent); }
-
 .kiosque__vide { padding: var(--e-6) var(--e-4); text-align: center; }
-
-.kiosque__pole {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e-1);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--texte-doux);
-}
-
-.kiosque__pole-point {
-  inline-size: 7px;
-  block-size: 7px;
-  border-radius: var(--rayon-plein);
-  background-color: var(--texte-faible);
-}
-
-.kiosque__pole[data-pole="ETIIA"] .kiosque__pole-point { background-color: var(--pole-etiia); }
-.kiosque__pole[data-pole="ETIIE"] .kiosque__pole-point { background-color: var(--pole-etiie); }
-.kiosque__pole[data-pole="ETIII"] .kiosque__pole-point { background-color: var(--pole-etiii); }
 
 /* --- La lecture ---------------------------------------------------------- */
 
@@ -925,7 +888,6 @@ ol.kiosque__liste {
 
 .porteurs__fiche-poles { display: inline-flex; gap: var(--e-1); min-block-size: var(--e-2); margin-block-start: var(--e-1); }
 
-.porteurs__pole { display: inline-flex; align-items: center; gap: var(--e-1); font-family: var(--police-mono); font-size: var(--texte-xs); letter-spacing: 0.06em; text-transform: uppercase; color: var(--texte-doux); }
 
 .porteurs__pole-point {
   inline-size: 7px;
@@ -934,9 +896,9 @@ ol.kiosque__liste {
   background-color: var(--texte-faible);
 }
 
-.porteurs__pole-point[data-pole="ETIIA"], .porteurs__pole[data-pole="ETIIA"] .porteurs__pole-point { background-color: var(--pole-etiia); }
-.porteurs__pole-point[data-pole="ETIIE"], .porteurs__pole[data-pole="ETIIE"] .porteurs__pole-point { background-color: var(--pole-etiie); }
-.porteurs__pole-point[data-pole="ETIII"], .porteurs__pole[data-pole="ETIII"] .porteurs__pole-point { background-color: var(--pole-etiii); }
+.porteurs__pole-point[data-pole="ETIIA"] { background-color: var(--pole-etiia); }
+.porteurs__pole-point[data-pole="ETIIE"] { background-color: var(--pole-etiie); }
+.porteurs__pole-point[data-pole="ETIII"] { background-color: var(--pole-etiii); }
 
 /* --- La fiche dépliée : un item sur toute la largeur de la rangée -------- */
 
@@ -1056,26 +1018,6 @@ ol.kiosque__liste {
 /* Le résumé : un court discours sur TOUTE la largeur de la boîte, en
    corps lisible et interligne aéré. */
 .porteurs__resume { max-width: none; font-size: var(--texte-lg); line-height: 1.6; }
-
-/* --- La carte d'identité ------------------------------------------------ */
-
-/* Les mêmes lignes que les groupes, sur deux colonnes quand la place le
-   permet, dans un cadre à peine teinté : c'est le rappel, avant le
-   détail. */
-.porteurs__identite {
-  padding: var(--e-4) var(--e-6);
-  background-color: var(--fond-enfonce);
-  border: 1px solid var(--bordure-douce);
-  border-radius: var(--rayon-lg);
-}
-.porteurs__lignes--identite { columns: 2 22rem; column-gap: var(--e-10); }
-.porteurs__lignes--identite .porteurs__ligne { break-inside: avoid; }
-/* En colonnes, chaque ligne garde son filet : la dernière de chaque
-   colonne n'est pas connue du CSS. */
-.porteurs__lignes--identite .porteurs__ligne:last-child { border-bottom: 1px solid var(--bordure-douce); }
-
-.porteurs__poles { display: flex; flex-wrap: wrap; gap: var(--e-2) var(--e-3); }
-.porteurs__cellule.porteurs__poles { flex-direction: row; align-items: baseline; }
 
 /* --- Les onglets et leurs groupes ---------------------------------------- */
 
@@ -1214,7 +1156,6 @@ ol.kiosque__liste {
 
 @media (max-width: 40rem) {
   .porteurs__ligne { grid-template-columns: 1fr; gap: 2px; }
-  .porteurs__identite { padding: var(--e-3) var(--e-4); }
 }
 
 /* --- Insolite, crédits, équipe ------------------------------------------ */
@@ -3157,7 +3098,17 @@ ol.liseuse__bloc-liste {
   inset-block-start: var(--hauteur-barre-site);
   z-index: 5;
   background-color: var(--fond-bande);
-  border-bottom: 1px solid var(--bordure-douce);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--duree) var(--courbe), box-shadow var(--duree) var(--courbe);
+}
+
+/* Au repos, le sommaire fait corps avec la bande de l'en-tête : aucun
+   filet ne la coupe avant le titre de la première section. Collé sous la
+   barre du site (ui.js, suivreSommaire, pose la classe), il reprend un
+   filet et une ombre courte pour se détacher de ce qui défile dessous. */
+.page-sommaire--collee {
+  border-bottom-color: var(--bordure-douce);
+  box-shadow: var(--ombre-sm);
 }
 
 /* Dans son bandeau, la liste n'est plus collante ni bordée elle-même :
@@ -3174,7 +3125,60 @@ ol.liseuse__bloc-liste {
 /* Une section visée par le sommaire garde de l'air au-dessus de son
    titre quand on y saute : la barre du site et le sommaire collés. */
 .page-sommaire ~ .pile--section > section {
-  scroll-margin-block-start: calc(var(--hauteur-barre-site) + var(--cible-tactile) + var(--e-4));
+  scroll-margin-block-start: calc(var(--hauteur-barre-site) + var(--cible-tactile) - var(--e-4));
+}
+
+/* ----------------------------------------------------------------------
+   15 ter. Les bandes coupées au filet du titre (accueil et pôles)
+       Les sections se touchent, sans interstice, et chacune porte sa
+       couleur : le papier, puis la bande, en alternance. La couleur ne
+       change pas au bord de la section mais au filet de son titre — la
+       bande du dessus descend jusqu'au trait « — Communication center — »,
+       celle de la section commence dessous. L'en-tête de page (la bande)
+       se prolonge ainsi jusqu'au premier titre. La peinture déborde en
+       pleine largeur par border-image, qui ne crée aucun défilement
+       horizontal (au contraire de la marge négative en 50vw).
+   ---------------------------------------------------------------------- */
+
+.page-sommaire ~ .pile--section {
+  gap: 0;
+  /* L'air au-dessus du filet, puis la moitié de la ligne du titre : la
+     hauteur exacte où passe le trait. */
+  --bande-air: var(--e-10);
+  --bande-coupe: calc(var(--bande-air) + var(--texte-section) * var(--interligne-serre) / 2);
+}
+
+.page-sommaire ~ .pile--section > section,
+.page-sommaire ~ .pile--section > section:nth-of-type(even) {
+  --bande-dessus: var(--fond-bande);
+  --bande-ton: var(--fond);
+  gap: var(--e-6);
+  margin: 0;
+  padding: var(--bande-air) 0 var(--e-10);
+  background: none;
+  border: 0;
+  border-image: linear-gradient(to bottom,
+      var(--bande-dessus) var(--bande-coupe),
+      var(--bande-ton) var(--bande-coupe)) fill 0 / / 0 100vw;
+}
+
+.page-sommaire ~ .pile--section > section:nth-of-type(even) {
+  --bande-dessus: var(--fond);
+  --bande-ton: var(--fond-bande);
+}
+
+.page-sommaire ~ .pile--section > section > .titre-section { padding-block-start: 0; }
+
+/* La dernière bande descend jusqu'au pied de page : plus de lisière du
+   papier entre les deux. */
+body > main:has(> .page-sommaire) { padding-block-end: 0; }
+.page-sommaire ~ .pile--section > section:last-of-type { padding-block-end: var(--e-12); }
+
+/* Sur téléphone, les filets du titre se retirent (§1) : la couleur
+   change au bord de la section, et non plus au milieu d'un mot. */
+@media (max-width: 640px) {
+  .page-sommaire ~ .pile--section { --bande-air: var(--e-8); --bande-coupe: 0px; }
+  .page-sommaire--collee { box-shadow: none; }
 }
 
 /* Sur téléphone, le sommaire défile sur une ligne plutôt que de
@@ -3218,6 +3222,7 @@ ol.liseuse__bloc-liste {
 
 .agenda__rdv {
   --rdv-teinte: var(--chaud);
+  --i: 0;   /* le rang dans l'ordre des dates (agenda.js), pour l'arrivée */
   position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -3374,7 +3379,7 @@ ol.liseuse__bloc-liste {
    pôle. */
 .agenda__traits { position: absolute; inset: 0; pointer-events: none; }
 .agenda__traits-dessin { display: block; overflow: visible; }
-.agenda__trait { stroke: var(--chaud); stroke-width: 1.5; stroke-dasharray: 3 3; opacity: 0.8; }
+.agenda__trait { --i: 0; stroke: var(--chaud); stroke-width: 1.5; stroke-dasharray: 3 3; opacity: 0.8; }
 .agenda__trait[data-pole="ETIIA"] { stroke: var(--pole-etiia); }
 .agenda__trait[data-pole="ETIIE"] { stroke: var(--pole-etiie); }
 .agenda__trait[data-pole="ETIII"] { stroke: var(--pole-etiii); }
@@ -3382,6 +3387,7 @@ ol.liseuse__bloc-liste {
 /* Le repère sur l'axe : un losange pour un jalon, un rond sinon. */
 .agenda__repere {
   --rdv-teinte: var(--chaud);
+  --i: 0;
   position: absolute;
   top: calc(50% - 7px);
   inline-size: 14px;
@@ -3395,6 +3401,97 @@ ol.liseuse__bloc-liste {
 .agenda__repere[data-pole="ETIIE"] { --rdv-teinte: var(--pole-etiie); }
 .agenda__repere[data-pole="ETIII"] { --rdv-teinte: var(--pole-etiii); }
 .agenda__repere[data-type="jalon"] { border-radius: 2px; background-color: var(--rdv-teinte); transform: rotate(45deg); }
+
+/* --- La frise qui vit (agenda.js §3) --------------------------------------
+   Survoler une carte ou son repère l'allume : la carte se soulève et prend
+   un filet à sa couleur, le repère grossit dans un halo, le trait devient
+   plein, et une jauge part d'aujourd'hui jusqu'à la date. Les autres
+   rendez-vous s'estompent sans disparaître. */
+.agenda--frise .agenda__repere { pointer-events: auto; cursor: pointer; }
+.agenda--frise .agenda__rdv,
+.agenda__repere,
+.agenda__trait {
+  transition: opacity var(--duree) var(--courbe), translate var(--duree) var(--courbe),
+              scale var(--duree) var(--courbe), box-shadow var(--duree) var(--courbe),
+              border-color var(--duree) var(--courbe), stroke-width var(--duree) var(--courbe);
+}
+.agenda--frise .agenda__rdv.est-allume {
+  z-index: 3;
+  translate: 0 -3px;
+  border-color: color-mix(in srgb, var(--rdv-teinte) 45%, var(--carte-bord));
+  border-inline-start-color: var(--rdv-teinte);
+  box-shadow: var(--ombre-md);
+}
+.agenda--frise .agenda__rdv--bas.est-allume { translate: 0 3px; }
+.agenda__repere.est-allume {
+  scale: 1.45;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--rdv-teinte) 24%, transparent);
+}
+.agenda__trait.est-allume { stroke-dasharray: none; stroke-width: 2; opacity: 1; }
+.agenda--allume .agenda__rdv:not(.est-allume) { opacity: 0.55; }
+.agenda--allume .agenda__repere:not(.est-allume) { opacity: 0.4; }
+.agenda--allume .agenda__trait:not(.est-allume) { opacity: 0.2; }
+
+.agenda__progression {
+  --rdv-teinte: var(--chaud);
+  position: absolute;
+  top: 50%;
+  inline-size: 0;
+  block-size: 4px;
+  margin-block-start: -2px;
+  border-radius: 2px;
+  background: linear-gradient(to right, color-mix(in srgb, var(--rdv-teinte) 25%, transparent), var(--rdv-teinte));
+  transition: inline-size var(--duree-lente) var(--courbe);
+}
+.agenda__progression[data-pole="ETIIA"] { --rdv-teinte: var(--pole-etiia); }
+.agenda__progression[data-pole="ETIIE"] { --rdv-teinte: var(--pole-etiie); }
+.agenda__progression[data-pole="ETIII"] { --rdv-teinte: var(--pole-etiii); }
+
+/* L'arrivée : l'axe se trace de gauche à droite, les repères se posent un
+   à un, les traits apparaissent, les cartes montent dans l'ordre des
+   dates. Le point d'aujourd'hui bat ensuite, doucement. Tant que la frise
+   n'a pas été vue, ce qui va apparaître reste invisible — mais seulement
+   si agenda.js a pu poser .agenda--anime (observateur présent, animations
+   permises). */
+@media (prefers-reduced-motion: no-preference) {
+  .agenda--anime:not(.agenda--vu) .agenda__ligne { transform: scaleX(0); }
+  .agenda--anime:not(.agenda--vu) .agenda__repere,
+  .agenda--anime:not(.agenda--vu) .agenda__trait,
+  .agenda--anime:not(.agenda--vu) .agenda__rdv,
+  .agenda--anime:not(.agenda--vu) .agenda__mois-bande { opacity: 0; }
+
+  .agenda--vu .agenda__ligne {
+    transform-origin: left center;
+    animation: agenda-trace calc(var(--duree-lente) * 2) var(--courbe) backwards;
+  }
+  .agenda--vu .agenda__mois-bande { animation: agenda-apparait var(--duree-lente) var(--courbe) calc(var(--duree-lente) * 0.5) backwards; }
+  .agenda--vu .agenda__repere {
+    animation: agenda-pose var(--duree-lente) var(--courbe) calc(var(--duree-lente) + var(--i) * var(--duree-rapide)) backwards;
+  }
+  .agenda--vu .agenda__trait {
+    animation: agenda-apparait var(--duree-lente) var(--courbe) calc(var(--duree-lente) * 1.5 + var(--i) * var(--duree-rapide)) backwards;
+  }
+  .agenda--vu .agenda__rdv {
+    animation: agenda-monte var(--duree-lente) var(--courbe) calc(var(--duree-lente) * 1.5 + var(--i) * var(--duree-rapide)) backwards;
+  }
+  .agenda--frise .agenda__aujourdhui::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    animation: agenda-bat calc(var(--duree-lente) * 6) ease-out calc(var(--duree-lente) * 3) infinite;
+  }
+}
+
+@keyframes agenda-trace { from { transform: scaleX(0); } }
+@keyframes agenda-apparait { from { opacity: 0; } }
+@keyframes agenda-pose { from { opacity: 0; scale: 0.2; } }
+@keyframes agenda-monte { from { opacity: 0; translate: 0 12px; } }
+@keyframes agenda-bat {
+  from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--texte) 35%, transparent); }
+  45%  { box-shadow: 0 0 0 10px color-mix(in srgb, var(--texte) 0%, transparent); }
+  to   { box-shadow: 0 0 0 10px color-mix(in srgb, var(--texte) 0%, transparent); }
+}
 
 /* La liste des alertes, dans leur fenêtre de modification. */
 .edition-liste { display: flex; flex-direction: column; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
@@ -3472,6 +3569,86 @@ ol.liseuse__bloc-liste {
   text-align: center;
 }
 .edition-bandeau__marque { font-size: var(--texte-md); }
+.edition-bandeau__historique {
+  flex: none;
+  margin-inline-start: var(--e-2);
+  padding: 2px var(--e-3);
+  border: 1px solid color-mix(in srgb, var(--chaud) 40%, transparent);
+  border-radius: var(--rayon-plein);
+  background-color: transparent;
+  color: var(--chaud-encre);
+  font: inherit;
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  cursor: pointer;
+}
+.edition-bandeau__historique:hover { background-color: color-mix(in srgb, var(--chaud) 12%, transparent); }
+
+/* L'historique des modifications (journal.js) : des filtres par rubrique,
+   puis les gestes du plus récent au plus ancien, jour par jour. Une
+   pastille de couleur dit l'action : ajout, modification, suppression. */
+.historique__note { margin: 0 0 var(--e-3); font-size: var(--texte-sm); color: var(--texte-doux); }
+.historique__filtres { display: flex; flex-wrap: wrap; gap: var(--e-2); margin-block-end: var(--e-4); }
+.historique__filtre {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  padding: var(--e-1) var(--e-3);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-plein);
+  background-color: var(--fond-eleve);
+  color: var(--texte-doux);
+  font: inherit;
+  font-size: var(--texte-sm);
+  cursor: pointer;
+}
+.historique__filtre:hover { border-color: var(--bordure-forte); color: var(--texte); }
+.historique__filtre[aria-pressed="true"] { background-color: var(--texte); border-color: var(--texte); color: var(--fond-eleve); }
+.historique__compte { font-family: var(--police-mono); font-size: var(--texte-xs); opacity: 0.8; }
+.historique__zone { display: flex; flex-direction: column; gap: var(--e-5); max-block-size: 60vh; overflow-y: auto; padding-inline-end: var(--e-2); }
+.historique__vide { margin: 0; color: var(--texte-doux); font-size: var(--texte-sm); }
+.historique__date {
+  position: sticky;
+  top: 0;
+  margin: 0 0 var(--e-2);
+  padding-block: var(--e-1);
+  background-color: var(--fond-eleve);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+.historique__liste { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.historique__entree {
+  --action-teinte: var(--statut-alerte);
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  gap: var(--e-3);
+  padding-block: var(--e-3);
+  border-top: 1px solid var(--bordure-douce);
+}
+.historique__entree[data-action="ajout"] { --action-teinte: var(--statut-succes); }
+.historique__entree[data-action="suppression"] { --action-teinte: var(--statut-critique); }
+.historique__entree[data-action="annulation"] { --action-teinte: var(--texte-doux); }
+.historique__heure { font-family: var(--police-mono); font-size: var(--texte-sm); color: var(--texte-doux); }
+.historique__corps { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; }
+.historique__tete { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-1) var(--e-3); margin: 0; font-size: var(--texte-xs); color: var(--texte-doux); }
+.historique__action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  font-family: var(--police-mono);
+  font-weight: var(--graisse-forte);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--action-teinte);
+}
+.historique__action::before { content: ""; inline-size: 7px; block-size: 7px; border-radius: var(--rayon-plein); background-color: var(--action-teinte); }
+.historique__par { margin-inline-start: auto; }
+.historique__element { margin: 0; font-weight: var(--graisse-moyenne); color: var(--texte); }
+.historique__detail { margin: 0; font-size: var(--texte-sm); color: var(--texte-doux); white-space: pre-line; overflow-wrap: anywhere; }
 
 /* Les commandes d'un élément : deux petits boutons, discrets mais nets. */
 .barre-edition {

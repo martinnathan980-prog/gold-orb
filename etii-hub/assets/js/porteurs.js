@@ -92,12 +92,6 @@ function categories(donnees, appareils) {
   return [...vues.values()];
 }
 
-function pastillePole(code) {
-  return el('span', { class: 'porteurs__pole', dataset: { pole: code } },
-    el('span', { class: 'porteurs__pole-point', 'aria-hidden': 'true' }),
-    'Pôle ' + code);
-}
-
 /* -------------------------------------------------------------------------
    La carte de la galerie
    ------------------------------------------------------------------------- */
@@ -158,10 +152,13 @@ const GROUPES_FICHE = [
   { cle: 'capacite', titre: 'Capacité', champs: [['equipage', 'Équipage'], ['passagers', 'Passagers']] },
   { cle: 'dimensions', titre: 'Dimensions', champs: [
     ['longueur', 'Longueur'], ['hauteur', 'Hauteur'], ['diametreRotor', 'Diamètre du rotor']] },
-  /* L'identité longue (certificat, ancien nom) n'a pas sa place dans le
-     bandeau : elle se lit ici, avec le reste de la technique. */
+  /* L'identité (qui le construit, quand il a volé, où il est assemblé,
+     son statut, son certificat) se lit ici, avec le reste de la
+     technique : plus de bandeau gris entre le résumé et les onglets. */
   { cle: 'identite', titre: 'Identité', champs: [
-    ['certification', 'Certification'], ['ancienNom', 'Ancien nom']] },
+    ['constructeur', 'Constructeur'], ['premierVol', 'Premier vol'], ['miseEnService', 'Mise en service'],
+    ['siteAssemblage', 'Site d’assemblage'], ['statut', 'Statut'], ['certification', 'Certification'],
+    ['ancienNom', 'Ancien nom']] },
   { cle: 'performances', titre: 'Performances', champs: [
     ['vitesseCroisiere', 'Vitesse de croisière'], ['vitesseMax', 'Vitesse maximale'], ['rayonAction', 'Rayon d’action'],
     ['autonomie', 'Autonomie'], ['plafond', 'Plafond']] },
@@ -177,14 +174,8 @@ const GROUPES_FICHE = [
 export function libellesFiche() {
   const r = {};
   for (const g of GROUPES_FICHE) r[g.cle] = Object.fromEntries(g.champs);
-  r.identite = Object.assign({}, r.identite || {}, Object.fromEntries(IDENTITE));
   return r;
 }
-
-/* Le bandeau d'identité : les essentiels, rien d'autre. */
-const IDENTITE = [
-  ['constructeur', 'Constructeur'], ['premierVol', 'Premier vol'],
-  ['miseEnService', 'Mise en service'], ['siteAssemblage', 'Site d’assemblage']];
 
 /* Cinq onglets, rien que sur l'appareil : ni sources, ni équipe, ni
    données du service. La fiche ne renvoie vers aucun site
@@ -332,43 +323,18 @@ function onglets(prefixe, panneaux) {
   return racine;
 }
 
-/* La carte d'identité : le nom complet, la catégorie et le segment, le
-   statut, les pôles, puis l'identité (constructeur, premier vol, mise en
-   service, site d'assemblage). Les mêmes lignes que les groupes de la
-   fiche — libellé à gauche, valeur à côté, précision dessous — sur deux
-   colonnes quand la place le permet. */
-function bandeauIdentite(appareil, fiche, avecFiche, categorie) {
-  const identite = objet(fiche.identite);
-  const code = texte(appareil.code) || '—';
-  const poles = Array.isArray(appareil.poles) ? appareil.poles.map(texte).filter(Boolean) : [];
-  const nom = texte(fiche.nom);
-  const segment = texte(appareil.segment) || texte(fiche.segment);
-  const libelleCategorie = categorie ? categorie.libelle : texte(appareil.categorie);
-  const categorieSegment = [libelleCategorie, segment].filter(Boolean).join(' · ');
-  return el('section', { class: 'porteurs__identite', 'aria-label': 'Identité du ' + code },
-    el('dl', { class: 'porteurs__lignes porteurs__lignes--identite' },
-      ligneFiche('Nom', nom || code),
-      ligneFiche('Catégorie', categorieSegment),
-      ligneFiche('Statut', avecFiche ? texte(fiche.statut) : ''),
-      el('div', { class: 'porteurs__ligne' },
-        el('dt', { class: 'porteurs__libelle' }, 'Pôles'),
-        el('dd', { class: 'porteurs__cellule porteurs__poles' }, poles.length ? poles.map(pastillePole)
-          : el('span', { class: 'porteurs__manquant' }, NON_RENSEIGNE))),
-      IDENTITE.map(([cle, libelle]) => ligneFiche(libelle, identite[cle]))));
-}
-
 function detail(appareil, donnees, categoriesConnues, contexte) {
   const code = texte(appareil.code) || '—';
   const fiche = objet(appareil.fiche);
   const avecFiche = Object.keys(fiche).length > 0;
   const photo = texte(appareil.photo);
-  const categorie = categoriesConnues.find((c) => c.cle === texte(appareil.categorie));
   const prefixe = 'porteur-' + code.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-  /* Les valeurs de l'onglet Technique : les groupes de la fiche, plus
-     l'identité longue (certificat, ancien nom) rapatriée ici. */
+  /* Les valeurs de l'onglet Technique : les groupes de la fiche ; le
+     statut et l'ancien nom, rangés à la racine de la fiche, rejoignent
+     l'identité. */
   const valeursGroupe = (cle) => cle === 'identite'
-    ? { certification: objet(fiche.identite).certification, ancienNom: fiche.ancienNom }
+    ? Object.assign({}, objet(fiche.identite), { statut: fiche.statut, ancienNom: fiche.ancienNom })
     : fiche[cle];
 
   const panneaux = ONGLETS.map((o) => {
@@ -436,7 +402,6 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
     el('div', { class: 'porteurs__contenu' },
       commandes,
       texte(fiche.resume) ? el('p', { class: 'porteurs__resume sans-marge' }, texte(fiche.resume)) : null,
-      bandeauIdentite(appareil, fiche, avecFiche, categorie),
       onglets(prefixe, panneaux)));
 }
 

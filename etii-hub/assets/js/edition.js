@@ -28,6 +28,7 @@
 
 import { el, monter, ouvrirModale, toast, annoncer, stockage } from './ui.js';
 import { ouvrirMagasin } from './magasin.js';
+import { ouvrirHistorique } from './journal.js';
 
 const CLE_ETAT = 'edition.actif';
 
@@ -64,7 +65,15 @@ function appliquer(actif, magasin, bouton) {
           : 'Ce que vous modifiez est enregistré dans ce navigateur seulement : ouvrez le site depuis son lien publié pour le partager.',
         /* Quand l'hôte dit qui est connecté (Google), on le montre : on
            sait sous quel nom partent les modifications. */
-        magasin.identite ? el('span', { class: 'edition-bandeau__identite' }, ' Connecté : ' + magasin.identite + '.') : null));
+        magasin.identite ? el('span', { class: 'edition-bandeau__identite' }, ' Connecté : ' + magasin.identite + '.') : null),
+      /* Tout ce qui a été fait dans le site, par qui, quand, rubrique par
+         rubrique (journal.js). */
+      typeof magasin.journal === 'function'
+        ? el('button', {
+            type: 'button', class: 'edition-bandeau__historique',
+            onClick: (evt) => ouvrirHistorique(evt.currentTarget)
+          }, el('span', { 'aria-hidden': 'true' }, '☰ '), 'Historique')
+        : null);
     const entete = document.querySelector('.site-entete');
     if (entete && entete.parentNode) entete.parentNode.insertBefore(bandeau, entete.nextSibling);
     else document.body.prepend(bandeau);

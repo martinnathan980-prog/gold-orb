@@ -38,7 +38,7 @@
    ========================================================================= */
 
 import { el as creerElement, vider, ressourceIntegree } from './ui.js';
-import { appliquerModifications, abonnerModifications } from './modifications.js';
+import { appliquerModifications, abonnerModifications, definirLecteur } from './modifications.js';
 import { ouvrirMagasin } from './magasin.js';
 
 /* -------------------------------------------------------------------------
@@ -177,6 +177,10 @@ export function chargerDonnees(nom, options) {
 /* Une modification enregistrée dans le site rend le jeu périmé : la page
    qui le redemande le relit, avec la modification. */
 abonnerModifications(function (jeu) { CACHE.delete(jeu); });
+
+/* Le journal raconte une modification en comparant l'élément avant et
+   après : modifications.js relit l'« avant » par ici. */
+definirLecteur(function (jeu) { return chargerDonnees(jeu); });
 
 export function viderCache(nom) {
   if (typeof nom === 'string') {

@@ -465,13 +465,6 @@ function bandeauAlertes(alertes, surAlertes) {
    4. La liste (à gauche) : par mois, la plus récente d'abord
    ------------------------------------------------------------------------- */
 
-function pastillePole(code) {
-  if (!code || code === 'ETII') return null;
-  return el('span', { class: 'kiosque__pole', dataset: { pole: code } },
-    el('span', { class: 'kiosque__pole-point', 'aria-hidden': 'true' }),
-    code);
-}
-
 function carteListe(dossier, prefixe) {
   const p = partiesDate(dossier.date);
   return el('li', {
@@ -488,15 +481,12 @@ function carteListe(dossier, prefixe) {
     el('span', { class: 'kiosque__quand', 'aria-hidden': 'true' },
       el('span', { class: 'kiosque__jour' }, p ? String(p.jour) : '—'),
       el('span', { class: 'kiosque__mois' }, p ? MOIS_COURTS[p.mois - 1] : '')),
+    /* Seule la date accompagne le titre : ni pôle, ni porteur, ni
+       catégorie — le point de la frise porte déjà la couleur du pôle. */
     el('span', { class: 'kiosque__carte-corps' },
       el('span', { class: 'kiosque__carte-titre' }, dossier.titre || 'Sans titre'),
       dossier.resume ? el('span', { class: 'kiosque__carte-resume' }, dossier.resume) : null,
-      el('span', { class: 'kiosque__carte-meta' },
-        el('time', { class: 'visuellement-cache', datetime: dossier.date || null }, dateLongue(dossier.date)),
-        pastillePole(dossier.pole),
-        el('span', {}, dossier.programme || 'Général'),
-        dossier.avecImage ? el('span', { class: 'kiosque__carte-glyphe', title: 'Avec image', 'aria-hidden': 'true' }, '▣') : null,
-        dossier.avecChiffres ? el('span', { class: 'kiosque__carte-glyphe', title: 'Avec chiffres', 'aria-hidden': 'true' }, '▮') : null))));
+      el('time', { class: 'visuellement-cache', datetime: dossier.date || null }, dateLongue(dossier.date)))));
 }
 
 /* La frise : un rail vertical à gauche, un point par entrée (coloré selon
@@ -706,10 +696,6 @@ function lecture(prefixe) {
   const meta = el('p', { class: 'kiosque__lecture-meta' });
   const titre = el('h3', { class: 'kiosque__lecture-titre', id: prefixe + '-lecture-titre' }, '');
   const chapeau = el('p', { class: 'kiosque__chapeau', hidden: true });
-  /* La mention des données d'exemple, posée une fois pour toute la lecture :
-     la phrase est celle du suivi OTQ, pour dire pourquoi et pas seulement quoi. */
-  const exemple = el('p', { class: 'kiosque__ligne texte-doux', hidden: true },
-    'Ces chiffres illustrent le rendu. Ils ne mesurent rien.');
   const blocs = el('div', { class: 'kiosque__blocs' });
   const curseur = el('span', { class: 'kiosque__curseur', 'aria-hidden': 'true', hidden: true });
   /* Pas de crédit sous la lecture : l'utilisateur ne veut pas de mention
@@ -726,15 +712,14 @@ function lecture(prefixe) {
     tabIndex: -1
   },
   image,
-  el('div', { class: 'kiosque__lecture-interieur' }, avisImage, meta, titre, chapeau, exemple, blocs, curseur, fin));
+  el('div', { class: 'kiosque__lecture-interieur' }, avisImage, meta, titre, chapeau, blocs, curseur, fin));
 
-  return { racine, image, avisImage, meta, titre, chapeau, exemple, blocs, curseur, fin };
+  return { racine, image, avisImage, meta, titre, chapeau, blocs, curseur, fin };
 }
 
 /* Remplit une lecture avec un dossier. La première image ouvre la lecture
    en bannière, sans légende dessus ; les autres blocs suivent dans l'ordre. */
 function remplirLecture(lect, dossier) {
-  const statut = STATUTS[dossier.statut] || STATUTS.info;
   const blocs = dossier.blocs.slice();
   const premiere = blocs.findIndex((b) => b.type === 'image');
   const hero = premiere === 0 ? blocs.shift() : null;
@@ -758,16 +743,14 @@ function remplirLecture(lect, dossier) {
     lect.image.hidden = true;
   }
 
+  /* Au-dessus du titre, la date et rien d'autre : le pôle, le porteur, la
+     catégorie et la mention d'exemple chargeaient la lecture sans rien
+     apprendre au lecteur (le pied de page dit que les données sont fictives). */
   monter(lect.meta,
-    el('time', { class: 'mono', datetime: dossier.date || null }, dateLongue(dossier.date) || 'Date à renseigner'),
-    el('span', { class: 'badge badge--accent' }, dossier.programme || 'Général'),
-    dossier.groupe === 'mot' ? null : el('span', { class: ['badge', statut.classe] }, statut.libelle),
-    pastillePole(dossier.pole),
-    dossier.exemple ? el('span', { class: ['badge', 'badge--alerte'] }, 'Données d’exemple') : null);
+    el('time', { class: 'mono', datetime: dossier.date || null }, dateLongue(dossier.date) || 'Date à renseigner'));
   lect.titre.textContent = dossier.titre || 'Sans titre';
   lect.chapeau.textContent = dossier.resume || '';
   lect.chapeau.hidden = !dossier.resume;
-  lect.exemple.hidden = !dossier.exemple;
   monter(lect.blocs, blocs.length
     ? blocs.map(rendreBloc)
     : el('p', { class: 'kiosque__ligne texte-doux' }, 'Aucun détail publié pour cette communication.'));
@@ -921,7 +904,6 @@ export function kiosque(options) {
     monter(lect.meta);
     lect.titre.textContent = 'Aucune communication';
     lect.chapeau.hidden = true;
-    lect.exemple.hidden = true;
     monter(lect.blocs, el('p', { class: 'texte-doux sans-marge' }, 'Rien à lire pour ce pôle pour le moment.'));
     lect.fin.hidden = true;
   }

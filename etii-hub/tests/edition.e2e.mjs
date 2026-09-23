@@ -75,7 +75,7 @@ const outils = (page) => ({
 let page = await nouvellePage();
 let o = outils(page);
 await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
-await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (/^etii:(modifications:|edition\.|editeur\.)/.test(k)) localStorage.removeItem(k); });
+await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (/^etii:(modifications:|journal|edition\.|editeur\.)/.test(k)) localStorage.removeItem(k); });
 await page.reload({ waitUntil: 'networkidle' });
 await o.attendre(900);
 
@@ -96,8 +96,10 @@ await o.remplir('Date', jourIso(1));
 await o.remplir('Lieu', 'Salle B');
 await o.enregistrer();
 const rdv = page.locator('#zone-agenda .agenda__rdv', { hasText: 'Revue d’essai des faisceaux' });
+/* En tête, à sa date : un rendez-vous de la base peut tomber le même
+   jour (la frise suit le calendrier réel), l'ordre entre eux est libre. */
 t('ajouté, il arrive en tête : c’est le plus proche', (await rdv.count()) === 1
-  && /Revue d’essai/.test(await page.locator('#zone-agenda .agenda__rdv').first().innerText())
+  && (await page.locator('#zone-agenda .agenda__rdv').first().getAttribute('data-date')) === jourIso(1)
   && /demain/i.test(await rdv.innerText()), `(${rdvAvant} avant)`);
 await o.centrer(rdv);
 await rdv.locator('.barre-edition__bouton', { hasText: 'Modifier' }).click();
@@ -105,6 +107,24 @@ await o.remplir('Titre', 'Revue d’essai des faisceaux (déplacée)');
 await o.enregistrer();
 t('modifié, il se corrige sur place', (await page.locator('#zone-agenda .agenda__rdv', { hasText: '(déplacée)' }).count()) === 1
   && (await page.locator('#zone-agenda .agenda__rdv').count()) === rdvAvant + 1);
+
+console.log('\n== L’historique ==');
+await page.evaluate(() => window.scrollTo(0, 0));
+await page.locator('.edition-bandeau__historique').click();
+await o.attendre(500);
+const histo = page.locator('.modale .historique__entree');
+t('le bandeau ouvre l’historique : les deux gestes, le plus récent d’abord',
+  (await histo.count()) === 2 && /Modification/i.test(await histo.nth(0).locator('.historique__action').innerText())
+  && /Ajout/i.test(await histo.nth(1).locator('.historique__action').innerText()), `(${await histo.count()})`);
+t('chacun dit sa rubrique et son élément',
+  /À venir/.test(await histo.nth(0).locator('.historique__rubrique').innerText())
+  && /Revue d’essai des faisceaux \(déplacée\)/.test(await histo.nth(0).locator('.historique__element').innerText()));
+t('une modification dit ce qui a changé, avant → après',
+  /Titre : « Revue d’essai des faisceaux » → « Revue d’essai des faisceaux \(déplacée\) »/.test(await histo.nth(0).locator('.historique__detail').innerText()),
+  await histo.nth(0).locator('.historique__detail').innerText());
+t('un ajout résume ses champs', /Lieu : « Salle B »/.test(await histo.nth(1).locator('.historique__detail').innerText()));
+await page.keyboard.press('Escape');
+await o.attendre(300);
 
 console.log('\n== Le bandeau d’alertes ==');
 await page.evaluate(() => window.scrollTo(0, 0));
@@ -445,7 +465,14 @@ const fauxGoogle = (reglages) => {
       const b = lire();
       (b[jeu] = b[jeu] || {})[modif.type + '~' + modif.id] = Object.assign({}, modif, { par: reglages.email });
       ecrire(b);
+      const j = JSON.parse(localStorage.getItem('faux-google:journal') || '[]');
+      j.unshift(Object.assign({ le: new Date().toISOString(), par: reglages.email, rubrique: modif.type === 'agenda' ? 'À venir' : 'Autres' }, modif.journal || {}));
+      localStorage.setItem('faux-google:journal', JSON.stringify(j));
       return { le: new Date().toISOString(), par: reglages.email };
+    },
+    etiiJournal() {
+      if (!reglages.peut) throw new Error('NON_AUTORISE');
+      return JSON.parse(localStorage.getItem('faux-google:journal') || '[]');
     },
     etiiRetirer(jeu, type, id) {
       if (!reglages.peut) throw new Error('NON_AUTORISE');
@@ -494,6 +521,16 @@ t('l’écriture part au serveur, signée de l’adresse connectée',
 t('et rien dans ce navigateur', await page.evaluate(() => localStorage.getItem('etii:modifications:communications') === null));
 t('le rendez-vous s’affiche', (await page.locator('#zone-agenda .agenda__rdv', { hasText: 'servi par Google' }).count()) === 1);
 t('un seul appel au démarrage pour tous les jeux', await page.evaluate(() => window.__APPELS_GOOGLE.filter((n) => n === 'etiiDemarrer').length === 1));
+t('l’écriture emporte son récit pour le journal de la feuille',
+  docsGoogle[0].journal && docsGoogle[0].journal.action === 'Ajout' && docsGoogle[0].journal.element === 'Rendez-vous servi par Google'
+  && docsGoogle[0].journal.rubrique === 'À venir', JSON.stringify(docsGoogle[0].journal));
+await page.evaluate(() => window.scrollTo(0, 0));
+await page.locator('.edition-bandeau__historique').click();
+await o.attendre(600);
+t('l’historique se lit sur le serveur, et renvoie à la feuille',
+  (await page.locator('.modale .historique__entree', { hasText: 'Rendez-vous servi par Google' }).count()) === 1
+  && /Journal complet/.test(await page.locator('.modale .historique__note').innerText())
+  && await page.evaluate(() => window.__APPELS_GOOGLE.includes('etiiJournal')));
 await page.close();
 
 page = await nouvellePage(scriptGoogle({ email: 'lecteur@exemple.fr', peut: false }));

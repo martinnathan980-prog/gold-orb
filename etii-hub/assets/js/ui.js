@@ -1718,7 +1718,20 @@ export function suivreSommaire(options) {
     liens.forEach((a) => a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'true' : 'false'));
   };
 
+  /* Le bandeau du sommaire : collé sous la barre du site, il prend un
+     filet (modules.css, .page-sommaire--collee). Au repos, il fait corps
+     avec la bande de l'en-tête. Il est collé dès que l'en-tête qui le
+     précède a commencé à remonter au-dessus de lui. */
+  const bandeau = document.querySelector('.page-sommaire');
+  const tete = bandeau ? bandeau.previousElementSibling : null;
+  const marquerCollage = () => {
+    if (!bandeau || !tete) return;
+    const colle = tete.getBoundingClientRect().bottom < bandeau.getBoundingClientRect().top - 1;
+    bandeau.classList.toggle('page-sommaire--collee', colle);
+  };
+
   const mesurer = () => {
+    marquerCollage();
     const racine = document.documentElement;
     const hauteur = window.innerHeight || racine.clientHeight || 0;
     const auBout = (window.scrollY || racine.scrollTop || 0) + hauteur >= racine.scrollHeight - 2;

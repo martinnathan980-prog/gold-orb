@@ -14,11 +14,18 @@
    Une seule liste dans le document, dans l'ordre des dates : c'est elle
    que lisent les lecteurs d'écran. Sur un écran large, disposer() la pose
    sur la frise : deux rangées de cartes, une au-dessus de l'axe et une
-   au-dessous, les rendez-vous alternant de l'une à l'autre ; dans une
-   rangée, une carte se décale pour ne pas chevaucher sa voisine, et un
-   trait la relie à son repère sur l'axe. La frise garde ainsi toujours la
-   même hauteur, même quand les dates se serrent. Sur un écran étroit,
-   c'est une simple liste de cartes. L'axe et les traits sont décoratifs.
+   au-dessous, les rendez-vous alternant de l'une à l'autre. L'axe va
+   d'aujourd'hui au dernier rendez-vous (pas plus loin) ; les cartes, elles,
+   se répartissent sur toute la largeur, dans l'ordre des dates, et un
+   trait relie chacune à son repère. La frise garde ainsi toujours la même
+   hauteur, même quand les dates se serrent. Sur un écran étroit, c'est une
+   simple liste de cartes. L'axe et les traits sont décoratifs.
+
+   La frise vit : elle se dessine quand on arrive dessus (l'axe se trace,
+   les repères se posent, les cartes montent), le point d'aujourd'hui bat
+   doucement, et survoler une carte — ou son repère — l'allume avec son
+   trait, son repère et la jauge qui mesure le temps d'ici là ; les autres
+   s'estompent. Rien ne bouge si le système demande moins d'animations.
 
    En mode édition (edition.js), chaque carte se modifie ou se retire, et
    un bouton en ajoute une. Un rendez-vous passé quitte la frise de
@@ -46,7 +53,10 @@ const JOUR_MS = 86400000;
 /* La frise, en pixels : largeur d'une carte, écart entre deux couloirs,
    hauteur de la bande de l'axe, marges. En dessous de LARGEUR_MIN, la
    liste simple lit mieux qu'une frise écrasée. */
-const FRISE = { carte: 248, ecart: 14, axe: 64, marge: 28, largeurMin: 880, horizonMin: 35 };
+const FRISE = { carte: 288, ecart: 14, axe: 64, marge: 28, largeurMin: 880, horizonMin: 14 };
+
+/* Les positions de la dernière mise en page, pour la jauge du survol. */
+const MISES = new WeakMap();
 
 function dateDe(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(texte(iso));
@@ -72,7 +82,7 @@ function aujourdhui() {
    1. Une carte
    ------------------------------------------------------------------------- */
 
-function carte(entree, options) {
+function carte(entree, options, rang) {
   const date = dateDe(entree.date);
   const n = joursRestants(entree.date);
   const pole = texte(entree.pole).toUpperCase() || 'ETII';
@@ -80,7 +90,8 @@ function carte(entree, options) {
   const type = TYPES_AGENDA[cleType] || cleType || 'Rendez-vous';
   const li = el('li', {
     class: ['agenda__rdv', n !== null && n <= 7 ? 'agenda__rdv--proche' : null],
-    dataset: { pole, type: cleType === 'jalon' ? 'jalon' : 'rdv', date: texte(entree.date) }
+    dataset: { pole, type: cleType === 'jalon' ? 'jalon' : 'rdv', date: texte(entree.date), i: String(rang) },
+    style: { '--i': String(rang) }
   },
   el('div', { class: 'agenda__date', 'aria-hidden': 'true' },
     el('span', { class: 'agenda__jour-semaine' }, date ? JOURS_COURTS[date.getDay()] : ''),
@@ -138,12 +149,19 @@ function dessinerAxe(axe, debut, fin, versX, reperes) {
     }
     rang += 1;
   }
+  /* La jauge : d'aujourd'hui au rendez-vous survolé, à sa couleur. Vide
+     au repos. */
+  marques.push(el('span', { class: 'agenda__progression', style: { left: versX(debut) + 'px' } }));
   marques.push(el('span', { class: 'agenda__aujourdhui', style: { left: versX(debut) + 'px' } },
     el('span', { class: 'agenda__aujourdhui-libelle' }, 'Aujourd’hui')));
   /* Les repères : un losange pour un jalon, un rond sinon. */
-  for (const r of reperes) {
-    marques.push(el('span', { class: 'agenda__repere', dataset: { pole: r.pole, type: r.type }, style: { left: r.x + 'px' } }));
-  }
+  reperes.forEach((r, i) => {
+    marques.push(el('span', {
+      class: 'agenda__repere',
+      dataset: { pole: r.pole, type: r.type, i: String(i) },
+      style: { left: r.x + 'px', '--i': String(i) }
+    }));
+  });
   axe.replaceChildren(el('span', { class: 'agenda__ligne' }), ...marques);
 }
 
@@ -189,15 +207,22 @@ function disposer(racine) {
     return;
   }
 
-  /* Le temps : d'aujourd'hui au dernier rendez-vous, trois semaines au
-     moins, et un peu d'air après le dernier. */
+  /* Le temps : d'aujourd'hui au dernier rendez-vous, deux semaines au
+     moins, et un peu d'air après le dernier — l'axe ne s'étire pas vers
+     un mois vide, les repères occupent toute la largeur. */
   const debut = aujourdhui();
   const dates = cartes.map((c) => dateDe(c.dataset.date) || debut);
-  const dernier = Math.max(...dates.map((d) => d.getTime()), debut.getTime() + FRISE.horizonMin * JOUR_MS);
-  const fin = new Date(dernier + 3 * JOUR_MS);
+  const dernier = Math.max(...dates.map((d) => d.getTime()), debut.getTime());
+  const etendue = Math.max(dernier - debut.getTime(), FRISE.horizonMin * JOUR_MS);
+  const fin = new Date(debut.getTime() + etendue * 1.1 + 2 * JOUR_MS);
   const utile = largeur - 2 * FRISE.marge;
   const versX = (d) => Math.round(FRISE.marge + ((d.getTime() - debut.getTime()) / (fin.getTime() - debut.getTime())) * utile);
   const xs = dates.map(versX);
+  /* Les cartes, elles, se partagent la largeur à parts égales, dans
+     l'ordre des dates : trois rendez-vous serrés sur une semaine ne
+     s'entassent plus à gauche. Le trait dit la vraie date. */
+  const places = cartes.map((_c, i) => ((i + 0.5) / cartes.length) * largeur);
+  MISES.set(racine, { x0: versX(debut), xs });
 
   /* Les cartes prennent leur largeur de frise avant d'être mesurées. */
   for (const c of cartes) c.style.inlineSize = carteL + 'px';
@@ -217,7 +242,7 @@ function disposer(racine) {
   const lignes = [];
   for (const cote of ['haut', 'bas']) {
     const indices = rangs[cote];
-    const gauches = rangee(indices.map((i) => xs[i]), largeur, carteL, FRISE.ecart);
+    const gauches = rangee(indices.map((i) => places[i]), largeur, carteL, FRISE.ecart);
     indices.forEach((i, k) => {
       const c = cartes[i];
       const gauche = gauches[k];
@@ -232,7 +257,8 @@ function disposer(racine) {
       const bord = cote === 'haut' ? haut + hauteurs[i] : haut;
       lignes.push(svg('line', {
         x1: xs[i], y1: yAxe + (cote === 'haut' ? -8 : 8), x2: ancre, y2: bord,
-        class: 'agenda__trait', dataset: { pole: c.dataset.pole }
+        class: 'agenda__trait', dataset: { pole: c.dataset.pole, i: String(i) },
+        style: { '--i': String(i) }
       }));
     });
   }
@@ -245,7 +271,60 @@ function disposer(racine) {
 }
 
 /* -------------------------------------------------------------------------
-   3. Le bloc
+   3. La frise qui vit : le survol et l'arrivée
+   ------------------------------------------------------------------------- */
+
+/* Allume le rendez-vous de rang i (sa carte, son repère, son trait) et
+   tend la jauge d'aujourd'hui jusqu'à lui ; null éteint tout. */
+function allumer(racine, i) {
+  const frise = racine.classList.contains('agenda--frise');
+  const rang = frise && i !== null && Number.isFinite(i) ? i : null;
+  racine.classList.toggle('agenda--allume', rang !== null);
+  racine.querySelectorAll('[data-i]').forEach((n) => {
+    n.classList.toggle('est-allume', rang !== null && Number(n.dataset.i) === rang);
+  });
+  const jauge = racine.querySelector('.agenda__progression');
+  const mise = MISES.get(racine);
+  if (!jauge || !mise) return;
+  if (rang === null || mise.xs[rang] === undefined) {
+    jauge.style.inlineSize = '0px';
+    return;
+  }
+  const carteAllumee = racine.querySelector('.agenda__rdv[data-i="' + rang + '"]');
+  jauge.dataset.pole = carteAllumee ? carteAllumee.dataset.pole : 'ETII';
+  jauge.style.inlineSize = Math.max(0, mise.xs[rang] - mise.x0) + 'px';
+}
+
+function brancherSurvol(racine) {
+  const rangDe = (cible) => {
+    const n = cible && typeof cible.closest === 'function' ? cible.closest('.agenda__rdv, .agenda__repere') : null;
+    return n && racine.contains(n) && n.dataset.i !== undefined ? Number(n.dataset.i) : null;
+  };
+  racine.addEventListener('pointerover', (e) => allumer(racine, rangDe(e.target)));
+  racine.addEventListener('pointerleave', () => allumer(racine, null));
+  racine.addEventListener('focusin', (e) => allumer(racine, rangDe(e.target)));
+  racine.addEventListener('focusout', (e) => {
+    if (!e.relatedTarget || !racine.contains(e.relatedTarget)) allumer(racine, null);
+  });
+}
+
+/* La frise se dessine la première fois qu'elle entre à l'écran. Sans
+   IntersectionObserver, ou si le système demande moins d'animations, elle
+   est là d'emblée : rien n'est jamais caché faute d'observateur. */
+function brancherArrivee(racine) {
+  const calme = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (calme || typeof IntersectionObserver !== 'function') return;
+  racine.classList.add('agenda--anime');
+  const obs = new IntersectionObserver((vus) => {
+    if (!vus.some((v) => v.isIntersecting)) return;
+    obs.disconnect();
+    requestAnimationFrame(() => racine.classList.add('agenda--vu'));
+  }, { threshold: 0.2 });
+  obs.observe(racine);
+}
+
+/* -------------------------------------------------------------------------
+   4. Le bloc
    ------------------------------------------------------------------------- */
 
 /**
@@ -270,7 +349,7 @@ export function agenda(donnees, options) {
       ? el('div', { class: 'agenda__cadre' },
           el('div', { class: 'agenda__traits', 'aria-hidden': 'true' }),
           el('div', { class: 'agenda__axe', 'aria-hidden': 'true' }),
-          el('ol', { class: 'agenda__liste', role: 'list' }, visibles.map((e) => carte(e, o))))
+          el('ol', { class: 'agenda__liste', role: 'list' }, visibles.map((e, i) => carte(e, o, i))))
       : el('p', { class: 'agenda__vide' }, 'Aucun rendez-vous à venir pour le moment.'),
     entrees.length > visibles.length
       ? el('p', { class: 'agenda__suite' }, 'Et ' + (entrees.length - visibles.length) + ' autre' + (entrees.length - visibles.length > 1 ? 's' : '') + ' plus tard.')
@@ -304,6 +383,10 @@ export function agenda(donnees, options) {
     const cadre = racine.querySelector('.agenda__cadre');
     observateur.observe(cadre);
     racine.querySelectorAll('.agenda__rdv').forEach((c) => observateur.observe(c));
+  }
+  if (visibles.length) {
+    brancherSurvol(racine);
+    brancherArrivee(racine);
   }
   return racine;
 }

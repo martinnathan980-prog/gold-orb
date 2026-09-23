@@ -73,30 +73,30 @@
   --serie-otd: #008300;
 
   /* --- Neutres : un gris chaud, qui tire vers le papier ------------------- */
-  --gris-50:  #fbfaf7;
-  --gris-100: #f4f1ea;
-  --gris-200: #eae6dc;
-  --gris-300: #dad5c8;
-  --gris-400: #bcb6a8;
-  --gris-500: #837d71;
-  --gris-600: #56524a;
-  --gris-700: #3a3732;
-  --gris-800: #262421;
-  --gris-900: #1a1916;
+  --gris-50:  #fbf8f2;
+  --gris-100: #f3ede2;
+  --gris-200: #e8dfd0;
+  --gris-300: #d5c9b5;
+  --gris-400: #b7aa94;
+  --gris-500: #7e7565;
+  --gris-600: #4f4940;
+  --gris-700: #39332b;
+  --gris-800: #28231d;
+  --gris-900: #1d1914;
 
   /* --- Rôles sémantiques ------------------------------------------------
      Le papier est le fond de page : un beige clair, chaud. La feuille
      (fond-eleve) est crème et s'en détache par une ombre courte et un
      filet léger. Le creux (fond-enfonce) est la surface en retrait : champ
      au repos, bouton, ligne survolée. */
-  --fond:          #f0ece4;
+  --fond:          #ece4d6;
   --fond-profond:  var(--gris-200);
   /* La feuille n'est pas blanche : un crème à peine plus clair que le
      papier. Le blanc pur, sur écran, éblouit. */
-  --fond-eleve:    #faf8f3;
+  --fond-eleve:    #f8f3ea;
   /* La bande : une section sur deux se pose sur un ton à peine différent,
      pour que l'œil sépare les parties de la page sans y penser. */
-  --fond-bande:    #f6f3ec;
+  --fond-bande:    #e3d8c5;
   /* Le creux est un lavis d'encre translucide, pas un gris de plus : posé
      sur le papier, sur la bande ou sur une feuille blanche, il assombrit
      toujours ce qu'il recouvre du même cran. Un gris fixe, lui, devenait
@@ -108,12 +108,12 @@
   --texte-doux:    var(--gris-600);
   /* En littéral et non via --gris-500 : ce gris-là sert aussi de
      --bordure-forte, qu'on ne veut pas foncer. */
-  --texte-faible:  #686359;
+  --texte-faible:  #625c51;
   --texte-inverse: #ffffff;
   --texte-accent:  #17367f;
 
   --bordure:       var(--gris-300);
-  --bordure-douce: #e2ddd1;
+  --bordure-douce: #d9cdb8;
   --bordure-forte: var(--gris-400);
   /* Le filet d'un champ de saisie : plus marqué que --bordure, c'est le
      seul indice qui dise « on écrit ici ». Le fond du champ, lui, reste
@@ -139,7 +139,7 @@
   --chaud-lueur:     rgb(180 84 47 / 0.18);
 
   /* La barre du haut : blanc cassé, un filet fin, une ombre douce. */
-  --barre-fond:          #f6f3ec;
+  --barre-fond:          #f4eee3;
   --barre-texte:         var(--gris-900);
   --barre-texte-doux:    var(--gris-600);
   --barre-bordure:       var(--gris-300);
@@ -183,6 +183,9 @@
   --texte-xl:  1.25rem;                                      /* 20 px   */
   --texte-2xl: clamp(1.375rem, 0.5vw + 1.25rem, 1.625rem);   /* 22–26   */
   --texte-3xl: clamp(2rem, 2.4vw + 1.4rem, 3rem);            /* 32–48   */
+  /* Le titre de section « — Titre — » : sa taille sert aussi à placer la
+     coupe des bandes sur son filet (modules.css §15 ter). */
+  --texte-section: clamp(1.625rem, 0.9vw + 1.35rem, 2rem);   /* 26–32   */
 
   --graisse-normale: 400;
   --graisse-moyenne: 500;
