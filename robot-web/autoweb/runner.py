@@ -60,6 +60,12 @@ class Bilan:
     interrompu: bool = False
     simule: bool = False
     message: str = ""
+    lignes_fichier: int = 0  # lignes de données présentes dans l'Excel, traitées ou non
+
+    @property
+    def tout_deja_fait(self) -> bool:
+        """Rien à traiter alors que le fichier a des lignes : elles sont toutes terminées."""
+        return not self.simule and self.total == 0 and self.lignes_fichier > 0
 
     @property
     def traitees(self) -> int:
@@ -321,7 +327,7 @@ def lancer(scenario: Scenario, options: Options) -> Bilan:
                 + f". Colonnes disponibles : {', '.join(classeur.entetes)}."
             )
         lignes = selectionner(classeur, scenario, options)
-        bilan = Bilan(total=len(lignes))
+        bilan = Bilan(total=len(lignes), lignes_fichier=len(classeur.lignes()))
         base = contexte_de_base(scenario, options)
         if lignes:
             completer_secrets(scenario, options, base)

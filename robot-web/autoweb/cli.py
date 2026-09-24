@@ -137,7 +137,12 @@ def cmd_lancer(args: argparse.Namespace) -> int:
     print(bilan.resume())
     if bilan.simule:
         return 2 if bilan.message else 0
+    if bilan.tout_deja_fait:
+        return CODE_TOUT_DEJA_FAIT
     return 0 if (bilan.erreurs == 0 and not bilan.interrompu) else 1
+
+
+CODE_TOUT_DEJA_FAIT = 3  # « lancer » n'avait rien à faire : toutes les lignes sont déjà OK
 
 
 def cmd_verifier(args: argparse.Namespace) -> int:
@@ -673,9 +678,20 @@ def cmd_menu(args: argparse.Namespace) -> int:
                 print("   1. Une seule ligne, pour tester")
                 print("   2. Toutes les lignes a faire")
                 print("   3. Reprendre aussi les lignes en erreur")
+                print("   4. Tout refaire, meme les lignes deja faites (tache a refaire souvent)")
                 mode = _demander("   Votre choix", "1")
-                options = {"1": dict(limite=1), "2": {}, "3": dict(reprendre_erreurs=True)}.get(mode, dict(limite=1))
-                cmd_lancer(_ns(scenario=str(chemin), **options))
+                options = {
+                    "1": dict(limite=1), "2": {}, "3": dict(reprendre_erreurs=True), "4": dict(tout=True),
+                }.get(mode, dict(limite=1))
+                code = cmd_lancer(_ns(scenario=str(chemin), **options))
+                if code == CODE_TOUT_DEJA_FAIT:
+                    print()
+                    print("   Toutes les lignes de l'Excel sont deja faites (Statut OK). Le robot ne")
+                    print("   refait jamais une ligne terminee : c'est pour ne rien faire deux fois.")
+                    if _demander("   Les refaire quand meme maintenant ? (o/n)", "o").lower().startswith("o"):
+                        options = dict(options)
+                        options["tout"] = True
+                        cmd_lancer(_ns(scenario=str(chemin), **options))
             elif choix == "3":
                 cmd_scenarios(_ns())
             elif choix == "4":

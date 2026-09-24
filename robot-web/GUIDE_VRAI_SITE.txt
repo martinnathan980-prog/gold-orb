@@ -177,6 +177,17 @@ Faites-la une fois a la main dans votre Chrome habituel pour vous en souvenir.
 
      BRAVO : le robot sait faire votre tache sur le vrai site.
 
+8.9  SI VOUS RELANCEZ ENSUITE ET QU'IL NE FAIT PLUS RIEN : c'est normal.
+     Apres un succes, la ligne de l'Excel porte « OK », et le robot ne refait
+     JAMAIS une ligne terminee (pour ne rien faire deux fois par erreur).
+     La fenetre noire affiche alors « 0 ligne(s) a traiter » ou « Rien a faire ».
+     Pour la refaire quand meme, tapez (depuis le dossier robot-web) :
+
+         robot lancer taches\premier_essai.yaml --tout
+
+     --tout veut dire : refais toutes les lignes, meme celles deja faites.
+     (Les versions plus recentes du robot le proposent directement dans le menu.)
+
 
 =====================================================================
  SI CA NE MARCHE PAS
