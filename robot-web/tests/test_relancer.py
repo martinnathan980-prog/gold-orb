@@ -80,3 +80,62 @@ def test_le_menu_offre_tout_refaire_directement(tmp_path, monkeypatch, capsys):
     assert cli.main([]) == 0
     assert "Tout refaire" in capsys.readouterr().out
     assert lancements == [True]
+
+
+def _tache_sans_excel(dossier: Path) -> Path:
+    chemin = dossier / "sans.yaml"
+    chemin.write_text(
+        "nom: sans excel\n"
+        "navigateur: {canal: auto, visible: false}\n"
+        "variables: {url: \"https://exemple.invalid\"}\n"
+        "etapes:\n"
+        "  - aller: \"{{url}}\"\n",
+        encoding="utf-8",
+    )
+    return chemin
+
+
+def test_le_menu_lance_directement_une_tache_sans_excel(tmp_path, monkeypatch, capsys):
+    chemin = _tache_sans_excel(tmp_path)
+    monkeypatch.setattr(cli, "lister_scenarios", lambda racine=None: [chemin])
+    lancements = []
+    monkeypatch.setattr(cli, "cmd_lancer", lambda args: lancements.append(args.scenario) or 0)
+    reponses = iter(["2", "1", "2", "1", "0"])  # lancer la tâche 1, deux fois de suite, puis quitter
+    monkeypatch.setattr(builtins, "input", lambda *a: next(reponses))
+    assert cli.main([]) == 0
+    sortie = capsys.readouterr().out
+    assert "Une seule ligne" not in sortie  # pas de question sur des lignes qui n'existent pas
+    assert "rejouée en entier" in sortie
+    assert lancements == [str(chemin), str(chemin)]
+
+
+def test_le_menu_enregistre_sans_excel_par_defaut(monkeypatch):
+    appels = []
+    monkeypatch.setattr(cli, "cmd_enregistrer", lambda args: appels.append((args.url, args.nom, args.excel)) or 0)
+    reponses = iter(["1", "https://outil.exemple", "export du lundi", "", "0"])  # Entrée = sans Excel
+    monkeypatch.setattr(builtins, "input", lambda *a: next(reponses))
+    assert cli.main([]) == 0
+    assert appels == [("https://outil.exemple", "export du lundi", None)]
+
+
+def test_une_tache_sans_excel_se_simule_et_se_verifie(tmp_path, capsys):
+    chemin = _tache_sans_excel(tmp_path)
+    assert cli.main(["verifier", str(chemin)]) == 0
+    assert "sans Excel" in capsys.readouterr().out
+    assert cli.main(["simuler", str(chemin)]) == 0
+    assert "Simulation" in capsys.readouterr().out
+
+
+def test_refaire_toujours_retraite_les_lignes_deja_ok(tmp_path):
+    from autoweb.runner import Options, ouvrir_classeur, selectionner
+    from autoweb.scenario import charger
+
+    chemin = _tache(tmp_path, "OK")
+    scenario = charger(chemin)
+    classeur = ouvrir_classeur(scenario, Options())
+    try:
+        assert selectionner(classeur, scenario, Options()) == []
+        scenario.excel.refaire = "toujours"
+        assert len(selectionner(classeur, scenario, Options())) == 1
+    finally:
+        classeur.fermer()

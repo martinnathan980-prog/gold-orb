@@ -1,223 +1,301 @@
-PREMIER ESSAI SUR UN VRAI SITE - PAS A PAS
-===========================================
-Objectif, et UN SEUL : que le robot rejoue une fois, a l'identique, 3 ou 4 gestes
-que vous faites sur votre vrai site.
+ROBOT WEB - TOUT RECOMMENCER A ZERO, PUIS UNE TACHE A RELANCER QUAND VOUS VOULEZ
+=================================================================================
+(Windows, au bureau. Version 15 du robot.)
 
-On ne s'occupe PAS de l'Excel pour l'instant. Le robot en exige un, alors on en
-cree un faux, en une commande, et on n'y touche plus. On le branchera pour de vrai
-seulement quand ce premier essai marchera.
+Ce qui change avec la version 15 :
+   - PLUS BESOIN D'EXCEL. Vous montrez la tache une fois, le robot la garde.
+   - Ensuite vous la relancez quand vous voulez, autant de fois que vous
+     voulez : aujourd'hui, demain, dans un mois. Elle n'est jamais « deja faite ».
+   - Les fichiers exportes portent la date et l'heure : un nouveau fichier a
+     chaque lancement, l'ancien n'est jamais ecrase.
 
 Dans ce guide :
-   VOUS TAPEZ  = ce que vous tapez au clavier, puis la touche Entree
+   VOUS TAPEZ  = vous tapez ce texte au clavier, PUIS la touche Entree
    VOUS VOYEZ  = ce qui doit s'afficher. Si ce n'est pas ca, arretez-vous
                  et envoyez-moi ce que vous voyez a la place.
+   [Entree]    = appuyez seulement sur la touche Entree, sans rien taper
+
+Il y a 4 parties :
+   PARTIE A - Tout effacer et reinstaller proprement      (10 minutes, une fois)
+   PARTIE B - Montrer la tache au robot                   (une fois par tache)
+   PARTIE C - Relancer la tache                           (quand vous voulez)
+   PARTIE D - Si ca ne marche pas
 
 
 =====================================================================
- ETAPE 1 - OUVRIR LA FENETRE NOIRE AU BON ENDROIT
+ PARTIE A - TOUT EFFACER ET REINSTALLER PROPREMENT
 =====================================================================
-1.1  Appuyez sur la touche Windows, tapez   cmd   puis Entree.
-     Une fenetre noire s'ouvre.
+On efface l'ancien dossier du robot (anciennes taches, faux Excel essai.xlsx,
+ancien Chrome du robot), puis on installe la version 15. Vos fichiers a vous,
+votre Chrome habituel et vos mots de passe ne sont PAS touches.
 
-1.2  VOUS TAPEZ :
-         cd /d %USERPROFILE%\robot\robot-web
+A1. FERMEZ toutes les fenetres noires ouvertes, et toutes les fenetres Chrome
+    ouvertes par le robot (votre Chrome habituel peut rester ouvert).
 
-     VOUS VOYEZ : la ligne se termine maintenant par
-         C:\Users\A612990\robot\robot-web>
+    ATTENTION : si vous aviez range dans le dossier du robot un fichier a vous
+    que vous voulez garder, copiez-le ailleurs AVANT (par exemple sur le Bureau).
+    Tout le dossier du robot va etre efface.
 
+A2. Appuyez sur la touche Windows, tapez   cmd   puis Entree.
+    Une fenetre noire s'ouvre.
 
-=====================================================================
- ETAPE 2 - CREER LE FAUX EXCEL (une seule commande, sans ouvrir Excel)
-=====================================================================
-2.1  VOUS TAPEZ (tout sur une ligne, le plus simple est de copier-coller) :
+A3. VOUS TAPEZ :
+        cd /d %USERPROFILE%
 
-         py -c "from autoweb.excel import creer_classeur; creer_classeur('essai.xlsx', ['Tache'], [['essai']])"
+    VOUS VOYEZ : la ligne se termine par   C:\Users\A612990>
+    (avec votre identifiant a la place de A612990)
 
-     Rien ne s'affiche : c'est normal.
+A4. On efface l'ancien robot. VOUS TAPEZ :
+        rmdir /s /q robot
 
-2.2  VOUS TAPEZ :
-         dir essai.xlsx
+    VOUS VOYEZ : rien. C'est normal.
+    SI « Le processus ne peut pas acceder au fichier » : un Chrome du robot
+    ou une fenetre noire est encore ouvert. Fermez-les (au pire, redemarrez
+    le PC), refaites A2, A3, puis A4.
 
-     VOUS VOYEZ : une ligne avec la date, l'heure et   essai.xlsx
+A5. On verifie. VOUS TAPEZ :
+        dir robot
 
-     C'est tout pour l'Excel. Il contient une seule ligne, donc le robot fera
-     votre tache une seule fois. Vous n'avez pas besoin de l'ouvrir.
+    VOUS VOYEZ :   Fichier introuvable
+    Parfait : l'ancien robot a disparu.
 
+A6. On efface aussi les anciens installeurs telecharges (pour ne pas les
+    confondre avec le nouveau). VOUS TAPEZ :
+        del "%USERPROFILE%\Downloads\robot-web-installeur*.txt"
 
-=====================================================================
- ETAPE 3 - CHOISIR UNE TOUTE PETITE TACHE (avant de toucher au robot)
-=====================================================================
-Choisissez sur votre vrai site une manipulation de 3 ou 4 gestes, par exemple :
-   - aller dans un menu, puis ouvrir une page de recherche ;
-   - choisir une valeur dans une liste deroulante, puis cliquer Rechercher ;
-   - ouvrir une fiche en cliquant dessus.
+    VOUS VOYEZ : rien, ou « Fichier introuvable ». Les deux sont normaux.
 
-DEUX REGLES pour ce premier essai :
-   - RIEN D'IRREVERSIBLE : pas d'enregistrement, pas de suppression, pas de
-     validation. Le robot va REFAIRE exactement ce que vous faites.
-   - PEU DE GESTES : 3 ou 4 suffisent. On allongera ensuite.
+A7. Dans Gmail, ouvrez mon dernier mail et telechargez la piece jointe
+        robot-web-installeur.txt
+    (en haut du fichier est ecrit VERSION 15)
 
-Faites-la une fois a la main dans votre Chrome habituel pour vous en souvenir.
+A8. Revenez dans la fenetre noire. VOUS TAPEZ, une ligne a la fois :
+        mkdir robot
+        move "%USERPROFILE%\Downloads\robot-web-installeur.txt" robot\
+        cd robot
 
+    VOUS VOYEZ apres la 2e ligne :   1 fichier(s) deplace(s).
+    SI « Le fichier specifie est introuvable » : le telechargement n'est pas
+    fini ou n'est pas alle dans Telechargements. Attendez, puis refaites
+    uniquement la ligne   move ...
 
-=====================================================================
- ETAPE 4 - COPIER L'ADRESSE DE LA PAGE DE DEPART
-=====================================================================
-4.1  Dans votre Chrome habituel, allez sur la page ou COMMENCE votre petite tache.
+A9. On verifie que c'est bien la version 15. VOUS TAPEZ :
+        findstr /c:"VERSION 15" robot-web-installeur.txt
 
-4.2  Cliquez une fois dans la barre d'adresse tout en haut (l'adresse devient
-     bleue, selectionnee). Appuyez sur Ctrl+C pour la copier.
+    VOUS VOYEZ une ligne qui contient :   INSTALLEUR AUTOMATIQUE - VERSION 15
+    SI rien ne s'affiche : ce n'est pas le bon fichier. Refaites A6 a A8.
 
-     L'adresse commence par   http://   ou   https://
+A10. On installe. VOUS TAPEZ (le plus simple : copier-coller, puis Entree) :
+        py -c "exec(open('robot-web-installeur.txt', encoding='utf-8').read())"
 
+    VOUS VOYEZ defiler, en 1 a 3 minutes :
+        ROBOT-WEB - installeur version 15
+        === 1/4  Extraction des fichiers ===
+        === 2/4  Environnement Python ===
+            L'environnement isole est bloque par une strategie de l'entreprise.
+            On passe par le Python du poste : c'est prevu, rien de grave.
+        === 3/4  Installation des bibliotheques ===
+            (des lignes « Requirement already satisfied » : normal)
+        === 4/4  Verification avec un faux outil web ===
+        ...
+         TOUT EST PRET.
 
-=====================================================================
- ETAPE 5 - LANCER L'ENREGISTREMENT
-=====================================================================
-5.1  Revenez dans la fenetre noire. VOUS TAPEZ :
-         robot
+    SI a la fin il n'y a pas « TOUT EST PRET » : arretez-vous et
+    envoyez-moi les 10 dernieres lignes.
 
-     VOUS VOYEZ : le menu « ROBOT WEB - que voulez-vous faire ? »
+A11. On entre dans le dossier du robot. VOUS TAPEZ :
+        cd /d %USERPROFILE%\robot\robot-web
 
-5.2  VOUS TAPEZ :   1
+    VOUS VOYEZ : la ligne se termine par   ...\robot\robot-web>
 
-5.3  Il demande « Adresse de l'outil ».
-     Faites un CLIC DROIT dans la fenetre noire : l'adresse copiee se colle.
-     (Si le clic droit ne colle rien, essayez Ctrl+V.)
-     Puis appuyez sur Entree.
-
-5.4  Il demande « Chemin du fichier Excel ».
-     VOUS TAPEZ :   essai.xlsx
-
-5.5  Il demande « Nom de cette tache ».
-     VOUS TAPEZ :   premier essai
-
-5.6  VOUS VOYEZ : une fenetre Chrome s'ouvre toute seule sur votre site,
-     et la fenetre noire affiche  « ENREGISTREMENT EN COURS ».
-
-     Ce Chrome est un Chrome propre au robot : pas vos favoris, pas vos onglets.
-     C'est normal.
-
-     SI Chrome affiche une page d'erreur au lieu de votre site, ou si la fenetre
-     noire affiche une erreur : arretez-vous, envoyez-moi le message.
-
-
-=====================================================================
- ETAPE 6 - FAIRE LA TACHE DANS LE CHROME DU ROBOT
-=====================================================================
-6.1  SI le site vous demande de vous connecter : connectez-vous normalement,
-     dans CE Chrome-la. Le robot le note ; il saura le refaire.
-
-6.2  Faites vos 3 ou 4 gestes, LENTEMENT, un par un.
-     Attendez que chaque page ait fini de s'afficher avant le geste suivant.
-     En bas a gauche, un bandeau rouge compte vos actions :
-         « Enregistrement : 3 action(s) - cliquez pour terminer »
-
-6.3  Quand c'est fini : CLIQUEZ SUR LE BANDEAU ROUGE en bas a gauche.
-     Il devient vert.
-     (S'il est cache ou ne reagit pas : revenez dans la fenetre noire et
-      appuyez sur Entree. Ca termine aussi.)
+    La partie A est finie. Vous ne la referez plus.
 
 
 =====================================================================
- ETAPE 7 - REPONDRE AUX QUESTIONS : ENTREE PARTOUT
+ PARTIE B - MONTRER LA TACHE AU ROBOT (une seule fois par tache)
 =====================================================================
-7.1  VOUS VOYEZ dans la fenetre noire la liste de ce que le robot a note :
+B1. AVANT de toucher au robot, choisissez votre tache sur le vrai site.
+    Pour la toute premiere, prenez une tache COURTE (3 a 6 gestes) et SANS
+    RISQUE : pas de suppression, pas de validation definitive. Par exemple :
+       - ouvrir une page de recherche, choisir un filtre, cliquer Rechercher,
+         cliquer Exporter.
+    Le robot refera EXACTEMENT vos gestes, avec les memes valeurs.
+
+B2. Dans votre Chrome habituel, allez sur la page ou COMMENCE la tache.
+    Cliquez une fois dans la barre d'adresse (tout en haut), puis Ctrl+C
+    pour copier l'adresse. Elle commence par http:// ou https://
+
+B3. Revenez dans la fenetre noire (partie A11 : elle doit finir par
+    ...\robot\robot-web>). VOUS TAPEZ :
+        robot
+
+    VOUS VOYEZ le menu :
+        ROBOT WEB   -   que voulez-vous faire ?
+           1. Enregistrer une nouvelle tache (vous la montrez au robot)
+           2. Lancer une tache enregistree
+           ...
+
+B4. VOUS TAPEZ :   1
+
+B5. Il demande :   Adresse de l'outil (elle commence par http) :
+    Faites un CLIC DROIT dans la fenetre noire : l'adresse copiee se colle.
+    (Si rien ne se colle, essayez Ctrl+V.) Puis Entree.
+
+B6. Il demande :   Nom de cette tache [ma tache] :
+    Tapez un nom court, sans accent, qui vous parle. Par exemple :
+        export contrats
+
+B7. Il demande :
+        Faut-il repeter la tache pour chaque ligne d'un fichier Excel ?
+        Avec un fichier Excel ? (o/n) [n] :
+    [Entree]     (= non, pas d'Excel. C'est ce qu'on veut.)
+
+B8. VOUS VOYEZ : une fenetre Chrome s'ouvre toute seule sur votre site,
+    et la fenetre noire affiche   ENREGISTREMENT EN COURS
+
+    Ce Chrome est celui du robot : pas vos favoris, pas vos onglets.
+    En haut il peut etre ecrit « Chrome est controle par un logiciel de test
+    automatise » : c'est normal.
+
+B9. SI le site demande de vous connecter : connectez-vous normalement, dans
+    CE Chrome-la. Le robot note l'identifiant, mais JAMAIS le mot de passe
+    (il vous le demandera a chaque lancement, sans l'afficher).
+
+B10. Faites votre tache, LENTEMENT, un geste a la fois. Attendez que chaque
+     page ait fini de s'afficher avant le geste suivant.
+     En bas a gauche, un bandeau rouge compte vos gestes :
+         Enregistrement : 4 action(s) - cliquez pour terminer
+
+B11. Quand la tache est finie : CLIQUEZ SUR LE BANDEAU ROUGE.
+     (S'il ne reagit pas : revenez dans la fenetre noire et appuyez sur
+      Entree. Ca termine aussi.)
+     Le Chrome du robot se ferme.
+
+B12. La fenetre noire affiche la liste de vos gestes, par exemple :
          == Enregistrement termine : 5 etape(s)
              1. ouvrir https://...
-             2. cliquer sur ...
-             3. choisir « ... » dans ...
-         ...
-     Relisez-la : ce sont vos gestes. S'il y en a un en trop, notez son numero.
+             2. choisir « HDK » dans Contrat
+             3. cliquer sur Rechercher
+             4. telecharger le fichier obtenu en cliquant sur Exporter
+     Relisez : ce sont vos gestes.
 
-7.2  Puis une serie de questions. Pour ce premier essai :
+B13. Puis il pose des questions. REPONSES A DONNER :
 
-         APPUYEZ SUR ENTREE A TOUTES LES QUESTIONS, SANS RIEN TAPER.
+     « Etapes a retirer ... »
+         [Entree]   (ou tapez le numero d'un geste en trop, puis Entree)
 
-     Seule exception possible : a « Etapes a retirer », vous pouvez taper le
-     numero d'un geste en trop avant d'appuyer sur Entree.
+     « Les premieres etapes ressemblent a une connexion ... La faire une
+       seule fois au debut ... ? (o/n) [o] »          (seulement si connexion)
+         [Entree]
 
-     Les questions « Vous avez choisi ... Colonne ? » proposent   [0]
-     C'est ce qu'on veut : 0 veut dire « garde exactement cette valeur ».
+     « Dossier ou ranger les fichiers telecharges [...\robot-web\exports] »
+         [Entree]                                     (seulement si export)
 
-7.3  VOUS VOYEZ a la fin :
-         OK Tache enregistree : C:\Users\A612990\robot\robot-web\taches\premier_essai.yaml
+     « Nom du fichier, sans extension ... [export_contrats_{{horodatage}}] »
+         [Entree]   ({{horodatage}} = la date et l'heure du lancement :
+                     chaque lancement donne un nouveau fichier)
 
+     « Convertir un export CSV en Excel (.xlsx) ? (o/n) [o] »
+         [Entree]
 
-=====================================================================
- ETAPE 8 - LE ROBOT REJOUE LA TACHE
-=====================================================================
-8.1  Vous etes revenu au menu. VOUS TAPEZ :   2
+     « Texte affiche par l'outil quand tout s'est bien passe ... »
+         [Entree]                                     (seulement sans export)
 
-8.2  Il liste vos taches. VOUS TAPEZ le numero de « premier_essai ».
+     « Faut-il se connecter a la main au debut (SSO, mot de passe) ? (o/n) [o] »
+       ou « Ajouter une pause au debut, pour verifier la connexion ... [o] »
+         [Entree]   (= oui : a chaque lancement, le robot attendra que vous
+                     confirmiez etre connecte. C'est le plus sur.)
 
-8.3  Il propose 1 / 2 / 3. VOUS TAPEZ :   1   (une seule ligne)
+     « Faire une capture d'ecran a la fin de la tache ? (o/n) [o] »
+         [Entree]
 
-8.4  VOUS VOYEZ :
-         Scenario « premier essai » — Excel essai.xlsx — 1 ligne(s) a traiter
+B14. VOUS VOYEZ :
+         Tache enregistree : C:\Users\A612990\robot\robot-web\taches\export_contrats.yaml
 
-     SI « 0 ligne(s) a traiter » : la ligne a deja ete faite lors d'un essai
-     precedent. Refaites l'ETAPE 2 (elle recree le fichier neuf), puis 8.1.
+         Pour la relancer, maintenant ou plus tard, autant de fois que vous voulez :
+            menu, choix 2, puis le numero de la tache
 
-8.5  SI il demande « Mot de passe pour ... (il ne s'affiche pas) » :
-     tapez votre mot de passe du site. RIEN NE S'AFFICHE pendant la frappe,
-     c'est voulu. Puis Entree. Il n'est enregistre nulle part.
-
-8.6  Chrome s'ouvre, et la fenetre noire s'arrete sur :
-         Verifiez que vous etes bien connecte dans le navigateur, puis appuyez sur Entree
-     Regardez Chrome. Si le site demande de se connecter, connectez-vous
-     (ou laissez le robot le faire s'il a note votre connexion).
-     Quand vous voyez votre site normalement : revenez dans la fenetre noire,
-     appuyez sur Entree.
-
-8.7  Le robot refait vos gestes tout seul. Ne touchez a rien, regardez.
-
-8.8  VOUS VOYEZ a la fin :
-         1/1 ligne(s) traitee(s) : 1 OK, 0 ERREUR, 0 IGNORE.
-
-     BRAVO : le robot sait faire votre tache sur le vrai site.
-
-8.9  SI VOUS RELANCEZ ENSUITE ET QU'IL NE FAIT PLUS RIEN : c'est normal.
-     Apres un succes, la ligne de l'Excel porte « OK », et le robot ne refait
-     JAMAIS une ligne terminee (pour ne rien faire deux fois par erreur).
-     La fenetre noire affiche alors « 0 ligne(s) a traiter » ou « Rien a faire ».
-     Pour la refaire quand meme, tapez (depuis le dossier robot-web) :
-
-         robot lancer taches\premier_essai.yaml --tout
-
-     --tout veut dire : refais toutes les lignes, meme celles deja faites.
-     (Les versions plus recentes du robot le proposent directement dans le menu.)
+     Le menu revient tout seul. La tache est gardee pour toujours.
 
 
 =====================================================================
- SI CA NE MARCHE PAS
+ PARTIE C - RELANCER LA TACHE (quand vous voulez, autant de fois que vous voulez)
 =====================================================================
-Dites-moi simplement :
-   1. a quelle ETAPE (le numero, par exemple 6.1 ou 8.8) ;
-   2. ce qui est ecrit dans la fenetre noire a ce moment-la (les 5 dernieres
-      lignes suffisent ; si une ligne commence par « X ERREUR », c'est elle).
+C1. SI la fenetre noire est fermee (par exemple le lendemain) :
+       - touche Windows, tapez   cmd   puis Entree ;
+       - VOUS TAPEZ :   cd /d %USERPROFILE%\robot\robot-web
+       - VOUS TAPEZ :   robot
+    SI le menu est deja affiche : passez directement a C2.
 
-Pas besoin de capture d'ecran ni du nom de votre site. Avec ces deux
-informations, je vous dis quoi changer.
+C2. VOUS TAPEZ :   2
+
+C3. VOUS VOYEZ la liste de vos taches :
+        Quelle tache voulez-vous lancer ?
+          1. C:\...\taches\export_contrats.yaml   (5 etape(s), rejouee en entier a chaque lancement)
+    VOUS TAPEZ le numero de la tache :   1
+
+C4. SI il demande :   Mot de passe pour « mot_de_passe » (il ne s'affiche pas) :
+    tapez le mot de passe du site. RIEN NE S'AFFICHE pendant la frappe, c'est
+    voulu. Puis Entree. Il n'est ecrit nulle part.
+
+C5. Le Chrome du robot s'ouvre. La fenetre noire s'arrete sur :
+        Verifiez que vous etes bien connecte dans le navigateur, puis appuyez sur Entree
+    Regardez le Chrome du robot :
+       - si le site est affiche normalement : revenez dans la fenetre noire
+         (cliquez dedans) et appuyez sur Entree ;
+       - si le site demande de se connecter : connectez-vous dans ce Chrome,
+         PUIS revenez dans la fenetre noire et appuyez sur Entree.
+
+C6. Le robot refait vos gestes tout seul. NE TOUCHEZ A RIEN, regardez.
+
+C7. VOUS VOYEZ a la fin :
+        Tache reussie. Vous pouvez la relancer quand vous voulez.
+    Le menu revient.
+
+C8. POUR LA REFAIRE : tapez encore   2   puis le numero. C'est tout.
+    Autant de fois que vous voulez : jamais de « deja fait ».
+
+C9. Si votre tache exporte un fichier, il est dans le dossier   exports   du robot.
+    Pour l'ouvrir : quittez le menu (tapez 0), puis VOUS TAPEZ :
+        explorer exports
+    Une fenetre de l'explorateur s'ouvre avec vos fichiers, un par lancement,
+    nommes avec la date et l'heure (ex. export_contrats_20260924-143005.xlsx).
+
+C10. Pour une AUTRE tache : menu, choix 1, et refaites la PARTIE B.
+     Chaque tache garde son nom ; le choix 2 les liste toutes.
+
+
+=====================================================================
+ PARTIE D - SI CA NE MARCHE PAS
+=====================================================================
+Envoyez-moi simplement :
+   1. le numero de l'etape (par exemple A10, B8 ou C7) ;
+   2. les 5 dernieres lignes de la fenetre noire (si une ligne contient
+      « ERREUR », c'est elle la plus importante).
+Pas besoin de capture d'ecran, ni du nom du site, ni de vos donnees.
 
 Cas deja connus :
- - « robot n'est pas reconnu »  -> refaites l'ETAPE 1.2.
- - « Fichier introuvable : essai.xlsx »  -> refaites l'ETAPE 2.
- - « delai depasse : element introuvable »  -> la page etait plus lente que
-   pendant l'enregistrement, ou elle a change. Relancez une fois (ETAPE 8).
-   Si ca recommence, envoyez-moi la ligne d'erreur : elle dit quel geste bloque.
- - Chrome ne s'ouvre pas du tout  -> envoyez-moi les dernieres lignes.
+ - « robot n'est pas reconnu... »
+       -> vous n'etes pas dans le bon dossier. Tapez :
+              cd /d %USERPROFILE%\robot\robot-web
+          puis   robot
 
+ - « Tache en ERREUR — ... delai depasse ... introuvable »
+       -> la page etait plus lente que pendant l'enregistrement, ou elle a
+          change. Relancez une fois (C2). Si ca recommence, envoyez-moi la
+          ligne d'erreur : elle dit quel geste bloque. Une capture d'ecran du
+          moment de l'erreur est rangee dans le dossier captures du robot
+          (pour vous : ne me l'envoyez pas si elle montre des donnees).
 
-=====================================================================
- APRES : BRANCHER LE VRAI EXCEL
-=====================================================================
-Quand l'ETAPE 8 donne « 1 OK », le plus dur est fait. Pour que le robot fasse
-la tache sur 50 dossiers au lieu d'un, il faut lui dire ce qui CHANGE d'un
-dossier a l'autre : c'est ca, les colonnes de l'Excel.
+ - Le robot ne demande pas le mot de passe et la connexion echoue
+       -> repondez « o » a la pause (B13) et connectez-vous a la main en C5.
 
-Envoyez-moi une phrase qui decrit votre tache, par exemple :
-   « je choisis un numero de dossier dans la recherche, j'ouvre la fiche,
-     je clique sur Exporter »
-Je vous repondrai exactement : quelles colonnes creer, quoi mettre dedans,
-et quoi repondre aux questions de l'enregistrement.
+ - « profil deja utilise » ou Chrome du robot qui se ferme tout de suite
+       -> un Chrome du robot est encore ouvert quelque part : fermez-le,
+          puis relancez (C2).
+
+ - Le robot rejoue mais pas exactement ce que vous vouliez
+       -> recommencez la PARTIE B avec le meme nom : la nouvelle version
+          s'ajoute a la liste du choix 2 (avec la date dans son nom), a cote
+          de l'ancienne. Testez la nouvelle, puis supprimez l'ancienne avec
+          le choix 4 du menu.

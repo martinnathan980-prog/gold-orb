@@ -226,14 +226,11 @@ def deviner_colonne(valeur: Any, colonnes: Sequence[str], lignes: Sequence[Dict[
 
 
 def _entete_scenario(
-    nom: str, base: str, canal: str, fichier_excel: str, feuille: Optional[str],
-    colonnes: Sequence[str], url: str, secrets: Sequence[str] = (),
+    nom: str, base: str, canal: str, fichier_excel: Optional[str], feuille: Optional[str],
+    colonnes: Sequence[str], url: str, secrets: Sequence[str] = (), refaire: str = "reprise",
 ) -> List[str]:
     lignes = [
-        "# Scénario autoweb — à relire, puis :",
-        "#   ./robot.command verifier <ce fichier>     (robot verifier ... sous Windows)",
-        "#   ./robot.command simuler  <ce fichier>",
-        "#   ./robot.command lancer   <ce fichier> --limite 1",
+        "# Tâche autoweb. Pour la relancer : menu, choix 2 (ou « robot lancer <ce fichier> »).",
         f"nom: {_yaml_chaine(nom)}",
         "navigateur:",
         f"  canal: {canal if canal in ('chrome', 'msedge', 'chromium', 'auto') else 'auto'}"
@@ -241,13 +238,15 @@ def _entete_scenario(
         f"  profil: profils/{base}",
         "  visible: true",
         "  delai_max: 15000",
-        "excel:",
-        f"  fichier: {_yaml_chaine(fichier_excel)}",
     ]
-    if feuille:
-        lignes.append(f"  feuille: {_yaml_chaine(feuille)}")
-    if colonnes:
-        lignes.append(f"  colonne_libelle: {_yaml_chaine(colonnes[0])}")
+    if fichier_excel:
+        lignes += ["excel:", f"  fichier: {_yaml_chaine(fichier_excel)}"]
+        if feuille:
+            lignes.append(f"  feuille: {_yaml_chaine(feuille)}")
+        if colonnes:
+            lignes.append(f"  colonne_libelle: {_yaml_chaine(colonnes[0])}")
+        if refaire == "toujours":
+            lignes.append("  refaire: toujours   # chaque lancement refait toutes les lignes (« reprise » : une seule fois)")
     lignes += ["variables:", f"  url: {_yaml_chaine(url)}"]
     for secret in secrets:
         lignes.append(f'  {secret}: ""   # demandé au lancement, ou --var {secret}=...')
@@ -328,13 +327,18 @@ def _bloc_etapes(
     return lignes
 
 
+def nom_de_base(nom: str) -> str:
+    """Nom de la tâche utilisable dans un chemin : sert au profil du navigateur."""
+    return re.sub(r"[^a-z0-9_-]+", "_", nom.lower()).strip("_") or "tache"
+
+
 def construire_depuis_enregistrement(
     etapes: List[Any],
     colonnes: Sequence[str],
     lignes_excel: Sequence[Dict[str, Any]],
     dialogue: Dialogue,
     nom: str,
-    fichier_excel: str = "suivi.xlsx",
+    fichier_excel: Optional[str] = "suivi.xlsx",
     feuille: Optional[str] = None,
     canal: str = "chrome",
     url_depart: str = "",
@@ -343,7 +347,7 @@ def construire_depuis_enregistrement(
     """Transforme un enregistrement (liste d'EtapeEnregistree) en scénario YAML,
     en demandant d'où vient chaque valeur saisie."""
     d = dialogue
-    base = re.sub(r"[^a-z0-9_-]+", "_", nom.lower()).strip("_") or "tache"
+    base = nom_de_base(nom)
 
     d.dire()
     d.dire(f"{S.LIGNE} Enregistrement terminé : {len(etapes)} étape(s)")
@@ -408,16 +412,20 @@ def construire_depuis_enregistrement(
         )
 
     d.dire()
-    premiere = colonnes[0] if colonnes else "ligne"
+    avec_excel = bool(fichier_excel)
+    # nom qui change à chaque exécution : la colonne de l'Excel, sinon la date et l'heure
+    repere = colonnes[0] if (avec_excel and colonnes) else "horodatage"
     texte_succes = ""
     if telechargements:
         dossier = d.demander(f"{S.FLECHE} Dossier où ranger les fichiers téléchargés", dossier_exports)
         nom_fichier = d.demander(
             f"{S.FLECHE} Nom du fichier, sans extension (vide = nom donné par l'outil)",
-            f"export_{{{{{premiere}}}}}" if colonnes else "")
+            f"export_{{{{{repere}}}}}" if (avec_excel and colonnes) else f"{base}_{{{{horodatage}}}}")
         convertir = d.oui_non(f"{S.FLECHE} Convertir un export CSV en Excel (.xlsx) ?", True)
-        colonne_fichier = d.demander(
-            f"{S.FLECHE} Colonne où écrire le chemin du fichier obtenu (vide = aucune)", "Fichier export")
+        colonne_fichier = ""
+        if avec_excel:
+            colonne_fichier = d.demander(
+                f"{S.FLECHE} Colonne où écrire le chemin du fichier obtenu (vide = aucune)", "Fichier export")
         for numero, e in enumerate(telechargements):
             options = [f"cliquer: {_yaml_chaine(str(e.args['cliquer']))}",
                        f"vers: {_yaml_chaine(dossier.rstrip('/') + '/')}"]
@@ -440,10 +448,11 @@ def construire_depuis_enregistrement(
             f"{S.FLECHE} Ajouter une pause au début, pour vérifier la connexion (code, carte, écran en deux temps) ?", True)
     else:
         pause_connexion = d.oui_non(f"{S.FLECHE} Faut-il se connecter à la main au début (SSO, mot de passe) ?", True)
-    capture = d.oui_non(f"{S.FLECHE} Faire une capture d'écran à la fin de chaque ligne ?", True)
+    capture = d.oui_non(
+        f"{S.FLECHE} Faire une capture d'écran à la fin {'de chaque ligne' if avec_excel else 'de la tâche'} ?", True)
 
     lignes = _entete_scenario(nom, base, canal, fichier_excel, feuille, colonnes, url_depart,
-                              secrets=sorted(set(secrets.values())))
+                              secrets=sorted(set(secrets.values())), refaire="toujours")
     if etapes_connexion or pause_connexion:
         lignes.append("avant:")
         lignes.append('  - aller: "{{url}}"')
@@ -461,7 +470,7 @@ def construire_depuis_enregistrement(
     if texte_succes:
         lignes.append(f"  - verifier: {{texte_page: {_yaml_chaine(texte_succes)}}}")
     if capture:
-        lignes.append(f"  - capture: {_yaml_chaine('captures/{{' + premiere + '}}.png')}")
+        lignes.append(f"  - capture: {_yaml_chaine('captures/{{' + repere + '}}.png')}")
     return "\n".join(lignes) + "\n"
 
 

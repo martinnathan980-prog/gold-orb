@@ -85,7 +85,7 @@ B1. Dans l'invite de commandes :
            2. Lancer une tache enregistree
            3. Voir mes taches
            4. Supprimer une tache
-           5. Creer un fichier Excel de pilotage (vide, avec vos colonnes)
+           5. Creer un fichier Excel de pilotage (facultatif)
            6. M'entrainer sur la fausse base de demonstration
            7. Verifier que tout fonctionne
            0. Quitter
@@ -113,73 +113,45 @@ C3. Ouvrez une DEUXIEME invite de commandes (touche Windows, cmd, Entree) et tap
         robot
 
 C4. Choix 1. Repondez :
-        Adresse de l'outil      ->  http://127.0.0.1:8765/base_demo.html
-        Chemin du fichier Excel ->  bac_a_sable\contrats.xlsx
-        Nom de cette tache      ->  essai export
+        Adresse de l'outil        ->  http://127.0.0.1:8765/base_demo.html
+        Nom de cette tache        ->  essai export
+        Avec un fichier Excel ?   ->  Entree (= non)
 
 C5. Un navigateur s'ouvre, avec un bandeau rouge en bas a gauche.
     Connectez-vous (demo / demo), choisissez le contrat HDK dans le filtre,
     cliquez Rechercher, attendez le tableau, cliquez Exporter CSV.
     Puis cliquez sur le bandeau rouge (ou Entree dans l'invite de commandes).
 
-C6. Le robot liste ce qu'il a note et pose ses questions. Entree partout suffit :
-    il propose deja la bonne colonne (Contrat) et le bon dossier.
+C6. Le robot liste ce qu'il a note et pose ses questions. Entree partout suffit.
     ATTENDU :   Tache enregistree : ...\taches\essai_export.yaml
 
-C7. Menu, choix 2, votre tache, puis « 1 » (une seule ligne).
-    ATTENDU :   1/1 ligne(s) traitee(s) : 1 OK, 0 ERREUR, 0 IGNORE.
-    Puis choix 2, la meme tache, puis « 2 » (toutes les lignes) : 2 OK.
-    Les fichiers arrivent dans un dossier exports\ cree a cote de l'Excel utilise
-    (ici bac_a_sable\exports\), et l'Excel contrats.xlsx porte maintenant le statut,
-    l'heure et le chemin exact du fichier produit.
+C7. Menu, choix 2, puis le numero de votre tache.
+    Il demande le mot de passe (il ne s'affiche pas) : tapez   demo   puis Entree.
+    Il s'arrete sur « Verifiez que vous etes bien connecte » : Entree.
+    ATTENDU :   Tache reussie. Vous pouvez la relancer quand vous voulez.
+    Refaites choix 2, la meme tache : elle est refaite, autant de fois que
+    vous voulez. Chaque lancement depose un nouveau fichier, nomme avec la date
+    et l'heure, dans le dossier   exports   du robot.
 
 C8. Pour arreter le faux outil : revenez dans la PREMIERE fenetre, Entree.
 
 Si C1 a C7 se sont bien passes, votre poste sait tout faire. La suite est
-exactement le meme geste, avec l'adresse de votre outil et votre Excel.
+exactement le meme geste, avec l'adresse de votre outil.
 
 
 =====================================================================
  D. VOTRE PREMIERE VRAIE TACHE
 =====================================================================
+Suivez GUIDE_VRAI_SITE.txt (meme dossier), parties B et C : vous montrez la
+tache une fois, puis vous la relancez quand vous voulez (menu, choix 2).
+Pas besoin d'Excel.
 
-D1. PREPAREZ L'EXCEL. Une ligne = une execution. Les colonnes contiennent ce qui
-    change d'une execution a l'autre (un numero de contrat, un numero de plan...).
-    Pour commencer, mettez UNE SEULE LIGNE, avec une valeur sans consequence
-    (un dossier de test, un contrat que vous pouvez exporter sans risque).
-    Si vous n'avez pas de fichier : menu, choix 5, il le cree avec vos colonnes.
-
-    Pour connaitre le chemin d'un Excel existant : dans l'explorateur, clic droit
-    sur le fichier en maintenant Maj, puis « Copier comme chemin d'acces ».
-    Vous pourrez le coller tel quel, avec ses guillemets.
-
-    IMPORTANT : fermez le fichier dans Excel avant de lancer le robot.
-
-D2. Menu, choix 1. Adresse de votre outil, chemin de l'Excel, nom de la tache.
-
-D3. Le navigateur s'ouvre. FAITES VOTRE TACHE UNE FOIS, normalement, du debut a la
-    fin, avec les valeurs de la PREMIERE ligne de l'Excel. Connectez-vous, cliquez,
-    filtrez, exportez ou remplissez, validez. Puis cliquez sur le bandeau rouge.
-
-D4. Repondez aux questions. Les deux qui comptent :
-     - « Les premieres etapes ressemblent a une connexion, la faire une seule fois
-       au debut ? »  ->  o   (sinon il se reconnecterait a chaque ligne)
-     - « Vous avez choisi HDK... Colonne ? »  ->  Entree si la colonne proposee est
-       la bonne, sinon le numero de la bonne colonne, ou 0 pour garder la valeur
-       toujours identique.
-    Un mot de passe n'est jamais ecrit dans le fichier : il vous sera demande au
-    lancement, sans s'afficher.
-
-D5. Menu, choix 2, votre tache, « 1 » (une seule ligne). REGARDEZ L'ECRAN pendant
-    que le robot travaille. A la fin, ouvrez votre Excel : la ligne porte OK, l'heure,
-    et ce que le robot a releve.
-    Si c'est ERREUR : la colonne Message dit ou ca a bloque, et donne le nom d'une
-    photo de l'ecran, rangee dans   taches\captures\erreurs\   (a cote du fichier
-    de la tache).
-
-D6. Quand une ligne passe : ajoutez vos autres lignes dans l'Excel (colonne Statut
-    VIDE pour les nouvelles), enregistrez, fermez, puis menu choix 2, « 2 ».
-    Le robot ne refait jamais une ligne deja OK.
+PLUS TARD, SEULEMENT SI BESOIN : la meme tache sur une LISTE (par exemple
+50 contrats). Menu, choix 1, et repondez « o » a « Avec un fichier Excel ? ».
+Une ligne de l'Excel = une execution ; les colonnes contiennent ce qui change
+d'une execution a l'autre. Chaque lancement refait toutes les lignes, et
+l'Excel note pour chacune OK ou ERREUR, avec l'heure.
+IMPORTANT : fermez le fichier dans Excel avant de lancer le robot.
 
 
 =====================================================================

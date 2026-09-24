@@ -160,6 +160,9 @@ def cmd_verifier(args: argparse.Namespace) -> int:
     if problemes:
         print(f"{S.ERREUR} Variables absentes dans avant/apres : {', '.join(problemes)}")
     code = 0
+    if not options.excel and not scenario.excel.fichier:
+        print(f"{S.OK} Tâche sans Excel : elle sera rejouée en entier à chaque lancement.")
+        return 1 if problemes else 0
     try:
         classeur = ouvrir_classeur(scenario, options)
     except ErreurAutoweb as e:
@@ -411,14 +414,13 @@ def _chemin_scenario(nom: str, excel: Optional[str], sortie: Optional[str], ecra
 
 def cmd_enregistrer(args: argparse.Namespace) -> int:
     """Le robot regarde l'utilisateur faire la tâche, puis écrit le scénario."""
-    from .assistant import Dialogue, construire_depuis_enregistrement
+    from .assistant import Dialogue, construire_depuis_enregistrement, nom_de_base
     from .enregistreur import Enregistreur
 
     configurer_journal(None, args.verbeux)
     colonnes, lignes_excel, feuille = _colonnes_et_lignes(args.excel, args.feuille)
-    if not args.excel:
-        print(f"{S.ATTENTION} Aucun Excel indiqué (--excel suivi.xlsx) : les valeurs saisies resteront figées.")
-    elif not lignes_excel:
+    # Sans Excel : la tâche rejoue exactement les gestes, à chaque lancement.
+    if args.excel and not lignes_excel:
         raise ErreurAutoweb(
             f"Le fichier {Path(args.excel).name} ne contient aucune ligne de données, seulement les titres.\n"
             "   Sans exemple, le robot ne peut pas deviner quelle colonne remplit quel champ,\n"
@@ -431,6 +433,10 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
     if not url:
         raise ErreurAutoweb("Indiquez l'adresse de l'outil : autoweb enregistrer https://mon-outil/...")
 
+    sortie = _chemin_scenario(nom, args.excel, args.sortie, args.ecraser)
+    if not args.profil:
+        # même profil que la tâche relancée plus tard : la connexion faite ici est gardée
+        args.profil = str(sortie.parent.resolve() / "profils" / nom_de_base(nom))
     nav = _lancer_navigateur_libre(args)
     nav.ouvrir()
     canal = nav.canal_utilise or (args.canal or "chrome")
@@ -447,7 +453,10 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
         print()
         print(f"{S.LIGNE} ENREGISTREMENT EN COURS")
         print("   1. Dans le navigateur qui vient de s'ouvrir, faites votre tâche normalement,")
-        print("      une seule fois, avec les valeurs de la PREMIÈRE ligne de votre Excel.")
+        if args.excel:
+            print("      une seule fois, avec les valeurs de la PREMIÈRE ligne de votre Excel.")
+        else:
+            print("      une seule fois, exactement comme d'habitude (connexion comprise si l'outil la demande).")
         print("   2. Quand c'est fini, cliquez sur le bandeau rouge en bas à gauche de la page")
         print("      (« Enregistrement ... cliquez pour terminer »).")
         print("   Le robot note chaque clic et chaque saisie. Rien ne sort de votre poste.")
@@ -462,14 +471,13 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
     if not etapes:
         print(f"{S.ATTENTION} Aucune action enregistrée : rien à écrire.")
         return 1
-    sortie = _chemin_scenario(nom, args.excel, args.sortie, args.ecraser)
     sortie.parent.mkdir(parents=True, exist_ok=True)
     # chemin de l'Excel : relatif s'il est à côté du scénario, absolu sinon
     if args.excel:
         excel_absolu = Path(nettoyer_chemin(args.excel)).resolve()
         reference = excel_absolu.name if excel_absolu.parent == sortie.parent.resolve() else str(excel_absolu)
     else:
-        reference = "suivi.xlsx"
+        reference = None  # tâche sans Excel : rejouée en entier à chaque lancement
     # les fichiers téléchargés arrivent à côté de l'Excel, là où l'utilisateur les cherche
     base_exports = Path(nettoyer_chemin(args.excel)).resolve().parent if args.excel else DOSSIER_PROJET
     texte = construire_depuis_enregistrement(
@@ -482,10 +490,9 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
     print()
     print(f"{S.OK} Tâche enregistrée : {sortie}")
     print()
-    print("Pour la tester sur UNE seule ligne de l'Excel :")
-    print(f"   {prefixe} lancer \"{sortie}\" --limite 1")
-    print("Puis, si tout est bon, sur toutes les lignes :")
-    print(f"   {prefixe} lancer \"{sortie}\"")
+    print("Pour la relancer, maintenant ou plus tard, autant de fois que vous voulez :")
+    print("   menu, choix 2, puis le numéro de la tâche")
+    print(f"   ou directement :  {prefixe} lancer \"{sortie}\"")
     return 0
 
 
@@ -522,7 +529,18 @@ def _decrire_scenario(chemin: Path) -> str:
     morceaux = [f"{len(scenario.etapes)} étape(s)"]
     if scenario.excel.fichier:
         morceaux.append(f"Excel {scenario.excel.fichier}")
+    else:
+        morceaux.append("rejouée en entier à chaque lancement")
     return ", ".join(morceaux)
+
+
+def _tache_sans_excel(chemin: Path) -> bool:
+    from .scenario import charger
+
+    try:
+        return not charger(chemin).excel.fichier
+    except ErreurAutoweb:
+        return False  # illisible : « lancer » affichera l'erreur complète
 
 
 def cmd_scenarios(args: argparse.Namespace) -> int:
@@ -530,7 +548,7 @@ def cmd_scenarios(args: argparse.Namespace) -> int:
     scenarios = lister_scenarios(Path(args.dossier) if args.dossier else None)
     if not scenarios:
         print("Aucune tâche enregistrée pour l'instant.")
-        print(f"Pour en créer une :  {prefixe_commande()} enregistrer https://mon-outil/... --excel suivi.xlsx --nom \"ma tache\"")
+        print(f"Pour en créer une :  {prefixe_commande()} menu   puis choix 1")
         return 0
     print(f"{len(scenarios)} tâche(s) :")
     for i, chemin in enumerate(scenarios, start=1):
@@ -645,7 +663,7 @@ def cmd_menu(args: argparse.Namespace) -> int:
         print("   2. Lancer une tache enregistree")
         print("   3. Voir mes taches")
         print("   4. Supprimer une tache")
-        print("   5. Creer le fichier Excel de pilotage (colonnes et lignes)")
+        print("   5. Creer un fichier Excel de pilotage (facultatif)")
         print("   6. M'entrainer sur la fausse base de demonstration")
         print("   7. Verifier que tout fonctionne")
         print("   0. Quitter")
@@ -656,23 +674,30 @@ def cmd_menu(args: argparse.Namespace) -> int:
                 url = nettoyer_chemin(_demander("   Adresse de l'outil (elle commence par http)"))
                 if not url:
                     continue
-                print("   Le fichier Excel qui pilote la tache : une ligne = une execution.")
-                print("   (si vous n'en avez pas encore, revenez au menu et choisissez 5)")
-                excel = nettoyer_chemin(_demander("   Chemin du fichier Excel"))
-                if not excel:
-                    print(f"   {S.ATTENTION} Sans Excel, la tache ne pourrait pas etre lancee : abandon.")
-                    continue
-                if not Path(excel).exists() and Path(excel + ".xlsx").exists():
-                    excel += ".xlsx"   # « contrats » au lieu de « contrats.xlsx »
-                if not Path(excel).exists():
-                    print(f"   {S.ERREUR} Fichier introuvable : {excel}")
-                    print("   Donnez son nom complet avec .xlsx, ou son chemin entier.")
-                    continue
                 nom = _demander("   Nom de cette tache", "ma tache")
+                print()
+                print("   Faut-il repeter la tache pour chaque ligne d'un fichier Excel ?")
+                print("   (en cas de doute, repondez n : la tache sera simplement rejouee")
+                print("    telle quelle, a chaque fois que vous la lancerez)")
+                excel = None
+                if _demander("   Avec un fichier Excel ? (o/n)", "n").lower().startswith("o"):
+                    excel = nettoyer_chemin(_demander("   Chemin du fichier Excel"))
+                    if not excel:
+                        continue
+                    if not Path(excel).exists() and Path(excel + ".xlsx").exists():
+                        excel += ".xlsx"   # « contrats » au lieu de « contrats.xlsx »
+                    if not Path(excel).exists():
+                        print(f"   {S.ERREUR} Fichier introuvable : {excel}")
+                        print("   Donnez son nom complet avec .xlsx, ou son chemin entier.")
+                        continue
                 cmd_enregistrer(_ns(url=url, excel=excel, nom=nom))
             elif choix == "2":
                 chemin = _choisir_scenario("lancer")
                 if chemin is None:
+                    continue
+                if _tache_sans_excel(chemin):
+                    # rien à choisir : la tâche est rejouée en entier, à chaque fois
+                    cmd_lancer(_ns(scenario=str(chemin)))
                     continue
                 print()
                 print("   1. Une seule ligne, pour tester")

@@ -31,7 +31,7 @@ from .scenario import Etape, Scenario, masquer_secrets, toutes_les_etapes
 
 journal = logging.getLogger("autoweb")
 
-VARIABLES_SPECIALES = ("ligne", "n", "total", "aujourdhui", "maintenant", "fichier_telecharge")
+VARIABLES_SPECIALES = ("ligne", "n", "total", "aujourdhui", "maintenant", "horodatage", "fichier_telecharge")
 
 
 @dataclass
@@ -61,6 +61,7 @@ class Bilan:
     simule: bool = False
     message: str = ""
     lignes_fichier: int = 0  # lignes de données présentes dans l'Excel, traitées ou non
+    sans_excel: bool = False  # tâche jouée une fois, sans liste
 
     @property
     def tout_deja_fait(self) -> bool:
@@ -72,6 +73,16 @@ class Bilan:
         return self.ok + self.erreurs + self.ignorees
 
     def resume(self) -> str:
+        if self.sans_excel:
+            if self.simule:
+                return "Simulation : aucune action réelle effectuée."
+            if self.interrompu:
+                return "Tâche INTERROMPUE" + (f" — {self.message}" if self.message else "") + "."
+            if self.erreurs:
+                return f"Tâche en ERREUR — {self.message}"
+            if self.ignorees:
+                return "Tâche ignorée."
+            return "Tâche réussie. Vous pouvez la relancer quand vous voulez."
         if self.simule:
             return f"Simulation : {self.total} ligne(s) à traiter, aucune action réelle effectuée."
         texte = f"{self.traitees}/{self.total} ligne(s) traitée(s) : {self.ok} OK, {self.erreurs} ERREUR, {self.ignorees} IGNORE"
@@ -141,10 +152,11 @@ def selectionner(classeur: ClasseurSuivi, scenario: Scenario, options: Options) 
     if options.reprendre_erreurs:
         statuts.add(normaliser_cle(STATUT_ERREUR))
     resultat: List[Ligne] = []
+    tout = options.tout or cfg.refaire == "toujours"
     for ligne in classeur.lignes():
         if options.lignes is not None and ligne.numero not in options.lignes:
             continue
-        if not options.tout:
+        if not tout:
             statut = ligne.valeur(cfg.colonne_statut)
             if normaliser_cle("" if statut is None else statut) not in statuts:
                 continue
@@ -161,6 +173,8 @@ def contexte_de_base(scenario: Scenario, options: Options) -> Dict[str, Any]:
     contexte.update(options.variables)
     contexte["aujourdhui"] = maintenant.strftime("%d/%m/%Y")
     contexte["maintenant"] = maintenant.strftime("%d/%m/%Y %H:%M")
+    # pour nommer des fichiers sans jamais écraser le précédent : 20260924-143005
+    contexte["horodatage"] = maintenant.strftime("%Y%m%d-%H%M%S")
     return contexte
 
 
@@ -312,8 +326,79 @@ def _capture_erreur(navigateur: Navigateur, scenario: Scenario, numero: int) -> 
         return None
 
 
+def sans_excel(scenario: Scenario, options: Options) -> bool:
+    return not options.excel and not scenario.excel.fichier
+
+
+def lancer_sans_excel(scenario: Scenario, options: Options) -> Bilan:
+    """Tâche sans Excel : les étapes sont jouées une fois, à CHAQUE lancement.
+
+    Rien n'est noté nulle part, donc rien n'empêche de la relancer autant qu'on veut.
+    """
+    base = contexte_de_base(scenario, options)
+    bilan = Bilan(total=1, lignes_fichier=1, sans_excel=True)
+    if options.simuler:
+        bilan.simule = True
+        journal.info("Simulation de « %s » (tâche sans Excel)", scenario.nom)
+        for partie, etapes in (("avant", scenario.avant), ("étapes", scenario.etapes), ("après", scenario.apres)):
+            if etapes:
+                journal.info("%s :", partie.capitalize())
+                for texte in _decrire_etapes(etapes, base):
+                    journal.info(texte)
+        return bilan
+
+    completer_secrets(scenario, options, base)
+    journal.info("Tâche « %s » — lancement", scenario.nom)
+    navigateur = Navigateur(scenario.navigateur, scenario.dossier, visible=options.visible)
+    navigateur.ouvrir()
+    debut = time.monotonic()
+    try:
+        if scenario.avant and not options.sans_avant:
+            Executeur(navigateur, scenario, base, interactif=options.interactif).executer(scenario.avant)
+        executeur = Executeur(navigateur, scenario, dict(base), interactif=options.interactif)
+        try:
+            executeur.executer(scenario.etapes)
+            bilan.ok = 1
+            journal.info("   %s Tâche terminée (%.1f s)", S.OK, time.monotonic() - debut)
+        except LigneIgnoree as e:
+            bilan.ignorees = 1
+            journal.info("   %s IGNORE : %s", S.IGNORE, e)
+        except ErreurEtape as e:
+            capture = _capture_erreur(navigateur, scenario, 1)
+            message = str(e) + (f" [capture : {capture}]" if capture else "")
+            bilan.erreurs = 1
+            bilan.message = message
+            journal.error("   %s ERREUR : %s", S.ERREUR, message)
+            if options.inspecter_si_erreur and navigateur.visible:
+                try:
+                    navigateur.page_courante().pause()
+                except Exception:
+                    pass
+        if scenario.apres and not options.sans_apres and not bilan.erreurs:
+            try:
+                Executeur(navigateur, scenario, base, interactif=options.interactif).executer(scenario.apres)
+            except (ErreurEtape, LigneIgnoree) as e:
+                journal.error("Étapes « apres » en erreur : %s", e)
+    except NavigateurFerme as e:
+        journal.error("%s", e)
+        bilan.interrompu = True
+        bilan.message = str(e)
+    except ArretDemande as e:
+        journal.warning("Arrêt demandé : %s", e)
+        bilan.interrompu = True
+        bilan.message = str(e)
+    except KeyboardInterrupt:
+        journal.warning("Interruption clavier (Ctrl+C) : arrêt propre.")
+        bilan.interrompu = True
+    finally:
+        navigateur.fermer()
+    return bilan
+
+
 def lancer(scenario: Scenario, options: Options) -> Bilan:
-    """Point d'entrée : exécute le scénario sur l'Excel et renvoie le bilan."""
+    """Point d'entrée : exécute le scénario (sur chaque ligne de l'Excel s'il y en a un)."""
+    if sans_excel(scenario, options):
+        return lancer_sans_excel(scenario, options)
     classeur = ouvrir_classeur(scenario, options)
     try:
         if options.simuler:

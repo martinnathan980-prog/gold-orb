@@ -11,6 +11,11 @@ sauvegardes/
 **/sauvegardes/
 telechargements/
 **/telechargements/
+exports/
+**/exports/
+taches/
+corbeille/
+**/corbeille/
 demo/
 
 # --- Données métier (vos Excel de suivi ne concernent que vous)

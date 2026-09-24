@@ -80,8 +80,11 @@ CLES_NAVIGATEUR = (
 )
 CLES_EXCEL = (
     "fichier", "feuille", "ligne_entete", "colonne_statut", "colonne_message",
-    "colonne_horodatage", "colonne_libelle", "traiter_si", "entre_lignes_ms",
+    "colonne_horodatage", "colonne_libelle", "traiter_si", "entre_lignes_ms", "refaire",
 )
+# refaire: reprise  -> chaque ligne n'est faite qu'une fois (on reprend là où on s'était arrêté)
+# refaire: toujours -> chaque lancement refait toutes les lignes (tâche répétitive)
+MODES_REFAIRE = ("reprise", "toujours")
 CANAUX = ("auto", "msedge", "chrome", "chromium")
 DIALOGUES = ("accepter", "refuser", "ignorer")
 
@@ -118,6 +121,7 @@ class ConfigExcel:
     colonne_libelle: Optional[str] = None
     traiter_si: List[str] = field(default_factory=lambda: ["", "A faire"])
     entre_lignes_ms: int = 0
+    refaire: str = "reprise"
 
 
 @dataclass
@@ -476,6 +480,11 @@ def charger_config_excel(donnees: Any) -> ConfigExcel:
         cfg.traiter_si = ["" if v is None else str(v) for v in brut]
     if "entre_lignes_ms" in donnees:
         cfg.entre_lignes_ms = _entier(donnees["entre_lignes_ms"], "excel.entre_lignes_ms")
+    if "refaire" in donnees:
+        mode = str(donnees["refaire"]).strip().lower()
+        if mode not in MODES_REFAIRE:
+            raise ErreurScenario(f"excel.refaire : « {mode} » inconnu. Possibles : {', '.join(MODES_REFAIRE)}.")
+        cfg.refaire = mode
     return cfg
 
 

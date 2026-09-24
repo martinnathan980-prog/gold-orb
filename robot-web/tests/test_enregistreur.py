@@ -4,6 +4,7 @@ Les actions de l'utilisateur sont simulées avec Playwright (clics et saisies r�
 dans la page), ce qui exerce le script d'enregistrement exactement comme un humain.
 """
 
+import time
 from pathlib import Path
 
 import pytest
@@ -90,7 +91,8 @@ def test_enregistrement_export_par_contrat(bac, navigateur_ok):
         fichier_excel="contrats.xlsx", feuille="Contrats", canal="chromium", url_depart=url,
     )
     donnees = yaml.safe_load(texte)
-    assert donnees["excel"] == {"fichier": "contrats.xlsx", "feuille": "Contrats", "colonne_libelle": "Contrat"}
+    assert donnees["excel"] == {"fichier": "contrats.xlsx", "feuille": "Contrats", "colonne_libelle": "Contrat",
+                                "refaire": "toujours"}  # tâche répétitive : refaite à chaque lancement
     # la connexion est dans « avant », conditionnée à l'écran de connexion
     avant = donnees["avant"]
     assert avant[1]["si"]["visible"] == "#mot-de-passe"
@@ -126,6 +128,55 @@ def test_enregistrement_export_par_contrat(bac, navigateur_ok):
     entetes = [c.value for c in suivi[1]]
     assert suivi.cell(row=2, column=entetes.index("Statut") + 1).value == "OK"
     assert chemin in lister_scenarios(dossier)
+    # tâche répétitive : relancée, elle refait tout, sans « déjà fait »
+    bilan = lancer(charger(chemin), Options(visible=False, interactif=False, variables={"mot_de_passe": "demo"}))
+    assert (bilan.ok, bilan.erreurs) == (2, 0), bilan.resume()
+
+
+def test_tache_sans_excel_relancee_autant_de_fois_qu_on_veut(bac, navigateur_ok):
+    """Pas d'Excel : la tâche est rejouée en entier à chaque lancement, sans « une seule fois »."""
+    dossier, url = bac
+
+    def tache(page):
+        page.fill("#utilisateur", "demo")
+        page.fill("#mot-de-passe", "demo")
+        page.click("#btn-connexion")
+        page.wait_for_selector("#liste")
+        page.select_option("#filtre-contrat", "HDK")
+        page.click("#btn-rechercher")
+        page.wait_for_selector("text=15 plan(s)")
+        page.click("#btn-exporter")
+
+    etapes = _enregistrer(dossier, url, tache)
+    reponses = [
+        "",     # ne rien retirer
+        "",     # connexion une seule fois au début : oui
+        "",     # dossier exports
+        "",     # nom proposé : date et heure, pour ne jamais écraser l'export précédent
+        "",     # convertir en Excel
+        "n",    # pas de pause
+        "n",    # pas de capture
+    ]
+    texte = construire_depuis_enregistrement(
+        etapes, [], [], Dialogue(reponses), nom="export hdk",
+        fichier_excel=None, canal="chromium", url_depart=url,
+    )
+    donnees = yaml.safe_load(texte)
+    assert "excel" not in donnees
+    assert {"choisir": {"selecteur": "#filtre-contrat", "valeur": "HDK"}} in donnees["etapes"]
+    telecharger = [e["telecharger"] for e in donnees["etapes"] if isinstance(e, dict) and "telecharger" in e][0]
+    assert telecharger["renommer"] == "export_hdk_{{horodatage}}" and "vers_colonne" not in telecharger
+
+    chemin = dossier / "export_hdk.yaml"
+    chemin.write_text(texte, encoding="utf-8")
+    for fois in range(2):
+        if fois:
+            time.sleep(1.1)  # l'horodatage est à la seconde
+        bilan = lancer(charger(chemin), Options(visible=False, interactif=False, variables={"mot_de_passe": "demo"}))
+        assert (bilan.ok, bilan.erreurs) == (1, 0), bilan.resume()
+        assert bilan.resume().startswith("Tâche réussie")
+        assert not bilan.tout_deja_fait
+    assert len(list((dossier / "exports").glob("export_hdk_*.xlsx"))) == 2
 
 
 def test_enregistrement_modification_de_fiche(bac, navigateur_ok):
