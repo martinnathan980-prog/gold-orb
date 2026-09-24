@@ -1,0 +1,212 @@
+PREMIER ESSAI SUR UN VRAI SITE - PAS A PAS
+===========================================
+Objectif, et UN SEUL : que le robot rejoue une fois, a l'identique, 3 ou 4 gestes
+que vous faites sur votre vrai site.
+
+On ne s'occupe PAS de l'Excel pour l'instant. Le robot en exige un, alors on en
+cree un faux, en une commande, et on n'y touche plus. On le branchera pour de vrai
+seulement quand ce premier essai marchera.
+
+Dans ce guide :
+   VOUS TAPEZ  = ce que vous tapez au clavier, puis la touche Entree
+   VOUS VOYEZ  = ce qui doit s'afficher. Si ce n'est pas ca, arretez-vous
+                 et envoyez-moi ce que vous voyez a la place.
+
+
+=====================================================================
+ ETAPE 1 - OUVRIR LA FENETRE NOIRE AU BON ENDROIT
+=====================================================================
+1.1  Appuyez sur la touche Windows, tapez   cmd   puis Entree.
+     Une fenetre noire s'ouvre.
+
+1.2  VOUS TAPEZ :
+         cd /d %USERPROFILE%\robot\robot-web
+
+     VOUS VOYEZ : la ligne se termine maintenant par
+         C:\Users\A612990\robot\robot-web>
+
+
+=====================================================================
+ ETAPE 2 - CREER LE FAUX EXCEL (une seule commande, sans ouvrir Excel)
+=====================================================================
+2.1  VOUS TAPEZ (tout sur une ligne, le plus simple est de copier-coller) :
+
+         py -c "from autoweb.excel import creer_classeur; creer_classeur('essai.xlsx', ['Tache'], [['essai']])"
+
+     Rien ne s'affiche : c'est normal.
+
+2.2  VOUS TAPEZ :
+         dir essai.xlsx
+
+     VOUS VOYEZ : une ligne avec la date, l'heure et   essai.xlsx
+
+     C'est tout pour l'Excel. Il contient une seule ligne, donc le robot fera
+     votre tache une seule fois. Vous n'avez pas besoin de l'ouvrir.
+
+
+=====================================================================
+ ETAPE 3 - CHOISIR UNE TOUTE PETITE TACHE (avant de toucher au robot)
+=====================================================================
+Choisissez sur votre vrai site une manipulation de 3 ou 4 gestes, par exemple :
+   - aller dans un menu, puis ouvrir une page de recherche ;
+   - choisir une valeur dans une liste deroulante, puis cliquer Rechercher ;
+   - ouvrir une fiche en cliquant dessus.
+
+DEUX REGLES pour ce premier essai :
+   - RIEN D'IRREVERSIBLE : pas d'enregistrement, pas de suppression, pas de
+     validation. Le robot va REFAIRE exactement ce que vous faites.
+   - PEU DE GESTES : 3 ou 4 suffisent. On allongera ensuite.
+
+Faites-la une fois a la main dans votre Chrome habituel pour vous en souvenir.
+
+
+=====================================================================
+ ETAPE 4 - COPIER L'ADRESSE DE LA PAGE DE DEPART
+=====================================================================
+4.1  Dans votre Chrome habituel, allez sur la page ou COMMENCE votre petite tache.
+
+4.2  Cliquez une fois dans la barre d'adresse tout en haut (l'adresse devient
+     bleue, selectionnee). Appuyez sur Ctrl+C pour la copier.
+
+     L'adresse commence par   http://   ou   https://
+
+
+=====================================================================
+ ETAPE 5 - LANCER L'ENREGISTREMENT
+=====================================================================
+5.1  Revenez dans la fenetre noire. VOUS TAPEZ :
+         robot
+
+     VOUS VOYEZ : le menu « ROBOT WEB - que voulez-vous faire ? »
+
+5.2  VOUS TAPEZ :   1
+
+5.3  Il demande « Adresse de l'outil ».
+     Faites un CLIC DROIT dans la fenetre noire : l'adresse copiee se colle.
+     (Si le clic droit ne colle rien, essayez Ctrl+V.)
+     Puis appuyez sur Entree.
+
+5.4  Il demande « Chemin du fichier Excel ».
+     VOUS TAPEZ :   essai.xlsx
+
+5.5  Il demande « Nom de cette tache ».
+     VOUS TAPEZ :   premier essai
+
+5.6  VOUS VOYEZ : une fenetre Chrome s'ouvre toute seule sur votre site,
+     et la fenetre noire affiche  « ENREGISTREMENT EN COURS ».
+
+     Ce Chrome est un Chrome propre au robot : pas vos favoris, pas vos onglets.
+     C'est normal.
+
+     SI Chrome affiche une page d'erreur au lieu de votre site, ou si la fenetre
+     noire affiche une erreur : arretez-vous, envoyez-moi le message.
+
+
+=====================================================================
+ ETAPE 6 - FAIRE LA TACHE DANS LE CHROME DU ROBOT
+=====================================================================
+6.1  SI le site vous demande de vous connecter : connectez-vous normalement,
+     dans CE Chrome-la. Le robot le note ; il saura le refaire.
+
+6.2  Faites vos 3 ou 4 gestes, LENTEMENT, un par un.
+     Attendez que chaque page ait fini de s'afficher avant le geste suivant.
+     En bas a gauche, un bandeau rouge compte vos actions :
+         « Enregistrement : 3 action(s) - cliquez pour terminer »
+
+6.3  Quand c'est fini : CLIQUEZ SUR LE BANDEAU ROUGE en bas a gauche.
+     Il devient vert.
+     (S'il est cache ou ne reagit pas : revenez dans la fenetre noire et
+      appuyez sur Entree. Ca termine aussi.)
+
+
+=====================================================================
+ ETAPE 7 - REPONDRE AUX QUESTIONS : ENTREE PARTOUT
+=====================================================================
+7.1  VOUS VOYEZ dans la fenetre noire la liste de ce que le robot a note :
+         == Enregistrement termine : 5 etape(s)
+             1. ouvrir https://...
+             2. cliquer sur ...
+             3. choisir « ... » dans ...
+         ...
+     Relisez-la : ce sont vos gestes. S'il y en a un en trop, notez son numero.
+
+7.2  Puis une serie de questions. Pour ce premier essai :
+
+         APPUYEZ SUR ENTREE A TOUTES LES QUESTIONS, SANS RIEN TAPER.
+
+     Seule exception possible : a « Etapes a retirer », vous pouvez taper le
+     numero d'un geste en trop avant d'appuyer sur Entree.
+
+     Les questions « Vous avez choisi ... Colonne ? » proposent   [0]
+     C'est ce qu'on veut : 0 veut dire « garde exactement cette valeur ».
+
+7.3  VOUS VOYEZ a la fin :
+         OK Tache enregistree : C:\Users\A612990\robot\robot-web\taches\premier_essai.yaml
+
+
+=====================================================================
+ ETAPE 8 - LE ROBOT REJOUE LA TACHE
+=====================================================================
+8.1  Vous etes revenu au menu. VOUS TAPEZ :   2
+
+8.2  Il liste vos taches. VOUS TAPEZ le numero de « premier_essai ».
+
+8.3  Il propose 1 / 2 / 3. VOUS TAPEZ :   1   (une seule ligne)
+
+8.4  VOUS VOYEZ :
+         Scenario « premier essai » — Excel essai.xlsx — 1 ligne(s) a traiter
+
+     SI « 0 ligne(s) a traiter » : la ligne a deja ete faite lors d'un essai
+     precedent. Refaites l'ETAPE 2 (elle recree le fichier neuf), puis 8.1.
+
+8.5  SI il demande « Mot de passe pour ... (il ne s'affiche pas) » :
+     tapez votre mot de passe du site. RIEN NE S'AFFICHE pendant la frappe,
+     c'est voulu. Puis Entree. Il n'est enregistre nulle part.
+
+8.6  Chrome s'ouvre, et la fenetre noire s'arrete sur :
+         Verifiez que vous etes bien connecte dans le navigateur, puis appuyez sur Entree
+     Regardez Chrome. Si le site demande de se connecter, connectez-vous
+     (ou laissez le robot le faire s'il a note votre connexion).
+     Quand vous voyez votre site normalement : revenez dans la fenetre noire,
+     appuyez sur Entree.
+
+8.7  Le robot refait vos gestes tout seul. Ne touchez a rien, regardez.
+
+8.8  VOUS VOYEZ a la fin :
+         1/1 ligne(s) traitee(s) : 1 OK, 0 ERREUR, 0 IGNORE.
+
+     BRAVO : le robot sait faire votre tache sur le vrai site.
+
+
+=====================================================================
+ SI CA NE MARCHE PAS
+=====================================================================
+Dites-moi simplement :
+   1. a quelle ETAPE (le numero, par exemple 6.1 ou 8.8) ;
+   2. ce qui est ecrit dans la fenetre noire a ce moment-la (les 5 dernieres
+      lignes suffisent ; si une ligne commence par « X ERREUR », c'est elle).
+
+Pas besoin de capture d'ecran ni du nom de votre site. Avec ces deux
+informations, je vous dis quoi changer.
+
+Cas deja connus :
+ - « robot n'est pas reconnu »  -> refaites l'ETAPE 1.2.
+ - « Fichier introuvable : essai.xlsx »  -> refaites l'ETAPE 2.
+ - « delai depasse : element introuvable »  -> la page etait plus lente que
+   pendant l'enregistrement, ou elle a change. Relancez une fois (ETAPE 8).
+   Si ca recommence, envoyez-moi la ligne d'erreur : elle dit quel geste bloque.
+ - Chrome ne s'ouvre pas du tout  -> envoyez-moi les dernieres lignes.
+
+
+=====================================================================
+ APRES : BRANCHER LE VRAI EXCEL
+=====================================================================
+Quand l'ETAPE 8 donne « 1 OK », le plus dur est fait. Pour que le robot fasse
+la tache sur 50 dossiers au lieu d'un, il faut lui dire ce qui CHANGE d'un
+dossier a l'autre : c'est ca, les colonnes de l'Excel.
+
+Envoyez-moi une phrase qui decrit votre tache, par exemple :
+   « je choisis un numero de dossier dans la recherche, j'ouvre la fiche,
+     je clique sur Exporter »
+Je vous repondrai exactement : quelles colonnes creer, quoi mettre dedans,
+et quoi repondre aux questions de l'enregistrement.
