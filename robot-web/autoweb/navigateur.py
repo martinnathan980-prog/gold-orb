@@ -17,9 +17,12 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import sys
+import time
 from pathlib import Path
 from typing import List, Optional, Tuple
+from urllib.parse import urlsplit
 
 from playwright.sync_api import Browser, BrowserContext, Error as PlaywrightError, Page, sync_playwright
 
@@ -29,6 +32,45 @@ from .scenario import ConfigNavigateur
 journal = logging.getLogger("autoweb")
 
 VAR_EXECUTABLE = "AUTOWEB_EXECUTABLE"
+
+# Onglets que Chrome (ou Edge) ouvre de lui-même : nouveautés, bienvenue, présentation...
+# Ils n'ont rien à voir avec la tâche et passent devant l'onglet du robot.
+MOTIF_ONGLET_PARASITE = re.compile(
+    r"^(?:"
+    r"(?:chrome|edge)://(?:whats-new|welcome|welcome-win10|intro|privacy-sandbox-dialog"
+    r"|settings/reset|managed-user-profile-notice)"
+    r"|https?://(?:www\.)?google\.[a-z.]{2,6}/(?:intl/[^/]+/)?chrome(?:[/?#]|$)"
+    r"|https?://microsoftedgewelcome\.microsoft\.com/"
+    r")",
+    re.IGNORECASE,
+)
+# Onglet vide : ouvert par l'utilisateur (Ctrl+T) ou encore en cours d'ouverture. Jamais fermé.
+MOTIF_ONGLET_VIDE = re.compile(
+    r"^(?:about:blank|chrome://new-?tab(?:-page)?/?|chrome-search://local-ntp|edge://newtab)",
+    re.IGNORECASE,
+)
+# Onglets sans lien avec l'outil ouverts juste après le démarrage (extension imposée par
+# l'entreprise, page de présentation...) : fermés s'ils arrivent dans ce délai.
+FENETRE_DEMARRAGE_S = 30.0
+
+
+def est_onglet_parasite(url: str) -> bool:
+    return bool(MOTIF_ONGLET_PARASITE.match(url or ""))
+
+
+def est_onglet_vide(url: str) -> bool:
+    return not url or bool(MOTIF_ONGLET_VIDE.match(url))
+
+
+def adresse_courte(url: str) -> str:
+    """Hôte et chemin seulement : la suite d'une adresse peut contenir un jeton de session."""
+    try:
+        morceaux = urlsplit(url or "")
+    except ValueError:
+        return "?"
+    if morceaux.scheme in ("http", "https"):
+        return f"{morceaux.netloc}{morceaux.path}"
+    return f"{morceaux.scheme}://{morceaux.netloc}{morceaux.path}"
 
 CHEMINS_WINDOWS = {
     "chrome": [
@@ -127,6 +169,9 @@ class Navigateur:
         self.attache = False
         self.description = ""
         self.canal_utilise: Optional[str] = None  # msedge / chrome / chromium / executable
+        self.parasites: List[Page] = []  # onglets ouverts par Chrome lui-même, fermés par le robot
+        self._creation = False  # vrai pendant que le robot ouvre lui-même un onglet
+        self._ouvert_a = 0.0
 
     # ------------------------------------------------------------------ ouverture
     def ouvrir(self) -> Page:
@@ -148,15 +193,99 @@ class Navigateur:
         assert self.contexte is not None
         self.contexte.set_default_timeout(self.config.delai_max)
         self.contexte.set_default_navigation_timeout(max(self.config.delai_max, 30000))
+        self._ouvert_a = time.monotonic()
+        if not self.attache:
+            # branché AVANT tout : un onglet que Chrome ajoute dans la seconde qui suit est vu
+            self.contexte.on("page", self._surveiller_onglet)
         if not self.contexte.pages:
-            self.page = self.contexte.new_page()
-        else:
+            self._creation = True
+            try:
+                self.page = self.contexte.new_page()
+            finally:
+                self._creation = False
+        elif self.attache:
             self.page = self.contexte.pages[0]
+        else:
+            self.page = self._garder_un_seul_onglet()
         for page in self.contexte.pages:
             self._brancher_page(page)
         self.contexte.on("page", self._brancher_page)
+        if not self.attache and self.visible:
+            self.utiliser_page(self.page)
         journal.info("Navigateur ouvert : %s", self.description)
         return self.page
+
+    # ------------------------------------------------------------------ onglets parasites
+    def _garder_un_seul_onglet(self) -> Page:
+        """Au démarrage, seul l'onglet vide demandé par le robot compte.
+
+        Avec un profil conservé, Chrome peut ajouter ses propres onglets (session
+        précédente, nouveautés, pages imposées par l'entreprise) et l'ordre de la liste
+        ne dit pas lequel est devant. Le robot garde l'onglet vide et ferme les autres :
+        personne n'a encore rien fait, ce ne sont donc que des onglets de Chrome.
+        """
+        pages = [p for p in self.contexte.pages if not p.is_closed()]
+        travail = next((p for p in pages if est_onglet_vide(p.url)), pages[0])
+        for page in pages:
+            if page is not travail:
+                self._fermer_parasite(page)
+        return travail
+
+    def _surveiller_onglet(self, page: Page) -> None:
+        """Onglet ouvert après le démarrage : fermé s'il vient de Chrome et non de l'outil.
+
+        Exécuté par Playwright pendant un appel du robot : les appels Playwright sont
+        permis ici, mais aucune exception ne doit s'échapper (Playwright la relancerait
+        plus tard, au milieu d'une étape sans rapport).
+        """
+        try:
+            if self._creation or page is self.page or page.is_closed():
+                return
+            if page.opener() is not None:
+                return  # fenêtre ouverte par l'outil (lien, export, connexion) : on la garde
+            if est_onglet_vide(page.url):
+                try:
+                    page.wait_for_load_state("domcontentloaded", timeout=3000)
+                except Exception:
+                    pass
+            url = page.url
+            recent = time.monotonic() - self._ouvert_a < FENETRE_DEMARRAGE_S
+            if est_onglet_parasite(url) or (recent and not est_onglet_vide(url)):
+                self._fermer_parasite(page)
+                if self.visible and self.page is not None and not self.page.is_closed():
+                    self.page.bring_to_front()
+        except Exception as e:  # noqa: BLE001 - voir la docstring
+            journal.debug("Surveillance d'onglet : %s", e)
+
+    def _fermer_parasite(self, page: Page) -> None:
+        if page is self.page:
+            return
+        ouvertes = [p for p in self.contexte.pages if not p.is_closed()] if self.contexte else []
+        if len(ouvertes) <= 1:
+            return  # fermer le dernier onglet fermerait la fenêtre
+        self.parasites.append(page)
+        journal.info("Onglet ouvert par le navigateur lui-même, fermé : %s", adresse_courte(page.url))
+        try:
+            page.close()
+        except Exception as e:  # noqa: BLE001
+            journal.debug("Fermeture d'onglet impossible : %s", e)
+
+    def pages_de_travail(self) -> List[Page]:
+        """Onglets ouverts, sans ceux que Chrome a ouverts de lui-même."""
+        if self.contexte is None:
+            return []
+        return [
+            p for p in self.contexte.pages
+            if not p.is_closed() and p not in self.parasites and not est_onglet_parasite(p.url)
+        ]
+
+    def pomper(self, duree_ms: int = 250) -> None:
+        """Laisse Playwright traiter ses événements (fermeture des onglets parasites...)
+        pendant que le robot attend l'utilisateur."""
+        try:
+            self.page_courante().wait_for_timeout(duree_ms)
+        except Exception:  # noqa: BLE001 - navigateur fermé : l'étape suivante le dira
+            time.sleep(duree_ms / 1000)
 
     def _brancher_page(self, page: Page) -> None:
         mode = self.config.dialogues
@@ -326,6 +455,9 @@ class Navigateur:
             if not profil.is_absolute():
                 profil = self.dossier / profil
             profil.mkdir(parents=True, exist_ok=True)
+            if "--hide-crash-restore-bubble" not in options["args"]:
+                # sinon, après un arrêt brutal : bulle « Restaurer les pages ? » par-dessus l'outil
+                options["args"] = list(options["args"]) + ["--hide-crash-restore-bubble"]
             self.contexte = self._pw.chromium.launch_persistent_context(
                 user_data_dir=str(profil), accept_downloads=True, **self._viewport(), **options
             )
@@ -346,7 +478,7 @@ class Navigateur:
     # ------------------------------------------------------------------ pages
     def page_courante(self) -> Page:
         if self.page is None or self.page.is_closed():
-            pages = [p for p in (self.contexte.pages if self.contexte else []) if not p.is_closed()]
+            pages = self.pages_de_travail()
             if not pages:
                 raise NavigateurFerme("Toutes les pages du navigateur sont fermées.")
             self.page = pages[-1]

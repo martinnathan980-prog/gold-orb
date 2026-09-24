@@ -22,9 +22,11 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from urllib.parse import urlsplit
+
 from playwright.sync_api import Error as PlaywrightError, Page
 
-from .navigateur import Navigateur
+from .navigateur import Navigateur, est_onglet_parasite
 from .releve import JS_SELECTEUR_IFRAME
 
 journal = logging.getLogger("autoweb")
@@ -44,6 +46,9 @@ JS_ENREGISTREUR = """
   let compteur = 0;
 
   function envoyer(e) {
+    // adresse de la page : sert seulement à écarter les pages Google ou Chrome (jamais écrite)
+    e.url = location.href;
+    try { e.url_page = window.top.location.href; } catch (err) { e.url_page = ''; }
     const texte = JSON.stringify(e);
     if (e.type_evenement === 'clic' || e.type_evenement === 'saisie' || e.type_evenement === 'touche') {
       compteur++;
@@ -305,6 +310,32 @@ class Evenement:
     donnees: Dict[str, Any]
     cadre: str = ""  # sélecteur de l'iframe, vide si page principale
     frame: Any = None  # objet Playwright, résolu en fin d'enregistrement seulement
+    page: Any = None  # onglet d'où vient l'événement (simple référence, aucun appel Playwright)
+
+
+PREFIXES_NAVIGATEUR = ("chrome://", "chrome-extension://", "chrome-search://", "chrome-untrusted://",
+                       "edge://", "about:")
+MOTIF_HOTE_GOOGLE = re.compile(r"(?:www\.|consent\.)?google\.[a-z.]{2,6}", re.IGNORECASE)
+
+
+def est_hors_tache(url: str, url_depart: str = "") -> bool:
+    """Vrai pour une page du navigateur ou de Google (accueil, recherche, cookies), où
+    l'utilisateur a pu cliquer pendant l'enregistrement sans que cela fasse partie de la tâche."""
+    if not url:
+        return False
+    if est_onglet_parasite(url) or url.lower().startswith(PREFIXES_NAVIGATEUR):
+        return True
+    try:
+        morceaux = urlsplit(url)
+        hote_depart = urlsplit(url_depart).hostname or ""
+    except ValueError:
+        return False
+    hote = morceaux.hostname or ""
+    if MOTIF_HOTE_GOOGLE.fullmatch(hote_depart):
+        return False  # l'outil est lui-même chez Google : on ne filtre rien
+    if hote.lower().startswith("consent.") and MOTIF_HOTE_GOOGLE.fullmatch(hote):
+        return True
+    return bool(MOTIF_HOTE_GOOGLE.fullmatch(hote)) and morceaux.path.rstrip("/") in ("", "/search", "/webhp", "/url")
 
 
 @dataclass
@@ -350,6 +381,8 @@ class Enregistreur:
         self._cadres: Dict[Any, str] = {}
         self._pages_suivies: List[Page] = []
         self._actif = False
+        self.url_depart = ""
+        self.ignorees = 0  # actions faites hors de l'outil (page Google, onglet de Chrome)
 
     # ------------------------------------------------------------------ session
     def demarrer(self, url: Optional[str] = None) -> Page:
@@ -365,10 +398,13 @@ class Enregistreur:
         contexte.on("page", self._suivre_page)
         self._actif = True
         page = self.nav.page_courante()
+        self.url_depart = url or ""
         if url:
             page.goto(url)
         else:
             self._injecter(page)
+        if self.nav.visible:
+            self.nav.utiliser_page(page)  # l'onglet du robot devant, pas un onglet de Chrome
         # Page de départ notée ici, et non par le script injecté : celui-ci peut être
         # servi quelques dizaines de millisecondes plus tard, après les premières actions.
         self.evenements.insert(0, Evenement("page", {"url": url or page.url, "titre": ""}))
@@ -402,7 +438,8 @@ class Enregistreur:
             self._actif = False
             return
         frame = source.get("frame") if source else None
-        self.evenements.append(Evenement(type_evenement, donnees, "", frame))
+        page = source.get("page") if source else None
+        self.evenements.append(Evenement(type_evenement, donnees, "", frame, page))
 
     def _telechargement(self, telechargement: Any) -> None:
         if not self._actif:
@@ -426,7 +463,7 @@ class Enregistreur:
             return self._cadres[frame]
         selecteur = ""
         try:
-            page = self.nav.page_courante()
+            page = frame.page  # l'onglet de l'événement, pas forcément l'onglet courant
             if frame is page.main_frame:
                 selecteur = ""
             elif frame.parent_frame is not page.main_frame:
@@ -462,12 +499,34 @@ class Enregistreur:
                 break
         self._actif = False
 
+    def _hors_tache(self, evenement: Evenement) -> bool:
+        if evenement.type not in ("clic", "saisie", "touche"):
+            return False  # page de départ, téléchargement : notés par le robot lui-même
+        d = evenement.donnees
+        url, url_page = str(d.pop("url", "") or ""), str(d.pop("url_page", "") or "")
+        if evenement.page is not None and evenement.page in getattr(self.nav, "parasites", []):
+            return True
+        if url_page:
+            return est_hors_tache(url_page, self.url_depart)
+        # iframe d'une autre origine : seule son adresse est connue
+        return est_onglet_parasite(url)
+
     def arreter(self) -> List[EtapeEnregistree]:
         self._actif = False
+        gardes: List[Evenement] = []
+        for evenement in self.evenements:
+            if self._hors_tache(evenement):
+                self.ignorees += 1
+                continue
+            gardes.append(evenement)
+        if self.ignorees:
+            journal.info("%d action(s) faite(s) sur une page Google ou du navigateur : ignorée(s).", self.ignorees)
+        self.evenements = gardes
         for evenement in self.evenements:  # résolution des iframes, hors boucle Playwright
             if evenement.frame is not None:
                 evenement.cadre = self._selecteur_cadre(evenement.frame)
                 evenement.frame = None
+            evenement.page = None
         for page in self._pages_suivies:
             try:
                 page.remove_listener("download", self._telechargement)

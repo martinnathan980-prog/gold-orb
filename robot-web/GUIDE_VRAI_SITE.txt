@@ -1,8 +1,12 @@
 ROBOT WEB - TOUT RECOMMENCER A ZERO, PUIS UNE TACHE A RELANCER QUAND VOUS VOULEZ
 =================================================================================
-(Windows, au bureau. Version 15 du robot.)
+(Windows, au bureau. Version 16 du robot.)
 
-Ce qui change avec la version 15 :
+Ce qui change avec la version 16 :
+   - Les pages Google ou Chrome (« Decouvrez... », « Nouveautes... ») qui
+     s'ouvraient devant votre outil sont fermees toutes seules par le robot.
+     Et si vous cliquez quand meme sur une page Google pendant l'enregistrement,
+     le robot ne le rejoue pas.
    - PLUS BESOIN D'EXCEL. Vous montrez la tache une fois, le robot la garde.
    - Ensuite vous la relancez quand vous voulez, autant de fois que vous
      voulez : aujourd'hui, demain, dans un mois. Elle n'est jamais « deja faite ».
@@ -26,7 +30,7 @@ Il y a 4 parties :
  PARTIE A - TOUT EFFACER ET REINSTALLER PROPREMENT
 =====================================================================
 On efface l'ancien dossier du robot (anciennes taches, faux Excel essai.xlsx,
-ancien Chrome du robot), puis on installe la version 15. Vos fichiers a vous,
+ancien Chrome du robot), puis on installe la version 16. Vos fichiers a vous,
 votre Chrome habituel et vos mots de passe ne sont PAS touches.
 
 A1. FERMEZ toutes les fenetres noires ouvertes, et toutes les fenetres Chrome
@@ -67,7 +71,7 @@ A6. On efface aussi les anciens installeurs telecharges (pour ne pas les
 
 A7. Dans Gmail, ouvrez mon dernier mail et telechargez la piece jointe
         robot-web-installeur.txt
-    (en haut du fichier est ecrit VERSION 15)
+    (en haut du fichier est ecrit VERSION 16)
 
 A8. Revenez dans la fenetre noire. VOUS TAPEZ, une ligne a la fois :
         mkdir robot
@@ -79,17 +83,17 @@ A8. Revenez dans la fenetre noire. VOUS TAPEZ, une ligne a la fois :
     fini ou n'est pas alle dans Telechargements. Attendez, puis refaites
     uniquement la ligne   move ...
 
-A9. On verifie que c'est bien la version 15. VOUS TAPEZ :
-        findstr /c:"VERSION 15" robot-web-installeur.txt
+A9. On verifie que c'est bien la version 16. VOUS TAPEZ :
+        findstr /c:"VERSION 16" robot-web-installeur.txt
 
-    VOUS VOYEZ une ligne qui contient :   INSTALLEUR AUTOMATIQUE - VERSION 15
+    VOUS VOYEZ une ligne qui contient :   INSTALLEUR AUTOMATIQUE - VERSION 16
     SI rien ne s'affiche : ce n'est pas le bon fichier. Refaites A6 a A8.
 
 A10. On installe. VOUS TAPEZ (le plus simple : copier-coller, puis Entree) :
         py -c "exec(open('robot-web-installeur.txt', encoding='utf-8').read())"
 
     VOUS VOYEZ defiler, en 1 a 3 minutes :
-        ROBOT-WEB - installeur version 15
+        ROBOT-WEB - installeur version 16
         === 1/4  Extraction des fichiers ===
         === 2/4  Environnement Python ===
             L'environnement isole est bloque par une strategie de l'entreprise.
@@ -156,6 +160,12 @@ B8. VOUS VOYEZ : une fenetre Chrome s'ouvre toute seule sur votre site,
     Ce Chrome est celui du robot : pas vos favoris, pas vos onglets.
     En haut il peut etre ecrit « Chrome est controle par un logiciel de test
     automatise » : c'est normal.
+
+    Il ne doit y avoir QU'UN SEUL onglet, celui de votre outil. Si une page
+    Google ou Chrome s'affiche quand meme (« Decouvrez... », « Nouveautes »,
+    « Avant d'acceder a Google ») : ne cliquez RIEN dedans. Le robot la ferme
+    en general tout seul en quelques secondes ; sinon fermez-la avec la petite
+    croix de son onglet, et revenez sur l'onglet de votre outil.
 
 B9. SI le site demande de vous connecter : connectez-vous normalement, dans
     CE Chrome-la. Le robot note l'identifiant, mais JAMAIS le mot de passe
@@ -275,6 +285,13 @@ Envoyez-moi simplement :
 Pas besoin de capture d'ecran, ni du nom du site, ni de vos donnees.
 
 Cas deja connus :
+ - Une page Google s'ouvre, ou le robot « est sur Google » a la relance
+       -> c'etait le cas en version 15. Refaites la PARTIE A avec la
+          version 16, puis la PARTIE B (l'ancienne tache contient les clics
+          faits sur Google : il faut la refaire), puis la PARTIE C.
+          En fin d'enregistrement, le robot dit combien d'actions faites sur
+          Google ou Chrome il a ignorees : c'est normal.
+
  - « robot n'est pas reconnu... »
        -> vous n'etes pas dans le bon dossier. Tapez :
               cd /d %USERPROFILE%\robot\robot-web

@@ -25,6 +25,7 @@ from typing import Any, Callable, Dict, List, Optional
 from playwright.sync_api import Error as PlaywrightError, TimeoutError as PlaywrightTimeout, expect
 
 from . import symboles as S
+from .console import lire_ligne
 from .erreurs import ArretDemande, ErreurEtape, ErreurGabarit, LigneIgnoree, NavigateurFerme
 from .excel import ClasseurSuivi, csv_vers_excel
 from .gabarit import est_vrai, formater, rendre_structure
@@ -449,7 +450,9 @@ class Executeur:
         message = str(args.get("message") or "Action manuelle requise")
         if self.interactif and sys.stdin is not None and sys.stdin.isatty():
             print(f"\n{S.PAUSE}  {message}\n   Appuyez sur Entrée pour continuer (ou tapez « stop » puis Entrée pour arrêter) : ", end="", flush=True)
-            reponse = input().strip().lower()
+            # le navigateur continue de tourner pendant l'attente : un onglet que Chrome
+            # ouvrirait de lui-même est refermé au lieu de rester devant l'outil
+            reponse = (lire_ligne(self.nav.pomper) or "").strip().lower()
             if reponse in ("stop", "arreter", "arrêter", "q", "quit"):
                 raise ArretDemande("arrêt demandé par l'utilisateur pendant une pause.")
         else:
@@ -530,7 +533,8 @@ class Executeur:
             self.portees.pop()
 
     def act_onglet(self, args: Dict[str, Any], delai: Optional[int]) -> None:
-        pages = [p for p in self.page.context.pages if not p.is_closed()]
+        # les onglets ouverts par Chrome lui-même ne comptent pas (« onglet: 2 » reste juste)
+        pages = self.nav.pages_de_travail() or [p for p in self.page.context.pages if not p.is_closed()]
         cible = None
         if args.get("titre") is not None or args.get("url") is not None:
             for p in pages:
@@ -558,13 +562,13 @@ class Executeur:
         self.portees = []
 
     def act_fermer_onglet(self, args: Dict[str, Any], delai: Optional[int]) -> None:
-        courante = self.page
-        contexte = courante.context
-        courante.close()
-        restantes = [p for p in contexte.pages if not p.is_closed()]
-        if not restantes:
+        self.page.close()
+        self.nav.page = None
+        try:
+            suivante = self.nav.page_courante()  # jamais un onglet ouvert par Chrome lui-même
+        except NavigateurFerme:
             raise NavigateurFerme("dernier onglet fermé.")
-        self.nav.utiliser_page(restantes[-1])
+        self.nav.utiliser_page(suivante)
         self.portees = []
 
     def act_ignorer(self, args: Dict[str, Any], delai: Optional[int]) -> None:

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import getpass
 import sys
-from typing import Optional
+from typing import Callable, Optional
 
 
 def console_interactive() -> bool:
@@ -45,6 +45,45 @@ def touche_entree_disponible() -> bool:
         return True
     except Exception:
         return False
+
+
+def lire_ligne(pomper: Callable[[], None]) -> Optional[str]:
+    """Lit une ligne tapée dans le terminal, comme input(), mais sans figer le navigateur :
+    `pomper` est appelé en boucle pendant l'attente. None si pas de vrai terminal."""
+    if not console_interactive():
+        return None
+    if sys.platform == "win32":
+        import msvcrt
+
+        tampon = []
+        while True:
+            while msvcrt.kbhit():
+                touche = msvcrt.getwch()
+                if touche in ("\r", "\n"):
+                    sys.stdout.write("\n")
+                    sys.stdout.flush()
+                    return "".join(tampon)
+                if touche == "\x03":
+                    raise KeyboardInterrupt
+                if touche in ("\x00", "\xe0"):
+                    msvcrt.getwch()  # flèche, touche de fonction : second code ignoré
+                elif touche == "\b":
+                    if tampon:
+                        tampon.pop()
+                        sys.stdout.write("\b \b")
+                else:
+                    tampon.append(touche)
+                    sys.stdout.write(touche)
+                sys.stdout.flush()
+            pomper()
+    import select
+
+    while True:
+        prets, _, _ = select.select([sys.stdin], [], [], 0)
+        if prets:
+            ligne = sys.stdin.readline()
+            return ligne.rstrip("\r\n")
+        pomper()
 
 
 def demander_secret(question: str) -> Optional[str]:

@@ -463,10 +463,16 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
         print()
         print("   Si le bandeau gêne ou ne répond pas : appuyez simplement sur Entrée ICI,")
         print("   dans le Terminal. Fermer la fenêtre du navigateur arrête aussi l'enregistrement.")
+        print("   Si une page Google ou Chrome apparaît : ne l'utilisez pas, revenez sur l'onglet")
+        print("   de votre outil (le robot ne rejoue pas ce qui est fait sur Google ou Chrome).")
         enregistreur.attendre_fin()
         etapes = enregistreur.arreter()
     finally:
         nav.fermer()
+    if enregistreur.ignorees:
+        print()
+        print(f"{S.ATTENTION} {enregistreur.ignorees} action(s) faite(s) sur une page Google ou Chrome, hors de")
+        print("   votre outil : elles sont ignorées et ne seront pas rejouées.")
 
     if not etapes:
         print(f"{S.ATTENTION} Aucune action enregistrée : rien à écrire.")
