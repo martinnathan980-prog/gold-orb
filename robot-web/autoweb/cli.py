@@ -640,7 +640,7 @@ def cmd_menu(args: argparse.Namespace) -> int:
         print("   2. Lancer une tache enregistree")
         print("   3. Voir mes taches")
         print("   4. Supprimer une tache")
-        print("   5. Creer un fichier Excel de pilotage (vide, avec vos colonnes)")
+        print("   5. Creer le fichier Excel de pilotage (colonnes et lignes)")
         print("   6. M'entrainer sur la fausse base de demonstration")
         print("   7. Verifier que tout fonctionne")
         print("   0. Quitter")
@@ -693,10 +693,27 @@ def cmd_menu(args: argparse.Namespace) -> int:
                 chemin = Path(nom_fichier)
                 if chemin.exists():
                     print(f"   {S.ATTENTION} {chemin} existe déjà : il n'a pas été touché.")
+                    continue
+                print()
+                print("   Ajoutez maintenant les lignes : une ligne = une exécution du robot.")
+                print("   Un fichier sans ligne ne sert à rien, le robot n'aurait rien à traiter.")
+                if len(liste) > 1:
+                    print(f"   Séparez les valeurs par des virgules, dans l'ordre : {', '.join(liste)}")
+                donnees = []
+                while True:
+                    reponse = _demander(f"   Ligne {len(donnees) + 1} (Entrée pour terminer)", "")
+                    if not reponse:
+                        break
+                    separateur = ";" if ";" in reponse else ","
+                    valeurs = [v.strip() for v in reponse.split(separateur)][: len(liste)]
+                    donnees.append(valeurs)
+                creer_classeur(chemin, liste, donnees, feuille="Suivi")
+                print(f"   {S.OK} Créé : {chemin.resolve()}  ({len(donnees)} ligne(s))")
+                if donnees:
+                    print("   Vous pouvez passer au choix 1 pour enregistrer la tâche.")
                 else:
-                    creer_classeur(chemin, liste, feuille="Suivi")
-                    print(f"   {S.OK} Créé : {chemin.resolve()}")
-                    print("   Remplissez-le (une ligne = une exécution), enregistrez, fermez-le, puis choix 1.")
+                    print(f"   {S.ATTENTION} Aucune ligne : ouvrez le fichier, écrivez vos valeurs SOUS les")
+                    print("   titres, enregistrez et fermez-le avant de passer au choix 1.")
             elif choix == "6":
                 print()
                 print("   La fausse base va demarrer. Suivez ensuite DEMARRAGE_MAC.txt (Mac)")

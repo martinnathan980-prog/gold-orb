@@ -1,0 +1,317 @@
+GUIDE PAS A PAS - FAIRE MARCHER VOTRE PREMIERE TACHE
+=====================================================
+Ecrit pour reprendre exactement la ou vous en etes : le robot est installe,
+le fichier contrats.xlsx existe mais il est VIDE (il n'a que le titre de colonne).
+C'est la seule chose qui manque. On la corrige, et tout va fonctionner.
+
+Duree : 15 minutes. Ne sautez aucune ligne, meme celles qui paraissent evidentes.
+
+
+#####################################################################
+ PARTIE 1 - REMETTRE LES DEUX FENETRES EN PLACE
+#####################################################################
+Le robot a besoin de DEUX fenetres noires (invites de commandes) :
+   FENETRE A = le faux outil web qui tourne (pour s'entrainer)
+   FENETRE B = le menu du robot
+
+1.1  Regardez vos fenetres noires ouvertes dans la barre des taches.
+     Celle qui affiche une ligne du genre
+         Fausse base documentaire en ligne : http://127.0.0.1:8765/base_demo.html
+         Appuyez sur Entree (ou Ctrl+C) pour arreter le serveur...
+     c'est la FENETRE A. Laissez-la tranquille, ne tapez rien dedans.
+
+1.2  SI vous ne la trouvez pas (vous l'avez fermee), recreez-la :
+     - appuyez sur la touche Windows, tapez   cmd   puis Entree ;
+     - dans la nouvelle fenetre, tapez ces deux lignes, Entree apres chacune :
+           cd /d %USERPROFILE%\robot\robot-web
+           robot base-demo
+     - vous devez voir « Fausse base documentaire en ligne : http://127.0.0.1:8765/... »
+     Cette fenetre devient la FENETRE A. Laissez-la ouverte.
+
+1.3  Prenez maintenant l'AUTRE fenetre noire (celle ou vous avez vu le menu).
+     C'est la FENETRE B. Si le menu y est affiche, tapez   0   puis Entree
+     pour en sortir : vous devez revenir a une ligne qui se termine par
+           C:\Users\A612990\robot\robot-web>
+     Si vous n'avez pas de deuxieme fenetre : touche Windows, cmd, Entree, puis
+           cd /d %USERPROFILE%\robot\robot-web
+
+     A partir d'ici, TOUT se passe dans la FENETRE B.
+
+
+#####################################################################
+ PARTIE 2 - REMPLIR LE FICHIER EXCEL (c'est ce qui manque)
+#####################################################################
+Le robot fait UNE execution par ligne de l'Excel. Votre fichier n'a aucune ligne,
+donc il n'a rien a faire. On va lui en donner deux.
+
+2.1  Dans la FENETRE B, tapez exactement :
+
+         start contrats.xlsx
+
+     Excel s'ouvre avec le fichier. (S'il ne se passe rien, passez au 2.9.)
+
+2.2  SI un bandeau jaune apparait en haut, du genre « AFFICHAGE PROTEGE » ou
+     « Attention aux fichiers provenant d'Internet », cliquez sur le bouton
+     « Activer la modification ». Sans ca, vous ne pourrez rien taper.
+
+2.3  Vous voyez le mot   Contrat   dans la case A1 (premiere case, en haut a gauche).
+     En dessous, les cases A2, A3... sont vides.
+
+2.4  Cliquez sur la case A2 (juste sous Contrat). Tapez :
+
+         HDK
+
+     puis appuyez sur Entree. Le curseur descend en A3.
+
+2.5  Tapez :
+
+         QRS
+
+     puis Entree.
+
+2.6  Vous devez avoir ceci a l'ecran :
+
+         A1 : Contrat
+         A2 : HDK
+         A3 : QRS
+
+     Ne touchez a rien d'autre. Les colonnes Statut, Message, Horodatage
+     n'existent pas encore : c'est normal, le robot les creera tout seul.
+
+2.7  Enregistrez : maintenez Ctrl et appuyez sur S.
+     Si Excel demande de confirmer le format, cliquez « Oui » ou « Enregistrer ».
+
+2.8  FERMEZ COMPLETEMENT Excel : cliquez sur la croix X en haut a droite de la
+     fenetre Excel. C'est obligatoire : tant qu'Excel garde le fichier ouvert,
+     le robot ne peut pas ecrire dedans.
+
+2.9  SI « start contrats.xlsx » n'a rien ouvert, c'est que vous n'etes pas dans
+     le bon dossier. Tapez d'abord :
+           cd /d %USERPROFILE%\robot\robot-web
+           dir *.xlsx
+     Vous devez voir contrats.xlsx dans la liste. Puis refaites le 2.1.
+
+
+#####################################################################
+ PARTIE 3 - SUPPRIMER LES DEUX ANCIENNES TACHES
+#####################################################################
+Vos deux tentatives (test_nathan et test2_nathan) ont ete enregistrees alors que
+l'Excel etait vide. Elles exporteraient toujours le meme contrat. On les enleve.
+
+3.1  Dans la FENETRE B, tapez :
+
+         robot
+
+3.2  Le menu s'affiche. Tapez   4   puis Entree.
+
+3.3  Il liste vos taches. Tapez   1   puis Entree (la premiere de la liste).
+
+3.4  Il demande confirmation. Tapez   o   puis Entree.
+     Il repond « Tache retiree. Le fichier est conserve dans ...corbeille... »
+
+3.5  Recommencez pour l'autre : tapez   4   Entree, puis   1   Entree, puis  o  Entree.
+
+3.6  Verifiez : tapez   3   puis Entree.
+     Il doit repondre « Aucune tache enregistree pour l'instant. »
+
+
+#####################################################################
+ PARTIE 4 - ENREGISTRER LA TACHE (le robot vous regarde faire)
+#####################################################################
+
+4.1  Dans le menu, tapez   1   puis Entree.
+
+4.2  Il demande l'adresse de l'outil. Tapez exactement (ou copiez-collez) :
+
+         http://127.0.0.1:8765/base_demo.html
+
+     puis Entree.
+
+4.3  Il demande le chemin du fichier Excel. Tapez :
+
+         contrats.xlsx
+
+     puis Entree.
+
+4.4  Il demande le nom de la tache. Tapez :
+
+         export plans
+
+     puis Entree.
+
+4.5  UNE FENETRE CHROME S'OUVRE toute seule sur le faux outil.
+     La fenetre noire affiche « ENREGISTREMENT EN COURS ».
+     A partir de maintenant, TOUT ce que vous faites dans cette fenetre Chrome
+     est note par le robot. Allez-y doucement, une action a la fois.
+
+4.6  Dans Chrome, cliquez dans la case « Identifiant » et tapez :   demo
+
+4.7  Cliquez dans la case « Mot de passe » et tapez :   demo
+
+4.8  Cliquez sur le bouton bleu « Se connecter ».
+     La page affiche maintenant les filtres et le tableau des plans.
+
+4.9  Dans la liste deroulante « Contrat », choisissez   HDK
+     (cliquez sur la liste, puis sur HDK).
+
+4.10 NE TOUCHEZ PAS aux autres filtres (Type de plan, Statut, Numero contient).
+     On garde la tache la plus simple possible pour ce premier essai.
+
+4.11 Cliquez sur le bouton bleu « Rechercher ».
+     Attendez une seconde : la ligne « 15 plan(s) trouve(s) » apparait, avec le tableau.
+
+4.12 Cliquez sur le bouton « Exporter CSV ».
+     Chrome telecharge un fichier : c'est normal, le robot le note.
+
+4.13 EN BAS A GAUCHE de la page, il y a un petit bandeau rouge qui dit
+     « Enregistrement : N action(s) - cliquez pour terminer ».
+     CLIQUEZ DESSUS. Il devient vert.
+     (S'il ne reagit pas, revenez dans la FENETRE B et appuyez sur Entree :
+      ca termine aussi l'enregistrement.)
+
+4.14 Revenez dans la FENETRE B. Elle affiche la liste de ce qu'elle a note,
+     quelque chose comme :
+
+         == Enregistrement termine : 7 etape(s)
+             1. ouvrir http://127.0.0.1:8765/base_demo.html
+             2. ecrire « demo » dans Identifiant
+             3. ecrire « ••••• » dans Mot de passe
+             4. cliquer sur Se connecter
+             5. choisir « HDK » dans Contrat
+             6. cliquer sur Rechercher
+             7. telecharger le fichier obtenu en cliquant sur Exporter CSV
+
+4.15 « Etapes a retirer » : appuyez simplement sur Entree (on garde tout).
+
+4.16 « Les premieres etapes ressemblent a une connexion. La faire une seule fois
+     au debut ? » : appuyez sur Entree (la reponse o est deja proposee).
+
+4.17 ATTENTION, C'EST LA QUESTION IMPORTANTE :
+
+         -> Vous avez choisi, dans « Contrat » : « HDK »
+              1. Contrat
+            Colonne (numero), 0 = valeur toujours identique [1] :
+
+     Le chiffre entre crochets doit etre   [1]   et non [0].
+     Appuyez sur Entree pour accepter.
+
+     SI vous voyez [0] : c'est que l'Excel est toujours vide. Arretez ici,
+     tapez 0 pour sortir du menu, et refaites la PARTIE 2.
+
+4.18 Les questions suivantes (dossier des fichiers, nom du fichier, conversion en
+     Excel, colonne, pause, capture d'ecran) : appuyez sur Entree a chaque fois.
+
+4.19 Il affiche pour finir :
+
+         OK Tache enregistree : C:\Users\A612990\robot\robot-web\taches\export_plans.yaml
+
+
+#####################################################################
+ PARTIE 5 - LANCER SUR UNE SEULE LIGNE
+#####################################################################
+
+5.1  Vous etes revenu au menu. Tapez   2   puis Entree.
+
+5.2  Il liste vos taches. Tapez   1   puis Entree.
+
+5.3  Il propose :
+         1. Une seule ligne, pour tester
+         2. Toutes les lignes a faire
+         3. Reprendre aussi les lignes en erreur
+     Tapez   1   puis Entree.
+
+5.4  ATTENDU : la fenetre noire affiche
+
+         Scenario « export plans » — Excel contrats.xlsx — 1 ligne(s) a traiter
+
+     Si elle affiche « 0 ligne(s) a traiter », l'Excel est vide ou pas enregistre :
+     refaites la PARTIE 2.
+
+5.5  Chrome s'ouvre. La fenetre noire s'arrete sur :
+
+         Connectez-vous dans le navigateur si necessaire, puis appuyez sur Entree
+
+     Regardez Chrome : si la page de connexion est affichee, le robot va s'en
+     occuper tout seul. Revenez dans la FENETRE B et appuyez sur Entree.
+
+5.6  Le robot travaille sous vos yeux : il se connecte, choisit HDK, clique
+     Rechercher, clique Exporter CSV. Ca prend quelques secondes.
+
+5.7  ATTENDU a la fin :
+
+         1/1 ligne(s) traitee(s) : 1 OK, 0 ERREUR, 0 IGNORE.
+
+     Si c'est 1 ERREUR : notez la ligne qui commence par « X ERREUR » et
+     envoyez-la moi. N'allez pas plus loin.
+
+
+#####################################################################
+ PARTIE 6 - LANCER SUR TOUTES LES LIGNES
+#####################################################################
+
+6.1  Dans le menu, tapez   2   Entree, puis   1   Entree (la tache),
+     puis   2   Entree (toutes les lignes).
+
+6.2  ATTENDU :
+
+         Scenario « export plans » — Excel contrats.xlsx — 1 ligne(s) a traiter
+         ...
+         1/1 ligne(s) traitee(s) : 1 OK, 0 ERREUR, 0 IGNORE.
+
+     Une seule ligne, parce que HDK est deja fait : le robot ne refait jamais
+     une ligne deja OK. C'est QRS qui vient d'etre traite.
+
+
+#####################################################################
+ PARTIE 7 - REGARDER LE RESULTAT
+#####################################################################
+
+7.1  Tapez   0   puis Entree pour sortir du menu.
+
+7.2  Tapez :
+
+         start exports
+
+     L'explorateur s'ouvre. Vous devez y trouver quatre fichiers :
+         export_HDK.csv     export_HDK.xlsx
+         export_QRS.csv     export_QRS.xlsx
+
+7.3  Tapez :
+
+         start contrats.xlsx
+
+     Le fichier contient maintenant, pour chaque ligne :
+         Statut = OK,  Message vide,  Horodatage = l'heure,
+         Fichier export = le chemin du fichier produit.
+     Fermez Excel quand vous avez regarde.
+
+C'EST FAIT. Vous venez d'automatiser une tache complete.
+
+
+#####################################################################
+ PARTIE 8 - ET MAINTENANT, SUR VOTRE VRAI OUTIL
+#####################################################################
+Exactement le meme geste, avec deux differences :
+ - a la question « Adresse de l'outil », vous mettez l'adresse de votre vraie
+   base documentaire (celle affichee dans Chrome quand vous l'utilisez) ;
+ - vous creez un Excel avec vos vraies valeurs (menu, choix 5, puis PARTIE 2).
+
+Commencez par UNE seule ligne, avec un dossier de test sans consequence.
+
+
+#####################################################################
+ PARTIE 9 - SI CA BLOQUE
+#####################################################################
+ « 0 ligne(s) a traiter »
+     -> l'Excel n'a pas de ligne sous le titre, ou il n'a pas ete enregistre,
+        ou toutes les lignes sont deja OK. Refaites la PARTIE 2.
+ « [0] » propose a la question 4.17
+     -> meme cause : l'Excel etait vide au moment de l'enregistrement.
+ « le fichier est ouvert dans Excel »
+     -> fermez Excel, appuyez sur Entree, le robot continue tout seul.
+ « robot n'est pas reconnu »
+     -> vous n'etes pas dans le bon dossier :  cd /d %USERPROFILE%\robot\robot-web
+ Chrome ne s'ouvre pas, ou une erreur rouge apparait
+     -> copiez les 5 dernieres lignes de la fenetre noire et envoyez-les moi.
+ Vous etes perdu dans les fenetres
+     -> fermez tout, et reprenez a la PARTIE 1.
