@@ -89,8 +89,10 @@ const INTERDITS = [
   // programme interne n'ont rien à faire dans un dépôt public.
   // Gamme publique d'Airbus Helicopters, civile et militaire. Le suffixe M
   // est pris en compte : sans lui, « H225M » échappait au contrôle par un
-  // simple effet de bord de la limite de mot.
-  [/\bH(?!(?:125|130|135|145|160|175|215|225)M?\b)\d{3}M?\b/, 'programme non public'],
+  // simple effet de bord de la limite de mot. Le H140 y entre : lancé en
+  // public au salon Verticon le 11 mars 2025, il figure dans la gamme
+  // civile du site public d'Airbus.
+  [/\bH(?!(?:125|130|135|140|145|160|175|215|225)M?\b)\d{3}M?\b/, 'programme non public'],
 ];
 for (const [motif, libelle, raccordement] of INTERDITS) {
   const touches = (raccordement && RACCORDE) ? []

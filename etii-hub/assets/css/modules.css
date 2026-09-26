@@ -887,31 +887,51 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 
 .porteurs { display: flex; flex-direction: column; gap: var(--e-6); }
 
-/* Les filtres, centrés comme le reste de la galerie. */
-.porteurs__barre { display: flex; justify-content: center; }
-.porteurs__facettes { justify-content: center; }
+/* La barre d'édition : « Ajouter un porteur », seul, à droite — elle
+   n'existe qu'en mode édition (edition-seulement). */
+.porteurs__barre { display: flex; justify-content: flex-end; }
 
-.porteurs__galerie { display: flex; flex-direction: column; gap: var(--e-8); }
-.porteurs__groupe-galerie[hidden] { display: none; }
+/* Trois marchés l'un sous l'autre — Civil, Militaire, Prototype —, tous
+   visibles : assez d'air entre deux pour qu'on lise trois sections, et
+   pas une seule grille coupée. */
+.porteurs__galerie { display: flex; flex-direction: column; gap: var(--e-12); margin-block-start: var(--e-3); }
 
-/* L'en-tête d'un groupe : le nom en Newsreader, le compte en retrait. */
+/* L'intertitre d'un marché reprend la voix du titre de section, en plus
+   petit : le nom en Newsreader, à l'encre, aligné sur la grille ; un filet
+   fin court jusqu'au compte, en capitales mono discrètes, en bout de
+   ligne. Un seul filet, jamais deux : le nom n'est pas pris en étau. */
 .porteurs__groupe-galerie-titre {
   display: flex;
   align-items: baseline;
-  justify-content: center;
-  gap: var(--e-3);
+  gap: var(--e-4);
   margin: 0 0 var(--e-5);
   font-family: var(--police-titre);
-  font-size: var(--texte-2xl);
+  font-size: clamp(1.5rem, 0.8vw + 1.2rem, 1.875rem);
   font-weight: var(--graisse-normale);
+  letter-spacing: 0.005em;
   line-height: 1.1;
   color: var(--texte);
 }
 
+.porteurs__groupe-galerie-nom { flex: none; }
+
+.porteurs__groupe-galerie-filet {
+  flex: 1;
+  align-self: center;
+  min-inline-size: var(--e-4);
+  block-size: 1px;
+  /* Plus doux que les filets du titre de section : un cran en dessous. */
+  background-color: var(--bordure-douce);
+}
+
 .porteurs__groupe-galerie-compte {
+  flex: none;
+  font-family: var(--police-mono);
   font-size: var(--texte-xs);
-  letter-spacing: 0.06em;
-  color: var(--texte-faible);
+  font-weight: var(--graisse-normale);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-doux);
 }
 
 /* La grille est un flux centré : chaque rangée se centre, y compris la
@@ -1040,40 +1060,21 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 .porteurs__pole-point[data-pole="ETIII"] { background-color: var(--pole-etiii); }
 
 /* --- La galerie, mise en page de revue -------------------------------------
-   Quatre cartes par rangée sur toute la largeur (trois, puis deux sur les
-   écrans plus étroits), alignées à gauche sous leur titre de famille —
-   « Civil » suivi d'un filet et du nombre. La photo occupe tout le haut
-   de la carte et s'approche doucement au survol ; dessous, le code en
-   Newsreader et le segment en toutes lettres. Sans photo, la silhouette
-   se pose sur un aplat de lin, au même format. */
+   Cinq cartes par rangée sur toute la largeur (quatre, trois, puis deux
+   sur les écrans plus étroits), alignées à gauche sous l'intertitre de
+   leur marché : neuf appareils tiennent en deux rangées. La photo occupe
+   tout le haut de la carte et s'approche doucement au survol ; dessous,
+   le code en Newsreader et le segment en toutes lettres. Sans photo, la
+   silhouette se pose sur un aplat de lin, au même format. */
 .porteurs__grille {
-  --porteurs-colonnes: 4;
+  --porteurs-colonnes: 5;
   --porteurs-espace: var(--e-5);
   --porteurs-carte: calc((100% - (var(--porteurs-colonnes) - 1) * var(--porteurs-espace)) / var(--porteurs-colonnes));
   justify-content: flex-start;
 }
-@media (max-width: 64rem) { .porteurs__grille { --porteurs-colonnes: 3; } }
+@media (max-width: 72rem) { .porteurs__grille { --porteurs-colonnes: 4; } }
+@media (max-width: 58rem) { .porteurs__grille { --porteurs-colonnes: 3; } }
 @media (max-width: 44rem) { .porteurs__grille { --porteurs-colonnes: 2; --porteurs-espace: var(--e-3); } }
-
-.porteurs__groupe-galerie-titre {
-  justify-content: flex-start;
-  gap: var(--e-4);
-  font-size: 1.75rem;
-}
-.porteurs__groupe-galerie-titre::after {
-  content: "";
-  order: 1;
-  flex: 1;
-  align-self: center;
-  block-size: 1px;
-  background-color: var(--bordure);
-}
-.porteurs__groupe-galerie-compte {
-  order: 2;
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0;
-}
 
 .porteurs__fiche {
   align-items: stretch;
@@ -1085,6 +1086,8 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: "visuel visuel" "code poles" "segment segment";
   align-content: start;
+  /* La carte est le conteneur de mesure du code (cqi). */
+  container-type: inline-size;
 }
 .porteurs__fiche:hover { transform: translateY(-3px); }
 .porteurs__fiche-visuel {
@@ -1106,13 +1109,25 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 .porteurs__fiche:hover .porteurs__fiche-photo,
 .porteurs__fiche[aria-pressed="true"] .porteurs__fiche-photo { transform: scale(1.045); }
 .porteurs__fiche-code {
+  --car: 5;
   grid-area: code;
   margin: 0;
   padding: var(--e-3) var(--e-4) 0;
   font-family: var(--police-titre);
   font-size: 1.625rem;
+  /* Le code tient toujours sur une ligne : sa taille se règle sur la
+     largeur de la carte (cqi) et sur son nombre de caractères (--car,
+     posé par porteurs.js) — environ 0,65 em par capitale de Newsreader.
+     Un code court garde 1,625rem ; « DISRUPTIVELAB » rétrécit. La ligne
+     garde la même hauteur partout : les segments restent alignés d'une
+     carte à l'autre. Sans les unités de conteneur, la taille fixe reste. */
+  font-size: min(1.625rem, (100cqi - 3rem) / (var(--car) * 0.65));
   font-weight: var(--graisse-normale);
   letter-spacing: 0.01em;
+  line-height: calc(1.625rem * 1.1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .porteurs__fiche-poles {
   grid-area: poles;
@@ -1129,63 +1144,6 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
   color: var(--texte-doux);
 }
 .porteurs__fiche-segment::first-letter { text-transform: uppercase; }
-
-/* Les marchés : trois onglets — Civil, Militaire, Prototype — en grand,
-   en Newsreader, le nombre d'appareils en exposant ; un trait terre cuite
-   sous le marché ouvert. */
-.porteurs__barre { flex-wrap: wrap; align-items: center; gap: var(--e-4); }
-.porteurs__marches {
-  display: flex;
-  justify-content: center;
-  gap: var(--e-10);
-  margin: 0 0 var(--e-2);
-  padding: 0;
-  list-style: none;
-}
-.porteurs__marche {
-  position: relative;
-  display: inline-flex;
-  align-items: flex-start;
-  gap: var(--e-1);
-  padding: var(--e-2) var(--e-1) var(--e-3);
-  border: 0;
-  background: none;
-  font: inherit;
-  font-family: var(--police-titre);
-  font-size: 1.875rem;
-  font-weight: 300;
-  line-height: 1;
-  color: var(--texte-faible);
-  cursor: pointer;
-  transition: color var(--duree) var(--courbe);
-}
-.porteurs__marche::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  inset-block-end: 0;
-  block-size: 2px;
-  border-radius: 1px;
-  background-color: var(--chaud);
-  transform: scaleX(0);
-  transition: transform var(--duree-lente) var(--courbe);
-}
-.porteurs__marche:hover { color: var(--texte); }
-.porteurs__marche[aria-pressed="true"] { color: var(--texte); font-weight: var(--graisse-normale); }
-.porteurs__marche[aria-pressed="true"]::after { transform: scaleX(1); }
-.porteurs__marche-compte {
-  font-family: var(--police-mono);
-  font-size: 0.6875rem;
-  font-weight: var(--graisse-normale);
-  color: var(--texte-faible);
-}
-@media (max-width: 640px) {
-  .porteurs__marches { gap: var(--e-5); }
-  .porteurs__marche { font-size: 1.375rem; }
-}
-
-/* Plus de titres de famille : une seule galerie, triée par les onglets. */
-.porteurs__groupe-galerie-titre { display: none; }
 
 /* La jauge d'une valeur chiffrée : un trait fin, rempli à proportion du
    plus grand de la flotte ; plein et en terre cuite pour le record. */
@@ -1415,6 +1373,7 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
   font-family: var(--police-titre);
   font-size: 1.2rem;
   font-weight: var(--graisse-moyenne);
+  letter-spacing: -0.005em;
   line-height: 1.2;
   color: var(--texte);
 }

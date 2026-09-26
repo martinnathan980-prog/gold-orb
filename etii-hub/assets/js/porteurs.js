@@ -1,8 +1,9 @@
 /* =========================================================================
    ETII Hub — Les porteurs
-   La flotte suivie par le service, en galerie centrée : toutes les fiches
-   compactes visibles d'un coup, groupées par catégorie (civil, militaire,
-   prototype). Cliquer une carte la DÉPLIE : la fiche détaillée s'ouvre
+   La flotte suivie par le service, en trois sections l'une sous l'autre —
+   Civil, Militaire, Prototype —, toutes visibles d'un coup : ni onglet ni
+   filtre, chaque section a son intertitre et sa grille de cartes.
+   Cliquer une carte la DÉPLIE : la fiche détaillée s'ouvre
    juste sous la rangée de la carte, jamais en bas de page — la photo en
    bannière avec le code seul en titre, le résumé sur toute la largeur,
    le rappel d'identité en bandeau, puis les onglets de données telles
@@ -122,7 +123,10 @@ function fiche(appareil, prefixe) {
     },
     el('span', { class: 'porteurs__fiche-visuel', 'aria-hidden': 'true' },
       vignettePhoto(appareil)),
-    el('span', { class: 'porteurs__fiche-code' }, code),
+    /* Le nombre de caractères du code règle sa taille (modules.css) : un
+       code long (« DISRUPTIVELAB ») rétrécit pour tenir sur une ligne,
+       comme les autres, au lieu de se couper en deux sur téléphone. */
+    el('span', { class: 'porteurs__fiche-code', style: { '--car': String(code.length) } }, code),
     el('span', { class: 'porteurs__fiche-segment' }, texte(appareil.segment) || texte(objet(appareil.fiche).segment) || NON_RENSEIGNE),
     el('span', { class: 'porteurs__fiche-poles', 'aria-label': 'Pôles : ' + (Array.isArray(appareil.poles) ? appareil.poles.join(', ') : '') },
       (Array.isArray(appareil.poles) ? appareil.poles : []).map((p) =>
@@ -304,9 +308,11 @@ function ligneFiche(libelle, brut, echelle) {
       c.complement ? el('span', { class: 'porteurs__complement' }, c.complement) : null));
 }
 
+/* Les niveaux de titre suivent l'emboîtement : « Porteurs » (h2), la
+   section du marché (h3), le code de la fiche (h4), ses groupes (h5). */
 function groupeFiche(titre, lignes) {
   return el('section', { class: 'porteurs__groupe' },
-    el('h4', { class: 'porteurs__groupe-titre' }, titre),
+    el('h5', { class: 'porteurs__groupe-titre' }, titre),
     el('dl', { class: 'porteurs__lignes' }, lignes));
 }
 
@@ -446,7 +452,7 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
      rappel, sous le résumé. */
   const titreBloc = el('div', { class: 'porteurs__banniere-texte' },
     el('div', { class: 'porteurs__titre-ligne' },
-      el('h3', { class: 'porteurs__titre sans-marge' }, code),
+      el('h4', { class: 'porteurs__titre sans-marge' }, code),
       relecture));
 
   /* La bannière de repli, fabriquée à la demande : c'est elle qui prend la
@@ -521,6 +527,22 @@ export function creditsPhotos(donnees) {
    Le composant
    ------------------------------------------------------------------------- */
 
+/* Une section par marché : l'intertitre — le nom en Newsreader, un filet
+   qui court jusqu'au compte, discret, en fin de ligne — puis la grille de
+   ses cartes. Le compte porte son nom (« 9 appareils ») : un chiffre
+   seul, lu à voix haute après « Civil », n'y voudrait rien dire. */
+function sectionMarche(groupe, prefixe) {
+  const cle = groupe.cle || 'autres';
+  const idTitre = prefixe + '-marche-' + cle.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const n = groupe.membres.length;
+  return el('section', { class: 'porteurs__groupe-galerie', dataset: { categorie: groupe.cle }, 'aria-labelledby': idTitre },
+    el('h3', { class: 'porteurs__groupe-galerie-titre', id: idTitre },
+      el('span', { class: 'porteurs__groupe-galerie-nom' }, groupe.libelle),
+      el('span', { class: 'porteurs__groupe-galerie-filet', 'aria-hidden': 'true' }),
+      el('span', { class: 'porteurs__groupe-galerie-compte' }, n + (n > 1 ? ' appareils' : ' appareil'))),
+    el('ul', { class: 'porteurs__grille', role: 'list' }, groupe.membres.map((a) => fiche(a, prefixe))));
+}
+
 /**
  * @param {object} donnees   contenu de flotte.json
  * @param {{id?: string, surAjouter?: Function, surModifier?: Function, surSupprimer?: Function}} [options]
@@ -534,18 +556,15 @@ export function porteurs(donnees, options) {
   const d = objet(donnees);
   const appareils = (Array.isArray(d.flotte) ? d.flotte : []).filter((a) => a && typeof a === 'object' && texte(a.code));
   const cats = categories(d, appareils);
-
-  /* Trois marchés, un onglet chacun : civil, militaire, prototype. On
-     ouvre sur le premier ; il n'y a plus de vue « tous mélangés ». */
-  const marches = cats.filter((c) => appareils.some((a) => texte(a.categorie) === c.cle));
-  let categorie = marches.length ? marches[0].cle : '';
   /* Le porteur déplié, s'il y en a un, et l'élément de galerie qui porte
      sa fiche — un seul à la fois. */
   let courant = null;
   let itemDetail = null;
 
-  /* La galerie : un groupe par catégorie, toutes les fiches visibles d'un
-     coup — pas de piste à faire défiler. */
+  /* Trois marchés, trois sections l'une sous l'autre — civil, militaire,
+     prototype, dans l'ordre du fichier —, toutes visibles : ni onglet ni
+     filtre, on voit toute la flotte en faisant défiler. Un appareil d'une
+     catégorie inconnue ferme la marche dans « Autres ». */
   const groupesGalerie = cats.map((c) => {
     const membres = appareils.filter((a) => texte(a.categorie) === c.cle);
     return { cle: c.cle, libelle: c.libelle, membres };
@@ -553,23 +572,7 @@ export function porteurs(donnees, options) {
   const horsCategorie = appareils.filter((a) => !cats.some((c) => c.cle === texte(a.categorie)));
   if (horsCategorie.length) groupesGalerie.push({ cle: '', libelle: 'Autres', membres: horsCategorie });
 
-  /* Une seule galerie, sans découpage par famille : les appareils se
-     suivent (civils, militaires, prototypes, dans cet ordre) et les
-     filtres du dessus font le tri. */
-  const piste = el('div', { class: 'porteurs__galerie' },
-    el('section', { class: 'porteurs__groupe-galerie', dataset: { categorie: '' }, 'aria-label': 'Tous les porteurs' },
-      el('ul', { class: 'porteurs__grille', role: 'list' },
-        groupesGalerie.flatMap((g) => g.membres).map((a) => fiche(a, prefixe)))));
-
-  const puces = el('ul', { class: 'porteurs__marches', 'aria-label': 'Choisir le marché' },
-    marches.map((c) => el('li', {},
-      el('button', {
-        type: 'button', class: 'porteurs__marche',
-        'aria-pressed': c.cle === categorie ? 'true' : 'false',
-        dataset: { categorie: c.cle }
-      },
-      el('span', { class: 'porteurs__marche-nom' }, c.libelle),
-      el('span', { class: 'porteurs__marche-compte' }, String(appareils.filter((a) => texte(a.categorie) === c.cle).length))))));
+  const piste = el('div', { class: 'porteurs__galerie' }, groupesGalerie.map((g) => sectionMarche(g, prefixe)));
 
   const itemDe = (appareil) => piste.querySelector('.porteurs__item[data-code="' + CSS.escape(texte(appareil.code)) + '"]');
 
@@ -584,11 +587,11 @@ export function porteurs(donnees, options) {
   }
 
   /**
-   * Place la fiche dépliée juste sous la RANGÉE de la carte ouverte : les
-   * cartes d'une même rangée visuelle partagent le même offsetTop ; la
-   * fiche, sur toute la largeur, s'insère après la dernière d'entre elles.
-   * Idempotent : rappelé au redimensionnement, il ne bouge rien si la
-   * fiche est déjà au bon endroit.
+   * Place la fiche dépliée juste sous la RANGÉE de la carte ouverte, dans
+   * la grille de sa section : les cartes d'une même rangée visuelle
+   * partagent le même offsetTop ; la fiche, sur toute la largeur, s'insère
+   * après la dernière d'entre elles. Idempotent : rappelé au
+   * redimensionnement, il ne bouge rien si la fiche est déjà au bon endroit.
    */
   function positionner() {
     if (!courant || !itemDetail) return;
@@ -643,21 +646,6 @@ export function porteurs(donnees, options) {
     montrer(appareil, Boolean(o.defiler));
   }
 
-  function visibles() {
-    return appareils.filter((a) => !categorie || texte(a.categorie) === categorie);
-  }
-
-  function filtrer() {
-    const liste = visibles();
-    piste.querySelectorAll('.porteurs__item:not(.porteurs__item--detail)').forEach((li) => {
-      li.hidden = Boolean(categorie) && li.dataset.categorie !== categorie;
-    });
-    piste.querySelectorAll('.porteurs__groupe-galerie').forEach((g) => {
-      g.hidden = Boolean(categorie) && Boolean(g.dataset.categorie) && g.dataset.categorie !== categorie;
-    });
-    if (courant && !liste.includes(courant)) replier(); else positionner();
-  }
-
   piste.addEventListener('click', (evt) => {
     const b = evt.target.closest('.porteurs__fiche');
     if (!b) return;
@@ -668,9 +656,9 @@ export function porteurs(donnees, options) {
     annoncer('Fiche ' + b.dataset.code + ' dépliée');
   });
 
-  /* Les flèches parcourent les cartes visibles et déplient celle qui
-     reçoit le focus ; le dépliage n'est pas un bascule ici, sinon revenir
-     sur la carte ouverte la fermerait. */
+  /* Les flèches parcourent les cartes, d'une section à la suivante, et
+     déplient celle qui reçoit le focus ; le dépliage n'est pas une bascule
+     ici, sinon revenir sur la carte ouverte la fermerait. */
   piste.addEventListener('keydown', (evt) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(evt.key)) return;
     const boutons = Array.from(piste.querySelectorAll('.porteurs__item:not([hidden]):not(.porteurs__item--detail) .porteurs__fiche'));
@@ -687,17 +675,12 @@ export function porteurs(donnees, options) {
     if (a && a !== courant) deplier(a);
   });
 
-  puces.addEventListener('click', (evt) => {
-    const b = evt.target.closest('[data-categorie]');
-    if (!b) return;
-    categorie = b.dataset.categorie || '';
-    puces.querySelectorAll('[data-categorie]').forEach((x) => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
-    filtrer();
-  });
-
+  /* En mode édition seulement, « Ajouter un porteur » : la barre entière
+     disparaît sinon, sans laisser de vide au-dessus des sections. */
   const racine = el('section', { class: 'porteurs', id: prefixe },
-    el('div', { class: 'porteurs__barre' }, puces,
-      typeof opts.surAjouter === 'function' ? boutonAjouter('Ajouter un porteur', opts.surAjouter) : null),
+    typeof opts.surAjouter === 'function'
+      ? el('div', { class: 'porteurs__barre edition-seulement' }, boutonAjouter('Ajouter un porteur', opts.surAjouter))
+      : null,
     piste);
 
   /* La rangée d'une carte change avec la largeur : la fiche dépliée suit. */
@@ -708,23 +691,17 @@ export function porteurs(donnees, options) {
   }
 
   /* Arrivée par la palette ou un lien : #porteur=CODE déplie la fiche et
-     amène la carte à l'écran. */
+     amène la carte à l'écran, dans la section de son marché. */
   const suivreHash = () => {
     const demande = texte(etatUrl.lire().porteur).toUpperCase();
     if (!demande) return false;
     const a = appareils.find((x) => texte(x.code).toUpperCase() === demande);
     if (!a) return false;
-    if (categorie && texte(a.categorie) !== categorie) {
-      categorie = texte(a.categorie);
-      puces.querySelectorAll('[data-categorie]').forEach((x) => x.setAttribute('aria-pressed', x.dataset.categorie === categorie ? 'true' : 'false'));
-      filtrer();
-    }
     if (a !== courant) deplier(a, { defiler: true });
     else montrer(a, true);
     return true;
   };
 
-  filtrer();
   /* Le composant n'est pas encore dans le document : le hash se suit une
      fois monté, sinon offsetTop et scrollIntoView ne veulent rien dire. */
   setTimeout(suivreHash, 0);

@@ -68,9 +68,13 @@ t('cliquer une entrée la lit à droite',
 console.log('\n== Les porteurs ==');
 t('la galerie des porteurs est rendue', (await f.locator('.porteurs__galerie').count()) > 0 && (await f.locator('.porteurs__item').count()) >= 10);
 const fiches = await f.locator('.porteurs__fiche').count();
-t('les seize appareils sont présents', fiches === 16, `(${fiches})`);
-t('les trois catégories sont proposées',
-  ['Civil', 'Militaire', 'Prototype'].every(c => texte.includes(c)));
+t('les vingt-deux appareils sont présents', fiches === 22, `(${fiches})`);
+// Plus d'onglets : trois sections l'une sous l'autre, toutes visibles.
+const intertitres = await f.locator('.porteurs__groupe-galerie > h3 .porteurs__groupe-galerie-nom').allInnerTexts();
+t('les trois marchés sont trois sections visibles, sans onglet',
+  intertitres.map(s => s.trim()).join(' · ') === 'Civil · Militaire · Prototype'
+  && (await f.locator('.porteurs__marche, .porteurs__marches').count()) === 0,
+  intertitres.join(' · '));
 
 console.log('\n== La fiche d\'un porteur ==');
 const troisieme = f.locator('.porteurs__fiche').nth(2);
