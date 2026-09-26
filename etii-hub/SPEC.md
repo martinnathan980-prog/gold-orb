@@ -22,7 +22,8 @@ Ce dépôt est **public**. Aucun fichier ne doit jamais contenir :
 - de nom de programme non public. **Seuls autorisés : la gamme publique
   d'Airbus Helicopters** (H125, H130, H135, H140, H145, H160, H175, H215,
   H225, leurs versions M, Tigre, NH90, les drones U070 — ex-VSR700 — et
-  U145) et ses démonstrateurs publics (Racer, DisruptiveLab, Flightlab).
+  U145) et ses démonstrateurs publics (Racer, DisruptiveLab, Flightlab,
+  PioneerLab).
   Les fiches « porteurs » ne contiennent que des
   informations publiques, sourcées, avec leur niveau de confiance.
 - de jalon, procédure, norme ou référence documentaire interne

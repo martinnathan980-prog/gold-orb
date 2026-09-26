@@ -887,9 +887,9 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 
 .porteurs { display: flex; flex-direction: column; gap: var(--e-6); }
 
-/* La barre d'édition : « Ajouter un porteur », seul, à droite — elle
-   n'existe qu'en mode édition (edition-seulement). */
-.porteurs__barre { display: flex; justify-content: flex-end; }
+/* « Ajouter » ferme chaque section, à gauche sous sa grille, comme dans
+   le reste du site — seulement en mode édition (edition-seulement). */
+.porteurs__ajout { display: flex; margin-block-start: var(--e-5); }
 
 /* Trois marchés l'un sous l'autre — Civil, Militaire, Prototype —, tous
    visibles : assez d'air entre deux pour qu'on lise trois sections, et
@@ -1060,9 +1060,10 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 .porteurs__pole-point[data-pole="ETIII"] { background-color: var(--pole-etiii); }
 
 /* --- La galerie, mise en page de revue -------------------------------------
-   Cinq cartes par rangée sur toute la largeur (quatre, trois, puis deux
-   sur les écrans plus étroits), alignées à gauche sous l'intertitre de
-   leur marché : neuf appareils tiennent en deux rangées. La photo occupe
+   Cinq cartes par rangée sur toute la largeur, trois sur un écran moyen,
+   deux sur téléphone — jamais quatre : neuf appareils y laisseraient une
+   carte seule sur sa rangée. Alignées à gauche sous l'intertitre de leur
+   marché : neuf appareils tiennent en deux rangées (5 + 4) ou trois (3 × 3). La photo occupe
    tout le haut de la carte et s'approche doucement au survol ; dessous,
    le code en Newsreader et le segment en toutes lettres. Sans photo, la
    silhouette se pose sur un aplat de lin, au même format. */
@@ -1072,8 +1073,7 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
   --porteurs-carte: calc((100% - (var(--porteurs-colonnes) - 1) * var(--porteurs-espace)) / var(--porteurs-colonnes));
   justify-content: flex-start;
 }
-@media (max-width: 72rem) { .porteurs__grille { --porteurs-colonnes: 4; } }
-@media (max-width: 58rem) { .porteurs__grille { --porteurs-colonnes: 3; } }
+@media (max-width: 64rem) { .porteurs__grille { --porteurs-colonnes: 3; } }
 @media (max-width: 44rem) { .porteurs__grille { --porteurs-colonnes: 2; --porteurs-espace: var(--e-3); } }
 
 .porteurs__fiche {
@@ -1108,19 +1108,20 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 }
 .porteurs__fiche:hover .porteurs__fiche-photo,
 .porteurs__fiche[aria-pressed="true"] .porteurs__fiche-photo { transform: scale(1.045); }
+.porteurs__grille { --car: 5; }
 .porteurs__fiche-code {
-  --car: 5;
   grid-area: code;
   margin: 0;
   padding: var(--e-3) var(--e-4) 0;
   font-family: var(--police-titre);
   font-size: 1.625rem;
   /* Le code tient toujours sur une ligne : sa taille se règle sur la
-     largeur de la carte (cqi) et sur son nombre de caractères (--car,
-     posé par porteurs.js) — environ 0,65 em par capitale de Newsreader.
-     Un code court garde 1,625rem ; « DISRUPTIVELAB » rétrécit. La ligne
-     garde la même hauteur partout : les segments restent alignés d'une
-     carte à l'autre. Sans les unités de conteneur, la taille fixe reste. */
+     largeur de la carte (cqi) et sur le plus long code de sa section
+     (--car, posé sur la grille par porteurs.js) — environ 0,65 em par
+     capitale de Newsreader. Un code court garde 1,625rem ; la section où
+     figure « DISRUPTIVELAB » rétrécit tous ses codes d'un même cran, et
+     la rangée reste égale. Sans les unités de conteneur, la taille fixe
+     reste. */
   font-size: min(1.625rem, (100cqi - 3rem) / (var(--car) * 0.65));
   font-weight: var(--graisse-normale);
   letter-spacing: 0.01em;
@@ -1136,7 +1137,10 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 }
 .porteurs__fiche-segment {
   grid-area: segment;
-  padding: var(--e-1) var(--e-4) var(--e-4);
+  /* De la marge, pas du rembourrage : la coupe à deux lignes (overflow)
+     se fait au bord du rembourrage — une troisième ligne s'y montrerait. */
+  margin: var(--e-1) var(--e-4) var(--e-4);
+  padding: 0;
   font-family: var(--police);
   font-size: var(--texte-xs);
   letter-spacing: 0;
@@ -1144,6 +1148,7 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
   color: var(--texte-doux);
 }
 .porteurs__fiche-segment::first-letter { text-transform: uppercase; }
+.porteurs__fiche-precision { white-space: nowrap; }
 
 /* La jauge d'une valeur chiffrée : un trait fin, rempli à proportion du
    plus grand de la flotte ; plein et en terre cuite pour le record. */

@@ -72,7 +72,7 @@
     {
       "code": "H125",
       "categorie": "civil",
-      "segment": "Monomoteur léger (segment « intermediate single »)",
+      "segment": "Monomoteur léger",
       "poles": [
         "ETIIE",
         "ETIII"
@@ -375,7 +375,7 @@
     {
       "code": "H130",
       "categorie": "civil",
-      "segment": "Monomoteur léger (« intermediate single »)",
+      "segment": "Monomoteur léger",
       "poles": [
         "ETIIE"
       ],
@@ -2400,12 +2400,12 @@
         }
       },
       "credit": {
-        "auteur": "Armando Olivo Martín del Campo",
-        "licence": "CC BY-SA 4.0",
-        "fichier": "File:Eurocopter AS332 Super Puma.jpg",
-        "vu": "AS332 Super Puma vert militaire exposé derrière une barrière, vue de face",
-        "page": "https://commons.wikimedia.org/wiki/File%3AEurocopter_AS332_Super_Puma.jpg",
-        "note": "Photo d'un AS332 Super Puma, dont le H215 est l'évolution."
+        "auteur": "Anna Zvereva",
+        "licence": "CC BY-SA 2.0",
+        "fichier": "File:Finnish Border Guard, OH-HVQ, Airbus Helicopters H215 (50417726482).jpg",
+        "vu": "H215 de la garde-frontière finlandaise (immatriculation civile OH-HVQ) en vol, vu de profil, livrée verte et blanche sur ciel gris",
+        "page": "https://commons.wikimedia.org/wiki/File%3AFinnish_Border_Guard%2C_OH-HVQ%2C_Airbus_Helicopters_H215_%2850417726482%29.jpg",
+        "note": ""
       }
     },
     {
@@ -2674,12 +2674,12 @@
         "relecture": "non effectuée"
       },
       "credit": {
-        "auteur": "sparkcyf",
-        "licence": "CC BY-SA 4.0",
-        "fichier": "File:Airbus Helicopters EC225 COMC.jpg",
-        "vu": "EC225 rouge et blanc en vol, vu de dessous dans la brume ; la photo porte la signature du photographe en bas à droite",
-        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_Helicopters_EC225_COMC.jpg",
-        "note": "Photo d'un EC225 (ancienne désignation du H225)."
+        "auteur": "marcosbascuas76",
+        "licence": "CC BY-SA 2.0",
+        "fichier": "File:Airbus Helicopters H225 Super Puma Helimer 401 (27388342926).jpg",
+        "vu": "H225 orange du sauvetage en mer espagnol (Salvamento Marítimo, EC-MCR) en vol, trois quarts avant, sur ciel gris",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_Helicopters_H225_Super_Puma_Helimer_401_%2827388342926%29.jpg",
+        "note": ""
       }
     },
     {
@@ -5126,12 +5126,12 @@
         }
       },
       "credit": {
-        "auteur": "Henning Rolapp",
+        "auteur": "André Gerwing",
         "licence": "CC BY-SA 4.0",
-        "fichier": "File:Hubschrauberdrohne Airbus VSR700.jpg",
-        "vu": "VSR700 gris exposé sur un socle au salon ILA de Berlin, profil gauche, un hélicoptère jaune garé derrière lui",
-        "page": "https://commons.wikimedia.org/wiki/File%3AHubschrauberdrohne_Airbus_VSR700.jpg",
-        "note": "Photo prise en 2018, sous son premier nom de VSR700."
+        "fichier": "File:Airbus VSR700 (F-ZWSR) 2024-06-09 Andre Gerwing Collection ID 020885.jpg",
+        "vu": "VSR700 gris (F-ZWSR, l’appareil d’essais) exposé au salon ILA de Berlin 2024, trois quarts avant, patins et boule optronique sous le nez",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_VSR700_%28F-ZWSR%29_2024-06-09_Andre_Gerwing_Collection_ID_020885.jpg",
+        "note": "Photo prise en 2024, sous son premier nom de VSR700."
       }
     },
     {
@@ -5141,7 +5141,7 @@
       "jalon": null,
       "avancement": null,
       "categorie": "prototype",
-      "segment": "Démonstrateur haute vitesse (girodyne composé)",
+      "segment": "Démonstrateur haute vitesse",
       "silhouette": "roues-bi",
       "fiche": {
         "nom": "Airbus Racer",
@@ -5398,11 +5398,11 @@
         }
       },
       "credit": {
-        "auteur": "Marc Lacoste",
-        "licence": "CC BY-SA 4.0",
-        "fichier": "File:Paris Air Show 2017 Airbus racer (cropped).jpg",
-        "vu": "maquette du Racer détourée sur fond blanc, trois quarts avant, ailes et hélices propulsives visibles",
-        "page": "https://commons.wikimedia.org/wiki/File%3AParis_Air_Show_2017_Airbus_racer_%28cropped%29.jpg",
+        "auteur": "Ibex73",
+        "licence": "CC BY 4.0",
+        "fichier": "File:Airbus Racer at Paris Air Show 2025 (2).jpg",
+        "vu": "Racer en vol de démonstration au salon du Bourget 2025, trois quarts avant, sur ciel bleu ; ailes et hélices propulsives bien visibles",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_Racer_at_Paris_Air_Show_2025_%282%29.jpg",
         "note": ""
       }
     },
@@ -5915,6 +5915,284 @@
         }
       },
       "credit": null
+    },
+    {
+      "code": "PIONEERLAB",
+      "poles": [],
+      "photo": "assets/img/porteurs/pioneerlab.jpg",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "prototype",
+      "segment": "Démonstrateur technologique bimoteur",
+      "silhouette": "patins-fenestron-bi",
+      "fiche": {
+        "nom": "Airbus PioneerLab",
+        "ancienNom": "",
+        "segment": "Démonstrateur technologique bimoteur",
+        "statut": "démonstrateur en essais (premier vol hybride-électrique visé en 2027)",
+        "resume": "Le PioneerLab est le laboratoire volant bimoteur d’Airbus Helicopters, tiré d’un H145 et dévoilé en septembre 2023. Basé à Donauwörth, en Allemagne, il éprouve des technologies propres aux bimoteurs : alerte de collision du rotor, décollage et atterrissage automatisés, pièces en matériaux biosourcés et recyclés, retouches aérodynamiques. Il doit recevoir une propulsion hybride-électrique — un dérivé du PW210 de Pratt & Whitney Canada et deux moteurs électriques Collins Aerospace de 250 kW sur une boîte commune — pour un premier vol hybride visé en 2027 et jusqu’à 30 % de carburant en moins qu’un H145 classique.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters (base H145)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "premierVol": {
+            "valeur": "Avant septembre 2023 (campagne d’essais déjà lancée à son dévoilement)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "certification": {
+            "valeur": "sans objet (démonstrateur)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "miseEnService": {
+            "valeur": "sans objet (démonstrateur)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "siteAssemblage": {
+            "valeur": "Donauwörth (Allemagne), site des essais",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Ceux du H145 d’origine ; en préparation, une chaîne hybride : un dérivé du Pratt & Whitney Canada PW210 et deux moteurs électriques Collins Aerospace sur une boîte de transmission commune",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://verticalmag.com/news/pwc-collins-to-collaborate-on-airbus-demonstrators-hybrid-powerplant/"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "puissance": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rotorPrincipal": {
+            "valeur": "Celui du H145 dont il dérive",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "rotorArriere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "masseAVide": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "chargeUtile": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "passagers": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "vitesseMax": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rayonAction": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "hauteur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "diametreRotor": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "1 laboratoire volant",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "prixIndicatif": {
+            "valeur": "sans objet (démonstrateur)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "cadence": {
+            "valeur": "sans objet",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "principauxOperateurs": {
+            "valeur": "Airbus Helicopters (essais)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "commandesNotables": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": "Chaîne hybride-électrique en préparation : deux moteurs électriques Collins Aerospace de 250 kW, couplés au turbomoteur par une boîte commune ; premier vol hybride visé en 2027",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://verticalmag.com/news/pwc-collins-to-collaborate-on-airbus-demonstrators-hybrid-powerplant/"
+          },
+          "avionique": {
+            "valeur": "Alerte de collision du rotor, décollage et atterrissage automatisés (lidar, caméras, capteurs d’effort dans les patins)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory ; https://verticalmag.com/news/airbus-helicopters-pioneerlab-testing-fully-autonomous-touchdown-landings/"
+          },
+          "particularites": {
+            "valeur": "Pièces de structure en matériaux biosourcés et recyclés ; améliorations aérodynamiques contre la traînée, essayées en vol à partir de 2026 (environ 10 % du gain visé)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory ; https://aerospaceglobalnews.com/news/pioneerlab-due-to-make-hybrid-electric-flight-in-2027/"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Objectif affiché : jusqu’à 30 % de carburant en moins qu’un H145 classique, en combinant propulsion hybride et retouches aérodynamiques.",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory ; https://verticalmag.com/news/pwc-collins-to-collaborate-on-airbus-demonstrators-hybrid-powerplant/"
+          },
+          {
+            "texte": "Des patins qui sentent le sol : des capteurs d’effort y mesurent le contact, pour que l’appareil puisse se poser entièrement seul.",
+            "source": "https://verticalmag.com/news/airbus-helicopters-pioneerlab-testing-fully-autonomous-touchdown-landings/"
+          },
+          {
+            "texte": "La première technologie essayée à bord fut une alerte de collision du rotor avec un obstacle.",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          {
+            "texte": "Il est cofinancé par le ministère fédéral allemand de l’Économie, au titre du programme de recherche aéronautique LuFo.",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          }
+        ],
+        "sources": [
+          "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory",
+          "https://verticalmag.com/news/pwc-collins-to-collaborate-on-airbus-demonstrators-hybrid-powerplant/",
+          "https://verticalmag.com/news/airbus-helicopters-pioneerlab-testing-fully-autonomous-touchdown-landings/",
+          "https://aerospaceglobalnews.com/news/pioneerlab-due-to-make-hybrid-electric-flight-in-2027/"
+        ],
+        "code": "PIONEERLAB",
+        "categorie": "prototype",
+        "relecture": "non effectuée"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": {
+        "auteur": "André Gerwing",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:Airbus H145 Pioneer Lab (c-n 20007, D-HADS) 2026-06-11 Andre Gerwing Collection ID 029658.jpg",
+        "vu": "H145 PioneerLab (D-HADS) exposé au salon ILA de Berlin 2026, vu de profil, livrée blanche à hexagones orange et bleus, Fenestron visible",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_H145_Pioneer_Lab_%28c-n_20007%2C_D-HADS%29_2026-06-11_Andre_Gerwing_Collection_ID_029658.jpg",
+        "note": ""
+      }
     },
     {
       "code": "U145",

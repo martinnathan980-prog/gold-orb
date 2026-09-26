@@ -93,7 +93,7 @@ function rendreFlotte(ensemble, conteneur) {
   monter(conteneur, el('div', { class: 'pile' },
     porteurs(donnees, {
       id: 'porteurs-service',
-      surAjouter: (b) => ouvrirPorteur({ flotte: donnees, libelles: libellesFiche(), declencheur: b }),
+      surAjouter: (b, categorie) => ouvrirPorteur({ flotte: donnees, libelles: libellesFiche(), declencheur: b, categorie }),
       surModifier: (appareil, b) => ouvrirPorteur({ existant: appareil, flotte: donnees, libelles: libellesFiche(), declencheur: b }),
       surSupprimer: (appareil) => supprimerElement('flotte', 'porteur', appareil.code)
     }),

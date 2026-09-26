@@ -378,6 +378,7 @@ function libelleCle(cle) {
  * @param {object} [o.existant]   l'appareil (flotte.json → flotte[])
  * @param {object} o.flotte       flotte.json, pour ses catégories
  * @param {object} [o.libelles]   { groupe: { cle: libellé } } — les libellés de porteurs.js
+ * @param {string} [o.categorie]  le marché choisi d'avance (la section d'où l'on ajoute)
  */
 export function ouvrirPorteur(o) {
   const existant = o.existant || null;
@@ -405,7 +406,8 @@ export function ouvrirPorteur(o) {
   }).filter((g) => g.champs.length);
   const valeurs = existant
     ? JSON.parse(JSON.stringify(existant))
-    : { categorie: categories.length ? categories[0][0] : 'civil', poles: [], fiche: { statut: 'à renseigner' } };
+    : { categorie: categories.some(([c]) => c === texte(o.categorie)) ? texte(o.categorie) : categories.length ? categories[0][0] : 'civil',
+        poles: [], fiche: { statut: 'à renseigner' } };
   return ouvrirFormulaire({
     titre: existant ? 'Modifier la fiche ' + texte(existant.code) : 'Ajouter un porteur',
     declencheur: o.declencheur,

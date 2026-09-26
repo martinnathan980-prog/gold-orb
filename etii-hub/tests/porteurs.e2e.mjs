@@ -7,9 +7,11 @@
 // Vérifie la mise en page demandée : trois sections l'une sous l'autre —
 // Civil, Militaire, Prototype —, toutes visibles, sans onglet ni filtre ;
 // toute la flotte de flotte.json, chaque appareil dans la section de son
-// marché ; la fiche qui se déplie sous la rangée de sa carte ; le lien
-// #porteur=CODE ; les crédits de chaque photo ; le téléphone et le thème
-// sombre.
+// marché ; des rangées sans carte orpheline (5 ou 3 colonnes, jamais 4) ;
+// des codes de même corps dans une section ; la fiche qui se déplie sous
+// la rangée de sa carte, et qu'Échap replie ; le lien #porteur=CODE ; les
+// crédits de chaque photo ; le téléphone (segments entiers, sur deux
+// lignes au plus) et le thème sombre.
 
 import { chromium } from 'playwright';
 const B = process.env.BASE || 'http://localhost:8111';
@@ -59,8 +61,36 @@ t(`toute la flotte est là (${appareils.length} appareils), chacun une seule foi
 t('toute la gamme H publique est présente',
   ['H125', 'H130', 'H135', 'H140', 'H145', 'H160', 'H175', 'H215', 'H225',
     'H125M', 'H145M', 'H160M', 'H175M', 'H215M', 'H225M'].every((c) => appareils.some((a) => a.code === c)));
-t('le bouton « Ajouter un porteur » ne se voit pas hors du mode édition',
-  (await g.locator('.porteurs__barre').count()) === 1 && !(await g.locator('.porteurs__barre').isVisible()));
+t('les démonstrateurs publics sont en Prototype, PioneerLab compris',
+  ['RACER', 'DISRUPTIVELAB', 'FLIGHTLAB', 'PIONEERLAB', 'U145'].every((c) => (sections.find((x) => x.cle === 'prototype') || { codes: [] }).codes.includes(c)));
+/* « Ajouter » ferme chaque section, et seulement en mode édition : plus de
+   barre au-dessus de la galerie. */
+const ajouts = g.locator('.porteurs__groupe-galerie > .porteurs__ajout');
+t('un bouton « Ajouter » par section, invisible hors du mode édition',
+  (await ajouts.count()) === 3 && (await g.locator('.porteurs__barre').count()) === 0
+  && (await ajouts.evaluateAll((l) => l.every((x) => x.getBoundingClientRect().height === 0))));
+
+console.log('\n== Les rangées et les codes ==');
+/* Neuf appareils : 5 + 4 ou 3 × 3, jamais une carte seule sur sa rangée. */
+const rangees = async (largeur) => {
+  await page.setViewportSize({ width: largeur, height: 900 });
+  await page.waitForTimeout(250);
+  return page.evaluate(() => Array.from(document.querySelectorAll('#porteurs-service .porteurs__grille')).map((ul) => {
+    const hauts = Array.from(ul.querySelectorAll('.porteurs__item:not(.porteurs__item--detail)')).map((li) => li.offsetTop);
+    const parRangee = [...new Set(hauts)].map((h) => hauts.filter((x) => x === h).length);
+    return parRangee;
+  }));
+};
+for (const [largeur, colonnes] of [[1280, 5], [1100, 5], [960, 3], [800, 3]]) {
+  const r = await rangees(largeur);
+  t(`${largeur} px : ${colonnes} cartes par rangée, aucune carte seule`,
+    r.every((l) => l[0] === Math.min(colonnes, l.reduce((a, b) => a + b, 0)) && (l.length === 1 || l[l.length - 1] > 1)), JSON.stringify(r));
+}
+await page.setViewportSize({ width: 1280, height: 900 });
+await page.waitForTimeout(250);
+const corps = await g.locator('.porteurs__grille').evaluateAll((uls) => uls.map((ul) =>
+  [...new Set(Array.from(ul.querySelectorAll('.porteurs__fiche-code')).map((c) => getComputedStyle(c).fontSize))]));
+t('dans chaque section, tous les codes ont le même corps', corps.every((l) => l.length === 1), JSON.stringify(corps));
 
 console.log('\n== Les photos ==');
 const photos = await g.locator('.porteurs__fiche-photo').evaluateAll((imgs) => imgs.map((i) => ({ src: i.getAttribute('src'), lazy: i.getAttribute('loading') })));
@@ -98,6 +128,13 @@ t('la fiche ne mentionne pas de lien extérieur', (await g.locator('.porteurs__d
 await carte.click();
 await page.waitForTimeout(400);
 t('recliquer la carte replie la fiche', (await g.locator('.porteurs__detail').count()) === 0);
+await carte.click();
+await page.waitForTimeout(400);
+await g.locator('.porteurs__detail [role="tab"]').first().focus();
+await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
+t('Échap replie la fiche et rend le focus à sa carte', (await g.locator('.porteurs__detail').count()) === 0
+  && await page.evaluate(() => document.activeElement && document.activeElement.dataset.code === 'H175M'));
 
 console.log('\n== Les crédits photos du pied de page ==');
 await page.locator('[data-credits-photos]').first().click();
@@ -108,7 +145,7 @@ await page.keyboard.press('Escape');
 await ctx.close();
 
 console.log('\n== Arrivée par un lien #porteur= ==');
-for (const code of ['H140', 'U145']) {
+for (const code of ['H140', 'PIONEERLAB', 'U145']) {
   const c2 = await nav.newContext({ viewport: { width: 1280, height: 900 } });
   const p2 = await c2.newPage();
   const e2 = []; p2.on('pageerror', (e) => e2.push(e.message));
@@ -139,6 +176,15 @@ const deuxColonnes = await pm.evaluate(() => {
   return l.length > 1 && l[0].offsetTop === l[1].offsetTop && l[2] && l[2].offsetTop > l[0].offsetTop;
 });
 t('deux cartes par rangée sur téléphone', deuxColonnes);
+/* Le segment tient en entier sous le code, sur deux lignes au plus : ni
+   points de suspension, ni troisième ligne dans la marge du bas. */
+const segments = await pm.evaluate(() => Array.from(document.querySelectorAll('#porteurs-service .porteurs__fiche-segment')).map((s) => {
+  const cs = getComputedStyle(s);
+  const lignes = Math.round(s.getBoundingClientRect().height / parseFloat(cs.lineHeight));
+  return { code: s.closest('.porteurs__item').dataset.code, entier: s.scrollHeight <= s.clientHeight + 1, lignes, fond: parseFloat(cs.paddingBottom) };
+}));
+t('chaque segment tient en entier, sur deux lignes au plus', segments.every((x) => x.entier && x.lignes <= 2 && x.fond === 0),
+  JSON.stringify(segments.filter((x) => !(x.entier && x.lignes <= 2 && x.fond === 0))));
 /* Le contraste du compte, discret mais lisible : au moins 4,5 contre le fond. */
 const contraste = await pm.evaluate(() => {
   const lum = (rgb) => {

@@ -110,6 +110,15 @@ function vignettePhoto(appareil) {
   return img;
 }
 
+/* Le segment de la carte ne se coupe jamais au milieu de sa précision :
+   « (classe 7-8 t) » passe entier à la ligne plutôt que de laisser
+   « 8 t) » seul sur la suivante. */
+function segmentCarte(t) {
+  const coupe = t.indexOf(' (');
+  if (coupe < 1 || !t.endsWith(')')) return t;
+  return [t.slice(0, coupe) + ' ', el('span', { class: 'porteurs__fiche-precision' }, t.slice(coupe + 1))];
+}
+
 function fiche(appareil, prefixe) {
   const code = texte(appareil.code) || '—';
   return el('li', { class: 'porteurs__item', dataset: { categorie: texte(appareil.categorie), code } },
@@ -123,11 +132,10 @@ function fiche(appareil, prefixe) {
     },
     el('span', { class: 'porteurs__fiche-visuel', 'aria-hidden': 'true' },
       vignettePhoto(appareil)),
-    /* Le nombre de caractères du code règle sa taille (modules.css) : un
-       code long (« DISRUPTIVELAB ») rétrécit pour tenir sur une ligne,
-       comme les autres, au lieu de se couper en deux sur téléphone. */
-    el('span', { class: 'porteurs__fiche-code', style: { '--car': String(code.length) } }, code),
-    el('span', { class: 'porteurs__fiche-segment' }, texte(appareil.segment) || texte(objet(appareil.fiche).segment) || NON_RENSEIGNE),
+    /* La taille du code se règle sur la grille entière (sectionMarche) :
+       toutes les cartes d'une section ont des codes de même corps. */
+    el('span', { class: 'porteurs__fiche-code' }, code),
+    el('span', { class: 'porteurs__fiche-segment' }, segmentCarte(texte(appareil.segment) || texte(objet(appareil.fiche).segment) || NON_RENSEIGNE)),
     el('span', { class: 'porteurs__fiche-poles', 'aria-label': 'Pôles : ' + (Array.isArray(appareil.poles) ? appareil.poles.join(', ') : '') },
       (Array.isArray(appareil.poles) ? appareil.poles : []).map((p) =>
         el('span', { class: 'porteurs__pole-point', dataset: { pole: texte(p) }, title: 'Pôle ' + texte(p) })))));
@@ -530,24 +538,41 @@ export function creditsPhotos(donnees) {
 /* Une section par marché : l'intertitre — le nom en Newsreader, un filet
    qui court jusqu'au compte, discret, en fin de ligne — puis la grille de
    ses cartes. Le compte porte son nom (« 9 appareils ») : un chiffre
-   seul, lu à voix haute après « Civil », n'y voudrait rien dire. */
-function sectionMarche(groupe, prefixe) {
+   seul, lu à voix haute après « Civil », n'y voudrait rien dire.
+   En mode édition, « Ajouter » ferme la section, à gauche comme partout
+   dans le site, et choisit d'avance son marché. Un marché encore vide
+   n'existe qu'en mode édition : c'est là qu'on lui ajoute un appareil. */
+const AJOUTER = { civil: 'Ajouter un porteur civil', militaire: 'Ajouter un porteur militaire', prototype: 'Ajouter un prototype' };
+
+function sectionMarche(groupe, prefixe, surAjouter) {
   const cle = groupe.cle || 'autres';
   const idTitre = prefixe + '-marche-' + cle.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const n = groupe.membres.length;
-  return el('section', { class: 'porteurs__groupe-galerie', dataset: { categorie: groupe.cle }, 'aria-labelledby': idTitre },
+  /* Le code le plus long de la section règle le corps de tous ses codes
+     (modules.css, --car) : « DISRUPTIVELAB » tient sur une ligne, et ses
+     voisins de rangée ne restent pas plus grands que lui. */
+  const car = Math.max(5, ...groupe.membres.map((a) => texte(a.code).length));
+  return el('section', {
+    class: ['porteurs__groupe-galerie', n ? null : 'edition-seulement'],
+    dataset: { categorie: groupe.cle }, 'aria-labelledby': idTitre
+  },
     el('h3', { class: 'porteurs__groupe-galerie-titre', id: idTitre },
       el('span', { class: 'porteurs__groupe-galerie-nom' }, groupe.libelle),
       el('span', { class: 'porteurs__groupe-galerie-filet', 'aria-hidden': 'true' }),
-      el('span', { class: 'porteurs__groupe-galerie-compte' }, n + (n > 1 ? ' appareils' : ' appareil'))),
-    el('ul', { class: 'porteurs__grille', role: 'list' }, groupe.membres.map((a) => fiche(a, prefixe))));
+      el('span', { class: 'porteurs__groupe-galerie-compte' }, n ? n + (n > 1 ? ' appareils' : ' appareil') : 'aucun appareil')),
+    n ? el('ul', { class: 'porteurs__grille', role: 'list', style: { '--car': String(car) } }, groupe.membres.map((a) => fiche(a, prefixe))) : null,
+    typeof surAjouter === 'function'
+      ? el('div', { class: 'porteurs__ajout edition-seulement' },
+          boutonAjouter(AJOUTER[groupe.cle] || 'Ajouter un porteur', (b) => surAjouter(b, groupe.cle)))
+      : null);
 }
 
 /**
  * @param {object} donnees   contenu de flotte.json
  * @param {{id?: string, surAjouter?: Function, surModifier?: Function, surSupprimer?: Function}} [options]
  *   Les trois commandes d'édition ne se voient qu'en mode édition
- *   (edition.js).
+ *   (edition.js). `surAjouter(bouton, categorie)` reçoit le marché de la
+ *   section d'où l'on ajoute.
  * @returns {HTMLElement}
  */
 export function porteurs(donnees, options) {
@@ -568,11 +593,11 @@ export function porteurs(donnees, options) {
   const groupesGalerie = cats.map((c) => {
     const membres = appareils.filter((a) => texte(a.categorie) === c.cle);
     return { cle: c.cle, libelle: c.libelle, membres };
-  }).filter((g) => g.membres.length);
+  });
   const horsCategorie = appareils.filter((a) => !cats.some((c) => c.cle === texte(a.categorie)));
   if (horsCategorie.length) groupesGalerie.push({ cle: '', libelle: 'Autres', membres: horsCategorie });
 
-  const piste = el('div', { class: 'porteurs__galerie' }, groupesGalerie.map((g) => sectionMarche(g, prefixe)));
+  const piste = el('div', { class: 'porteurs__galerie' }, groupesGalerie.map((g) => sectionMarche(g, prefixe, opts.surAjouter)));
 
   const itemDe = (appareil) => piste.querySelector('.porteurs__item[data-code="' + CSS.escape(texte(appareil.code)) + '"]');
 
@@ -660,6 +685,16 @@ export function porteurs(donnees, options) {
      déplient celle qui reçoit le focus ; le dépliage n'est pas une bascule
      ici, sinon revenir sur la carte ouverte la fermerait. */
   piste.addEventListener('keydown', (evt) => {
+    /* Échap replie la fiche ouverte et rend le focus à sa carte. */
+    if (evt.key === 'Escape' && courant) {
+      const code = texte(courant.code);
+      const carte = itemDe(courant);
+      evt.preventDefault();
+      replier();
+      if (carte) carte.querySelector('.porteurs__fiche').focus();
+      annoncer('Fiche ' + code + ' repliée');
+      return;
+    }
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(evt.key)) return;
     const boutons = Array.from(piste.querySelectorAll('.porteurs__item:not([hidden]):not(.porteurs__item--detail) .porteurs__fiche'));
     const i = boutons.indexOf(document.activeElement);
@@ -675,13 +710,9 @@ export function porteurs(donnees, options) {
     if (a && a !== courant) deplier(a);
   });
 
-  /* En mode édition seulement, « Ajouter un porteur » : la barre entière
-     disparaît sinon, sans laisser de vide au-dessus des sections. */
-  const racine = el('section', { class: 'porteurs', id: prefixe },
-    typeof opts.surAjouter === 'function'
-      ? el('div', { class: 'porteurs__barre edition-seulement' }, boutonAjouter('Ajouter un porteur', opts.surAjouter))
-      : null,
-    piste);
+  /* Les boutons « Ajouter » vivent dans leurs sections (sectionMarche) :
+     hors du mode édition, rien ne s'ajoute au-dessus de la galerie. */
+  const racine = el('section', { class: 'porteurs', id: prefixe }, piste);
 
   /* La rangée d'une carte change avec la largeur : la fiche dépliée suit. */
   if (typeof ResizeObserver === 'function') {
