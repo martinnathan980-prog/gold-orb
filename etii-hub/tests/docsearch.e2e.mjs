@@ -22,16 +22,25 @@ const t=(n,c,d='')=>{ if(c){ok++;console.log(`  OK    ${n}`);} else {ko++;consol
 
 console.log('== Facettes ==');
 // Le document se classe par son pôle — le service qui le tient — et par
-// son type (les tuiles d'exploration). Plus de menu Métier ni Porteur.
-const menus = await page.evaluate(() => ({
-  pole: (() => { const s = document.getElementById('ds-pole');
-    return s ? [...s.options].map(o => o.value) : null; })(),
-  anciens: ['ds-metier', 'ds-porteur'].filter(id => document.getElementById(id)),
-  tous: document.querySelectorAll('.ds-menus select').length
-}));
-t('un seul menu de filtre : le pôle', menus.tous === 1 && !!menus.pole && menus.anciens.length === 0, JSON.stringify(menus));
-t('il propose les trois pôles du service',
-  JSON.stringify(menus.pole) === JSON.stringify(['', 'ETIIA', 'ETIIE', 'ETIII']), JSON.stringify(menus.pole));
+// son type (les tuiles d'exploration). Plus de menu Métier ni Porteur :
+// le pôle se choisit d'un clic, dans un groupe de boutons radio nommé
+// « Pôle », sous la barre.
+const menus = await page.evaluate(() => {
+  const g = document.getElementById('ds-pole');
+  return {
+    groupe: g ? g.tagName + '|' + (g.querySelector('legend') || {}).textContent : null,
+    pole: g ? [...g.querySelectorAll('input[type="radio"]')].map(r => r.value) : null,
+    libelles: g ? [...g.querySelectorAll('.ds-pole')].map(l => l.textContent.replace(/\s+/g, ' ').trim()) : null,
+    coche: g ? (g.querySelector('input:checked') || {}).value : null,
+    anciens: ['ds-metier', 'ds-porteur'].filter(id => document.getElementById(id)),
+    selects: document.querySelectorAll('#ds-pole select, .ds-menus select').length
+  };
+});
+t('un seul filtre : le groupe « Pôle », sans menu déroulant', menus.groupe === 'FIELDSET|Pôle'
+  && menus.selects === 0 && menus.anciens.length === 0, JSON.stringify(menus));
+t('il propose « Tous les pôles » (coché) et les trois pôles du service',
+  JSON.stringify(menus.pole) === JSON.stringify(['', 'ETIIA', 'ETIIE', 'ETIII']) && menus.coche === ''
+  && JSON.stringify(menus.libelles) === JSON.stringify(['Tous les pôles', 'ETIIA', 'ETIIE', 'ETIII']), JSON.stringify(menus));
 
 console.log('\n== Un filtre restreint bien les résultats ==');
 // Une requête reste active pendant la comparaison : sans requête NI filtre,
@@ -40,12 +49,34 @@ console.log('\n== Un filtre restreint bien les résultats ==');
 await page.locator('#ds-champ').fill('norme');
 await page.waitForTimeout(700);
 const sansFiltre = await page.locator('#ds-resultats > *').count();
-await page.selectOption('#ds-pole', 'ETIIA');
+// Les propositions de la frappe se referment d'abord (Échap), comme on le
+// ferait avant de cliquer dessous.
+await page.keyboard.press('Escape');
+await page.waitForTimeout(200);
+await page.locator('#ds-pole .ds-pole', { hasText: 'ETIIA' }).click();
 await page.waitForTimeout(700);
 const avecFiltre = await page.locator('#ds-resultats > *').count();
-t('filtrer par pôle réduit le nombre de résultats',
+t('un clic sur un pôle réduit le nombre de résultats',
   avecFiltre > 0 && avecFiltre < sansFiltre, `(${avecFiltre} avec, ${sansFiltre} sans)`);
-await page.selectOption('#ds-pole', '');
+const hashPole = decodeURIComponent(await page.evaluate(() => location.hash));
+t('le pôle choisi est coché, écrit dans l’URL, sans jeton en double sous la barre',
+  (await page.locator('#ds-pole input:checked').getAttribute('value')) === 'ETIIA'
+  && (await page.locator('#ds-jetons .facette').count()) === 0 && /pole=ETIIA/.test(hashPole), hashPole);
+// Au clavier : les flèches passent d'un pôle à l'autre, et filtrent.
+await page.locator('#ds-pole input:checked').focus();
+await page.keyboard.press('ArrowRight');
+await page.waitForTimeout(600);
+t('au clavier, → passe au pôle suivant et filtre',
+  (await page.locator('#ds-pole input:checked').getAttribute('value')) === 'ETIIE'
+  && (await page.locator('#ds-resultats > li').evaluateAll(l => l.every(c => /Pôle ETIIE/.test(c.textContent)))));
+t('l’anneau de focus est visible sur la pastille',
+  await page.evaluate(() => {
+    const r = document.querySelector('#ds-pole input:focus-visible');
+    return !!r && getComputedStyle(r.nextElementSibling).outlineStyle === 'solid';
+  }));
+await page.locator('#ds-pole .ds-pole', { hasText: 'Tous' }).click();
+await page.waitForTimeout(500);
+t('« Tous les pôles » lève le filtre', (await page.locator('#ds-resultats > *').count()) === sansFiltre);
 await page.locator('#ds-champ').fill('');
 await page.waitForTimeout(600);
 
@@ -217,6 +248,17 @@ await page.goto(B + '/docsearch.html#q=harnais', {waitUntil:'networkidle'});
 await page.waitForTimeout(900);
 t('« harnais » trouve encore les documents du domaine', (await page.locator('#ds-resultats > li').count()) >= 8,
   `(${await page.locator('#ds-resultats > li').count()})`);
+// Aucun résultat ne paraît tombé du ciel : une carte qui ne montre le mot
+// ni dans son titre, ni dans sa référence, ni dans son extrait le dit sur
+// une ligne « Sujet : Harnais », le mot surligné.
+const pourquoi = await page.locator('#ds-resultats > li').evaluateAll(l => l.map(c => ({
+  titre: c.querySelector('.ds-carte__titre').textContent.slice(0, 40),
+  marques: c.querySelectorAll('mark').length,
+  sujet: c.querySelector('.ds-carte__sujet').hidden ? '' : c.querySelector('.ds-carte__sujet').textContent
+})));
+t('chaque carte montre ce qui l’a fait sortir, surligné', pourquoi.every(c => c.marques > 0), JSON.stringify(pourquoi.filter(c => !c.marques)));
+t('par la ligne « Sujet » quand le mot n’est pas à l’écran',
+  pourquoi.some(c => c.sujet === 'Sujet : Harnais'), JSON.stringify(pourquoi.map(c => c.sujet)));
 
 // Un ancien lien partagé : ses clés métier / porteur sont ignorées sans
 // erreur, le pôle s'applique, et l'URL réécrite ne les porte plus.
@@ -224,14 +266,14 @@ await page.goto('about:blank');
 await page.goto(B + '/docsearch.html#q=norme&metier=Harnais&porteur=Personne%2008&pole=ETIIA', {waitUntil:'networkidle'});
 await page.waitForTimeout(1200);
 const ancien = await page.evaluate(() => ({
-  pole: document.getElementById('ds-pole').value,
+  pole: (document.querySelector('#ds-pole input:checked') || {}).value,
   jetons: [...document.querySelectorAll('#ds-jetons .facette')].map(j => j.textContent.replace(/\s+/g, ' ').trim()),
   cartes: document.querySelectorAll('#ds-resultats > li').length,
   horsPole: [...document.querySelectorAll('#ds-resultats > li')].filter(c => !/Pôle ETIIA/.test(c.textContent)).length,
   hash: decodeURIComponent(location.hash)
 }));
 t('un ancien lien métier / porteur s’ouvre filtré par pôle seulement',
-  ancien.pole === 'ETIIA' && ancien.jetons.length === 1 && /Pôle/.test(ancien.jetons[0])
+  ancien.pole === 'ETIIA' && ancien.jetons.length === 0
   && ancien.cartes > 0 && ancien.horsPole === 0, JSON.stringify(ancien));
 t('et l’URL réécrite ne porte plus ni métier ni porteur',
   !/metier|porteur/.test(ancien.hash) && /pole=ETIIA/.test(ancien.hash), ancien.hash);

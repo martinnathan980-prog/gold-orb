@@ -116,7 +116,7 @@ t('les mois sont des en-têtes collants', frise.groupes >= 1 && frise.collants, 
 t('chaque entrée a son carré (photo ou tuile) et son statut', frise.statuts && frise.visuels);
 t('le carré ne porte plus la date, ni sur la photo ni sur la tuile', frise.sansDate, JSON.stringify(frise.tuiles));
 t('sans photo, une tuile teintée marquée d’une lettrine (une lettre ou le guillemet du mot)',
-  frise.tuiles.length >= 1 && frise.tuiles.every((x) => x.visible && /^(\p{Lu}|“)$/u.test(x.lettre) && !/rgba\(0, 0, 0, 0\)/.test(x.fond)),
+  frise.tuiles.length >= 1 && frise.tuiles.every((x) => x.visible && /^(\p{Lu}|«)$/u.test(x.lettre) && !/rgba\(0, 0, 0, 0\)/.test(x.fond)),
   JSON.stringify(frise.tuiles));
 t('la carte lue est la seule active, marquée d’un filet', frise.actives === 1 && frise.activeMarquee);
 t('la date, le résumé et le bouton d’ajout sont là', frise.dates && frise.resumes && frise.ajout);

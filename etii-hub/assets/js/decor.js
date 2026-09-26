@@ -11,6 +11,9 @@
        une traîne derrière eux, la liaison parcourue s'éclaire ;
      - à l'arrivée, le neurone s'allume ; de temps en temps, l'un d'eux
        « décharge » : un halo, une onde qui s'élargit.
+   Le nom du pôle reste net : les influx s'y effacent en passant dessous,
+   et une décharge ne tombe que là où son onde tient tout entière, hors du
+   nom et dans ce que la une montre du dessin.
 
    Tout est tiré d'une graine calculée sur le dessin lui-même : le réseau
    bouge de la même façon à chaque visite. Le coût est borné : 30 images
@@ -31,7 +34,9 @@ import { svg, mouvementReduit } from './ui.js';
 /* Les réglages du mouvement, en unités du viewBox et en secondes. */
 const DERIVE = { amplitude: [7, 13], periode: [11, 24] };
 const INFLUX = { nombre: 8, vitesse: [52, 80], traine: 38 };
-const ECLAT = { duree: 1.25, onde: 24, pool: 8 };
+/* L'onde d'une décharge : 24 unités au plus, moins si la place manque ;
+   sous 12 unités de place libre autour du neurone, pas de décharge. */
+const ECLAT = { duree: 1.25, onde: 24, marge: 12, pool: 8 };
 /* Une décharge spontanée toutes les 2,5 à 5 secondes, et une arrivée
    d'influx sur huit environ qui en déclenche une ; les autres arrivées
    allument seulement le neurone. */
@@ -153,7 +158,7 @@ export function animerReseau(racine) {
   const influx = points.map((point, i) => {
     const traine = svg('line', { class: 'page-une__traine', style: { stroke: 'url(#nerf-traine-' + i + ')' } });
     signaux.insertBefore(traine, point);
-    return { point, traine, degrade: degrades[i], liaison: 0, depart: 0, p: 0, vitesse: entre(hasard, INFLUX.vitesse) };
+    return { point, traine, degrade: degrades[i], liaison: 0, depart: 0, p: 0, vitesse: entre(hasard, INFLUX.vitesse), voile: '' };
   });
 
   const groupeEclats = svg('g', { class: 'page-une__eclats' });
@@ -164,7 +169,7 @@ export function animerReseau(racine) {
       svg('circle', { class: 'page-une__onde', r: '0' }),
       svg('circle', { class: 'page-une__coeur', r: '0' }));
     groupeEclats.append(g);
-    return { g, halo: g.children[0], onde: g.children[1], coeur: g.children[2], neurone: -1, age: Infinity, force: 0 };
+    return { g, halo: g.children[0], onde: g.children[1], coeur: g.children[2], neurone: -1, age: Infinity, force: 0, rayon: 0 };
   });
 
   /* --- Les influx : chacun sur une liaison, dans un sens ------------------ */
@@ -178,40 +183,80 @@ export function animerReseau(racine) {
     liaisons[liaison].noeud.classList.add('page-une__liaison--active');
   };
 
-  /* Ce que la une montre du dessin : sur un écran large, seulement une
-     bande au milieu (le haut et le bas sont rognés, les bords s'effacent).
-     Les influx y sont attirés et les décharges y tombent : ce qui bouge se
-     voit. Relu quand la fenêtre change de taille. */
-  let enVue = neurones.map(() => true);
+  /* Ce que la une montre du dessin, en unités du viewBox : sur un écran
+     large, seulement une bande au milieu (le haut et le bas sont rognés,
+     les bords s'effacent) ; au centre, le nom du pôle. Les influx sont
+     attirés par ce qui se voit hors du nom (poids 3), passent rarement
+     sous le nom (poids 0,2). Relu quand la une ou le nom changent de
+     taille (le nom s'écrit après le chargement, la police arrive). */
+  let bande = null;     // { gauche, droite, haut, bas }
+  let nom = null;       // idem, la boîte du titre
+  let poids = neurones.map(() => 1);
+
+  /* La distance d'un point au nom (0 dessous). */
+  const loinDuNom = (x, y) => {
+    if (!nom) return Infinity;
+    return Math.hypot(Math.max(nom.gauche - x, 0, x - nom.droite), Math.max(nom.haut - y, 0, y - nom.bas));
+  };
+  /* La place libre autour d'un point : jusqu'au bord de ce qui se voit,
+     ou jusqu'au nom. Négative hors de la bande. */
+  const place = (x, y) => Math.min(loinDuNom(x, y),
+    bande ? Math.min(x - bande.gauche, bande.droite - x, y - bande.haut, bande.bas - y) : Infinity);
+  /* Sous le nom, ce qui bouge s'efface (jusqu'à 18 %) : il reste lisible. */
+  const voile = (x, y) => {
+    const k = Math.min(1, loinDuNom(x, y) / 26);
+    return 0.18 + 0.82 * k * k * (3 - 2 * k);
+  };
+
+  const titre = (dessin.parentElement || document).querySelector('.page-une h1');
   const mesurer = () => {
     const vb = dessin.viewBox && dessin.viewBox.baseVal;
     const boite = dessin.getBoundingClientRect();
     const cadre = (dessin.parentElement || dessin).getBoundingClientRect();
     if (!vb || !vb.width || !boite.width) return;
     const echelle = boite.width / vb.width;
-    const gauche = Math.max(cadre.left, boite.left + boite.width * 0.16);
-    const droite = Math.min(cadre.right, boite.right - boite.width * 0.16);
-    const vus = neurones.map((n) => {
-      const x = boite.left + (n.x0 - vb.x) * echelle;
-      const y = boite.top + (n.y0 - vb.y) * echelle;
-      return x > gauche && x < droite && y > cadre.top + 6 && y < cadre.bottom - 6;
-    });
-    enVue = vus.some(Boolean) ? vus : neurones.map(() => true);
+    const versX = (px) => vb.x + (px - boite.left) / echelle;
+    const versY = (px) => vb.y + (px - boite.top) / echelle;
+    bande = {
+      gauche: versX(Math.max(cadre.left, boite.left + boite.width * 0.16)),
+      droite: versX(Math.min(cadre.right, boite.right - boite.width * 0.16)),
+      haut: versY(cadre.top),
+      bas: versY(cadre.bottom)
+    };
+    /* La place du nom dans la mise en page, sans la petite montée de son
+       arrivée (une translation, que getBoundingClientRect compterait). */
+    const parent = titre && titre.offsetParent;
+    if (parent && titre.offsetWidth) {
+      const p = parent.getBoundingClientRect();
+      const x = p.left + titre.offsetLeft;
+      const y = p.top + titre.offsetTop;
+      nom = { gauche: versX(x), droite: versX(x + titre.offsetWidth), haut: versY(y), bas: versY(y + titre.offsetHeight) };
+    } else {
+      nom = null;
+    }
+    poids = neurones.map((n) => (loinDuNom(n.x0, n.y0) < 8 ? 0.2 : place(n.x0, n.y0) > n.r ? 3 : 1));
   };
   mesurer();
-  window.addEventListener('resize', mesurer);
+  if (typeof ResizeObserver === 'function') {
+    const observateur = new ResizeObserver(() => mesurer());
+    observateur.observe(dessin);
+    if (dessin.parentElement) observateur.observe(dessin.parentElement);
+    if (titre) observateur.observe(titre);
+  } else {
+    window.addEventListener('resize', mesurer);
+  }
 
-  /* Un tirage pondéré : ce qui est en vue pèse trois fois plus. */
-  const choisir = (liste, poids) => {
-    const total = liste.reduce((s, x) => s + poids(x), 0);
+  /* Un tirage pondéré. */
+  const choisir = (liste, peser) => {
+    const total = liste.reduce((s, x) => s + peser(x), 0);
     let r = hasard() * total;
-    for (const x of liste) { r -= poids(x); if (r < 0) return x; }
+    for (const x of liste) { r -= peser(x); if (r < 0) return x; }
     return liste[liste.length - 1];
   };
   const autreBout = (liaison, neurone) => (liaisons[liaison].a === neurone ? liaisons[liaison].b : liaisons[liaison].a);
 
   influx.forEach((f) => {
-    const l = choisir(liaisons.map((_l, i) => i), (i) => (enVue[liaisons[i].a] || enVue[liaisons[i].b] ? 3 : 1));
+    const l = choisir(liaisons.map((_l, i) => i), (i) => Math.max(poids[liaisons[i].a], poids[liaisons[i].b]));
     liaisons[l].actifs += 1;
     liaisons[l].noeud.classList.add('page-une__liaison--active');
     f.liaison = l;
@@ -219,24 +264,31 @@ export function animerReseau(racine) {
     f.p = hasard();
   });
 
-  /* Au bout de la liaison : le neurone s'allume, et l'influx repart par une
-     autre liaison que celle d'où il vient (s'il en a une). */
+  /* Au bout de la liaison : le neurone s'allume (décharge s'il a la place),
+     et l'influx repart par une autre liaison que celle d'où il vient (s'il
+     en a une). */
   const arriver = (f) => {
     const arrivee = autreBout(f.liaison, f.depart);
-    allumer(arrivee, hasard() < EVEIL.parArrivee ? 1 : 0.45);
+    const n = neurones[arrivee];
+    const libre = place(n.x, n.y) - n.r;
+    if (hasard() < EVEIL.parArrivee && libre >= ECLAT.marge) allumer(arrivee, 1, libre);
+    else allumer(arrivee, 0.45 * voile(n.x, n.y), 0);
     const suites = voisins[arrivee].filter((i) => i !== f.liaison);
-    const suite = suites.length ? choisir(suites, (i) => (enVue[autreBout(i, arrivee)] ? 3 : 1)) : f.liaison;
+    const suite = suites.length ? choisir(suites, (i) => poids[autreBout(i, arrivee)]) : f.liaison;
     entrer(f, suite, arrivee);
   };
 
   /* --- Les éclats : un halo, un cœur, et pour une décharge une onde ------ */
 
-  function allumer(neurone, force) {
-    let libre = eclats[0];
-    for (const e of eclats) if (e.age > libre.age) libre = e;
-    libre.neurone = neurone;
-    libre.age = 0;
-    libre.force = force;
+  /* libre : la place autour du neurone (0 pour un simple allumage, sans
+     onde) ; l'onde et le halo s'y tiennent. */
+  function allumer(neurone, force, libre) {
+    let e = eclats[0];
+    for (const x of eclats) if (x.age > e.age) e = x;
+    e.neurone = neurone;
+    e.age = 0;
+    e.force = force;
+    e.rayon = libre > 0 ? Math.min(ECLAT.onde, libre - 3) : 0;
   }
 
   let prochainEveil = entre(hasard, EVEIL.ecart);
@@ -290,12 +342,21 @@ export function animerReseau(racine) {
       /* La traîne : une longueur fixe derrière l'influx, qui s'efface vers
          l'arrière (son dégradé la suit, en coordonnées du dessin). */
       const queue = Math.max(0, f.p - INFLUX.traine / longueur);
-      const x = fixe(de.x + (vers.x - de.x) * f.p);
-      const y = fixe(de.y + (vers.y - de.y) * f.p);
+      const px = de.x + (vers.x - de.x) * f.p;
+      const py = de.y + (vers.y - de.y) * f.p;
+      const x = fixe(px);
+      const y = fixe(py);
       const qx = fixe(de.x + (vers.x - de.x) * queue);
       const qy = fixe(de.y + (vers.y - de.y) * queue);
       f.point.setAttribute('cx', x);
       f.point.setAttribute('cy', y);
+      /* Sous le nom, l'influx et sa traîne s'effacent. */
+      const v = voile(px, py).toFixed(2);
+      if (v !== f.voile) {
+        f.voile = v;
+        f.point.style.opacity = (0.95 * v).toFixed(2);
+        f.traine.style.opacity = v;
+      }
       for (const noeud of [f.traine, f.degrade]) {
         noeud.setAttribute('x1', qx);
         noeud.setAttribute('y1', qy);
@@ -306,8 +367,12 @@ export function animerReseau(racine) {
 
     prochainEveil -= dt;
     if (prochainEveil <= 0) {
-      const candidats = neurones.map((_n, i) => i).filter((i) => enVue[i]);
-      allumer(candidats[Math.floor(hasard() * candidats.length)], 1);
+      /* Une décharge spontanée, là où son onde tient tout entière. */
+      const candidats = neurones.map((n, i) => [i, place(n.x, n.y) - n.r]).filter(([, libre]) => libre >= ECLAT.marge);
+      if (candidats.length) {
+        const [i, libre] = candidats[Math.floor(hasard() * candidats.length)];
+        allumer(i, 1, libre);
+      }
       prochainEveil = entre(hasard, EVEIL.ecart);
     }
 
@@ -328,9 +393,10 @@ export function animerReseau(racine) {
         c.setAttribute('cx', fixe(n.x));
         c.setAttribute('cy', fixe(n.y));
       }
-      e.halo.setAttribute('r', fixe(n.r * (1.6 + 2.6 * ouverture)));
+      const halo = n.r * (1.6 + 2.6 * ouverture);
+      e.halo.setAttribute('r', fixe(e.rayon ? Math.min(halo, n.r + e.rayon + 3) : halo));
       e.coeur.setAttribute('r', fixe(n.r * (1 - 0.3 * k)));
-      e.onde.setAttribute('r', e.force >= 1 ? fixe(n.r + ECLAT.onde * ouverture) : '0');
+      e.onde.setAttribute('r', e.rayon ? fixe(n.r + e.rayon * ouverture) : '0');
     }
   }
 

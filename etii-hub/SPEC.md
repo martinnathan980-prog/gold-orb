@@ -242,11 +242,13 @@ Exigences :
 - **Insensible à la casse et aux accents.**
 - **Surlignage** des termes trouvés dans les résultats.
 - **Filtres combinables** : le pôle (ETIIA, ETIIE, ETIII — le service qui
-  tient le document, seul classement affiché) et le type (tuiles
-  d'accueil). Le métier n'est plus ni filtre ni étiquette, mais ses mots
-  restent cherchables ; le porteur du document n'est ni affiché, ni
-  filtrable, ni indexé. Un fonds qui porte encore ces champs se lit sans
-  erreur.
+  tient le document, seul classement affiché, choisi d'un clic sous la
+  barre) et le type (tuiles d'accueil). Le métier n'est plus ni filtre ni
+  étiquette, mais ses mots restent cherchables : quand une carte sort par
+  eux (ou par ses mots-clés) sans montrer le mot, une ligne « Sujet : … »
+  le dit, surligné. Le porteur du document n'est ni affiché, ni
+  filtrable, ni indexé, ni dans la recherche « partout ». Un fonds qui
+  porte encore ces champs se lit sans erreur.
 - **Navigation 100 % clavier** : `/` pour focaliser, `↑`/`↓` pour parcourir,
   `Entrée` pour ouvrir, `Échap` pour effacer.
 - **URL partageable** : l'état (requête + facettes) est reflété dans le

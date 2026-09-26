@@ -52,6 +52,40 @@ t('les liaisons suivent leurs neurones', b.liaisons.every((l) => places.has(l[0]
 t('les influx courent sur le réseau', b.influx.length >= 5 && !identiques(a.influx, b.influx), JSON.stringify(b.influx.slice(0, 3)));
 t('le réseau prend la couleur du pôle', /^rgb/.test(a.couleur) && a.couleur !== 'rgb(0, 0, 0)', a.couleur);
 
+/* Le nom reste net et rien n'est rogné : une onde de décharge tient tout
+   entière dans la une, sans toucher le nom ; un influx qui passe sous le
+   nom s'efface. Relevé sur une dizaine de secondes. */
+const cadrer = (p) => p.evaluate(() => new Promise((fin) => {
+  const tete = document.querySelector('.page-tete--une').getBoundingClientRect();
+  const h = document.querySelector('#pole-titre');
+  const p = h.offsetParent.getBoundingClientRect();
+  const nom = { left: p.left + h.offsetLeft, top: p.top + h.offsetTop, right: p.left + h.offsetLeft + h.offsetWidth, bottom: p.top + h.offsetTop + h.offsetHeight };
+  const loin = (x, y) => Math.hypot(Math.max(nom.left - x, 0, x - nom.right), Math.max(nom.top - y, 0, y - nom.bottom));
+  const r = { ondes: 0, rognees: 0, surNom: 0, sousNom: 0, vifsSousNom: 0 };
+  let n = 0;
+  const tic = setInterval(() => {
+    for (const g of document.querySelectorAll('.page-une__eclat')) {
+      const o = g.querySelector('.page-une__onde');
+      if (Number(g.getAttribute('opacity') || 0) < 0.05 || !(Number(o.getAttribute('r')) > 0)) continue;
+      const b = o.getBoundingClientRect();
+      r.ondes += 1;
+      if (b.top < tete.top - 1 || b.bottom > tete.bottom + 1) r.rognees += 1;
+      if (loin(b.left + b.width / 2, b.top + b.height / 2) < b.width / 2 - 1) r.surNom += 1;
+    }
+    for (const c of document.querySelectorAll('.page-une__influx')) {
+      const b = c.getBoundingClientRect();
+      if (loin(b.left + b.width / 2, b.top + b.height / 2) > 0) continue;
+      r.sousNom += 1;
+      if (Number(getComputedStyle(c).opacity) > 0.4) r.vifsSousNom += 1;
+    }
+    if (++n >= 70) { clearInterval(tic); fin(r); }
+  }, 150);
+}));
+const cadrage = await cadrer(page);
+t('des décharges, et leur onde n’est jamais rognée par la une', cadrage.ondes > 5 && cadrage.rognees === 0, JSON.stringify(cadrage));
+t('ni ne touche le nom du pôle', cadrage.surNom === 0, JSON.stringify(cadrage));
+t('un influx sous le nom s’efface', cadrage.vifsSousNom === 0, JSON.stringify(cadrage));
+
 const cadence = await page.evaluate(() => new Promise((fin) => {
   const p = document.querySelector('.page-une__influx');
   let n = 0; let dernier = p.getAttribute('cx');
@@ -109,6 +143,10 @@ t('sur téléphone, le décor reste dans la une', await mobile.evaluate(() => {
   return getComputedStyle(tete).overflow === 'hidden' && r.left >= 0 && r.right <= innerWidth + 0.5
     && document.querySelector('.page-une__decor--vivant') !== null;
 }));
+const cadrageMobile = await cadrer(mobile);
+t('sur téléphone aussi, les ondes tiennent dans la une, hors du nom, et les influx s’effacent sous le nom',
+  cadrageMobile.ondes > 5 && cadrageMobile.rognees === 0 && cadrageMobile.surNom === 0 && cadrageMobile.vifsSousNom === 0,
+  JSON.stringify(cadrageMobile));
 
 console.log('\n== Mouvement réduit ==');
 const reduit = await (await nav.newContext({ viewport: { width: 1366, height: 900 }, reducedMotion: 'reduce' })).newPage();

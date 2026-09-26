@@ -13,8 +13,8 @@
         stockage local.
 
    Ce que la page raconte, dans l'ordre :
-     « Que recherchez-vous ? »  — la question, une barre large, le menu du
-                                  pôle : le service est le seul classement.
+     « Que recherchez-vous ? »  — la question, une barre large, le choix
+                                  du pôle : le service est le seul classement.
      « Par où commencer ? »     — les chiffres du fonds, puis trois façons
                                   d'entrer dedans sans rien taper.
      Dès la deuxième lettre     — des propositions sous le champ.
@@ -258,8 +258,8 @@ async function avecEtatLocal(cible, source, rendu, options) {
    ETIIA / ETIIE / ETIII sont à une seule substitution les uns des autres :
    indexés, la tolérance aux fautes de frappe (Levenshtein ≤ 1 sur 4 à 7
    caractères, SPEC §5) ferait remonter les documents d'un pôle quand on
-   tape le code d'un autre. Le pôle se choisit donc au menu déroulant ou à
-   la tuile d'accueil, qui sont exacts, et se lit sur la carte — jamais au
+   tape le code d'un autre. Le pôle se choisit donc sous la barre, d'un
+   clic, ce qui est exact, et se lit sur la carte — jamais au
    petit bonheur du classement.
 
    Le porteur d'un document (la personne qui le tient) n'est plus indexé :
@@ -288,22 +288,22 @@ const NOMS_CHAMPS = {
   titre: 'le titre',
   reference: 'la référence',
   motsCles: 'les mots-clés',
-  metier: 'le domaine',
+  metier: 'le sujet',
   type: 'le type',
   perimetre: 'le périmètre',
   description: 'la description'
 };
 
 /*
-   Le menu déroulant de la barre : le pôle, c'est-à-dire le service qui
-   tient le document. Un vrai <select> étiqueté, à valeur unique : « Tous
-   les pôles » est la valeur vide. Il se combine (ET) avec la requête et
-   avec le type choisi par une tuile.
+   Le choix sous la barre : le pôle, c'est-à-dire le service qui tient le
+   document. Un groupe de boutons radio nommé (« Pôle »), à valeur unique :
+   « Tous les pôles » est la valeur vide. Il se combine (ET) avec la
+   requête et avec le type choisi par une tuile.
 
    `champ` peut désigner une chaîne ou un TABLEAU dans le document : un
    document relève parfois de deux pôles. `valeursDoc()` normalise les
    deux formes, et toute la mécanique — filtrage, jetons, hash, « Tout
-   effacer » — est écrite une fois, sur la liste des dimensions : un menu
+   effacer » — est écrite une fois, sur la liste des dimensions : un choix
    de plus ne demanderait qu'une entrée ici.
 */
 const DIMENSIONS = [
@@ -498,7 +498,7 @@ function parDimension(fabrique) {
 const etat = {
   /** Texte saisi, tel quel. */
   requete: '',
-  /** Valeur choisie dans chaque menu déroulant ('' = « Tous les … »). */
+  /** Valeur choisie dans chaque groupe de choix ('' = « Tous les … »). */
   filtres: parDimension(() => ''),
   /** Type retenu par une tuile d'accueil ('' = aucun). */
   type: '',
@@ -538,7 +538,7 @@ const refs = {
   zone: null,
   suggestions: null,
   jetons: null,
-  menus: new Map(),          // clé de dimension -> <select>
+  menus: new Map(),          // clé de dimension -> <fieldset> de boutons radio
   accueil: null,
   resultats: null,           // la section entière
   compteur: null,
@@ -596,6 +596,11 @@ function premiere(valeur) {
 /** Chaîne non vide, ou '' — jamais `undefined` ni « null » affiché. */
 function texteOuVide(valeur) {
   return (typeof valeur === 'string' && valeur.trim() !== '') ? valeur : '';
+}
+
+/** Un champ texte ou liste de textes, toujours en tableau de chaînes non vides. */
+function tableauDeTextes(valeur) {
+  return (Array.isArray(valeur) ? valeur : [valeur]).map(texteOuVide).filter(Boolean);
 }
 
 /**
@@ -1073,21 +1078,35 @@ function ordonner(documents) {
    ------------------------------------------------------------------------- */
 
 /**
- * Remplit le menu déroulant de la barre (le pôle) et le rend actif.
- * Le balisage vient de la page : seule la liste d'options dépend du JSON.
+ * Un choix du groupe « Pôle » : un bouton radio masqué, et la pastille
+ * qu'on voit — le point de couleur du pôle, puis son code écrit.
+ */
+function choixDimension(dimension, valeur) {
+  return el('label', { class: 'ds-pole', dataset: { valeur, pole: valeur } },
+    el('input', { class: 'ds-pole__radio visuellement-cache', type: 'radio', name: dimension.cle, value: valeur }),
+    el('span', { class: 'ds-pole__nom' },
+      el('span', { class: 'pole-point', ariaHidden: 'true' }),
+      valeur));
+}
+
+/**
+ * Remplit le groupe de choix sous la barre (le pôle) et le rend actif.
+ * Le balisage vient de la page : seule la liste des pôles dépend du JSON.
  */
 function remplirMenus() {
   for (const dimension of DIMENSIONS) {
-    const select = refs.menus.get(dimension.cle);
-    if (!select) continue;
+    const groupe = refs.menus.get(dimension.cle);
+    if (!groupe) continue;
 
-    // Un « Réessayer » repasse ici : on ne garde que l'option « Tous les … ».
-    while (select.options.length > 1) select.remove(1);
+    // Un « Réessayer » repasse ici : on ne garde que le choix « Tous les … ».
+    for (const choix of groupe.querySelectorAll('.ds-pole')) {
+      if (choix.dataset.valeur !== '') choix.remove();
+    }
 
-    select.append(frag(corpus.valeurs[dimension.cle].map(
-      (valeur) => el('option', { value: valeur }, valeur))));
+    groupe.append(frag(corpus.valeurs[dimension.cle].map(
+      (valeur) => choixDimension(dimension, valeur))));
 
-    select.disabled = false;
+    groupe.disabled = false;
   }
 }
 
@@ -1298,13 +1317,16 @@ function rendre() {
   annoncerResultats();
 }
 
-/** Reporte l'état dans le menu déroulant. */
+/** Reporte l'état dans le groupe de choix : le bouton de la valeur est coché. */
 function majMenus() {
   for (const dimension of DIMENSIONS) {
-    const select = refs.menus.get(dimension.cle);
-    if (!select) continue;
+    const groupe = refs.menus.get(dimension.cle);
+    if (!groupe) continue;
     const valeur = etat.filtres[dimension.cle];
-    if (select.value !== valeur) select.value = valeur;
+    for (const radio of groupe.querySelectorAll('input[type="radio"]')) {
+      const coche = radio.value === valeur;
+      if (radio.checked !== coche) radio.checked = coche;
+    }
   }
 }
 
@@ -1345,11 +1367,14 @@ function jetonFiltre(filtre, compacte) {
 /**
  * Ligne de jetons sous la barre : ce qui est actif est écrit en toutes
  * lettres, retirable un à un, avec un « Tout effacer » en bout de ligne.
+ * Le pôle n'y a pas de jeton : le groupe de choix, juste au-dessus, montre
+ * déjà le pôle retenu (et « Tous les pôles » le retire). Reste le type,
+ * choisi par une tuile de l'accueil qui n'est plus à l'écran.
  * La liste n'est rebâtie que lorsqu'elle change réellement : un jeton qui
  * a le focus n'est pas détruit à chaque caractère saisi.
  */
 function majJetons() {
-  const actifs = filtresActifs();
+  const actifs = filtresActifs().filter((filtre) => !refs.menus.has(filtre.cle));
   const signature = actifs.map((f) => f.cle + '=' + f.valeur).join('&');
   if (signature === signatureJetons) return;
   signatureJetons = signature;
@@ -1702,6 +1727,7 @@ function obtenirFiche(doc) {
   const reference = el('span', { class: 'badge badge--carre badge--contour' });
   const extrait = el('p', { class: 'ds-carte__extrait' });
   const raison = el('p', { class: 'ds-carte__meta', hidden: true });
+  const sujet = el('p', { class: 'ds-carte__sujet', hidden: true });
 
   /* Le ou les pôles dont relève le document : c'est son seul classement
      (le service qui le tient), à la place des anciens métiers. Une
@@ -1812,6 +1838,7 @@ function obtenirFiche(doc) {
     reference),
   titre,
   extrait,
+  sujet,
   raison,
   el('ul', { class: 'facettes' }, poles),
   el('div', { class: 'carte__pied ds-carte__pied' },
@@ -1823,7 +1850,7 @@ function obtenirFiche(doc) {
     sansLien,
     actions));
 
-  const fiche = { doc, carte, titre, reference, extrait, raison, requete: null };
+  const fiche = { doc, carte, titre, reference, extrait, sujet, raison, requete: null };
   fiches.set(id, fiche);
   return fiche;
 }
@@ -1844,20 +1871,29 @@ function majSurlignage(fiche, requete) {
   const description = texteOuVide(doc.description);
   const vide = requete.trim() === '';
 
+  /* Chaque texte montré sur la carte, découpé une fois selon la requête :
+     on en tire le surlignage, et on sait si la carte montre déjà ce qui
+     l'a fait sortir. */
+  const decoupe = (texte) => (vide || texte === '' ? [] : surligner(texte, requete));
+  const touche = (morceaux) => morceaux.some((m) => m.correspond);
+  const morceauxTitre = decoupe(titre);
+  const morceauxReference = decoupe(reference);
+
   if (titre !== '') {
     if (vide) fiche.titre.textContent = titre;
-    else monter(fiche.titre, surlignerVers(surligner(titre, requete)));
+    else monter(fiche.titre, surlignerVers(morceauxTitre));
   } else {
     monter(fiche.titre, valeurOuManquant(''));
   }
 
   if (reference !== '') {
     if (vide) fiche.reference.textContent = reference;
-    else monter(fiche.reference, surlignerVers(surligner(reference, requete)));
+    else monter(fiche.reference, surlignerVers(morceauxReference));
   } else {
     monter(fiche.reference, valeurOuManquant(''));
   }
 
+  let morceauxExtrait = [];
   if (description === '') {
     monter(fiche.extrait, valeurOuManquant(''));
   } else if (vide) {
@@ -1865,10 +1901,38 @@ function majSurlignage(fiche, requete) {
     fiche.extrait.textContent = description;
   } else {
     const morceau = extraitPertinent(description, requete);
+    morceauxExtrait = surligner(morceau.texte, requete);
     monter(fiche.extrait,
       morceau.avant ? '… ' : null,
-      surlignerVers(surligner(morceau.texte, requete)),
+      surlignerVers(morceauxExtrait),
       morceau.apres ? ' …' : null);
+  }
+
+  /* La carte ne montre ni le sujet (les anciens métiers) ni les mots-clés.
+     Quand c'est par eux seuls qu'elle sort, une ligne discrète le dit —
+     « Sujet : Harnais », le mot surligné — pour qu'aucun résultat ne
+     paraisse tombé du ciel. */
+  let termes = [];
+  if (!vide && !touche(morceauxTitre) && !touche(morceauxReference) && !touche(morceauxExtrait)) {
+    const vus = new Set();
+    termes = [].concat(tableauDeTextes(doc.metier), tableauDeTextes(doc.motsCles))
+      .map((terme) => ({ terme, morceaux: surligner(terme, requete) }))
+      .filter(({ terme, morceaux }) => {
+        const cle = terme.toLocaleLowerCase('fr');
+        if (!touche(morceaux) || vus.has(cle)) return false;
+        vus.add(cle);
+        return true;
+      })
+      .slice(0, 3);
+  }
+  if (termes.length === 0) {
+    fiche.sujet.hidden = true;
+    vider(fiche.sujet);
+  } else {
+    fiche.sujet.hidden = false;
+    monter(fiche.sujet,
+      el('span', { class: 'ds-carte__sujet-cle' }, pluriel(termes.length, 'Sujet', 'Sujets') + ' : '),
+      termes.map(({ morceaux }, i) => frag(i ? ', ' : null, surlignerVers(morceaux))));
   }
 
   // Pourquoi cette carte sort : les champs que le moteur a réellement
@@ -1991,7 +2055,7 @@ function choisirType(valeur) {
   refs.champ.focus();
 }
 
-/** Une tuile de pôle a été choisie : elle alimente le menu « Pôle ». */
+/** Une tuile de pôle a été choisie : elle alimente le choix « Pôle ». */
 function choisirPole(valeur) {
   if (!DIMENSION_POLE || !corpus.connues.pole.has(valeur)) return;
   etat.filtres.pole = valeur;
@@ -2042,8 +2106,9 @@ function allerAuDocument(id) {
 }
 
 /**
- * Retire un filtre, puis replace le focus sur un élément vivant : le menu
- * déroulant correspondant s'il existe, le champ de recherche sinon.
+ * Retire un filtre, puis replace le focus sur un élément vivant : le choix
+ * désormais coché du groupe correspondant s'il existe, le champ de
+ * recherche sinon.
  *
  * @param {string} cle 'type', ou la clé d'une dimension
  */
@@ -2061,8 +2126,9 @@ function retirerFiltre(cle) {
   etat.filtres[cle] = '';
   rendre();
 
-  const select = refs.menus.get(cle);
-  if (select && select.isConnected && !select.disabled) select.focus();
+  const groupe = refs.menus.get(cle);
+  const coche = groupe && groupe.querySelector('input[type="radio"]:checked');
+  if (coche && groupe.isConnected && !groupe.disabled) coche.focus();
   else refs.champ.focus();
 }
 
@@ -2395,8 +2461,8 @@ function formulaireProposition(requeteEchouee) {
     el('option', { value: '' }, 'Non précisé'),
     corpus.types.map((type) => el('option', { value: type }, type)));
 
-  // Le pôle concerné : le service à qui en parler. Celui du menu, s'il
-  // est choisi, est proposé d'office.
+  // Le pôle concerné : le service à qui en parler. Celui choisi sous la
+  // barre, s'il l'est, est proposé d'office.
   const champPole = el('select', { class: 'champ__controle', id: idBase + '-pole' },
     el('option', { value: '' }, 'Non précisé'),
     corpus.valeurs.pole.map((code) => el('option', { value: code, selected: code === etat.filtres.pole }, code)));
@@ -2613,8 +2679,8 @@ function demarrer() {
   refs.propositionsListe = document.getElementById('ds-propositions-liste');
 
   for (const dimension of DIMENSIONS) {
-    const select = document.getElementById(dimension.id);
-    if (select) refs.menus.set(dimension.cle, select);
+    const groupe = document.getElementById(dimension.id);
+    if (groupe) refs.menus.set(dimension.cle, groupe);
   }
 
   if (!refs.champ || !refs.zone || !refs.suggestions || !refs.jetons) return;
@@ -2681,13 +2747,15 @@ function demarrer() {
     else if (bouton.dataset.action === 'tout-effacer') toutEffacer();
   });
 
-  // Le menu déroulant du pôle : il se combine avec le type et avec la
-  // recherche, et ne survit jamais à un état qu'il ne décrit pas.
+  // Le choix du pôle : il se combine avec le type et avec la recherche,
+  // et ne survit jamais à un état qu'il ne décrit pas.
   for (const dimension of DIMENSIONS) {
-    const select = refs.menus.get(dimension.cle);
-    if (!select) continue;
-    select.addEventListener('change', () => {
-      const valeur = select.value;
+    const groupe = refs.menus.get(dimension.cle);
+    if (!groupe) continue;
+    groupe.addEventListener('change', (evt) => {
+      const radio = evt.target;
+      if (!radio || radio.name !== dimension.cle || !radio.checked) return;
+      const valeur = radio.value;
       etat.filtres[dimension.cle] =
         corpus.connues[dimension.cle].has(valeur) ? valeur : '';
       fermerPropositions();

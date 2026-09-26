@@ -254,25 +254,26 @@ t('le lien courant suit le défilement (Porteurs)', /porteurs/i.test(courantApre
 console.log('\n== Recherche : facette de pôle ==');
 await page.goto(`${B}/docsearch.html`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(900);
-// Le filtrage par pôle passe par un menu déroulant, le seul de la barre :
-// le pôle (le service) est le classement du fonds, sans métier ni porteur.
+// Le filtrage par pôle passe par un groupe de boutons radio, le seul
+// filtre de la barre : le pôle (le service) est le classement du fonds,
+// sans métier ni porteur.
 const optionsPole = await page.evaluate(() => {
-  const sel = document.getElementById('ds-pole');
-  return sel ? [...sel.options].map(o => o.value).filter(Boolean) : null;
+  const groupe = document.getElementById('ds-pole');
+  return groupe ? [...groupe.querySelectorAll('input[type="radio"]')].map(r => r.value).filter(Boolean) : null;
 });
-t('le menu « pôle » propose les trois pôles',
+t('le choix « pôle » propose les trois pôles',
   Array.isArray(optionsPole) && ['ETIIA', 'ETIIE', 'ETIII'].every(c => optionsPole.includes(c)),
   JSON.stringify(optionsPole));
 
 const attenduA = docs.documents.filter(d => (d.pole || []).includes('ETIIA')).length;
-await page.selectOption('#ds-pole', 'ETIIA');
+await page.locator('#ds-pole .ds-pole', { hasText: 'ETIIA' }).click();
 await page.waitForTimeout(800);
 const n = await page.locator('#ds-resultats > *').count();
 t(`choisir ETIIA filtre les résultats (${attenduA} documents concernés)`,
   n > 0 && n <= attenduA, `(${n}/${attenduA})`);
 t('le choix est reflété dans l\'URL', /ETIIA/i.test(decodeURIComponent(page.url())),
   page.url().slice(-60));
-t('le pôle est le seul menu de filtre',
+t('le pôle est le seul filtre de la barre',
   (await page.locator('#ds-metier, #ds-porteur, #ds-pole').count()) === 1
   && (await page.locator('#ds-pole').count()) === 1);
 

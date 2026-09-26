@@ -64,7 +64,9 @@ function entreesDocuments(d) {
   return (d && Array.isArray(d.documents) ? d.documents : []).filter((x) => x && texte(x.titre)).map((x) => ({
     id: 'document-' + texte(x.id), groupe: 'document',
     titre: texte(x.titre),
-    sousTitre: [texte(x.type), texte(x.reference), texte(x.porteur) ? 'porteur du document : ' + texte(x.porteur) : ''].filter(Boolean).join(' · '),
+    /* Le pôle classe le document ; son porteur n'est pas cité ici, comme
+       sur la page de recherche. */
+    sousTitre: [texte(x.type), texte(x.reference), liste(x.pole).length ? 'pôle ' + liste(x.pole).join(', ') : ''].filter(Boolean).join(' · '),
     texte: [texte(x.description), liste(x.motsCles).join(' '), liste(x.metier).join(' '), texte(x.perimetre)].join(' '),
     href: 'docsearch.html#q=' + encoder(texte(x.reference) || texte(x.titre))
   }));

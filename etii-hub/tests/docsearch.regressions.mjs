@@ -18,16 +18,19 @@ let ok=0,ko=0; const t=(n,c,d='')=>{c?(ok++,console.log(`  OK    ${n}`)):(ko++,c
 
 console.log('== Défaut 1 : le classement du fonds se filtre ==');
 // Le document se classe par son pôle (le service qui le tient) et par son
-// type : un menu pour le pôle, des tuiles pour le type. Les anciens menus
-// Métier et Porteur sont partis — le contrôle porte sur la CAPACITÉ de
-// filtrer par le classement voulu, et sur leur absence.
+// type : un groupe de boutons radio pour le pôle, des tuiles pour le type.
+// Les anciens menus Métier et Porteur sont partis — le contrôle porte sur
+// la CAPACITÉ de filtrer par le classement voulu, et sur leur absence.
 const filtres = await page.evaluate(() => ({
   menus: ['ds-metier', 'ds-porteur', 'ds-pole']
     .filter(id => document.getElementById(id)),
+  poles: [...document.querySelectorAll('#ds-pole input[type="radio"]')].map(r => r.value),
   typesParTuile: [...document.querySelectorAll('[data-action="filtrer-type"]')].length,
 }));
-t('le seul menu de filtre est le pôle', JSON.stringify(filtres.menus) === '["ds-pole"]',
-  JSON.stringify(filtres.menus));
+t('le seul filtre est le pôle, choisi d’un clic parmi les trois',
+  JSON.stringify(filtres.menus) === '["ds-pole"]'
+  && JSON.stringify(filtres.poles) === '["","ETIIA","ETIIE","ETIII"]',
+  JSON.stringify(filtres));
 t('le filtrage par type passe par les tuiles', filtres.typesParTuile >= 5,
   `(${filtres.typesParTuile} tuiles)`);
 

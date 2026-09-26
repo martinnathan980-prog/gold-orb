@@ -130,7 +130,8 @@ t('la tolérance aux fautes marche hors serveur',
   (await f.locator('#ds-resultats > *').count()) > 0);
 t('les termes sont surlignés', (await f.locator('mark').count()) > 0);
 const menus = await f.locator('#ds-metier, #ds-porteur, #ds-pole').count();
-t('un seul menu de filtre, le pôle', menus === 1 && (await f.locator('#ds-pole').count()) === 1, `(${menus})`);
+t('un seul filtre, le pôle, choisi d’un clic', menus === 1
+  && (await f.locator('#ds-pole input[type="radio"]').count()) === 4, `(${menus})`);
 
 console.log('\n== Les neuf pages s\'ouvrent ==');
 for (const [lien, attendu] of [['etiie.html', 'ETIIE'], ['etiii.html', 'ETIII'],

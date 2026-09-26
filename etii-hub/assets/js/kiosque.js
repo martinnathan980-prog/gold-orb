@@ -473,9 +473,9 @@ function bandeauAlertes(alertes, surAlertes) {
 
 /* La lettrine d'une tuile sans photo : la première lettre du titre, en
    capitale — jamais un chiffre, qu'on lirait comme une date ; le mot du
-   chef prend un guillemet. */
+   chef prend un guillemet français. */
 function lettrine(dossier) {
-  if (dossier.statut === 'mot') return '“';
+  if (dossier.statut === 'mot') return '«';
   const m = /\p{L}/u.exec(dossier.titre || '');
   return m ? m[0].toUpperCase().slice(0, 1) : '·';
 }

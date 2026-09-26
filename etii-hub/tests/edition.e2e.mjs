@@ -195,10 +195,23 @@ await o.centrer(page.locator('#zone-documents .edition-ajout'));
 await page.locator('#zone-documents .edition-ajout').click();
 await o.remplir('Titre', 'Note d’essai du pôle');
 await o.remplir('Référence', 'ETII-TEC-998');
+/* « Documents du pôle » affiche le porteur de chaque document : son
+   formulaire le demande, parmi les membres du pôle. */
+const champPorteur = page.locator('.modale--formulaire .champ')
+  .filter({ has: page.locator('.champ__etiquette', { hasText: 'Porteur du document' }) }).locator('select');
+const porteursProposes = (await champPorteur.count())
+  ? await champPorteur.locator('option').evaluateAll((l) => l.map((x) => x.value).filter(Boolean)) : [];
+t('le formulaire d’un document du pôle demande son porteur, parmi les membres',
+  porteursProposes.length > 5 && porteursProposes.every((n) => /^Personne \d+/.test(n)), `(${porteursProposes.length})`);
+const porteurChoisi = porteursProposes[0] || '';
+if (porteurChoisi) await o.remplir('Porteur du document', porteurChoisi);
 await o.enregistrer();
 t('un document ajouté, daté du jour, rejoint les documents récents du pôle',
   (await page.locator('#zone-documents .pole-doc', { hasText: 'Note d’essai du pôle' }).count()) === 1
   && (await totalDocs()) === docsAvant + 1, `(${docsAvant} → ${await totalDocs()})`);
+t('avec le porteur choisi, lié à sa fiche',
+  !!porteurChoisi && (await page.locator('#zone-documents .pole-doc', { hasText: 'Note d’essai du pôle' }).locator('.pole-doc__porteur a').innerText().catch(() => '')) === porteurChoisi,
+  `(${porteurChoisi})`);
 await o.centrer(page.locator('#zone-faq .edition-ajout'));
 await page.locator('#zone-faq .edition-ajout').click();
 await o.remplir('Question', 'Question d’essai du pôle ?');
@@ -271,6 +284,11 @@ t('et se retire', (await page.locator('.faq__item', { hasText: 'Question d’ess
 await page.goto(`${B}/docsearch.html#q=ETII-TEC-998`, { waitUntil: 'networkidle' });
 await o.attendre(900);
 await page.locator('.ds-carte', { hasText: 'Note d’essai du pôle' }).locator('.ds-carte__edition .barre-edition__bouton', { hasText: 'Modifier' }).click();
+await page.waitForSelector('.modale--formulaire');
+/* La recherche documentaire ne montre plus de porteur : son formulaire ne
+   le demande pas, et le porteur saisi depuis le pôle est gardé. */
+t('depuis la recherche, le formulaire ne demande pas de porteur',
+  (await page.locator('.modale--formulaire .champ__etiquette', { hasText: /porteur/i }).count()) === 0);
 await o.remplir('Titre', 'Note d’essai du pôle (v2)');
 await o.enregistrer();
 t('un document se modifie depuis sa carte, la recherche en cours conservée',

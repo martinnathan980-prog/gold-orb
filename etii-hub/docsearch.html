@@ -240,25 +240,81 @@
       background-color: var(--fond-enfonce);
     }
 
-    /* --- A3. Le menu du pôle ---------------------------------------------
-       Seul sous la barre, centré, à la largeur de son libellé le plus long :
-       étiré sur toute la ligne, il ressemblerait à un second champ. */
+    /* --- A3. Le choix du pôle ---------------------------------------------
+       Le pôle — le service qui tient le document — est le seul classement
+       du fonds : ses quatre choix se font d'un clic, en une rangée de
+       pastilles centrée sous la barre, au lieu d'un menu qui les cacherait.
+       De vrais boutons radio (les flèches passent de l'un à l'autre, le
+       groupe s'appelle « Pôle ») ; le choix en cours est teinté et cerclé
+       d'accent, comme une facette active ; le point de couleur d'un pôle
+       est toujours suivi de son code. */
 
-    .ds-menus {
+    .ds-poles {
+      display: flex;
+      flex-wrap: wrap;
       justify-content: center;
-      inline-size: 100%;
-      max-inline-size: calc(var(--e-16) * 12);
-      margin-inline: auto;
+      gap: var(--e-1);
+      inline-size: fit-content;
+      max-inline-size: 100%;
+      min-inline-size: 0;
+      margin: 0 auto;
+      padding: var(--e-1);
+      background-color: var(--fond-eleve);
+      border: 1px solid var(--bordure);
+      border-radius: var(--rayon-plein);
+      transition: opacity var(--duree) var(--courbe);
     }
 
-    /* .champ__select est une boîte de bloc : dans une rangée, elle doit au
-       contraire rester à sa taille propre et pouvoir rétrécir. */
-    .ds-menu {
-      inline-size: auto;
-      flex: 0 1 calc(var(--e-16) * 3);
-      min-inline-size: min(calc(var(--e-16) * 3), 100%);
-      max-inline-size: 100%;
-      text-align: start;
+    /* Tant que le fonds n'est pas chargé, le groupe attend, estompé. */
+    .ds-poles:disabled { opacity: 0.55; }
+
+    .ds-pole {
+      display: inline-flex;
+      cursor: pointer;
+    }
+
+    .ds-poles:disabled .ds-pole { cursor: default; }
+
+    .ds-pole__nom {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--e-2);
+      min-block-size: calc(var(--cible-tactile) - var(--e-1));
+      padding-inline: var(--e-4);
+      border-radius: var(--rayon-plein);
+      font-family: var(--police);
+      font-size: var(--texte-sm);
+      font-weight: var(--graisse-moyenne);
+      letter-spacing: 0.02em;
+      color: var(--texte-doux);
+      white-space: nowrap;
+      transition: background-color var(--duree) var(--courbe),
+        color var(--duree) var(--courbe), box-shadow var(--duree) var(--courbe);
+    }
+
+    .ds-poles:not(:disabled) .ds-pole:hover .ds-pole__nom {
+      background-color: var(--fond-enfonce);
+      color: var(--texte);
+    }
+
+    .ds-pole__radio:checked + .ds-pole__nom,
+    .ds-poles:not(:disabled) .ds-pole:hover .ds-pole__radio:checked + .ds-pole__nom {
+      background-color: var(--accent-doux);
+      color: var(--texte-accent);
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    /* Le bouton radio est masqué : son anneau de focus passe à la pastille. */
+    .ds-pole__radio:focus-visible + .ds-pole__nom {
+      outline: var(--focus-epaisseur) solid var(--focus-couleur);
+      outline-offset: var(--focus-decalage);
+    }
+
+    /* Sur téléphone, « Tous les pôles » devient « Tous » (le groupe
+       s'appelle déjà « Pôle ») : les quatre choix tiennent sur une ligne. */
+    @media (max-width: 30rem) {
+      .ds-pole__nom { padding-inline: var(--e-3); }
+      .ds-pole__suite { display: none; }
     }
 
     /* --- A4. Les jetons de filtre ---------------------------------------
@@ -610,6 +666,21 @@
       color: var(--texte-doux);
     }
 
+    /* Ce qui a fait sortir la carte quand elle ne le montre pas : un mot
+       de son sujet ou de ses mots-clés, surligné comme le reste. */
+    .ds-carte__sujet {
+      margin: 0;
+      font-size: var(--texte-xs);
+      color: var(--texte);
+    }
+
+    .ds-carte__sujet[hidden] { display: none; }
+
+    .ds-carte__sujet-cle {
+      color: var(--texte-doux);
+      letter-spacing: 0.02em;
+    }
+
     .ds-carte__actions {
       display: flex;
       flex-wrap: wrap;
@@ -929,21 +1000,18 @@
                 aria-label="Propositions de recherche" hidden></ul>
           </div>
 
-          <!-- Le menu du pôle : le service qui tient le document, seul
-               classement du fonds. Un vrai <select> : il se combine avec la
-               recherche et avec le type choisi par une tuile. Les options
-               sont ajoutées par docsearch.js depuis le JSON ; le menu reste
+          <!-- Le pôle : le service qui tient le document, seul classement
+               du fonds. Des boutons radio : ils se combinent avec la
+               recherche et avec le type choisi par une tuile. Les pôles sont
+               ajoutés par docsearch.js depuis le JSON ; le groupe reste
                désactivé tant que le fonds n'est pas là. -->
-          <div class="ds-menus rangee rangee--serree">
-            <label class="visuellement-cache" for="ds-pole">
-              Filtrer par pôle
+          <fieldset class="ds-poles" id="ds-pole" disabled>
+            <legend class="visuellement-cache">Pôle</legend>
+            <label class="ds-pole" data-valeur="">
+              <input class="ds-pole__radio visuellement-cache" type="radio" name="pole" value="" checked>
+              <span class="ds-pole__nom"><span>Tous<span class="ds-pole__suite">&nbsp;les pôles</span></span></span>
             </label>
-            <span class="champ__select ds-menu">
-              <select class="champ__controle" id="ds-pole" name="pole" disabled>
-                <option value="">Tous les pôles</option>
-              </select>
-            </span>
-          </div>
+          </fieldset>
 
           <!-- Résumé de ce qui est actif : un jeton par filtre, retirable,
                plus un « Tout effacer ». Masqué tant que rien n'est actif. -->

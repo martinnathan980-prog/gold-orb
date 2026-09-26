@@ -104,6 +104,17 @@ t('la communication n\'est plus évincée par les groupes précédents',
   tetes.some((h) => /COMMUNICATION/i.test(h)), `(${tetes.join(' ; ')})`);
 t('au plus quatre lignes par groupe', (await page.locator('.palette__resultat').count()) <= tetes.length * 4);
 
+console.log('\n== Un document se classe par pôle, sans son porteur ==');
+// Comme sur la page de recherche : le sous-titre d'un document dit son pôle,
+// jamais la personne qui le porte.
+await chercher('sertissage');
+const lignesDocs = await page.locator('.palette__resultat[data-href^="docsearch.html"]').allInnerTexts();
+t('« sertissage » trouve des documents', lignesDocs.length > 0, `(${lignesDocs.length})`);
+t('aucun document ne cite de porteur', lignesDocs.every((l) => !/porteur/i.test(l)),
+  `(${lignesDocs.map((l) => l.replace(/\n/g, ' | ')).join(' ; ')})`);
+t('chaque document dit son pôle', lignesDocs.every((l) => /pôle ETII[AEI]/.test(l)),
+  `(${lignesDocs.map((l) => l.replace(/\n/g, ' | ')).join(' ; ')})`);
+
 console.log('\n== Les espaces de pôle sont trouvables par leur sujet ==');
 for (const [q, code] of [['routage', 'etiii.html'], ['nommage', 'etiia.html'], ['schemas electriques', 'etiie.html']]) {
   await chercher(q);
