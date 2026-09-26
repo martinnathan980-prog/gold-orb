@@ -1091,9 +1091,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
         <span class="segmente" id="choix-perimetre" role="group" aria-labelledby="mot-perimetre"></span>
       </div>
     </div>
-    <div class="barre" id="barre" role="img" aria-label="Répartition de l'avancement FWD"></div>
+    <div class="barre" id="barre" role="img" aria-label="Répartition de l'avancement suivi"></div>
     <div class="filets" id="filets" aria-hidden="true"></div>
-    <div class="etats" id="etats" role="group" aria-label="Filtrer par état d'avancement FWD"></div>
+    <div class="etats" id="etats" role="group" aria-label="Filtrer par valeur de l'avancement suivi"></div>
     <div class="comparatif" id="comparatif"></div>
   </section>
 
@@ -3763,8 +3763,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
       /* D'où partent les projections, dit sous le point : la semaine en
          cours, que le dernier relevé n'a pas encore rattrapée. */
       if (depart >= d0 && depart <= d1) {
-        horsClip.push('<text class="grad repere-depart" x="' + x(depart).toFixed(1) + '" y="' + (y(atteint) + 15).toFixed(1) +
-          '" text-anchor="middle">aujourd\u2019hui</text>');
+        horsClip.push('<text class="grad repere-depart" x="' + (x(depart) + 3).toFixed(1) + '" y="' + (y(atteint) + 15).toFixed(1) +
+          '" text-anchor="start">aujourd\u2019hui</text>');
       }
     }
     /* La droite « requis » monte de ce qui est terminé à ce que le jalon
@@ -3977,7 +3977,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       var nj = joursAvant(j);
       var horsFenetre = j.i < d0 || j.i > d1;   // dans la légende, mais pas dans la fenêtre affichée
       return '<span class="legende-jalon' + (hors ? ' hors-perimetre' : '') + (rouge ? ' critique' : '') + (horsFenetre ? ' hors-fenetre' : '') +
-        '" data-jalon="' + idx + '"' + (j.date ? ' data-date="' + ech(j.date) + '"' : '') +
+        '" data-jalon="' + idx + '" data-semaine="' + etiquette(j.i) + '"' + (j.date ? ' data-date="' + ech(j.date) + '"' : '') +
         ' tabindex="0" role="button" aria-expanded="' + (vue.echeance === idx) + '" title="' +
         ech(j.texte) + ' \u2014 ' + semaineDite(j.i) + (j.perimetre ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) : '') +
         (hors ? ' \u2014 ' + ech(raisonRetrait(j)) : '') + (horsFenetre ? ' \u2014 hors de la fen\u00eatre affich\u00e9e' : '') + '">' +
@@ -4429,7 +4429,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var html = '<div class="critique-tete">' +
       entete('nom', TITRE_DIM[dim].replace(/ \(.*\)$/, ''), TITRE_DIM[dim]) + '</span>' +
       entete('total', 'plans', 'Nombre de plans du groupe dans la sélection courante.') + '</span>' +
-      entete('pct', 'répartition FWD', 'Trier par part de plans terminés.', 'a-gauche') + '</span>' +
+      entete('pct', 'répartition', 'Trier par part de plans terminés.', 'a-gauche') + '</span>' +
       entete('fin', 'fin estimée', 'Semaine où tout le groupe serait terminé si le rythme tenu se maintient.') + aide('la fin estimée') + '</span>' +
       (prochain
         ? entete('requis', 'rythme requis', 'Plans à terminer chaque semaine pour tenir \u00ab\u00a0' + prochain.texte + '\u00a0\u00bb (' +

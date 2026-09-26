@@ -964,7 +964,7 @@ async function reinitialiser(pg) {
     const iPlafond = grads.findIndex(t => / plans$/.test(t));
     return {
       echelle: grads.slice(0, iPlafond), plafond: grads[iPlafond],
-      semaines: grads.filter(t => /^S\d{2}$/.test(t)), avecAnnee: grads.filter(t => /^\d{4}-S/.test(t) && !/plans/.test(t)),
+      semaines: grads.filter(t => /^S\d{1,2}$/.test(t)), avecAnnee: grads.filter(t => /^\d{4}-S/.test(t) && !/plans/.test(t)),
       annees: [...document.querySelectorAll('svg.graphe .annee')].map(t => t.textContent),
       pointsPleins: document.querySelectorAll('svg.graphe circle[fill="var(--fait)"][stroke="var(--surface)"]').length,
       barres: document.querySelectorAll('svg.graphe path[fill="var(--r4)"]').length,
@@ -1086,7 +1086,7 @@ async function reinitialiser(pg) {
   verifier('le journal ne garde que les plans PERSO : aucun événement d’un plan BASE/OPTION',
     perso.evenements > 0 && perso.domainesJournal.join() === 'PERSO' && perso.lignesJournal <= tout0.lignesJournal,
     JSON.stringify(perso.domainesJournal) + ' ' + perso.evenements);
-  verifier('le comparatif « depuis l’import » aussi',
+  verifier('le comparatif « depuis le relevé précédent » aussi',
     perso.comparatif > 0 && perso.comparatif < tout0.comparatif && perso.domainesComparatif.join() === 'PERSO',
     perso.comparatif + ' / ' + tout0.comparatif);
   verifier('le bandeau nomme le périmètre comme un filtre, et la puce est pressée',
@@ -1306,7 +1306,7 @@ async function reinitialiser(pg) {
     app.nouveaux.length === 2 && app.disparus.length === 0, app.nouveaux.length + ' / ' + app.disparus.length);
   verifier('le journal parle des nouvelles références, celles du tableau',
     app.indices.every(x => refsTable.indexOf(x.ref) !== -1 && refsTable.indexOf(x.ancienne) === -1));
-  verifier('le comparatif « depuis l’import » porte les réémissions de la dernière semaine',
+  verifier('le comparatif « depuis le relevé précédent » porte les réémissions de la dernière semaine',
     app.comparatif && app.comparatif.length >= 1 && lu(app.comparatif) === lu(app.attenduComparatif),
     lu(app.comparatif) + ' vs ' + lu(app.attenduComparatif));
   verifier('avec, pour chacun, l’ancienne et la nouvelle référence',
@@ -1361,8 +1361,11 @@ async function reinitialiser(pg) {
   verifier('dans chaque semaine, la somme des comptes du résumé est le nombre de lignes',
     justesse.length >= 5 && justesse.every(x => x.comptes === x.lignes), JSON.stringify(justesse.filter(x => x.comptes !== x.lignes).slice(0, 3)));
   verifier('et la mini-jauge de chaque semaine fait 100', justesse.every(x => x.jauge === 100), JSON.stringify(justesse.map(x => x.jauge)));
-  verifier('« effacés » se compte mais ne se filtre pas : jamais un bouton que la barre du filtre ne saurait montrer',
-    justesse.every(x => !x.effaceBouton));
+  /* Un passage à « Non renseigné » se dit comme les autres, et se filtre
+     comme eux : la barre du filtre a son bouton dès qu'il y en a un. */
+  const filtreVide = await p.evaluate(() => !!document.querySelector('#filtre-journal button[data-journal="vide"]'));
+  verifier('« passés à « Non renseigné » » se compte comme les autres passages : jamais un bouton que la barre du filtre ne saurait montrer',
+    justesse.every(x => !x.effaceBouton) || filtreVide, JSON.stringify([justesse.some(x => x.effaceBouton), filtreVide]));
   for (const f of ['termine', 'encours', 'afaire', 'indice']) {
     await p.click('#filtre-journal button[data-journal="' + f + '"]'); await p.waitForTimeout(300);
     await toutDeplier();
@@ -2413,7 +2416,7 @@ async function reinitialiser(pg) {
     mot: (document.querySelector('#legende-jalons .legende-jalons-mot') || {}).textContent,
     entrees: [...document.querySelectorAll('#legende-jalons .legende-jalon')].map(e => ({
       idx: e.dataset.jalon, num: e.querySelector('.num').textContent, mot: e.querySelector('.mot').textContent,
-      quand: e.querySelector('.quand').textContent, critique: e.classList.contains('critique'), hors: e.classList.contains('hors-perimetre'),
+      quand: e.querySelector('.quand').textContent.replace(/[\u00a0\u202f]/g, ' '), critique: e.classList.contains('critique'), hors: e.classList.contains('hors-perimetre'),
       focusable: e.tabIndex === 0 })),
     critiquesDessin: [...document.querySelectorAll('svg.graphe .jalon.critique')].map(g => g.dataset.jalon).join(',')
   }));
@@ -2505,7 +2508,7 @@ async function reinitialiser(pg) {
   await p.click('.commandes-graphe button[data-span="0"]'); await p.waitForTimeout(400);
   const lireEcheance = () => p.evaluate(() => ({
     prochain: window.__prochainJalon() && window.__prochainJalon().texte,
-    entete: ((document.querySelector('.critique-tete button[data-trig="requis"]') || {}).title || '').replace(/\u00a0/g, ' '),
+    entete: ((document.querySelector('.critique-tete button[data-trig="requis"], .critique-tete button[data-trig="vitesse"]') || {}).title || '').replace(/\u00a0/g, ' '),
     zone: document.getElementById('zone-critique').getAttribute('data-jalon'),
     retrait: [...document.querySelectorAll('.jalon.hors-perimetre .jalon-texte')].map(t => t.textContent),
     legende: document.getElementById('legende').textContent,
@@ -2576,7 +2579,7 @@ async function reinitialiser(pg) {
   await p.waitForTimeout(500);
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
   const eRien = await lireEcheance();
-  verifier('sous PERSO sans jalon à venir : « rythme actuel », et le graphique dit « dans ce périmètre »',
+  verifier('sous PERSO sans jalon à venir : « rythme tenu », et le graphique dit « dans ce périmètre »',
     eRien.prochain === null && /Plans terminés par semaine/.test(eRien.entete) && eRien.zone === '' &&
     eRien.retrait.join('|') === 'Base seul' && eRien.aucun === 'Aucun jalon à venir dans ce périmètre',
     JSON.stringify(eRien));
@@ -2610,10 +2613,10 @@ async function reinitialiser(pg) {
     textes.forEach((t, i) => marques.forEach((m, j) => { if (croise(t, m)) chev.push('texte ' + i + ' / marque ' + j); }));
     const rangs = new Set(groupes.map(g => g.querySelector('.jalon-marque').getAttribute('cy')));
     return { n: groupes.length, nums: groupes.map(g => g.querySelector('.jalon-num').textContent).join(','), visibles: textes.length, chev, rangs: rangs.size,
-             titres: groupes.map(g => g.querySelector('title').textContent), aria: groupes.map(g => g.getAttribute('aria-label')) };
+             titres: groupes.map(g => g.querySelector('title').textContent.replace(/[\u00a0\u202f]/g, ' ')), aria: groupes.map(g => g.getAttribute('aria-label')) };
   });
   verifier('cinq marqueurs numérotés 1 à 5, dans l\'ordre des jalons, chacun avec sa bulle « N — texte — semaine » et son aria « Jalon N, … »',
-    dessinJ.n === 5 && dessinJ.nums === '1,2,3,4,5' && dessinJ.titres.every((t, i) => new RegExp('^' + (i + 1) + ' — .+ — \\d{4}-S\\d{2}').test(t)) &&
+    dessinJ.n === 5 && dessinJ.nums === '1,2,3,4,5' && dessinJ.titres.every((t, i) => new RegExp('^' + (i + 1) + ' — .+ — S\\d{1,2} · \\S+ \\d{4}').test(t)) &&
     dessinJ.aria.every((a, i) => new RegExp('^Jalon ' + (i + 1) + ', ').test(a)), JSON.stringify([dessinJ.nums, dessinJ.titres]));
   verifier('les cinq numéros sur une seule rangée, sans étage, aucun ne touche l’autre, et aucun nom écrit sur le dessin — la légende les porte',
     dessinJ.chev.length === 0 && dessinJ.visibles === 0 && dessinJ.rangs === 1, JSON.stringify([dessinJ.chev, dessinJ.visibles, dessinJ.rangs]));
@@ -2791,7 +2794,7 @@ async function reinitialiser(pg) {
     presse: document.querySelectorAll('.critique-ligne[aria-pressed="true"]').length
   }));
   verifier('cliquer un groupe filtre le tableau', apresGroupe.compte.indexOf(TOTAL + ' plans') === -1, apresGroupe.compte);
-  verifier('le graphique suit le groupe', /Historique de/.test(apresGroupe.note), apresGroupe.note);
+  verifier('le graphique suit le groupe, et le nomme', /^Historique · \S+ /.test(apresGroupe.note), apresGroupe.note);
   verifier('une seule ligne est marquée sélectionnée', apresGroupe.presse === 1);
   await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(350);
   verifier('re-cliquer désélectionne',
@@ -2989,7 +2992,7 @@ async function reinitialiser(pg) {
       tete: [...document.querySelectorAll('tr.titres th')].slice(0, 3).map(t => t.dataset.cle).join(',')
     }));
     verifier('après « Vue essentielle » puis rechargement, « Toutes les colonnes » revient dans l’ordre de l’extract',
-      apresEssentielle.toutes === 'true' && apresEssentielle.n === COLONNES_TOTAL && apresEssentielle.tete === 'reference,rpt,colonne_4',
+      apresEssentielle.toutes === 'true' && apresEssentielle.n === COLONNES_TOTAL && apresEssentielle.tete === 'reference,avancement,rpt',
       JSON.stringify(apresEssentielle));
     await pp.click('tr.titres button[data-tri="ata"]'); await pp.waitForTimeout(800);
     await pp.reload(); await pp.waitForTimeout(1400);
@@ -3033,7 +3036,7 @@ async function reinitialiser(pg) {
   await p.evaluate(() => window.scrollTo(0, 0));
   const joursAttendus = await p.evaluate(() => {
     return [...document.querySelectorAll('.legende-jalon')].map(el => {
-      const m = el.title.match(/(\d{4})-S(\d{2})/);
+      const m = el.dataset.semaine.match(/(\d{4})-S(\d{2})/);
       const an = +m[1], sem = +m[2];
       const j4 = new Date(Date.UTC(an, 0, 4));
       const lundi1 = new Date(j4.getTime() - ((j4.getUTCDay() + 6) % 7) * 86400000);
