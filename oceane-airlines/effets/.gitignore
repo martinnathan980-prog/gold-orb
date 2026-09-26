@@ -1,0 +1,4 @@
+# Téléchargés par carte_vol.py au premier lancement
+*.ttf
+countries-50m.json
+*-f[0-9][0-9][0-9].png
