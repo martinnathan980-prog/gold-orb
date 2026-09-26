@@ -21,7 +21,7 @@
    Tout le DOM est construit avec el().
    ========================================================================= */
 
-import { el, frag, monter, debounce, deleguer, initTheme, initNav, suivreSommaire, ouvrirModale, stockage, toast, annoncer } from './ui.js';
+import { el, frag, monter, debounce, deleguer, initTheme, initNav, suivreSommaire, revelerAuDefilement, ouvrirModale, stockage, toast, annoncer } from './ui.js';
 import { installerEdition, barreEdition, boutonAjouter } from './edition.js';
 import { abonnerModifications, supprimerElement, aplatirOrganigramme } from './modifications.js';
 import { modifierCommunication, supprimerDossier, ouvrirAlertes, ouvrirPersonne, ouvrirSquad, ouvrirDocument, ouvrirQuestion,
@@ -504,36 +504,87 @@ function dateCourte(iso) {
   return m ? Number(m[3]) + ' ' + MOIS_COURTS[Number(m[2]) - 1] + ' ' + m[1] : '';
 }
 
+/* Les documents du pôle : les huit plus récents en vigueur ; au-dessus,
+   un filtre par type et une recherche dans le bloc — alors tous les
+   documents du pôle qui correspondent s'affichent. Chaque ligne s'ouvre
+   directement sur le document quand il a un lien, et un document mis à
+   jour depuis moins de trente jours porte « Nouveau ». */
 function rendreDocuments(pole, m, conteneur) {
   const MAX = 8;
-  const visibles = m.enVigueur.slice(0, MAX);
+  const tous = m.enVigueur;
   const porteurDuDoc = (d) => m.tousMembres.find((p) => normaliser(p.nom) === normaliser(d.porteur)) || null;
+  const recent = (d) => {
+    const t = Date.parse(texte(d.maj));
+    return Number.isFinite(t) && (Date.now() - t) / 86400000 <= 30 && t <= Date.now() + 86400000;
+  };
+  const ligne = (d) => {
+    const porteur = porteurDuDoc(d);
+    const lien = texte(d.lien);
+    return el('li', { class: 'pole-doc', dataset: { type: texte(d.type) || 'Document' } },
+      el('span', { class: 'pole-doc__type badge badge--contour' }, texte(d.type) || 'Document'),
+      el('span', { class: 'pole-doc__intitule' },
+        el('a', { class: 'pole-doc__titre', href: 'docsearch.html#q=' + encodeURIComponent(texte(d.reference) || texte(d.titre)) }, texte(d.titre)),
+        recent(d) ? el('span', { class: 'pole-doc__nouveau' }, 'Nouveau') : null),
+      el('span', { class: 'pole-doc__ref mono' }, texte(d.reference)),
+      el('span', { class: 'pole-doc__porteur' }, porteur
+        ? el('a', { href: lienFiche(pole, porteur) }, texte(porteur.nom))
+        : (texte(d.porteur) || 'Porteur à renseigner')),
+      el('time', { class: 'pole-doc__date', datetime: texte(d.maj) || null }, dateCourte(d.maj) || 'date à renseigner'),
+      /^https?:\/\//i.test(lien)
+        ? el('a', { class: 'pole-doc__ouvrir', href: lien, target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'Ouvrir le document : ' + texte(d.titre) }, 'Ouvrir ↗')
+        : el('span', { class: 'pole-doc__ouvrir pole-doc__ouvrir--vide' }),
+      /* Une ligne de document a la place : « Modifier » et
+         « Supprimer » s'y écrivent en toutes lettres. */
+      barreEdition({
+        classe: 'pole-doc__edition',
+        quoi: texte(d.titre),
+        surModifier: (b) => ouvrirDocument({ existant: d, documents: m.docs, personnes: m.tousMembres, pole: pole.cle, declencheur: b }),
+        surSupprimer: () => retirer('documents', 'document', texte(d.id), 'Document retiré du fonds.')
+      }));
+  };
+
+  let type = '';
+  let requete = '';
+  const liste = el('ul', { class: 'pole-docs__liste', role: 'list' });
+  const resume = el('p', { class: 'pole-docs__resume', 'aria-live': 'polite' });
+  const remplir = () => {
+    const q = normaliser(requete);
+    const filtres = tous.filter((d) => (!type || (texte(d.type) || 'Document') === type)
+      && (!q || normaliser([d.titre, d.reference, d.porteur, d.description, [].concat(d.metier || []).join(' '), [].concat(d.motsCles || []).join(' ')].join(' ')).includes(q)));
+    const actif = type || q;
+    const montres = actif ? filtres : filtres.slice(0, MAX);
+    monter(liste, montres.length ? montres.map(ligne)
+      : el('li', { class: 'pole-docs__vide' }, 'Aucun document du pôle ne correspond.'));
+    resume.textContent = actif
+      ? filtres.length + ' document' + (filtres.length > 1 ? 's' : '') + ' sur ' + tous.length
+      : 'Les ' + Math.min(MAX, tous.length) + ' plus récents sur ' + tous.length;
+  };
+
+  const types = [...new Set(tous.map((d) => texte(d.type) || 'Document'))].sort((x, y) => x.localeCompare(y, 'fr'));
+  const puces = el('div', { class: 'facettes pole-docs__types', role: 'group', 'aria-label': 'Filtrer par type' },
+    [''].concat(types).map((t) => el('button', {
+      type: 'button', class: 'facette facette--compacte', 'aria-pressed': t === '' ? 'true' : 'false', dataset: { type: t },
+      onClick: (evt) => {
+        type = t;
+        puces.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b === evt.currentTarget ? 'true' : 'false'));
+        remplir();
+      }
+    }, t || 'Tous')));
+  const champ = el('input', {
+    type: 'search', class: 'champ__controle pole-docs__recherche', placeholder: 'Chercher dans les documents du pôle…',
+    'aria-label': 'Chercher dans les documents du pôle',
+    onInput: debounce((evt) => { requete = evt.target.value; remplir(); }, 150)
+  });
+
+  remplir();
   monter(conteneur,
     el('div', { class: 'pole-docs' },
-      visibles.length
-        ? el('ul', { class: 'pole-docs__liste', role: 'list' }, visibles.map((d) => {
-          const porteur = porteurDuDoc(d);
-          return el('li', { class: 'pole-doc' },
-            el('span', { class: 'pole-doc__type badge badge--contour' }, texte(d.type) || 'Document'),
-            el('a', { class: 'pole-doc__titre', href: 'docsearch.html#q=' + encodeURIComponent(texte(d.reference) || texte(d.titre)) }, texte(d.titre)),
-            el('span', { class: 'pole-doc__ref mono' }, texte(d.reference)),
-            el('span', { class: 'pole-doc__porteur' }, porteur
-              ? el('a', { href: lienFiche(pole, porteur) }, texte(porteur.nom))
-              : (texte(d.porteur) || 'Porteur à renseigner')),
-            el('time', { class: 'pole-doc__date', datetime: texte(d.maj) || null }, dateCourte(d.maj) || 'date à renseigner'),
-            /* Une ligne de document a la place : « Modifier » et
-               « Supprimer » s'y écrivent en toutes lettres. */
-            barreEdition({
-              classe: 'pole-doc__edition',
-              quoi: texte(d.titre),
-              surModifier: (b) => ouvrirDocument({ existant: d, documents: m.docs, personnes: m.tousMembres, pole: pole.cle, declencheur: b }),
-              surSupprimer: () => retirer('documents', 'document', texte(d.id), 'Document retiré du fonds.')
-            }));
-        }))
-        : el('p', { class: 'texte-doux sans-marge' }, 'Aucun document rattaché à ce pôle pour le moment.'),
+      tous.length ? el('div', { class: 'pole-docs__outils' }, puces, champ) : null,
+      tous.length ? resume : null,
+      tous.length ? liste : el('p', { class: 'texte-doux sans-marge' }, 'Aucun document rattaché à ce pôle pour le moment.'),
       el('div', { class: 'pole-docs__pied' },
         el('a', { class: 'bouton bouton--secondaire bouton--compact', href: 'docsearch.html#pole=' + encodeURIComponent(pole.cle) },
-          'Tous les documents du pôle' + (m.enVigueur.length ? ' (' + m.enVigueur.length + ')' : '')),
+          'Tous les documents du pôle' + (tous.length ? ' (' + tous.length + ')' : '')),
         boutonAjouter('Ajouter un document', (b) => ouvrirDocument({ documents: m.docs, personnes: m.tousMembres, pole: pole.cle, declencheur: b })))));
 }
 
@@ -714,6 +765,7 @@ if (!POLE) {
 } else {
   rendreEntete(POLE);
   suivreSommaire();
+  revelerAuDefilement(document.querySelectorAll('.pile--section > section > *'));
 
   chargerCommunicationDuPole(POLE);
 

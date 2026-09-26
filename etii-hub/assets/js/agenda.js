@@ -324,6 +324,47 @@ function brancherArrivee(racine) {
 }
 
 /* -------------------------------------------------------------------------
+   3 bis. Le prochain rendez-vous, en vedette
+   Au-dessus de la frise : combien de jours encore, en très grand, dans un
+   anneau qui se remplit à mesure que la date approche (plein à J-0, vide
+   à trente jours et plus) ; à côté, quoi, quand, où.
+   ------------------------------------------------------------------------- */
+
+const HORIZON_ANNEAU = 30;
+
+function prochain(entree) {
+  const n = joursRestants(entree.date);
+  const date = dateDe(entree.date);
+  const pole = texte(entree.pole).toUpperCase() || 'ETII';
+  const cleType = texte(entree.type);
+  const type = TYPES_AGENDA[cleType] || cleType || 'Rendez-vous';
+  const rayon = 52;
+  const tour = 2 * Math.PI * rayon;
+  const part = Math.min(1, Math.max(0, 1 - (n === null ? HORIZON_ANNEAU : n) / HORIZON_ANNEAU));
+  const grand = n === null ? '—' : n <= 0 ? '0' : String(n);
+  const unite = n === 1 ? 'jour' : 'jours';
+  return el('div', { class: 'agenda__prochain', dataset: { pole } },
+    el('div', { class: 'agenda__prochain-anneau', 'aria-hidden': 'true' },
+      svg('svg', { viewBox: '0 0 120 120', class: 'agenda__prochain-svg' },
+        svg('circle', { cx: 60, cy: 60, r: rayon, class: 'agenda__prochain-piste' }),
+        svg('circle', {
+          cx: 60, cy: 60, r: rayon, class: 'agenda__prochain-arc',
+          style: { '--tour': tour.toFixed(1), '--reste': (tour * (1 - part)).toFixed(1) }
+        })),
+      el('span', { class: 'agenda__prochain-nombre' }, grand),
+      el('span', { class: 'agenda__prochain-unite' }, n !== null && n <= 0 ? 'aujourd’hui' : unite)),
+    el('div', { class: 'agenda__prochain-corps' },
+      el('p', { class: 'agenda__prochain-sur-titre' },
+        'Prochain rendez-vous', el('span', { class: 'agenda__prochain-type' }, type + ' · ' + (pole === 'ETII' ? 'Service' : pole))),
+      el('p', { class: 'agenda__prochain-titre' }, texte(entree.titre)),
+      el('p', { class: 'agenda__prochain-quand' },
+        date ? JOURS[date.getDay()] + ' ' + date.getDate() + ' ' + MOIS_LONGS[date.getMonth()] : '',
+        texte(entree.lieu) ? ' · ' + texte(entree.lieu) : '',
+        n !== null ? el('span', { class: 'visuellement-cache' }, ', ' + echeance(n)) : null),
+      texte(entree.resume) ? el('p', { class: 'agenda__prochain-resume' }, texte(entree.resume)) : null));
+}
+
+/* -------------------------------------------------------------------------
    4. Le bloc
    ------------------------------------------------------------------------- */
 
@@ -345,6 +386,7 @@ export function agenda(donnees, options) {
   const visibles = entrees.slice(0, limite);
 
   const racine = el('div', { class: 'agenda' },
+    visibles.length ? prochain(visibles[0]) : null,
     visibles.length
       ? el('div', { class: 'agenda__cadre' },
           el('div', { class: 'agenda__traits', 'aria-hidden': 'true' }),

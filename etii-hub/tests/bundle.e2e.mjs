@@ -66,7 +66,7 @@ t('cliquer une entrée la lit à droite',
   && (await f.locator('.kiosque__lecture-titre').innerText()).trim() === titreCarte);
 
 console.log('\n== Les porteurs ==');
-t('la galerie des porteurs est rendue', (await f.locator('.porteurs__galerie').count()) > 0 && (await f.locator('.porteurs__groupe-galerie').count()) === 3);
+t('la galerie des porteurs est rendue', (await f.locator('.porteurs__galerie').count()) > 0 && (await f.locator('.porteurs__item').count()) >= 10);
 const fiches = await f.locator('.porteurs__fiche').count();
 t('les seize appareils sont présents', fiches === 16, `(${fiches})`);
 t('les trois catégories sont proposées',
@@ -96,7 +96,7 @@ t('la fiche se replie quand on reclique sa carte', await (async () => {
 console.log('\n== Le suivi OTQ / OTD ==');
 const zoneOtq = f.locator('#zone-otq');
 t('l\'exemple est annoncé comme tel', /Données d’exemple|Données d'exemple/i.test(await zoneOtq.innerText()));
-t('deux tuiles OTQ et OTD', (await zoneOtq.locator('.ind-tuile').count()) === 2);
+t('deux cartes OTQ et OTD', (await zoneOtq.locator('.otq-carte').count()) === 2);
 t('le graphique est tracé', (await zoneOtq.locator('.ind-graphique svg').count()) >= 1);
 
 console.log('\n== Un espace de pôle ==');

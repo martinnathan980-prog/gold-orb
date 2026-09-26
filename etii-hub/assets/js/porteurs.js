@@ -177,15 +177,28 @@ export function libellesFiche() {
   return r;
 }
 
+/* Les grands chiffres de l'onglet Performances et de l'onglet Production. */
+const CHIFFRES_PERF = [
+  ['performances', 'vitesseCroisiere', 'Croisière'],
+  ['performances', 'vitesseMax', 'Vitesse max.'],
+  ['performances', 'rayonAction', 'Rayon d’action'],
+  ['performances', 'plafond', 'Plafond'],
+  ['performances', 'autonomie', 'Autonomie']
+];
+const CHIFFRES_PROD = [
+  ['production', 'unitesProduites', 'Unités produites'],
+  ['production', 'cadence', 'Cadence']
+];
+
 /* Cinq onglets, rien que sur l'appareil : ni sources, ni équipe, ni
    données du service. La fiche ne renvoie vers aucun site
    extérieur. Les crédits des photos, eux, restent dans la fenêtre
    « Crédits photos » du pied de page — c'est une obligation de licence. */
 const ONGLETS = [
   { cle: 'technique', titre: 'Technique', groupes: ['motorisation', 'masses', 'capacite', 'dimensions', 'identite'], chiffres: true },
-  { cle: 'performances', titre: 'Performances', groupes: ['performances'] },
+  { cle: 'performances', titre: 'Performances', groupes: ['performances'], chiffres: CHIFFRES_PERF },
   { cle: 'electrique', titre: 'Électrique', groupes: ['electrique'] },
-  { cle: 'economie', titre: 'Production & économie', groupes: ['production'] },
+  { cle: 'economie', titre: 'Production & économie', groupes: ['production'], chiffres: CHIFFRES_PROD },
   { cle: 'insolite', titre: 'Insolite' }
 ];
 
@@ -200,6 +213,20 @@ const CHIFFRES_CLES = [
   ['performances', 'rayonAction', 'Rayon d’action'],
   ['dimensions', 'diametreRotor', 'Rotor principal']
 ];
+
+/* Le nombre en tête d'une valeur écrite en toutes lettres : « 255 km/h
+   (138 kt) croisière recommandée » donne 255 et « km/h » ; « 6 096 m »
+   donne 6096 ; « 4 h 30 avec réservoirs » donne « 4 h 30 ». */
+function nombreEnTete(t) {
+  const txt = texte(t);
+  const heure = /^(\d{1,2})\s*h\s*(\d{2})?/.exec(txt);
+  if (heure) return { nombre: Number(heure[1]) + (heure[2] ? Number(heure[2]) / 60 : 0), affiche: heure[0].trim(), unite: '', heure: true };
+  const m = /^(\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d+)(?:[.,](\d+))?\s*([^\s(;,]{1,8})?/.exec(txt);
+  if (!m) return null;
+  const nombre = Number(m[1].replace(/[ \u00a0\u202f]/g, '') + (m[2] ? '.' + m[2] : ''));
+  if (!Number.isFinite(nombre)) return null;
+  return { nombre, affiche: nombreLisible(nombre), unite: m[3] || '' };
+}
 
 /* Une phrase longue se lit mieux en deux temps : l'essentiel, puis sa
    précision en retrait. On coupe au premier « ; », sinon à la première
@@ -225,12 +252,55 @@ function champFiche(brut) {
 /* Une ligne : le libellé dans une colonne étroite, grise, en petites
    capitales ; la valeur à côté, l'essentiel d'abord, la précision dessous
    en plus petit. Toutes les lignes de la fiche ont cette forme. */
-function ligneFiche(libelle, brut) {
+/* La valeur chiffrée d'un champ de fiche, ou null. */
+function valeurNumerique(brut) {
+  const o = objet(brut);
+  const v = (brut && typeof brut === 'object' && !Array.isArray(brut)) ? o.valeur : brut;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  const n = typeof v === 'string' ? nombreEnTete(v) : null;
+  return n ? n.nombre : null;
+}
+
+/* Pour chaque champ chiffré, la plus grande valeur de la flotte et le
+   nombre d'appareils qui la renseignent : l'échelle des jauges. */
+function echellesFlotte(appareils) {
+  const e = {};
+  for (const a of appareils) {
+    const f = objet(objet(a).fiche);
+    for (const g of GROUPES_FICHE) {
+      for (const [cle] of g.champs) {
+        const v = valeurNumerique(objet(f[g.cle])[cle]);
+        if (v === null || v <= 0) continue;
+        const k = g.cle + '.' + cle;
+        const cur = e[k] || { max: 0, n: 0, code: '' };
+        if (v > cur.max) { cur.max = v; cur.code = texte(a.code); }
+        cur.n += 1;
+        e[k] = cur;
+      }
+    }
+  }
+  return e;
+}
+
+function ligneFiche(libelle, brut, echelle) {
   const c = champFiche(brut);
+  const v = valeurNumerique(brut);
+  /* La jauge : la valeur rapportée au plus grand de la flotte — on voit
+     d'un coup d'œil où se situe l'appareil. Seulement quand au moins trois
+     appareils renseignent le champ. */
+  const jauge = (v !== null && echelle && echelle.n >= 3 && echelle.max > 0)
+    ? el('span', {
+        class: ['porteurs__jauge', v >= echelle.max ? 'porteurs__jauge--max' : null],
+        style: { '--part': String(Math.min(1, v / echelle.max).toFixed(3)) },
+        title: v >= echelle.max ? 'Le plus élevé de la flotte' : 'Le plus élevé de la flotte : ' + echelle.code,
+        'aria-hidden': 'true'
+      }, el('span', { class: 'porteurs__jauge-barre' }))
+    : null;
   return el('div', { class: 'porteurs__ligne' },
     el('dt', { class: 'porteurs__libelle' }, libelle),
     el('dd', { class: 'porteurs__cellule' },
       el('span', { class: ['porteurs__valeur', c.chiffre ? 'porteurs__valeur--chiffre' : null, c.ok ? null : 'porteurs__manquant'] }, c.principal),
+      jauge,
       c.complement ? el('span', { class: 'porteurs__complement' }, c.complement) : null));
 }
 
@@ -242,14 +312,23 @@ function groupeFiche(titre, lignes) {
 
 /* Les chiffres clés : trois à cinq tuiles, quand le fichier les donne en
    nombre. Rien ne s'affiche s'il n'y en a pas au moins deux. */
-function chiffresCles(fiche) {
+function chiffresCles(fiche, liste) {
   const tuiles = [];
-  for (const [groupe, cle, libelle] of CHIFFRES_CLES) {
+  for (const [groupe, cle, libelle] of (liste || CHIFFRES_CLES)) {
     const brut = objet(fiche[groupe])[cle];
     const c = (brut && typeof brut === 'object') ? brut : { valeur: brut };
-    if (typeof c.valeur !== 'number' || !Number.isFinite(c.valeur)) continue;
-    const v = valeurLisible(c.valeur, c.unite);
-    const [nombre, ...unite] = v.principal.split(' ');
+    let nombre;
+    let unite;
+    if (typeof c.valeur === 'number' && Number.isFinite(c.valeur)) {
+      const v = valeurLisible(c.valeur, c.unite);
+      [nombre, ...unite] = v.principal.split(' ');
+    } else {
+      /* Une valeur en toutes lettres : son nombre de tête, et son unité. */
+      const n = typeof c.valeur === 'string' ? nombreEnTete(c.valeur) : null;
+      if (!n) continue;
+      nombre = n.affiche;
+      unite = n.heure ? [] : n.unite ? [n.unite] : (texte(c.unite) && texte(c.unite).length <= 8 ? [texte(c.unite)] : []);
+    }
     tuiles.push(el('div', { class: 'porteurs__chiffre' },
       el('dt', { class: 'porteurs__chiffre-libelle' }, libelle),
       el('dd', { class: 'porteurs__chiffre-valeur' },
@@ -260,9 +339,10 @@ function chiffresCles(fiche) {
   return tuiles.length >= 2 ? el('dl', { class: 'porteurs__chiffres', style: { '--nb': String(tuiles.length) } }, tuiles) : null;
 }
 
-function tableFiche(titre, champsDuGroupe, valeurs) {
+function tableFiche(titre, champsDuGroupe, valeurs, cleGroupe, echelles) {
   const source = objet(valeurs);
-  return groupeFiche(titre, champsDuGroupe.map(([cle, libelle]) => ligneFiche(libelle, source[cle])));
+  const e = echelles || {};
+  return groupeFiche(titre, champsDuGroupe.map(([cle, libelle]) => ligneFiche(libelle, source[cle], e[cleGroupe + '.' + cle])));
 }
 
 /* « Le saviez-vous ? » : une carte par fait, numérotée en grand, dans
@@ -329,6 +409,7 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
   const avecFiche = Object.keys(fiche).length > 0;
   const photo = texte(appareil.photo);
   const prefixe = 'porteur-' + code.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const echelles = echellesFlotte(Array.isArray(objet(donnees).flotte) ? objet(donnees).flotte : []);
 
   /* Les valeurs de l'onglet Technique : les groupes de la fiche ; le
      statut et l'ancien nom, rangés à la racine de la fiche, rejoignent
@@ -343,8 +424,8 @@ function detail(appareil, donnees, categoriesConnues, contexte) {
       return { cle: o.cle, titre: o.titre,
         contenu: avecFiche
           ? el('div', { class: 'porteurs__panneau' },
-              o.chiffres ? chiffresCles(fiche) : null,
-              el('div', { class: 'porteurs__groupes' }, groupes.map((g) => tableFiche(g.titre, g.champs, valeursGroupe(g.cle)))))
+              o.chiffres ? chiffresCles(fiche, Array.isArray(o.chiffres) ? o.chiffres : CHIFFRES_CLES) : null,
+              el('div', { class: 'porteurs__groupes' }, groupes.map((g) => tableFiche(g.titre, g.champs, valeursGroupe(g.cle), g.cle, echelles))))
           : el('p', { class: 'texte-doux sans-marge' }, 'Fiche publique non encore constituée pour ce porteur.') };
     }
     return { cle: o.cle, titre: o.titre, contenu: panneauInsolite(fiche) };
@@ -469,12 +550,13 @@ export function porteurs(donnees, options) {
   const horsCategorie = appareils.filter((a) => !cats.some((c) => c.cle === texte(a.categorie)));
   if (horsCategorie.length) groupesGalerie.push({ cle: '', libelle: 'Autres', membres: horsCategorie });
 
-  const piste = el('div', { class: 'porteurs__galerie' }, groupesGalerie.map((g) =>
-    el('section', { class: 'porteurs__groupe-galerie', dataset: { categorie: g.cle }, 'aria-label': g.libelle },
-      el('h3', { class: 'porteurs__groupe-galerie-titre' },
-        el('span', { class: 'porteurs__groupe-galerie-nom' }, g.libelle),
-        el('span', { class: 'mono porteurs__groupe-galerie-compte' }, String(g.membres.length))),
-      el('ul', { class: 'porteurs__grille', role: 'list' }, g.membres.map((a) => fiche(a, prefixe))))));
+  /* Une seule galerie, sans découpage par famille : les appareils se
+     suivent (civils, militaires, prototypes, dans cet ordre) et les
+     filtres du dessus font le tri. */
+  const piste = el('div', { class: 'porteurs__galerie' },
+    el('section', { class: 'porteurs__groupe-galerie', dataset: { categorie: '' }, 'aria-label': 'Tous les porteurs' },
+      el('ul', { class: 'porteurs__grille', role: 'list' },
+        groupesGalerie.flatMap((g) => g.membres).map((a) => fiche(a, prefixe)))));
 
   const puces = el('ul', { class: 'facettes porteurs__facettes', 'aria-label': 'Filtrer les porteurs par catégorie' },
     [{ cle: '', libelle: 'Tous' }].concat(cats).map((c) => el('li', {},

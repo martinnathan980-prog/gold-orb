@@ -303,14 +303,20 @@ function dossierDepuis(e, base) {
  *   à la même date) ne compte qu'une fois : l'annonce, qui porte le texte.
  *
  * @param {object} donnees  contenu de communications.json
- * @param {{pole?: string}} [options]  code de pôle ; absent ou 'ETII' : tout le service
+ * @param {{pole?: string, serviceSeul?: boolean}} [options]  code de pôle ;
+ *   absent ou 'ETII' : tout le service. serviceSeul : au niveau service,
+ *   seulement les communications du service lui-même (pas celles des pôles).
  * @returns {Array<object>}
  */
 export function dossiersDepuisCommunications(donnees, options) {
   const opts = options || {};
   const pole = texte(opts.pole).toUpperCase();
   const niveauService = !pole || pole === 'ETII';
-  const garder = (entree) => niveauService || texte(entree.pole).toUpperCase() === pole;
+  const garder = (entree) => {
+    const sien = texte(entree.pole).toUpperCase() || 'ETII';
+    if (!niveauService) return sien === pole;
+    return !opts.serviceSeul || sien === 'ETII';
+  };
 
   const dossiers = [];
   const d = (donnees && typeof donnees === 'object') ? donnees : {};
@@ -486,7 +492,11 @@ function carteListe(dossier, prefixe) {
     el('span', { class: 'kiosque__carte-corps' },
       el('span', { class: 'kiosque__carte-titre' }, dossier.titre || 'Sans titre'),
       dossier.resume ? el('span', { class: 'kiosque__carte-resume' }, dossier.resume) : null,
-      el('time', { class: 'visuellement-cache', datetime: dossier.date || null }, dateLongue(dossier.date)))));
+      el('time', { class: 'visuellement-cache', datetime: dossier.date || null }, dateLongue(dossier.date))),
+    premiereImage(dossier)
+      ? el('img', { class: 'kiosque__vignette', src: premiereImage(dossier), alt: '', loading: 'lazy', decoding: 'async',
+          onError: (evt) => evt.currentTarget.remove() })
+      : null));
 }
 
 /* La frise : un rail vertical à gauche, un point par entrée (coloré selon
@@ -705,6 +715,10 @@ function lecture(prefixe) {
   /* La marque de fin : un court filet terre cuite, centré, après le
      dernier bloc — le lecteur sait qu'il a tout lu. Pas de signature. */
   const fin = el('div', { class: 'kiosque__fin', 'aria-hidden': 'true', hidden: true });
+  /* Sous la marque de fin : la communication plus récente et la plus
+     ancienne, par leur titre — on lit la suite sans remonter à la liste
+     (kiosque() branche les boutons). */
+  const suite = el('nav', { class: 'kiosque__suite', 'aria-label': 'Autres communications', hidden: true });
 
   const racine = el('article', {
     class: 'kiosque__lecture',
@@ -712,9 +726,33 @@ function lecture(prefixe) {
     tabIndex: -1
   },
   image,
-  el('div', { class: 'kiosque__lecture-interieur' }, avisImage, meta, titre, chapeau, blocs, curseur, fin));
+  el('div', { class: 'kiosque__lecture-interieur' }, avisImage, meta, titre, chapeau, blocs, curseur, fin, suite));
 
-  return { racine, image, avisImage, meta, titre, chapeau, blocs, curseur, fin };
+  return { racine, image, avisImage, meta, titre, chapeau, blocs, curseur, fin, suite };
+}
+
+/* Tout le texte d'un dossier, pour estimer le temps de lecture : titre,
+   chapeau et les chaînes des blocs (sans les adresses d'image). */
+function motsDe(valeur, sortie) {
+  if (typeof valeur === 'string') { sortie.push(valeur); return sortie; }
+  if (Array.isArray(valeur)) { valeur.forEach((v) => motsDe(v, sortie)); return sortie; }
+  if (valeur && typeof valeur === 'object') {
+    for (const [cle, v] of Object.entries(valeur)) if (!['type', 'src', 'alt', 'id', 'couleur', 'tendance'].includes(cle)) motsDe(v, sortie);
+  }
+  return sortie;
+}
+
+/* « 2 min de lecture » : 200 mots par minute, une minute au moins. */
+export function dureeLecture(dossier) {
+  const texteComplet = motsDe([dossier.titre, dossier.resume, dossier.blocs], []).join(' ');
+  const mots = texteComplet.split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(mots / 200)) + ' min de lecture';
+}
+
+/* La photo d'un dossier, s'il en a une : sa vignette dans la liste. */
+function premiereImage(dossier) {
+  const bloc = (Array.isArray(dossier.blocs) ? dossier.blocs : []).find((b) => b && b.type === 'image' && texte(b.src));
+  return bloc ? texte(bloc.src) : '';
 }
 
 /* Remplit une lecture avec un dossier. La première image ouvre la lecture
@@ -747,7 +785,8 @@ function remplirLecture(lect, dossier) {
      catégorie et la mention d'exemple chargeaient la lecture sans rien
      apprendre au lecteur (le pied de page dit que les données sont fictives). */
   monter(lect.meta,
-    el('time', { class: 'mono', datetime: dossier.date || null }, dateLongue(dossier.date) || 'Date à renseigner'));
+    el('time', { class: 'mono', datetime: dossier.date || null }, dateLongue(dossier.date) || 'Date à renseigner'),
+    el('span', { class: 'kiosque__duree' }, dureeLecture(dossier)));
   lect.titre.textContent = dossier.titre || 'Sans titre';
   lect.chapeau.textContent = dossier.resume || '';
   lect.chapeau.hidden = !dossier.resume;
@@ -882,6 +921,7 @@ export function kiosque(options) {
       if (actif && o.montrer) carteAMontrer = b;
     });
     remplirLecture(lect, dossier);
+    poserSuite(dossier);
     if (barreLecture) barreLecture.hidden = false;
     /* La lecture défile dans son cadre : une nouvelle communication se lit
        depuis son début, pas depuis là où la précédente avait été laissée. */
@@ -896,8 +936,28 @@ export function kiosque(options) {
     if (typeof opts.surSelection === 'function') opts.surSelection(dossier);
   }
 
+  /* « Plus récente » / « Plus ancienne » : les voisines dans la liste
+     affichée (le filtre compris). */
+  function poserSuite(dossier) {
+    const liste = visibles();
+    const i = liste.findIndex((d) => d.id === dossier.id);
+    const bouton = (voisin, sens) => voisin
+      ? el('button', {
+          type: 'button', class: ['kiosque__suite-bouton', 'kiosque__suite-bouton--' + sens],
+          onClick: () => { lire(voisin, { montrer: true }); annoncer(voisin.titre); lect.racine.scrollTop = 0; }
+        },
+        el('span', { class: 'kiosque__suite-sens' }, sens === 'avant' ? '← Plus récente' : 'Plus ancienne →'),
+        el('span', { class: 'kiosque__suite-titre' }, voisin.titre || 'Sans titre'))
+      : el('span', { class: 'kiosque__suite-vide' });
+    const avant = i > 0 ? liste[i - 1] : null;
+    const apres = i >= 0 && i < liste.length - 1 ? liste[i + 1] : null;
+    monter(lect.suite, bouton(avant, 'avant'), bouton(apres, 'apres'));
+    lect.suite.hidden = !avant && !apres;
+  }
+
   function viderLecture() {
     courant = null;
+    lect.suite.hidden = true;
     if (barreLecture) barreLecture.hidden = true;
     monter(lect.image); lect.image.hidden = true;
     lect.avisImage.hidden = true;

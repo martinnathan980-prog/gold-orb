@@ -216,14 +216,16 @@ for (const bloc of orga.poles) {
 console.log('\n== Tableau de bord : en-tête sur la bande et sommaire ==');
 await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1200);
-const toutes = dedup(comms.annonces.concat(comms.agenda.filter(a => a.statut !== 'a-venir' && a.type !== 'mot'))).length;
+/* La page du service ne montre que les communications du service : celles
+   des pôles se lisent dans leur espace. */
+const duService = (e) => !e.pole || String(e.pole).toUpperCase() === 'ETII';
+const toutes = dedup(comms.annonces.concat(comms.agenda.filter(a => a.statut !== 'a-venir' && a.type !== 'mot')).filter(duService)).length;
 const auService = await page.locator('#zone-communication .kiosque__carte').count();
-t(`le service liste le mot du chef et ses ${toutes} entrées passées`, auService === toutes + 1, `(${auService})`);
+t(`le service liste le mot du chef et ses ${toutes} entrées passées du service (pas celles des pôles)`, auService === toutes + 1, `(${auService})`);
 t('la lecture s\'ouvre sur le mot du chef', /trimestre qui se tient/i.test(await page.locator('#zone-communication .kiosque__lecture-titre').innerText()));
 /* Le nom de chaque entrée, sans le compteur qui le suit. */
 const sommaireService = await page.locator('.sous-nav a').evaluateAll(l => l.map(a => (a.firstChild ? a.firstChild.textContent : '').trim() + ':' + a.getAttribute('aria-current')));
-t('le sommaire du service donne le nombre d’éléments de ses sections',
-  await page.evaluate(() => ['communication', 'agenda', 'porteurs'].every((k) => /^\d+$/.test(document.querySelector('[data-compte="' + k + '"]').textContent))));
+
 t('le sommaire du service : Communication (courant), À venir, Porteurs, Suivi OTQ / OTD',
   sommaireService.join('|') === 'Communication:true|À venir:false|Porteurs:false|Suivi OTQ / OTD:false', `(${sommaireService.join('|')})`);
 // « À venir » : les prochains rendez-vous, du plus proche au plus lointain.

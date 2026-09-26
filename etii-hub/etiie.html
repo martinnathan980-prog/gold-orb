@@ -65,9 +65,24 @@
     <!-- L'en-tête de page : le titre et le sommaire, sur la bande — un
          ton à part du papier des sections (modules.css §15). Le sommaire
          reste collé sous la barre du site et suit la lecture (pole.js). -->
-    <div class="page-tete">
-      <div class="conteneur pile pile--serree pole-entete page-entete">
+    <div class="page-tete page-tete--une" data-pole="ETIIE">
+      <svg class="page-une__rotor" viewBox="-200 -200 400 400" aria-hidden="true" focusable="false">
+        <circle r="196" class="page-une__graduation"/>
+        <circle r="176"/>
+        <circle r="118"/>
+        <circle r="30"/>
+        <circle r="12"/>
+        <g class="page-une__pales">
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z"/>
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(72)"/>
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(144)"/>
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(216)"/>
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(288)"/>
+        </g>
+      </svg>
+      <div class="conteneur pole-entete page-entete page-une">
         <h1 class="pole-titre" id="pole-titre">Espace de pôle</h1>
+        <span class="page-une__ornement" aria-hidden="true"></span>
         <div id="pole-alerte" hidden></div>
       </div>
     </div>

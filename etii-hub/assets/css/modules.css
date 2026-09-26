@@ -612,35 +612,39 @@ ol.kiosque__liste {
 .kiosque__alertes {
   gap: 0;
   padding: 0 var(--e-2) 0 0;
-  background-color: var(--carte-fond);
-  border: 1px solid var(--carte-bord);
+  background-color: var(--alerte-fond);
+  border: 0;
   border-radius: var(--rayon-plein);
-  box-shadow: var(--ombre-sm);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--alerte-fond) 28%, transparent);
+  color: var(--alerte-texte);
 }
 .kiosque__alertes-etiquette {
   gap: var(--e-2);
   padding: var(--e-2) var(--e-4) var(--e-2) var(--e-5);
   background: none;
-  border-inline-end: 1px solid var(--bordure-douce);
+  border-inline-end: 1px solid color-mix(in srgb, var(--alerte-texte) 30%, transparent);
   font-family: var(--police);
   font-size: 0.6875rem;
   font-weight: var(--graisse-forte);
   letter-spacing: var(--lettrage-capitales);
-  color: var(--chaud-encre);
+  color: var(--alerte-texte);
 }
-.kiosque__alertes-point { background-color: var(--chaud); }
+.kiosque__alertes-point { background-color: var(--alerte-texte); }
 @media (prefers-reduced-motion: no-preference) {
-  .kiosque__alertes-point { animation: alerte-pouls 2400ms ease-out infinite; }
+  .kiosque__alertes-point { animation: alerte-pouls 2000ms ease-out infinite; }
 }
 @keyframes alerte-pouls {
-  from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--chaud) 55%, transparent); }
-  60%  { box-shadow: 0 0 0 7px color-mix(in srgb, var(--chaud) 0%, transparent); }
-  to   { box-shadow: 0 0 0 7px color-mix(in srgb, var(--chaud) 0%, transparent); }
+  from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--alerte-texte) 70%, transparent); }
+  60%  { box-shadow: 0 0 0 7px color-mix(in srgb, var(--alerte-texte) 0%, transparent); }
+  to   { box-shadow: 0 0 0 7px color-mix(in srgb, var(--alerte-texte) 0%, transparent); }
 }
 ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
-.kiosque__alerte { color: var(--texte); font-weight: var(--graisse-normale); }
-.kiosque__alertes-pause { border-radius: var(--rayon-plein); color: var(--texte-doux); }
-.kiosque__alertes-pause:hover { background-color: var(--fond-enfonce); color: var(--texte); }
+.kiosque__alerte { color: var(--alerte-texte); font-weight: var(--graisse-moyenne); }
+.kiosque__alerte::before { background-color: var(--alerte-texte); opacity: 0.7; }
+.kiosque__alertes-pause { border-radius: var(--rayon-plein); color: var(--alerte-texte); }
+.kiosque__alertes-pause:hover { background-color: color-mix(in srgb, var(--alerte-texte) 16%, transparent); color: var(--alerte-texte); }
+.kiosque__alertes-pause:focus-visible { outline-color: var(--alerte-texte); }
+.kiosque__alertes .kiosque__alertes-modifier { color: var(--alerte-texte); }
 
 .kiosque__flux-titre,
 .kiosque__groupe {
@@ -677,7 +681,56 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
   color: var(--texte);
 }
 
-/* La communication lue : posée sur le lin, un filet marine à gauche. */
+/* La vignette : la photo de la communication, en petit, à droite. */
+.kiosque__carte:has(.kiosque__vignette) { grid-template-columns: 2.75rem minmax(0, 1fr) 3.5rem; }
+.kiosque__vignette {
+  align-self: center;
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  object-fit: cover;
+  border-radius: var(--rayon-md);
+  box-shadow: 0 0 0 1px var(--bordure-douce);
+}
+
+/* Le temps de lecture, après la date, séparé par un point. */
+.kiosque__duree { color: var(--texte-faible); font-weight: var(--graisse-moyenne); }
+.kiosque__duree::before { content: "·"; margin-inline-end: var(--e-3); }
+
+/* La suite : deux cartes discrètes, la plus récente à gauche, la plus
+   ancienne à droite, chacune avec son titre. */
+.kiosque__suite {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--e-3);
+  margin-block-start: var(--e-2);
+}
+.kiosque__suite[hidden] { display: none; }
+.kiosque__suite-bouton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  padding: var(--e-3) var(--e-4);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-lg);
+  background: none;
+  color: var(--texte);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color var(--duree-rapide) var(--courbe), background-color var(--duree-rapide) var(--courbe), transform var(--duree-rapide) var(--courbe);
+}
+.kiosque__suite-bouton--apres { text-align: end; align-items: flex-end; }
+.kiosque__suite-bouton:hover { border-color: var(--bordure-forte); background-color: var(--fond); transform: translateY(-1px); }
+.kiosque__suite-sens {
+  font-size: 0.65625rem;
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--lettrage-capitales);
+  text-transform: uppercase;
+  color: var(--chaud-encre);
+}
+.kiosque__suite-titre { font-family: var(--police-titre); font-size: var(--texte-lg); line-height: 1.25; }
+
+/* La communication lue : posée sur le papier, un filet marine à gauche. */
 .kiosque__carte[aria-current="true"] {
   background-color: var(--fond);
   border-color: var(--bordure-douce);
@@ -1141,6 +1194,36 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 }
 .porteurs__fiche-segment::first-letter { text-transform: uppercase; }
 
+/* Plus de titres de famille : une seule galerie, triée par les filtres. */
+.porteurs__groupe-galerie-titre { display: none; }
+
+/* La jauge d'une valeur chiffrée : un trait fin, rempli à proportion du
+   plus grand de la flotte ; plein et en terre cuite pour le record. */
+.porteurs__jauge {
+  --part: 0;
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 14rem;
+  block-size: 4px;
+  margin-block: var(--e-1) 2px;
+  border-radius: 2px;
+  background-color: var(--fond-enfonce);
+  overflow: hidden;
+}
+.porteurs__jauge-barre {
+  position: absolute;
+  inset: 0 auto 0 0;
+  inline-size: calc(var(--part) * 100%);
+  border-radius: inherit;
+  background: linear-gradient(to right, color-mix(in srgb, var(--accent) 45%, transparent), var(--accent));
+}
+.porteurs__jauge--max .porteurs__jauge-barre { background: linear-gradient(to right, color-mix(in srgb, var(--chaud) 45%, transparent), var(--chaud)); }
+@media (prefers-reduced-motion: no-preference) {
+  .porteurs__jauge-barre { animation: jauge-remplit 900ms var(--courbe) 200ms backwards; }
+}
+@keyframes jauge-remplit { from { inline-size: 0; } }
+
 /* --- La fiche dépliée : un item sur toute la largeur de la rangée -------- */
 
 .porteurs__item--detail {
@@ -1337,13 +1420,13 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
   gap: var(--e-2);
   margin: 0;
   padding: var(--e-3) var(--e-5);
-  background-color: var(--chaud-doux);
-  border-block-end: 1px solid color-mix(in srgb, var(--chaud) 25%, transparent);
+  background-color: var(--fond-bande);
+  border-block-end: 1px solid var(--bordure-douce);
   font-family: var(--police-titre);
   font-size: 1.2rem;
   font-weight: var(--graisse-moyenne);
   line-height: 1.2;
-  color: var(--chaud-encre);
+  color: var(--texte);
 }
 .porteurs__groupe-titre::before {
   content: '';
@@ -1351,7 +1434,7 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
   inline-size: 4px;
   block-size: 1.1em;
   border-radius: 2px;
-  background-color: var(--chaud);
+  background-color: var(--accent);
 }
 
 .porteurs__lignes { margin: 0; }
@@ -1986,6 +2069,120 @@ ol.liseuse__bloc-liste {
   border-radius: var(--rayon-plein);
   background-color: currentColor;
 }
+
+/* La lecture pour tous : une phrase de synthèse, puis deux colonnes —
+   pour chaque indicateur, une carte (ce qu'il mesure, la valeur, ce
+   qu'elle veut dire, la jauge avec l'objectif et l'an dernier, les
+   évolutions) et, dessous, sa courbe de l'année. */
+.otq__synthese {
+  margin: 0 auto;
+  max-inline-size: 60ch;
+  font-family: var(--police-titre);
+  font-size: 1.3125rem;
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--texte-doux);
+}
+.otq__synthese strong { font-style: normal; font-weight: var(--graisse-moyenne); color: var(--texte); }
+.otq__colonnes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr)); gap: var(--e-6); }
+.otq__colonne { display: flex; flex-direction: column; gap: var(--e-4); min-inline-size: 0; }
+
+.otq-carte {
+  --serie: var(--accent);
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-5);
+  padding: var(--e-6);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-block-start: 3px solid var(--serie);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
+}
+.otq-carte__tete { display: flex; flex-direction: column; gap: var(--e-1); }
+.otq-carte__sigle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--e-2);
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--lettrage-capitales);
+  text-transform: uppercase;
+  color: var(--serie);
+}
+.otq-carte__nom { font-weight: var(--graisse-moyenne); color: var(--texte-faible); }
+.otq-carte__titre { margin: 0; font-family: var(--police-titre); font-size: 1.625rem; font-weight: var(--graisse-normale); }
+.otq-carte__phrase { margin: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
+.otq-carte__mesure { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-3) var(--e-6); }
+.otq-carte__valeur {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 4rem;
+  font-weight: 300;
+  line-height: 0.9;
+  color: var(--texte);
+  font-variant-numeric: lining-nums;
+}
+.otq-carte__unite { margin-inline-start: 0.1em; font-size: 0.45em; color: var(--texte-doux); }
+.otq-carte__concret { flex: 1; min-inline-size: 12rem; margin: 0; font-size: var(--texte-md); line-height: 1.45; color: var(--texte); }
+.otq-carte__quand { font-size: var(--texte-xs); color: var(--texte-faible); }
+
+.otq-jauge { display: flex; flex-direction: column; gap: var(--e-2); }
+.otq-jauge__piste {
+  position: relative;
+  block-size: 10px;
+  border-radius: 5px;
+  background-color: var(--fond-enfonce);
+}
+.otq-jauge__zone {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  border-radius: 0 5px 5px 0;
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--statut-succes) 22%, transparent) 0 4px, transparent 4px 8px);
+}
+.otq-jauge__remplissage {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  border-radius: 5px;
+  background: linear-gradient(to right, color-mix(in srgb, var(--serie) 35%, transparent), var(--serie));
+}
+.otq-jauge__passe {
+  position: absolute;
+  inset-block-start: 50%;
+  inline-size: 12px;
+  block-size: 12px;
+  margin: -6px 0 0 -6px;
+  border: 2px solid var(--texte-faible);
+  border-radius: var(--rayon-plein);
+  background-color: var(--carte-fond);
+}
+.otq-jauge__cible {
+  position: absolute;
+  inset-block: -5px;
+  inline-size: 2px;
+  margin-inline-start: -1px;
+  background-color: var(--texte);
+}
+.otq-jauge__echelle { position: relative; block-size: 1.2em; font-size: var(--texte-xs); color: var(--texte-faible); }
+.otq-jauge__echelle > span { position: absolute; translate: -50% 0; white-space: nowrap; }
+.otq-jauge__echelle > span:first-child { translate: 0 0; }
+.otq-jauge__echelle > span:last-child { translate: -100% 0; }
+.otq-jauge__echelle-cible { font-weight: var(--graisse-forte); color: var(--texte); }
+@media (prefers-reduced-motion: no-preference) {
+  .otq-jauge__remplissage { animation: jauge-remplit 1200ms var(--courbe) 200ms backwards; }
+}
+
+.otq-carte__faits { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--e-3); margin: 0; padding-block-start: var(--e-4); border-block-start: 1px solid var(--bordure-douce); }
+.otq-carte__faits dt { font-size: 0.65625rem; font-weight: var(--graisse-moyenne); letter-spacing: var(--lettrage-capitales); text-transform: uppercase; color: var(--texte-faible); }
+.otq-carte__faits dd { margin: var(--e-1) 0 0; font-size: var(--texte-md); font-weight: var(--graisse-forte); color: var(--texte); }
+.otq-carte__faits dd span { font-weight: var(--graisse-normale); color: var(--texte-doux); font-size: var(--texte-xs); }
+.otq-carte__faits dd.otq-hausse { color: var(--statut-succes); }
+.otq-carte__faits dd.otq-baisse { color: var(--statut-critique); }
 
 /* Le suivi, en revue : des indicateurs au chiffre en Newsreader, et la
    courbe des douze mois posée sur sa propre feuille. */
@@ -3334,13 +3531,44 @@ ol.liseuse__bloc-liste {
 
 .pole-doc {
   display: grid;
-  grid-template-columns: 6.5rem minmax(0, 1fr) auto auto auto auto;
+  grid-template-columns: 6.5rem minmax(0, 1fr) auto auto auto 4.5rem auto;
+  transition: background-color var(--duree-rapide) var(--courbe);
   align-items: center;
   gap: var(--e-2) var(--e-4);
   padding: var(--e-3) var(--e-4);
   border-bottom: 1px solid var(--bordure-douce);
 }
 .pole-doc:last-child { border-bottom: 0; }
+.pole-doc:hover { background-color: color-mix(in srgb, var(--fond-bande) 55%, transparent); }
+.pole-doc__intitule { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-1) var(--e-2); min-inline-size: 0; }
+.pole-doc__nouveau {
+  padding: 1px var(--e-2);
+  border-radius: var(--rayon-plein);
+  background-color: var(--statut-succes-fond);
+  font-size: 0.625rem;
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--lettrage-capitales);
+  text-transform: uppercase;
+  color: var(--statut-succes);
+}
+.pole-doc__ouvrir {
+  justify-self: end;
+  padding: 2px var(--e-3);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-plein);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  color: var(--texte-accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.pole-doc__ouvrir:hover { border-color: var(--accent); background-color: var(--accent-doux); }
+.pole-doc__ouvrir--vide { border: 0; padding: 0; }
+.pole-docs__outils { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--e-3); margin-block-end: var(--e-3); }
+.pole-docs__types { display: flex; flex-wrap: wrap; gap: var(--e-1); }
+.pole-docs__recherche { flex: 0 1 20rem; min-inline-size: 12rem; border-radius: var(--rayon-plein); padding-inline: var(--e-4); }
+.pole-docs__resume { margin: 0 0 var(--e-2); font-size: var(--texte-xs); color: var(--texte-faible); }
+.pole-docs__vide { padding: var(--e-5) var(--e-4); color: var(--texte-doux); }
 .pole-doc__type { justify-self: start; }
 .pole-doc__titre { min-inline-size: 0; font-weight: var(--graisse-moyenne); color: var(--texte); text-decoration: none; }
 .pole-doc__titre:hover { color: var(--texte-accent); text-decoration: underline; }
@@ -3353,7 +3581,7 @@ ol.liseuse__bloc-liste {
 
 @media (max-width: 800px) {
   .pole-doc { grid-template-columns: minmax(0, 1fr) auto; }
-  .pole-doc__type, .pole-doc__titre { grid-column: 1 / -1; }
+  .pole-doc__type, .pole-doc__intitule { grid-column: 1 / -1; }
 }
 
 /* ----------------------------------------------------------------------
@@ -3373,8 +3601,11 @@ ol.liseuse__bloc-liste {
    rembourrage de .page-entete. */
 .page-tete {
   margin-block-start: calc(var(--e-8) * -1);
-  background-color: var(--fond-bande);
+  background-color: var(--une-fond);
+  background-image: linear-gradient(to bottom, var(--une-fond-haut), var(--une-fond));
+  color: var(--une-texte);
 }
+.page-tete h1 { color: var(--une-texte); }
 
 .page-tete .page-entete {
   padding-block: var(--e-10) var(--e-4);
@@ -3384,7 +3615,7 @@ ol.liseuse__bloc-liste {
   position: sticky;
   inset-block-start: var(--hauteur-barre-site);
   z-index: 5;
-  background-color: var(--fond-bande);
+  background-color: var(--une-fond);
   border-bottom: 1px solid transparent;
   transition: border-color var(--duree) var(--courbe), box-shadow var(--duree) var(--courbe);
 }
@@ -3395,11 +3626,11 @@ ol.liseuse__bloc-liste {
    vitre dépolie : un filet, une ombre courte, et ce qui défile dessous se
    devine. */
 .page-sommaire--collee {
-  background-color: color-mix(in srgb, var(--fond-bande) 84%, transparent);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  border-bottom-color: color-mix(in srgb, var(--bordure) 70%, transparent);
-  box-shadow: var(--ombre-sm);
+  background-color: color-mix(in srgb, var(--une-fond) 90%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border-bottom-color: transparent;
+  box-shadow: var(--ombre-md);
 }
 
 /* Les entrées du sommaire : des capitales fines et espacées, sans cadre.
@@ -3422,11 +3653,11 @@ ol.liseuse__bloc-liste {
   font-size: 0.75rem;
   font-weight: var(--graisse-moyenne);
   letter-spacing: var(--lettrage-capitales);
-  color: var(--texte-doux);
+  color: var(--une-texte-doux);
   transition: color var(--duree) var(--courbe);
 }
-.page-sommaire .sous-nav a:hover { background: none; color: var(--texte); }
-.page-sommaire .sous-nav a[aria-current="true"] { background: none; color: var(--texte); }
+.page-sommaire .sous-nav a:hover { background: none; color: var(--une-texte); }
+.page-sommaire .sous-nav a[aria-current="true"] { background: none; color: var(--une-texte); }
 .page-sommaire .sous-nav::after {
   content: "";
   position: absolute;
@@ -3435,26 +3666,16 @@ ol.liseuse__bloc-liste {
   inline-size: var(--curseur-l);
   block-size: 2px;
   border-radius: 1px;
-  background-color: var(--chaud);
+  background-color: var(--une-ornement);
   transform: translateX(var(--curseur-x));
   transition: transform var(--duree-lente) var(--courbe), inline-size var(--duree-lente) var(--courbe);
 }
-.sous-nav__compte {
-  margin-inline-start: 0.45em;
-  font-family: var(--police-mono);
-  font-size: 0.625rem;
-  font-weight: var(--graisse-normale);
-  letter-spacing: 0;
-  color: var(--texte-faible);
-  font-variant-numeric: tabular-nums;
-}
-.sous-nav__compte:empty { display: none; }
 
 /* -------------------------------------------------------------------------
-   15 quater. La une (index.html) : la date du jour, le nom du service en
-       très grand, un ornement terre cuite ; derrière, en filigrane, un
-       rotor à cinq pales tracé au trait qui tourne lentement. Tout arrive
-       en fondu au chargement.
+   15 quater. La une (accueil et pôles) : sur un marine profond, le nom en
+       très grand, un ornement terre cuite (ou à la couleur du pôle) ;
+       derrière, en filigrane, un rotor à cinq pales tracé au trait qui
+       tourne lentement. Tout arrive en fondu au chargement.
    ---------------------------------------------------------------------- */
 
 .page-tete--une { position: relative; overflow: hidden; isolation: isolate; }
@@ -3466,29 +3687,6 @@ ol.liseuse__bloc-liste {
   align-items: center;
   gap: var(--e-3);
   padding-block: var(--e-10) var(--e-5);
-}
-
-.page-une__date {
-  min-block-size: 1.5em;
-  margin: 0;
-  font-family: var(--police-titre);
-  font-size: 1.125rem;
-  font-style: italic;
-  font-weight: var(--graisse-normale);
-  color: var(--texte-doux);
-}
-.page-une__date time { font-family: inherit; font-variant-numeric: normal; }
-.page-une__semaine {
-  margin-inline-start: var(--e-3);
-  padding-inline-start: var(--e-3);
-  border-inline-start: 1px solid var(--bordure-forte);
-  font-family: var(--police);
-  font-size: 0.6875rem;
-  font-style: normal;
-  font-weight: var(--graisse-moyenne);
-  letter-spacing: var(--lettrage-capitales);
-  text-transform: uppercase;
-  vertical-align: 0.15em;
 }
 
 .page-entete.page-une h1 {
@@ -3506,8 +3704,12 @@ ol.liseuse__bloc-liste {
   display: inline-flex;
   align-items: center;
   gap: var(--e-3);
-  color: var(--chaud);
+  color: var(--une-ornement);
 }
+/* Sur un espace de pôle, l'ornement prend la couleur du pôle. */
+.page-tete[data-pole="ETIIA"] .page-une__ornement { color: var(--pole-etiia-sur-marine); }
+.page-tete[data-pole="ETIIE"] .page-une__ornement { color: var(--pole-etiie-sur-marine); }
+.page-tete[data-pole="ETIII"] .page-une__ornement { color: var(--pole-etiii-sur-marine); }
 .page-une__ornement::before,
 .page-une__ornement::after {
   content: "";
@@ -3531,14 +3733,14 @@ ol.liseuse__bloc-liste {
   block-size: auto;
   translate: -50% -50%;
   fill: none;
-  stroke: color-mix(in srgb, var(--texte) 7%, transparent);
+  stroke: var(--une-trait);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
 }
 .page-une__rotor * { vector-effect: non-scaling-stroke; }
 .page-une__graduation { stroke-dasharray: 1 7; stroke-width: 2; }
-.page-une__pales path { fill: color-mix(in srgb, var(--texte) 2.5%, transparent); }
+.page-une__pales path { fill: color-mix(in srgb, var(--une-texte) 2.5%, transparent); }
 
 @media (prefers-reduced-motion: no-preference) {
   .page-une__rotor { animation: une-rotor 180s linear infinite, une-fondu 2400ms var(--courbe) both; }
@@ -3574,7 +3776,6 @@ ol.liseuse__bloc-liste {
 
 @media (max-width: 640px) {
   .page-une { padding-block: var(--e-10) var(--e-4); }
-  .page-une__semaine { display: none; }
   .page-sommaire .sous-nav { gap: var(--e-6); }
 }
 
@@ -3636,6 +3837,18 @@ ol.liseuse__bloc-liste {
 
 .page-sommaire ~ .pile--section > section > .titre-section { padding-block-start: 0; }
 
+/* La première section s'ouvre sur le marine de la une : son titre y est
+   posé tout entier, en blanc, et le papier commence juste dessous — la
+   une se referme sur « Communication center ». */
+.page-sommaire ~ .pile--section > section:first-of-type {
+  --bande-dessus: var(--une-fond);
+  --bande-coupe: calc(var(--bande-air) + var(--texte-section) * var(--interligne-serre) + var(--e-4));
+  gap: var(--e-10);
+}
+.page-sommaire ~ .pile--section > section:first-of-type > .titre-section { color: var(--une-texte); }
+.page-sommaire ~ .pile--section > section:first-of-type > .titre-section::before,
+.page-sommaire ~ .pile--section > section:first-of-type > .titre-section::after { background-color: var(--une-trait); }
+
 /* La dernière bande descend jusqu'au pied de page : plus de lisière du
    papier entre les deux. */
 body > main:has(> .page-sommaire) { padding-block-end: 0; }
@@ -3645,6 +3858,8 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
    change au bord de la section, et non plus au milieu d'un mot. */
 @media (max-width: 640px) {
   .page-sommaire ~ .pile--section { --bande-air: var(--e-8); --bande-coupe: 0px; }
+  .page-sommaire ~ .pile--section > section:first-of-type { --bande-coupe: 0px; gap: var(--e-6); }
+  .page-sommaire ~ .pile--section > section:first-of-type > .titre-section { color: var(--texte); }
   .page-sommaire--collee { box-shadow: none; }
 }
 
@@ -3895,6 +4110,93 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   color: var(--chaud-encre);
 }
 .agenda--frise .agenda__titre { font-size: 1.1875rem; line-height: 1.2; }
+
+/* --- Le prochain rendez-vous, en vedette (agenda.js §3 bis) ---------------
+   Une grande carte : l'anneau du compte à rebours à gauche — le nombre de
+   jours en Newsreader, l'arc à la couleur du pôle qui se dessine à
+   l'arrivée — et le rendez-vous à droite. */
+.agenda__prochain {
+  --rdv-teinte: var(--chaud);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--e-8);
+  padding: var(--e-6) var(--e-8);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-xl);
+  box-shadow: var(--ombre-md);
+  margin-block-end: var(--e-4);
+}
+.agenda__prochain[data-pole="ETIIA"] { --rdv-teinte: var(--pole-etiia); }
+.agenda__prochain[data-pole="ETIIE"] { --rdv-teinte: var(--pole-etiie); }
+.agenda__prochain[data-pole="ETIII"] { --rdv-teinte: var(--pole-etiii); }
+.agenda__prochain-anneau {
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: 8.5rem;
+  block-size: 8.5rem;
+}
+.agenda__prochain-svg { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; rotate: -90deg; }
+.agenda__prochain-piste { fill: none; stroke: var(--bordure-douce); stroke-width: 6; }
+.agenda__prochain-arc {
+  --tour: 0;
+  --reste: 0;
+  fill: none;
+  stroke: var(--rdv-teinte);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: var(--tour);
+  stroke-dashoffset: var(--reste);
+}
+.agenda__prochain-nombre {
+  font-family: var(--police-titre);
+  font-size: 3.25rem;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--texte);
+  translate: 0 -0.35rem;
+}
+.agenda__prochain-unite {
+  position: absolute;
+  inset-block-end: 1.9rem;
+  font-size: 0.65625rem;
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--lettrage-capitales);
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+.agenda__prochain-corps { display: flex; flex-direction: column; gap: var(--e-2); min-inline-size: 0; }
+.agenda__prochain-sur-titre {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2) var(--e-4);
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--lettrage-capitales);
+  text-transform: uppercase;
+  color: var(--chaud-encre);
+}
+.agenda__prochain-type { color: var(--texte-doux); font-weight: var(--graisse-moyenne); }
+.agenda__prochain-titre {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: clamp(1.6rem, 1.4vw + 1.1rem, 2.25rem);
+  line-height: 1.1;
+  color: var(--texte);
+}
+.agenda__prochain-quand { margin: 0; font-family: var(--police-titre); font-style: italic; font-size: var(--texte-lg); color: var(--texte-doux); }
+.agenda__prochain-resume { margin: 0; max-inline-size: 70ch; font-size: var(--texte-sm); color: var(--texte-doux); }
+@media (prefers-reduced-motion: no-preference) {
+  .agenda__prochain-arc { animation: prochain-arc 1600ms var(--courbe) 300ms backwards; }
+}
+@keyframes prochain-arc { from { stroke-dashoffset: var(--tour); } }
+@media (max-width: 640px) {
+  .agenda__prochain { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; padding: var(--e-5); gap: var(--e-4); }
+  .agenda__prochain-sur-titre { justify-content: center; }
+}
 
 /* --- La frise qui vit (agenda.js §3) --------------------------------------
    Survoler une carte ou son repère l'allume : la carte se soulève et prend

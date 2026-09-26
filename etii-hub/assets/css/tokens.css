@@ -75,30 +75,30 @@
   --serie-otd: #b8562a;
 
   /* --- Neutres : un gris chaud, qui tire vers le papier ------------------- */
-  --gris-50:  #fbf8f2;
-  --gris-100: #f3ede2;
-  --gris-200: #e8dfd0;
-  --gris-300: #d5c9b5;
-  --gris-400: #b7aa94;
-  --gris-500: #7e7565;
-  --gris-600: #4f4940;
-  --gris-700: #39332b;
-  --gris-800: #28231d;
-  --gris-900: #1d1914;
+  --gris-50:  #fbfaf8;
+  --gris-100: #f3f2ef;
+  --gris-200: #e6e5e1;
+  --gris-300: #d4d3cd;
+  --gris-400: #b2b0a8;
+  --gris-500: #787670;
+  --gris-600: #4a4944;
+  --gris-700: #34332f;
+  --gris-800: #232220;
+  --gris-900: #1b1a17;
 
   /* --- Rôles sémantiques ------------------------------------------------
      Le papier est le fond de page : un beige clair, chaud. La feuille
      (fond-eleve) est crème et s'en détache par une ombre courte et un
      filet léger. Le creux (fond-enfonce) est la surface en retrait : champ
      au repos, bouton, ligne survolée. */
-  --fond:          #ece4d6;
+  --fond:          #f3f2ef;
   --fond-profond:  var(--gris-200);
   /* La feuille n'est pas blanche : un crème à peine plus clair que le
      papier. Le blanc pur, sur écran, éblouit. */
-  --fond-eleve:    #f8f3ea;
+  --fond-eleve:    #fdfcfa;
   /* La bande : une section sur deux se pose sur un ton à peine différent,
      pour que l'œil sépare les parties de la page sans y penser. */
-  --fond-bande:    #e3d8c5;
+  --fond-bande:    #e7eaee;
   /* Le creux est un lavis d'encre translucide, pas un gris de plus : posé
      sur le papier, sur la bande ou sur une feuille blanche, il assombrit
      toujours ce qu'il recouvre du même cran. Un gris fixe, lui, devenait
@@ -110,12 +110,12 @@
   --texte-doux:    var(--gris-600);
   /* En littéral et non via --gris-500 : ce gris-là sert aussi de
      --bordure-forte, qu'on ne veut pas foncer. */
-  --texte-faible:  #625c51;
+  --texte-faible:  #5e5c56;
   --texte-inverse: #ffffff;
   --texte-accent:  #17367f;
 
   --bordure:       var(--gris-300);
-  --bordure-douce: #d9cdb8;
+  --bordure-douce: #e1e0db;
   --bordure-forte: var(--gris-400);
   /* Le filet d'un champ de saisie : plus marqué que --bordure, c'est le
      seul indice qui dise « on écrit ici ». Le fond du champ, lui, reste
@@ -141,13 +141,28 @@
   --chaud-lueur:     rgb(180 84 47 / 0.18);
 
   /* La barre du haut : blanc cassé, un filet fin, une ombre douce. */
-  --barre-fond:          #f4eee3;
+  --barre-fond:          #fbfaf8;
   --barre-texte:         var(--gris-900);
   --barre-texte-doux:    var(--gris-600);
   --barre-bordure:       var(--gris-300);
   --barre-surface:       var(--gris-100);
   --barre-surface-forte: var(--gris-200);
   --barre-ombre:         0 1px 0 rgb(40 35 25 / 0.04), 0 6px 20px rgb(40 35 25 / 0.06);
+
+  /* La une : le bandeau d'en-tête des pages, en marine profond. Le titre
+     y est blanc, l'ornement terre cuite éclaircie, le rotor un trait
+     blanc presque effacé. --une-fond est aussi la couleur sur laquelle
+     s'ouvre la première section (modules.css §15 ter). */
+  --une-fond-haut:   #0b1c3e;
+  --une-fond:        #12295a;
+  --une-texte:       #ffffff;
+  --une-texte-doux:  #c9d3e6;
+  --une-trait:       rgb(255 255 255 / 0.09);
+  --une-ornement:    #e8a07c;
+
+  /* Les alertes : le rouge, parce que c'est ce qui compte le plus. */
+  --alerte-fond:     #a8322c;
+  --alerte-texte:    #ffffff;
 
   /* Les surfaces sombres posées sur une photo (bannières, voiles) : un
      graphite chaud, jamais du marine. */
@@ -302,6 +317,14 @@
     --barre-surface-forte: rgb(255 255 255 / 0.11);
     --barre-ombre:         0 1px 0 rgb(0 0 0 / 0.25), 0 6px 20px rgb(0 0 0 / 0.30);
 
+    --une-fond-haut:  #0a1428;
+    --une-fond:       #111f3d;
+    --une-texte:      #f5f3ee;
+    --une-texte-doux: #b7c2d8;
+    --une-trait:      rgb(255 255 255 / 0.07);
+    --une-ornement:   #e8a07c;
+    --alerte-fond:    #b8453d;
+    --alerte-texte:   #ffffff;
     --entete-fond:    #1c1b17;
     --entete-fond-2:  #282622;
     --entete-texte:   #ffffff;
@@ -404,6 +427,14 @@
   --barre-surface-forte: rgb(255 255 255 / 0.11);
   --barre-ombre:         0 1px 0 rgb(0 0 0 / 0.25), 0 6px 20px rgb(0 0 0 / 0.30);
 
+  --une-fond-haut:  #0a1428;
+  --une-fond:       #111f3d;
+  --une-texte:      #f5f3ee;
+  --une-texte-doux: #b7c2d8;
+  --une-trait:      rgb(255 255 255 / 0.07);
+  --une-ornement:   #e8a07c;
+  --alerte-fond:    #b8453d;
+  --alerte-texte:   #ffffff;
   --entete-fond:    #1c1b17;
   --entete-fond-2:  #282622;
   --entete-texte:   #ffffff;
