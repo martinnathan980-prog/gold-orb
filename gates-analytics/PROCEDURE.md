@@ -481,7 +481,12 @@ bouton « non renseigné » sous la barre sort la liste.
 ## 12. Comparaison des bases de données : GATES et SEE
 
 Une autre base suit les mêmes plans sous une autre structure. La seconde base
-prévue est **SEE**, l'extract Excel de l'intranet (« Nommage WD BFLOW ») : un
+prévue est **SEE**, l'extract Excel de l'intranet (« Nommage WD BFLOW »).
+**Chaque contrat a la sienne** : l'onglet `SEE HDK` sert au contrat `HDK`,
+`SEE THS` à `THS` (`SEE - HDK`, `SEE_HDK`, `HDK SEE` valent aussi) ; un onglet
+`SEE` tout court ne vaut que pour un classeur d'un seul contrat — devant
+plusieurs, il n'est lu pour aucun, et le Diagnostic dit comment le renommer.
+Un extract SEE : un
 titre en ligne 1, les en-têtes en ligne 3, les données dessous, et la
 référence UD répartie sur trois colonnes — **NAME** (la racine), **SOL.** (la
 solution, trois chiffres) et **Cust.V** (l'indice, une lettre). Collé tel quel
@@ -722,8 +727,51 @@ bandeau des filtres ne bougent.
 
 La page s'ouvre **tout replié** : les semaines du journal, les lots « plan par
 plan » de la comparaison et les groupes (ATA, ECP…) ; le lecteur déplie ce
-qu'il veut voir. Le graphique s'ouvre sur **un an** (le bouton « 1 an »),
-élargi s'il le faut pour garder tous les jalons dans le champ.
+qu'il veut voir. Le graphique s'ouvre sur **six mois** — exactement le bouton
+« 6 mois ». Un jalon plus lointain reste dans la légende, avec son décompte,
+marqué « hors fenêtre ».
+
+## 13 quater. Les échéances en jours
+
+Un jalon se donne à la semaine ; la page le dit **en jours**, jusqu'au
+**vendredi** de sa semaine :
+
+- **sous le titre**, la prochaine échéance du périmètre : « Prochaine
+  échéance · Solde FWD · dans 83 jours », avec un point **vert** si le rythme
+  tenu suffit, **rouge** sinon ;
+- **dans la légende des jalons**, sous chacun : « dans 111 jours », en ambre
+  à moins de trois semaines, « il y a 5 jours » une fois passé.
+
+Un clic — sur l'échéance du titre, sur un jalon de la légende ou sur son
+numéro dans le graphique — ouvre la **fiche de l'échéance** : sa date
+(« vendredi 18 décembre 2026 · fin de la semaine 51 »), les **jours** et les
+**semaines** restants, les **plans à terminer** dans *son* périmètre (un
+jalon BASE/OPTION compte les plans BASE/OPTION, quel que soit le périmètre
+affiché), la jauge des terminés, le **rythme qu'il faut** d'ici là contre le
+**rythme tenu** depuis le premier relevé, et le verdict : échéance tenue, ou
+de combien de semaines elle serait manquée. Un second clic, la croix ou
+Échap la referment ; au clavier, Entrée sur un jalon l'ouvre.
+
+## 13 quinquies. Vitesse d'ouverture et thème
+
+- **Le paquet voyage compacté** : chaque nom de colonne, chaque référence
+  d'un relevé n'y est écrit qu'une fois (compacterPaquet dans `Code`, rendu à
+  l'identique par la page) — trois à quatre fois moins lourd.
+- **Les gros tableaux se dessinent par tranches** : au-delà d'environ 40 000
+  cellules, la suite vient en descendant dans le tableau, ou d'un clic sur
+  « N lignes de plus ». Filtres, tris et comptes portent toujours sur toutes
+  les lignes. Le tableau de SEE ne se dessine que quand on bascule dessus, et
+  un tableau hors de l'écran ne se met pas en page tant qu'on ne s'en approche
+  pas.
+- **Les polices** se chargent sans retenir l'affichage : un réseau lent
+  n'empêche plus la page de paraître.
+- **Le Diagnostic dit le temps de chaque lecture** — GATES, historique,
+  seconde base — et le poids envoyé : c'est lui qui dit où l'ouverture passe
+  son temps sur ce classeur-là.
+- **Le thème suit le navigateur** : clair ou sombre, menus déroulants, champs
+  et barres de défilement compris — un Chrome en mode sombre n'ouvre plus de
+  menu blanc écrit en clair.
+- Un bouton **↑** en bas à droite ramène en haut de la page.
 
 ## 14. Ce qui reste local à chaque personne
 

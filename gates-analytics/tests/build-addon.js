@@ -129,7 +129,7 @@ function construire(options) {
 
   // Les polices locales évitent toute dépendance réseau pendant les tests.
   if (fs.existsSync(path.join(racine, 'prototype', 'fonts', 'local.css'))) {
-    index = index.replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^"]*">/,
+    index = index.replace(/<link rel="stylesheet"[^>]*href="https:\/\/fonts\.googleapis\.com[^>]*>/,
                           '<link rel="stylesheet" href="prototype/fonts/local.css">');
   }
 
@@ -153,6 +153,10 @@ async function brancherClasseur(page, contexte) {
     if (id === '__panne__') throw new Error('Panne simulée du classeur');
     return JSON.stringify(contexte.getDonneesPourClient(id === null ? undefined : id));
   });
+  await page.exposeFunction('__classeurGetDonneesCompactes', function (id) {
+    if (id === '__panne__') throw new Error('Panne simulée du classeur');
+    return JSON.stringify(contexte.getDonneesCompactes(id === null ? undefined : id));
+  });
   await page.addInitScript(function () {
     function chaine(succes, echec) {
       return {
@@ -161,6 +165,13 @@ async function brancherClasseur(page, contexte) {
         getDonneesPourClient: function (id) {
           window.__appelsClasseur.push(id);
           window.__classeurGetDonneesPourClient(id === undefined ? null : id).then(
+            function (json) { if (succes) succes(JSON.parse(json)); },
+            function (e) { if (echec) echec(e); });
+        },
+        // Le pont d'Index.html demande le paquet compacté, comme au classeur.
+        getDonneesCompactes: function (id) {
+          window.__appelsClasseur.push(id);
+          window.__classeurGetDonneesCompactes(id === undefined ? null : id).then(
             function (json) { if (succes) succes(JSON.parse(json)); },
             function (e) { if (echec) echec(e); });
         }

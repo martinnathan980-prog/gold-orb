@@ -102,13 +102,23 @@ l'écran, aucune boîte ne s'affiche. Vérifier une fois, dans **Extensions →
 Apps Script → ⚙ Paramètres du projet**, que le fuseau horaire est
 Europe/Paris. « Désactiver l'archivage automatique » l'arrête.
 
-## 5. La seconde base, SEE : un onglet `SEE`
+## 5. La seconde base, SEE : un onglet par contrat
 
-1. **+** pour un nouvel onglet, le nommer exactement **`SEE`**.
-2. Ouvrir l'extract « Nommage WD BFLOW » dans Excel, **Ctrl+A**, **Ctrl+C**.
-3. Dans l'onglet `SEE`, **A1**, **Ctrl+V** — tel quel, titre en ligne 1 et
+Chaque contrat a sa propre base SEE, donc son propre onglet :
+
+1. **+** pour un nouvel onglet, le nommer **`SEE` suivi du nom du contrat** —
+   **`SEE HDK`** pour le contrat de l'onglet `HDK`, **`SEE THS`** pour `THS`
+   (`SEE - HDK` ou `SEE_HDK` marchent aussi).
+2. Ouvrir l'extract « Nommage WD BFLOW » **de ce contrat** dans Excel,
+   **Ctrl+A**, **Ctrl+C**.
+3. Dans l'onglet `SEE HDK`, **A1**, **Ctrl+V** — tel quel, titre en ligne 1 et
    en-têtes en ligne 3 compris.
-4. Rouvrir le tableau de bord.
+4. Rouvrir le tableau de bord : chaque contrat se compare à sa base.
+
+Avec **un seul contrat** dans le classeur, un onglet nommé `SEE` tout court
+suffit. Avec plusieurs, un `SEE` tout court n'est lu pour aucun — il ne dit
+pas à quel contrat il appartient : le **Diagnostic** le signale et donne le
+nom à lui donner.
 
 Sous le tableau des plans apparaît la section **Comparaison des bases de
 données** : les deux cercles, les verdicts, et la liste **plan par plan** de
@@ -210,7 +220,7 @@ onglet, et ce qui manque. Puis :
 | « Ouvrir le tableau de bord » donne une erreur | Un fichier HTML manque ou est mal nommé | Diagnostic : il nomme le fichier (`Index`, `Styles`, `Javascript`) introuvable |
 | La page reste sur la démonstration, avec une alerte | Aucun onglet de données lisible : l'alerte dit pourquoi | « Aucune colonne d'avancement FWD n'a été reconnue » : l'extract est collé sans sa ligne d'en-têtes ou sa ligne de groupes → recoller entier en A1 ; « Aucun onglet de données exploitable : « Feuille 1 » est vide » : aucun onglet ne contient encore d'extract |
 | Pas de courbe, pas de fin estimée | Aucun relevé archivé | Suivi FWD → Archiver le relevé de cette semaine |
-| Pas de section « Comparaison » | Pas d'onglet `SEE`, ou illisible | Diagnostic, ligne « Seconde base » : elle dit s'il manque l'onglet, s'il est vide, ou si les en-têtes NAME / SOL. / Cust.V ne s'y trouvent pas |
+| Pas de section « Comparaison » | Pas d'onglet `SEE <contrat>` (ou `SEE` pour un seul contrat), ou illisible | Diagnostic, ligne « Seconde base » : elle dit s'il manque l'onglet, s'il est vide, ou si les en-têtes NAME / SOL. / Cust.V ne s'y trouvent pas |
 | Un contrat en trop ou en moins | Un onglet visible en trop, ou masqué | Chaque onglet visible est un contrat ; masquer ce qui n'en est pas un |
 
 Et dans tous les cas : **le texte du Diagnostic** (copié à la souris dans la

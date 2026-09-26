@@ -828,6 +828,36 @@ function serveurSur(valeurs, proprietes, fichiers) {
     JSON.stringify(seeParNom.paquet.rapprochement && seeParNom.paquet.rapprochement.lignes.length));
   verifier('et il n\'apparaît pas dans la liste des contrats',
     !seeParNom.paquet.contrats.some(c => /^see$/i.test(c.id)), JSON.stringify(seeParNom.paquet.contrats));
+
+  /* Une seconde base par contrat : l'onglet « SEE X1 » sert au contrat X1,
+     « SEE - X2 » au contrat X2 — écrits comme on veut, tirets, casse. Aucun
+     n'est un contrat. Un « SEE » tout court devant plusieurs contrats
+     n'appartient à personne : pas de comparaison plutôt qu'une fausse. */
+  const seeDe = (nom, lignes) => new Feuille(nom, [['Nommage WD BFLOW', '', '', ''], ['', '', '', ''],
+    ['NAME', 'SOL.', 'Cust.V', 'Validated']].concat(lignes));
+  const parContrat = construire({ contrats: ['X1', 'X2'], lignes: 20, historique: false, sortie: 'apercu-see-contrats.html',
+    feuilles: [seeDe('SEE X1', [['AAA111A0001', '1', 'a', 'TRUE']]),
+               seeDe('see - x2', [['BBB222A0002', '1', 'b', 'TRUE'], ['BBB222A0003', '1', 'b', 'FALSE']])] });
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-see-contrats.html'));
+  const rX1 = parContrat.contexte.getDonneesPourClient('X1').rapprochement;
+  const rX2 = parContrat.contexte.getDonneesPourClient('X2').rapprochement;
+  verifier('chaque contrat lit sa propre base : « SEE X1 » pour X1, « see - x2 » pour X2',
+    !!rX1 && !!rX2 && rX1.lignes.length === 1 && rX1.lignes[0].NAME === 'AAA111A0001' &&
+    rX2.lignes.length === 2 && rX2.lignes[0].NAME === 'BBB222A0002', JSON.stringify([rX1 && rX1.lignes, rX2 && rX2.lignes.length]));
+  verifier('et ces onglets ne sont pas des contrats',
+    parContrat.contexte.listerContrats(parContrat.classeur).map(c => c.id).join() === 'X1,X2');
+  const diagContrats = parContrat.contexte.diagnostic();
+  verifier('le diagnostic dit, contrat par contrat, quel onglet est lu',
+    /✓ Seconde base « SEE » de « X1 » : onglet « SEE X1 », 1 ligne\(s\)/.test(diagContrats) &&
+    /✓ Seconde base « SEE » de « X2 » : onglet « see - x2 », 2 ligne\(s\)/.test(diagContrats), diagContrats);
+  const generique = construire({ contrats: ['X1', 'X2'], lignes: 20, historique: false, sortie: 'apercu-see-generique.html',
+    feuilles: [seeDe('SEE', [['AAA111A0001', '1', 'a', 'TRUE']])] });
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-see-generique.html'));
+  const diagGen = generique.contexte.diagnostic();
+  verifier('un « SEE » tout court devant deux contrats n\'est lu pour aucun, et le diagnostic dit comment le renommer',
+    !generique.contexte.getDonneesPourClient('X1').rapprochement && !generique.contexte.getDonneesPourClient('X2').rapprochement &&
+    /aucun onglet « SEE X1 »/.test(diagGen) && /⚠ L'onglet « SEE » ne dit pas à quel contrat il appartient/.test(diagGen) &&
+    /le renommer « SEE X1 »/.test(diagGen), diagGen);
   /* Le diagnostic dit ce que le script voit de la seconde base — c'est la
      réponse à « je ne vois pas les deux cercles » : l'onglet lu et compté,
      l'onglet absent (et le geste qui manque), l'onglet vide, l'onglet dont
@@ -2140,6 +2170,73 @@ function serveurSur(valeurs, proprietes, fichiers) {
     retourM.releves === cM.getHistorique(clM, 'X1').length && retourM.etat === '',
     JSON.stringify([retourM.plans, retourM.nom, retourM.releves]));
   await ctxMulti.close();
+
+  // =================================================================
+  /* L'ouverture rapide. Le paquet voyage compacté — chaque nom de colonne,
+     chaque référence d'un relevé écrit une fois — et la page le rend à
+     l'identique. Un gros extract ne dessine d'abord qu'une tranche du
+     tableau ; la suite vient en descendant, ou d'un clic. Le diagnostic dit
+     le temps de chaque lecture. */
+  section('Ouverture rapide : paquet compact, tableau par tranches');
+  const complet = gates.contexte.getDonneesPourClient();
+  const compactJson = gates.contexte.donneesJSONPourPage();
+  verifier('le paquet posé dans la page est compacté : moins de 40 % du poids complet',
+    compactJson.length < 0.4 * JSON.stringify(complet).length && /"plansTab":\{"cles":/.test(compactJson) && !/"plans":\[/.test(compactJson),
+    Math.round(compactJson.length / 1024) + ' Ko contre ' + Math.round(JSON.stringify(complet).length / 1024) + ' Ko');
+  const pCompact = await (await nav.newContext()).newPage();
+  await pCompact.goto('file://' + path.join(__dirname, '..', 'prototype', 'apercu.html')); await pCompact.waitForTimeout(600);
+  const pourComparer = (o) => JSON.parse(JSON.stringify(o, (k, v) => k === 'genereLe' ? undefined : v));
+  const seeCompact = construire({ lignes: 60, gates: true, feuilles: [see], config: configSEE, sortie: 'apercu-compact.html' });
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-compact.html'));
+  for (const [nom, ctxS] of [['GATES seul', gates.contexte], ['avec historique et SEE', seeCompact.contexte]]) {
+    const attendu = pourComparer(ctxS.getDonneesPourClient());
+    const rendu = await pCompact.evaluate(j => window.__deballerPaquet(JSON.parse(j)), ctxS.donneesJSONPourPage());
+    const trie = o => Array.isArray(o) ? o.map(trie) : (o && typeof o === 'object') ? Object.keys(o).sort().reduce((r, k) => (r[k] = trie(o[k]), r), {}) : o;
+    verifier('déballé par la page, le paquet ' + nom + ' est exactement celui du serveur',
+      JSON.stringify(trie(pourComparer(rendu))) === JSON.stringify(trie(attendu)));
+  }
+  verifier('un contrat demandé par la page arrive compacté lui aussi',
+    !!gates.contexte.getDonneesCompactes().plansTab && !gates.contexte.getDonneesCompactes().plans);
+  await pCompact.context().close();
+
+  construire({ lignes: 640, gates: true, sortie: 'apercu-gros.html' });
+  const pGros = await (await nav.newContext({ viewport: { width: 1400, height: 900 } })).newPage();
+  pGros.on('pageerror', e => erreursJS.push('gros : ' + e.message));
+  await pGros.goto('file://' + path.join(__dirname, '..', 'apercu-gros.html')); await pGros.waitForTimeout(1200);
+  const tranche1 = await pGros.evaluate(() => ({
+    lignes: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length,
+    suite: (document.querySelector('#corps-tableau tr.ligne-suite') || {}).textContent || '',
+    compte: document.getElementById('compte').textContent
+  }));
+  verifier('640 plans sur 138 colonnes : une première tranche seulement, et le compte dit bien 640',
+    tranche1.lignes > 60 && tranche1.lignes < 640 && /640 plans/.test(tranche1.compte) &&
+    new RegExp((640 - tranche1.lignes) + ' lignes de plus').test(tranche1.suite.replace(/\s/g, ' ')), JSON.stringify(tranche1));
+  await pGros.click('#corps-tableau tr.ligne-suite button'); await pGros.waitForTimeout(400);
+  const tranche2 = await pGros.evaluate(() => document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length);
+  verifier('un clic sur « N lignes de plus » ajoute la tranche suivante', tranche2 > tranche1.lignes, tranche1.lignes + ' → ' + tranche2);
+  for (let k = 0; k < 8; k++) {
+    await pGros.evaluate(() => { const d = document.getElementById('defile'); d.scrollTop = d.scrollHeight; });
+    await pGros.waitForTimeout(250);
+  }
+  const toutes = await pGros.evaluate(() => ({
+    lignes: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length,
+    suite: !!document.querySelector('#corps-tableau tr.ligne-suite'),
+    figees: [...document.querySelectorAll('#corps-tableau tr:last-child td.col-fige')].every(td => td.style.left !== '')
+  }));
+  verifier('en descendant dans le tableau, les 640 lignes finissent toutes là, colonnes figées comprises',
+    toutes.lignes === 640 && !toutes.suite && toutes.figees, JSON.stringify(toutes));
+  await pGros.fill('#recherche', 'UD-21'); await pGros.waitForTimeout(500);
+  const filtreGros = await pGros.evaluate(() => ({
+    lignes: document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length,
+    compte: document.getElementById('compte').textContent
+  }));
+  verifier('un filtre porte sur toutes les lignes, pas sur la tranche dessinée',
+    filtreGros.lignes > 0 && new RegExp('^' + filtreGros.lignes + ' plans? sur 640').test(filtreGros.compte.replace(/\s/g, ' ')), JSON.stringify(filtreGros));
+  await pGros.context().close();
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-gros.html'));
+  const diagTemps = gates.contexte.diagnostic();
+  verifier('le diagnostic dit le temps de chaque lecture : GATES, historique, seconde base',
+    /préparé en \d+,\d s — lecture de GATES \d+,\d s, de l'historique \d+,\d s, de la seconde base \d+,\d s/.test(diagTemps), diagTemps.slice(-600));
 
   await ctxGates.close();
   await ctx.close();

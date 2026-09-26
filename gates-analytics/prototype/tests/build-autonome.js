@@ -57,7 +57,7 @@ const stylePolices = [...parFichier.values()].map(function (f) {
 }).join('\n');
 
 const avant = corps.length;
-corps = corps.replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^"]*">/,
+corps = corps.replace(/<link rel="stylesheet"[^>]*href="https:\/\/fonts\.googleapis\.com[^>]*>/,
                       '<style>\n' + stylePolices + '\n</style>');
 if (corps.length === avant) throw new Error('lien Google Fonts introuvable dans suivi-fwd.html');
 

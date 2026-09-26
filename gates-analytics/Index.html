@@ -5,7 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Suivi FWD</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
     <?!= include('Styles'); ?>
   </head>
   <body>
@@ -27,7 +28,7 @@
             console.error('Contrat non chargé :', e && e.message);
             cb(null);
           })
-          .getDonneesPourClient(id);
+          .getDonneesCompactes(id);
       } catch (e) { cb(null); /* page ouverte hors classeur : sans conséquence */ }
     }
   };
@@ -72,6 +73,9 @@
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
     </div>
+    <!-- La prochaine échéance, en jours : un clic ouvre sa fiche sous le
+         graphique. -->
+    <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
   </header>
 
   <section class="avancement">
@@ -269,6 +273,11 @@
 </div>
 
 <div class="bulle" id="bulle" role="status" aria-live="polite"></div>
+<!-- Une page longue : un bouton discret ramène en haut, là où sont le
+     périmètre et l'avancement suivi. -->
+<button type="button" class="haut-de-page" id="haut-de-page" aria-label="Revenir en haut de la page" hidden>
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
 
     <?!= include('Javascript'); ?>
   </body>

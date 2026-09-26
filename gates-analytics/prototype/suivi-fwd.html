@@ -1,5 +1,6 @@
 <title>Suivi FWD</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 
 <style>
 :root {
@@ -55,6 +56,14 @@
   --focus: #6fae82;
   --voile-ecart: rgba(221, 164, 52, .2);
 }
+
+/* Les contrôles du navigateur — la liste d'un menu déroulant, les barres de
+   défilement, les champs — suivent le thème de la page. Sans cela, un
+   Chrome en mode sombre ouvrait un menu blanc écrit en clair : illisible. */
+:root { color-scheme: light dark; }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+select option { background-color: var(--surface); color: var(--encre); }
 
 * { box-sizing: border-box; }
 body {
@@ -472,9 +481,15 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .legende-jalons-mot { display: block; color: var(--encre-3); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
 .legende-jalons-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 10px 18px; }
 .legende-jalon {
-  display: grid; grid-template-columns: 18px 1fr; grid-template-rows: auto auto;
-  column-gap: 8px; row-gap: 1px; align-items: center; cursor: default; border-radius: 4px;
+  display: grid; grid-template-columns: 18px 1fr; grid-template-rows: auto auto auto;
+  column-gap: 8px; row-gap: 1px; align-items: center; cursor: pointer; border-radius: 6px;
+  transition: background-color .15s, box-shadow .15s;
 }
+.legende-jalon:hover, .legende-jalon[aria-expanded="true"] { background: var(--creux); box-shadow: 0 0 0 6px var(--creux); }
+.legende-jalon .ligne-decompte { grid-column: 2; font-size: 11.5px; color: var(--encre-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legende-jalon .decompte { font-variant-numeric: tabular-nums; }
+.legende-jalon .decompte.proche { color: var(--cours); font-weight: 500; }
+.legende-jalon .decompte.passe { font-style: italic; }
 .legende-jalon:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
 .legende-jalon .num {
   display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
@@ -490,6 +505,74 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 /* Hors de la fenêtre affichée : dans la légende, mais nulle part sur le dessin. */
 .legende-jalon.hors-fenetre { opacity: .55; }
 .legende-jalon.critique .num { background: var(--alerte); }
+
+/* ---------------------------------------------------- Fiche d'une échéance */
+.fiche-echeance {
+  margin-top: 16px; border: 1px solid var(--filet); background: var(--creux); border-radius: 10px;
+  padding: 16px 18px 15px; display: grid; gap: 13px; color: var(--encre); font-size: 13.5px;
+  animation: apparaitre .2s ease-out;
+}
+@keyframes apparaitre { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.fiche-echeance-tete { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.fiche-echeance-tete .num {
+  display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--encre-2); color: var(--surface); font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600;
+}
+.fiche-echeance-tete h3 { margin: 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 21px; line-height: 1.2; }
+.fiche-echeance-tete .quand { color: var(--encre-2); }
+.fiche-echeance-fermer {
+  margin-left: auto; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--filet-fort);
+  background: var(--surface); color: var(--encre-2); font: inherit; font-size: 16px; line-height: 1; cursor: pointer;
+}
+.fiche-echeance-fermer:hover { color: var(--encre); border-color: var(--encre-3); }
+.fiche-echeance-chiffres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.fiche-echeance-chiffres > div { background: var(--surface); border: 1px solid var(--filet); border-radius: 8px; padding: 10px 13px 9px; min-width: 0; }
+.fiche-echeance-chiffres b {
+  display: block; font-family: "IBM Plex Mono", monospace; font-size: 27px; font-weight: 500; line-height: 1.15;
+  font-variant-numeric: tabular-nums; color: var(--encre);
+}
+.fiche-echeance-chiffres span { color: var(--encre-2); font-size: 12.5px; }
+.fiche-echeance-jauge { display: flex; align-items: center; gap: 12px; color: var(--encre-2); font-size: 12.5px; }
+.fiche-echeance-jauge .piste { flex: 1 1 auto; height: 6px; border-radius: 3px; background: var(--filet); overflow: hidden; }
+.fiche-echeance-jauge .piste span { display: block; height: 100%; background: var(--fait); border-radius: 3px; }
+.fiche-echeance-rythme { color: var(--encre-2); }
+.fiche-echeance-rythme b { color: var(--encre); font-weight: 500; font-variant-numeric: tabular-nums; }
+.fiche-echeance-verdict { display: flex; gap: 9px; align-items: baseline; font-weight: 500; }
+.fiche-echeance-verdict::before {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
+  font-size: 11px; font-weight: 700; color: var(--sur-plein); transform: translateY(3px);
+}
+.fiche-echeance-verdict.bon::before { content: '\2713'; background: var(--fait); }
+.fiche-echeance-verdict.mal::before { content: '!'; background: var(--alerte); }
+@media (max-width: 560px) {
+  .fiche-echeance-chiffres b { font-size: 21px; }
+  .fiche-echeance { padding: 14px 13px 13px; }
+}
+@media (prefers-reduced-motion: reduce) { .fiche-echeance { animation: none; } }
+
+/* ---------------------------------------------------- Échéance sous le titre */
+.echeance-titre {
+  margin: 14px auto 0; display: inline-flex; align-items: center; gap: 9px;
+  border: 1px solid var(--filet-fort); background: var(--surface); color: var(--encre-2);
+  border-radius: 999px; padding: 6px 15px 6px 11px; font: inherit; font-size: 13px; cursor: pointer;
+  transition: border-color .15s, color .15s, transform .15s;
+}
+.echeance-titre:hover { border-color: var(--encre-3); color: var(--encre); }
+.echeance-titre:active { transform: scale(.98); }
+.echeance-titre b { color: var(--encre); font-weight: 500; }
+.echeance-titre .jours { font-family: "IBM Plex Mono", monospace; color: var(--encre); font-variant-numeric: tabular-nums; }
+.echeance-titre .point { width: 8px; height: 8px; border-radius: 50%; background: var(--fait); flex: none; }
+.echeance-titre.en-retard .point { background: var(--alerte); }
+
+/* ---------------------------------------------------- Haut de page */
+.haut-de-page {
+  position: fixed; right: 22px; bottom: 22px; z-index: 40; width: 40px; height: 40px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  border: 1px solid var(--filet-fort); background: var(--surface); color: var(--encre-2);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .12); transition: color .15s, border-color .15s, transform .15s;
+}
+.haut-de-page:hover { color: var(--encre); border-color: var(--encre-3); transform: translateY(-2px); }
+@media print { .haut-de-page, .echeance-titre { display: none !important; } }
 .legende-jalon.critique .mot { color: var(--alerte); }
 .legende-jalon:hover .mot, .legende-jalon:focus-visible .mot { text-decoration: underline; text-underline-offset: 3px; }
 /* Un jalon d'un autre périmètre que celui choisi : dessiné, mais en retrait —
@@ -840,6 +923,9 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 .puce-vide b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; }
 
 .cadre-tableau { position: relative; border: 1px solid var(--filet); background: var(--surface); }
+/* Sous la ligne de flottaison à l'ouverture, un tableau de milliers de
+   cellules ne se met en page que quand on s'en approche. */
+.cadre-tableau { content-visibility: auto; contain-intrinsic-size: auto 560px; }
 .defile { overflow: auto; max-height: 68vh; }
 .ombre-defile {
   position: absolute; top: 0; right: 0; bottom: 0; width: 46px; pointer-events: none;
@@ -953,6 +1039,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
     </div>
+    <!-- La prochaine échéance, en jours : un clic ouvre sa fiche sous le
+         graphique. -->
+    <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
   </header>
 
   <section class="avancement">
@@ -1150,6 +1239,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
 </div>
 
 <div class="bulle" id="bulle" role="status" aria-live="polite"></div>
+<!-- Une page longue : un bouton discret ramène en haut, là où sont le
+     périmètre et l'avancement suivi. -->
+<button type="button" class="haut-de-page" id="haut-de-page" aria-label="Revenir en haut de la page" hidden>
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
 
 <script>
 (function () {
@@ -2070,7 +2164,49 @@ table.plans thead tr th.col-fige { z-index: 6; }
      une source vide qui garde ce que le paquet sait encore dire (contrats,
      jalons) et porte son message : la page s'ouvre sans plan et l'explique,
      au lieu de montrer 640 plans fictifs sous « Données réelles ». */
+  /* Le paquet arrive compacté du classeur (compacterPaquet, Code.gs) : chaque
+     nom de colonne, chaque référence d'un relevé n'y est écrit qu'une fois.
+     On le rend à sa forme de travail — des objets —, à l'identique. Un
+     paquet déjà déballé passe tel quel. */
+  function deballerTableau(t) {
+    var cles = t.cles || [];
+    return (t.lignes || []).map(function (ligne) {
+      var o = {};
+      for (var i = 0; i < cles.length; i++) if (ligne[i] !== null && ligne[i] !== undefined) o[cles[i]] = ligne[i];
+      return o;
+    });
+  }
+  function deballerPaquet(paquet) {
+    if (!paquet || typeof paquet !== 'object') return paquet;
+    if (paquet.plansTab) { paquet.plans = deballerTableau(paquet.plansTab); delete paquet.plansTab; }
+    if (paquet.relevesTab) {
+      var T = paquet.relevesTab;
+      var carte = function (plat) {
+        if (!Array.isArray(plat)) return plat;
+        var c = {};
+        for (var i = 0; i + 1 < plat.length; i += 2) c[T.refs[plat[i]]] = T.vals[plat[i + 1]];
+        return c;
+      };
+      paquet.releves = (T.releves || []).map(function (r) {
+        var o = {};
+        Object.keys(r).forEach(function (k) {
+          if (k === 'p') o.plans = carte(r.p);
+          else if (k === 'c') o.plansConcept = carte(r.c);
+          else o[k] = r[k];
+        });
+        return o;
+      });
+      delete paquet.relevesTab;
+    }
+    if (paquet.rapprochement && paquet.rapprochement.lignesTab) {
+      paquet.rapprochement.lignes = deballerTableau(paquet.rapprochement.lignesTab);
+      delete paquet.rapprochement.lignesTab;
+    }
+    return paquet;
+  }
+
   function sourceDuClasseur(paquet) {
+    paquet = deballerPaquet(paquet);
     if (paquet && paquet.ok !== false && Array.isArray(paquet.plans) && paquet.plans.length) return paquet;
     var p = paquet || {};
     return {
@@ -2173,6 +2309,118 @@ table.plans thead tr th.col-fige { z-index: 6; }
      quand il n'y en a aucun ici. */
   function jalonsAVenirAilleurs() {
     return jalons.some(function (j) { return j.i > AUJ && !jalonDansPerimetre(j); });
+  }
+
+  /* ============================================================
+     LES ÉCHÉANCES, EN JOURS
+     Un jalon se donne à la semaine ; on le vit en jours. Sa date : le
+     vendredi de sa semaine, dernier jour ouvré. Pour chacun : combien de
+     jours restent, combien de plans restent dans son périmètre, le rythme
+     qu'il faut contre celui qu'on tient.
+     ============================================================ */
+  var JOURS_SEMAINE = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  function dateEcheance(j) {
+    var d = new Date(dateDe(j.i).getTime());
+    d.setUTCDate(d.getUTCDate() + 4);
+    return d;
+  }
+  function joursAvant(j) {
+    return Math.round((dateEcheance(j).getTime() - aujourdhuiCivil().getTime()) / 86400000);
+  }
+  function motJours(n) {
+    if (n === 0) return 'aujourd\u2019hui';
+    if (n === 1) return 'demain';
+    if (n === -1) return 'hier';
+    return n > 1 ? 'dans ' + nb(n) + ' jours' : 'il y a ' + nb(-n) + ' jours';
+  }
+  /* Le périmètre d'un jalon, écrit comme dans la colonne de domaine. */
+  function domaineDuJalon(j) {
+    if (!j.perimetre) return '';
+    var n = norm(j.perimetre), trouve = '';
+    PLANS.some(function (p) { var d = domaineDe(p); if (norm(d) === n) { trouve = d; return true; } return false; });
+    return trouve || String(j.perimetre);
+  }
+  function bilanEcheance(j) {
+    var dom = domaineDuJalon(j);
+    var plans = dom ? PLANS.filter(function (p) { return domaineDe(p) === dom; }) : PLANS;
+    var total = plans.length;
+    var termines = plans.filter(function (p) { return p._etat === 'termine'; }).length;
+    var pts = [];
+    RELEVES.forEach(function (r) {
+      if (!dom) { pts.push({ i: r.i, total: r.total, termine: r.termine }); return; }
+      if (!r.plans) return;
+      var c = comptesDerives(r, dom, null);
+      pts.push({ i: r.i, total: c.total, termine: c.termine });
+    });
+    var ry = rythmes(pts);
+    /* Les semaines se comptent d'aujourd'hui, comme les jours. */
+    var semaines = j.i - semaineDAujourdhui(), restants = total - termines;
+    return {
+      domaine: dom, total: total, termines: termines, restants: restants,
+      jours: joursAvant(j), semaines: semaines,
+      rythme: ry ? ry.central : null,
+      requis: semaines > 0 ? restants / semaines : null,
+      fin: ry ? semaineFin(termines, total, ry.central) : null
+    };
+  }
+  function semaineDite(i) {
+    var an = dateDe(i).getUTCFullYear(), ici = aujourdhuiCivil().getUTCFullYear();
+    return 'semaine ' + numeroSemaine(i) + (an !== ici ? ' de ' + an : '');
+  }
+  function virgule(x) { return (Math.round(x * 10) / 10).toFixed(1).replace('.', ','); }
+  function ficheEcheance(idx) {
+    var j = jalons[idx];
+    if (!j) return '';
+    var b = bilanEcheance(j), d = dateEcheance(j);
+    var quand = JOURS_SEMAINE[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MOIS[d.getUTCMonth()] + ' ' + d.getUTCFullYear() +
+      ' \u00b7 fin de la semaine ' + numeroSemaine(j.i);
+    var passe = b.jours < 0;
+    var verdict;
+    if (!b.total) verdict = { cls: 'mal', mot: 'Aucun plan dans ce périmètre.' };
+    else if (!b.restants) verdict = { cls: 'bon', mot: 'Tout est soldé' + (b.domaine ? ' dans ' + b.domaine : '') + '.' };
+    else if (passe) verdict = { cls: 'mal', mot: 'Échéance passée : ' + nb(b.restants) + (b.restants > 1 ? ' plans restent' : ' plan reste') + ' à terminer.' };
+    else if (!b.rythme || b.rythme <= 0) verdict = { cls: 'mal', mot: 'Aucun plan terminé d\u2019un relevé à l\u2019autre : pas de rythme, donc pas de date d\u2019arrivée.' };
+    else if (b.fin !== null && b.fin <= j.i) verdict = { cls: 'bon', mot: 'Au rythme tenu, l\u2019échéance est tenue \u2014 tout serait terminé en ' + semaineDite(b.fin) + '.' };
+    else verdict = { cls: 'mal', mot: 'Au rythme tenu, tout serait terminé en ' + semaineDite(b.fin) + ', ' +
+      nb(b.fin - j.i) + (b.fin - j.i > 1 ? ' semaines' : ' semaine') + ' après l\u2019échéance.' };
+    var pct = b.total ? Math.round(100 * b.termines / b.total) : 0;
+    var jours = Math.abs(b.jours);
+    return '<div class="fiche-echeance" id="fiche-echeance" role="region" aria-label="Échéance ' + ech(j.texte) + '">' +
+      '<div class="fiche-echeance-tete"><span class="num">' + (idx + 1) + '</span><h3>' + ech(j.texte) + '</h3>' +
+      '<span class="quand">' + ech(quand) + (b.domaine ? ' \u00b7 ' + ech(b.domaine) : '') + '</span>' +
+      '<button type="button" class="fiche-echeance-fermer" data-fermer-echeance="1" aria-label="Fermer la fiche">\u00d7</button></div>' +
+      '<div class="fiche-echeance-chiffres">' +
+        '<div><b>' + nb(jours) + '</b><span>' + (passe ? (jours > 1 ? 'jours de retard' : 'jour de retard') : (jours > 1 ? 'jours restants' : (jours === 1 ? 'jour restant' : 'c\u2019est aujourd\u2019hui'))) + '</span></div>' +
+        '<div><b>' + nb(Math.max(0, b.semaines)) + '</b><span>' + (b.semaines > 1 ? 'semaines restantes' : 'semaine restante') + '</span></div>' +
+        '<div><b>' + nb(b.restants) + '</b><span>' + (b.restants > 1 ? 'plans à terminer' : 'plan à terminer') + '</span></div>' +
+      '</div>' +
+      '<div class="fiche-echeance-jauge"><div class="piste"><span style="width:' + pct + '%"></span></div>' +
+        '<span>' + nb(b.termines) + ' sur ' + nb(b.total) + ' terminés \u00b7 ' + pct + '\u00a0%</span></div>' +
+      (b.requis !== null && b.restants
+        ? '<div class="fiche-echeance-rythme">Il faut <b>' + virgule(b.requis) + '</b> plans terminés par semaine d\u2019ici l\u2019échéance' +
+          (b.rythme !== null ? ' ; le rythme tenu depuis le premier relevé est de <b>' + virgule(b.rythme) + '</b>.' : '.') + '</div>'
+        : '') +
+      '<div class="fiche-echeance-verdict ' + verdict.cls + '">' + ech(verdict.mot) + '</div>' +
+      '</div>';
+  }
+  /* Sous le titre : la prochaine échéance du périmètre, en jours. */
+  function rendreEcheanceTitre() {
+    var bouton = $('echeance-titre'), j = prochainJalon();
+    if (!j) { bouton.hidden = true; return; }
+    var idx = jalons.indexOf(j), b = bilanEcheance(j);
+    var enRetard = !!b.restants && (!b.rythme || b.fin === null || b.fin > j.i);
+    bouton.hidden = false;
+    bouton.className = 'echeance-titre' + (enRetard ? ' en-retard' : '');
+    bouton.dataset.jalon = idx;
+    bouton.innerHTML = '<span class="point" aria-hidden="true"></span><span>Prochaine échéance</span>' +
+      '<b>' + ech(j.texte) + '</b><span class="jours">' + ech(motJours(b.jours)) + '</span>';
+    bouton.title = enRetard ? 'Au rythme tenu, cette échéance ne sera pas tenue \u2014 cliquez pour le détail'
+                            : 'Au rythme tenu, cette échéance est tenue \u2014 cliquez pour le détail';
+  }
+  function ouvrirEcheance(idx, defiler) {
+    vue.echeance = (vue.echeance === idx && !defiler) ? null : idx;
+    rendreGraphique(selection());
+    if (defiler && vue.echeance !== null && $('fiche-echeance')) defilerVers($('legende-jalons'), { block: 'center', behavior: 'smooth' });
   }
 
   /* Une colonne « Colonne N » — le nom que le serveur donne à une colonne sans
@@ -2441,18 +2689,16 @@ table.plans thead tr th.col-fige { z-index: 6; }
      repartent de zéro avec elle — on ouvre toujours sur « Tout » ; la
      disposition — dimension, colonnes, tris, vue du tableau — est une
      préférence qui traverse les sources, tant que la nouvelle la permet. */
-  /* Le cadrage d'ouverture : un an, celui du bouton « 1 an » — aujourd'hui
-     un peu avant le milieu —, élargi s'il le faut pour que tous les jalons
-     configurés restent dans le champ. Il est rejoué à chaque source ; un
-     cadrage mémorisé ne le remplace que s'il montre encore aujourd'hui (voir
-     chargerPrefs). Sans cela, passé quelques mois d'archivage, la page
-     s'ouvrirait sur le passé seul. bornerFenetre() ramène le tout sous le
-     plafond de l'axe. */
-  var SPAN_OUVERTURE = 52;
+  /* Le cadrage d'ouverture : six mois, exactement celui du bouton « 6 mois »
+     — aujourd'hui un peu avant le milieu. Un jalon plus lointain reste dans
+     la légende, avec son décompte, marqué « hors fenêtre ». Il est rejoué à
+     chaque source ; un cadrage mémorisé ne le remplace que s'il montre encore
+     aujourd'hui (voir chargerPrefs). Sans cela, passé quelques mois
+     d'archivage, la page s'ouvrirait sur le passé seul. bornerFenetre()
+     ramène le tout sous le plafond de l'axe. */
+  var SPAN_OUVERTURE = 26;
   function cadrageParDefaut() {
-    var debut = Math.max(0, AUJ - Math.round(SPAN_OUVERTURE * 0.45));
-    var dernierJalon = jalons.reduce(function (m, j) { return Math.max(m, j.i); }, AUJ);
-    return { debut: debut, span: Math.max(SPAN_OUVERTURE, dernierJalon - debut + 3) };
+    return { debut: Math.max(0, AUJ - Math.round(SPAN_OUVERTURE * 0.45)), span: SPAN_OUVERTURE };
   }
 
   function remettreVue() {
@@ -2466,6 +2712,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
          que dans la sienne. Rien n'en est mémorisé. */
       rechercheJournal: '', rechercheRapp: '',
       aideFin: false,
+      /* La fiche d'échéance ouverte sous le graphique : l'index du jalon. */
+      echeance: null,
       /* Plan par plan : les groupes que le lecteur a pliés ou dépliés
          lui-même ; les autres restent repliés. */
       plisRapp: {},
@@ -2816,7 +3064,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
          de la feuille, exactement ce que rend appliquerVueTable() au retour. */
       localStorage.setItem(CLE_PREFS, JSON.stringify({
         fen: vue.fen,
-        cadrage: 2,
+        cadrage: 3,
         dimCritique: vue.dimCritique,
         ordre: vue.vueTable === 'essentielle' ? ORDRE_FEUILLE.slice() : vue.ordre,
         tri: vue.tri,
@@ -2857,9 +3105,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
          foi, les jalons viennent de la configuration. On les ignore. */
       /* Le cadrage ne se reprend que s'il montre encore aujourd'hui : laissé
          sur le passé, il n'est plus celui qu'on veut à l'ouverture. */
-      /* « cadrage: 2 » : mémorisé depuis que la page s'ouvre sur un an ; un
-         cadrage plus ancien (treize semaines) ne s'impose plus. */
-      if (pref.cadrage === 2 && pref.fen && typeof pref.fen.debut === 'number' && typeof pref.fen.span === 'number' &&
+      /* « cadrage: 3 » : mémorisé depuis que la page s'ouvre sur six mois ;
+         un cadrage plus ancien (treize semaines, puis un an) ne s'impose plus. */
+      if (pref.cadrage === 3 && pref.fen && typeof pref.fen.debut === 'number' && typeof pref.fen.span === 'number' &&
           pref.fen.debut <= AUJ && AUJ < pref.fen.debut + pref.fen.span) {
         vue.fen = { debut: pref.fen.debut, span: pref.fen.span };
       }
@@ -3487,16 +3735,19 @@ table.plans thead tr th.col-fige { z-index: 6; }
       var lundi = dateDe(i);
       return 'S' + String(numeroSemaine(i)).replace(/^0/, '') + ' \u00b7 ' + MOIS_COURTS[lundi.getUTCMonth()] + ' ' + lundi.getUTCFullYear();
     };
-    $('legende-jalons').innerHTML = jalons.length ? '<span class="legende-jalons-mot">Jalons</span><div class="legende-jalons-grille">' + jalons.map(function (j, idx) {
+    $('legende-jalons').innerHTML = jalons.length ? '<span class="legende-jalons-mot">Jalons \u00b7 cliquez pour le détail</span><div class="legende-jalons-grille">' + jalons.map(function (j, idx) {
       var hors = !jalonDansPerimetre(j), rouge = prochain && j.i === prochain.i && !hors && enRetard;
+      var nj = joursAvant(j);
       var horsFenetre = j.i < d0 || j.i > d1;   // dans la légende, mais pas dans la fenêtre affichée
       return '<span class="legende-jalon' + (hors ? ' hors-perimetre' : '') + (rouge ? ' critique' : '') + (horsFenetre ? ' hors-fenetre' : '') +
-        '" data-jalon="' + idx + '" tabindex="0" title="' +
+        '" data-jalon="' + idx + '" tabindex="0" role="button" aria-expanded="' + (vue.echeance === idx) + '" title="' +
         ech(j.texte) + ' \u2014 ' + etiquette(j.i) + (j.perimetre ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) : '') +
         (hors ? ' \u2014 hors du p\u00e9rim\u00e8tre choisi' : '') + (horsFenetre ? ' \u2014 hors de la fen\u00eatre affich\u00e9e' : '') + '">' +
         '<b class="num">' + (idx + 1) + '</b><span class="mot">' + ech(j.texte) + '</span>' +
-        '<span class="quand">' + quandJalon(j.i) + (j.perimetre ? ' \u00b7 ' + ech(j.perimetre) : '') + (horsFenetre ? ' \u00b7 hors fen\u00eatre' : '') + '</span></span>';
-    }).join('') + '</div>' : '';
+        '<span class="quand">' + quandJalon(j.i) + (j.perimetre ? ' \u00b7 ' + ech(j.perimetre) : '') + '</span>' +
+        '<span class="ligne-decompte"><span class="decompte' + (nj < 0 ? ' passe' : (nj <= 21 ? ' proche' : '')) + '">' + ech(motJours(nj)) + '</span>' +
+        (horsFenetre ? '<span class="hors-fen"> \u00b7 hors fen\u00eatre</span>' : '') + '</span></span>';
+    }).join('') + '</div>' + (vue.echeance !== null && jalons[vue.echeance] ? ficheEcheance(vue.echeance) : '') : '';
 
     derniereAnalyse = { pts: pts, total: total, atteint: atteint, restants: restants, vitesse: vitesse,
                         projIdx: projIdx, prochain: prochain, requis: requis, enRetard: enRetard, span: span, d0: d0 };
@@ -4108,8 +4359,20 @@ table.plans thead tr th.col-fige { z-index: 6; }
     $('tete-tableau').innerHTML = html;
     ajusterSticky();
   }
+  /* Un tableau encore hors de l'écran n'est pas mis en page (content-
+     visibility) : le mesurer forcerait tout le travail qu'on voulait
+     s'épargner. On le mesure quand il paraît. */
+  /* L'état vient du navigateur lui-même (contentvisibilityautostatechange) :
+     au tout premier rendu, avant qu'il ait tranché, le tableau compte comme
+     hors de l'écran. Sans content-visibility, il est toujours « à l'écran ». */
+  var CV_AUTO = !!(window.CSS && CSS.supports && CSS.supports('content-visibility', 'auto'));
+  var cadresVisibles = {};
+  function tableauHorsEcran(cadre) {
+    return CV_AUTO && !!cadre && !cadresVisibles[cadre.id];
+  }
   function ajusterSticky() {
     requestAnimationFrame(function () {
+      if (tableauHorsEcran($('cadre-tableau'))) return;
       var g = document.querySelector('.groupes'), t = document.querySelector('.titres'), f = document.querySelector('.filtres');
       if (!g || !t || !f) return;
       var hg = g.getBoundingClientRect().height;
@@ -4141,6 +4404,45 @@ table.plans thead tr th.col-fige { z-index: 6; }
       });
     });
   }
+  /* Un tableau de dizaines de milliers de cellules ne se dessine pas d'un
+     bloc : c'était l'essentiel du temps d'ouverture sur un gros extract. Au-
+     delà d'un budget de cellules, les lignes suivantes s'ajoutent quand on
+     approche du bas du cadre, ou d'un clic sur « N lignes de plus ». Les
+     filtres, les tris et les comptes portent toujours sur toutes les lignes. */
+  var BUDGET_CELLULES = typeof window.SUIVI_FWD_BUDGET === 'number' && window.SUIVI_FWD_BUDGET > 0 ? window.SUIVI_FWD_BUDGET : 40000;
+  var TRANCHES = {};
+  function trancheHtml(t) {
+    var fin = Math.min(t.total, t.montrees + t.pas), h = '';
+    for (var i = t.montrees; i < fin; i++) h += t.ligneHtml(i);
+    t.montrees = fin;
+    var reste = t.total - fin;
+    return h + (reste > 0
+      ? '<tr class="ligne-suite"><td colspan="' + t.nbCols + '"><button type="button" class="lien-doux" data-suite="' + t.id + '">' +
+        nb(reste) + (reste > 1 ? ' lignes de plus' : ' ligne de plus') + ' — descendez, ou cliquez ici</button></td></tr>'
+      : '');
+  }
+  function poserTranches(corps, total, nbCols, ligneHtml, apres) {
+    var t = { id: corps.id, total: total, nbCols: Math.max(1, nbCols), montrees: 0, ligneHtml: ligneHtml, apres: apres,
+              pas: Math.max(60, Math.floor(BUDGET_CELLULES / Math.max(1, nbCols))) };
+    TRANCHES[corps.id] = t;
+    corps.innerHTML = trancheHtml(t);
+    if (apres) apres();
+  }
+  function trancheSuivante(idCorps) {
+    var t = TRANCHES[idCorps], corps = $(idCorps);
+    if (!t || !corps || t.montrees >= t.total) return;
+    var suite = corps.querySelector('tr.ligne-suite');
+    if (suite) suite.parentNode.removeChild(suite);
+    corps.insertAdjacentHTML('beforeend', trancheHtml(t));
+    if (t.apres) t.apres();
+  }
+  /* Près du bas du cadre qui défile, la tranche suivante vient d'elle-même. */
+  function suivreDefilement(cadre, idCorps) {
+    cadre.addEventListener('scroll', function () {
+      if (cadre.scrollTop + cadre.clientHeight > cadre.scrollHeight - 600) trancheSuivante(idCorps);
+    }, { passive: true });
+  }
+
   function rendreCorps(liste) {
     var cols = visibles();
     /* Le lot « seulement dans la seconde base » n'a aucun plan ici : le
@@ -4151,6 +4453,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       $('corps-tableau').innerHTML = '<tr><td colspan="' + cols.length + '"><div class="vide-message">Ces ' + nb(nLa) +
         (nLa > 1 ? ' lignes n’ont pas de plan dans GATES. ' : ' ligne n’a pas de plan dans GATES. ') +
         '<button class="lien-doux" type="button" data-aller-base="la">Les voir dans ' + ech(nomLa) + '</button></div></td></tr>';
+      delete TRANCHES['corps-tableau'];
       $('compte').textContent = '0 plan sur ' + nb(population().length);
       majOmbre();
       return;
@@ -4167,13 +4470,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
     if (!rangs.length) {
       $('corps-tableau').innerHTML = '<tr><td colspan="' + cols.length + '"><div class="vide-message">Aucun plan ne correspond aux filtres.</div></td></tr>';
+      delete TRANCHES['corps-tableau'];
       $('compte').textContent = '0 plan';
       majOmbre();
       return;
     }
 
     var nFige = nbFigees(cols);
-    $('corps-tableau').innerHTML = rangs.map(function (p) {
+    poserTranches($('corps-tableau'), rangs.length, cols.length, function (k) {
+      var p = rangs[k];
       return '<tr>' + cols.map(function (c, i) {
         var fige = classeFige(i, nFige);
         if (c.cle === CLE_SUIVIE) {
@@ -4190,7 +4495,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         return '<td class="' + classes + '"' + titre + '>' + ech(val) + '</td>';
       }).join('') + '</tr>';
-    }).join('');
+    });
 
     /* « sur N » : N est la population du périmètre, pas la feuille entière. */
     var base = population().length;
@@ -4663,6 +4968,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     var demande = ++demandeContrat;
     function poser(paquet) {
       if (demande !== demandeContrat) return;        // une demande plus récente a pris le relais
+      paquet = deballerPaquet(paquet);
       if (!paquet || !paquet.plans || !paquet.plans.length) {
         sel.disabled = false;
         sel.value = CONTRAT;
@@ -4824,9 +5130,20 @@ table.plans thead tr th.col-fige { z-index: 6; }
       ech(col.titre) + ' non renseign\u00e9 <b>' + nb(n) + '</b></button>';
   }
 
+  /* L'ombre du bord droit se mesure à l'image suivante, avec les autres
+     mesures : lue juste après l'écriture du tableau, elle forçait le
+     navigateur à tout mettre en page une fois de plus — une seconde entière
+     sur un gros extract. */
+  var ombrePrevue = false;
   function majOmbre() {
-    var d = $('defile');
-    $('cadre-tableau').dataset.deborde = (d.scrollWidth - d.clientWidth - d.scrollLeft) > 4 ? 'true' : 'false';
+    if (ombrePrevue) return;
+    ombrePrevue = true;
+    requestAnimationFrame(function () {
+      ombrePrevue = false;
+      if (tableauHorsEcran($('cadre-tableau'))) return;
+      var d = $('defile');
+      $('cadre-tableau').dataset.deborde = (d.scrollWidth - d.clientWidth - d.scrollLeft) > 4 ? 'true' : 'false';
+    });
   }
 
   /* La section « Comparaison des bases de données » : une phrase, deux
@@ -5264,7 +5581,14 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }).join('') + '</tr>';
 
     var seul = vue.refs && Object.keys(vue.refs).length === 1 ? Object.keys(vue.refs)[0] : null;
-    if (!lignes.length) {
+    /* Caché derrière l'interrupteur, le tableau de la seconde base ne se
+       dessine pas : des milliers de lignes pour rien à l'ouverture. Il se
+       dessine quand on bascule dessus. */
+    if (vue.base !== 'la') {
+      $('corps-seconde').innerHTML = '';
+      delete TRANCHES['corps-seconde'];
+    } else if (!lignes.length) {
+      delete TRANCHES['corps-seconde'];
       var nAbs = compteLotRapp(lot);
       $('corps-seconde').innerHTML = '<tr><td colspan="' + Math.max(cols.length, 1) + '"><div class="vide-message">' +
         (lot === 'manque' || lot === 'attente'
@@ -5273,7 +5597,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
           : 'Aucune ligne ne correspond.') +
         '</div></td></tr>';
     } else {
-      $('corps-seconde').innerHTML = lignes.map(function (e) {
+      poserTranches($('corps-seconde'), lignes.length, cols.length, function (k) {
+        var e = lignes[k];
         var ref = e.plan ? e.plan.reference : '';
         return '<tr data-i="' + e.i + '" data-cat="' + e.cat + '"' + (ref ? ' data-plan="' + ech(ref) + '"' : '') +
           (ref && seul === ref ? ' class="choisie"' : '') +
@@ -5292,7 +5617,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
             else contenu = ech(s);
             return '<td' + (classes.length ? ' class="' + classes.join(' ') + '"' : '') + titre + '>' + contenu + '</td>';
           }).join('') + '</tr>';
-      }).join('');
+      });
     }
 
     var base = R.nbLignes;
@@ -5342,6 +5667,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     refleterBase();                    // avant les tableaux : l'ombre du défilement se mesure sur un cadre visible
     rendreAvancement(liste);
     rendreGraphique(liste);
+    rendreEcheanceTitre();
     rendreJournal();
     rendreCritique(liste);
     rendreEntetes();
@@ -5609,6 +5935,37 @@ table.plans thead tr th.col-fige { z-index: 6; }
       if (g.__suivant !== undefined) { g.parentNode.insertBefore(g, g.__suivant); g.__suivant = undefined; }
     }
   }
+  /* Un jalon de la légende, un numéro du graphique ou l'échéance sous le
+     titre : un clic ouvre la fiche de l'échéance, un second la referme. */
+  $('legende-jalons').addEventListener('click', function (e) {
+    if (e.target.closest('[data-fermer-echeance]')) { vue.echeance = null; rendreGraphique(selection()); return; }
+    var el = e.target.closest('.legende-jalon[data-jalon]');
+    if (el) ouvrirEcheance(+el.dataset.jalon);
+  });
+  $('legende-jalons').addEventListener('keydown', function (e) {
+    var el = e.target.closest('.legende-jalon[data-jalon]');
+    if (!el || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault();
+    ouvrirEcheance(+el.dataset.jalon);
+    var meme = document.querySelector('.legende-jalon[data-jalon="' + el.dataset.jalon + '"]');
+    if (meme) meme.focus();
+  });
+  $('zone-graphe').addEventListener('click', function (e) {
+    var g = e.target.closest && e.target.closest('.jalon[data-jalon]');
+    if (g) ouvrirEcheance(+g.getAttribute('data-jalon'), true);
+  });
+  $('echeance-titre').addEventListener('click', function () {
+    ouvrirEcheance(+this.dataset.jalon, true);
+  });
+  var boutonHaut = $('haut-de-page');
+  window.addEventListener('scroll', function () {
+    var montrer = window.scrollY > window.innerHeight * 1.2;
+    if (boutonHaut.hidden === montrer) boutonHaut.hidden = !montrer;
+  }, { passive: true });
+  boutonHaut.addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  });
+
   ['mouseover', 'focusin'].forEach(function (ev) {
     $('legende-jalons').addEventListener(ev, function (e) {
       var el = e.target.closest('[data-jalon]');
@@ -5860,6 +6217,18 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
   $('reinit').addEventListener('click', function () { toutEffacer(); rendre(); });
   $('defile').addEventListener('scroll', majOmbre, { passive: true });
+  suivreDefilement($('defile'), 'corps-tableau');
+  ['cadre-tableau', 'cadre-seconde'].forEach(function (id) {
+    $(id).addEventListener('contentvisibilityautostatechange', function (e) {
+      cadresVisibles[id] = !e.skipped;
+      if (!e.skipped && id === 'cadre-tableau') { ajusterSticky(); majOmbre(); }
+    });
+  });
+  suivreDefilement($('cadre-seconde').querySelector('.defile'), 'corps-seconde');
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-suite]');
+    if (b) trancheSuivante(b.dataset.suite);
+  });
   document.addEventListener('keydown', function (e) {
     var champ = vue.base === 'la' ? $('recherche-seconde') : $('recherche');
     if (e.key === '/' && document.activeElement !== champ) {
@@ -5892,6 +6261,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
      un jeu sans liste de contrats — sans passer par l'interface. */
   window.__jeuDExemple = jeuDExemple;
   window.__chargerSource = function (src) { chargerSource(src); remplirDims(); rendre(); };
+  window.__deballerPaquet = deballerPaquet;
   /* Et lire ce que la page a déduit : le journal et le comparatif, tels
      quels, pour vérifier l'appariement sans passer par le rendu. */
 
@@ -5903,6 +6273,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
              titre: document.querySelector('.masthead').textContent.replace(/\s+/g, ' '),
              iAuj: semaineDAujourdhui(), auj: AUJ, etiquetteAuj: etiquette(AUJ) };
   };
+  window.__bilanEcheance = function (idx) { var j = jalons[idx]; return j ? bilanEcheance(j) : null; };
   window.__valeurs = function () { return VALEURS_COLONNE.map(function (v) { return { cle: v.cle, libelle: v.libelle, famille: v.famille, n: v.n }; }); };
   window.__classer = function (v) { return classer(v); };
   window.__indicateur = function () { return { indicateur: INDICATEUR, cle: CLE_SUIVIE, releves: RELEVES.length }; };

@@ -9,7 +9,7 @@ const racine = path.join(__dirname, '..');
 let corps = fs.readFileSync(path.join(racine, 'suivi-fwd.html'), 'utf8');
 
 if (fs.existsSync(path.join(racine, 'fonts', 'local.css'))) {
-  corps = corps.replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^"]*">/,
+  corps = corps.replace(/<link rel="stylesheet"[^>]*href="https:\/\/fonts\.googleapis\.com[^>]*>/,
                         '<link rel="stylesheet" href="fonts/local.css">');
 }
 

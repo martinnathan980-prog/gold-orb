@@ -209,7 +209,7 @@ function monterLeChargeur(options) {
   section('Et dans un vrai navigateur');
   let html = page;
   if (fs.existsSync(path.join(racine, 'prototype', 'fonts', 'local.css'))) {
-    html = html.replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^"]*">/,
+    html = html.replace(/<link rel="stylesheet"[^>]*href="https:\/\/fonts\.googleapis\.com[^>]*>/,
                         '<link rel="stylesheet" href="fonts/local.css">');
   }
   const cible = path.join(racine, 'prototype', 'apercu-chargeur.html');

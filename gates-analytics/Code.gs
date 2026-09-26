@@ -387,13 +387,68 @@ function feuilleRapprochement() {
   return String(cfg.FEUILLE || cfg.NOM || '').trim();
 }
 
+/**
+ * Un nom d'onglet réduit pour être comparé : minuscules, sans accents, les
+ * séparateurs (espaces, tirets, soulignés, points) ramenés à une espace —
+ * « SEE - HDK », « SEE_HDK » et « see hdk » se valent.
+ */
+function nomCompact(nom) {
+  return normaliser(nom).replace(/[\s_\-\u2013\u2014.:\/]+/g, ' ').trim();
+}
+
+/**
+ * La seconde base est propre à chaque contrat : l'onglet « SEE HDK » (ou
+ * « SEE - HDK », « SEE_HDK », « HDK SEE ») sert au contrat HDK, et à lui
+ * seul. Un onglet « SEE » tout court ne vaut que pour un classeur d'un seul
+ * contrat : devant plusieurs, il ne dirait pas à qui il appartient, et la
+ * page comparerait un contrat à l'extract d'un autre. Rien plutôt que faux.
+ *
+ * @return {Sheet|null}
+ */
+function ongletSecondeBase(classeur, contrat) {
+  const base = feuilleRapprochement();
+  if (!base) return null;
+  const b = nomCompact(base);
+  const c = contrat ? nomCompact(contrat) : '';
+  const feuilles = classeur.getSheets();
+  if (c) {
+    for (let i = 0; i < feuilles.length; i++) {
+      const n = nomCompact(feuilles[i].getName());
+      if (n === b + ' ' + c || n === c + ' ' + b) return feuilles[i];
+    }
+  }
+  let generique = null;
+  for (let i = 0; i < feuilles.length && !generique; i++) {
+    if (nomCompact(feuilles[i].getName()) === b) generique = feuilles[i];
+  }
+  if (!generique) return null;
+  let nbContrats = 1;
+  try { nbContrats = listerContrats(classeur).length; } catch (err) { nbContrats = 1; }
+  return nbContrats <= 1 ? generique : null;
+}
+
+/** L'onglet qu'on attend pour la seconde base d'un contrat, pour le dire. */
+function nomAttenduSecondeBase(classeur, contrat) {
+  const base = feuilleRapprochement();
+  let plusieurs = false;
+  try { plusieurs = listerContrats(classeur).length > 1; } catch (err) { plusieurs = false; }
+  return plusieurs && contrat ? base + ' ' + contrat : base;
+}
+
 function estOngletInterne(nom) {
   const n = normaliser(nom);
-  /* L'onglet de la seconde base n'est pas un contrat non plus. */
+  /* L'onglet de la seconde base n'est pas un contrat non plus — ni celui
+     d'un contrat, « SEE HDK ». */
   const internes = CONFIG.FEUILLES_INTERNES
     .concat(feuilleRapprochement() ? [feuilleRapprochement()] : [])
     .map(normaliser);
   if (internes.indexOf(n) !== -1) return true;
+  const base = feuilleRapprochement() ? nomCompact(feuilleRapprochement()) : '';
+  if (base) {
+    const compact = nomCompact(nom);
+    if (compact === base || compact.indexOf(base + ' ') === 0 ||
+        compact.slice(-(base.length + 1)) === ' ' + base) return true;
+  }
   const prefixe = normaliser(CONFIG.FEUILLE_HISTORIQUE);
   return !!prefixe && n.indexOf(prefixe) === 0;
 }
@@ -912,7 +967,7 @@ function getDonneesPourClient(contrat) {
     };
     /* La seconde base, seulement si la configuration en nomme une : la page
        masque la section quand la clé est absente. */
-    const rapprochement = getRapprochement(classeur);
+    const rapprochement = getRapprochement(classeur, modele.feuille);
     if (rapprochement) paquet.rapprochement = rapprochement;
     return paquet;
   } catch (err) {
@@ -929,6 +984,89 @@ function getDonneesPourClient(contrat) {
 }
 
 /**
+ * Le paquet d'un autre contrat, demandé par la page sans se recharger —
+ * compacté comme celui de l'ouverture.
+ */
+function getDonneesCompactes(contrat) {
+  return compacterPaquet(getDonneesPourClient(contrat));
+}
+
+/**
+ * Le paquet, en plus léger pour le voyage — la page le rend à l'identique
+ * (deballerPaquet). Un plan portait le nom de ses 138 colonnes, un relevé
+ * celui de chacun de ses plans, une ligne de SEE ses intitulés : chaque nom
+ * ne s'écrit plus qu'une fois. Sur 640 plans et un an d'archives, le poids
+ * de la page est divisé par trois ou plus — et la page s'ouvre d'autant
+ * plus vite. Le paquet reçu n'est pas modifié.
+ *
+ *   plansTab   : { cles: [...], lignes: [[valeur | null, ...], ...] }
+ *   relevesTab : { refs: [...], vals: [...], releves: [{ ..., p: [iRef, iVal, ...], c: [...] }] }
+ *   rapprochement.lignesTab : comme plansTab
+ */
+function compacterPaquet(paquet) {
+  if (!paquet || !paquet.ok) return paquet;
+  const sortie = {};
+  Object.keys(paquet).forEach(function (k) { sortie[k] = paquet[k]; });
+
+  function tableau(objets) {
+    const cles = [], rang = {};
+    objets.forEach(function (o) {
+      Object.keys(o).forEach(function (k) {
+        if (rang[k] === undefined) { rang[k] = cles.length; cles.push(k); }
+      });
+    });
+    return {
+      cles: cles,
+      lignes: objets.map(function (o) {
+        return cles.map(function (k) { return Object.prototype.hasOwnProperty.call(o, k) ? o[k] : null; });
+      })
+    };
+  }
+
+  if (Array.isArray(paquet.plans)) {
+    sortie.plansTab = tableau(paquet.plans);
+    delete sortie.plans;
+  }
+
+  if (Array.isArray(paquet.releves) && paquet.releves.length) {
+    const refs = [], rangRef = {}, vals = [], rangVal = {};
+    const indexer = function (carte) {
+      if (!carte || typeof carte !== 'object') return carte;
+      const plat = [];
+      Object.keys(carte).forEach(function (ref) {
+        const v = carte[ref];
+        const cleV = JSON.stringify(v === undefined ? null : v);
+        if (rangRef[ref] === undefined) { rangRef[ref] = refs.length; refs.push(ref); }
+        if (rangVal[cleV] === undefined) { rangVal[cleV] = vals.length; vals.push(v); }
+        plat.push(rangRef[ref], rangVal[cleV]);
+      });
+      return plat;
+    };
+    sortie.relevesTab = {
+      refs: refs, vals: vals,
+      releves: paquet.releves.map(function (r) {
+        const o = {};
+        Object.keys(r).forEach(function (k) {
+          if (k === 'plans') o.p = indexer(r.plans);
+          else if (k === 'plansConcept') o.c = indexer(r.plansConcept);
+          else o[k] = r[k];
+        });
+        return o;
+      })
+    };
+    delete sortie.releves;
+  }
+
+  if (paquet.rapprochement && Array.isArray(paquet.rapprochement.lignes)) {
+    const rap = {};
+    Object.keys(paquet.rapprochement).forEach(function (k) { if (k !== 'lignes') rap[k] = paquet.rapprochement[k]; });
+    rap.lignesTab = tableau(paquet.rapprochement.lignes);
+    sortie.rapprochement = rap;
+  }
+  return sortie;
+}
+
+/**
  * Le paquet du premier contrat, sérialisé pour être posé tel quel dans un
  * <script> — c'est ce que la page reçoit à l'ouverture.
  *
@@ -937,7 +1075,7 @@ function getDonneesPourClient(contrat) {
  * mal choisie couperait la page en deux et rien ne s'afficherait.
  */
 function donneesJSONPourPage() {
-  return JSON.stringify(getDonneesPourClient())
+  return JSON.stringify(compacterPaquet(getDonneesPourClient()))
     .replace(/</g, '\\u003c')
     .replace(/>/g, '\\u003e')
     .replace(/\u2028/g, '\\u2028')
@@ -1029,11 +1167,24 @@ function diagnostic() {
   dire('');
   const secondeLisible = diagnostiquerSecondeBase(classeur, dire);
   try {
+    /* Le temps de chaque lecture, mesuré ici même : c'est ce qui dit où
+       l'ouverture de la page passe son temps, sur ce classeur-là. */
+    const secondes = function (ms) { return (ms / 1000).toFixed(1).replace('.', ',') + ' s'; };
+    const t0 = Date.now();
+    const modele = construireModele(contrats[0].id);
+    const t1 = Date.now();
+    getHistorique(classeur, modele.feuille);
+    const t2 = Date.now();
+    getRapprochement(classeur, modele.feuille);
+    const t3 = Date.now();
     const poids = donneesJSONPourPage().length;
+    const t4 = Date.now();
     dire('✓ Paquet envoyé à la page : ' + Math.round(poids / 1024) + ' Ko' +
          (contrats.length > 1
            ? ' (contrat « ' + contrats[0].nom + ' », le premier ; les autres se chargent à la demande)'
            : ''));
+    dire('   préparé en ' + secondes(t4 - t3) + ' — lecture de GATES ' + secondes(t1 - t0) +
+         ', de l\'historique ' + secondes(t2 - t1) + ', de la seconde base ' + secondes(t3 - t2));
   } catch (err) {
     dire('✗ Paquet envoyé à la page : ' + (err && err.message ? err.message : err));
     tousLisibles = false;
@@ -1100,9 +1251,31 @@ function diagnostiquerPerimetresDesJalons(contrat, jalons, dire) {
  * place » sous un avertissement.
  */
 function diagnostiquerSecondeBase(classeur, dire) {
-  const base = lireSecondeBase(classeur);
+  /* Une seconde base par contrat : on dit, pour chacun, quel onglet est lu.
+     Un onglet « SEE » tout court devant plusieurs contrats n'appartient à
+     personne : on le dit, et comment le renommer. */
+  let contrats = [];
+  try { contrats = listerContrats(classeur); } catch (err) { contrats = []; }
+  const plusieurs = contrats.length > 1;
+  let tout = true;
+  (plusieurs ? contrats : [contrats[0] || null]).forEach(function (c) {
+    if (!diagnostiquerSecondeBaseDe(classeur, c ? c.id : undefined, plusieurs ? ' de « ' + c.nom + ' »' : '', dire)) tout = false;
+  });
+  const base = feuilleRapprochement();
+  if (plusieurs && base) {
+    const generique = classeur.getSheets().filter(function (f) { return nomCompact(f.getName()) === nomCompact(base); })[0];
+    if (generique) {
+      dire('⚠ L\'onglet « ' + generique.getName() + ' » ne dit pas à quel contrat il appartient : il n\'est lu pour aucun.');
+      dire('   → le renommer « ' + base + ' ' + contrats[0].nom + ' » (ou le nom de son contrat) : chaque contrat a sa base.');
+    }
+  }
+  return tout;
+}
+
+function diagnostiquerSecondeBaseDe(classeur, contrat, pour, dire) {
+  const base = lireSecondeBase(classeur, contrat);
   const cfg = CONFIG.RAPPROCHEMENT || {};
-  const nom = '« ' + (String(cfg.NOM || base.onglet || '').trim() || 'seconde base') + ' »';
+  const nom = '« ' + (String(cfg.NOM || feuilleRapprochement() || '').trim() || 'seconde base') + ' »' + pour;
   switch (base.etat) {
     case 'sans-configuration':
       dire('– Seconde base : ' + (!base.onglet
@@ -1143,7 +1316,7 @@ function diagnostiquerSecondeBase(classeur, dire) {
       return false;
     }
     default:
-      dire('✓ Seconde base « ' + base.rapprochement.nom + ' » : onglet « ' + base.onglet + ' », ' +
+      dire('✓ Seconde base « ' + base.rapprochement.nom + ' »' + pour + ' : onglet « ' + base.onglet + ' », ' +
            base.rapprochement.lignes.length + ' ligne(s), référence ' +
            [].concat(base.rapprochement.cleReference).join(' + ') + ' (ligne d\'en-têtes : ' + base.ligneEntete + ')');
       return true;
@@ -1681,8 +1854,8 @@ function getJalons() {
  *
  * @param {Spreadsheet} classeur
  */
-function getRapprochement(classeur) {
-  return lireSecondeBase(classeur).rapprochement;
+function getRapprochement(classeur, contrat) {
+  return lireSecondeBase(classeur, contrat).rapprochement;
 }
 
 /**
@@ -1708,15 +1881,15 @@ function getRapprochement(classeur) {
  *
  * @param {Spreadsheet} classeur
  */
-function lireSecondeBase(classeur) {
+function lireSecondeBase(classeur, contrat) {
   const cfg = CONFIG.RAPPROCHEMENT;
   const nomFeuille = feuilleRapprochement();
   const clesVoulues = !cfg ? [] : [].concat(cfg.CLE_REFERENCE === undefined || cfg.CLE_REFERENCE === null ? [] : cfg.CLE_REFERENCE)
     .map(function (c) { return String(c).trim(); }).filter(Boolean);
   const rendu = { etat: 'sans-configuration', onglet: nomFeuille, cles: clesVoulues, entetes: [], ligneEntete: null, rapprochement: null };
   if (!cfg || !nomFeuille || !clesVoulues.length) return rendu;
-  const feuille = classeur.getSheetByName(nomFeuille);
-  if (!feuille) { rendu.etat = 'absent'; return rendu; }
+  const feuille = ongletSecondeBase(classeur, contrat);
+  if (!feuille) { rendu.etat = 'absent'; rendu.onglet = nomAttenduSecondeBase(classeur, contrat); return rendu; }
   rendu.onglet = feuille.getName();
 
   const donnees = feuille.getDataRange().getDisplayValues();

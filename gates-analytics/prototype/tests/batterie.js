@@ -46,8 +46,13 @@ async function reinitialiser(pg) {
     });
     pg.on('dialog', d => d.dismiss().catch(() => {}));
   }
+  /* Sur un gros extract, le tableau ne dessine d'abord qu'une tranche (le
+     reste vient en descendant) ; cette batterie vérifie tout le reste sur
+     TOUTES les lignes dessinées : elle lève le seuil. Les tranches ont leurs
+     propres tests, côté add-on, sur un extract de 640 plans. */
   async function contexte(opts = {}) {
     const ctx = await nav.newContext(Object.assign({ viewport: { width: 1280, height: 950 } }, opts));
+    await ctx.addInitScript(() => { window.SUIVI_FWD_BUDGET = 1e9; });
     return ctx;
   }
   async function page(ctx, etiquette = 'page') {
@@ -2328,11 +2333,11 @@ async function reinitialiser(pg) {
 
   // =================================================================
   section('Graphique : zoom, déplacement, extrêmes');
-  /* Le cadrage d'ouverture est d'un an — celui du bouton « 1 an » —, les
-     jalons dans le champ. */
+  /* Le cadrage d'ouverture est de six mois — exactement celui du bouton
+     « 6 mois ». */
   const zoom0 = await p.evaluate(() => document.querySelectorAll('.zone-clic').length);
-  const presse0 = await p.evaluate(() => document.querySelector('.segmente button[data-span="52"]').getAttribute('aria-pressed'));
-  verifier('le graphique s\'ouvre sur un an : 52 semaines, « 1 an » pressé', zoom0 === 52 && presse0 === 'true', zoom0 + ' ' + presse0);
+  const presse0 = await p.evaluate(() => document.querySelector('.segmente button[data-span="26"]').getAttribute('aria-pressed'));
+  verifier('le graphique s\'ouvre sur six mois : 26 semaines, « 6 mois » pressé', zoom0 === 26 && presse0 === 'true', zoom0 + ' ' + presse0);
   await p.click('.segmente button[data-span="52"]'); await p.waitForTimeout(350);
   const zoom1 = await p.evaluate(() => ({
     n: document.querySelectorAll('.zone-clic').length,
@@ -2917,13 +2922,22 @@ async function reinitialiser(pg) {
     await p.evaluate(() => !document.getElementById('avertissement-demo').hidden &&
       /Jeu d'exemple/.test(document.querySelector('.pied').textContent)));
 
-  // Le cadrage d'ouverture montre aujourd'hui et les cinq jalons configurés.
+  /* Le cadrage d'ouverture : six mois autour d'aujourd'hui. Les jalons qui
+     tombent dehors restent dans la légende, marqués « hors fenêtre », et
+     tous gardent leur décompte en jours. */
   const cadrage = await p.evaluate(() => ({
-    jalons: document.querySelectorAll('svg.graphe .jalon').length,
+    dessines: document.querySelectorAll('svg.graphe .jalon').length,
+    legende: document.querySelectorAll('.legende-jalon').length,
+    horsFenetre: document.querySelectorAll('.legende-jalon.hors-fenetre').length,
+    decomptes: [...document.querySelectorAll('.legende-jalon .decompte')].map(d => d.textContent),
     aujourdhui: [...document.querySelectorAll('svg.graphe .repere-auj')].length === 1
   }));
-  verifier('à l’ouverture, les cinq jalons et le repère du dernier relevé sont dans le cadre',
-    cadrage.jalons === 5 && cadrage.aujourdhui, JSON.stringify(cadrage));
+  verifier('à l’ouverture, le repère du dernier relevé est dans le cadre ; les jalons au-delà des six mois sont dits « hors fenêtre »',
+    cadrage.aujourdhui && cadrage.legende === 5 && cadrage.dessines + cadrage.horsFenetre === 5 && cadrage.dessines >= 1,
+    JSON.stringify(cadrage));
+  verifier('chaque jalon de la légende dit dans combien de jours il tombe',
+    cadrage.decomptes.length === 5 && cadrage.decomptes.every(t => /^(dans \d+ jours|demain|aujourd’hui|hier|il y a \d+ jours)$/.test(t.replace(/\s/g, ' '))),
+    JSON.stringify(cadrage.decomptes));
 
   // La ligne « changement d'indice » d'une semaine dépliée n'est plus reléguée derrière « voir les autres ».
   await p.click('.journal-semaine .journal-plier >> nth=0'); await p.waitForTimeout(300);
@@ -3091,6 +3105,106 @@ async function reinitialiser(pg) {
     await ctxVide.close();
   }
 
+  section('Échéances en jours');
+  /* Un jalon se donne à la semaine ; la page le dit en jours — jusqu'au
+     vendredi de sa semaine. Le compte attendu est refait ici, à partir de
+     l'étiquette ISO du jalon (dans la bulle de la légende) et de la date du
+     jour, sans passer par le code de la page. */
+  await reinitialiser(p);
+  await p.evaluate(() => window.scrollTo(0, 0));
+  const joursAttendus = await p.evaluate(() => {
+    return [...document.querySelectorAll('.legende-jalon')].map(el => {
+      const m = el.title.match(/(\d{4})-S(\d{2})/);
+      const an = +m[1], sem = +m[2];
+      const j4 = new Date(Date.UTC(an, 0, 4));
+      const lundi1 = new Date(j4.getTime() - ((j4.getUTCDay() + 6) % 7) * 86400000);
+      const vendredi = lundi1.getTime() + ((sem - 1) * 7 + 4) * 86400000;
+      const n = new Date(); const auj = Date.UTC(n.getFullYear(), n.getMonth(), n.getDate());
+      return { idx: +el.dataset.jalon, jours: Math.round((vendredi - auj) / 86400000), nom: el.querySelector('.mot').textContent,
+               decompte: el.querySelector('.decompte').textContent };
+    });
+  });
+  const motAttendu = n => n === 0 ? 'aujourd’hui' : n === 1 ? 'demain' : n === -1 ? 'hier' : n > 1 ? 'dans ' + n + ' jours' : 'il y a ' + (-n) + ' jours';
+  const espaces = t => t.replace(/[\s  ]+/g, ' ');
+  verifier('chaque jalon dit dans combien de jours il tombe — le vendredi de sa semaine',
+    joursAttendus.length === 5 && joursAttendus.every(j => espaces(j.decompte) === motAttendu(j.jours)), JSON.stringify(joursAttendus));
+  const titreEch = await p.evaluate(() => {
+    const b = document.getElementById('echeance-titre');
+    return { visible: !b.hidden && b.offsetParent !== null, texte: b.textContent, jalon: b.dataset.jalon,
+             dansMasthead: !!b.closest('header.masthead') };
+  });
+  const prochainAttendu = joursAttendus.filter(j => j.jours > 0)[0];
+  verifier('sous le titre, la prochaine échéance, en jours',
+    titreEch.visible && titreEch.dansMasthead && /Prochaine échéance/.test(titreEch.texte) && !!prochainAttendu &&
+    titreEch.texte.indexOf(prochainAttendu.nom) !== -1 && espaces(titreEch.texte).indexOf(motAttendu(prochainAttendu.jours)) !== -1,
+    JSON.stringify([titreEch, prochainAttendu]));
+  await p.click('#echeance-titre'); await p.waitForTimeout(700);
+  const fiche1 = await p.evaluate(() => {
+    const f = document.getElementById('fiche-echeance');
+    if (!f) return null;
+    const chiffres = [...f.querySelectorAll('.fiche-echeance-chiffres > div')].map(d => ({ n: +d.querySelector('b').textContent.replace(/\s/g, ''), mot: d.querySelector('span').textContent }));
+    const phrase = document.getElementById('phrase').textContent.replace(/\s/g, ' ');
+    const m = phrase.match(/([\d ]+) sur ([\d ]+) plans?/);
+    return { titre: f.querySelector('h3').textContent, chiffres, verdict: f.querySelector('.fiche-echeance-verdict').className,
+             texte: f.textContent.replace(/\s+/g, ' '), restantsBarre: m ? +m[2].replace(/\s/g, '') - +m[1].replace(/\s/g, '') : null,
+             ouvert: document.querySelector('.legende-jalon[aria-expanded="true"]') ? document.querySelector('.legende-jalon[aria-expanded="true"]').dataset.jalon : null };
+  });
+  verifier('un clic sur l’échéance du titre ouvre sa fiche : son nom, ses jours restants',
+    !!fiche1 && fiche1.titre === prochainAttendu.nom && fiche1.chiffres[0].n === prochainAttendu.jours && /jours? restants?/.test(fiche1.chiffres[0].mot) &&
+    fiche1.ouvert === String(prochainAttendu.idx), JSON.stringify(fiche1));
+  verifier('la fiche dit combien de plans restent — ceux que la barre ne dit pas terminés — et le rythme qu’il faut',
+    !!fiche1 && fiche1.chiffres[2].n === fiche1.restantsBarre && /Il faut [\d,]+ plans terminés par semaine/.test(fiche1.texte) &&
+    /vendredi \d+ \S+ \d{4}/.test(fiche1.texte) && /(bon|mal)$/.test(fiche1.verdict), JSON.stringify(fiche1));
+  // Un jalon d'un périmètre : ses plans à terminer sont ceux de ce périmètre.
+  const jalonPerimetre = await p.evaluate(() => {
+    const el = [...document.querySelectorAll('.legende-jalon')].find(e => /BASE\/OPTION/.test(e.querySelector('.quand').textContent));
+    return el ? +el.dataset.jalon : null;
+  });
+  if (jalonPerimetre !== null) {
+    await p.click('.legende-jalon[data-jalon="' + jalonPerimetre + '"]'); await p.waitForTimeout(500);
+    const fichePer = await p.evaluate(() => {
+      const f = document.getElementById('fiche-echeance');
+      return f ? { restants: +f.querySelectorAll('.fiche-echeance-chiffres > div b')[2].textContent.replace(/\s/g, ''), texte: f.textContent } : null;
+    });
+    await p.click('#choix-perimetre button[data-perimetre="BASE/OPTION"]'); await p.waitForTimeout(500);
+    const barreBase = await p.evaluate(() => {
+      const m = document.getElementById('phrase').textContent.replace(/\s/g, ' ').match(/([\d ]+) sur ([\d ]+) plans?/);
+      return m ? +m[2].replace(/\s/g, '') - +m[1].replace(/\s/g, '') : null;
+    });
+    verifier('un jalon BASE/OPTION compte les plans à terminer de BASE/OPTION, quel que soit le périmètre affiché',
+      !!fichePer && fichePer.restants === barreBase && /BASE\/OPTION/.test(fichePer.texte), JSON.stringify([fichePer && fichePer.restants, barreBase]));
+    await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(400);
+  }
+  // Re-cliquer ferme ; la croix ferme ; Entrée au clavier ouvre ; un numéro du graphique ouvre.
+  const cle0 = String(joursAttendus[0].idx);
+  await p.click('.legende-jalon[data-jalon="' + cle0 + '"]'); await p.waitForTimeout(300);
+  const ouverte0 = await p.evaluate(() => !!document.getElementById('fiche-echeance'));
+  await p.click('.legende-jalon[data-jalon="' + cle0 + '"]'); await p.waitForTimeout(300);
+  verifier('re-cliquer le même jalon referme sa fiche',
+    ouverte0 && await p.evaluate(() => !document.getElementById('fiche-echeance')));
+  await p.focus('.legende-jalon[data-jalon="' + cle0 + '"]'); await p.keyboard.press('Enter'); await p.waitForTimeout(300);
+  verifier('au clavier, Entrée sur un jalon ouvre sa fiche, et le focus reste sur lui',
+    await p.evaluate(k => !!document.getElementById('fiche-echeance') && document.activeElement && document.activeElement.dataset.jalon === k, cle0));
+  await p.click('#fiche-echeance [data-fermer-echeance]'); await p.waitForTimeout(300);
+  verifier('la croix referme la fiche', await p.evaluate(() => !document.getElementById('fiche-echeance')));
+  const marque = await p.$('svg.graphe .jalon[data-jalon] .jalon-marque');
+  if (marque) {
+    const idxMarque = await p.evaluate(m => m.closest('.jalon').getAttribute('data-jalon'), marque);
+    await marque.click(); await p.waitForTimeout(700);
+    verifier('un clic sur un numéro du graphique ouvre la fiche de ce jalon',
+      await p.evaluate(k => !!document.getElementById('fiche-echeance') &&
+        document.querySelector('.legende-jalon[aria-expanded="true"]').dataset.jalon === k, idxMarque));
+    await p.click('#fiche-echeance [data-fermer-echeance]'); await p.waitForTimeout(300);
+  }
+  // Le bouton « haut de page » : caché en haut, visible plus bas, et il ramène en haut.
+  await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(200);
+  const hautCache = await p.evaluate(() => document.getElementById('haut-de-page').hidden);
+  await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await p.waitForTimeout(300);
+  const hautVisible = await p.evaluate(() => !document.getElementById('haut-de-page').hidden);
+  await p.click('#haut-de-page'); await p.waitForTimeout(1500);
+  verifier('le bouton « haut de page » paraît en descendant et ramène en haut',
+    hautCache && hautVisible && await p.evaluate(() => window.scrollY < 5), JSON.stringify([hautCache, hautVisible]));
+
   section('Persistance (même navigateur, page rechargée)');
   await p.click('button[data-trig="fin"]'); await p.waitForTimeout(300);
   const triAvant = await p.evaluate(() => {
@@ -3244,6 +3358,24 @@ async function reinitialiser(pg) {
   });
   verifier('fond sombre et encre claire', sombre.fond < 0.1 && sombre.encre > 0.6);
   verifier('le texte principal dépasse 7:1', sombre.contrasteTexte >= 7, sombre.contrasteTexte.toFixed(1) + ':1');
+  /* Le menu déroulant d'un Chrome en mode sombre : la page déclare son
+     schéma, et chaque option porte le fond et l'encre de la page — plus de
+     texte clair sur une liste blanche. */
+  const menus = await ps.evaluate(() => {
+    function lum(c) {
+      const m = c.match(/\d+/g).slice(0, 3).map(Number).map(v => {
+        v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2];
+    }
+    function contraste(a, b) { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+    const o = document.querySelector('#dim-critique option');
+    const st = o ? getComputedStyle(o) : null;
+    return { schema: getComputedStyle(document.documentElement).colorScheme,
+             contraste: st ? contraste(st.color, st.backgroundColor) : 0, fond: st ? lum(st.backgroundColor) : 1 };
+  });
+  verifier('en sombre, les menus déroulants suivent : schéma déclaré, options sombres et lisibles (≥ 7:1)',
+    /dark/.test(menus.schema) && menus.fond < 0.1 && menus.contraste >= 7, JSON.stringify(menus));
   verifier('les pourcentages dans la barre dépassent 4,5:1',
     sombre.contrastesSegments.every(c => c >= 4.5),
     JSON.stringify(sombre.contrastesSegments.map(c => c.toFixed(1))));
