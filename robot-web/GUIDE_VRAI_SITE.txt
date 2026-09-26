@@ -1,8 +1,10 @@
 ROBOT WEB - TOUT RECOMMENCER A ZERO, PUIS UNE TACHE A RELANCER QUAND VOUS VOULEZ
 =================================================================================
-(Windows, au bureau. Version 16 du robot.)
+(Windows, au bureau. Version 17 du robot.)
 
-Ce qui change avec la version 16 :
+Ce qui change avec la version 17 :
+   - NOUVEAU : le robot peut parcourir tout votre portail SANS RIEN MODIFIER et
+     en faire la carte (menu, choix 8) : voir la PARTIE E.
    - Les pages Google ou Chrome (« Decouvrez... », « Nouveautes... ») qui
      s'ouvraient devant votre outil sont fermees toutes seules par le robot.
      Et si vous cliquez quand meme sur une page Google pendant l'enregistrement,
@@ -24,13 +26,14 @@ Il y a 4 parties :
    PARTIE B - Montrer la tache au robot                   (une fois par tache)
    PARTIE C - Relancer la tache                           (quand vous voulez)
    PARTIE D - Si ca ne marche pas
+   PARTIE E - Faire la carte de mon portail, sans rien modifier   (quand vous voulez)
 
 
 =====================================================================
  PARTIE A - TOUT EFFACER ET REINSTALLER PROPREMENT
 =====================================================================
 On efface l'ancien dossier du robot (anciennes taches, faux Excel essai.xlsx,
-ancien Chrome du robot), puis on installe la version 16. Vos fichiers a vous,
+ancien Chrome du robot), puis on installe la version 17. Vos fichiers a vous,
 votre Chrome habituel et vos mots de passe ne sont PAS touches.
 
 A1. FERMEZ toutes les fenetres noires ouvertes, et toutes les fenetres Chrome
@@ -71,7 +74,7 @@ A6. On efface aussi les anciens installeurs telecharges (pour ne pas les
 
 A7. Dans Gmail, ouvrez mon dernier mail et telechargez la piece jointe
         robot-web-installeur.txt
-    (en haut du fichier est ecrit VERSION 16)
+    (en haut du fichier est ecrit VERSION 17)
 
 A8. Revenez dans la fenetre noire. VOUS TAPEZ, une ligne a la fois :
         mkdir robot
@@ -83,17 +86,17 @@ A8. Revenez dans la fenetre noire. VOUS TAPEZ, une ligne a la fois :
     fini ou n'est pas alle dans Telechargements. Attendez, puis refaites
     uniquement la ligne   move ...
 
-A9. On verifie que c'est bien la version 16. VOUS TAPEZ :
-        findstr /c:"VERSION 16" robot-web-installeur.txt
+A9. On verifie que c'est bien la version 17. VOUS TAPEZ :
+        findstr /c:"VERSION 17" robot-web-installeur.txt
 
-    VOUS VOYEZ une ligne qui contient :   INSTALLEUR AUTOMATIQUE - VERSION 16
+    VOUS VOYEZ une ligne qui contient :   INSTALLEUR AUTOMATIQUE - VERSION 17
     SI rien ne s'affiche : ce n'est pas le bon fichier. Refaites A6 a A8.
 
 A10. On installe. VOUS TAPEZ (le plus simple : copier-coller, puis Entree) :
         py -c "exec(open('robot-web-installeur.txt', encoding='utf-8').read())"
 
     VOUS VOYEZ defiler, en 1 a 3 minutes :
-        ROBOT-WEB - installeur version 16
+        ROBOT-WEB - installeur version 17
         === 1/4  Extraction des fichiers ===
         === 2/4  Environnement Python ===
             L'environnement isole est bloque par une strategie de l'entreprise.
@@ -287,7 +290,7 @@ Pas besoin de capture d'ecran, ni du nom du site, ni de vos donnees.
 Cas deja connus :
  - Une page Google s'ouvre, ou le robot « est sur Google » a la relance
        -> c'etait le cas en version 15. Refaites la PARTIE A avec la
-          version 16, puis la PARTIE B (l'ancienne tache contient les clics
+          derniere version, puis la PARTIE B (l'ancienne tache contient les clics
           faits sur Google : il faut la refaire), puis la PARTIE C.
           En fin d'enregistrement, le robot dit combien d'actions faites sur
           Google ou Chrome il a ignorees : c'est normal.
@@ -316,3 +319,66 @@ Cas deja connus :
           s'ajoute a la liste du choix 2 (avec la date dans son nom), a cote
           de l'ancienne. Testez la nouvelle, puis supprimez l'ancienne avec
           le choix 4 du menu.
+
+
+=====================================================================
+ PARTIE E - FAIRE LA CARTE DE MON PORTAIL, SANS RIEN MODIFIER
+=====================================================================
+Le robot parcourt votre portail tout seul : menus, onglets, listes, fiches.
+Il note chaque ecran : ses champs, ses boutons, ses tableaux, et comment on y
+arrive. C'est cette carte qui nous permettra de preparer ensemble les taches.
+
+CE QU'IL NE FAIT JAMAIS :
+   - il ne remplit aucun champ, ne coche rien, ne tape rien ;
+   - il ne clique jamais sur Enregistrer, Supprimer, Creer, Nouveau, Modifier,
+     Valider, Exporter, Imprimer, Deconnexion... ni sur un bouton sans texte ;
+   - et si un bouton d'apparence anodine essaie quand meme d'envoyer des donnees
+     au portail, le robot BLOQUE l'envoi avant qu'il parte, et le note ;
+   - aux questions « Etes-vous sur ? », il repond toujours Annuler.
+Sur une grosse base, il ne visite pas tout : 1 ou 2 fiches suffisent pour
+connaitre toutes les fiches du meme genre.
+
+E1. AVANT : si vous avez un doute, demandez a votre responsable ou a
+    l'informatique si c'est permis. Un robot qui ouvre des centaines de pages
+    peut ressembler a une activite inhabituelle. Il va lentement expres.
+
+E2. Fenetre noire, dans le dossier du robot (PARTIE C1), puis :
+        robot
+    VOUS TAPEZ :   8
+
+E3. Il demande l'adresse de la page d'ACCUEIL du portail : collez-la (clic
+    droit), Entree.
+    Il demande la duree maximum :   [Entree]   (60 minutes)
+
+E4. Le Chrome du robot s'ouvre. La fenetre noire dit :
+        Dans la fenetre du robot : connectez-vous si besoin, puis allez sur
+        la page d'ACCUEIL du portail
+    Connectez-vous dans le Chrome du robot, allez sur l'accueil, puis revenez
+    dans la fenetre noire et appuyez sur Entree.
+
+E5. Le robot travaille. NE TOUCHEZ PLUS a sa fenetre Chrome : vous pouvez
+    faire autre chose a cote (Outlook, Excel...). La fenetre noire affiche
+    chaque ecran decouvert :
+        OK E12 : « Fiche composant » — 14 champ(s), 22 element(s) cliquable(s)
+    Pour arreter avant la fin : Entree dans la fenetre noire. Ce qui a deja
+    ete vu est garde.
+    Si le portail vous deconnecte en route, le robot s'arrete et vous demande
+    de vous reconnecter : faites-le dans sa fenetre, puis Entree.
+
+E6. A la fin, VOUS VOYEZ :
+        OK Exploration terminee (...)
+           85 ecran(s) differents vus, 640 element(s) essayes, 3 envoi(s) bloque(s)
+    et deux fichiers :
+       - carte.html : TOUT ce qui a ete vu. Il reste sur votre poste. Pour
+         l'ouvrir : tapez   0   (quitter le menu), puis
+              explorer explorations
+         ouvrez le dossier le plus recent, double-cliquez sur carte.html.
+       - carte_a_partager.txt : la STRUCTURE seule (noms d'ecrans, de
+         champs, de boutons, de colonnes), sans valeurs, sans contenu de
+         tableau, sans titre de page, sans adresse de serveur.
+
+E7. Relisez carte_a_partager.txt (double-clic : il s'ouvre dans le Bloc-notes).
+    Si un mot vous semble sensible, remplacez-le. Puis, SEULEMENT si c'est
+    permis chez vous, recopiez-le moi ici. Sinon, decrivez-moi simplement
+    ce que vous y voyez : ca suffit pour avancer.
+    Avec cette carte, je vous propose les taches a automatiser, et comment.

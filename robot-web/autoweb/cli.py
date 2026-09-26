@@ -286,6 +286,56 @@ def cmd_releve(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_explorer(args: argparse.Namespace) -> int:
+    """Parcourt le portail sans rien modifier et en dresse la carte."""
+    from .explorateur import Explorateur, Limites
+    from .navigateur import Navigateur
+    from .scenario import ConfigNavigateur
+
+    configurer_journal(None, args.verbeux)
+    url = _normaliser_url(args.url)
+    if not url:
+        raise ErreurAutoweb("Indiquez l'adresse du portail : autoweb explorer https://mon-portail/...")
+    dossier = Path(args.sortie) if args.sortie else DOSSIER_PROJET / "explorations" / f"{dt.datetime.now():%Y%m%d-%H%M%S}"
+    limites = Limites(ecrans=args.max_ecrans, profondeur=args.profondeur, minutes=args.minutes, delai_ms=args.delai)
+    cfg = ConfigNavigateur(
+        canal=args.canal or "auto",
+        profil=args.profil or str(DOSSIER_PROJET / "profils" / "explorateur"),  # la connexion est gardée
+        visible=not args.cache,
+        dialogues="ignorer",  # « Êtes-vous sûr ? » -> toujours Annuler
+    )
+    if args.executable:
+        cfg.executable = args.executable
+    if args.attacher:
+        cfg.attacher = args.attacher
+    nav = Navigateur(cfg, DOSSIER_PROJET, visible=not args.cache)
+    nav.options_contexte = {"service_workers": "block"}  # sinon certaines requêtes échapperaient au contrôle
+    print()
+    print(f"{S.LIGNE} EXPLORATION DU PORTAIL, SANS RIEN MODIFIER")
+    print("   Le robot parcourt les menus, les onglets, les listes et les fiches, et note tout.")
+    print("   Il ne remplit aucun champ, ne clique jamais sur Enregistrer, Supprimer, Créer,")
+    print("   Modifier, Valider, Exporter..., et bloque tout envoi de données vers le portail.")
+    print(f"   Limites : {limites.ecrans} écrans, {limites.minutes:g} minutes. Pour arrêter avant : Entrée ici.")
+    nav.ouvrir()
+    explorateur = Explorateur(nav, dossier, limites, interactif=not args.sans_pause)
+    try:
+        explorateur.explorer(url)
+    finally:
+        nav.fermer()
+    r = explorateur.resume()
+    print()
+    print(f"{S.OK} Exploration terminée ({r['arret']}).")
+    print(f"   {r['ecrans']} écran(s) différents vus, {r['essais']} élément(s) essayés, "
+          f"{r['bloquees']} envoi(s) de données bloqué(s).")
+    print()
+    print("   Résultats :")
+    print(f"     {dossier / 'carte.html'}")
+    print("        à ouvrir dans le navigateur : tout ce qui a été vu (reste sur votre poste)")
+    print(f"     {dossier / 'carte_a_partager.txt'}")
+    print("        la structure seule, sans vos données : relisez-le, puis envoyez-le à Claude si vous le souhaitez")
+    return 0
+
+
 def cmd_inspecter(args: argparse.Namespace) -> int:
     configurer_journal(None, args.verbeux)
     nav = _lancer_navigateur_libre(args)
@@ -626,6 +676,7 @@ def _ns(**kw) -> argparse.Namespace:
         sans_avant=False, sans_apres=False, inspecter_si_erreur=False, arret_premiere_erreur=False,
         sans_pause=False, simuler=False, scenario=None, port=8765, sans_attente=False, fichier=False,
         releve=None, sortie_releve=None, colonnes=None, regles=None, journal=False,
+        max_ecrans=150, profondeur=6, minutes=60.0, delai=500,
     )
     defauts.update(kw)
     return argparse.Namespace(**defauts)
@@ -672,6 +723,7 @@ def cmd_menu(args: argparse.Namespace) -> int:
         print("   5. Creer un fichier Excel de pilotage (facultatif)")
         print("   6. M'entrainer sur la fausse base de demonstration")
         print("   7. Verifier que tout fonctionne")
+        print("   8. Explorer mon portail et en faire la carte (sans rien modifier)")
         print("   0. Quitter")
         print()
         choix = _demander("   Votre choix", "0")
@@ -768,11 +820,19 @@ def cmd_menu(args: argparse.Namespace) -> int:
                 cmd_base_demo(_ns())
             elif choix == "7":
                 cmd_demo(_ns(sans_pause=True))
+            elif choix == "8":
+                url = nettoyer_chemin(_demander("   Adresse de la page d'accueil du portail (elle commence par http)"))
+                if not url:
+                    continue
+                minutes = _demander("   Durée maximum, en minutes", "60")
+                cmd_explorer(_ns(url=url, max_ecrans=150, profondeur=6,
+                                 minutes=float(minutes) if minutes.replace(".", "", 1).isdigit() else 60.0,
+                                 delai=500))
             elif choix in ("0", "q", "quitter"):
                 print("   A bientot.")
                 return 0
             else:
-                print("   Tapez un chiffre de 0 a 7.")
+                print("   Tapez un chiffre de 0 a 8.")
         except ErreurAutoweb as e:
             print()
             print(f"{S.ERREUR} {e}")
@@ -979,6 +1039,19 @@ def construire_parseur() -> argparse.ArgumentParser:
     options_navigateur(p)
     commun(p)
     p.set_defaults(fonction=cmd_releve)
+
+    p = sous.add_parser("explorer", help="parcourir tout le portail SANS RIEN MODIFIER et en dresser la carte")
+    p.add_argument("url", help="adresse du portail (page d'accueil)")
+    p.add_argument("--max-ecrans", type=int, default=150, help="nombre d'écrans différents au maximum (défaut 150)")
+    p.add_argument("--profondeur", type=int, default=6, help="nombre de clics au maximum depuis l'accueil (défaut 6)")
+    p.add_argument("--minutes", type=float, default=60, help="durée maximum (défaut 60)")
+    p.add_argument("--delai", type=int, default=500, help="pause entre deux actions, en ms (défaut 500)")
+    p.add_argument("--sortie", help="dossier des résultats (défaut : explorations/<date>)")
+    p.add_argument("--sans-pause", action="store_true", help="ne pas attendre la connexion (page publique)")
+    p.add_argument("--cache", action="store_true", help="navigateur invisible")
+    options_navigateur(p)
+    commun(p)
+    p.set_defaults(fonction=cmd_explorer)
 
     p = sous.add_parser("assistant", help="construire un scénario par questions/réponses (relevé + colonnes Excel)")
     p.add_argument("url", nargs="?", help="adresse de l'écran à relever d'abord (sinon : dernier relevé de releves/)")

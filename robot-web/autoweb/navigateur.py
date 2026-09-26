@@ -201,6 +201,9 @@ class Navigateur:
         self._creation = False  # vrai pendant que le robot ouvre lui-même un onglet
         self._ouvert_a = 0.0
         self._en_pause = False  # l'utilisateur a la main : ses boîtes de dialogue sont à lui
+        # options supplémentaires du contexte (ex. l'explorateur bloque les service workers,
+        # qui échapperaient à son contrôle des requêtes)
+        self.options_contexte: dict = {}
         self._dialogues_differes: List[Any] = []
 
     # ------------------------------------------------------------------ ouverture
@@ -517,7 +520,8 @@ class Navigateur:
                 # sinon, après un arrêt brutal : bulle « Restaurer les pages ? » par-dessus l'outil
                 options["args"] = list(options["args"]) + ["--hide-crash-restore-bubble"]
             self.contexte = self._pw.chromium.launch_persistent_context(
-                user_data_dir=str(profil), accept_downloads=True, **self._viewport(), **options
+                user_data_dir=str(profil), accept_downloads=True, **self._viewport(), **options,
+                **self.options_contexte,
             )
             self.browser = None
             self.description = f"{libelle}, profil {profil}"
@@ -528,6 +532,7 @@ class Navigateur:
                 accept_downloads=True,
                 ignore_https_errors=self.config.ignorer_https,
                 **self._viewport(),
+                **self.options_contexte,
             )
             self.description = f"{libelle}, session temporaire"
         if not self.visible:

@@ -88,6 +88,7 @@ B1. Dans l'invite de commandes :
            5. Creer un fichier Excel de pilotage (facultatif)
            6. M'entrainer sur la fausse base de demonstration
            7. Verifier que tout fonctionne
+           8. Explorer mon portail et en faire la carte (sans rien modifier)
            0. Quitter
 
     On tape un chiffre, Entree. C'est tout ce qu'il y a a retenir.

@@ -14,6 +14,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
+from playwright.sync_api import Error as PlaywrightError
 
 from autoweb import navigateur as nav_mod
 from autoweb.enregistreur import Enregistreur, Evenement, est_hors_tache
@@ -267,7 +268,10 @@ def test_application_ouverte_par_un_portail_qui_se_referme_gardee(site, tmp_path
             page.evaluate("window.open('outil.html')")
         portail = info.value
         portail.wait_for_load_state()
-        portail.click("#lanceur")  # ouvre l'application puis se ferme aussitôt
+        try:
+            portail.click("#lanceur")  # ouvre l'application puis se ferme aussitôt
+        except PlaywrightError:
+            pass  # la page s'est fermée pendant le clic lui-même : c'est ce qu'on veut
         for _ in range(10):
             page.wait_for_timeout(200)
         ouvertes = [p.url for p in nav.contexte.pages if not p.is_closed()]

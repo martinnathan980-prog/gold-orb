@@ -30,6 +30,7 @@ Un menu s'affiche :
    5. Creer un fichier Excel de pilotage (facultatif)
    6. M'entrainer sur la fausse base de demonstration
    7. Verifier que tout fonctionne
+   8. Explorer mon portail et en faire la carte (sans rien modifier)
    0. Quitter
 Tapez le chiffre, Entree. C'est tout ce qu'il y a a retenir.
 
@@ -102,6 +103,16 @@ reinstalle. Vos fichiers a vous et votre Chrome habituel ne sont pas touches.
 
 
 =====================================================================
+ 5 bis. FAIRE LA CARTE DU PORTAIL (choix 8)
+=====================================================================
+Le robot parcourt tout le portail SANS RIEN MODIFIER (aucun champ rempli, aucun
+bouton Enregistrer / Supprimer / Créer / Modifier..., tout envoi de données
+bloqué) et note chaque écran. Résultats dans robot-web\explorations\<date>\ :
+carte.html (tout, reste sur le poste) et carte_a_partager.txt (la structure
+seule, sans vos données). Pas à pas détaillé : GUIDE_VRAI_SITE.txt, partie E.
+
+
+=====================================================================
  6. FACULTATIF : LA MEME TACHE SUR UNE LISTE (EXCEL)
 =====================================================================
 Utile seulement si la tache doit etre faite pour plusieurs valeurs, par exemple
@@ -169,3 +180,4 @@ travail (export par contrat, mise a jour d'indice, depot de document...).
    robot simuler ma_tache.yaml                montre les etapes sans rien faire
    robot scenarios                            la liste des taches
    robot base-demo                            la fausse base d'entrainement
+   robot explorer ADRESSE                     la carte du portail, sans rien modifier
