@@ -3842,15 +3842,14 @@ body[data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
 }
 
 /* ----------------------------------------------------------------------
-   15 ter. Les bandes coupées au filet du titre (accueil et pôles)
+   15 ter. Les bandes de section (accueil et pôles)
        Les sections se touchent, sans interstice, et chacune porte sa
-       couleur : le papier, puis la bande, en alternance. La couleur ne
-       change pas au bord de la section mais au filet de son titre — la
-       bande du dessus descend jusqu'au trait « — Communication center — »,
-       celle de la section commence dessous. L'en-tête de page (la bande)
-       se prolonge ainsi jusqu'au premier titre. La peinture déborde en
-       pleine largeur par border-image, qui ne crée aucun défilement
-       horizontal (au contraire de la marge négative en 50vw).
+       couleur : le papier, puis la bande, en alternance. La couleur change
+       au bord de la section : chaque titre est posé en entier sur la
+       couleur de sa section, dessiné partout comme « Communication
+       center ». La peinture déborde en pleine largeur par border-image,
+       qui ne crée aucun défilement horizontal (au contraire de la marge
+       négative en 50vw). --bande-coupe reste réglable (0 : au bord).
    ---------------------------------------------------------------------- */
 
 .page-sommaire ~ .pile--section {
@@ -3858,7 +3857,7 @@ body[data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
   /* L'air au-dessus du filet, puis la moitié de la ligne du titre : la
      hauteur exacte où passe le trait. */
   --bande-air: var(--e-10);
-  --bande-coupe: calc(var(--bande-air) + var(--texte-section) * var(--interligne-serre) / 2);
+  --bande-coupe: 0px;
 }
 
 .page-sommaire ~ .pile--section > section,
@@ -3882,19 +3881,14 @@ body[data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
 
 .page-sommaire ~ .pile--section > section > .titre-section { padding-block-start: 0; }
 
-/* La une (marine) s'arrête sous le sommaire : la première section commence
-   sur le papier, et son titre est dessiné comme tous les autres. */
-.page-sommaire ~ .pile--section > section:first-of-type { --bande-coupe: 0px; }
-
 /* La dernière bande descend jusqu'au pied de page : plus de lisière du
    papier entre les deux. */
 body > main:has(> .page-sommaire) { padding-block-end: 0; }
 .page-sommaire ~ .pile--section > section:last-of-type { padding-block-end: var(--e-12); }
 
-/* Sur téléphone, les filets du titre se retirent (§1) : la couleur
-   change au bord de la section, et non plus au milieu d'un mot. */
+/* Sur téléphone, un peu moins d'air au-dessus des titres. */
 @media (max-width: 640px) {
-  .page-sommaire ~ .pile--section { --bande-air: var(--e-8); --bande-coupe: 0px; }
+  .page-sommaire ~ .pile--section { --bande-air: var(--e-8); }
   .page-sommaire--collee { box-shadow: none; }
 }
 
