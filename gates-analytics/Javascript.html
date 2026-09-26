@@ -3257,7 +3257,7 @@
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         return '\x3Ctd class="' + classes + '"' + titre + '>' + ech(val) + '\x3C/td>';
       }).join('') + '\x3C/tr>';
-    });
+    }, ajusterSticky);   // chaque tranche ajoutée a ses colonnes figées posées
 
     /* « sur N » : N est la population du périmètre, pas la feuille entière. */
     var base = population().length;

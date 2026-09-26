@@ -4504,7 +4504,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
         var titre = c.classe.indexOf('large') !== -1 ? ' title="' + ech(val) + '"' : '';
         return '<td class="' + classes + '"' + titre + '>' + ech(val) + '</td>';
       }).join('') + '</tr>';
-    });
+    }, ajusterSticky);   // chaque tranche ajoutée a ses colonnes figées posées
 
     /* « sur N » : N est la population du périmètre, pas la feuille entière. */
     var base = population().length;

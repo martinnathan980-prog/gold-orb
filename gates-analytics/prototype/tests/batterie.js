@@ -2600,6 +2600,7 @@ async function reinitialiser(pg) {
     window.__chargerSource(s);
   });
   await p.waitForTimeout(500);
+  await p.click('.commandes-graphe button[data-span="0"]'); await p.waitForTimeout(400);
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
   const eTous = await lireEcheance();
   verifier('sous PERSO, un jalon sans périmètre placé avant fait l\'échéance : « Tous »',

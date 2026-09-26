@@ -2214,6 +2214,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await pGros.click('#corps-tableau tr.ligne-suite button'); await pGros.waitForTimeout(400);
   const tranche2 = await pGros.evaluate(() => document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length);
   verifier('un clic sur « N lignes de plus » ajoute la tranche suivante', tranche2 > tranche1.lignes, tranche1.lignes + ' → ' + tranche2);
+  // Comme quelqu'un qui lit : on descend jusqu'au tableau, puis dans le tableau.
+  await pGros.evaluate(() => document.getElementById('section-plans').scrollIntoView()); await pGros.waitForTimeout(400);
   for (let k = 0; k < 8; k++) {
     await pGros.evaluate(() => { const d = document.getElementById('defile'); d.scrollTop = d.scrollHeight; });
     await pGros.waitForTimeout(250);
