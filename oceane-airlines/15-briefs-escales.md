@@ -560,7 +560,7 @@ Regarde ce que ça donne à cet endroit précis du film. Pendant presque dix min
 ## Les rôles
 
 - **Joséphine : la plus jeune passagère de la compagnie. Siège 1A.** Elle a deux ans, elle n'a donc rien à jouer, et c'est voulu.
-- **Célestin : chef de cabine.** Dix ans à bord du même appareil, jamais redescendu. C'est le seul membre d'équipage qui n'a jamais pris de congé. C'est son deuxième clip du film, après l'escale Avignon à 4:40, et les deux ne se ressemblent pas du tout : là-bas il raconte six mois à se détester, ici il ferme le film.
+- **Célestin : chef de cabine.** Dix ans à bord du même appareil, jamais redescendu. C'est le seul membre d'équipage qui n'a jamais pris de congé. C'est son deuxième clip du film, après l'escale Avignon à 4:40, et ici il ferme le film.
 
 ## Célestin, c'est ton allié numéro un
 
@@ -571,6 +571,8 @@ Trois raisons de le briefer en premier, avant tout le monde :
 3. **Il a besoin de marge.** Un enfant de deux ans ne dit pas un mot sur commande un mardi soir. Trois semaines, pas trois jours, et cinq sessions de dix minutes, je détaille tout plus bas.
 
 ## Le message à envoyer à Célestin
+
+> ⛔ **Brief obsolète (26 septembre), ne pas le renvoyer.** Le nouveau plan est dans l'onglet Vidéo de la page.
 
 > Salut Célestin, tu es le premier au courant et c'est normal : sans toi, il n'y a pas de fin à cette vidéo.
 >

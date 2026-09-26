@@ -1,5 +1,7 @@
 # Les 12 annonces du commandant de bord
 
+> ⚠️ **26 septembre : le plan a changé.** Pour enregistrer la voix, lire uniquement les annonces du nouveau plan (onglet Vidéo de la page). Ce fichier ne fait plus foi.
+
 Vidéo surprise « Océane Airlines », 30 ans d'Océane. Voix off enregistrée par **Nathan**, avec traitement de voix. Les douze s'enregistrent dans la même session, le même jour, sans changer de pièce.
 
 Version du 20 septembre, calée sur la fiche `08-fiche-oceane.md` et sur le conducteur à 11 minutes de `03-script.md`, qui fait foi pour tous les timecodes. Les douze annonces couvrent les 19 temps du film.
@@ -137,11 +139,11 @@ On ne nomme jamais un modèle précis ni un programme précis. On reste sur le g
 >
 > *(coupure, la suite tombe à 4:38, sur le carton Avignon)*
 >
-> Escale suivante : Avignon, département statistiques. Les six premiers mois n'ont donné lieu à aucune correspondance.
+> *(Phrase sur Avignon retirée le 26 septembre, à la demande de Célestin. Ne pas l'enregistrer. Dans le nouveau plan, le commandant dit seulement : « Nous survolons Avignon, l'IUT. »)*
 
 *Jeu : « laissent toujours des témoins » se dit exactement du même ton que « descente vers l'École nationale de l'aviation civile », aucune accentuation sur la vanne, c'est ça qui la fait marcher.*
 
-**Note tournage :** l'escale École devient l'escale ENAC, c'est confirmé, et le carton suit la même décision. Dans l'annonce, on développe le sigle en entier plutôt que de dire « l'ENAC » : c'est plus long, plus administratif, donc plus drôle, et ça reste compréhensible pour la moitié de la salle qui ne connaît pas le sigle. Le second morceau est très court et sec, il sert de sas : il pose Avignon et les six mois, et il laisse Célestin raconter le reste.
+**Note tournage :** l'escale École devient l'escale ENAC, c'est confirmé, et le carton suit la même décision. Dans l'annonce, on développe le sigle en entier plutôt que de dire « l'ENAC » : c'est plus long, plus administratif, donc plus drôle, et ça reste compréhensible pour la moitié de la salle qui ne connaît pas le sigle. Le second morceau est retiré (voir plus haut).
 
 ---
 

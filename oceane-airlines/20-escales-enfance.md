@@ -385,6 +385,8 @@ Dite par un témoin, face caméra, essoufflé, juste après la coupure de la mus
 
 # 3. Escale Avignon, la rencontre (4:40, 35 secondes)
 
+> ⛔ **Section obsolète (26 septembre).** Célestin ne veut pas de cette anecdote dans le film. Rien de cette section ne s'utilise, ne s'enregistre ni ne s'envoie. Voir le nouveau plan (onglet Vidéo de la page).
+
 **Registre : GAG.** C'est la meilleure histoire du lot, parce qu'elle a un retournement : six mois à se détester, puis dix ans ensemble. Une séquence avec un retournement n'a pas besoin d'être drôle en plus, elle l'est déjà.
 
 **Ce qui la précède :** l'escale ENAC à 4:10, avec Julien, registre mixte. **Ce qui la suit :** l'escale Marignane à 5:15, mixte aussi. Elle est donc le seul gag franc entre 3:15 et 5:50, et elle relance à elle seule tout ce milieu de film.
