@@ -204,6 +204,7 @@ class Navigateur:
         # options supplémentaires du contexte (ex. l'explorateur bloque les service workers,
         # qui échapperaient à son contrôle des requêtes)
         self.options_contexte: dict = {}
+        self.options_lancement: dict = {}  # ex. handle_sigint=False : Ctrl+C géré par l'appelant
         self._dialogues_differes: List[Any] = []
 
     # ------------------------------------------------------------------ ouverture
@@ -482,6 +483,7 @@ class Navigateur:
             "slow_mo": self.config.lenteur or 0,
             "args": args,
             "downloads_path": str(self._dossier_telechargements()),
+            **self.options_lancement,
         }
 
     def _dossier_telechargements(self) -> Path:

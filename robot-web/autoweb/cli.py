@@ -310,11 +310,14 @@ def cmd_explorer(args: argparse.Namespace) -> int:
         cfg.attacher = args.attacher
     nav = Navigateur(cfg, DOSSIER_PROJET, visible=not args.cache)
     nav.options_contexte = {"service_workers": "block"}  # sinon certaines requêtes échapperaient au contrôle
+    nav.options_lancement = {"handle_sigint": False}  # Ctrl+C : c'est l'explorateur qui s'arrête proprement
     print()
     print(f"{S.LIGNE} EXPLORATION DU PORTAIL, SANS RIEN MODIFIER")
     print("   Le robot parcourt les menus, les onglets, les listes et les fiches, et note tout.")
-    print("   Il ne remplit aucun champ, ne clique jamais sur Enregistrer, Supprimer, Créer,")
-    print("   Modifier, Valider, Exporter..., et bloque tout envoi de données vers le portail.")
+    print("   Il ne remplit aucun champ, ne clique que sur des menus, onglets, lignes et boutons de")
+    print("   consultation (jamais Enregistrer, Supprimer, Créer, Modifier, Valider, Oui, OK...), et")
+    print("   bloque tout envoi de données vers le portail.")
+    print("   Ne touchez pas à sa fenêtre pendant l'exploration.")
     print(f"   Limites : {limites.ecrans} écrans, {limites.minutes:g} minutes. Pour arrêter avant : Entrée ici.")
     nav.ouvrir()
     explorateur = Explorateur(nav, dossier, limites, interactif=not args.sans_pause)
@@ -324,7 +327,11 @@ def cmd_explorer(args: argparse.Namespace) -> int:
         nav.fermer()
     r = explorateur.resume()
     print()
-    print(f"{S.OK} Exploration terminée ({r['arret']}).")
+    if r["complet"]:
+        print(f"{S.OK} Exploration terminée ({r['arret']}).")
+    else:
+        print(f"{S.ATTENTION} Exploration arrêtée avant la fin : {r['arret']}.")
+        print("   Ce qui a été vu est gardé ; vous pouvez relancer plus tard (choix 8).")
     print(f"   {r['ecrans']} écran(s) différents vus, {r['essais']} élément(s) essayés, "
           f"{r['bloquees']} envoi(s) de données bloqué(s).")
     print()

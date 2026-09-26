@@ -330,8 +330,13 @@ arrive. C'est cette carte qui nous permettra de preparer ensemble les taches.
 
 CE QU'IL NE FAIT JAMAIS :
    - il ne remplit aucun champ, ne coche rien, ne tape rien ;
-   - il ne clique jamais sur Enregistrer, Supprimer, Creer, Nouveau, Modifier,
-     Valider, Exporter, Imprimer, Deconnexion... ni sur un bouton sans texte ;
+   - il ne clique QUE sur des menus, des onglets, des lignes de tableau et des
+     boutons de consultation (Rechercher, Voir, Detail, Suivant, Retour...) ;
+     jamais sur Enregistrer, Supprimer, Creer, Nouveau, Modifier, Valider,
+     Exporter, Imprimer, Oui, OK, Deconnexion..., ni sur une icone ou un symbole
+     sans texte (×, poubelle), ni dans une fenetre de confirmation ;
+   - il verifie l'element au moment meme du clic : si la page a change entre
+     temps, il ne clique pas ;
    - et si un bouton d'apparence anodine essaie quand meme d'envoyer des donnees
      au portail, le robot BLOQUE l'envoi avant qu'il parte, et le note ;
    - aux questions « Etes-vous sur ? », il repond toujours Annuler.
@@ -373,12 +378,15 @@ E6. A la fin, VOUS VOYEZ :
          l'ouvrir : tapez   0   (quitter le menu), puis
               explorer explorations
          ouvrez le dossier le plus recent, double-cliquez sur carte.html.
-       - carte_a_partager.txt : la STRUCTURE seule (noms d'ecrans, de
-         champs, de boutons, de colonnes), sans valeurs, sans contenu de
-         tableau, sans titre de page, sans adresse de serveur.
+       - carte_a_partager.txt : la STRUCTURE (noms des champs, colonnes,
+         onglets, menus courts, boutons usuels), sans valeurs, sans contenu
+         de tableau, sans titre de page, sans adresse, sans le menu lateral
+         (souvent des noms de dossiers ou de projets).
 
 E7. Relisez carte_a_partager.txt (double-clic : il s'ouvre dans le Bloc-notes).
-    Si un mot vous semble sensible, remplacez-le. Puis, SEULEMENT si c'est
+    Un nom d'onglet, de menu ou de colonne peut quand meme etre un nom de
+    client, de projet ou de personne : si un mot vous semble sensible,
+    remplacez-le. Puis, SEULEMENT si c'est
     permis chez vous, recopiez-le moi ici. Sinon, decrivez-moi simplement
     ce que vous y voyez : ca suffit pour avancer.
     Avec cette carte, je vous propose les taches a automatiser, et comment.

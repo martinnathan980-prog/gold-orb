@@ -132,6 +132,24 @@ def _lire_ligne_windows(pomper: Callable[[], None], interrompu: List[int]) -> st
         _pomper(pomper, interrompu)
 
 
+def vider_clavier() -> None:
+    """Oublie les touches tapées en avance (un second Entrée ne doit rien déclencher)."""
+    if not console_interactive():
+        return
+    try:
+        if sys.platform == "win32":
+            import msvcrt
+
+            while msvcrt.kbhit():
+                msvcrt.getwch()
+        else:
+            import termios
+
+            termios.tcflush(sys.stdin, termios.TCIFLUSH)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def demander_secret(question: str) -> Optional[str]:
     """Demande un mot de passe sans l'afficher. None si pas de terminal."""
     if not console_interactive():
