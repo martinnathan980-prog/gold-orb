@@ -11,15 +11,19 @@
    point jusqu'à l'étiquette : la date en petites capitales, le titre en
    Newsreader. Pas de carte, pas de cadre, pas de compte à rebours.
 
-   La ligne porte le temps, en perspective : les jours proches ont de la
-   place, les mois lointains se resserrent, et le trait s'amincit vers
-   l'horizon. Les mois s'écrivent sur le trait même, un cran marque chaque
-   semaine, un cran plus fin chaque jour tant que la place le permet. Les
-   étiquettes alternent au-dessus et au-dessous ; quand des dates se
-   serrent, elles montent d'une rangée, en escalier, sans jamais se
-   chevaucher ni se faire couper par une tige. Quand la place manque,
-   la ligne s'allonge et défile : à la molette, au doigt, en glissant à la
-   souris, par les flèches posées sur ses bords, qui s'estompent.
+   La ligne porte le temps. Deux intervalles égaux y sont égaux (une
+   réunion chaque semaine, c'est un point tous les mêmes centimètres) ;
+   un intervalle long pèse un peu moins que ses jours, et huit semaines
+   sans rien deviennent une coupure — deux traits obliques et « ≈ 3 mois »
+   — plutôt qu'une longue ligne vide. Le nom de chaque mois pend à côté du
+   cran qui l'ouvre ; un cran marque chaque lundi, un plus fin chaque
+   jour tant que la place le permet. Les étiquettes alternent au-dessus
+   et au-dessous ; quand des dates se serrent, elles montent d'une rangée,
+   sans jamais se chevaucher ni se faire couper par une tige, et près du
+   bord droit elles se posent à gauche de leur tige. La ligne tient dans
+   sa largeur : faute de place, les titres passent sur deux lignes. En
+   dernier recours seulement, elle s'allonge et défile — au doigt, en
+   glissant à la souris, par les flèches posées sur ses bords.
 
    La ligne vit. Elle se trace quand on arrive dessus, les points se posent
    quand elle les atteint, les tiges poussent, les étiquettes montent. Puis
@@ -63,28 +67,32 @@ const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 's
 const JOURS_COURTS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
 const JOUR_MS = 86400000;
 
-/* La ligne, en pixels. `origine` laisse à gauche la place de
-   « Aujourd'hui ». Le temps y est en perspective : un logarithme, presque
-   droit sur les `fuite` premiers jours, de plus en plus serré ensuite. La
-   ligne montre au moins `horizonMin` jours et ne descend pas sous
-   `longueurMin` : en deçà, elle défile. Les étiquettes montent d'au plus
-   `rangeesMax` rangées de chaque côté ; au-delà, la ligne s'allonge. Sous
+/* La ligne, en pixels et en jours. `origine` laisse à gauche la place de
+   « Aujourd'hui ». L'écart dessiné entre deux dates vaut k × (jours) ^
+   `exposant` : k est le plus grand qui fasse tenir la ligne dans sa
+   largeur, sans qu'une semaine dépasse `semaineMax`. `coupure` jours sans
+   rien deviennent une coupure de `largeurCoupure`, avec `abords` jours de
+   chaque côté. Les étiquettes montent d'au plus `rangeesMax` rangées de
+   chaque côté ; en dernier recours, la ligne s'allonge et défile. Sous
    `largeurMin`, elle se dresse en colonne. */
 const LIGNE = {
   origine: 150,
-  fin: 36,
-  longueurMin: 280,
-  fuite: 12,
-  horizonMin: 14,
+  bord: 8,
+  bordPoint: 36,
+  exposant: 0.65,
+  semaineMax: 250,
   ecartPoints: 28,
-  ecartEtiquettes: 22,
-  base: 30,
+  coupure: 56,
+  abords: 7,
+  largeurCoupure: 104,
+  ecartEtiquettes: 11,
+  base: 34,
   ecartRangees: 14,
-  traitPres: 2.6,
-  traitLoin: 0.6,
-  rangeesMax: 3,
-  marge: 18,
-  etendueMin: 124,
+  rangeesMax: 4,
+  reserve: 34,
+  marge: 16,
+  traitPres: 2.4,
+  traitLoin: 0.9,
   largeurMin: 640
 };
 
@@ -316,33 +324,124 @@ function ouvrirFiche(info, declencheur) {
    4. La mise en page de la ligne
    ------------------------------------------------------------------------- */
 
-/* Les rangées d'étiquettes, de droite à gauche. Une étiquette part de sa
-   tige et s'étend à droite : elle monte au-dessus de toute étiquette plus
-   tardive qu'elle recouvrirait, sur son côté. L'escalier descend donc vers
-   la droite, et aucune tige ne traverse jamais une étiquette. On préfère
-   le côté qui alterne, puis la rangée la plus basse. */
-function ranger(xs, largeurs) {
-  const places = [];
-  for (let i = xs.length - 1; i >= 0; i -= 1) {
-    const prefere = i % 2 === 0 ? 'haut' : 'bas';
-    let choix = null;
-    for (const cote of [prefere, prefere === 'haut' ? 'bas' : 'haut']) {
-      let rangee = 0;
-      for (let j = i + 1; j < xs.length; j += 1) {
-        if (places[j].cote === cote && xs[j] < xs[i] + largeurs[i] + LIGNE.ecartEtiquettes) {
-          rangee = Math.max(rangee, places[j].rangee + 1);
+/* L'écart dessiné entre deux dates suit le temps qui les sépare, adouci :
+   deux intervalles égaux restent égaux (des réunions chaque semaine sont
+   également espacées), un intervalle long pèse moins que ses jours. */
+function poids(jours) { return Math.pow(Math.max(0, jours), LIGNE.exposant); }
+
+/* Les tronçons de la ligne, d'aujourd'hui au dernier rendez-vous : un par
+   intervalle entre deux dates. Huit semaines sans rien : on garde une
+   semaine de chaque côté, et le reste devient une coupure. */
+function troncons(jours) {
+  const liste = [];
+  let avant = 0;
+  jours.forEach((j) => {
+    if (j - avant >= LIGNE.coupure) {
+      liste.push({ a: avant + LIGNE.abords, poids: poids(LIGNE.abords) });
+      liste.push({ a: j - LIGNE.abords, coupe: true });
+      liste.push({ a: j, poids: poids(LIGNE.abords), point: true });
+    } else {
+      liste.push({ a: j, poids: poids(j - avant), point: true });
+    }
+    avant = j;
+  });
+  return liste;
+}
+
+/* L'échelle pour un facteur k : les nœuds (un jour, sa position), et la
+   position de chaque rendez-vous. Entre deux nœuds, le temps est droit ;
+   deux points ne se touchent jamais, même le même jour. */
+function echelle(liste, k, ecart) {
+  const noeuds = [{ j: 0, x: LIGNE.origine }];
+  const xs = [];
+  let x = LIGNE.origine;
+  for (const t of liste) {
+    x += t.coupe ? LIGNE.largeurCoupure : Math.max(k * t.poids, t.point ? ecart || LIGNE.ecartPoints : 0);
+    noeuds.push({ j: t.a, x, coupe: !!t.coupe });
+    if (t.point) xs.push(Math.round(x));
+  }
+  return { noeuds, xs };
+}
+
+/* La position d'un jour ; null dans une coupure ou au-delà de la ligne. */
+function versX(noeuds, j) {
+  if (j <= noeuds[0].j) return noeuds[0].x;
+  for (let i = 1; i < noeuds.length; i += 1) {
+    const a = noeuds[i - 1];
+    const b = noeuds[i];
+    if (j > b.j) continue;
+    if (b.coupe && j > a.j && j < b.j) return null;
+    return b.j === a.j ? b.x : a.x + (b.x - a.x) * (j - a.j) / (b.j - a.j);
+  }
+  return null;
+}
+
+/* Au-delà du dernier rendez-vous, la ligne file au pas d'une semaine
+   ordinaire, jusqu'au bord. */
+function prolonger(noeuds, k, jusqua) {
+  const dernier = noeuds[noeuds.length - 1];
+  const pas = Math.max(2, k * poids(7) / 7);
+  if (jusqua > dernier.x) noeuds.push({ j: dernier.j + (jusqua - dernier.x) / pas, x: jusqua });
+  return noeuds;
+}
+
+/* Les côtés et les rangées des étiquettes. Une étiquette part de sa tige
+   vers la droite, ou vers la gauche (ancre « d ») quand elle déborderait.
+   Deux règles : deux étiquettes d'une même rangée ne se touchent pas, et
+   une tige ne traverse jamais une étiquette — celle qui la couvrirait
+   monte d'une rangée. On essaie toutes les façons de répartir les
+   rendez-vous de part et d'autre (le premier toujours au-dessus) et l'on
+   garde la plus basse, à hauteur égale celle qui alterne le mieux. */
+function ranger(xs, mesure, ancres) {
+  const n = xs.length;
+  const { largeurs, hauteurs } = mesure;
+  const e = LIGNE.ecartEtiquettes;
+  const zones = xs.map((x, i) => (ancres[i] === 'g' ? [x - e, x + largeurs[i] + e] : [x - largeurs[i] - e, x + e]));
+  /* La tige de j passe dans la zone de l'étiquette i. */
+  const traverse = (i, j) => xs[j] > zones[i][0] && xs[j] < zones[i][1];
+  const touche = (i, j) => zones[i][0] < zones[j][1] && zones[j][0] < zones[i][1];
+  const plusHaute = Math.max(...hauteurs);
+  const alterne = Array.from({ length: n }, (_, i) => i % 2).reduce((m, c, i) => m | (c << i), 0);
+  const masques = n <= 9 ? Array.from({ length: 1 << Math.max(0, n - 1) }, (_, m) => m << 1) : [alterne];
+  let meilleur = null;
+  for (const masque of masques) {
+    const cote = (i) => (masque >> i) & 1;
+    const rangees = new Array(n).fill(0);
+    let possible = true;
+    for (let change = true; change && possible;) {
+      change = false;
+      for (let i = 0; i < n && possible; i += 1) {
+        for (let j = 0; j < n; j += 1) {
+          if (i === j || cote(i) !== cote(j)) continue;
+          if (traverse(i, j)) {
+            if (rangees[i] <= rangees[j]) { rangees[i] = rangees[j] + 1; change = true; }
+          } else if (i > j && !traverse(j, i) && touche(i, j) && rangees[i] === rangees[j]) {
+            rangees[i] += 1;
+            change = true;
+          }
+          if (rangees[i] >= LIGNE.rangeesMax) { possible = false; break; }
         }
       }
-      if (!choix || rangee < choix.rangee) choix = { cote, rangee };
     }
-    places[i] = choix;
+    if (!possible) continue;
+    /* La hauteur de chaque rangée : la plus haute de ses étiquettes. Un
+       côté vide compte pour une rangée : on préfère deux côtés d'une
+       rangée à un seul de deux. */
+    const hautes = [[], []];
+    rangees.forEach((r, i) => { hautes[cote(i)][r] = Math.max(hautes[cote(i)][r] || 0, hauteurs[i]); });
+    const etendue = (h) => (h.length ? LIGNE.base + h.reduce((s, v) => s + (v || 0) + LIGNE.ecartRangees, 0) - LIGNE.ecartRangees : 0);
+    let cout = [0, 1].reduce((s, c) => s + Math.max(etendue(hautes[c]), LIGNE.base + plusHaute), 0);
+    for (let i = 1; i < n; i += 1) if (cote(i) === cote(i - 1)) cout += 6;
+    if (!meilleur || cout < meilleur.cout) {
+      meilleur = { cout, hautes, etendues: hautes.map(etendue), places: rangees.map((r, i) => ({ cote: cote(i) ? 'bas' : 'haut', rangee: r })) };
+    }
   }
-  return places;
+  return meilleur;
 }
 
 /* La largeur qu'occupe vraiment une étiquette : jusqu'au bout de son
-   texte le plus long (un titre équilibré sur deux lignes laisse de l'air à
-   droite de sa boîte), ou de sa barre d'édition. */
+   texte le plus long (un titre sur deux lignes laisse de l'air à droite
+   de sa boîte), ou de sa barre d'édition. */
 function largeurUtile(li) {
   const gauche = li.getBoundingClientRect().left;
   let droite = gauche + 13;
@@ -354,17 +453,84 @@ function largeurUtile(li) {
   return Math.ceil(Math.min(li.offsetWidth, droite - gauche));
 }
 
-/* Le nom d'un mois s'écrit sur la ligne, dans le premier creux assez
-   large entre deux points ; sinon en abrégé ; sinon pas du tout (les
-   étiquettes disent déjà le mois). */
-function creux(debut, fin, obstacles, largeur) {
-  let curseur = debut;
-  const tries = obstacles.filter(([a, b]) => b > debut && a < fin).sort((p, q) => p[0] - q[0]);
-  for (const [a, b] of tries) {
-    if (a - curseur >= largeur) return curseur;
-    curseur = Math.max(curseur, b);
+/* Les étiquettes mesurées dans une forme : large (le titre sur une ligne
+   tant qu'il tient) ou serrée (sur deux lignes, pour qu'il en tienne plus
+   côte à côte). */
+function mesurer(racine, items, serre) {
+  racine.classList.toggle('agenda--serre', serre);
+  items.forEach((it) => {
+    it.li.classList.remove('agenda__rdv--droite');
+    it.li.style.removeProperty('inline-size');
+  });
+  return {
+    serre,
+    largeurs: items.map((it) => largeurUtile(it.li) + 2),
+    hauteurs: items.map((it) => it.li.offsetHeight)
+  };
+}
+
+/* Une mise en page pour un facteur k dans la largeur, ou null si elle
+   n'y tient pas. */
+function essayer(liste, k, mesure, largeur) {
+  const { noeuds, xs } = echelle(liste, k);
+  if (xs[xs.length - 1] > largeur - LIGNE.bordPoint) return null;
+  const ancres = xs.map((x, i) => (x + mesure.largeurs[i] <= largeur - LIGNE.bord ? 'g' : 'd'));
+  if (xs.some((x, i) => ancres[i] === 'd' && x - mesure.largeurs[i] < LIGNE.origine)) return null;
+  const rang = ranger(xs, mesure, ancres);
+  return rang ? Object.assign(rang, { noeuds, xs, ancres, k, mesure }) : null;
+}
+
+/* Le plus grand facteur qui garde le dernier point dans la largeur, sans
+   qu'une semaine dépasse `semaineMax` : la ligne remplit la place, sans
+   étirer quelques rendez-vous proches sur tout l'écran. */
+function facteurMax(liste, largeur) {
+  const plafond = LIGNE.semaineMax / poids(7);
+  const fin = (k) => { const { xs } = echelle(liste, k); return xs[xs.length - 1]; };
+  if (fin(plafond) <= largeur - LIGNE.bordPoint) return plafond;
+  let bas = 0;
+  let haut = plafond;
+  for (let i = 0; i < 24; i += 1) {
+    const milieu = (bas + haut) / 2;
+    if (fin(milieu) <= largeur - LIGNE.bordPoint) bas = milieu; else haut = milieu;
   }
-  return fin - curseur >= largeur ? curseur : null;
+  return bas;
+}
+
+/* La meilleure mise en page dans la largeur : on essaie les deux formes
+   d'étiquettes et quelques resserrements de l'échelle, et l'on garde la
+   plus basse — une forme serrée ou une échelle resserrée coûtent un peu.
+   Rien ne tient : la ligne s'allonge et défile, en dernier recours. */
+function choisir(liste, largeur, mesures) {
+  const kMax = facteurMax(liste, largeur);
+  let meilleur = null;
+  for (const mesure of mesures) {
+    for (const f of [1, 0.86, 0.72]) {
+      const essai = kMax > 0 ? essayer(liste, kMax * f, mesure, largeur) : null;
+      if (!essai) continue;
+      const cout = essai.cout + (mesure.serre ? 40 : 0) + (1 - f) * 220;
+      if (!meilleur || cout < meilleur.total) meilleur = Object.assign(essai, { total: cout, largeur });
+    }
+  }
+  if (meilleur) return meilleur;
+  /* La ligne défile : les étiquettes larges, à droite de leur tige ;
+     l'échelle et l'écart entre deux points s'étirent ensemble jusqu'à ce
+     qu'elles tiennent sur deux rangées de chaque côté (quatre au plus).
+     Au pire, un point par largeur d'étiquette : tout tient sur une. */
+  const mesure = mesures[0];
+  const sansFin = mesure.largeurs.map(() => 'g');
+  const poser = (k, ecart) => {
+    const { noeuds, xs } = echelle(liste, k, ecart);
+    const rang = ranger(xs, mesure, sansFin);
+    if (!rang) return null;
+    const longueur = Math.max(largeur, ...xs.map((x, i) => x + mesure.largeurs[i] + LIGNE.bord));
+    return Object.assign(rang, { noeuds, xs, ancres: sansFin, k, mesure, largeur: longueur });
+  };
+  let secours = null;
+  for (let k = Math.max(kMax, 40 / poids(7)), ecart = LIGNE.ecartPoints, essai = 0; essai < 16; essai += 1, k *= 1.2, ecart *= 1.2) {
+    secours = poser(k, ecart) || secours;
+    if (secours && secours.places.every((p) => p.rangee < 2)) break;
+  }
+  return secours || poser(Math.max(kMax, 40 / poids(7)), Math.max(...mesure.largeurs) + 2 * LIGNE.ecartEtiquettes + 2);
 }
 
 /**
@@ -385,8 +551,10 @@ function disposer(racine) {
   const debut = aujourdhui();
 
   if (colonne) {
+    racine.classList.remove('agenda--serre');
     toile.style.removeProperty('inline-size');
     toile.style.removeProperty('block-size');
+    toile.style.removeProperty('translate');
     trace.replaceChildren();
     mois.replaceChildren();
     /* L'écart entre deux rendez-vous suit, de loin, le temps qui les
@@ -403,7 +571,7 @@ function disposer(racine) {
       } else {
         delete it.li.dataset.mois;
       }
-      it.li.classList.remove('agenda__rdv--haut', 'agenda__rdv--bas');
+      it.li.classList.remove('agenda__rdv--haut', 'agenda__rdv--bas', 'agenda__rdv--droite');
       precedent = d;
     });
     /* Le signal descend le rail, du point d'aujourd'hui au prochain. */
@@ -420,52 +588,32 @@ function disposer(racine) {
     return;
   }
 
-  /* Les étiquettes prennent leur forme de ligne avant d'être mesurées. */
-  const largeurs = items.map((it) => largeurUtile(it.li));
-  const hauteurs = items.map((it) => it.li.offsetHeight);
-  const jours = items.map((it) => Math.max(0, ((it.info.date || debut) - debut) / JOUR_MS));
-  const dernier = items.length - 1;
-  /* Le temps en perspective : le proche en grand, le lointain qui se
-     resserre, comme une route qui fuit vers l'horizon. La longueur est
-     la plus grande qui fasse tenir la dernière étiquette. */
-  const horizon = Math.max(jours[dernier] || 0, LIGNE.horizonMin);
-  const fuite = (j) => Math.log1p(j / LIGNE.fuite) / Math.log1p(horizon / LIGNE.fuite);
-  let longueur = Math.max(LIGNE.longueurMin, largeur - LIGNE.origine - (largeurs[dernier] || 0) - LIGNE.fin);
+  /* Les jours d'ici chaque rendez-vous (arrondis : un changement d'heure
+     ne décale pas un point). */
+  const jours = items.map((it) => Math.max(0, Math.round(((it.info.date || debut) - debut) / JOUR_MS)));
+  const liste = troncons(jours);
+  const large = mesurer(racine, items, false);
+  const mesures = [large];
+  /* La forme serrée n'est mesurée que si la large ne tient pas sur une
+     rangée de chaque côté. */
+  const direct = choisir(liste, largeur, mesures);
+  if (!direct || direct.largeur > largeur || direct.places.some((p) => p.rangee > 0)) mesures.push(mesurer(racine, items, true));
+  const mise = mesures.length > 1 ? choisir(liste, largeur, mesures) : direct;
+  if (!mise) return;
+  racine.classList.toggle('agenda--serre', mise.mesure.serre);
+  const { xs, places, ancres, etendues, hautes } = mise;
+  const { largeurs, hauteurs } = mise.mesure;
 
-  /* L'échelle, puis les rangées ; trop de rangées : la ligne s'allonge et
-     on recommence. */
-  let xs = [];
-  let places = [];
-  for (let essai = 0; essai < 14; essai += 1) {
-    xs = [];
-    jours.forEach((j, i) => {
-      const x = LIGNE.origine + fuite(j) * longueur;
-      xs.push(Math.round(Math.max(x, i ? xs[i - 1] + LIGNE.ecartPoints : LIGNE.origine + LIGNE.ecartPoints)));
-    });
-    places = ranger(xs, largeurs);
-    if (places.every((p) => p.rangee < LIGNE.rangeesMax)) break;
-    longueur *= 1.25;
-  }
-  const versX = (d) => LIGNE.origine + fuite(Math.max(0, (d - debut) / JOUR_MS)) * longueur;
-
-  /* La hauteur de chaque rangée : la plus haute de ses étiquettes. */
-  const rangees = { haut: [], bas: [] };
-  places.forEach((p, i) => {
-    rangees[p.cote][p.rangee] = Math.max(rangees[p.cote][p.rangee] || 0, hauteurs[i]);
-  });
+  /* Les rangées, de l'axe vers l'extérieur ; de chaque côté, au moins un
+     peu d'air. */
   const decalages = { haut: [], bas: [] };
-  for (const cote of ['haut', 'bas']) {
+  ['haut', 'bas'].forEach((cote, c) => {
     let d = LIGNE.base;
-    for (let k = 0; k < rangees[cote].length; k += 1) {
-      decalages[cote][k] = d;
-      d += (rangees[cote][k] || 0) + LIGNE.ecartRangees;
-    }
-  }
-  const etendue = (cote) => (rangees[cote].length ? decalages[cote][rangees[cote].length - 1] + rangees[cote][rangees[cote].length - 1] : 24);
-  /* De chaque côté, au moins la place de l'aperçu d'un rendez-vous. */
-  const axeY = Math.round(LIGNE.marge + Math.max(etendue('haut'), LIGNE.etendueMin));
-  const hauteur = Math.round(axeY + Math.max(etendue('bas'), LIGNE.etendueMin) + LIGNE.marge);
-  const toileL = Math.max(largeur, Math.max(0, ...xs.map((x, i) => x + largeurs[i])) + LIGNE.fin);
+    hautes[c].forEach((h, r) => { decalages[cote][r] = d; d += (h || 0) + LIGNE.ecartRangees; });
+  });
+  const axeY = Math.round(LIGNE.marge + Math.max(etendues[0], LIGNE.reserve));
+  const hauteur = Math.round(axeY + Math.max(etendues[1], LIGNE.reserve) + LIGNE.marge);
+  const toileL = Math.round(mise.largeur);
   toile.style.inlineSize = toileL + 'px';
   toile.style.blockSize = hauteur + 'px';
   scene.style.setProperty('--axe-y', axeY + 'px');
@@ -478,65 +626,116 @@ function disposer(racine) {
     const haut = p.cote === 'haut'
       ? axeY - decalages.haut[p.rangee] - hauteurs[i]
       : axeY + decalages.bas[p.rangee];
+    const droite = ancres[i] === 'd';
     it.li.classList.toggle('agenda__rdv--haut', p.cote === 'haut');
     it.li.classList.toggle('agenda__rdv--bas', p.cote === 'bas');
+    it.li.classList.toggle('agenda__rdv--droite', droite);
     delete it.li.dataset.mois;
     it.li.style.removeProperty('--ecart');
-    it.li.style.left = xs[i] + 'px';
+    /* La boîte épouse le texte : le contour du focus aussi. */
+    it.li.style.inlineSize = largeurs[i] + 'px';
+    it.li.style.left = (droite ? xs[i] - largeurs[i] : xs[i]) + 'px';
     it.li.style.top = Math.round(haut) + 'px';
     it.li.style.setProperty('--dy', Math.round(axeY - haut) + 'px');
     /* Le point se pose quand le trait l'atteint. */
     it.li.style.setProperty('--retard', Math.round(Math.min(1, xs[i] / Math.max(largeur, 1)) * 1100) + 'ms');
   });
 
-  dessinerTrace(etat, { debut, versX, xs, axeY, toileL, hauteur });
-  etat.mise = { xs, axeY, x0: LIGNE.origine, places };
+  /* Les traits d'un pixel tombent sur un pixel entier : la ligne se cale
+     sur la grille de l'écran. */
+  const ratio = window.devicePixelRatio || 1;
+  const gauche = etat.defilement.getBoundingClientRect().left * ratio;
+  const reste = (gauche - Math.floor(gauche)) / ratio;
+  if (reste > 0.01) toile.style.translate = (-reste).toFixed(3) + 'px 0';
+  else toile.style.removeProperty('translate');
+
+  const noeuds = prolonger(mise.noeuds, mise.k, toileL - 4);
+  dessinerTrace(etat, { debut, noeuds, xs, places, axeY, toileL, hauteur });
+  etat.mise = { xs, axeY, x0: LIGNE.origine, places, ancres };
   etat.signal.style.setProperty('--course', Math.max(0, (xs[0] || LIGNE.origine) - LIGNE.origine) + 'px');
   etat.signal.style.setProperty('--course-y', '0px');
   majBords(racine);
   if (etat.actif !== null) placerApercu(racine);
 }
 
-/* Le trait, les crans et les mois : décoratifs, redessinés à chaque mise
-   en page. Le trait s'interrompt là où un mois s'écrit. */
+/* Le trait, les crans, les mois, les coupures : décoratifs, redessinés à
+   chaque mise en page. Le nom d'un mois pend à côté du cran qui l'ouvre,
+   sous la ligne (au-dessus si une tige passe) : il ne s'éloigne jamais de
+   son mois, et le trait reste entier. En abrégé s'il manque de place, pas
+   du tout s'il n'y en a pas. */
 function dessinerTrace(etat, g) {
-  const { debut, versX, xs, axeY, toileL, hauteur } = g;
+  const { debut, noeuds, xs, places, axeY, toileL, hauteur } = g;
   const finTrait = toileL - 4;
-  const obstacles = [[LIGNE.origine - 12, LIGNE.origine + 14], ...xs.map((x) => [x - 13, x + 13])];
-
-  /* Les mois : le nom mesuré une fois posé, puis glissé dans son creux. */
-  const noms = [];
-  const crans = [];
+  const dernierJour = Math.floor(noeuds[noeuds.length - 1].j);
+  const obstacles = [[LIGNE.origine - 14, LIGNE.origine + 14], ...xs.map((x) => [x - 14, x + 14])];
   const trous = [];
-  for (let d = new Date(debut.getFullYear(), debut.getMonth(), 1); versX(d) < finTrait; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
-    const suivant = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-    const a = Math.max(versX(d), LIGNE.origine);
-    const b = Math.min(versX(suivant), finTrait);
-    if (d > debut) crans.push(Math.round(a));
-    const long = MOIS_LONGS[d.getMonth()] + (d.getMonth() === 0 || noms.length === 0 ? ' ' + d.getFullYear() : '');
-    noms.push({ long, court: MOIS[d.getMonth()], a: a + (d > debut ? 8 : 16), b: b - 8 });
-  }
-  const spans = noms.map((n) => el('span', { class: 'agenda__mois' }, n.long));
-  monter(etat.mois, spans);
-  noms.forEach((n, i) => {
-    const s = spans[i];
-    let largeur = s.offsetWidth;
-    let x = creux(n.a, n.b, obstacles, largeur + 10);
-    if (x === null) {
-      s.textContent = n.court;
-      largeur = s.offsetWidth;
-      x = creux(n.a, n.b, obstacles, largeur + 10);
-    }
-    if (x === null) { s.remove(); return; }
-    s.style.left = Math.round(x + 5) + 'px';
+  const textes = [];
+  const traits = [];
+
+  /* Les coupures : deux traits obliques et, entre eux, le temps sauté. */
+  for (let i = 1; i < noeuds.length; i += 1) {
+    if (!noeuds[i].coupe) continue;
+    const a = noeuds[i - 1];
+    const b = noeuds[i];
+    const saute = b.j - a.j;
+    const s = el('span', { class: 'agenda__coupure' },
+      '≈ ' + (saute < 63 ? Math.round(saute / 7) + ' semaines' : Math.round(saute / 30.44) + ' mois'));
+    s.style.left = Math.round((a.x + b.x) / 2) + 'px';
     s.style.top = axeY + 'px';
-    trous.push([x, x + largeur + 10]);
-    obstacles.push([x, x + largeur + 10]);
+    textes.push(s);
+    trous.push([a.x + 4, b.x - 4]);
+    obstacles.push([a.x, b.x]);
+    for (const x of [a.x + 8, b.x - 8]) traits.push('M' + (x - 3).toFixed(1) + ' ' + (axeY + 6) + 'L' + (x + 3).toFixed(1) + ' ' + (axeY - 6));
+  }
+
+  /* Les mois : un cran à chaque premier du mois ; le nom, mesuré en long
+     et en abrégé, pend du côté où aucune tige ne le traverse. L'année
+     sur le premier nom et sur janvier. */
+  const debuts = [];
+  for (let d = new Date(debut.getFullYear(), debut.getMonth() + 1, 1); ; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
+    const j = Math.round((d - debut) / JOUR_MS);
+    if (j > dernierJour) break;
+    const x = versX(noeuds, j);
+    if (x !== null && x < finTrait - 8) debuts.push({ d, x: Math.round(x) });
+  }
+  const noms = debuts.map((m, i) => {
+    const annee = i === 0 || m.d.getMonth() === 0 ? ' ' + m.d.getFullYear() : '';
+    const iso = m.d.getFullYear() + '-' + deux(m.d.getMonth() + 1) + '-01';
+    return [el('span', { class: 'agenda__mois', dataset: { debut: iso } }, MOIS_LONGS[m.d.getMonth()] + annee),
+      el('span', { class: 'agenda__mois', dataset: { debut: iso } }, MOIS[m.d.getMonth()])];
+  });
+  monter(etat.mois, textes, noms.flat());
+  const mesures = noms.map(([l, c]) => [l.offsetWidth, c.offsetWidth]);
+  const hauteurNom = noms.length ? noms[0][0].offsetHeight : 0;
+  /* Ce qui barre un nom, de chaque côté : les tiges de ce côté, les
+     coupures, les noms déjà posés. */
+  const barrages = { bas: obstacles.slice(xs.length + 1), haut: obstacles.slice(xs.length + 1) };
+  xs.forEach((x, i) => barrages[places[i].cote].push([x - 5, x + 5]));
+  const crans = [];
+  debuts.forEach((m, i) => {
+    const [long, court] = noms[i];
+    let garde = null;
+    for (const [s, l] of [[long, mesures[i][0]], [court, mesures[i][1]]]) {
+      for (const cote of ['bas', 'haut']) {
+        const a = m.x - 3;
+        const b = m.x + 6 + l + 8;
+        if (!garde && b < finTrait && !barrages[cote].some(([o1, o2]) => a < o2 && b > o1)) garde = { s, l, cote };
+      }
+    }
+    for (const s of [long, court]) if (!garde || s !== garde.s) s.remove();
+    const sousPoint = obstacles.slice(1, xs.length + 1).some(([o1, o2]) => m.x > o1 && m.x < o2);
+    if (!garde) { if (!sousPoint) crans.push('M' + (m.x + 0.5) + ' ' + (axeY - 8) + 'V' + (axeY + 8)); return; }
+    const bas = garde.cote === 'bas';
+    garde.s.style.left = (m.x + 6) + 'px';
+    garde.s.style.top = (bas ? axeY + 11 : axeY - 11 - hauteurNom) + 'px';
+    garde.s.classList.add('agenda__mois--' + garde.cote);
+    barrages[garde.cote].push([m.x - 3, m.x + 6 + garde.l + 8]);
+    /* Le cran file jusqu'au nom, comme un fanion. */
+    crans.push('M' + (m.x + 0.5) + ' ' + (axeY + (bas ? -6 : 6)) + 'V' + (bas ? axeY + 11 + hauteurNom : axeY - 11 - hauteurNom));
   });
 
-  /* Le trait, en segments autour des noms de mois. Il s'amincit vers
-     l'horizon — la perspective encore : épais d'aujourd'hui, un fil au
-     loin. */
+  /* Le trait, en segments autour des coupures. Il s'amincit
+     vers l'horizon et s'éteint après le dernier rendez-vous. */
   const epaisseur = (x) => LIGNE.traitPres - (LIGNE.traitPres - LIGNE.traitLoin) * Math.min(1, Math.max(0, (x - LIGNE.origine) / Math.max(1, finTrait - LIGNE.origine)));
   const segment = (x1, x2) => {
     const e1 = epaisseur(x1) / 2;
@@ -553,26 +752,27 @@ function dessinerTrace(etat, g) {
   if (depart < finTrait) chemin += segment(depart, finTrait);
 
   /* Les crans : un par lundi, un plus fin par jour tant que les jours ont
-     de la place — ils se resserrent, puis s'effacent, vers l'horizon.
-     Jamais sous un nom de mois ni sous un point. */
+     de la place. Jamais sous un point ni dans une coupure. */
   const libre = (x) => !obstacles.some(([x1, x2]) => x > x1 - 2 && x < x2 + 2);
   let semaines = '';
   let journees = '';
-  for (let j = 1; j < 800; j += 1) {
+  for (let j = 1; j <= dernierJour; j += 1) {
     const d = new Date(debut.getFullYear(), debut.getMonth(), debut.getDate() + j);
-    const x = versX(d);
+    const x = versX(noeuds, j);
+    if (x === null) continue;
     if (x >= finTrait) break;
-    const veille = versX(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1));
-    const semaine = versX(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7));
     if (!libre(x) || d.getDate() === 1) continue;
+    const veille = versX(noeuds, j - 1);
+    const semaine = versX(noeuds, j - 7);
     const xr = Math.round(x) + 0.5;
-    if (d.getDay() === 1 && x - semaine >= 14) semaines += 'M' + xr + ' ' + (axeY - 5.5) + 'V' + (axeY + 5.5);
-    else if (d.getDay() !== 1 && x - veille >= 13) journees += 'M' + xr + ' ' + (axeY - 3.5) + 'V' + (axeY + 3.5);
+    if (d.getDay() === 1 && (semaine === null || x - semaine >= 14)) semaines += 'M' + xr + ' ' + (axeY - 5.5) + 'V' + (axeY + 5.5);
+    else if (d.getDay() !== 1 && veille !== null && x - veille >= 13) journees += 'M' + xr + ' ' + (axeY - 3.5) + 'V' + (axeY + 3.5);
   }
-  const mensuels = crans.filter(libre).map((x) => 'M' + (x + 0.5) + ' ' + (axeY - 10) + 'V' + (axeY + 10)).join('');
+  const mensuels = crans.join('');
 
   const id = 'agenda-degrade-' + etat.id;
-  const plein = Math.min(0.97, Math.max(0.55, ((xs[xs.length - 1] || LIGNE.origine) - LIGNE.origine) / Math.max(1, finTrait - LIGNE.origine) + 0.1));
+  const dernier = xs[xs.length - 1] || LIGNE.origine;
+  const plein = Math.min(0.98, Math.max(0.3, (dernier + 24 - LIGNE.origine) / Math.max(1, finTrait - LIGNE.origine)));
   etat.trace.replaceChildren(svg('svg', {
     class: 'agenda__trace-dessin', width: toileL, height: hauteur, 'aria-hidden': 'true', focusable: 'false'
   },
@@ -584,6 +784,7 @@ function dessinerTrace(etat, g) {
   journees ? svg('path', { d: journees, class: 'agenda__cran agenda__cran--jour', stroke: 'url(#' + id + ')' }) : null,
   semaines ? svg('path', { d: semaines, class: 'agenda__cran agenda__cran--semaine', stroke: 'url(#' + id + ')' }) : null,
   mensuels ? svg('path', { d: mensuels, class: 'agenda__cran agenda__cran--mois', stroke: 'url(#' + id + ')' }) : null,
+  traits.length ? svg('path', { d: traits.join(''), class: 'agenda__cran agenda__cran--coupure' }) : null,
   chemin ? svg('path', { d: chemin, class: 'agenda__axe', fill: 'url(#' + id + ')' }) : null));
 }
 
@@ -618,8 +819,11 @@ function allumer(racine, i) {
   placerApercu(racine);
 }
 
-/* L'aperçu se pose de l'autre côté de la ligne, sous le point si
-   l'étiquette est au-dessus, et reste dans la largeur du bloc. */
+/* L'aperçu se pose à côté de l'étiquette, comme si elle se dépliait : à
+   sa droite, sinon à sa gauche, toujours au-delà du contour du focus.
+   Sans place d'un côté ni de l'autre, il passe de l'autre côté de la
+   ligne, relié au point par un fil. Il peut déborder de la ligne vers le
+   bas, jamais par-dessus le titre de la section. */
 function placerApercu(racine) {
   const etat = ETATS.get(racine);
   if (!etat || etat.actif === null) return;
@@ -628,28 +832,31 @@ function placerApercu(racine) {
   const x = etat.mise.xs[rang] - etat.defilement.scrollLeft;
   const largeur = etat.scene.clientWidth;
   if (x < 0 || x > largeur) { etat.apercu.classList.remove('est-visible'); return; }
-  const li = etat.items[rang].li;
+  const cadre = etat.scene.getBoundingClientRect();
+  const boite = etat.items[rang].bouton.getBoundingClientRect();
+  const g = boite.left - cadre.left;
+  const d = boite.right - cadre.left;
   const haut = etat.mise.places[rang].cote === 'haut';
   const l = etat.apercu.offsetWidth;
-  /* À côté de l'étiquette, comme si elle se dépliait : à sa droite, ou à
-     gauche de sa tige. Sans place d'un côté ni de l'autre, de l'autre
-     côté de la ligne, relié au point par un fil. */
-  let mode = 'droite';
-  let gauche = x + largeurUtile(li) + 16;
-  if (gauche + l > largeur - 4) { mode = 'gauche'; gauche = x - 16 - l; }
-  if (gauche < 4) { mode = haut ? 'dessous' : 'dessus'; gauche = Math.min(Math.max(x - 22, 0), Math.max(0, largeur - l)); }
-  for (const m of ['droite', 'gauche', 'dessous', 'dessus']) etat.apercu.classList.toggle('agenda__apercu--' + m, m === mode);
   const h = etat.apercu.offsetHeight;
-  const hToile = etat.toile.offsetHeight;
+  const ecart = 16;
+  let mode = 'droite';
+  let gauche = d + ecart;
+  if (gauche + l > largeur - 4) { mode = 'gauche'; gauche = g - ecart - l; }
+  if (gauche < 4) { mode = haut ? 'dessous' : 'dessus'; gauche = Math.min(Math.max(x - 22, 0), Math.max(0, largeur - l)); }
   let top;
   if (mode === 'dessous') top = etat.mise.axeY + 22;
-  else if (mode === 'dessus') top = etat.mise.axeY - 22 - h;
-  else {
-    /* Aligné sur l'étiquette, sans passer au-dessus de la ligne : ce qui
-       dépasse descend plutôt que de couvrir le titre de la section. */
-    top = haut ? li.offsetTop + li.offsetHeight - h : li.offsetTop;
-    top = Math.max(0, Math.min(top, hToile - h));
+  else if (mode === 'dessus') {
+    top = etat.mise.axeY - 22 - h;
+    if (top < 0) { mode = 'dessous'; top = etat.mise.axeY + 22; }
+  } else {
+    /* Aligné sur l'étiquette : par le bas au-dessus de la ligne (s'il y
+       a la place), par le haut au-dessous. */
+    const t = boite.top - cadre.top;
+    const b = boite.bottom - cadre.top;
+    top = haut && b - h >= 0 ? b - h : Math.max(0, t);
   }
+  for (const m of ['droite', 'gauche', 'dessous', 'dessus']) etat.apercu.classList.toggle('agenda__apercu--' + m, m === mode);
   etat.apercu.style.left = Math.round(gauche) + 'px';
   etat.apercu.style.top = Math.round(top) + 'px';
   etat.apercu.style.setProperty('--pointe', Math.round(x - gauche) + 'px');
@@ -668,14 +875,16 @@ function majBords(racine) {
 }
 
 /* Fait voir le rendez-vous i dans la ligne qui défile, sans faire
-   bouger la page. */
+   bouger la page : son point et toute son étiquette. */
 function montrer(etat, i) {
   if (!etat.mise) return;
   const d = etat.defilement;
-  const x = etat.mise.xs[i];
-  const l = etat.items[i].li.offsetWidth;
-  if (x - 40 < d.scrollLeft) d.scrollTo({ left: Math.max(0, x - 60), behavior: etat.calme ? 'auto' : 'smooth' });
-  else if (x + l + 40 > d.scrollLeft + d.clientWidth) d.scrollTo({ left: x + l + 60 - d.clientWidth, behavior: etat.calme ? 'auto' : 'smooth' });
+  const li = etat.items[i].li;
+  const debut = Math.min(etat.mise.xs[i], li.offsetLeft) - 48;
+  const fin = Math.max(etat.mise.xs[i], li.offsetLeft + li.offsetWidth) + 48;
+  const comment = etat.calme ? 'auto' : 'smooth';
+  if (debut < d.scrollLeft) d.scrollTo({ left: Math.max(0, debut), behavior: comment });
+  else if (fin > d.scrollLeft + d.clientWidth) d.scrollTo({ left: fin - d.clientWidth, behavior: comment });
 }
 
 function brancher(racine) {
@@ -791,22 +1000,27 @@ function brancher(racine) {
 }
 
 /* La ligne se trace la première fois qu'elle entre à l'écran, et ses
-   battements ne tournent que tant qu'elle y est. Sans observateur, ou si
-   le système demande moins d'animations, tout est là d'emblée et rien ne
-   bat. */
+   battements ne tournent que tant qu'elle y est. Il suffit qu'elle
+   paraisse au bas de l'écran — quelle que soit sa hauteur, même agrandie
+   quatre fois. Par sécurité, elle se montre aussi dès qu'on y entre au
+   clavier, et avant une impression. Sans observateur, ou si le système
+   demande moins d'animations, tout est là d'emblée et rien ne bat. */
 function brancherArrivee(racine) {
   const etat = ETATS.get(racine);
   if (etat.calme || typeof IntersectionObserver !== 'function') return;
   racine.classList.add('agenda--anime');
+  const montrerTout = () => {
+    if (!racine.classList.contains('agenda--vu')) requestAnimationFrame(() => racine.classList.add('agenda--vu'));
+  };
   const obs = new IntersectionObserver((vus) => {
     for (const v of vus) {
-      if (v.isIntersecting && !racine.classList.contains('agenda--vu')) {
-        requestAnimationFrame(() => racine.classList.add('agenda--vu'));
-      }
+      if (v.isIntersecting) montrerTout();
       racine.classList.toggle('agenda--en-vue', v.isIntersecting);
     }
-  }, { threshold: 0.2 });
+  }, { threshold: 0, rootMargin: '0px 0px -12% 0px' });
   obs.observe(racine);
+  racine.addEventListener('focusin', montrerTout);
+  if (typeof window !== 'undefined') window.addEventListener('beforeprint', () => racine.classList.add('agenda--vu'));
 }
 
 /* -------------------------------------------------------------------------
