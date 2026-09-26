@@ -2415,7 +2415,10 @@ async function reinitialiser(pg) {
   }));
   verifier('sous le graphique, la légende des jalons : « Jalons », puis chaque numéro, son texte, sa semaine et son périmètre, atteignable au clavier',
     legendeJ.visible && legendeJ.mot === 'Jalons' && legendeJ.entrees.length === 5 &&
-    legendeJ.entrees.every((e, i) => e.num === String(i + 1) && e.idx === String(i) && e.mot.length > 0 && /^S\d{1,2} · \S+ \d{4}/.test(e.quand) && e.focusable && !e.hors) &&
+    legendeJ.entrees.every((e, i) => e.num === String(i + 1) && e.idx === String(i) && e.mot.length > 0 && /^S\d{1,2} · \S+ \d{4}/.test(e.quand) && e.focusable) &&
+    /* Sous la définition électrique, les diffusions TO — la table outil,
+       concept harnais — restent dessinées, en retrait ; les autres comptent. */
+    legendeJ.entrees.every(e => e.hors === /TO /.test(e.mot)) &&
     legendeJ.entrees[0].mot === 'Solde FWD' && legendeJ.entrees[1].quand === 'S2 · janv. 2027 · BASE/OPTION', JSON.stringify(legendeJ));
   const grilleJ = await p.evaluate(() => {
     const g = document.querySelector('#legende-jalons .legende-jalons-grille');
@@ -3016,10 +3019,11 @@ async function reinitialiser(pg) {
   }
 
   section('Échéances en jours');
-  /* Un jalon se donne à la semaine ; la page le dit en jours — jusqu'au
-     vendredi de sa semaine. Le compte attendu est refait ici, à partir de
-     l'étiquette ISO du jalon (dans la bulle de la légende) et de la date du
-     jour, sans passer par le code de la page. */
+  /* Un jalon se donne à la semaine ; la page le dit en jours — jusqu'à sa
+     date quand la configuration la donne, sinon jusqu'au vendredi de sa
+     semaine. Le compte attendu est refait ici, à partir de la date portée
+     par l'entrée de légende ou de l'étiquette ISO (dans sa bulle) et de la
+     date du jour, sans passer par le code de la page. */
   await reinitialiser(p);
   await p.evaluate(() => window.scrollTo(0, 0));
   const joursAttendus = await p.evaluate(() => {
@@ -3028,16 +3032,18 @@ async function reinitialiser(pg) {
       const an = +m[1], sem = +m[2];
       const j4 = new Date(Date.UTC(an, 0, 4));
       const lundi1 = new Date(j4.getTime() - ((j4.getUTCDay() + 6) % 7) * 86400000);
-      const vendredi = lundi1.getTime() + ((sem - 1) * 7 + 4) * 86400000;
+      const d = el.dataset.date ? el.dataset.date.split('-').map(Number) : null;
+      const cible = d ? Date.UTC(d[0], d[1] - 1, d[2]) : lundi1.getTime() + ((sem - 1) * 7 + 4) * 86400000;
       const n = new Date(); const auj = Date.UTC(n.getFullYear(), n.getMonth(), n.getDate());
-      return { idx: +el.dataset.jalon, jours: Math.round((vendredi - auj) / 86400000), nom: el.querySelector('.mot').textContent,
+      return { idx: +el.dataset.jalon, jours: Math.round((cible - auj) / 86400000), date: el.dataset.date || '', nom: el.querySelector('.mot').textContent,
                decompte: el.querySelector('.decompte').textContent };
     });
   });
   const motAttendu = n => n === 0 ? 'aujourd’hui' : n === 1 ? 'demain' : n === -1 ? 'hier' : n > 1 ? 'dans ' + n + ' jours' : 'il y a ' + (-n) + ' jours';
   const espaces = t => t.replace(/[\s  ]+/g, ' ');
-  verifier('chaque jalon dit dans combien de jours il tombe — le vendredi de sa semaine',
-    joursAttendus.length === 5 && joursAttendus.every(j => espaces(j.decompte) === motAttendu(j.jours)), JSON.stringify(joursAttendus));
+  verifier('chaque jalon dit dans combien de jours il tombe — à sa date exacte (Solde FWD : mardi 15/12/2026)',
+    joursAttendus.length === 5 && joursAttendus.every(j => espaces(j.decompte) === motAttendu(j.jours)) &&
+    joursAttendus[0].date === '2026-12-15', JSON.stringify(joursAttendus));
   const titreEch = await p.evaluate(() => {
     const b = document.getElementById('echeance-titre');
     return { visible: !b.hidden && b.offsetParent !== null, texte: b.textContent, jalon: b.dataset.jalon,
@@ -3066,7 +3072,7 @@ async function reinitialiser(pg) {
     fiche1.ouvert === String(prochainAttendu.idx), JSON.stringify(fiche1));
   verifier('la fiche dit combien de plans restent — ceux que la barre ne dit pas terminés — et le rythme qu’il faut',
     !!fiche1 && fiche1.chiffres[2].n === fiche1.restantsBarre && /Il faut [\d,]+ plans terminés par semaine/.test(fiche1.texte) &&
-    /vendredi \d+ \S+ \d{4}/.test(fiche1.texte) && /(bon|mal)$/.test(fiche1.verdict), JSON.stringify(fiche1));
+    /(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) \d+ \S+ \d{4}/.test(fiche1.texte) && /(bon|mal)$/.test(fiche1.verdict), JSON.stringify(fiche1));
   // Un jalon d'un périmètre : ses plans à terminer sont ceux de ce périmètre.
   const jalonPerimetre = await p.evaluate(() => {
     const el = [...document.querySelectorAll('.legende-jalon')].find(e => /BASE\/OPTION/.test(e.querySelector('.quand').textContent));

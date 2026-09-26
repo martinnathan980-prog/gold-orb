@@ -2003,7 +2003,8 @@
       var nj = joursAvant(j);
       var horsFenetre = j.i < d0 || j.i > d1;   // dans la légende, mais pas dans la fenêtre affichée
       return '\x3Cspan class="legende-jalon' + (hors ? ' hors-perimetre' : '') + (rouge ? ' critique' : '') + (horsFenetre ? ' hors-fenetre' : '') +
-        '" data-jalon="' + idx + '" tabindex="0" role="button" aria-expanded="' + (vue.echeance === idx) + '" title="' +
+        '" data-jalon="' + idx + '"' + (j.date ? ' data-date="' + ech(j.date) + '"' : '') +
+        ' tabindex="0" role="button" aria-expanded="' + (vue.echeance === idx) + '" title="' +
         ech(j.texte) + ' \u2014 ' + etiquette(j.i) + (j.perimetre ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) : '') +
         (hors ? ' \u2014 ' + ech(raisonRetrait(j)) : '') + (horsFenetre ? ' \u2014 hors de la fen\u00eatre affich\u00e9e' : '') + '">' +
         '\x3Cb class="num">' + (idx + 1) + '\x3C/b>\x3Cspan class="mot">' + ech(j.texte) + '\x3C/span>' +
