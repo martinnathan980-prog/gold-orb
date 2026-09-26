@@ -3262,255 +3262,665 @@ ol.liseuse__bloc-liste {
 
 /* ----------------------------------------------------------------------
    14. Espace de pôle : « le pôle en un coup d'œil » et ses documents
-       (pole.js). Les repères chiffrés, puis l'annuaire : trois volets côte
-       à côte — organigramme, référents, par porteur — de même hauteur,
-       qui défilent chacun dans leur cadre. Une personne s'y lit en une
-       ligne : son nom, son rôle. Puis les documents du pôle.
+       (pole.js). Les chiffres du pôle en une ligne ; « Qui peut
+       m'aider ? », un champ qui répond pendant la frappe par des cartes
+       de personnes ; les équipes, en tuiles qui s'ouvrent sur place ;
+       l'index des référents. Puis les documents du pôle.
    ---------------------------------------------------------------------- */
-
-/* Quatre chiffres, chacun un lien vers la section ou la page qui le
-   détaille. Le filet de gauche porte la couleur du pôle : c'est le seul
-   aplat. */
-.pole-reperes {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
-  gap: var(--e-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pole-repere { display: flex; }
-
-.pole-repere__lien {
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-1);
-  inline-size: 100%;
-  padding: var(--e-3) var(--e-4);
-  background-color: var(--carte-fond);
-  border: 1px solid var(--carte-bord);
-  border-inline-start: 3px solid var(--org-teinte, var(--accent));
-  border-radius: var(--rayon-lg);
-  box-shadow: var(--ombre-sm);
-  color: var(--texte);
-  text-decoration: none;
-  transition: border-color var(--duree-rapide) var(--courbe),
-              transform var(--duree-rapide) var(--courbe),
-              box-shadow var(--duree-rapide) var(--courbe);
-}
-
-
-.pole-repere__valeur {
-  font-family: var(--police-titre);
-  font-size: var(--texte-3xl);
-  font-weight: var(--graisse-normale);
-  line-height: 1;
-  color: var(--texte);
-}
-
-.pole-repere__libelle {
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--texte-doux);
-}
-
-.pole-repere__detail { font-size: var(--texte-xs); line-height: 1.4; color: var(--texte-faible); }
-
-
-/* --- L'annuaire ------------------------------------------------------ */
-
-.annuaire { display: flex; flex-direction: column; gap: var(--e-4); }
-
-.annuaire__barre { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-4); }
-.annuaire__recherche {
-  flex: 1 1 22rem;
-  min-height: calc(var(--cible-tactile) - var(--e-2));
-  padding: var(--e-1) var(--e-3);
-  background-color: var(--fond-eleve);
-  border: 1px solid var(--champ-bordure, var(--bordure));
-  border-radius: var(--rayon-md);
-  color: var(--texte);
-  font: inherit;
-  font-size: var(--texte-sm);
-}
-.annuaire__recherche { border-radius: var(--rayon-plein); padding-inline: var(--e-4); }
-.annuaire__recherche:focus { outline: none; border-color: var(--accent); box-shadow: var(--ombre-accent); }
-.annuaire__resultat { margin: 0; font-size: var(--texte-xs); color: var(--texte-doux); }
-
-/* --- Le coup d'œil, en onglets ---------------------------------------------
-   Trois onglets sous la recherche ; un seul volet à la fois, sans cadre :
-   ses groupes (le responsable, chaque squad, chaque compétence, chaque
-   porteur) forment une grille de cartes, chacune avec son titre et ses
-   personnes. Pendant une recherche, les trois volets s'enchaînent. */
-.annuaire__onglets {
-  display: flex;
-  justify-content: center;
-  gap: var(--e-8);
-  border-block-end: 1px solid var(--bordure-douce);
-}
-.annuaire__onglet {
-  position: relative;
-  display: inline-flex;
-  align-items: flex-start;
-  gap: var(--e-1);
-  padding: var(--e-2) var(--e-1) var(--e-3);
-  border: 0;
-  background: none;
-  font: inherit;
-  font-family: var(--police-titre);
-  font-size: 1.5rem;
-  font-weight: 300;
-  line-height: 1;
-  color: var(--texte-faible);
-  cursor: pointer;
-  transition: color var(--duree) var(--courbe);
-}
-.annuaire__onglet::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  inset-block-end: -1px;
-  block-size: 2px;
-  background-color: var(--chaud);
-  transform: scaleX(0);
-  transition: transform var(--duree-lente) var(--courbe);
-}
-.annuaire__onglet:hover { color: var(--texte); }
-.annuaire__onglet[aria-selected="true"] { color: var(--texte); font-weight: var(--graisse-normale); }
-.annuaire__onglet[aria-selected="true"]::after { transform: scaleX(1); }
-.annuaire__onglet-compte { font-family: var(--police-mono); font-size: 0.625rem; color: var(--texte-faible); }
-.annuaire__onglets--recherche .annuaire__onglet::after { transform: scaleX(0); }
-.annuaire__onglets--recherche .annuaire__onglet { color: var(--texte-faible); font-weight: 300; }
 
 body { --pole-teinte: var(--accent); }
 body[data-pole="ETIIA"] { --pole-teinte: var(--pole-etiia); }
 body[data-pole="ETIIE"] { --pole-teinte: var(--pole-etiie); }
 body[data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
-.annuaire .annuaire__volets { display: flex; flex-direction: column; gap: var(--e-6); }
-.annuaire .annuaire__volet[hidden] { display: none; }
-.annuaire .annuaire__volet { background: none; border: 0; box-shadow: none; overflow: visible; }
-.annuaire .annuaire__volet-tete { padding: 0 0 var(--e-3); border: 0; text-align: center; }
-.annuaire .annuaire__volet-titre { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.annuaire .annuaire__onglets--recherche ~ .annuaire__volets .annuaire__volet-titre {
-  position: static; inline-size: auto; block-size: auto; clip-path: none; font-size: var(--texte-xl);
-}
-.annuaire .annuaire__defile { block-size: auto; overflow: visible; padding: 0; }
-.annuaire .annuaire__groupes {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
-  gap: var(--e-4);
-  align-items: start;
-}
-.annuaire .annuaire__groupe {
-  padding: var(--e-3) var(--e-4) var(--e-4);
-  background-color: var(--carte-fond);
-  border: 1px solid var(--carte-bord);
-  border-block-start: 3px solid var(--pole-teinte);
-  border-radius: var(--rayon-lg);
-  box-shadow: var(--ombre-sm);
-}
-.annuaire .annuaire__groupe-tete { position: static; background: none; padding: 0 0 var(--e-2); margin-block-end: var(--e-2); }
-.annuaire .annuaire__groupe-titre { font-family: var(--police-titre); font-size: 1.125rem; font-weight: var(--graisse-normale); }
-.annuaire .annuaire__personnes { display: flex; flex-direction: column; gap: 2px; }
 
-.annuaire__volets {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--e-4);
+/* La teinte d'une squad : six teintes d'équipe (tokens.css), tirées du
+   rang de la squad ; le responsable prend celle du pôle. Elle colore les
+   initiales, le filet d'une tuile, le point devant le nom d'une squad. */
+.coup-oeil [data-teinte="pole"] { --equipe-teinte: var(--pole-teinte); }
+.coup-oeil [data-teinte="1"] { --equipe-teinte: var(--equipe-1); }
+.coup-oeil [data-teinte="2"] { --equipe-teinte: var(--equipe-2); }
+.coup-oeil [data-teinte="3"] { --equipe-teinte: var(--equipe-3); }
+.coup-oeil [data-teinte="4"] { --equipe-teinte: var(--equipe-4); }
+.coup-oeil [data-teinte="5"] { --equipe-teinte: var(--equipe-5); }
+.coup-oeil [data-teinte="6"] { --equipe-teinte: var(--equipe-6); }
+
+.coup-oeil { display: flex; flex-direction: column; gap: var(--e-12); }
+
+/* --- Les chiffres : une ligne, pas des tuiles ---------------------------- */
+
+.coup-oeil__chiffres {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: var(--e-1) var(--e-8);
+  margin: calc(var(--e-4) * -1) 0 calc(var(--e-4) * -1);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+.coup-oeil__chiffre { position: relative; display: inline-flex; align-items: baseline; gap: var(--e-2); white-space: nowrap; }
+/* Entre deux chiffres, un point de terre cuite. */
+.coup-oeil__chiffre + .coup-oeil__chiffre::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(var(--e-4) * -1 - 2px);
+  inset-block-end: 0.8em;
+  inline-size: 4px;
+  block-size: 4px;
+  border-radius: var(--rayon-plein);
+  background-color: var(--chaud);
+}
+.coup-oeil__nombre {
+  font-family: var(--police-titre);
+  font-size: var(--texte-2xl);
+  font-weight: var(--graisse-normale);
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: none;
+  color: var(--texte);
 }
 
-.annuaire__volet {
+/* --- La tête d'un sous-bloc : son titre, une phrase, un lien à droite --- */
+
+.coup-oeil__tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--e-2) var(--e-6);
+  padding-block-end: var(--e-3);
+  margin-block-end: var(--e-5);
+  border-block-end: 1px solid var(--bordure-douce);
+}
+.coup-oeil__tete-texte { min-inline-size: 0; }
+.coup-oeil__titre {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: var(--texte-2xl);
+  font-weight: var(--graisse-normale);
+  line-height: var(--interligne-serre);
+  color: var(--texte);
+}
+.coup-oeil__sous-titre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-1) var(--e-2);
+  margin: var(--e-2) 0 0;
+  font-size: var(--texte-sm);
+  color: var(--texte-doux);
+}
+.coup-oeil__lien {
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
+  color: var(--texte-accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.coup-oeil__lien:hover { text-decoration: underline; text-underline-offset: 3px; }
+.coup-oeil__vide { margin: 0; color: var(--texte-doux); font-size: var(--texte-sm); }
+.coup-oeil__ajouts { display: flex; flex-wrap: wrap; gap: var(--e-2); margin-block-start: var(--e-4); }
+
+/* --- Les initiales ------------------------------------------------------ */
+
+.avatar {
+  --avatar-taille: 2.5rem;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  inline-size: var(--avatar-taille);
+  block-size: var(--avatar-taille);
+  border-radius: var(--rayon-plein);
+  background-color: color-mix(in srgb, var(--equipe-teinte, var(--accent)) 16%, var(--carte-fond));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--equipe-teinte, var(--accent)) 34%, transparent);
+  color: color-mix(in srgb, var(--equipe-teinte, var(--accent)) 58%, var(--texte));
+  font-family: var(--police-mono);
+  font-size: calc(var(--avatar-taille) * 0.3);
+  font-weight: var(--graisse-forte);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  user-select: none;
+}
+.avatar--md  { --avatar-taille: 2.25rem; }
+.avatar--sm  { --avatar-taille: 1.625rem; }
+.avatar--xs  { --avatar-taille: 1.875rem; font-size: 0.5625rem; }
+/* Quatre signes (« P105 ») : un cran plus petit, pour tenir dans le rond. */
+.avatar--long { font-size: calc(var(--avatar-taille) * 0.25); }
+.avatar--xs.avatar--long { font-size: 0.5rem; }
+/* La plus petite taille n'est qu'une pastille de couleur, sans lettres. */
+.avatar--xxs, .avatar--xxs.avatar--long { --avatar-taille: 1.25rem; font-size: 0; }
+
+/* --- Qui peut m'aider ? ------------------------------------------------ */
+
+.qui {
   display: flex;
   flex-direction: column;
-  min-inline-size: 0;
+  align-items: center;
+  gap: var(--e-4);
+  scroll-margin-block-start: calc(var(--hauteur-barre-site) + var(--e-16));
+}
+.qui__titre {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: var(--texte-section);
+  font-style: italic;
+  font-weight: var(--graisse-normale);
+  line-height: var(--interligne-serre);
+  text-align: center;
+  color: var(--texte);
+}
+.qui__aide { margin: calc(var(--e-2) * -1) 0 var(--e-1); max-inline-size: 40rem; font-size: var(--texte-sm); text-align: center; color: var(--texte-doux); }
+
+.qui__barre { position: relative; inline-size: min(100%, 46rem); }
+.qui__champ {
+  inline-size: 100%;
+  min-block-size: var(--e-12);
+  padding: 0 var(--e-12);
+  background-color: var(--fond-eleve);
+  border: 1px solid var(--champ-bordure);
+  border-radius: var(--rayon-plein);
+  box-shadow: var(--ombre-sm);
+  color: var(--texte);
+  font: inherit;
+  font-size: var(--texte-lg);
+  transition: border-color var(--duree-rapide) var(--courbe), box-shadow var(--duree) var(--courbe);
+}
+.qui__champ::placeholder { color: var(--texte-faible); font-family: var(--police-titre); font-style: italic; font-size: 1.0625rem; }
+.qui__champ:hover { border-color: var(--texte-doux); }
+.qui__champ:focus { outline: none; border-color: var(--accent); box-shadow: var(--ombre-accent), var(--ombre-md); }
+/* La croix du navigateur fait doublon avec « Effacer », qui a un nom. */
+.qui__champ::-webkit-search-cancel-button { appearance: none; }
+.qui__loupe {
+  position: absolute;
+  inset-inline-start: var(--e-5);
+  inset-block-start: 50%;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  transform: translateY(-50%);
+  fill: none;
+  stroke: var(--texte-faible);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  pointer-events: none;
+  transition: stroke var(--duree-rapide) var(--courbe);
+}
+.qui__barre:focus-within .qui__loupe { stroke: var(--texte-accent); }
+.qui__effacer {
+  position: absolute;
+  inset-inline-end: var(--e-2);
+  inset-block-start: 50%;
+  display: grid;
+  place-items: center;
+  inline-size: var(--cible-tactile);
+  block-size: var(--cible-tactile);
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: var(--rayon-plein);
+  background: none;
+  color: var(--texte-doux);
+  font: inherit;
+  font-size: var(--texte-xl);
+  line-height: 1;
+  cursor: pointer;
+}
+.qui__effacer:hover { background-color: var(--fond-enfonce); color: var(--texte); }
+.qui__effacer[hidden] { display: none; }
+
+.qui__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--e-2);
+}
+.qui__suggestions-libelle {
+  margin-inline-end: var(--e-1);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+.qui__suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  min-block-size: 2rem;
+  padding: var(--e-1) var(--e-3);
+  background-color: var(--fond-eleve);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-plein);
+  color: var(--texte);
+  font: inherit;
+  font-size: var(--texte-sm);
+  line-height: 1.5;
+  cursor: pointer;
+  transition: border-color var(--duree-rapide) var(--courbe), background-color var(--duree-rapide) var(--courbe),
+              transform var(--duree-rapide) var(--courbe);
+}
+.qui__suggestion:hover { border-color: var(--bordure-forte); background-color: var(--fond-enfonce); }
+.qui__suggestion[aria-pressed="true"] { border-color: var(--accent); background-color: var(--accent-doux); color: var(--texte-accent); }
+.qui__suggestion--appareil .qui__suggestion-nom { font-family: var(--police-mono); font-size: var(--texte-xs); letter-spacing: 0.03em; }
+.qui__suggestion-compte { font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--texte-faible); }
+.qui__suggestion[aria-pressed="true"] .qui__suggestion-compte { color: inherit; }
+
+/* Les résultats : un compte, puis des cartes. */
+.qui__resultats { display: flex; flex-direction: column; gap: var(--e-3); inline-size: 100%; margin-block-start: var(--e-2); }
+.qui__resultats[hidden] { display: none; }
+.qui__entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2) var(--e-4);
+  padding-block-end: var(--e-2);
+  border-block-end: 1px solid var(--bordure-douce);
+}
+.qui__compte { margin: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
+.qui__compte strong { font-weight: var(--graisse-forte); color: var(--texte); }
+.qui__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-4); }
+.qui__actions:empty { display: none; }
+.qui__grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr));
+  gap: var(--e-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.qui__grille[hidden], .qui__rien[hidden], .qui__plus[hidden] { display: none; }
+.qui__plus { align-self: center; }
+.qui__rien {
+  margin: 0;
+  padding: var(--e-6) var(--e-4);
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon-lg);
+  text-align: center;
+  color: var(--texte-doux);
+}
+.qui__marque { padding-inline: 1px; border-radius: 2px; background-color: var(--surlignage); color: var(--surlignage-texte); }
+
+/* --- La carte d'une personne --------------------------------------------
+   Toute la carte mène à la fiche (le lien du nom s'étend sur elle) ; la
+   puce d'appareil et, en mode édition, les commandes passent au-dessus. */
+
+.personne-carte {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--e-3);
+  padding: var(--e-3) var(--e-4) var(--e-3) var(--e-3);
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
   border-radius: var(--rayon-lg);
   box-shadow: var(--ombre-sm);
+  transition: border-color var(--duree-rapide) var(--courbe), box-shadow var(--duree) var(--courbe),
+              transform var(--duree) var(--courbe);
+}
+.personne-carte:hover, .personne-carte:focus-within {
+  border-color: color-mix(in srgb, var(--equipe-teinte, var(--accent)) 45%, var(--carte-bord));
+  box-shadow: var(--ombre-md);
+}
+.personne-carte__corps { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; }
+.personne-carte__ligne { display: flex; align-items: baseline; gap: var(--e-2); margin: 0; min-inline-size: 0; }
+.personne-carte__nom {
   overflow: hidden;
-}
-
-.annuaire__volet-tete { padding: var(--e-3) var(--e-4) var(--e-2); border-bottom: 1px solid var(--bordure); }
-.annuaire__volet-titre { margin: 0; font-family: var(--police-titre); font-size: var(--texte-lg); font-weight: var(--graisse-normale); color: var(--texte); }
-.annuaire__volet-sous-titre { margin: 2px 0 0; font-size: var(--texte-xs); color: var(--texte-doux); }
-
-/* Le cadre qui défile : même hauteur pour les trois volets. */
-.annuaire__defile {
-  block-size: 26rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 0 var(--e-4) var(--e-3);
-}
-.annuaire__defile:focus-visible { outline: 2px solid var(--focus-couleur); outline-offset: -2px; }
-
-.annuaire__groupes { display: flex; flex-direction: column; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
-.annuaire__groupe[hidden], .annuaire__personne[hidden] { display: none; }
-
-/* L'intitulé d'un groupe reste collé en haut du cadre pendant qu'on fait
-   défiler ses membres : on sait toujours dans quelle squad on est. */
-.annuaire__groupe-tete {
-  position: sticky;
-  inset-block-start: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: var(--e-2);
-  padding: var(--e-2) 0 var(--e-1);
-  background-color: var(--carte-fond);
-  border-bottom: 1px solid var(--bordure-douce);
-}
-.annuaire__groupe-titre { flex: 1; min-inline-size: 0; margin: 0; font-size: var(--texte-sm); font-weight: var(--graisse-forte); color: var(--texte); }
-.annuaire__compte { font-size: var(--texte-xs); color: var(--texte-faible); }
-
-.annuaire__personnes { margin: 0; padding: 0; list-style: none; }
-.annuaire__personne { display: flex; align-items: center; gap: var(--e-2); }
-
-.annuaire__lien {
-  flex: 1;
-  min-inline-size: 0;
-  display: flex;
-  align-items: baseline;
-  gap: var(--e-2);
-  padding: 3px var(--e-2);
-  margin-inline: calc(var(--e-2) * -1);
-  border-radius: var(--rayon-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--texte-md);
+  font-weight: var(--graisse-forte);
   color: var(--texte);
   text-decoration: none;
 }
-.annuaire__lien:hover { background-color: var(--fond-enfonce); }
-.annuaire__lien:hover .annuaire__nom { color: var(--texte-accent); }
-.annuaire__nom { flex: none; font-size: var(--texte-sm); font-weight: var(--graisse-moyenne); white-space: nowrap; }
-.annuaire__role { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--texte-xs); color: var(--texte-doux); }
-.annuaire__badge {
+.personne-carte__nom::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.personne-carte__nom:focus-visible { outline: none; }
+.personne-carte__nom:focus-visible::after { outline: 2px solid var(--focus-couleur); outline-offset: 2px; border-radius: var(--rayon-lg); }
+.personne-carte:hover .personne-carte__nom { color: var(--texte-accent); }
+.personne-carte__badge {
   flex: none;
   font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.04em;
+  font-size: 0.625rem;
+  letter-spacing: var(--lettrage-etiquette);
   text-transform: uppercase;
   color: var(--chaud-encre);
 }
-
-.annuaire__porteur { font-family: var(--police-mono); color: var(--texte); text-decoration: none; }
-.annuaire__porteur:hover { text-decoration: underline; }
-.annuaire__segment { font-weight: var(--graisse-normale); font-size: var(--texte-xs); color: var(--texte-doux); }
-
-.annuaire__ajouts { display: flex; flex-wrap: wrap; gap: var(--e-2); padding-block-start: var(--e-3); }
-/* « + Un référent », « + Quelqu'un » : au bout de la tête du groupe. */
-.annuaire__groupe-tete .edition-ajout { min-block-size: 1.625rem; padding: 0 var(--e-2); font-size: var(--texte-xs); }
-.annuaire__rien { margin: var(--e-3) 0 0; font-size: var(--texte-sm); color: var(--texte-doux); }
-.annuaire__vide { padding: var(--e-1) var(--e-2); font-size: var(--texte-sm); font-style: italic; color: var(--texte-faible); }
-.annuaire__rien[hidden] { display: none; }
-.annuaire__suite { display: flex; justify-content: center; margin: 0; }
-
-@media (max-width: 980px) {
-  .annuaire__volets { grid-template-columns: minmax(0, 1fr); }
-  .annuaire__defile { block-size: auto; max-block-size: 22rem; }
+.personne-carte__role {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--e-2);
+  margin: 0;
+  font-size: var(--texte-xs);
+  color: var(--texte-doux);
+}
+.personne-carte__squad { display: inline-flex; align-items: center; gap: var(--e-1); white-space: nowrap; }
+.personne-carte__squad::before {
+  content: "";
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: var(--rayon-plein);
+  background-color: var(--equipe-teinte, var(--accent));
+}
+.personne-carte__puces { display: flex; flex-wrap: wrap; gap: var(--e-1); margin: var(--e-1) 0 0; }
+/* En mode édition, la première ligne laisse la place aux deux commandes. */
+.mode-edition .personne-carte__ligne { padding-inline-end: 3.75rem; }
+.personne-carte .barre-edition {
+  position: absolute;
+  inset-block-start: var(--e-2);
+  inset-inline-end: var(--e-2);
+  z-index: 2;
+  padding: 2px;
+  border-radius: var(--rayon-md);
+  background-color: var(--carte-fond);
 }
 
-/* Des commandes d'édition serrées, pour une ligne d'annuaire : l'icône
+/* Une compétence et son niveau ; un appareil, vers sa fiche. */
+.competence-puce {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--e-1);
+  max-inline-size: 100%;
+  padding: 1px var(--e-2);
+  border-radius: var(--rayon-sm);
+  background-color: var(--fond-enfonce);
+  font-size: var(--texte-xs);
+  color: var(--texte-doux);
+}
+.competence-puce__niveau { font-family: var(--police-mono); font-size: 0.625rem; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+.competence-puce[data-niveau="referent"] { background-color: var(--chaud-doux); color: var(--chaud-encre); }
+.competence-puce[data-niveau="confirme"] { background-color: var(--accent-doux); color: var(--texte-accent); }
+
+.appareil-puce {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--e-2);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-sm);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  line-height: 1.6;
+  color: var(--texte-doux);
+  text-decoration: none;
+  transition: border-color var(--duree-rapide) var(--courbe), background-color var(--duree-rapide) var(--courbe);
+}
+a.appareil-puce:hover { border-color: var(--accent); background-color: var(--accent-doux); color: var(--texte-accent); }
+.appareil-puce--transverse { border-style: dashed; font-family: var(--police); }
+
+/* --- Les équipes ---------------------------------------------------------
+   Une tuile par squad. La grille est « dense » : le panneau d'une squad
+   ouverte prend toute la largeur sous la rangée de sa tuile, et les tuiles
+   suivantes remontent combler la rangée. */
+
+.equipes__responsable { display: inline-flex; align-items: center; gap: var(--e-2); }
+.equipes__responsable-nom { font-weight: var(--graisse-moyenne); color: var(--texte); text-decoration: none; }
+.equipes__responsable-nom:hover { color: var(--texte-accent); text-decoration: underline; text-underline-offset: 3px; }
+
+.equipes__grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr));
+  grid-auto-flow: row dense;
+  gap: var(--e-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.equipe { display: flex; min-inline-size: 0; }
+.equipe__tuile {
+  --tuile-fond: var(--carte-fond);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  inline-size: 100%;
+  padding: var(--e-4) var(--e-5);
+  background-color: var(--tuile-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-xl);
+  box-shadow: var(--ombre-sm);
+  color: var(--texte);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color var(--duree) var(--courbe), box-shadow var(--duree) var(--courbe),
+              transform var(--duree) var(--courbe), background-color var(--duree) var(--courbe);
+}
+/* Le filet de la squad, en haut de la tuile. */
+.equipe__tuile::before {
+  content: "";
+  position: absolute;
+  inset-inline: -1px;
+  inset-block-start: -1px;
+  block-size: 3px;
+  border-start-start-radius: var(--rayon-xl);
+  border-start-end-radius: var(--rayon-xl);
+  background-color: var(--equipe-teinte);
+}
+.equipe__tuile:hover { border-color: color-mix(in srgb, var(--equipe-teinte) 40%, var(--carte-bord)); box-shadow: var(--ombre-md); }
+.equipe__tuile:focus-visible { outline: 2px solid var(--focus-couleur); outline-offset: 2px; }
+.equipe__tuile[aria-expanded="true"] {
+  --tuile-fond: color-mix(in srgb, var(--equipe-teinte) 7%, var(--carte-fond));
+  border-color: var(--equipe-teinte);
+  box-shadow: var(--ombre-md);
+}
+/* Sur le fond teinté d'une tuile ouverte, le gris le plus faible ne tient
+   plus 4,5:1 en thème sombre : il passe au gris doux. */
+.equipe__tuile[aria-expanded="true"] :is(.equipe__unite, .equipe__plus, .equipe__appareil--plus) { color: var(--texte-doux); }
+/* Ouverte, la tuile pointe vers son panneau. */
+.equipe__tuile[aria-expanded="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-start: 100%;
+  border: var(--e-2) solid transparent;
+  border-block-start-color: var(--equipe-teinte);
+  transform: translateX(-50%);
+}
+
+.equipe__tete { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--e-3); }
+.equipe__nom { font-family: var(--police-titre); font-size: var(--texte-xl); line-height: var(--interligne-serre); }
+.equipe__effectif { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; line-height: 1; }
+.equipe__nombre { font-family: var(--police-titre); font-size: var(--texte-2xl); color: var(--texte); }
+.equipe__unite { font-family: var(--police-mono); font-size: 0.625rem; letter-spacing: var(--lettrage-etiquette); text-transform: uppercase; color: var(--texte-faible); }
+
+.equipe__lead { display: flex; align-items: center; gap: var(--e-3); min-inline-size: 0; }
+.equipe__lead--vide { font-size: var(--texte-sm); font-style: italic; color: var(--texte-faible); }
+.equipe__lead-texte { display: flex; flex-direction: column; min-inline-size: 0; }
+.equipe__lead-nom { font-size: var(--texte-sm); font-weight: var(--graisse-forte); }
+.equipe__lead-role { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--texte-xs); color: var(--texte-doux); }
+
+.equipe__pied { display: flex; align-items: center; justify-content: space-between; gap: var(--e-3); }
+/* Les visages de l'équipe, qui se chevauchent — et s'écartent au survol. */
+.equipe__visages { display: flex; align-items: center; min-block-size: 1.875rem; padding-inline-start: 5px; }
+.equipe__visages .avatar {
+  margin-inline-start: -5px;
+  box-shadow: 0 0 0 2px var(--tuile-fond), inset 0 0 0 1px color-mix(in srgb, var(--equipe-teinte) 34%, transparent);
+  transition: margin var(--duree) var(--courbe);
+}
+.equipe__plus { margin-inline-start: var(--e-2); font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--texte-faible); }
+.equipe__chevron {
+  flex: none;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  margin-inline-end: var(--e-1);
+  border-inline-end: 1.5px solid var(--texte-faible);
+  border-block-end: 1.5px solid var(--texte-faible);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--duree) var(--courbe), border-color var(--duree) var(--courbe);
+}
+.equipe__tuile:hover .equipe__chevron { border-color: var(--texte); }
+.equipe__tuile[aria-expanded="true"] .equipe__chevron { border-color: var(--equipe-teinte); transform: translateY(2px) rotate(-135deg); }
+.equipe__appareils { display: flex; flex-wrap: wrap; gap: var(--e-1); }
+.equipe__appareil {
+  padding: 0 var(--e-2);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-sm);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  line-height: 1.6;
+  color: var(--texte-doux);
+}
+.equipe__appareil--plus { border-style: dashed; color: var(--texte-faible); }
+
+/* Le panneau d'une squad ouverte : un plateau à sa teinte, ses membres en
+   cartes. Il ne coupe son contenu que le temps de se déplier. */
+.equipe__panneau { grid-column: 1 / -1; min-inline-size: 0; }
+.equipe__panneau--anime { overflow: hidden; }
+.equipe__panneau-interieur {
+  padding: var(--e-4) var(--e-5) var(--e-5);
+  background-color: color-mix(in srgb, var(--equipe-teinte) 6%, var(--fond));
+  border: 1px solid color-mix(in srgb, var(--equipe-teinte) 30%, var(--carte-bord));
+  border-block-start: 3px solid var(--equipe-teinte);
+  border-radius: var(--rayon-xl);
+}
+.equipe__panneau-tete { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-4); margin-block-end: var(--e-4); }
+.equipe__panneau-titres { flex: 1 1 16rem; min-inline-size: 0; }
+.equipe__panneau-titre { margin: 0; font-family: var(--police-titre); font-size: var(--texte-xl); font-weight: var(--graisse-normale); }
+.equipe__panneau-resume { margin: 2px 0 0; font-size: var(--texte-xs); color: var(--texte-doux); }
+.equipe__fermer {
+  display: grid;
+  place-items: center;
+  inline-size: var(--cible-tactile);
+  block-size: var(--cible-tactile);
+  border: 1px solid transparent;
+  border-radius: var(--rayon-plein);
+  background: none;
+  color: var(--texte-doux);
+  font: inherit;
+  font-size: var(--texte-xl);
+  line-height: 1;
+  cursor: pointer;
+}
+.equipe__fermer:hover { border-color: var(--bordure); background-color: var(--carte-fond); color: var(--texte); }
+.equipe__vide { margin: 0; font-size: var(--texte-sm); font-style: italic; color: var(--texte-doux); }
+/* Dans le panneau d'une squad, chaque carte redirait son nom. */
+.equipe__membres .personne-carte__squad { display: none; }
+.equipe__panneau-pied { margin-block-start: var(--e-4); }
+
+/* --- Les référents : l'index, et le détail de la compétence choisie ----- */
+
+.referents__corps { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--e-5); align-items: start; }
+@media (min-width: 900px) {
+  .referents__corps { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--e-8); }
+}
+.referents__index { display: flex; flex-wrap: wrap; align-content: flex-start; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
+.referents__puce {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  min-block-size: 2.25rem;
+  padding: var(--e-1) var(--e-2) var(--e-1) var(--e-3);
+  background-color: var(--fond-eleve);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-plein);
+  color: var(--texte);
+  font: inherit;
+  font-size: var(--texte-sm);
+  cursor: pointer;
+  transition: border-color var(--duree-rapide) var(--courbe), background-color var(--duree-rapide) var(--courbe),
+              box-shadow var(--duree) var(--courbe);
+}
+.referents__puce:hover { border-color: color-mix(in srgb, var(--chaud) 55%, var(--bordure)); }
+.referents__puce[aria-pressed="true"] {
+  border-color: var(--chaud);
+  background-color: var(--chaud-doux);
+  color: var(--chaud-encre);
+  box-shadow: 0 0 0 3px var(--chaud-lueur);
+}
+.referents__visages { display: flex; padding-inline-start: 6px; }
+.referents__visages .avatar { margin-inline-start: -6px; box-shadow: 0 0 0 2px var(--fond-eleve), inset 0 0 0 1px color-mix(in srgb, var(--equipe-teinte) 34%, transparent); }
+.referents__puce[aria-pressed="true"] .avatar { box-shadow: 0 0 0 2px var(--chaud-doux); }
+
+.referents__detail {
+  padding: var(--e-4) var(--e-5) var(--e-5);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-block-start: 3px solid var(--chaud);
+  border-radius: var(--rayon-xl);
+  box-shadow: var(--ombre-sm);
+}
+.referents__surtitre {
+  margin: 0;
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--chaud-encre);
+}
+.referents__competence { margin: var(--e-1) 0 0; font-family: var(--police-titre); font-size: var(--texte-2xl); font-weight: var(--graisse-normale); line-height: var(--interligne-serre); }
+.referents__resume { margin: var(--e-1) 0 var(--e-4); font-size: var(--texte-xs); color: var(--texte-doux); }
+.referents__gens { display: flex; flex-direction: column; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
+.referents__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-4); margin-block-start: var(--e-4); }
+.referents__actions:empty { display: none; }
+.referents__tous {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--texte-accent);
+  font: inherit;
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
+  cursor: pointer;
+}
+.referents__tous:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* --- Le mouvement : court, et seulement s'il est bienvenu ---------------- */
+
+@keyframes coup-oeil-entree {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .personne-carte--entree { animation: coup-oeil-entree var(--duree-lente) var(--courbe) both; animation-delay: calc(var(--i, 0) * var(--duree-rapide) / 5); }
+  .personne-carte:hover, .personne-carte:focus-within { transform: translateY(-1px); }
+  .equipe__tuile:hover { transform: translateY(-2px); }
+  .equipe__tuile:hover .equipe__visages .avatar { margin-inline-start: 2px; }
+  .qui__suggestion:hover { transform: translateY(-1px); }
+}
+
+/* Sous 900px, le détail passe sous l'index : l'index tient alors sur une
+   rangée qui défile de côté, pour qu'une compétence touchée et ses
+   référents restent sous les yeux ensemble. */
+@media (max-width: 899px) {
+  .referents__index {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    padding: var(--e-1) var(--e-1) var(--e-3);
+    margin-inline: calc(var(--e-1) * -1);
+  }
+  .referents__index > li { flex: none; scroll-snap-align: start; }
+}
+
+@media (max-width: 640px) {
+  .coup-oeil { gap: var(--e-10); }
+  /* Les quatre chiffres en deux colonnes : pas de point en tête de ligne. */
+  .coup-oeil__chiffres { display: grid; grid-template-columns: repeat(2, auto); justify-content: center; gap: var(--e-2) var(--e-6); }
+  .coup-oeil__chiffre + .coup-oeil__chiffre::before { display: none; }
+  .qui__champ { padding-inline-end: var(--e-10); }
+  /* Les suggestions, sur une rangée qui défile de côté. */
+  .qui__suggestions {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    inline-size: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-block: var(--e-1) var(--e-2);
+  }
+  .qui__suggestions > * { flex: none; }
+  .equipe__tuile { padding: var(--e-4); }
+  .equipe__panneau-interieur { padding: var(--e-3) var(--e-3) var(--e-4); }
+  .referents__detail { padding: var(--e-4); }
+}
+
+/* Des commandes d'édition serrées, pour une carte ou une ligne : l'icône
    seule, le mot reste pour les lecteurs d'écran. */
 .barre-edition--compacte { flex: none; gap: 2px; }
 .barre-edition--compacte .barre-edition__bouton { min-block-size: 1.625rem; padding: 0 var(--e-1); }
@@ -4617,7 +5027,7 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   select.champ__select,
   .recherche__champ,
   .org-recherche,
-  .annuaire__recherche,
+  .qui__champ,
   .liseuse__recherche,
   .arbre__recherche {
     font-size: var(--texte-lg);
@@ -4626,19 +5036,20 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
 }
 
 /* Ces liens-ci sont petits par choix typographique — un lien de sommaire,
-   une personne ou un code de porteur de l'annuaire d'un pôle, un nom de
+   une suggestion ou une compétence du « coup d'œil » d'un pôle, un nom de
    pôle dans l'arbre. Au doigt, on leur pose un plancher de 44px sans
    toucher à --cible-tactile, dont dépend la hauteur de la barre du site :
-   la rehausser mangerait le sommaire collant. Les volets de l'annuaire
-   défilent dans leur cadre : des lignes plus hautes ne l'allongent pas. */
+   la rehausser mangerait le sommaire collant. Une carte de personne n'en
+   a pas besoin : elle est tout entière le lien de sa fiche. La puce d'un
+   appareil, dans la carte, prend un plancher plus bas : 44px la
+   déborderait. */
 @media (pointer: coarse) {
   .sous-nav a,
-  .annuaire__lien,
-  .annuaire__porteur,
+  .qui__suggestion,
+  .referents__puce,
   .org-arbre__pole-nom,
   .kiosque__filtres .facette {
     min-block-size: 44px;
   }
-  /* Un lien en ligne n'a pas de hauteur à lui : il en prend une. */
-  .annuaire__porteur { display: inline-flex; align-items: center; }
+  .appareil-puce { min-block-size: 1.75rem; }
 }

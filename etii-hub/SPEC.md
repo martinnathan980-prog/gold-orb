@@ -192,11 +192,13 @@ au survol et au focus, et masqué sous `prefers-reduced-motion`.
 
 ### 4.2 bis `etiia.html` / `etiie.html` / `etiii.html` — Les espaces de pôle
 Une seule page (`pole.js`), paramétrée par `<body data-pole="…">`, et la
-deuxième surface du site. Quatre sections : la communication du pôle, « en
-un coup d'œil » (repères chiffrés, à qui s'adresser, par porteur),
-« Équipe & référents » avec un commutateur « Par squad / Par compétence »,
-et la FAQ du pôle. Rien n'y est saisi à la main : chaque section est
-calculée depuis les mêmes JSON que le reste du site.
+deuxième surface du site. Ses sections : la communication du pôle, « À
+venir », « en un coup d'œil » (les chiffres du pôle en une ligne ; « Qui
+peut m'aider ? », un champ qui répond pendant la frappe par des cartes de
+personnes ; les équipes, en tuiles qui s'ouvrent sur place ; l'index des
+référents), les documents du pôle et sa FAQ. Rien n'y est saisi à la
+main : chaque section est calculée depuis les mêmes JSON que le reste du
+site.
 
 ### 4.3 `reunions.html` — Réunions
 **Un seul onglet est publié**, « Comptes-rendus » ; la barre d'onglets ne
