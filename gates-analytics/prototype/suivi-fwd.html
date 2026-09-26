@@ -550,9 +550,9 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 }
 @media (prefers-reduced-motion: reduce) { .fiche-echeance { animation: none; } }
 
-/* ---------------------------------------------------- Échéance sous le titre */
+/* ---------------------------------------------------- Échéance, en tête du graphique */
 .echeance-titre {
-  margin: 14px auto 0; display: inline-flex; align-items: center; gap: 9px;
+  margin: 0 auto 0 4px; align-self: center; display: inline-flex; align-items: center; gap: 9px;
   border: 1px solid var(--filet-fort); background: var(--surface); color: var(--encre-2);
   border-radius: 999px; padding: 6px 15px 6px 11px; font: inherit; font-size: 13px; cursor: pointer;
   transition: border-color .15s, color .15s, transform .15s;
@@ -1039,9 +1039,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
     </div>
-    <!-- La prochaine échéance, en jours : un clic ouvre sa fiche sous le
-         graphique. -->
-    <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
   </header>
 
   <section class="avancement">
@@ -1063,6 +1060,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
   <section class="bloc">
     <div class="section-tete">
       <h2>Avancement dans le temps</h2>
+      <!-- La prochaine échéance, en jours : un clic ouvre sa fiche sous le
+           graphique. Pas sous le titre, qui ne dit que la semaine. -->
+      <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
       <div class="commandes-graphe">
         <span class="indice">Glissez pour vous déplacer · molette pour zoomer</span>
         <span class="segmente" role="group" aria-label="Période affichée">
@@ -2403,7 +2403,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       '<div class="fiche-echeance-verdict ' + verdict.cls + '">' + ech(verdict.mot) + '</div>' +
       '</div>';
   }
-  /* Sous le titre : la prochaine échéance du périmètre, en jours. */
+  /* En tête du graphique : la prochaine échéance du périmètre, en jours. */
   function rendreEcheanceTitre() {
     var bouton = $('echeance-titre'), j = prochainJalon();
     if (!j) { bouton.hidden = true; return; }
@@ -3735,7 +3735,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       var lundi = dateDe(i);
       return 'S' + String(numeroSemaine(i)).replace(/^0/, '') + ' \u00b7 ' + MOIS_COURTS[lundi.getUTCMonth()] + ' ' + lundi.getUTCFullYear();
     };
-    $('legende-jalons').innerHTML = jalons.length ? '<span class="legende-jalons-mot">Jalons \u00b7 cliquez pour le détail</span><div class="legende-jalons-grille">' + jalons.map(function (j, idx) {
+    $('legende-jalons').innerHTML = jalons.length ? '<span class="legende-jalons-mot">Jalons</span><div class="legende-jalons-grille" title="Cliquez un jalon pour le détail de son échéance">' + jalons.map(function (j, idx) {
       var hors = !jalonDansPerimetre(j), rouge = prochain && j.i === prochain.i && !hors && enRetard;
       var nj = joursAvant(j);
       var horsFenetre = j.i < d0 || j.i > d1;   // dans la légende, mais pas dans la fenêtre affichée
@@ -3803,9 +3803,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
   var cadreGraphe = $('cadre-graphe');
   var glisse = null;
 
-  /* Le seul geste du graphique : le panoramique. Il part de n'importe quel
-     point du cadre, frise des jalons et marge du bas comprises — le curseur
-     y promet la main partout. Un clic net ne fait rien. */
+  /* Le geste du graphique : le panoramique. Il part de n'importe quel point
+     du cadre, frise des jalons et marge du bas comprises — le curseur y
+     promet la main partout. Un clic net sur le numéro d'un jalon ouvre la
+     fiche de son échéance ; ailleurs, il ne fait rien. */
   cadreGraphe.addEventListener('pointerdown', function (e) {
     if (e.button !== 0) return;
     glisse = { x0: e.clientX, debut0: vue.fen.debut, bouge: false };
@@ -3843,7 +3844,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
     glisse = null;
     cadreGraphe.dataset.glisse = 'false';
   }
-  cadreGraphe.addEventListener('pointerup', finGlisse);
+  cadreGraphe.addEventListener('pointerup', function (e) {
+    var net = !!glisse && !glisse.bouge;
+    finGlisse();
+    if (!net) return;
+    /* Le cadre a capturé le pointeur : la cible se retrouve sous le doigt. */
+    var sous = document.elementFromPoint(e.clientX, e.clientY);
+    var g = sous && sous.closest && sous.closest('.jalon[data-jalon]');
+    if (g) ouvrirEcheance(+g.getAttribute('data-jalon'), true);
+  });
   cadreGraphe.addEventListener('pointercancel', finGlisse);
 
   /* Infobulle */
@@ -5581,13 +5590,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
     }).join('') + '</tr>';
 
     var seul = vue.refs && Object.keys(vue.refs).length === 1 ? Object.keys(vue.refs)[0] : null;
-    /* Caché derrière l'interrupteur, le tableau de la seconde base ne se
-       dessine pas : des milliers de lignes pour rien à l'ouverture. Il se
-       dessine quand on bascule dessus. */
-    if (vue.base !== 'la') {
-      $('corps-seconde').innerHTML = '';
-      delete TRANCHES['corps-seconde'];
-    } else if (!lignes.length) {
+    /* Caché derrière l'interrupteur, le tableau de la seconde base n'est pas
+       mis en page ; il se dessine par tranches, comme celui de GATES. */
+    if (!lignes.length) {
       delete TRANCHES['corps-seconde'];
       var nAbs = compteLotRapp(lot);
       $('corps-seconde').innerHTML = '<tr><td colspan="' + Math.max(cols.length, 1) + '"><div class="vide-message">' +
@@ -5949,10 +5954,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
     ouvrirEcheance(+el.dataset.jalon);
     var meme = document.querySelector('.legende-jalon[data-jalon="' + el.dataset.jalon + '"]');
     if (meme) meme.focus();
-  });
-  $('zone-graphe').addEventListener('click', function (e) {
-    var g = e.target.closest && e.target.closest('.jalon[data-jalon]');
-    if (g) ouvrirEcheance(+g.getAttribute('data-jalon'), true);
   });
   $('echeance-titre').addEventListener('click', function () {
     ouvrirEcheance(+this.dataset.jalon, true);

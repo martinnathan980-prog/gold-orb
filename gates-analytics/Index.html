@@ -73,9 +73,6 @@
       <span aria-hidden="true">·</span>
       <span id="dates-semaine">—</span>
     </div>
-    <!-- La prochaine échéance, en jours : un clic ouvre sa fiche sous le
-         graphique. -->
-    <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
   </header>
 
   <section class="avancement">
@@ -97,6 +94,9 @@
   <section class="bloc">
     <div class="section-tete">
       <h2>Avancement dans le temps</h2>
+      <!-- La prochaine échéance, en jours : un clic ouvre sa fiche sous le
+           graphique. Pas sous le titre, qui ne dit que la semaine. -->
+      <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
       <div class="commandes-graphe">
         <span class="indice">Glissez pour vous déplacer · molette pour zoomer</span>
         <span class="segmente" role="group" aria-label="Période affichée">

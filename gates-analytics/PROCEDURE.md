@@ -736,13 +736,14 @@ marqué « hors fenêtre ».
 Un jalon se donne à la semaine ; la page le dit **en jours**, jusqu'au
 **vendredi** de sa semaine :
 
-- **sous le titre**, la prochaine échéance du périmètre : « Prochaine
+- **en tête du graphique** (le titre, lui, ne dit que la semaine), la
+  prochaine échéance du périmètre : « Prochaine
   échéance · Solde FWD · dans 83 jours », avec un point **vert** si le rythme
   tenu suffit, **rouge** sinon ;
 - **dans la légende des jalons**, sous chacun : « dans 111 jours », en ambre
   à moins de trois semaines, « il y a 5 jours » une fois passé.
 
-Un clic — sur l'échéance du titre, sur un jalon de la légende ou sur son
+Un clic — sur cette échéance, sur un jalon de la légende ou sur son
 numéro dans le graphique — ouvre la **fiche de l'échéance** : sa date
 (« vendredi 18 décembre 2026 · fin de la semaine 51 »), les **jours** et les
 **semaines** restants, les **plans à terminer** dans *son* périmètre (un

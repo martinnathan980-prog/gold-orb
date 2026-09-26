@@ -298,8 +298,8 @@ async function reinitialiser(pg) {
   verifier('et le pied de page', x2.pied !== pied0, x2.pied);
   verifier('le contrat courant est celui du sélecteur, et le titre ne le répète pas',
     x2.nom === 'THS' && x2.courant === 'THS' && !/contrat/i.test(x2.masthead), x2.nom);
-  verifier('les filtres et le cadrage repartent de zero',
-    x2.filtres && x2.presse === 0 && x2.jalons === 5 && x2.aujourdhui, JSON.stringify(x2));
+  verifier('les filtres et le cadrage repartent de zero : six mois, le repère du dernier relevé',
+    x2.filtres && x2.presse === 0 && x2.zones === 26 && x2.aujourdhui, JSON.stringify(x2));
   verifier('le bloc par groupe et le journal suivent le nouveau contrat',
     x2.groupes === x2.plans && x2.journal > 0, x2.groupes + ' / ' + x2.plans);
   await p.selectOption('#select-contrat', 'VRK'); await p.waitForTimeout(1200);
@@ -2549,6 +2549,9 @@ async function reinitialiser(pg) {
     window.__chargerSource(s);
   });
   await p.waitForTimeout(500);
+  /* La page s'ouvre sur six mois : pour lire tous les jalons dessinés, on
+     montre tout l'axe. */
+  await p.click('.commandes-graphe button[data-span="0"]'); await p.waitForTimeout(400);
   const lireEcheance = () => p.evaluate(() => ({
     prochain: window.__prochainJalon() && window.__prochainJalon().texte,
     entete: (document.querySelector('.critique-tete button[data-trig="tension"]') || {}).title || '',
@@ -3012,8 +3015,8 @@ async function reinitialiser(pg) {
     aujourdhui: [...document.querySelectorAll('svg.graphe .repere-auj')].length === 1,
     jalons: document.querySelectorAll('svg.graphe .jalon').length
   }));
-  verifier('avec 113 relevés, l’ouverture montre encore le repère du dernier relevé et les jalons',
-    longOuverture.releves && longOuverture.aujourdhui && longOuverture.jalons === 5, JSON.stringify(longOuverture));
+  verifier('avec 113 relevés, l’ouverture montre encore le repère du dernier relevé, et au moins le prochain jalon',
+    longOuverture.releves && longOuverture.aujourdhui && longOuverture.jalons >= 1, JSON.stringify(longOuverture));
   await p.click('.commandes-graphe button[data-span="0"]'); await p.waitForTimeout(400);
   const longTout = await p.evaluate(() => ({
     aujourdhui: document.querySelectorAll('svg.graphe .repere-auj').length === 1,
@@ -3131,11 +3134,13 @@ async function reinitialiser(pg) {
   const titreEch = await p.evaluate(() => {
     const b = document.getElementById('echeance-titre');
     return { visible: !b.hidden && b.offsetParent !== null, texte: b.textContent, jalon: b.dataset.jalon,
-             dansMasthead: !!b.closest('header.masthead') };
+             /* Pas sous le titre — il ne dit que la semaine — : en tête du graphique. */
+             place: !b.closest('header.masthead') && !!b.closest('.section-tete') &&
+                    b.closest('.section-tete').querySelector('h2').textContent === 'Avancement dans le temps' };
   });
   const prochainAttendu = joursAttendus.filter(j => j.jours > 0)[0];
-  verifier('sous le titre, la prochaine échéance, en jours',
-    titreEch.visible && titreEch.dansMasthead && /Prochaine échéance/.test(titreEch.texte) && !!prochainAttendu &&
+  verifier('en tête du graphique, la prochaine échéance, en jours — le titre, lui, ne dit que la semaine',
+    titreEch.visible && titreEch.place && /Prochaine échéance/.test(titreEch.texte) && !!prochainAttendu &&
     titreEch.texte.indexOf(prochainAttendu.nom) !== -1 && espaces(titreEch.texte).indexOf(motAttendu(prochainAttendu.jours)) !== -1,
     JSON.stringify([titreEch, prochainAttendu]));
   await p.click('#echeance-titre'); await p.waitForTimeout(700);
@@ -3187,10 +3192,10 @@ async function reinitialiser(pg) {
     await p.evaluate(k => !!document.getElementById('fiche-echeance') && document.activeElement && document.activeElement.dataset.jalon === k, cle0));
   await p.click('#fiche-echeance [data-fermer-echeance]'); await p.waitForTimeout(300);
   verifier('la croix referme la fiche', await p.evaluate(() => !document.getElementById('fiche-echeance')));
-  const marque = await p.$('svg.graphe .jalon[data-jalon] .jalon-marque');
-  if (marque) {
-    const idxMarque = await p.evaluate(m => m.closest('.jalon').getAttribute('data-jalon'), marque);
-    await marque.click(); await p.waitForTimeout(700);
+  const idxMarque = await p.evaluate(() => { const g = document.querySelector('svg.graphe .jalon[data-jalon]'); return g ? g.getAttribute('data-jalon') : null; });
+  if (idxMarque !== null) {
+    // Par sélecteur : le graphique se redessine au survol, la cible se retrouve.
+    await p.click('svg.graphe .jalon[data-jalon="' + idxMarque + '"] .jalon-marque'); await p.waitForTimeout(700);
     verifier('un clic sur un numéro du graphique ouvre la fiche de ce jalon',
       await p.evaluate(k => !!document.getElementById('fiche-echeance') &&
         document.querySelector('.legende-jalon[aria-expanded="true"]').dataset.jalon === k, idxMarque));
