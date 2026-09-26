@@ -452,7 +452,8 @@ class Executeur:
             print(f"\n{S.PAUSE}  {message}\n   Appuyez sur Entrée pour continuer (ou tapez « stop » puis Entrée pour arrêter) : ", end="", flush=True)
             # le navigateur continue de tourner pendant l'attente : un onglet que Chrome
             # ouvrirait de lui-même est refermé au lieu de rester devant l'outil
-            reponse = (lire_ligne(self.nav.pomper) or "").strip().lower()
+            with self.nav.pause_manuelle():
+                reponse = (lire_ligne(self.nav.pomper) or "").strip().lower()
             if reponse in ("stop", "arreter", "arrêter", "q", "quit"):
                 raise ArretDemande("arrêt demandé par l'utilisateur pendant une pause.")
         else:

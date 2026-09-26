@@ -18,10 +18,11 @@ from __future__ import annotations
 import logging
 import os
 import re
+from contextlib import contextmanager
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Iterator, List, Optional, Tuple
 from urllib.parse import urlsplit
 
 from playwright.sync_api import Browser, BrowserContext, Error as PlaywrightError, Page, sync_playwright
@@ -51,7 +52,7 @@ MOTIF_ONGLET_VIDE = re.compile(
 )
 # Onglets sans lien avec l'outil ouverts juste après le démarrage (extension imposée par
 # l'entreprise, page de présentation...) : fermés s'ils arrivent dans ce délai.
-FENETRE_DEMARRAGE_S = 30.0
+FENETRE_DEMARRAGE_S = 15.0
 
 
 def est_onglet_parasite(url: str) -> bool:
@@ -60,6 +61,33 @@ def est_onglet_parasite(url: str) -> bool:
 
 def est_onglet_vide(url: str) -> bool:
     return not url or bool(MOTIF_ONGLET_VIDE.match(url))
+
+
+def site_de(url: str) -> str:
+    """« entreprise.fr » pour https://outil.entreprise.fr/... : deux onglets du même site
+    appartiennent à la même tâche (outil, connexion d'entreprise, lien ouvert à part)."""
+    try:
+        hote = (urlsplit(url or "").hostname or "").lower()
+    except ValueError:
+        return ""
+    if not hote or re.fullmatch(r"[\d.]+|\[?[0-9a-f:]+\]?", hote) or "." not in hote:
+        return hote
+    return ".".join(hote.split(".")[-2:])
+
+
+def _a_un_ouvreur(page: Page) -> bool:
+    """Vrai si l'onglet a été ouvert par une page (lien, window.open).
+
+    page.opener() répond None quand la page d'origine s'est refermée entre-temps
+    (portail qui ouvre l'application puis se ferme) : l'objet interne, lui, s'en souvient.
+    """
+    try:
+        if page.opener() is not None:
+            return True
+    except Exception:  # noqa: BLE001
+        pass
+    interne = getattr(page, "_impl_obj", None)
+    return getattr(interne, "_opener", None) is not None
 
 
 def adresse_courte(url: str) -> str:
@@ -172,6 +200,8 @@ class Navigateur:
         self.parasites: List[Page] = []  # onglets ouverts par Chrome lui-même, fermés par le robot
         self._creation = False  # vrai pendant que le robot ouvre lui-même un onglet
         self._ouvert_a = 0.0
+        self._en_pause = False  # l'utilisateur a la main : ses boîtes de dialogue sont à lui
+        self._dialogues_differes: List[Any] = []
 
     # ------------------------------------------------------------------ ouverture
     def ouvrir(self) -> Page:
@@ -241,7 +271,7 @@ class Navigateur:
         try:
             if self._creation or page is self.page or page.is_closed():
                 return
-            if page.opener() is not None:
+            if _a_un_ouvreur(page):
                 return  # fenêtre ouverte par l'outil (lien, export, connexion) : on la garde
             if est_onglet_vide(page.url):
                 try:
@@ -250,7 +280,10 @@ class Navigateur:
                     pass
             url = page.url
             recent = time.monotonic() - self._ouvert_a < FENETRE_DEMARRAGE_S
-            if est_onglet_parasite(url) or (recent and not est_onglet_vide(url)):
+            # un onglet du même site que l'outil (clic molette, Ctrl+clic...) fait partie de la tâche
+            sites_outil = {site_de(p.url) for p in self.pages_de_travail() if p is not page} - {""}
+            etranger = site_de(url) not in sites_outil
+            if est_onglet_parasite(url) or (recent and etranger and not est_onglet_vide(url)):
                 self._fermer_parasite(page)
                 if self.visible and self.page is not None and not self.page.is_closed():
                     self.page.bring_to_front()
@@ -288,21 +321,46 @@ class Navigateur:
             time.sleep(duree_ms / 1000)
 
     def _brancher_page(self, page: Page) -> None:
-        mode = self.config.dialogues
-        if mode == "ignorer":
-            return  # sans gestionnaire, Playwright ferme les boîtes de dialogue automatiquement
+        page.on("dialog", self._gerer_dialogue)
 
-        def gerer(dialogue) -> None:
-            journal.info("Boîte de dialogue (%s) : %s -> %s", dialogue.type, dialogue.message, mode)
-            try:
-                if mode == "accepter":
+    def _gerer_dialogue(self, dialogue: Any) -> None:
+        if self._en_pause:
+            # pause manuelle : la boîte reste à l'écran, c'est l'utilisateur qui répond
+            self._dialogues_differes.append(dialogue)
+            return
+        self._repondre_dialogue(dialogue)
+
+    def _repondre_dialogue(self, dialogue: Any) -> None:
+        mode = self.config.dialogues
+        try:
+            if mode == "ignorer":
+                # comme Playwright sans gestionnaire : on ferme (on quitte la page si c'est demandé)
+                if dialogue.type == "beforeunload":
                     dialogue.accept()
                 else:
                     dialogue.dismiss()
-            except PlaywrightError:
-                pass
+                return
+            journal.info("Boîte de dialogue (%s) : %s -> %s", dialogue.type, dialogue.message, mode)
+            if mode == "accepter":
+                dialogue.accept()
+            else:
+                dialogue.dismiss()
+        except Exception:  # noqa: BLE001 - déjà fermée (par l'utilisateur) ou page fermée
+            pass
 
-        page.on("dialog", gerer)
+    @contextmanager
+    def pause_manuelle(self) -> Iterator[None]:
+        """Pendant une pause, le navigateur continue de tourner mais ne répond pas aux
+        boîtes de dialogue à la place de l'utilisateur. Celles qu'il a laissées ouvertes
+        sont traitées normalement à la reprise."""
+        self._en_pause = True
+        try:
+            yield
+        finally:
+            self._en_pause = False
+            differes, self._dialogues_differes = self._dialogues_differes, []
+            for dialogue in differes:
+                self._repondre_dialogue(dialogue)
 
     def _attacher(self, url: str) -> None:
         if not url.startswith("http"):
@@ -501,12 +559,12 @@ class Navigateur:
                 if self.contexte is not None:
                     try:
                         self.contexte.close()
-                    except PlaywrightError:
+                    except Exception:  # noqa: BLE001 - navigateur déjà fermé (Ctrl+C...)
                         pass
                 if self.browser is not None:
                     try:
                         self.browser.close()
-                    except PlaywrightError:
+                    except Exception:  # noqa: BLE001
                         pass
         finally:
             if self._pw is not None:

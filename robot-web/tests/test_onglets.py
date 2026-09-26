@@ -5,7 +5,10 @@ travaillait dedans, et à la relance le robot « était sur Google ».
 """
 
 import json
+import subprocess
+import sys
 import threading
+import time
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -109,6 +112,8 @@ def site(tmp_path):
     (tmp_path / "outil.html").write_text(
         "<title>Outil</title><h1>Outil</h1>"
         "<a id=lien target=_blank href=fiche.html>fiche</a>"
+        "<a id=simple href=fiche.html>simple</a>"
+        "<button id=lanceur onclick=\"window.open('fiche.html','app','width=600');window.close()\">lancer</button>"
         "<button id=chercher onclick=\"document.body.dataset.fait='1'\">Chercher</button>",
         encoding="utf-8")
     (tmp_path / "fiche.html").write_text("<title>Fiche</title>fiche", encoding="utf-8")
@@ -161,8 +166,11 @@ def test_onglets_restaures_par_chrome_fermes_au_demarrage(site, tmp_path_factory
 
 def test_onglet_tardif_de_chrome_ferme_mais_pas_les_fenetres_de_l_outil(site, tmp_path_factory, navigateur_ok):
     dossier, base = site
-    # profil conservé, comme pour une vraie tâche (et Target.createTarget y ouvre l'onglet)
-    nav = _ouvrir(dossier, profil=str(tmp_path_factory.mktemp("profil")))
+    port = base.rsplit(":", 1)[1]
+    # profil conservé, comme pour une vraie tâche (et Target.createTarget y ouvre l'onglet) ;
+    # « promo.exemple » : un autre site que l'outil, servi par le même petit serveur
+    nav = _ouvrir(dossier, profil=str(tmp_path_factory.mktemp("profil")),
+                  arguments=["--host-resolver-rules=MAP promo.exemple 127.0.0.1"])
     try:
         page = nav.page
         page.goto(f"{base}/outil.html")
@@ -172,12 +180,12 @@ def test_onglet_tardif_de_chrome_ferme_mais_pas_les_fenetres_de_l_outil(site, tm
         fiche = info.value
         # un onglet ouvert par Chrome lui-même, sans opener (comme « Nouveautés »)
         cdp = nav.contexte.new_cdp_session(page)
-        cdp.send("Target.createTarget", {"url": f"{base}/promo.html"})
+        cdp.send("Target.createTarget", {"url": f"http://promo.exemple:{port}/promo.html"})
         for _ in range(20):
             page.wait_for_timeout(200)
             if nav.parasites:
                 break
-        assert [p.url for p in nav.parasites] == [f"{base}/promo.html"]
+        assert [p.url for p in nav.parasites] == [f"http://promo.exemple:{port}/promo.html"]
         assert nav.parasites[0].is_closed()
         assert not fiche.is_closed()
         assert nav.page_courante() is page
@@ -228,3 +236,113 @@ def test_clics_sur_google_ignores_pendant_l_enregistrement(site, navigateur_ok):
         nav.fermer()
     assert enregistreur.ignorees == 1
     assert [e.args.get("selecteur") for e in etapes if e.action == "cliquer"] == ["#chercher"]
+
+
+# ---------------------------------------------------------------------- relecture de la revue
+@pytest.mark.parametrize("comment", [dict(button="middle"), dict(modifiers=["ControlOrMeta"]), dict(modifiers=["Shift"])])
+def test_onglet_ouvert_par_l_utilisateur_sur_l_outil_garde(site, tmp_path_factory, comment, navigateur_ok):
+    """Clic molette, Ctrl+clic, Maj+clic : Chrome ouvre l'onglet sans « opener »,
+    mais il est sur le site de l'outil : il fait partie de la tâche."""
+    dossier, base = site
+    nav = _ouvrir(dossier, profil=str(tmp_path_factory.mktemp("profil")))
+    try:
+        page = nav.page
+        page.goto(f"{base}/outil.html")
+        page.click("#simple", **comment)
+        for _ in range(10):
+            page.wait_for_timeout(200)
+        ouvertes = [p.url for p in nav.contexte.pages if not p.is_closed()]
+        assert f"{base}/fiche.html" in ouvertes and not nav.parasites
+    finally:
+        nav.fermer()
+
+
+def test_application_ouverte_par_un_portail_qui_se_referme_gardee(site, tmp_path_factory, navigateur_ok):
+    dossier, base = site
+    nav = _ouvrir(dossier, profil=str(tmp_path_factory.mktemp("profil")))
+    try:
+        page = nav.page
+        page.goto(f"{base}/outil.html")
+        with page.expect_popup() as info:
+            page.evaluate("window.open('outil.html')")
+        portail = info.value
+        portail.wait_for_load_state()
+        portail.click("#lanceur")  # ouvre l'application puis se ferme aussitôt
+        for _ in range(10):
+            page.wait_for_timeout(200)
+        ouvertes = [p.url for p in nav.contexte.pages if not p.is_closed()]
+        assert f"{base}/fiche.html" in ouvertes and not nav.parasites
+    finally:
+        nav.fermer()
+
+
+def test_pendant_une_pause_les_questions_de_l_outil_restent_a_l_utilisateur(navigateur_ok, tmp_path):
+    nav = _ouvrir(tmp_path)
+    try:
+        page = nav.page
+        page.set_content("<title>t</title>")
+        page.evaluate("setTimeout(() => { document.title = 'reponse=' + confirm('Supprimer ?'); }, 200)")
+        with nav.pause_manuelle():
+            fin = time.monotonic() + 1.5
+            while time.monotonic() < fin:
+                nav.pomper()
+            assert len(nav._dialogues_differes) == 1  # mise de côté : personne n'a répondu à sa place
+        page.wait_for_function("document.title.startsWith('reponse')", timeout=5000)
+        assert page.title() == "reponse=true"  # à la reprise : réglage habituel (accepter)
+    finally:
+        nav.fermer()
+
+
+SCRIPT_CTRL_C = """
+import os, signal, sys, threading, time
+sys.path.insert(0, {racine!r})
+from pathlib import Path
+from autoweb import console
+from autoweb.navigateur import Navigateur
+from autoweb.scenario import ConfigNavigateur
+console.console_interactive = lambda: True
+nav = Navigateur(ConfigNavigateur(canal="auto", visible=False), Path({dossier!r}), visible=False)
+nav.ouvrir()
+lecture, _ = os.pipe()
+sys.stdin = os.fdopen(lecture, "r")
+threading.Thread(target=lambda: (time.sleep(1.5), os.kill(os.getpid(), signal.SIGINT)), daemon=True).start()
+try:
+    console.lire_ligne(nav.pomper)
+except KeyboardInterrupt:
+    print("interrompu", flush=True)
+debut = time.monotonic()
+nav.fermer()
+print("ferme en %.1f s" % (time.monotonic() - debut), flush=True)
+"""
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="signal envoyé à soi-même : POSIX")
+def test_ctrl_c_pendant_une_pause_arrete_proprement(tmp_path, navigateur_ok):
+    """Ctrl+C reçu pendant que le navigateur tourne ne doit pas bloquer la fermeture."""
+    script = SCRIPT_CTRL_C.format(racine=str(Path(__file__).resolve().parent.parent), dossier=str(tmp_path))
+    sortie = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, timeout=60).stdout
+    assert "interrompu" in sortie and "ferme en" in sortie
+
+
+class _FauxMsvcrt:
+    def __init__(self, touches):
+        self.touches = list(touches)
+
+    def kbhit(self):
+        return bool(self.touches)
+
+    def getwch(self):
+        return self.touches.pop(0)
+
+
+@pytest.mark.parametrize("touches, attendu", [
+    ("à\r", "à"),                       # « à » (touche 0 du clavier français) n'est pas une flèche
+    ("\xe0Hstop\r", "stop"),            # flèche haut, puis « stop »
+    ("\x00;ok\r", "ok"),                # touche F1, puis « ok »
+    ("abc\bd\r", "abd"),                # retour arrière
+])
+def test_lecture_windows_du_clavier(monkeypatch, capsys, touches, attendu):
+    from autoweb import console
+
+    monkeypatch.setitem(sys.modules, "msvcrt", _FauxMsvcrt(touches))
+    assert console._lire_ligne_windows(lambda: None, []) == attendu
