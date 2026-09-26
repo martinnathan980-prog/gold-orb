@@ -188,8 +188,10 @@ async function reinitialiser(pg) {
   const sel0 = await p.evaluate(() => ({
     visible: !document.getElementById('choix-contrat').hidden &&
              document.getElementById('select-contrat').offsetParent !== null,
-    haut: document.getElementById('choix-contrat').getBoundingClientRect().top <
-          document.querySelector('.masthead').getBoundingClientRect().top,
+    /* Le bloc des réglages est en display: contents — sa boîte est vide ;
+       on mesure le sélecteur lui-même. */
+    haut: document.getElementById('select-contrat').getBoundingClientRect().bottom <=
+          document.querySelector('.masthead').getBoundingClientRect().top + 1,
     options: [...document.querySelectorAll('#select-contrat option')].map(o => o.value).join(','),
     courant: document.getElementById('select-contrat').value,
     masthead: document.querySelector('.masthead').textContent,
@@ -222,7 +224,10 @@ async function reinitialiser(pg) {
        dernier relevé et tous les jalons du contrat — pas à un nombre de
        bandes, qui dépend de la source. */
     jalons: document.querySelectorAll('svg.graphe .jalon').length,
-    aujourdhui: document.querySelectorAll('svg.graphe .repere-auj').length === 1
+    aujourdhui: document.querySelectorAll('svg.graphe .repere-auj').length === 1,
+    cadrage: [...document.querySelectorAll('.commandes-graphe .segmente button[aria-pressed="true"]')]
+      .map(b => b.dataset.span).join(','),
+    echeances: !document.querySelector('.commandes-graphe .segmente button[data-span="jalons"]').hidden
   }));
   await p.selectOption('#select-contrat', 'THS'); await p.waitForTimeout(1200);
   const x2 = await lireContrat();
@@ -230,8 +235,8 @@ async function reinitialiser(pg) {
   verifier('et le pied de page', x2.pied !== pied0, x2.pied);
   verifier('le contrat courant est celui du sélecteur, et le titre ne le répète pas',
     x2.nom === 'THS' && x2.courant === 'THS' && !/contrat/i.test(x2.masthead), x2.nom);
-  verifier('les filtres et le cadrage repartent de zero : six mois, le repère du dernier relevé',
-    x2.filtres && x2.presse === 0 && x2.zones === 26 && x2.aujourdhui, JSON.stringify(x2));
+  verifier('les filtres et le cadrage repartent de zero : « Échéances » (ou six mois sans jalon à venir), le repère du dernier relevé',
+    x2.filtres && x2.presse === 0 && x2.cadrage === (x2.echeances ? 'jalons' : '26') && x2.aujourdhui, JSON.stringify(x2));
   verifier('le bloc par groupe et le journal suivent le nouveau contrat',
     x2.groupes === x2.plans && x2.journal > 0, x2.groupes + ' / ' + x2.plans);
   await p.selectOption('#select-contrat', 'VRK'); await p.waitForTimeout(1200);
@@ -2198,18 +2203,23 @@ async function reinitialiser(pg) {
   await p.click(`.critique-ligne[data-groupe="${grosAta.groupe}"]`); await p.waitForTimeout(600);
   const liste = await p.evaluate(() => {
     const refs = [...document.querySelectorAll('.jeton-ud')];
-    const titres = [...document.querySelectorAll('.groupe-refs .sous-titre')].map(t => t.textContent.replace(/\s+/g, ' ').trim());
-    const paquets = [...document.querySelectorAll('.groupe-refs .sous-groupe')].map(sg => ({
-      titre: sg.querySelector('.sous-titre').textContent,
-      refs: [...sg.querySelectorAll('.jeton-ud')].map(b => ({
-        ref: b.dataset.ud, etat: (b.getAttribute('title') || '').split(' — ')[0]
-      }))
-    }));
+    const paquets = [...document.querySelectorAll('.groupe-refs .sous-groupe')].map(sg => {
+      const t = sg.querySelector('.sous-titre');
+      const n = t.querySelector('.n');
+      return {
+        libelle: (t.textContent.slice(0, t.textContent.length - (n ? n.textContent.length : 0))).replace(/\s+/g, ' ').trim(),
+        n: n ? +n.textContent.replace(/\D/g, '') : NaN,
+        pastille: !!t.querySelector('.pastille'),
+        refs: [...sg.querySelectorAll('.jeton-ud')].map(b => ({
+          ref: b.dataset.ud, etat: (b.getAttribute('title') || '').split(' — ')[0]
+        }))
+      };
+    });
     const zone = document.getElementById('zone-critique');
     return {
       jetons: refs.length, ud: refs.filter(b => b.dataset.ud).length,
       autres: /autres/.test(document.querySelector('.groupe-refs').textContent),
-      titres, paquets,
+      paquets, valeurs: window.__valeurs(),
       entete: document.querySelector('.groupe-refs .entete').textContent,
       pastilles: refs.every(b => b.querySelector('.pastille')),
       mono: refs.every(b => /Mono|mono/.test(getComputedStyle(b).fontFamily)),
@@ -2217,34 +2227,34 @@ async function reinitialiser(pg) {
       defile: zone.scrollHeight > zone.clientHeight && getComputedStyle(zone).overflowY === 'auto'
     };
   });
-  const ETATS_RESTANTS = ['À faire', 'Non renseigné', 'En cours'];
-  const rangEtat = e => ETATS_RESTANTS.indexOf(e);
-  const numRef = r => Number(r.replace(/\D/g, ''));
-  const bienRange = (refs) => refs.every((x, i) => i === 0 ||
-    rangEtat(refs[i - 1].etat) < rangEtat(x.etat) ||
-    (rangEtat(refs[i - 1].etat) === rangEtat(x.etat) && refs[i - 1].ref.localeCompare(x.ref, 'fr', { numeric: true }) <= 0));
+  const ordreValeurs = liste.valeurs.map(v => v.libelle);
+  const familleDe = l => (liste.valeurs.find(v => v.libelle === l) || {}).famille;
+  const parRef = refs => refs.every((r, i) => i === 0 || refs[i - 1].ref.localeCompare(r.ref, 'fr', { numeric: true }) <= 0);
+  const restantsListe = liste.paquets.filter(q => familleDe(q.libelle) !== 'termine').reduce((t, q) => t + q.refs.length, 0);
   verifier('deplier un groupe montre TOUTES ses references : autant de jetons que de plans',
     liste.ud === grosAta.total && liste.jetons === liste.ud, liste.ud + ' / ' + grosAta.total);
   verifier('plus aucun « et N autres »', !liste.autres);
-  verifier('deux sous-titres, « Pas encore termines (n) » puis « Termines (n) », avec les bons comptes',
-    liste.paquets.length === 2 && /^Pas encore terminés\s*\((\d+)\)$/.test(liste.titres[0]) && /^Terminés\s*\((\d+)\)$/.test(liste.titres[1]) &&
-    +liste.titres[0].match(/\((\d+)\)/)[1] === liste.paquets[0].refs.length &&
-    +liste.titres[1].match(/\((\d+)\)/)[1] === liste.paquets[1].refs.length &&
-    liste.paquets[0].refs.length + liste.paquets[1].refs.length === grosAta.total,
-    JSON.stringify(liste.titres));
-  verifier('le premier paquet : a faire, non renseignes, en cours — dans cet ordre, puis par reference',
-    liste.paquets[0].refs.every(r => rangEtat(r.etat) !== -1) && bienRange(liste.paquets[0].refs),
-    JSON.stringify(liste.paquets[0].refs.slice(0, 3)));
-  verifier('le second : rien que des termines, par reference',
-    liste.paquets[1].refs.every(r => r.etat === 'Terminé') &&
-    liste.paquets[1].refs.every((r, i) => i === 0 || liste.paquets[1].refs[i - 1].ref.localeCompare(r.ref, 'fr', { numeric: true }) <= 0));
+  /* Débrief 13 : « c'est un peu le bordel ». Plus de tas « pas encore
+     terminés » où les états se mêlaient : une sous-liste par valeur de la
+     colonne, dans l'ordre de la barre du haut, chacune avec sa pastille et
+     son compte. */
+  verifier('une sous-liste par valeur, dans l’ordre de la barre du haut, chacune avec sa pastille et son compte',
+    liste.paquets.length >= 2 &&
+    liste.paquets.every((q, i) => ordreValeurs.indexOf(q.libelle) !== -1 &&
+      (i === 0 || ordreValeurs.indexOf(liste.paquets[i - 1].libelle) < ordreValeurs.indexOf(q.libelle))) &&
+    liste.paquets.every(q => q.pastille && q.n === q.refs.length) &&
+    liste.paquets.reduce((t, q) => t + q.refs.length, 0) === grosAta.total,
+    JSON.stringify(liste.paquets.map(q => [q.libelle, q.n, q.refs.length])));
+  verifier('dans chaque sous-liste, un seul état — celui de son titre — et les références dans l’ordre',
+    liste.paquets.every(q => q.refs.every(r => r.etat === q.libelle) && parRef(q.refs)),
+    JSON.stringify(liste.paquets.map(q => [q.libelle, q.refs.slice(0, 2)])));
   verifier('l\'en-tete dit combien et invite a cliquer une reference',
-    new RegExp('^' + grosAta.total + ' plans · ' + liste.paquets[0].refs.length + ' pas encore terminés').test(liste.entete.trim()) &&
+    new RegExp('^' + grosAta.total + ' plans · ' + restantsListe + ' pas encore terminés').test(liste.entete.trim()) &&
     /cliquez une référence pour la retrouver dans le tableau/.test(liste.entete), liste.entete.trim());
   verifier('des jetons compacts : pastille + reference en mono, aucun ne deborde',
     liste.pastilles && liste.mono && liste.dedans);
   verifier('le bloc defile plutot que de pousser la page', liste.defile);
-  const refJeton = liste.paquets[1].refs[0].ref;
+  const refJeton = liste.paquets[liste.paquets.length - 1].refs[0].ref;
   await p.click(`.jeton-ud[data-ud="${refJeton}"]`); await p.waitForTimeout(600);
   verifier('un clic sur un jeton filtre le tableau sur ce plan',
     await p.evaluate(r => {
@@ -2284,11 +2294,41 @@ async function reinitialiser(pg) {
 
   // =================================================================
   section('Graphique : zoom, déplacement, extrêmes');
-  /* Le cadrage d'ouverture est de six mois — exactement celui du bouton
-     « 6 mois ». */
+  /* Débrief 13 : le cadrage d'ouverture est « Échéances » — trois mois
+     avant le dernier relevé, jusqu'à la semaine qui suit la dernière
+     échéance : toutes les échéances à l'écran, la cinquième comprise, et
+     rien au-delà. C'est celui du bouton « Échéances », pressé. */
+  const cadrageOuv = await p.evaluate(() => {
+    const zones = [...document.querySelectorAll('.zone-clic')].map(z => +z.dataset.i);
+    const jal = [...document.querySelectorAll('svg.graphe .jalon')].map(g => +g.dataset.i);
+    const auj = document.querySelector('svg.graphe .repere-auj');
+    return {
+      n: zones.length, premiere: Math.min(...zones), derniere: Math.max(...zones),
+      jalons: jal, source: window.__jeuDExemple('HDK').jalons.length,
+      horsFenetre: document.querySelectorAll('.legende-jalon.hors-fenetre').length,
+      presses: [...document.querySelectorAll('.commandes-graphe .segmente button[aria-pressed="true"]')].map(b => b.dataset.span),
+      premierBouton: document.querySelector('.commandes-graphe .segmente button').textContent.trim(),
+      auj: !!auj
+    };
+  });
+  verifier('le graphique s’ouvre sur « Échéances » : le premier bouton, seul pressé',
+    cadrageOuv.presses.join() === 'jalons' && cadrageOuv.premierBouton === 'Échéances', JSON.stringify(cadrageOuv.presses));
+  verifier('toutes les échéances sont à l’écran, la cinquième comprise, aucune « hors fenêtre »',
+    cadrageOuv.jalons.length === cadrageOuv.source && cadrageOuv.source === 5 &&
+    cadrageOuv.jalons.every(i => i >= cadrageOuv.premiere && i <= cadrageOuv.derniere) && cadrageOuv.horsFenetre === 0,
+    JSON.stringify(cadrageOuv));
+  verifier('le cadre s’arrête la semaine qui suit la dernière échéance, et montre le dernier relevé',
+    cadrageOuv.derniere === Math.max(...cadrageOuv.jalons) + 1 && cadrageOuv.auj, JSON.stringify(cadrageOuv));
+  await p.click('.segmente button[data-span="26"]'); await p.waitForTimeout(350);
   const zoom0 = await p.evaluate(() => document.querySelectorAll('.zone-clic').length);
-  const presse0 = await p.evaluate(() => document.querySelector('.segmente button[data-span="26"]').getAttribute('aria-pressed'));
-  verifier('le graphique s\'ouvre sur six mois : 26 semaines, « 6 mois » pressé', zoom0 === 26 && presse0 === 'true', zoom0 + ' ' + presse0);
+  const presse0 = await p.evaluate(() => [...document.querySelectorAll('.commandes-graphe .segmente button[aria-pressed="true"]')].map(b => b.dataset.span).join());
+  verifier('le bouton « 6 mois » cadre 26 semaines, et lui seul est pressé', zoom0 === 26 && presse0 === '26', zoom0 + ' ' + presse0);
+  await p.click('.segmente button[data-span="jalons"]'); await p.waitForTimeout(350);
+  const retourEch = await p.evaluate(() => ({
+    n: document.querySelectorAll('.zone-clic').length,
+    presses: [...document.querySelectorAll('.commandes-graphe .segmente button[aria-pressed="true"]')].map(b => b.dataset.span).join()
+  }));
+  verifier('« Échéances » y ramène', retourEch.n === cadrageOuv.n && retourEch.presses === 'jalons', JSON.stringify(retourEch));
   await p.click('.segmente button[data-span="52"]'); await p.waitForTimeout(350);
   const zoom1 = await p.evaluate(() => ({
     n: document.querySelectorAll('.zone-clic').length,
@@ -2329,8 +2369,11 @@ async function reinitialiser(pg) {
   /* Le curseur promet la main sur tout le cadre : le glissement doit donc
      partir de partout, y compris de la frise des jalons et de la marge basse. */
   const cadre = await (await p.$('#cadre-graphe')).boundingBox();
+  /* La dernière semaine du cadre : celle de la dernière bande de survol. (Pas
+     la dernière graduation : les mots posés sur la courbe, « fin S9… »,
+     « manque 180 », passent après les traits des jalons.) */
   const derniereSemaine = () => p.evaluate(() =>
-    [...document.querySelectorAll('svg.graphe .grad')].map(t => t.textContent).slice(-1)[0]);
+    [...document.querySelectorAll('svg.graphe .zone-clic')].map(z => z.dataset.i).slice(-1)[0]);
   async function balayer(fracY, sens) {
     const y = cadre.y + cadre.height * fracY;
     const depart = cadre.x + cadre.width * (sens < 0 ? 0.75 : 0.25);
@@ -2417,16 +2460,20 @@ async function reinitialiser(pg) {
     entrees: [...document.querySelectorAll('#legende-jalons .legende-jalon')].map(e => ({
       idx: e.dataset.jalon, num: e.querySelector('.num').textContent, mot: e.querySelector('.mot').textContent,
       quand: e.querySelector('.quand').textContent.replace(/[\u00a0\u202f]/g, ' '), critique: e.classList.contains('critique'), hors: e.classList.contains('hors-perimetre'),
+      autres: e.children.length - 3,
       focusable: e.tabIndex === 0 })),
     critiquesDessin: [...document.querySelectorAll('svg.graphe .jalon.critique')].map(g => g.dataset.jalon).join(',')
   }));
-  verifier('sous le graphique, la légende des jalons : « Jalons », puis chaque numéro, son texte, sa semaine et son périmètre, atteignable au clavier',
+  /* Débrief 13 : « Diffusion PH base et la date, c'est nickel » — sous le
+     nom, la semaine et rien d'autre : ni périmètre, ni « dans N jours ». */
+  verifier('sous le graphique, la légende des jalons : « Jalons », puis chaque numéro, son texte et sa semaine — rien d’autre —, atteignable au clavier',
     legendeJ.visible && legendeJ.mot === 'Jalons' && legendeJ.entrees.length === 5 &&
-    legendeJ.entrees.every((e, i) => e.num === String(i + 1) && e.idx === String(i) && e.mot.length > 0 && /^S\d{1,2} · \S+ \d{4}/.test(e.quand) && e.focusable) &&
+    legendeJ.entrees.every((e, i) => e.num === String(i + 1) && e.idx === String(i) && e.mot.length > 0 && /^S\d{1,2} · \S+ \d{4}$/.test(e.quand) && e.focusable) &&
+    legendeJ.entrees.every(e => !/BASE|OPTION|PERSO|jour|demain|hier|FWD|concept/i.test(e.quand) && e.autres === 0) &&
     /* Sous la définition électrique, les diffusions TO — la table outil,
        concept harnais — restent dessinées, en retrait ; les autres comptent. */
     legendeJ.entrees.every(e => e.hors === /TO /.test(e.mot)) &&
-    legendeJ.entrees[0].mot === 'Solde FWD' && legendeJ.entrees[1].quand === 'S2 · janv. 2027 · BASE/OPTION', JSON.stringify(legendeJ));
+    legendeJ.entrees[0].mot === 'Solde FWD' && legendeJ.entrees[1].quand === 'S2 · janv. 2027', JSON.stringify(legendeJ));
   const grilleJ = await p.evaluate(() => {
     const g = document.querySelector('#legende-jalons .legende-jalons-grille');
     if (!g) return null;
@@ -2503,8 +2550,8 @@ async function reinitialiser(pg) {
     window.__chargerSource(s);
   });
   await p.waitForTimeout(500);
-  /* La page s'ouvre sur six mois : pour lire tous les jalons dessinés, on
-     montre tout l'axe. */
+  /* Les jalons de cette source peuvent tomber hors du cadre d'ouverture :
+     pour tous les lire, on montre tout l'axe. */
   await p.click('.commandes-graphe button[data-span="0"]'); await p.waitForTimeout(400);
   const lireEcheance = () => p.evaluate(() => ({
     prochain: window.__prochainJalon() && window.__prochainJalon().texte,
@@ -2704,12 +2751,21 @@ async function reinitialiser(pg) {
       a.length + '/' + b.length);
     await p.click(`button[data-trig="${cle}"]`); await p.waitForTimeout(250);
   }
-  verifier('un troisième clic rend le classement par défaut',
-    await p.evaluate(() => document.querySelectorAll('button[data-trig][data-actif="true"]').length === 0));
-  await p.click('button[data-trig="nom"]'); await p.waitForTimeout(280);
+  /* Le classement par défaut est « par ATA, dans l'ordre » — et il se voit :
+     la colonne ATA est la colonne active, avec sa flèche. */
+  const actifsDefaut = await p.evaluate(() => [...document.querySelectorAll('button[data-trig][data-actif="true"]')]
+    .map(b => b.dataset.trig + (b.querySelector('.fleche') ? '+fleche' : '')).join(','));
+  verifier('un troisième clic rend le classement par défaut : par ATA, colonne active et fléchée',
+    actifsDefaut === 'nom+fleche', actifsDefaut);
   const parNom = await lire('nom');
   verifier('le tri par ATA est bien numérique et croissant',
     parNom.every((v, i) => i === 0 || Number(parNom[i - 1]) <= Number(v)), JSON.stringify(parNom));
+  await p.click('button[data-trig="nom"]'); await p.waitForTimeout(280);
+  const parNomInverse = await lire('nom');
+  verifier('un clic sur ATA renverse l’ordre : décroissant',
+    parNomInverse.every((v, i) => i === 0 || Number(parNomInverse[i - 1]) >= Number(v)) &&
+      parNomInverse.join('|') === parNom.slice().reverse().join('|'), JSON.stringify(parNomInverse));
+  await p.click('button[data-trig="nom"]'); await p.waitForTimeout(280);
   await p.click('button[data-trig="total"]'); await p.waitForTimeout(280);
   const parTotal = (await lire('total')).map(Number);
   verifier('le tri par nombre de plans est décroissant au premier clic',
@@ -2865,22 +2921,24 @@ async function reinitialiser(pg) {
     await p.evaluate(() => !document.getElementById('avertissement-demo').hidden &&
       /Démonstration — les chiffres de cette page sont fictifs/.test(document.querySelector('.pied').textContent)));
 
-  /* Le cadrage d'ouverture : six mois autour d'aujourd'hui. Les jalons qui
-     tombent dehors restent dans la légende, marqués « hors fenêtre », et
-     tous gardent leur décompte en jours. */
+  /* Le cadrage d'ouverture : « Échéances » — tous les jalons à l'écran. Le
+     décompte en jours n'est plus écrit sous chaque jalon (le graphique le
+     donne) : il se lit au survol, avec la semaine. */
   const cadrage = await p.evaluate(() => ({
     dessines: document.querySelectorAll('svg.graphe .jalon').length,
     legende: document.querySelectorAll('.legende-jalon').length,
     horsFenetre: document.querySelectorAll('.legende-jalon.hors-fenetre').length,
-    decomptes: [...document.querySelectorAll('.legende-jalon .decompte')].map(d => d.textContent),
+    decomptesEcrits: document.querySelectorAll('.legende-jalon .decompte').length,
+    survols: [...document.querySelectorAll('.legende-jalon')].map(e => (e.getAttribute('title') || '').replace(/[\u00a0\u202f]/g, ' ')),
     aujourdhui: [...document.querySelectorAll('svg.graphe .repere-auj')].length === 1
   }));
-  verifier('à l’ouverture, le repère du dernier relevé est dans le cadre ; les jalons au-delà des six mois sont dits « hors fenêtre »',
-    cadrage.aujourdhui && cadrage.legende === 5 && cadrage.dessines + cadrage.horsFenetre === 5 && cadrage.dessines >= 1,
+  verifier('à l’ouverture, le repère du dernier relevé est dans le cadre, et les cinq jalons aussi : aucun « hors fenêtre »',
+    cadrage.aujourdhui && cadrage.legende === 5 && cadrage.dessines === 5 && cadrage.horsFenetre === 0,
     JSON.stringify(cadrage));
-  verifier('chaque jalon de la légende dit dans combien de jours il tombe',
-    cadrage.decomptes.length === 5 && cadrage.decomptes.every(t => /^(dans \d+ jours|demain|aujourd’hui|hier|il y a \d+ jours)$/.test(t.replace(/\s/g, ' '))),
-    JSON.stringify(cadrage.decomptes));
+  verifier('aucun « dans N jours » écrit sous les jalons ; le survol le dit, avec la semaine',
+    cadrage.decomptesEcrits === 0 && cadrage.survols.length === 5 &&
+    cadrage.survols.every(t => /S\d{1,2} · \S+ \d{4}, (dans \d+ jours|demain|aujourd’hui|hier|il y a \d+ jours)/.test(t)),
+    JSON.stringify(cadrage.survols));
 
   // La ligne « changement d'indice » d'une semaine dépliée n'est plus reléguée derrière « voir les autres ».
   await p.click('.journal-semaine .journal-plier >> nth=0'); await p.waitForTimeout(300);
@@ -3044,12 +3102,15 @@ async function reinitialiser(pg) {
       const cible = d ? Date.UTC(d[0], d[1] - 1, d[2]) : lundi1.getTime() + ((sem - 1) * 7 + 4) * 86400000;
       const n = new Date(); const auj = Date.UTC(n.getFullYear(), n.getMonth(), n.getDate());
       return { idx: +el.dataset.jalon, jours: Math.round((cible - auj) / 86400000), date: el.dataset.date || '', nom: el.querySelector('.mot').textContent,
-               decompte: el.querySelector('.decompte').textContent };
+               /* Le décompte n'est plus écrit sous le jalon (débrief 13) : il se
+                  lit au survol, juste après la semaine. */
+               decompte: (((el.getAttribute('title') || '').replace(/[\u00a0\u202f]/g, ' ')
+                 .match(/, (dans \d+ jours|demain|aujourd’hui|hier|il y a \d+ jours)/) || [])[1] || '') };
     });
   });
   const motAttendu = n => n === 0 ? 'aujourd’hui' : n === 1 ? 'demain' : n === -1 ? 'hier' : n > 1 ? 'dans ' + n + ' jours' : 'il y a ' + (-n) + ' jours';
   const espaces = t => t.replace(/[\s  ]+/g, ' ');
-  verifier('chaque jalon dit dans combien de jours il tombe — à sa date exacte (Solde FWD : mardi 15/12/2026)',
+  verifier('chaque jalon dit, au survol, dans combien de jours il tombe — à sa date exacte (Solde FWD : mardi 15/12/2026)',
     joursAttendus.length === 5 && joursAttendus.every(j => espaces(j.decompte) === motAttendu(j.jours)) &&
     joursAttendus[0].date === '2026-12-15', JSON.stringify(joursAttendus));
   const titreEch = await p.evaluate(() => {
@@ -3083,9 +3144,12 @@ async function reinitialiser(pg) {
     /(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) \d+ \S+ \d{4}/.test(fiche1.texte) && /(bon|mal)$/.test(fiche1.verdict), JSON.stringify(fiche1));
   // Un jalon d'un périmètre : ses plans à terminer sont ceux de ce périmètre.
   const jalonPerimetre = await p.evaluate(() => {
-    const el = [...document.querySelectorAll('.legende-jalon')].find(e => /BASE\/OPTION/.test(e.querySelector('.quand').textContent));
+    /* Le périmètre d'un jalon ne s'écrit plus sous son nom (débrief 13) : il
+       se lit dans son survol. */
+    const el = [...document.querySelectorAll('.legende-jalon')].find(e => /périmètre BASE\/OPTION/.test(e.getAttribute('title') || ''));
     return el ? +el.dataset.jalon : null;
   });
+  verifier('la démonstration a un jalon BASE/OPTION, que son survol nomme', jalonPerimetre !== null);
   if (jalonPerimetre !== null) {
     await p.click('.legende-jalon[data-jalon="' + jalonPerimetre + '"]'); await p.waitForTimeout(500);
     const fichePer = await p.evaluate(() => {
@@ -3219,7 +3283,9 @@ async function reinitialiser(pg) {
     // La dernière semaine : comparatif du haut, journal et bulle, les mêmes lignes.
     const res = await pq.evaluate(() => {
       const esp = t => String(t || '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim();
-      return { journal: [...document.querySelector('.journal-semaine .resume').children].map(c => esp(c.textContent)),
+      /* Les cases vides du tableau du journal (une sorte de passage absente
+         cette semaine) ne sont pas des lignes du résumé. */
+      return { journal: [...document.querySelector('.journal-semaine .resume').children].filter(c => !c.classList.contains('case-vide')).map(c => esp(c.textContent)),
                comparatif: [...document.querySelectorAll('#comparatif .puce-delta')].map(b => esp(b.textContent)),
                auj: window.__semaineDuTitre().auj };
     });
@@ -3253,8 +3319,8 @@ async function reinitialiser(pg) {
     const cDef = await cad();
     await pq.click('#choix-indicateur button[data-indicateur="concept"]'); await pq.waitForTimeout(700);
     const cCon = await cad();
-    verifier('le graphique s\'ouvre sur six mois, ou sur un an quand la prochaine échéance tombe au-delà : jamais sans elle',
-      cDef.presse === '6 mois' && cDef.horsFenetre === false && cCon.presse === '1 an' && cCon.horsFenetre === false, JSON.stringify([cDef, cCon]));
+    verifier('le graphique s\'ouvre sur « Échéances », sous les deux avancements : jamais sans la prochaine échéance',
+      cDef.presse === 'Échéances' && cDef.horsFenetre === false && cCon.presse === 'Échéances' && cCon.horsFenetre === false, JSON.stringify([cDef, cCon]));
     // Sous le concept, sur « Tout », l'échéance TO Base ne demande que ses plans BASE/OPTION.
     const leg = await pq.evaluate(() => ({ texte: document.getElementById('legende').textContent.replace(/[  ]/g, ' '),
                                            voir: !!document.querySelector('#legende button[data-voir-perimetre]'),
@@ -3278,6 +3344,100 @@ async function reinitialiser(pg) {
     verifier('un cadrage choisi à la main (3 mois) reste quand on change d\'avancement', (await cad()).presse === '3 mois');
     await pq.context().close();
   }
+
+  // =================================================================
+  /* Débrief 13 : « contrat et définition électrique, l'un en dessous de
+     l'autre » ; « dans ce qui a changé semaine par semaine… c'est pas droit,
+     c'est pas carré… il faut tout sur la même colonne ». */
+  section('Débrief 13 : un bandeau empilé, un journal au carré');
+  await reinitialiser(p);
+  await p.evaluate(() => window.scrollTo(0, 0));
+  const bandeau13 = await p.evaluate(() => {
+    const r = el => { const b = el.getBoundingClientRect(); return { l: Math.round(b.left), r: Math.round(b.right), t: Math.round(b.top), b: Math.round(b.bottom) }; };
+    const lab = document.querySelector('#choix-contrat > label');
+    const mot = document.querySelector('#choix-avancement .mot-reglage');
+    return {
+      avancementVisible: !document.getElementById('choix-avancement').hidden && document.getElementById('choix-indicateur').offsetParent !== null,
+      select: r(document.getElementById('select-contrat')), boutons: r(document.getElementById('choix-indicateur')),
+      label: lab ? r(lab) : null, mot: mot ? r(mot) : null,
+      motTexte: mot ? mot.textContent.trim() : '',
+      boutonsTexte: [...document.querySelectorAll('#choix-indicateur button')].map(b => b.textContent.trim())
+    };
+  });
+  verifier('le contrat au-dessus, l’avancement dessous : « Définition électrique | Concept harnais » sous le sélecteur',
+    bandeau13.avancementVisible && bandeau13.select.b <= bandeau13.boutons.t + 1 &&
+    bandeau13.boutonsTexte.join('|') === 'Définition électrique|Concept harnais', JSON.stringify(bandeau13));
+  verifier('les deux commandes partent du même bord gauche, leurs mots alignés à droite devant elles',
+    Math.abs(bandeau13.select.l - bandeau13.boutons.l) <= 1 && !!bandeau13.label && !!bandeau13.mot &&
+    Math.abs(bandeau13.label.r - bandeau13.mot.r) <= 1 && bandeau13.label.r <= bandeau13.select.l && bandeau13.motTexte === 'Avancement',
+    JSON.stringify(bandeau13));
+
+  await p.evaluate(() => document.getElementById('zone-journal').scrollIntoView({ block: 'start' }));
+  await p.waitForTimeout(200);
+  const carre = await p.evaluate(() => {
+    const zone = document.getElementById('zone-journal');
+    const debutContenu = el => {
+      const vus = [...el.querySelectorAll('.pastille, b')].filter(x => x.getBoundingClientRect().width > 2);
+      if (vus.length) return Math.round(Math.min(...vus.map(x => x.getBoundingClientRect().left)));
+      const r = document.createRange(); r.selectNodeContents(el);
+      return Math.round(r.getBoundingClientRect().left);
+    };
+    const semaines = [...zone.querySelectorAll('.journal-semaine')];
+    const entetes = [...zone.querySelectorAll('.journal-entetes > span')];
+    const nCol = entetes.length - 2;   // la semaine, puis les colonnes, puis la jauge
+    const cols = [];
+    for (let k = 0; k < nCol; k++) cols.push([]);
+    const cases = semaines.map(sem => [...sem.querySelector('.resume').children]);
+    cases.forEach(cs => cs.forEach((c, k) => {
+      if (!c.classList.contains('case-vide') && cols[k]) cols[k].push(Math.round(c.getBoundingClientRect().left));
+    }));
+    const jauges = semaines.map(sem => sem.querySelector('.mini-jauge')).filter(Boolean).map(j => Math.round(j.getBoundingClientRect().right));
+    const semLeft = semaines.map(sem => Math.round(sem.querySelector('.journal-plier').getBoundingClientRect().left));
+    return {
+      grille: zone.classList.contains('journal-grille'), semaines: semaines.length, nCol,
+      casesParSemaine: [...new Set(cases.map(cs => cs.length))],
+      ecartsColonnes: cols.map(c => c.length ? Math.max(...c) - Math.min(...c) : 0),
+      remplies: cols.map(c => c.length),
+      /* Ce que l'œil compare : le début du contenu (la pastille, sinon le
+         texte) de chaque en-tête et de la première case remplie dessous. */
+      entetesX: entetes.slice(1, -1).map(debutContenu),
+      premieresX: cols.map((c, k) => {
+        const cs = cases.map(l => l[k]).filter(x => x && !x.classList.contains('case-vide'));
+        return cs.length ? debutContenu(cs[0]) : null;
+      }),
+      entetesTextes: entetes.slice(1, -1).map(e => e.textContent.replace(/[  ]/g, ' ').trim()),
+      motsVisibles: [...zone.querySelectorAll('.journal-tete .mot-case')].filter(m => m.getBoundingClientRect().width > 2).length,
+      ecartJauges: jauges.length ? Math.max(...jauges) - Math.min(...jauges) : 0,
+      ecartSemaines: Math.max(...semLeft) - Math.min(...semLeft),
+      deborde: zone.scrollWidth > zone.clientWidth + 1,
+      collant: getComputedStyle(zone.querySelector('.journal-entetes')).position
+    };
+  });
+  verifier('le journal est un tableau : une case par colonne dans chaque semaine, vide quand la semaine n’a pas cette sorte de passage',
+    carre.grille && carre.semaines >= 5 && carre.nCol >= 3 && carre.casesParSemaine.length === 1 && carre.casesParSemaine[0] === carre.nCol &&
+    carre.remplies.every(n => n >= 1), JSON.stringify(carre));
+  verifier('chaque sorte de passage tombe dans sa colonne, au pixel près, d’une semaine à l’autre',
+    carre.ecartsColonnes.every(e => e <= 1), JSON.stringify(carre.ecartsColonnes));
+  verifier('l’en-tête nomme chaque colonne une fois, exactement au-dessus de ses cases, et reste collé en haut',
+    carre.entetesX.every((x, k) => carre.premieresX[k] === null || Math.abs(x - carre.premieresX[k]) <= 1) &&
+    carre.entetesTextes.some(t => /^passés à « [^»]+ »$/.test(t)) && carre.collant === 'sticky', JSON.stringify([carre.entetesX, carre.premieresX, carre.entetesTextes]));
+  verifier('dans les cases, le nombre et la pastille : les mots sont dans l’en-tête (et pour les lecteurs d’écran)',
+    carre.motsVisibles === 0, String(carre.motsVisibles));
+  verifier('les semaines et les jauges sont alignées elles aussi, et rien ne déborde',
+    carre.ecartJauges <= 1 && carre.ecartSemaines <= 1 && !carre.deborde, JSON.stringify(carre));
+  /* Un filtre qui retire une sorte de passage retire sa colonne : le tableau
+     reste plein, sans colonne vide de bout en bout. */
+  const filtreJ = await p.$('#filtre-journal button[data-journal="indice"]');
+  if (filtreJ) {
+    await filtreJ.click(); await p.waitForTimeout(350);
+    const seul = await p.evaluate(() => ({
+      entetes: [...document.querySelectorAll('#zone-journal .journal-entetes > span')].length - 2,
+      cases: [...new Set([...document.querySelectorAll('#zone-journal .journal-semaine .resume')].map(r => r.children.length))]
+    }));
+    verifier('filtrer sur les changements d’indice ne laisse que leur colonne', seul.entetes === 1 && seul.cases.join() === '1', JSON.stringify(seul));
+    await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(350);
+  }
+  await reinitialiser(p);
 
   section('Persistance (même navigateur, page rechargée)');
   await p.click('button[data-trig="fin"]'); await p.waitForTimeout(300);
@@ -3318,7 +3478,7 @@ async function reinitialiser(pg) {
     lignes: (document.querySelector('#corps-tableau .vide-message') ? 0 : document.querySelectorAll('#corps-tableau tr').length),
     colonnes: document.querySelectorAll('tr.titres th').length,
     refVisible: !!document.querySelector('tr.titres th[data-cle="reference"]'),
-    triActif: document.querySelectorAll('button[data-trig][data-actif="true"]').length,
+    triActif: [...document.querySelectorAll('button[data-trig][data-actif="true"]')].map(b => b.dataset.trig).join(','),
     jalons: [...document.querySelectorAll('.jalon-texte')].map(t => t.textContent)
   }));
   verifier('des préférences absurdes sont ignorées sans plantage', survie.lignes === TOTAL, survie.lignes + ' lignes');
@@ -3327,7 +3487,7 @@ async function reinitialiser(pg) {
   verifier('une ancienne clé « cachees » est ignorée : les 137 colonnes restent présentes',
     survie.colonnes === COLONNES_TOTAL, survie.colonnes + ' colonnes');
   verifier('la référence UD ne peut pas être masquée par le stockage', survie.refVisible);
-  verifier('une clé de tri inconnue n\'est pas appliquée', survie.triActif === 0);
+  verifier('une clé de tri inconnue n\'est pas appliquée : le bloc reste rangé par nom', survie.triActif === 'nom', survie.triActif);
   await ctxCorrompu.close();
 
   const ctxBloque = await contexte();

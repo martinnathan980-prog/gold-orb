@@ -198,7 +198,7 @@ body {
   border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--creux); }
 body[data-vide="true"] .classeur-vide { display: block; }
 body[data-vide="true"] section.avancement, body[data-vide="true"] section.bloc,
-body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-indicateur, body[data-vide="true"] .pied { display: none !important; }
+body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement, body[data-vide="true"] .pied { display: none !important; }
 
 /* ---------------------------------------------------- Bandeau du haut */
 /* Le contrat et l'avancement suivi, tout en haut, discrets. */
@@ -212,14 +212,21 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-indicateur,
    place du mot de mode, et annoncé aux lecteurs d'écran. */
 .bandeau-mode .alerte-source { color: var(--alerte); font-weight: 500; }
 .bandeau-mode .alerte-source[hidden] { display: none; }
-/* Le choix du contrat : à droite du même bandeau, dans le même registre
-   discret. Il n'apparaît que s'il y a vraiment plusieurs contrats entre
-   lesquels choisir — avec un seul, il n'aurait rien à dire. */
-.bandeau-mode .choix-contrat {
-  margin-left: auto; display: inline-flex; align-items: baseline; gap: 8px;
-  font-size: 12.5px; color: var(--encre-3);
+/* Les réglages, à droite du bandeau : le contrat au-dessus, l'avancement
+   dessous, chacun son mot à gauche, alignés comme un petit formulaire. Le
+   contrat n'apparaît que s'il y a vraiment plusieurs contrats entre lesquels
+   choisir ; l'avancement, que si l'extract porte le concept harnais. */
+.bandeau-mode .reglages {
+  margin-left: auto; display: grid; grid-template-columns: auto auto; column-gap: 10px; row-gap: 8px;
+  align-items: center; justify-items: start; font-size: 12.5px; color: var(--encre-3);
 }
+.bandeau-mode .choix-contrat, .bandeau-mode .choix-avancement { display: contents; }
+.bandeau-mode .choix-contrat > label, .bandeau-mode .mot-reglage { justify-self: end; }
+.bandeau-mode .choix-contrat .controle { display: inline-flex; align-items: baseline; gap: 8px; }
 .bandeau-mode .choix-contrat[hidden] { display: none; }
+/* Sans l'interrupteur, son mot se tait aussi. */
+.bandeau-mode .choix-avancement[hidden] { display: none; }
+.bandeau-mode .reglages:empty { display: none; }
 .bandeau-mode .choix-contrat select { font-size: 13px; min-width: 64px; }
 .bandeau-mode .choix-contrat select:disabled { color: var(--encre-3); cursor: progress; }
 .bandeau-mode .attente { font-size: 12px; color: var(--encre-3); }
@@ -345,6 +352,43 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-indicateur,
   box-shadow: inset 0 0 0 1px var(--filet-fort);
 }
 @media (max-width: 720px) { .journal-tete .mini-jauge { display: none; } }
+/* Les semaines sur une même grille : la semaine, puis une colonne par sorte
+   de passage — alignées d'une semaine à l'autre, une case vide quand une
+   semaine n'en a pas —, puis la mini-jauge au bord droit. */
+#zone-journal.journal-grille { display: grid; column-gap: 14px; align-content: start; }
+.journal-grille .journal-semaine { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+.journal-grille .journal-tete { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; }
+.journal-grille .journal-tete .resume { display: contents; }
+.journal-grille .journal-liste { grid-column: 1 / -1; }
+.journal-grille .journal-tete .mini-jauge { margin-left: 0; justify-self: end; }
+/* L'en-tête du tableau : chaque colonne nommée une fois, collée en haut du
+   cadre qui défile ; dessous, les cases ne portent que pastille et nombre. */
+.journal-entetes { display: none; }
+.journal-grille .journal-entetes {
+  grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: end;
+  position: sticky; top: 0; z-index: 1; background: var(--surface);
+  padding: 8px 2px 7px; border-bottom: 1px solid var(--filet-fort);
+  font-size: 11.5px; color: var(--encre-3); line-height: 1.3;
+}
+.journal-grille .entete-col { display: flex; align-items: center; gap: 6px; }
+.journal-grille .entete-col .pastille { width: 7px; height: 7px; flex: none; }
+.journal-grille .mot-case { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.journal-grille .compte-passage, .journal-grille .doux-compte { justify-self: start; }
+/* Le contenu d'une case bouton commence 5 px après le bord de sa colonne
+   (marge −4, bord 1, retrait 8) : l'en-tête et les cases sans bouton
+   prennent le même retrait, pour que pastilles et nombres tombent pile sous
+   le nom de leur colonne. */
+.journal-grille .entete-col { padding-left: 4px; }
+.journal-grille .journal-tete .resume .doux-compte { padding-left: 5px; }
+@media (max-width: 720px) {
+  #zone-journal.journal-grille { display: block; }
+  .journal-grille .journal-semaine { display: block; }
+  .journal-grille .journal-tete { display: flex; flex-wrap: wrap; }
+  .journal-grille .journal-tete .resume { display: flex; flex-wrap: wrap; }
+  .journal-tete .case-vide { display: none; }
+  .journal-grille .journal-entetes { display: none; }
+  .journal-grille .mot-case { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+}
 .journal-tete .chevron { color: var(--encre-3); transition: transform .12s; flex: none; }
 .journal-plier[aria-expanded="true"] .chevron { transform: rotate(90deg); }
 .journal-liste { margin: 0 0 12px; padding: 0 0 0 78px; list-style: none; }
@@ -405,22 +449,22 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-indicateur,
   display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
 }
 .groupe-refs .sous-groupe { margin-top: 10px; }
-/* La légende des pastilles, à côté du compte : les carrés ne se devinent pas. */
-.groupe-refs .legende-etats { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; color: var(--encre-2); }
-.groupe-refs .legende-etats span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
-.groupe-refs .legende-etats .pastille { width: 7px; height: 7px; }
 .groupe-refs .sous-titre {
   margin: 0 0 7px; font: 500 10.5px/1.4 "IBM Plex Sans", system-ui, sans-serif;
   letter-spacing: .09em; text-transform: uppercase; color: var(--encre-2);
-  display: flex; align-items: baseline; gap: 7px;
+  display: flex; align-items: center; gap: 7px;
 }
+.groupe-refs .sous-titre .pastille { width: 8px; height: 8px; }
 .groupe-refs .sous-titre .n {
   font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
   letter-spacing: 0; color: var(--encre-3);
 }
+/* Les références en colonnes régulières : même largeur, alignées de ligne
+   en ligne, qu'on parcourt du regard comme une liste. */
 .groupe-refs .grille {
-  display: flex; flex-wrap: wrap; gap: 6px 7px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 7px;
 }
+.groupe-refs .grille .jeton-ud { justify-content: flex-start; }
 .jeton-ud {
   display: inline-flex; align-items: center; gap: 6px;
   border: 1px solid var(--filet); background: var(--surface); color: var(--encre-2);
@@ -458,7 +502,7 @@ select.select:focus { outline: none; border-bottom-color: var(--focus); }
 /* ---------------------------------------------------- Graphique */
 .commandes-graphe { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-left: auto; }
 .segmente { display: inline-flex; border: 1px solid var(--filet-fort); }
-.segmente[hidden] { display: none; }
+.segmente[hidden], .segmente button[hidden] { display: none; }
 .segmente button {
   border: none; border-left: 1px solid var(--filet-fort); background: none;
   font: inherit; font-size: 12px; padding: 3px 10px; color: var(--encre-2); cursor: pointer;
@@ -503,16 +547,11 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .legende-jalons-mot { display: block; color: var(--encre-3); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
 .legende-jalons-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 10px 18px; }
 .legende-jalon {
-  display: grid; grid-template-columns: 18px 1fr; grid-template-rows: auto auto auto;
+  display: grid; grid-template-columns: 18px 1fr; grid-template-rows: auto auto;
   column-gap: 8px; row-gap: 1px; align-items: center; cursor: pointer; border-radius: 6px;
   transition: background-color .15s, box-shadow .15s;
 }
 .legende-jalon:hover, .legende-jalon[aria-expanded="true"] { background: var(--creux); box-shadow: 0 0 0 6px var(--creux); }
-.legende-jalon .ligne-decompte { grid-column: 2; font-size: 11.5px; color: var(--encre-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.legende-jalon .decompte { font-variant-numeric: tabular-nums; }
-.legende-jalon .autre-suivi { font-style: italic; }
-.legende-jalon .decompte.proche { color: var(--cours); font-weight: 500; }
-.legende-jalon .decompte.passe { font-style: italic; }
 .legende-jalon:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
 .legende-jalon .num {
   display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
@@ -1044,18 +1083,28 @@ table.plans thead tr th.col-fige { z-index: 6; }
     <!-- Le message du classeur quand il n'a rien pu rendre — feuille vide,
          contrat introuvable, colonne d'avancement absente. -->
     <span class="mot-mode alerte-source" id="alerte-source" role="alert" hidden></span>
-    <span class="choix-contrat" id="choix-contrat" hidden>
-      <label for="select-contrat">Contrat</label>
-      <select class="select" id="select-contrat"></select>
-      <span class="attente" id="etat-contrat" role="status" aria-live="polite"></span>
-    </span>
-    <!-- L'avancement suivi, lu dans le bloc HDK AA 011 de l'extract : la
-         définition électrique (le FWD) ou le concept harnais. Toute la page
-         suit — barre, courbe, journal, groupes, tableau, comparaison. -->
-    <span class="segmente choix-indicateur" id="choix-indicateur" role="group" aria-label="Avancement suivi" hidden>
-      <button type="button" data-indicateur="def" aria-pressed="true">Définition électrique</button>
-      <button type="button" data-indicateur="concept" aria-pressed="false">Concept harnais</button>
-    </span>
+    <!-- Les deux réglages de la page, l'un sous l'autre, à droite : le
+         contrat, puis l'avancement suivi. Chacun a son mot à gauche, comme
+         un petit formulaire qui se lit de haut en bas. -->
+    <div class="reglages" id="reglages">
+      <span class="choix-contrat" id="choix-contrat" hidden>
+        <label for="select-contrat">Contrat</label>
+        <span class="controle">
+          <select class="select" id="select-contrat"></select>
+          <span class="attente" id="etat-contrat" role="status" aria-live="polite"></span>
+        </span>
+      </span>
+      <!-- L'avancement suivi, lu dans le bloc HDK AA 011 de l'extract : la
+           définition électrique (le FWD) ou le concept harnais. Toute la page
+           suit — barre, courbe, journal, groupes, tableau, comparaison. -->
+      <span class="choix-avancement" id="choix-avancement">
+        <span class="mot-reglage" aria-hidden="true">Avancement</span>
+        <span class="segmente choix-indicateur" id="choix-indicateur" role="group" aria-label="Avancement suivi" hidden>
+          <button type="button" data-indicateur="def" aria-pressed="true">Définition électrique</button>
+          <button type="button" data-indicateur="concept" aria-pressed="false">Concept harnais</button>
+        </span>
+      </span>
+    </div>
   </div>
 
   <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
@@ -1105,6 +1154,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
       <div class="commandes-graphe">
         <span class="segmente" role="group" aria-label="Période affichée">
+          <button type="button" data-span="jalons" title="Jusqu'à la semaine après la dernière échéance : tous les jalons à l'écran">Échéances</button>
           <button type="button" data-span="13">3 mois</button>
           <button type="button" data-span="26">6 mois</button>
           <button type="button" data-span="52">1 an</button>
@@ -2796,27 +2846,26 @@ table.plans thead tr th.col-fige { z-index: 6; }
      repartent de zéro avec elle — on ouvre toujours sur « Tout » ; la
      disposition — dimension, colonnes, tris, vue du tableau — est une
      préférence qui traverse les sources, tant que la nouvelle la permet. */
-  /* Le cadrage d'ouverture : six mois, exactement celui du bouton « 6 mois »
-     — aujourd'hui un peu avant le milieu —, et, si la prochaine échéance
-     tombe au-delà, un an (le bouton « 1 an »), puis tout : la puce
-     « Prochaine échéance » ne parle jamais d'un jalon que le graphique ne
-     montre pas. Tant que le lecteur n'a ni zoomé ni déplacé (vue.fenAuto),
-     le cadrage suit l'échéance quand elle change — autre périmètre, autre
-     avancement. Un cadrage choisi à la main se mémorise, et ne se reprend à
-     l'ouverture que s'il montre encore le dernier relevé (voir chargerPrefs).
-     bornerFenetre() ramène le tout sous le plafond de l'axe. */
-  var SPAN_OUVERTURE = 26;
+  /* Le cadrage d'ouverture : « Échéances » — du dernier relevé moins trois
+     mois jusqu'à la semaine qui suit le dernier jalon : toutes les
+     échéances à l'écran, la cinquième comprise, et rien au-delà. Sans jalon
+     à venir, six mois (le bouton « 6 mois »). Tant que le lecteur n'a ni
+     zoomé ni déplacé (vue.fenAuto), le cadrage se refait à chaque rendu. Un
+     cadrage choisi à la main se mémorise, et ne se reprend à l'ouverture que
+     s'il montre encore le dernier relevé (voir chargerPrefs). bornerFenetre()
+     ramène le tout sous le plafond de l'axe. */
+  var SPAN_OUVERTURE = 26, RECUL_OUVERTURE = 12;
   function cadrageSur(span) {
     return { debut: Math.max(0, AUJ - Math.round(span * 0.45)), span: span };
   }
+  function cadrageEcheances() {
+    var dernier = jalons.reduce(function (m, j) { return Math.max(m, j.i); }, -Infinity);
+    if (!isFinite(dernier) || dernier < AUJ) return null;
+    var debut = Math.max(0, AUJ - RECUL_OUVERTURE);
+    return { debut: debut, span: Math.max(8, dernier + 2 - debut) };
+  }
   function cadrageParDefaut() {
-    var j = prochainJalon();
-    var spans = [SPAN_OUVERTURE, 52];
-    for (var k = 0; k < spans.length; k++) {
-      var f = cadrageSur(spans[k]);
-      if (!j || j.i <= f.debut + f.span - 1) return f;
-    }
-    return { debut: 0, span: spanTout() };
+    return cadrageEcheances() || cadrageSur(SPAN_OUVERTURE);
   }
 
   function remettreVue() {
@@ -2995,8 +3044,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
       }
       parArrivee[e.cApres].refs.push(e.ref);
     });
+    /* Un ordre fixe — la famille (terminé, en cours, à faire, non
+       renseigné), puis la valeur —, le même toutes les semaines : c'est ce
+       qui permet au journal de ranger chaque sorte de passage dans sa
+       colonne. */
     arrivees.sort(function (x, y) {
-      return RANG_FAMILLE[x.famille] - RANG_FAMILLE[y.famille] || y.refs.length - x.refs.length || COMPARER_REF(x.libelle, y.libelle);
+      return RANG_FAMILLE[x.famille] - RANG_FAMILLE[y.famille] || COMPARER_REF(x.libelle, y.libelle);
     });
     var lignes = arrivees.map(function (v) {
       return { cle: v.cle, famille: v.famille, libelle: v.libelle, refs: v.refs, n: v.refs.length, passage: true,
@@ -3395,6 +3448,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     $('titre-page').textContent = INDICATEUR === 'concept' ? 'Suivi concept harnais' : 'Suivi FWD';
     var b = $('choix-indicateur');
     b.hidden = !(SRC && SRC.cleConcept && PAR_CLE[SRC.cleConcept]);
+    $('choix-avancement').hidden = b.hidden;
     [].forEach.call(b.querySelectorAll('button[data-indicateur]'), function (x) {
       x.setAttribute('aria-pressed', String(x.dataset.indicateur === INDICATEUR));
     });
@@ -3783,11 +3837,22 @@ table.plans thead tr th.col-fige { z-index: 6; }
              '" fill="none" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="5 4" opacity=".6"/>');
       if (projIdx >= d0 && projIdx <= d1) {
         s.push('<circle cx="' + x(projIdx).toFixed(1) + '" cy="' + y(total).toFixed(1) + '" r="3.4" fill="none" stroke="var(--fait)" stroke-width="1.6"/>');
-        var xp = Math.max(mG + 40, Math.min(x(projIdx), L - mD - 40));
         // Sous le plafond plutot qu'au-dessus : au-dessus, elle tombait dans la
-        // bande des jalons et se superposait a leurs etiquettes.
-        horsClip.push('<text class="grad" x="' + xp.toFixed(1) + '" y="' + (y(total) + 16).toFixed(1) +
-                      '" text-anchor="middle">fin ' + semaineDite(projIdx) + '</text>');
+        // bande des jalons et se superposait a leurs etiquettes. Près du bord
+        // droit, elle se range avant le point ; un liseré la garde lisible
+        // sur les traits des jalons.
+        var auBord = x(projIdx) > L - mD - 60;
+        var motFin = 'fin ' + semaineDite(projIdx);
+        var xFin = auBord ? x(projIdx) - 8 : Math.max(mG + 40, x(projIdx));
+        /* Un fond plein sous le mot, pas seulement un liseré : le liseré
+           épouse les lettres et laissait passer, entre les mots, le
+           pointillé de la projection ou d'un jalon. Sa largeur est estimée
+           large — 0,6 em par signe, plus que la moyenne de la police. */
+        var wFin = motFin.length * 6.6;
+        horsClip.push('<rect class="fond-mot" x="' + ((auBord ? xFin - wFin : xFin - wFin / 2) - 3).toFixed(1) + '" y="' + (y(total) + 5).toFixed(1) +
+                      '" width="' + (wFin + 6).toFixed(1) + '" height="15" rx="3" fill="var(--surface)"/>');
+        horsClip.push('<text class="grad" x="' + xFin.toFixed(1) + '" y="' + (y(total) + 16).toFixed(1) +
+                      '" text-anchor="' + (auBord ? 'end' : 'middle') + '">' + motFin + '</text>');
       }
     }
     /* Ce qui manquerait le jour de l'échéance, au rythme tenu — le même
@@ -3805,7 +3870,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
         '<title>Au rythme tenu, il manquerait ' + nb(bilan.manque) + ' plan' + (bilan.manque > 1 ? 's' : '') + ' le jour de l\u2019échéance</title>manque ' + nb(bilan.manque) + '</text>');
     }
     s.push('</g>');
-    horsClip.forEach(function (t) { s.push(t); });
 
     if (AUJ >= d0 && AUJ <= d1) {
       s.push('<line x1="' + x(AUJ).toFixed(1) + '" x2="' + x(AUJ).toFixed(1) + '" y1="' + (mHaut - 6) + '" y2="' + basTotal.toFixed(1) + '" stroke="var(--encre-3)" stroke-width="1"/>');
@@ -3840,7 +3904,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       var yMarque = yBase - 9;        // centre du numéro
       var cx = pl.cx;
 
-      s.push('<g class="jalon' + (hors ? ' hors-perimetre' : '') + (critique ? ' critique' : '') + '" data-jalon="' + idx + '" role="img" aria-label="Jalon ' + (idx + 1) + ', ' +
+      s.push('<g class="jalon' + (hors ? ' hors-perimetre' : '') + (critique ? ' critique' : '') + '" data-jalon="' + idx + '" data-i="' + j.i + '" role="img" aria-label="Jalon ' + (idx + 1) + ', ' +
              ech(j.texte) + ', ' + semaineDite(j.i) + mention + '">');
       s.push('<title>' + (idx + 1) + ' \u2014 ' + ech(j.texte) + ' \u2014 ' + semaineDite(j.i) + mention + '</title>');
       s.push('<line x1="' + jx.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y1="' + yBase.toFixed(1) + '" y2="' + basTotal.toFixed(1) +
@@ -3913,6 +3977,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
       }
     }
 
+    /* Les mots posés sur la courbe — « fin S9 · mars 2027 », « manque 180 »,
+       le départ des projections — passent après les traits des jalons :
+       leur liseré les garde lisibles au lieu d'être barrés par un
+       pointillé. */
+    horsClip.forEach(function (t) { s.push(t); });
+
     /* Le point d'une semaine se cherche par son indice, pas par sa position
        dans la série : une semaine sans relevé n'a pas de point. */
     var ptParI = {};
@@ -3965,13 +4035,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
         '</span>');
     }
     $('legende').innerHTML = items.join('');
-    /* La légende des jalons : chaque numéro en clair, sa semaine, son
-       périmètre ; en retrait hors périmètre, en rouge s'il est l'échéance
+    /* La légende des jalons : chaque numéro en clair, son nom, et dessous sa
+       semaine telle que la page la dit partout — « S51 · déc. 2026 ». Rien
+       d'autre (débrief 13) : le périmètre, l'avancement suivi, le décompte
+       en jours et la raison d'un retrait passent dans le survol et dans la
+       fiche. En retrait hors périmètre, en rouge s'il est l'échéance
        manquée. Survoler un jalon ici l'éclaire sur le graphique. */
-    /* Sous chaque nom, sa semaine telle que la page la dit partout —
-       « S51 · déc. 2026 » —, son périmètre, et l'avancement qu'il suit quand
-       ce n'est pas celui qu'on regarde : un jalon TO grisé sous la
-       définition électrique dit pourquoi, sans qu'il faille cliquer. */
     $('legende-jalons').innerHTML = jalons.length ? '<span class="legende-jalons-mot">Jalons</span><div class="legende-jalons-grille" title="Cliquez un jalon pour le détail de son échéance">' + jalons.map(function (j, idx) {
       var hors = !jalonDansPerimetre(j), rouge = prochain && j.i === prochain.i && !hors && enRetard;
       var nj = joursAvant(j);
@@ -3979,13 +4048,13 @@ table.plans thead tr th.col-fige { z-index: 6; }
       return '<span class="legende-jalon' + (hors ? ' hors-perimetre' : '') + (rouge ? ' critique' : '') + (horsFenetre ? ' hors-fenetre' : '') +
         '" data-jalon="' + idx + '" data-semaine="' + etiquette(j.i) + '"' + (j.date ? ' data-date="' + ech(j.date) + '"' : '') +
         ' tabindex="0" role="button" aria-expanded="' + (vue.echeance === idx) + '" title="' +
-        ech(j.texte) + ' \u2014 ' + semaineDite(j.i) + (j.perimetre ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) : '') +
+        ech(j.texte) + ' \u2014 ' + semaineDite(j.i) + ', ' + ech(motJours(nj)) + (j.perimetre ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) : '') +
         (hors ? ' \u2014 ' + ech(raisonRetrait(j)) : '') + (horsFenetre ? ' \u2014 hors de la fen\u00eatre affich\u00e9e' : '') + '">' +
+        /* Le nom et la semaine, rien d'autre : le périmètre, l'avancement
+           suivi et le décompte en jours sont dans la bulle et dans la
+           fiche ; le graphique dit le reste. */
         '<b class="num">' + (idx + 1) + '</b><span class="mot">' + ech(j.texte) + '</span>' +
-        '<span class="quand">' + semaineDite(j.i) + (j.perimetre ? ' \u00b7 ' + ech(j.perimetre) : '') +
-          (!jalonDuSuivi(j) ? ' \u00b7 <span class="autre-suivi">' + (j.suivi === 'concept' ? 'concept harnais' : 'définition électrique') + '</span>' : '') + '</span>' +
-        '<span class="ligne-decompte"><span class="decompte' + (nj < 0 ? ' passe' : (nj <= 21 ? ' proche' : '')) + '">' + ech(motJours(nj)) + '</span>' +
-        (horsFenetre ? '<span class="hors-fen"> \u00b7 hors fen\u00eatre</span>' : '') + '</span></span>';
+        '<span class="quand">' + semaineDite(j.i) + '</span></span>';
     }).join('') + '</div>' + (vue.echeance !== null && jalons[vue.echeance] ? ficheEcheance(vue.echeance) : '') : '';
 
     derniereAnalyse = { pts: pts, total: total, atteint: atteint, restants: restants, vitesse: vitesse,
@@ -3996,16 +4065,21 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
   /* « Tout » n'a pas de largeur fixe : il est pressé quand la fenêtre est
      exactement celle qu'il donnerait, et qu'aucun préréglage fixe ne l'est. */
+  /* Un seul bouton pressé : « Échéances » si la fenêtre est exactement la
+     sienne, sinon la durée qui a cette largeur, sinon « Tout » s'il la
+     donnerait. « Échéances » s'efface quand il n'y a plus de jalon à venir. */
   function majBoutonsZoom() {
-    var boutons = document.querySelectorAll('.commandes-graphe .segmente button');
-    var fixe = false;
-    for (var i = 0; i < boutons.length; i++) {
-      if (Number(boutons[i].dataset.span) === vue.fen.span) fixe = true;
-    }
-    for (var k = 0; k < boutons.length; k++) {
-      var v = Number(boutons[k].dataset.span);
-      boutons[k].setAttribute('aria-pressed', String(v ? v === vue.fen.span : !fixe && vue.fen.span === spanTout()));
-    }
+    var boutons = [].slice.call(document.querySelectorAll('.commandes-graphe .segmente button'));
+    var ech = cadrageEcheances();
+    var surEch = !!ech && ech.debut === vue.fen.debut && ech.span === vue.fen.span;
+    var fixe = !surEch && boutons.some(function (b) { return Number(b.dataset.span) > 0 && Number(b.dataset.span) === vue.fen.span; });
+    boutons.forEach(function (b) {
+      var d = b.dataset.span, v = Number(d), presse;
+      if (d === 'jalons') { b.hidden = !ech; presse = surEch; }
+      else if (v) presse = !surEch && v === vue.fen.span;
+      else presse = !surEch && !fixe && vue.fen.span === spanTout();
+      b.setAttribute('aria-pressed', String(presse));
+    });
   }
 
   function spanTout() {
@@ -4017,7 +4091,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
   function reglerSpan(span) {
     vue.fenAuto = false;
-    vue.fen = span ? cadrageSur(span) : { debut: 0, span: spanTout() };
+    vue.fen = span === 'jalons' ? (cadrageEcheances() || cadrageSur(SPAN_OUVERTURE))
+            : span ? cadrageSur(span) : { debut: 0, span: spanTout() };
     rendreGraphique(selection());
   }
 
@@ -4147,7 +4222,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
   document.querySelector('.commandes-graphe .segmente').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-span]');
-    if (b) reglerSpan(Number(b.dataset.span));
+    if (b) reglerSpan(b.dataset.span === 'jalons' ? 'jalons' : Number(b.dataset.span));
   });
 
   /* ============================================================
@@ -4210,43 +4285,40 @@ table.plans thead tr th.col-fige { z-index: 6; }
   }
 
   /* « Plus de 6 mois : 42 » ne dit pas lesquels. Choisir une ligne déplie donc
-     TOUTES ses références, en deux paquets : ce qui n'est pas terminé — à
-     faire, non renseigné, en cours, dans cet ordre, parce que c'est là qu'il
-     y a quelque chose à faire — puis ce qui est soldé. Dans chaque paquet,
-     les références se suivent dans l'ordre numérique. Rien n'est tronqué :
-     un « et N autres » qui ne s'ouvre pas ne sert à personne. */
+     TOUTES ses références. Rien n'est tronqué : un « et N autres » qui ne
+     s'ouvre pas ne sert à personne. */
   function listeUD(r) {
-    var ordre = { afaire: 0, vide: 1, encours: 2, termine: 3 };
-    var plans = (r.plans || []).slice().sort(function (a, b) {
-      return (ordre[a._etat] - ordre[b._etat]) || a.reference.localeCompare(b.reference, 'fr', { numeric: true });
-    });
+    var plans = (r.plans || []).slice();
     if (!plans.length) return '';
-    function paquet(titre, liste) {
-      if (!liste.length) return '';
-      return '<div class="sous-groupe"><h4 class="sous-titre">' + titre +
-        '<span class="n">(' + nb(liste.length) + ')</span></h4>' +
+    /* Une sous-liste par valeur de la colonne, dans l'ordre de la barre du
+       haut — Terminé, En cours, À faire, Non renseigné, et leurs variantes —,
+       chacune avec sa pastille et son compte ; dans chacune, les références
+       dans l'ordre. Plus de tas « pas encore terminés » où les états se
+       mêlaient. */
+    var parValeur = {};
+    plans.forEach(function (p) {
+      var k = cleValeur(p[CLE_SUIVIE]);
+      (parValeur[k] = parValeur[k] || []).push(p);
+    });
+    var restants = plans.filter(function (p) { return p._etat !== 'termine'; }).length;
+    var html = VALEURS_COLONNE.filter(function (v) { return parValeur[v.cle]; }).map(function (v) {
+      var liste = parValeur[v.cle].sort(function (a, b) { return COMPARER_REF(a.reference, b.reference); });
+      return '<div class="sous-groupe"><h4 class="sous-titre">' + pastilleValeur(v.cle, v.famille) + ech(v.libelle) +
+        '<span class="n">' + nb(liste.length) + '</span></h4>' +
         '<div class="grille">' + liste.map(jetonUD).join('') + '</div></div>';
-    }
-    var restants = plans.filter(function (p) { return p._etat !== 'termine'; });
-    var termines = plans.filter(function (p) { return p._etat === 'termine'; });
+    }).join('');
     return '<div class="groupe-refs"><div class="entete">' +
       '<span>' + nb(plans.length) + ' plan' + (plans.length > 1 ? 's' : '') +
-      (restants.length ? ' · <b>' + nb(restants.length) + '</b> pas encore terminé' + (restants.length > 1 ? 's' : '')
-                       : ' · tout est terminé') +
-      '</span><span class="legende-etats" role="group" aria-label="Légende des pastilles">' + ETATS.map(function (et) {
-        return '<span>' + pastilleDe(et.cle) + ech(et.court) + '</span>';
-      }).join('') + '</span><span>cliquez une référence pour la retrouver dans le tableau</span></div>' +
-      paquet('Pas encore terminés', restants) +
-      paquet('Terminés', termines) +
-      '</div>';
+      (restants ? ' · <b>' + nb(restants) + '</b> pas encore terminé' + (restants > 1 ? 's' : '') : ' · tout est terminé') +
+      '</span><span>cliquez une référence pour la retrouver dans le tableau</span></div>' + html + '</div>';
   }
 
   function jetonUD(p) {
     var e = ETAT_PAR_CLE[p._etat];
     var quoi = CLE_LIBELLE ? String(p[CLE_LIBELLE] || '') : '';
     return '<button class="jeton-ud" type="button" data-ud="' + ech(p.reference) +
-      '" title="' + ech(e.court + (quoi ? ' — ' + quoi : '')) + '">' +
-      pastilleDe(p._etat) + ech(p.reference) + '</button>';
+      '" title="' + ech(libelleValeur(p[CLE_SUIVIE]) + (quoi ? ' — ' + quoi : '')) + '">' +
+      pastilleValeur(cleValeur(p[CLE_SUIVIE]), p._etat) + ech(p.reference) + '</button>';
   }
   /* Un plan cherché dans ce bloc : sous le groupe qui le contient, lui seul
      — pas toute la liste du groupe. */
@@ -4363,7 +4435,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
       if (cle === 'fin') return r.fin === null ? Infinity : r.fin;
       return 0;
     }
-    var tg = vue.triGroupe;
+    /* Par défaut, les groupes se rangent par leur nom — ATA 21, 24, 25…, les
+       mois dans l'ordre du temps : on cherche un groupe comme dans un
+       index. Un clic sur « fin estimée » ou « rythme requis » range par
+       urgence. */
+    var tg = vue.triGroupe && vue.triGroupe.cle ? vue.triGroupe : { cle: 'nom', asc: true, parDefaut: true };
     if (tg && tg.cle) {
       var signe = tg.asc ? 1 : -1;
       rangs.sort(function (a, b) {
@@ -4378,14 +4454,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
         // Infinity des deux cotes : egalite, on retombe sur le nom.
         if (!isFinite(x) && !isFinite(y)) return a.nom.localeCompare(b.nom, 'fr', { numeric: true });
         return (x < y ? -1 : 1) * signe;
-      });
-    } else {
-      rangs.sort(function (a, b) {
-        if ((a.restantsGroupe === 0) !== (b.restantsGroupe === 0)) return a.restantsGroupe === 0 ? 1 : -1;
-        if (prochain && a.tension !== b.tension) return b.tension > a.tension ? 1 : -1;
-        if (prochain) return a.nom.localeCompare(b.nom, 'fr', { numeric: true });
-        if ((a.fin === null) !== (b.fin === null)) return a.fin === null ? -1 : 1;
-        return (b.fin || 0) - (a.fin || 0);
       });
     }
 
@@ -4874,6 +4942,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
   }
 
   var MAX_JOURNAL = 12;                // lignes affichées avant « voir tout »
+  /* Les semaines du journal partagent une grille (subgrid) pour aligner
+     leurs colonnes ; un navigateur qui ne la connaît pas garde la ligne
+     libre d'avant. */
+  var GRILLE_JOURNAL = !!(window.CSS && CSS.supports && CSS.supports('grid-template-columns', 'subgrid'));
 
   /* Le journal affiché : sous un périmètre, seuls les événements des plans
      qui en font partie ; une semaine qui n'en a plus disparaît. */
@@ -4917,11 +4989,38 @@ table.plans thead tr th.col-fige { z-index: 6; }
       '<button type="button" data-journal="indice" aria-pressed="' + (vue.journal === 'indice') + '"><span class="pastille indice"></span>Changement d\u2019indice</button>';
     var filtre = vue.journal;
     var q = motCherche(vue.rechercheJournal);
-    var html = journal.map(function (sem) {
-      var evts = sem.evenements.filter(function (e) {
+    var retenus = function (sem) {
+      return sem.evenements.filter(function (e) {
         return retenuParJournal(e, filtre) &&
           (!q || refCorrespond(e.ref, q) || (!!e.ancienne && refCorrespond(e.ancienne, q)));
       });
+    };
+    /* Les colonnes du résumé : chaque sorte de passage des semaines
+       affichées a la sienne — « passés à « Terminé » », « … « En cours » »,
+       « … « À faire » », changements d'indice, nouveaux, disparus —, dans cet
+       ordre, et une semaine qui n'en a pas laisse sa case vide : les
+       pastilles d'une même sorte tombent l'une sous l'autre, de semaine en
+       semaine. */
+    var cleResume = function (l) { return l.passage ? 'v:' + l.cle : l.cle; };
+    var colonnes = [], vuesCol = {};
+    journal.forEach(function (sem) {
+      resumeEvenements(retenus(sem)).forEach(function (l) {
+        var k = cleResume(l);
+        if (!vuesCol[k]) { vuesCol[k] = l; colonnes.push(k); }
+      });
+    });
+    var RANG_LIGNE = { indice: 1, nouveaux: 2, disparus: 3 };
+    colonnes.sort(function (a, b) {
+      var la = vuesCol[a], lb = vuesCol[b];
+      var ra = la.passage ? 0 : RANG_LIGNE[la.cle], rb = lb.passage ? 0 : RANG_LIGNE[lb.cle];
+      return (ra - rb) || (la.passage ? RANG_FAMILLE[la.famille] - RANG_FAMILLE[lb.famille] || COMPARER_REF(la.libelle, lb.libelle) : 0);
+    });
+    var enGrille = GRILLE_JOURNAL && colonnes.length > 0;
+    zone.classList.toggle('journal-grille', enGrille);
+    zone.style.gridTemplateColumns = enGrille
+      ? 'max-content repeat(' + colonnes.length + ', minmax(min-content, max-content)) minmax(96px, 1fr)' : '';
+    var html = journal.map(function (sem) {
+      var evts = retenus(sem);
       if (!evts.length) return '';
 
       var parType = comptesEvenements(evts);
@@ -4930,14 +5029,23 @@ table.plans thead tr th.col-fige { z-index: 6; }
          changements d'indice sont des boutons : cliquer « 4 passés à
          « Validé » » n'affiche plus que ceux-là, pour toutes les semaines à
          la fois. Les nouveaux et les disparus se lisent sous « Tout ». */
-      var resume = resumeEvenements(evts).map(function (l) {
+      var parCle = {};
+      resumeEvenements(evts).forEach(function (l) { parCle[cleResume(l)] = l; });
+      var resume = colonnes.map(function (k) {
+        var l = parCle[k];
+        if (!l) return '<span class="case-vide" aria-hidden="true"></span>';
+        /* Dans le tableau, l'en-tête nomme la colonne : la case ne porte
+           que la pastille et le nombre ; les mots restent là pour les
+           lecteurs d'écran et pour l'affichage en ligne des petits écrans. */
+        var mot = '<span class="mot-case"> ' + ech(libelleLot(l, l.n)) + '</span>';
         if (l.cle === 'nouveaux' || l.cle === 'disparus') {
-          return '<span class="doux-compte"><b>' + nb(l.n) + '</b> ' + ech(libelleLot(l, l.n)) + '</span>';
+          return '<span class="doux-compte" title="' + ech(nb(l.n) + ' ' + libelleLot(l, l.n)) + '"><b>' + nb(l.n) + '</b>' + mot + '</span>';
         }
         var cle = l.passage ? l.cle : 'indice';
         return '<button class="compte-passage" type="button" data-passage="' + ech(cle) +
-          '" aria-pressed="' + (vue.journal === cle) + '" title="N\u2019afficher que ' + (l.passage ? 'ces passages' : 'les changements d\u2019indice') +
-          ', sur toutes les semaines">' + pastilleResume(l) + '<b>' + nb(l.n) + '</b> ' + ech(libelleLot(l, l.n)) + '</button>';
+          '" aria-pressed="' + (vue.journal === cle) + '" title="' + ech(nb(l.n) + ' ' + libelleLot(l, l.n)) + ' \u2014 n\u2019afficher que ' +
+          (l.passage ? 'ces passages' : 'les changements d\u2019indice') + ', sur toutes les semaines">' +
+          pastilleResume(l) + '<b>' + nb(l.n) + '</b>' + mot + '</button>';
       });
       /* La ligne de couleur de la semaine : une part par compte, dans l'ordre
          du résumé, sur la largeur d'une petite jauge. */
@@ -5012,7 +5120,13 @@ table.plans thead tr th.col-fige { z-index: 6; }
         '</div>';
     }).join('');
 
-    zone.innerHTML = html || (q
+    var entetes = enGrille && html
+      ? '<div class="journal-entetes" aria-hidden="true"><span></span>' + colonnes.map(function (k) {
+          var l = vuesCol[k];
+          return '<span class="entete-col">' + (l.cle === 'nouveaux' || l.cle === 'disparus' ? '' : pastilleResume(l)) + ech(l.des) + '</span>';
+        }).join('') + '<span></span></div>'
+      : '';
+    zone.innerHTML = entetes + html || (q
       ? '<div class="journal-vide">Aucun changement pour « ' + ech(vue.rechercheJournal.trim()) + ' » dans l’historique. Échap vide la recherche.</div>'
       : '<div class="journal-vide">Aucun changement de ce type dans l’historique.</div>');
   }
@@ -6120,9 +6234,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
        l'autre, troisieme retour au classement par defaut. */
     var t = e.target.closest('button[data-trig]');
     if (t) {
+      /* Le classement par défaut est « par nom, dans l'ordre » : un clic
+         sur le nom le renverse d'abord. */
       var cle = t.dataset.trig, naturel = (cle === 'nom');
-      if (vue.triGroupe.cle !== cle) vue.triGroupe = { cle: cle, asc: naturel };
-      else if (vue.triGroupe.asc === naturel) vue.triGroupe = { cle: cle, asc: !naturel };
+      var courant = vue.triGroupe.cle ? vue.triGroupe : { cle: 'nom', asc: true };
+      if (courant.cle !== cle) vue.triGroupe = { cle: cle, asc: naturel };
+      else if (courant.asc === naturel) vue.triGroupe = { cle: cle, asc: !naturel };
       else vue.triGroupe = { cle: null, asc: false };
       planifierSauvegarde();
       rendreCritique(selection());

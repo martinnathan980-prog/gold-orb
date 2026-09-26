@@ -1813,33 +1813,33 @@ function serveurSur(valeurs, proprietes, fichiers) {
     jetons: [...document.querySelectorAll('.jeton-ud[data-ud]')].map(b => b.textContent.trim()),
     total: +document.querySelector('.critique-ligne[aria-pressed="true"] .critique-total').textContent,
     entete: (document.querySelector('.groupe-refs .entete') || {}).textContent || '',
-    sousTitres: [...document.querySelectorAll('.groupe-refs .sous-titre')].map(t => t.textContent.replace(/\s+/g, ' ').trim()),
+    /* Une sous-liste par valeur de la colonne (débrief 13) : son libellé, son
+       compte, et les titres de ses jetons. */
+    paquets: [...document.querySelectorAll('.groupe-refs .sous-groupe')].map(sg => {
+      const t = sg.querySelector('.sous-titre'), n = t.querySelector('.n');
+      return { libelle: t.textContent.slice(0, t.textContent.length - (n ? n.textContent.length : 0)).replace(/\s+/g, ' ').trim(),
+               n: n ? +n.textContent.replace(/\D/g, '') : NaN, pastille: !!t.querySelector('.pastille'),
+               etats: [...sg.querySelectorAll('.jeton-ud[data-ud]')].map(b => (b.getAttribute('title') || '').split(' — ')[0]) };
+    }),
+    ordre: window.__valeurs().map(v => v.libelle),
     autres: /autres/.test((document.querySelector('.groupe-refs') || {}).textContent || ''),
     etats: [...document.querySelectorAll('.jeton-ud[data-ud] .pastille')].map(e => e.className),
     tableau: document.querySelectorAll('#corps-tableau tr').length
   }));
   verifier('choisir un groupe déplie ses références', ud.jetons.length > 0, String(ud.jetons.length));
-  verifier('toutes, sans « et N autres », en deux paquets titrés',
-    ud.jetons.length === ud.total && !ud.autres && ud.sousTitres.length === 2 &&
-    /^Pas encore terminés\s*\(\d+\)$/.test(ud.sousTitres[0]) && /^Terminés\s*\(\d+\)$/.test(ud.sousTitres[1]),
-    ud.jetons.length + ' / ' + ud.total + ' ' + JSON.stringify(ud.sousTitres));
+  verifier('toutes, sans « et N autres », une sous-liste par valeur, dans l’ordre de la barre du haut, avec pastille et compte',
+    ud.jetons.length === ud.total && !ud.autres && ud.paquets.length >= 2 &&
+    ud.paquets.every((q, i) => q.pastille && q.n === q.etats.length && ud.ordre.indexOf(q.libelle) !== -1 &&
+      (i === 0 || ud.ordre.indexOf(ud.paquets[i - 1].libelle) < ud.ordre.indexOf(q.libelle))) &&
+    ud.paquets.reduce((t, q) => t + q.n, 0) === ud.total,
+    ud.jetons.length + ' / ' + ud.total + ' ' + JSON.stringify(ud.paquets.map(q => [q.libelle, q.n])));
   verifier('toutes sont des références de plan', ud.jetons.every(t => /^UD-/.test(t)), JSON.stringify(ud.jetons.slice(0, 3)));
   verifier('l\'en-tête dit combien et combien restent',
     /\d+ plans?/.test(ud.entete) && /(pas encore terminés?|tout est soldé)/.test(ud.entete), ud.entete.trim());
   verifier('le tableau du bas montre exactement le même groupe',
     ud.tableau === Math.min(ud.jetons.length, ud.tableau) && ud.tableau > 0);
-  verifier('les non terminés sont en tête de liste',
-    await pg.evaluate(() => {
-      const ordre = ['afaire', 'vide', 'encours', 'termine'];
-      const rang = [...document.querySelectorAll('.jeton-ud[data-ud]')].map(b => {
-        const t = b.getAttribute('title') || '';
-        if (/À faire/.test(t)) return 0;
-        if (/Non renseigné/.test(t)) return 1;
-        if (/En cours/.test(t)) return 2;
-        return 3;
-      });
-      return rang.every((v, i) => i === 0 || rang[i - 1] <= v);
-    }));
+  verifier('chaque sous-liste ne porte que son état : plus de tas où les états se mêlent',
+    ud.paquets.every(q => q.etats.every(e => e === q.libelle)), JSON.stringify(ud.paquets.map(q => [q.libelle, q.etats.slice(0, 2)])));
   const refUD = await pg.evaluate(() => document.querySelector('.jeton-ud[data-ud]').dataset.ud);
   await pg.click('.jeton-ud[data-ud] >> nth=0'); await pg.waitForTimeout(700);
   verifier('cliquer une référence réduit le tableau à ce plan',

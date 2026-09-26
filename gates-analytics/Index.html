@@ -45,18 +45,28 @@
     <!-- Le message du classeur quand il n'a rien pu rendre — feuille vide,
          contrat introuvable, colonne d'avancement absente. -->
     <span class="mot-mode alerte-source" id="alerte-source" role="alert" hidden></span>
-    <span class="choix-contrat" id="choix-contrat" hidden>
-      <label for="select-contrat">Contrat</label>
-      <select class="select" id="select-contrat"></select>
-      <span class="attente" id="etat-contrat" role="status" aria-live="polite"></span>
-    </span>
-    <!-- L'avancement suivi, lu dans le bloc HDK AA 011 de l'extract : la
-         définition électrique (le FWD) ou le concept harnais. Toute la page
-         suit — barre, courbe, journal, groupes, tableau, comparaison. -->
-    <span class="segmente choix-indicateur" id="choix-indicateur" role="group" aria-label="Avancement suivi" hidden>
-      <button type="button" data-indicateur="def" aria-pressed="true">Définition électrique</button>
-      <button type="button" data-indicateur="concept" aria-pressed="false">Concept harnais</button>
-    </span>
+    <!-- Les deux réglages de la page, l'un sous l'autre, à droite : le
+         contrat, puis l'avancement suivi. Chacun a son mot à gauche, comme
+         un petit formulaire qui se lit de haut en bas. -->
+    <div class="reglages" id="reglages">
+      <span class="choix-contrat" id="choix-contrat" hidden>
+        <label for="select-contrat">Contrat</label>
+        <span class="controle">
+          <select class="select" id="select-contrat"></select>
+          <span class="attente" id="etat-contrat" role="status" aria-live="polite"></span>
+        </span>
+      </span>
+      <!-- L'avancement suivi, lu dans le bloc HDK AA 011 de l'extract : la
+           définition électrique (le FWD) ou le concept harnais. Toute la page
+           suit — barre, courbe, journal, groupes, tableau, comparaison. -->
+      <span class="choix-avancement" id="choix-avancement">
+        <span class="mot-reglage" aria-hidden="true">Avancement</span>
+        <span class="segmente choix-indicateur" id="choix-indicateur" role="group" aria-label="Avancement suivi" hidden>
+          <button type="button" data-indicateur="def" aria-pressed="true">Définition électrique</button>
+          <button type="button" data-indicateur="concept" aria-pressed="false">Concept harnais</button>
+        </span>
+      </span>
+    </div>
   </div>
 
   <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
@@ -106,6 +116,7 @@
       <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
       <div class="commandes-graphe">
         <span class="segmente" role="group" aria-label="Période affichée">
+          <button type="button" data-span="jalons" title="Jusqu'à la semaine après la dernière échéance : tous les jalons à l'écran">Échéances</button>
           <button type="button" data-span="13">3 mois</button>
           <button type="button" data-span="26">6 mois</button>
           <button type="button" data-span="52">1 an</button>

@@ -166,8 +166,9 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
 
 ## 6. Lire la page, de haut en bas
 
-- **Le bandeau** : dès deux contrats le sélecteur **Contrat**, et
-  l'interrupteur **Définition électrique | Concept harnais** — les deux
+- **Le bandeau**, à droite : dès deux contrats le sélecteur **Contrat**, et
+  dessous l'interrupteur **Avancement : Définition électrique | Concept
+  harnais** — les deux
   avancements du bloc HDK AA 011 ; toute la page suit celui qui est choisi,
   le titre aussi (« Suivi FWD » ou « Suivi concept harnais »). Sous le
   titre, la semaine où l'on est, et rien d'autre.
@@ -186,19 +187,26 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   les jalons du programme (numérotés 1 à 5 sur une rangée, en clair dans la
   légende dessous), la fin estimée au rythme tenu et le rythme requis pour
   tenir le prochain jalon (« manque N » quand le rythme ne suffit pas). Il
-  s'ouvre sur six mois — un an si la prochaine échéance tombe plus loin ;
-  **3 mois · 6 mois · 1 an · Tout** à droite. En
+  s'ouvre sur **Échéances** — jusqu'à la semaine qui suit la dernière
+  échéance : les cinq jalons à l'écran — ; **Échéances · 3 mois · 6 mois ·
+  1 an · Tout** à droite. Sous chaque jalon de la légende, son nom et sa
+  semaine ; le reste (périmètre, jours) au survol et dans la fiche. En
   tête, la prochaine échéance en jours : un clic ouvre sa fiche (Échap la
   ferme). Les jalons **TO** (table outil) suivent le concept harnais : sous
   la définition électrique, ils restent dessinés, en retrait.
 - **Ce qui a changé, semaine par semaine** : le journal — quels plans sont
   passés terminés, lesquels ont changé d'indice, lesquels sont apparus ou ont
-  disparu de l'extract. Une ligne = une référence et son passage, sans
-  libellé. Les semaines s'ouvrent repliées ; le petit champ
+  disparu de l'extract. Les semaines forment un tableau : une colonne par
+  sorte de passage, nommée dans l'en-tête, la pastille et le nombre dans la
+  case — tout tombe droit d'une semaine à l'autre. Dépliée, une ligne = une
+  référence et son passage, sans libellé. Les semaines s'ouvrent repliées ; le petit champ
   « Chercher un plan… » à droite ne cherche que dans le journal.
 - **Avancement FWD par…** (ou **Concept harnais par…**) : le même avancement découpé par ATA, séquence,
   CC, ECP, ou par mois de création, avec la fin estimée et le rythme requis
-  (en plans par semaine, le rythme tenu dessous) par groupe. Son champ « ATA ou plan… » trouve un groupe ou un plan.
+  (en plans par semaine, le rythme tenu dessous) par groupe, rangés par ATA
+  dans l'ordre. Un clic sur un groupe déplie ses plans, une sous-liste par
+  valeur (Validé, En cours, À faire…), chacune avec son compte. Son champ
+  « ATA ou plan… » trouve un groupe ou un plan.
 - **Plans** : l'extract, à l'identique, avec ses colonnes ; recherche, tri,
   filtres. « Vue essentielle » n'en garde qu'une poignée — référence, nom
   d'installation, ECP, ATA, séquence, validation définition électrique, date

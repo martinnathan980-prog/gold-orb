@@ -60,7 +60,9 @@ contrat, le message nomme les onglets vides et dit le geste : coller l'export
 GATES en A1 d'un onglet nommé du contrat.
 
 Dans la page, un **sélecteur « Contrat »** dans le bandeau du haut passe de
-l'un à l'autre sans recharger ; le titre ne le répète pas. Avec un seul
+l'un à l'autre sans recharger ; le titre ne le répète pas. Il est à droite,
+**au-dessus de l'interrupteur d'avancement** (voir plus bas) : deux lignes
+alignées comme un petit formulaire, « Contrat » puis « Avancement ». Avec un seul
 onglet, le sélecteur n'apparaît pas. La page
 s'ouvre toujours sur le **premier** onglet, dans l'ordre du classeur ; les
 autres se chargent à la demande. Un contrat qui ne peut pas être lu laisse la
@@ -178,7 +180,8 @@ lettres : « ⚠ La colonne demandée … est introuvable ».
 
 `CONFIG.COLONNE_CONCEPT` nomme le second avancement suivi,
 `HDK AA 011 > Avancement Concept Harnais`. Quand l'extract le porte, la page
-affiche en haut l'interrupteur **Définition électrique | Concept harnais**,
+affiche en haut, sous le sélecteur de contrat, l'interrupteur **Définition
+électrique | Concept harnais**,
 et **toute la page suit** la colonne choisie : la barre, la courbe et son
 historique, le journal, le bloc par groupe (« Concept harnais par ATA »), le
 filtre des états, le tableau (c'est la colonne suivie qui porte la pastille
@@ -227,7 +230,7 @@ Dans « Avancement FWD par… », dans l'ordre de la configuration :
 
 | Colonne | Ce qu'elle montre |
 |---|---|
-| **ATA** | le découpage attendu, ouvert par défaut |
+| **ATA** | le découpage attendu, ouvert par défaut, les ATA rangés dans l'ordre (21, 24, 25…) |
 | **CC** | code circuit |
 | **ECP** | |
 | **Date création (par mois)** | un groupe par mois, rangés dans l'ordre du temps ; s'ajoute d'elle-même |
@@ -245,11 +248,18 @@ lignes dont le nom de groupe contient ce qu'on tape (« Filtrer les ATA… ») :
 il n'agit que sur ce bloc, un compte « n sur m » dit ce qu'il retient, `Échap`
 le vide, changer de dimension le vide aussi. Rien n'en est retenu.
 
-**Choisir une ligne déplie toutes ses références**, sans coupure, en deux
-paquets : **Pas encore terminés (n)** — à faire, non renseignés, en cours —
-puis **Terminés (n)**, chacun rangé par référence, une pastille par état. Un
-clic sur une référence réduit le tableau du bas à ce plan. Le bloc défile :
-640 références dans un seul groupe restent lisibles.
+**Par défaut, les groupes se rangent par leur nom**, dans l'ordre — ATA 21,
+24, 25… ; les mois dans l'ordre du temps — et la colonne le montre (elle est
+la colonne active, avec sa flèche). Un clic sur son en-tête renverse l'ordre,
+un clic sur une autre colonne range par elle (fin estimée, rythme requis…) ;
+le troisième clic revient à l'ordre par nom.
+
+**Choisir une ligne déplie toutes ses références**, sans coupure, **une
+sous-liste par valeur** de la colonne suivie — dans l'ordre de la barre du
+haut : Validé, En cours, À faire, Non renseigné… —, chacune avec sa pastille et
+son compte, et dans chacune les références dans l'ordre, en colonnes
+régulières. Un clic sur une référence réduit le tableau du bas à ce plan. Le
+bloc défile : 640 références dans un seul groupe restent lisibles.
 
 Chaque colonne calculée porte un **?** qui ouvre la même explication chiffrée.
 
@@ -428,8 +438,15 @@ terminés, puis les passés en cours, puis les repassés à faire. Chaque ligne
 ne dit que **quel plan est passé** : sa référence et son passage (« En cours
 → Validé »), sans le libellé de l'installation — il est dans le tableau.
 
-- La semaine la plus récente est en haut, ouverte ; les autres se déplient
-  d'un clic.
+- **Les semaines forment un tableau** : une colonne par sorte de passage —
+  « passés à « Validé » », « … « En cours » », « … « À faire » »,
+  changements d'indice, nouveaux, disparus —, nommée une fois dans un
+  en-tête qui reste collé en haut. Chaque case porte la pastille et le
+  nombre ; une semaine qui n'a pas cette sorte de passage laisse sa case
+  vide. Les pastilles d'une même sorte tombent donc l'une sous l'autre, de
+  semaine en semaine, au pixel près.
+- La semaine la plus récente est en haut ; les semaines se déplient d'un
+  clic.
 - `Tout / Terminés / En cours / À faire / Changement d'indice`, chacun avec sa
   pastille, ne garde que
   les passages voulus, et **chaque compte du résumé est cliquable** :
@@ -759,16 +776,16 @@ bandeau des filtres ne bougent.
 
 La page s'ouvre **tout replié** : les semaines du journal, les lots « plan par
 plan » de la comparaison et les groupes (ATA, ECP…) ; le lecteur déplie ce
-qu'il veut voir. Le graphique s'ouvre sur **six mois** — exactement le bouton
-« 6 mois » —, ou sur **un an** quand la prochaine échéance tombe au-delà (le
-concept harnais, dont la première échéance est en février) : la puce
-« Prochaine échéance » ne parle jamais d'un jalon que le graphique ne montre
-pas. Tant qu'on n'a ni zoomé ni déplacé, ce cadrage suit l'échéance quand on
-change de périmètre ou d'avancement ; un cadrage choisi à la main est gardé.
-Les boutons **3 mois · 6 mois · 1 an · Tout** sont à droite de l'en-tête du
-graphique ; l'aide « glisser pour déplacer, molette pour zoomer » a disparu
-(le geste, lui, marche toujours). Un jalon plus lointain reste dans la
-légende, avec son décompte, marqué « hors fenêtre ».
+qu'il veut voir. Le graphique s'ouvre sur **« Échéances »** : de trois mois
+avant le dernier relevé jusqu'à **la semaine qui suit la dernière
+échéance** — toutes les échéances à l'écran, la cinquième comprise, et rien
+au-delà. Sans jalon à venir, il s'ouvre sur six mois. Tant qu'on n'a ni zoomé
+ni déplacé, ce cadrage se refait quand on change de contrat, de périmètre ou
+d'avancement ; un cadrage choisi à la main est gardé. Les boutons
+**Échéances · 3 mois · 6 mois · 1 an · Tout** sont à droite de l'en-tête du
+graphique, un seul pressé à la fois ; l'aide « glisser pour déplacer, molette
+pour zoomer » a disparu (le geste, lui, marche toujours). Un jalon hors du
+cadre choisi reste dans la légende, en retrait.
 
 ## 13 quater. Les échéances en jours
 
@@ -779,8 +796,11 @@ date** (sans date, jusqu'au vendredi de sa semaine) :
   prochaine échéance du périmètre : « Prochaine
   échéance · Solde FWD · dans 80 jours », avec un point **vert** si le rythme
   tenu suffit, **rouge** sinon — le verdict de la fiche, mot pour mot ;
-- **dans la légende des jalons**, sous chacun : « dans 111 jours », en ambre
-  à moins de trois semaines, « il y a 5 jours » une fois passé.
+- **au survol d'un jalon de la légende** : « Solde FWD — S51 · déc. 2026,
+  dans 80 jours · périmètre … ». Sous chaque jalon, la légende n'écrit que
+  son nom et sa semaine — « Diffusion PH Base · S2 · janv. 2027 » — : ni
+  périmètre, ni décompte ; le graphique montre la distance, la fiche la
+  chiffre.
 
 Un clic — sur cette échéance, sur un jalon de la légende ou sur son
 numéro dans le graphique — ouvre la **fiche de l'échéance** : sa date
