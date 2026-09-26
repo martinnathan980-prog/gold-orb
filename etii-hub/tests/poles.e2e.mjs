@@ -108,8 +108,16 @@ for (const bloc of orga.poles) {
   const sousNav = await page.locator('.sous-nav a').evaluateAll(l => l.map(a => a.textContent.trim()));
   t(`${code} : sommaire Communication, À venir, En un coup d’œil, Documents, FAQ`,
     sousNav.join('|') === 'Communication|À venir|En un coup d’œil|Documents|FAQ', `(${sousNav.join('|')})`);
-  t(`${code} : « À venir » montre le prochain rendez-vous et la frise du pôle`,
-    (await page.locator('#zone-agenda .agenda').count()) === 1);
+  // « À venir » : la ligne seule — plus de carte « prochain rendez-vous »
+  // ni de compte à rebours —, avec les rendez-vous du pôle et ceux du
+  // service, et d'aucun autre pôle.
+  const polesVus = await page.locator('#zone-agenda .agenda__rdv').evaluateAll(l => l.map(e => e.dataset.pole));
+  t(`${code} : « À venir » est une ligne, sans carte ni compte à rebours`,
+    (await page.locator('#zone-agenda .agenda').count()) === 1
+    && (await page.locator('#zone-agenda [class*="agenda__prochain"]').count()) === 0
+    && (await page.locator('#zone-agenda .agenda__scene, #zone-agenda .agenda--vide').count()) === 1);
+  t(`${code} : « À venir » ne montre que le pôle et le service`,
+    polesVus.every(p => p === code || p === 'ETII'), JSON.stringify(polesVus));
   t(`${code} : l’en-tête est sur la bande, le sommaire collant en dessous`,
     (await page.locator('.page-tete h1').count()) === 1
     && (await page.locator('.page-sommaire').evaluate(e => getComputedStyle(e).position)) === 'sticky');
