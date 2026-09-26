@@ -19,8 +19,9 @@ automatique.
    demande une autorisation : Autoriser, choisir votre compte, « Autoriser »
    encore.
 3. La page s'ouvre dans une fenêtre. Tant que le classeur est vide, elle
-   montre la **démonstration** (trois contrats fictifs HDK, THS, VRK), et le
-   dit dans le bandeau. C'est la page telle qu'elle sera avec vos données.
+   le dit — **« Le classeur est vide »** — et rappelle les trois gestes
+   ci-dessous. Elle ne montre jamais rien de fabriqué : seulement vos
+   données.
 
 ## 2. Mettre un contrat : l'extract GATES, dans un onglet
 
@@ -165,33 +166,34 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
 
 ## 6. Lire la page, de haut en bas
 
-- **Le bandeau** : l'interrupteur **Données réelles / Exemple**, dès deux
-  contrats le sélecteur **Contrat**, et l'interrupteur **Définition
-  électrique | Concept harnais** — les deux avancements du bloc HDK AA 011 ;
-  toute la page suit celui qui est choisi, le titre aussi (« Suivi FWD » ou
-  « Suivi concept harnais »). Sous le titre, la semaine où l'on est, et rien
-  d'autre.
-  « Exemple » montre, sur vos vrais plans, un historique fabriqué — pour
-  voir ce que donneront les courbes quand les relevés se seront accumulés ;
-  « Données réelles » revient à ce que le classeur contient. Le bandeau dit
-  lequel est affiché (« Historique fabriqué ») et la page se borde de
-  tirets ; le nombre de relevés du pied est alors celui de l'exemple.
+- **Le bandeau** : dès deux contrats le sélecteur **Contrat**, et
+  l'interrupteur **Définition électrique | Concept harnais** — les deux
+  avancements du bloc HDK AA 011 ; toute la page suit celui qui est choisi,
+  le titre aussi (« Suivi FWD » ou « Suivi concept harnais »). Sous le
+  titre, la semaine où l'on est, et rien d'autre.
 - **Le périmètre** : Tout / BASE/OPTION / PERSO — les valeurs de la colonne
   « Domaine » de l'extract, telles quelles. Il restreint toute la page.
 - **En haut, sans titre** : la phrase « N sur M plans terminés », la barre
   des valeurs de la colonne telles qu'elles sont écrites (Validé, Check, En
   cours, A traiter, non renseigné…) avec leur nombre, et, dès le second
-  relevé, ce qui a bougé depuis le dernier. « Validé » compte comme fini ;
+  relevé, ce qui a bougé depuis le dernier. Au-delà de quatre valeurs, ou
+  quand l'une est trop petite pour se voir (deux plans sur six cents), les
+  valeurs passent en **légende** sous la barre ; survoler une case éclaire
+  son segment. « Validé » compte comme fini ;
   une autre valeur qui voudrait dire fini se déclare dans `Code`
   (`VALEURS_FINIES`).
 - **Avancement dans le temps** : la courbe des terminés relevé après relevé,
   les jalons du programme (numérotés 1 à 5 sur une rangée, en clair dans la
   légende dessous), la fin estimée au rythme actuel et le rythme requis pour
-  tenir le prochain jalon. Il s'ouvre sur un an ; la molette zoome, la
-  souris déplace.
+  tenir le prochain jalon (« manque N » quand le rythme ne suffit pas). Il
+  s'ouvre sur six mois ; **3 mois · 6 mois · 1 an · Tout** à droite. En
+  tête, la prochaine échéance en jours : un clic ouvre sa fiche (Échap la
+  ferme). Les jalons **TO** (table outil) suivent le concept harnais : sous
+  la définition électrique, ils restent dessinés, en retrait.
 - **Ce qui a changé, semaine par semaine** : le journal — quels plans sont
   passés terminés, lesquels ont changé d'indice, lesquels sont apparus ou ont
-  disparu de l'extract. Les semaines s'ouvrent repliées ; le petit champ
+  disparu de l'extract. Une ligne = une référence et son passage, sans
+  libellé. Les semaines s'ouvrent repliées ; le petit champ
   « Chercher un plan… » à droite ne cherche que dans le journal.
 - **Avancement FWD par…** (ou **Concept harnais par…**) : le même avancement découpé par ATA, séquence,
   CC, ECP, ou par mois de création, avec la fin estimée et l'effort demandé
@@ -218,7 +220,7 @@ onglet, et ce qui manque. Puis :
 |---|---|---|
 | Pas de menu « Suivi FWD » | Le script n'est pas chargé | F5 ; sinon Extensions → Apps Script, fonction `onOpen`, ▶ Exécuter (le menu ne dépend que du fichier `Code`) |
 | « Ouvrir le tableau de bord » donne une erreur | Un fichier HTML manque ou est mal nommé | Diagnostic : il nomme le fichier (`Index`, `Styles`, `Javascript`) introuvable |
-| La page reste sur la démonstration, avec une alerte | Aucun onglet de données lisible : l'alerte dit pourquoi | « Aucune colonne d'avancement FWD n'a été reconnue » : l'extract est collé sans sa ligne d'en-têtes ou sa ligne de groupes → recoller entier en A1 ; « Aucun onglet de données exploitable : « Feuille 1 » est vide » : aucun onglet ne contient encore d'extract |
+| « Le classeur est vide », avec une alerte | Aucun onglet de données lisible : l'alerte dit pourquoi | « Aucune colonne d'avancement FWD n'a été reconnue » : l'extract est collé sans sa ligne d'en-têtes ou sa ligne de groupes → recoller entier en A1 ; « Aucun onglet de données exploitable : « Feuille 1 » est vide » : aucun onglet ne contient encore d'extract |
 | Pas de courbe, pas de fin estimée | Aucun relevé archivé | Suivi FWD → Archiver le relevé de cette semaine |
 | Pas de section « Comparaison » | Pas d'onglet `SEE <contrat>` (ou `SEE` pour un seul contrat), ou illisible | Diagnostic, ligne « Seconde base » : elle dit s'il manque l'onglet, s'il est vide, ou si les en-têtes NAME / SOL. / Cust.V ne s'y trouvent pas |
 | Un contrat en trop ou en moins | Un onglet visible en trop, ou masqué | Chaque onglet visible est un contrat ; masquer ce qui n'en est pas un |

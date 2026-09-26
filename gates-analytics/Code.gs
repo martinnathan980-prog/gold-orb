@@ -79,14 +79,23 @@ const CONFIG = {
    * vaut pour tous les plans. Le Diagnostic dit si chaque valeur est bien
    * l'une de celles de la colonne.
    *
+   * date (facultatif) : le jour exact, « AAAA-MM-JJ » ou « JJ/MM/AAAA ».
+   * La page compte les jours jusqu'à lui ; sans date, jusqu'au vendredi de
+   * la semaine. Donnée, la date fixe aussi la semaine.
+   *
+   * suivi (facultatif) : l'avancement auquel le jalon appartient.
+   * « concept » pour le concept harnais — les diffusions TO, la table
+   * outil ; sans suivi, la définition électrique, le FWD. Sous l'autre
+   * avancement, le jalon reste dessiné, en retrait, et ne compte pas.
+   *
    * Les échéances du programme, telles que transmises le 17/09/2026.
    */
   JALONS: [
-    { semaine: '2026-S51', texte: 'Solde FWD' },                                    // 15/12/2026
-    { semaine: '2027-S02', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },  // 15/01/2027
-    { semaine: '2027-S03', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },        // 22/01/2027
-    { semaine: '2027-S05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION' },  // 05/02/2027
-    { semaine: '2027-S08', texte: 'Diffusion TO Perso', perimetre: 'PERSO' }         // 26/02/2027
+    { semaine: '2026-S51', date: '2026-12-15', texte: 'Solde FWD' },
+    { semaine: '2027-S02', date: '2027-01-15', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },
+    { semaine: '2027-S03', date: '2027-01-22', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },
+    { semaine: '2027-S05', date: '2027-02-05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION', suivi: 'concept' },
+    { semaine: '2027-S08', date: '2027-02-26', texte: 'Diffusion TO Perso', perimetre: 'PERSO',       suivi: 'concept' }
   ],
 
   /** Nombre maximum de jalons transmis à la page. */
@@ -1823,18 +1832,32 @@ function desinstallerSuiviHebdomadaire() {
  * MAX_JALONS. Une faute de frappe dans la configuration ne fait donc jamais
  * tomber la page — le jalon fautif est simplement absent.
  */
+/** Le jour d'un jalon, « AAAA-MM-JJ » ou « JJ/MM/AAAA », en date UTC — ou null. */
+function dateDeJalon(valeur) {
+  const t = String(valeur || '').trim();
+  let m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/), a, mo, j;
+  if (m) { a = +m[1]; mo = +m[2]; j = +m[3]; }
+  else if ((m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/))) { a = +m[3]; mo = +m[2]; j = +m[1]; }
+  else return null;
+  const d = new Date(Date.UTC(a, mo - 1, j));
+  return d.getUTCFullYear() === a && d.getUTCMonth() === mo - 1 && d.getUTCDate() === j ? d : null;
+}
+
 function getJalons() {
   const liste = Array.isArray(CONFIG.JALONS) ? CONFIG.JALONS : [];
   return liste
     .map(function (j) {
-      const semaine = normaliserSemaine(j && j.semaine);
+      const date = dateDeJalon(j && j.date);
+      const semaine = date ? numeroSemaineISO(date) : normaliserSemaine(j && j.semaine);
       if (!semaine) return null;
       const jalon = {
         semaine: semaine,
         texte: String((j && j.texte) || 'Jalon').trim().slice(0, 60) || 'Jalon'
       };
+      if (date) jalon.date = date.toISOString().slice(0, 10);
       const perimetre = String((j && j.perimetre) || '').trim().slice(0, 40);
       if (perimetre) jalon.perimetre = perimetre;
+      if (j && j.suivi && normaliser(j.suivi).indexOf('concept') === 0) jalon.suivi = 'concept';
       return jalon;
     })
     .filter(function (j) { return j !== null; })

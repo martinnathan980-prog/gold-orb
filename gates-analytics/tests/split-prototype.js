@@ -20,7 +20,19 @@ fs.writeFileSync(path.join(racine, 'Styles.html'), src.slice(s0, s1 + 1).join('\
    mais plus une seule balise, donc un fichier qui traverse une passerelle de
    messagerie au lieu d'être retenu pour contrebande HTML. Voir
    tests/echapper-chevrons.js. L'enveloppe <script> reste en clair. */
-const corps = echapperChevrons(src.slice(j0 + 1, j1).join('\n'));
+/* Le jeu de démonstration — 138 colonnes, trois contrats fictifs, une base
+   SEE inventée — ne sert qu'à la page ouverte seule. Le classeur a ses
+   propres données : le bloc balisé <démonstration> n'y est pas livré, et un
+   appel égaré rendrait une source vide plutôt que des plans fictifs. */
+const lignesScript = src.slice(j0 + 1, j1);
+const d0 = lignesScript.findIndex(l => l.trim().indexOf('/* <démonstration>') === 0);
+const d1 = lignesScript.findIndex(l => l.trim() === '/* </démonstration> */');
+if (d0 === -1 || d1 === -1 || d1 < d0) throw new Error('balises <démonstration> introuvables dans le prototype');
+const livre = lignesScript.slice(0, d0).concat([
+  '  /* La démonstration n\'est pas livrée au classeur : il a ses propres données. */',
+  '  function jeuDExemple() { return sourceDuClasseur(null); }'
+], lignesScript.slice(d1 + 1));
+const corps = echapperChevrons(livre.join('\n'));
 fs.writeFileSync(path.join(racine, 'Javascript.html'),
   '<script>\n' + corps.texte + '\n</script>\n');
 

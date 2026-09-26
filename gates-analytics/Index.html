@@ -39,13 +39,8 @@
   <div class="filtres-actifs" id="filtres-actifs" hidden></div>
 
   <div class="bandeau-mode" id="bandeau-mode">
-    <!-- Toujours visible : devant un classeur, il compare les données réelles
-         à un historique fabriqué ; dans la démonstration seule, il montre le
-         même geste — c'est ainsi qu'on l'explique à quelqu'un. -->
-    <span class="segmente" id="mode-donnees" role="group" aria-label="Source des données">
-      <button type="button" data-mode="reel" aria-pressed="true">Données réelles</button>
-      <button type="button" data-mode="exemple" aria-pressed="false">Exemple</button>
-    </span>
+    <!-- Hors du classeur seulement — la page ouverte seule, sur son jeu de
+         démonstration — le bandeau le dit. Devant le classeur, rien. -->
     <span class="mot-mode" id="mot-mode"></span>
     <!-- Le message du classeur quand il n'a rien pu rendre — feuille vide,
          contrat introuvable, colonne d'avancement absente. -->
@@ -75,6 +70,18 @@
     </div>
   </header>
 
+  <!-- Un classeur sans plans : ce qu'il faut faire, au lieu de sections vides. -->
+  <section class="classeur-vide" id="classeur-vide">
+    <h2>Le classeur n’a pas encore de plans</h2>
+    <p>Le message au-dessus dit ce que le script a trouvé. Pour remplir la page :</p>
+    <ol>
+      <li>Ouvrir l’export GATES du contrat, tout sélectionner (<kbd>Ctrl</kbd>+<kbd>A</kbd>), copier.</li>
+      <li>Dans le classeur, un onglet au nom du contrat — « HDK » —, cellule <b>A1</b>, coller.</li>
+      <li>Menu <b>Suivi FWD → Archiver le relevé de cette semaine</b>, puis rouvrir le tableau de bord.</li>
+    </ol>
+    <p class="doux">En cas de doute : <b>Suivi FWD → Diagnostic</b> dit ce que le script voit du classeur.</p>
+  </section>
+
   <section class="avancement">
     <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
          gouverne, juste au-dessus de la barre. -->
@@ -98,7 +105,6 @@
            graphique. Pas sous le titre, qui ne dit que la semaine. -->
       <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
       <div class="commandes-graphe">
-        <span class="indice">Glissez pour vous déplacer · molette pour zoomer</span>
         <span class="segmente" role="group" aria-label="Période affichée">
           <button type="button" data-span="13">3 mois</button>
           <button type="button" data-span="26">6 mois</button>
@@ -268,7 +274,7 @@
     <span id="import"></span><br>
     <!-- La démonstration seule le dit : sur le classeur, ces chiffres SONT
          ceux du tableur. Masqué dès qu'un classeur est derrière la page. -->
-    <span id="avertissement-demo">Jeu d'exemple — les chiffres de cette page ne proviennent pas du tableur.</span>
+    <span id="avertissement-demo">Démonstration — les chiffres de cette page sont fictifs, aucun ne vient d'un classeur.</span>
   </footer>
 </div>
 

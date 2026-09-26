@@ -160,13 +160,44 @@ body {
   .etat-haut { justify-content: flex-start; }
 }
 /* La même grille quand les boutons ne tiennent pas bout à bout dans la rangée. */
-.etats.en-grille { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 0; height: auto; }
-.etats.en-grille .etat-btn { position: relative; text-align: left; padding: 3px 0; background: none; white-space: normal; }
-.etats.en-grille .etat-haut { justify-content: flex-start; }
+/* La légende, quand la barre porte beaucoup de valeurs ou de très petites :
+   une carte par valeur, dans l'ordre de la barre — pastille, nom, nombre et
+   part —, sans filets. Survoler une carte éclaire son segment, et l'inverse. */
+.etat-pct { display: none; font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.etats.en-legende {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 8px; height: auto; margin-top: 14px;
+}
+.etats.en-legende .etat-btn {
+  position: relative; text-align: left; white-space: normal; padding: 9px 12px 8px;
+  background: var(--surface); border: 1px solid var(--filet); border-radius: 8px;
+  grid-template-columns: 1fr auto; align-items: baseline; column-gap: 8px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.etats.en-legende .etat-haut { justify-content: flex-start; grid-column: 1 / -1; min-width: 0; }
+.etats.en-legende .etat-haut .libelle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.etats.en-legende .etat-n { font-size: 22px; }
+.etats.en-legende .etat-pct { display: inline; }
+.etats.en-legende .etat-btn:hover, .etats.en-legende .etat-btn.eclaire { border-color: var(--encre-3); }
+.etats.en-legende .etat-btn[aria-pressed="true"] { border-color: var(--encre); box-shadow: inset 0 -2px 0 var(--teinte); }
+.etats.en-legende .etat-btn[aria-pressed="true"]::after { display: none; }
+.barre.focalise span { opacity: .3; transition: opacity .15s; }
+.barre.focalise span.eclaire { opacity: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--encre); position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .barre.focalise span { transition: none; } }
 
-/* ---------------------------------------------------- Mode des données */
-/* Un seul interrupteur, tout en haut : la page entière est réelle, ou elle est
-   un exemple. Pas de demi-mesure au milieu de l'écran. */
+/* ---------------------------------------------------- Classeur sans plans */
+.classeur-vide { display: none; max-width: 640px; margin: 34px auto 10px; padding: 22px 26px;
+  background: var(--surface); border: 1px solid var(--filet); border-radius: 12px; }
+.classeur-vide h2 { margin-bottom: 8px; }
+.classeur-vide p { color: var(--encre-2); margin: 8px 0; }
+.classeur-vide ol { margin: 10px 0 12px; padding-left: 22px; display: grid; gap: 7px; }
+.classeur-vide kbd { font-family: "IBM Plex Mono", monospace; font-size: 12px; border: 1px solid var(--filet-fort);
+  border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--creux); }
+body[data-vide="true"] .classeur-vide { display: block; }
+body[data-vide="true"] section.avancement, body[data-vide="true"] section.bloc,
+body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-indicateur, body[data-vide="true"] .pied { display: none !important; }
+
+/* ---------------------------------------------------- Bandeau du haut */
+/* Le contrat et l'avancement suivi, tout en haut, discrets. */
 .bandeau-mode {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   padding: 12px 0 0;
@@ -177,10 +208,6 @@ body {
    place du mot de mode, et annoncé aux lecteurs d'écran. */
 .bandeau-mode .alerte-source { color: var(--alerte); font-weight: 500; }
 .bandeau-mode .alerte-source[hidden] { display: none; }
-body[data-exemple="true"] .bandeau-mode {
-  border: 1px dashed var(--cours); background: var(--creux);
-  padding: 10px 13px; margin-top: 12px;
-}
 /* Le choix du contrat : à droite du même bandeau, dans le même registre
    discret. Il n'apparaît que s'il y a vraiment plusieurs contrats entre
    lesquels choisir — avec un seul, il n'aurait rien à dire. */
@@ -318,17 +345,16 @@ body[data-exemple="true"] .bandeau-mode {
 .journal-plier[aria-expanded="true"] .chevron { transform: rotate(90deg); }
 .journal-liste { margin: 0 0 12px; padding: 0 0 0 78px; list-style: none; }
 @media (max-width: 720px) { .journal-liste { padding-left: 0; } }
-/* Trois colonnes alignées : la référence, ce que c'est, où ça va. Le regard
-   descend une colonne au lieu de chercher la flèche au milieu du texte. */
+/* Deux colonnes alignées : la référence, puis où elle va. Le regard descend
+   une colonne au lieu de chercher la flèche au milieu du texte. */
 .journal-ligne {
-  display: grid; grid-template-columns: 136px minmax(0, 1fr) 190px;
+  display: grid; grid-template-columns: 150px minmax(0, 260px);
   align-items: baseline; gap: 12px; width: 100%;
   background: none; border: none; font: inherit; color: inherit;
   padding: 6px 6px; text-align: left; cursor: pointer; border-radius: 3px;
 }
 @media (max-width: 720px) {
   .journal-ligne { grid-template-columns: 1fr auto; gap: 3px 10px; padding: 8px 4px; }
-  .journal-ligne .quoi { grid-column: 1 / -1; }
 }
 .journal-ligne:hover { background: var(--creux); }
 .journal-ligne .ref { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
@@ -336,10 +362,6 @@ body[data-exemple="true"] .bandeau-mode {
 .journal-ligne .ref-indice { display: grid; gap: 1px; }
 .journal-ligne .ref-indice .ancienne { color: var(--encre-3); }
 .journal-ligne .ref-indice .nouvelle { white-space: nowrap; color: var(--indice); }
-.journal-ligne .quoi {
-  color: var(--encre-3); font-size: 12.5px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
 /* Le passage : l'état de départ s'efface, seule l'arrivée porte la couleur. */
 .journal-ligne .vers {
   display: grid; grid-template-columns: 1fr 12px 1fr; align-items: center; gap: 4px;
@@ -430,7 +452,7 @@ select.select {
 select.select:focus { outline: none; border-bottom-color: var(--focus); }
 
 /* ---------------------------------------------------- Graphique */
-.commandes-graphe { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.commandes-graphe { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-left: auto; }
 .segmente { display: inline-flex; border: 1px solid var(--filet-fort); }
 .segmente[hidden] { display: none; }
 .segmente button {
@@ -493,7 +515,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
   grid-row: span 2; align-self: center;
 }
 .legende-jalon .mot { color: var(--encre); align-self: end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.legende-jalon .quand { grid-column: 2; color: var(--encre-2); font-size: 12px; align-self: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legende-jalon .quand { grid-column: 2; color: var(--encre-2); font-size: 12px; align-self: start; white-space: normal; }
 /* Hors du périmètre choisi : le numéro reste net (c'est le lien avec le
    graphique), seul le reste s'efface un peu. */
 .legende-jalon.hors-perimetre .num { background: var(--surface); color: var(--encre-2); box-shadow: inset 0 0 0 1.5px var(--encre-3); }
@@ -559,6 +581,13 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .echeance-titre .jours { font-family: "IBM Plex Mono", monospace; color: var(--encre); font-variant-numeric: tabular-nums; }
 .echeance-titre .point { width: 8px; height: 8px; border-radius: 50%; background: var(--fait); flex: none; }
 .echeance-titre.en-retard .point { background: var(--alerte); }
+/* Chaque morceau reste d'un bloc : sur un téléphone, « Prochaine échéance »
+   se cassait en deux lignes au milieu de la puce. */
+.echeance-titre > span, .echeance-titre > b { white-space: nowrap; }
+@media (max-width: 480px) {
+  .echeance-titre { flex-wrap: wrap; row-gap: 2px; margin-left: 0; font-size: 12.5px; }
+  .haut-de-page { right: 12px; bottom: 12px; width: 36px; height: 36px; }
+}
 
 /* ---------------------------------------------------- Haut de page */
 .haut-de-page {

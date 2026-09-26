@@ -321,540 +321,13 @@
     return r;
   }
 
-  /* ============================================================
-     JEU D'EXEMPLE
-     Il ne sert que lorsque la page tourne seule, sans classeur derrière.
-     Dans l'application réelle, Apps Script injecte window.SUIVI_FWD_DONNEES
-     avant ce script : colonnes réelles, plans, relevés archivés, jalons.
-     ============================================================ */
-  /* Les 138 colonnes de l'export GATES, intitulés, groupes et ordre repris à
-     l'identique du fichier. La démonstration doit montrer exactement ce que
-     le classeur montrera : une colonne en moins et on ne parle plus de la
-     même chose. (« Colonne 1 », vide de bout en bout, est retirée au
-     chargement par la même règle que pour le classeur : 137 à l'écran.) */
-  var COLONNES_GATES = [
-    { cle: "colonne_1", groupe: "", titre: "Colonne 1" },
-    { cle: "reference", groupe: "Informations principales", titre: "Référence UD" },
-    { cle: "rpt", groupe: "Informations principales", titre: "RPT" },
-    { cle: "colonne_4", groupe: "Informations principales", titre: "Colonne 4" },
-    { cle: "colonne_5", groupe: "Informations principales", titre: "Colonne 5" },
-    { cle: "propa", groupe: "Informations principales", titre: "Propa." },
-    { cle: "libelle", groupe: "Informations principales", titre: "Libellé" },
-    { cle: "domaine", groupe: "Informations principales", titre: "Domaine" },
-    { cle: "type", groupe: "Informations principales", titre: "Type" },
-    { cle: "date_creation", groupe: "Informations principales", titre: "Date création" },
-    { cle: "nom_installation", groupe: "Informations principales", titre: "Nom Installation" },
-    { cle: "chapitre", groupe: "Informations principales", titre: "Chapitre" },
-    { cle: "sous_chapitre", groupe: "Informations principales", titre: "Sous-chapitre" },
-    { cle: "etape", groupe: "Informations principales", titre: "Etape" },
-    { cle: "produit", groupe: "Informations principales", titre: "Produit" },
-    { cle: "raison_de_la_creation", groupe: "Informations principales", titre: "Raison de la création" },
-    { cle: "commentaire", groupe: "Informations principales", titre: "Commentaire" },
-    { cle: "version", groupe: "Définition du plan", titre: "Version" },
-    { cle: "groupage", groupe: "Définition du plan", titre: "Groupage" },
-    { cle: "installation_gates", groupe: "Définition du plan", titre: "Installation GATES" },
-    { cle: "designation_gates", groupe: "Définition du plan", titre: "Désignation GATES" },
-    { cle: "type_2", groupe: "Définition du plan", titre: "Type" },
-    { cle: "bte_btr_cdr_plt", groupe: "Définition du plan", titre: "BTE/BTR/CDR/PLT" },
-    { cle: "pwd", groupe: "Définition du plan", titre: "PWD" },
-    { cle: "cc", groupe: "Définition du plan", titre: "CC" },
-    { cle: "ata", groupe: "Définition du plan", titre: "ATA" },
-    { cle: "sequence", groupe: "Définition du plan", titre: "Séquence" },
-    { cle: "commentaire_2", groupe: "Définition du plan", titre: "Commentaire" },
-    { cle: "ecp", groupe: "Définition du plan", titre: "ECP" },
-    { cle: "statut_ibg", groupe: "Définition du plan", titre: "Statut iBG" },
-    { cle: "rpts_lies", groupe: "Définition du plan", titre: "RPTs liés" },
-    { cle: "validation_definition_electrique", groupe: "Définition du plan", titre: "Validation Définition Electrique" },
-    { cle: "xpwd", groupe: "Définition du plan", titre: "XPWD" },
-    { cle: "ddi", groupe: "Définition du plan", titre: "DDI" },
-    { cle: "logiciel_archivage", groupe: "Définition du plan", titre: "Logiciel Archivage" },
-    { cle: "eclairage", groupe: "Définition du plan", titre: "Eclairage" },
-    { cle: "patchboard", groupe: "Définition du plan", titre: "Patchboard" },
-    { cle: "tableau_d_alarmes", groupe: "Définition du plan", titre: "Tableau d'alarmes" },
-    { cle: "panier_a_cartes_16ww", groupe: "Définition du plan", titre: "Panier à cartes 16WW" },
-    { cle: "commentaire_3", groupe: "Concept Harnais", titre: "Commentaire" },
-    { cle: "geometrical_harness", groupe: "Concept Harnais", titre: "GEOMETRICAL HARNESS" },
-    { cle: "avancement_fwd", groupe: "Réalisation FWD", titre: "Avancement" },
-    { cle: "date_de_depart", groupe: "Réalisation FWD", titre: "Date de départ" },
-    { cle: "date_de_retour", groupe: "Réalisation FWD", titre: "Date de retour" },
-    { cle: "redraw", groupe: "Réalisation FWD", titre: "Redraw" },
-    { cle: "classif_sap_beta", groupe: "", titre: "Classif. SAP (BETA)" },
-    { cle: "classif_calculee_beta", groupe: "", titre: "Classif. calculée (BETA)" },
-    { cle: "validite", groupe: "HDK AA", titre: "Validité" },
-    { cle: "quantite", groupe: "HDK AA", titre: "Quantité" },
-    { cle: "configuration_officielle", groupe: "HDK AA", titre: "Configuration officielle" },
-    { cle: "avancement_definition_electrique", groupe: "HDK AA", titre: "Avancement Définition Electrique" },
-    { cle: "a_traiter_par", groupe: "HDK AA", titre: "A traiter par" },
-    { cle: "commentaire_4", groupe: "HDK AA", titre: "Commentaire" },
-    { cle: "avancement_concept_harnais", groupe: "HDK AA", titre: "Avancement Concept Harnais" },
-    { cle: "validite_2", groupe: "HDK AA 011", titre: "Validité" },
-    { cle: "quantite_2", groupe: "HDK AA 011", titre: "Quantité" },
-    { cle: "configuration_officielle_2", groupe: "HDK AA 011", titre: "Configuration officielle" },
-    { cle: "avancement", groupe: "HDK AA 011", titre: "Avancement Définition Electrique" },
-    { cle: "a_traiter_par_2", groupe: "HDK AA 011", titre: "A traiter par" },
-    { cle: "commentaire_5", groupe: "HDK AA 011", titre: "Commentaire" },
-    { cle: "avancement_concept_harnais_2", groupe: "HDK AA 011", titre: "Avancement Concept Harnais" },
-    { cle: "validite_3", groupe: "HDK AA 012", titre: "Validité" },
-    { cle: "quantite_3", groupe: "HDK AA 012", titre: "Quantité" },
-    { cle: "configuration_officielle_3", groupe: "HDK AA 012", titre: "Configuration officielle" },
-    { cle: "avancement_definition_electrique_3", groupe: "HDK AA 012", titre: "Avancement Définition Electrique" },
-    { cle: "a_traiter_par_3", groupe: "HDK AA 012", titre: "A traiter par" },
-    { cle: "commentaire_6", groupe: "HDK AA 012", titre: "Commentaire" },
-    { cle: "avancement_concept_harnais_3", groupe: "HDK AA 012", titre: "Avancement Concept Harnais" },
-    { cle: "validite_4", groupe: "HDK AA 002", titre: "Validité" },
-    { cle: "quantite_4", groupe: "HDK AA 002", titre: "Quantité" },
-    { cle: "configuration_officielle_4", groupe: "HDK AA 002", titre: "Configuration officielle" },
-    { cle: "avancement_definition_electrique_4", groupe: "HDK AA 002", titre: "Avancement Définition Electrique" },
-    { cle: "a_traiter_par_4", groupe: "HDK AA 002", titre: "A traiter par" },
-    { cle: "commentaire_7", groupe: "HDK AA 002", titre: "Commentaire" },
-    { cle: "avancement_concept_harnais_4", groupe: "HDK AA 002", titre: "Avancement Concept Harnais" },
-    { cle: "validite_5", groupe: "HDK AA 001", titre: "Validité" },
-    { cle: "quantite_5", groupe: "HDK AA 001", titre: "Quantité" },
-    { cle: "configuration_officielle_5", groupe: "HDK AA 001", titre: "Configuration officielle" },
-    { cle: "avancement_definition_electrique_5", groupe: "HDK AA 001", titre: "Avancement Définition Electrique" },
-    { cle: "a_traiter_par_5", groupe: "HDK AA 001", titre: "A traiter par" },
-    { cle: "commentaire_8", groupe: "HDK AA 001", titre: "Commentaire" },
-    { cle: "avancement_concept_harnais_5", groupe: "HDK AA 001", titre: "Avancement Concept Harnais" },
-    { cle: "validite_6", groupe: "HDK AA 004", titre: "Validité" },
-    { cle: "quantite_6", groupe: "HDK AA 004", titre: "Quantité" },
-    { cle: "configuration_officielle_6", groupe: "HDK AA 004", titre: "Configuration officielle" },
-    { cle: "avancement_definition_electrique_6", groupe: "HDK AA 004", titre: "Avancement Définition Electrique" },
-    { cle: "a_traiter_par_6", groupe: "HDK AA 004", titre: "A traiter par" },
-    { cle: "commentaire_9", groupe: "HDK AA 004", titre: "Commentaire" },
-    { cle: "avancement_concept_harnais_6", groupe: "HDK AA 004", titre: "Avancement Concept Harnais" },
-    { cle: "validite_7", groupe: "HDK AA 006", titre: "Validité" },
-    { cle: "quantite_7", groupe: "HDK AA 006", titre: "Quantité" },
-    { cle: "configuration_officielle_7", groupe: "HDK AA 006", titre: "Configuration officielle" },
-    { cle: "avancement_definition_electrique_7", groupe: "HDK AA 006", titre: "Avancement Définition Electrique" },
-    { cle: "a_traiter_par_7", groupe: "HDK AA 006", titre: "A traiter par" },
-    { cle: "commentaire_10", groupe: "HDK AA 006", titre: "Commentaire" },
-    { cle: "avancement_concept_harnais_7", groupe: "HDK AA 006", titre: "Avancement Concept Harnais" },
-    { cle: "validite_8", groupe: "HDK AA 010", titre: "Validité" },
-    { cle: "quantite_8", groupe: "HDK AA 010", titre: "Quantité" },
-    { cle: "configuration_officielle_8", groupe: "HDK AA 010", titre: "Configuration officielle" },
-    { cle: "avancement_definition_electrique_8", groupe: "HDK AA 010", titre: "Avancement Définition Electrique" },
-    { cle: "a_traiter_par_8", groupe: "HDK AA 010", titre: "A traiter par" },
-    { cle: "commentaire_11", groupe: "HDK AA 010", titre: "Commentaire" },
-    { cle: "avancement_concept_harnais_8", groupe: "HDK AA 010", titre: "Avancement Concept Harnais" },
-    { cle: "validite_9", groupe: "HDK AA 005", titre: "Validité" },
-    { cle: "quantite_9", groupe: "HDK AA 005", titre: "Quantité" },
-    { cle: "configuration_officielle_9", groupe: "HDK AA 005", titre: "Configuration officielle" },
-    { cle: "avancement_definition_electrique_9", groupe: "HDK AA 005", titre: "Avancement Définition Electrique" },
-    { cle: "a_traiter_par_9", groupe: "HDK AA 005", titre: "A traiter par" },
-    { cle: "commentaire_12", groupe: "HDK AA 005", titre: "Commentaire" },
-    { cle: "avancement_concept_harnais_9", groupe: "HDK AA 005", titre: "Avancement Concept Harnais" },
-    { cle: "validite_10", groupe: "HDK AA 003", titre: "Validité" },
-    { cle: "quantite_10", groupe: "HDK AA 003", titre: "Quantité" },
-    { cle: "configuration_officielle_10", groupe: "HDK AA 003", titre: "Configuration officielle" },
-    { cle: "avancement_definition_electrique_10", groupe: "HDK AA 003", titre: "Avancement Définition Electrique" },
-    { cle: "a_traiter_par_10", groupe: "HDK AA 003", titre: "A traiter par" },
-    { cle: "commentaire_13", groupe: "HDK AA 003", titre: "Commentaire" },
-    { cle: "avancement_concept_harnais_10", groupe: "HDK AA 003", titre: "Avancement Concept Harnais" },
-    { cle: "validite_11", groupe: "HDK AA 007", titre: "Validité" },
-    { cle: "quantite_11", groupe: "HDK AA 007", titre: "Quantité" },
-    { cle: "configuration_officielle_11", groupe: "HDK AA 007", titre: "Configuration officielle" },
-    { cle: "avancement_definition_electrique_11", groupe: "HDK AA 007", titre: "Avancement Définition Electrique" },
-    { cle: "a_traiter_par_11", groupe: "HDK AA 007", titre: "A traiter par" },
-    { cle: "commentaire_14", groupe: "HDK AA 007", titre: "Commentaire" },
-    { cle: "avancement_concept_harnais_11", groupe: "HDK AA 007", titre: "Avancement Concept Harnais" },
-    { cle: "validite_12", groupe: "HDK AA 008", titre: "Validité" },
-    { cle: "quantite_12", groupe: "HDK AA 008", titre: "Quantité" },
-    { cle: "configuration_officielle_12", groupe: "HDK AA 008", titre: "Configuration officielle" },
-    { cle: "avancement_definition_electrique_12", groupe: "HDK AA 008", titre: "Avancement Définition Electrique" },
-    { cle: "a_traiter_par_12", groupe: "HDK AA 008", titre: "A traiter par" },
-    { cle: "commentaire_15", groupe: "HDK AA 008", titre: "Commentaire" },
-    { cle: "avancement_concept_harnais_12", groupe: "HDK AA 008", titre: "Avancement Concept Harnais" },
-    { cle: "validite_13", groupe: "HDK AA 009", titre: "Validité" },
-    { cle: "quantite_13", groupe: "HDK AA 009", titre: "Quantité" },
-    { cle: "configuration_officielle_13", groupe: "HDK AA 009", titre: "Configuration officielle" },
-    { cle: "avancement_definition_electrique_13", groupe: "HDK AA 009", titre: "Avancement Définition Electrique" },
-    { cle: "a_traiter_par_13", groupe: "HDK AA 009", titre: "A traiter par" },
-    { cle: "commentaire_16", groupe: "HDK AA 009", titre: "Commentaire" },
-    { cle: "avancement_concept_harnais_13", groupe: "HDK AA 009", titre: "Avancement Concept Harnais" }
-  ];
-
-  /* Trois contrats fictifs, de tailles différentes, chacun avec sa graine et
-     sa profondeur d'historique : changer de contrat doit changer visiblement
-     les comptes, la courbe et le pied de page, sinon on ne verrait pas que
-     la page a suivi. */
-  var CONTRATS_EXEMPLE = [
-    { id: 'HDK', nom: 'HDK', plans: 640, graine: 20260920, semaines: 12 },
-    { id: 'THS', nom: 'THS', plans: 410, graine: 20260721, semaines: 9 },
-    { id: 'VRK', nom: 'VRK', plans: 275, graine: 20260322, semaines: 6 }
-  ];
-
-  /** Le jeu d'exemple d'un contrat ; un identifiant inconnu donne le premier. */
-  function jeuDExemple(contrat) {
-    var fiche = CONTRATS_EXEMPLE.filter(function (c) { return c.id === contrat; })[0] || CONTRATS_EXEMPLE[0];
-    function graine(a) {
-      return function () {
-        a |= 0; a = a + 0x6D2B79F5 | 0;
-        var t = Math.imul(a ^ a >>> 15, 1 | a);
-        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-        return ((t ^ t >>> 14) >>> 0) / 4294967296;
-      };
-    }
-    var alea = graine(fiche.graine);
-    function tire(l) { return l[Math.floor(alea() * l.length)]; }
-    function ent(a, b) { return a + Math.floor(alea() * (b - a + 1)); }
-
-    /* Toutes les colonnes de l'export, dans son ordre : le tableau s'ouvre
-       dessus, et la vue essentielle n'en garde qu'une poignée. */
-    var colonnes = COLONNES_GATES.map(function (c) {
-      var col = { cle: c.cle, groupe: c.groupe, titre: c.titre, classe: '' };
-      if (c.cle === 'reference') { col.fige = true; col.classe = 'ref'; }
-      else if (/^(nom_installation|libelle|designation_gates|raison_de_la_creation|classif_calculee_beta)/.test(c.cle)) col.classe = 'large';
-      else col.classe = 'num';
-      return col;
-    });
-
-    var ATA = ['21', '24', '25', '31', '33', '34', '39', '46', '53', '92'];
-    var CODES_CIRCUIT = ['TF', 'WL', 'PA', 'PB', 'PC', 'LA', 'LB', 'MA', 'MB', 'NA', 'RA', 'RB', 'SA', 'SB', 'XA', 'XB', 'GA', 'GB'];
-    var INSTALLATIONS = [
-      'Harnais alimentation cabine', 'Cheminement plancher avant', 'Boîtier de disjoncteurs',
-      'Éclairage de soute', 'Platine de masse structure', 'Faisceau treuil de sauvetage',
-      'Connectique traversée de cloison', 'Support calculateur avionique', 'Antenne VHF dorsale',
-      'Coffret relais poste avant', 'Câblage siège pilote', 'Raccordement phare d’atterrissage',
-      'Harnais capteurs boîte de transmission', 'Bâti convertisseur statique',
-      'Cheminement console centrale', 'Bloc prises maintenance'
-    ];
-
-    var NB_PLANS = fiche.plans;
-    var plans = [];
-    for (var i = 0; i < NB_PLANS; i++) {
-      var t = alea(), avancement;
-      /* L'avancement FWD ne prend que ces quatre formes : jamais de pourcentage. */
-      if (t < 0.34)      { avancement = 'Terminé'; }
-      else if (t < 0.63) { avancement = 'En cours'; }
-      else if (t < 0.85) { avancement = 'À faire'; }
-      else               { avancement = ''; }
-      var ata = tire(ATA);
-      var e0 = classer(avancement);
-      var annee = e0 === 'termine' ? ent(2018, 2026) : ent(2023, 2026);
-
-      var p = {};
-      colonnes.forEach(function (c) { p[c.cle] = ''; });
-      /* Une vraie référence UD, telle qu'elle s'écrit : le code circuit (deux
-         lettres), E, l'ATA et son sous-ATA (quatre chiffres), A, la séquence
-         (600 côté pilote, 700 côté copilote, 800 les boîtes), la solution sur
-         trois chiffres, l'indice en lettre. Le code circuit et le sous-ATA
-         suivent le rang : deux plans ne peuvent pas porter la même racine tant
-         qu'un contrat reste sous 1 080 plans — la démonstration en compte 640
-         au plus. Les deux tirages sans emploi gardent au tirage aléatoire la
-         même longueur qu'avant, pour que la démonstration reste comparable
-         d'une version à l'autre. */
-      tire(['HEL', 'ELE', 'HAR', 'CAB', 'AVI']); ent(0, 8999);
-      var sequence = String(ent(600, 602)).replace(/^60(\d)$/, function (m, d) { return ['600', '700', '800'][d]; });
-      p.reference = CODES_CIRCUIT[i % CODES_CIRCUIT.length] + 'E' + ata + deuxChiffres(10 + Math.floor(i / CODES_CIRCUIT.length) % 60) + 'A' +
-                    sequence + '00' + ent(1, 3) + tire(['A', 'B', 'C']);
-      p.rpt = tire(['true', 'false']);
-      /* Deux colonnes sans intitulé et vides, comme dans l'export : elles
-         restent dans le tableau, c'est la structure de GATES. Seule la
-         première colonne de la feuille (« Colonne 1 »), qu'Excel ajoute, en
-         est retirée. */
-      p.colonne_4 = '';
-      p.colonne_5 = '';
-      p.propa = tire(['BASE/OPTION', 'BASE', 'OPTION']);
-      p.libelle = 'Faisceau ' + (i + 1);
-      p.domaine = alea() < 0.68 ? 'BASE/OPTION' : 'PERSO';
-      p.type = tire(['STD', 'SPEC']);
-      p.date_creation = annee + '-' + deuxChiffres(ent(1, 12)) + '-' + deuxChiffres(ent(1, 28));
-      p.nom_installation = tire(INSTALLATIONS);
-      p.chapitre = tire(['A', 'B', 'C', 'D']);
-      p.sous_chapitre = tire(['A1', 'A2', 'B1', 'B2', 'C1']);
-      p.etape = tire(['AVAILABLE', 'IN WORK', 'FROZEN']);
-      p.produit = tire(['SUPER PUMA', 'MK2', 'MK3']);
-      p.version = String(ent(1, 4));
-      p.groupage = tire(['G1', 'G2', 'G3']);
-      p.installation_gates = 'GATES-' + (5000 + i);
-      p.designation_gates = 'Désignation du plan ' + (i + 1);
-      p.type_2 = tire(['PM', 'PS']);
-      p.bte_btr_cdr_plt = tire(['BTE', 'BTR', 'CDR', 'PLT']);
-      p.pwd = String(600 + ent(0, 2));
-      p.cc = '3' + deuxChiffres(ent(1, 12)) + '99';
-      p.ata = ata;
-      p.sequence = sequence;
-      p.ecp = alea() < 0.86 ? 'ECP-' + ent(2100, 2140) : '';
-      p.statut_ibg = tire(['true', 'false']);
-      p.validation_definition_electrique = e0 === 'termine' || e0 === 'encours' ? 'true' : tire(['true', 'false']);
-      p.xpwd = tire(['XPWD1', 'XPWD2']);
-      p.ddi = tire(['N/A', 'DDI-A']);
-      p.avancement = avancement;
-      p.redraw = tire(['true', 'false']);
-      /* Les blocs par variante : quelques-uns renseignés, le reste à blanc,
-         comme dans l'export. */
-      colonnes.forEach(function (c) {
-        if (c.groupe.indexOf('HDK AA') !== 0) return;
-        if (alea() < 0.75) { p[c.cle] = '-'; return; }
-        if (/^validite/.test(c.cle)) p[c.cle] = tire(['V', 'NV']);
-        else if (/^quantite/.test(c.cle)) p[c.cle] = '1';
-        else if (/^configuration/.test(c.cle)) p[c.cle] = tire(['EMPTY', '()']);
-        else if (/^a_traiter_par/.test(c.cle)) p[c.cle] = tire(['MR', 'AB', 'CM']);
-        else p[c.cle] = tire(['EMPTY', 'V']);
-      });
-      /* Le bloc HDK AA 011 porte les deux avancements suivis : la définition
-         électrique (le FWD) et le concept harnais, qui la précède le plus
-         souvent. Tirés sans toucher au générateur — un tirage de plus
-         décalerait tout le jeu d'essai — et posés après la boucle des
-         variantes, qui passe aussi sur leurs colonnes. L'ancienne colonne
-         « Réalisation FWD > Avancement » reste, un pas derrière. */
-      var uHdk = ((i + 1) * 7919 % 997) / 997;
-      p.avancement = avancement;
-      p.avancement_concept_harnais_2 =
-        e0 === 'termine' ? (uHdk < 0.9 ? 'Terminé' : 'En cours')
-        : e0 === 'encours' ? (uHdk < 0.55 ? 'Terminé' : 'En cours')
-        : e0 === 'afaire' ? (uHdk < 0.45 ? 'En cours' : 'À faire')
-        : (uHdk < 0.5 ? '' : 'À faire');
-      p.avancement_fwd =
-        e0 === 'termine' ? (uHdk < 0.7 ? 'Terminé' : 'En cours')
-        : e0 === 'encours' ? (uHdk < 0.3 ? 'En cours' : 'À faire')
-        : e0 === 'afaire' ? 'À faire' : '';
-      plans.push(p);
-    }
-    plans.forEach(function (x) { x._etat = classer(x.avancement); x._pct = pourcentDe(x); });
-
-    var clesDim = ['ata', 'cc', 'ecp', 'sequence'];
-    var refDate = lundiDeLaSemaine(2026, 38);
-    function valeurDe(x, c) {
-      if (c === '_anciennete') return ancienneteDepuis(x.date_creation, refDate);
-      if (c === '_mois') return moisDe(x.date_creation);
-      return x[c];
-    }
-    var clesAvecDerivees = clesDim.concat(['_anciennete', '_mois']);
-
-    /* Plusieurs semaines d'historique, avec l'avancement plan par plan à
-       chaque relevé : c'est ce qui fait vivre le journal et la bulle du
-       graphique. La profondeur dépend du contrat. */
-    var SEMAINES = fiche.semaines;
-
-    /* Quelques plans ont été réémis au fil des semaines : leur référence a
-       changé d'indice sans que le plan change d'identité. Six
-       par contrat, à des semaines différentes ; deux d'entre eux changent
-       aussi d'état à ce moment-là. Les cartes d'avant portent l'ancienne
-       référence, celles d'après la nouvelle — c'est ce que le journal doit
-       apparier au lieu d'y voir un disparu et un nouveau. */
-    var reemissions = [];
-    for (var q = 5; reemissions.length < 6 && q < plans.length; q += 53) {
-      var pl = plans[q], ud = analyserUD(pl.reference), ancienne;
-      if (ud.indice === 'A') { ud.indice = 'B'; pl.reference = ud.racine + ud.solution + 'B'; }
-      ancienne = ud.racine + ud.solution + String.fromCharCode(ud.indice.charCodeAt(0) - 1);
-      reemissions.push({ ref: pl.reference, ancienne: ancienne,
-                         k: SEMAINES - reemissions.length, avecEtat: reemissions.length % 3 === 0 });
-    }
-    var ETAT_DAVANT = { 'Terminé': 'En cours', 'En cours': 'À faire', 'À faire': 'En cours', '': 'À faire' };
-
-    var etatCourant = {};
-    plans.forEach(function (x) { etatCourant[x.reference] = x.avancement; });
-    var refs = plans.map(function (x) { return x.reference; });
-
-    var instantanes = [];
-    for (var k = SEMAINES; k >= 0; k--) {
-      instantanes[k] = JSON.parse(JSON.stringify(etatCourant));
-      if (k === 0) break;
-      var recules = 0, rebonds = 0;
-      for (var r = 0; r < refs.length && recules < 26; r++) {
-        var ref = refs[(r * 17 + k * 29) % refs.length];
-        var v = etatCourant[ref];
-        if (v === 'Terminé') { etatCourant[ref] = 'En cours'; recules++; }
-        else if (v === 'En cours' && alea() < 0.5) { etatCourant[ref] = 'À faire'; recules++; }
-        /* Deux plans repassés à faire, une semaine : un vrai recul, pour que
-           le journal en montre aussi. */
-        else if (v === 'À faire' && k === SEMAINES - 2 && rebonds < 2) { etatCourant[ref] = 'En cours'; rebonds++; }
-      }
-      reemissions.forEach(function (re) {
-        if (re.k !== k) return;
-        /* Avant cette semaine, le plan portait l'ancienne référence — et,
-           pour certains, n'était pas encore dans le même état. */
-        var val = etatCourant[re.ref];
-        delete etatCourant[re.ref];
-        etatCourant[re.ancienne] = re.avecEtat ? ETAT_DAVANT[val] : val;
-      });
-      if (k === 1) { delete etatCourant[refs[3]]; delete etatCourant[refs[11]]; }
-    }
-
-    /* Le concept harnais a son historique à lui, remonté de la même façon —
-       sans le générateur, par rang — et ses cartes changent de référence
-       aux mêmes semaines que celles de la définition. */
-    var conceptCourant = {};
-    plans.forEach(function (x) { conceptCourant[x.reference] = x.avancement_concept_harnais_2; });
-    var instantanesConcept = [];
-    for (var kc = SEMAINES; kc >= 0; kc--) {
-      instantanesConcept[kc] = JSON.parse(JSON.stringify(conceptCourant));
-      if (kc === 0) break;
-      var recC = 0;
-      for (var rc = 0; rc < refs.length && recC < 20; rc++) {
-        var refc = refs[(rc * 13 + kc * 31) % refs.length];
-        var vc = conceptCourant[refc];
-        if (vc === 'Terminé') { conceptCourant[refc] = 'En cours'; recC++; }
-        else if (vc === 'En cours' && (rc + kc) % 2 === 0) { conceptCourant[refc] = 'À faire'; recC++; }
-      }
-      reemissions.forEach(function (re) {
-        if (re.k !== kc) return;
-        var valc = conceptCourant[re.ref];
-        delete conceptCourant[re.ref];
-        conceptCourant[re.ancienne] = valc;
-      });
-      if (kc === 1) { delete conceptCourant[refs[3]]; delete conceptCourant[refs[11]]; }
-    }
-
-    /* Une ancienne référence retrouve son plan par la racine : ses comptes
-       par dimension ne doivent pas manquer dans les relevés d'avant. */
-    var parRef = {}, parRacine = {};
-    plans.forEach(function (x) { parRef[x.reference] = x; parRacine[clePlan(analyserUD(x.reference))] = x; });
-    var releves = [];
-    for (var s = 0; s <= SEMAINES; s++) {
-      var carte = instantanes[s];
-      var etats = { termine: 0, encours: 0, afaire: 0, vide: 0 };
-      var groupes = {};
-      clesAvecDerivees.forEach(function (d) { groupes[d] = {}; });
-      Object.keys(carte).forEach(function (ref) {
-        var etat = classer(carte[ref]);
-        etats[etat]++;
-        var plan = parRef[ref] || parRacine[clePlan(analyserUD(ref))];
-        if (!plan) return;
-        clesAvecDerivees.forEach(function (d) {
-          var v = String(valeurDe(plan, d) || '—');
-          if (!groupes[d][v]) groupes[d][v] = { total: 0, termine: 0 };
-          groupes[d][v].total++;
-          if (etat === 'termine') groupes[d][v].termine++;
-        });
-      });
-      releves.push({
-        semaine: etiquetteISO(dateDeBase(lundiDeLaSemaine(2026, 38 - SEMAINES), s)),
-        total: Object.keys(carte).length,
-        termine: etats.termine, encours: etats.encours, afaire: etats.afaire, vide: etats.vide,
-        groupes: groupes,
-        plans: carte,
-        plansConcept: instantanesConcept[s]
-      });
-    }
-
-    return {
-      colonnes: colonnes,
-      cleDate: 'date_creation',
-      cleDomaine: 'domaine',
-      /* Comme CONFIG.COLONNE_CONCEPT de Code.gs : HDK AA 011 > Avancement
-         Concept Harnais. */
-      cleConcept: 'avancement_concept_harnais_2',
-      clesDim: clesDim,
-      clesEssentielles: ['reference', 'nom_installation', 'ecp', 'ata', 'sequence',
-                         'validation_definition_electrique', 'date_creation', 'avancement',
-                         'avancement_concept_harnais_2'],
-      dimParDefaut: 'ata',
-      plans: plans,
-      releves: releves,
-      /* Les jalons du programme, les mêmes que CONFIG.JALONS de Code.gs
-         (échéances transmises le 17/09/2026) : le solde FWD, puis les
-         diffusions PH et TO, chacune pour un périmètre. La semaine courante
-         de la démonstration est la 38 de 2026 : tous sont à venir. */
-      jalons: [
-        { semaine: '2026-S51', texte: 'Solde FWD' },
-        { semaine: '2027-S02', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },
-        { semaine: '2027-S03', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },
-        { semaine: '2027-S05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION' },
-        { semaine: '2027-S08', texte: 'Diffusion TO Perso', perimetre: 'PERSO' }
-      ],
-      /* La liste des contrats et celui-ci : c'est ce que le sélecteur affiche. */
-      contrats: CONTRATS_EXEMPLE.map(function (c) { return { id: c.id, nom: c.nom }; }),
-      contrat: fiche.id,
-      /* La seconde base, fabriquée à partir des plans de CE contrat, une fois
-         leurs références définitives (après les réémissions). */
-      rapprochement: rapprochementDExemple(plans),
-      info: { feuille: 'Démonstration ' + fiche.nom, message: '' }
-    };
-  }
+  /* Le lundi de la semaine i, comptée depuis un lundi de base. */
   function dateDeBase(base, i) {
     var d = new Date(base.getTime()); d.setUTCDate(base.getUTCDate() + i * 7); return d;
   }
 
-  /* La seconde base, en attendant la vraie : « SEE », l'extract Excel de
-     l'intranet — titre « Nommage WD BFLOW » en ligne 1, en-têtes en ligne 3,
-     données dessous. Ses colonnes sont celles de l'extract, dans son ordre.
-     La référence UD s'y lit sur trois colonnes : NAME (la racine, écrite
-     avec le A un cran trop tôt par rapport à GATES — GBE312A3600 pour le
-     plan GBE3123A600), SOL. (la solution, trois chiffres) et Cust.V (l'indice,
-     une lettre). Un plan qui
-     est dans SEE est un plan créé — donc terminé : l'extract porte les plans
-     terminés du contrat, avec des écarts DÉLIBÉRÉS et déterministes — les
-     mêmes à chaque ouverture, pour que la section ait toujours quelque chose
-     à montrer et que la batterie sache quoi attendre :
-       · 3 plans terminés dans GATES que SEE ne connaît pas ;
-       · 2 plans terminés que SEE connaît sous un autre indice ;
-       · 12 plans que SEE connaît alors que GATES ne les dit pas terminés ;
-       · 5 références présentes dans SEE mais pas ici (racines inédites).
-     Les plans concernés se choisissent par leur rang parmi les terminés (ou
-     les autres), et les pas sont assez courts pour que le plus petit contrat
-     (275 plans) atteigne les mêmes comptes : les trois contrats portent donc
-     exactement le même jeu d'écarts, sur d'autres plans.
-     Pas de vue essentielle : l'extract n'a qu'une vingtaine de colonnes, et
-     seules les trois de la référence servent au rapprochement. */
-  var CHOIX_EXEMPLE = { manque: 3, emission: 2, avance: 12, seul: 5 };
-  var COLONNES_SEE = ['NAME', 'SOL.', 'Cust.V', 'Int. V', 'ARCHIVE FILE PREFIX', 'VALIDITY PSN FULL',
-    'User Status', 'DIAGRAM TYPE', 'PRODUCT FAMILY', 'Validated', 'FG1 TAGDESCRIPTION', 'FG2 TAGDESCRIPTION',
-    'SCHEMA NUMBER', 'Released Date', 'Obsolete Date', 'Validated Date', 'REDRAW', 'ARCHIVED', 'CGM', 'XPEMPTY'];
-  var AVIONS_SEE = ['2851', '2860', '2874', '2902', '2915'];
-  function rapprochementDExemple(plans) {
-    var lignes = [];
-    function ligneSEE(racine, solution, indice, i, p, enCours) {
-      var l = {};
-      var nom = racineSEE(racine);   // l'extract écrit le A un cran trop tôt
-      l['NAME'] = nom;
-      l['SOL.'] = solution;
-      l['Cust.V'] = indice;
-      l['Int. V'] = String(1 + (i % 3));
-      l['ARCHIVE FILE PREFIX'] = 'WD_' + nom + '_' + solution + indice;
-      l['VALIDITY PSN FULL'] = AVIONS_SEE[i % AVIONS_SEE.length];
-      l['User Status'] = enCours ? 'In Work' : 'Released';
-      l['DIAGRAM TYPE'] = ['WD', 'HD', 'SD'][i % 3];
-      l['PRODUCT FAMILY'] = p ? p.produit : 'SUPER PUMA';
-      l['Validated'] = enCours ? 'FALSE' : 'TRUE';
-      l['FG1 TAGDESCRIPTION'] = p ? p.nom_installation : 'Harnais alimentation cabine';
-      l['FG2 TAGDESCRIPTION'] = i % 4 === 0 && p ? 'Zone ' + p.chapitre + p.sous_chapitre : '';
-      l['SCHEMA NUMBER'] = p ? p.cc : '32499';
-      l['Released Date'] = p ? p.date_creation : '2026-01-15';
-      l['Obsolete Date'] = '';
-      l['Validated Date'] = enCours ? '' : '2026-0' + (1 + i % 9) + '-1' + (i % 9);
-      l['REDRAW'] = p && p.redraw === 'true' ? 'TRUE' : 'FALSE';
-      l['ARCHIVED'] = 'FALSE';
-      l['CGM'] = enCours ? 'FALSE' : 'TRUE';
-      l['XPEMPTY'] = 'FALSE';
-      return l;
-    }
-    /* Les terminés vont dans SEE, sauf quelques-uns (manque) ; parmi eux,
-       quelques-uns sous une autre lettre (emission). Les autres n'y sont pas,
-       sauf quelques-uns (avance) : SEE les connaît déjà, GATES ne suit pas. */
-    var rangT = 0, rangA = 0, faits = { manque: 0, emission: 0, avance: 0 };
-    plans.forEach(function (p, i) {
-      var termine = classer(p.avancement) === 'termine';
-      var ud = analyserUD(p.reference), indice = ud.indice;
-      if (termine) {
-        rangT++;
-        if (rangT % 23 === 7 && faits.manque < CHOIX_EXEMPLE.manque) { faits.manque++; return; }
-        if (rangT % 29 === 20 && faits.emission < CHOIX_EXEMPLE.emission) {
-          faits.emission++; indice = String.fromCharCode(ud.indice.charCodeAt(0) + 1);
-        }
-        lignes.push(ligneSEE(ud.racine, ud.solution, indice, i, p, false));
-      } else {
-        rangA++;
-        if (rangA % 13 === 3 && faits.avance < CHOIX_EXEMPLE.avance) {
-          faits.avance++; lignes.push(ligneSEE(ud.racine, ud.solution, indice, i, p, true));
-        }
-      }
-    });
-    /* Ce que SEE est seul à connaître : de vraies références, d'un circuit
-       (ZZ) et d'un ATA (99) que GATES n'emploie pas — elles ne peuvent donc
-       s'apparier à aucun plan, sans cesser d'être bien formées. */
-    for (var k = 0; k < CHOIX_EXEMPLE.seul; k++) {
-      lignes.push(ligneSEE('ZZE99' + deuxChiffres(10 + k) + 'A800', '001', 'A', k, null, false));
-    }
-    return {
-      nom: 'SEE',
-      titre: 'Nommage WD BFLOW',
-      cleReference: ['NAME', 'SOL.', 'Cust.V'],
-      colonnes: COLONNES_SEE,
-      lignes: lignes
-    };
-  }
+  /* La démonstration n'est pas livrée au classeur : il a ses propres données. */
+  function jeuDExemple() { return sourceDuClasseur(null); }
 
   /* ============================================================
      SOURCE DES DONNEES
@@ -862,8 +335,8 @@
      contrats… } : le jeu d'exemple quand la page tourne seule, le paquet du
      classeur dans l'add-on. Tout l'état qui en découle se recalcule d'un
      bloc dans chargerSource() — le même chemin sert au premier affichage,
-     au passage en mode « Exemple » et au changement de contrat, donc les
-     trois offrent exactement les mêmes fonctions. Les écouteurs, eux, sont
+     au changement de contrat et d'avancement suivi, donc tous offrent
+     exactement les mêmes fonctions. Les écouteurs, eux, sont
      posés une seule fois sur les éléments fixes de la page.
      ============================================================ */
   /* Un classeur derrière la page, ou non : c'est la présence du paquet qui
@@ -875,8 +348,7 @@
   var API = window.SUIVI_FWD_API || null;
 
   /* L'état dérivé de la source courante. Déclaré ici, rempli par chargerSource(). */
-  var SRC = null;                  // la source affichée : réelle, ou son exemple
-  var SRC_REELLE = null;           // la dernière source réelle chargée
+  var SRC = null;                  // la source affichée
   var COLONNES, PAR_CLE, CLE_DATE, PLANS, RELEVES_SRC, BASE, AUJ;
   /* L'avancement suivi : la définition électrique — la colonne « avancement »
      du paquet, le FWD — ou le concept harnais (SRC.cleConcept). Toute la page
@@ -908,15 +380,9 @@
     obs.observe(cadre);
   }
   var DIMENSIONS, TITRE_DIM, ORDRE_FEUILLE, PLAN_PAR_REF, PLAN_PAR_RACINE, JOURNAL;
-  var RELEVES_REELS, AUJ_REEL, BASE_REELLE;
   var CONTRATS, CONTRAT;
   var vue = null;
 
-  /* La source qu'un paquet du classeur donne à la page. Complet, il passe
-     tel quel. Sinon — feuille vide, contrat introuvable, erreur du script —
-     une source vide qui garde ce que le paquet sait encore dire (contrats,
-     jalons) et porte son message : la page s'ouvre sans plan et l'explique,
-     au lieu de montrer 640 plans fictifs sous « Données réelles ». */
   /* Le paquet arrive compacté du classeur (compacterPaquet, Code.gs) : chaque
      nom de colonne, chaque référence d'un relevé n'y est écrit qu'une fois.
      On le rend à sa forme de travail — des objets —, à l'identique. Un
@@ -958,6 +424,10 @@
     return paquet;
   }
 
+  /* La source qu'un paquet du classeur donne à la page. Complet, il passe
+     tel quel. Sinon — feuille vide, contrat introuvable, erreur du script —
+     une source vide qui garde ce que le paquet sait encore dire (contrats,
+     jalons) et porte son message : la page s'ouvre sans plan et l'explique. */
   function sourceDuClasseur(paquet) {
     paquet = deballerPaquet(paquet);
     if (paquet && paquet.ok !== false && Array.isArray(paquet.plans) && paquet.plans.length) return paquet;
@@ -1036,12 +506,16 @@
      bavarde ne fasse pas déborder la frise. Un jalon peut porter un
      périmètre — la valeur de la colonne de domaine à laquelle il s'applique
      (« Diffusion PH Perso » ne vaut que pour PERSO) ; sans périmètre, il vaut
-     pour tous les plans. */
+     pour tous les plans. Il appartient à un avancement — la définition
+     électrique (le FWD), ou le concept harnais pour les diffusions TO — et
+     peut porter son jour exact. */
   function jalonsDe(liste) {
     return (Array.isArray(liste) ? liste : []).map(function (j) {
       if (!j) return null;
       var texte = String(j.texte || 'Jalon').trim().slice(0, 60) || 'Jalon';
-      return { i: indexDe(j.semaine), texte: texte, perimetre: String(j.perimetre || '').trim().slice(0, 40) };
+      var date = /^\d{4}-\d{2}-\d{2}$/.test(String(j.date || '')) ? String(j.date) : '';
+      return { i: indexDe(j.semaine), texte: texte, perimetre: String(j.perimetre || '').trim().slice(0, 40),
+               date: date, suivi: j.suivi === 'concept' ? 'concept' : 'def' };
     }).filter(function (j) { return j && j.i !== null; })
       .sort(function (a, b) { return a.i - b.i; });
   }
@@ -1050,7 +524,15 @@
      (« Tout »), tous comptent ; sinon ceux du périmètre et ceux qui n'en ont
      pas. Casse et accents indifférents, comme partout ailleurs. */
   function jalonDansPerimetre(j) {
-    return !j.perimetre || !vue.perimetre || norm(j.perimetre) === norm(vue.perimetre);
+    return jalonDuSuivi(j) && (!j.perimetre || !vue.perimetre || norm(j.perimetre) === norm(vue.perimetre));
+  }
+  /* Un jalon du concept harnais ne compte pas sous la définition électrique,
+     ni l'inverse : il reste dessiné, en retrait. */
+  function jalonDuSuivi(j) { return (j.suivi || 'def') === INDICATEUR; }
+  /* Pourquoi un jalon est en retrait, dit en clair — ou rien s'il compte. */
+  function raisonRetrait(j) {
+    if (!jalonDuSuivi(j)) return j.suivi === 'concept' ? 'suit le concept harnais' : 'suit la définition électrique';
+    return jalonDansPerimetre(j) ? '' : 'hors du périmètre choisi';
   }
   /* L'échéance : le premier jalon à venir qui compte ici. C'est lui qui
      pilote l'« effort demandé » et la droite « requis pour … ». */
@@ -1066,13 +548,15 @@
 
   /* ============================================================
      LES ÉCHÉANCES, EN JOURS
-     Un jalon se donne à la semaine ; on le vit en jours. Sa date : le
-     vendredi de sa semaine, dernier jour ouvré. Pour chacun : combien de
+     Un jalon se donne à la semaine ; on le vit en jours. Sa date : son jour
+     exact quand la configuration le donne, sinon le vendredi de sa semaine,
+     dernier jour ouvré. Pour chacun : combien de
      jours restent, combien de plans restent dans son périmètre, le rythme
      qu'il faut contre celui qu'on tient.
      ============================================================ */
   var JOURS_SEMAINE = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
   function dateEcheance(j) {
+    if (j.date) return new Date(Date.UTC(+j.date.slice(0, 4), +j.date.slice(5, 7) - 1, +j.date.slice(8, 10)));
     var d = new Date(dateDe(j.i).getTime());
     d.setUTCDate(d.getUTCDate() + 4);
     return d;
@@ -1126,7 +610,23 @@
     if (!j) return '';
     var b = bilanEcheance(j), d = dateEcheance(j);
     var quand = JOURS_SEMAINE[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MOIS[d.getUTCMonth()] + ' ' + d.getUTCFullYear() +
-      ' \u00b7 fin de la semaine ' + numeroSemaine(j.i);
+      (j.date ? ' \u00b7 semaine ' : ' \u00b7 fin de la semaine ') + numeroSemaine(j.i);
+    /* Un jalon de l'autre avancement : ses jours, et le chemin vers ses
+       plans — pas de comptes tirés d'une colonne qui n'est pas la sienne. */
+    if (!jalonDuSuivi(j)) {
+      var autre = j.suivi === 'concept' ? 'concept' : 'def';
+      var leAutre = autre === 'concept' ? 'le concept harnais' : 'la définition électrique';
+      var versAutre = autre === 'concept' ? 'au concept harnais' : 'à la définition électrique';
+      var nJours = joursAvant(j);
+      return '\x3Cdiv class="fiche-echeance" id="fiche-echeance" role="region" aria-label="Échéance ' + ech(j.texte) + '">' +
+        '\x3Cdiv class="fiche-echeance-tete">\x3Cspan class="num">' + (idx + 1) + '\x3C/span>\x3Ch3>' + ech(j.texte) + '\x3C/h3>' +
+        '\x3Cspan class="quand">' + ech(quand) + (j.perimetre ? ' \u00b7 ' + ech(j.perimetre) : '') + '\x3C/span>' +
+        '\x3Cbutton type="button" class="fiche-echeance-fermer" data-fermer-echeance="1" aria-label="Fermer la fiche">\u00d7\x3C/button>\x3C/div>' +
+        '\x3Cdiv class="fiche-echeance-rythme">' + ech(motJours(nJours).replace(/^./, function (c) { return c.toUpperCase(); })) +
+        '. Ce jalon suit \x3Cb>' + leAutre + '\x3C/b> : ses plans se comptent sur cet avancement.\x3C/div>' +
+        '\x3Cdiv>\x3Cbutton type="button" class="lien-doux" data-aller-indicateur="' + autre + '" data-jalon="' + idx + '">Passer ' + versAutre + '\x3C/button>\x3C/div>' +
+        '\x3C/div>';
+    }
     var passe = b.jours < 0;
     var verdict;
     if (!b.total) verdict = { cls: 'mal', mot: 'Aucun plan dans ce périmètre.' };
@@ -1194,7 +694,7 @@
 
   /**
    * Dérive tout l'état de la page d'une source. Rejouable : la source
-   * initiale, l'exemple fabriqué et chaque contrat passent par ici.
+   * initiale et chaque contrat passent par ici.
    * Ne dessine rien : l'appelant enchaîne remplirDims() puis rendre().
    */
   /* ============================================================
@@ -1242,14 +742,19 @@
     });
     /* Plusieurs valeurs dans une même famille : la plus fréquente prend la
        couleur de la famille, les suivantes s'éclaircissent. */
-    var rangs = {};
+    /* Le pas d'éclaircissement suit le nombre de valeurs de la famille :
+       la plus claire garde au moins la moitié de la teinte, pour rester
+       visible sur le papier, même en trait de quatre pixels. */
+    var rangs = {}, parFamille = {};
+    liste.forEach(function (v) { parFamille[v.famille] = (parFamille[v.famille] || 0) + 1; });
     liste.forEach(function (v) {
       var r = rangs[v.famille] = (rangs[v.famille] || 0) + 1;
       var base = ETAT_PAR_CLE[v.famille];
+      var pas = parFamille[v.famille] > 1 ? Math.min(22, 50 / (parFamille[v.famille] - 1)) : 0;
       v.hachure = !!base.hachure;
       v.teinte = base.teinte;
       v.couleur = r === 1 ? base.couleur
-        : 'color-mix(in srgb, ' + base.couleur + ' ' + Math.max(38, 100 - 24 * (r - 1)) + '%, var(--surface))';
+        : 'color-mix(in srgb, ' + base.couleur + ' ' + Math.round(100 - pas * (r - 1)) + '%, var(--surface))';
       v.encre = r === 1 ? encreSegment(v.famille) : 'var(--encre)';
     });
     VALEUR_PAR_CLE = par;
@@ -1287,7 +792,6 @@
 
   function chargerSource(src) {
     SRC = src;
-    if (!src.exemple) SRC_REELLE = src;
     ANIMER_FIGURE = true;
 
     PLANS = src.plans;
@@ -1391,10 +895,9 @@
     DERNIER = RELEVES[RELEVES.length - 1];
     $('import').textContent = 'Dernier import : semaine ' + etiquette(DERNIER.i).slice(5) + ' · ' +
       RELEVES.length + (RELEVES.length > 1 ? ' relevés archivés' : ' relevé archivé');
-    /* « Jeu d'exemple » ne se lit que dans la démonstration — seule, ou
-       montrée à la place d'un classeur vide. Sur les chiffres du tableur, le
-       pied ne doit pas dire le contraire. */
-    $('avertissement-demo').hidden = SERVEUR && !src.demonstration;
+    /* « Démonstration » ne se lit que dans la démonstration, la page
+       ouverte seule. Sur les chiffres du tableur, le pied ne dit rien de tel. */
+    $('avertissement-demo').hidden = SERVEUR;
 
     /* Ce qui a bougé entre les deux derniers imports, plan par plan. Le
        comparatif affiché en découle, restreint au périmètre courant. */
@@ -1420,8 +923,6 @@
     MEMO_DERIVE = {};
     JOURNAL = construireJournal();
 
-    /* Ce dont l'exemple a besoin pour se fabriquer : la vraie « aujourd'hui ». */
-    if (!src.exemple) { RELEVES_REELS = RELEVES; AUJ_REEL = AUJ; BASE_REELLE = BASE; }
 
     CONTRATS = (Array.isArray(src.contrats) ? src.contrats : [])
       .filter(function (c) { return c && c.id !== undefined && c.id !== null && c.id !== ''; })
@@ -1481,7 +982,6 @@
       seconde: { recherche: '', vueTable: 'toutes', tri: { cle: null, asc: true } },
       /* La base montrée dans le tableau : ici (GATES) ou là (la seconde). */
       base: 'ici',
-      exemple: !!SRC.exemple,
       fen: cadrageParDefaut(),
       /* L'ordre de la feuille, sans exception : tout le monde doit voir le même
          tableau que l'export. Le verrouillage à gauche s'adapte à cet ordre
@@ -1529,27 +1029,17 @@
     afficherMode();
   }
 
-  /* Le bandeau du haut dit dans quel mode on est. La phrase dit exactement ce
-     qui est fabriqué : l'historique, pas les plans. Une phrase qui exagère se
-     fait prendre en défaut et on ne croit plus rien. */
+  /* Le bandeau du haut : hors du classeur, la page le dit — c'est une
+     démonstration ; devant le classeur, il ne dit rien, sauf ce que le
+     classeur a à dire quand il n'a rien pu rendre. */
   function afficherMode() {
-    var actif = !!vue.exemple;
-    var demo = actif && !!(SRC && SRC.demonstration);
-    document.body.dataset.exemple = String(actif);
-    document.querySelectorAll('#mode-donnees button').forEach(function (b) {
-      b.setAttribute('aria-pressed', String((b.dataset.mode === 'exemple') === actif));
-    });
-    $('mot-mode').innerHTML = demo
-      ? '\x3Cb>Démonstration\x3C/b> — le classeur n\'a pas encore de données : trois contrats fictifs, pour voir la page entière.'
-      : actif
-        ? '\x3Cb>Historique fabriqué\x3C/b> — un aperçu de ce que la page montrera quand les relevés se seront accumulés.'
-        : SERVEUR ? '' : '\x3Cb>Démonstration\x3C/b> — trois contrats fictifs ; devant votre classeur, ce mode montre vos données.';
-    /* Ce que le classeur a à dire — feuille vide, colonne d'avancement
-       absente — s'affiche à côté, en alerte : hors exemple, et sous la
-       démonstration aussi, puisque c'est la raison d'y être. */
-    var message = SRC && SRC.message && (!actif || demo) ? String(SRC.message) : '';
+    $('mot-mode').innerHTML = SERVEUR ? '' : '\x3Cb>Démonstration\x3C/b> — trois contrats fictifs ; devant votre classeur, la page montre vos données.';
+    var message = SRC && SRC.message ? String(SRC.message) : '';
     $('alerte-source').hidden = !message;
     $('alerte-source').textContent = message;
+    /* Un classeur sans plans : la page le dit, et dit le geste, au lieu
+       d'afficher des sections vides. */
+    document.body.dataset.vide = String(SERVEUR && !PLANS.length);
   }
 
   /* Le sélecteur de contrat et le rappel du contrat courant sous le titre.
@@ -2056,10 +1546,16 @@
     /* Quand les boutons, mis bout à bout, ne tiennent plus dans la rangée,
        les pousser ne suffit plus : ils passent en grille, comme sur un petit
        écran, plutôt que de se recouvrir. */
-    zone.classList.remove('en-grille');          // mesurer les boutons libres, pas étirés par la grille
+    zone.classList.remove('en-legende');         // mesurer les boutons libres, pas étirés par la légende
+    /* Plus de quatre valeurs, ou un segment trop fin pour porter son
+       étiquette — deux plans sur six cents : aligner chaque chiffre sous son
+       segment ne dit plus rien, les étiquettes se poussent et les filets se
+       perdent. La page passe alors en légende : une carte par valeur, dans
+       l'ordre de la barre, et le survol relie la carte à son segment. */
+    var etroit = segs.some(function (seg) { return seg.getBoundingClientRect().width < 36; });
     var besoin = boutons.reduce(function (t, b) { return t + b.offsetWidth; }, 0) + 4 * (boutons.length - 1);
-    if (besoin > largeur) {
-      zone.classList.add('en-grille');
+    if (boutons.length > 4 || etroit || besoin > largeur) {
+      zone.classList.add('en-legende');
       boutons.forEach(function (b) { b.style.left = ''; });
       return;
     }
@@ -2099,6 +1595,12 @@
     boutons.forEach(function (b, i) { b.style.left = Math.max(0, gauches[i]).toFixed(1) + 'px'; });
   }
 
+  /* Une part lisible même petite : « 0,3 % » plutôt que « 0 % ». */
+  function partDite(n, total) {
+    if (!n || !total) return '0\u202f%';
+    var p = 100 * n / total;
+    return (p < 1 ? (Math.round(p * 10) / 10).toFixed(1).replace('.', ',') : String(Math.round(p))) + '\u202f%';
+  }
   function rendreAvancement(liste) {
     var c = compte(liste);
     /* Sous un périmètre seul, la phrase le nomme ; dès qu'un autre filtre
@@ -2132,8 +1634,9 @@
       return '\x3Cbutton class="etat-btn" type="button" data-etat="' + ech(v.cle) + '" data-cle="' + ech(v.cle) + '" data-famille="' + v.famille +
         '" style="--teinte:' + v.teinte +
         '" aria-pressed="' + actif + '" title="' + (actif ? 'Retirer le filtre' : 'N\u2019afficher que ces plans') + '">' +
-        '\x3Cspan class="etat-haut">' + pastille + ech(v.libelle) + '\x3C/span>' +
-        '\x3Cspan class="etat-n">' + nb(parValeur[v.cle] || 0) + '\x3C/span>\x3C/button>';
+        '\x3Cspan class="etat-haut">' + pastille + '\x3Cspan class="libelle">' + ech(v.libelle) + '\x3C/span>\x3C/span>' +
+        '\x3Cspan class="etat-n">' + nb(parValeur[v.cle] || 0) + '\x3C/span>' +
+        '\x3Cspan class="etat-pct">' + partDite(parValeur[v.cle] || 0, c.total) + '\x3C/span>\x3C/button>';
     }).join('');
 
     requestAnimationFrame(function () { alignerSousBarre('barre', 'filets', 'etats'); });
@@ -2322,7 +1825,15 @@
         if (manque > 0 && prochain.i >= d0 && prochain.i <= d1) {
           var xj = x(prochain.i), y1 = y(auJalon), y2 = y(total);
           s.push('\x3Cline x1="' + xj.toFixed(1) + '" x2="' + xj.toFixed(1) + '" y1="' + y1.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="var(--alerte)" stroke-width="1" opacity=".45"/>');
-          s.push('\x3Ctext class="grad" x="' + (xj + 7).toFixed(1) + '" y="' + ((y1 + y2) / 2 + 4).toFixed(1) + '" fill="var(--alerte)" font-weight="500">-' + manque + '\x3C/text>');
+          /* Ce qui manquerait le jour de l'échéance, au rythme tenu — dit en
+             mots : un « -31 » seul ne disait pas de quoi il s'agissait. */
+          /* Hors du cadre découpé, et à gauche du trait quand l'échéance
+             tombe au bord droit : sinon le mot était rogné. */
+          var aGauche = xj > L - mD - 70;
+          horsClip.push('\x3Ctext class="grad" x="' + (aGauche ? xj - 7 : xj + 7).toFixed(1) + '" y="' + ((y1 + y2) / 2 + 4).toFixed(1) +
+            '"' + (aGauche ? ' text-anchor="end"' : '') + ' fill="var(--alerte)" font-weight="500"' +
+            ' stroke="var(--surface)" stroke-width="4" stroke-linejoin="round" paint-order="stroke">' +
+            '\x3Ctitle>Au rythme tenu, il manquerait ' + manque + ' plan' + (manque > 1 ? 's' : '') + ' le jour de l\u2019échéance\x3C/title>manque ' + manque + '\x3C/text>');
         }
       }
     }
@@ -2356,9 +1867,8 @@
       var hors = !jalonDansPerimetre(j);
       var critique = prochain && j.i === prochain.i && !hors && enRetard;
       var couleur = critique ? 'var(--alerte)' : 'var(--encre-2)';
-      var mention = j.perimetre
-        ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) + (hors ? ' \u2014 hors du p\u00e9rim\u00e8tre choisi, ne compte pas ici' : '')
-        : '';
+      var mention = (j.perimetre ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) : '') +
+        (hors ? ' \u2014 ' + ech(raisonRetrait(j)) + ', ne compte pas ici' : '');
       var yBase = mHaut - 8;          // haut du trait pointillé
       var yMarque = yBase - 9;        // centre du numéro
       var cx = pl.cx;
@@ -2495,7 +2005,7 @@
       return '\x3Cspan class="legende-jalon' + (hors ? ' hors-perimetre' : '') + (rouge ? ' critique' : '') + (horsFenetre ? ' hors-fenetre' : '') +
         '" data-jalon="' + idx + '" tabindex="0" role="button" aria-expanded="' + (vue.echeance === idx) + '" title="' +
         ech(j.texte) + ' \u2014 ' + etiquette(j.i) + (j.perimetre ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) : '') +
-        (hors ? ' \u2014 hors du p\u00e9rim\u00e8tre choisi' : '') + (horsFenetre ? ' \u2014 hors de la fen\u00eatre affich\u00e9e' : '') + '">' +
+        (hors ? ' \u2014 ' + ech(raisonRetrait(j)) : '') + (horsFenetre ? ' \u2014 hors de la fen\u00eatre affich\u00e9e' : '') + '">' +
         '\x3Cb class="num">' + (idx + 1) + '\x3C/b>\x3Cspan class="mot">' + ech(j.texte) + '\x3C/span>' +
         '\x3Cspan class="quand">' + quandJalon(j.i) + (j.perimetre ? ' \u00b7 ' + ech(j.perimetre) : '') + '\x3C/span>' +
         '\x3Cspan class="ligne-decompte">\x3Cspan class="decompte' + (nj < 0 ? ' passe' : (nj <= 21 ? ' proche' : '')) + '">' + ech(motJours(nj)) + '\x3C/span>' +
@@ -3503,8 +3013,8 @@
       });
 
       var lignes = evts.slice(0, limite).map(function (e) {
-        var plan = planDeRef(e.ref);
-        var quoi = plan && CLE_LIBELLE ? String(plan[CLE_LIBELLE] || '') : '';
+        /* La référence et son passage, rien d'autre : le libellé du plan
+           (« Faisceau 417 ») n'apprenait rien ici. */
         var vers = e.type === 'nouveau'
           ? '\x3Cspan class="vers">\x3Cspan class="etiq-etat avant">nouveau\x3C/span>' +
             '\x3Cspan class="fleche-etat">\u2192\x3C/span>' + etiqEtat(e.apres, 'apres', e.cApres, e.vApres) + '\x3C/span>'
@@ -3522,7 +3032,7 @@
         return '\x3Cli>\x3Cbutton class="journal-ligne' + (estReemission(e) ? ' reemission ' + e.type : '') +
           '" type="button" data-ref="' + ech(e.ref) + '" data-type="' + e.type +
           '" title="N’afficher que ce plan dans le tableau">' + reference +
-          '\x3Cspan class="quoi">' + ech(quoi) + '\x3C/span>' + vers + '\x3C/button>\x3C/li>';
+          vers + '\x3C/button>\x3C/li>';
       }).join('');
 
       var reste = evts.length - limite;
@@ -3548,164 +3058,6 @@
       : '\x3Cdiv class="journal-vide">Aucun changement de ce type dans l’historique.\x3C/div>');
   }
 
-  /* ============================================================
-     APERÇU
-     Avec un seul relevé, le graphique n'a rien à tracer et personne ne voit
-     à quoi servira la page. Un bouton fabrique donc un historique fictif à
-     partir des comptes du jour — sous bandeau, pour qu'il soit impossible de
-     le prendre pour du réel.
-     ============================================================ */
-  /* Un relevé complet à partir d'une carte plan par plan — les mêmes comptes,
-     globaux et par dimension, que releveDepuis() tire des plans vivants. Les
-     relevés fabriqués ont ainsi tout ce qu'ont les relevés archivés : la
-     courbe d'un groupe, son rythme et sa fin estimée marchent à l'identique. */
-  function releveDeCarte(semaine, carte) {
-    var r = { semaine: semaine, total: 0, termine: 0, encours: 0, afaire: 0, vide: 0, groupes: {}, plans: carte };
-    CLES_DIM.forEach(function (d) { r.groupes[d] = {}; });
-    Object.keys(carte).forEach(function (ref) {
-      var etat = classer(carte[ref]);
-      r.total++;
-      r[etat]++;
-      /* Une ancienne référence retrouve son plan par la racine. */
-      var p = planDeRef(ref);
-      if (!p) return;
-      CLES_DIM.forEach(function (d) {
-        var v = String(valeurDim(p, d) || '—');
-        if (!r.groupes[d][v]) r.groupes[d][v] = { total: 0, termine: 0 };
-        r.groupes[d][v].total++;
-        if (etat === 'termine') r.groupes[d][v].termine++;
-      });
-    });
-    return r;
-  }
-
-  /* Neuf semaines d'historique fictif, en semaines réelles : la dernière est
-     la vraie « aujourd'hui », les autres remontent d'une semaine chacune.
-     Les terminés montent régulièrement jusqu'aux comptes du jour ; et les
-     cartes portent, de façon déterministe par rang de plan, tout ce que le
-     journal sait reconnaître — sinon l'exemple ne montrerait que des
-     « passés en terminé », et la chef n'y verrait jamais un changement
-     d'indice :
-       · des retours en arrière : un plan en cours aujourd'hui était terminé
-         jusqu'à la semaine dernière (→ passé en cours), un plan à faire était
-         en cours (→ repassé à faire) ;
-       · des plans apparus : absents des cartes anciennes (→ nouveaux) ;
-       · des plans disparus : présents dans les cartes anciennes sous une
-         référence que la feuille ne porte plus (→ disparus) ;
-       · des réémissions : pour trois plans à référence UD valide, les cartes
-         anciennes portent l'indice précédent (→ changements d'indice, par
-         appariement de racine).
-     Les écarts sont posés sur la dernière transition pour que le comparatif
-     « depuis l'import » les montre tous, et quelques-uns plus tôt pour que
-     le journal en ait à plusieurs semaines. */
-  function relevesDExemple(cleConcept) {
-    var semaines = 8;
-    var retours = {}, apparus = {}, reemis = {}, disparus = [];
-    var nbReemis = 0;
-    /* Les écarts se posent sur la définition, quelle que soit la colonne
-       suivie à l'écran : l'historique fabriqué est le même des deux côtés. */
-    PLANS.forEach(function (p, i) {
-      var etatDef = classer(p.avancement);
-      if (etatDef === 'encours' && i % 53 === 7) retours[p.reference] = { avant: 'Terminé', jusque: semaines - 1 };
-      else if (etatDef === 'afaire' && i % 59 === 11) retours[p.reference] = { avant: 'En cours', jusque: semaines - 1 };
-      if (i === 3 || i === 11) apparus[p.reference] = semaines - 1;
-      else if (i === 19) apparus[p.reference] = semaines - 4;
-      var ud = analyserUD(p.reference);
-      if (ud.valide && ud.indice !== 'A' && nbReemis < 3 && i % 7 === 2) {
-        reemis[p.reference] = { ancienne: ud.racine + ud.solution + String.fromCharCode(ud.indice.charCodeAt(0) - 1),
-                                jusque: nbReemis === 0 ? semaines - 1 : semaines - 3 - nbReemis };
-        nbReemis++;
-      }
-      /* Une référence que la feuille ne porte plus : les trois lettres
-         changées, elle ne partage sa racine avec aucun plan — jamais appariée. */
-      if (i === 5 || i === 13) disparus.push('XXX' + p.reference.slice(3));
-    });
-    function terminesDe(cle) { return PLANS.filter(function (p) { return classer(p[cle]) === 'termine'; }).length; }
-    /* Les valeurs que l'historique fabriqué emprunte sont celles de la
-       colonne elle-même — la plus fréquente de chaque famille —, jamais des
-       mots qu'elle n'emploie pas : « Validé » reste « Validé ». */
-    function motDe(cle, famille, defaut) {
-      var n = {}, meilleur = null;
-      PLANS.forEach(function (p) {
-        var v = String(p[cle] == null ? '' : p[cle]).trim();
-        if (!v || classer(v) !== famille) return;
-        n[v] = (n[v] || 0) + 1;
-        if (!meilleur || n[v] > n[meilleur]) meilleur = v;
-      });
-      return meilleur || defaut;
-    }
-    /* La carte d'une semaine pour une colonne : les terminés montent
-       régulièrement jusqu'aux comptes du jour. */
-    function carteDe(k, cle, nbTermines) {
-      var part = 0.25 + (0.75 * k) / semaines;      // montée régulière jusqu'à aujourd'hui
-      var termine = Math.round(nbTermines * part);
-      var carte = {}, atteint = 0;
-      var enCours = motDe(cle, 'encours', motDe(cle, 'afaire', 'En cours'));
-      var fini = motDe(cle, 'termine', 'Terminé');
-      PLANS.forEach(function (p) {
-        var ref = p.reference;
-        if (apparus[ref] !== undefined && k <= apparus[ref]) return;
-        var valeur = (classer(p[cle]) === 'termine' && atteint++ >= termine) ? enCours : p[cle];
-        if (cle === 'avancement' && retours[ref] && k <= retours[ref].jusque) valeur = retours[ref].avant === 'Terminé' ? fini : enCours;
-        carte[(reemis[ref] && k <= reemis[ref].jusque) ? reemis[ref].ancienne : ref] = valeur;
-      });
-      if (k < semaines) disparus.forEach(function (ref) { carte[ref] = enCours; });
-      return carte;
-    }
-    var nDef = terminesDe('avancement'), nConcept = cleConcept ? terminesDe(cleConcept) : 0;
-    var faux = [];
-    for (var k = 0; k <= semaines; k++) {
-      /* Un avancement plan par plan, sinon le journal resterait vide et
-         l'exemple ne montrerait que la moitié de ce que fera la page. */
-      var r = releveDeCarte(etiquetteISO(dateDeBase(BASE_REELLE, AUJ_REEL - semaines + k)), carteDe(k, 'avancement', nDef));
-      if (cleConcept) r.plansConcept = carteDe(k, cleConcept, nConcept);
-      faux.push(r);
-    }
-    return faux;
-  }
-
-  /* Le mode « Exemple » est une source comme une autre : la source réelle,
-     avec l'historique fabriqué à la place de l'archivé. Elle passe par
-     chargerSource() comme le reste — c'est ce qui garantit que l'exemple
-     montre exactement ce que la page fera, ni plus ni moins. */
-  function basculerExemple(actif) {
-    if (actif === !!vue.exemple) return;
-    chargerSource(actif ? exempleDe(SRC_REELLE) : SRC_REELLE);
-    remplirDims();
-    rendre();
-  }
-
-  /* L'exemple d'une source réelle. Devant des plans, c'est leur historique
-     fabriqué : les plans restent les vrais, seule la courbe est inventée.
-     Devant un classeur qui n'a rien donné — pas encore d'onglet, feuille
-     vide —, c'est la démonstration entière, trois contrats fictifs : la page
-     se montre au lieu de s'ouvrir vide, et dit pourquoi. */
-  function exempleDe(reelle) {
-    if (!reelle.plans.length) return demonstration(jeuDExemple(), reelle.message);
-    var exemple = {};
-    Object.keys(reelle).forEach(function (k) { exemple[k] = reelle[k]; });
-    exemple.releves = relevesDExemple(reelle.cleConcept && PAR_CLE[reelle.cleConcept] ? reelle.cleConcept : null);
-    exemple.exemple = true;
-    return exemple;
-  }
-
-  /* Un jeu d'exemple marqué comme démonstration, avec ce que le classeur
-     avait à dire — c'est la raison d'être là. */
-  function demonstration(jeu, message) {
-    jeu.exemple = true;
-    jeu.demonstration = true;
-    jeu.message = message || '';
-    return jeu;
-  }
-
-  /* L'interrupteur vit en haut de page : il porte sur tout, pas sur un bloc.
-     Au premier import il montre ce que la page dira plus tard ; après, il sert
-     encore à l'expliquer à quelqu'un. */
-  document.querySelector('#mode-donnees').addEventListener('click', function (e) {
-    var b = e.target.closest('button[data-mode]');
-    if (!b) return;
-    basculerExemple(b.dataset.mode === 'exemple');
-  });
 
   /* Le périmètre porte sur toute la page : un clic, et tout se recalcule —
      comparatif compris. Cliquer la puce déjà pressée ne change rien. */
@@ -3737,24 +3089,11 @@
         etat.textContent = paquet && paquet.message ? paquet.message : 'Contrat impossible à charger.';
         return;
       }
-      /* Sous la démonstration, le contrat suivant est fictif lui aussi, et
-         la source réelle — vide — n'est pas touchée. */
-      if (SRC && SRC.demonstration) {
-        chargerSource(demonstration(paquet, SRC.message));
-        remplirDims();
-        rendre();
-        return;
-      }
-      /* En mode « Exemple », le nouveau contrat arrive en exemple aussi —
-         son historique fabriqué à lui — au lieu de rebasculer sans un mot
-         sur les données réelles. */
-      var exemple = !!vue.exemple;
       chargerSource(paquet);
-      if (exemple) { basculerExemple(true); return; }
       remplirDims();
       rendre();
     }
-    if (API && API.chargerContrat && !(SRC && SRC.demonstration)) {
+    if (API && API.chargerContrat) {
       sel.disabled = true;
       etat.textContent = 'Chargement…';
       API.chargerContrat(id, poser);
@@ -4462,6 +3801,29 @@
     minuteur = setTimeout(function () { vue.recherche = v; rendre(); }, 170);
   });
 
+  /* La barre et ses valeurs se répondent : survoler une valeur éclaire son
+     segment — même fin comme un trait —, survoler un segment éclaire sa
+     valeur. */
+  function eclairerValeur(cle) {
+    var barre = $('barre');
+    barre.classList.toggle('focalise', !!cle);
+    [].forEach.call(barre.querySelectorAll('span[data-cle]'), function (s) { s.classList.toggle('eclaire', s.dataset.cle === cle); });
+    [].forEach.call($('etats').querySelectorAll('.etat-btn'), function (b) { b.classList.toggle('eclaire', b.dataset.cle === cle); });
+  }
+  ['mouseover', 'focusin'].forEach(function (ev) {
+    $('etats').addEventListener(ev, function (e) {
+      var b = e.target.closest('.etat-btn');
+      eclairerValeur(b ? b.dataset.cle : null);
+    });
+    $('barre').addEventListener(ev, function (e) {
+      var s = e.target.closest('span[data-cle]');
+      eclairerValeur(s ? s.dataset.cle : null);
+    });
+  });
+  ['mouseleave', 'focusout'].forEach(function (ev) {
+    $('etats').addEventListener(ev, function () { eclairerValeur(null); });
+    $('barre').addEventListener(ev, function () { eclairerValeur(null); });
+  });
   $('etats').addEventListener('click', function (e) {
     var b = e.target.closest('.etat-btn');
     if (!b) return;
@@ -4697,8 +4059,25 @@
      titre : un clic ouvre la fiche de l'échéance, un second la referme. */
   $('legende-jalons').addEventListener('click', function (e) {
     if (e.target.closest('[data-fermer-echeance]')) { vue.echeance = null; rendreGraphique(selection()); return; }
+    var aller = e.target.closest('[data-aller-indicateur]');
+    if (aller) {
+      var idxJalon = +aller.dataset.jalon;
+      changerIndicateur(aller.dataset.allerIndicateur);
+      vue.echeance = idxJalon;
+      rendreGraphique(selection());
+      return;
+    }
     var el = e.target.closest('.legende-jalon[data-jalon]');
     if (el) ouvrirEcheance(+el.dataset.jalon);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || vue.echeance === null || !$('fiche-echeance')) return;
+    if (e.target.closest && e.target.closest('input, select, textarea')) return;
+    var idx = vue.echeance;
+    vue.echeance = null;
+    rendreGraphique(selection());
+    var el = document.querySelector('.legende-jalon[data-jalon="' + idx + '"]');
+    if (el) el.focus();
   });
   $('legende-jalons').addEventListener('keydown', function (e) {
     var el = e.target.closest('.legende-jalon[data-jalon]');
@@ -5059,6 +4438,5 @@
   /* Quand le classeur n'a encore rien donné, la page s'ouvre sur la
      démonstration plutôt que vide : on voit ce qu'elle sera, et l'alerte dit
      ce qui manque. */
-  if (SERVEUR && !PLANS.length) basculerExemple(true);
 })();
 </script>

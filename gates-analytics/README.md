@@ -16,7 +16,7 @@ C'est un outil de **consultation** : la page montre, elle ne modifie rien.
 | `Styles.html` | Feuille de style |
 | `Javascript.html` | Interface |
 | `appsscript.json` | Manifeste (fuseau, portées OAuth) |
-| `prototype/` | La même interface, autonome, avec un jeu d'exemple à trois contrats — c'est la source |
+| `prototype/` | La même interface, autonome, avec une démonstration à trois contrats fictifs — c'est la source |
 | `import/` | L'automatisation : pilote Chrome, recettes d'extraction, dépôt dans le classeur, lecture des composants sur les plans (PDF, Visio, DXF, scans), transport par la messagerie |
 | `apps-script/` | Ce qu'on colle dans Apps Script : le **chargeur** (un fichier, qui va chercher le reste à l'ouverture) et l'**installateur** (qui écrit les quatre fichiers dans le projet) |
 | `MODE-D-EMPLOI.md` | Ce qu'on fait dans le classeur, concrètement : coller un extract, un onglet par contrat, archiver la semaine, brancher SEE, lire la page |
@@ -26,9 +26,11 @@ C'est un outil de **consultation** : la page montre, elle ne modifie rien.
 ## Une seule interface, deux sources
 
 `prototype/suivi-fwd.html` est **la** version de l'interface. Elle tourne seule
-avec un jeu d'exemple, ce qui permet de la montrer et de la tester sans
-classeur. Quand elle trouve `window.SUIVI_FWD_DONNEES` posé dans la page, elle
-s'alimente à la place sur le classeur.
+sur une démonstration (trois contrats fictifs), ce qui permet de la montrer et
+de la tester sans classeur. Quand elle trouve `window.SUIVI_FWD_DONNEES` posé
+dans la page, elle s'alimente à la place sur le classeur — et sur lui seul :
+la construction retire la démonstration des fichiers de l'add-on, et un
+classeur vide affiche « Le classeur est vide », jamais des données fabriquées.
 
 `Styles.html`, `Javascript.html` et `Index.html` en sont **dérivés** :
 
@@ -86,7 +88,7 @@ npm install
 npm test
 ```
 
-- `npm run test:addon` — 382 tests. Le vrai `Code.gs` tourne dans Node contre
+- `npm run test:addon` — 372 tests. Le vrai `Code.gs` tourne dans Node contre
   un classeur en mémoire (`tests/faux-classeur.js`), sur un export
   volontairement pénible : lignes de titre, groupes fusionnés, en-têtes
   accentués ou dupliqués, ligne vide au milieu, avancements de toutes les
@@ -123,7 +125,7 @@ npm test
   balises, expressions régulières, 3 000 caractères ou émoji, jalon de
   configuration au texte injecté, `localStorage` corrompu puis inaccessible,
   zoom et déplacement extrêmes, sept largeurs d'écran, clavier seul, contraste
-  dans les deux thèmes ; parité entre données réelles et exemple, le parseur
+  dans les deux thèmes ; la légende de la barre à huit valeurs, le parseur
   de références UD sur quinze formes, les changements d'indice, le périmètre
   (PERSO + BASE/OPTION = Tout, point par point), les trois contrats de la
   démonstration, le rapprochement aux écarts délibérés. Toute erreur

@@ -25,7 +25,6 @@ function section(t) { sectionCourante = t; console.log('\n— ' + t + ' —'); }
 
 /* L'interrupteur exemple / réel est visible devant un classeur ;
    mais son mécanisme reste : la batterie le manœuvre comme un clic. */
-const basculerMode = (pg, mode) => pg.evaluate(m => document.querySelector('#mode-donnees button[data-mode="' + m + '"]').click(), mode);
 
 function serveurSur(valeurs, proprietes, fichiers) {
   const classeur = new Classeur([new Feuille('Données', valeurs)]);
@@ -1479,7 +1478,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
      BASE/OPTION et PERSO. Sous PERSO, les deux jalons Base passent en retrait
      et l'échéance affichée (data-jalon, en-tête de l'effort demandé) est
      celle que la page calcule ; sous BASE/OPTION, l'inverse. Le solde FWD,
-     sans périmètre, reste l'échéance tant qu'il est à venir. */
+     sans périmètre, reste l'échéance tant qu'il est à venir. Les diffusions
+     TO suivent le concept harnais : sous la définition électrique, elles
+     restent dessinées, en retrait ; sous le concept, ce sont les PH. */
   const lireJalons = () => pg.evaluate(() => ({
     retrait: [...document.querySelectorAll('.jalon.hors-perimetre .jalon-texte')].map(t => t.textContent).sort(),
     dessines: document.querySelectorAll('svg.graphe .jalon').length,
@@ -1489,20 +1490,28 @@ function serveurSur(valeurs, proprietes, fichiers) {
   }));
   await pg.click('.segmente button[data-span="0"]'); await pg.waitForTimeout(400);
   const jTout = await lireJalons();
-  verifier('sur « Tout », les cinq jalons de la configuration sont dessinés, aucun en retrait, et l\'en-tête de l\'effort demandé nomme l\'échéance',
-    jTout.dessines === 5 && jTout.retrait.length === 0 && !!jTout.prochain && jTout.zone === jTout.prochain &&
+  verifier('sur « Tout », les cinq jalons sont dessinés ; seules les diffusions TO, du concept harnais, sont en retrait ; l\'en-tête de l\'effort demandé nomme l\'échéance',
+    jTout.dessines === 5 && jTout.retrait.join('|') === 'Diffusion TO Base|Diffusion TO Perso' && !!jTout.prochain && jTout.zone === jTout.prochain &&
     jTout.entete.indexOf('«\u00a0' + jTout.prochain + '\u00a0»') !== -1, JSON.stringify(jTout));
   await pg.click('#choix-perimetre button[data-perimetre="PERSO"]'); await pg.waitForTimeout(700);
   const jPerso = await lireJalons();
-  verifier('sous PERSO, les deux jalons Base sont en retrait, et l\'échéance affichée est celle que la page calcule',
-    jPerso.retrait.join('|') === 'Diffusion PH Base|Diffusion TO Base' && !!jPerso.prochain && jPerso.zone === jPerso.prochain &&
+  verifier('sous PERSO, le jalon PH Base est en retrait (et les TO), et l\'échéance affichée est celle que la page calcule',
+    jPerso.retrait.join('|') === 'Diffusion PH Base|Diffusion TO Base|Diffusion TO Perso' && !!jPerso.prochain && jPerso.zone === jPerso.prochain &&
     !/Base$/.test(jPerso.prochain) && jPerso.entete.indexOf('«\u00a0' + jPerso.prochain + '\u00a0»') !== -1, JSON.stringify(jPerso));
   await pg.click('#choix-perimetre button[data-perimetre="BASE/OPTION"]'); await pg.waitForTimeout(700);
   const jBase = await lireJalons();
-  verifier('sous BASE/OPTION, les deux jalons Perso sont en retrait',
-    jBase.retrait.join('|') === 'Diffusion PH Perso|Diffusion TO Perso' && !!jBase.prochain && jBase.zone === jBase.prochain &&
+  verifier('sous BASE/OPTION, le jalon PH Perso est en retrait (et les TO)',
+    jBase.retrait.join('|') === 'Diffusion PH Perso|Diffusion TO Base|Diffusion TO Perso' && !!jBase.prochain && jBase.zone === jBase.prochain &&
     !/Perso$/.test(jBase.prochain), JSON.stringify(jBase));
   await pg.click('#choix-perimetre button[data-perimetre=""]'); await pg.waitForTimeout(500);
+  // Sous le concept harnais, l'inverse : les PH et le solde FWD en retrait, les TO comptent.
+  await pg.click('#choix-indicateur button[data-indicateur="concept"]'); await pg.waitForTimeout(700);
+  await pg.click('.segmente button[data-span="0"]'); await pg.waitForTimeout(400);
+  const jConcept = await lireJalons();
+  verifier('sous le concept harnais, les jalons du FWD sont en retrait et l\'échéance est la diffusion TO',
+    jConcept.retrait.join('|') === 'Diffusion PH Base|Diffusion PH Perso|Solde FWD' && /^Diffusion TO/.test(jConcept.prochain || ''),
+    JSON.stringify(jConcept));
+  await pg.click('#choix-indicateur button[data-indicateur="def"]'); await pg.waitForTimeout(700);
 
   section('Journal des changements');
   const ouvertesDEmblee = await pg.evaluate(() => [...document.querySelectorAll('.journal-plier')].map(e => e.getAttribute('aria-expanded')));
@@ -1992,7 +2001,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   await ctxRapp.close();
 
   // =================================================================
-  section('Aperçu quand l\'historique est vide');
+  section('Premier relevé : les vraies données, rien de fabriqué');
   construire({ gates: true, historique: 'premier', sortie: 'apercu-premier.html' });
   const ctxPremier = await nav.newContext({ viewport: { width: 1280, height: 1000 } });
   const pp = await ctxPremier.newPage();
@@ -2000,94 +2009,50 @@ function serveurSur(valeurs, proprietes, fichiers) {
   pp.on('console', m => { if (m.type() === 'error' && !m.text().includes('ERR_FILE')) erreursJS.push('premier : ' + m.text()); });
   await pp.goto('file://' + path.join(__dirname, '..', 'apercu-premier.html'));
   await pp.waitForTimeout(1600);
-
-  /* L'interrupteur porte sur tout — il n'y a plus un bouton par bloc, et on
-     ne peut pas se retrouver a moitie en exemple. Devant un classeur, il est
-     visible : il y a de quoi comparer. */
-  const depart = await pp.evaluate(() => ({
-    present: !!document.getElementById('mode-donnees'),
-    visible: !document.getElementById('mode-donnees').hidden && document.getElementById('mode-donnees').offsetParent !== null,
-    presse: [...document.querySelectorAll('#mode-donnees button')]
-      .map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')),
+  /* Plus de mode « Exemple » : devant le classeur, la page montre ses
+     données, et seulement elles — pas d'interrupteur, pas d'historique
+     inventé. Au premier relevé, le journal dit qu'il attend le deuxième. */
+  const premier = await pp.evaluate(() => ({
+    interrupteur: !!document.getElementById('mode-donnees') || !!document.querySelector('[data-mode="exemple"]'),
     mot: document.getElementById('mot-mode').textContent.trim(),
-    marque: document.body.dataset.exemple
-  }));
-  verifier('l\'interrupteur est la, visible devant le classeur',
-    depart.present && depart.visible, JSON.stringify(depart));
-  verifier('il demarre sur les donnees reelles, sans un mot de trop',
-    depart.presse.join(' ') === 'reel:true exemple:false' && depart.mot === '' &&
-    depart.marque === 'false', JSON.stringify(depart));
-  verifier('le journal explique pourquoi il est vide',
-    await pp.evaluate(() => /deuxième archivage/.test(document.getElementById('zone-journal').textContent)));
-
-  const avantEx = await pp.evaluate(() => document.querySelectorAll('.zone-clic').length);
-  await basculerMode(pp, 'exemple'); await pp.waitForTimeout(900);
-  const ex = await pp.evaluate(() => ({
-    mot: document.getElementById('mot-mode').textContent,
-    marque: document.body.dataset.exemple,
-    encadre: getComputedStyle(document.getElementById('bandeau-mode')).borderStyle,
-    zones: document.querySelectorAll('.zone-clic').length,
-    points: document.querySelectorAll('svg.graphe circle').length,
-    presse: [...document.querySelectorAll('#mode-donnees button')]
-      .map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')),
+    vide: document.body.dataset.vide,
     plans: document.querySelectorAll('#corps-tableau tr').length,
+    phrase: document.getElementById('phrase').textContent,
     journal: document.getElementById('zone-journal').textContent,
-    semainesJournal: document.querySelectorAll('#zone-journal .journal-semaine').length,
-    phrase: document.getElementById('phrase').textContent
+    pied: document.getElementById('avertissement-demo').hidden
   }));
-  verifier('l\'apercu trace une vraie courbe', ex.points >= 5, String(ex.points));
-  verifier('et remplit aussi le journal des changements (des semaines, repliées)',
-    ex.semainesJournal >= 2 && /passés? à/.test(ex.journal) && !/deuxième archivage/.test(ex.journal), ex.journal.slice(0, 90));
-  verifier('la page se marque en exemple, cadre compris',
-    ex.marque === 'true' && /dashed/.test(ex.encadre), ex.marque + ' / ' + ex.encadre);
-  verifier('l\'interrupteur montre ou l\'on est',
-    ex.presse.join(' ') === 'reel:false exemple:true', JSON.stringify(ex.presse));
-  /* La phrase doit dire exactement ce qui est fabrique. Elle annoncait
-     « tout est fabrique » alors que les plans, eux, restent les vrais : une
-     phrase qui exagere se fait prendre en defaut. */
-  verifier('et il dit ce qui est fabrique : l\'historique, pas les plans',
-    /historique/i.test(ex.mot) && !/tout ce qui est affich/i.test(ex.mot), ex.mot);
-  verifier('les plans affiches restent ceux de la feuille',
-    ex.plans === 186 && /186 plans/.test(ex.phrase), ex.phrase);
-
-  await basculerMode(pp, 'reel'); await pp.waitForTimeout(800);
-  const revenu = await pp.evaluate(() => ({
-    mot: document.getElementById('mot-mode').textContent.trim(),
-    marque: document.body.dataset.exemple,
-    presse: [...document.querySelectorAll('#mode-donnees button')]
-      .map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')),
-    journal: document.getElementById('zone-journal').textContent,
-    zones: document.querySelectorAll('.zone-clic').length
-  }));
-  verifier('revenir au reel remet tout en place',
-    revenu.marque === 'false' && revenu.mot === '' &&
-    revenu.presse.join(' ') === 'reel:true exemple:false', JSON.stringify(revenu));
-  verifier('le journal redit qu\'il attend un deuxieme archivage',
-    /deuxième archivage/.test(revenu.journal));
-  verifier('et le graphique retrouve son cadrage', revenu.zones === avantEx,
-    avantEx + ' → ' + revenu.zones);
-
-  // Dix bascules d'affilee : ni fuite, ni etat coince.
-  for (let i = 0; i < 5; i++) {
-    await basculerMode(pp, 'exemple'); await pp.waitForTimeout(160);
-    await basculerMode(pp, 'reel'); await pp.waitForTimeout(160);
-  }
-  await pp.waitForTimeout(700);
-  verifier('dix bascules d\'affilee laissent la page intacte',
-    await pp.evaluate(() => document.body.dataset.exemple === 'false' &&
-      document.querySelectorAll('#corps-tableau tr').length === 186 &&
-      document.querySelectorAll('.zone-clic').length > 0));
-  // Re-cliquer le mode deja actif ne doit rien recalculer de travers.
-  await basculerMode(pp, 'reel'); await pp.waitForTimeout(500);
-  verifier('re-cliquer le mode actif ne change rien',
-    await pp.evaluate(() => document.body.dataset.exemple === 'false' &&
-      document.querySelectorAll('#corps-tableau tr').length === 186));
-
-  /* Le mecanisme reste meme avec de l'historique : il sert a montrer la page
-     a quelqu'un, avec une courbe, avant que les releves se soient accumules. */
-  verifier('le mecanisme de l\'exemple reste meme avec de l\'historique',
-    await pg.evaluate(() => !!document.querySelector('#mode-donnees button[data-mode="exemple"]')));
+  verifier('plus d\'interrupteur « Exemple » ni de mot de démonstration devant le classeur',
+    !premier.interrupteur && premier.mot === '' && premier.pied && premier.vide === 'false', JSON.stringify(premier));
+  verifier('les plans affichés sont ceux de la feuille', premier.plans === 186 && /186 plans/.test(premier.phrase), premier.phrase);
+  verifier('le journal explique pourquoi il est vide', /deuxième archivage/.test(premier.journal), premier.journal.slice(0, 120));
   await ctxPremier.close();
+
+  /* Un classeur sans plan : pas de démonstration à la place, mais ce qu'il
+     faut faire — le message du script, et les trois gestes. */
+  construire({ lignes: 10, historique: false, sortie: 'apercu-classeur-vide.html' });
+  const pv = await (await nav.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  pv.on('pageerror', e => erreursJS.push('classeur vide : ' + e.message));
+  /* Le paquet d'un classeur qui n'a rien rendu, posé à la place du vrai. */
+  const htmlVide = fs.readFileSync(path.join(__dirname, '..', 'apercu-classeur-vide.html'), 'utf8')
+    .replace(/window\.SUIVI_FWD_DONNEES = [\s\S]*?;\n/, 'window.SUIVI_FWD_DONNEES = ' +
+      JSON.stringify({ ok: false, message: 'Aucun onglet de données exploitable dans ce classeur : « Feuille 1 » est vide.', plans: [], releves: [], jalons: [], contrats: [], contrat: '' }) + ';\n');
+  fs.writeFileSync(path.join(__dirname, '..', 'apercu-classeur-vide.html'), htmlVide);
+  await pv.goto('file://' + path.join(__dirname, '..', 'apercu-classeur-vide.html')); await pv.waitForTimeout(900);
+  const etatVide = await pv.evaluate(() => ({
+    vide: document.body.dataset.vide,
+    panneau: getComputedStyle(document.getElementById('classeur-vide')).display !== 'none',
+    gestes: document.querySelectorAll('#classeur-vide ol li').length,
+    alerte: document.getElementById('alerte-source').hidden ? '' : document.getElementById('alerte-source').textContent,
+    sections: [...document.querySelectorAll('section.avancement, section.bloc')].every(el => getComputedStyle(el).display === 'none'),
+    demo: /Démonstration/.test(document.getElementById('mot-mode').textContent),
+    /* Le pied compterait « 1 relevé archivé » là où il n'y en a aucun. */
+    pied: getComputedStyle(document.querySelector('.pied')).display === 'none'
+  }));
+  verifier('un classeur sans plan : le message du script et les trois gestes, pas de sections vides, de pied ni de démonstration',
+    etatVide.vide === 'true' && etatVide.panneau && etatVide.gestes === 3 && /Feuille 1/.test(etatVide.alerte) && etatVide.sections && !etatVide.demo && etatVide.pied,
+    JSON.stringify(etatVide));
+  await pv.context().close();
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-classeur-vide.html'));
 
   // =================================================================
   /* La page assemblée sur le classeur à deux contrats, avec un

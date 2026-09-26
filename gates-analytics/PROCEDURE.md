@@ -296,27 +296,24 @@ Le bloc figé à gauche couvre tout ce qui précède la référence, elle compri
 Sur l'export réel, la seule colonne qui la précédait est la « Colonne 1 »
 retirée : la référence ouvre donc le tableau et reste seule figée.
 
-### L'exemple
+### Plus de mode « Exemple »
 
-La page a un mode **Exemple**, et l'interrupteur **Données réelles / Exemple**
-est toujours visible en haut de page — devant un classeur comme dans la
-démonstration seule, où « Données réelles » montre les trois contrats fictifs
-tels quels (un mot « Démonstration » le dit à côté) et « Exemple »
-l'historique fabriqué. Il fait deux choses, selon ce que le classeur a
-donné :
+Il n'y a plus d'interrupteur **Données réelles / Exemple** : devant un
+classeur, la page ne montre **que** ce que le classeur contient, rien de
+fabriqué.
 
-- **le classeur a des plans** : l'exemple se borde de tirets et remplit **le
-  graphique, le journal et le comparatif** avec un historique fabriqué à
-  partir des comptes du jour. Les plans affichés restent ceux de la feuille —
-  et la phrase le dit : c'est l'historique qui est fabriqué, pas les plans ;
+- **le classeur a des plans** : ce sont eux, et l'historique est celui des
+  relevés archivés — un seul relevé donne un graphique à un point, et le
+  journal attend le relevé suivant pour dire ce qui a bougé ;
 - **le classeur n'a encore rien donné** — pas d'onglet de contrat, feuille
-  vide — : la page **s'ouvre d'elle-même sur la démonstration**, trois
-  contrats fictifs avec leur seconde base, pour voir la page entière. Le
-  bandeau le dit, l'alerte dit ce qui manque au classeur, et « Données
-  réelles » ramène à la page vide qui l'explique.
+  vide — : à la place des sections, un panneau **« Le classeur est vide »**
+  rappelle les trois gestes (un onglet au nom du contrat, l'extract collé
+  en A1, Actualiser), et l'alerte dit ce qui manque.
 
-Tout ce qui marche en données réelles marche à l'identique en exemple :
-périmètre, groupes, changements d'indice, bulle du graphique, rapprochement.
+Le jeu de trois contrats fictifs (HDK, THS, VRK) ne vit plus que dans la
+**démonstration seule** (`prototype/`, l'artifact) : un mot « Démonstration »
+le dit en tête de page. Le script de construction le retire des fichiers de
+l'add-on, qui en sont d'autant plus légers.
 
 ## 7 bis. La semaine sous le titre
 
@@ -335,7 +332,7 @@ fois par heure.
 La démonstration, elle, est **datée** : son historique s'arrête à la semaine
 38 de 2026, en face des jalons du programme, qui sont des dates fixes. Son
 trait dira donc « dernier relevé » — c'est exact, et c'est le signe qu'il
-faudra rafraîchir le jeu d'exemple en même temps que les jalons.
+faudra rafraîchir le jeu de démonstration en même temps que les jalons.
 
 ## 8. Le périmètre : Tout / BASE/OPTION / PERSO
 
@@ -420,7 +417,9 @@ Il est **sous le graphique**, dans la même section : la courbe dit combien, le
 journal dit lesquels. Sa hauteur est bornée, on y descend.
 
 Dans chaque semaine, les plans sont **rangés par état d'arrivée** : tous les
-terminés, puis les passés en cours, puis les repassés à faire.
+terminés, puis les passés en cours, puis les repassés à faire. Chaque ligne
+ne dit que **quel plan est passé** : sa référence et son passage (« En cours
+→ Validé »), sans le libellé de l'installation — il est dans le tableau.
 
 - La semaine la plus récente est en haut, ouverte ; les autres se déplient
   d'un clic.
@@ -477,6 +476,15 @@ ou de trente caractères, rien n'est recopié).
 
 Une cellule vide reste un *défaut de saisie*, distinct de toute valeur : le
 bouton « non renseigné » sous la barre sort la liste.
+
+**Beaucoup de valeurs, ou de toutes petites.** Tant qu'elles tiennent, les
+boutons des valeurs sont posés sous leur segment de la barre. Au-delà de
+quatre valeurs, ou dès qu'un segment fait moins de quelques pixels (deux
+plans sur six cents), ils passent en **légende** : une grille, une case par
+valeur avec sa pastille, son nom, son nombre et sa part (« < 1 % » plutôt
+que « 0 % »). Survoler une case — ou un segment — **éclaire** son segment et
+estompe les autres : une valeur de deux plans se retrouve d'un coup d'œil.
+Un clic filtre le tableau, comme avant.
 
 ## 12. Comparaison des bases de données : GATES et SEE
 
@@ -593,7 +601,7 @@ s'effacent du tableau de SEE ; ce qui n'est que dans SEE, sans domaine, reste
 compté à part, tout contrat) et le contrat. Rien n'est modifiable, rien n'est
 mémorisé.
 
-La démonstration en montre un exemple aux écarts délibérés.
+La démonstration seule en montre un exemple aux écarts délibérés.
 
 **Brancher SEE, en trois gestes.** Dans le classeur, un onglet nommé
 **`SEE`** (le nom configuré, `NOM`) ; l'extract « Nommage WD BFLOW » ouvert
@@ -652,19 +660,33 @@ poser, plus de poignée ni de croix — c'est un outil de consultation, et deux
 lectrices ne peuvent plus se les déplacer l'une à l'autre.
 
 Ils se règlent en haut de `Code.gs` : une semaine ISO, un texte de 60
-caractères au plus et, quand le jalon ne vaut que pour une partie des plans,
-son **périmètre** — la valeur de la colonne de domaine (§ 8), écrite comme
-dans l'extract. Ce sont les échéances du programme, transmises le 17/09/2026 :
+caractères au plus et, au besoin :
+
+- **`date`** — le jour exact (« AAAA-MM-JJ » ou « JJ/MM/AAAA ») : la page
+  compte les jours jusqu'à lui, et il fixe la semaine ;
+- **`perimetre`** — quand le jalon ne vaut que pour une partie des plans, la
+  valeur de la colonne de domaine (§ 8), écrite comme dans l'extract ;
+- **`suivi: 'concept'`** — quand le jalon appartient au **concept harnais**
+  et non à la définition électrique (le FWD). Les diffusions **TO** (table
+  outil) sont dans ce cas ; les diffusions **PH** et le solde suivent le FWD.
+
+Ce sont les échéances du programme, transmises le 17/09/2026 :
 
 ```js
 JALONS: [
-  { semaine: '2026-S51', texte: 'Solde FWD' },                                    // 15/12/2026
-  { semaine: '2027-S02', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },  // 15/01/2027
-  { semaine: '2027-S03', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },        // 22/01/2027
-  { semaine: '2027-S05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION' },  // 05/02/2027
-  { semaine: '2027-S08', texte: 'Diffusion TO Perso', perimetre: 'PERSO' }         // 26/02/2027
+  { semaine: '2026-S51', date: '2026-12-15', texte: 'Solde FWD' },
+  { semaine: '2027-S02', date: '2027-01-15', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },
+  { semaine: '2027-S03', date: '2027-01-22', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },
+  { semaine: '2027-S05', date: '2027-02-05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION', suivi: 'concept' },
+  { semaine: '2027-S08', date: '2027-02-26', texte: 'Diffusion TO Perso', perimetre: 'PERSO',       suivi: 'concept' }
 ],
 ```
+
+Sous l'avancement « définition électrique », les deux jalons TO restent
+dessinés, **en retrait**, et ne comptent pas (ni échéance, ni effort
+demandé) ; sous « concept harnais », c'est l'inverse. Leur fiche le dit
+(« suit le concept harnais ») et propose, d'un bouton, de passer à
+l'avancement dont ils relèvent.
 
 Sur le graphique, chaque jalon se marque d'un **numéro**, 1 à 5, en tête de
 son trait — **tous sur une seule rangée**, jamais étagés, et sans texte
@@ -728,13 +750,15 @@ bandeau des filtres ne bougent.
 La page s'ouvre **tout replié** : les semaines du journal, les lots « plan par
 plan » de la comparaison et les groupes (ATA, ECP…) ; le lecteur déplie ce
 qu'il veut voir. Le graphique s'ouvre sur **six mois** — exactement le bouton
-« 6 mois ». Un jalon plus lointain reste dans la légende, avec son décompte,
+« 6 mois ». Les boutons **3 mois · 6 mois · 1 an · Tout** sont à droite de
+l'en-tête du graphique ; l'aide « glisser pour déplacer, molette pour
+zoomer » a disparu (le geste, lui, marche toujours). Un jalon plus lointain reste dans la légende, avec son décompte,
 marqué « hors fenêtre ».
 
 ## 13 quater. Les échéances en jours
 
-Un jalon se donne à la semaine ; la page le dit **en jours**, jusqu'au
-**vendredi** de sa semaine :
+Un jalon se donne à la semaine ; la page le dit **en jours**, jusqu'à **sa
+date** (sans date, jusqu'au vendredi de sa semaine) :
 
 - **en tête du graphique** (le titre, lui, ne dit que la semaine), la
   prochaine échéance du périmètre : « Prochaine
@@ -745,13 +769,18 @@ Un jalon se donne à la semaine ; la page le dit **en jours**, jusqu'au
 
 Un clic — sur cette échéance, sur un jalon de la légende ou sur son
 numéro dans le graphique — ouvre la **fiche de l'échéance** : sa date
-(« vendredi 18 décembre 2026 · fin de la semaine 51 »), les **jours** et les
+(« mardi 15 décembre 2026 · semaine 51 »), les **jours** et les
 **semaines** restants, les **plans à terminer** dans *son* périmètre (un
 jalon BASE/OPTION compte les plans BASE/OPTION, quel que soit le périmètre
 affiché), la jauge des terminés, le **rythme qu'il faut** d'ici là contre le
 **rythme tenu** depuis le premier relevé, et le verdict : échéance tenue, ou
 de combien de semaines elle serait manquée. Un second clic, la croix ou
-Échap la referment ; au clavier, Entrée sur un jalon l'ouvre.
+Échap — où que soit le focus — la referment ; au clavier, Entrée sur un
+jalon l'ouvre.
+
+Sur le graphique, quand le rythme tenu ne suffit pas, la droite de
+projection s'arrête à l'échéance sur « manque N » : les plans qui resteraient
+à faire ce jour-là au rythme actuel. La survoler donne la phrase entière.
 
 ## 13 quinquies. Vitesse d'ouverture et thème
 

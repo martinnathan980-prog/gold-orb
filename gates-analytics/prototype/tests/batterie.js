@@ -22,7 +22,6 @@ function section(titre) { sectionCourante = titre; console.log('\n— ' + titre 
 
 /* L'interrupteur Données réelles / Exemple est visible en haut de page ;
    la batterie le manœuvre comme un clic. */
-const basculerMode = (pg, mode) => pg.evaluate(m => document.querySelector('#mode-donnees button[data-mode="' + m + '"]').click(), mode);
 
 /* « tout reinitialiser » est masque quand rien n'est filtre : on ne clique que
    s'il est visible, sinon on remet l'etat a la main. */
@@ -150,22 +149,19 @@ async function reinitialiser(pg) {
       { c: COLONNES_TOTAL, n: TOTAL }));
 
   // =================================================================
-  section('L\'interrupteur exemple / reel');
+  section('Plus de mode « Exemple »');
+  /* L'historique fabriqué n'existe plus : le classeur a ses relevés. Seule,
+     la page dit qu'elle montre une démonstration ; il n'y a plus
+     d'interrupteur, et tous les blocs sont remplis par la source elle-même. */
   const modeDepart = await p.evaluate(() => ({
-    visible: !document.getElementById('mode-donnees').hidden && document.getElementById('mode-donnees').offsetParent !== null,
+    interrupteur: !!document.getElementById('mode-donnees') || !!document.querySelector('[data-mode="exemple"]'),
     bandeau: !!document.getElementById('bandeau-mode'),
-    presse: [...document.querySelectorAll('#mode-donnees button')]
-      .map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')).join(' '),
-    marque: document.body.dataset.exemple
+    mot: document.getElementById('mot-mode').textContent.trim(),
+    pied: !document.getElementById('avertissement-demo').hidden
   }));
-  verifier('il est visible en haut de page, dans la démonstration aussi, à côté du bandeau', modeDepart.visible && modeDepart.bandeau, JSON.stringify(modeDepart));
-  verifier('et il demarre sur le reel',
-    modeDepart.presse === 'reel:true exemple:false' && modeDepart.marque === 'false',
+  verifier('plus d\'interrupteur « Données réelles / Exemple » ; seule, la page dit « Démonstration » et son pied le rappelle',
+    !modeDepart.interrupteur && modeDepart.bandeau && /^Démonstration — trois contrats fictifs/.test(modeDepart.mot) && modeDepart.pied,
     JSON.stringify(modeDepart));
-  /* Parité : les deux modes passent par la même dérivation, donc chaque bloc
-     rempli en réel l'est aussi en exemple — comparatif « depuis l'import »,
-     journal, fin estimée et rythme par groupe, courbe. On relève la même
-     signature dans les deux modes et on exige qu'elle soit identique. */
   const blocsRemplis = () => p.evaluate(() => ({
     comparatif: /Depuis l’import/.test(document.getElementById('comparatif').textContent) &&
                 document.querySelectorAll('.puce-delta').length > 0,
@@ -178,73 +174,8 @@ async function reinitialiser(pg) {
     plans: document.querySelectorAll('#corps-tableau tr').length
   }));
   const reelBlocs = await blocsRemplis();
-  verifier('en reel, tous les blocs sont remplis',
+  verifier('tous les blocs sont remplis',
     Object.keys(reelBlocs).every(k => reelBlocs[k]), JSON.stringify(reelBlocs));
-  await basculerMode(p, 'exemple'); await p.waitForTimeout(900);
-  const modeEx = await p.evaluate(() => ({
-    marque: document.body.dataset.exemple,
-    bord: getComputedStyle(document.getElementById('bandeau-mode')).borderStyle,
-    mot: document.getElementById('mot-mode').textContent,
-    points: document.querySelectorAll('svg.graphe circle').length,
-    lignes: document.querySelectorAll('#corps-tableau tr').length
-  }));
-  verifier('la page entiere se marque en exemple',
-    modeEx.marque === 'true' && /dashed/.test(modeEx.bord), JSON.stringify(modeEx).slice(0, 120));
-  verifier('et elle dit ce qui est fabrique', /historique/i.test(modeEx.mot), modeEx.mot);
-  verifier('le graphique se remplit sans perdre de plan',
-    modeEx.points >= 5 && modeEx.lignes === TOTAL, JSON.stringify(modeEx));
-  const exBlocs = await blocsRemplis();
-  verifier('l\'exemple remplit exactement les memes blocs que le reel',
-    JSON.stringify(exBlocs) === JSON.stringify(reelBlocs), JSON.stringify(exBlocs));
-  verifier('le comparatif de l\'exemple se rapporte a l\'historique fabrique',
-    await p.evaluate(() => /Depuis l’import du \d{4}-S\d{2}/.test(document.getElementById('comparatif').textContent)));
-  // Choisir un groupe : la courbe et le rythme suivent, comme en réel.
-  await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(450);
-  const exGroupe = await p.evaluate(() => ({
-    note: document.getElementById('note-graphe').textContent,
-    points: document.querySelectorAll('svg.graphe circle').length,
-    presse: document.querySelectorAll('.critique-ligne[aria-pressed="true"]').length,
-    lignes: document.querySelectorAll('#corps-tableau tr').length
-  }));
-  verifier('en exemple, choisir un groupe trace son historique',
-    /Historique de/.test(exGroupe.note) && exGroupe.points >= 5 && exGroupe.presse === 1,
-    JSON.stringify(exGroupe));
-  verifier('et filtre le tableau', exGroupe.lignes > 0 && exGroupe.lignes < TOTAL, String(exGroupe.lignes));
-  await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(350);
-  // La bulle du graphique nomme les passages en terminé, comme en réel.
-  await p.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' }));
-  await p.waitForTimeout(300);
-  let bulleEx = '';
-  for (const z of await p.$$('.zone-clic')) {
-    const bb = await z.boundingBox();
-    if (!bb || bb.y < 0 || bb.y > 900) continue;
-    await p.mouse.move(bb.x + bb.width / 2, bb.y + bb.height * 0.6);
-    await p.waitForTimeout(90);
-    const t = await p.evaluate(() => document.getElementById('bulle').textContent);
-    if (/passés? en terminé/.test(t)) { bulleEx = t; break; }
-  }
-  verifier('en exemple, la bulle du graphique annonce les passages en termine',
-    /passés? en terminé/.test(bulleEx), bulleEx.slice(0, 80));
-  await p.mouse.move(5, 5);
-  // Les filtres marchent en exemple aussi.
-  await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(350);
-  verifier('en exemple, filtrer un etat reduit le tableau',
-    await p.evaluate(t => { const n = document.querySelectorAll('#corps-tableau tr').length; return n > 0 && n < t; }, TOTAL));
-  await p.click('#etats .etat-btn[data-etat="termine"]'); await p.waitForTimeout(300);
-  await basculerMode(p, 'reel'); await p.waitForTimeout(800);
-  verifier('revenir au reel efface la marque ; seule, la page dit « Démonstration » à côté de l\'interrupteur',
-    await p.evaluate(() => document.body.dataset.exemple === 'false' &&
-      /^Démonstration — trois contrats fictifs/.test(document.getElementById('mot-mode').textContent.trim())));
-  verifier('et retrouve exactement les blocs du depart',
-    JSON.stringify(await blocsRemplis()) === JSON.stringify(reelBlocs));
-  for (let i = 0; i < 5; i++) {
-    await basculerMode(p, 'exemple'); await p.waitForTimeout(150);
-    await basculerMode(p, 'reel'); await p.waitForTimeout(150);
-  }
-  await p.waitForTimeout(700);
-  verifier('dix bascules d\'affilee laissent la page intacte',
-    await p.evaluate(t => document.body.dataset.exemple === 'false' &&
-      document.querySelectorAll('#corps-tableau tr').length === t, TOTAL));
 
   // =================================================================
   /* Plusieurs contrats, une seule page : le sélecteur vit dans le bandeau du
@@ -285,7 +216,6 @@ async function reinitialiser(pg) {
     etats: [...document.querySelectorAll('#etats .etat-n')].map(e => e.textContent).join(' '),
     groupes: [...document.querySelectorAll('.critique-total')].reduce((s, e) => s + (+e.textContent), 0),
     journal: document.querySelectorAll('.journal-semaine').length,
-    mode: document.body.dataset.exemple,
     /* Le cadrage par défaut se reconnaît à ce qu'il montre : le repère du
        dernier relevé et tous les jalons du contrat — pas à un nombre de
        bandes, qui dépend de la source. */
@@ -306,18 +236,10 @@ async function reinitialiser(pg) {
   const x3 = await lireContrat();
   verifier('un troisieme contrat a encore d\'autres comptes',
     x3.plans > 0 && x3.plans !== x2.plans && x3.plans !== TOTAL && x3.nom === 'VRK', String(x3.plans));
-  // L'exemple d'un autre contrat, puis un changement de contrat : on RESTE en
-  // exemple, sur le nouveau contrat — rebasculer sans un mot sur le réel
-  // trompait la lectrice.
-  await basculerMode(p, 'exemple'); await p.waitForTimeout(800);
   await p.selectOption('#select-contrat', 'HDK'); await p.waitForTimeout(1200);
-  const x1ex = await lireContrat();
-  verifier('un changement de contrat en exemple reste en exemple, sur le nouveau contrat',
-    x1ex.mode === 'true' && x1ex.nom === 'HDK', JSON.stringify({ mode: x1ex.mode, nom: x1ex.nom }));
-  await basculerMode(p, 'reel'); await p.waitForTimeout(900);
   const x1 = await lireContrat();
-  verifier('revenir a HDK, en donnees reelles, redonne les comptes initiaux',
-    x1.plans === TOTAL && x1.etats === etats0 && x1.pied === pied0 && x1.mode === 'false', JSON.stringify(x1));
+  verifier('revenir a HDK redonne les comptes initiaux',
+    x1.plans === TOTAL && x1.etats === etats0 && x1.pied === pied0, JSON.stringify(x1));
   // Sans liste de contrats — ou avec un seul — rien à choisir : le sélecteur disparaît.
   await p.evaluate(() => { const s = window.__jeuDExemple('HDK'); delete s.contrats; window.__chargerSource(s); });
   await p.waitForTimeout(900);
@@ -835,13 +757,6 @@ async function reinitialiser(pg) {
     rX3.R.refsManque.length > 0 && rX3.R.refsManque.every(r => r0.R.refsManque.indexOf(r) === -1), JSON.stringify(rX3.R.refsManque.slice(0, 2)));
   await p.selectOption('#select-contrat', 'HDK'); await p.waitForTimeout(1200);
 
-  // L'exemple : la même seconde base, les mêmes comptes.
-  await basculerMode(p, 'exemple'); await p.waitForTimeout(800);
-  const rEx = await lireRapp();
-  verifier('en mode exemple, la section reste et dit la même chose',
-    !rEx.cache && rEx.R.total === 22 && rEx.puces.map(x => x.cle + '=' + x.n).join() === r0.puces.map(x => x.cle + '=' + x.n).join(),
-    JSON.stringify(rEx.puces.map(x => x.cle + '=' + x.n)));
-  await basculerMode(p, 'reel'); await p.waitForTimeout(800);
 
   // Sans description de seconde base, il n'y a rien à rapprocher.
   await p.evaluate(() => { const s = window.__jeuDExemple('HDK'); delete s.rapprochement; window.__chargerSource(s); });
@@ -1222,15 +1137,6 @@ async function reinitialiser(pg) {
   await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(300);
   verifier('re-cliquer la puce pressée ne change rien', JSON.stringify(await lirePerimetre()) === JSON.stringify(tout0));
 
-  // En exemple, même dérivation : l'historique fabriqué a ses cartes.
-  await basculerMode(p, 'exemple'); await p.waitForTimeout(900);
-  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
-  const exPerso = await lirePerimetre();
-  verifier('en exemple aussi, la courbe du périmètre est dérivée des cartes',
-    exPerso.serie.length >= 5 && exPerso.dernier.total === nPerso && exPerso.dernier.termine === exPerso.etats[0] &&
-    exPerso.domainesJournal.join() === 'PERSO', JSON.stringify(exPerso.dernier));
-  await basculerMode(p, 'reel'); await p.waitForTimeout(800);
-  verifier('revenir au réel rouvre sur Tout', (await lirePerimetre()).presse === ':true BASE/OPTION:false PERSO:false');
 
   // Un relevé sans carte plan par plan ne peut pas être dérivé : il est écarté, et la note le dit.
   await p.evaluate(() => {
@@ -1511,7 +1417,7 @@ async function reinitialiser(pg) {
       ancienne: (b.querySelector('.ref-indice .ancienne') || { textContent: '' }).textContent,
       nouvelle: (b.querySelector('.ref-indice .nouvelle') || { textContent: '' }).textContent,
       etats: b.querySelectorAll('.vers .etiq-etat').length,
-      quoi: b.querySelector('.quoi').textContent
+      libelle: !!b.querySelector('.quoi')
     })),
     presse: [...document.querySelectorAll('#filtre-journal button')]
       .map(b => b.dataset.journal + ':' + b.getAttribute('aria-pressed')).join(' ')
@@ -1521,7 +1427,8 @@ async function reinitialiser(pg) {
   verifier('chaque ligne se lit « ancienne → nouvelle », puis l’état avant et après',
     lignesIndice.indice.every(l => l.type === 'indice' && /^[A-Z]{3}\d{4}A\d{6}[A-Z]$/.test(l.ancienne) &&
       l.nouvelle === '→ ' + l.ref && l.etats === 2), lu(lignesIndice.indice[0]));
-  verifier('et nomme le plan', lignesIndice.indice.every(l => l.quoi.trim() !== ''));
+  verifier('la ligne ne porte que la référence et le passage — plus le libellé du plan (« Faisceau 417 »)',
+    lignesIndice.indice.every(l => !l.libelle));
   verifier('le filtre du journal reflète le choix',
     lignesIndice.presse === ':false termine:false encours:false afaire:false indice:true', lignesIndice.presse);
   await p.click('#filtre-journal button[data-journal="indice"]'); await p.waitForTimeout(400);
@@ -1934,6 +1841,43 @@ async function reinitialiser(pg) {
     align.basTrait - align.basChiffres < 20, Math.round(align.basTrait - align.basChiffres) + ' px');
   verifier('les filets sont assez visibles (opacité ≥ .35)',
     parseFloat(align.opacite) >= 0.35, align.opacite);
+
+  /* Beaucoup de valeurs, ou de très petites : la barre passe en légende —
+     une carte par valeur, dans l'ordre de la barre, sans filets — et le
+     survol relie chaque carte à son segment, même large de quatre pixels. */
+  await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    const vals = ['Validé', 'En cours', 'A traiter', 'Check', 'Attente retour', 'Bloqué', 'Refusé', ''];
+    const poids = [300, 150, 90, 40, 30, 3, 2, 25];
+    s.plans.forEach((pl, i) => { let c = 0, j = 0; const r = i % 640; while (j < poids.length - 1 && r >= c + poids[j]) { c += poids[j]; j++; } pl.avancement = vals[j]; });
+    window.__chargerSource(s);
+  });
+  await p.waitForTimeout(700);
+  const legende = await p.evaluate(() => ({
+    classe: document.getElementById('etats').className,
+    filets: document.querySelectorAll('#filets i').length,
+    cartes: [...document.querySelectorAll('#etats .etat-btn')].map(b => b.querySelector('.libelle').textContent + '|' + b.querySelector('.etat-pct').textContent.replace(/\s/g, ' ')),
+    segments: [...document.querySelectorAll('#barre span[data-cle]')].map(x => ({ cle: x.dataset.cle, l: x.getBoundingClientRect().width })),
+    ordre: [...document.querySelectorAll('#etats .etat-btn')].map(b => b.dataset.cle).join() === [...document.querySelectorAll('#barre span[data-cle]')].map(x => x.dataset.cle).join()
+  }));
+  verifier('huit valeurs dont deux minuscules : la barre passe en légende, sans filets, une carte par valeur dans l\'ordre de la barre',
+    /en-legende/.test(legende.classe) && legende.filets === 0 && legende.cartes.length === 8 && legende.ordre, JSON.stringify(legende).slice(0, 300));
+  verifier('chaque carte dit sa part, même petite (« 0,3 % »), et chaque segment reste visible (≥ 4 px)',
+    legende.cartes.some(c => /\|0,3 %$/.test(c)) && legende.segments.every(x => x.l >= 3.5), JSON.stringify(legende.cartes));
+  await p.hover('#etats .etat-btn[data-cle="refuse"]'); await p.waitForTimeout(250);
+  const survolLegende = await p.evaluate(() => ({
+    focalise: document.getElementById('barre').classList.contains('focalise'),
+    eclaire: [...document.querySelectorAll('#barre span.eclaire')].map(x => x.dataset.cle).join(),
+    carte: [...document.querySelectorAll('#etats .etat-btn.eclaire')].map(x => x.dataset.cle).join()
+  }));
+  verifier('survoler « Refusé » (2 plans) éclaire son segment et lui seul',
+    survolLegende.focalise && survolLegende.eclaire === 'refuse' && survolLegende.carte === 'refuse', JSON.stringify(survolLegende));
+  await p.mouse.move(5, 5); await p.waitForTimeout(200);
+  verifier('en quittant la légende, la barre redevient entière', await p.evaluate(() => !document.getElementById('barre').classList.contains('focalise')));
+  await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
+  await p.waitForTimeout(700);
+  verifier('quatre grandes valeurs : les chiffres reviennent sous leurs segments, filets compris',
+    await p.evaluate(() => !/en-legende/.test(document.getElementById('etats').className) && document.querySelectorAll('#filets i').length === 3));
 
   // =================================================================
   section('Filtres par état');
@@ -2448,7 +2392,7 @@ async function reinitialiser(pg) {
                    document.querySelector('form.saisie-jalon')),
     boutons: document.querySelectorAll('svg.graphe [role="button"]').length,
     curseur: getComputedStyle(document.getElementById('cadre-graphe')).cursor,
-    indice: document.querySelector('.commandes-graphe .indice').textContent,
+    indice: (document.querySelector('.commandes-graphe .indice') || { textContent: '' }).textContent,
     pont: !(window.SUIVI_FWD_API && window.SUIVI_FWD_API.sauverJalons)
   }));
   verifier('la démonstration a cinq jalons — ceux du programme, le solde FWD en tête',
@@ -2526,7 +2470,7 @@ async function reinitialiser(pg) {
   await p.click('.segmente button[data-span="0"]'); await p.waitForTimeout(400);
   verifier('aucun bouton dans le graphique', fixes.boutons === 0, String(fixes.boutons));
   verifier('le curseur du cadre reste la main du panoramique', fixes.curseur === 'grab', fixes.curseur);
-  verifier('l\'indice ne promet plus de poser un jalon', !/poser/.test(fixes.indice), fixes.indice);
+  verifier('plus de phrase d\'aide au-dessus du graphique : les périodes seules, à droite', fixes.indice === '', fixes.indice);
   verifier('aucun pont de sauvegarde des jalons', fixes.pont);
 
   /* Un jalon peut porter un périmètre : sous ce périmètre, il fait
@@ -2904,27 +2848,11 @@ async function reinitialiser(pg) {
   await p.evaluate(() => window.__chargerSource(window.__jeuDExemple('HDK')));
   await reinitialiser(p);
 
-  // Le mode « Exemple » ne racontait que des « passés en terminé ».
-  await basculerMode(p, 'exemple'); await p.waitForTimeout(900);
-  const lotsExemple = await p.evaluate(() => (document.getElementById('comparatif').textContent || '').replace(/\s+/g, ' '));
-  verifier('en exemple, le comparatif montre aussi passés en cours, nouveaux, disparus et une réémission',
-    /passés? à « En cours »/.test(lotsExemple) && /nouveau/.test(lotsExemple) && /disparu/.test(lotsExemple) && /indice/.test(lotsExemple),
-    lotsExemple.slice(0, 160));
-  // Changer de contrat en exemple ne rebascule plus sans un mot sur les données réelles.
-  await p.selectOption('#select-contrat', 'THS'); await p.waitForTimeout(900);
-  const exempleX2 = await p.evaluate(() => ({
-    marque: document.body.dataset.exemple, mot: document.getElementById('mot-mode').textContent,
-    contrat: document.getElementById('select-contrat').value
-  }));
-  verifier('changer de contrat en exemple reste en exemple, sur le nouveau contrat',
-    exempleX2.marque === 'true' && /fabriqué/.test(exempleX2.mot) && exempleX2.contrat === 'THS', JSON.stringify(exempleX2));
-  await p.selectOption('#select-contrat', 'HDK'); await p.waitForTimeout(900);
-  await basculerMode(p, 'reel'); await p.waitForTimeout(900);
 
-  // Le pied « Jeu d'exemple » ne se lit que dans la démonstration.
-  verifier('la démonstration dit « Jeu d’exemple » dans son pied',
+  // Le pied « Démonstration » ne se lit que dans la démonstration.
+  verifier('la démonstration dit « chiffres fictifs » dans son pied',
     await p.evaluate(() => !document.getElementById('avertissement-demo').hidden &&
-      /Jeu d'exemple/.test(document.querySelector('.pied').textContent)));
+      /Démonstration — les chiffres de cette page sont fictifs/.test(document.querySelector('.pied').textContent)));
 
   /* Le cadrage d'ouverture : six mois autour d'aujourd'hui. Les jalons qui
      tombent dehors restent dans la légende, marqués « hors fenêtre », et
@@ -3062,50 +2990,28 @@ async function reinitialiser(pg) {
     await ctxPrefs.close();
   }
 
-  // Un paquet que le classeur n'a pas pu remplir : la page s'ouvre sur la
-  // démonstration — et le dit —, et « Données réelles » montre la page vide
-  // avec le message du classeur. L'interrupteur est visible : il y a de quoi
-  // comparer.
+  // Un paquet que le classeur n'a pas pu remplir : plus de démonstration à
+  // la place — la page le dit, avec le message du classeur, et dit le geste.
   {
     const ctxVide = await contexte();
     await ctxVide.addInitScript(() => {
       window.SUIVI_FWD_DONNEES = { ok: false, message: 'Feuille vide : aucun plan.', colonnes: [], plans: [], releves: [], jalons: [], contrats: [], contrat: '' };
     });
     const pv = await page(ctxVide, 'classeur vide');
-    const lire = () => pv.evaluate(() => ({
-      visible: !document.getElementById('mode-donnees').hidden && document.getElementById('mode-donnees').offsetParent !== null,
+    const ouverture = await pv.evaluate(() => ({
       alerte: !document.getElementById('alerte-source').hidden,
       texte: document.getElementById('alerte-source').textContent,
       mot: document.getElementById('mot-mode').textContent,
       lignes: document.querySelectorAll('#corps-tableau td.ref, #corps-tableau .ref').length,
       demo: !document.getElementById('avertissement-demo').hidden,
-      marque: document.body.dataset.exemple,
-      presse: [...document.querySelectorAll('#mode-donnees button')].map(b => b.dataset.mode + ':' + b.getAttribute('aria-pressed')).join(' '),
-      contrats: [...document.querySelectorAll('#select-contrat option')].map(o => o.value).join(','),
-      rapprochement: !document.getElementById('rapprochement').hidden
+      vide: document.body.dataset.vide,
+      panneau: getComputedStyle(document.getElementById('classeur-vide')).display !== 'none',
+      sectionsCachees: [...document.querySelectorAll('section.avancement, section.bloc')].every(el => getComputedStyle(el).display === 'none')
     }));
-    const ouverture = await lire();
-    verifier('un classeur vide ouvre la page sur la démonstration, et le dit',
-      ouverture.marque === 'true' && /Démonstration/.test(ouverture.mot) && ouverture.presse === 'reel:false exemple:true' &&
-      ouverture.lignes > 0 && ouverture.demo, JSON.stringify(ouverture));
-    verifier('… avec le message du classeur à côté, pour dire pourquoi',
-      ouverture.alerte && /Feuille vide/.test(ouverture.texte), ouverture.texte);
-    verifier('… l’interrupteur visible, les trois contrats fictifs et le rapprochement',
-      ouverture.visible && ouverture.contrats === 'HDK,THS,VRK' && ouverture.rapprochement, JSON.stringify(ouverture));
-    await basculerMode(pv, 'reel'); await pv.waitForTimeout(600);
-    const reel = await lire();
-    verifier('« Données réelles » montre alors la page vide, avec le message, sans plan ni démonstration',
-      reel.marque === 'false' && reel.lignes === 0 && reel.alerte && /Feuille vide/.test(reel.texte) && !reel.demo && reel.mot === '',
-      JSON.stringify(reel));
-    await basculerMode(pv, 'exemple'); await pv.waitForTimeout(600);
-    await pv.selectOption('#select-contrat', 'THS'); await pv.waitForTimeout(900);
-    const ths = await lire();
-    verifier('changer de contrat sous la démonstration reste dans la démonstration',
-      ths.marque === 'true' && /Démonstration/.test(ths.mot) && ths.lignes > 0 && ths.lignes !== ouverture.lignes && ths.alerte,
-      JSON.stringify([ths.lignes, ouverture.lignes, ths.mot]));
-    await basculerMode(pv, 'reel'); await pv.waitForTimeout(600);
-    verifier('et revenir au réel après cela retrouve la page vide du classeur, intacte',
-      (await lire()).lignes === 0);
+    verifier('un classeur vide : ni plan fictif ni démonstration, le message du classeur, et la marche à suivre',
+      ouverture.vide === 'true' && ouverture.panneau && ouverture.sectionsCachees && ouverture.lignes === 0 &&
+      ouverture.alerte && /Feuille vide/.test(ouverture.texte) && !ouverture.demo && ouverture.mot === '',
+      JSON.stringify(ouverture));
     await ctxVide.close();
   }
 

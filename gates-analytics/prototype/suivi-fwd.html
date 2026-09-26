@@ -164,13 +164,44 @@ body {
   .etat-haut { justify-content: flex-start; }
 }
 /* La même grille quand les boutons ne tiennent pas bout à bout dans la rangée. */
-.etats.en-grille { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 0; height: auto; }
-.etats.en-grille .etat-btn { position: relative; text-align: left; padding: 3px 0; background: none; white-space: normal; }
-.etats.en-grille .etat-haut { justify-content: flex-start; }
+/* La légende, quand la barre porte beaucoup de valeurs ou de très petites :
+   une carte par valeur, dans l'ordre de la barre — pastille, nom, nombre et
+   part —, sans filets. Survoler une carte éclaire son segment, et l'inverse. */
+.etat-pct { display: none; font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.etats.en-legende {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 8px; height: auto; margin-top: 14px;
+}
+.etats.en-legende .etat-btn {
+  position: relative; text-align: left; white-space: normal; padding: 9px 12px 8px;
+  background: var(--surface); border: 1px solid var(--filet); border-radius: 8px;
+  grid-template-columns: 1fr auto; align-items: baseline; column-gap: 8px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.etats.en-legende .etat-haut { justify-content: flex-start; grid-column: 1 / -1; min-width: 0; }
+.etats.en-legende .etat-haut .libelle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.etats.en-legende .etat-n { font-size: 22px; }
+.etats.en-legende .etat-pct { display: inline; }
+.etats.en-legende .etat-btn:hover, .etats.en-legende .etat-btn.eclaire { border-color: var(--encre-3); }
+.etats.en-legende .etat-btn[aria-pressed="true"] { border-color: var(--encre); box-shadow: inset 0 -2px 0 var(--teinte); }
+.etats.en-legende .etat-btn[aria-pressed="true"]::after { display: none; }
+.barre.focalise span { opacity: .3; transition: opacity .15s; }
+.barre.focalise span.eclaire { opacity: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--encre); position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .barre.focalise span { transition: none; } }
 
-/* ---------------------------------------------------- Mode des données */
-/* Un seul interrupteur, tout en haut : la page entière est réelle, ou elle est
-   un exemple. Pas de demi-mesure au milieu de l'écran. */
+/* ---------------------------------------------------- Classeur sans plans */
+.classeur-vide { display: none; max-width: 640px; margin: 34px auto 10px; padding: 22px 26px;
+  background: var(--surface); border: 1px solid var(--filet); border-radius: 12px; }
+.classeur-vide h2 { margin-bottom: 8px; }
+.classeur-vide p { color: var(--encre-2); margin: 8px 0; }
+.classeur-vide ol { margin: 10px 0 12px; padding-left: 22px; display: grid; gap: 7px; }
+.classeur-vide kbd { font-family: "IBM Plex Mono", monospace; font-size: 12px; border: 1px solid var(--filet-fort);
+  border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--creux); }
+body[data-vide="true"] .classeur-vide { display: block; }
+body[data-vide="true"] section.avancement, body[data-vide="true"] section.bloc,
+body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-indicateur, body[data-vide="true"] .pied { display: none !important; }
+
+/* ---------------------------------------------------- Bandeau du haut */
+/* Le contrat et l'avancement suivi, tout en haut, discrets. */
 .bandeau-mode {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   padding: 12px 0 0;
@@ -181,10 +212,6 @@ body {
    place du mot de mode, et annoncé aux lecteurs d'écran. */
 .bandeau-mode .alerte-source { color: var(--alerte); font-weight: 500; }
 .bandeau-mode .alerte-source[hidden] { display: none; }
-body[data-exemple="true"] .bandeau-mode {
-  border: 1px dashed var(--cours); background: var(--creux);
-  padding: 10px 13px; margin-top: 12px;
-}
 /* Le choix du contrat : à droite du même bandeau, dans le même registre
    discret. Il n'apparaît que s'il y a vraiment plusieurs contrats entre
    lesquels choisir — avec un seul, il n'aurait rien à dire. */
@@ -322,17 +349,16 @@ body[data-exemple="true"] .bandeau-mode {
 .journal-plier[aria-expanded="true"] .chevron { transform: rotate(90deg); }
 .journal-liste { margin: 0 0 12px; padding: 0 0 0 78px; list-style: none; }
 @media (max-width: 720px) { .journal-liste { padding-left: 0; } }
-/* Trois colonnes alignées : la référence, ce que c'est, où ça va. Le regard
-   descend une colonne au lieu de chercher la flèche au milieu du texte. */
+/* Deux colonnes alignées : la référence, puis où elle va. Le regard descend
+   une colonne au lieu de chercher la flèche au milieu du texte. */
 .journal-ligne {
-  display: grid; grid-template-columns: 136px minmax(0, 1fr) 190px;
+  display: grid; grid-template-columns: 150px minmax(0, 260px);
   align-items: baseline; gap: 12px; width: 100%;
   background: none; border: none; font: inherit; color: inherit;
   padding: 6px 6px; text-align: left; cursor: pointer; border-radius: 3px;
 }
 @media (max-width: 720px) {
   .journal-ligne { grid-template-columns: 1fr auto; gap: 3px 10px; padding: 8px 4px; }
-  .journal-ligne .quoi { grid-column: 1 / -1; }
 }
 .journal-ligne:hover { background: var(--creux); }
 .journal-ligne .ref { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
@@ -340,10 +366,6 @@ body[data-exemple="true"] .bandeau-mode {
 .journal-ligne .ref-indice { display: grid; gap: 1px; }
 .journal-ligne .ref-indice .ancienne { color: var(--encre-3); }
 .journal-ligne .ref-indice .nouvelle { white-space: nowrap; color: var(--indice); }
-.journal-ligne .quoi {
-  color: var(--encre-3); font-size: 12.5px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
 /* Le passage : l'état de départ s'efface, seule l'arrivée porte la couleur. */
 .journal-ligne .vers {
   display: grid; grid-template-columns: 1fr 12px 1fr; align-items: center; gap: 4px;
@@ -434,7 +456,7 @@ select.select {
 select.select:focus { outline: none; border-bottom-color: var(--focus); }
 
 /* ---------------------------------------------------- Graphique */
-.commandes-graphe { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.commandes-graphe { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-left: auto; }
 .segmente { display: inline-flex; border: 1px solid var(--filet-fort); }
 .segmente[hidden] { display: none; }
 .segmente button {
@@ -497,7 +519,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
   grid-row: span 2; align-self: center;
 }
 .legende-jalon .mot { color: var(--encre); align-self: end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.legende-jalon .quand { grid-column: 2; color: var(--encre-2); font-size: 12px; align-self: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legende-jalon .quand { grid-column: 2; color: var(--encre-2); font-size: 12px; align-self: start; white-space: normal; }
 /* Hors du périmètre choisi : le numéro reste net (c'est le lien avec le
    graphique), seul le reste s'efface un peu. */
 .legende-jalon.hors-perimetre .num { background: var(--surface); color: var(--encre-2); box-shadow: inset 0 0 0 1.5px var(--encre-3); }
@@ -563,6 +585,13 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .echeance-titre .jours { font-family: "IBM Plex Mono", monospace; color: var(--encre); font-variant-numeric: tabular-nums; }
 .echeance-titre .point { width: 8px; height: 8px; border-radius: 50%; background: var(--fait); flex: none; }
 .echeance-titre.en-retard .point { background: var(--alerte); }
+/* Chaque morceau reste d'un bloc : sur un téléphone, « Prochaine échéance »
+   se cassait en deux lignes au milieu de la puce. */
+.echeance-titre > span, .echeance-titre > b { white-space: nowrap; }
+@media (max-width: 480px) {
+  .echeance-titre { flex-wrap: wrap; row-gap: 2px; margin-left: 0; font-size: 12.5px; }
+  .haut-de-page { right: 12px; bottom: 12px; width: 36px; height: 36px; }
+}
 
 /* ---------------------------------------------------- Haut de page */
 .haut-de-page {
@@ -1005,13 +1034,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
   <div class="filtres-actifs" id="filtres-actifs" hidden></div>
 
   <div class="bandeau-mode" id="bandeau-mode">
-    <!-- Toujours visible : devant un classeur, il compare les données réelles
-         à un historique fabriqué ; dans la démonstration seule, il montre le
-         même geste — c'est ainsi qu'on l'explique à quelqu'un. -->
-    <span class="segmente" id="mode-donnees" role="group" aria-label="Source des données">
-      <button type="button" data-mode="reel" aria-pressed="true">Données réelles</button>
-      <button type="button" data-mode="exemple" aria-pressed="false">Exemple</button>
-    </span>
+    <!-- Hors du classeur seulement — la page ouverte seule, sur son jeu de
+         démonstration — le bandeau le dit. Devant le classeur, rien. -->
     <span class="mot-mode" id="mot-mode"></span>
     <!-- Le message du classeur quand il n'a rien pu rendre — feuille vide,
          contrat introuvable, colonne d'avancement absente. -->
@@ -1041,6 +1065,18 @@ table.plans thead tr th.col-fige { z-index: 6; }
     </div>
   </header>
 
+  <!-- Un classeur sans plans : ce qu'il faut faire, au lieu de sections vides. -->
+  <section class="classeur-vide" id="classeur-vide">
+    <h2>Le classeur n’a pas encore de plans</h2>
+    <p>Le message au-dessus dit ce que le script a trouvé. Pour remplir la page :</p>
+    <ol>
+      <li>Ouvrir l’export GATES du contrat, tout sélectionner (<kbd>Ctrl</kbd>+<kbd>A</kbd>), copier.</li>
+      <li>Dans le classeur, un onglet au nom du contrat — « HDK » —, cellule <b>A1</b>, coller.</li>
+      <li>Menu <b>Suivi FWD → Archiver le relevé de cette semaine</b>, puis rouvrir le tableau de bord.</li>
+    </ol>
+    <p class="doux">En cas de doute : <b>Suivi FWD → Diagnostic</b> dit ce que le script voit du classeur.</p>
+  </section>
+
   <section class="avancement">
     <!-- Le périmètre — ce qu'on regarde — à droite de la phrase qu'il
          gouverne, juste au-dessus de la barre. -->
@@ -1064,7 +1100,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
            graphique. Pas sous le titre, qui ne dit que la semaine. -->
       <button type="button" class="echeance-titre" id="echeance-titre" hidden></button>
       <div class="commandes-graphe">
-        <span class="indice">Glissez pour vous déplacer · molette pour zoomer</span>
         <span class="segmente" role="group" aria-label="Période affichée">
           <button type="button" data-span="13">3 mois</button>
           <button type="button" data-span="26">6 mois</button>
@@ -1234,7 +1269,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
     <span id="import"></span><br>
     <!-- La démonstration seule le dit : sur le classeur, ces chiffres SONT
          ceux du tableur. Masqué dès qu'un classeur est derrière la page. -->
-    <span id="avertissement-demo">Jeu d'exemple — les chiffres de cette page ne proviennent pas du tableur.</span>
+    <span id="avertissement-demo">Démonstration — les chiffres de cette page sont fictifs, aucun ne vient d'un classeur.</span>
   </footer>
 </div>
 
@@ -1568,6 +1603,13 @@ table.plans thead tr th.col-fige { z-index: 6; }
     return r;
   }
 
+  /* Le lundi de la semaine i, comptée depuis un lundi de base. */
+  function dateDeBase(base, i) {
+    var d = new Date(base.getTime()); d.setUTCDate(base.getUTCDate() + i * 7); return d;
+  }
+
+  /* <démonstration> — ce bloc n'est pas livré au classeur (voir
+     tests/split-prototype.js) : il n'y sert jamais. */
   /* ============================================================
      JEU D'EXEMPLE
      Il ne sert que lorsque la page tourne seule, sans classeur derrière.
@@ -1995,11 +2037,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
          diffusions PH et TO, chacune pour un périmètre. La semaine courante
          de la démonstration est la 38 de 2026 : tous sont à venir. */
       jalons: [
-        { semaine: '2026-S51', texte: 'Solde FWD' },
-        { semaine: '2027-S02', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },
-        { semaine: '2027-S03', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },
-        { semaine: '2027-S05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION' },
-        { semaine: '2027-S08', texte: 'Diffusion TO Perso', perimetre: 'PERSO' }
+        { semaine: '2026-S51', date: '2026-12-15', texte: 'Solde FWD' },
+        { semaine: '2027-S02', date: '2027-01-15', texte: 'Diffusion PH Base',  perimetre: 'BASE/OPTION' },
+        { semaine: '2027-S03', date: '2027-01-22', texte: 'Diffusion PH Perso', perimetre: 'PERSO' },
+        { semaine: '2027-S05', date: '2027-02-05', texte: 'Diffusion TO Base',  perimetre: 'BASE/OPTION', suivi: 'concept' },
+        { semaine: '2027-S08', date: '2027-02-26', texte: 'Diffusion TO Perso', perimetre: 'PERSO',       suivi: 'concept' }
       ],
       /* La liste des contrats et celui-ci : c'est ce que le sélecteur affiche. */
       contrats: CONTRATS_EXEMPLE.map(function (c) { return { id: c.id, nom: c.nom }; }),
@@ -2009,9 +2051,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
       rapprochement: rapprochementDExemple(plans),
       info: { feuille: 'Démonstration ' + fiche.nom, message: '' }
     };
-  }
-  function dateDeBase(base, i) {
-    var d = new Date(base.getTime()); d.setUTCDate(base.getUTCDate() + i * 7); return d;
   }
 
   /* La seconde base, en attendant la vraie : « SEE », l'extract Excel de
@@ -2102,6 +2141,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       lignes: lignes
     };
   }
+  /* </démonstration> */
 
   /* ============================================================
      SOURCE DES DONNEES
@@ -2109,8 +2149,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
      contrats… } : le jeu d'exemple quand la page tourne seule, le paquet du
      classeur dans l'add-on. Tout l'état qui en découle se recalcule d'un
      bloc dans chargerSource() — le même chemin sert au premier affichage,
-     au passage en mode « Exemple » et au changement de contrat, donc les
-     trois offrent exactement les mêmes fonctions. Les écouteurs, eux, sont
+     au changement de contrat et d'avancement suivi, donc tous offrent
+     exactement les mêmes fonctions. Les écouteurs, eux, sont
      posés une seule fois sur les éléments fixes de la page.
      ============================================================ */
   /* Un classeur derrière la page, ou non : c'est la présence du paquet qui
@@ -2122,8 +2162,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
   var API = window.SUIVI_FWD_API || null;
 
   /* L'état dérivé de la source courante. Déclaré ici, rempli par chargerSource(). */
-  var SRC = null;                  // la source affichée : réelle, ou son exemple
-  var SRC_REELLE = null;           // la dernière source réelle chargée
+  var SRC = null;                  // la source affichée
   var COLONNES, PAR_CLE, CLE_DATE, PLANS, RELEVES_SRC, BASE, AUJ;
   /* L'avancement suivi : la définition électrique — la colonne « avancement »
      du paquet, le FWD — ou le concept harnais (SRC.cleConcept). Toute la page
@@ -2155,15 +2194,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
     obs.observe(cadre);
   }
   var DIMENSIONS, TITRE_DIM, ORDRE_FEUILLE, PLAN_PAR_REF, PLAN_PAR_RACINE, JOURNAL;
-  var RELEVES_REELS, AUJ_REEL, BASE_REELLE;
   var CONTRATS, CONTRAT;
   var vue = null;
 
-  /* La source qu'un paquet du classeur donne à la page. Complet, il passe
-     tel quel. Sinon — feuille vide, contrat introuvable, erreur du script —
-     une source vide qui garde ce que le paquet sait encore dire (contrats,
-     jalons) et porte son message : la page s'ouvre sans plan et l'explique,
-     au lieu de montrer 640 plans fictifs sous « Données réelles ». */
   /* Le paquet arrive compacté du classeur (compacterPaquet, Code.gs) : chaque
      nom de colonne, chaque référence d'un relevé n'y est écrit qu'une fois.
      On le rend à sa forme de travail — des objets —, à l'identique. Un
@@ -2205,6 +2238,10 @@ table.plans thead tr th.col-fige { z-index: 6; }
     return paquet;
   }
 
+  /* La source qu'un paquet du classeur donne à la page. Complet, il passe
+     tel quel. Sinon — feuille vide, contrat introuvable, erreur du script —
+     une source vide qui garde ce que le paquet sait encore dire (contrats,
+     jalons) et porte son message : la page s'ouvre sans plan et l'explique. */
   function sourceDuClasseur(paquet) {
     paquet = deballerPaquet(paquet);
     if (paquet && paquet.ok !== false && Array.isArray(paquet.plans) && paquet.plans.length) return paquet;
@@ -2283,12 +2320,16 @@ table.plans thead tr th.col-fige { z-index: 6; }
      bavarde ne fasse pas déborder la frise. Un jalon peut porter un
      périmètre — la valeur de la colonne de domaine à laquelle il s'applique
      (« Diffusion PH Perso » ne vaut que pour PERSO) ; sans périmètre, il vaut
-     pour tous les plans. */
+     pour tous les plans. Il appartient à un avancement — la définition
+     électrique (le FWD), ou le concept harnais pour les diffusions TO — et
+     peut porter son jour exact. */
   function jalonsDe(liste) {
     return (Array.isArray(liste) ? liste : []).map(function (j) {
       if (!j) return null;
       var texte = String(j.texte || 'Jalon').trim().slice(0, 60) || 'Jalon';
-      return { i: indexDe(j.semaine), texte: texte, perimetre: String(j.perimetre || '').trim().slice(0, 40) };
+      var date = /^\d{4}-\d{2}-\d{2}$/.test(String(j.date || '')) ? String(j.date) : '';
+      return { i: indexDe(j.semaine), texte: texte, perimetre: String(j.perimetre || '').trim().slice(0, 40),
+               date: date, suivi: j.suivi === 'concept' ? 'concept' : 'def' };
     }).filter(function (j) { return j && j.i !== null; })
       .sort(function (a, b) { return a.i - b.i; });
   }
@@ -2297,7 +2338,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
      (« Tout »), tous comptent ; sinon ceux du périmètre et ceux qui n'en ont
      pas. Casse et accents indifférents, comme partout ailleurs. */
   function jalonDansPerimetre(j) {
-    return !j.perimetre || !vue.perimetre || norm(j.perimetre) === norm(vue.perimetre);
+    return jalonDuSuivi(j) && (!j.perimetre || !vue.perimetre || norm(j.perimetre) === norm(vue.perimetre));
+  }
+  /* Un jalon du concept harnais ne compte pas sous la définition électrique,
+     ni l'inverse : il reste dessiné, en retrait. */
+  function jalonDuSuivi(j) { return (j.suivi || 'def') === INDICATEUR; }
+  /* Pourquoi un jalon est en retrait, dit en clair — ou rien s'il compte. */
+  function raisonRetrait(j) {
+    if (!jalonDuSuivi(j)) return j.suivi === 'concept' ? 'suit le concept harnais' : 'suit la définition électrique';
+    return jalonDansPerimetre(j) ? '' : 'hors du périmètre choisi';
   }
   /* L'échéance : le premier jalon à venir qui compte ici. C'est lui qui
      pilote l'« effort demandé » et la droite « requis pour … ». */
@@ -2313,13 +2362,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
   /* ============================================================
      LES ÉCHÉANCES, EN JOURS
-     Un jalon se donne à la semaine ; on le vit en jours. Sa date : le
-     vendredi de sa semaine, dernier jour ouvré. Pour chacun : combien de
+     Un jalon se donne à la semaine ; on le vit en jours. Sa date : son jour
+     exact quand la configuration le donne, sinon le vendredi de sa semaine,
+     dernier jour ouvré. Pour chacun : combien de
      jours restent, combien de plans restent dans son périmètre, le rythme
      qu'il faut contre celui qu'on tient.
      ============================================================ */
   var JOURS_SEMAINE = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
   function dateEcheance(j) {
+    if (j.date) return new Date(Date.UTC(+j.date.slice(0, 4), +j.date.slice(5, 7) - 1, +j.date.slice(8, 10)));
     var d = new Date(dateDe(j.i).getTime());
     d.setUTCDate(d.getUTCDate() + 4);
     return d;
@@ -2373,7 +2424,23 @@ table.plans thead tr th.col-fige { z-index: 6; }
     if (!j) return '';
     var b = bilanEcheance(j), d = dateEcheance(j);
     var quand = JOURS_SEMAINE[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MOIS[d.getUTCMonth()] + ' ' + d.getUTCFullYear() +
-      ' \u00b7 fin de la semaine ' + numeroSemaine(j.i);
+      (j.date ? ' \u00b7 semaine ' : ' \u00b7 fin de la semaine ') + numeroSemaine(j.i);
+    /* Un jalon de l'autre avancement : ses jours, et le chemin vers ses
+       plans — pas de comptes tirés d'une colonne qui n'est pas la sienne. */
+    if (!jalonDuSuivi(j)) {
+      var autre = j.suivi === 'concept' ? 'concept' : 'def';
+      var leAutre = autre === 'concept' ? 'le concept harnais' : 'la définition électrique';
+      var versAutre = autre === 'concept' ? 'au concept harnais' : 'à la définition électrique';
+      var nJours = joursAvant(j);
+      return '<div class="fiche-echeance" id="fiche-echeance" role="region" aria-label="Échéance ' + ech(j.texte) + '">' +
+        '<div class="fiche-echeance-tete"><span class="num">' + (idx + 1) + '</span><h3>' + ech(j.texte) + '</h3>' +
+        '<span class="quand">' + ech(quand) + (j.perimetre ? ' \u00b7 ' + ech(j.perimetre) : '') + '</span>' +
+        '<button type="button" class="fiche-echeance-fermer" data-fermer-echeance="1" aria-label="Fermer la fiche">\u00d7</button></div>' +
+        '<div class="fiche-echeance-rythme">' + ech(motJours(nJours).replace(/^./, function (c) { return c.toUpperCase(); })) +
+        '. Ce jalon suit <b>' + leAutre + '</b> : ses plans se comptent sur cet avancement.</div>' +
+        '<div><button type="button" class="lien-doux" data-aller-indicateur="' + autre + '" data-jalon="' + idx + '">Passer ' + versAutre + '</button></div>' +
+        '</div>';
+    }
     var passe = b.jours < 0;
     var verdict;
     if (!b.total) verdict = { cls: 'mal', mot: 'Aucun plan dans ce périmètre.' };
@@ -2441,7 +2508,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
   /**
    * Dérive tout l'état de la page d'une source. Rejouable : la source
-   * initiale, l'exemple fabriqué et chaque contrat passent par ici.
+   * initiale et chaque contrat passent par ici.
    * Ne dessine rien : l'appelant enchaîne remplirDims() puis rendre().
    */
   /* ============================================================
@@ -2489,14 +2556,19 @@ table.plans thead tr th.col-fige { z-index: 6; }
     });
     /* Plusieurs valeurs dans une même famille : la plus fréquente prend la
        couleur de la famille, les suivantes s'éclaircissent. */
-    var rangs = {};
+    /* Le pas d'éclaircissement suit le nombre de valeurs de la famille :
+       la plus claire garde au moins la moitié de la teinte, pour rester
+       visible sur le papier, même en trait de quatre pixels. */
+    var rangs = {}, parFamille = {};
+    liste.forEach(function (v) { parFamille[v.famille] = (parFamille[v.famille] || 0) + 1; });
     liste.forEach(function (v) {
       var r = rangs[v.famille] = (rangs[v.famille] || 0) + 1;
       var base = ETAT_PAR_CLE[v.famille];
+      var pas = parFamille[v.famille] > 1 ? Math.min(22, 50 / (parFamille[v.famille] - 1)) : 0;
       v.hachure = !!base.hachure;
       v.teinte = base.teinte;
       v.couleur = r === 1 ? base.couleur
-        : 'color-mix(in srgb, ' + base.couleur + ' ' + Math.max(38, 100 - 24 * (r - 1)) + '%, var(--surface))';
+        : 'color-mix(in srgb, ' + base.couleur + ' ' + Math.round(100 - pas * (r - 1)) + '%, var(--surface))';
       v.encre = r === 1 ? encreSegment(v.famille) : 'var(--encre)';
     });
     VALEUR_PAR_CLE = par;
@@ -2534,7 +2606,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
 
   function chargerSource(src) {
     SRC = src;
-    if (!src.exemple) SRC_REELLE = src;
     ANIMER_FIGURE = true;
 
     PLANS = src.plans;
@@ -2638,10 +2709,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
     DERNIER = RELEVES[RELEVES.length - 1];
     $('import').textContent = 'Dernier import : semaine ' + etiquette(DERNIER.i).slice(5) + ' · ' +
       RELEVES.length + (RELEVES.length > 1 ? ' relevés archivés' : ' relevé archivé');
-    /* « Jeu d'exemple » ne se lit que dans la démonstration — seule, ou
-       montrée à la place d'un classeur vide. Sur les chiffres du tableur, le
-       pied ne doit pas dire le contraire. */
-    $('avertissement-demo').hidden = SERVEUR && !src.demonstration;
+    /* « Démonstration » ne se lit que dans la démonstration, la page
+       ouverte seule. Sur les chiffres du tableur, le pied ne dit rien de tel. */
+    $('avertissement-demo').hidden = SERVEUR;
 
     /* Ce qui a bougé entre les deux derniers imports, plan par plan. Le
        comparatif affiché en découle, restreint au périmètre courant. */
@@ -2667,8 +2737,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
     MEMO_DERIVE = {};
     JOURNAL = construireJournal();
 
-    /* Ce dont l'exemple a besoin pour se fabriquer : la vraie « aujourd'hui ». */
-    if (!src.exemple) { RELEVES_REELS = RELEVES; AUJ_REEL = AUJ; BASE_REELLE = BASE; }
 
     CONTRATS = (Array.isArray(src.contrats) ? src.contrats : [])
       .filter(function (c) { return c && c.id !== undefined && c.id !== null && c.id !== ''; })
@@ -2728,7 +2796,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
       seconde: { recherche: '', vueTable: 'toutes', tri: { cle: null, asc: true } },
       /* La base montrée dans le tableau : ici (GATES) ou là (la seconde). */
       base: 'ici',
-      exemple: !!SRC.exemple,
       fen: cadrageParDefaut(),
       /* L'ordre de la feuille, sans exception : tout le monde doit voir le même
          tableau que l'export. Le verrouillage à gauche s'adapte à cet ordre
@@ -2776,27 +2843,17 @@ table.plans thead tr th.col-fige { z-index: 6; }
     afficherMode();
   }
 
-  /* Le bandeau du haut dit dans quel mode on est. La phrase dit exactement ce
-     qui est fabriqué : l'historique, pas les plans. Une phrase qui exagère se
-     fait prendre en défaut et on ne croit plus rien. */
+  /* Le bandeau du haut : hors du classeur, la page le dit — c'est une
+     démonstration ; devant le classeur, il ne dit rien, sauf ce que le
+     classeur a à dire quand il n'a rien pu rendre. */
   function afficherMode() {
-    var actif = !!vue.exemple;
-    var demo = actif && !!(SRC && SRC.demonstration);
-    document.body.dataset.exemple = String(actif);
-    document.querySelectorAll('#mode-donnees button').forEach(function (b) {
-      b.setAttribute('aria-pressed', String((b.dataset.mode === 'exemple') === actif));
-    });
-    $('mot-mode').innerHTML = demo
-      ? '<b>Démonstration</b> — le classeur n\'a pas encore de données : trois contrats fictifs, pour voir la page entière.'
-      : actif
-        ? '<b>Historique fabriqué</b> — un aperçu de ce que la page montrera quand les relevés se seront accumulés.'
-        : SERVEUR ? '' : '<b>Démonstration</b> — trois contrats fictifs ; devant votre classeur, ce mode montre vos données.';
-    /* Ce que le classeur a à dire — feuille vide, colonne d'avancement
-       absente — s'affiche à côté, en alerte : hors exemple, et sous la
-       démonstration aussi, puisque c'est la raison d'y être. */
-    var message = SRC && SRC.message && (!actif || demo) ? String(SRC.message) : '';
+    $('mot-mode').innerHTML = SERVEUR ? '' : '<b>Démonstration</b> — trois contrats fictifs ; devant votre classeur, la page montre vos données.';
+    var message = SRC && SRC.message ? String(SRC.message) : '';
     $('alerte-source').hidden = !message;
     $('alerte-source').textContent = message;
+    /* Un classeur sans plans : la page le dit, et dit le geste, au lieu
+       d'afficher des sections vides. */
+    document.body.dataset.vide = String(SERVEUR && !PLANS.length);
   }
 
   /* Le sélecteur de contrat et le rappel du contrat courant sous le titre.
@@ -3303,10 +3360,16 @@ table.plans thead tr th.col-fige { z-index: 6; }
     /* Quand les boutons, mis bout à bout, ne tiennent plus dans la rangée,
        les pousser ne suffit plus : ils passent en grille, comme sur un petit
        écran, plutôt que de se recouvrir. */
-    zone.classList.remove('en-grille');          // mesurer les boutons libres, pas étirés par la grille
+    zone.classList.remove('en-legende');         // mesurer les boutons libres, pas étirés par la légende
+    /* Plus de quatre valeurs, ou un segment trop fin pour porter son
+       étiquette — deux plans sur six cents : aligner chaque chiffre sous son
+       segment ne dit plus rien, les étiquettes se poussent et les filets se
+       perdent. La page passe alors en légende : une carte par valeur, dans
+       l'ordre de la barre, et le survol relie la carte à son segment. */
+    var etroit = segs.some(function (seg) { return seg.getBoundingClientRect().width < 36; });
     var besoin = boutons.reduce(function (t, b) { return t + b.offsetWidth; }, 0) + 4 * (boutons.length - 1);
-    if (besoin > largeur) {
-      zone.classList.add('en-grille');
+    if (boutons.length > 4 || etroit || besoin > largeur) {
+      zone.classList.add('en-legende');
       boutons.forEach(function (b) { b.style.left = ''; });
       return;
     }
@@ -3346,6 +3409,12 @@ table.plans thead tr th.col-fige { z-index: 6; }
     boutons.forEach(function (b, i) { b.style.left = Math.max(0, gauches[i]).toFixed(1) + 'px'; });
   }
 
+  /* Une part lisible même petite : « 0,3 % » plutôt que « 0 % ». */
+  function partDite(n, total) {
+    if (!n || !total) return '0\u202f%';
+    var p = 100 * n / total;
+    return (p < 1 ? (Math.round(p * 10) / 10).toFixed(1).replace('.', ',') : String(Math.round(p))) + '\u202f%';
+  }
   function rendreAvancement(liste) {
     var c = compte(liste);
     /* Sous un périmètre seul, la phrase le nomme ; dès qu'un autre filtre
@@ -3379,8 +3448,9 @@ table.plans thead tr th.col-fige { z-index: 6; }
       return '<button class="etat-btn" type="button" data-etat="' + ech(v.cle) + '" data-cle="' + ech(v.cle) + '" data-famille="' + v.famille +
         '" style="--teinte:' + v.teinte +
         '" aria-pressed="' + actif + '" title="' + (actif ? 'Retirer le filtre' : 'N\u2019afficher que ces plans') + '">' +
-        '<span class="etat-haut">' + pastille + ech(v.libelle) + '</span>' +
-        '<span class="etat-n">' + nb(parValeur[v.cle] || 0) + '</span></button>';
+        '<span class="etat-haut">' + pastille + '<span class="libelle">' + ech(v.libelle) + '</span></span>' +
+        '<span class="etat-n">' + nb(parValeur[v.cle] || 0) + '</span>' +
+        '<span class="etat-pct">' + partDite(parValeur[v.cle] || 0, c.total) + '</span></button>';
     }).join('');
 
     requestAnimationFrame(function () { alignerSousBarre('barre', 'filets', 'etats'); });
@@ -3569,7 +3639,15 @@ table.plans thead tr th.col-fige { z-index: 6; }
         if (manque > 0 && prochain.i >= d0 && prochain.i <= d1) {
           var xj = x(prochain.i), y1 = y(auJalon), y2 = y(total);
           s.push('<line x1="' + xj.toFixed(1) + '" x2="' + xj.toFixed(1) + '" y1="' + y1.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="var(--alerte)" stroke-width="1" opacity=".45"/>');
-          s.push('<text class="grad" x="' + (xj + 7).toFixed(1) + '" y="' + ((y1 + y2) / 2 + 4).toFixed(1) + '" fill="var(--alerte)" font-weight="500">-' + manque + '</text>');
+          /* Ce qui manquerait le jour de l'échéance, au rythme tenu — dit en
+             mots : un « -31 » seul ne disait pas de quoi il s'agissait. */
+          /* Hors du cadre découpé, et à gauche du trait quand l'échéance
+             tombe au bord droit : sinon le mot était rogné. */
+          var aGauche = xj > L - mD - 70;
+          horsClip.push('<text class="grad" x="' + (aGauche ? xj - 7 : xj + 7).toFixed(1) + '" y="' + ((y1 + y2) / 2 + 4).toFixed(1) +
+            '"' + (aGauche ? ' text-anchor="end"' : '') + ' fill="var(--alerte)" font-weight="500"' +
+            ' stroke="var(--surface)" stroke-width="4" stroke-linejoin="round" paint-order="stroke">' +
+            '<title>Au rythme tenu, il manquerait ' + manque + ' plan' + (manque > 1 ? 's' : '') + ' le jour de l\u2019échéance</title>manque ' + manque + '</text>');
         }
       }
     }
@@ -3603,9 +3681,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
       var hors = !jalonDansPerimetre(j);
       var critique = prochain && j.i === prochain.i && !hors && enRetard;
       var couleur = critique ? 'var(--alerte)' : 'var(--encre-2)';
-      var mention = j.perimetre
-        ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) + (hors ? ' \u2014 hors du p\u00e9rim\u00e8tre choisi, ne compte pas ici' : '')
-        : '';
+      var mention = (j.perimetre ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) : '') +
+        (hors ? ' \u2014 ' + ech(raisonRetrait(j)) + ', ne compte pas ici' : '');
       var yBase = mHaut - 8;          // haut du trait pointillé
       var yMarque = yBase - 9;        // centre du numéro
       var cx = pl.cx;
@@ -3742,7 +3819,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
       return '<span class="legende-jalon' + (hors ? ' hors-perimetre' : '') + (rouge ? ' critique' : '') + (horsFenetre ? ' hors-fenetre' : '') +
         '" data-jalon="' + idx + '" tabindex="0" role="button" aria-expanded="' + (vue.echeance === idx) + '" title="' +
         ech(j.texte) + ' \u2014 ' + etiquette(j.i) + (j.perimetre ? ' \u00b7 p\u00e9rim\u00e8tre ' + ech(j.perimetre) : '') +
-        (hors ? ' \u2014 hors du p\u00e9rim\u00e8tre choisi' : '') + (horsFenetre ? ' \u2014 hors de la fen\u00eatre affich\u00e9e' : '') + '">' +
+        (hors ? ' \u2014 ' + ech(raisonRetrait(j)) : '') + (horsFenetre ? ' \u2014 hors de la fen\u00eatre affich\u00e9e' : '') + '">' +
         '<b class="num">' + (idx + 1) + '</b><span class="mot">' + ech(j.texte) + '</span>' +
         '<span class="quand">' + quandJalon(j.i) + (j.perimetre ? ' \u00b7 ' + ech(j.perimetre) : '') + '</span>' +
         '<span class="ligne-decompte"><span class="decompte' + (nj < 0 ? ' passe' : (nj <= 21 ? ' proche' : '')) + '">' + ech(motJours(nj)) + '</span>' +
@@ -4750,8 +4827,8 @@ table.plans thead tr th.col-fige { z-index: 6; }
       });
 
       var lignes = evts.slice(0, limite).map(function (e) {
-        var plan = planDeRef(e.ref);
-        var quoi = plan && CLE_LIBELLE ? String(plan[CLE_LIBELLE] || '') : '';
+        /* La référence et son passage, rien d'autre : le libellé du plan
+           (« Faisceau 417 ») n'apprenait rien ici. */
         var vers = e.type === 'nouveau'
           ? '<span class="vers"><span class="etiq-etat avant">nouveau</span>' +
             '<span class="fleche-etat">\u2192</span>' + etiqEtat(e.apres, 'apres', e.cApres, e.vApres) + '</span>'
@@ -4769,7 +4846,7 @@ table.plans thead tr th.col-fige { z-index: 6; }
         return '<li><button class="journal-ligne' + (estReemission(e) ? ' reemission ' + e.type : '') +
           '" type="button" data-ref="' + ech(e.ref) + '" data-type="' + e.type +
           '" title="N’afficher que ce plan dans le tableau">' + reference +
-          '<span class="quoi">' + ech(quoi) + '</span>' + vers + '</button></li>';
+          vers + '</button></li>';
       }).join('');
 
       var reste = evts.length - limite;
@@ -4795,164 +4872,6 @@ table.plans thead tr th.col-fige { z-index: 6; }
       : '<div class="journal-vide">Aucun changement de ce type dans l’historique.</div>');
   }
 
-  /* ============================================================
-     APERÇU
-     Avec un seul relevé, le graphique n'a rien à tracer et personne ne voit
-     à quoi servira la page. Un bouton fabrique donc un historique fictif à
-     partir des comptes du jour — sous bandeau, pour qu'il soit impossible de
-     le prendre pour du réel.
-     ============================================================ */
-  /* Un relevé complet à partir d'une carte plan par plan — les mêmes comptes,
-     globaux et par dimension, que releveDepuis() tire des plans vivants. Les
-     relevés fabriqués ont ainsi tout ce qu'ont les relevés archivés : la
-     courbe d'un groupe, son rythme et sa fin estimée marchent à l'identique. */
-  function releveDeCarte(semaine, carte) {
-    var r = { semaine: semaine, total: 0, termine: 0, encours: 0, afaire: 0, vide: 0, groupes: {}, plans: carte };
-    CLES_DIM.forEach(function (d) { r.groupes[d] = {}; });
-    Object.keys(carte).forEach(function (ref) {
-      var etat = classer(carte[ref]);
-      r.total++;
-      r[etat]++;
-      /* Une ancienne référence retrouve son plan par la racine. */
-      var p = planDeRef(ref);
-      if (!p) return;
-      CLES_DIM.forEach(function (d) {
-        var v = String(valeurDim(p, d) || '—');
-        if (!r.groupes[d][v]) r.groupes[d][v] = { total: 0, termine: 0 };
-        r.groupes[d][v].total++;
-        if (etat === 'termine') r.groupes[d][v].termine++;
-      });
-    });
-    return r;
-  }
-
-  /* Neuf semaines d'historique fictif, en semaines réelles : la dernière est
-     la vraie « aujourd'hui », les autres remontent d'une semaine chacune.
-     Les terminés montent régulièrement jusqu'aux comptes du jour ; et les
-     cartes portent, de façon déterministe par rang de plan, tout ce que le
-     journal sait reconnaître — sinon l'exemple ne montrerait que des
-     « passés en terminé », et la chef n'y verrait jamais un changement
-     d'indice :
-       · des retours en arrière : un plan en cours aujourd'hui était terminé
-         jusqu'à la semaine dernière (→ passé en cours), un plan à faire était
-         en cours (→ repassé à faire) ;
-       · des plans apparus : absents des cartes anciennes (→ nouveaux) ;
-       · des plans disparus : présents dans les cartes anciennes sous une
-         référence que la feuille ne porte plus (→ disparus) ;
-       · des réémissions : pour trois plans à référence UD valide, les cartes
-         anciennes portent l'indice précédent (→ changements d'indice, par
-         appariement de racine).
-     Les écarts sont posés sur la dernière transition pour que le comparatif
-     « depuis l'import » les montre tous, et quelques-uns plus tôt pour que
-     le journal en ait à plusieurs semaines. */
-  function relevesDExemple(cleConcept) {
-    var semaines = 8;
-    var retours = {}, apparus = {}, reemis = {}, disparus = [];
-    var nbReemis = 0;
-    /* Les écarts se posent sur la définition, quelle que soit la colonne
-       suivie à l'écran : l'historique fabriqué est le même des deux côtés. */
-    PLANS.forEach(function (p, i) {
-      var etatDef = classer(p.avancement);
-      if (etatDef === 'encours' && i % 53 === 7) retours[p.reference] = { avant: 'Terminé', jusque: semaines - 1 };
-      else if (etatDef === 'afaire' && i % 59 === 11) retours[p.reference] = { avant: 'En cours', jusque: semaines - 1 };
-      if (i === 3 || i === 11) apparus[p.reference] = semaines - 1;
-      else if (i === 19) apparus[p.reference] = semaines - 4;
-      var ud = analyserUD(p.reference);
-      if (ud.valide && ud.indice !== 'A' && nbReemis < 3 && i % 7 === 2) {
-        reemis[p.reference] = { ancienne: ud.racine + ud.solution + String.fromCharCode(ud.indice.charCodeAt(0) - 1),
-                                jusque: nbReemis === 0 ? semaines - 1 : semaines - 3 - nbReemis };
-        nbReemis++;
-      }
-      /* Une référence que la feuille ne porte plus : les trois lettres
-         changées, elle ne partage sa racine avec aucun plan — jamais appariée. */
-      if (i === 5 || i === 13) disparus.push('XXX' + p.reference.slice(3));
-    });
-    function terminesDe(cle) { return PLANS.filter(function (p) { return classer(p[cle]) === 'termine'; }).length; }
-    /* Les valeurs que l'historique fabriqué emprunte sont celles de la
-       colonne elle-même — la plus fréquente de chaque famille —, jamais des
-       mots qu'elle n'emploie pas : « Validé » reste « Validé ». */
-    function motDe(cle, famille, defaut) {
-      var n = {}, meilleur = null;
-      PLANS.forEach(function (p) {
-        var v = String(p[cle] == null ? '' : p[cle]).trim();
-        if (!v || classer(v) !== famille) return;
-        n[v] = (n[v] || 0) + 1;
-        if (!meilleur || n[v] > n[meilleur]) meilleur = v;
-      });
-      return meilleur || defaut;
-    }
-    /* La carte d'une semaine pour une colonne : les terminés montent
-       régulièrement jusqu'aux comptes du jour. */
-    function carteDe(k, cle, nbTermines) {
-      var part = 0.25 + (0.75 * k) / semaines;      // montée régulière jusqu'à aujourd'hui
-      var termine = Math.round(nbTermines * part);
-      var carte = {}, atteint = 0;
-      var enCours = motDe(cle, 'encours', motDe(cle, 'afaire', 'En cours'));
-      var fini = motDe(cle, 'termine', 'Terminé');
-      PLANS.forEach(function (p) {
-        var ref = p.reference;
-        if (apparus[ref] !== undefined && k <= apparus[ref]) return;
-        var valeur = (classer(p[cle]) === 'termine' && atteint++ >= termine) ? enCours : p[cle];
-        if (cle === 'avancement' && retours[ref] && k <= retours[ref].jusque) valeur = retours[ref].avant === 'Terminé' ? fini : enCours;
-        carte[(reemis[ref] && k <= reemis[ref].jusque) ? reemis[ref].ancienne : ref] = valeur;
-      });
-      if (k < semaines) disparus.forEach(function (ref) { carte[ref] = enCours; });
-      return carte;
-    }
-    var nDef = terminesDe('avancement'), nConcept = cleConcept ? terminesDe(cleConcept) : 0;
-    var faux = [];
-    for (var k = 0; k <= semaines; k++) {
-      /* Un avancement plan par plan, sinon le journal resterait vide et
-         l'exemple ne montrerait que la moitié de ce que fera la page. */
-      var r = releveDeCarte(etiquetteISO(dateDeBase(BASE_REELLE, AUJ_REEL - semaines + k)), carteDe(k, 'avancement', nDef));
-      if (cleConcept) r.plansConcept = carteDe(k, cleConcept, nConcept);
-      faux.push(r);
-    }
-    return faux;
-  }
-
-  /* Le mode « Exemple » est une source comme une autre : la source réelle,
-     avec l'historique fabriqué à la place de l'archivé. Elle passe par
-     chargerSource() comme le reste — c'est ce qui garantit que l'exemple
-     montre exactement ce que la page fera, ni plus ni moins. */
-  function basculerExemple(actif) {
-    if (actif === !!vue.exemple) return;
-    chargerSource(actif ? exempleDe(SRC_REELLE) : SRC_REELLE);
-    remplirDims();
-    rendre();
-  }
-
-  /* L'exemple d'une source réelle. Devant des plans, c'est leur historique
-     fabriqué : les plans restent les vrais, seule la courbe est inventée.
-     Devant un classeur qui n'a rien donné — pas encore d'onglet, feuille
-     vide —, c'est la démonstration entière, trois contrats fictifs : la page
-     se montre au lieu de s'ouvrir vide, et dit pourquoi. */
-  function exempleDe(reelle) {
-    if (!reelle.plans.length) return demonstration(jeuDExemple(), reelle.message);
-    var exemple = {};
-    Object.keys(reelle).forEach(function (k) { exemple[k] = reelle[k]; });
-    exemple.releves = relevesDExemple(reelle.cleConcept && PAR_CLE[reelle.cleConcept] ? reelle.cleConcept : null);
-    exemple.exemple = true;
-    return exemple;
-  }
-
-  /* Un jeu d'exemple marqué comme démonstration, avec ce que le classeur
-     avait à dire — c'est la raison d'être là. */
-  function demonstration(jeu, message) {
-    jeu.exemple = true;
-    jeu.demonstration = true;
-    jeu.message = message || '';
-    return jeu;
-  }
-
-  /* L'interrupteur vit en haut de page : il porte sur tout, pas sur un bloc.
-     Au premier import il montre ce que la page dira plus tard ; après, il sert
-     encore à l'expliquer à quelqu'un. */
-  document.querySelector('#mode-donnees').addEventListener('click', function (e) {
-    var b = e.target.closest('button[data-mode]');
-    if (!b) return;
-    basculerExemple(b.dataset.mode === 'exemple');
-  });
 
   /* Le périmètre porte sur toute la page : un clic, et tout se recalcule —
      comparatif compris. Cliquer la puce déjà pressée ne change rien. */
@@ -4984,24 +4903,11 @@ table.plans thead tr th.col-fige { z-index: 6; }
         etat.textContent = paquet && paquet.message ? paquet.message : 'Contrat impossible à charger.';
         return;
       }
-      /* Sous la démonstration, le contrat suivant est fictif lui aussi, et
-         la source réelle — vide — n'est pas touchée. */
-      if (SRC && SRC.demonstration) {
-        chargerSource(demonstration(paquet, SRC.message));
-        remplirDims();
-        rendre();
-        return;
-      }
-      /* En mode « Exemple », le nouveau contrat arrive en exemple aussi —
-         son historique fabriqué à lui — au lieu de rebasculer sans un mot
-         sur les données réelles. */
-      var exemple = !!vue.exemple;
       chargerSource(paquet);
-      if (exemple) { basculerExemple(true); return; }
       remplirDims();
       rendre();
     }
-    if (API && API.chargerContrat && !(SRC && SRC.demonstration)) {
+    if (API && API.chargerContrat) {
       sel.disabled = true;
       etat.textContent = 'Chargement…';
       API.chargerContrat(id, poser);
@@ -5709,6 +5615,29 @@ table.plans thead tr th.col-fige { z-index: 6; }
     minuteur = setTimeout(function () { vue.recherche = v; rendre(); }, 170);
   });
 
+  /* La barre et ses valeurs se répondent : survoler une valeur éclaire son
+     segment — même fin comme un trait —, survoler un segment éclaire sa
+     valeur. */
+  function eclairerValeur(cle) {
+    var barre = $('barre');
+    barre.classList.toggle('focalise', !!cle);
+    [].forEach.call(barre.querySelectorAll('span[data-cle]'), function (s) { s.classList.toggle('eclaire', s.dataset.cle === cle); });
+    [].forEach.call($('etats').querySelectorAll('.etat-btn'), function (b) { b.classList.toggle('eclaire', b.dataset.cle === cle); });
+  }
+  ['mouseover', 'focusin'].forEach(function (ev) {
+    $('etats').addEventListener(ev, function (e) {
+      var b = e.target.closest('.etat-btn');
+      eclairerValeur(b ? b.dataset.cle : null);
+    });
+    $('barre').addEventListener(ev, function (e) {
+      var s = e.target.closest('span[data-cle]');
+      eclairerValeur(s ? s.dataset.cle : null);
+    });
+  });
+  ['mouseleave', 'focusout'].forEach(function (ev) {
+    $('etats').addEventListener(ev, function () { eclairerValeur(null); });
+    $('barre').addEventListener(ev, function () { eclairerValeur(null); });
+  });
   $('etats').addEventListener('click', function (e) {
     var b = e.target.closest('.etat-btn');
     if (!b) return;
@@ -5944,8 +5873,25 @@ table.plans thead tr th.col-fige { z-index: 6; }
      titre : un clic ouvre la fiche de l'échéance, un second la referme. */
   $('legende-jalons').addEventListener('click', function (e) {
     if (e.target.closest('[data-fermer-echeance]')) { vue.echeance = null; rendreGraphique(selection()); return; }
+    var aller = e.target.closest('[data-aller-indicateur]');
+    if (aller) {
+      var idxJalon = +aller.dataset.jalon;
+      changerIndicateur(aller.dataset.allerIndicateur);
+      vue.echeance = idxJalon;
+      rendreGraphique(selection());
+      return;
+    }
     var el = e.target.closest('.legende-jalon[data-jalon]');
     if (el) ouvrirEcheance(+el.dataset.jalon);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || vue.echeance === null || !$('fiche-echeance')) return;
+    if (e.target.closest && e.target.closest('input, select, textarea')) return;
+    var idx = vue.echeance;
+    vue.echeance = null;
+    rendreGraphique(selection());
+    var el = document.querySelector('.legende-jalon[data-jalon="' + idx + '"]');
+    if (el) el.focus();
   });
   $('legende-jalons').addEventListener('keydown', function (e) {
     var el = e.target.closest('.legende-jalon[data-jalon]');
@@ -6306,6 +6252,5 @@ table.plans thead tr th.col-fige { z-index: 6; }
   /* Quand le classeur n'a encore rien donné, la page s'ouvre sur la
      démonstration plutôt que vide : on voit ce qu'elle sera, et l'alerte dit
      ce qui manque. */
-  if (SERVEUR && !PLANS.length) basculerExemple(true);
 })();
 </script>
