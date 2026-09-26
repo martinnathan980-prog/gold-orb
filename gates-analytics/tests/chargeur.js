@@ -245,13 +245,23 @@ function monterLeChargeur(options) {
     vu.etats.reduce(function (a, b) { return a + b; }, 0) === paquet.plans.length,
     [vu.etats, paquet.plans.length]);
   /* La page retire la première colonne de l'extract — celle qu'Excel ajoute,
-     sans intitulé et vide. Toutes les autres restent, dans l'ordre. */
+     sans intitulé et vide. Toutes les autres restent, dans l'ordre — sauf
+     la colonne suivie, rangée juste après la référence et figée avec elle. */
   const attendues = paquet.colonnes.map(function (c) { return c.titre; });
-  const sansLaPremiere = attendues.slice(1);
+  const sansLaPremiere = (function () {
+    const cols = paquet.colonnes.slice(1);
+    const suivie = cols.filter(function (c) { return c.cle === 'avancement'; })[0];
+    const reste = cols.filter(function (c) { return c !== suivie; });
+    if (suivie) {
+      const iRef = reste.map(function (c) { return c.titre; }).indexOf('Référence UD');
+      reste.splice(iRef + 1, 0, suivie);
+    }
+    return reste.map(function (c) { return c.titre; });
+  })();
   verifier('le tableau porte toutes les lignes de l\'extract',
     vu.colonnes.length > 0 && vu.lignes === paquet.plans.length,
     [vu.lignes, paquet.plans.length]);
-  verifier('et toutes ses colonnes, dans l\'ordre, sauf la première que la page retire',
+  verifier('et toutes ses colonnes, dans l\'ordre, sauf la première que la page retire (la colonne suivie juste après la référence)',
     JSON.stringify(vu.colonnes) === JSON.stringify(sansLaPremiere),
     [vu.colonnes.slice(0, 4), sansLaPremiere.slice(0, 4),
      vu.colonnes.length, sansLaPremiere.length]);
