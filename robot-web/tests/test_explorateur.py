@@ -358,3 +358,12 @@ def test_carte_a_partager_sans_noms_de_clients_ni_de_personnes(tmp_path, navigat
                    "Rousseau", "Lefebvre", "Lyon", "Réclamation", "127.0.0.1", "dupont-industrie"):
         assert donnee not in partage, donnee
     assert "Client [liste, 3 choix]" in partage and "Chargé d'affaires | Site" in partage
+
+
+def test_retour_de_connexion_d_entreprise_permis_mais_pas_les_envois_de_donnees():
+    from autoweb.explorateur import MOTIF_RETOUR_CONNEXION
+
+    for chemin in ("/saml/acs", "/Saml2/Acs", "/signin-oidc", "/Shibboleth.sso/SAML2/POST", "/login/oauth2/code/azure"):
+        assert MOTIF_RETOUR_CONNEXION.search(chemin), chemin
+    for chemin in ("/api/plans/7", "/api/saml-settings/update", "/admin/sso/config", "/plans/acs-list/save"):
+        assert not MOTIF_RETOUR_CONNEXION.search(chemin), chemin

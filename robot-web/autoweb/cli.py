@@ -339,7 +339,7 @@ def cmd_explorer(args: argparse.Namespace) -> int:
     print(f"     {dossier / 'carte.html'}")
     print("        à ouvrir dans le navigateur : tout ce qui a été vu (reste sur votre poste)")
     print(f"     {dossier / 'carte_a_partager.txt'}")
-    print("        la structure seule, sans vos données : relisez-le, puis envoyez-le à Claude si vous le souhaitez")
+    print("        la structure du portail, sans les valeurs : relisez-le, puis envoyez-le à Claude si c'est permis")
     return 0
 
 

@@ -109,6 +109,13 @@ EXTENSIONS_FICHIERS = (
     ".xml", ".json", ".dwg", ".dxf", ".png", ".jpg", ".jpeg", ".gif", ".tif", ".tiff", ".ppt", ".pptx",
 )
 METHODES_LECTURE = ("GET", "HEAD", "OPTIONS")
+# Adresses où le serveur de connexion de l'entreprise (SSO) renvoie l'utilisateur pour ouvrir
+# la session : ce retour se fait en POST, mais il ne modifie aucune donnée du portail.
+MOTIF_RETOUR_CONNEXION = re.compile(
+    r"/(?:saml2?/(?:acs|post|consume|sso)|acs|signin-oidc|signin-saml|signin-wsfed|shibboleth\.sso/saml2?/post"
+    r"|oauth2?/callback|login/oauth2?/code(?:/[^/]*)?|auth/callback|openid/callback|_trust|adfs/ls)/?$",
+    re.IGNORECASE,
+)
 # Ressources jamais bloquées pour leur adresse : feuilles de style, polices, scripts, médias.
 RESSOURCES_STATIQUES = ("stylesheet", "font", "script", "media", "manifest", "texttrack")
 
@@ -293,6 +300,15 @@ JS_OUTILS = r"""
   const EXCLUS = 'input:not([type=submit]):not([type=button]):not([type=image]):not([type=reset]), select, option, ' +
                  'textarea, label, [role=checkbox], [role=radio], [role=switch], [role=option], [contenteditable=true]';
   const cache = new Map();
+  const indexes = new Map();
+  const indexLigne = tr => {
+    const parent = tr.parentElement;
+    if (!parent) return -1;
+    let m = indexes.get(parent);
+    if (!m) { m = new Map(); Array.prototype.forEach.call(parent.children, (x, i) => m.set(x, i)); indexes.set(parent, m); }
+    const i = m.get(tr);
+    return i === undefined ? -1 : i;
+  };
   const rangDans = (conteneur, e) => {
     let liste = cache.get(conteneur);
     if (!liste) { liste = Array.from(conteneur.querySelectorAll(SELECTION)).filter(x => !x.matches(EXCLUS)); cache.set(conteneur, liste); }
@@ -311,7 +327,7 @@ JS_OUTILS = r"""
     if (cont) {
       if (z === 'tableau') {
         const tr = e.closest('tbody tr, [role=row]');
-        ligne = tr && tr.parentElement ? Array.prototype.indexOf.call(tr.parentElement.children, tr) : -1;
+        ligne = tr ? indexLigne(tr) : -1;
         rang = tr ? (tr === e ? 0 : Array.from(tr.querySelectorAll(SELECTION)).filter(x => !x.matches(EXCLUS)).indexOf(e) + 1) : -1;
       } else {
         ligne = rangDans(cont, e);
@@ -343,7 +359,7 @@ JS_ECRAN = r"""
     const type = (e.getAttribute('type') || '').toLowerCase();
     if (type === 'hidden' || ['submit', 'button', 'reset', 'image'].includes(type) || !vis(e) || champs.length >= 200) return;
     const tr = e.closest('tbody tr');
-    if (tr && tr.parentElement && Array.prototype.indexOf.call(tr.parentElement.children, tr) >= exemples) return;
+    if (tr && indexLigne(tr) >= exemples) return;
     const [lib, source] = libelle(e);
     champs.push({
       libelle: lib, source: source, nom: e.id || e.getAttribute('name') || '',
@@ -363,15 +379,10 @@ JS_ECRAN = r"""
   });
   const cibles = [];
   let tronque = false;
-  const lignesVues = new Map();
   for (const e of document.querySelectorAll(SELECTION)) {
-    if (e.matches(EXCLUS) || !vis(e)) continue;
     const tr = e.closest('tbody tr, [role=row]');
-    if (tr && tr.parentElement) {   // une ligne de tableau ressemble aux autres : les premières suffisent
-      let index = lignesVues.get(tr);
-      if (index === undefined) { index = Array.prototype.indexOf.call(tr.parentElement.children, tr); lignesVues.set(tr, index); }
-      if (index >= exemples) continue;
-    }
+    if (tr && indexLigne(tr) >= exemples) continue;   // une ligne ressemble aux autres : les premières suffisent
+    if (e.matches(EXCLUS) || !vis(e)) continue;
     if (cibles.length >= maxCibles) { tronque = true; break; }
     cibles.push(decrire(e));
   }
@@ -574,7 +585,9 @@ class Explorateur:
             methode = requete.method.upper()
             raison = ""
             if methode not in METHODES_LECTURE:
-                raison = methode
+                m = decouper(requete.url)
+                if not (methode == "POST" and m is not None and MOTIF_RETOUR_CONNEXION.search(m.path)):
+                    raison = methode
             elif requete.resource_type not in RESSOURCES_STATIQUES:
                 if not (requete.is_navigation_request() and sans_fragment(requete.url) in self._urls_sures):
                     raison = adresse_action(requete.url) or ""
@@ -687,6 +700,7 @@ class Explorateur:
         finally:
             self.garde_active = False
             if self.formulaires_bloques >= 3:
+                self.complet = False
                 self.arret += (" ; attention : ce portail navigue en envoyant des formulaires, bloqués par "
                                "sécurité : la carte est incomplète")
             try:
