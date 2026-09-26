@@ -179,8 +179,8 @@ Oui, avec une réserve mesurée :
   plus. C'est une journée de travail, à faire quand tu approcheras du
   seuil, pas avant.
 - **Au-delà de ~20 000** : le fonds n'a plus sa place dans un fichier
-  statique ; c'est le moment du chemin « Gemini Enterprise » de
-  `docs/ASSISTANT-IA.md`.
+  statique ; la recherche dans le texte passe alors par Drive lui-même
+  (niveaux 1 à 3 de `docs/ASSISTANT-IA.md`).
 
 ---
 

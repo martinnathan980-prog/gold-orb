@@ -4,75 +4,197 @@
 <base target="_top">
 <meta charset="utf-8">
 <style>
+  /* Les couleurs du portail (assets/css/tokens.css), recopiées ici : la
+     page est servie par Google, seule, sans les feuilles du site. */
   :root {
-    --fond: #f3f2ef; --fond-eleve: #fdfcfa; --texte: #1b1a17; --texte-doux: #4a4944;
-    --bordure: #d4d3cd; --accent: #00205b; --accent-texte: #ffffff; --une: #12295a;
-    --une-haut: #0b1c3e; --une-texte: #ffffff; --chaud: #7d3417; --alerte: #b03a34; --alerte-fond: #fbebea;
+    color-scheme: light dark;
+    --fond: #f3f2ef; --fond-eleve: #fdfcfa; --fond-enfonce: rgb(40 35 25 / 0.06);
+    --texte: #1b1a17; --texte-doux: #4a4944; --texte-faible: #5e5c56; --texte-accent: #17367f;
+    --bordure: #d4d3cd; --bordure-douce: #e1e0db; --champ-bordure: #787670;
+    --accent: #00205b; --accent-vif: #123b8f; --accent-contenu: #ffffff; --accent-doux: #e4e5ee;
+    --accent-lueur: rgb(0 32 91 / 0.16);
+    --une-fond-haut: #0b1c3e; --une-fond: #12295a; --une-texte: #ffffff; --une-texte-doux: #c9d3e6;
+    --une-ornement: #e8a07c;
+    --chaud: #b4542f; --chaud-encre: #7d3417; --chaud-doux: #f8e8de;
+    --surlignage: #fbeec4; --surlignage-texte: #3d2e00;
+    --critique: #b03a34; --critique-fond: #fbebea;
+    --ombre: 0 1px 2px rgb(40 35 25 / 0.06), 0 4px 14px rgb(40 35 25 / 0.05);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --fond: #282622; --fond-eleve: #33312c; --texte: #ece8df; --texte-doux: #c3bdb0;
-      --bordure: #46433c; --accent: #a3bff5; --accent-texte: #0b1c3e; --une: #111f3d;
-      --une-haut: #0a1428; --une-texte: #f5f3ee; --chaud: #e59566; --alerte: #e0745c; --alerte-fond: #3a2622;
+      --fond: #282622; --fond-eleve: #33312c; --fond-enfonce: #3b3934;
+      --texte: #ece8df; --texte-doux: #c3bdb0; --texte-faible: #aaa394; --texte-accent: #a3bff5;
+      --bordure: #46433c; --bordure-douce: #3d3a34; --champ-bordure: #8f897b;
+      --accent: #a3bff5; --accent-vif: #bfd2f8; --accent-contenu: #0c1730; --accent-doux: rgb(163 191 245 / 0.16);
+      --accent-lueur: rgb(163 191 245 / 0.22);
+      --une-fond-haut: #0a1428; --une-fond: #111f3d; --une-texte: #f5f3ee; --une-texte-doux: #b7c2d8;
+      --une-ornement: #e8a07c;
+      --chaud: #e0906a; --chaud-encre: #f2b797; --chaud-doux: rgb(224 144 106 / 0.16);
+      --surlignage: #5a4300; --surlignage-texte: #ffe9b0;
+      --critique: #e0745c; --critique-fond: rgb(224 116 92 / 0.14);
+      --ombre: 0 1px 2px rgb(0 0 0 / 0.25), 0 6px 18px rgb(0 0 0 / 0.22);
     }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--fond); color: var(--texte);
-    font: 16px/1.55 "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; }
-  header { background: linear-gradient(var(--une-haut), var(--une)); color: var(--une-texte); padding: 2rem 1rem 1.75rem; }
-  header div, main { max-width: 46rem; margin: 0 auto; }
-  h1 { margin: 0; font: 400 2rem/1.15 Newsreader, Georgia, serif; }
-  header p { margin: .4rem 0 0; opacity: .85; }
-  main { padding: 1.5rem 1rem 3rem; }
-  form { display: flex; gap: .75rem; align-items: flex-end; flex-wrap: wrap; }
-  textarea { flex: 1 1 20rem; min-height: 3.2rem; resize: vertical; padding: .7rem .9rem; font: inherit;
-    color: var(--texte); background: var(--fond-eleve); border: 1px solid var(--bordure); border-radius: .6rem; }
-  textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-  button { font: inherit; font-weight: 600; padding: .7rem 1.2rem; border-radius: 999px; cursor: pointer;
-    border: 1px solid var(--accent); background: var(--accent); color: var(--accent-texte); }
+    font: 15px/1.55 "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; }
+  .cadre { max-width: 50rem; margin: 0 auto; padding-inline: 1rem; }
+  .cache { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .mono { font-family: "IBM Plex Mono", Consolas, monospace; }
+
+  /* La une : le bandeau marine des pages du portail. */
+  header { background: linear-gradient(var(--une-fond-haut), var(--une-fond)); color: var(--une-texte);
+    padding: 2.25rem 0 3.5rem; }
+  .surtitre { margin: 0 0 .6rem; font: 500 .72rem/1 "IBM Plex Mono", Consolas, monospace;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--une-ornement); }
+  h1 { margin: 0; font: 400 clamp(1.75rem, 5vw, 2.4rem)/1.12 Newsreader, Georgia, serif; letter-spacing: -.01em; }
+  .chapo { margin: .7rem 0 0; max-width: 40rem; color: var(--une-texte-doux); }
+
+  main { padding-bottom: 3rem; }
+
+  /* La saisie : une feuille posée à cheval sur la une. */
+  .saisie { display: flex; gap: .6rem; align-items: flex-end; margin-top: -1.9rem; padding: .6rem;
+    background: var(--fond-eleve); border: 1px solid var(--bordure-douce); border-radius: .9rem; box-shadow: var(--ombre); }
+  .saisie:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-lueur), var(--ombre); }
+  textarea { flex: 1 1 auto; min-width: 0; min-height: 2.75rem; max-height: 9rem; resize: none; padding: .6rem .7rem;
+    font: inherit; font-size: 1rem; color: var(--texte); background: transparent; border: 0; outline: none; }
+  textarea::placeholder { color: var(--texte-faible); }
+  button { font: inherit; font-weight: 600; min-height: 2.75rem; padding: .55rem 1.25rem; border-radius: .6rem; cursor: pointer;
+    border: 1px solid var(--accent); background: var(--accent); color: var(--accent-contenu); }
+  button:hover { background: var(--accent-vif); border-color: var(--accent-vif); }
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   button.discret { background: transparent; color: var(--texte); border-color: var(--bordure); font-weight: 400; }
-  button:disabled { opacity: .55; cursor: progress; }
-  .aide { color: var(--texte-doux); font-size: .875rem; margin: .6rem 0 0; }
-  .echange { margin-top: 1.75rem; padding: 1.25rem 1.35rem; background: var(--fond-eleve);
-    border: 1px solid var(--bordure); border-radius: .8rem; }
-  .question { margin: 0 0 .75rem; font: italic 400 1.2rem/1.35 Newsreader, Georgia, serif; }
+  button.discret:hover { background: var(--fond-enfonce); }
+  button:disabled { opacity: .6; cursor: progress; }
+  .aide { color: var(--texte-faible); font-size: .8125rem; margin: .6rem .25rem 0; }
+  kbd { font: .75rem "IBM Plex Mono", Consolas, monospace; padding: .05rem .35rem; border: 1px solid var(--bordure);
+    border-bottom-width: 2px; border-radius: .3rem; background: var(--fond-eleve); }
+
+  /* Un échange : la demande, ce qui revient. */
+  .echange { margin-top: 2rem; }
+  .echange + .echange { padding-top: 2rem; border-top: 1px solid var(--bordure); }
+  .echange__question { margin: 0 0 .35rem; font: italic 400 1.3rem/1.3 Newsreader, Georgia, serif; }
+  .bilan { margin: 0 0 1rem; color: var(--texte-doux); font-size: .875rem; }
+  .bilan strong { color: var(--texte); }
+  .puce { display: inline-block; padding: 0 .4rem; border-radius: .3rem; line-height: 1.6;
+    background: var(--surlignage); color: var(--surlignage-texte); font-weight: 500; }
+  .elargie { margin: -.5rem 0 1rem; padding: .55rem .75rem; border-radius: .5rem; font-size: .875rem;
+    background: var(--chaud-doux); color: var(--chaud-encre); }
+
+  .attente { display: flex; align-items: center; gap: .75rem; color: var(--texte-doux); font-style: italic; margin: .5rem 0; }
+  .attente__barre { flex: 0 0 3.5rem; height: 3px; border-radius: 3px; background: var(--accent-doux); overflow: hidden; position: relative; }
+  .attente__barre::after { content: ""; position: absolute; inset: 0 60% 0 0; border-radius: 3px; background: var(--accent); }
+  @media (prefers-reduced-motion: no-preference) {
+    .attente__barre::after { animation: va-vient 1.1s ease-in-out infinite alternate; }
+    @keyframes va-vient { from { transform: translateX(-10%); } to { transform: translateX(160%); } }
+    .doc { transition: box-shadow .25s ease, border-color .25s ease; }
+  }
+
+  /* La liste des documents. */
+  .docs { list-style: none; margin: 0; padding: 0; display: grid; gap: .7rem; }
+  .doc { display: flex; gap: .9rem; align-items: flex-start; padding: .95rem 1rem; background: var(--fond-eleve);
+    border: 1px solid var(--bordure-douce); border-radius: .75rem; }
+  .doc--vise { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-lueur); }
+  .doc__numero { flex: 0 0 auto; min-width: 1.9rem; height: 1.9rem; display: grid; place-items: center; border-radius: 50%;
+    background: var(--accent-doux); color: var(--texte-accent); font: 600 .8rem/1 "IBM Plex Mono", Consolas, monospace; }
+  .doc__corps { flex: 1 1 auto; min-width: 0; }
+  .doc__lieu { margin: 0 0 .15rem; font: 500 .7rem/1.3 "IBM Plex Mono", Consolas, monospace; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--chaud-encre); }
+  .doc__titre { margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+  .doc__cite { display: inline-block; margin-left: .4rem; padding: 0 .4rem; border-radius: .3rem; vertical-align: .1em;
+    font: 500 .68rem/1.5 "IBM Plex Mono", Consolas, monospace; letter-spacing: .06em; text-transform: uppercase;
+    background: var(--chaud-doux); color: var(--chaud-encre); }
+  .doc__extrait { margin: .45rem 0 0; color: var(--texte-doux); font-size: .9rem; overflow-wrap: anywhere; }
+  .doc__sans { margin: .45rem 0 0; color: var(--texte-faible); font-size: .8125rem; font-style: italic; }
+  mark { background: var(--surlignage); color: var(--surlignage-texte); border-radius: .2rem; padding: 0 .1rem; }
+  .doc__meta { margin: .5rem 0 0; color: var(--texte-faible); font-size: .8rem; display: flex; flex-wrap: wrap; gap: .25rem .6rem; align-items: center; }
+  .format { font: 500 .68rem/1.5 "IBM Plex Mono", Consolas, monospace; padding: 0 .4rem; border: 1px solid var(--bordure);
+    border-radius: .3rem; color: var(--texte-doux); }
+  .doc__ouvrir { flex: 0 0 auto; align-self: center; padding: .5rem .85rem; border-radius: .55rem; white-space: nowrap;
+    border: 1px solid var(--accent); color: var(--texte-accent); font-weight: 600; font-size: .875rem; text-decoration: none; }
+  .doc__ouvrir:hover { background: var(--accent); color: var(--accent-contenu); }
+
+  .rubrique { margin: 1.5rem 0 .6rem; font: 500 .72rem/1.2 "IBM Plex Mono", Consolas, monospace; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--chaud-encre); }
+  .aussi { margin: .9rem 0 0; font-size: .875rem; color: var(--texte-doux); }
+  .aussi a { color: var(--texte-accent); }
+
+  /* La réponse rédigée (niveaux 2 et 3). */
+  .reponse { padding: 1.1rem 1.25rem; background: var(--fond-eleve); border: 1px solid var(--bordure-douce);
+    border-left: 3px solid var(--accent); border-radius: .75rem; }
   .reponse p, .reponse ul { margin: 0 0 .7rem; }
+  .reponse > :last-child { margin-bottom: 0; }
   .reponse h3 { font-size: 1rem; margin: 1rem 0 .4rem; }
   .reponse pre { white-space: pre-wrap; font: .85rem/1.45 "IBM Plex Mono", Consolas, monospace; margin: 0 0 .7rem; }
+  .renvoi { font: 600 .72em/1 "IBM Plex Mono", Consolas, monospace; color: var(--texte-accent); text-decoration: none;
+    padding: .1em .3em; border-radius: .3em; background: var(--accent-doux); vertical-align: .15em; }
+  .renvoi:hover { background: var(--accent); color: var(--accent-contenu); }
+  .note { margin: .55rem 0 0; color: var(--texte-faible); font-size: .8125rem; }
   .sources { margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--bordure); }
-  .sources h2 { margin: 0 0 .5rem; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--chaud); }
   .sources ol { margin: 0; padding-left: 1.2rem; display: grid; gap: .55rem; }
   .sources a { color: var(--texte); font-weight: 600; }
   .extrait { display: block; color: var(--texte-doux); font-size: .875rem; }
-  .attente { color: var(--texte-doux); font-style: italic; }
-  .erreur, .sans-source { border-left: 3px solid var(--alerte); background: var(--alerte-fond); padding: .6rem .8rem; border-radius: .3rem; }
-  .actions { margin-top: 1.25rem; display: flex; gap: .6rem; flex-wrap: wrap; }
+
+  .erreur, .sans-source, .vide { border-left: 3px solid var(--critique); background: var(--critique-fond);
+    padding: .65rem .85rem; border-radius: .4rem; margin: .75rem 0 0; }
+  .vide { border-left-color: var(--chaud); background: var(--chaud-doux); }
+
+  .astuce { display: flex; gap: .75rem; margin-top: 1.25rem; padding: .85rem 1rem; border: 1px dashed var(--bordure);
+    border-radius: .75rem; color: var(--texte-doux); font-size: .875rem; }
+  .astuce__etoile { flex: 0 0 auto; color: var(--chaud); font-size: 1.1rem; line-height: 1.3; }
+  .astuce p { margin: 0; }
+  .actions { margin-top: 1.5rem; display: flex; gap: .6rem; flex-wrap: wrap; }
+
+  @media (max-width: 34rem) {
+    header { padding: 1.75rem 0 3.25rem; }
+    .saisie { flex-wrap: wrap; }
+    .saisie button { flex: 1 1 100%; }
+    .doc { flex-wrap: wrap; padding: .85rem; gap: .6rem .75rem; }
+    .doc__corps { flex-basis: calc(100% - 3rem); }
+    .doc__ouvrir { margin-left: auto; }
+  }
 </style>
 </head>
-<body>
-<header><div>
-  <h1>Assistant documentaire ETII</h1>
-  <p>Une question en français : la réponse est tirée des documents du service que vous avez le droit de lire, avec ses sources.</p>
+<body data-mode="<?= mode ?>">
+<header><div class="cadre">
+  <p class="surtitre">ETII · Assistant documentaire</p>
+  <h1><?= titre ?></h1>
+  <p class="chapo"><?= chapo ?></p>
 </div></header>
-<main>
-  <form id="formulaire">
-    <label for="question" style="position:absolute;left:-9999px">Votre question</label>
-    <textarea id="question" rows="2" maxlength="2000" placeholder="Ex. : quelle distance entre un faisceau de puissance et un faisceau signal ?"><?= question ?></textarea>
-    <button id="envoyer" type="submit">Demander</button>
+<main class="cadre">
+  <form id="formulaire" class="saisie" role="search">
+    <label for="question" class="cache">Votre recherche</label>
+    <textarea id="question" rows="1" maxlength="2000" placeholder="<?= exemple ?>"><?= question ?></textarea>
+    <button id="envoyer" type="submit"><?= bouton ?></button>
   </form>
-  <p class="aide">Ctrl + Entrée pour envoyer. Une question de suite garde le fil de la conversation.</p>
+  <p class="aide"><kbd>Entrée</kbd> pour lancer, <kbd>Maj</kbd> + <kbd>Entrée</kbd> pour aller à la ligne.</p>
   <div id="fil" aria-live="polite"></div>
   <div class="actions" id="actions" hidden>
-    <button class="discret" id="nouvelle" type="button">Nouvelle conversation</button>
+    <button class="discret" id="nouvelle" type="button">Effacer</button>
   </div>
 </main>
 <script>
   (function () {
+    var MODE = document.body.getAttribute('data-mode') || 'texte';
+    var ATTENTES = {
+      texte: 'Recherche dans le texte des documents…',
+      vertex: 'Recherche des documents, puis lecture par Gemini…',
+      enterprise: 'Gemini lit les documents du service…'
+    };
+    var INDISPONIBLE = {
+      PDF: 'Aperçu indisponible pour un PDF : ouvrez-le, puis Ctrl + F pour retrouver les mots.',
+      Word: 'Aperçu indisponible pour un fichier Word : ouvrez-le, puis Ctrl + F pour retrouver les mots.',
+      Excel: 'Aperçu indisponible pour un fichier Excel : ouvrez-le, puis Ctrl + F pour retrouver les mots.',
+      PowerPoint: 'Aperçu indisponible pour un fichier PowerPoint : ouvrez-le, puis Ctrl + F pour retrouver les mots.'
+    };
     var champ = document.getElementById('question');
     var bouton = document.getElementById('envoyer');
     var fil = document.getElementById('fil');
     var actions = document.getElementById('actions');
     var session = '';
+    var compteur = 0;
+    var douceur = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (MODE === 'enterprise') document.getElementById('nouvelle').textContent = 'Nouvelle conversation';
 
     function el(nom, classe, texte) {
       var n = document.createElement(nom);
@@ -81,16 +203,67 @@
       return n;
     }
 
-    /* Le texte en gras (**…**) devient <strong>, sans jamais interpréter de HTML. */
-    function enLigne(parent, ligne) {
-      ligne.split(/(\*\*[^*]+\*\*)/).forEach(function (bout) {
-        if (/^\*\*[^*]+\*\*$/.test(bout)) parent.appendChild(el('strong', '', bout.slice(2, -2)));
-        else if (bout) parent.appendChild(document.createTextNode(bout));
+    /* Un lien vers Drive : https seulement, nouvel onglet, sans opener. */
+    function lienExterne(href, classe, texte, etiquette) {
+      if (!/^https:\/\//i.test(String(href || ''))) return el('span', classe, texte);
+      var a = el('a', classe, texte);
+      a.href = href;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      if (etiquette) a.setAttribute('aria-label', etiquette);
+      return a;
+    }
+
+    function dateFr(iso) {
+      var d = new Date(iso);
+      return isNaN(d.getTime()) ? '' : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function pluriel(n, un, plusieurs) { return n + ' ' + (n > 1 ? plusieurs : un); }
+
+    /* Les segments de l'extrait : le texte, les mots trouvés en <mark>. */
+    function segments(parent, liste) {
+      liste.forEach(function (s) {
+        parent.appendChild(s.marque ? el('mark', '', s.texte) : document.createTextNode(s.texte));
+      });
+    }
+
+    /* Un renvoi [n] de la réponse mène à la carte du document n. */
+    function renvoi(idEchange, n) {
+      var a = el('a', 'renvoi', String(n));
+      a.href = '#doc-' + idEchange + '-' + n;
+      a.target = '_self';
+      a.setAttribute('aria-label', 'Document ' + n);
+      a.addEventListener('click', function (evt) {
+        var cible = document.getElementById('doc-' + idEchange + '-' + n);
+        if (!cible) return;
+        evt.preventDefault();
+        cible.scrollIntoView({ behavior: douceur ? 'smooth' : 'auto', block: 'center' });
+        cible.classList.add('doc--vise');
+        cible.focus({ preventScroll: true });
+        setTimeout(function () { cible.classList.remove('doc--vise'); }, 1600);
+      });
+      return a;
+    }
+
+    /* Le texte en gras (**…**) devient <strong>, [1] un renvoi — sans jamais interpréter de HTML. */
+    function enLigne(parent, ligne, idEchange) {
+      ligne.split(/(\*\*[^*]+\*\*|\[\d+(?:\s*[,;]\s*\d+)*\])/).forEach(function (bout) {
+        if (/^\*\*[^*]+\*\*$/.test(bout)) { parent.appendChild(el('strong', '', bout.slice(2, -2))); return; }
+        var cites = /^\[(\d+(?:\s*[,;]\s*\d+)*)\]$/.exec(bout);
+        if (cites && idEchange) {
+          cites[1].split(/[,;]/).forEach(function (n, i) {
+            if (i) parent.appendChild(document.createTextNode(' '));
+            parent.appendChild(renvoi(idEchange, Number(n.trim())));
+          });
+          return;
+        }
+        if (bout) parent.appendChild(document.createTextNode(bout));
       });
     }
 
     /* Un Markdown minimal : titres, listes, tableaux laissés en texte, paragraphes. */
-    function rendre(texte) {
+    function rendre(texte, idEchange) {
       var zone = el('div', 'reponse');
       var liste = null;
       var tableau = null;
@@ -102,34 +275,147 @@
           return;
         }
         tableau = null;
-        var puce = /^\s*[-*•]\s+(.*)$/.exec(ligne);
+        var puce = /^\s*(?:[-*•]|\d+[.)])\s+(.*)$/.exec(ligne);
         if (puce) {
           if (!liste) { liste = el('ul'); zone.appendChild(liste); }
-          var li = el('li'); enLigne(li, puce[1]); liste.appendChild(li);
+          var li = el('li'); enLigne(li, puce[1], idEchange); liste.appendChild(li);
           return;
         }
         liste = null;
         if (!ligne.trim() || /^-{3,}$/.test(ligne.trim())) return;
         var titre = /^#{1,6}\s+(.*)$/.exec(ligne);
         var bloc = el(titre ? 'h3' : 'p');
-        enLigne(bloc, titre ? titre[1].replace(/\*\*/g, '') : ligne);
+        enLigne(bloc, titre ? titre[1].replace(/\*\*/g, '') : ligne, idEchange);
         zone.appendChild(bloc);
       });
       return zone;
     }
 
+    /* La carte d'un document : où il est, son titre, l'extrait, « Ouvrir ↗ ». */
+    function carte(d, idEchange) {
+      var li = el('li', 'doc');
+      if (d.numero) {
+        li.id = 'doc-' + idEchange + '-' + d.numero;
+        li.tabIndex = -1;
+        li.appendChild(el('span', 'doc__numero', String(d.numero)));
+      }
+      var corps = el('div', 'doc__corps');
+      if (d.lieu) corps.appendChild(el('p', 'doc__lieu', d.lieu));
+      var titre = el('h3', 'doc__titre', d.titre);
+      if (d.cite) titre.appendChild(el('span', 'doc__cite', 'cité'));
+      corps.appendChild(titre);
+      if (d.extrait && d.extrait.length) {
+        var extrait = el('p', 'doc__extrait');
+        segments(extrait, d.extrait);
+        corps.appendChild(extrait);
+      } else if (d.description) {
+        corps.appendChild(el('p', 'doc__extrait', d.description));
+      } else if (!d.lisible && INDISPONIBLE[d.format]) {
+        corps.appendChild(el('p', 'doc__sans', INDISPONIBLE[d.format]));
+      }
+      var meta = el('p', 'doc__meta');
+      meta.appendChild(el('span', 'format', d.format));
+      var date = dateFr(d.modifie);
+      if (date) meta.appendChild(el('span', '', 'modifié le ' + date));
+      corps.appendChild(meta);
+      li.appendChild(corps);
+      li.appendChild(lienExterne(d.lien, 'doc__ouvrir', 'Ouvrir ↗', 'Ouvrir « ' + d.titre + ' » dans Drive, nouvel onglet'));
+      return li;
+    }
+
+    function listeDocs(docs, idEchange) {
+      var ol = el('ol', 'docs');
+      docs.forEach(function (d) { ol.appendChild(carte(d, idEchange)); });
+      return ol;
+    }
+
+    /* « 12 documents contiennent faisceau, puissance et signal » — « ou »
+       quand la recherche a dû se contenter d'un mot sur plusieurs. */
+    function bilan(n, mots, elargie) {
+      var p = el('p', 'bilan');
+      p.appendChild(el('strong', '', pluriel(n, 'document', 'documents')));
+      p.appendChild(document.createTextNode(n > 1 ? ' contiennent ' : ' contient '));
+      /* Les puces séparent déjà les mots : pas de virgule entre elles, qui
+         flotterait après l'arrondi ; « et » (ou « ou ») avant la dernière. */
+      mots.forEach(function (m, i) {
+        if (i) p.appendChild(document.createTextNode(i === mots.length - 1 ? (elargie ? ' ou ' : ' et ') : ' '));
+        p.appendChild(el('span', 'puce', m));
+      });
+      return p;
+    }
+
+    function astuce() {
+      var bloc = el('div', 'astuce');
+      bloc.appendChild(el('span', 'astuce__etoile', '✦'));
+      var p = el('p');
+      p.appendChild(el('strong', '', 'Pour une réponse rédigée : '));
+      p.appendChild(document.createTextNode('ouvrez le document, puis « Demander à Gemini » — l’étoile, en haut à droite de Google Drive. '
+        + 'Gemini y lit ce document, ou tout un dossier, avec vos droits.'));
+      bloc.appendChild(p);
+      return bloc;
+    }
+
+    function vide(texte) { return el('p', 'vide', texte); }
+
+    /* Niveau 1 : la liste des documents qui contiennent les mots. */
+    function rendreTexte(r, echange, id) {
+      var docs = r.documents || [];
+      if (!docs.length) {
+        echange.appendChild(vide('Aucun document du Drive partagé ne contient ces mots. Essayez un synonyme, une référence (ETII-TEC-001) ou moins de mots.'));
+        return;
+      }
+      if (r.elargie) echange.appendChild(el('p', 'elargie', 'Aucun document ne contient tous ces mots : voici ceux qui en contiennent au moins un.'));
+      echange.appendChild(bilan(docs.length, r.mots || [], r.elargie));
+      echange.appendChild(listeDocs(docs, id));
+      echange.appendChild(astuce());
+    }
+
+    /* Niveau 2 : la réponse de Gemini, puis les documents lus, numérotés. */
+    function rendreVertex(r, echange, id) {
+      var docs = r.documents || [];
+      if (!docs.length) {
+        echange.appendChild(vide('Aucun document du Drive partagé ne contient ces mots : Gemini n’a rien eu à lire. Essayez un synonyme ou une référence.'));
+        return;
+      }
+      var lus = docs.filter(function (d) { return d.numero; });
+      var autres = docs.filter(function (d) { return !d.numero; });
+      if (r.illisibles || !lus.length) {
+        echange.appendChild(vide('Les documents trouvés sont dans des formats que Gemini ne lit pas ici (Word, Excel, PowerPoint) ou trop lourds : ouvrez-les ci-dessous.'));
+        echange.appendChild(listeDocs(docs, id));
+        return;
+      }
+      if (r.elargie) echange.appendChild(el('p', 'elargie', 'Aucun document ne contenait tous les mots de la question : Gemini a lu ceux qui en contiennent au moins un.'));
+      echange.appendChild(rendre(r.reponse || '', id));
+      var note = 'Réponse rédigée par Gemini' + (r.modele ? ' (' + r.modele + ')' : '') + ' à partir des documents ci-dessous. '
+        + (r.tronquee ? 'Elle a été coupée : posez une question plus précise. ' : '')
+        + 'Vérifiez dans le document avant d’appliquer une règle.';
+      echange.appendChild(el('p', 'note', note));
+      if (!lus.some(function (d) { return d.cite; })) {
+        echange.appendChild(el('p', 'sans-source', 'Aucun document cité : cette réponse n’est pas vérifiable, ne l’utilisez pas telle quelle.'));
+      }
+      echange.appendChild(el('h2', 'rubrique', pluriel(lus.length, 'document lu', 'documents lus')));
+      echange.appendChild(listeDocs(lus, id));
+      if (autres.length) {
+        var p = el('p', 'aussi', 'Aussi trouvés, non lus : ');
+        autres.forEach(function (d, i) {
+          if (i) p.appendChild(document.createTextNode(' · '));
+          p.appendChild(lienExterne(d.lien, '', d.titre + ' ↗'));
+        });
+        echange.appendChild(p);
+      }
+    }
+
+    /* Niveau 3 : la réponse de Gemini Enterprise et ses sources. */
     function sources(liste) {
       if (!liste.length) {
         return el('p', 'sans-source', 'Aucun document cité : cette réponse n’est pas vérifiable, ne l’utilisez pas telle quelle.');
       }
       var bloc = el('div', 'sources');
-      bloc.appendChild(el('h2', '', 'Documents cités'));
+      bloc.appendChild(el('h2', 'rubrique', 'Documents cités'));
       var ol = el('ol');
       liste.forEach(function (s) {
         var li = el('li');
-        var titre = s.lien ? el('a', '', s.titre + (s.page ? ' — p. ' + s.page : '') + ' ↗') : el('strong', '', s.titre);
-        if (s.lien) { titre.href = s.lien; titre.target = '_blank'; titre.rel = 'noopener noreferrer'; }
-        li.appendChild(titre);
+        li.appendChild(lienExterne(s.lien, '', s.titre + (s.page ? ' — p. ' + s.page : '') + (s.lien ? ' ↗' : '')));
         if (s.extrait) li.appendChild(el('span', 'extrait', '« ' + s.extrait + ' »'));
         ol.appendChild(li);
       });
@@ -137,29 +423,52 @@
       return bloc;
     }
 
+    function rendreEnterprise(r, echange) {
+      session = r.session || session;
+      echange.appendChild(r.reponse ? rendre(r.reponse, '') : el('p', 'note', 'Gemini n’a renvoyé aucun texte.'));
+      echange.appendChild(sources(r.sources || []));
+    }
+
+    function attente() {
+      var bloc = el('div', 'attente');
+      bloc.setAttribute('role', 'status');
+      bloc.appendChild(el('span', 'attente__barre'));
+      bloc.appendChild(el('span', '', ATTENTES[MODE] || ATTENTES.texte));
+      return bloc;
+    }
+
+    function ajuster() {
+      champ.style.height = 'auto';
+      champ.style.height = Math.min(champ.scrollHeight, 144) + 'px';
+    }
+
     function poser() {
       var q = champ.value.trim();
       if (!q || bouton.disabled) { champ.focus(); return; }
       bouton.disabled = true;
+      var id = String(++compteur);
       var echange = el('section', 'echange');
-      echange.appendChild(el('p', 'question', q));
-      var attente = el('p', 'attente', 'Gemini lit les documents du service…');
-      echange.appendChild(attente);
+      echange.setAttribute('aria-label', 'Résultats pour « ' + q + ' »');
+      echange.appendChild(el('p', 'echange__question', '« ' + q + ' »'));
+      var enCours = attente();
+      echange.appendChild(enCours);
       fil.insertBefore(echange, fil.firstChild);
       google.script.run
         .withSuccessHandler(function (r) {
-          attente.remove();
-          session = r.session || session;
-          echange.appendChild(r.reponse ? rendre(r.reponse) : el('p', 'attente', 'Gemini n’a renvoyé aucun texte.'));
-          echange.appendChild(sources(r.sources || []));
+          enCours.remove();
+          var mode = (r && r.mode) || MODE;
+          if (mode === 'enterprise') rendreEnterprise(r, echange);
+          else if (mode === 'vertex') rendreVertex(r, echange, id);
+          else rendreTexte(r, echange, id);
           champ.value = '';
+          ajuster();
           actions.hidden = false;
           bouton.disabled = false;
           champ.focus();
         })
         .withFailureHandler(function (err) {
-          attente.remove();
-          echange.appendChild(el('p', 'erreur', 'Pas de réponse : ' + (err && err.message ? err.message : err)));
+          enCours.remove();
+          echange.appendChild(el('p', 'erreur', 'Pas de résultat : ' + (err && err.message ? err.message : err)));
           bouton.disabled = false;
         })
         .etiiRepondre(q, session);
@@ -167,8 +476,9 @@
 
     document.getElementById('formulaire').addEventListener('submit', function (evt) { evt.preventDefault(); poser(); });
     champ.addEventListener('keydown', function (evt) {
-      if (evt.key === 'Enter' && (evt.ctrlKey || evt.metaKey)) { evt.preventDefault(); poser(); }
+      if (evt.key === 'Enter' && !evt.shiftKey && !evt.isComposing) { evt.preventDefault(); poser(); }
     });
+    champ.addEventListener('input', ajuster);
     document.getElementById('nouvelle').addEventListener('click', function () {
       session = '';
       while (fil.firstChild) fil.removeChild(fil.firstChild);
@@ -177,6 +487,7 @@
     });
 
     /* Arrivé depuis le portail avec une question : elle part tout de suite. */
+    ajuster();
     if (champ.value.trim()) poser(); else champ.focus();
   })();
 </script>
