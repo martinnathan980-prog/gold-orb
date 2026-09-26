@@ -241,9 +241,12 @@ Exigences :
 - **Tolérance aux fautes de frappe** (distance d'édition bornée).
 - **Insensible à la casse et aux accents.**
 - **Surlignage** des termes trouvés dans les résultats.
-- **Facettes combinables** : type, métier, porteur, périmètre. Chaque
-  facette affiche le nombre de résultats correspondants et se met à jour
-  en fonction des autres filtres actifs.
+- **Filtres combinables** : le pôle (ETIIA, ETIIE, ETIII — le service qui
+  tient le document, seul classement affiché) et le type (tuiles
+  d'accueil). Le métier n'est plus ni filtre ni étiquette, mais ses mots
+  restent cherchables ; le porteur du document n'est ni affiché, ni
+  filtrable, ni indexé. Un fonds qui porte encore ces champs se lit sans
+  erreur.
 - **Navigation 100 % clavier** : `/` pour focaliser, `↑`/`↓` pour parcourir,
   `Entrée` pour ouvrir, `Échap` pour effacer.
 - **URL partageable** : l'état (requête + facettes) est reflété dans le

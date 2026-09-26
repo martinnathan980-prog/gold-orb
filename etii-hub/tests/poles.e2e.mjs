@@ -254,8 +254,8 @@ t('le lien courant suit le défilement (Porteurs)', /porteurs/i.test(courantApre
 console.log('\n== Recherche : facette de pôle ==');
 await page.goto(`${B}/docsearch.html`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(900);
-// Le filtrage par pôle passe par un menu déroulant, aux côtés de « métier »
-// et « porteur » — c'est la mise en page voulue par le service.
+// Le filtrage par pôle passe par un menu déroulant, le seul de la barre :
+// le pôle (le service) est le classement du fonds, sans métier ni porteur.
 const optionsPole = await page.evaluate(() => {
   const sel = document.getElementById('ds-pole');
   return sel ? [...sel.options].map(o => o.value).filter(Boolean) : null;
@@ -272,8 +272,9 @@ t(`choisir ETIIA filtre les résultats (${attenduA} documents concernés)`,
   n > 0 && n <= attenduA, `(${n}/${attenduA})`);
 t('le choix est reflété dans l\'URL', /ETIIA/i.test(decodeURIComponent(page.url())),
   page.url().slice(-60));
-t('les trois menus de filtre sont présents',
-  (await page.locator('#ds-metier, #ds-porteur, #ds-pole').count()) === 3);
+t('le pôle est le seul menu de filtre',
+  (await page.locator('#ds-metier, #ds-porteur, #ds-pole').count()) === 1
+  && (await page.locator('#ds-pole').count()) === 1);
 
 console.log('\n== Navigation entre les neuf pages ==');
 // La barre a cinq liens : le tableau de bord, les trois pôles, la

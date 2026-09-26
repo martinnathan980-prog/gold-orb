@@ -240,7 +240,9 @@
       background-color: var(--fond-enfonce);
     }
 
-    /* --- A3. Les trois menus déroulants --------------------------------- */
+    /* --- A3. Le menu du pôle ---------------------------------------------
+       Seul sous la barre, centré, à la largeur de son libellé le plus long :
+       étiré sur toute la ligne, il ressemblerait à un second champ. */
 
     .ds-menus {
       justify-content: center;
@@ -253,7 +255,7 @@
        contraire rester à sa taille propre et pouvoir rétrécir. */
     .ds-menu {
       inline-size: auto;
-      flex: 1 1 calc(var(--e-16) * 3);
+      flex: 0 1 calc(var(--e-16) * 3);
       min-inline-size: min(calc(var(--e-16) * 3), 100%);
       max-inline-size: 100%;
       text-align: start;
@@ -927,29 +929,12 @@
                 aria-label="Propositions de recherche" hidden></ul>
           </div>
 
-          <!-- Trois menus déroulants sur une seule ligne. Ce sont de vrais
-               <select> : ils se combinent entre eux et avec la recherche.
-               Les options sont ajoutées par docsearch.js depuis le JSON ;
-               les menus restent désactivés tant que le fonds n'est pas là. -->
+          <!-- Le menu du pôle : le service qui tient le document, seul
+               classement du fonds. Un vrai <select> : il se combine avec la
+               recherche et avec le type choisi par une tuile. Les options
+               sont ajoutées par docsearch.js depuis le JSON ; le menu reste
+               désactivé tant que le fonds n'est pas là. -->
           <div class="ds-menus rangee rangee--serree">
-            <label class="visuellement-cache" for="ds-metier">
-              Filtrer par métier
-            </label>
-            <span class="champ__select ds-menu">
-              <select class="champ__controle" id="ds-metier" name="metier" disabled>
-                <option value="">Tous les métiers</option>
-              </select>
-            </span>
-
-            <label class="visuellement-cache" for="ds-porteur">
-              Filtrer par porteur du document
-            </label>
-            <span class="champ__select ds-menu">
-              <select class="champ__controle" id="ds-porteur" name="porteur" disabled>
-                <option value="">Tous les porteurs de document</option>
-              </select>
-            </span>
-
             <label class="visuellement-cache" for="ds-pole">
               Filtrer par pôle
             </label>
@@ -992,7 +977,7 @@
           <p class="texte-doux texte-sm mesure sans-marge">
             Ces propositions sont conservées dans ce navigateur uniquement.
             Rien n'est envoyé : elles vous servent de pense-bête avant d'en
-            parler au porteur concerné.
+            parler au pôle concerné.
           </p>
         </div>
         <div class="grille grille--compacte" id="ds-propositions-liste"></div>

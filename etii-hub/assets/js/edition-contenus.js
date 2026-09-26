@@ -329,7 +329,6 @@ export function ouvrirDocument(o) {
   const id = texte(existant && existant.id) || nouvelIdentifiant('d');
   const f = (o.documents && o.documents.facettes) || {};
   const choix = (liste) => tableau(liste).map((x) => [texte(x), texte(x)]);
-  const personnes = tableau(o.personnes).map((p) => texte(p.nom)).filter(Boolean).sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
   const autres = tableau(o.documents && o.documents.documents).filter((d) => texte(d.id) !== id);
   return ouvrirFormulaire({
     titre: existant ? 'Modifier le document' : 'Ajouter un document',
@@ -342,9 +341,11 @@ export function ouvrirDocument(o) {
       { cle: 'maj', libelle: 'Mis à jour le', type: 'date', requis: true, valider: DATE_ISO },
       { cle: 'type', libelle: 'Type', type: 'choix', requis: true, options: choix(f.types) },
       { cle: 'perimetre', libelle: 'Périmètre', type: 'choix', options: choix(f.perimetres) },
-      { cle: 'porteur', libelle: 'Porteur du document', type: 'choix', options: [['', '—']].concat(personnes.map((n) => [n, n])) },
       { cle: 'pole', libelle: 'Pôles', type: 'plusieurs', options: POLES_SEULS },
-      { cle: 'metier', libelle: 'Métiers', type: 'liste', aide: 'Séparés par des virgules : ' + tableau(f.metiers).join(', ') + '.' },
+      /* Le pôle classe le document ; le porteur n'est plus demandé (un
+         porteur déjà saisi est gardé tel quel). Les anciens métiers ne
+         s'affichent plus : leurs mots aident seulement la recherche. */
+      { cle: 'metier', libelle: 'Domaines (pour la recherche)', type: 'liste', aide: 'Ne s’affichent pas : ils aident la recherche à trouver le document. Séparés par des virgules : ' + tableau(f.metiers).join(', ') + '.' },
       { cle: 'lien', libelle: 'Lien vers le document', type: 'url', large: true, placeholder: 'https://…' },
       { cle: 'description', libelle: 'Description', type: 'long', lignes: 3 },
       { cle: 'motsCles', libelle: 'Mots-clés', type: 'liste' },

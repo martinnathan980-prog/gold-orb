@@ -1742,7 +1742,7 @@
       "porteur": "Personne 27",
       "perimetre": "Transverse",
       "lien": "",
-      "description": "Gestes, outillage et contrôle qualité du sertissage. Document communiqué sur demande auprès du porteur.",
+      "description": "Gestes, outillage et contrôle qualité du sertissage. Document communiqué sur demande auprès du pôle.",
       "motsCles": [
         "sertissage",
         "outillage",
@@ -1767,7 +1767,7 @@
       "porteur": "Personne 40",
       "perimetre": "Transverse",
       "lien": "",
-      "description": "Sections normalisées et courants admissibles associés. Document communiqué sur demande auprès du porteur.",
+      "description": "Sections normalisées et courants admissibles associés. Document communiqué sur demande auprès du pôle.",
       "motsCles": [
         "câble",
         "section",
@@ -1793,7 +1793,7 @@
       "porteur": "Personne 53",
       "perimetre": "H160",
       "lien": "",
-      "description": "Structure du plan de validation et couverture des exigences. Document communiqué sur demande auprès du porteur.",
+      "description": "Structure du plan de validation et couverture des exigences. Document communiqué sur demande auprès du pôle.",
       "motsCles": [
         "validation",
         "plan",
@@ -1818,7 +1818,7 @@
       "porteur": "Personne 01",
       "perimetre": "Transverse",
       "lien": "",
-      "description": "Journal des modifications de définition avec traçabilité complète. Document communiqué sur demande auprès du porteur.",
+      "description": "Journal des modifications de définition avec traçabilité complète. Document communiqué sur demande auprès du pôle.",
       "motsCles": [
         "modification",
         "suivi",
@@ -1842,7 +1842,7 @@
       "porteur": "Personne 14",
       "perimetre": "H175",
       "lien": "",
-      "description": "Contraintes d'accessibilité, de maintenance et de dégagement. Document communiqué sur demande auprès du porteur.",
+      "description": "Contraintes d'accessibilité, de maintenance et de dégagement. Document communiqué sur demande auprès du pôle.",
       "motsCles": [
         "implantation",
         "accessibilité",
@@ -1867,7 +1867,7 @@
       "porteur": "Personne 27",
       "perimetre": "Transverse",
       "lien": "",
-      "description": "Classification des fonctions selon leur criticité opérationnelle. Document communiqué sur demande auprès du porteur.",
+      "description": "Classification des fonctions selon leur criticité opérationnelle. Document communiqué sur demande auprès du pôle.",
       "motsCles": [
         "criticité",
         "analyse",

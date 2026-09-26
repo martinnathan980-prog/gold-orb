@@ -13,7 +13,8 @@
         stockage local.
 
    Ce que la page raconte, dans l'ordre :
-     « Que recherchez-vous ? »  — la question, une barre large, trois menus.
+     « Que recherchez-vous ? »  — la question, une barre large, le menu du
+                                  pôle : le service est le seul classement.
      « Par où commencer ? »     — les chiffres du fonds, puis trois façons
                                   d'entrer dedans sans rien taper.
      Dès la deuxième lettre     — des propositions sous le champ.
@@ -23,10 +24,11 @@
    Invariants tenus ici :
    - aucun `innerHTML`, aucun `onclick=` : tout passe par el()/svg()/
      frag()/monter() et par la délégation d'événements de ui.js ;
-   - un seul chargement indispensable, assets/data/documents.json ; celui de
-     assets/data/organigramme.json vient À CÔTÉ, sans bloquer le premier
-     rendu, et sert uniquement à faire du nom du porteur un lien vers sa
-     fiche : s'il échoue, la page se comporte comme s'il n'existait pas ;
+   - un seul chargement, assets/data/documents.json ;
+   - un document se classe par son pôle (ETIIA, ETIIE, ETIII) et son type,
+     rien d'autre : ni métier ni porteur à l'écran. Un fonds qui porte
+     encore ces champs se lit sans erreur ; les mots du métier restent
+     seulement cherchables (voir CHAMPS_INDEXES) ;
    - RIEN n'est inventé : un champ vide s'écrit « à renseigner », jamais une
      valeur plausible. Tous les chiffres affichés sont comptés sur le JSON ;
    - l'index n'est jamais reconstruit à la frappe ;
@@ -259,6 +261,13 @@ async function avecEtatLocal(cible, source, rendu, options) {
    tape le code d'un autre. Le pôle se choisit donc au menu déroulant ou à
    la tuile d'accueil, qui sont exacts, et se lit sur la carte — jamais au
    petit bonheur du classement.
+
+   Le porteur d'un document (la personne qui le tient) n'est plus indexé :
+   la page ne le montre plus, taper un nom ne doit rien ramener. Le métier,
+   lui, n'est plus ni un filtre ni une étiquette — le classement est le
+   pôle — mais ses mots (Harnais, Architecture…) disent de quoi parle le
+   document : ils restent cherchables, sans quoi « harnais » ne trouverait
+   plus que les rares documents qui l'écrivent dans leur titre.
 */
 const CHAMPS_INDEXES = [
   { nom: 'titre',       poids: 10 },  // fort
@@ -266,7 +275,6 @@ const CHAMPS_INDEXES = [
   { nom: 'motsCles',    poids: 5 },   // moyen
   { nom: 'metier',      poids: 4 },   // moyen
   { nom: 'type',        poids: 4 },   // moyen
-  { nom: 'porteur',     poids: 2 },   // faible
   { nom: 'perimetre',   poids: 2 },   // faible
   { nom: 'description', poids: 1 }    // faible
 ];
@@ -280,41 +288,31 @@ const NOMS_CHAMPS = {
   titre: 'le titre',
   reference: 'la référence',
   motsCles: 'les mots-clés',
-  metier: 'le métier',
+  metier: 'le domaine',
   type: 'le type',
-  porteur: 'le porteur',
   perimetre: 'le périmètre',
   description: 'la description'
 };
 
 /*
-   Les trois menus déroulants de la barre. Ce sont de vrais <select>
-   étiquetés, à valeur unique : « Tous les métiers » est la valeur vide.
-   Ils se combinent entre eux (ET) et avec la requête.
+   Le menu déroulant de la barre : le pôle, c'est-à-dire le service qui
+   tient le document. Un vrai <select> étiqueté, à valeur unique : « Tous
+   les pôles » est la valeur vide. Il se combine (ET) avec la requête et
+   avec le type choisi par une tuile.
 
    `champ` peut désigner une chaîne ou un TABLEAU dans le document : un
-   document relève parfois de deux pôles, exactement comme il relève
-   parfois de deux métiers. `valeursDoc()` normalise les deux formes, et
-   tout le reste de la mécanique — filtrage, jetons, hash, « Tout
-   effacer » — est écrit une fois pour les trois dimensions.
-
-   `documents.json` ne déclare pas de clé « porteurs » : `preparerCorpus()`
-   déduit alors les valeurs du corpus, comme pour toute source absente.
+   document relève parfois de deux pôles. `valeursDoc()` normalise les
+   deux formes, et toute la mécanique — filtrage, jetons, hash, « Tout
+   effacer » — est écrite une fois, sur la liste des dimensions : un menu
+   de plus ne demanderait qu'une entrée ici.
 */
 const DIMENSIONS = [
-  { cle: 'metier',  champ: 'metier',  libelle: 'Métier',  source: 'metiers',
-    id: 'ds-metier',  tous: 'Tous les métiers' },
-  { cle: 'porteur', champ: 'porteur', libelle: 'Porteur', source: 'porteurs',
-    id: 'ds-porteur', tous: 'Tous les porteurs' },
-  { cle: 'pole',    champ: 'pole',    libelle: 'Pôle',    source: 'poles',
-    id: 'ds-pole',    tous: 'Tous les pôles' }
+  { cle: 'pole', champ: 'pole', libelle: 'Pôle', source: 'poles',
+    id: 'ds-pole', tous: 'Tous les pôles' }
 ];
 
 /** Raccourci vers la dimension « pôle », affichée sur chaque carte. */
 const DIMENSION_POLE = DIMENSIONS.find((dimension) => dimension.cle === 'pole');
-
-/** Raccourci vers la dimension « métier », multivaluée comme le pôle. */
-const DIMENSION_METIER = DIMENSIONS.find((dimension) => dimension.cle === 'metier');
 
 /** Libellé de la dimension « type », filtrée par les tuiles d'accueil. */
 const LIBELLE_TYPE = 'Type';
@@ -665,7 +663,8 @@ function correspondFiltres(doc) {
    et la liste de propositions du champ — mais elle n'est jamais niée. Le
    portail indexe des liens vers des documents qui vivent ailleurs : il ne
    peut pas certifier ce qui est applicable, donc aucune carte ne porte
-   « en vigueur » (règle 6), et c'est le porteur qui reste l'autorité.
+   « en vigueur » (règle 6), et c'est le pôle qui le tient qui reste
+   l'autorité.
 
    Trois chemins la ramènent, parce que les trois la demandent
    explicitement : sa référence exacte (« je cherche ETII-PRO-035 » est un
@@ -766,10 +765,11 @@ function retourVisuel(bouton, texte) {
 /* -------------------------------------------------------------------------
    5. Synchronisation avec l'URL
 
-   Format : #q=harnais&metier=Qualité&porteur=Personne%2008&pole=ETIIA
-            &type=Norme&tri=maj
+   Format : #q=harnais&pole=ETIIA&type=Norme&tri=maj
    Écriture en replaceState (etatUrl s'en charge) et anti-rebondie : le
-   bouton « Précédent » reste utilisable, l'URL reste partageable.
+   bouton « Précédent » reste utilisable, l'URL reste partageable. Un
+   ancien lien qui porte encore « metier= » ou « porteur= » s'ouvre sans
+   erreur : ces clés sont ignorées, et la première écriture les efface.
    ------------------------------------------------------------------------- */
 
 /** Clés que cette page reconnaît dans le fragment d'URL. */
@@ -1073,7 +1073,7 @@ function ordonner(documents) {
    ------------------------------------------------------------------------- */
 
 /**
- * Remplit les trois menus déroulants de la barre et les rend actifs.
+ * Remplit le menu déroulant de la barre (le pôle) et le rend actif.
  * Le balisage vient de la page : seule la liste d'options dépend du JSON.
  */
 function remplirMenus() {
@@ -1298,7 +1298,7 @@ function rendre() {
   annoncerResultats();
 }
 
-/** Reporte l'état dans les trois menus déroulants. */
+/** Reporte l'état dans le menu déroulant. */
 function majMenus() {
   for (const dimension of DIMENSIONS) {
     const select = refs.menus.get(dimension.cle);
@@ -1703,23 +1703,19 @@ function obtenirFiche(doc) {
   const extrait = el('p', { class: 'ds-carte__extrait' });
   const raison = el('p', { class: 'ds-carte__meta', hidden: true });
 
-  /* Le ou les pôles dont relève le document. Une pastille ÉTIQUETÉE : le
-     point teinté est décoratif, c'est « Pôle ETIIA » écrit à côté qui
-     porte l'information. La couleur ne signale donc jamais seule le pôle
-     (SPEC §1bis), et la carte reste lisible en niveaux de gris. */
-  const poles = valeursDoc(doc, DIMENSION_POLE).map(
-    (code) => el('li', {},
+  /* Le ou les pôles dont relève le document : c'est son seul classement
+     (le service qui le tient), à la place des anciens métiers. Une
+     pastille ÉTIQUETÉE : le point teinté est décoratif, c'est « Pôle
+     ETIIA » écrit à côté qui porte l'information. La couleur ne signale
+     donc jamais seule le pôle (SPEC §1bis), et la carte reste lisible en
+     niveaux de gris. Sans pôle déclaré, la carte le dit. */
+  const codesPole = valeursDoc(doc, DIMENSION_POLE);
+  const poles = codesPole.length
+    ? codesPole.map((code) => el('li', {},
       el('span', { class: 'badge badge--pole', dataset: { pole: code } },
         el('span', { class: 'pole-point', ariaHidden: 'true' }),
-        'Pôle ' + code)));
-
-  /* Les métiers, étiquetés eux aussi : le préfixe reste hors écran, mais
-     un lecteur d'écran annonce bien « Métier : Harnais ». */
-  const metiers = valeursDoc(doc, DIMENSION_METIER).map(
-    (metier) => el('li', {},
-      el('span', { class: 'badge badge--contour' },
-        el('span', { class: 'visuellement-cache' }, 'Métier : '),
-        metier)));
+        'Pôle ' + code)))
+    : el('li', {}, el('span', { class: 'badge badge--contour' }, 'Pôle : ', valeurOuManquant('')));
 
   const lien = texteOuVide(doc.lien);
   const actions = el('div', { class: 'ds-carte__actions' });
@@ -1769,12 +1765,7 @@ function obtenirFiche(doc) {
     'Lien : ', valeurOuManquant(''));
 
   const maj = texteOuVide(doc.maj);
-  const porteur = texteOuVide(doc.porteur);
   const type = texteOuVide(doc.type);
-
-  /* Le porteur : un nœud retenu dans la fiche, pour que le nom devienne un
-     lien dès que l'organigramme est là — sans attendre au premier rendu. */
-  const noeudPorteur = el('span', {}, 'Porteur : ', valeurOuManquant(porteur));
 
   /* Une révision remplacée le dit en tête de carte, et rien de plus : une
      ligne, la référence de la version en vigueur, le lien qui y mène. Les
@@ -1805,8 +1796,8 @@ function obtenirFiche(doc) {
 
   // Un élément de liste, focalisable par programme seulement : le parcours
   // ↑/↓ y déplace un tabindex glissant, sans imposer d'arrêt de tabulation
-  // supplémentaire. Aucun aria-label global : il masquerait l'extrait, les
-  // métiers et la date de mise à jour.
+  // supplémentaire. Aucun aria-label global : il masquerait l'extrait, le
+  // pôle et la date de mise à jour.
   const carte = el('li', {
     class: 'carte carte--compacte ds-carte',
     id: 'ds-document-' + id,
@@ -1822,10 +1813,9 @@ function obtenirFiche(doc) {
   titre,
   extrait,
   raison,
-  el('ul', { class: 'facettes' }, poles, metiers),
+  el('ul', { class: 'facettes' }, poles),
   el('div', { class: 'carte__pied ds-carte__pied' },
     el('p', { class: 'ds-carte__meta' },
-      noeudPorteur,
       maj !== ''
         ? el('span', {}, 'Mis à jour le ',
           el('time', { datetime: maj }, formaterDate(maj)))
@@ -1833,93 +1823,9 @@ function obtenirFiche(doc) {
     sansLien,
     actions));
 
-  const fiche = {
-    doc, carte, titre, reference, extrait, raison,
-    porteur: noeudPorteur, requete: null
-  };
+  const fiche = { doc, carte, titre, reference, extrait, raison, requete: null };
   fiches.set(id, fiche);
-  majLienPorteur(fiche);
   return fiche;
-}
-
-/* -------------------------------------------------------------------------
-   12bis. Le porteur mène à sa fiche
-
-   Partout ailleurs le site fait d'un nom de personne un lien vers
-   l'organigramme (porteurs.js, pole.js, palette.js) ; sur une carte de
-   document, c'était le seul nom qui ne menait nulle part — alors que c'est
-   exactement là qu'on se demande « à qui je demande pour celui-là ».
-
-   `documents.json` ne connaît que le NOM du porteur : c'est la convention
-   du dépôt (organigramme.js, pole.js), et un identifiant recopié à la main
-   dans un second fichier pourrirait en silence. L'identifiant se résout
-   donc en lisant l'organigramme, chargé À CÔTÉ du corpus : le premier
-   rendu ne l'attend pas, et un nom que l'organigramme ne connaît pas
-   reste un texte inerte — jamais un lien mort.
-   ------------------------------------------------------------------------- */
-
-/** Nom de personne -> identifiant de fiche. `null` tant que rien n'est lu. */
-let fichesPersonnes = null;
-
-/** Parcourt l'organigramme et retient, pour chaque nom, son identifiant. */
-function tablePersonnes(orga) {
-  const table = new Map();
-
-  const ajouter = (personne) => {
-    if (!personne || typeof personne !== 'object') return;
-    const nom = texteOuVide(personne.nom);
-    const identifiant = texteOuVide(personne.id);
-    // Un homonyme ne doit pas rendre le lien arbitraire : le premier vu
-    // gagne, et l'ambiguïté se règle dans l'organigramme, pas ici.
-    if (nom !== '' && identifiant !== '' && !table.has(nom)) table.set(nom, identifiant);
-  };
-
-  if (!orga || typeof orga !== 'object') return table;
-  ajouter(orga.direction);
-  for (const pole of (Array.isArray(orga.poles) ? orga.poles : [])) {
-    if (!pole || typeof pole !== 'object') continue;
-    ajouter(pole.responsable);
-    for (const squad of (Array.isArray(pole.squads) ? pole.squads : [])) {
-      if (!squad || typeof squad !== 'object') continue;
-      for (const membre of (Array.isArray(squad.membres) ? squad.membres : [])) ajouter(membre);
-    }
-  }
-  return table;
-}
-
-/** Fait du nom du porteur un lien, si — et seulement si — il se résout. */
-function majLienPorteur(fiche) {
-  if (fichesPersonnes === null || !fiche || !fiche.porteur) return;
-  const nom = texteOuVide(fiche.doc.porteur);
-  if (nom === '') return;
-  const identifiant = fichesPersonnes.get(nom);
-  if (!identifiant) return;
-
-  monter(fiche.porteur, 'Porteur : ',
-    el('a', {
-      class: 'ds-carte__porteur',
-      href: 'organigramme.html#personne=' + encodeURIComponent(identifiant)
-    }, nom));
-}
-
-/**
- * Charge l'organigramme sans bloquer, puis met à niveau les cartes déjà
- * construites en une passe. Un échec est silencieux pour la personne : la
- * recherche fonctionne alors exactement comme avant ce chantier.
- */
-async function chargerFichesPersonnes() {
-  let table;
-  try {
-    table = tablePersonnes(await chargerDonnees('organigramme'));
-  } catch (cause) {
-    console.warn('[docsearch] organigramme.json indisponible : '
-      + 'le porteur reste un texte, sans lien.', cause);
-    return;
-  }
-  if (table.size === 0) return;
-
-  fichesPersonnes = table;
-  for (const fiche of fiches.values()) majLienPorteur(fiche);
 }
 
 /**
@@ -1996,16 +1902,13 @@ function surActionAccueil(bouton) {
 
 /**
  * Le formulaire d'un document, prérempli avec le pôle filtré pour un
- * document neuf. Les porteurs proposés sont les noms de l'organigramme,
- * quand il a pu être lu.
+ * document neuf.
  */
 function editerDocument(doc, declencheur) {
   if (!edition) return;
-  const personnes = fichesPersonnes ? Array.from(fichesPersonnes.keys()).map((nom) => ({ nom })) : [];
   edition.ouvrirDocument({
     existant: doc || null,
     documents: corpus.donnees || { documents: corpus.documents },
-    personnes,
     pole: doc ? '' : (etat.filtres.pole || ''),
     declencheur
   });
@@ -2492,21 +2395,11 @@ function formulaireProposition(requeteEchouee) {
     el('option', { value: '' }, 'Non précisé'),
     corpus.types.map((type) => el('option', { value: type }, type)));
 
-  const casesMetier = corpus.valeurs.metier.map((metier) => el('label', { class: 'case' },
-    el('input', {
-      class: 'case__controle',
-      type: 'checkbox',
-      value: metier
-    }),
-    el('span', { class: 'case__texte' }, metier)));
-
-  const champPorteur = el('input', {
-    class: 'champ__controle',
-    id: idBase + '-porteur',
-    type: 'text',
-    autocomplete: 'off',
-    placeholder: 'Personne 00'
-  });
+  // Le pôle concerné : le service à qui en parler. Celui du menu, s'il
+  // est choisi, est proposé d'office.
+  const champPole = el('select', { class: 'champ__controle', id: idBase + '-pole' },
+    el('option', { value: '' }, 'Non précisé'),
+    corpus.valeurs.pole.map((code) => el('option', { value: code, selected: code === etat.filtres.pole }, code)));
 
   const champLien = el('input', {
     class: 'champ__controle',
@@ -2522,10 +2415,6 @@ function formulaireProposition(requeteEchouee) {
     rows: 3
   });
 
-  const groupeMetier = el('fieldset', { class: 'groupe-champs' },
-    el('legend', { class: 'groupe-champs__legende' }, 'Métiers concernés'),
-    ...casesMetier);
-
   const avertissement = stockage.disponible()
     ? null
     : el('p', { class: 'champ__aide' },
@@ -2539,7 +2428,7 @@ function formulaireProposition(requeteEchouee) {
   },
   el('p', { class: 'texte-sm texte-doux sans-marge' },
     'Cette proposition reste dans ce navigateur. Rien n’est envoyé : '
-    + 'servez-vous-en comme d’un pense-bête avant d’en parler au porteur.'),
+    + 'servez-vous-en comme d’un pense-bête avant d’en parler au pôle concerné.'),
   avertissement,
   el('div', { class: 'champ' },
     el('label', { class: 'champ__etiquette', for: idBase + '-titre' },
@@ -2550,10 +2439,9 @@ function formulaireProposition(requeteEchouee) {
   el('div', { class: 'champ' },
     el('label', { class: 'champ__etiquette', for: idBase + '-type' }, 'Type'),
     el('span', { class: 'champ__select' }, champType)),
-  groupeMetier,
   el('div', { class: 'champ' },
-    el('label', { class: 'champ__etiquette', for: idBase + '-porteur' }, 'Porteur'),
-    champPorteur),
+    el('label', { class: 'champ__etiquette', for: idBase + '-pole' }, 'Pôle concerné'),
+    el('span', { class: 'champ__select' }, champPole)),
   el('div', { class: 'champ' },
     el('label', { class: 'champ__etiquette', for: idBase + '-lien' }, 'Lien'),
     champLien,
@@ -2575,11 +2463,7 @@ function formulaireProposition(requeteEchouee) {
     lire: () => ({
       titre: champTitre.value.trim(),
       type: champType.value,
-      metier: casesMetier
-        .map((label) => label.querySelector('input'))
-        .filter((c) => c.checked)
-        .map((c) => c.value),
-      porteur: champPorteur.value.trim(),
+      pole: champPole.value,
       lien: champLien.value.trim(),
       remarque: champRemarque.value.trim()
     })
@@ -2611,8 +2495,7 @@ function ouvrirModaleProposition(declencheur, requeteEchouee) {
       id: 'p-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7),
       titre: valeurs.titre,
       type: valeurs.type,
-      metier: valeurs.metier,
-      porteur: valeurs.porteur,
+      pole: valeurs.pole,
       lien: valeurs.lien,
       remarque: valeurs.remarque,
       cree: new Date().toISOString().slice(0, 10)
@@ -2656,8 +2539,10 @@ function rendrePropositions() {
   refs.propositionsSection.hidden = false;
 
   monter(refs.propositionsListe, propositions.map((proposition) => {
-    const details = [proposition.type, (proposition.metier || []).join(', '),
-      proposition.porteur].filter((v) => typeof v === 'string' && v !== '');
+    /* Le type et le pôle. Une proposition enregistrée avant que la page ne
+       classe par pôle porte encore métiers et porteur : ils sont ignorés. */
+    const details = [proposition.type, proposition.pole ? 'Pôle ' + proposition.pole : '']
+      .filter((v) => typeof v === 'string' && v !== '');
 
     return el('article', { class: 'carte carte--compacte' },
       el('div', { class: 'carte__entete' },
@@ -2741,10 +2626,6 @@ function demarrer() {
   deleguer(refs.propositionsListe, '[data-action="supprimer-proposition"]', 'click',
     (evt, bouton) => confirmerSuppression(bouton.dataset.id, bouton));
 
-  // L'organigramme se charge à côté du corpus, sans être attendu : il ne
-  // sert qu'à faire du nom du porteur un lien vers sa fiche.
-  chargerFichesPersonnes();
-
   // La requête de l'URL est appliquée avant même le chargement : le champ
   // est déjà rempli quand les squelettes s'affichent.
   const initial = etatUrl.lire();
@@ -2800,8 +2681,8 @@ function demarrer() {
     else if (bouton.dataset.action === 'tout-effacer') toutEffacer();
   });
 
-  // Les trois menus déroulants : ils se combinent entre eux et avec la
-  // recherche, et ne survivent jamais à un état qu'ils ne décrivent pas.
+  // Le menu déroulant du pôle : il se combine avec le type et avec la
+  // recherche, et ne survit jamais à un état qu'il ne décrit pas.
   for (const dimension of DIMENSIONS) {
     const select = refs.menus.get(dimension.cle);
     if (!select) continue;
@@ -2852,7 +2733,6 @@ function demarrer() {
   if (edition) {
     edition.installer();
     edition.abonner(async (jeu) => {
-      if (jeu === 'organigramme') { chargerFichesPersonnes(); return; }
       if (jeu !== 'documents' || !pretARendre) return;
       try {
         construireInterface(await chargerDonnees('documents'), refs.zone);

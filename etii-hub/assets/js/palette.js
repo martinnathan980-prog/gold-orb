@@ -42,7 +42,7 @@ const PAGES = [
   { titre: 'ETIII — Structure & harnais', sousTitre: 'Intégration physique et routage dans la maquette numérique', href: 'etiii.html',
     texte: 'Intégration physique et routage dans la maquette numérique : cheminements, '
       + 'fixations et vérification des interférences avant fabrication.' },
-  { titre: 'Recherche documentaire', sousTitre: 'Le fonds du service, filtres métier, porteur, pôle', href: 'docsearch.html' },
+  { titre: 'Recherche documentaire', sousTitre: 'Le fonds du service, par pôle et par type', href: 'docsearch.html' },
   { titre: 'Base de connaissances', sousTitre: 'Questions fréquentes et demandes aux experts', href: 'faq.html' },
   { titre: 'Réunions', sousTitre: 'Les comptes-rendus du service et des pôles', href: 'reunions.html' },
   { titre: 'Organigramme', sousTitre: 'Arbre, trombinoscope, compétences', href: 'organigramme.html' }

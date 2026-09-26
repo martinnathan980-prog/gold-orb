@@ -16,16 +16,17 @@ await page.goto(B + '/docsearch.html',{waitUntil:'networkidle'});
 await page.waitForTimeout(600);
 let ok=0,ko=0; const t=(n,c,d='')=>{c?(ok++,console.log(`  OK    ${n}`)):(ko++,console.log(`  ÉCHEC ${n} ${d}`))};
 
-console.log('== Défaut 1 : le filtrage par porteur existe ==');
-// La colonne de facettes a laissé place à trois menus déroulants et aux
-// tuiles d'exploration par type — c'est la mise en page voulue. Le contrôle
-// porte donc sur la CAPACITÉ de filtrer, pas sur la forme du contrôle.
+console.log('== Défaut 1 : le classement du fonds se filtre ==');
+// Le document se classe par son pôle (le service qui le tient) et par son
+// type : un menu pour le pôle, des tuiles pour le type. Les anciens menus
+// Métier et Porteur sont partis — le contrôle porte sur la CAPACITÉ de
+// filtrer par le classement voulu, et sur leur absence.
 const filtres = await page.evaluate(() => ({
   menus: ['ds-metier', 'ds-porteur', 'ds-pole']
     .filter(id => document.getElementById(id)),
   typesParTuile: [...document.querySelectorAll('[data-action="filtrer-type"]')].length,
 }));
-t('les trois menus de filtre sont présents', filtres.menus.length === 3,
+t('le seul menu de filtre est le pôle', JSON.stringify(filtres.menus) === '["ds-pole"]',
   JSON.stringify(filtres.menus));
 t('le filtrage par type passe par les tuiles', filtres.typesParTuile >= 5,
   `(${filtres.typesParTuile} tuiles)`);

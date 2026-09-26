@@ -471,20 +471,29 @@ function bandeauAlertes(alertes, surAlertes) {
    4. La liste (à gauche) : par mois, la plus récente d'abord
    ------------------------------------------------------------------------- */
 
-/* Une communication dans la liste : un carré à gauche — sa photo, avec
-   le jour posé dessus, ou à défaut une tuile au jour et au mois —, puis
-   la date en petites capitales, le titre et une ligne de résumé. */
+/* La lettrine d'une tuile sans photo : la première lettre du titre, en
+   capitale — jamais un chiffre, qu'on lirait comme une date ; le mot du
+   chef prend un guillemet. */
+function lettrine(dossier) {
+  if (dossier.statut === 'mot') return '“';
+  const m = /\p{L}/u.exec(dossier.titre || '');
+  return m ? m[0].toUpperCase().slice(0, 1) : '·';
+}
+
+/* Une communication dans la liste : un carré à gauche — sa photo, ou à
+   défaut une tuile à la teinte de son pôle, marquée d'une lettrine ; la
+   date n'y est plus, elle est déjà écrite en grand à côté —, puis la date
+   en petites capitales, le titre et une ligne de résumé. */
 function carteListe(dossier, prefixe) {
-  const p = partiesDate(dossier.date);
   const image = premiereImage(dossier);
-  const jour = el('span', { class: 'kiosque__jour' }, p ? String(p.jour) : '—');
-  const mois = el('span', { class: 'kiosque__mois' }, p ? MOIS_COURTS[p.mois - 1] : '');
+  /* La lettrine est toujours posée : la photo la recouvre, et si elle ne
+     se charge pas, la tuile est déjà là, dessous. */
   const visuel = el('span', { class: ['kiosque__visuel', image ? 'kiosque__visuel--photo' : null], 'aria-hidden': 'true' },
+    el('span', { class: 'kiosque__lettrine' }, lettrine(dossier)),
     image
       ? el('img', { class: 'kiosque__vignette', src: image, alt: '', loading: 'lazy', decoding: 'async',
           onError: (evt) => { const v = evt.currentTarget.parentNode; evt.currentTarget.remove(); if (v) v.classList.remove('kiosque__visuel--photo'); } })
-      : null,
-    el('span', { class: 'kiosque__quand' }, jour, mois));
+      : null);
   return el('li', {
     class: 'kiosque__entree',
     dataset: { pole: dossier.pole || 'ETII', statut: STATUTS[dossier.statut] ? dossier.statut : 'info' }

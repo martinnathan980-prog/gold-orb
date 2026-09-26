@@ -8,10 +8,13 @@ import { creerIndex, rechercher, normaliser, surligner, suggerer }
 
 const corpus = JSON.parse(readFileSync(new URL('../assets/data/documents.json', import.meta.url),'utf8'));
 const docs = corpus.documents;
+// Les champs indexés par la recherche documentaire (docsearch.js). Le
+// porteur d'un document n'y est plus : la page ne le montre plus, un nom
+// de personne ne doit rien ramener.
 const CHAMPS = [
-  {nom:'titre', poids:10}, {nom:'reference', poids:6}, {nom:'motsCles', poids:5},
+  {nom:'titre', poids:10}, {nom:'reference', poids:5}, {nom:'motsCles', poids:5},
   {nom:'metier', poids:4}, {nom:'type', poids:4}, {nom:'perimetre', poids:2},
-  {nom:'porteur', poids:2}, {nom:'description', poids:1},
+  {nom:'description', poids:1},
 ];
 
 let ok = 0, ko = 0;
@@ -49,6 +52,8 @@ t('multi-termes : score du 1er >= score du dernier',
 const rRef = rechercher(idx, 'ETII-TEC-001', {limite:1000});
 t('une référence ne ramène qu\'un document', rRef.length === 1, `(${rRef.length})`);
 t('et c\'est le bon', rRef[0]?.doc.reference === 'ETII-TEC-001', `(${rRef[0]?.doc.reference})`);
+const rNom = rechercher(idx, 'Personne 08', {limite:1000});
+t('le nom d\'un porteur ne ramène aucun document', rNom.length === 0, `(${rNom.length})`);
 const rChute = rechercher(idx, 'chute de tension', {limite:1000});
 t('"chute de tension" reste une poignée de résultats', rChute.length <= 5, `(${rChute.length})`);
 const rAcc = rechercher(idx, 'integration', {limite:5});

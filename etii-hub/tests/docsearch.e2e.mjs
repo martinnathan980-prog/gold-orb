@@ -21,13 +21,17 @@ let ok=0, ko=0;
 const t=(n,c,d='')=>{ if(c){ok++;console.log(`  OK    ${n}`);} else {ko++;console.log(`  ÉCHEC ${n} ${d}`);} };
 
 console.log('== Facettes ==');
-// Le filtrage se fait par trois menus déroulants et par les tuiles
-// d'exploration : c'est la mise en page voulue par le service.
-const menus = await page.evaluate(() => ['ds-metier','ds-porteur','ds-pole']
-  .map(id => { const s = document.getElementById(id);
-    return s ? { id, options: s.options.length } : null; }).filter(Boolean));
-t('les trois menus de filtre sont présents', menus.length === 3, JSON.stringify(menus));
-t('chaque menu propose des valeurs', menus.every(m => m.options > 1), JSON.stringify(menus));
+// Le document se classe par son pôle — le service qui le tient — et par
+// son type (les tuiles d'exploration). Plus de menu Métier ni Porteur.
+const menus = await page.evaluate(() => ({
+  pole: (() => { const s = document.getElementById('ds-pole');
+    return s ? [...s.options].map(o => o.value) : null; })(),
+  anciens: ['ds-metier', 'ds-porteur'].filter(id => document.getElementById(id)),
+  tous: document.querySelectorAll('.ds-menus select').length
+}));
+t('un seul menu de filtre : le pôle', menus.tous === 1 && !!menus.pole && menus.anciens.length === 0, JSON.stringify(menus));
+t('il propose les trois pôles du service',
+  JSON.stringify(menus.pole) === JSON.stringify(['', 'ETIIA', 'ETIIE', 'ETIII']), JSON.stringify(menus.pole));
 
 console.log('\n== Un filtre restreint bien les résultats ==');
 // Une requête reste active pendant la comparaison : sans requête NI filtre,
@@ -133,7 +137,7 @@ console.log('\n== Documents sans lien ==');
 await champ2.fill('sur demande');
 await page.waitForTimeout(400);
 const corps2 = await page.locator('main').innerText();
-t('les documents sans lien sont signalés', /sur demande|porteur/i.test(corps2));
+t('les documents sans lien sont signalés', /sur demande/i.test(corps2) && /Lien\s*:\s*à renseigner/i.test(corps2));
 
 console.log('\n== La chaîne de remplacement ==');
 // `remplacePar` désigne la révision en vigueur. Une révision remplacée quitte
@@ -183,23 +187,54 @@ t('parcourir tout le fonds montre aussi les révisions remplacées',
   fonds.length === 72 && fonds.filter(c => c.remplacant).length === 36,
   `(${fonds.length} cartes, ${fonds.filter(c => c.remplacant).length} remplacées)`);
 
-console.log('\n== Le porteur mène à sa fiche ==');
-// Partout ailleurs le site fait d'un nom de personne un lien ; la carte de
-// document est justement le moment où l'on se demande à qui demander.
-const liensPorteur = await page.evaluate(() => {
+console.log('\n== Le pôle classe le document, sans porteur ni métier ==');
+// Le fonds entier est à l'écran (#tout=1) : chaque carte dit son pôle, et
+// aucune ne parle plus du porteur du document ni de ses métiers.
+const cartesFonds = await page.evaluate(() => {
   const cartes = [...document.querySelectorAll('#ds-resultats > li')];
-  const liens = cartes.map(c => c.querySelector('.ds-carte__porteur')).filter(Boolean);
   return {
     cartes: cartes.length,
-    liens: liens.length,
-    premier: liens.length ? liens[0].getAttribute('href') : null
+    avecPole: cartes.filter(c => c.querySelector('.badge--pole')).length,
+    polesLus: [...new Set(cartes.flatMap(c => [...c.querySelectorAll('.badge--pole')].map(b => b.textContent.trim())))].sort(),
+    porteur: cartes.filter(c => c.querySelector('.ds-carte__porteur') || /porteur\s*:/i.test(c.textContent)).length,
+    metier: cartes.filter(c => /métier/i.test(c.textContent)).length
   };
 });
-t('le porteur est un lien sur chaque carte',
-  liensPorteur.liens === liensPorteur.cartes, JSON.stringify(liensPorteur));
-t('ce lien ouvre la fiche de la personne',
-  /^organigramme\.html#personne=\S+/.test(liensPorteur.premier || ''),
-  String(liensPorteur.premier));
+t('chaque carte porte son pôle, écrit en toutes lettres',
+  cartesFonds.cartes === 72 && cartesFonds.avecPole === 72
+  && JSON.stringify(cartesFonds.polesLus) === JSON.stringify(['Pôle ETIIA', 'Pôle ETIIE', 'Pôle ETIII']), JSON.stringify(cartesFonds));
+t('aucune carte ne parle du porteur ni du métier', cartesFonds.porteur === 0 && cartesFonds.metier === 0, JSON.stringify(cartesFonds));
+
+// Le nom d'une personne n'est plus indexé : le taper ne ramène rien.
+await page.goto(B + '/docsearch.html#q=' + encodeURIComponent('Personne 08'), {waitUntil:'networkidle'});
+await page.waitForTimeout(900);
+t('le nom d’un porteur ne ramène plus de document', (await page.locator('#ds-resultats > li').count()) === 0
+  && /Aucun document/i.test(await page.locator('main').innerText()));
+
+// Les mots d'un ancien métier restent cherchables : « harnais » trouve
+// toujours les documents de harnais, même sans le mot dans leur titre.
+await page.goto(B + '/docsearch.html#q=harnais', {waitUntil:'networkidle'});
+await page.waitForTimeout(900);
+t('« harnais » trouve encore les documents du domaine', (await page.locator('#ds-resultats > li').count()) >= 8,
+  `(${await page.locator('#ds-resultats > li').count()})`);
+
+// Un ancien lien partagé : ses clés métier / porteur sont ignorées sans
+// erreur, le pôle s'applique, et l'URL réécrite ne les porte plus.
+await page.goto('about:blank');
+await page.goto(B + '/docsearch.html#q=norme&metier=Harnais&porteur=Personne%2008&pole=ETIIA', {waitUntil:'networkidle'});
+await page.waitForTimeout(1200);
+const ancien = await page.evaluate(() => ({
+  pole: document.getElementById('ds-pole').value,
+  jetons: [...document.querySelectorAll('#ds-jetons .facette')].map(j => j.textContent.replace(/\s+/g, ' ').trim()),
+  cartes: document.querySelectorAll('#ds-resultats > li').length,
+  horsPole: [...document.querySelectorAll('#ds-resultats > li')].filter(c => !/Pôle ETIIA/.test(c.textContent)).length,
+  hash: decodeURIComponent(location.hash)
+}));
+t('un ancien lien métier / porteur s’ouvre filtré par pôle seulement',
+  ancien.pole === 'ETIIA' && ancien.jetons.length === 1 && /Pôle/.test(ancien.jetons[0])
+  && ancien.cartes > 0 && ancien.horsPole === 0, JSON.stringify(ancien));
+t('et l’URL réécrite ne porte plus ni métier ni porteur',
+  !/metier|porteur/.test(ancien.hash) && /pole=ETIIA/.test(ancien.hash), ancien.hash);
 
 console.log('\n== La requête échouée amorce la proposition ==');
 await page.goto(B + '/docsearch.html', {waitUntil:'networkidle'});
@@ -225,6 +260,15 @@ const titreAmorce = await page.evaluate(() => {
 });
 t('le titre est pré-rempli avec la requête échouée', titreAmorce === 'zircogrommelin',
   JSON.stringify(titreAmorce));
+const champsProposition = await page.evaluate(() => {
+  const d = document.querySelector('[role="dialog"]');
+  const etiquettes = d ? [...d.querySelectorAll('label, legend')].map(l => l.textContent.trim()) : [];
+  const pole = d ? [...d.querySelectorAll('select')].find(s => [...s.options].some(o => o.value === 'ETIIE')) : null;
+  return { etiquettes, pole: !!pole };
+});
+t('la proposition demande le pôle concerné, plus le porteur ni les métiers',
+  champsProposition.pole && champsProposition.etiquettes.some(e => /Pôle concerné/.test(e))
+  && !champsProposition.etiquettes.some(e => /Porteur|Métier/i.test(e)), JSON.stringify(champsProposition));
 await page.keyboard.press('Escape');
 await page.waitForTimeout(300);
 

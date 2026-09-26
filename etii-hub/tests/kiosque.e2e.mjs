@@ -96,16 +96,30 @@ const frise = await page.evaluate(() => {
     visuels: entrees.every((e) => e.querySelector('.kiosque__visuel')),
     actives: document.querySelectorAll('.kiosque__entree--active').length,
     activeMarquee: !!active && active.getAttribute('aria-current') === 'true' && /inset/.test(getComputedStyle(active).boxShadow),
-    quand: document.querySelectorAll('.kiosque__jour').length === entrees.length,
+    /* Le carré ne porte plus la date (elle est écrite en grand à côté) :
+       ni jour ni mois, aucun chiffre visible dedans, photo ou pas. */
+    sansDate: document.querySelectorAll('.kiosque__visuel .kiosque__quand, .kiosque__visuel .kiosque__jour, .kiosque__visuel .kiosque__mois').length === 0
+      && entrees.every((e) => !/\d/.test(e.querySelector('.kiosque__visuel').textContent)),
+    /* Sans photo, une tuile à la teinte du pôle et une lettrine. */
+    tuiles: entrees.filter((e) => !e.querySelector('.kiosque__vignette')).map((e) => {
+      const v = e.querySelector('.kiosque__visuel');
+      const l = v.querySelector('.kiosque__lettrine');
+      return { lettre: l ? l.textContent : '', visible: !!l && l.getBoundingClientRect().width > 0,
+        teinte: l ? getComputedStyle(l).color : '', fond: getComputedStyle(v).backgroundColor };
+    }),
     dates: document.querySelectorAll('.kiosque__carte-date').length === entrees.length,
     resumes: document.querySelectorAll('.kiosque__carte-resume').length >= 1,
     ajout: document.querySelectorAll('.kiosque__ajout').length === 1
   };
 });
 t('les mois sont des en-têtes collants', frise.groupes >= 1 && frise.collants, JSON.stringify(frise));
-t('chaque entrée a son carré (photo ou tuile datée) et son statut', frise.statuts && frise.visuels);
+t('chaque entrée a son carré (photo ou tuile) et son statut', frise.statuts && frise.visuels);
+t('le carré ne porte plus la date, ni sur la photo ni sur la tuile', frise.sansDate, JSON.stringify(frise.tuiles));
+t('sans photo, une tuile teintée marquée d’une lettrine (une lettre ou le guillemet du mot)',
+  frise.tuiles.length >= 1 && frise.tuiles.every((x) => x.visible && /^(\p{Lu}|“)$/u.test(x.lettre) && !/rgba\(0, 0, 0, 0\)/.test(x.fond)),
+  JSON.stringify(frise.tuiles));
 t('la carte lue est la seule active, marquée d’un filet', frise.actives === 1 && frise.activeMarquee);
-t('le jour, la date, le résumé et le bouton d’ajout sont là', frise.quand && frise.dates && frise.resumes && frise.ajout);
+t('la date, le résumé et le bouton d’ajout sont là', frise.dates && frise.resumes && frise.ajout);
 await page.locator('.kiosque__carte').nth(1).hover();
 await page.waitForTimeout(300);
 t('le survol soulève la carte', (await page.locator('.kiosque__carte').nth(1).evaluate((c) => getComputedStyle(c).transform)) !== 'none');
@@ -204,7 +218,7 @@ const sombre = await (await nav.newContext({ viewport: { width: 1366, height: 90
 sombre.on('pageerror', (e) => err.push('sombre: ' + e.message));
 await sombre.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
 await sombre.waitForTimeout(1200);
-t('en sombre, les tuiles datées et la marque de fin sont visibles', await sombre.evaluate(() => {
+t('en sombre, les tuiles à lettrine et la marque de fin sont visibles', await sombre.evaluate(() => {
   const vide = (c) => /rgba\(0, 0, 0, 0\)/.test(c);
   return !vide(getComputedStyle(document.querySelector('.kiosque__visuel')).backgroundColor)
     && !vide(getComputedStyle(document.querySelector('.kiosque__fin'), '::before').backgroundColor);

@@ -788,6 +788,9 @@ function refuser(brut) {
 
 initTheme();
 
+/* Le réseau de neurones de la une ETIIE vit (decor.js), chargé seulement s'il est dans la page. */
+if (document.querySelector('.page-une__decor--nerf')) import('./decor.js').then((m) => m.animerReseau()).catch((e) => console.warn('[pole] décor immobile.', e));
+
 const PARAMETRE = (document.body && document.body.dataset ? String(document.body.dataset.pole || '') : '').trim();
 const POLE = Object.prototype.hasOwnProperty.call(POLES, PARAMETRE.toUpperCase()) ? POLES[PARAMETRE.toUpperCase()] : null;
 

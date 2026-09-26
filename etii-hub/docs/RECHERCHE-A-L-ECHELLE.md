@@ -70,7 +70,9 @@ Cela demande des **métadonnées propres** sur chaque document :
 ```
 
 **Le portail en gère six sur sept** — métier, porteur, périmètre, type,
-date et pôle sont des champs de `documents.json`, filtrables. L'indice,
+date et pôle sont des champs de `documents.json`. La page de recherche
+ne filtre plus que par pôle (le service qui tient le document) et par
+type ; le métier reste cherchable, le porteur n'est plus affiché. L'indice,
 lui, n'a jamais été un champ : il vit dans la chaîne du titre
 (« — indice C »), donc aucun code ne peut s'en servir. Ce qui a été
 ajouté à la place, et qui suffit, c'est **la chaîne de remplacement** :
