@@ -108,7 +108,7 @@ def board():
         d.text((x, 208), t, font=hdr, fill=MUTED)
     rows = [
         ("OC 1996", "NÎMES", "1996", "A1"),
-        ("OC 2000", "ÉCOLE", "20--", "B2"),
+        ("OC 2000", "D'ALZON", "20--", "B2"),
         ("OC 2018", "MARIGNANE", "20--", "C3"),
         ("OC 2024", "POINTE-À-PITRE", "20--", "D4"),
         ("OC 0030", "TRENTE ANS", "09 NOV", "1A"),
@@ -156,7 +156,7 @@ def boarding_pass():
     field(x0 + 60, 640, "DATE", "09 NOV 2026", 44)
     field(x0 + 470, 640, "VOL", "OC 1996", 44)
     field(x0 + 830, 640, "CLASSE", "FAMILLE", 44)
-    d.text((x0 + 60, 790), "PROCHAINE DESTINATION   /   POINTE-À-PITRE   /   DÉCEMBRE 2026",
+    d.text((x0 + 60, 790), "PROCHAINE DESTINATION   /   À TOI DE CHOISIR",
            font=f(FR, 26), fill=grey)
 
     sx = split + 55
@@ -178,21 +178,22 @@ def boarding_pass():
     print("  13-carte-embarquement.png")
 
 
-def meme_equipage():
-    """Le second carton final, apres une seconde de noir. Deux mots, rien d'autre."""
+def pas_une_blague():
+    """Le second carton final, apres une seconde de noir : le cadeau est vrai."""
     img = Image.new("RGB", (W, H), (4, 10, 17))
     d = ImageDraw.Draw(img)
-    draw_tracked(d, (W / 2, H / 2 - 70), "MÊME ÉQUIPAGE", f(FB, 116), GOLD, tracking=14)
-    img.save(os.path.join(OUT, "12b-carton-meme-equipage.png"))
-    print("  12b-carton-meme-equipage.png")
+    draw_tracked(d, (W / 2, H / 2 - 70), "CECI N'EST PAS UNE BLAGUE", f(FB, 96), GOLD, tracking=10)
+    img.save(os.path.join(OUT, "12b-carton-pas-une-blague.png"))
+    print("  12b-carton-pas-une-blague.png")
 
 
 print("Generation des cartons :")
 logo()
 board()
 card("02-carton-nimes.png", "DÉCOLLAGE", "NÎMES", "9 NOVEMBRE 1996", code="NIM")
-card("03-carton-ecole.png", "ESCALE", "L'ÉCOLE", "MÊME PROMOTION",
-     note="carton provisoire, à regénérer avec le nom exact de l'école")
+card("03-carton-dalzon.png", "ESCALE", "D'ALZON", "NÎMES", code="NIM")
+card("03b-carton-avignon.png", "ESCALE", "AVIGNON", "L'IUT", code="AVN")
+card("03c-carton-enac.png", "ESCALE", "ENAC", "TOULOUSE", code="TLS")
 card("04-carton-marignane.png", "ESCALE", "MARIGNANE", "AIRBUS HELICOPTERS", code="MRS")
 card("05-carton-turbulences.png", "ATTENTION", "ZONE DE TURBULENCES",
      "RESTEZ ASSIS, CEINTURE ATTACHÉE", accent=RED)
@@ -202,8 +203,10 @@ card("08-carton-duty-free.png", "VENTE À BORD", "BOUTIQUE HORS TAXES", "OFFRES 
 card("09-carton-presidence.png", "DIRECTION", "CONSEIL D'ADMINISTRATION", "SÉANCE EXCEPTIONNELLE")
 card("10-carton-perte-signal.png", "", "PERTE DE SIGNAL", "TRANSMISSION INTERROMPUE", accent=RED)
 card("11-carton-maternite.png", "ARRIVÉES", "TERMINAL MATERNITÉ", "PLUS JEUNE PASSAGÈRE")
-card("12-carton-final.png", "PROCHAINE DESTINATION", "POINTE-À-PITRE",
-     "DÉCEMBRE 2026   ///   TOUJOURS PAS D'HÉLICOPTÈRES", accent=GOLD)
-meme_equipage()
+card("12-carton-final.png", "PROCHAINE DESTINATION", "À TOI DE CHOISIR",
+     "UN VOYAGE POUR DEUX, EN EUROPE", accent=GOLD)
+card("14-carton-controle.png", "CONTRÔLE DE SÉCURITÉ", "HOMONYME DÉTECTÉ",
+     "PASSAGÈRE 1A   ///   VÉRIFICATION EN COURS", accent=RED)
+pas_une_blague()
 boarding_pass()
 print("Termine.")
