@@ -2,17 +2,23 @@
    ETII Hub — L'assistant documentaire
 
    La recherche trouve LE document ; l'assistant dit CE QUE dit le
-   document. Il pose la question à un intermédiaire (Apps Script ou Cloud
-   Run) qui détient la clé API et interroge le fonds indexé — jamais le
-   navigateur, qui ne doit jamais voir une clé.
+   document. Il vit sur sa propre page : une petite application web
+   Apps Script (tools/apps-script/assistant/) qui s'exécute au nom de la
+   personne qui l'ouvre et interroge Gemini Enterprise avec SES droits —
+   chacun ne reçoit que des passages de documents qu'il peut ouvrir.
+
+   Ce bloc n'appelle rien lui-même : il ouvre cette page, la question déjà
+   posée (?q=…). Une requête faite d'ici ne pourrait pas porter la
+   connexion Google de la personne, et le navigateur ne doit jamais voir
+   ni clé ni jeton.
 
    Tant que SOURCE.url est vide, le bloc explique qu'il n'est pas
-   raccordé et n'affiche AUCUNE réponse : pas d'exemple, pas de
-   simulation, rien qui puisse passer pour une réponse du service.
+   raccordé : pas d'exemple, pas de simulation, rien qui puisse passer
+   pour une réponse du service.
    Mode d'emploi complet : docs/ASSISTANT-IA.md
    ========================================================================= */
 
-import { el, monter, annoncer } from './ui.js';
+import { el } from './ui.js';
 
 /* -------------------------------------------------------------------------
    LE POINT DE RACCORDEMENT — la seule chose à modifier en production
@@ -23,53 +29,16 @@ import { el, monter, annoncer } from './ui.js';
    tests/audit.mjs refuse une URL de raccordement commitée ; sur une copie
    raccordée, lancez ETII_RACCORDE=1 node tests/audit.mjs. */
 export const SOURCE = {
-  /* URL /exec de l'application web Apps Script (ou du service Cloud Run).
-     Elle reçoit { question } en POST et renvoie { reponse, citations }.
+  /* URL /exec de l'application web « Assistant documentaire ETII ».
      Vide : l'assistant reste annoncé comme non raccordé. */
   url: '',
   /* Nom affiché de la source, pour que chacun sache ce qui répond. */
-  libelle: 'Fonds documentaire ETII'
+  libelle: 'Gemini · documents ETII'
 };
 
 const LIMITE_QUESTION = 2000;
 
-/* Délai maximal d'un envoi : un appel de modèle passé par Apps Script
-   dépasse facilement huit secondes. Sans borne du tout, un intermédiaire
-   muet laisse le bouton « Demander » désactivé et le message d'attente
-   affichés pour toujours — la promesse ne se règle jamais. */
-const DELAI_ENVOI = 30000;
-
 function texte(v) { return (v === null || v === undefined) ? '' : String(v).trim(); }
-
-/**
- * fetch() borné dans le temps. Le délai est levé dès l'arrivée des en-têtes ;
- * un corps qui se bloque ensuite n'est pas couvert — cas bien plus rare,
- * assumé.
- * @param {string} url
- * @param {object} [options] options de fetch(), plus `delai` en millisecondes
- * @returns {Promise<Response>}
- */
-async function recupererReponse(url, options) {
-  const opt = options || {};
-  const delai = typeof opt.delai === 'number' ? opt.delai : DELAI_ENVOI;
-  const controleur = typeof AbortController === 'function' ? new AbortController() : null;
-  let expire = false;
-  const minuteur = controleur && delai > 0
-    ? setTimeout(() => { expire = true; controleur.abort(); }, delai)
-    : null;
-  try {
-    return await fetch(url, Object.assign({}, opt, {
-      delai: undefined,
-      signal: controleur ? controleur.signal : undefined
-    }));
-  } catch (cause) {
-    throw new Error(expire
-      ? 'délai de ' + Math.round(delai / 1000) + ' s dépassé'
-      : 'réseau injoignable');
-  } finally {
-    if (minuteur !== null) clearTimeout(minuteur);
-  }
-}
 
 /** L'assistant est-il raccordé ? */
 export function raccorde() {
@@ -77,118 +46,93 @@ export function raccorde() {
 }
 
 /**
- * Pose une question à l'intermédiaire.
+ * L'adresse de la page de l'assistant, la question en paramètre.
  * @param {string} question
- * @returns {Promise<{reponse:string, citations:Array<{titre:string, extrait:string}>}>}
+ * @returns {string}  vide si l'assistant n'est pas raccordé
  */
-export async function demander(question) {
-  const q = texte(question);
-  if (!q) throw new Error('La question est vide.');
-  if (q.length > LIMITE_QUESTION) throw new Error('La question dépasse ' + LIMITE_QUESTION + ' caractères.');
-  if (!raccorde()) throw new Error('Aucune source n’est raccordée.');
-
-  const reponse = await recupererReponse(SOURCE.url, {
-    method: 'POST',
-    /* text/plain : évite la requête préalable CORS, qu'Apps Script ne
-       traite pas. Le corps reste du JSON, lu tel quel côté script. */
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ question: q }),
-    delai: DELAI_ENVOI
-  });
-  if (!reponse.ok) throw new Error('L’assistant a répondu ' + reponse.status + '.');
-
-  const donnees = await reponse.json();
-  if (donnees && donnees.erreur) throw new Error(donnees.erreur);
-  return {
-    reponse: texte(donnees && donnees.reponse),
-    citations: (donnees && Array.isArray(donnees.citations) ? donnees.citations : [])
-      .map((c) => ({ titre: texte(c && c.titre), extrait: texte(c && c.extrait) }))
-      .filter((c) => c.titre)
-  };
+export function adresseQuestion(question) {
+  const base = texte(SOURCE.url);
+  if (!base) return '';
+  const q = texte(question).slice(0, LIMITE_QUESTION);
+  if (!q) return base;
+  return base + (base.indexOf('?') === -1 ? '?' : '&') + 'q=' + encodeURIComponent(q);
 }
 
 /* -------------------------------------------------------------------------
    L'interface
    ------------------------------------------------------------------------- */
 
+/**
+ * Un lien « Demander à Gemini ↗ » qui pose la question du moment, lue au
+ * dernier instant (survol, focus, clic) : posé à côté des résultats, il
+ * suit la barre de recherche sans être reconstruit à chaque frappe.
+ * @param {() => string} lireQuestion
+ * @param {string} [classe]
+ * @returns {HTMLElement|null}  null tant que l'assistant n'est pas raccordé
+ */
+export function lienDemander(lireQuestion, classe) {
+  if (!raccorde()) return null;
+  const lien = el('a', { class: classe || 'bouton bouton--principal', href: adresseQuestion(''),
+    target: '_blank', rel: 'noopener noreferrer',
+    title: 'Poser cette question à Gemini, sur les documents du service' }, 'Demander à Gemini ↗');
+  const actualiser = () => { lien.href = adresseQuestion(lireQuestion()); };
+  ['focus', 'pointerenter', 'pointerdown', 'click'].forEach((type) => lien.addEventListener(type, actualiser));
+  return lien;
+}
+
 function encadreNonRaccorde() {
   return el('div', { class: 'assistant assistant--attente' },
     el('div', { class: 'assistant__tete' },
       el('span', { class: 'badge badge--neutre' }, 'Pas encore raccordé'),
-      el('h3', { class: 'assistant__titre sans-marge' }, 'Poser une question au fonds documentaire')),
+      el('h3', { class: 'assistant__titre sans-marge' }, 'Demander à Gemini ce que disent les documents')),
     el('p', { class: 'assistant__texte sans-marge' },
       'La recherche ci-dessus trouve ', el('em', {}, 'le'), ' document. Cette section répondra à '
-      + '« que dit le document ? » — une réponse en français, tirée des documents du service, '
-      + 'avec la référence et le passage d’origine.'),
+      + '« que dit le document ? » : une réponse en français, tirée des documents du service que vous '
+      + 'avez le droit de lire, avec les documents cités.'),
     el('p', { class: 'assistant__texte texte-sm sans-marge' },
-      'Elle n’affichera jamais de réponse tant qu’elle n’est pas raccordée à une source réelle : '
-      + 'aucun exemple, aucune simulation. Le branchement se fait en un seul point — ',
+      'En attendant : ouvrez un document depuis la recherche, puis « Demander à Gemini » dans Google Drive. '
+      + 'Le branchement se fait en un seul point — ',
       el('span', { class: 'mono' }, 'SOURCE.url'), ' dans ', el('span', { class: 'mono' }, 'assets/js/assistant.js'),
-      '. La marche à suivre complète, les interlocuteurs à contacter et les précautions sont dans ',
+      '. La marche à suivre complète est dans ',
       el('span', { class: 'mono' }, 'docs/ASSISTANT-IA.md'), '.'));
 }
 
-function citation(c) {
-  return el('li', { class: 'assistant__citation' },
-    el('span', { class: 'assistant__citation-titre' }, c.titre),
-    c.extrait ? el('span', { class: 'assistant__citation-extrait' }, '« ' + c.extrait + ' »') : null);
-}
-
 /**
- * Construit le bloc de l'assistant : question, réponse, citations.
- * @param {{requete?: string}} [options]  question pré-remplie
+ * Construit le bloc de l'assistant : une question, envoyée à sa page.
+ * Le champ reprend ce qui est tapé dans la barre de recherche tant que la
+ * personne n'y a pas écrit elle-même.
+ * @param {{requete?: string|(() => string)}} [options]
  * @returns {HTMLElement}
  */
 export function blocAssistant(options) {
   if (!raccorde()) return encadreNonRaccorde();
   const opts = options || {};
+  const requete = () => texte(typeof opts.requete === 'function' ? opts.requete() : opts.requete);
 
   const champ = el('textarea', { class: 'assistant__champ', id: 'assistant-question', rows: 2,
     placeholder: 'Posez votre question en une phrase…', maxLength: LIMITE_QUESTION });
-  champ.value = texte(opts.requete);
+  const question = () => texte(champ.value) || requete();
 
-  const bouton = el('button', { type: 'button', class: 'bouton bouton--principal' }, 'Demander');
-  const zone = el('div', { class: 'assistant__reponse', role: 'status', 'aria-live': 'polite' });
-
-  const poser = () => {
-    const q = texte(champ.value);
-    if (!q) { champ.focus(); return; }
-    bouton.disabled = true;
-    monter(zone, el('p', { class: 'assistant__attente sans-marge' }, 'Lecture du fonds documentaire…'));
-    demander(q).then((r) => {
-      monter(zone,
-        r.reponse
-          ? el('div', { class: 'assistant__texte-reponse' }, r.reponse)
-          : el('p', { class: 'assistant__texte sans-marge' }, 'L’assistant n’a rien renvoyé.'),
-        r.citations.length
-          ? el('div', { class: 'assistant__sources' },
-              el('p', { class: 'assistant__sources-titre sans-marge' }, 'Documents cités'),
-              el('ul', { class: 'assistant__citations' }, r.citations.map(citation)))
-          : el('p', { class: 'assistant__sans-source sans-marge' },
-              el('span', { class: 'badge badge--alerte' }, 'Sans citation'),
-              ' Aucun document n’a été cité : cette réponse n’est pas vérifiable, ne vous en servez pas telle quelle.'));
-      annoncer('Réponse de l’assistant affichée.');
-    }).catch((err) => {
-      monter(zone, el('p', { class: 'assistant__erreur sans-marge' },
-        'L’assistant n’a pas pu répondre : ' + (err && err.message ? err.message : 'erreur inconnue') + '.'));
-    }).then(() => { bouton.disabled = false; });
+  const lien = lienDemander(question);
+  const actualiser = () => {
+    if (!texte(champ.value)) champ.placeholder = requete() || 'Posez votre question en une phrase…';
+    lien.href = adresseQuestion(question());
   };
-
-  bouton.addEventListener('click', poser);
+  champ.addEventListener('focus', actualiser);
+  champ.addEventListener('input', actualiser);
   champ.addEventListener('keydown', (evt) => {
-    if (evt.key === 'Enter' && (evt.ctrlKey || evt.metaKey)) { evt.preventDefault(); poser(); }
+    if (evt.key === 'Enter' && (evt.ctrlKey || evt.metaKey)) { evt.preventDefault(); actualiser(); lien.click(); }
   });
 
   return el('div', { class: 'assistant' },
     el('div', { class: 'assistant__tete' },
       el('span', { class: 'badge badge--accent' }, SOURCE.libelle),
-      el('h3', { class: 'assistant__titre sans-marge' }, 'Poser une question au fonds documentaire')),
+      el('h3', { class: 'assistant__titre sans-marge' }, 'Demander à Gemini ce que disent les documents')),
     el('div', { class: 'assistant__saisie' },
       el('label', { class: 'visuellement-cache', for: 'assistant-question' }, 'Votre question'),
-      champ, bouton),
+      champ, lien),
     el('p', { class: 'assistant__texte texte-xs sans-marge' },
-      'Réponse tirée des documents indexés, avec leur référence. Une réponse sans citation '
-      + 'n’est pas vérifiable : recoupez-la avant de l’utiliser. ',
-      el('kbd', {}, 'Ctrl'), ' + ', el('kbd', {}, 'Entrée'), ' pour envoyer.'),
-    zone);
+      'La réponse s’ouvre dans un nouvel onglet, avec les documents cités. Gemini ne lit que ce que '
+      + 'vous avez le droit d’ouvrir. Vérifiez dans le document avant d’appliquer une règle. ',
+      el('kbd', {}, 'Ctrl'), ' + ', el('kbd', {}, 'Entrée'), ' pour envoyer.'));
 }

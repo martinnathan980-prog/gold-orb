@@ -535,7 +535,10 @@ export function porteurs(donnees, options) {
   const appareils = (Array.isArray(d.flotte) ? d.flotte : []).filter((a) => a && typeof a === 'object' && texte(a.code));
   const cats = categories(d, appareils);
 
-  let categorie = '';
+  /* Trois marchés, un onglet chacun : civil, militaire, prototype. On
+     ouvre sur le premier ; il n'y a plus de vue « tous mélangés ». */
+  const marches = cats.filter((c) => appareils.some((a) => texte(a.categorie) === c.cle));
+  let categorie = marches.length ? marches[0].cle : '';
   /* Le porteur déplié, s'il y en a un, et l'élément de galerie qui porte
      sa fiche — un seul à la fois. */
   let courant = null;
@@ -558,15 +561,15 @@ export function porteurs(donnees, options) {
       el('ul', { class: 'porteurs__grille', role: 'list' },
         groupesGalerie.flatMap((g) => g.membres).map((a) => fiche(a, prefixe)))));
 
-  const puces = el('ul', { class: 'facettes porteurs__facettes', 'aria-label': 'Filtrer les porteurs par catégorie' },
-    [{ cle: '', libelle: 'Tous' }].concat(cats).map((c) => el('li', {},
+  const puces = el('ul', { class: 'porteurs__marches', 'aria-label': 'Choisir le marché' },
+    marches.map((c) => el('li', {},
       el('button', {
-        type: 'button', class: 'facette facette--compacte',
-        'aria-pressed': c.cle === '' ? 'true' : 'false',
+        type: 'button', class: 'porteurs__marche',
+        'aria-pressed': c.cle === categorie ? 'true' : 'false',
         dataset: { categorie: c.cle }
-      }, c.libelle, ' ',
-      el('span', { class: 'facette__compteur' },
-        String(c.cle ? appareils.filter((a) => texte(a.categorie) === c.cle).length : appareils.length))))));
+      },
+      el('span', { class: 'porteurs__marche-nom' }, c.libelle),
+      el('span', { class: 'porteurs__marche-compte' }, String(appareils.filter((a) => texte(a.categorie) === c.cle).length))))));
 
   const itemDe = (appareil) => piste.querySelector('.porteurs__item[data-code="' + CSS.escape(texte(appareil.code)) + '"]');
 
@@ -650,7 +653,7 @@ export function porteurs(donnees, options) {
       li.hidden = Boolean(categorie) && li.dataset.categorie !== categorie;
     });
     piste.querySelectorAll('.porteurs__groupe-galerie').forEach((g) => {
-      g.hidden = Boolean(categorie) && g.dataset.categorie !== categorie;
+      g.hidden = Boolean(categorie) && Boolean(g.dataset.categorie) && g.dataset.categorie !== categorie;
     });
     if (courant && !liste.includes(courant)) replier(); else positionner();
   }
@@ -712,8 +715,8 @@ export function porteurs(donnees, options) {
     const a = appareils.find((x) => texte(x.code).toUpperCase() === demande);
     if (!a) return false;
     if (categorie && texte(a.categorie) !== categorie) {
-      categorie = '';
-      puces.querySelectorAll('[data-categorie]').forEach((x) => x.setAttribute('aria-pressed', x.dataset.categorie === '' ? 'true' : 'false'));
+      categorie = texte(a.categorie);
+      puces.querySelectorAll('[data-categorie]').forEach((x) => x.setAttribute('aria-pressed', x.dataset.categorie === categorie ? 'true' : 'false'));
       filtrer();
     }
     if (a !== courant) deplier(a, { defiler: true });

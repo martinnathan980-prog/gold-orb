@@ -261,44 +261,33 @@ function carteIndicateur(cle, def, valeurs, mois, cible) {
   const e = EXPLICATIONS[cle];
   const couleur = 'var(--serie-' + cle + ')';
   const bornes = premiereEtDerniere(valeurs);
-  const dernierMois = mois.length ? libelleMois(mois[mois.length - 1]) : '';
   if (!bornes) {
     return el('article', { class: 'otq-carte' },
       el('p', { class: 'otq-carte__sigle' }, def.libelle), el('p', { class: 'texte-doux' }, 'Aucune mesure pour le moment.'));
   }
-  const { debut, fin, avant } = bornes;
+  const { debut, fin } = bornes;
   const surAn = fin - debut;
-  const surMois = avant === null ? null : fin - avant;
-  const ecart = cible === null ? null : fin - cible;
+  const atteint = cible !== null && fin >= cible;
+  /* L'essentiel, et rien d'autre : ce que c'est, la valeur, ce qu'elle
+     veut dire, la jauge avec l'objectif, et une seule tendance. */
   return el('article', { class: 'otq-carte', dataset: { indicateur: cle }, style: { '--serie': couleur } },
     el('header', { class: 'otq-carte__tete' },
       el('p', { class: 'otq-carte__sigle' }, def.libelle, el('span', { class: 'otq-carte__nom' }, def.nom)),
-      el('h3', { class: 'otq-carte__titre' }, e.titre),
-      el('p', { class: 'otq-carte__phrase' }, e.phrase)),
+      el('h3', { class: 'otq-carte__titre' }, e.titre)),
     el('div', { class: 'otq-carte__mesure' },
       el('p', { class: 'otq-carte__valeur' }, fr(fin), el('span', { class: 'otq-carte__unite' }, '%')),
-      el('p', { class: 'otq-carte__concret' }, e.concret(Math.round(fin)), el('br'),
-        el('span', { class: 'otq-carte__quand' }, 'Mesure de ' + dernierMois + '.'))),
+      el('p', { class: 'otq-carte__concret' }, e.concret(Math.round(fin)))),
     jauge(fin, debut, cible, couleur),
-    el('dl', { class: 'otq-carte__faits' },
-      el('div', {},
-        el('dt', {}, 'En un an'),
-        el('dd', { class: surAn >= 0 ? 'otq-hausse' : 'otq-baisse' }, points(surAn),
-          el('span', {}, ' (' + fr(debut) + ' % → ' + fr(fin) + ' %)'))),
-      surMois === null ? null : el('div', {},
-        el('dt', {}, 'Sur le dernier mois'),
-        el('dd', { class: surMois >= 0 ? 'otq-hausse' : 'otq-baisse' }, points(surMois))),
-      ecart === null ? null : el('div', {},
-        el('dt', {}, 'Par rapport à l’objectif'),
-        el('dd', {}, ecart >= 0
-          ? points(ecart) + ' au-delà'
-          : 'il manque ' + fr(Math.abs(ecart)) + (Math.abs(ecart) >= 2 ? ' pts' : ' pt')))));
+    el('p', { class: 'otq-carte__tendances' },
+      el('span', { class: ['otq-puce', surAn >= 0 ? 'otq-puce--hausse' : 'otq-puce--baisse'] },
+        (surAn >= 0 ? '↗ ' : '↘ ') + points(surAn) + ' en un an'),
+      cible === null ? null : el('span', { class: ['otq-puce', atteint ? 'otq-puce--atteint' : null] },
+        atteint ? 'Objectif atteint' : 'Objectif ' + fr(cible) + ' %')));
 }
 
 /**
- * Construit la section complète : origine, la phrase de synthèse, une
- * carte par indicateur (ce qu'il mesure, où on en est, la jauge avec
- * l'objectif), et sous chacune la courbe de ses douze mois.
+ * Construit la section : la mention d'exemple, une carte par indicateur,
+ * puis une seule courbe des douze mois pour les deux.
  * @param {{series:object, origine:string, maj:string}} suivi
  * @returns {HTMLElement}
  */
@@ -307,34 +296,19 @@ export function rendreSuivi(suivi) {
   const mois = s.mois;
   const dernierMois = mois[mois.length - 1];
   const periode = mois.length ? libelleMois(mois[0]) + ' à ' + libelleMois(dernierMois) : '';
-
-  const bq = premiereEtDerniere(s.otq);
-  const bd = premiereEtDerniere(s.otd);
-  const tendance = (b) => (b ? (b.fin >= b.debut ? 'en progrès' : 'en recul') : '');
-  const synthese = (bq && bd)
-    ? el('p', { class: 'otq__synthese' },
-        'En ' + libelleMois(dernierMois) + ', la qualité du premier coup est à ',
-        el('strong', {}, fr(bq.fin) + ' %'), s.cibleOtq === null ? '' : ' (objectif ' + fr(s.cibleOtq) + ' %)',
-        ' et le respect des délais à ', el('strong', {}, fr(bd.fin) + ' %'), s.cibleOtd === null ? '' : ' (objectif ' + fr(s.cibleOtd) + ' %)',
-        '. Sur un an, la qualité est ' + tendance(bq) + ' et les délais sont ' + tendance(bd) + '.')
-    : null;
-
-  const colonne = (cle, def, valeurs, cible, libelle) => el('div', { class: 'otq__colonne' },
-    carteIndicateur(cle, def, valeurs, mois, cible),
-    graphiqueLignes({
-      mois,
-      series: [{ cle, libelle, valeurs, couleur: 'var(--serie-' + cle + ')' }],
-      definition: { libelle: def.libelle, nom: def.nom, unite: '%', sens: 'haut', cible },
-      titre: def.libelle + ', mois par mois — ' + periode
-    }));
-
   return el('div', { class: 'otq' },
     bandeauOrigine(suivi),
-    synthese,
     el('div', { class: 'otq__colonnes' },
-      colonne('otq', DEFINITIONS.otq, s.otq, s.cibleOtq, 'OTQ — On Time Quality'),
-      colonne('otd', DEFINITIONS.otd, s.otd, s.cibleOtd, 'OTD — On Time Delivery')),
-    el('p', { class: 'otq__note texte-faible texte-xs sans-marge' },
-      'Plus haut, c’est mieux. La ligne pointillée de chaque courbe marque l’objectif. ',
-      'Une valeur manquante laisse un trou dans la courbe : rien n’est interpolé.'));
+      carteIndicateur('otq', DEFINITIONS.otq, s.otq, mois, s.cibleOtq),
+      carteIndicateur('otd', DEFINITIONS.otd, s.otd, mois, s.cibleOtd)),
+    graphiqueLignes({
+      mois,
+      series: [
+        { cle: 'otq', libelle: 'Qualité du premier coup (OTQ)', valeurs: s.otq, couleur: 'var(--serie-otq)' },
+        { cle: 'otd', libelle: 'Respect des délais (OTD)', valeurs: s.otd, couleur: 'var(--serie-otd)' }
+      ],
+      definition: { libelle: 'OTQ et OTD', nom: 'Taux mensuels', unite: '%', sens: 'haut',
+        cible: (s.cibleOtq !== null && s.cibleOtq === s.cibleOtd) ? s.cibleOtq : null },
+      titre: 'L’année, mois par mois — ' + periode
+    }));
 }

@@ -51,7 +51,7 @@ import {
 } from './ui.js';
 
 import { creerIndex, rechercher, surligner, suggerer } from './search.js';
-import { blocAssistant } from './assistant.js';
+import { blocAssistant, lienDemander } from './assistant.js';
 
 /* -------------------------------------------------------------------------
    0. Accès aux données
@@ -1163,9 +1163,9 @@ function construireInterface(donnees, cible) {
     edition ? edition.ajouter('Ajouter un document', (bouton) => editerDocument(null, bouton)) : null),
   blocUsage(),
   /* L'assistant : « que dit le document », quand la recherche répond
-     « où est le document ». Tant qu'aucune source n'est raccordée, il se
-     présente comme tel et n'affiche aucune réponse. */
-  blocAssistant());
+     « où est le document ». Il reprend la question tapée dans la barre.
+     Tant qu'aucune source n'est raccordée, il se présente comme tel. */
+  blocAssistant({ requete: () => etat.requete }));
 
   /* --- Résultats : compteur, tri, grille, messages --------------------- */
 
@@ -1210,7 +1210,11 @@ function construireInterface(donnees, cible) {
     hidden: true
   },
   el('div', { class: 'rangee rangee--serree' },
-    refs.compteur, bandeauTri, proposer,
+    refs.compteur, bandeauTri,
+    /* La même question, posée à Gemini sur le texte des documents : le
+       lien n'existe que si l'assistant est raccordé. */
+    lienDemander(() => etat.requete, 'bouton bouton--discret bouton--compact'),
+    proposer,
     edition ? edition.ajouter('Ajouter un document', (bouton) => editerDocument(null, bouton)) : null),
   el('div', { class: 'separateur', role: 'presentation' }),
   refs.grille,

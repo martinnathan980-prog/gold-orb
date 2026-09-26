@@ -1,274 +1,381 @@
-# Poser une question au fonds documentaire — le guide
+# Des milliers de documents, une barre de recherche, Gemini — le mode d'emploi
 
-> Objectif : taper « quelle est la règle de séparation entre un faisceau
-> de puissance et un faisceau signal ? » et obtenir **la** réponse, tirée
-> des documents du service, **avec la référence du document et la page**.
+> Trois questions, trois réponses :
 >
-> Faits vérifiés le 20 septembre 2026 sur la documentation Google. Les
-> tarifs et les noms de produits bougent vite : revérifiez avant de vous
-> engager. Ce document ne remplace pas l'avis de votre DSI.
+> - **Où stocker autant de documents ?** Dans un **Drive partagé** du
+>   service, rangé par pôle. Le **classeur Google** (celui que le site lit
+>   déjà) en est le catalogue, rempli automatiquement.
+> - **Comment les faire lire à Gemini ?** Tout de suite, avec le Gemini
+>   que vous avez au travail : **« Demander à Gemini » dans Drive** et des
+>   **carnets NotebookLM** par thème. Aucune installation.
+> - **Comment la barre de recherche devient le portail pour tout lire ?**
+>   Elle trouve déjà *le* document. Pour qu'elle dise aussi *ce que dit*
+>   le document, sur tout le fonds, il faut **Gemini Enterprise** (la DSI)
+>   et une petite page Apps Script, déjà écrite dans ce dépôt.
+>
+> Faits vérifiés le 26 septembre 2026 sur la documentation Google. Les noms
+> de produits et les tarifs changent souvent : revérifiez avant de vous
+> engager. Ce qui n'a pas pu être vérifié est signalé **(à confirmer)**.
+
+```
+                    ┌──────────────────────────── Drive partagé « ETII — Fonds documentaire »
+                    │                              ETIIA/  ETIIE/  ETIII/  Commun/
+                    │                                │  (les fichiers, et les droits)
+                    │                                ▼
+   index-documents.gs  ──▶  Classeur des documents (un onglet par pôle)
+   (chaque nuit)            Titre · Référence · Type · Lien · Porteur…
+                                     │
+                                     ▼
+   Portail ETII Hub — Recherche  « routage harnais »  ──▶  la fiche + « Ouvrir ↗ »  ──▶  le document dans Drive
+                              │                                                           └─ « Demander à Gemini » (partie 2)
+                              └─ « Demander à Gemini ↗ »  ──▶  page Assistant (partie 3)
+                                                              └─ Gemini Enterprise lit le Drive partagé
+                                                                 avec VOS droits, répond, cite les documents
+```
 
 ---
 
-## 0. La chose à savoir avant tout le reste
+## 0. Deux précautions avant tout
 
-**Une clé API Gemini personnelle ne doit jamais toucher un document
-d'entreprise.** Deux raisons, pas une :
-
-1. **Les conditions d'usage.** Sur les *Unpaid Services* de l'API Gemini
-   (clé gratuite, AI Studio), Google écrit noir sur blanc qu'il utilise
-   vos contenus « pour fournir, améliorer et développer les produits
-   Google », et que **des relecteurs humains peuvent lire vos données**.
-   Sur les *Paid Services* (facturation activée), ce n'est plus le cas.
-   La bascule gratuit → payant n'est donc pas une histoire de quota :
-   c'est une histoire de confidentialité.
-2. **Le contrôle export.** Un document d'ingénierie électrique
-   hélicoptère peut relever du contrôle des biens à double usage
-   (règlement UE 2021/821) ou de l'ITAR/EAR s'il y a du contenu
-   américain. L'envoyer vers un service cloud dont vous ne maîtrisez ni
-   la région ni les accès, c'est potentiellement un transfert non
-   autorisé. Ce n'est pas un risque théorique.
-
-**Conclusion pratique** : montez la maquette sur des documents publics
-ou fictifs, et faites valider le chemin de production par la DSI **avant**
-d'y mettre le premier document réel.
+1. **Le contrôle export.** Un document d'ingénierie électrique hélicoptère
+   peut relever des biens à double usage (règlement UE 2021/821) ou de
+   l'ITAR/EAR. Faites valider par le référent conformité **quels dossiers**
+   Gemini peut lire avant d'y mettre des documents réels. Un dossier
+   exclu reste simplement hors du Drive partagé indexé.
+2. **Jamais de clé API personnelle, jamais d'outil grand public.** Tout ce
+   qui suit passe par le compte Google de l'entreprise, dans le cadre du
+   contrat du groupe. Le site ne contient aucune clé et n'en contiendra
+   jamais.
 
 ---
 
-## 1. Les trois chemins possibles
+## 1. Ranger — aujourd'hui, sans la DSI
 
-| | A — File Search (API Gemini) | B — Gemini Enterprise | C — Gemini Notebook Enterprise |
-|---|---|---|---|
-| **Ce que c'est** | Un « magasin de fichiers » géré par Google : il découpe, indexe et cite vos documents | Recherche intranet + assistant, connecté à vos sources existantes | Un carnet de recherche sur un lot de documents choisi |
-| **Qui l'installe** | Vous, avec une clé API et un bout de code | La DSI, dans le projet Google Cloud du groupe | La DSI, puis vous |
-| **Droits d'accès** | ❌ aucun : qui interroge voit tout | ✅ *permissions-aware* : chacun ne voit que ce à quoi il a droit | selon le carnet |
-| **Sources** | fichiers que vous poussez | connecteurs SharePoint, Drive, Confluence, Jira, ServiceNow… | fichiers ajoutés au carnet |
-| **Effort** | jours | semaines à mois (c'est un projet) | heures |
-| **Pour vous** | la maquette | **la cible** | la preuve de valeur immédiate |
+### 1.1 Le Drive partagé
 
-### Recommandation
+Un **Drive partagé** (et non « Mon Drive ») : les fichiers appartiennent au
+service, pas à une personne. Quand quelqu'un part, rien ne disparaît. Un
+Drive partagé contient jusqu'à **400 000 éléments** (fichiers et dossiers) :
+des milliers de documents y tiennent largement.
 
-1. **Cette semaine** : maquette en A, sur des documents non sensibles.
-   Elle vous sert à montrer ce que ça donne et à convaincre.
-2. **En parallèle** : demandez à la DSI si le groupe a déjà **Gemini
-   Enterprise** ou un équivalent (Microsoft Copilot, Glean…). Dans une
-   entreprise de cette taille, la réponse est souvent « oui, mais
-   personne ne le sait ». Vous éviterez de rebâtir ce qui existe.
-3. **En cible** : B, parce que c'est le seul chemin qui respecte les
-   droits d'accès document par document. Sans ça, votre assistant
-   répondra à un stagiaire avec le contenu d'un document restreint.
+Dans Drive : **Drives partagés › Nouveau** › « ETII — Fonds documentaire ».
+
+```
+ETII — Fonds documentaire
+├── ETIIA/
+│   ├── Guides/
+│   ├── Notes techniques/
+│   ├── Procédures/
+│   ├── Retours d'expérience/
+│   └── Formations/
+├── ETIIE/      (même découpage)
+├── ETIII/      (même découpage)
+└── Commun/     (ce qui vaut pour tout le service)
+```
+
+Le nom du **premier sous-dossier** devient le **Type** du document dans le
+portail (étape 1.3) : choisissez des noms que vous voulez voir dans le
+filtre « Type ».
+
+**Les droits** : partagez avec des **groupes Google** (un par pôle), pas
+personne par personne.
+
+| Rôle Drive | À qui |
+|---|---|
+| Lecteur | tout le service |
+| Contributeur | les référents qui déposent des documents |
+| Gestionnaire | deux personnes, pas plus |
+
+### 1.2 Des fichiers que Gemini lit bien
+
+- **Un nom normalisé**, la référence d'abord :
+  `ETII-TEC-001_indice-C_routage-harnais.pdf`. Le script de l'étape 1.3 lit
+  la référence dans le nom (le début, jusqu'au premier `_` ou à la
+  première espace).
+- **Du texte, pas une image** : un PDF exporté depuis Word ou Docs est lu
+  entièrement ; un PDF scanné sans reconnaissance de texte est mal lu.
+- **Un document = un sujet.** Un « guide complet » de 400 pages répond à
+  tout, donc mal. De plus, Gemini Enterprise n'indexe qu'une partie du
+  texte d'un très gros fichier (partie 3.1).
+- **Une seule version en vigueur dans le dossier.** Les versions périmées
+  vont dans un dossier `Archives/` **hors** du Drive partagé indexé, sinon
+  Gemini peut citer l'ancienne règle.
+
+### 1.3 Le catalogue : le classeur des documents, rempli tout seul
+
+Le site lit déjà le classeur des documents : un onglet par pôle (ETIIA,
+ETIIE, ETIII), colonnes Titre, Référence, Type, Métier, Porteur,
+Périmètre, Mise à jour, Lien… (voir `INSTALLER-SUR-GOOGLE.txt`, étape 9).
+Pour des milliers de fichiers, un script le remplit à votre place.
+
+1. Ouvrez le classeur des documents › **Extensions › Apps Script**.
+2. **+ › Script**, nommez-le `index-documents`, collez tout le contenu de
+   `tools/apps-script/index-documents.gs`.
+3. En haut du fichier, dans `DOSSIERS_POLES`, collez l'identifiant du
+   dossier de chaque pôle (dans l'adresse du dossier, ce qui suit
+   `/folders/`).
+4. Choisissez la fonction **`indexerDocuments`** › **Exécuter**. La
+   première fois, Google demande l'autorisation de lire Drive et d'écrire
+   dans le classeur : acceptez.
+5. Des milliers de fichiers ? Le script s'arrête proprement vers 5 minutes
+   (la limite d'Apps Script est de 6) et **se relance tout seul** une
+   minute plus tard jusqu'à la fin. Le bilan est dans **Exécutions**.
+6. Une fois : exécutez **`planifierChaqueNuit`**. Chaque nuit vers 6 h, les
+   nouveaux fichiers sont ajoutés.
+
+Ce que le script fait et ne fait pas :
+
+- il **ajoute** une ligne par nouveau fichier (Titre, Référence, Type,
+  Mise à jour, Lien) ;
+- il **ne modifie ni n'efface jamais** une ligne existante. Ce que vous
+  complétez à la main (Métier, Porteur, Description, Mots-clés) reste ;
+- il reconnaît un fichier déjà listé par son identifiant Drive dans la
+  colonne Lien, même si vous avez changé son titre dans le classeur.
+
+Complétez ensuite **Métier, Porteur et Mots-clés** au fil de l'eau, en
+commençant par les documents les plus demandés : la recherche du portail
+tolère les fautes de frappe, mais elle ne trouve que ce qui est écrit.
+
+### 1.4 Vérifier dans le portail
+
+Ouvrez le site › **Recherche** : les documents apparaissent, filtrables par
+pôle, type, métier. Chaque fiche a **« Ouvrir ↗ »**, qui ouvre le fichier
+dans Drive, avec les droits de la personne.
 
 ---
 
-## 2. Chemin A — la maquette, en détail
+## 2. Faire lire à Gemini — aujourd'hui, avec votre Gemini au travail
 
-### 2.1 Comment ça marche
+Aucune installation : c'est le Gemini inclus dans Google Workspace.
 
-```
- vos fichiers            File Search Store                 votre question
- (PDF, docx, txt)  ──▶   découpage en morceaux    ──▶     + morceaux pertinents  ──▶  réponse
-                         + index sémantique                  (Gemini)                  + citations
-```
+### 2.1 « Demander à Gemini » dans Drive — sur tout un dossier
 
-Google fait le découpage et l'index tout seul. À l'interrogation, il
-retrouve les bons morceaux, les donne au modèle, et la réponse revient
-avec des **annotations `file_citation`** : nom du fichier et passage
-d'origine. C'est ce qui fait la différence entre « une réponse » et « une
-réponse qu'on peut vérifier ».
+1. Dans Drive, ouvrez le Drive partagé ou un dossier (ETIIA/Guides…).
+2. En haut à droite, **Demander à Gemini** (l'étoile).
+3. Posez la question : *« Quelle distance minimale entre un faisceau de
+   puissance et un faisceau signal ? Cite le document et la page. »*
+4. Gemini répond en citant les fichiers ; cliquez pour ouvrir la source.
 
-### 2.2 Les étapes
+Gemini ne lit que ce que **vous** avez le droit d'ouvrir. Il peut aussi
+travailler sur un seul document, depuis son panneau latéral, une fois le
+document ouvert depuis le portail (« Ouvrir ↗ »).
 
-1. **Créer le projet et la clé.** [aistudio.google.com](https://aistudio.google.com)
-   → « Get API key ». Créez la clé dans un **projet Google Cloud dédié**,
-   pas dans un projet personnel.
-2. **Activer la facturation sur ce projet.** C'est ce qui fait basculer
-   en *Paid Services*, donc hors réutilisation de vos données. Sans
-   facturation, ne mettez rien de confidentiel.
-3. **Créer un magasin** (`fileSearchStores`), un par périmètre : un pour
-   ETIIA, un pour ETIIE, un pour ETIII, ou un par famille de documents.
-   C'est votre seul moyen de cloisonner en chemin A.
-4. **Y verser les documents.** Import direct, ou upload puis import.
-   Limites constatées : **100 Mo par document**, 1 Go gratuit de
-   stockage, et Google recommande de **rester sous 20 Go par magasin**
-   pour que la recherche reste rapide.
-5. **Interroger** en passant `file_search_store_names` dans la requête,
-   et **lire les citations** dans la réponse.
-6. **Réindexer** quand les documents changent : rien ne se met à jour
-   tout seul.
+Limite à connaître : Google ne publie pas combien de fichiers d'un dossier
+Gemini lit à chaque question, et une réponse peut ne s'appuyer que sur une
+partie du dossier. Posez des questions précises, dans le bon sous-dossier.
 
-### 2.3 Ce que ça coûte
+### 2.2 L'application Gemini — comparer quelques documents
 
-- **Stockage** : gratuit.
-- **Indexation** : facturée au titre des embeddings, **0,15 $ par million
-  de tokens** indexés (une fois, à l'import).
-- **Interrogation** : les morceaux retrouvés sont facturés comme des
-  tokens d'entrée normaux, au tarif du modèle choisi.
+Dans Gemini, tapez **@** puis choisissez des fichiers Drive (jusqu'à
+**10 fichiers** par question) : *« @guide-routage @note-blindage : ces deux
+documents sont-ils cohérents sur la séparation des faisceaux ? »*
 
-Ordre de grandeur pour se faire une idée : un fonds de 2 000 pages
-represente très grossièrement 1 à 1,5 million de tokens, soit **moins de
-0,25 $ à indexer**. Le coût réel, c'est l'usage quotidien, pas l'index.
+### 2.3 NotebookLM — un carnet par thème, partagé avec le pôle
 
-### 2.4 Le piège à ne pas rater
+Pour un corpus que tout le monde interroge (« Règles de conception
+harnais », « Normes CEM », « Accueil des nouveaux ») :
 
-**La clé API ne doit jamais se trouver dans le site.** Le portail ETII
-est un site statique : tout ce qu'il contient est lisible par quiconque
-ouvre les outils du navigateur. Une clé dans le JavaScript, c'est une
-clé publique — facturée sur votre projet, par n'importe qui.
+1. Ouvrez NotebookLM (renommé « Gemini Notebook » en 2026) › **Nouveau
+   carnet**.
+2. **Ajouter des sources › Google Drive** : choisissez les documents du
+   thème. Nombre de sources par carnet selon l'édition : 50 (standard),
+   100 (Plus), 300 (Pro et Enterprise), 500 à 600 (Ultra) ; chaque source
+   jusqu'à 500 000 mots ou 200 Mo.
+3. **Partager** le carnet avec le groupe du pôle, en lecture.
+4. Chaque réponse renvoie au **passage exact** de la source.
 
-Il faut donc un intermédiaire qui détient la clé et que le site appelle :
+Quand un document change, vérifiez que la source du carnet est à jour.
 
-```
-navigateur (site ETII)  ──▶  intermédiaire (Apps Script / Cloud Run)  ──▶  API Gemini
-   pas de clé                  la clé vit ici, côté serveur
-```
+**Mettre ces carnets dans le portail** : en mode Modifier, ajoutez à la FAQ
+du pôle une question « Où interroger les règles harnais ? » avec le lien du
+carnet. Le lien est rangé dans votre feuille Google, pas dans ce dépôt
+public.
 
-Deux implémentations possibles :
+### 2.4 Ce que la partie 2 ne fait pas
 
-- **Apps Script** (le plus simple, vous savez déjà faire) :
-  `tools/apps-script/assistant-proxy.gs` dans ce dépôt. La clé va dans
-  les *propriétés du script*, jamais dans le code. Déploiement en
-  application web, accès restreint au domaine.
-- **Cloud Run** (le plus propre) : un petit service, la clé dans Secret
-  Manager, l'authentification par le compte Google de l'utilisateur.
-  C'est ce que la DSI voudra si le projet grandit.
+Aucune de ces trois portes n'a d'interface de programmation : elles ne
+peuvent pas répondre **dans** la barre du portail. Pour une seule question
+posée à **tout** le fonds depuis le portail, il faut la partie 3.
 
 ---
 
-## 3. Chemin B — la cible, et comment l'obtenir
+## 3. La barre du portail qui répond — avec la DSI
 
-**Gemini Enterprise** est décrit par Google comme une recherche intranet
-et un assistant, avec des connecteurs prêts pour SharePoint, Confluence,
-Jira, ServiceNow et l'espace Google Workspace, et — le point qui compte —
-des résultats **soumis aux droits d'accès** de celui qui pose la
-question. C'est la seule façon propre de servir 300 à 500 personnes qui
-n'ont pas toutes les mêmes habilitations.
+### 3.1 Le produit : Gemini Enterprise, relié au Drive partagé
 
-Ce n'est pas quelque chose que vous installez : c'est un projet. Votre
-rôle est d'arriver avec un dossier, pas avec une demande.
+**Gemini Enterprise** (ex-Agentspace) est différent du Gemini inclus dans
+Workspace : c'est l'offre de recherche et d'assistant d'entreprise de
+Google Cloud. Relié au Drive partagé par son **connecteur Google Drive**, il
+lit les documents **avec les droits de chaque personne** : un stagiaire ne
+recevra jamais un passage d'un document qu'il ne peut pas ouvrir.
 
-### Qui contacter, dans quel ordre
+Ce qu'il faut savoir sur le connecteur Drive :
 
-| Interlocuteur | Ce que vous lui demandez | Ce qu'il va vous demander |
+- il est **fédéré** : il interroge Drive au moment de la question, avec
+  l'identité Workspace de la personne. Il ne marche que dans la même
+  organisation ;
+- il se limite au **Drive partagé** choisi (ou à des dossiers) ;
+- il n'indexe que le **premier Mo de texte** de chaque fichier. Les très
+  gros PDF (au-delà d'environ 50 Mo ou 80 pages selon la documentation,
+  **(à confirmer)** avec la DSI) ne sont pas lus. D'où « un document = un
+  sujet » (1.2).
+
+**Coût** (prix publics, en dollars, hors remise du groupe) : Gemini
+Enterprise de **21 à 30 $ par personne et par mois** selon l'édition. Le
+groupe a peut-être déjà un contrat : c'est la première question à poser.
+
+### 3.2 Ce que la DSI fait — la liste à lui remettre
+
+- [ ] Un **projet Google Cloud standard** du groupe, avec l'**API
+      Discovery Engine** activée.
+- [ ] Une **application Gemini Enterprise**, région **eu**, avec un
+      **magasin de données Google Drive** limité au Drive partagé
+      « ETII — Fonds documentaire ».
+- [ ] Une **licence Gemini Enterprise** pour chaque membre du service qui
+      l'utilisera.
+- [ ] Pour ces personnes (un groupe Google), un rôle IAM qui porte la
+      permission `discoveryengine.assistants.assist` sur le projet (par
+      exemple « Discovery Engine User », **(à confirmer)**).
+- [ ] L'écran de consentement OAuth du projet en **interne**, pour que le
+      script de 3.3 puisse demander ses autorisations.
+- [ ] En retour, deux informations pour vous :
+      - le **numéro du projet** (pour relier le script) ;
+      - le **nom complet de l'application**, de la forme
+        `projects/123456789/locations/eu/collections/default_collection/engines/etii-docs`.
+
+La DSI peut d'abord tester l'application dans l'interface web de Gemini
+Enterprise : si les réponses y sont bonnes, la page 3.3 donnera les mêmes.
+
+### 3.3 Ce que vous faites — la page « Assistant », 20 minutes
+
+Le code est prêt dans `tools/apps-script/assistant/` : `Code.gs`,
+`Page.html`, `appsscript.json`. C'est une **application à part** du site :
+le site s'exécute « en tant que Moi » (il écrit dans votre feuille) ; un
+assistant exécuté ainsi lirait les documents avec **vos** droits pour tout
+le monde. Celui-ci s'exécute **au nom de la personne qui l'ouvre**.
+
+1. Dans le navigateur : `script.new` › un nouveau projet Apps Script,
+   nommé « Assistant documentaire ETII ».
+2. **Paramètres du projet** (roue dentée) › cochez **Afficher le fichier
+   manifeste « appsscript.json »**. Revenez à l'éditeur, ouvrez
+   `appsscript.json`, remplacez tout par le fichier du dépôt.
+3. `Code.gs` : remplacez tout par `tools/apps-script/assistant/Code.gs`.
+4. **+ › HTML**, nommez-le exactement `Page`, collez `Page.html`.
+5. **Paramètres du projet › Projet Google Cloud › Changer de projet** :
+   le numéro fourni par la DSI.
+6. **Paramètres du projet › Propriétés du script › Ajouter** :
+   `GEMINI_APP` = le nom complet de l'application.
+7. **Déployer › Nouveau déploiement › Application web** :
+   - Exécuter en tant que : **Utilisateur accédant à l'application Web** ;
+   - Qui a accès : **tous les utilisateurs de votre organisation**.
+
+   Copiez l'adresse qui se termine par `/exec`.
+8. Ouvrez cette adresse suivie de `?q=bonjour` : la première fois, Google
+   demande votre accord (chaque personne le donnera une fois), puis la
+   page répond.
+
+**Relier le portail** (sur votre copie locale, jamais dans ce dépôt public) :
+
+9. Dans `assets/js/assistant.js`, collez l'adresse `/exec` dans
+   `SOURCE.url`.
+10. `ETII_RACCORDE=1 node tests/audit.mjs`, puis
+    `node tools/build-artifact.mjs`.
+11. Dans Drive, **remplacez** le fichier `etii-hub.html` par le nouveau
+    `dist/etii-hub.html` (clic droit › Gérer les versions › Importer une
+    nouvelle version : l'identifiant reste le même, le site suit).
+
+Le résultat : sur la page Recherche du portail, le bloc **« Demander à
+Gemini ce que disent les documents »** reprend ce que vous tapez dans la
+barre de recherche. **Demander à Gemini ↗** ouvre la page de l'assistant,
+qui répond aussitôt, avec les **documents cités** (titre, page, extrait,
+lien). Une question de suite garde le fil de la conversation.
+
+### 3.4 La recette, avant d'annoncer quoi que ce soit
+
+1. **Dix questions dont vous connaissez la réponse**, prises dans des
+   documents différents. Notez : bonne réponse ? bon document cité ?
+2. **Le test des droits** : un collègue qui n'a pas accès à un dossier pose
+   une question dont la réponse n'est que dans ce dossier. Il ne doit
+   **rien** en obtenir.
+3. **Le test de la version** : une règle qui a changé d'indice. La réponse
+   doit citer l'indice en vigueur.
+
+Une réponse **sans document cité** est affichée comme non vérifiable :
+c'est voulu.
+
+### 3.5 Si ça ne marche pas
+
+| Message de la page | Cause | Remède |
 |---|---|---|
-| **1. Votre manager / chef de service** | Le mandat : « je porte ce sujet pour ETII » | Le gain en heures, pour combien de personnes |
-| **2. La DSI / l'équipe Digital Workplace** | « Avons-nous déjà Gemini Enterprise, Copilot ou Glean ? Sinon, quel est le chemin agréé pour un assistant documentaire ? » | Le volume, les sources, le nombre d'utilisateurs |
-| **3. La sécurité des systèmes d'information (RSSI)** | La classification admise : jusqu'à quel niveau de confidentialité peut-on indexer ? | La liste des types de documents |
-| **4. Le référent contrôle export / conformité** | Y a-t-il du contenu sous contrôle dans le périmètre ? | Les références documentaires concernées |
-| **5. Le DPO** | Si des noms de personnes apparaissent dans les documents | La finalité, la durée de conservation |
-| **6. Les achats / le contrôle de gestion** | Le porteur du budget et le contrat-cadre Google existant | Le coût annuel estimé |
-
-**L'ordre compte.** Arriver chez le RSSI sans le mandat de votre chef,
-c'est un non. Arriver avec une maquette qui fonctionne, un périmètre
-écrit et une estimation de coût, c'est une discussion.
-
-### Ce qu'il faut préparer avant la première réunion
-
-1. **Le périmètre** : quels documents, combien, où ils sont aujourd'hui,
-   qui a le droit de les lire.
-2. **Le gain** : « chaque ingénieur cherche un document *n* fois par
-   semaine et y passe *m* minutes ; sur 400 personnes, cela fait *X*
-   heures par an ». Mesurez-le, même grossièrement — le portail peut
-   vous aider en comptant les recherches faites.
-3. **Ce que vous ne demandez pas** : pas d'accès à tout, pas de nouveau
-   fournisseur si le groupe a déjà un outil, pas de données classifiées
-   au premier tour.
-4. **La maquette** (chemin A), sur des documents publics.
+| « pas encore relié : la propriété GEMINI_APP est vide » | étape 6 oubliée | ajouter la propriété |
+| « doit avoir la forme projects/… » | nom d'application incomplet | recopier le nom complet fourni par la DSI |
+| « refuse l'accès (403) … licence … rôle » | pas de licence, ou pas le rôle IAM | DSI, liste 3.2 |
+| « Application Gemini introuvable » | mauvais nom ou mauvaise région | vérifier `locations/eu` et l'identifiant |
+| « Gemini n'a pas reconnu une question » | message trop court (« bonjour ») | poser une vraie question |
+| Aucune autorisation demandée, erreur d'API désactivée | script non relié au projet | étape 5 |
 
 ---
 
-## 4. Où stocker les documents
-
-Le point le plus souvent négligé, et celui qui décide de tout.
-
-**Règle simple : une seule source de vérité, et l'assistant lit cette
-source — il ne la remplace pas.**
-
-| Où | Pour | Contre |
-|---|---|---|
-| **L'espace documentaire existant** (SharePoint, Drive du service) | Les droits sont déjà posés, les gens y sont | Il faut un connecteur (chemin B) ou une synchronisation |
-| **Un Drive dédié « fonds ETII »** | Simple, maîtrisé par le service | Une copie de plus à tenir à jour |
-| **Le magasin File Search seul** | Rien à gérer | ❌ aucun droit d'accès, aucune version, aucune traçabilité — **jamais comme source unique** |
-
-**Ce qu'il faut faire, quel que soit le chemin :**
-
-1. Un **dossier par périmètre**, avec les droits d'accès posés dessus.
-2. Un **nom de fichier normalisé** : `ETII-TEC-001_indice-C_routage-harnais.pdf`.
-   L'indice dans le nom, c'est ce qui évite de répondre avec la version
-   périmée.
-3. **Un porteur par document**, nommé — c'est déjà dans le portail.
-4. **Un document = un fichier** : pas de « guide complet » de 400 pages
-   qui répond à tout et donc à rien.
-5. **Une purge** : un document retiré du fonds doit être retiré de
-   l'index le jour même. Prévoyez qui le fait.
-
----
-
-## 5. Ce que le portail apporte déjà, et ce qu'il apportera
-
-**Déjà :** la recherche documentaire du portail trouve un document par
-son titre, sa référence, son métier, son porteur, avec tolérance aux
-fautes de frappe — sans aucun service externe, instantanément. Pour
-« retrouver LE document », c'est souvent suffisant, et ça le restera.
-
-**L'assistant répond à une autre question** : pas « où est le document »
-mais « que dit le document ». Les deux coexistent :
-
-```
-  « guide routage harnais »  ──▶  recherche documentaire  ──▶  la fiche du document
-  « à quelle distance d'un
-    faisceau de puissance ? » ──▶  assistant             ──▶  la réponse + la citation
-```
-
-Le point de raccordement est déjà écrit dans le portail :
-`assets/js/assistant.js`, constante `SOURCE`. Tant qu'elle est vide, le
-bloc explique qu'il n'est pas raccordé et **ne montre aucune réponse
-inventée**. Le jour où vous collez l'URL de votre intermédiaire, il
-s'active — rien d'autre à changer.
-
----
-
-## 6. Le plan, en clair
+## 4. Le plan, en clair
 
 | Quand | Quoi | Qui |
 |---|---|---|
-| Semaine 1 | Maquette chemin A sur 20 documents publics, avec le proxy Apps Script | Vous |
-| Semaine 1 | Mesurer : combien de recherches, combien de temps perdu | Vous |
-| Semaine 2 | Montrer la maquette au chef de service, obtenir le mandat | Vous |
-| Semaine 3 | DSI : « qu'avons-nous déjà ? quel est le chemin agréé ? » | Vous + chef |
-| Semaine 4+ | RSSI, contrôle export, DPO — périmètre écrit | DSI pilote |
-| Ensuite | Chemin B sur un pôle pilote, puis extension | DSI + vous |
+| Semaine 1 | Drive partagé, dossiers, groupes, noms de fichiers (1.1, 1.2) | Vous |
+| Semaine 1 | `index-documents.gs` : le catalogue se remplit (1.3) | Vous |
+| Semaine 2 | Gemini dans Drive et deux carnets NotebookLM, présentés au service (partie 2) | Vous |
+| Semaine 2 | Mesurer : combien de questions, combien de temps gagné | Vous |
+| Semaine 3 | Chef de service, puis DSI : « avons-nous Gemini Enterprise ? » avec la liste 3.2 | Vous + chef |
+| Ensuite | Conformité et RSSI : quels dossiers peuvent être lus | DSI pilote |
+| Ensuite | Page Assistant (3.3), recette (3.4), puis ouverture au service | Vous |
 
-**Ne sautez pas l'étape 3.** Dans un groupe de cette taille, la question
-n'est presque jamais « peut-on faire de l'IA ? » mais « pourquoi
-faites-vous ça dans votre coin alors que nous avons déjà l'outil ? ».
+**Qui voir, dans quel ordre** : votre chef de service (le mandat), la DSI
+(ce qui existe déjà, le chemin agréé), la RSSI (le niveau de
+confidentialité admis), le référent contrôle export, le DPO si des noms de
+personnes figurent dans les documents, les achats (le porteur du budget).
+Arriver avec les parties 1 et 2 qui fonctionnent déjà et un périmètre
+écrit, c'est une discussion ; arriver avec une idée, c'est un « non ».
 
 ---
 
-## 7. Les questions qu'on vous posera, et les réponses
+## 5. Les questions qu'on vous posera
 
-> **« Et si l'IA invente une réponse ? »**
-> C'est pour ça que les citations sont obligatoires. Une réponse sans
-> citation est une réponse à jeter, et l'interface doit le montrer comme
-> tel. Le portail affichera la source sous chaque réponse, exactement
-> comme les fiches des porteurs affichent la leur.
+> **« Et si Gemini invente ? »**
+> Chaque réponse cite ses documents, et la page affiche une réponse sans
+> source comme non vérifiable. La règle du service : on vérifie dans le
+> document avant d'appliquer.
 
-> **« Nos données servent-elles à entraîner le modèle ? »**
-> Sur les services payants de l'API Gemini, non — les conditions le
-> disent explicitement. Sur la version gratuite, oui, et des relecteurs
-> humains peuvent y accéder. D'où la facturation activée dès le premier
-> document interne.
+> **« Tout le monde va-t-il voir les documents restreints ? »**
+> Non : Gemini Enterprise interroge Drive avec l'identité de chaque
+> personne, et la page Assistant s'exécute au nom de celui qui l'ouvre.
+> C'est vérifié en recette (3.4, test des droits).
 
-> **« Où sont hébergées les données ? »**
-> Question pour la DSI : elle se règle au niveau du projet Google Cloud
-> (région, résidence des données, engagements contractuels du groupe).
-> Ne répondez pas à sa place.
+> **« Nos documents servent-ils à entraîner le modèle ? »**
+> Question pour la DSI, qui la tranche avec les engagements contractuels
+> du groupe (Workspace et Google Cloud). Ne répondez pas à sa place.
 
-> **« Qui paie ? »**
-> Pour la maquette, quelques euros par mois : demandez une carte achat
-> ou un budget d'expérimentation. Pour la cible, c'est une ligne
-> budgétaire à porter par le service ou la DSI — d'où l'étape « achats ».
+> **« Pourquoi pas un simple export des PDF vers une IA ? »**
+> Parce qu'une copie n'a ni droits d'accès, ni versions, ni traçabilité.
+> Ici, les documents restent à un seul endroit, le Drive partagé ; tout le
+> reste (catalogue, portail, Gemini) le lit.
 
 > **« Combien de temps avant que ça marche ? »**
-> La maquette : quelques jours. La cible, dans une grande entreprise :
-> comptez en mois, l'essentiel du délai étant les validations, pas la
-> technique.
+> Parties 1 et 2 : quelques jours. Partie 3 : l'essentiel du délai est la
+> validation, pas la technique ; la page Assistant elle-même s'installe en
+> vingt minutes.
+
+---
+
+### Les fichiers de ce dépôt
+
+| Fichier | Rôle |
+|---|---|
+| `tools/apps-script/index-documents.gs` | Remplit le classeur des documents depuis le Drive partagé (1.3) |
+| `tools/apps-script/assistant/Code.gs` | L'assistant : pose la question à Gemini Enterprise au nom de la personne (3.3) |
+| `tools/apps-script/assistant/Page.html` | La page de questions, réponses et documents cités |
+| `tools/apps-script/assistant/appsscript.json` | Autorisations et mode d'exécution de l'assistant |
+| `assets/js/assistant.js` | Le bloc du portail qui ouvre l'assistant, la question déjà posée |
+| `tests/assistant-gemini.test.mjs` | Vérifie les deux scripts contre la forme de réponse documentée par Google |
+
+Référence utilisée pour le format des appels : Gemini Enterprise, REST v1,
+`projects.locations.collections.engines.assistants.streamAssist`, et la
+ressource `AssistAnswer` (consultées le 26 septembre 2026).

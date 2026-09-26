@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root {
+    --fond: #f3f2ef; --fond-eleve: #fdfcfa; --texte: #1b1a17; --texte-doux: #4a4944;
+    --bordure: #d4d3cd; --accent: #00205b; --accent-texte: #ffffff; --une: #12295a;
+    --une-haut: #0b1c3e; --une-texte: #ffffff; --chaud: #7d3417; --alerte: #b03a34; --alerte-fond: #fbebea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fond: #282622; --fond-eleve: #33312c; --texte: #ece8df; --texte-doux: #c3bdb0;
+      --bordure: #46433c; --accent: #a3bff5; --accent-texte: #0b1c3e; --une: #111f3d;
+      --une-haut: #0a1428; --une-texte: #f5f3ee; --chaud: #e59566; --alerte: #e0745c; --alerte-fond: #3a2622;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--texte);
+    font: 16px/1.55 "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; }
+  header { background: linear-gradient(var(--une-haut), var(--une)); color: var(--une-texte); padding: 2rem 1rem 1.75rem; }
+  header div, main { max-width: 46rem; margin: 0 auto; }
+  h1 { margin: 0; font: 400 2rem/1.15 Newsreader, Georgia, serif; }
+  header p { margin: .4rem 0 0; opacity: .85; }
+  main { padding: 1.5rem 1rem 3rem; }
+  form { display: flex; gap: .75rem; align-items: flex-end; flex-wrap: wrap; }
+  textarea { flex: 1 1 20rem; min-height: 3.2rem; resize: vertical; padding: .7rem .9rem; font: inherit;
+    color: var(--texte); background: var(--fond-eleve); border: 1px solid var(--bordure); border-radius: .6rem; }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button { font: inherit; font-weight: 600; padding: .7rem 1.2rem; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--accent); background: var(--accent); color: var(--accent-texte); }
+  button.discret { background: transparent; color: var(--texte); border-color: var(--bordure); font-weight: 400; }
+  button:disabled { opacity: .55; cursor: progress; }
+  .aide { color: var(--texte-doux); font-size: .875rem; margin: .6rem 0 0; }
+  .echange { margin-top: 1.75rem; padding: 1.25rem 1.35rem; background: var(--fond-eleve);
+    border: 1px solid var(--bordure); border-radius: .8rem; }
+  .question { margin: 0 0 .75rem; font: italic 400 1.2rem/1.35 Newsreader, Georgia, serif; }
+  .reponse p, .reponse ul { margin: 0 0 .7rem; }
+  .reponse h3 { font-size: 1rem; margin: 1rem 0 .4rem; }
+  .reponse pre { white-space: pre-wrap; font: .85rem/1.45 "IBM Plex Mono", Consolas, monospace; margin: 0 0 .7rem; }
+  .sources { margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--bordure); }
+  .sources h2 { margin: 0 0 .5rem; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--chaud); }
+  .sources ol { margin: 0; padding-left: 1.2rem; display: grid; gap: .55rem; }
+  .sources a { color: var(--texte); font-weight: 600; }
+  .extrait { display: block; color: var(--texte-doux); font-size: .875rem; }
+  .attente { color: var(--texte-doux); font-style: italic; }
+  .erreur, .sans-source { border-left: 3px solid var(--alerte); background: var(--alerte-fond); padding: .6rem .8rem; border-radius: .3rem; }
+  .actions { margin-top: 1.25rem; display: flex; gap: .6rem; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<header><div>
+  <h1>Assistant documentaire ETII</h1>
+  <p>Une question en français : la réponse est tirée des documents du service que vous avez le droit de lire, avec ses sources.</p>
+</div></header>
+<main>
+  <form id="formulaire">
+    <label for="question" style="position:absolute;left:-9999px">Votre question</label>
+    <textarea id="question" rows="2" maxlength="2000" placeholder="Ex. : quelle distance entre un faisceau de puissance et un faisceau signal ?"><?= question ?></textarea>
+    <button id="envoyer" type="submit">Demander</button>
+  </form>
+  <p class="aide">Ctrl + Entrée pour envoyer. Une question de suite garde le fil de la conversation.</p>
+  <div id="fil" aria-live="polite"></div>
+  <div class="actions" id="actions" hidden>
+    <button class="discret" id="nouvelle" type="button">Nouvelle conversation</button>
+  </div>
+</main>
+<script>
+  (function () {
+    var champ = document.getElementById('question');
+    var bouton = document.getElementById('envoyer');
+    var fil = document.getElementById('fil');
+    var actions = document.getElementById('actions');
+    var session = '';
+
+    function el(nom, classe, texte) {
+      var n = document.createElement(nom);
+      if (classe) n.className = classe;
+      if (texte) n.textContent = texte;
+      return n;
+    }
+
+    /* Le texte en gras (**…**) devient <strong>, sans jamais interpréter de HTML. */
+    function enLigne(parent, ligne) {
+      ligne.split(/(\*\*[^*]+\*\*)/).forEach(function (bout) {
+        if (/^\*\*[^*]+\*\*$/.test(bout)) parent.appendChild(el('strong', '', bout.slice(2, -2)));
+        else if (bout) parent.appendChild(document.createTextNode(bout));
+      });
+    }
+
+    /* Un Markdown minimal : titres, listes, tableaux laissés en texte, paragraphes. */
+    function rendre(texte) {
+      var zone = el('div', 'reponse');
+      var liste = null;
+      var tableau = null;
+      texte.split('\n').forEach(function (brute) {
+        var ligne = brute.replace(/\s+$/, '');
+        if (/^\s*\|/.test(ligne)) {
+          if (!tableau) { tableau = el('pre'); zone.appendChild(tableau); }
+          if (!/^\s*\|[\s:|-]+\|\s*$/.test(ligne)) tableau.textContent += ligne.replace(/\*\*/g, '') + '\n';
+          return;
+        }
+        tableau = null;
+        var puce = /^\s*[-*•]\s+(.*)$/.exec(ligne);
+        if (puce) {
+          if (!liste) { liste = el('ul'); zone.appendChild(liste); }
+          var li = el('li'); enLigne(li, puce[1]); liste.appendChild(li);
+          return;
+        }
+        liste = null;
+        if (!ligne.trim() || /^-{3,}$/.test(ligne.trim())) return;
+        var titre = /^#{1,6}\s+(.*)$/.exec(ligne);
+        var bloc = el(titre ? 'h3' : 'p');
+        enLigne(bloc, titre ? titre[1].replace(/\*\*/g, '') : ligne);
+        zone.appendChild(bloc);
+      });
+      return zone;
+    }
+
+    function sources(liste) {
+      if (!liste.length) {
+        return el('p', 'sans-source', 'Aucun document cité : cette réponse n’est pas vérifiable, ne l’utilisez pas telle quelle.');
+      }
+      var bloc = el('div', 'sources');
+      bloc.appendChild(el('h2', '', 'Documents cités'));
+      var ol = el('ol');
+      liste.forEach(function (s) {
+        var li = el('li');
+        var titre = s.lien ? el('a', '', s.titre + (s.page ? ' — p. ' + s.page : '') + ' ↗') : el('strong', '', s.titre);
+        if (s.lien) { titre.href = s.lien; titre.target = '_blank'; titre.rel = 'noopener noreferrer'; }
+        li.appendChild(titre);
+        if (s.extrait) li.appendChild(el('span', 'extrait', '« ' + s.extrait + ' »'));
+        ol.appendChild(li);
+      });
+      bloc.appendChild(ol);
+      return bloc;
+    }
+
+    function poser() {
+      var q = champ.value.trim();
+      if (!q || bouton.disabled) { champ.focus(); return; }
+      bouton.disabled = true;
+      var echange = el('section', 'echange');
+      echange.appendChild(el('p', 'question', q));
+      var attente = el('p', 'attente', 'Gemini lit les documents du service…');
+      echange.appendChild(attente);
+      fil.insertBefore(echange, fil.firstChild);
+      google.script.run
+        .withSuccessHandler(function (r) {
+          attente.remove();
+          session = r.session || session;
+          echange.appendChild(r.reponse ? rendre(r.reponse) : el('p', 'attente', 'Gemini n’a renvoyé aucun texte.'));
+          echange.appendChild(sources(r.sources || []));
+          champ.value = '';
+          actions.hidden = false;
+          bouton.disabled = false;
+          champ.focus();
+        })
+        .withFailureHandler(function (err) {
+          attente.remove();
+          echange.appendChild(el('p', 'erreur', 'Pas de réponse : ' + (err && err.message ? err.message : err)));
+          bouton.disabled = false;
+        })
+        .etiiRepondre(q, session);
+    }
+
+    document.getElementById('formulaire').addEventListener('submit', function (evt) { evt.preventDefault(); poser(); });
+    champ.addEventListener('keydown', function (evt) {
+      if (evt.key === 'Enter' && (evt.ctrlKey || evt.metaKey)) { evt.preventDefault(); poser(); }
+    });
+    document.getElementById('nouvelle').addEventListener('click', function () {
+      session = '';
+      while (fil.firstChild) fil.removeChild(fil.firstChild);
+      actions.hidden = true;
+      champ.focus();
+    });
+
+    /* Arrivé depuis le portail avec une question : elle part tout de suite. */
+    if (champ.value.trim()) poser(); else champ.focus();
+  })();
+</script>
+</body>
+</html>

@@ -105,10 +105,10 @@ await page.waitForTimeout(2200);
 const pole = await f.locator('main').innerText();
 t('ETIIA s\'ouvre', /ETIIA/.test(await f.locator('h1').innerText()));
 t('sa communication est en tête', (await f.locator('.kiosque').count()) === 1);
-t('son sommaire a quatre entrées', (await f.locator('.sous-nav a').count()) === 4);
+t('son sommaire a cinq entrées (dont À venir)', (await f.locator('.sous-nav a').count()) === 5);
 t('plus de section Réunions ni Porteurs du pôle', (await f.locator('#section-reunions, #zone-reunions, #section-porteurs, #zone-porteurs').count()) === 0);
 t('ses repères sont calculés', (await f.locator('#zone-reperes .pole-repere').count()) === 4);
-t('l’organigramme, les référents et « par porteur » sont côte à côte',
+t('l’organigramme, les référents et « par porteur » sont en onglets',
   (await f.locator('#zone-reperes .annuaire__volet').count()) === 3
   && (await f.locator('#zone-reperes [id$="-organigramme"] .annuaire__personne').count()) > 50
   && (await f.locator('#zone-reperes [id$="-referents"] .annuaire__groupe').count()) > 3
@@ -225,6 +225,11 @@ t('les repères du pôle ne sont plus des liens', (await f.locator('#zone-repere
 console.log('\n== Un lien avec ancre garde son ancre ==');
 await f.locator('nav.site-nav a[href="etiia.html"]').first().click();
 await page.waitForTimeout(1900);
+// Les volets de l'annuaire sont en onglets : « Par porteur » d'abord.
+const ongletPorteur = f.locator('#zone-reperes .annuaire__onglet', { hasText: 'Par porteur' });
+await ongletPorteur.evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
+await ongletPorteur.click();
+await page.waitForTimeout(800);
 const lienPorteur = f.locator('#zone-reperes .annuaire__porteur').first();
 const codeLien = (await lienPorteur.innerText()).trim();
 await lienPorteur.evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));

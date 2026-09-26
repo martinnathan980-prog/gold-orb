@@ -295,124 +295,54 @@ ul.kiosque__alertes-liste {
 
 .kiosque__defile:focus-visible { outline-offset: -2px; }
 
-/* --- La frise : un rail, un point par entrée, les mois en repères ------- */
-
-/* Le rail : un fin filet vertical à gauche des cartes, sur toute la liste.
-   Les cartes sont décalées vers la droite pour lui laisser la place ; les
-   points des entrées et les en-têtes de mois se posent dessus. Sélecteur
-   qualifié par la balise : base.css retire le retrait de tout `ol[class]`,
-   et cette liste-là veut le sien. */
+/* --- La liste : un sommaire d'articles -----------------------------------
+   Pas de rail ni de points : chaque communication est une ligne claire —
+   un carré à gauche (sa photo avec le jour posé dessus, ou une tuile au
+   jour et au mois), la date en petites capitales, le titre en Newsreader,
+   une ligne de résumé. Les mois sont des en-têtes collants. La
+   communication lue est posée sur le papier, tenue par un filet marine. */
 ol.kiosque__liste {
-  --kiosque-rail: 0.9rem;        /* abscisse du rail, depuis la gauche  */
-  --kiosque-point: 9px;          /* diamètre d'un point                  */
-  position: relative;
   display: flex;
   flex-direction: column;
+  gap: 2px;
   margin: 0;
-  padding: 0 0 0 calc(var(--kiosque-rail) + 0.9rem);
+  padding: 0;
   list-style: none;
 }
 
-/* L'espace entre deux cartes est porté par la carte, pas par la liste :
-   ainsi rien ne transparaît dans une fente sous l'en-tête de mois collant. */
-.kiosque__entree + .kiosque__entree { margin-block-start: 2px; }
-
-.kiosque__liste::before {
-  content: "";
-  position: absolute;
-  inset-block: var(--e-2);
-  inset-inline-start: calc(var(--kiosque-rail) - 0.5px);
-  inline-size: 1px;
-  background-color: var(--bordure-forte);
-}
-
-/* Le mois : un repère collant en haut de la fenêtre, sur fond de carte
-   pour couvrir le rail et les cartes qui passent dessous. */
 .kiosque__groupe {
   position: sticky;
   inset-block-start: 0;
   z-index: 2;
-  margin-inline-start: calc(-1 * (var(--kiosque-rail) + 0.9rem));
-  padding: var(--e-3) var(--e-2) var(--e-1) calc(var(--kiosque-rail) + 0.9rem);
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  padding: var(--e-3) var(--e-2) var(--e-2);
   background-color: var(--carte-fond);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: var(--lettrage-etiquette);
+  font-family: var(--police);
+  font-size: 0.6875rem;
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-capitales);
   text-transform: uppercase;
-  color: var(--texte-faible);
+  color: var(--texte-doux);
 }
+.kiosque__groupe::after { content: ""; flex: 1; block-size: 1px; background-color: var(--bordure-douce); }
 
-/* Un petit trait sur le rail, devant le mois : la frise est graduée. */
-.kiosque__groupe::before {
-  content: "";
-  position: absolute;
-  inset-inline-start: calc(var(--kiosque-rail) - 3px);
-  inset-block-start: calc(50% + var(--e-1));
-  inline-size: 7px;
-  block-size: 1px;
-  background-color: var(--bordure-forte);
-}
-
-/* L'entrée porte le point sur le rail, coloré selon son statut : un
-   anneau au repos, un disque plein — relié à la carte par un court filet —
-   quand elle est lue. */
-.kiosque__entree {
-  --kiosque-teinte: var(--statut-info);
-  position: relative;
-}
-
-.kiosque__entree[data-statut="succes"] { --kiosque-teinte: var(--statut-succes); }
-.kiosque__entree[data-statut="urgent"] { --kiosque-teinte: var(--chaud); }
-.kiosque__entree[data-statut="mot"]    { --kiosque-teinte: var(--accent); }
-
-/* Le point est à mi-hauteur de la carte, en face du bloc jour/mois. */
-.kiosque__entree::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset-inline-start: calc(-0.9rem - var(--kiosque-point) / 2);
-  inset-block-start: 50%;
-  inline-size: var(--kiosque-point);
-  block-size: var(--kiosque-point);
-  border-radius: var(--rayon-plein);
-  background-color: var(--carte-fond);
-  box-shadow: inset 0 0 0 2px var(--kiosque-teinte);
-  transform: translateY(-50%);
-  transition: background-color var(--duree-rapide) var(--courbe),
-              transform var(--duree-rapide) var(--courbe);
-}
-
-/* Le filet qui relie le point à la carte lue. */
-.kiosque__entree::after {
-  content: "";
-  position: absolute;
-  inset-inline-start: calc(-0.9rem + var(--kiosque-point) / 2);
-  inset-block-start: calc(50% - 1px);
-  inline-size: calc(0.9rem - var(--kiosque-point) / 2);
-  block-size: 2px;
-  background-color: var(--kiosque-teinte);
-  opacity: 0;
-  transition: opacity var(--duree-rapide) var(--courbe);
-}
-
-.kiosque__entree--active::before {
-  background-color: var(--kiosque-teinte);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--kiosque-teinte) 22%, transparent);
-  transform: translateY(-50%) scale(1.15);
-}
-
-.kiosque__entree--active::after { opacity: 1; }
+.kiosque__entree { --kiosque-teinte: var(--accent); position: relative; }
+.kiosque__entree[data-pole="ETIIA"] { --kiosque-teinte: var(--pole-etiia); }
+.kiosque__entree[data-pole="ETIIE"] { --kiosque-teinte: var(--pole-etiie); }
+.kiosque__entree[data-pole="ETIII"] { --kiosque-teinte: var(--pole-etiii); }
 
 .kiosque__carte {
   display: grid;
-  grid-template-columns: 2.75rem minmax(0, 1fr);
-  gap: var(--e-3);
+  grid-template-columns: 4rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--e-4);
   inline-size: 100%;
   padding: var(--e-2) var(--e-3) var(--e-2) var(--e-2);
   background: none;
   border: 1px solid transparent;
-  border-radius: var(--rayon-md);
-  box-shadow: 0 0 0 transparent;
+  border-radius: var(--rayon-lg);
   color: var(--texte);
   font: inherit;
   text-align: start;
@@ -420,65 +350,90 @@ ol.kiosque__liste {
   transition: background-color var(--duree-rapide) var(--courbe),
               border-color var(--duree-rapide) var(--courbe),
               box-shadow var(--duree-rapide) var(--courbe),
-              transform var(--duree-rapide) var(--courbe);
+              transform var(--duree) var(--courbe);
 }
-
-/* Le survol soulève la carte ; la carte lue reste soulevée, posée sur un
-   fond accent, avec le point plein et le filet du rail. */
-.kiosque__carte:hover {
-  background-color: var(--fond-enfonce);
-  border-color: var(--bordure-douce);
-  box-shadow: var(--ombre-sm);
-  transform: translateY(-1px);
-}
-
+.kiosque__carte:hover { background-color: color-mix(in srgb, var(--fond) 70%, transparent); transform: translateX(2px); }
 .kiosque__carte[aria-current="true"] {
-  background-color: var(--accent-doux);
-  border-color: color-mix(in srgb, var(--accent) 18%, transparent);
-  box-shadow: var(--ombre-md);
-  transform: translateY(-1px);
+  background-color: var(--fond);
+  border-color: var(--bordure-douce);
+  box-shadow: inset 3px 0 0 var(--kiosque-teinte);
 }
-
 @media (prefers-reduced-motion: reduce) {
-  .kiosque__carte:hover,
-  .kiosque__carte[aria-current="true"] { transform: none; }
-  .kiosque__entree--active::before { transform: translateY(-50%); }
+  .kiosque__carte:hover { transform: none; }
 }
 
-.kiosque__quand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding-block: var(--e-1);
-  border-inline-end: 1px solid var(--bordure-douce);
-  color: var(--texte-doux);
+/* Le carré : la photo, ou une tuile au jour et au mois. */
+.kiosque__visuel {
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: 4rem;
+  block-size: 4rem;
+  overflow: hidden;
+  border-radius: var(--rayon-md);
+  background-color: var(--fond-bande);
 }
-
-.kiosque__jour {
-  font-family: var(--police-titre);
-  font-size: var(--texte-xl);
-  line-height: 1;
-  color: var(--texte);
+.kiosque__vignette {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  transition: transform var(--duree-lente) var(--courbe);
 }
-
+.kiosque__carte:hover .kiosque__vignette { transform: scale(1.06); }
+.kiosque__quand { position: relative; display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.kiosque__jour { font-family: var(--police-titre); font-size: 1.625rem; font-weight: var(--graisse-normale); color: var(--texte); }
 .kiosque__mois {
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.04em;
+  margin-block-start: 2px;
+  font-family: var(--police);
+  font-size: 0.5625rem;
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--lettrage-capitales);
   text-transform: uppercase;
-}
-
-.kiosque__carte-corps { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; }
-
-.kiosque__carte-titre { font-size: var(--texte-sm); font-weight: var(--graisse-forte); line-height: 1.3; }
-
-.kiosque__carte-resume {
-  font-size: var(--texte-xs);
-  line-height: 1.45;
   color: var(--texte-doux);
+}
+/* Sur la photo, le jour devient une petite pastille dans le coin. */
+.kiosque__visuel--photo .kiosque__quand {
+  position: absolute;
+  inset: auto auto 4px 4px;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 3px;
+  padding: 2px 5px;
+  border-radius: var(--rayon-sm);
+  background-color: var(--voile-fort);
+  backdrop-filter: blur(4px);
+}
+.kiosque__visuel--photo .kiosque__jour { font-family: var(--police); font-size: 0.6875rem; font-weight: var(--graisse-forte); color: var(--entete-texte); }
+.kiosque__visuel--photo .kiosque__mois { margin: 0; font-size: 0.5rem; color: var(--entete-texte-doux); }
+
+.kiosque__carte-corps { display: flex; flex-direction: column; gap: 3px; min-inline-size: 0; }
+.kiosque__carte-date {
+  font-family: var(--police);
+  font-size: 0.625rem;
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--lettrage-capitales);
+  text-transform: uppercase;
+  color: var(--chaud-encre);
+}
+.kiosque__carte-titre {
+  font-family: var(--police-titre);
+  font-size: 1.0625rem;
+  font-weight: var(--graisse-normale);
+  line-height: 1.2;
+  color: var(--texte);
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.kiosque__carte-resume {
+  font-size: var(--texte-xs);
+  line-height: 1.4;
+  color: var(--texte-doux);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -681,16 +636,6 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
   color: var(--texte);
 }
 
-/* La vignette : la photo de la communication, en petit, à droite. */
-.kiosque__carte:has(.kiosque__vignette) { grid-template-columns: 2.75rem minmax(0, 1fr) 3.5rem; }
-.kiosque__vignette {
-  align-self: center;
-  inline-size: 3.5rem;
-  block-size: 3.5rem;
-  object-fit: cover;
-  border-radius: var(--rayon-md);
-  box-shadow: 0 0 0 1px var(--bordure-douce);
-}
 
 /* Le temps de lecture, après la date, séparé par un point. */
 .kiosque__duree { color: var(--texte-faible); font-weight: var(--graisse-moyenne); }
@@ -730,15 +675,6 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 }
 .kiosque__suite-titre { font-family: var(--police-titre); font-size: var(--texte-lg); line-height: 1.25; }
 
-/* La communication lue : posée sur le papier, un filet marine à gauche. */
-.kiosque__carte[aria-current="true"] {
-  background-color: var(--fond);
-  border-color: var(--bordure-douce);
-  box-shadow: inset 2px 0 0 var(--accent), var(--ombre-sm);
-}
-.kiosque__carte:hover { background-color: color-mix(in srgb, var(--fond) 60%, transparent); }
-.kiosque__carte-titre { font-size: 0.84375rem; }
-.kiosque__mois { font-family: var(--police); font-size: 0.625rem; letter-spacing: var(--lettrage-capitales); }
 
 .kiosque__lecture-meta {
   font-family: var(--police);
@@ -1194,7 +1130,61 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 }
 .porteurs__fiche-segment::first-letter { text-transform: uppercase; }
 
-/* Plus de titres de famille : une seule galerie, triée par les filtres. */
+/* Les marchés : trois onglets — Civil, Militaire, Prototype — en grand,
+   en Newsreader, le nombre d'appareils en exposant ; un trait terre cuite
+   sous le marché ouvert. */
+.porteurs__barre { flex-wrap: wrap; align-items: center; gap: var(--e-4); }
+.porteurs__marches {
+  display: flex;
+  justify-content: center;
+  gap: var(--e-10);
+  margin: 0 0 var(--e-2);
+  padding: 0;
+  list-style: none;
+}
+.porteurs__marche {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--e-1);
+  padding: var(--e-2) var(--e-1) var(--e-3);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-family: var(--police-titre);
+  font-size: 1.875rem;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--texte-faible);
+  cursor: pointer;
+  transition: color var(--duree) var(--courbe);
+}
+.porteurs__marche::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: 2px;
+  border-radius: 1px;
+  background-color: var(--chaud);
+  transform: scaleX(0);
+  transition: transform var(--duree-lente) var(--courbe);
+}
+.porteurs__marche:hover { color: var(--texte); }
+.porteurs__marche[aria-pressed="true"] { color: var(--texte); font-weight: var(--graisse-normale); }
+.porteurs__marche[aria-pressed="true"]::after { transform: scaleX(1); }
+.porteurs__marche-compte {
+  font-family: var(--police-mono);
+  font-size: 0.6875rem;
+  font-weight: var(--graisse-normale);
+  color: var(--texte-faible);
+}
+@media (max-width: 640px) {
+  .porteurs__marches { gap: var(--e-5); }
+  .porteurs__marche { font-size: 1.375rem; }
+}
+
+/* Plus de titres de famille : une seule galerie, triée par les onglets. */
 .porteurs__groupe-galerie-titre { display: none; }
 
 /* La jauge d'une valeur chiffrée : un trait fin, rempli à proportion du
@@ -2074,20 +2064,7 @@ ol.liseuse__bloc-liste {
    pour chaque indicateur, une carte (ce qu'il mesure, la valeur, ce
    qu'elle veut dire, la jauge avec l'objectif et l'an dernier, les
    évolutions) et, dessous, sa courbe de l'année. */
-.otq__synthese {
-  margin: 0 auto;
-  max-inline-size: 60ch;
-  font-family: var(--police-titre);
-  font-size: 1.3125rem;
-  font-style: italic;
-  font-weight: 300;
-  line-height: 1.5;
-  text-align: center;
-  color: var(--texte-doux);
-}
-.otq__synthese strong { font-style: normal; font-weight: var(--graisse-moyenne); color: var(--texte); }
 .otq__colonnes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr)); gap: var(--e-6); }
-.otq__colonne { display: flex; flex-direction: column; gap: var(--e-4); min-inline-size: 0; }
 
 .otq-carte {
   --serie: var(--accent);
@@ -2115,7 +2092,6 @@ ol.liseuse__bloc-liste {
 }
 .otq-carte__nom { font-weight: var(--graisse-moyenne); color: var(--texte-faible); }
 .otq-carte__titre { margin: 0; font-family: var(--police-titre); font-size: 1.625rem; font-weight: var(--graisse-normale); }
-.otq-carte__phrase { margin: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
 .otq-carte__mesure { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-3) var(--e-6); }
 .otq-carte__valeur {
   margin: 0;
@@ -2128,7 +2104,6 @@ ol.liseuse__bloc-liste {
 }
 .otq-carte__unite { margin-inline-start: 0.1em; font-size: 0.45em; color: var(--texte-doux); }
 .otq-carte__concret { flex: 1; min-inline-size: 12rem; margin: 0; font-size: var(--texte-md); line-height: 1.45; color: var(--texte); }
-.otq-carte__quand { font-size: var(--texte-xs); color: var(--texte-faible); }
 
 .otq-jauge { display: flex; flex-direction: column; gap: var(--e-2); }
 .otq-jauge__piste {
@@ -2177,12 +2152,20 @@ ol.liseuse__bloc-liste {
   .otq-jauge__remplissage { animation: jauge-remplit 1200ms var(--courbe) 200ms backwards; }
 }
 
-.otq-carte__faits { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--e-3); margin: 0; padding-block-start: var(--e-4); border-block-start: 1px solid var(--bordure-douce); }
-.otq-carte__faits dt { font-size: 0.65625rem; font-weight: var(--graisse-moyenne); letter-spacing: var(--lettrage-capitales); text-transform: uppercase; color: var(--texte-faible); }
-.otq-carte__faits dd { margin: var(--e-1) 0 0; font-size: var(--texte-md); font-weight: var(--graisse-forte); color: var(--texte); }
-.otq-carte__faits dd span { font-weight: var(--graisse-normale); color: var(--texte-doux); font-size: var(--texte-xs); }
-.otq-carte__faits dd.otq-hausse { color: var(--statut-succes); }
-.otq-carte__faits dd.otq-baisse { color: var(--statut-critique); }
+.otq-carte__tendances { display: flex; flex-wrap: wrap; gap: var(--e-2); margin: 0; }
+.otq-puce {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--e-1) var(--e-3);
+  border-radius: var(--rayon-plein);
+  background-color: var(--fond-enfonce);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-forte);
+  color: var(--texte-doux);
+}
+.otq-puce--hausse { background-color: var(--statut-succes-fond); color: var(--statut-succes); }
+.otq-puce--baisse { background-color: var(--statut-critique-fond); color: var(--statut-critique); }
+.otq-puce--atteint { background-color: var(--accent-doux); color: var(--texte-accent); }
 
 /* Le suivi, en revue : des indicateurs au chiffre en Newsreader, et la
    courbe des douze mois posée sur sa propre feuille. */
@@ -2501,63 +2484,6 @@ ol.liseuse__bloc-liste {
 }
 
 .assistant__champ:focus { outline: none; border-color: var(--accent); box-shadow: var(--ombre-accent); }
-
-.assistant__reponse:empty { display: none; }
-.assistant__attente { font-size: var(--texte-sm); color: var(--texte-faible); }
-
-.assistant__texte-reponse {
-  padding: var(--e-4);
-  background-color: var(--fond-enfonce);
-  border: 1px solid var(--bordure-douce);
-  border-inline-start: 3px solid var(--accent);
-  border-radius: var(--rayon-md);
-  font-size: var(--texte-md);
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
-.assistant__sources { margin-block-start: var(--e-3); }
-
-.assistant__sources-titre {
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: var(--lettrage-etiquette);
-  text-transform: uppercase;
-  color: var(--texte-faible);
-  margin-block-end: var(--e-2);
-}
-
-.assistant__citations { display: grid; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
-
-.assistant__citation {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--e-2) var(--e-3);
-  border: 1px solid var(--bordure-douce);
-  border-radius: var(--rayon-md);
-  font-size: var(--texte-sm);
-}
-
-.assistant__citation-titre { font-weight: var(--graisse-forte); }
-.assistant__citation-extrait { color: var(--texte-doux); font-size: var(--texte-xs); }
-
-.assistant__sans-source,
-.assistant__erreur {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--e-2);
-  margin-block-start: var(--e-2);
-  padding: var(--e-2) var(--e-3);
-  border: 1px dashed var(--statut-alerte);
-  border-radius: var(--rayon-md);
-  background-color: var(--statut-alerte-fond);
-  font-size: var(--texte-sm);
-  color: color-mix(in srgb, var(--statut-alerte) 70%, var(--texte));
-}
-
-.assistant__erreur { border-color: var(--statut-critique); background-color: var(--statut-critique-fond); color: color-mix(in srgb, var(--statut-critique) 70%, var(--texte)); }
 
 /* -------------------------------------------------------------------------
    11. L'organigramme : barre, repères, arbre, trombinoscope, compétences
@@ -3410,8 +3336,85 @@ ol.liseuse__bloc-liste {
   font: inherit;
   font-size: var(--texte-sm);
 }
+.annuaire__recherche { border-radius: var(--rayon-plein); padding-inline: var(--e-4); }
 .annuaire__recherche:focus { outline: none; border-color: var(--accent); box-shadow: var(--ombre-accent); }
 .annuaire__resultat { margin: 0; font-size: var(--texte-xs); color: var(--texte-doux); }
+
+/* --- Le coup d'œil, en onglets ---------------------------------------------
+   Trois onglets sous la recherche ; un seul volet à la fois, sans cadre :
+   ses groupes (le responsable, chaque squad, chaque compétence, chaque
+   porteur) forment une grille de cartes, chacune avec son titre et ses
+   personnes. Pendant une recherche, les trois volets s'enchaînent. */
+.annuaire__onglets {
+  display: flex;
+  justify-content: center;
+  gap: var(--e-8);
+  border-block-end: 1px solid var(--bordure-douce);
+}
+.annuaire__onglet {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--e-1);
+  padding: var(--e-2) var(--e-1) var(--e-3);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-family: var(--police-titre);
+  font-size: 1.5rem;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--texte-faible);
+  cursor: pointer;
+  transition: color var(--duree) var(--courbe);
+}
+.annuaire__onglet::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: -1px;
+  block-size: 2px;
+  background-color: var(--chaud);
+  transform: scaleX(0);
+  transition: transform var(--duree-lente) var(--courbe);
+}
+.annuaire__onglet:hover { color: var(--texte); }
+.annuaire__onglet[aria-selected="true"] { color: var(--texte); font-weight: var(--graisse-normale); }
+.annuaire__onglet[aria-selected="true"]::after { transform: scaleX(1); }
+.annuaire__onglet-compte { font-family: var(--police-mono); font-size: 0.625rem; color: var(--texte-faible); }
+.annuaire__onglets--recherche .annuaire__onglet::after { transform: scaleX(0); }
+.annuaire__onglets--recherche .annuaire__onglet { color: var(--texte-faible); font-weight: 300; }
+
+body { --pole-teinte: var(--accent); }
+body[data-pole="ETIIA"] { --pole-teinte: var(--pole-etiia); }
+body[data-pole="ETIIE"] { --pole-teinte: var(--pole-etiie); }
+body[data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
+.annuaire .annuaire__volets { display: flex; flex-direction: column; gap: var(--e-6); }
+.annuaire .annuaire__volet[hidden] { display: none; }
+.annuaire .annuaire__volet { background: none; border: 0; box-shadow: none; overflow: visible; }
+.annuaire .annuaire__volet-tete { padding: 0 0 var(--e-3); border: 0; text-align: center; }
+.annuaire .annuaire__volet-titre { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.annuaire .annuaire__onglets--recherche ~ .annuaire__volets .annuaire__volet-titre {
+  position: static; inline-size: auto; block-size: auto; clip-path: none; font-size: var(--texte-xl);
+}
+.annuaire .annuaire__defile { block-size: auto; overflow: visible; padding: 0; }
+.annuaire .annuaire__groupes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
+  gap: var(--e-4);
+  align-items: start;
+}
+.annuaire .annuaire__groupe {
+  padding: var(--e-3) var(--e-4) var(--e-4);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-block-start: 3px solid var(--pole-teinte);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
+}
+.annuaire .annuaire__groupe-tete { position: static; background: none; padding: 0 0 var(--e-2); margin-block-end: var(--e-2); }
+.annuaire .annuaire__groupe-titre { font-family: var(--police-titre); font-size: 1.125rem; font-weight: var(--graisse-normale); }
+.annuaire .annuaire__personnes { display: flex; flex-direction: column; gap: 2px; }
 
 .annuaire__volets {
   display: grid;
@@ -3770,6 +3773,48 @@ ol.liseuse__bloc-liste {
   .titre-section + .revele { transition-delay: 120ms; }
 }
 
+/* Le décor d'un espace de pôle, à la place du rotor : une double hélice
+   qui défile (ETIIA, squelette & ADN), un réseau de neurones où des influx
+   circulent (ETIIE, système nerveux), un faisceau de câbles où passe un
+   courant (ETIII, structure & harnais). Même trait presque effacé. */
+.page-une__decor {
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-start: 55%;
+  z-index: -1;
+  inline-size: min(76rem, 150vw);
+  block-size: auto;
+  translate: -50% -50%;
+  fill: none;
+  stroke: var(--une-trait);
+  stroke-width: 1;
+  pointer-events: none;
+  overflow: visible;
+  -webkit-mask-image: linear-gradient(to right, transparent, var(--texte) 18%, var(--texte) 82%, transparent);
+  mask-image: linear-gradient(to right, transparent, var(--texte) 18%, var(--texte) 82%, transparent);
+}
+.page-une__decor * { vector-effect: non-scaling-stroke; }
+.page-une__barreaux line { stroke-dasharray: 2 3; }
+.page-une__neurones circle { --i: 0; fill: color-mix(in srgb, var(--une-texte) 8%, transparent); }
+.page-une__influx { fill: var(--une-ornement); stroke: none; opacity: 0.55; }
+.page-une__colliers rect { fill: color-mix(in srgb, var(--une-texte) 5%, transparent); }
+.page-une__courant { --i: 0; stroke: var(--une-ornement); stroke-width: 2; stroke-linecap: round; opacity: 0; stroke-dasharray: 60 1400; }
+.page-tete[data-pole="ETIIA"] .page-une__decor { color: var(--pole-etiia-sur-marine); }
+.page-tete[data-pole="ETIIE"] .page-une__influx { fill: var(--pole-etiie-sur-marine); }
+.page-tete[data-pole="ETIII"] .page-une__courant { stroke: var(--pole-etiii-sur-marine); }
+@media (prefers-reduced-motion: no-preference) {
+  .page-une__decor { animation: une-fondu 2400ms var(--courbe) both; }
+  .page-une__defile { animation: une-defile 24s linear infinite; }
+  .page-une__neurones circle { animation: une-neurone 4s ease-in-out calc(var(--i) * 0.45s) infinite; }
+  .page-une__courant { opacity: 0.6; animation: une-courant 7s linear calc(var(--i) * 0.9s) infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-une__signaux { display: none; }
+}
+@keyframes une-defile { to { transform: translateX(-220px); } }
+@keyframes une-neurone { 50% { fill: color-mix(in srgb, var(--une-texte) 30%, transparent); } }
+@keyframes une-courant { from { stroke-dashoffset: 1460; } to { stroke-dashoffset: 0; } }
+
 @keyframes une-rotor { to { rotate: 360deg; } }
 @keyframes une-fondu { from { opacity: 0; } }
 @keyframes une-arrive { from { opacity: 0; translate: 0 10px; } }
@@ -3837,17 +3882,9 @@ ol.liseuse__bloc-liste {
 
 .page-sommaire ~ .pile--section > section > .titre-section { padding-block-start: 0; }
 
-/* La première section s'ouvre sur le marine de la une : son titre y est
-   posé tout entier, en blanc, et le papier commence juste dessous — la
-   une se referme sur « Communication center ». */
-.page-sommaire ~ .pile--section > section:first-of-type {
-  --bande-dessus: var(--une-fond);
-  --bande-coupe: calc(var(--bande-air) + var(--texte-section) * var(--interligne-serre) + var(--e-4));
-  gap: var(--e-10);
-}
-.page-sommaire ~ .pile--section > section:first-of-type > .titre-section { color: var(--une-texte); }
-.page-sommaire ~ .pile--section > section:first-of-type > .titre-section::before,
-.page-sommaire ~ .pile--section > section:first-of-type > .titre-section::after { background-color: var(--une-trait); }
+/* La une (marine) s'arrête sous le sommaire : la première section commence
+   sur le papier, et son titre est dessiné comme tous les autres. */
+.page-sommaire ~ .pile--section > section:first-of-type { --bande-coupe: 0px; }
 
 /* La dernière bande descend jusqu'au pied de page : plus de lisière du
    papier entre les deux. */
@@ -3858,8 +3895,6 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
    change au bord de la section, et non plus au milieu d'un mot. */
 @media (max-width: 640px) {
   .page-sommaire ~ .pile--section { --bande-air: var(--e-8); --bande-coupe: 0px; }
-  .page-sommaire ~ .pile--section > section:first-of-type { --bande-coupe: 0px; gap: var(--e-6); }
-  .page-sommaire ~ .pile--section > section:first-of-type > .titre-section { color: var(--texte); }
   .page-sommaire--collee { box-shadow: none; }
 }
 
@@ -4197,6 +4232,32 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   .agenda__prochain { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; padding: var(--e-5); gap: var(--e-4); }
   .agenda__prochain-sur-titre { justify-content: center; }
 }
+
+/* --- La frise, épurée ---------------------------------------------------------
+   Sur la frise, une carte ne dit que sa date et son titre : la couleur du
+   filet dit le pôle, la position sur l'axe dit quand. Le type, l'échéance
+   et le résumé restent dans la liste des écrans étroits et pour les
+   lecteurs d'écran ; le prochain rendez-vous, lui, est détaillé au-dessus. */
+.agenda--frise .agenda__meta,
+.agenda--frise .agenda__resume,
+.agenda--frise .agenda__lieu {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.agenda--frise .agenda__rdv {
+  gap: var(--e-1);
+  padding: var(--e-3) var(--e-4);
+  border-radius: var(--rayon-lg);
+  border-inline-start-width: 1px;
+  border-block-start: 3px solid var(--rdv-teinte);
+  background-color: var(--carte-fond);
+}
+.agenda--frise .agenda__rdv--proche { background-color: var(--carte-fond); }
+.agenda--frise .agenda__titre { font-size: 1.125rem; line-height: 1.2; text-wrap: balance; }
 
 /* --- La frise qui vit (agenda.js §3) --------------------------------------
    Survoler une carte ou son repère l'allume : la carte se soulève et prend

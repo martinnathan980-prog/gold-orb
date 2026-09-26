@@ -66,19 +66,10 @@
          ton à part du papier des sections (modules.css §15). Le sommaire
          reste collé sous la barre du site et suit la lecture (pole.js). -->
     <div class="page-tete page-tete--une" data-pole="ETIII">
-      <svg class="page-une__rotor" viewBox="-200 -200 400 400" aria-hidden="true" focusable="false">
-        <circle r="196" class="page-une__graduation"/>
-        <circle r="176"/>
-        <circle r="118"/>
-        <circle r="30"/>
-        <circle r="12"/>
-        <g class="page-une__pales">
-          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z"/>
-          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(72)"/>
-          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(144)"/>
-          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(216)"/>
-          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(288)"/>
-        </g>
+      <svg class="page-une__decor page-une__decor--harnais" viewBox="-440 -130 880 260" aria-hidden="true" focusable="false">
+        <g class="page-une__cables"><path d="M -460 -97 C -220 -97, -120 33, 0 -7 S 240 -67, 460 -17"/><path d="M -460 -88 C -220 -88, -120 42, 0 2 S 240 -58, 460 -8"/><path d="M -460 -79 C -220 -79, -120 51, 0 11 S 240 -49, 460 1"/><path d="M -460 -70 C -220 -70, -120 60, 0 20 S 240 -40, 460 10"/><path d="M -460 -61 C -220 -61, -120 69, 0 29 S 240 -31, 460 19"/><path d="M -460 -52 C -220 -52, -120 78, 0 38 S 240 -22, 460 28"/><path d="M -460 -43 C -220 -43, -120 87, 0 47 S 240 -13, 460 37"/></g>
+        <g class="page-une__colliers"><rect x="-300" y="-94" width="10" height="72" rx="3"/><rect x="-120" y="-31" width="10" height="72" rx="3"/><rect x="80" y="-10" width="10" height="72" rx="3"/><rect x="280" y="-48" width="10" height="72" rx="3"/></g>
+        <g><path class="page-une__courant" d="M -460 -88 C -220 -88, -120 42, 0 2 S 240 -58, 460 -8" style="--i: 1"/><path class="page-une__courant" d="M -460 -70 C -220 -70, -120 60, 0 20 S 240 -40, 460 10" style="--i: 3"/><path class="page-une__courant" d="M -460 -52 C -220 -52, -120 78, 0 38 S 240 -22, 460 28" style="--i: 5"/></g>
       </svg>
       <div class="conteneur pole-entete page-entete page-une">
         <h1 class="pole-titre" id="pole-titre">Espace de pôle</h1>
@@ -89,6 +80,7 @@
     <nav class="page-sommaire" aria-label="Sections de l’espace">
       <ul class="sous-nav sous-nav--page conteneur">
         <li><a href="#section-communication" aria-current="true">Communication</a></li>
+        <li><a href="#section-agenda">À venir</a></li>
         <li><a href="#section-reperes">En un coup d’œil</a></li>
         <li><a href="#section-documents">Documents</a></li>
         <li><a href="#section-faq">FAQ</a></li>
@@ -100,6 +92,13 @@
       <section class="pile" id="section-communication" data-section-pole aria-labelledby="titre-communication">
         <h2 class="titre-section" id="titre-communication"><span class="titre-section__texte">Communication</span></h2>
         <div id="zone-communication"></div>
+      </section>
+
+      <!-- À venir : les prochains rendez-vous du pôle et du service, sur
+           la même frise que le tableau de bord (agenda.js). -->
+      <section class="pile" id="section-agenda" data-section-pole aria-labelledby="titre-agenda">
+        <h2 class="titre-section" id="titre-agenda"><span class="titre-section__texte">À venir</span></h2>
+        <div id="zone-agenda"></div>
       </section>
 
       <!-- Le pôle en un coup d'œil : les repères chiffrés, puis

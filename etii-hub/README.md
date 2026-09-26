@@ -290,7 +290,7 @@ dans le navigateur.
 |---|---|
 | `docs/INSTALLER-SUR-GOOGLE.txt` | **Faire tourner le site chez Google** (Drive + Sheets + Apps Script), clic par clic, avec les profils : qui lit, qui modifie. Le code serveur est recopié en annexe (l'audit vérifie qu'il suit `tools/apps-script/site/Code.gs`, et `node tests/apps-script.test.mjs` l'exécute contre une feuille simulée) |
 | `docs/OTQ-GOOGLE-SHEETS.md` | Alimenter le suivi OTQ / OTD chaque nuit depuis un Google Sheet |
-| `docs/ASSISTANT-IA.md` | Brancher un assistant documentaire (Gemini) : chemins, coûts, interlocuteurs, précautions |
+| `docs/ASSISTANT-IA.md` | **Des milliers de documents et Gemini** : où les ranger (Drive partagé), le catalogue rempli tout seul (`tools/apps-script/index-documents.gs`), Gemini dans Drive et NotebookLM dès aujourd'hui, puis la page Assistant reliée à Gemini Enterprise (`tools/apps-script/assistant/`, vérifiée par `node tests/assistant-gemini.test.mjs`) |
 | `docs/RECHERCHE-A-L-ECHELLE.md` | Ce qui fait la qualité d'une recherche sur des milliers de documents |
 | `SPEC.md` | Le cahier des charges de la réécriture ; les en-têtes de modules y renvoient par numéro de section |
 

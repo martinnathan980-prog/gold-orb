@@ -25,10 +25,11 @@ import { el, frag, monter, debounce, deleguer, initTheme, initNav, suivreSommair
 import { installerEdition, barreEdition, boutonAjouter } from './edition.js';
 import { abonnerModifications, supprimerElement, aplatirOrganigramme } from './modifications.js';
 import { modifierCommunication, supprimerDossier, ouvrirAlertes, ouvrirPersonne, ouvrirSquad, ouvrirDocument, ouvrirQuestion,
-         ouvrirReferent, retirerReferent, ouvrirAffectation, affecter } from './edition-contenus.js';
+         ouvrirReferent, retirerReferent, ouvrirAffectation, affecter, ouvrirRendezVous } from './edition-contenus.js';
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
 import { kiosque, dossiersDepuisCommunications, noteOrigine } from './kiosque.js';
 import { lecteur } from './lecteur.js';
+import { agenda } from './agenda.js';
 import { chargerCommunications } from './communications.js';
 import { ouvrirEditeur } from './editeur.js';
 import { creditsCommunications } from './credits.js';
@@ -117,6 +118,24 @@ function rendreCommunication(pole, donnees, conteneur) {
       surModifier: (dossier, bouton) => modifierCommunication(dossier, bouton, pole.cle),
       surSupprimer: (dossier) => supprimerDossier(dossier)
     }));
+}
+
+/* À venir : la frise du tableau de bord, filtrée sur le pôle (ses
+   rendez-vous et ceux du service). */
+function chargerAgendaDuPole(pole) {
+  avecEtat('#zone-agenda', chargerCommunications,
+    (donnees, conteneur) => monter(conteneur, agenda(donnees, {
+      pole: pole.cle,
+      limite: 8,
+      surAjouter: (b) => ouvrirRendezVous({ pole: pole.cle, declencheur: b }),
+      surModifier: (entree, b) => ouvrirRendezVous({ existant: entree, declencheur: b }),
+      surSupprimer: (entree) => supprimerElement('communications', 'agenda', entree.id)
+    })), {
+      squelette: 2, compact: true,
+      texteChargement: 'Chargement des prochains rendez-vous…',
+      titreErreur: 'Rendez-vous indisponibles',
+      estVide: () => false
+    });
 }
 
 function chargerCommunicationDuPole(pole) {
@@ -420,6 +439,32 @@ function rendreAnnuaire(pole, m, conteneur) {
     volet(prefixe + '-referents', 'Référents', 'La personne à solliciter en premier, par compétence', groupesRef, piedRef),
     volet(prefixe + '-porteurs', 'Par porteur', 'Qui travaille sur quel appareil', groupesPorteur));
 
+  /* Trois onglets, un seul volet à la fois : l'organigramme, les
+     référents, les porteurs — chacun en grille de cartes. Pendant une
+     recherche, les trois volets s'affichent l'un sous l'autre : on voit
+     tout ce qui correspond. */
+  let vue = 'organigramme';
+  const vues = [
+    ['organigramme', 'Organigramme', m.membres.length],
+    ['referents', 'Référents', m.nbReferents],
+    ['porteurs', 'Par porteur', m.parPorteur.length]
+  ];
+  const onglets = el('div', { class: 'annuaire__onglets', role: 'tablist', 'aria-label': 'Vues du pôle' },
+    vues.map(([cle, libelle, n]) => el('button', {
+      type: 'button', role: 'tab', class: 'annuaire__onglet', id: prefixe + '-onglet-' + cle,
+      'aria-controls': prefixe + '-' + cle, 'aria-selected': cle === vue ? 'true' : 'false', dataset: { vue: cle },
+      onClick: () => { vue = cle; afficherVue(); }
+    }, libelle, el('span', { class: 'annuaire__onglet-compte' }, String(n)))));
+  function afficherVue() {
+    const enRecherche = Boolean(normaliser(champ.value));
+    onglets.querySelectorAll('.annuaire__onglet').forEach((b) => b.setAttribute('aria-selected', b.dataset.vue === vue ? 'true' : 'false'));
+    onglets.classList.toggle('annuaire__onglets--recherche', enRecherche);
+    volets.querySelectorAll('.annuaire__volet').forEach((v) => {
+      v.setAttribute('role', 'tabpanel');
+      v.hidden = !enRecherche && !v.id.endsWith('-' + vue);
+    });
+  }
+
   /* Un seul champ filtre les trois volets. */
   const champ = el('input', {
     type: 'search', class: 'annuaire__recherche', id: prefixe + '-recherche', autocomplete: 'off',
@@ -447,8 +492,9 @@ function rendreAnnuaire(pole, m, conteneur) {
     });
     compteur.textContent = q ? pluriel(trouves, 'personne') + ' dans l’organigramme' : '';
   }
-  champ.addEventListener('input', debounce(filtrer, 100));
-  champ.addEventListener('search', filtrer);
+  champ.addEventListener('input', debounce(() => { filtrer(); afficherVue(); }, 100));
+  champ.addEventListener('search', () => { filtrer(); afficherVue(); });
+  afficherVue();
 
   monter(conteneur,
     el('div', { class: 'annuaire' },
@@ -460,6 +506,7 @@ function rendreAnnuaire(pole, m, conteneur) {
       el('div', { class: 'annuaire__barre', role: 'search' },
         el('label', { class: 'visuellement-cache', for: champ.id }, 'Rechercher une personne, un rôle, un porteur ou une compétence du pôle'),
         champ, compteur),
+      onglets,
       volets,
       el('p', { class: 'annuaire__suite' },
         lienSuite('organigramme.html', code, 'L’organigramme complet, avec les fiches'))));
@@ -768,6 +815,7 @@ if (!POLE) {
   revelerAuDefilement(document.querySelectorAll('.pile--section > section > *'));
 
   chargerCommunicationDuPole(POLE);
+  chargerAgendaDuPole(POLE);
 
   const chargerSectionAnnuaire = () => avecEtat('#zone-reperes', () => chargerAnnuaire(POLE.cle),
     (modele, conteneur) => rendreAnnuaire(POLE, modele, conteneur), {
@@ -804,7 +852,7 @@ if (!POLE) {
   /* Une modification enregistrée redessine les sections qui en dépendent :
      data.js a déjà oublié le jeu, la section le relit. */
   abonnerModifications((jeu) => {
-    if (jeu === 'communications') chargerCommunicationDuPole(POLE);
+    if (jeu === 'communications') { chargerCommunicationDuPole(POLE); chargerAgendaDuPole(POLE); }
     if (jeu === 'organigramme' || jeu === 'flotte') { chargerSectionAnnuaire(); chargerSectionDocuments(); }
     if (jeu === 'documents') { chargerSectionDocuments(); chargerSectionAnnuaire(); }
     if (jeu === 'faq') chargerSectionFaq();

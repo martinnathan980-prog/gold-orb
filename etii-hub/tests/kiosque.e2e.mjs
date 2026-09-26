@@ -83,31 +83,29 @@ const fin = await page.evaluate(() => {
 t('la lecture se termine par une marque de fin, après le dernier bloc', !!fin && fin.apresDernierBloc, JSON.stringify(fin));
 t('un court filet coloré, sans signature', !!fin && fin.largeur > 20 && fin.largeur < 80 && !/rgba\(0, 0, 0, 0\)/.test(fin.couleur) && !fin.signature, JSON.stringify(fin));
 
-console.log('\n== La frise ==');
+console.log('\n== La liste ==');
 const frise = await page.evaluate(() => {
-  const liste = document.querySelector('.kiosque__liste');
-  const rail = getComputedStyle(liste, '::before');
   const groupes = Array.from(document.querySelectorAll('.kiosque__groupe'));
   const entrees = Array.from(document.querySelectorAll('.kiosque__entree'));
   const statuts = new Set(['info', 'succes', 'urgent', 'mot']);
+  const active = document.querySelector('.kiosque__entree--active .kiosque__carte');
   return {
-    rail: rail.content !== 'none' && parseFloat(rail.width) >= 1 && !/rgba\(0, 0, 0, 0\)/.test(rail.backgroundColor),
     groupes: groupes.length,
     collants: groupes.every((g) => getComputedStyle(g).position === 'sticky'),
     statuts: entrees.every((e) => statuts.has(e.dataset.statut)),
-    points: entrees.every((e) => { const p = getComputedStyle(e, '::before'); return p.content !== 'none' && parseFloat(p.width) >= 6; }),
+    visuels: entrees.every((e) => e.querySelector('.kiosque__visuel')),
     actives: document.querySelectorAll('.kiosque__entree--active').length,
-    activeReliee: (() => { const a = document.querySelector('.kiosque__entree--active'); return !!a && getComputedStyle(a, '::after').opacity === '1' && a.querySelector('.kiosque__carte').getAttribute('aria-current') === 'true'; })(),
+    activeMarquee: !!active && active.getAttribute('aria-current') === 'true' && /inset/.test(getComputedStyle(active).boxShadow),
     quand: document.querySelectorAll('.kiosque__jour').length === entrees.length,
+    dates: document.querySelectorAll('.kiosque__carte-date').length === entrees.length,
     resumes: document.querySelectorAll('.kiosque__carte-resume').length >= 1,
     ajout: document.querySelectorAll('.kiosque__ajout').length === 1
   };
 });
-t('un rail vertical longe la liste', frise.rail);
 t('les mois sont des en-têtes collants', frise.groupes >= 1 && frise.collants, JSON.stringify(frise));
-t('chaque entrée porte un point coloré selon son statut', frise.statuts && frise.points);
-t('la carte lue est la seule active, reliée au rail', frise.actives === 1 && frise.activeReliee);
-t('le bloc jour/mois, le résumé et le bouton d’ajout sont conservés', frise.quand && frise.resumes && frise.ajout);
+t('chaque entrée a son carré (photo ou tuile datée) et son statut', frise.statuts && frise.visuels);
+t('la carte lue est la seule active, marquée d’un filet', frise.actives === 1 && frise.activeMarquee);
+t('le jour, la date, le résumé et le bouton d’ajout sont là', frise.quand && frise.dates && frise.resumes && frise.ajout);
 await page.locator('.kiosque__carte').nth(1).hover();
 await page.waitForTimeout(300);
 t('le survol soulève la carte', (await page.locator('.kiosque__carte').nth(1).evaluate((c) => getComputedStyle(c).transform)) !== 'none');
@@ -206,10 +204,9 @@ const sombre = await (await nav.newContext({ viewport: { width: 1366, height: 90
 sombre.on('pageerror', (e) => err.push('sombre: ' + e.message));
 await sombre.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
 await sombre.waitForTimeout(1200);
-t('en sombre, le rail, les points et la marque de fin sont visibles', await sombre.evaluate(() => {
+t('en sombre, les tuiles datées et la marque de fin sont visibles', await sombre.evaluate(() => {
   const vide = (c) => /rgba\(0, 0, 0, 0\)/.test(c);
-  return !vide(getComputedStyle(document.querySelector('.kiosque__liste'), '::before').backgroundColor)
-    && !vide(getComputedStyle(document.querySelector('.kiosque__entree--active'), '::before').backgroundColor)
+  return !vide(getComputedStyle(document.querySelector('.kiosque__visuel')).backgroundColor)
     && !vide(getComputedStyle(document.querySelector('.kiosque__fin'), '::before').backgroundColor);
 }));
 

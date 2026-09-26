@@ -53,7 +53,7 @@ const JOUR_MS = 86400000;
 /* La frise, en pixels : largeur d'une carte, écart entre deux couloirs,
    hauteur de la bande de l'axe, marges. En dessous de LARGEUR_MIN, la
    liste simple lit mieux qu'une frise écrasée. */
-const FRISE = { carte: 288, ecart: 14, axe: 64, marge: 28, largeurMin: 880, horizonMin: 14 };
+const FRISE = { carte: 240, ecart: 14, axe: 64, marge: 28, largeurMin: 880, horizonMin: 14 };
 
 /* Les positions de la dernière mise en page, pour la jauge du survol. */
 const MISES = new WeakMap();

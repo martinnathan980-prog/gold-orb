@@ -106,8 +106,10 @@ for (const bloc of orga.poles) {
   await page.waitForTimeout(1200);
   // textContent : innerText rendrait les capitales du CSS.
   const sousNav = await page.locator('.sous-nav a').evaluateAll(l => l.map(a => a.textContent.trim()));
-  t(`${code} : sommaire Communication, En un coup d’œil, Documents, FAQ`,
-    sousNav.join('|') === 'Communication|En un coup d’œil|Documents|FAQ', `(${sousNav.join('|')})`);
+  t(`${code} : sommaire Communication, À venir, En un coup d’œil, Documents, FAQ`,
+    sousNav.join('|') === 'Communication|À venir|En un coup d’œil|Documents|FAQ', `(${sousNav.join('|')})`);
+  t(`${code} : « À venir » montre le prochain rendez-vous et la frise du pôle`,
+    (await page.locator('#zone-agenda .agenda').count()) === 1);
   t(`${code} : l’en-tête est sur la bande, le sommaire collant en dessous`,
     (await page.locator('.page-tete h1').count()) === 1
     && (await page.locator('.page-sommaire').evaluate(e => getComputedStyle(e).position)) === 'sticky');
@@ -123,16 +125,17 @@ for (const bloc of orga.poles) {
   t(`${code} : les repères se lisent, ils ne se cliquent pas`,
     (await page.locator('#zone-reperes .pole-repere a').count()) === 0);
 
-  // Trois volets, côte à côte et de même hauteur, dans une section courte.
-  const volets = await page.locator('#zone-reperes .annuaire__volet').evaluateAll(l => l.map(v => {
-    const r = v.getBoundingClientRect();
-    return { titre: v.querySelector('.annuaire__volet-titre').textContent.trim(), top: Math.round(r.top), h: Math.round(r.height) };
-  }));
-  t(`${code} : trois volets — Organigramme, Référents, Par porteur — côte à côte`,
+  // Trois volets derrière trois onglets : un seul visible à la fois.
+  const volets = await page.locator('#zone-reperes .annuaire__volet').evaluateAll(l => l.map(v => ({
+    titre: v.querySelector('.annuaire__volet-titre').textContent.trim(), visible: !v.hidden })));
+  t(`${code} : trois volets — Organigramme, Référents, Par porteur — en onglets, l'organigramme d'abord`,
     volets.map(v => v.titre).join('|') === 'Organigramme|Référents|Par porteur'
-    && volets.every(v => v.top === volets[0].top && Math.abs(v.h - volets[0].h) <= 1), JSON.stringify(volets));
-  const hauteurSection = await page.locator('#section-reperes').evaluate(e => e.getBoundingClientRect().height);
-  t(`${code} : la section tient en moins d’un écran et demi (${Math.round(hauteurSection)} px)`, hauteurSection < 1200);
+    && volets.map(v => v.visible).join() === 'true,false,false', JSON.stringify(volets));
+  await page.locator('#zone-reperes .annuaire__onglet', { hasText: 'Référents' }).click();
+  t(`${code} : l'onglet Référents montre les référents`,
+    (await page.locator('#zone-reperes .annuaire__volet:visible').count()) === 1
+    && (await page.locator(`#annuaire-${code.toLowerCase()}-referents`).isVisible()));
+  await page.locator('#zone-reperes .annuaire__onglet', { hasText: 'Organigramme' }).click();
 
   // L'organigramme : le responsable, puis une carte par squad.
   const orgaVolet = page.locator(`#annuaire-${code.toLowerCase()}-organigramme`);

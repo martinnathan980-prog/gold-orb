@@ -471,8 +471,20 @@ function bandeauAlertes(alertes, surAlertes) {
    4. La liste (à gauche) : par mois, la plus récente d'abord
    ------------------------------------------------------------------------- */
 
+/* Une communication dans la liste : un carré à gauche — sa photo, avec
+   le jour posé dessus, ou à défaut une tuile au jour et au mois —, puis
+   la date en petites capitales, le titre et une ligne de résumé. */
 function carteListe(dossier, prefixe) {
   const p = partiesDate(dossier.date);
+  const image = premiereImage(dossier);
+  const jour = el('span', { class: 'kiosque__jour' }, p ? String(p.jour) : '—');
+  const mois = el('span', { class: 'kiosque__mois' }, p ? MOIS_COURTS[p.mois - 1] : '');
+  const visuel = el('span', { class: ['kiosque__visuel', image ? 'kiosque__visuel--photo' : null], 'aria-hidden': 'true' },
+    image
+      ? el('img', { class: 'kiosque__vignette', src: image, alt: '', loading: 'lazy', decoding: 'async',
+          onError: (evt) => { const v = evt.currentTarget.parentNode; evt.currentTarget.remove(); if (v) v.classList.remove('kiosque__visuel--photo'); } })
+      : null,
+    el('span', { class: 'kiosque__quand' }, jour, mois));
   return el('li', {
     class: 'kiosque__entree',
     dataset: { pole: dossier.pole || 'ETII', statut: STATUTS[dossier.statut] ? dossier.statut : 'info' }
@@ -484,23 +496,15 @@ function carteListe(dossier, prefixe) {
       dataset: { id: dossier.id },
       'aria-current': 'false'
     },
-    el('span', { class: 'kiosque__quand', 'aria-hidden': 'true' },
-      el('span', { class: 'kiosque__jour' }, p ? String(p.jour) : '—'),
-      el('span', { class: 'kiosque__mois' }, p ? MOIS_COURTS[p.mois - 1] : '')),
-    /* Seule la date accompagne le titre : ni pôle, ni porteur, ni
-       catégorie — le point de la frise porte déjà la couleur du pôle. */
+    visuel,
     el('span', { class: 'kiosque__carte-corps' },
+      el('time', { class: 'kiosque__carte-date', datetime: dossier.date || null }, dateLongue(dossier.date)),
       el('span', { class: 'kiosque__carte-titre' }, dossier.titre || 'Sans titre'),
-      dossier.resume ? el('span', { class: 'kiosque__carte-resume' }, dossier.resume) : null,
-      el('time', { class: 'visuellement-cache', datetime: dossier.date || null }, dateLongue(dossier.date))),
-    premiereImage(dossier)
-      ? el('img', { class: 'kiosque__vignette', src: premiereImage(dossier), alt: '', loading: 'lazy', decoding: 'async',
-          onError: (evt) => evt.currentTarget.remove() })
-      : null));
+      dossier.resume ? el('span', { class: 'kiosque__carte-resume' }, dossier.resume) : null)));
 }
 
-/* La frise : un rail vertical à gauche, un point par entrée (coloré selon
-   son statut, en CSS), et le libellé du mois en en-tête collant. */
+/* La liste, par mois : le libellé du mois en en-tête collant, puis les
+   communications du mois, la plus récente d'abord. */
 function liste(dossiers, prefixe) {
   const enfants = [];
   let moisCourant = null;
