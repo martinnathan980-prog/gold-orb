@@ -56,7 +56,7 @@ ferait perdre au découpage suivant. Tout passe par le prototype (et par
   qui résume chaque semaine en chiffres, et dessous le **journal** de ce qui a
   changé, semaine par semaine, plan par plan.
 - **Avancement FWD par…** : par ATA, Séquence, CC, ECP ou mois de création,
-  avec la fin estimée et l'effort demandé par le prochain jalon ; un filtre
+  avec la fin estimée et le rythme requis par le prochain jalon ; un filtre
   sur la colonne de gauche, et sous chaque ligne toutes ses références, à
   faire puis terminées.
 - **La comparaison des bases de données** (GATES et SEE), dès qu'un onglet
@@ -71,7 +71,8 @@ ferait perdre au découpage suivant. Tout passe par le prototype (et par
   l'interrupteur GATES | SEE, l'extract SEE à l'identique avec le verdict sur
   chaque ligne.
 - **Le tableau** : l'extract GATES à l'identique — toutes les colonnes, les
-  mêmes intitulés, l'ordre exact de la feuille — en deux vues seulement,
+  mêmes intitulés, l'ordre de la feuille (la colonne suivie figée juste après
+  la référence) — en deux vues seulement,
   *Toutes les colonnes* et *Vue essentielle*. Seule exception : la **première**
   colonne quand elle est sans intitulé et entièrement vide (« Colonne 1 » sur
   l'export réel, ajoutée par Excel). Les autres colonnes sans intitulé restent,

@@ -506,6 +506,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .legende-jalon:hover, .legende-jalon[aria-expanded="true"] { background: var(--creux); box-shadow: 0 0 0 6px var(--creux); }
 .legende-jalon .ligne-decompte { grid-column: 2; font-size: 11.5px; color: var(--encre-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .legende-jalon .decompte { font-variant-numeric: tabular-nums; }
+.legende-jalon .autre-suivi { font-style: italic; }
 .legende-jalon .decompte.proche { color: var(--cours); font-weight: 500; }
 .legende-jalon .decompte.passe { font-style: italic; }
 .legende-jalon:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
@@ -812,6 +813,9 @@ table.plans tbody tr[data-plan] { cursor: pointer; }
   padding-bottom: 6px; border-bottom: 1px solid var(--filet); margin-bottom: 3px;
 }
 .critique-tete > span { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
+/* Quand d'autres filtres réduisent les lignes, les colonnes tirées de
+   l'historique le disent : elles portent sur tout le groupe. */
+.critique-note { font-size: 11.5px; color: var(--encre-3); margin: 0 0 6px; line-height: 1.4; }
 .critique-tete > span.a-gauche { justify-content: flex-start; }
 button.tri-groupe {
   border: none; background: none; padding: 2px 0; margin: 0; color: inherit; cursor: pointer;

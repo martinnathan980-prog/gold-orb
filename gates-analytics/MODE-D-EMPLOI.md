@@ -84,7 +84,7 @@ n'existent que par lui.
 2. Dans l'onglet du contrat : **Ctrl+A**, **Suppr**, cliquer **A1**,
    **Ctrl+V**. (Pour chaque contrat.)
 3. **Suivi FWD → Archiver le relevé de cette semaine.** Une boîte confirme :
-   « Relevé 2026-S39 archivé : HDK (186 plans), THS (93 plans). »
+   « Relevé S39 archivé : HDK (186 plans), THS (93 plans). »
 
 L'archivage passe sur **tous les contrats d'un coup** : une ligne datée de la
 semaine dans l'onglet d'historique de chaque contrat (`Historique_FWD_HDK`,
@@ -184,9 +184,10 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   (`VALEURS_FINIES`).
 - **Avancement dans le temps** : la courbe des terminés relevé après relevé,
   les jalons du programme (numérotés 1 à 5 sur une rangée, en clair dans la
-  légende dessous), la fin estimée au rythme actuel et le rythme requis pour
+  légende dessous), la fin estimée au rythme tenu et le rythme requis pour
   tenir le prochain jalon (« manque N » quand le rythme ne suffit pas). Il
-  s'ouvre sur six mois ; **3 mois · 6 mois · 1 an · Tout** à droite. En
+  s'ouvre sur six mois — un an si la prochaine échéance tombe plus loin ;
+  **3 mois · 6 mois · 1 an · Tout** à droite. En
   tête, la prochaine échéance en jours : un clic ouvre sa fiche (Échap la
   ferme). Les jalons **TO** (table outil) suivent le concept harnais : sous
   la définition électrique, ils restent dessinés, en retrait.
@@ -196,8 +197,8 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   libellé. Les semaines s'ouvrent repliées ; le petit champ
   « Chercher un plan… » à droite ne cherche que dans le journal.
 - **Avancement FWD par…** (ou **Concept harnais par…**) : le même avancement découpé par ATA, séquence,
-  CC, ECP, ou par mois de création, avec la fin estimée et l'effort demandé
-  par groupe. Son champ « ATA ou plan… » trouve un groupe ou un plan.
+  CC, ECP, ou par mois de création, avec la fin estimée et le rythme requis
+  (en plans par semaine, le rythme tenu dessous) par groupe. Son champ « ATA ou plan… » trouve un groupe ou un plan.
 - **Plans** : l'extract, à l'identique, avec ses colonnes ; recherche, tri,
   filtres. « Vue essentielle » n'en garde qu'une poignée — référence, nom
   d'installation, ECP, ATA, séquence, validation définition électrique, date

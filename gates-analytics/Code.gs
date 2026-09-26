@@ -1714,8 +1714,10 @@ function enregistrerInstantaneHebdo() {
     }
   });
 
+  /* La semaine se dit comme sur la page : « S39 », pas l'étiquette 2026-S39. */
+  const dite = 'S' + parseInt(semaine.slice(6), 10);
   if (erreurs.length) {
-    throw new Error('Relevé ' + semaine + ' — ' +
+    throw new Error('Relevé ' + dite + ' — ' +
       (detail.length ? detail.length + ' contrat(s) archivé(s), ' : '') +
       erreurs.length + ' en erreur : ' + erreurs.join(' ; '));
   }
@@ -1723,7 +1725,7 @@ function enregistrerInstantaneHebdo() {
      « Script terminé », et on ne sait pas si c'est fait. Lancé par le
      déclencheur du vendredi, il n'y a personne devant : pas d'interface, et
      l'appel ci-dessous échoue en silence. */
-  const mot = 'Relevé ' + semaine + ' archivé : ' + detail.map(function (d) {
+  const mot = 'Relevé ' + dite + ' archivé : ' + detail.map(function (d) {
     return d.nom + ' (' + d.compte.total + ' plans)';
   }).join(', ') + '.' + (detail.length ? ' Un second archivage dans la semaine remplace celui-ci.' : '');
   try {
@@ -1790,13 +1792,15 @@ function supprimerDernierReleve() {
   });
 
   const nommer = function (liste) { return liste.map(function (n) { return '« ' + n + ' »'; }).join(', '); };
+  /* La semaine se dit comme sur la page : « S39 ». */
+  const dite = 'S' + parseInt(semaine.slice(6), 10);
   let message;
   if (!supprimes.length) {
-    message = 'Aucun relevé pour la semaine ' + semaine + '.';
+    message = 'Aucun relevé pour la semaine en cours (' + dite + ').';
   } else if (contrats.length === 1) {
-    message = 'Relevé ' + semaine + ' supprimé. Recollez le bon export puis relancez l\'archivage.';
+    message = 'Relevé ' + dite + ' supprimé. Recollez le bon export puis relancez l\'archivage.';
   } else {
-    message = 'Relevé ' + semaine + ' supprimé pour ' + nommer(supprimes) +
+    message = 'Relevé ' + dite + ' supprimé pour ' + nommer(supprimes) +
       (sans.length ? ' ; aucun relevé pour ' + nommer(sans) : '') +
       '. Recollez le bon export puis relancez l\'archivage.';
   }

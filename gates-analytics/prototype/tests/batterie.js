@@ -97,14 +97,16 @@ async function reinitialiser(pg) {
   verifier('« Colonne 1 », vide de bout en bout, n\'est pas dans les en-tetes',
     extrait.titres.indexOf('Colonne 1') === -1 && extrait.ordre.indexOf('colonne_1') === -1,
     extrait.titres.slice(0, 4).join(' | '));
-  verifier('« Colonne 4 » et « Colonne 5 », sans intitule et vides elles aussi, restent a leur place : seule la premiere colonne s\'efface',
-    extrait.titres[2] === 'Colonne 4' && extrait.titres[3] === 'Colonne 5' && extrait.col4 && extrait.col5,
+  /* La seule entorse à l'ordre de la feuille : la colonne suivie vient
+     juste après la référence. Le reste garde sa place. */
+  verifier('la colonne suivie suit la référence ; « Colonne 4 » et « Colonne 5 », sans intitule et vides, restent a leur place',
+    extrait.ordre[1] === 'avancement' && extrait.titres[3] === 'Colonne 4' && extrait.titres[4] === 'Colonne 5' && extrait.col4 && extrait.col5,
     extrait.titres.slice(0, 5).join(' | '));
   verifier('la reference ouvre le tableau : plus rien ne la precede',
     extrait.ordre[0] === 'reference', extrait.ordre[0]);
-  verifier('la reference est figee, et tout ce qui la precede avec elle',
-    extrait.figees.length >= 1 &&
-    extrait.figees[extrait.figees.length - 1] === 'reference' &&
+  verifier('la reference est figee, tout ce qui la precede et la colonne suivie avec elle',
+    extrait.figees.length >= 2 &&
+    extrait.figees[extrait.figees.length - 2] === 'reference' && extrait.figees[extrait.figees.length - 1] === 'avancement' &&
     extrait.figees.join(',') === extrait.ordre.slice(0, extrait.figees.length).join(','),
     JSON.stringify(extrait.figees));
   verifier('les colonnes figees se posent l\'une apres l\'autre',
@@ -129,8 +131,8 @@ async function reinitialiser(pg) {
   }));
   verifier('la vue essentielle reduit vraiment le tableau',
     vEss.n > 1 && vEss.n < COLONNES_TOTAL, vEss.n + ' colonnes');
-  verifier('la reference l\'ouvre et reste seule figee',
-    vEss.premiere.cle === 'reference' && vEss.figees === 1, JSON.stringify(vEss));
+  verifier('la reference l\'ouvre, figee avec la colonne suivie',
+    vEss.premiere.cle === 'reference' && vEss.figees === 2, JSON.stringify(vEss));
   verifier('et aucun plan n\'est perdu', vEss.lignes === TOTAL, String(vEss.lignes));
   verifier('l\'interrupteur dit laquelle est active',
     vEss.presse === 'toutes:false essentielle:true', vEss.presse);
@@ -163,11 +165,11 @@ async function reinitialiser(pg) {
     !modeDepart.interrupteur && modeDepart.bandeau && /^Démonstration — trois contrats fictifs/.test(modeDepart.mot) && modeDepart.pied,
     JSON.stringify(modeDepart));
   const blocsRemplis = () => p.evaluate(() => ({
-    comparatif: /Depuis l’import/.test(document.getElementById('comparatif').textContent) &&
+    comparatif: /Depuis le relevé précédent \(S\d{1,2} · \S+ \d{4}\)/.test(document.getElementById('comparatif').textContent.replace(/[\u00a0\u202f]/g, ' ')) &&
                 document.querySelectorAll('.puce-delta').length > 0,
     journal: document.querySelectorAll('.journal-semaine').length > 0,
     finEstimee: [...document.querySelectorAll('.critique-date .v')]
-      .some(v => /^\d{4}-S\d{2}$/.test(v.textContent.trim())),
+      .some(v => /^S\d{1,2} · \S+ \d{4}$/.test(v.textContent.trim().replace(/[\u00a0\u202f]/g, ' '))),
     rythme: [...document.querySelectorAll('.critique-effort .v')].some(v => /sem\./.test(v.textContent)),
     courbe: document.querySelectorAll('svg.graphe circle').length >= 5,
     groupes: document.querySelectorAll('.critique-ligne').length > 0,
@@ -562,7 +564,9 @@ async function reinitialiser(pg) {
     F && F.cotes.map(c => c.cle + '=' + c.n + ' ' + c.mots + (c.zero ? ' (zéro)' : '')).join(' | ') === 'manque=3 terminés sans SEE | attente=' + ATTENTE + ' pas encore dans SEE | seul=5 seulement dans SEE',
     JSON.stringify(F && F.cotes));
   verifier('la figure se lit aussi à voix haute',
-    F && F.aria === 'Comparaison GATES / SEE : ' + ACCORD + ' terminés et dans SEE, 2 sous un autre indice, 12 dans SEE sans être terminés ici, 3 terminés absents de SEE, ' + ATTENTE + ' pas encore dans SEE, sur ' + TOTAL + ' plans ; 5 lignes seulement dans SEE.', F && F.aria);
+    F && F.aria === 'Comparaison GATES / SEE, sur ' + TOTAL + ' plans : ' + ACCORD + ' terminés dans GATES et connus de SEE ; 2 dans SEE sous une autre lettre d’indice ; ' +
+      '12 dans SEE, mais GATES ne les dit pas terminés ; 3 terminés dans GATES, mais SEE ne les connaît pas ; ' + ATTENTE +
+      ' pas terminés, et pas encore dans SEE : rien d’anormal ; 5 lignes de SEE sans plan dans GATES.', F && F.aria);
   const rectsRapp = await p.evaluate(() => {
     const fig = document.getElementById('venn-rapprochement').getBoundingClientRect();
     const zone = document.getElementById('verdicts-rapprochement').getBoundingClientRect();
@@ -669,9 +673,10 @@ async function reinitialiser(pg) {
   };
   const nEnCours = r0.R.etatsAvance.filter(e => e === 'encours').length;
   const svAv = await survolRapp('#verdicts-rapprochement button[data-rapp="avance"]');
-  verifier('survoler « dans SEE, pas terminés ici » éclaire sa part de l\'anneau et ouvre la bulle : le compte, la répartition par état d\'ici, le sens, où mène le clic',
-    svAv.visible === 'true' && svAv.eclaire === 'avance' && /Dans SEE, mais pas terminés dans GATES/.test(svAv.texte) &&
-    /12 plans/.test(svAv.texte) && new RegExp('en cours dans GATES ' + nEnCours).test(svAv.texte) &&
+  /* La tête de la bulle est la phrase même du verdict, avec son compte. */
+  verifier('survoler « dans SEE, mais GATES ne les dit pas terminés » éclaire sa part de l\'anneau et ouvre la bulle : la phrase du verdict, la répartition par état dans GATES, le sens, où mène le clic',
+    svAv.visible === 'true' && svAv.eclaire === 'avance' && /^12 dans SEE, mais GATES ne les dit pas terminés/.test(svAv.texte) &&
+    new RegExp('en cours dans GATES ' + nEnCours).test(svAv.texte) &&
     /l’avancement GATES est peut-être en retard/.test(svAv.texte) && /n’afficher que ceux-là dans le tableau/.test(svAv.texte), svAv.texte.slice(0, 200));
   const svEm = await survolRapp('#verdicts-rapprochement button[data-rapp="emission"]');
   verifier('la bulle d’« autre indice » montre les paires : référence GATES → solution et lettre dans SEE',
@@ -691,19 +696,19 @@ async function reinitialiser(pg) {
     eclaire: [...document.querySelectorAll('#venn-rapprochement .survole')].map(x => x.getAttribute('data-cle')).join()
   }));
   verifier('survoler la part verte de l\'anneau ouvre la bulle des plans d\'accord — avec leur part des terminés — et l\'épaissit',
-    svAn.visible === 'true' && svAn.eclaire === 'accord' && /Terminés ici, connus de SEE/.test(svAn.texte) &&
-    new RegExp(ACCORD + ' plans ' + PCT + '\\s?% des terminés').test(svAn.texte), svAn.texte.slice(0, 120));
+    svAn.visible === 'true' && svAn.eclaire === 'accord' && new RegExp('^' + ACCORD + ' terminés dans GATES et connus de SEE').test(svAn.texte) &&
+    new RegExp('part des terminés de GATES ' + PCT + '\\s?%').test(svAn.texte), svAn.texte.slice(0, 120));
   const svMa = await survolRapp('#venn-rapprochement .cote[data-cle="manque"] .grand');
   verifier('survoler le 3 « terminés sans SEE » ouvre sa bulle et souligne le nombre',
-    svMa.visible === 'true' && svMa.eclaire === 'manque' && /Terminés ici, inconnus de SEE/.test(svMa.texte) && /3 plans/.test(svMa.texte) &&
+    svMa.visible === 'true' && svMa.eclaire === 'manque' && /^3 terminés dans GATES, mais SEE ne les connaît pas/.test(svMa.texte) &&
     /à vérifier des deux côtés/.test(svMa.texte), svMa.texte.slice(0, 120));
   const svAt = await survolRapp('#venn-rapprochement .cote[data-cle="attente"] .moyen');
   verifier('survoler « pas encore dans SEE » dit que ce n\'est pas anormal, avec la répartition par état',
-    svAt.visible === 'true' && svAt.eclaire === 'attente' && /Pas encore dans SEE/.test(svAt.texte) && /rien d’anormal/.test(svAt.texte) &&
+    svAt.visible === 'true' && svAt.eclaire === 'attente' && /pas terminés, et pas encore dans SEE : rien d’anormal/.test(svAt.texte) &&
     /à faire dans GATES/.test(svAt.texte), svAt.texte.slice(0, 120));
   const svSe = await survolRapp('#venn-rapprochement .cote[data-cle="seul"] .grand');
   verifier('survoler le 5 « seulement dans SEE » ouvre sa bulle',
-    svSe.visible === 'true' && svSe.eclaire === 'seul' && /Seulement dans SEE/.test(svSe.texte) && /5 lignes/.test(svSe.texte), svSe.texte.slice(0, 120));
+    svSe.visible === 'true' && svSe.eclaire === 'seul' && /^5 lignes de SEE sans plan dans GATES/.test(svSe.texte), svSe.texte.slice(0, 120));
   await p.mouse.move(5, 5); await p.waitForTimeout(150);
   // Au clavier : le verdict qui a le focus éclaire aussi sa part.
   await p.focus('#verdicts-rapprochement button[data-rapp="accord"]'); await p.keyboard.press('Tab'); await p.waitForTimeout(150);
@@ -999,10 +1004,9 @@ async function reinitialiser(pg) {
     const serie = window.__serieAffichee();
     const evts = window.__journalAffiche().reduce((l, s) => l.concat(s.evenements), []);
     const C = window.__comparatif();
-    /* Le comparatif range ses passages par valeur d'arrivée (parValeur),
-       puis les nouveaux, les disparus et les changements d'indice. */
-    const refsComparatif = C ? Object.keys(C.parValeur).reduce((l, k) => l.concat(C.parValeur[k]), [])
-      .concat(['nouveaux', 'disparus', 'indice'].reduce((l, k) => l.concat(C[k]), [])) : [];
+    /* Le comparatif : les lignes du résumé commun — une par valeur
+       d'arrivée, puis les changements d'indice, les nouveaux, les disparus. */
+    const refsComparatif = C ? C.lignes.reduce((l, x) => l.concat(x.refs), []) : [];
     return {
       phrase: document.getElementById('phrase').textContent,
       etats: [...document.querySelectorAll('#etats .etat-n')].map(e => +e.textContent.replace(/\s/g, '')),
@@ -1078,7 +1082,7 @@ async function reinitialiser(pg) {
     perso.serie.length === tout0.serie.length, JSON.stringify(perso.dernier));
   verifier('chaque point du périmètre est plus petit que le point global de la même semaine',
     perso.serie.every((pt, k) => pt.total < tout0.serie[k].total && pt.termine <= tout0.serie[k].termine));
-  verifier('la note du graphique nomme le périmètre', /^Historique du périmètre PERSO · \d+ relevés$/.test(perso.note), perso.note);
+  verifier('la note du graphique nomme le périmètre', /^Historique · périmètre PERSO · \d+ relevés, de S\d{1,2} · \S+ \d{4} à S\d{1,2} · \S+ \d{4}$/.test(perso.note.replace(/[\u00a0\u202f]/g, ' ')), perso.note);
   verifier('le journal ne garde que les plans PERSO : aucun événement d’un plan BASE/OPTION',
     perso.evenements > 0 && perso.domainesJournal.join() === 'PERSO' && perso.lignesJournal <= tout0.lignesJournal,
     JSON.stringify(perso.domainesJournal) + ' ' + perso.evenements);
@@ -1126,7 +1130,7 @@ async function reinitialiser(pg) {
     cumul.lignes === perso.etats[0] && cumul.compte === perso.etats[0] + ' plans sur ' + nPerso &&
     /dans la sélection/.test(cumul.phrase) && cumul.jetons.length === 2, cumul.compte + ' / ' + cumul.phrase);
   verifier('la courbe reste celle du périmètre, et le dit',
-    cumul.dernier.total === nPerso && /Historique du périmètre PERSO/.test(cumul.note) &&
+    cumul.dernier.total === nPerso && /^Historique · périmètre PERSO/.test(cumul.note) &&
     /autres filtres ne s’appliquent pas/.test(cumul.note), cumul.note);
   await p.click('#tout-effacer'); await p.waitForTimeout(700);
   verifier('« Tout effacer » remet le périmètre à Tout',
@@ -1287,7 +1291,7 @@ async function reinitialiser(pg) {
       touches: nouveaux.concat(disparus).filter(r => racines.indexOf(racine(r)) !== -1),
       attenduComparatif: indices.filter(x => x.i === derniere).map(x => x.ref).sort(),
       types: indices.map(x => x.type).sort().join(' '),
-      comparatif: C && C.indice ? C.indice.slice().sort() : null,
+      comparatif: C ? ((C.lignes.filter(l => l.cle === 'indice')[0] || { refs: [] }).refs).slice().sort() : null,
       reemissions: C && C.reemissions ? C.reemissions : null
     };
   });
@@ -1477,17 +1481,17 @@ async function reinitialiser(pg) {
     })));
   }
   await p.mouse.move(5, 5); await p.waitForTimeout(150);
-  const releves = bulles.filter(b => /Relevé du \d{4}-S\d{2}/.test(b.texte));
-  verifier('chaque semaine relevée a sa bulle « Relevé du … »', releves.length >= 5, String(releves.length));
+  const releves = bulles.filter(b => /Relevé de S\d{1,2}[\u00a0 ]· \S+[\u00a0 ]\d{4}/.test(b.texte));
+  verifier('chaque semaine relevée a sa bulle « Relevé de S38 · sept. 2026 »', releves.length >= 5, String(releves.length));
   verifier('elle dit « terminés N / total »',
     releves.every(b => /terminés\s*\d+\s*\/\s*\d+/.test(b.texte)), (releves[0] || {}).texte);
-  verifier('et « depuis le précédent ±n » dès le deuxième relevé',
-    releves.filter(b => /depuis le précédent\s*[+\-−]?\s*\d/.test(b.texte)).length >= releves.length - 1);
+  verifier('et « gain net sur le relevé précédent ±n » dès le deuxième relevé',
+    releves.filter(b => /gain net sur le relevé précédent\s*[+\-−]?\s*\d/.test(b.texte)).length >= releves.length - 1);
   verifier('plus aucune référence de plan dans la bulle',
     releves.every(b => !/[A-Z]{3}\d{4}A\d{3}/.test(b.texte)), (releves.find(b => /[A-Z]{3}\d{4}A\d{3}/.test(b.texte)) || {}).texte);
   verifier('ni « et N autres »', releves.every(b => !/autres/.test(b.texte)));
-  verifier('les semaines qui ont bougé donnent leurs comptes : passés en terminé…',
-    releves.filter(b => /passés? en terminé/.test(b.texte)).length >= 3);
+  verifier('les semaines qui ont bougé donnent leurs comptes, dans les mots du journal : passés à « Terminé »…',
+    releves.filter(b => /passés? à « Terminé »/.test(b.texte.replace(/[\u00a0\u202f]/g, ' '))).length >= 3);
   verifier('… nouveaux, et changements d’indice',
     releves.some(b => /nouveaux/.test(b.texte)) && releves.some(b => /changements? d’indice/.test(b.texte)));
   const toutesLignes = releves.reduce((l, b) => l.concat(b.lignes), []);
@@ -2501,7 +2505,7 @@ async function reinitialiser(pg) {
   await p.click('.commandes-graphe button[data-span="0"]'); await p.waitForTimeout(400);
   const lireEcheance = () => p.evaluate(() => ({
     prochain: window.__prochainJalon() && window.__prochainJalon().texte,
-    entete: (document.querySelector('.critique-tete button[data-trig="tension"]') || {}).title || '',
+    entete: ((document.querySelector('.critique-tete button[data-trig="requis"]') || {}).title || '').replace(/\u00a0/g, ' '),
     zone: document.getElementById('zone-critique').getAttribute('data-jalon'),
     retrait: [...document.querySelectorAll('.jalon.hors-perimetre .jalon-texte')].map(t => t.textContent),
     legende: document.getElementById('legende').textContent,
@@ -2509,12 +2513,12 @@ async function reinitialiser(pg) {
   }));
   const eTout = await lireEcheance();
   verifier('sur « Tout », le premier jalon à venir fait l\'échéance, périmètre ou pas, et l\'en-tête le nomme',
-    eTout.prochain === 'Base seul' && /«\u00a0Base seul\u00a0» \(2026-S51\)/.test(eTout.entete) && eTout.zone === 'Base seul' && eTout.retrait.length === 0 &&
+    eTout.prochain === 'Base seul' && /« Base seul » \(S51 · déc\. 2026\)/.test(eTout.entete) && eTout.zone === 'Base seul' && eTout.retrait.length === 0 &&
     /requis pour «\u00a0Base seul\u00a0»/.test(eTout.legende), JSON.stringify(eTout));
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(700);
   const ePerso = await lireEcheance();
   verifier('sous PERSO, l\'échéance saute au jalon Perso (casse indifférente) ; le jalon Base est dessiné en retrait',
-    ePerso.prochain === 'Perso seul' && /«\u00a0Perso seul\u00a0» \(2027-S02\)/.test(ePerso.entete) && ePerso.zone === 'Perso seul' &&
+    ePerso.prochain === 'Perso seul' && /« Perso seul » \(S2 · janv\. 2027\)/.test(ePerso.entete) && ePerso.zone === 'Perso seul' &&
     ePerso.retrait.join('|') === 'Base seul' && /requis pour «\u00a0Perso seul\u00a0»/.test(ePerso.legende) && ePerso.aucun === '',
     JSON.stringify(ePerso));
   const retraitPerso = await p.evaluate(() => ({
@@ -2724,10 +2728,10 @@ async function reinitialiser(pg) {
     coh.totaux.reduce((a, b) => a + b, 0) === TOTAL, String(coh.totaux.reduce((a, b) => a + b, 0)));
   verifier('chaque répartition totalise 100 %',
     coh.barres.every(b => Math.abs(b - 100) < 0.5), JSON.stringify(coh.barres.map(b => b.toFixed(1))));
-  verifier('« fin estimée » est une semaine ISO, « — » ou « soldé »',
-    coh.dates.every(v => /^\d{4}-S\d{2}$/.test(v) || v === '—' || v === 'soldé'), JSON.stringify(coh.dates));
-  verifier('« effort demandé » porte le facteur et le rythme',
-    coh.efforts.every(v => /^×\d+,\d/.test(v) || /sold|rien/.test(v)), JSON.stringify(coh.efforts.slice(0, 3)));
+  verifier('« fin estimée » est une semaine dite comme partout — « S18 · mai 2027 » —, « — » ou « terminé »',
+    coh.dates.every(v => /^S\d{1,2} · \S+ \d{4}$/.test(v.replace(/[\u00a0\u202f]/g, ' ')) || v === '—' || v === 'terminé'), JSON.stringify(coh.dates));
+  verifier('« rythme requis » se dit en plans par semaine, le rythme tenu dessous',
+    coh.efforts.every(v => /^\d+,\d\/sem\.(tenu \d+,\d\/sem\.|rien de terminé)$/.test(v) || /terminé|—/.test(v)), JSON.stringify(coh.efforts.slice(0, 3)));
 
   // =================================================================
   section('Panneau d\'explication de la fin estimée');
@@ -2749,18 +2753,19 @@ async function reinitialiser(pg) {
   verifier('le panneau s\'ouvre', !!aide);
   if (aide) {
     verifier('aria-expanded passe à true', aide.expanded === 'true');
-    verifier('la formule générale est donnée', /rythme\s*=/.test(aide.formules[0] || '') && /fin\s*=/.test(aide.formules[0] || ''));
+    verifier('la formule générale est donnée, avec les mots de la page', /rythme tenu\s*=/.test(aide.formules[0] || '') && /fin estimée\s*=/.test(aide.formules[0] || '') &&
+      /rythme requis\s*=/.test(aide.formules[0] || ''));
     verifier('un exemple chiffré reprend une ligne réelle', /Exemple/.test(aide.texte) && aide.formules.length >= 2);
     verifier('les colonnes voisines sont expliquées aussi', aide.formules.length >= 3);
     verifier('le panneau ne déborde pas en largeur', !aide.scrollFormule);
     // L'exemple doit être refaisable : on recalcule à partir de ses propres nombres.
     const ex = aide.formules[1] || '';
-    const mR = ex.match(/rythme\s*=\s*\((\d+)\s*−\s*(\d+)\)\s*÷\s*(\d+)\s*sem\.\s*=\s*([\d,]+)/);
-    const mF = ex.match(/fin\s*=\s*(\d+)\s*÷\s*([\d,]+)\s*=\s*(\d+)\s*semaines/);
+    const mR = ex.match(/rythme tenu\s*=\s*(\d+)\s*÷\s*(\d+)\s*sem\.\s*=\s*([\d,]+)/);
+    const mF = ex.match(/fin estimée\s*=\s*(\d+)\s*÷\s*([\d,]+)\s*=\s*(\d+)\s*semaines/);
     let calculOk = false, calculDetail = 'formule illisible';
     if (mR && mF) {
-      const rythme = (Number(mR[1]) - Number(mR[2])) / Number(mR[3]);
-      const affiche = Number(mR[4].replace(',', '.'));
+      const rythme = Number(mR[1]) / Number(mR[2]);
+      const affiche = Number(mR[3].replace(',', '.'));
       const semaines = Math.ceil(Number(mF[1]) / Number(mF[2].replace(',', '.')));
       calculOk = Math.abs(rythme - affiche) < 0.005 && semaines === Number(mF[3]);
       calculDetail = 'rythme ' + rythme + ' vs ' + affiche + ', semaines ' + semaines + ' vs ' + mF[3];
@@ -3122,6 +3127,154 @@ async function reinitialiser(pg) {
   await p.click('#haut-de-page'); await p.waitForTimeout(1500);
   verifier('le bouton « haut de page » paraît en descendant et ramène en haut',
     hautCache && hautVisible && await p.evaluate(() => window.scrollY < 5), JSON.stringify([hautCache, hautVisible]));
+
+  // =================================================================
+  /* Une seule formule, une seule façon de dire une semaine, un seul mot :
+     chaque nombre qui se lit à deux endroits est le même aux deux endroits.
+     Sur une page neuve, pour ne dépendre d'aucun test précédent. */
+  section('Une seule formule, une seule façon de dire une semaine');
+  {
+    const pq = await page(await contexte(), 'cohérence');
+    await pq.waitForTimeout(900);
+    const esp = t => String(t || '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim();
+    // Plus d'étiquette technique ni du mot « import » à l'écran (hors tableaux : l'extract a ses valeurs).
+    const visible = await pq.evaluate(() => {
+      const c = document.body.cloneNode(true);
+      c.querySelectorAll('table, script, style').forEach(t => t.remove());
+      return c.textContent;
+    });
+    verifier('plus aucune étiquette 2026-S38 à l\'écran : une semaine se dit « S38 · sept. 2026 »',
+      !/\b20\d\d-S\d\d\b/.test(visible), (visible.match(/.{30}\b20\d\d-S\d\d\b.{10}/) || [''])[0]);
+    verifier('un seul mot pour une photo archivée : « relevé », jamais « import »',
+      !/\bimport/i.test(visible), (visible.match(/.{30}\bimport.{20}/i) || [''])[0]);
+    const lieux = await pq.evaluate(() => ({
+      pied: document.getElementById('import').textContent,
+      note: document.getElementById('note-graphe').textContent,
+      comparatif: document.getElementById('comparatif').textContent,
+      journal: document.querySelector('.journal-semaine .sem').textContent,
+      legende: [...document.querySelectorAll('.legende-jalon .quand')].map(q => q.textContent)
+    }));
+    const SEM = /S\d{1,2} · (janv\.|févr\.|mars|avr\.|mai|juin|juil\.|août|sept\.|oct\.|nov\.|déc\.) \d{4}/;
+    verifier('pied, note du graphique, comparatif, journal et jalons écrivent la semaine de la même façon',
+      /^Dernier relevé : S\d{1,2} · \S+ \d{4} · \d+ relevés$/.test(esp(lieux.pied)) &&
+      /^\d+ relevés, de S\d{1,2} · \S+ \d{4} à S\d{1,2} · \S+ \d{4}$/.test(esp(lieux.note)) &&
+      /^Depuis le relevé précédent \(S\d{1,2} · \S+ \d{4}\) :/.test(esp(lieux.comparatif)) &&
+      SEM.test(esp(lieux.journal)) && lieux.legende.every(q => SEM.test(esp(q))), JSON.stringify(lieux));
+    // Le pied et la note disent le même dernier relevé.
+    verifier('le pied et la note du graphique nomment le même dernier relevé',
+      esp(lieux.note).split(' à ')[1] === esp(lieux.pied).replace(/^Dernier relevé : /, '').replace(/ · \d+ relevés$/, ''), JSON.stringify(lieux));
+
+    // La fiche, la légende, le « manque » du graphique et la puce : les mêmes nombres.
+    await pq.click('#echeance-titre'); await pq.waitForTimeout(500);
+    const m = await pq.evaluate(() => {
+      const esp = t => String(t || '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ');
+      const f = document.getElementById('fiche-echeance');
+      const fiche = esp(f.textContent), leg = esp(document.getElementById('legende').textContent);
+      const manque = [...document.querySelectorAll('.manque-jalon')].map(t => (esp(t.textContent).match(/manque (\d[\d ]*)$/) || [])[1]);
+      const ch = [...f.querySelectorAll('.fiche-echeance-chiffres > div b')].map(b => +b.textContent.replace(/\s/g, ''));
+      return {
+        requisFiche: (fiche.match(/Il faut ([\d,]+) plans/) || [])[1], requisLegende: (leg.match(/requis pour « [^»]+ » : ([\d,]+)\/sem\./) || [])[1],
+        tenuFiche: (fiche.match(/le rythme tenu est de ([\d,]+)/) || [])[1], tenuLegende: (leg.match(/au rythme tenu \(([\d,]+)\/sem\.\)/) || [])[1],
+        finFiche: (fiche.match(/tout serait terminé en (S\d+ · \S+ \d{4})/) || [])[1], finLegende: (leg.match(/→ fin (S\d+ · \S+ \d{4})/) || [])[1],
+        manqueFiche: (fiche.match(/il manquerait (\d[\d ]*) plans?/) || [])[1], manqueGraphe: manque[0],
+        rouge: document.getElementById('echeance-titre').classList.contains('en-retard'),
+        mal: f.querySelector('.fiche-echeance-verdict').classList.contains('mal'),
+        jours: ch[0], semaines: ch[1], restants: ch[2]
+      };
+    });
+    verifier('la fiche et la légende du graphique disent le même rythme requis, le même rythme tenu, la même fin',
+      !!m.requisFiche && m.requisFiche === m.requisLegende && !!m.tenuFiche && m.tenuFiche === m.tenuLegende &&
+      !!m.finFiche && m.finFiche === m.finLegende, JSON.stringify(m));
+    verifier('« manque N » sur le graphique est le nombre de la fiche ; la puce a la couleur du verdict',
+      !!m.manqueFiche && m.manqueFiche.replace(/ /g, '') === (m.manqueGraphe || '').replace(/ /g, '') && m.rouge === m.mal, JSON.stringify(m));
+    verifier('jours et semaines restants se comptent tous deux d\'aujourd\'hui',
+      m.semaines >= 1 && Math.abs(m.jours / 7 - m.semaines) < 1.2, JSON.stringify([m.jours, m.semaines]));
+    verifier('le rythme requis est bien les plans à terminer divisés par les semaines restantes',
+      Math.abs(Number(m.requisFiche.replace(',', '.')) - m.restants / m.semaines) < 0.051, JSON.stringify([m.requisFiche, m.restants, m.semaines]));
+    await pq.click('#fiche-echeance [data-fermer-echeance]'); await pq.waitForTimeout(300);
+
+    // Une ligne du bloc, puis le graphique de ce groupe : les mêmes nombres.
+    const ligne = await pq.evaluate(() => {
+      const esp = t => String(t || '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim();
+      const l = document.querySelector('.critique-ligne');
+      const v = esp(l.querySelector('.critique-effort .v').textContent);
+      return { requis: (v.match(/^([\d,]+)\/sem\./) || [])[1], tenu: (v.match(/tenu ([\d,]+)\/sem\./) || [])[1],
+               fin: esp(l.querySelector('.critique-date .v').textContent) };
+    });
+    await pq.click('.critique-ligne >> nth=0'); await pq.waitForTimeout(500);
+    const legG = esp(await pq.evaluate(() => document.getElementById('legende').textContent));
+    verifier('une ligne du bloc et le graphique de son groupe disent le même rythme requis, le même rythme tenu, la même fin',
+      !!ligne.requis && legG.indexOf(': ' + ligne.requis + '/sem.') !== -1 && legG.indexOf('au rythme tenu (' + ligne.tenu + '/sem.)') !== -1 &&
+      legG.indexOf('→ fin ' + ligne.fin) !== -1 && /requis pour « [^»]+ » \(\S+ [^)]+\)/.test(legG), JSON.stringify([ligne, legG]));
+    const phraseG = esp(await pq.evaluate(() => document.getElementById('phrase').textContent));
+    const noteG = esp(await pq.evaluate(() => document.getElementById('note-graphe').textContent));
+    verifier('choisir un groupe : la phrase et la note du graphique le nomment de la même façon, sans « autres filtres » inventés',
+      /plans terminés dans \S+ \S+$/.test(phraseG) && noteG.indexOf(phraseG.replace(/^.* dans /, '')) !== -1 && !/autres filtres/.test(noteG),
+      JSON.stringify([phraseG, noteG]));
+    await pq.click('.critique-ligne >> nth=0'); await pq.waitForTimeout(400);
+
+    // La dernière semaine : comparatif du haut, journal et bulle, les mêmes lignes.
+    const res = await pq.evaluate(() => {
+      const esp = t => String(t || '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim();
+      return { journal: [...document.querySelector('.journal-semaine .resume').children].map(c => esp(c.textContent)),
+               comparatif: [...document.querySelectorAll('#comparatif .puce-delta')].map(b => esp(b.textContent)),
+               auj: window.__semaineDuTitre().auj };
+    });
+    verifier('le comparatif du haut et la dernière semaine du journal : les mêmes lignes, dans le même ordre',
+      res.journal.length > 0 && res.journal.join('|') === res.comparatif.join('|'), JSON.stringify(res));
+    await pq.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' })); await pq.waitForTimeout(200);
+    await (await pq.$('.zone-clic[data-i="' + res.auj + '"]')).hover(); await pq.waitForTimeout(300);
+    const bulleL = await pq.evaluate(() => [...document.querySelectorAll('#bulle .bulle-comptes .bulle-ligne')].map(l => {
+      const esp = t => String(t || '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim();
+      return esp(l.querySelector('.n').textContent) + ' ' + esp(l.textContent.replace(l.querySelector('.n').textContent, ''));
+    }));
+    verifier('la bulle du graphique dit la même semaine avec les mêmes lignes',
+      bulleL.join('|') === res.journal.join('|'), JSON.stringify([bulleL, res.journal]));
+    await pq.mouse.move(5, 5);
+
+    // « Non renseigné » : le même compte sous la barre et au-dessus du tableau.
+    const nr = await pq.evaluate(() => {
+      const b = document.querySelector('#etats .etat-btn[data-cle="vide"] .etat-n');
+      const puce = document.querySelector('#incomplets .puce-vide b');
+      return { barre: b ? +b.textContent.replace(/\s/g, '') : null, puce: puce ? +puce.textContent.replace(/\s/g, '') : null };
+    });
+    verifier('« Non renseigné » compte la même chose sous la barre et au-dessus du tableau', nr.barre !== null && nr.barre === nr.puce, JSON.stringify(nr));
+
+    // Le cadrage d'ouverture montre toujours la prochaine échéance.
+    const cad = () => pq.evaluate(() => {
+      const presse = [...document.querySelectorAll('.commandes-graphe .segmente button')].filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.textContent).join();
+      const j = document.getElementById('echeance-titre').dataset.jalon;
+      const leg = document.querySelector('.legende-jalon[data-jalon="' + j + '"]');
+      return { presse: presse, horsFenetre: leg ? leg.classList.contains('hors-fenetre') : null };
+    });
+    const cDef = await cad();
+    await pq.click('#choix-indicateur button[data-indicateur="concept"]'); await pq.waitForTimeout(700);
+    const cCon = await cad();
+    verifier('le graphique s\'ouvre sur six mois, ou sur un an quand la prochaine échéance tombe au-delà : jamais sans elle',
+      cDef.presse === '6 mois' && cDef.horsFenetre === false && cCon.presse === '1 an' && cCon.horsFenetre === false, JSON.stringify([cDef, cCon]));
+    // Sous le concept, sur « Tout », l'échéance TO Base ne demande que ses plans BASE/OPTION.
+    const leg = await pq.evaluate(() => ({ texte: document.getElementById('legende').textContent.replace(/[  ]/g, ' '),
+                                           voir: !!document.querySelector('#legende button[data-voir-perimetre]'),
+                                           manque: document.querySelectorAll('.manque-jalon').length }));
+    verifier('sur « Tout », un jalon BASE/OPTION se lit dans la légende, « sur ses plans BASE/OPTION », avec un lien — pas de droite sur la courbe de tous',
+      /requis pour « Diffusion TO Base » : [\d,]+\/sem\. sur ses plans BASE\/OPTION/.test(leg.texte) && leg.voir && leg.manque === 0, JSON.stringify(leg));
+    await pq.click('#legende button[data-voir-perimetre]'); await pq.waitForTimeout(600);
+    await pq.click('#echeance-titre'); await pq.waitForTimeout(400);
+    const surBase = await pq.evaluate(() => {
+      const esp = t => String(t || '').replace(/[  ]/g, ' ');
+      return { per: document.querySelector('#choix-perimetre button[aria-pressed="true"]').dataset.perimetre,
+               leg: esp(document.getElementById('legende').textContent), fiche: esp((document.getElementById('fiche-echeance') || {}).textContent || ''),
+               voir: !!document.querySelector('#legende button[data-voir-perimetre]') };
+    });
+    const rL = (surBase.leg.match(/requis pour « [^»]+ » : ([\d,]+)\/sem\./) || [])[1], rF = (surBase.fiche.match(/Il faut ([\d,]+) plans/) || [])[1];
+    verifier('« voir BASE/OPTION » passe au périmètre du jalon, où la légende et la fiche disent le même rythme requis',
+      surBase.per === 'BASE/OPTION' && !surBase.voir && !!rL && rL === rF, JSON.stringify([surBase.per, rL, rF]));
+    // Un cadrage choisi à la main survit au changement d'avancement.
+    await pq.click('.commandes-graphe .segmente button[data-span="13"]'); await pq.waitForTimeout(300);
+    await pq.click('#choix-indicateur button[data-indicateur="def"]'); await pq.waitForTimeout(700);
+    verifier('un cadrage choisi à la main (3 mois) reste quand on change d\'avancement', (await cad()).presse === '3 mois');
+    await pq.context().close();
+  }
 
   section('Persistance (même navigateur, page rechargée)');
   await p.click('button[data-trig="fin"]'); await p.waitForTimeout(300);

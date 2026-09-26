@@ -82,7 +82,7 @@ FEUILLE_DONNEES: 'Données',
 2. Ouvrir l'onglet du contrat, `Ctrl+A`, `Suppr`, puis coller l'export
    en **A1**. Même chose pour chaque contrat.
 3. **Suivi FWD → Archiver le relevé de cette semaine.** Une boîte confirme :
-   « Relevé 2026-S39 archivé : HDK (186 plans), THS (93 plans). Un second
+   « Relevé S39 archivé : HDK (186 plans), THS (93 plans). Un second
    archivage dans la semaine remplace celui-ci. »
 
 C'est tout. L'archivage passe sur **tous les contrats d'un coup**, une ligne
@@ -232,8 +232,11 @@ Dans « Avancement FWD par… », dans l'ordre de la configuration :
 | **ECP** | |
 | **Date création (par mois)** | un groupe par mois, rangés dans l'ordre du temps ; s'ajoute d'elle-même |
 
-Deux colonnes calculées : **fin estimée**, puis **effort demandé** quand un
-jalon est à venir (**rythme actuel** sinon). Le bloc a une hauteur bornée :
+Deux colonnes calculées : **fin estimée** (« S18 · mai 2027 »), puis
+**rythme requis** quand un jalon est à venir — en plans par semaine, rouge
+quand le rythme tenu, écrit dessous, ne suffit pas —, **rythme tenu** sinon.
+Ces deux colonnes viennent de l'historique : elles portent sur tous les plans
+du groupe, et une note le dit quand un autre filtre réduit les lignes. Le bloc a une hauteur bornée :
 au-delà d'une dizaine de lignes, on descend dedans plutôt que d'allonger la
 page.
 
@@ -281,7 +284,10 @@ avec un **Tout effacer**. Où qu'on ait cliqué, la sortie est à portée.
 Un interrupteur au-dessus du tableau, et rien entre les deux :
 
 - **Toutes les colonnes** (au départ) : l'extract tel quel. Les 137 colonnes
-  (voir plus haut), les mêmes intitulés, **l'ordre exact de la feuille**.
+  (voir plus haut), les mêmes intitulés, **l'ordre de la feuille** — à une
+  exception près : la **colonne suivie** (l'avancement FWD, ou le concept
+  harnais) vient juste après la référence et reste figée avec elle, pour
+  lire l'état d'un plan sans faire défiler le tableau.
   C'est la vue de référence, celle sur laquelle tout le monde parle de la même
   chose.
 - **Vue essentielle** : la poignée de colonnes qu'on regarde vraiment —
@@ -292,9 +298,10 @@ Il n'y a plus de bouton « Choisir » ni de panneau pour masquer une colonne à 
 main : deux lectrices regardent toujours le même tableau. Le glisser-déposer
 des colonnes et le tri restent.
 
-Le bloc figé à gauche couvre tout ce qui précède la référence, elle comprise.
-Sur l'export réel, la seule colonne qui la précédait est la « Colonne 1 »
-retirée : la référence ouvre donc le tableau et reste seule figée.
+Le bloc figé à gauche couvre tout ce qui précède la référence, elle comprise,
+et la colonne suivie. Sur l'export réel, la seule colonne qui la précédait est
+la « Colonne 1 » retirée : la référence ouvre donc le tableau, l'avancement
+la suit. Ni l'une ni l'autre ne se déplace, et rien ne se dépose devant.
 
 ### Plus de mode « Exemple »
 
@@ -343,7 +350,7 @@ une puce par valeur de la colonne de domaine, chacune avec son compte de
 plans. Il est masqué quand l'export n'a pas de colonne de domaine.
 
 Le périmètre pilote **toute la page** : la barre et les états, la phrase, le
-comparatif « depuis l'import », la courbe et sa bulle, le journal, le bloc par
+comparatif « depuis le relevé précédent », la courbe et sa bulle, le journal, le bloc par
 groupe, le rapprochement, le tableau et son « sur N ». Choisir PERSO, c'est
 regarder une page qui ne parle que des plans PERSO.
 
@@ -393,7 +400,7 @@ réémis sous un autre indice n'est plus « un disparu plus un nouveau », c'est
 un **changement d'indice**. Une référence qui change de solution reste ce
 qu'elle est : un plan disparu et un nouveau plan.
 
-- **Dans le comparatif** « depuis l'import », un lot *changements d'indice*
+- **Dans le comparatif** « depuis le relevé précédent », un lot *changements d'indice*
   (pastille violette), cliquable comme les autres, filtre le tableau sur les
   nouvelles références ; son survol montre « ancienne → nouvelle ». Un plan
   réémis compte une fois, sous ce lot, même s'il change aussi d'état : la
@@ -431,12 +438,14 @@ ne dit que **quel plan est passé** : sa référence et son passage (« En cours
 - Les nouveaux plans, ceux qui ont disparu de l'export et les changements
   d'indice sont signalés.
 - **Survoler une semaine sur le graphique** en donne le résumé en chiffres :
-  « Relevé du … », terminés sur total, la différence depuis le relevé
-  précédent, puis les comptes non nuls de la semaine — passés en terminé, en
-  cours, repassés à faire, effacés, nouveaux, disparus, changements d'indice.
-  La bulle ne liste pas de références : le journal, dessous, donne le détail.
+  « Relevé de S38 · sept. 2026 », terminés sur total, le gain net sur le
+  relevé précédent, puis **les lignes mêmes du journal** — « 20 passés à
+  « Validé » », « 3 passés à « Non renseigné » », changements d'indice,
+  nouveaux, disparus. Le comparatif du haut dit la dernière semaine avec ces
+  mêmes lignes. La bulle ne liste pas de références : le journal, dessous,
+  donne le détail.
 
-Le journal se remplit au **deuxième** archivage : il faut deux relevés pour
+Le journal se remplit au **deuxième** relevé : il faut deux relevés pour
 savoir ce qui a changé entre les deux.
 
 Le **changement d'indice** a sa couleur, un violet — ni un état ni une
@@ -683,8 +692,8 @@ JALONS: [
 ```
 
 Sous l'avancement « définition électrique », les deux jalons TO restent
-dessinés, **en retrait**, et ne comptent pas (ni échéance, ni effort
-demandé) ; sous « concept harnais », c'est l'inverse. Leur fiche le dit
+dessinés, **en retrait**, et ne comptent pas (ni échéance, ni rythme
+requis) ; sous « concept harnais », c'est l'inverse. Leur fiche le dit
 (« suit le concept harnais ») et propose, d'un bouton, de passer à
 l'avancement dont ils relèvent.
 
@@ -693,8 +702,9 @@ son trait — **tous sur une seule rangée**, jamais étagés, et sans texte
 collé : deux jalons de semaines voisines se serrent côte à côte sur la
 rangée, un court trait reliant le numéro à sa vraie semaine. La **légende
 des jalons**, sous celle du graphique, les nomme — sur une ligne dès qu'il y
-a la place — avec leur semaine telle qu'on la dit (« S2 · janv. 2027 ») et
-leur périmètre. La survoler (ou y passer au clavier) éclaire le trait et
+a la place — avec leur semaine telle qu'on la dit (« S2 · janv. 2027 »), leur
+périmètre et, quand il n'est pas celui qu'on regarde, l'avancement qu'ils
+suivent (« concept harnais »). La survoler (ou y passer au clavier) éclaire le trait et
 fait paraître le nom sous la rangée. Un jalon
 hors du périmètre choisi garde son numéro, dans un marqueur creux ; son
 trait s'estompe. Un jalon sorti de la fenêtre affichée (zoom serré) reste
@@ -702,15 +712,15 @@ dans la légende, en retrait, avec « hors fenêtre ». L'échéance manquée es
 rouge partout : marqueur, trait, et son entrée dans la légende. Cinq jalons
 en dix semaines restent lisibles.
 
-Le jalon à venir le plus proche fait l'**échéance** : il pilote la colonne
-**effort demandé** du bloc par groupe (ce qu'il faudrait solder chaque semaine
-pour le tenir, comparé au rythme réellement tenu — l'en-tête de la colonne le
-nomme) et la droite « requis pour … » du graphique. Sous un périmètre, seuls
+Le jalon dont le jour n'est pas passé le plus proche fait l'**échéance** : il
+pilote la colonne **rythme requis** du bloc par groupe (ce qu'il faudrait
+terminer chaque semaine pour le tenir, avec le rythme tenu dessous) et la
+droite « requis pour … » du graphique. Sous un périmètre, seuls
 comptent les jalons de ce périmètre et ceux qui n'en ont pas : sous PERSO,
 une fois le solde passé, l'échéance est « Diffusion PH Perso », pas
 « Diffusion PH Base » ; les jalons de l'autre périmètre restent dessinés, en
 retrait, et leur bulle le dit. Sur « Tout », tous comptent. Sans jalon à
-venir, la colonne laisse la place au **rythme actuel** et le graphique dit
+venir, la colonne laisse la place au **rythme tenu** et le graphique dit
 « Aucun jalon à venir » (« … dans ce périmètre » quand il en reste ailleurs).
 
 Une entrée illisible est simplement absente, elle ne fait pas tomber la page.
@@ -750,10 +760,15 @@ bandeau des filtres ne bougent.
 La page s'ouvre **tout replié** : les semaines du journal, les lots « plan par
 plan » de la comparaison et les groupes (ATA, ECP…) ; le lecteur déplie ce
 qu'il veut voir. Le graphique s'ouvre sur **six mois** — exactement le bouton
-« 6 mois ». Les boutons **3 mois · 6 mois · 1 an · Tout** sont à droite de
-l'en-tête du graphique ; l'aide « glisser pour déplacer, molette pour
-zoomer » a disparu (le geste, lui, marche toujours). Un jalon plus lointain reste dans la légende, avec son décompte,
-marqué « hors fenêtre ».
+« 6 mois » —, ou sur **un an** quand la prochaine échéance tombe au-delà (le
+concept harnais, dont la première échéance est en février) : la puce
+« Prochaine échéance » ne parle jamais d'un jalon que le graphique ne montre
+pas. Tant qu'on n'a ni zoomé ni déplacé, ce cadrage suit l'échéance quand on
+change de périmètre ou d'avancement ; un cadrage choisi à la main est gardé.
+Les boutons **3 mois · 6 mois · 1 an · Tout** sont à droite de l'en-tête du
+graphique ; l'aide « glisser pour déplacer, molette pour zoomer » a disparu
+(le geste, lui, marche toujours). Un jalon plus lointain reste dans la
+légende, avec son décompte, marqué « hors fenêtre ».
 
 ## 13 quater. Les échéances en jours
 
@@ -762,25 +777,68 @@ date** (sans date, jusqu'au vendredi de sa semaine) :
 
 - **en tête du graphique** (le titre, lui, ne dit que la semaine), la
   prochaine échéance du périmètre : « Prochaine
-  échéance · Solde FWD · dans 83 jours », avec un point **vert** si le rythme
-  tenu suffit, **rouge** sinon ;
+  échéance · Solde FWD · dans 80 jours », avec un point **vert** si le rythme
+  tenu suffit, **rouge** sinon — le verdict de la fiche, mot pour mot ;
 - **dans la légende des jalons**, sous chacun : « dans 111 jours », en ambre
   à moins de trois semaines, « il y a 5 jours » une fois passé.
 
 Un clic — sur cette échéance, sur un jalon de la légende ou sur son
 numéro dans le graphique — ouvre la **fiche de l'échéance** : sa date
-(« mardi 15 décembre 2026 · semaine 51 »), les **jours** et les
-**semaines** restants, les **plans à terminer** dans *son* périmètre (un
-jalon BASE/OPTION compte les plans BASE/OPTION, quel que soit le périmètre
-affiché), la jauge des terminés, le **rythme qu'il faut** d'ici là contre le
-**rythme tenu** depuis le premier relevé, et le verdict : échéance tenue, ou
-de combien de semaines elle serait manquée. Un second clic, la croix ou
+(« mardi 15 décembre 2026 · S51 »), les **jours** et les **semaines**
+restants, les **plans à terminer**, la jauge des terminés, le **rythme
+requis** d'ici là contre le **rythme tenu**, et le verdict : échéance tenue,
+ou combien de plans manqueraient le jour dit et quand tout serait terminé.
+Les plans se comptent dans le périmètre regardé — sous PERSO, le solde FWD ne
+compte que les plans PERSO — et un jalon d'un seul périmètre ne compte que
+les siens : sur « Tout », « Diffusion PH Base » demande les plans
+BASE/OPTION ; ouvert sous PERSO, sa fiche le dit (« hors du périmètre
+choisi »). Un second clic, la croix ou
 Échap — où que soit le focus — la referment ; au clavier, Entrée sur un
 jalon l'ouvre.
 
-Sur le graphique, quand le rythme tenu ne suffit pas, la droite de
-projection s'arrête à l'échéance sur « manque N » : les plans qui resteraient
-à faire ce jour-là au rythme actuel. La survoler donne la phrase entière.
+Sur le graphique, quand le rythme tenu ne suffit pas, un trait rouge
+marque à l'échéance « manque N » : les plans qui resteraient à faire ce
+jour-là au rythme tenu — le même nombre que la fiche. La survoler donne la
+phrase entière. La droite « requis » et ce trait ne se tracent que sur la
+courbe des plans que l'échéance demande : sur « Tout », un jalon BASE/OPTION
+se lit dans la légende (« requis … sur ses plans BASE/OPTION ») avec un lien
+**voir BASE/OPTION** qui passe à ce périmètre.
+
+## 13 quater bis. Une seule formule, une seule façon de dire une semaine
+
+Chaque nombre qui se lit à deux endroits est **le même aux deux endroits** :
+la fiche, la puce, la légende du graphique et le bloc par groupe tirent leurs
+chiffres d'une seule fonction, avec une seule formule.
+
+```
+semaines restantes = semaine du jalon − semaine en cours
+rythme requis      = plans à terminer ÷ semaines restantes (au moins une)
+rythme tenu        = terminés gagnés du premier au dernier relevé ÷ semaines écoulées
+fin estimée        = semaine en cours + arrondi supérieur(à terminer ÷ rythme tenu)
+manque             = à terminer − rythme tenu × semaines restantes (au plan supérieur)
+```
+
+Tout se compte **à partir de la semaine en cours**, comme les jours : si le
+relevé de la semaine n'est pas encore archivé, le temps qui reste ne
+s'allonge pas pour autant. Le graphique le montre : un trait plat, fin, entre
+le dernier relevé et la semaine en cours (marquée « aujourd'hui »), d'où
+partent les projections ; survolée, cette semaine dit « pas encore de relevé
+archivé », pas « à venir ».
+
+Une semaine s'écrit partout de la même façon — journal, graphique, bulle,
+jalons, fin estimée, pied de page : **« S38 · sept. 2026 »** (le mois et
+l'année de son jeudi, qui fixe l'année ISO), ou « S38 » seul là où le mois se
+lit déjà (axe du graphique, date complète de la fiche, boîte d'archivage).
+L'étiquette technique 2026-S38 ne s'affiche plus que dans le Diagnostic.
+
+Un seul mot pour une photo archivée de l'extract : **relevé**. « Depuis le
+relevé précédent (S37 · sept. 2026) », « 13 relevés, de S26 · juin 2026 à S38
+· sept. 2026 », « Dernier relevé : S38 · sept. 2026 ». Une même semaine du
+journal se dit avec les **mêmes lignes** dans le comparatif du haut, dans le
+journal et dans la bulle du graphique — « 20 passés à « Validé » », « 3
+passés à « Non renseigné » » —, dans le même ordre ; « Non renseigné » compte
+partout la même chose (cellule vide, tiret ou EMPTY), sous la barre comme
+au-dessus du tableau.
 
 ## 13 quinquies. Vitesse d'ouverture et thème
 

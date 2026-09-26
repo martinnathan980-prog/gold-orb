@@ -568,12 +568,12 @@ function serveurSur(valeurs, proprietes, fichiers) {
     cM.getHistorique(clM, 'X1').length === 4 && cM.getHistorique(clM, 'X2').length === 4,
     JSON.stringify(sM));
   verifier('et l\'alerte récapitule contrat par contrat',
-    /^Relevé \d{4}-S\d{2} supprimé pour « X1 », « X2 »\. Recollez/.test(cM.__alertes[cM.__alertes.length - 1]),
+    /^Relevé S\d{1,2} supprimé pour « X1 », « X2 »\. Recollez/.test(cM.__alertes[cM.__alertes.length - 1]),
     cM.__alertes[cM.__alertes.length - 1]);
   const sM2 = cM.supprimerDernierReleve();
   verifier('une seconde suppression n\'a plus rien à retirer, et le dit',
     sM2.supprimes.length === 0 && sM2.sans.join() === 'X1,X2' &&
-    /^Aucun relevé pour la semaine \d{4}-S\d{2}\.$/.test(cM.__alertes[cM.__alertes.length - 1]),
+    /^Aucun relevé pour la semaine en cours \(S\d{1,2}\)\.$/.test(cM.__alertes[cM.__alertes.length - 1]),
     cM.__alertes[cM.__alertes.length - 1]);
   /* Un seul contrat archivé cette semaine : le récapitulatif distingue. */
   histoX1.appendRow([rM.semaine, new Date(), 186, 1, 1, 1, 183, '{}', '{}']);
@@ -630,7 +630,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   /* Lancé du menu, l'archivage se confirme dans une boîte : la semaine, les
      contrats et leurs comptes, et le fait qu'un second archivage remplace. */
   verifier('l\'archivage se confirme dans une boîte : « Relevé <semaine> archivé : X1 (20 plans). »',
-    /^Relevé \d{4}-S\d{2} archivé : X1 \(20 plans\)\. Un second archivage dans la semaine remplace celui-ci\.$/.test(boite), boite);
+    /^Relevé S\d{1,2} archivé : X1 \(20 plans\)\. Un second archivage dans la semaine remplace celui-ci\.$/.test(boite), boite);
 
   /* Ce qui n'est pas un contrat : un onglet masqué, un onglet de service, la
      seconde base. CONFIG.FEUILLE_DONNEES, lui, impose un contrat unique. */
@@ -1242,7 +1242,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('la somme des plans par groupe fait 186',
     vu.totauxGroupes.reduce((a, b) => a + b, 0) === 186, String(vu.totauxGroupes.reduce((a, b) => a + b, 0)));
   verifier('le graphique a de quoi tracer', vu.releves);
-  verifier('la ligne d\'import annonce les relevés archivés', /relevés archivés/.test(vu.importe), vu.importe);
+  verifier('le pied nomme le dernier relevé et compte les relevés, comme la note du graphique',
+    /^Dernier relevé : S\d{1,2}\u00a0· \S+\u00a0\d{4} · \d+ relevés$/.test(vu.importe), vu.importe);
   verifier('rien ne permet d\'éditer un jalon dans la page', vu.jalons === 0);
   /* Les jalons de CONFIG sont dessinés — ceux qui tombent après le premier
      relevé, puisque l'axe du graphique part de là. Sur « Tout », la fenêtre
@@ -1373,9 +1374,23 @@ function serveurSur(valeurs, proprietes, fichiers) {
     vg.ordre.indexOf('Colonne 1') === -1 && vg.ordre.indexOf('Colonne 4') !== -1 && vg.ordre.indexOf('Colonne 5') !== -1,
     vg.ordre.slice(0, 5).join(' | '));
   verifier('la colonne « Avancement » est visible au départ', vg.colFWD !== -1, String(vg.colFWD));
-  verifier('et dans l\'ordre exact de la feuille, sans autre exception',
-    JSON.stringify(vg.ordre) === JSON.stringify(mGates.colonnes.filter(c => c.titre !== 'Colonne 1').map(c => c.titre)),
-    vg.ordre.slice(0, 6).join(' | '));
+  /* Une seule entorse à l'ordre de la feuille : la colonne suivie vient
+     juste après la référence, figée avec elle. */
+  const ordreAttendu = (() => {
+    /* La colonne suivie, par sa clé : l'export répète « Avancement
+       Définition Electrique » bloc après bloc. */
+    const cols = mGates.colonnes.filter(c => c.titre !== 'Colonne 1');
+    const suivie = cols.filter(c => c.cle === 'avancement')[0];
+    const reste = cols.filter(c => c !== suivie);
+    const iRef = reste.findIndex(c => c.titre === 'Référence UD');
+    reste.splice(iRef + 1, 0, suivie);
+    return reste.map(c => c.titre);
+  })();
+  verifier('et dans l\'ordre de la feuille, la colonne suivie juste après la référence, sans autre exception',
+    JSON.stringify(vg.ordre) === JSON.stringify(ordreAttendu), (() => {
+      const k = vg.ordre.findIndex((t, i) => t !== ordreAttendu[i]);
+      return 'écart au rang ' + k + ' : ' + JSON.stringify(vg.ordre.slice(Math.max(0, k - 1), k + 2)) + ' / attendu ' + JSON.stringify(ordreAttendu.slice(Math.max(0, k - 1), k + 2));
+    })());
   verifier('pas de débordement horizontal de la page', vg.debord <= 2, vg.debord + ' px');
 
   /* Données réelles, sur l'en-tête réel : l'interrupteur de l'avancement
@@ -1405,18 +1420,18 @@ function serveurSur(valeurs, proprietes, fichiers) {
       rang: n,
       figees: th.filter(t => t.classList.contains('col-fige')).map(t => t.textContent.trim()),
       gauches: th.filter(t => t.classList.contains('col-fige')).map(t => parseFloat(t.style.left)),
-      fin: th[n] && th[n].classList.contains('fige-fin'),
+      fin: (() => { const f = th.filter(t => t.classList.contains('col-fige')); return !!f.length && f[f.length - 1].classList.contains('fige-fin'); })(),
       corpsFigees: [...document.querySelectorAll('#corps-tableau tr:first-child td')]
         .filter(td => td.classList.contains('col-fige')).length,
       groupesFiges: [...document.querySelectorAll('.groupes th.col-fige')]
         .map(t => ({ debut: +t.dataset.debut, span: t.colSpan, gauche: parseFloat(t.style.left) }))
     };
   });
-  verifier('le bloc figé couvre tout ce qui précède la référence, elle comprise',
-    fige.figees.length === fige.rang + 1 && fige.figees[fige.rang] === 'Référence UD',
+  verifier('le bloc figé couvre tout ce qui précède la référence, elle comprise, et la colonne suivie',
+    fige.figees.length === fige.rang + 2 && fige.figees[fige.rang] === 'Référence UD' && fige.figees[fige.rang + 1] === 'Avancement Définition Electrique',
     JSON.stringify(fige.figees));
-  verifier('la référence ouvre le tableau : elle est seule figée',
-    fige.rang === 0 && fige.figees.length === 1, JSON.stringify(fige.figees));
+  verifier('la référence ouvre le tableau, l\'avancement la suit : les deux seules colonnes figées',
+    fige.rang === 0 && fige.figees.length === 2, JSON.stringify(fige.figees));
   verifier('chaque colonne figée se pose après la précédente, jamais dessus',
     fige.gauches[0] === 0 && fige.gauches.every((g, i) => i === 0 || g > fige.gauches[i - 1]),
     JSON.stringify(fige.gauches));
@@ -1486,11 +1501,11 @@ function serveurSur(valeurs, proprietes, fichiers) {
     dessines: document.querySelectorAll('svg.graphe .jalon').length,
     zone: document.getElementById('zone-critique').getAttribute('data-jalon'),
     prochain: window.__prochainJalon() && window.__prochainJalon().texte,
-    entete: (document.querySelector('.critique-tete button[data-trig="tension"]') || {}).title || ''
+    entete: (document.querySelector('.critique-tete button[data-trig="requis"]') || {}).title || ''
   }));
   await pg.click('.segmente button[data-span="0"]'); await pg.waitForTimeout(400);
   const jTout = await lireJalons();
-  verifier('sur « Tout », les cinq jalons sont dessinés ; seules les diffusions TO, du concept harnais, sont en retrait ; l\'en-tête de l\'effort demandé nomme l\'échéance',
+  verifier('sur « Tout », les cinq jalons sont dessinés ; seules les diffusions TO, du concept harnais, sont en retrait ; l\'en-tête du rythme requis nomme l\'échéance',
     jTout.dessines === 5 && jTout.retrait.join('|') === 'Diffusion TO Base|Diffusion TO Perso' && !!jTout.prochain && jTout.zone === jTout.prochain &&
     jTout.entete.indexOf('«\u00a0' + jTout.prochain + '\u00a0»') !== -1, JSON.stringify(jTout));
   await pg.click('#choix-perimetre button[data-perimetre="PERSO"]'); await pg.waitForTimeout(700);
@@ -1631,15 +1646,15 @@ function serveurSur(valeurs, proprietes, fichiers) {
     figees: document.querySelectorAll('tr.titres th.col-fige').length
   }));
   verifier('la vue essentielle est exactement celle demandee',
-    JSON.stringify(ess.titres) === JSON.stringify(['Référence UD', 'Nom Installation', 'ECP',
+    JSON.stringify(ess.titres) === JSON.stringify(['Référence UD', 'Avancement Définition Electrique', 'Nom Installation', 'ECP',
       'ATA', 'Séquence', 'Validation Définition Electrique', 'Date création',
-      'Avancement Définition Electrique', 'Avancement Concept Harnais']),
+      'Avancement Concept Harnais']),
     JSON.stringify(ess.titres));
   verifier('ni Statut iBG ni les blocs repetes n\'y entrent',
     ess.titres.indexOf('Statut iBG') === -1 && ess.titres.indexOf('Validité') === -1);
   verifier('aucun plan n\'est perdu au passage', ess.lignes === 186, String(ess.lignes));
-  verifier('la reference ouvre la vue essentielle et reste seule figee',
-    ess.titres[0] === 'Référence UD' && ess.figees === 1, String(ess.figees));
+  verifier('la reference ouvre la vue essentielle, figee avec la colonne suivie',
+    ess.titres[0] === 'Référence UD' && ess.figees === 2, String(ess.figees));
   verifier('l\'interrupteur dit laquelle des deux est active',
     ess.presse.join(' ') === 'toutes:false essentielle:true', JSON.stringify(ess.presse));
 
@@ -1650,7 +1665,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   }));
   verifier('revenir rend l\'extract entier dans l\'ordre de la feuille',
     JSON.stringify(retour.titres) === JSON.stringify(vg.ordre), String(retour.titres.length));
-  verifier('et le bloc fige reste la reference seule', retour.figees === 1, String(retour.figees));
+  verifier('et le bloc fige reste la reference et la colonne suivie', retour.figees === 2, String(retour.figees));
 
   // Un aller-retour repete ne doit rien laisser derriere lui.
   for (let i = 0; i < 4; i++) {
@@ -1775,7 +1790,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
     JSON.stringify(dernierG) + ' / ' + persoG.serie.length);
   verifier('chaque point du périmètre est en deçà du point global',
     persoG.serie.every((pt, k) => pt.total < perim.serieTout[k].total && pt.termine <= perim.serieTout[k].termine));
-  verifier('la note du graphique nomme le périmètre', /Historique du périmètre PERSO/.test(persoG.note), persoG.note);
+  verifier('la note du graphique nomme le périmètre', /^Historique · périmètre PERSO · /.test(persoG.note), persoG.note);
   verifier('le journal ne parle que de plans PERSO',
     persoG.journal.length > 0 && persoG.journal.every(d => d === 'PERSO'), JSON.stringify([...new Set(persoG.journal)]));
   verifier('le bandeau nomme le périmètre', persoG.jetons.length === 1 && /^Périmètre : PERSO$/.test(persoG.jetons[0]),
@@ -1840,8 +1855,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   // =================================================================
   section('Repères du bloc par groupe');
   /* Deux colonnes calculées, chacune avec son « ? » : la fin estimée, et la
-     dernière, qui est « effort demandé » quand un jalon de la configuration
-     est à venir (c'est le cas : CONFIG.JALONS en fournit), « rythme actuel »
+     dernière, qui est « rythme requis » quand un jalon de la configuration
+     est à venir (c'est le cas : CONFIG.JALONS en fournit), « rythme tenu »
      sinon. */
   const reperes = await pg.evaluate(() => ({
     aides: document.querySelectorAll('button[data-aide]').length,
@@ -1849,8 +1864,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
     derniere: [...document.querySelectorAll('.critique-tete button[data-trig]')].slice(-1)[0].textContent.trim()
   }));
   verifier('chaque colonne calculée porte son « ? »', reperes.aides === 2, reperes.aides + ' « ? »');
-  verifier('avec un jalon de configuration à venir, la dernière colonne est l\'effort demandé',
-    reperes.avecJalon && /effort demandé/.test(reperes.derniere), JSON.stringify(reperes));
+  verifier('avec un jalon de configuration à venir, la dernière colonne est le rythme requis',
+    reperes.avecJalon && /rythme requis/.test(reperes.derniere), JSON.stringify(reperes));
   await pg.selectOption('#dim-critique', 'ata'); await pg.waitForTimeout(500);
   const noteA = await pg.textContent('#indice-dim');
   await pg.selectOption('#dim-critique', '_mois'); await pg.waitForTimeout(500);
@@ -1889,10 +1904,11 @@ function serveurSur(valeurs, proprietes, fichiers) {
     await pg.mouse.move(bb.x + bb.width / 2, bb.y + bb.height * 0.6);
     await pg.waitForTimeout(120);
     const t = await pg.evaluate(() => document.getElementById('bulle').textContent);
-    if (/passés? en terminé/.test(t)) { texteBulle = t; break; }
+    if (/passés? à « 100 % »/.test(t.replace(/[\u00a0\u202f]/g, ' '))) { texteBulle = t; break; }
   }
-  verifier('survoler une semaine annonce les passages en terminé',
-    /passés? en terminé/.test(texteBulle), texteBulle.slice(0, 90));
+  /* La bulle dit les passages comme le journal : par valeur d'arrivée. */
+  verifier('survoler une semaine annonce les passages, dans les mots du journal',
+    /passés? à « 100 % »/.test(texteBulle.replace(/[\u00a0\u202f]/g, ' ')), texteBulle.slice(0, 90));
   /* La bulle résume : « terminés N / total », l'écart, puis les comptes de la
      semaine. Les références, elles, sont dans le journal, dessous. */
   verifier('en comptes, sans lister les références ni « et N autres »',
@@ -2024,7 +2040,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('plus d\'interrupteur « Exemple » ni de mot de démonstration devant le classeur',
     !premier.interrupteur && premier.mot === '' && premier.pied && premier.vide === 'false', JSON.stringify(premier));
   verifier('les plans affichés sont ceux de la feuille', premier.plans === 186 && /186 plans/.test(premier.phrase), premier.phrase);
-  verifier('le journal explique pourquoi il est vide', /deuxième archivage/.test(premier.journal), premier.journal.slice(0, 120));
+  verifier('le journal explique pourquoi il est vide', /deuxième relevé/.test(premier.journal), premier.journal.slice(0, 120));
   await ctxPremier.close();
 
   /* Un classeur sans plan : pas de démonstration à la place, mais ce qu'il
@@ -2176,7 +2192,12 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('640 plans sur 138 colonnes : une première tranche seulement, et le compte dit bien 640',
     tranche1.lignes > 60 && tranche1.lignes < 640 && /640 plans/.test(tranche1.compte) &&
     new RegExp((640 - tranche1.lignes) + ' lignes de plus').test(tranche1.suite.replace(/\s/g, ' ')), JSON.stringify(tranche1));
-  await pGros.click('#corps-tableau tr.ligne-suite button'); await pGros.waitForTimeout(400);
+  /* Le bouton est au bas du cadre qui défile : y faire défiler pour le
+     cliquer charge déjà la tranche suivante (« descendez, ou cliquez ici »)
+     et le remplace sous le pointeur. On le clique donc là où il est, sans
+     défiler — c'est son geste à lui qu'on vérifie ; le défilement a son test
+     juste après. */
+  await pGros.evaluate(() => document.querySelector('#corps-tableau tr.ligne-suite button').click()); await pGros.waitForTimeout(400);
   const tranche2 = await pGros.evaluate(() => document.querySelectorAll('#corps-tableau tr:not(.ligne-suite)').length);
   verifier('un clic sur « N lignes de plus » ajoute la tranche suivante', tranche2 > tranche1.lignes, tranche1.lignes + ' → ' + tranche2);
   // Comme quelqu'un qui lit : on descend jusqu'au tableau, puis dans le tableau.
