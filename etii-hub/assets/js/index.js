@@ -20,7 +20,7 @@
    gestionnaire en attribut HTML.
    ========================================================================= */
 
-import { el, monter, initTheme, initNav, deleguer, ouvrirModale, suivreSommaire } from './ui.js';
+import { el, monter, initTheme, initNav, deleguer, ouvrirModale, suivreSommaire, revelerAuDefilement } from './ui.js';
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
 import { porteurs, creditsPhotos, libellesFiche } from './porteurs.js';
 import { creditsCommunications } from './credits.js';
@@ -45,6 +45,38 @@ function txt(valeur) {
 }
 
 /* -------------------------------------------------------------------------
+   0. La une : la date du jour, et le nombre d'éléments de chaque section
+   dans le sommaire
+   ------------------------------------------------------------------------- */
+
+const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+/* Le numéro de semaine ISO : celle du jeudi de la semaine. */
+function semaineIso(d) {
+  const jeudi = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  jeudi.setUTCDate(jeudi.getUTCDate() + 3 - ((jeudi.getUTCDay() + 6) % 7));
+  const debut = new Date(Date.UTC(jeudi.getUTCFullYear(), 0, 4));
+  return 1 + Math.round(((jeudi - debut) / 86400000 - 3 + ((debut.getUTCDay() + 6) % 7)) / 7);
+}
+
+function poserDateDuJour() {
+  const cible = document.querySelector('[data-date-du-jour]');
+  if (!cible) return;
+  const d = new Date();
+  const jour = JOURS[d.getDay()];
+  monter(cible,
+    el('time', { datetime: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') },
+      jour.charAt(0).toUpperCase() + jour.slice(1) + ' ' + d.getDate() + ' ' + MOIS[d.getMonth()] + ' ' + d.getFullYear()),
+    el('span', { class: 'page-une__semaine' }, 'Semaine ' + semaineIso(d)));
+}
+
+function compter(section, n) {
+  const cible = document.querySelector('[data-compte="' + section + '"]');
+  if (cible) cible.textContent = n > 0 ? String(n) : '';
+}
+
+/* -------------------------------------------------------------------------
    1. Le Communication Center
    ------------------------------------------------------------------------- */
 
@@ -55,6 +87,7 @@ function txt(valeur) {
 function rendreCommunication(donnees, conteneur) {
   verifierForme(donnees, { agenda: 'tableau' }, 'communications.json');
   const dossiers = dossiersDepuisCommunications(donnees, { pole: 'ETII' });
+  compter('communication', dossiers.length);
   /* Une ligne, seulement s'il y a quelque chose à dire sur la source : la
      feuille du service n'a pas répondu, ou des lignes n'ont pas été lues. */
   monter(conteneur, noteOrigine(donnees), kiosque({
@@ -85,6 +118,7 @@ function rendreAgenda(donnees, conteneur) {
     surModifier: (entree, b) => ouvrirRendezVous({ existant: entree, declencheur: b }),
     surSupprimer: (entree) => supprimerElement('communications', 'agenda', entree.id)
   }));
+  compter('agenda', conteneur.querySelectorAll('.agenda__rdv').length);
 }
 
 /* -------------------------------------------------------------------------
@@ -94,6 +128,7 @@ function rendreAgenda(donnees, conteneur) {
 function rendreFlotte(ensemble, conteneur) {
   const donnees = ensemble.flotte;
   verifierForme(donnees, { flotte: 'tableau' }, 'flotte.json');
+  compter('porteurs', donnees.flotte.length);
   const avertissement = txt(donnees.avertissement);
   monter(conteneur, el('div', { class: 'pile' },
     porteurs(donnees, {
@@ -124,10 +159,13 @@ function rendreSuiviOTQ(suivi, conteneur) {
 
 initTheme();
 initNav('index.html');
+poserDateDuJour();
 installerEdition();
 /* Le sommaire : Communication · Porteurs · Suivi OTQ / OTD, le lien
    courant marqué au fil du défilement (le mécanisme des espaces de pôle). */
 suivreSommaire();
+/* Chaque titre de section, puis son contenu, arrivent en douceur. */
+revelerAuDefilement(document.querySelectorAll('.pile--section > section > *'));
 
 function chargerCommunicationCenter() {
   avecEtat('#zone-communication', chargerCommunications, rendreCommunication, {

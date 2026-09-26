@@ -69,8 +69,10 @@
   --portrait-fiche:     8rem;      /* la fiche d'une personne            */
 
   /* --- Séries du suivi OTQ / OTD : paire validée (clair sur blanc) ---------- */
-  --serie-otq: #2a78d6;
-  --serie-otd: #008300;
+  /* Marine et terre cuite : la paire des deux couleurs du site, lisible
+     en vision daltonienne (bleu / orange), 3:1 au moins sur la bande. */
+  --serie-otq: #2b5ea7;
+  --serie-otd: #b8562a;
 
   /* --- Neutres : un gris chaud, qui tire vers le papier ------------------- */
   --gris-50:  #fbf8f2;
@@ -123,7 +125,7 @@
   --accent:          var(--marque-bleu);
   --accent-vif:      var(--marque-bleu-clair);
   --accent-contenu:  #ffffff;
-  --accent-doux:     #e7ecf6;
+  --accent-doux:     #e4e5ee;   /* un marine dilué qui tient sur le lin   */
   --accent-lueur:    rgb(0 32 91 / 0.16);
   --surlignage:      #fbeec4;
   --surlignage-texte: #3d2e00;
@@ -185,7 +187,12 @@
   --texte-3xl: clamp(2rem, 2.4vw + 1.4rem, 3rem);            /* 32–48   */
   /* Le titre de section « — Titre — » : sa taille sert aussi à placer la
      coupe des bandes sur son filet (modules.css §15 ter). */
-  --texte-section: clamp(1.625rem, 0.9vw + 1.35rem, 2rem);   /* 26–32   */
+  --texte-section: clamp(1.75rem, 1.1vw + 1.4rem, 2.375rem); /* 28–38   */
+  /* Le titre de page, en tête : grand, léger, à l'encre. */
+  --texte-titre-page: clamp(3.25rem, 4.6vw + 1.6rem, 5.75rem); /* 52–92 */
+  /* L'étiquette en capitales : Plex Sans, espacée — la voix des rubriques
+     et des repères quand le mono serait trop « technique ». */
+  --lettrage-capitales: 0.12em;
 
   --graisse-normale: 400;
   --graisse-moyenne: 500;
@@ -328,8 +335,8 @@
     --portrait-tenue-4:   #8a847c;
     --portrait-trait:     #2a1f18;
 
-    --serie-otq: #3987e5;
-    --serie-otd: #2ea043;
+    --serie-otq: #7aa7ec;
+    --serie-otd: #e59566;
 
     --statut-info:     #6fb1e0;
     --statut-succes:   #6fae82;
@@ -430,8 +437,8 @@
   --portrait-tenue-4:   #8a847c;
   --portrait-trait:     #2a1f18;
 
-  --serie-otq: #3987e5;
-  --serie-otd: #2ea043;
+  --serie-otq: #7aa7ec;
+  --serie-otd: #e59566;
 
   --statut-info:     #6fb1e0;
   --statut-succes:   #6fae82;

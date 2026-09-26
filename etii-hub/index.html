@@ -68,17 +68,35 @@
          ton à part du papier des sections, pour que l'œil sépare l'entrée
          de la page du Communication Center (modules.css §15). Le sommaire
          reste collé sous la barre du site et suit la lecture (index.js). -->
-    <div class="page-tete">
-      <div class="conteneur pile pile--serree page-entete">
-        <!-- Le titre seul, sans sur-titre : le service se reconnaît. -->
-        <h1>ETII</h1>
+    <div class="page-tete page-tete--une">
+      <!-- La une : la date du jour (index.js), le nom du service en grand,
+           un ornement. Derrière, en filigrane, un rotor à cinq pales
+           dessiné au trait tourne très lentement (décoratif). -->
+      <svg class="page-une__rotor" viewBox="-200 -200 400 400" aria-hidden="true" focusable="false">
+        <circle r="196" class="page-une__graduation"/>
+        <circle r="176"/>
+        <circle r="118"/>
+        <circle r="30"/>
+        <circle r="12"/>
+        <g class="page-une__pales">
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z"/>
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(72)"/>
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(144)"/>
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(216)"/>
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(288)"/>
+        </g>
+      </svg>
+      <div class="conteneur page-entete page-une">
+        <p class="page-une__date" data-date-du-jour></p>
+        <h1 class="page-une__titre">ETII</h1>
+        <span class="page-une__ornement" aria-hidden="true"></span>
       </div>
     </div>
     <nav class="page-sommaire" aria-label="Sections de la page">
       <ul class="sous-nav sous-nav--page conteneur">
-        <li><a href="#section-communication" aria-current="true">Communication</a></li>
-        <li><a href="#section-agenda">À venir</a></li>
-        <li><a href="#section-porteurs">Porteurs</a></li>
+        <li><a href="#section-communication" aria-current="true">Communication<span class="sous-nav__compte" data-compte="communication"></span></a></li>
+        <li><a href="#section-agenda">À venir<span class="sous-nav__compte" data-compte="agenda"></span></a></li>
+        <li><a href="#section-porteurs">Porteurs<span class="sous-nav__compte" data-compte="porteurs"></span></a></li>
         <li><a href="#section-otq">Suivi OTQ / OTD</a></li>
       </ul>
     </nav>
@@ -123,7 +141,7 @@
 
   <footer class="site-pied">
     <div class="site-pied__interieur">
-      <p>ETII Hub — portail de démonstration, sans aucune dépendance externe.</p>
+      <p class="site-pied__marque"><span class="site-pied__nom">ETII <span>Hub</span></span> Le portail du service, tenu par ses équipes.</p>
       <p class="site-pied__liens">
         <a href="#credits-photos" data-credits-photos>Crédits photos</a>
       </p>

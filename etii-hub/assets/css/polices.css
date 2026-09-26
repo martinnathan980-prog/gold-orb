@@ -1,8 +1,10 @@
 /* =========================================================================
    ETII Hub — Polices
 
-   Quatre faces, servies depuis assets/polices/ : IBM Plex Mono 400 et 500,
-   IBM Plex Sans variable 400-600, Newsreader variable 300-500.
+   Cinq faces, servies depuis assets/polices/ : IBM Plex Mono 400 et 500,
+   IBM Plex Sans variable 400-600, Newsreader variable 300-500, et son
+   italique (jeu latin, qui couvre le français : œ, guillemets, points de
+   suspension). Toutes sous licence libre SIL Open Font License 1.1.
 
    Elles étaient autrefois écrites en base64 dans cette feuille, qui pesait
    alors 271 ko et bloquait la première peinture de chaque page — deux
@@ -15,7 +17,7 @@
    Aucun octet n'est économisé (gzippé, c'est le même transfert) : ce qui
    change, c'est le moment où il est payé.
 
-   Le fichier autonome dist/etii-hub.html, lui, réintègre ces quatre
+   Le fichier autonome dist/etii-hub.html, lui, réintègre ces cinq
    fichiers en data: URI — un cadre srcdoc n'a pas d'URL de base et ne
    résoudrait pas ../polices/ (voir tools/build-artifact.mjs).
    ========================================================================= */
@@ -51,4 +53,14 @@
   font-weight: 300 500;
   font-display: swap;
   src: url(../polices/newsreader-300-500.woff2) format('woff2');
+}
+
+/* L'italique de Newsreader : la voix de la revue — la date du jour, le
+   chapeau d'une communication, une citation. */
+@font-face {
+  font-family: 'Newsreader';
+  font-style: italic;
+  font-weight: 300 500;
+  font-display: swap;
+  src: url(../polices/newsreader-italique-300-500.woff2) format('woff2');
 }

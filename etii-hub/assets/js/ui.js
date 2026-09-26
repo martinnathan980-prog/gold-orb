@@ -1698,6 +1698,28 @@ function mesurerBarre() {
  *   `.sous-nav a[href^="#"]`)
  * @returns {{arreter: () => void}}
  */
+/**
+ * Les blocs d'une page arrivent en douceur quand on les atteint : un fondu
+ * et une montée de quelques pixels, une seule fois (modules.css, .revele).
+ * Sans IntersectionObserver, ou si le système demande moins d'animations,
+ * rien n'est caché : la classe n'est même pas posée.
+ * @param {Iterable<Element>} elements
+ */
+export function revelerAuDefilement(elements) {
+  if (!AVEC_DOM || typeof IntersectionObserver !== 'function') return;
+  try { if (matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (_e) { return; }
+  const liste = Array.from(elements || []).filter((n) => n && n.classList);
+  if (!liste.length) return;
+  const obs = new IntersectionObserver((vus) => {
+    for (const v of vus) {
+      if (!v.isIntersecting) continue;
+      v.target.classList.add('revele--vu');
+      obs.unobserve(v.target);
+    }
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+  for (const n of liste) { n.classList.add('revele'); obs.observe(n); }
+}
+
 export function suivreSommaire(options) {
   const inerte = { arreter: () => {} };
   if (!AVEC_DOM) return inerte;
@@ -1712,10 +1734,24 @@ export function suivreSommaire(options) {
     .filter(Boolean);
   if (!cibles.length) return inerte;
   let courant = null;
+  /* Le trait qui glisse sous l'entrée courante (modules.css,
+     .page-sommaire .sous-nav::after) : sa position et sa largeur, relues
+     à chaque mesure — une police qui arrive, un compteur qui se remplit
+     changent la largeur des entrées. */
+  const liste = liens[0].closest('.sous-nav');
+  const placerCurseur = () => {
+    if (!liste) return;
+    const actif = liens.find((a) => a.getAttribute('aria-current') === 'true');
+    if (!actif) return;
+    liste.style.setProperty('--curseur-x', actif.offsetLeft + 'px');
+    liste.style.setProperty('--curseur-l', actif.offsetWidth + 'px');
+  };
   const marquer = (id) => {
-    if (id === courant) return;
-    courant = id;
-    liens.forEach((a) => a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'true' : 'false'));
+    if (id !== courant) {
+      courant = id;
+      liens.forEach((a) => a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'true' : 'false'));
+    }
+    placerCurseur();
   };
 
   /* Le bandeau du sommaire : collé sous la barre du site, il prend un

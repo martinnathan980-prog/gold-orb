@@ -192,11 +192,12 @@ function libelleMois(iso) {
 
 function bandeauOrigine(suivi) {
   if (suivi.origine === 'exemple') {
+    /* Une ligne discrète : l'exemple est annoncé, sans chemin de fichier
+       ni consigne technique (le branchement est décrit dans
+       docs/OTQ-GOOGLE-SHEETS.md). */
     return el('div', { class: 'otq__origine otq__origine--exemple', role: 'note' },
-      el('span', { class: 'badge badge--alerte' }, 'Données d’exemple'),
-      el('span', {}, 'Ces courbes illustrent le rendu. Elles ne mesurent rien. La source réelle se branche dans ',
-        el('span', { class: 'mono' }, 'assets/js/otq.js'), ' (', el('span', { class: 'mono' }, 'SOURCE.url'), ') — voir ',
-        el('span', { class: 'mono' }, 'docs/OTQ-GOOGLE-SHEETS.md'), '.'));
+      el('span', { class: 'otq__origine-marque' }, 'Données d’exemple'),
+      el('span', {}, 'Ces courbes illustrent la présentation ; elles ne mesurent rien.'));
   }
   return el('div', { class: 'otq__origine', role: 'note' },
     el('span', { class: 'badge badge--succes' }, 'Source du service'),

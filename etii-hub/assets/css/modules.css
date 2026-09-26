@@ -602,6 +602,140 @@ ol.kiosque__liste {
 .kiosque__chiffre-tendance { font-size: var(--texte-xs); color: var(--texte-doux); }
 .kiosque__chiffre-tendance > span { color: var(--accent); }
 
+/* --- La mise en page de revue ---------------------------------------------
+   Le bandeau d'alertes devient une fine pilule ivoire : un point terre
+   cuite qui bat, « Alertes » en capitales, les messages à l'encre. La
+   liste parle en capitales fines (Plex Sans), ses filtres forment un
+   commutateur. La lecture se compose comme une page de revue : la date en
+   capitales terre cuite, un grand titre, le chapeau en italique, des
+   chiffres posés sur un simple filet. */
+.kiosque__alertes {
+  gap: 0;
+  padding: 0 var(--e-2) 0 0;
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-plein);
+  box-shadow: var(--ombre-sm);
+}
+.kiosque__alertes-etiquette {
+  gap: var(--e-2);
+  padding: var(--e-2) var(--e-4) var(--e-2) var(--e-5);
+  background: none;
+  border-inline-end: 1px solid var(--bordure-douce);
+  font-family: var(--police);
+  font-size: 0.6875rem;
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--lettrage-capitales);
+  color: var(--chaud-encre);
+}
+.kiosque__alertes-point { background-color: var(--chaud); }
+@media (prefers-reduced-motion: no-preference) {
+  .kiosque__alertes-point { animation: alerte-pouls 2400ms ease-out infinite; }
+}
+@keyframes alerte-pouls {
+  from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--chaud) 55%, transparent); }
+  60%  { box-shadow: 0 0 0 7px color-mix(in srgb, var(--chaud) 0%, transparent); }
+  to   { box-shadow: 0 0 0 7px color-mix(in srgb, var(--chaud) 0%, transparent); }
+}
+ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
+.kiosque__alerte { color: var(--texte); font-weight: var(--graisse-normale); }
+.kiosque__alertes-pause { border-radius: var(--rayon-plein); color: var(--texte-doux); }
+.kiosque__alertes-pause:hover { background-color: var(--fond-enfonce); color: var(--texte); }
+
+.kiosque__flux-titre,
+.kiosque__groupe {
+  font-family: var(--police);
+  font-size: 0.6875rem;
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-capitales);
+  color: var(--texte-doux);
+}
+.kiosque__compte { font-family: var(--police-mono); font-weight: var(--graisse-normale); color: var(--texte-faible); }
+
+/* Les filtres de pôle : un commutateur — une gouttière, et la pastille
+   choisie posée dessus comme une feuille. */
+.kiosque__filtres {
+  gap: 2px;
+  padding: 3px;
+  background-color: var(--fond-enfonce);
+  border-radius: var(--rayon-plein);
+}
+.kiosque__filtres .facette,
+.kiosque__filtres .facette:hover:not(:disabled) {
+  min-height: calc(var(--cible-tactile) - var(--e-4));
+  padding-inline: var(--e-3);
+  border-color: transparent;
+  background: none;
+  font-size: var(--texte-xs);
+}
+.kiosque__filtres .facette:hover:not(:disabled) { color: var(--texte); }
+.kiosque__filtres .facette[aria-pressed="true"],
+.kiosque__filtres .facette[aria-pressed="true"]:hover:not(:disabled) {
+  background-color: var(--carte-fond);
+  border-color: var(--carte-bord);
+  box-shadow: var(--ombre-sm);
+  color: var(--texte);
+}
+
+/* La communication lue : posée sur le lin, un filet marine à gauche. */
+.kiosque__carte[aria-current="true"] {
+  background-color: var(--fond);
+  border-color: var(--bordure-douce);
+  box-shadow: inset 2px 0 0 var(--accent), var(--ombre-sm);
+}
+.kiosque__carte:hover { background-color: color-mix(in srgb, var(--fond) 60%, transparent); }
+.kiosque__carte-titre { font-size: 0.84375rem; }
+.kiosque__mois { font-family: var(--police); font-size: 0.625rem; letter-spacing: var(--lettrage-capitales); }
+
+.kiosque__lecture-meta {
+  font-family: var(--police);
+  font-size: 0.6875rem;
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--lettrage-capitales);
+  color: var(--chaud-encre);
+}
+.kiosque__lecture-meta time { font-family: inherit; }
+.kiosque__lecture-titre {
+  font-size: clamp(1.9rem, 1.8vw + 1.2rem, 2.75rem);
+  letter-spacing: -0.005em;
+  line-height: 1.08;
+}
+.kiosque__chapeau {
+  font-family: var(--police-titre);
+  font-size: 1.3125rem;
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.45;
+  color: var(--texte-doux);
+}
+
+/* Les chiffres clés : plus de pavé gris — un filet au-dessus, la valeur
+   en grand, l'intitulé en capitales fines. */
+.kiosque__chiffres { gap: var(--e-5); }
+.kiosque__chiffre {
+  gap: var(--e-1);
+  padding: var(--e-3) 0 0;
+  background: none;
+  border: 0;
+  border-block-start: 1px solid var(--bordure);
+  border-radius: 0;
+}
+.kiosque__chiffre-valeur {
+  font-family: var(--police-titre);
+  font-size: 2.25rem;
+  font-weight: 300;
+  line-height: 1;
+  font-variant-numeric: lining-nums;
+}
+.kiosque__chiffre-unite { font-family: var(--police-titre); font-size: var(--texte-lg); }
+.kiosque__chiffre-libelle {
+  font-family: var(--police);
+  font-size: 0.6875rem;
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-capitales);
+  color: var(--texte-doux);
+}
+
 /* La série : la courbe validée, étirée sur la largeur disponible. */
 .kiosque__serie {
   display: flex;
@@ -620,6 +754,22 @@ ol.kiosque__liste {
 .kiosque__serie-bornes { font-size: var(--texte-xs); color: var(--texte-doux); }
 .kiosque__serie .ind-spark { inline-size: 100%; block-size: auto; }
 .kiosque__serie-periode { font-size: var(--texte-xs); color: var(--texte-faible); }
+/* La petite courbe d'une communication : la même économie que les
+   chiffres — un filet au-dessus, pas de pavé. */
+.kiosque__serie {
+  padding: var(--e-3) 0 0;
+  background: none;
+  border: 0;
+  border-block-start: 1px solid var(--bordure);
+  border-radius: 0;
+}
+.kiosque__serie-libelle {
+  font-size: 0.6875rem;
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-capitales);
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
 
 /* Les blocs d'une lecture : une grille de six colonnes. Chaque bloc porte
    sa largeur (pleine = 6, deux tiers = 4, moitié = 3, tiers = 2) et,
@@ -899,6 +1049,97 @@ ol.kiosque__liste {
 .porteurs__pole-point[data-pole="ETIIA"] { background-color: var(--pole-etiia); }
 .porteurs__pole-point[data-pole="ETIIE"] { background-color: var(--pole-etiie); }
 .porteurs__pole-point[data-pole="ETIII"] { background-color: var(--pole-etiii); }
+
+/* --- La galerie, mise en page de revue -------------------------------------
+   Quatre cartes par rangée sur toute la largeur (trois, puis deux sur les
+   écrans plus étroits), alignées à gauche sous leur titre de famille —
+   « Civil » suivi d'un filet et du nombre. La photo occupe tout le haut
+   de la carte et s'approche doucement au survol ; dessous, le code en
+   Newsreader et le segment en toutes lettres. Sans photo, la silhouette
+   se pose sur un aplat de lin, au même format. */
+.porteurs__grille {
+  --porteurs-colonnes: 4;
+  --porteurs-espace: var(--e-5);
+  --porteurs-carte: calc((100% - (var(--porteurs-colonnes) - 1) * var(--porteurs-espace)) / var(--porteurs-colonnes));
+  justify-content: flex-start;
+}
+@media (max-width: 64rem) { .porteurs__grille { --porteurs-colonnes: 3; } }
+@media (max-width: 44rem) { .porteurs__grille { --porteurs-colonnes: 2; --porteurs-espace: var(--e-3); } }
+
+.porteurs__groupe-galerie-titre {
+  justify-content: flex-start;
+  gap: var(--e-4);
+  font-size: 1.75rem;
+}
+.porteurs__groupe-galerie-titre::after {
+  content: "";
+  order: 1;
+  flex: 1;
+  align-self: center;
+  block-size: 1px;
+  background-color: var(--bordure);
+}
+.porteurs__groupe-galerie-compte {
+  order: 2;
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0;
+}
+
+.porteurs__fiche {
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  text-align: start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "visuel visuel" "code poles" "segment segment";
+  align-content: start;
+}
+.porteurs__fiche:hover { transform: translateY(-3px); }
+.porteurs__fiche-visuel {
+  grid-area: visuel;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background-color: var(--fond-bande);
+  color: var(--texte-faible);
+}
+.porteurs__fiche-visuel svg { inline-size: 72%; }
+.porteurs__fiche-photo {
+  block-size: 100%;
+  border-radius: 0;
+  aspect-ratio: auto;
+  transition: filter var(--duree) ease, transform var(--duree-lente) var(--courbe);
+}
+.porteurs__fiche:hover .porteurs__fiche-photo,
+.porteurs__fiche[aria-pressed="true"] .porteurs__fiche-photo { transform: scale(1.045); }
+.porteurs__fiche-code {
+  grid-area: code;
+  margin: 0;
+  padding: var(--e-3) var(--e-4) 0;
+  font-family: var(--police-titre);
+  font-size: 1.625rem;
+  font-weight: var(--graisse-normale);
+  letter-spacing: 0.01em;
+}
+.porteurs__fiche-poles {
+  grid-area: poles;
+  align-self: center;
+  margin: var(--e-3) var(--e-4) 0 0;
+}
+.porteurs__fiche-segment {
+  grid-area: segment;
+  padding: var(--e-1) var(--e-4) var(--e-4);
+  font-family: var(--police);
+  font-size: var(--texte-xs);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--texte-doux);
+}
+.porteurs__fiche-segment::first-letter { text-transform: uppercase; }
 
 /* --- La fiche dépliée : un item sur toute la largeur de la rangée -------- */
 
@@ -1721,10 +1962,56 @@ ol.liseuse__bloc-liste {
 }
 
 .otq__origine--exemple {
-  border-style: dashed;
-  border-color: var(--statut-alerte);
-  background-color: var(--statut-alerte-fond);
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--texte-xs);
+  color: var(--texte-doux);
 }
+.otq__origine-marque {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  font-size: 0.6875rem;
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--lettrage-capitales);
+  text-transform: uppercase;
+  color: var(--statut-alerte);
+}
+.otq__origine-marque::before {
+  content: "";
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: var(--rayon-plein);
+  background-color: currentColor;
+}
+
+/* Le suivi, en revue : des indicateurs au chiffre en Newsreader, et la
+   courbe des douze mois posée sur sa propre feuille. */
+.otq .ind-tuile__valeur {
+  font-family: var(--police-titre);
+  font-size: 3rem;
+  font-weight: 300;
+  line-height: 1;
+  font-variant-numeric: lining-nums;
+}
+.otq .ind-tuile__unite { font-family: var(--police-titre); font-size: var(--texte-xl); font-weight: 300; }
+.otq .ind-graphique {
+  padding: var(--e-6) clamp(var(--e-4), 3vw, var(--e-8)) var(--e-5);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-sm);
+}
+.otq .ind-graphique__titre {
+  font-family: var(--police-titre);
+  font-size: 1.5rem;
+  font-weight: var(--graisse-normale);
+}
+.otq .ind-donnees { background: none; border-color: var(--bordure-douce); }
+.otq .ind-donnees__resume { cursor: pointer; }
+.otq .ind-donnees__resume:hover { color: var(--texte); }
 
 .otq__tuiles {
   display: grid;
@@ -3104,11 +3391,191 @@ ol.liseuse__bloc-liste {
 
 /* Au repos, le sommaire fait corps avec la bande de l'en-tête : aucun
    filet ne la coupe avant le titre de la première section. Collé sous la
-   barre du site (ui.js, suivreSommaire, pose la classe), il reprend un
-   filet et une ombre courte pour se détacher de ce qui défile dessous. */
+   barre du site (ui.js, suivreSommaire, pose la classe), il devient une
+   vitre dépolie : un filet, une ombre courte, et ce qui défile dessous se
+   devine. */
 .page-sommaire--collee {
-  border-bottom-color: var(--bordure-douce);
+  background-color: color-mix(in srgb, var(--fond-bande) 84%, transparent);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  border-bottom-color: color-mix(in srgb, var(--bordure) 70%, transparent);
   box-shadow: var(--ombre-sm);
+}
+
+/* Les entrées du sommaire : des capitales fines et espacées, sans cadre.
+   La section courante passe à l'encre, et un trait terre cuite glisse
+   sous elle d'une entrée à l'autre (ui.js pose --curseur-x et
+   --curseur-l). Le nombre d'éléments de la section suit son nom. */
+.page-sommaire .sous-nav {
+  --curseur-x: 0px;
+  --curseur-l: 0px;
+  position: relative;
+  gap: var(--e-2) var(--e-8);
+  padding-inline: clamp(var(--e-4), 4vw, var(--e-8));
+}
+.page-sommaire .sous-nav a {
+  gap: 0;
+  padding: var(--e-3) 0;
+  border-radius: 0;
+  background: none;
+  font-family: var(--police);
+  font-size: 0.75rem;
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-capitales);
+  color: var(--texte-doux);
+  transition: color var(--duree) var(--courbe);
+}
+.page-sommaire .sous-nav a:hover { background: none; color: var(--texte); }
+.page-sommaire .sous-nav a[aria-current="true"] { background: none; color: var(--texte); }
+.page-sommaire .sous-nav::after {
+  content: "";
+  position: absolute;
+  inset-block-end: var(--e-2);
+  inset-inline-start: 0;
+  inline-size: var(--curseur-l);
+  block-size: 2px;
+  border-radius: 1px;
+  background-color: var(--chaud);
+  transform: translateX(var(--curseur-x));
+  transition: transform var(--duree-lente) var(--courbe), inline-size var(--duree-lente) var(--courbe);
+}
+.sous-nav__compte {
+  margin-inline-start: 0.45em;
+  font-family: var(--police-mono);
+  font-size: 0.625rem;
+  font-weight: var(--graisse-normale);
+  letter-spacing: 0;
+  color: var(--texte-faible);
+  font-variant-numeric: tabular-nums;
+}
+.sous-nav__compte:empty { display: none; }
+
+/* -------------------------------------------------------------------------
+   15 quater. La une (index.html) : la date du jour, le nom du service en
+       très grand, un ornement terre cuite ; derrière, en filigrane, un
+       rotor à cinq pales tracé au trait qui tourne lentement. Tout arrive
+       en fondu au chargement.
+   ---------------------------------------------------------------------- */
+
+.page-tete--une { position: relative; overflow: hidden; isolation: isolate; }
+
+.page-une {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e-3);
+  padding-block: var(--e-10) var(--e-5);
+}
+
+.page-une__date {
+  min-block-size: 1.5em;
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 1.125rem;
+  font-style: italic;
+  font-weight: var(--graisse-normale);
+  color: var(--texte-doux);
+}
+.page-une__date time { font-family: inherit; font-variant-numeric: normal; }
+.page-une__semaine {
+  margin-inline-start: var(--e-3);
+  padding-inline-start: var(--e-3);
+  border-inline-start: 1px solid var(--bordure-forte);
+  font-family: var(--police);
+  font-size: 0.6875rem;
+  font-style: normal;
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-capitales);
+  text-transform: uppercase;
+  vertical-align: 0.15em;
+}
+
+.page-entete.page-une h1 {
+  margin: 0;
+  font-size: var(--texte-titre-page);
+  font-weight: 300;
+  letter-spacing: 0.06em;
+  line-height: 0.95;
+  /* Les capitales espacées gardent leur centre : l'espace après la
+     dernière lettre est rendu à gauche. */
+  padding-inline-start: 0.06em;
+}
+
+.page-une__ornement {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-3);
+  color: var(--chaud);
+}
+.page-une__ornement::before,
+.page-une__ornement::after {
+  content: "";
+  inline-size: var(--e-12);
+  block-size: 1px;
+  background: linear-gradient(to right, transparent, currentColor);
+}
+.page-une__ornement::after { background: linear-gradient(to left, transparent, currentColor); }
+.page-une__ornement {
+  background: radial-gradient(circle, currentColor 0 3px, transparent 3.5px) center / 8px 8px no-repeat;
+  min-inline-size: calc(var(--e-12) * 2 + var(--e-8));
+  justify-content: space-between;
+}
+
+.page-une__rotor {
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-start: 58%;
+  z-index: -1;
+  inline-size: min(46rem, 120vw);
+  block-size: auto;
+  translate: -50% -50%;
+  fill: none;
+  stroke: color-mix(in srgb, var(--texte) 7%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.page-une__rotor * { vector-effect: non-scaling-stroke; }
+.page-une__graduation { stroke-dasharray: 1 7; stroke-width: 2; }
+.page-une__pales path { fill: color-mix(in srgb, var(--texte) 2.5%, transparent); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .page-une__rotor { animation: une-rotor 180s linear infinite, une-fondu 2400ms var(--courbe) both; }
+  .page-une > * { animation: une-arrive 900ms var(--courbe) both; }
+  .page-une > :nth-child(2) { animation-delay: 120ms; }
+  .page-une > :nth-child(3) { animation-delay: 300ms; }
+}
+/* L'arrivée des blocs au défilement (ui.js, revelerAuDefilement) : un
+   fondu, une courte montée ; les filets d'un titre de section se
+   déroulent depuis le titre vers les bords. */
+@media (prefers-reduced-motion: no-preference) {
+  .revele {
+    opacity: 0;
+    translate: 0 18px;
+    transition: opacity 800ms var(--courbe), translate 800ms var(--courbe);
+  }
+  .revele--vu { opacity: 1; translate: 0 0; }
+  .titre-section.revele::before,
+  .titre-section.revele::after {
+    transform: scaleX(0);
+    transition: transform 1100ms var(--courbe) 150ms;
+  }
+  .titre-section.revele::before { transform-origin: right center; }
+  .titre-section.revele::after { transform-origin: left center; }
+  .titre-section.revele--vu::before,
+  .titre-section.revele--vu::after { transform: scaleX(1); }
+  .titre-section + .revele { transition-delay: 120ms; }
+}
+
+@keyframes une-rotor { to { rotate: 360deg; } }
+@keyframes une-fondu { from { opacity: 0; } }
+@keyframes une-arrive { from { opacity: 0; translate: 0 10px; } }
+
+@media (max-width: 640px) {
+  .page-une { padding-block: var(--e-10) var(--e-4); }
+  .page-une__semaine { display: none; }
+  .page-sommaire .sous-nav { gap: var(--e-6); }
 }
 
 /* Dans son bandeau, la liste n'est plus collante ni bordée elle-même :
@@ -3402,6 +3869,33 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
 .agenda__repere[data-pole="ETIII"] { --rdv-teinte: var(--pole-etiii); }
 .agenda__repere[data-type="jalon"] { border-radius: 2px; background-color: var(--rdv-teinte); transform: rotate(45deg); }
 
+/* --- Les étiquettes de la frise, dans la voix du site ---------------------
+   Plex Sans en capitales espacées plutôt que le mono ; la date de la
+   carte en terre cuite, sans pavé gris. */
+.agenda__meta,
+.agenda__mois-libelle,
+.agenda__aujourdhui-libelle {
+  font-family: var(--police);
+  font-size: 0.65625rem;
+  letter-spacing: var(--lettrage-capitales);
+}
+.agenda__aujourdhui-libelle { font-weight: var(--graisse-forte); }
+.agenda--frise .agenda__date {
+  padding: 0;
+  background: none;
+  color: var(--chaud-encre);
+}
+.agenda--frise .agenda__jour-semaine,
+.agenda--frise .agenda__jour,
+.agenda--frise .agenda__mois {
+  font-family: var(--police);
+  font-size: 0.6875rem;
+  font-weight: var(--graisse-forte);
+  letter-spacing: var(--lettrage-capitales);
+  color: var(--chaud-encre);
+}
+.agenda--frise .agenda__titre { font-size: 1.1875rem; line-height: 1.2; }
+
 /* --- La frise qui vit (agenda.js §3) --------------------------------------
    Survoler une carte ou son repère l'allume : la carte se soulève et prend
    un filet à sa couleur, le repère grossit dans un halo, le trait devient
@@ -3524,10 +4018,10 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   align-items: center;
   gap: var(--e-2);
   min-height: calc(var(--cible-tactile) - var(--e-2));
-  padding-inline: var(--e-3);
+  padding-inline: var(--e-4);
   border: 1px solid var(--barre-bordure);
-  border-radius: var(--rayon-md);
-  background-color: var(--barre-surface);
+  border-radius: var(--rayon-plein);
+  background-color: color-mix(in srgb, var(--fond-eleve) 60%, transparent);
   color: var(--barre-texte-doux);
   font: inherit;
   font-size: var(--texte-xs);
@@ -3553,6 +4047,7 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
 @media (max-width: 1240px) {
   .site-entete .bascule-theme__libelle { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .site-entete .palette-ouvrir kbd { display: none; }
+  .site-entete .palette-ouvrir { min-inline-size: 0; }
 }
 
 /* Le bandeau, sous la barre : une ligne, dans la teinte chaude. */

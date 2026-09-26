@@ -220,7 +220,10 @@ const toutes = dedup(comms.annonces.concat(comms.agenda.filter(a => a.statut !==
 const auService = await page.locator('#zone-communication .kiosque__carte').count();
 t(`le service liste le mot du chef et ses ${toutes} entrées passées`, auService === toutes + 1, `(${auService})`);
 t('la lecture s\'ouvre sur le mot du chef', /trimestre qui se tient/i.test(await page.locator('#zone-communication .kiosque__lecture-titre').innerText()));
-const sommaireService = await page.locator('.sous-nav a').evaluateAll(l => l.map(a => a.textContent.trim() + ':' + a.getAttribute('aria-current')));
+/* Le nom de chaque entrée, sans le compteur qui le suit. */
+const sommaireService = await page.locator('.sous-nav a').evaluateAll(l => l.map(a => (a.firstChild ? a.firstChild.textContent : '').trim() + ':' + a.getAttribute('aria-current')));
+t('le sommaire du service donne le nombre d’éléments de ses sections',
+  await page.evaluate(() => ['communication', 'agenda', 'porteurs'].every((k) => /^\d+$/.test(document.querySelector('[data-compte="' + k + '"]').textContent))));
 t('le sommaire du service : Communication (courant), À venir, Porteurs, Suivi OTQ / OTD',
   sommaireService.join('|') === 'Communication:true|À venir:false|Porteurs:false|Suivi OTQ / OTD:false', `(${sommaireService.join('|')})`);
 // « À venir » : les prochains rendez-vous, du plus proche au plus lointain.

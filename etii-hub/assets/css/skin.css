@@ -158,11 +158,13 @@ a:hover { text-decoration-color: currentColor; }
    ---------------------------------------------------------------------- */
 
 .site-entete {
-  background-color: var(--barre-fond);
+  /* Un papier à peine translucide : ce qui défile dessous se devine, flouté,
+     sans jamais gêner la lecture de la barre. */
+  background-color: color-mix(in srgb, var(--barre-fond) 86%, transparent);
   background-image: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border-bottom: 1px solid var(--barre-bordure);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  border-bottom: 1px solid color-mix(in srgb, var(--barre-bordure) 70%, transparent);
   box-shadow: var(--barre-ombre);
   color: var(--barre-texte);
 }
@@ -176,14 +178,15 @@ a:hover { text-decoration-color: currentColor; }
   gap: var(--e-2);
   color: var(--barre-texte);
   font-family: var(--police-titre);
-  font-size: var(--texte-xl);
+  font-size: 1.375rem;
   font-weight: var(--graisse-moyenne);
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
 }
 
 .site-logo:hover { color: var(--texte-accent); }
 
-/* Le « HUB » : une mention mono, en retrait, séparée par un filet. */
+/* Le « HUB » : des capitales fines et très espacées, séparées par un
+   filet — une signature, pas un second titre. */
 .site-logo span {
   padding: 0 0 0 var(--e-2);
   margin-inline-start: var(--e-1);
@@ -191,64 +194,101 @@ a:hover { text-decoration-color: currentColor; }
   border-radius: 0;
   border-inline-start: 1px solid var(--barre-bordure);
   color: var(--barre-texte-doux);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  font-weight: var(--graisse-normale);
-  letter-spacing: var(--lettrage-etiquette);
+  font-family: var(--police);
+  font-size: 0.625rem;
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: 0.24em;
   text-transform: uppercase;
 }
 
 .site-nav__liste { gap: var(--e-1); }
 
+/* Les liens : à l'encre douce ; le trait marine se déroule depuis le
+   centre au survol, et reste sous le lien courant. */
 .site-nav__liste a {
-  border-radius: var(--rayon-sm) var(--rayon-sm) 0 0;
-  border-bottom: 2px solid transparent;
+  position: relative;
+  border-radius: var(--rayon-md);
+  border-bottom: 0;
   min-height: calc(var(--cible-tactile) - var(--e-1));
   padding-inline: var(--e-3);
   color: var(--barre-texte-doux);
   font-size: var(--texte-sm);
   font-weight: var(--graisse-moyenne);
+  transition: color var(--duree-rapide) var(--courbe), background-color var(--duree-rapide) var(--courbe);
+}
+
+.site-nav__liste a::after {
+  content: "";
+  position: absolute;
+  inset-inline: var(--e-3);
+  bottom: 2px;
+  block-size: 2px;
+  border-radius: 1px;
+  background-color: var(--accent);
+  transform: scaleX(0);
+  transition: transform var(--duree) var(--courbe);
 }
 
 .site-nav__liste a:hover {
   color: var(--barre-texte);
-  background-color: var(--barre-surface);
+  background-color: transparent;
 }
 
-/* Le lien courant : à l'encre, souligné d'un trait marine fin. */
+.site-nav__liste a:hover::after { transform: scaleX(0.6); }
+
 .site-nav__liste a[aria-current="page"] {
   color: var(--barre-texte);
   background-color: transparent;
-  border-bottom-color: var(--accent);
   font-weight: var(--graisse-forte);
 }
 
-.site-nav__liste a[aria-current="page"]:hover { background-color: var(--barre-surface); }
+.site-nav__liste a[aria-current="page"]::after { transform: scaleX(1); }
+.site-nav__liste a[aria-current="page"]:hover { background-color: transparent; }
 
-/* Les deux boutons de la barre : un cadre léger sur le papier. La règle
-   est ancrée sur .site-entete pour passer devant celle de modules.css. */
+/* Les boutons de la barre : des pilules légères, du même dessin que les
+   filtres de la page. Le thème n'est plus qu'une icône ronde (son nom
+   reste lu par les lecteurs d'écran). La règle est ancrée sur
+   .site-entete pour passer devant celle de modules.css. */
 .site-entete .bascule-theme,
 .site-entete .palette-ouvrir {
   min-height: calc(var(--cible-tactile) - var(--e-2));
-  padding-inline: var(--e-3);
-  border-radius: var(--rayon-md);
+  padding-inline: var(--e-4);
+  border-radius: var(--rayon-plein);
   border: 1px solid var(--barre-bordure);
-  background-color: var(--barre-surface);
+  background-color: color-mix(in srgb, var(--fond-eleve) 60%, transparent);
   color: var(--barre-texte-doux);
   font-size: var(--texte-xs);
+  transition: background-color var(--duree-rapide) var(--courbe), border-color var(--duree-rapide) var(--courbe),
+              color var(--duree-rapide) var(--courbe);
 }
+
+.site-entete .bascule-theme {
+  inline-size: calc(var(--cible-tactile) - var(--e-2));
+  min-width: 0;
+  padding-inline: 0;
+  font-size: var(--texte-md);
+}
+
+.site-entete .bascule-theme__libelle {
+  position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+.site-entete .palette-ouvrir { min-inline-size: 14rem; justify-content: flex-start; gap: var(--e-2); }
+.site-entete .palette-ouvrir kbd { margin-inline-start: auto; }
 
 .site-entete .bascule-theme:hover,
 .site-entete .palette-ouvrir:hover {
-  background-color: var(--barre-surface-forte);
+  background-color: var(--fond-eleve);
   border-color: var(--bordure-forte);
   color: var(--barre-texte);
 }
 
 .site-entete .palette-ouvrir kbd {
   border-color: var(--barre-bordure);
+  border-radius: var(--rayon-sm);
   background: none;
   color: var(--barre-texte-doux);
+  font-size: 0.625rem;
 }
 
 .site-entete :focus-visible { outline-color: var(--focus-couleur); }
@@ -406,9 +446,9 @@ kbd {
    d'encre — l'état actif se voit de loin, sans couleur. */
 .facette {
   min-height: calc(var(--cible-tactile) - var(--e-2));
-  padding-inline: var(--e-3);
-  border-radius: var(--rayon-sm);
-  background-color: var(--fond-eleve);
+  padding-inline: var(--e-4);
+  border-radius: var(--rayon-plein);
+  background-color: color-mix(in srgb, var(--fond-eleve) 70%, transparent);
   border: 1px solid var(--bordure);
   color: var(--texte-doux);
   font-size: var(--texte-sm);
@@ -552,20 +592,50 @@ mark, .surlignage {
 .modale__actions,
 .modale__pied   { border-top: 1px solid var(--bordure); background-color: var(--fond-enfonce); }
 
+/* Le pied de page : une bande graphite qui ferme la page — le nom en
+   Newsreader, une phrase, les crédits, la mention des données fictives. */
 .site-pied {
-  border-top: 1px solid var(--bordure);
-  background: none;
-  color: var(--texte-faible);
+  padding-block: var(--e-10);
+  border-top: 0;
+  background-color: var(--entete-fond);
+  color: var(--entete-texte-doux);
   font-size: var(--texte-xs);
 }
 
+.site-pied a {
+  color: var(--entete-texte);
+  text-decoration-color: var(--entete-bordure);
+}
+.site-pied a:hover { text-decoration-color: currentColor; }
+
+.site-pied__marque { display: flex; flex-direction: column; gap: var(--e-1); margin: 0; }
+.site-pied__nom {
+  font-family: var(--police-titre);
+  font-size: 1.625rem;
+  font-weight: var(--graisse-normale);
+  letter-spacing: 0.03em;
+  line-height: 1;
+  color: var(--entete-texte);
+}
+.site-pied__nom span {
+  margin-inline-start: var(--e-1);
+  font-family: var(--police);
+  font-size: 0.625rem;
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--entete-texte-doux);
+  vertical-align: 0.35em;
+}
+
 .site-pied__mention {
-  border-radius: var(--rayon-sm);
-  border-color: var(--bordure);
-  background-color: var(--fond-eleve);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.04em;
+  border-radius: var(--rayon-plein);
+  border-color: var(--entete-bordure);
+  background-color: var(--entete-surface);
+  color: var(--entete-texte-doux);
+  font-family: var(--police);
+  font-size: 0.625rem;
+  letter-spacing: var(--lettrage-capitales);
   text-transform: uppercase;
 }
 
