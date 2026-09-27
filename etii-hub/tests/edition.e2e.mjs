@@ -146,14 +146,24 @@ t('supprimée, elle quitte le bandeau', !/Coupure réseau d’essai/.test(await 
 
 console.log('\n== Les porteurs ==');
 const fichesAvant = await page.locator('.porteurs__fiche').count();
-await o.centrer(page.locator('.porteurs__barre .edition-ajout'));
-await page.locator('.porteurs__barre .edition-ajout').click();
+/* Chaque section a son « Ajouter », qui choisit d'avance son marché : on
+   ajoute depuis Prototype, et l'appareil y arrive. */
+const ajoutPrototype = page.locator('.porteurs__groupe-galerie[data-categorie="prototype"] .porteurs__ajout .edition-ajout');
+t('chaque marché a son bouton « Ajouter », à la fin de sa section',
+  (await page.locator('.porteurs__groupe-galerie .porteurs__ajout .edition-ajout').count()) === 3 && (await ajoutPrototype.count()) === 1);
+await o.centrer(ajoutPrototype);
+await ajoutPrototype.click();
+await o.attendre(300);
+t('« Ajouter » d\'une section choisit d\'avance son marché',
+  (await page.locator('.modale--formulaire .champ').filter({ has: page.locator('.champ__etiquette', { hasText: 'Catégorie' }) }).locator('select').inputValue()) === 'prototype');
 await o.remplir('Code', 'ZXTEST1');
 await o.remplir('Nom complet', 'Appareil d’essai');
 await o.remplir('Présentation', 'Un porteur ajouté par le test.');
 await o.enregistrer();
 const ficheEssai = page.locator('.porteurs__fiche', { hasText: 'ZXTEST1' });
 t('un porteur ajouté rejoint la galerie', (await page.locator('.porteurs__fiche').count()) === fichesAvant + 1 && (await ficheEssai.count()) === 1);
+t('… dans la section du marché d\'où on l\'a ajouté',
+  (await page.locator('.porteurs__groupe-galerie[data-categorie="prototype"] .porteurs__fiche', { hasText: 'ZXTEST1' }).count()) === 1);
 await o.centrer(ficheEssai);
 await ficheEssai.click();
 await o.attendre(500);

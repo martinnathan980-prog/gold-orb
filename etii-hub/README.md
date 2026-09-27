@@ -224,7 +224,8 @@ contradictoire par le service.
 ### Photos des porteurs
 
 Les photos de `assets/img/porteurs/` viennent de Wikimedia Commons, sous
-licence libre (CC BY, CC BY-SA). La condition de réutilisation est de citer
+licence libre (CC BY, CC BY-SA, ou CC0 pour une œuvre versée au domaine
+public). La condition de réutilisation est de citer
 l'auteur et la licence : c'est ce que fait la ligne de crédit sous chaque
 photo, alimentée par le champ `credit` de `flotte.json` (`auteur`, `licence`,
 `fichier`, `page`, `note`). Pour remplacer une photo par une photo interne,

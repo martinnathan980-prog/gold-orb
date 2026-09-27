@@ -20,9 +20,11 @@ Ce dépôt est **public**. Aucun fichier ne doit jamais contenir :
   intranet, PLM, serveurs) → utiliser `#` ou `https://example.invalid/...`
 - d'identifiant Google Drive / Sheets / Docs (`1moBQcC...`, `?id=...`)
 - de nom de programme non public. **Seuls autorisés : la gamme publique
-  d'Airbus Helicopters** (H125, H130, H135, H145, H160, H175, H215, H225,
-  leurs versions M, Tigre, NH90) et ses démonstrateurs publics (Racer,
-  DisruptiveLab, Flightlab). Les fiches « porteurs » ne contiennent que des
+  d'Airbus Helicopters** (H125, H130, H135, H140, H145, H160, H175, H215,
+  H225, leurs versions M, Tigre, NH90, les drones U070 — ex-VSR700 — et
+  U145) et ses démonstrateurs publics (Racer, DisruptiveLab, Flightlab,
+  PioneerLab).
+  Les fiches « porteurs » ne contiennent que des
   informations publiques, sourcées, avec leur niveau de confiance.
 - de jalon, procédure, norme ou référence documentaire interne
 
@@ -171,8 +173,9 @@ explicite) si son JSON manque ou est invalide.
 
 ### 4.1 `index.html` — Tableau de bord
 Trois sections, dans cet ordre : **Communication center** (le kiosque, plus
-l'accès à l'éditeur « Ajouter une communication »), **Porteurs** (la galerie
-des appareils par catégorie, chaque tuile ouvrant sa fiche) et **Suivi
+l'accès à l'éditeur « Ajouter une communication »), **Porteurs** (trois
+sections l'une sous l'autre — Civil, Militaire, Prototype —, toutes visibles,
+chaque tuile ouvrant sa fiche) et **Suivi
 OTQ / OTD**. Les trois pôles ne sont pas des cartes de cette page : ils
 vivent dans la barre de navigation, présente sur toutes les pages. Un
 sommaire collant suit la lecture. Navigation clavier complète.

@@ -72,7 +72,7 @@
     {
       "code": "H125",
       "categorie": "civil",
-      "segment": "Monomoteur léger (segment « intermediate single »)",
+      "segment": "Monomoteur léger",
       "poles": [
         "ETIIE",
         "ETIII"
@@ -375,7 +375,7 @@
     {
       "code": "H130",
       "categorie": "civil",
-      "segment": "Monomoteur léger (« intermediate single »)",
+      "segment": "Monomoteur léger",
       "poles": [
         "ETIIE"
       ],
@@ -964,6 +964,274 @@
         "page": "https://commons.wikimedia.org/wiki/File%3ADRF_Eurocopter_EC135_Christoph_44_D-HDRK_G%C3%B6ttingen_2017_03.jpg",
         "note": ""
       }
+    },
+    {
+      "code": "H140",
+      "poles": [],
+      "photo": "",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "civil",
+      "segment": "Bimoteur léger (classe 3 t)",
+      "silhouette": "patins-fenestron-bi",
+      "fiche": {
+        "nom": "Airbus Helicopters H140",
+        "ancienNom": "",
+        "segment": "Bimoteur léger (classe 3 t)",
+        "statut": "en développement (essais en vol, première livraison prévue en 2028)",
+        "resume": "Le H140 est le nouveau bimoteur léger d'Airbus Helicopters, lancé le 11 mars 2025 au salon Verticon de Dallas : premier modèle entièrement nouveau de la gamme depuis près de dix ans, il a été conçu avec les opérateurs de secours médical héliporté, son premier marché. Il reprend le rotor principal à cinq pales sans palier du H145, un Fenestron optimisé sous une poutre de queue en T, l'avionique Helionix et deux moteurs Safran Arrius 2E ; la première livraison est prévue en 2028.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h140"
+          },
+          "premierVol": {
+            "valeur": "Premier prototype en essais à Donauwörth dès le lancement (mars 2025) ; deuxième le 1er août 2025, troisième fin 2025 ; un quatrième est prévu",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2025-03-airbus-introduces-the-light-twin-engined-h140-to-its-range ; https://verticalmag.com/news/second-airbus-h140-prototype-joins-flight-test-campaign/ ; https://www.airbus.com/en/newsroom/stories/2026-04-the-airbus-h140-to-the-power-of-three"
+          },
+          "certification": {
+            "valeur": "Non certifié à ce jour : 2026 est annoncée comme « l'année des essais », en vue de l'entrée en service de 2028",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/stories/2026-04-the-airbus-h140-to-the-power-of-three"
+          },
+          "miseEnService": {
+            "valeur": "Première livraison prévue en 2028",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h140"
+          },
+          "siteAssemblage": {
+            "valeur": "Essais en vol des prototypes à Donauwörth (Allemagne) ; site de production série non précisé par les sources consultées",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2025-03-airbus-introduces-the-light-twin-engined-h140-to-its-range ; https://verticalmag.com/news/second-airbus-h140-prototype-joins-flight-test-campaign/"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Safran Arrius 2E, régulation FADEC double canal",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h140 ; https://www.airbus.com/en/newsroom/press-releases/2025-03-airbus-introduces-the-light-twin-engined-h140-to-its-range"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h140"
+          },
+          "puissance": {
+            "valeur": "520 kW environ (700 shp) par moteur",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h140 ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H140"
+          },
+          "rotorPrincipal": {
+            "valeur": "Rotor sans palier à cinq pales, repris du H145 (introduit sur celui-ci en 2019) ; diamètre 10,8 m",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2025-03-airbus-introduces-the-light-twin-engined-h140-to-its-range ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H140"
+          },
+          "rotorArriere": {
+            "valeur": "Fenestron optimisé sous une poutre de queue en T, forme déjà essayée sur le démonstrateur Bluecopter",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2025-03-airbus-introduces-the-light-twin-engined-h140-to-its-range ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H140"
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": "3 175 kg",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h140 ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H140"
+          },
+          "masseAVide": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "chargeUtile": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": "1 ou 2 pilotes",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h140"
+          },
+          "passagers": {
+            "valeur": "6 (jusqu'à 7 selon l'aménagement) ; cabine de 1,28 m de hauteur sur toute sa longueur, portes coulissantes et portes arrière en coquille",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h140 ; https://www.airbus.com/en/newsroom/press-releases/2025-03-airbus-introduces-the-light-twin-engined-h140-to-its-range"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "vitesseMax": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rayonAction": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "hauteur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "diametreRotor": {
+            "valeur": "10,8 m",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H140"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "Aucun exemplaire livré : programme en essais en vol, quatre prototypes prévus",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://verticalmag.com/news/second-airbus-h140-prototype-joins-flight-test-campaign/ ; https://www.airbus.com/en/newsroom/stories/2026-04-the-airbus-h140-to-the-power-of-three"
+          },
+          "prixIndicatif": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "Opérateurs de secours médical héliporté européens et américains (clients de lancement)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h140 ; https://verticalmag.com/news/second-airbus-h140-prototype-joins-flight-test-campaign/"
+          },
+          "commandesNotables": {
+            "valeur": "74 engagements pris pendant le salon Verticon 2025 ; plus de 100 engagements fin 2025, dont 61 contrats fermes",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/stories/2026-04-the-airbus-h140-to-the-power-of-three"
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Helionix, avec pilote automatique 4 axes — la suite commune aux H135, H145, H160 et H175",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h140"
+          },
+          "particularites": {
+            "valeur": "Éclairage médical intégré au plafond de la cabine",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H140"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le H140 est le premier hélicoptère entièrement nouveau d'Airbus depuis près de dix ans, et il a été dessiné avec les opérateurs de secours médical qui allaient le piloter.",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h140"
+          },
+          {
+            "texte": "Sa poutre de queue en T, déjà essayée sur le démonstrateur Bluecopter, lui apporte jusqu'à 80 kg de portance supplémentaire selon Airbus.",
+            "source": "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h140 ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H140"
+          },
+          {
+            "texte": "Fin décembre 2025, ses trois premiers prototypes volaient ; le deuxième est ensuite allé chercher le froid en Finlande, jusqu'à −40 °C.",
+            "source": "https://www.airbus.com/en/newsroom/stories/2026-04-the-airbus-h140-to-the-power-of-three"
+          }
+        ],
+        "sources": [
+          "https://en.wikipedia.org/wiki/Airbus_Helicopters_H140",
+          "https://www.airbus.com/en/products-services/helicopters/civil-helicopters/h140",
+          "https://www.airbus.com/en/newsroom/press-releases/2025-03-airbus-introduces-the-light-twin-engined-h140-to-its-range",
+          "https://www.airbus.com/en/newsroom/stories/2026-04-the-airbus-h140-to-the-power-of-three",
+          "https://verticalmag.com/news/second-airbus-h140-prototype-joins-flight-test-campaign/"
+        ],
+        "code": "H140",
+        "categorie": "civil",
+        "relecture": "non effectuée"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": null
     },
     {
       "code": "H145",
@@ -2132,12 +2400,12 @@
         }
       },
       "credit": {
-        "auteur": "Armando Olivo Martín del Campo",
-        "licence": "CC BY-SA 4.0",
-        "fichier": "File:Eurocopter AS332 Super Puma.jpg",
-        "vu": "AS332 Super Puma vert militaire exposé derrière une barrière, vue de face",
-        "page": "https://commons.wikimedia.org/wiki/File%3AEurocopter_AS332_Super_Puma.jpg",
-        "note": "Photo d'un AS332 Super Puma, dont le H215 est l'évolution."
+        "auteur": "Anna Zvereva",
+        "licence": "CC BY-SA 2.0",
+        "fichier": "File:Finnish Border Guard, OH-HVQ, Airbus Helicopters H215 (50417726482).jpg",
+        "vu": "H215 de la garde-frontière finlandaise (immatriculation civile OH-HVQ) en vol, vu de profil, livrée verte et blanche sur ciel gris",
+        "page": "https://commons.wikimedia.org/wiki/File%3AFinnish_Border_Guard%2C_OH-HVQ%2C_Airbus_Helicopters_H215_%2850417726482%29.jpg",
+        "note": ""
       }
     },
     {
@@ -2406,12 +2674,284 @@
         "relecture": "non effectuée"
       },
       "credit": {
-        "auteur": "sparkcyf",
+        "auteur": "marcosbascuas76",
+        "licence": "CC BY-SA 2.0",
+        "fichier": "File:Airbus Helicopters H225 Super Puma Helimer 401 (27388342926).jpg",
+        "vu": "H225 orange du sauvetage en mer espagnol (Salvamento Marítimo, EC-MCR) en vol, trois quarts avant, sur ciel gris",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_Helicopters_H225_Super_Puma_Helimer_401_%2827388342926%29.jpg",
+        "note": ""
+      }
+    },
+    {
+      "code": "H125M",
+      "poles": [],
+      "photo": "assets/img/porteurs/h125m.jpg",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "militaire",
+      "segment": "Monomoteur léger militaire",
+      "silhouette": "patins-monoturbine",
+      "fiche": {
+        "nom": "Airbus Helicopters H125M Fennec",
+        "ancienNom": "Eurocopter AS550 Fennec",
+        "segment": "Monomoteur léger militaire",
+        "statut": "en production",
+        "resume": "Le H125M est la version militaire du monomoteur H125 : un hélicoptère de deux tonnes, discret et économique, pour la formation, le transport tactique, la reconnaissance et l'appui léger. Il succède à l'AS550 Fennec, lui-même dérivé de l'Écureuil, et peut recevoir HForce, le système d'armes modulaire d'Airbus.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters (Eurocopter jusqu'en 2014)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          },
+          "premierVol": {
+            "valeur": "1990 (famille Fennec, dérivée de l’Écureuil)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          },
+          "certification": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": "1990 (famille Fennec)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          },
+          "siteAssemblage": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Safran Arriel 2D, régulation FADEC double canal",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h125m"
+          },
+          "nombreMoteurs": {
+            "valeur": 1,
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h125m"
+          },
+          "puissance": {
+            "valeur": "632 kW (Arriel 2B de l'AS550 C3) ; le H125M actuel reçoit l'Arriel 2D",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec ; https://www.airbus.com/en/products-services/helicopters/military-helicopters/h125m"
+          },
+          "rotorPrincipal": {
+            "valeur": "Diamètre 10,69 m (AS550 C3)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          },
+          "rotorArriere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": "2 250 kg (AS550 C3) ; « deux tonnes » selon Airbus",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec ; https://www.airbus.com/en/products-services/helicopters/military-helicopters/h125m"
+          },
+          "masseAVide": {
+            "valeur": "1 220 kg (AS550 C3)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          },
+          "chargeUtile": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          },
+          "passagers": {
+            "valeur": "4 (AS550 C3)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": "246 km/h (AS550 C3)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          },
+          "vitesseMax": {
+            "valeur": "287 km/h (AS550 C3)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          },
+          "rayonAction": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "autonomie": {
+            "valeur": "648 km de distance franchissable (AS550 C3)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          },
+          "plafond": {
+            "valeur": "5 280 m (AS550 C3)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": "10,93 m de fuselage ; 12,94 m rotors tournants (AS550 C3)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          },
+          "hauteur": {
+            "valeur": "3,34 m (AS550 C3)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          },
+          "diametreRotor": {
+            "valeur": "10,69 m (AS550 C3)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "prixIndicatif": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "Famille Fennec (AS550 et AS555) : France (aviation légère de l'armée de Terre, armée de l'Air et de l'Espace), Argentine, Brésil, Danemark, Indonésie, Malaisie, Pakistan, Thaïlande",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          },
+          "commandesNotables": {
+            "valeur": "Commandes récentes du Qatar et de l'Indonésie ; en 2007, l'Inde avait retenu l'AS550 C3 pour 197 appareils (environ 500 M USD), contrat ensuite annulé",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "particularites": {
+            "valeur": "Signature radar réduite par les matériaux composites, peinture réfléchissant l’infrarouge",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h125m"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Selon Airbus, la plateforme du H125M détient le record du monde d'altitude : un posé au sommet de l'Everest, à 8 848 m.",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h125m"
+          },
+          {
+            "texte": "Le nom Fennec vient du fennec, le petit renard des sables aux grandes oreilles.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          },
+          {
+            "texte": "En 2011, des Fennec de la marine malaisienne ont participé à la reprise d'un navire détourné par des pirates dans le golfe d'Aden.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_Fennec"
+          }
+        ],
+        "sources": [
+          "https://en.wikipedia.org/wiki/Eurocopter_Fennec",
+          "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h125m"
+        ],
+        "code": "H125M",
+        "categorie": "militaire",
+        "relecture": "non effectuée"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": {
+        "auteur": "Armyman1989",
         "licence": "CC BY-SA 4.0",
-        "fichier": "File:Airbus Helicopters EC225 COMC.jpg",
-        "vu": "EC225 rouge et blanc en vol, vu de dessous dans la brume ; la photo porte la signature du photographe en bas à droite",
-        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_Helicopters_EC225_COMC.jpg",
-        "note": "Photo d'un EC225 (ancienne désignation du H225)."
+        "fichier": "File:Airbus AS550 Fennec.jpg",
+        "vu": "AS550 Fennec noir de l'armée thaïlandaise posé sur un tarmac, profil gauche, une nacelle d'arme sur un chariot sous le fuselage",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_AS550_Fennec.jpg",
+        "note": "Photo d'un AS550 Fennec, ancienne désignation du H125M."
       }
     },
     {
@@ -2962,6 +3502,543 @@
       }
     },
     {
+      "code": "H175M",
+      "poles": [],
+      "photo": "assets/img/porteurs/h175m.jpg",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "militaire",
+      "segment": "Bimoteur super-moyen militaire",
+      "silhouette": "roues-bi",
+      "fiche": {
+        "nom": "Airbus Helicopters H175M",
+        "ancienNom": "",
+        "segment": "Bimoteur super-moyen militaire",
+        "statut": "premières commandes (Espagne, décembre 2025)",
+        "resume": "Le H175M est la version militaire du super-moyen H175 : un bimoteur de la classe 8 tonnes pour le transport de troupes, les forces spéciales, la recherche et le sauvetage et l'évacuation sanitaire. Proposé au Royaume-Uni pour le programme New Medium Helicopter, il a trouvé son premier client en Espagne, qui en a commandé six en décembre 2025 pour l'escadre 48 de son armée de l'Air et de l'Espace.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m"
+          },
+          "premierVol": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "certification": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": "À venir : premier client, l'Espagne, commande de décembre 2025",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m"
+          },
+          "siteAssemblage": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Pratt & Whitney Canada PT6C-67E",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m"
+          },
+          "puissance": {
+            "valeur": "1 324 kW (1 776 shp) par moteur",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "rotorPrincipal": {
+            "valeur": "Diamètre 14,8 m (base H175)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "rotorArriere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": "7 800 kg (base H175)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "masseAVide": {
+            "valeur": "4 603 kg (base H175)",
+            "unite": "",
+            "confiance": "faible",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "chargeUtile": {
+            "valeur": "2 700 kg sous élingue",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m"
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": "2 (base H175)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "passagers": {
+            "valeur": "Jusqu'à 15 soldats ; cabine de 12 m³, la plus grande de sa catégorie selon Airbus",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": "300 km/h (base H175)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "vitesseMax": {
+            "valeur": "315 km/h (base H175)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "rayonAction": {
+            "valeur": "555 km environ (près de 300 NM)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m"
+          },
+          "autonomie": {
+            "valeur": "1 111 km de distance franchissable (600 NM) ; endurance maximale de près de 6 h",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m"
+          },
+          "plafond": {
+            "valeur": "6 000 m (base H175)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": "18,06 m rotors tournants (base H175)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "hauteur": {
+            "valeur": "5,34 m (base H175)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          },
+          "diametreRotor": {
+            "valeur": "14,8 m (base H175)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "prixIndicatif": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "Espagne (armée de l'Air et de l'Espace, escadre 48), premier client",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m"
+          },
+          "commandesNotables": {
+            "valeur": "Six H175M commandés par l'Espagne en décembre 2025 ; appareil proposé à la Royal Air Force pour le programme New Medium Helicopter",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Helionix, pilote automatique 4 axes double-duplex",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m"
+          },
+          "particularites": {
+            "valeur": "Intégration en cours d'HForce, le système d'armes modulaire d'Airbus",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "La cabine du H175M, 12 m³, est la plus vaste de sa catégorie selon Airbus : elle accueille jusqu’à 15 soldats équipés.",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m"
+          },
+          {
+            "texte": "Le démonstrateur F-WMXB, tout en noir avec l'Union Jack sur la dérive, a été présenté au Royal International Air Tattoo de 2022 à l'appui de la candidature d'Airbus au programme britannique New Medium Helicopter.",
+            "source": "https://commons.wikimedia.org/wiki/File:Airbus_Helicopters_H175M_%E2%80%98F-WMXB%E2%80%99_(53471303342).jpg ; https://en.wikipedia.org/wiki/Airbus_Helicopters_H175"
+          }
+        ],
+        "sources": [
+          "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h175m",
+          "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175",
+          "https://commons.wikimedia.org/wiki/File:Airbus_Helicopters_H175M_%E2%80%98F-WMXB%E2%80%99_(53471303342).jpg"
+        ],
+        "code": "H175M",
+        "categorie": "militaire",
+        "relecture": "non effectuée"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": {
+        "auteur": "Airwolfhound",
+        "licence": "CC BY-SA 2.0",
+        "fichier": "File:H175M (52272090596).jpg",
+        "vu": "H175M noir en vol sous un ciel nuageux, trois quarts avant gauche, drapeau britannique sur la porte et sur la dérive",
+        "page": "https://commons.wikimedia.org/wiki/File%3AH175M_%2852272090596%29.jpg",
+        "note": ""
+      }
+    },
+    {
+      "code": "H215M",
+      "poles": [],
+      "photo": "assets/img/porteurs/h215m.jpg",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "militaire",
+      "segment": "Bimoteur lourd militaire",
+      "silhouette": "roues-bi-lourd",
+      "fiche": {
+        "nom": "Airbus Helicopters H215M",
+        "ancienNom": "Eurocopter AS532 Cougar",
+        "segment": "Bimoteur lourd militaire",
+        "statut": "en production",
+        "resume": "Le H215M est le nom actuel du Cougar, la version militaire du Super Puma : un bimoteur robuste de la classe 9 tonnes pour le transport de troupes, les missions utilitaires, l'évacuation sanitaire, la recherche et le sauvetage — y compris au combat — et les opérations spéciales. Il reçoit un cockpit moderne compatible avec les jumelles de vision nocturne et un pilote automatique numérique quatre axes.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters (Eurocopter jusqu'en 2014)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "premierVol": {
+            "valeur": "Septembre 1977 (Super Puma AS332, dont le Cougar est la version militaire)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "certification": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": "1978 (famille Super Puma) ; nom Cougar (AS532) pour les versions militaires depuis 1990",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "siteAssemblage": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Safran Makila 1A1",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h215m ; https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h215m"
+          },
+          "puissance": {
+            "valeur": "1 357 kW (1 820 ch) par moteur",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "rotorPrincipal": {
+            "valeur": "Pales composites ; diamètre 15,6 m",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h215m ; https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "rotorArriere": {
+            "valeur": "Rotor arrière classique à pales composites",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h215m"
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": "9 000 kg (AS532 UL/AL)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "masseAVide": {
+            "valeur": "4 350 kg (AS532 UL/AL)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "chargeUtile": {
+            "valeur": "4 500 kg sous élingue selon Airbus ; 4 650 kg de charge utile selon Wikipédia",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h215m ; https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "passagers": {
+            "valeur": "Jusqu'à 20 soldats",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": "239 km/h (AS532 UL/AL)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "vitesseMax": {
+            "valeur": "249 km/h (AS532 UL/AL)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "rayonAction": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "autonomie": {
+            "valeur": "573 km de distance franchissable (AS532 UL/AL)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "plafond": {
+            "valeur": "3 450 m (AS532 UL/AL)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": "15,53 m (AS532 UL/AL)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "hauteur": {
+            "valeur": "4,92 m (AS532 UL/AL)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          "diametreRotor": {
+            "valeur": "15,6 m",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "prixIndicatif": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "Armée de l'Air et de l'Espace (France), Bulgarie, Turquie, Pays-Bas, forces navales roumaines ; clients cités par Airbus : Chili, Ouzbékistan, Bulgarie",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar ; https://www.airbus.com/en/products-services/helicopters/military-helicopters/h215m"
+          },
+          "commandesNotables": {
+            "valeur": "Programme français de modernisation de 26 Cougar lancé en 2012 (288,8 M€)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Cockpit numérique compatible jumelles de vision nocturne ; pilote automatique numérique 4 axes double-duplex",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h215m"
+          },
+          "particularites": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le nom Cougar date de 1990 : toutes les désignations militaires du Super Puma passent alors d'« AS 332 » à « AS 532 », pour distinguer les versions civiles des militaires.",
+            "source": "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          },
+          {
+            "texte": "Sous élingue, le H215M soulève 4,5 tonnes, soit la moitié de sa masse maximale au décollage.",
+            "source": "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h215m ; https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar"
+          }
+        ],
+        "sources": [
+          "https://en.wikipedia.org/wiki/Eurocopter_AS532_Cougar",
+          "https://www.airbus.com/en/products-services/helicopters/military-helicopters/h215m"
+        ],
+        "code": "H215M",
+        "categorie": "militaire",
+        "relecture": "non effectuée"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": {
+        "auteur": "Bene Riobó",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:ET-670 AS-532 UL Cougar UME SCQ.jpg",
+        "vu": "AS532 UL Cougar orange et camouflé de l'unité militaire d'urgence espagnole en vol, profil gauche sur ciel blanc",
+        "page": "https://commons.wikimedia.org/wiki/File%3AET-670_AS-532_UL_Cougar_UME_SCQ.jpg",
+        "note": "Photo d'un AS532 UL Cougar, ancienne désignation du H215M."
+      }
+    },
+    {
       "code": "H225M",
       "categorie": "militaire",
       "segment": "Bimoteur lourd militaire",
@@ -2969,6 +4046,7 @@
         "ETIII"
       ],
       "silhouette": "roues-bi-lourd",
+      "photo": "assets/img/porteurs/h225m.jpg",
       "service": {
         "technique": {
           "motorisation": null,
@@ -3225,7 +4303,14 @@
         "categorie": "militaire",
         "relecture": "non effectuée"
       },
-      "credit": null
+      "credit": {
+        "auteur": "Dylan Agbagni",
+        "licence": "CC0 1.0",
+        "fichier": "File:French Air Force EC725 lift off.jpg",
+        "vu": "EC725 Caracal gris de l'armée de l'Air en vol, trois quarts avant gauche, perche de ravitaillement en vol visible, deux militaires assis à la porte",
+        "page": "https://commons.wikimedia.org/wiki/File%3AFrench_Air_Force_EC725_lift_off.jpg",
+        "note": "Photo d'un EC725 (ancienne désignation du H225M)."
+      }
     },
     {
       "code": "TIGRE",
@@ -3776,13 +4861,287 @@
       }
     },
     {
+      "code": "U070",
+      "poles": [],
+      "photo": "assets/img/porteurs/u070.jpg",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "militaire",
+      "segment": "Drone hélicoptère tactique (classe 700 kg)",
+      "silhouette": "patins-fenestron",
+      "fiche": {
+        "nom": "Airbus U070 (ex-VSR700)",
+        "ancienNom": "VSR700",
+        "segment": "Drone hélicoptère tactique (classe 700 kg)",
+        "statut": "commandé (6 systèmes pour la Marine nationale, janvier 2026 ; mise en œuvre à partir de 2028)",
+        "resume": "Le U070, connu jusqu'ici sous le nom de VSR700, est le drone hélicoptère tactique d'Airbus Helicopters, dérivé de l'hélicoptère léger Cabri G2 d'Hélicoptères Guimbal. Conçu pour opérer depuis les navires, il emporte radar de surveillance maritime et capteurs électro-optiques pendant plus de huit heures. La France en a commandé six systèmes en janvier 2026 pour la Marine nationale, qui les mettra en œuvre à partir de 2028.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters, sur la base du Cabri G2 d'Hélicoptères Guimbal",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700 ; https://www.airbus.com/en/products-services/defence/uas/vsr700"
+          },
+          "premierVol": {
+            "valeur": "8 novembre 2019 (prototype, près d'Aix-en-Provence)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          },
+          "certification": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": "À partir de 2028 (Marine nationale)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2026-01-france-orders-airbus-vsr700-uncrewed-aerial-system"
+          },
+          "siteAssemblage": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Moteur Diesel à faible consommation (Thielert Centurion)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/products-services/defence/uas/vsr700 ; https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          },
+          "nombreMoteurs": {
+            "valeur": 1,
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          },
+          "puissance": {
+            "valeur": "116 kW",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          },
+          "rotorPrincipal": {
+            "valeur": "Diamètre 7,2 m",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          },
+          "rotorArriere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": "700 kg environ",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          },
+          "masseAVide": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "chargeUtile": {
+            "valeur": "100 kg de charge de mission",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": "Aucun à bord (drone, décollage et atterrissage autonomes)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/defence/uas/vsr700"
+          },
+          "passagers": {
+            "valeur": "Aucun (drone de surveillance)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/defence/uas/vsr700"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": "220 km/h",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          },
+          "vitesseMax": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rayonAction": {
+            "valeur": "185 km (100 NM) du navire, avec plus de 8 h sur zone",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          },
+          "autonomie": {
+            "valeur": "Jusqu'à 10 h ; plus de 8 h selon Airbus",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700 ; https://www.airbus.com/en/products-services/defence/uas/vsr700"
+          },
+          "plafond": {
+            "valeur": "6 000 m",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": "6,2 m",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          },
+          "hauteur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "diametreRotor": {
+            "valeur": "7,2 m",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "prixIndicatif": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": "Marine nationale (France), à partir de 2028",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2026-01-france-orders-airbus-vsr700-uncrewed-aerial-system"
+          },
+          "commandesNotables": {
+            "valeur": "Accord-cadre signé par la France le 17 juin 2025 ; commande de six systèmes par la DGA le 16 janvier 2026 (programme SDAM, avec Naval Group)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/defence/uas/vsr700 ; https://www.airbus.com/en/newsroom/press-releases/2026-01-france-orders-airbus-vsr700-uncrewed-aerial-system"
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Commandes de vol autonomes ; radar de surveillance maritime, boule électro-optique ; version anti-sous-marine avec bouées acoustiques",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/products-services/defence/uas/vsr700 ; https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          },
+          "particularites": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le U070 dérive du Cabri G2, un petit hélicoptère léger construit par Hélicoptères Guimbal : une cellule civile éprouvée, devenue drone embarqué.",
+            "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700 ; https://www.airbus.com/en/products-services/defence/uas/vsr700"
+          },
+          {
+            "texte": "Plutôt qu'une turbine, il reçoit un moteur Diesel à faible consommation : c'est lui qui lui donne jusqu'à dix heures d'endurance.",
+            "source": "https://www.airbus.com/en/products-services/defence/uas/vsr700 ; https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700"
+          },
+          {
+            "texte": "Ses essais d’appontage ont été menés en Bretagne, sur le navire Partisan.",
+            "source": "https://www.airbus.com/en/products-services/defence/uas/vsr700"
+          }
+        ],
+        "sources": [
+          "https://www.airbus.com/en/products-services/defence/uas/vsr700",
+          "https://www.airbus.com/en/newsroom/press-releases/2026-01-france-orders-airbus-vsr700-uncrewed-aerial-system",
+          "https://en.wikipedia.org/wiki/Airbus_Helicopters_VSR700",
+          "https://www.airbus.com/en/products-services/helicopters/military-helicopters"
+        ],
+        "code": "U070",
+        "categorie": "militaire",
+        "relecture": "non effectuée"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": {
+        "auteur": "André Gerwing",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:Airbus VSR700 (F-ZWSR) 2024-06-09 Andre Gerwing Collection ID 020885.jpg",
+        "vu": "VSR700 gris (F-ZWSR, l’appareil d’essais) exposé au salon ILA de Berlin 2024, trois quarts avant, patins et boule optronique sous le nez",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_VSR700_%28F-ZWSR%29_2024-06-09_Andre_Gerwing_Collection_ID_020885.jpg",
+        "note": "Photo prise en 2024, sous son premier nom de VSR700."
+      }
+    },
+    {
       "code": "RACER",
       "poles": [],
       "photo": "assets/img/porteurs/racer.jpg",
       "jalon": null,
       "avancement": null,
       "categorie": "prototype",
-      "segment": "Démonstrateur haute vitesse (girodyne composé)",
+      "segment": "Démonstrateur haute vitesse",
       "silhouette": "roues-bi",
       "fiche": {
         "nom": "Airbus Racer",
@@ -4039,11 +5398,11 @@
         }
       },
       "credit": {
-        "auteur": "Marc Lacoste",
-        "licence": "CC BY-SA 4.0",
-        "fichier": "File:Paris Air Show 2017 Airbus racer (cropped).jpg",
-        "vu": "maquette du Racer détourée sur fond blanc, trois quarts avant, ailes et hélices propulsives visibles",
-        "page": "https://commons.wikimedia.org/wiki/File%3AParis_Air_Show_2017_Airbus_racer_%28cropped%29.jpg",
+        "auteur": "Ibex73",
+        "licence": "CC BY 4.0",
+        "fichier": "File:Airbus Racer at Paris Air Show 2025 (2).jpg",
+        "vu": "Racer en vol de démonstration au salon du Bourget 2025, trois quarts avant, sur ciel bleu ; ailes et hélices propulsives bien visibles",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_Racer_at_Paris_Air_Show_2025_%282%29.jpg",
         "note": ""
       }
     },
@@ -4556,6 +5915,558 @@
         }
       },
       "credit": null
+    },
+    {
+      "code": "PIONEERLAB",
+      "poles": [],
+      "photo": "assets/img/porteurs/pioneerlab.jpg",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "prototype",
+      "segment": "Démonstrateur technologique bimoteur",
+      "silhouette": "patins-fenestron-bi",
+      "fiche": {
+        "nom": "Airbus PioneerLab",
+        "ancienNom": "",
+        "segment": "Démonstrateur technologique bimoteur",
+        "statut": "démonstrateur en essais (premier vol hybride-électrique visé en 2027)",
+        "resume": "Le PioneerLab est le laboratoire volant bimoteur d’Airbus Helicopters, tiré d’un H145 et dévoilé en septembre 2023. Basé à Donauwörth, en Allemagne, il éprouve des technologies propres aux bimoteurs : alerte de collision du rotor, décollage et atterrissage automatisés, pièces en matériaux biosourcés et recyclés, retouches aérodynamiques. Il doit recevoir une propulsion hybride-électrique — un dérivé du PW210 de Pratt & Whitney Canada et deux moteurs électriques Collins Aerospace de 250 kW sur une boîte commune — pour un premier vol hybride visé en 2027 et jusqu’à 30 % de carburant en moins qu’un H145 classique.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters (base H145)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "premierVol": {
+            "valeur": "Avant septembre 2023 (campagne d’essais déjà lancée à son dévoilement)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "certification": {
+            "valeur": "sans objet (démonstrateur)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "miseEnService": {
+            "valeur": "sans objet (démonstrateur)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "siteAssemblage": {
+            "valeur": "Donauwörth (Allemagne), site des essais",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Ceux du H145 d’origine ; en préparation, une chaîne hybride : un dérivé du Pratt & Whitney Canada PW210 et deux moteurs électriques Collins Aerospace sur une boîte de transmission commune",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://verticalmag.com/news/pwc-collins-to-collaborate-on-airbus-demonstrators-hybrid-powerplant/"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "puissance": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rotorPrincipal": {
+            "valeur": "Celui du H145 dont il dérive",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "rotorArriere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "masseAVide": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "chargeUtile": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "passagers": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "vitesseMax": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rayonAction": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "hauteur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "diametreRotor": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "1 laboratoire volant",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "prixIndicatif": {
+            "valeur": "sans objet (démonstrateur)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "cadence": {
+            "valeur": "sans objet",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "principauxOperateurs": {
+            "valeur": "Airbus Helicopters (essais)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          "commandesNotables": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": "Chaîne hybride-électrique en préparation : deux moteurs électriques Collins Aerospace de 250 kW, couplés au turbomoteur par une boîte commune ; premier vol hybride visé en 2027",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://verticalmag.com/news/pwc-collins-to-collaborate-on-airbus-demonstrators-hybrid-powerplant/"
+          },
+          "avionique": {
+            "valeur": "Alerte de collision du rotor, décollage et atterrissage automatisés (lidar, caméras, capteurs d’effort dans les patins)",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory ; https://verticalmag.com/news/airbus-helicopters-pioneerlab-testing-fully-autonomous-touchdown-landings/"
+          },
+          "particularites": {
+            "valeur": "Pièces de structure en matériaux biosourcés et recyclés ; améliorations aérodynamiques contre la traînée, essayées en vol à partir de 2026 (environ 10 % du gain visé)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory ; https://aerospaceglobalnews.com/news/pioneerlab-due-to-make-hybrid-electric-flight-in-2027/"
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Objectif affiché : jusqu’à 30 % de carburant en moins qu’un H145 classique, en combinant propulsion hybride et retouches aérodynamiques.",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory ; https://verticalmag.com/news/pwc-collins-to-collaborate-on-airbus-demonstrators-hybrid-powerplant/"
+          },
+          {
+            "texte": "Des patins qui sentent le sol : des capteurs d’effort y mesurent le contact, pour que l’appareil puisse se poser entièrement seul.",
+            "source": "https://verticalmag.com/news/airbus-helicopters-pioneerlab-testing-fully-autonomous-touchdown-landings/"
+          },
+          {
+            "texte": "La première technologie essayée à bord fut une alerte de collision du rotor avec un obstacle.",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          },
+          {
+            "texte": "Il est cofinancé par le ministère fédéral allemand de l’Économie, au titre du programme de recherche aéronautique LuFo.",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory"
+          }
+        ],
+        "sources": [
+          "https://www.airbus.com/en/newsroom/press-releases/2023-09-airbus-unveils-pioneerlab-as-its-new-twin-engine-flying-laboratory",
+          "https://verticalmag.com/news/pwc-collins-to-collaborate-on-airbus-demonstrators-hybrid-powerplant/",
+          "https://verticalmag.com/news/airbus-helicopters-pioneerlab-testing-fully-autonomous-touchdown-landings/",
+          "https://aerospaceglobalnews.com/news/pioneerlab-due-to-make-hybrid-electric-flight-in-2027/"
+        ],
+        "code": "PIONEERLAB",
+        "categorie": "prototype",
+        "relecture": "non effectuée"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": {
+        "auteur": "André Gerwing",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:Airbus H145 Pioneer Lab (c-n 20007, D-HADS) 2026-06-11 Andre Gerwing Collection ID 029658.jpg",
+        "vu": "H145 PioneerLab (D-HADS) exposé au salon ILA de Berlin 2026, vu de profil, livrée blanche à hexagones orange et bleus, Fenestron visible",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_H145_Pioneer_Lab_%28c-n_20007%2C_D-HADS%29_2026-06-11_Andre_Gerwing_Collection_ID_029658.jpg",
+        "note": ""
+      }
+    },
+    {
+      "code": "U145",
+      "poles": [],
+      "photo": "assets/img/porteurs/u145.jpg",
+      "jalon": null,
+      "avancement": null,
+      "categorie": "prototype",
+      "segment": "Drone hélicoptère logistique (classe 3,8 t)",
+      "silhouette": "patins-fenestron-bi",
+      "fiche": {
+        "nom": "Airbus U145",
+        "ancienNom": "",
+        "segment": "Drone hélicoptère logistique (classe 3,8 t)",
+        "statut": "en développement (premier vol, avec pilote de sécurité, prévu fin 2026)",
+        "resume": "Le U145 est la version sans pilote du H145, dévoilée au salon ILA de Berlin en juin 2026 : une plateforme autonome sans cockpit, pensée d'abord pour le fret, avec une porte de nez, une table de chargement repliable et un plancher cargo dédié. Elle reprend la cellule et les deux moteurs Safran Arriel 2E du H145. Premier vol prévu fin 2026, entrée en service au début de la prochaine décennie.",
+        "identite": {
+          "constructeur": {
+            "valeur": "Airbus Helicopters",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-introduces-uncrewed-version-of-the-h145-the-u145"
+          },
+          "premierVol": {
+            "valeur": "Prévu fin 2026, avec un pilote de sécurité à bord",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-introduces-uncrewed-version-of-the-h145-the-u145 ; https://www.airbus.com/en/newsroom/stories/2026-09-are-u-ready-for-the-u145"
+          },
+          "certification": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "miseEnService": {
+            "valeur": "Au début de la prochaine décennie",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-introduces-uncrewed-version-of-the-h145-the-u145"
+          },
+          "siteAssemblage": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "motorisation": {
+          "moteur": {
+            "valeur": "Safran Arriel 2E, régulation FADEC",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/defence/uas/u145 ; https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-introduces-uncrewed-version-of-the-h145-the-u145"
+          },
+          "nombreMoteurs": {
+            "valeur": 2,
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/products-services/defence/uas/u145"
+          },
+          "puissance": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rotorPrincipal": {
+            "valeur": "Celui du H145, dont le U145 reprend la plateforme",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/products-services/defence/uas/u145"
+          },
+          "rotorArriere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "masses": {
+          "masseMaxDecollage": {
+            "valeur": "3 800 kg",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-introduces-uncrewed-version-of-the-h145-the-u145"
+          },
+          "masseAVide": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "chargeUtile": {
+            "valeur": "Supérieure à celle du H145 piloté, selon Airbus (valeur non publiée)",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/stories/2026-09-are-u-ready-for-the-u145"
+          }
+        },
+        "capacite": {
+          "equipage": {
+            "valeur": "Aucun : pas de cockpit",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-introduces-uncrewed-version-of-the-h145-the-u145"
+          },
+          "passagers": {
+            "valeur": "Aucun (fret) ; compartiment accessible par l'avant, les côtés et l'arrière, plancher plat",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/stories/2026-09-are-u-ready-for-the-u145"
+          }
+        },
+        "performances": {
+          "vitesseCroisiere": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "vitesseMax": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "rayonAction": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "autonomie": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "plafond": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "dimensions": {
+          "longueur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "hauteur": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "diametreRotor": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "production": {
+          "unitesProduites": {
+            "valeur": "Aucun : programme en développement",
+            "unite": "",
+            "confiance": "haute",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-introduces-uncrewed-version-of-the-h145-the-u145"
+          },
+          "prixIndicatif": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "cadence": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "principauxOperateurs": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "commandesNotables": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "electrique": {
+          "reseau": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "generation": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          },
+          "avionique": {
+            "valeur": "Suite de capteurs spécialisée et intelligence artificielle pour une autonomie complète ; version américaine développée avec Shield AI, L3Harris et Parry Labs",
+            "unite": "",
+            "confiance": "moyenne",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-introduces-uncrewed-version-of-the-h145-the-u145"
+          },
+          "particularites": {
+            "valeur": null,
+            "unite": "",
+            "confiance": "faible",
+            "source": ""
+          }
+        },
+        "insolites": [
+          {
+            "texte": "Le U145 n'a pas de cockpit du tout : le nez devient une porte de chargement, avec une table repliable.",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-introduces-uncrewed-version-of-the-h145-the-u145"
+          },
+          {
+            "texte": "Airbus veut aussi en faire un « vaisseau-mère » capable d’emporter et de lancer en vol des drones plus petits.",
+            "source": "https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-introduces-uncrewed-version-of-the-h145-the-u145 ; https://www.airbus.com/en/newsroom/stories/2026-09-are-u-ready-for-the-u145"
+          },
+          {
+            "texte": "Sans cockpit ni équipage, il emporte davantage que le H145 piloté dont il dérive, selon Airbus.",
+            "source": "https://www.airbus.com/en/newsroom/stories/2026-09-are-u-ready-for-the-u145"
+          }
+        ],
+        "sources": [
+          "https://www.airbus.com/en/products-services/defence/uas/u145",
+          "https://www.airbus.com/en/newsroom/press-releases/2026-06-airbus-introduces-uncrewed-version-of-the-h145-the-u145",
+          "https://www.airbus.com/en/newsroom/stories/2026-09-are-u-ready-for-the-u145",
+          "https://www.airbus.com/en/products-services/helicopters/military-helicopters"
+        ],
+        "code": "U145",
+        "categorie": "prototype",
+        "relecture": "non effectuée"
+      },
+      "service": {
+        "technique": {
+          "motorisation": null,
+          "masseMaxDecollage": null,
+          "capacite": null,
+          "rayonAction": null,
+          "vitesseCroisiere": null,
+          "longueurHarnais": null,
+          "nbConnecteurs": null
+        },
+        "economique": {
+          "heuresIngenierie": null,
+          "chargePersMois": null,
+          "coutRecurrent": null,
+          "volumeSerie": null,
+          "tauxService": null
+        }
+      },
+      "credit": {
+        "auteur": "André Gerwing",
+        "licence": "CC BY-SA 4.0",
+        "fichier": "File:Airbus U145 Mockup 2026-06-11 Andre Gerwing Collection ID 029577.jpg",
+        "vu": "maquette camouflée du U145 au salon ILA de Berlin 2026, côté gauche, porte de nez relevée au-dessus d’une table de chargement portant des caisses",
+        "page": "https://commons.wikimedia.org/wiki/File%3AAirbus_U145_Mockup_2026-06-11_Andre_Gerwing_Collection_ID_029577.jpg",
+        "note": "Photo d'une maquette : le premier vol est prévu fin 2026."
+      }
     }
   ]
 }
