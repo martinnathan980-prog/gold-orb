@@ -81,8 +81,9 @@ FEUILLE_DONNEES: 'Données',
 
 1. Dans GATES, exporter la liste de chaque contrat — en Excel de préférence :
    les cellules fusionnées de la ligne des groupes voyagent avec, et c'est
-   par le groupe « Réalisation FWD » que la bonne colonne « Avancement » se
-   reconnaît (§ 7).
+   par le groupe « HDK AA 011 » que la bonne colonne « Avancement Définition
+   Electrique » se reconnaît parmi les treize blocs qui portent le même
+   intitulé (§ 7).
 2. Ouvrir l'onglet du contrat, `Ctrl+A`, `Suppr`, puis coller l'export
    en **A1**. Même chose pour chaque contrat.
 3. **Suivi FWD → Archiver le relevé de cette semaine.** Une boîte confirme :
@@ -119,6 +120,23 @@ s'accumule, un relevé par semaine, **par contrat**, dans un onglet masqué
 - Mauvais export collé par erreur ? **Suivi FWD → Supprimer le relevé de cette
   semaine** retire la semaine courante de tous les contrats et récapitule ce
   qui a été retiré ; recoller le bon, ré-archiver.
+
+**Coller, archiver : ce qui écrase quoi.** Coller un export dans l'onglet du
+contrat **remplace l'export de la semaine d'avant** — l'onglet ne garde que
+l'état du jour, c'est voulu. Ce qui est gardé, c'est l'**archive** : chaque
+semaine archivée est une ligne à elle dans l'onglet d'historique, que rien
+n'écrase — sauf un second archivage **dans la même semaine**, qui remplace
+celui de la semaine. D'où le seul piège : recoller un nouvel export **avant**
+d'avoir archivé le précédent fait perdre la semaine du précédent. Coller puis
+archiver dans la foulée (ou laisser l'archivage du vendredi le faire) suffit.
+
+Entre le collage et l'archivage, la page ne perd rien : si l'export du jour a
+changé depuis le dernier relevé archivé, d'une semaine d'avant, il compte
+pour **la semaine où l'on est** — un point de plus sur la courbe, marqué
+« aujourd'hui », et le pied le dit : « l'extract du jour, pas encore archivé,
+compte pour S39 · sept. 2026 ». Un export qui n'a pas bougé reste le dernier
+relevé : on ne sait rien de la semaine en cours, la courbe n'y invente pas
+de palier.
 
 Un classeur d'avant les contrats, qui porte encore l'ancien onglet
 **`Historique_FWD`** tout court, continue de s'en servir tant qu'il n'a qu'un
@@ -174,9 +192,26 @@ dans `Réalisation FWD > Avancement`, qui reste une colonne du tableau comme
 les autres. C'est `CONFIG.COLONNE_FWD` qui le dit, groupe compris : les
 treize blocs HDK AA portent tous les mêmes intitulés, et c'est le groupe
 fusionné au-dessus qui départage — le script lit les **vraies fusions** de
-la feuille. Un extract sans bloc `HDK AA 011` retombe sur la détection
-(`Réalisation FWD > Avancement`), et le **Diagnostic** le dit en toutes
-lettres : « ⚠ La colonne demandée … est introuvable ».
+la feuille.
+
+**Cette colonne-là, ou aucune** (débrief 15 : « il ne faut pas qu'on se
+trompe de la source »). Un extract où `HDK AA 011 > Avancement Définition
+Electrique` est introuvable — un groupe renommé, un bloc absent — n'est
+**jamais** lu dans une autre colonne à sa place : la page s'ouvre avec, en
+haut, « Colonne « HDK AA 011 > Avancement Définition Electrique »
+introuvable dans l'onglet « … » », aucun plan n'y est dit terminé, et
+**l'archivage refuse** — une semaine où tout serait « non renseigné »
+fausserait l'historique pour de bon. Le **Diagnostic** donne alors les
+colonnes de même intitulé avec leur groupe (« Colonnes intitulées
+« Avancement Définition Electrique », par groupe : « HDK AA », « HDK AA
+009 »… ») : on voit d'un coup d'œil si c'est le groupe qui a changé de nom.
+Il en va de même pour le concept harnais (`CONFIG.COLONNE_CONCEPT`).
+
+**En bas de page**, la page nomme la colonne qu'elle lit : « Colonne suivie :
+HDK AA 011 › Avancement Définition Electrique » (ou « … › Avancement Concept
+Harnais »), et chaque bouton de l'interrupteur la redit au survol. Vider
+`COLONNE_FWD` rend la main à la détection automatique (`Réalisation FWD >
+Avancement`) : c'est un choix à faire exprès, jamais un repli silencieux.
 
 ### Définition électrique ou concept harnais
 
@@ -195,7 +230,7 @@ définition électrique. Changer d'avancement retire les filtres posés — un
 regroupement. Le graphique revient sur **Échéances** : l'autre avancement a
 ses propres échéances (les diffusions TO tombent en février), qu'un zoom
 choisi pour le premier pouvait cacher. Sous les deux avancements, la page a
-**les mêmes fonctions** — reculs, rythme récent, plans à l'arrêt, vie d'un
+**les mêmes fonctions** — reculs, rythme tenu, plans à l'arrêt, vie d'un
 plan, vue d'ensemble ; seule la comparaison avec SEE n'existe que pour la
 définition électrique.
 
@@ -263,8 +298,10 @@ le troisième clic revient à l'ordre par nom.
 
 Chaque ligne porte un **chevron**, comme les semaines du journal : vers la
 droite repliée, vers le bas dépliée. Sous le nombre de plans d'un groupe,
-en ambre, ceux qui sont **à l'arrêt** (voir § 13 sexies) ; sous la fin
-estimée et le rythme, ceux du **rythme récent**.
+en ambre, ceux qui sont **à l'arrêt** (voir § 13 sexies) — et dès qu'un
+groupe en compte, une ligne en tête du bloc dit ce que c'est : « à l'arrêt =
+en cours, sans changement depuis 6 semaines ou plus. Ouvrez le groupe pour
+les voir, cerclés de cette couleur. »
 
 **Choisir une ligne déplie toutes ses références**, sans coupure, **une
 sous-liste par valeur** de la colonne suivie — dans l'ordre de la barre du
@@ -287,7 +324,8 @@ intitulé. Liste vidée, la détection automatique reprend la main.
 Les autres réglages du même bloc :
 
 ```js
-COLONNE_FWD: 'Réalisation FWD > Avancement',
+COLONNE_FWD: 'HDK AA 011 > Avancement Définition Electrique',
+COLONNE_CONCEPT: 'HDK AA 011 > Avancement Concept Harnais',
 COLONNE_DOMAINE: 'Domaine',
 COLONNES_ESSENTIELLES: ['Nom Installation', 'ECP', 'ATA', 'Séquence',
                         'Validation Définition Electrique', 'Date création',
@@ -297,7 +335,7 @@ COLONNES_ESSENTIELLES: ['Nom Installation', 'ECP', 'ATA', 'Séquence',
 ### Revenir en arrière
 
 Dès qu'un filtre est posé — un périmètre, un état, un groupe, une référence,
-une recherche, un filtre de colonne, un lot du comparatif ou du rapprochement —
+une recherche, un filtre de colonne, un lot du rapprochement, les plans à l'arrêt —
 un **bandeau collé en haut de la page** nomme chacun d'eux et donne sa croix,
 avec un **Tout effacer**. Où qu'on ait cliqué, la sortie est à portée.
 
@@ -371,8 +409,8 @@ qu'il gouverne (à la ligne, à gauche, sur un petit écran) : **« Tout »**, p
 une puce par valeur de la colonne de domaine, chacune avec son compte de
 plans. Il est masqué quand l'export n'a pas de colonne de domaine.
 
-Le périmètre pilote **toute la page** : la barre et les états, la phrase, le
-comparatif « depuis le relevé précédent », la courbe et sa bulle, le journal, le bloc par
+Le périmètre pilote **toute la page** : la barre et les états, la phrase, la
+courbe et sa bulle, le journal, le bloc par
 groupe, le rapprochement, le tableau et son « sur N ». Choisir PERSO, c'est
 regarder une page qui ne parle que des plans PERSO.
 
@@ -387,6 +425,18 @@ La limite : un relevé archivé **sans carte plan par plan** ne peut pas être
 dérivé. Il est écarté sous un périmètre et la note sous le graphique le dit
 (« n relevés sans détail plan par plan, hors périmètre »). Sous « Tout », rien
 ne change : ce sont les comptes archivés.
+
+Sous « Tout », la courbe d'un **groupe** du bloc prend les comptes archivés
+par le classeur pour ce découpage ; le classeur n'archive pas le découpage
+**par mois de création**, que la page ajoute d'elle-même : ses comptes se
+refont alors sur la carte plan par plan de chaque relevé (débrief 15 — avant,
+la courbe d'un mois partait de zéro et son rythme était faux).
+
+Le périmètre d'un jalon (`perimetre: 'BASE/OPTION'` dans `CONFIG.JALONS`) se
+reconnaît dans la colonne de domaine **sans tenir compte de la casse, des
+accents ni des espaces** : « Base / Option » dans l'extract est bien le
+BASE/OPTION du jalon. Une valeur vraiment différente, le Diagnostic la
+signale (« périmètre … inconnu de la colonne »).
 
 Le bandeau des filtres actifs nomme le périmètre en premier ; sa croix,
 « Tout effacer » ou le bouton **Tout** y reviennent. Il n'est pas mémorisé : la
@@ -422,11 +472,6 @@ réémis sous un autre indice n'est plus « un disparu plus un nouveau », c'est
 un **changement d'indice**. Une référence qui change de solution reste ce
 qu'elle est : un plan disparu et un nouveau plan.
 
-- **Dans le comparatif** « depuis le relevé précédent », un lot *changements d'indice*
-  (pastille violette), cliquable comme les autres, filtre le tableau sur les
-  nouvelles références ; son survol montre « ancienne → nouvelle ». Un plan
-  réémis compte une fois, sous ce lot, même s'il change aussi d'état : la
-  bulle et le journal montrent l'état avant et après.
 - **Dans le journal**, la ligne se lit « ancienne → nouvelle », avec l'état
   avant et après ; chaque semaine compte ses changements d'indice, et le
   filtre du journal les propose.
@@ -454,17 +499,16 @@ ne dit que **quel plan est passé** : sa référence et son passage (« En cours
   « passés à « Validé » », « … « En cours » », reculs, changements d'indice,
   nouveaux, disparus —, nommée une fois dans un en-tête qui reste collé en
   haut, **de la plus fréquente à la plus rare**, de gauche à droite : une
-  sorte qui n'apparaît qu'une semaine ne coupe plus le tableau en deux. Le
-  comparatif du haut et la bulle du graphique suivent le même ordre. Chaque case porte la pastille et le
+  sorte qui n'apparaît qu'une semaine ne coupe plus le tableau en deux. La
+  bulle du graphique suit le même ordre. Chaque case porte la pastille et le
   nombre ; une semaine qui n'a pas cette sorte de passage laisse sa case
   vide. Les pastilles d'une même sorte tombent donc l'une sous l'autre, de
   semaine en semaine, au pixel près.
 - La semaine la plus récente est en haut ; les semaines se déplient d'un
   clic.
 - **Les reculs**, en rouge : un plan qui perd son « terminé », ou qui repasse
-  d'« en cours » à « à faire ». Ils ont leur colonne, leur filtre, leur puce
-  dans le comparatif du haut (« 1 recul », dont la bulle dit lequel :
-  « référence : Terminé → En cours ») ; ils ne se comptent plus parmi les
+  d'« en cours » à « à faire ». Ils ont leur colonne (« 1 recul », le nombre
+  en rouge), leur filtre ; ils ne se comptent plus parmi les
   « passés à … ». Dans une semaine dépliée, ils ouvrent la liste, référence
   en rouge. Un plan réémis sous un autre indice n'est pas un recul (il se
   range sous « changement d'indice »), ni une case vidée (« en cours » →
@@ -480,15 +524,16 @@ ne dit que **quel plan est passé** : sa référence et son passage (« En cours
   « Relevé de S38 · sept. 2026 », terminés sur total, le gain net sur le
   relevé précédent, puis **les lignes mêmes du journal** — « 20 passés à
   « Validé » », « 3 passés à « Non renseigné » », changements d'indice,
-  nouveaux, disparus. Le comparatif du haut dit la dernière semaine avec ces
-  mêmes lignes. La bulle ne liste pas de références : le journal, dessous,
-  donne le détail.
+  nouveaux, disparus. La bulle ne liste pas de références : le journal,
+  dessous, donne le détail. (Débrief 15 : la bande « Depuis le relevé
+  précédent », sous la barre, est retirée — la courbe et le journal disent
+  déjà ce qui a changé.)
 
 Le journal se remplit au **deuxième** relevé : il faut deux relevés pour
 savoir ce qui a changé entre les deux.
 
 Le **changement d'indice** a sa couleur, un violet — ni un état ni une
-alerte —, sur sa pastille (journal, filtre du journal, puce du comparatif) et
+alerte —, sur sa pastille (journal, filtre du journal) et
 sur la nouvelle référence de la ligne ; la même couleur dit « autre indice »
 dans la comparaison des bases.
 
@@ -856,10 +901,12 @@ chiffres d'une seule fonction, avec une seule formule.
 semaines restantes = semaine du jalon − semaine en cours
 rythme requis      = plans à terminer ÷ semaines restantes (au moins une)
 rythme tenu        = terminés gagnés du premier au dernier relevé ÷ semaines écoulées
-rythme récent      = terminés gagnés depuis le relevé d'il y a 4 semaines ÷ semaines entre les deux
 fin estimée        = semaine en cours + arrondi supérieur(à terminer ÷ rythme tenu)
 manque             = à terminer − rythme tenu × semaines restantes (au plan supérieur)
 ```
+
+Un seul rythme : le **rythme tenu** (débrief 15 — un second rythme, sur les
+quatre dernières semaines, faisait « trop de rythme »).
 
 Tout se compte **à partir de la semaine en cours**, comme les jours : si le
 relevé de la semaine n'est pas encore archivé, le temps qui reste ne
@@ -874,32 +921,25 @@ l'année de son jeudi, qui fixe l'année ISO), ou « S38 » seul là où le mois
 lit déjà (axe du graphique, date complète de la fiche, boîte d'archivage).
 L'étiquette technique 2026-S38 ne s'affiche plus que dans le Diagnostic.
 
-Un seul mot pour une photo archivée de l'extract : **relevé**. « Depuis le
-relevé précédent (S37 · sept. 2026) », « 13 relevés, de S26 · juin 2026 à S38
-· sept. 2026 », « Dernier relevé : S38 · sept. 2026 ». Une même semaine du
-journal se dit avec les **mêmes lignes** dans le comparatif du haut, dans le
-journal et dans la bulle du graphique — « 20 passés à « Validé » », « 3
+Un seul mot pour une photo archivée de l'extract : **relevé**. « 13 relevés,
+de S26 · juin 2026 à S38 · sept. 2026 », « Dernier relevé : S38 · sept.
+2026 ». Une même semaine se dit avec les **mêmes lignes** dans le journal et
+dans la bulle du graphique — « 20 passés à « Validé » », « 3
 passés à « Non renseigné » » —, dans le même ordre ; « Non renseigné » compte
 partout la même chose (cellule vide, tiret ou EMPTY), sous la barre comme
 au-dessus du tableau.
 
-## 13 sexies. Ce qu'il faut surveiller (débrief 14)
+## 13 sexies. Ce qu'il faut surveiller (débriefs 14 et 15)
 
-- **Le rythme récent** : à côté du rythme tenu (premier → dernier relevé),
-  celui des **4 dernières semaines** — depuis le relevé le plus récent qui a
-  au moins quatre semaines. Il s'écrit dans la légende du graphique, avec sa
-  propre projection en pointillés fins (« sur les 4 dernières semaines
-  (19,5/sem.) → fin S6 · févr. 2027 »), dans la fiche d'échéance (les deux
-  rythmes, puis le verdict au rythme récent, en retrait sous celui du rythme
-  tenu), et dans le bloc par groupe (« tenu 2,0 · récent 2,3/sem. », et sous
-  la fin estimée, « récent S4 · janv. 2027 »). Les verdicts — échéance tenue,
-  manque, rouge — restent au rythme tenu. Tant que l'historique ne dépasse
-  pas quatre semaines, seul le rythme tenu s'écrit.
 - **Les plans à l'arrêt** : un plan **en cours** dont la valeur n'a pas changé
-  depuis **6 semaines ou plus**, relevé après relevé. En haut, sous le
-  comparatif : « À surveiller : 16 plans en cours n'ont pas bougé depuis 6
-  semaines ou plus » — un clic les montre dans le tableau. Dans le bloc par
-  groupe, sous le nombre de plans : « 3 à l'arrêt » ; dans la liste dépliée
+  depuis **6 semaines ou plus**, relevé après relevé. Seuls les « en cours »
+  comptent — ni les terminés, ni les à faire, ni les non renseignés. Au
+  début, rien n'est à l'arrêt : il faut six semaines de relevés pour qu'un
+  plan puisse l'être. En haut, sous les états : « À surveiller : 16 plans en
+  cours n'ont pas bougé depuis 6 semaines ou plus » — un clic les montre dans
+  le tableau. Dans le bloc par groupe, sous le nombre de plans : « 3 à
+  l'arrêt », et une ligne en tête du bloc le définit (« à l'arrêt = en
+  cours, sans changement depuis 6 semaines ou plus ») ; dans la liste dépliée
   d'un groupe, ces plans sont cerclés d'ambre, et leur bulle dit depuis quand.
 - **La vie d'un plan** : dès que le tableau n'en montre qu'un — un clic sur
   une référence, dans le tableau (la référence se clique), le journal, un
@@ -914,8 +954,8 @@ au-dessus du tableau.
   les filtres trouvent les deux écritures.
 - **La vue d'ensemble des contrats** : le lien « Vue d'ensemble », à gauche
   du sélecteur de contrat, ouvre sous le bandeau une ligne par contrat — ses
-  terminés, son gain et ses reculs depuis le relevé précédent, son rythme tenu
-  et récent, ses plans à l'arrêt, sa prochaine échéance et le verdict. Les
+  terminés, son gain et ses reculs depuis le relevé précédent, son rythme
+  tenu, ses plans à l'arrêt, sa prochaine échéance et le verdict. Les
   chiffres sont ceux que la page de ce contrat affiche : chaque contrat est
   chargé tour à tour et lu par les mêmes fonctions, sur tout le contrat, puis
   la page revient exactement où en était le lecteur. Dans le classeur, les

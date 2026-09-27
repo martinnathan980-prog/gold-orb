@@ -229,10 +229,36 @@ function serveurSur(valeurs, proprietes, fichiers) {
 
   const forceInconnu = serveurGates(20, { COLONNE_FWD: 'Colonne qui n\'existe pas' });
   const mInconnu = forceInconnu.contexte.construireModele();
-  verifier('un forçage qui ne tombe sur rien retombe sur la détection — et le modèle le sait',
-    mInconnu.colonnes.find(c => c.cle === 'avancement').titre === 'Avancement' && mInconnu.fwdDemandeeAbsente === true);
-  verifier('le diagnostic le dit : la colonne demandée est introuvable, la page suit celle trouvée d’elle-même',
-    /⚠ La colonne demandée \(CONFIG\.COLONNE_FWD « Colonne qui n'existe pas »\) est introuvable/.test(forceInconnu.contexte.diagnostic()));
+  /* Débrief 15 : « il ne faut pas qu'on se trompe de la source ». Une colonne
+     nommée et introuvable n'est remplacée par aucune autre. */
+  verifier('un forçage qui ne tombe sur rien ne se rabat sur aucune autre colonne — et le modèle le dit',
+    !mInconnu.colonnes.some(c => c.cle === 'avancement') && mInconnu.fwdDemandeeAbsente === true &&
+    mInconnu.plans.every(p => p.avancement === '') && /Colonne « Colonne qui n'existe pas » introuvable/.test(mInconnu.avertissement),
+    mInconnu.avertissement);
+  const paquetInconnu = forceInconnu.contexte.getDonneesPourClient();
+  verifier('la page reçoit le message, en haut',
+    paquetInconnu.ok === true && /introuvable/.test(paquetInconnu.message) && /archivage est refusé/.test(paquetInconnu.message), paquetInconnu.message);
+  const diagInconnu = forceInconnu.contexte.diagnostic();
+  verifier('le diagnostic le dit, et nomme les colonnes de même intitulé avec leur groupe',
+    /✗ Colonne « Colonne qui n'existe pas » introuvable/.test(diagInconnu) && /Aucune colonne intitulée « colonne qui n'existe pas »/.test(diagInconnu),
+    diagInconnu.split('\n').filter(l => /introuvable|intitulée/.test(l)).join(' / '));
+  let refusInconnu = '';
+  try { forceInconnu.contexte.enregistrerInstantaneHebdo(); } catch (e) { refusInconnu = String(e.message || e); }
+  verifier('l’archivage refuse : pas de semaine « non renseignée » dans l’historique',
+    /introuvable/.test(refusInconnu) && forceInconnu.contexte.getHistorique(forceInconnu.classeur).length === 0, refusInconnu);
+  /* Le groupe a changé de nom dans l'export : le diagnostic montre où se trouve la colonne. */
+  const groupeRenomme = serveurGates(20, { COLONNE_FWD: 'HDK AA 11 > Avancement Définition Electrique' });
+  const diagRenomme = groupeRenomme.contexte.diagnostic();
+  verifier('un groupe mal nommé : le diagnostic liste les groupes où l’intitulé existe, dont « HDK AA 011 »',
+    /Colonnes intitulées « Avancement Définition Electrique », par groupe : .*« HDK AA 011 »/.test(diagRenomme),
+    diagRenomme.split('\n').filter(l => /intitulées/.test(l)).join(' / ').slice(0, 300));
+  const conceptAbsent = serveurGates(20, { COLONNE_CONCEPT: 'HDK AA 011 > Colonne absente' });
+  const paquetSansConcept = conceptAbsent.contexte.getDonneesPourClient();
+  let refusConcept = '';
+  try { conceptAbsent.contexte.enregistrerInstantaneHebdo(); } catch (e) { refusConcept = String(e.message || e); }
+  verifier('un concept harnais demandé et introuvable : la page le dit, pas d’interrupteur, pas d’archivage',
+    paquetSansConcept.cleConcept === null && /Colonne absente/.test(paquetSansConcept.message) && /introuvable/.test(refusConcept),
+    JSON.stringify([paquetSansConcept.message, refusConcept]));
 
   // L'archivage doit tenir sur 137 colonnes et treize blocs répétés.
   gates.contexte.enregistrerInstantaneHebdo();
@@ -1360,6 +1386,38 @@ function serveurSur(valeurs, proprietes, fichiers) {
     ordre: [...document.querySelectorAll('tr.titres th')].map(t => t.textContent.trim())
   }));
   verifier('les 186 plans sont là malgré les 138 colonnes', vg.lignes === 186, String(vg.lignes));
+  /* Débrief 15 : « il ne faut pas qu'on se trompe de la source ». Le vrai
+     Code.gs, sur la vraie structure d'export : la page nomme la colonne lue. */
+  const colonneLue = await pg.evaluate(() => ({
+    pied: document.getElementById('colonne-suivie').textContent,
+    alerte: document.getElementById('alerte-source').hidden
+  }));
+  verifier('sur la vraie structure d’export, la page dit lire « HDK AA 011 › Avancement Définition Electrique », sans alerte',
+    colonneLue.pied === 'Colonne suivie : HDK AA 011 \u203a Avancement Définition Electrique' && colonneLue.alerte, JSON.stringify(colonneLue));
+  await pg.click('#choix-indicateur button[data-indicateur="concept"]'); await pg.waitForTimeout(600);
+  const colonneConcept = await pg.evaluate(() => document.getElementById('colonne-suivie').textContent);
+  await pg.click('#choix-indicateur button[data-indicateur="def"]'); await pg.waitForTimeout(600);
+  verifier('et « HDK AA 011 › Avancement Concept Harnais » sous le concept harnais',
+    colonneConcept === 'Colonne suivie : HDK AA 011 \u203a Avancement Concept Harnais', colonneConcept);
+  /* Et si la colonne manque (un groupe renommé dans l'export) : la page le
+     dit en haut, ne lit aucune autre colonne à la place, et le pied le redit. */
+  construire({ gates: true, lignes: 40, historique: false, config: { COLONNE_FWD: 'HDK AA 11 > Avancement Définition Electrique' },
+               sortie: 'apercu-colonne-absente.html' });
+  const pAbs = await ctxGates.newPage();
+  pAbs.on('pageerror', e => erreursJS.push('colonne absente : ' + e.message));
+  await pAbs.goto('file://' + path.join(__dirname, '..', 'apercu-colonne-absente.html'));
+  await pAbs.waitForTimeout(1500);
+  const abs = await pAbs.evaluate(() => ({
+    alerte: document.getElementById('alerte-source').hidden ? '' : document.getElementById('alerte-source').textContent,
+    pied: document.getElementById('colonne-suivie').textContent,
+    termines: [...document.querySelectorAll('#etats .etat-btn')].filter(b => /termin|valid/i.test(b.textContent)).length,
+    phrase: document.getElementById('phrase').textContent.replace(/\s+/g, ' ')
+  }));
+  verifier('colonne introuvable : l’alerte la nomme en haut de la page, aucun plan n’est dit terminé, le pied dit « introuvable »',
+    /Colonne « HDK AA 11 > Avancement Définition Electrique » introuvable/.test(abs.alerte) && abs.termines === 0 &&
+    /^0 sur 40 plans/.test(abs.phrase) && /introuvable/.test(abs.pied), JSON.stringify(abs));
+  await pAbs.close();
+  fs.unlinkSync(path.join(__dirname, '..', 'apercu-colonne-absente.html'));
   verifier('les quatre états totalisent 186', vg.etats.reduce((a, b) => a + b, 0) === 186, JSON.stringify(vg.etats));
   /* La consigne est explicite : le tableau du bas EST l'extract. Toutes les
      colonnes, les mêmes intitulés, l'ordre de la feuille — c'est ce qui fait
@@ -1566,13 +1624,12 @@ function serveurSur(valeurs, proprietes, fichiers) {
     J.forEach(s => s.evenements.forEach(e => { types[e.type]++; }));
     return {
       types,
-      puce: !!document.querySelector('.puce-delta[data-delta="indice"]'),
       compte: !!document.querySelector('.compte-passage[data-passage="indice"]'),
       racines: window.__analyserUD('UD-24-1037')
     };
   });
   verifier('des références hors format ne sont jamais appariées : aucun changement d’indice',
-    appariement.types.indice === 0 && !appariement.puce && !appariement.compte, JSON.stringify(appariement.types));
+    appariement.types.indice === 0 && !appariement.compte, JSON.stringify(appariement.types));
   verifier('les deux plans apparus dans l’historique restent des nouveaux',
     appariement.types.nouveau === 2 && appariement.types.disparu === 0 && appariement.types.change > 0,
     JSON.stringify(appariement.types));
@@ -2109,6 +2166,9 @@ function serveurSur(valeurs, proprietes, fichiers) {
     etats: [...document.querySelectorAll('#etats .etat-n')].reduce((s, e) => s + (+e.textContent.replace(/\s/g, '')), 0),
     totauxGroupes: [...document.querySelectorAll('.critique-total')].reduce((s, t) => s + (+t.textContent), 0),
     releves: window.__serieAffichee().pts.length,
+    /* L'extract recollé après le dernier relevé archivé (débrief 15) : un
+       point de plus, à la semaine où l'on est, que le pied annonce. */
+    extrait: /pas encore archivé/.test(document.getElementById('import').textContent),
     phrase: document.getElementById('phrase').textContent,
     appels: window.__appelsClasseur.slice()
   }));
@@ -2130,8 +2190,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   /* Le classeur a bougé depuis l'assemblage de la page (suppressions plus
      haut) : le pont sert son état du moment, pas celui de l'ouverture. */
   verifier('le graphique trace l\'historique de X2, tel qu\'il est dans le classeur à cet instant',
-    x2M.releves === cM.getHistorique(clM, 'X2').length && x2M.releves >= 2,
-    x2M.releves + ' vs ' + cM.getHistorique(clM, 'X2').length);
+    x2M.releves === cM.getHistorique(clM, 'X2').length + (x2M.extrait ? 1 : 0) && x2M.releves >= 2,
+    x2M.releves + ' vs ' + cM.getHistorique(clM, 'X2').length + (x2M.extrait ? ' + l’extract du jour' : ''));
   verifier('le sélecteur est rendu à la main, sans message', !x2M.disabled && x2M.etat === '', x2M.etat);
 
   /* Un contrat introuvable — ajouté au sélecteur pour la démonstration : le
@@ -2154,7 +2214,7 @@ function serveurSur(valeurs, proprietes, fichiers) {
   const retourM = await etatPage();
   verifier('revenir à X1 rend ses 186 plans et son historique',
     retourM.plans === 186 && retourM.etats === 186 && retourM.nom === 'X1' &&
-    retourM.releves === cM.getHistorique(clM, 'X1').length && retourM.etat === '',
+    retourM.releves === cM.getHistorique(clM, 'X1').length + (retourM.extrait ? 1 : 0) && retourM.etat === '',
     JSON.stringify([retourM.plans, retourM.nom, retourM.releves]));
   /* La vue d'ensemble (débrief 14) : une ligne par contrat, avec les
      chiffres de sa propre page. X1 est affiché ; X2 vient du classeur par

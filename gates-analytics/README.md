@@ -48,17 +48,19 @@ ferait perdre au découpage suivant. Tout passe par le prototype (et par
   classeur en a plusieurs ; le titre, seul ; puis, à droite de la phrase
   d'avancement, le **périmètre** (Tout, puis une puce par domaine —
   `BASE/OPTION`, `PERSO`…) qui pilote toute la page.
-- **L'avancement du jour** : barre, quatre états, et le comparatif « depuis
-  l'import » — passés en terminé, en cours, repassés à faire, nouveaux,
-  disparus et **changements d'indice** (le même plan réémis sous un autre
-  indice, retrouvé par la racine de sa référence UD).
+- **L'avancement du jour** : barre et états, lus dans **une seule colonne**,
+  `HDK AA 011 > Avancement Définition Electrique` (ou le concept harnais du
+  même bloc) — introuvable, la page le dit en haut et n'en lit aucune autre ;
+  le pied de page nomme la colonne suivie.
 - **La courbe dans le temps**, avec les jalons de configuration, une bulle
   qui résume chaque semaine en chiffres, cadrée à l'ouverture jusqu'à la
   semaine qui suit la dernière échéance, et dessous le **journal** de ce qui a
   changé, semaine par semaine — un tableau, une colonne par sorte de
-  passage, les reculs en rouge —, plan par plan. En haut, « À surveiller » :
-  les plans en cours qui n'ont pas bougé depuis six semaines. Le rythme des
-  quatre dernières semaines s'écrit à côté du rythme tenu.
+  passage (passés terminés, reculs en rouge, **changements d'indice** : le
+  même plan réémis sous un autre indice, retrouvé par la racine de sa
+  référence UD, nouveaux, disparus) —, plan par plan. En haut, « À
+  surveiller » : les plans en cours qui n'ont pas bougé depuis six semaines.
+  Un seul rythme, le rythme tenu.
 - **Avancement FWD par…** : par ATA, Séquence, CC, ECP ou mois de création,
   rangé par nom (ATA 21, 24, 25…), avec la fin estimée et le rythme requis
   par le prochain jalon ; un filtre sur la colonne de gauche, et sous chaque
@@ -99,7 +101,7 @@ npm install
 npm test
 ```
 
-- `npm run test:addon` — 376 tests. Le vrai `Code.gs` tourne dans Node contre
+- `npm run test:addon` — 383 tests. Le vrai `Code.gs` tourne dans Node contre
   un classeur en mémoire (`tests/faux-classeur.js`), sur un export
   volontairement pénible : lignes de titre, groupes fusionnés, en-têtes
   accentués ou dupliqués, ligne vide au milieu, avancements de toutes les
@@ -112,7 +114,10 @@ npm test
   changement de contrat dans la page, panne du classeur), périmètre dérivé
   des cartes plan par plan, seconde base à rapprocher, et le dépôt
   automatique (secret absent ou refusé, corps illisible, onglet d'historique
-  protégé, archivage de la semaine, réponse JSON de `doPost`).
+  protégé, archivage de la semaine, réponse JSON de `doPost`). Et la colonne
+  suivie : `HDK AA 011 > Avancement Définition Electrique` sur la vraie
+  structure, nommée dans le pied de la page ; introuvable, aucune autre n'est
+  lue à la place, la page le dit en haut et l'archivage refuse.
 - `npm run test:import` — 308 tests en Python : le paquet qui se déballe tout seul (fabriqué, lancé, et chaque fichier vérifié octet pour octet) ; la fiche d'extract (classeurs .xlsx fabriqués à la main, CSV de tous encodages, détection de l'en-tête et des groupes, confidentialité de la fiche) ; l'essai à blanc (un faux GATES joué de bout en bout dans un vrai Chrome) ; le pilote Chrome (canal
   WebSocket écrit à la main, gestes, téléchargements, erreurs lisibles) joué
   contre un vrai Chrome ; la lecture des recettes ; le dépôt joué contre un
@@ -131,7 +136,7 @@ npm test
   menus, fenêtres), le vrai `Chargeur.gs` lancé dedans, et la page qu'il
   fabrique ouverte dans un vrai navigateur — les états, les colonnes, le
   graphe et le journal comparés au paquet du classeur.
-- `npm run test:interface` — 594 tests sur l’interface elle-même.
+- `npm run test:interface` — 595 tests sur l’interface elle-même.
   Elle n'essaie pas seulement de vérifier que ça marche : recherches avec
   balises, expressions régulières, 3 000 caractères ou émoji, jalon de
   configuration au texte injecté, `localStorage` corrompu puis inaccessible,
@@ -141,6 +146,13 @@ npm test
   (PERSO + BASE/OPTION = Tout, point par point), les trois contrats de la
   démonstration, le rapprochement aux écarts délibérés. Toute erreur
   JavaScript remontée par la console fait échouer le lot.
+- `npm run test:chiffres` — l'audit des chiffres, indépendant de la page :
+  pour chaque contrat, chaque avancement et chaque périmètre, il recalcule
+  depuis la source brute, avec ses propres formules, les comptes par état,
+  la courbe, le rythme tenu, la fin estimée, le rythme requis et les plans à
+  l'arrêt, et les compare à ce que la page affiche — sur la démonstration et
+  sur la page servie par le vrai `Code.gs` (269 vérifications). Il vérifie
+  aussi que la page classe chaque valeur exactement comme le serveur.
 
 Les deux lots se lancent séparément ; chacun affiche à la fin
 « N test(s) réussi(s), M échec(s) ». `CHROMIUM_PATH` force un binaire Chromium

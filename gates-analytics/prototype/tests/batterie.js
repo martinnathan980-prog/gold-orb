@@ -164,9 +164,10 @@ async function reinitialiser(pg) {
   verifier('plus d\'interrupteur « Données réelles / Exemple » ; seule, la page dit « Démonstration » et son pied le rappelle',
     !modeDepart.interrupteur && modeDepart.bandeau && /^Démonstration — trois contrats fictifs/.test(modeDepart.mot) && modeDepart.pied,
     JSON.stringify(modeDepart));
+  /* Débrief 15 : plus de bande « Depuis le relevé précédent » — le journal
+     et la courbe le disent. */
   const blocsRemplis = () => p.evaluate(() => ({
-    comparatif: /Depuis le relevé précédent \(S\d{1,2} · \S+ \d{4}\)/.test(document.getElementById('comparatif').textContent.replace(/[\u00a0\u202f]/g, ' ')) &&
-                document.querySelectorAll('.puce-delta').length > 0,
+    sansComparatif: !document.getElementById('comparatif') && !/Depuis le relevé précédent/.test(document.querySelector('section.avancement').textContent),
     journal: document.querySelectorAll('.journal-semaine').length > 0,
     finEstimee: [...document.querySelectorAll('.critique-date .v')]
       .some(v => /^S\d{1,2} · \S+ \d{4}$/.test(v.textContent.trim().replace(/[\u00a0\u202f]/g, ' '))),
@@ -1323,19 +1324,17 @@ async function reinitialiser(pg) {
     app.reemissions && app.reemissions.length === app.comparatif.length &&
     app.reemissions.every(r => r.ancienne && r.ref && r.ancienne !== r.ref), lu(app.reemissions));
 
-  /* La dernière semaine porte un changement d'indice : la puce du comparatif
-     est celle-là, et il n'y en a pas d'autre sorte. */
+  /* La dernière semaine porte un changement d'indice : le filtre du journal
+     est celui-là, et il n'y en a pas d'autre sorte. */
   const cleReem = 'indice';
   const domIndice = await p.evaluate(cle => ({
-    puce: (document.querySelector('.puce-delta[data-delta="' + cle + '"]') || { textContent: '' }).textContent,
-    pastille: !!document.querySelector('.puce-delta[data-delta="' + cle + '"] .pastille.indice'),
+    pastille: !!document.querySelector('#filtre-journal button[data-journal="' + cle + '"] .pastille.indice'),
     comptes: [...document.querySelectorAll('.compte-passage[data-passage="indice"]')].map(b => b.textContent.replace(/\s+/g, ' ').trim()),
     boutons: !!document.querySelector('#filtre-journal button[data-journal="indice"]') &&
              !document.querySelector('#filtre-journal button[data-journal="solution"]') &&
              document.querySelectorAll('#filtre-journal button').length === 5
   }), cleReem);
-  verifier('la puce de la réémission est là, avec sa pastille violette',
-    /changements? d’indice/.test(domIndice.puce) && domIndice.pastille, domIndice.puce);
+  verifier('le filtre du journal « changement d’indice » est là, avec sa pastille violette', domIndice.pastille);
   verifier('chaque semaine concernée compte son changement d’indice, en bouton',
     domIndice.comptes.length === 6 && domIndice.comptes.every(t => /^1 changement d’indice$/.test(t)),
     lu(domIndice.comptes));
@@ -1344,14 +1343,13 @@ async function reinitialiser(pg) {
   const violet = await p.evaluate(() => {
     const fond = el => el && getComputedStyle(el).backgroundColor;
     return {
-      puce: fond(document.querySelector('.puce-delta[data-delta="indice"] .pastille')),
       filtre: fond(document.querySelector('#filtre-journal button[data-journal="indice"] .pastille')),
       verdict: fond(document.querySelector('#verdicts-rapprochement button[data-rapp="emission"] .pastille')),
       anneau: getComputedStyle(document.querySelector('#venn-rapprochement .donut-seg.emission')).stroke
     };
   });
-  verifier('le violet du changement d’indice est le même partout : puce du comparatif, filtre du journal, verdict « autre indice », part de l’anneau',
-    /^rgb/.test(violet.puce) && violet.puce === violet.filtre && violet.puce === violet.verdict && violet.puce === violet.anneau, JSON.stringify(violet));
+  verifier('le violet du changement d’indice est le même partout : filtre du journal, verdict « autre indice », part de l’anneau',
+    /^rgb/.test(violet.filtre) && violet.filtre === violet.verdict && violet.filtre === violet.anneau, JSON.stringify(violet));
 
   /* « Pourtant il est faux » : le journal doit être juste. Chaque semaine, la
      somme des comptes du résumé est le nombre de lignes ; la mini-jauge fait
@@ -1395,34 +1393,6 @@ async function reinitialiser(pg) {
       JSON.stringify(sousFiltre));
   }
   await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(300);
-
-  // Survoler la puce : les deux références, ancienne → nouvelle.
-  await p.evaluate(() => document.getElementById('comparatif').scrollIntoView({ block: 'center' }));
-  await p.waitForTimeout(250);
-  const bbPuce = await (await p.$('.puce-delta[data-delta="' + cleReem + '"]')).boundingBox();
-  await p.mouse.move(bbPuce.x + 6, bbPuce.y + bbPuce.height / 2); await p.waitForTimeout(200);
-  const survol = await p.evaluate(() => document.getElementById('bulle').textContent);
-  verifier('survoler la puce montre « ancienne → nouvelle »',
-    /[A-Z]{3}\d{4}A\d{6}[A-Z] → [A-Z]{3}\d{4}A\d{6}[A-Z]/.test(survol), survol.slice(0, 100));
-  await p.mouse.move(5, 5); await p.waitForTimeout(150);
-
-  // Cliquer la puce : le tableau ne montre plus que les plans réémis, sous leur nouvelle référence.
-  await p.click('.puce-delta[data-delta="' + cleReem + '"]'); await p.waitForTimeout(500);
-  const filtreIndice = await p.evaluate(cle => {
-    const i = [...document.querySelectorAll('tr.titres th')].findIndex(t => t.dataset.cle === 'reference');
-    return {
-      lignes: [...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.children[i].textContent.trim()).sort(),
-      presse: document.querySelector('.puce-delta[data-delta="' + cle + '"]').getAttribute('aria-pressed'),
-      jeton: document.getElementById('filtres-actifs').textContent
-    };
-  }, cleReem);
-  verifier('cliquer la puce de la réémission filtre le tableau sur les nouvelles références',
-    lu(filtreIndice.lignes) === lu(app.comparatif), lu(filtreIndice.lignes));
-  verifier('la puce se marque pressée et le bandeau nomme le filtre',
-    filtreIndice.presse === 'true' && /changements d’indice/.test(filtreIndice.jeton), filtreIndice.jeton);
-  await p.click('.puce-delta[data-delta="' + cleReem + '"]'); await p.waitForTimeout(500);
-  verifier('re-cliquer rend tous les plans',
-    await p.evaluate(t => document.querySelectorAll('#corps-tableau tr').length === t, TOTAL));
 
   // Le compte du journal filtre sur les changements d'indice ; la ligne se lit ancienne → nouvelle.
   await p.click('.compte-passage[data-passage="indice"] >> nth=0'); await p.waitForTimeout(400);
@@ -2805,8 +2775,9 @@ async function reinitialiser(pg) {
     coh.barres.every(b => Math.abs(b - 100) < 0.5), JSON.stringify(coh.barres.map(b => b.toFixed(1))));
   verifier('« fin estimée » est une semaine dite comme partout — « S18 · mai 2027 » —, « — » ou « terminé »',
     coh.dates.every(v => /^S\d{1,2} · \S+ \d{4}$/.test(v.replace(/[\u00a0\u202f]/g, ' ')) || v === '—' || v === 'terminé'), JSON.stringify(coh.dates));
-  verifier('« rythme requis » se dit en plans par semaine, le rythme tenu dessous — et le récent à côté de lui',
-    coh.efforts.every(v => /^\d+,\d\/sem\.(tenu \d+,\d( · récent \d+,\d)?\/sem\.|rien de terminé( · récent \d+,\d\/sem\.)?)$/.test(v) || /terminé|—/.test(v)), JSON.stringify(coh.efforts.slice(0, 3)));
+  verifier('« rythme requis » se dit en plans par semaine, le rythme tenu dessous — un seul rythme (débrief 15)',
+    coh.efforts.every(v => /^\d+,\d\/sem\.(tenu \d+,\d\/sem\.|rien de terminé)$/.test(v) || /terminé|—/.test(v)) &&
+    !coh.efforts.some(v => /récent/.test(v)), JSON.stringify(coh.efforts.slice(0, 3)));
 
   // =================================================================
   section('Panneau d\'explication de la fin estimée');
@@ -2962,23 +2933,6 @@ async function reinitialiser(pg) {
     await p.evaluate(() => !!document.querySelector('.journal-semaine .journal-liste .ref-indice')));
   // On la replie : une semaine ouverte à la main le reste sous un filtre, et la dernière semaine a désormais un recul.
   await p.click('.journal-semaine .journal-plier >> nth=0'); await p.waitForTimeout(200);
-
-  // La bulle d'une puce du comparatif ne liste plus de références tronquées.
-  const puceTermine = await p.$('.puce-delta[data-delta="termine"]');
-  if (puceTermine) {
-    await puceTermine.hover(); await p.waitForTimeout(250);
-    const bulleTermine = await p.evaluate(() => document.getElementById('bulle').innerText);
-    verifier('la bulle d’un lot compte et invite à cliquer, sans lister de références',
-      !/[A-Z]{3}\d{4}A\d{3}/.test(bulleTermine) && /Cliquez/.test(bulleTermine) && !/autres/.test(bulleTermine),
-      bulleTermine.replace(/\s+/g, ' ').slice(0, 100));
-  }
-  const puceIndice = await p.$('.puce-delta[data-delta="indice"]');
-  if (puceIndice) {
-    await puceIndice.hover(); await p.waitForTimeout(250);
-    verifier('la bulle des changements d’indice montre les paires ancienne → nouvelle',
-      await p.evaluate(() => /→/.test(document.getElementById('bulle').innerText)));
-  }
-  await p.mouse.move(5, 5); await p.waitForTimeout(150);
 
   // Sous périmètre, le rapprochement sépare ce qui est dans le périmètre de ce qui est absent d'ici (tout contrat).
   await p.click('#choix-perimetre button:has-text("PERSO")'); await p.waitForTimeout(700);
@@ -3236,15 +3190,13 @@ async function reinitialiser(pg) {
     const lieux = await pq.evaluate(() => ({
       pied: document.getElementById('import').textContent,
       note: document.getElementById('note-graphe').textContent,
-      comparatif: document.getElementById('comparatif').textContent,
       journal: document.querySelector('.journal-semaine .sem').textContent,
       legende: [...document.querySelectorAll('.legende-jalon .quand')].map(q => q.textContent)
     }));
     const SEM = /S\d{1,2} · (janv\.|févr\.|mars|avr\.|mai|juin|juil\.|août|sept\.|oct\.|nov\.|déc\.) \d{4}/;
-    verifier('pied, note du graphique, comparatif, journal et jalons écrivent la semaine de la même façon',
+    verifier('pied, note du graphique, journal et jalons écrivent la semaine de la même façon',
       /^Dernier relevé : S\d{1,2} · \S+ \d{4} · \d+ relevés$/.test(esp(lieux.pied)) &&
       /^\d+ relevés, de S\d{1,2} · \S+ \d{4} à S\d{1,2} · \S+ \d{4}$/.test(esp(lieux.note)) &&
-      /^Depuis le relevé précédent \(S\d{1,2} · \S+ \d{4}\) :/.test(esp(lieux.comparatif)) &&
       SEM.test(esp(lieux.journal)) && lieux.legende.every(q => SEM.test(esp(q))), JSON.stringify(lieux));
     // Le pied et la note disent le même dernier relevé.
     verifier('le pied et la note du graphique nomment le même dernier relevé',
@@ -3284,15 +3236,14 @@ async function reinitialiser(pg) {
       const esp = t => String(t || '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim();
       const l = document.querySelector('.critique-ligne');
       const v = esp(l.querySelector('.critique-effort .v').textContent);
-      return { requis: (v.match(/^([\d,]+)\/sem\./) || [])[1], tenu: (v.match(/tenu ([\d,]+)(?: · récent [\d,]+)?\/sem\./) || [])[1],
-               recent: (v.match(/récent ([\d,]+)\/sem\./) || [])[1],
+      return { requis: (v.match(/^([\d,]+)\/sem\./) || [])[1], tenu: (v.match(/tenu ([\d,]+)\/sem\./) || [])[1],
                fin: esp(l.querySelector('.critique-date .v').textContent) };
     });
     await pq.click('.critique-ligne >> nth=0'); await pq.waitForTimeout(500);
     const legG = esp(await pq.evaluate(() => document.getElementById('legende').textContent));
     verifier('une ligne du bloc et le graphique de son groupe disent le même rythme requis, le même rythme tenu, la même fin',
       !!ligne.requis && legG.indexOf(': ' + ligne.requis + '/sem.') !== -1 && legG.indexOf('au rythme tenu (' + ligne.tenu + '/sem.)') !== -1 &&
-      legG.indexOf('→ fin ' + ligne.fin) !== -1 && (!ligne.recent || legG.indexOf('dernières semaines (' + ligne.recent + '/sem.)') !== -1) && /requis pour « [^»]+ » \(\S+ [^)]+\)/.test(legG), JSON.stringify([ligne, legG]));
+      legG.indexOf('→ fin ' + ligne.fin) !== -1 && /requis pour « [^»]+ » \(\S+ [^)]+\)/.test(legG), JSON.stringify([ligne, legG]));
     const phraseG = esp(await pq.evaluate(() => document.getElementById('phrase').textContent));
     const noteG = esp(await pq.evaluate(() => document.getElementById('note-graphe').textContent));
     verifier('choisir un groupe : la phrase et la note du graphique le nomment de la même façon, sans « autres filtres » inventés',
@@ -3300,17 +3251,14 @@ async function reinitialiser(pg) {
       JSON.stringify([phraseG, noteG]));
     await pq.click('.critique-ligne >> nth=0'); await pq.waitForTimeout(400);
 
-    // La dernière semaine : comparatif du haut, journal et bulle, les mêmes lignes.
+    // La dernière semaine : journal et bulle du graphique, les mêmes lignes.
     const res = await pq.evaluate(() => {
       const esp = t => String(t || '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim();
       /* Les cases vides du tableau du journal (une sorte de passage absente
          cette semaine) ne sont pas des lignes du résumé. */
       return { journal: [...document.querySelector('.journal-semaine .resume').children].filter(c => !c.classList.contains('case-vide')).map(c => esp(c.textContent)),
-               comparatif: [...document.querySelectorAll('#comparatif .puce-delta')].map(b => esp(b.textContent)),
                auj: window.__semaineDuTitre().auj };
     });
-    verifier('le comparatif du haut et la dernière semaine du journal : les mêmes lignes, dans le même ordre',
-      res.journal.length > 0 && res.journal.join('|') === res.comparatif.join('|'), JSON.stringify(res));
     await pq.evaluate(() => document.getElementById('cadre-graphe').scrollIntoView({ block: 'center' })); await pq.waitForTimeout(200);
     await (await pq.$('.zone-clic[data-i="' + res.auj + '"]')).hover(); await pq.waitForTimeout(300);
     const bulleL = await pq.evaluate(() => [...document.querySelectorAll('#bulle .bulle-comptes .bulle-ligne')].map(l => {
@@ -3482,9 +3430,10 @@ async function reinitialiser(pg) {
 
   // =================================================================
   /* Débrief 14 : ce qui péchait encore, et ce que Nathan a validé — les
-     reculs, le rythme récent, un seul mot pour une même chose, les plans à
-     l'arrêt, la vie d'un plan, la vue d'ensemble des contrats. */
-  section('Débrief 14 : reculs, rythme récent, plans à l’arrêt, vie d’un plan, vue d’ensemble');
+     reculs, un seul mot pour une même chose, les plans à l'arrêt, la vie
+     d'un plan, la vue d'ensemble des contrats. Débrief 15 : plus de bande
+     « Depuis le relevé précédent », un seul rythme. */
+  section('Débrief 14-15 : reculs, un seul rythme, plans à l’arrêt, vie d’un plan, vue d’ensemble');
   await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); window.scrollTo(0, 0); });
   await p.waitForTimeout(700);
   const esp14 = t => String(t || '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -3498,18 +3447,22 @@ async function reinitialiser(pg) {
       cases: [...sem.querySelector('.resume').children].filter(c => !c.classList.contains('case-vide')).map(c => c.textContent.replace(/\s+/g, ' ').trim()),
       somme: [...sem.querySelectorAll('.resume b')].reduce((t, b) => t + Number(b.textContent.replace(/\s/g, '')), 0)
     }));
-    const puce = document.querySelector('#comparatif .puce-delta[data-delta="reculs"]');
+    const compte = document.querySelector('.journal-semaine .compte-passage.recul');
     return {
       parSemaine, semaines,
       entetes: [...document.querySelectorAll('.journal-entetes .entete-col')].map(e => e.textContent.trim()),
-      puce: puce ? { texte: puce.textContent.replace(/\s+/g, ' ').trim(), rouge: getComputedStyle(puce).color, pastille: !!puce.querySelector('.pastille.recul') } : null,
+      compte: compte ? { texte: compte.textContent.replace(/\s+/g, ' ').trim(), rouge: getComputedStyle(compte.querySelector('b')).color } : null,
       alerte: getComputedStyle(document.body).getPropertyValue('--alerte').trim(),
       filtre: !!document.querySelector('#filtre-journal button[data-journal="reculs"] .pastille.recul')
     };
   });
   const recS38 = rec.parSemaine[0].reculs, totRec = rec.parSemaine.reduce((t, x) => t + x.reculs, 0);
-  verifier('les reculs ont leur ligne : « ' + recS38 + ' recul » dans le comparatif du haut, en rouge, pastille rouge',
-    recS38 >= 1 && !!rec.puce && rec.puce.texte === recS38 + (recS38 > 1 ? ' reculs' : ' recul') && rec.puce.pastille, JSON.stringify(rec.puce));
+  verifier('les reculs ont leur case : « ' + recS38 + ' recul » dans la dernière semaine du journal, le nombre en rouge',
+    recS38 >= 1 && !!rec.compte && rec.compte.texte === recS38 + (recS38 > 1 ? ' reculs' : ' recul') &&
+    rec.compte.rouge === (await p.evaluate(() => { const t = document.createElement('span'); t.style.color = 'var(--alerte)'; document.body.appendChild(t); const c = getComputedStyle(t).color; t.remove(); return c; })),
+    JSON.stringify(rec.compte));
+  verifier('plus de bande « Depuis le relevé précédent » sous la barre : le journal et la courbe le disent',
+    await p.evaluate(() => !document.getElementById('comparatif') && !/Depuis le relevé précédent/.test(document.querySelector('section.avancement').textContent)));
   verifier('dans le journal, une colonne « reculs », un filtre « Reculs » ; chaque semaine compte tous ses événements, une fois chacun',
     rec.entetes.includes('reculs') && rec.filtre && totRec >= 2 &&
     rec.semaines.every((s, k) => s.somme === rec.parSemaine[k].total), JSON.stringify([rec.entetes, rec.semaines.map(s => s.somme), rec.parSemaine.map(s => s.total)]));
@@ -3526,54 +3479,36 @@ async function reinitialiser(pg) {
     new Set(lignesRecul.map(l => l.rouge)).size === 1, JSON.stringify(lignesRecul));
   await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(300);
   await p.click('.journal-semaine .journal-plier >> nth=0'); await p.waitForTimeout(200);
-  await p.hover('#comparatif .puce-delta[data-delta="reculs"]'); await p.waitForTimeout(250);
-  const bulleRecul2 = esp14(await p.evaluate(() => document.getElementById('bulle').textContent));
-  verifier('la bulle du recul dit lequel : « référence : Terminé → En cours »',
-    /[A-Z]{2}E\d{4}A\d{6}[A-Z] : Terminé → /.test(bulleRecul2), bulleRecul2.slice(0, 200));
-  await p.mouse.move(5, 5);
-
   // --- L'ordre : de la sorte la plus fréquente à la plus rare, partout pareil.
   const ordre = await p.evaluate(() => {
     const entetes = [...document.querySelectorAll('.journal-entetes .entete-col')].map(e => e.textContent.trim());
     const pleines = entetes.map((_, k) => [...document.querySelectorAll('.journal-semaine .resume')].filter(r => r.children[k] && !r.children[k].classList.contains('case-vide')).length);
-    const puces = [...document.querySelectorAll('#comparatif .puce-delta')].map(b => b.textContent.replace(/^\s*\d+\s*/, '').replace(/\s+/g, ' ').trim());
     const filtres = [...document.querySelectorAll('#filtre-journal button[data-journal]:not([data-journal=""])')].map(b => b.dataset.journal);
-    return { entetes, pleines, puces, filtres };
+    return { entetes, pleines, filtres };
   });
-  /* Une puce s'accorde à son nombre (« 1 recul »), l'en-tête est au pluriel
-     (« reculs ») : on compare les mots au singulier. */
-  const auSingulier = t => t.replace(/^passés? /, 'passé ').replace(/^changements? /, 'changement ').replace(/^reculs?$/, 'recul')
-    .replace(/^nouveaux?$/, 'nouveau').replace(/^disparus?$/, 'disparu');
-  const rangEntete = t => ordre.entetes.map(auSingulier).indexOf(auSingulier(t));
   verifier('les colonnes du journal vont de la plus remplie à la plus rare — la colonne d’une seule case n’est plus au milieu',
     ordre.pleines.every((n, k) => k === 0 || ordre.pleines[k - 1] >= n), JSON.stringify(ordre));
-  verifier('le comparatif du haut suit le même ordre que les colonnes',
-    ordre.puces.every(t => rangEntete(t) !== -1) && ordre.puces.every((t, k) => k === 0 || rangEntete(ordre.puces[k - 1]) < rangEntete(t)),
-    JSON.stringify([ordre.puces, ordre.entetes]));
-
-  // --- Le rythme des quatre dernières semaines, à côté du rythme tenu.
+  // --- Débrief 15 : un seul rythme, le rythme tenu — plus « les 4 dernières semaines » nulle part.
   const ryt = await p.evaluate(() => {
     const pts = window.__serieAffichee().pts, der = pts[pts.length - 1];
-    let base = pts[0];
-    for (let k = pts.length - 2; k >= 0; k--) if (der.i - pts[k].i >= 4) { base = pts[k]; break; }
-    const recent = (der.termine - base.termine) / (der.i - base.i), tenu = (der.termine - pts[0].termine) / (der.i - pts[0].i);
-    return { recent, tenu, legende: document.getElementById('legende').textContent.replace(/[  ]/g, ' '),
-             ligne: !!document.querySelector('svg.graphe path.projection-recente'),
+    const tenu = (der.termine - pts[0].termine) / (der.i - pts[0].i);
+    return { tenu, legende: document.getElementById('legende').textContent.replace(/[\u00a0\u202f]/g, ' '),
+             projections: document.querySelectorAll('svg.graphe path[stroke-dasharray]').length,
+             recente: !!document.querySelector('svg.graphe path.projection-recente, .legende-recent, .fin-recente, .fiche-echeance-recent'),
              bloc: [...document.querySelectorAll('.critique-effort .v small')].map(s => s.textContent),
-             fins: document.querySelectorAll('.critique-date .fin-recente').length, lignes: document.querySelectorAll('.critique-ligne').length };
+             page: document.body.innerText };
   });
   const v1 = x => (Math.round(x * 10) / 10).toFixed(1).replace('.', ',');
-  verifier('la légende dit les deux rythmes — tenu ' + v1(ryt.tenu) + ', et ' + v1(ryt.recent) + ' sur les 4 dernières semaines — et le graphique trace les deux projections',
-    ryt.legende.indexOf('au rythme tenu (' + v1(ryt.tenu) + '/sem.)') !== -1 &&
-    new RegExp('sur les 4 dernières semaines \\(' + v1(ryt.recent) + '/sem\\.\\) → fin S\\d{1,2} · \\S+ \\d{4}').test(ryt.legende) && ryt.ligne,
+  verifier('la légende dit un seul rythme — « au rythme tenu (' + v1(ryt.tenu) + '/sem.) » — et le graphique ne trace plus de seconde projection',
+    ryt.legende.indexOf('au rythme tenu (' + v1(ryt.tenu) + '/sem.)') !== -1 && !/dernières semaines/.test(ryt.legende) && !ryt.recente,
     ryt.legende);
-  verifier('le bloc par groupe écrit les deux rythmes de chaque groupe, et la fin où mène le récent',
-    ryt.bloc.length === ryt.lignes && ryt.bloc.every(t => /^tenu [\d,]+ · récent [\d,]+\/sem\.$/.test(t)) && ryt.fins === ryt.lignes, JSON.stringify(ryt.bloc.slice(0, 3)));
+  verifier('le bloc par groupe écrit le rythme tenu de chaque groupe, seul',
+    ryt.bloc.length > 0 && ryt.bloc.every(t => /^tenu [\d,]+\/sem\.$|^rien de terminé$/.test(t)), JSON.stringify(ryt.bloc.slice(0, 3)));
   await p.click('#echeance-titre'); await p.waitForTimeout(400);
   const ficheRyt = esp14(await p.evaluate(() => (document.getElementById('fiche-echeance') || {}).textContent));
-  verifier('la fiche dit les deux rythmes, puis le verdict au rythme récent, sous celui du rythme tenu',
-    ficheRyt.indexOf('le rythme tenu est de ' + v1(ryt.tenu) + ' par semaine, ' + v1(ryt.recent) + ' sur les 4 dernières semaines.') !== -1 &&
-    /Au rythme des 4 dernières semaines \([\d,]+ par semaine\), (il manquerait \d+ plans?|l’échéance serait tenue)/.test(ficheRyt), ficheRyt);
+  verifier('la fiche dit le rythme tenu, et plus « au rythme des 4 dernières semaines »',
+    ficheRyt.indexOf('le rythme tenu est de ' + v1(ryt.tenu) + ' par semaine.') !== -1 && !/dernières semaines/.test(ficheRyt), ficheRyt);
+  verifier('nulle part sur la page « récent » ni « dernières semaines »', !/ récent|dernières semaines/.test(ryt.page));
   await p.keyboard.press('Escape'); await p.waitForTimeout(200);
 
   // --- Oui/Non, partout.
@@ -3724,20 +3659,129 @@ async function reinitialiser(pg) {
   await p.click('#choix-indicateur button[data-indicateur="concept"]'); await p.waitForTimeout(800);
   const sousConcept = await p.evaluate(() => ({
     surveiller: !document.getElementById('a-surveiller').hidden,
-    recent: /sur les 4 dernières semaines/.test(document.getElementById('legende').textContent),
     journal: document.querySelectorAll('.journal-entetes .entete-col').length,
-    reculs: !!document.querySelector('#comparatif .puce-delta[data-delta="reculs"]'),
+    reculs: !!document.querySelector('.journal-semaine .compte-passage.recul'),
     jalons: document.querySelectorAll('svg.graphe .jalon').length,
     presse: [...document.querySelectorAll('.commandes-graphe .segmente button[aria-pressed="true"]')].map(b => b.dataset.span).join()
   }));
   await p.evaluate(() => { const b = document.querySelector('#corps-tableau button[data-ref-plan]'); b.scrollIntoView({ block: 'center' }); b.click(); });
   await p.waitForTimeout(500);
   const ficheConcept = await p.evaluate(() => !document.getElementById('fiche-plan').hidden && document.querySelectorAll('#fiche-plan .case').length > 1);
-  verifier('sous le concept harnais, tout y est : à surveiller, rythme récent, journal, reculs, cinq jalons sur « Échéances », historique d’un plan',
-    sousConcept.surveiller && sousConcept.recent && sousConcept.journal >= 3 && sousConcept.reculs && sousConcept.jalons === 5 &&
+  verifier('sous le concept harnais, tout y est : à surveiller, journal, reculs, cinq jalons sur « Échéances », historique d’un plan',
+    sousConcept.surveiller && sousConcept.journal >= 3 && sousConcept.reculs && sousConcept.jalons === 5 &&
     sousConcept.presse === 'jalons' && ficheConcept, JSON.stringify([sousConcept, ficheConcept]));
   await p.evaluate(() => { const b = document.querySelector('#fiche-plan button[data-fermer-plan]'); if (b) b.click(); });
   await p.click('#choix-indicateur button[data-indicateur="def"]'); await p.waitForTimeout(700);
+  await reinitialiser(p);
+
+  // =================================================================
+  /* Débrief 15 : « est-ce qu'on regarde la bonne colonne ? », « tous nos
+     calculs sont-ils logiques ? », et « à l'arrêt, qu'est-ce que ça veut
+     dire ? ». */
+  section('Débrief 15 : la colonne suivie, l’extract du jour, « à l’arrêt » expliqué, les groupes par mois');
+  await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); window.scrollTo(0, 0); });
+  await p.waitForTimeout(700);
+  const esp15 = t => String(t || '').replace(/[\u00a0\u202f]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // --- La colonne lue, nommée en bas de page, groupe compris ; et au survol de l'interrupteur.
+  const colonnes15 = await p.evaluate(() => ({
+    def: document.getElementById('colonne-suivie').textContent,
+    titres: [...document.querySelectorAll('#choix-indicateur button')].map(b => b.title)
+  }));
+  await p.click('#choix-indicateur button[data-indicateur="concept"]'); await p.waitForTimeout(700);
+  colonnes15.concept = await p.evaluate(() => document.getElementById('colonne-suivie').textContent);
+  await p.click('#choix-indicateur button[data-indicateur="def"]'); await p.waitForTimeout(700);
+  verifier('le pied nomme la colonne lue : « HDK AA 011 › Avancement Définition Electrique », puis « … › Avancement Concept Harnais »',
+    esp15(colonnes15.def) === 'Colonne suivie : HDK AA 011 › Avancement Définition Electrique' &&
+    esp15(colonnes15.concept) === 'Colonne suivie : HDK AA 011 › Avancement Concept Harnais', JSON.stringify(colonnes15));
+  verifier('et chaque bouton de l’interrupteur dit, au survol, la colonne qu’il lit',
+    colonnes15.titres.join('|') === 'Colonne lue : HDK AA 011 › Avancement Définition Electrique|Colonne lue : HDK AA 011 › Avancement Concept Harnais',
+    JSON.stringify(colonnes15.titres));
+
+  // --- « à l'arrêt » se définit dans le bloc, en toutes lettres, dès qu'un groupe en compte.
+  const arret15 = await p.evaluate(() => ({
+    note: (document.querySelector('#zone-critique .note-arret') || { textContent: '' }).textContent,
+    lignes: document.querySelectorAll('.critique-ligne .arret-n').length
+  }));
+  verifier('« 1 à l’arrêt » s’explique dans le bloc : « à l’arrêt = en cours, sans changement depuis 6 semaines ou plus »',
+    arret15.lignes > 0 && /^à l’arrêt = en cours, sans changement depuis 6 semaines ou plus\./.test(esp15(arret15.note)), JSON.stringify(arret15));
+
+  // --- L'extract recollé après le dernier archivage : un point de plus, à la semaine où l'on est.
+  const vivant15 = async (bouge) => {
+    await p.evaluate(bouge => {
+      const s = window.__jeuDExemple('HDK');
+      const recule = sem => { let [a, w] = sem.split('-S').map(Number); w -= 2; if (w < 1) { a--; w += 52; } return a + '-S' + String(w).padStart(2, '0'); };
+      s.releves = s.releves.map(r => Object.assign({}, r, { semaine: recule(r.semaine) }));
+      if (bouge) s.plans.filter(x => window.__classer(x.avancement) === 'encours').slice(0, 3).forEach(x => { x.avancement = 'Validé'; });
+      window.__chargerSource(s);
+    }, bouge);
+    await p.waitForTimeout(500);
+    return p.evaluate(() => ({
+      pts: window.__serieAffichee().pts.map(x => x.i), jour: window.__semaineDuTitre().iAuj, auj: window.__semaineDuTitre().auj,
+      pied: document.getElementById('import').textContent, note: document.getElementById('note-graphe').textContent,
+      repere: (document.querySelector('.repere-auj') || {}).textContent, journal: (document.querySelector('.journal-semaine .sem') || {}).textContent
+    }));
+  };
+  const immobile = await vivant15(false), bouge15 = await vivant15(true);
+  verifier('un extract inchangé depuis le dernier relevé reste ce relevé-là : pas de palier inventé à la semaine où l’on est',
+    immobile.pts[immobile.pts.length - 1] < immobile.jour && immobile.repere === 'dernier relevé' && !/pas encore archivé/.test(immobile.pied),
+    JSON.stringify(immobile));
+  verifier('un extract recollé depuis devient un point de plus, à la semaine où l’on est — le relevé d’avant reste le sien',
+    bouge15.pts[bouge15.pts.length - 1] === bouge15.jour && bouge15.pts.length === immobile.pts.length + 1 && bouge15.repere === 'aujourd’hui',
+    JSON.stringify(bouge15));
+  verifier('le pied, la note du graphique et le journal le disent : l’extract du jour, pas encore archivé',
+    /· l’extract du jour, pas encore archivé, compte pour S\d{1,2} · \S+ \d{4}$/.test(esp15(bouge15.pied)) &&
+    /, puis l’extract du jour en S\d{1,2} · \S+ \d{4}, pas encore archivé$/.test(esp15(bouge15.note)) &&
+    esp15(bouge15.journal) === esp15(bouge15.pied).replace(/^.*compte pour /, ''), JSON.stringify([bouge15.pied, bouge15.note, bouge15.journal]));
+  await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); });
+  await p.waitForTimeout(500);
+
+  // --- Un groupe « par mois de création » a son historique, même quand le classeur n'archive pas ce découpage.
+  const mois15 = await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    s.releves.forEach(r => { r.groupes = {}; });          // comme le classeur : pas de comptes « par mois »
+    window.__chargerSource(s);
+    return true;
+  });
+  await p.waitForTimeout(500);
+  await p.selectOption('#dim-critique', '_mois'); await p.waitForTimeout(400);
+  const serieMois = await p.evaluate(() => {
+    document.querySelectorAll('.critique-ligne')[0].click();
+    const pts = window.__serieAffichee().pts;
+    const val = document.querySelectorAll('.critique-ligne')[0].dataset.groupe;
+    /* recompte à la main : plans du mois, relevé par relevé */
+    const s = window.__jeuDExemple('HDK');
+    const MC = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    const moisDe = d => { const v = window.__anneeEtMois(d); return v ? MC[v.mois - 1] + ' ' + v.annee : '\u2014'; };
+    const refsMois = new Set(s.plans.filter(p => moisDe(p[s.cleDate]) === val).map(p => p.reference));
+    const attendu = s.releves.slice().sort((a, b) => a.semaine < b.semaine ? -1 : 1)
+      .map(r => Object.keys(r.plans).filter(ref => refsMois.has(ref) && window.__classer(r.plans[ref]) === 'termine').length);
+    document.querySelectorAll('.critique-ligne')[0].click();
+    return { val, termines: pts.map(x => x.termine), totaux: pts.map(x => x.total), attendu };
+  });
+  verifier('la courbe d’un mois de création part de ses vrais comptes, pas de zéro : chaque relevé recompté sur sa carte plan par plan',
+    mois15 && serieMois.totaux.every(t => t > 0) && serieMois.termines.slice(0, -1).join() === serieMois.attendu.slice(0, serieMois.termines.length - 1).join(),
+    JSON.stringify(serieMois));
+  await p.selectOption('#dim-critique', 'ata'); await p.waitForTimeout(300);
+
+  // --- Un périmètre se reconnaît sans espaces : « Base / Option » dans l'extract est le « BASE/OPTION » du jalon.
+  const per15 = await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    s.plans.forEach(p => { if (p[s.cleDomaine] === 'BASE/OPTION') p[s.cleDomaine] = 'Base / Option'; });
+    const nBase = s.plans.filter(p => p[s.cleDomaine] === 'Base / Option').length;
+    window.__chargerSource(s);
+    [...document.querySelectorAll('#choix-perimetre button')].find(b => b.dataset.perimetre === 'Base / Option').click();
+    const legendes = [...document.querySelectorAll('.legende-jalon')].map(l => ({ texte: l.textContent.replace(/\s+/g, ' '), hors: l.classList.contains('hors-perimetre') }));
+    const b = window.__bilanEcheance(1);          // Diffusion PH Base, périmètre BASE/OPTION
+    return { nBase, legendes, bilan: b && { domaine: b.domaine, total: b.total } };
+  });
+  await p.waitForTimeout(400);
+  const legPH = n => per15.legendes.find(l => l.texte.indexOf(n) !== -1) || {};
+  verifier('sous « Base / Option », le jalon BASE/OPTION est le sien — il compte, l’autre non — et son bilan porte sur ses plans',
+    legPH('Diffusion PH Base').hors === false && legPH('Diffusion PH Perso').hors === true &&
+    !!per15.bilan && per15.bilan.domaine === 'Base / Option' && per15.bilan.total === per15.nBase && per15.nBase > 0, JSON.stringify(per15));
+  await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); });
+  await p.waitForTimeout(500);
   await reinitialiser(p);
 
   section('Persistance (même navigateur, page rechargée)');

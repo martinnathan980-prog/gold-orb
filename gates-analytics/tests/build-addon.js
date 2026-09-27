@@ -17,7 +17,27 @@ function chargerServeur(classeur, proprietes, fichiers) {
     { console: muet, JSON: JSON, Date: Date, Math: Math },
     classeur, proprietes, fichiers));
   vm.runInContext(fs.readFileSync(path.join(racine, 'Code.gs'), 'utf8'), contexte);
+  /* La configuration livrée suit une colonne nommée, HDK AA 011 >
+     Avancement Définition Electrique, et n'en suit aucune autre si elle
+     manque. Les extracts d'essai qui n'ont pas ce bloc (l'exemple simple,
+     les onglets fabriqués à la main) tournent donc comme un classeur dont on
+     aurait vidé COLONNE_FWD et COLONNE_CONCEPT : en détection automatique.
+     Ceux qui ont la vraie structure gardent la configuration livrée. */
+  if (!aLeBlocHDK(classeur)) {
+    const cfg = vm.runInContext('CONFIG', contexte);
+    cfg.COLONNE_FWD = '';
+    cfg.COLONNE_CONCEPT = '';
+  }
   return contexte;
+}
+
+function aLeBlocHDK(classeur) {
+  if (!classeur || !classeur.getSheets) return false;
+  return classeur.getSheets().some(function (f) {
+    return (f.valeurs || []).slice(0, 8).some(function (l) {
+      return (l || []).some(function (v) { return String(v).trim() === 'HDK AA 011'; });
+    });
+  });
 }
 
 /**

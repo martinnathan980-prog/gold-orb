@@ -610,7 +610,6 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .fiche-echeance-verdict { display: flex; gap: 9px; align-items: baseline; font-weight: 500; }
 /* Le même verdict au rythme des quatre dernières semaines, en retrait sous
    celui du rythme tenu. */
-.fiche-echeance-recent { font-size: 12.5px; color: var(--encre-2); margin: -4px 0 0 27px; }
 .fiche-echeance-verdict::before {
   flex: none; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
   font-size: 11px; font-weight: 700; color: var(--sur-plein); transform: translateY(3px);
@@ -666,12 +665,6 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .note-graphe { margin: 12px 0 0; text-align: center; font-size: 12px; color: var(--encre-3); }
 .note-graphe:empty { display: none; }
 
-.comparatif {
-  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--filet);
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 18px; font-size: 13px; color: var(--encre-3);
-}
-.comparatif:empty { display: none; }
-.comparatif > span:first-child { color: var(--encre-2); }
 .puce-delta {
   border: none; background: none; font: inherit; cursor: pointer; padding: 1px 0;
   color: var(--encre-2); border-bottom: 1px dotted var(--filet-fort);
@@ -727,14 +720,13 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 /* La référence du tableau se clique comme un lien discret. */
 .ref-plan { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
 .ref-plan:hover { text-decoration: underline; text-underline-offset: 3px; }
-/* À surveiller : les plans à l'arrêt, sous le comparatif, dans le même
-   registre, en ambre — ce n'est pas un retard, c'est une question à poser. */
+/* À surveiller : les plans à l'arrêt, sous les états, en ambre — ce n'est pas un retard, c'est une question à poser. */
 .a-surveiller { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-top: 8px; font-size: 13px; color: var(--encre-2); }
 .a-surveiller[hidden] { display: none; }
 .a-surveiller .puce-arret b { color: var(--cours); }
 .pastille.arret { background: transparent; border: 2px solid var(--cours); box-sizing: border-box; }
 /* Les reculs en rouge, dans le comparatif comme dans le journal. */
-.puce-delta[data-delta="reculs"], .compte-passage.recul b { color: var(--alerte); }
+.compte-passage.recul b { color: var(--alerte); }
 
 /* ---------------------------------------------------- Rapprochement
    Quatre compteurs dans le registre des puces du comparatif ; une liste
@@ -916,6 +908,9 @@ table.plans tbody tr[data-plan] { cursor: pointer; }
 /* Quand d'autres filtres réduisent les lignes, les colonnes tirées de
    l'historique le disent : elles portent sur tout le groupe. */
 .critique-note { font-size: 11.5px; color: var(--encre-3); margin: 0 0 6px; line-height: 1.4; }
+.critique-note.note-arret { display: flex; align-items: baseline; gap: 6px; color: var(--encre-2); }
+.critique-note.note-arret .pastille { flex: none; width: 8px; height: 8px; align-self: center; }
+.critique-note.note-arret b { color: var(--cours); font-weight: 500; }
 .critique-tete > span.a-gauche { justify-content: flex-start; }
 button.tri-groupe {
   border: none; background: none; padding: 2px 0; margin: 0; color: inherit; cursor: pointer;
@@ -952,7 +947,6 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
 .critique-date .v {
   font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-size: 12.5px;
 }
-.critique-date .fin-recente { display: block; font-size: 10.5px; color: var(--encre-3); margin-top: 3px; white-space: nowrap; }
 
 /* Le panneau d'explication : la formule, puis la meme formule avec les chiffres
    d'une ligne reelle, pour qu'on puisse la refaire de tete. */

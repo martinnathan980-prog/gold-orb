@@ -523,10 +523,16 @@ function getFeuilleDonnees(classeur, contrat) {
 /** Trouve la ligne d'en-têtes dans les premières lignes de la feuille. */
 function detecterLigneEntete(donnees) {
   const limite = Math.min(CONFIG.LIGNES_SCAN_ENTETE, donnees.length);
+  /* Un mot-clé compte s'il occupe une cellule à lui seul, ou y figure comme
+     mot entier : « ata » ne doit pas se lire dans « catalogue » ou
+     « constatation » d'une ligne de groupes, au-dessus du vrai en-tête. */
+  const motsCles = CONFIG.MOTS_CLES_ENTETE.map(function (m) {
+    return new RegExp('(^|[^a-z0-9])' + normaliser(m).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)');
+  });
   for (let i = 0; i < limite; i++) {
-    const ligne = normaliser(donnees[i].join(' '));
-    for (let k = 0; k < CONFIG.MOTS_CLES_ENTETE.length; k++) {
-      if (ligne.indexOf(CONFIG.MOTS_CLES_ENTETE[k]) !== -1) return i;
+    const cellules = donnees[i].map(normaliser);
+    for (let k = 0; k < motsCles.length; k++) {
+      if (cellules.some(function (c) { return motsCles[k].test(c); })) return i;
     }
   }
   // Repli : première ligne qui contient au moins 3 libellés non vides.
@@ -616,8 +622,11 @@ function indexParDesignation(designation, entetes, groupes) {
  * nomment explicitement un autre sujet sont écartés d'office.
  */
 function trouverIndexFWD(entetes, groupes) {
-  const force = indexParDesignation(CONFIG.COLONNE_FWD, entetes, groupes);
-  if (force !== -1) return force;
+  /* Une colonne nommée dans CONFIG.COLONNE_FWD est la seule qu'on suive :
+     introuvable, on n'en suit aucune — la page le dit en haut, l'archivage
+     refuse. Se rabattre sur une autre colonne (« Réalisation FWD >
+     Avancement ») montrerait des chiffres justes d'allure, mais faux. */
+  if (CONFIG.COLONNE_FWD) return indexParDesignation(CONFIG.COLONNE_FWD, entetes, groupes);
 
   const autreSujet = /(definition|concept|harnais|electrique|ibg|documentaire)/;
   const criteres = [
@@ -720,9 +729,10 @@ function construireModele(contrat) {
     : new Array(nbColonnes).fill('');
 
   const iFWD = trouverIndexFWD(entetes, groupes);
-  const fwdDemandeeAbsente = !!CONFIG.COLONNE_FWD && indexParDesignation(CONFIG.COLONNE_FWD, entetes, groupes) === -1;
+  const fwdDemandeeAbsente = !!CONFIG.COLONNE_FWD && iFWD === -1;
   let iConcept = CONFIG.COLONNE_CONCEPT ? indexParDesignation(CONFIG.COLONNE_CONCEPT, entetes, groupes) : -1;
   if (iConcept === iFWD) iConcept = -1;
+  const conceptDemandeAbsent = !!CONFIG.COLONNE_CONCEPT && iConcept === -1;
   const iRef = trouverIndexReference(entetes);
   const iDomaine = trouverIndexDomaine(entetes, groupes);
   const lignesBrutes = donnees.slice(indexEntete + 1);
@@ -851,8 +861,16 @@ function construireModele(contrat) {
     cleDomaine: iDomaine === -1 ? null : colonnes[iDomaine].cle,
     cleConcept: cleConcept,
     fwdDemandeeAbsente: fwdDemandeeAbsente,
-    avertissement: cleFWD === null
-      ? 'Aucune colonne d\'avancement FWD n\'a été reconnue dans l\'en-tête.'
+    conceptDemandeAbsent: conceptDemandeAbsent,
+    avertissement: fwdDemandeeAbsente
+      ? 'Colonne « ' + CONFIG.COLONNE_FWD + ' » introuvable dans l\'onglet « ' + feuille.getName() +
+        ' » : aucun avancement n\'est lu plutôt qu\'un autre, et l\'archivage est refusé. Suivi FWD → Diagnostic montre l\'en-tête lu.'
+      : cleFWD === null
+        ? 'Aucune colonne d\'avancement FWD n\'a été reconnue dans l\'en-tête.'
+        : '',
+    avertissementConcept: conceptDemandeAbsent
+      ? 'Colonne « ' + CONFIG.COLONNE_CONCEPT + ' » introuvable dans l\'onglet « ' + feuille.getName() +
+        ' » : pas de concept harnais, et l\'archivage est refusé. Suivi FWD → Diagnostic montre l\'en-tête lu.'
       : '',
     lignesIgnorees: lignesBrutes.length - lignes.length
   };
@@ -956,7 +974,7 @@ function getDonneesPourClient(contrat) {
     const modele = construireModele(contrat);
     const paquet = {
       ok: true,
-      message: modele.avertissement,
+      message: [modele.avertissement, modele.avertissementConcept].filter(Boolean).join(' '),
       feuille: modele.feuille,
       genereLe: new Date().toISOString(),
       colonnes: modele.colonnes,
@@ -1216,6 +1234,9 @@ function diagnostic() {
  * qu'aucun jalon n'a de périmètre, ni quand le contrat ne se lit pas (son
  * propre diagnostic l'a déjà dit).
  */
+/** Un périmètre se compare comme sur la page : sans casse, accents ni espaces. */
+function clePerimetre(v) { return normaliser(v).replace(/\s+/g, ''); }
+
 function diagnostiquerPerimetresDesJalons(contrat, jalons, dire) {
   const avecPerimetre = jalons.filter(function (j) { return j.perimetre; });
   if (!avecPerimetre.length || !contrat) return;
@@ -1233,10 +1254,10 @@ function diagnostiquerPerimetresDesJalons(contrat, jalons, dire) {
   const vues = {};
   modele.plans.forEach(function (p) {
     const v = String(p[modele.cleDomaine] === undefined || p[modele.cleDomaine] === null ? '' : p[modele.cleDomaine]).trim();
-    if (v && !vues[normaliser(v)]) vues[normaliser(v)] = v;
+    if (v && !vues[clePerimetre(v)]) vues[clePerimetre(v)] = v;
   });
   const valeurs = Object.keys(vues).map(function (k) { return vues[k]; });
-  const inconnus = avecPerimetre.filter(function (j) { return !vues[normaliser(j.perimetre)]; });
+  const inconnus = avecPerimetre.filter(function (j) { return !vues[clePerimetre(j.perimetre)]; });
   const colonne = modele.colonnes.filter(function (c) { return c.cle === modele.cleDomaine; })[0];
   const titre = colonne ? colonne.titre : modele.cleDomaine;
   if (!inconnus.length) {
@@ -1387,14 +1408,13 @@ function diagnostiquerContrat(classeur, contrat, dire) {
     const colFWD = modele.colonnes.filter(function (c) { return c.cle === 'avancement'; })[0];
     if (modele.avertissement) {
       dire('✗ ' + modele.avertissement);
-      dire('   → la page s\'affichera, mais tout sera « non renseigné ».');
+      dire('   → la page s\'affichera, mais tout sera « non renseigné », et rien ne sera archivé.');
+      if (modele.fwdDemandeeAbsente) direColonnesProches(dire, modele.colonnes, CONFIG.COLONNE_FWD);
     } else {
       dire('✓ Avancement FWD : colonne « ' + colFWD.titre + ' »' +
-           (colFWD.groupe ? ', groupe « ' + colFWD.groupe + ' »' : ''));
-      if (modele.fwdDemandeeAbsente) {
-        dire('⚠ La colonne demandée (CONFIG.COLONNE_FWD « ' + CONFIG.COLONNE_FWD + ' ») est introuvable dans cet extract :');
-        dire('   la page suit celle ci-dessus, trouvée d\'elle-même. Vérifier le nom du groupe et de la colonne.');
-      }
+           (colFWD.groupe ? ', groupe « ' + colFWD.groupe + ' »' : '') +
+           (CONFIG.COLONNE_FWD ? ' — celle de CONFIG.COLONNE_FWD' : ' — trouvée d\'elle-même (CONFIG.COLONNE_FWD est vide)'));
+      direDoublon(dire, modele.colonnes, CONFIG.COLONNE_FWD);
       const compte = { termine: 0, encours: 0, afaire: 0, vide: 0 };
       modele.plans.forEach(function (p) { compte[classerFWD(p.avancement)]++; });
       dire('  ' + compte.termine + ' terminés, ' + compte.encours + ' en cours, ' +
@@ -1410,8 +1430,10 @@ function diagnostiquerContrat(classeur, contrat, dire) {
         dire('  ' + compteC.termine + ' terminés, ' + compteC.encours + ' en cours, ' +
              compteC.afaire + ' à faire, ' + compteC.vide + ' non renseignés');
         direValeurs(dire, modele.plans, modele.cleConcept);
+        direDoublon(dire, modele.colonnes, CONFIG.COLONNE_CONCEPT);
       } else {
-        dire('– Concept harnais : colonne « ' + CONFIG.COLONNE_CONCEPT + ' » introuvable dans cet extract — pas d\'interrupteur.');
+        dire('✗ ' + modele.avertissementConcept);
+        direColonnesProches(dire, modele.colonnes, CONFIG.COLONNE_CONCEPT);
       }
     }
 
@@ -1450,6 +1472,37 @@ function diagnostiquerContrat(classeur, contrat, dire) {
     if (err && err.stack) dire(String(err.stack).split('\n').slice(0, 3).join('\n'));
     return false;
   }
+}
+
+/**
+ * Une colonne demandée introuvable : les colonnes de même intitulé, avec
+ * leur groupe, pour voir d'un coup d'œil si c'est le groupe qui a changé
+ * de nom. Seulement des intitulés d'en-tête, jamais de contenu de cellule.
+ */
+function direColonnesProches(dire, colonnes, designation) {
+  const voulu = normaliser(designation).split('>');
+  const titre = voulu[voulu.length - 1].trim();
+  const memes = colonnes.filter(function (c) { return normaliser(c.titre) === titre; });
+  if (!memes.length) {
+    dire('   Aucune colonne intitulée « ' + titre + ' » dans l\'en-tête.');
+    return;
+  }
+  dire('   Colonnes intitulées « ' + memes[0].titre + ' », par groupe : ' +
+       memes.map(function (c) { return '« ' + (c.groupe || 'sans groupe') + ' »'; }).join(', ') + '.');
+  dire('   → corriger le groupe dans CONFIG (partie avant « > ») s\'il a changé de nom dans l\'export.');
+}
+
+/** Deux colonnes répondant à la même désignation : la première est suivie, on le dit. */
+function direDoublon(dire, colonnes, designation) {
+  const voulu = normaliser(designation);
+  if (!voulu) return;
+  const coupe = voulu.split('>');
+  const n = colonnes.filter(function (c) {
+    return coupe.length === 2
+      ? normaliser(c.titre) === coupe[1].trim() && normaliser(c.groupe) === coupe[0].trim()
+      : normaliser(c.titre) === voulu;
+  }).length;
+  if (n > 1) dire('⚠ ' + n + ' colonnes répondent à « ' + designation + ' » : la page suit la première, à gauche.');
 }
 
 function terminerDiagnostic(lignes) {
@@ -1605,6 +1658,11 @@ function ancienneteDepuis(valeur, reference) {
 /** Compte l'état du jour d'un contrat : global, par dimension, et plan par plan. */
 function compterAvancements(contrat) {
   const modele = construireModele(contrat);
+  /* Sans la colonne suivie, chaque plan serait archivé « non renseigné » :
+     une semaine fausse dans l'historique, des reculs partout la semaine
+     d'après. Mieux vaut ne rien archiver et le dire. */
+  if (modele.avertissement) throw new Error(modele.avertissement);
+  if (modele.avertissementConcept) throw new Error(modele.avertissementConcept);
   const clesDim = modele.clesDim.concat(modele.cleDate ? ['_anciennete'] : []);
   const maintenant = new Date();
   const reference = new Date(Date.UTC(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate()));

@@ -109,7 +109,6 @@
     <div class="barre" id="barre" role="img" aria-label="Répartition de l'avancement suivi"></div>
     <div class="filets" id="filets" aria-hidden="true"></div>
     <div class="etats" id="etats" role="group" aria-label="Filtrer par valeur de l'avancement suivi"></div>
-    <div class="comparatif" id="comparatif"></div>
     <!-- À surveiller : les plans en cours qui n'ont pas bougé depuis des
          semaines. Un clic les montre dans le tableau. -->
     <div class="a-surveiller" id="a-surveiller" hidden></div>
@@ -288,6 +287,9 @@
 
   <footer class="pied">
     <span id="import"></span><br>
+    <!-- La colonne lue, nommée comme dans l'export : on voit d'un coup d'œil
+         que la page suit la bonne. -->
+    <span id="colonne-suivie"></span><br id="colonne-suivie-fin">
     <!-- La démonstration seule le dit : sur le classeur, ces chiffres SONT
          ceux du tableur. Masqué dès qu'un classeur est derrière la page. -->
     <span id="avertissement-demo">Démonstration — les chiffres de cette page sont fictifs, aucun ne vient d'un classeur.</span>

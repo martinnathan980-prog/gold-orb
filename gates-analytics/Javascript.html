@@ -368,7 +368,10 @@
      groupes, tableau, comparaison. */
   var INDICATEUR = 'def', CLE_SUIVIE = 'avancement';
   var CLES_DIM, CLE_DOMAINE, CLES_ESSENTIELLES, VAUT_ESSENTIELLES, CLE_LIBELLE;
-  var RELEVES, DERNIER, EVENEMENTS_IMPORT, COMPARATIF, RAPPROCHEMENT, jalons;
+  var RELEVES, DERNIER, EVENEMENTS_IMPORT, RAPPROCHEMENT, jalons;
+  /* Vrai quand le dernier point est l’extract du jour, collé après le dernier
+     relevé archivé et pas encore archivé lui-même (voir chargerSource). */
+  var EXTRAIT_EN_PLUS = false;
   /* La figure de la comparaison s'anime une fois par source : le drapeau se
      lève au chargement, le premier rendu le consomme. */
   var ANIMER_FIGURE = false, GUETTEUR_FIGURE = null;
@@ -556,7 +559,7 @@
      (« Tout »), tous comptent ; sinon ceux du périmètre et ceux qui n'en ont
      pas. Casse et accents indifférents, comme partout ailleurs. */
   function jalonDansPerimetre(j) {
-    return jalonDuSuivi(j) && (!j.perimetre || !vue.perimetre || norm(j.perimetre) === norm(vue.perimetre));
+    return jalonDuSuivi(j) && (!j.perimetre || !vue.perimetre || memePerimetre(j.perimetre, vue.perimetre));
   }
   /* Un jalon du concept harnais ne compte pas sous la définition électrique,
      ni l'inverse : il reste dessiné, en retrait. */
@@ -606,10 +609,13 @@
     return n > 1 ? 'dans ' + nb(n) + ' jours' : 'il y a ' + nb(-n) + ' jours';
   }
   /* Le périmètre d'un jalon, écrit comme dans la colonne de domaine. */
+  /* Un périmètre se compare sans casse, sans accents ni espaces : le jalon
+     « BASE/OPTION » est bien le domaine « Base / Option » de l'extract. */
+  function memePerimetre(a, b) { return norm(a).replace(/\s+/g, '') === norm(b).replace(/\s+/g, ''); }
   function domaineDuJalon(j) {
     if (!j.perimetre) return '';
-    var n = norm(j.perimetre), trouve = '';
-    PLANS.some(function (p) { var d = domaineDe(p); if (norm(d) === n) { trouve = d; return true; } return false; });
+    var trouve = '';
+    PLANS.some(function (p) { var d = domaineDe(p); if (memePerimetre(d, j.perimetre)) { trouve = d; return true; } return false; });
     return trouve || String(j.perimetre);
   }
   /* Le périmètre où se comptent les plans d'une échéance : celui qu'on
@@ -636,11 +642,9 @@
     var der = pts[pts.length - 1];
     var total = der.total, termines = der.termine, restants = Math.max(0, total - termines);
     var ry = rythmes(pts), rythme = ry ? ry.central : 0;
-    var rec = ry && ry.recent ? ry.recent.central : null;
     var depart = semaineDepart();
     var ecart = j.i - depart;
     var semaines = Math.max(1, ecart);          // le jalon de la semaine en cours laisse une semaine
-    var manqueA = function (r) { return restants > 0 && !(r > 0 && restants <= r * semaines + 1e-9) ? Math.ceil(restants - Math.max(0, r) * semaines - 1e-9) : 0; };
     var enRetard = restants > 0 && !(rythme > 0 && restants <= rythme * semaines + 1e-9);
     return {
       domaine: per, total: total, termines: termines, restants: restants,
@@ -649,30 +653,10 @@
       requis: restants / semaines,
       fin: restants ? semaineFin(termines, total, rythme) : depart,
       enRetard: enRetard,
-      manque: enRetard ? manqueA(rythme) : 0,
-      /* Le rythme des quatre dernières semaines, et où il mène : écrit à côté,
-         jamais à la place. */
-      rythmeRecent: rec, gagnesRecent: rec !== null ? ry.recent.gagnes : 0, semainesRecent: rec !== null ? ry.recent.semaines : 0,
-      finRecente: rec !== null ? (restants ? semaineFin(termines, total, rec) : depart) : null,
-      manqueRecent: rec !== null ? manqueA(rec) : null
+      manque: enRetard ? Math.ceil(restants - Math.max(0, rythme) * semaines - 1e-9) : 0
     };
   }
   function virgule(x) { return (Math.round(x * 10) / 10).toFixed(1).replace('.', ','); }
-  /* La bulle d'une cellule « rythme tenu » du bloc : les deux rythmes. */
-  function titreRecent(r) {
-    if (r.vitesseRec === null) return '';
-    return ' title="' + ech('Rythme tenu : ' + virgule(r.vitesse) + ' par semaine, du premier au dernier relevé ; sur les ' +
-      r.semainesRec + ' dernières semaines : ' + virgule(r.vitesseRec) + ' par semaine.') + '"';
-  }
-  /* Ce que dirait la fiche au rythme des quatre dernières semaines : la
-     même phrase, en retrait sous le verdict. */
-  function phraseRecente(b) {
-    var debut = 'Au rythme des ' + b.semainesRecent + ' dernières semaines (' + virgule(b.rythmeRecent) + ' par semaine), ';
-    if (b.rythmeRecent <= 0) return debut + 'rien n’a été terminé : pas de date d’arrivée.';
-    if (!b.manqueRecent) return debut + 'l’échéance serait tenue : tout serait terminé en ' + semaineDite(b.finRecente) + '.';
-    return debut + 'il manquerait ' + nb(b.manqueRecent) + (b.manqueRecent > 1 ? ' plans' : ' plan') +
-      ' le jour de l’échéance ; tout serait terminé en ' + semaineDite(b.finRecente) + '.';
-  }
   function ficheEcheance(idx) {
     var j = jalons[idx];
     if (!j) return '';
@@ -727,12 +711,9 @@
         '\x3Cspan>' + nb(b.termines) + ' sur ' + nb(b.total) + ' terminés · ' + pct + ' %\x3C/span>\x3C/div>' +
       (b.restants && !passe
         ? '\x3Cdiv class="fiche-echeance-rythme">Il faut \x3Cb>' + virgule(b.requis) + '\x3C/b> plans terminés par semaine d’ici l’échéance' +
-          (b.rythme !== null ? ' ; le rythme tenu est de \x3Cb>' + virgule(b.rythme) + '\x3C/b> par semaine' +
-            (b.rythmeRecent !== null ? ', \x3Cb>' + virgule(b.rythmeRecent) + '\x3C/b> sur les ' + b.semainesRecent + ' dernières semaines.' : '.') : '.') + '\x3C/div>'
+          (b.rythme !== null ? ' ; le rythme tenu est de \x3Cb>' + virgule(b.rythme) + '\x3C/b> par semaine.' : '.') + '\x3C/div>'
         : '') +
       '\x3Cdiv class="fiche-echeance-verdict ' + verdict.cls + '">' + ech(verdict.mot) + '\x3C/div>' +
-      (b.restants && !passe && b.rythmeRecent !== null && b.rythme > 0
-        ? '\x3Cdiv class="fiche-echeance-recent">' + ech(phraseRecente(b)) + '\x3C/div>' : '') +
       '\x3C/div>';
   }
   /* En tête du graphique : la prochaine échéance du périmètre, en jours. Son
@@ -846,6 +827,20 @@
      définition. Les groupes se refont sur les plans d'aujourd'hui, comme
      pour un relevé fabriqué (une ancienne référence retrouve son plan par
      sa racine). */
+  /* L'extract du jour dit-il autre chose que le dernier relevé archivé ?
+     Plan par plan quand le relevé a gardé sa carte, sur les comptes sinon. */
+  function extraitABouge(vivant, archive) {
+    if (!archive.plans || !vivant.plans) {
+      return ['total', 'termine', 'encours', 'afaire', 'vide'].some(function (k) { return vivant[k] !== archive[k]; });
+    }
+    var refs = Object.keys(vivant.plans);
+    if (refs.length !== Object.keys(archive.plans).length) return true;
+    return refs.some(function (ref) {
+      return !Object.prototype.hasOwnProperty.call(archive.plans, ref) ||
+        String(archive.plans[ref] == null ? '' : archive.plans[ref]).trim() !== String(vivant.plans[ref] == null ? '' : vivant.plans[ref]).trim();
+    });
+  }
+
   function releveDuConcept(r) {
     var carte = r.plansConcept, e = { termine: 0, encours: 0, afaire: 0, vide: 0 }, g = {};
     var parRef = {}, parRacine = {};
@@ -1029,9 +1024,24 @@
     });
     var vivant = releveDepuis(PLANS, AUJ, CLES_DIM, valeurDim, true);
     var dernier = RELEVES[RELEVES.length - 1];
-    // Le dernier relevé archivé garde son état plan par plan : c'est lui qui
-    // sert de point de comparaison si la feuille a bougé depuis.
-    if (dernier && dernier.i === AUJ) {
+    var iJour = semaineDAujourdhui();
+    /* L'extract recollé cette semaine alors que le dernier relevé archivé est
+       d'une semaine d'avant (recollé lundi, archivé vendredi) : c'est un
+       point de plus, à la semaine où l'on est. Écraser le relevé d'avant
+       mettrait les avancées de cette semaine au compte de la précédente, et
+       le rythme compterait une semaine de moins qu'il n'en a fallu. Un
+       extract qui n'a pas bougé reste, lui, le point du dernier relevé : on
+       ne sait rien de cette semaine, on n'y invente pas un palier. */
+    EXTRAIT_EN_PLUS = false;
+    if (dernier && dernier.i === AUJ && iJour > AUJ && extraitABouge(vivant, dernier)) {
+      EXTRAIT_EN_PLUS = true;
+      AUJ = iJour;
+      vivant.i = AUJ;
+      MAX_IDX = Math.max(104, AUJ + 52);
+      RELEVES.push(vivant);
+    } else if (dernier && dernier.i === AUJ) {
+      // Le dernier relevé archivé garde son état plan par plan : c'est lui qui
+      // sert de point de comparaison si la feuille a bougé depuis.
       if (RELEVES.length > 1 && !RELEVES[RELEVES.length - 2].plans) {
         RELEVES[RELEVES.length - 2].plans = dernier.plans;
       }
@@ -1051,9 +1061,18 @@
     DERNIER = RELEVES[RELEVES.length - 1];
     /* Le pied dit ce que dit la note du graphique : le dernier relevé, et
        combien il y en a — avec les mêmes mots. */
-    $('import').textContent = RELEVES_SRC.length
-      ? 'Dernier relevé : ' + semaineDite(DERNIER.i) + ' · ' + RELEVES.length + (RELEVES.length > 1 ? ' relevés' : ' relevé')
-      : 'Aucun relevé archivé pour l\u2019instant : la page montre l\u2019extract du jour.';
+    var nArchives = RELEVES.length - (EXTRAIT_EN_PLUS ? 1 : 0);
+    $('import').textContent = !RELEVES_SRC.length
+      ? 'Aucun relevé archivé pour l\u2019instant : la page montre l\u2019extract du jour.'
+      : EXTRAIT_EN_PLUS
+        ? 'Dernier relevé : ' + semaineDite(RELEVES[RELEVES.length - 2].i) + ' · ' + nArchives + (nArchives > 1 ? ' relevés' : ' relevé') +
+          ' · l\u2019extract du jour, pas encore archivé, compte pour ' + semaineDite(DERNIER.i)
+        : 'Dernier relevé : ' + semaineDite(DERNIER.i) + ' · ' + RELEVES.length + (RELEVES.length > 1 ? ' relevés' : ' relevé');
+    var colonneLue = colonneDite(CLE_SUIVIE);
+    $('colonne-suivie').textContent = colonneLue
+      ? 'Colonne suivie : ' + colonneLue
+      : (PLANS.length ? 'Colonne suivie : introuvable \u2014 voir le message en haut de la page.' : '');
+    $('colonne-suivie').hidden = $('colonne-suivie-fin').hidden = !$('colonne-suivie').textContent;
     /* « Démonstration » ne se lit que dans la démonstration, la page
        ouverte seule. Sur les chiffres du tableur, le pied ne dit rien de tel. */
     $('avertissement-demo').hidden = SERVEUR;
@@ -1093,7 +1112,6 @@
 
     remettreVue();
     rendrePerimetre();
-    COMPARATIF = comparatif();
     afficherContrat();
     refleterVue();
     $('bulle').dataset.visible = 'false';
@@ -1229,38 +1247,22 @@
 
   /* ------------------------------------------------------------
      RYTHME
-     Deux rythmes, lus sur la même série que la courbe :
-     - le rythme tenu : les plans terminés gagnés du premier au dernier
-       relevé, divisés par les semaines écoulées. Il lisse les semaines
-       irrégulières — un lot soldé d'un coup, puis rien — mais réagit
-       lentement : une équipe qui accélère depuis un mois reste jugée sur
-       tout son passé ;
-     - le rythme récent (débrief 14) : la même mesure sur les quatre
-       dernières semaines — depuis le relevé le plus récent qui date d'au
-       moins quatre semaines. Il dit ce que l'équipe fait maintenant.
-     Les verdicts (échéance tenue, manque, rouge) restent au rythme tenu ;
-     le rythme récent s'écrit à côté, avec la fin où il mène. Tant que
-     l'historique ne dépasse pas quatre semaines, les deux se confondent et
-     seul le rythme tenu s'écrit.
+     Un seul rythme, lu sur la même série que la courbe : le rythme tenu,
+     les plans terminés gagnés du premier au dernier relevé, divisés par les
+     semaines écoulées. Il lisse les semaines irrégulières — un lot soldé
+     d'un coup, puis rien. (Débrief 15 : un second rythme, sur les quatre
+     dernières semaines, faisait « trop de rythme » ; il est retiré.)
      ------------------------------------------------------------ */
-  var SEMAINES_RECENTES = 4;
   function rythmes(pts) {
     if (!pts || pts.length < 2) return null;
     var premier = pts[0], dernier = pts[pts.length - 1];
     var semaines = dernier.i - premier.i;
     if (semaines <= 0) return null;
-    var base = premier;
-    for (var k = pts.length - 2; k >= 0; k--) {
-      if (dernier.i - pts[k].i >= SEMAINES_RECENTES) { base = pts[k]; break; }
-    }
-    var sr = dernier.i - base.i;
     return {
       central: (dernier.termine - premier.termine) / semaines,
       gagnes: dernier.termine - premier.termine,
       semaines: semaines,
-      n: pts.length,
-      /* null quand il se confond avec le rythme tenu : rien à écrire à côté. */
-      recent: sr < semaines ? { central: (dernier.termine - base.termine) / sr, gagnes: dernier.termine - base.termine, semaines: sr, depuis: base.i } : null
+      n: pts.length
     };
   }
 
@@ -1295,8 +1297,8 @@
   /* Le résumé d'une liste d'événements, dans les mots du journal : une ligne
      par valeur d'arrivée — « 20 passés à « Validé » », « 3 passés à « Non
      renseigné » » —, les reculs, les changements d'indice, les nouveaux, les
-     disparus. Le comparatif du haut, le journal et la bulle du graphique le
-     lisent tous trois : une même semaine s'y dit avec les mêmes mots, dans
+     disparus. Le journal, la bulle du graphique et la vue d'ensemble le
+     lisent : une même semaine s'y dit avec les mêmes mots, dans
      le même ordre, avec les mêmes nombres. Chaque événement compte une
      fois : un plan réémis sous « changement d'indice », même s'il change
      d'état au passage (sa ligne du journal montre l'état avant et après) ;
@@ -1370,8 +1372,10 @@
     if (l.cle === 'reculs') return '\x3Cspan class="pastille recul">\x3C/span>';
     return pastilleDe(l.cle === 'indice' ? 'indice' : 'sans');
   }
-  /* Le comparatif affiché : les événements du dernier relevé, restreints au
-     périmètre, résumés comme une semaine du journal. */
+  /* Ce qui a changé au dernier relevé, restreint au périmètre, résumé comme
+     une semaine du journal : la colonne « Depuis le relevé précédent » de la
+     vue d'ensemble. (La bande du même nom sous la barre est retirée au
+     débrief 15 : la courbe et le journal le disent.) */
   function comparatif() {
     if (!EVENEMENTS_IMPORT) return null;
     var evts = EVENEMENTS_IMPORT.filter(dansPerimetreEvt);
@@ -1526,7 +1530,7 @@
     return Object.keys(RAPPROCHEMENT.parPlan).filter(function (ref) { return RAPPROCHEMENT.parPlan[ref] === cle; });
   }
   /* Poser ou retirer un lot : les lots d'ici passent par la sélection du
-     tableau, comme les puces du comparatif ; le lot de là ne filtre que le
+     tableau ; le lot de là ne filtre que le
      tableau de là. Un seul lot à la fois. */
   function poserLotRapp(cle) {
     var lot = LOTS_RAPPROCHEMENT.filter(function (l) { return l.cle === cle; })[0];
@@ -1674,7 +1678,7 @@
      PÉRIMÈTRE
      La colonne de domaine (BASE/OPTION, PERSO…) découpe les plans en
      familles qu'on suit séparément. Le périmètre choisi en haut de page
-     restreint tout : la sélection du jour, le comparatif, le journal, et les
+     restreint tout : la sélection du jour, le journal, et les
      séries historiques — dérivées relevé par relevé de la carte plan par plan
      archivée, croisée avec le domaine COURANT de chaque plan. L'onglet
      Historique, lui, n'est jamais réécrit.
@@ -1706,7 +1710,7 @@
     var c = { total: 0, termine: 0, groupes: {} };
     Object.keys(rel.plans || {}).forEach(function (ref) {
       var p = planDeRef(ref);
-      if (!p || domaineDe(p) !== perimetre) return;
+      if (!p || (perimetre !== null && domaineDe(p) !== perimetre)) return;
       var fini = classer(rel.plans[ref]) === 'termine';
       c.total++;
       if (fini) c.termine++;
@@ -1756,6 +1760,7 @@
     $('choix-avancement').hidden = b.hidden;
     [].forEach.call(b.querySelectorAll('button[data-indicateur]'), function (x) {
       x.setAttribute('aria-pressed', String(x.dataset.indicateur === INDICATEUR));
+      x.title = 'Colonne lue : ' + colonneDite(x.dataset.indicateur === 'concept' ? SRC && SRC.cleConcept : 'avancement');
     });
   }
   /* Changer d'avancement suivi, c'est relire la même source sous l'autre
@@ -1766,6 +1771,14 @@
      février), et un cadrage choisi pour le premier pouvait les cacher
      (débrief 14 : « dans le concept harnais, on ne voyait pas les
      jalons »). */
+  /* Une colonne dite comme dans l'export, groupe compris : « HDK AA 011 ›
+     Avancement Définition Electrique ». Vingt-sept colonnes de l'export
+     s'appellent « Avancement… » : sans le groupe, on ne saurait laquelle. */
+  function colonneDite(cle) {
+    var c = cle && PAR_CLE[cle];
+    return c ? (c.groupe ? c.groupe + ' \u203a ' : '') + c.titre : '';
+  }
+
   function changerIndicateur(ind) {
     if (ind === INDICATEUR || !SRC) return;
     INDICATEUR = ind;
@@ -1952,8 +1965,14 @@
       });
       if (!pts.length) pts.push({ i: AUJ, total: 0, termine: 0 });
     } else if (groupe) {
+      /* Le classeur archive les comptes par ses dimensions à lui ; « par
+         mois de création » n'en est pas (débrief 15 : la courbe d'un mois
+         partait de zéro). Faute de comptes archivés pour la dimension, on
+         les refait sur la carte plan par plan du relevé. */
       pts = RELEVES.map(function (r) {
-        var g = r.groupes[groupe.dim] && r.groupes[groupe.dim][groupe.val];
+        var gs = r.groupes && r.groupes[groupe.dim];
+        if (!gs && r.plans) gs = comptesDerives(r, null, groupe.dim).groupes;
+        var g = gs && gs[groupe.val];
         return { i: r.i, total: g ? g.total : 0, termine: g ? g.termine : 0 };
       });
     } else {
@@ -2012,18 +2031,21 @@
     var ryt = rythmes(pts);
     var vitesse = ryt ? ryt.central : 0;
     var projIdx = semaineFin(atteint, total, vitesse);
-    var vitesseRec = ryt && ryt.recent ? ryt.recent.central : null;
-    var projRec = vitesseRec !== null ? semaineFin(atteint, total, vitesseRec) : null;
 
     /* Combien de relevés, et de quand à quand : les mêmes mots que le pied. */
-    var n1 = pts.length, bornes = n1 > 1 ? ', de ' + semaineDite(pts[0].i) + ' à ' + semaineDite(pts[n1 - 1].i)
-                                         : (n1 ? ', ' + semaineDite(pts[0].i) : '');
+    /* L'extract du jour, pas encore archivé, est le dernier point sans être
+       un relevé : il se dit à part. */
+    var n1 = pts.length - (EXTRAIT_EN_PLUS ? 1 : 0);
+    var bornes = n1 > 1 ? ', de ' + semaineDite(pts[0].i) + ' à ' + semaineDite(pts[n1 - 1].i)
+                        : (n1 ? ', ' + semaineDite(pts[0].i) : '');
+    var releves = (n1 ? n1 + (n1 > 1 ? ' relevés' : ' relevé') + bornes : '') +
+      (EXTRAIT_EN_PLUS ? (n1 ? ', puis ' : '') + 'l’extract du jour en ' + semaineDite(pts[pts.length - 1].i) + ', pas encore archivé' : '');
     var note = vueSerie.portee
-      ? 'Historique · ' + vueSerie.portee + ' · ' + n1 + (n1 > 1 ? ' relevés' : ' relevé') + bornes +
+      ? 'Historique · ' + vueSerie.portee + ' · ' + releves +
         (vueSerie.partiel ? ' · les autres filtres ne s’appliquent pas à l’historique' : '')
       : (vueSerie.partiel
           ? 'Historique de l’ensemble des plans : un relevé archivé ne se refiltre pas.'
-          : n1 + (n1 > 1 ? ' relevés' : ' relevé') + bornes);
+          : releves);
     if (vueSerie.ecartes) {
       note += ' · ' + vueSerie.ecartes + ' relevé' + (vueSerie.ecartes > 1 ? 's' : '') +
         ' sans détail plan par plan, hors périmètre';
@@ -2143,15 +2165,6 @@
       s.push('\x3Ccircle cx="' + x(prochain.i).toFixed(1) + '" cy="' + y(cible).toFixed(1) + '" r="3.4" fill="' + cr + '"/>');
     }
 
-    /* Le rythme des quatre dernières semaines : une seconde projection, en
-       points fins, sans étiquette sur le dessin — la légende la nomme. */
-    if (projRec !== null && restants > 0) {
-      s.push('\x3Cpath class="projection-recente" d="M' + x(depart).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(projRec).toFixed(1) + ' ' + y(total).toFixed(1) +
-             '" fill="none" stroke="var(--fait)" stroke-width="1.8" stroke-dasharray="0.5 4" stroke-linecap="round" opacity=".75"/>');
-      if (projRec >= d0 && projRec <= d1) {
-        s.push('\x3Ccircle cx="' + x(projRec).toFixed(1) + '" cy="' + y(total).toFixed(1) + '" r="2.4" fill="var(--fait)" opacity=".75"/>');
-      }
-    }
     if (projIdx !== null) {
       s.push('\x3Cpath d="M' + x(depart).toFixed(1) + ' ' + y(atteint).toFixed(1) + ' L' + x(projIdx).toFixed(1) + ' ' + y(total).toFixed(1) +
              '" fill="none" stroke="var(--fait)" stroke-width="1.6" stroke-dasharray="5 4" opacity=".6"/>');
@@ -2336,18 +2349,6 @@
         '\x3Cspan title="' + ech(explication) + '">au rythme tenu (' + virgule(vitesse) + '/sem.)' +
         (projIdx !== null ? ' \u2192 fin ' + semaineDite(projIdx) : ' \u2014 pas de fin pr\u00e9visible') +
         '\x3C/span>\x3C/span>');
-      if (vitesseRec !== null) {
-        var explRec = nb(ryt.recent.gagnes) + ' plans terminés sur les ' + ryt.recent.semaines + ' dernières semaines (depuis le relevé de ' +
-          semaineDite(ryt.recent.depuis) + ') : ' + virgule(vitesseRec) + ' par semaine. ' +
-          (projRec !== null
-            ? 'À ce rythme, les ' + nb(restants) + ' restants demandent ' + (projRec - depart) + ' semaines : fin ' + semaineDite(projRec) + '.'
-            : 'Aucun plan terminé sur ces semaines : pas de fin prévisible à ce rythme.');
-        items.push('\x3Cspan class="legende-item legende-recent">\x3Csvg width="22" height="8" aria-hidden="true">' +
-          '\x3Cline x1="1" y1="4" x2="21" y2="4" stroke="var(--fait)" stroke-width="1.8" stroke-dasharray="0.5 4" stroke-linecap="round" opacity=".8"/>\x3C/svg>' +
-          '\x3Cspan title="' + ech(explRec) + '">sur les ' + ryt.recent.semaines + ' dernières semaines (' + virgule(vitesseRec) + '/sem.)' +
-          (projRec !== null ? ' \u2192 fin ' + semaineDite(projRec) : ' \u2014 pas de fin pr\u00e9visible') +
-          '\x3C/span>\x3C/span>');
-      }
     }
     if (requis !== null) {
       var dom = bilan.domaine && bilan.domaine !== vue.perimetre ? bilan.domaine : '';
@@ -2390,7 +2391,7 @@
     }).join('') + '\x3C/div>' + (vue.echeance !== null && jalons[vue.echeance] ? ficheEcheance(vue.echeance) : '') : '';
 
     derniereAnalyse = { pts: pts, total: total, atteint: atteint, restants: restants, vitesse: vitesse,
-                        projIdx: projIdx, projRec: projRec, vitesseRec: vitesseRec,
+                        projIdx: projIdx,
                         prochain: prochain, requis: requis, enRetard: enRetard, span: span, d0: d0 };
     majBoutonsZoom();
     planifierSauvegarde();
@@ -2418,7 +2419,7 @@
   function spanTout() {
     var a = derniereAnalyse;
     var maxJalon = jalons.reduce(function (m, j) { return Math.max(m, j.i); }, AUJ);
-    var maxProj = Math.max(a && a.projIdx !== null ? a.projIdx : AUJ, a && a.projRec !== null && a.projRec !== undefined ? a.projRec : AUJ);
+    var maxProj = a && a.projIdx !== null ? a.projIdx : AUJ;
     return Math.min(MAX_IDX + 1, Math.max(maxJalon, maxProj, AUJ) + 3);
   }
 
@@ -2581,7 +2582,6 @@
          'semaine en cours, ' + ech(semaineDite(depart)) + '.\x3C/p>';
     h += '\x3Cdiv class="aide-formule">' +
          'rythme tenu   = terminés gagnés du premier au dernier relevé ÷ semaines entre les deux\n' +
-         'rythme récent = terminés gagnés depuis le relevé d’il y a ' + SEMAINES_RECENTES + ' semaines ÷ semaines entre les deux\n' +
          'à terminer    = plans − terminés\n' +
          '\x3Cb>fin estimée   = semaine en cours + arrondi supérieur(à terminer ÷ rythme tenu)\x3C/b>' +
          (prochain ? '\n\x3Cb>rythme requis = à terminer ÷ semaines d’ici « ' + ech(prochain.texte) + ' »\x3C/b>' : '') +
@@ -2597,11 +2597,7 @@
            'rythme tenu   = ' + nb(ex.rythme.gagnes) + ' ÷ ' + ex.rythme.semaines + ' sem. = ' + d2(ex.vitesse) + ' par semaine (affiché ' + virgule(ex.vitesse) + ')\n' +
            'à terminer    = ' + nb(ex.restantsGroupe) + ' plans\n' +
            '\x3Cb>fin estimée   = ' + ex.restantsGroupe + ' ÷ ' + d2(ex.vitesse) + ' = ' + sem + ' semaines après ' + ech(semaineDite(depart)) +
-           ' → ' + ech(semaineDite(ex.fin)) + '\x3C/b>' +
-           (ex.rythme.recent && ex.finRec !== null
-             ? '\nrythme récent = ' + nb(ex.rythme.recent.gagnes) + ' ÷ ' + ex.rythme.recent.semaines + ' sem. = ' + d2(ex.vitesseRec) +
-               ' par semaine → fin ' + ech(semaineDite(ex.finRec))
-             : '') + '\x3C/div>';
+           ' → ' + ech(semaineDite(ex.fin)) + '\x3C/b>\x3C/div>';
       var b = ex.bilan;
       if (prochain && b && b.restants) {
         h += '\x3Cdiv class="aide-formule">\x3Cspan class="exemple">Et la colonne voisine, sur la même ligne\x3C/span>' +
@@ -2745,7 +2741,6 @@
       var restantsGroupe = Math.max(0, derG.total - derG.termine);
       var rg = rythmes(serie);
       var vitesse = rg ? rg.central : 0;
-      var vitesseRec = rg && rg.recent ? rg.recent.central : null;
       /* Le rythme requis : la formule de la fiche (bilanEcheance), sur ce
          groupe — sous « Tout », un jalon BASE/OPTION ne lui demande que ses
          plans BASE/OPTION. */
@@ -2757,8 +2752,6 @@
         termine: g.termine, encours: g.encours, afaire: g.afaire, vide: g.vide,
         pct: g.total ? Math.round((g.termine / g.total) * 100) : 0,
         fin: restantsGroupe === 0 ? depart : semaineFin(derG.termine, derG.total, vitesse),
-        vitesseRec: vitesseRec, semainesRec: rg && rg.recent ? rg.recent.semaines : null,
-        finRec: vitesseRec === null ? null : (restantsGroupe === 0 ? depart : semaineFin(derG.termine, derG.total, vitesseRec)),
         requis: b && b.restants ? b.requis : 0,
         /* Pour ranger : combien de fois plus vite qu'aujourd'hui il faudrait
            aller. Rien à terminer pour ce jalon : en bas. */
@@ -2858,6 +2851,13 @@
       html += '\x3Cdiv class="critique-note">Rythme requis pour \u00ab\u00a0' + ech(prochain.texte) + '\u00a0\u00bb : sur les plans ' +
         ech(perJ) + ' de chaque groupe.\x3C/div>';
     }
+    /* « 1 à l'arrêt », sous le compte d'un groupe, ne s'explique pas tout
+       seul (débrief 15) : le mot se définit ici, en clair, dès qu'un groupe
+       en compte un. */
+    if (rangs.some(function (r) { return r.arret; })) {
+      html += '\x3Cdiv class="critique-note note-arret">\x3Cspan class="pastille arret">\x3C/span>\x3Cspan>\x3Cb>à l\u2019arrêt\x3C/b> = en cours, sans changement depuis ' +
+        SEMAINES_ARRET + ' semaines ou plus. Ouvrez le groupe pour les voir, cerclés de cette couleur.\x3C/span>\x3C/div>';
+    }
     /* Les autres filtres ne touchent pas l'historique : le bloc le dit. */
     if (filtreHorsGroupe()) {
       html += '\x3Cdiv class="critique-note">Fin estimée et rythmes : sur tous les plans de chaque groupe — un relevé archivé ne se refiltre pas.\x3C/div>';
@@ -2889,10 +2889,9 @@
          le rythme tenu seul sinon. */
       var col2, b = r.bilan;
       if (!prochain) {
-        col2 = '\x3Cspan class="critique-effort" data-libelle="rythme tenu"' + titreRecent(r) + '>\x3Cspan class="v critique-ecart' +
+        col2 = '\x3Cspan class="critique-effort" data-libelle="rythme tenu">\x3Cspan class="v critique-ecart' +
           (r.vitesse > 0 ? '' : ' arret') + '">' +
           (r.vitesse > 0 ? virgule(r.vitesse) + '/sem.' : 'rien de terminé') +
-          (r.vitesseRec !== null ? '\x3Csmall>récent ' + virgule(r.vitesseRec) + '/sem.\x3C/small>' : '') +
           '\x3C/span>\x3C/span>';
       } else if (!b.total) {
         col2 = '\x3Cspan class="critique-effort" data-libelle="rythme requis" title="Aucun plan de ce groupe dans ' +
@@ -2902,12 +2901,10 @@
       } else {
         col2 = '\x3Cspan class="critique-effort" data-libelle="rythme requis" title="' + ech(nb(b.restants) + (b.restants > 1 ? ' plans' : ' plan') +
           ' à terminer' + (b.domaine && b.domaine !== per ? ' dans ' + b.domaine : '') + ' en ' + b.semaines + (b.semaines > 1 ? ' semaines' : ' semaine') +
-          ' : ' + virgule(b.requis) + ' par semaine ; rythme tenu : ' + (b.rythme > 0 ? virgule(b.rythme) + ' par semaine' : 'aucun plan terminé') +
-          (b.rythmeRecent !== null ? ' ; sur les ' + b.semainesRecent + ' dernières semaines : ' + virgule(b.rythmeRecent) + ' par semaine.' : '.')) +
+          ' : ' + virgule(b.requis) + ' par semaine ; rythme tenu : ' + (b.rythme > 0 ? virgule(b.rythme) + ' par semaine.' : 'aucun plan terminé.')) +
           '">\x3Cspan class="v critique-ecart">' +
           (b.enRetard ? '\x3Cb class="tard">' + virgule(b.requis) + '/sem.\x3C/b>' : virgule(b.requis) + '/sem.') +
-          '\x3Csmall>' + (b.rythme > 0 ? 'tenu ' + virgule(b.rythme) : 'rien de terminé') +
-          (b.rythmeRecent !== null ? ' · récent ' + virgule(b.rythmeRecent) : '') + (b.rythme > 0 || b.rythmeRecent !== null ? '/sem.' : '') + '\x3C/small>\x3C/span>\x3C/span>';
+          '\x3Csmall>' + (b.rythme > 0 ? 'tenu ' + virgule(b.rythme) + '/sem.' : 'rien de terminé') + '\x3C/small>\x3C/span>\x3C/span>';
       }
 
       // --- colonne chiffree 3 : la semaine d'arrivee au rythme tenu
@@ -2917,13 +2914,7 @@
         (r.restantsGroupe === 0 ? 'Plus rien à terminer dans ce groupe.'
           : r.fin === null ? 'Aucun plan terminé depuis le premier relevé : pas de rythme, donc pas de date.'
           : ech(nb(r.restantsGroupe) + ' plans à terminer à ' + virgule(r.vitesse) + ' par semaine : ' + (r.fin - depart) + ' semaines, fin ' + semaineDite(r.fin) + '.')) +
-        '">\x3Cspan class="v">' + texteFin + '\x3C/span>' +
-        /* Où mène le rythme des quatre dernières semaines, dessous. */
-        (r.restantsGroupe > 0 && r.vitesseRec !== null
-          ? '\x3Csmall class="fin-recente" title="' + ech(r.finRec === null ? 'Rien terminé sur les ' + r.semainesRec + ' dernières semaines : pas de date à ce rythme.'
-              : 'Au rythme des ' + r.semainesRec + ' dernières semaines (' + virgule(r.vitesseRec) + ' par semaine) : fin ' + semaineDite(r.finRec) + '.') +
-            '">récent ' + (r.finRec === null ? '—' : semaineDite(r.finRec)) + '\x3C/small>' : '') +
-        '\x3C/span>';
+        '">\x3Cspan class="v">' + texteFin + '\x3C/span>\x3C/span>';
 
       return '\x3Cbutton class="critique-ligne" type="button" data-groupe="' + ech(r.nom) + '" aria-pressed="' + !!actif +
         '" title="' + r.termine + ' terminés, ' + r.encours + ' en cours, ' + r.afaire + ' à faire, ' +
@@ -3210,32 +3201,12 @@
      peut le voir à l'œil ; c'est pourtant la question de chaque semaine. */
   /* « un » et « des » : le libellé s'accorde au compte — « 1 passé en
      terminé », « 20 passés en terminé ». */
-  /* Les lots du comparatif : les lignes du résumé commun (resumeEvenements). */
-  function lotsDelta() { return COMPARATIF ? COMPARATIF.lignes : []; }
-  function lotDelta(cle) { return lotsDelta().filter(function (l) { return l.cle === cle; })[0] || null; }
-  function refsDelta(cle) { var l = lotDelta(cle); return l ? l.refs : []; }
   function libelleLot(l, n) { return n > 1 ? l.des : l.un; }
   /* La pastille d'une valeur : la couleur que lui donne la barre. */
   function pastilleValeur(cle, famille) {
     var v = valeurDeCle(cle);
     if (!v) return pastilleDe(famille || 'sans');
     return v.hachure ? '\x3Cspan class="pastille hachure">\x3C/span>' : '\x3Cspan class="pastille" style="background:' + v.couleur + '">\x3C/span>';
-  }
-
-  function rendreComparatif() {
-    var zone = $('comparatif');
-    if (!COMPARATIF) {
-      zone.innerHTML = '\x3Cspan>Premier relevé : ce qui a changé se lira ici au relevé suivant.\x3C/span>';
-      return;
-    }
-    var morceaux = lotsDelta().map(function (l) {
-      var actif = vue.refsLibelle === l.cle;
-      return '\x3Cbutton class="puce-delta" type="button" data-delta="' + ech(l.cle) +
-        '" aria-pressed="' + actif + '">' +
-        (l.cle === 'nouveaux' || l.cle === 'disparus' ? '' : pastilleResume(l)) + '\x3Cb>' + nb(l.n) + '\x3C/b> ' + ech(libelleLot(l, l.n)) + '\x3C/button>';
-    });
-    zone.innerHTML = '\x3Cspan>Depuis le relevé précédent (' + semaineDite(RELEVES[RELEVES.length - 2].i) + ') :\x3C/span>' +
-      (morceaux.length ? morceaux.join('') : '\x3Cspan>aucun changement.\x3C/span>');
   }
 
   /* L'historique d'un plan, au-dessus du tableau quand il n'en montre qu'un :
@@ -3482,7 +3453,7 @@
 
       var parType = comptesEvenements(evts);
       /* Le résumé de la semaine : les lignes du résumé commun, les mêmes que
-         le comparatif du haut et la bulle du graphique. Chaque passage et les
+         la bulle du graphique. Chaque passage et les
          changements d'indice sont des boutons : cliquer « 4 passés à
          « Validé » » n'affiche plus que ceux-là, pour toutes les semaines à
          la fois. Les nouveaux et les disparus se lisent sous « Tout ». */
@@ -3590,8 +3561,8 @@
   }
 
 
-  /* Le périmètre porte sur toute la page : un clic, et tout se recalcule —
-     comparatif compris. Cliquer la puce déjà pressée ne change rien. */
+  /* Le périmètre porte sur toute la page : un clic, et tout se recalcule.
+     Cliquer la puce déjà pressée ne change rien. */
   $('legende').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-voir-perimetre]');
     if (!b || !CLE_DOMAINE) return;
@@ -3661,7 +3632,7 @@
     return {
       total: der.total, termines: der.termine, pct: der.total ? Math.round(100 * der.termine / der.total) : 0,
       gain: avant ? der.termine - avant.termine : null, reculs: reculs,
-      rythme: ry ? ry.central : null, rythmeRecent: ry && ry.recent ? ry.recent.central : null,
+      rythme: ry ? ry.central : null,
       fin: der.total && der.total === der.termine ? 'terminé' : fin === null ? null : semaineDite(fin),
       arret: RELEVES.length > 1 ? plansALArret().liste.length : 0,
       echeance: j ? { texte: j.texte, quand: semaineDite(j.i), jours: joursAvant(j), enRetard: b.enRetard, manque: b.manque, requis: b.requis } : null,
@@ -3710,8 +3681,7 @@
         '\x3Ctd>\x3Cspan class="v">' + nb(r.termines) + ' / ' + nb(r.total) + '\x3C/span>\x3Csmall>' + r.pct + ' %\x3C/small>\x3C/td>' +
         '\x3Ctd>\x3Cspan class="v">' + (r.gain === null ? '\u2014' : (r.gain > 0 ? '+' : '') + nb(r.gain)) + '\x3C/span>' +
           (r.reculs ? '\x3Csmall class="recul">' + nb(r.reculs) + (r.reculs > 1 ? ' reculs' : ' recul') + '\x3C/small>' : '') + '\x3C/td>' +
-        '\x3Ctd>\x3Cspan class="v">' + (r.rythme === null ? '\u2014' : virgule(r.rythme) + '/sem.') + '\x3C/span>' +
-          (r.rythmeRecent !== null ? '\x3Csmall>récent ' + virgule(r.rythmeRecent) + '\x3C/small>' : '') + '\x3C/td>' +
+        '\x3Ctd>\x3Cspan class="v">' + (r.rythme === null ? '\u2014' : virgule(r.rythme) + '/sem.') + '\x3C/span>\x3C/td>' +
         '\x3Ctd>\x3Cspan class="v' + (r.arret ? ' arret' : '') + '">' + (r.arret ? nb(r.arret) : '\u2014') + '\x3C/span>\x3C/td>' +
         '\x3Ctd>' + (e ? '\x3Cspan class="v">' + ech(e.texte) + '\x3C/span>\x3Csmall>' + ech(e.quand) + ' · ' + ech(motJours(e.jours)) + '\x3C/small>' : '\x3Cspan class="doux">aucune à venir\x3C/span>') + '\x3C/td>' +
         '\x3Ctd>' + (e ? (e.enRetard
@@ -3726,7 +3696,7 @@
         ', au dernier relevé \u2014 un clic sur un contrat l’affiche\x3C/span>' +
       '\x3Cbutton type="button" class="fiche-plan-fermer" data-fermer-ensemble="1" aria-label="Fermer la vue d’ensemble">×\x3C/button>\x3C/div>' +
       '\x3Cdiv class="defile-ensemble">\x3Ctable class="ensemble-table">\x3Cthead>\x3Ctr>\x3Cth scope="col">Contrat\x3C/th>\x3Cth scope="col">Terminés\x3C/th>' +
-      '\x3Cth scope="col">Depuis le relevé précédent\x3C/th>\x3Cth scope="col">Rythme tenu\x3C/th>\x3Cth scope="col">À l’arrêt\x3C/th>' +
+      '\x3Cth scope="col">Depuis le relevé précédent\x3C/th>\x3Cth scope="col">Rythme tenu\x3C/th>\x3Cth scope="col" title="' + ech('Plans en cours sans changement depuis ' + SEMAINES_ARRET + ' semaines ou plus') + '">À l’arrêt\x3C/th>' +
       '\x3Cth scope="col">Prochaine échéance\x3C/th>\x3Cth scope="col">Au rythme tenu\x3C/th>\x3C/tr>\x3C/thead>\x3Ctbody>' + lignes + '\x3C/tbody>\x3C/table>\x3C/div>';
   }
   function ouvrirEnsemble() {
@@ -3828,15 +3798,12 @@
     }
     if (vue.refs) {
       var n = Object.keys(vue.refs).length;
-      /* Un lot du comparatif se nomme par son libellé, pas par sa clé — et au
-         pluriel : le bandeau nomme une catégorie, il ne compte pas. */
-      var lot = lotDelta(vue.refsLibelle);
       /* Un lot de la comparaison se nomme par la phrase même du verdict :
          le jeton redit ce qu'on vient de cliquer, mot pour mot. */
       var lotRapp = LOTS_RAPPROCHEMENT.filter(function (l) { return 'rapprochement:' + l.cle === vue.refsLibelle; })[0];
       if (lotRapp) liste.push({ cle: 'refs', mot: 'Comparaison', valeur: phraseLot(lotRapp.cle, compteLotRapp(lotRapp.cle), nomSeconde()) });
       else if (vue.refsLibelle === SEL_ARRET) liste.push({ cle: 'refs', mot: 'À surveiller', valeur: 'en cours sans bouger depuis ' + SEMAINES_ARRET + ' semaines ou plus' });
-      else liste.push({ cle: 'refs', mot: 'Sélection', valeur: lot ? lot.des : (vue.refsLibelle || (n + ' plans')) });
+      else liste.push({ cle: 'refs', mot: 'Sélection', valeur: vue.refsLibelle || (n + ' plans') });
     }
     if (vue.lotLa) {
       var lotLa = LOTS_RAPPROCHEMENT.filter(function (l) { return l.cle === vue.lotLa; })[0];
@@ -4355,9 +4322,6 @@
   }
 
   function rendre() {
-    /* Le comparatif et le rapprochement dépendent du périmètre : on les
-       refait avant tout le reste. */
-    COMPARATIF = comparatif();
     /* SEE ne connaît pas le concept harnais : sous lui, pas de comparaison
        des bases — ni la section, ni l'interrupteur GATES | SEE du tableau. */
     RAPPROCHEMENT = INDICATEUR === 'concept' ? null : rapprocher(SRC.rapprochement, population());
@@ -4403,7 +4367,6 @@
     rendreEntetes();
     rendreCorps(liste);
     rendreFichePlan(liste);
-    rendreComparatif();
     rendreASurveiller();
     rendreRapprochement();
     rendreSeconde();
@@ -4466,53 +4429,6 @@
     rendre();
   });
 
-  /* Survol d'un lot : le compte et le geste — le clic filtre le tableau, qui
-     donne la liste. Pas de références ni de « et N autres » dans la bulle,
-     comme pour celle du graphique. Seuls le changement d'indice (ses paires
-     « ancienne → nouvelle ») et le recul (« référence : Terminé → En
-     cours ») montrent leurs plans : c'est ce qu'il y a à reconnaître, et
-     ils sont rares. */
-  var MAX_PAIRES_INDICE = 10;
-  $('comparatif').addEventListener('mousemove', function (e) {
-    var b = e.target.closest('.puce-delta');
-    var bulle = $('bulle');
-    if (!b || !COMPARATIF) { bulle.dataset.visible = 'false'; return; }
-    var lot = lotDelta(b.dataset.delta);
-    var refs = refsDelta(b.dataset.delta);
-    var paires = '';
-    if (b.dataset.delta === 'indice' || b.dataset.delta === 'reculs') {
-      var lignes = b.dataset.delta === 'reculs'
-        ? COMPARATIF.reculs.map(function (r) { return ech(r.ref) + ' : ' + ech(r.avant) + ' \u2192 ' + ech(r.apres); })
-        : COMPARATIF.reemissions.filter(function (r) { return r.type === b.dataset.delta; })
-          .map(function (r) { return ech(r.ancienne) + ' \u2192 ' + ech(r.ref); });
-      paires = '\x3Cdiv class="liste-refs">' + lignes.slice(0, MAX_PAIRES_INDICE).join('\x3Cbr>') +
-        (lignes.length > MAX_PAIRES_INDICE ? '\x3Cbr>\x3Cspan class="doux">et ' + nb(lignes.length - MAX_PAIRES_INDICE) + ' autres\u2026\x3C/span>' : '') +
-        '\x3C/div>';
-    }
-    bulle.innerHTML = '\x3Cdiv class="tete-bulle">' + nb(refs.length) + ' ' + ech(libelleLot(lot, refs.length)) + '\x3C/div>' +
-      paires +
-      '\x3Cdiv class="doux"' + (paires ? ' style="margin-top:6px;padding-top:5px;border-top:1px solid var(--filet)"' : '') + '>' +
-      (vue.refsLibelle === b.dataset.delta ? 'Cliquez pour retirer le filtre' : 'Cliquez pour n\u2019afficher que ceux-l\u00e0') +
-      '\x3C/div>';
-    bulle.dataset.visible = 'true';
-    bulle.style.left = Math.min(e.clientX + 14, window.innerWidth - bulle.offsetWidth - 12) + 'px';
-    bulle.style.top = Math.min(e.clientY + 16, window.innerHeight - bulle.offsetHeight - 12) + 'px';
-  });
-  $('comparatif').addEventListener('mouseleave', function () { $('bulle').dataset.visible = 'false'; });
-
-  $('comparatif').addEventListener('click', function (e) {
-    var b = e.target.closest('.puce-delta');
-    if (!b) return;
-    var cle = b.dataset.delta;
-    if (vue.refsLibelle === cle) { vue.refs = null; vue.refsLibelle = ''; }
-    else {
-      vue.refs = {};
-      refsDelta(cle).forEach(function (r) { vue.refs[r] = true; });
-      vue.refsLibelle = cle;
-    }
-    rendre();
-  });
-
   $('corps-tableau').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-ref-plan]');
     if (!b) return;
@@ -4536,8 +4452,8 @@
     rendre();
   });
 
-  /* Les tuiles du rapprochement : les lots d'ici filtrent le tableau, comme
-     les puces du comparatif ; « seulement là » filtre le tableau de là. Le
+  /* Les tuiles du rapprochement : les lots d'ici filtrent le tableau ;
+     « seulement là » filtre le tableau de là. Le
      détail se déplie à part. */
   $('rapprochement').addEventListener('click', function (e) {
     var pr = e.target.closest('button[data-plan-rapp]');
@@ -5084,7 +5000,7 @@
     var p = PLAN_PAR_REF[ref];
     return p ? historiquePlan(p).map(function (h) { return { semaine: etiquette(h.i), ref: h.ref, valeur: h.valeur, absent: !!h.absent, inconnu: !!h.inconnu }; }) : null;
   };
-  window.__comparatif = function () { return COMPARATIF; };
+  window.__comparatif = function () { return comparatif(); };
   /* Le rapprochement tel qu'il est calculé, sur le périmètre courant. */
   window.__rapprochement = function () { return RAPPROCHEMENT; };
   /* Et le tableau de là tel qu'il est affiché : ses colonnes et ses lignes. */

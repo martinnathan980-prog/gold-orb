@@ -76,9 +76,8 @@ y a deux onglets ; il passe de l'un à l'autre sans recharger.
 
 ## 4. Chaque semaine : recoller, puis archiver
 
-C'est le geste qui construit l'historique — la courbe, la fin estimée, le
-comparatif « depuis le dernier relevé » et le journal des changements
-n'existent que par lui.
+C'est le geste qui construit l'historique — la courbe, la fin estimée et le
+journal des changements n'existent que par lui.
 
 1. Refaire l'export GATES de chaque contrat.
 2. Dans l'onglet du contrat : **Ctrl+A**, **Suppr**, cliquer **A1**,
@@ -94,6 +93,22 @@ seconde. Une erreur de manipulation (mauvais extract collé) : **Suivi FWD →
 Supprimer le relevé de cette semaine**, recoller le bon, archiver de nouveau.
 Pour vérifier après coup : le pied du tableau de bord (« 3 relevés
 archivés ») ou le Diagnostic (« Relevés archivés : 3 »).
+
+**Coller écrase-t-il l'historique ?** Non. Coller remplace **l'extract** de
+l'onglet du contrat — c'est voulu, l'onglet ne garde que l'état du jour.
+L'historique, lui, est dans l'onglet masqué `Historique_FWD_HDK` : **une
+ligne par semaine archivée**, que rien n'écrase, sauf un second archivage
+dans la même semaine (il remplace la ligne de cette semaine-là). Le seul
+piège : recoller un nouvel extract **avant** d'avoir archivé le précédent —
+la semaine du précédent est alors perdue. Coller puis archiver dans la foulée
+(ou laisser l'archivage du vendredi le faire) suffit. En attendant
+l'archivage, la page compte déjà l'extract collé pour la semaine en cours, et
+le pied le dit (« l'extract du jour, pas encore archivé, compte pour S39 »).
+
+**L'archivage refuse** si la colonne suivie est introuvable dans un onglet
+(« Colonne « HDK AA 011 > Avancement Définition Electrique » introuvable ») :
+une semaine où tout serait « non renseigné » fausserait la courbe pour de bon.
+Le Diagnostic dit alors où se trouve l'intitulé (voir § 7).
 
 Pour ne plus y penser : **Suivi FWD → Activer l'archivage automatique
 (vendredi 17 h)**, et Google prend le relevé chaque vendredi **entre 17 h et
@@ -178,10 +193,10 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   « Domaine » de l'extract, telles quelles. Il restreint toute la page.
 - **En haut, sans titre** : la phrase « N sur M plans terminés », la barre
   des valeurs de la colonne telles qu'elles sont écrites (Validé, Check, En
-  cours, A traiter, non renseigné…) avec leur nombre, et, dès le second
-  relevé, ce qui a bougé depuis le dernier — les **reculs** en rouge (un plan
-  qui perd son « terminé ») — et **À surveiller** : les plans en cours qui
-  n'ont pas bougé depuis 6 semaines ou plus, un clic les montre. Au-delà de quatre valeurs, ou
+  cours, A traiter, non renseigné…) avec leur nombre, et **À surveiller** :
+  les plans en cours qui n'ont pas bougé depuis 6 semaines ou plus, un clic
+  les montre. Au début, il n'y en a aucun : il faut six semaines de relevés
+  pour qu'un plan puisse être « à l'arrêt ». Au-delà de quatre valeurs, ou
   quand l'une est trop petite pour se voir (deux plans sur six cents), les
   valeurs passent en **légende** sous la barre ; survoler une case éclaire
   son segment. « Validé » compte comme fini ;
@@ -189,8 +204,7 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
   (`VALEURS_FINIES`).
 - **Avancement dans le temps** : la courbe des terminés relevé après relevé,
   les jalons du programme (numérotés 1 à 5 sur une rangée, en clair dans la
-  légende dessous), la fin estimée au rythme tenu — et, à côté, au rythme
-  des 4 dernières semaines — et le rythme requis pour
+  légende dessous), la fin estimée au rythme tenu et le rythme requis pour
   tenir le prochain jalon (« manque N » quand le rythme ne suffit pas). Il
   s'ouvre sur **Échéances** — jusqu'à la semaine qui suit la dernière
   échéance : les cinq jalons à l'écran — ; **Échéances · 3 mois · 6 mois ·
@@ -210,7 +224,9 @@ n'est déclenché par une saisie dans le classeur. Dans l'ordre d'efficacité :
 - **Avancement FWD par…** (ou **Concept harnais par…**) : le même avancement découpé par ATA, séquence,
   CC, ECP, ou par mois de création, avec la fin estimée et le rythme requis
   (en plans par semaine, le rythme tenu dessous) par groupe, rangés par ATA
-  dans l'ordre, chacun avec son chevron et, en ambre, ses plans à l'arrêt.
+  dans l'ordre, chacun avec son chevron et, en ambre, ses plans **à
+  l'arrêt** — en cours, sans changement depuis 6 semaines ou plus (le bloc
+  le rappelle en tête).
   Un clic sur un groupe déplie ses plans, une sous-liste par
   valeur (Validé, En cours, À faire…), chacune avec son compte. Son champ
   « ATA ou plan… » trouve un groupe ou un plan.
@@ -241,6 +257,8 @@ onglet, et ce qui manque. Puis :
 | Pas de menu « Suivi FWD » | Le script n'est pas chargé | F5 ; sinon Extensions → Apps Script, fonction `onOpen`, ▶ Exécuter (le menu ne dépend que du fichier `Code`) |
 | « Ouvrir le tableau de bord » donne une erreur | Un fichier HTML manque ou est mal nommé | Diagnostic : il nomme le fichier (`Index`, `Styles`, `Javascript`) introuvable |
 | « Le classeur est vide », avec une alerte | Aucun onglet de données lisible : l'alerte dit pourquoi | « Aucune colonne d'avancement FWD n'a été reconnue » : l'extract est collé sans sa ligne d'en-têtes ou sa ligne de groupes → recoller entier en A1 ; « Aucun onglet de données exploitable : « Feuille 1 » est vide » : aucun onglet ne contient encore d'extract |
+| En haut : « Colonne « HDK AA 011 > Avancement Définition Electrique » introuvable » | L'extract n'a pas cette colonne sous ce groupe (groupe renommé, bloc absent) : la page n'en lit **aucune autre** à la place, rien n'est dit terminé, l'archivage refuse | Diagnostic : il liste les groupes où l'intitulé existe ; corriger le nom du groupe dans `COLONNE_FWD` (partie avant « > ») s'il a changé dans l'export |
+| Pour vérifier la colonne lue | — | Le **pied de la page** la nomme : « Colonne suivie : HDK AA 011 › Avancement Définition Electrique » |
 | Pas de courbe, pas de fin estimée | Aucun relevé archivé | Suivi FWD → Archiver le relevé de cette semaine |
 | Pas de section « Comparaison » | Pas d'onglet `SEE <contrat>` (ou `SEE` pour un seul contrat), ou illisible | Diagnostic, ligne « Seconde base » : elle dit s'il manque l'onglet, s'il est vide, ou si les en-têtes NAME / SOL. / Cust.V ne s'y trouvent pas |
 | Un contrat en trop ou en moins | Un onglet visible en trop, ou masqué | Chaque onglet visible est un contrat ; masquer ce qui n'en est pas un |
