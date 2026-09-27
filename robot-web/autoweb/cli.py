@@ -522,7 +522,8 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
         print("   dans le Terminal. Fermer la fenêtre du navigateur arrête aussi l'enregistrement.")
         print("   Si une page Google ou Chrome apparaît : ne l'utilisez pas, revenez sur l'onglet")
         print("   de votre outil (le robot ne rejoue pas ce qui est fait sur Google ou Chrome).")
-        enregistreur.attendre_fin()
+        with nav.pause_manuelle():  # « Supprimer ce plan ? » : c'est l'utilisateur qui répond
+            enregistreur.attendre_fin()
         etapes = enregistreur.arreter()
     finally:
         nav.fermer()

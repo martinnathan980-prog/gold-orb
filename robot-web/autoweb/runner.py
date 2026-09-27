@@ -225,20 +225,30 @@ def etapes_de_suppression(scenario: Scenario) -> List[str]:
     return trouvees
 
 
-def confirmer_suppression(scenario: Scenario, options: Options) -> bool:
-    """Une tâche qui SUPPRIME ne part qu'après un « OUI » tapé par l'utilisateur."""
+def confirmer_suppression(scenario: Scenario, options: Options, contexte: Optional[Dict[str, Any]] = None,
+                          lignes: Optional[List[Ligne]] = None) -> bool:
+    """Une tâche qui SUPPRIME (ou marquée « confirmer ») ne part qu'après un « OUI » tapé par
+    l'utilisateur, qui voit d'abord sur QUOI elle va porter."""
     suppressions = etapes_de_suppression(scenario)
-    if not suppressions or options.simuler:
+    if not (suppressions or scenario.confirmer) or options.simuler:
         return True
     if not options.interactif:
         journal.warning("Tâche avec suppression lancée sans confirmation (mode non interactif) : %s",
                         "; ".join(suppressions))
         return True
     print()
-    print(f"{S.ATTENTION} ATTENTION : cette tâche SUPPRIME quelque chose dans l'outil :")
+    print(f"{S.ATTENTION} ATTENTION : la tâche « {scenario.nom} » SUPPRIME ou MODIFIE des données dans l'outil.")
     for texte in suppressions[:5]:
         print(f"     - clic sur {texte}")
-    print("   Une suppression ne peut pas être annulée par le robot.")
+    contexte = contexte or {}
+    for nom, question in scenario.questions.items():
+        print(f"     {question} : {contexte.get(nom, '')}")
+    if lignes is not None:
+        colonne = scenario.excel.colonne_libelle
+        exemples = [str(l.valeur(colonne) or "") for l in lignes[:5]] if colonne else []
+        print(f"     {len(lignes)} ligne(s) de l'Excel" + (f" : {', '.join(exemples)}" if exemples else "")
+              + (" ..." if len(lignes) > 5 else ""))
+    print("   Le robot ne peut pas annuler ce qu'il aura fait.")
     print("   Tapez OUI (en entier) pour continuer, ou Entrée pour annuler : ", end="", flush=True)
     try:
         reponse = input().strip().lower()
@@ -416,11 +426,11 @@ def lancer_sans_excel(scenario: Scenario, options: Options) -> Bilan:
                     journal.info(texte)
         return bilan
 
-    if not confirmer_suppression(scenario, options):
+    demander_questions(scenario, options, base)
+    if not confirmer_suppression(scenario, options, base):
         bilan.interrompu = True
         bilan.message = "suppression non confirmée : rien n'a été fait"
         return bilan
-    demander_questions(scenario, options, base)
     completer_secrets(scenario, options, base)
     journal.info("Tâche « %s » — lancement", scenario.nom)
     navigateur = Navigateur(scenario.navigateur, scenario.dossier, visible=options.visible)
@@ -489,11 +499,11 @@ def lancer(scenario: Scenario, options: Options) -> Bilan:
         bilan = Bilan(total=len(lignes), lignes_fichier=len(classeur.lignes()))
         base = contexte_de_base(scenario, options)
         if lignes:
-            if not confirmer_suppression(scenario, options):
+            demander_questions(scenario, options, base)
+            if not confirmer_suppression(scenario, options, base, lignes):
                 bilan.interrompu = True
                 bilan.message = "suppression non confirmée : rien n'a été fait"
                 return bilan
-            demander_questions(scenario, options, base)
             completer_secrets(scenario, options, base)
         journal.info("Scénario « %s » — Excel %s — %d ligne(s) à traiter", scenario.nom, classeur.chemin.name, len(lignes))
         if classeur.chemin_sauvegarde:

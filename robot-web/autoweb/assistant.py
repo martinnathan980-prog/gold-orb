@@ -15,7 +15,7 @@ import re
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 from . import symboles as S
-from .enregistreur import remplacer_texte_selecteur
+from .enregistreur import ancrer_exactement, remplacer_texte_selecteur
 from .erreurs import ErreurAutoweb
 from .gabarit import normaliser_cle
 from .releve import selecteur_suggere
@@ -228,11 +228,15 @@ def deviner_colonne(valeur: Any, colonnes: Sequence[str], lignes: Sequence[Dict[
 def _entete_scenario(
     nom: str, base: str, canal: str, fichier_excel: Optional[str], feuille: Optional[str],
     colonnes: Sequence[str], url: str, secrets: Sequence[str] = (), refaire: str = "reprise",
-    questions: Optional[Dict[str, str]] = None,
+    questions: Optional[Dict[str, str]] = None, confirmer: bool = False,
 ) -> List[str]:
     lignes = [
         "# Tâche autoweb. Pour la relancer : menu, choix 2 (ou « robot lancer <ce fichier> »).",
         f"nom: {_yaml_chaine(nom)}",
+    ]
+    if confirmer:
+        lignes.append("confirmer: true   # modifie ou supprime des données : le robot demande OUI avant chaque lancement")
+    lignes += [
         "navigateur:",
         f"  canal: {canal if canal in ('chrome', 'msedge', 'chromium', 'auto') else 'auto'}"
         "            # chrome | msedge | chromium | auto",
@@ -296,9 +300,11 @@ def _bloc_etapes(
                 contexte = ("Vous avez cliqué sur la ligne" if ":has-text(" in selecteur
                             else "Vous avez cliqué sur le lien" if selecteur.startswith("role=link:")
                             else "Vous avez cliqué sur")
-                colonne = question_valeur(e.texte_selecteur, contexte)
+                colonne = question_valeur(e.texte_selecteur, contexte, e.libelle)
                 if colonne:
-                    selecteur = remplacer_texte_selecteur(selecteur, e.texte_selecteur, "{{" + colonne + "}}")
+                    gabarit = colonne if "{{" in colonne else "{{" + colonne + "}}"
+                    gabarit = re.sub(r"\{\{\s*([^}|]+?)\s*\}\}", r"{{\1 | echapper}}", gabarit)
+                    selecteur = ancrer_exactement(selecteur, e.texte_selecteur, gabarit)
             if e.args.get("nouvel_onglet"):
                 lignes.append(f"{i}- cliquer: {{selecteur: {_yaml_chaine(selecteur)}, nouvel_onglet: true}}"
                               "   # ce clic ouvre un nouvel onglet : la suite s'y passe")
@@ -324,8 +330,11 @@ def _bloc_etapes(
                 commentaire = "   # jamais écrit ici : demandé au lancement"
             else:
                 contexte = {"remplir": "Vous avez écrit", "choisir": "Vous avez choisi", "cocher": "Vous avez coché"}[e.action]
-                colonne = question_valeur(valeur, f"{contexte}, dans « {e.libelle or selecteur} » :")
-                valeur_finale = "{{" + colonne + "}}" if colonne else valeur
+                colonne = question_valeur(valeur, f"{contexte}, dans « {e.libelle or selecteur} » :", e.libelle)
+                if colonne and "{{" in colonne:
+                    valeur_finale = colonne
+                else:
+                    valeur_finale = "{{" + colonne + "}}" if colonne else valeur
                 if colonne and e.type_champ == "date":
                     valeur_finale = "{{" + colonne + " | date:%Y-%m-%d}}"
                     commentaire = "   # champ date : format AAAA-MM-JJ attendu par le navigateur"
@@ -340,6 +349,28 @@ def _bloc_etapes(
             telechargements.append(e)
             lignes.append(f"{i}__TELECHARGEMENT_{len(telechargements) - 1}__")
     return lignes
+
+
+MOTIF_DESTRUCTIF = re.compile(
+    r"suppr|(?<![a-z])del(?![a-z])|delete|effac|poubelle|corbeille|trash|remove|retir|enlev|detach|discard|erase"
+    r"|purge|vider|archiv|detrui|destroy|clotur|rejet|reject")
+
+
+def _semble_destructif(etapes: List[Any]) -> bool:
+    """Proposition par défaut : cette tâche a-t-elle l'air de supprimer quelque chose ?"""
+    precedent_icone = False
+    for e in etapes:
+        if e.action not in ("cliquer", "telecharger", "touche", "choisir"):
+            continue
+        texte = normaliser_nom(" ".join(str(x or "") for x in (
+            e.libelle, e.texte_selecteur, e.args.get("selecteur"), e.args.get("cliquer"), e.args.get("valeur"))))
+        if MOTIF_DESTRUCTIF.search(texte):
+            return True
+        # une icône sans texte (poubelle, croix) suivie de « Oui / OK / Confirmer »
+        if precedent_icone and re.search(r"^(oui|ok|yes|confirmer|valider)\b", normaliser_nom(e.libelle)):
+            return True
+        precedent_icone = e.action == "cliquer" and not str(e.libelle or "").strip()
+    return False
 
 
 def normaliser_nom(texte: str) -> str:
@@ -522,38 +553,59 @@ def construire_depuis_enregistrement(
     parametres: Dict[str, str] = {}  # valeur montrée -> variable demandée au lancement
     questions: Dict[str, str] = {}   # variable -> question (« Plan de départ »)
 
-    def question_parametre(valeur: str, contexte: str) -> Optional[str]:
-        """Sans Excel : une valeur qui change à chaque fois devient une question posée au lancement."""
+    valeurs_de: Dict[str, str] = {}  # variable -> valeur montrée pendant l'enregistrement
+
+    def nouvelle_variable(nom_question: str) -> str:
+        variable = re.sub(r"[^a-z0-9_]+", "_", normaliser_nom(nom_question)).strip("_") or "valeur"
+        while variable in questions or variable in ("url", "ligne", "n", "total", "aujourdhui", "maintenant",
+                                                    "horodatage", "oui", "non") or variable.startswith("mot_de_passe"):
+            variable += "_2"
+        questions[variable] = nom_question.strip()[:1].upper() + nom_question.strip()[1:]
+        return variable
+
+    def question_parametre(valeur: str, contexte: str, libelle: str = "") -> Optional[str]:
+        """Sans Excel : une valeur qui change à chaque fois devient une question posée au lancement.
+        Renvoie le nom de la variable, ou un gabarit (« PL-{{plan}} »), ou None (valeur fixe)."""
         cle = str(valeur).strip()
         if not cle:
             return None
+        clic = contexte.startswith("Vous avez cliqué")
         if cle in parametres:
-            return parametres[cle]  # même valeur retrouvée plus loin (ex. la ligne du plan cherché)
+            variable = parametres[cle]
+            if clic and len(cle) >= 3:
+                return variable  # la ligne ou le lien du plan cherché juste avant
+            if d.oui_non(f"{S.FLECHE} « {valeur} » : même valeur que « {questions[variable]} » ?", True):
+                return variable
+            return None
         if contexte == "Vous avez cliqué sur":
             return None  # texte de bouton : il ne change pas
         d.dire()
         d.dire(f"{S.FLECHE} {contexte} « {valeur} »")
-        nom_question = d.demander(
+        reponse = d.demander(
             "   Cette valeur change-t-elle à chaque fois ? Entrée = non, elle reste la même ;\n"
-            "   sinon, donnez-lui un nom court (ex. plan de départ)", "")
-        if not nom_question.strip():
+            "   sinon, donnez-lui un nom court (ex. plan de départ)", "").strip()
+        if normaliser_nom(reponse) in ("", "n", "non", "no"):
             return None
-        for existante, question in questions.items():  # même nom donné deux fois : même valeur
-            if normaliser_nom(question) == normaliser_nom(nom_question):
+        if normaliser_nom(reponse) in ("o", "oui", "y", "yes"):
+            propose = (libelle or "valeur").strip().rstrip(" :*")[:40] or "valeur"
+            reponse = d.demander("   Quel nom lui donner ?", propose).strip() or propose
+        for existante, question in questions.items():  # nom déjà donné
+            if normaliser_nom(question) == normaliser_nom(reponse):
+                ancienne = valeurs_de.get(existante, "")
+                if ancienne and ancienne != cle and ancienne in cle:
+                    # « PL-7 » alors que la valeur donnée était « 7 » : seule cette partie change
+                    return cle.replace(ancienne, "{{" + existante + "}}")
                 parametres[cle] = existante
                 return existante
-        variable = re.sub(r"[^a-z0-9_]+", "_", normaliser_nom(nom_question)).strip("_") or "valeur"
-        while variable in questions or variable in ("url", "ligne", "n", "total", "aujourdhui", "maintenant",
-                                                    "horodatage") or variable.startswith("mot_de_passe"):
-            variable += "_2"
+        variable = nouvelle_variable(reponse)
         parametres[cle] = variable
-        questions[variable] = nom_question.strip()[:1].upper() + nom_question.strip()[1:]
+        valeurs_de[variable] = cle
         return variable
 
-    def question_valeur(valeur: str, contexte: str) -> Optional[str]:
+    def question_valeur(valeur: str, contexte: str, libelle: str = "") -> Optional[str]:
         if not colonnes:
             # sans Excel : la valeur peut être demandée au lancement ; avec Excel, ce sont les colonnes
-            return None if fichier_excel else question_parametre(valeur, contexte)
+            return None if fichier_excel else question_parametre(valeur, contexte, libelle)
         if not str(valeur).strip():
             return None
         propose = deviner_colonne(valeur, colonnes, lignes_excel)
@@ -572,7 +624,7 @@ def construire_depuis_enregistrement(
     telechargements: List[Any] = []
     secrets: Dict[str, str] = {}
     lignes_etapes = _bloc_etapes(etapes, "  ", question_valeur, telechargements, secrets)
-    lignes_connexion = _bloc_etapes(etapes_connexion, "        ", lambda v, c: None, telechargements, secrets)
+    lignes_connexion = _bloc_etapes(etapes_connexion, "        ", lambda v, c, l="": None, telechargements, secrets)
     if not [l for l in lignes_etapes if l.strip() and not l.strip().startswith("- aller")]:
         raise ErreurAutoweb(
             "Il ne reste aucune action à rejouer : le scénario ne ferait rien.\n"
@@ -618,9 +670,14 @@ def construire_depuis_enregistrement(
         pause_connexion = d.oui_non(f"{S.FLECHE} Faut-il se connecter à la main au début (SSO, mot de passe) ?", True)
     capture = d.oui_non(
         f"{S.FLECHE} Faire une capture d'écran à la fin {'de chaque ligne' if avec_excel else 'de la tâche'} ?", True)
+    d.dire()
+    confirmer = d.oui_non(
+        f"{S.FLECHE} Cette tâche SUPPRIME-t-elle quelque chose, ou fait-elle un changement difficile à défaire ?\n"
+        "   Si oui, le robot vous demandera de taper OUI avant chaque lancement", _semble_destructif(etapes_connexion + etapes))
 
     lignes = _entete_scenario(nom, base, canal, fichier_excel, feuille, colonnes, url_depart,
-                              secrets=sorted(set(secrets.values())), refaire="toujours", questions=questions)
+                              secrets=sorted(set(secrets.values())), refaire="toujours", questions=questions,
+                              confirmer=confirmer)
     if sortie_partage is not None:
         sortie_partage["texte"] = decrire_pour_partage(nom, etapes_connexion + etapes, parametres, questions)
     if etapes_connexion or pause_connexion:

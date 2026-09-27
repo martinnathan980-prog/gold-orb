@@ -348,6 +348,7 @@ JS_ENREGISTREUR = """
     if (ev.key !== 'Enter' || !ev.isTrusted) return;
     const e = ev.target;
     if (!e || e.nodeType !== 1 || surBadge(e)) return;
+    if (!estChampSaisie(e)) return;   // Entrée sur un bouton ou un lien : le navigateur envoie déjà un clic
     viderEnAttente();   // la valeur tapee doit precéder la touche Entree
     const d = decrire(e);
     d.type_evenement = 'touche';
@@ -636,6 +637,22 @@ def remplacer_texte_selecteur(selecteur: str, ancien: str, nouveau: str) -> str:
         echappe = nouveau.replace("\\", "\\\\").replace('"', '\\"')
         return selecteur[:m.start()] + f':has-text("{echappe}")' + selecteur[m.end():]
     return selecteur
+
+
+CELLULES = ":is(td,th,a,[role=cell],[role=gridcell])"
+
+
+def ancrer_exactement(selecteur: str, ancien: str, gabarit: str) -> str:
+    """Remplace le texte figé par une valeur qui change (« {{plan}} »), en exigeant une
+    cellule dont le texte est EXACTEMENT cette valeur : PL-1 ne désigne jamais la ligne PL-10."""
+    for prefixe, exact in (("role=button:", "role=button:"), ("role=link:", "role=link:"),
+                           ("texte=", "texte_exact="), ("texte_exact=", "texte_exact=")):
+        if selecteur.startswith(prefixe) and selecteur[len(prefixe):] == ancien:
+            return exact + re.sub(r"\s*\|\s*echapper\s*(?=\}\})", "", gabarit)
+    m = MOTIF_HAS_TEXT.search(selecteur)
+    if m and m.group(1).replace('\\"', '"').replace("\\\\", "\\") == ancien:
+        return selecteur[:m.start()] + f':has({CELLULES}:text-is("{gabarit}"))' + selecteur[m.end():]
+    return remplacer_texte_selecteur(selecteur, ancien, gabarit)
 
 
 def construire_etapes(evenements: List[Evenement], url_depart: str = "") -> List[EtapeEnregistree]:

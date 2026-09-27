@@ -173,17 +173,17 @@ def test_supprimer_un_plan_demande_oui_avant_de_partir(portail, tmp_path, monkey
     chemin = tmp_path / "supprimer.yaml"
     chemin.write_text(texte, encoding="utf-8")
     scenario = charger(chemin)
-    assert etapes_de_suppression(scenario)
+    assert etapes_de_suppression(scenario) and scenario.confirmer  # proposé par défaut, la tâche supprime
 
-    # l'utilisateur répond autre chose que OUI : rien n'est fait
-    reponses = iter(["non"])
+    # le numéro est demandé d'abord, puis le robot récapitule et attend OUI ; autre chose : rien n'est fait
+    reponses = iter(["PL-5", "non"])
     monkeypatch.setattr(builtins, "input", lambda *a: next(reponses))
     bilan = lancer(scenario, Options(visible=False, interactif=True))
     assert bilan.interrompu and "non confirmée" in bilan.message
     assert not _Portail.envois
 
-    # OUI, puis le numéro du plan demandé au lancement : le plan est supprimé
-    reponses = iter(["OUI", "PL-5"])
+    # le numéro, puis OUI : le plan est supprimé
+    reponses = iter(["PL-5", "OUI"])
     monkeypatch.setattr(builtins, "input", lambda *a: next(reponses))
     bilan = lancer(scenario, Options(visible=False, interactif=True))
     assert (bilan.ok, bilan.erreurs) == (1, 0), bilan.resume()

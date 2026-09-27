@@ -73,7 +73,8 @@ META_ETAPE = ("nom", "optionnel", "delai_max", "commentaire", "description", "se
 MOTIF_SECRET = re.compile(r"pass|mdp|mot.?de.?passe|pwd|secret|token|jeton|credential|identifiant", re.I)
 MASQUE = "•••••"
 
-CLES_SCENARIO = ("nom", "description", "navigateur", "excel", "variables", "questions", "avant", "etapes", "apres")
+CLES_SCENARIO = ("nom", "description", "navigateur", "excel", "variables", "questions", "confirmer",
+                 "avant", "etapes", "apres")
 CLES_NAVIGATEUR = (
     "canal", "profil", "visible", "attacher", "delai_max", "lenteur", "largeur", "hauteur",
     "executable", "dialogues", "telechargements", "arguments", "ignorer_https",
@@ -163,6 +164,7 @@ class Scenario:
     variables: Dict[str, Any] = field(default_factory=dict)
     # valeurs demandées au lancement : nom de variable -> question (« Numéro du plan de départ »)
     questions: Dict[str, str] = field(default_factory=dict)
+    confirmer: bool = False  # la tâche modifie ou supprime : OUI demandé avant chaque lancement
     avant: List[Etape] = field(default_factory=list)
     etapes: List[Etape] = field(default_factory=list)
     apres: List[Etape] = field(default_factory=list)
@@ -528,6 +530,7 @@ def depuis_dict(donnees: Any, chemin: Path) -> Scenario:
         excel=charger_config_excel(donnees.get("excel")),
         variables={str(k): v for k, v in variables.items()},
         questions={str(k): str(v or k) for k, v in questions.items()},
+        confirmer=bool(donnees.get("confirmer", False)),
         avant=normaliser_etapes(donnees.get("avant"), "avant"),
         etapes=normaliser_etapes(donnees.get("etapes"), "etapes"),
         apres=normaliser_etapes(donnees.get("apres"), "apres"),

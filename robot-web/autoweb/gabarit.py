@@ -26,7 +26,7 @@ FAUX = {"", "non", "n", "no", "false", "faux", "f", "0", "-"}
 
 FILTRES_CONNUS = (
     "defaut", "majuscules", "minuscules", "date", "entier", "nombre", "virgule",
-    "point", "sans_espaces", "tronquer", "brut", "ouinon", "texte",
+    "point", "sans_espaces", "tronquer", "brut", "ouinon", "texte", "echapper",
 )
 
 
@@ -118,6 +118,8 @@ def _appliquer_filtre(valeur: Any, nom: str, arg: str) -> Any:
         return formater(valeur).upper()
     if nom == "minuscules":
         return formater(valeur).lower()
+    if nom == "echapper":  # valeur placée entre guillemets dans un sélecteur
+        return formater(valeur).replace("\\", "\\\\").replace('"', '\\"')
     if nom == "sans_espaces":
         return re.sub(r"\s+", "", formater(valeur))
     if nom == "virgule":

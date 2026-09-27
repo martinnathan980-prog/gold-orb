@@ -226,7 +226,9 @@ def test_enregistrement_modification_de_fiche(bac, navigateur_ok):
         fichier_excel="fiches.xlsx", feuille="Fiches", canal="chromium", url_depart=url,
     )
     donnees = yaml.safe_load(texte)
-    assert {"cliquer": 'tr:has-text("{{Numéro}}") a'} in donnees["etapes"]
+    # la ligne est trouvée par une cellule EXACTEMENT égale au numéro (HDK-ARC-001 ≠ HDK-ARC-0010)
+    assert {"cliquer": 'tr:has(:is(td,th,a,[role=cell],[role=gridcell]):text-is("{{Numéro | echapper}}")) a'} \
+        in donnees["etapes"]
     assert '{selecteur: "#fiche-indice", valeur: "{{Indice}}"}' in texte
     assert '{selecteur: "#fiche-statut", valeur: "{{Nouveau statut}}"}' in texte
     assert '- verifier: {texte_page: "enregistrée"}' in texte
