@@ -114,15 +114,19 @@ t('ETIIA s\'ouvre', /ETIIA/.test(await f.locator('h1').innerText()));
 t('sa communication est en tête', (await f.locator('.kiosque').count()) === 1);
 t('son sommaire a cinq entrées (dont À venir)', (await f.locator('.sous-nav a').count()) === 5);
 t('plus de section Réunions ni Porteurs du pôle', (await f.locator('#section-reunions, #zone-reunions, #section-porteurs, #zone-porteurs').count()) === 0);
-t('ses repères sont calculés', (await f.locator('#zone-reperes .pole-repere').count()) === 4);
-t('l’organigramme, les référents et « par porteur » sont en onglets',
-  (await f.locator('#zone-reperes .annuaire__volet').count()) === 3
-  && (await f.locator('#zone-reperes [id$="-organigramme"] .annuaire__personne').count()) > 50
-  && (await f.locator('#zone-reperes [id$="-referents"] .annuaire__groupe').count()) > 3
-  && (await f.locator('#zone-reperes [id$="-porteurs"] .annuaire__groupe').count()) > 3);
-t('une personne s’y lit en une ligne : nom et rôle, sans portrait',
-  (await f.locator('#zone-reperes .annuaire__personne .annuaire__role').count()) > 50
+t('ses chiffres sont calculés, en une ligne', (await f.locator('#zone-reperes .coup-oeil__chiffre').count()) === 4);
+t('« Qui peut m’aider ? », les équipes et les référents sont rendus',
+  (await f.locator('#zone-reperes .qui__champ').count()) === 1
+  && (await f.locator('#zone-reperes .equipe__tuile').count()) > 3
+  && (await f.locator('#zone-reperes .referents__puce').count()) > 3);
+await f.locator('#zone-reperes .qui__champ').fill('harnais');
+await page.waitForTimeout(500);
+t('une recherche y répond par des cartes : initiales, nom et rôle, sans portrait',
+  (await f.locator('#zone-reperes .qui__resultats .personne-carte').count()) > 3
+  && (await f.locator('#zone-reperes .qui__resultats .personne-carte .avatar').count()) > 3
+  && (await f.locator('#zone-reperes .qui__resultats .personne-carte__role').count()) > 3
   && (await f.locator('#zone-reperes .portrait').count()) === 0);
+await f.locator('#zone-reperes .qui__champ').fill('');
 t('ses documents récents sont listés', (await f.locator('#zone-documents .pole-doc').count()) === 8);
 t('l\'image de sa communication est intégrée', /^data:image/.test((await f.locator('.kiosque__image img, .kiosque__figure img').first().getAttribute('src')) || ''));
 t('sa FAQ est lisible, sans « Toute la base »', (await f.locator('#zone-faq .liseuse').count()) === 1 && !/Toute la base/i.test(pole));
@@ -229,22 +233,23 @@ t('un lien du sommaire fait défiler la page, sans la quitter',
     const r = d.getElementById('section-documents').getBoundingClientRect();
     return r.top >= -2 && r.top < 260 && d.location.href.startsWith('about:srcdoc');
   }));
-t('les repères du pôle ne sont plus des liens', (await f.locator('#zone-reperes .pole-repere a').count()) === 0);
+t('les chiffres du pôle ne sont pas des liens', (await f.locator('#zone-reperes .coup-oeil__chiffres a').count()) === 0);
 
 console.log('\n== Un lien avec ancre garde son ancre ==');
 await f.locator('nav.site-nav a[href="etiia.html"]').first().click();
 await page.waitForTimeout(1900);
-// Les volets de l'annuaire sont en onglets : « Par porteur » d'abord.
-const ongletPorteur = f.locator('#zone-reperes .annuaire__onglet', { hasText: 'Par porteur' });
-await ongletPorteur.evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
-await ongletPorteur.click();
+// Une squad s'ouvre sur ses membres ; la puce d'appareil d'une carte mène
+// à la fiche du porteur.
+const tuileEquipe = f.locator('#zone-reperes .equipe__tuile').first();
+await tuileEquipe.evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
+await tuileEquipe.click();
 await page.waitForTimeout(800);
-const lienPorteur = f.locator('#zone-reperes .annuaire__porteur').first();
+const lienPorteur = f.locator('#zone-reperes .equipe__panneau a.appareil-puce').first();
 const codeLien = (await lienPorteur.innerText()).trim();
 await lienPorteur.evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
 await lienPorteur.click();
 await page.waitForTimeout(2200);
-t(`« ${codeLien} » dans l’annuaire d’un pôle ouvre sa fiche sur le tableau de bord`,
+t(`« ${codeLien} » dans l’équipe d’un pôle ouvre sa fiche sur le tableau de bord`,
   (await f.locator('.porteurs__detail').count()) === 1
   && (await f.locator('.porteurs__detail .porteurs__titre').innerText()).trim() === codeLien, `(${codeLien})`);
 

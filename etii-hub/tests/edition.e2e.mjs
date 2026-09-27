@@ -178,25 +178,77 @@ await o.confirmer();
 t('supprimé, il quitte la galerie', (await page.locator('.porteurs__fiche', { hasText: 'ZXTEST1' }).count()) === 0
   && (await page.locator('.porteurs__fiche').count()) === fichesAvant);
 
-console.log('\n== Un espace de pôle : l’annuaire ==');
+console.log('\n== Un espace de pôle : le coup d’œil ==');
+// Tout ce que l'ancien annuaire savait faire se fait dans le nouveau bloc :
+// modifier une personne dans le panneau de sa squad, ajouter une squad,
+// nommer puis retirer un référent, affecter quelqu'un à un porteur puis
+// l'en retirer. Après chaque enregistrement, la section se redessine et
+// garde ce qui était ouvert.
 await page.goto(`${B}/etiia.html`, { waitUntil: 'networkidle' });
 await o.attendre(1200);
 t('le mode édition suit d’une page à l’autre', await o.enEdition());
-const ligne = page.locator('#annuaire-etiia-organigramme .annuaire__groupe').nth(1).locator('.annuaire__personne').nth(1);
-const nomPersonne = (await ligne.locator('.annuaire__nom').innerText()).trim();
-await o.centrer(ligne);
-await ligne.locator('.barre-edition__bouton', { hasText: 'Modifier' }).click();
+const tuile = page.locator('#zone-reperes .equipe__tuile').first();
+await o.centrer(tuile);
+await tuile.click();
+await o.attendre(700);
+const carte = page.locator('#zone-reperes .equipe__panneau .personne-carte').nth(1);
+const nomPersonne = (await carte.locator('.personne-carte__nom').innerText()).trim();
+await o.centrer(carte);
+await carte.locator('.barre-edition__bouton', { hasText: 'Modifier' }).click();
 await o.remplir('Rôle', 'Ingénieur essais (modifié)');
 await o.enregistrer();
-const exactement = (nom) => page.locator('.annuaire__nom', { hasText: new RegExp('^' + nom + '$') });
-t('le rôle d’une personne se modifie dans l’annuaire du pôle',
-  (await page.locator('#annuaire-etiia-organigramme .annuaire__personne').filter({ has: exactement(nomPersonne) }).locator('.annuaire__role').innerText()).trim() === 'Ingénieur essais (modifié)');
-await o.centrer(page.locator('#annuaire-etiia-organigramme .annuaire__ajouts'));
-await page.locator('#annuaire-etiia-organigramme .annuaire__ajouts button', { hasText: 'Une squad' }).click();
+const exactement = (nom) => page.locator('.personne-carte__nom', { hasText: new RegExp('^' + nom + '$') });
+t('le rôle d’une personne se modifie dans le panneau de sa squad, qui reste ouvert',
+  (await page.locator('#zone-reperes .equipe__panneau .personne-carte').filter({ has: exactement(nomPersonne) }).locator('.personne-carte__role').innerText().catch(() => '')).includes('Ingénieur essais (modifié)'));
+await o.centrer(page.locator('#zone-reperes .equipes .coup-oeil__ajouts'));
+await page.locator('#zone-reperes .equipes .coup-oeil__ajouts button', { hasText: 'Une squad' }).click();
 await o.remplir('Nom de la squad', 'Squad Essai');
 await o.enregistrer();
-t('une squad ajoutée apparaît, vide, et le dit',
-  /Personne dans cette squad/.test(await page.locator('#annuaire-etiia-organigramme .annuaire__groupe', { hasText: 'Squad Essai' }).innerText().catch(() => '')));
+const tuileEssai = page.locator('#zone-reperes .equipe__tuile', { hasText: 'Squad Essai' });
+await o.centrer(tuileEssai);
+await tuileEssai.click();
+await o.attendre(700);
+t('une squad ajoutée a sa tuile ; ouverte, elle est vide et le dit',
+  /Personne dans cette squad/.test(await page.locator('#zone-reperes .equipe__panneau').innerText().catch(() => '')));
+
+// Un référent de plus pour la compétence montrée, puis on le lui retire.
+const referentsMontres = () => page.locator('#zone-reperes .referents__detail .personne-carte').count();
+const competenceMontree = (await page.locator('#zone-reperes .referents__competence').innerText()).trim();
+const referentsAvant = await referentsMontres();
+await o.centrer(page.locator('#zone-reperes .referents__detail .edition-ajout'));
+await page.locator('#zone-reperes .referents__detail .edition-ajout').click();
+const nouveauReferent = (await page.locator('.modale--formulaire select').first().evaluate((s) => s.options[s.selectedIndex].text)).split(' — ')[0].trim();
+await o.enregistrer();
+t(`« ${nouveauReferent} » devient référent en « ${competenceMontree} », et la compétence reste montrée`,
+  (await page.locator('#zone-reperes .referents__competence').innerText()).trim() === competenceMontree
+  && (await referentsMontres()) === referentsAvant + 1
+  && (await page.locator('#zone-reperes .referents__detail .personne-carte').filter({ has: exactement(nouveauReferent) }).count()) === 1,
+  `(${referentsAvant} → ${await referentsMontres()})`);
+const carteReferent = page.locator('#zone-reperes .referents__detail .personne-carte').filter({ has: exactement(nouveauReferent) });
+await o.centrer(carteReferent);
+await carteReferent.locator('.barre-edition__bouton--danger').click();
+await o.confirmer();
+t('retiré, le titre de référent quitte la compétence',
+  (await referentsMontres()) === referentsAvant
+  && (await page.locator('#zone-reperes .referents__detail .personne-carte').filter({ has: exactement(nouveauReferent) }).count()) === 0);
+
+// Un porteur du pôle que personne ne suit : on y affecte quelqu'un, puis on l'en retire.
+const champQui = page.locator('#qui-etiia-champ');
+const porteurLibre = await page.locator('#zone-reperes .qui__porteurs .qui__suggestion').evaluateAll((l) =>
+  (l.find((b) => b.querySelector('.qui__suggestion-compte').textContent.trim() === '0') || l[0]).dataset.suggestion);
+await o.centrer(champQui);
+await page.locator('#zone-reperes .qui__porteurs .qui__suggestion', { hasText: porteurLibre }).click();
+await o.attendre(400);
+const suiventLibre = () => page.locator('#zone-reperes .qui__resultats .personne-carte').count();
+const avantLibre = await suiventLibre();
+await page.locator('#zone-reperes .qui__actions .edition-ajout').click();
+await o.enregistrer();
+t(`on affecte quelqu’un au ${porteurLibre} depuis la recherche de cet appareil`,
+  (await champQui.inputValue()) === porteurLibre && (await suiventLibre()) === avantLibre + 1, `(${avantLibre} → ${await suiventLibre()})`);
+await page.locator('#zone-reperes .qui__resultats .personne-carte').first().locator('.barre-edition__bouton--danger').click();
+await o.confirmer();
+t(`et on l’en retire : le ${porteurLibre} retrouve ses ${avantLibre} personne(s)`, (await suiventLibre()) === avantLibre);
+await champQui.fill('');
 
 console.log('\n== Un espace de pôle : documents et FAQ ==');
 const totalDocs = async () => Number(((await page.locator('#zone-documents .pole-docs__pied a').innerText()).match(/\((\d+)\)/) || [])[1]);

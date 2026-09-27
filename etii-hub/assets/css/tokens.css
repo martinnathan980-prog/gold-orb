@@ -48,6 +48,18 @@
   --pole-etiie-sur-marine: #38bdf8;
   --pole-etiii-sur-marine: #fb923c;
 
+  /* --- Les teintes des squads (pole.js, « Les équipes ») -----------------
+     Six teintes sourdes, de même clarté, pour qu'une squad se reconnaisse
+     d'un coup d'œil : les initiales de ses membres, le filet de sa tuile,
+     le point devant son nom. Jamais seules : le nom de la squad est
+     toujours écrit à côté. Au-delà de six squads, elles reviennent. */
+  --equipe-1: #2f5f98;
+  --equipe-2: #1f7a6d;
+  --equipe-3: #667a2a;
+  --equipe-4: #9c6418;
+  --equipe-5: #a4473d;
+  --equipe-6: #6f52a0;
+
   /* --- Portraits illustrés (portraits.js) -------------------------------
      Les « photos test » : des visages plats, jamais réels. Quatre teintes
      de peau, quatre de cheveux, quatre de tenue, tirées depuis
@@ -344,6 +356,13 @@
     --pole-etiie: #38bdf8;
     --pole-etiii: #f0a04b;
 
+    --equipe-1: #86aee6;
+    --equipe-2: #5cc2b0;
+    --equipe-3: #b3c46e;
+    --equipe-4: #e2b160;
+    --equipe-5: #e8958a;
+    --equipe-6: #b9a0e8;
+
     --portrait-peau-1:    #e9c3a0;
     --portrait-peau-2:    #d2a077;
     --portrait-peau-3:    #a9714b;
@@ -453,6 +472,13 @@
   --pole-etiia: #a78bfa;
   --pole-etiie: #38bdf8;
   --pole-etiii: #f0a04b;
+
+  --equipe-1: #86aee6;
+  --equipe-2: #5cc2b0;
+  --equipe-3: #b3c46e;
+  --equipe-4: #e2b160;
+  --equipe-5: #e8958a;
+  --equipe-6: #b9a0e8;
 
   --portrait-peau-1:    #e9c3a0;
   --portrait-peau-2:    #d2a077;

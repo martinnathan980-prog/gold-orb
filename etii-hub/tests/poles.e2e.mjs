@@ -82,11 +82,12 @@ for (const code of ['ETIIA', 'ETIIE', 'ETIII']) {
 
 console.log('\n== Espace de pôle : en un coup d’œil, documents, FAQ ==');
 // Plus de réunions ni de « porteurs du pôle » dans un espace de pôle. Entre
-// la communication et la FAQ : le pôle en un coup d'œil — quatre repères,
-// puis trois volets côte à côte (l'organigramme, les référents, qui
-// travaille sur quel porteur), une personne par ligne, nom et rôle — et les
-// documents du pôle, les plus récents en vigueur. Tout est calculé depuis
-// organigramme.json, flotte.json et documents.json, sans rien d'inventé.
+// la communication et la FAQ : le pôle en un coup d'œil — ses chiffres en
+// une ligne, « Qui peut m'aider ? » (un champ qui répond pendant la frappe
+// par des cartes de personnes), les équipes en tuiles qui s'ouvrent sur
+// place, l'index des référents — et les documents du pôle, les plus récents
+// en vigueur. Tout est calculé depuis organigramme.json, flotte.json et
+// documents.json, sans rien d'inventé.
 const sansAccents = (v) => String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const membresDe = (bloc) => [bloc.responsable].concat(...bloc.squads.map(s => s.membres));
 const porteurDe = (m) => String(m.porteur || m.perimetre || '').toUpperCase();
@@ -126,86 +127,241 @@ for (const bloc of orga.poles) {
   t(`${code} : plus de section Réunions, Porteurs, Organigramme ni « Équipe & référents »`,
     (await page.locator('#section-reunions, #zone-reunions, #section-porteurs, #zone-porteurs, #section-organigramme, #zone-organigramme, #section-equipe, #zone-equipe, .arbre').count()) === 0);
 
-  const reperes = await page.locator('#zone-reperes .pole-repere__valeur').allInnerTexts();
-  t(`${code} : repères ${membres.length} personnes, ${bloc.squads.length} squads, ${referents.size} référents, ${enVigueur.length} documents`,
-    reperes.join(' ') === [membres.length, bloc.squads.length, referents.size, enVigueur.length].join(' '),
-    `(${reperes.join(' ')})`);
-  t(`${code} : les repères se lisent, ils ne se cliquent pas`,
-    (await page.locator('#zone-reperes .pole-repere a').count()) === 0);
+  const Z = '#zone-reperes';
+  const fiche = new RegExp('^organigramme\\.html#pole=' + code + '&personne=');
+  const nomsDe = (liste) => liste.map(m => m.nom).sort().join('|');
+  const squadDe = (m) => { const sq = bloc.squads.find(x => x.membres.includes(m)); return sq ? sq.nom : ''; };
+  const texteDe = (m) => sansAccents([m.nom, m.poste, porteurDe(m), squadDe(m)].concat((m.competences || []).map(c => c.nom)).join(' '));
 
-  // Trois volets derrière trois onglets : un seul visible à la fois.
-  const volets = await page.locator('#zone-reperes .annuaire__volet').evaluateAll(l => l.map(v => ({
-    titre: v.querySelector('.annuaire__volet-titre').textContent.trim(), visible: !v.hidden })));
-  t(`${code} : trois volets — Organigramme, Référents, Par porteur — en onglets, l'organigramme d'abord`,
-    volets.map(v => v.titre).join('|') === 'Organigramme|Référents|Par porteur'
-    && volets.map(v => v.visible).join() === 'true,false,false', JSON.stringify(volets));
-  await page.locator('#zone-reperes .annuaire__onglet', { hasText: 'Référents' }).click();
-  t(`${code} : l'onglet Référents montre les référents`,
-    (await page.locator('#zone-reperes .annuaire__volet:visible').count()) === 1
-    && (await page.locator(`#annuaire-${code.toLowerCase()}-referents`).isVisible()));
-  await page.locator('#zone-reperes .annuaire__onglet', { hasText: 'Organigramme' }).click();
+  // Les chiffres : une ligne, qui se lit sans se cliquer — plus de tuiles.
+  const chiffres = await page.locator(`${Z} .coup-oeil__nombre`).allInnerTexts();
+  t(`${code} : chiffres ${membres.length} personnes, ${bloc.squads.length} squads, ${referents.size} référents, ${enVigueur.length} documents`,
+    chiffres.join(' ') === [membres.length, bloc.squads.length, referents.size, enVigueur.length].join(' '), `(${chiffres.join(' ')})`);
+  t(`${code} : les chiffres se lisent, ils ne se cliquent pas`,
+    (await page.locator(`${Z} .coup-oeil__chiffres a`).count()) === 0);
+  t(`${code} : ni tuiles de repères, ni onglets, ni volets`,
+    (await page.locator(`${Z} .pole-repere, ${Z} [role="tab"], ${Z} [role="tabpanel"]`).count()) === 0);
 
-  // L'organigramme : le responsable, puis une carte par squad.
-  const orgaVolet = page.locator(`#annuaire-${code.toLowerCase()}-organigramme`);
-  const groupes = await orgaVolet.locator('.annuaire__groupe').evaluateAll(l => l.map(g => ({
-    titre: g.querySelector('.annuaire__groupe-titre').textContent.trim(),
-    gens: [...g.querySelectorAll('.annuaire__personne')].map(p => ({
-      nom: p.querySelector('.annuaire__nom').textContent.trim(),
-      role: p.querySelector('.annuaire__role').textContent.trim(),
-      href: p.querySelector('.annuaire__lien').getAttribute('href'),
-      lead: !!p.querySelector('.annuaire__badge')
-    }))
-  })));
-  t(`${code} : l’organigramme ouvre sur le responsable, puis ${bloc.squads.length} squads`,
-    groupes.length === 1 + bloc.squads.length && groupes[0].titre === 'Responsable du pôle'
-    && groupes[0].gens.length === 1 && groupes[0].gens[0].nom === bloc.responsable.nom
-    && bloc.squads.every((sq, i) => groupes[i + 1].titre === sq.nom && groupes[i + 1].gens.length === sq.membres.length),
-    JSON.stringify(groupes.map(g => g.titre + ':' + g.gens.length)));
-  t(`${code} : chaque squad commence par son lead`,
-    bloc.squads.every((sq, i) => !sq.membres.some(m => m.role === 'leader') || groupes[i + 1].gens[0].lead));
-  const lignes = groupes.flatMap(g => g.gens);
-  t(`${code} : une personne = une ligne, son nom et son rôle, vers sa fiche (${membres.length})`,
-    lignes.length === membres.length
-    && lignes.every(l => l.nom && l.role && l.href.startsWith(`organigramme.html#pole=${code}&personne=`))
-    && (await orgaVolet.locator('.portrait, .pole-competence').count()) === 0, `(${lignes.length})`);
+  // « Qui peut m'aider ? » : sans recherche, rien que le champ et ses
+  // suggestions — les compétences et les appareils les plus partagés.
+  const champ = page.locator(`#qui-${code.toLowerCase()}-champ`);
+  t(`${code} : « Qui peut m’aider ? » ouvre sur un champ, sans résultat affiché`,
+    (await champ.count()) === 1 && (await page.locator(`${Z} .qui__resultats`).isHidden()));
+  // Pas de phrase d'aide sous le titre : le texte d'attente du champ la dit
+  // déjà ; elle reste pour les lecteurs d'écran, masquée.
+  t(`${code} : pas de phrase d’aide visible sous « Qui peut m’aider ? »`,
+    (await page.locator(`${Z} .qui > p:not(.visuellement-cache)`).count()) === 0
+    && (await page.locator(`#${await champ.getAttribute('aria-describedby')}.visuellement-cache`).count()) === 1);
+  const frequences = (valeurs) => [...valeurs.reduce((mp, v) => mp.set(v, (mp.get(v) || 0) + 1), new Map())]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fr', { numeric: true })).map(([v]) => v);
+  const suggestionsAttendues = frequences(membres.flatMap(m => (m.competences || []).map(c => c.nom))).slice(0, 4)
+    .concat(frequences(membres.map(m => m.porteur || m.perimetre).filter(c => c && c.toUpperCase() !== 'TRANSVERSE')).slice(0, 3));
+  const suggestions = await page.locator(`${Z} .qui > .qui__suggestions:not(.qui__porteurs) .qui__suggestion`).evaluateAll(l => l.map(b => b.dataset.suggestion));
+  t(`${code} : suggestions — ${suggestionsAttendues.join(', ')}`,
+    suggestions.join('|') === suggestionsAttendues.join('|'), `(${suggestions.join('|')})`);
 
-  // Les référents : une compétence, qui solliciter.
-  const refVolet = page.locator(`#annuaire-${code.toLowerCase()}-referents`);
-  const groupesRef = await refVolet.locator('.annuaire__groupe').count();
-  t(`${code} : les référents couvrent ${competencesAvecReferent.size} compétences`, groupesRef === competencesAvecReferent.size, `(${groupesRef})`);
-
-  // Par porteur : un groupe par porteur, les gens du pôle qui y travaillent.
-  const porteursVolet = page.locator(`#annuaire-${code.toLowerCase()}-porteurs`);
-  const groupesP = await porteursVolet.locator('.annuaire__groupe').evaluateAll(l => l.map(g => ({
-    code: g.querySelector('.annuaire__porteur').textContent.trim().toUpperCase(),
-    gens: [...g.querySelectorAll('.annuaire__personne')].map(p => ({ nom: p.querySelector('.annuaire__nom').textContent.trim(), lead: !!p.querySelector('.annuaire__badge') }))
-  })));
-  const codesRendus = new Set(groupesP.map(g => g.code));
-  t(`${code} : « Par porteur » couvre ${codesAttendus.size} porteurs (flotte et périmètres des membres)`,
-    codesRendus.size === codesAttendus.size && [...codesAttendus].every(c => codesRendus.has(c)), `(${[...codesRendus].join(',')})`);
-  t(`${code} : les groupes commencent par les porteurs déclarés dans flotte.json`,
-    codesFlotte.every((c, i) => groupesP[i] && groupesP[i].code === c));
-  const groupeH160 = groupesP.find(g => g.code === 'H160');
-  const gensH160 = membres.filter(m => porteurDe(m) === 'H160');
-  t(`${code} : le groupe H160 compte ${gensH160.length} personnes, le lead d’abord`,
-    Boolean(groupeH160) && groupeH160.gens.length === gensH160.length
-    && (!gensH160.some(m => m.role === 'leader') || groupeH160.gens[0].lead), JSON.stringify(groupeH160 && groupeH160.gens.slice(0, 2)));
-
-  // Un seul champ filtre les trois volets.
-  const champ = page.locator('#zone-reperes .annuaire__recherche');
+  // La recherche filtre les personnes pendant la frappe : toutes celles qui
+  // correspondent, et elles seules, chacune vers sa fiche.
+  const cartes = page.locator(`${Z} .qui__resultats .personne-carte`);
+  const toutVoir = async () => {
+    if (await page.locator(`${Z} .qui__plus`).isVisible()) { await page.locator(`${Z} .qui__plus`).click(); await page.waitForTimeout(300); }
+  };
+  const nomsVisibles = async () => (await cartes.locator('.personne-carte__nom').allInnerTexts()).map(n => n.trim()).sort().join('|');
   await champ.fill('harnais');
-  await page.waitForTimeout(400);
-  const attendusHarnais = membres.filter(m => sansAccents([m.nom, m.poste, porteurDe(m)].concat((m.competences || []).map(c => c.nom)).join(' ')).includes('harnais')).length;
-  const visiblesHarnais = await orgaVolet.locator('.annuaire__personne:visible').count();
-  t(`${code} : « harnais » ne garde que ${attendusHarnais} personnes dans l’organigramme, et le dit`,
-    visiblesHarnais === attendusHarnais
-    && (await page.locator('#zone-reperes .annuaire__resultat').innerText()).startsWith(String(attendusHarnais)), `(${visiblesHarnais})`);
+  await page.waitForTimeout(300);
+  const harnais = membres.filter(m => texteDe(m).includes('harnais'));
+  const compteHarnais = await page.locator(`${Z} .qui__compte`).innerText();
+  await toutVoir();
+  t(`${code} : « harnais » trouve ses ${harnais.length} personnes, et le dit`,
+    (await nomsVisibles()) === nomsDe(harnais) && compteHarnais.startsWith(harnais.length + ' personne'),
+    `(${await cartes.count()} cartes, « ${compteHarnais} »)`);
+  const refHarnais = membres.filter(m => (m.competences || []).some(c => c.niveau === 'referent' && sansAccents(c.nom).includes('harnais'))).map(m => m.nom);
+  t(`${code} : un référent passe en tête`,
+    !refHarnais.length || refHarnais.includes((await cartes.first().locator('.personne-carte__nom').innerText()).trim()));
+  t(`${code} : chaque carte mène à la fiche de la personne`,
+    (await cartes.locator('.personne-carte__nom').evaluateAll(l => l.map(a => a.getAttribute('href')))).every(h => fiche.test(h)));
+  t(`${code} : le mot cherché est marqué`, (await page.locator(`${Z} .qui__resultats .qui__marque`).count()) > 0);
+
+  // Au-delà de douze, « Voir les N autres » ; toutes les cartes ensuite. Un
+  // reste de trois cartes ou moins se montre d'emblée, sans bouton.
+  await champ.fill('ingenieur');
+  await page.waitForTimeout(300);
+  const ingenieurs = membres.filter(m => texteDe(m).includes('ingenieur'));
+  const avantPlus = await cartes.count();
+  const attenduAvant = ingenieurs.length <= 15 ? ingenieurs.length : 12;
+  await toutVoir();
+  t(`${code} : « ingénieur » montre ${attenduAvant} cartes, puis les ${ingenieurs.length} sur demande`,
+    avantPlus === attenduAvant && (await cartes.count()) === ingenieurs.length, `(${avantPlus} → ${await cartes.count()})`);
+
+  // Un nombre seul ne compte qu'en début de mot : « 1 » trouve « Squad 1 »
+  // ou « Personne 157 », pas le « 1 » de « H175 », qui n'est pas marqué.
+  await champ.fill('1');
+  await page.waitForTimeout(300);
+  await toutVoir();
+  const debutDeMot = (v) => /(^|[^a-z0-9])1/.test(sansAccents(v));
+  const avecUn = membres.filter(m => [m.nom, m.poste, porteurDe(m), squadDe(m)].concat((m.competences || []).map(c => c.nom)).some(debutDeMot));
+  t(`${code} : « 1 » trouve ses ${avecUn.length} personnes (début de mot), sans marque dans un code d’appareil`,
+    (await nomsVisibles()) === nomsDe(avecUn) && (await page.locator(`${Z} .qui__resultats .appareil-puce .qui__marque`).count()) === 0,
+    `(${await cartes.count()} cartes)`);
+  // Une requête de plusieurs mots se marque d'un trait là où elle se lit.
+  const nomAvecChiffre = membres.map(m => m.nom).find(n => /\s\d+$/.test(n));
+  if (nomAvecChiffre) {
+    await champ.fill(nomAvecChiffre);
+    await page.waitForTimeout(300);
+    t(`${code} : « ${nomAvecChiffre} » vient en tête, marqué d’un seul trait`,
+      (await cartes.first().locator('.personne-carte__nom').innerText()).trim() === nomAvecChiffre
+      && (await cartes.first().locator('.personne-carte__nom .qui__marque').allInnerTexts()).join('|') === nomAvecChiffre);
+  }
+
+  // Un code d'appareil : ceux qui le suivent, et eux seuls (H160 ≠ H160M),
+  // avec le lien vers sa fiche sur le tableau de bord.
+  await champ.fill('H160');
+  await page.waitForTimeout(300);
+  await toutVoir();
+  const surH160 = membres.filter(m => porteurDe(m) === 'H160');
+  t(`${code} : « H160 » montre ses ${surH160.length} personnes et le lien vers sa fiche`,
+    (await nomsVisibles()) === nomsDe(surH160)
+    && (await page.locator(`${Z} .qui__actions a[href="index.html#porteur=H160"]`).count()) === 1);
+  t(`${code} : la puce d’appareil d’une carte mène à la fiche du porteur`,
+    (await cartes.locator('a.appareil-puce').evaluateAll(l => l.map(a => a.getAttribute('href')))).every(h => h === 'index.html#porteur=H160'));
+
   await champ.fill('zzzz-rien');
+  await page.waitForTimeout(300);
+  t(`${code} : une recherche sans réponse le dit`,
+    (await cartes.count()) === 0 && (await page.locator(`${Z} .qui__rien`).isVisible()));
+  await champ.press('Escape');
+  await page.waitForTimeout(200);
+  t(`${code} : Échap vide le champ et referme les résultats`,
+    (await champ.inputValue()) === '' && (await page.locator(`${Z} .qui__resultats`).isHidden()));
+
+  // Une suggestion se cherche d'un clic, et se relâche d'un autre.
+  const premiere = page.locator(`${Z} .qui > .qui__suggestions:not(.qui__porteurs) .qui__suggestion`).first();
+  await premiere.click();
+  await page.waitForTimeout(300);
+  // Une compétence exacte ramène ceux qui la pratiquent, et eux seuls.
+  const avecPremiere = membres.filter(m => (m.competences || []).some(c => c.nom === suggestionsAttendues[0]));
+  t(`${code} : la suggestion « ${suggestionsAttendues[0]} » se cherche d’un clic (${avecPremiere.length} personnes)`,
+    (await champ.inputValue()) === suggestionsAttendues[0] && (await premiere.getAttribute('aria-pressed')) === 'true'
+    && (await page.locator(`${Z} .qui__compte`).innerText()).startsWith(avecPremiere.length + ' personne'));
+  // Une compétence exacte se marque sur sa seule puce, en entier : pas mot
+  // à mot, ni dans les rôles (« Lead technique »).
+  const marques = await page.locator(`${Z} .qui__resultats .qui__marque`).evaluateAll(l => l.map(m => ({
+    texte: m.textContent, puce: Boolean(m.closest('.competence-puce__nom'))
+  })));
+  t(`${code} : « ${suggestionsAttendues[0]} » est marquée en entier sur sa puce, et nulle part ailleurs`,
+    marques.length === Math.min(avecPremiere.length, 12 + (avecPremiere.length <= 15 ? 3 : 0))
+    && marques.every(m => m.puce && m.texte === suggestionsAttendues[0]), JSON.stringify(marques.slice(0, 3)));
+  await premiere.click();
+  await page.waitForTimeout(300);
+  t(`${code} : un second clic la relâche`, (await champ.inputValue()) === '' && (await premiere.getAttribute('aria-pressed')) === 'false');
+
+  // Les équipes : une tuile par squad — son nom, son effectif, son lead.
+  const tuiles = await page.locator(`${Z} .equipe__tuile`).evaluateAll(l => l.map(b => ({
+    nom: b.querySelector('.equipe__nom').textContent.trim(),
+    n: Number(b.querySelector('.equipe__nombre').textContent),
+    lead: (b.querySelector('.equipe__lead-nom') || { textContent: '' }).textContent.trim(),
+    ouverte: b.getAttribute('aria-expanded')
+  })));
+  t(`${code} : ${bloc.squads.length} tuiles d’équipe, avec leur effectif et leur lead`,
+    tuiles.length === bloc.squads.length && bloc.squads.every((sq, i) => tuiles[i].nom === sq.nom && tuiles[i].n === sq.membres.length
+      && tuiles[i].lead === ((sq.membres.find(m => m.role === 'leader') || { nom: '' }).nom) && tuiles[i].ouverte === 'false'),
+    JSON.stringify(tuiles.slice(0, 2)));
+  t(`${code} : le responsable, nommé, mène à sa fiche`,
+    (await page.locator(`${Z} .equipes__responsable-nom`).innerText()).trim() === bloc.responsable.nom
+    && fiche.test(await page.locator(`${Z} .equipes__responsable-nom`).getAttribute('href')));
+  t(`${code} : « L’organigramme complet » reste à portée`,
+    (await page.locator(`${Z} a[href="organigramme.html#pole=${code}"]`).count()) === 1);
+  // Les visages d'une tuile : six au plus, côte à côte — aucun ne cache les
+  // initiales du voisin —, puis « +N » ; le nom de chacun en infobulle.
+  const visages = await page.locator(`${Z} .equipe__visages`).evaluateAll(l => l.map(v => {
+    const r = [...v.querySelectorAll('.avatar')].map(a => a.getBoundingClientRect());
+    return {
+      n: r.length, chevauche: r.some((b, i) => i && b.left < r[i - 1].right - 0.5 && Math.abs(b.top - r[i - 1].top) < 1),
+      titres: [...v.querySelectorAll('.avatar')].every(a => a.title),
+      plus: (v.querySelector('.equipe__plus') || { textContent: '' }).textContent
+    };
+  }));
+  t(`${code} : les visages des tuiles se lisent en entier (six au plus, puis « +N »)`,
+    visages.length === bloc.squads.length && visages.every((v, i) => {
+      const autres = bloc.squads[i].membres.length - (bloc.squads[i].membres.some(m => m.role === 'leader') ? 1 : 0);
+      return v.n === Math.min(6, autres) && !v.chevauche && v.titres && v.plus === (autres > 6 ? '+' + (autres - 6) : '');
+    }), JSON.stringify(visages.slice(0, 2)));
+
+  // Une tuile s'ouvre sur place ; une seule à la fois.
+  const panneaux = page.locator(`${Z} .equipe__panneau`);
+  const ouvrirTuile = async (i) => { await page.locator(`${Z} .equipe__tuile`).nth(i).click(); await page.waitForTimeout(700); };
+  await ouvrirTuile(1);
+  const sq1 = bloc.squads[1];
+  const cartesPanneau = panneaux.locator('.personne-carte');
+  t(`${code} : « ${sq1.nom} » s’ouvre sur ses ${sq1.membres.length} membres, le lead d’abord`,
+    (await panneaux.count()) === 1 && (await page.locator(`${Z} .equipe__tuile`).nth(1).getAttribute('aria-expanded')) === 'true'
+    && (await cartesPanneau.locator('.personne-carte__nom').allInnerTexts()).map(n => n.trim()).sort().join('|') === nomsDe(sq1.membres)
+    && (!sq1.membres.some(m => m.role === 'leader') || (await cartesPanneau.first().locator('.personne-carte__badge').count()) === 1));
+  const boiteTuile = await page.locator(`${Z} .equipe__tuile`).nth(1).boundingBox();
+  const boitePanneau = await panneaux.boundingBox();
+  t(`${code} : le panneau se pose sous la rangée de sa tuile, sur toute la largeur`,
+    boitePanneau.y >= boiteTuile.y + boiteTuile.height - 1 && boitePanneau.width > boiteTuile.width * 1.5,
+    JSON.stringify({ tuile: boiteTuile, panneau: boitePanneau }));
+  t(`${code} : ses cartes mènent aux fiches`,
+    (await cartesPanneau.locator('.personne-carte__nom').evaluateAll(l => l.map(a => a.getAttribute('href')))).every(h => fiche.test(h)));
+  await ouvrirTuile(2);
+  t(`${code} : ouvrir « ${bloc.squads[2].nom} » referme « ${sq1.nom} »`,
+    (await panneaux.count()) === 1
+    && (await page.locator(`${Z} .equipe__tuile[aria-expanded="true"]`).count()) === 1
+    && (await page.locator(`${Z} .equipe__tuile`).nth(2).getAttribute('aria-expanded')) === 'true'
+    && (await cartesPanneau.count()) === bloc.squads[2].membres.length);
+  await ouvrirTuile(2);
+  t(`${code} : un second clic la referme`,
+    (await panneaux.count()) === 0 && (await page.locator(`${Z} .equipe__tuile[aria-expanded="true"]`).count()) === 0);
+
+  // Les référents : une puce par compétence qui a un référent ; la choisir
+  // montre qui solliciter — ses référents, et eux seuls.
+  const puces = page.locator(`${Z} .referents__puce`);
+  t(`${code} : l’index couvre les ${competencesAvecReferent.size} compétences qui ont un référent, par leur seul nom`,
+    (await puces.count()) === competencesAvecReferent.size
+    && (await puces.evaluateAll(l => l.map(b => b.dataset.competence))).every(c => competencesAvecReferent.has(c))
+    && (await puces.evaluateAll(l => l.every(b => b.textContent.trim() === b.dataset.competence && !b.querySelector('.avatar')))));
+  // Le détail se pose sous l'index, sur toute sa largeur ; jusqu'à trois
+  // référents tiennent sur une rangée.
+  const boiteIndex = await page.locator(`${Z} .referents__index`).boundingBox();
+  const boiteDetail = await page.locator(`${Z} .referents__detail`).boundingBox();
+  const hauts = await page.locator(`${Z} .referents__gens > li`).evaluateAll(l => [...new Set(l.map(c => Math.round(c.getBoundingClientRect().top)))]);
+  t(`${code} : le détail se pose sous l’index, ses référents sur une rangée`,
+    boiteDetail.y >= boiteIndex.y + boiteIndex.height - 1 && Math.abs(boiteDetail.width - boiteIndex.width) < 2
+    && (hauts.length === 1 || (await page.locator(`${Z} .referents__gens > li`).count()) > 3), JSON.stringify({ boiteIndex, boiteDetail, hauts }));
+  const refsDe = (nom) => membres.filter(m => (m.competences || []).some(c => c.nom === nom && c.niveau === 'referent'));
+  const detailNoms = async () => (await page.locator(`${Z} .referents__detail .personne-carte__nom`).allInnerTexts()).map(n => n.trim()).sort().join('|');
+  const nomPremiere = await puces.first().getAttribute('data-competence');
+  t(`${code} : la première compétence est montrée d’office, avec ses référents`,
+    (await puces.first().getAttribute('aria-pressed')) === 'true' && (await detailNoms()) === nomsDe(refsDe(nomPremiere)));
+  const derniere = puces.last();
+  const nomDerniere = await derniere.getAttribute('data-competence');
+  await derniere.click();
   await page.waitForTimeout(400);
-  t(`${code} : une recherche sans réponse l’annonce dans chaque volet`,
-    (await page.locator('#zone-reperes .annuaire__rien:visible').count()) === 3);
-  await champ.fill('');
-  await page.waitForTimeout(400);
+  t(`${code} : choisir « ${nomDerniere} » montre ses ${refsDe(nomDerniere).length} référent(s)`,
+    (await derniere.getAttribute('aria-pressed')) === 'true'
+    && (await page.locator(`${Z} .referents__puce[aria-pressed="true"]`).count()) === 1
+    && (await page.locator(`${Z} .referents__competence`).innerText()).trim() === nomDerniere
+    && (await detailNoms()) === nomsDe(refsDe(nomDerniere)));
+  await puces.nth(1).hover();
+  await page.waitForTimeout(500);
+  t(`${code} : à la souris, s’attarder sur une compétence la montre`,
+    (await page.locator(`${Z} .referents__competence`).innerText()).trim() === (await puces.nth(1).getAttribute('data-competence')));
+  t(`${code} : les référents mènent à leur fiche`,
+    (await page.locator(`${Z} .referents__detail .personne-carte__nom`).evaluateAll(l => l.map(a => a.getAttribute('href')))).every(h => fiche.test(h)));
+  // « Les N personnes qui la pratiquent » : la recherche, et le focus sur
+  // son compte — la suite au clavier part des résultats.
+  const tous = page.locator(`${Z} .referents__tous`);
+  if (await tous.count()) {
+    const competenceTous = (await page.locator(`${Z} .referents__competence`).innerText()).trim();
+    await tous.focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(700);
+    t(`${code} : « ${(await tous.innerText()).trim()} » cherche « ${competenceTous} » et y amène le focus`,
+      (await champ.inputValue()) === competenceTous
+      && (await page.evaluate(() => document.activeElement && document.activeElement.classList.contains('qui__compte'))));
+    await champ.fill('');
+  }
 
   // Les documents du pôle : les huit plus récents en vigueur.
   const docsRendus = await page.locator('#zone-documents .pole-doc .pole-doc__titre').allInnerTexts();
@@ -222,6 +378,33 @@ for (const bloc of orga.poles) {
     /Interroger un expert/.test(pied) && !/Toute la base/i.test(pied));
   t(`${code} : hors mode édition, aucune commande d’édition visible`,
     (await page.locator('.edition-seulement:visible').count()) === 0);
+}
+
+console.log('\n== Espace de pôle au téléphone (390 px) ==');
+{
+  const ctxMobile = await nav.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  const mobile = await ctxMobile.newPage();
+  mobile.on('pageerror', e => err.push(e.message));
+  for (const code of ['ETIIA', 'ETIIE', 'ETIII']) {
+    await mobile.goto(`${B}/${code.toLowerCase()}.html`, { waitUntil: 'networkidle' });
+    await mobile.waitForTimeout(1000);
+    await mobile.fill(`#qui-${code.toLowerCase()}-champ`, 'harnais');
+    await mobile.locator('#zone-reperes .equipe__tuile').first().click();
+    await mobile.locator('#zone-reperes .referents__puce').last().click();
+    await mobile.waitForTimeout(700);
+    const debord = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    t(`${code} : au téléphone, le coup d’œil ne déborde pas de l’écran`, debord <= 0, `(${debord} px)`);
+    // Les rangées qui défilent de côté s'estompent au bord où il reste à voir.
+    await mobile.fill(`#qui-${code.toLowerCase()}-champ`, '');
+    const rangees = await mobile.locator('#zone-reperes .qui__suggestions:not(.qui__porteurs), #zone-reperes .referents__index').evaluateAll(l => l.map(r => {
+      r.scrollLeft = 0; r.dispatchEvent(new Event('scroll'));
+      const deborde = r.scrollWidth > r.clientWidth + 2;
+      return { deborde, apres: r.hasAttribute('data-apres'), masque: getComputedStyle(r).maskImage || getComputedStyle(r).webkitMaskImage || 'none' };
+    }));
+    t(`${code} : au téléphone, suggestions et index des référents défilent avec un bord estompé`,
+      rangees.length === 2 && rangees.every(r => r.deborde && r.apres && r.masque !== 'none'), JSON.stringify(rangees));
+  }
+  await ctxMobile.close();
 }
 
 console.log('\n== Tableau de bord : en-tête sur la bande et sommaire ==');

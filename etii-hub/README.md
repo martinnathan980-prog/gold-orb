@@ -50,7 +50,7 @@ Puis ouvrir <http://localhost:8000>.
 | Page | Rôle |
 |---|---|
 | `index.html` | Tableau de bord : Communication center (kiosque + éditeur), À venir (les prochains rendez-vous), Porteurs, Suivi OTQ / OTD |
-| `etiia.html`, `etiie.html`, `etiii.html` | L'espace d'un pôle : sa communication, le pôle en un coup d'œil (repères, organigramme, référents, par porteur), ses documents récents, sa FAQ (voir ci-dessous) |
+| `etiia.html`, `etiie.html`, `etiii.html` | L'espace d'un pôle : sa communication, le pôle en un coup d'œil (« Qui peut m'aider ? », les équipes, les référents), ses documents récents, sa FAQ (voir ci-dessous) |
 | `reunions.html` | Les comptes-rendus de réunion, par périmètre |
 | `organigramme.html` | Équipes, rôles, compétences ; hors de la barre du site, on y arrive depuis un pôle |
 | `faq.html` | Base de connaissances |
@@ -79,7 +79,7 @@ fichiers de `assets/data/` pour ce pôle.
 | Section | Source | Ce qu'elle montre |
 |---|---|---|
 | Communication | `communications.json` (`pole`) | Le kiosque du pôle, identique à celui du tableau de bord : chaque pôle y a au moins une annonce riche en blocs (image d'un de ses porteurs avec son crédit, chiffres clés, courbe, pastilles, encadré) — des données d'exemple |
-| Le pôle en un coup d'œil | `organigramme.json`, `flotte.json`, `documents.json` | Quatre repères cliquables (personnes, squads, référents, documents en vigueur), un champ « Qui sait faire… ? », puis trois volets côte à côte qui défilent chacun dans leur cadre : **Organigramme** (le responsable, puis chaque squad et ses membres, le lead d'abord), **Référents** (pour chaque compétence, qui solliciter en premier) et **Par porteur** (pour chaque porteur suivi par le pôle — `flotte.json` → `poles`, puis les codes que ses membres déclarent —, les personnes dont le champ `porteur` ou `perimetre` est ce code ; un porteur sans personne dit « Contact à renseigner »). Une personne tient en une ligne : son nom, vers sa fiche, et son rôle |
+| Le pôle en un coup d'œil | `organigramme.json`, `flotte.json`, `documents.json` | Ses chiffres en une ligne (personnes, squads, référents, documents en vigueur), puis trois gestes. **Qui peut m'aider ?** : un champ qui répond pendant la frappe — un nom, un rôle, une compétence, un appareil — par des cartes de personnes (initiales teintées de la squad, rôle, squad, titres de référent, appareil suivi vers sa fiche), le mot cherché marqué, les référents en tête ; un code d'appareil exact ramène ceux qui le suivent, une compétence exacte ceux qui la pratiquent ; des suggestions d'un clic (les compétences et les appareils les plus partagés du pôle). **Les équipes** : le responsable, puis une tuile par squad — son lead, six visages côte à côte puis « +N », son effectif, ses appareils — qui s'ouvre sur place, une à la fois, sur ses membres ; « L'organigramme complet » mène à la page du service. **Les référents** : l'index des compétences qui ont un référent ; un clic, ou la souris qui s'y attarde, montre qui solliciter, en bandeau sous l'index. Au téléphone, suggestions et index défilent de côté, le bord estompé tant qu'il reste à voir. Chaque carte mène à la fiche de la personne. En mode édition, tout l'organigramme du pôle s'y modifie : personnes, squads, référents (nommer, retirer), affectation aux porteurs (depuis la recherche d'un appareil ; la rangée « Porteurs du pôle » montre aussi ceux que personne ne suit) |
 | Documents du pôle | `documents.json` (`pole`, `porteur`) | Les huit documents en vigueur les plus récents du pôle, puis « Tous les documents du pôle (N) » vers la recherche filtrée |
 | Questions fréquentes | `faq.json` (`pole`) | Les questions du pôle puis celles du service, et « Interroger un expert » |
 
@@ -191,7 +191,7 @@ Après toute modification d'un fichier de `assets/data/`, lancer
 | `documents.json` | La recherche documentaire, et les documents portés affichés sur la fiche d'une personne | `node tests/audit.mjs`, `node tests/search.test.mjs` |
 | `faq.json` | La page FAQ et la FAQ de chaque espace de pôle | `node tests/audit.mjs` |
 | `flotte.json` | La galerie Porteurs du tableau de bord, les fiches d'appareil et les crédits photo | `node tests/audit.mjs` |
-| `indicateurs.json` | Les repères chiffrés des espaces de pôle | `node tests/audit.mjs` |
+| `indicateurs.json` | Les définitions d'indicateurs normalisées par `indicateurs.js` ; aucune page ne l'affiche aujourd'hui (les chiffres d'un pôle se calculent depuis `organigramme.json` et `documents.json`) | `node tests/audit.mjs` |
 | `organigramme.json` | L'organigramme, le trombinoscope, les compétences, les équipes et référents des pôles | `node tests/audit.mjs` |
 | `reunions.json` | Les comptes-rendus de réunion | `node tests/audit.mjs` |
 | `otq-exemple.csv` | Le Suivi OTQ / OTD tant que `SOURCE.url` d'`assets/js/otq.js` est vide | `node tests/audit.mjs` |
