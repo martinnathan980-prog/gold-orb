@@ -14,7 +14,7 @@
  *
  * Où le coller : dans le classeur des documents (celui que lit le site),
  * Extensions › Apps Script, un nouveau fichier « index-documents ».
- * Mode d'emploi : docs/ASSISTANT-IA.md, étape 1.3.
+ * Mode d'emploi : docs/ASSISTANT-IA.md, niveau 0, § 0.3.
  *
  * Des milliers de fichiers : Apps Script arrête un script après 6 minutes.
  * Celui-ci s'interrompt proprement vers 5 minutes, note où il en est, et
