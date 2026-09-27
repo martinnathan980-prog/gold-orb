@@ -108,16 +108,37 @@ for (const bloc of orga.poles) {
   const sousNav = await page.locator('.sous-nav a').evaluateAll(l => l.map(a => a.textContent.trim()));
   t(`${code} : sommaire Communication, À venir, En un coup d’œil, Documents, FAQ`,
     sousNav.join('|') === 'Communication|À venir|En un coup d’œil|Documents|FAQ', `(${sousNav.join('|')})`);
-  // « À venir » : la ligne seule — plus de carte « prochain rendez-vous »
-  // ni de compte à rebours —, avec les rendez-vous du pôle et ceux du
-  // service, et d'aucun autre pôle.
+  // « À venir » : des pastilles sur leur ligne — plus de carte « prochain
+  // rendez-vous », de compte à rebours ni de légende —, avec les
+  // rendez-vous du pôle et ceux du service, et d'aucun autre pôle. La
+  // couleur seule les distingue : celle du pôle, le marine du service.
   const polesVus = await page.locator('#zone-agenda .agenda__rdv').evaluateAll(l => l.map(e => e.dataset.pole));
-  t(`${code} : « À venir » est une ligne, sans carte ni compte à rebours`,
+  t(`${code} : « À venir » est une ligne de pastilles, sans compte à rebours ni légende`,
     (await page.locator('#zone-agenda .agenda').count()) === 1
-    && (await page.locator('#zone-agenda [class*="agenda__prochain"]').count()) === 0
-    && (await page.locator('#zone-agenda .agenda__scene, #zone-agenda .agenda--vide').count()) === 1);
+    && (await page.locator('#zone-agenda [class*="agenda__prochain"], #zone-agenda .agenda__legende').count()) === 0
+    && (await page.locator('#zone-agenda .agenda__scene, #zone-agenda .agenda--vide').count()) === 1
+    && (await page.locator('#zone-agenda .agenda__rdv .agenda__pastille').count()) === polesVus.length);
   t(`${code} : « À venir » ne montre que le pôle et le service`,
     polesVus.every(p => p === code || p === 'ETII'), JSON.stringify(polesVus));
+  const teintes = await page.evaluate((code) => {
+    const jeton = (nom) => {
+      const s = document.createElement('span');
+      s.style.color = 'var(' + nom + ')';
+      document.body.append(s);
+      const c = getComputedStyle(s).color;
+      s.remove();
+      return c;
+    };
+    const attendues = { ETII: jeton('--agenda-service'), [code]: jeton('--pole-' + code.toLowerCase()) };
+    return [...document.querySelectorAll('#zone-agenda .agenda__rdv')].map((li) => {
+      const s = getComputedStyle(li.querySelector('.agenda__pastille'));
+      const filet = li.classList.contains('agenda__rdv--droite') ? s.borderRightColor : s.borderLeftColor;
+      return filet === attendues[li.dataset.pole] && attendues.ETII !== attendues[code];
+    });
+  }, code);
+  t(`${code} : le pôle et le service se distinguent par la couleur seule`,
+    teintes.every(Boolean) && !/service|ETII/i.test(await page.locator('#zone-agenda .agenda__quand').evaluateAll(l => l.map(e => e.textContent).join(' '))),
+    JSON.stringify(teintes));
   t(`${code} : l’en-tête est sur la bande, le sommaire collant en dessous`,
     (await page.locator('.page-tete h1').count()) === 1
     && (await page.locator('.page-sommaire').evaluate(e => getComputedStyle(e).position)) === 'sticky');

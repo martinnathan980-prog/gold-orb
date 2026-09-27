@@ -43,6 +43,11 @@
   --pole-etiie: #0e8aa8;
   --pole-etiii: #b45309;
   --pole-etii:  var(--texte-doux);
+  /* Tout le service, sur la ligne « À venir » (agenda.js) : la couleur du
+     site, nettement à part des trois pôles — le marine sur le papier,
+     l'encre ivoire sur le graphite (la terre cuite s'y confondrait avec
+     ETIII, le marine éclairci avec ETIIE). */
+  --agenda-service: var(--marque-bleu);
   /* Les mêmes teintes, éclaircies pour tenir sur un fond sombre (voiles). */
   --pole-etiia-sur-marine: #a78bfa;
   --pole-etiie-sur-marine: #38bdf8;
@@ -355,6 +360,7 @@
     --pole-etiia: #a78bfa;
     --pole-etiie: #38bdf8;
     --pole-etiii: #f0a04b;
+    --agenda-service: #ece8df;
 
     --equipe-1: #86aee6;
     --equipe-2: #5cc2b0;
@@ -472,6 +478,7 @@
   --pole-etiia: #a78bfa;
   --pole-etiie: #38bdf8;
   --pole-etiii: #f0a04b;
+  --agenda-service: #ece8df;
 
   --equipe-1: #86aee6;
   --equipe-2: #5cc2b0;
