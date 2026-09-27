@@ -4048,6 +4048,9 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
    La section courante passe à l'encre, et un trait terre cuite glisse
    sous elle d'une entrée à l'autre (ui.js pose --curseur-x et
    --curseur-l). Le nombre d'éléments de la section suit son nom. */
+/* Le trait est contenu dans le bandeau : sur téléphone, quand l'entrée
+   courante est au bout de la liste défilante, il n'élargit pas la page. */
+.page-sommaire { overflow-x: clip; }
 .page-sommaire .sous-nav {
   --curseur-x: 0px;
   --curseur-l: 0px;

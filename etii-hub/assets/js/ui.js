@@ -1746,10 +1746,21 @@ export function suivreSommaire(options) {
     liste.style.setProperty('--curseur-x', actif.offsetLeft + 'px');
     liste.style.setProperty('--curseur-l', actif.offsetWidth + 'px');
   };
+  /* Sur téléphone, le sommaire défile sur une ligne : l'entrée courante
+     y est ramenée en vue, sans toucher au défilement de la page. */
+  const montrerActif = () => {
+    if (!liste || liste.scrollWidth <= liste.clientWidth + 1) return;
+    const actif = liens.find((a) => a.getAttribute('aria-current') === 'true');
+    if (!actif) return;
+    const gauche = actif.offsetLeft - (liste.clientWidth - actif.offsetWidth) / 2;
+    const doux = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    liste.scrollTo({ left: Math.max(0, gauche), behavior: doux ? 'smooth' : 'auto' });
+  };
   const marquer = (id) => {
     if (id !== courant) {
       courant = id;
       liens.forEach((a) => a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'true' : 'false'));
+      montrerActif();
     }
     placerCurseur();
   };
