@@ -1,8 +1,12 @@
 ROBOT WEB - TOUT RECOMMENCER A ZERO, PUIS UNE TACHE A RELANCER QUAND VOUS VOULEZ
 =================================================================================
-(Windows, au bureau. Version 17 du robot.)
+(Windows, au bureau. Version 18 du robot.)
 
-Ce qui change avec la version 17 :
+Ce qui change avec la version 18 :
+   - NOUVEAU : montrer une action au robot (dupliquer un plan, supprimer un
+     plan...) : il la refait en vous demandant, a chaque fois, le plan de
+     depart. Et il ecrit un fichier qui me decrit l'action sans vos donnees.
+     Voir la PARTIE F.
    - NOUVEAU : le robot peut parcourir tout votre portail SANS RIEN MODIFIER et
      en faire la carte (menu, choix 8) : voir la PARTIE E.
    - Les pages Google ou Chrome (« Decouvrez... », « Nouveautes... ») qui
@@ -27,13 +31,14 @@ Il y a 4 parties :
    PARTIE C - Relancer la tache                           (quand vous voulez)
    PARTIE D - Si ca ne marche pas
    PARTIE E - Faire la carte de mon portail, sans rien modifier   (quand vous voulez)
+   PARTIE F - Montrer une action : dupliquer, supprimer un plan  (quand vous voulez)
 
 
 =====================================================================
  PARTIE A - TOUT EFFACER ET REINSTALLER PROPREMENT
 =====================================================================
 On efface l'ancien dossier du robot (anciennes taches, faux Excel essai.xlsx,
-ancien Chrome du robot), puis on installe la version 17. Vos fichiers a vous,
+ancien Chrome du robot), puis on installe la version 18. Vos fichiers a vous,
 votre Chrome habituel et vos mots de passe ne sont PAS touches.
 
 A1. FERMEZ toutes les fenetres noires ouvertes, et toutes les fenetres Chrome
@@ -74,7 +79,7 @@ A6. On efface aussi les anciens installeurs telecharges (pour ne pas les
 
 A7. Dans Gmail, ouvrez mon dernier mail et telechargez la piece jointe
         robot-web-installeur.txt
-    (en haut du fichier est ecrit VERSION 17)
+    (en haut du fichier est ecrit VERSION 18)
 
 A8. Revenez dans la fenetre noire. VOUS TAPEZ, une ligne a la fois :
         mkdir robot
@@ -86,17 +91,17 @@ A8. Revenez dans la fenetre noire. VOUS TAPEZ, une ligne a la fois :
     fini ou n'est pas alle dans Telechargements. Attendez, puis refaites
     uniquement la ligne   move ...
 
-A9. On verifie que c'est bien la version 17. VOUS TAPEZ :
-        findstr /c:"VERSION 17" robot-web-installeur.txt
+A9. On verifie que c'est bien la version 18. VOUS TAPEZ :
+        findstr /c:"VERSION 18" robot-web-installeur.txt
 
-    VOUS VOYEZ une ligne qui contient :   INSTALLEUR AUTOMATIQUE - VERSION 17
+    VOUS VOYEZ une ligne qui contient :   INSTALLEUR AUTOMATIQUE - VERSION 18
     SI rien ne s'affiche : ce n'est pas le bon fichier. Refaites A6 a A8.
 
 A10. On installe. VOUS TAPEZ (le plus simple : copier-coller, puis Entree) :
         py -c "exec(open('robot-web-installeur.txt', encoding='utf-8').read())"
 
     VOUS VOYEZ defiler, en 1 a 3 minutes :
-        ROBOT-WEB - installeur version 17
+        ROBOT-WEB - installeur version 18
         === 1/4  Extraction des fichiers ===
         === 2/4  Environnement Python ===
             L'environnement isole est bloque par une strategie de l'entreprise.
@@ -390,3 +395,55 @@ E7. Relisez carte_a_partager.txt (double-clic : il s'ouvre dans le Bloc-notes).
     permis chez vous, recopiez-le moi ici. Sinon, decrivez-moi simplement
     ce que vous y voyez : ca suffit pour avancer.
     Avec cette carte, je vous propose les taches a automatiser, et comment.
+
+
+=====================================================================
+ PARTIE F - MONTRER UNE ACTION : DUPLIQUER UN PLAN, SUPPRIMER UN PLAN
+=====================================================================
+Vous faites l'action UNE fois devant le robot. Il la refait ensuite seul, et
+vous demande a chaque lancement ce qui change (le plan de depart, un titre).
+Il ecrit aussi un fichier qui me decrit l'action (gestes, champs remplis ou
+laisses vides, boutons), SANS aucune valeur.
+
+ATTENTION : pendant l'enregistrement, l'action est VRAIMENT faite dans le
+portail (le plan est vraiment duplique, ou vraiment supprime). Faites-la sur
+un plan de test, ou supprimez justement la copie que vous venez de creer.
+
+F1. Menu, choix 1.
+       Adresse de l'outil   -> la page d'ACCUEIL du portail (clic droit, Entree)
+       Nom de cette tache   -> dupliquer un plan      (ou : supprimer un plan)
+       Avec un fichier Excel ? -> [Entree]
+
+F2. Dans le Chrome du robot, faites l'action normalement, LENTEMENT :
+       dupliquer : cherchez le plan de depart, ouvrez-le, cliquez Dupliquer,
+                   remplissez les champs comme d'habitude, Enregistrer ;
+       supprimer : cherchez le plan, ouvrez-le, Supprimer, confirmez.
+    Si Dupliquer ouvre un nouvel onglet : continuez simplement dedans, le
+    robot suit. Puis cliquez sur le bandeau rouge.
+
+F3. Les questions. La nouvelle, importante :
+       « Vous avez ecrit, dans « Numero » : « PL-... »
+         Cette valeur change-t-elle a chaque fois ? Entree = non ;
+         sinon, donnez-lui un nom court »
+    -> pour le numero du plan de depart : tapez   plan de depart
+    -> pour un champ qui change (titre, indice...) : tapez son nom, ex. titre
+    -> pour ce qui est toujours pareil : [Entree]
+    Les autres questions : [Entree].
+
+F4. VOUS VOYEZ a la fin deux fichiers, dans le dossier taches :
+       dupliquer_un_plan.yaml              la tache (reste sur votre poste)
+       dupliquer_un_plan_a_partager.txt    la description SANS vos donnees
+    Relisez le second (double-clic), puis, si c'est permis chez vous,
+    recopiez-le moi ici. Avec lui et la carte (partie E), je construis les
+    automatismes : dupliquer en serie depuis une liste, supprimer, lire des
+    infos...
+
+F5. Pour relancer : menu, choix 2, la tache. Le robot demande :
+       -> Plan de depart :      (tapez le numero, Entree)
+       -> Titre :               (etc.)
+    Pour une tache qui SUPPRIME, il demande d'abord de taper   OUI   en
+    entier. Toute autre reponse annule : rien n'est fait.
+
+F6. Pour « aller chercher des infos » (fiche, onglets, PDF) : montrez-le de
+    la meme facon (choix 1) : ouvrir un plan, aller dans l'onglet voulu,
+    telecharger le PDF... Appelez la tache par exemple « lire un plan ».
