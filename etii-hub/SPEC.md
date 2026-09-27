@@ -116,7 +116,8 @@ Site statique. Aucune étape de build. Ouvrable par double-clic ou
 servable par n'importe quel serveur de fichiers.
 
     etii-hub/
-      index.html              Tableau de bord : Communication center, Porteurs, Suivi OTQ / OTD
+      index.html              Tableau de bord : Communication center, Porteurs (aperçu), Suivi OTQ / OTD
+      porteurs.html           Les porteurs : galerie, fiches, taille réelle, comparaison
       etiia.html              Espace du pôle ETIIA  ─┐
       etiie.html              Espace du pôle ETIIE   ├─ même gabarit
       etiii.html              Espace du pôle ETIII  ─┘  (pole.js)
@@ -173,12 +174,21 @@ explicite) si son JSON manque ou est invalide.
 
 ### 4.1 `index.html` — Tableau de bord
 Trois sections, dans cet ordre : **Communication center** (le kiosque, plus
-l'accès à l'éditeur « Ajouter une communication »), **Porteurs** (trois
-sections l'une sous l'autre — Civil, Militaire, Prototype —, toutes visibles,
-chaque tuile ouvrant sa fiche) et **Suivi
+l'accès à l'éditeur « Ajouter une communication »), **Porteurs** (un aperçu :
+la pellicule des photos, marché par marché, chaque photo ouvrant sa fiche sur
+la page des porteurs, et « Voir tous les porteurs ») et **Suivi
 OTQ / OTD**. Les trois pôles ne sont pas des cartes de cette page : ils
 vivent dans la barre de navigation, présente sur toutes les pages. Un
 sommaire collant suit la lecture. Navigation clavier complète.
+
+### 4.1 bis `porteurs.html` — Les porteurs
+Un seul écran pour regarder la flotte : la galerie par marché, filtrable et
+triable ; la fiche d'un appareil, qui répond d'abord en chiffres expliqués
+(taille, masse, places, vitesse, distance, puissance, depuis quand), situés
+par rapport à la gamme, avec le dessin à l'échelle et la frise du programme ;
+la comparaison de deux ou trois appareils. Les sources et la confiance de
+chaque valeur restent repliées ; les données du service sont « à
+renseigner », jamais inventées. Le README décrit le détail.
 
 ### 4.2 Les communications
 Liste chronologique d'annonces + panneau de détail.

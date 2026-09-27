@@ -91,6 +91,16 @@
   --serie-otq: #2b5ea7;
   --serie-otd: #b8562a;
 
+  /* --- Les marchés des porteurs (porteurs.js) ----------------------------
+     Civil, militaire, prototype : un bleu, un olive, une brique, sourds et
+     de même clarté, distincts des couleurs de pôle. Ils teintent la
+     pastille du marché, le repère de la jauge et le dessin à l'échelle ;
+     jamais seuls : le nom du marché est toujours écrit. 4,5:1 au moins
+     sur la feuille, le papier et la bande. */
+  --marche-civil:     #2c5a94;
+  --marche-militaire: #56662a;
+  --marche-prototype: #9a4431;
+
   /* --- Neutres : un gris chaud, qui tire vers le papier ------------------- */
   --gris-50:  #fbfaf8;
   --gris-100: #f3f2ef;
@@ -386,6 +396,10 @@
     --serie-otq: #7aa7ec;
     --serie-otd: #e59566;
 
+    --marche-civil:     #8db4ea;
+    --marche-militaire: #b5c67a;
+    --marche-prototype: #eb9d86;
+
     --statut-info:     #6fb1e0;
     --statut-succes:   #6fae82;
     --statut-alerte:   #dda434;
@@ -503,6 +517,10 @@
 
   --serie-otq: #7aa7ec;
   --serie-otd: #e59566;
+
+  --marche-civil:     #8db4ea;
+  --marche-militaire: #b5c67a;
+  --marche-prototype: #eb9d86;
 
   --statut-info:     #6fb1e0;
   --statut-succes:   #6fae82;

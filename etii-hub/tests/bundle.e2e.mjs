@@ -30,7 +30,7 @@ const f = page.frameLocator('#cadre');
 
 // Le plafond de publication est de 16 Mo ; la marge de 15 Mo est la règle du
 // projet. Le poids est surtout fait d'images intégrées, et un module ajouté à
-// palette.js — chargée par les huit pages — peut faire entrer les photos d'un
+// palette.js — chargée par les neuf pages — peut faire entrer les photos d'un
 // jeu dans des pages qui ne les affichent pas : mesuré une fois à +2,8 Mo.
 // Sans ce contrôle, le dépassement ne se voit qu'au refus de publication.
 console.log('== Poids du fichier autonome ==');
@@ -68,37 +68,43 @@ t('cliquer une entrée la lit à droite',
   (await secondeEntree.getAttribute('aria-current')) === 'true'
   && (await f.locator('.kiosque__lecture-titre').innerText()).trim() === titreCarte);
 
-console.log('\n== Les porteurs ==');
-t('la galerie des porteurs est rendue', (await f.locator('.porteurs__galerie').count()) > 0 && (await f.locator('.porteurs__item').count()) >= 10);
-const fiches = await f.locator('.porteurs__fiche').count();
-t('les vingt-trois appareils sont présents', fiches === 23, `(${fiches})`);
-// Plus d'onglets : trois sections l'une sous l'autre, toutes visibles.
-const intertitres = await f.locator('.porteurs__groupe-galerie > h3 .porteurs__groupe-galerie-nom').allInnerTexts();
-t('les trois marchés sont trois sections visibles, sans onglet',
-  intertitres.map(s => s.trim()).join(' · ') === 'Civil · Militaire · Prototype'
-  && (await f.locator('.porteurs__marche, .porteurs__marches').count()) === 0,
-  intertitres.join(' · '));
+console.log('\n== L\'aperçu des porteurs ==');
+// Le tableau de bord n'en garde qu'une pellicule, qui mène à leur page.
+t('la pellicule des vingt-trois appareils est rendue', (await f.locator('.apercu-porteurs__vignette').count()) === 23);
+t('ses photos sont intégrées', /^data:image/.test((await f.locator('.apercu-porteurs__photo').first().getAttribute('src')) || ''));
+t('pas de fiche sur le tableau de bord', (await f.locator('.porteur-fiche, .porteur-carte').count()) === 0);
+
+console.log('\n== La page des porteurs ==');
+await f.locator('nav.site-nav a[href="porteurs.html"]').first().click();
+await page.waitForTimeout(2200);
+t('porteurs.html s\'ouvre depuis la barre', /Porteurs/.test(await f.locator('h1').innerText()));
+t('les vingt-trois appareils sont présents', (await f.locator('.porteur-carte').count()) === 23);
+const intertitres = await f.locator('.porteurs__marche-titre').evaluateAll((l) => l.map((h) => h.firstChild.textContent.trim()));
+t('les trois marchés, dans l\'ordre', intertitres.join(' · ') === 'Civil · Militaire · Prototype', intertitres.join(' · '));
 
 console.log('\n== La fiche d\'un porteur ==');
-const troisieme = f.locator('.porteurs__fiche').nth(2);
-await troisieme.scrollIntoViewIfNeeded();
-await troisieme.click();
-await page.waitForTimeout(500);
-const apres = await f.locator('.porteurs__detail').innerText();
-t('la fiche propose ses cinq rubriques, sans données du service ni lien vers l’extérieur',
-  /Technique/.test(apres) && /Performances/.test(apres) && /Électrique/.test(apres) && /économie/i.test(apres) && /Insolite/.test(apres)
-  && !/Données service|Équipe & documents|Sources/.test(apres)
-  && (await f.locator('.porteurs__detail a[href^="http"]').count()) === 0);
-t('la fiche suit le porteur choisi', apres.includes(await troisieme.locator('.porteurs__fiche-code').innerText()));
-// Une valeur absente de la fiche publique s'annonce « à renseigner »,
-// dans l'onglet où elle se trouve (textContent : tous les onglets).
-t('les valeurs absentes sont annoncées comme telles',
-  /à renseigner/i.test(await f.locator('.porteurs__detail').textContent()));
-t('la fiche se replie quand on reclique sa carte', await (async () => {
-  await troisieme.click();
-  await page.waitForTimeout(400);
-  return (await f.locator('.porteurs__detail').count()) === 0;
-})());
+const troisieme = f.locator('.porteur-carte').nth(2);
+const codeTroisieme = await troisieme.getAttribute('data-code');
+await troisieme.locator('.porteur-carte__lien').evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
+await troisieme.locator('.porteur-carte__lien').click();
+await page.waitForTimeout(900);
+t('la carte ouvre sa fiche, dans le cadre', (await f.locator('.porteur-fiche').count()) === 1
+  && (await f.locator('.porteur-fiche__code').innerText()).trim() === codeTroisieme
+  && await page.evaluate(() => document.getElementById('cadre').contentDocument.location.href.startsWith('about:srcdoc')));
+const apres = await f.locator('.porteur-fiche').innerText();
+t('la fiche se lit en chiffres : l’essentiel, la taille réelle, le programme',
+  /L’essentiel/.test(apres) && (await f.locator('.porteur-tuile').count()) >= 4 && (await f.locator('.porteur-fiche .gabarit svg').count()) === 1 && /Le programme/.test(apres));
+t('ni source en ligne ni lien vers l’extérieur', (await f.locator('.porteur-fiche a[href^="http"]').count()) === 0 && !/https?:/.test(apres.replace(/Sources et fiabilité[\s\S]*$/, '')));
+t('ce que le service seul peut dire est « à renseigner »', /Pour le service[\s\S]*à renseigner/.test(apres));
+await f.locator('body').click({ position: { x: 5, y: 300 } });
+await page.keyboard.press('ArrowRight');
+await page.waitForTimeout(700);
+t('→ passe au suivant, dans le cadre', (await f.locator('.porteur-fiche__code').innerText()).trim() !== codeTroisieme);
+await f.locator('.porteurs-bandeau__retour').click();
+await page.waitForTimeout(900);
+t('« Tous les porteurs » revient à la galerie', (await f.locator('.porteur-fiche').count()) === 0 || await f.locator('.porteurs__vue--fiche').isHidden());
+await f.locator('nav.site-nav a[href="index.html"]').first().click();
+await page.waitForTimeout(2200);
 
 console.log('\n== Le suivi OTQ / OTD ==');
 const zoneOtq = f.locator('#zone-otq');
@@ -143,7 +149,7 @@ t('un seul filtre, le pôle, choisi d’un clic', menus === 1
 
 console.log('\n== Les neuf pages s\'ouvrent ==');
 for (const [lien, attendu] of [['etiie.html', 'ETIIE'], ['etiii.html', 'ETIII'],
-                               ['index.html', 'ETII']]) {
+                               ['porteurs.html', 'Porteurs'], ['index.html', 'ETII']]) {
   await f.locator(`nav.site-nav a[href="${lien}"]`).first().click();
   await page.waitForTimeout(1900);
   t(lien, new RegExp(attendu).test(await f.locator('h1').innerText()));
@@ -236,7 +242,8 @@ console.log('\n== Un lien avec ancre garde son ancre ==');
 await f.locator('nav.site-nav a[href="etiia.html"]').first().click();
 await page.waitForTimeout(1900);
 // Une squad s'ouvre sur ses membres ; la puce d'appareil d'une carte mène
-// à la fiche du porteur.
+// à la fiche du porteur. Son lien dit encore « index.html#porteur=… » :
+// la coquille l'envoie sur la page des porteurs.
 const tuileEquipe = f.locator('#zone-reperes .equipe__tuile').first();
 await tuileEquipe.evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
 await tuileEquipe.click();
@@ -246,9 +253,10 @@ const codeLien = (await lienPorteur.innerText()).trim();
 await lienPorteur.evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
 await lienPorteur.click();
 await page.waitForTimeout(2200);
-t(`« ${codeLien} » dans l’équipe d’un pôle ouvre sa fiche sur le tableau de bord`,
-  (await f.locator('.porteurs__detail').count()) === 1
-  && (await f.locator('.porteurs__detail .porteurs__titre').innerText()).trim() === codeLien, `(${codeLien})`);
+t(`« ${codeLien} » dans l’équipe d’un pôle ouvre sa fiche sur la page des porteurs`,
+  (await f.locator('.porteur-fiche').count()) === 1
+  && (await f.locator('.porteur-fiche__code').innerText()).trim() === codeLien
+  && /Porteurs/.test(await f.locator('h1').innerText()), `(${codeLien})`);
 
 console.log('\n== Rechercher partout, depuis une page qui n\'affiche pas la flotte ==');
 // La version autonome n'embarque par page que les jeux que ses modules

@@ -885,609 +885,1188 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 .kiosque__glyphe { flex: none; inline-size: 1.2em; text-align: center; font-family: var(--police-mono); }
 
 /* -------------------------------------------------------------------------
-   3. Les porteurs : une galerie centrée de cartes, et la fiche qui se
-      déplie sous la rangée de la carte ouverte — le code seul en titre
-      de bannière, le résumé sur toute la largeur, le bandeau de rappel,
-      puis les onglets où le libellé (gras) se distingue de la valeur
+   3. Les porteurs (porteurs.html, porteurs.js, fiche-porteur.js,
+      gabarit.js) et leur aperçu sur le tableau de bord.
+      La galerie en cartes photographiques, la fiche qui se lit d'abord en
+      grands chiffres, le dessin à l'échelle, le comparateur. Chaque marché
+      a sa teinte (--marche-*), toujours accompagnée de son nom.
    ---------------------------------------------------------------------- */
 
-.porteurs { display: flex; flex-direction: column; gap: var(--e-6); }
+/* La teinte d'un marché, portée par data-marche / data-categorie. */
+[data-marche="civil"], [data-categorie="civil"] { --porteur-teinte: var(--marche-civil); }
+[data-marche="militaire"], [data-categorie="militaire"] { --porteur-teinte: var(--marche-militaire); }
+[data-marche="prototype"], [data-categorie="prototype"] { --porteur-teinte: var(--marche-prototype); }
 
-/* « Ajouter » ferme chaque section, à gauche sous sa grille, comme dans
-   le reste du site — seulement en mode édition (edition-seulement). */
-.porteurs__ajout { display: flex; margin-block-start: var(--e-5); }
+/* --- La une de la page : le résumé sous l'ornement, le Fenestron -------- */
 
-/* Trois marchés l'un sous l'autre — Civil, Militaire, Prototype —, tous
-   visibles : assez d'air entre deux pour qu'on lise trois sections, et
-   pas une seule grille coupée. */
-.porteurs__galerie { display: flex; flex-direction: column; gap: var(--e-12); margin-block-start: var(--e-3); }
+.page-une__sous-titre {
+  margin: 0;
+  max-inline-size: 62ch;
+  text-wrap: balance;
+  font-family: var(--police-titre);
+  font-size: clamp(1.05rem, 0.6vw + 0.95rem, 1.3rem);
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--une-texte-doux);
+}
+.page-une__rotor--fenestron { inline-size: min(40rem, 110vw); }
+.page-une__stators path { stroke-dasharray: 2 5; }
 
-/* L'intertitre d'un marché reprend la voix du titre de section, en plus
-   petit : le nom en Newsreader, à l'encre, aligné sur la grille ; un filet
-   fin court jusqu'au compte, en capitales mono discrètes, en bout de
-   ligne. Un seul filet, jamais deux : le nom n'est pas pris en étau. */
-.porteurs__groupe-galerie-titre {
+/* Sur une fiche ou une comparaison, la une se fait discrète : le titre
+   rapetisse, l'ornement et le résumé s'effacent ; l'appareil prend la
+   scène (porteurs-page.js pose data-vue). */
+.page-tete--porteurs:is([data-vue="fiche"], [data-vue="comparer"]) .page-une { padding-block: var(--e-5) var(--e-1); gap: 0; }
+.page-tete--porteurs:is([data-vue="fiche"], [data-vue="comparer"]) .page-une h1 { font-size: clamp(1.9rem, 1.6vw + 1.4rem, 2.6rem); }
+.page-tete--porteurs:is([data-vue="fiche"], [data-vue="comparer"]) :is(.page-une__ornement, .page-une__sous-titre, .page-une__rotor) { display: none; }
+
+/* --- Le bandeau collant : les marchés, puis la navigation d'une fiche --- */
+
+.porteurs-bandeau {
+  --curseur-x: 0px;
+  --curseur-l: 0px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-2) var(--e-8);
+  min-block-size: 2.75rem;
+  padding-block: var(--e-1);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.porteurs-bandeau__marche {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--e-2);
+  flex: none;
+  padding: var(--e-3) 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-capitales);
+  text-transform: uppercase;
+  color: var(--une-texte-doux);
+  cursor: pointer;
+  transition: color var(--duree) var(--courbe);
+}
+.porteurs-bandeau__marche:hover,
+.porteurs-bandeau__marche[aria-pressed="true"] { color: var(--une-texte); }
+.porteurs-bandeau__compte { font-family: var(--police-mono); font-size: var(--texte-xs); letter-spacing: 0; opacity: 0.8; }
+/* Le trait terre cuite sous le marché choisi, comme sous l'entrée
+   courante du sommaire des autres pages. */
+.porteurs-bandeau:not(.porteurs-bandeau--nav)::after {
+  content: "";
+  position: absolute;
+  inset-block-end: var(--e-2);
+  inset-inline-start: 0;
+  inline-size: var(--curseur-l);
+  block-size: 2px;
+  border-radius: 1px;
+  background-color: var(--une-ornement);
+  transform: translateX(var(--curseur-x));
+  transition: transform var(--duree-lente) var(--courbe), inline-size var(--duree-lente) var(--courbe);
+}
+
+/* Sur une fiche : le retour à gauche, précédent · ici · suivant au centre,
+   le rappel du clavier à droite. */
+.porteurs-bandeau--nav { justify-content: space-between; gap: var(--e-4); }
+.porteurs-bandeau__retour,
+.porteurs-bandeau__voisin {
+  flex: none;
+  padding-block: var(--e-2);
+  font-size: 0.75rem;
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-capitales);
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--une-texte-doux);
+}
+.porteurs-bandeau__retour:hover,
+.porteurs-bandeau__voisin:hover { color: var(--une-texte); }
+.porteurs-bandeau__pas { display: inline-flex; align-items: center; gap: var(--e-6); }
+.porteurs-bandeau__ici { display: inline-flex; align-items: baseline; gap: var(--e-2); white-space: nowrap; color: var(--une-texte); }
+.porteurs-bandeau__code { font-family: var(--police-titre); font-size: var(--texte-lg); }
+.porteurs-bandeau__position { font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--une-texte-doux); }
+.porteurs-bandeau__clavier { font-size: var(--texte-xs); color: var(--une-texte-doux); }
+.porteurs-bandeau__clavier kbd {
+  padding: 0 var(--e-1);
+  border: 1px solid var(--entete-bordure);
+  border-radius: var(--rayon-sm);
+  font-family: var(--police-mono);
+  color: var(--une-texte-doux);
+  background: none;
+}
+@media (max-width: 40rem) {
+  .porteurs-bandeau { justify-content: flex-start; gap: var(--e-6); padding-inline: var(--e-4); }
+  .porteurs-bandeau--nav { gap: var(--e-3); }
+  .porteurs-bandeau__clavier { display: none; }
+  /* « Tous », au lieu de « Tous les porteurs » : la suite reste lue. */
+  .porteurs-bandeau__long { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .porteurs-bandeau__pas { gap: var(--e-3); }
+}
+
+/* --- La page ------------------------------------------------------------ */
+
+.porteurs__page { padding-block: var(--e-8) var(--e-12); }
+body > main:has(.porteurs__page) { padding-block-end: 0; }
+.porteurs { position: relative; }
+.porteurs__vue[hidden] { display: none; }
+.porteurs__avertissement {
+  max-inline-size: var(--largeur-texte);
+  margin: var(--e-10) 0 0;
+  font-size: var(--texte-xs);
+  line-height: var(--interligne);
+  color: var(--texte-faible);
+}
+
+/* --- La barre : le compte, les tris, « Comparer » ----------------------- */
+
+.porteurs__barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3) var(--e-6);
+  margin-block-end: var(--e-6);
+}
+.porteurs__compte { margin: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
+.porteurs__compte strong { font-family: var(--police-titre); font-size: var(--texte-xl); font-weight: var(--graisse-normale); color: var(--texte); }
+.porteurs__outils { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-3); min-inline-size: 0; max-inline-size: 100%; }
+.porteurs__tris {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding: 3px;
+  background-color: var(--fond-enfonce);
+  border-radius: var(--rayon-plein);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+/* Au téléphone, les tris prennent toute la ligne et défilent de côté. */
+@media (max-width: 40rem) {
+  .porteurs__outils { inline-size: 100%; }
+  .porteurs__tris { flex: 1 1 100%; }
+  .porteurs__tris-libelle { display: none; }
+}
+.porteurs__tris-libelle {
+  padding-inline: var(--e-3) var(--e-1);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+.porteurs__tri {
+  flex: none;
+  min-block-size: 2rem;
+  padding-inline: var(--e-3);
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-plein);
+  font: inherit;
+  font-size: var(--texte-sm);
+  color: var(--texte-doux);
+  cursor: pointer;
+  transition: background-color var(--duree-rapide) var(--courbe), color var(--duree-rapide) var(--courbe);
+}
+.porteurs__tri:hover { color: var(--texte); }
+.porteurs__tri[aria-pressed="true"] { background-color: var(--carte-fond); color: var(--texte); box-shadow: var(--ombre-sm); }
+
+/* --- Les marchés de la galerie ----------------------------------------- */
+
+.porteurs__marche + .porteurs__marche { margin-block-start: var(--e-12); }
+.porteurs__marche-titre {
   display: flex;
   align-items: baseline;
-  gap: var(--e-4);
+  gap: var(--e-3);
   margin: 0 0 var(--e-5);
+  padding-block-end: var(--e-3);
+  border-block-end: 1px solid var(--bordure-douce);
   font-family: var(--police-titre);
-  font-size: clamp(1.5rem, 0.8vw + 1.2rem, 1.875rem);
+  font-size: clamp(1.625rem, 1vw + 1.3rem, 2.125rem);
   font-weight: var(--graisse-normale);
-  letter-spacing: 0.005em;
   line-height: 1.1;
   color: var(--texte);
 }
-
-.porteurs__groupe-galerie-nom { flex: none; }
-
-.porteurs__groupe-galerie-filet {
-  flex: 1;
+.porteurs__marche-titre::before {
+  content: "";
   align-self: center;
-  min-inline-size: var(--e-4);
-  block-size: 1px;
-  /* Plus doux que les filets du titre de section : un cran en dessous. */
-  background-color: var(--bordure-douce);
-}
-
-.porteurs__groupe-galerie-compte {
   flex: none;
+  inline-size: 0.55rem;
+  block-size: 0.55rem;
+  border-radius: var(--rayon-plein);
+  background-color: var(--porteur-teinte, var(--accent));
+}
+.porteurs__marche-compte {
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
-  font-weight: var(--graisse-normale);
   letter-spacing: var(--lettrage-etiquette);
   text-transform: uppercase;
   color: var(--texte-doux);
 }
 
-/* La grille est un flux centré : chaque rangée se centre, y compris la
-   dernière, et la fiche dépliée (un item sur toute la largeur) s'insère
-   après la dernière carte de sa rangée. Sur téléphone : deux par rangée. */
+/* --- La grille et ses cartes ------------------------------------------- */
+
+/* Trois cartes par rangée : les neuf civils et les neuf militaires font
+   trois rangées pleines, sans carte seule ; deux au téléphone. */
 .porteurs__grille {
-  --porteurs-carte: 13.5rem;
-  --porteurs-espace: var(--e-4);
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--porteurs-espace);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e-6) var(--e-5);
   margin: 0;
   padding: 0;
   list-style: none;
 }
-
-.porteurs__item {
-  position: relative;
-  display: flex;
-  flex: 0 0 var(--porteurs-carte);
-  max-inline-size: 100%;
-  /* Amenée à l'écran, la carte reste sous la barre du haut, pas derrière. */
-  scroll-margin-block-start: calc(var(--e-12) + var(--e-4));
-}
-.porteurs__item[hidden] { display: none; }
-
 @media (max-width: 40rem) {
-  .porteurs__grille { --porteurs-espace: var(--e-3); --porteurs-carte: calc(50% - var(--porteurs-espace) / 2); }
+  .porteurs__grille { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--e-4) var(--e-3); }
 }
 
-/* Le repère sous la carte ouverte : un losange aux couleurs de la fiche,
-   posé à cheval sur le filet supérieur de celle-ci. */
-.porteurs__item--ouvert::after {
-  content: '';
-  position: absolute;
-  z-index: 2;
-  inset-inline-start: 50%;
-  inset-block-start: calc(100% + var(--porteurs-espace));
-  inline-size: 0.875rem;
-  block-size: 0.875rem;
-  transform: translate(-50%, -50%) rotate(45deg);
-  background-color: var(--carte-fond);
-  border-top: 1px solid var(--carte-bord);
-  border-left: 1px solid var(--carte-bord);
-  pointer-events: none;
-}
-
-.porteurs__fiche {
+.porteur-carte { position: relative; display: flex; min-inline-size: 0; }
+.porteur-carte__lien {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--e-1);
   inline-size: 100%;
-  padding: var(--e-2) var(--e-2) var(--e-3);
+  overflow: hidden;
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
   border-radius: var(--rayon-lg);
   box-shadow: var(--ombre-sm);
   color: var(--texte);
-  font: inherit;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color var(--duree-rapide) var(--courbe),
-              transform var(--duree-rapide) var(--courbe),
-              box-shadow var(--duree-rapide) var(--courbe);
+  text-decoration: none;
+  transition: box-shadow var(--duree) var(--courbe), border-color var(--duree) var(--courbe), transform var(--duree) var(--courbe);
 }
-
-.porteurs__fiche:hover { border-color: var(--bordure-forte); transform: translateY(-2px); box-shadow: var(--ombre-md); }
-
-.porteurs__fiche[aria-pressed="true"] {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent), var(--ombre-md);
-}
-
-.porteurs__fiche-visuel { inline-size: 100%; color: var(--texte-doux); }
-.porteurs__fiche-visuel svg { inline-size: 100%; block-size: auto; display: block; }
-.porteurs__fiche-photo {
-  display: block;
-  inline-size: 100%;
-  aspect-ratio: 3 / 2;
-  object-fit: cover;
-  border-radius: var(--rayon-sm);
-  background-color: var(--fond-enfonce);
-  filter: saturate(0.85);
-  transition: filter var(--duree-rapide) ease;
-}
-.porteurs__fiche[aria-pressed="true"] .porteurs__fiche-photo,
-.porteurs__fiche:hover .porteurs__fiche-photo { filter: none; }
-.porteurs__fiche[aria-pressed="true"] .porteurs__fiche-visuel { color: var(--texte); }
-
-/* Le code en gros, le segment en petit. */
-.porteurs__fiche-code {
-  margin-block-start: var(--e-1);
-  font-size: var(--texte-xl);
-  font-weight: var(--graisse-forte);
-  letter-spacing: 0.01em;
-  line-height: 1.1;
-}
-
-.porteurs__fiche-segment {
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--texte-faible);
-  /* Deux lignes au plus : le segment complet est dans la fiche détaillée. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.porteurs__fiche-poles { display: inline-flex; gap: var(--e-1); min-block-size: var(--e-2); margin-block-start: var(--e-1); }
-
-
-.porteurs__pole-point {
-  inline-size: 7px;
-  block-size: 7px;
-  border-radius: var(--rayon-plein);
-  background-color: var(--texte-faible);
-}
-
-.porteurs__pole-point[data-pole="ETIIA"] { background-color: var(--pole-etiia); }
-.porteurs__pole-point[data-pole="ETIIE"] { background-color: var(--pole-etiie); }
-.porteurs__pole-point[data-pole="ETIII"] { background-color: var(--pole-etiii); }
-
-/* --- La galerie, mise en page de revue -------------------------------------
-   Cinq cartes par rangée sur toute la largeur, trois sur un écran moyen,
-   deux sur téléphone — jamais quatre : neuf appareils y laisseraient une
-   carte seule sur sa rangée. Alignées à gauche sous l'intertitre de leur
-   marché : neuf appareils tiennent en deux rangées (5 + 4) ou trois (3 × 3). La photo occupe
-   tout le haut de la carte et s'approche doucement au survol ; dessous,
-   le code en Newsreader et le segment en toutes lettres. Sans photo, la
-   silhouette se pose sur un aplat de lin, au même format. */
-.porteurs__grille {
-  --porteurs-colonnes: 5;
-  --porteurs-espace: var(--e-5);
-  --porteurs-carte: calc((100% - (var(--porteurs-colonnes) - 1) * var(--porteurs-espace)) / var(--porteurs-colonnes));
-  justify-content: flex-start;
-}
-@media (max-width: 64rem) { .porteurs__grille { --porteurs-colonnes: 3; } }
-@media (max-width: 44rem) { .porteurs__grille { --porteurs-colonnes: 2; --porteurs-espace: var(--e-3); } }
-
-.porteurs__fiche {
-  align-items: stretch;
-  gap: 0;
-  padding: 0;
-  overflow: hidden;
-  text-align: start;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "visuel visuel" "code poles" "segment segment";
-  align-content: start;
-  /* La carte est le conteneur de mesure du code (cqi). */
-  container-type: inline-size;
-}
-.porteurs__fiche:hover { transform: translateY(-3px); }
-.porteurs__fiche-visuel {
-  grid-area: visuel;
+.porteur-carte__lien:hover { border-color: var(--bordure-forte); box-shadow: var(--ombre-md); }
+.porteur-carte--choisie .porteur-carte__lien { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), var(--ombre-md); }
+.porteur-carte__visuel {
+  position: relative;
   display: grid;
   place-items: center;
   aspect-ratio: 3 / 2;
   overflow: hidden;
-  background-color: var(--fond-bande);
-  color: var(--texte-faible);
+  background-color: var(--entete-fond);
+  color: var(--entete-texte-doux);
 }
-.porteurs__fiche-visuel svg { inline-size: 72%; }
-.porteurs__fiche-photo {
-  block-size: 100%;
-  border-radius: 0;
-  aspect-ratio: auto;
-  transition: filter var(--duree) ease, transform var(--duree-lente) var(--courbe);
-}
-.porteurs__fiche:hover .porteurs__fiche-photo,
-.porteurs__fiche[aria-pressed="true"] .porteurs__fiche-photo { transform: scale(1.045); }
-.porteurs__grille { --car: 5; }
-.porteurs__fiche-code {
-  grid-area: code;
-  margin: 0;
-  padding: var(--e-3) var(--e-4) 0;
-  font-family: var(--police-titre);
-  font-size: 1.625rem;
-  /* Le code tient toujours sur une ligne : sa taille se règle sur la
-     largeur de la carte (cqi) et sur le plus long code de sa section
-     (--car, posé sur la grille par porteurs.js) — environ 0,65 em par
-     capitale de Newsreader. Un code court garde 1,625rem ; la section où
-     figure « DISRUPTIVELAB » rétrécit tous ses codes d'un même cran, et
-     la rangée reste égale. Sans les unités de conteneur, la taille fixe
-     reste. */
-  font-size: min(1.625rem, (100cqi - 3rem) / (var(--car) * 0.65));
-  font-weight: var(--graisse-normale);
-  letter-spacing: 0.01em;
-  line-height: calc(1.625rem * 1.1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.porteurs__fiche-poles {
-  grid-area: poles;
-  align-self: center;
-  margin: var(--e-3) var(--e-4) 0 0;
-}
-.porteurs__fiche-segment {
-  grid-area: segment;
-  /* De la marge, pas du rembourrage : la coupe à deux lignes (overflow)
-     se fait au bord du rembourrage — une troisième ligne s'y montrerait. */
-  margin: var(--e-1) var(--e-4) var(--e-4);
-  padding: 0;
-  font-family: var(--police);
-  font-size: var(--texte-xs);
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--texte-doux);
-}
-.porteurs__fiche-segment::first-letter { text-transform: uppercase; }
-.porteurs__fiche-precision { white-space: nowrap; }
-
-/* La jauge d'une valeur chiffrée : un trait fin, rempli à proportion du
-   plus grand de la flotte ; plein et en terre cuite pour le record. */
-.porteurs__jauge {
-  --part: 0;
-  position: relative;
+.porteur-carte__photo {
   display: block;
-  inline-size: 100%;
-  max-inline-size: 14rem;
-  block-size: 4px;
-  margin-block: var(--e-1) 2px;
-  border-radius: 2px;
-  background-color: var(--fond-enfonce);
-  overflow: hidden;
-}
-.porteurs__jauge-barre {
-  position: absolute;
-  inset: 0 auto 0 0;
-  inline-size: calc(var(--part) * 100%);
-  border-radius: inherit;
-  background: linear-gradient(to right, color-mix(in srgb, var(--accent) 45%, transparent), var(--accent));
-}
-.porteurs__jauge--max .porteurs__jauge-barre { background: linear-gradient(to right, color-mix(in srgb, var(--chaud) 45%, transparent), var(--chaud)); }
-@media (prefers-reduced-motion: no-preference) {
-  .porteurs__jauge-barre { animation: jauge-remplit 900ms var(--courbe) 200ms backwards; }
-}
-@keyframes jauge-remplit { from { inline-size: 0; } }
-
-/* --- La fiche dépliée : un item sur toute la largeur de la rangée -------- */
-
-.porteurs__item--detail {
-  flex: 1 1 100%;
-  max-inline-size: none;
-  min-inline-size: 0;
-  /* La marge du haut fait la place du losange-repère. */
-  margin-block: var(--e-1) var(--e-3);
-  scroll-margin-block-start: var(--e-6);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .porteurs__item--detail[data-etat="entree"] { animation: porteurs-depli var(--duree) var(--courbe) both; }
-}
-
-@keyframes porteurs-depli {
-  from { opacity: 0; transform: translateY(-0.5rem); }
-  to   { opacity: 1; transform: none; }
-}
-
-.porteurs__detail {
-  display: flex;
-  flex-direction: column;
-  inline-size: 100%;
-  min-inline-size: 0;
-  overflow: hidden;
-  background-color: var(--carte-fond);
-  border: 1px solid var(--carte-bord);
-  border-radius: var(--rayon-xl);
-  box-shadow: var(--ombre-md);
-}
-
-.porteurs__banniere {
-  position: relative;
-  margin: 0;
-  min-block-size: 14rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-}
-
-.porteurs__banniere--photo { block-size: clamp(14rem, 30vw, 24rem); background-color: var(--fond-profond); }
-
-.porteurs__photo {
-  position: absolute;
-  inset: 0;
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
-  object-position: center;
+  transition: transform var(--duree-lente) var(--courbe);
+}
+.porteur-carte__lien:hover .porteur-carte__photo { transform: scale(1.045); }
+.porteur-photo__repli { display: grid; place-items: center; inline-size: 100%; block-size: 100%; }
+.porteur-photo__repli svg { inline-size: 70%; block-size: auto; }
+.porteur-carte__phase { position: absolute; inset-block-start: var(--e-2); inset-inline-start: var(--e-2); }
+.porteur-carte__marche { position: absolute; inset-block-end: var(--e-2); inset-inline-start: var(--e-2); }
+.porteur-carte__marche .porteur-marche { background-color: var(--voile-fort); color: var(--entete-texte); }
+.porteur-carte__corps { display: flex; flex-direction: column; gap: var(--e-1); padding: var(--e-3) var(--e-4) var(--e-4); }
+.porteur-carte__titre { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--e-2); }
+.porteur-carte__code { font-family: var(--police-titre); font-size: 1.625rem; line-height: 1.1; letter-spacing: 0.01em; overflow-wrap: anywhere; }
+.porteur-carte__surnom { font-family: var(--police-titre); font-style: italic; font-size: var(--texte-md); color: var(--texte-doux); }
+.porteur-carte__segment { font-size: var(--texte-xs); color: var(--texte-doux); }
+.porteur-carte__segment::first-letter { text-transform: uppercase; }
+.porteur-carte__chiffres,
+.porteur-carte__tri {
+  margin-block-start: var(--e-2);
+  padding-block-start: var(--e-2);
+  border-block-start: 1px dashed var(--bordure);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--texte);
+}
+.porteur-carte__tri { display: flex; align-items: baseline; justify-content: space-between; gap: var(--e-2); font-size: var(--texte-sm); }
+.porteur-carte__tri-libelle { font-size: var(--texte-xs); letter-spacing: var(--lettrage-etiquette); text-transform: uppercase; color: var(--texte-doux); }
+@media (max-width: 40rem) {
+  .porteur-carte__corps { padding: var(--e-2) var(--e-3) var(--e-3); }
+  .porteur-carte__code { font-size: 1.3rem; }
+  .porteur-carte__surnom { display: none; }
 }
 
-/* Le voile : du transparent en haut vers un voile sombre en bas, pour que
-   le titre se lise sur n'importe quelle photo — un voile neutre, pas un
-   aplat de couleur, et le même dans les deux thèmes. */
-.porteurs__banniere-voile {
+/* Le bouton « comparer » d'une carte : au coin de la photo, visible au
+   survol, au focus, ou quand on choisit. */
+.porteur-carte__choisir {
+  position: absolute;
+  inset-block-start: var(--e-2);
+  inset-inline-end: var(--e-2);
+  display: grid;
+  place-items: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  padding: 0;
+  background-color: var(--carte-fond);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-plein);
+  box-shadow: var(--ombre-sm);
+  font-size: var(--texte-lg);
+  line-height: 1;
+  color: var(--texte);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duree-rapide) var(--courbe), background-color var(--duree-rapide) var(--courbe);
+}
+.porteur-carte:hover .porteur-carte__choisir,
+.porteur-carte:focus-within .porteur-carte__choisir,
+.porteurs--choix .porteur-carte__choisir { opacity: 1; }
+.porteur-carte__choisir[aria-pressed="true"] { background-color: var(--accent); border-color: var(--accent); color: var(--accent-contenu); }
+@media (hover: none) { .porteur-carte__choisir { opacity: 1; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .porteur-carte__lien:hover { transform: translateY(-3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .porteur-carte__photo, .porteur-carte__lien { transition: none; }
+  .porteur-carte__lien:hover .porteur-carte__photo { transform: none; }
+}
+
+/* --- Les pastilles : le marché, la phase ------------------------------- */
+
+.porteur-marche {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  padding: 2px var(--e-2);
+  border-radius: var(--rayon-plein);
+  background-color: color-mix(in srgb, var(--porteur-teinte, var(--accent)) 14%, transparent);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--porteur-teinte, var(--accent));
+}
+.porteur-marche::before { content: ""; inline-size: 6px; block-size: 6px; border-radius: var(--rayon-plein); background-color: currentColor; }
+
+.porteur-phase {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--e-2);
+  border-radius: var(--rayon-sm);
+  background-color: var(--statut-info-fond);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: 0.02em;
+  color: var(--statut-info);
+  white-space: nowrap;
+}
+.porteur-phase[data-phase="production"] { background-color: var(--statut-succes-fond); color: var(--statut-succes); }
+.porteur-phase[data-phase="developpement"],
+.porteur-phase[data-phase="relecture"] { background-color: var(--statut-alerte-fond); color: var(--statut-alerte); }
+.porteur-phase[data-phase="demonstrateur"] { background-color: var(--chaud-doux); color: var(--chaud-encre); }
+/* Posée sur une photo, la pastille prend un fond de feuille. */
+.porteur-carte__phase.porteur-phase { background-color: var(--carte-fond); box-shadow: var(--ombre-sm); }
+
+.porteur-manquant { font-style: italic; color: var(--texte-faible); }
+
+/* --- Le tiroir du comparateur ------------------------------------------ */
+
+.porteurs__tiroir {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 6;
+  margin-block-start: var(--e-8);
+  background-color: var(--fond-eleve);
+  border-block-start: 1px solid var(--bordure);
+  box-shadow: var(--ombre-lg);
+  border-radius: var(--rayon-lg) var(--rayon-lg) 0 0;
+}
+.porteurs__tiroir[hidden] { display: none; }
+.porteurs__tiroir-interieur { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-3) var(--e-4); padding-block: var(--e-3); }
+.porteurs__tiroir-texte { margin: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
+.porteurs__tiroir-liste { display: flex; flex-wrap: wrap; gap: var(--e-2); margin: 0; padding: 0; list-style: none; flex: 1 1 auto; }
+.porteurs__tiroir-choix {
+  padding: var(--e-1) var(--e-3);
+  background-color: var(--accent-doux);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-plein);
+  font-family: var(--police-titre);
+  font-size: var(--texte-md);
+  color: var(--texte);
+  cursor: pointer;
+}
+.porteurs__tiroir-actions { display: flex; gap: var(--e-2); margin-inline-start: auto; }
+.porteurs__tiroir-go[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+
+/* =========================================================================
+   La fiche
+   ========================================================================= */
+
+.porteur-fiche { --porteur-teinte: var(--accent); display: flex; flex-direction: column; gap: var(--e-8); }
+.porteur-fiche[data-marche="civil"] { --porteur-teinte: var(--marche-civil); }
+.porteur-fiche[data-marche="militaire"] { --porteur-teinte: var(--marche-militaire); }
+.porteur-fiche[data-marche="prototype"] { --porteur-teinte: var(--marche-prototype); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .porteur-fiche { animation: porteur-arrive 420ms var(--courbe) both; }
+}
+@keyframes porteur-arrive { from { opacity: 0; translate: 0 12px; } }
+
+/* 1. La tête : la photo en grand, le titre posé dessus. */
+.porteur-fiche__tete {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-block-size: clamp(17rem, 27vw, 23rem);
+  overflow: hidden;
+  border-radius: var(--rayon-xl);
+  background-color: var(--entete-fond);
+  box-shadow: var(--ombre-md);
+  color: var(--entete-texte);
+  isolation: isolate;
+}
+.porteur-fiche__photo { position: absolute; inset: 0; z-index: -1; color: var(--entete-texte-doux); }
+.porteur-fiche__image { inline-size: 100%; block-size: 100%; object-fit: cover; object-position: center 45%; }
+/* Sans photo : la silhouette au trait, en haut à droite, loin du titre. */
+.porteur-fiche__photo .porteur-photo__repli { place-items: start end; padding: var(--e-8) clamp(var(--e-5), 5vw, var(--e-12)); }
+.porteur-fiche__photo .porteur-photo__repli svg { inline-size: min(26rem, 55%); opacity: 0.8; }
+.porteur-fiche__voile {
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(to top, var(--voile-fort) 0%, var(--voile-fort) 18%, var(--voile) 50%, transparent 78%);
+  /* Deux voiles : du bas, et de la gauche où se pose le titre — le code
+     reste lisible quelle que soit la photo. */
+  background-image:
+    linear-gradient(to right, var(--voile) 0%, transparent 55%),
+    linear-gradient(to top, var(--voile-fort) 0%, var(--voile-fort) 22%, var(--voile) 55%, transparent 82%);
+}
+.porteur-fiche__titres { display: flex; flex-direction: column; gap: var(--e-2); padding: var(--e-8) clamp(var(--e-5), 4vw, var(--e-10)) clamp(var(--e-5), 3vw, var(--e-8)); }
+.porteur-fiche__surtitre { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-3); margin: 0; font-size: var(--texte-sm); color: var(--entete-texte-doux); }
+.porteur-fiche__surtitre .porteur-marche { background-color: var(--entete-surface-forte); color: var(--entete-texte); }
+.porteur-fiche__segment::first-letter { text-transform: uppercase; }
+.porteur-fiche__code {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: clamp(3.25rem, 6.5vw + 1rem, 6.5rem);
+  font-weight: var(--graisse-normale);
+  letter-spacing: 0.01em;
+  line-height: 0.92;
+  color: var(--entete-texte);
+  overflow-wrap: anywhere;
+  text-shadow: 0 2px 24px var(--voile-fort);
+}
+.porteur-fiche__code:focus { outline: none; }
+.porteur-fiche__code:focus-visible { outline: var(--focus-epaisseur) solid var(--entete-texte); outline-offset: 4px; }
+.porteur-fiche__nom { margin: 0; font-size: var(--texte-lg); color: var(--entete-texte-doux); }
+.porteur-fiche__etat { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-3); margin: var(--e-1) 0 0; font-size: var(--texte-sm); color: var(--entete-texte-doux); }
+.porteur-fiche__etat .porteur-phase { background-color: var(--entete-surface-forte); color: var(--entete-texte); }
+
+/* L'accroche, et ce qu'on peut faire. */
+.porteur-fiche__intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--e-4) var(--e-8);
+  align-items: start;
+}
+.porteur-fiche__propos { display: flex; flex-direction: column; gap: var(--e-3); min-inline-size: 0; }
+.porteur-fiche__accroche {
+  margin: 0;
+  max-inline-size: 46ch;
+  font-family: var(--police-titre);
+  font-size: clamp(1.3rem, 1vw + 1rem, 1.75rem);
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.3;
+  text-wrap: balance;
+  color: var(--texte);
+}
+.porteur-fiche__ancien { margin: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
+.porteur-fiche__ancien span { color: var(--texte-faible); }
+.porteur-fiche__presentation { max-inline-size: var(--largeur-texte); font-size: var(--texte-sm); line-height: 1.6; color: var(--texte-doux); }
+.porteur-fiche__presentation summary,
+.porteur-faits__encore summary,
+.porteur-sources__resume {
+  cursor: pointer;
+  list-style: none;
+}
+.porteur-fiche__presentation summary::-webkit-details-marker,
+.porteur-faits__encore summary::-webkit-details-marker,
+.porteur-fait__plie summary::-webkit-details-marker,
+.porteur-sources__resume::-webkit-details-marker { display: none; }
+.porteur-fiche__presentation summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
+  color: var(--texte-accent);
+}
+.porteur-fiche__presentation summary::after,
+.porteur-faits__encore summary::after { content: "▾"; font-size: 0.8em; transition: transform var(--duree) var(--courbe); }
+.porteur-fiche__presentation[open] summary::after,
+.porteur-faits__encore[open] summary::after { transform: rotate(180deg); }
+.porteur-fiche__presentation p { margin-block-start: var(--e-2); }
+.porteur-fiche__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--e-2); }
+@media (max-width: 48rem) {
+  .porteur-fiche__intro { grid-template-columns: minmax(0, 1fr); }
+  .porteur-fiche__actions { justify-content: flex-start; }
 }
 
-.porteurs__banniere-texte {
-  position: relative;
+/* Les titres de section de la fiche : Newsreader, un filet qui file. */
+.porteur-section { display: flex; flex-direction: column; gap: var(--e-4); min-inline-size: 0; }
+.porteur-section__tete { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--e-2) var(--e-4); }
+.porteur-section__titre {
+  display: flex;
+  align-items: center;
+  gap: var(--e-4);
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: clamp(1.4rem, 0.6vw + 1.2rem, 1.75rem);
+  font-weight: var(--graisse-normale);
+  line-height: 1.15;
+  color: var(--texte);
+}
+.porteur-section > .porteur-section__titre::after { content: ""; flex: 1; block-size: 1px; background-color: var(--bordure-douce); }
+
+/* 2. L'essentiel : six tuiles, le nombre en grand. */
+.porteur-tuiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e-4);
+  margin: 0;
+}
+@media (max-width: 60rem) { .porteur-tuiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 40rem) {
+  .porteur-tuiles { gap: var(--e-2); }
+  .porteur-tuile { padding: var(--e-3); }
+  .porteur-tuile__libelle { letter-spacing: 0.04em; }
+  .porteur-tuile .porteur-grand__nombre { font-size: 1.75rem; }
+  .porteur-tuile__question { font-size: var(--texte-xs); }
+  .porteur-jauge__titre { display: none; }
+}
+@media (max-width: 21rem) { .porteur-tuiles { grid-template-columns: minmax(0, 1fr); } }
+/* Ce qu'aucune source ne donne encore : nommé en une ligne. */
+.porteur-essentiel__manque { margin: 0; font-size: var(--texte-sm); line-height: 1.5; color: var(--texte-doux); }
+.porteur-essentiel__manque-mot { font-style: italic; color: var(--texte-faible); }
+.porteur-tuile {
   display: flex;
   flex-direction: column;
   gap: var(--e-2);
-  padding: var(--e-6) clamp(var(--e-4), 4vw, var(--e-8)) var(--e-5);
-}
-
-.porteurs__banniere--photo .porteurs__banniere-texte { color: var(--entete-texte); }
-.porteurs__banniere--photo .porteurs__titre { color: var(--entete-texte); }
-
-.porteurs__banniere--silhouette {
-  background-color: var(--fond-enfonce);
-  border-bottom: 1px solid var(--bordure-douce);
-}
-
-.porteurs__banniere--silhouette .porteurs__silhouette {
-  position: relative;
-  max-inline-size: 20rem;
-  margin: var(--e-5) auto 0;
-  padding: var(--e-4) var(--e-6);
-  background: none;
-  border: 0;
-  color: var(--texte-doux);
-}
-
-.porteurs__silhouette svg { inline-size: 100%; block-size: auto; display: block; }
-
-.porteurs__photo-attente {
-  position: absolute;
-  inset-block-end: 0;
-  inset-inline-end: 0;
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--texte-faible);
-}
-
-/* Le titre de la bannière : le code seul, en Newsreader, grand — rien
-   au-dessus. Le nom complet et le segment sont dans le bandeau. */
-.porteurs__titre-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-4); }
-.porteurs__titre {
-  font-family: var(--police-titre);
-  font-size: clamp(2.25rem, 2.6vw + 1.4rem, 3.5rem);
-  font-weight: var(--graisse-moyenne);
-  letter-spacing: 0.01em;
-  line-height: 1;
-  overflow-wrap: anywhere;
-}
-.porteurs__relecture { cursor: help; }
-
-.porteurs__contenu { display: flex; flex-direction: column; gap: var(--e-6); min-inline-size: 0; padding: var(--e-5) clamp(var(--e-4), 4vw, var(--e-8)) var(--e-6); }
-
-/* Le résumé : un court discours sur TOUTE la largeur de la boîte, en
-   corps lisible et interligne aéré. */
-.porteurs__resume { max-width: none; font-size: var(--texte-lg); line-height: 1.6; }
-
-/* --- Les onglets et leurs groupes ---------------------------------------- */
-
-.porteurs__panneau { display: flex; flex-direction: column; gap: var(--e-5); }
-
-/* Les chiffres clés : des tuiles, le nombre en grand. */
-.porteurs__chiffres {
-  display: grid;
-  /* Autant de colonnes que de tuiles : la rangée est pleine, les tuiles
-     identiques (porteurs.js pose --nb). */
-  --nb: 4;
-  grid-template-columns: repeat(var(--nb), minmax(0, 1fr));
-  gap: var(--e-3);
-  margin: 0;
-}
-@media (max-width: 40rem) {
-  .porteurs__chiffres { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-.porteurs__chiffre {
-  display: flex;
-  flex-direction: column-reverse;
-  justify-content: flex-end;
-  gap: var(--e-1);
   min-inline-size: 0;
-  padding: var(--e-3) var(--e-4);
+  padding: var(--e-4) var(--e-5) var(--e-4);
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
-  border-block-start: 3px solid var(--chaud);
-  border-radius: var(--rayon-md);
-  box-shadow: var(--ombre-sm);
-}
-.porteurs__chiffre-libelle {
-  overflow: hidden;
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: 0.06em;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--texte-doux);
-}
-.porteurs__chiffre-valeur { margin: 0; line-height: 1.1; color: var(--texte); }
-.porteurs__chiffre-nombre { font-family: var(--police-titre); font-size: var(--texte-2xl); font-variant-numeric: tabular-nums; }
-.porteurs__chiffre-unite { font-family: var(--police-mono); font-size: var(--texte-sm); color: var(--texte-doux); }
-
-/* Les groupes : des cartes, deux par rangée sur un écran large. */
-.porteurs__groupes {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--e-4);
-  align-items: stretch;
-}
-@media (max-width: 56rem) {
-  .porteurs__groupes { grid-template-columns: minmax(0, 1fr); }
-}
-.porteurs__groupe {
-  overflow: hidden;
-  background-color: var(--carte-fond);
-  border: 1px solid var(--carte-bord);
+  border-block-start: 3px solid var(--porteur-teinte);
   border-radius: var(--rayon-lg);
   box-shadow: var(--ombre-sm);
 }
-/* Seul sur sa rangée (un groupe, ou le dernier d'un nombre impair) : il
-   prend toute la largeur, et ses lignes passent sur deux colonnes. */
-.porteurs__groupe:last-child:nth-child(odd) { grid-column: 1 / -1; }
-.porteurs__groupe:last-child:nth-child(odd) .porteurs__lignes { columns: 2 22rem; column-gap: var(--e-10); }
-.porteurs__groupe:last-child:nth-child(odd) .porteurs__ligne { break-inside: avoid; }
-.porteurs__groupe .porteurs__lignes { padding: var(--e-1) var(--e-5) var(--e-2); }
-
-/* Le titre de groupe (Motorisation, Masses…) : une tête de carte teintée
-   terre cuite, le titre en Newsreader — on voit d'un coup où commence
-   chaque groupe. */
-.porteurs__groupe-titre {
-  display: flex;
-  align-items: center;
-  gap: var(--e-2);
-  margin: 0;
-  padding: var(--e-3) var(--e-5);
-  background-color: var(--fond-bande);
-  border-block-end: 1px solid var(--bordure-douce);
-  font-family: var(--police-titre);
-  font-size: 1.2rem;
-  font-weight: var(--graisse-moyenne);
-  letter-spacing: -0.005em;
-  line-height: 1.2;
-  color: var(--texte);
-}
-.porteurs__groupe-titre::before {
-  content: '';
-  flex: none;
-  inline-size: 4px;
-  block-size: 1.1em;
-  border-radius: 2px;
-  background-color: var(--accent);
-}
-
-.porteurs__lignes { margin: 0; }
-
-/* Une ligne : le libellé dans une colonne étroite, gris, en petites
-   capitales ; la valeur à côté ; un filet léger entre deux lignes. */
-.porteurs__ligne {
-  display: grid;
-  grid-template-columns: minmax(7.5rem, 11rem) minmax(0, 1fr);
-  gap: var(--e-1) var(--e-4);
-  align-items: baseline;
-  padding-block: var(--e-2);
-  border-bottom: 1px solid var(--bordure-douce);
-}
-.porteurs__ligne:last-child { border-bottom: 0; }
-
-.porteurs__libelle {
-  min-inline-size: 0;
+.porteur-tuile__libelle {
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
-  letter-spacing: 0.05em;
-  line-height: 1.5;
+  letter-spacing: var(--lettrage-etiquette);
   text-transform: uppercase;
   color: var(--texte-doux);
 }
+.porteur-tuile__corps { display: flex; flex-direction: column; gap: var(--e-2); margin: 0; min-inline-size: 0; }
+.porteur-tuile__question { font-size: var(--texte-sm); line-height: 1.4; color: var(--texte-doux); }
 
-/* La valeur : l'essentiel en corps normal (un chiffre en mono), sa
-   précision dessous, plus petite et plus grise. */
-.porteurs__cellule {
+/* Un nombre en grand : Newsreader, chiffres alignés ; l'unité en petit. */
+.porteur-grand { display: inline; line-height: 1.05; color: var(--texte); overflow-wrap: anywhere; }
+.porteur-grand__nombre { font-family: var(--police-titre); font-size: clamp(2rem, 1.4vw + 1.5rem, 2.75rem); font-weight: var(--graisse-normale); font-variant-numeric: lining-nums tabular-nums; letter-spacing: -0.01em; }
+.porteur-grand__unite { font-family: var(--police-mono); font-size: var(--texte-sm); color: var(--texte-doux); }
+.porteur-grand__avant { font-family: var(--police); font-size: var(--texte-sm); color: var(--texte-doux); }
+.porteur-grand--moyen .porteur-grand__nombre { font-size: clamp(1.35rem, 0.6vw + 1.15rem, 1.7rem); }
+
+/* La jauge « par rapport à la gamme ». */
+.porteur-jauge { display: flex; flex-direction: column; gap: 2px; margin-block-start: var(--e-2); }
+/* --pos et --fin : la place d'une valeur sur la gamme, posée par fiche-porteur.js. */
+.porteur-jauge__piste > * { --pos: 0%; --fin: 0%; }
+.porteur-jauge__piste { position: relative; display: block; block-size: 1.1rem; }
+.porteur-jauge__piste::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 50%;
+  block-size: 2px;
+  translate: 0 -50%;
+  border-radius: 1px;
+  background-color: var(--fond-enfonce);
+}
+.porteur-jauge__repere {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: var(--pos);
+  inline-size: 2px;
+  block-size: 0.55rem;
+  translate: -50% -50%;
+  border-radius: 1px;
+  background-color: var(--bordure-forte);
+}
+.porteur-jauge__plage {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: var(--pos);
+  inline-size: calc(var(--fin) - var(--pos));
+  block-size: 4px;
+  translate: 0 -50%;
+  border-radius: 2px;
+  background-color: color-mix(in srgb, var(--porteur-teinte) 45%, transparent);
+}
+.porteur-jauge__moi {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: var(--pos);
+  inline-size: 0.8rem;
+  block-size: 0.8rem;
+  translate: -50% -50%;
+  border-radius: var(--rayon-plein);
+  background-color: var(--porteur-teinte);
+  box-shadow: 0 0 0 3px var(--carte-fond);
+}
+.porteur-jauge__legende {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--e-2);
+  font-family: var(--police-mono);
+  font-size: 0.6875rem;
+  color: var(--texte-faible);
+}
+.porteur-jauge__titre { font-family: var(--police); font-style: italic; text-align: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .porteur-jauge__moi { animation: porteur-jauge 700ms var(--courbe) 150ms both; }
+}
+@keyframes porteur-jauge { from { inset-inline-start: 0; opacity: 0; } }
+
+/* Deux blocs côte à côte : le dessin et la frise ; puis le « saviez-vous »
+   et le service. L'un sous l'autre sur un écran étroit. */
+.porteur-fiche__duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 20rem);
+  gap: var(--e-10);
+  align-items: start;
+}
+.porteur-fiche__duo--bas { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 60rem) {
+  .porteur-fiche__duo, .porteur-fiche__duo--bas { grid-template-columns: minmax(0, 1fr); gap: var(--e-8); }
+}
+
+/* 3. À l'échelle. */
+.porteur-echelle__voisin { display: inline-flex; align-items: center; gap: var(--e-2); font-size: var(--texte-sm); color: var(--texte-doux); }
+.porteur-echelle__choix { inline-size: auto; min-inline-size: 11rem; max-inline-size: 16rem; padding-block: var(--e-1); }
+.porteur-echelle__scene {
+  padding: var(--e-4) var(--e-4) var(--e-2);
+  background-color: var(--carte-fond);
+  background-image: linear-gradient(to bottom, var(--carte-fond), var(--fond-bande));
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+}
+.porteur-echelle__legende { font-size: var(--texte-xs); line-height: var(--interligne); color: var(--texte-faible); }
+.porteur-echelle__manque { padding: var(--e-4) var(--e-5); border: 1px dashed var(--bordure); border-radius: var(--rayon-lg); font-size: var(--texte-sm); color: var(--texte-doux); }
+
+/* Le dessin (gabarit.js) : la scène garde les proportions du viewBox, les
+   étiquettes HTML se posent en pourcentages par-dessus. */
+/* --gabarit-ratio : largeur sur hauteur de la scène, posée par gabarit.js. */
+.gabarit { --gabarit-ratio: 3; margin: 0; }
+.gabarit__scene { position: relative; aspect-ratio: var(--gabarit-ratio); inline-size: 100%; }
+.gabarit__dessin { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; overflow: visible; }
+.gabarit__dessin * { vector-effect: non-scaling-stroke; }
+.gabarit__sol { stroke: var(--bordure-forte); stroke-width: 1.5; }
+.gabarit__appareil { --gabarit-teinte: var(--porteur-teinte, var(--accent)); fill: none; stroke: var(--gabarit-teinte); stroke-width: 1.25; stroke-linejoin: round; stroke-linecap: round; }
+.gabarit__appareil--1 { --gabarit-teinte: var(--chaud); }
+.gabarit__appareil--2 { --gabarit-teinte: var(--texte-doux); }
+.gabarit__masse { fill: color-mix(in srgb, var(--gabarit-teinte) 16%, transparent); }
+.gabarit__vitre { fill: color-mix(in srgb, var(--gabarit-teinte) 34%, transparent); stroke-width: 0.75; }
+.gabarit__trait--epais { stroke-width: 2.25; }
+.gabarit__pales { stroke-width: 2.5; }
+.gabarit__moyeu { fill: var(--gabarit-teinte); }
+.gabarit__disque { stroke-dasharray: 3 3; fill: color-mix(in srgb, var(--gabarit-teinte) 6%, transparent); }
+.gabarit__fenestron { fill: var(--carte-fond); }
+.gabarit__roue { fill: var(--carte-fond); stroke-width: 1.75; }
+.gabarit__personne { fill: var(--texte-faible); }
+.gabarit__cote line { stroke: var(--texte-doux); stroke-width: 1; }
+.gabarit__etiquettes { position: absolute; inset: 0; pointer-events: none; }
+.gabarit__etiquette {
+  position: absolute;
+  translate: -50% -50%;
+  padding: 0 var(--e-1);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--texte-doux);
+}
+.gabarit__etiquette--cote { background-color: var(--carte-fond); border-radius: var(--rayon-sm); color: var(--texte); }
+.gabarit__etiquette--dessus { translate: -50% -115%; background: none; }
+.gabarit__etiquette--droite { translate: 0 -50%; background: none; }
+.gabarit__etiquette--sous { translate: -50% 0; }
+.gabarit__etiquette--personne { translate: -50% 0; color: var(--texte-faible); }
+.gabarit__etiquette--code { translate: -50% -100%; font-family: var(--police-titre); font-size: var(--texte-lg); color: var(--porteur-teinte, var(--accent)); }
+.gabarit__etiquette--1 { color: var(--chaud-encre); }
+.gabarit__etiquette--2 { color: var(--texte-doux); }
+@media (max-width: 40rem) {
+  .gabarit__etiquette { font-size: 0.625rem; }
+  .gabarit__etiquette--code { font-size: var(--texte-sm); }
+}
+
+/* 4. Dans le détail : une carte par groupe, en colonnes de journal — les
+   cartes courtes et longues s'emboîtent sans laisser de trou. */
+.porteur-groupes { columns: 3 18rem; column-gap: var(--e-4); }
+.porteur-groupe {
+  display: block;
+  break-inside: avoid;
+  margin-block-end: var(--e-4);
+  padding: var(--e-4) var(--e-5);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--carte-bord);
+  border-radius: var(--rayon-lg);
+}
+.porteur-groupe--vide { background-color: transparent; border-style: dashed; }
+.porteur-groupe__titre {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  margin: 0 0 var(--e-2);
+  font-family: var(--police-titre);
+  font-size: 1.15rem;
+  font-weight: var(--graisse-moyenne);
+  color: var(--texte);
+}
+.porteur-groupe__titre::before { content: ""; inline-size: 3px; block-size: 1em; border-radius: 2px; background-color: var(--porteur-teinte); }
+.porteur-groupe__lignes { margin: 0; }
+.porteur-ligne {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 40%) minmax(0, 1fr);
+  gap: var(--e-1) var(--e-3);
+  padding-block: var(--e-2);
+  border-block-end: 1px dotted var(--bordure);
+}
+.porteur-ligne:last-child { border-block-end: 0; }
+.porteur-ligne__libelle { font-size: var(--texte-sm); line-height: 1.4; color: var(--texte-doux); }
+.porteur-ligne__valeur { display: flex; flex-direction: column; gap: 2px; margin: 0; min-inline-size: 0; }
+.porteur-ligne__principal { font-size: var(--texte-md); line-height: 1.4; color: var(--texte); overflow-wrap: anywhere; }
+.porteur-ligne__principal--chiffre { font-family: var(--police-mono); font-size: var(--texte-sm); font-variant-numeric: tabular-nums; font-weight: var(--graisse-moyenne); }
+.porteur-ligne__note { font-size: var(--texte-xs); line-height: 1.45; color: var(--texte-faible); }
+.porteur-groupe__manque { margin: var(--e-2) 0 0; font-size: var(--texte-xs); line-height: 1.5; color: var(--texte-faible); }
+.porteur-groupe__manque-mot { font-style: italic; }
+
+/* 5. Les blocs d'à côté : la frise, le « saviez-vous », le service. */
+.porteur-marge__bloc { display: flex; flex-direction: column; gap: var(--e-3); min-inline-size: 0; }
+.porteur-marge__titre {
+  margin: 0;
+  padding-block-end: var(--e-2);
+  border-block-end: 1px solid var(--bordure-douce);
+  font-family: var(--police-titre);
+  font-size: 1.3rem;
+  font-weight: var(--graisse-normale);
+  color: var(--texte);
+}
+
+/* La frise : un point par date, et un trait qui mène de chaque point au
+   suivant — tracé par le jalon lui-même, pour tomber juste sur les points. */
+.porteur-frise { --frise-axe: 0.45rem; margin: 0; padding: 0; list-style: none; }
+.porteur-frise__jalon {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 2px;
   margin: 0;
-  min-inline-size: 0;
-  font-size: var(--texte-md);
-  line-height: 1.45;
+  padding: var(--e-2) 0 var(--e-2) var(--e-6);
+}
+.porteur-frise__jalon::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset-inline-start: var(--frise-axe);
+  inset-block-start: calc(var(--e-2) + 0.3rem);
+  inline-size: 0.7rem;
+  block-size: 0.7rem;
+  translate: -50% 0;
+  border-radius: var(--rayon-plein);
+  background-color: var(--fond);
+  border: 2px solid var(--porteur-teinte);
+}
+.porteur-frise__jalon:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: var(--frise-axe);
+  inset-block: calc(var(--e-2) + 0.3rem) calc((var(--e-2) + 0.3rem) * -1);
+  inline-size: 2px;
+  translate: -50% 0;
+  background-color: var(--bordure);
+}
+/* Après aujourd'hui, le trait se fait pointillé : ce qui est prévu. */
+.porteur-frise__jalon--maintenant:not(:last-child)::after,
+.porteur-frise__jalon--prevu:not(:last-child)::after {
+  background: repeating-linear-gradient(to bottom, var(--bordure-forte) 0 4px, transparent 4px 8px);
+}
+.porteur-frise__annee { font-family: var(--police-mono); font-size: var(--texte-sm); font-weight: var(--graisse-moyenne); color: var(--texte); }
+.porteur-frise__texte { font-size: var(--texte-sm); line-height: 1.4; color: var(--texte-doux); }
+.porteur-frise__jalon--prevu .porteur-frise__annee { color: var(--texte-doux); }
+.porteur-frise__jalon--prevu::before { border-style: dashed; border-color: var(--bordure-forte); }
+.porteur-frise__jalon--maintenant::before { background-color: var(--chaud); border-color: var(--chaud); box-shadow: 0 0 0 4px var(--chaud-lueur); }
+.porteur-frise__jalon--maintenant .porteur-frise__annee { color: var(--chaud-encre); letter-spacing: var(--lettrage-etiquette); text-transform: uppercase; font-size: var(--texte-xs); }
+.porteur-frise__jalon--maintenant .porteur-frise__texte { color: var(--texte); font-weight: var(--graisse-moyenne); }
+
+.porteur-faits { display: flex; flex-direction: column; gap: var(--e-3); margin: 0; padding: 0; list-style: none; }
+.porteur-fait { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--e-3); align-items: start; }
+.porteur-fait__numero { font-family: var(--police-titre); font-size: 1.6rem; line-height: 1; color: var(--porteur-teinte); }
+.porteur-fait__tete { font-family: var(--police-titre); font-size: var(--texte-md); line-height: 1.45; color: var(--texte); }
+.porteur-fait__plie summary { cursor: pointer; list-style: none; }
+.porteur-fait__plie summary::after { content: " +"; font-family: var(--police-mono); color: var(--texte-accent); }
+.porteur-fait__plie[open] summary::after { content: " −"; }
+.porteur-fait__suite { margin: var(--e-2) 0 0; font-size: var(--texte-sm); line-height: 1.55; color: var(--texte-doux); }
+.porteur-faits__encore summary { display: inline-flex; gap: var(--e-1); font-size: var(--texte-sm); font-weight: var(--graisse-moyenne); color: var(--texte-accent); }
+.porteur-faits__encore .porteur-faits { margin-block-start: var(--e-3); }
+
+.porteur-service {
+  padding: var(--e-4);
+  background-color: var(--fond-bande);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-lg);
+}
+.porteur-service .porteur-marge__titre { font-size: 1.15rem; }
+.porteur-service__intro { margin: 0; font-size: var(--texte-xs); line-height: 1.5; color: var(--texte-doux); }
+.porteur-service__sous-titre {
+  margin: var(--e-2) 0 0;
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  letter-spacing: var(--lettrage-etiquette);
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+.porteur-service__lignes { margin: 0; }
+.porteur-service__ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--e-2);
+  padding-block: 3px;
+  border-block-end: 1px dotted var(--bordure);
+  font-size: var(--texte-xs);
+}
+.porteur-service__ligne dt { color: var(--texte-doux); }
+.porteur-service__ligne dd { margin: 0; text-align: end; color: var(--texte); }
+.porteur-service__bloc { display: flex; flex-direction: column; gap: var(--e-1); }
+.porteur-service__vides { margin: 0; font-size: var(--texte-xs); line-height: 1.5; color: var(--texte-doux); }
+.porteur-poles { display: inline-flex; flex-wrap: wrap; gap: var(--e-1); justify-content: flex-end; }
+.porteur-pole {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px var(--e-2);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-plein);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  text-decoration: none;
   color: var(--texte);
 }
-.porteurs__valeur { overflow-wrap: anywhere; }
-.porteurs__valeur--chiffre { font-family: var(--police-mono); font-size: var(--texte-sm); font-variant-numeric: tabular-nums; }
-.porteurs__complement { font-size: var(--texte-sm); line-height: 1.45; color: var(--texte-doux); }
-.porteurs__manquant { font-style: italic; color: var(--texte-faible); font-family: var(--police); font-weight: var(--graisse-normale); }
+.porteur-pole::before { content: ""; inline-size: 6px; block-size: 6px; border-radius: var(--rayon-plein); background-color: var(--texte-faible); }
+.porteur-pole[data-pole="ETIIA"]::before { background-color: var(--pole-etiia); }
+.porteur-pole[data-pole="ETIIE"]::before { background-color: var(--pole-etiie); }
+.porteur-pole[data-pole="ETIII"]::before { background-color: var(--pole-etiii); }
+.porteur-pole:hover { background-color: var(--fond-enfonce); }
 
-@media (max-width: 40rem) {
-  .porteurs__ligne { grid-template-columns: 1fr; gap: 2px; }
+/* 6. En pied : les sources, repliées ; les voisins. */
+.porteur-fiche__pied { display: flex; flex-direction: column; gap: var(--e-6); }
+.porteur-sources { border: 1px solid var(--bordure-douce); border-radius: var(--rayon-lg); background-color: var(--carte-fond); }
+.porteur-sources__resume {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-4);
+  padding: var(--e-3) var(--e-5);
+  font-size: var(--texte-sm);
+  font-weight: var(--graisse-moyenne);
+  color: var(--texte);
 }
-
-/* --- Insolite, crédits, équipe ------------------------------------------ */
-
-.porteurs__insolites {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
-  gap: var(--e-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.porteur-sources__resume::before { content: "▸"; color: var(--texte-doux); transition: transform var(--duree) var(--courbe); }
+.porteur-sources[open] .porteur-sources__resume::before { transform: rotate(90deg); }
+.porteur-sources__compte { font-family: var(--police-mono); font-size: var(--texte-xs); font-weight: var(--graisse-normale); color: var(--texte-doux); }
+.porteur-sources__corps { display: flex; flex-direction: column; gap: var(--e-4); padding: 0 var(--e-5) var(--e-5); }
+.porteur-sources__intro { margin: 0; max-inline-size: var(--largeur-texte); font-size: var(--texte-sm); line-height: 1.55; color: var(--texte-doux); }
+.porteur-sources__liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr)); gap: 0 var(--e-8); margin: 0; padding: 0; list-style: none; }
+.porteur-source { padding-block: var(--e-2); border-block-end: 1px dotted var(--bordure); font-size: var(--texte-xs); line-height: 1.5; }
+.porteur-source p { margin: 0; }
+.porteur-source__tete { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--e-1) var(--e-2); }
+.porteur-source__champ { color: var(--texte-doux); }
+.porteur-source__valeur { font-family: var(--police-mono); color: var(--texte); }
+.porteur-source__detail { color: var(--texte-doux); }
+.porteur-source__correction { color: var(--statut-alerte); }
+.porteur-source__ou { color: var(--texte-faible); overflow-wrap: anywhere; }
+.porteur-confiance {
+  padding: 0 var(--e-1);
+  border-radius: var(--rayon-sm);
+  font-family: var(--police-mono);
+  font-size: 0.6875rem;
+  background-color: var(--fond-enfonce);
+  color: var(--texte-doux);
 }
-/* Un fait : son numéro en grand, l'accroche en Newsreader, la suite en
-   petit. Quatre teintes qui alternent : la terre cuite et les trois
-   pôles. */
-.porteurs__insolite {
-  --insolite-teinte: var(--chaud);
-  position: relative;
+.porteur-confiance[data-confiance="haute"] { background-color: var(--statut-succes-fond); color: var(--statut-succes); }
+.porteur-confiance[data-confiance="faible"] { background-color: var(--statut-alerte-fond); color: var(--statut-alerte); }
+.porteur-sources__liens { margin: var(--e-2) 0 0; padding-inline-start: var(--e-5); font-size: var(--texte-xs); line-height: 1.6; color: var(--texte-faible); overflow-wrap: anywhere; }
+
+.porteur-voisins { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--e-4); }
+.porteur-voisin {
   display: flex;
   flex-direction: column;
-  gap: var(--e-2);
-  padding: var(--e-5) var(--e-5) var(--e-4);
-  background-color: color-mix(in srgb, var(--insolite-teinte) 9%, var(--carte-fond));
-  border: 1px solid color-mix(in srgb, var(--insolite-teinte) 28%, transparent);
+  gap: 2px;
+  padding: var(--e-4) var(--e-5);
+  border: 1px solid var(--carte-bord);
   border-radius: var(--rayon-lg);
+  background-color: var(--carte-fond);
+  text-decoration: none;
+  color: var(--texte);
+  transition: border-color var(--duree-rapide) var(--courbe), box-shadow var(--duree-rapide) var(--courbe);
+}
+.porteur-voisin:hover { border-color: var(--bordure-forte); box-shadow: var(--ombre-sm); }
+.porteur-voisin--suivant { align-items: flex-end; text-align: end; }
+.porteur-voisin--vide { visibility: hidden; }
+.porteur-voisin__sens { font-family: var(--police-mono); font-size: var(--texte-xs); letter-spacing: var(--lettrage-etiquette); text-transform: uppercase; color: var(--texte-doux); }
+.porteur-voisin__code { font-family: var(--police-titre); font-size: 1.6rem; line-height: 1.1; }
+.porteur-voisin__segment { font-size: var(--texte-xs); color: var(--texte-doux); }
+.porteur-voisin__segment::first-letter { text-transform: uppercase; }
+
+/* =========================================================================
+   Le comparateur
+   ========================================================================= */
+
+/* --colonnes, --nb, --part : le nombre d'appareils comparés, de colonnes
+   d'en-tête, et la part d'une barre, posés par fiche-porteur.js. */
+.comparateur { --colonnes: 2; display: flex; flex-direction: column; gap: var(--e-8); }
+.comparateur__tete { display: flex; flex-direction: column; gap: var(--e-2); }
+.comparateur__titre { margin: 0; font-family: var(--police-titre); font-size: clamp(2.25rem, 2vw + 1.5rem, 3.25rem); font-weight: var(--graisse-normale); line-height: 1; }
+.comparateur__titre:focus { outline: none; }
+.comparateur__intro { max-inline-size: var(--largeur-texte); font-size: var(--texte-md); color: var(--texte-doux); }
+.comparateur__colonnes { --nb: 2; display: grid; grid-template-columns: repeat(var(--nb), minmax(0, 1fr)); gap: var(--e-4); }
+.comparateur__colonne { position: relative; display: flex; flex-direction: column; gap: var(--e-2); min-inline-size: 0; }
+/* Retirer un appareil : au coin de sa photo. */
+.comparateur__retirer {
+  position: absolute;
+  inset-block-start: var(--e-2);
+  inset-inline-end: var(--e-2);
+  inline-size: 2rem;
+  min-block-size: 2rem;
+  padding: 0;
+  background-color: var(--carte-fond);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-plein);
+  box-shadow: var(--ombre-sm);
+}
+.comparateur__carte {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+  border: 1px solid var(--carte-bord);
+  border-block-start: 3px solid var(--comparateur-teinte, var(--accent));
+  border-radius: var(--rayon-lg);
+  background-color: var(--carte-fond);
+  text-decoration: none;
+  color: var(--texte);
 }
-.porteurs__insolite[data-teinte="1"] { --insolite-teinte: var(--pole-etiia); }
-.porteurs__insolite[data-teinte="2"] { --insolite-teinte: var(--pole-etiie); }
-.porteurs__insolite[data-teinte="3"] { --insolite-teinte: var(--pole-etiii); }
-.porteurs__insolite-numero {
-  font-family: var(--police-titre);
-  font-size: 2.5rem;
-  line-height: 1;
-  color: var(--insolite-teinte);
+.comparateur__colonne--0 { --comparateur-teinte: var(--accent); }
+.comparateur__colonne--1 { --comparateur-teinte: var(--chaud); }
+.comparateur__colonne--2 { --comparateur-teinte: var(--texte-doux); }
+.comparateur__visuel { display: grid; place-items: center; aspect-ratio: 3 / 2; overflow: hidden; background-color: var(--entete-fond); color: var(--entete-texte-doux); }
+.comparateur__image { inline-size: 100%; block-size: 100%; object-fit: cover; }
+.comparateur__code { padding: var(--e-2) var(--e-4) 0; font-family: var(--police-titre); font-size: 1.75rem; line-height: 1.1; }
+.comparateur__segment { padding: 0 var(--e-4) var(--e-3); font-size: var(--texte-xs); color: var(--texte-doux); }
+.comparateur__segment::first-letter { text-transform: uppercase; }
+.comparateur__outils { display: flex; gap: var(--e-1); align-items: center; }
+.comparateur__choix { flex: 1 1 auto; min-inline-size: 0; font-size: var(--texte-sm); padding-block: var(--e-1); }
+.comparateur__ajout {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--e-2);
+  aspect-ratio: 3 / 2;
+  padding: var(--e-4);
+  border: 1px dashed var(--bordure-forte);
+  border-radius: var(--rayon-lg);
+  font-size: var(--texte-sm);
+  text-align: center;
+  color: var(--texte-doux);
 }
-.porteurs__insolite-accroche { margin: 0; font-family: var(--police-titre); font-size: var(--texte-lg); line-height: 1.35; color: var(--texte); }
-.porteurs__insolite-suite { margin: 0; font-size: var(--texte-sm); line-height: 1.55; color: var(--texte-doux); }
+.comparateur__ajout-signe { font-family: var(--police-titre); font-size: 2.5rem; line-height: 1; color: var(--texte-faible); }
+
+.comparateur__table-cadre { overflow-x: auto; }
+.comparateur__table { inline-size: 100%; border-collapse: collapse; }
+.comparateur__table thead td,
+.comparateur__table thead th { padding: 0 var(--e-3) var(--e-2); }
+.comparateur__entete { font-family: var(--police-titre); font-size: var(--texte-xl); font-weight: var(--graisse-normale); letter-spacing: 0; text-transform: none; text-align: start; }
+.comparateur__entete--0 { color: var(--accent); }
+.comparateur__entete--1 { color: var(--chaud-encre); }
+.comparateur__entete--2 { color: var(--texte-doux); }
+.comparateur__intertitre th {
+  padding: var(--e-6) var(--e-3) var(--e-2);
+  border-block-end: 1px solid var(--bordure);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  font-weight: var(--graisse-moyenne);
+  letter-spacing: var(--lettrage-etiquette);
+  text-align: start;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+.comparateur__ligne { border-block-end: 1px dotted var(--bordure); }
+/* Le libellé d'une ligne se lit comme une phrase : pas les capitales
+   mono des en-têtes de tableau du site (skin.css). */
+.comparateur__libelle { inline-size: 15rem; padding: var(--e-3); border-bottom: 0; font-family: var(--police); font-size: var(--texte-sm); font-weight: var(--graisse-moyenne); letter-spacing: 0; text-transform: none; text-align: start; vertical-align: top; color: var(--texte); }
+.comparateur__question { display: block; margin-block-start: 2px; font-size: var(--texte-xs); font-weight: var(--graisse-normale); color: var(--texte-faible); }
+.comparateur__cellule { padding: var(--e-3); vertical-align: top; }
+.comparateur__cellule--0 { --comparateur-teinte: var(--accent); }
+.comparateur__cellule--1 { --comparateur-teinte: var(--chaud); }
+.comparateur__cellule--2 { --comparateur-teinte: var(--texte-doux); }
+.comparateur__valeur { font-family: var(--police-mono); font-size: var(--texte-md); }
+.comparateur__barre { display: block; block-size: 5px; margin-block: var(--e-2) var(--e-1); border-radius: 3px; background-color: var(--fond-enfonce); overflow: hidden; }
+.comparateur__barre span { --part: 0; display: block; block-size: 100%; inline-size: calc(var(--part) * 100%); border-radius: inherit; background-color: color-mix(in srgb, var(--comparateur-teinte) 55%, transparent); }
+.comparateur__cellule--plus .comparateur__barre span { background-color: var(--comparateur-teinte); }
+.comparateur__cellule--plus .porteur-grand__nombre { font-weight: var(--graisse-moyenne); }
+.comparateur__ecart { display: flex; flex-wrap: wrap; gap: 2px var(--e-2); font-size: var(--texte-xs); color: var(--texte-faible); }
+.comparateur__plus { font-weight: var(--graisse-moyenne); color: var(--chaud-encre); }
+.comparateur__delta { font-family: var(--police-mono); }
 @media (prefers-reduced-motion: no-preference) {
-  .porteurs__insolite { transition: transform var(--duree-rapide) var(--courbe), box-shadow var(--duree-rapide) var(--courbe); }
-  .porteurs__insolite:hover { transform: translateY(-2px); box-shadow: var(--ombre-md); }
+  .comparateur__barre span { animation: comparateur-barre 700ms var(--courbe) both; }
+}
+@keyframes comparateur-barre { from { inline-size: 0; } }
+
+/* Au téléphone : le libellé passe au-dessus de sa ligne, les valeurs
+   côte à côte dessous. */
+@media (max-width: 40rem) {
+  .comparateur__colonnes { gap: var(--e-2); }
+  .comparateur__code { font-size: 1.25rem; padding-inline: var(--e-2); }
+  .comparateur__segment { padding-inline: var(--e-2); }
+  .comparateur__colonnes { grid-template-columns: repeat(var(--colonnes), minmax(0, 1fr)); }
+  .comparateur__colonne--ajout { grid-column: 1 / -1; flex-direction: row; align-items: center; }
+  .comparateur__colonne--ajout .comparateur__outils { flex: 1 1 auto; }
+  .comparateur__table thead { display: none; }
+  .comparateur__table, .comparateur__table tbody { display: block; }
+  .comparateur__intertitre, .comparateur__ligne { display: grid; grid-template-columns: repeat(var(--colonnes), minmax(0, 1fr)); }
+  .comparateur__intertitre th, .comparateur__libelle { grid-column: 1 / -1; inline-size: auto; }
+  .comparateur__libelle { padding: var(--e-3) var(--e-1) 0; }
+  .comparateur__cellule { padding: var(--e-2) var(--e-1) var(--e-3); min-inline-size: 0; }
+  .comparateur__ajout { display: none; }
 }
 
+/* =========================================================================
+   L'aperçu du tableau de bord : la pellicule
+   ========================================================================= */
+
+.apercu-porteurs { display: flex; flex-direction: column; gap: var(--e-5); }
+.apercu-porteurs__tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-3) var(--e-6);
+}
+.apercu-porteurs__phrase { flex: 1 1 22rem; margin: 0; font-size: var(--texte-md); color: var(--texte-doux); }
+.apercu-porteurs__phrase strong { font-family: var(--police-titre); font-size: var(--texte-xl); font-weight: var(--graisse-normale); color: var(--texte); }
+.apercu-porteurs__marches { display: flex; flex-wrap: wrap; gap: var(--e-2); }
+.apercu-porteurs__aller {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--e-2);
+  min-block-size: 2.25rem;
+  padding: var(--e-1) var(--e-3);
+  background-color: var(--carte-fond);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-plein);
+  font: inherit;
+  font-size: var(--texte-sm);
+  color: var(--texte);
+  cursor: pointer;
+}
+.apercu-porteurs__aller:hover { border-color: var(--bordure-forte); background-color: var(--fond-enfonce); }
+.apercu-porteurs__aller-compte { font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--texte-doux); }
+.apercu-porteurs__tout { margin-inline-start: auto; }
+
+.apercu-porteurs__cadre { position: relative; }
+.apercu-porteurs__piste {
+  display: flex;
+  gap: var(--e-3);
+  margin: 0;
+  padding: var(--e-1) 0 var(--e-3);
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--e-1);
+  scrollbar-width: thin;
+}
+.apercu-porteurs__piste[data-apres] { -webkit-mask-image: linear-gradient(to right, var(--texte) 88%, transparent); mask-image: linear-gradient(to right, var(--texte) 88%, transparent); }
+.apercu-porteurs__piste[data-avant] { -webkit-mask-image: linear-gradient(to left, var(--texte) 88%, transparent); mask-image: linear-gradient(to left, var(--texte) 88%, transparent); }
+.apercu-porteurs__piste[data-avant][data-apres] { -webkit-mask-image: linear-gradient(to right, transparent, var(--texte) 8%, var(--texte) 90%, transparent); mask-image: linear-gradient(to right, transparent, var(--texte) 8%, var(--texte) 90%, transparent); }
+.apercu-porteurs__marche {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--e-1);
+  inline-size: 8.5rem;
+  padding: var(--e-4);
+  scroll-snap-align: start;
+  border-inline-start: 3px solid var(--porteur-teinte, var(--accent));
+  background-color: var(--fond-bande);
+  border-radius: 0 var(--rayon-lg) var(--rayon-lg) 0;
+}
+.apercu-porteurs__marche-nom { font-family: var(--police-titre); font-size: 1.6rem; line-height: 1.05; color: var(--texte); }
+.apercu-porteurs__marche-compte { font-family: var(--police-mono); font-size: var(--texte-xs); letter-spacing: var(--lettrage-etiquette); text-transform: uppercase; color: var(--texte-doux); }
+.apercu-porteurs__item { flex: 0 0 auto; scroll-snap-align: start; }
+.apercu-porteurs__vignette {
+  position: relative;
+  display: block;
+  inline-size: clamp(11.5rem, 17vw, 14.5rem);
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--rayon-lg);
+  background-color: var(--entete-fond);
+  color: var(--entete-texte);
+  text-decoration: none;
+  box-shadow: var(--ombre-sm);
+}
+.apercu-porteurs__visuel { position: absolute; inset: 0; display: grid; place-items: center; color: var(--entete-texte-doux); }
+.apercu-porteurs__photo { inline-size: 100%; block-size: 100%; object-fit: cover; transition: transform var(--duree-lente) var(--courbe); }
+.apercu-porteurs__vignette:hover .apercu-porteurs__photo { transform: scale(1.05); }
+.apercu-porteurs__legende {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--e-8) var(--e-3) var(--e-3);
+  background-image: linear-gradient(to top, var(--voile-fort), var(--voile) 55%, transparent);
+}
+.apercu-porteurs__code { font-family: var(--police-titre); font-size: 1.4rem; line-height: 1.05; color: var(--entete-texte); }
+.apercu-porteurs__segment { font-size: var(--texte-xs); color: var(--entete-texte-doux); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.apercu-porteurs__segment::first-letter { text-transform: uppercase; }
+.apercu-porteurs__fleche {
+  position: absolute;
+  inset-block-start: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  translate: 0 -60%;
+  padding: 0;
+  background-color: var(--carte-fond);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-plein);
+  box-shadow: var(--ombre-md);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--texte);
+  cursor: pointer;
+}
+.apercu-porteurs__fleche[hidden] { display: none; }
+.apercu-porteurs__fleche--avant { inset-inline-start: calc(var(--e-2) * -1); }
+.apercu-porteurs__fleche--apres { inset-inline-end: calc(var(--e-2) * -1); }
+@media (hover: none) { .apercu-porteurs__fleche { display: none; } }
+@media (max-width: 40rem) {
+  .apercu-porteurs__tout { margin-inline-start: 0; inline-size: 100%; justify-content: center; }
+  .apercu-porteurs__marche { inline-size: 6.5rem; padding: var(--e-3); }
+  .apercu-porteurs__marche-nom { font-size: 1.25rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .apercu-porteurs__photo { transition: none; }
+  .apercu-porteurs__vignette:hover .apercu-porteurs__photo { transform: none; }
+}
+
+/* --- Les crédits des photos (fenêtre du pied de page, credits.js) ------ */
 
 .porteurs__credit { font-size: var(--texte-sm); line-height: var(--interligne); color: var(--texte-doux); }
 .porteurs__credit-mot { color: var(--texte-faible); }
 .porteurs__credit-note { display: block; font-size: var(--texte-xs); color: var(--texte-faible); }
-
 .porteurs__credits { display: grid; gap: var(--e-3); margin: 0; padding: 0; list-style: none; }
 .porteurs__credits-item { display: flex; align-items: center; gap: var(--e-3); padding-block: var(--e-2); border-bottom: 1px solid var(--bordure-douce); }
 .porteurs__credits-item:last-child { border-bottom: 0; }
@@ -1495,13 +2074,8 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 .porteurs__credits-texte { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; }
 .porteurs__credits-nom { font-weight: var(--graisse-forte); font-size: var(--texte-sm); }
 
-/* --- Les onglets de la fiche --------------------------------------------- */
-
-.porteurs__onglets { gap: var(--e-5); }
-.porteurs__onglets .onglets__liste { flex-wrap: wrap; }
-.porteurs__onglets .onglets__panneau { padding-block-start: var(--e-1); }
-
-
+/* En mode édition, « Modifier » et « Supprimer » de la fiche. */
+.porteurs__edition { display: inline-flex; }
 
 /* -------------------------------------------------------------------------
    4. Le lecteur : liste à gauche, lecture à droite

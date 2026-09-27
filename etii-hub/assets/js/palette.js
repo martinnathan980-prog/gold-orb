@@ -11,7 +11,7 @@
      docsearch.html#q=…            faq.html#pole=…&question=…
      organigramme.html#pole=…&personne=…   reunions.html#pole=…&onglet=…&reunion=…
      index.html#communication=…    etiia.html#communication=…
-     index.html#porteur=…
+     porteurs.html#porteur=…
    ========================================================================= */
 
 import { el, monter, ouvrirModale, surlignerVers, annoncer, debounce } from './ui.js';
@@ -30,6 +30,9 @@ const GROUPES = [
 
 const PAGES = [
   { titre: 'Tableau de bord ETII', sousTitre: 'Communication Center, porteurs, suivi OTQ / OTD', href: 'index.html' },
+  { titre: 'Porteurs', sousTitre: 'La gamme suivie par le service : fiches, taille réelle, comparaison', href: 'porteurs.html',
+    texte: 'Hélicoptères, drones et démonstrateurs : civil, militaire, prototype. Masse, dimensions, vitesse, '
+      + 'distance franchissable, motorisation, programme ; comparer deux ou trois appareils.' },
   /* Le sous-titre et le texte d'un pôle reprennent sa description (pole.js) :
      les deux champs sont indexés, donc l'espace devient trouvable par son
      sujet (« nommage », « routage ») et plus seulement par son code. */
@@ -128,8 +131,8 @@ function entreesPorteurs(d) {
       id: 'porteur-' + texte(a.code), groupe: 'porteur',
       titre: texte(fiche.nom) || texte(a.code),
       sousTitre: [texte(a.categorie), texte(a.segment) || texte(fiche.segment), liste(a.poles).map((p) => 'pôle ' + p).join(', ')].filter(Boolean).join(' · '),
-      texte: [texte(a.code), texte(fiche.ancienNom), texte(fiche.resume), (fiche.insolites || []).map((f) => f && f.texte).join(' ')].join(' '),
-      href: 'index.html#porteur=' + encoder(a.code)
+      texte: [texte(a.code), texte(fiche.ancienNom), texte(fiche.accroche), texte(fiche.resume), (fiche.insolites || []).map((f) => f && f.texte).join(' ')].join(' '),
+      href: 'porteurs.html#porteur=' + encoder(a.code)
     };
   });
 }

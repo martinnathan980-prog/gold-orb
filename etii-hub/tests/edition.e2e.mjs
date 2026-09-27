@@ -145,38 +145,51 @@ await o.confirmer();
 t('supprimée, elle quitte le bandeau', !/Coupure réseau d’essai/.test(await page.locator('.kiosque__alertes').innerText()));
 
 console.log('\n== Les porteurs ==');
-const fichesAvant = await page.locator('.porteurs__fiche').count();
-/* Chaque section a son « Ajouter », qui choisit d'avance son marché : on
-   ajoute depuis Prototype, et l'appareil y arrive. */
-const ajoutPrototype = page.locator('.porteurs__groupe-galerie[data-categorie="prototype"] .porteurs__ajout .edition-ajout');
-t('chaque marché a son bouton « Ajouter », à la fin de sa section',
-  (await page.locator('.porteurs__groupe-galerie .porteurs__ajout .edition-ajout').count()) === 3 && (await ajoutPrototype.count()) === 1);
-await o.centrer(ajoutPrototype);
-await ajoutPrototype.click();
+// Les porteurs se modifient sur leur page : le tableau de bord n'en garde
+// qu'un aperçu, qui y renvoie en mode édition.
+t('le tableau de bord renvoie à la page des porteurs pour les modifier',
+  (await page.locator('#zone-flotte .edition-seulement a[href="porteurs.html"]').count()) === 1);
+await page.goto(`${B}/porteurs.html`, { waitUntil: 'networkidle' });
+await o.attendre(700);
+t('le mode édition suit sur la page des porteurs', await o.enEdition());
+const cartesAvant = await page.locator('.porteur-carte').count();
+/* « Ajouter » choisit d'avance le marché affiché : on se place sur
+   Prototype, et l'appareil y arrive. */
+await page.locator('.porteurs-bandeau__marche[data-marche="prototype"]').click();
 await o.attendre(300);
-t('« Ajouter » d\'une section choisit d\'avance son marché',
+const ajout = page.locator('.porteurs__barre .edition-ajout');
+t('la galerie a son bouton « Ajouter un porteur »', (await ajout.count()) === 1 && /Ajouter un porteur/.test(await ajout.innerText()));
+await ajout.click();
+await o.attendre(300);
+t('« Ajouter » choisit d’avance le marché affiché',
   (await page.locator('.modale--formulaire .champ').filter({ has: page.locator('.champ__etiquette', { hasText: 'Catégorie' }) }).locator('select').inputValue()) === 'prototype');
 await o.remplir('Code', 'ZXTEST1');
 await o.remplir('Nom complet', 'Appareil d’essai');
 await o.remplir('Présentation', 'Un porteur ajouté par le test.');
 await o.enregistrer();
-const ficheEssai = page.locator('.porteurs__fiche', { hasText: 'ZXTEST1' });
-t('un porteur ajouté rejoint la galerie', (await page.locator('.porteurs__fiche').count()) === fichesAvant + 1 && (await ficheEssai.count()) === 1);
-t('… dans la section du marché d\'où on l\'a ajouté',
-  (await page.locator('.porteurs__groupe-galerie[data-categorie="prototype"] .porteurs__fiche', { hasText: 'ZXTEST1' }).count()) === 1);
-await o.centrer(ficheEssai);
-await ficheEssai.click();
-await o.attendre(500);
+const carteEssai = page.locator('.porteur-carte', { hasText: 'ZXTEST1' });
+t('un porteur ajouté rejoint la galerie, dans le marché d’où on l’a ajouté',
+  (await carteEssai.count()) === 1 && (await carteEssai.getAttribute('data-categorie')) === 'prototype');
+await o.centrer(carteEssai);
+await carteEssai.locator('.porteur-carte__lien').click();
+await o.attendre(600);
+t('sa fiche s’ouvre, sa présentation sert d’accroche', /Un porteur ajouté par le test/.test(await page.locator('.porteur-fiche__accroche').innerText().catch(() => '')));
 await page.locator('.porteurs__edition .barre-edition__bouton', { hasText: 'Modifier' }).click();
-await o.remplir('Présentation', 'Présentation corrigée par le test.');
+await o.remplir('Accroche', 'Accroche corrigée par le test.');
+await o.remplir('Masse maximale au décollage', '1234');
 await o.enregistrer();
-await o.centrer(page.locator('.porteurs__fiche', { hasText: 'ZXTEST1' }));
-if (!(await page.locator('.porteurs__detail').count())) { await page.locator('.porteurs__fiche', { hasText: 'ZXTEST1' }).click(); await o.attendre(500); }
-t('sa fiche se modifie', /Présentation corrigée par le test/.test(await page.locator('.porteurs__detail').innerText().catch(() => '')));
+await o.attendre(400);
+const ficheModifiee = await page.locator('.porteur-fiche').innerText().catch(() => '');
+t('sa fiche se modifie sur place : l’accroche, et une masse saisie en grand dans l’essentiel',
+  /Accroche corrigée par le test/.test(ficheModifiee)
+  && /1\s?234/.test(await page.locator('.porteur-tuile[data-chiffre="masseMaxDecollage"]').innerText().catch(() => '')), ficheModifiee.slice(0, 160));
 await page.locator('.porteurs__edition .barre-edition__bouton--danger').click();
 await o.confirmer();
-t('supprimé, il quitte la galerie', (await page.locator('.porteurs__fiche', { hasText: 'ZXTEST1' }).count()) === 0
-  && (await page.locator('.porteurs__fiche').count()) === fichesAvant);
+await o.attendre(400);
+await page.locator('.porteurs-bandeau__marche[data-marche="tous"]').click().catch(() => {});
+await o.attendre(300);
+t('supprimé, il quitte la page', (await page.locator('.porteur-carte', { hasText: 'ZXTEST1' }).count()) === 0
+  && (await page.locator('.porteur-fiche').count()) === 0 && (await page.locator('.porteur-carte').count()) === cartesAvant);
 
 console.log('\n== Un espace de pôle : le coup d’œil ==');
 // Tout ce que l'ancien annuaire savait faire se fait dans le nouveau bloc :
