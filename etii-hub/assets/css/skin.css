@@ -202,6 +202,7 @@ a:hover { text-decoration-color: currentColor; }
 }
 
 .site-nav__liste { gap: var(--e-1); }
+.site-nav__court { display: none; }
 
 /* Les liens : à l'encre douce ; le trait marine se déroule depuis le
    centre au survol, et reste sous le lien courant. */
@@ -742,10 +743,18 @@ mark, .surlignage {
      par rangée de 390 px. */
   .site-nav__liste a {
     min-height: calc(var(--cible-tactile) - var(--e-1));
-    padding-inline: var(--e-1);
+    padding-inline: 3px;
     font-size: var(--texte-xs);
     white-space: nowrap;
   }
+
+  /* « Tableau de bord » s'écrit « Accueil » : les six liens tiennent alors
+     sur une seule rangée de 390 px. Le nom long reste celui du lien pour
+     les lecteurs d'écran. */
+  .site-nav__plein {
+    position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+  .site-nav__court { display: inline; }
 
   .site-entete__interieur { padding-block: var(--e-1) 0; }
 }

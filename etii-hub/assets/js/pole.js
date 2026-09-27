@@ -344,7 +344,7 @@ function appareilPuce(m, code) {
 }
 
 /* La fiche d'un appareil, sur la page des porteurs. */
-function lienPorteur(code) { return 'index.html#porteur=' + encodeURIComponent(texte(code)); }
+function lienPorteur(code) { return 'porteurs.html#porteur=' + encodeURIComponent(texte(code)); }
 
 /* Les commandes d'une personne, en mode édition. Selon l'endroit,
    « retirer » n'a pas le même sens : de l'organigramme, du titre de

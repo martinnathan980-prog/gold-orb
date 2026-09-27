@@ -446,8 +446,12 @@ if (pages.length) {
   const signature = (h) => {
     const nav = h.match(/<nav class="site-nav"[\s\S]*?<\/nav>/);
     if (!nav) return null;
-    return [...nav[0].matchAll(/<a[^>]+href="([^"]+)"[^>]*>([^<]*)<\/a>/g)]
-      .map(m => `${m[1]}|${m[2].trim()}`).join(' · ');
+    // Le nom d'un lien est ce qu'entend un lecteur d'écran : sans les
+    // variantes aria-hidden (« Accueil », forme courte du téléphone).
+    const nom = (html) => html.replace(/<span[^>]*aria-hidden="true"[^>]*>[\s\S]*?<\/span>/g, '')
+      .replace(/<[^>]+>/g, '').trim();
+    return [...nav[0].matchAll(/<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)]
+      .map(m => `${m[1]}|${nom(m[2])}`).join(' · ');
   };
   const refPage = pages.includes('index.html') ? 'index.html' : pages[0];
   const ref = signature(lire(refPage));

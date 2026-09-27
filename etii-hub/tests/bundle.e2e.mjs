@@ -242,8 +242,7 @@ console.log('\n== Un lien avec ancre garde son ancre ==');
 await f.locator('nav.site-nav a[href="etiia.html"]').first().click();
 await page.waitForTimeout(1900);
 // Une squad s'ouvre sur ses membres ; la puce d'appareil d'une carte mène
-// à la fiche du porteur. Son lien dit encore « index.html#porteur=… » :
-// la coquille l'envoie sur la page des porteurs.
+// à la fiche du porteur, sur la page des porteurs (« porteurs.html#porteur=… »).
 const tuileEquipe = f.locator('#zone-reperes .equipe__tuile').first();
 await tuileEquipe.evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
 await tuileEquipe.click();

@@ -213,7 +213,7 @@ await page.waitForTimeout(1200);
 await page.locator('#zone-reperes .equipe__tuile').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
 await page.locator('#zone-reperes .equipe__tuile').first().click();
 await page.waitForTimeout(700);
-const puce = page.locator('#zone-reperes a.appareil-puce[href^="index.html#porteur="]').first();
+const puce = page.locator('#zone-reperes a.appareil-puce[href^="porteurs.html#porteur="]').first();
 const codePuce = (await puce.innerText()).trim();
 await puce.evaluate((e) => e.scrollIntoView({ block: 'center' }));
 await puce.click();

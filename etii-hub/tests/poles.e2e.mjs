@@ -257,7 +257,7 @@ for (const bloc of orga.poles) {
   t(`${code} : le ${plusSuivi.code} s’ouvre sur ses ${plusSuivi.n} personnes, et sur sa fiche`,
     (await panneauP.count()) === 1
     && (await panneauP.locator('.personne-carte__nom').allInnerTexts()).map(n => n.trim()).sort().join('|') === nomsDe(gensSur(plusSuivi.code))
-    && (await panneauP.locator(`a.coup-oeil__lien[href="index.html#porteur=${encodeURIComponent(plusSuivi.code)}"]`).count()) === 1);
+    && (await panneauP.locator(`a.coup-oeil__lien[href="porteurs.html#porteur=${encodeURIComponent(plusSuivi.code)}"]`).count()) === 1);
   await page.locator(`${P} .equipe__tuile`).first().click();
   await page.waitForTimeout(500);
 
