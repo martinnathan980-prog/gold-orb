@@ -26,6 +26,10 @@
  *   5. Les documents — la seule source extérieure : votre classeur de
  *      documents, un onglet par pôle (ETIIA, ETIIE, ETIII), lu à chaque
  *      ouverture.
+ *   6. Les questions aux experts — « Interroger un expert », dans le site,
+ *      ajoute une ligne en haut de l'onglet « Questions aux experts » :
+ *      date, qui, pôle, question, contexte, statut « À traiter ». Les
+ *      administrateurs y notent le statut et la réponse.
  *
  * Déploiement : Déployer › Nouveau déploiement › Application web
  *   - Exécuter en tant que : Moi
@@ -68,6 +72,10 @@ var ONGLET_JOURNAL = 'Journal complet';
 var PREFIXE_JOURNAL = 'Journal · ';
 var ENTETE_JOURNAL = ['Date', 'Qui', 'Rubrique', 'Pôle', 'Action', 'Élément', 'Ce qui a changé'];
 var ENTETE_RUBRIQUE = ['Date', 'Qui', 'Pôle', 'Action', 'Élément', 'Ce qui a changé'];
+/* « Interroger un expert » : les questions posées depuis le site, la plus
+   récente en haut. Les administrateurs y tiennent le statut et la réponse. */
+var ONGLET_QUESTIONS = 'Questions aux experts';
+var ENTETE_QUESTIONS = ['Date', 'Qui', 'Pôle', 'Question', 'Contexte', 'Statut', 'Réponse'];
 var JEUX = ['communications', 'flotte', 'organigramme', 'faq', 'documents', 'reunions'];
 /* La rubrique d'une modification, décidée ici d'après le jeu et le type :
    c'est elle qui choisit l'onglet du journal. */
@@ -227,6 +235,29 @@ function etiiJournal(limite) {
   });
 }
 
+/**
+ * Une question posée à un expert depuis le site (« Interroger un expert ») :
+ * une ligne en haut de l'onglet « Questions aux experts », avec la date,
+ * l'adresse de la personne, son pôle et le statut « À traiter ». Tout
+ * lecteur peut poser une question ; ce sont les administrateurs qui la
+ * suivent, dans la feuille.
+ * @param {Object} demande  { question, contexte, pole }
+ * @return {{ok: boolean}}
+ */
+function etiiDemande(demande) {
+  var d = (demande && typeof demande === 'object') ? demande : {};
+  var question = court_(d.question, 2000);
+  if (!question) throw new Error('Question vide.');
+  var ligne = [new Date(), emailConnecte_() || 'anonyme', court_(d.pole, 20), question, court_(d.contexte, 500), 'À traiter', ''];
+  var feuille = ongletJournal_(ONGLET_QUESTIONS, ENTETE_QUESTIONS);
+  feuille.insertRowAfter(1);
+  var plage = feuille.getRange(2, 1, 1, ligne.length);
+  plage.setValues([ligne.map(enTexte_)]);
+  plage.setFontWeight('normal').setBackground(null).setFontColor('#2a251f');
+  feuille.getRange(2, 1).setNumberFormat('dd/MM/yyyy HH:mm');
+  return { ok: true };
+}
+
 /* ======================================================================
    3. Mise en place — à exécuter UNE fois depuis l'éditeur (▶ Exécuter)
    ====================================================================== */
@@ -240,6 +271,7 @@ function installer() {
   var editeurs = onglet_(ONGLET_EDITEURS, ['adresse', 'nom (facultatif)']);
   ongletJournal_(ONGLET_JOURNAL, ENTETE_JOURNAL);
   ORDRE_RUBRIQUES.forEach(function (r) { ongletJournal_(PREFIXE_JOURNAL + r, ENTETE_RUBRIQUE); });
+  ongletJournal_(ONGLET_QUESTIONS, ENTETE_QUESTIONS);
   onglet_(ONGLET_MODIFICATIONS, EN_TETE);
   /* L'onglet vide que Google crée avec le classeur (« Feuille 1 ») ne
      sert à rien : on le retire, la feuille ne montre que les nôtres. */
@@ -493,7 +525,8 @@ function ongletJournal_(nom, entete) {
   feuille.getRange(1, 1, 1, entete.length).setValues([entete])
     .setFontWeight('bold').setBackground('#e9e1d3').setFontColor('#2a251f');
   feuille.setFrozenRows(1);
-  var largeurs = { 'Date': 130, 'Qui': 210, 'Rubrique': 170, 'Pôle': 90, 'Action': 110, 'Élément': 300, 'Ce qui a changé': 560 };
+  var largeurs = { 'Date': 130, 'Qui': 210, 'Rubrique': 170, 'Pôle': 90, 'Action': 110, 'Élément': 300, 'Ce qui a changé': 560,
+    'Question': 420, 'Contexte': 220, 'Statut': 110, 'Réponse': 420 };
   entete.forEach(function (t, i) { if (largeurs[t]) feuille.setColumnWidth(i + 1, largeurs[t]); });
   feuille.getRange(1, entete.length, feuille.getMaxRows(), 1).setWrap(true);
   return feuille;

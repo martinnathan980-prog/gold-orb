@@ -155,9 +155,9 @@ const { contexte: gs, classeur, etat } = environnement({ proprietaire: PROPRIETA
 console.log('== Installation ==');
 gs.installer();
 const RUBRIQUES = ['Communication center', 'À venir', 'Porteurs', 'Organigramme', 'Documents', 'Questions fréquentes', 'Réunions'];
-t('installer() crée Éditeurs, le journal complet, un journal par rubrique, et les modifications — dans cet ordre',
+t('installer() crée Éditeurs, le journal complet, un journal par rubrique, les questions aux experts et les modifications — dans cet ordre',
   JSON.stringify(classeur.getSheets().map((f) => f.getName()))
-    === JSON.stringify(['Éditeurs', 'Journal complet', ...RUBRIQUES.map((r) => 'Journal · ' + r), 'modifications']),
+    === JSON.stringify(['Éditeurs', 'Journal complet', ...RUBRIQUES.map((r) => 'Journal · ' + r), 'Questions aux experts', 'modifications']),
   JSON.stringify(classeur.getSheets().map((f) => f.getName())));
 t('les onglets de journal ont leur en-tête lisible',
   classeur.getSheetByName('Journal complet')._lignes[0].join('|') === 'Date|Qui|Rubrique|Pôle|Action|Élément|Ce qui a changé'
@@ -249,6 +249,20 @@ t('son écriture est refusée par le serveur (NON_AUTORISE)', refus === 'NON_AUT
 refus = '';
 try { gs.etiiJournal(10); } catch (e) { refus = e.message; }
 t('il ne lit pas le journal (il porte des adresses)', refus === 'NON_AUTORISE');
+// « Interroger un expert » : tout lecteur peut poser une question ; elle
+// arrive en haut de l'onglet « Questions aux experts ».
+gs.etiiDemande({ question: 'Quelle section pour un faisceau 28 V ?', contexte: 'Lot 4', pole: 'ETIIE' });
+gs.etiiDemande({ question: '=HYPERLINK("x")', pole: 'ETIIA' });
+const questions = classeur.getSheetByName('Questions aux experts')._lignes;
+t('un lecteur pose une question : elle arrive en haut de « Questions aux experts »',
+  questions[0].join('|') === 'Date|Qui|Pôle|Question|Contexte|Statut|Réponse'
+  && questions.length === 3 && questions[2][1] === 'collegue@exemple.fr' && questions[2][2] === 'ETIIE'
+  && questions[2][3] === 'Quelle section pour un faisceau 28 V ?' && questions[2][4] === 'Lot 4' && questions[2][5] === 'À traiter',
+  JSON.stringify(questions.slice(1)));
+t('la plus récente en haut, et jamais lue comme une formule', String(questions[1][3]).startsWith("'="));
+refus = '';
+try { gs.etiiDemande({ question: '   ' }); } catch (e) { refus = e.message; }
+t('une question vide est refusée', /vide/.test(refus));
 classeur.getSheetByName('Éditeurs').appendRow(['  Collegue@Exemple.fr ', 'Personne 12']);
 t('ajouté à « Éditeurs » (casse et espaces indifférents), il peut écrire', gs.etiiDemarrer().peutModifier === true);
 etat.connecte = '';

@@ -124,7 +124,7 @@
               "competences": [
                 {
                   "nom": "Interfaces systèmes",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Intégration systèmes",
@@ -349,7 +349,7 @@
               "competences": [
                 {
                   "nom": "Interfaces systèmes",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Spécification d’interface",
@@ -599,7 +599,7 @@
               "competences": [
                 {
                   "nom": "Pilotage technique",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Indices et versions",
@@ -790,7 +790,7 @@
                 },
                 {
                   "nom": "Génération et distribution",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Essais au sol",
@@ -815,7 +815,7 @@
                 },
                 {
                   "nom": "Bilan de masse harnais",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Industrialisation",
@@ -1258,7 +1258,7 @@
                 },
                 {
                   "nom": "Normes aéronautiques",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Intégration physique",
@@ -1405,11 +1405,11 @@
               "competences": [
                 {
                   "nom": "Pilotage technique",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Chute de tension",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Routage de harnais",
@@ -1509,7 +1509,7 @@
                 },
                 {
                   "nom": "Cheminement",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Génération et distribution",
@@ -1600,7 +1600,7 @@
                 },
                 {
                   "nom": "Génération et distribution",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 }
               ]
             },
@@ -1731,7 +1731,7 @@
               "competences": [
                 {
                   "nom": "Interfaces systèmes",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Spécification d’interface",
@@ -1956,7 +1956,7 @@
               "competences": [
                 {
                   "nom": "Pilotage technique",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Revue par les pairs",
@@ -2068,7 +2068,7 @@
               "competences": [
                 {
                   "nom": "Architecture électrique",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Bilan de puissance",
@@ -2936,7 +2936,7 @@
                 },
                 {
                   "nom": "Charge et capacité",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Indices et versions",
@@ -2990,7 +2990,7 @@
                 },
                 {
                   "nom": "Tableur avancé",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 }
               ]
             },
@@ -3007,7 +3007,7 @@
                 },
                 {
                   "nom": "Instrumentation",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Tolérancement",
@@ -3033,7 +3033,7 @@
               "competences": [
                 {
                   "nom": "Pilotage technique",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Lecture de plan",
@@ -3062,7 +3062,7 @@
                 },
                 {
                   "nom": "Maquette numérique 3D",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Sertissage",
@@ -3141,7 +3141,7 @@
               "competences": [
                 {
                   "nom": "Cotation fonctionnelle",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Essais en vol",
@@ -3149,7 +3149,7 @@
                 },
                 {
                   "nom": "Revue par les pairs",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Conformité normative",
@@ -3195,7 +3195,7 @@
               "competences": [
                 {
                   "nom": "Interfaces systèmes",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Dépouillement de mesures",
@@ -3421,7 +3421,7 @@
               "competences": [
                 {
                   "nom": "Architecture électrique",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Bilan de puissance",
@@ -3870,7 +3870,7 @@
               "competences": [
                 {
                   "nom": "Intégration physique",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Recherche d’interférences",
@@ -4124,7 +4124,7 @@
                 },
                 {
                   "nom": "Animation de revue",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Outillage",
@@ -4350,7 +4350,7 @@
               "competences": [
                 {
                   "nom": "Lecture de plan",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Traitement des écarts",
@@ -4412,7 +4412,7 @@
                 },
                 {
                   "nom": "Tableur avancé",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 }
               ]
             }
@@ -4430,7 +4430,7 @@
               "competences": [
                 {
                   "nom": "Pilotage technique",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Banc d’essai",
@@ -4446,7 +4446,7 @@
                 },
                 {
                   "nom": "Rédaction technique",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 }
               ]
             },
@@ -4496,7 +4496,7 @@
                 },
                 {
                   "nom": "Audit interne",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 }
               ]
             },
@@ -4681,7 +4681,7 @@
               "competences": [
                 {
                   "nom": "Pilotage technique",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Banc d’essai",
@@ -4793,7 +4793,7 @@
               "competences": [
                 {
                   "nom": "Analyse de données",
-                  "niveau": "referent"
+                  "niveau": "confirme"
                 },
                 {
                   "nom": "Génération et distribution",

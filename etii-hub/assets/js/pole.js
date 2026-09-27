@@ -7,7 +7,7 @@
                          niveau service ;
      2. EN UN COUP D'ŒIL — les chiffres du pôle en une ligne ; les
                          équipes, en tuiles qui s'ouvrent sur place ; les
-                         référents du pôle ; les porteurs et leurs gens ;
+                         référents du pôle, chacun avec son appareil ;
      3. DOCUMENTS      — les documents du pôle les plus récents, en vigueur ;
      4. FAQ            — les questions du pôle, et la demande aux experts.
 
@@ -24,12 +24,13 @@ import { el, frag, monter, debounce, deleguer, mouvementReduit, dureeJeton, init
 import { initiales } from './portraits.js';
 import { installerEdition, barreEdition, boutonAjouter } from './edition.js';
 import { abonnerModifications, supprimerElement, aplatirOrganigramme } from './modifications.js';
-import { modifierCommunication, supprimerDossier, ouvrirPersonne, ouvrirSquad, ouvrirDocument, ouvrirQuestion, ouvrirReferent, retirerReferent, estReferent, ouvrirAffectation, affecter, ouvrirRendezVous } from './edition-contenus.js';
+import { modifierCommunication, supprimerDossier, ouvrirPersonne, ouvrirSquad, ouvrirDocument, ouvrirQuestion, ouvrirReferent, retirerReferent, estReferent, ouvrirRendezVous } from './edition-contenus.js';
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
 import { kiosque, dossiersDepuisCommunications, noteOrigine } from './kiosque.js';
 import { lecteur } from './lecteur.js';
 import { agenda } from './agenda.js';
 import { chargerCommunications } from './communications.js';
+import { demandesPartagees, envoyerDemande } from './demandes.js';
 import { ouvrirEditeur } from './editeur.js';
 import { creditsCommunications } from './credits.js';
 
@@ -186,25 +187,18 @@ function referentsDuBloc(bloc) {
 }
 
 /* -------------------------------------------------------------------------
-   4. Le pôle en un coup d'œil : les équipes, les référents, les porteurs
+   4. Le pôle en un coup d'œil : les équipes, les référents
 
-   Trois blocs, un seul geste — on ouvre une tuile :
+   Deux blocs :
      - « Les équipes » : une tuile par squad — son lead, ses visages, ses
        appareils — qui s'ouvre sur place, une à la fois, sur ses membres ;
      - « Les référents » : les personnes à solliciter en premier, sans
-       plus : le pôle a des référents, pas un référent par compétence ;
-     - « Par porteur » : une tuile par appareil — sa photo, ses gens —
-       qui s'ouvre de même sur les personnes qui y travaillent.
+       plus — le pôle a des référents, pas un référent par compétence —,
+       chacun avec l'appareil qu'il suit.
    Les chiffres du pôle tiennent en une ligne, au-dessus. En mode édition,
    l'organigramme du pôle se modifie ici même : personnes, squads,
-   référents, affectation aux porteurs.
+   référents.
    ------------------------------------------------------------------------- */
-
-function porteursDuPole(flotte, code) {
-  verifierForme(flotte, { flotte: 'tableau' }, 'flotte.json');
-  return flotte.flotte.filter((a) => a && typeof a === 'object'
-    && (Array.isArray(a.poles) ? a.poles : []).some((p) => texte(p).toUpperCase() === code));
-}
 
 /* Les documents du pôle : ceux que documents.json rattache au pôle
    (`pole`), et, à défaut, ceux dont le porteur est un membre du pôle. */
@@ -220,32 +214,6 @@ function documentsDuPole(docs, code, membres) {
 function rangDe(p) { return estLead(p) ? 0 : texte(p.role) === 'responsable' ? 1 : 2; }
 function parRang(a, b) {
   return rangDe(a) - rangDe(b) || texte(a.nom).localeCompare(texte(b.nom), 'fr', { numeric: true });
-}
-
-/**
- * Les appareils du pôle, avec leurs gens : d'abord ceux que flotte.json
- * rattache au pôle — même quand personne n'y est encore affecté —, puis
- * les autres codes que les membres déclarent. Le périmètre transverse
- * n'est pas un porteur.
- */
-function gensParPorteur(bloc, flotte) {
-  const parCode = new Map();
-  for (const m of membresDuBloc(bloc)) {
-    const code = porteurDe(m).toUpperCase();
-    if (!code || code === TRANSVERSE) continue;
-    if (!parCode.has(code)) parCode.set(code, []);
-    parCode.get(code).push(m);
-  }
-  const groupes = [];
-  const vus = new Set();
-  const ajouter = (code, meme) => {
-    if (vus.has(code) || (!parCode.has(code) && !meme)) return;
-    vus.add(code);
-    groupes.push({ code, gens: (parCode.get(code) || []).slice().sort(parRang) });
-  };
-  if (flotte) porteursDuPole(flotte, texte(bloc.pole).toUpperCase()).forEach((a) => ajouter(texte(a.code).toUpperCase(), true));
-  [...parCode.keys()].sort().forEach((code) => ajouter(code, false));
-  return groupes;
 }
 
 /* L'organigramme est indispensable ; la flotte et les documents se passent
@@ -275,10 +243,6 @@ async function chargerAnnuaire(code) {
     membres,
     referents,
     nbReferents: referents.length,
-    parPorteur: gensParPorteur(bloc, laFlotte),
-    /* La fiche de chaque appareil connu : sa photo, son segment. */
-    appareils: new Map(laFlotte ? laFlotte.flotte.filter((a) => a && typeof a === 'object' && texte(a.code))
-      .map((a) => [texte(a.code).toUpperCase(), a]) : []),
     /* Les codes qui ont une fiche sur le tableau de bord. */
     appareilsConnus: new Set(laFlotte ? laFlotte.flotte.filter((a) => a && typeof a === 'object' && texte(a.code))
       .map((a) => texte(a.code).toUpperCase()) : []),
@@ -287,8 +251,8 @@ async function chargerAnnuaire(code) {
 }
 
 /* L'état du bloc survit à un redessin — une modification enregistrée en
-   mode édition redessine la section — : la squad ou le porteur ouvert. */
-const etatCoupOeil = { equipes: '', porteurs: '' };
+   mode édition redessine la section — : la squad ouverte. */
+const etatCoupOeil = { equipes: '' };
 
 /* Six teintes d'équipe dans tokens.css ; au-delà, elles reviennent. Le
    responsable prend la teinte du pôle. */
@@ -343,24 +307,22 @@ function appareilPuce(m, code) {
     : el('span', { class: 'appareil-puce' }, texte(code));
 }
 
-/* La fiche d'un appareil, sur la page des porteurs. */
-function lienPorteur(code) { return 'porteurs.html#porteur=' + encodeURIComponent(texte(code)); }
+/* La fiche d'un appareil, dans la section Porteurs du tableau de bord. */
+function lienPorteur(code) { return 'index.html#porteur=' + encodeURIComponent(texte(code)); }
 
 /* Les commandes d'une personne, en mode édition. Selon l'endroit,
-   « retirer » n'a pas le même sens : de l'organigramme, du titre de
-   référent, ou d'un porteur. */
+   « retirer » n'a pas le même sens : de l'organigramme, ou du titre de
+   référent. */
 function commandesPersonne(m, personne, o) {
   const soi = Object.assign({}, personne, placementDe(m, personne));
   const nom = texte(personne.nom);
   return barreEdition({
     classe: 'barre-edition--compacte',
-    quoi: nom + (o.edition === 'referent' ? ', référent' : (o.edition === 'porteur' ? ', sur le ' + o.porteur : '')),
+    quoi: nom + (o.edition === 'referent' ? ', référent' : ''),
     surModifier: (b) => ouvrirPersonne({ existant: soi, organigramme: m.organigramme, flotte: m.flotte, declencheur: b }),
     surSupprimer: o.edition === 'referent'
       ? () => agir(retirerReferent(soi), '« ' + nom + ' » n’est plus référent.')
-      : o.edition === 'porteur'
-        ? () => agir(affecter(soi, ''), '« ' + nom + ' » ne suit plus le ' + o.porteur + '.')
-        : () => retirer('organigramme', 'personne', texte(personne.id), '« ' + nom + ' » ne figure plus dans l’organigramme.')
+      : () => retirer('organigramme', 'personne', texte(personne.id), '« ' + nom + ' » ne figure plus dans l’organigramme.')
   });
 }
 
@@ -368,12 +330,12 @@ function commandesPersonne(m, personne, o) {
  * Une personne, en carte : ses initiales, son nom (vers sa fiche), son
  * rôle et sa squad, l'étiquette « référent » s'il y a lieu, et l'appareil
  * qu'elle suit.
- * @param {object} o  { rang, entree, edition, porteur, sansAppareil }
+ * @param {object} o  { rang, entree, edition }
  */
 function cartePersonne(pole, m, personne, o) {
   const opt = o || {};
   const squad = m.squadDe.get(personne) || null;
-  const code = opt.sansAppareil ? '' : porteurDe(personne);
+  const code = porteurDe(personne);
   return el('li', {
     class: ['personne-carte', opt.entree ? 'personne-carte--entree' : null],
     dataset: { teinte: teinteDe(m, personne), personne: texte(personne.id) },
@@ -424,8 +386,7 @@ function ligneChiffres(m) {
 /**
  * Une grille de tuiles dont une seule s'ouvre à la fois : son panneau se
  * pose sous la rangée de la tuile (la grille est « dense » : les tuiles
- * suivantes remontent combler la rangée), et se déplie. Les équipes et
- * les porteurs s'ouvrent ainsi, du même geste.
+ * suivantes remontent combler la rangée), et se déplie.
  * @param {{prefixe: string, cleEtat: string, elements: object[], cle: (x) => string,
  *          tuile: (x, idPanneau, surClic) => HTMLElement,
  *          panneau: (x, idPanneau, fermer) => HTMLElement}} o
@@ -654,62 +615,6 @@ function blocReferents(pole, m) {
     el('div', { class: 'coup-oeil__ajouts edition-seulement' }, nommer));
 }
 
-/* --- Par porteur ------------------------------------------------------------- */
-
-/* Un appareil, en tuile : sa photo, son code, son segment, ses gens. */
-function tuilePorteur(m, g, idPanneau, surClic) {
-  const fiche = m.appareils.get(g.code) || null;
-  const photo = fiche ? texte(fiche.photo) : '';
-  const segment = fiche ? texte(fiche.segment) : '';
-  const n = g.gens.length;
-  return el('li', { class: 'equipe equipe--porteur', dataset: { porteur: g.code, teinte: 'pole' } },
-    el('button', {
-      type: 'button', class: 'equipe__tuile', 'aria-expanded': 'false', 'aria-controls': idPanneau,
-      'aria-label': g.code + ', ' + (n ? pluriel(n, 'personne') : 'personne pour le moment') + ' : voir qui y travaille',
-      onClick: surClic
-    },
-      teteTuile(g.code, n),
-      el('span', { class: 'porteur-tuile__corps' },
-        el('span', { class: 'porteur-tuile__vignette', 'aria-hidden': 'true' },
-          photo ? el('img', { src: photo, alt: '', loading: 'lazy', decoding: 'async',
-            onError: (evt) => evt.currentTarget.remove() }) : null),
-        el('span', { class: 'porteur-tuile__segment' }, segment || 'Appareil du pôle')),
-      el('span', { class: 'equipe__pied' },
-        n ? visages(m, g.gens) : el('span', { class: 'equipe__lead--vide' }, 'Personne n’y travaille encore'),
-        el('span', { class: 'equipe__chevron', 'aria-hidden': 'true' }))));
-}
-
-function blocPorteurs(pole, m) {
-  const code = pole.cle;
-  const prefixe = 'porteurs-' + code.toLowerCase();
-  if (!m.parPorteur.length) {
-    return el('section', { class: 'porteurs-pole', 'aria-labelledby': prefixe + '-titre' },
-      teteBloc(prefixe + '-titre', 'Par porteur', null, null),
-      el('p', { class: 'coup-oeil__vide' }, 'Aucun porteur rattaché à ce pôle pour le moment.'));
-  }
-  /* Les appareils les plus suivis d'abord ; à égalité, dans l'ordre de la gamme. */
-  const appareils = m.parPorteur.map((g, i) => ({ g, i }))
-    .sort((a, b) => b.g.gens.length - a.g.gens.length || a.i - b.i).map((x) => x.g);
-  const grille = grilleDepliable({
-    prefixe, cleEtat: 'porteurs', elements: appareils, cle: (g) => g.code,
-    tuile: (g, id, surClic) => tuilePorteur(m, g, id, surClic),
-    panneau: (g, id, fermer) => panneauTuile({
-      id, fermer, titre: g.code, libelle: 'Qui travaille sur le ' + g.code,
-      classe: 'equipe__panneau--porteur', dataset: { porteur: g.code, teinte: 'pole' },
-      resume: g.gens.length ? pluriel(g.gens.length, 'personne') + ' sur cet appareil' : 'Personne n’y est encore affecté',
-      lien: m.appareilsConnus.has(g.code)
-        ? el('a', { class: 'coup-oeil__lien', href: lienPorteur(g.code) }, 'La fiche du ' + g.code, el('span', { 'aria-hidden': 'true' }, ' →'))
-        : null,
-      cartes: g.gens.map((p, i) => cartePersonne(pole, m, p, { rang: i, entree: true, edition: 'porteur', porteur: g.code, sansAppareil: true })),
-      vide: 'Personne du pôle n’y est encore affecté.',
-      pied: boutonAjouter('Affecter quelqu’un au ' + g.code, (b) => ouvrirAffectation({ organigramme: m.organigramme, pole: code, code: g.code, declencheur: b }))
-    })
-  });
-  return el('section', { class: 'porteurs-pole', 'aria-labelledby': prefixe + '-titre' },
-    teteBloc(prefixe + '-titre', 'Par porteur', 'Qui travaille sur quel appareil.', null),
-    grille);
-}
-
 /* --- L'assemblage ------------------------------------------------------------ */
 
 function rendreAnnuaire(pole, m, conteneur) {
@@ -717,8 +622,7 @@ function rendreAnnuaire(pole, m, conteneur) {
     el('div', { class: 'coup-oeil' },
       ligneChiffres(m),
       blocEquipes(pole, m),
-      blocReferents(pole, m),
-      blocPorteurs(pole, m)));
+      blocReferents(pole, m)));
 }
 
 /* -------------------------------------------------------------------------
@@ -841,8 +745,9 @@ function enregistrerDemande(question, contexte, pole) {
   return stockage.ecrire(CLE_STOCKAGE_FAQ, liste);
 }
 
-function ouvrirDemandeExpert(pole, declencheur, texteInitial) {
+async function ouvrirDemandeExpert(pole, declencheur, texteInitial) {
   let champ = null; let contexte = null; let erreur = null;
+  const partage = await demandesPartagees();
   ouvrirModale({
     titre: 'Interroger un expert du pôle ' + pole.cle,
     classe: 'modale--etroite',
@@ -855,9 +760,11 @@ function ouvrirDemandeExpert(pole, declencheur, texteInitial) {
       contexte = el('input', { class: 'champ__controle', id: 'demande-contexte', type: 'text',
         placeholder: 'Document, appareil, référence… (facultatif)' });
       return frag(
-        el('p', { class: 'texte-doux texte-sm sans-marge' },
-          'Votre question rejoint la liste des questions en attente de la base de '
-          + 'connaissances, dans ce navigateur. Aucun envoi réseau n’a lieu.'),
+        el('p', { class: 'texte-doux texte-sm sans-marge' }, partage
+          ? 'Votre question part aux administrateurs du service, avec votre nom et votre pôle : '
+            + 'ils la suivent et vous répondent.'
+          : 'Ce site n’est pas relié à sa feuille Google : votre question reste dans ce navigateur, '
+            + 'personne d’autre ne la verra.'),
         el('div', { class: 'champ' },
           el('label', { class: 'champ__etiquette', for: 'demande-question' }, 'Votre question'),
           champ, erreur),
@@ -870,11 +777,15 @@ function ouvrirDemandeExpert(pole, declencheur, texteInitial) {
       { libelle: 'Envoyer aux experts', variante: 'principal', onClick: () => {
         const q = texte(champ && champ.value);
         if (!q) { if (erreur) erreur.hidden = false; if (champ) champ.focus(); return false; }
-        const ok = enregistrerDemande(q, texte(contexte && contexte.value), pole.cle);
-        toast(ok ? 'Question enregistrée pour les experts du pôle ' + pole.cle + '.'
-                 : 'Ce navigateur refuse le stockage local : la question n’a pas pu être conservée.',
-              ok ? 'succes' : 'alerte');
-        annoncer('Question enregistrée.');
+        const ctx = texte(contexte && contexte.value);
+        enregistrerDemande(q, ctx, pole.cle);
+        envoyerDemande({ question: q, contexte: ctx, pole: pole.cle })
+          .then((envoyee) => {
+            toast(envoyee ? 'Question envoyée aux administrateurs du service.'
+              : 'Question gardée dans ce navigateur : le site n’est pas relié à sa feuille.', envoyee ? 'succes' : 'info');
+            annoncer(envoyee ? 'Question envoyée.' : 'Question enregistrée dans ce navigateur.');
+          })
+          .catch((e) => toast((e && e.message) || 'La question n’a pas pu être envoyée.', 'erreur'));
         return true;
       } }
     ]

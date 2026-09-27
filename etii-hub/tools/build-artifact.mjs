@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (p) => readFileSync(join(RACINE, p), 'utf8');
 
-const PAGES = ['index', 'porteurs', 'etiia', 'etiie', 'etiii',
+const PAGES = ['index', 'etiia', 'etiie', 'etiii',
                'reunions', 'organigramme', 'faq', 'docsearch'];
 const CSS = ['polices', 'tokens', 'base', 'components', 'skin', 'modules'];
 const DONNEES = ['communications', 'reunions', 'organigramme', 'faq',
@@ -172,7 +172,7 @@ if (restant) {
     + `srcdoc ne le résoudrait pas. Élargissez le garde-fou de dataUri().`);
 }
 
-// Toutes les images de assets/img/, une seule fois pour les neuf pages.
+// Toutes les images de assets/img/, une seule fois pour les huit pages.
 function imagesDuSite() {
   const table = {};
   const parcourir = (dossier) => {
@@ -227,7 +227,7 @@ function construirePage(nom) {
 
   // Les six feuilles deviennent un seul bloc de style intégré. Le style
   // n'est pas recopié ici : le jeton est remplacé par la coquille au moment
-  // de poser le srcdoc, sinon les neuf pages porteraient neuf copies de la
+  // de poser le srcdoc, sinon les huit pages porteraient huit copies de la
   // même feuille — plus de 3 Mo.
   html = html.replace(
     /[ \t]*<link rel="stylesheet" href="assets\/css\/[a-z]+\.css">\n?/g, '');
@@ -326,7 +326,7 @@ const coquille = `<meta charset="utf-8">
 <script>
 (function () {
   var PAGES = ${json(pagesAssemblees)};
-  // La feuille de style, une seule fois pour les neuf pages.
+  // La feuille de style, une seule fois pour les huit pages.
   var CSS = ${json(cssIntegre)};
   // Les jeux de données et les images, une seule fois : chaque page les lit
   // chez son parent (data.js, ui.js). Même origine, pas de copie.
@@ -341,18 +341,10 @@ const coquille = `<meta charset="utf-8">
     return m && PAGES[m[1]] ? m[1] : null;
   }
 
-  // La fiche d'un porteur vit sur sa page : un ancien lien
-  // « index.html#porteur=H160 » (celui des espaces de pôle) y mène. Sur le
-  // site servi, c'est index.js qui fait ce renvoi ; ici, la coquille.
-  function pageCible(nom, ancre) {
-    return nom === 'index' && /^#porteur=/.test(ancre || '') && PAGES.porteurs ? 'porteurs' : nom;
-  }
-
   function afficher(nom, ancre) {
     if (!PAGES[nom]) nom = 'index';
-    ancre = ancre && ancre.charAt(0) === '#' ? ancre : '';
-    nom = pageCible(nom, ancre);
     courante = nom;
+    ancre = ancre && ancre.charAt(0) === '#' ? ancre : '';
     try { history.replaceState(null, '', '#' + nom + ancre); } catch (e) {}
     // Fonction de remplacement, et non chaîne : un « $& » dans la feuille
     // serait interprété par String.replace s'il s'agissait d'une chaîne.
@@ -404,7 +396,6 @@ const coquille = `<meta charset="utf-8">
       evt.preventDefault();
       var i = href.indexOf('#');
       var ancre = i >= 0 ? href.slice(i) : '';
-      nom = pageCible(nom, ancre);
       if (nom !== courante) { afficher(nom, ancre); return; }
       // Même page, autre ancre : la page suit son adresse (hashchange).
       if (ancre) { try { cadre.contentWindow.location.hash = ancre; } catch (e) {} }

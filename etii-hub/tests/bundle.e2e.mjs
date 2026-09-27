@@ -4,7 +4,7 @@
 //
 // Ouvre le fichier en file://, SANS serveur : c'est tout l'intérêt de cette
 // construction. Vérifie le rendu, la composition de chaque page et la
-// navigation entre les neuf pages.
+// navigation entre les huit pages.
 
 import { chromium } from 'playwright';
 import { statSync } from 'node:fs';
@@ -30,7 +30,7 @@ const f = page.frameLocator('#cadre');
 
 // Le plafond de publication est de 16 Mo ; la marge de 15 Mo est la règle du
 // projet. Le poids est surtout fait d'images intégrées, et un module ajouté à
-// palette.js — chargée par les neuf pages — peut faire entrer les photos d'un
+// palette.js — chargée par les huit pages — peut faire entrer les photos d'un
 // jeu dans des pages qui ne les affichent pas : mesuré une fois à +2,8 Mo.
 // Sans ce contrôle, le dépassement ne se voit qu'au refus de publication.
 console.log('== Poids du fichier autonome ==');
@@ -68,17 +68,11 @@ t('cliquer une entrée la lit à droite',
   (await secondeEntree.getAttribute('aria-current')) === 'true'
   && (await f.locator('.kiosque__lecture-titre').innerText()).trim() === titreCarte);
 
-console.log('\n== L\'aperçu des porteurs ==');
-// Le tableau de bord n'en garde qu'une pellicule, qui mène à leur page.
-t('la pellicule des vingt-trois appareils est rendue', (await f.locator('.apercu-porteurs__vignette').count()) === 23);
-t('ses photos sont intégrées', /^data:image/.test((await f.locator('.apercu-porteurs__photo').first().getAttribute('src')) || ''));
-t('pas de fiche sur le tableau de bord', (await f.locator('.porteur-fiche, .porteur-carte').count()) === 0);
-
-console.log('\n== La page des porteurs ==');
-await f.locator('nav.site-nav a[href="porteurs.html"]').first().click();
-await page.waitForTimeout(2200);
-t('porteurs.html s\'ouvre depuis la barre', /Porteurs/.test(await f.locator('h1').innerText()));
-t('les vingt-trois appareils sont présents', (await f.locator('.porteur-carte').count()) === 23);
+console.log('\n== Les porteurs, dans leur section ==');
+// Pas de page à eux : toute la flotte, rangée par marché, sur le tableau de bord.
+t('la barre ne propose pas de page Porteurs', (await f.locator('nav.site-nav a[href="porteurs.html"]').count()) === 0);
+t('les vingt-trois appareils sont présents', (await f.locator('#zone-flotte .porteur-carte').count()) === 23);
+t('leurs photos sont intégrées', /^data:image/.test((await f.locator('#zone-flotte .porteur-carte__photo').first().getAttribute('src')) || ''));
 const intertitres = await f.locator('.porteurs__marche-titre').evaluateAll((l) => l.map((h) => h.firstChild.textContent.trim()));
 t('les trois marchés, dans l\'ordre', intertitres.join(' · ') === 'Civil · Militaire · Prototype', intertitres.join(' · '));
 
@@ -95,7 +89,7 @@ const apres = await f.locator('.porteur-fiche').innerText();
 t('la fiche se lit en chiffres : l’essentiel, la taille réelle, le programme',
   /L’essentiel/.test(apres) && (await f.locator('.porteur-tuile').count()) >= 4 && (await f.locator('.porteur-fiche .gabarit svg').count()) === 1 && /Le programme/.test(apres));
 t('ni source en ligne ni lien vers l’extérieur', (await f.locator('.porteur-fiche a[href^="http"]').count()) === 0 && !/https?:/.test(apres.replace(/Sources et fiabilité[\s\S]*$/, '')));
-t('ce que le service seul peut dire est « à renseigner »', /Pour le service[\s\S]*à renseigner/.test(apres));
+t('ni « Pour le service », ni « Lire la présentation »', !/Pour le service|Lire la présentation/.test(apres));
 await f.locator('body').click({ position: { x: 5, y: 300 } });
 await page.keyboard.press('ArrowRight');
 await page.waitForTimeout(700);
@@ -103,8 +97,6 @@ t('→ passe au suivant, dans le cadre', (await f.locator('.porteur-fiche__code'
 await f.locator('.porteurs-bandeau__retour').click();
 await page.waitForTimeout(900);
 t('« Tous les porteurs » revient à la galerie', (await f.locator('.porteur-fiche').count()) === 0 || await f.locator('.porteurs__vue--fiche').isHidden());
-await f.locator('nav.site-nav a[href="index.html"]').first().click();
-await page.waitForTimeout(2200);
 
 console.log('\n== Le suivi OTQ / OTD ==');
 const zoneOtq = f.locator('#zone-otq');
@@ -121,11 +113,10 @@ t('sa communication est en tête', (await f.locator('.kiosque').count()) === 1);
 t('son sommaire a cinq entrées (dont À venir)', (await f.locator('.sous-nav a').count()) === 5);
 t('plus de section Réunions ni Porteurs du pôle', (await f.locator('#section-reunions, #zone-reunions, #section-porteurs, #zone-porteurs').count()) === 0);
 t('ses chiffres sont calculés, en une ligne', (await f.locator('#zone-reperes .coup-oeil__chiffre').count()) === 4);
-t('les équipes, les référents et les porteurs sont rendus, sans champ de recherche',
-  (await f.locator('#zone-reperes .qui__champ').count()) === 0
+t('les équipes et les référents sont rendus, sans champ de recherche ni « Par porteur »',
+  (await f.locator('#zone-reperes .qui__champ, #zone-reperes .porteurs-pole').count()) === 0
   && (await f.locator('#zone-reperes .equipes .equipe__tuile').count()) > 3
-  && (await f.locator('#zone-reperes .referents__gens .personne-carte').count()) > 3
-  && (await f.locator('#zone-reperes .porteurs-pole .equipe__tuile').count()) > 3);
+  && (await f.locator('#zone-reperes .referents__gens .personne-carte').count()) > 3);
 t('les référents sont des cartes : initiales, nom et rôle, sans portrait',
   (await f.locator('#zone-reperes .referents__gens .personne-carte .avatar').count()) > 3
   && (await f.locator('#zone-reperes .referents__gens .personne-carte__role').count()) > 3
@@ -147,9 +138,8 @@ const menus = await f.locator('#ds-metier, #ds-porteur, #ds-pole').count();
 t('un seul filtre, le pôle, choisi d’un clic', menus === 1
   && (await f.locator('#ds-pole input[type="radio"]').count()) === 4, `(${menus})`);
 
-console.log('\n== Les neuf pages s\'ouvrent ==');
-for (const [lien, attendu] of [['etiie.html', 'ETIIE'], ['etiii.html', 'ETIII'],
-                               ['porteurs.html', 'Porteurs'], ['index.html', 'ETII']]) {
+console.log('\n== Les huit pages s\'ouvrent ==');
+for (const [lien, attendu] of [['etiie.html', 'ETIIE'], ['etiii.html', 'ETIII'], ['index.html', 'ETII']]) {
   await f.locator(`nav.site-nav a[href="${lien}"]`).first().click();
   await page.waitForTimeout(1900);
   t(lien, new RegExp(attendu).test(await f.locator('h1').innerText()));
@@ -242,7 +232,7 @@ console.log('\n== Un lien avec ancre garde son ancre ==');
 await f.locator('nav.site-nav a[href="etiia.html"]').first().click();
 await page.waitForTimeout(1900);
 // Une squad s'ouvre sur ses membres ; la puce d'appareil d'une carte mène
-// à la fiche du porteur, sur la page des porteurs (« porteurs.html#porteur=… »).
+// à la fiche du porteur, dans la section du tableau de bord (« index.html#porteur=… »).
 const tuileEquipe = f.locator('#zone-reperes .equipe__tuile').first();
 await tuileEquipe.evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
 await tuileEquipe.click();
@@ -252,10 +242,10 @@ const codeLien = (await lienPorteur.innerText()).trim();
 await lienPorteur.evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
 await lienPorteur.click();
 await page.waitForTimeout(2200);
-t(`« ${codeLien} » dans l’équipe d’un pôle ouvre sa fiche sur la page des porteurs`,
+t(`« ${codeLien} » dans l’équipe d’un pôle ouvre sa fiche sur le tableau de bord`,
   (await f.locator('.porteur-fiche').count()) === 1
   && (await f.locator('.porteur-fiche__code').innerText()).trim() === codeLien
-  && /Porteurs/.test(await f.locator('h1').innerText()), `(${codeLien})`);
+  && /ETII/.test(await f.locator('h1').innerText()), `(${codeLien})`);
 
 console.log('\n== Rechercher partout, depuis une page qui n\'affiche pas la flotte ==');
 // La version autonome n'embarque par page que les jeux que ses modules

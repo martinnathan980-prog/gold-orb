@@ -49,9 +49,8 @@ Puis ouvrir <http://localhost:8000>.
 
 | Page | Rôle |
 |---|---|
-| `index.html` | Tableau de bord : Communication center (kiosque + éditeur), À venir (les prochains rendez-vous), Porteurs (un aperçu qui mène à leur page), Suivi OTQ / OTD |
-| `porteurs.html` | **Les porteurs** : la gamme en photos, la fiche de chaque appareil, sa taille réelle, la comparaison de deux ou trois (voir ci-dessous) |
-| `etiia.html`, `etiie.html`, `etiii.html` | L'espace d'un pôle : sa communication, le pôle en un coup d'œil (« Qui peut m'aider ? », les équipes, les référents), ses documents récents, sa FAQ (voir ci-dessous) |
+| `index.html` | Tableau de bord : Communication center (kiosque + éditeur), À venir (les prochains rendez-vous), **Porteurs** (toute la flotte par marché, la fiche de chaque appareil, sa taille réelle, la comparaison — voir ci-dessous), Suivi OTQ / OTD |
+| `etiia.html`, `etiie.html`, `etiii.html` | L'espace d'un pôle : sa communication, ses rendez-vous, le pôle en un coup d'œil (les équipes, les référents), ses documents récents, sa FAQ (voir ci-dessous) |
 | `reunions.html` | Les comptes-rendus de réunion, par périmètre |
 | `organigramme.html` | Équipes, rôles, compétences ; hors de la barre du site, on y arrive depuis un pôle |
 | `faq.html` | Base de connaissances |
@@ -80,27 +79,26 @@ fichiers de `assets/data/` pour ce pôle.
 | Section | Source | Ce qu'elle montre |
 |---|---|---|
 | Communication | `communications.json` (`pole`) | Le kiosque du pôle, identique à celui du tableau de bord : chaque pôle y a au moins une annonce riche en blocs (image d'un de ses porteurs avec son crédit, chiffres clés, courbe, pastilles, encadré) — des données d'exemple |
-| Le pôle en un coup d'œil | `organigramme.json`, `flotte.json`, `documents.json` | Ses chiffres en une ligne (personnes, squads, référents, documents en vigueur), puis trois gestes. **Qui peut m'aider ?** : un champ qui répond pendant la frappe — un nom, un rôle, une compétence, un appareil — par des cartes de personnes (initiales teintées de la squad, rôle, squad, titres de référent, appareil suivi vers sa fiche), le mot cherché marqué, les référents en tête ; un code d'appareil exact ramène ceux qui le suivent, une compétence exacte ceux qui la pratiquent ; des suggestions d'un clic (les compétences et les appareils les plus partagés du pôle). **Les équipes** : le responsable, puis une tuile par squad — son lead, six visages côte à côte puis « +N », son effectif, ses appareils — qui s'ouvre sur place, une à la fois, sur ses membres ; « L'organigramme complet » mène à la page du service. **Les référents** : l'index des compétences qui ont un référent ; un clic, ou la souris qui s'y attarde, montre qui solliciter, en bandeau sous l'index. Au téléphone, suggestions et index défilent de côté, le bord estompé tant qu'il reste à voir. Chaque carte mène à la fiche de la personne. En mode édition, tout l'organigramme du pôle s'y modifie : personnes, squads, référents (nommer, retirer), affectation aux porteurs (depuis la recherche d'un appareil ; la rangée « Porteurs du pôle » montre aussi ceux que personne ne suit) |
+| Le pôle en un coup d'œil | `organigramme.json`, `flotte.json`, `documents.json` | Ses chiffres en une ligne (personnes, squads, référents, documents en vigueur), puis deux blocs. **Les équipes** : le responsable, puis une tuile par squad — son lead, six visages côte à côte puis « +N », son effectif, ses appareils — qui s'ouvre sur place, une à la fois, sur ses membres ; « L'organigramme complet » mène à la page du service. **Les référents** : les personnes à solliciter en premier, en cartes (initiales, nom, rôle, squad, l'appareil qu'elles suivent, vers sa fiche) — sans compétence : le pôle a des référents, pas un référent par compétence. Chaque carte mène à la fiche de la personne. En mode édition, tout l'organigramme du pôle s'y modifie : personnes (dont l'appareil suivi), squads, référents (nommer, retirer) |
 | Documents du pôle | `documents.json` (`pole`, `porteur`) | Les huit documents en vigueur les plus récents du pôle, puis « Tous les documents du pôle (N) » vers la recherche filtrée |
 | Questions fréquentes | `faq.json` (`pole`) | Les questions du pôle puis celles du service, et « Interroger un expert » |
 
 Un pôle n'a pas de section Réunions : ce qui vaut d'être dit se publie en
 communication. Les comptes-rendus restent lisibles dans `reunions.html`.
 Il n'a pas non plus de galerie de porteurs : tout le pôle travaille sur les
-porteurs du service, qui ont leur page.
+porteurs du service, qui se regardent sur le tableau de bord.
 
-### La page des porteurs
+### Les porteurs (section du tableau de bord)
 
-Un seul écran pour regarder la flotte (`porteurs.html`, `assets/js/porteurs.js`,
-`fiche-porteur.js`, `gamme.js`, `gabarit.js`). La vue ouverte est portée par
-l'adresse, donc partageable :
+Toute la flotte, dans la section « Porteurs » d'`index.html`
+(`assets/js/porteurs.js`, `fiche-porteur.js`, `gamme.js`, `gabarit.js`). La
+vue ouverte est portée par l'adresse, donc partageable :
 
 | Adresse | Ce qu'on voit |
 |---|---|
-| `porteurs.html` | La galerie, marché par marché (Civil, Militaire, Prototype), trois cartes par rangée : la photo, le code, le segment, et trois chiffres (masse, places, vitesse) |
-| `porteurs.html#marche=civil&tri=masse` | La galerie filtrée par marché (le bandeau sous le titre) et triée : gamme, masse, longueur, vitesse, mise en service |
-| `porteurs.html#porteur=H160` | La fiche d'un appareil |
-| `porteurs.html#comparer=H125&comparer=H160` | Deux ou trois appareils côte à côte |
+| `index.html` | La galerie, marché par marché (Civil, Militaire, Prototype), trois cartes par rangée : la photo, le code, le segment, et trois chiffres (masse, places, vitesse) |
+| `index.html#porteur=H160` | La fiche d'un appareil, à la place de la galerie ; au-dessus, le retour, le précédent, le suivant |
+| `index.html#comparer=H125&comparer=H160` | Deux ou trois appareils côte à côte |
 
 **La fiche** se lit d'abord en chiffres : la photo en grand avec le code, le
 marché, la phase et depuis quand ; une phrase d'accroche ; **l'essentiel** —

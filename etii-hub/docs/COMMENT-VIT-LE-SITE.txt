@@ -1,0 +1,235 @@
+================================================================================
+  ETII HUB — COMMENT LE SITE VIT
+  Où va ce qu'on modifie, qui le voit, ce qui est gardé. Expliqué simplement.
+================================================================================
+
+Pour installer le site : docs/INSTALLER-SUR-GOOGLE.txt (étapes 1 à 9).
+Ce document-ci explique ce qui se passe ENSUITE, tous les jours.
+
+
+--------------------------------------------------------------------------------
+ 1. LE SITE, C'EST TROIS BOÎTES
+--------------------------------------------------------------------------------
+
+  Imaginez un classeur d'école avec trois choses dedans.
+
+  BOÎTE 1 — Le livre imprimé : le fichier etii-hub.html, sur votre Drive.
+     C'est le site lui-même : les pages, les couleurs, les photos, et tout
+     le contenu de départ (les porteurs, l'organigramme, la FAQ, les
+     communications d'exemple…).
+     Comme un livre imprimé, personne ne l'écrit depuis le site. Il ne
+     change que si VOUS déposez une nouvelle version du fichier sur Drive
+     (quand je vous en envoie une).
+
+  BOÎTE 2 — Le cahier des changements : la feuille « ETII Hub — base ».
+     Chaque fois qu'un éditeur modifie quelque chose dans le site, une
+     ligne s'écrit dans ce cahier. Le site, en s'ouvrant, lit le livre
+     (boîte 1), puis applique par-dessus tout ce qui est écrit dans le
+     cahier. C'est ce que tout le monde voit.
+     Onglets de cette feuille :
+        Éditeurs                qui a le droit de modifier (vous gérez)
+        modifications           le cahier lui-même (n'y touchez pas)
+        Journal complet         l'histoire de tout ce qui a changé
+        Journal · <rubrique>    la même histoire, rubrique par rubrique
+        Questions aux experts   les questions posées dans le site
+
+  BOÎTE 3 — La liste de vos documents : votre classeur de documents.
+     Trois onglets (ETIIA, ETIIE, ETIII), une ligne par document. Le site
+     la LIT à chaque ouverture ; il ne l'écrit JAMAIS. C'est la seule chose
+     que le site va chercher à l'extérieur.
+
+  Et le lien /exec ? C'est la porte d'entrée. Quand quelqu'un l'ouvre,
+  Google prend le livre (boîte 1), le cahier (boîte 2) et la liste des
+  documents (boîte 3), et montre le tout à la personne.
+
+        ┌───────────────────┐   ┌────────────────────────┐   ┌──────────────────┐
+        │ BOÎTE 1           │   │ BOÎTE 2                │   │ BOÎTE 3          │
+        │ etii-hub.html     │   │ « ETII Hub — base »    │   │ Classeur des     │
+        │ (Drive)           │   │ le cahier des          │   │ documents        │
+        │ le site + le      │   │ changements + journal  │   │ ETIIA ETIIE ETIII│
+        │ contenu de départ │   │ + questions aux experts│   │ lu, jamais écrit │
+        └─────────┬─────────┘   └───────────┬────────────┘   └────────┬─────────┘
+                  └────────────────┬────────┴─────────────────────────┘
+                                   ▼
+                    le lien /exec  →  chaque personne voit la même chose
+
+
+--------------------------------------------------------------------------------
+ 2. QUAND QUELQU'UN OUVRE LE SITE
+--------------------------------------------------------------------------------
+
+  1. Il clique sur le lien /exec. Google vérifie qu'il est connecté avec
+     son compte de l'entreprise (sinon : pas d'accès).
+  2. Le site s'affiche avec le livre (boîte 1).
+  3. Il demande à Google : « Qui est-ce ? Peut-il modifier ? Qu'y a-t-il
+     dans le cahier ? Quels documents ? »
+  4. Il applique le cahier par-dessus le livre, et affiche la liste des
+     documents.
+  Résultat : TOUT LE MONDE VOIT LA MÊME CHOSE.
+
+  Si la personne est dans l'onglet « Éditeurs » (ou si c'est vous, le
+  propriétaire), elle voit le bouton « ✎ Modifier ». Sinon, elle lit
+  seulement.
+
+
+--------------------------------------------------------------------------------
+ 3. QUAND JE MODIFIE QUELQUE CHOSE — UN EXEMPLE PAS À PAS
+--------------------------------------------------------------------------------
+
+  Exemple : j'ajoute un rendez-vous « Revue harnais » le 14 octobre.
+
+  1. Je clique « ✎ Modifier ». Un bandeau dit : « Mode édition. Ce que vous
+     ajoutez, modifiez ou supprimez est enregistré pour tous les lecteurs
+     du site. Connecté : moi@… »
+  2. Dans « À venir », je clique « Ajouter un rendez-vous », je remplis,
+     je clique « Enregistrer ».
+  3. Le site envoie le rendez-vous à Google. Google vérifie que je suis
+     bien éditeur (s'il ne me trouve pas dans « Éditeurs », il REFUSE).
+  4. Google écrit :
+       - une ligne dans « modifications » (le cahier) ;
+       - une ligne en haut de « Journal complet » et de « Journal · À venir » :
+         la date, mon adresse, « Ajout », « Revue harnais », les champs.
+  5. Sur MON écran, le rendez-vous apparaît tout de suite.
+  6. Pour les AUTRES : il apparaît dès qu'ils rechargent la page (touche F5),
+     ou en changeant de page du site (au plus tard une minute après).
+     Le site ne « pousse » rien sur les écrans déjà ouverts.
+
+  C'est pareil pour tout ce qui se modifie dans le site :
+     communications (et leurs photos, par leur adresse), alertes du
+     bandeau, rendez-vous, porteurs, personnes, squads, référents,
+     documents, questions de la FAQ, comptes rendus.
+
+
+--------------------------------------------------------------------------------
+ 4. LES QUESTIONS QU'ON SE POSE — ET LES RÉPONSES
+--------------------------------------------------------------------------------
+
+  « Est-ce que c'est gardé en mémoire ? »
+     Oui, pour toujours, dans la feuille « ETII Hub — base ». Ni un
+     redémarrage, ni un changement d'ordinateur, ni une nouvelle version
+     du site ne l'effacent.
+
+  « Est-ce que tout le monde le voit ? »
+     Oui : tous ceux qui ouvrent le lien /exec voient la même chose,
+     après avoir rechargé la page.
+
+  « Qui peut modifier ? »
+     Les adresses de l'onglet « Éditeurs », et vous, propriétaire. Pour
+     donner le droit : ajoutez l'adresse. Pour le retirer : supprimez la
+     ligne. Effet immédiat, au prochain chargement de la personne.
+
+  « Et si je me trompe ? »
+     - Je modifie à nouveau, ou je supprime, depuis le site : c'est tout.
+     - Le journal garde la trace de chaque geste (qui, quand, avant →
+       après). Dans le site, « Historique » (visible des éditeurs) le
+       montre aussi.
+     - En dernier recours : « Fichier » › « Historique des versions » de la
+       feuille remet la feuille dans l'état d'un jour passé.
+
+  « Si je supprime un élément d'origine (un porteur du livre) ? »
+     Le livre n'est pas touché : le cahier note « supprimé », et le site ne
+     le montre plus à personne. Supprimer la ligne correspondante dans
+     l'onglet « modifications » le fait revenir tel qu'à l'origine.
+
+  « Si deux personnes modifient la même chose en même temps ? »
+     Google les fait passer l'une après l'autre. La dernière enregistrée
+     l'emporte ; le journal garde les deux.
+
+  « Si vous m'envoyez une nouvelle version du site ? »
+     Vous remplacez le fichier sur Drive (« Gérer les versions » ›
+     « Importer une nouvelle version »). TOUT ce qui a été modifié dans le
+     site est conservé : c'est dans la feuille, pas dans le fichier.
+
+  « Les documents : où je les change ? »
+     Dans VOTRE classeur de documents (boîte 3), directement. Le site le
+     relit à chaque ouverture : une ligne ajoutée dans le classeur apparaît
+     au prochain chargement, pour tout le monde.
+     Le site sait aussi ajouter ou corriger un document (bouton
+     « Modifier ») ; ce changement-là est gardé dans le cahier (boîte 2),
+     PAS dans votre classeur. Conseil : pour les documents, travaillez
+     toujours dans le classeur — une seule source, jamais de doute.
+
+  « “Interroger un expert”, ça va où ? »
+     Une ligne en haut de l'onglet « Questions aux experts » : la date,
+     l'adresse de la personne, son pôle, sa question, le contexte, et le
+     statut « À traiter ». Tout lecteur peut poser une question. Les
+     administrateurs la suivent : ils remplissent les colonnes Statut et
+     Réponse. Une bonne réponse peut devenir une question de la FAQ,
+     ajoutée depuis le site.
+
+  « Les photos d'une communication ? »
+     Une communication montre une image par son ADRESSE (un lien). Le
+     cahier garde l'adresse, pas l'image. L'image doit donc être à une
+     adresse que tout le monde peut ouvrir.
+
+  « Le suivi OTQ / OTD ? »
+     Pour l'instant, il montre des données d'exemple, annoncées comme
+     telles. Il ne se modifie pas dans le site : on le branchera plus tard
+     sur votre feuille de suivi (docs/OTQ-GOOGLE-SHEETS.md).
+
+  « Et ce qui ne concerne que moi ? »
+     Le thème clair / sombre et vos questions « en attente » sur la page
+     FAQ restent dans VOTRE navigateur. Ils ne changent rien pour les
+     autres.
+
+
+--------------------------------------------------------------------------------
+ 5. LE TABLEAU À GARDER SOUS LA MAIN
+--------------------------------------------------------------------------------
+
+  Je change…                         Rangé où ?                        Qui le voit ?   Quand ?
+  ---------------------------------  --------------------------------  --------------  --------------------------
+  une communication, une alerte      feuille « base » › modifications  tout le monde   au rechargement
+  un rendez-vous (À venir)           feuille « base » › modifications  tout le monde   au rechargement
+  un porteur, sa fiche               feuille « base » › modifications  tout le monde   au rechargement
+  une personne, une squad,           feuille « base » › modifications  tout le monde   au rechargement
+  un référent
+  une question de la FAQ             feuille « base » › modifications  tout le monde   au rechargement
+  un document (conseillé : ici)      VOTRE classeur de documents       tout le monde   au rechargement
+  une question « Interroger          feuille « base » ›                les adminis-    tout de suite, dans
+  un expert »                        Questions aux experts             trateurs        la feuille
+  qui peut modifier                  feuille « base » › Éditeurs       —               au rechargement
+  le thème clair / sombre            votre navigateur                  vous seul       tout de suite
+  le design, les pages               le fichier etii-hub.html (Drive)  tout le monde   quand vous le remplacez
+
+
+--------------------------------------------------------------------------------
+ 6. ATTENTION : TROIS FAÇONS D'OUVRIR LE SITE, UNE SEULE EST LA VRAIE
+--------------------------------------------------------------------------------
+
+  1. LE LIEN /exec (Google) — LA VRAIE.
+     Tout ce qui est expliqué ci-dessus vaut pour lui seul. C'est ce lien
+     qu'on donne à l'équipe.
+
+  2. Le lien de l'aperçu que je vous envoie (claude.ai).
+     Il sert à regarder et à tester le design. Ce qu'on y modifie reste
+     dans l'aperçu : ça n'arrive PAS dans votre feuille Google.
+
+  3. Le fichier etii-hub.html ouvert en double-cliquant dessus.
+     Ce qu'on y modifie reste dans CE navigateur, sur CET ordinateur. Le
+     bandeau du mode édition le dit : « enregistré dans ce navigateur
+     seulement ».
+
+
+--------------------------------------------------------------------------------
+ 7. POUR DEMAIN — CE QU'IL ME FAUT POUR VOS DOCUMENTS
+--------------------------------------------------------------------------------
+
+  Pour coller exactement à votre classeur, envoyez-moi :
+
+  1. Le NOM EXACT des trois onglets (par exemple « ETIIA », « ETIIE »,
+     « ETIII »).
+  2. La LIGNE 1 de chaque onglet, telle quelle : les titres de colonnes,
+     dans l'ordre (par exemple : Titre | Référence | Type | Mis par |
+     Date | Lien).
+  3. Laquelle de ces colonnes dit « la personne qui a mis le document »,
+     et laquelle est la date (et son format : 15/07/2026, juillet 2026…).
+  4. Une ligne d'exemple, avec des valeurs inventées si le contenu est
+     confidentiel (seule la FORME compte : un lien Drive ? un chemin ?).
+  5. S'il y a une colonne qui ne doit PAS apparaître sur le site.
+
+  Je règle alors le site pour qu'il lise vos colonnes telles quelles —
+  vous n'aurez rien à renommer.
+
+  Ensuite, l'installation se fait en suivant docs/INSTALLER-SUR-GOOGLE.txt,
+  étapes 1 à 9 (20 à 30 minutes, une seule fois).

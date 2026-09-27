@@ -885,8 +885,8 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 .kiosque__glyphe { flex: none; inline-size: 1.2em; text-align: center; font-family: var(--police-mono); }
 
 /* -------------------------------------------------------------------------
-   3. Les porteurs (porteurs.html, porteurs.js, fiche-porteur.js,
-      gabarit.js) et leur aperçu sur le tableau de bord.
+   3. Les porteurs (section du tableau de bord : porteurs.js,
+      fiche-porteur.js, gabarit.js).
       La galerie en cartes photographiques, la fiche qui se lit d'abord en
       grands chiffres, le dessin à l'échelle, le comparateur. Chaque marché
       a sa teinte (--marche-*), toujours accompagnée de son nom.
@@ -897,31 +897,18 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
 [data-marche="militaire"], [data-categorie="militaire"] { --porteur-teinte: var(--marche-militaire); }
 [data-marche="prototype"], [data-categorie="prototype"] { --porteur-teinte: var(--marche-prototype); }
 
-/* --- La une de la page : le résumé sous l'ornement, le Fenestron -------- */
+/* --- Le bandeau d'une fiche : le retour, le précédent, le suivant ------- */
 
-.page-une__sous-titre {
-  margin: 0;
-  max-inline-size: 62ch;
-  text-wrap: balance;
-  font-family: var(--police-titre);
-  font-size: clamp(1.05rem, 0.6vw + 0.95rem, 1.3rem);
-  font-style: italic;
-  font-weight: 300;
-  line-height: 1.4;
-  text-align: center;
-  color: var(--une-texte-doux);
+/* Dans la section du tableau de bord, le bandeau se pose sur le papier,
+   au-dessus de la fiche : ses encres sont celles de la page. */
+.porteurs-bandeau__cadre--section {
+  --une-texte: var(--texte);
+  --une-texte-doux: var(--texte-doux);
+  --entete-bordure: var(--bordure);
+  border-block: 1px solid var(--bordure-douce);
 }
-.page-une__rotor--fenestron { inline-size: min(40rem, 110vw); }
-.page-une__stators path { stroke-dasharray: 2 5; }
-
-/* Sur une fiche ou une comparaison, la une se fait discrète : le titre
-   rapetisse, l'ornement et le résumé s'effacent ; l'appareil prend la
-   scène (porteurs-page.js pose data-vue). */
-.page-tete--porteurs:is([data-vue="fiche"], [data-vue="comparer"]) .page-une { padding-block: var(--e-5) var(--e-1); gap: 0; }
-.page-tete--porteurs:is([data-vue="fiche"], [data-vue="comparer"]) .page-une h1 { font-size: clamp(1.9rem, 1.6vw + 1.4rem, 2.6rem); }
-.page-tete--porteurs:is([data-vue="fiche"], [data-vue="comparer"]) :is(.page-une__ornement, .page-une__sous-titre, .page-une__rotor) { display: none; }
-
-/* --- Le bandeau collant : les marchés, puis la navigation d'une fiche --- */
+.porteurs-bandeau__cadre--section[hidden] { display: none; }
+.porteurs-bandeau__cadre--section .porteurs-bandeau { padding-inline: 0; }
 
 .porteurs-bandeau {
   --curseur-x: 0px;
@@ -1009,10 +996,6 @@ ul.kiosque__alertes-liste { padding-inline-start: var(--e-4); }
   .porteurs-bandeau__pas { gap: var(--e-3); }
 }
 
-/* --- La page ------------------------------------------------------------ */
-
-.porteurs__page { padding-block: var(--e-8) var(--e-12); }
-body > main:has(.porteurs__page) { padding-block-end: 0; }
 .porteurs { position: relative; }
 .porteurs__vue[hidden] { display: none; }
 .porteurs__avertissement {
@@ -1359,46 +1342,33 @@ body > main:has(.porteurs__page) { padding-block-end: 0; }
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--e-4) var(--e-8);
-  align-items: start;
+  align-items: center;
 }
-.porteur-fiche__propos { display: flex; flex-direction: column; gap: var(--e-3); min-inline-size: 0; }
+/* L'accroche prend toute la largeur de la fiche ; dessous, l'ancien nom à
+   gauche, les commandes à droite. */
 .porteur-fiche__accroche {
+  grid-column: 1 / -1;
   margin: 0;
-  max-inline-size: 46ch;
   font-family: var(--police-titre);
   font-size: clamp(1.3rem, 1vw + 1rem, 1.75rem);
   font-style: italic;
   font-weight: 300;
   line-height: 1.3;
-  text-wrap: balance;
+  text-wrap: pretty;
   color: var(--texte);
 }
 .porteur-fiche__ancien { margin: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
 .porteur-fiche__ancien span { color: var(--texte-faible); }
-.porteur-fiche__presentation { max-inline-size: var(--largeur-texte); font-size: var(--texte-sm); line-height: 1.6; color: var(--texte-doux); }
-.porteur-fiche__presentation summary,
 .porteur-faits__encore summary,
 .porteur-sources__resume {
   cursor: pointer;
   list-style: none;
 }
-.porteur-fiche__presentation summary::-webkit-details-marker,
 .porteur-faits__encore summary::-webkit-details-marker,
 .porteur-fait__plie summary::-webkit-details-marker,
 .porteur-sources__resume::-webkit-details-marker { display: none; }
-.porteur-fiche__presentation summary {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e-1);
-  font-size: var(--texte-sm);
-  font-weight: var(--graisse-moyenne);
-  color: var(--texte-accent);
-}
-.porteur-fiche__presentation summary::after,
 .porteur-faits__encore summary::after { content: "▾"; font-size: 0.8em; transition: transform var(--duree) var(--courbe); }
-.porteur-fiche__presentation[open] summary::after,
 .porteur-faits__encore[open] summary::after { transform: rotate(180deg); }
-.porteur-fiche__presentation p { margin-block-start: var(--e-2); }
 .porteur-fiche__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--e-2); }
 @media (max-width: 48rem) {
   .porteur-fiche__intro { grid-template-columns: minmax(0, 1fr); }
@@ -1530,17 +1500,16 @@ body > main:has(.porteurs__page) { padding-block-end: 0; }
 }
 @keyframes porteur-jauge { from { inset-inline-start: 0; opacity: 0; } }
 
-/* Deux blocs côte à côte : le dessin et la frise ; puis le « saviez-vous »
-   et le service. L'un sous l'autre sur un écran étroit. */
+/* Deux blocs côte à côte : le dessin et la frise. L'un sous l'autre sur un
+   écran étroit. */
 .porteur-fiche__duo {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(15rem, 20rem);
   gap: var(--e-10);
   align-items: start;
 }
-.porteur-fiche__duo--bas { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 @media (max-width: 60rem) {
-  .porteur-fiche__duo, .porteur-fiche__duo--bas { grid-template-columns: minmax(0, 1fr); gap: var(--e-8); }
+  .porteur-fiche__duo { grid-template-columns: minmax(0, 1fr); gap: var(--e-8); }
 }
 
 /* 3. À l'échelle. */
@@ -1601,13 +1570,17 @@ body > main:has(.porteurs__page) { padding-block-end: 0; }
   .gabarit__etiquette--code { font-size: var(--texte-sm); }
 }
 
-/* 4. Dans le détail : une carte par groupe, en colonnes de journal — les
-   cartes courtes et longues s'emboîtent sans laisser de trou. */
-.porteur-groupes { columns: 3 18rem; column-gap: var(--e-4); }
+/* 4. Dans le détail : une carte par groupe, rangées en grille — deux
+   colonnes égales, les cartes d'une même rangée à la même hauteur. */
+.porteur-groupes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: var(--e-4);
+}
+@media (max-width: 48rem) { .porteur-groupes { grid-template-columns: minmax(0, 1fr); } }
 .porteur-groupe {
   display: block;
-  break-inside: avoid;
-  margin-block-end: var(--e-4);
   padding: var(--e-4) var(--e-5);
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
@@ -1711,15 +1684,9 @@ body > main:has(.porteurs__page) { padding-block-end: 0; }
 .porteur-faits__encore summary { display: inline-flex; gap: var(--e-1); font-size: var(--texte-sm); font-weight: var(--graisse-moyenne); color: var(--texte-accent); }
 .porteur-faits__encore .porteur-faits { margin-block-start: var(--e-3); }
 
-.porteur-service {
-  padding: var(--e-4);
-  background-color: var(--fond-bande);
-  border: 1px solid var(--bordure-douce);
-  border-radius: var(--rayon-lg);
-}
-.porteur-service .porteur-marge__titre { font-size: 1.15rem; }
-.porteur-service__intro { margin: 0; font-size: var(--texte-xs); line-height: 1.5; color: var(--texte-doux); }
-.porteur-service__sous-titre {
+/* 6. En pied : les sources, repliées ; les voisins. */
+.porteur-fiche__pied { display: flex; flex-direction: column; gap: var(--e-6); }
+.porteur-sources__sous-titre {
   margin: var(--e-2) 0 0;
   font-family: var(--police-mono);
   font-size: var(--texte-xs);
@@ -1727,40 +1694,6 @@ body > main:has(.porteurs__page) { padding-block-end: 0; }
   text-transform: uppercase;
   color: var(--texte-doux);
 }
-.porteur-service__lignes { margin: 0; }
-.porteur-service__ligne {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--e-2);
-  padding-block: 3px;
-  border-block-end: 1px dotted var(--bordure);
-  font-size: var(--texte-xs);
-}
-.porteur-service__ligne dt { color: var(--texte-doux); }
-.porteur-service__ligne dd { margin: 0; text-align: end; color: var(--texte); }
-.porteur-service__bloc { display: flex; flex-direction: column; gap: var(--e-1); }
-.porteur-service__vides { margin: 0; font-size: var(--texte-xs); line-height: 1.5; color: var(--texte-doux); }
-.porteur-poles { display: inline-flex; flex-wrap: wrap; gap: var(--e-1); justify-content: flex-end; }
-.porteur-pole {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 1px var(--e-2);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-plein);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  text-decoration: none;
-  color: var(--texte);
-}
-.porteur-pole::before { content: ""; inline-size: 6px; block-size: 6px; border-radius: var(--rayon-plein); background-color: var(--texte-faible); }
-.porteur-pole[data-pole="ETIIA"]::before { background-color: var(--pole-etiia); }
-.porteur-pole[data-pole="ETIIE"]::before { background-color: var(--pole-etiie); }
-.porteur-pole[data-pole="ETIII"]::before { background-color: var(--pole-etiii); }
-.porteur-pole:hover { background-color: var(--fond-enfonce); }
-
-/* 6. En pied : les sources, repliées ; les voisins. */
-.porteur-fiche__pied { display: flex; flex-direction: column; gap: var(--e-6); }
 .porteur-sources { border: 1px solid var(--bordure-douce); border-radius: var(--rayon-lg); background-color: var(--carte-fond); }
 .porteur-sources__resume {
   display: flex;
@@ -1938,128 +1871,6 @@ body > main:has(.porteurs__page) { padding-block-end: 0; }
   .comparateur__libelle { padding: var(--e-3) var(--e-1) 0; }
   .comparateur__cellule { padding: var(--e-2) var(--e-1) var(--e-3); min-inline-size: 0; }
   .comparateur__ajout { display: none; }
-}
-
-/* =========================================================================
-   L'aperçu du tableau de bord : la pellicule
-   ========================================================================= */
-
-.apercu-porteurs { display: flex; flex-direction: column; gap: var(--e-5); }
-.apercu-porteurs__tete {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--e-3) var(--e-6);
-}
-.apercu-porteurs__phrase { flex: 1 1 22rem; margin: 0; font-size: var(--texte-md); color: var(--texte-doux); }
-.apercu-porteurs__phrase strong { font-family: var(--police-titre); font-size: var(--texte-xl); font-weight: var(--graisse-normale); color: var(--texte); }
-.apercu-porteurs__marches { display: flex; flex-wrap: wrap; gap: var(--e-2); }
-.apercu-porteurs__aller {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--e-2);
-  min-block-size: 2.25rem;
-  padding: var(--e-1) var(--e-3);
-  background-color: var(--carte-fond);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-plein);
-  font: inherit;
-  font-size: var(--texte-sm);
-  color: var(--texte);
-  cursor: pointer;
-}
-.apercu-porteurs__aller:hover { border-color: var(--bordure-forte); background-color: var(--fond-enfonce); }
-.apercu-porteurs__aller-compte { font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--texte-doux); }
-.apercu-porteurs__tout { margin-inline-start: auto; }
-
-.apercu-porteurs__cadre { position: relative; }
-.apercu-porteurs__piste {
-  display: flex;
-  gap: var(--e-3);
-  margin: 0;
-  padding: var(--e-1) 0 var(--e-3);
-  list-style: none;
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  scroll-padding-inline: var(--e-1);
-  scrollbar-width: thin;
-}
-.apercu-porteurs__piste[data-apres] { -webkit-mask-image: linear-gradient(to right, var(--texte) 88%, transparent); mask-image: linear-gradient(to right, var(--texte) 88%, transparent); }
-.apercu-porteurs__piste[data-avant] { -webkit-mask-image: linear-gradient(to left, var(--texte) 88%, transparent); mask-image: linear-gradient(to left, var(--texte) 88%, transparent); }
-.apercu-porteurs__piste[data-avant][data-apres] { -webkit-mask-image: linear-gradient(to right, transparent, var(--texte) 8%, var(--texte) 90%, transparent); mask-image: linear-gradient(to right, transparent, var(--texte) 8%, var(--texte) 90%, transparent); }
-.apercu-porteurs__marche {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: var(--e-1);
-  inline-size: 8.5rem;
-  padding: var(--e-4);
-  scroll-snap-align: start;
-  border-inline-start: 3px solid var(--porteur-teinte, var(--accent));
-  background-color: var(--fond-bande);
-  border-radius: 0 var(--rayon-lg) var(--rayon-lg) 0;
-}
-.apercu-porteurs__marche-nom { font-family: var(--police-titre); font-size: 1.6rem; line-height: 1.05; color: var(--texte); }
-.apercu-porteurs__marche-compte { font-family: var(--police-mono); font-size: var(--texte-xs); letter-spacing: var(--lettrage-etiquette); text-transform: uppercase; color: var(--texte-doux); }
-.apercu-porteurs__item { flex: 0 0 auto; scroll-snap-align: start; }
-.apercu-porteurs__vignette {
-  position: relative;
-  display: block;
-  inline-size: clamp(11.5rem, 17vw, 14.5rem);
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  border-radius: var(--rayon-lg);
-  background-color: var(--entete-fond);
-  color: var(--entete-texte);
-  text-decoration: none;
-  box-shadow: var(--ombre-sm);
-}
-.apercu-porteurs__visuel { position: absolute; inset: 0; display: grid; place-items: center; color: var(--entete-texte-doux); }
-.apercu-porteurs__photo { inline-size: 100%; block-size: 100%; object-fit: cover; transition: transform var(--duree-lente) var(--courbe); }
-.apercu-porteurs__vignette:hover .apercu-porteurs__photo { transform: scale(1.05); }
-.apercu-porteurs__legende {
-  position: absolute;
-  inset: auto 0 0;
-  display: flex;
-  flex-direction: column;
-  padding: var(--e-8) var(--e-3) var(--e-3);
-  background-image: linear-gradient(to top, var(--voile-fort), var(--voile) 55%, transparent);
-}
-.apercu-porteurs__code { font-family: var(--police-titre); font-size: 1.4rem; line-height: 1.05; color: var(--entete-texte); }
-.apercu-porteurs__segment { font-size: var(--texte-xs); color: var(--entete-texte-doux); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.apercu-porteurs__segment::first-letter { text-transform: uppercase; }
-.apercu-porteurs__fleche {
-  position: absolute;
-  inset-block-start: 50%;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  inline-size: 2.75rem;
-  block-size: 2.75rem;
-  translate: 0 -60%;
-  padding: 0;
-  background-color: var(--carte-fond);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-plein);
-  box-shadow: var(--ombre-md);
-  font-size: 1.5rem;
-  line-height: 1;
-  color: var(--texte);
-  cursor: pointer;
-}
-.apercu-porteurs__fleche[hidden] { display: none; }
-.apercu-porteurs__fleche--avant { inset-inline-start: calc(var(--e-2) * -1); }
-.apercu-porteurs__fleche--apres { inset-inline-end: calc(var(--e-2) * -1); }
-@media (hover: none) { .apercu-porteurs__fleche { display: none; } }
-@media (max-width: 40rem) {
-  .apercu-porteurs__tout { margin-inline-start: 0; inline-size: 100%; justify-content: center; }
-  .apercu-porteurs__marche { inline-size: 6.5rem; padding: var(--e-3); }
-  .apercu-porteurs__marche-nom { font-size: 1.25rem; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .apercu-porteurs__photo { transition: none; }
-  .apercu-porteurs__vignette:hover .apercu-porteurs__photo { transform: none; }
 }
 
 /* --- Les crédits des photos (fenêtre du pied de page, credits.js) ------ */
@@ -4226,23 +4037,6 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
 
 .referents__gens { grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr)); }
 .personne-carte__badge--referent { color: var(--chaud-encre); }
-
-/* --- Par porteur : une tuile par appareil, sa photo, ses gens ----------- */
-
-.porteur-tuile__corps { display: flex; align-items: center; gap: var(--e-3); min-inline-size: 0; }
-.porteur-tuile__vignette {
-  flex: none;
-  inline-size: 4.5rem;
-  block-size: 3rem;
-  overflow: hidden;
-  border-radius: var(--rayon-md);
-  background-color: var(--fond-enfonce);
-  box-shadow: inset 0 0 0 1px var(--bordure-douce);
-}
-.porteur-tuile__vignette img { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; }
-.porteur-tuile__segment { min-inline-size: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
-.equipe--porteur .equipe__nom { letter-spacing: 0.01em; }
-.equipe--porteur .equipe__lead--vide { font-size: var(--texte-sm); }
 
 /* --- Le mouvement : court, et seulement s'il est bienvenu ---------------- */
 

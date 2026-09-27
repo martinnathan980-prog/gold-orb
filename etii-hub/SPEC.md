@@ -116,8 +116,7 @@ Site statique. Aucune étape de build. Ouvrable par double-clic ou
 servable par n'importe quel serveur de fichiers.
 
     etii-hub/
-      index.html              Tableau de bord : Communication center, Porteurs (aperçu), Suivi OTQ / OTD
-      porteurs.html           Les porteurs : galerie, fiches, taille réelle, comparaison
+      index.html              Tableau de bord : Communication center, À venir, Porteurs (galerie, fiches, comparaison), Suivi OTQ / OTD
       etiia.html              Espace du pôle ETIIA  ─┐
       etiie.html              Espace du pôle ETIIE   ├─ même gabarit
       etiii.html              Espace du pôle ETIII  ─┘  (pole.js)
@@ -181,9 +180,9 @@ OTQ / OTD**. Les trois pôles ne sont pas des cartes de cette page : ils
 vivent dans la barre de navigation, présente sur toutes les pages. Un
 sommaire collant suit la lecture. Navigation clavier complète.
 
-### 4.1 bis `porteurs.html` — Les porteurs
-Un seul écran pour regarder la flotte : la galerie par marché, filtrable et
-triable ; la fiche d'un appareil, qui répond d'abord en chiffres expliqués
+### 4.1 bis Les porteurs — section du tableau de bord
+Toute la flotte dans sa section d'`index.html` : la galerie par marché
+(Civil, Militaire, Prototype) ; la fiche d'un appareil, qui répond d'abord en chiffres expliqués
 (taille, masse, places, vitesse, distance, puissance, depuis quand), situés
 par rapport à la gamme, avec le dessin à l'échelle et la frise du programme ;
 la comparaison de deux ou trois appareils. Les sources et la confiance de

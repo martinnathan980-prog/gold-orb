@@ -55,6 +55,8 @@
      Magasin.poser(jeu, modif)       -> Promise<void>
      Magasin.retirer(jeu, type, id)  -> Promise<void>   (annule la modification)
      Magasin.journal()               -> Promise<Entree[]>  l'historique, le plus récent d'abord
+     Magasin.demander(demande)       -> Promise<void>   une question aux experts
+                                        (partagé seulement : Google, claude.ai)
 
    Une modification peut porter son récit (journal.js) :
      modif.journal = { rubrique, action, element, pole, detail }
@@ -290,6 +292,12 @@ function magasinPartage(db, peutEcrire, auteur) {
     async journal() {
       const instantane = await db.collection('journal').orderBy('le', 'desc').limit(JOURNAL_MAX).get();
       return instantane.docs.map((d) => entreeJournal(d.data()));
+    },
+    async demander(demande) {
+      const le = new Date().toISOString();
+      const cle = 'demande-' + le.replace(/[^0-9]/g, '') + '-' + Math.random().toString(36).slice(2, 8);
+      try { await db.collection('demandes').doc(cle).set(Object.assign({}, demande, { le, par: auteur || null, statut: 'À traiter' })); }
+      catch (e) { throw traduire(e); }
     }
   };
 }
@@ -405,6 +413,12 @@ function magasinGoogle(run, depart) {
       try { lignes = await appelerGoogle(run, 'etiiJournal', [300]); }
       catch (e) { throw traduire(e); }
       return (Array.isArray(lignes) ? lignes : []).map((e) => entreeJournal(e));
+    },
+    /* Tout lecteur peut poser une question : le serveur ne vérifie pas
+       l'onglet « Éditeurs » ici. */
+    async demander(demande) {
+      try { await appelerGoogle(run, 'etiiDemande', [demande]); }
+      catch (e) { throw new Error('La question n’a pas pu être envoyée (' + ((e && e.message) || 'réseau') + ').'); }
     }
   };
 }

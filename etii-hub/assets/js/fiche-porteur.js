@@ -16,8 +16,7 @@
         on le demande (gabarit.js) ; depuis quand il vole.
      4. Dans le détail : une carte par groupe, une ligne par valeur, la
         précision en petit dessous.
-     5. Le « saviez-vous », et ce que le service seul peut dire —
-        « à renseigner », jamais inventé.
+     5. Le « saviez-vous » : une histoire à raconter.
      6. En pied : les sources et la confiance de chaque valeur, repliées,
         et les appareils voisins.
 
@@ -106,12 +105,6 @@ export function depuisQuand(appareil) {
 
 const POLES = { ETIIA: 'etiia.html', ETIIE: 'etiie.html', ETIII: 'etiii.html' };
 
-function pastillesPoles(appareil) {
-  const poles = (Array.isArray(appareil.poles) ? appareil.poles : []).map(texte).filter((p) => POLES[p]);
-  if (!poles.length) return el('span', { class: 'porteur-manquant' }, 'aucun pôle pour l’instant');
-  return el('span', { class: 'porteur-poles' }, poles.map((p) =>
-    el('a', { class: 'porteur-pole', href: POLES[p], dataset: { pole: p } }, p)));
-}
 
 /* -------------------------------------------------------------------------
    1. Un chiffre en grand, et sa jauge
@@ -312,41 +305,6 @@ function saviezVous(appareil) {
       : null);
 }
 
-/* Ce que le service seul peut dire : les pôles qui suivent l'appareil, et
-   ses données internes. Tant que le fichier ne les donne pas, elles sont
-   « à renseigner » — la fiche ne les invente jamais. */
-function pourLeService(appareil, champsService) {
-  const service = objet(appareil.service);
-  const technique = Object.assign({}, objet(appareil.technique), objet(service.technique));
-  const economique = Object.assign({}, objet(appareil.economique), objet(service.economique));
-  const cs = objet(champsService);
-  const valeurDe = (v) => ((v === null || v === undefined) ? '' : texte(typeof v === 'object' ? v.valeur : v));
-  const liste = (cles, valeurs) => (Array.isArray(cles) ? cles : Object.keys(valeurs).map((c) => ({ cle: c, libelle: c })))
-    .map((c) => ({ libelle: texte(c.libelle) || texte(c.cle), valeur: valeurDe(valeurs[c.cle]) }));
-  const ligne = (libelle, t) => el('div', { class: 'porteur-service__ligne' },
-    el('dt', {}, libelle),
-    el('dd', { class: t ? null : 'porteur-manquant' }, t || NON_RENSEIGNE));
-  /* Un groupe : ses valeurs saisies en lignes ; celles qui manquent,
-     nommées ensemble, « à renseigner ». */
-  const bloc = (titre, champs) => {
-    const saisis = champs.filter((x) => x.valeur);
-    const vides = champs.filter((x) => !x.valeur).map((x) => x.libelle.charAt(0).toLowerCase() + x.libelle.slice(1));
-    return el('div', { class: 'porteur-service__bloc' },
-      el('p', { class: 'porteur-service__sous-titre' }, titre),
-      saisis.length ? el('dl', { class: 'porteur-service__lignes' }, saisis.map((x) => ligne(x.libelle, x.valeur))) : null,
-      vides.length
-        ? el('p', { class: 'porteur-service__vides' }, el('span', { class: 'porteur-manquant' }, NON_RENSEIGNE), ' : ' + vides.join(', ') + '.')
-        : null);
-  };
-  return el('section', { class: 'porteur-marge__bloc porteur-service', 'aria-labelledby': 'porteur-titre-service' },
-    el('h3', { class: 'porteur-marge__titre', id: 'porteur-titre-service' }, 'Pour le service'),
-    el('p', { class: 'porteur-service__intro' }, 'Ce que seul le service peut dire. Tant que ce n’est pas saisi, c’est « à renseigner » : rien n’est inventé.'),
-    el('dl', { class: 'porteur-service__lignes' },
-      el('div', { class: 'porteur-service__ligne' }, el('dt', {}, 'Suivi par'), el('dd', {}, pastillesPoles(appareil))),
-      ligne('Jalon', valeurDe(appareil.jalon)), ligne('Avancement', valeurDe(appareil.avancement))),
-    bloc('Technique', liste(cs.technique, technique)),
-    bloc('Économique', liste(cs.economique, economique)));
-}
 
 /* -------------------------------------------------------------------------
    4. Les sources, repliées
@@ -386,7 +344,7 @@ function sources(appareil) {
       lignes.length ? el('ul', { class: 'porteur-sources__liste', role: 'list' }, lignes) : null,
       toutes.length
         ? el('div', { class: 'porteur-sources__toutes' },
-          el('p', { class: 'porteur-service__sous-titre' }, 'Toutes les sources de la fiche'),
+          el('p', { class: 'porteur-sources__sous-titre' }, 'Toutes les sources de la fiche'),
           el('ul', { class: 'porteur-sources__liens', role: 'list' }, toutes.map((s) => el('li', {}, sourcesLisibles(s).join(' ')))))
         : null));
 }
@@ -444,7 +402,6 @@ function aLEchelle(appareil, ctx) {
  * @param {object[]} ctx.appareils     toute la flotte
  * @param {object} ctx.echelles        echelles(appareils), calculées une fois
  * @param {object} [ctx.scene]         sceneGamme(appareils) : l'échelle commune
- * @param {object} [ctx.champsService] flotte.json → champs
  * @param {Array<{cle:string, libelle:string}>} [ctx.marches]
  * @param {{precedent?:object, suivant?:object, position?:number, total?:number,
  *          lien:(code:string)=>string, lienComparer:(code:string)=>string}} ctx.navigation
@@ -485,16 +442,12 @@ export function fiche(appareil, ctx) {
       surSupprimer: typeof ctx.surSupprimer === 'function' ? () => ctx.surSupprimer(appareil) : null
     })
     : null;
+  /* L'accroche sur toute la largeur ; dessous, l'ancien nom à gauche et
+     les commandes à droite. */
   const phrase = accroche(appareil);
   const intro = el('div', { class: 'porteur-fiche__intro' },
-    el('div', { class: 'porteur-fiche__propos' },
-      phrase ? el('p', { class: 'porteur-fiche__accroche' }, phrase) : null,
-      ancien ? el('p', { class: 'porteur-fiche__ancien' }, el('span', {}, 'Aussi connu comme '), texte(ancien.valeur)) : null,
-      texte(f.resume) && texte(f.resume) !== phrase
-        ? el('details', { class: 'porteur-fiche__presentation' },
-          el('summary', {}, 'Lire la présentation'),
-          el('p', { class: 'sans-marge' }, texte(f.resume)))
-        : null),
+    phrase ? el('p', { class: 'porteur-fiche__accroche' }, phrase) : null,
+    ancien ? el('p', { class: 'porteur-fiche__ancien' }, el('span', {}, 'Aussi connu comme '), texte(ancien.valeur)) : el('span'),
     el('div', { class: 'porteur-fiche__actions' },
       nav.lienComparer
         ? el('a', { class: 'bouton bouton--secondaire porteur-fiche__comparer', href: nav.lienComparer(code) },
@@ -522,8 +475,8 @@ export function fiche(appareil, ctx) {
     /* La taille réelle, et à côté la frise du programme : depuis quand. */
     el('div', { class: 'porteur-fiche__duo' }, aLEchelle(appareil, ctx), frise(appareil)),
     detail,
-    /* Pour finir : une histoire à raconter, et ce que le service y ajoute. */
-    el('div', { class: 'porteur-fiche__duo porteur-fiche__duo--bas' }, saviezVous(appareil), pourLeService(appareil, ctx.champsService)),
+    /* Pour finir : une histoire à raconter. */
+    saviezVous(appareil),
     el('footer', { class: 'porteur-fiche__pied' },
       sources(appareil),
       el('nav', { class: 'porteur-voisins', 'aria-label': 'Porteurs voisins' },

@@ -145,30 +145,20 @@ await o.confirmer();
 t('supprimée, elle quitte le bandeau', !/Coupure réseau d’essai/.test(await page.locator('.kiosque__alertes').innerText()));
 
 console.log('\n== Les porteurs ==');
-// Les porteurs se modifient sur leur page : le tableau de bord n'en garde
-// qu'un aperçu, qui y renvoie en mode édition.
-t('le tableau de bord renvoie à la page des porteurs pour les modifier',
-  (await page.locator('#zone-flotte .edition-seulement a[href="porteurs.html"]').count()) === 1);
-await page.goto(`${B}/porteurs.html`, { waitUntil: 'networkidle' });
-await o.attendre(700);
-t('le mode édition suit sur la page des porteurs', await o.enEdition());
+// Les porteurs se modifient dans leur section du tableau de bord.
 const cartesAvant = await page.locator('.porteur-carte').count();
-/* « Ajouter » choisit d'avance le marché affiché : on se place sur
-   Prototype, et l'appareil y arrive. */
-await page.locator('.porteurs-bandeau__marche[data-marche="prototype"]').click();
-await o.attendre(300);
-const ajout = page.locator('.porteurs__barre .edition-ajout');
+const ajout = page.locator('#zone-flotte .porteurs__barre .edition-ajout');
 t('la galerie a son bouton « Ajouter un porteur »', (await ajout.count()) === 1 && /Ajouter un porteur/.test(await ajout.innerText()));
+await o.centrer(ajout);
 await ajout.click();
 await o.attendre(300);
-t('« Ajouter » choisit d’avance le marché affiché',
-  (await page.locator('.modale--formulaire .champ').filter({ has: page.locator('.champ__etiquette', { hasText: 'Catégorie' }) }).locator('select').inputValue()) === 'prototype');
+await page.locator('.modale--formulaire .champ').filter({ has: page.locator('.champ__etiquette', { hasText: 'Catégorie' }) }).locator('select').selectOption('prototype');
 await o.remplir('Code', 'ZXTEST1');
 await o.remplir('Nom complet', 'Appareil d’essai');
 await o.remplir('Présentation', 'Un porteur ajouté par le test.');
 await o.enregistrer();
 const carteEssai = page.locator('.porteur-carte', { hasText: 'ZXTEST1' });
-t('un porteur ajouté rejoint la galerie, dans le marché d’où on l’a ajouté',
+t('un porteur ajouté rejoint la galerie, dans le marché choisi',
   (await carteEssai.count()) === 1 && (await carteEssai.getAttribute('data-categorie')) === 'prototype');
 await o.centrer(carteEssai);
 await carteEssai.locator('.porteur-carte__lien').click();
@@ -194,8 +184,8 @@ t('supprimé, il quitte la page', (await page.locator('.porteur-carte', { hasTex
 console.log('\n== Un espace de pôle : le coup d’œil ==');
 // Tout ce que l'ancien annuaire savait faire se fait dans le nouveau bloc :
 // modifier une personne dans le panneau de sa squad, ajouter une squad,
-// nommer puis retirer un référent, affecter quelqu'un à un porteur puis
-// l'en retirer. Après chaque enregistrement, la section se redessine et
+// nommer puis retirer un référent (l'appareil d'une personne se choisit
+// dans sa fiche). Après chaque enregistrement, la section se redessine et
 // garde ce qui était ouvert.
 await page.goto(`${B}/etiia.html`, { waitUntil: 'networkidle' });
 await o.attendre(1200);
@@ -244,25 +234,6 @@ await o.confirmer();
 t('retiré, le titre de référent disparaît de la liste',
   (await referentsListes()) === referentsAvant && (await carteReferent.count()) === 0);
 
-// Le porteur le moins suivi du pôle : on y affecte quelqu'un depuis sa tuile, puis on l'en retire.
-const tuilesPorteur = page.locator('#zone-reperes .porteurs-pole .equipe__tuile');
-const porteurLibre = await page.locator('#zone-reperes .porteurs-pole .equipe').last().getAttribute('data-porteur');
-const tuileLibre = page.locator(`#zone-reperes .porteurs-pole .equipe[data-porteur="${porteurLibre}"] .equipe__tuile`);
-await o.centrer(tuileLibre);
-await tuileLibre.click();
-await o.attendre(700);
-const suiventLibre = () => page.locator('#zone-reperes .porteurs-pole .equipe__panneau .personne-carte').count();
-const avantLibre = await suiventLibre();
-await o.centrer(page.locator('#zone-reperes .porteurs-pole .equipe__panneau .edition-ajout'));
-await page.locator('#zone-reperes .porteurs-pole .equipe__panneau .edition-ajout').click();
-await o.enregistrer();
-t(`on affecte quelqu’un au ${porteurLibre} depuis sa tuile, qui reste ouverte`,
-  (await suiventLibre()) === avantLibre + 1 && (await tuilesPorteur.count()) > 0, `(${avantLibre} → ${await suiventLibre()})`);
-const affecte = page.locator('#zone-reperes .porteurs-pole .equipe__panneau .personne-carte').first();
-await o.centrer(affecte);
-await affecte.locator('.barre-edition__bouton--danger').click();
-await o.confirmer();
-t(`et on l’en retire : le ${porteurLibre} retrouve ses ${avantLibre} personne(s)`, (await suiventLibre()) === avantLibre);
 
 console.log('\n== Un espace de pôle : documents et FAQ ==');
 const totalDocs = async () => Number(((await page.locator('#zone-documents .pole-docs__pied a').innerText()).match(/\((\d+)\)/) || [])[1]);

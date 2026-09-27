@@ -5,19 +5,18 @@
      1. LE COMMUNICATION CENTER — le bandeau des alertes, l'édito en
         vedette, l'historique en frise. Rendu par kiosque.js.
      2. À VENIR — les prochains rendez-vous du service (agenda.js).
-     3. LES PORTEURS — un aperçu : la pellicule des photos, marché par
-        marché, qui mène à la page des porteurs (porteurs.html), où se
-        lisent les fiches et la comparaison.
+     3. LES PORTEURS — toute la flotte, rangée par marché (Civil,
+        Militaire, Prototype) ; une carte ouvre sa fiche sur place, et
+        deux ou trois appareils se comparent (porteurs.js).
      4. LE SUIVI OTQ / OTD — lu dans un CSV : la feuille publiée du service,
         ou l'exemple embarqué, toujours annoncé comme tel (otq.js).
 
    Tout se modifie dans la page, en mode édition (edition.js) : les
-   communications, les alertes, les rendez-vous. Les porteurs se modifient
-   sur leur page. Chaque section se redessine seule après un
-   enregistrement.
+   communications, les alertes, les rendez-vous, les porteurs. Chaque
+   section se redessine seule après un enregistrement.
 
-   Un ancien lien « index.html#porteur=H160 » (celui des espaces de pôle,
-   d'un favori, d'un message) mène à la fiche, sur la page des porteurs.
+   « index.html#porteur=H160 » (le lien des espaces de pôle, d'un favori,
+   d'un message) ouvre la fiche de l'appareil dans sa section.
 
    Au-dessus, sur la bande de l'en-tête, le sommaire collant (la même
    « petite barre » que sur un espace de pôle) suit la lecture.
@@ -26,9 +25,9 @@
    gestionnaire en attribut HTML.
    ========================================================================= */
 
-import { el, monter, initTheme, initNav, deleguer, ouvrirModale, suivreSommaire, revelerAuDefilement, etatUrl } from './ui.js';
+import { el, monter, initTheme, initNav, deleguer, ouvrirModale, suivreSommaire, revelerAuDefilement } from './ui.js';
 import { chargerDonnees, avecEtat, verifierForme } from './data.js';
-import { bandeauPorteurs, creditsPhotos } from './porteurs.js';
+import { porteurs, creditsPhotos, libellesFiche } from './porteurs.js';
 import { creditsCommunications } from './credits.js';
 import { kiosque, dossiersDepuisCommunications, alertesDepuisCommunications, noteOrigine } from './kiosque.js';
 import { chargerSuivi, rendreSuivi } from './otq.js';
@@ -37,29 +36,12 @@ import { ouvrirEditeur } from './editeur.js';
 import { installerEdition } from './edition.js';
 import { abonnerModifications, supprimerElement } from './modifications.js';
 import { agenda } from './agenda.js';
-import { modifierCommunication, supprimerDossier, ouvrirAlertes, ouvrirRendezVous } from './edition-contenus.js';
+import { modifierCommunication, supprimerDossier, ouvrirAlertes, ouvrirRendezVous, ouvrirPorteur } from './edition-contenus.js';
 
 function txt(valeur) {
   if (valeur === null || valeur === undefined) return '';
   return String(valeur).trim();
 }
-
-/* -------------------------------------------------------------------------
-   0. Les anciens liens vers une fiche
-   « index.html#porteur=CODE » s'ouvre désormais sur la page des porteurs.
-   Dans le fichier autonome (un cadre « about:srcdoc »), c'est la coquille
-   qui fait ce renvoi (tools/build-artifact.mjs) : ici, on ne le fait que
-   sur le site servi.
-   ------------------------------------------------------------------------- */
-
-function versLaFiche() {
-  const code = txt(etatUrl.lire().porteur);
-  if (!code || typeof location === 'undefined' || location.protocol === 'about:') return false;
-  location.replace('porteurs.html#porteur=' + encodeURIComponent(code));
-  return true;
-}
-versLaFiche();
-window.addEventListener('hashchange', versLaFiche);
 
 /* -------------------------------------------------------------------------
    1. Le Communication Center
@@ -106,19 +88,29 @@ function rendreAgenda(donnees, conteneur) {
 }
 
 /* -------------------------------------------------------------------------
-   2. Les porteurs : l'aperçu
-   La pellicule des photos, marché par marché ; chaque photo ouvre sa fiche
-   sur la page des porteurs, où elle se modifie aussi en mode édition.
+   2. Les porteurs
+   Toute la flotte, marché par marché ; une carte ouvre sa fiche dans la
+   section. En mode édition : ajouter, modifier, supprimer un porteur.
    ------------------------------------------------------------------------- */
+
+const bandeauFlotte = document.getElementById('bandeau-porteurs');
 
 function rendreFlotte(ensemble, conteneur) {
   const donnees = ensemble.flotte;
   verifierForme(donnees, { flotte: 'tableau' }, 'flotte.json');
-  monter(conteneur, bandeauPorteurs(donnees),
-    el('p', { class: 'flotte-note sans-marge edition-seulement' },
-      el('span', { 'aria-hidden': 'true' }, '✎'),
-      el('span', null, 'Les porteurs s’ajoutent et se modifient sur leur page : ',
-        el('a', { href: 'porteurs.html' }, 'ouvrir la page des porteurs'), '.')));
+  const libelles = libellesFiche();
+  const avertissement = txt(donnees.avertissement);
+  monter(conteneur,
+    porteurs(donnees, {
+      bandeau: bandeauFlotte,
+      enSection: true,
+      surAjouter: (b, categorie) => ouvrirPorteur({ flotte: donnees, libelles, declencheur: b, categorie }),
+      surModifier: (appareil, b) => ouvrirPorteur({ existant: appareil, flotte: donnees, libelles, declencheur: b }),
+      surSupprimer: (appareil) => supprimerElement('flotte', 'porteur', appareil.code)
+    }),
+    avertissement
+      ? el('p', { class: 'porteurs__avertissement' }, el('span', { 'aria-hidden': 'true' }, '※ '), avertissement)
+      : null);
 }
 
 /* -------------------------------------------------------------------------

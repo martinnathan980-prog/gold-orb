@@ -238,28 +238,10 @@ for (const bloc of orga.poles) {
   t(`${code} : aucune compétence n’y est écrite`,
     (await page.locator(`${Z} .referents .competence-puce`).count()) === 0);
 
-  // Par porteur : une tuile par appareil du pôle — sa photo, ses gens —,
-  // les plus suivis d'abord ; elle s'ouvre sur les personnes qui y travaillent.
-  const P = `${Z} .porteurs-pole`;
-  const tuilesP = await page.locator(`${P} .equipe`).evaluateAll(l => l.map(li => ({
-    code: li.dataset.porteur, n: Number(li.querySelector('.equipe__nombre').textContent)
-  })));
-  const gensSur = (c) => membres.filter(m => porteurDe(m) === c);
-  t(`${code} : « Par porteur » couvre ses ${codesAttendus.size} appareils, avec leur effectif`,
-    tuilesP.length === codesAttendus.size && tuilesP.every(x => codesAttendus.has(x.code) && x.n === gensSur(x.code).length),
-    JSON.stringify(tuilesP.slice(0, 3)));
-  t(`${code} : les appareils les plus suivis d’abord`,
-    tuilesP.every((x, i) => !i || tuilesP[i - 1].n >= x.n));
-  const plusSuivi = tuilesP[0];
-  await page.locator(`${P} .equipe__tuile`).first().click();
-  await page.waitForTimeout(700);
-  const panneauP = page.locator(`${P} .equipe__panneau`);
-  t(`${code} : le ${plusSuivi.code} s’ouvre sur ses ${plusSuivi.n} personnes, et sur sa fiche`,
-    (await panneauP.count()) === 1
-    && (await panneauP.locator('.personne-carte__nom').allInnerTexts()).map(n => n.trim()).sort().join('|') === nomsDe(gensSur(plusSuivi.code))
-    && (await panneauP.locator(`a.coup-oeil__lien[href="porteurs.html#porteur=${encodeURIComponent(plusSuivi.code)}"]`).count()) === 1);
-  await page.locator(`${P} .equipe__tuile`).first().click();
-  await page.waitForTimeout(500);
+  // Plus de bloc « Par porteur » : le référent porte déjà son appareil.
+  t(`${code} : plus de bloc « Par porteur »`, (await page.locator(`${Z} .porteurs-pole`).count()) === 0);
+  t(`${code} : chaque référent qui suit un appareil le montre, lien vers sa fiche`,
+    (await cartesRef.evaluateAll(l => l.every(c => !c.querySelector('a.appareil-puce') || /^index\.html#porteur=/.test(c.querySelector('a.appareil-puce').getAttribute('href'))))));
 
   // Les documents du pôle : les huit plus récents en vigueur.
   const docsRendus = await page.locator('#zone-documents .pole-doc .pole-doc__titre').allInnerTexts();
@@ -291,8 +273,6 @@ console.log('\n== Espace de pôle au téléphone (390 px) ==');
     await mobile.goto(`${B}/${code.toLowerCase()}.html`, { waitUntil: 'networkidle' });
     await mobile.waitForTimeout(1000);
     await mobile.locator('#zone-reperes .equipes .equipe__tuile').first().click();
-    await mobile.waitForTimeout(500);
-    await mobile.locator('#zone-reperes .porteurs-pole .equipe__tuile').first().click();
     await mobile.waitForTimeout(700);
     const debord = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     t(`${code} : au téléphone, le coup d’œil ne déborde pas de l’écran`, debord <= 0, `(${debord} px)`);
@@ -361,23 +341,22 @@ t('le pôle est le seul filtre de la barre',
   (await page.locator('#ds-metier, #ds-porteur, #ds-pole').count()) === 1
   && (await page.locator('#ds-pole').count()) === 1);
 
-console.log('\n== Navigation entre les neuf pages ==');
-// La barre a six liens : le tableau de bord, les porteurs, les trois
-// pôles, la recherche. faq.html, reunions.html et organigramme.html n'y
-// figurent pas — on les atteint depuis un pôle — et n'ont donc AUCUNE
-// entrée courante. Marquer « Tableau de bord » y serait un mensonge.
+console.log('\n== Navigation entre les huit pages ==');
+// La barre a cinq liens : le tableau de bord (et ses porteurs), les trois
+// pôles, la recherche. La FAQ, les réunions et l'organigramme s'ouvrent
+// depuis les pages ; ils n'ont pas de lien courant dans la barre.
 const HORS_BARRE = new Set(['faq', 'reunions', 'organigramme']);
-const BARRE = 'index.html porteurs.html etiia.html etiie.html etiii.html docsearch.html';
+const BARRE = 'index.html etiia.html etiie.html etiii.html docsearch.html';
 let navOk = true;
-for (const p of ['index','porteurs','etiia','etiie','etiii','reunions','organigramme','faq','docsearch']) {
+for (const p of ['index','etiia','etiie','etiii','reunions','organigramme','faq','docsearch']) {
   await page.goto(`${B}/${p}.html`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
   const liens = (await page.locator('nav.site-nav a').evaluateAll((l) => l.map((a) => a.getAttribute('href')))).join(' ');
   const courant = await page.locator('nav.site-nav [aria-current="page"]').count();
   const attendu = HORS_BARRE.has(p) ? 0 : 1;
-  if (liens !== BARRE || courant !== attendu) { navOk = false; t(`${p}.html : nav des 6 liens, ${attendu} courant`, false, `(${liens} ; ${courant} courant)`); }
+  if (liens !== BARRE || courant !== attendu) { navOk = false; t(`${p}.html : nav des 5 liens, ${attendu} courant`, false, `(${liens} ; ${courant} courant)`); }
 }
-t('les neuf pages ont la même navigation, porteurs compris, sans lien Organigramme', navOk);
+t('les huit pages ont la même navigation, sans page Porteurs ni lien Organigramme', navOk);
 
 // Ouvert depuis un pôle, l'organigramme désigne ce pôle dans la barre.
 await page.goto(`${B}/organigramme.html#pole=ETIIE`, { waitUntil: 'networkidle' });

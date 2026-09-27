@@ -42,7 +42,6 @@
       <nav class="site-nav" aria-label="Navigation principale">
         <ul class="site-nav__liste">
           <li><a href="index.html" aria-current="page"><span class="site-nav__plein">Tableau de bord</span><span class="site-nav__court" aria-hidden="true">Accueil</span></a></li>
-          <li><a href="porteurs.html">Porteurs</a></li>
           <li><a href="etiia.html" data-pole="ETIIA">ETIIA</a></li>
           <li><a href="etiie.html" data-pole="ETIIE">ETIIE</a></li>
           <li><a href="etiii.html" data-pole="ETIII">ETIII</a></li>
@@ -119,13 +118,15 @@
         <div id="zone-agenda"></div>
       </section>
 
-      <!-- 3. LES PORTEURS — un aperçu (porteurs.js, bandeauPorteurs) : la
-           pellicule des photos, marché par marché, qui mène à la page des
-           porteurs (porteurs.html), où vivent les fiches et la comparaison. -->
+      <!-- 3. LES PORTEURS — rendu par porteurs.js : toute la flotte, rangée
+           par marché (Civil, Militaire, Prototype) ; une carte ouvre sa
+           fiche ici même, le bandeau au-dessus mène au précédent, au
+           suivant, et ramène à la galerie. -->
       <section class="pile" id="section-porteurs" aria-labelledby="titre-porteurs">
         <h2 class="titre-section" id="titre-porteurs">
           <span class="titre-section__texte">Porteurs</span>
         </h2>
+        <div class="porteurs-bandeau__cadre porteurs-bandeau__cadre--section" id="bandeau-porteurs" hidden></div>
         <div id="zone-flotte"></div>
       </section>
 

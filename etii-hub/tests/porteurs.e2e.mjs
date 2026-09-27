@@ -4,13 +4,13 @@
 //   2. npm install playwright
 //   3. node tests/porteurs.e2e.mjs
 //
-// La page des porteurs (porteurs.html) est un seul écran pour regarder la
-// flotte : la galerie par marché, filtrable et triable ; la fiche d'un
-// appareil, qui se lit d'abord en grands chiffres expliqués en français,
-// sans source ni lien extérieur en ligne ; le dessin à l'échelle ; la
-// comparaison de deux ou trois appareils. Le tableau de bord n'en garde
-// qu'un aperçu qui y mène. Les anciens liens « index.html#porteur=CODE »
-// (ceux des espaces de pôle) arrivent sur la fiche.
+// Les porteurs vivent dans leur section du tableau de bord (index.html) :
+// toute la flotte, rangée par marché — Civil, Militaire, Prototype — sans
+// onglet ni tri ; la fiche d'un appareil s'ouvre sur place et se lit
+// d'abord en grands chiffres expliqués en français, sans source ni lien
+// extérieur en ligne ; le dessin à l'échelle ; la comparaison de deux ou
+// trois appareils. Les liens « index.html#porteur=CODE » (ceux des espaces
+// de pôle) ouvrent la fiche.
 
 import { chromium } from 'playwright';
 const B = process.env.BASE || 'http://localhost:8111';
@@ -35,19 +35,15 @@ const debordement = (page) => page.evaluate(() => document.documentElement.scrol
    ========================================================================= */
 
 let { ctx, page } = await nouvelle();
-await page.goto(B + '/porteurs.html', { waitUntil: 'networkidle' });
-await page.waitForSelector('.porteur-carte');
+await page.goto(B + '/index.html', { waitUntil: 'networkidle' });
+await page.waitForSelector('#zone-flotte .porteur-carte');
 
-console.log('\n== La page et sa galerie ==');
-t('un seul h1, « Porteurs »', (await page.locator('h1').count()) === 1 && (await page.locator('h1').innerText()).trim() === 'Porteurs');
-t('« Porteurs » est la page courante de la barre, entre le tableau de bord et les pôles',
-  (await page.locator('nav.site-nav a[aria-current="page"]').getAttribute('href')) === 'porteurs.html'
-  && (await page.locator('nav.site-nav a').evaluateAll((l) => l.map((a) => a.getAttribute('href')))).join(' ') === 'index.html porteurs.html etiia.html etiie.html etiii.html docsearch.html');
-t('le résumé sous le titre est calculé depuis le fichier', new RegExp('^' + appareils.length + ' appareils suivis').test(await page.locator('#porteurs-resume').innerText()),
-  await page.locator('#porteurs-resume').innerText());
-const choixMarches = await page.locator('.porteurs-bandeau__marche').evaluateAll((l) => l.map((b) => b.textContent.replace(/\s+/g, ' ').trim()));
-t('le bandeau propose Tous puis chaque marché, avec son compte',
-  choixMarches.join(' | ') === ['Tous ' + appareils.length].concat(marches.map((m) => m.libelle + ' ' + m.codes.length)).join(' | '), choixMarches.join(' | '));
+console.log('\n== La section et sa galerie ==');
+t('les porteurs n’ont pas de page à eux : la barre ne la propose pas, la section les porte',
+  (await page.locator('nav.site-nav a').evaluateAll((l) => l.map((a) => a.getAttribute('href')))).join(' ') === 'index.html etiia.html etiie.html etiii.html docsearch.html'
+  && (await page.locator('#section-porteurs #zone-flotte .porteurs').count()) === 1);
+t('ni onglets de marché ni tri : toute la gamme, rangée par marché',
+  (await page.locator('.porteurs-bandeau__marche, .porteurs__tri').count()) === 0 && await page.locator('#bandeau-porteurs').isHidden());
 const sections = await page.locator('.porteurs__marche').evaluateAll((s) => s.map((x) => ({
   cle: x.dataset.categorie, titre: x.querySelector('h2').firstChild.textContent.trim(),
   codes: Array.from(x.querySelectorAll('.porteur-carte')).map((c) => c.dataset.code)
@@ -80,31 +76,6 @@ t('chaque photo a son crédit (auteur, licence, page Commons)',
   avecPhoto.every((a) => a.credit && a.credit.auteur && a.credit.licence && /^https:\/\/commons\.wikimedia\.org\//.test(a.credit.page)));
 t('un appareil sans photo garde sa silhouette', (await page.locator('.porteur-carte[data-code="H140"] .porteur-carte__visuel svg').count()) === 1);
 
-console.log('\n== Filtrer et trier ==');
-await page.locator('.porteurs-bandeau__marche[data-marche="militaire"]').click();
-await page.waitForTimeout(300);
-const militaires = await page.locator('.porteur-carte').evaluateAll((l) => l.map((c) => c.dataset.code));
-t('« Militaire » ne montre que les militaires', militaires.join(',') === marches.find((m) => m.cle === 'militaire').codes.join(','), militaires.join(','));
-t('le choix est marqué et reflété dans l’adresse', (await page.locator('.porteurs-bandeau__marche[aria-pressed="true"]').getAttribute('data-marche')) === 'militaire'
-  && /marche=militaire/.test(page.url()));
-await page.locator('.porteurs-bandeau__marche[data-marche="tous"]').click();
-await page.locator('.porteurs__tri[data-tri="masse"]').click();
-await page.waitForTimeout(300);
-const parMasse = await page.locator('.porteur-carte').evaluateAll((l) => l.map((c) => c.dataset.code));
-const masse = (code) => { const f = appareils.find((a) => a.code === code).fiche; const m = f.masses && f.masses.masseMaxDecollage; return m && typeof m.valeur === 'number' ? (m.max || m.valeur) : null; };
-const masses = parMasse.map(masse);
-const renseignees = masses.filter((m) => m !== null);
-t('« Masse » range du plus lourd au plus léger, les inconnus à la fin',
-  renseignees.every((m, i) => i === 0 || renseignees[i - 1] >= m) && masses.lastIndexOf(null) === masses.length - 1 && masses.indexOf(null) === renseignees.length,
-  parMasse.slice(0, 5).join(','));
-t('le tri montre sa valeur sur chaque carte', /masse\s*11 t/i.test(await page.locator('.porteur-carte').first().innerText()), await page.locator('.porteur-carte').first().innerText());
-await page.locator('.porteurs__tri[data-tri="service"]').click();
-await page.waitForTimeout(300);
-const annees = await page.locator('.porteur-carte__tri').evaluateAll((l) => l.map((x) => Number((x.textContent.match(/\d{4}/) || [])[0])));
-t('« Mise en service » range du plus ancien au plus récent', annees.length > 15 && annees.every((a, i) => i === 0 || annees[i - 1] <= a), annees.join(','));
-await page.locator('.porteurs__tri[data-tri="gamme"]').click();
-await page.waitForTimeout(200);
-
 /* =========================================================================
    2. La fiche
    ========================================================================= */
@@ -114,7 +85,7 @@ await page.locator('.porteur-carte__lien[data-code="H130"]').click();
 await page.waitForTimeout(700);
 t('cliquer une carte ouvre sa fiche, à la place de la galerie',
   (await page.locator('.porteur-fiche').count()) === 1 && await page.locator('.porteurs__vue--galerie').isHidden()
-  && (await page.locator('.porteur-fiche__code').innerText()).trim() === 'H130' && /#porteur=H130$/.test(page.url()));
+  && (await page.locator('.porteur-fiche__code').innerText()).trim() === 'H130' && /index\.html#porteur=H130$/.test(page.url()));
 t('le titre de la fiche est un h2, et reçoit le focus', await page.evaluate(() => document.activeElement && document.activeElement.classList.contains('porteur-fiche__code') && document.activeElement.tagName === 'H2'));
 const fiche = page.locator('.porteur-fiche');
 t('la tête dit le marché, la phase et depuis quand', /Civil/i.test(await fiche.locator('.porteur-fiche__surtitre').innerText())
@@ -140,9 +111,16 @@ t('la fiche ne mène jamais hors du site', (await fiche.locator('a[href^="http"]
 t('les sources sont repliées, et s’ouvrent', (await fiche.locator('details.porteur-sources').getAttribute('open')) === null
   && await (async () => { await fiche.locator('.porteur-sources__resume').click(); await page.waitForTimeout(200);
     return /airbus\.com|wikipedia/i.test(await fiche.locator('.porteur-sources').innerText()); })());
-t('« Pour le service » : rien d’inventé, tout est à renseigner',
-  /Pour le service/.test(lu) && (await fiche.locator('.porteur-service').innerText()).match(/à renseigner/g).length >= 3
-  && /Suivi par/.test(await fiche.locator('.porteur-service').innerText()));
+t('ni « Pour le service », ni « Lire la présentation »',
+  !/Pour le service|Lire la présentation/.test(lu) && (await fiche.locator('.porteur-service, .porteur-fiche__presentation').count()) === 0);
+const largeurs = await fiche.evaluate((f) => ({ fiche: f.getBoundingClientRect().width, accroche: f.querySelector('.porteur-fiche__accroche').getBoundingClientRect().width }));
+t('l’accroche prend toute la largeur de la fiche', largeurs.accroche >= largeurs.fiche * 0.97, JSON.stringify(largeurs));
+const grille = await fiche.locator('.porteur-groupe').evaluateAll((l) => {
+  const b = l.map((g) => g.getBoundingClientRect());
+  const rangs = [...new Set(b.map((r) => Math.round(r.top)))];
+  return { colonnes: [...new Set(b.map((r) => Math.round(r.left)))].length, rangsEgaux: rangs.every((y) => new Set(b.filter((r) => Math.round(r.top) === y).map((r) => Math.round(r.height))).size === 1) };
+});
+t('« Dans le détail » : deux colonnes, les cartes d’une rangée à la même hauteur', grille.colonnes === 2 && grille.rangsEgaux, JSON.stringify(grille));
 t('la frise du programme situe aujourd’hui', /1999[\s\S]*2001[\s\S]*Aujourd’hui/i.test(await fiche.locator('.porteur-frise').innerText()));
 t('le détail range chaque valeur dans son groupe, la précision en petit',
   (await fiche.locator('.porteur-groupe').count()) >= 7 && /606 km/.test(await fiche.locator('.porteur-groupe[data-groupe="performances"]').innerText()));
@@ -178,7 +156,7 @@ await page.waitForTimeout(500);
 t('« Précédent » du navigateur ramène à la galerie', (await page.locator('.porteur-fiche').count()) === 0 || await page.locator('.porteurs__vue--fiche').isHidden());
 
 console.log('\n== Une fiche presque vide (démonstrateur) ==');
-await page.goto(B + '/porteurs.html#porteur=DISRUPTIVELAB', { waitUntil: 'networkidle' });
+await page.goto(B + '/index.html#porteur=DISRUPTIVELAB', { waitUntil: 'networkidle' });
 await page.waitForTimeout(700);
 const vide = await page.locator('.porteur-fiche').innerText();
 t('pas de tuile vide : ce qui manque est nommé en une ligne, « à renseigner »',
@@ -194,18 +172,14 @@ console.log('\n== Arriver par un lien ==');
 await ctx.close();
 for (const code of ['H140', 'PIONEERLAB', 'U145']) {
   const n = await nouvelle();
-  await n.page.goto(B + '/porteurs.html#porteur=' + code, { waitUntil: 'networkidle' });
+  await n.page.goto(B + '/index.html#porteur=' + code, { waitUntil: 'networkidle' });
   await n.page.waitForTimeout(800);
   const titre = await n.page.locator('.porteur-fiche__code').innerText().catch(() => '');
   const haut = await n.page.locator('.porteur-fiche__tete').evaluate((e) => e.getBoundingClientRect().top).catch(() => 9999);
-  t(`porteurs.html#porteur=${code} ouvre sa fiche, à l’écran`, titre.trim() === code && haut < 900, `(${titre}, ${haut})`);
+  t(`index.html#porteur=${code} ouvre sa fiche, à l’écran`, titre.trim() === code && haut < 900, `(${titre}, ${haut})`);
   await n.ctx.close();
 }
 ({ ctx, page } = await nouvelle());
-await page.goto(B + '/index.html#porteur=H160', { waitUntil: 'networkidle' });
-await page.waitForTimeout(1200);
-t('un ancien lien index.html#porteur=H160 arrive sur la fiche, page des porteurs',
-  /porteurs\.html#porteur=H160$/.test(page.url()) && (await page.locator('.porteur-fiche__code').innerText()).trim() === 'H160', page.url());
 /* Le lien d'un espace de pôle, tel quel : une personne d'une squad, la
    puce de son appareil. */
 await page.goto(B + '/etiia.html', { waitUntil: 'networkidle' });
@@ -213,20 +187,20 @@ await page.waitForTimeout(1200);
 await page.locator('#zone-reperes .equipe__tuile').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
 await page.locator('#zone-reperes .equipe__tuile').first().click();
 await page.waitForTimeout(700);
-const puce = page.locator('#zone-reperes a.appareil-puce[href^="porteurs.html#porteur="]').first();
+const puce = page.locator('#zone-reperes a.appareil-puce[href^="index.html#porteur="]').first();
 const codePuce = (await puce.innerText()).trim();
 await puce.evaluate((e) => e.scrollIntoView({ block: 'center' }));
 await puce.click();
 await page.waitForTimeout(1500);
 t(`depuis un espace de pôle, la puce « ${codePuce} » mène à sa fiche`,
-  /porteurs\.html#porteur=/.test(page.url()) && (await page.locator('.porteur-fiche__code').innerText().catch(() => '')).trim() === codePuce, page.url());
+  /index\.html#porteur=/.test(page.url()) && (await page.locator('.porteur-fiche__code').innerText().catch(() => '')).trim() === codePuce, page.url());
 
 /* =========================================================================
    4. Comparer
    ========================================================================= */
 
 console.log('\n== Comparer ==');
-await page.goto(B + '/porteurs.html', { waitUntil: 'networkidle' });
+await page.goto(B + '/index.html', { waitUntil: 'networkidle' });
 await page.waitForTimeout(600);
 await page.locator('.porteurs__comparer').click();
 await page.locator('.porteur-carte__choisir[data-code="H125"]').click();
@@ -247,26 +221,6 @@ await page.waitForTimeout(600);
 t('on en ajoute un troisième', (await page.locator('.comparateur__entete').allInnerTexts()).join(',') === 'H125,H225,NH90');
 t('aucune erreur JavaScript jusqu’ici', err.length === 0, err.join(' | '));
 
-/* =========================================================================
-   5. Le tableau de bord n'en garde qu'un aperçu
-   ========================================================================= */
-
-console.log('\n== L’aperçu du tableau de bord ==');
-await page.goto(B + '/index.html', { waitUntil: 'networkidle' });
-await page.waitForTimeout(800);
-const zone = page.locator('#section-porteurs');
-t('plus de galerie ni de fiche sur le tableau de bord', (await zone.locator('.porteur-carte, .porteur-fiche').count()) === 0);
-t(`une pellicule : les ${appareils.length} photos, chacune vers sa fiche`,
-  (await zone.locator('.apercu-porteurs__vignette').count()) === appareils.length
-  && (await zone.locator('.apercu-porteurs__vignette').evaluateAll((l) => l.every((a) => /^porteurs\.html#porteur=/.test(a.getAttribute('href'))))));
-t('les marchés en repères dans la pellicule', (await zone.locator('.apercu-porteurs__marche').allInnerTexts()).map((s) => s.split('\n')[0]).join(' · ') === 'Civil · Militaire · Prototype');
-t('« Voir tous les porteurs » mène à la page', (await zone.locator('a.apercu-porteurs__tout').getAttribute('href')) === 'porteurs.html');
-t('l’aperçu tient en une bande', (await zone.locator('.apercu-porteurs').evaluate((e) => e.getBoundingClientRect().height)) < 420);
-await zone.locator('.apercu-porteurs__vignette[data-code="H160"]').evaluate((e) => e.scrollIntoView({ block: 'center', inline: 'center' }));
-await zone.locator('.apercu-porteurs__vignette[data-code="H160"]').click();
-await page.waitForTimeout(1200);
-t('une photo ouvre sa fiche sur la page des porteurs', /porteurs\.html#porteur=H160$/.test(page.url()) && (await page.locator('.porteur-fiche__code').innerText()).trim() === 'H160');
-
 console.log('\n== Les crédits photos du pied de page ==');
 await page.locator('[data-credits-photos]').first().click();
 await page.waitForTimeout(800);
@@ -281,17 +235,17 @@ await ctx.close();
 
 console.log('\n== Téléphone (390 px) et thème sombre ==');
 ({ ctx, page } = await nouvelle({ viewport: { width: 390, height: 844 }, colorScheme: 'dark' }));
-for (const [adresse, quoi] of [['/porteurs.html', 'la galerie'], ['/porteurs.html#porteur=H145', 'une fiche'],
-  ['/porteurs.html#comparer=H125&comparer=H175&comparer=TIGRE', 'la comparaison'], ['/index.html', 'le tableau de bord']]) {
+for (const [adresse, quoi] of [['/index.html', 'la galerie'], ['/index.html#porteur=H145', 'une fiche'],
+  ['/index.html#comparer=H125&comparer=H175&comparer=TIGRE', 'la comparaison']]) {
   await page.goto(B + adresse, { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);
   t(`aucun défilement horizontal à 390 px : ${quoi}`, !(await debordement(page)));
 }
-await page.goto(B + '/porteurs.html', { waitUntil: 'networkidle' });
+await page.goto(B + '/index.html', { waitUntil: 'networkidle' });
 await page.waitForTimeout(500);
 const deux = await page.locator('.porteurs__marche[data-categorie="civil"] .porteur-carte').evaluateAll((l) => l[0].getBoundingClientRect().top === l[1].getBoundingClientRect().top && l[2].getBoundingClientRect().top > l[0].getBoundingClientRect().top);
 t('deux cartes par rangée sur téléphone', deux);
-await page.goto(B + '/porteurs.html#porteur=H160', { waitUntil: 'networkidle' });
+await page.goto(B + '/index.html#porteur=H160', { waitUntil: 'networkidle' });
 await page.waitForTimeout(800);
 const contrastes = await page.evaluate(() => {
   const lum = (rgb) => {
@@ -300,14 +254,14 @@ const contrastes = await page.evaluate(() => {
   };
   const fond = (n) => { for (let e = n; e; e = e.parentElement) { const c = getComputedStyle(e).backgroundColor; if (c && !/rgba\(0, 0, 0, 0\)|transparent/.test(c)) return c; } return 'rgb(255,255,255)'; };
   const mesure = (sel) => { const n = document.querySelector(sel); if (!n) return 0; const a = lum(getComputedStyle(n).color); const b = lum(fond(n)); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); };
-  return { question: mesure('.porteur-tuile__question'), libelle: mesure('.porteur-tuile__libelle'), note: mesure('.porteur-ligne__note'), service: mesure('.porteur-service__vides') };
+  return { question: mesure('.porteur-tuile__question'), libelle: mesure('.porteur-tuile__libelle'), note: mesure('.porteur-ligne__note') };
 });
 t('en sombre, les textes de la fiche tiennent 4,5:1', Object.values(contrastes).every((c) => c >= 4.5), JSON.stringify(contrastes));
 await ctx.close();
 
 console.log('\n== Mouvement réduit ==');
 ({ ctx, page } = await nouvelle({ reducedMotion: 'reduce' }));
-await page.goto(B + '/porteurs.html#porteur=H125', { waitUntil: 'networkidle' });
+await page.goto(B + '/index.html#porteur=H125', { waitUntil: 'networkidle' });
 await page.waitForTimeout(500);
 t('la fiche arrive sans animation', await page.evaluate(() => getComputedStyle(document.querySelector('.porteur-fiche')).animationName === 'none'
   && getComputedStyle(document.querySelector('.porteur-jauge__moi')).animationName === 'none'));

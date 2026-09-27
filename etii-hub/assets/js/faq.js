@@ -44,6 +44,7 @@ import {
 } from './ui.js';
 import { installerEdition, barreEdition, boutonAjouter } from './edition.js';
 import { ouvrirQuestion } from './edition-contenus.js';
+import { demandesPartagees, envoyerDemande } from './demandes.js';
 import { abonnerModifications, supprimerElement } from './modifications.js';
 
 /* -------------------------------------------------------------------------
@@ -614,8 +615,7 @@ function blocAucunResultat() {
         ? 'Rien ne correspond à cette recherche dans le périmètre affiché. '
           + 'Vouliez-vous dire « ' + suggestion + ' » ?'
         : 'Rien ne correspond à cette recherche dans le périmètre affiché. '
-          + 'Élargissez les filtres, ou posez la question aux experts : elle '
-          + 'sera conservée dans ce navigateur.'),
+          + 'Élargissez les filtres, ou posez la question aux experts.'),
     el('div', { class: 'etat-vide__actions' }, actions));
 }
 
@@ -912,7 +912,8 @@ function rendreAppel() {
  *        retaper — c'est bien la saisie de la personne, pas une invention
  * @param {Element} [declencheur]
  */
-function ouvrirDemande(texteInitial, declencheur) {
+async function ouvrirDemande(texteInitial, declencheur) {
+  const partage = await demandesPartagees();
   let champQuestion = null;
   let champPole = null;
   let champContexte = null;
@@ -1026,14 +1027,13 @@ function ouvrirDemande(texteInitial, declencheur) {
           'Ce qui aiderait à répondre : ce que vous avez déjà cherché, le '
           + 'cas rencontré.')),
 
-      el('p', { class: 'faq__note' },
-        'Ce portail est une démonstration hors ligne : il n’a aucune '
-        + 'destination configurée. Votre question ne part donc nulle part — '
-        + 'ni message, ni courriel, ni requête vers un serveur. Elle est '
-        + 'enregistrée dans ce navigateur, sur cet appareil seulement, et '
-        + 'vous pouvez la supprimer à tout moment. Tant qu’une destination '
-        + 'n’aura pas été configurée par l’équipe qui administre le portail, '
-        + 'aucun envoi n’aura lieu.'));
+      el('p', { class: 'faq__note' }, partage
+        ? 'Votre question part aux administrateurs du service, avec votre nom '
+          + 'et le pôle choisi : ils la suivent et vous répondent. Elle reste '
+          + 'aussi dans « Vos questions en attente », sur cet appareil.'
+        : 'Ce site n’est pas relié à sa feuille Google : votre question ne part '
+          + 'nulle part. Elle est enregistrée dans ce navigateur, sur cet '
+          + 'appareil seulement, et vous pouvez la supprimer à tout moment.'));
     },
     actions: [
       { libelle: 'Annuler', variante: 'secondaire' },
@@ -1048,7 +1048,8 @@ function ouvrirDemande(texteInitial, declencheur) {
 }
 
 /* -------------------------------------------------------------------------
-   15. Questions en attente — stockage local, aucun réseau
+   15. Questions en attente — gardées sur cet appareil ; envoyées aux
+       administrateurs quand le site est relié à sa feuille (demandes.js)
    ------------------------------------------------------------------------- */
 
 /** Relit la liste conservée, en se méfiant de tout. */
@@ -1102,9 +1103,13 @@ function enregistrerQuestion(saisie) {
 
   ecrireAttente();
   rendreAttente();
-  toast('Question enregistrée dans ce navigateur. Aucun envoi n’a eu lieu.',
-    'succes');
-  annoncer('Question ajoutée à vos questions en attente.');
+  envoyerDemande(saisie)
+    .then((envoyee) => {
+      toast(envoyee ? 'Question envoyée aux administrateurs du service.'
+        : 'Question enregistrée dans ce navigateur : le site n’est pas relié à sa feuille.', envoyee ? 'succes' : 'info');
+      annoncer(envoyee ? 'Question envoyée.' : 'Question ajoutée à vos questions en attente.');
+    })
+    .catch((e) => toast((e && e.message) || 'La question n’a pas pu être envoyée.', 'erreur'));
 }
 
 /**
@@ -1358,8 +1363,7 @@ function demarrer() {
     titreErreur: 'Base de connaissances indisponible',
     titreVide: 'Aucune question publiée',
     texteVide: 'Le fichier ne contient encore aucune question. Vous pouvez '
-      + 'tout de même poser la vôtre : elle sera conservée dans ce '
-      + 'navigateur.',
+      + 'tout de même poser la vôtre aux experts.',
     // Une base sans question reste une colonne : en mode édition, c'est là
     // qu'on ajoute la première.
     estVide: (donnees) => !donnees || !Array.isArray(donnees.questions)

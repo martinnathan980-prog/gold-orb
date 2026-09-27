@@ -1,26 +1,22 @@
 /* =========================================================================
    ETII Hub — Les porteurs
 
-   La page des porteurs (porteurs.html) : un seul écran pour regarder la
-   flotte suivie par le service. Trois vues, portées par l'adresse :
+   La section « Porteurs » du tableau de bord (index.html) : toute la
+   flotte suivie par le service, rangée par marché — Civil, Militaire,
+   Prototype. Trois vues, portées par l'adresse :
 
-     porteurs.html                      la galerie, toute la gamme
-     porteurs.html#marche=civil&tri=masse   la galerie filtrée, triée
-     porteurs.html#porteur=H160         la fiche d'un appareil
-     porteurs.html#comparer=H125&comparer=H160   deux ou trois côte à côte
+     index.html                                  la galerie, toute la gamme
+     index.html#porteur=H160                     la fiche d'un appareil
+     index.html#comparer=H125&comparer=H160      deux ou trois côte à côte
 
-   Le bandeau collant sous le titre porte les marchés (Tous · Civil ·
-   Militaire · Prototype) ; sur une fiche, il devient la navigation :
-   retour à la galerie, appareil précédent, suivant. Les flèches ← → du
-   clavier passent d'un appareil à l'autre, Échap revient à la galerie.
-
-   Sur le tableau de bord, bandeauPorteurs() n'en montre qu'un aperçu :
-   une pellicule de photos, marché par marché, qui mène à la page.
+   Sur une fiche, un bandeau au-dessus d'elle porte le retour à la
+   galerie, l'appareil précédent et le suivant. Les flèches ← → du clavier
+   passent d'un appareil à l'autre, Échap revient à la galerie.
 
    Tout le DOM passe par el() de ui.js : aucun innerHTML.
    ========================================================================= */
 
-import { el, monter, annoncer, etatUrl, mouvementReduit, rafThrottle } from './ui.js';
+import { el, monter, annoncer, etatUrl, rafThrottle } from './ui.js';
 import { boutonAjouter } from './edition.js';
 import { creditPhoto } from './credits.js';
 import { GROUPES, texte, objet, nombreFr, chiffre, echelles, marches, anneeService, phase } from './gamme.js';
@@ -129,11 +125,13 @@ function carte(appareil, ctx) {
 const MAX_COMPARER = 3;
 
 /**
- * La page des porteurs : galerie, fiche, comparateur.
+ * Les porteurs : galerie, fiche, comparateur.
  *
  * @param {object} donnees   contenu de flotte.json
  * @param {object} [options]
- * @param {Element} [options.bandeau]   le bandeau collant de la page, sous le titre
+ * @param {Element} [options.bandeau]   le bandeau de navigation d'une fiche
+ * @param {boolean} [options.enSection] dans une section de page : ni marchés à
+ *                                      filtrer ni tris — toute la gamme, par marché
  * @param {Function} [options.surVue]   (vue) — la page suit la vue ouverte
  * @param {Function} [options.surAjouter]   (bouton, marché) — mode édition
  * @param {Function} [options.surModifier]  (appareil, bouton)
@@ -201,6 +199,10 @@ export function porteurs(donnees, options) {
   /* --- Le bandeau ------------------------------------------------------ */
   function rendreBandeau() {
     if (!bandeau) return;
+    /* Dans une section, la galerie montre déjà les trois marchés : le
+       bandeau ne sert qu'à la navigation d'une fiche. */
+    bandeau.hidden = Boolean(opts.enSection) && etat.vue === 'galerie';
+    if (bandeau.hidden) { monter(bandeau); return; }
     if (etat.vue === 'galerie') {
       const choix = [{ cle: 'tous', libelle: 'Tous', n: appareils.length }].concat(lesMarches.map((m) => ({ cle: m.cle, libelle: m.libelle, n: m.membres.length })));
       monter(bandeau, el('div', { class: 'porteurs-bandeau conteneur', role: 'group', 'aria-label': 'Marchés' },
@@ -262,7 +264,7 @@ export function porteurs(donnees, options) {
       el('p', { class: 'porteurs__compte', role: 'status' },
         el('strong', {}, String(n)), ' ' + (n > 1 ? quoi : quoi.replace('porteurs', 'porteur')), el('span', { class: 'porteurs__ordre' }, ', ' + t.ordre)),
       el('div', { class: 'porteurs__outils' },
-        el('div', { class: 'porteurs__tris', role: 'group', 'aria-label': 'Trier par' },
+        opts.enSection ? null : el('div', { class: 'porteurs__tris', role: 'group', 'aria-label': 'Trier par' },
           el('span', { class: 'porteurs__tris-libelle', 'aria-hidden': 'true' }, 'Trier'),
           TRIS.map((x) => el('button', { type: 'button', class: 'porteurs__tri', dataset: { tri: x.cle }, 'aria-pressed': x.cle === etat.tri ? 'true' : 'false' }, x.libelle))),
         el('button', { type: 'button', class: ['bouton', etat.choix ? 'bouton--principal' : 'bouton--secondaire', 'porteurs__comparer'], 'aria-pressed': etat.choix ? 'true' : 'false' },
@@ -336,7 +338,7 @@ export function porteurs(donnees, options) {
     const i = liste.indexOf(appareil);
     const n = liste.length;
     monter(zoneFiche, fiche(appareil, {
-      appareils, echelles: lesEchelles, scene, champsService: d.champs, marches: lesMarches,
+      appareils, echelles: lesEchelles, scene, marches: lesMarches,
       navigation: {
         precedent: n > 1 ? liste[(i - 1 + n) % n] : null,
         suivant: n > 1 ? liste[(i + 1) % n] : null,
@@ -362,12 +364,32 @@ export function porteurs(donnees, options) {
     }));
   }
 
-  /* Ramène le haut de la page des porteurs à l'écran, sous la barre. */
-  function allerEnHaut() {
-    const cible = bandeau || racine;
+  /* Ramène le haut des porteurs à l'écran, sous la barre (et, dans une
+     section, sous le sommaire collant) ; `descendre` : même s'il est plus
+     bas que l'écran. */
+  function allerEnHaut(descendre) {
+    const cible = bandeau && !bandeau.hidden ? bandeau : racine;
     const haut = cible.getBoundingClientRect().top + window.scrollY;
-    const barre = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hauteur-barre-site')) || 0;
-    if (window.scrollY > haut - barre) window.scrollTo({ top: Math.max(0, haut - barre), behavior: 'auto' });
+    const racineStyle = getComputedStyle(document.documentElement);
+    const barre = parseFloat(racineStyle.getPropertyValue('--hauteur-barre-site')) || 0;
+    const sommaire = document.querySelector('.page-sommaire');
+    const dessus = barre + (opts.enSection && sommaire ? sommaire.offsetHeight : 0) + 8;
+    if (descendre || window.scrollY > haut - dessus) window.scrollTo({ top: Math.max(0, haut - dessus), behavior: 'auto' });
+  }
+
+  /* Arrivé par un lien vers une fiche : les sections du dessus finissent de
+     se charger après la fiche et la repoussent. Tant que la page change de
+     hauteur, la fiche reste en vue — jusqu'à ce que la personne fasse
+     défiler elle-même, ou au plus deux secondes. */
+  function garderEnVue() {
+    if (typeof ResizeObserver !== 'function') { allerEnHaut(true); return; }
+    let fini = false;
+    const arreter = () => { fini = true; obs.disconnect(); ['wheel', 'touchstart', 'keydown'].forEach((t) => window.removeEventListener(t, arreter)); };
+    const obs = new ResizeObserver(() => { if (!fini) allerEnHaut(true); });
+    obs.observe(document.body);
+    ['wheel', 'touchstart', 'keydown'].forEach((t) => window.addEventListener(t, arreter, { passive: true, once: true }));
+    setTimeout(arreter, 2000);
+    allerEnHaut(true);
   }
 
   let premier = true;
@@ -393,7 +415,7 @@ export function porteurs(donnees, options) {
       }
     } else {
       if (avant === 'galerie' && !premier) retour = { y: window.scrollY, code: etat.code };
-      allerEnHaut();
+      if (premier && opts.enSection) garderEnVue(); else allerEnHaut();
       if (!premier) {
         const titre = racine.querySelector(vue === 'fiche' ? '.porteur-fiche__code' : '.comparateur__titre');
         if (titre) titre.focus({ preventScroll: true });
@@ -408,8 +430,8 @@ export function porteurs(donnees, options) {
     const e = etatUrl.lire();
     const marche = texte(e.marche);
     const tri = texte(e.tri);
-    if (marche && (marche === 'tous' || lesMarches.some((m) => m.cle === marche))) etat.marche = marche;
-    if (tri && TRIS.some((t) => t.cle === tri)) etat.tri = tri;
+    if (!opts.enSection && marche && (marche === 'tous' || lesMarches.some((m) => m.cle === marche))) etat.marche = marche;
+    if (!opts.enSection && tri && TRIS.some((t) => t.cle === tri)) etat.tri = tri;
     const code = texte(e.porteur).toUpperCase();
     const comp = [...new Set([].concat(e.comparer || []).map((c) => texte(c).toUpperCase()))].filter((c) => trouver(c)).slice(0, MAX_COMPARER);
     const a = code ? trouver(code) : null;
@@ -527,72 +549,7 @@ export function porteurs(donnees, options) {
 }
 
 /* -------------------------------------------------------------------------
-   4. L'aperçu du tableau de bord
-   ------------------------------------------------------------------------- */
-
-/**
- * La pellicule des porteurs : toutes les photos, marché par marché, qui
- * défilent de côté ; chaque photo ouvre sa fiche sur la page des porteurs.
- * @param {object} donnees   contenu de flotte.json
- * @returns {HTMLElement}
- */
-export function bandeauPorteurs(donnees) {
-  const d = objet(donnees);
-  const appareils = (Array.isArray(d.flotte) ? d.flotte : []).filter((a) => a && typeof a === 'object' && texte(a.code));
-  const lesMarches = marches(d, appareils).filter((m) => m.membres.length);
-  const piste = el('ol', { class: 'apercu-porteurs__piste', role: 'list', tabIndex: 0, 'aria-label': 'Les porteurs, marché par marché' },
-    lesMarches.map((m) => [
-      el('li', { class: 'apercu-porteurs__marche', id: 'apercu-marche-' + m.cle, dataset: { marche: m.cle } },
-        el('span', { class: 'apercu-porteurs__marche-nom' }, m.libelle), ' ',
-        el('span', { class: 'apercu-porteurs__marche-compte' }, m.membres.length + (m.membres.length > 1 ? ' appareils' : ' appareil'))),
-      m.membres.map((a) => el('li', { class: 'apercu-porteurs__item' },
-        el('a', { class: 'apercu-porteurs__vignette', href: 'porteurs.html#porteur=' + encodeURIComponent(texte(a.code)), dataset: { code: texte(a.code) } },
-          el('span', { class: 'apercu-porteurs__visuel' }, photo(a, { classe: 'apercu-porteurs__photo' })),
-          el('span', { class: 'apercu-porteurs__legende' },
-            el('span', { class: 'apercu-porteurs__code' }, texte(a.code)),
-            el('span', { class: 'apercu-porteurs__segment' }, segment(a))))))
-    ]));
-
-  /* Les flèches font défiler d'un écran ; un marché se rejoint d'un clic. */
-  const defiler = (sens) => {
-    piste.scrollBy({ left: sens * piste.clientWidth * 0.85, behavior: mouvementReduit() ? 'auto' : 'smooth' });
-  };
-  const fleche = (sens, libelle, signe) => el('button', {
-    type: 'button', class: 'apercu-porteurs__fleche apercu-porteurs__fleche--' + (sens < 0 ? 'avant' : 'apres'),
-    'aria-label': libelle, onClick: () => defiler(sens)
-  }, el('span', { 'aria-hidden': 'true' }, signe));
-  const avant = fleche(-1, 'Faire défiler vers la gauche', '‹');
-  const apres = fleche(1, 'Faire défiler vers la droite', '›');
-  /* Les bords : une flèche disparaît quand il n'y a plus rien de ce côté. */
-  const bords = rafThrottle(() => {
-    avant.hidden = piste.scrollLeft <= 4;
-    apres.hidden = piste.scrollLeft + piste.clientWidth >= piste.scrollWidth - 4;
-    piste.toggleAttribute('data-avant', !avant.hidden);
-    piste.toggleAttribute('data-apres', !apres.hidden);
-  });
-  piste.addEventListener('scroll', bords, { passive: true });
-  if (typeof ResizeObserver === 'function') new ResizeObserver(bords).observe(piste);
-  setTimeout(bords, 0);
-
-  const aller = (cle) => {
-    const cible = piste.querySelector('.apercu-porteurs__marche[data-marche="' + CSS.escape(cle) + '"]');
-    if (cible) piste.scrollTo({ left: cible.offsetLeft - piste.offsetLeft, behavior: mouvementReduit() ? 'auto' : 'smooth' });
-  };
-
-  return el('div', { class: 'apercu-porteurs' },
-    el('div', { class: 'apercu-porteurs__tete' },
-      el('p', { class: 'apercu-porteurs__phrase' },
-        el('strong', {}, appareils.length + ' appareils'), ' suivis par le service : leurs chiffres, leur taille réelle, leur histoire.'),
-      el('div', { class: 'apercu-porteurs__marches', role: 'group', 'aria-label': 'Aller à un marché' },
-        lesMarches.map((m) => el('button', { type: 'button', class: 'apercu-porteurs__aller', onClick: () => aller(m.cle) },
-          m.libelle, ' ', el('span', { class: 'apercu-porteurs__aller-compte' }, String(m.membres.length))))),
-      el('a', { class: 'bouton bouton--principal apercu-porteurs__tout', href: 'porteurs.html' },
-        'Voir tous les porteurs', el('span', { 'aria-hidden': 'true' }, ' →'))),
-    el('div', { class: 'apercu-porteurs__cadre' }, avant, piste, apres));
-}
-
-/* -------------------------------------------------------------------------
-   5. Les crédits de toutes les photos, pour la fenêtre « Crédits photos »
+   4. Les crédits de toutes les photos, pour la fenêtre « Crédits photos »
    ------------------------------------------------------------------------- */
 
 /**
