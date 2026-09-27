@@ -62,7 +62,9 @@ GATES en A1 d'un onglet nommé du contrat.
 Dans la page, un **sélecteur « Contrat »** dans le bandeau du haut passe de
 l'un à l'autre sans recharger ; le titre ne le répète pas. Il est à droite,
 **au-dessus de l'interrupteur d'avancement** (voir plus bas) : deux lignes
-alignées comme un petit formulaire, « Contrat » puis « Avancement ». Avec un seul
+calées sur le bord droit de la page, chacune son mot juste devant sa
+commande, « Contrat » puis « Avancement ». À gauche du sélecteur, le lien
+**Vue d'ensemble** (voir § 13 sexies). Avec un seul
 onglet, le sélecteur n'apparaît pas. La page
 s'ouvre toujours sur le **premier** onglet, dans l'ordre du classeur ; les
 autres se chargent à la demande. Un contrat qui ne peut pas être lu laisse la
@@ -189,8 +191,13 @@ d'état). Le titre devient **« Suivi concept harnais »**. SEE ne connaît pas
 le concept harnais : sous lui, la **comparaison avec SEE disparaît** — la
 section comme l'interrupteur GATES | SEE du tableau — et revient avec la
 définition électrique. Changer d'avancement retire les filtres posés — un
-« terminé » n'a plus le même sens — et garde le cadre : périmètre, fenêtre du
-graphique, regroupement.
+« terminé » n'a plus le même sens — et garde le cadre : périmètre,
+regroupement. Le graphique revient sur **Échéances** : l'autre avancement a
+ses propres échéances (les diffusions TO tombent en février), qu'un zoom
+choisi pour le premier pouvait cacher. Sous les deux avancements, la page a
+**les mêmes fonctions** — reculs, rythme récent, plans à l'arrêt, vie d'un
+plan, vue d'ensemble ; seule la comparaison avec SEE n'existe que pour la
+définition électrique.
 
 L'archivage garde **les deux valeurs de chaque plan** : la carte d'un relevé
 porte `[définition, concept]` par référence. Les relevés d'avant n'ont que
@@ -253,6 +260,11 @@ le vide, changer de dimension le vide aussi. Rien n'en est retenu.
 la colonne active, avec sa flèche). Un clic sur son en-tête renverse l'ordre,
 un clic sur une autre colonne range par elle (fin estimée, rythme requis…) ;
 le troisième clic revient à l'ordre par nom.
+
+Chaque ligne porte un **chevron**, comme les semaines du journal : vers la
+droite repliée, vers le bas dépliée. Sous le nombre de plans d'un groupe,
+en ambre, ceux qui sont **à l'arrêt** (voir § 13 sexies) ; sous la fin
+estimée et le rythme, ceux du **rythme récent**.
 
 **Choisir une ligne déplie toutes ses références**, sans coupure, **une
 sous-liste par valeur** de la colonne suivie — dans l'ordre de la barre du
@@ -439,15 +451,25 @@ ne dit que **quel plan est passé** : sa référence et son passage (« En cours
 → Validé »), sans le libellé de l'installation — il est dans le tableau.
 
 - **Les semaines forment un tableau** : une colonne par sorte de passage —
-  « passés à « Validé » », « … « En cours » », « … « À faire » »,
-  changements d'indice, nouveaux, disparus —, nommée une fois dans un
-  en-tête qui reste collé en haut. Chaque case porte la pastille et le
+  « passés à « Validé » », « … « En cours » », reculs, changements d'indice,
+  nouveaux, disparus —, nommée une fois dans un en-tête qui reste collé en
+  haut, **de la plus fréquente à la plus rare**, de gauche à droite : une
+  sorte qui n'apparaît qu'une semaine ne coupe plus le tableau en deux. Le
+  comparatif du haut et la bulle du graphique suivent le même ordre. Chaque case porte la pastille et le
   nombre ; une semaine qui n'a pas cette sorte de passage laisse sa case
   vide. Les pastilles d'une même sorte tombent donc l'une sous l'autre, de
   semaine en semaine, au pixel près.
 - La semaine la plus récente est en haut ; les semaines se déplient d'un
   clic.
-- `Tout / Terminés / En cours / À faire / Changement d'indice`, chacun avec sa
+- **Les reculs**, en rouge : un plan qui perd son « terminé », ou qui repasse
+  d'« en cours » à « à faire ». Ils ont leur colonne, leur filtre, leur puce
+  dans le comparatif du haut (« 1 recul », dont la bulle dit lequel :
+  « référence : Terminé → En cours ») ; ils ne se comptent plus parmi les
+  « passés à … ». Dans une semaine dépliée, ils ouvrent la liste, référence
+  en rouge. Un plan réémis sous un autre indice n'est pas un recul (il se
+  range sous « changement d'indice »), ni une case vidée (« en cours » →
+  « non renseigné »).
+- `Tout / Terminés / En cours / Reculs / Changement d'indice`, chacun avec sa
   pastille, ne garde que
   les passages voulus, et **chaque compte du résumé est cliquable** :
   « 6 terminés » n'affiche plus que ceux-là, sur toutes les semaines à la fois.
@@ -535,9 +557,10 @@ sur la **référence** ; les autres colonnes de l'extract s'affichent, elles ne
 se comparent pas.
 
 **La section « Comparaison des bases de données »**, sous le tableau des
-plans, se lit comme on compare deux bases : deux cercles face à face, puis
-plan par plan. Le titre suffit — plus de phrase ni de compte au-dessus, la
-figure et les verdicts disent tout.
+plans, se lit comme on compare deux bases : deux cercles face à face, et à
+leur droite **une seule liste**, les six verdicts, qui se déplient sur leurs
+plans. Le titre suffit — plus de phrase ni de compte au-dessus, la figure et
+les verdicts disent tout.
 
 - la figure : le cercle **GATES** (plein, vert) à gauche avec son compte de
   plans et de terminés, le cercle **SEE** (pointillé) à droite avec ses
@@ -570,33 +593,32 @@ Le bandeau des filtres redit la même phrase (« Comparaison : terminés dans
 GATES, mais SEE ne les connaît pas ») : ce qu'on vient de cliquer se relit
 mot pour mot.
 
-Cliquer un verdict filtre le tableau des plans ; les deux lots de plans que
-SEE ne connaît pas l'emmènent sur GATES, celui des lignes que SEE est seule
-à connaître sur SEE. Un seul lot à la fois ; le bandeau le nomme
-(« Comparaison : … »), la croix le retire sans changer de côté. Un verdict se
-**combine** avec les filtres du haut : « dans SEE, pas terminés ici » plus
-l'état *En cours* ne garde que ceux-là.
+Cliquer un verdict **filtre le tableau des plans et déplie ses plans sous
+sa ligne** — comme une ligne d'ATA ; son chevron le dit (vers la droite
+replié, vers le bas déplié). Les deux lots de plans que SEE ne connaît pas
+emmènent le tableau sur GATES, celui des lignes que SEE est seule à connaître
+sur SEE. Un seul lot à la fois ; le bandeau le nomme (« Comparaison : … »), la
+croix le retire sans changer de côté ; un second clic sur le verdict retire
+le filtre et le replie. Un verdict se **combine** avec les filtres du haut :
+« dans SEE, pas terminés ici » plus l'état *En cours* ne garde que ceux-là.
 
 Survoler un verdict — ou sa part de l'anneau, ou un nombre de côté —
 l'éclaire dans la figure et ouvre une bulle : le compte, la part des terminés,
 les paires « référence → solution et lettre », la répartition par état de
 GATES, et où mène le clic.
 
-**Plan par plan**, sous les cercles : un groupe par verdict, dans l'ordre
-des priorités — d'abord ce qui est à vérifier (terminés absents de SEE, dans
-SEE pas terminés ici, autre indice, seulement dans SEE), puis ce qui va (pas
-encore dans SEE, terminés et dans SEE). À l'ouverture, **tous sont repliés** —
-un clic sur la tête du groupe plie ou déplie. Cette tête porte la pastille, le nombre et
-la même phrase que le verdict — rien d'autre. Dans un groupe, **une puce par
-plan** : sa pastille d'état GATES, sa référence, et pour une réémission la
-lettre sous laquelle SEE le connaît (« → B », en violet) ; douze plans
-tiennent en deux lignes. La légende des pastilles (Terminé, En cours, À
-faire, Non renseigné) est en tête de la liste, à droite du titre quand la
-place le permet, dessous sinon. La bulle du survol dit le reste (« Terminé
-dans GATES · absent dans SEE »). Pour « seulement dans SEE », la référence
-recomposée, sans pastille. Les références sont triées, et un groupe déplié
-montre **tous** ses plans — aucune coupure, aucun renvoi au tableau : quand
-la liste dépasse la hauteur d'un écran, c'est la zone du groupe qui défile.
+**Les plans d'un verdict**, dépliés sous sa ligne (il n'y a plus de liste
+« plan par plan » qui répétait les six verdicts dessous) : **une puce par
+plan** — sa pastille d'état GATES, sa référence, et pour une réémission la
+lettre sous laquelle SEE le connaît (« → B », en violet). En tête, la légende
+des pastilles (Terminé, En cours, À faire, Non renseigné). La bulle du survol
+dit le reste (« Terminé dans GATES · absent dans SEE »). Pour « seulement dans
+SEE », la référence recomposée, sans pastille. Les références sont triées, et
+un verdict déplié montre **tous** ses plans — aucune coupure : au-delà de la
+hauteur d'un demi-écran, c'est sa zone qui défile. À l'ouverture, tout est
+replié ; « Tout effacer » replie aussi. Pendant une recherche dans la
+comparaison, les verdicts qui ont le plan cherché se déplient sur lui
+(« 1 trouvé sur 251 »), les autres s'effacent.
 Un clic sur une référence d'ici
 réduit le tableau GATES à ce plan (bandeau « Sélection : plan … ») ; sur une
 référence seulement là, le tableau passe sur SEE, cherché sur elle (le
@@ -834,6 +856,7 @@ chiffres d'une seule fonction, avec une seule formule.
 semaines restantes = semaine du jalon − semaine en cours
 rythme requis      = plans à terminer ÷ semaines restantes (au moins une)
 rythme tenu        = terminés gagnés du premier au dernier relevé ÷ semaines écoulées
+rythme récent      = terminés gagnés depuis le relevé d'il y a 4 semaines ÷ semaines entre les deux
 fin estimée        = semaine en cours + arrondi supérieur(à terminer ÷ rythme tenu)
 manque             = à terminer − rythme tenu × semaines restantes (au plan supérieur)
 ```
@@ -859,6 +882,45 @@ journal et dans la bulle du graphique — « 20 passés à « Validé » », « 
 passés à « Non renseigné » » —, dans le même ordre ; « Non renseigné » compte
 partout la même chose (cellule vide, tiret ou EMPTY), sous la barre comme
 au-dessus du tableau.
+
+## 13 sexies. Ce qu'il faut surveiller (débrief 14)
+
+- **Le rythme récent** : à côté du rythme tenu (premier → dernier relevé),
+  celui des **4 dernières semaines** — depuis le relevé le plus récent qui a
+  au moins quatre semaines. Il s'écrit dans la légende du graphique, avec sa
+  propre projection en pointillés fins (« sur les 4 dernières semaines
+  (19,5/sem.) → fin S6 · févr. 2027 »), dans la fiche d'échéance (les deux
+  rythmes, puis le verdict au rythme récent, en retrait sous celui du rythme
+  tenu), et dans le bloc par groupe (« tenu 2,0 · récent 2,3/sem. », et sous
+  la fin estimée, « récent S4 · janv. 2027 »). Les verdicts — échéance tenue,
+  manque, rouge — restent au rythme tenu. Tant que l'historique ne dépasse
+  pas quatre semaines, seul le rythme tenu s'écrit.
+- **Les plans à l'arrêt** : un plan **en cours** dont la valeur n'a pas changé
+  depuis **6 semaines ou plus**, relevé après relevé. En haut, sous le
+  comparatif : « À surveiller : 16 plans en cours n'ont pas bougé depuis 6
+  semaines ou plus » — un clic les montre dans le tableau. Dans le bloc par
+  groupe, sous le nombre de plans : « 3 à l'arrêt » ; dans la liste dépliée
+  d'un groupe, ces plans sont cerclés d'ambre, et leur bulle dit depuis quand.
+- **La vie d'un plan** : dès que le tableau n'en montre qu'un — un clic sur
+  une référence, dans le tableau (la référence se clique), le journal, un
+  groupe ou la comparaison —, son historique s'ouvre au-dessus : une frise,
+  une case par relevé de la couleur de sa valeur ; depuis quand il est dans
+  la sienne (« En cours depuis S30 · juil. 2026 (8 semaines) — à l'arrêt ») ;
+  et la liste de ses changements — passages, reculs en rouge, réémissions
+  sous un autre indice en violet (le plan est suivi d'un indice à l'autre),
+  apparition et disparition de l'extract. La croix le retire du tableau.
+- **Oui / Non** : une case à cocher de l'extract (« true » / « false ») se lit
+  « Oui » ou « Non » partout — bloc par groupe et tableau. La recherche et
+  les filtres trouvent les deux écritures.
+- **La vue d'ensemble des contrats** : le lien « Vue d'ensemble », à gauche
+  du sélecteur de contrat, ouvre sous le bandeau une ligne par contrat — ses
+  terminés, son gain et ses reculs depuis le relevé précédent, son rythme tenu
+  et récent, ses plans à l'arrêt, sa prochaine échéance et le verdict. Les
+  chiffres sont ceux que la page de ce contrat affiche : chaque contrat est
+  chargé tour à tour et lu par les mêmes fonctions, sur tout le contrat, puis
+  la page revient exactement où en était le lecteur. Dans le classeur, les
+  autres contrats sont demandés une fois par le pont, puis gardés. Un clic sur
+  un contrat l'affiche.
 
 ## 13 quinquies. Vitesse d'ouverture et thème
 

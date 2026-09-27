@@ -56,12 +56,19 @@ ferait perdre au découpage suivant. Tout passe par le prototype (et par
   qui résume chaque semaine en chiffres, cadrée à l'ouverture jusqu'à la
   semaine qui suit la dernière échéance, et dessous le **journal** de ce qui a
   changé, semaine par semaine — un tableau, une colonne par sorte de
-  passage —, plan par plan.
+  passage, les reculs en rouge —, plan par plan. En haut, « À surveiller » :
+  les plans en cours qui n'ont pas bougé depuis six semaines. Le rythme des
+  quatre dernières semaines s'écrit à côté du rythme tenu.
 - **Avancement FWD par…** : par ATA, Séquence, CC, ECP ou mois de création,
   rangé par nom (ATA 21, 24, 25…), avec la fin estimée et le rythme requis
   par le prochain jalon ; un filtre sur la colonne de gauche, et sous chaque
   ligne toutes ses références, une sous-liste par valeur (Validé, En cours,
   À faire…).
+- **La vie d'un plan** : un clic sur une référence, n'importe où, et son
+  historique s'ouvre au-dessus du tableau — relevé après relevé, d'un indice
+  à l'autre.
+- **La vue d'ensemble des contrats**, depuis le bandeau : une ligne par
+  contrat, avec les chiffres de sa propre page.
 - **La comparaison des bases de données** (GATES et SEE), dès qu'un onglet
   `SEE` est là, sous le tableau. Un plan connu de SEE est un plan créé, donc
   terminé : la section croise cette présence avec l'avancement de GATES. Deux
@@ -92,7 +99,7 @@ npm install
 npm test
 ```
 
-- `npm run test:addon` — 372 tests. Le vrai `Code.gs` tourne dans Node contre
+- `npm run test:addon` — 376 tests. Le vrai `Code.gs` tourne dans Node contre
   un classeur en mémoire (`tests/faux-classeur.js`), sur un export
   volontairement pénible : lignes de titre, groupes fusionnés, en-têtes
   accentués ou dupliqués, ligne vide au milieu, avancements de toutes les
@@ -124,7 +131,7 @@ npm test
   menus, fenêtres), le vrai `Chargeur.gs` lancé dedans, et la page qu'il
   fabrique ouverte dans un vrai navigateur — les états, les colonnes, le
   graphe et le journal comparés au paquet du classeur.
-- `npm run test:interface` — 565 tests sur l’interface elle-même.
+- `npm run test:interface` — 594 tests sur l’interface elle-même.
   Elle n'essaie pas seulement de vérifier que ça marche : recherches avec
   balises, expressions régulières, 3 000 caractères ou émoji, jalon de
   configuration au texte injecté, `localStorage` corrompu puis inaccessible,

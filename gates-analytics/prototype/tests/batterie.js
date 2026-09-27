@@ -365,56 +365,64 @@ async function reinitialiser(pg) {
     !animAvant && animApres.anime && animFin === 1, JSON.stringify([animAvant, animApres, animFin]));
   await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(200);
 
-  /* Sous les cercles, plan par plan : les lots dans l'ordre des priorités —
-     à vérifier d'abord, puis ce qui va —, tous repliés à l'ouverture. Un clic sur une
-     référence réduit le tableau d'ici à ce plan ; une ligne seulement là
-     ouvre le tableau de SEE sur elle. */
+  /* Débrief 14 : « la comparaison dit deux fois la même chose ». Plus de
+     « Plan par plan » sous les cercles : les six verdicts, à droite, sont la
+     seule liste. Un clic sur un verdict filtre les tableaux ET déplie ses
+     plans sous sa ligne — comme une ligne d'ATA —, le chevron le dit ; un
+     second clic retire l'un et l'autre. Un clic sur une référence réduit le
+     tableau d'ici à ce plan ; une ligne seulement là ouvre le tableau de SEE
+     sur elle. */
   const lireListe = () => p.evaluate(() => ({
-    titre: (document.querySelector('#liste-rapprochement .rapp-liste-titre') || {}).textContent,
-    groupes: [...document.querySelectorAll('#liste-rapprochement .rapp-groupe')].map(g => ({
-      cle: g.dataset.cle, ouvert: g.dataset.ouvert,
-      n: +g.querySelector('.rapp-groupe-tete b').textContent.replace(/\s/g, ''),
-      expanded: g.querySelector('.rapp-groupe-tete').getAttribute('aria-expanded'),
+    ancienne: !!document.querySelector('#liste-rapprochement, .rapp-liste-titre, .rapp-groupe'),
+    groupes: [...document.querySelectorAll('#verdicts-rapprochement .verdict-bloc')].map(g => ({
+      cle: g.dataset.lot, ouvert: g.dataset.ouvert,
+      n: +g.querySelector('.verdict-n').textContent.replace(/\s/g, ''),
+      expanded: g.querySelector('.verdict').getAttribute('aria-expanded'),
+      presse: g.querySelector('.verdict').getAttribute('aria-pressed'),
+      chevron: !!g.querySelector('.verdict .chevron'),
       lignes: g.querySelectorAll('.rapp-puce').length
-    }))
+    })),
+    tableau: document.querySelectorAll('#corps-tableau tr').length
   }));
+  const ouvrirLot = async cle => { await p.click('#verdicts-rapprochement button[data-rapp="' + cle + '"]'); await p.waitForTimeout(350); };
   /* La colonne NAME de SEE porte l'écriture de SEE — le A un cran trop tôt.
      Pour la comparer aux références de GATES, on décale le A d'un cran. */
   const deSEE = n => /^[A-Z]{3}\d{3}A\d{4}$/.test(n) ? n.slice(0, 6) + n.charAt(7) + 'A' + n.slice(8) : n;
   const li0 = await lireListe();
-  verifier('sous les cercles, « Plan par plan » range les lots dans l\'ordre des priorités, avec les comptes des verdicts',
-    li0.titre === 'Plan par plan' && li0.groupes.map(g => g.cle).join() === 'manque,avance,emission,seul,attente,accord' &&
-    li0.groupes.map(g => g.n).join() === [MANQUE, AVANCE, EMISSION, SEUL, ATTENTE, ACCORD].join(), JSON.stringify(li0));
-  verifier('à l\'ouverture, tous les lots sont repliés', li0.groupes.every(g => g.ouvert === 'false' && g.expanded === 'false' && g.lignes === 0),
+  verifier('une seule liste : les six verdicts à droite des cercles, chacun avec son chevron — plus de « Plan par plan » qui les répète dessous',
+    !li0.ancienne && li0.groupes.map(g => g.cle).join() === 'accord,emission,avance,manque,attente,seul' &&
+    li0.groupes.map(g => g.n).join() === [ACCORD, EMISSION, AVANCE, MANQUE, ATTENTE, SEUL].join() && li0.groupes.every(g => g.chevron),
     JSON.stringify(li0));
-  // On déplie les quatre lots à vérifier : chacun montre une puce par plan.
-  for (const cle of ['manque', 'avance', 'emission', 'seul']) {
-    await p.click('#liste-rapprochement button[data-plier="' + cle + '"]'); await p.waitForTimeout(150);
-  }
-  const liDeplie = await lireListe();
-  verifier('un lot déplié montre une puce par plan ; les autres restent repliés',
-    liDeplie.groupes.slice(0, 4).every(g => g.ouvert === 'true' && g.expanded === 'true' && g.lignes === g.n) &&
-    liDeplie.groupes.slice(4).every(g => g.ouvert === 'false' && g.expanded === 'false' && g.lignes === 0), JSON.stringify(liDeplie));
-  const rangees = await p.evaluate(() => {
-    const lire = cle => [...document.querySelectorAll('#liste-rapprochement .rapp-groupe[data-cle="' + cle + '"] .rapp-puce')]
-      .map(b => ({ ref: b.querySelector('.rapp-puce-ref').textContent, etat: b.dataset.etat, la: b.dataset.ligneLa, see: b.dataset.see,
-        vers: (b.querySelector('.rapp-puce-vers') || { textContent: '' }).textContent,
-        pastille: b.querySelector('.pastille') ? b.querySelector('.pastille').className.replace('pastille', '').trim() : null,
-        couleur: b.querySelector('.pastille') ? (b.querySelector('.pastille').getAttribute('style') || '') : null, bulle: b.title }));
-    return { manque: lire('manque'), avance: lire('avance'), emission: lire('emission'), seul: lire('seul') };
-  });
+  verifier('à l\'ouverture, tous les verdicts sont repliés', li0.groupes.every(g => g.ouvert === 'false' && g.expanded === 'false' && g.lignes === 0),
+    JSON.stringify(li0));
+  await ouvrirLot('manque');
+  const liManque = await lireListe();
+  verifier('un clic sur un verdict le pose sur le tableau ET déplie ses plans sous sa ligne ; les autres restent repliés',
+    liManque.groupes[3].ouvert === 'true' && liManque.groupes[3].expanded === 'true' && liManque.groupes[3].presse === 'true' &&
+    liManque.groupes[3].lignes === MANQUE && liManque.tableau === MANQUE &&
+    liManque.groupes.filter((g, k) => k !== 3).every(g => g.ouvert === 'false' && g.lignes === 0), JSON.stringify(liManque));
+  const lirePuces = cle => p.evaluate(c => [...document.querySelectorAll('#verdicts-rapprochement .verdict-bloc[data-lot="' + c + '"] .rapp-puce')]
+    .map(b => ({ ref: b.querySelector('.rapp-puce-ref').textContent, etat: b.dataset.etat, la: b.dataset.ligneLa, see: b.dataset.see,
+      vers: (b.querySelector('.rapp-puce-vers') || { textContent: '' }).textContent,
+      pastille: b.querySelector('.pastille') ? b.querySelector('.pastille').className.replace('pastille', '').trim() : null,
+      couleur: b.querySelector('.pastille') ? (b.querySelector('.pastille').getAttribute('style') || '') : null, bulle: b.title })), cle);
+  const rangees = { manque: await lirePuces('manque') };
+  const legendePuces = await p.evaluate(() => [...document.querySelectorAll('#verdicts-rapprochement .verdict-corps .rapp-puces-legende > span')].map(s => s.textContent.trim()).join(','));
+  for (const cle of ['avance', 'emission', 'seul']) { await ouvrirLot(cle); rangees[cle] = await lirePuces(cle); }
+  const unSeulOuvert = await lireListe();
+  verifier('un verdict à la fois : ouvrir le suivant replie le précédent', unSeulOuvert.groupes.filter(g => g.ouvert === 'true').map(g => g.cle).join() === 'seul',
+    JSON.stringify(unSeulOuvert.groupes.map(g => g.cle + ':' + g.ouvert)));
   verifier('« terminés, absents de SEE » : une puce par plan — pastille verte, référence, et la bulle dit Terminé dans GATES, absent dans SEE, où mène le clic',
     rangees.manque.length === MANQUE && rangees.manque.every(r => /^[A-Z]{2}E\d{4}A\d{6}[A-Z]$/.test(r.ref) && r.etat === 'termine' && r.see === 'absent' &&
       r.pastille === '' && /--fait/.test(r.couleur) && r.vers === '' && r.bulle === 'Terminé dans GATES · absent dans SEE — ne montrer que ce plan dans le tableau'),
     JSON.stringify(rangees.manque));
   verifier('« dans SEE, pas terminés ici » : jamais terminé côté GATES, présent côté SEE ; « autre indice » porte la lettre en violet ; « seulement dans SEE » n\'a ni plan ni pastille et mène au tableau de SEE',
-    rangees.avance.every(r => r.etat !== 'termine' && r.see === 'présent' && r.vers === '') &&
+    rangees.avance.length === AVANCE && rangees.avance.every(r => r.etat !== 'termine' && r.see === 'présent' && r.vers === '') &&
     rangees.emission.every(r => r.etat === 'termine' && /--fait/.test(r.couleur) && /^sous l’indice [A-Z] \([A-Z]{2}E\d{4}A\d{6}[A-Z]\)$/.test(r.see) && /^→ [A-Z]$/.test(r.vers)) &&
     rangees.seul.length === SEUL && rangees.seul.every(r => r.etat === undefined && r.la && r.see === 'présent' && r.pastille === null &&
       /^aucun plan dans GATES · présent dans SEE — voir cette ligne dans le tableau de SEE$/.test(r.bulle)),
     JSON.stringify([rangees.avance[0], rangees.emission[0], rangees.seul[0]]));
-  const legendePuces = await p.evaluate(() => [...document.querySelectorAll('#liste-rapprochement .rapp-puces-legende > span')].map(s => s.textContent.trim()).join(','));
-  verifier('en tête du plan par plan, la légende des pastilles d\'état', legendePuces === 'Terminé,En cours,À faire,Non renseigné', legendePuces);
+  verifier('en tête des plans dépliés, la légende des pastilles d\'état', legendePuces === 'Terminé,En cours,À faire,Non renseigné', legendePuces);
   const deuxEcritures = await p.evaluate(() => {
     const a = window.__analyserUD('GBE3123A600002B'), b = window.__analyserUD('GBE312A3600002B');
     const c = window.__analyserUD('ZZE991A0800001A');
@@ -426,14 +434,14 @@ async function reinitialiser(pg) {
     deuxEcritures.a.indice === deuxEcritures.b.indice && deuxEcritures.c.racine === 'ZZE9910A800' &&
     deuxEcritures.seeDepuisGates === 'GBE312A3600', JSON.stringify(deuxEcritures));
   verifier('les références d\'un lot sont triées', rangees.avance.map(r => r.ref).join() === rangees.avance.map(r => r.ref).sort((a, b) => a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' })).join());
-  await p.click('#liste-rapprochement .rapp-groupe[data-cle="accord"] button[data-plier]'); await p.waitForTimeout(300);
+  await ouvrirLot('accord');
   const li1 = await lireListe();
-  verifier('déplier « terminés et dans SEE » montre TOUS ses plans — ' + ACCORD + ' puces, aucune coupure, aucun renvoi au tableau ; les autres ne bougent pas',
-    li1.groupes[5].ouvert === 'true' && li1.groupes[5].lignes === ACCORD && li1.groupes[0].ouvert === 'true' && li1.groupes[4].ouvert === 'false' &&
-    await p.evaluate(() => !document.querySelector('#liste-rapprochement .rapp-groupe-suite, #liste-rapprochement [data-rapp-tout]')),
+  verifier('déplier « terminés et dans SEE » montre TOUS ses plans — ' + ACCORD + ' puces, aucune coupure, aucun renvoi au tableau',
+    li1.groupes[0].ouvert === 'true' && li1.groupes[0].lignes === ACCORD && li1.groupes.slice(1).every(g => g.ouvert === 'false') &&
+    await p.evaluate(() => !document.querySelector('#verdicts-rapprochement .rapp-groupe-suite, #verdicts-rapprochement [data-rapp-tout]')),
     JSON.stringify(li1.groupes));
   const defile = await p.evaluate(() => {
-    const corps = document.querySelector('#liste-rapprochement .rapp-groupe[data-cle="accord"] .rapp-groupe-corps');
+    const corps = document.querySelector('#verdicts-rapprochement .verdict-bloc[data-lot="accord"] .verdict-corps');
     const page = document.documentElement;
     return { defile: corps.scrollHeight > corps.clientHeight + 1, reglage: getComputedStyle(corps).overflowY,
              retenue: getComputedStyle(corps).overscrollBehaviorY, hauteur: corps.getBoundingClientRect().height,
@@ -442,27 +450,32 @@ async function reinitialiser(pg) {
   verifier('le lot le plus gros défile dans sa zone — plafonnée à 46 % de la hauteur de fenêtre, retenue comprise — au lieu de pousser la page',
     defile.reglage === 'auto' && defile.defile && defile.retenue === 'contain' &&
     Math.abs(defile.hauteur - defile.plafond) <= 2 && defile.page, JSON.stringify(defile));
-  await p.click('#liste-rapprochement .rapp-groupe[data-cle="accord"] button[data-plier]'); await p.waitForTimeout(300);
-  verifier('replier le referme', (await lireListe()).groupes[5].ouvert === 'false');
-  await p.click('#liste-rapprochement .rapp-groupe[data-cle="manque"] button[data-plan-rapp]'); await p.waitForTimeout(500);
+  await ouvrirLot('accord');
+  const replie = await lireListe();
+  verifier('re-cliquer le verdict posé et déplié le replie et retire le filtre',
+    replie.groupes[0].ouvert === 'false' && replie.groupes[0].presse === 'false' && replie.tableau === TOTAL, JSON.stringify(replie.groupes[0]));
+  await ouvrirLot('manque');
+  await p.click('#verdicts-rapprochement .verdict-bloc[data-lot="manque"] button[data-plan-rapp]'); await p.waitForTimeout(500);
   const clicPlan = await p.evaluate(() => ({
     lignes: document.querySelectorAll('#corps-tableau tr').length,
     ref: (document.querySelector('#corps-tableau td.ref, #corps-tableau .ref') || {}).textContent,
     jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').replace(/\s+/g, ' ').trim()),
     base: document.querySelector('#choix-base button[aria-pressed="true"]').dataset.base,
-    liste: document.querySelectorAll('#liste-rapprochement .rapp-groupe').length
+    ouvert: (document.querySelector('#verdicts-rapprochement .verdict-bloc[data-ouvert="true"]') || { dataset: {} }).dataset.lot,
+    puces: document.querySelectorAll('#verdicts-rapprochement .verdict-bloc[data-lot="manque"] .rapp-puce').length
   }));
-  verifier('un clic sur une référence réduit le tableau GATES à ce plan, le bandeau le dit, et la liste reste entière',
+  verifier('un clic sur une référence réduit le tableau GATES à ce plan, le bandeau le dit, et le verdict reste déplié',
     clicPlan.lignes === 1 && clicPlan.ref === rangees.manque[0].ref && clicPlan.base === 'ici' &&
-    clicPlan.jetons.some(j => /Sélection : plan /.test(j)) && clicPlan.liste === 6, JSON.stringify(clicPlan));
+    clicPlan.jetons.some(j => /Sélection : plan /.test(j)) && clicPlan.ouvert === 'manque' && clicPlan.puces === MANQUE, JSON.stringify(clicPlan));
   await p.click('.jeton .x'); await p.waitForTimeout(400);
   /* Un lot posé sur les plans d'ici cacherait toute ligne seulement là :
      le clic le retire. Le tableau de SEE se montre, cherché sur la ligne, le
      bandeau porte le jeton de cette recherche, et le focus se pose sur le
      bouton de base — qui survit au rendu. */
-  await p.click('#verdicts-rapprochement button[data-rapp="accord"]'); await p.waitForTimeout(400);
-  await p.evaluate(() => { window.__valeurLa = document.querySelector('#liste-rapprochement .rapp-groupe[data-cle="seul"] button[data-ligne-la]').dataset.ligneLa; });
-  await p.click('#liste-rapprochement .rapp-groupe[data-cle="seul"] button[data-ligne-la]'); await p.waitForTimeout(600);
+  await ouvrirLot('accord');
+  await ouvrirLot('seul');
+  await p.evaluate(() => { window.__valeurLa = document.querySelector('#verdicts-rapprochement .verdict-bloc[data-lot="seul"] button[data-ligne-la]').dataset.ligneLa; });
+  await p.click('#verdicts-rapprochement .verdict-bloc[data-lot="seul"] button[data-ligne-la]'); await p.waitForTimeout(600);
   const clicLa = await p.evaluate(() => ({
     base: document.querySelector('#choix-base button[aria-pressed="true"]').dataset.base,
     lignes: document.querySelectorAll('#corps-seconde tr[data-i]').length,
@@ -493,30 +506,22 @@ async function reinitialiser(pg) {
   /* Sous un filtre du haut, « ne montrer que ce plan » tient sa promesse :
      les filtres libres s'effacent, le plan est là, le périmètre reste. */
   await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(600);
-  /* Le premier plan d'un lot déplié sous ce périmètre — quel qu'il soit —,
-     et un filtre d'état qui l'exclut. */
+  /* Le premier lot de plans d'ici qui a encore des plans sous ce périmètre,
+     déplié ; son premier plan, et un filtre d'état qui l'exclut. */
+  const lotPerso = await p.evaluate(() => ['manque', 'avance', 'emission', 'accord'].find(c => {
+    const b = document.querySelector('#verdicts-rapprochement button[data-rapp="' + c + '"]');
+    return b && !b.disabled;
+  }));
+  if (lotPerso) await ouvrirLot(lotPerso);
   const cible = await p.evaluate(() => {
-    const b = document.querySelector('#liste-rapprochement .rapp-groupe[data-ouvert="true"] button[data-plan-rapp]');
+    const b = document.querySelector('#verdicts-rapprochement .verdict-bloc[data-ouvert="true"] button[data-plan-rapp]');
     if (!b) return null;
-    return { ref: b.querySelector('.rapp-puce-ref').textContent, groupe: b.closest('.rapp-groupe').dataset.cle, etat: b.dataset.etat };
+    const bloc = b.closest('.verdict-bloc');
+    return { ref: b.querySelector('.rapp-puce-ref').textContent, groupe: bloc.dataset.lot, etat: b.dataset.etat,
+             puces: bloc.querySelectorAll('.rapp-puce').length, n: +bloc.querySelector('.verdict-n').textContent.replace(/\s/g, '') };
   });
-  verifier('sous PERSO, un lot déplié a encore des plans à cliquer', !!cible, JSON.stringify(cible));
-  const suitPerimetre = await p.evaluate(() => {
-    const groupes = [...document.querySelectorAll('#liste-rapprochement .rapp-groupe')].map(g => ({
-      cle: g.dataset.cle, n: +g.querySelector('.rapp-groupe-tete b').textContent.replace(/\s/g, ''),
-      mot: g.querySelector('.rapp-groupe-phrase').textContent,
-      gras: !g.querySelector('.rapp-groupe-mot')
-    }));
-    const puces = [...document.querySelectorAll('#verdicts-rapprochement button[data-rapp]')].map(b => ({
-      cle: b.dataset.rapp, n: +b.querySelector('.verdict-n').textContent.replace(/\s/g, '')
-    }));
-    return { groupes, puces };
-  });
-  verifier('sous PERSO, la liste suit le périmètre : mêmes comptes que les verdicts, aucun groupe à zéro, « seulement dans SEE · tout le contrat »',
-    suitPerimetre.groupes.every(g => g.n > 0 && suitPerimetre.puces.some(pu => pu.cle === g.cle && pu.n === g.n)) &&
-    suitPerimetre.puces.filter(pu => pu.n > 0).length === suitPerimetre.groupes.length &&
-    suitPerimetre.groupes.some(g => g.cle === 'seul' && g.mot === 'lignes de SEE sans plan dans GATES — tout le contrat') &&
-    suitPerimetre.groupes.every(g => g.gras), JSON.stringify(suitPerimetre));
+  verifier('sous PERSO, un verdict déplié montre autant de plans que son nombre — ceux du périmètre',
+    !!cible && cible.puces === cible.n && cible.n > 0, JSON.stringify(cible));
   const titres = await p.evaluate(() => {
     const j = document.querySelector('.titre-journal'), r = document.getElementById('titre-rapprochement');
     const cj = getComputedStyle(j), cr = getComputedStyle(r);
@@ -526,7 +531,7 @@ async function reinitialiser(pg) {
     titres.tag === 'H2' && titres.memePolice && titres.memeTaille, JSON.stringify(titres));
   const etatQuiExclut = cible && cible.etat === 'termine' ? 'encours' : 'termine';
   await p.click('#etats .etat-btn[data-etat="' + etatQuiExclut + '"]'); await p.waitForTimeout(400);
-  await p.click('#liste-rapprochement .rapp-groupe[data-cle="' + (cible ? cible.groupe : 'manque') + '"] button[data-plan-rapp]'); await p.waitForTimeout(600);
+  await p.click('#verdicts-rapprochement .verdict-bloc[data-lot="' + (cible ? cible.groupe : 'manque') + '"] button[data-plan-rapp]'); await p.waitForTimeout(600);
   const sousFiltre = await p.evaluate(() => ({
     lignes: document.querySelectorAll('#corps-tableau tr').length,
     ref: (document.querySelector('#corps-tableau td.ref, #corps-tableau .ref') || {}).textContent,
@@ -575,7 +580,7 @@ async function reinitialiser(pg) {
   const rectsRapp = await p.evaluate(() => {
     const fig = document.getElementById('venn-rapprochement').getBoundingClientRect();
     const zone = document.getElementById('verdicts-rapprochement').getBoundingClientRect();
-    const r = [...document.querySelectorAll('#verdicts-rapprochement button')].map(b => b.getBoundingClientRect());
+    const r = [...document.querySelectorAll('#verdicts-rapprochement button.verdict')].map(b => b.getBoundingClientRect());
     return { aDroite: zone.left >= fig.right, chevauche: r.some((a, i) => i > 0 && a.top < r[i - 1].bottom - 1), dedans: r.every(b => b.left >= zone.left - 1 && b.right <= zone.right + 1), n: r.length };
   });
   verifier('les verdicts sont une liste à droite de la figure, une ligne chacun, sans se chevaucher ni sortir du cadre',
@@ -1334,7 +1339,8 @@ async function reinitialiser(pg) {
   verifier('chaque semaine concernée compte son changement d’indice, en bouton',
     domIndice.comptes.length === 6 && domIndice.comptes.every(t => /^1 changement d’indice$/.test(t)),
     lu(domIndice.comptes));
-  verifier('et le filtre du journal ne propose que lui, en cinq boutons : Tout, trois états, l’indice', domIndice.boutons);
+  verifier('et le filtre du journal ne propose que lui, en cinq boutons : Tout, deux valeurs d’arrivée, les reculs, l’indice',
+    domIndice.boutons && await p.evaluate(() => !!document.querySelector('#filtre-journal button[data-journal="reculs"]')));
   const violet = await p.evaluate(() => {
     const fond = el => el && getComputedStyle(el).backgroundColor;
     return {
@@ -1371,7 +1377,11 @@ async function reinitialiser(pg) {
   const filtreVide = await p.evaluate(() => !!document.querySelector('#filtre-journal button[data-journal="vide"]'));
   verifier('« passés à « Non renseigné » » se compte comme les autres passages : jamais un bouton que la barre du filtre ne saurait montrer',
     justesse.every(x => !x.effaceBouton) || filtreVide, JSON.stringify([justesse.some(x => x.effaceBouton), filtreVide]));
-  for (const f of ['termine', 'encours', 'afaire', 'indice']) {
+  /* Chaque filtre que le journal propose — les valeurs d'arrivée, les
+     reculs (débrief 14 : ils ne sont plus des « passés à … »), l'indice. */
+  const filtresPresents = await p.evaluate(() => [...document.querySelectorAll('#filtre-journal button[data-journal]')].map(b => b.dataset.journal).filter(Boolean));
+  verifier('le journal propose ses filtres, dont les reculs quand il y en a', filtresPresents.includes('indice') && filtresPresents.length >= 3, filtresPresents.join());
+  for (const f of filtresPresents) {
     await p.click('#filtre-journal button[data-journal="' + f + '"]'); await p.waitForTimeout(300);
     await toutDeplier();
     const sousFiltre = await p.evaluate(f => ({
@@ -1442,7 +1452,7 @@ async function reinitialiser(pg) {
   verifier('la ligne ne porte que la référence et le passage — plus le libellé du plan (« Faisceau 417 »)',
     lignesIndice.indice.every(l => !l.libelle));
   verifier('le filtre du journal reflète le choix',
-    lignesIndice.presse === ':false termine:false encours:false afaire:false indice:true', lignesIndice.presse);
+    lignesIndice.presse.split(' ').filter(x => /:true$/.test(x)).join() === 'indice:true' && /^:false /.test(lignesIndice.presse), lignesIndice.presse);
   await p.click('#filtre-journal button[data-journal="indice"]'); await p.waitForTimeout(400);
   // Le journal se replie à chaque rendu : seule la première semaine reste ouverte.
   for (let garde = 0; garde < 20; garde++) {
@@ -1690,28 +1700,34 @@ async function reinitialiser(pg) {
   // La comparaison
   await p.fill('#recherche-rapp', cibles.accord); await p.waitForTimeout(450);
   const rp = await p.evaluate(() => ({
-    lots: [...document.querySelectorAll('#liste-rapprochement .rapp-groupe')].map(g => g.dataset.cle),
-    ouverts: document.querySelectorAll('#liste-rapprochement .rapp-groupe-tete[aria-expanded="true"]').length,
-    puces: [...document.querySelectorAll('#liste-rapprochement .rapp-puce .rapp-puce-ref')].map(x => x.textContent),
-    sur: document.querySelectorAll('#liste-rapprochement .rapp-sur').length
+    ouverts: [...document.querySelectorAll('#verdicts-rapprochement .verdict-bloc[data-ouvert="true"]')].map(g => g.dataset.lot),
+    effaces: document.querySelectorAll('#verdicts-rapprochement .verdict-bloc.sans-trouve').length,
+    puces: [...document.querySelectorAll('#verdicts-rapprochement .rapp-puce .rapp-puce-ref')].map(x => x.textContent),
+    sur: [...document.querySelectorAll('#verdicts-rapprochement .rapp-sur')].map(x => x.textContent.replace(/\s+/g, ' ')),
+    presses: document.querySelectorAll('#verdicts-rapprochement .verdict[aria-pressed="true"]').length
   }));
-  verifier('le champ de la comparaison ne garde que le lot du plan, ouvert sur lui, avec « sur N »',
-    rp.lots.length === 1 && rp.lots[0] === 'accord' && rp.ouverts === 1 && rp.puces.length === 1 && rp.puces[0] === cibles.accord && rp.sur === 1,
+  verifier('le champ de la comparaison déplie le seul verdict du plan, sur lui — « 1 trouvé sur N » —, efface les autres, ne pose aucun filtre',
+    rp.ouverts.length === 1 && rp.ouverts[0] === 'accord' && rp.puces.length === 1 && rp.puces[0] === cibles.accord &&
+    rp.sur.length === 1 && /^1 trouvé sur \d+$/.test(rp.sur[0]) && rp.effaces === 5 && rp.presses === 0,
     JSON.stringify(rp));
   if (cibles.seul) {
     await p.fill('#recherche-rapp', cibles.seul); await p.waitForTimeout(450);
     verifier('une ligne que SEE est seule à connaître se cherche aussi',
-      await p.evaluate(ref => { const g = [...document.querySelectorAll('#liste-rapprochement .rapp-groupe')]; return g.length === 1 && g[0].dataset.cle === 'seul' && document.querySelector('#liste-rapprochement .rapp-puce-ref').textContent === ref; }, cibles.seul));
+      await p.evaluate(ref => {
+        const g = [...document.querySelectorAll('#verdicts-rapprochement .verdict-bloc[data-ouvert="true"]')];
+        return g.length === 1 && g[0].dataset.lot === 'seul' && g[0].querySelector('.rapp-puce-ref').textContent === ref;
+      }, cibles.seul));
   }
   await p.fill('#recherche-rapp', 'ZZZZZZ'); await p.waitForTimeout(450);
   verifier('rien trouvé : la comparaison le dit',
-    /Aucun plan de la comparaison ne contient «\s?ZZZZZZ\s?»/.test(await p.evaluate(() => document.getElementById('liste-rapprochement').textContent)));
+    /Aucun plan de la comparaison ne contient «\s?ZZZZZZ\s?»/.test(await p.evaluate(() => document.getElementById('verdicts-rapprochement').textContent)));
   await p.focus('#recherche-rapp'); await p.keyboard.press('Escape'); await p.waitForTimeout(350);
   const rpApres = await p.evaluate(() => ({
-    lots: document.querySelectorAll('#liste-rapprochement .rapp-groupe').length,
-    ouverts: document.querySelectorAll('#liste-rapprochement .rapp-groupe-tete[aria-expanded="true"]').length
+    lots: document.querySelectorAll('#verdicts-rapprochement .verdict-bloc').length,
+    ouverts: document.querySelectorAll('#verdicts-rapprochement .verdict[aria-expanded="true"]').length,
+    effaces: document.querySelectorAll('#verdicts-rapprochement .verdict-bloc.sans-trouve').length
   }));
-  verifier('Échap rend tous les lots, repliés', rpApres.lots >= 3 && rpApres.ouverts === 0, JSON.stringify(rpApres));
+  verifier('Échap rend les six verdicts, repliés', rpApres.lots === 6 && rpApres.ouverts === 0 && rpApres.effaces === 0, JSON.stringify(rpApres));
   verifier('chercher dans la comparaison ne touche pas au tableau', (await lignesTableau()) === tableauAvant);
 
   /* ---------------------------------------------------------------
@@ -2789,8 +2805,8 @@ async function reinitialiser(pg) {
     coh.barres.every(b => Math.abs(b - 100) < 0.5), JSON.stringify(coh.barres.map(b => b.toFixed(1))));
   verifier('« fin estimée » est une semaine dite comme partout — « S18 · mai 2027 » —, « — » ou « terminé »',
     coh.dates.every(v => /^S\d{1,2} · \S+ \d{4}$/.test(v.replace(/[\u00a0\u202f]/g, ' ')) || v === '—' || v === 'terminé'), JSON.stringify(coh.dates));
-  verifier('« rythme requis » se dit en plans par semaine, le rythme tenu dessous',
-    coh.efforts.every(v => /^\d+,\d\/sem\.(tenu \d+,\d\/sem\.|rien de terminé)$/.test(v) || /terminé|—/.test(v)), JSON.stringify(coh.efforts.slice(0, 3)));
+  verifier('« rythme requis » se dit en plans par semaine, le rythme tenu dessous — et le récent à côté de lui',
+    coh.efforts.every(v => /^\d+,\d\/sem\.(tenu \d+,\d( · récent \d+,\d)?\/sem\.|rien de terminé( · récent \d+,\d\/sem\.)?)$/.test(v) || /terminé|—/.test(v)), JSON.stringify(coh.efforts.slice(0, 3)));
 
   // =================================================================
   section('Panneau d\'explication de la fin estimée');
@@ -2944,6 +2960,8 @@ async function reinitialiser(pg) {
   await p.click('.journal-semaine .journal-plier >> nth=0'); await p.waitForTimeout(300);
   verifier('un changement d’indice se lit dans la semaine dépliée sans ouvrir « voir les autres »',
     await p.evaluate(() => !!document.querySelector('.journal-semaine .journal-liste .ref-indice')));
+  // On la replie : une semaine ouverte à la main le reste sous un filtre, et la dernière semaine a désormais un recul.
+  await p.click('.journal-semaine .journal-plier >> nth=0'); await p.waitForTimeout(200);
 
   // La bulle d'une puce du comparatif ne liste plus de références tronquées.
   const puceTermine = await p.$('.puce-delta[data-delta="termine"]');
@@ -2970,7 +2988,8 @@ async function reinitialiser(pg) {
   await p.click('#choix-perimetre button:has-text("Tout")'); await p.waitForTimeout(700);
 
   // Le journal filtré reste replié ; la première semaine affichée se déplie d'un clic.
-  await p.click('#filtre-journal button[data-journal="afaire"]'); await p.waitForTimeout(500);
+  // (Un filtre rare : les reculs — depuis le débrief 14, les « passés à À faire » de la démonstration en sont.)
+  await p.click('#filtre-journal button[data-journal="reculs"]'); await p.waitForTimeout(500);
   const lireSemaine = () => p.evaluate(() => {
     const s = document.querySelector('.journal-semaine');
     return s ? { ouvert: s.querySelector('.journal-plier').getAttribute('aria-expanded'), lignes: s.querySelectorAll('.journal-ligne').length,
@@ -3265,14 +3284,15 @@ async function reinitialiser(pg) {
       const esp = t => String(t || '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim();
       const l = document.querySelector('.critique-ligne');
       const v = esp(l.querySelector('.critique-effort .v').textContent);
-      return { requis: (v.match(/^([\d,]+)\/sem\./) || [])[1], tenu: (v.match(/tenu ([\d,]+)\/sem\./) || [])[1],
+      return { requis: (v.match(/^([\d,]+)\/sem\./) || [])[1], tenu: (v.match(/tenu ([\d,]+)(?: · récent [\d,]+)?\/sem\./) || [])[1],
+               recent: (v.match(/récent ([\d,]+)\/sem\./) || [])[1],
                fin: esp(l.querySelector('.critique-date .v').textContent) };
     });
     await pq.click('.critique-ligne >> nth=0'); await pq.waitForTimeout(500);
     const legG = esp(await pq.evaluate(() => document.getElementById('legende').textContent));
     verifier('une ligne du bloc et le graphique de son groupe disent le même rythme requis, le même rythme tenu, la même fin',
       !!ligne.requis && legG.indexOf(': ' + ligne.requis + '/sem.') !== -1 && legG.indexOf('au rythme tenu (' + ligne.tenu + '/sem.)') !== -1 &&
-      legG.indexOf('→ fin ' + ligne.fin) !== -1 && /requis pour « [^»]+ » \(\S+ [^)]+\)/.test(legG), JSON.stringify([ligne, legG]));
+      legG.indexOf('→ fin ' + ligne.fin) !== -1 && (!ligne.recent || legG.indexOf('dernières semaines (' + ligne.recent + '/sem.)') !== -1) && /requis pour « [^»]+ » \(\S+ [^)]+\)/.test(legG), JSON.stringify([ligne, legG]));
     const phraseG = esp(await pq.evaluate(() => document.getElementById('phrase').textContent));
     const noteG = esp(await pq.evaluate(() => document.getElementById('note-graphe').textContent));
     verifier('choisir un groupe : la phrase et la note du graphique le nomment de la même façon, sans « autres filtres » inventés',
@@ -3338,10 +3358,24 @@ async function reinitialiser(pg) {
     const rL = (surBase.leg.match(/requis pour « [^»]+ » : ([\d,]+)\/sem\./) || [])[1], rF = (surBase.fiche.match(/Il faut ([\d,]+) plans/) || [])[1];
     verifier('« voir BASE/OPTION » passe au périmètre du jalon, où la légende et la fiche disent le même rythme requis',
       surBase.per === 'BASE/OPTION' && !surBase.voir && !!rL && rL === rF, JSON.stringify([surBase.per, rL, rF]));
-    // Un cadrage choisi à la main survit au changement d'avancement.
+    /* Débrief 14 : « dans le concept harnais, on ne voyait pas les jalons ».
+       Un cadrage choisi à la main sous un avancement pouvait cacher les
+       échéances de l'autre : changer d'avancement revient sur « Échéances »,
+       et toutes les échéances du nouvel avancement sont à l'écran. */
     await pq.click('.commandes-graphe .segmente button[data-span="13"]'); await pq.waitForTimeout(300);
     await pq.click('#choix-indicateur button[data-indicateur="def"]'); await pq.waitForTimeout(700);
-    verifier('un cadrage choisi à la main (3 mois) reste quand on change d\'avancement', (await cad()).presse === '3 mois');
+    const apresDef = await cad();
+    await pq.click('.commandes-graphe .segmente button[data-span="13"]'); await pq.waitForTimeout(300);
+    await pq.click('#choix-indicateur button[data-indicateur="concept"]'); await pq.waitForTimeout(700);
+    const apresCon = await pq.evaluate(() => ({
+      presse: [...document.querySelectorAll('.commandes-graphe .segmente button[aria-pressed="true"]')].map(b => b.textContent).join(),
+      horsFenetre: document.querySelectorAll('.legende-jalon.hors-fenetre').length,
+      to: [...document.querySelectorAll('svg.graphe .jalon')].filter(g => /Diffusion TO/.test(g.getAttribute('aria-label'))).length,
+      comptent: document.querySelectorAll('svg.graphe .jalon:not(.hors-perimetre)').length
+    }));
+    verifier('changer d’avancement revient sur « Échéances » : sous le concept harnais, ses deux échéances TO sont à l’écran (celle d’un autre périmètre en pâle), même après un zoom sur 3 mois',
+      apresDef.presse === 'Échéances' && apresCon.presse === 'Échéances' && apresCon.horsFenetre === 0 && apresCon.to === 2 && apresCon.comptent >= 1,
+      JSON.stringify([apresDef, apresCon]));
     await pq.context().close();
   }
 
@@ -3367,10 +3401,17 @@ async function reinitialiser(pg) {
   verifier('le contrat au-dessus, l’avancement dessous : « Définition électrique | Concept harnais » sous le sélecteur',
     bandeau13.avancementVisible && bandeau13.select.b <= bandeau13.boutons.t + 1 &&
     bandeau13.boutonsTexte.join('|') === 'Définition électrique|Concept harnais', JSON.stringify(bandeau13));
-  verifier('les deux commandes partent du même bord gauche, leurs mots alignés à droite devant elles',
-    Math.abs(bandeau13.select.l - bandeau13.boutons.l) <= 1 && !!bandeau13.label && !!bandeau13.mot &&
-    Math.abs(bandeau13.label.r - bandeau13.mot.r) <= 1 && bandeau13.label.r <= bandeau13.select.l && bandeau13.motTexte === 'Avancement',
-    JSON.stringify(bandeau13));
+  /* Débrief 14 : « tout centré sur la droite ». Les deux commandes
+     finissent au bord droit de la page, chacune avec son mot juste devant
+     elle. */
+  const bordDroit = await p.evaluate(() => Math.round(document.querySelector('.bandeau-mode').getBoundingClientRect().right -
+    parseFloat(getComputedStyle(document.querySelector('.bandeau-mode')).paddingRight)));
+  verifier('les deux commandes finissent au même bord droit — celui de la page —, chacune avec son mot juste devant elle',
+    Math.abs(bandeau13.select.r - bandeau13.boutons.r) <= 1 && Math.abs(bandeau13.boutons.r - bordDroit) <= 1 &&
+    !!bandeau13.label && !!bandeau13.mot &&
+    bandeau13.label.r <= bandeau13.select.l && bandeau13.select.l - bandeau13.label.r <= 14 &&
+    bandeau13.mot.r <= bandeau13.boutons.l && bandeau13.boutons.l - bandeau13.mot.r <= 14 && bandeau13.motTexte === 'Avancement',
+    JSON.stringify([bandeau13, bordDroit]));
 
   await p.evaluate(() => document.getElementById('zone-journal').scrollIntoView({ block: 'start' }));
   await p.waitForTimeout(200);
@@ -3437,6 +3478,266 @@ async function reinitialiser(pg) {
     verifier('filtrer sur les changements d’indice ne laisse que leur colonne', seul.entetes === 1 && seul.cases.join() === '1', JSON.stringify(seul));
     await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(350);
   }
+  await reinitialiser(p);
+
+  // =================================================================
+  /* Débrief 14 : ce qui péchait encore, et ce que Nathan a validé — les
+     reculs, le rythme récent, un seul mot pour une même chose, les plans à
+     l'arrêt, la vie d'un plan, la vue d'ensemble des contrats. */
+  section('Débrief 14 : reculs, rythme récent, plans à l’arrêt, vie d’un plan, vue d’ensemble');
+  await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); window.scrollTo(0, 0); });
+  await p.waitForTimeout(700);
+  const esp14 = t => String(t || '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // --- Les reculs : une ligne à part, en rouge, jamais parmi les « passés à … ».
+  const rec = await p.evaluate(() => {
+    const J = window.__journal();
+    const estRecul = e => e.type === 'change' && ((e.avant === 'termine' && e.apres !== 'termine') || (e.avant === 'encours' && e.apres === 'afaire'));
+    const parSemaine = J.map(s => ({ i: s.i, reculs: s.evenements.filter(estRecul).length, total: s.evenements.length }));
+    const semaines = [...document.querySelectorAll('.journal-semaine')].map(sem => ({
+      cases: [...sem.querySelector('.resume').children].filter(c => !c.classList.contains('case-vide')).map(c => c.textContent.replace(/\s+/g, ' ').trim()),
+      somme: [...sem.querySelectorAll('.resume b')].reduce((t, b) => t + Number(b.textContent.replace(/\s/g, '')), 0)
+    }));
+    const puce = document.querySelector('#comparatif .puce-delta[data-delta="reculs"]');
+    return {
+      parSemaine, semaines,
+      entetes: [...document.querySelectorAll('.journal-entetes .entete-col')].map(e => e.textContent.trim()),
+      puce: puce ? { texte: puce.textContent.replace(/\s+/g, ' ').trim(), rouge: getComputedStyle(puce).color, pastille: !!puce.querySelector('.pastille.recul') } : null,
+      alerte: getComputedStyle(document.body).getPropertyValue('--alerte').trim(),
+      filtre: !!document.querySelector('#filtre-journal button[data-journal="reculs"] .pastille.recul')
+    };
+  });
+  const recS38 = rec.parSemaine[0].reculs, totRec = rec.parSemaine.reduce((t, x) => t + x.reculs, 0);
+  verifier('les reculs ont leur ligne : « ' + recS38 + ' recul » dans le comparatif du haut, en rouge, pastille rouge',
+    recS38 >= 1 && !!rec.puce && rec.puce.texte === recS38 + (recS38 > 1 ? ' reculs' : ' recul') && rec.puce.pastille, JSON.stringify(rec.puce));
+  verifier('dans le journal, une colonne « reculs », un filtre « Reculs » ; chaque semaine compte tous ses événements, une fois chacun',
+    rec.entetes.includes('reculs') && rec.filtre && totRec >= 2 &&
+    rec.semaines.every((s, k) => s.somme === rec.parSemaine[k].total), JSON.stringify([rec.entetes, rec.semaines.map(s => s.somme), rec.parSemaine.map(s => s.total)]));
+  verifier('un recul ne se range plus parmi les « passés à … » : la semaine qui a 2 reculs ne dit plus « passés à « À faire » »',
+    rec.semaines.every((s, k) => rec.parSemaine[k].reculs === 0 || s.cases.some(c => new RegExp('^' + rec.parSemaine[k].reculs + ' reculs?$').test(c))) &&
+    !rec.semaines.some(s => s.cases.some(c => /passés? à « À faire »/.test(c))), JSON.stringify(rec.semaines.slice(0, 3)));
+  await p.click('#filtre-journal button[data-journal="reculs"]'); await p.waitForTimeout(350);
+  await p.click('.journal-semaine .journal-plier >> nth=0'); await p.waitForTimeout(300);
+  const lignesRecul = await p.evaluate(() => [...document.querySelectorAll('.journal-liste .journal-ligne')].map(l => ({
+    recul: l.classList.contains('recul'), passage: l.querySelector('.vers').textContent.replace(/\s+/g, ' ').trim(),
+    rouge: getComputedStyle(l.querySelector('.ref')).color })));
+  verifier('filtrer « Reculs » ne garde que des reculs — « Terminé → … » ou « En cours → À faire » —, référence en rouge',
+    lignesRecul.length >= 1 && lignesRecul.every(l => l.recul && (/^Terminé ?→/.test(l.passage) || /^En cours ?→ ?À faire$/.test(l.passage))) &&
+    new Set(lignesRecul.map(l => l.rouge)).size === 1, JSON.stringify(lignesRecul));
+  await p.click('#filtre-journal button[data-journal=""]'); await p.waitForTimeout(300);
+  await p.click('.journal-semaine .journal-plier >> nth=0'); await p.waitForTimeout(200);
+  await p.hover('#comparatif .puce-delta[data-delta="reculs"]'); await p.waitForTimeout(250);
+  const bulleRecul2 = esp14(await p.evaluate(() => document.getElementById('bulle').textContent));
+  verifier('la bulle du recul dit lequel : « référence : Terminé → En cours »',
+    /[A-Z]{2}E\d{4}A\d{6}[A-Z] : Terminé → /.test(bulleRecul2), bulleRecul2.slice(0, 200));
+  await p.mouse.move(5, 5);
+
+  // --- L'ordre : de la sorte la plus fréquente à la plus rare, partout pareil.
+  const ordre = await p.evaluate(() => {
+    const entetes = [...document.querySelectorAll('.journal-entetes .entete-col')].map(e => e.textContent.trim());
+    const pleines = entetes.map((_, k) => [...document.querySelectorAll('.journal-semaine .resume')].filter(r => r.children[k] && !r.children[k].classList.contains('case-vide')).length);
+    const puces = [...document.querySelectorAll('#comparatif .puce-delta')].map(b => b.textContent.replace(/^\s*\d+\s*/, '').replace(/\s+/g, ' ').trim());
+    const filtres = [...document.querySelectorAll('#filtre-journal button[data-journal]:not([data-journal=""])')].map(b => b.dataset.journal);
+    return { entetes, pleines, puces, filtres };
+  });
+  /* Une puce s'accorde à son nombre (« 1 recul »), l'en-tête est au pluriel
+     (« reculs ») : on compare les mots au singulier. */
+  const auSingulier = t => t.replace(/^passés? /, 'passé ').replace(/^changements? /, 'changement ').replace(/^reculs?$/, 'recul')
+    .replace(/^nouveaux?$/, 'nouveau').replace(/^disparus?$/, 'disparu');
+  const rangEntete = t => ordre.entetes.map(auSingulier).indexOf(auSingulier(t));
+  verifier('les colonnes du journal vont de la plus remplie à la plus rare — la colonne d’une seule case n’est plus au milieu',
+    ordre.pleines.every((n, k) => k === 0 || ordre.pleines[k - 1] >= n), JSON.stringify(ordre));
+  verifier('le comparatif du haut suit le même ordre que les colonnes',
+    ordre.puces.every(t => rangEntete(t) !== -1) && ordre.puces.every((t, k) => k === 0 || rangEntete(ordre.puces[k - 1]) < rangEntete(t)),
+    JSON.stringify([ordre.puces, ordre.entetes]));
+
+  // --- Le rythme des quatre dernières semaines, à côté du rythme tenu.
+  const ryt = await p.evaluate(() => {
+    const pts = window.__serieAffichee().pts, der = pts[pts.length - 1];
+    let base = pts[0];
+    for (let k = pts.length - 2; k >= 0; k--) if (der.i - pts[k].i >= 4) { base = pts[k]; break; }
+    const recent = (der.termine - base.termine) / (der.i - base.i), tenu = (der.termine - pts[0].termine) / (der.i - pts[0].i);
+    return { recent, tenu, legende: document.getElementById('legende').textContent.replace(/[  ]/g, ' '),
+             ligne: !!document.querySelector('svg.graphe path.projection-recente'),
+             bloc: [...document.querySelectorAll('.critique-effort .v small')].map(s => s.textContent),
+             fins: document.querySelectorAll('.critique-date .fin-recente').length, lignes: document.querySelectorAll('.critique-ligne').length };
+  });
+  const v1 = x => (Math.round(x * 10) / 10).toFixed(1).replace('.', ',');
+  verifier('la légende dit les deux rythmes — tenu ' + v1(ryt.tenu) + ', et ' + v1(ryt.recent) + ' sur les 4 dernières semaines — et le graphique trace les deux projections',
+    ryt.legende.indexOf('au rythme tenu (' + v1(ryt.tenu) + '/sem.)') !== -1 &&
+    new RegExp('sur les 4 dernières semaines \\(' + v1(ryt.recent) + '/sem\\.\\) → fin S\\d{1,2} · \\S+ \\d{4}').test(ryt.legende) && ryt.ligne,
+    ryt.legende);
+  verifier('le bloc par groupe écrit les deux rythmes de chaque groupe, et la fin où mène le récent',
+    ryt.bloc.length === ryt.lignes && ryt.bloc.every(t => /^tenu [\d,]+ · récent [\d,]+\/sem\.$/.test(t)) && ryt.fins === ryt.lignes, JSON.stringify(ryt.bloc.slice(0, 3)));
+  await p.click('#echeance-titre'); await p.waitForTimeout(400);
+  const ficheRyt = esp14(await p.evaluate(() => (document.getElementById('fiche-echeance') || {}).textContent));
+  verifier('la fiche dit les deux rythmes, puis le verdict au rythme récent, sous celui du rythme tenu',
+    ficheRyt.indexOf('le rythme tenu est de ' + v1(ryt.tenu) + ' par semaine, ' + v1(ryt.recent) + ' sur les 4 dernières semaines.') !== -1 &&
+    /Au rythme des 4 dernières semaines \([\d,]+ par semaine\), (il manquerait \d+ plans?|l’échéance serait tenue)/.test(ficheRyt), ficheRyt);
+  await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+
+  // --- Oui/Non, partout.
+  const ouiNon = await p.evaluate(() => {
+    const ths = [...document.querySelectorAll('tr.titres th')];
+    const i = ths.findIndex(t => /^RPT/.test(t.textContent.trim()));
+    const vals = [...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.children[i] && tr.children[i].textContent.trim()).filter(Boolean);
+    return { i, valeurs: [...new Set(vals)].sort() };
+  });
+  verifier('dans le tableau, une case à cocher de l’extract se lit « Oui » ou « Non » — plus de true/false',
+    ouiNon.i > 0 && ouiNon.valeurs.join() === 'Non,Oui', JSON.stringify(ouiNon));
+  await p.fill('#recherche', 'true'); await p.waitForTimeout(450);
+  const parTrue = await p.evaluate(() => document.getElementById('compte').textContent.replace(/[\s\u00a0\u202f]+/g, ' ').trim());
+  await p.fill('#recherche', ''); await p.waitForTimeout(350);
+  verifier('et la recherche trouve encore les deux écritures', /^\d+ plans sur 640$/.test(parTrue), parTrue);
+
+  // --- Les plans à l'arrêt : recomptés à la main dans la source.
+  const arretAttendu = await p.evaluate(() => {
+    const src = window.__jeuDExemple('HDK');
+    const cle = ref => { const u = window.__analyserUD(ref); return u.valide ? u.racine + u.solution : ref; };
+    const sem = l => +String(l).slice(6);
+    const rel = src.releves.slice().sort((a, b) => sem(a.semaine) - sem(b.semaine)).map(r => {
+      const m = {}; Object.keys(r.plans || {}).forEach(ref => { m[cle(ref)] = r.plans[ref]; }); return { s: sem(r.semaine), m };
+    });
+    const cur = {}; src.plans.forEach(p => { cur[cle(p.reference)] = p.avancement; });
+    rel[rel.length - 1].m = cur;
+    let n = 0;
+    src.plans.forEach(p => {
+      if (window.__classer(p.avancement) !== 'encours') return;
+      const k0 = cle(p.reference); let depuis = rel[rel.length - 1].s;
+      for (let k = rel.length - 2; k >= 0; k--) { if (rel[k].m[k0] !== p.avancement) break; depuis = rel[k].s; }
+      if (rel[rel.length - 1].s - depuis >= 6) n++;
+    });
+    return n;
+  });
+  const arret = await p.evaluate(() => ({
+    texte: document.getElementById('a-surveiller').textContent.replace(/\s+/g, ' ').trim(),
+    liste: window.__plansALArret().length,
+    parGroupe: [...document.querySelectorAll('.critique-ligne .arret-n')].reduce((t, e) => t + parseInt(e.textContent, 10), 0)
+  }));
+  verifier('« À surveiller : N plans en cours n’ont pas bougé depuis 6 semaines ou plus » — N recompté à la main dans la source : ' + arretAttendu,
+    arretAttendu > 0 && arret.liste === arretAttendu &&
+    new RegExp('^À surveiller : ?' + arretAttendu + ' plans en cours n’ont pas bougé depuis 6 semaines ou plus$').test(arret.texte), JSON.stringify(arret));
+  verifier('le bloc par groupe les répartit par ATA : la somme des « à l’arrêt » fait N', arret.parGroupe === arretAttendu, String(arret.parGroupe));
+  await p.click('#a-surveiller button[data-arret]'); await p.waitForTimeout(450);
+  const arretFiltre = await p.evaluate(() => ({
+    lignes: document.querySelectorAll('#corps-tableau tr').length,
+    etats: [...new Set([...document.querySelectorAll('#corps-tableau tr')].map(tr => tr.querySelector('.etat-cellule') && tr.querySelector('.etat-cellule').textContent.trim()))],
+    jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent.replace('×', '').replace(/\s+/g, ' ').trim()),
+    presse: document.querySelector('#a-surveiller button').getAttribute('aria-pressed')
+  }));
+  verifier('un clic les montre dans le tableau — tous en cours —, le bandeau le dit', arretFiltre.lignes === arretAttendu && arretFiltre.presse === 'true' &&
+    arretFiltre.etats.join() === 'En cours' && arretFiltre.jetons.some(j => j === 'À surveiller : en cours sans bouger depuis 6 semaines ou plus'), JSON.stringify(arretFiltre));
+  await p.click('#a-surveiller button[data-arret]'); await p.waitForTimeout(400);
+  verifier('un second clic retire le filtre', await p.evaluate(() => document.querySelectorAll('#corps-tableau tr').length) === TOTAL);
+  const grpArret = await p.evaluate(() => {
+    const l = [...document.querySelectorAll('.critique-ligne')].find(x => x.querySelector('.arret-n'));
+    return l ? { groupe: l.dataset.groupe, n: parseInt(l.querySelector('.arret-n').textContent, 10) } : null;
+  });
+  await p.click('.critique-ligne[data-groupe="' + grpArret.groupe + '"]'); await p.waitForTimeout(500);
+  const jetonsArret = await p.evaluate(() => [...document.querySelectorAll('.groupe-refs .jeton-ud.arret')].map(b => b.title));
+  verifier('dans la liste d’un groupe, ses plans à l’arrêt sont cerclés d’ambre et leur bulle dit depuis quand',
+    jetonsArret.length === grpArret.n && jetonsArret.every(t => /en cours sans bouger depuis (au moins )?S\d{1,2} · \S+ \d{4} \(\d+ semaines\)/.test(t.replace(/[  ]/g, ' '))),
+    JSON.stringify([grpArret, jetonsArret.slice(0, 2)]));
+  await p.click('.critique-ligne[data-groupe="' + grpArret.groupe + '"]'); await p.waitForTimeout(400);
+
+  // --- La vie d'un plan : un clic sur une référence, où qu'elle soit.
+  const refRecul = await p.evaluate(() => {
+    const J = window.__journal();
+    const e = J[0].evenements.find(x => x.type === 'change' && x.avant === 'termine' && x.apres !== 'termine');
+    return e ? e.ref : null;
+  });
+  await p.evaluate(ref => { document.querySelector('#corps-tableau button[data-ref-plan="' + ref + '"]').scrollIntoView({ block: 'center' }); }, refRecul);
+  await p.click('#corps-tableau button[data-ref-plan="' + refRecul + '"]'); await p.waitForTimeout(600);
+  const vie = await p.evaluate(ref => {
+    const f = document.getElementById('fiche-plan');
+    return {
+      visible: !f.hidden && f.offsetParent !== null, lignes: document.querySelectorAll('#corps-tableau tr').length,
+      ref: (f.querySelector('.ref') || {}).textContent, cases: f.querySelectorAll('.fiche-plan-frise .case').length,
+      releves: window.__historiquePlan(ref).length,
+      etapes: [...f.querySelectorAll('.fiche-plan-etapes li')].map(li => ({ texte: li.textContent.replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim(), recul: li.classList.contains('recul') })),
+      resume: (f.querySelector('.fiche-plan-resume') || {}).textContent,
+      auDessus: f.getBoundingClientRect().bottom <= document.getElementById('cadre-tableau').getBoundingClientRect().top + 1
+    };
+  }, refRecul);
+  verifier('cliquer une référence du tableau le réduit à ce plan et ouvre au-dessus son historique : une case par relevé',
+    vie.visible && vie.lignes === 1 && vie.ref === refRecul && vie.cases === vie.releves && vie.releves >= 10 && vie.auDessus, JSON.stringify(vie));
+  verifier('l’historique d’un plan dé-validé dit son recul, en rouge, et depuis quand il est dans son état',
+    vie.etapes.some(e => e.recul && /^S\d{1,2} · \S+ \d{4} ?Terminé → En cours recul$/.test(e.texte)) &&
+    /^En cours depuis S\d{1,2} · \S+ \d{4} \((ce relevé|\d+ semaines?)\)/.test(esp14(vie.resume)), JSON.stringify([vie.etapes, vie.resume]));
+  await p.click('#fiche-plan button[data-fermer-plan]'); await p.waitForTimeout(400);
+  verifier('la croix de l’historique rend le tableau entier', await p.evaluate(() => document.getElementById('fiche-plan').hidden &&
+    document.querySelectorAll('#corps-tableau tr').length) === TOTAL);
+  const refReemis = await p.evaluate(() => { const e = window.__journal().flatMap(s => s.evenements).find(x => x.type === 'indice'); return e ? e.ref : null; });
+  await p.evaluate(ref => { const b = document.querySelector('#corps-tableau button[data-ref-plan="' + ref + '"]'); b.scrollIntoView({ block: 'center' }); b.click(); }, refReemis);
+  await p.waitForTimeout(600);
+  const vieReemis = await p.evaluate(() => [...document.querySelectorAll('#fiche-plan .fiche-plan-etapes li.indice')].map(li => li.textContent.replace(/\s+/g, ' ').trim()));
+  verifier('l’historique d’un plan réémis le suit d’un indice à l’autre : « réémis sous l’indice X (ancienne → nouvelle) »',
+    vieReemis.length >= 1 && vieReemis.every(t => /réémis sous l’indice [A-Z] \([A-Z]{2}E\d{4}A\d{6}[A-Z] → [A-Z]{2}E\d{4}A\d{6}[A-Z]\)/.test(t)), JSON.stringify(vieReemis));
+  await p.click('#fiche-plan button[data-fermer-plan]'); await p.waitForTimeout(300);
+
+  // --- Le chevron des groupes, comme celui des semaines.
+  await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(400);
+  const chevrons = await p.evaluate(() => [...document.querySelectorAll('.critique-ligne')].map(l => ({
+    chevron: !!l.querySelector('svg.chevron'), presse: l.getAttribute('aria-pressed'),
+    tourne: getComputedStyle(l.querySelector('svg.chevron')).transform })));
+  verifier('chaque groupe porte un chevron : vers la droite fermé, vers le bas ouvert — comme les semaines du journal',
+    chevrons.every(c => c.chevron) && chevrons.filter(c => c.presse === 'true').every(c => c.tourne !== 'none') &&
+    chevrons.filter(c => c.presse !== 'true').every(c => c.tourne === 'none'), JSON.stringify(chevrons.slice(0, 2)));
+  await p.click('.critique-ligne >> nth=0'); await p.waitForTimeout(300);
+
+  // --- La vue d'ensemble : les chiffres de chaque contrat, ceux de sa page.
+  await p.click('#choix-perimetre button[data-perimetre="PERSO"]'); await p.waitForTimeout(400);
+  const avantEns = await p.evaluate(() => ({ phrase: document.getElementById('phrase').textContent, lignes: document.querySelectorAll('#corps-tableau tr').length,
+    contrat: document.getElementById('select-contrat').value, jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent).join('|') }));
+  await p.click('#voir-ensemble'); await p.waitForTimeout(1500);
+  const ens = await p.evaluate(() => [...document.querySelectorAll('#ensemble tbody tr')].map(tr => ({
+    nom: tr.querySelector('th button').textContent.trim(), courant: tr.classList.contains('courant'),
+    /* La valeur principale de chaque case (la petite ligne dessous à part). */
+    cellules: [...tr.querySelectorAll('td')].map(td => ((td.querySelector('.v') || td).textContent).replace(/[\u00a0\u202f]/g, ' ').replace(/\s+/g, ' ').trim()) })));
+  const apresEns = await p.evaluate(() => ({ phrase: document.getElementById('phrase').textContent, lignes: document.querySelectorAll('#corps-tableau tr').length,
+    contrat: document.getElementById('select-contrat').value, jetons: [...document.querySelectorAll('.jeton')].map(j => j.textContent).join('|') }));
+  verifier('la vue d’ensemble : une ligne par contrat, le contrat affiché signalé',
+    ens.map(r => r.nom).join() === 'HDK,THS,VRK' && ens.filter(r => r.courant).map(r => r.nom).join() === 'HDK', JSON.stringify(ens.map(r => [r.nom, r.courant])));
+  verifier('l’ouvrir ne touche à rien de ce que le lecteur regardait : même contrat, même périmètre, mêmes filtres',
+    JSON.stringify(avantEns) === JSON.stringify(apresEns), JSON.stringify([avantEns, apresEns]));
+  await p.click('#ensemble button[data-fermer-ensemble]'); await p.waitForTimeout(200);
+  await p.click('#choix-perimetre button[data-perimetre=""]'); await p.waitForTimeout(400);
+  for (const r of ens) {
+    await p.selectOption('#select-contrat', r.nom); await p.waitForTimeout(900);
+    const page = await p.evaluate(() => {
+      const t = [...document.querySelectorAll('#etats .etat-btn')].find(b => b.dataset.famille === 'termine') || document.querySelector('#etats .etat-btn');
+      return {
+        phrase: document.getElementById('phrase').textContent.replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim(),
+        legende: document.getElementById('legende').textContent.replace(/[  ]/g, ' '),
+        arret: (document.getElementById('a-surveiller').textContent.match(/(\d+) plans?/) || [])[1] || '—',
+        echeance: document.getElementById('echeance-titre').textContent.replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim()
+      };
+    });
+    verifier('vue d’ensemble, ' + r.nom + ' : terminés, rythme tenu, à l’arrêt et prochaine échéance sont ceux de sa page',
+      page.phrase.indexOf(r.cellules[0].replace(' / ', ' sur ') + ' plans terminés') === 0 &&
+      page.legende.indexOf('au rythme tenu (' + r.cellules[2] + ')') !== -1 &&
+      r.cellules[3] === page.arret && page.echeance.indexOf(r.cellules[4]) !== -1, JSON.stringify([r.cellules, page]));
+  }
+  await p.selectOption('#select-contrat', 'HDK'); await p.waitForTimeout(900);
+
+  // --- Sous le concept harnais, les mêmes fonctions.
+  await p.click('#choix-indicateur button[data-indicateur="concept"]'); await p.waitForTimeout(800);
+  const sousConcept = await p.evaluate(() => ({
+    surveiller: !document.getElementById('a-surveiller').hidden,
+    recent: /sur les 4 dernières semaines/.test(document.getElementById('legende').textContent),
+    journal: document.querySelectorAll('.journal-entetes .entete-col').length,
+    reculs: !!document.querySelector('#comparatif .puce-delta[data-delta="reculs"]'),
+    jalons: document.querySelectorAll('svg.graphe .jalon').length,
+    presse: [...document.querySelectorAll('.commandes-graphe .segmente button[aria-pressed="true"]')].map(b => b.dataset.span).join()
+  }));
+  await p.evaluate(() => { const b = document.querySelector('#corps-tableau button[data-ref-plan]'); b.scrollIntoView({ block: 'center' }); b.click(); });
+  await p.waitForTimeout(500);
+  const ficheConcept = await p.evaluate(() => !document.getElementById('fiche-plan').hidden && document.querySelectorAll('#fiche-plan .case').length > 1);
+  verifier('sous le concept harnais, tout y est : à surveiller, rythme récent, journal, reculs, cinq jalons sur « Échéances », historique d’un plan',
+    sousConcept.surveiller && sousConcept.recent && sousConcept.journal >= 3 && sousConcept.reculs && sousConcept.jalons === 5 &&
+    sousConcept.presse === 'jalons' && ficheConcept, JSON.stringify([sousConcept, ficheConcept]));
+  await p.evaluate(() => { const b = document.querySelector('#fiche-plan button[data-fermer-plan]'); if (b) b.click(); });
+  await p.click('#choix-indicateur button[data-indicateur="def"]'); await p.waitForTimeout(700);
   await reinitialiser(p);
 
   section('Persistance (même navigateur, page rechargée)');

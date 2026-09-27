@@ -45,11 +45,11 @@
     <!-- Le message du classeur quand il n'a rien pu rendre — feuille vide,
          contrat introuvable, colonne d'avancement absente. -->
     <span class="mot-mode alerte-source" id="alerte-source" role="alert" hidden></span>
-    <!-- Les deux réglages de la page, l'un sous l'autre, à droite : le
-         contrat, puis l'avancement suivi. Chacun a son mot à gauche, comme
-         un petit formulaire qui se lit de haut en bas. -->
+    <!-- Les deux réglages de la page, l'un sous l'autre, calés à droite : le
+         contrat, puis l'avancement suivi, chacun son mot juste devant lui. -->
     <div class="reglages" id="reglages">
       <span class="choix-contrat" id="choix-contrat" hidden>
+        <button type="button" class="lien-doux lien-ensemble" id="voir-ensemble" aria-expanded="false" aria-controls="ensemble">Vue d’ensemble</button>
         <label for="select-contrat">Contrat</label>
         <span class="controle">
           <select class="select" id="select-contrat"></select>
@@ -68,6 +68,10 @@
       </span>
     </div>
   </div>
+
+  <!-- La vue d'ensemble des contrats : une ligne par contrat, ouverte à la
+       demande depuis le bandeau. -->
+  <section class="ensemble" id="ensemble" hidden aria-label="Vue d’ensemble des contrats"></section>
 
   <!-- Le titre, seul, au centre : rien ne lui vole sa zone. Le contrat n'est
        pas répété, il est déjà choisi en haut. -->
@@ -106,6 +110,9 @@
     <div class="filets" id="filets" aria-hidden="true"></div>
     <div class="etats" id="etats" role="group" aria-label="Filtrer par valeur de l'avancement suivi"></div>
     <div class="comparatif" id="comparatif"></div>
+    <!-- À surveiller : les plans en cours qui n'ont pas bougé depuis des
+         semaines. Un clic les montre dans le tableau. -->
+    <div class="a-surveiller" id="a-surveiller" hidden></div>
   </section>
 
   <section class="bloc">
@@ -225,6 +232,10 @@
       <span class="legende-rapp" id="legende-seconde" data-base="la" hidden></span>
     </div>
     <div class="incomplets" id="incomplets" data-base="ici"></div>
+    <!-- L'historique d'un plan : dès que le tableau n'en montre qu'un — un
+         clic sur une référence, où qu'elle soit —, sa vie relevé après
+         relevé. -->
+    <div class="fiche-plan" id="fiche-plan" data-base="ici" hidden></div>
 
     <div class="cadre-tableau" id="cadre-tableau" data-base="ici">
       <div class="defile" id="defile">
@@ -273,12 +284,6 @@
       <div class="rapp-figure" id="venn-rapprochement" role="img" aria-label="Comparaison GATES / seconde base"></div>
       <div class="verdicts" id="verdicts-rapprochement" role="group" aria-label="Filtrer le tableau des plans par verdict de la comparaison"></div>
     </div>
-    <!-- Sous les cercles, plan par plan : un lot après l'autre, dans l'ordre
-         des priorités — ce qui est à vérifier d'abord, déplié ; ce qui va
-         ensuite, replié. Chaque ligne : la référence, l'état GATES, ce que la
-         seconde base en dit. Un clic sur une référence la montre dans le
-         tableau. -->
-    <div class="rapp-liste" id="liste-rapprochement"></div>
   </section>
 
   <footer class="pied">

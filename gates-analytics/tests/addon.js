@@ -1850,6 +1850,19 @@ function serveurSur(valeurs, proprietes, fichiers) {
         .findIndex(t => t.dataset.cle === 'reference');
       return i !== -1 && document.querySelector('#corps-tableau tr').children[i].textContent.trim() === r;
     }, refUD));
+  /* Le tableau réduit à ce plan : son historique s'ouvre au-dessus (débrief
+     14), lu dans les relevés tels que Code.gs les archive — une case par
+     relevé, et depuis quand il est dans sa valeur. */
+  const vieUD = await pg.evaluate(r => {
+    const f = document.getElementById('fiche-plan');
+    return { visible: !f.hidden, ref: (f.querySelector('.ref') || {}).textContent, cases: f.querySelectorAll('.fiche-plan-frise .case').length,
+             releves: window.__serieAffichee().pts.length, resume: (f.querySelector('.fiche-plan-resume') || {}).textContent || '' };
+  }, refUD);
+  verifier('l’historique du plan s’ouvre au-dessus du tableau : une case par relevé archivé, et depuis quand il est dans sa valeur',
+    vieUD.visible && vieUD.ref === refUD && vieUD.cases === vieUD.releves && vieUD.releves >= 2 &&
+    / depuis (au moins )?S\d{1,2} · \S+ \d{4}/.test(vieUD.resume.replace(/[\u00a0\u202f]/g, ' ')), JSON.stringify(vieUD));
+  const ouiNonUD = await pg.evaluate(() => [...document.querySelectorAll('#corps-tableau td')].some(td => /^(true|false)$/i.test(td.textContent.trim())));
+  verifier('aucune case du tableau ne dit true ou false : Oui ou Non', !ouiNonUD);
   await pg.click('#tout-effacer'); await pg.waitForTimeout(450);
 
   // =================================================================
@@ -1985,28 +1998,21 @@ function serveurSur(valeurs, proprietes, fichiers) {
         /Ces 1 ligne n’a pas de plan dans GATES\. Les voir dans Base2/.test((document.querySelector('#corps-tableau .vide-message') || {}).textContent.replace(/\s+/g, ' ')) &&
         [...document.querySelectorAll('.jeton')].some(j => /Comparaison : ligne de Base2 sans plan dans GATES/.test(j.textContent));
     }));
-  /* Plan par plan, sur une référence à une seule colonne : les groupes
-     suivent les verdicts (les lots à zéro n'apparaissent pas), et la ligne
-     seulement là s'ouvre dans le tableau de Base2, cherchée sur REF_UD.
-     Les lots s'ouvrent repliés : on déplie « seulement dans Base2 ». */
-  const seulOuvert = await pr.evaluate(() => {
-    const t = document.querySelector('#liste-rapprochement button[data-plier="seul"]');
-    return t ? t.getAttribute('aria-expanded') : null;
-  });
-  verifier('plan par plan sur Base2 : les lots s\'ouvrent repliés', seulOuvert === 'false', String(seulOuvert));
-  await pr.click('#liste-rapprochement button[data-plier="seul"]'); await pr.waitForTimeout(300);
+  /* Une seule liste (débrief 14) : les verdicts. Le clic sur « seulement
+     dans Base2 » l'a posé ET déplié sous sa ligne : sa ligne seulement là,
+     cherchée sur REF_UD. Plus de « plan par plan » qui répète les verdicts. */
   const listeB2 = await pr.evaluate(() => ({
-    groupes: [...document.querySelectorAll('#liste-rapprochement .rapp-groupe')].map(g => g.dataset.cle + '=' + g.querySelector('.rapp-groupe-tete b').textContent.replace(/\s/g, '')),
-    seul: [...document.querySelectorAll('#liste-rapprochement .rapp-groupe[data-cle="seul"] .rapp-puce')].map(b => ({
+    ancienne: !!document.querySelector('#liste-rapprochement, .rapp-groupe'),
+    ouverts: [...document.querySelectorAll('#verdicts-rapprochement .verdict-bloc[data-ouvert="true"]')].map(g => g.dataset.lot).join(),
+    chevrons: [...document.querySelectorAll('#verdicts-rapprochement .verdict:not([disabled])')].every(b => !!b.querySelector('.chevron')),
+    seul: [...document.querySelectorAll('#verdicts-rapprochement .verdict-bloc[data-lot="seul"] .rapp-puce')].map(b => ({
       ref: b.querySelector('.rapp-puce-ref').textContent, la: b.dataset.ligneLa, gates: b.dataset.etat || '', bulle: b.title
     }))
   }));
-  const attendusB2 = ['manque', 'avance', 'emission', 'seul', 'attente', 'accord']
-    .map(c => [c, c === 'seul' ? 1 : (attB2[c] || 0)]).filter(x => x[1] > 0).map(x => x[0] + '=' + x[1]);
-  verifier('plan par plan sur Base2 : les groupes non vides des verdicts, dans l\'ordre des priorités, et la ligne seulement là avec REF_UD',
-    listeB2.groupes.join(' ') === attendusB2.join(' ') && listeB2.seul.length === 1 && listeB2.seul[0].ref === 'UD-99-9999' &&
-    listeB2.seul[0].la === 'UD-99-9999' && listeB2.seul[0].gates === '' && /^aucun plan dans GATES/.test(listeB2.seul[0].bulle), JSON.stringify([listeB2, attendusB2]));
-  await pr.click('#liste-rapprochement .rapp-groupe[data-cle="seul"] button[data-ligne-la]'); await pr.waitForTimeout(500);
+  verifier('une seule liste sur Base2 : les verdicts, chacun son chevron, « seulement dans Base2 » déplié sous sa ligne avec REF_UD',
+    !listeB2.ancienne && listeB2.ouverts === 'seul' && listeB2.chevrons && listeB2.seul.length === 1 && listeB2.seul[0].ref === 'UD-99-9999' &&
+    listeB2.seul[0].la === 'UD-99-9999' && listeB2.seul[0].gates === '' && /^aucun plan dans GATES/.test(listeB2.seul[0].bulle), JSON.stringify(listeB2));
+  await pr.click('#verdicts-rapprochement .verdict-bloc[data-lot="seul"] button[data-ligne-la]'); await pr.waitForTimeout(500);
   verifier('un clic sur cette référence ouvre le tableau de Base2 cherché sur UD-99-9999, le lot retiré, le jeton de recherche posé',
     await pr.evaluate(() => {
       const l = document.querySelectorAll('#corps-seconde tr[data-i]');
@@ -2150,6 +2156,31 @@ function serveurSur(valeurs, proprietes, fichiers) {
     retourM.plans === 186 && retourM.etats === 186 && retourM.nom === 'X1' &&
     retourM.releves === cM.getHistorique(clM, 'X1').length && retourM.etat === '',
     JSON.stringify([retourM.plans, retourM.nom, retourM.releves]));
+  /* La vue d'ensemble (débrief 14) : une ligne par contrat, avec les
+     chiffres de sa propre page. X1 est affiché ; X2 vient du classeur par
+     le pont — une fois : les paquets reçus sont gardés. La page, elle, ne
+     bouge pas. */
+  const avantEns = await etatPage();
+  await pm.click('#voir-ensemble'); await pm.waitForTimeout(2000);
+  const ens = await pm.evaluate(() => [...document.querySelectorAll('#ensemble tbody tr')].map(tr => ({
+    nom: tr.querySelector('th button').textContent.trim(), courant: tr.classList.contains('courant'),
+    termines: (tr.querySelector('td .v') || { textContent: '' }).textContent.replace(/\s+/g, ' ').trim()
+  })));
+  const apresEns = await etatPage();
+  const nouveauxAppels = apresEns.appels.slice(avantEns.appels.length);
+  verifier('la vue d’ensemble liste X1 et X2, X1 affiché ; X2 est demandé au classeur par le pont, une fois',
+    ens.map(r => r.nom).join() === 'X1,X2' && ens[0].courant && !ens[1].courant && nouveauxAppels.join() === 'X2',
+    JSON.stringify([ens, nouveauxAppels]));
+  verifier('les terminés de X1 sont ceux de sa page, et la page n’a pas bougé',
+    apresEns.phrase.replace(/\s+/g, ' ').indexOf(ens[0].termines.replace(' / ', ' sur ')) === 0 &&
+    apresEns.plans === avantEns.plans && apresEns.nom === 'X1' && apresEns.phrase === avantEns.phrase,
+    JSON.stringify([ens[0], apresEns.phrase]));
+  await pm.click('#ensemble button[data-aller-contrat="X2"]'); await pm.waitForTimeout(1200);
+  const x2Ens = await etatPage();
+  verifier('un clic sur X2 l’affiche avec les terminés annoncés, sans redemander son paquet au classeur',
+    x2Ens.nom === 'X2' && x2Ens.plans === 93 && x2Ens.appels.length === apresEns.appels.length &&
+    x2Ens.phrase.replace(/\s+/g, ' ').indexOf(ens[1].termines.replace(' / ', ' sur ')) === 0,
+    JSON.stringify([ens[1], x2Ens.phrase, x2Ens.appels]));
   await ctxMulti.close();
 
   // =================================================================

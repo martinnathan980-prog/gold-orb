@@ -151,6 +151,7 @@ body {
 /* Un changement d'indice n'est pas un état : sa pastille est un anneau, pas
    un aplat. « sans » tient la place d'une pastille pour garder l'alignement. */
 .pastille.indice { background: var(--indice); }
+.pastille.recul { background: var(--alerte); }
 .pastille.sans { background: transparent; }
 /* Sous 680 px les segments sont trop étroits pour porter une étiquette :
    on repasse à une grille régulière. */
@@ -209,16 +210,18 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .bandeau-mode .alerte-source { color: var(--alerte); font-weight: 500; }
 .bandeau-mode .alerte-source[hidden] { display: none; }
 /* Les réglages, à droite du bandeau : le contrat au-dessus, l'avancement
-   dessous, chacun son mot à gauche, alignés comme un petit formulaire. Le
+   dessous, chaque ligne calée sur le bord droit de la page, son mot juste
+   devant sa commande (débrief 14 : « tout centré sur la droite »). Le
    contrat n'apparaît que s'il y a vraiment plusieurs contrats entre lesquels
    choisir ; l'avancement, que si l'extract porte le concept harnais. */
 .bandeau-mode .reglages {
-  margin-left: auto; display: grid; grid-template-columns: auto auto; column-gap: 10px; row-gap: 8px;
-  align-items: center; justify-items: start; font-size: 12.5px; color: var(--encre-3);
+  margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+  font-size: 12.5px; color: var(--encre-3);
 }
-.bandeau-mode .choix-contrat, .bandeau-mode .choix-avancement { display: contents; }
-.bandeau-mode .choix-contrat > label, .bandeau-mode .mot-reglage { justify-self: end; }
-.bandeau-mode .choix-contrat .controle { display: inline-flex; align-items: baseline; gap: 8px; }
+.bandeau-mode .choix-contrat, .bandeau-mode .choix-avancement { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+/* « Chargement… » s'écrit à gauche du sélecteur : le sélecteur reste
+   collé au bord droit pendant qu'un contrat se charge. */
+.bandeau-mode .choix-contrat .controle { display: inline-flex; flex-direction: row-reverse; align-items: baseline; gap: 8px; }
 .bandeau-mode .choix-contrat[hidden] { display: none; }
 /* Sans l'interrupteur, son mot se tait aussi. */
 .bandeau-mode .choix-avancement[hidden] { display: none; }
@@ -342,6 +345,7 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .journal-tete .mini-jauge span { display: block; min-width: 2px; }
 .journal-tete .mini-jauge .indice { background: var(--indice); }   /* le changement d'indice, en violet ici aussi */
 .journal-tete .mini-jauge .nouveau { background: var(--filet-fort); }
+.journal-tete .mini-jauge .recul { background: var(--alerte); }
 .journal-tete .mini-jauge .disparu { background: transparent; box-shadow: inset 0 0 0 1.5px var(--filet-fort); }
 .journal-tete .mini-jauge .vide {
   background-image: repeating-linear-gradient(45deg, var(--filet-fort) 0 1.5px, transparent 1.5px 4px);
@@ -406,6 +410,10 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
 .journal-ligne .ref-indice { display: grid; gap: 1px; }
 .journal-ligne .ref-indice .ancienne { color: var(--encre-3); }
 .journal-ligne .ref-indice .nouvelle { white-space: nowrap; color: var(--indice); }
+/* Un recul : la référence et la flèche en rouge, un liseré à gauche — la
+   ligne se voit dans la liste sans qu'il faille lire les états. */
+.journal-ligne.recul { box-shadow: inset 2px 0 0 var(--alerte); }
+.journal-ligne.recul .ref, .journal-ligne.recul .fleche-etat { color: var(--alerte); }
 /* Le passage : l'état de départ s'efface, seule l'arrivée porte la couleur. */
 .journal-ligne .vers {
   display: grid; grid-template-columns: 1fr 12px 1fr; align-items: center; gap: 4px;
@@ -468,6 +476,10 @@ body[data-vide="true"] #rapprochement, body[data-vide="true"] .choix-avancement,
   font-size: 11.5px; line-height: 1.3; cursor: pointer; white-space: nowrap;
 }
 .jeton-ud:hover { border-color: var(--encre-3); color: var(--encre); background: var(--creux); }
+/* Un plan à l'arrêt : bord ambre, comme la puce « À surveiller ». */
+.jeton-ud.arret { border-color: var(--cours); box-shadow: inset 0 0 0 1px var(--cours); }
+.groupe-refs .entete .arret-n { display: inline-flex; align-items: center; gap: 5px; color: var(--cours); }
+.groupe-refs .entete .arret-n .pastille { width: 8px; height: 8px; }
 .jeton-ud .pastille { width: 7px; height: 7px; margin: 0; flex: none; }
 .journal-vide { color: var(--encre-3); font-size: 13px; padding: 14px 2px; }
 .journal-plus {
@@ -596,6 +608,9 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .fiche-echeance-rythme { color: var(--encre-2); }
 .fiche-echeance-rythme b { color: var(--encre); font-weight: 500; font-variant-numeric: tabular-nums; }
 .fiche-echeance-verdict { display: flex; gap: 9px; align-items: baseline; font-weight: 500; }
+/* Le même verdict au rythme des quatre dernières semaines, en retrait sous
+   celui du rythme tenu. */
+.fiche-echeance-recent { font-size: 12.5px; color: var(--encre-2); margin: -4px 0 0 27px; }
 .fiche-echeance-verdict::before {
   flex: none; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
   font-size: 11px; font-weight: 700; color: var(--sur-plein); transform: translateY(3px);
@@ -665,6 +680,61 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .puce-delta:hover { color: var(--encre); border-bottom-color: var(--encre); }
 .puce-delta[aria-pressed="true"] { color: var(--encre); font-weight: 500; border-bottom: 1px solid var(--encre); }
 .puce-delta b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; }
+/* La vue d'ensemble des contrats, sous le bandeau. */
+.lien-ensemble { font-size: 12.5px; }
+.ensemble { margin: 14px 0 0; padding: 14px 18px 12px; background: var(--surface); border: 1px solid var(--filet); border-radius: 4px; }
+.ensemble[hidden] { display: none; }
+.ensemble-tete { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+.ensemble-tete h2 { font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 18px; margin: 0; }
+.ensemble-tete .indice { font-size: 12px; color: var(--encre-3); }
+.defile-ensemble { overflow-x: auto; }
+.ensemble-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ensemble-table th, .ensemble-table td { padding: 8px 10px; text-align: left; vertical-align: top; border-top: 1px solid var(--filet); }
+.ensemble-table thead th { border-top: none; font-size: 10.5px; font-weight: 400; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-3); }
+.ensemble-table tbody th .lien-doux { font: 500 14px "IBM Plex Sans", system-ui, sans-serif; color: var(--encre); }
+.ensemble-table tr.courant { background: var(--creux); }
+.ensemble-table .v { display: block; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; color: var(--encre); }
+.ensemble-table small { display: block; margin-top: 2px; font-size: 11px; color: var(--encre-3); }
+.ensemble-table .v.tard, .ensemble-table small.recul { color: var(--alerte); }
+.ensemble-table .v.bon { color: var(--fait); }
+.ensemble-table .v.arret { color: var(--cours); }
+/* L'historique d'un plan, au-dessus du tableau. */
+.fiche-plan { margin: 0 0 12px; padding: 12px 16px 12px; background: var(--surface); border: 1px solid var(--filet); border-radius: 4px; }
+.fiche-plan[hidden] { display: none; }
+.fiche-plan-tete { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.fiche-plan-tete .mot { font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--encre-3); }
+.fiche-plan-tete .ref { font: 500 14px "IBM Plex Mono", monospace; }
+.fiche-plan-tete .etat { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.fiche-plan-fermer { margin-left: auto; border: 1px solid var(--filet-fort); background: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; color: var(--encre-2); font: inherit; line-height: 1; }
+.fiche-plan-fermer:hover { border-color: var(--encre); color: var(--encre); }
+/* La frise : une case par relevé, de la couleur de la valeur ce jour-là ;
+   la semaine n'est écrite qu'aux changements, au premier et au dernier. */
+.fiche-plan-frise { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 2px; margin: 12px 0 8px; }
+.fiche-plan-frise .case { display: grid; gap: 4px; min-width: 0; }
+.fiche-plan-frise .bande { height: 12px; border-radius: 2px; }
+.fiche-plan-frise .bande.absent { background: none; border: 1px dashed var(--filet-fort); }
+.fiche-plan-frise .bande.inconnu { background: var(--creux); }
+.fiche-plan-frise .case.reemis .bande { box-shadow: inset 2px 0 0 var(--indice); }
+.fiche-plan-frise .sem { font: 10.5px "IBM Plex Mono", monospace; color: var(--encre-3); white-space: nowrap; overflow: visible; }
+.fiche-plan-resume { font-size: 13px; color: var(--encre); }
+.fiche-plan-resume.arret b { color: var(--cours); }
+.fiche-plan-resume.doux { color: var(--encre-3); }
+.fiche-plan-etapes { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 12.5px; color: var(--encre-2); }
+.fiche-plan-etapes .sem { display: inline-block; min-width: 130px; font: 11.5px "IBM Plex Mono", monospace; color: var(--encre-3); }
+.fiche-plan-etapes .indice { color: var(--indice); }
+.fiche-plan-etapes .recul, .fiche-plan-etapes .mot-recul { color: var(--alerte); }
+.fiche-plan-etapes .mot-recul { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+/* La référence du tableau se clique comme un lien discret. */
+.ref-plan { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.ref-plan:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* À surveiller : les plans à l'arrêt, sous le comparatif, dans le même
+   registre, en ambre — ce n'est pas un retard, c'est une question à poser. */
+.a-surveiller { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-top: 8px; font-size: 13px; color: var(--encre-2); }
+.a-surveiller[hidden] { display: none; }
+.a-surveiller .puce-arret b { color: var(--cours); }
+.pastille.arret { background: transparent; border: 2px solid var(--cours); box-sizing: border-box; }
+/* Les reculs en rouge, dans le comparatif comme dans le journal. */
+.puce-delta[data-delta="reculs"], .compte-passage.recul b { color: var(--alerte); }
 
 /* ---------------------------------------------------- Rapprochement
    Quatre compteurs dans le registre des puces du comparatif ; une liste
@@ -675,7 +745,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
    en commun au milieu, ce que chacune est seule à connaître sur les côtés —
    et, au cœur du recouvrement, un anneau qui dit d'un coup d'œil la part
    d'identiques. À droite, une ligne par verdict, en français, cliquable. */
-.rapp-face { display: grid; grid-template-columns: minmax(0, 12fr) minmax(0, 8fr); gap: 18px 36px; align-items: center; }
+.rapp-face { display: grid; grid-template-columns: minmax(0, 12fr) minmax(0, 8fr); gap: 18px 36px; align-items: start; }
 @media (max-width: 860px) { .rapp-face { grid-template-columns: 1fr; } }
 .rapp-figure { min-width: 0; }
 .rapp-figure svg { width: 100%; height: auto; display: block; overflow: visible; }
@@ -720,10 +790,26 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .rapp-figure .cote.survole .moyen { text-decoration: underline; text-underline-offset: 3px; }
 .verdicts { display: grid; gap: 6px; }
 .verdict {
-  display: grid; grid-template-columns: 14px 62px minmax(0, 1fr); align-items: center; column-gap: 10px;
-  text-align: left; background: none; border: 1px solid transparent; border-radius: 4px; padding: 6px 10px 6px 8px;
+  display: grid; grid-template-columns: 14px 62px minmax(0, 1fr) 10px; align-items: center; column-gap: 10px;
+  width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 4px; padding: 6px 10px 6px 8px;
   font: inherit; color: var(--encre-2); cursor: pointer;
 }
+/* Le chevron dit que la ligne se déplie, comme partout ailleurs sur la
+   page : vers la droite fermée, vers le bas ouverte. */
+.verdict .chevron { color: var(--encre-3); transition: transform .12s; }
+.verdict[aria-expanded="true"] .chevron { transform: rotate(90deg); color: var(--encre); }
+.verdict-bloc.sans-trouve { opacity: .45; }
+/* Les plans d'un verdict, dépliés sous sa ligne : un filet à gauche les
+   rattache à elle ; au-delà d'une hauteur, la zone défile plutôt que de
+   pousser la page — comme le journal et le bloc par groupe. */
+.verdict-corps {
+  margin: 4px 0 8px 18px; padding: 6px 4px 2px 12px; border-left: 2px solid var(--filet-fort);
+  max-height: 46vh; overflow-y: auto; overscroll-behavior: contain;
+}
+.verdict-corps::-webkit-scrollbar { width: 9px; }
+.verdict-corps::-webkit-scrollbar-thumb { background: var(--filet-fort); border-radius: 5px; }
+.verdict-corps::-webkit-scrollbar-track { background: transparent; }
+.verdict-corps-tete { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 4px 8px; }
 .verdict:hover { background: var(--creux); color: var(--encre); }
 .verdict[aria-pressed="true"] { border-color: var(--encre); background: var(--surface); color: var(--encre); }
 .verdict:disabled { cursor: default; opacity: .5; }
@@ -734,39 +820,14 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 }
 .verdict .verdict-mot { font-size: 13px; line-height: 1.35; color: var(--encre); }
 .verdict .pastille { width: 9px; height: 9px; }
-/* Plan par plan : un groupe par lot, une tête cliquable qui plie et déplie,
-   un tableau de trois colonnes dessous. Les groupes se suivent séparés d'un
-   filet, comme les semaines du journal. */
-.rapp-liste { margin-top: 24px; }
-.rapp-liste:empty { display: none; }
-.rapp-sur { font-size: 12px; color: var(--encre-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.rapp-liste-tete { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
-.rapp-liste-titre { font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 17px; margin: 0; }
-.rapp-puces-legende { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; margin-left: auto; font-size: 12.5px; color: var(--encre-2); }
+.rapp-sur { font-size: 12px; color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.rapp-puces-legende { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--encre-2); }
 .rapp-puces-legende > span { display: inline-flex; align-items: center; gap: 5px; }
 .rapp-puces-legende .pastille { width: 8px; height: 8px; }
-.rapp-groupe { border-top: 1px solid var(--filet); }
-.rapp-groupe:last-child { border-bottom: 1px solid var(--filet); }
-.rapp-groupe-tete {
-  width: 100%; display: flex; align-items: center; gap: 10px; background: none; border: 0;
-  padding: 9px 4px; font: inherit; font-size: 13.5px; color: var(--encre); cursor: pointer; text-align: left;
-}
-.rapp-groupe-tete:hover { background: var(--creux); }
-.rapp-groupe-tete b { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-weight: 500; min-width: 3.4ch; text-align: right; }
-.rapp-groupe-tete .rapp-groupe-phrase { color: var(--encre); font-size: 13px; text-align: left; }
-.rapp-groupe-tete .chevron { margin-left: auto; width: 8px; height: 8px; flex: none; border-right: 1.5px solid var(--encre-3); border-bottom: 1.5px solid var(--encre-3); transform: rotate(45deg); transition: transform .15s; }
-.rapp-groupe[data-ouvert="true"] .rapp-groupe-tete .chevron { transform: rotate(225deg); }
-/* Un lot déplié montre tous ses plans : plutôt que de pousser la page sur
-   des centaines de puces, le corps se donne une hauteur et défile — comme
-   le journal et le bloc par groupe, avec leur barre et leur retenue. */
-.rapp-groupe-corps { padding: 4px 4px 10px; max-height: 46vh; overflow-y: auto; overscroll-behavior: contain; }
-.rapp-groupe-corps::-webkit-scrollbar { width: 9px; }
-.rapp-groupe-corps::-webkit-scrollbar-thumb { background: var(--filet-fort); border-radius: 5px; }
-.rapp-groupe-corps::-webkit-scrollbar-track { background: transparent; }
 /* Les puces : une référence par puce, sa pastille d'état à gauche, la
    lettre d'une réémission à droite. Elles coulent sur la ligne — douze
    plans tiennent en deux lignes, pas en douze. */
-.rapp-puces { display: flex; flex-wrap: wrap; gap: 6px 8px; padding: 2px 4px 12px; }
+.rapp-puces { display: flex; flex-wrap: wrap; gap: 6px 8px; padding: 2px 4px 10px; }
 .rapp-puce {
   display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--filet-fort); border-radius: 999px;
   background: var(--surface); padding: 4px 11px 4px 9px; font-family: "IBM Plex Mono", monospace; font-size: 12px;
@@ -841,8 +902,8 @@ table.plans tbody tr[data-plan] { cursor: pointer; }
 
 /* Une seule definition de colonnes, portee par le conteneur : l'en-tete et les
    lignes ne peuvent pas diverger, et la variante sans jalon n'a qu'a la redefinir. */
-#zone-critique { --cols: 96px 58px minmax(0, 1fr) 126px minmax(0, 150px); }
-#zone-critique.sans-jalon { --cols: 104px 62px minmax(0, 1fr) 126px minmax(0, 150px); }
+#zone-critique { --cols: 96px 58px minmax(0, 1fr) 140px minmax(0, 160px); }
+#zone-critique.sans-jalon { --cols: 104px 62px minmax(0, 1fr) 140px minmax(0, 160px); }
 .critique-tete, .critique-ligne {
   display: grid; grid-template-columns: var(--cols);
   gap: 14px; align-items: center;
@@ -871,7 +932,12 @@ button.aide {
 }
 button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre); color: var(--encre); }
 
-.critique-ligne { padding: 7px 0; border: none; background: none; width: 100%; text-align: center; font: inherit; color: var(--encre); cursor: pointer; }
+.critique-ligne { position: relative; padding: 7px 0; border: none; background: none; width: 100%; text-align: center; font: inherit; color: var(--encre); cursor: pointer; }
+/* Le chevron dit qu'une ligne se déplie, comme les semaines du journal :
+   vers la droite fermée, vers le bas ouverte. */
+.critique-ligne .chevron { position: absolute; left: 8px; top: 50%; margin-top: -4.5px; color: var(--encre-3); transition: transform .12s; }
+.critique-ligne[aria-pressed="true"] .chevron { transform: rotate(90deg); color: var(--encre); }
+.critique-ligne:hover .chevron { color: var(--encre); }
 .critique-ligne:hover { background: var(--creux); }
 .critique-ligne[aria-pressed="true"] { background: var(--creux); box-shadow: inset 3px 0 0 var(--encre); }
 .critique-nom { font-size: 13px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -879,11 +945,14 @@ button.aide:hover, button.aide[aria-expanded="true"] { border-color: var(--encre
   font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
   font-size: 13px; color: var(--encre-2); text-align: center;
 }
+.critique-plans { display: grid; justify-items: center; min-width: 0; }
+.critique-plans .arret-n { display: block; margin-top: 3px; font: 10.5px/1.2 "IBM Plex Sans", system-ui, sans-serif; color: var(--cours); white-space: nowrap; }
 .critique-effort, .critique-date { text-align: center; min-width: 0; }
 .critique-effort .v, .critique-date .v { display: block; }
 .critique-date .v {
   font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-size: 12.5px;
 }
+.critique-date .fin-recente { display: block; font-size: 10.5px; color: var(--encre-3); margin-top: 3px; white-space: nowrap; }
 
 /* Le panneau d'explication : la formule, puis la meme formule avec les chiffres
    d'une ligne reelle, pour qu'on puisse la refaire de tete. */
