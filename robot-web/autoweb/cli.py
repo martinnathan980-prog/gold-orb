@@ -543,15 +543,22 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
         reference = None  # tâche sans Excel : rejouée en entier à chaque lancement
     # les fichiers téléchargés arrivent à côté de l'Excel, là où l'utilisateur les cherche
     base_exports = Path(nettoyer_chemin(args.excel)).resolve().parent if args.excel else DOSSIER_PROJET
+    partage: dict = {}
     texte = construire_depuis_enregistrement(
         etapes, colonnes, lignes_excel, Dialogue(), nom=nom,
         fichier_excel=reference, feuille=feuille, canal=canal, url_depart=url,
-        dossier_exports=str(base_exports / "exports"),
+        dossier_exports=str(base_exports / "exports"), sortie_partage=partage,
     )
     sortie.write_text(texte, encoding="utf-8")
+    fichier_partage = sortie.with_name(sortie.stem + "_a_partager.txt")
+    fichier_partage.write_text(partage.get("texte", ""), encoding="utf-8")
     prefixe = prefixe_commande()
     print()
     print(f"{S.OK} Tâche enregistrée : {sortie}")
+    print()
+    print("Pour me la décrire sans vos données (gestes, champs remplis ou vides) :")
+    print(f"   {fichier_partage}")
+    print("   relisez-le, puis recopiez-le à Claude si c'est permis chez vous")
     print()
     print("Pour la relancer, maintenant ou plus tard, autant de fois que vous voulez :")
     print("   menu, choix 2, puis le numéro de la tâche")

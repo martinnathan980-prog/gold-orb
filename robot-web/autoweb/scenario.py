@@ -73,7 +73,7 @@ META_ETAPE = ("nom", "optionnel", "delai_max", "commentaire", "description", "se
 MOTIF_SECRET = re.compile(r"pass|mdp|mot.?de.?passe|pwd|secret|token|jeton|credential|identifiant", re.I)
 MASQUE = "•••••"
 
-CLES_SCENARIO = ("nom", "description", "navigateur", "excel", "variables", "avant", "etapes", "apres")
+CLES_SCENARIO = ("nom", "description", "navigateur", "excel", "variables", "questions", "avant", "etapes", "apres")
 CLES_NAVIGATEUR = (
     "canal", "profil", "visible", "attacher", "delai_max", "lenteur", "largeur", "hauteur",
     "executable", "dialogues", "telechargements", "arguments", "ignorer_https",
@@ -161,6 +161,8 @@ class Scenario:
     navigateur: ConfigNavigateur = field(default_factory=ConfigNavigateur)
     excel: ConfigExcel = field(default_factory=ConfigExcel)
     variables: Dict[str, Any] = field(default_factory=dict)
+    # valeurs demandées au lancement : nom de variable -> question (« Numéro du plan de départ »)
+    questions: Dict[str, str] = field(default_factory=dict)
     avant: List[Etape] = field(default_factory=list)
     etapes: List[Etape] = field(default_factory=list)
     apres: List[Etape] = field(default_factory=list)
@@ -512,6 +514,12 @@ def depuis_dict(donnees: Any, chemin: Path) -> Scenario:
     variables = donnees.get("variables") or {}
     if not isinstance(variables, dict):
         raise ErreurScenario(f"{chemin.name} : « variables » doit être un dictionnaire nom -> valeur.")
+    questions = donnees.get("questions") or {}
+    if not isinstance(questions, dict):
+        raise ErreurScenario(f"{chemin.name} : « questions » doit être un dictionnaire nom -> question.")
+    variables = dict(variables)
+    for nom_question in questions:
+        variables.setdefault(nom_question, "")  # connue d'avance : remplie au lancement
     scenario = Scenario(
         nom=str(donnees.get("nom") or chemin.stem),
         chemin=chemin.resolve(),
@@ -519,6 +527,7 @@ def depuis_dict(donnees: Any, chemin: Path) -> Scenario:
         navigateur=charger_config_navigateur(donnees.get("navigateur")),
         excel=charger_config_excel(donnees.get("excel")),
         variables={str(k): v for k, v in variables.items()},
+        questions={str(k): str(v or k) for k, v in questions.items()},
         avant=normaliser_etapes(donnees.get("avant"), "avant"),
         etapes=normaliser_etapes(donnees.get("etapes"), "etapes"),
         apres=normaliser_etapes(donnees.get("apres"), "apres"),

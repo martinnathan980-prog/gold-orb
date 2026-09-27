@@ -151,6 +151,7 @@ def test_tache_sans_excel_relancee_autant_de_fois_qu_on_veut(bac, navigateur_ok)
     reponses = [
         "",     # ne rien retirer
         "",     # connexion une seule fois au début : oui
+        "",     # « HDK » : toujours la même valeur
         "",     # dossier exports
         "",     # nom proposé : date et heure, pour ne jamais écraser l'export précédent
         "",     # convertir en Excel

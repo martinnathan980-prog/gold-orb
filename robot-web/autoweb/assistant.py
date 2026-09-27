@@ -228,6 +228,7 @@ def deviner_colonne(valeur: Any, colonnes: Sequence[str], lignes: Sequence[Dict[
 def _entete_scenario(
     nom: str, base: str, canal: str, fichier_excel: Optional[str], feuille: Optional[str],
     colonnes: Sequence[str], url: str, secrets: Sequence[str] = (), refaire: str = "reprise",
+    questions: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     lignes = [
         "# Tâche autoweb. Pour la relancer : menu, choix 2 (ou « robot lancer <ce fichier> »).",
@@ -250,6 +251,10 @@ def _entete_scenario(
     lignes += ["variables:", f"  url: {_yaml_chaine(url)}"]
     for secret in secrets:
         lignes.append(f'  {secret}: ""   # demandé au lancement, ou --var {secret}=...')
+    if questions:
+        lignes.append("questions:   # demandées à chaque lancement (ou --var nom=valeur)")
+        for variable, question in questions.items():
+            lignes.append(f"  {variable}: {_yaml_chaine(question)}")
     return lignes
 
 
@@ -287,10 +292,20 @@ def _bloc_etapes(
         elif e.action == "cliquer":
             selecteur = str(e.args["selecteur"])
             if e.texte_selecteur:
-                colonne = question_valeur(e.texte_selecteur, "Vous avez cliqué sur")
+                # une ligne de tableau ou un lien portent souvent une donnée (numéro de plan...)
+                contexte = ("Vous avez cliqué sur la ligne" if ":has-text(" in selecteur
+                            else "Vous avez cliqué sur le lien" if selecteur.startswith("role=link:")
+                            else "Vous avez cliqué sur")
+                colonne = question_valeur(e.texte_selecteur, contexte)
                 if colonne:
                     selecteur = remplacer_texte_selecteur(selecteur, e.texte_selecteur, "{{" + colonne + "}}")
-            lignes.append(f"{i}- cliquer: {_yaml_chaine(selecteur)}")
+            if e.args.get("nouvel_onglet"):
+                lignes.append(f"{i}- cliquer: {{selecteur: {_yaml_chaine(selecteur)}, nouvel_onglet: true}}"
+                              "   # ce clic ouvre un nouvel onglet : la suite s'y passe")
+            else:
+                lignes.append(f"{i}- cliquer: {_yaml_chaine(selecteur)}")
+        elif e.action == "onglet":
+            lignes.append(f"{i}- onglet: {{index: {int(e.args.get('index', 1))}}}")
         elif e.action in ("remplir", "choisir", "cocher"):
             selecteur = str(e.args["selecteur"])
             valeur = str(e.args.get("valeur", ""))
@@ -327,6 +342,124 @@ def _bloc_etapes(
     return lignes
 
 
+def normaliser_nom(texte: str) -> str:
+    import unicodedata
+
+    texte = unicodedata.normalize("NFD", str(texte or ""))
+    return "".join(c for c in texte if unicodedata.category(c) != "Mn").lower().strip()
+
+
+def _masquer(texte: str) -> str:
+    """Tout mot contenant un chiffre, et les adresses mail, sont masqués."""
+    texte = re.sub(r"[\w.+-]+@[\w-]+\.[\w.-]+", "<email>", str(texte or ""))
+    return re.sub(r"\S*\d\S*", "#", texte)
+
+
+def _court(texte: str, mots: int) -> bool:
+    return 0 < len(str(texte or "").split()) <= mots
+
+
+def _repere_structurel(selecteur: str) -> str:
+    """Le sélecteur, s'il ne contient que de la structure (identifiant, nom de champ) : utile
+    pour construire l'automatisme, sans donnée."""
+    if ":has-text(" in selecteur or selecteur.startswith(("role=link:", "texte=", "texte_exact=")):
+        return ""
+    if re.match(r"^(#[A-Za-z_][\w-]*|test=[\w-]+|\w+\[name=\"[\w\-\[\].]+\"\]|libelle=.{1,40}|role=button:.{1,40})$",
+                selecteur):
+        return _masquer(selecteur)
+    return ""
+
+
+def decrire_pour_partage(nom: str, etapes: List[Any], parametres: Dict[str, str], questions: Dict[str, str]) -> str:
+    """Les gestes et les écrans d'une action montrée au robot, SANS aucune valeur : noms des
+    champs et des boutons, champs remplis ou laissés vides, valeurs demandées au lancement."""
+    par_variable = {v: questions.get(v, v) for v in parametres.values()}
+    lignes = [
+        "ACTION MONTREE AU ROBOT - VERSION A PARTAGER",
+        "=" * 60,
+        "Ce fichier décrit les gestes et les écrans : noms des champs et des boutons, champs",
+        "remplis ou laissés vides. Il ne contient AUCUNE valeur saisie, aucune adresse. Les mots",
+        "contenant un chiffre sont remplacés par #. Un nom de bouton ou de champ peut malgré tout",
+        "être un nom de client ou de projet : RELISEZ-LE avant de l'envoyer.",
+        "",
+        f"Tâche : {_masquer(nom)}",
+    ]
+    if questions:
+        lignes.append("Valeurs demandées à chaque lancement : " + " ; ".join(questions.values()))
+    lignes.append("")
+    ecran_precedent: Any = object()
+    numero_ecran = 0
+    numero = 0
+    for e in etapes:
+        if e.action == "attendre":
+            continue
+        if e.ecran is not ecran_precedent and e.ecran is not None:
+            ecran_precedent = e.ecran
+            numero_ecran += 1
+            lignes.append(f"ECRAN {numero_ecran}")
+            champs = []
+            for c in e.ecran.get("champs", []):
+                nom_champ = _masquer(c.get("libelle")) if _court(c.get("libelle"), 6) else "(sans nom)"
+                details = [str(c.get("type") or "")]
+                if c.get("obligatoire"):
+                    details.append("obligatoire")
+                if c.get("lecture_seule"):
+                    details.append("lecture seule")
+                champs.append(f"{nom_champ} [{', '.join(details)}] {'rempli' if c.get('rempli') else 'vide'}")
+            if champs:
+                lignes.append("   champs : " + " ; ".join(champs))
+            boutons = [_masquer(b) if _court(b, 5) else "(bouton)" for b in e.ecran.get("boutons", [])]
+            if boutons:
+                lignes.append("   boutons : " + " ; ".join(boutons))
+        numero += 1
+        selecteur = str(e.args.get("selecteur") or e.args.get("cliquer") or "")
+        champ = _masquer(e.libelle) if _court(e.libelle, 6) else "(champ)"
+        if e.action == "aller":
+            texte = "ouvrir la page de départ de l'outil"
+        elif e.action == "onglet":
+            texte = f"passer à l'onglet {e.args.get('index')}"
+        elif e.action in ("cliquer", "telecharger"):
+            variable = parametres.get(str(e.texte_selecteur or "").strip())
+            if variable:
+                texte = f"cliquer sur la ligne / le lien du « {par_variable[variable]} »"
+            elif ":has-text(" in selecteur:
+                texte = "cliquer dans une ligne du tableau"
+            elif selecteur.startswith("role=link:"):
+                texte = "cliquer sur un lien"
+            elif _court(e.libelle, 5):
+                texte = f"cliquer « {_masquer(e.libelle)} »"
+            else:
+                texte = "cliquer sur un élément"
+            if e.action == "telecharger":
+                texte = texte.replace("cliquer", "télécharger le fichier en cliquant", 1)
+            if e.args.get("nouvel_onglet"):
+                texte += "   (ouvre un nouvel onglet)"
+        elif e.action in ("remplir", "choisir", "cocher"):
+            valeur = str(e.args.get("valeur") or "")
+            variable = parametres.get(valeur.strip())
+            if _est_secret(e):
+                quoi = "(mot de passe, demandé au lancement)"
+            elif _est_code_unique(e):
+                quoi = "(code reçu, tapé à la main)"
+            elif variable:
+                quoi = f"(valeur demandée au lancement : {par_variable[variable]})"
+            elif e.action == "cocher":
+                quoi = "(coché)" if valeur == "oui" else "(décoché)"
+            else:
+                quoi = "(valeur fixe, toujours la même)"
+            verbe = {"remplir": "écrire", "choisir": "choisir", "cocher": "cocher/décocher"}[e.action]
+            texte = f"{verbe} {quoi} dans « {champ} »"
+        elif e.action == "touche":
+            texte = f"appuyer sur Entrée dans « {champ} »"
+        else:
+            texte = e.action
+        lignes.append(f"   {numero}. {texte}")
+        repere = _repere_structurel(selecteur)
+        if repere:
+            lignes.append(f"      repère : {repere}")
+    return "\n".join(lignes) + "\n"
+
+
 def nom_de_base(nom: str) -> str:
     """Nom de la tâche utilisable dans un chemin : sert au profil du navigateur."""
     return re.sub(r"[^a-z0-9_-]+", "_", nom.lower()).strip("_") or "tache"
@@ -343,6 +476,7 @@ def construire_depuis_enregistrement(
     canal: str = "chrome",
     url_depart: str = "",
     dossier_exports: str = "exports",
+    sortie_partage: Optional[Dict[str, str]] = None,
 ) -> str:
     """Transforme un enregistrement (liste d'EtapeEnregistree) en scénario YAML,
     en demandant d'où vient chaque valeur saisie."""
@@ -385,8 +519,42 @@ def construire_depuis_enregistrement(
         d.dire("Pour chaque valeur que vous avez saisie, indiquez la colonne de l'Excel qui la donne.")
         d.dire("Entrée accepte la proposition ; 0 garde la valeur telle quelle à chaque ligne.")
 
+    parametres: Dict[str, str] = {}  # valeur montrée -> variable demandée au lancement
+    questions: Dict[str, str] = {}   # variable -> question (« Plan de départ »)
+
+    def question_parametre(valeur: str, contexte: str) -> Optional[str]:
+        """Sans Excel : une valeur qui change à chaque fois devient une question posée au lancement."""
+        cle = str(valeur).strip()
+        if not cle:
+            return None
+        if cle in parametres:
+            return parametres[cle]  # même valeur retrouvée plus loin (ex. la ligne du plan cherché)
+        if contexte == "Vous avez cliqué sur":
+            return None  # texte de bouton : il ne change pas
+        d.dire()
+        d.dire(f"{S.FLECHE} {contexte} « {valeur} »")
+        nom_question = d.demander(
+            "   Cette valeur change-t-elle à chaque fois ? Entrée = non, elle reste la même ;\n"
+            "   sinon, donnez-lui un nom court (ex. plan de départ)", "")
+        if not nom_question.strip():
+            return None
+        for existante, question in questions.items():  # même nom donné deux fois : même valeur
+            if normaliser_nom(question) == normaliser_nom(nom_question):
+                parametres[cle] = existante
+                return existante
+        variable = re.sub(r"[^a-z0-9_]+", "_", normaliser_nom(nom_question)).strip("_") or "valeur"
+        while variable in questions or variable in ("url", "ligne", "n", "total", "aujourdhui", "maintenant",
+                                                    "horodatage") or variable.startswith("mot_de_passe"):
+            variable += "_2"
+        parametres[cle] = variable
+        questions[variable] = nom_question.strip()[:1].upper() + nom_question.strip()[1:]
+        return variable
+
     def question_valeur(valeur: str, contexte: str) -> Optional[str]:
-        if not colonnes or not str(valeur).strip():
+        if not colonnes:
+            # sans Excel : la valeur peut être demandée au lancement ; avec Excel, ce sont les colonnes
+            return None if fichier_excel else question_parametre(valeur, contexte)
+        if not str(valeur).strip():
             return None
         propose = deviner_colonne(valeur, colonnes, lignes_excel)
         if propose is None and contexte.startswith("Vous avez cliqué"):
@@ -452,7 +620,9 @@ def construire_depuis_enregistrement(
         f"{S.FLECHE} Faire une capture d'écran à la fin {'de chaque ligne' if avec_excel else 'de la tâche'} ?", True)
 
     lignes = _entete_scenario(nom, base, canal, fichier_excel, feuille, colonnes, url_depart,
-                              secrets=sorted(set(secrets.values())), refaire="toujours")
+                              secrets=sorted(set(secrets.values())), refaire="toujours", questions=questions)
+    if sortie_partage is not None:
+        sortie_partage["texte"] = decrire_pour_partage(nom, etapes_connexion + etapes, parametres, questions)
     if etapes_connexion or pause_connexion:
         lignes.append("avant:")
         lignes.append('  - aller: "{{url}}"')

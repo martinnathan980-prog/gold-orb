@@ -13,8 +13,10 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
+import re
 import sys
 import time
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set
@@ -176,6 +178,73 @@ def contexte_de_base(scenario: Scenario, options: Options) -> Dict[str, Any]:
     # pour nommer des fichiers sans jamais écraser le précédent : 20260924-143005
     contexte["horodatage"] = maintenant.strftime("%Y%m%d-%H%M%S")
     return contexte
+
+
+def demander_questions(scenario: Scenario, options: Options, contexte: Dict[str, Any]) -> None:
+    """Pose les questions de la tâche (« Numéro du plan de départ ? ») pour ce lancement."""
+    for nom, question in scenario.questions.items():
+        if str(contexte.get(nom) or "").strip():
+            continue  # déjà donnée (--var nom=valeur)
+        if not options.interactif or options.simuler:
+            if options.simuler:
+                contexte[nom] = f"<{question}>"
+                continue
+            raise ErreurAutoweb(f"La tâche demande « {question} » : ajoutez --var {nom}=... au lancement.")
+        reponse = ""
+        for _ in range(3):
+            print(f"{S.FLECHE} {question} : ", end="", flush=True)
+            try:
+                reponse = input().strip()
+            except EOFError:
+                reponse = ""
+            if reponse:
+                break
+            print("   (une valeur est nécessaire)")
+        if not reponse:
+            raise ArretDemande(f"aucune valeur donnée pour « {question} »")
+        contexte[nom] = reponse
+
+
+MOTIF_SUPPRESSION = re.compile(r"supprim|delete|effac|remove|detrui|destroy|corbeille|trash|retirer|archiver")
+
+
+def _normaliser(texte: str) -> str:
+    texte = unicodedata.normalize("NFD", str(texte or ""))
+    return "".join(c for c in texte if unicodedata.category(c) != "Mn").lower()
+
+
+def etapes_de_suppression(scenario: Scenario) -> List[str]:
+    """Les clics de la tâche qui suppriment quelque chose (d'après leur texte)."""
+    trouvees = []
+    for etape in toutes_les_etapes(scenario.avant + scenario.etapes + scenario.apres):
+        if etape.action not in ("cliquer", "telecharger", "touche"):
+            continue
+        texte = " ".join(str(etape.args.get(k) or "") for k in ("selecteur", "cliquer")) + " " + (etape.nom or "")
+        if MOTIF_SUPPRESSION.search(_normaliser(texte)):
+            trouvees.append(texte.strip())
+    return trouvees
+
+
+def confirmer_suppression(scenario: Scenario, options: Options) -> bool:
+    """Une tâche qui SUPPRIME ne part qu'après un « OUI » tapé par l'utilisateur."""
+    suppressions = etapes_de_suppression(scenario)
+    if not suppressions or options.simuler:
+        return True
+    if not options.interactif:
+        journal.warning("Tâche avec suppression lancée sans confirmation (mode non interactif) : %s",
+                        "; ".join(suppressions))
+        return True
+    print()
+    print(f"{S.ATTENTION} ATTENTION : cette tâche SUPPRIME quelque chose dans l'outil :")
+    for texte in suppressions[:5]:
+        print(f"     - clic sur {texte}")
+    print("   Une suppression ne peut pas être annulée par le robot.")
+    print("   Tapez OUI (en entier) pour continuer, ou Entrée pour annuler : ", end="", flush=True)
+    try:
+        reponse = input().strip().lower()
+    except EOFError:
+        reponse = ""
+    return reponse == "oui"
 
 
 def completer_secrets(scenario: Scenario, options: Options, contexte: Dict[str, Any]) -> None:
@@ -347,6 +416,11 @@ def lancer_sans_excel(scenario: Scenario, options: Options) -> Bilan:
                     journal.info(texte)
         return bilan
 
+    if not confirmer_suppression(scenario, options):
+        bilan.interrompu = True
+        bilan.message = "suppression non confirmée : rien n'a été fait"
+        return bilan
+    demander_questions(scenario, options, base)
     completer_secrets(scenario, options, base)
     journal.info("Tâche « %s » — lancement", scenario.nom)
     navigateur = Navigateur(scenario.navigateur, scenario.dossier, visible=options.visible)
@@ -415,6 +489,11 @@ def lancer(scenario: Scenario, options: Options) -> Bilan:
         bilan = Bilan(total=len(lignes), lignes_fichier=len(classeur.lignes()))
         base = contexte_de_base(scenario, options)
         if lignes:
+            if not confirmer_suppression(scenario, options):
+                bilan.interrompu = True
+                bilan.message = "suppression non confirmée : rien n'a été fait"
+                return bilan
+            demander_questions(scenario, options, base)
             completer_secrets(scenario, options, base)
         journal.info("Scénario « %s » — Excel %s — %d ligne(s) à traiter", scenario.nom, classeur.chemin.name, len(lignes))
         if classeur.chemin_sauvegarde:

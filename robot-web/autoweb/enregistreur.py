@@ -40,7 +40,10 @@ CLIQUABLES = (
 
 JS_ENREGISTREUR = """
 (CLIQUABLES) => {
-  if (window.__autoweb_enregistre) return;
+  // marque posée sur le DOCUMENT : un onglet ouvert par window.open garde la même fenêtre
+  // (window) entre sa page vide de départ et la vraie page, mais pas le même document
+  if (document.__autoweb_enregistre) return;
+  document.__autoweb_enregistre = true;
   window.__autoweb_enregistre = true;
   const attente = [];
   let compteur = 0;
@@ -276,11 +279,64 @@ JS_ENREGISTREUR = """
     envoyer(decrireSaisie(e));
   }, true);
 
+  // --- photo de l'ecran : STRUCTURE seulement (noms des champs, rempli oui/non, jamais la valeur) ---
+  let dernierePhoto = '';
+  function texteSeul(n) {
+    const c = n.cloneNode(true);
+    c.querySelectorAll('select, option, input, textarea, button, script, style').forEach(x => x.remove());
+    return court(c.textContent, 80);
+  }
+  function nomDuChamp(e) {
+    if (idOk(e.id)) { const l = document.querySelector('label[for="' + e.id + '"]'); if (l) return texteSeul(l); }
+    const p = e.closest('label'); if (p) return texteSeul(p);
+    const al = e.getAttribute('aria-label'); if (al) return court(al, 80);
+    const th = e.closest('th'); if (th) return texteSeul(th);
+    const prev = e.previousElementSibling;
+    if (prev && ['LABEL','SPAN','TD','TH','DIV','B','STRONG'].includes(prev.tagName)) {
+      const t = texteSeul(prev); if (t.length < 60) return t;
+    }
+    return '';
+  }
+  const visible = (e) => {
+    const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
+    const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0;
+  };
+  function photo() {
+    if (window !== window.top) return;
+    const champs = [];
+    for (const e of document.querySelectorAll('input, select, textarea')) {
+      if (champs.length >= 80) break;
+      const type = (e.getAttribute('type') || '').toLowerCase();
+      if (type === 'hidden' || ['submit', 'button', 'reset', 'image'].includes(type) || !visible(e)) continue;
+      const tr = e.closest('tbody tr');
+      if (tr && tr.parentElement && Array.prototype.indexOf.call(tr.parentElement.children, tr) > 0) continue;
+      const tag = e.tagName.toLowerCase();
+      const rempli = (type === 'checkbox' || type === 'radio') ? e.checked : !!String(e.value || '').trim();
+      champs.push({ libelle: nomDuChamp(e), type: tag === 'select' ? 'liste' : (tag === 'textarea' ? 'texte long' : (type || 'text')),
+                    obligatoire: !!e.required, lecture_seule: !!(e.readOnly || e.disabled), rempli: rempli });
+    }
+    const boutons = [];
+    for (const b of document.querySelectorAll('button, input[type=submit], input[type=button], [role=button]')) {
+      if (boutons.length >= 30) break;
+      if (surBadge(b) || b.closest('tbody tr') || !visible(b)) continue;
+      const t = court(b.tagName === 'INPUT' ? b.value : (b.getAttribute('aria-label') || b.innerText), 40);
+      if (t && !boutons.includes(t)) boutons.push(t);
+    }
+    const d = { champs: champs, boutons: boutons };
+    const texte = JSON.stringify(d);
+    if (texte === dernierePhoto) return;
+    dernierePhoto = texte;
+    d.type_evenement = 'ecran';
+    envoyer(d);
+  }
+  setTimeout(() => { try { photo(); } catch (err) {} }, 800);
+
   document.addEventListener('click', (ev) => {
     // isTrusted : uniquement les vrais clics. Les pages qui fabriquent un lien
     // invisible pour declencher un telechargement emettent un clic factice.
     if (!ev.isTrusted || surBadge(ev.target)) return;
     viderEnAttente();   // ce qui vient d'etre tape doit etre note AVANT le clic
+    try { photo(); } catch (err) {}   // l'ecran tel qu'il est au moment du clic (champs remplis ou non)
     const e = cible(ev.target);
     if (!e) return;
     const d = decrire(e);
@@ -311,6 +367,7 @@ class Evenement:
     cadre: str = ""  # sélecteur de l'iframe, vide si page principale
     frame: Any = None  # objet Playwright, résolu en fin d'enregistrement seulement
     page: Any = None  # onglet d'où vient l'événement (simple référence, aucun appel Playwright)
+    onglet: int = 0  # 0 = premier onglet utilisé, 1 = le suivant...
 
 
 PREFIXES_NAVIGATEUR = ("chrome://", "chrome-extension://", "chrome-search://", "chrome-untrusted://",
@@ -349,6 +406,7 @@ class EtapeEnregistree:
     valeur_brute: Optional[str] = None  # valeur saisie, pour la question « quelle colonne ? »
     texte_selecteur: Optional[str] = None  # texte figé dans le sélecteur (role=link:XXX)
     type_champ: str = ""  # text, password, checkbox... pour traiter les mots de passe à part
+    ecran: Optional[Dict[str, Any]] = None  # photo de l'écran au moment du geste (structure seule)
 
     def resume(self) -> str:
         libelle = self.libelle or self.args.get("selecteur") or ""
@@ -356,8 +414,10 @@ class EtapeEnregistree:
             return f"ouvrir {self.args.get('url', '')}"
         if self.action == "attendre":
             return "attendre le chargement de la page"
+        if self.action == "onglet":
+            return f"passer à l'onglet {self.args.get('index')}"
         if self.action == "cliquer":
-            return f"cliquer sur {libelle}"
+            return f"cliquer sur {libelle}" + (" (ouvre un nouvel onglet)" if self.args.get("nouvel_onglet") else "")
         if self.action == "choisir":
             return f"choisir « {self.args.get('valeur')} » dans {libelle}"
         if self.action == "cocher":
@@ -415,11 +475,16 @@ class Enregistreur:
             return
         self._pages_suivies.append(page)
         page.on("download", self._telechargement)
+        # Un onglet ouvert par window.open ne rejoue pas toujours le script d'enregistrement
+        # sur sa vraie page : on le réinjecte à chaque chargement (sans doublon, voir le script).
+        page.on("domcontentloaded", self._injecter)
 
     def _injecter(self, page: Page) -> None:
+        if not self._actif:
+            return
         try:
             page.evaluate(f"({JS_ENREGISTREUR})({json.dumps(CLIQUABLES)})")
-        except PlaywrightError:
+        except Exception:  # noqa: BLE001 - page fermée ou en cours de navigation
             pass
 
     def _recevoir(self, source: Dict[str, Any], charge: str) -> None:
@@ -436,6 +501,8 @@ class Enregistreur:
             return
         if type_evenement == "fin":
             self._actif = False
+            return
+        if type_evenement not in ("clic", "saisie", "touche", "ecran"):
             return
         frame = source.get("frame") if source else None
         page = source.get("page") if source else None
@@ -500,7 +567,7 @@ class Enregistreur:
         self._actif = False
 
     def _hors_tache(self, evenement: Evenement) -> bool:
-        if evenement.type not in ("clic", "saisie", "touche"):
+        if evenement.type not in ("clic", "saisie", "touche", "ecran"):
             return False  # page de départ, téléchargement : notés par le robot lui-même
         d = evenement.donnees
         url, url_page = str(d.pop("url", "") or ""), str(d.pop("url_page", "") or "")
@@ -516,22 +583,30 @@ class Enregistreur:
         gardes: List[Evenement] = []
         for evenement in self.evenements:
             if self._hors_tache(evenement):
-                self.ignorees += 1
+                if evenement.type != "ecran":
+                    self.ignorees += 1
                 continue
             gardes.append(evenement)
         if self.ignorees:
             journal.info("%d action(s) faite(s) sur une page Google ou du navigateur : ignorée(s).", self.ignorees)
         self.evenements = gardes
+        ordre: List[Any] = []  # onglets dans l'ordre où l'utilisateur s'en est servi
+        for evenement in self.evenements:
+            if evenement.page is not None and evenement.type in ("clic", "saisie", "touche", "ecran"):
+                if evenement.page not in ordre:
+                    ordre.append(evenement.page)
+                evenement.onglet = ordre.index(evenement.page)
         for evenement in self.evenements:  # résolution des iframes, hors boucle Playwright
             if evenement.frame is not None:
                 evenement.cadre = self._selecteur_cadre(evenement.frame)
                 evenement.frame = None
             evenement.page = None
         for page in self._pages_suivies:
-            try:
-                page.remove_listener("download", self._telechargement)
-            except Exception:
-                pass
+            for evenement, fonction in (("download", self._telechargement), ("domcontentloaded", self._injecter)):
+                try:
+                    page.remove_listener(evenement, fonction)
+                except Exception:
+                    pass
         self._pages_suivies = []
         return construire_etapes(self.evenements)
 
@@ -567,65 +642,26 @@ def construire_etapes(evenements: List[Evenement], url_depart: str = "") -> List
     """Transforme les événements bruts en étapes propres (fusion, nettoyage)."""
     etapes: List[EtapeEnregistree] = []
     derniere_url: Optional[str] = None
+    ecran: Optional[Dict[str, Any]] = None
+    onglet_courant, onglet_max = 0, 0
     for ev in evenements:
         d = ev.donnees
+        if ev.type == "ecran":
+            ecran = {"champs": d.get("champs") or [], "boutons": d.get("boutons") or []}
+            continue
+        if ev.type in ("clic", "saisie", "touche") and ev.onglet != onglet_courant:
+            gestes = [e for e in etapes if e.action != "attendre"]
+            if ev.onglet > onglet_max and gestes and gestes[-1].action == "cliquer":
+                gestes[-1].args["nouvel_onglet"] = True  # ce clic a ouvert l'onglet où l'on continue
+            else:
+                etapes.append(EtapeEnregistree("onglet", {"index": ev.onglet + 1}))
+            onglet_courant, onglet_max = ev.onglet, max(onglet_max, ev.onglet)
+        nb_avant = len(etapes)
+        _traduire(ev, d, etapes, derniere_url)
         if ev.type == "page":
-            url = str(d.get("url", ""))
-            if url and url == derniere_url:
-                continue  # même page : le script injecté l'annonce une seconde fois
-            derniere_url = url
-            if not etapes:
-                etapes.append(EtapeEnregistree("aller", {"url": url}, libelle=str(d.get("titre", ""))))
-            elif etapes[-1].action != "attendre":
-                etapes.append(EtapeEnregistree("attendre", {"chargement": "reseau", "delai": 8000}))
-            continue
-        if ev.type == "telechargement":
-            for etape in reversed(etapes):
-                if etape.action == "cliquer":
-                    etape.action = "telecharger"
-                    etape.args = {"cliquer": etape.args["selecteur"], "nom_propose": d.get("nom", "")}
-                    break
-            continue
-
-        selecteur = str(d.get("selecteur") or "")
-        if not selecteur:
-            continue
-        libelle = str(d.get("libelle") or d.get("texte") or "")
-        tag = str(d.get("tag") or "")
-        type_champ = str(d.get("type") or "")
-
-        if ev.type == "clic":
-            if tag in ("input", "textarea", "select") and type_champ not in ("checkbox", "radio", "submit", "button", "reset"):
-                continue  # simple clic dans un champ : la saisie suffit
-            etapes.append(EtapeEnregistree(
-                "cliquer", {"selecteur": selecteur}, libelle=libelle, cadre=ev.cadre,
-                texte_selecteur=_texte_du_selecteur(selecteur),
-            ))
-        elif ev.type == "saisie":
-            valeur = "" if d.get("valeur") is None else str(d["valeur"])
-            if tag == "select":
-                action = "choisir"
-                args = {"selecteur": selecteur, "valeur": valeur or str(d.get("libelle_valeur") or "")}
-            elif type_champ in ("checkbox", "radio"):
-                action, args = "cocher", {"selecteur": selecteur, "valeur": valeur}
-            else:
-                action, args = "remplir", {"selecteur": selecteur, "valeur": valeur}
-            # On ne fusionne qu'avec la saisie qui précède IMMÉDIATEMENT sur le même
-            # champ (l'utilisateur corrige ce qu'il vient de taper). Deux champs
-            # éloignés qui partagent un sélecteur restent deux étapes distinctes.
-            precedente = etapes[-1] if etapes else None
-            if (precedente is not None and precedente.action in ("remplir", "choisir", "cocher")
-                    and precedente.args.get("selecteur") == selecteur and precedente.cadre == ev.cadre):
-                precedente.action = action
-                precedente.args = args
-                precedente.valeur_brute = args.get("valeur")
-                precedente.type_champ = type_champ
-            else:
-                etapes.append(EtapeEnregistree(action, args, libelle=libelle, cadre=ev.cadre,
-                                               valeur_brute=args.get("valeur"), type_champ=type_champ))
-        elif ev.type == "touche" and str(d.get("touche") or "") == "Enter":
-            etapes.append(EtapeEnregistree("touche", {"selecteur": selecteur, "touche": "Enter"},
-                                           libelle=libelle, cadre=ev.cadre))
+            derniere_url = str(d.get("url", "")) or derniere_url
+        for etape in etapes[nb_avant:]:
+            etape.ecran = ecran
     while etapes and etapes[-1].action == "attendre":
         etapes.pop()
     if etapes and etapes[0].action != "aller":
@@ -633,3 +669,64 @@ def construire_etapes(evenements: List[Evenement], url_depart: str = "") -> List
         if depart:
             etapes.insert(0, EtapeEnregistree("aller", {"url": depart}))
     return etapes
+
+
+def _traduire(ev: Evenement, d: Dict[str, Any], etapes: List[EtapeEnregistree], derniere_url: Optional[str]) -> None:
+    """Ajoute à `etapes` ce que produit un événement (rien, une étape, ou une fusion)."""
+    if ev.type == "page":
+        url = str(d.get("url", ""))
+        if url and url == derniere_url:
+            return  # même page : le script injecté l'annonce une seconde fois
+        derniere_url = url
+        if not etapes:
+            etapes.append(EtapeEnregistree("aller", {"url": url}, libelle=str(d.get("titre", ""))))
+        elif etapes[-1].action != "attendre":
+            etapes.append(EtapeEnregistree("attendre", {"chargement": "reseau", "delai": 8000}))
+        return
+    if ev.type == "telechargement":
+        for etape in reversed(etapes):
+            if etape.action == "cliquer":
+                etape.action = "telecharger"
+                etape.args = {"cliquer": etape.args["selecteur"], "nom_propose": d.get("nom", "")}
+                break
+        return
+
+    selecteur = str(d.get("selecteur") or "")
+    if not selecteur:
+        return
+    libelle = str(d.get("libelle") or d.get("texte") or "")
+    tag = str(d.get("tag") or "")
+    type_champ = str(d.get("type") or "")
+
+    if ev.type == "clic":
+        if tag in ("input", "textarea", "select") and type_champ not in ("checkbox", "radio", "submit", "button", "reset"):
+            return  # simple clic dans un champ : la saisie suffit
+        etapes.append(EtapeEnregistree(
+            "cliquer", {"selecteur": selecteur}, libelle=libelle, cadre=ev.cadre,
+            texte_selecteur=_texte_du_selecteur(selecteur),
+        ))
+    elif ev.type == "saisie":
+        valeur = "" if d.get("valeur") is None else str(d["valeur"])
+        if tag == "select":
+            action = "choisir"
+            args = {"selecteur": selecteur, "valeur": valeur or str(d.get("libelle_valeur") or "")}
+        elif type_champ in ("checkbox", "radio"):
+            action, args = "cocher", {"selecteur": selecteur, "valeur": valeur}
+        else:
+            action, args = "remplir", {"selecteur": selecteur, "valeur": valeur}
+        # On ne fusionne qu'avec la saisie qui précède IMMÉDIATEMENT sur le même
+        # champ (l'utilisateur corrige ce qu'il vient de taper). Deux champs
+        # éloignés qui partagent un sélecteur restent deux étapes distinctes.
+        precedente = etapes[-1] if etapes else None
+        if (precedente is not None and precedente.action in ("remplir", "choisir", "cocher")
+                and precedente.args.get("selecteur") == selecteur and precedente.cadre == ev.cadre):
+            precedente.action = action
+            precedente.args = args
+            precedente.valeur_brute = args.get("valeur")
+            precedente.type_champ = type_champ
+        else:
+            etapes.append(EtapeEnregistree(action, args, libelle=libelle, cadre=ev.cadre,
+                                           valeur_brute=args.get("valeur"), type_champ=type_champ))
+    elif ev.type == "touche" and str(d.get("touche") or "") == "Enter":
+        etapes.append(EtapeEnregistree("touche", {"selecteur": selecteur, "touche": "Enter"},
+                                       libelle=libelle, cadre=ev.cadre))
