@@ -211,44 +211,45 @@ await o.attendre(700);
 t('une squad ajoutée a sa tuile ; ouverte, elle est vide et le dit',
   /Personne dans cette squad/.test(await page.locator('#zone-reperes .equipe__panneau').innerText().catch(() => '')));
 
-// Un référent de plus pour la compétence montrée, puis on le lui retire.
-const referentsMontres = () => page.locator('#zone-reperes .referents__detail .personne-carte').count();
-const competenceMontree = (await page.locator('#zone-reperes .referents__competence').innerText()).trim();
-const referentsAvant = await referentsMontres();
-await o.centrer(page.locator('#zone-reperes .referents__detail .edition-ajout'));
-await page.locator('#zone-reperes .referents__detail .edition-ajout').click();
+// Un référent de plus — une personne, sans compétence —, puis on lui retire le titre.
+const referentsListes = () => page.locator('#zone-reperes .referents__gens .personne-carte').count();
+const referentsAvant = await referentsListes();
+await o.centrer(page.locator('#zone-reperes .referents .coup-oeil__ajouts .edition-ajout'));
+await page.locator('#zone-reperes .referents .coup-oeil__ajouts .edition-ajout').click();
+t('nommer un référent ne demande que la personne',
+  (await page.locator('.modale--formulaire select').count()) === 1
+  && (await page.locator('.modale--formulaire').innerText()).indexOf('Compétence') === -1);
 const nouveauReferent = (await page.locator('.modale--formulaire select').first().evaluate((s) => s.options[s.selectedIndex].text)).split(' — ')[0].trim();
 await o.enregistrer();
-t(`« ${nouveauReferent} » devient référent en « ${competenceMontree} », et la compétence reste montrée`,
-  (await page.locator('#zone-reperes .referents__competence').innerText()).trim() === competenceMontree
-  && (await referentsMontres()) === referentsAvant + 1
-  && (await page.locator('#zone-reperes .referents__detail .personne-carte').filter({ has: exactement(nouveauReferent) }).count()) === 1,
-  `(${referentsAvant} → ${await referentsMontres()})`);
-const carteReferent = page.locator('#zone-reperes .referents__detail .personne-carte').filter({ has: exactement(nouveauReferent) });
+const carteReferent = page.locator('#zone-reperes .referents__gens .personne-carte').filter({ has: exactement(nouveauReferent) });
+t(`« ${nouveauReferent} » rejoint « Les référents »`,
+  (await referentsListes()) === referentsAvant + 1 && (await carteReferent.count()) === 1,
+  `(${referentsAvant} → ${await referentsListes()})`);
 await o.centrer(carteReferent);
 await carteReferent.locator('.barre-edition__bouton--danger').click();
 await o.confirmer();
-t('retiré, le titre de référent quitte la compétence',
-  (await referentsMontres()) === referentsAvant
-  && (await page.locator('#zone-reperes .referents__detail .personne-carte').filter({ has: exactement(nouveauReferent) }).count()) === 0);
+t('retiré, le titre de référent disparaît de la liste',
+  (await referentsListes()) === referentsAvant && (await carteReferent.count()) === 0);
 
-// Un porteur du pôle que personne ne suit : on y affecte quelqu'un, puis on l'en retire.
-const champQui = page.locator('#qui-etiia-champ');
-const porteurLibre = await page.locator('#zone-reperes .qui__porteurs .qui__suggestion').evaluateAll((l) =>
-  (l.find((b) => b.querySelector('.qui__suggestion-compte').textContent.trim() === '0') || l[0]).dataset.suggestion);
-await o.centrer(champQui);
-await page.locator('#zone-reperes .qui__porteurs .qui__suggestion', { hasText: porteurLibre }).click();
-await o.attendre(400);
-const suiventLibre = () => page.locator('#zone-reperes .qui__resultats .personne-carte').count();
+// Le porteur le moins suivi du pôle : on y affecte quelqu'un depuis sa tuile, puis on l'en retire.
+const tuilesPorteur = page.locator('#zone-reperes .porteurs-pole .equipe__tuile');
+const porteurLibre = await page.locator('#zone-reperes .porteurs-pole .equipe').last().getAttribute('data-porteur');
+const tuileLibre = page.locator(`#zone-reperes .porteurs-pole .equipe[data-porteur="${porteurLibre}"] .equipe__tuile`);
+await o.centrer(tuileLibre);
+await tuileLibre.click();
+await o.attendre(700);
+const suiventLibre = () => page.locator('#zone-reperes .porteurs-pole .equipe__panneau .personne-carte').count();
 const avantLibre = await suiventLibre();
-await page.locator('#zone-reperes .qui__actions .edition-ajout').click();
+await o.centrer(page.locator('#zone-reperes .porteurs-pole .equipe__panneau .edition-ajout'));
+await page.locator('#zone-reperes .porteurs-pole .equipe__panneau .edition-ajout').click();
 await o.enregistrer();
-t(`on affecte quelqu’un au ${porteurLibre} depuis la recherche de cet appareil`,
-  (await champQui.inputValue()) === porteurLibre && (await suiventLibre()) === avantLibre + 1, `(${avantLibre} → ${await suiventLibre()})`);
-await page.locator('#zone-reperes .qui__resultats .personne-carte').first().locator('.barre-edition__bouton--danger').click();
+t(`on affecte quelqu’un au ${porteurLibre} depuis sa tuile, qui reste ouverte`,
+  (await suiventLibre()) === avantLibre + 1 && (await tuilesPorteur.count()) > 0, `(${avantLibre} → ${await suiventLibre()})`);
+const affecte = page.locator('#zone-reperes .porteurs-pole .equipe__panneau .personne-carte').first();
+await o.centrer(affecte);
+await affecte.locator('.barre-edition__bouton--danger').click();
 await o.confirmer();
 t(`et on l’en retire : le ${porteurLibre} retrouve ses ${avantLibre} personne(s)`, (await suiventLibre()) === avantLibre);
-await champQui.fill('');
 
 console.log('\n== Un espace de pôle : documents et FAQ ==');
 const totalDocs = async () => Number(((await page.locator('#zone-documents .pole-docs__pied a').innerText()).match(/\((\d+)\)/) || [])[1]);

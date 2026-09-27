@@ -3361,138 +3361,9 @@ body[data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
 .avatar--long { font-size: calc(var(--avatar-taille) * 0.25); }
 .avatar--xs.avatar--long { font-size: 0.5625rem; }
 
-/* --- Qui peut m'aider ? ------------------------------------------------ */
+/* --- Une grille de cartes de personnes --------------------------------- */
 
-.qui {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--e-4);
-  scroll-margin-block-start: calc(var(--hauteur-barre-site) + var(--e-16));
-}
-.qui__titre {
-  margin: 0;
-  font-family: var(--police-titre);
-  font-size: var(--texte-section);
-  font-style: italic;
-  font-weight: var(--graisse-normale);
-  line-height: var(--interligne-serre);
-  text-align: center;
-  color: var(--texte);
-}
-
-.qui__barre { position: relative; inline-size: min(100%, 46rem); }
-.qui__champ {
-  inline-size: 100%;
-  min-block-size: var(--e-12);
-  padding: 0 var(--e-12);
-  background-color: var(--fond-eleve);
-  border: 1px solid var(--champ-bordure);
-  border-radius: var(--rayon-plein);
-  box-shadow: var(--ombre-sm);
-  color: var(--texte);
-  font: inherit;
-  font-size: var(--texte-lg);
-  transition: border-color var(--duree-rapide) var(--courbe), box-shadow var(--duree) var(--courbe);
-}
-.qui__champ::placeholder { color: var(--texte-faible); font-family: var(--police-titre); font-style: italic; font-size: 1.0625rem; }
-.qui__champ:hover { border-color: var(--texte-doux); }
-.qui__champ:focus { outline: none; border-color: var(--accent); box-shadow: var(--ombre-accent), var(--ombre-md); }
-/* La croix du navigateur fait doublon avec « Effacer », qui a un nom. */
-.qui__champ::-webkit-search-cancel-button { appearance: none; }
-.qui__loupe {
-  position: absolute;
-  inset-inline-start: var(--e-5);
-  inset-block-start: 50%;
-  inline-size: 1.125rem;
-  block-size: 1.125rem;
-  transform: translateY(-50%);
-  fill: none;
-  stroke: var(--texte-faible);
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  pointer-events: none;
-  transition: stroke var(--duree-rapide) var(--courbe);
-}
-.qui__barre:focus-within .qui__loupe { stroke: var(--texte-accent); }
-.qui__effacer {
-  position: absolute;
-  inset-inline-end: var(--e-2);
-  inset-block-start: 50%;
-  display: grid;
-  place-items: center;
-  inline-size: var(--cible-tactile);
-  block-size: var(--cible-tactile);
-  transform: translateY(-50%);
-  border: 0;
-  border-radius: var(--rayon-plein);
-  background: none;
-  color: var(--texte-doux);
-  font: inherit;
-  font-size: var(--texte-xl);
-  line-height: 1;
-  cursor: pointer;
-}
-.qui__effacer:hover { background-color: var(--fond-enfonce); color: var(--texte); }
-.qui__effacer[hidden] { display: none; }
-
-.qui__suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: var(--e-2);
-}
-.qui__suggestions-libelle {
-  margin-inline-end: var(--e-1);
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: var(--lettrage-etiquette);
-  text-transform: uppercase;
-  color: var(--texte-faible);
-}
-.qui__suggestion {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e-2);
-  min-block-size: 2rem;
-  padding: var(--e-1) var(--e-3);
-  background-color: var(--fond-eleve);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-plein);
-  color: var(--texte);
-  font: inherit;
-  font-size: var(--texte-sm);
-  line-height: 1.5;
-  cursor: pointer;
-  transition: border-color var(--duree-rapide) var(--courbe), background-color var(--duree-rapide) var(--courbe),
-              transform var(--duree-rapide) var(--courbe);
-}
-.qui__suggestion:hover { border-color: var(--bordure-forte); background-color: var(--fond-enfonce); }
-.qui__suggestion[aria-pressed="true"] { border-color: var(--accent); background-color: var(--accent-doux); color: var(--texte-accent); }
-.qui__suggestion--appareil .qui__suggestion-nom { font-family: var(--police-mono); font-size: var(--texte-xs); letter-spacing: 0.03em; }
-.qui__suggestion-compte { font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--texte-faible); }
-.qui__suggestion[aria-pressed="true"] .qui__suggestion-compte { color: inherit; }
-
-/* Les résultats : un compte, puis des cartes. */
-.qui__resultats { display: flex; flex-direction: column; gap: var(--e-3); inline-size: 100%; margin-block-start: var(--e-2); }
-.qui__resultats[hidden] { display: none; }
-.qui__entete {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--e-2) var(--e-4);
-  padding-block-end: var(--e-2);
-  border-block-end: 1px solid var(--bordure-douce);
-}
-.qui__compte { margin: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
-.qui__compte:focus { outline: none; }
-.qui__compte:focus-visible { outline: 2px solid var(--focus-couleur); outline-offset: 4px; border-radius: var(--rayon-sm); }
-.qui__compte strong { font-weight: var(--graisse-forte); color: var(--texte); }
-.qui__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-4); }
-.qui__actions:empty { display: none; }
-.qui__grille {
+.personnes__grille {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr));
   gap: var(--e-3);
@@ -3500,17 +3371,6 @@ body[data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
   padding: 0;
   list-style: none;
 }
-.qui__grille[hidden], .qui__rien[hidden], .qui__plus[hidden] { display: none; }
-.qui__plus { align-self: center; }
-.qui__rien {
-  margin: 0;
-  padding: var(--e-6) var(--e-4);
-  border: 1px dashed var(--bordure);
-  border-radius: var(--rayon-lg);
-  text-align: center;
-  color: var(--texte-doux);
-}
-.qui__marque { padding-inline: 1px; border-radius: 2px; background-color: var(--surlignage); color: var(--surlignage-texte); }
 
 /* --- La carte d'une personne --------------------------------------------
    Toute la carte mène à la fiche (le lien du nom s'étend sur elle) ; la
@@ -3788,83 +3648,27 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
 .equipe__membres .personne-carte__squad { display: none; }
 .equipe__panneau-pied { margin-block-start: var(--e-4); }
 
-/* --- Les référents : l'index, puis le détail de la compétence choisie ---
-   L'index occupe toute la largeur ; le détail se pose dessous, en bandeau :
-   la compétence à gauche, ses référents en cartes à droite. */
+/* --- Les référents : les personnes à solliciter en premier ------------- */
 
-.referents__corps { display: flex; flex-direction: column; gap: var(--e-5); }
-.referents__index { display: flex; flex-wrap: wrap; align-content: flex-start; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
-.referents__puce {
-  display: inline-flex;
-  align-items: center;
-  min-block-size: 2.25rem;
-  padding: var(--e-1) var(--e-4);
-  background-color: var(--fond-eleve);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-plein);
-  color: var(--texte);
-  font: inherit;
-  font-size: var(--texte-sm);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: border-color var(--duree-rapide) var(--courbe), background-color var(--duree-rapide) var(--courbe),
-              box-shadow var(--duree) var(--courbe);
-}
-.referents__puce:hover { border-color: color-mix(in srgb, var(--chaud) 55%, var(--bordure)); }
-.referents__puce[aria-pressed="true"] {
-  border-color: var(--chaud);
-  background-color: var(--chaud-doux);
-  color: var(--chaud-encre);
-  box-shadow: 0 0 0 3px var(--chaud-lueur);
-}
+.referents__gens { grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr)); }
+.personne-carte__badge--referent { color: var(--chaud-encre); }
 
-.referents__detail {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--e-4) var(--e-8);
-  align-items: start;
-  padding: var(--e-4) var(--e-5) var(--e-5);
-  background-color: var(--carte-fond);
-  border: 1px solid var(--carte-bord);
-  border-block-start: 3px solid var(--chaud);
-  border-radius: var(--rayon-xl);
-  box-shadow: var(--ombre-sm);
+/* --- Par porteur : une tuile par appareil, sa photo, ses gens ----------- */
+
+.porteur-tuile__corps { display: flex; align-items: center; gap: var(--e-3); min-inline-size: 0; }
+.porteur-tuile__vignette {
+  flex: none;
+  inline-size: 4.5rem;
+  block-size: 3rem;
+  overflow: hidden;
+  border-radius: var(--rayon-md);
+  background-color: var(--fond-enfonce);
+  box-shadow: inset 0 0 0 1px var(--bordure-douce);
 }
-.referents__surtitre {
-  margin: 0;
-  font-family: var(--police-mono);
-  font-size: var(--texte-xs);
-  letter-spacing: var(--lettrage-etiquette);
-  text-transform: uppercase;
-  color: var(--chaud-encre);
-}
-.referents__competence { margin: var(--e-1) 0 0; font-family: var(--police-titre); font-size: var(--texte-2xl); font-weight: var(--graisse-normale); line-height: var(--interligne-serre); }
-.referents__resume { margin: var(--e-1) 0 0; font-size: var(--texte-xs); color: var(--texte-doux); }
-.referents__gens {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
-  gap: var(--e-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.referents__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-4); margin-block-start: var(--e-3); }
-.referents__actions:empty { display: none; }
-@media (min-width: 900px) {
-  .referents__detail { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); padding: var(--e-5) var(--e-6) var(--e-6); }
-  .referents__entete { padding-block-start: var(--e-1); }
-}
-.referents__tous {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--texte-accent);
-  font: inherit;
-  font-size: var(--texte-sm);
-  font-weight: var(--graisse-moyenne);
-  cursor: pointer;
-}
-.referents__tous:hover { text-decoration: underline; text-underline-offset: 3px; }
+.porteur-tuile__vignette img { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; }
+.porteur-tuile__segment { min-inline-size: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
+.equipe--porteur .equipe__nom { letter-spacing: 0.01em; }
+.equipe--porteur .equipe__lead--vide { font-size: var(--texte-sm); }
 
 /* --- Le mouvement : court, et seulement s'il est bienvenu ---------------- */
 
@@ -3877,45 +3681,15 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
   .personne-carte:hover, .personne-carte:focus-within { transform: translateY(-1px); }
   .equipe__tuile:hover { transform: translateY(-2px); }
   .equipe__tuile:hover .equipe__visages .avatar { transform: translateY(-3px); }
-  .qui__suggestion:hover { transform: translateY(-1px); }
 }
-
-/* Une rangée qui défile de côté s'estompe au bord où il reste à voir
-   (data-avant, data-apres, posés par pole.js). Le masque ne lit que
-   l'opacité : n'importe quelle couleur opaque convient. */
-.qui__suggestions, .referents__index { --fondu-avant: 0px; --fondu-apres: 0px; }
-.qui__suggestions[data-avant], .referents__index[data-avant] { --fondu-avant: var(--e-10); }
-.qui__suggestions[data-apres], .referents__index[data-apres] { --fondu-apres: var(--e-10); }
 
 @media (max-width: 640px) {
   .coup-oeil { gap: var(--e-10); }
   /* Les quatre chiffres en deux colonnes : pas de point en tête de ligne. */
   .coup-oeil__chiffres { display: grid; grid-template-columns: repeat(2, auto); justify-content: center; gap: var(--e-2) var(--e-6); }
   .coup-oeil__chiffre + .coup-oeil__chiffre::before { display: none; }
-  .qui__champ { padding-inline-end: var(--e-10); }
-  /* Les suggestions et l'index des référents, sur une rangée qui défile
-     de côté, d'une puce à l'autre ; le bord s'estompe tant qu'il en reste.
-     (.coup-oeil devant l'index : ul[class] de base.css pèse plus lourd.) */
-  .qui__suggestions, .coup-oeil .referents__index {
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    /* Le retrait laisse voir la lueur d'une puce choisie ; la marge
-       négative remet les puces à l'aplomb du reste. */
-    inline-size: calc(100% + var(--e-2));
-    margin-inline: calc(var(--e-1) * -1);
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    scroll-padding-inline: var(--e-1);
-    scrollbar-width: thin;
-    padding: var(--e-1) var(--e-1) var(--e-2);
-    -webkit-mask-image: linear-gradient(to right, transparent, var(--texte) var(--fondu-avant), var(--texte) calc(100% - var(--fondu-apres)), transparent);
-    mask-image: linear-gradient(to right, transparent, var(--texte) var(--fondu-avant), var(--texte) calc(100% - var(--fondu-apres)), transparent);
-  }
-  .qui__suggestions > *, .referents__index > li { flex: none; scroll-snap-align: start; }
   .equipe__tuile { padding: var(--e-4); }
   .equipe__panneau-interieur { padding: var(--e-3) var(--e-3) var(--e-4); }
-  .referents__detail { padding: var(--e-4); }
 }
 
 /* Des commandes d'édition serrées, pour une carte ou une ligne : l'icône
@@ -3942,7 +3716,7 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
 
 .pole-doc {
   display: grid;
-  grid-template-columns: 6.5rem minmax(0, 1fr) auto auto auto 4.5rem auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 11rem) 7.5rem 4.5rem auto;
   transition: background-color var(--duree-rapide) var(--courbe);
   align-items: center;
   gap: var(--e-2) var(--e-4);
@@ -3951,17 +3725,6 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
 }
 .pole-doc:last-child { border-bottom: 0; }
 .pole-doc:hover { background-color: color-mix(in srgb, var(--fond-bande) 55%, transparent); }
-.pole-doc__intitule { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-1) var(--e-2); min-inline-size: 0; }
-.pole-doc__nouveau {
-  padding: 1px var(--e-2);
-  border-radius: var(--rayon-plein);
-  background-color: var(--statut-succes-fond);
-  font-size: 0.625rem;
-  font-weight: var(--graisse-forte);
-  letter-spacing: var(--lettrage-capitales);
-  text-transform: uppercase;
-  color: var(--statut-succes);
-}
 .pole-doc__ouvrir {
   justify-self: end;
   padding: 2px var(--e-3);
@@ -3980,19 +3743,17 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
 .pole-docs__recherche { flex: 0 1 20rem; min-inline-size: 12rem; border-radius: var(--rayon-plein); padding-inline: var(--e-4); }
 .pole-docs__resume { margin: 0 0 var(--e-2); font-size: var(--texte-xs); color: var(--texte-faible); }
 .pole-docs__vide { padding: var(--e-5) var(--e-4); color: var(--texte-doux); }
-.pole-doc__type { justify-self: start; }
 .pole-doc__titre { min-inline-size: 0; font-weight: var(--graisse-moyenne); color: var(--texte); text-decoration: none; }
 .pole-doc__titre:hover { color: var(--texte-accent); text-decoration: underline; }
-.pole-doc__ref { font-size: var(--texte-xs); color: var(--texte-doux); white-space: nowrap; }
-.pole-doc__porteur { font-size: var(--texte-sm); color: var(--texte-doux); white-space: nowrap; }
+.pole-doc__porteur { overflow: hidden; font-size: var(--texte-sm); color: var(--texte-doux); white-space: nowrap; text-overflow: ellipsis; }
 .pole-doc__porteur a { color: inherit; }
 .pole-doc__date { font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--texte-faible); white-space: nowrap; }
 
 .pole-docs__pied { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--e-3); }
 
 @media (max-width: 800px) {
-  .pole-doc { grid-template-columns: minmax(0, 1fr) auto; }
-  .pole-doc__type, .pole-doc__intitule { grid-column: 1 / -1; }
+  .pole-doc { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .pole-doc__titre { grid-column: 1 / -1; }
 }
 
 /* ----------------------------------------------------------------------
@@ -5317,7 +5078,6 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   select.champ__select,
   .recherche__champ,
   .org-recherche,
-  .qui__champ,
   .liseuse__recherche,
   .arbre__recherche {
     font-size: var(--texte-lg);
@@ -5326,8 +5086,7 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
 }
 
 /* Ces liens-ci sont petits par choix typographique — un lien de sommaire,
-   une suggestion ou une compétence du « coup d'œil » d'un pôle, un nom de
-   pôle dans l'arbre. Au doigt, on leur pose un plancher de 44px sans
+   un nom de pôle dans l'arbre. Au doigt, on leur pose un plancher de 44px sans
    toucher à --cible-tactile, dont dépend la hauteur de la barre du site :
    la rehausser mangerait le sommaire collant. Une carte de personne n'en
    a pas besoin : elle est tout entière le lien de sa fiche. La puce d'un
@@ -5335,8 +5094,6 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
    déborderait. */
 @media (pointer: coarse) {
   .sous-nav a,
-  .qui__suggestion,
-  .referents__puce,
   .org-arbre__pole-nom,
   .kiosque__filtres .facette {
     min-block-size: 44px;

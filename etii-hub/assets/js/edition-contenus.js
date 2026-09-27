@@ -213,39 +213,50 @@ function personnesDuPole(organigramme, pole) {
 function normaliser(v) { return texte(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
 
 /**
- * Nommer un référent : une personne du pôle, une compétence. La compétence
- * passe au niveau « Référent » dans la fiche de la personne (ou s'y
- * ajoute).
- * @param {{organigramme: object, pole: string, competence?: string, competences?: string[], declencheur?: Element}} o
+ * Nommer un référent : une personne du pôle, rien de plus. Le pôle a des
+ * référents — les personnes à solliciter en premier —, pas un référent
+ * par compétence : la fiche de la personne porte `referent: true`.
+ * @param {{organigramme: object, pole: string, declencheur?: Element}} o
  */
 export function ouvrirReferent(o) {
-  const personnes = personnesDuPole(o.organigramme, o.pole);
+  const personnes = personnesDuPole(o.organigramme, o.pole).filter((p) => !estReferent(p));
+  if (!personnes.length) throw new Error('Tout le pôle est déjà référent.');
   return ouvrirFormulaire({
-    titre: o.competence ? 'Un référent pour « ' + o.competence + ' »' : 'Nommer un référent',
+    titre: 'Nommer un référent',
     declencheur: o.declencheur,
-    valeurs: { competence: o.competence || '', personne: personnes.length ? texte(personnes[0].id) : '' },
+    valeurs: { personne: texte(personnes[0].id) },
     champs: [
       { cle: 'personne', libelle: 'Personne', type: 'choix', requis: true,
-        options: personnes.map((p) => [texte(p.id), texte(p.nom) + (texte(p.poste) ? ' — ' + texte(p.poste) : '')]) },
-      { cle: 'competence', libelle: 'Compétence', type: 'texte', requis: true, suggestions: o.competences || [],
-        aide: 'Une compétence déjà citée dans le pôle, ou une nouvelle.' }
+        options: personnes.map((p) => [texte(p.id), texte(p.nom) + (texte(p.poste) ? ' — ' + texte(p.poste) : '')]),
+        aide: 'Elle apparaît dans « Les référents » du pôle : la personne à solliciter en premier.' }
     ],
     surEnregistrer: (v) => {
       const p = personnes.find((x) => texte(x.id) === texte(v.personne));
       if (!p) throw new Error('Choisissez une personne du pôle.');
-      const nom = texte(v.competence);
-      const competences = tableau(p.competences).filter((c) => normaliser(c && c.nom) !== normaliser(nom));
-      competences.unshift({ nom, niveau: 'referent' });
-      return enregistrerModification('organigramme', 'personne', texte(p.id), Object.assign({}, p, { competences }));
+      return enregistrerModification('organigramme', 'personne', texte(p.id), Object.assign({}, p, { referent: true }));
     }
   });
 }
 
-/** Retirer le statut de référent : la compétence reste, au niveau « Confirmé ». */
-export function retirerReferent(personne, competence) {
-  const competences = tableau(personne.competences).map((c) => (normaliser(c && c.nom) === normaliser(competence)
+/**
+ * Une personne est-elle référente ? Le titre posé sur sa fiche
+ * (`referent`) l'emporte ; à défaut, une compétence au niveau
+ * « référent » — la forme des données plus anciennes — suffit.
+ * @param {object} personne
+ * @returns {boolean}
+ */
+export function estReferent(personne) {
+  if (!personne || typeof personne !== 'object') return false;
+  if (personne.referent === true) return true;
+  if (personne.referent === false) return false;
+  return tableau(personne.competences).some((c) => c && texte(c.niveau) === 'referent');
+}
+
+/** Retirer le titre de référent : les compétences restent, au niveau « Confirmé ». */
+export function retirerReferent(personne) {
+  const competences = tableau(personne.competences).map((c) => (c && texte(c.niveau) === 'referent'
     ? Object.assign({}, c, { niveau: 'confirme' }) : c));
-  return enregistrerModification('organigramme', 'personne', texte(personne.id), Object.assign({}, personne, { competences }));
+  return enregistrerModification('organigramme', 'personne', texte(personne.id), Object.assign({}, personne, { competences, referent: false }));
 }
 
 /**

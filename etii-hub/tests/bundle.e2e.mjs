@@ -115,18 +115,15 @@ t('sa communication est en tête', (await f.locator('.kiosque').count()) === 1);
 t('son sommaire a cinq entrées (dont À venir)', (await f.locator('.sous-nav a').count()) === 5);
 t('plus de section Réunions ni Porteurs du pôle', (await f.locator('#section-reunions, #zone-reunions, #section-porteurs, #zone-porteurs').count()) === 0);
 t('ses chiffres sont calculés, en une ligne', (await f.locator('#zone-reperes .coup-oeil__chiffre').count()) === 4);
-t('« Qui peut m’aider ? », les équipes et les référents sont rendus',
-  (await f.locator('#zone-reperes .qui__champ').count()) === 1
-  && (await f.locator('#zone-reperes .equipe__tuile').count()) > 3
-  && (await f.locator('#zone-reperes .referents__puce').count()) > 3);
-await f.locator('#zone-reperes .qui__champ').fill('harnais');
-await page.waitForTimeout(500);
-t('une recherche y répond par des cartes : initiales, nom et rôle, sans portrait',
-  (await f.locator('#zone-reperes .qui__resultats .personne-carte').count()) > 3
-  && (await f.locator('#zone-reperes .qui__resultats .personne-carte .avatar').count()) > 3
-  && (await f.locator('#zone-reperes .qui__resultats .personne-carte__role').count()) > 3
+t('les équipes, les référents et les porteurs sont rendus, sans champ de recherche',
+  (await f.locator('#zone-reperes .qui__champ').count()) === 0
+  && (await f.locator('#zone-reperes .equipes .equipe__tuile').count()) > 3
+  && (await f.locator('#zone-reperes .referents__gens .personne-carte').count()) > 3
+  && (await f.locator('#zone-reperes .porteurs-pole .equipe__tuile').count()) > 3);
+t('les référents sont des cartes : initiales, nom et rôle, sans portrait',
+  (await f.locator('#zone-reperes .referents__gens .personne-carte .avatar').count()) > 3
+  && (await f.locator('#zone-reperes .referents__gens .personne-carte__role').count()) > 3
   && (await f.locator('#zone-reperes .portrait').count()) === 0);
-await f.locator('#zone-reperes .qui__champ').fill('');
 t('ses documents récents sont listés', (await f.locator('#zone-documents .pole-doc').count()) === 8);
 t('l\'image de sa communication est intégrée', /^data:image/.test((await f.locator('.kiosque__image img, .kiosque__figure img').first().getAttribute('src')) || ''));
 t('sa FAQ est lisible, sans « Toute la base »', (await f.locator('#zone-faq .liseuse').count()) === 1 && !/Toute la base/i.test(pole));
