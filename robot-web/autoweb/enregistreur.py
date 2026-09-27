@@ -109,22 +109,24 @@ JS_ENREGISTREUR = """
     return tag === 'input' && !['submit', 'button', 'reset', 'image', 'checkbox', 'radio', 'file'].includes(type);
   }
 
+  // libellé d'un champ : le texte du <label> SANS les listes et champs qu'il contient
+  // (sinon toutes les options d'une liste, des noms de clients..., deviendraient le « nom » du champ)
   function libelleDe(e) {
     if (idOk(e.id)) {
       const l = document.querySelector('label[for="' + e.id + '"]');
-      if (l && l.innerText) return court(l.innerText, 80);
+      if (l && texteSeul(l)) return texteSeul(l);
     }
     const p = e.closest('label');
-    if (p && p.innerText) return court(p.innerText, 80);
+    if (p && texteSeul(p)) return texteSeul(p);
     const al = e.getAttribute('aria-label');
     if (al) return court(al, 80);
     const lb = e.getAttribute('aria-labelledby');
-    if (lb) { const t = document.getElementById(lb.split(' ')[0]); if (t) return court(t.innerText, 80); }
+    if (lb) { const t = document.getElementById(lb.split(' ')[0]); if (t) return texteSeul(t); }
     const ph = e.getAttribute('placeholder');
     if (ph) return court(ph, 80);
     const prev = e.previousElementSibling;
-    if (prev && ['LABEL','SPAN','TD','TH','DIV'].includes(prev.tagName) && court(prev.innerText, 61).length < 60)
-      return court(prev.innerText, 80);
+    if (prev && ['LABEL','SPAN','TD','TH','DIV'].includes(prev.tagName) && texteSeul(prev).length < 60)
+      return texteSeul(prev);
     return '';
   }
 
@@ -132,6 +134,7 @@ JS_ENREGISTREUR = """
   function texteDe(e) {
     if (estChampSaisie(e)) return '';
     const tag = e.tagName.toLowerCase();
+    if (tag === 'select') return '';   // son texte, ce sont toutes ses options
     const type = (e.getAttribute('type') || '').toLowerCase();
     if (tag === 'input' && ['submit', 'button', 'reset'].includes(type)) return court(e.value || '', 60);
     // aria-label d'abord : c'est le nom que Playwright utilisera (bouton à icône)
@@ -227,11 +230,14 @@ JS_ENREGISTREUR = """
   }
 
   function decrire(e) {
+    const tag = e.tagName.toLowerCase();
+    const champ = ['input', 'select', 'textarea'].includes(tag) || e.isContentEditable;
     return {
       selecteur: selecteurDe(e),
-      tag: e.tagName.toLowerCase(),
+      tag: tag,
       type: (e.getAttribute('type') || '').toLowerCase(),
-      libelle: libelleDe(e) || texteDe(e),
+      // un bouton porte son propre nom, pas celui du texte posé juste avant lui (titre d'un plan...)
+      libelle: champ ? (libelleDe(e) || texteDe(e)) : (texteDe(e) || libelleDe(e)),
       texte: texteDe(e)
     };
   }
@@ -308,8 +314,8 @@ JS_ENREGISTREUR = """
       if (champs.length >= 80) break;
       const type = (e.getAttribute('type') || '').toLowerCase();
       if (type === 'hidden' || ['submit', 'button', 'reset', 'image'].includes(type) || !visible(e)) continue;
-      const tr = e.closest('tbody tr');
-      if (tr && tr.parentElement && Array.prototype.indexOf.call(tr.parentElement.children, tr) > 0) continue;
+      // champs d'une ligne de tableau ou de liste, de l'en-tête : des données, pas le formulaire
+      if (e.closest('tbody tr, [role=row], [role=grid], [role=listbox], li, header, nav, [role=banner]')) continue;
       const tag = e.tagName.toLowerCase();
       const rempli = (type === 'checkbox' || type === 'radio') ? e.checked : !!String(e.value || '').trim();
       champs.push({ libelle: nomDuChamp(e), type: tag === 'select' ? 'liste' : (tag === 'textarea' ? 'texte long' : (type || 'text')),
@@ -318,7 +324,10 @@ JS_ENREGISTREUR = """
     const boutons = [];
     for (const b of document.querySelectorAll('button, input[type=submit], input[type=button], [role=button]')) {
       if (boutons.length >= 30) break;
-      if (surBadge(b) || b.closest('tbody tr') || !visible(b)) continue;
+      if (surBadge(b) || !visible(b)) continue;
+      // lignes, listes, en-tête (nom de l'utilisateur), listes déroulantes (qui affichent le choix fait)
+      if (b.closest('tbody tr, [role=row], [role=grid], [role=listbox], li, header, nav, [role=banner]')) continue;
+      if (b.hasAttribute('aria-haspopup') || b.hasAttribute('aria-expanded')) continue;
       const t = court(b.tagName === 'INPUT' ? b.value : (b.getAttribute('aria-label') || b.innerText), 40);
       if (t && !boutons.includes(t)) boutons.push(t);
     }
@@ -331,18 +340,24 @@ JS_ENREGISTREUR = """
   }
   setTimeout(() => { try { photo(); } catch (err) {} }, 800);
 
-  document.addEventListener('click', (ev) => {
+  function surClic(ev) {
     // isTrusted : uniquement les vrais clics. Les pages qui fabriquent un lien
     // invisible pour declencher un telechargement emettent un clic factice.
     if (!ev.isTrusted || surBadge(ev.target)) return;
+    if (ev.type === 'auxclick' && ev.button !== 1) return;   // seul le clic molette compte
     viderEnAttente();   // ce qui vient d'etre tape doit etre note AVANT le clic
     try { photo(); } catch (err) {}   // l'ecran tel qu'il est au moment du clic (champs remplis ou non)
     const e = cible(ev.target);
     if (!e) return;
     const d = decrire(e);
     d.type_evenement = 'clic';
+    d.ctrl = !!(ev.ctrlKey || ev.metaKey);   // Ctrl+clic : ouvre souvent un nouvel onglet
+    d.maj = !!ev.shiftKey;
+    d.bouton = ev.button || 0;
     envoyer(d);
-  }, true);
+  }
+  document.addEventListener('click', surClic, true);
+  document.addEventListener('auxclick', surClic, true);
 
   document.addEventListener('keydown', (ev) => {
     if (ev.key !== 'Enter' || !ev.isTrusted) return;
@@ -455,7 +470,7 @@ class Enregistreur:
         # « download » est un événement de page : il faut l'écouter sur chaque onglet,
         # y compris ceux qui s'ouvriront pendant l'enregistrement.
         for page_ouverte in contexte.pages:
-            self._suivre_page(page_ouverte)
+            self._suivre_page(page_ouverte, initiale=True)
         contexte.on("page", self._suivre_page)
         self._actif = True
         page = self.nav.page_courante()
@@ -471,10 +486,14 @@ class Enregistreur:
         self.evenements.insert(0, Evenement("page", {"url": url or page.url, "titre": ""}))
         return page
 
-    def _suivre_page(self, page: Page) -> None:
+    def _suivre_page(self, page: Page, initiale: bool = False) -> None:
         if page in self._pages_suivies:
             return
         self._pages_suivies.append(page)
+        if not initiale and self._actif:
+            # l'onglet apparaît juste après le clic qui l'a ouvert : c'est ce clic qui sera rejoué
+            # en « nouvel onglet » (même si l'utilisateur tape vite, ou n'agit jamais dans l'onglet)
+            self.evenements.append(Evenement("onglet_ouvert", {}, "", None, page))
         page.on("download", self._telechargement)
         # Un onglet ouvert par window.open ne rejoue pas toujours le script d'enregistrement
         # sur sa vraie page : on le réinjecte à chaque chargement (sans doublon, voir le script).
@@ -563,6 +582,10 @@ class Enregistreur:
             except Exception:  # navigateur ou onglet fermé : l'enregistrement s'arrête
                 break
             ecoule += 300
+            if ecoule % 1500 == 0:
+                for page in list(self._pages_suivies):
+                    if not page.is_closed():
+                        self._injecter(page)  # sans effet si déjà présent
             if touche_entree_disponible():
                 break
         self._actif = False
@@ -583,6 +606,8 @@ class Enregistreur:
         self._actif = False
         gardes: List[Evenement] = []
         for evenement in self.evenements:
+            if evenement.type == "onglet_ouvert" and evenement.page in getattr(self.nav, "parasites", []):
+                continue  # onglet ouvert par Chrome lui-même, refermé par le robot
             if self._hors_tache(evenement):
                 if evenement.type != "ecran":
                     self.ignorees += 1
@@ -593,7 +618,7 @@ class Enregistreur:
         self.evenements = gardes
         ordre: List[Any] = []  # onglets dans l'ordre où l'utilisateur s'en est servi
         for evenement in self.evenements:
-            if evenement.page is not None and evenement.type in ("clic", "saisie", "touche", "ecran"):
+            if evenement.page is not None and evenement.type in ("clic", "saisie", "touche", "ecran", "onglet_ouvert"):
                 if evenement.page not in ordre:
                     ordre.append(evenement.page)
                 evenement.onglet = ordre.index(evenement.page)
@@ -666,6 +691,12 @@ def construire_etapes(evenements: List[Evenement], url_depart: str = "") -> List
         if ev.type == "ecran":
             ecran = {"champs": d.get("champs") or [], "boutons": d.get("boutons") or []}
             continue
+        if ev.type == "onglet_ouvert":
+            gestes = [e for e in etapes if e.action != "attendre"]
+            if ev.onglet > onglet_max and gestes and gestes[-1].action == "cliquer":
+                gestes[-1].args["nouvel_onglet"] = True
+                onglet_courant, onglet_max = ev.onglet, ev.onglet
+            continue
         if ev.type in ("clic", "saisie", "touche") and ev.onglet != onglet_courant:
             gestes = [e for e in etapes if e.action != "attendre"]
             if ev.onglet > onglet_max and gestes and gestes[-1].action == "cliquer":
@@ -718,8 +749,15 @@ def _traduire(ev: Evenement, d: Dict[str, Any], etapes: List[EtapeEnregistree], 
     if ev.type == "clic":
         if tag in ("input", "textarea", "select") and type_champ not in ("checkbox", "radio", "submit", "button", "reset"):
             return  # simple clic dans un champ : la saisie suffit
+        args_clic: Dict[str, Any] = {"selecteur": selecteur}
+        if d.get("ctrl"):
+            args_clic["ctrl"] = True
+        if d.get("maj"):
+            args_clic["maj"] = True
+        if d.get("bouton") == 1:
+            args_clic["bouton"] = "middle"
         etapes.append(EtapeEnregistree(
-            "cliquer", {"selecteur": selecteur}, libelle=libelle, cadre=ev.cadre,
+            "cliquer", args_clic, libelle=libelle, cadre=ev.cadre,
             texte_selecteur=_texte_du_selecteur(selecteur),
         ))
     elif ev.type == "saisie":

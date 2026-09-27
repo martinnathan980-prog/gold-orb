@@ -205,7 +205,7 @@ def demander_questions(scenario: Scenario, options: Options, contexte: Dict[str,
         contexte[nom] = reponse
 
 
-MOTIF_SUPPRESSION = re.compile(r"supprim|delete|effac|remove|detrui|destroy|corbeille|trash|retirer|archiver")
+from .scenario import MOTIF_DESTRUCTIF as MOTIF_SUPPRESSION  # noqa: E402
 
 
 def _normaliser(texte: str) -> str:
@@ -418,6 +418,7 @@ def lancer_sans_excel(scenario: Scenario, options: Options) -> Bilan:
     bilan = Bilan(total=1, lignes_fichier=1, sans_excel=True)
     if options.simuler:
         bilan.simule = True
+        demander_questions(scenario, options, base)  # « <Plan de départ> » à la place de la valeur
         journal.info("Simulation de « %s » (tâche sans Excel)", scenario.nom)
         for partie, etapes in (("avant", scenario.avant), ("étapes", scenario.etapes), ("après", scenario.apres)):
             if etapes:
@@ -560,6 +561,19 @@ def lancer(scenario: Scenario, options: Options) -> Bilan:
         classeur.fermer()
 
 
+def _refermer_onglets_de_la_ligne(navigateur: Navigateur, page_depart: Any, onglets_avant: List[Any]) -> None:
+    """Les onglets ouverts pendant une ligne (copie du plan...) sont refermés : la ligne
+    suivante repart du même onglet, et « onglet: 2 » y désigne le même onglet."""
+    try:
+        for page in list(navigateur.contexte.pages if navigateur.contexte else []):
+            if page not in onglets_avant and page is not page_depart and not page.is_closed():
+                page.close()
+        if page_depart is not None and not page_depart.is_closed():
+            navigateur.utiliser_page(page_depart)
+    except Exception as e:  # noqa: BLE001 - le ménage ne doit jamais faire échouer la ligne
+        journal.debug("Onglets de la ligne : %s", e)
+
+
 def _boucle(
     scenario: Scenario,
     classeur: ClasseurSuivi,
@@ -577,6 +591,8 @@ def _boucle(
         contexte = contexte_ligne(base, ligne, n, total, noms_variables)
         executeur = Executeur(navigateur, scenario, contexte, classeur, ligne.numero, interactif=options.interactif)
         debut = time.monotonic()
+        page_depart = navigateur.page_courante()
+        onglets_avant = list(navigateur.contexte.pages) if navigateur.contexte else []
         try:
             executeur.executer(scenario.etapes)
             classeur.marquer(ligne.numero, STATUT_OK, "")
@@ -616,5 +632,6 @@ def _boucle(
             _sauvegarder_avec_reessai(classeur, options)
             raise
         _sauvegarder_avec_reessai(classeur, options)
+        _refermer_onglets_de_la_ligne(navigateur, page_depart, onglets_avant)
         if scenario.excel.entre_lignes_ms > 0 and n < total:
             time.sleep(scenario.excel.entre_lignes_ms / 1000.0)

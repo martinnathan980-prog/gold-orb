@@ -19,6 +19,7 @@ import logging
 import os
 import re
 import sys
+import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -315,8 +316,13 @@ class Executeur:
             "button": str(args.get("bouton", "left")),
             "force": bool(args.get("forcer", False)),
         }
+        modificateurs = (["ControlOrMeta"] if est_vrai(args.get("ctrl", False)) else []) + \
+                        (["Shift"] if est_vrai(args.get("maj", False)) else [])
+        if modificateurs:
+            options["modifiers"] = modificateurs
         if args.get("nouvel_onglet"):
-            with self.page.expect_popup(timeout=timeout) as popup:
+            # tout nouvel onglet compte : window.open, lien « nouvel onglet », Ctrl+clic, clic molette
+            with self.page.context.expect_page(timeout=timeout) as popup:
                 loc.click(**options)
             nouvelle = popup.value
             nouvelle.wait_for_load_state("load", timeout=timeout)
@@ -417,9 +423,7 @@ class Executeur:
         """
         timeout = self._delai(args, delai)
         loc = self.localiser(args["cliquer"], args)
-        with self.page.expect_download(timeout=timeout) as info:
-            loc.click(timeout=timeout)
-        telechargement = info.value
+        telechargement = self._cliquer_et_attendre_fichier(loc, timeout or self.nav.config.delai_max)
         suggere = telechargement.suggested_filename or "telechargement"
         if args.get("vers"):
             cible = self._chemin(args["vers"])
@@ -442,6 +446,43 @@ class Executeur:
         self.contexte["fichier_telecharge"] = str(resultat)
         if args.get("vers_colonne") and self.classeur is not None and self.numero_ligne is not None:
             self.classeur.ecrire(self.numero_ligne, str(args["vers_colonne"]), str(resultat))
+
+    def _cliquer_et_attendre_fichier(self, loc: Any, timeout: int) -> Any:
+        """Le fichier peut arriver dans l'onglet courant ou dans un onglet que le clic ouvre
+        (page « préparation du fichier... ») : on écoute tous les onglets."""
+        contexte = self.page.context
+        recus: List[Any] = []
+        ecoutees = list(contexte.pages)
+
+        def recevoir(telechargement: Any) -> None:
+            recus.append(telechargement)
+
+        for page in ecoutees:
+            page.on("download", recevoir)
+
+        def nouvelle(page: Any) -> None:
+            ecoutees.append(page)
+            page.on("download", recevoir)
+
+        contexte.on("page", nouvelle)
+        try:
+            loc.click(timeout=timeout)
+            fin = time.monotonic() + timeout / 1000
+            while not recus and time.monotonic() < fin:
+                self.page.wait_for_timeout(200)
+        finally:
+            for page in ecoutees:
+                try:
+                    page.remove_listener("download", recevoir)
+                except Exception:  # noqa: BLE001
+                    pass
+            try:
+                contexte.remove_listener("page", nouvelle)
+            except Exception:  # noqa: BLE001
+                pass
+        if not recus:
+            raise ErreurEtape(f"aucun téléchargement n'a démarré dans les {timeout // 1000} s après le clic.")
+        return recus[0]
 
     def act_journal(self, args: Dict[str, Any], delai: Optional[int]) -> None:
         journal.info("      %s", args["message"])
@@ -531,11 +572,20 @@ class Executeur:
         try:
             self.executer(args["etapes"])
         finally:
-            self.portees.pop()
+            # un clic « nouvel onglet » dans le cadre a déjà vidé les portées : ne rien retirer de plus
+            if self.portees and self.portees[-1] is cadre:
+                self.portees.pop()
 
     def act_onglet(self, args: Dict[str, Any], delai: Optional[int]) -> None:
         # les onglets ouverts par Chrome lui-même ne comptent pas (« onglet: 2 » reste juste)
         pages = self.nav.pages_de_travail() or [p for p in self.page.context.pages if not p.is_closed()]
+        index = args.get("index")
+        if isinstance(index, int) or (isinstance(index, str) and index.strip().isdigit()):
+            # l'onglet est peut-être encore en train de s'ouvrir : on lui laisse le délai habituel
+            fin = time.monotonic() + (self._delai(args, delai) or self.nav.config.delai_max) / 1000
+            while len(pages) < int(index) and time.monotonic() < fin:
+                self.page.wait_for_timeout(200)
+                pages = self.nav.pages_de_travail() or [p for p in self.page.context.pages if not p.is_closed()]
         cible = None
         if args.get("titre") is not None or args.get("url") is not None:
             for p in pages:

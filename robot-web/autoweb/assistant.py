@@ -18,6 +18,7 @@ from . import symboles as S
 from .enregistreur import ancrer_exactement, remplacer_texte_selecteur
 from .erreurs import ErreurAutoweb
 from .gabarit import normaliser_cle
+from .scenario import MOTIF_DESTRUCTIF
 from .releve import selecteur_suggere
 
 MOTS_ENREGISTRER = ("enregistr", "valid", "sauvegard", "soumettre", "save", "submit", "confirm", "creer", "créer", "ajouter", "ok")
@@ -305,9 +306,18 @@ def _bloc_etapes(
                     gabarit = colonne if "{{" in colonne else "{{" + colonne + "}}"
                     gabarit = re.sub(r"\{\{\s*([^}|]+?)\s*\}\}", r"{{\1 | echapper}}", gabarit)
                     selecteur = ancrer_exactement(selecteur, e.texte_selecteur, gabarit)
+            options = []
+            if e.args.get("bouton"):
+                options.append(f"bouton: {e.args['bouton']}")
+            if e.args.get("ctrl"):
+                options.append("ctrl: true")
+            if e.args.get("maj"):
+                options.append("maj: true")
             if e.args.get("nouvel_onglet"):
-                lignes.append(f"{i}- cliquer: {{selecteur: {_yaml_chaine(selecteur)}, nouvel_onglet: true}}"
-                              "   # ce clic ouvre un nouvel onglet : la suite s'y passe")
+                options.append("nouvel_onglet: true")
+            if options:
+                commentaire = "   # ce clic ouvre un nouvel onglet : la suite s'y passe" if e.args.get("nouvel_onglet") else ""
+                lignes.append(f"{i}- cliquer: {{selecteur: {_yaml_chaine(selecteur)}, {', '.join(options)}}}{commentaire}")
             else:
                 lignes.append(f"{i}- cliquer: {_yaml_chaine(selecteur)}")
         elif e.action == "onglet":
@@ -351,9 +361,6 @@ def _bloc_etapes(
     return lignes
 
 
-MOTIF_DESTRUCTIF = re.compile(
-    r"suppr|(?<![a-z])del(?![a-z])|delete|effac|poubelle|corbeille|trash|remove|retir|enlev|detach|discard|erase"
-    r"|purge|vider|archiv|detrui|destroy|clotur|rejet|reject")
 
 
 def _semble_destructif(etapes: List[Any]) -> bool:
@@ -390,15 +397,33 @@ def _court(texte: str, mots: int) -> bool:
     return 0 < len(str(texte or "").split()) <= mots
 
 
+def _texte_usuel(texte: str) -> bool:
+    """Texte d'interface courant (Rechercher, Dupliquer, Enregistrer, Supprimer...) : il peut
+    figurer dans le fichier à partager. Un nom de client ou de plan, non."""
+    from .explorateur import est_lecture, mot_interdit
+
+    texte = str(texte or "").strip()
+    return _court(texte, 4) and (est_lecture(texte) or mot_interdit(texte) is not None)
+
+
 def _repere_structurel(selecteur: str) -> str:
     """Le sélecteur, s'il ne contient que de la structure (identifiant, nom de champ) : utile
     pour construire l'automatisme, sans donnée."""
-    if ":has-text(" in selecteur or selecteur.startswith(("role=link:", "texte=", "texte_exact=")):
-        return ""
-    if re.match(r"^(#[A-Za-z_][\w-]*|test=[\w-]+|\w+\[name=\"[\w\-\[\].]+\"\]|libelle=.{1,40}|role=button:.{1,40})$",
-                selecteur):
+    if re.match(r"^(#[A-Za-z_][\w-]*|test=[\w-]+|\w+\[name=\"[\w\-\[\].]+\"\])$", selecteur):
         return _masquer(selecteur)
+    for prefixe in ("role=button:", "libelle="):
+        if selecteur.startswith(prefixe) and _texte_usuel(selecteur[len(prefixe):]):
+            return _masquer(selecteur)
     return ""
+
+
+def _effacer_valeurs(texte: str, valeurs: Iterable[str]) -> str:
+    """Dernier filet : toute valeur vue pendant l'enregistrement est effacée du fichier."""
+    for valeur in sorted({str(v).strip() for v in valeurs if v}, key=len, reverse=True):
+        if len(valeur) < 3 or normaliser_nom(valeur) in ("oui", "non"):
+            continue
+        texte = re.sub(re.escape(valeur), "«valeur»", texte, flags=re.IGNORECASE)
+    return texte
 
 
 def decrire_pour_partage(nom: str, etapes: List[Any], parametres: Dict[str, str], questions: Dict[str, str]) -> str:
@@ -430,7 +455,10 @@ def decrire_pour_partage(nom: str, etapes: List[Any], parametres: Dict[str, str]
             lignes.append(f"ECRAN {numero_ecran}")
             champs = []
             for c in e.ecran.get("champs", []):
-                nom_champ = _masquer(c.get("libelle")) if _court(c.get("libelle"), 6) else "(sans nom)"
+                if c.get("type") in ("checkbox", "radio"):
+                    nom_champ = "(case)"  # le libellé d'une case, c'est souvent une donnée
+                else:
+                    nom_champ = _masquer(c.get("libelle")) if _court(c.get("libelle"), 6) else "(sans nom)"
                 details = [str(c.get("type") or "")]
                 if c.get("obligatoire"):
                     details.append("obligatoire")
@@ -439,12 +467,14 @@ def decrire_pour_partage(nom: str, etapes: List[Any], parametres: Dict[str, str]
                 champs.append(f"{nom_champ} [{', '.join(details)}] {'rempli' if c.get('rempli') else 'vide'}")
             if champs:
                 lignes.append("   champs : " + " ; ".join(champs))
-            boutons = [_masquer(b) if _court(b, 5) else "(bouton)" for b in e.ecran.get("boutons", [])]
+            boutons = [_masquer(b) if _texte_usuel(b) else "(bouton)" for b in e.ecran.get("boutons", [])]
             if boutons:
                 lignes.append("   boutons : " + " ; ".join(boutons))
         numero += 1
         selecteur = str(e.args.get("selecteur") or e.args.get("cliquer") or "")
         champ = _masquer(e.libelle) if _court(e.libelle, 6) else "(champ)"
+        if e.type_champ in ("checkbox", "radio"):
+            champ = "(case)"
         if e.action == "aller":
             texte = "ouvrir la page de départ de l'outil"
         elif e.action == "onglet":
@@ -457,10 +487,10 @@ def decrire_pour_partage(nom: str, etapes: List[Any], parametres: Dict[str, str]
                 texte = "cliquer dans une ligne du tableau"
             elif selecteur.startswith("role=link:"):
                 texte = "cliquer sur un lien"
-            elif _court(e.libelle, 5):
+            elif _texte_usuel(e.libelle):
                 texte = f"cliquer « {_masquer(e.libelle)} »"
             else:
-                texte = "cliquer sur un élément"
+                texte = "cliquer sur un bouton ou un élément (nom non repris)"
             if e.action == "telecharger":
                 texte = texte.replace("cliquer", "télécharger le fichier en cliquant", 1)
             if e.args.get("nouvel_onglet"):
@@ -488,7 +518,12 @@ def decrire_pour_partage(nom: str, etapes: List[Any], parametres: Dict[str, str]
         repere = _repere_structurel(selecteur)
         if repere:
             lignes.append(f"      repère : {repere}")
-    return "\n".join(lignes) + "\n"
+    valeurs = list(parametres)
+    for e in etapes:
+        valeurs += [e.args.get("valeur"), e.valeur_brute, e.texte_selecteur]
+        if e.action == "cliquer" and not _texte_usuel(e.libelle):
+            valeurs.append(e.libelle)  # nom d'un bouton qui n'a pas été repris
+    return _effacer_valeurs("\n".join(lignes) + "\n", [v for v in valeurs if isinstance(v, str)])
 
 
 def nom_de_base(nom: str) -> str:
@@ -589,6 +624,8 @@ def construire_depuis_enregistrement(
         if normaliser_nom(reponse) in ("o", "oui", "y", "yes"):
             propose = (libelle or "valeur").strip().rstrip(" :*")[:40] or "valeur"
             reponse = d.demander("   Quel nom lui donner ?", propose).strip() or propose
+            if normaliser_nom(reponse) in ("o", "oui", "y", "yes", "n", "non", "no"):
+                reponse = propose
         for existante, question in questions.items():  # nom déjà donné
             if normaliser_nom(question) == normaliser_nom(reponse):
                 ancienne = valeurs_de.get(existante, "")

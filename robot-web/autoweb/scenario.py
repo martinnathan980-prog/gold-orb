@@ -87,6 +87,10 @@ CLES_EXCEL = (
 # refaire: toujours -> chaque lancement refait toutes les lignes (tâche répétitive)
 MODES_REFAIRE = ("reprise", "toujours")
 CANAUX = ("auto", "msedge", "chrome", "chromium")
+# Mots (sans accents, en minuscules) d'un geste qui supprime ou retire quelque chose.
+MOTIF_DESTRUCTIF = re.compile(
+    r"suppr|(?<![a-z])del(?![a-z])|delete|effac|poubelle|corbeille|trash|remove|retir|enlev|detach|discard|erase"
+    r"|purge|vider|archiv|detrui|destroy|clotur|rejet|reject")
 DIALOGUES = ("accepter", "refuser", "ignorer")
 
 CLES_CONDITION = ("present", "absent", "visible", "cache", "valeur", "egal", "different",

@@ -188,3 +188,29 @@ def test_supprimer_un_plan_demande_oui_avant_de_partir(portail, tmp_path, monkey
     bilan = lancer(scenario, Options(visible=False, interactif=True))
     assert (bilan.ok, bilan.erreurs) == (1, 0), bilan.resume()
     assert _Portail.envois == [("DELETE", "/api/plans/PL-5", "")]
+
+
+def test_jamais_le_plan_voisin_quand_le_numero_demande_n_existe_pas(portail, tmp_path, navigateur_ok):
+    """Plans PL-3, PL-5, PL-7 : demander PL-1 ou PL- ne doit JAMAIS viser une autre ligne."""
+    def geste(page):
+        page.fill("#recherche", "PL-7")
+        page.click("#chercher")
+        page.click("text=PL-7")
+        page.wait_for_selector("#supprimer")
+
+    etapes = _enregistrer(tmp_path, f"{portail}/plans", geste)
+    texte = construire_depuis_enregistrement(
+        etapes, [], [], Dialogue(["", "oui", "", "", "n", "n", "o"]), nom="ouvrir un plan",
+        fichier_excel=None, canal="chromium", url_depart=f"{portail}/plans",
+    )
+    donnees = yaml.safe_load(texte)
+    # « oui » à la question : le robot demande un nom et propose le libellé du champ
+    assert donnees["questions"] == {"numero_de_plan": "Numéro de plan"}
+    chemin = tmp_path / "ouvrir.yaml"
+    chemin.write_text(texte, encoding="utf-8")
+    for demande in ("PL-", "L-7"):
+        bilan = lancer(charger(chemin), Options(visible=False, interactif=False,
+                                                variables={"numero_de_plan": demande}))
+        assert bilan.erreurs == 1, (demande, bilan.resume())  # rien trouvé : erreur, aucune autre ligne ouverte
+    bilan = lancer(charger(chemin), Options(visible=False, interactif=False, variables={"numero_de_plan": "PL-5"}))
+    assert (bilan.ok, bilan.erreurs) == (1, 0), bilan.resume()
