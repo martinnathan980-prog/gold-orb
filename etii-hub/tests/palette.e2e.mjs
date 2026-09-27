@@ -124,10 +124,35 @@ for (const [q, code] of [['routage', 'etiii.html'], ['nommage', 'etiia.html'], [
 
 console.log('\n== À requête vide, l\'écran ne change pas ==');
 await chercher('');
-t('les 8 pages, et rien d\'autre', (await page.locator('.palette__resultat').count()) === 8,
+t('les 9 pages, et rien d\'autre', (await page.locator('.palette__resultat').count()) === 9,
   `(${await page.locator('.palette__resultat').count()})`);
-t('un seul en-tête, « Pages 8 »', (await entetes()).length === 1 && /8$/.test((await entetes())[0]),
+t('un seul en-tête, « Pages 9 »', (await entetes()).length === 1 && /9$/.test((await entetes())[0]),
   `(${(await entetes()).join(' ; ')})`);
+t('la page des porteurs est dans la liste', (await page.locator('.palette__resultat[data-href="porteurs.html"]').count()) === 1);
+
+console.log('\n== Un porteur s\'ouvre sur sa fiche ==');
+// Par son code, par son surnom, par ce qu'il fait : chaque fois la fiche,
+// sur la page des porteurs.
+await chercher('H175');
+t('« H175 » trouve le porteur, avec le lien de sa fiche',
+  (await page.locator('.palette__resultat[data-href="porteurs.html#porteur=H175"]').count()) === 1);
+await chercher('Écureuil');
+t('« Écureuil » trouve le H125', (await page.locator('.palette__resultat[data-href="porteurs.html#porteur=H125"]').count()) === 1);
+await chercher('H175');
+await page.locator('.palette__resultat[data-href="porteurs.html#porteur=H175"]').click();
+await page.waitForTimeout(1500);
+t('cliquer le résultat ouvre sa fiche', /porteurs\.html#porteur=H175$/.test(page.url())
+  && (await page.locator('.porteur-fiche__code').innerText().catch(() => '')).trim() === 'H175', page.url());
+// Depuis la page des porteurs elle-même : la fiche change sur place.
+await ouvrir();
+await chercher('Tigre');
+await page.locator('.palette__resultat[data-href="porteurs.html#porteur=TIGRE"]').click();
+await page.waitForTimeout(1200);
+t('depuis la page des porteurs, un autre porteur s’ouvre sur place',
+  (await page.locator('.porteur-fiche__code').innerText().catch(() => '')).trim() === 'TIGRE');
+await page.goto(B + '/index.html', { waitUntil: 'load' });
+await page.waitForTimeout(1200);
+await ouvrir();
 
 t('aucune erreur JavaScript', err.length === 0, err.slice(0, 3).join(' | '));
 await fermer();

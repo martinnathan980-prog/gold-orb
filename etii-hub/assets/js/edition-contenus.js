@@ -372,12 +372,14 @@ export function ouvrirDocument(o) {
    6. Les porteurs
    ------------------------------------------------------------------------- */
 
-/* Les groupes de la fiche, dans l'ordre de la fiche dépliée. Un champ se
-   modifie par sa valeur et son unité ; la confiance et la source restent
-   ce qu'elles étaient (une valeur saisie ici devient « à relire »). */
+/* Les groupes de la fiche, dans l'ordre où la fiche les montre. Un champ se
+   modifie par sa valeur (un nombre seul : « 2250 »), son unité (« kg ») et
+   sa précision d'une ligne ; la source reste ce qu'elle était. Une valeur
+   changée ici perd la phrase de sa source, qui ne la dit plus, et devient
+   « à relire ». */
 const GROUPES_FICHE = [
-  ['identite', 'Identité'], ['motorisation', 'Motorisation'], ['masses', 'Masses'], ['capacite', 'Capacité'],
-  ['performances', 'Performances'], ['dimensions', 'Dimensions'], ['production', 'Production'], ['electrique', 'Électrique']
+  ['dimensions', 'Dimensions'], ['masses', 'Masses'], ['capacite', 'À bord'], ['motorisation', 'Motorisation'],
+  ['performances', 'Performances'], ['electrique', 'Électrique & avionique'], ['identite', 'Identité'], ['production', 'Production']
 ];
 
 function libelleCle(cle) {
@@ -412,7 +414,8 @@ export function ouvrirPorteur(o) {
         const nom = (libelles[g] && libelles[g][cle]) || libelleCle(cle);
         return [
           { cle: 'fiche.' + g + '.' + cle + '.valeur', libelle: nom, type: 'valeur' },
-          { cle: 'fiche.' + g + '.' + cle + '.unite', libelle: 'Unité', type: 'texte', placeholder: 'kg, km/h…' }
+          { cle: 'fiche.' + g + '.' + cle + '.unite', libelle: 'Unité', type: 'texte', placeholder: 'kg, km/h…' },
+          { cle: 'fiche.' + g + '.' + cle + '.note', libelle: 'Précision', type: 'texte', large: true, placeholder: 'une ligne : version, conditions…' }
         ];
       })
     };
@@ -438,6 +441,7 @@ export function ouvrirPorteur(o) {
       { type: 'groupe', libelle: 'Crédit de la photo', champs: [
         { cle: 'credit.auteur', libelle: 'Auteur', type: 'texte' },
         { cle: 'credit.licence', libelle: 'Licence', type: 'texte', placeholder: 'CC BY-SA 4.0' }] },
+      { cle: 'fiche.accroche', libelle: 'Accroche', type: 'texte', large: true, placeholder: 'Une phrase : ce qu’il est, à quoi il sert.', aide: 'Une seule phrase courte, en tête de la fiche.' },
       { cle: 'fiche.resume', libelle: 'Présentation', type: 'long', lignes: 5 },
       ...champsFiche,
       { cle: 'fiche.insolites', libelle: 'Le saviez-vous ?', type: 'lignes', objets: true, aide: 'Un fait par ligne ; sa première phrase sert d’accroche.' }
@@ -446,6 +450,22 @@ export function ouvrirPorteur(o) {
       const code = texte(v.code).toUpperCase();
       const porteur = Object.assign({}, existant || {}, v, { code });
       porteur.fiche = Object.assign({}, porteur.fiche || {}, { code, categorie: v.categorie, segment: v.segment, relecture: 'modifiée dans le site' });
+      /* Une valeur changée : la phrase de sa source ne la dit plus. */
+      for (const [g] of GROUPES_FICHE) {
+        const nouveau = porteur.fiche[g];
+        const ancien = (fiche[g] && typeof fiche[g] === 'object') ? fiche[g] : {};
+        if (!nouveau || typeof nouveau !== 'object') continue;
+        for (const cle of Object.keys(nouveau)) {
+          const n = nouveau[cle];
+          const a = ancien[cle] || {};
+          if (!n || typeof n !== 'object') continue;
+          if (String(n.valeur ?? '') !== String(a.valeur ?? '') || String(n.unite ?? '') !== String(a.unite ?? '')) {
+            delete n.detail;
+            delete n.correction;
+            n.confiance = 'à relire';
+          }
+        }
+      }
       const ancien = texte(existant && existant.code).toUpperCase();
       return enregistrerModification('flotte', 'porteur', code, porteur)
         .then(() => (ancien && ancien !== code ? supprimerElement('flotte', 'porteur', ancien) : null));

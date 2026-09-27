@@ -49,7 +49,8 @@ Puis ouvrir <http://localhost:8000>.
 
 | Page | Rôle |
 |---|---|
-| `index.html` | Tableau de bord : Communication center (kiosque + éditeur), À venir (les prochains rendez-vous), Porteurs, Suivi OTQ / OTD |
+| `index.html` | Tableau de bord : Communication center (kiosque + éditeur), À venir (les prochains rendez-vous), Porteurs (un aperçu qui mène à leur page), Suivi OTQ / OTD |
+| `porteurs.html` | **Les porteurs** : la gamme en photos, la fiche de chaque appareil, sa taille réelle, la comparaison de deux ou trois (voir ci-dessous) |
 | `etiia.html`, `etiie.html`, `etiii.html` | L'espace d'un pôle : sa communication, le pôle en un coup d'œil (« Qui peut m'aider ? », les équipes, les référents), ses documents récents, sa FAQ (voir ci-dessous) |
 | `reunions.html` | Les comptes-rendus de réunion, par périmètre |
 | `organigramme.html` | Équipes, rôles, compétences ; hors de la barre du site, on y arrive depuis un pôle |
@@ -86,7 +87,50 @@ fichiers de `assets/data/` pour ce pôle.
 Un pôle n'a pas de section Réunions : ce qui vaut d'être dit se publie en
 communication. Les comptes-rendus restent lisibles dans `reunions.html`.
 Il n'a pas non plus de galerie de porteurs : tout le pôle travaille sur les
-porteurs du service, qui sont sur le tableau de bord.
+porteurs du service, qui ont leur page.
+
+### La page des porteurs
+
+Un seul écran pour regarder la flotte (`porteurs.html`, `assets/js/porteurs.js`,
+`fiche-porteur.js`, `gamme.js`, `gabarit.js`). La vue ouverte est portée par
+l'adresse, donc partageable :
+
+| Adresse | Ce qu'on voit |
+|---|---|
+| `porteurs.html` | La galerie, marché par marché (Civil, Militaire, Prototype), trois cartes par rangée : la photo, le code, le segment, et trois chiffres (masse, places, vitesse) |
+| `porteurs.html#marche=civil&tri=masse` | La galerie filtrée par marché (le bandeau sous le titre) et triée : gamme, masse, longueur, vitesse, mise en service |
+| `porteurs.html#porteur=H160` | La fiche d'un appareil |
+| `porteurs.html#comparer=H125&comparer=H160` | Deux ou trois appareils côte à côte |
+
+**La fiche** se lit d'abord en chiffres : la photo en grand avec le code, le
+marché, la phase et depuis quand ; une phrase d'accroche ; **l'essentiel** —
+six chiffres, toujours les mêmes et dans le même ordre (longueur, masse au
+décollage, passagers, vitesse de croisière, distance franchissable,
+puissance), chacun en grand avec son unité, ce qu'il veut dire en français
+(« jusqu'où il vole avec un plein, sans ravitailler ») et une jauge « par
+rapport à la gamme » ; ceux qu'aucune source ne donne sont nommés en une
+ligne, « à renseigner ». Puis **à l'échelle** : le profil de l'appareil près
+d'une personne de 1,80 m (le rotor à sa vraie taille, la longueur et la
+hauteur quand la fiche les donne ; toutes les fiches partagent la même
+échelle sur écran large), et à côté d'un autre porteur si on le demande ;
+**le programme** en frise ; **le détail** par groupe ; un « saviez-vous » ;
+**pour le service** (pôles, jalon, avancement, données techniques et
+économiques : « à renseigner » tant que le service ne les a pas saisies,
+jamais inventées). Les sources et la confiance de chaque valeur sont
+repliées en pied de fiche ; la fiche ne mène jamais hors du site. Les
+flèches ← → passent d'un appareil à l'autre, Échap revient à la galerie.
+
+**Le comparateur** : « Comparer » dans la galerie, puis « + » sur deux ou
+trois cartes (ou « Comparer avec un autre » sur une fiche). Les mêmes
+chiffres côte à côte, une barre par valeur, le plus grand marqué, l'écart au
+premier appareil choisi, et les silhouettes à la même échelle.
+
+Le tableau de bord n'en garde qu'une pellicule de photos qui mène à la page.
+Un ancien lien `index.html#porteur=CODE` (celui des espaces de pôle) arrive
+sur la fiche, sur le site servi (`index.js`) comme dans le fichier autonome
+(la coquille de `tools/build-artifact.mjs`). En mode édition, la page des
+porteurs a son « Ajouter un porteur » (qui choisit d'avance le marché
+affiché), et chaque fiche son « Modifier » et son « Supprimer ».
 
 ## Architecture
 
@@ -190,7 +234,7 @@ Après toute modification d'un fichier de `assets/data/`, lancer
 | `communications.json` | Le Communication center du tableau de bord et la communication de chaque espace de pôle | `node tests/audit.mjs`, `node tests/communications.test.mjs` |
 | `documents.json` | La recherche documentaire, et les documents portés affichés sur la fiche d'une personne | `node tests/audit.mjs`, `node tests/search.test.mjs` |
 | `faq.json` | La page FAQ et la FAQ de chaque espace de pôle | `node tests/audit.mjs` |
-| `flotte.json` | La galerie Porteurs du tableau de bord, les fiches d'appareil et les crédits photo | `node tests/audit.mjs` |
+| `flotte.json` | La page des porteurs (galerie, fiches, comparateur), l'aperçu du tableau de bord et les crédits photo | `node tests/audit.mjs` |
 | `indicateurs.json` | Les définitions d'indicateurs normalisées par `indicateurs.js` ; aucune page ne l'affiche aujourd'hui (les chiffres d'un pôle se calculent depuis `organigramme.json` et `documents.json`) | `node tests/audit.mjs` |
 | `organigramme.json` | L'organigramme, le trombinoscope, les compétences, les équipes et référents des pôles | `node tests/audit.mjs` |
 | `reunions.json` | Les comptes-rendus de réunion | `node tests/audit.mjs` |
@@ -220,6 +264,30 @@ sources **publiques** (Wikipédia, site public d'Airbus Helicopters, EASA) et
 chaque valeur porte sa confiance et sa source. Les fiches sont marquées
 « relecture non effectuée » tant qu'elles n'ont pas été relues en
 contradictoire par le service.
+
+Chaque valeur d'une fiche s'écrit ainsi :
+
+```json
+"masseMaxDecollage": {
+  "valeur": 2250, "unite": "kg",
+  "note": "standard ; 2 370 kg avec double circuit hydraulique, 2 800 kg avec charge à l’élingue",
+  "detail": "2 250 kg (standard) ; 2 370 kg avec double circuit hydraulique optionnel ; …",
+  "confiance": "haute", "source": "https://www.airbus.com/… ; https://fr.wikipedia.org/…"
+}
+```
+
+`valeur` est un nombre seul (ou un texte court), `unite` l'unité, `note` la
+précision d'une ligne affichée sous la valeur, `detail` la phrase de la
+source, gardée entière et montrée dans « Sources et fiabilité ». Facultatifs :
+`qualificatif` (« environ », « jusqu'à »), `max` (la borne haute d'une plage :
+« 15 à 19 »), `annee` et `prevu` (une date), `correction` (une valeur corrigée,
+et pourquoi). La durée s'écrit en minutes (`"unite": "min"`), la puissance
+en kW ou en ch. La distance d'un plein (`distanceFranchissable`) et le rayon
+d'action (`rayonAction`, aller et retour) sont deux champs distincts. La
+fiche porte aussi `accroche` (une phrase), `phase` (`production`, `service`,
+`developpement`, `commande`, `demonstrateur`) et `chronologie`
+(`[{ annee, texte, prevu?, source }]`). Une valeur modifiée dans le site
+perd son `detail` et passe « à relire ».
 
 ### Photos des porteurs
 
