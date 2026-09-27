@@ -3386,12 +3386,10 @@ body[data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
 }
 .avatar--md  { --avatar-taille: 2.25rem; }
 .avatar--sm  { --avatar-taille: 1.625rem; }
-.avatar--xs  { --avatar-taille: 1.875rem; font-size: 0.5625rem; }
+.avatar--xs  { --avatar-taille: 1.875rem; font-size: 0.6875rem; }
 /* Quatre signes (« P105 ») : un cran plus petit, pour tenir dans le rond. */
 .avatar--long { font-size: calc(var(--avatar-taille) * 0.25); }
-.avatar--xs.avatar--long { font-size: 0.5rem; }
-/* La plus petite taille n'est qu'une pastille de couleur, sans lettres. */
-.avatar--xxs, .avatar--xxs.avatar--long { --avatar-taille: 1.25rem; font-size: 0; }
+.avatar--xs.avatar--long { font-size: 0.5625rem; }
 
 /* --- Qui peut m'aider ? ------------------------------------------------ */
 
@@ -3412,7 +3410,6 @@ body[data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
   text-align: center;
   color: var(--texte);
 }
-.qui__aide { margin: calc(var(--e-2) * -1) 0 var(--e-1); max-inline-size: 40rem; font-size: var(--texte-sm); text-align: center; color: var(--texte-doux); }
 
 .qui__barre { position: relative; inline-size: min(100%, 46rem); }
 .qui__champ {
@@ -3520,6 +3517,8 @@ body[data-pole="ETIII"] { --pole-teinte: var(--pole-etiii); }
   border-block-end: 1px solid var(--bordure-douce);
 }
 .qui__compte { margin: 0; font-size: var(--texte-sm); color: var(--texte-doux); }
+.qui__compte:focus { outline: none; }
+.qui__compte:focus-visible { outline: 2px solid var(--focus-couleur); outline-offset: 4px; border-radius: var(--rayon-sm); }
 .qui__compte strong { font-weight: var(--graisse-forte); color: var(--texte); }
 .qui__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-4); }
 .qui__actions:empty { display: none; }
@@ -3732,18 +3731,29 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
 .equipe__lead { display: flex; align-items: center; gap: var(--e-3); min-inline-size: 0; }
 .equipe__lead--vide { font-size: var(--texte-sm); font-style: italic; color: var(--texte-faible); }
 .equipe__lead-texte { display: flex; flex-direction: column; min-inline-size: 0; }
-.equipe__lead-nom { font-size: var(--texte-sm); font-weight: var(--graisse-forte); }
+.equipe__lead-ligne { display: flex; align-items: baseline; gap: var(--e-2); min-inline-size: 0; }
+.equipe__lead-nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--texte-sm); font-weight: var(--graisse-forte); }
 .equipe__lead-role { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--texte-xs); color: var(--texte-doux); }
 
 .equipe__pied { display: flex; align-items: center; justify-content: space-between; gap: var(--e-3); }
-/* Les visages de l'équipe, qui se chevauchent — et s'écartent au survol. */
-.equipe__visages { display: flex; align-items: center; min-block-size: 1.875rem; padding-inline-start: 5px; }
-.equipe__visages .avatar {
-  margin-inline-start: -5px;
-  box-shadow: 0 0 0 2px var(--tuile-fond), inset 0 0 0 1px color-mix(in srgb, var(--equipe-teinte) 34%, transparent);
-  transition: margin var(--duree) var(--courbe);
+/* Les visages de l'équipe, côte à côte et lisibles en entier ; au survol
+   de la tuile, ils se lèvent l'un après l'autre. */
+/* Six visages et « +N » tiennent sur une ligne dans la tuile la plus
+   étroite de la grille (19rem). */
+.equipe__visages { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-1); min-block-size: 1.875rem; min-inline-size: 0; }
+.equipe__visages .avatar { transition: transform var(--duree) var(--courbe); transition-delay: calc(var(--i, 0) * 35ms); }
+.equipe__plus {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: 1.875rem;
+  block-size: 1.875rem;
+  padding-inline: var(--e-1);
+  border: 1px dashed color-mix(in srgb, var(--equipe-teinte) 45%, var(--bordure));
+  border-radius: var(--rayon-plein);
+  font-family: var(--police-mono);
+  font-size: var(--texte-xs);
+  color: var(--texte-doux);
 }
-.equipe__plus { margin-inline-start: var(--e-2); font-family: var(--police-mono); font-size: var(--texte-xs); color: var(--texte-faible); }
 .equipe__chevron {
   flex: none;
   inline-size: 0.5rem;
@@ -3767,6 +3777,9 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
   color: var(--texte-doux);
 }
 .equipe__appareil--plus { border-style: dashed; color: var(--texte-faible); }
+/* Sur le fond teinté d'une tuile ouverte, le filet gris s'effaçait (thème
+   sombre) : il prend un peu de la teinte de la squad. */
+.equipe__tuile[aria-expanded="true"] .equipe__appareil { border-color: color-mix(in srgb, var(--equipe-teinte) 45%, var(--bordure)); }
 
 /* Le panneau d'une squad ouverte : un plateau à sa teinte, ses membres en
    cartes. Il ne coupe son contenu que le temps de se déplier. */
@@ -3783,6 +3796,8 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
 .equipe__panneau-titres { flex: 1 1 16rem; min-inline-size: 0; }
 .equipe__panneau-titre { margin: 0; font-family: var(--police-titre); font-size: var(--texte-xl); font-weight: var(--graisse-normale); }
 .equipe__panneau-resume { margin: 2px 0 0; font-size: var(--texte-xs); color: var(--texte-doux); }
+.equipe__panneau-edition { margin-block-start: var(--e-2); }
+.equipe__panneau-tete .equipe__fermer { align-self: flex-start; margin-inline-start: auto; }
 .equipe__fermer {
   display: grid;
   place-items: center;
@@ -3803,25 +3818,24 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
 .equipe__membres .personne-carte__squad { display: none; }
 .equipe__panneau-pied { margin-block-start: var(--e-4); }
 
-/* --- Les référents : l'index, et le détail de la compétence choisie ----- */
+/* --- Les référents : l'index, puis le détail de la compétence choisie ---
+   L'index occupe toute la largeur ; le détail se pose dessous, en bandeau :
+   la compétence à gauche, ses référents en cartes à droite. */
 
-.referents__corps { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--e-5); align-items: start; }
-@media (min-width: 900px) {
-  .referents__corps { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--e-8); }
-}
+.referents__corps { display: flex; flex-direction: column; gap: var(--e-5); }
 .referents__index { display: flex; flex-wrap: wrap; align-content: flex-start; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
 .referents__puce {
   display: inline-flex;
   align-items: center;
-  gap: var(--e-2);
   min-block-size: 2.25rem;
-  padding: var(--e-1) var(--e-2) var(--e-1) var(--e-3);
+  padding: var(--e-1) var(--e-4);
   background-color: var(--fond-eleve);
   border: 1px solid var(--bordure);
   border-radius: var(--rayon-plein);
   color: var(--texte);
   font: inherit;
   font-size: var(--texte-sm);
+  white-space: nowrap;
   cursor: pointer;
   transition: border-color var(--duree-rapide) var(--courbe), background-color var(--duree-rapide) var(--courbe),
               box-shadow var(--duree) var(--courbe);
@@ -3833,11 +3847,12 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
   color: var(--chaud-encre);
   box-shadow: 0 0 0 3px var(--chaud-lueur);
 }
-.referents__visages { display: flex; padding-inline-start: 6px; }
-.referents__visages .avatar { margin-inline-start: -6px; box-shadow: 0 0 0 2px var(--fond-eleve), inset 0 0 0 1px color-mix(in srgb, var(--equipe-teinte) 34%, transparent); }
-.referents__puce[aria-pressed="true"] .avatar { box-shadow: 0 0 0 2px var(--chaud-doux); }
 
 .referents__detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--e-4) var(--e-8);
+  align-items: start;
   padding: var(--e-4) var(--e-5) var(--e-5);
   background-color: var(--carte-fond);
   border: 1px solid var(--carte-bord);
@@ -3854,10 +3869,21 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
   color: var(--chaud-encre);
 }
 .referents__competence { margin: var(--e-1) 0 0; font-family: var(--police-titre); font-size: var(--texte-2xl); font-weight: var(--graisse-normale); line-height: var(--interligne-serre); }
-.referents__resume { margin: var(--e-1) 0 var(--e-4); font-size: var(--texte-xs); color: var(--texte-doux); }
-.referents__gens { display: flex; flex-direction: column; gap: var(--e-2); margin: 0; padding: 0; list-style: none; }
-.referents__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-4); margin-block-start: var(--e-4); }
+.referents__resume { margin: var(--e-1) 0 0; font-size: var(--texte-xs); color: var(--texte-doux); }
+.referents__gens {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+  gap: var(--e-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.referents__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-4); margin-block-start: var(--e-3); }
 .referents__actions:empty { display: none; }
+@media (min-width: 900px) {
+  .referents__detail { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); padding: var(--e-5) var(--e-6) var(--e-6); }
+  .referents__entete { padding-block-start: var(--e-1); }
+}
 .referents__tous {
   padding: 0;
   border: 0;
@@ -3880,24 +3906,16 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
   .personne-carte--entree { animation: coup-oeil-entree var(--duree-lente) var(--courbe) both; animation-delay: calc(var(--i, 0) * var(--duree-rapide) / 5); }
   .personne-carte:hover, .personne-carte:focus-within { transform: translateY(-1px); }
   .equipe__tuile:hover { transform: translateY(-2px); }
-  .equipe__tuile:hover .equipe__visages .avatar { margin-inline-start: 2px; }
+  .equipe__tuile:hover .equipe__visages .avatar { transform: translateY(-3px); }
   .qui__suggestion:hover { transform: translateY(-1px); }
 }
 
-/* Sous 900px, le détail passe sous l'index : l'index tient alors sur une
-   rangée qui défile de côté, pour qu'une compétence touchée et ses
-   référents restent sous les yeux ensemble. */
-@media (max-width: 899px) {
-  .referents__index {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    padding: var(--e-1) var(--e-1) var(--e-3);
-    margin-inline: calc(var(--e-1) * -1);
-  }
-  .referents__index > li { flex: none; scroll-snap-align: start; }
-}
+/* Une rangée qui défile de côté s'estompe au bord où il reste à voir
+   (data-avant, data-apres, posés par pole.js). Le masque ne lit que
+   l'opacité : n'importe quelle couleur opaque convient. */
+.qui__suggestions, .referents__index { --fondu-avant: 0px; --fondu-apres: 0px; }
+.qui__suggestions[data-avant], .referents__index[data-avant] { --fondu-avant: var(--e-10); }
+.qui__suggestions[data-apres], .referents__index[data-apres] { --fondu-apres: var(--e-10); }
 
 @media (max-width: 640px) {
   .coup-oeil { gap: var(--e-10); }
@@ -3905,16 +3923,26 @@ a.appareil-puce:hover { border-color: var(--accent); background-color: var(--acc
   .coup-oeil__chiffres { display: grid; grid-template-columns: repeat(2, auto); justify-content: center; gap: var(--e-2) var(--e-6); }
   .coup-oeil__chiffre + .coup-oeil__chiffre::before { display: none; }
   .qui__champ { padding-inline-end: var(--e-10); }
-  /* Les suggestions, sur une rangée qui défile de côté. */
-  .qui__suggestions {
+  /* Les suggestions et l'index des référents, sur une rangée qui défile
+     de côté, d'une puce à l'autre ; le bord s'estompe tant qu'il en reste.
+     (.coup-oeil devant l'index : ul[class] de base.css pèse plus lourd.) */
+  .qui__suggestions, .coup-oeil .referents__index {
     flex-wrap: nowrap;
     justify-content: flex-start;
-    inline-size: 100%;
+    /* Le retrait laisse voir la lueur d'une puce choisie ; la marge
+       négative remet les puces à l'aplomb du reste. */
+    inline-size: calc(100% + var(--e-2));
+    margin-inline: calc(var(--e-1) * -1);
     overflow-x: auto;
     overscroll-behavior-x: contain;
-    padding-block: var(--e-1) var(--e-2);
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--e-1);
+    scrollbar-width: thin;
+    padding: var(--e-1) var(--e-1) var(--e-2);
+    -webkit-mask-image: linear-gradient(to right, transparent, var(--texte) var(--fondu-avant), var(--texte) calc(100% - var(--fondu-apres)), transparent);
+    mask-image: linear-gradient(to right, transparent, var(--texte) var(--fondu-avant), var(--texte) calc(100% - var(--fondu-apres)), transparent);
   }
-  .qui__suggestions > * { flex: none; }
+  .qui__suggestions > *, .referents__index > li { flex: none; scroll-snap-align: start; }
   .equipe__tuile { padding: var(--e-4); }
   .equipe__panneau-interieur { padding: var(--e-3) var(--e-3) var(--e-4); }
   .referents__detail { padding: var(--e-4); }

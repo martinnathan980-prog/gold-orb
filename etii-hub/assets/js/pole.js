@@ -378,20 +378,37 @@ function avatar(m, personne, taille) {
 /* Les termes d'une recherche : normalisés, sans les mots vides. */
 function termesDe(requete) { return normaliser(requete).split(/\s+/).filter(Boolean); }
 
+/* Un terme d'une lettre, ou fait de chiffres, ne compte qu'en début de
+   mot : « 1 » trouve « Squad 1 » et « Personne 157 », pas le « 1 » de
+   « H175 ». Les autres se trouvent n'importe où. */
+function debutDeMotSeulement(terme) { return terme.length < 2 || /^\d+$/.test(terme); }
+function positionsDe(n, terme) {
+  const strict = debutDeMotSeulement(terme);
+  const trouvees = [];
+  let i = n.indexOf(terme);
+  while (i >= 0) {
+    if (!strict || i === 0 || !/[a-z0-9]/.test(n[i - 1])) trouvees.push(i);
+    i = n.indexOf(terme, i + terme.length);
+  }
+  return trouvees;
+}
+function contient(n, terme) { return positionsDe(n, terme).length > 0; }
+
 /**
- * Un texte dont les passages cherchés sont marqués. La comparaison se fait
- * sans accents ni casse ; si la normalisation change la longueur du texte
- * (un caractère exotique), on renonce au marquage plutôt que de décaler.
+ * Un texte dont les passages cherchés sont marqués — `true` le marque en
+ * entier. La comparaison se fait sans accents ni casse ; si la
+ * normalisation change la longueur du texte (un caractère exotique), on
+ * renonce au marquage plutôt que de décaler.
  */
 function marquer(brut, termes) {
   const t = texte(brut);
+  if (termes === true && t) return el('mark', { class: 'qui__marque' }, t);
   if (!termes || !termes.length || !t) return t;
   const n = normaliser(t);
   if (n.length !== t.length) return t;
   const plages = [];
   for (const terme of termes) {
-    let i = n.indexOf(terme);
-    while (i >= 0) { plages.push([i, i + terme.length]); i = n.indexOf(terme, i + terme.length); }
+    for (const i of positionsDe(n, terme)) plages.push([i, i + terme.length]);
   }
   if (!plages.length) return t;
   plages.sort((a, b) => a[0] - b[0]);
@@ -412,7 +429,8 @@ function marquer(brut, termes) {
 }
 
 /* Un appareil : un lien vers sa fiche sur le tableau de bord quand la
-   flotte le connaît ; « Transverse » n'est pas un appareil. */
+   flotte le connaît ; « Transverse » n'est pas un appareil. `termes`
+   vaut `true` quand c'est l'appareil cherché : il se marque en entier. */
 function appareilPuce(m, code, termes) {
   const cle = texte(code).toUpperCase();
   if (cle === TRANSVERSE) return el('span', { class: 'appareil-puce appareil-puce--transverse' }, marquer('Transverse', termes));
@@ -421,9 +439,11 @@ function appareilPuce(m, code, termes) {
     : el('span', { class: 'appareil-puce' }, marquer(texte(code), termes));
 }
 
+/* Une compétence et son niveau ; `c.cherchee` : c'est la compétence
+   cherchée, marquée en entier plutôt que mot à mot. */
 function competencePuce(c, termes) {
   return el('span', { class: 'competence-puce', dataset: { niveau: c.niveau } },
-    el('span', { class: 'competence-puce__nom' }, marquer(c.nom, termes)),
+    el('span', { class: 'competence-puce__nom' }, marquer(c.nom, c.cherchee ? true : termes)),
     el('span', { class: 'competence-puce__niveau' }, NIVEAUX[c.niveau] || ''));
 }
 
@@ -450,7 +470,7 @@ function commandesPersonne(m, personne, o) {
  * la carte avec lui), son rôle et sa squad, puis ses titres — les
  * compétences qui l'ont fait ressortir d'une recherche, sinon celles où
  * elle est référente — et l'appareil qu'elle suit.
- * @param {object} o  { termes, titres, rang, entree, edition, competence, porteur }
+ * @param {object} o  { termes, titres, rang, entree, edition, competence, porteur, appareilCherche }
  */
 function cartePersonne(pole, m, personne, o) {
   const opt = o || {};
@@ -474,7 +494,7 @@ function cartePersonne(pole, m, personne, o) {
       (titres.length || code)
         ? el('p', { class: 'personne-carte__puces' },
           titres.map((c) => competencePuce(c, opt.termes)),
-          code ? appareilPuce(m, code, opt.termes) : null)
+          code ? appareilPuce(m, code, opt.appareilCherche || opt.termes) : null)
         : null),
     commandesPersonne(m, personne, opt));
 }
@@ -484,13 +504,25 @@ function teteBloc(id, titre, sousTitre, aDroite) {
   return el('header', { class: 'coup-oeil__tete' },
     el('div', { class: 'coup-oeil__tete-texte' },
       el('h3', { class: 'coup-oeil__titre', id }, titre),
-      sousTitre ? el('p', { class: 'coup-oeil__sous-titre' }, sousTitre) : null),
+      sousTitre ? el('div', { class: 'coup-oeil__sous-titre' }, sousTitre) : null),
     aDroite || null);
 }
 
 function courbeJeton() {
   try { return getComputedStyle(document.documentElement).getPropertyValue('--courbe').trim() || 'ease-out'; }
   catch (_e) { return 'ease-out'; }
+}
+
+/* Une rangée qui défile de côté (au téléphone) s'estompe au bord où il
+   reste à voir : data-avant, data-apres, que le CSS lit. */
+function fonduDefilement(boite) {
+  const maj = () => {
+    boite.toggleAttribute('data-avant', boite.scrollLeft > 2);
+    boite.toggleAttribute('data-apres', boite.scrollWidth - boite.clientWidth - boite.scrollLeft > 2);
+  };
+  boite.addEventListener('scroll', maj, { passive: true });
+  if (typeof ResizeObserver === 'function') new ResizeObserver(maj).observe(boite);
+  return boite;
 }
 
 /* --- Les chiffres : une ligne, pas des tuiles ------------------------------ */
@@ -529,8 +561,11 @@ function indexerPersonnes(m) {
 }
 
 /* Chaque terme doit se trouver quelque part ; le score retient, pour
-   chaque terme, le meilleur endroit où il se trouve. */
+   chaque terme, le meilleur endroit où il se trouve. Un nom qui contient
+   toute la requête (« personne 1 ») passe devant ceux qui n'en ont qu'un
+   morceau (les membres de la « Squad 1 »). */
 function chercherPersonnes(index, termes) {
+  const phrase = termes.join(' ');
   const trouves = [];
   for (const e of index) {
     let score = 0;
@@ -538,19 +573,20 @@ function chercherPersonnes(index, termes) {
     let complet = true;
     for (const t of termes) {
       let s = 0;
-      if (e.nom.includes(t)) s = POIDS.nom;
+      if (contient(e.nom, t)) s = POIDS.nom;
       for (const c of e.competences) {
-        if (!c.n.includes(t)) continue;
+        if (!contient(c.n, t)) continue;
         s = Math.max(s, POIDS[c.niveau]);
         titres.set(c.nom, c.niveau);
       }
-      if (e.appareil.includes(t)) s = Math.max(s, POIDS.appareil + (e.appareil === t ? 10 : 0));
-      if (e.poste.includes(t)) s = Math.max(s, POIDS.poste);
-      if (e.squad.includes(t)) s = Math.max(s, POIDS.squad);
+      if (contient(e.appareil, t)) s = Math.max(s, POIDS.appareil + (e.appareil === t ? 10 : 0));
+      if (contient(e.poste, t)) s = Math.max(s, POIDS.poste);
+      if (contient(e.squad, t)) s = Math.max(s, POIDS.squad);
       if (!s) { complet = false; break; }
       score += s;
     }
     if (!complet) continue;
+    if (termes.length > 1 && contient(e.nom, phrase)) score += POIDS.nom;
     trouves.push({
       personne: e.personne,
       score: score + (rangDe(e.personne) < 2 ? 2 : 0),
@@ -580,6 +616,7 @@ function suggestionsDuPole(m) {
 }
 
 const LIMITE_RESULTATS = 12;
+const RESTE_MONTRE = 3;
 
 function blocChercheur(pole, m) {
   const prefixe = 'qui-' + pole.cle.toLowerCase();
@@ -618,7 +655,9 @@ function blocChercheur(pole, m) {
     : null;
   const toutesPuces = puces.concat(porteursEdition ? [...porteursEdition.querySelectorAll('.qui__suggestion')] : []);
 
-  const compte = el('p', { class: 'qui__compte' });
+  /* Le compte reçoit le focus quand une recherche vient d'ailleurs (le
+     lien d'un référent) : la suite au clavier part des résultats. */
+  const compte = el('p', { class: 'qui__compte', tabindex: '-1' });
   /* Le compte se lit aussi à l'oreille, par la région commune d'ui.js (la
      zone des résultats, elle, apparaît et disparaît) : une fois la frappe
      posée, pas à chaque lettre. */
@@ -669,9 +708,12 @@ function blocChercheur(pole, m) {
       : competence
         ? index.map((e) => ({ e, c: e.competences.find((c) => c.n === nq) })).filter((x) => x.c)
           .sort((a, b) => RANG_NIVEAU[a.c.niveau] - RANG_NIVEAU[b.c.niveau] || parRang(a.e.personne, b.e.personne))
-          .map((x) => ({ personne: x.e.personne, titres: [{ nom: x.c.nom, niveau: x.c.niveau }] }))
+          .map((x) => ({ personne: x.e.personne, titres: [{ nom: x.c.nom, niveau: x.c.niveau, cherchee: true }] }))
         : chercherPersonnes(index, termes);
-    const montres = etatCoupOeil.tout ? trouves : trouves.slice(0, LIMITE_RESULTATS);
+    /* Pas de « Voir les 2 autres » : un reste de trois cartes ou moins se
+       montre d'emblée. */
+    const montres = etatCoupOeil.tout || trouves.length <= LIMITE_RESULTATS + RESTE_MONTRE
+      ? trouves : trouves.slice(0, LIMITE_RESULTATS);
 
     const n = trouves.length;
     if (code) {
@@ -690,8 +732,13 @@ function blocChercheur(pole, m) {
       code ? boutonAjouter('Affecter quelqu’un au ' + code, (b) => ouvrirAffectation({ organigramme: m.organigramme, pole: pole.cle, code, declencheur: b })) : null,
       competence ? boutonAjouter('Un référent en ' + competence, (b) => ouvrirReferent({ organigramme: m.organigramme, pole: pole.cle, competence, competences: m.toutesCompetences, declencheur: b })) : null);
 
+    /* Un appareil ou une compétence exacts se marquent sur leur seule puce,
+       en entier : pas « technique » dans chaque « Lead technique ». Une
+       requête de plusieurs mots se marque d'un trait là où elle se lit
+       telle quelle (« Personne 1|57 »). */
+    const aMarquer = code || competence ? null : termes.length > 1 ? termes.concat(termes.join(' ')) : termes;
     monter(grille, montres.map((r, i) => cartePersonne(pole, m, r.personne, {
-      termes: code ? [normaliser(code)] : termes, titres: r.titres, rang: i,
+      termes: aMarquer, appareilCherche: Boolean(code), titres: r.titres, rang: i,
       entree: !precedents.has(r.personne),
       edition: code ? 'porteur' : undefined, porteur: code
     })));
@@ -719,7 +766,9 @@ function blocChercheur(pole, m) {
 
   const bloc = el('section', { class: 'qui', 'aria-labelledby': prefixe + '-titre' },
     el('h3', { class: 'qui__titre', id: prefixe + '-titre' }, 'Qui peut m’aider ?'),
-    el('p', { class: 'qui__aide', id: prefixe + '-aide' }, 'Tapez un nom, un rôle, une compétence ou un appareil : la réponse vient pendant la frappe.'),
+    /* L'aide ne se lit qu'à l'oreille : à l'écran, le texte d'attente du
+       champ la dit déjà. */
+    el('p', { class: 'visuellement-cache', id: prefixe + '-aide' }, 'Tapez un nom, un rôle, une compétence ou un appareil : la réponse vient pendant la frappe.'),
     el('div', { class: 'qui__barre', role: 'search' },
       el('label', { class: 'visuellement-cache', for: champ.id }, 'Chercher une personne du pôle ' + pole.cle),
       svg('svg', { class: 'qui__loupe', viewBox: '0 0 20 20', 'aria-hidden': 'true', focusable: 'false' },
@@ -727,18 +776,20 @@ function blocChercheur(pole, m) {
         svg('path', { d: 'M13 13 L17.5 17.5' })),
       champ, effacer),
     puces.length
-      ? el('div', { class: 'qui__suggestions', role: 'group', 'aria-label': 'Suggestions' },
-        el('span', { class: 'qui__suggestions-libelle' }, 'Souvent cherché'), puces)
+      ? fonduDefilement(el('div', { class: 'qui__suggestions', role: 'group', 'aria-label': 'Suggestions' },
+        el('span', { class: 'qui__suggestions-libelle' }, 'Souvent cherché'), puces))
       : null,
     porteursEdition,
     zone);
   afficher();
   return {
     element: bloc,
-    /** Cherche `valeur`, et amène le champ sous les yeux. */
+    /** Cherche `valeur`, amène le champ sous les yeux et le focus sur le
+        compte des résultats. */
     chercher(valeur) {
       poser(valeur);
       bloc.scrollIntoView({ block: 'start', behavior: mouvementReduit() ? 'auto' : 'smooth' });
+      compte.focus({ preventScroll: true });
     }
   };
 }
@@ -755,14 +806,37 @@ function appareilsDe(membres) {
   return [...n].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fr', { numeric: true })).map(([code]) => code);
 }
 
-const VISAGES_MAX = 8;
+/* Six visages côte à côte, lisibles en entier — pas en pile, où chacun
+   mangeait la fin des initiales du précédent —, puis « +N ». */
+const VISAGES_MAX = 6;
 const APPAREILS_MAX = 4;
+
+/* Le lead, au nom suivi de l'étiquette « lead » comme sur les cartes ; son
+   rôle ne s'écrit que s'il dit autre chose que « Lead … ». */
+function leadDeTuile(m, lead, n) {
+  if (!lead) return el('span', { class: 'equipe__lead equipe__lead--vide' }, n ? 'Lead à désigner' : 'Personne pour le moment');
+  const poste = texte(lead.poste);
+  return el('span', { class: 'equipe__lead' }, avatar(m, lead, 'md'),
+    el('span', { class: 'equipe__lead-texte' },
+      el('span', { class: 'equipe__lead-ligne' },
+        el('span', { class: 'equipe__lead-nom' }, texte(lead.nom)),
+        el('span', { class: 'personne-carte__badge' }, 'lead')),
+      poste && !/lead/i.test(poste) ? el('span', { class: 'equipe__lead-role' }, poste) : null));
+}
 
 function tuileEquipe(pole, m, s, idPanneau, surClic) {
   const lead = s.lead;
   const autres = s.membres.filter((p) => p !== lead).sort(parRang);
   const codes = appareilsDe(s.membres);
   const n = s.membres.length;
+  /* Le nom de chacun en infobulle ; au survol de la tuile, les visages
+     se lèvent l'un après l'autre (--i). */
+  const visages = autres.slice(0, VISAGES_MAX).map((p, i) => {
+    const a = avatar(m, p, 'xs');
+    a.title = texte(p.nom);
+    a.style.setProperty('--i', String(i));
+    return a;
+  });
   return el('li', { class: 'equipe', dataset: { squad: s.id, teinte: String((s.rang % NB_TEINTES) + 1) } },
     el('button', {
       type: 'button', class: 'equipe__tuile', 'aria-expanded': 'false', 'aria-controls': idPanneau,
@@ -775,18 +849,11 @@ function tuileEquipe(pole, m, s, idPanneau, surClic) {
         el('span', { class: 'equipe__effectif' },
           el('span', { class: 'equipe__nombre' }, String(n)),
           el('span', { class: 'equipe__unite' }, n > 1 ? 'personnes' : 'personne'))),
-      lead
-        ? el('span', { class: 'equipe__lead' }, avatar(m, lead, 'md'),
-          el('span', { class: 'equipe__lead-texte' },
-            el('span', { class: 'equipe__lead-nom' }, texte(lead.nom)),
-            el('span', { class: 'equipe__lead-role' }, /lead/i.test(texte(lead.poste)) ? texte(lead.poste) : 'Lead · ' + (texte(lead.poste) || 'rôle à renseigner'))))
-        : el('span', { class: 'equipe__lead equipe__lead--vide' }, n ? 'Lead à désigner' : 'Personne pour le moment'),
+      leadDeTuile(m, lead, n),
       el('span', { class: 'equipe__pied' },
-        autres.length
-          ? el('span', { class: 'equipe__visages' },
-            autres.slice(0, VISAGES_MAX).map((p) => avatar(m, p, 'xs')),
-            autres.length > VISAGES_MAX ? el('span', { class: 'equipe__plus' }, '+' + (autres.length - VISAGES_MAX)) : null)
-          : el('span', { class: 'equipe__visages' }),
+        el('span', { class: 'equipe__visages' },
+          visages,
+          autres.length > VISAGES_MAX ? el('span', { class: 'equipe__plus' }, '+' + (autres.length - VISAGES_MAX)) : null),
         el('span', { class: 'equipe__chevron', 'aria-hidden': 'true' })),
       codes.length
         ? el('span', { class: 'equipe__appareils' },
@@ -800,16 +867,19 @@ function panneauEquipe(pole, m, s, id, fermer) {
   const codes = appareilsDe(s.membres);
   return el('li', { class: 'equipe__panneau', dataset: { squad: s.id, teinte: String((s.rang % NB_TEINTES) + 1) } },
     el('div', { class: 'equipe__panneau-interieur', id, role: 'region', 'aria-label': 'Les membres de ' + s.nom },
+      /* Les commandes d'édition de la squad sous son nom, à gauche : loin
+         de la croix qui referme le panneau, à droite. */
       el('div', { class: 'equipe__panneau-tete' },
         el('div', { class: 'equipe__panneau-titres' },
           el('h4', { class: 'equipe__panneau-titre' }, s.nom),
           el('p', { class: 'equipe__panneau-resume' }, pluriel(membres.length, 'personne')
-            + (s.lead ? ' · lead ' + texte(s.lead.nom) : '') + (codes.length ? ' · ' + codes.join(', ') : ''))),
-        barreEdition({
-          quoi: s.nom,
-          surModifier: (b) => ouvrirSquad({ existant: { id: s.id, pole: pole.cle, nom: s.nom, rang: s.rang }, pole: pole.cle, declencheur: b }),
-          surSupprimer: () => retirer('organigramme', 'squad', s.id, '« ' + s.nom + ' » retirée : ses membres attendent dans « À affecter ».')
-        }),
+            + (s.lead ? ' · lead ' + texte(s.lead.nom) : '') + (codes.length ? ' · ' + codes.join(', ') : '')),
+          barreEdition({
+            classe: 'equipe__panneau-edition',
+            quoi: s.nom,
+            surModifier: (b) => ouvrirSquad({ existant: { id: s.id, pole: pole.cle, nom: s.nom, rang: s.rang }, pole: pole.cle, declencheur: b }),
+            surSupprimer: () => retirer('organigramme', 'squad', s.id, '« ' + s.nom + ' » retirée : ses membres attendent dans « À affecter ».')
+          })),
         el('button', { type: 'button', class: 'equipe__fermer', 'aria-label': 'Refermer ' + s.nom, onClick: fermer },
           el('span', { 'aria-hidden': 'true' }, '×'))),
       membres.length
@@ -889,15 +959,16 @@ function blocEquipes(pole, m) {
 
   if (etatCoupOeil.squad && tuiles.has(etatCoupOeil.squad)) ouvrir(etatCoupOeil.squad, false);
 
+  /* Le responsable clôt la phrase : en mode édition, ses commandes
+     viennent au bout de la ligne, pas au milieu d'une phrase. */
   const r = m.responsable;
   return el('section', { class: 'equipes', 'aria-labelledby': prefixe + '-titre' },
     teteBloc(prefixe + '-titre', 'Les équipes',
-      r ? frag('Sous la responsabilité de ',
+      r ? frag('Sous la responsabilité de',
         el('span', { class: 'equipes__responsable', dataset: { teinte: 'pole' } },
           avatar(m, r, 'sm'),
-          el('a', { class: 'equipes__responsable-nom', href: lienFiche(pole, r) }, texte(r.nom) || 'Nom à renseigner'),
-          commandesPersonne(m, r, {})),
-        m.squads.length ? ' — ouvrez une squad pour voir ses membres.' : '.')
+          el('a', { class: 'equipes__responsable-nom', href: lienFiche(pole, r) }, texte(r.nom) || 'Nom à renseigner')),
+        commandesPersonne(m, r, {}))
         : 'Aucun responsable déclaré pour ce pôle.',
       el('a', { class: 'coup-oeil__lien', href: lienPole('organigramme.html', code) }, 'L’organigramme complet', el('span', { 'aria-hidden': 'true' }, ' →'))),
     m.squads.length ? grille : el('p', { class: 'coup-oeil__vide' }, 'Aucune squad déclarée pour ce pôle.'),
@@ -931,14 +1002,24 @@ function blocReferents(pole, m, chercheur) {
     etatCoupOeil.competence = e.nom;
     index.querySelectorAll('.referents__puce').forEach((b) => b.setAttribute('aria-pressed', b.dataset.competence === e.nom ? 'true' : 'false'));
     const pratiquants = e.referents.length + e.confirmes + e.pratiquants;
+    /* Le détail, en bandeau sous l'index : la compétence à gauche, ses
+       référents en cartes à droite — jusqu'à trois tiennent sur une
+       rangée, la hauteur ne saute pas d'une compétence à l'autre. */
     monter(detail,
-      el('p', { class: 'referents__surtitre' }, e.referents.length > 1 ? 'Les référents en' : 'Le référent en'),
-      el('h4', { class: 'referents__competence' }, e.nom),
-      el('p', { class: 'referents__resume' }, [
-        pluriel(e.referents.length, 'référent'),
-        e.confirmes ? pluriel(e.confirmes, 'confirmé') : '',
-        e.pratiquants ? e.pratiquants + ' en pratique' : ''
-      ].filter(Boolean).join(' · ')),
+      el('div', { class: 'referents__entete' },
+        el('p', { class: 'referents__surtitre' }, e.referents.length > 1 ? 'Les référents en' : 'Le référent en'),
+        el('h4', { class: 'referents__competence' }, e.nom),
+        el('p', { class: 'referents__resume' }, [
+          pluriel(e.referents.length, 'référent'),
+          e.confirmes ? pluriel(e.confirmes, 'confirmé') : '',
+          e.pratiquants ? e.pratiquants + ' en pratique' : ''
+        ].filter(Boolean).join(' · ')),
+        el('div', { class: 'referents__actions' },
+          pratiquants > e.referents.length
+            ? el('button', { type: 'button', class: 'referents__tous', onClick: () => chercheur.chercher(e.nom) },
+              'Les ' + pratiquants + ' personnes qui la pratiquent', el('span', { 'aria-hidden': 'true' }, ' →'))
+            : null,
+          boutonAjouter('Un référent en ' + e.nom, (b) => ouvrirReferent({ organigramme: m.organigramme, pole: code, competence: e.nom, competences: m.toutesCompetences, declencheur: b })))),
       el('ul', { class: 'referents__gens', role: 'list' },
         /* La compétence est dans le titre : la carte dit plutôt où
            d'autre la personne est référente. */
@@ -946,13 +1027,7 @@ function blocReferents(pole, m, chercheur) {
           rang: i, entree: true, edition: 'referent', competence: e.nom,
           titres: competencesDe(p).filter((c) => niveauDe(c) === 'referent' && texte(c.nom) !== e.nom)
             .slice(0, 2).map((c) => ({ nom: texte(c.nom), niveau: 'referent' }))
-        }))),
-      el('div', { class: 'referents__actions' },
-        pratiquants > e.referents.length
-          ? el('button', { type: 'button', class: 'referents__tous', onClick: () => chercheur.chercher(e.nom) },
-            'Les ' + pratiquants + ' personnes qui la pratiquent', el('span', { 'aria-hidden': 'true' }, ' →'))
-          : null,
-        boutonAjouter('Un référent en ' + e.nom, (b) => ouvrirReferent({ organigramme: m.organigramme, pole: code, competence: e.nom, competences: m.toutesCompetences, declencheur: b }))));
+        }))));
     if (animer && !mouvementReduit() && typeof detail.animate === 'function') {
       detail.animate([{ opacity: 0.35, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }],
         { duration: dureeJeton('--duree', 220), easing: courbeJeton() });
@@ -976,22 +1051,22 @@ function blocReferents(pole, m, chercheur) {
     clearTimeout(attente);
     attente = setTimeout(() => montrer(nom, true), 180);
   };
-  const index = el('ul', { class: 'referents__index', role: 'list', 'aria-label': 'Les compétences qui ont un référent' },
+  /* Le nom de la compétence, seul : les pastilles de couleur qui le
+     suivaient ne disaient rien. */
+  const index = fonduDefilement(el('ul', { class: 'referents__index', role: 'list', 'aria-label': 'Les compétences qui ont un référent' },
     expertises.map((e) => el('li', {},
       el('button', {
         type: 'button', class: 'referents__puce', 'aria-pressed': 'false', 'aria-controls': detail.id,
         dataset: { competence: e.nom },
         onClick: (evt) => {
           montrer(e.nom, true);
-          /* Sur une rangée qui défile, la compétence choisie vient au milieu. */
+          /* Sur une rangée qui défile, la compétence choisie vient au milieu ;
+             ailleurs, rien ne bouge (block: 'nearest' sur une puce visible). */
           evt.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center', behavior: mouvementReduit() ? 'auto' : 'smooth' });
         },
         onPointerMove: (evt) => viser(evt, e.nom),
         onPointerLeave: () => { clearTimeout(attente); visee = ''; }
-      },
-        el('span', { class: 'referents__puce-nom' }, e.nom),
-        el('span', { class: 'referents__visages', 'aria-hidden': 'true' },
-          e.referents.slice(0, 3).map((p) => avatar(m, p, 'xxs')))))));
+      }, e.nom)))));
 
   montrer(expertises.some((e) => e.nom === etatCoupOeil.competence) ? etatCoupOeil.competence : expertises[0].nom, false);
 
