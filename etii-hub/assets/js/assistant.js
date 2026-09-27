@@ -149,12 +149,15 @@ function encadreNonRaccorde() {
       + 'Drive partagé — une valeur, une règle, une référence citée —, avec vos droits Google : '
       + 'chacun ne voit que ce qu’il peut ouvrir.'),
     el('p', { class: 'assistant__texte texte-sm sans-marge' },
-      'Dès aujourd’hui : ouvrez un document avec « Ouvrir ↗ », puis « Demander à Gemini » — l’étoile, '
-      + 'en haut à droite de Google Drive — pour qu’il le résume ou réponde sur ce document. '
-      + 'Le raccordement se fait en un seul point, ',
+      el('strong', {}, 'Dès aujourd’hui, sans rien installer : '),
+      'posez votre question en une phrase dans la barre de recherche de Google Drive — Gemini peut y '
+      + 'répondre au-dessus des résultats, en citant les fichiers. Sur un document précis : « Ouvrir ↗ », '
+      + 'puis « Demander à Gemini ».'),
+    el('p', { class: 'assistant__texte texte-xs sans-marge' },
+      'Le raccordement se fait en un seul point, ',
       el('span', { class: 'mono' }, 'SOURCE.url'), ' dans ', el('span', { class: 'mono' }, 'assets/js/assistant.js'),
       ' ; la marche à suivre est dans ',
-      el('span', { class: 'mono' }, 'docs/ASSISTANT-IA.md'), ', niveau 1.'));
+      el('span', { class: 'mono' }, 'docs/ASSISTANT-IA.md'), ', niveaux 0 et 1.'));
 }
 
 /**

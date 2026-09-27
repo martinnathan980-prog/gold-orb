@@ -180,7 +180,7 @@ Oui, avec une réserve mesurée :
   seuil, pas avant.
 - **Au-delà de ~20 000** : le fonds n'a plus sa place dans un fichier
   statique ; la recherche dans le texte passe alors par Drive lui-même
-  (niveaux 1 à 3 de `docs/ASSISTANT-IA.md`).
+  (niveaux 0 à 3 de `docs/ASSISTANT-IA.md`).
 
 ---
 

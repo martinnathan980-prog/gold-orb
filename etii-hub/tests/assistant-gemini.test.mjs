@@ -33,7 +33,9 @@ const DRIVE_B = '0AdriveB-0123456789';
  *  - dossiers    : id → { name, parents }, pour files.get ;
  *  - contenus    : id → texte (export ou alt=media) ;
  *  - octets      : id → octets d'un PDF (alt=media) ;
- *  - vertex / enterprise : { code, corps } de l'API du modèle.
+ *  - vertex / enterprise : { code, corps } de l'API du modèle ;
+ *  - erreurDrive : le message d'erreur de Drive.Files.list, pour tout Drive,
+ *    ou { identifiant du Drive : message } pour certains seulement.
  */
 function assistant({ proprietes = {}, lister = () => [], dossiers = {}, contenus = {}, octets = {},
   vertex = { code: 200, corps: '{}' }, enterprise = { code: 200, corps: '[]' }, sansDrive = false, erreurDrive = null } = {}) {
@@ -92,7 +94,8 @@ function assistant({ proprietes = {}, lister = () => [], dossiers = {}, contenus
   if (!sansDrive) {
     contexte.Drive = { Files: { list: (params) => {
       etat.listes.push(params);
-      if (erreurDrive) throw new Error(erreurDrive);
+      const message = typeof erreurDrive === 'string' ? erreurDrive : (erreurDrive && erreurDrive[params.driveId]);
+      if (message) throw new Error(message);
       return { files: lister(params) };
     } } };
   }
@@ -163,6 +166,9 @@ console.log('\n== Niveau 1 : la question devient des mots ==');
   t('pluriels en -aux et -eaux', json(gs.analyser_('signaux')[0].variantes) === json(['signaux', 'signal'])
     && json(gs.analyser_('réseau')[0].variantes) === json(['réseau', 'reseau', 'réseaux', 'reseaux']));
   t('une expression ne change que d’accents', json(gs.analyser_('"câble blindé"')[0].variantes) === json(['câble blindé', 'cable blinde']));
+  const nfd = 'Quelle re\u0301sistance d’isolement ?';
+  t('une question aux accents décomposés (NFD, collée d’un PDF) garde ses mots entiers',
+    mots(nfd) === json(['résistance', 'isolement']) && gs.analyser_(nfd)[0].variantes.indexOf('resistance') !== -1, mots(nfd));
   t('une question sans mot utile est refusée clairement',
     /Précisez ce qu’il faut chercher/.test(erreur(() => assistant({ proprietes: { DRIVE_PARTAGE: DRIVE_A } }).gs.etiiRepondre('Est-ce que c’est quoi ?'))));
 }
@@ -172,8 +178,9 @@ console.log('\n== Niveau 1 : la requête Drive ==');
   const { gs } = assistant();
   t('\\ et \' sont échappés', gs.echapper_('quinn\'s paper\\essay') === 'quinn\\\'s paper\\\\essay');
   const q = gs.requeteDrive_(gs.analyser_('faisceaux "l\'avion" ETII-TEC-001'), 'and');
-  t('une requête : hors corbeille, sans dossiers, un groupe par mot, variantes en « or », expressions entre guillemets',
-    q === 'trashed = false and mimeType != \'application/vnd.google-apps.folder\' and ('
+  t('une requête : hors corbeille, sans dossiers ni raccourcis, un groupe par mot, variantes en « or », expressions entre guillemets',
+    q === 'trashed = false and mimeType != \'application/vnd.google-apps.folder\''
+      + ' and mimeType != \'application/vnd.google-apps.shortcut\' and ('
       + 'fullText contains \'"l\\\'avion"\' and (fullText contains \'faisceaux\' or fullText contains \'faisceau\')'
       + ' and fullText contains \'"etii-tec-001"\')', q);
   t('liaison « or » pour la recherche élargie',
@@ -245,6 +252,9 @@ console.log('\n== Niveau 1 : les documents, leur place, leur extrait ==');
     ex.filter((s) => s.marque).map((s) => s.texte).join('|') === 'CÂBLE|masse'
     && ex[0].texte === '…' && /^(abcdefghij )+Le $/.test(ex[1].texte)
     && /\. (klmnopqrst )*klmnopqrst$/.test(ex[ex.length - 2].texte) && ex[ex.length - 1].texte === '…', json(ex));
+  const decompose = gs.extrait_('La re\u0301sistance d’isolement est mesurée sous 500 V.', gs.analyser_('résistance'));
+  t('un texte aux accents décomposés (NFD) est marqué quand même, et rendu composé',
+    decompose.some((s) => s.marque && s.texte === 'résistance'), json(decompose));
   const aucun = gs.extrait_('Un texte sans les mots cherchés.', gs.analyser_('harnais'));
   t('sans occurrence, l’extrait est le début du texte, sans marque', aucun.length === 1 && !aucun[0].marque);
   t('un mot marqué doit commencer un mot (« signal » ne marque pas « désignal »)',
@@ -279,6 +289,32 @@ console.log('\n== Niveau 1 : la recherche élargie et les erreurs ==');
   t('un Drive partagé introuvable est nommé',
     /Drive partagé introuvable \(0AdriveA/.test(erreur(() => assistant({ proprietes: { DRIVE_PARTAGE: DRIVE_A },
       erreurDrive: 'API call to drive.files.list failed with error: Shared drive not found: 0AdriveA' }).gs.etiiRepondre('harnais'))));
+  const fermeB = assistant({ proprietes: { DRIVE_PARTAGE: DRIVE_A + ',' + DRIVE_B }, dossiers: DOSSIERS, contenus: { gd1: TEXTE_GUIDE },
+    lister: (p) => (p.driveId === DRIVE_A ? [GUIDE] : [FEUILLE]),
+    erreurDrive: { [DRIVE_B]: 'API call to drive.files.list failed with error: Shared drive not found: ' + DRIVE_B } });
+  const rB = fermeB.gs.etiiRepondre('faisceaux');
+  t('deux Drive partagés, dont un fermé à la personne : les résultats de l’autre, et le Drive sauté est compté',
+    rB.documents.length === 1 && rB.documents[0].titre === 'Guide de routage harnais' && rB.ignores === 1, json(rB));
+  const refusA = assistant({ proprietes: { DRIVE_PARTAGE: DRIVE_A + ',' + DRIVE_B },
+    lister: (p) => (/\) or \(/.test(p.q) ? [FEUILLE] : []),
+    erreurDrive: { [DRIVE_A]: 'The user does not have sufficient permissions for this file' } });
+  const rA = refusA.gs.etiiRepondre('faisceaux puissance');
+  t('la recherche élargie ne réinterroge pas le Drive fermé',
+    rA.elargie === true && rA.ignores === 1 && refusA.etat.listes.filter((l) => l.driveId === DRIVE_A).length === 1
+    && refusA.etat.listes.filter((l) => l.driveId === DRIVE_B).length === 2, json(refusA.etat.listes.map((l) => l.driveId)));
+  const tousFermes = erreur(() => assistant({ proprietes: { DRIVE_PARTAGE: DRIVE_A + ',' + DRIVE_B },
+    erreurDrive: 'Shared drive not found' }).gs.etiiRepondre('harnais'));
+  t('tous les Drive partagés fermés : une erreur claire, qui les compte', /Aucun des 2 Drive partagés/.test(tousFermes), tousFermes);
+  const autreErreur = erreur(() => assistant({ proprietes: { DRIVE_PARTAGE: DRIVE_A + ',' + DRIVE_B }, lister: () => [GUIDE],
+    erreurDrive: { [DRIVE_B]: 'Invalid Value' } }).gs.etiiRepondre('harnais'));
+  t('une erreur qui ne tient pas aux droits arrête tout, même si l’autre Drive répond',
+    /La recherche dans Drive a échoué : Invalid Value/.test(autreErreur), autreErreur);
+  const portee = erreur(() => assistant({ proprietes: { DRIVE_PARTAGE: DRIVE_A + ',' + DRIVE_B },
+    erreurDrive: 'Request had insufficient authentication scopes.' }).gs.etiiRepondre('harnais'));
+  t('une portée Drive manquante n’est pas prise pour un Drive fermé : le manifeste est nommé',
+    /portée « drive\.readonly » manque/.test(portee) && !/membre/.test(portee), portee);
+  t('un seul Drive partagé et tout va bien : rien d’ignoré',
+    assistant({ proprietes: { DRIVE_PARTAGE: DRIVE_A }, lister: () => [GUIDE], dossiers: DOSSIERS }).gs.etiiRepondre('faisceaux').ignores === 0);
   t('un refus de Drive dit qu’il faut en être membre',
     /il faut en être membre/.test(erreur(() => assistant({ proprietes: { DRIVE_PARTAGE: DRIVE_A },
       erreurDrive: 'The user does not have sufficient permissions' }).gs.etiiRepondre('harnais'))));
@@ -482,6 +518,16 @@ console.log('\n== Assistant : la page ne fabrique jamais de HTML à partir du te
     /@media \(prefers-color-scheme: dark\)/.test(page)
     && !page.replace(/:root\s*\{[^}]*\}/g, '').replace(/@media \(prefers-color-scheme: dark\)\s*\{\s*:root\s*\{[^}]*\}\s*\}/, '').match(/#[0-9a-f]{3,8}\b|rgb\(/i));
   t('au niveau 1, la page renvoie vers « Demander à Gemini » dans Drive', /Demander à Gemini/.test(page));
+  t('au niveau 1, la page mène à la barre de recherche de Drive (aperçu IA) avec la même question, encodée, en https',
+    /barre de recherche de Google Drive/.test(page)
+    && /lienExterne\('https:\/\/drive\.google\.com\/drive\/search\?q=' \+ encodeURIComponent\(q\)/.test(page));
+  t('une question venue du portail ne part seule qu’au niveau 1 : aux niveaux 2 et 3, elle attend un clic',
+    /else if \(MODE === 'texte'\) poser\(\);/.test(page) && !/if \(champ\.value\.trim\(\)\) poser\(\)/.test(page)
+    && /bouton\.focus\(\)/.test(page));
+  t('un Drive partagé sauté est dit (« Drive partagé ignoré »), aux niveaux 1 et 2',
+    /Drive partagé ignoré/.test(page) && (page.match(/ignores\(echange, r\.ignores\)/g) || []).length >= 4);
+  t('un PDF lu par Gemini ne se dit pas « aperçu indisponible »',
+    /else if \(d\.numero\) \{[\s\S]{0,160}Lu en entier par Gemini[\s\S]{0,80}\} else if \(!d\.lisible && INDISPONIBLE/.test(page));
 
   const manifeste = JSON.parse(lire('../tools/apps-script/assistant/appsscript.json'));
   t('le manifeste : exécution en tant que l’utilisateur qui accède, réservée au domaine',
@@ -529,6 +575,10 @@ console.log('\n== Portail : le bloc et le lien vers l’assistant ==');
   const source = lire('../assets/js/assistant.js');
   t('le module n’appelle rien lui-même et ne contient aucune adresse Google',
     !/fetch\(|XMLHttpRequest|google\.com|googleapis/.test(source));
+  const encadre = source.slice(source.indexOf('function encadreNonRaccorde'), source.indexOf('export function blocAssistant'));
+  t('non raccordé, le bloc dit quoi faire dès aujourd’hui : la question dans la barre de recherche de Drive, puis « Demander à Gemini »',
+    /Dès aujourd’hui/.test(encadre) && /barre de recherche de Google Drive/.test(encadre) && /Demander à Gemini/.test(encadre)
+    && /niveaux 0 et 1/.test(encadre));
 }
 
 /* ======================================================================

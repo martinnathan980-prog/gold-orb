@@ -1,13 +1,19 @@
 # Des milliers de documents et Gemini — ce que vous pouvez faire maintenant, et plus tard
 
 > **Gemini Enterprise n'arrivera que dans plusieurs années. D'ici là ?**
-> Quatre niveaux, chacun utile seul, chacun préparant le suivant :
+>
+> **La réponse courte : dès demain, tapez votre question dans la barre de
+> recherche de Google Drive** (§ 0.4). Le Gemini inclus dans votre Google
+> Workspace peut y répondre au-dessus des résultats, en citant les
+> fichiers. Le reste de ce guide range les documents pour que cette
+> réponse soit bonne, puis ajoute, si le service en a besoin, une page à
+> vous, lancée depuis le portail et limitée au fonds du service.
 >
 > | Niveau | Ce que vous obtenez | Il faut | Coût |
 > |---|---|---|---|
-> | **0 — dès demain** | Un Drive partagé rangé, un catalogue qui se remplit seul, Gemini dans Drive, des carnets Gemini Notebook par thème, reliés au portail | Vous seul | Rien (inclus dans Workspace) |
-> | **1 — sans IA payante** | La page **« Chercher dans le texte des documents »** : les mots cherchés *dans* les documents, avec un extrait, chacun avec ses droits | Vous seul, 30 minutes | Rien |
-> | **2 — une petite demande à la DSI** | La même page **répond en rédigeant**, à partir des documents trouvés, en les citant | Un projet Google Cloud et un rôle | Payé à la question : quelques dizaines à ~150 $ par mois (estimation, § 2.5) |
+> | **0 — dès demain** | **La question dans la barre de recherche de Drive** : une réponse rédigée, fichiers cités (aperçu IA). Et : un Drive partagé rangé, un catalogue qui se remplit seul, « Demander à Gemini » sur un dossier, des projets Drive et des carnets par thème, reliés au portail | Vous seul, si l'administrateur Workspace a activé Gemini dans Drive | Rien (inclus dans Workspace) |
+> | **1 — sans IA payante** | La page **« Chercher dans le texte des documents »**, lancée depuis le portail : les mots cherchés *dans* les documents du seul Drive partagé du service, avec un extrait, chacun avec ses droits | Vous seul, 30 minutes | Rien |
+> | **2 — une petite demande à la DSI** | La même page **répond toujours en rédigeant**, à partir des documents du service, traités dans l'UE, avec des renvois numérotés vérifiables | Un projet Google Cloud et un rôle | Payé à la question : quelques dizaines à ~150 $ par mois (estimation, § 2.5) |
 > | **3 — plus tard** | Gemini Enterprise lit tout le Drive partagé | Licences, DSI | Par personne et par mois |
 >
 > Le code des niveaux 1, 2 et 3 est **un seul et même petit programme**,
@@ -20,17 +26,18 @@
 > être vérifié est marqué **(à confirmer)**.
 
 ```
- Drive partagé « ETII — Fonds documentaire »      ETIIA/  ETIIE/  ETIII/  Commun/   (les fichiers, et les droits)
-        │                         │
-        │ chaque nuit             │ à chaque recherche, AVEC LES DROITS de la personne
-        ▼                         ▼
- index-documents.gs        Page « Assistant » (Apps Script, s'exécute au nom de qui l'ouvre)
-        │                    niveau 1 : Drive cherche les mots dans le texte → liste + extraits
-        ▼                    niveau 2 : + Gemini (Agent Platform, UE) lit les 5 meilleurs → réponse citée
- Classeur des documents      niveau 3 : Gemini Enterprise lit tout le Drive partagé → réponse citée
-        │                         ▲
-        ▼                         │  « Chercher dans le texte des documents ↗ » (la demande part avec)
- Portail ETII Hub — Recherche ────┘
+ Drive partagé « ETII — Fonds documentaire »   ETIIA/  ETIIE/  ETIII/  Commun/   (les fichiers, et les droits)
+        │                        │                                  │
+        │ chaque nuit            │ à chaque recherche, AVEC LES     │ à chaque question
+        │                        │ DROITS de la personne            │
+        ▼                        ▼                                  ▼
+ index-documents.gs       Page « Assistant » (Apps Script)    Barre de recherche de Drive (niveau 0)
+        │                   1 : les mots dans le texte, extraits  « quelle distance puissance / signal ? »
+        ▼                   2 : + Gemini (UE), réponse citée      → aperçu IA, fichiers cités
+ Classeur des documents     3 : Gemini Enterprise, réponse citée
+        │                        ▲
+        ▼                        │ « Chercher dans le texte des documents ↗ » (la demande part avec)
+ Portail ETII Hub — Recherche ───┘
    « routage harnais » → la fiche → « Ouvrir ↗ » → le document dans Drive → « Demander à Gemini » (niveau 0)
 ```
 
@@ -143,29 +150,104 @@ tolère les fautes de frappe, mais elle ne trouve que ce qui est écrit.
 > le **service**, c'est-à-dire le pôle — l'onglet où se trouve la ligne.
 > Ces colonnes peuvent rester vides.
 
-### 0.4 « Demander à Gemini » dans Drive — sur un document ou un dossier
+### 0.4 Poser la question dans la barre de recherche de Drive (aperçu IA)
 
-C'est le Gemini inclus dans votre Google Workspace : rien à installer.
+C'est la réponse à « d'ici là, comment je fais ? » : rien à installer, rien
+à demander, rien à payer de plus que Workspace.
 
-1. Depuis le portail, **« Ouvrir ↗ »** ouvre le document dans Drive.
-2. En haut à droite, **Demander à Gemini** (l'étoile) ouvre le panneau.
-3. Posez la question : *« Quelle distance minimale entre un faisceau de
-   puissance et un faisceau signal ? Cite la page. »*
+1. Ouvrez Google Drive, sur ordinateur.
+2. Dans la **barre de recherche**, en haut, tapez une **question**, en une
+   phrase, comme à un collègue : *« Quelle distance minimale entre un
+   faisceau de puissance et un faisceau signal ? »*
+3. Un **aperçu IA** peut apparaître au-dessus des résultats : une réponse
+   rédigée à partir de plusieurs fichiers, avec des **renvois**. Cliquez
+   sur un renvoi : le fichier s'ouvre, vous vérifiez le passage.
+4. Pour creuser, **Demander à Gemini** sous l'aperçu ouvre l'espace plein
+   écran avec les mêmes fichiers, pour des questions de suite (0.5).
 
-Dans le panneau de Drive, tapez **@** puis le nom d'un **dossier**
-(ETIIA/Guides…) pour interroger tout le dossier. Limite annoncée par
-Google : dans un dossier qui contient beaucoup de fichiers ou de
-sous-dossiers, Gemini peut ne pas les prendre tous en compte. Posez des
-questions précises, dans le bon sous-dossier.
+**Réglez la portée une fois.** Dans la barre de recherche, le réglage
+« AI Overview search » (libellé anglais de l'aide ; libellé français
+**(à confirmer)**) propose quatre cases : fichiers Drive, pièces jointes et
+liens de Gmail, de Chat, d'Agenda. Ne gardez que **les fichiers Drive** :
+l'aperçu s'appuie alors sur les documents, pas sur les courriels. Ce
+réglage ne change rien à la recherche Drive habituelle.
 
-Gemini ne lit que ce que **vous** avez le droit d'ouvrir.
+**Ce qu'il faut** :
+- une édition Workspace éligible : **Business Standard ou Plus,
+  Enterprise Standard ou Plus** ;
+- que l'administrateur Workspace ait activé **Gemini dans Drive** ;
+- pour chacun : les **fonctionnalités intelligentes de Workspace**
+  activées dans ses paramètres.
 
-### 0.5 Gemini Notebook (ex-NotebookLM) — un carnet par thème
+**Depuis quand** : en anglais depuis le 22 avril 2026 (domaines en
+diffusion rapide) et le 7 mai 2026 (diffusion planifiée) ; dans 28 autres
+langues depuis le 6 et le 26 mai 2026 ; sur les applications Drive
+Android et iOS depuis le 26 juin 2026. Ces 28 langues sont celles du
+panneau Gemini de Drive, où figure le **français** ; que l'aperçu
+réponde en français sur votre compte reste **(à confirmer)** sur place.
+
+**Les droits** : Google écrit que « Demander à Gemini » dans Drive
+respecte les droits d'accès, les règles DLP et l'IRM. Pour l'aperçu de la
+barre de recherche, qui cherche dans vos fichiers, faites le test des
+droits de 2.6 avant de l'annoncer **(à confirmer)**.
+
+**Ce que Drive ne garantit pas** : l'aperçu « peut » apparaître, pas pour
+toutes les questions ; il cherche dans **tout** ce que vous pouvez ouvrir
+(Mon Drive, tous les Drive partagés, les fichiers partagés avec vous), pas
+dans le seul fonds du service ; la page d'aide ne dit pas où le
+traitement a lieu.
+
+**Ce que les niveaux 1 et 2 ajoutent par-dessus** — à installer seulement
+si l'aperçu de Drive ne suffit pas au service :
+
+| | Barre de recherche de Drive (0.4) | Page du niveau 1 | Page du niveau 2 |
+|---|---|---|---|
+| Où elle cherche | tout ce que vous pouvez ouvrir | le seul Drive partagé du service | le seul Drive partagé du service |
+| Réponse rédigée | quand l'aperçu apparaît | non : les documents, avec un extrait | à chaque question, ou « les documents ne répondent pas » |
+| Renvois | liens vers les fichiers | — | numérotés [1], [2], carte du document, « cité » |
+| Depuis le portail | non (la page du niveau 1 y mène : « Poser cette question dans Drive ↗ ») | oui, la demande part avec | oui, la demande part avec |
+| Lieu du traitement | non précisé | aucune IA | point d'accès `eu` (2.1) |
+| Coût | inclus | rien | à la question (2.5) |
+
+### 0.5 « Demander à Gemini » sur un dossier, un document, un projet
+
+C'est le même Gemini, visé sur des fichiers que vous choisissez.
+Disponible depuis le 22 avril 2026 (anglais) et mai 2026 (28 autres
+langues), pour les mêmes éditions qu'en 0.4.
+
+- **Un dossier** : dans Drive, ouvrez le dossier (ETIIA › Guides…), puis
+  **Demander à Gemini** dans la barre d'outils, en haut. L'espace plein
+  écran s'ouvre, le dossier en source. Chaque réponse porte des renvois
+  [1], [2] vers les fichiers.
+- **Un document** : ouvrez-le depuis le portail (« Ouvrir ↗ »), puis
+  **Demander à Gemini** (l'étoile, en haut à droite) : le panneau latéral
+  répond sur ce document. *« Quelle distance minimale entre un faisceau
+  de puissance et un faisceau signal ? Cite la page. »*
+- **Un projet Drive par thème, partagé avec le pôle** : Drive › **Nouveau
+  › Projet** (ou **Enregistrer comme projet** depuis l'espace plein
+  écran) › ajoutez les fichiers et dossiers du thème › **Partager** avec
+  le groupe du pôle, en **Lecteur**. Chacun pose ses propres questions sur
+  les mêmes sources ; les conversations restent privées. Les fichiers ne
+  bougent pas et gardent leurs droits : un collègue qui ne peut pas
+  ouvrir un fichier du projet ne peut pas s'en servir.
+- **L'application Gemini** : **Ajouter depuis Drive** joint jusqu'à
+  **10 fichiers** à une question (« sous réserve de disponibilité », écrit
+  Google), pour comparer deux indices d'un même document. Il faut que
+  l'administrateur Workspace ait ouvert l'accès aux applications dans
+  Gemini.
+
+La page d'aide consultée ne publie pas de nombre maximal de fichiers pour
+un dossier ou un projet **(à confirmer)** : dans un dossier très fourni,
+visez le bon sous-dossier et posez des questions précises.
+
+### 0.6 Gemini Notebook (ex-NotebookLM) — un carnet par thème
 
 NotebookLM s'appelle **Gemini Notebook** depuis juillet 2026 ; c'est le
 même produit, les carnets et les liens existants continuent de marcher.
-Pour un corpus que tout le monde interroge (« Règles de conception
-harnais », « Normes CEM », « Accueil des nouveaux ») :
+Un projet Drive (0.5) lit les fichiers là où ils sont ; un carnet garde
+ses propres sources, à resynchroniser quand un document change. Le carnet
+reste utile pour un corpus stable que tout le monde interroge (« Règles de
+conception harnais », « Normes CEM », « Accueil des nouveaux ») :
 
 1. Ouvrez Gemini Notebook › **Nouveau carnet**.
 2. **Ajouter des sources › Google Drive** : choisissez les documents du
@@ -178,12 +260,12 @@ harnais », « Normes CEM », « Accueil des nouveaux ») :
 
 Avec un compte Google Workspace, Google indique que vos sources, questions
 et réponses ne sont ni relues par des personnes ni utilisées pour
-entraîner des modèles. Quand un document change, vérifiez que la source
-du carnet est à jour.
+entraîner des modèles.
 
-### 0.6 Relier les carnets au portail, par la FAQ
+### 0.7 Relier les carnets et les projets au portail, par la FAQ
 
-Le portail se modifie depuis lui-même (bouton **Modifier** en haut) :
+Un carnet (0.6) ou un projet Drive (0.5) ne sert que si on le trouve. Le
+portail se modifie depuis lui-même (bouton **Modifier** en haut) :
 
 1. **Modifier** › ouvrez la page du pôle › **Questions fréquentes** ›
    **Ajouter une question**.
@@ -200,7 +282,10 @@ pas. Pour un bouton **« Ouvrir ↗ »**, ajoutez plutôt le carnet comme un
 document : page **Recherche** › **Modifier** › **Ajouter un document**,
 titre « Carnet — Règles harnais », une référence à vous (« CARNET-HARNAIS »),
 le type le plus proche, le lien du carnet dans **Lien vers le document**,
-les mots-clés « carnet, gemini ». Dans les deux cas, le lien
+les mots-clés « carnet, gemini ». Un projet Drive se relie de la même
+façon, par son lien de partage (le menu de partage d'un projet est décrit
+par l'aide ; le lien à copier **(à confirmer)** sur place). Dans tous les
+cas, le lien
 est rangé là où le site range ses modifications (la feuille Google quand
 le site est servi par Google, voir `INSTALLER-SUR-GOOGLE.txt`), jamais
 dans ce dépôt public.
@@ -231,15 +316,22 @@ au détour d'une page.
   **référence** (ETII-TEC-001) sont cherchées d'un bloc.
 - Si aucun document ne contient **tous** les mots, elle montre ceux qui en
   contiennent **au moins un**, et le dit.
-- Sous les résultats, elle rappelle le geste suivant : ouvrir le document
-  et **« Demander à Gemini »** dans Drive (0.4) pour une réponse rédigée.
+- Sous les résultats, elle rappelle le geste suivant pour une réponse
+  rédigée : un lien **« Poser cette question dans Drive ↗ »** ouvre la
+  recherche de Drive avec la même question, où l'aperçu IA peut répondre
+  (0.4 ; qu'il s'affiche aussi pour une recherche ouverte par un lien
+  reste **(à confirmer)** — sinon, validez la question dans la barre) ;
+  ou **« Demander à Gemini »** sur un document ou un dossier (0.5).
+- Un Drive partagé dont la personne n'est pas membre est **sauté** : elle
+  reçoit les résultats des autres, et la page le dit (« 1 Drive partagé
+  ignoré : vous n'en êtes pas membre »).
 - Rien n'est enregistré, sauf le nom des dossiers déjà rencontrés, dans
   un cache propre à chaque personne, pendant 6 heures.
 
 Ce que Drive ne fait pas : il compare des **mots entiers** (« faisceau »
 ne trouve pas « faisceaux » tout seul — la page ajoute l'autre nombre), il
-ne comprend pas les synonymes, et il ne rédige pas. Pour rédiger, c'est le
-niveau 2.
+ne comprend pas les synonymes, et il ne rédige pas. Pour rédiger : la
+barre de recherche de Drive (0.4), ou le niveau 2.
 
 ### 1.2 L'installation, pas à pas (30 minutes)
 
@@ -255,6 +347,11 @@ s'exécute au nom de chaque personne.
    ouvrez `appsscript.json`, remplacez tout par le fichier du dépôt. Il
    active le **service avancé Drive** (v3) ; dans le projet Google Cloud
    par défaut d'Apps Script, l'API Drive s'active alors toute seule.
+   **Au niveau 1, retirez-en les deux portées d'IA** — les lignes qui
+   finissent par `/auth/aiplatform` et par
+   `/auth/discoveryengine.assist.readwrite` (et la virgule qui les
+   précède) : elles ne servent qu'aux niveaux 2 et 3, et leur libellé
+   inquiéterait sur l'écran d'accord (étape 7).
 3. `Code.gs` : remplacez tout par `tools/apps-script/assistant/Code.gs`.
 4. **+ › HTML**, nommez-le exactement `Page`, collez `Page.html`.
 5. **Paramètres du projet › Propriétés du script › Ajouter** :
@@ -262,7 +359,8 @@ s'exécute au nom de chaque personne.
    partagé : son adresse se termine par `/folders/` suivi de
    l'identifiant. Coller l'adresse entière marche aussi. Plusieurs Drive
    partagés (un par pôle, par exemple) : séparez-les par des virgules,
-   cinq au plus.
+   cinq au plus. Chacun cherche dans ceux dont il est membre ; les autres
+   sont sautés, et la page le dit.
 6. **Déployer › Nouveau déploiement › Application Web** :
    - Exécuter en tant que : **Utilisateur accédant à l'application Web** ;
    - Qui a accès : **tous les utilisateurs de votre organisation**.
@@ -271,19 +369,25 @@ s'exécute au nom de chaque personne.
 7. Ouvrez cette adresse suivie de `?q=harnais`. La première fois, Google
    demande votre accord (chacun le donnera une fois) :
 
-   | Ce que Google affiche | Pourquoi |
-   |---|---|
-   | Voir et télécharger vos fichiers Google Drive (`drive.readonly`) | chercher et lire les extraits, avec **vos** droits — jamais d'écriture |
-   | Se connecter à un service externe (`script.external_request`) | appeler l'API Drive (extraits, dossiers) et, aux niveaux 2 et 3, Gemini |
-   | Données Vertex AI (`aiplatform`) | niveau 2 seulement |
-   | Assistant Agentspace (`discoveryengine.assist.readwrite`) | niveau 3 seulement |
+   | Portée | Ce que Google demande (en substance) | Pourquoi |
+   |---|---|---|
+   | `drive.readonly` | voir et télécharger tous vos fichiers Google Drive | chercher et lire les extraits, avec **vos** droits — jamais d'écriture |
+   | `script.external_request` | se connecter à un service externe | appeler l'API Drive (extraits, dossiers) et, aux niveaux 2 et 3, Gemini |
+   | `aiplatform` | voir, modifier, configurer et supprimer vos données Vertex AI dans Google Cloud | niveau 2 seulement : la page ne fait qu'interroger un modèle, mais aucune portée plus étroite ne le permet |
+   | `discoveryengine.assist.readwrite` | voir votre historique de conversation avec l'assistant (Agentspace) et interagir avec lui en votre nom | niveau 3 seulement |
 
-   Ce sont les portées les plus étroites qu'acceptent ces API. **Pour un
-   écran d'accord plus court tant que vous êtes au niveau 1**, retirez les
-   deux dernières lignes de `oauthScopes` ; remettez-les au niveau 2 ou 3
-   (la page dit clairement laquelle manque).
+   La deuxième colonne résume la description officielle de chaque portée
+   (documents de découverte des API) ; l'écran d'accord la formule à sa
+   façon. Ce sont les portées les plus étroites qu'acceptent ces API.
+   Au niveau 1, **seules les deux premières** doivent apparaître : sinon,
+   revenez à l'étape 2. Au niveau 2 ou 3, remettez la portée qu'il faut :
+   la page dit clairement laquelle manque.
 
-**Relier le portail** (sur votre copie locale, jamais dans ce dépôt public) :
+**Relier le portail** (sur votre copie locale, jamais dans ce dépôt public).
+Ces trois étapes demandent un ordinateur avec **Node.js** installé et
+une **copie locale du dépôt** — celle d'où sort `dist/etii-hub.html`
+(README, « Version autonome, en un seul fichier »). Sans elles, confiez
+ces trois étapes à la personne qui fabrique le site : c'est cinq minutes.
 
 8. Dans `assets/js/assistant.js` : collez l'adresse `/exec` dans
    `SOURCE.url` ; laissez `niveau: 1`.
@@ -308,8 +412,11 @@ version** › Déployer. L'adresse `/exec` ne change pas.
 |---|---|---|
 | « pas encore relié : la propriété du script DRIVE_PARTAGE est vide » | étape 5 oubliée, ou valeur qui n'est pas un identifiant | recopier l'identifiant ou l'adresse du Drive partagé |
 | « Le service avancé Drive n'est pas activé » | `appsscript.json` non recopié | étape 2 |
-| « Drive partagé introuvable (…) » | mauvais identifiant, ou vous n'en êtes pas membre | vérifier l'adresse ; demander l'accès |
+| « Autorisation incomplète : la portée « drive.readonly » manque » | ligne retirée par erreur du manifeste | étape 2, puis rouvrir la page |
+| « Drive partagé introuvable (…) » | mauvais identifiant, ou vous n'en êtes pas membre (le seul Drive partagé configuré) | vérifier l'adresse ; demander l'accès |
 | « Accès refusé au Drive partagé » | la personne n'en est pas membre | l'ajouter au groupe du pôle |
+| « 1 Drive partagé ignoré : vous n'en êtes pas membre » | plusieurs Drive partagés, dont un fermé à cette personne ; les autres ont été fouillés | rien, si l'accès est par pôle ; sinon l'ajouter au groupe |
+| « Aucun des … Drive partagés … ne vous est ouvert » | aucun des Drive partagés configurés | vérifier `DRIVE_PARTAGE` ; demander l'accès |
 | « Précisez ce qu'il faut chercher » | la demande n'a que des mots vides | taper les mots qui comptent |
 | Aucun document, alors qu'il existe | PDF scanné sans texte ; fichier tout juste déposé, pas encore indexé par Drive **(à confirmer : délai non publié)** | exporter un PDF texte ; réessayer plus tard |
 | Google refuse l'autorisation, ou « application bloquée » | la console d'administration Workspace restreint les applications Apps Script internes **(à confirmer avec l'administrateur Workspace)** | demander que les applications internes du domaine soient autorisées |
@@ -332,7 +439,14 @@ avec « cité » sur ceux que la réponse invoque ; un clic sur [2] mène à la
 carte du document 2. Une réponse sans aucun document cité est signalée
 comme non vérifiable.
 
-**Aucun document trouvé : aucun appel au modèle, donc aucun coût.**
+**Aucun document trouvé : aucun appel au modèle, donc aucun coût.** Et
+une question qui arrive du portail (`?q=…`) attend un clic sur
+« Demander » : un lien, à lui seul, ne déclenche jamais un appel payant.
+
+**Par rapport à l'aperçu IA de la barre de recherche de Drive** (0.4) :
+la page ne lit que le Drive partagé du service, répond à chaque question
+(ou dit que les documents ne répondent pas), numérote ses renvois, et
+fait traiter la demande dans l'UE. Le tableau de 0.4 les compare.
 
 Le produit s'appelle **Gemini Enterprise Agent Platform** : c'est le
 nouveau nom de **Vertex AI** depuis le 22 avril 2026 (l'API reste
@@ -384,8 +498,9 @@ DSI voit le coût exact de l'assistant dans ses rapports.
    projet. `DRIVE_PARTAGE` reste.
    Facultatif : `VERTEX_REGION` (`eu` par défaut ; `europe-west3`,
    `global`…) et `VERTEX_MODELE` (`gemini-3.5-flash` par défaut).
-3. Si vous aviez raccourci `oauthScopes` (1.2, étape 7), remettez la ligne
-   `https://www.googleapis.com/auth/aiplatform`.
+3. Remettez dans `oauthScopes` la ligne
+   `https://www.googleapis.com/auth/aiplatform`, retirée au niveau 1
+   (1.2, étape 2).
 4. **Déployer › Gérer les déploiements** › Nouvelle version. Rouvrez la
    page : Google redemande l'accord une fois, puis le titre devient
    « Demander aux documents ».
@@ -398,9 +513,19 @@ DSI voit le coût exact de l'assistant dans ses rapports.
 |---|---|---|---|
 | `gemini-3.5-flash` (par défaut) | GA depuis le 19 mai 2026 | oui | pas avant le 19 mai 2027 |
 | `gemini-3.5-flash-lite` (moins cher) | GA depuis le 21 juillet 2026 | oui | pas avant le 21 juillet 2027 |
+| `gemini-3.8-flash` (plus récent) | GA depuis le 2 septembre 2026 | oui | aucune date annoncée (« à plus court terme ») |
 
-Les Gemini 3.6, 3.7 et 3.8 Flash sont aussi servis en `eu`. Un modèle
-finit toujours par être retiré : quand Google l'annonce, changez
+**Pourquoi `gemini-3.5-flash` par défaut**, alors que les Gemini 3.6, 3.7
+et 3.8 Flash, plus récents, sont aussi servis en `eu` et moins chers
+jusqu'au 31 décembre 2026 (2.5) : Google range 3.5 Flash parmi les
+modèles garantis **au moins douze mois**, avec une date de retrait
+publiée ; les 3.6, 3.7 et 3.8 Flash sont des modèles « à plus court
+terme », sans date de retrait annoncée au 26 septembre 2026, qui restent
+actifs jusqu'à ce que Google annonce leur retrait. Pour une page qu'on
+installe et qu'on oublie, la date connue l'emporte. Pour essayer 3.8
+Flash : `VERTEX_MODELE` = `gemini-3.8-flash`.
+
+Un modèle finit toujours par être retiré : quand Google l'annonce, changez
 `VERTEX_MODELE`. D'ici là, la page dit « Modèle ou projet introuvable…
 peut-être retiré » plutôt que de se taire. Pour les modèles Gemini 3 et
 suivants, la page demande une réflexion **LOW** : relire cinq documents
@@ -417,8 +542,10 @@ régional ou multirégion comme `eu` (tarif standard, 26 septembre 2026) :
 | `gemini-3.5-flash-lite` | 0,33 $ | 2,75 $ |
 
 Les Gemini 3.6, 3.7 et 3.8 Flash sont à prix d'introduction jusqu'au
-31 décembre 2026 (0,75 $ / 3,75 $ au point d'accès mondial), puis à
-1,50 $ / 7,50 $ : si vous en choisissez un, refaites le calcul.
+31 décembre 2026 : 0,825 $ / 4,125 $ en `eu` (0,75 $ / 3,75 $ au point
+d'accès mondial), puis, à partir du 1er janvier 2027, 1,65 $ / 8,25 $ en
+`eu` (1,50 $ / 7,50 $ au mondial) : si vous en choisissez un, refaites le
+calcul.
 
 Une question typique : la question, cinq documents (un Google Docs de dix
 pages ≈ 6 000 jetons ; un PDF ≈ 560 jetons par page avec le réglage par
@@ -490,9 +617,10 @@ forme
 **Ce que vous faites** : relier le script au projet (Paramètres du projet
 › Projet Google Cloud), ajouter la propriété `GEMINI_APP` = le nom complet
 de l'application — elle l'emporte sur les deux autres niveaux, qu'on peut
-laisser —, remettre la portée `discoveryengine.assist.readwrite` si vous
-l'aviez retirée, publier une nouvelle version, et `SOURCE.niveau = 3` dans
-le portail. La page affiche alors la réponse de Gemini Enterprise et ses
+laisser —, remettre la portée `discoveryengine.assist.readwrite`
+(retirée au niveau 1, 1.2, étape 2), publier une nouvelle version, et
+`SOURCE.niveau = 3` dans le portail. La page affiche alors la réponse de
+Gemini Enterprise et ses
 sources ; une question de suite garde le fil de la conversation (bouton
 « Nouvelle conversation »).
 
@@ -509,9 +637,10 @@ sources ; une question de suite garde le fil de la conversation (bouton
 
 | Quand | Quoi | Qui |
 |---|---|---|
+| Dès demain | La question dans la barre de recherche de Drive, portée réglée sur les fichiers Drive ; le montrer au service (0.4) | Vous |
 | Semaine 1 | Drive partagé, dossiers, groupes, noms de fichiers (0.1, 0.2) | Vous |
 | Semaine 1 | `index-documents.gs` : le catalogue se remplit (0.3) | Vous |
-| Semaine 2 | Gemini dans Drive, deux carnets Gemini Notebook reliés à la FAQ (0.4 à 0.6) | Vous |
+| Semaine 2 | « Demander à Gemini » sur les dossiers, un projet Drive et un carnet par thème, reliés à la FAQ (0.5 à 0.7) | Vous |
 | Semaine 2 | La page « Chercher dans le texte des documents » (niveau 1), reliée au portail | Vous |
 | Semaine 3 | Mesurer : combien de recherches, combien de temps gagné, quelles questions reviennent | Vous |
 | Ensuite | Chef de service, puis DSI, avec la liste 2.2 et les chiffres du niveau 1 | Vous + chef |
@@ -530,6 +659,12 @@ idée, c'est un « non ».
 ---
 
 ## Les questions qu'on vous posera
+
+> **« Drive répond déjà dans sa barre de recherche : pourquoi une page à nous ? »**
+> Pour le périmètre (le seul fonds du service, pas les courriels ni les
+> brouillons de chacun), pour le lien depuis le portail et, au niveau 2,
+> pour le traitement dans l'UE et des renvois numérotés. Si l'aperçu de
+> Drive suffit au service, restez-en au niveau 0 : c'est un bon résultat.
 
 > **« Et si Gemini invente ? »**
 > Au niveau 1, rien n'est rédigé : ce sont les documents eux-mêmes. Aux
@@ -558,7 +693,8 @@ idée, c'est un « non ».
 > (catalogue, portail, page de recherche, Gemini) le lit.
 
 > **« Combien de temps avant que ça marche ? »**
-> Niveaux 0 et 1 : quelques jours, sans rien demander à personne. Niveau
+> La barre de recherche de Drive : dès demain. Niveaux 0 et 1 complets :
+> quelques jours, sans rien demander à personne. Niveau
 > 2 : le délai est celui de la DSI ; la bascule elle-même prend dix
 > minutes.
 
@@ -601,8 +737,11 @@ Documentation Google Cloud :
   `promptFeedback`, `usageMetadata`).
 - « Deployments and endpoints » : point d'accès multirégion `eu` et
   traitement dans l'UE.
-- Fiches « Gemini 3.5 Flash » et « Gemini 3.5 Flash-Lite » : versions,
-  dates, régions, 50 Mo par PDF.
+- Fiches « Gemini 3.5 Flash », « Gemini 3.5 Flash-Lite » et « Gemini 3.8
+  Flash » : versions, dates, régions, 50 Mo par PDF, niveaux de réflexion.
+- « Model versions and lifecycle » : modèles garantis au moins douze mois
+  (3.5 Flash, 3.5 Flash-Lite) et modèles « à plus court terme » (3.6, 3.7,
+  3.8 Flash, sans date de retrait annoncée).
 - « Get started with Gemini 3 » : garder la température à 1,0 ;
   `thinkingLevel`.
 - « Document understanding » : jetons par PDF (réglage par défaut).
@@ -611,13 +750,37 @@ Documentation Google Cloud :
 - « Agent Platform and zero data retention » : restriction
   d'entraînement, cache de 24 heures.
 - « Agent Platform Pricing » (tarifs standard, « non-global »).
-- Documents de découverte des API `aiplatform` et `discoveryengine` v1 :
-  portées acceptées (`auth/aiplatform`,
+- Documents de découverte des API Drive v3, `aiplatform` et
+  `discoveryengine` v1 : portées acceptées et leur description
+  (`auth/drive.readonly`, `auth/aiplatform`,
   `auth/discoveryengine.assist.readwrite`).
 - Gemini Enterprise — « Compare editions of Gemini Enterprise ».
 
+Blog Google Workspace Updates :
+- « AI Overviews in Drive now generally available » (avril 2026) :
+  dates de diffusion (22 avril et 7 mai 2026 en anglais ; 6 et 26 mai
+  2026 pour 28 autres langues), éditions éligibles, Gemini dans Drive
+  activé par l'administrateur, fonctionnalités intelligentes activées.
+- « Ask Gemini in Drive now generally available » (avril 2026) : espace
+  plein écran, projets Drive, respect des droits d'accès, DLP et IRM.
+- « AI Overviews in Drive now available on mobile » (30 juin 2026) :
+  Android et iOS, à partir du 26 juin 2026 ; mêmes langues que le panneau
+  Gemini de Drive.
+
 Centres d'aide Google :
 - « Shared drive limits » : 500 000 éléments.
-- Google Drive — « Get insights about your files & folders with Gemini ».
+- Google Drive — « Search & retrieve your files in Drive with Gemini » :
+  la question dans la barre de recherche, l'aperçu IA, ses renvois, le
+  réglage « AI Overview search ».
+- Google Drive — « Use Gemini in Drive for research & analysis » :
+  « Demander à Gemini » depuis un dossier, l'espace plein écran, les
+  renvois.
+- Google Drive — « Organize, save, and share your Gemini sources using
+  projects in Drive » : créer et partager un projet, conversations
+  privées, droits des sources.
+- « Supported languages for Google Workspace with Gemini » : langues du
+  panneau Gemini de Drive, dont le français.
+- Gemini Apps — « Upload & analyze files in Gemini Apps » : « Ajouter
+  depuis Drive », 10 fichiers par question, accord de l'administrateur.
 - Gemini Notebook — « Upgrade Gemini Notebook » (sources par carnet) et
   annonce du changement de nom (juillet 2026).

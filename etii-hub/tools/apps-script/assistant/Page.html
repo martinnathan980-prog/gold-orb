@@ -80,6 +80,9 @@
     background: var(--surlignage); color: var(--surlignage-texte); font-weight: 500; }
   .elargie { margin: -.5rem 0 1rem; padding: .55rem .75rem; border-radius: .5rem; font-size: .875rem;
     background: var(--chaud-doux); color: var(--chaud-encre); }
+  .ignores { margin: 0 0 1rem; color: var(--texte-faible); font-size: .8125rem; }
+  .bilan + .ignores { margin-top: -.6rem; }
+  .vide + .ignores { margin-top: .5rem; }
 
   .attente { display: flex; align-items: center; gap: .75rem; color: var(--texte-doux); font-style: italic; margin: .5rem 0; }
   .attente__barre { flex: 0 0 3.5rem; height: 3px; border-radius: 3px; background: var(--accent-doux); overflow: hidden; position: relative; }
@@ -143,6 +146,8 @@
     border-radius: .75rem; color: var(--texte-doux); font-size: .875rem; }
   .astuce__etoile { flex: 0 0 auto; color: var(--chaud); font-size: 1.1rem; line-height: 1.3; }
   .astuce p { margin: 0; }
+  .astuce .astuce__suite { margin-top: .55rem; }
+  .astuce__lien { color: var(--texte-accent); font-weight: 600; text-underline-offset: .2em; }
   .actions { margin-top: 1.5rem; display: flex; gap: .6rem; flex-wrap: wrap; }
 
   @media (max-width: 34rem) {
@@ -167,7 +172,7 @@
     <textarea id="question" rows="1" maxlength="2000" placeholder="<?= exemple ?>"><?= question ?></textarea>
     <button id="envoyer" type="submit"><?= bouton ?></button>
   </form>
-  <p class="aide"><kbd>Entrée</kbd> pour lancer, <kbd>Maj</kbd> + <kbd>Entrée</kbd> pour aller à la ligne.</p>
+  <p class="aide" id="aide"><kbd>Entrée</kbd> pour lancer, <kbd>Maj</kbd> + <kbd>Entrée</kbd> pour aller à la ligne.</p>
   <div id="fil" aria-live="polite"></div>
   <div class="actions" id="actions" hidden>
     <button class="discret" id="nouvelle" type="button">Effacer</button>
@@ -310,6 +315,9 @@
         corps.appendChild(extrait);
       } else if (d.description) {
         corps.appendChild(el('p', 'doc__extrait', d.description));
+      } else if (d.numero) {
+        // Un PDF lu par Gemini (niveau 2) : lu en entier, pas « indisponible ».
+        corps.appendChild(el('p', 'doc__sans', 'Lu en entier par Gemini : ouvrez-le pour vérifier le passage.'));
       } else if (!d.lisible && INDISPONIBLE[d.format]) {
         corps.appendChild(el('p', 'doc__sans', INDISPONIBLE[d.format]));
       }
@@ -344,30 +352,48 @@
       return p;
     }
 
-    function astuce() {
+    /* Le geste suivant, sans IA payante : la même question dans la barre de
+       recherche de Drive, où Gemini peut répondre au-dessus des résultats
+       (aperçu IA) ; ou « Demander à Gemini » sur un document, un dossier. */
+    function astuce(q) {
       var bloc = el('div', 'astuce');
       bloc.appendChild(el('span', 'astuce__etoile', '✦'));
+      var corps = el('div', 'astuce__corps');
       var p = el('p');
       p.appendChild(el('strong', '', 'Pour une réponse rédigée : '));
-      p.appendChild(document.createTextNode('ouvrez le document, puis « Demander à Gemini » — l’étoile, en haut à droite de Google Drive. '
-        + 'Gemini y lit ce document, ou tout un dossier, avec vos droits.'));
-      bloc.appendChild(p);
+      p.appendChild(document.createTextNode('posez la question en une phrase dans la barre de recherche de Google Drive. '
+        + 'Gemini peut y répondre au-dessus des résultats, en citant les fichiers. Sur un document ou un dossier précis : '
+        + 'ouvrez-le, puis «\u00a0Demander à Gemini\u00a0».'));
+      corps.appendChild(p);
+      var suite = el('p', 'astuce__suite');
+      suite.appendChild(lienExterne('https://drive.google.com/drive/search?q=' + encodeURIComponent(q), 'astuce__lien',
+        'Poser cette question dans Drive ↗', 'Poser « ' + q + ' » dans la recherche de Google Drive, nouvel onglet'));
+      corps.appendChild(suite);
+      bloc.appendChild(corps);
       return bloc;
     }
 
     function vide(texte) { return el('p', 'vide', texte); }
 
+    /* Un Drive partagé dont la personne n'est pas membre n'a pas été fouillé : on le dit. */
+    function ignores(echange, n) {
+      if (n > 0) echange.appendChild(el('p', 'ignores', pluriel(n, 'Drive partagé ignoré', 'Drive partagés ignorés') + ' : vous n’en êtes pas membre.'));
+    }
+
     /* Niveau 1 : la liste des documents qui contiennent les mots. */
-    function rendreTexte(r, echange, id) {
+    function rendreTexte(r, echange, id, q) {
       var docs = r.documents || [];
       if (!docs.length) {
         echange.appendChild(vide('Aucun document du Drive partagé ne contient ces mots. Essayez un synonyme, une référence (ETII-TEC-001) ou moins de mots.'));
+        ignores(echange, r.ignores);
+        echange.appendChild(astuce(q));
         return;
       }
       if (r.elargie) echange.appendChild(el('p', 'elargie', 'Aucun document ne contient tous ces mots : voici ceux qui en contiennent au moins un.'));
       echange.appendChild(bilan(docs.length, r.mots || [], r.elargie));
+      ignores(echange, r.ignores);
       echange.appendChild(listeDocs(docs, id));
-      echange.appendChild(astuce());
+      echange.appendChild(astuce(q));
     }
 
     /* Niveau 2 : la réponse de Gemini, puis les documents lus, numérotés. */
@@ -375,16 +401,19 @@
       var docs = r.documents || [];
       if (!docs.length) {
         echange.appendChild(vide('Aucun document du Drive partagé ne contient ces mots : Gemini n’a rien eu à lire. Essayez un synonyme ou une référence.'));
+        ignores(echange, r.ignores);
         return;
       }
       var lus = docs.filter(function (d) { return d.numero; });
       var autres = docs.filter(function (d) { return !d.numero; });
       if (r.illisibles || !lus.length) {
+        ignores(echange, r.ignores);
         echange.appendChild(vide('Les documents trouvés sont dans des formats que Gemini ne lit pas ici (Word, Excel, PowerPoint) ou trop lourds : ouvrez-les ci-dessous.'));
         echange.appendChild(listeDocs(docs, id));
         return;
       }
       if (r.elargie) echange.appendChild(el('p', 'elargie', 'Aucun document ne contenait tous les mots de la question : Gemini a lu ceux qui en contiennent au moins un.'));
+      ignores(echange, r.ignores);
       echange.appendChild(rendre(r.reponse || '', id));
       var note = 'Réponse rédigée par Gemini' + (r.modele ? ' (' + r.modele + ')' : '') + ' à partir des documents ci-dessous. '
         + (r.tronquee ? 'Elle a été coupée : posez une question plus précise. ' : '')
@@ -446,6 +475,8 @@
       var q = champ.value.trim();
       if (!q || bouton.disabled) { champ.focus(); return; }
       bouton.disabled = true;
+      var reprise = document.getElementById('reprise');
+      if (reprise) { reprise.remove(); document.getElementById('aide').hidden = false; }
       var id = String(++compteur);
       var echange = el('section', 'echange');
       echange.setAttribute('aria-label', 'Résultats pour « ' + q + ' »');
@@ -459,7 +490,7 @@
           var mode = (r && r.mode) || MODE;
           if (mode === 'enterprise') rendreEnterprise(r, echange);
           else if (mode === 'vertex') rendreVertex(r, echange, id);
-          else rendreTexte(r, echange, id);
+          else rendreTexte(r, echange, id, q);
           champ.value = '';
           ajuster();
           actions.hidden = false;
@@ -486,9 +517,21 @@
       champ.focus();
     });
 
-    /* Arrivé depuis le portail avec une question : elle part tout de suite. */
+    /* Arrivé depuis le portail avec une question : au niveau 1, la recherche
+       part tout de suite. Aux niveaux 2 et 3, une question fait lire Gemini,
+       ce qui se paie : elle attend un clic, qu'aucun lien ne peut faire à
+       la place de la personne. */
     ajuster();
-    if (champ.value.trim()) poser(); else champ.focus();
+    if (!champ.value.trim()) champ.focus();
+    else if (MODE === 'texte') poser();
+    else {
+      var aide = document.getElementById('aide');
+      var reprise = el('p', 'aide', 'Question reprise du portail : relisez-la, puis «\u00a0' + bouton.textContent + '\u00a0».');
+      reprise.id = 'reprise';
+      aide.hidden = true;
+      aide.parentNode.insertBefore(reprise, aide.nextSibling);
+      bouton.focus();
+    }
   })();
 </script>
 </body>

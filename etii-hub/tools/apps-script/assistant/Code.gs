@@ -35,7 +35,8 @@
  *   - Paramètres du projet › Propriétés du script :
  *       DRIVE_PARTAGE  niveaux 1 et 2 : l'identifiant du Drive partagé (ce
  *                      qui suit « /folders/ » dans son adresse) ; plusieurs
- *                      Drive partagés se séparent par des virgules.
+ *                      Drive partagés se séparent par des virgules, et
+ *                      chacun cherche dans ceux dont il est membre.
  *       VERTEX_PROJET  niveau 2 : l'identifiant du projet Google Cloud.
  *       VERTEX_REGION  niveau 2, facultatif : « eu » par défaut, le
  *                      traitement reste dans l'Union européenne.
@@ -66,6 +67,7 @@ var DUREE_CACHE = 6 * 60 * 60;         // secondes : le maximum du cache Apps Sc
 var DRIVE_API = 'https://www.googleapis.com/drive/v3';
 var CHAMPS_FICHIER = 'files(id,name,mimeType,modifiedTime,webViewLink,parents,description,size)';
 var DOSSIER = 'application/vnd.google-apps.folder';
+var RACCOURCI = 'application/vnd.google-apps.shortcut';
 
 /* Niveau 2 : Gemini sur les documents trouvés. Budgets prudents : la
    requête entière reste loin des 50 Mo qu'UrlFetchApp accepte. */
@@ -214,6 +216,7 @@ function chercherTexte_(q, config) {
     mode: 'texte',
     mots: trouve.mots.map(function (m) { return m.texte; }),
     elargie: trouve.elargie,
+    ignores: trouve.ignores,
     documents: trouve.fichiers.map(function (f) {
       var d = fiche_(f, chemins[f.id]);
       if (textes[f.id] !== undefined) d.extrait = extrait_(textes[f.id], trouve.mots);
@@ -225,18 +228,19 @@ function chercherTexte_(q, config) {
 /**
  * La question devient une requête Drive : tous les mots d'abord (« et ») ;
  * si aucun document ne les contient tous, au moins l'un d'eux (« ou »), et
- * la réponse le dit (elargie).
+ * la réponse le dit (elargie). Un Drive partagé dont la personne n'est pas
+ * membre est laissé de côté et compté (ignores), sans relance.
  */
 function trouver_(q, drives, max) {
   var mots = analyser_(q);
   if (!mots.length) throw new Error('Précisez ce qu’il faut chercher : la question ne contient que des mots trop courants.');
-  var fichiers = lister_(requeteDrive_(mots, 'and'), drives, max);
+  var liste = lister_(requeteDrive_(mots, 'and'), drives, max);
   var elargie = false;
-  if (!fichiers.length && mots.length > 1) {
-    fichiers = lister_(requeteDrive_(mots, 'or'), drives, max);
-    elargie = fichiers.length > 0;
+  if (!liste.fichiers.length && mots.length > 1) {
+    liste.fichiers = lister_(requeteDrive_(mots, 'or'), liste.ouverts, max).fichiers;
+    elargie = liste.fichiers.length > 0;
   }
-  return { mots: mots, fichiers: fichiers, elargie: elargie, drives: drives };
+  return { mots: mots, fichiers: liste.fichiers, elargie: elargie, drives: drives, ignores: drives.length - liste.ouverts.length };
 }
 
 /**
@@ -260,7 +264,9 @@ function analyser_(question) {
     var phrase = !!entreGuillemets || /[\s\-.,]/.test(t);
     mots.push({ texte: t, phrase: phrase, variantes: variantes_(t, phrase) });
   }
-  var reste = String(question || '').replace(/["«“]\s*([^"»”]{2,120}?)\s*["»”]/g, function (_tout, expression) {
+  // Forme composée (NFC) : un « é » collé depuis certains PDF arrive en
+  // deux caractères (e + accent), qui couperaient le mot en deux.
+  var reste = String(question || '').normalize('NFC').replace(/["«“]\s*([^"»”]{2,120}?)\s*["»”]/g, function (_tout, expression) {
     ajouter(expression, true);
     return ' ';
   });
@@ -294,8 +300,9 @@ function autreNombre_(m) {
 
 /**
  * La requête Drive : un groupe par mot, ses variantes en « or », les
- * groupes liés par `liaison`. Pas de tri : Drive refuse orderBy avec
- * fullText et classe lui-même par pertinence.
+ * groupes liés par `liaison`. Ni dossiers ni raccourcis (un raccourci
+ * doublerait le document qu'il désigne). Pas de tri : Drive refuse orderBy
+ * avec fullText et classe lui-même par pertinence.
  */
 function requeteDrive_(mots, liaison) {
   var groupes = mots.map(function (m) {
@@ -304,7 +311,7 @@ function requeteDrive_(mots, liaison) {
     });
     return clauses.length > 1 ? '(' + clauses.join(' or ') + ')' : clauses[0];
   });
-  return 'trashed = false and mimeType != \'' + DOSSIER + '\' and ('
+  return 'trashed = false and mimeType != \'' + DOSSIER + '\' and mimeType != \'' + RACCOURCI + '\' and ('
     + groupes.join(liaison === 'or' ? ' or ' : ' and ') + ')';
 }
 
@@ -316,12 +323,19 @@ function echapper_(v) {
 /**
  * Interroge chaque Drive partagé (service avancé Drive, au nom de la
  * personne) et entrelace les réponses, pour qu'aucun ne masque les autres.
+ * Un Drive partagé fermé à la personne (introuvable ou refusé : elle n'en
+ * est pas membre) est sauté ; on ne s'arrête que si tous le sont, ou sur
+ * une autre erreur, qui ne tient pas aux droits.
+ * @returns {{fichiers: Object[], ouverts: string[]}}  ouverts : les Drive partagés lus
  */
 function lister_(requete, drives, max) {
   if (typeof Drive === 'undefined' || !Drive.Files) {
     throw new Error('Le service avancé Drive n’est pas activé : recopiez appsscript.json (docs/ASSISTANT-IA.md, niveau 1).');
   }
-  var listes = drives.map(function (id) {
+  var listes = [];
+  var ouverts = [];
+  var refus = [];
+  drives.forEach(function (id) {
     var r;
     try {
       r = Drive.Files.list({
@@ -334,10 +348,17 @@ function lister_(requete, drives, max) {
         fields: CHAMPS_FICHIER
       });
     } catch (err) {
-      throw new Error(messageDrive_(err, id));
+      if (!accesRefuse_(err)) throw new Error(messageDrive_(err, id));
+      refus.push(messageDrive_(err, id));
+      return;
     }
-    return (r && r.files) || [];
+    ouverts.push(id);
+    listes.push((r && r.files) || []);
   });
+  if (!ouverts.length && refus.length) {
+    throw new Error(refus.length === 1 ? refus[0]
+      : 'Aucun des ' + refus.length + ' Drive partagés de la propriété DRIVE_PARTAGE ne vous est ouvert : vérifiez-la, ou demandez à en devenir membre.');
+  }
   var sortie = [];
   var vus = {};
   for (var rang = 0; sortie.length < max; rang++) {
@@ -350,11 +371,24 @@ function lister_(requete, drives, max) {
     });
     if (!encore) break;
   }
-  return sortie;
+  return { fichiers: sortie, ouverts: ouverts };
+}
+
+/**
+ * Drive refuse parce que la personne n'est pas membre (ou que l'identifiant
+ * est faux). Une portée manquante n'en est pas : elle vaut pour tous les
+ * Drive partagés, et se corrige dans le manifeste.
+ */
+function accesRefuse_(err) {
+  var m = String((err && err.message) || err);
+  return !/scope/i.test(m) && /not ?found|notFound|404|insufficient|permission|forbidden|403/i.test(m);
 }
 
 function messageDrive_(err, id) {
   var m = String((err && err.message) || err);
+  if (/scope/i.test(m)) {
+    return 'Autorisation incomplète : la portée « drive.readonly » manque ; recopiez appsscript.json, puis rouvrez la page pour l’accepter (docs/ASSISTANT-IA.md, niveau 1).';
+  }
   if (/not ?found|notFound|404/i.test(m)) {
     return 'Drive partagé introuvable (' + id + ') : vérifiez la propriété DRIVE_PARTAGE, ou demandez à en devenir membre.';
   }
@@ -512,7 +546,9 @@ function lireTextes_(fichiers, limite) {
  * @returns {Array<{texte:string, marque:boolean}>}  des segments, jamais de HTML
  */
 function extrait_(texte, mots) {
-  var brut = String(texte || '').replace(/\s+/g, ' ').trim();
+  // En forme composée, comme la question (analyser_) : sinon « é » écrit
+  // e + accent échapperait à la marque.
+  var brut = String(texte || '').normalize('NFC').replace(/\s+/g, ' ').trim();
   if (!brut) return [];
   var plat = aplatirAligne_(brut);
 
@@ -618,6 +654,7 @@ function repondreVertex_(q, config) {
     mode: 'vertex',
     mots: trouve.mots.map(function (m) { return m.texte; }),
     elargie: trouve.elargie,
+    ignores: trouve.ignores,
     modele: cible.modele,
     reponse: '',
     tronquee: false,
