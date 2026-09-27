@@ -123,6 +123,9 @@ export function ouvrirRendezVous(o) {
     champs: [
       { cle: 'titre', libelle: 'Titre', type: 'texte', requis: true, large: true, placeholder: 'Revue de configuration trimestrielle' },
       { cle: 'date', libelle: 'Date', type: 'date', requis: true, valider: DATE_ISO },
+      /* Facultative : elle s'affiche au survol de la ligne « À venir » et
+         cale le rendez-vous dans le fichier d'agenda (.ics). */
+      { cle: 'heure', libelle: 'Heure', type: 'texte', placeholder: '14 h 30' },
       { cle: 'type', libelle: 'Type', type: 'choix', requis: true, options: TYPES_RENDEZ_VOUS },
       { cle: 'pole', libelle: 'Pour', type: 'choix', requis: true, options: POLES },
       { cle: 'lieu', libelle: 'Lieu', type: 'texte', placeholder: 'Salle, visio…' },

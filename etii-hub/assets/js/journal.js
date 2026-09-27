@@ -82,7 +82,8 @@ const NOMS = {
   libelle: 'Libellé', tendance: 'Tendance', items: 'Points', identite: 'Identité', motorisation: 'Motorisation',
   masses: 'Masses', capacite: 'Capacité', dimensions: 'Dimensions', performances: 'Performances',
   production: 'Production', electrique: 'Électrique', ancienNom: 'Ancien nom', participants: 'Participants',
-  decisions: 'Décisions', actions: 'Actions', responsable: 'Responsable', echeance: 'Échéance'
+  decisions: 'Décisions', actions: 'Actions', responsable: 'Responsable', echeance: 'Échéance',
+  heure: 'Heure'
 };
 
 /* Les champs de travail du site, et ceux qu'il réécrit seul, ne se
