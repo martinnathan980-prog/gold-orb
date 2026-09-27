@@ -4340,22 +4340,23 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
 }
 
 /* -------------------------------------------------------------------------
-   15 bis. « À venir » (agenda.js) : la ligne des prochains rendez-vous
-       Une ligne, rien d'autre : aujourd'hui à gauche, chaque rendez-vous
-       posé à sa date — un glyphe par type, une couleur par pôle (le gris
-       d'encre pour le service), une tige fine, une étiquette en petites
-       capitales et en Newsreader, au-dessus ou au-dessous. agenda.js
-       calcule les positions ; sous 640 px de large, la ligne se dresse en
-       colonne. Pas de carte, pas de cadre : seul l'aperçu flotte, le temps
-       d'un survol.
+   15 bis. « À venir » (agenda.js) : les prochains rendez-vous, en pastilles
+       Une ligne : aujourd'hui à gauche, chaque rendez-vous planté à sa
+       date — un repère sur le trait, une tige, et une pastille comme un
+       fanion : la date, le titre. La couleur du pôle (le marine du site
+       pour tout le service) tient le filet de la pastille, sa tige, son
+       repère et un voile à peine teinté ; aucun libellé ne la répète.
+       agenda.js calcule les positions ; sous 640 px de large, la ligne se
+       dresse en colonne. Au survol, la pastille se soulève et se déplie,
+       et la ligne s'allume d'aujourd'hui jusqu'à elle.
    ---------------------------------------------------------------------- */
 
 .agenda {
   /* La couleur d'un rendez-vous : celle de son pôle, posée par
-     data-pole ; le service garde le gris d'encre. */
-  --rdv-teinte: var(--pole-etii);
-  /* Le fond de la section : le glyphe s'y découpe d'un liseré, pour que
-     le trait ne le traverse pas. */
+     data-pole ; le service prend le marine du site. */
+  --rdv-teinte: var(--agenda-service);
+  /* Le fond de la section : les repères s'y découpent d'un liseré, pour
+     que le trait ne les touche pas. */
   --agenda-fond: var(--bande-ton, var(--fond));
   display: flex;
   flex-direction: column;
@@ -4375,7 +4376,10 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   --axe-y: 50%;
   position: relative;
 }
-.agenda__defilement {
+/* La ligne ne coupe rien tant qu'elle tient dans sa largeur : une
+   pastille dépliée peut en déborder. En dernier recours, elle défile. */
+.agenda__defilement { overflow: visible; }
+.agenda--defile .agenda__defilement {
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
@@ -4385,68 +4389,32 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
 .agenda__toile { position: relative; }
 .agenda__liste { margin: 0; padding: 0; list-style: none; }
 
-/* --- Le rendez-vous : le point, la tige, l'étiquette ---------------------- */
+/* --- Le rendez-vous : le repère, la tige, la pastille ---------------------- */
 
 .agenda__rdv {
-  --dy: 0px;       /* de l'étiquette à l'axe (agenda.js)                   */
-  --retard: 0ms;   /* quand le trait l'atteint, à l'arrivée                */
-  --ecart: 0px;    /* dans la colonne : le temps qui le sépare du précédent */
-  transition: opacity var(--duree) var(--courbe);
+  --dy: 0px;       /* de la pastille à l'axe (agenda.js)                    */
+  --retard: 0ms;   /* quand le trait l'atteint, à l'arrivée                 */
+  --ecart: 0px;    /* dans la colonne : le temps qui la sépare de la précédente */
+  position: relative;
 }
 
-/* La tige : un pixel plein à la couleur du pôle, adouci par l'opacité
-   (agenda.js la cale sur un pixel entier : elle garde sa teinte). */
-.agenda__tige {
-  position: absolute;
-  inset-inline-start: 0;
-  inline-size: 1px;
-  background-color: var(--rdv-teinte);
-  opacity: 0.6;
-  transition: opacity var(--duree) var(--courbe);
-  cursor: pointer;
+/* La pastille : une feuille à peine teintée de son pôle, un filet plein à
+   sa couleur du côté de la tige. Le coin où la tige s'attache est vif :
+   c'est un fanion. */
+.agenda__pastille {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: var(--e-2) var(--e-3) calc(var(--e-2) + 2px);
+  background-color: color-mix(in srgb, var(--rdv-teinte) 5%, var(--carte-fond));
+  border: 1px solid color-mix(in srgb, var(--rdv-teinte) 14%, var(--carte-bord));
+  border-inline-start: 3px solid var(--rdv-teinte);
+  border-radius: var(--rayon-xl);
+  box-shadow: var(--ombre-sm);
 }
 
-.agenda__point {
-  position: absolute;
-  inset-inline-start: 0;
-  top: var(--dy);
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  inline-size: 30px;
-  block-size: 30px;
-  margin: -15px 0 0 -15px;
-  cursor: pointer;
-}
-/* Le halo du survol, et l'onde du prochain rendez-vous. */
-.agenda__point::before,
-.agenda__point::after {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  border-radius: var(--rayon-plein);
-  pointer-events: none;
-}
-.agenda__point::before {
-  background-color: color-mix(in srgb, var(--rdv-teinte) 16%, transparent);
-  transform: scale(0);
-  transition: transform var(--duree) var(--courbe);
-}
-.agenda__point::after { border: 1.5px solid var(--rdv-teinte); opacity: 0; }
-
-.agenda__glyphe { display: block; inline-size: 20px; block-size: 20px; overflow: visible; }
-.agenda__glyphe > * {
-  fill: var(--rdv-teinte);
-  stroke: var(--agenda-fond);
-  stroke-width: 2.5;
-  stroke-linejoin: round;
-  paint-order: stroke;
-}
-.agenda__glyphe > .agenda__glyphe-coeur { fill: var(--agenda-fond); stroke: none; }
-.agenda__point .agenda__glyphe { position: relative; transition: transform var(--duree) var(--courbe); }
-
-/* L'étiquette est le bouton : la date en petites capitales, le titre en
-   Newsreader. */
+/* L'étiquette est le bouton ; son voile couvre toute la pastille, qui se
+   clique partout (sauf ses commandes d'édition, posées au-dessus). */
 .agenda__cible {
   display: flex;
   flex-direction: column;
@@ -4454,39 +4422,111 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: var(--rayon-sm);
   background: none;
   font: inherit;
   color: inherit;
   text-align: start;
   cursor: pointer;
-  transition: transform var(--duree) var(--courbe);
 }
-.agenda__cible:focus-visible { outline: 2px solid var(--focus-couleur); outline-offset: 4px; }
+.agenda__cible::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--rayon-xl);
+}
+.agenda__cible:focus-visible { outline: none; }
+.agenda__cible:focus-visible::after { outline: 2px solid var(--focus-couleur); outline-offset: 3px; }
 .agenda__quand {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 var(--e-2);
   font-size: 0.6875rem;
   font-weight: var(--graisse-forte);
   letter-spacing: var(--lettrage-capitales);
   text-transform: uppercase;
   line-height: 1.3;
-  color: var(--texte);
+  color: var(--texte-doux);
 }
-.agenda__pole { font-weight: var(--graisse-moyenne); color: var(--texte-doux); }
-.agenda__pole::before { content: "·"; margin-inline-end: var(--e-2); }
 .agenda__titre {
   font-family: var(--police-titre);
-  font-size: 1.125rem;
+  font-size: 1.0625rem;
   font-weight: var(--graisse-normale);
-  line-height: 1.22;
+  line-height: 1.24;
   color: var(--texte);
   text-wrap: pretty;
 }
-.agenda__details { margin: 0; }
-.agenda__edition { margin-block-start: var(--e-2); justify-content: flex-start; }
+
+/* Le détail, replié : le type, l'heure, le lieu, puis ce qui s'y joue. Il
+   ne compte pas dans la largeur de la pastille : il s'y plie. */
+.agenda__deplie {
+  display: grid;
+  grid-template-rows: 0fr;
+  inline-size: 0;
+  min-inline-size: 100%;
+}
+.agenda__details {
+  min-block-size: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--texte-sm);
+  line-height: 1.4;
+  color: var(--texte-doux);
+}
+.agenda__details-infos {
+  display: block;
+  margin-block-start: 6px;
+  padding-block-start: 5px;
+  border-block-start: 1px solid color-mix(in srgb, var(--rdv-teinte) 22%, var(--bordure-douce));
+  color: var(--texte);
+}
+/* Deux lignes sur la ligne (la fiche dit tout) ; trois dans la colonne. */
+.agenda__details-resume {
+  display: -webkit-box;
+  margin-block-start: 1px;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.agenda--colonne .agenda__details-resume { -webkit-line-clamp: 3; }
+.agenda__edition { position: relative; z-index: 1; margin-block-start: var(--e-2); justify-content: flex-start; }
+
+/* La tige : du filet de la pastille jusqu'à l'axe, à sa couleur adoucie. */
+.agenda__tige {
+  position: absolute;
+  inset-inline-start: 0;
+  inline-size: 3px;
+  background-color: color-mix(in srgb, var(--rdv-teinte) 55%, transparent);
+  cursor: pointer;
+}
+
+/* Le repère : un rond à la couleur du pôle, un losange pour un jalon,
+   découpé dans le fond ; son halo respire pour le plus proche. */
+.agenda__point {
+  position: absolute;
+  inset-inline-start: 1.5px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  inline-size: 26px;
+  block-size: 26px;
+  margin: -13px 0 0 -13px;
+  cursor: pointer;
+}
+.agenda__point::before {
+  content: "";
+  inline-size: 11px;
+  block-size: 11px;
+  border-radius: var(--rayon-plein);
+  background-color: var(--rdv-teinte);
+  box-shadow: 0 0 0 3px var(--agenda-fond);
+}
+.agenda__rdv[data-type="jalon"] .agenda__point::before { inline-size: 10px; block-size: 10px; border-radius: 1.5px; rotate: 45deg; }
+.agenda__point::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1.5px solid var(--rdv-teinte);
+  border-radius: var(--rayon-plein);
+  opacity: 0;
+  pointer-events: none;
+}
 
 /* --- La ligne (écran large) ------------------------------------------------ */
 
@@ -4495,46 +4535,68 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   z-index: 1;
   inline-size: max-content;
   max-inline-size: 15.5rem;
-  padding-inline-start: 13px;
 }
 /* Serrée : quand beaucoup de rendez-vous se côtoient, le titre passe sur
    deux lignes plutôt que la ligne ne s'allonge. */
-.agenda--serre.agenda--ligne .agenda__rdv { max-inline-size: 11.5rem; }
-/* Près du bord droit, l'étiquette se pose à gauche de sa tige, alignée
-   sur elle. */
-.agenda--ligne .agenda__rdv--droite { padding-inline: 0 13px; text-align: end; }
-.agenda--ligne .agenda__rdv--droite .agenda__tige,
-.agenda--ligne .agenda__rdv--droite .agenda__point { inset-inline-start: 100%; }
-.agenda--ligne .agenda__rdv--droite .agenda__cible { align-items: flex-end; }
-.agenda--ligne .agenda__rdv--droite .agenda__quand,
-.agenda--ligne .agenda__rdv--droite .agenda__edition { justify-content: flex-end; }
-/* La tige longe l'étiquette jusqu'à l'axe : elle part du haut de
-   l'étiquette au-dessus, finit en bas de celle du dessous. */
-.agenda--ligne .agenda__rdv--haut .agenda__tige { top: 0; block-size: var(--dy); transform-origin: bottom; }
-.agenda--ligne .agenda__rdv--bas .agenda__tige { top: var(--dy); bottom: 0; transform-origin: top; }
-/* Le détail n'est pas écrit sur la ligne : l'aperçu le montre, les
-   lecteurs d'écran le lisent. */
-.agenda--ligne .agenda__details {
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+.agenda--serre.agenda--ligne .agenda__rdv { max-inline-size: 11.75rem; }
+
+/* La tige part du coin vif : au-dessus de la ligne, du bas de la
+   pastille ; au-dessous, de son haut. */
+.agenda--ligne .agenda__rdv--haut .agenda__pastille { border-end-start-radius: 0; transform-origin: 0 100%; }
+.agenda--ligne .agenda__rdv--bas .agenda__pastille { border-start-start-radius: 0; transform-origin: 0 0; }
+.agenda--ligne .agenda__rdv--haut .agenda__tige { top: 100%; block-size: var(--dy); transform-origin: bottom; }
+.agenda--ligne .agenda__rdv--bas .agenda__tige { bottom: 100%; block-size: var(--dy); transform-origin: top; }
+.agenda--ligne .agenda__rdv--haut .agenda__point { top: calc(100% + var(--dy)); }
+.agenda--ligne .agenda__rdv--bas .agenda__point { top: calc(-1 * var(--dy)); }
+/* Près du bord droit, le fanion flotte à gauche de sa tige. */
+.agenda--ligne .agenda__rdv--droite .agenda__pastille {
+  border-inline-start: 1px solid color-mix(in srgb, var(--rdv-teinte) 14%, var(--carte-bord));
+  border-inline-end: 3px solid var(--rdv-teinte);
+  border-start-start-radius: var(--rayon-xl);
+  border-end-start-radius: var(--rayon-xl);
 }
+.agenda--ligne .agenda__rdv--droite.agenda__rdv--haut .agenda__pastille { border-end-end-radius: 0; transform-origin: 100% 100%; }
+.agenda--ligne .agenda__rdv--droite.agenda__rdv--bas .agenda__pastille { border-start-end-radius: 0; transform-origin: 100% 0; }
+.agenda--ligne .agenda__rdv--droite .agenda__tige { inset-inline: auto 0; }
+.agenda--ligne .agenda__rdv--droite .agenda__point { inset-inline-start: calc(100% - 1.5px); }
+
+/* Le plus proche est allumé d'emblée : son voile est un peu plus teinté,
+   son ombre un peu plus longue. */
+.agenda__rdv--prochain .agenda__pastille {
+  background-color: color-mix(in srgb, var(--rdv-teinte) 9%, var(--carte-fond));
+  box-shadow: var(--ombre-md);
+}
+
+/* Allumée : la pastille se soulève (sa tige s'allonge d'autant, le repère
+   ne quitte pas l'axe), se déplie, prend sa couleur pleine ; les autres
+   s'effacent un peu. */
+.agenda__rdv.est-allume { z-index: 3; }
+.agenda--ligne .agenda__rdv.est-allume .agenda__deplie { grid-template-rows: 1fr; }
+.agenda--ligne .agenda__rdv.est-allume .agenda__pastille { box-shadow: var(--ombre-md), 0 0 0 1px color-mix(in srgb, var(--rdv-teinte) 35%, transparent); }
+.agenda--ligne .agenda__rdv--haut.est-allume .agenda__pastille { translate: 0 -4px; }
+.agenda--ligne .agenda__rdv--bas.est-allume .agenda__pastille { translate: 0 4px; }
+.agenda--ligne .agenda__rdv--haut.est-allume .agenda__tige { top: calc(100% - 4px); block-size: calc(var(--dy) + 4px); }
+.agenda--ligne .agenda__rdv--bas.est-allume .agenda__tige { bottom: calc(100% - 4px); block-size: calc(var(--dy) + 4px); }
+.agenda__rdv.est-allume .agenda__tige { background-color: var(--rdv-teinte); }
+/* En mode édition, la pastille ne bouge pas : ses commandes restent sous
+   le pointeur. */
+:root.mode-edition .agenda--ligne .agenda__rdv.est-allume .agenda__deplie { grid-template-rows: 0fr; }
+:root.mode-edition .agenda--ligne .agenda__rdv.est-allume .agenda__pastille { translate: none; }
+:root.mode-edition .agenda--ligne .agenda__rdv--haut.est-allume .agenda__tige { top: 100%; block-size: var(--dy); }
+:root.mode-edition .agenda--ligne .agenda__rdv--bas.est-allume .agenda__tige { bottom: 100%; block-size: var(--dy); }
+.agenda__rdv.est-allume .agenda__point::before { scale: 1.3; }
+.agenda--allume .agenda__rdv:not(.est-allume) { opacity: 0.42; }
 
 /* Le trait, les crans, les mois : dessinés par agenda.js. Le trait
    s'éteint vers la droite, le futur continue. */
 .agenda__trace, .agenda__mois-couche { position: absolute; inset: 0; pointer-events: none; }
-/* Les noms passent au-dessus du signal et de la jauge ; celui d'une
-   coupure, posé sur le trait, a un liseré du fond : la lumière glisse
-   derrière lui. */
+/* Les noms passent au-dessus de la jauge ; celui d'une coupure, posé sur
+   le trait, a un liseré du fond : la lumière glisse derrière lui. */
 .agenda__mois-couche { z-index: 2; }
 .agenda__trace-dessin { display: block; overflow: visible; }
 .agenda__axe { stroke: none; }
 .agenda__cran { fill: none; stroke-width: 1; }
-.agenda__cran--jour { opacity: 0.4; }
-.agenda__cran--semaine { opacity: 0.75; }
+.agenda__cran--semaine { opacity: 0.6; }
 .agenda__cran--mois { stroke-width: 1.25; }
 .agenda__cran--coupure { stroke: var(--texte-doux); stroke-width: 1.25; stroke-linecap: round; }
 .agenda__degrade-plein { stop-color: var(--texte-doux); }
@@ -4546,6 +4608,7 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   white-space: nowrap;
   color: var(--texte-doux);
 }
+.agenda__mois.est-masque { opacity: 0; }
 .agenda__mois {
   font-size: 0.65625rem;
   font-weight: var(--graisse-forte);
@@ -4603,7 +4666,8 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
 }
 .agenda__aujourdhui-date { font-family: var(--police-titre); font-style: italic; font-size: var(--texte-md); color: var(--texte-doux); }
 
-/* La jauge : d'aujourd'hui au rendez-vous allumé, à sa couleur. */
+/* La jauge : la lumière du trait, d'aujourd'hui au rendez-vous allumé (au
+   plus proche, au repos), à sa couleur. */
 .agenda__jauge {
   --jauge: 0;
   position: absolute;
@@ -4612,118 +4676,30 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   top: calc(var(--axe-y) - 1.5px);
   block-size: 3px;
   border-radius: 2px;
-  background: linear-gradient(to right, color-mix(in srgb, var(--rdv-teinte) 8%, transparent), var(--rdv-teinte));
+  background: linear-gradient(to right, color-mix(in srgb, var(--rdv-teinte) 25%, transparent), var(--rdv-teinte));
   transform: scaleX(var(--jauge));
   transform-origin: left center;
-  transition: transform var(--duree-lente) var(--courbe);
   pointer-events: none;
 }
-
-/* Le signal : un point de lumière qui court d'aujourd'hui au prochain
-   rendez-vous (agenda.js pose la course). */
-.agenda__signal {
-  --course: 0px;
-  --course-y: 0px;
+/* Le temps d'ici là, écrit sur le trait allumé. */
+.agenda__distance {
   position: absolute;
-  left: var(--x0);
-  top: var(--axe-y);
-  z-index: 1;
-  inline-size: 9px;
-  block-size: 9px;
-  margin: -4.5px 0 0 -4.5px;
+  z-index: 2;
+  translate: -50% -50%;
+  padding: 0 var(--e-2);
   border-radius: var(--rayon-plein);
-  background-color: var(--rdv-teinte);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rdv-teinte) 22%, transparent),
-              0 0 14px 3px color-mix(in srgb, var(--rdv-teinte) 40%, transparent);
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* --- La ligne qui vit (agenda.js §5) --------------------------------------
-   Allumé : le glyphe grossit dans son halo, la tige prend sa couleur
-   pleine, l'étiquette s'écarte d'un souffle de la ligne ; les autres
-   rendez-vous s'estompent. La légende fait de même pour tout un type ou
-   tout un pôle. */
-.agenda__rdv.est-allume { z-index: 3; }
-.agenda__rdv.est-allume .agenda__glyphe,
-.agenda--filtre .agenda__rdv.est-choisi .agenda__glyphe { transform: scale(1.4); }
-.agenda__rdv.est-allume .agenda__point::before { transform: scale(1.35); }
-.agenda__rdv.est-allume .agenda__tige,
-.agenda--filtre .agenda__rdv.est-choisi .agenda__tige { opacity: 1; box-shadow: 0 0 0 0.5px var(--rdv-teinte); }
-.agenda--ligne .agenda__rdv--haut.est-allume .agenda__cible { transform: translateY(-3px); }
-.agenda--ligne .agenda__rdv--bas.est-allume .agenda__cible { transform: translateY(3px); }
-.agenda--allume .agenda__rdv:not(.est-allume),
-.agenda--filtre .agenda__rdv:not(.est-choisi) { opacity: 0.28; }
-.agenda--allume .agenda__signal,
-.agenda--filtre .agenda__signal { visibility: hidden; }
-
-/* L'aperçu flottant : à côté de l'étiquette, comme si elle se dépliait,
-   un filet à la couleur du pôle du côté de la tige. Faute de place, de
-   l'autre côté de la ligne, relié au point par un fil ; il redit alors
-   le titre. */
-.agenda__apercu {
-  --pointe: 24px;
-  position: absolute;
-  z-index: 5;
-  inline-size: min(18rem, 100%);
-  padding: var(--e-3) var(--e-4) var(--e-4);
-  background-color: var(--fond-eleve);
-  border-radius: var(--rayon-xl);
-  box-shadow: var(--ombre-md), 0 0 0 1px var(--bordure-douce);
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity var(--duree) var(--courbe), translate var(--duree) var(--courbe), visibility var(--duree);
-}
-.agenda__apercu--droite { translate: -6px 0; border-inline-start: 2px solid var(--rdv-teinte); }
-.agenda__apercu--gauche { translate: 6px 0; border-inline-end: 2px solid var(--rdv-teinte); }
-.agenda__apercu--dessous { translate: 0 -4px; border-block-start: 2px solid var(--rdv-teinte); }
-.agenda__apercu--dessus { translate: 0 4px; border-block-end: 2px solid var(--rdv-teinte); }
-.agenda__apercu.est-visible { opacity: 1; visibility: visible; translate: 0 0; }
-.agenda__apercu--droite .agenda__apercu-titre,
-.agenda__apercu--gauche .agenda__apercu-titre { display: none; }
-.agenda__apercu--dessous::before,
-.agenda__apercu--dessus::before {
-  content: "";
-  position: absolute;
-  left: var(--pointe);
-  inline-size: 1px;
-  block-size: 20px;
-  background-color: var(--rdv-teinte);
-}
-.agenda__apercu--dessous::before { bottom: calc(100% + 2px); }
-.agenda__apercu--dessus::before { top: calc(100% + 2px); }
-.agenda__apercu-type {
-  display: flex;
-  align-items: center;
-  gap: var(--e-2);
-  margin: 0;
-  font-size: 0.65625rem;
-  font-weight: var(--graisse-forte);
-  letter-spacing: var(--lettrage-capitales);
-  text-transform: uppercase;
-  color: var(--texte-doux);
-}
-.agenda__apercu-glyphe { inline-size: 12px; block-size: 12px; }
-.agenda__apercu-glyphe > *, .agenda__legende-glyphe > * { stroke: none; }
-.agenda__apercu-titre {
-  margin: var(--e-1) 0 0;
-  font-family: var(--police-titre);
-  font-size: 1.1875rem;
-  line-height: 1.2;
-  color: var(--texte);
-  text-wrap: balance;
-}
-.agenda__apercu-quand {
-  margin: 2px 0 0;
+  background-color: var(--agenda-fond);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--rdv-teinte) 45%, transparent);
   font-family: var(--police-titre);
   font-style: italic;
   font-size: var(--texte-md);
-  color: var(--texte-doux);
+  line-height: 1.4;
+  white-space: nowrap;
+  color: var(--texte);
+  opacity: 0;
+  pointer-events: none;
 }
-.agenda__apercu-lieu { margin: var(--e-2) 0 0; font-size: var(--texte-sm); color: var(--texte); }
-.agenda__apercu-lieu::before { content: "⌖"; margin-inline-end: var(--e-2); color: var(--texte-doux); }
-.agenda__apercu-resume { margin: var(--e-2) 0 0; font-size: var(--texte-sm); line-height: 1.5; color: var(--texte-doux); }
+.agenda__distance.est-visible { opacity: 1; }
 
 /* Les bords d'une ligne qui défile : un fondu (le masque ne lit que
    l'opacité : l'encre n'y est qu'un opaque), une flèche, la main qui
@@ -4771,26 +4747,6 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
 .agenda--ligne.peut-apres .agenda__fleche--apres { opacity: 1; visibility: visible; }
 .agenda__fleche svg { inline-size: 14px; block-size: 14px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 
-/* --- La légende : les glyphes présents, puis les pôles -------------------- */
-
-.agenda__legende {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: var(--e-2) var(--e-8);
-  font-size: 0.65625rem;
-  font-weight: var(--graisse-moyenne);
-  letter-spacing: var(--lettrage-capitales);
-  text-transform: uppercase;
-  color: var(--texte-doux);
-}
-.agenda__legende-groupe { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: var(--e-2) var(--e-5); }
-.agenda__legende-item { display: inline-flex; align-items: center; gap: var(--e-2); transition: color var(--duree) var(--courbe); }
-.agenda__legende-item:hover { color: var(--texte); }
-.agenda__legende-glyphe { inline-size: 12px; block-size: 12px; }
-.agenda__legende-pastille { inline-size: 14px; block-size: 3px; border-radius: 2px; background-color: var(--rdv-teinte); }
-
 .agenda__suite {
   margin: 0;
   text-align: center;
@@ -4802,21 +4758,21 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
 
 /* --- La colonne (écran étroit) ---------------------------------------------
    Le rail à gauche, aujourd'hui en tête, les mois en intertitres ; chaque
-   rendez-vous a son point sur le rail et son détail écrit à côté. */
+   pastille, dépliée, est tenue à son repère par une tige courte. */
 .agenda--colonne .agenda__trace,
 .agenda--colonne .agenda__mois-couche,
 .agenda--colonne .agenda__jauge,
-.agenda--colonne .agenda__fleche,
-.agenda--colonne .agenda__apercu,
-.agenda--colonne .agenda__tige { display: none; }
+.agenda--colonne .agenda__distance,
+.agenda--colonne .agenda__fleche { display: none; }
 .agenda--colonne .agenda__toile::before {
   content: "";
   position: absolute;
   left: 11px;
   top: var(--e-3);
   bottom: 0;
-  inline-size: 1px;
-  background: linear-gradient(to bottom, var(--texte-doux), var(--texte-doux) 75%, transparent);
+  inline-size: 1.5px;
+  margin-inline-start: -0.75px;
+  background: linear-gradient(to bottom, var(--texte-doux), var(--texte-doux) 80%, transparent);
   transform-origin: top;
 }
 .agenda--colonne .agenda__aujourdhui {
@@ -4824,7 +4780,7 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   left: auto;
   top: auto;
   padding-inline-start: 34px;
-  margin-block-end: var(--e-4);
+  margin-block-end: var(--e-2);
 }
 .agenda--colonne .agenda__aujourdhui-point { left: 11px; top: 50%; }
 .agenda--colonne .agenda__aujourdhui-libelle {
@@ -4835,18 +4791,20 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   gap: var(--e-2);
 }
 .agenda--colonne .agenda__rdv {
-  position: relative;
-  margin-block-start: var(--ecart);
-  padding-block-end: var(--e-5);
-  padding-inline-start: 34px;
+  max-inline-size: 36rem;
+  margin-inline-start: 34px;
+  margin-block-start: calc(var(--e-3) + var(--ecart));
 }
-.agenda--colonne .agenda__point { left: 11px; top: 9px; }
-.agenda--colonne .agenda__rdv[data-mois] { margin-block-start: calc(var(--ecart) + var(--e-6)); }
+.agenda--colonne .agenda__pastille { border-start-start-radius: 0; }
+.agenda--colonne .agenda__tige { top: 16px; inset-inline-start: -23px; inline-size: 23px; block-size: 2px; }
+.agenda--colonne .agenda__point { top: 17px; inset-inline-start: -23px; }
+.agenda--colonne .agenda__deplie { grid-template-rows: 1fr; }
+.agenda--colonne .agenda__rdv[data-mois] { margin-block-start: calc(var(--ecart) + var(--e-10)); }
 .agenda--colonne .agenda__rdv[data-mois]::before,
 .agenda--colonne .agenda__rdv[data-mois]::after { position: absolute; top: calc(-1 * var(--e-5)); }
 .agenda--colonne .agenda__rdv[data-mois]::before {
   content: attr(data-mois);
-  left: 34px;
+  left: 0;
   translate: 0 -50%;
   font-size: 0.65625rem;
   font-weight: var(--graisse-forte);
@@ -4856,37 +4814,26 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
 }
 .agenda--colonne .agenda__rdv[data-mois]::after {
   content: "";
-  left: 5px;
+  left: -29px;
   inline-size: 13px;
-  block-size: 1px;
+  block-size: 1.5px;
   background-color: var(--texte-doux);
 }
-.agenda--colonne .agenda__details { margin-block-start: var(--e-1); font-size: var(--texte-sm); color: var(--texte-doux); }
-.agenda--colonne .agenda__details-lieu::before { content: " · "; }
-.agenda--colonne .agenda__details-resume {
-  display: -webkit-box;
-  margin-block-start: 2px;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.5;
-}
-.agenda--colonne .agenda__signal { left: 11px; }
 /* Au doigt, les commandes d'édition reprennent leur taille et leur nom. */
 .agenda--colonne .barre-edition--compacte { gap: var(--e-1); }
 .agenda--colonne .barre-edition--compacte .barre-edition__bouton { min-block-size: var(--e-8); padding: 0 var(--e-2); }
 .agenda--colonne .barre-edition--compacte .barre-edition__libelle { position: static; inline-size: auto; block-size: auto; overflow: visible; clip-path: none; }
 
-/* --- Rien à venir : la ligne reste, et le dit ------------------------------ */
+/* --- Rien à venir : la ligne reste, une pastille en pointillé le dit ------- */
 
 .agenda__vide {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--e-3) var(--e-5);
+  gap: var(--e-3) 0;
   padding-block: var(--e-6);
 }
-/* Le trait passe d'aujourd'hui au message, puis file et s'éteint. */
+/* Le trait passe d'aujourd'hui à la pastille, puis file et s'éteint. */
 .agenda__vide::before,
 .agenda__vide::after {
   content: "";
@@ -4894,30 +4841,36 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   border-radius: 1px;
   background-color: var(--texte-doux);
 }
-.agenda__vide::before { order: 1; flex: 0 1 5rem; }
+.agenda__vide::before { order: 1; flex: 0 1 4rem; }
 .agenda__vide::after { order: 3; flex: 1 1 4rem; background: linear-gradient(to right, var(--texte-doux), transparent); }
-.agenda--vide .agenda__aujourdhui { order: 0; }
-.agenda__vide-texte { order: 2; }
 .agenda--vide .agenda__aujourdhui {
   position: relative;
   left: auto;
   top: auto;
+  order: 0;
   display: flex;
   align-items: center;
   gap: var(--e-5);
+  margin-inline-end: var(--e-3);
 }
 .agenda--vide .agenda__aujourdhui-point { position: relative; margin: 0; order: 2; }
 /* Le point d'aujourd'hui à la même place que sur la ligne pleine. */
 .agenda--vide .agenda__aujourdhui-libelle { position: static; translate: none; min-inline-size: 118px; }
 .agenda__vide-texte {
+  order: 2;
   margin: 0;
+  padding: var(--e-3) var(--e-5);
+  border: 1px dashed var(--bordure-forte);
+  border-radius: var(--rayon-xl);
+  background-color: color-mix(in srgb, var(--carte-fond) 55%, transparent);
   font-family: var(--police-titre);
   font-style: italic;
-  font-size: var(--texte-xl);
+  font-size: var(--texte-lg);
   color: var(--texte-doux);
 }
-/* Sur téléphone, le même rail que la colonne : aujourd'hui en tête, le
-   message comme première entrée, le trait qui descend et s'éteint. */
+/* Sur téléphone, le même rail que la colonne : aujourd'hui en tête, la
+   pastille en pointillé comme première entrée, le trait qui descend et
+   s'éteint. */
 @media (max-width: 640px) {
   .agenda__vide {
     position: relative;
@@ -4931,23 +4884,24 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
     top: 10px;
     bottom: 0;
     display: block;
-    inline-size: 1px;
+    inline-size: 1.5px;
+    margin-inline-start: -0.75px;
     block-size: auto;
     border-radius: 0;
     background: linear-gradient(to bottom, var(--texte-doux), transparent);
   }
   .agenda__vide::after { display: none; }
-  .agenda--vide .agenda__aujourdhui { position: static; display: block; margin-block-end: var(--e-4); }
-  .agenda--vide .agenda__aujourdhui-point { position: absolute; left: 11px; top: 10px; margin: -5.5px 0 0 -5px; }
+  .agenda--vide .agenda__aujourdhui { position: static; display: block; margin: 0 0 var(--e-4); }
+  .agenda--vide .agenda__aujourdhui-point { position: absolute; left: 11px; top: 10px; margin: -5.5px 0 0 -5.5px; }
   .agenda--vide .agenda__aujourdhui-libelle { min-inline-size: 0; flex-direction: row; align-items: baseline; gap: var(--e-2); line-height: 20px; }
-  .agenda__vide-texte { font-size: var(--texte-lg); }
+  .agenda__vide-texte { font-size: var(--texte-md); }
 }
 
 /* --- Le rendez-vous en grand (ouvrirFiche) --------------------------------- */
 
 .modale__boite.agenda-fiche { inline-size: min(100%, calc(var(--e-16) * 7)); }
 .agenda-fiche__corps {
-  --rdv-teinte: var(--pole-etii);
+  --rdv-teinte: var(--agenda-service);
   --agenda-fond: var(--fond-eleve);
   display: flex;
   flex-direction: column;
@@ -4964,6 +4918,9 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   text-transform: uppercase;
   color: var(--texte-doux);
 }
+.agenda__glyphe { display: block; overflow: visible; }
+.agenda__glyphe > * { fill: var(--rdv-teinte); stroke: none; }
+.agenda__glyphe > .agenda__glyphe-coeur { fill: var(--agenda-fond); }
 .agenda-fiche__glyphe { inline-size: 16px; block-size: 16px; }
 .agenda-fiche__quand { font-family: var(--police-titre); font-style: italic; font-size: var(--texte-xl); color: var(--texte); }
 .agenda-fiche__lieu { display: flex; align-items: baseline; gap: var(--e-3); font-size: var(--texte-md); color: var(--texte); }
@@ -4982,24 +4939,43 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   color: var(--texte-doux);
 }
 
-/* --- L'arrivée, puis le battement -------------------------------------------
-   Quand la ligne entre à l'écran : le trait se trace de gauche à droite,
-   les mois s'écrivent, chaque point se pose quand le trait l'atteint, sa
-   tige pousse, son étiquette monte. Ensuite, tant que la ligne est à
-   l'écran, un signal part d'aujourd'hui et court jusqu'au prochain
-   rendez-vous, qui répond d'une onde. Tant que la ligne n'a pas été vue,
-   ce qui va apparaître reste invisible — mais seulement si agenda.js a pu
-   poser .agenda--anime (observateur présent, animations permises). */
+/* --- Le mouvement -----------------------------------------------------------
+   Survol : la pastille se soulève et se déplie, la lumière glisse le long
+   du trait. Arrivée, quand la ligne entre à l'écran : le trait se trace
+   de gauche à droite, les mois s'écrivent, chaque repère se pose quand le
+   trait l'atteint, sa tige pousse, sa pastille éclot ; puis la lumière
+   file d'aujourd'hui au plus proche, dont le repère respire tant que la
+   ligne est à l'écran. Tant que la ligne n'a pas été vue, ce qui va
+   apparaître reste invisible — mais seulement si agenda.js a pu poser
+   .agenda--anime (observateur présent, animations permises). */
 @media (prefers-reduced-motion: no-preference) {
+  .agenda__rdv { transition: opacity var(--duree) var(--courbe); }
+  .agenda__pastille {
+    transition: translate var(--duree) var(--courbe), box-shadow var(--duree) var(--courbe),
+                background-color var(--duree) var(--courbe);
+  }
+  .agenda__deplie { transition: grid-template-rows var(--duree-lente) var(--courbe); }
+  .agenda__tige {
+    transition: top var(--duree) var(--courbe), bottom var(--duree) var(--courbe),
+                block-size var(--duree) var(--courbe), background-color var(--duree) var(--courbe);
+  }
+  .agenda__point::before { transition: scale var(--duree) var(--courbe); }
+  .agenda__jauge { transition: transform var(--duree-lente) var(--courbe); }
+  .agenda__distance { transition: opacity var(--duree) var(--courbe), left var(--duree-lente) var(--courbe); }
+  .agenda__mois { transition: opacity var(--duree) var(--courbe); }
+  /* Pendant une mesure, rien ne glisse : la hauteur lue est la vraie. */
+  .agenda--mesure .agenda__deplie,
+  .agenda--mesure .agenda__pastille { transition: none; }
+
   .agenda--anime:not(.agenda--vu) .agenda__trace,
   .agenda--anime:not(.agenda--vu) .agenda__mois,
   .agenda--anime:not(.agenda--vu) .agenda__coupure,
   .agenda--anime:not(.agenda--vu) .agenda__aujourdhui,
   .agenda--anime:not(.agenda--vu) .agenda__point,
   .agenda--anime:not(.agenda--vu) .agenda__tige,
-  .agenda--anime:not(.agenda--vu) .agenda__cible,
-  .agenda--anime:not(.agenda--vu) .agenda__details,
-  .agenda--anime:not(.agenda--vu) .agenda__legende,
+  .agenda--anime:not(.agenda--vu) .agenda__pastille,
+  .agenda--anime:not(.agenda--vu) .agenda__jauge,
+  .agenda--anime:not(.agenda--vu) .agenda__distance,
   .agenda--anime:not(.agenda--vu) .agenda__toile::before { opacity: 0; }
 
   .agenda--vu .agenda__trace { animation: agenda-trace calc(var(--duree-lente) * 3) var(--courbe) backwards; }
@@ -5007,41 +4983,39 @@ body > main:has(> .page-sommaire) { padding-block-end: 0; }
   .agenda--vu .agenda__mois,
   .agenda--vu .agenda__coupure { animation: agenda-apparait var(--duree-lente) var(--courbe) var(--duree-lente) backwards; }
   .agenda--vu .agenda__point {
-    animation: agenda-pose calc(var(--duree-lente) * 1.3) cubic-bezier(0.34, 1.5, 0.64, 1) calc(var(--retard) + var(--duree-rapide)) backwards;
+    animation: agenda-pose calc(var(--duree-lente) * 1.2) cubic-bezier(0.34, 1.5, 0.64, 1) var(--retard) backwards;
   }
-  .agenda--vu .agenda__tige { animation: agenda-pousse var(--duree-lente) var(--courbe) calc(var(--retard) + var(--duree-lente) * 0.8) backwards; }
-  .agenda--vu .agenda__cible,
-  .agenda--vu .agenda__details { animation: agenda-monte var(--duree-lente) var(--courbe) calc(var(--retard) + var(--duree-lente) * 1.2) backwards; }
-  .agenda--vu .agenda__rdv--bas .agenda__cible { animation-name: agenda-descend; }
-  .agenda--vu .agenda__legende { animation: agenda-apparait calc(var(--duree-lente) * 2) var(--courbe) calc(var(--duree-lente) * 3) backwards; }
+  .agenda--vu .agenda__tige { animation: agenda-pousse var(--duree) var(--courbe) calc(var(--retard) + var(--duree-rapide)) backwards; }
+  .agenda--vu .agenda__pastille {
+    animation: agenda-eclot-haut calc(var(--duree-lente) * 1.3) cubic-bezier(0.34, 1.35, 0.64, 1) calc(var(--retard) + var(--duree)) backwards;
+  }
+  .agenda--vu .agenda__rdv--bas .agenda__pastille { animation-name: agenda-eclot-bas; }
+  .agenda--vu.agenda--colonne .agenda__pastille { animation-name: agenda-eclot-cote; }
+  .agenda--vu .agenda__jauge { animation: agenda-jauge calc(var(--duree-lente) * 2) var(--courbe) calc(var(--duree-lente) * 4) backwards; }
+  .agenda--vu .agenda__distance { animation: agenda-apparait var(--duree-lente) var(--courbe) calc(var(--duree-lente) * 5.5) backwards; }
   .agenda--vu.agenda--colonne .agenda__toile::before { animation: agenda-pousse calc(var(--duree-lente) * 3) var(--courbe) backwards; }
 
-  .agenda--vu.agenda--en-vue .agenda__signal { animation: agenda-signal calc(var(--duree-lente) * 12) var(--courbe) calc(var(--duree-lente) * 6) infinite; }
-  .agenda--vu.agenda--en-vue .agenda__aujourdhui-point::after { animation: agenda-depart calc(var(--duree-lente) * 12) ease-out calc(var(--duree-lente) * 6) infinite; }
-  .agenda--vu.agenda--en-vue .agenda__rdv--prochain .agenda__point::after { animation: agenda-onde calc(var(--duree-lente) * 12) ease-out calc(var(--duree-lente) * 6) infinite; }
+  .agenda--vu.agenda--en-vue .agenda__rdv--prochain .agenda__point::after {
+    animation: agenda-onde calc(var(--duree-lente) * 9) ease-out calc(var(--duree-lente) * 6) infinite;
+  }
   .agenda--vide .agenda__aujourdhui-point::after { animation: agenda-depart calc(var(--duree-lente) * 8) ease-out var(--duree-lente) 6; }
 }
 
 @keyframes agenda-trace { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 @keyframes agenda-apparait { from { opacity: 0; } }
-@keyframes agenda-pose { from { opacity: 0; transform: scale(0.2); } }
+@keyframes agenda-pose { from { opacity: 0; scale: 0.2; } }
 @keyframes agenda-pousse { from { transform: scaleY(0); } }
-@keyframes agenda-monte { from { opacity: 0; transform: translateY(8px); } }
-@keyframes agenda-descend { from { opacity: 0; transform: translateY(-8px); } }
-@keyframes agenda-signal {
-  0%        { opacity: 0; transform: translate(0, 0) scale(0.4); }
-  6%        { opacity: 1; transform: translate(0, 0) scale(1); }
-  36%       { opacity: 1; transform: translate(var(--course), var(--course-y)) scale(1); }
-  44%, 100% { opacity: 0; transform: translate(var(--course), var(--course-y)) scale(0.3); }
-}
+@keyframes agenda-eclot-haut { from { opacity: 0; scale: 0.86; translate: 0 8px; } }
+@keyframes agenda-eclot-bas { from { opacity: 0; scale: 0.86; translate: 0 -8px; } }
+@keyframes agenda-eclot-cote { from { opacity: 0; translate: -10px 0; } }
+@keyframes agenda-jauge { from { transform: scaleX(0); } }
 @keyframes agenda-depart {
   0%        { opacity: 0.6; transform: scale(1); }
   28%, 100% { opacity: 0; transform: scale(3.2); }
 }
 @keyframes agenda-onde {
-  0%, 34%   { opacity: 0; transform: scale(0.9); }
-  37%       { opacity: 0.8; }
-  72%, 100% { opacity: 0; transform: scale(2.8); }
+  0%        { opacity: 0.85; transform: scale(1); }
+  45%, 100% { opacity: 0; transform: scale(2.6); }
 }
 
 /* La liste des alertes, dans leur fenêtre de modification. */

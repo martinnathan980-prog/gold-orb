@@ -53,10 +53,10 @@ t('le mot du chef ouvre la lecture', (await f.locator('.kiosque__lecture').count
   && /trimestre qui se tient/i.test(await f.locator('.kiosque__lecture-titre').innerText()));
 t('la liste est à côté de la lecture', (await f.locator('.kiosque__flux .kiosque__carte').count()) >= 3);
 t('rien d\'« à venir » dans la communication', !/à venir/i.test(await f.locator('#zone-communication').innerText()));
-t('les prochains rendez-vous ont leur bloc, « À venir » : une ligne, sans compte à rebours',
-  (await f.locator('#zone-agenda .agenda__rdv').count()) >= 1
+t('les prochains rendez-vous ont leur bloc, « À venir » : des pastilles sur leur ligne, sans compte à rebours ni légende',
+  (await f.locator('#zone-agenda .agenda__rdv .agenda__pastille').count()) >= 1
   && (await f.locator('#zone-agenda .agenda__scene').count()) === 1
-  && (await f.locator('#zone-agenda [class*="agenda__prochain"]').count()) === 0);
+  && (await f.locator('#zone-agenda [class*="agenda__prochain"], #zone-agenda .agenda__legende').count()) === 0);
 t('le bandeau d\'alertes est là', (await f.locator('.kiosque__alertes').count()) === 1);
 t('les chiffres clés et la courbe sont rendus', (await f.locator('.kiosque__chiffre').count()) >= 3 && (await f.locator('.kiosque__serie .ind-spark').count()) === 1);
 t('l\'image de la communication est intégrée', /^data:image/.test((await f.locator('.kiosque__image img').first().getAttribute('src')) || ''));
