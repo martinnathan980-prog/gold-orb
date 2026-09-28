@@ -272,7 +272,7 @@ const ctxGoogle = await nav.newContext({ viewport: { width: 1440, height: 1000 }
 await ctxGoogle.addInitScript(() => {
   if (window !== window.top) return;
   const serveur = {
-    etiiDemarrer: () => ({ email: 'editeur@exemple.fr', peutModifier: true, modifications: { communications: [
+    etiiDemarrer: () => (window.__appelsDemarrer = (window.__appelsDemarrer || 0) + 1, { email: 'editeur@exemple.fr', peutModifier: true, modifications: { communications: [
       { type: 'alerte', id: 'alerte-google', op: 'maj', donnees: { texte: 'Alerte venue du serveur Google.' }, le: '', par: 'editeur@exemple.fr' }] } })
   };
   const coureur = (ok) => new Proxy({}, { get: (_c, nom) => {
@@ -294,6 +294,19 @@ await fg.locator('.bascule-edition').click();
 await pageGoogle.waitForTimeout(400);
 t('et le bandeau dit qui il est', /Connecté : editeur@exemple\.fr/.test(await fg.locator('.edition-bandeau').innerText()));
 await fg.locator('.bascule-edition').click();
+// Changer de page : la suivante réutilise la réponse du serveur. Partager
+// la PROMESSE de la page précédente la laissait sur « Chargement… » pour
+// toujours (elle meurt avec son cadre) : les pages de pôle ne s'ouvraient
+// pas une fois le site déployé.
+for (const cible of ['etiia.html', 'etiie.html', 'index.html', 'etiii.html']) {
+  await fg.locator(`.site-nav a[href="${cible}"]`).first().click();
+  await pageGoogle.waitForTimeout(1500);
+  const bloques = await fg.locator('main').evaluate((m) => [...m.querySelectorAll('*')]
+    .filter((n) => n.children.length === 0 && n.offsetParent && /^Chargement/.test(n.textContent.trim())).length);
+  t(`sous Google, ${cible} s’affiche après un clic dans la barre (rien ne reste en « Chargement… »)`, bloques === 0, `(${bloques} bloc(s) bloqué(s))`);
+}
+t('un seul appel au serveur pour toutes ces pages', await pageGoogle.evaluate(() => window.__appelsDemarrer) === 1,
+  `(${await pageGoogle.evaluate(() => window.__appelsDemarrer)})`);
 await ctxGoogle.close();
 t('aucune erreur JavaScript côté Google', !err.some((e) => e.startsWith('GOOGLE')), err.filter((e) => e.startsWith('GOOGLE')).slice(0, 2).join(' | '));
 

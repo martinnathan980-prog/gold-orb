@@ -323,10 +323,13 @@ function appelerGoogle(run, fonction, args, delai) {
   });
 }
 
-/* Le premier appel au serveur, partagé par les pages pendant une minute :
-   dans le fichier autonome, chaque page est un cadre neuf ; sans ce
-   partage, chaque clic dans la barre referait l'aller-retour. Une
-   écriture l'oublie aussitôt : la page suivante relit tout. */
+/* La réponse du premier appel au serveur, partagée par les pages pendant
+   une minute : dans le fichier autonome, chaque page est un cadre neuf ;
+   sans ce partage, chaque clic dans la barre referait l'aller-retour. Une
+   écriture l'oublie aussitôt : la page suivante relit tout.
+   On partage le TEXTE de la réponse, jamais la promesse : une promesse
+   née dans la page précédente meurt avec son cadre, et la page suivante
+   l'attendrait pour toujours (pages de pôle bloquées sur « Chargement… »). */
 const DUREE_PARTAGE = 60000;
 
 function hoteDuPartage() {
@@ -334,14 +337,15 @@ function hoteDuPartage() {
   return window;
 }
 
-function demarrerGoogle(run) {
+async function demarrerGoogle(run) {
   const hote = hoteDuPartage();
-  const memo = hote.__ETII_DEMARRAGE;
-  if (memo && Date.now() - memo.t < DUREE_PARTAGE) return memo.p;
-  const p = appelerGoogle(run, 'etiiDemarrer', [], 20000);
-  hote.__ETII_DEMARRAGE = { t: Date.now(), p };
-  p.catch(() => { hote.__ETII_DEMARRAGE = null; });
-  return p;
+  try {
+    const memo = hote.__ETII_DEMARRAGE;
+    if (memo && typeof memo.texte === 'string' && Date.now() - memo.t < DUREE_PARTAGE) return JSON.parse(memo.texte);
+  } catch (_e) { /* mémo illisible : on redemande */ }
+  const reponse = await appelerGoogle(run, 'etiiDemarrer', [], 20000);
+  try { hote.__ETII_DEMARRAGE = { t: Date.now(), texte: JSON.stringify(reponse) }; } catch (_e) { /* pas de partage */ }
+  return reponse;
 }
 
 function oublierDemarrage() {
