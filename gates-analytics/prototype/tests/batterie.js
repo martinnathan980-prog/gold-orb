@@ -3784,6 +3784,90 @@ async function reinitialiser(pg) {
   await p.waitForTimeout(500);
   await reinitialiser(p);
 
+  // =================================================================
+  /* Débrief 16, au bureau sur les vraies données : « 0 sur 600 plans
+     terminés » (un mot « fini » que la page ne connaissait pas), et un
+     journal vide avec deux semaines archivées qui disait encore d'attendre
+     le deuxième relevé. */
+  section('Débrief 16 : vocabulaire inconnu signalé, accords, journal vide expliqué');
+  await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); window.scrollTo(0, 0); });
+  await p.waitForTimeout(600);
+  verifier('sur la démonstration, aucune alerte de vocabulaire : des plans sont comptés terminés',
+    await p.evaluate(() => document.getElementById('alerte-valeurs').hidden));
+  const vocab16 = await p.evaluate(() => {
+    const s = window.__jeuDExemple('HDK');
+    s.plans.forEach(x => { if (window.__classer(x.avancement) === 'termine') x.avancement = 'Released'; });
+    window.__chargerSource(s);
+    const z = document.getElementById('alerte-valeurs');
+    return { visible: !z.hidden, texte: z.textContent.replace(/[\u00a0\u202f]/g, ' '), phrase: document.getElementById('phrase').textContent.replace(/\s+/g, ' ') };
+  });
+  await p.waitForTimeout(300);
+  verifier('un mot « fini » inconnu : la page dit « Aucun plan n’est compté terminé », nomme la colonne et les valeurs lues, et où les déclarer',
+    vocab16.visible && /^0 sur 640 plans terminés/.test(vocab16.phrase) && /^Aucun plan n’est compté « terminé »\./.test(vocab16.texte) &&
+    /HDK AA 011 › Avancement Définition Electrique/.test(vocab16.texte) && /« Released » \(\d+\)/.test(vocab16.texte) && /VALEURS_FINIES/.test(vocab16.texte),
+    JSON.stringify(vocab16));
+  const accords16 = await p.evaluate(() => ['Validé', 'Validée', 'VALIDÉS', 'Non validé', 'OK', 'Non OK', 'Non terminé', '3 - Validé', '1 - En cours', '2026-09-01', '100 %', 'Pas commencé']
+    .map(v => v + '=' + window.__classer(v)).join(' | '));
+  verifier('« Validée », « Validés », « 3 - Validé » comptent comme « Validé » ; « Non OK », « Non terminé », une date, non',
+    accords16 === 'Validé=termine | Validée=termine | VALIDÉS=termine | Non validé=encours | OK=termine | Non OK=encours | Non terminé=encours | ' +
+      '3 - Validé=termine | 1 - En cours=encours | 2026-09-01=encours | 100 %=termine | Pas commencé=afaire', accords16);
+
+  // --- Le journal vide dit la vraie raison.
+  const journal16 = await p.evaluate(() => {
+    const lire = () => (document.querySelector('#zone-journal .journal-vide') || { textContent: '' }).textContent.replace(/[\u00a0\u202f]/g, ' ');
+    const s1 = window.__jeuDExemple('HDK');
+    s1.releves = s1.releves.slice(-1);
+    window.__chargerSource(s1);
+    const un = lire();
+    const s2 = window.__jeuDExemple('HDK');
+    const carte = {}; s2.plans.forEach(x => { carte[x.reference] = x.avancement; });
+    const deux = s2.releves.slice(-2).map(r => Object.assign({}, r, { plans: Object.assign({}, carte) }));
+    s2.releves = deux;
+    window.__chargerSource(s2);
+    return { un, identiques: lire(), n: s2.plans.length };
+  });
+  verifier('un seul relevé : le journal le nomme et dit que deux archivages la même semaine n’en font qu’un',
+    /^Un seul relevé archivé pour l’instant \(S\d{1,2} · \S+ \d{4}\) : le journal se remplira au suivant\. Deux archivages dans la même semaine n’en font qu’un/.test(journal16.un),
+    journal16.un);
+  verifier('deux relevés identiques : « Aucun plan n’a changé de valeur entre … et … », et le geste pour y remédier',
+    new RegExp('^Aucun plan n’a changé de valeur entre S\\d{1,2} · \\S+ \\d{4} et S\\d{1,2} · \\S+ \\d{4} \\(' + journal16.n + ' plans comparés\\)').test(journal16.identiques) &&
+    /même export qui a été archivé deux fois/.test(journal16.identiques), journal16.identiques);
+  /* Les pièges des vraies données, trouvés en relecture : comptes archivés
+     figés au classement du jour d'archivage, références en double, relevé
+     identique au précédent. */
+  const pieges16 = await p.evaluate(() => {
+    const out = {};
+    // 1. Des comptes archivés « 0 terminé » (ancien classement) : la page recompte sur la carte.
+    const s1 = window.__jeuDExemple('HDK');
+    s1.releves.forEach(r => { r.termine = 0; r.encours = r.total; });
+    window.__chargerSource(s1);
+    const pts = window.__serieAffichee().pts;
+    const r0 = s1.releves.slice().sort((a, b) => a.semaine < b.semaine ? -1 : 1)[0];
+    out.recompte = { premier: pts[0].termine, attendu: Object.keys(r0.plans).filter(k => window.__classer(r0.plans[k]) === 'termine').length };
+    // 2. Trois références en double.
+    const s2 = window.__jeuDExemple('HDK');
+    s2.plans = s2.plans.concat(s2.plans.slice(0, 3).map(x => Object.assign({}, x)));
+    window.__chargerSource(s2);
+    out.doublons = document.getElementById('alerte-valeurs').hidden ? '' : document.getElementById('alerte-valeurs').textContent;
+    // 3. Un relevé identique au précédent, plan par plan.
+    const s3 = window.__jeuDExemple('HDK');
+    const tries = s3.releves.slice().sort((a, b) => a.semaine < b.semaine ? -1 : 1);
+    tries[tries.length - 2].plans = Object.assign({}, tries[tries.length - 3].plans);
+    window.__chargerSource(s3);
+    out.note = document.getElementById('note-graphe').textContent.replace(/[\u00a0\u202f]/g, ' ');
+    out.identiqueSem = tries[tries.length - 2].semaine;
+    return out;
+  });
+  verifier('des comptes archivés figés à « 0 terminé » : la courbe recompte chaque relevé sur sa carte plan par plan, au classement du jour',
+    pieges16.recompte.premier > 0 && pieges16.recompte.premier === pieges16.recompte.attendu, JSON.stringify(pieges16.recompte));
+  verifier('des références en double : la page le dit — « 3 lignes répètent une référence déjà vue »',
+    /3 lignes répètent une référence déjà vue\. Chaque ligne compte dans les totaux/.test(pieges16.doublons), pieges16.doublons);
+  verifier('un relevé identique au précédent : la note du graphique le signale (export pas recollé ?)',
+    /S\d{1,2} · \S+ \d{4} : identique au relevé d’avant, plan par plan \(export pas recollé \?\)/.test(pieges16.note), pieges16.note);
+  await p.evaluate(() => { window.__chargerSource(window.__jeuDExemple('HDK')); });
+  await p.waitForTimeout(500);
+  await reinitialiser(p);
+
   section('Persistance (même navigateur, page rechargée)');
   await p.click('button[data-trig="fin"]'); await p.waitForTimeout(300);
   const triAvant = await p.evaluate(() => {

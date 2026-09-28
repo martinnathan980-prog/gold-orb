@@ -530,7 +530,15 @@ ne dit que **quel plan est passé** : sa référence et son passage (« En cours
   déjà ce qui a changé.)
 
 Le journal se remplit au **deuxième** relevé : il faut deux relevés pour
-savoir ce qui a changé entre les deux.
+savoir ce qui a changé entre les deux. Vide, il dit **pourquoi** (débrief 16) :
+un seul relevé archivé (« deux archivages dans la même semaine n'en font
+qu'un ») ; des relevés sans carte plan par plan ; ou deux relevés où **aucun
+plan n'a changé de valeur** — « Aucun plan n'a changé de valeur entre S39 et
+S40 (640 plans comparés) » : c'est presque toujours le même export archivé
+deux fois. Le **Diagnostic** le dit aussi, en comptes : « entre 2026-S39 et
+2026-S40 : 0 plan(s) ont changé de valeur », si la semaine en cours est
+archivée, et de combien de plans l'extract du jour s'écarte du dernier
+relevé.
 
 Le **changement d'indice** a sa couleur, un violet — ni un état ni une
 alerte —, sur sa pastille (journal, filtre du journal) et
@@ -553,19 +561,32 @@ couleur et font la courbe :
 
 | Famille | Ce qui l'y range |
 |---|---|
-| **Fini** | une valeur de `CONFIG.VALEURS_FINIES` (par défaut **`Validé`**), comparée entière — « Non validé » n'en est pas —, ou `100 %`, `terminé`, `achevé`, `clôturé`, `soldé`, `fini`, `ok` |
-| **À faire** | `à faire`, `à traiter`, `non commencé`, `0 %` |
+| **Fini** | une valeur de `CONFIG.VALEURS_FINIES` (par défaut **`Validé`**), comparée entière, sans tenir compte des accents, majuscules, féminin ou pluriel (« Validée », « VALIDÉS » valent « Validé » ; « Non validé » n'en est pas) ; ou `100 %` ; ou les mots `terminé`, `achevé`, `clôturé`, `soldé`, `fini`, `ok` en mots entiers — sauf après « non » ou « pas » (« Non OK » n'est pas fini) |
+| **À faire** | une valeur de `CONFIG.VALEURS_A_FAIRE` (vide par défaut), ou `à faire`, `à traiter`, `non commencé`, `pas commencé`, `0 %` |
 | **En cours** | tout pourcentage strictement entre 0 et 100, ou toute autre valeur (« Check », « En cours »…) |
 | **Non renseigné** | cellule vide, `-`, ou `EMPTY` (tel que l'extract l'écrit) |
+
+Un numéro devant la valeur ne compte pas : « 3 - Validé » est « Validé »,
+« 1 - En cours » est « En cours ». Un nombre ne se lit comme un pourcentage
+que s'il est seul dans la cellule (une date n'en est pas un).
 
 Plusieurs valeurs d'une même famille prennent la couleur de la famille, de
 plus en plus claire. Seule la famille **fini** a un poids : c'est elle que
 compte la courbe, le rythme requis par jalon, la comparaison avec SEE. Une
 autre valeur qui voudrait dire « fini » s'ajoute à `VALEURS_FINIES`, en haut
-de `Code.gs`. Le **Diagnostic** donne, pour chaque colonne suivie, les valeurs
-lues avec leur compte et la mention « = fini » — de quoi vérifier d'un coup
-d'œil (seulement des valeurs d'état : au-delà de vingt valeurs différentes,
-ou de trente caractères, rien n'est recopié).
+de `Code.gs` (et une valeur « pas commencé » à `VALEURS_A_FAIRE`).
+
+**Un mot « fini » inconnu ne passe pas inaperçu** (débrief 16 : « 0 sur 600
+plans terminés » sur les vraies données). Quand **aucun** plan n'est compté
+terminé alors que la colonne a des valeurs, la page le dit au-dessus de la
+barre : « Aucun plan n'est compté « terminé ». Aucune des valeurs lues dans
+« HDK AA 011 › Avancement Définition Electrique » ne veut dire « fini » pour
+la page : « Released » (256), « In work » (166)… Si l'une d'elles veut dire
+« fini », il faut la déclarer dans Code.gs, VALEURS_FINIES. » Le
+**Diagnostic** donne, pour chaque colonne suivie, chaque valeur lue avec son
+compte **et la façon dont elle est comptée** (« « Check » 312 → en cours »),
+et le même avertissement (seulement des valeurs d'état : au-delà de vingt
+valeurs différentes, ou de trente caractères, rien n'est recopié).
 
 Une cellule vide reste un *défaut de saisie*, distinct de toute valeur : le
 bouton « non renseigné » sous la barre sort la liste.
@@ -961,6 +982,61 @@ au-dessus du tableau.
   la page revient exactement où en était le lecteur. Dans le classeur, les
   autres contrats sont demandés une fois par le pont, puis gardés. Un clic sur
   un contrat l'affiche.
+
+## 13 septies. Les pièges des vraies données (débrief 16)
+
+Au bureau, sur les vraies données : « 0 sur 600 plans terminés » et un
+journal vide avec deux semaines archivées. Une relecture dédiée a cherché
+tout ce qui, de la même façon, fausse une page **sans erreur visible**. Ce
+qui en est sorti, et ce que la page fait maintenant :
+
+- **Un mot « fini » inconnu** : la page le dit au-dessus de la barre, avec
+  les valeurs lues ; le Diagnostic dit comment chaque valeur est comptée
+  (§ 11). « Validée », « Validés », « 3 - Validé » valent « Validé » ;
+  « Non OK », « Non terminé » ne sont pas finis.
+- **Les relevés se recomptent au classement du jour.** Un relevé qui a gardé
+  sa carte plan par plan (tous, depuis longtemps) est recompté avec les
+  règles d'aujourd'hui : déclarer un mot « fini » vaut aussi pour les
+  semaines déjà archivées. Sans cela, les semaines archivées restaient à
+  « 0 terminé » et la semaine du jour sautait à 300 — « 300 plans par
+  semaine », une fin estimée absurde. Seul un relevé sans carte garde ses
+  comptes d'archivage.
+- **Un relevé identique au précédent**, plan par plan — un archivage sans
+  export recollé, celui du vendredi le plus souvent — compte dans le rythme
+  (on ne sait pas si rien n'a bougé ou si rien n'a été recollé) ; la note
+  sous le graphique le signale : « S41 : identique au relevé d'avant, plan
+  par plan (export pas recollé ?) ». Le journal, s'il est vide pour cette
+  raison, le dit (§ 10), et le Diagnostic compte les plans qui ont changé
+  entre les deux derniers relevés.
+- **Des références en double** (un export collé par-dessus l'ancien sans le
+  vider) : chaque ligne compte dans les totaux, la carte archivée garde la
+  première ; la page et le Diagnostic le disent (« 3 lignes répètent une
+  référence déjà vue »).
+- **Un onglet de contrat renommé** après un archivage : son historique porte
+  l'ancien nom (`Historique_FWD_Feuille 1`), la page repart d'un relevé. Le
+  Diagnostic signale tout onglet d'historique rattaché à aucun contrat, avec
+  le geste (le renommer `Historique_FWD_<contrat>`).
+- **Un onglet qui n'est pas un export** (« Notes », un tableau croisé) : dès
+  qu'un onglet porte une ligne d'en-têtes d'export (Référence UD, ATA, Nom
+  installation), seuls ceux-là sont des contrats. Avant, un onglet « Notes »
+  devenait un contrat, et un classeur à contrat unique perdait son onglet
+  « SEE » et son ancien historique. Le Diagnostic nomme les onglets écartés.
+- **Confidentialité du Diagnostic** : une ligne d'en-têtes introuvable (export
+  collé sans ses premières lignes) n'est plus recopiée — ce serait une ligne
+  de plan, libellés et commentaires compris ; le Diagnostic s'arrête pour cet
+  onglet et dit de recoller l'export entier. Les valeurs de la colonne de
+  domaine suivent la même garde que les valeurs d'état.
+- **La carte archivée découpée en plusieurs cellules** : une tranche ne
+  commence plus par `=`, `+`, `-`, `@` ou `'`, que Sheets interprète en tête
+  de cellule.
+- **La vue d'ensemble** montre, pour un contrat dont la colonne suivie est
+  introuvable, le message au lieu d'un « 0 / N » ; et « aucun mot « fini »
+  reconnu » à la place du pourcentage quand c'est le cas.
+- **À surveiller, sans correction** : un classeur réglé en anglais
+  (États-Unis) écrit les dates mois/jour — le découpage par mois de création
+  les lirait à l'envers (les classeurs en français ne sont pas concernés) ;
+  et une colonne d'avancement en pourcentages *formatés* arrondirait 99,6 %
+  à « 100 % » (les exports lus jusqu'ici écrivent du texte).
 
 ## 13 quinquies. Vitesse d'ouverture et thème
 

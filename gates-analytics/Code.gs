@@ -128,12 +128,20 @@ const CONFIG = {
   COLONNE_CONCEPT: 'HDK AA 011 > Avancement Concept Harnais',
 
   /* Les valeurs qui veulent dire « fini » dans la colonne suivie, écrites
-     comme dans l'extract (accents et majuscules indifférents, valeur
+     comme dans l'extract (accents, majuscules, féminin et pluriel
+     indifférents : « Validé » vaut aussi « Validée », « Validés » ; valeur
      entière : « Non validé » n'en fait pas partie). S'ajoutent aux mots
      reconnus d'eux-mêmes : Terminé, Fini, Soldé, Clôturé, OK, 100 %. Les
      autres valeurs de la colonne s'affichent telles quelles, sans rien
-     déclarer : la page les lit. */
+     déclarer : la page les lit.
+     ⚠ Une valeur « finie » absente d'ici compte « en cours » : la page le
+     signale en haut quand AUCUN plan n'est compté terminé, et le Diagnostic
+     dit, valeur par valeur, comment chacune est comptée. */
   VALEURS_FINIES: ['Validé'],
+
+  /* Les valeurs qui veulent dire « pas commencé », même règle. S'ajoutent à
+     « À faire », « A traiter », « Non commencé », 0 %. Vide : aucune de plus. */
+  VALEURS_A_FAIRE: [],
 
   /*
    * Les colonnes proposées dans « Avancement FWD par… », dans l'ordre du
@@ -333,17 +341,33 @@ function normaliser(valeur) {
 function classerFWD(valeur) {
   const s = normaliser(valeur);
   if (s === '' || s === '-' || s === 'empty') return 'vide';
-  const finies = (CONFIG.VALEURS_FINIES && CONFIG.VALEURS_FINIES.length ? CONFIG.VALEURS_FINIES : ['Validé']).map(normaliser);
-  if (finies.indexOf(s) !== -1) return 'termine';
-  if (s.indexOf('a faire') !== -1 || s.indexOf('a traiter') !== -1 || s === 'non commence') return 'afaire';
-  const n = parseFloat(s.replace(/[\s%]/g, '').replace(',', '.'));
-  if (!isNaN(n)) {
+  /* Un numéro devant l'état (« 3 - Validé », « 1. En cours ») ne compte pas. */
+  const t = s.replace(/^\d+\s*[-.)]\s*/, '');
+  const k = sansAccord(t);
+  if (formesDeclarees(CONFIG.VALEURS_FINIES, ['Validé']).indexOf(k) !== -1) return 'termine';
+  if (formesDeclarees(CONFIG.VALEURS_A_FAIRE, []).indexOf(k) !== -1) return 'afaire';
+  if (/\ba (faire|traiter)\b/.test(t) || /^(non|pas) commence/.test(t)) return 'afaire';
+  /* Un nombre, seul : un pourcentage. « 3 - Validé » ou une date n'en sont pas. */
+  if (/^-?\d+(?:[.,]\d+)?\s*%?$/.test(s)) {
+    const n = parseFloat(s.replace(/[\s%]/g, '').replace(',', '.'));
     if (n >= 100) return 'termine';
     if (n <= 0) return 'afaire';
     return 'encours';
   }
-  if (/(termine|acheve|cloture|solde|fini|ok)/.test(s)) return 'termine';
+  /* Les mots qui disent « fini », en mots entiers — et pas après « non » ou
+     « pas » : « Non OK », « Non terminé » ne sont pas finis. */
+  if (!/^(non|pas)\b/.test(t) && /\b(?:(?:termine|acheve|cloture|solde|fini)e?s?|ok)\b/.test(t)) return 'termine';
   return 'encours';
+}
+
+/** Une valeur sans ses marques d'accord : « validee », « valides » → « valid ». */
+function sansAccord(s) { return s.replace(/(?:ee?s?|s)$/, ''); }
+
+/** Les valeurs d'une liste de CONFIG, normalisées et sans accord. */
+function formesDeclarees(liste, defaut) {
+  return (liste && liste.length ? liste : defaut)
+    .map(function (v) { return sansAccord(normaliser(v)); })
+    .filter(function (v) { return v !== ''; });
 }
 
 /** Numéro de semaine ISO-8601 au format « 2026-S07 ». */
@@ -476,10 +500,37 @@ function listerContrats(classeur) {
   }
   /* Un onglet visible et VIDE n'est pas un contrat : c'est la « Feuille 1 »
      d'un classeur neuf, restée en tête quand on a ajouté l'onglet du premier
-     contrat à côté. Sans cela, la page s'ouvrirait sur elle. */
-  return classeur.getSheets()
-    .filter(function (f) { return !f.isSheetHidden() && !estOngletInterne(f.getName()) && f.getLastRow() > 0; })
+     contrat à côté. Sans cela, la page s'ouvrirait sur elle. Et dès qu'un
+     onglet porte une ligne d'en-têtes d'export (Référence UD, ATA…), seuls
+     ceux-là sont des contrats (débrief 16) : un onglet « Notes » ou un tableau
+     croisé, compté comme contrat, faisait perdre l'onglet « SEE » et l'ancien
+     historique d'un classeur à contrat unique. */
+  return ongletsDeDonnees(classeur).contrats
     .map(function (f) { return { id: f.getName(), nom: f.getName() }; });
+}
+
+/** Les onglets candidats, partagés entre contrats et onglets écartés. */
+function ongletsDeDonnees(classeur) {
+  const candidats = classeur.getSheets()
+    .filter(function (f) { return !f.isSheetHidden() && !estOngletInterne(f.getName()) && f.getLastRow() > 0; });
+  const exports = candidats.filter(aDesEntetes);
+  return {
+    contrats: exports.length ? exports : candidats,
+    ecartes: exports.length ? candidats.filter(function (f) { return exports.indexOf(f) === -1; }) : []
+  };
+}
+
+/** L'onglet porte-t-il, dans ses premières lignes, une ligne d'intitulés d'export ? */
+function aDesEntetes(feuille) {
+  const n = Math.min(CONFIG.LIGNES_SCAN_ENTETE, feuille.getLastRow());
+  const largeur = feuille.getLastColumn();
+  if (n < 1 || largeur < 1) return false;
+  return feuille.getRange(1, 1, n, largeur).getDisplayValues().some(ligneAIntitule);
+}
+
+/** Les onglets visibles, non vides, qui ne sont pas des exports à côté d'exports : écartés, et on le dit. */
+function ongletsEcartes(classeur) {
+  return ongletsDeDonnees(classeur).ecartes.map(function (f) { return f.getName(); });
 }
 
 /**
@@ -521,19 +572,24 @@ function getFeuilleDonnees(classeur, contrat) {
 }
 
 /** Trouve la ligne d'en-têtes dans les premières lignes de la feuille. */
-function detecterLigneEntete(donnees) {
-  const limite = Math.min(CONFIG.LIGNES_SCAN_ENTETE, donnees.length);
-  /* Un mot-clé compte s'il occupe une cellule à lui seul, ou y figure comme
-     mot entier : « ata » ne doit pas se lire dans « catalogue » ou
-     « constatation » d'une ligne de groupes, au-dessus du vrai en-tête. */
+/**
+ * Une ligne porte-t-elle un intitulé d'en-tête attendu (Référence UD, ATA,
+ * Nom installation) ? Un mot-clé compte s'il occupe une cellule à lui seul,
+ * ou y figure comme mot entier : « ata » ne doit pas se lire dans
+ * « catalogue » ou « constatation » d'une ligne de groupes.
+ */
+function ligneAIntitule(ligne) {
   const motsCles = CONFIG.MOTS_CLES_ENTETE.map(function (m) {
     return new RegExp('(^|[^a-z0-9])' + normaliser(m).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)');
   });
+  const cellules = (ligne || []).map(normaliser);
+  return motsCles.some(function (m) { return cellules.some(function (c) { return m.test(c); }); });
+}
+
+function detecterLigneEntete(donnees) {
+  const limite = Math.min(CONFIG.LIGNES_SCAN_ENTETE, donnees.length);
   for (let i = 0; i < limite; i++) {
-    const cellules = donnees[i].map(normaliser);
-    for (let k = 0; k < motsCles.length; k++) {
-      if (cellules.some(function (c) { return motsCles[k].test(c); })) return i;
-    }
+    if (ligneAIntitule(donnees[i])) return i;
   }
   // Repli : première ligne qui contient au moins 3 libellés non vides.
   for (let i = 0; i < limite; i++) {
@@ -872,7 +928,15 @@ function construireModele(contrat) {
       ? 'Colonne « ' + CONFIG.COLONNE_CONCEPT + ' » introuvable dans l\'onglet « ' + feuille.getName() +
         ' » : pas de concept harnais, et l\'archivage est refusé. Suivi FWD → Diagnostic montre l\'en-tête lu.'
       : '',
-    lignesIgnorees: lignesBrutes.length - lignes.length
+    lignesIgnorees: lignesBrutes.length - lignes.length,
+    /* Une référence présente sur plusieurs lignes (export collé par-dessus
+       l'ancien, sans Ctrl+A / Suppr) : chaque ligne compte, la carte garde la
+       première — et le diagnostic comme la page le disent (débrief 16). */
+    doublons: (function () {
+      const vues = {}; let n = 0;
+      plans.forEach(function (p) { if (vues[p.reference]) n++; else vues[p.reference] = true; });
+      return n;
+    })()
   };
 }
 
@@ -984,8 +1048,10 @@ function getDonneesPourClient(contrat) {
       cleDomaine: modele.cleDomaine,
       cleConcept: modele.cleConcept,
       valeursFinies: CONFIG.VALEURS_FINIES,
+      valeursAFaire: CONFIG.VALEURS_A_FAIRE || [],
       dimParDefaut: modele.dimParDefaut,
       lignesIgnorees: modele.lignesIgnorees,
+      doublons: modele.doublons,
       plans: modele.plans,
       releves: getHistorique(classeur, modele.feuille),
       jalons: getJalons(),
@@ -1170,6 +1236,10 @@ function diagnostic() {
     dire('✓ ' + contrats.length + ' contrat(s), un onglet visible chacun : ' +
          contrats.map(function (c) { return '« ' + c.nom + ' »'; }).join(', '));
   }
+  ongletsEcartes(classeur).forEach(function (nom) {
+    dire('– Onglet « ' + nom + ' » écarté : aucun intitulé d\'export (Référence UD, ATA, Nom installation) dans ses ' +
+         CONFIG.LIGNES_SCAN_ENTETE + ' premières lignes. Si c\'est un export, le recoller entier en A1.');
+  });
 
   let tousLisibles = true;
   contrats.forEach(function (c) {
@@ -1186,6 +1256,21 @@ function diagnostic() {
     dire('   → le renommer « ' + nomFeuilleHistorique('<nom du contrat>') +
          ' » rend ses relevés au contrat qui les a produits.');
   }
+  /* Un onglet de contrat renommé (« Feuille 1 » devenu « HDK ») laisse son
+     historique sous l'ancien nom : la page repart d'un seul relevé, le
+     journal reste vide. On le dit (débrief 16). */
+  const attendus = {};
+  contrats.forEach(function (c) { attendus[normaliser(nomFeuilleHistorique(c.id))] = true; });
+  attendus[normaliser(CONFIG.FEUILLE_HISTORIQUE)] = true;       // l'ancien, traité juste au-dessus
+  classeur.getSheets().forEach(function (f) {
+    const nom = f.getName();
+    if (!estOngletHistorique(nom) || attendus[normaliser(nom)]) return;
+    const n = Math.max(0, f.getLastRow() - 1);
+    dire('');
+    dire('⚠ L\'onglet d\'historique « ' + nom + ' » (' + n + ' relevé' + (n > 1 ? 's' : '') + ') n\'est rattaché à aucun contrat :');
+    dire('   l\'onglet de son contrat a sans doute été renommé. Le renommer « ' + nomFeuilleHistorique('<nom du contrat>') +
+         ' » lui rend ses relevés.');
+  });
 
   dire('');
   const jalons = getJalons();
@@ -1217,11 +1302,20 @@ function diagnostic() {
     tousLisibles = false;
   }
 
+  /* Les ⚠ ne bloquent rien, mais faussent ce qu'on montrerait (0 terminé,
+     journal vide…) : le bilan les reprend, au lieu de conclure « tout est en
+     place » juste en dessous (débrief 16). */
+  const aVerifier = lignes.filter(function (l) { return l.charAt(0) === '⚠'; });
   dire('');
   if (nomsFichiers.length !== 3) dire('Il manque des fichiers HTML (voir ci-dessus).');
   else if (!tousLisibles) dire('Un contrat au moins n\'est pas lisible (voir ci-dessus).');
   else if (!secondeLisible) dire('Tout est en place pour GATES : Suivi FWD → Ouvrir le tableau de bord. La seconde base, elle, ne se lit pas (voir ci-dessus).');
   else dire('Tout est en place : Suivi FWD → Ouvrir le tableau de bord.');
+  if (nomsFichiers.length === 3 && tousLisibles && aVerifier.length) {
+    dire('');
+    dire('À vérifier avant de présenter (' + aVerifier.length + ') :');
+    aVerifier.forEach(function (l) { dire('  ' + l); });
+  }
 
   return terminerDiagnostic(lignes);
 }
@@ -1269,8 +1363,14 @@ function diagnostiquerPerimetresDesJalons(contrat, jalons, dire) {
   inconnus.forEach(function (j) {
     dire('⚠ Jalon « ' + j.texte + ' » : périmètre « ' + j.perimetre + ' » inconnu de la colonne « ' + titre + ' »');
   });
-  dire('   → valeurs vues dans « ' + titre + ' » : ' + (valeurs.length ? valeurs.slice(0, 8).join(', ') : 'aucune') +
-       (valeurs.length > 8 ? ', …' : '') + ' — à recopier dans perimetre (CONFIG.JALONS).');
+  /* Même garde que pour les valeurs d'état : des valeurs courtes et peu
+     nombreuses se recopient ; au-delà, ce n'est pas une colonne de domaine. */
+  if (valeurs.length > 20 || valeurs.some(function (v) { return v.length > 30; })) {
+    dire('   → ' + valeurs.length + ' valeurs différentes dans « ' + titre + ' » : trop, ou trop longues, pour être des périmètres — rien n\'est recopié.');
+  } else {
+    dire('   → valeurs vues dans « ' + titre + ' » : ' + (valeurs.length ? valeurs.slice(0, 8).join(', ') : 'aucune') +
+         (valeurs.length > 8 ? ', …' : '') + ' — à recopier dans perimetre (CONFIG.JALONS).');
+  }
 }
 
 /**
@@ -1367,18 +1467,28 @@ function direValeurs(dire, plans, cle) {
   plans.forEach(function (p) {
     const brut = String(p[cle] === null || p[cle] === undefined ? '' : p[cle]).trim();
     const k = normaliser(brut);
-    if (!(k in par)) { par[k] = { brut: brut, n: 0 }; ordre.push(k); }
+    if (!(k in par)) { par[k] = { brut: brut, n: 0, famille: classerFWD(brut) }; ordre.push(k); }
     par[k].n++;
   });
+  const remplies = ordre.filter(function (k) { return par[k].famille !== 'vide'; });
+  const aucunFini = remplies.length > 0 && !remplies.some(function (k) { return par[k].famille === 'termine'; });
   if (ordre.length > 20 || ordre.some(function (k) { return par[k].brut.length > 30; })) {
     dire('  ' + ordre.length + ' valeurs différentes : trop, ou trop longues, pour être des états — rien n\'est recopié.');
-    return;
+  } else {
+    /* Chaque valeur avec la façon dont elle est comptée : c'est ce qui dit,
+       d'un coup d'œil, qu'un mot « fini » n'est pas reconnu. */
+    const MOT = { termine: 'fini', encours: 'en cours', afaire: 'à faire', vide: 'non renseigné' };
+    ordre.sort(function (a, b) { return par[b].n - par[a].n; });
+    dire('  valeurs lues (comptées comme) : ' + ordre.map(function (k) {
+      const v = par[k];
+      return (v.brut === '' ? '(vide)' : '« ' + v.brut + ' »') + ' ' + v.n + ' → ' + MOT[v.famille];
+    }).join(' · '));
   }
-  ordre.sort(function (a, b) { return par[b].n - par[a].n; });
-  dire('  valeurs lues : ' + ordre.map(function (k) {
-    const v = par[k];
-    return (v.brut === '' ? '(vide)' : '« ' + v.brut + ' »') + ' ' + v.n + (classerFWD(v.brut) === 'termine' ? ' = fini' : '');
-  }).join(' · '));
+  if (aucunFini) {
+    dire('⚠ Aucune valeur n\'est comptée comme finie : la page dira « 0 terminé ». Si l\'une de ces valeurs veut dire « fini »,');
+    dire('   l\'ajouter à CONFIG.VALEURS_FINIES (aujourd\'hui : ' +
+         (CONFIG.VALEURS_FINIES && CONFIG.VALEURS_FINIES.length ? CONFIG.VALEURS_FINIES : ['Validé']).join(', ') + ').');
+  }
 }
 
 function diagnostiquerContrat(classeur, contrat, dire) {
@@ -1399,8 +1509,19 @@ function diagnostiquerContrat(classeur, contrat, dire) {
       return false;
     }
     const iEntete = detecterLigneEntete(donnees);
-    dire('✓ Ligne d\'en-têtes : ligne ' + (iEntete + 1));
-    dire('  ' + donnees[iEntete].filter(function (e) { return String(e).trim(); }).join(' | '));
+    /* Confidentialité : on ne recopie la ligne que si c'est bien une ligne
+       d'intitulés. Devinée (aucun intitulé attendu), ce peut être une ligne
+       de plan — libellés, commentaires : rien n'en sort. */
+    if (ligneAIntitule(donnees[iEntete])) {
+      dire('✓ Ligne d\'en-têtes : ligne ' + (iEntete + 1));
+      dire('  ' + donnees[iEntete].filter(function (e) { return String(e).trim(); }).join(' | '));
+    } else {
+      dire('✗ Ligne d\'en-têtes introuvable : aucun intitulé attendu (Référence UD, ATA, Nom installation) dans les ' +
+           CONFIG.LIGNES_SCAN_ENTETE + ' premières lignes.');
+      dire('   → recoller l\'extract entier en A1, avec ses lignes de groupes et d\'en-têtes. Le reste de cet onglet n\'est pas');
+      dire('     détaillé : ses « intitulés » seraient des cellules de plans, qui ne sortent pas d\'ici.');
+      return false;
+    }
 
     const modele = construireModele(contrat.id);
     dire('✓ ' + modele.colonnes.length + ' colonnes, ' + modele.plans.length + ' plans');
@@ -1442,6 +1563,13 @@ function diagnostiquerContrat(classeur, contrat, dire) {
     if (modele.lignesIgnorees > 0) {
       dire('  ' + modele.lignesIgnorees + ' ligne(s) sans référence ignorée(s)');
     }
+    if (modele.doublons > 0) {
+      dire('⚠ ' + modele.doublons + ' ligne(s) répètent une référence déjà vue : un export collé par-dessus l\'ancien, sans Ctrl+A puis Suppr ?');
+      dire('   Chaque ligne compte dans les totaux, le journal ne garde que la première. Recoller l\'export sur un onglet vidé.');
+    }
+    if (colRef && /^Colonne \d+$/.test(colRef.titre)) {
+      dire('⚠ La référence est lue dans « ' + colRef.titre + ' », une colonne sans intitulé : l\'en-tête « Référence UD » n\'a pas été trouvé.');
+    }
     const titresDim = modele.colonnes
       .filter(function (c) { return c.dim; })
       .map(function (c) { return c.titre; });
@@ -1465,6 +1593,7 @@ function diagnostiquerContrat(classeur, contrat, dire) {
       if (cellulesCarte > 1) {
         dire('  carte plan par plan sur ' + cellulesCarte + ' cellules par relevé, au plus');
       }
+      direJournal(dire, histo, modele);
     }
     return true;
   } catch (err) {
@@ -1503,6 +1632,51 @@ function direDoublon(dire, colonnes, designation) {
       : normaliser(c.titre) === voulu;
   }).length;
   if (n > 1) dire('⚠ ' + n + ' colonnes répondent à « ' + designation + ' » : la page suit la première, à gauche.');
+}
+
+/**
+ * Ce que le journal aura à dire : combien de plans ont changé de valeur entre
+ * les deux derniers relevés, si la semaine en cours est archivée, et de
+ * combien l'extract du jour s'écarte du dernier relevé. Des comptes
+ * seulement, jamais une valeur ni une référence.
+ */
+function direJournal(dire, histo, modele) {
+  const semaine = numeroSemaineISO(new Date());
+  const dernier = histo[histo.length - 1];
+  if (dernier.semaine !== semaine) {
+    dire('  pas encore de relevé pour la semaine en cours (' + semaine + ') : Suivi FWD → Archiver le relevé de cette semaine.');
+  }
+  if (histo.length === 1) {
+    dire('  un seul relevé : le journal des changements se remplira au suivant (deux archivages la même semaine n\'en font qu\'un).');
+  } else {
+    const avant = histo[histo.length - 2];
+    if (!avant.plans || !dernier.plans) {
+      dire('⚠ ' + (!avant.plans ? avant.semaine : dernier.semaine) + ' n\'a pas de carte plan par plan : le journal ne peut rien comparer entre '
+           + avant.semaine + ' et ' + dernier.semaine + '.');
+    } else {
+      const n = plansQuiChangent(avant.plans, dernier.plans);
+      dire('  entre ' + avant.semaine + ' et ' + dernier.semaine + ' : ' + n + ' plan(s) ont changé de valeur — c\'est ce que dit le journal.');
+      if (n === 0) {
+        dire('⚠ Les deux derniers relevés sont identiques, plan par plan : le même extract a sans doute été archivé deux fois.');
+        dire('   Le journal restera vide. Recoller le dernier export de GATES, puis archiver de nouveau.');
+      }
+    }
+  }
+  if (dernier.plans) {
+    const jour = {};
+    modele.plans.forEach(function (p) { jour[p.reference] = p.avancement; });
+    dire('  l\'extract du jour s\'écarte du dernier relevé (' + dernier.semaine + ') sur ' + plansQuiChangent(dernier.plans, jour) + ' plan(s).');
+  }
+}
+
+/** Combien de plans diffèrent entre deux cartes { référence: valeur } : autre valeur, apparu, disparu. */
+function plansQuiChangent(a, b) {
+  let n = 0;
+  Object.keys(b).forEach(function (r) {
+    if (!Object.prototype.hasOwnProperty.call(a, r) || normaliser(a[r]) !== normaliser(b[r])) n++;
+  });
+  Object.keys(a).forEach(function (r) { if (!Object.prototype.hasOwnProperty.call(b, r)) n++; });
+  return n;
 }
 
 function terminerDiagnostic(lignes) {
@@ -1680,9 +1854,11 @@ function compterAvancements(contrat) {
     /* Avec le concept harnais, chaque plan garde ses deux avancements :
        [définition électrique, concept harnais]. Les relevés d'avant n'en
        ont qu'un, une chaîne : les deux formes se relisent (separerCartes). */
-    compte.plans[p.reference] = modele.cleConcept
-      ? [String(p.avancement || ''), String(p[modele.cleConcept] || '')]
-      : String(p.avancement || '');
+    if (!Object.prototype.hasOwnProperty.call(compte.plans, p.reference)) {   // une référence en double : la première ligne
+      compte.plans[p.reference] = modele.cleConcept
+        ? [String(p.avancement || ''), String(p[modele.cleConcept] || '')]
+        : String(p.avancement || '');
+    }
     clesDim.forEach(function (d) {
       const v = String((d === '_anciennete'
         ? ancienneteDepuis(p[modele.cleDate], reference)
@@ -1709,14 +1885,16 @@ function jsonTenable(valeur) {
 /**
  * Découpe un texte en tranches d'au plus `taille` caractères, une par
  * cellule ; le recollage (recoller) les remet bout à bout. Une tranche ne
- * commence jamais par « = » : Sheets la prendrait pour une formule.
+ * commence jamais par un caractère que Sheets interprète en tête de cellule :
+ * « = », « + », « - », « @ » (une formule) ou « ' » (la marque de texte, qu'il
+ * avale) — la carte deviendrait illisible, et le relevé perdrait son détail.
  */
 function decouper(texte, taille) {
   const morceaux = [];
   let debut = 0;
   while (debut < texte.length) {
     let fin = Math.min(debut + taille, texte.length);
-    while (fin < texte.length && fin > debut + 1 && texte.charAt(fin) === '=') fin--;
+    while (fin < texte.length && fin > debut + 1 && '=+-@\''.indexOf(texte.charAt(fin)) !== -1) fin--;
     morceaux.push(texte.slice(debut, fin));
     debut = fin;
   }

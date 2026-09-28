@@ -88,22 +88,35 @@
      archiver les relevés, le client pour les compteurs filtrés. Toute
      modification de l'un OU de l'autre doit être reportée des deux côtés,
      sinon le dernier point de la courbe ne vaut plus la barre du jour. */
-  /* Les valeurs qui veulent dire « fini », écrites comme dans l'extract —
-     CONFIG.VALEURS_FINIES côté serveur, transmises par le paquet. Comparées
-     entières : « Non validé » n'est pas « Validé ». */
-  var VALEURS_FINIES_N = ['valide'];
+  /* Les valeurs qui veulent dire « fini » (CONFIG.VALEURS_FINIES) et « pas
+     commencé » (CONFIG.VALEURS_A_FAIRE), transmises par le paquet. Comparées
+     entières, sans accents ni accord : « Validée » est « Validé », « Non
+     validé » ne l'est pas. */
+  function sansAccord(s) { return s.replace(/(?:ee?s?|s)$/, ''); }
+  function formesDeclarees(liste, defaut) {
+    return (Array.isArray(liste) && liste.length ? liste : defaut)
+      .map(function (v) { return sansAccord(norm(v)); }).filter(function (v) { return v !== ''; });
+  }
+  var VALEURS_FINIES_N = ['valid'], VALEURS_A_FAIRE_N = [], VALEURS_FINIES_DITES = ['Validé'];
   function classer(valeur) {
     var s = norm(valeur);
     if (s === '' || s === '-' || s === 'empty') return 'vide';
-    if (VALEURS_FINIES_N.indexOf(s) !== -1) return 'termine';
-    if (s.indexOf('a faire') !== -1 || s.indexOf('a traiter') !== -1 || s === 'non commence') return 'afaire';
-    var n = parseFloat(s.replace(/[\s%]/g, '').replace(',', '.'));
-    if (!isNaN(n)) {
+    /* Un numéro devant l'état (« 3 - Validé », « 1. En cours ») ne compte pas. */
+    var t = s.replace(/^\d+\s*[-.)]\s*/, '');
+    var k = sansAccord(t);
+    if (VALEURS_FINIES_N.indexOf(k) !== -1) return 'termine';
+    if (VALEURS_A_FAIRE_N.indexOf(k) !== -1) return 'afaire';
+    if (/\ba (faire|traiter)\b/.test(t) || /^(non|pas) commence/.test(t)) return 'afaire';
+    /* Un nombre, seul : un pourcentage. « 3 - Validé » ou une date n'en sont pas. */
+    if (/^-?\d+(?:[.,]\d+)?\s*%?$/.test(s)) {
+      var n = parseFloat(s.replace(/[\s%]/g, '').replace(',', '.'));
       if (n >= 100) return 'termine';
       if (n <= 0) return 'afaire';
       return 'encours';
     }
-    if (/(termine|acheve|cloture|solde|fini|ok)/.test(s)) return 'termine';
+    /* Les mots qui disent « fini », en mots entiers — pas après « non » ou
+       « pas » : « Non OK », « Non terminé » ne sont pas finis. */
+    if (!/^(non|pas)\b/.test(t) && /\b(?:(?:termine|acheve|cloture|solde|fini)e?s?|ok)\b/.test(t)) return 'termine';
     return 'encours';
   }
   function pourcentDe(p) {
@@ -328,7 +341,8 @@
     });
     if (avecPlans) {
       r.plans = {};
-      plans.forEach(function (p) { r.plans[p.reference] = p[CLE_SUIVIE]; });
+      /* Une référence en double : la première ligne, comme au classeur. */
+      plans.forEach(function (p) { if (!Object.prototype.hasOwnProperty.call(r.plans, p.reference)) r.plans[p.reference] = p[CLE_SUIVIE]; });
     }
     return r;
   }
@@ -372,6 +386,10 @@
   /* Vrai quand le dernier point est l’extract du jour, collé après le dernier
      relevé archivé et pas encore archivé lui-même (voir chargerSource). */
   var EXTRAIT_EN_PLUS = false;
+  /* Les relevés identiques, plan par plan, au précédent : un archivage
+     (celui du vendredi, souvent) sans export recollé. Le point compte dans
+     le rythme ; la note du graphique le signale (débrief 16). */
+  var RELEVES_IDENTIQUES = [];
   /* La figure de la comparaison s'anime une fois par source : le drapeau se
      lève au chargement, le premier rendu le consomme. */
   var ANIMER_FIGURE = false, GUETTEUR_FIGURE = null;
@@ -790,6 +808,36 @@
     return String(v == null ? '' : v).trim();
   }
   var RANG_FAMILLE = { termine: 0, encours: 1, afaire: 2, vide: 3 };
+  /* Aucun plan compté « terminé » alors que la colonne a des valeurs : c'est
+     presque toujours un mot « fini » que la page ne connaît pas (débrief 16 :
+     « 0 sur 600 plans terminés » sur les vraies données). La page le dit, avec
+     les valeurs lues, au lieu d'afficher un zéro qu'on croirait juste. Sur
+     tout le contrat, quel que soit le périmètre. */
+  function rendreAlerteValeurs() {
+    var z = $('alerte-valeurs'), morceaux = [];
+    var remplies = VALEURS_COLONNE.filter(function (v) { return v.famille !== 'vide'; });
+    var aucunFini = !VALEURS_COLONNE.some(function (v) { return v.famille === 'termine'; });
+    if (PLANS.length && remplies.length && aucunFini) {
+      var vues = remplies.slice().sort(function (a, b) { return b.n - a.n; });
+      var liste = vues.slice(0, 8).map(function (v) { return '« ' + ech(v.libelle) + ' » (' + nb(v.n) + ')'; }).join(', ') +
+        (vues.length > 8 ? ', et ' + (vues.length - 8) + ' autres' : '');
+      morceaux.push('\x3Cb>Aucun plan n\u2019est compté « terminé ».\x3C/b> Aucune des valeurs lues dans « ' +
+        ech(colonneDite(CLE_SUIVIE) || 'la colonne suivie') + ' » ne veut dire « fini » pour la page : ' + liste +
+        '. Si l\u2019une d\u2019elles veut dire « fini », il faut la déclarer dans Code.gs, \x3Ccode>VALEURS_FINIES\x3C/code> ' +
+        '(aujourd\u2019hui : ' + VALEURS_FINIES_DITES.map(function (v) { return '« ' + ech(v) + ' »'; }).join(', ') + ').');
+    }
+    /* Une référence sur plusieurs lignes : un export collé par-dessus l'ancien
+       sans le vider, le plus souvent. Chaque ligne compte ; on le dit. */
+    var vuesRef = {}, doublons = 0;
+    PLANS.forEach(function (p) { if (vuesRef[p.reference]) doublons++; else vuesRef[p.reference] = true; });
+    if (doublons) {
+      morceaux.push('\x3Cb>' + nb(doublons) + (doublons > 1 ? ' lignes répètent' : ' ligne répète') + ' une référence déjà vue.\x3C/b> ' +
+        'Chaque ligne compte dans les totaux. Si l\u2019export a été collé par-dessus l\u2019ancien, le recoller sur un onglet vidé (Ctrl+A, Suppr).');
+    }
+    z.hidden = !morceaux.length;
+    z.innerHTML = morceaux.map(function (m) { return '\x3Cp>' + m + '\x3C/p>'; }).join('');
+  }
+
   function lireValeurs(plans) {
     var par = {}, liste = [];
     plans.forEach(function (p) {
@@ -841,8 +889,11 @@
     });
   }
 
-  function releveDuConcept(r) {
-    var carte = r.plansConcept, e = { termine: 0, encours: 0, afaire: 0, vide: 0 }, g = {};
+  /* Un relevé refait sur sa carte plan par plan, avec le classement du jour :
+     comptes par état, et par groupe sur les attributs d'aujourd'hui de
+     chaque plan (retrouvé par référence ou par racine). */
+  function releveDeCarte(r, carte) {
+    var e = { termine: 0, encours: 0, afaire: 0, vide: 0 }, g = {};
     var parRef = {}, parRacine = {};
     PLANS.forEach(function (p) { parRef[p.reference] = p; parRacine[p._racine] = p; });
     CLES_DIM.forEach(function (d) { g[d] = {}; });
@@ -962,14 +1013,16 @@
        sinon l'interrupteur s'efface et la page revient à la définition. */
     if (INDICATEUR === 'concept' && !(src.cleConcept && PAR_CLE[src.cleConcept])) INDICATEUR = 'def';
     CLE_SUIVIE = INDICATEUR === 'concept' ? src.cleConcept : 'avancement';
-    VALEURS_FINIES_N = (Array.isArray(src.valeursFinies) && src.valeursFinies.length ? src.valeursFinies : ['Validé'])
-      .map(function (v) { return norm(v); }).filter(Boolean);
+    VALEURS_FINIES_N = formesDeclarees(src.valeursFinies, ['Validé']);
+    VALEURS_FINIES_DITES = (Array.isArray(src.valeursFinies) && src.valeursFinies.length ? src.valeursFinies : ['Validé']).map(String);
+    VALEURS_A_FAIRE_N = formesDeclarees(src.valeursAFaire, []);
 
     PLANS.forEach(function (p) {
       p._etat = classer(p[CLE_SUIVIE]); p._pct = pourcentDe(p);
       p._racine = cleAppariement(analyserUD(p.reference));   // racine + solution : l'identité du plan
     });
     VALEURS_COLONNE = lireValeurs(PLANS);
+    rendreAlerteValeurs();
 
     RELEVES_SRC = (src.releves || []).filter(function (r) { return r && lundiDeLibelle(r.semaine); });
     RELEVES_SRC.sort(function (a, b) { return lundiDeLibelle(a.semaine) - lundiDeLibelle(b.semaine); });
@@ -1014,12 +1067,18 @@
        ceux d'avant l'interrupteur n'ont que la définition, et un historique
        ne se reconstitue pas. Leurs comptes se refont sur leur carte. */
     var enConcept = CLE_SUIVIE !== 'avancement';
+    /* Un relevé qui a gardé sa carte plan par plan se recompte avec le
+       classement d'aujourd'hui (débrief 16) : déclarer un mot « fini » dans
+       VALEURS_FINIES vaut aussi pour les semaines déjà archivées. Les comptes
+       figés au jour de l'archivage mettaient « 0 terminé » en S39 et 300 en
+       S40 — 300 plans par semaine. Sans carte, restent les comptes archivés. */
     RELEVES = RELEVES_SRC.filter(function (r) { return !enConcept || r.plansConcept; }).map(function (r) {
-      if (enConcept) return releveDuConcept(r);
+      if (enConcept) return releveDeCarte(r, r.plansConcept);
+      if (r.plans) return releveDeCarte(r, r.plans);
       return {
         i: indexDe(r.semaine),
         total: r.total, termine: r.termine, encours: r.encours, afaire: r.afaire, vide: r.vide,
-        groupes: r.groupes || {}, plans: r.plans || null
+        groupes: r.groupes || {}, plans: null
       };
     });
     var vivant = releveDepuis(PLANS, AUJ, CLES_DIM, valeurDim, true);
@@ -1040,11 +1099,9 @@
       MAX_IDX = Math.max(104, AUJ + 52);
       RELEVES.push(vivant);
     } else if (dernier && dernier.i === AUJ) {
-      // Le dernier relevé archivé garde son état plan par plan : c'est lui qui
-      // sert de point de comparaison si la feuille a bougé depuis.
-      if (RELEVES.length > 1 && !RELEVES[RELEVES.length - 2].plans) {
-        RELEVES[RELEVES.length - 2].plans = dernier.plans;
-      }
+      /* L'extract du jour tient lieu du relevé de la même semaine. (Un relevé
+         d'avant sans carte n'hérite plus de celle-ci : il prêtait à une autre
+         semaine l'état de celle-là — journal faux, courbe plate.) */
       RELEVES[RELEVES.length - 1] = vivant;
     } else {
       RELEVES.push(vivant);
@@ -2049,6 +2106,10 @@
     if (vueSerie.ecartes) {
       note += ' · ' + vueSerie.ecartes + ' relevé' + (vueSerie.ecartes > 1 ? 's' : '') +
         ' sans détail plan par plan, hors périmètre';
+    }
+    if (RELEVES_IDENTIQUES.length && JOURNAL.length) {
+      note += ' · ' + RELEVES_IDENTIQUES.map(function (i) { return semaineDite(i); }).join(', ') +
+        (RELEVES_IDENTIQUES.length > 1 ? ' : identiques' : ' : identique') + ' au relevé d\u2019avant, plan par plan (export pas recollé ?)';
     }
     $('note-graphe').textContent = note;
     var prochain = prochainJalon();
@@ -3303,11 +3364,13 @@
      un plan réémis y est un changement d'indice, pas un disparu plus un nouveau. */
   function construireJournal() {
     var journal = [];
+    RELEVES_IDENTIQUES = [];
     for (var k = 1; k < RELEVES.length; k++) {
       var avant = RELEVES[k - 1].plans, apres = RELEVES[k].plans;
       if (!avant || !apres) continue;
       var evenements = apparier(avant, apres);
       if (evenements.length) journal.push({ i: RELEVES[k].i, evenements: evenements });
+      else RELEVES_IDENTIQUES.push(RELEVES[k].i);
     }
     return journal.reverse();          // la semaine la plus récente en tête
   }
@@ -3381,11 +3444,41 @@
     }).filter(function (sem) { return sem.evenements.length > 0; });
   }
 
+  /* Un journal vide, et pourquoi — la vraie raison, pas toujours « il faut
+     deux relevés » (débrief 16 : deux semaines archivées, et la page disait
+     encore d'attendre le deuxième relevé). */
+  function pourquoiJournalVide() {
+    var enConcept = CLE_SUIVIE !== 'avancement';
+    var archives = RELEVES_SRC.length, avecConcept = RELEVES_SRC.filter(function (r) { return r.plansConcept; }).length;
+    if (RELEVES.length < 2) {
+      if (!archives) return 'Le journal se remplira au deuxième relevé archivé : il faut deux relevés pour savoir ce qui a bougé entre les deux.';
+      if (enConcept && avecConcept < archives && avecConcept < 2) {
+        return 'Les relevés archivés avant le suivi du concept harnais n\u2019en gardent pas la valeur : le journal du concept se remplira à partir du deuxième relevé qui l\u2019a gardée.';
+      }
+      return 'Un seul relevé archivé pour l\u2019instant (' + semaineDite(RELEVES[0].i) + ') : le journal se remplira au suivant. ' +
+        'Deux archivages dans la même semaine n\u2019en font qu\u2019un — le second remplace le premier. Si l\u2019onglet du contrat ' +
+        'a été renommé depuis un archivage, son historique porte encore l\u2019ancien nom : Suivi FWD → Diagnostic le signale.';
+    }
+    var comparees = 0, sansCarte = [];
+    for (var k = 1; k < RELEVES.length; k++) {
+      if (RELEVES[k - 1].plans && RELEVES[k].plans) comparees++;
+      else sansCarte.push(semaineDite(RELEVES[(RELEVES[k - 1].plans ? k : k - 1)].i));
+    }
+    if (!comparees) {
+      return 'Les relevés de ' + sansCarte.filter(function (x, i, t) { return t.indexOf(x) === i; }).join(', ') +
+        ' n\u2019ont pas le détail plan par plan : le journal ne peut pas dire ce qui a changé. Le prochain archivage l\u2019aura.';
+    }
+    var a = RELEVES[0], b = RELEVES[RELEVES.length - 1];
+    return 'Aucun plan n\u2019a changé de valeur ' + (RELEVES.length > 2 ? 'd\u2019un relevé à l\u2019autre, de ' : 'entre ') +
+      semaineDite(a.i) + (RELEVES.length > 2 ? ' à ' : ' et ') + semaineDite(b.i) + ' (' + nb(Object.keys(b.plans || {}).length) +
+      ' plans comparés). Si des plans ont avancé entre-temps, c\u2019est sans doute le même export qui a été archivé deux fois : ' +
+      'recoller le dernier export de GATES, puis archiver.';
+  }
+
   function rendreJournal() {
     var zone = $('zone-journal');
     if (!JOURNAL.length) {
-      zone.innerHTML = '\x3Cdiv class="journal-vide">Le journal se remplira au deuxième relevé : ' +
-        'il faut deux relevés pour savoir ce qui a bougé entre les deux.\x3C/div>';
+      zone.innerHTML = '\x3Cdiv class="journal-vide">' + ech(pourquoiJournalVide()) + '\x3C/div>';
       return;
     }
     var journal = journalAffiche();
@@ -3636,7 +3729,12 @@
       fin: der.total && der.total === der.termine ? 'terminé' : fin === null ? null : semaineDite(fin),
       arret: RELEVES.length > 1 ? plansALArret().liste.length : 0,
       echeance: j ? { texte: j.texte, quand: semaineDite(j.i), jours: joursAvant(j), enRetard: b.enRetard, manque: b.manque, requis: b.requis } : null,
-      releve: semaineDite(AUJ)
+      releve: semaineDite(AUJ),
+      /* Ce que le classeur dit de ce contrat (colonne suivie introuvable…) :
+         la ligne le montre au lieu d'un « 0 / N » qu'on croirait juste. */
+      message: SRC && SRC.message ? String(SRC.message) : '',
+      aucunFini: !VALEURS_COLONNE.some(function (v) { return v.famille === 'termine'; }) &&
+        VALEURS_COLONNE.some(function (v) { return v.famille !== 'vide'; })
     };
   }
   function calculerEnsemble(paquets) {
@@ -3675,10 +3773,15 @@
           ech(c.nom) + '\x3C/button>\x3C/th>\x3Ctd colspan="6" class="doux">' + (resumes === null ? 'chargement…' : 'contrat impossible à charger') + '\x3C/td>\x3C/tr>';
       }
       var e = r.echeance;
+      if (r.message) {
+        return '\x3Ctr' + (courant ? ' class="courant"' : '') + '>\x3Cth scope="row">\x3Cbutton type="button" class="lien-doux" data-aller-contrat="' + ech(c.id) + '">' +
+          ech(c.nom) + '\x3C/button>' + (courant ? '\x3Csmall>affiché\x3C/small>' : '') + '\x3C/th>\x3Ctd colspan="6" class="alerte-ligne">' + ech(r.message) + '\x3C/td>\x3C/tr>';
+      }
       return '\x3Ctr' + (courant ? ' class="courant"' : '') + '>' +
         '\x3Cth scope="row">\x3Cbutton type="button" class="lien-doux" data-aller-contrat="' + ech(c.id) + '" title="Passer à ce contrat">' + ech(c.nom) + '\x3C/button>' +
           (courant ? '\x3Csmall>affiché\x3C/small>' : '') + '\x3C/th>' +
-        '\x3Ctd>\x3Cspan class="v">' + nb(r.termines) + ' / ' + nb(r.total) + '\x3C/span>\x3Csmall>' + r.pct + ' %\x3C/small>\x3C/td>' +
+        '\x3Ctd>\x3Cspan class="v">' + nb(r.termines) + ' / ' + nb(r.total) + '\x3C/span>\x3Csmall' + (r.aucunFini ? ' class="alerte-ligne" title="Aucune valeur de la colonne n\u2019est comptée comme « fini » : voir le haut de la page de ce contrat"' : '') + '>' +
+          (r.aucunFini ? 'aucun mot « fini » reconnu' : r.pct + ' %') + '\x3C/small>\x3C/td>' +
         '\x3Ctd>\x3Cspan class="v">' + (r.gain === null ? '\u2014' : (r.gain > 0 ? '+' : '') + nb(r.gain)) + '\x3C/span>' +
           (r.reculs ? '\x3Csmall class="recul">' + nb(r.reculs) + (r.reculs > 1 ? ' reculs' : ' recul') + '\x3C/small>' : '') + '\x3C/td>' +
         '\x3Ctd>\x3Cspan class="v">' + (r.rythme === null ? '\u2014' : virgule(r.rythme) + '/sem.') + '\x3C/span>\x3C/td>' +

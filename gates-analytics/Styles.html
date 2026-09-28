@@ -102,6 +102,15 @@ body {
   gap: 16px; flex-wrap: wrap; margin-bottom: 12px;
 }
 .phrase { font-size: 20px; }
+/* Aucun plan compté terminé alors que la colonne a des valeurs (débrief 16) :
+   la page le dit, avec les valeurs lues, au lieu d'un zéro qu'on croirait juste. */
+.alerte-valeurs { margin: 0 0 14px; padding: 10px 14px; border-left: 3px solid var(--cours); background: var(--surface);
+  font-size: 13px; line-height: 1.55; color: var(--encre-2); }
+.alerte-valeurs[hidden] { display: none; }
+.alerte-valeurs b { color: var(--encre); font-weight: 500; }
+.alerte-valeurs p { margin: 0; }
+.alerte-valeurs p + p { margin-top: 6px; }
+.alerte-valeurs code { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
 .phrase b { font-weight: 600; }
 
 .barre { display: flex; gap: 2px; height: 26px; margin-bottom: 0; }
@@ -691,6 +700,7 @@ svg.graphe text { font-family: "IBM Plex Sans", sans-serif; }
 .ensemble-table .v.tard, .ensemble-table small.recul { color: var(--alerte); }
 .ensemble-table .v.bon { color: var(--fait); }
 .ensemble-table .v.arret { color: var(--cours); }
+.ensemble-table .alerte-ligne { color: var(--alerte); }
 /* L'historique d'un plan, au-dessus du tableau. */
 .fiche-plan { margin: 0 0 12px; padding: 12px 16px 12px; background: var(--surface); border: 1px solid var(--filet); border-radius: 4px; }
 .fiche-plan[hidden] { display: none; }

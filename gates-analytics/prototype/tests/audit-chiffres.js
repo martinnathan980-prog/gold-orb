@@ -68,7 +68,10 @@ let totalEcarts = 0;
           const carteDe = r => ind === 'def' ? r.plans : r.plansConcept;
           const pts = rels.map(r => {
             const carte = carteDe(r);
-            if (!per) return { i: idx(r.semaine), total: ind === 'def' ? r.total : Object.keys(carte).length, termine: ind === 'def' ? r.termine : Object.keys(carte).filter(k => classer(carte[k]) === 'termine').length, carte };
+            /* Un relevé qui a sa carte se recompte avec le classement du jour (débrief 16) ; sans carte, les comptes archivés. */
+            if (!per) return carte
+              ? { i: idx(r.semaine), total: Object.keys(carte).length, termine: Object.keys(carte).filter(k => classer(carte[k]) === 'termine').length, carte }
+              : { i: idx(r.semaine), total: r.total, termine: r.termine, carte };
             let t = 0, f = 0;
             Object.keys(carte || {}).forEach(k => { const pl = planDe(k); if (!pl || dom(pl) !== per) return; t++; if (classer(carte[k]) === 'termine') f++; });
             return { i: idx(r.semaine), total: t, termine: f, carte };
@@ -157,7 +160,9 @@ let totalEcarts = 0;
     const src = document.getElementById('select-contrat') && window.__jeuDExemple ? window.__jeuDExemple(document.getElementById('select-contrat').value) : null;
     const s = src || window.__deballerPaquet(JSON.parse(JSON.stringify(window.SUIVI_FWD_DONNEES)));
     const vals = new Set(); s.plans.forEach(p => { vals.add(String(p.avancement == null ? '' : p.avancement)); if (s.cleConcept) vals.add(String(p[s.cleConcept] == null ? '' : p[s.cleConcept])); });
-    ['Validé', 'validé', 'Non validé', '100 %', '100%', '0 %', '45 %', 'À faire', 'A traiter', 'Terminé', 'OK', 'Check', '-', '', 'En cours', 'Soldé'].forEach(v => vals.add(v));
+    ['Validé', 'validé', 'Validée', 'VALIDÉS', 'Non validé', 'Non validée', '100 %', '100%', '0 %', '45 %', '0', '12', 'À faire', 'A traiter',
+     'Pas commencé', 'Non commencé', 'Terminé', 'Terminée', 'Non terminé', 'OK', 'Non OK', 'OK avec réserve', 'book', 'Check', '-', '', 'EMPTY',
+     'En cours', 'Soldé', 'Clôturée', 'Finie', '3 - Validé', '1 - En cours', '0 - A traiter', '2) Check', '1.5', '2026-09-01', 'Released'].forEach(v => vals.add(v));
     return [...vals].map(v => [v, window.__classer(v)]);
   });
   valeurs.forEach(([v, c]) => ok('classement « ' + v + ' » : page = serveur', ctx.classerFWD(v) === c, JSON.stringify([c, ctx.classerFWD(v)])));

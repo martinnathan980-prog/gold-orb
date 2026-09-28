@@ -286,10 +286,23 @@ function serveurSur(valeurs, proprietes, fichiers) {
     !/⚠ La colonne demandée/.test(rapportGates),
     rapportGates.split('\n').find(l => /Avancement FWD/.test(l)));
   verifier('pour chaque colonne suivie, le diagnostic donne les valeurs lues et leur compte',
-    (rapportGates.match(/^  valeurs lues : /gm) || []).length === 2, rapportGates.split('\n').filter(l => /valeurs lues/.test(l)).join(' / '));
+    (rapportGates.match(/^  valeurs lues \(comptées comme\) : /gm) || []).length === 2, rapportGates.split('\n').filter(l => /valeurs lues/.test(l)).join(' / '));
   const rapportValide = serveurSur(feuilleExemple(10).map((l, i) => i === 4 ? l.map((c, j) => j === 8 ? 'Validé' : c) : l)).contexte.diagnostic();
-  verifier('« Validé » y est marqué « = fini »', /« Validé » 1 = fini/.test(rapportValide),
+  verifier('chaque valeur dit comment elle est comptée : « Validé » 1 → fini',
+    /« Validé » 1 → fini/.test(rapportValide) && /→ en cours/.test(rapportValide) && !/Aucune valeur n'est comptée comme finie/.test(rapportValide),
     rapportValide.split('\n').filter(l => /valeurs lues/.test(l)).join(' / '));
+  /* Débrief 16 : « 0 sur 600 terminés » sur les vraies données. Un vocabulaire
+     que la page ne connaît pas se voit au diagnostic ET sur la page. */
+  const vocab = ['Released', 'Checked', 'In work', 'Released', 'Released'];
+  // Lignes 0 à 3 : titres, groupes, en-têtes ; les plans commencent ligne 4, avancement en colonne 8.
+  const feuilleVocab = feuilleExemple(10).map((l, i) => i >= 4 && i < 9 ? l.map((c, j) => j === 8 ? vocab[i - 4] : c) : l);
+  const rapportVocab = serveurSur(feuilleVocab.map(l => l.map((c, j) => j === 8 && /^(Terminé|Validé|OK|100 ?%|Fini|Soldé)$/i.test(c) ? 'Checked' : c))).contexte.diagnostic();
+  verifier('un vocabulaire inconnu : le diagnostic l’annonce — « Aucune valeur n’est comptée comme finie »',
+    /⚠ Aucune valeur n'est comptée comme finie/.test(rapportVocab) && /« Released » \d+ → en cours/.test(rapportVocab),
+    rapportVocab.split('\n').filter(l => /valeurs lues|Aucune valeur/.test(l)).join(' / '));
+  verifier('et le bilan du diagnostic le reprend : « À vérifier avant de présenter », au lieu de conclure seul « tout est en place »',
+    /\nÀ vérifier avant de présenter \(\d+\) :\n(  ⚠ .*\n?)*  ⚠ Aucune valeur n'est comptée comme finie/.test(rapportVocab),
+    rapportVocab.split('\n').slice(-6).join(' / '));
   verifier('et celle du concept harnais, avec ses comptes',
     /✓ Concept harnais : colonne « Avancement Concept Harnais », groupe « HDK AA 011 »/.test(rapportGates) &&
     /✓ Concept harnais[^\n]*\n  \d+ terminés, \d+ en cours, \d+ à faire, \d+ non renseignés/.test(rapportGates),
@@ -300,6 +313,24 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /1 ligne\(s\) sans référence ignorée/.test(rapportGates) &&
     /Tableau ouvert sur les 138 colonnes de la feuille, dans son ordre/.test(rapportGates),
     rapportGates.split('\n').find(l => /Tableau ouvert/.test(l)));
+
+  /* Débrief 16 : « deux semaines archivées, et le journal reste vide ». Le
+     diagnostic dit combien de plans ont changé entre les deux derniers
+     relevés — et quand ils sont identiques, pourquoi le journal est vide. */
+  const dj = serveurSur(feuilleExemple(12));
+  dj.contexte.enregistrerInstantaneHebdo();
+  const fhj = dj.contexte.getFeuilleHistorique(dj.classeur, undefined, false);
+  const semJ = dj.contexte.numeroSemaineISO(new Date());
+  const precedente = (() => { const [a, w] = semJ.split('-S').map(Number); return w > 1 ? a + '-S' + String(w - 1).padStart(2, '0') : (a - 1) + '-S52'; })();
+  fhj.valeurs[1][0] = precedente;                     // le relevé d'avant, même extract
+  dj.contexte.enregistrerInstantaneHebdo();
+  const diagJ = dj.contexte.diagnostic();
+  verifier('deux relevés identiques : le diagnostic le dit, et que le journal restera vide',
+    /entre \d{4}-S\d\d et \d{4}-S\d\d : 0 plan\(s\) ont changé de valeur/.test(diagJ) && /⚠ Les deux derniers relevés sont identiques/.test(diagJ),
+    diagJ.split('\n').filter(l => /relevé|journal|changé/.test(l)).join(' / '));
+  verifier('et il ne recopie ni valeur ni référence : des comptes seulement',
+    !diagJ.split('\n').filter(l => /changé de valeur|s'écarte du dernier relevé/.test(l)).some(l => /UD-\d/.test(l)),
+    diagJ.split('\n').filter(l => /changé de valeur|s'écarte/.test(l)).join(' / '));
 
   // =================================================================
   section('Classement des quatre états, côté serveur');
@@ -1177,12 +1208,49 @@ function serveurSur(valeurs, proprietes, fichiers) {
     /Onglet de données : Aucun onglet de données exploitable dans ce classeur : « Données » est vide — coller l'export GATES en A1/.test(dVide.contexte.diagnostic()),
     dVide.contexte.diagnostic());
 
-  const dSansFWD = serveurSur([['Réf', 'Truc'], ['A-1', 'x']]);
+  const dSansFWD = serveurSur([['Référence UD', 'Truc'], ['A-1', 'x']]);
   const rapportSansFWD = dSansFWD.contexte.diagnostic();
   verifier('l\'absence de colonne d\'avancement est signalée',
     /Aucune colonne d'avancement FWD/.test(rapportSansFWD));
   verifier('et la conséquence est expliquée',
     /tout sera « non renseigné »/.test(rapportSansFWD));
+  /* Débrief 16 (confidentialité) : sans aucun intitulé d'export, la « ligne
+     d'en-têtes » devinée peut être une ligne de plan — le diagnostic n'en
+     recopie rien, et s'arrête là pour cet onglet. */
+  const dSansIntitule = serveurSur([['A-1', 'Retard fournisseur, voir M. Dupont', 'x'], ['A-2', 'y', 'z']]);
+  const rapportSansIntitule = dSansIntitule.contexte.diagnostic();
+  verifier('une ligne d\'en-têtes introuvable : le diagnostic le dit, ne recopie aucune cellule, et dit le geste',
+    /✗ Ligne d'en-têtes introuvable/.test(rapportSansIntitule) && !/Dupont|A-1/.test(rapportSansIntitule) && /recoller l'extract entier en A1/.test(rapportSansIntitule),
+    rapportSansIntitule.split('\n').filter(l => /en-têtes|Dupont|A-1/.test(l)).join(' / '));
+  /* Un onglet « Notes » à côté d'un vrai export n'est pas un contrat : l'onglet
+     « SEE » et le contrat unique restent ce qu'ils sont. */
+  const clNotes = new Classeur([new Feuille('HDK', feuilleExemple(10)), new Feuille('Notes', [['réunion du 24/09 : relancer le BE']])]);
+  const cNotes = chargerServeur(clNotes, {});
+  verifier('un onglet « Notes » à côté de l\'export n\'est pas un contrat — et le diagnostic dit qu\'il est écarté',
+    cNotes.listerContrats(clNotes).map(c => c.id).join() === 'HDK' && /Onglet « Notes » écarté/.test(cNotes.diagnostic()) &&
+    !/relancer le BE/.test(cNotes.diagnostic()), cNotes.listerContrats(clNotes).map(c => c.id).join());
+  /* Un export collé par-dessus l'ancien : des références répétées. Le
+     diagnostic les compte, la carte archivée garde la première ligne. */
+  const fDoubles = feuilleExemple(10);
+  fDoubles.push(fDoubles[5].slice(), fDoubles[6].slice());
+  const cDoubles = serveurSur(fDoubles);
+  const diagDoubles = cDoubles.contexte.diagnostic();
+  cDoubles.contexte.enregistrerInstantaneHebdo();
+  const carteDoubles = cDoubles.contexte.getHistorique(cDoubles.classeur)[0].plans;
+  verifier('des références en double : « ⚠ 2 ligne(s) répètent une référence déjà vue », et la carte garde la première ligne',
+    /⚠ 2 ligne\(s\) répètent une référence déjà vue/.test(diagDoubles) && Object.keys(carteDoubles).length === 10,
+    diagDoubles.split('\n').filter(l => /répètent/.test(l)).join(' / ') + ' | carte ' + Object.keys(carteDoubles).length);
+  /* Un onglet de contrat renommé après un archivage : son historique porte
+     l'ancien nom. Le diagnostic le trouve et dit le geste (débrief 16). */
+  const fRenomme = new Feuille('Feuille 1', feuilleExemple(10));
+  const clRenomme = new Classeur([fRenomme]);
+  const cRenomme = chargerServeur(clRenomme, {});
+  cRenomme.enregistrerInstantaneHebdo();
+  fRenomme.nom = 'HDK';
+  const diagRenomme16 = cRenomme.diagnostic();
+  verifier('un onglet renommé : son ancien historique est signalé, avec le geste — « Historique_FWD_Feuille 1 » (1 relevé)',
+    /⚠ L'onglet d'historique « Historique_FWD_Feuille 1 » \(1 relevé\) n'est rattaché à aucun contrat/.test(diagRenomme16) &&
+    /Historique_FWD_<nom du contrat>/.test(diagRenomme16), diagRenomme16.split('\n').filter(l => /Historique_FWD/.test(l)).join(' / '));
 
   const dSansHisto = serveurSur(feuilleExemple(10));
   verifier('l\'absence de relevé est signalée avec la marche à suivre',
@@ -2103,7 +2171,8 @@ function serveurSur(valeurs, proprietes, fichiers) {
   verifier('plus d\'interrupteur « Exemple » ni de mot de démonstration devant le classeur',
     !premier.interrupteur && premier.mot === '' && premier.pied && premier.vide === 'false', JSON.stringify(premier));
   verifier('les plans affichés sont ceux de la feuille', premier.plans === 186 && /186 plans/.test(premier.phrase), premier.phrase);
-  verifier('le journal explique pourquoi il est vide', /deuxième relevé/.test(premier.journal), premier.journal.slice(0, 120));
+  verifier('le journal explique pourquoi il est vide : un seul relevé, nommé, et le suivant le remplira',
+    /^Un seul relevé archivé pour l’instant \(S\d{1,2} · \S+ \d{4}\) : le journal se remplira au suivant\./.test(premier.journal.replace(/[\u00a0\u202f]/g, ' ')), premier.journal.slice(0, 160));
   await ctxPremier.close();
 
   /* Un classeur sans plan : pas de démonstration à la place, mais ce qu'il
