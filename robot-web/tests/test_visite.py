@@ -129,7 +129,9 @@ def _visiter(tmp_path, url, promenade):
     nav = Navigateur(cfg, tmp_path, visible=False)
     nav.options_lancement = {"handle_sigint": False}
     nav.ouvrir()
-    visite = Visite(nav, tmp_path / "carte", interactif=False, releve_s=0.4)
+    (tmp_path / "Telechargements").mkdir(exist_ok=True)
+    visite = Visite(nav, tmp_path / "carte", interactif=False, releve_s=0.4,
+                    dossier_telechargements=tmp_path / "Telechargements")
     try:
         visite.visiter(url, promenade=promenade)
     finally:
@@ -183,7 +185,9 @@ def test_visite_guidee_note_les_ecrans_sans_rien_bloquer(portail, tmp_path, navi
     assert (tmp_path / "carte" / "carte_PRIVEE_ne_pas_envoyer.html").exists()
 
 
-def test_visite_note_un_pdf_sans_le_garder(portail, tmp_path, navigateur_ok):
+def test_visite_range_un_pdf_dans_telechargements(portail, tmp_path, navigateur_ok):
+    """Un PDF ouvert pendant la visite arrive dans Téléchargements, comme d'habitude ; la carte
+    note seulement qu'un document existe."""
     def promenade(v):
         page = v.nav.page_courante()
         page.click("text=PL-11") if page.locator("text=PL-11").count() else page.goto(portail + "/plans/11")
@@ -198,8 +202,8 @@ def test_visite_note_un_pdf_sans_le_garder(portail, tmp_path, navigateur_ok):
 
     visite = _visiter(tmp_path, portail + "/plans/11", promenade)
     assert visite.documents + len(visite.telechargements) >= 1
-    fichiers = [f for f in (tmp_path / "telechargements").glob("*")] if (tmp_path / "telechargements").exists() else []
-    assert not fichiers, fichiers
+    if visite.telechargements:  # navigateur sans visionneuse de PDF : le fichier est téléchargé
+        assert [f.name for f in (tmp_path / "Telechargements").iterdir()] == ["doc.pdf"]
 
 
 def test_ecran_de_connexion_pas_note(portail, tmp_path, navigateur_ok):

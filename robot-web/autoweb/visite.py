@@ -999,7 +999,10 @@ class Visite(Explorateur):
             parent = cadre.parent_frame
             ouvreur = self._ouvreurs.get(page)
             base = parent.url if parent is not None else (ouvreur.url if ouvreur is not None else "")
-            if base and _site_adresse(base) == self.site:
+            # jamais dans la visionneuse d'un PDF (son cadre interne ne répond pas aux scripts) : seulement
+            # sous une page HTML du portail déjà lue
+            etat_parent = self._etats.get(parent) if parent is not None else ("", 0, "", "text/html", False)
+            if base and _site_adresse(base) == self.site and etat_parent and "html" in str(etat_parent[3]).lower():
                 self._equiper(cadre)
             return
         if not url.startswith(("http:", "https:", "file:", "blob:")) or est_onglet_parasite(url):
