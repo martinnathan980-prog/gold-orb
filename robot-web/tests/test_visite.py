@@ -279,9 +279,19 @@ def test_rassembler_met_tout_dans_un_fichier(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(cli, "DOSSIER_PROJET", tmp_path)
     visite = tmp_path / "explorations" / "20260928-100000-visite"
     auto = tmp_path / "explorations" / "20260928-090000"
-    for dossier, texte in ((auto, "carte auto"), (visite, "carte visite")):
+    import json
+    import os
+    import time
+
+    ancienne = tmp_path / "explorations" / "20260927-100000"  # carte de la version 18 : jamais envoyée
+    ratee = tmp_path / "explorations" / "20260928-110000-visite"  # visite d'un seul écran : pas envoyée
+    for i, (dossier, texte, version, ecrans) in enumerate(((ancienne, "carte v18", 0, 30), (auto, "carte auto", 19, 12),
+                                                           (visite, "carte visite", 19, 20), (ratee, "carte ratee", 19, 1))):
         dossier.mkdir(parents=True)
         (dossier / "carte_a_partager.txt").write_text(texte, encoding="utf-8")
+        (dossier / "carte.json").write_text(json.dumps({"version": version, "ecrans": [{}] * ecrans}), encoding="utf-8")
+        horodatage = time.time() - 100 + i
+        os.utime(dossier / "carte_a_partager.txt", (horodatage, horodatage))
     (tmp_path / "taches").mkdir()
     (tmp_path / "taches" / "dupliquer_un_plan_a_partager.txt").write_text("gestes dupliquer", encoding="utf-8")
     (tmp_path / "taches" / "dupliquer_un_plan.yaml").write_text("secret: ne pas envoyer", encoding="utf-8")
@@ -291,6 +301,7 @@ def test_rassembler_met_tout_dans_un_fichier(tmp_path, monkeypatch, capsys):
     (sortie,) = tmp_path.glob("A_ENVOYER_A_CLAUDE_*.txt")
     texte = sortie.read_text(encoding="utf-8")
     assert "flamanville" not in texte.lower() and "onglet XXX" in texte
+    assert "carte v18" not in texte and "carte ratee" not in texte
     assert "carte visite" in texte and "carte auto" in texte and "gestes dupliquer" in texte
     assert "ne pas envoyer" not in texte
     assert texte.index("carte visite") < texte.index("carte auto") < texte.index("gestes dupliquer")
@@ -414,8 +425,8 @@ def test_filet_de_securite_et_carte_sans_noms(portail, tmp_path, navigateur_ok):
         assert secret not in partage, secret
     assert "Voir …" in partage and "Titre du plan" in partage and "Indice" in partage
     assert "onglets de document (un par élément ouvert) : 1" in partage
-    assert "code btnSupprimerPlan" in partage
-    assert "1 bouton(s) de modification bloqué(s)" in partage
+    assert "code " not in partage  # noms de code (id, name) : jamais dans le fichier à partager
+    assert "1 bouton(s) et 0 envoi(s) de modification bloqué(s)" in partage
 
 
 def test_recherche_ne_cree_pas_un_nouvel_ecran():
@@ -432,3 +443,138 @@ def test_noms_de_personnes_reconnus():
         assert p(nom), nom
     for libelle in ("Plans", "Recherche avancée", "Mes documents", "Accueil"):
         assert not p(libelle), libelle
+
+
+
+# ---------------------------------------------------------------------- filet de sécurité : les pièges de la relecture
+PIEGES = """<!doctype html><meta charset=utf-8><title>Fiche</title>
+<script>const envoi = n => fetch('/api/' + n, {method: 'POST', body: 'x'});</script>
+<nav><a href=/accueil>Accueil</a> <a href=/modifications>Mes modifications</a></nav>
+<ul role=menu><li role=menuitem onclick="envoi('menuitem_supprimer')">Supprimer</li>
+<li role=menuitem onclick="envoi('menuitem_dupliquer')">Dupliquer</li></ul>
+<header><h2>PL-12</h2><button onclick="envoi('header_supprimer')">Supprimer</button></header>
+<aside><button onclick="envoi('aside_enregistrer')">Enregistrer</button></aside>
+<button id=a1 onclick="envoi('enregistrer_fermer')">Enregistrer et fermer</button>
+<button id=a2 onclick="envoi('cancel_checkout')">Cancel Checkout</button>
+<button id=a3 onclick="envoi('reviser')">Réviser</button>
+<button id=ctl00_Main_ucResultatsRecherche_gvPlans_ctl02_btnSupprimer onclick="envoi('grille')">Supprimer</button>
+<button id=a4 class=btn-danger onclick="envoi('icone_seule')"><i class="fa fa-trash"></i></button>
+<a id=a5 href="javascript:void(0)" onclick="envoi('img_alt')"><img alt=Supprimer src=data:,></a>
+<a id=a6 href="/plans/5" onclick="envoi('lien_onclick');return false">Supprimer</a>
+<div id=a7 style="cursor:pointer" onclick="envoi('div_maison')">Supprimer</div>
+<button id=a8 onpointerup="envoi('pointerup')">Supprimer</button>
+<div id=a9 role=button tabindex=0 onkeydown="if(event.key==='Enter')envoi('clavier')">Supprimer</div>
+<a id=a10 href="/plans/5/delete">Retirer du dossier</a>
+<form id=f1 onsubmit="envoi('formulaire_enregistrer');return false"><input name=t><button>Enregistrer</button></form>
+<button id=a11 onclick="fetch('/api/plans/5', {method: 'DELETE'})">Mettre à la une</button>
+<button id=a12 onclick="fetch('/api/Plans.aspx', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: '__VIEWSTATE=x&__EVENTTARGET=ctl00%24Main%24btnSupprimerPlan'})">Continuer</button>
+<table><thead><tr><th>Numéro</th><th>Statut</th></tr></thead><tbody>
+<tr style="cursor:pointer" onclick="envoi('ligne_publiee')"><td>PL-12</td><td>Publié</td></tr></tbody></table>
+<a id=b1 href=/plans/7>Nouveau poste source</a>
+<button id=b2 onclick="envoi('rechercher')">Rechercher</button>
+<button id=b3 onclick="envoi('telecharger')">Télécharger le PDF</button>
+<button id=b4 onclick="envoi('fermer')">Fermer</button>
+<x-bouton id=a13 role=button onclick="envoi('composant_web')">Supprimer</x-bouton>
+"""
+
+DANGEREUX = ["menuitem_supprimer", "menuitem_dupliquer", "header_supprimer", "aside_enregistrer", "enregistrer_fermer",
+             "cancel_checkout", "reviser", "grille", "icone_seule", "img_alt", "lien_onclick", "div_maison", "pointerup",
+             "clavier", "formulaire_enregistrer", "composant_web"]
+PERMIS = ["ligne_publiee", "rechercher", "telecharger", "fermer"]
+
+
+def _serveur_pieges():
+    requetes = []
+
+    class Pieges(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+
+        def _repondre(self):
+            longueur = int(self.headers.get("Content-Length") or 0)
+            corps = self.rfile.read(longueur).decode("utf-8", "replace") if longueur else ""
+            requetes.append((self.command, urlsplit(self.path).path, corps))
+            donnees = (PIEGES if urlsplit(self.path).path in ("/", "/fiche") else "<!doctype html><title>x</title>ok").encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(donnees)))
+            self.end_headers()
+            self.wfile.write(donnees)
+
+        do_GET = do_POST = do_DELETE = do_PUT = _repondre
+
+    serveur = ThreadingHTTPServer(("127.0.0.1", 0), Pieges)
+    threading.Thread(target=serveur.serve_forever, daemon=True).start()
+    return serveur, requetes
+
+
+def test_filet_de_securite_resiste_aux_pieges(tmp_path, navigateur_ok):
+    serveur, requetes = _serveur_pieges()
+    url = f"http://127.0.0.1:{serveur.server_address[1]}/fiche"
+
+    def promenade(v):
+        page = v.nav.page_courante()
+        for selecteur in ("[role=menuitem] >> nth=0", "[role=menuitem] >> nth=1", "header button", "aside button",
+                          "#a1", "#a2", "#a3", "#ctl00_Main_ucResultatsRecherche_gvPlans_ctl02_btnSupprimer", "#a4",
+                          "#a5", "#a6", "#a7", "#a8", "#f1 button", "#a11", "#a12", "#a13",
+                          "tbody tr", "#b2", "#b3", "#b4"):
+            page.click(selecteur)
+            page.wait_for_timeout(150)
+        page.focus("#a9")
+        page.keyboard.press("Enter")
+        page.click("#a10", button="middle")
+        v.laisser_tourner(1.0)
+        page.click("#b1")  # un lien ordinaire dont le texte ressemble à une action : il s'ouvre
+        v.laisser_tourner(1.0)
+
+    try:
+        cfg = ConfigNavigateur(canal="auto", visible=False, profil=str(tmp_path / "profil"), dialogues="ignorer")
+        nav = Navigateur(cfg, tmp_path, visible=False)
+        nav.ouvrir()
+        visite = Visite(nav, tmp_path / "carte", interactif=False, releve_s=0.4)
+        try:
+            visite.visiter(url, promenade=promenade)
+        finally:
+            nav.fermer()
+    finally:
+        serveur.shutdown()
+        serveur.server_close()
+    arrives = {p.rsplit("/", 1)[-1] for m, p, _ in requetes if p.startswith("/api/")}
+    for nom in DANGEREUX:
+        assert nom not in arrives, nom
+    for nom in PERMIS:
+        assert nom in arrives, nom
+    assert not any(m == "DELETE" for m, _, _ in requetes)  # « Mettre à la une » : DELETE coupé par la 2e barrière
+    assert not any("btnSupprimerPlan" in c for _, _, c in requetes)  # envoi ASP.NET de suppression coupé
+    assert not any(p == "/plans/5/delete" for _, p, _ in requetes)  # clic molette sur un lien d'action
+    assert any(p == "/plans/7" for _, p, _ in requetes)  # « Nouveau poste source » : simple lien, ouvert
+    assert visite.envois_bloques and visite.boutons_bloques >= 10
+
+
+def test_connexion_d_entreprise_jamais_bloquee(tmp_path, navigateur_ok):
+    """Page de connexion (autre site, bouton « okta-signin-submit ») : le filet ne s'en mêle pas."""
+    serveur, requetes = _serveur_pieges()
+    port = serveur.server_address[1]
+    connexion = f"http://localhost:{port}/connexion"
+
+    def promenade(v):
+        page = v.nav.page_courante()
+        page.set_content("<form method=post action='/login'><input name=u><input type=password name=p>"
+                         "<input type=submit id=okta-signin-submit value='Sign In'></form>")
+        page.click("#okta-signin-submit")
+        page.wait_for_timeout(500)
+
+    try:
+        cfg = ConfigNavigateur(canal="auto", visible=False, profil=str(tmp_path / "profil"), dialogues="ignorer")
+        nav = Navigateur(cfg, tmp_path, visible=False)
+        nav.ouvrir()
+        visite = Visite(nav, tmp_path / "carte", interactif=False, releve_s=0.4)
+        try:
+            visite.visiter(connexion, promenade=promenade)
+        finally:
+            nav.fermer()
+    finally:
+        serveur.shutdown()
+        serveur.server_close()
+    assert any(m == "POST" and p == "/login" for m, p, _ in requetes)
+    assert visite.boutons_bloques == 0

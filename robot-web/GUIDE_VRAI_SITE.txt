@@ -1,13 +1,13 @@
-ROBOT WEB - TOUT RECOMMENCER A ZERO, PUIS UNE TACHE A RELANCER QUAND VOUS VOULEZ
-=================================================================================
+ROBOT WEB - METTRE A JOUR, FAIRE LA CARTE, MONTRER ET RELANCER DES TACHES
+==========================================================================
 (Windows, au bureau. Version 19 du robot.)
 
 A FAIRE, DANS L'ORDRE (chaque partie est expliquee plus bas) :
    1. PARTIE A : mettre le robot a jour, version 19 (5 minutes).
    2. PARTIE E : faire la carte du portail (15 a 20 minutes). C'est VOUS qui
       cliquez, guide etape par etape ; le robot regarde et note. Il ne clique
-      sur rien, et il bloque les boutons Supprimer, Enregistrer... pendant la
-      visite : rien ne peut casser.
+      sur rien. Consultez seulement (n'enregistrez rien) : en plus, le robot
+      bloque la plupart des boutons de modification pendant la visite.
    3. PARTIE F : me montrer une action (dupliquer, supprimer un plan), sur un
       plan de test. Si vous l'avez deja fait avec la version 18 : inutile de
       recommencer.
@@ -17,7 +17,8 @@ Ce qui change avec la version 19 :
    - La carte se fait maintenant en VISITE GUIDEE : vous vous promenez dans
      votre portail comme d'habitude, guide etape par etape par un bandeau vert ;
      le robot regarde et note. Il ne clique sur rien, ne modifie rien, et
-     bloque pendant la visite les boutons Supprimer, Enregistrer, Dupliquer...
+     bloque pendant la visite la plupart des boutons de modification
+     (Supprimer, Enregistrer, Dupliquer...) et des envois qui y ressemblent.
    - La premiere fois, on se connecte dans le Chrome du robot sans le robot,
      comme dans un Chrome ordinaire (Google et certains portails refusent une
      connexion dans un navigateur pilote par un robot).
@@ -83,7 +84,8 @@ A4. On efface les anciens installeurs (pour ne pas les confondre avec le
         del robot-web-installeur.txt
         del "%USERPROFILE%\Downloads\robot-web-installeur*.txt"
 
-    VOUS VOYEZ : rien, ou « Fichier introuvable ». Les deux sont normaux.
+    VOUS VOYEZ : rien, « Fichier introuvable » ou « Impossible de trouver ... ».
+    Les trois sont normaux.
 
 A5. Dans Gmail, ouvrez mon dernier mail et telechargez la piece jointe
         robot-web-installeur.txt
@@ -293,7 +295,9 @@ C10. Pour une AUTRE tache : menu, choix 1, et refaites la PARTIE B.
 Envoyez-moi simplement :
    1. le numero de l'etape (par exemple A8, E5 ou G2) ;
    2. les 5 dernieres lignes de la fenetre noire (si une ligne contient
-      « ERREUR », c'est elle la plus importante).
+      « ERREUR », c'est elle la plus importante). Relisez-les avant : si
+      une ligne contient un nom de plan, de projet, de personne ou une
+      adresse, remplacez-le par XXX.
 Pas besoin de capture d'ecran, ni du nom du site, ni de vos donnees.
 
 Cas deja connus :
@@ -349,9 +353,11 @@ C'est VOUS qui vous promenez dans le portail, comme d'habitude, guide etape par
 etape. Le robot regarde par-dessus votre epaule et note comment chaque ecran
 est construit : les noms des champs, des boutons, des onglets, des colonnes.
 Jamais ce qui est ecrit dedans. Il ne clique sur rien, ne tape rien, ne
-modifie rien. Et par securite, pendant la visite, il BLOQUE les boutons
-Supprimer, Enregistrer, Dupliquer, Creer, Modifier... : meme une fausse
-manoeuvre ne part pas.
+modifie rien. Pendant la visite, CONSULTEZ seulement : n'enregistrez rien, ne
+validez rien. Par securite, le robot bloque en plus la plupart des boutons de
+modification (Supprimer, Enregistrer, Dupliquer, Creer, Modifier, Reviser...)
+et coupe les envois qui ressemblent a une modification. Il ne peut pas tous
+les reconnaitre : c'est un filet de securite, pas une permission.
 
 E1. Fenetre noire, dans le dossier du robot (PARTIE C1), puis :
         robot
@@ -382,6 +388,9 @@ E5. Revenez dans la fenetre noire et appuyez sur Entree. VOUS VOYEZ :
     Si c'est bien votre portail : [Entree].
     Sinon : tapez  n  puis Entree, affichez la bonne page dans le Chrome du
     robot, revenez dans la fenetre noire, Entree.
+    S'il affiche [n] a la fin de la question (il a un doute : page de
+    connexion, adresse differente) alors que c'est bien votre portail,
+    connecte : tapez  o  puis Entree.
 
 E6. La visite commence. Le bandeau vert vous guide, UNE ETAPE A LA FOIS :
         Etape 1/7 : affichez la page d'accueil, puis chaque menu principal...
@@ -404,7 +413,8 @@ E6. La visite commence. Le bandeau vert vous guide, UNE ETAPE A LA FOIS :
 
 E7. Quand vous avez fini : « Terminer la visite » dans le bandeau (il demande
     de cliquer une deuxieme fois, pour etre sur), ou Entree dans la fenetre
-    noire. La fenetre du robot se ferme. VOUS VOYEZ :
+    noire puis [Entree] a « Terminer la visite ? (o/n) [o] ».
+    La fenetre du robot se ferme. VOUS VOYEZ :
         OK Visite terminee : 23 ecran(s) note(s)...
     et deux fichiers, dans explorations\<date>-visite :
        - carte_PRIVEE_ne_pas_envoyer.html : tout ce qui a ete vu. Il
@@ -480,11 +490,15 @@ G2. Il demande :
              C:\Users\...\robot\robot-web\A_ENVOYER_A_CLAUDE_<date>.txt
     et le Bloc-notes s'ouvre avec ce fichier. Il contient, l'un apres l'autre :
     la derniere carte et chaque tache montree au robot (sans vos valeurs).
-    (Un nouveau fichier a chaque fois : vos corrections d'avant ne sont
-    jamais effacees.)
+    (Un nouveau fichier a chaque fois : l'ancien n'est jamais ecrase.)
+    Seules les cartes faites avec la version 19, d'au moins 2 ecrans, sont
+    reprises ; la liste s'affiche dans la fenetre noire.
 
 G3. RELISEZ-LE. Si un mot vous semble sensible (nom de client, de projet, de
     personne, de site), remplacez-le par XXX. Puis enregistrez : Ctrl+S.
+    Important : ce que vous corrigez a la main n'est PAS repris la fois
+    suivante. Pour qu'un mot soit toujours cache, donnez-le aussi a la
+    question « Des mots a cacher en plus ? » (G2) : lui est retenu.
 
 G4. Seulement si c'est permis chez vous : Ctrl+A (tout selectionner), Ctrl+C
     (copier), puis collez-le dans votre message pour moi.

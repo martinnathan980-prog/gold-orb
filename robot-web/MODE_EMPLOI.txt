@@ -98,10 +98,12 @@ l'ecran au moment du probleme est rangee dans taches/captures/erreurs/.
 
 
 =====================================================================
- 5. TOUT RECOMMENCER A ZERO
+ 5. METTRE LE ROBOT A JOUR
 =====================================================================
-Voir GUIDE_VRAI_SITE.txt, partie A : on efface le dossier du robot et on
-reinstalle. Vos fichiers a vous et votre Chrome habituel ne sont pas touches.
+Voir GUIDE_VRAI_SITE.txt, partie A : on remplace les programmes du robot par
+la nouvelle version. Vos taches, vos cartes et la connexion du Chrome du robot
+sont gardees. N'effacez jamais le dossier robot vous-meme : vous perdriez vos
+taches et la connexion.
 
 
 =====================================================================
@@ -109,8 +111,8 @@ reinstalle. Vos fichiers a vous et votre Chrome habituel ne sont pas touches.
 =====================================================================
 Choix 8 : c'est VOUS qui vous promenez dans le portail, guide etape par etape
 par un bandeau vert ; le robot regarde et note la forme de chaque ecran (jamais
-vos donnees). Il ne clique sur rien et bloque, pendant la visite, les boutons
-Supprimer, Enregistrer, Dupliquer... Resultats dans
+vos donnees). Il ne clique sur rien et bloque, pendant la visite, la plupart des boutons
+de modification (Supprimer, Enregistrer, Dupliquer...). Resultats dans
 robot-web\explorations\<date>-visite\ : carte_PRIVEE_ne_pas_envoyer.html
 (tout, reste sur le poste) et carte_a_partager.txt (la structure seule).
 Choix 9 : la carte et les taches montrees, dans UN fichier a relire avant de
@@ -185,4 +187,4 @@ travail (export par contrat, mise a jour d'indice, depot de document...).
    robot simuler ma_tache.yaml                montre les etapes sans rien faire
    robot scenarios                            la liste des taches
    robot base-demo                            la fausse base d'entrainement
-   robot explorer ADRESSE                     la carte du portail, sans rien modifier
+   robot explorer ADRESSE                     la carte du portail en visite guidée (vous cliquez)

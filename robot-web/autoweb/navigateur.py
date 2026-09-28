@@ -119,6 +119,32 @@ def chemin_profil(profil: str, dossier: Path) -> Path:
     return chemin
 
 
+def reprendre_ancien_profil(profil_robot: Path = PROFIL_ROBOT) -> None:
+    """Le Chrome du robot n'a jamais servi : on reprend le profil de la carte de la version 18
+    (profils/explorateur), sinon le plus récent des tâches de la version 18, pour garder la
+    connexion déjà faite dedans. Rien n'est copié depuis le Chrome habituel."""
+    profil_robot = Path(profil_robot)
+    if (profil_robot / "Default").is_dir():
+        return
+    racine = profil_robot.parent.parent
+    taches = racine / "taches" / "profils"
+    anciens = [racine / "profils" / "explorateur"]
+    if taches.is_dir():
+        anciens += sorted((d for d in taches.iterdir() if d.is_dir()), key=lambda d: d.stat().st_mtime, reverse=True)
+    for ancien in anciens:
+        if not (ancien / "Default").is_dir() or profil_verrouille(ancien):
+            continue
+        try:
+            if profil_robot.exists():
+                profil_robot.rmdir()  # dossier vide laissé par un démarrage raté ; sinon OSError : on garde
+            profil_robot.parent.mkdir(parents=True, exist_ok=True)
+            ancien.rename(profil_robot)
+            journal.info("Chrome du robot : connexion reprise de %s", ancien.name)
+            return
+        except OSError as e:
+            journal.debug("Reprise de %s impossible : %s", ancien, e)
+
+
 def profil_verrouille(profil: Path) -> bool:
     """Vrai si un Chrome se sert déjà de ce profil (Chrome refuse d'en ouvrir un second)."""
     profil = Path(profil)
@@ -235,6 +261,13 @@ def blocage_strategie(e: BaseException) -> bool:
     )
 
 
+def navigateur_introuvable(e: BaseException) -> bool:
+    """Vrai si l'erreur dit seulement que ce navigateur n'est pas installé sur le poste."""
+    texte = str(e)
+    return any(m in texte for m in ("is not found", "Executable doesn't exist", "not installed", "not found at",
+                                    "ENOENT", "cannot find", "No such file"))
+
+
 def navigateur_ferme(e: BaseException) -> bool:
     """Vrai si l'erreur Playwright signifie que la page / le navigateur a été fermé."""
     texte = str(e)
@@ -269,6 +302,8 @@ class Navigateur:
         # quand l'utilisateur a la main (visite, enregistrement) : Chrome demande avant de renvoyer
         # un formulaire (F5 ou Retour après « Dupliquer ») au lieu de le renvoyer en silence
         self.confirmer_renvoi = False
+        # prévenu après chaque boîte de dialogue à laquelle le robot a répondu (type : alert, confirm...)
+        self.sur_dialogue: Optional[Any] = None
         self._dialogues_differes: List[Any] = []
 
     # ------------------------------------------------------------------ ouverture
@@ -400,6 +435,11 @@ class Navigateur:
 
     def _repondre_dialogue(self, dialogue: Any) -> None:
         mode = self.config.dialogues
+        if self.sur_dialogue is not None:
+            try:
+                self.sur_dialogue(dialogue.type)
+            except Exception:  # noqa: BLE001
+                pass
         try:
             if mode == "ignorer":
                 # comme Playwright sans gestionnaire : on ferme (on quitte la page si c'est demandé)
@@ -493,10 +533,16 @@ class Navigateur:
             except PlaywrightError as e:
                 erreurs.append(f"  - {canal}{' (' + executable + ')' if executable else ''} : {premiere_ligne(e)}")
                 journal.debug("Échec du lancement via %s : %s", canal, premiere_ligne(e))
-                if navigateur_ferme(e) and self.config.profil:
-                    # profil sans doute déjà ouvert : surtout ne pas l'ouvrir avec un autre navigateur
-                    # (Edge ou Chromium abîmeraient le profil de Chrome et sa connexion)
-                    raise ErreurAutoweb(MESSAGE_PROFIL_OUVERT + "\n(détail : " + premiere_ligne(e) + ")")
+                if self.config.profil and not navigateur_introuvable(e):
+                    # Chrome est là mais n'a pas démarré sur ce profil (déjà ouvert, trop lent...) :
+                    # surtout ne pas l'ouvrir avec un autre navigateur (Edge ou Chromium abîmeraient
+                    # le profil de Chrome et sa connexion)
+                    if navigateur_ferme(e):
+                        raise ErreurAutoweb(MESSAGE_PROFIL_OUVERT + "\n(détail : " + premiere_ligne(e) + ")")
+                    raise ErreurAutoweb(
+                        f"{NOM_NAVIGATEUR.get(canal, canal)} n'a pas pu démarrer ({premiere_ligne(e)}).\n"
+                        "Fermez les fenêtres du robot et recommencez ; si cela se répète, envoyez-moi ce message."
+                    )
             except (FileNotFoundError, OSError) as e:
                 erreurs.append(f"  - {canal} : {premiere_ligne(e)}")
         raise ErreurAutoweb(
@@ -586,6 +632,8 @@ class Navigateur:
 
         if self.config.profil:
             profil = chemin_profil(self.config.profil, self.dossier)
+            if profil == PROFIL_ROBOT:
+                reprendre_ancien_profil(profil)
             profil.mkdir(parents=True, exist_ok=True)
             if "--hide-crash-restore-bubble" not in options["args"]:
                 # sinon, après un arrêt brutal : bulle « Restaurer les pages ? » par-dessus l'outil

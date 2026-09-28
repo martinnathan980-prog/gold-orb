@@ -16,12 +16,13 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import logging
+import re
 import shutil
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from playwright.sync_api import Error as PlaywrightError
 
@@ -244,12 +245,9 @@ def profil_robot() -> Tuple[Path, bool]:
     Renvoie (dossier, première fois). Le profil de la carte de la version 18
     (profils/explorateur) est repris : la connexion déjà faite dedans est gardée.
     """
-    ancien = DOSSIER_PROJET / "profils" / "explorateur"
-    if not PROFIL_ROBOT.exists() and ancien.is_dir():
-        try:
-            ancien.rename(PROFIL_ROBOT)
-        except OSError as e:  # Chrome encore ouvert dessus... : on part d'un profil neuf
-            journal.debug("Reprise du profil explorateur impossible : %s", e)
+    from .navigateur import reprendre_ancien_profil
+
+    reprendre_ancien_profil(PROFIL_ROBOT)
     premiere_fois = not (PROFIL_ROBOT / "Default").is_dir()
     return PROFIL_ROBOT, premiere_fois
 
@@ -270,7 +268,7 @@ def expliquer_premiere_fois(url: Optional[str] = None) -> None:
     print()
     print("   Le plus simple : vous connecter d'abord dans une fenêtre Chrome ordinaire, robot éteint.")
     if _demander("   On le fait maintenant ? (o/n)", "o").lower().startswith("o"):
-        cmd_connecter(_ns(url=url))
+        cmd_connecter(_ns(url=url, suite=True))
 
 
 def _lancer_navigateur_libre(args: argparse.Namespace):
@@ -338,7 +336,8 @@ def cmd_explorer(args: argparse.Namespace) -> int:
     url = _normaliser_url(args.url)
     if not url:
         raise ErreurAutoweb("Indiquez l'adresse du portail : autoweb explorer https://mon-portail/...")
-    visite = bool(getattr(args, "visite", False))
+    # par défaut, la visite guidée (l'utilisateur clique) ; l'exploration automatique sur demande
+    visite = not bool(getattr(args, "auto", False))
     horodatage = f"{dt.datetime.now():%Y%m%d-%H%M%S}"
     dossier = Path(args.sortie) if args.sortie else \
         DOSSIER_PROJET / "explorations" / (f"{horodatage}-visite" if visite else horodatage)
@@ -422,11 +421,14 @@ def cmd_connecter(args: argparse.Namespace) -> int:
     navigateur piloté). Le robot reprend ensuite cette connexion."""
     import os
 
-    from .console import touche_entree_disponible
-    from .navigateur import VAR_EXECUTABLE, Navigateur
+    from .console import touche_entree_disponible, vider_clavier
+    from .navigateur import MESSAGE_PROFIL_OUVERT, VAR_EXECUTABLE, Navigateur, profil_verrouille
     from .scenario import ConfigNavigateur
 
     profil, _ = profil_robot()
+    if profil_verrouille(profil):
+        # une fenêtre du robot tourne encore : Chrome y ajouterait la nouvelle fenêtre, pilotée
+        raise ErreurAutoweb(MESSAGE_PROFIL_OUVERT)
     url = _normaliser_url(args.url) or "about:blank"
     executable = args.executable or os.environ.get(VAR_EXECUTABLE)
     if not executable:
@@ -460,22 +462,49 @@ def cmd_connecter(args: argparse.Namespace) -> int:
         print(f"{S.ATTENTION} La fenêtre s'est refermée tout de suite : le Chrome du robot est sans doute")
         print("   déjà ouvert quelque part. Fermez toutes ses fenêtres, puis recommencez.")
         return 1
-    print(f"{S.OK} C'est noté. Vous pouvez maintenant faire la carte (choix 8) ou montrer une tâche (choix 1).")
+    vider_clavier()  # un Entrée tapé en avance ne doit pas sauter l'étape suivante
+    if getattr(args, "suite", False):
+        print(f"{S.OK} C'est noté. Le Chrome du ROBOT va maintenant s'ouvrir tout seul : ne tapez rien.")
+    else:
+        print(f"{S.OK} C'est noté. Vous pouvez maintenant faire la carte (choix 8) ou montrer une tâche (choix 1).")
     return 0
 
 
+def _carte_valable(dossier: Path) -> Optional[Tuple[int, int]]:
+    """(version, nombre d'écrans) d'une carte faite avec les filtres actuels, sinon None : une
+    carte de la version 18 (filtres moins stricts) ou une visite ratée n'est jamais envoyée."""
+    import json
+
+    try:
+        donnees = json.loads((dossier / "carte.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    version = int(donnees.get("version") or 0)
+    ecrans = len(donnees.get("ecrans") or [])
+    if version < 19 or ecrans < 2:
+        return None
+    return version, ecrans
+
+
 def _fichiers_a_partager() -> List[Tuple[str, Path]]:
-    """(titre, fichier) : la dernière visite, la dernière exploration automatique, puis les tâches."""
+    """(titre, fichier) : les visites guidées valables (les plus récentes d'abord, cinq au plus :
+    une visite faite en deux fois est envoyée en entier), la dernière exploration automatique
+    valable, puis les tâches montrées."""
     trouves: List[Tuple[str, Path]] = []
     explorations = DOSSIER_PROJET / "explorations"
     if explorations.is_dir():
         cartes = sorted((d for d in explorations.iterdir() if (d / "carte_a_partager.txt").is_file()),
-                        key=lambda d: (d / "carte_a_partager.txt").stat().st_mtime)
-        for suffixe, titre in (("-visite", "CARTE DU PORTAIL (visite guidée)"),
-                               ("", "CARTE DU PORTAIL (exploration automatique)")):
-            dernieres = [d for d in cartes if d.name.endswith("-visite") == bool(suffixe)]
-            if dernieres:
-                trouves.append((f"{titre}, {dernieres[-1].name[:13]}", dernieres[-1] / "carte_a_partager.txt"))
+                        key=lambda d: (d / "carte_a_partager.txt").stat().st_mtime, reverse=True)
+        valables = [(d, _carte_valable(d)) for d in cartes]
+        valables = [(d, v) for d, v in valables if v]
+        visites = [(d, v) for d, v in valables if d.name.endswith("-visite")][:5]
+        for d, (_, ecrans) in visites:
+            trouves.append((f"CARTE DU PORTAIL (visite guidée du {d.name[6:8]}/{d.name[4:6]}, {ecrans} écrans)",
+                            d / "carte_a_partager.txt"))
+        auto = [(d, v) for d, v in valables if not d.name.endswith("-visite")][:1]
+        for d, (_, ecrans) in auto:
+            trouves.append((f"CARTE DU PORTAIL (exploration automatique du {d.name[6:8]}/{d.name[4:6]}, {ecrans} écrans)",
+                            d / "carte_a_partager.txt"))
     taches = DOSSIER_PROJET / "taches"
     if taches.is_dir():
         for fichier in sorted(taches.glob("*_a_partager.txt")):
@@ -507,12 +536,43 @@ def _mots_a_cacher(demander: bool) -> List[str]:
     return mots
 
 
-def cacher_mots(texte: str, mots: List[str]) -> str:
-    import re
+VARIANTES = {"a": "aàâäáã", "e": "eéèêë", "i": "iîïíì", "o": "oôöóò", "u": "uùûüú", "c": "cç", "y": "yÿ", "n": "nñ"}
 
+
+def _motif_souple(mot: str) -> Optional[str]:
+    """« Saint-Étienne » trouve aussi « SAINT ETIENNE », « saint-etienne », « Saint Étienne »."""
+    import unicodedata
+
+    base = "".join(c for c in unicodedata.normalize("NFD", mot.lower()) if unicodedata.category(c) != "Mn")
+    base = re.sub(r"[\s\-_'’.]+", " ", base).strip()
+    if len(base) < 2:
+        return None
+    morceaux = []
+    for c in base:
+        if c == " ":
+            morceaux.append(r"[\s\-_'’.]*")
+        elif c in VARIANTES:
+            morceaux.append(f"[{VARIANTES[c]}]")
+        else:
+            morceaux.append(re.escape(c))
+    return r"(?<![^\W\d_])" + "".join(morceaux) + r"(?![^\W\d_])"
+
+
+def cacher_mots(texte: str, mots: List[str]) -> Tuple[str, Dict[str, int]]:
+    """Remplace chaque mot de la liste par XXX, sans tenir compte des accents, des majuscules ni
+    des tirets. Un nom en plusieurs mots cache aussi chacun de ses mots de 4 lettres ou plus
+    (« Flamanville 3 » cache « Flamanville # »). Renvoie le texte et le nombre de remplacements."""
+    comptes: Dict[str, int] = {}
     for mot in sorted(mots, key=len, reverse=True):
-        texte = re.sub(re.escape(mot), "XXX", texte, flags=re.IGNORECASE)
-    return texte
+        formes = [mot] + [m for m in re.split(r"[\s\-_'’.]+", mot) if len(re.sub(r"\d", "", m)) >= 4 and m != mot]
+        total = 0
+        for forme in formes:
+            motif = _motif_souple(re.sub(r"\d+", "", forme).strip() if forme != mot else forme)
+            if motif:
+                texte, n = re.subn(motif, "XXX", texte, flags=re.IGNORECASE)
+                total += n
+        comptes[mot] = total
+    return texte, comptes
 
 
 def cmd_rassembler(args: argparse.Namespace) -> int:
@@ -543,12 +603,19 @@ def cmd_rassembler(args: argparse.Namespace) -> int:
             morceaux.append(fichier.read_text(encoding="utf-8").rstrip())
         except OSError as e:
             morceaux.append(f"(fichier illisible : {e.strerror})")
-    sortie.write_text(cacher_mots("\n".join(morceaux) + "\n", mots), encoding="utf-8")
+    texte, comptes = cacher_mots("\n".join(morceaux) + "\n", mots)
+    sortie.write_text(texte, encoding="utf-8")
     print()
     print(f"{S.OK} Tout est rassemblé dans UN fichier ({len(fichiers)} partie(s)) :")
+    for titre, _ in fichiers:
+        print(f"      - {titre}")
     print(f"     {sortie}")
-    if mots:
-        print(f"   {len(mots)} mot(s) de votre liste remplacé(s) par XXX.")
+    trouves = {m: n for m, n in comptes.items() if n}
+    if trouves:
+        print(f"   Remplacé(s) par XXX : {', '.join(f'{m} ({n} fois)' for m, n in trouves.items())}.")
+    absents = [m for m, n in comptes.items() if not n]
+    if absents:
+        print(f"   Pas trouvé(s) dans le fichier : {', '.join(absents)} (vérifiez l'orthographe en relisant).")
     print("   1. Il s'ouvre dans le Bloc-notes : RELISEZ-LE, remplacez les mots sensibles par XXX,")
     print("      puis enregistrez (Ctrl+S).")
     print("   2. Si c'est permis chez vous : Ctrl+A (tout sélectionner), Ctrl+C (copier),")
@@ -919,7 +986,8 @@ def _ns(**kw) -> argparse.Namespace:
         sans_avant=False, sans_apres=False, inspecter_si_erreur=False, arret_premiere_erreur=False,
         sans_pause=False, simuler=False, scenario=None, port=8765, sans_attente=False, fichier=False,
         releve=None, sortie_releve=None, colonnes=None, regles=None, journal=False,
-        max_ecrans=150, profondeur=6, minutes=60.0, delai=500, visite=False, sans_ouvrir=False,
+        max_ecrans=150, profondeur=6, minutes=60.0, delai=500, visite=False, sans_ouvrir=False, suite=False,
+        auto=False,
     )
     defauts.update(kw)
     return argparse.Namespace(**defauts)
@@ -971,7 +1039,13 @@ def cmd_menu(args: argparse.Namespace) -> int:
         print("  10. Me connecter dans le Chrome du robot, sans le robot (si la connexion bloque)")
         print("   0. Quitter")
         print()
-        choix = _demander("   Votre choix", "0")
+        print("   Votre choix (0 pour quitter) : ", end="", flush=True)
+        try:
+            choix = input().strip()
+        except EOFError:
+            choix = "0"
+        if not choix:
+            continue  # Entrée seule (en trop, après une visite) : le menu revient, on ne quitte pas
         try:
             if choix == "1":
                 url = nettoyer_chemin(_demander("   Adresse de l'outil (elle commence par http)"))
@@ -1070,7 +1144,7 @@ def cmd_menu(args: argparse.Namespace) -> int:
                 if not url:
                     continue
                 # visite guidée : c'est l'utilisateur qui clique, le robot regarde. L'exploration
-                # automatique reste disponible en ligne de commande (robot explorer <adresse>).
+                # automatique reste disponible en ligne de commande (robot explorer <adresse> --auto).
                 cmd_explorer(_ns(url=url, visite=True))
             elif choix == "9":
                 cmd_rassembler(_ns())
@@ -1289,7 +1363,7 @@ def construire_parseur() -> argparse.ArgumentParser:
     commun(p)
     p.set_defaults(fonction=cmd_releve)
 
-    p = sous.add_parser("explorer", help="parcourir tout le portail SANS RIEN MODIFIER et en dresser la carte")
+    p = sous.add_parser("explorer", help="faire la carte du portail SANS RIEN MODIFIER (visite guidée ; --auto : le robot seul)")
     p.add_argument("url", help="adresse du portail (page d'accueil)")
     p.add_argument("--max-ecrans", type=int, default=150, help="nombre d'écrans différents au maximum (défaut 150)")
     p.add_argument("--profondeur", type=int, default=6, help="nombre de clics au maximum depuis l'accueil (défaut 6)")
@@ -1298,8 +1372,9 @@ def construire_parseur() -> argparse.ArgumentParser:
     p.add_argument("--sortie", help="dossier des résultats (défaut : explorations/<date>)")
     p.add_argument("--sans-pause", action="store_true", help="ne pas attendre la connexion (page publique)")
     p.add_argument("--cache", action="store_true", help="navigateur invisible")
-    p.add_argument("--visite", action="store_true",
-                   help="visite guidée : c'est vous qui cliquez, le robot regarde et note (aucun risque)")
+    p.add_argument("--auto", action="store_true",
+                   help="exploration AUTOMATIQUE (le robot clique seul, en lecture seule) au lieu de la visite guidée")
+    p.add_argument("--visite", action="store_true", help=argparse.SUPPRESS)  # c'est le défaut
     options_navigateur(p)
     commun(p)
     p.set_defaults(fonction=cmd_explorer)
