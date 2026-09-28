@@ -147,7 +147,17 @@ export function aplatirOrganigramme(donnees) {
 }
 
 function appliquerOrganigramme(d, modifs) {
-  const plat = aplatirOrganigramme(d);
+  /* Un pôle dont la vraie liste a été importée (Code.gs,
+     importerPersonnes) ne garde rien de l'exemple : ni ses personnes ni
+     ses squads. Le drapeau est une modification « pole » du pôle. */
+  const sansExemple = new Set(tableau(modifs)
+    .filter((m) => m && m.type === 'pole' && m.op !== 'suppr' && objet(m.donnees) && m.donnees.sansExemple === true)
+    .map((m) => texte(m.id).toUpperCase()));
+  const brut = aplatirOrganigramme(d);
+  const plat = {
+    personnes: brut.personnes.filter((p) => !sansExemple.has(texte(p.pole).toUpperCase())),
+    squads: brut.squads.filter((s) => !sansExemple.has(texte(s.pole).toUpperCase()))
+  };
   const personnes = appliquerListe(plat.personnes, modifs, 'personne');
   const squads = appliquerListe(plat.squads, modifs, 'squad');
   const r = Object.assign({}, d);
@@ -185,7 +195,9 @@ const ADAPTATEURS = {
   organigramme: appliquerOrganigramme,
   faq: (d, m) => Object.assign({}, d, { questions: appliquerListe(d.questions, m, 'question') }),
   documents: (d, m) => Object.assign({}, d, { documents: appliquerListe(d.documents, m, 'document') }),
-  reunions: (d, m) => Object.assign({}, d, { comptesRendus: appliquerListe(d.comptesRendus, m, 'compte-rendu') })
+  reunions: (d, m) => Object.assign({}, d, { comptesRendus: appliquerListe(d.comptesRendus, m, 'compte-rendu') }),
+  /* Les réglages du site : les carnets Gemini reliés à la recherche. */
+  reglages: (d, m) => Object.assign({}, d, { carnets: appliquerListe(d.carnets, m, 'carnet') })
 };
 
 /**
@@ -248,6 +260,7 @@ function trouverElement(jeu, type, id, d) {
   }
   if (jeu === 'faq') return chercher(d.questions);
   if (jeu === 'documents') return chercher(d.documents);
+  if (jeu === 'reglages') return chercher(d.carnets);
   if (jeu === 'reunions') return chercher(d.comptesRendus);
   return null;
 }

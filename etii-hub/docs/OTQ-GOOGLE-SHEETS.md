@@ -1,91 +1,57 @@
-# Suivi OTQ / OTD — alimentation nocturne depuis Google Sheets
+# Suivi OTQ — le site lit votre Command Center
 
-Le site est statique : il ne calcule rien, il **lit** un CSV à l'ouverture
-de la page. Le travail de nuit se fait dans Google Sheets, avec Apps Script.
+Le suivi OTQ du tableau de bord (`assets/js/otq.js`) ne recompte rien : il
+lit l'onglet **« Data »** de la feuille « Command Center » du service, que
+son propre script remplit (menu **🚀 Airbus Sync**, ou son déclencheur de
+nuit) à partir de deux sources, « Drawings Prod » et « Drawings TVE »,
+pour toutes les lignes où figure ETII.
 
 ```
-Feuille SOURCE (accès en lecture)          Feuille de PUBLICATION (la vôtre)
-┌──────────────────────────────┐  minuit   ┌──────────────────────────────┐
-│ mois │ otq │ otd │ cibles     │ ───────▶ │ onglet « publication » (CSV) │
-└──────────────────────────────┘ Apps      └──────────────┬───────────────┘
-                                  Script                  │ publié sur le web
-                                                          ▼
-                                            ETII Hub — assets/js/otq.js (SOURCE.url)
+Drawings Prod ─┐                          ┌─ Code.gs du site (lireOtq_)
+               ├─ script du Command Center ─ onglet « Data » ─┤  à chaque ouverture, lu seulement
+Drawings TVE ──┘   (Airbus Sync)                              └─ otq.js : le mois en grand, les barres
 ```
 
-## 1. Préparer la feuille de publication
+## Ce que le site lit
 
-1. Créez un Google Sheet à vous, nommé par exemple `ETII Hub — publication`.
-2. Extensions → Apps Script. Collez le contenu de
-   `tools/apps-script/otq-sync.gs`. Renseignez en tête :
-   - `ID_FEUILLE_SOURCE` : l'identifiant de la feuille qu'on vous a
-     partagée (dans son URL, entre `/d/` et `/edit`) ;
-   - `NOM_ONGLET_SOURCE` et `PLAGE_SOURCE` : l'onglet et les colonnes
-     `mois | otq | otd | cible otq | cible otd` (les cibles sont facultatives).
-3. Exécutez `synchroniser` une fois à la main : Google demande
-   l'autorisation d'accéder aux deux feuilles ; acceptez. L'onglet
-   `publication` apparaît, rempli.
-4. Exécutez `installerDeclencheur` une fois : le script tournera **chaque
-   nuit entre 0 h et 1 h** (fuseau horaire : Paramètres du projet).
-   Vérifiez dans le menu « Déclencheurs » (icône réveil).
+Une ligne par mois, sept colonnes, reconnues par leurs mots (emoji et
+majuscules sans importance) :
 
-## 2. Exposer le CSV au site
+| Colonne de « Data » | Dans le site |
+|---|---|
+| 📅 MOIS (« OCT 26 ») | le mois (`2026-10`) |
+| ✅ PROD ACCEPTED · ⚠️ PROD MINOR REFUSED · ❌ PROD REFUSED | **Qualité des plans (OTQ)** : acceptés, refus mineurs, refusés |
+| 🟢 TVE ACCEPTED · 🟡 TVE FALSE REFUSED · 🔴 TVE REFUSED | **TVE** : acceptés, faux refus, refusés |
 
-**Option A — publication sur le web (le plus simple)**
-Fichier → Partager → Publier sur le web → choisir l'onglet `publication`
-et le format **CSV** → Publier. Copiez l'URL (elle finit par
-`output=csv`).
+Le taux affiché est **acceptés ÷ plans présentés** (la somme des trois
+statuts) ; le mois en grand est le dernier mois **complet** (le mois en
+cours est montré estompé, « en cours »). Les bascules choisissent la
+mesure (OTQ ou TVE) et la période (3 mois, 6 mois, 1 an, tout) ; le
+tableau des nombres est replié sous les barres.
 
-**Option B — web app Apps Script (si la publication est interdite)**
-Déployer → Nouveau déploiement → type « Application web » → exécuter en
-tant que « Moi », accès « Toute personne disposant du lien » → Déployer.
-Copiez l'URL qui finit par `/exec` : la fonction `doGet` du script sert
-le même CSV.
+## Le brancher
 
-Dans les deux cas, collez l'URL dans `assets/js/otq.js` :
+Dans `tools/apps-script/site/Code.gs`, en haut :
 
 ```js
-export const SOURCE = {
-  url: 'https://…output=csv',      // ← ici
-  exemple: 'assets/data/otq-exemple.csv'
-};
+var OTQ_ID_FEUILLE = '1AbC…';   // la feuille du Command Center
+var OTQ_ONGLET = 'Data';
 ```
 
-Tant que `url` est vide, la page affiche l'exemple embarqué avec le
-bandeau « Données d'exemple ». Dès qu'elle est renseignée, le bandeau
-devient « Source du service ».
+Puis **installer** (le journal d'exécution dit « Suivi OTQ lu : 14 mois »)
+et une nouvelle version du déploiement. Pas à pas :
+`docs/INSTALLER-SUR-GOOGLE.txt`, étape 10.
 
-## 3. Ce que le site attend
+Tant que `OTQ_ID_FEUILLE` est vide, le site montre
+`assets/data/otq-exemple.csv`, annoncé « Données d'exemple ». On peut
+aussi publier un CSV au même format (`SOURCE.url` d'`otq.js`), mais ce
+dépôt est public : n'y écrivez jamais d'adresse.
 
-| colonne     | format          | obligatoire |
-|-------------|-----------------|-------------|
-| `mois`      | `AAAA-MM`       | oui         |
-| `otq`       | nombre (95,4 ou 95.4) | oui   |
-| `otd`       | nombre          | oui         |
-| `cible_otq` | nombre          | non         |
-| `cible_otd` | nombre          | non         |
+## Ce que le site ne sait pas (encore)
 
-Une case vide laisse un **trou** dans la courbe : le site n'interpole
-jamais et ne remplace jamais par zéro. Les douze derniers mois sont
-tracés ; les tuiles montrent le dernier mois, l'écart à la cible et la
-variation mensuelle.
-
-## 4. Vérifier
-
-- Dans le navigateur, ouvrez l'URL du CSV : vous devez voir le texte brut
-  avec l'en-tête `mois,otq,otd,cible_otq,cible_otd`.
-- Sur le site, le bandeau doit indiquer « Source du service ».
-- En cas d'erreur (URL fausse, feuille dépubliée), la section affiche
-  l'erreur et un bouton « Réessayer » : aucun chiffre périmé n'est montré.
-
-## 5. Points d'attention
-
-- **Confidentialité** : « Publier sur le web » rend l'onglet lisible par
-  quiconque a l'URL. Ne publiez que l'onglet `publication`, jamais la
-  feuille source. Si la politique du domaine l'interdit, prenez l'option B
-  et restreignez l'accès de la web app au domaine.
-- **Quota** : un déclencheur quotidien est très loin des limites Apps
-  Script.
-- **Historique** : si vous voulez conserver plus de douze mois, laissez-les
-  dans l'onglet — le site ne trace que les douze derniers, mais le tableau
-  du graphique donne tout ce qu'il lit.
+- **L'OTD** : les deux sources comptent des statuts, pas des dates. Un
+  « On Time Delivery » demanderait une date promise et une date de remise
+  par plan. Si TVE tient lieu de suivi des délais chez vous, dites-le :
+  la section se renommera.
+- Les mois sans aucun plan n'apparaissent pas dans « Data » : la période
+  « 3 mois » compte les trois derniers mois **présents**.

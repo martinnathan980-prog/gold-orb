@@ -33,21 +33,22 @@ Ce document-ci explique ce qui se passe ENSUITE, tous les jours.
         Journal · <rubrique>    la même histoire, rubrique par rubrique
         Questions aux experts   les questions posées dans le site
 
-  BOÎTE 3 — La liste de vos documents : votre classeur de documents.
-     Trois onglets (ETIIA, ETIIE, ETIII), une ligne par document. Le site
-     la LIT à chaque ouverture ; il ne l'écrit JAMAIS. C'est la seule chose
-     que le site va chercher à l'extérieur.
+  BOÎTE 3 — Ce que le site LIT ailleurs, sans jamais l'écrire :
+     - votre classeur de documents : trois onglets (ETIIA, ETIIE, ETIII),
+       une ligne par document ;
+     - l'onglet « Data » de votre Command Center : le suivi OTQ.
+     Le site les relit à chaque ouverture. Il n'y écrit JAMAIS.
 
   Et le lien /exec ? C'est la porte d'entrée. Quand quelqu'un l'ouvre,
-  Google prend le livre (boîte 1), le cahier (boîte 2) et la liste des
-  documents (boîte 3), et montre le tout à la personne.
+  Google prend le livre (boîte 1), le cahier (boîte 2) et ce qu'il lit
+  ailleurs (boîte 3), et montre le tout à la personne.
 
         ┌───────────────────┐   ┌────────────────────────┐   ┌──────────────────┐
         │ BOÎTE 1           │   │ BOÎTE 2                │   │ BOÎTE 3          │
-        │ etii-hub.html     │   │ « ETII Hub — base »    │   │ Classeur des     │
-        │ (Drive)           │   │ le cahier des          │   │ documents        │
-        │ le site + le      │   │ changements + journal  │   │ ETIIA ETIIE ETIII│
-        │ contenu de départ │   │ + questions aux experts│   │ lu, jamais écrit │
+        │ etii-hub.html     │   │ « ETII Hub — base »    │   │ Documents (3     │
+        │ (Drive)           │   │ le cahier des          │   │ onglets) + « Data│
+        │ le site + le      │   │ changements + journal  │   │ » du Command     │
+        │ contenu de départ │   │ + questions aux experts│   │ Center : lus     │
         └─────────┬─────────┘   └───────────┬────────────┘   └────────┬─────────┘
                   └────────────────┬────────┴─────────────────────────┘
                                    ▼
@@ -97,7 +98,8 @@ Ce document-ci explique ce qui se passe ENSUITE, tous les jours.
   C'est pareil pour tout ce qui se modifie dans le site :
      communications (et leurs photos, par leur adresse), alertes du
      bandeau, rendez-vous, porteurs, personnes, squads, référents,
-     documents, questions de la FAQ, comptes rendus.
+     documents, questions de la FAQ, comptes rendus, et les carnets Gemini
+     reliés à la Recherche.
 
 
 --------------------------------------------------------------------------------
@@ -152,20 +154,41 @@ Ce document-ci explique ce qui se passe ENSUITE, tous les jours.
   « “Interroger un expert”, ça va où ? »
      Une ligne en haut de l'onglet « Questions aux experts » : la date,
      l'adresse de la personne, son pôle, sa question, le contexte, et le
-     statut « À traiter ». Tout lecteur peut poser une question. Les
-     administrateurs la suivent : ils remplissent les colonnes Statut et
-     Réponse. Une bonne réponse peut devenir une question de la FAQ,
-     ajoutée depuis le site.
+     statut « À traiter ». ET un e-mail part aussitôt vers les
+     administrateurs (vous, par défaut) : la question, qui la pose, le lien
+     vers l'onglet ; « Répondre » écrit directement à la personne. Les
+     administrateurs remplissent ensuite les colonnes Statut et Réponse.
+     Une bonne réponse peut devenir une question de la FAQ, ajoutée depuis
+     le site.
+
+  « L'équipe de mon pôle : d'où viennent les noms ? »
+     De votre feuille du personnel, importée UNE fois (importerPersonnes,
+     dans l'éditeur Apps Script). Les noms sont alors écrits dans le cahier
+     (boîte 2), dans une squad « À répartir ». Ensuite, tout se fait dans
+     le site : créer les squads, y placer chacun, nommer les leaders et les
+     référents. La feuille du personnel n'est plus relue : un nouvel
+     arrivant, on l'ajoute dans le site (ou on relance l'import : il
+     n'ajoute que les nouveaux).
+
+  « “Demander à Gemini”, ça marche comment ? »
+     Le site n'envoie rien à Gemini. Il copie votre question et ouvre le
+     carnet Gemini du pôle, avec VOTRE compte : vous collez, Gemini répond
+     en citant les documents. Les liens des carnets sont rangés dans le
+     cahier (boîte 2), reliés depuis le site. Tout est expliqué dans
+     docs/GEMINI-PAS-A-PAS.txt.
 
   « Les photos d'une communication ? »
      Une communication montre une image par son ADRESSE (un lien). Le
      cahier garde l'adresse, pas l'image. L'image doit donc être à une
      adresse que tout le monde peut ouvrir.
 
-  « Le suivi OTQ / OTD ? »
-     Pour l'instant, il montre des données d'exemple, annoncées comme
-     telles. Il ne se modifie pas dans le site : on le branchera plus tard
-     sur votre feuille de suivi (docs/OTQ-GOOGLE-SHEETS.md).
+  « Le suivi OTQ ? »
+     Il lit l'onglet « Data » de votre Command Center (boîte 3), à chaque
+     ouverture, sans jamais l'écrire. Pour qu'il soit à jour, le Command
+     Center doit continuer de se synchroniser (son menu « Airbus Sync » ou
+     son déclencheur de nuit). Tant qu'il n'est pas branché (étape 10 du
+     guide d'installation), le site montre des données d'exemple, annoncées
+     comme telles.
 
   « Et ce qui ne concerne que moi ? »
      Le thème clair / sombre et vos questions « en attente » sur la page
@@ -186,8 +209,10 @@ Ce document-ci explique ce qui se passe ENSUITE, tous les jours.
   un référent
   une question de la FAQ             feuille « base » › modifications  tout le monde   au rechargement
   un document (conseillé : ici)      VOTRE classeur de documents       tout le monde   au rechargement
-  une question « Interroger          feuille « base » ›                les adminis-    tout de suite, dans
-  un expert »                        Questions aux experts             trateurs        la feuille
+  le suivi OTQ                       le Command Center › Data          tout le monde   au rechargement
+  une question « Interroger          feuille « base » ›                les adminis-    tout de suite (feuille
+  un expert »                        Questions aux experts             trateurs        + e-mail)
+  un carnet Gemini relié             feuille « base » › modifications  tout le monde   au rechargement
   qui peut modifier                  feuille « base » › Éditeurs       —               au rechargement
   le thème clair / sombre            votre navigateur                  vous seul       tout de suite
   le design, les pages               le fichier etii-hub.html (Drive)  tout le monde   quand vous le remplacez
@@ -212,24 +237,21 @@ Ce document-ci explique ce qui se passe ENSUITE, tous les jours.
 
 
 --------------------------------------------------------------------------------
- 7. POUR DEMAIN — CE QU'IL ME FAUT POUR VOS DOCUMENTS
+ 7. CE QUI RESTE À BRANCHER
 --------------------------------------------------------------------------------
 
-  Pour coller exactement à votre classeur, envoyez-moi :
+  Tout se règle en haut de Code.gs, puis « installer » et une nouvelle
+  version du déploiement (docs/INSTALLER-SUR-GOOGLE.txt) :
 
-  1. Le NOM EXACT des trois onglets (par exemple « ETIIA », « ETIIE »,
-     « ETIII »).
-  2. La LIGNE 1 de chaque onglet, telle quelle : les titres de colonnes,
-     dans l'ordre (par exemple : Titre | Référence | Type | Mis par |
-     Date | Lien).
-  3. Laquelle de ces colonnes dit « la personne qui a mis le document »,
-     et laquelle est la date (et son format : 15/07/2026, juillet 2026…).
-  4. Une ligne d'exemple, avec des valeurs inventées si le contenu est
-     confidentiel (seule la FORME compte : un lien Drive ? un chemin ?).
-  5. S'il y a une colonne qui ne doit PAS apparaître sur le site.
+     étape 9    vos documents        DOCUMENTS_ID_FEUILLE
+                (vos colonnes sont reconnues telles quelles : Référence du
+                document, Titre du document, Lien d'accès, Type de
+                document, Métier, Applicabilité des porteurs, Sensibilité,
+                Export Control, Ajouté par, Commentaire)
+     étape 10   le suivi OTQ         OTQ_ID_FEUILLE (votre Command Center)
+     étape 11   l'e-mail des         DESTINATAIRES_QUESTIONS (vide : vous)
+                questions
+     étape 12   l'équipe du pôle     PERSONNES_ID_FEUILLE, puis
+                                     « importerPersonnes », une fois
 
-  Je règle alors le site pour qu'il lise vos colonnes telles quelles —
-  vous n'aurez rien à renommer.
-
-  Ensuite, l'installation se fait en suivant docs/INSTALLER-SUR-GOOGLE.txt,
-  étapes 1 à 9 (20 à 30 minutes, une seule fois).
+  Et, dans le site, les carnets Gemini (docs/GEMINI-PAS-A-PAS.txt).

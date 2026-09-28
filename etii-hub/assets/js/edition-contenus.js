@@ -521,3 +521,40 @@ export function ouvrirCompteRendu(o) {
     surSupprimer: existant ? () => supprimerElement('reunions', 'compte-rendu', id) : null
   });
 }
+
+/* -------------------------------------------------------------------------
+   Les carnets Gemini de la recherche
+   ------------------------------------------------------------------------- */
+
+const LIEN_HTTPS = (v) => (/^https:\/\/\S+$/i.test(texte(v)) ? '' : 'Une adresse complète, qui commence par https://');
+const LIEN_FACULTATIF = (v) => (!texte(v) || /^https:\/\/\S+$/i.test(texte(v)) ? '' : 'Une adresse complète, qui commence par https://');
+
+/**
+ * Relier (ou modifier) un carnet Gemini : son nom, son pôle, son lien, et
+ * facultativement le lien pré-rempli d'un formulaire qui envoie la réponse
+ * par e-mail (Workspace Studio). Rangé dans le jeu « reglages ».
+ * @param {{existant?: object, pole?: string, declencheur?: Element}} o
+ */
+export function ouvrirCarnet(o) {
+  const existant = o.existant || null;
+  const id = texte(existant && existant.id) || nouvelIdentifiant('carnet');
+  return ouvrirFormulaire({
+    titre: existant ? 'Modifier le carnet' : 'Relier un carnet Gemini',
+    declencheur: o.declencheur,
+    quoi: existant ? texte(existant.libelle) : '',
+    valeurs: existant || { pole: o.pole || 'ETII', libelle: '' },
+    champs: [
+      { cle: 'libelle', libelle: 'Nom du carnet', type: 'texte', requis: true, placeholder: 'Normes et règles harnais' },
+      { cle: 'pole', libelle: 'Pôle', type: 'choix', requis: true, options: POLES },
+      { cle: 'lien', libelle: 'Lien du carnet', type: 'texte', requis: true, large: true, valider: LIEN_HTTPS,
+        placeholder: 'https://…', aide: 'Dans le carnet : « Partager » › « Copier le lien ».' },
+      { cle: 'formulaire', libelle: 'Réponse par e-mail (facultatif)', type: 'texte', large: true, valider: LIEN_FACULTATIF,
+        placeholder: 'https://…XYZ…',
+        aide: 'Le lien pré-rempli du formulaire relié au carnet (Workspace Studio), avec XYZ à la place de la question.' }
+    ],
+    surEnregistrer: (v) => enregistrerModification('reglages', 'carnet', id, {
+      id, libelle: v.libelle, pole: v.pole, lien: texte(v.lien), formulaire: texte(v.formulaire)
+    }),
+    surSupprimer: existant ? () => supprimerElement('reglages', 'carnet', id) : null
+  });
+}

@@ -898,6 +898,307 @@
         transition: none;
       }
     }
+
+    /* =====================================================================
+       G. LA PAGE, AU NIVEAU DU RESTE DU SITE
+       La recherche prend la une marine des autres pages : la question en
+       Newsreader clair, la barre blanche au milieu, les pôles en pastilles
+       translucides. Dessous, sur le papier : les types en grandes tuiles
+       chiffrées (la part du fonds en filet), les derniers ajouts, puis les
+       résultats en fiches larges, une par ligne, qui se lisent d'un
+       regard. En bas, toujours, « Demander à Gemini ».
+       ===================================================================== */
+
+    /* --- G1. La une ------------------------------------------------------ */
+    /* La bande passe au-dessus de la page (z-index) et ne coupe rien : le
+       panneau de suggestions s'ouvre par-dessus les résultats. Seul son
+       fond, rotor compris, est coupé à la bande. */
+    .ds-une {
+      position: relative;
+      z-index: 20;
+      overflow: visible;
+      background: linear-gradient(to bottom, var(--une-fond-haut), var(--une-fond));
+      color: var(--une-texte);
+    }
+    .ds-une__fond { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+    .ds-une .conteneur { position: relative; }
+    .ds-une .ds-entete { padding-block: var(--e-12) var(--e-10); gap: var(--e-5); }
+    .ds-une__rotor { inset-block-start: 62%; inline-size: min(52rem, 130vw); }
+    .ds-surtitre {
+      margin: 0;
+      font-size: 0.75rem;
+      font-weight: var(--graisse-moyenne);
+      letter-spacing: var(--lettrage-capitales);
+      text-transform: uppercase;
+      color: var(--une-ornement);
+    }
+    .ds-une .ds-question {
+      font-family: var(--police-titre);
+      font-size: clamp(2.25rem, 3vw + 1.2rem, 3.75rem);
+      font-weight: 300;
+      line-height: 1.05;
+      letter-spacing: -0.005em;
+      color: var(--une-texte);
+    }
+    .ds-une .ds-recherche { gap: var(--e-4); }
+    .ds-une .recherche {
+      background-color: var(--fond-eleve);
+      border-color: transparent;
+      border-radius: var(--rayon-plein);
+      box-shadow: 0 1px 0 rgb(255 255 255 / 0.06), 0 18px 40px -18px rgb(0 0 0 / 0.55);
+      padding-inline: var(--e-3);
+    }
+    .ds-une .recherche:focus-within {
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--une-ornement) 55%, transparent), 0 18px 40px -18px rgb(0 0 0 / 0.55);
+    }
+    .ds-une .ds-poles {
+      background-color: rgb(255 255 255 / 0.06);
+      border-color: rgb(255 255 255 / 0.14);
+    }
+    .ds-une .ds-pole__nom { color: var(--une-texte-doux); }
+    .ds-une .ds-poles:not(:disabled) .ds-pole:hover .ds-pole__nom { background-color: rgb(255 255 255 / 0.1); color: var(--une-texte); }
+    .ds-une .ds-pole__radio:checked + .ds-pole__nom,
+    .ds-une .ds-poles:not(:disabled) .ds-pole:hover .ds-pole__radio:checked + .ds-pole__nom {
+      background-color: var(--une-texte);
+      color: var(--une-fond);
+      box-shadow: none;
+    }
+    .ds-une .ds-jetons .facette { background-color: rgb(255 255 255 / 0.1); color: var(--une-texte); border-color: rgb(255 255 255 / 0.2); }
+    .ds-page { padding-block-start: var(--e-10); }
+
+    /* --- G2. Les tuiles des types --------------------------------------- */
+    .ds-tuiles { grid-template-columns: repeat(auto-fit, minmax(min(10.5rem, 100%), 1fr)); gap: var(--e-4); }
+    .ds-tuile {
+      position: relative;
+      align-items: flex-start;
+      gap: var(--e-1);
+      padding: var(--e-5) var(--e-5) var(--e-6);
+      text-align: start;
+      overflow: hidden;
+      transition: transform var(--duree) var(--courbe), box-shadow var(--duree) var(--courbe), border-color var(--duree) var(--courbe);
+    }
+    .ds-tuile .ds-tuile__icone { position: absolute; inset-block-start: var(--e-4); inset-inline-end: var(--e-4); margin: 0; inline-size: var(--e-8); block-size: var(--e-8); }
+    .ds-tuile .ds-icone { inline-size: var(--e-5); block-size: var(--e-5); }
+    .ds-tuile__nombre {
+      font-family: var(--police-titre);
+      font-size: 2.75rem;
+      font-weight: 300;
+      line-height: 1;
+      font-variant-numeric: lining-nums;
+      color: var(--texte);
+    }
+    .ds-tuile__nom { font-family: var(--police-titre); font-size: 1.25rem; font-weight: var(--graisse-normale); }
+    .ds-tuile__compte { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
+    .ds-tuile__part {
+      --part: 0;   /* la part du fonds, posée par docsearch.js */
+      position: absolute;
+      inset-inline: 0;
+      inset-block-end: 0;
+      block-size: 3px;
+      background: linear-gradient(to right, var(--une-ornement) calc(var(--part) * 100%), var(--bordure-douce) 0);
+    }
+    .ds-tuile:hover { border-color: var(--bordure-forte); box-shadow: var(--ombre-md); }
+
+    /* --- G3. Les derniers ajouts ---------------------------------------- */
+    .ds-derniers {
+      padding: var(--e-5) var(--e-6);
+      background-color: var(--carte-fond);
+      border: 1px solid var(--carte-bord);
+      border-radius: var(--rayon-lg);
+      box-shadow: var(--ombre-sm);
+    }
+    .ds-derniers__titre { margin: 0 0 var(--e-3); font-family: var(--police-titre); font-size: 1.375rem; font-weight: var(--graisse-normale); }
+    .ds-derniers__liste { margin: 0; padding: 0; list-style: none; }
+    .ds-dernier {
+      display: grid;
+      /* Des colonnes fixes : chaque ligne est sa propre grille, et une
+         colonne vide (pas de lien) ne doit pas décaler les autres. */
+      grid-template-columns: auto minmax(0, 1fr) 6.5rem 8rem 4rem;
+      align-items: center;
+      gap: var(--e-2) var(--e-4);
+      padding-block: var(--e-3);
+      border-block-start: 1px solid var(--bordure-douce);
+    }
+    .ds-dernier:first-child { border-block-start: 0; }
+    .ds-dernier__titre {
+      min-inline-size: 0;
+      padding: 0;
+      background: none;
+      border: 0;
+      font: inherit;
+      font-weight: var(--graisse-moyenne);
+      color: var(--texte);
+      text-align: start;
+      cursor: pointer;
+    }
+    .ds-dernier__titre:hover { color: var(--texte-accent); text-decoration: underline; }
+    .ds-dernier__ref { margin-inline-end: var(--e-2); font-family: var(--police-mono); font-size: var(--texte-xs); font-weight: var(--graisse-normale); color: var(--texte-doux); }
+    .ds-dernier__type { font-size: var(--texte-xs); color: var(--texte-doux); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: end; }
+    .ds-dernier__securite { justify-content: flex-end; }
+    .ds-dernier__ouvrir { justify-self: end; }
+    .ds-dernier__ouvrir { font-size: var(--texte-xs); font-weight: var(--graisse-moyenne); color: var(--texte-accent); text-decoration: none; white-space: nowrap; }
+    .ds-dernier__ouvrir:hover { text-decoration: underline; }
+    @media (max-width: 40rem) {
+      .ds-dernier { grid-template-columns: auto minmax(0, 1fr) 4rem; }
+      .ds-dernier__type, .ds-dernier__securite { display: none; }
+      .ds-dernier__ref { display: block; margin: 0; white-space: nowrap; }
+    }
+
+    /* --- G4. Les résultats, en fiches larges ----------------------------- */
+    .ds-grille { grid-template-columns: minmax(0, 1fr); gap: var(--e-3); }
+    .ds-carte {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        "meta   pied"
+        "titre  pied"
+        "extrait pied"
+        "sujet  pied"
+        "raison pied"
+        "poles  pied";
+      column-gap: var(--e-6);
+      row-gap: var(--e-1);
+      padding: var(--e-4) var(--e-5);
+      border-inline-start: 3px solid transparent;
+      transition: border-color var(--duree) var(--courbe), box-shadow var(--duree) var(--courbe), background-color var(--duree) var(--courbe);
+    }
+    .ds-carte:hover { border-inline-start-color: var(--une-ornement); box-shadow: var(--ombre-md); }
+    .ds-carte > .carte__meta { grid-area: meta; }
+    .ds-carte > .ds-carte__titre { grid-area: titre; font-family: var(--police-titre); font-size: 1.375rem; font-weight: var(--graisse-normale); }
+    .ds-carte > .ds-carte__extrait { grid-area: extrait; -webkit-line-clamp: 2; line-clamp: 2; }
+    .ds-carte > .ds-carte__sujet { grid-area: sujet; }
+    .ds-carte > .facettes { grid-area: poles; margin: var(--e-1) 0 0; }
+    .ds-carte > .ds-carte__pied {
+      grid-area: pied;
+      align-self: center;
+      align-items: flex-end;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      text-align: end;
+    }
+    .ds-carte > .ds-carte__pied .ds-carte__meta { justify-content: flex-end; }
+    .ds-carte > .ds-carte__pied .ds-carte__actions { justify-content: flex-end; }
+    .ds-carte__securite { margin-inline-start: var(--e-1); }
+    @media (max-width: 48rem) {
+      .ds-carte {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "meta" "titre" "extrait" "sujet" "raison" "poles" "pied";
+      }
+      .ds-carte > .ds-carte__pied { align-items: stretch; text-align: start; margin-block-start: var(--e-2); }
+      .ds-carte > .ds-carte__pied .ds-carte__meta,
+      .ds-carte > .ds-carte__pied .ds-carte__actions { justify-content: flex-start; }
+    }
+
+    /* --- G5. Demander à Gemini ------------------------------------------ */
+    .gemini {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+      gap: var(--e-4) var(--e-10);
+      padding: var(--e-8) clamp(var(--e-5), 4vw, var(--e-10));
+      background:
+        radial-gradient(60rem 20rem at 100% 0%, color-mix(in srgb, var(--une-ornement) 16%, transparent), transparent 60%),
+        linear-gradient(to bottom right, var(--une-fond-haut), var(--une-fond));
+      color: var(--une-texte);
+      border-radius: var(--rayon-lg);
+      box-shadow: var(--ombre-md);
+      scroll-margin-block-start: calc(var(--hauteur-barre-site) + var(--e-4));
+      overflow: hidden;
+    }
+    .gemini__tete { display: flex; flex-direction: column; gap: var(--e-2); }
+    .gemini__surtitre {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--e-2);
+      margin: 0;
+      font-size: 0.75rem;
+      font-weight: var(--graisse-moyenne);
+      letter-spacing: var(--lettrage-capitales);
+      text-transform: uppercase;
+      color: var(--une-ornement);
+    }
+    .gemini__eclat { font-size: 1.1em; }
+    .gemini__titre { margin: 0; font-family: var(--police-titre); font-size: clamp(1.6rem, 1.2vw + 1.2rem, 2.1rem); font-weight: 300; line-height: 1.15; color: var(--une-texte); }
+    .gemini__intro { margin: 0; font-size: var(--texte-sm); line-height: 1.55; color: var(--une-texte-doux); }
+    .gemini__corps { display: flex; flex-direction: column; gap: var(--e-3); min-inline-size: 0; }
+    .gemini__question {
+      inline-size: 100%;
+      min-block-size: 3.5rem;
+      padding: var(--e-3) var(--e-4);
+      background-color: var(--fond-eleve);
+      border: 0;
+      border-radius: var(--rayon-md);
+      font-size: var(--texte-md);
+      color: var(--texte);
+      resize: vertical;
+    }
+    .gemini__question:focus-visible { outline: 3px solid color-mix(in srgb, var(--une-ornement) 60%, transparent); outline-offset: 1px; }
+    .gemini__carnets { display: flex; flex-wrap: wrap; gap: var(--e-2); }
+    .gemini__carnet-cadre { display: inline-flex; align-items: center; gap: var(--e-1); }
+    .gemini__carnet {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--e-2);
+      min-block-size: 2.25rem;
+      padding: 0 var(--e-4);
+      background-color: rgb(255 255 255 / 0.06);
+      border: 1px solid rgb(255 255 255 / 0.16);
+      border-radius: var(--rayon-plein);
+      font: inherit;
+      font-size: var(--texte-sm);
+      color: var(--une-texte-doux);
+      cursor: pointer;
+      transition: background-color var(--duree-rapide) var(--courbe), color var(--duree-rapide) var(--courbe);
+    }
+    .gemini__carnet:hover { background-color: rgb(255 255 255 / 0.12); color: var(--une-texte); }
+    .gemini__carnet[aria-checked="true"] { background-color: var(--une-texte); color: var(--une-fond); border-color: var(--une-texte); }
+    .gemini__carnet-point { inline-size: 7px; block-size: 7px; border-radius: 50%; background-color: var(--une-ornement); }
+    .gemini__carnet[data-pole="ETIIA"] .gemini__carnet-point { background-color: var(--pole-etiia-sur-marine, var(--pole-etiia)); }
+    .gemini__carnet[data-pole="ETIIE"] .gemini__carnet-point { background-color: var(--pole-etiie-sur-marine, var(--pole-etiie)); }
+    .gemini__carnet[data-pole="ETIII"] .gemini__carnet-point { background-color: var(--pole-etiii-sur-marine, var(--pole-etiii)); }
+    .gemini__carnet-pole { font-size: var(--texte-xs); opacity: 0.7; }
+    .gemini__carnet-edition .bouton { color: var(--une-texte-doux); }
+    .gemini__actions { display: flex; flex-wrap: wrap; gap: var(--e-2); }
+    .gemini__ouvrir { background-color: var(--une-ornement); border-color: var(--une-ornement); color: var(--une-fond-haut); }
+    .gemini__ouvrir:hover { filter: brightness(1.06); }
+    .gemini__ouvrir[aria-disabled="true"] { opacity: 0.55; }
+    .gemini__email { background: none; border-color: rgb(255 255 255 / 0.3); color: var(--une-texte); }
+    .gemini__email[hidden] { display: none; }
+    .gemini__etapes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--e-1) var(--e-5);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: etape;
+      font-size: var(--texte-xs);
+      color: var(--une-texte-doux);
+    }
+    .gemini__etapes li { counter-increment: etape; }
+    .gemini__etapes li::before { content: counter(etape) " · "; color: var(--une-ornement); font-weight: var(--graisse-forte); }
+    .gemini__vide { margin: 0; font-size: var(--texte-md); line-height: 1.5; color: var(--une-texte); }
+    .gemini__vide--astuce { font-size: var(--texte-sm); color: var(--une-texte-doux); }
+    .gemini__edition { grid-column: 2; }
+    .gemini__edition .bouton { color: var(--une-texte); border-color: rgb(255 255 255 / 0.3); }
+    .gemini__garde { grid-column: 1 / -1; margin: 0; padding-block-start: var(--e-4); border-block-start: 1px solid rgb(255 255 255 / 0.12); font-size: var(--texte-xs); color: var(--une-texte-doux); }
+    @media (max-width: 52rem) {
+      .gemini { grid-template-columns: minmax(0, 1fr); }
+      .gemini__edition { grid-column: 1; }
+    }
+
+    /* --- G6. Mouvement ---------------------------------------------------- */
+    @media (prefers-reduced-motion: no-preference) {
+      .ds-tuile:hover { transform: translateY(-2px); }
+      .ds-grille > .ds-carte { animation: ds-fiche 380ms var(--courbe) both; }
+      .ds-grille > .ds-carte:nth-child(2) { animation-delay: 30ms; }
+      .ds-grille > .ds-carte:nth-child(3) { animation-delay: 60ms; }
+      .ds-grille > .ds-carte:nth-child(4) { animation-delay: 90ms; }
+      .ds-grille > .ds-carte:nth-child(n+5) { animation-delay: 120ms; }
+      @keyframes ds-fiche { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+      .ds-une__rotor { animation: une-rotor 180s linear infinite, une-fondu 2400ms var(--courbe) both; }
+    }
   </style>
 </head>
 
@@ -931,13 +1232,35 @@
   </header>
 
   <main id="contenu" tabindex="-1">
-    <div class="conteneur pile pile--lache">
+    <!-- ==================================================================
+         La une de la recherche : sur la bande marine du site, la question,
+         la barre, les suggestions, les pôles, les jetons. Derrière, en
+         filigrane, le rotor des autres unes.
+         ================================================================== -->
+    <div class="page-tete page-tete--une ds-une">
+      <!-- Le fond (et son rotor) est coupé à la bande ; la bande, elle, ne
+           coupe rien : le panneau de suggestions doit pouvoir en déborder. -->
+      <div class="ds-une__fond" aria-hidden="true">
+      <svg class="page-une__rotor ds-une__rotor" viewBox="-200 -200 400 400" aria-hidden="true" focusable="false">
+        <circle r="196" class="page-une__graduation"/>
+        <circle r="176"/>
+        <circle r="118"/>
+        <circle r="30"/>
+        <circle r="12"/>
+        <g class="page-une__pales">
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z"/>
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(72)"/>
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(144)"/>
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(216)"/>
+          <path d="M 30 -4 L 186 -7 Q 194 0 186 7 L 30 4 Z" transform="rotate(288)"/>
+        </g>
+      </svg>
+      </div>
+    <div class="conteneur">
 
-      <!-- ================================================================
-           La question, la barre, les suggestions, les menus, les jetons.
-           ================================================================ -->
       <section class="ds-entete pile" aria-labelledby="ds-question">
 
+        <p class="ds-surtitre">Le fonds documentaire du service</p>
         <h1 class="ds-question" id="ds-question">Que recherchez-vous&nbsp;?</h1>
 
 
@@ -1027,6 +1350,10 @@
 
         </div>
       </section>
+    </div>
+    </div>
+
+    <div class="conteneur pile pile--lache ds-page">
 
       <!-- ================================================================
            Zone pilotée par avecEtat() : chargement, erreur, ou

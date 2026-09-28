@@ -51,7 +51,7 @@ const texte = await f.locator('main').innerText();
 t('le kiosque est rendu', (await f.locator('.kiosque').count()) === 1);
 t('le mot du chef ouvre la lecture', (await f.locator('.kiosque__lecture').count()) === 1
   && /trimestre qui se tient/i.test(await f.locator('.kiosque__lecture-titre').innerText()));
-t('la liste est à côté de la lecture', (await f.locator('.kiosque__flux .kiosque__carte').count()) >= 3);
+t('la liste est à côté de la lecture : un seul exemple, le mot du chef', (await f.locator('.kiosque__flux .kiosque__carte').count()) === 1);
 t('rien d\'« à venir » dans la communication', !/à venir/i.test(await f.locator('#zone-communication').innerText()));
 t('les prochains rendez-vous ont leur bloc, « À venir » : des pastilles sur leur ligne, sans compte à rebours ni légende',
   (await f.locator('#zone-agenda .agenda__rdv .agenda__pastille').count()) >= 1
@@ -60,12 +60,12 @@ t('les prochains rendez-vous ont leur bloc, « À venir » : des pastilles sur l
 t('le bandeau d\'alertes est là', (await f.locator('.kiosque__alertes').count()) === 1);
 t('les chiffres clés et la courbe sont rendus', (await f.locator('.kiosque__chiffre').count()) >= 3 && (await f.locator('.kiosque__serie .ind-spark').count()) === 1);
 t('l\'image de la communication est intégrée', /^data:image/.test((await f.locator('.kiosque__image img').first().getAttribute('src')) || ''));
-const secondeEntree = f.locator('.kiosque__carte').nth(1);
-const titreCarte = (await secondeEntree.locator('.kiosque__carte-titre').innerText()).trim();
-await secondeEntree.click();
+const seuleEntree = f.locator('.kiosque__carte').first();
+const titreCarte = (await seuleEntree.locator('.kiosque__carte-titre').innerText()).trim();
+await seuleEntree.click();
 await page.waitForTimeout(600);
 t('cliquer une entrée la lit à droite',
-  (await secondeEntree.getAttribute('aria-current')) === 'true'
+  (await seuleEntree.getAttribute('aria-current')) === 'true'
   && (await f.locator('.kiosque__lecture-titre').innerText()).trim() === titreCarte);
 
 console.log('\n== Les porteurs, dans leur section ==');
@@ -80,7 +80,9 @@ console.log('\n== La fiche d\'un porteur ==');
 const troisieme = f.locator('.porteur-carte').nth(2);
 const codeTroisieme = await troisieme.getAttribute('data-code');
 await troisieme.locator('.porteur-carte__lien').evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
-await troisieme.locator('.porteur-carte__lien').click();
+/* Le clic du doigt, sans que le sommaire collant ne s'interpose : les
+   tuiles sont petites et peuvent passer dessous au défilement. */
+await troisieme.locator('.porteur-carte__lien').evaluate((e) => e.click());
 await page.waitForTimeout(900);
 t('la carte ouvre sa fiche, dans le cadre', (await f.locator('.porteur-fiche').count()) === 1
   && (await f.locator('.porteur-fiche__code').innerText()).trim() === codeTroisieme
@@ -98,11 +100,17 @@ await f.locator('.porteurs-bandeau__retour').click();
 await page.waitForTimeout(900);
 t('« Tous les porteurs » revient à la galerie', (await f.locator('.porteur-fiche').count()) === 0 || await f.locator('.porteurs__vue--fiche').isHidden());
 
-console.log('\n== Le suivi OTQ / OTD ==');
+console.log('\n== Le suivi OTQ ==');
 const zoneOtq = f.locator('#zone-otq');
-t('l\'exemple est annoncé comme tel', /Données d’exemple|Données d'exemple/i.test(await zoneOtq.innerText()));
-t('deux cartes OTQ et OTD', (await zoneOtq.locator('.otq-carte').count()) === 2);
-t('le graphique est tracé', (await zoneOtq.locator('.ind-graphique svg').count()) >= 1);
+t('l\'exemple est annoncé comme tel (lu dans le CSV intégré, sans fetch)', /Données d’exemple|Données d'exemple/i.test(await zoneOtq.innerText()));
+t('le mois en grand, et ses barres empilées par statut',
+  (await zoneOtq.locator('.otq-une__valeur').count()) === 1 && (await zoneOtq.locator('.otq-barres__colonne').count()) === 12
+  && (await zoneOtq.locator('.otq-barres__segment[data-teinte="refuse"]').count()) >= 1);
+await zoneOtq.locator('.otq-bascule__choix', { hasText: 'TVE' }).click();
+await page.waitForTimeout(300);
+await zoneOtq.locator('.otq-bascule__choix', { hasText: '3 mois' }).click();
+await page.waitForTimeout(300);
+t('les bascules : TVE, sur 3 mois', /TVE/.test(await zoneOtq.locator('.otq-une__titre').innerText()) && (await zoneOtq.locator('.otq-barres__colonne').count()) === 3);
 
 console.log('\n== Un espace de pôle ==');
 await f.locator('nav.site-nav a[href="etiia.html"]').first().click();
@@ -272,8 +280,26 @@ const ctxGoogle = await nav.newContext({ viewport: { width: 1440, height: 1000 }
 await ctxGoogle.addInitScript(() => {
   if (window !== window.top) return;
   const serveur = {
-    etiiDemarrer: () => (window.__appelsDemarrer = (window.__appelsDemarrer || 0) + 1, { email: 'editeur@exemple.fr', peutModifier: true, modifications: { communications: [
-      { type: 'alerte', id: 'alerte-google', op: 'maj', donnees: { texte: 'Alerte venue du serveur Google.' }, le: '', par: 'editeur@exemple.fr' }] } })
+    etiiDemarrer: () => (window.__appelsDemarrer = (window.__appelsDemarrer || 0) + 1, { email: 'editeur@exemple.fr', peutModifier: true, modifications: {
+      communications: [
+        { type: 'alerte', id: 'alerte-google', op: 'maj', donnees: { texte: 'Alerte venue du serveur Google.' }, le: '', par: 'editeur@exemple.fr' }],
+      /* Ce qu'écrit importerPersonnes() pour ETIIE. */
+      organigramme: [
+        { type: 'pole', id: 'ETIIE', op: 'maj', donnees: { id: 'ETIIE', sansExemple: true }, le: '', par: 'editeur@exemple.fr' },
+        { type: 'squad', id: 'ETIIE-a-repartir', op: 'maj', donnees: { id: 'ETIIE-a-repartir', pole: 'ETIIE', nom: 'À répartir', rang: 99 }, le: '', par: 'editeur@exemple.fr' },
+        { type: 'personne', id: 'imp-etiie-a', op: 'maj', donnees: { id: 'imp-etiie-a', nom: 'Personne Importée A', poste: '', role: 'membre', pole: 'ETIIE', squad: 'ETIIE-a-repartir', competences: [] }, le: '', par: 'editeur@exemple.fr' },
+        { type: 'personne', id: 'imp-etiie-b', op: 'maj', donnees: { id: 'imp-etiie-b', nom: 'Personne Importée B', poste: '', role: 'membre', pole: 'ETIIE', squad: 'ETIIE-a-repartir', competences: [] }, le: '', par: 'editeur@exemple.fr' }],
+      /* Un carnet Gemini relié depuis le site. */
+      reglages: [
+        { type: 'carnet', id: 'carnet-1', op: 'maj', donnees: { id: 'carnet-1', libelle: 'Carnet d’essai', pole: 'ETII', lien: 'https://exemple.invalid/carnet' }, le: '', par: 'editeur@exemple.fr' }]
+    }, bases: {
+      /* L'onglet « Data » du Command Center, tel que lireOtq_() le rend. */
+      otq: { mois: ['2026-07', '2026-08'], otq: { acc: [40, 30], min: [5, 3], ref: [5, 2] }, tve: { acc: [20, 18], fref: [1, 1], ref: [2, 1] } },
+      /* Le classeur des documents, tel que lireDocumentsExternes_() le rend. */
+      documents: [
+        { id: 'HS9019', reference: 'HS9019', titre: 'Règles d’installation des harnais', lien: 'https://exemple.invalid/hs9019', type: 'Document technique',
+          metier: ['Définition électrique'], perimetre: 'All', sensibilite: 'Airbus amber', exportControl: 'EAR99', porteur: 'Personne 08', pole: ['ETIIE'], ligne: 3 }]
+    } })
   };
   const coureur = (ok) => new Proxy({}, { get: (_c, nom) => {
     if (nom === 'withSuccessHandler') return (f) => coureur(f);
@@ -289,6 +315,10 @@ await pageGoogle.waitForTimeout(3500);
 const fg = pageGoogle.frameLocator('#cadre');
 t('les pages trouvent le serveur chez la coquille : les modifications de la feuille s’affichent',
   /Alerte venue du serveur Google/.test(await fg.locator('.kiosque__alertes').innerText()));
+t('le suivi OTQ lit l’onglet « Data » : plus d’exemple, 88 % en août (30 sur 35)',
+  /Command Center/.test(await fg.locator('#zone-otq .otq__origine').innerText()) && !/Données d’exemple/.test(await fg.locator('#zone-otq').innerText())
+  && (await fg.locator('#zone-otq .otq-barres__colonne').count()) === 2 && /86|88|85/.test(await fg.locator('#zone-otq .otq-une__valeur').innerText()),
+  await fg.locator('#zone-otq .otq-une').innerText().catch(() => ''));
 t('l’éditeur connecté a son bouton « Modifier »', (await fg.locator('.bascule-edition').count()) === 1);
 await fg.locator('.bascule-edition').click();
 await pageGoogle.waitForTimeout(400);
@@ -305,6 +335,20 @@ for (const cible of ['etiia.html', 'etiie.html', 'index.html', 'etiii.html']) {
     .filter((n) => n.children.length === 0 && n.offsetParent && /^Chargement/.test(n.textContent.trim())).length);
   t(`sous Google, ${cible} s’affiche après un clic dans la barre (rien ne reste en « Chargement… »)`, bloques === 0, `(${bloques} bloc(s) bloqué(s))`);
 }
+await fg.locator('.site-nav a[href="etiie.html"]').first().click();
+await pageGoogle.waitForTimeout(2500);
+await fg.locator('#zone-reperes .equipe__tuile').first().waitFor({ timeout: 8000 }).catch(() => {});
+const equipeE = await fg.locator('#zone-reperes').innerText();
+t('ETIIE : les personnes importées remplacent l’exemple, « à répartir »',
+  /À répartir/.test(equipeE) && /\b2\s*PERSONNES/i.test(equipeE) && !/Squad 1\b/.test(equipeE)
+  && (await fg.locator('#zone-reperes .equipe__tuile').count()) === 1, equipeE.slice(0, 300));
+const docE = await fg.locator('#zone-documents').innerText();
+t('ETIIE : les documents du classeur, avec leur sensibilité et le contrôle export',
+  /Règles d’installation des harnais/.test(docE) && /Amber/.test(docE) && /Export control/.test(docE), docE.slice(0, 300));
+await fg.locator('.site-nav a[href="docsearch.html"]').first().click();
+await pageGoogle.waitForTimeout(2000);
+t('Recherche : le carnet relié apparaît dans « Demander à Gemini »',
+  /Carnet d’essai/.test(await fg.locator('.gemini').innerText()) && (await fg.locator('.gemini__ouvrir').getAttribute('href')) === 'https://exemple.invalid/carnet');
 t('un seul appel au serveur pour toutes ces pages', await pageGoogle.evaluate(() => window.__appelsDemarrer) === 1,
   `(${await pageGoogle.evaluate(() => window.__appelsDemarrer)})`);
 await ctxGoogle.close();

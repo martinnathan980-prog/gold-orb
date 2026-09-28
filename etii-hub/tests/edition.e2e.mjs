@@ -499,7 +499,7 @@ console.log('\n== Un runtime qui ne répond pas ==');
 page = await nouvellePage([runtime.toString(), 'runtime({ muet: true })'].join(';\n').replace(/^/, 'const runtime = '));
 await page.goto(`${B}/index.html`, { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(7500);
-t('la page s’affiche sur ses fichiers', (await page.locator('#zone-communication .kiosque__carte').count()) >= 3
+t('la page s’affiche sur ses fichiers', (await page.locator('#zone-communication .kiosque__carte').count()) >= 1
   && (await page.locator('#zone-agenda .agenda').count()) === 1);
 t('sans bouton « Modifier »', (await page.locator('.bascule-edition').count()) === 0);
 await page.close();

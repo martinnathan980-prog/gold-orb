@@ -13,13 +13,16 @@
         stockage local.
 
    Ce que la page raconte, dans l'ordre :
-     « Que recherchez-vous ? »  — la question, une barre large, le choix
-                                  du pôle : le service est le seul classement.
-     « Par où commencer ? »     — les chiffres du fonds, puis trois façons
-                                  d'entrer dedans sans rien taper.
+     « Que cherchez-vous ? »    — sur la bande marine, la question, une
+                                  barre large, le choix du pôle : le service
+                                  est le seul classement.
+     « Explorer le fonds »      — un type par tuile, son poids dans le
+                                  fonds ; puis les derniers documents ajoutés.
      Dès la deuxième lettre     — des propositions sous le champ.
-     Dès qu'il y a un résultat  — une grille de cartes qui montrent
-                                  POURQUOI elles sortent.
+     Dès qu'il y a un résultat  — une liste de fiches qui montrent POURQUOI
+                                  elles sortent, et leur sensibilité.
+     Toujours, en bas           — « Demander à Gemini » (gemini.js) : la
+                                  même question, posée au carnet du pôle.
 
    Invariants tenus ici :
    - aucun `innerHTML`, aucun `onclick=` : tout passe par el()/svg()/
@@ -53,7 +56,8 @@ import {
 } from './ui.js';
 
 import { creerIndex, rechercher, surligner, suggerer } from './search.js';
-import { blocAssistant, lienDemander } from './assistant.js';
+import { blocGemini } from './gemini.js';
+import { pastillesSecurite } from './sensibilite.js';
 
 /* -------------------------------------------------------------------------
    0. Accès aux données
@@ -104,6 +108,7 @@ try {
     barre: moduleEdition.barreEdition,
     ajouter: moduleEdition.boutonAjouter,
     ouvrirDocument: moduleContenus.ouvrirDocument,
+    ouvrirCarnet: moduleContenus.ouvrirCarnet,
     abonner: moduleModifications.abonnerModifications,
     supprimer: moduleModifications.supprimerElement
   };
@@ -546,8 +551,23 @@ const refs = {
   grille: null,
   messages: null,
   propositionsSection: null,
-  propositionsListe: null
+  propositionsListe: null,
+  gemini: null               // le bloc « Demander à Gemini », toujours en bas
 };
+
+/** Les réglages du site (reglages.json, modifié) : les carnets Gemini. */
+let reglages = { carnets: [] };
+
+/* Les réglages se lisent à part : illisibles, la recherche reste entière
+   et le bloc Gemini dit seulement qu'aucun carnet n'est relié. */
+async function chargerReglages() {
+  try {
+    const r = await chargerDonnees('reglages');
+    reglages = r && Array.isArray(r.carnets) ? r : { carnets: [] };
+  } catch (_e) {
+    reglages = { carnets: [] };
+  }
+}
 
 /** Cartes déjà construites : id de document -> fiche réutilisable. */
 const fiches = new Map();
@@ -1110,8 +1130,9 @@ function remplirMenus() {
   }
 }
 
-/** Une tuile d'accès : un bouton-carte, un chiffre, un libellé. */
-function tuile(dataset, libelle, nombre, ornement, etiquetteAria) {
+/** Une tuile d'accès : un bouton-carte, un chiffre, un libellé, et un
+    filet qui dit la part du fonds. */
+function tuile(dataset, libelle, nombre, ornement, etiquetteAria, part) {
   return el('li', {},
     el('button', {
       type: 'button',
@@ -1120,8 +1141,39 @@ function tuile(dataset, libelle, nombre, ornement, etiquetteAria) {
       ariaLabel: etiquetteAria
     },
     ornement,
+    el('span', { class: 'ds-tuile__nombre', ariaHidden: 'true' }, String(nombre)),
     el('span', { class: 'ds-tuile__nom' }, libelle),
-    el('span', { class: 'ds-tuile__compte' }, compteDocuments(nombre))));
+    el('span', { class: 'ds-tuile__compte' }, compteDocuments(nombre)),
+    typeof part === 'number'
+      ? el('span', { class: 'ds-tuile__part', ariaHidden: 'true', style: { '--part': part.toFixed(3) } })
+      : null));
+}
+
+/* Les derniers documents ajoutés : les plus récents d'abord — par date de
+   mise à jour quand le classeur en donne une, sinon par ligne (la dernière
+   ligne ajoutée au classeur est la plus récente). Six, en vigueur. */
+function derniersAjouts() {
+  const reperes = corpus.documents.filter((d) => texteOuVide(d.maj) !== '' || Number(d.ligne) > 0);
+  if (!reperes.length) return null;
+  const derniers = reperes.filter((d) => !texteOuVide(d.remplacePar)).slice()
+    .sort((a, b) => texteOuVide(b.maj).localeCompare(texteOuVide(a.maj)) || (Number(b.ligne) || 0) - (Number(a.ligne) || 0))
+    .slice(0, 6);
+  return el('section', { class: 'ds-derniers', ariaLabelledby: 'ds-derniers-titre' },
+    el('h3', { class: 'ds-derniers__titre', id: 'ds-derniers-titre' }, 'Derniers ajouts'),
+    el('ol', { class: 'ds-derniers__liste', role: 'list' }, derniers.map((d) => {
+      const codes = valeursDoc(d, DIMENSION_POLE);
+      const lien = texteOuVide(d.lien);
+      return el('li', { class: 'ds-dernier', dataset: { pole: codes[0] || '' } },
+        el('span', { class: 'pole-point', ariaHidden: 'true' }),
+        el('button', { type: 'button', class: 'ds-dernier__titre', dataset: { action: 'voir-document', id: String(d.id) } },
+          texteOuVide(d.reference) ? el('span', { class: 'ds-dernier__ref' }, texteOuVide(d.reference)) : null,
+          texteOuVide(d.titre)),
+        el('span', { class: 'ds-dernier__type' }, texteOuVide(d.type)),
+        pastillesSecurite(d, 'ds-dernier__securite') || el('span', { class: 'ds-dernier__securite' }),
+        /^https?:\/\//i.test(lien)
+          ? el('a', { class: 'ds-dernier__ouvrir', href: lien, target: '_blank', rel: 'noopener noreferrer', ariaLabel: 'Ouvrir : ' + texteOuVide(d.titre) }, 'Ouvrir ↗')
+          : el('span', { class: 'ds-dernier__ouvrir' }));
+    })));
 }
 
 
@@ -1156,17 +1208,20 @@ function construireInterface(donnees, cible) {
     class: 'ds-bloc pile pile--lache',
     ariaLabelledby: 'ds-depart-titre'
   },
-  titreSection('Exploration rapide', { id: 'ds-depart-titre' }),
+  titreSection('Explorer le fonds', { id: 'ds-depart-titre' }),
   el('ul', { class: 'ds-tuiles' }, corpus.types.map((type) => {
     const habillage = habillageType(type);
     const nombre = corpus.comptesType.get(type) || 0;
+    const part = total ? nombre / total : 0;
     return tuile(
       { action: 'filtrer-type', valeur: type },
       habillage.libelle,
       nombre,
       el('span', { class: 'ds-tuile__icone', ariaHidden: 'true' }, habillage.icone()),
-      'Voir les documents de type ' + type + ', ' + compteDocuments(nombre));
+      'Voir les documents de type ' + type + ', ' + compteDocuments(nombre),
+      part);
   })),
+  derniersAjouts(),
   // Sorties de l'accueil : tout parcourir, ou signaler un document absent.
   el('div', { class: 'rangee rangee--centree' },
     el('button', {
@@ -1180,11 +1235,29 @@ function construireInterface(donnees, cible) {
       dataset: { action: 'proposer' }
     }, 'Proposer un document'),
     edition ? edition.ajouter('Ajouter un document', (bouton) => editerDocument(null, bouton)) : null),
-  blocUsage(),
-  /* L'assistant : « que dit le document », quand la recherche répond
-     « où est le document ». Il reprend la question tapée dans la barre.
-     Tant qu'aucune source n'est raccordée, il se présente comme tel. */
-  blocAssistant({ requete: () => etat.requete }));
+  blocUsage());
+
+  /* « Demander à Gemini » : « que dit le document », quand la recherche
+     répond « où est le document ». Sous l'accueil comme sous les
+     résultats ; la question de la barre le suit. */
+  refs.gemini = blocGemini({
+    carnets: reglages.carnets,
+    requete: () => etat.requete,
+    pole: etat.filtres.pole || 'ETII',
+    edition: edition && edition.ouvrirCarnet ? {
+      surAjouter: (b) => edition.ouvrirCarnet({ pole: etat.filtres.pole || 'ETII', declencheur: b }),
+      surModifier: (carnet, b) => edition.ouvrirCarnet({ existant: carnet, declencheur: b }),
+      surSupprimer: async (carnet) => {
+        try {
+          await edition.supprimer('reglages', 'carnet', String(carnet.id));
+          toast('Carnet retiré de la recherche.', 'succes');
+        } catch (cause) {
+          toast((cause && cause.message) || 'La suppression a échoué.', 'erreur');
+        }
+      }
+    } : null
+  });
+  refs.gemini.id = 'ds-gemini';
 
   /* --- Résultats : compteur, tri, grille, messages --------------------- */
 
@@ -1230,9 +1303,17 @@ function construireInterface(donnees, cible) {
   },
   el('div', { class: 'rangee rangee--serree' },
     refs.compteur, bandeauTri,
-    /* La même question, posée à Gemini sur le texte des documents : le
-       lien n'existe que si l'assistant est raccordé. */
-    lienDemander(() => etat.requete, 'bouton bouton--discret bouton--compact'),
+    /* La même question, posée à Gemini : le bloc du bas, question reprise. */
+    el('button', {
+      type: 'button', class: 'bouton bouton--discret bouton--compact ds-vers-gemini',
+      onClick: () => {
+        if (!refs.gemini) return;
+        refs.gemini.synchroniser();
+        refs.gemini.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        const q = refs.gemini.querySelector('.gemini__question');
+        if (q) q.focus({ preventScroll: true });
+      }
+    }, el('span', { ariaHidden: 'true' }, '✦ '), 'Demander à Gemini'),
     proposer,
     edition ? edition.ajouter('Ajouter un document', (bouton) => editerDocument(null, bouton)) : null),
   el('div', { class: 'separateur', role: 'presentation' }),
@@ -1240,7 +1321,7 @@ function construireInterface(donnees, cible) {
   refs.messages);
 
   monter(cible, el('div', { class: 'pile pile--lache' },
-    refs.accueil, refs.resultats));
+    refs.accueil, refs.resultats, refs.gemini));
 
   /* --- Délégations : un gestionnaire par conteneur, jamais par carte --- */
 
@@ -1315,6 +1396,7 @@ function rendre() {
 
   ecrireUrl();
   annoncerResultats();
+  if (refs.gemini && typeof refs.gemini.synchroniser === 'function') refs.gemini.synchroniser();
 }
 
 /** Reporte l'état dans le groupe de choix : le bouton de la valeur est coché. */
@@ -1835,7 +1917,8 @@ function obtenirFiche(doc) {
     el('span', { class: 'badge badge--neutre' },
       el('span', { class: 'visuellement-cache' }, 'Type : '),
       valeurOuManquant(type)),
-    reference),
+    reference,
+    pastillesSecurite(doc, 'ds-carte__securite')),
   titre,
   extrait,
   sujet,
@@ -2770,7 +2853,7 @@ function demarrer() {
 
   avecEtat(
     refs.zone,
-    () => chargerDonnees('documents'),
+    () => Promise.all([chargerDonnees('documents'), chargerReglages()]).then(([docs]) => docs),
     (donnees, cible) => {
       construireInterface(donnees, cible);
 
@@ -2801,8 +2884,9 @@ function demarrer() {
   if (edition) {
     edition.installer();
     edition.abonner(async (jeu) => {
-      if (jeu !== 'documents' || !pretARendre) return;
+      if ((jeu !== 'documents' && jeu !== 'reglages') || !pretARendre) return;
       try {
+        if (jeu === 'reglages') await chargerReglages();
         construireInterface(await chargerDonnees('documents'), refs.zone);
         rendre();
       } catch (cause) {

@@ -3,7 +3,7 @@
 //
 // Code.gs ne tourne que chez Google ; ce test lui fournit des doublures des
 // services qu'il appelle (SpreadsheetApp, Session, LockService, DriveApp,
-// HtmlService, PropertiesService, Logger) et vérifie le contrat que
+// HtmlService, PropertiesService, Logger, MailApp) et vérifie le contrat que
 // magasin.js attend : qui est connecté, qui peut écrire, ce qui est rangé,
 // relu, remplacé, annulé — y compris un élément plus long qu'une cellule.
 
@@ -20,6 +20,7 @@ const LIMITE_CELLULE = 50000;
 function creerFeuille(nom) {
   const lignes = [];            // tableau de tableaux, ligne 1 = lignes[0]
   const fonds = new Map();      // couleur posée sur une cellule de la ligne 2 (journal)
+  const liens = new Map();      // « ligne,colonne » -> lien hypertexte d'une cellule (texte riche)
   let colonnes = 26;
   const largeur = () => Math.max(0, ...lignes.map((l) => {
     let n = l.length; while (n > 0 && (l[n - 1] === '' || l[n - 1] === undefined)) n -= 1; return n;
@@ -48,12 +49,22 @@ function creerFeuille(nom) {
     setColumnWidth: () => feuille,
     getRange(ligne, col, nbL = 1, nbC = 1) {
       if (col + nbC - 1 > colonnes) throw new Error('Les coordonnées de la plage sont en dehors de la feuille.');
+      const valeurs = () => Array.from({ length: nbL }, (_x, i) => Array.from({ length: nbC }, (_y, j) => {
+        const l = lignes[ligne - 1 + i] || [];
+        const v = l[col - 1 + j];
+        return v === undefined ? '' : v;
+      }));
       const plage = {
-        getValues: () => Array.from({ length: nbL }, (_x, i) => Array.from({ length: nbC }, (_y, j) => {
-          const l = lignes[ligne - 1 + i] || [];
-          const v = l[col - 1 + j];
-          return v === undefined ? '' : v;
+        getValues: valeurs,
+        /* Ce que Sheets affiche : une date en JJ/MM/AAAA, le reste en texte. */
+        getDisplayValues: () => valeurs().map((l) => l.map((v) => (v instanceof Date
+          ? String(v.getDate()).padStart(2, '0') + '/' + String(v.getMonth() + 1).padStart(2, '0') + '/' + v.getFullYear()
+          : String(v)))),
+        getRichTextValues: () => valeurs().map((l, i) => l.map((_v, j) => {
+          const lien = liens.get((ligne + i) + ',' + (col + j)) || null;
+          return { getLinkUrl: () => lien, getRuns: () => [] };
         })),
+        getFormulas: () => valeurs().map((l) => l.map(() => '')),
         setValues(v) {
           v.forEach((l, i) => l.forEach((c, j) => {
             while (lignes.length < ligne + i) lignes.push([]);
@@ -73,8 +84,10 @@ function creerFeuille(nom) {
       };
       return plage;
     },
+    getDataRange: () => feuille.getRange(1, 1, Math.max(1, hauteur()), Math.max(1, largeur())),
     _lignes: lignes,
-    _fonds: fonds
+    _fonds: fonds,
+    _liens: liens
   };
   return feuille;
 }
@@ -83,6 +96,7 @@ function creerClasseur(id = 'classeur-essai') {
   const onglets = new Map();
   return {
     getId: () => id,
+    getUrl: () => 'https://feuille.exemple/' + id,
     getSheetByName: (n) => onglets.get(n) || null,
     getSheets: () => [...onglets.values()],
     insertSheet: (n) => { const f = creerFeuille(n); onglets.set(n, f); return f; },
@@ -97,14 +111,16 @@ function environnement(options) {
   const classeur = creerClasseur();
   if (options.feuilleParDefaut) classeur.insertSheet('Feuille 1');
   const documents = options.documents || null;
+  const autres = options.autres || {};
   const proprietes = new Map();
-  const etat = { connecte: options.connecte, journal: [], verrou: 0 };
+  const etat = { connecte: options.connecte, journal: [], verrou: 0, courriels: [] };
   const contexte = {
     SpreadsheetApp: {
       getActiveSpreadsheet: () => classeur,
       openById: (id) => {
         if (id === 'classeur-essai') return classeur;
         if (documents && id === 'feuille-documents') return documents;
+        if (autres[id]) return autres[id];
         throw new Error('classeur inconnu');
       }
     },
@@ -137,12 +153,19 @@ function environnement(options) {
       }
     },
     Logger: { log: (m) => etat.journal.push(String(m)) },
+    MailApp: {
+      sendEmail: (m) => { if (options.courrielEnPanne) throw new Error('quota'); etat.courriels.push(m); },
+      getRemainingDailyQuota: () => 1500
+    },
     console
   };
   vm.createContext(contexte);
   let code = readFileSync(new URL('../tools/apps-script/site/Code.gs', import.meta.url), 'utf8')
     .replace("var ID_FICHIER_SITE = 'COLLEZ_ICI_L_IDENTIFIANT_DU_FICHIER';", "var ID_FICHIER_SITE = 'fichier-site';");
   if (documents) code = code.replace("var DOCUMENTS_ID_FEUILLE = '';", "var DOCUMENTS_ID_FEUILLE = 'feuille-documents';");
+  if (autres['feuille-otq']) code = code.replace("var OTQ_ID_FEUILLE = '';", "var OTQ_ID_FEUILLE = 'feuille-otq';");
+  if (autres['feuille-personnes']) code = code.replace("var PERSONNES_ID_FEUILLE = '';", "var PERSONNES_ID_FEUILLE = 'feuille-personnes';");
+  if (options.destinataires) code = code.replace("var DESTINATAIRES_QUESTIONS = '';", "var DESTINATAIRES_QUESTIONS = '" + options.destinataires + "';");
   vm.runInContext(code, contexte, { filename: 'Code.gs' });
   return { contexte, classeur, etat };
 }
@@ -154,7 +177,7 @@ const { contexte: gs, classeur, etat } = environnement({ proprietaire: PROPRIETA
 
 console.log('== Installation ==');
 gs.installer();
-const RUBRIQUES = ['Communication center', 'À venir', 'Porteurs', 'Organigramme', 'Documents', 'Questions fréquentes', 'Réunions'];
+const RUBRIQUES = ['Communication center', 'À venir', 'Porteurs', 'Organigramme', 'Documents', 'Questions fréquentes', 'Réunions', 'Recherche'];
 t('installer() crée Éditeurs, le journal complet, un journal par rubrique, les questions aux experts et les modifications — dans cet ordre',
   JSON.stringify(classeur.getSheets().map((f) => f.getName()))
     === JSON.stringify(['Éditeurs', 'Journal complet', ...RUBRIQUES.map((r) => 'Journal · ' + r), 'Questions aux experts', 'modifications']),
@@ -260,6 +283,19 @@ t('un lecteur pose une question : elle arrive en haut de « Questions aux expert
   && questions[2][3] === 'Quelle section pour un faisceau 28 V ?' && questions[2][4] === 'Lot 4' && questions[2][5] === 'À traiter',
   JSON.stringify(questions.slice(1)));
 t('la plus récente en haut, et jamais lue comme une formule', String(questions[1][3]).startsWith("'="));
+const courriel = etat.courriels[0] || {};
+t('chaque question prévient les administrateurs par e-mail (le propriétaire, par défaut), réponse à la personne',
+  etat.courriels.length === 2 && courriel.to === PROPRIETAIRE && /ETIIE/.test(courriel.subject) && /faisceau 28 V/.test(courriel.body)
+  && /Lot 4/.test(courriel.body) && courriel.replyTo === 'collegue@exemple.fr' && /Questions aux experts/.test(courriel.body), JSON.stringify(courriel));
+const enPanne = environnement({ proprietaire: PROPRIETAIRE, connecte: 'x@exemple.fr', courrielEnPanne: true });
+enPanne.contexte.installer();
+enPanne.contexte.etiiDemande({ question: 'Toujours rangée ?' });
+t('un e-mail qui ne part pas n’empêche pas la question d’être rangée',
+  enPanne.classeur.getSheetByName('Questions aux experts')._lignes[1][3] === 'Toujours rangée ?' && enPanne.etat.journal.some((l) => /non envoyé/.test(l)));
+const liste = environnement({ proprietaire: PROPRIETAIRE, connecte: 'x@exemple.fr', destinataires: 'a@exemple.fr, b@exemple.fr' });
+liste.contexte.installer();
+liste.contexte.etiiDemande({ question: 'Pour deux administrateurs' });
+t('DESTINATAIRES_QUESTIONS choisit qui reçoit l’e-mail', liste.etat.courriels[0].to === 'a@exemple.fr, b@exemple.fr');
 refus = '';
 try { gs.etiiDemande({ question: '   ' }); } catch (e) { refus = e.message; }
 t('une question vide est refusée', /vide/.test(refus));
@@ -314,6 +350,96 @@ sansE.insertSheet('ETIII').appendRow(['Colonne sans titre']);
 const partiel = environnement({ proprietaire: PROPRIETAIRE, connecte: PROPRIETAIRE, documents: sansE }).contexte.etiiDemarrer();
 t('un onglet absent ou sans « Titre » n’empêche pas les autres, et le site le dit',
   partiel.bases.documents.length === 1 && /ETIIE.*introuvable/.test(partiel.basesErreur) && /ETIII.*Titre/.test(partiel.basesErreur), JSON.stringify(partiel.basesErreur));
+/* Le classeur réel : un bandeau de groupes en ligne 1, les titres en ligne
+   2, un « Lien » cliquable, une puce @personne, la sécurité. */
+const reel = creerClasseur('feuille-documents');
+for (const nom of ['ETIIA', 'ETIIE', 'ETIII']) {
+  const f = reel.insertSheet(nom);
+  f.appendRow(['IDENTIFICATION', '', '', 'CATEGORISATION', '', '', 'Sécurité', '', 'SUIVI', '']);
+  f.appendRow(['Référence du document', 'Titre du document', 'Lien d\'accès', 'Type de document', 'Métier', 'Applicabilité des porteurs', 'Sensibilité', 'Export Control', 'Ajouté par (@ devant votre nom) :', 'Commentaire']);
+}
+const reelE = reel.getSheetByName('ETIIE');
+reelE.appendRow(['HS9019', 'ELECTRICAL HARNESSES INSTALLATION RULES FOR HELICOPTERS', 'Lien', 'Document technique', 'Définition électrique', 'All', 'Airbus amber', 'Not in Export Control List', 'Personne 08', '']);
+reelE._liens.set('3,3', 'https://example.invalid/hs9019');
+reelE.appendRow(['HS9020', 'Règles de marquage', 'https://example.invalid/hs9020', 'Norme', 'Définition électrique, Installation', 'H160', 'Airbus red', 'EAR99', '@Personne 12', 'Version à jour']);
+const lusReel = environnement({ proprietaire: PROPRIETAIRE, connecte: PROPRIETAIRE, documents: reel }).contexte.etiiDemarrer();
+const hs = (lusReel.bases.documents || [])[0] || {};
+const hs2 = (lusReel.bases.documents || [])[1] || {};
+t('le classeur réel : titres en ligne 2 sous un bandeau, colonnes longues reconnues',
+  lusReel.bases.documents.length === 2 && hs.reference === 'HS9019' && hs.titre === 'ELECTRICAL HARNESSES INSTALLATION RULES FOR HELICOPTERS'
+  && hs.type === 'Document technique' && JSON.stringify(hs.metier) === '["Définition électrique"]' && hs.perimetre === 'All'
+  && hs.porteur === 'Personne 08' && JSON.stringify(hs.pole) === '["ETIIE"]', JSON.stringify(hs));
+t('« Lien » cliquable : l’adresse du lien, pas le mot ; une adresse en clair aussi',
+  hs.lien === 'https://example.invalid/hs9019' && hs2.lien === 'https://example.invalid/hs9020', JSON.stringify([hs.lien, hs2.lien]));
+t('sensibilité, contrôle export, commentaire, et le « @ » de la puce retiré',
+  hs.sensibilite === 'Airbus amber' && hs.exportControl === 'Not in Export Control List' && hs2.sensibilite === 'Airbus red'
+  && hs2.exportControl === 'EAR99' && hs2.description === 'Version à jour' && hs2.porteur === 'Personne 12', JSON.stringify(hs2));
+t('chaque document dit sa ligne : sans date, la dernière ajoutée est la plus récente', hs.ligne === 3 && hs2.ligne === 4);
+const onglets = creerClasseur('feuille-documents');
+onglets.insertSheet(' etiia ').appendRow(['Titre']);
+onglets.getSheetByName(' etiia ').appendRow(['Doc A']);
+onglets.insertSheet('Documents ETIIE').appendRow(['Titre']);
+onglets.getSheetByName('Documents ETIIE').appendRow(['Doc E']);
+const lusOnglets = environnement({ proprietaire: PROPRIETAIRE, connecte: PROPRIETAIRE, documents: onglets }).contexte.etiiDemarrer();
+t('un onglet se trouve aux espaces et à la casse près, ou par son code',
+  lusOnglets.bases.documents.length === 2 && /ETIII.*introuvable/.test(lusOnglets.basesErreur || ''), JSON.stringify([lusOnglets.bases.documents, lusOnglets.basesErreur]));
+
+console.log('\n== Le suivi OTQ : l’onglet « Data » du Command Center ==');
+t('non branché, rien n’est lu', gs.etiiDemarrer().bases.otq === undefined);
+const cc = creerClasseur('feuille-otq');
+const data = cc.insertSheet('Data');
+data.appendRow(['📅 MOIS', '✅ PROD ACCEPTED', '⚠️ PROD MINOR REFUSED', '❌ PROD REFUSED', '🟢 TVE ACCEPTED', '🟡 TVE FALSE REFUSED', '🔴 TVE REFUSED']);
+data.appendRow(['SEP 26', 39, 3, 2, 24, 1, 2]);
+data.appendRow(['AUG 26', 31, 2, 1, 18, 1, 1]);
+data.appendRow([new Date(2026, 6, 1), 47, 4, 2, 27, 2, 1]);
+data.appendRow(['ligne illisible', 1, 1, 1, 1, 1, 1]);
+const avecOtq = environnement({ proprietaire: PROPRIETAIRE, connecte: 'x@exemple.fr', autres: { 'feuille-otq': cc } });
+const otq = avecOtq.contexte.etiiDemarrer().bases.otq;
+t('les mois sont lus (« SEP 26 », une date), triés, la ligne illisible écartée',
+  otq && JSON.stringify(otq.mois) === '["2026-07","2026-08","2026-09"]', JSON.stringify(otq));
+t('les colonnes sont reconnues par leurs mots, emoji compris',
+  JSON.stringify(otq.otq) === '{"acc":[47,31,39],"min":[4,2,3],"ref":[2,1,2]}' && JSON.stringify(otq.tve) === '{"acc":[27,18,24],"fref":[2,1,1],"ref":[1,1,2]}', JSON.stringify(otq));
+const sansData = creerClasseur('feuille-otq');
+const rOtq = environnement({ proprietaire: PROPRIETAIRE, connecte: 'x@exemple.fr', autres: { 'feuille-otq': sansData } }).contexte.etiiDemarrer();
+t('un onglet « Data » absent ne bloque pas le site, et le dit', rOtq.bases.otq === undefined && /OTQ.*Data/.test(rOtq.basesErreur || ''), JSON.stringify(rOtq.basesErreur));
+
+console.log('\n== L’import des personnes, une fois ==');
+const perso = creerClasseur('feuille-personnes');
+const liste2 = perso.insertSheet('Personnel');
+liste2.appendRow(['Effectif ETIIE']);
+liste2.appendRow(['Nom', 'Prénom', 'Matricule']);
+liste2.appendRow(['DUPONT', 'Alex', '001']);
+liste2.appendRow(['MARTIN', 'Camille', '002']);
+liste2.appendRow(['DUPONT', 'Alex', '003']);
+liste2.appendRow(['', '', '004']);
+const imp = environnement({ proprietaire: PROPRIETAIRE, connecte: PROPRIETAIRE, autres: { 'feuille-personnes': perso } });
+imp.contexte.installer();
+imp.contexte.importerPersonnes();
+const lignesImp = imp.contexte.lireModifications_().organigramme;
+const personnesImp = lignesImp.filter((m) => m.type === 'personne');
+t('les noms (Prénom Nom), une fois chacun, arrivent « à répartir » dans le pôle',
+  JSON.stringify(personnesImp.map((m) => m.donnees.nom)) === '["Alex DUPONT","Camille MARTIN"]'
+  && personnesImp.every((m) => m.donnees.pole === 'ETIIE' && m.donnees.squad === 'ETIIE-a-repartir' && m.donnees.role === 'membre'), JSON.stringify(personnesImp));
+t('le pôle quitte ses personnes d’exemple, et reçoit sa squad d’attente',
+  lignesImp.some((m) => m.type === 'pole' && m.id === 'ETIIE' && m.donnees.sansExemple === true)
+  && lignesImp.some((m) => m.type === 'squad' && m.donnees.nom === 'À répartir'));
+/* Une personne placée depuis le site ne revient pas « à répartir ». */
+imp.contexte.etiiPoser('organigramme', { type: 'personne', id: personnesImp[0].id, op: 'maj', donnees: Object.assign({}, personnesImp[0].donnees, { squad: 'ETIIE-squad-1' }) });
+liste2.appendRow(['NOUVEAU', 'Sam', '005']);
+imp.contexte.importerPersonnes();
+const apres = imp.contexte.lireModifications_().organigramme.filter((m) => m.type === 'personne');
+t('relancé, il n’ajoute que les nouveaux et ne déplace personne',
+  apres.length === 3 && apres.find((m) => m.id === personnesImp[0].id).donnees.squad === 'ETIIE-squad-1', JSON.stringify(apres.map((m) => [m.donnees.nom, m.donnees.squad])));
+t('le journal le dit en une ligne', imp.classeur.getSheetByName('Journal · Organigramme')._lignes.some((l) => /Import de 2 personnes/.test(String(l[4]))));
+const uneColonne = creerClasseur('feuille-personnes');
+uneColonne.insertSheet('Feuille').appendRow(['Collaborateur']);
+uneColonne.getSheetByName('Feuille').appendRow(['Personne Exemple']);
+const imp2 = environnement({ proprietaire: PROPRIETAIRE, connecte: PROPRIETAIRE, autres: { 'feuille-personnes': uneColonne } });
+imp2.contexte.installer();
+imp2.contexte.importerPersonnes();
+t('une seule colonne « Collaborateur » convient aussi',
+  imp2.contexte.lireModifications_().organigramme.filter((m) => m.type === 'personne').map((m) => m.donnees.nom).join() === 'Personne Exemple');
+
 const casse = environnement({ proprietaire: PROPRIETAIRE, connecte: PROPRIETAIRE, documents: creerClasseur('feuille-documents') });
 const r = casse.contexte.etiiDemarrer();
 t('un classeur sans aucun onglet lisible ne bloque pas le site : il garde ses documents, et le dit', r.bases.documents === undefined && /illisible/.test(r.basesErreur || ''), JSON.stringify(r.basesErreur));

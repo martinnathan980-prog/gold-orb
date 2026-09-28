@@ -205,48 +205,6 @@
     },
     {
       "exemple": true,
-      "id": "c01",
-      "date": "2026-09-12",
-      "statut": "succes",
-      "categorie": "H160",
-      "titre": "Validation du jalon de définition",
-      "resume": "L'architecture électrique du lot 3 est validée.",
-      "corps": [
-        {
-          "type": "titre",
-          "texte": "Périmètre de la revue"
-        },
-        {
-          "type": "puce",
-          "texte": "Revue documentaire complète des schémas du lot 3."
-        },
-        {
-          "type": "puce",
-          "texte": "Vérification croisée avec la maquette numérique."
-        },
-        {
-          "type": "vide",
-          "texte": ""
-        },
-        {
-          "type": "valide",
-          "texte": "Conclusion : passage en fabrication autorisé."
-        }
-      ],
-      "pole": "ETII",
-      "image": {
-        "src": "assets/img/porteurs/h160.jpg",
-        "alt": "Un H160 sur un salon",
-        "legende": "",
-        "credit": {
-          "auteur": "Domenjod",
-          "licence": "CC BY-SA 4.0",
-          "page": "https://commons.wikimedia.org/wiki/File:Airbus_H160_Gend1_Domenjod_20_10_2021.jpg"
-        }
-      }
-    },
-    {
-      "exemple": true,
       "id": "c06",
       "date": "2026-09-10",
       "statut": "succes",
@@ -367,42 +325,6 @@
     },
     {
       "exemple": true,
-      "id": "c02",
-      "date": "2026-09-08",
-      "statut": "urgent",
-      "categorie": "Outils",
-      "titre": "Migration de la plateforme documentaire",
-      "resume": "Interruption de service prévue mercredi de 19h45 à 23h00.",
-      "corps": [
-        {
-          "type": "titre",
-          "texte": "Ce qui change"
-        },
-        {
-          "type": "puce",
-          "texte": "Nouvelle arborescence des espaces de travail."
-        },
-        {
-          "type": "puce",
-          "texte": "Les liens existants sont redirigés automatiquement."
-        },
-        {
-          "type": "vide",
-          "texte": ""
-        },
-        {
-          "type": "alerte",
-          "texte": "Sauvegardez vos travaux en cours avant 19h30."
-        },
-        {
-          "type": "valide",
-          "texte": "Aucune action requise après la bascule."
-        }
-      ],
-      "pole": "ETIIE"
-    },
-    {
-      "exemple": true,
       "id": "c08",
       "date": "2026-09-04",
       "statut": "succes",
@@ -513,109 +435,6 @@
           ],
           "largeur": "moitie",
           "cote": "droite"
-        }
-      ]
-    },
-    {
-      "exemple": true,
-      "id": "c03",
-      "date": "2026-09-02",
-      "statut": "info",
-      "categorie": "H175",
-      "titre": "Nouvelle procédure de revue par les pairs",
-      "resume": "Deux relecteurs sont désormais requis avant diffusion.",
-      "corps": [
-        {
-          "type": "titre",
-          "texte": "Principe"
-        },
-        {
-          "type": "puce",
-          "texte": "Tout livrable passe par deux relectures indépendantes."
-        },
-        {
-          "type": "puce",
-          "texte": "Les relecteurs sont désignés par le lead technique."
-        },
-        {
-          "type": "vide",
-          "texte": ""
-        },
-        {
-          "type": "titre",
-          "texte": "Entrée en vigueur"
-        },
-        {
-          "type": "puce",
-          "texte": "Applicable aux livrables émis à partir du mois prochain."
-        }
-      ],
-      "pole": "ETII"
-    },
-    {
-      "exemple": true,
-      "id": "c04",
-      "date": "2026-08-26",
-      "statut": "info",
-      "categorie": "Transverse",
-      "titre": "Ouverture du portail de recherche documentaire",
-      "resume": "Un point d'entrée unique pour retrouver les documents du service.",
-      "corps": [
-        {
-          "type": "titre",
-          "texte": "Ce que vous y trouvez"
-        },
-        {
-          "type": "puce",
-          "texte": "Outils, documents techniques, processus, normes et formations."
-        },
-        {
-          "type": "puce",
-          "texte": "Recherche tolérante aux fautes de frappe et filtres combinables."
-        },
-        {
-          "type": "vide",
-          "texte": ""
-        },
-        {
-          "type": "valide",
-          "texte": "Accessible depuis la page d'accueil du hub."
-        }
-      ],
-      "pole": "ETIIA"
-    },
-    {
-      "exemple": true,
-      "id": "c05",
-      "date": "2026-08-19",
-      "statut": "succes",
-      "categorie": "H160",
-      "titre": "Clôture de la campagne d'essais",
-      "resume": "L'ensemble des points ouverts est soldé.",
-      "corps": [
-        {
-          "type": "puce",
-          "texte": "Campagne menée sur six semaines."
-        },
-        {
-          "type": "valide",
-          "texte": "Tous les écarts relevés ont été traités."
-        }
-      ],
-      "pole": "ETIII",
-      "chiffres": [
-        {
-          "libelle": "Vols réalisés",
-          "valeur": 42
-        },
-        {
-          "libelle": "Écarts relevés",
-          "valeur": 7
-        },
-        {
-          "libelle": "Écarts soldés",
-          "valeur": 7,
-          "tendance": "hausse"
         }
       ]
     }

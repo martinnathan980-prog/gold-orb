@@ -1,0 +1,211 @@
+================================================================================
+  ETII HUB — GEMINI SUR VOS CENTAINES DE DOCUMENTS
+  Sans Vertex AI, sans Gemini Enterprise, sans l'informatique.
+================================================================================
+
+Faits vérifiés le 28 septembre 2026 dans l'aide officielle de Google (liste
+des sources à la fin). Les noms et les limites changent souvent : un point
+marqué (NON VÉRIFIÉ) est à tester chez vous avant de l'annoncer.
+
+
+--------------------------------------------------------------------------------
+ EN BREF
+--------------------------------------------------------------------------------
+
+  La page Recherche du site trouve OÙ est un document. Pour savoir CE QU'IL
+  DIT, le site vous envoie vers Gemini par le chemin que votre Google
+  Workspace offre déjà, sans rien installer :
+
+   1. Un « carnet » Gemini Notebook (l'ancien NotebookLM) par pôle ou par
+      thème, rempli de vos documents validés. Chez vous : jusqu'à 300
+      documents par carnet (*). Gemini y répond en citant les documents.
+
+   2. Dans le site, page Recherche, en bas : le bloc « Demander à Gemini ».
+      On tape la question (elle reprend celle de la barre de recherche),
+      on clique « Copier la question et ouvrir le carnet », on colle
+      (Ctrl + V), Entrée : la réponse arrive, sources à l'appui.
+
+   3. Facultatif : la réponse par e-mail, sans ouvrir le carnet (un
+      formulaire Google et un flux Workspace Studio). Voir VOIE 2.
+
+  (*) Éditions Business ou Enterprise Standard / Plus : 300 sources par
+      carnet, 500 carnets, 500 questions par jour et par personne. Édition
+      Business Starter : 50 sources par carnet. Pour savoir la vôtre :
+      ouvrez notebooklm.google, le badge en haut à droite l'indique.
+
+  Personne n'a besoin d'une clé, d'un projet Google Cloud ni de
+  l'informatique. Le site n'envoie jamais rien à Gemini : chaque personne
+  interroge le carnet avec son propre compte Google.
+
+
+--------------------------------------------------------------------------------
+ AVANT TOUT — CE QU'ON MET DANS UN CARNET, ET CE QU'ON N'Y MET PAS
+--------------------------------------------------------------------------------
+
+  Un carnet fait une COPIE de chaque document hors de Drive. Google s'engage
+  à ne pas s'en servir pour entraîner ses modèles et à ne pas la faire
+  relire par des humains ; mais sur cette copie, les règles de votre
+  organisation ne s'appliquent pas : pas de région de données, pas de DLP,
+  pas de certification ISO ni SOC. Et tout lecteur d'un carnet peut lire
+  toutes ses sources, quels que soient ses droits sur le fichier d'origine.
+
+  Donc :
+   - dans un carnet : les documents VALIDÉS, que tout le pôle peut lire ;
+   - JAMAIS un document sous contrôle export (dans votre classeur : colonne
+     « Export Control » autre que « Not in Export Control List ») ;
+   - faites valider la liste par votre référent conformité, une fois ;
+   - pour les documents sensibles : la VOIE 3 (Gemini dans Drive), où les
+     fichiers restent à leur place, avec leurs droits.
+
+  Le site aide : dans la Recherche et dans les documents de chaque pôle, un
+  document sous contrôle export porte une pastille rouge « Export control »,
+  et la sensibilité (Amber, Red…) est écrite à côté du titre.
+
+
+--------------------------------------------------------------------------------
+ VOIE 1 — UN CARNET PAR PÔLE (20 minutes par carnet, une seule fois)
+--------------------------------------------------------------------------------
+
+  1. Ouvrez notebooklm.google avec votre compte Airbus.
+  2. « Créer un carnet ». Donnez un nom clair :
+        ETIIE — Définition électrique
+  3. « Ajouter des sources » › « Google Drive ». Choisissez les documents :
+     Google Docs et PDF qui contiennent du TEXTE (un PDF scanné, sans texte,
+     ne se lit pas). 300 au plus par carnet ; au-delà, faites un carnet par
+     thème (Normes, Définition, Installation…).
+     Les sources venues de Drive se mettent à jour toutes seules quand le
+     document change.
+  4. « Partager » : ajoutez le groupe Google du pôle (ou les personnes) en
+     LECTEUR. Décochez « Allow copies ». Copiez le lien du carnet.
+  5. Recette, avant d'annoncer quoi que ce soit : posez dix questions dont
+     vous connaissez la réponse. Vérifiez que chaque réponse cite le bon
+     document, et qu'une personne hors du partage n'ouvre pas le carnet.
+  6. Dans le site : page Recherche › « ✎ Modifier » › en bas, « Relier un
+     carnet ». Nom, pôle, lien du carnet. « Enregistrer ».
+     C'est fait : tout le monde voit ce carnet dans « Demander à Gemini ».
+     (Le lien est rangé dans la feuille « ETII Hub — base », comme toute
+     modification du site. Rien n'est écrit ailleurs.)
+
+  Le jour où un document est ajouté à votre classeur : ajoutez-le aussi au
+  carnet (« Ajouter des sources »). Facultatif, à tester : un flux Workspace
+  Studio « quand un fichier arrive dans un dossier › ajouter une source au
+  carnet » le ferait seul (NON VÉRIFIÉ sur un Drive partagé).
+
+
+--------------------------------------------------------------------------------
+ VOIE 2 — LA RÉPONSE PAR E-MAIL (facultatif, 30 minutes)
+--------------------------------------------------------------------------------
+
+  Pour ceux qui préfèrent recevoir la réponse sans ouvrir le carnet. Le
+  site ouvre un formulaire, la question déjà écrite ; la personne clique
+  « Envoyer » ; un flux Workspace Studio pose la question au carnet et lui
+  envoie la réponse par e-mail.
+
+  1. Google Forms : nouveau formulaire « Question à Gemini ».
+     Paramètres : « Collecter les adresses e-mail » › Vérifiées ; réservé à
+     votre organisation. Une seule question, de type Paragraphe.
+  2. ⋮ › « Obtenir le lien pré-rempli » : tapez XYZ dans la question, puis
+     « Obtenir le lien » et copiez-le. Il contient « entry.…=XYZ ».
+  3. studio.workspace.google.com › nouveau flux :
+       Déclencheur : « When a form response comes in » (votre formulaire).
+       Étape : « Ask Gemini Notebook » › votre carnet. Consigne :
+         « Réponds en français, uniquement à partir des sources, en
+           nommant les documents utilisés. Question : » + la réponse du
+           formulaire.
+       Étape : « Send an email » › destinataire : l'adresse de la personne
+         qui a répondu (NON VÉRIFIÉ : à tester) ; corps : la réponse de
+         Gemini, suivie de « À vérifier dans le document cité. »
+     « Test run », puis « Turn on ».
+  4. Dans le site : Recherche › « ✎ Modifier » › « Modifier » sur le carnet ›
+     « Réponse par e-mail » : collez le lien pré-rempli (avec XYZ).
+     Le bouton « Recevoir la réponse par e-mail » apparaît.
+
+  Limites : pas de citations dans l'e-mail ; le flux agit au nom de son
+  propriétaire (vous) ; 25 flux par personne ; un flux inactif pendant six
+  mois s'arrête. Votre administrateur peut exiger une approbation.
+
+
+--------------------------------------------------------------------------------
+ VOIE 3 — LES DOCUMENTS SENSIBLES : GEMINI DANS DRIVE
+--------------------------------------------------------------------------------
+
+  Ici, rien n'est copié : les fichiers restent dans Drive, avec leurs droits
+  et les règles de l'entreprise. C'est la seule voie pour un document
+  sensible (toujours après accord de la conformité pour le contrôle export).
+
+   - Sur un dossier ou un projet Drive : « Demander à Gemini ». Gemini ne
+     lit que ce que VOUS pouvez ouvrir. Partez du dossier ou du projet :
+     une conversation ouverte à partir de rien cherche aussi dans Gmail,
+     Chat et Agenda.
+   - La barre de recherche de Drive : tapez la question en une phrase ;
+     un « aperçu IA » peut répondre au-dessus des résultats, en citant les
+     fichiers (il n'apparaît pas à chaque fois).
+   - L'application Gemini, avec « @Google Drive » : 10 fichiers au plus par
+     question (l'administrateur doit l'avoir autorisé).
+
+
+--------------------------------------------------------------------------------
+ CE QUI NE MARCHE PAS SANS L'INFORMATIQUE — ET POURQUOI ON NE LE FAIT PAS
+--------------------------------------------------------------------------------
+
+  - Faire appeler Gemini par le site (Apps Script) : il faut un projet
+    Google Cloud avec facturation (Vertex AI), ou une clé d'API.
+  - Une clé Gemini (AI Studio) : exclue. Une clé ouvre les documents à
+    quiconque la détient, sans vos droits ; et sur l'offre gratuite, Google
+    peut réutiliser et faire relire les données.
+  - La fonction =AI() de Google Sheets : elle demande un clic à chaque fois
+    et ne lit pas les fichiers de Drive.
+  - Une API des carnets : réservée à Google Cloud.
+  - « Notebooks in Gemini » : indisponible en Europe.
+
+  Le jour où l'informatique ouvre un projet Google Cloud ou Gemini
+  Enterprise, le code est prêt : tools/apps-script/assistant/ (voir
+  docs/ASSISTANT-IA.md).
+
+
+--------------------------------------------------------------------------------
+ SI ÇA NE MARCHE PAS
+--------------------------------------------------------------------------------
+
+  « Le bouton n'a pas copié la question. »
+     Le site le dit (« copiez la question ci-dessus »). Sélectionnez-la,
+     Ctrl + C, puis collez-la dans le carnet. (Dans la page Google, la copie
+     automatique peut être refusée par le navigateur — NON VÉRIFIÉ.)
+  « Le carnet ne s'ouvre pas » ou « Vous n'avez pas accès »
+     La personne n'est pas dans le partage du carnet : ajoutez-la, ou
+     ajoutez son groupe.
+  « Gemini répond à côté »
+     La réponse n'est pas dans les sources du carnet : ajoutez le document,
+     ou posez la question au carnet du bon thème.
+  « Je ne vois pas "Relier un carnet" »
+     Il faut être en mode édition (« ✎ Modifier ») : vous devez être dans
+     l'onglet « Éditeurs » de la feuille.
+
+
+--------------------------------------------------------------------------------
+ SOURCES (consultées le 28 septembre 2026)
+--------------------------------------------------------------------------------
+
+  Gemini Notebook (ex-NotebookLM) : nouveau nom, limites, sources Drive, partage
+    workspaceupdates.googleblog.com/2026/07/notebooklm-now-gemini-notebook.html
+    support.google.com/notebooklm/answer/16337734
+    support.google.com/gemininotebook/answer/16215270
+    support.google.com/gemininotebook/answer/16206563
+  Confidentialité (copie hors Drive, pas de DLP, pas d'entraînement)
+    knowledge.workspace.google.com/admin/generative-ai/generative-ai-in-google-workspace-privacy-hub
+  Workspace Studio (déclencheurs, « Ask Gemini Notebook », e-mail, limites)
+    workspaceupdates.googleblog.com/2025/12/workspace-studio.html
+    support.google.com/workspace-studio/table/17176961
+    support.google.com/workspace-studio/answer/16765942
+  Gemini dans Drive (aperçus IA, « Demander à Gemini », projets)
+    support.google.com/drive/answer/16963068
+    support.google.com/drive/answer/16684520
+  Application Gemini et Drive
+    support.google.com/gemini/answer/14959807
+  =AI() dans Google Sheets
+    support.google.com/docs/answer/15877199
+  Vertex AI dans Apps Script, conditions de l'API Gemini
+    developers.google.com/apps-script/advanced/vertex-ai
+    ai.google.dev/gemini-api/terms
+  Formulaires pré-remplis
+    support.google.com/docs/answer/2839588

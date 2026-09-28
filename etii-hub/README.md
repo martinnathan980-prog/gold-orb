@@ -49,7 +49,7 @@ Puis ouvrir <http://localhost:8000>.
 
 | Page | Rôle |
 |---|---|
-| `index.html` | Tableau de bord : Communication center (kiosque + éditeur), À venir (les prochains rendez-vous), **Porteurs** (toute la flotte par marché, la fiche de chaque appareil, sa taille réelle, la comparaison — voir ci-dessous), Suivi OTQ / OTD |
+| `index.html` | Tableau de bord : Communication center (kiosque + éditeur), À venir (les prochains rendez-vous), **Porteurs** (toute la flotte en petites tuiles par marché, la fiche de chaque appareil, sa taille réelle — voir ci-dessous), Suivi OTQ (l'onglet « Data » du Command Center) |
 | `etiia.html`, `etiie.html`, `etiii.html` | L'espace d'un pôle : sa communication, ses rendez-vous, le pôle en un coup d'œil (les équipes, les référents), ses documents récents, sa FAQ (voir ci-dessous) |
 | `reunions.html` | Les comptes-rendus de réunion, par périmètre |
 | `organigramme.html` | Équipes, rôles, compétences ; hors de la barre du site, on y arrive depuis un pôle |
@@ -96,9 +96,11 @@ vue ouverte est portée par l'adresse, donc partageable :
 
 | Adresse | Ce qu'on voit |
 |---|---|
-| `index.html` | La galerie, marché par marché (Civil, Militaire, Prototype), trois cartes par rangée : la photo, le code, le segment, et trois chiffres (masse, places, vitesse) |
+| `index.html` | La galerie, marché par marché (Civil, Militaire, Prototype), en petites tuiles — un marché par rangée sur ordinateur, toute la gamme d'un coup d'œil : la photo, le code, le surnom, le segment ; masse, places et vitesse dans la bulle du survol |
 | `index.html#porteur=H160` | La fiche d'un appareil, à la place de la galerie ; au-dessus, le retour, le précédent, le suivant |
-| `index.html#comparer=H125&comparer=H160` | Deux ou trois appareils côte à côte |
+
+Il n'y a plus de comparateur : une ancienne adresse `#comparer=…` ramène à
+la galerie.
 
 **La fiche** se lit d'abord en chiffres : la photo en grand avec le code, le
 marché, la phase et depuis quand ; une phrase d'accroche ; **l'essentiel** —
@@ -110,18 +112,13 @@ rapport à la gamme » ; ceux qu'aucune source ne donne sont nommés en une
 ligne, « à renseigner ». Puis **à l'échelle** : le profil de l'appareil près
 d'une personne de 1,80 m (le rotor à sa vraie taille, la longueur et la
 hauteur quand la fiche les donne ; toutes les fiches partagent la même
-échelle sur écran large), et à côté d'un autre porteur si on le demande ;
-**le programme** en frise ; **le détail** par groupe ; un « saviez-vous » ;
-**pour le service** (pôles, jalon, avancement, données techniques et
-économiques : « à renseigner » tant que le service ne les a pas saisies,
-jamais inventées). Les sources et la confiance de chaque valeur sont
-repliées en pied de fiche ; la fiche ne mène jamais hors du site. Les
-flèches ← → passent d'un appareil à l'autre, Échap revient à la galerie.
-
-**Le comparateur** : « Comparer » dans la galerie, puis « + » sur deux ou
-trois cartes (ou « Comparer avec un autre » sur une fiche). Les mêmes
-chiffres côte à côte, une barre par valeur, le plus grand marqué, l'écart au
-premier appareil choisi, et les silhouettes à la même échelle.
+échelle sur écran large) ; **le programme** en frise ; deux « saviez-vous » ;
+puis, **repliée**, toute la fiche technique par groupe — l'essentiel se
+voit, le reste s'ouvre. Les jauges n'ont qu'un point (l'appareil) entre le
+minimum et le maximum de la gamme. Les sources et la confiance de chaque
+valeur sont repliées en pied de fiche ; la fiche ne mène jamais hors du
+site. Les flèches ← → passent d'un appareil à l'autre, Échap revient à la
+galerie.
 
 Le tableau de bord n'en garde qu'une pellicule de photos qui mène à la page.
 Un ancien lien `index.html#porteur=CODE` (celui des espaces de pôle) arrive
@@ -232,11 +229,12 @@ Après toute modification d'un fichier de `assets/data/`, lancer
 | `communications.json` | Le Communication center du tableau de bord et la communication de chaque espace de pôle | `node tests/audit.mjs`, `node tests/communications.test.mjs` |
 | `documents.json` | La recherche documentaire, et les documents portés affichés sur la fiche d'une personne | `node tests/audit.mjs`, `node tests/search.test.mjs` |
 | `faq.json` | La page FAQ et la FAQ de chaque espace de pôle | `node tests/audit.mjs` |
-| `flotte.json` | La page des porteurs (galerie, fiches, comparateur), l'aperçu du tableau de bord et les crédits photo | `node tests/audit.mjs` |
+| `flotte.json` | La section des porteurs (galerie, fiches) et les crédits photo | `node tests/audit.mjs` |
 | `indicateurs.json` | Les définitions d'indicateurs normalisées par `indicateurs.js` ; aucune page ne l'affiche aujourd'hui (les chiffres d'un pôle se calculent depuis `organigramme.json` et `documents.json`) | `node tests/audit.mjs` |
 | `organigramme.json` | L'organigramme, le trombinoscope, les compétences, les équipes et référents des pôles | `node tests/audit.mjs` |
 | `reunions.json` | Les comptes-rendus de réunion | `node tests/audit.mjs` |
-| `otq-exemple.csv` | Le Suivi OTQ / OTD tant que `SOURCE.url` d'`assets/js/otq.js` est vide | `node tests/audit.mjs` |
+| `otq-exemple.csv` | Le suivi OTQ tant que le site n'est pas branché sur l'onglet « Data » du Command Center (`OTQ_ID_FEUILLE` de Code.gs) : mêmes colonnes, annoncé « Données d'exemple » | `node tests/audit.mjs` |
+| `reglages.json` | Les réglages tenus dans le site : les carnets Gemini reliés à la Recherche (vide dans le dépôt : les liens se relient dans le site) | `node tests/audit.mjs` |
 
 L'audit vérifie aussi la cohérence *entre* ces fichiers : qu'un document est
 bien porté par quelqu'un qui existe dans l'organigramme, que ses valeurs de
@@ -356,7 +354,8 @@ dans le navigateur.
 | Fichier | Ce qu'il explique |
 |---|---|
 | `docs/INSTALLER-SUR-GOOGLE.txt` | **Faire tourner le site chez Google** (Drive + Sheets + Apps Script), clic par clic, avec les profils : qui lit, qui modifie. Le code serveur est recopié en annexe (l'audit vérifie qu'il suit `tools/apps-script/site/Code.gs`, et `node tests/apps-script.test.mjs` l'exécute contre une feuille simulée) |
-| `docs/OTQ-GOOGLE-SHEETS.md` | Alimenter le suivi OTQ / OTD chaque nuit depuis un Google Sheet |
+| `docs/OTQ-GOOGLE-SHEETS.md` | Le suivi OTQ lu dans l'onglet « Data » du Command Center : colonnes, calcul, branchement |
+| `docs/GEMINI-PAS-A-PAS.txt` | **Gemini sur des centaines de documents, sans Vertex ni Gemini Enterprise ni l'informatique** : un carnet Gemini Notebook par pôle, relié à la Recherche (« Demander à Gemini »), la réponse par e-mail (Workspace Studio), Gemini dans Drive pour les documents sensibles ; faits vérifiés et sources |
 | `docs/ASSISTANT-IA.md` | **Des milliers de documents et Gemini, en attendant Gemini Enterprise** — par niveaux. 0, dès demain : la question posée dans la barre de recherche de Drive (aperçu IA de Gemini, fichiers cités), Drive partagé, catalogue rempli tout seul (`tools/apps-script/index-documents.gs`), « Demander à Gemini » sur un dossier, projets Drive et carnets Gemini Notebook reliés à la FAQ. 1, sans IA payante ni DSI : la page « Chercher dans le texte des documents ». 2, une petite demande à la DSI : la même page fait répondre Gemini (Agent Platform, ex-Vertex AI, payé à la question). 3, plus tard : Gemini Enterprise. Un seul programme pour les trois pages (`tools/apps-script/assistant/`, vérifié par `node tests/assistant-gemini.test.mjs`) |
 | `docs/RECHERCHE-A-L-ECHELLE.md` | Ce qui fait la qualité d'une recherche sur des milliers de documents |
 | `SPEC.md` | Le cahier des charges de la réécriture ; les en-têtes de modules y renvoient par numéro de section |

@@ -269,8 +269,16 @@ Exigences :
   hash de l'URL et restauré au chargement.
 - **États explicites** : chargement, vide, aucun résultat (avec
   suggestion « vouliez-vous dire… » et proposition d'ajouter le document).
-- **Accès rapides** par type depuis l'accueil de la page.
+- **Accès rapides** par type depuis l'accueil de la page (une tuile par
+  type, son nombre et sa part du fonds), puis les **derniers ajouts** (par
+  date, sinon par ligne du classeur).
+- La **sécurité** du document se voit sur la carte : sa sensibilité
+  (Amber, Red…) et, s'il y est soumis, « Export control » en rouge.
 - Copier le lien d'un document en un clic, avec retour visuel.
+- **Demander à Gemini**, en bas de page (`gemini.js`) : la question de la
+  barre, le carnet Gemini Notebook du pôle, « Copier la question et ouvrir
+  le carnet ». Les carnets se relient dans le site (jeu `reglages`) ; le
+  site n'envoie rien à Gemini (docs/GEMINI-PAS-A-PAS.txt).
 
 ## 5. Moteur de recherche (`search.js`)
 

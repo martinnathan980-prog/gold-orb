@@ -8,9 +8,9 @@
 // toute la flotte, rangée par marché — Civil, Militaire, Prototype — sans
 // onglet ni tri ; la fiche d'un appareil s'ouvre sur place et se lit
 // d'abord en grands chiffres expliqués en français, sans source ni lien
-// extérieur en ligne ; le dessin à l'échelle ; la comparaison de deux ou
-// trois appareils. Les liens « index.html#porteur=CODE » (ceux des espaces
-// de pôle) ouvrent la fiche.
+// extérieur en ligne ; le dessin à l'échelle ; le reste replié. Plus de
+// comparaison. Les liens « index.html#porteur=CODE » (ceux des espaces de
+// pôle) ouvrent la fiche.
 
 import { chromium } from 'playwright';
 const B = process.env.BASE || 'http://localhost:8111';
@@ -56,14 +56,25 @@ for (const m of marches) {
 t(`toute la flotte est là (${appareils.length}), chacun une fois`, (await page.locator('.porteur-carte').count()) === appareils.length);
 t('chaque carte est un lien vers sa fiche (#porteur=CODE)',
   (await page.locator('.porteur-carte__lien').evaluateAll((l) => l.every((a) => a.getAttribute('href') === '#porteur=' + encodeURIComponent(a.dataset.code)))));
-t('chaque carte dit sa masse, ses places et sa vitesse quand on les connaît',
-  /2,25 t · 6 places · 252 km\/h/.test(await page.locator('.porteur-carte[data-code="H125"]').innerText()));
-t('un prototype sans chiffre ne montre pas de zéro inventé', /chiffres à venir/.test(await page.locator('.porteur-carte[data-code="DISRUPTIVELAB"]').innerText()));
-const rangees = await page.locator('.porteurs__marche[data-categorie="civil"] .porteur-carte').evaluateAll((l) => {
-  const hauts = l.map((x) => Math.round(x.getBoundingClientRect().top));
-  return [...new Set(hauts)].map((h) => hauts.filter((y) => y === h).length);
+const h125 = page.locator('.porteur-carte[data-code="H125"]');
+t('une petite tuile : le code, le surnom, ce que c’est ; les chiffres dans la bulle du survol',
+  /H125/.test(await h125.innerText()) && /Monomoteur/i.test(await h125.innerText()) && !/km\/h/.test(await h125.innerText())
+  && /2,25 t · 6 places · 252 km\/h/.test(await h125.locator('.porteur-carte__lien').getAttribute('title')));
+t('un prototype sans chiffre n’en invente pas', !/\d+ km\/h/.test(await page.locator('.porteur-carte[data-code="DISRUPTIVELAB"] .porteur-carte__lien').getAttribute('title')));
+const rangees = await page.locator('.porteurs__marche .porteur-carte').evaluateAll((l) => {
+  const parMarche = {};
+  for (const x of l) {
+    const m = x.closest('.porteurs__marche').dataset.categorie;
+    (parMarche[m] = parMarche[m] || new Set()).add(Math.round(x.getBoundingClientRect().top));
+  }
+  return Object.fromEntries(Object.entries(parMarche).map(([k, v]) => [k, v.size]));
 });
-t('trois cartes par rangée : les neuf civils font trois rangées pleines', rangees.join(',') === '3,3,3', rangees.join(','));
+t('toute la gamme d’un coup d’œil : chaque marché tient sur une rangée (1280 px)',
+  Object.values(rangees).every((n) => n === 1), JSON.stringify(rangees));
+const hauteurGalerie = await page.locator('#zone-flotte .porteurs__galerie').evaluate((g) => g.getBoundingClientRect().height);
+t('la galerie entière tient dans un écran', hauteurGalerie < 900, String(hauteurGalerie));
+t('plus de comparaison : ni bouton « Comparer », ni « + » sur les tuiles',
+  (await page.locator('.porteurs__comparer, .porteur-carte__choisir, .porteurs__tiroir').count()) === 0);
 
 console.log('\n== Les photos ==');
 const photos = await page.locator('.porteur-carte__photo').evaluateAll((imgs) => imgs.map((i) => ({ src: i.getAttribute('src'), lazy: i.getAttribute('loading') })));
@@ -115,12 +126,20 @@ t('ni « Pour le service », ni « Lire la présentation »',
   !/Pour le service|Lire la présentation/.test(lu) && (await fiche.locator('.porteur-service, .porteur-fiche__presentation').count()) === 0);
 const largeurs = await fiche.evaluate((f) => ({ fiche: f.getBoundingClientRect().width, accroche: f.querySelector('.porteur-fiche__accroche').getBoundingClientRect().width }));
 t('l’accroche prend toute la largeur de la fiche', largeurs.accroche >= largeurs.fiche * 0.97, JSON.stringify(largeurs));
+t('l’essentiel seulement : la fiche technique est repliée, ni « Comparer » ni « Aussi connu comme »',
+  (await fiche.locator('details.porteur-detail').getAttribute('open')) === null && await fiche.locator('.porteur-groupes').isHidden()
+  && !/Comparer|Aussi connu comme/.test(lu) && (await fiche.locator('.porteur-echelle__choix').count()) === 0);
+t('deux anecdotes au plus, sans « autres anecdotes »', (await fiche.locator('.porteur-fait').count()) <= 2 && !/autres anecdotes|autre anecdote/.test(lu));
+t('les jauges n’ont plus de pointillés : ni cran par appareil, seulement le point de l’appareil',
+  (await fiche.locator('.porteur-jauge__repere').count()) === 0 && (await fiche.locator('.porteur-jauge__moi').count()) === 6);
+await fiche.locator('.porteur-detail__resume').click();
+await page.waitForTimeout(300);
 const grille = await fiche.locator('.porteur-groupe').evaluateAll((l) => {
   const b = l.map((g) => g.getBoundingClientRect());
   const rangs = [...new Set(b.map((r) => Math.round(r.top)))];
   return { colonnes: [...new Set(b.map((r) => Math.round(r.left)))].length, rangsEgaux: rangs.every((y) => new Set(b.filter((r) => Math.round(r.top) === y).map((r) => Math.round(r.height))).size === 1) };
 });
-t('« Dans le détail » : deux colonnes, les cartes d’une rangée à la même hauteur', grille.colonnes === 2 && grille.rangsEgaux, JSON.stringify(grille));
+t('ouverte, « Toute la fiche technique » : deux colonnes, les cartes d’une rangée à la même hauteur', grille.colonnes === 2 && grille.rangsEgaux, JSON.stringify(grille));
 t('la frise du programme situe aujourd’hui', /1999[\s\S]*2001[\s\S]*Aujourd’hui/i.test(await fiche.locator('.porteur-frise').innerText()));
 t('le détail range chaque valeur dans son groupe, la précision en petit',
   (await fiche.locator('.porteur-groupe').count()) >= 7 && /606 km/.test(await fiche.locator('.porteur-groupe[data-groupe="performances"]').innerText()));
@@ -129,10 +148,7 @@ console.log('\n== À l’échelle ==');
 t('le dessin est là, avec une personne de 1,80 m et les cotes sourcées',
   (await fiche.locator('.gabarit svg').count()) === 1 && (await fiche.locator('.gabarit__personne').count()) === 1
   && /12,64 m hors tout/.test(await fiche.locator('.gabarit').innerText()) && /10,69 m de rotor/.test(await fiche.locator('.gabarit').innerText()));
-await fiche.locator('.porteur-echelle__choix').selectOption('H225');
-await page.waitForTimeout(300);
-t('on peut le mettre à côté d’un autre porteur, à la même échelle', (await fiche.locator('.gabarit__appareil').count()) === 2
-  && /H225/.test(await fiche.locator('.gabarit').innerText()));
+t('un seul appareil sur le dessin : plus de voisin à choisir', (await fiche.locator('.gabarit__appareil').count()) === 1);
 
 console.log('\n== Au clavier ==');
 await page.locator('body').click({ position: { x: 5, y: 400 } });
@@ -142,8 +158,8 @@ t('→ passe à l’appareil suivant', (await page.locator('.porteur-fiche__code
 await page.keyboard.press('ArrowLeft');
 await page.waitForTimeout(500);
 t('← revient au précédent', (await page.locator('.porteur-fiche__code').innerText()).trim() === 'H130');
-t('le bandeau dit où l’on est, et mène aux voisins', /H130\s*2 \/ 23/.test(await page.locator('.porteurs-bandeau').innerText())
-  && (await page.locator('.porteurs-bandeau__voisin').count()) === 2);
+t('le bandeau dit où l’on est, et mène aux voisins, sans aide clavier écrite', /H130\s*2 \/ 23/.test(await page.locator('.porteurs-bandeau').innerText())
+  && (await page.locator('.porteurs-bandeau__voisin').count()) === 2 && (await page.locator('.porteurs-bandeau__clavier').count()) === 0);
 t('le pied de fiche mène aussi aux voisins', (await page.locator('.porteur-voisin[data-code]').count()) === 2);
 await page.keyboard.press('Escape');
 await page.waitForTimeout(500);
@@ -196,29 +212,14 @@ t(`depuis un espace de pôle, la puce « ${codePuce} » mène à sa fiche`,
   /index\.html#porteur=/.test(page.url()) && (await page.locator('.porteur-fiche__code').innerText().catch(() => '')).trim() === codePuce, page.url());
 
 /* =========================================================================
-   4. Comparer
+   4. Plus de comparaison : une ancienne adresse ramène à la galerie
    ========================================================================= */
 
-console.log('\n== Comparer ==');
-await page.goto(B + '/index.html', { waitUntil: 'networkidle' });
-await page.waitForTimeout(600);
-await page.locator('.porteurs__comparer').click();
-await page.locator('.porteur-carte__choisir[data-code="H125"]').click();
-await page.locator('.porteur-carte__choisir[data-code="H225"]').click();
-t('le tiroir montre les deux appareils choisis', /H125[\s\S]*H225/.test(await page.locator('.porteurs__tiroir').innerText()));
-await page.locator('.porteurs__tiroir-go').click();
+console.log('\n== Une ancienne adresse de comparaison ==');
+await page.goto(B + '/index.html#comparer=H125&comparer=H225', { waitUntil: 'networkidle' });
 await page.waitForTimeout(800);
-t('« Comparer » ouvre la comparaison, portée par l’adresse', (await page.locator('.comparateur').count()) === 1 && /comparer=H125&comparer=H225/.test(page.url()));
-const colonnes = await page.locator('.comparateur__entete').allInnerTexts();
-t('deux colonnes, dans l’ordre choisi', colonnes.join(',') === 'H125,H225', colonnes.join(','));
-const ligneMasse = page.locator('.comparateur__ligne').filter({ has: page.locator('.comparateur__libelle', { hasText: 'Masse maximale au décollage' }) });
-t('la valeur la plus grande est marquée, l’écart au premier est dit',
-  /le plus lourd/.test(await ligneMasse.locator('.comparateur__cellule--1').innerText()) && /×\s*4,9\s*\/\s*H125/.test(await ligneMasse.locator('.comparateur__cellule--1').innerText()),
-  await ligneMasse.innerText());
-t('les deux sont dessinés à la même échelle', (await page.locator('.comparateur .gabarit__appareil').count()) === 2);
-await page.locator('#comparer-choix-2').selectOption('NH90');
-await page.waitForTimeout(600);
-t('on en ajoute un troisième', (await page.locator('.comparateur__entete').allInnerTexts()).join(',') === 'H125,H225,NH90');
+t('« #comparer=… » montre la galerie, sans comparateur', (await page.locator('.comparateur').count()) === 0
+  && await page.locator('.porteurs__vue--galerie').isVisible() && !/comparer=/.test(page.url()), page.url());
 t('aucune erreur JavaScript jusqu’ici', err.length === 0, err.join(' | '));
 
 console.log('\n== Les crédits photos du pied de page ==');
@@ -235,16 +236,15 @@ await ctx.close();
 
 console.log('\n== Téléphone (390 px) et thème sombre ==');
 ({ ctx, page } = await nouvelle({ viewport: { width: 390, height: 844 }, colorScheme: 'dark' }));
-for (const [adresse, quoi] of [['/index.html', 'la galerie'], ['/index.html#porteur=H145', 'une fiche'],
-  ['/index.html#comparer=H125&comparer=H175&comparer=TIGRE', 'la comparaison']]) {
+for (const [adresse, quoi] of [['/index.html', 'la galerie'], ['/index.html#porteur=H145', 'une fiche']]) {
   await page.goto(B + adresse, { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);
   t(`aucun défilement horizontal à 390 px : ${quoi}`, !(await debordement(page)));
 }
 await page.goto(B + '/index.html', { waitUntil: 'networkidle' });
 await page.waitForTimeout(500);
-const deux = await page.locator('.porteurs__marche[data-categorie="civil"] .porteur-carte').evaluateAll((l) => l[0].getBoundingClientRect().top === l[1].getBoundingClientRect().top && l[2].getBoundingClientRect().top > l[0].getBoundingClientRect().top);
-t('deux cartes par rangée sur téléphone', deux);
+const trois = await page.locator('.porteurs__marche[data-categorie="civil"] .porteur-carte').evaluateAll((l) => l[0].getBoundingClientRect().top === l[2].getBoundingClientRect().top && l[3].getBoundingClientRect().top > l[0].getBoundingClientRect().top);
+t('trois tuiles par rangée sur téléphone', trois);
 await page.goto(B + '/index.html#porteur=H160', { waitUntil: 'networkidle' });
 await page.waitForTimeout(800);
 const contrastes = await page.evaluate(() => {

@@ -383,6 +383,21 @@ function versX(noeuds, j) {
   return null;
 }
 
+/* Le jour sous une position : l'inverse de versX. null avant aujourd'hui
+   ou au-delà de la ligne ; « coupe » dans une coupure (le temps sauté ne
+   se lit pas au jour près). */
+function versJour(noeuds, x) {
+  if (x < noeuds[0].x) return null;
+  for (let i = 1; i < noeuds.length; i += 1) {
+    const a = noeuds[i - 1];
+    const b = noeuds[i];
+    if (x > b.x) continue;
+    if (b.coupe) return 'coupe';
+    return b.x === a.x ? b.j : a.j + (b.j - a.j) * (x - a.x) / (b.x - a.x);
+  }
+  return null;
+}
+
 /* Au-delà du dernier rendez-vous, la ligne file au pas d'une semaine
    ordinaire, jusqu'au bord. */
 function prolonger(noeuds, k, jusqua) {
@@ -695,7 +710,7 @@ function disposer(racine) {
 
   const noeuds = prolonger(mise.noeuds, mise.k, toileL - 4);
   const occupe = dessinerTrace(etat, { debut, noeuds, xs, places, axeY, toileL, hauteur });
-  etat.mise = { xs, axeY, x0: LIGNE.origine, places, ancres, occupe, toileL };
+  etat.mise = { xs, axeY, x0: LIGNE.origine, places, ancres, occupe, toileL, noeuds, debut };
   etat.masques = [];
   majBords(racine);
   allumer(racine, etat.actif, true);
@@ -963,6 +978,35 @@ function brancher(racine) {
     if (!e.relatedTarget || !racine.contains(e.relatedTarget)) allumer(racine, null);
   });
 
+  /* La règle : à la souris, un fil suit le pointeur le long de la ligne
+     et lit la date sous lui. Il s'aimante au repère d'un rendez-vous
+     proche, qui s'allume ; ailleurs, la lumière revient au plus proche.
+     Rien au doigt (le toucher n'a pas de survol), ni pendant un glissé,
+     ni dans la colonne, ni sur une pastille (elle se suffit), ni dans le
+     temps sauté d'une coupure. */
+  const cacherRegle = () => etat.regle.classList.remove('est-visible');
+  etat.toile.addEventListener('pointermove', (e) => {
+    const m = etat.mise;
+    if (e.pointerType !== 'mouse' || !m || !surLigne() || racine.classList.contains('agenda--glisse')) { cacherRegle(); return; }
+    if (e.target.closest && e.target.closest('.agenda__pastille, .barre-edition')) { cacherRegle(); return; }
+    const x = e.clientX - etat.toile.getBoundingClientRect().left;
+    let proche = null;
+    m.xs.forEach((xi, i) => { if (Math.abs(xi - x) <= 14 && (proche === null || Math.abs(xi - x) < Math.abs(m.xs[proche] - x))) proche = i; });
+    const xr = proche === null ? x : m.xs[proche];
+    const j = proche === null ? versJour(m.noeuds, xr) : Math.max(0, Math.round((etat.items[proche].info.date - m.debut) / JOUR_MS));
+    if (j === null || j === 'coupe' || xr < m.x0 + 10 || xr > m.toileL - 6) { cacherRegle(); allumer(racine, null); return; }
+    const jour = new Date(m.debut.getTime() + Math.round(j) * JOUR_MS);
+    etat.regle.firstChild.textContent = Math.round(j) === 0 ? 'Aujourd’hui' : dateCourte(jour);
+    etat.regle.style.left = Math.round(xr) + 'px';
+    etat.regle.style.top = m.axeY + 'px';
+    etat.regle.classList.toggle('est-aimante', proche !== null);
+    if (proche !== null) etat.regle.dataset.pole = etat.items[proche].info.pole;
+    else delete etat.regle.dataset.pole;
+    etat.regle.classList.add('est-visible');
+    allumer(racine, proche);
+  });
+  etat.toile.addEventListener('pointerleave', cacherRegle);
+
   /* Le repère et la tige ouvrent le rendez-vous comme la pastille. */
   etat.items.forEach((it) => {
     const ouvrir = (e) => {
@@ -1112,7 +1156,9 @@ export function agenda(donnees, options) {
   const mois = el('div', { class: 'agenda__mois-couche', 'aria-hidden': 'true' });
   const jauge = el('span', { class: 'agenda__jauge', 'aria-hidden': 'true' });
   const distance = el('span', { class: 'agenda__distance', 'aria-hidden': 'true' });
-  const toile = el('div', { class: 'agenda__toile' }, couche, jauge, mois, distance, aujourdhuiRepere(debut), liste);
+  const regle = el('span', { class: 'agenda__regle', 'aria-hidden': 'true' },
+    el('span', { class: 'agenda__regle-date' }));
+  const toile = el('div', { class: 'agenda__toile' }, couche, jauge, mois, distance, regle, aujourdhuiRepere(debut), liste);
   const defilement = el('div', { class: 'agenda__defilement' }, toile);
   const fleche = (sens) => el('button', {
     type: 'button', class: ['agenda__fleche', 'agenda__fleche--' + sens], tabindex: -1, 'aria-hidden': 'true'
@@ -1125,7 +1171,7 @@ export function agenda(donnees, options) {
   let calme = false;
   try { calme = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_e) { calme = false; }
   ETATS.set(racine, {
-    id, scene, defilement, toile, trace: couche, mois, liste, jauge, distance, items,
+    id, scene, defilement, toile, trace: couche, mois, liste, jauge, distance, regle, items,
     actif: null, mise: null, finGlisse: 0, calme
   });
 

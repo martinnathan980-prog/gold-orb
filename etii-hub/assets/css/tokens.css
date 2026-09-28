@@ -90,6 +90,11 @@
      en vision daltonienne (bleu / orange), 3:1 au moins sur la bande. */
   --serie-otq: #2b5ea7;
   --serie-otd: #b8562a;
+  /* Les plans présentés, par statut (otq.js) : acceptés, refus mineurs
+     ou faux refus, refusés. Validés au daltonisme contre la carte. */
+  --otq-accepte: #23875a;
+  --otq-mineur:  #e0a82e;
+  --otq-refuse:  #b0312f;
 
   /* --- Les marchés des porteurs (porteurs.js) ----------------------------
      Civil, militaire, prototype : un bleu, un olive, une brique, sourds et
@@ -395,6 +400,9 @@
 
     --serie-otq: #7aa7ec;
     --serie-otd: #e59566;
+    --otq-accepte: #3a9a6a;
+    --otq-mineur:  #b98c1c;
+    --otq-refuse:  #c9435a;
 
     --marche-civil:     #8db4ea;
     --marche-militaire: #b5c67a;
@@ -517,6 +525,9 @@
 
   --serie-otq: #7aa7ec;
   --serie-otd: #e59566;
+  --otq-accepte: #3a9a6a;
+  --otq-mineur:  #b98c1c;
+  --otq-refuse:  #c9435a;
 
   --marche-civil:     #8db4ea;
   --marche-militaire: #b5c67a;

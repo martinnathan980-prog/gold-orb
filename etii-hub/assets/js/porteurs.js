@@ -3,15 +3,16 @@
 
    La section « Porteurs » du tableau de bord (index.html) : toute la
    flotte suivie par le service, rangée par marché — Civil, Militaire,
-   Prototype. Trois vues, portées par l'adresse :
+   Prototype. Deux vues, portées par l'adresse :
 
-     index.html                                  la galerie, toute la gamme
-     index.html#porteur=H160                     la fiche d'un appareil
-     index.html#comparer=H125&comparer=H160      deux ou trois côte à côte
+     index.html                    la galerie : de petites tuiles, toute
+                                   la gamme d'un coup d'œil
+     index.html#porteur=H160       la fiche d'un appareil
 
    Sur une fiche, un bandeau au-dessus d'elle porte le retour à la
    galerie, l'appareil précédent et le suivant. Les flèches ← → du clavier
-   passent d'un appareil à l'autre, Échap revient à la galerie.
+   passent d'un appareil à l'autre, Échap revient à la galerie. (Une
+   ancienne adresse « #comparer=… » ramène à la galerie.)
 
    Tout le DOM passe par el() de ui.js : aucun innerHTML.
    ========================================================================= */
@@ -21,7 +22,7 @@ import { boutonAjouter } from './edition.js';
 import { creditPhoto } from './credits.js';
 import { GROUPES, texte, objet, nombreFr, chiffre, echelles, marches, anneeService, phase } from './gamme.js';
 import { sceneGamme } from './gabarit.js';
-import { fiche, comparateur, photo, surnom, segment, pastilleMarche } from './fiche-porteur.js';
+import { fiche, photo, surnom, segment, pastilleMarche } from './fiche-porteur.js';
 
 const NON_RENSEIGNE = 'à renseigner';
 
@@ -91,41 +92,39 @@ function chiffresCarte(appareil) {
    2. La carte de la galerie
    ------------------------------------------------------------------------- */
 
+/* Une petite tuile : la photo, le code, le surnom, et en une ligne ce
+   que c'est. Les trois chiffres (masse, places, vitesse) restent dans la
+   bulle du survol et dans la fiche : la galerie se parcourt d'un coup
+   d'œil. */
 function carte(appareil, ctx) {
   const code = texte(appareil.code);
   const p = phase(appareil);
   const chiffres = chiffresCarte(appareil);
   const tri = ctx.tri && ctx.tri.cle !== 'gamme' ? valeurTri(appareil, ctx.tri) : null;
   const nomCourt = surnom(appareil);
-  const choisi = ctx.selection.has(code);
-  return el('li', { class: ['porteur-carte', choisi ? 'porteur-carte--choisie' : null], dataset: { code, categorie: texte(appareil.categorie) } },
-    el('a', { class: 'porteur-carte__lien', href: ctx.lien(code), dataset: { code } },
+  const bulle = [code + (nomCourt ? ' ' + nomCourt : ''), segment(appareil), chiffres.join(' · ')].filter(Boolean).join(' — ');
+  return el('li', { class: 'porteur-carte', dataset: { code, categorie: texte(appareil.categorie) } },
+    el('a', { class: 'porteur-carte__lien', href: ctx.lien(code), dataset: { code }, title: bulle },
       el('span', { class: 'porteur-carte__visuel' },
         photo(appareil, { classe: 'porteur-carte__photo' }),
         p.cle && p.cle !== 'production' ? el('span', { class: 'porteur-carte__phase porteur-phase', dataset: { phase: p.cle } }, p.libelle) : null,
         ctx.marqueMarche ? el('span', { class: 'porteur-carte__marche' }, pastilleMarche(appareil.categorie, ctx.libelleMarche(appareil.categorie))) : null),
       el('span', { class: 'porteur-carte__corps' },
         el('span', { class: 'porteur-carte__titre' },
-          el('span', { class: 'porteur-carte__code' }, code),
+          el('span', { class: ['porteur-carte__code', code.length > 7 ? 'porteur-carte__code--long' : null] }, code),
           nomCourt ? el('span', { class: 'porteur-carte__surnom' }, nomCourt) : null),
         el('span', { class: 'porteur-carte__segment' }, segment(appareil) || NON_RENSEIGNE),
         tri
           ? el('span', { class: 'porteur-carte__tri' }, el('span', { class: 'porteur-carte__tri-libelle' }, ctx.tri.libelle), ' ', tri.texte)
-          : el('span', { class: 'porteur-carte__chiffres' }, chiffres.length ? chiffres.join(' · ') : 'chiffres à venir'))),
-    el('button', {
-      type: 'button', class: 'porteur-carte__choisir', dataset: { code },
-      'aria-pressed': choisi ? 'true' : 'false', 'aria-label': 'Comparer le ' + code, title: 'Ajouter au comparateur'
-    }, el('span', { 'aria-hidden': 'true' }, choisi ? '✓' : '+')));
+          : null)));
 }
 
 /* -------------------------------------------------------------------------
    3. Le composant de page
    ------------------------------------------------------------------------- */
 
-const MAX_COMPARER = 3;
-
 /**
- * Les porteurs : galerie, fiche, comparateur.
+ * Les porteurs : la galerie et la fiche.
  *
  * @param {object} donnees   contenu de flotte.json
  * @param {object} [options]
@@ -147,7 +146,7 @@ export function porteurs(donnees, options) {
   const scene = sceneGamme(appareils);
   const libelleMarche = (cle) => (lesMarches.find((m) => m.cle === texte(cle)) || { libelle: texte(cle) }).libelle;
 
-  const etat = { vue: 'galerie', code: '', comparer: [], marche: 'tous', tri: 'gamme', choix: false, selection: new Set() };
+  const etat = { vue: 'galerie', code: '', marche: 'tous', tri: 'gamme' };
   /* Où l'on était dans la galerie avant d'ouvrir une fiche : on y revient. */
   let retour = { y: 0, code: '' };
 
@@ -157,7 +156,6 @@ export function porteurs(donnees, options) {
   /* Les adresses. Un lien de carte porte l'ancre de sa fiche : il s'ouvre
      dans un nouvel onglet, se copie, se partage. */
   const lien = (code) => '#porteur=' + encodeURIComponent(code);
-  const lienComparer = (codes) => '#' + [].concat(codes).map((c) => 'comparer=' + encodeURIComponent(c)).join('&');
   const lienGalerie = () => '#marche=' + encodeURIComponent(etat.marche) + (etat.tri !== 'gamme' ? '&tri=' + encodeURIComponent(etat.tri) : '');
 
   /* Changer d'adresse. Dans le fichier autonome, la page vit dans un cadre
@@ -190,10 +188,8 @@ export function porteurs(donnees, options) {
   const zoneBarre = el('div', { class: 'porteurs__barre' });
   const zoneGalerie = el('div', { class: 'porteurs__galerie' });
   const zoneFiche = el('div', { class: 'porteurs__vue porteurs__vue--fiche', hidden: true });
-  const zoneComparer = el('div', { class: 'porteurs__vue porteurs__vue--comparer', hidden: true });
-  const tiroir = el('div', { class: 'porteurs__tiroir', hidden: true, role: 'region', 'aria-label': 'Porteurs à comparer' });
   const vueGalerie = el('div', { class: 'porteurs__vue porteurs__vue--galerie' }, zoneBarre, zoneGalerie);
-  const racine = el('div', { class: 'porteurs', dataset: { vue: 'galerie' } }, vueGalerie, zoneFiche, zoneComparer, tiroir);
+  const racine = el('div', { class: 'porteurs', dataset: { vue: 'galerie' } }, vueGalerie, zoneFiche);
   const bandeau = opts.bandeau || null;
 
   /* --- Le bandeau ------------------------------------------------------ */
@@ -215,11 +211,6 @@ export function porteurs(donnees, options) {
     }
     const retourLien = el('a', { class: 'porteurs-bandeau__retour', href: lienGalerie() },
       el('span', { 'aria-hidden': 'true' }, '← '), 'Tous', el('span', { class: 'porteurs-bandeau__long' }, ' les porteurs'));
-    if (etat.vue === 'comparer') {
-      monter(bandeau, el('div', { class: 'porteurs-bandeau porteurs-bandeau--nav conteneur' },
-        retourLien, el('span', { class: 'porteurs-bandeau__ici' }, 'Comparaison')));
-      return;
-    }
     const liste = listeNavigation();
     const i = liste.findIndex((a) => texte(a.code) === etat.code);
     const prec = liste[(i - 1 + liste.length) % liste.length];
@@ -233,8 +224,7 @@ export function porteurs(donnees, options) {
           el('span', { class: 'porteurs-bandeau__code' }, etat.code),
           el('span', { class: 'porteurs-bandeau__position' }, (i + 1) + ' / ' + liste.length)),
         el('a', { class: 'porteurs-bandeau__voisin', href: lien(texte(suiv.code)), dataset: { code: texte(suiv.code) }, 'aria-label': 'Suivant : ' + texte(suiv.code) },
-          texte(suiv.code), el('span', { 'aria-hidden': 'true' }, ' ›'))),
-      el('span', { class: 'porteurs-bandeau__clavier', 'aria-hidden': 'true' }, el('kbd', {}, '←'), ' ', el('kbd', {}, '→'), ' au clavier')));
+          texte(suiv.code), el('span', { 'aria-hidden': 'true' }, ' ›')))));
   }
 
   /* Le trait sous le marché choisi glisse d'un marché à l'autre. */
@@ -267,8 +257,6 @@ export function porteurs(donnees, options) {
         opts.enSection ? null : el('div', { class: 'porteurs__tris', role: 'group', 'aria-label': 'Trier par' },
           el('span', { class: 'porteurs__tris-libelle', 'aria-hidden': 'true' }, 'Trier'),
           TRIS.map((x) => el('button', { type: 'button', class: 'porteurs__tri', dataset: { tri: x.cle }, 'aria-pressed': x.cle === etat.tri ? 'true' : 'false' }, x.libelle))),
-        el('button', { type: 'button', class: ['bouton', etat.choix ? 'bouton--principal' : 'bouton--secondaire', 'porteurs__comparer'], 'aria-pressed': etat.choix ? 'true' : 'false' },
-          el('span', { 'aria-hidden': 'true' }, '⇄ '), 'Comparer'),
         typeof opts.surAjouter === 'function'
           ? boutonAjouter('Ajouter un porteur', (b) => opts.surAjouter(b, etat.marche !== 'tous' ? etat.marche : null))
           : null));
@@ -277,7 +265,7 @@ export function porteurs(donnees, options) {
   function rendreGalerie() {
     rendreBarre();
     const t = leTri();
-    const ctx = { lien, tri: t, selection: etat.selection, libelleMarche, marqueMarche: etat.marche === 'tous' && t.cle !== 'gamme' };
+    const ctx = { lien, tri: t, libelleMarche, marqueMarche: etat.marche === 'tous' && t.cle !== 'gamme' };
     const grille = (liste) => el('ul', { class: 'porteurs__grille', role: 'list' }, liste.map((a) => carte(a, ctx)));
     if (!appareils.length) {
       monter(zoneGalerie, el('p', { class: 'texte-doux' }, 'Aucun porteur dans le fichier.'));
@@ -297,41 +285,6 @@ export function porteurs(donnees, options) {
     }
   }
 
-  /* --- Le comparateur à la volée : la sélection et son tiroir ----------- */
-  function rendreTiroir() {
-    const n = etat.selection.size;
-    tiroir.hidden = !(etat.vue === 'galerie' && (etat.choix || n));
-    racine.classList.toggle('porteurs--choix', etat.vue === 'galerie' && (etat.choix || n > 0));
-    if (tiroir.hidden) return;
-    const codes = [...etat.selection];
-    monter(tiroir, el('div', { class: 'porteurs__tiroir-interieur conteneur' },
-      el('p', { class: 'porteurs__tiroir-texte' }, n ? 'À comparer :' : 'Touchez « + » sur deux ou trois cartes.'),
-      el('ul', { class: 'porteurs__tiroir-liste', role: 'list' }, codes.map((c) => el('li', {},
-        el('button', { type: 'button', class: 'porteurs__tiroir-choix', dataset: { code: c }, 'aria-label': 'Retirer le ' + c + ' de la comparaison' },
-          c, el('span', { 'aria-hidden': 'true' }, ' ×'))))),
-      el('div', { class: 'porteurs__tiroir-actions' },
-        el('button', { type: 'button', class: 'bouton bouton--discret porteurs__tiroir-fermer' }, 'Annuler'),
-        n >= 2
-          ? el('a', { class: 'bouton bouton--principal porteurs__tiroir-go', href: lienComparer(codes) }, 'Comparer ' + n + ' porteurs →')
-          : el('span', { class: 'bouton bouton--principal porteurs__tiroir-go', 'aria-disabled': 'true' }, 'Comparer →'))));
-  }
-
-  function basculerChoix(code) {
-    if (etat.selection.has(code)) etat.selection.delete(code);
-    else if (etat.selection.size >= MAX_COMPARER) { annoncer('Trois porteurs au plus : retirez-en un d’abord.'); return; }
-    else etat.selection.add(code);
-    /* La carte change sur place : pas de redessin de toute la grille. */
-    zoneGalerie.querySelectorAll('.porteur-carte[data-code="' + CSS.escape(code) + '"]').forEach((li) => {
-      const choisi = etat.selection.has(code);
-      li.classList.toggle('porteur-carte--choisie', choisi);
-      const b = li.querySelector('.porteur-carte__choisir');
-      b.setAttribute('aria-pressed', choisi ? 'true' : 'false');
-      monter(b, el('span', { 'aria-hidden': 'true' }, choisi ? '✓' : '+'));
-    });
-    rendreTiroir();
-    annoncer(code + (etat.selection.has(code) ? ' ajouté' : ' retiré') + ' : ' + etat.selection.size + ' à comparer.');
-  }
-
   /* --- Les vues -------------------------------------------------------- */
   function rendreFiche(appareil) {
     const liste = listeNavigation();
@@ -342,25 +295,9 @@ export function porteurs(donnees, options) {
       navigation: {
         precedent: n > 1 ? liste[(i - 1 + n) % n] : null,
         suivant: n > 1 ? liste[(i + 1) % n] : null,
-        lien, lienComparer: (code) => lienComparer([code])
+        lien
       },
       surModifier: opts.surModifier, surSupprimer: opts.surSupprimer
-    }));
-  }
-
-  function rendreComparateur() {
-    const choisis = etat.comparer.map(trouver).filter(Boolean);
-    monter(zoneComparer, comparateur(choisis, {
-      appareils, lien,
-      surChanger: (i, code) => {
-        const codes = choisis.map((a) => texte(a.code));
-        codes[i] = code;
-        naviguer(lienComparer([...new Set(codes)]), true);
-      },
-      surRetirer: (i) => {
-        const codes = choisis.map((a) => texte(a.code)).filter((_c, j) => j !== i);
-        naviguer(lienComparer(codes), true);
-      }
     }));
   }
 
@@ -400,9 +337,7 @@ export function porteurs(donnees, options) {
     if (typeof opts.surVue === 'function') opts.surVue(vue);
     vueGalerie.hidden = vue !== 'galerie';
     zoneFiche.hidden = vue !== 'fiche';
-    zoneComparer.hidden = vue !== 'comparer';
     rendreBandeau();
-    rendreTiroir();
     if (vue === 'galerie') {
       if (avant !== 'galerie') {
         rendreGalerie();
@@ -417,7 +352,7 @@ export function porteurs(donnees, options) {
       if (avant === 'galerie' && !premier) retour = { y: window.scrollY, code: etat.code };
       if (premier && opts.enSection) garderEnVue(); else allerEnHaut();
       if (!premier) {
-        const titre = racine.querySelector(vue === 'fiche' ? '.porteur-fiche__code' : '.comparateur__titre');
+        const titre = racine.querySelector('.porteur-fiche__code');
         if (titre) titre.focus({ preventScroll: true });
       }
     }
@@ -433,23 +368,16 @@ export function porteurs(donnees, options) {
     if (!opts.enSection && marche && (marche === 'tous' || lesMarches.some((m) => m.cle === marche))) etat.marche = marche;
     if (!opts.enSection && tri && TRIS.some((t) => t.cle === tri)) etat.tri = tri;
     const code = texte(e.porteur).toUpperCase();
-    const comp = [...new Set([].concat(e.comparer || []).map((c) => texte(c).toUpperCase()))].filter((c) => trouver(c)).slice(0, MAX_COMPARER);
     const a = code ? trouver(code) : null;
     let vue = 'galerie';
     if (a) { vue = 'fiche'; etat.code = texte(a.code); }
-    else if (comp.length) { vue = 'comparer'; etat.comparer = comp.map((c) => texte(trouver(c).code)); }
-    const s = [vue, etat.code, etat.comparer.join(','), etat.marche, etat.tri].join('|');
+    const s = [vue, etat.code, etat.marche, etat.tri].join('|');
     if (s === signature) return;
     signature = s;
     if (vue === 'fiche') {
       /* L'appareil hors du marché filtré : on montre toute la gamme. */
       rendreFiche(a);
       annoncer('Fiche ' + etat.code);
-    } else if (vue === 'comparer') {
-      etat.choix = false;
-      etat.selection.clear();
-      rendreComparateur();
-      annoncer('Comparaison : ' + etat.comparer.join(', '));
     } else if (etat.vue === 'galerie') {
       rendreGalerie();
     }
@@ -464,7 +392,7 @@ export function porteurs(donnees, options) {
     if (marche) etat.marche = marche;
     if (tri) etat.tri = tri;
     etatUrl.ecrire({ marche: etat.marche, tri: etat.tri !== 'gamme' ? etat.tri : null });
-    signature = ['galerie', etat.code, etat.comparer.join(','), etat.marche, etat.tri].join('|');
+    signature = ['galerie', etat.code, etat.marche, etat.tri].join('|');
     rendreBandeau();
     rendreGalerie();
     const t = leTri();
@@ -484,22 +412,6 @@ export function porteurs(donnees, options) {
   racine.addEventListener('click', (evt) => {
     const tri = evt.target.closest('.porteurs__tri');
     if (tri) { filtrer(null, tri.dataset.tri); return; }
-    const choisir = evt.target.closest('.porteur-carte__choisir');
-    if (choisir) { evt.preventDefault(); basculerChoix(choisir.dataset.code); return; }
-    if (evt.target.closest('.porteurs__comparer')) {
-      etat.choix = !etat.choix;
-      if (!etat.choix) etat.selection.clear();
-      rendreBarre(); rendreGalerie(); rendreTiroir();
-      annoncer(etat.choix ? 'Choisissez deux ou trois porteurs à comparer.' : 'Comparaison annulée.');
-      return;
-    }
-    const retirer = evt.target.closest('.porteurs__tiroir-choix');
-    if (retirer) { basculerChoix(retirer.dataset.code); return; }
-    if (evt.target.closest('.porteurs__tiroir-fermer')) {
-      etat.choix = false; etat.selection.clear();
-      rendreBarre(); rendreGalerie(); rendreTiroir();
-      return;
-    }
     const v = evt.target.closest('.porteur-voisin[data-code]');
     if (v && !evt.ctrlKey && !evt.metaKey && !evt.shiftKey) { evt.preventDefault(); naviguer(lien(v.dataset.code), true); }
   });

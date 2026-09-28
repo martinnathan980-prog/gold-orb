@@ -13,7 +13,27 @@ let ok = 0, ko = 0;
 const t = (n, c, d = '') => { c ? (ok++, console.log(`  OK    ${n}`)) : (ko++, console.log(`  ÉCHEC ${n} ${d}`)); };
 
 const nav = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
-const ctx = await nav.newContext({ viewport: { width: 1366, height: 900 } });
+/* Le dépôt ne garde qu'une communication d'exemple : trois de plus,
+   ajoutées comme depuis le site (magasin du navigateur), pour éprouver la
+   liste — dont une publiée APRÈS le mot du chef, qui doit passer devant.
+   Chaque contexte de navigateur les reçoit. */
+const contexte = async (options) => {
+  const c = await nav.newContext(options);
+  await c.addInitScript(exemples);
+  return c;
+};
+const exemples = () => {
+  const annonce = (id, date, titre, extra) => ({ type: 'annonce', id, op: 'maj', le: date + 'T09:00:00.000Z', par: null,
+    donnees: Object.assign({ id, date, titre, statut: 'info', pole: 'ETII', resume: 'Résumé de ' + titre + '.', corps: 'Le texte de ' + titre + '.' }, extra || {}) });
+  /* Un cadre sans stockage (about:blank) n'a rien à recevoir. */
+  try { localStorage.getItem('x'); } catch (_e) { return; }
+  localStorage.setItem('etii:modifications:communications', JSON.stringify([
+    annonce('t-recente', '2026-09-20', 'Nouveau banc d’essais harnais'),
+    annonce('t-photo', '2026-09-12', 'Validation du jalon de définition', { image: { src: 'assets/img/porteurs/h160.jpg', alt: 'Un H160' } }),
+    annonce('t-ancienne', '2026-08-26', 'Ouverture du portail de recherche')
+  ]));
+};
+const ctx = await contexte({ viewport: { width: 1366, height: 900 } });
 const page = await ctx.newPage();
 const err = [];
 page.on('pageerror', (e) => err.push(e.message));
@@ -42,6 +62,9 @@ await page.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1000);
 const cartes = await page.locator('.kiosque__carte').count();
 t('la liste a plusieurs cartes', cartes >= 3, `(${cartes})`);
+const datesListe = await page.locator('.kiosque__carte-date').evaluateAll((ts) => ts.map((x) => x.getAttribute('datetime')));
+t('la liste est chronologique, la plus récente en haut — le mot du chef n’est plus épinglé',
+  datesListe[0] === '2026-09-20' && datesListe.every((d, i) => i === 0 || d <= datesListe[i - 1]), JSON.stringify(datesListe));
 const soucis = { interieur: [], section: [], suivante: [], liste: [], blocs: [], plafond: [] };
 for (let i = 0; i < cartes; i++) {
   await page.locator('.kiosque__carte').nth(i).click();
@@ -173,7 +196,7 @@ t('#communication=ID lit cette entrée et la montre dans la liste', await page.e
 }, derniereId));
 
 console.log('\n== Mobile ==');
-const mobile = await (await nav.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+const mobile = await (await contexte({ viewport: { width: 390, height: 844 } })).newPage();
 mobile.on('pageerror', (e) => err.push('mobile: ' + e.message));
 await mobile.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
 await mobile.waitForTimeout(1200);
@@ -214,7 +237,7 @@ t('les liens de la barre tiennent à l’écran sur téléphone',
   navEntiere.scrollWidth <= navEntiere.clientWidth + 1, JSON.stringify(navEntiere));
 
 console.log('\n== Sombre ==');
-const sombre = await (await nav.newContext({ viewport: { width: 1366, height: 900 }, colorScheme: 'dark' })).newPage();
+const sombre = await (await contexte({ viewport: { width: 1366, height: 900 }, colorScheme: 'dark' })).newPage();
 sombre.on('pageerror', (e) => err.push('sombre: ' + e.message));
 await sombre.goto(`${B}/index.html`, { waitUntil: 'networkidle' });
 await sombre.waitForTimeout(1200);

@@ -1,5 +1,5 @@
 /* =========================================================================
-   ETII Hub — La fiche d'un porteur, et le comparateur
+   ETII Hub — La fiche d'un porteur
 
    La fiche répond d'abord aux questions qu'on se pose devant un appareil,
    dans cet ordre, et en chiffres : qu'est-ce que c'est, quelle taille,
@@ -7,22 +7,22 @@
    moteurs, depuis quand. Une phrase d'accroche, pas plus ; tout le reste
    est un nombre, son unité, et ce qu'il veut dire en français courant.
 
+   L'essentiel se voit, le reste se déplie : personne ne lit une fiche
+   technique de haut en bas, qui la veut l'ouvre.
+
      1. La tête : la photo en grand, le code, le nom, le marché, la phase.
      2. L'essentiel : six chiffres, toujours les mêmes et dans le même
-        ordre, chacun situé sur une jauge « par rapport à la gamme » ; ceux
-        qu'aucune source ne donne sont nommés en une ligne.
+        ordre, chacun situé sur une jauge nette « par rapport à la gamme »
+        (le minimum, le maximum, l'appareil) ; ceux qu'aucune source ne
+        donne sont nommés en une ligne.
      3. À l'échelle, et à côté la frise du programme : le profil de
-        l'appareil près d'une personne de 1,80 m, ou d'un autre porteur si
-        on le demande (gabarit.js) ; depuis quand il vole.
-     4. Dans le détail : une carte par groupe, une ligne par valeur, la
-        précision en petit dessous.
-     5. Le « saviez-vous » : une histoire à raconter.
+        l'appareil près d'une personne de 1,80 m (gabarit.js) ; depuis
+        quand il vole.
+     4. Le « saviez-vous » : deux histoires à raconter.
+     5. Toute la fiche technique, repliée : une carte par groupe, une
+        ligne par valeur.
      6. En pied : les sources et la confiance de chaque valeur, repliées,
         et les appareils voisins.
-
-   Le comparateur pose deux ou trois appareils côte à côte : les mêmes
-   chiffres, une barre par valeur, le plus grand marqué, et l'écart au
-   premier appareil choisi.
 
    Tout le DOM passe par el() / svg() de ui.js : aucun innerHTML.
    ========================================================================= */
@@ -120,9 +120,10 @@ function valeurGrande(f, classe) {
 }
 
 /**
- * La jauge « par rapport à la gamme » : un trait avec un repère par
- * appareil renseigné, l'appareil de la fiche en grand. Les extrémités sont
- * légendées ; la phrase complète est lue par les lecteurs d'écran.
+ * La jauge « par rapport à la gamme » : un trait net, du plus petit au
+ * plus grand de la gamme, et l'appareil de la fiche dessus. Pas un cran
+ * par appareil : ces pointillés brouillaient la lecture. Les extrémités
+ * sont légendées ; la phrase complète est lue par les lecteurs d'écran.
  */
 function jauge(cle, c, echelle, code) {
   if (!echelle || echelle.valeurs.length < 3 || !(echelle.max > echelle.min) || c.ref === null) return null;
@@ -137,8 +138,6 @@ function jauge(cle, c, echelle, code) {
     : '';
   return el('div', { class: 'porteur-jauge', role: 'img', 'aria-label': 'Par rapport à la gamme : ' + phrase + '.', title: phrase },
     el('span', { class: 'porteur-jauge__piste' },
-      echelle.valeurs.filter((x) => x.code !== code).map((x) =>
-        el('span', { class: 'porteur-jauge__repere', style: { '--pos': pos(x.v) } })),
       c.refMax !== null && c.refMax > c.ref
         ? el('span', { class: 'porteur-jauge__plage', style: { '--pos': pos(c.ref), '--fin': pos(c.refMax) } })
         : null,
@@ -293,16 +292,10 @@ function saviezVous(appareil) {
           el('p', { class: 'porteur-fait__suite' }, suite.charAt(0).toUpperCase() + suite.slice(1)))
         : el('p', { class: 'porteur-fait__tete sans-marge' }, tete));
   };
-  const premiers = faits.slice(0, 2);
-  const autres = faits.slice(2);
+  /* Deux histoires, pas davantage : la fiche garde l'essentiel. */
   return el('section', { class: 'porteur-marge__bloc', 'aria-labelledby': 'porteur-titre-faits' },
     el('h3', { class: 'porteur-marge__titre', id: 'porteur-titre-faits' }, 'Le saviez-vous ?'),
-    el('ol', { class: 'porteur-faits', role: 'list' }, premiers.map(fait)),
-    autres.length
-      ? el('details', { class: 'porteur-faits__encore' },
-        el('summary', {}, autres.length === 1 ? 'Une autre anecdote' : autres.length + ' autres anecdotes'),
-        el('ol', { class: 'porteur-faits', role: 'list', start: 3 }, autres.map((f, i) => fait(f, i + 2))))
-      : null);
+    el('ol', { class: 'porteur-faits', role: 'list' }, faits.slice(0, 2).map(fait)));
 }
 
 
@@ -353,20 +346,15 @@ function sources(appareil) {
    5. La fiche
    ------------------------------------------------------------------------- */
 
-/* À l'échelle : le profil de l'appareil, et au choix un autre porteur à
-   côté. Changer de voisin redessine la scène, rien d'autre. */
+/* À l'échelle : le profil de l'appareil près d'une personne. */
 function aLEchelle(appareil, ctx) {
-  const code = texte(appareil.code);
   const scene = el('div', { class: 'porteur-echelle__scene' });
-  const autres = (ctx.appareils || []).filter((a) => texte(a.code) !== code && dimensions(a));
   /* Sur un écran large, tous les appareils partagent la même scène : passer
      d'une fiche à l'autre fait grandir ou rétrécir le dessin. Sur un
      téléphone, le dessin prend toute la largeur, pour rester lisible. */
   const etroit = typeof matchMedia === 'function' && matchMedia('(max-width: 40rem)').matches;
-  const dessiner = (voisin) => {
-    const d = voisin
-      ? gabarit([appareil, voisin])
-      : gabarit([appareil], { cotes: true, scene: etroit ? null : ctx.scene });
+  const dessiner = () => {
+    const d = gabarit([appareil], { cotes: true, scene: etroit ? null : ctx.scene });
     if (d) scene.replaceChildren(d);
   };
   if (!dimensions(appareil)) {
@@ -377,17 +365,9 @@ function aLEchelle(appareil, ctx) {
       el('p', { class: 'porteur-echelle__manque sans-marge' },
         'Pas encore de dessin à l’échelle : il manque ' + manque.join(' et ') + '.'));
   }
-  dessiner(null);
-  const idChoix = 'porteur-voisin-' + code.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const choix = el('select', { class: 'champ__controle porteur-echelle__choix', id: idChoix },
-    el('option', { value: '' }, 'seul, avec la personne'),
-    autres.map((a) => el('option', { value: texte(a.code) }, texte(a.code) + (segment(a) ? ' — ' + segment(a) : ''))));
-  choix.addEventListener('change', () => dessiner(autres.find((a) => texte(a.code) === choix.value) || null));
+  dessiner();
   return el('section', { class: 'porteur-section porteur-echelle', 'aria-labelledby': 'porteur-titre-echelle' },
-    el('div', { class: 'porteur-section__tete' },
-      el('h3', { class: 'porteur-section__titre', id: 'porteur-titre-echelle' }, 'À l’échelle'),
-      el('div', { class: 'porteur-echelle__voisin' },
-        el('label', { for: idChoix }, 'Le mettre à côté d’un autre :'), choix)),
+    el('h3', { class: 'porteur-section__titre', id: 'porteur-titre-echelle' }, 'À l’échelle'),
     scene,
     el('p', { class: 'porteur-echelle__legende sans-marge' },
       'Silhouette stylisée, dessinée à la vraie taille du rotor et, quand la fiche les donne, de la longueur et de la hauteur. '
@@ -404,7 +384,7 @@ function aLEchelle(appareil, ctx) {
  * @param {object} [ctx.scene]         sceneGamme(appareils) : l'échelle commune
  * @param {Array<{cle:string, libelle:string}>} [ctx.marches]
  * @param {{precedent?:object, suivant?:object, position?:number, total?:number,
- *          lien:(code:string)=>string, lienComparer:(code:string)=>string}} ctx.navigation
+ *          lien:(code:string)=>string}} ctx.navigation
  * @param {Function} [ctx.surModifier]  (appareil, bouton)
  * @param {Function} [ctx.surSupprimer] (appareil)
  * @returns {HTMLElement}
@@ -416,7 +396,6 @@ export function fiche(appareil, ctx) {
   const idTitre = 'porteur-titre-' + code.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const marche = (ctx.marches || []).find((m) => m.cle === texte(appareil.categorie));
   const nom = texte(f.nom);
-  const ancien = champ(appareil, 'identite', 'ancienNom');
 
   /* 1. La tête : la photo, et le titre posé dessus. */
   const visuel = el('div', { class: ['porteur-fiche__photo', texte(appareil.photo) ? null : 'porteur-fiche__photo--silhouette'] },
@@ -442,22 +421,19 @@ export function fiche(appareil, ctx) {
       surSupprimer: typeof ctx.surSupprimer === 'function' ? () => ctx.surSupprimer(appareil) : null
     })
     : null;
-  /* L'accroche sur toute la largeur ; dessous, l'ancien nom à gauche et
-     les commandes à droite. */
+  /* L'accroche sur toute la largeur ; dessous, à droite, les commandes du
+     mode édition. */
   const phrase = accroche(appareil);
   const intro = el('div', { class: 'porteur-fiche__intro' },
     phrase ? el('p', { class: 'porteur-fiche__accroche' }, phrase) : null,
-    ancien ? el('p', { class: 'porteur-fiche__ancien' }, el('span', {}, 'Aussi connu comme '), texte(ancien.valeur)) : el('span'),
-    el('div', { class: 'porteur-fiche__actions' },
-      nav.lienComparer
-        ? el('a', { class: 'bouton bouton--secondaire porteur-fiche__comparer', href: nav.lienComparer(code) },
-          el('span', { 'aria-hidden': 'true' }, '⇄ '), 'Comparer avec un autre')
-        : null,
-      commandes));
+    el('span'),
+    el('div', { class: 'porteur-fiche__actions' }, commandes));
 
-  /* 4. Dans le détail. */
-  const detail = el('section', { class: 'porteur-section porteur-detail', 'aria-labelledby': idTitre + '-detail' },
-    el('h3', { class: 'porteur-section__titre', id: idTitre + '-detail' }, 'Dans le détail'),
+  /* 5. Toute la fiche technique, repliée : qui la veut l'ouvre. */
+  const detail = el('details', { class: 'porteur-section porteur-detail' },
+    el('summary', { class: 'porteur-detail__resume' },
+      el('span', { class: 'porteur-detail__titre', id: idTitre + '-detail' }, 'Toute la fiche technique'),
+      el('span', { class: 'porteur-detail__groupes' }, GROUPES.map((g) => g.titre).join(' · '))),
     el('div', { class: 'porteur-groupes' }, GROUPES.map((g) => carteGroupe(appareil, g))));
 
   /* 6. Les voisins. */
@@ -474,143 +450,11 @@ export function fiche(appareil, ctx) {
     essentiel(appareil, ctx.echelles || {}, idTitre),
     /* La taille réelle, et à côté la frise du programme : depuis quand. */
     el('div', { class: 'porteur-fiche__duo' }, aLEchelle(appareil, ctx), frise(appareil)),
-    detail,
-    /* Pour finir : une histoire à raconter. */
+    /* Une histoire à raconter, puis le détail pour qui le veut. */
     saviezVous(appareil),
+    detail,
     el('footer', { class: 'porteur-fiche__pied' },
       sources(appareil),
       el('nav', { class: 'porteur-voisins', 'aria-label': 'Porteurs voisins' },
         voisin(nav.precedent, 'precedent'), voisin(nav.suivant, 'suivant'))));
-}
-
-/* -------------------------------------------------------------------------
-   6. Le comparateur
-   ------------------------------------------------------------------------- */
-
-/* Les lignes du comparateur : l'essentiel d'abord, puis le reste. */
-const LIGNES_COMPARER = [
-  ['Taille', ['longueur', 'longueurFuselage', 'hauteur', 'diametreRotor']],
-  ['Masse', ['masseMaxDecollage', 'masseAVide', 'chargeUtile']],
-  ['À bord', ['passagers', 'equipage']],
-  ['Motorisation', ['nombreMoteurs', 'puissance']],
-  ['Performances', ['vitesseCroisiere', 'vitesseMax', 'distanceFranchissable', 'rayonAction', 'autonomie', 'plafond']],
-  ['Programme', ['miseEnService', 'unitesProduites']]
-];
-
-/* L'écart au premier appareil choisi : « × 2,7 » quand l'un vaut plusieurs
-   fois l'autre, « + 12 % » sinon. */
-function ecart(v, ref) {
-  if (!(ref > 0) || !Number.isFinite(v)) return '';
-  const r = v / ref;
-  if (Math.abs(r - 1) < 0.005) return '=';
-  if (r >= 1.5) return '× ' + nombreFr(r, 1);
-  if (r <= 0.67) return '÷ ' + nombreFr(1 / r, 1);
-  const p = Math.round((r - 1) * 100);
-  return (p > 0 ? '+ ' : '− ') + Math.abs(p) + ' %';
-}
-
-/**
- * Deux ou trois porteurs côte à côte.
- * @param {object[]} choisis  les appareils, dans l'ordre (le premier sert de référence)
- * @param {object} ctx  { appareils, marches, lien(code), surChanger(i, code), surRetirer(i) }
- */
-export function comparateur(choisis, ctx) {
-  const tous = ctx.appareils || [];
-  const n = choisis.length;
-  /* L'en-tête : une colonne par appareil, sa photo, son code, et de quoi le
-     remplacer ou le retirer ; une colonne pour en ajouter un tant qu'on
-     n'en a pas trois. */
-  const selecteur = (i, actuel) => {
-    const id = 'comparer-choix-' + i;
-    const s = el('select', { class: 'champ__controle comparateur__choix', id, 'aria-label': actuel ? 'Remplacer le ' + texte(actuel.code) : 'Ajouter un porteur à la comparaison' },
-      actuel ? null : el('option', { value: '' }, 'Ajouter un porteur…'),
-      tous.map((a) => el('option', { value: texte(a.code), selected: actuel && a === actuel ? true : null,
-        disabled: !actuel || a !== actuel ? (choisis.includes(a) ? true : null) : null }, texte(a.code) + (segment(a) ? ' — ' + segment(a) : ''))));
-    s.addEventListener('change', () => { if (s.value) ctx.surChanger(i, s.value); });
-    return s;
-  };
-  const colonnes = choisis.map((a, i) => el('div', { class: ['comparateur__colonne', 'comparateur__colonne--' + i] },
-    el('a', { class: 'comparateur__carte', href: ctx.lien(texte(a.code)) },
-      el('span', { class: 'comparateur__visuel' }, photo(a, { classe: 'comparateur__image' })),
-      el('span', { class: 'comparateur__code' }, texte(a.code)),
-      el('span', { class: 'comparateur__segment' }, segment(a))),
-    el('div', { class: 'comparateur__outils' },
-      selecteur(i, a),
-      n > 1 ? el('button', { type: 'button', class: 'bouton bouton--discret bouton--compact comparateur__retirer',
-        'aria-label': 'Retirer le ' + texte(a.code), onClick: () => ctx.surRetirer(i) }, '×') : null)));
-  if (n < 3) {
-    colonnes.push(el('div', { class: 'comparateur__colonne comparateur__colonne--ajout' },
-      el('div', { class: 'comparateur__ajout' },
-        el('span', { class: 'comparateur__ajout-signe', 'aria-hidden': 'true' }, '+'),
-        el('span', {}, n < 2 ? 'Choisissez un autre porteur' : 'Un troisième, si vous voulez')),
-      el('div', { class: 'comparateur__outils' }, selecteur(n, null))));
-  }
-
-  /* Le tableau : une ligne par chiffre renseigné pour au moins un appareil. */
-  const corps = [];
-  for (const [titre, cles] of LIGNES_COMPARER) {
-    const rangees = [];
-    for (const cle of cles) {
-      if (cle === 'miseEnService') {
-        const annees = choisis.map((a) => anneeService(a));
-        if (!annees.some(Boolean)) continue;
-        rangees.push(el('tr', { class: 'comparateur__ligne' },
-          el('th', { scope: 'row', class: 'comparateur__libelle' }, 'Depuis', el('span', { class: 'comparateur__question' }, 'mise en service, ou premier vol')),
-          annees.map((x, i) => el('td', { class: ['comparateur__cellule', 'comparateur__cellule--' + i] },
-            x ? el('span', { class: 'comparateur__valeur' }, (x.prevu ? 'prévu ' : '') + x.annee + (x.quoi === 'vol' ? ' (vol)' : ''))
-              : el('span', { class: 'porteur-manquant' }, '—')))));
-        continue;
-      }
-      const valeurs = choisis.map((a) => chiffre(a, cle));
-      if (!valeurs.some((c) => c)) continue;
-      const refs = valeurs.map((c) => (c && c.ref !== null ? (c.refMax !== null ? c.refMax : c.ref) : null));
-      const max = Math.max(...refs.filter((v) => v !== null), 0);
-      const plusieurs = refs.filter((v) => v !== null).length > 1;
-      const tete = refs[0];
-      rangees.push(el('tr', { class: 'comparateur__ligne' },
-        el('th', { scope: 'row', class: 'comparateur__libelle' }, CHIFFRES[cle].libelle,
-          el('span', { class: 'comparateur__question' }, CHIFFRES[cle].question)),
-        valeurs.map((c, i) => {
-          if (!c) return el('td', { class: ['comparateur__cellule', 'comparateur__cellule--' + i] }, el('span', { class: 'porteur-manquant' }, '—'));
-          const v = refs[i];
-          const plus = plusieurs && v !== null && v === max && max > 0;
-          return el('td', { class: ['comparateur__cellule', 'comparateur__cellule--' + i, plus ? 'comparateur__cellule--plus' : null] },
-            valeurGrande(formater(c), 'porteur-grand porteur-grand--moyen'),
-            v !== null && max > 0
-              ? el('span', { class: 'comparateur__barre', 'aria-hidden': 'true' }, el('span', { style: { '--part': (v / max).toFixed(3) } }))
-              : null,
-            el('span', { class: 'comparateur__ecart' },
-              plus ? el('span', { class: 'comparateur__plus' }, CHIFFRES[cle].lePlus) : null,
-              i > 0 && v !== null && tete !== null ? el('span', { class: 'comparateur__delta' }, ecart(v, tete) + ' / ' + texte(choisis[0].code)) : null));
-        })));
-    }
-    if (rangees.length) {
-      corps.push(el('tbody', { class: 'comparateur__groupe' },
-        el('tr', { class: 'comparateur__intertitre' }, el('th', { scope: 'rowgroup', colSpan: n + 1 }, titre)),
-        rangees));
-    }
-  }
-
-  const dessin = gabarit(choisis);
-  return el('section', { class: 'comparateur', 'aria-labelledby': 'comparateur-titre', style: { '--colonnes': String(n) } },
-    el('div', { class: 'comparateur__tete' },
-      el('h2', { class: 'comparateur__titre', id: 'comparateur-titre', tabIndex: -1 }, 'Comparer'),
-      el('p', { class: 'comparateur__intro sans-marge' },
-        n < 2 ? 'Ajoutez un deuxième porteur pour les voir côte à côte.'
-          : 'Les mêmes chiffres, côte à côte. La barre compare les appareils choisis entre eux ; l’écart se lit par rapport au premier.')),
-    el('div', { class: 'comparateur__colonnes', style: { '--nb': String(colonnes.length) } }, colonnes),
-    n > 1 && dessin
-      ? el('section', { class: 'porteur-section comparateur__echelle', 'aria-labelledby': 'comparateur-titre-echelle' },
-        el('h3', { class: 'porteur-section__titre', id: 'comparateur-titre-echelle' }, 'À l’échelle'),
-        dessin)
-      : null,
-    n > 1 && corps.length
-      ? el('div', { class: 'comparateur__table-cadre' },
-        el('table', { class: 'comparateur__table' },
-          el('caption', { class: 'visuellement-cache' }, 'Comparaison de ' + choisis.map((a) => texte(a.code)).join(', ')),
-          el('thead', {}, el('tr', {},
-            el('td', {}),
-            choisis.map((a, i) => el('th', { scope: 'col', class: ['comparateur__entete', 'comparateur__entete--' + i] }, texte(a.code))))),
-          corps))
-      : null);
 }

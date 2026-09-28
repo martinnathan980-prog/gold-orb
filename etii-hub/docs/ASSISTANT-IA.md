@@ -1,29 +1,32 @@
-# Des milliers de documents et Gemini — ce que vous pouvez faire maintenant, et plus tard
+# Des centaines de documents et Gemini — ce que vous pouvez faire maintenant, et plus tard
 
-> **Gemini Enterprise n'arrivera que dans plusieurs années. D'ici là ?**
+> **Mise à jour du 28 septembre 2026.** Pas de Vertex AI, pas de Gemini
+> Enterprise, pas d'aide de l'informatique : les niveaux 2 et 3 ci-dessous
+> sont donc **pour plus tard**. Ce qui marche dès maintenant, pas à pas, est
+> dans **`docs/GEMINI-PAS-A-PAS.txt`** :
 >
-> **La réponse courte : dès demain, tapez votre question dans la barre de
-> recherche de Google Drive** (§ 0.4). Le Gemini inclus dans votre Google
-> Workspace peut y répondre au-dessus des résultats, en citant les
-> fichiers. Le reste de ce guide range les documents pour que cette
-> réponse soit bonne, puis ajoute, si le service en a besoin, une page à
-> vous, lancée depuis le portail et limitée au fonds du service.
+> 1. **Un carnet Gemini Notebook par pôle ou par thème** (jusqu'à
+>    300 documents par carnet en éditions Business et Enterprise
+>    Standard ou Plus), partagé à l'équipe.
+> 2. **Dans le portail, page Recherche, le bloc « Demander à Gemini »**
+>    (`assets/js/gemini.js`) : la question (celle de la barre), le carnet
+>    choisi, « Copier la question et ouvrir le carnet ». Les carnets se
+>    relient **dans le site**, en mode édition (« Relier un carnet ») :
+>    leur lien est rangé dans la feuille du site (jeu `reglages`), jamais
+>    dans ce dépôt public.
+> 3. Facultatif : **la réponse par e-mail**, un formulaire pré-rempli et un
+>    flux Workspace Studio (« Ask Gemini Notebook »).
+> 4. Pour les documents sensibles : **« Demander à Gemini » dans Drive**,
+>    où les fichiers restent en place avec leurs droits.
 >
-> | Niveau | Ce que vous obtenez | Il faut | Coût |
-> |---|---|---|---|
-> | **0 — dès demain** | **La question dans la barre de recherche de Drive** : une réponse rédigée, fichiers cités (aperçu IA). Et : un Drive partagé rangé, un catalogue qui se remplit seul, « Demander à Gemini » sur un dossier, des projets Drive et des carnets par thème, reliés au portail | Vous seul, si l'administrateur Workspace a activé Gemini dans Drive | Rien (inclus dans Workspace) |
-> | **1 — sans IA payante** | La page **« Chercher dans le texte des documents »**, lancée depuis le portail : les mots cherchés *dans* les documents du seul Drive partagé du service, avec un extrait, chacun avec ses droits | Vous seul, 30 minutes | Rien |
-> | **2 — une petite demande à la DSI** | La même page **répond toujours en rédigeant**, à partir des documents du service, traités dans l'UE, avec des renvois numérotés vérifiables | Un projet Google Cloud et un rôle | Payé à la question : quelques dizaines à ~150 $ par mois (estimation, § 2.5) |
-> | **3 — plus tard** | Gemini Enterprise lit tout le Drive partagé | Licences, DSI | Par personne et par mois |
+> Un carnet **copie** ses documents hors de Drive (régions de données et
+> DLP ne s'y appliquent pas) : on n'y met que des documents validés,
+> **jamais un document sous contrôle export**.
 >
-> Le code des niveaux 1, 2 et 3 est **un seul et même petit programme**,
-> déjà écrit dans `tools/apps-script/assistant/` : on passe d'un niveau à
-> l'autre en renseignant une propriété, sans rien réécrire.
->
-> Faits vérifiés le **26 septembre 2026** dans la documentation officielle
-> de Google (liste en fin de document). Les noms de produits et les prix
-> changent souvent : revérifiez avant de vous engager. Ce qui n'a pas pu
-> être vérifié est marqué **(à confirmer)**.
+> Le reste de ce guide (niveau 0 : ranger le Drive ; niveau 1 : chercher
+> dans le texte des documents, sans IA payante) reste valable. Les faits
+> du niveau 0 ont été revérifiés le 28 septembre 2026 ; les sources sont
+> listées dans `docs/GEMINI-PAS-A-PAS.txt`.
 
 ```
  Drive partagé « ETII — Fonds documentaire »   ETIIA/  ETIIE/  ETIII/  Commun/   (les fichiers, et les droits)
@@ -212,8 +215,8 @@ si l'aperçu de Drive ne suffit pas au service :
 ### 0.5 « Demander à Gemini » sur un dossier, un document, un projet
 
 C'est le même Gemini, visé sur des fichiers que vous choisissez.
-Disponible depuis le 22 avril 2026 (anglais) et mai 2026 (28 autres
-langues), pour les mêmes éditions qu'en 0.4.
+Disponible pour Business et Enterprise Standard ou Plus ; la diffusion
+en anglais a commencé le 6 mai 2026, les autres langues ont suivi.
 
 - **Un dossier** : dans Drive, ouvrez le dossier (ETIIA › Guides…), puis
   **Demander à Gemini** dans la barre d'outils, en haut. L'espace plein
@@ -230,11 +233,13 @@ langues), pour les mêmes éditions qu'en 0.4.
   les mêmes sources ; les conversations restent privées. Les fichiers ne
   bougent pas et gardent leurs droits : un collègue qui ne peut pas
   ouvrir un fichier du projet ne peut pas s'en servir.
-- **L'application Gemini** : **Ajouter depuis Drive** joint jusqu'à
-  **10 fichiers** à une question (« sous réserve de disponibilité », écrit
-  Google), pour comparer deux indices d'un même document. Il faut que
-  l'administrateur Workspace ait ouvert l'accès aux applications dans
-  Gemini.
+- **L'application Gemini** : **@Google Drive** ou **Ajouter depuis
+  Drive** joint jusqu'à **10 fichiers** à une question, pour comparer deux
+  indices d'un même document. Il faut que l'administrateur Workspace ait
+  ouvert l'accès, que « Keep Activity » soit activé et que Workspace soit
+  connecté à Gemini.
+- Partez toujours d'un dossier ou d'un projet : une conversation ouverte
+  à partir de rien cherche par défaut aussi dans Gmail, Chat et Agenda.
 
 La page d'aide consultée ne publie pas de nombre maximal de fichiers pour
 un dossier ou un projet **(à confirmer)** : dans un dossier très fourni,
@@ -242,30 +247,42 @@ visez le bon sous-dossier et posez des questions précises.
 
 ### 0.6 Gemini Notebook (ex-NotebookLM) — un carnet par thème
 
-NotebookLM s'appelle **Gemini Notebook** depuis juillet 2026 ; c'est le
-même produit, les carnets et les liens existants continuent de marcher.
-Un projet Drive (0.5) lit les fichiers là où ils sont ; un carnet garde
-ses propres sources, à resynchroniser quand un document change. Le carnet
-reste utile pour un corpus stable que tout le monde interroge (« Règles de
-conception harnais », « Normes CEM », « Accueil des nouveaux ») :
+NotebookLM s'appelle **Gemini Notebook** depuis le 16 juillet 2026 ;
+c'est le même produit, les carnets et les liens existants continuent de
+marcher. Un projet Drive (0.5) lit les fichiers là où ils sont ; un carnet
+garde une copie de ses sources, que Google tient à jour toute seule
+(« toutes les quelques minutes ») quand le document Drive change. C'est la
+voie retenue pour « Demander à Gemini » dans le portail
+(`docs/GEMINI-PAS-A-PAS.txt`) :
 
 1. Ouvrez Gemini Notebook › **Nouveau carnet**.
 2. **Ajouter des sources › Google Drive** : choisissez les documents du
-   thème. Nombre de sources par carnet : 50 en offre standard, 100
-   (Plus), 300 (Pro), 500 à 600 (Ultra) ; celle de votre compte
-   d'entreprise dépend de votre édition Workspace **(à confirmer dans
-   votre compte)**. Chaque source : jusqu'à 500 000 mots ou 200 Mo.
-3. **Partager** le carnet avec le groupe du pôle, en lecture.
-4. Chaque réponse renvoie au **passage exact** de la source.
+   thème. En éditions Business et Enterprise Standard ou Plus : **300
+   sources par carnet, 500 carnets, 500 questions par jour** ; Business
+   Starter : 50 sources. Chaque source : jusqu'à 500 000 mots ou 200 Mo.
+3. **Partager** le carnet avec le groupe du pôle, en lecture (décochez
+   « Allow copies »). Un lecteur voit **toutes** les sources du carnet,
+   quels que soient ses droits sur les fichiers d'origine ; la « vue
+   chat » ne les protège pas.
+4. Chaque réponse cite ses sources.
 
-Avec un compte Google Workspace, Google indique que vos sources, questions
-et réponses ne sont ni relues par des personnes ni utilisées pour
-entraîner des modèles.
+Avec un compte Google Workspace, les sources, questions et réponses ne
+sont ni relues par des personnes ni utilisées pour entraîner des modèles.
+Mais le carnet **copie** chaque fichier hors de Drive : sur cette copie,
+les régions de données et les règles de partage de l'organisation ne
+s'appliquent pas, il n'y a pas de DLP ni de certification ISO / SOC.
+D'où la règle : **documents validés seulement, jamais de contrôle
+export**.
 
-### 0.7 Relier les carnets et les projets au portail, par la FAQ
+### 0.7 Relier les carnets au portail
 
-Un carnet (0.6) ou un projet Drive (0.5) ne sert que si on le trouve. Le
-portail se modifie depuis lui-même (bouton **Modifier** en haut) :
+**Un carnet se relie maintenant directement à la Recherche** : page
+Recherche › **Modifier** › en bas, **Relier un carnet** (nom, pôle, lien,
+et facultativement le lien pré-rempli d'un formulaire pour la réponse par
+e-mail). Il apparaît alors dans le bloc « Demander à Gemini », pour tous.
+
+Un projet Drive (0.5), ou un carnet qu'on veut aussi signaler ailleurs,
+peut encore passer par la FAQ :
 
 1. **Modifier** › ouvrez la page du pôle › **Questions fréquentes** ›
    **Ajouter une question**.

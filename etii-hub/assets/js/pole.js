@@ -31,6 +31,7 @@ import { lecteur } from './lecteur.js';
 import { agenda } from './agenda.js';
 import { chargerCommunications } from './communications.js';
 import { demandesPartagees, envoyerDemande } from './demandes.js';
+import { pastillesSecurite } from './sensibilite.js';
 import { ouvrirEditeur } from './editeur.js';
 import { creditsCommunications } from './credits.js';
 
@@ -635,8 +636,11 @@ async function chargerDocuments(code) {
   const bloc = orga.status === 'fulfilled' ? blocOrganigramme(orga.value, code) : null;
   const membres = bloc ? membresDuBloc(bloc) : [];
   const liste = documentsDuPole(docs.value, code, membres);
+  /* Les plus récents d'abord : par date quand le classeur en donne une,
+     sinon par ligne — la dernière ligne ajoutée au classeur est la plus
+     récente. */
   const enVigueur = liste.filter((d) => !texte(d.remplacePar))
-    .sort((a, b) => texte(b.maj).localeCompare(texte(a.maj)));
+    .sort((a, b) => texte(b.maj).localeCompare(texte(a.maj)) || (Number(b.ligne) || 0) - (Number(a.ligne) || 0));
   return { code, docs: docs.value, enVigueur, membres, tousMembres: orga.status === 'fulfilled' ? aplatirOrganigramme(orga.value).personnes : membres };
 }
 
@@ -649,8 +653,9 @@ function dateCourte(iso) {
 /* Les documents du pôle : les huit plus récents en vigueur ; au-dessus,
    un filtre par type et une recherche dans le bloc — alors tous les
    documents du pôle qui correspondent s'affichent. Une ligne dit
-   l'essentiel, sans plus : le titre, la personne qui l'a mis, la date,
-   et « Ouvrir » quand le document a un lien. */
+   l'essentiel, sans plus : le titre, la personne qui l'a mis, la date
+   (ou, faute de date, sa sensibilité), et « Ouvrir » quand le document
+   a un lien. */
 function rendreDocuments(pole, m, conteneur) {
   const MAX = 8;
   const tous = m.enVigueur;
@@ -663,7 +668,9 @@ function rendreDocuments(pole, m, conteneur) {
       el('span', { class: 'pole-doc__porteur' }, porteur
         ? el('a', { href: lienFiche(pole, porteur) }, texte(porteur.nom))
         : (texte(d.porteur) || 'Porteur à renseigner')),
-      el('time', { class: 'pole-doc__date', datetime: texte(d.maj) || null }, dateCourte(d.maj) || 'date à renseigner'),
+      texte(d.maj)
+        ? el('time', { class: 'pole-doc__date', datetime: texte(d.maj) }, dateCourte(d.maj) || texte(d.maj))
+        : (pastillesSecurite(d, 'pole-doc__securite') || el('span', { class: 'pole-doc__date' })),
       /^https?:\/\//i.test(lien)
         ? el('a', { class: 'pole-doc__ouvrir', href: lien, target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'Ouvrir le document : ' + texte(d.titre) }, 'Ouvrir ↗')
         : el('span', { class: 'pole-doc__ouvrir pole-doc__ouvrir--vide' }),
@@ -684,7 +691,7 @@ function rendreDocuments(pole, m, conteneur) {
   const remplir = () => {
     const q = normaliser(requete);
     const filtres = tous.filter((d) => (!type || (texte(d.type) || 'Document') === type)
-      && (!q || normaliser([d.titre, d.reference, d.porteur, d.description, [].concat(d.metier || []).join(' '), [].concat(d.motsCles || []).join(' ')].join(' ')).includes(q)));
+      && (!q || normaliser([d.titre, d.reference, d.porteur, d.description, d.perimetre, [].concat(d.metier || []).join(' '), [].concat(d.motsCles || []).join(' ')].join(' ')).includes(q)));
     const actif = type || q;
     const montres = actif ? filtres : filtres.slice(0, MAX);
     monter(liste, montres.length ? montres.map(ligne)

@@ -296,9 +296,10 @@ function dossierDepuis(e, base) {
 /**
  * Construit la liste des dossiers du kiosque à partir de communications.json.
  *
- * - le mot du chef en premier (seulement au niveau service) ;
- * - puis l'historique : annonces et agenda passé, du plus récent au plus
- *   ancien. L'agenda à venir est ignoré : on communique sur ce qui s'est
+ * - le mot du chef (seulement au niveau service), les annonces et l'agenda
+ *   passé, TOUS du plus récent au plus ancien : le mot n'est plus épinglé
+ *   en tête (une communication publiée après lui passait sinon dessous,
+ *   et la liste n'était plus chronologique). L'agenda à venir est ignoré : on communique sur ce qui s'est
  *   passé. Un même événement saisi deux fois (annonce et agenda, même titre
  *   à la même date) ne compte qu'une fois : l'annonce, qui porte le texte.
  *
@@ -375,7 +376,8 @@ export function dossiersDepuisCommunications(donnees, options) {
     return true;
   });
 
-  return dossiers.concat(uniques);
+  /* Tri stable : à date égale, le mot reste devant. */
+  return dossiers.concat(uniques).sort((a, b) => texte(b.date).localeCompare(texte(a.date)));
 }
 
 /**

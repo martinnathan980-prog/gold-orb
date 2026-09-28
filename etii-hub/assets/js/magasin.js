@@ -80,7 +80,7 @@ const POIDS_MAX = 240 * 1024;
 
 /** Les jeux de données qu'on peut modifier : pas de nom construit à partir
     d'une saisie, jamais. */
-export const JEUX_MODIFIABLES = ['communications', 'flotte', 'organigramme', 'faq', 'documents', 'reunions'];
+export const JEUX_MODIFIABLES = ['communications', 'flotte', 'organigramme', 'faq', 'documents', 'reunions', 'reglages'];
 
 function texte(v) { return (v === null || v === undefined) ? '' : String(v).trim(); }
 
@@ -374,6 +374,9 @@ function magasinGoogle(run, depart) {
   const bases = {};
   const docs = depart && depart.bases && Array.isArray(depart.bases.documents) ? depart.bases.documents : null;
   if (docs) bases.documents = { facettes: facettesDepuis(docs), documents: docs, source: 'feuille' };
+  /* Le suivi OTQ, lu dans l'onglet « Data » du Command Center (otq.js). */
+  const otq = depart && depart.bases && depart.bases.otq;
+  if (otq && typeof otq === 'object' && Array.isArray(otq.mois)) bases.otq = otq;
   if (depart && depart.basesErreur && typeof console !== 'undefined') console.warn('[magasin] ' + depart.basesErreur);
   /* Le serveur a le dernier mot : il vérifie lui-même l'adresse à chaque
      écriture. Ce drapeau ne sert qu'à montrer, ou non, le bouton. */
