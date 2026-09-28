@@ -90,6 +90,7 @@ B1. Dans l'invite de commandes :
            7. Verifier que tout fonctionne
            8. Faire la carte de mon portail (sans rien modifier)
            9. Rassembler ce qu'il faut envoyer a Claude (un seul fichier a relire)
+          10. Me connecter dans le Chrome du robot, sans le robot (si la connexion bloque)
            0. Quitter
 
     On tape un chiffre, Entree. C'est tout ce qu'il y a a retenir.

@@ -164,7 +164,7 @@ def test_exploration_du_portail_sans_rien_modifier(portail, tmp_path, navigateur
         assert donnee not in partage, donnee
     assert "Référence | Désignation | Fabricant" in partage and "Titre [texte]" in partage
     assert "onglets : Composants ; Général ; Historique" in partage
-    assert (tmp_path / "carte" / "carte.html").exists() and (tmp_path / "carte" / "carte.json").exists()
+    assert (tmp_path / "carte" / "carte_PRIVEE_ne_pas_envoyer.html").exists() and (tmp_path / "carte" / "carte.json").exists()
 
 
 def test_exploration_de_la_base_demo_une_seule_page(tmp_path, navigateur_ok):

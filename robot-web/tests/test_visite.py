@@ -80,6 +80,23 @@ class _Portail(BaseHTTPRequestHandler):
             corps = _fiche(chemin.rsplit("/", 1)[1])
         elif chemin == "/documents":
             corps = _page("Documents", "<iframe src=/cadre width=600 height=300></iframe>")
+        elif chemin == "/atelier":
+            corps = ("<!doctype html><meta charset=utf-8><title>Atelier</title>"
+                     "<header><nav><a href=/accueil>Accueil</a><div class=user-menu><a href=/moi>Jean DUPONT</a></div></nav></header>"
+                     "<h1>Atelier</h1><div role=tablist><span role=tab>Poste Lyon Sud<span class=close>×</span></span>"
+                     "<span role=tab>Général</span></div>"
+                     "<dl><dt>Titre du plan</dt><dd>Poste confidentiel</dd><dt>Indice</dt><dd>B</dd></dl>"
+                     "<button id=btnVoir onclick=\"document.title='vu'\">Voir Poste Lyon Sud</button>"
+                     "<button id=btnSupprimerPlan onclick=\"fetch('/api/supprimer',{method:'POST'})\">Supprimer</button>"
+                     "<a href=/fichier.pdf>Télécharger le plan</a>")
+        elif chemin == "/fichier.pdf":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/pdf")
+            self.send_header("Content-Disposition", "attachment; filename=plan-secret.pdf")
+            self.send_header("Content-Length", str(len(PDF)))
+            self.end_headers()
+            self.wfile.write(PDF)
+            return
         elif chemin == "/cadre":
             corps = ("<!doctype html><meta charset=utf-8><h2>Classeur</h2><table><thead><tr><th>Nom du fichier</th>"
                      "<th>Version</th></tr></thead><tbody><tr><td>Schéma Durand.pdf</td><td>3</td></tr></tbody></table>")
@@ -158,10 +175,12 @@ def test_visite_guidee_note_les_ecrans_sans_rien_bloquer(portail, tmp_path, navi
 
     partage = (tmp_path / "carte" / "carte_a_partager.txt").read_text(encoding="utf-8")
     assert "Visite guidée" in partage
-    assert "TECHNOLOGIE RECONNUE : ASP.NET WebForms" in partage
+    ligne_techno = next(l for l in partage.splitlines() if l.startswith("TECHNOLOGIE RECONNUE"))
+    assert "ASP.NET WebForms" in ligne_techno and "EPLAN" not in ligne_techno  # « /plans » n'est pas EPLAN
+    assert "[étape : Accueil et menus]" in partage
     for secret in ("PL-12", "PL-10", "Plan secret", "Dupont", "Martin", "Durand", "127.0.0.1", "Plan confidentiel"):
         assert secret not in partage, secret
-    assert (tmp_path / "carte" / "carte.html").exists()
+    assert (tmp_path / "carte" / "carte_PRIVEE_ne_pas_envoyer.html").exists()
 
 
 def test_visite_note_un_pdf_sans_le_garder(portail, tmp_path, navigateur_ok):
@@ -222,8 +241,31 @@ def test_profil_du_robot_unique_et_repris(tmp_path, monkeypatch):
     assert profil == tmp_path / "profils" / "chrome_robot" and profil.is_dir()
     assert not premiere  # la connexion faite avec la carte de la version 18 est gardée
     assert not (tmp_path / "profils" / "explorateur").exists()
-    tache = tmp_path / "taches" / "dupliquer_un_plan.yaml"
-    assert cli.chemin_profil_pour(tache, profil) == "../profils/chrome_robot"
+
+
+def test_profil_robot_dans_les_taches(tmp_path):
+    from autoweb.navigateur import PROFIL_ROBOT, chemin_profil
+
+    assert chemin_profil("robot", tmp_path) == PROFIL_ROBOT
+    # tâche enregistrée en version 18 : un profil par tâche, désormais le Chrome du robot
+    assert chemin_profil("profils/dupliquer_un_plan", tmp_path / "taches") == PROFIL_ROBOT
+    assert chemin_profil("profils/outil", tmp_path) == tmp_path / "profils" / "outil"
+
+
+def test_profil_deja_ouvert_detecte(tmp_path):
+    import os
+    import socket
+    import sys
+
+    from autoweb.navigateur import profil_verrouille
+
+    assert not profil_verrouille(tmp_path)
+    if sys.platform != "win32":
+        os.symlink(f"{socket.gethostname()}-{os.getpid()}", tmp_path / "SingletonLock")
+        assert profil_verrouille(tmp_path)
+        os.remove(tmp_path / "SingletonLock")
+        os.symlink(f"{socket.gethostname()}-999999999", tmp_path / "SingletonLock")  # Chrome arrêté brutalement
+        assert not profil_verrouille(tmp_path)
 
 
 def test_premiere_fois_sans_profil(tmp_path, monkeypatch):
@@ -243,8 +285,12 @@ def test_rassembler_met_tout_dans_un_fichier(tmp_path, monkeypatch, capsys):
     (tmp_path / "taches").mkdir()
     (tmp_path / "taches" / "dupliquer_un_plan_a_partager.txt").write_text("gestes dupliquer", encoding="utf-8")
     (tmp_path / "taches" / "dupliquer_un_plan.yaml").write_text("secret: ne pas envoyer", encoding="utf-8")
+    (tmp_path / "mots_a_cacher.txt").write_text("# commentaire\nFlamanville\n", encoding="utf-8")
+    (tmp_path / "taches" / "lire_un_plan_a_partager.txt").write_text("onglet flamanville", encoding="utf-8")
     assert cli.cmd_rassembler(cli._ns(sans_ouvrir=True)) == 0
-    texte = (tmp_path / "A_ENVOYER_A_CLAUDE.txt").read_text(encoding="utf-8")
+    (sortie,) = tmp_path.glob("A_ENVOYER_A_CLAUDE_*.txt")
+    texte = sortie.read_text(encoding="utf-8")
+    assert "flamanville" not in texte.lower() and "onglet XXX" in texte
     assert "carte visite" in texte and "carte auto" in texte and "gestes dupliquer" in texte
     assert "ne pas envoyer" not in texte
     assert texte.index("carte visite") < texte.index("carte auto") < texte.index("gestes dupliquer")
@@ -253,3 +299,136 @@ def test_rassembler_met_tout_dans_un_fichier(tmp_path, monkeypatch, capsys):
 def test_rien_a_rassembler(tmp_path, monkeypatch):
     monkeypatch.setattr(cli, "DOSSIER_PROJET", tmp_path)
     assert cli.cmd_rassembler(cli._ns(sans_ouvrir=True)) == 1
+
+
+# ---------------------------------------------------------------------- nature des envois, sans valeurs
+@pytest.mark.parametrize("url, type_contenu, corps, attendu, absent", [
+    ("https://x/Plans.aspx", "application/x-www-form-urlencoded",
+     "__VIEWSTATE=abc&__EVENTTARGET=ctl00%24Main%24gvPlans&__EVENTARGUMENT=Page%242&ctl00%24Main%24txtNum=PL-12",
+     ["ASP.NET WebForms", "ctl#$Main$gvPlans", "commande Page", "[lecture probable]"], ["PL-12", "abc"]),
+    ("https://x/Plans.aspx", "application/x-www-form-urlencoded",
+     "__VIEWSTATE=abc&__EVENTTARGET=ctl00%24Main%24btnSupprimerPlan&__EVENTARGUMENT=",
+     ["[écriture probable]"], []),
+    ("https://x/app/graphql", "application/json",
+     '[{"query":"query A { a }","operationName":"GetPlans"},{"query":"mutation B { b(id: \\"PL-9\\") }"}]',
+     ["GraphQL", "mutation", "[écriture probable]"], ["PL-9"]),
+    ("https://x/app/graphql", "application/json",
+     '{"query":"fragment F on P { id }\\nquery Q { p(numero: \\"PL-3\\") { ...F } }","variables":{"n":"PL-3"}}',
+     ["GraphQL query", "[lecture probable]"], ["PL-3"]),
+    ("https://x/Server/InnovatorServer.aspx", "text/xml",
+     "<Body><ApplyItem><Item type='Part' action='get'><item_number>PL-4</item_number></Item></ApplyItem></Body>",
+     ["Aras" if False else "SOAP/XML", "action get", "[lecture probable]"], ["PL-4"]),
+    ("https://x/tc/JsonRestServices/Core-2007-01-DataManagement/getProperties", "application/json",
+     '{"body":{"objects":[{"uid":"QxSJ5"}]}}', ["Teamcenter SOA", "getProperties", "[lecture probable]"], ["QxSJ5"]),
+    ("https://x/sap/opu/odata/sap/API_X/$batch", "multipart/mixed; boundary=batch_1",
+     "--batch_1\nGET Parts('PL-5') HTTP/1.1\n\n--batch_1\nGET Docs HTTP/1.1\n", ["OData", "2 GET", "[lecture probable]"],
+     ["PL-5"]),
+    ("https://x/a/fiche.xhtml", "application/x-www-form-urlencoded",
+     "javax.faces.ViewState=x&javax.faces.source=form%3Atable&javax.faces.behavior.event=page&form%3Aq=Dupont",
+     ["JSF", "événement page", "[lecture probable]"], ["Dupont"]),
+    ("https://x/projets/Flamanville", "application/json", '{"numero":"PL-6","titre":"Poste Dupont"}',
+     ["JSON, clés : numero, titre"], ["Flamanville", "PL-6", "Dupont"]),
+])
+def test_nature_des_envois_sans_valeurs(url, type_contenu, corps, attendu, absent):
+    from autoweb.explorateur import classer_envoi
+
+    texte = classer_envoi("POST", url, type_contenu, corps)
+    for morceau in attendu:
+        assert morceau in texte, texte
+    for secret in absent:
+        assert secret not in texte, texte
+
+
+def test_modeles_d_adresse_des_portails_a_route():
+    from autoweb.explorateur import modele_url
+
+    awc = "https://tc/awc/#/com.siemens.splm.clientfx.tcui.xrt.showObject?uid=gRTJnuFxIOqA"
+    assert modele_url(awc) == "/awc/#/com.siemens.splm.clientfx.tcui.xrt.showObject?uid={}"
+    windchill = "https://w/Windchill/app/#ptc1/tcomp/infoPage?oid=OR:wt.part.WTPart:123456"
+    assert modele_url(windchill) == "/Windchill/app/#ptc1/tcomp/infoPage?oid=OR:wt.part.WTPart:{id}"
+    assert modele_url("https://p/projets/renovation-poste-source-nord/plans") == "/projets/{id}/plans"
+
+
+def test_connecter_ouvre_le_chrome_du_robot_sans_robot(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "DOSSIER_PROJET", tmp_path)
+    monkeypatch.setattr(cli, "PROFIL_ROBOT", tmp_path / "profils" / "chrome_robot")
+    trace = tmp_path / "arguments.txt"
+    faux = tmp_path / "faux_chrome.sh"
+    faux.write_text(f'#!/bin/sh\necho "$@" > "{trace}"\nsleep 4.5\n', encoding="utf-8")
+    faux.chmod(0o755)
+    assert cli.cmd_connecter(cli._ns(url="https://portail.exemple/accueil", executable=str(faux))) == 0
+    arguments = trace.read_text(encoding="utf-8")
+    assert f"--user-data-dir={tmp_path / 'profils' / 'chrome_robot'}" in arguments
+    assert "https://portail.exemple/accueil" in arguments
+    assert "--remote-debugging" not in arguments and "--enable-automation" not in arguments
+
+
+def test_connecter_chrome_du_robot_deja_ouvert(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "DOSSIER_PROJET", tmp_path)
+    monkeypatch.setattr(cli, "PROFIL_ROBOT", tmp_path / "profils" / "chrome_robot")
+    faux = tmp_path / "faux_chrome.sh"
+    faux.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")  # Chrome passe la main à la fenêtre déjà ouverte
+    faux.chmod(0o755)
+    assert cli.cmd_connecter(cli._ns(url=None, executable=str(faux))) == 1
+
+
+def test_diagnostic_de_connexion_sans_donnees(tmp_path):
+    from autoweb.navigateur import EXTENSION_SSO_MICROSOFT, diagnostic_connexion
+
+    (tmp_path / "Default" / "Extensions" / EXTENSION_SSO_MICROSOFT).mkdir(parents=True)
+    lignes = dict(diagnostic_connexion(tmp_path))
+    assert lignes["extension de connexion Microsoft installée dans le Chrome du robot"] == "oui"
+    assert lignes["Chrome du robot déjà utilisé"] == "oui"
+    assert all(v in ("oui", "non") or v.replace(".", "").isdigit() for v in lignes.values())
+
+
+
+def test_filet_de_securite_et_carte_sans_noms(portail, tmp_path, navigateur_ok):
+    """Pendant la visite, « Supprimer » ne part pas ; le nom de l'utilisateur, le nom d'un
+    document ouvert et la suite de « Voir ... » ne sont jamais repris ; un fichier
+    téléchargé arrive dans Téléchargements, comme d'habitude."""
+    def promenade(v):
+        page = v.nav.page_courante()
+        page.click("#btnSupprimerPlan")
+        v.laisser_tourner(1.0)
+        page.evaluate("document.querySelector('.__autoweb_etape').click()")  # « Étape suivante »
+        v.laisser_tourner(1.0)
+        page.click("text=Télécharger le plan")
+        v.laisser_tourner(1.5)
+
+    telechargements = tmp_path / "Telechargements"
+    telechargements.mkdir()
+    cfg = ConfigNavigateur(canal="auto", visible=False, profil=str(tmp_path / "profil"), dialogues="ignorer")
+    nav = Navigateur(cfg, tmp_path, visible=False)
+    nav.ouvrir()
+    visite = Visite(nav, tmp_path / "carte", interactif=False, releve_s=0.4, dossier_telechargements=telechargements)
+    try:
+        visite.visiter(portail + "/atelier", promenade=promenade)
+    finally:
+        nav.fermer()
+    assert not any(p == "/api/supprimer" for _, p, _ in _Portail.requetes)
+    assert visite.boutons_bloques == 1 and visite.etape == 1
+    assert [f.name for f in telechargements.iterdir()] == ["plan-secret.pdf"]
+    partage = (tmp_path / "carte" / "carte_a_partager.txt").read_text(encoding="utf-8")
+    for secret in ("DUPONT", "Lyon", "Poste confidentiel", "plan-secret"):
+        assert secret not in partage, secret
+    assert "Voir …" in partage and "Titre du plan" in partage and "Indice" in partage
+    assert "onglets de document (un par élément ouvert) : 1" in partage
+    assert "code btnSupprimerPlan" in partage
+    assert "1 bouton(s) de modification bloqué(s)" in partage
+
+
+def test_recherche_ne_cree_pas_un_nouvel_ecran():
+    from autoweb.explorateur import modele_url
+
+    assert modele_url("https://p/plans?q=Flamanville&page=2") == modele_url("https://p/plans?q=Chinon&page=3")
+    assert "Flamanville" not in modele_url("https://p/plans?recherche=Flamanville")
+
+
+def test_noms_de_personnes_reconnus():
+    from autoweb.explorateur import ressemble_a_une_personne as p
+
+    for nom in ("Jean DUPONT", "DUPONT Jean", "J. Dupont", "Mme Martin", "Dupont, Jean"):
+        assert p(nom), nom
+    for libelle in ("Plans", "Recherche avancée", "Mes documents", "Accueil"):
+        assert not p(libelle), libelle

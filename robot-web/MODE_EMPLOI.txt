@@ -32,6 +32,7 @@ Un menu s'affiche :
    7. Verifier que tout fonctionne
    8. Faire la carte de mon portail (sans rien modifier)
    9. Rassembler ce qu'il faut envoyer a Claude (un seul fichier a relire)
+  10. Me connecter dans le Chrome du robot, sans le robot (si la connexion bloque)
    0. Quitter
 Tapez le chiffre, Entree. C'est tout ce qu'il y a a retenir.
 
@@ -106,11 +107,12 @@ reinstalle. Vos fichiers a vous et votre Chrome habituel ne sont pas touches.
 =====================================================================
  5 bis. FAIRE LA CARTE DU PORTAIL (choix 8), PUIS ME L'ENVOYER (choix 9)
 =====================================================================
-Choix 8, puis [Entree] a « Qui conduit ? » : c'est VOUS qui vous promenez dans
-le portail, le robot regarde et note la forme de chaque ecran (jamais vos
-donnees). Il ne clique sur rien : il ne peut rien casser. Resultats dans
-robot-web\explorations\<date>-visite\ : carte.html (tout, reste sur le poste)
-et carte_a_partager.txt (la structure seule).
+Choix 8 : c'est VOUS qui vous promenez dans le portail, guide etape par etape
+par un bandeau vert ; le robot regarde et note la forme de chaque ecran (jamais
+vos donnees). Il ne clique sur rien et bloque, pendant la visite, les boutons
+Supprimer, Enregistrer, Dupliquer... Resultats dans
+robot-web\explorations\<date>-visite\ : carte_PRIVEE_ne_pas_envoyer.html
+(tout, reste sur le poste) et carte_a_partager.txt (la structure seule).
 Choix 9 : la carte et les taches montrees, dans UN fichier a relire avant de
 me l'envoyer. Pas a pas detaille : GUIDE_VRAI_SITE.txt, parties E et G.
 

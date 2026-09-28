@@ -19,6 +19,7 @@ import logging
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -253,24 +254,23 @@ def profil_robot() -> Tuple[Path, bool]:
     return PROFIL_ROBOT, premiere_fois
 
 
-def expliquer_premiere_fois() -> None:
+def expliquer_premiere_fois(url: Optional[str] = None) -> None:
+    """Première fois : le Chrome du robot ne connaît pas encore l'utilisateur. On propose de s'y
+    connecter d'abord dans une fenêtre Chrome ordinaire, robot éteint (Google et certains
+    portails refusent une connexion dans un navigateur piloté)."""
+    from .console import console_interactive
+
     print()
     print(f"{S.ATTENTION} C'est la PREMIÈRE fois que le Chrome du robot s'ouvre.")
     print("   Ce n'est pas votre Chrome habituel : c'est celui du robot (Chrome interdit aux")
-    print("   robots de se servir du vôtre). Il ne vous connaît pas encore, comme un ordinateur")
-    print("   neuf : des pages d'accueil de Chrome ou de Google peuvent s'afficher, et le portail")
-    print("   vous demandera de vous connecter. Connectez-vous normalement, UNE fois : ensuite,")
-    print("   le Chrome du robot s'en souviendra. (Si on vous propose « Rester connecté ? » : Oui.)")
-
-
-def chemin_profil_pour(scenario: Path, profil: Path) -> str:
-    """Chemin du profil tel qu'écrit dans la tâche : relatif au dossier de la tâche si possible."""
-    import os
-
-    try:
-        return Path(os.path.relpath(profil, scenario.parent)).as_posix()
-    except ValueError:  # autre lecteur (Windows)
-        return profil.as_posix()
+    print("   robots de se servir du vôtre). Comme un collègue qui a son propre badge, il faut")
+    print("   l'y connecter UNE fois ; ensuite, il s'en souvient.")
+    if not console_interactive():
+        return
+    print()
+    print("   Le plus simple : vous connecter d'abord dans une fenêtre Chrome ordinaire, robot éteint.")
+    if _demander("   On le fait maintenant ? (o/n)", "o").lower().startswith("o"):
+        cmd_connecter(_ns(url=url))
 
 
 def _lancer_navigateur_libre(args: argparse.Namespace):
@@ -330,7 +330,7 @@ def cmd_explorer(args: argparse.Namespace) -> int:
     """Carte du portail, sans rien modifier : visite guidée (l'utilisateur clique, le robot
     regarde) ou exploration automatique en lecture seule."""
     from .explorateur import Explorateur, Limites
-    from .navigateur import Navigateur
+    from .navigateur import Navigateur, diagnostic_connexion
     from .scenario import ConfigNavigateur
     from .visite import Visite
 
@@ -359,6 +359,7 @@ def cmd_explorer(args: argparse.Namespace) -> int:
         cfg.attacher = args.attacher
     nav = Navigateur(cfg, DOSSIER_PROJET, visible=not args.cache)
     nav.options_lancement = {"handle_sigint": False}  # Ctrl+C : c'est le robot qui s'arrête proprement
+    nav.confirmer_renvoi = visite  # l'utilisateur a la main : F5 ne renvoie pas un formulaire en silence
     print()
     if visite:
         print(f"{S.LIGNE} CARTE DU PORTAIL : VISITE GUIDÉE (vous cliquez, le robot regarde et note)")
@@ -375,20 +376,24 @@ def cmd_explorer(args: argparse.Namespace) -> int:
         print("   Ne touchez pas à sa fenêtre pendant l'exploration.")
         print(f"   Limites : {limites.ecrans} écrans, {limites.minutes:g} minutes. Pour arrêter avant : Entrée ici.")
     if premiere_fois:
-        expliquer_premiere_fois()
+        expliquer_premiere_fois(url)
     nav.ouvrir()
     if visite:
         robot: Explorateur = Visite(nav, dossier, interactif=not args.sans_pause)
-        try:
-            robot.visiter(url)
-        finally:
-            nav.fermer()
     else:
         robot = Explorateur(nav, dossier, limites, interactif=not args.sans_pause)
-        try:
+    robot.diagnostic = diagnostic_connexion(Path(profil))
+    try:
+        if visite:
+            robot.visiter(url)
+        else:
             robot.explorer(url)
-        finally:
-            nav.fermer()
+    finally:
+        nav.fermer()
+        # l'extension de connexion a pu s'installer pendant la séance : dernier état noté
+        robot.diagnostic = diagnostic_connexion(Path(profil))
+        if robot.ecrans:
+            robot.enregistrer()
     r = robot.resume()
     print()
     if visite:
@@ -403,11 +408,59 @@ def cmd_explorer(args: argparse.Namespace) -> int:
               f"{r['bloquees']} envoi(s) de données bloqué(s) (rien n'est parti).")
     print()
     print("   Résultats :")
-    print(f"     {dossier / 'carte.html'}")
+    print(f"     {dossier / 'carte_PRIVEE_ne_pas_envoyer.html'}")
     print("        à ouvrir dans le navigateur : tout ce qui a été vu (reste sur votre poste)")
     print(f"     {dossier / 'carte_a_partager.txt'}")
     print("        la structure du portail, sans vos données : à relire avant de me l'envoyer")
     print("   Pour tout rassembler en UN fichier à relire puis à m'envoyer : menu, choix 9.")
+    return 0
+
+
+def cmd_connecter(args: argparse.Namespace) -> int:
+    """Ouvre le Chrome du robot SANS le robot : un Chrome ordinaire, où l'on se connecte au
+    portail comme d'habitude (Google et certains portails refusent une connexion dans un
+    navigateur piloté). Le robot reprend ensuite cette connexion."""
+    import os
+
+    from .console import touche_entree_disponible
+    from .navigateur import VAR_EXECUTABLE, Navigateur
+    from .scenario import ConfigNavigateur
+
+    profil, _ = profil_robot()
+    url = _normaliser_url(args.url) or "about:blank"
+    executable = args.executable or os.environ.get(VAR_EXECUTABLE)
+    if not executable:
+        trouves = Navigateur(ConfigNavigateur(), DOSSIER_PROJET)._chemins_connus(["chrome", "msedge"])
+        executable = trouves[0][1] if trouves else None
+    if not executable:
+        raise ErreurAutoweb("Chrome est introuvable aux emplacements habituels de ce poste.")
+    print()
+    print(f"{S.LIGNE} LE CHROME DU ROBOT, SANS LE ROBOT")
+    print("   Une fenêtre Chrome ordinaire s'ouvre : c'est celle du robot, mais personne ne la pilote.")
+    print("   1. Connectez-vous au portail comme d'habitude (et à Google s'il le demande).")
+    print("      Si on vous propose « Rester connecté ? » : Oui.")
+    print("   2. Puis FERMEZ cette fenêtre Chrome (la croix en haut à droite).")
+    print("   Le robot reprendra cette connexion. (Pour arrêter d'attendre : Entrée ici.)")
+    debut = time.monotonic()
+    try:
+        processus = subprocess.Popen([executable, f"--user-data-dir={profil}", "--no-first-run",
+                                      "--no-default-browser-check", url])
+    except OSError as e:
+        raise ErreurAutoweb(f"Impossible d'ouvrir Chrome : {e}")
+    appuis = 0
+    while processus.poll() is None:
+        if touche_entree_disponible():
+            appuis += 1
+            if appuis >= 2:
+                break
+            print(f"   {S.ATTENTION} La fenêtre du Chrome du robot est encore ouverte : fermez-la d'abord")
+            print("   (la croix en haut à droite). Entrée encore une fois pour ne plus attendre.")
+        time.sleep(0.3)
+    if processus.poll() is not None and time.monotonic() - debut < 4:
+        print(f"{S.ATTENTION} La fenêtre s'est refermée tout de suite : le Chrome du robot est sans doute")
+        print("   déjà ouvert quelque part. Fermez toutes ses fenêtres, puis recommencez.")
+        return 1
+    print(f"{S.OK} C'est noté. Vous pouvez maintenant faire la carte (choix 8) ou montrer une tâche (choix 1).")
     return 0
 
 
@@ -430,14 +483,51 @@ def _fichiers_a_partager() -> List[Tuple[str, Path]]:
     return trouves
 
 
+FICHIER_MOTS_A_CACHER = "mots_a_cacher.txt"
+
+
+def _mots_a_cacher(demander: bool) -> List[str]:
+    """Mots que l'utilisateur ne veut jamais envoyer (clients, projets, personnes, sites) :
+    gardés dans mots_a_cacher.txt, remplacés par XXX à chaque fois que l'on rassemble."""
+    fichier = DOSSIER_PROJET / FICHIER_MOTS_A_CACHER
+    mots: List[str] = []
+    if fichier.is_file():
+        mots = [m.strip() for m in fichier.read_text(encoding="utf-8").splitlines() if m.strip() and not m.startswith("#")]
+    if demander:
+        print()
+        if mots:
+            print(f"   Mots déjà cachés à chaque fois (remplacés par XXX) : {', '.join(mots)}")
+        print("   Des mots à cacher en plus (noms de clients, de projets, de personnes, de sites) ?")
+        nouveaux = _demander("   Tapez-les séparés par des virgules (Entrée = aucun)", "")
+        ajout = [m.strip() for m in nouveaux.replace(";", ",").split(",") if len(m.strip()) >= 2]
+        if ajout:
+            mots += [m for m in ajout if m not in mots]
+            fichier.write_text("# Un mot par ligne : remplacé par XXX dans le fichier à envoyer (choix 9)\n"
+                               + "\n".join(mots) + "\n", encoding="utf-8")
+    return mots
+
+
+def cacher_mots(texte: str, mots: List[str]) -> str:
+    import re
+
+    for mot in sorted(mots, key=len, reverse=True):
+        texte = re.sub(re.escape(mot), "XXX", texte, flags=re.IGNORECASE)
+    return texte
+
+
 def cmd_rassembler(args: argparse.Namespace) -> int:
     """Met bout à bout, dans UN fichier à relire, tout ce qui peut m'être envoyé."""
+    from .console import console_interactive
+
     fichiers = _fichiers_a_partager()
     if not fichiers:
         print(f"{S.ATTENTION} Rien à rassembler pour l'instant : faites d'abord la carte (choix 8)")
         print("   ou montrez une tâche au robot (choix 1).")
         return 1
-    sortie = Path(args.sortie) if getattr(args, "sortie", None) else DOSSIER_PROJET / "A_ENVOYER_A_CLAUDE.txt"
+    mots = _mots_a_cacher(demander=console_interactive() and not getattr(args, "sans_ouvrir", False))
+    # un nouveau fichier à chaque fois : jamais d'écrasement d'un fichier déjà relu et corrigé
+    sortie = Path(args.sortie) if getattr(args, "sortie", None) else \
+        DOSSIER_PROJET / f"A_ENVOYER_A_CLAUDE_{dt.datetime.now():%Y%m%d-%H%M%S}.txt"
     morceaux = [
         "A ENVOYER A CLAUDE - RELISEZ TOUT AVANT D'ENVOYER",
         "=" * 60,
@@ -453,10 +543,12 @@ def cmd_rassembler(args: argparse.Namespace) -> int:
             morceaux.append(fichier.read_text(encoding="utf-8").rstrip())
         except OSError as e:
             morceaux.append(f"(fichier illisible : {e.strerror})")
-    sortie.write_text("\n".join(morceaux) + "\n", encoding="utf-8")
+    sortie.write_text(cacher_mots("\n".join(morceaux) + "\n", mots), encoding="utf-8")
     print()
     print(f"{S.OK} Tout est rassemblé dans UN fichier ({len(fichiers)} partie(s)) :")
     print(f"     {sortie}")
+    if mots:
+        print(f"   {len(mots)} mot(s) de votre liste remplacé(s) par XXX.")
     print("   1. Il s'ouvre dans le Bloc-notes : RELISEZ-LE, remplacez les mots sensibles par XXX,")
     print("      puis enregistrez (Ctrl+S).")
     print("   2. Si c'est permis chez vous : Ctrl+A (tout sélectionner), Ctrl+C (copier),")
@@ -623,13 +715,14 @@ def cmd_enregistrer(args: argparse.Namespace) -> int:
     profil_tache: Optional[str] = None
     if not args.profil:
         # le Chrome du robot, le même pour toutes les tâches et pour la carte : la connexion
-        # faite une fois est gardée, ici comme à chaque relance de la tâche
+        # faite une fois est gardée, ici comme à chaque relance de la tâche (« profil: robot »)
         profil, premiere_fois = profil_robot()
         args.profil = str(profil)
-        profil_tache = chemin_profil_pour(sortie.resolve(), profil)
+        profil_tache = "robot"
         if premiere_fois:
-            expliquer_premiere_fois()
+            expliquer_premiere_fois(url)
     nav = _lancer_navigateur_libre(args)
+    nav.confirmer_renvoi = True  # F5 après « Dupliquer » : Chrome demande avant de renvoyer
     nav.ouvrir()
     canal = nav.canal_utilise or (args.canal or "chrome")
     enregistreur = Enregistreur(nav)
@@ -875,6 +968,7 @@ def cmd_menu(args: argparse.Namespace) -> int:
         print("   7. Verifier que tout fonctionne")
         print("   8. Faire la carte de mon portail (sans rien modifier)")
         print("   9. Rassembler ce qu'il faut envoyer a Claude (un seul fichier a relire)")
+        print("  10. Me connecter dans le Chrome du robot, sans le robot (si la connexion bloque)")
         print("   0. Quitter")
         print()
         choix = _demander("   Votre choix", "0")
@@ -975,26 +1069,19 @@ def cmd_menu(args: argparse.Namespace) -> int:
                 url = nettoyer_chemin(_demander("   Adresse de la page d'accueil du portail (elle commence par http)"))
                 if not url:
                     continue
-                print()
-                print("   Qui conduit ?")
-                print("     1. VOUS : vous vous promenez dans le portail, le robot regarde et note")
-                print("        (recommande : le robot ne clique sur rien, aucun risque)")
-                print("     2. LE ROBOT : il explore tout seul, en lecture seule, pendant que vous")
-                print("        faites autre chose")
-                if _demander("   Votre choix", "1").strip() != "2":
-                    cmd_explorer(_ns(url=url, visite=True))
-                    continue
-                minutes = _demander("   Durée maximum, en minutes", "60")
-                cmd_explorer(_ns(url=url, max_ecrans=150, profondeur=6,
-                                 minutes=float(minutes) if minutes.replace(".", "", 1).isdigit() else 60.0,
-                                 delai=500))
+                # visite guidée : c'est l'utilisateur qui clique, le robot regarde. L'exploration
+                # automatique reste disponible en ligne de commande (robot explorer <adresse>).
+                cmd_explorer(_ns(url=url, visite=True))
             elif choix == "9":
                 cmd_rassembler(_ns())
+            elif choix == "10":
+                url = nettoyer_chemin(_demander("   Adresse de la page d'accueil du portail (elle commence par http)"))
+                cmd_connecter(_ns(url=url or None))
             elif choix in ("0", "q", "quitter"):
                 print("   A bientot.")
                 return 0
             else:
-                print("   Tapez un chiffre de 0 a 9.")
+                print("   Tapez un nombre de 0 a 10.")
         except ErreurAutoweb as e:
             print()
             print(f"{S.ERREUR} {e}")
@@ -1217,8 +1304,14 @@ def construire_parseur() -> argparse.ArgumentParser:
     commun(p)
     p.set_defaults(fonction=cmd_explorer)
 
+    p = sous.add_parser("connecter", help="ouvrir le Chrome du robot sans le robot, pour s'y connecter une fois")
+    p.add_argument("url", nargs="?", help="adresse du portail")
+    p.add_argument("--executable", help="chemin de chrome.exe")
+    commun(p)
+    p.set_defaults(fonction=cmd_connecter)
+
     p = sous.add_parser("rassembler", help="mettre la carte et les tâches montrées dans UN fichier à relire et m'envoyer")
-    p.add_argument("--sortie", help="fichier à écrire (défaut : A_ENVOYER_A_CLAUDE.txt)")
+    p.add_argument("--sortie", help="fichier à écrire (défaut : A_ENVOYER_A_CLAUDE_<date>.txt)")
     p.add_argument("--sans-ouvrir", action="store_true", help="ne pas ouvrir le fichier dans le Bloc-notes")
     commun(p)
     p.set_defaults(fonction=cmd_rassembler)

@@ -18,6 +18,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import socket
 from contextlib import contextmanager
 import sys
 import time
@@ -42,6 +43,7 @@ MOTIF_ONGLET_PARASITE = re.compile(
     r"|settings/reset|managed-user-profile-notice)"
     r"|https?://(?:www\.)?google\.[a-z.]{2,6}/(?:intl/[^/]+/)?chrome(?:[/?#]|$)"
     r"|https?://microsoftedgewelcome\.microsoft\.com/"
+    r"|chrome-extension://"  # page de bienvenue d'une extension imposée, ouverte à son installation
     r")",
     re.IGNORECASE,
 )
@@ -50,8 +52,20 @@ MOTIF_ONGLET_VIDE = re.compile(
     r"^(?:about:blank|chrome://new-?tab(?:-page)?/?|chrome-search://local-ntp|edge://newtab)",
     re.IGNORECASE,
 )
-# Réglages par défaut de Playwright qui éloignent le Chrome du robot du Chrome habituel.
-ARGUMENTS_RETIRES = ("--disable-extensions",)
+# Réglages par défaut de Playwright qui éloignent le Chrome du robot du Chrome habituel :
+# sans eux, les extensions imposées par l'entreprise (connexion automatique Microsoft, Okta...)
+# ne peuvent ni s'installer ni fonctionner, et le portail redemande le mot de passe.
+ARGUMENTS_RETIRES = ("--disable-extensions", "--disable-background-networking")
+# Le Chrome du robot : un seul profil pour la carte, les enregistrements et les relances.
+PROFIL_ROBOT = Path(__file__).resolve().parent.parent / "profils" / "chrome_robot"
+NOMS_PROFIL_ROBOT = ("robot", "chrome_robot")
+MESSAGE_PROFIL_OUVERT = (
+    "Le Chrome du robot est déjà ouvert : une autre fenêtre du robot, ou celle ouverte avec le\n"
+    "choix 10 du menu. Fermez toutes ses fenêtres (et les autres fenêtres noires du robot),\n"
+    "puis recommencez."
+)
+# Extension de connexion automatique Microsoft (Entra) : sa présence est vérifiée, rien d'autre.
+EXTENSION_SSO_MICROSOFT = "ppnbnpeolgkicgegkbkbjmhlideopiji"
 # Onglets sans lien avec l'outil ouverts juste après le démarrage (extension imposée par
 # l'entreprise, page de présentation...) : fermés s'ils arrivent dans ce délai.
 FENETRE_DEMARRAGE_S = 15.0
@@ -90,6 +104,51 @@ def _a_un_ouvreur(page: Page) -> bool:
         pass
     interne = getattr(page, "_impl_obj", None)
     return getattr(interne, "_opener", None) is not None
+
+
+def chemin_profil(profil: str, dossier: Path) -> Path:
+    """Dossier du profil. « robot » : le Chrome du robot. Les tâches enregistrées en version 18
+    (taches/profils/<tâche>, un Chrome à connecter par tâche) utilisent désormais le même."""
+    if str(profil).strip().lower() in NOMS_PROFIL_ROBOT:
+        return PROFIL_ROBOT
+    chemin = Path(profil)
+    if not chemin.is_absolute():
+        chemin = Path(dossier) / chemin
+    if chemin.parent.name == "profils" and chemin.parent.parent.name == "taches":
+        return PROFIL_ROBOT
+    return chemin
+
+
+def profil_verrouille(profil: Path) -> bool:
+    """Vrai si un Chrome se sert déjà de ce profil (Chrome refuse d'en ouvrir un second)."""
+    profil = Path(profil)
+    if sys.platform == "win32":
+        verrou = profil / "lockfile"
+        if not verrou.exists():
+            return False
+        try:
+            with open(verrou, "a"):  # Chrome le garde ouvert sans partage tant qu'il tourne
+                return False
+        except PermissionError:
+            return True
+        except OSError:
+            return False
+    try:
+        cible = os.readlink(profil / "SingletonLock")  # « machine-1234 »
+    except OSError:
+        return False
+    machine, _, pid = cible.rpartition("-")
+    if not pid.isdigit() or (machine and machine != socket.gethostname()):
+        return False
+    try:
+        os.kill(int(pid), 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
 
 
 def adresse_courte(url: str) -> str:
@@ -207,6 +266,9 @@ class Navigateur:
         # qui échapperaient à son contrôle des requêtes)
         self.options_contexte: dict = {}
         self.options_lancement: dict = {}  # ex. handle_sigint=False : Ctrl+C géré par l'appelant
+        # quand l'utilisateur a la main (visite, enregistrement) : Chrome demande avant de renvoyer
+        # un formulaire (F5 ou Retour après « Dupliquer ») au lieu de le renvoyer en silence
+        self.confirmer_renvoi = False
         self._dialogues_differes: List[Any] = []
 
     # ------------------------------------------------------------------ ouverture
@@ -421,6 +483,8 @@ class Navigateur:
 
     def _lancer(self) -> None:
         erreurs: List[str] = []
+        if self.config.profil and profil_verrouille(chemin_profil(self.config.profil, self.dossier)):
+            raise ErreurAutoweb(MESSAGE_PROFIL_OUVERT)
         for canal, executable in self._candidats():
             try:
                 self._lancer_canal(canal, executable)
@@ -430,10 +494,9 @@ class Navigateur:
                 erreurs.append(f"  - {canal}{' (' + executable + ')' if executable else ''} : {premiere_ligne(e)}")
                 journal.debug("Échec du lancement via %s : %s", canal, premiere_ligne(e))
                 if navigateur_ferme(e) and self.config.profil:
-                    erreurs.append(
-                        "    (un profil déjà utilisé par une autre fenêtre du navigateur provoque ce genre d'échec :"
-                        " fermez l'autre instance ou changez « profil »)"
-                    )
+                    # profil sans doute déjà ouvert : surtout ne pas l'ouvrir avec un autre navigateur
+                    # (Edge ou Chromium abîmeraient le profil de Chrome et sa connexion)
+                    raise ErreurAutoweb(MESSAGE_PROFIL_OUVERT + "\n(détail : " + premiere_ligne(e) + ")")
             except (FileNotFoundError, OSError) as e:
                 erreurs.append(f"  - {canal} : {premiere_ligne(e)}")
         raise ErreurAutoweb(
@@ -485,10 +548,12 @@ class Navigateur:
             "slow_mo": self.config.lenteur or 0,
             "args": args,
             "downloads_path": str(self._dossier_telechargements()),
-            # Playwright coupe toutes les extensions, y compris celles que l'entreprise impose
-            # (connexion automatique Microsoft, Okta...) : sans elles, le portail redemande
-            # le mot de passe là où le Chrome habituel entre directement.
-            "ignore_default_args": list(ARGUMENTS_RETIRES),
+            "ignore_default_args": list(ARGUMENTS_RETIRES)
+                                   + (["--disable-prompt-on-repost"] if self.confirmer_renvoi else []),
+            # sans bac à sable, Chrome affiche un bandeau jaune inquiétant (« indicateur de ligne de
+            # commande non pris en charge : --no-sandbox ») ; sous Linux (serveurs, tests en root)
+            # le bac à sable n'est pas toujours possible
+            "chromium_sandbox": sys.platform in ("win32", "darwin"),
             **self.options_lancement,
         }
 
@@ -520,9 +585,7 @@ class Navigateur:
             options["ignore_https_errors"] = True
 
         if self.config.profil:
-            profil = Path(self.config.profil)
-            if not profil.is_absolute():
-                profil = self.dossier / profil
+            profil = chemin_profil(self.config.profil, self.dossier)
             profil.mkdir(parents=True, exist_ok=True)
             if "--hide-crash-restore-bubble" not in options["args"]:
                 # sinon, après un arrêt brutal : bulle « Restaurer les pages ? » par-dessus l'outil
@@ -589,3 +652,64 @@ class Navigateur:
             self.contexte = None
             self.browser = None
             self.page = None
+
+
+# ---------------------------------------------------------------------- diagnostic de connexion
+def _politique_chrome(nom: str) -> Optional[Any]:
+    """Valeur d'une stratégie Chrome de l'entreprise (registre Windows), ou None."""
+    if sys.platform != "win32":
+        return None
+    import winreg  # type: ignore
+
+    for racine in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+        try:
+            with winreg.OpenKey(racine, r"SOFTWARE\Policies\Google\Chrome") as cle:
+                return winreg.QueryValueEx(cle, nom)[0]
+        except OSError:
+            pass
+        try:  # liste : une sous-clé du même nom, valeurs 1, 2, 3...
+            with winreg.OpenKey(racine, rf"SOFTWARE\Policies\Google\Chrome\{nom}") as cle:
+                valeurs, i = [], 0
+                while True:
+                    try:
+                        valeurs.append(str(winreg.EnumValue(cle, i)[1]))
+                    except OSError:
+                        break
+                    i += 1
+                if valeurs:
+                    return valeurs
+        except OSError:
+            pass
+    return None
+
+
+def diagnostic_connexion(profil: Optional[Path] = None) -> List[Tuple[str, str]]:
+    """Réglages du poste qui décident si le Chrome du robot entre directement dans le portail,
+    comme le Chrome habituel : des oui / non, jamais d'identifiant ni d'adresse."""
+    lignes: List[Tuple[str, str]] = []
+    try:
+        from importlib.metadata import version
+
+        lignes.append(("version de Playwright", version("playwright")))
+    except Exception:  # noqa: BLE001
+        pass
+    if sys.platform == "win32":
+        oui_non = lambda v: "oui" if v else "non"  # noqa: E731
+        lignes.append(("connexion Microsoft automatique (CloudAPAuthEnabled)",
+                       oui_non(_politique_chrome("CloudAPAuthEnabled") == 1)))
+        lignes.append(("connexion Windows automatique pour certains sites (AuthServerAllowlist)",
+                       oui_non(_politique_chrome("AuthServerAllowlist"))))
+        imposees = _politique_chrome("ExtensionInstallForcelist") or []
+        lignes.append(("extensions imposées par l'entreprise", str(len(imposees))))
+        lignes.append(("dont la connexion Microsoft (Single Sign On)",
+                       oui_non(any(EXTENSION_SSO_MICROSOFT in str(v) for v in imposees))))
+        lignes.append(("pilotage de Chrome interdit par l'entreprise (RemoteDebuggingAllowed)",
+                       oui_non(_politique_chrome("RemoteDebuggingAllowed") == 0)))
+        lignes.append(("connexion à Chrome obligatoire (BrowserSignin)",
+                       oui_non(_politique_chrome("BrowserSignin") == 2)))
+    if profil is not None:
+        lignes.append(("Chrome du robot déjà utilisé", "oui" if (Path(profil) / "Default").is_dir() else "non"))
+        extensions = Path(profil) / "Default" / "Extensions"
+        lignes.append(("extension de connexion Microsoft installée dans le Chrome du robot",
+                       "oui" if (extensions / EXTENSION_SSO_MICROSOFT).is_dir() else "non"))
+    return lignes

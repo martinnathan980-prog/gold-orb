@@ -25,7 +25,7 @@ Sur une grosse base, tout visiter serait infini : un ou deux exemples par modèl
 d'écran suffisent (deux fiches composant, deux pages de liste...).
 
 Résultats, dans explorations/<date>/ :
-- carte.json et carte.html : tout ce qui a été vu (restent sur le poste) ;
+- carte.json et carte_PRIVEE_ne_pas_envoyer.html : tout ce qui a été vu (restent sur le poste) ;
 - carte_a_partager.txt : la structure (écrans, noms des champs, colonnes, onglets,
   menus, boutons usuels), sans valeurs, sans adresses, sans titres de page.
 """
@@ -113,7 +113,9 @@ METHODES_LECTURE = ("GET", "HEAD", "OPTIONS")
 # la session : ce retour se fait en POST, mais il ne modifie aucune donnée du portail.
 MOTIF_RETOUR_CONNEXION = re.compile(
     r"/(?:saml2?/(?:acs|post|consume|sso)|acs|signin-oidc|signin-saml|signin-wsfed|shibboleth\.sso/saml2?/post"
-    r"|oauth2?/callback|login/oauth2?/code(?:/[^/]*)?|auth/callback|openid/callback|_trust|adfs/ls)/?$",
+    r"|oauth2?/callback|login/oauth2?/code(?:/[^/]*)?|auth/callback|openid/callback|_trust|adfs/ls"
+    # jeton de connexion demandé par la page elle-même (Microsoft, Okta, ADFS) : aucune donnée du portail
+    r"|oauth2/(?:v2\.0/)?token|connect/token|as/token\.oauth2|oauth2/v1/token|adfs/oauth2/token)/?$",
     re.IGNORECASE,
 )
 # Ressources jamais bloquées pour leur adresse : feuilles de style, polices, scripts, médias.
@@ -147,30 +149,61 @@ def decouper(url: str):
         return None
 
 
+# Identifiant technique à points, sans chiffre (com.siemens.splm.clientfx.tcui.xrt.showObject) :
+# c'est un nom d'écran, pas une valeur, même s'il est long.
+MOTIF_IDENTIFIANT_POINTE = re.compile(r"[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+")
+# Clés dont la valeur est toujours un numéro d'objet, même sans chiffre (uid=gRTJnuFxIOqA).
+MOTIF_CLE_IDENTIFIANT = re.compile(
+    r"(?:^|_)(?:id|uid|oid|guid|key|token|ref)$|^id"
+    # texte cherché : chaque recherche serait sinon un « nouvel écran » (et le mot cherché, une donnée)
+    r"|^(?:q|query|search|recherche|rech|text|texte|keyword|keywords|motcle|mot_cle|term|terms|filter|filtre|s)$",
+    re.IGNORECASE,
+)
+
+
 def _segment_variable(segment: str) -> bool:
-    return bool(re.search(r"\d", segment)) or len(segment) > 24
+    if re.fullmatch(r"[a-z]{1,4}\d", segment):
+        return False  # v1, v2, api2, ptc1 : une version ou un module, pas un numéro
+    if re.search(r"\d", segment):
+        return True
+    return len(segment) > 24 and not MOTIF_IDENTIFIANT_POINTE.fullmatch(segment)
+
+
+def _valeur_modele(cle: str, valeur: str) -> str:
+    # Windchill : OR:wt.part.WTPart:123 -> le genre d'objet est gardé, pas son numéro
+    m = re.fullmatch(r"((?:OR|VR):[A-Za-z_][\w.]*:)\d+", valeur)
+    if m:
+        return m.group(1) + "{id}"
+    if not valeur or _segment_variable(valeur) or MOTIF_CLE_IDENTIFIANT.search(cle):
+        return "{}"
+    return valeur
+
+
+def _requete_modele(paires) -> str:
+    return "&".join(sorted(f"{k}={_valeur_modele(k, v)}" for k, v in paires))
 
 
 def modele_url(url: str) -> str:
     """Adresse sans le serveur ni les valeurs variables : /plans/1234?onglet=2&module=plans
     -> /plans/{id}?module=plans&onglet={}. Deux adresses qui ne diffèrent que par ces
-    valeurs montrent le même modèle d'écran ; module=plans et module=composants, non."""
+    valeurs montrent le même modèle d'écran ; module=plans et module=composants, non.
+    Les portails à route après « # » (#/ecran?uid=...) sont traités de la même façon."""
     m = decouper(url)
     if m is None:
         return ""
     if m.scheme not in ("http", "https", "file"):
         return f"{m.scheme}:"
     chemin = "/".join("{id}" if _segment_variable(s) else s for s in m.path.split("/"))
-    paires = parse_qsl(m.query, keep_blank_values=True)
-    requete = "&".join(sorted(f"{k}={'{}' if (not v or _segment_variable(v)) else v}" for k, v in paires))
+    requete = _requete_modele(parse_qsl(m.query, keep_blank_values=True))
     fragment = m.fragment
     if fragment:
-        if "=" in fragment and not fragment.startswith("/"):
-            fragment = "&".join(sorted(
-                f"{k}={'{}' if (not v or _segment_variable(v)) else v}"
-                for k, _, v in (p.partition("=") for p in fragment.split("&"))))
+        route, _, requete_fragment = fragment.partition("?")
+        if "=" in route and not route.startswith("/") and not requete_fragment:
+            fragment = _requete_modele(p.partition("=")[::2] for p in route.split("&"))
         else:
-            fragment = "/".join("{id}" if _segment_variable(s) else s for s in fragment.split("/"))
+            fragment = "/".join("{id}" if _segment_variable(s) else s for s in route.split("/"))
+            if requete_fragment:
+                fragment += "?" + _requete_modele(p.partition("=")[::2] for p in requete_fragment.split("&"))
     return chemin + (f"?{requete}" if requete else "") + (f"#{fragment}" if fragment else "")
 
 
@@ -299,6 +332,22 @@ JS_OUTILS = r"""
                     '[role=button], [role=tab], [role=menuitem], [role=link], [role=treeitem], [onclick], summary';
   const EXCLUS = 'input:not([type=submit]):not([type=button]):not([type=image]):not([type=reset]), select, option, ' +
                  'textarea, label, [role=checkbox], [role=radio], [role=switch], [role=option], [contenteditable=true]';
+  // composants web (UI5, Vaadin, ServiceNow...) : leurs éléments sont dans des « racines fantômes »
+  let racinesCache = null;
+  const racines = () => {
+    if (racinesCache) return racinesCache;
+    const r = [document];
+    for (let i = 0; i < r.length && r.length < 300; i++) {
+      for (const x of r[i].querySelectorAll('*')) if (x.shadowRoot) r.push(x.shadowRoot);
+    }
+    return (racinesCache = r);
+  };
+  const tous = sel => { const res = []; for (const r of racines()) r.querySelectorAll(sel).forEach(x => res.push(x)); return res; };
+  // compte de l'utilisateur, avatar, profil : son nom n'est jamais repris
+  const PERSO = '[class*=user i], [class*=account i], [class*=profil i], [class*=avatar i], [id*=user i], ' +
+                '[id*=account i], [id*=profil i], [aria-label*=compte i], [aria-label*=account i], [aria-label*=profil i]';
+  const FERMER = '[class*=close i], [class*=fermer i], [aria-label*=close i], [aria-label*=fermer i], ' +
+                 '[title*=close i], [title*=fermer i]';
   const cache = new Map();
   const indexes = new Map();
   const indexLigne = tr => {
@@ -334,7 +383,17 @@ JS_OUTILS = r"""
       }
       conteneur = chemin(cont);
     }
+    const ombre = e.getRootNode && e.getRootNode() !== document;
+    let perso = false, fermable = false;
+    try { perso = !!e.closest(PERSO); } catch (err) {}
+    try {
+      // onglet de document : une croix DANS l'onglet (ou dans son enveloppe, si elle ne contient que lui)
+      const p = e.parentElement;
+      fermable = z === 'onglet' && !!(e.querySelector(FERMER) ||
+        (p && p.querySelectorAll('[role=tab]').length <= 1 && p.querySelector(FERMER)));
+    } catch (err) {}
     return {
+      ombre: ombre, perso: perso, fermable: fermable,
       texte: court(tag === 'input' ? (e.value || '') : (e.innerText || ''), 80),
       aria: court(e.getAttribute('aria-label') || e.getAttribute('title') || e.getAttribute('alt') || '', 80),
       tag: tag, type: type, role: e.getAttribute('role') || '', id: e.id || '',
@@ -343,7 +402,8 @@ JS_OUTILS = r"""
       telechargement: tag === 'a' && e.hasAttribute('download'),
       desactive: !!e.disabled || e.getAttribute('aria-disabled') === 'true',
       zone: z, ligne: ligne, rang: rang, conteneur: conteneur,
-      soumet: soumet, methode: methode, selecteur: chemin(e),
+      soumet: soumet, methode: methode, selecteur: ombre ? '' : chemin(e),
+      testid: court(e.getAttribute('data-testid') || e.getAttribute('data-test') || e.getAttribute('name') || '', 60),
     };
   };
 """
@@ -354,9 +414,9 @@ JS_ECRAN = r"""
   // bandeaux posés par le robot lui-même : jamais lus comme une partie de l'écran
   const robot = e => !!(e.closest && e.closest('[data-autoweb]'));
   const titres = [];
-  document.querySelectorAll('h1, h2, h3, [role=heading]').forEach(h => { if (vis(h) && !robot(h) && titres.length < 12) titres.push(court(h.innerText, 100)); });
+  tous('h1, h2, h3, [role=heading]').forEach(h => { if (vis(h) && !robot(h) && titres.length < 12) titres.push(court(h.innerText, 100)); });
   const champs = [];
-  document.querySelectorAll('input, select, textarea, [contenteditable=true]').forEach(e => {
+  tous('input, select, textarea, [contenteditable=true]').forEach(e => {
     const tag = e.tagName.toLowerCase();
     const type = (e.getAttribute('type') || '').toLowerCase();
     if (type === 'hidden' || ['submit', 'button', 'reset', 'image'].includes(type) || !vis(e) || robot(e) || champs.length >= 200) return;
@@ -372,8 +432,24 @@ JS_ECRAN = r"""
       dans_tableau: !!tr, zone: zone(e),
     });
   });
+  // fiche en lecture : « Titre : ... », <dt>, entête de ligne <th> suivie de sa valeur <td>.
+  // Seuls les LIBELLÉS sont lus, jamais les valeurs.
+  const infos = [];
+  const ajouterInfo = t => { t = court(t, 60).replace(/\s*:\s*$/, ''); if (t && t.split(' ').length <= 5 && !infos.includes(t) && infos.length < 80) infos.push(t); };
+  tous('dt').forEach(x => { if (vis(x) && !robot(x)) ajouterInfo(texteSeul(x)); });
+  tous('tbody tr > th:first-child').forEach(x => { if (vis(x) && !robot(x) && x.nextElementSibling && x.nextElementSibling.tagName === 'TD') ajouterInfo(texteSeul(x)); });
+  tous('label, span, b, strong, td, div').forEach(x => {
+    if (infos.length >= 80 || x.children.length > 1 || robot(x)) return;
+    const t = (x.textContent || '').trim();
+    if (t.length > 1 && t.length < 50 && /:\s*$/.test(t) && x.nextElementSibling && vis(x)) ajouterInfo(t);
+  });
+  const chargement = [];
+  for (const sel of ['[aria-busy=true]', '[role=progressbar]', '.blockUI', '.blockOverlay', '.x-mask', '.loading', '.spinner',
+                     '.loader', '.chargement', '.ui-widget-overlay', '.k-loading-mask', '.sapUiLocalBusyIndicator']) {
+    if (tous(sel).some(vis)) chargement.push(sel);
+  }
   const tableaux = [];
-  document.querySelectorAll('table, [role=grid]').forEach(t => {
+  tous('table, [role=grid]').forEach(t => {
     if (!vis(t) || t.parentElement.closest('table')) return;
     let entetes = Array.from(t.querySelectorAll('thead th, [role=columnheader]')).map(texteSeul);
     if (!entetes.length) { const tr = t.querySelector('tr'); if (tr) entetes = Array.from(tr.querySelectorAll('th')).map(texteSeul); }
@@ -381,7 +457,7 @@ JS_ECRAN = r"""
   });
   const cibles = [];
   let tronque = false;
-  for (const e of document.querySelectorAll(SELECTION)) {
+  for (const e of tous(SELECTION)) {
     const tr = e.closest('tbody tr, [role=row]');
     if (tr && indexLigne(tr) >= exemples) continue;   // une ligne ressemble aux autres : les premières suffisent
     if (e.matches(EXCLUS) || !vis(e) || robot(e)) continue;
@@ -389,7 +465,7 @@ JS_ECRAN = r"""
     cibles.push(decrire(e));
   }
   const cadres = Array.from(document.querySelectorAll('iframe, frame')).filter(vis).map(f => String(f.src || ''));
-  const motDePasse = !!Array.from(document.querySelectorAll('input[type=password]')).find(vis);
+  const motDePasse = !!tous('input[type=password]').find(vis);
   const identifiant = !!Array.from(document.querySelectorAll('input[type=email], input[autocomplete=username], ' +
       'input[name*=user i], input[name*=login i], input[id*=user i], input[id*=login i], input[name*=identifiant i]')).find(vis);
   const fenetre = !!Array.from(document.querySelectorAll(FENETRE)).find(vis);
@@ -397,6 +473,7 @@ JS_ECRAN = r"""
     url: location.href, titre: court(document.title, 120), titres: titres, champs: champs,
     tableaux: tableaux, cibles: cibles, tronque: tronque, cadres: cadres,
     mot_de_passe: motDePasse, identifiant: identifiant, fenetre: fenetre,
+    infos: infos, chargement: chargement, ombre: racines().length > 1,
   };
 }
 """
@@ -505,7 +582,7 @@ MOTIF_FIN_TECHNIQUE = re.compile(
     r"[A-Za-z_][\w.-]{0,38}\.(?:aspx|asmx|ashx|axd|svc|jsp|jspx|jsf|faces|xhtml|do|action|php|cgi|pl|json|xml)"
     r"|(?:graphql|api|rest|rpc|jsonrpc|soap|odata|batch|search|query|find|list|get|read|load|fetch|save|update"
     r"|delete|remove|create|insert|execute|exec|upload|download|export|import|login|logout|auth|token|session"
-    r"|services?|servlet|dispatch|command|handler|data|lookup|filter|count|details?)",
+    r"|services?|servlet|dispatch|command|handler|data|lookup|filter|count|details?|\$batch)",
     re.IGNORECASE,
 )
 
@@ -518,13 +595,86 @@ def _fin_adresse(url: str) -> str:
     return f"…/{dernier}" if MOTIF_FIN_TECHNIQUE.fullmatch(dernier or "") else "…"
 
 
+# Premiers mots d'une opération de LECTURE (en plus des mots de consultation français).
+VERBES_LECTURE = PREMIERS_MOTS_LECTURE | {
+    "get", "search", "find", "load", "read", "query", "list", "fetch", "retrieve", "lookup", "show", "count",
+    "select", "browse", "render", "rows", "page", "paging", "pagination", "sort", "sorting", "filtering",
+    "tabchange", "rowselect", "rowtoggle", "expand", "describe", "lister", "lire", "charger", "obtenir",
+}
+PREFIXES_CONTROLES = ("btn", "lnk", "lb", "ib", "img", "cmd", "bt", "link", "button", "menu", "mnu", "tab")
+
+
+def _mots(nom: str) -> List[str]:
+    """« ctl00$Main$btnSupprimerPlan » -> ['supprimer', 'plan'] (dernier morceau, sans préfixe)."""
+    dernier = re.split(r"[$:./]", str(nom or ""))[-1]
+    dernier = re.sub(r"([a-z])([A-Z])", r"\1 \2", dernier)
+    mots = re.findall(r"[a-z]+", normaliser(dernier.replace("_", " ").replace("-", " ")))
+    while mots and mots[0] in PREFIXES_CONTROLES and len(mots) > 1:
+        mots = mots[1:]
+    return mots
+
+
+def sens_operation(nom: str) -> str:
+    """« lecture probable », « écriture probable » ou "" d'après un nom d'opération ou de contrôle.
+    Ce n'est qu'un indice : le programme du serveur fait ce qu'il veut."""
+    mots = _mots(nom)
+    if not mots:
+        return ""
+    if mot_interdit(" ".join(mots)):
+        return "écriture probable"
+    if mots[0] in VERBES_LECTURE or mots[:2] == ["perform", "search"]:
+        return "lecture probable"
+    return ""
+
+
+def _avec_sens(texte: str, sens: str) -> str:
+    return f"{texte} [{sens}]" if sens else texte
+
+
+def _clefs(noms: List[str], n: int = 8) -> str:
+    propres = sorted({nom_technique(k, 30) for k in noms} - {""})
+    return ", ".join(propres[:n]) + ("…" if len(propres) > n else "") if propres else "?"
+
+
 def classer_envoi(methode: str, url: str, type_contenu: str, corps: Optional[str],
-                  soap_action: str = "") -> str:
-    """« POST …/Plans.aspx (formulaire ASP.NET WebForms, cible ctl#$Main$btnChercher) »."""
+                  soap_action: str = "", entetes: Optional[Dict[str, str]] = None) -> str:
+    """« POST …/Plans.aspx (formulaire ASP.NET WebForms, cible ctl#$Main$btnChercher) [lecture probable] ».
+    Seuls la nature de l'envoi et des NOMS techniques sont gardés, jamais les valeurs."""
+    entetes = {k.lower(): v for k, v in (entetes or {}).items()}
+    methode = (entetes.get("x-http-method-override") or entetes.get("x-http-method") or methode).upper()[:10]
     fin = _fin_adresse(url)
-    ct = (type_contenu or "").split(";")[0].strip().lower()
+    ct_complet = (type_contenu or entetes.get("content-type", "") or "")
+    ct = ct_complet.split(";")[0].strip().lower()
     corps = (corps or "")[:200000]
     debut = corps.lstrip()[:1]
+    m_url = decouper(url)
+    chemin = m_url.path if m_url else ""
+
+    # Teamcenter Active Workspace : …/JsonRestServices/<Bibliothèque-AAAA-MM-Service>/<opération>
+    m = re.search(r"/JsonRestServices/([^/]+)/([^/?]+)", chemin)
+    if m:
+        return _avec_sens(f"{methode} …/JsonRestServices/{nom_technique(m.group(1), 60)}/{nom_technique(m.group(2))}"
+                          " (Teamcenter SOA)", sens_operation(m.group(2)))
+    # SharePoint : lecture de liste ou recherche envoyées en POST
+    m = re.search(r"/_api/.*?/?(RenderListDataAsStream|postquery|GetItems|ProcessQuery)\b", chemin, re.IGNORECASE)
+    if m:
+        lecture = m.group(1).lower() in ("renderlistdataasstream", "postquery", "getitems")
+        return _avec_sens(f"{methode} …/_api/…/{m.group(1)} (SharePoint)", "lecture probable" if lecture else "")
+    if ct == "text/x-gwt-rpc" or "x-gwt-permutation" in entetes:
+        champs = corps.split("|")
+        interface = champs[5].rsplit(".", 1)[-1] if len(champs) > 6 else ""
+        operation = champs[6] if len(champs) > 6 else ""
+        return _avec_sens(f"{methode} {fin} (GWT-RPC {nom_technique(interface)}.{nom_technique(operation)})",
+                          sens_operation(operation))
+    if ct == "multipart/mixed" or (chemin.endswith("$batch") and ct.startswith("multipart")):
+        verbes = re.findall(r"(?m)^(GET|POST|PUT|PATCH|MERGE|DELETE) ", corps)
+        changeset = "changeset" in corps.lower()
+        lecture = bool(verbes) and set(verbes) == {"GET"} and not changeset
+        detail = ", ".join(f"{verbes.count(v)} {v}" for v in sorted(set(verbes))) or "?"
+        return _avec_sens(f"{methode} …/$batch (OData, {detail})",
+                          "lecture probable" if lecture else ("écriture probable" if verbes else ""))
+    if ct == "application/graphql":
+        return _classer_graphql(methode, fin, [{"query": corps}])
     if "x-www-form-urlencoded" in ct or (not ct and "=" in corps[:300] and debut not in "{[<"):
         paires = parse_qsl(corps, keep_blank_values=True)
         cles = [k for k, _ in paires]
@@ -533,48 +683,100 @@ def classer_envoi(methode: str, url: str, type_contenu: str, corps: Optional[str
             cible = valeurs.get("__EVENTTARGET") or ""
             if not cible:  # bouton qui envoie : son nom est une clé du formulaire
                 cible = next((k for k in reversed(cles) if k not in CLES_WEBFORMS and "$btn" in k.lower()), "")
-            asynchrone = ", partiel" if "__ASYNCPOST" in valeurs else ""
-            return f"{methode} {fin} (formulaire ASP.NET WebForms{asynchrone}, cible {nom_technique(cible, 60) or '?'})"
+            # commande standard des grilles : Page$2, Sort$Nom, Select$3, Delete$1... (sans ce qui suit $)
+            commande = (valeurs.get("__EVENTARGUMENT") or "").split("$", 1)[0]
+            commande = commande if re.fullmatch(r"[A-Za-z]{2,20}", commande) else ""
+            partiel = ", partiel" if "__ASYNCPOST" in valeurs or "x-microsoftajax" in entetes else ""
+            sens = {"page": "lecture probable", "sort": "lecture probable", "select": "lecture probable",
+                    "delete": "écriture probable", "update": "écriture probable", "insert": "écriture probable",
+                    "new": "écriture probable"}.get(commande.lower(), "") or sens_operation(cible)
+            texte = (f"{methode} {fin} (formulaire ASP.NET WebForms{partiel}, cible {nom_technique(cible, 60) or '?'}"
+                     + (f", commande {commande}" if commande else "") + ")")
+            return _avec_sens(texte, sens)
         faces = next((k for k in cles if k.endswith("faces.ViewState")), "")
         if faces:
             prefixe = faces.rsplit(".", 1)[0]
             source = valeurs.get(f"{prefixe}.source") or ""
-            ajax = ", ajax" if valeurs.get(f"{prefixe}.partial.ajax") else ""
-            return f"{methode} {fin} (formulaire JSF{ajax}, composant {nom_technique(source, 60) or '?'})"
-        noms = sorted({nom_technique(k, 30) for k in cles} - {""})
-        return f"{methode} {fin} (formulaire, champs : {', '.join(noms[:8]) or '?'}{'…' if len(noms) > 8 else ''})"
+            evenement = valeurs.get(f"{prefixe}.behavior.event") or ""
+            evenement = evenement if re.fullmatch(r"[A-Za-z]{2,30}", evenement) else ""
+            ajax = ", ajax" if valeurs.get(f"{prefixe}.partial.ajax") or "faces-request" in entetes else ""
+            drapeaux = [k.rsplit("_", 1)[-1] for k in cles if re.search(r"_(pagination|sorting|filtering)$", k)]
+            sens = ("lecture probable" if evenement.lower() in ("page", "sort", "filter", "tabchange", "rowselect",
+                                                                  "rowtoggle", "expand", "collapse") or drapeaux
+                    else sens_operation(source))
+            texte = (f"{methode} {fin} (formulaire JSF{ajax}, composant {nom_technique(source, 60) or '?'}"
+                     + (f", événement {evenement}" if evenement else "")
+                     + (f", {'/'.join(sorted(set(drapeaux)))}" if drapeaux else "") + ")")
+            return _avec_sens(texte, sens)
+        if "p_request" in valeurs and ("p_flow_id" in valeurs or "wwv_flow" in chemin):
+            return f"{methode} {fin} (Oracle APEX)"
+        return f"{methode} {fin} (formulaire, champs : {_clefs(cles)})"
     if "json" in ct or debut in ("{", "["):
         try:
             donnees = json.loads(corps)
         except ValueError:
             donnees = None
-        premier = donnees[0] if isinstance(donnees, list) and donnees else donnees
-        if isinstance(premier, dict):
+        lots = [d for d in (donnees if isinstance(donnees, list) else [donnees]) if isinstance(d, dict)]
+        if lots:
+            premier = lots[0]
             if "query" in premier or "operationName" in premier or "graphql" in url.lower():
-                texte = str(premier.get("query") or "")
-                m = re.match(r"\s*(?:#[^\n]*\n\s*)*(query|mutation|subscription)\b", texte)
-                genre = m.group(1) if m else ("query" if texte.lstrip().startswith("{") else "requête enregistrée")
-                operation = nom_technique(premier.get("operationName") or "")
-                return f"{methode} {fin} (GraphQL {genre}{' ' + operation if operation else ''})"
+                return _classer_graphql(methode, fin, lots)
             if "method" in premier and ("jsonrpc" in premier or "params" in premier):
-                return f"{methode} {fin} (JSON-RPC {nom_technique(premier.get('method'))})"
-            noms = sorted({nom_technique(k, 30) for k in premier} - {""})
-            return f"{methode} {fin} (JSON, clés : {', '.join(noms[:8]) or '?'}{'…' if len(noms) > 8 else ''})"
+                return _avec_sens(f"{methode} {fin} (JSON-RPC {nom_technique(premier.get('method'))})",
+                                  sens_operation(str(premier.get("method") or "")))
+            if isinstance(premier.get("requests"), list):  # OData 4 : lot en JSON
+                verbes = [str(r.get("method", "")).upper() for r in premier["requests"] if isinstance(r, dict)]
+                lecture = bool(verbes) and set(verbes) == {"GET"}
+                detail = ", ".join(f"{verbes.count(v)} {nom_technique(v)}" for v in sorted(set(verbes))) or "?"
+                return _avec_sens(f"{methode} {fin} (OData, lot JSON : {detail})",
+                                  "lecture probable" if lecture else "écriture probable")
+            return f"{methode} {fin} (JSON, clés : {_clefs(list(premier))})"
         return f"{methode} {fin} (JSON)"
     if "xml" in ct or debut == "<":
-        operation = nom_technique(soap_action.strip('"').rsplit("/", 1)[-1].rsplit("#", 1)[-1])
+        action = soap_action or entetes.get("soapaction", "")
+        m = re.search(r"action=\"?([^\";]+)", ct_complet)  # SOAP 1.2 : l'action est dans le type de contenu
+        if not action and m:
+            action = m.group(1)
+        operation = nom_technique(action.strip('"').rsplit("/", 1)[-1].rsplit("#", 1)[-1])
         if not operation:
             m = re.search(r"<(?:\w+:)?Body[^>]*>\s*<(?:\w+:)?([A-Za-z_][\w.-]*)", corps)
             operation = nom_technique(m.group(1)) if m else ""
-        actions = sorted({nom_technique(a) for a in re.findall(r"<Item\b[^>]*\baction=\"([\w]+)\"", corps)} - {""})
-        types = sorted({nom_technique(t.replace(" ", "_")) for t in re.findall(r"<Item\b[^>]*\btype=\"([\w ]{1,40})\"", corps)} - {""})
-        details = ""
-        if actions:
-            details = f", éléments {'/'.join(types[:4]) or '?'} : action {'/'.join(actions[:4])}"
-        return f"{methode} {fin} (SOAP/XML{' ' + operation if operation else ''}{details})"
+        actions = sorted({nom_technique(a) for a in re.findall(r"<Item\b[^>]*\baction=[\"']([\w]+)[\"']", corps)} - {""})
+        types = sorted({nom_technique(t.replace(" ", "_"))
+                        for t in re.findall(r"<Item\b[^>]*\btype=[\"']([\w ]{1,40})[\"']", corps)} - {""})
+        if actions:  # Aras : chaque élément dit ce qu'il fait
+            sens = "lecture probable" if set(a.lower() for a in actions) <= {"get"} else "écriture probable"
+            return _avec_sens(f"{methode} {fin} (SOAP/XML {operation or '?'}, éléments {'/'.join(types[:4]) or '?'} : "
+                              f"action {'/'.join(actions[:4])})", sens)
+        return _avec_sens(f"{methode} {fin} (SOAP/XML{' ' + operation if operation else ''})", sens_operation(operation))
     if "multipart" in ct:
         return f"{methode} {fin} (envoi de formulaire ou de fichier)"
     return f"{methode} {fin} ({nom_technique(ct.replace('/', '_'), 40) or 'sans contenu'})"
+
+
+def _classer_graphql(methode: str, fin: str, lots: List[Dict[str, Any]]) -> str:
+    """Type de CHAQUE opération (query / mutation) : le texte de la requête n'est jamais gardé."""
+    genres, operations = set(), []
+    for lot in lots:
+        texte = str(lot.get("query") or "")
+        trouves = re.findall(r"(?m)^\s*(query|mutation|subscription)\b", re.sub(r"#[^\n]*", "", texte))
+        if trouves:
+            genres.update(trouves)
+        elif re.search(r"(?m)^\s*\{", texte):
+            genres.add("query")  # document abrégé « { plans { id } } » : une lecture
+        else:
+            genres.add("requête enregistrée")
+        nom = nom_technique(lot.get("operationName") or "")
+        if nom and nom not in operations:
+            operations.append(nom)
+    if "mutation" in genres:
+        sens = "écriture probable"
+    elif genres <= {"query"}:
+        sens = "lecture probable"
+    else:
+        sens = sens_operation(operations[0]) if operations else ""
+    texte = f"{methode} {fin} (GraphQL {'/'.join(sorted(genres))}{' ' + ', '.join(operations[:3]) if operations else ''})"
+    return _avec_sens(texte, sens)
 
 
 def classer_requete(requete: Any) -> str:
@@ -589,30 +791,102 @@ def classer_requete(requete: Any) -> str:
         corps = None
     try:
         return classer_envoi(requete.method.upper(), requete.url, entetes.get("content-type", ""), corps,
-                             entetes.get("soapaction", ""))
+                             entetes.get("soapaction", ""), entetes)
     except Exception:  # noqa: BLE001
         return f"{requete.method.upper()} …"
+
+
+# Plateformes reconnues d'après les adresses appelées par la page (jamais l'adresse elle-même).
+TECHNO_ADRESSES = (
+    (re.compile(r"/JsonRestServices/", re.I), "Siemens Teamcenter (SOA)"),
+    (re.compile(r"InnovatorServer\.aspx|/Client/X-salt=", re.I), "Aras Innovator"),
+    (re.compile(r"/Windchill/", re.I), "PTC Windchill"),
+    (re.compile(r"/sap/opu/odata|/sap/bc/ui5_ui5/|/sap/bc/ui2/flp|/sap/bc/gui/sap/its/webgui", re.I), "SAP"),
+    (re.compile(r"/\$batch\b", re.I), "OData"),
+    (re.compile(r"/_api/|/_vti_bin/|/_layouts/15/", re.I), "SharePoint"),
+    (re.compile(r"/graphql\b", re.I), "GraphQL"),
+    (re.compile(r"/resources/v1/modeler/|/3dspace/|/3ddashboard/", re.I), "3DEXPERIENCE / ENOVIA"),
+    (re.compile(r"/dctm-rest/|/D2/|/webtop/", re.I), "OpenText Documentum"),
+    (re.compile(r"[/.](?:javax|jakarta)\.faces\.resource/|/rfRes/", re.I), "JSF"),
+    (re.compile(r"/(?:WebResource|ScriptResource)\.axd", re.I), "ASP.NET WebForms"),
+    (re.compile(r"/wwv_flow|[?&]p=\d+:\d+", re.I), "Oracle APEX"),
+    (re.compile(r"/AutodeskDM/|/AutodeskTC/", re.I), "Autodesk Vault"),
+    (re.compile(r"/PW_WSG/|/ws/v2\.\d+/repositories/Bentley\.PW", re.I), "Bentley ProjectWise"),
+    (re.compile(r"/Agile/PLMServlet", re.I), "Oracle Agile PLM"),
+    (re.compile(r"/REST/objects|/vnext/", re.I), "M-Files"),
+)
+
+
+def techno_depuis_adresse(url: str) -> List[str]:
+    return [nom for motif, nom in TECHNO_ADRESSES if motif.search(url or "")]
+
+
+def techno_depuis_entetes(entetes: Dict[str, str]) -> List[str]:
+    """Serveur et outil déclarés par le portail dans ses réponses : noms seulement, sans version."""
+    noms = []
+    for cle, prefixe in (("server", "serveur "), ("x-powered-by", ""), ("x-aspnet-version", "")):
+        valeur = str((entetes or {}).get(cle) or "")
+        if not valeur:
+            continue
+        if cle == "x-aspnet-version":
+            noms.append("ASP.NET")
+            continue
+        for morceau in re.split(r"[,;]", valeur)[:3]:
+            nom = re.sub(r"/[\w.]*|\([^)]*\)|\d[\w.]*", "", morceau).strip(" -")
+            if 1 < len(nom) <= 30 and re.fullmatch(r"[A-Za-z][A-Za-z .-]*", nom):
+                noms.append(prefixe + nom)
+    return noms
+
+
+COOKIES_TECHNO = (
+    (re.compile(r"^JSESSIONID$"), "Java (JSESSIONID)"),
+    (re.compile(r"^ASP\.NET_SessionId$"), "ASP.NET"),
+    (re.compile(r"^\.AspNetCore\."), "ASP.NET Core"),
+    (re.compile(r"^PHPSESSID$"), "PHP"),
+    (re.compile(r"^(FedAuth|rtFa)$"), "SharePoint"),
+    (re.compile(r"^(SAP_SESSIONID_|MYSAPSSO2$|sap-usercontext$)"), "SAP"),
+    (re.compile(r"^CASTGC$"), "connexion CAS (3DEXPERIENCE ?)"),
+    (re.compile(r"^MSISAuth"), "connexion ADFS (Microsoft)"),
+    (re.compile(r"^(connect\.sid)$"), "Node.js"),
+    (re.compile(r"^(csrftoken|sessionid)$"), "Django"),
+    (re.compile(r"^laravel_session$"), "PHP Laravel"),
+)
+
+
+def techno_depuis_cookies(noms: List[str]) -> List[str]:
+    """Plateforme d'après les NOMS des cookies du portail (leurs valeurs ne sont jamais lues)."""
+    trouves = []
+    for motif, nom in COOKIES_TECHNO:
+        if any(motif.search(n) for n in noms) and nom not in trouves:
+            trouves.append(nom)
+    return trouves
 
 
 # Plateformes et outils reconnus de l'intérieur de la page : des noms de produits, rien d'autre.
 JS_TECHNO = r"""
 () => {
   const t = [];
-  const w = window, d = document, chemin = location.pathname.toLowerCase();
+  const w = window, d = document;
+  const chemin = (location.pathname + location.hash).toLowerCase(), hote = location.hostname.toLowerCase();
+  // un nom de produit doit être un mot entier de l'adresse : « /listeplans » n'est pas EPLAN
+  const mot = nom => new RegExp('(^|[/.#?=&_-])' + nom + '([/.#?=&_-]|$)');
+  const ou = re => re.test(chemin) || re.test(hote);
   const a = s => { try { return !!d.querySelector(s); } catch (e) { return false; } };
-  if (a('input[name=__VIEWSTATE]') || typeof w.__doPostBack === 'function' || w.Sys && w.Sys.WebForms) t.push('ASP.NET WebForms');
-  if (a('input[name$="faces.ViewState"]')) t.push('JSF');
+  // existence seulement : ces objets contiennent parfois l'identifiant de l'utilisateur, jamais lus
+  if (a('input[name=__VIEWSTATE]') || typeof w.__doPostBack === 'function' || (w.Sys && w.Sys.WebForms)) t.push('ASP.NET WebForms');
+  if (a('input[name$="faces.ViewState"]') || w.jsf || (w.faces && w.faces.ajax)) t.push('JSF');
   if (w.PrimeFaces) t.push('PrimeFaces');
-  if (w.RichFaces) t.push('RichFaces');
+  if (w.RichFaces || w.A4J) t.push('RichFaces');
   if (w.ice && w.ice.ace) t.push('ICEfaces');
   if (a('[ng-version]')) t.push('Angular');
   if (w.angular && w.angular.version) t.push('AngularJS');
-  if (w.React || a('[data-reactroot]') || Array.from(d.querySelectorAll('body > div')).some(e => Object.keys(e).some(k => k.startsWith('__react')))) t.push('React');
-  if (w.Vue || w.__VUE__ || a('[data-v-app]')) t.push('Vue');
+  if (w.React || a('[data-reactroot]') || Array.from(d.querySelectorAll('body > div')).some(e =>
+      e._reactRootContainer || Object.keys(e).some(k => k.startsWith('__react')))) t.push('React');
+  if (w.Vue || w.__VUE__ || a('[data-v-app]') || Array.from(d.querySelectorAll('body > div')).some(e => e.__vue__ || e.__vue_app__)) t.push('Vue');
   if (w.Ext && (w.Ext.getVersion || w.Ext.version)) t.push('ExtJS');
-  if (w.sap && w.sap.ui) t.push('SAP UI5 / Fiori');
-  if (w._spPageContextInfo || a('#s4-workspace')) t.push('SharePoint');
-  if (w.apex && w.apex.item) t.push('Oracle APEX');
+  if ((w.sap && w.sap.ui) || a('#sap-ui-bootstrap') || ou(/\/sap\/(bc|opu)\//)) t.push('SAP UI5 / Fiori');
+  if (w._spPageContextInfo || a('#s4-workspace') || ou(/\/_layouts\/15\//)) t.push('SharePoint');
+  if ((w.apex && w.apex.item) || a('#pFlowId')) t.push('Oracle APEX');
   if (w.Vaadin || w.vaadin) t.push('Vaadin');
   if (w.Wicket) t.push('Wicket');
   if (w.Blazor) t.push('Blazor');
@@ -620,30 +894,42 @@ JS_TECHNO = r"""
   if (w.OutSystems) t.push('OutSystems');
   if (w.dojo) t.push('Dojo');
   if (w.jQuery) t.push('jQuery');
-  if (w.Backbone) t.push('Backbone');
   if (w.kendo) t.push('Kendo UI');
   if (w.DevExpress || w.ASPx) t.push('DevExpress');
   if (w.Telerik || w.$telerik) t.push('Telerik');
-  if (w.Ember) t.push('Ember');
-  if (w.GWT || w.__gwt_activeModules) t.push('GWT');
-  if (/\/windchill\//.test(chemin) || w.PTC) t.push('PTC Windchill');
-  if (/(^|\/)awc(\/|$)/.test(chemin) || w.afxWeakImport || w.afxDynamicImport) t.push('Siemens Teamcenter Active Workspace');
-  if (/\/3dspace|\/3ddashboard|\/enovia|\/3dpassport/.test(chemin) || w.UWA || w.widget && w.widget.uwaUrl) t.push('3DEXPERIENCE / ENOVIA');
-  if (/\/innovator(server)?(\/|\.aspx|$)/.test(chemin) || w.aras || w.ArasModules) t.push('Aras Innovator');
-  if (/\/agile\/|\/web\/pcmservlet/.test(chemin)) t.push('Oracle Agile PLM');
-  if (/\/autodeskdm\/|\/autodeskvault|\/vault\//.test(chemin)) t.push('Autodesk Vault');
-  if (/projectwise/.test(chemin)) t.push('Bentley ProjectWise');
-  if (/\/d2\/|\/webtop\/|\/documentum/.test(chemin)) t.push('OpenText Documentum');
-  if (/\/m-files|\/vnext\//.test(chemin) || w.MFiles) t.push('M-Files');
-  if (/\/comos|comosweb/.test(chemin)) t.push('Siemens COMOS');
-  if (/eplan/.test(chemin)) t.push('EPLAN');
-  if (/servicenow|\/now\//.test(chemin) || w.g_form || w.NOW) t.push('ServiceNow');
+  if (w.GWT || w.__gwt_activeModules || a('#__gwt_historyFrame')) t.push('GWT');
+  if (ou(/\/windchill\//) || /#ptc1\//.test(chemin) || a('input[name=CSRF_NONCE]') || w.PTC) t.push('PTC Windchill');
+  if (/com\.siemens\.splm\.clientfx/.test(chemin) || ou(/(^|\/)awc(\/|$)/) || w.afxWeakImport || w.afxDynamicImport) t.push('Siemens Teamcenter Active Workspace');
+  if (ou(/\/3dspace|\/3ddashboard|\/enovia|\/3dpassport|emxnavigator/) || w.UWA) t.push('3DEXPERIENCE / ENOVIA');
+  if (ou(/\/client\/x-salt=|innovatorserver|\/innovator\//) || w.aras || w.ArasModules) t.push('Aras Innovator');
+  if (ou(/plmservlet/) || (ou(mot('agile')) && ou(/servlet|plm/))) t.push('Oracle Agile PLM');
+  if (ou(/\/autodesktc\/|\/autodeskdm\//)) t.push('Autodesk Vault');
+  if (ou(mot('projectwise')) || ou(/pw_wsg/)) t.push('Bentley ProjectWise');
+  if (ou(/\/d2\/|\/webtop\/|dctm-rest/) || ou(mot('documentum'))) t.push('OpenText Documentum');
+  if (ou(mot('m-files')) || w.MFiles) t.push('M-Files');
+  if (ou(mot('comos(web)?'))) t.push('Siemens COMOS');
+  if (ou(mot('eplan')) || /(^|\.)eview\.eplan\./.test(hote)) t.push('EPLAN');
+  if (ou(/service-?now/) || w.g_form) t.push('ServiceNow');
   const gen = d.querySelector('meta[name=generator]');
   if (gen && gen.content) t.push('générateur : ' + gen.content.replace(/[^A-Za-z .-]/g, '').trim().slice(0, 30));
   if (d.querySelector('frameset')) t.push('cadres (frameset)');
   return t;
 }
 """
+
+
+# Nom de personne : « Jean DUPONT », « DUPONT Jean », « J. Dupont », « M. Dupont », « Dupont, Jean ».
+MOTIF_PERSONNE = re.compile(
+    r"^(?:[A-ZÀ-Ý][a-zà-ÿ'’-]+\s+[A-ZÀ-Ý]{2,}(?:[\s-][A-ZÀ-Ý]{2,})*"
+    r"|[A-ZÀ-Ý]{2,}(?:[\s-][A-ZÀ-Ý]{2,})*\s+[A-ZÀ-Ý][a-zà-ÿ'’-]+"
+    r"|[A-ZÀ-Ý]\.\s*[A-ZÀ-Ý][a-zà-ÿ'’-]+"
+    r"|(?:M\.|Mme|Mlle|Mr|Mrs|Ms|Dr)\s+\S+.*"
+    r"|[A-ZÀ-Ý][a-zà-ÿ'’-]+,\s*[A-ZÀ-Ý][a-zà-ÿ'’-]+)$"
+)
+
+
+def ressemble_a_une_personne(texte: str) -> bool:
+    return bool(MOTIF_PERSONNE.match(str(texte or "").strip()))
 
 
 # ---------------------------------------------------------------------- modèle de la carte
@@ -686,6 +972,10 @@ class Ecran:
     profondeur: int = 0
     resultats: Dict[str, str] = field(default_factory=dict)
     cadre: bool = False  # contenu d'un cadre (iframe, frameset) de la page, lu à part
+    infos: List[str] = field(default_factory=list)  # libellés d'une fiche en lecture (sans valeurs)
+    chargement: List[str] = field(default_factory=list)  # indicateurs de chargement vus
+    ombre: bool = False  # composants web (racines fantômes)
+    etape: str = ""  # visite guidée : ce que l'utilisateur montrait à ce moment-là
 
 
 @dataclass
@@ -715,8 +1005,9 @@ def signature(lecture: Dict[str, Any]) -> str:
     champs = sorted({(_norm_chiffres(c["libelle"]) if c["source"] in ("label", "aria", "entete") else "", c["type"])
                      for c in lecture["champs"] if not c["dans_tableau"] and c["zone"] not in ("arbre", "lateral")})
     tableaux = sorted((tuple(_norm_chiffres(e) for e in t["entetes"]), t["lignes"] > 0) for t in lecture["tableaux"])
-    brut = json.dumps([modele_url(lecture["url"]), onglets, boutons, champs, tableaux, lecture.get("fenetre", False)],
-                      ensure_ascii=False)
+    infos = sorted({_norm_chiffres(i) for i in lecture.get("infos") or []})
+    brut = json.dumps([modele_url(lecture["url"]), onglets, boutons, champs, tableaux, lecture.get("fenetre", False),
+                       infos], ensure_ascii=False)
     return hashlib.sha1(brut.encode("utf-8")).hexdigest()[:12]
 
 
@@ -745,6 +1036,7 @@ class Explorateur:
         self.envois: Dict[str, int] = {}
         self.techno: List[str] = []  # plateformes et outils reconnus
         self.mode = "exploration"
+        self.diagnostic: List[Tuple[str, str]] = []  # réglages de connexion du poste (oui / non)
         self.websockets = 0
         self.telechargements: List[str] = []
         self.externes: List[str] = []
@@ -775,6 +1067,7 @@ class Explorateur:
         try:
             requete = route.request
             methode = requete.method.upper()
+            self._techno_adresse(requete.url)
             raison = ""
             if methode not in METHODES_LECTURE:
                 m = decouper(requete.url)
@@ -796,6 +1089,37 @@ class Explorateur:
 
     def _noter_envoi(self, nature: str) -> None:
         self.envois[nature] = self.envois.get(nature, 0) + 1
+
+    def _techno_adresse(self, url: str) -> None:
+        for nom in techno_depuis_adresse(url):
+            if nom not in self.techno:
+                self.techno.append(nom)
+
+    def _reponse(self, reponse: Any) -> None:
+        """Serveur et outil déclarés dans les réponses des pages du portail."""
+        try:
+            if reponse.request.resource_type != "document":
+                return
+            site = getattr(self, "site", "") or site_de(self.depart or self.url_demandee)
+            if site and site_de(reponse.url) != site:
+                return
+            for nom in techno_depuis_entetes(reponse.headers):
+                if nom not in self.techno:
+                    self.techno.append(nom)
+        except Exception as e:  # noqa: BLE001 - un gestionnaire ne doit jamais lever
+            journal.debug("Réponse non lue : %s", e)
+
+    def _techno_cookies(self) -> None:
+        """Plateforme d'après les noms des cookies du portail (valeurs jamais gardées)."""
+        site = getattr(self, "site", "") or site_de(self.depart or self.url_demandee)
+        try:
+            noms = [c.get("name", "") for c in self.nav.contexte.cookies()
+                    if not site or str(c.get("domain", "")).lstrip(".").endswith(site)]
+        except Exception:  # noqa: BLE001
+            return
+        for nom in techno_depuis_cookies(noms):
+            if nom not in self.techno:
+                self.techno.append(nom)
 
     def _noter_techno(self, cadre: Any) -> None:
         """Plateforme du portail (Windchill, WebForms, Angular...) : lue sur chaque nouvel écran."""
@@ -858,6 +1182,7 @@ class Explorateur:
                 journal.debug("WebSocket non contrôlés : %s", e)
         contexte.add_init_script(JS_NEUTRALISER)
         contexte.on("page", self._nouvelle_page)
+        contexte.on("response", self._reponse)
         page.on("download", self._telechargement)
         self._debut = time.monotonic()
         self.url_demandee = url
@@ -915,6 +1240,7 @@ class Explorateur:
                 contexte.unroute("**/*", self._garde)
             except Exception:  # noqa: BLE001
                 pass
+            self._techno_cookies()
             self.enregistrer()
 
     def _essayer_sans_planter(self, ecran: Ecran, cible: Dict[str, Any]) -> Optional[Ecran]:
@@ -1012,16 +1338,25 @@ class Explorateur:
             titre = (lecture.get("titres") or [""])[0] or lecture.get("titre") or "(page sans titre)"
             m = decouper(page.url)
             print()
-            print(f"   Le robot partira de cette page :  « {titre[:70]} »   ({(m.netloc if m else '') or page.url[:40]})")
+            if self.mode == "visite":
+                print(f"   Vous êtes sur cette page :  « {titre[:70]} »   ({(m.netloc if m else '') or page.url[:40]})")
+            else:
+                print(f"   Le robot partira de cette page :  « {titre[:70]} »   ({(m.netloc if m else '') or page.url[:40]})")
+            doute = False
             if lecture.get("mot_de_passe"):
+                doute = True
                 print(f"   {S.ATTENTION} Cette page demande un mot de passe : vous n'êtes peut-être pas encore connecté.")
             elif self.url_demandee and site_de(page.url) != site_de(self.url_demandee):
+                doute = True
                 print(f"   {S.ATTENTION} Elle n'est pas à l'adresse que vous avez donnée : est-ce bien votre portail ?")
-                print("   (Un portail change parfois d'adresse après la connexion : dans ce cas, c'est normal.)")
-            print("   C'est bien votre portail, et vous êtes connecté ? (o/n) [o] : ", end="", flush=True)
+                print("   (Un portail change parfois d'adresse après la connexion : dans ce cas, répondez o.)")
+            # en cas de doute, Entrée seule veut dire « non » : on ne part pas d'une page de connexion
+            print(f"   C'est bien votre portail, et vous êtes connecté ? (o/n) [{'n' if doute else 'o'}] : ",
+                  end="", flush=True)
             with self.nav.pause_manuelle():
                 reponse = lire_ligne(self.nav.pomper)
-            if reponse is None or not reponse.strip().lower().startswith("n"):
+            reponse = (reponse or "").strip().lower() or ("n" if doute else "o")
+            if not reponse.startswith("n"):
                 return
             print()
             print("   D'accord. Dans la fenêtre du robot, affichez la bonne page (connectez-vous si besoin).")
@@ -1101,6 +1436,8 @@ class Explorateur:
             chemin=list(chemin), titre=lecture["titre"], titres=lecture["titres"],
             champs=lecture["champs"], tableaux=lecture["tableaux"], cibles=lecture["cibles"],
             cadres=lecture["cadres"], tronque=lecture["tronque"], fenetre=lecture["fenetre"], profondeur=profondeur,
+            infos=list(lecture.get("infos") or []), chargement=list(lecture.get("chargement") or []),
+            ombre=bool(lecture.get("ombre")),
         )
         self.ecrans.append(ecran)
         self._par_signature[sig] = ecran
@@ -1117,6 +1454,8 @@ class Explorateur:
         texte = cible["texte"] or cible["aria"]
         if cible["desactive"]:
             return "non", "désactivé"
+        if cible.get("ombre"):
+            return "non", "dans un composant web : on ne peut pas vérifier l'élément au moment du clic"
         if cible["zone"] == "fenetre":
             return "non", "dans une fenêtre de confirmation ou de saisie"
         interdit = mot_interdit(cible["aria"], cible["id"], cible["href"],
@@ -1280,6 +1619,10 @@ class Explorateur:
             return None
         if lecture["url"].startswith(("chrome-error:", "about:blank")):
             self.formulaires_bloques += 1
+            if self.formulaires_bloques >= 6 and len(self.ecrans) <= 5:
+                raise ArretExploration("ce portail envoie des données même pour changer d'écran, ce que le robot "
+                                       "bloque par sécurité : la visite guidée (menu, choix 8) le cartographiera "
+                                       "bien mieux")
             ecran.resultats[cle] = " ; ".join(notes + ["navigation par envoi de formulaire : bloquée"])
             return None
         # un nouveau lien qui mène ailleurs sort simplement du portail ; seul un écran de
@@ -1393,7 +1736,7 @@ class Explorateur:
             "envois": self.envois,
         }
         (self.dossier / "carte.json").write_text(json.dumps(donnees, ensure_ascii=False, indent=1), encoding="utf-8")
-        (self.dossier / "carte.html").write_text(self._html(), encoding="utf-8")
+        (self.dossier / "carte_PRIVEE_ne_pas_envoyer.html").write_text(self._html(), encoding="utf-8")
         (self.dossier / "carte_a_partager.txt").write_text(self._texte_partage(), encoding="utf-8")
 
     def _acces(self, ecran: Ecran) -> str:
@@ -1403,13 +1746,27 @@ class Explorateur:
     # Liste d'AUTORISATION : seuls les textes de l'interface qui ne sont presque jamais des
     # données sont repris (noms de champs, entêtes de colonnes, onglets et menus courts,
     # boutons usuels). Tout le reste est remplacé par sa nature : « (bouton) », « un lien ».
+    # Jamais repris : ce qui ressemble à un nom de personne, le menu du compte de
+    # l'utilisateur, les onglets de document (un onglet par plan ouvert, avec une croix).
     @staticmethod
     def _court(texte: str, mots: int = 3) -> bool:
         return 0 < len(normaliser(texte).split()) <= mots
 
+    @classmethod
+    def _sur(cls, texte: str, mots: int = 3) -> Optional[str]:
+        """Le texte masqué s'il peut être repris, sinon None."""
+        if not cls._court(texte, mots) or ressemble_a_une_personne(texte):
+            return None
+        return masquer(texte)
+
     def _texte_bouton(self, cible: Dict[str, Any]) -> str:
         texte = cible["texte"] or cible["aria"]
-        if est_lecture(texte) or (mot_interdit(texte) and self._court(texte, 4)):
+        if cible.get("perso") or ressemble_a_une_personne(texte):
+            return "(bouton)"
+        if est_lecture(texte):
+            # « Voir le détail » oui ; « Voir Poste Lyon Sud » : la suite peut être une donnée
+            return masquer(texte) if self._court(texte, 2) else masquer(texte.split()[0]) + " …"
+        if mot_interdit(texte) and self._court(texte, 4):
             return masquer(texte)
         return "(bouton)"
 
@@ -1419,10 +1776,15 @@ class Explorateur:
             return f"ligne {cible['ligne'] + 1} du tableau"
         if cible["zone"] == "arbre":
             return "un élément de l'arborescence"
+        if cible.get("perso"):
+            return "un élément du compte de l'utilisateur"
+        if cible["zone"] == "onglet" and cible.get("fermable"):
+            return "un onglet de document"
         noms = {"onglet": "onglet", "menu": "menu"}
-        if cible["zone"] in noms and self._court(texte) and \
+        sur = self._sur(texte)
+        if cible["zone"] in noms and sur and \
                 (cible["tag"] == "a" or cible["role"] in ("tab", "menuitem") or cible["zone"] == "onglet"):
-            return f"{noms[cible['zone']]} « {masquer(texte)} »"
+            return f"{noms[cible['zone']]} « {sur} »"
         if cible["zone"] == "lateral":
             return "un élément du menu latéral"
         if cible["tag"] == "a":
@@ -1432,11 +1794,23 @@ class Explorateur:
     def _libelle_champ(self, champ: Dict[str, Any]) -> str:
         if champ["type"] in ("checkbox", "radio"):
             return "(case)"
-        if champ["source"] in ("label", "aria", "entete") and self._court(champ["libelle"], 5):
-            return masquer(champ["libelle"])
-        if champ["source"] == "voisin" and champ["libelle"].rstrip().endswith(":") and self._court(champ["libelle"], 5):
-            return masquer(champ["libelle"])
+        libelle = champ["libelle"]
+        if ressemble_a_une_personne(libelle):
+            return "(sans nom)"
+        if champ["source"] in ("label", "aria", "entete") and self._court(libelle, 5):
+            return masquer(libelle)
+        if champ["source"] == "voisin" and libelle.rstrip().endswith(":") and self._court(libelle, 5):
+            return masquer(libelle)
         return "(sans nom)"
+
+    @staticmethod
+    def _nom_code(nom: str) -> str:
+        """Nom technique d'un champ ou d'un bouton (id, name) : sert aux sélecteurs d'une future
+        automatisation. Chiffres masqués ; tout ce qui n'a pas l'air d'un nom de code : rien."""
+        nom = nom_technique(nom, 60)
+        if len(nom) < 3 or nom == "?" or re.search(r"[A-Z][a-z]+[A-Z]{2,}|\s", nom):
+            return ""  # trop court pour servir, ou « JeanDUPONT » : pas un nom de code
+        return nom
 
     def _texte_partage(self) -> str:
         r = self.resume()
@@ -1460,38 +1834,55 @@ class Explorateur:
             "",
         ]
         for e in self.ecrans:
-            lignes.append(f"{e.id}" + ("   (fenêtre ouverte par-dessus l'écran)" if e.fenetre else "")
-                          + ("   (contenu d'un cadre de la page)" if e.cadre else ""))
+            lignes.append(f"{e.id}" + (f"   [étape : {e.etape}]" if e.etape else "")
+                          + ("   (fenêtre ouverte par-dessus l'écran)" if e.fenetre else "")
+                          + ("   (contenu d'un cadre de la page)" if e.cadre else "")
+                          + ("   (composants web)" if e.ombre else ""))
             lignes.append(f"     accès : {' › '.join(p.partage or 'un clic' for p in e.chemin)}")
-            onglets = sorted({masquer(c["texte"]) for c in e.cibles
-                              if c["zone"] == "onglet" and self._court(c["texte"])})
+            onglets_cibles = [c for c in e.cibles if c["zone"] == "onglet" and not c.get("perso")]
+            onglets = sorted({x for x in (self._sur(c["texte"]) for c in onglets_cibles if not c.get("fermable")) if x})
             if onglets:
                 lignes.append(f"     onglets : {' ; '.join(onglets)}")
-            menus = sorted({masquer(c["texte"]) for c in e.cibles if c["zone"] == "menu" and self._court(c["texte"])
-                            and (c["tag"] == "a" or c["role"] == "menuitem")})
+            documents = sum(1 for c in onglets_cibles if c.get("fermable"))
+            if documents:
+                lignes.append(f"     onglets de document (un par élément ouvert) : {documents}, noms non repris")
+            menus = sorted({x for x in (self._sur(c["texte"]) for c in e.cibles
+                                        if c["zone"] == "menu" and not c.get("perso")
+                                        and (c["tag"] == "a" or c["role"] == "menuitem")) if x})
             if menus:
                 lignes.append(f"     menus : {' ; '.join(menus)}")
             lateral = sum(1 for c in e.cibles if c["zone"] == "lateral")
             if lateral:
                 # souvent « consultés récemment », dossiers, projets : noms non repris
                 lignes.append(f"     menu latéral : {lateral} entrée(s), noms non repris")
-            champs = [f"{self._libelle_champ(c)} [{type_champ(c['type'])}"
-                      + (f", {c['nb_options']} choix" if c["type"] == "liste" else "")
-                      + (", obligatoire" if c["obligatoire"] else "")
-                      + (", lecture seule" if c["lecture_seule"] else "") + "]"
-                      for c in e.champs if not c["dans_tableau"] and c["zone"] not in ("arbre", "lateral")]
+            champs = []
+            for c in e.champs:
+                if c["dans_tableau"] or c["zone"] in ("arbre", "lateral"):
+                    continue
+                code = self._nom_code(c.get("nom", ""))
+                champs.append(f"{self._libelle_champ(c)} [{type_champ(c['type'])}"
+                              + (f", {c['nb_options']} choix" if c["type"] == "liste" else "")
+                              + (", obligatoire" if c["obligatoire"] else "")
+                              + (", lecture seule" if c["lecture_seule"] else "")
+                              + (f", code {code}" if code else "") + "]")
             if champs:
                 lignes.append(f"     champs : {' ; '.join(champs)}")
+            infos = sorted({x for x in (self._sur(i, 5) for i in e.infos) if x})
+            if infos:
+                lignes.append(f"     libellés affichés (fiche en lecture) : {' ; '.join(infos[:40])}")
             boutons = []
             for c in e.cibles:
                 if c["zone"] not in ("page", "fenetre") or c["tag"] == "a":
                     continue
                 res = e.resultats.get(self._cle(c), "")
-                boutons.append(self._texte_bouton(c) + (f" → {resultat(res)}" if res else ""))
+                code = self._nom_code(c.get("id") or c.get("testid") or "") if self._texte_bouton(c) != "(bouton)" else ""
+                boutons.append(self._texte_bouton(c) + (f" (code {code})" if code else "")
+                               + (f" → {resultat(res)}" if res else ""))
             if boutons:
                 lignes.append(f"     boutons : {' ; '.join(boutons)}")
             for t in e.tableaux:
-                lignes.append(f"     tableau : [{masquer(' | '.join(t['entetes']))}] ({t['lignes']} lignes)")
+                entetes = [x if not ressemble_a_une_personne(x) else "(nom)" for x in t["entetes"]]
+                lignes.append(f"     tableau : [{masquer(' | '.join(entetes))}] ({t['lignes']} lignes)")
             for k, v in sorted((k, v) for k, v in e.resultats.items() if k.startswith("ligne ")):
                 lignes.append(f"     {k} → {resultat(v)}")
             liens = sum(1 for c in e.cibles if c["tag"] == "a" and c["zone"] in ("page", "arbre"))
@@ -1524,6 +1915,11 @@ class Explorateur:
         """Ce qui m'aide à comprendre le portail : sa technologie, la nature des envois de
         données (jamais leurs valeurs), et pourquoi des éléments n'ont pas été essayés."""
         lignes = ["TECHNOLOGIE RECONNUE : " + (", ".join(self.techno) if self.techno else "rien de connu")]
+        if self.diagnostic:
+            lignes.append("")
+            lignes.append("CONNEXION DU CHROME DU ROBOT (réglages du poste, oui / non)")
+            for libelle, valeur in self.diagnostic:
+                lignes.append(f"   {libelle} : {valeur}")
         if self.envois:
             lignes.append("")
             lignes.append("ENVOIS DE DONNEES " + ("VUS PENDANT LA VISITE" if self.mode == "visite"
@@ -1531,6 +1927,10 @@ class Explorateur:
                           + " : nature seulement, sans aucune valeur")
             for nature, nombre in sorted(self.envois.items(), key=lambda x: (-x[1], x[0]))[:40]:
                 lignes.append(f"   {nombre:3} × {nature}")
+        indicateurs = sorted({i for e in self.ecrans for i in e.chargement})
+        if indicateurs:
+            lignes.append("")
+            lignes.append(f"INDICATEURS DE CHARGEMENT VUS : {', '.join(indicateurs)}")
         raisons = self._raisons_refus()
         if raisons:
             lignes.append("")
