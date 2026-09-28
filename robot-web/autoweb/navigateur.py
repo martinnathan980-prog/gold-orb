@@ -50,6 +50,8 @@ MOTIF_ONGLET_VIDE = re.compile(
     r"^(?:about:blank|chrome://new-?tab(?:-page)?/?|chrome-search://local-ntp|edge://newtab)",
     re.IGNORECASE,
 )
+# Réglages par défaut de Playwright qui éloignent le Chrome du robot du Chrome habituel.
+ARGUMENTS_RETIRES = ("--disable-extensions",)
 # Onglets sans lien avec l'outil ouverts juste après le démarrage (extension imposée par
 # l'entreprise, page de présentation...) : fermés s'ils arrivent dans ce délai.
 FENETRE_DEMARRAGE_S = 15.0
@@ -483,6 +485,10 @@ class Navigateur:
             "slow_mo": self.config.lenteur or 0,
             "args": args,
             "downloads_path": str(self._dossier_telechargements()),
+            # Playwright coupe toutes les extensions, y compris celles que l'entreprise impose
+            # (connexion automatique Microsoft, Okta...) : sans elles, le portail redemande
+            # le mot de passe là où le Chrome habituel entre directement.
+            "ignore_default_args": list(ARGUMENTS_RETIRES),
             **self.options_lancement,
         }
 

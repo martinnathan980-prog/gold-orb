@@ -50,7 +50,7 @@ from playwright.sync_api import Page
 
 from . import symboles as S
 from .erreurs import ErreurAutoweb
-from .navigateur import Navigateur, navigateur_ferme
+from .navigateur import Navigateur, navigateur_ferme, site_de
 
 journal = logging.getLogger("autoweb")
 
@@ -351,13 +351,15 @@ JS_OUTILS = r"""
 JS_ECRAN = r"""
 ([exemples, maxCibles]) => {
 """ + JS_OUTILS + r"""
+  // bandeaux posés par le robot lui-même : jamais lus comme une partie de l'écran
+  const robot = e => !!(e.closest && e.closest('[data-autoweb]'));
   const titres = [];
-  document.querySelectorAll('h1, h2, h3, [role=heading]').forEach(h => { if (vis(h) && titres.length < 12) titres.push(court(h.innerText, 100)); });
+  document.querySelectorAll('h1, h2, h3, [role=heading]').forEach(h => { if (vis(h) && !robot(h) && titres.length < 12) titres.push(court(h.innerText, 100)); });
   const champs = [];
   document.querySelectorAll('input, select, textarea, [contenteditable=true]').forEach(e => {
     const tag = e.tagName.toLowerCase();
     const type = (e.getAttribute('type') || '').toLowerCase();
-    if (type === 'hidden' || ['submit', 'button', 'reset', 'image'].includes(type) || !vis(e) || champs.length >= 200) return;
+    if (type === 'hidden' || ['submit', 'button', 'reset', 'image'].includes(type) || !vis(e) || robot(e) || champs.length >= 200) return;
     const tr = e.closest('tbody tr');
     if (tr && indexLigne(tr) >= exemples) return;
     const [lib, source] = libelle(e);
@@ -382,7 +384,7 @@ JS_ECRAN = r"""
   for (const e of document.querySelectorAll(SELECTION)) {
     const tr = e.closest('tbody tr, [role=row]');
     if (tr && indexLigne(tr) >= exemples) continue;   // une ligne ressemble aux autres : les premières suffisent
-    if (e.matches(EXCLUS) || !vis(e)) continue;
+    if (e.matches(EXCLUS) || !vis(e) || robot(e)) continue;
     if (cibles.length >= maxCibles) { tronque = true; break; }
     cibles.push(decrire(e));
   }
@@ -457,7 +459,191 @@ JS_CALME = r"""
 """
 
 # Injecté dans chaque page : l'impression ouvrirait une fenêtre qui bloque tout.
-JS_NEUTRALISER = "window.print = function () {}; window.showModalDialog = function () {};"
+JS_NEUTRALISER = r"""
+window.print = function () {}; window.showModalDialog = function () {};
+(() => {
+  // bandeau rassurant, dans la fenêtre principale : il ne capte aucun clic
+  if (window !== window.top) return;
+  const poser = () => {
+    if (!document.documentElement || document.getElementById('__autoweb_lecture')) return;
+    const b = document.createElement('div');
+    b.id = '__autoweb_lecture';
+    b.setAttribute('data-autoweb', '1');
+    b.setAttribute('style', 'position:fixed;bottom:12px;left:12px;z-index:2147483647;background:#1d4ed8;' +
+      'color:#fff;font:600 12px/1.3 system-ui,-apple-system,Arial;padding:8px 11px;border-radius:6px;' +
+      'box-shadow:0 2px 10px rgba(0,0,0,.35);pointer-events:none;max-width:320px;opacity:.93');
+    b.textContent = 'Robot en LECTURE SEULE : il regarde et note. Tout envoi de données vers le portail est bloqué.';
+    document.documentElement.appendChild(b);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poser); else poser();
+})();
+"""
+
+
+# ---------------------------------------------------------------------- envois et technologie
+# Ce que le portail ENVOIE dit comment il fonctionne (formulaire ASP.NET, JSF, GraphQL, SOAP,
+# API JSON) : on note la nature de l'envoi et des noms techniques, JAMAIS les valeurs.
+CLES_WEBFORMS = {
+    "__VIEWSTATE", "__VIEWSTATEGENERATOR", "__VIEWSTATEENCRYPTED", "__EVENTVALIDATION", "__EVENTTARGET",
+    "__EVENTARGUMENT", "__LASTFOCUS", "__SCROLLPOSITIONX", "__SCROLLPOSITIONY", "__PREVIOUSPAGE", "__ASYNCPOST",
+    "__VIEWSTATEFIELDCOUNT",
+}
+
+
+def nom_technique(texte: Any, longueur: int = 40) -> str:
+    """Identifiant technique (nom de contrôle, d'opération, de clé) : chiffres masqués ; tout
+    ce qui ressemble à du texte libre (espaces, @, ponctuation) est remplacé par « ? »."""
+    texte = re.sub(r"\d+", "#", str(texte or ""))[:longueur]
+    if not texte:
+        return ""
+    return texte if re.fullmatch(r"[A-Za-z_$#][\w$:.#-]*", texte) else "?"
+
+
+# Fins d'adresse gardées : programmes (…/Plans.aspx) et mots techniques génériques. Tout le
+# reste (…/Flamanville) peut être un nom de site, de projet ou de client : remplacé par « … ».
+MOTIF_FIN_TECHNIQUE = re.compile(
+    r"[A-Za-z_][\w.-]{0,38}\.(?:aspx|asmx|ashx|axd|svc|jsp|jspx|jsf|faces|xhtml|do|action|php|cgi|pl|json|xml)"
+    r"|(?:graphql|api|rest|rpc|jsonrpc|soap|odata|batch|search|query|find|list|get|read|load|fetch|save|update"
+    r"|delete|remove|create|insert|execute|exec|upload|download|export|import|login|logout|auth|token|session"
+    r"|services?|servlet|dispatch|command|handler|data|lookup|filter|count|details?)",
+    re.IGNORECASE,
+)
+
+
+def _fin_adresse(url: str) -> str:
+    """Dernier morceau du chemin s'il est technique (…/graphql, …/InnovatorServer.aspx) ;
+    jamais le serveur ni le reste de l'adresse."""
+    m = decouper(url)
+    dernier = (m.path.rstrip("/").rsplit("/", 1)[-1] if m else "")
+    return f"…/{dernier}" if MOTIF_FIN_TECHNIQUE.fullmatch(dernier or "") else "…"
+
+
+def classer_envoi(methode: str, url: str, type_contenu: str, corps: Optional[str],
+                  soap_action: str = "") -> str:
+    """« POST …/Plans.aspx (formulaire ASP.NET WebForms, cible ctl#$Main$btnChercher) »."""
+    fin = _fin_adresse(url)
+    ct = (type_contenu or "").split(";")[0].strip().lower()
+    corps = (corps or "")[:200000]
+    debut = corps.lstrip()[:1]
+    if "x-www-form-urlencoded" in ct or (not ct and "=" in corps[:300] and debut not in "{[<"):
+        paires = parse_qsl(corps, keep_blank_values=True)
+        cles = [k for k, _ in paires]
+        valeurs = dict(paires)
+        if CLES_WEBFORMS & set(cles):
+            cible = valeurs.get("__EVENTTARGET") or ""
+            if not cible:  # bouton qui envoie : son nom est une clé du formulaire
+                cible = next((k for k in reversed(cles) if k not in CLES_WEBFORMS and "$btn" in k.lower()), "")
+            asynchrone = ", partiel" if "__ASYNCPOST" in valeurs else ""
+            return f"{methode} {fin} (formulaire ASP.NET WebForms{asynchrone}, cible {nom_technique(cible, 60) or '?'})"
+        faces = next((k for k in cles if k.endswith("faces.ViewState")), "")
+        if faces:
+            prefixe = faces.rsplit(".", 1)[0]
+            source = valeurs.get(f"{prefixe}.source") or ""
+            ajax = ", ajax" if valeurs.get(f"{prefixe}.partial.ajax") else ""
+            return f"{methode} {fin} (formulaire JSF{ajax}, composant {nom_technique(source, 60) or '?'})"
+        noms = sorted({nom_technique(k, 30) for k in cles} - {""})
+        return f"{methode} {fin} (formulaire, champs : {', '.join(noms[:8]) or '?'}{'…' if len(noms) > 8 else ''})"
+    if "json" in ct or debut in ("{", "["):
+        try:
+            donnees = json.loads(corps)
+        except ValueError:
+            donnees = None
+        premier = donnees[0] if isinstance(donnees, list) and donnees else donnees
+        if isinstance(premier, dict):
+            if "query" in premier or "operationName" in premier or "graphql" in url.lower():
+                texte = str(premier.get("query") or "")
+                m = re.match(r"\s*(?:#[^\n]*\n\s*)*(query|mutation|subscription)\b", texte)
+                genre = m.group(1) if m else ("query" if texte.lstrip().startswith("{") else "requête enregistrée")
+                operation = nom_technique(premier.get("operationName") or "")
+                return f"{methode} {fin} (GraphQL {genre}{' ' + operation if operation else ''})"
+            if "method" in premier and ("jsonrpc" in premier or "params" in premier):
+                return f"{methode} {fin} (JSON-RPC {nom_technique(premier.get('method'))})"
+            noms = sorted({nom_technique(k, 30) for k in premier} - {""})
+            return f"{methode} {fin} (JSON, clés : {', '.join(noms[:8]) or '?'}{'…' if len(noms) > 8 else ''})"
+        return f"{methode} {fin} (JSON)"
+    if "xml" in ct or debut == "<":
+        operation = nom_technique(soap_action.strip('"').rsplit("/", 1)[-1].rsplit("#", 1)[-1])
+        if not operation:
+            m = re.search(r"<(?:\w+:)?Body[^>]*>\s*<(?:\w+:)?([A-Za-z_][\w.-]*)", corps)
+            operation = nom_technique(m.group(1)) if m else ""
+        actions = sorted({nom_technique(a) for a in re.findall(r"<Item\b[^>]*\baction=\"([\w]+)\"", corps)} - {""})
+        types = sorted({nom_technique(t.replace(" ", "_")) for t in re.findall(r"<Item\b[^>]*\btype=\"([\w ]{1,40})\"", corps)} - {""})
+        details = ""
+        if actions:
+            details = f", éléments {'/'.join(types[:4]) or '?'} : action {'/'.join(actions[:4])}"
+        return f"{methode} {fin} (SOAP/XML{' ' + operation if operation else ''}{details})"
+    if "multipart" in ct:
+        return f"{methode} {fin} (envoi de formulaire ou de fichier)"
+    return f"{methode} {fin} ({nom_technique(ct.replace('/', '_'), 40) or 'sans contenu'})"
+
+
+def classer_requete(requete: Any) -> str:
+    """classer_envoi() pour une requête Playwright, sans jamais lever."""
+    try:
+        entetes = requete.headers or {}
+    except Exception:  # noqa: BLE001
+        entetes = {}
+    try:
+        corps = requete.post_data
+    except Exception:  # noqa: BLE001 - contenu binaire
+        corps = None
+    try:
+        return classer_envoi(requete.method.upper(), requete.url, entetes.get("content-type", ""), corps,
+                             entetes.get("soapaction", ""))
+    except Exception:  # noqa: BLE001
+        return f"{requete.method.upper()} …"
+
+
+# Plateformes et outils reconnus de l'intérieur de la page : des noms de produits, rien d'autre.
+JS_TECHNO = r"""
+() => {
+  const t = [];
+  const w = window, d = document, chemin = location.pathname.toLowerCase();
+  const a = s => { try { return !!d.querySelector(s); } catch (e) { return false; } };
+  if (a('input[name=__VIEWSTATE]') || typeof w.__doPostBack === 'function' || w.Sys && w.Sys.WebForms) t.push('ASP.NET WebForms');
+  if (a('input[name$="faces.ViewState"]')) t.push('JSF');
+  if (w.PrimeFaces) t.push('PrimeFaces');
+  if (w.RichFaces) t.push('RichFaces');
+  if (w.ice && w.ice.ace) t.push('ICEfaces');
+  if (a('[ng-version]')) t.push('Angular');
+  if (w.angular && w.angular.version) t.push('AngularJS');
+  if (w.React || a('[data-reactroot]') || Array.from(d.querySelectorAll('body > div')).some(e => Object.keys(e).some(k => k.startsWith('__react')))) t.push('React');
+  if (w.Vue || w.__VUE__ || a('[data-v-app]')) t.push('Vue');
+  if (w.Ext && (w.Ext.getVersion || w.Ext.version)) t.push('ExtJS');
+  if (w.sap && w.sap.ui) t.push('SAP UI5 / Fiori');
+  if (w._spPageContextInfo || a('#s4-workspace')) t.push('SharePoint');
+  if (w.apex && w.apex.item) t.push('Oracle APEX');
+  if (w.Vaadin || w.vaadin) t.push('Vaadin');
+  if (w.Wicket) t.push('Wicket');
+  if (w.Blazor) t.push('Blazor');
+  if (w.mx && w.mx.session) t.push('Mendix');
+  if (w.OutSystems) t.push('OutSystems');
+  if (w.dojo) t.push('Dojo');
+  if (w.jQuery) t.push('jQuery');
+  if (w.Backbone) t.push('Backbone');
+  if (w.kendo) t.push('Kendo UI');
+  if (w.DevExpress || w.ASPx) t.push('DevExpress');
+  if (w.Telerik || w.$telerik) t.push('Telerik');
+  if (w.Ember) t.push('Ember');
+  if (w.GWT || w.__gwt_activeModules) t.push('GWT');
+  if (/\/windchill\//.test(chemin) || w.PTC) t.push('PTC Windchill');
+  if (/(^|\/)awc(\/|$)/.test(chemin) || w.afxWeakImport || w.afxDynamicImport) t.push('Siemens Teamcenter Active Workspace');
+  if (/\/3dspace|\/3ddashboard|\/enovia|\/3dpassport/.test(chemin) || w.UWA || w.widget && w.widget.uwaUrl) t.push('3DEXPERIENCE / ENOVIA');
+  if (/\/innovator(server)?(\/|\.aspx|$)/.test(chemin) || w.aras || w.ArasModules) t.push('Aras Innovator');
+  if (/\/agile\/|\/web\/pcmservlet/.test(chemin)) t.push('Oracle Agile PLM');
+  if (/\/autodeskdm\/|\/autodeskvault|\/vault\//.test(chemin)) t.push('Autodesk Vault');
+  if (/projectwise/.test(chemin)) t.push('Bentley ProjectWise');
+  if (/\/d2\/|\/webtop\/|\/documentum/.test(chemin)) t.push('OpenText Documentum');
+  if (/\/m-files|\/vnext\//.test(chemin) || w.MFiles) t.push('M-Files');
+  if (/\/comos|comosweb/.test(chemin)) t.push('Siemens COMOS');
+  if (/eplan/.test(chemin)) t.push('EPLAN');
+  if (/servicenow|\/now\//.test(chemin) || w.g_form || w.NOW) t.push('ServiceNow');
+  const gen = d.querySelector('meta[name=generator]');
+  if (gen && gen.content) t.push('générateur : ' + gen.content.replace(/[^A-Za-z .-]/g, '').trim().slice(0, 30));
+  if (d.querySelector('frameset')) t.push('cadres (frameset)');
+  return t;
+}
+"""
 
 
 # ---------------------------------------------------------------------- modèle de la carte
@@ -499,6 +685,7 @@ class Ecran:
     fenetre: bool = False
     profondeur: int = 0
     resultats: Dict[str, str] = field(default_factory=dict)
+    cadre: bool = False  # contenu d'un cadre (iframe, frameset) de la page, lu à part
 
 
 @dataclass
@@ -554,6 +741,10 @@ class Explorateur:
         self._clics_globaux: Dict[str, int] = {}
         self.transitions: List[Dict[str, str]] = []
         self.bloquees: List[Tuple[str, str]] = []  # (méthode, modèle d'adresse) : envois empêchés
+        # nature des envois (bloqués ici ; observés pendant une visite), sans aucune valeur
+        self.envois: Dict[str, int] = {}
+        self.techno: List[str] = []  # plateformes et outils reconnus
+        self.mode = "exploration"
         self.websockets = 0
         self.telechargements: List[str] = []
         self.externes: List[str] = []
@@ -574,6 +765,7 @@ class Explorateur:
         self._fenetres_a_voir: List[str] = []
         self._interrompu: List[int] = []
         self._depuis_sauvegarde = 0
+        self.url_demandee = ""
 
     # ------------------------------------------------------------------ sécurité réseau
     def _garde(self, route: Any) -> None:
@@ -593,12 +785,27 @@ class Explorateur:
                     raison = adresse_action(requete.url) or ""
             if self.garde_active and raison:
                 self.bloquees.append((methode, modele_url(requete.url)))
+                self._noter_envoi(classer_requete(requete) if methode not in METHODES_LECTURE
+                                  else f"{methode} {_fin_adresse(requete.url)} (adresse d'action)")
                 journal.debug("Requête bloquée (%s) : %s %s", raison, methode, modele_url(requete.url))
                 route.abort()
             else:
                 route.continue_()
         except Exception as e:  # noqa: BLE001 - un gestionnaire ne doit jamais lever
             journal.debug("Garde : %s", e)
+
+    def _noter_envoi(self, nature: str) -> None:
+        self.envois[nature] = self.envois.get(nature, 0) + 1
+
+    def _noter_techno(self, cadre: Any) -> None:
+        """Plateforme du portail (Windchill, WebForms, Angular...) : lue sur chaque nouvel écran."""
+        try:
+            trouves = cadre.evaluate(JS_TECHNO) or []
+        except Exception:  # noqa: BLE001
+            return
+        for nom in trouves:
+            if isinstance(nom, str) and nom not in self.techno:
+                self.techno.append(nom)
 
     def _garde_websocket(self, ws: Any) -> None:
         """Aucune connexion WebSocket ne part vers le serveur (rien n'est relayé)."""
@@ -653,6 +860,7 @@ class Explorateur:
         contexte.on("page", self._nouvelle_page)
         page.on("download", self._telechargement)
         self._debut = time.monotonic()
+        self.url_demandee = url
         self._urls_sures.add(sans_fragment(url))
         try:
             page.goto(url, wait_until="domcontentloaded")
@@ -745,28 +953,79 @@ class Explorateur:
             if premiere_fois:
                 return
             raise ArretExploration("la session a expiré (connexion redemandée) : carte incomplète")
+        if premiere_fois:
+            self._choisir_accueil()
+            return
+        self._relogins += 1
+        if self._relogins > 3:
+            raise ArretExploration("la connexion est redemandée sans cesse : carte incomplète")
+        print()
+        print(f"{S.PAUSE}  Le portail redemande la connexion : reconnectez-vous dans la fenêtre du robot,")
+        print("   sans rien faire d'autre.")
+        print("   Puis revenez ici et appuyez sur Entrée : ", end="", flush=True)
+        self._attendre_entree()
+        self._attendre(self.nav.page_courante())
+
+    def _attendre_entree(self) -> Optional[str]:
+        """Entrée dans le terminal ; pendant ce temps l'utilisateur a la main sur le navigateur
+        (ses boîtes de dialogue sont à lui, et la connexion peut envoyer des données)."""
         from .console import lire_ligne, vider_clavier
 
-        if not premiere_fois:
-            self._relogins += 1
-            if self._relogins > 3:
-                raise ArretExploration("la connexion est redemandée sans cesse : carte incomplète")
-        print()
-        if premiere_fois:
-            print(f"{S.PAUSE}  Dans la fenêtre du robot : connectez-vous si besoin, puis allez sur la page")
-            print("   d'ACCUEIL du portail (celle d'où part l'exploration).")
-        else:
-            print(f"{S.PAUSE}  Le portail redemande la connexion : reconnectez-vous dans la fenêtre du robot,")
-            print("   sans rien faire d'autre.")
-        print("   Puis revenez ici et appuyez sur Entrée : ", end="", flush=True)
-        actif, self.garde_active = self.garde_active, False  # la connexion envoie des données : permis
+        actif, self.garde_active = self.garde_active, False
         try:
             with self.nav.pause_manuelle():
-                lire_ligne(self.nav.pomper)
+                return lire_ligne(self.nav.pomper)
         finally:
             self.garde_active = actif
-            vider_clavier()  # un second Entrée ne doit pas arrêter l'exploration
-        self._attendre(self.nav.page_courante())
+            vider_clavier()  # un second Entrée ne doit rien déclencher
+
+    def _page_du_portail(self) -> Page:
+        """L'onglet où l'utilisateur a affiché son portail : de préférence celui du robot, sinon
+        le plus récent du même site que l'adresse donnée, sinon le plus récent tout court."""
+        pages = self.nav.pages_de_travail()
+        web = [p for p in pages if p.url.startswith(("http:", "https:", "file:"))]
+        voulu = site_de(self.url_demandee)
+        memes = [p for p in web if site_de(p.url) == voulu]
+        for liste in (memes, web, pages):
+            if self.nav.page in liste:
+                return self.nav.page
+            if liste:
+                return liste[-1]
+        return self.nav.page_courante()
+
+    def _choisir_accueil(self) -> None:
+        """Première fois : l'utilisateur se connecte et affiche l'accueil de son portail. Le robot
+        montre la page d'où il partira et demande confirmation : il ne part jamais, sans le dire,
+        d'une page Google, de Chrome ou de connexion."""
+        from .console import lire_ligne
+
+        print()
+        print(f"{S.PAUSE}  Dans la fenêtre du robot : connectez-vous si besoin, puis affichez la page")
+        print("   d'ACCUEIL de votre portail, comme d'habitude.")
+        for _ in range(6):
+            print("   Quand c'est fait, revenez ici et appuyez sur Entrée : ", end="", flush=True)
+            self._attendre_entree()
+            page = self._page_du_portail()
+            self.nav.utiliser_page(page)
+            self._attendre(page)
+            lecture = self._lire(page) or {}
+            titre = (lecture.get("titres") or [""])[0] or lecture.get("titre") or "(page sans titre)"
+            m = decouper(page.url)
+            print()
+            print(f"   Le robot partira de cette page :  « {titre[:70]} »   ({(m.netloc if m else '') or page.url[:40]})")
+            if lecture.get("mot_de_passe"):
+                print(f"   {S.ATTENTION} Cette page demande un mot de passe : vous n'êtes peut-être pas encore connecté.")
+            elif self.url_demandee and site_de(page.url) != site_de(self.url_demandee):
+                print(f"   {S.ATTENTION} Elle n'est pas à l'adresse que vous avez donnée : est-ce bien votre portail ?")
+                print("   (Un portail change parfois d'adresse après la connexion : dans ce cas, c'est normal.)")
+            print("   C'est bien votre portail, et vous êtes connecté ? (o/n) [o] : ", end="", flush=True)
+            with self.nav.pause_manuelle():
+                reponse = lire_ligne(self.nav.pomper)
+            if reponse is None or not reponse.strip().lower().startswith("n"):
+                return
+            print()
+            print("   D'accord. Dans la fenêtre du robot, affichez la bonne page (connectez-vous si besoin).")
+        raise ErreurAutoweb("La page de départ n'a pas été confirmée : rien n'a été fait.")
 
     def _attendre(self, page: Page) -> None:
         try:
@@ -828,9 +1087,9 @@ class Explorateur:
         return lecture["identifiant"] and bool(re.search(r"login|signin|sso|saml|oauth|authorize|connexion|logon", chemin))
 
     # ------------------------------------------------------------------ écrans
-    def _observer(self, page: Page, chemin: List[Action], profondeur: int,
-                  lecture: Optional[Dict[str, Any]] = None) -> Optional[Ecran]:
-        """Lit l'écran courant ; renvoie un Ecran s'il est NOUVEAU, sinon None."""
+    def _observer(self, page: Any, chemin: List[Action], profondeur: int,
+                  lecture: Optional[Dict[str, Any]] = None, annoncer: bool = True) -> Optional[Ecran]:
+        """Lit l'écran courant (page ou cadre) ; renvoie un Ecran s'il est NOUVEAU, sinon None."""
         lecture = lecture or self._lire(page)
         if lecture is None:
             return None
@@ -845,9 +1104,11 @@ class Explorateur:
         )
         self.ecrans.append(ecran)
         self._par_signature[sig] = ecran
-        journal.info("   %s %s : « %s » — %d champ(s), %d élément(s) cliquable(s), %d tableau(x)",
-                     S.OK, ecran.id, (ecran.titres[0] if ecran.titres else ecran.titre)[:60],
-                     len(ecran.champs), len(ecran.cibles), len(ecran.tableaux))
+        self._noter_techno(page)
+        if annoncer:
+            journal.info("   %s %s : « %s » — %d champ(s), %d élément(s) cliquable(s), %d tableau(x)",
+                         S.OK, ecran.id, (ecran.titres[0] if ecran.titres else ecran.titre)[:60],
+                         len(ecran.champs), len(ecran.cibles), len(ecran.tableaux))
         return ecran
 
     def _decision(self, cible: Dict[str, Any]) -> Tuple[str, str]:
@@ -1009,6 +1270,8 @@ class Explorateur:
                 self._fenetres_a_voir.append(adresse)
         if len(self.bloquees) > nb_bloquees:
             notes.append("a voulu ENVOYER des données : bloqué")
+            journal.info("   %s « %s » : le portail a voulu envoyer des données. Bloqué : rien n'est parti.",
+                         S.ATTENTION, cle[:50])
         if len(self.telechargements) > nb_fichiers:
             notes.append("lance un téléchargement (annulé)")
         lecture = self._lire(page)
@@ -1107,6 +1370,7 @@ class Explorateur:
             "arret": self.arret,
             "complet": self.complet,
             "duree_s": round(time.monotonic() - self._debut) if self._debut else 0,
+            "mode": self.mode,
         }
 
     def _sauvegarde_periodique(self) -> None:
@@ -1125,6 +1389,8 @@ class Explorateur:
             "envois_bloques": sorted({f"{m} {u}" for m, u in self.bloquees}),
             "telechargements": sorted(set(self.telechargements)),
             "sites_externes": sorted(set(self.externes)),
+            "technologie": self.techno,
+            "envois": self.envois,
         }
         (self.dossier / "carte.json").write_text(json.dumps(donnees, ensure_ascii=False, indent=1), encoding="utf-8")
         (self.dossier / "carte.html").write_text(self._html(), encoding="utf-8")
@@ -1190,13 +1456,12 @@ class Explorateur:
             "Un nom d'onglet, de menu ou de colonne peut malgré tout être un nom de client, de projet",
             "ou de personne : RELISEZ-LE et remplacez ce qui vous semble sensible avant de l'envoyer.",
             "",
-            f"{r['ecrans']} écran(s) vus, {r['essais']} élément(s) essayés, "
-            f"{r['bloquees']} envoi(s) de données bloqué(s). "
-            f"{'Exploration complète.' if r['complet'] else 'Exploration INCOMPLÈTE.'}",
+            self._bilan_partage(r),
             "",
         ]
         for e in self.ecrans:
-            lignes.append(f"{e.id}" + ("   (fenêtre ouverte par-dessus l'écran)" if e.fenetre else ""))
+            lignes.append(f"{e.id}" + ("   (fenêtre ouverte par-dessus l'écran)" if e.fenetre else "")
+                          + ("   (contenu d'un cadre de la page)" if e.cadre else ""))
             lignes.append(f"     accès : {' › '.join(p.partage or 'un clic' for p in e.chemin)}")
             onglets = sorted({masquer(c["texte"]) for c in e.cibles
                               if c["zone"] == "onglet" and self._court(c["texte"])})
@@ -1236,10 +1501,49 @@ class Explorateur:
             if e.tronque:
                 lignes.append("     (écran très chargé : seuls les premiers éléments ont été lus)")
             lignes.append("")
-        if self.bloquees:
-            lignes.append(f"ENVOIS DE DONNEES BLOQUES : {len(self.bloquees)} "
-                          "(le détail des adresses est dans carte.html, sur votre poste)")
+        lignes += self._diagnostic_partage()
         return "\n".join(lignes) + "\n"
+
+    def _bilan_partage(self, r: Dict[str, Any]) -> str:
+        return (f"Exploration automatique : {r['ecrans']} écran(s) vus, {r['essais']} élément(s) essayés, "
+                f"{r['bloquees']} envoi(s) de données bloqué(s). "
+                f"{'Exploration complète.' if r['complet'] else 'Exploration INCOMPLÈTE.'}")
+
+    def _raisons_refus(self) -> Dict[str, int]:
+        """Pourquoi des éléments n'ont pas été cliqués : explique une carte pauvre."""
+        raisons: Dict[str, int] = {}
+        for e in self.ecrans:
+            for resultat in e.resultats.values():
+                if not resultat.startswith("non cliqué : "):
+                    continue
+                raison = re.sub(r"\s*(«[^»]*»|\([^)]*\))", "", resultat[len("non cliqué : "):]).strip(" :;,")
+                raisons[raison] = raisons.get(raison, 0) + 1
+        return raisons
+
+    def _diagnostic_partage(self) -> List[str]:
+        """Ce qui m'aide à comprendre le portail : sa technologie, la nature des envois de
+        données (jamais leurs valeurs), et pourquoi des éléments n'ont pas été essayés."""
+        lignes = ["TECHNOLOGIE RECONNUE : " + (", ".join(self.techno) if self.techno else "rien de connu")]
+        if self.envois:
+            lignes.append("")
+            lignes.append("ENVOIS DE DONNEES " + ("VUS PENDANT LA VISITE" if self.mode == "visite"
+                                                   else "BLOQUES PAR SECURITE (rien n'est parti)")
+                          + " : nature seulement, sans aucune valeur")
+            for nature, nombre in sorted(self.envois.items(), key=lambda x: (-x[1], x[0]))[:40]:
+                lignes.append(f"   {nombre:3} × {nature}")
+        raisons = self._raisons_refus()
+        if raisons:
+            lignes.append("")
+            lignes.append("ELEMENTS NON CLIQUES PAR SECURITE, PAR RAISON")
+            for raison, nombre in sorted(raisons.items(), key=lambda x: (-x[1], x[0]))[:20]:
+                lignes.append(f"   {nombre:3} × {raison}")
+        if self.telechargements:
+            extensions = sorted({m.group(1).lower() if m else "?" for m in
+                                 (re.search(r"\.([A-Za-z0-9]{1,5})(?:$|[?#])", t) for t in self.telechargements)})
+            lignes.append("")
+            lignes.append(f"FICHIERS PROPOSES AU TELECHARGEMENT : {len(set(self.telechargements))} "
+                          f"(types : {', '.join(masquer(x) for x in extensions)})")
+        return lignes
 
     def _html(self) -> str:
         r = self.resume()
@@ -1282,6 +1586,13 @@ class Explorateur:
                 morceaux.append(f"<tr><td>{h(c['texte'] or c['aria'] or '(icône)')}</td><td>{h(c['zone'])}</td>"
                                 f"<td class={classe}>{liens}</td></tr>")
             morceaux.append("</table>")
+        morceaux.append(f"<h2>Technologie reconnue</h2><p>{h(', '.join(self.techno) or 'rien de connu')}</p>")
+        if self.envois:
+            morceaux.append("<h2>Nature des envois de données " + ("vus" if self.mode == "visite" else "bloqués")
+                            + "</h2><ul>")
+            for nature, nombre in sorted(self.envois.items(), key=lambda x: (-x[1], x[0])):
+                morceaux.append(f"<li>{nombre} × <code>{h(nature)}</code></li>")
+            morceaux.append("</ul>")
         if self.bloquees:
             morceaux.append("<h2>Envois de données bloqués</h2><ul>")
             for envoi in sorted({f"{m} {u}" for m, u in self.bloquees}):

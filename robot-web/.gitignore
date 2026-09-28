@@ -35,3 +35,6 @@ build/
 dist/
 .venv/
 venv/
+
+# --- Fichier rassemblé à envoyer (choix 9) : relu par vous, jamais versionné
+A_ENVOYER_A_CLAUDE.txt

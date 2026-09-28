@@ -15,7 +15,7 @@ import re
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 from . import symboles as S
-from .enregistreur import ancrer_exactement, remplacer_texte_selecteur
+from .enregistreur import ancrer_exactement
 from .erreurs import ErreurAutoweb
 from .gabarit import normaliser_cle
 from .scenario import MOTIF_DESTRUCTIF
@@ -229,7 +229,7 @@ def deviner_colonne(valeur: Any, colonnes: Sequence[str], lignes: Sequence[Dict[
 def _entete_scenario(
     nom: str, base: str, canal: str, fichier_excel: Optional[str], feuille: Optional[str],
     colonnes: Sequence[str], url: str, secrets: Sequence[str] = (), refaire: str = "reprise",
-    questions: Optional[Dict[str, str]] = None, confirmer: bool = False,
+    questions: Optional[Dict[str, str]] = None, confirmer: bool = False, profil: Optional[str] = None,
 ) -> List[str]:
     lignes = [
         "# Tâche autoweb. Pour la relancer : menu, choix 2 (ou « robot lancer <ce fichier> »).",
@@ -241,7 +241,7 @@ def _entete_scenario(
         "navigateur:",
         f"  canal: {canal if canal in ('chrome', 'msedge', 'chromium', 'auto') else 'auto'}"
         "            # chrome | msedge | chromium | auto",
-        f"  profil: profils/{base}",
+        f"  profil: {_yaml_chaine(profil) if profil else f'profils/{base}'}",
         "  visible: true",
         "  delai_max: 15000",
     ]
@@ -543,6 +543,7 @@ def construire_depuis_enregistrement(
     url_depart: str = "",
     dossier_exports: str = "exports",
     sortie_partage: Optional[Dict[str, str]] = None,
+    profil: Optional[str] = None,
 ) -> str:
     """Transforme un enregistrement (liste d'EtapeEnregistree) en scénario YAML,
     en demandant d'où vient chaque valeur saisie."""
@@ -714,7 +715,7 @@ def construire_depuis_enregistrement(
 
     lignes = _entete_scenario(nom, base, canal, fichier_excel, feuille, colonnes, url_depart,
                               secrets=sorted(set(secrets.values())), refaire="toujours", questions=questions,
-                              confirmer=confirmer)
+                              confirmer=confirmer, profil=profil)
     if sortie_partage is not None:
         sortie_partage["texte"] = decrire_pour_partage(nom, etapes_connexion + etapes, parametres, questions)
     if etapes_connexion or pause_connexion:

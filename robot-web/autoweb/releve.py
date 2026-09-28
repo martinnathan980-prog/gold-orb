@@ -235,9 +235,9 @@ def _brouillon_yaml(page: Page, elements: List[Dict[str, Any]], nom: str) -> str
         if e["cadre"]:
             if e["cadre"] not in cadres_vus:
                 cadres_vus.add(e["cadre"])
-                lignes.append(f"  - cadre:")
+                lignes.append("  - cadre:")
                 lignes.append(f"      selecteur: \"{_echapper(e['cadre'])}\"")
-                lignes.append(f"      etapes:")
+                lignes.append("      etapes:")
                 for autre in visibles:
                     if autre["cadre"] == e["cadre"] and not autre["bouton"] and autre["tag"] != "a":
                         lignes.extend(etape_pour(autre, "        "))

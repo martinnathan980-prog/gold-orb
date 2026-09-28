@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional
 
 from urllib.parse import urlsplit
 
-from playwright.sync_api import Error as PlaywrightError, Page
+from playwright.sync_api import Page
 
 from .navigateur import Navigateur, est_onglet_parasite
 from .releve import JS_SELECTEUR_IFRAME

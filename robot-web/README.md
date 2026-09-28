@@ -300,9 +300,13 @@ extension), `convertir_excel: true` (un CSV devient aussi un `.xlsx`) et `vers_c
 
 Trois façons, de la plus simple à la plus robuste :
 
-1. **Profil persistant** (`navigateur: profil: profils/mon_outil`) : le robot ouvre son propre Edge avec un
+1. **Profil persistant** (`navigateur: profil: profils/mon_outil`) : le robot ouvre son propre Chrome avec un
    profil dédié. La première fois, une étape `pause` dans `avant:` vous laisse vous connecter à la main ;
    les fois suivantes la session est mémorisée. *Ne partagez jamais le dossier `profils/` (cookies).*
+   Depuis la version 19, la carte (choix 8) et les tâches enregistrées (choix 1) partagent UN profil,
+   `profils/chrome_robot` : on s'y connecte une fois pour tout. Chrome (depuis sa version 136) refuse
+   d'être piloté sur le profil habituel de l'utilisateur : le robot a donc toujours son propre profil.
+   Les extensions imposées par l'entreprise (connexion automatique) y restent actives.
 2. **Se brancher sur votre Chrome (ou Edge) déjà ouvert** : lancez `chrome_debug.bat` (ou `edge_debug.bat`),
    qui ouvre le navigateur avec `--remote-debugging-port=9222`, connectez-vous à vos outils, puis dans le scénario :
    ```yaml
