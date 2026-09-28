@@ -262,10 +262,13 @@ def blocage_strategie(e: BaseException) -> bool:
 
 
 def navigateur_introuvable(e: BaseException) -> bool:
-    """Vrai si l'erreur dit seulement que ce navigateur n'est pas installé sur le poste."""
-    texte = str(e)
-    return any(m in texte for m in ("is not found", "Executable doesn't exist", "not installed", "not found at",
-                                    "ENOENT", "cannot find", "No such file"))
+    """Vrai si l'erreur dit seulement que ce navigateur n'est pas installé sur le poste. Seule la
+    première ligne compte (la suite est le journal du navigateur, plein de « No such file »)."""
+    if navigateur_ferme(e):
+        return False
+    texte = premiere_ligne(e)
+    return any(m in texte for m in ("is not found at", "Executable doesn't exist at", "distribution '",
+                                    "is not installed"))
 
 
 def navigateur_ferme(e: BaseException) -> bool:
@@ -302,8 +305,8 @@ class Navigateur:
         # quand l'utilisateur a la main (visite, enregistrement) : Chrome demande avant de renvoyer
         # un formulaire (F5 ou Retour après « Dupliquer ») au lieu de le renvoyer en silence
         self.confirmer_renvoi = False
-        # prévenu après chaque boîte de dialogue à laquelle le robot a répondu (type : alert, confirm...)
-        self.sur_dialogue: Optional[Any] = None
+        # décide de la réponse à une boîte de dialogue (« accepter », « refuser », ou None : le réglage)
+        self.decider_dialogue: Optional[Any] = None
         self._dialogues_differes: List[Any] = []
 
     # ------------------------------------------------------------------ ouverture
@@ -435,9 +438,9 @@ class Navigateur:
 
     def _repondre_dialogue(self, dialogue: Any) -> None:
         mode = self.config.dialogues
-        if self.sur_dialogue is not None:
+        if self.decider_dialogue is not None:
             try:
-                self.sur_dialogue(dialogue.type)
+                mode = self.decider_dialogue(dialogue) or mode
             except Exception:  # noqa: BLE001
                 pass
         try:

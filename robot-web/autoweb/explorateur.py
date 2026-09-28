@@ -139,8 +139,28 @@ EXCLUS_GARDE = {
     "confirm", "annul", "cancel", "relire", "retourner", "afficher en tant", "rejouer", "changer", "change",
     "generer", "generate", "generation", "sign in", "sign up", "signup", "logout", "log out", "logoff", "sign out",
     "signout", "deconnex", "deconnect", "disconnect", "demander", "noter", "lancer", "run", "start", "demarrer",
-    "stop", "arreter", "calcul", "traiter", "execut",
+    "stop", "arreter", "calcul", "traiter", "execut", "appliqu", "apply", "initialis", "reset",
 }
+# Verbes anglais à leur forme de base : « Delete », « Save » (en français, l'infinitif suffit :
+# « Supprimer » oui, « Supprimés » ou « Modifications » non).
+VERBES_ANGLAIS = [
+    "delete", "remove", "save", "create", "update", "archive", "restore", "rename", "move", "merge", "release",
+    "approve", "promote", "revise", "duplicate", "erase", "purge", "clone", "insert", "add", "edit", "copy", "lock",
+    "unlock", "checkout", "checkin", "submit", "send", "upload", "import", "assign", "reject", "publish", "discard",
+    "revert", "rollback", "undo", "destroy", "transfer", "sign", "decline", "accept", "share", "invite", "subscribe",
+    "follow", "pin", "unpin", "attach", "detach", "replace", "freeze", "commit", "post",
+]
+# Verbes d'action NETS, pour les adresses et les envois de la page (…/delete, action=supprimer) et
+# pour les onglets : pas de noms (« commentaires », « favoris ») ni d'ambigus (« valider »).
+VERBES_FORTS = [
+    "supprim", "suppr", "delete", "remove", "effac", "erase", "destroy", "purge", "enregistr", "sauvegard", "save",
+    "dupliqu", "duplicate", "clon", "copier", "copy", "creer", "create", "insert", "ajout", "add", "update", "modif",
+    "edit", "approuv", "approve", "rejet", "reject", "refus", "publier", "publish", "verrou", "lock", "unlock",
+    "checkout", "checkin", "archiv", "restaur", "restore", "renomm", "rename", "deplac", "move", "transfer",
+    "promouv", "promote", "revis", "liber", "release", "submit", "soumettre", "envoy", "send", "import", "upload",
+    "assign", "affect", "attribu", "merge", "fusion", "undo", "revert", "rollback", "discard", "retir", "vider",
+]
+VERBES_FORTS_ONGLETS = ["supprim", "delete", "remove", "effac", "erase", "enregistr", "sauvegard", "save", "purge"]
 RADICAUX_GARDE = [r for r in RADICAUX_INTERDITS if r not in EXCLUS_GARDE]
 MOTS_GARDE = [m for m in MOTS_ENTIERS_INTERDITS if m not in {"ok", "oui", "yes", "go", "done", "x"}]
 MOTIF_GARDE_SOURCE = (
@@ -403,13 +423,20 @@ JS_OUTILS = r"""
   const PERSO = '[class*=user i], [class*=account i], [class*=profil i], [class*=avatar i], [id*=user i], ' +
                 '[id*=account i], [id*=profil i], [aria-label*=compte i], [aria-label*=account i], [aria-label*=profil i]';
   const FERMER = '[class*=close i], [class*=fermer i], [aria-label*=close i], [aria-label*=fermer i], ' +
-                 '[title*=close i], [title*=fermer i], .fa-times, .fa-xmark, .k-i-x, .k-i-close, [class*=remove i]';
+                 '[title*=close i], [title*=fermer i], .fa-times, .fa-xmark, .k-i-x, .k-i-close, [class*=remove i], ' +
+                 '.bi-x, .bi-x-lg, .bi-x-circle, .pi-times, .pi-times-circle, .lucide-x, [class*=icon-x i], ' +
+                 '[data-dismiss], [data-bs-dismiss], .glyphicon-remove';
   // une croix dans l'élément : classe, info-bulle, ou glyphe (×, ligature « close » des icônes Material)
   const croix = x => {
     if (!x) return false;
     try { if (x.querySelector(FERMER)) return true; } catch (err) {}
-    for (const i of x.querySelectorAll('span, i, button, a, mat-icon')) {
-      if (['×', '✕', '✖', 'x', 'close', 'clear', 'cancel'].includes((i.textContent || '').trim().toLowerCase())) return true;
+    for (const i of [x].concat(Array.from(x.querySelectorAll('span, i, button, a, mat-icon, svg')).slice(0, 8))) {
+      if (i !== x && ['×', '✕', '✖', 'x', 'close', 'clear', 'cancel'].includes((i.textContent || '').trim().toLowerCase())) return true;
+      try {  // croix dessinée par le style (« ::after { content: '×' } »)
+        for (const pseudo of ['::after', '::before']) {
+          if (/[×✕✖]/.test(getComputedStyle(i, pseudo).content || '')) return true;
+        }
+      } catch (err) {}
     }
     return false;
   };
@@ -508,14 +535,21 @@ JS_ECRAN = r"""
     t = court(t, 60).replace(/\s*:\s*$/, '');
     if (t && t.split(' ').length <= 3 && !/["«»“”]/.test(t) && !infos.includes(t) && infos.length < 60) infos.push(t);
   };
-  tous('dt').forEach(x => { if (vis(x) && !robot(x) && !x.children.length) ajouterInfo(x.textContent || ''); });
+  // <dt> : une vraie fiche en a peu ; une longue liste <dl> est une liste d'objets
+  tous('dl').forEach(l => {
+    const dts = Array.from(l.querySelectorAll(':scope > dt, :scope > div > dt'));
+    if (dts.length <= 25) dts.forEach(x => { if (vis(x) && !robot(x) && !x.querySelector('a, button')) ajouterInfo(x.textContent || ''); });
+  });
   // entête de ligne : seulement dans une vraie fiche « libellé | valeur » (tableau SANS entêtes de
   // colonnes) et pour les premières lignes ; dans une liste de résultats, ce sont des noms d'objets
   tous('table').forEach(t => {
-    if (!vis(t) || robot(t) || t.querySelector('thead th, [role=columnheader]')) return;
+    // une liste de résultats a des entêtes de colonnes (thead, ou une première ligne tout en th) : pas une fiche
+    const premiere = t.querySelector('tr');
+    const entetesEnLigne = !!premiere && premiere.children.length > 1 && Array.from(premiere.children).every(c => c.tagName === 'TH');
+    if (!vis(t) || robot(t) || entetesEnLigne || t.querySelector('thead th, [role=columnheader], th[scope=col]')) return;
     t.querySelectorAll('tr > th:first-child').forEach(x => {
       const tr = x.parentElement;
-      if (tr && indexLigne(tr) < 30 && !x.children.length && x.nextElementSibling && x.nextElementSibling.tagName === 'TD') ajouterInfo(x.textContent || '');
+      if (tr && indexLigne(tr) < 30 && !x.querySelector('a, button') && x.nextElementSibling && x.nextElementSibling.tagName === 'TD') ajouterInfo(x.textContent || '');
     });
   });
   // « Titre : » suivi de sa valeur : le texte de l'élément LUI-MÊME, sans rien d'imbriqué
@@ -672,6 +706,8 @@ close fermer ok yes no oui non next previous suivant precedent back retour home 
 app application service services api rest json xml soap rpc graphql odata batch server serveur client module modules
 widget widgets container content dialog modal popup window frame iframe control controls ctl cmd txt lbl lnk ddl chk
 rb cb img pic hdn hf gv rpt uc tb dd sel inp fld frm mat mdc ng item apply ok innovator default ptc wt apex
+q id pk db uid oid ts dt fk num nb qte qty ui ux js css url uri ko fr en es it nl x y z i j k n s v el btn bt lb ib
+lst tbl dlg pop pnl sec hd ft nav col row idx pos rel src dst min max avg sum str int bool obj arr fn cfg env
 """.split())
 
 
@@ -681,7 +717,9 @@ def nom_de_code(nom: Any) -> bool:
     morceaux = [m for m in re.split(r"[^A-Za-z]+", brut) if m]
     if not morceaux:
         return False
-    return all(len(m) <= 3 or normaliser(m) in VOCABULAIRE_CODE for m in morceaux)
+    # chaque morceau doit être un mot de développeur connu, même court : « FLA », « JD » (code de site,
+    # initiales) ne passent pas
+    return all(normaliser(m) in VOCABULAIRE_CODE for m in morceaux)
 
 
 def nom_technique(texte: Any, longueur: int = 40) -> str:
@@ -876,7 +914,7 @@ def classer_envoi(methode: str, url: str, type_contenu: str, corps: Optional[str
         if not operation:
             m = re.search(r"<(?:\w+:)?Body[^>]*>\s*<(?:\w+:)?([A-Za-z_][\w.-]*)", corps)
             operation = _code(m.group(1)) if m else ""
-        actions = sorted({nom_technique(a) for a in re.findall(r"<Item\b[^>]*\baction=[\"']([\w]+)[\"']", corps)} - {""})
+        actions = sorted({_code(a) for a in re.findall(r"<Item\b[^>]*\baction=[\"']([\w]+)[\"']", corps)} - {""})
         types = sorted({_code(t.replace(" ", "_"))
                         for t in re.findall(r"<Item\b[^>]*\btype=[\"']([\w ]{1,40})[\"']", corps)} - {""})
         if actions:  # Aras : chaque élément dit ce qu'il fait
@@ -981,8 +1019,10 @@ PRODUITS_SERVEUR = tuple((re.compile(m, re.IGNORECASE), p) for m, p in (
     (r"\bphp\b", "PHP"), (r"express", "Express (Node.js)"), (r"servlet|\bjsp\b", "Java Servlet/JSP"),
     (r"\bjsf\b|mojarra|myfaces", "JSF"), (r"sharepoint", "SharePoint"), (r"wildfly|jboss|undertow", "WildFly/JBoss"),
     (r"glassfish|payara", "GlassFish/Payara"), (r"openresty", "OpenResty"), (r"envoy", "Envoy"),
-    (r"cloudflare", "Cloudflare"), (r"big-?ip|f5", "F5 BIG-IP"), (r"sap netweaver|sap web", "SAP NetWeaver"),
-    (r"oracle-http|oracle http|ohs", "Oracle HTTP Server"), (r"wordpress", "WordPress"), (r"drupal", "Drupal"),
+    (r"cloudflare", "Cloudflare"), (r"\bbig-?ip\b|^f5\b", "F5 BIG-IP"), (r"sap netweaver|sap web", "SAP NetWeaver"),
+    (r"oracle-http|oracle http|\bohs\b", "Oracle HTTP Server"),
+    (r"oracle-application-server|oracle application server", "Oracle Application Server"),
+    (r"microsoft-httpapi", "Microsoft HTTP API"), (r"wordpress", "WordPress"), (r"drupal", "Drupal"),
     (r"joomla", "Joomla"), (r"zope|plone", "Plone"), (r"lotus|domino", "HCL Domino"),
 ))
 
@@ -1099,29 +1139,52 @@ MOTIF_PERSONNE = re.compile(
 PRENOMS = set("""
 jean pierre michel philippe alain nicolas christophe patrick daniel bernard eric laurent frederic stephane david
 olivier christian julien thierry sebastien francois pascal thomas didier jacques gerard dominique vincent andre
-alexandre antoine guillaume maxime romain kevin mathieu matthieu anthony jerome franck marc sylvain yves claude
+alexandre antoine guillaume maxime romain kevin mathieu matthieu anthony jerome franck sylvain yves claude
 bruno fabrice cedric ludovic arnaud benoit emmanuel serge denis herve regis joel gilles lionel remi hugo lucas louis
 paul arthur gabriel raphael leo jules adam nathan theo enzo mehdi karim mohamed ahmed rachid samir yannick loic
+quentin florian clement benjamin xavier jonathan jeremy mickael michael damien adrien aurelien baptiste bastien
+alexis valentin corentin dylan tristan victor martin simon axel mathis noah ethan tom timothee gaetan gregory
+fabien johan jordan morgan steven teddy william yoann yohan cyril cyrille marcel roger rene robert henri georges
+maurice raymond lucien fernand gaston albert andre emile edouard etienne felix hubert jean-baptiste marc
 marie nathalie isabelle sylvie catherine francoise christine monique valerie sandrine sophie veronique nicole
 patricia celine stephanie aurelie julie caroline laure laurence emilie camille claire anne helene martine brigitte
 chantal agnes elodie audrey melanie virginie severine delphine sabine florence corinne pauline lea manon chloe emma
 sarah laura marion lucie charlotte mathilde juliette alice ines jade louise zoe fatima nadia sonia karine magali
-beatrice genevieve josiane odile evelyne danielle michele jacqueline marc-antoine jean-pierre jean-claude
-jean-marc jean-luc jean-francois jean-michel jean-louis jean-paul marie-claire marie-christine marie-france
-anne-marie anne-sophie marie-laure john james robert william richard joseph charles mary jennifer linda elizabeth
-susan jessica karen nancy lisa betty sandra ashley donna emily michelle carol amanda melissa deborah stephen mark
-steven andrew kenneth joshua brian george edward ronald timothy jason jeffrey ryan jacob gary eric peter
+beatrice genevieve josiane odile evelyne danielle michele jacqueline cecile oceane gaelle yasmine amandine
+jessica justine margaux morgane noemie ophelie oriane romane solene tiphaine vanessa alexandra anais estelle
+eloise fanny gwenaelle helena ingrid jeanne josephine lucile marine mylene nina rose valentine yasmina amelie
+ludivine myriam nadege perrine rachel regine sylviane therese yvette yvonne colette denise simone suzanne
+marc-antoine jean-pierre jean-claude jean-marc jean-luc jean-francois jean-michel jean-louis jean-paul
+marie-claire marie-christine marie-france anne-marie anne-sophie marie-laure marie-pierre pierre-yves
+john james robert william richard joseph charles mary jennifer linda elizabeth susan jessica karen nancy lisa
+betty sandra ashley donna emily michelle carol amanda melissa deborah stephen steven andrew kenneth joshua brian
+george edward ronald timothy jason jeffrey ryan jacob gary peter hans klaus jurgen stefan andreas giuseppe
+marco luca giovanni carlos jose juan miguel antonio manuel ana maria
 """.split())
+
+
+def nom_propre_dedans(texte: str) -> bool:
+    """« Résultats pour Tricastin », « Site Penly » : un mot à majuscule après le premier (les
+    libellés s'écrivent « Date de création ») ; ou un nom de personne."""
+    mots = str(texte or "").split()
+    return ressemble_a_une_personne(texte) or any(m[:1].isupper() and len(m) > 1 for m in mots[1:])
 
 
 def ressemble_a_une_personne(texte: str) -> bool:
     texte = str(texte or "").strip()
+    # une ligature d'icône devant (« person Marie Martin ») ou une ponctuation (« (Marie Martin) »)
+    texte = re.sub(r"^(?:person|account_circle|account|user|face|badge)\s+", "", texte)
+    texte = texte.strip("()[]{}«»\"' .,;:-")
     if MOTIF_PERSONNE.match(texte):
         return True
+    brut = texte.split()
     mots = normaliser(texte).split()
-    # « Marie Martin », « Jean-Pierre Durand », « Martin Marie » : un prénom connu et un nom
-    return 2 <= len(mots) <= 4 and any(m in PRENOMS or all(p in PRENOMS for p in m.split("-")) for m in mots) \
-        and texte[:1].isupper()
+    if not 2 <= len(mots) <= 4:
+        return False
+    # « Marie Martin », « Jean-Pierre Durand », « Martin Marie » : un prénom connu, tous les mots
+    # commençant par une majuscule (« Mark as read » n'est pas une personne)
+    prenom = any(m in PRENOMS or all(x in PRENOMS for x in m.split("-")) for m in mots)
+    return prenom and all(b[:1].isupper() for b in brut)
 
 
 # ---------------------------------------------------------------------- modèle de la carte
@@ -1530,7 +1593,7 @@ class Explorateur:
             self._attendre(page)
             lecture = self._lire(page) or {}
             menus = sum(1 for c in lecture.get("cibles") or [] if c["zone"] in ("menu", "lateral", "arbre"))
-            titre = (lecture.get("titres") or [""])[0] or lecture.get("titre") or "(page sans titre)"
+            titre = masquer((lecture.get("titres") or [""])[0] or lecture.get("titre") or "(page sans titre)")
             m = decouper(page.url)
             print()
             if self.mode == "visite":
@@ -1960,9 +2023,11 @@ class Explorateur:
         texte = cible["texte"] or cible["aria"]
         if cible.get("perso") or ressemble_a_une_personne(texte):
             return "(bouton)"
-        if est_lecture(texte) or (mot_interdit(texte) and self._court(texte, 4)):
+        premier = (texte.split() or [""])[0]
+        if est_lecture(texte) or (mot_interdit(premier) and self._court(texte, 4)):
             # « Voir le détail » oui ; « Voir Poste Lyon Sud », « Exporter Pompe Bugey » : la suite
-            # peut être une donnée, seuls les mots génériques sont repris
+            # peut être une donnée, seuls les mots génériques sont repris. Le premier mot doit être
+            # le verbe lui-même (« Paluel Exporter » : rien de repris)
             mots = texte.split()
             suite = [m for m in mots[1:] if normaliser(m).strip(".:,;") in MOTS_GENERIQUES]
             return masquer(" ".join([mots[0]] + suite) + (" …" if len(suite) < len(mots) - 1 else ""))
@@ -2001,6 +2066,16 @@ class Explorateur:
             return masquer(libelle)
         return "(sans nom)"
 
+    def _onglet_courant(self, cible: Dict[str, Any], ecran: "Ecran") -> bool:
+        """Onglet qu'on retrouve sur un autre écran du même modèle : un onglet de l'interface, pas le
+        nom d'un plan ouvert."""
+        nom = _norm_chiffres(cible["texte"] or cible["aria"])
+        return any(
+            autre is not ecran and autre.modele == ecran.modele
+            and any(_norm_chiffres(c["texte"] or c["aria"]) == nom for c in autre.cibles if c["zone"] == "onglet")
+            for autre in self.ecrans
+        )
+
     def _texte_partage(self) -> str:
         r = self.resume()
         ids = {e.id for e in self.ecrans}
@@ -2029,7 +2104,9 @@ class Explorateur:
                           + ("   (composants web)" if e.ombre else ""))
             lignes.append(f"     accès : {' › '.join(p.partage or 'un clic' for p in e.chemin)}")
             onglets_cibles = [c for c in e.cibles if c["zone"] == "onglet" and not c.get("perso")]
-            onglets = sorted({x for x in (self._sur(c["texte"]) for c in onglets_cibles if not c.get("fermable")) if x})
+            documents_ouverts = any(c.get("fermable") for c in e.cibles)
+            onglets = sorted({x for x in (self._sur(c["texte"]) for c in onglets_cibles if not c.get("fermable")
+                                          and (not documents_ouverts or self._onglet_courant(c, e))) if x})
             if onglets:
                 lignes.append(f"     onglets : {' ; '.join(onglets)}")
             documents = sum(1 for c in e.cibles if c.get("fermable") and not c.get("perso"))
@@ -2056,7 +2133,7 @@ class Explorateur:
                               + (", lecture seule" if c["lecture_seule"] else "") + "]")
             if champs:
                 lignes.append(f"     champs : {' ; '.join(champs)}")
-            infos = sorted({x for x in (self._sur(i, 5) for i in e.infos) if x})
+            infos = sorted({x for x in (self._sur(i, 5) for i in e.infos if not nom_propre_dedans(i)) if x})
             if infos:
                 lignes.append(f"     libellés affichés (fiche en lecture) : {' ; '.join(infos[:40])}")
             boutons = []

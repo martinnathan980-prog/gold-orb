@@ -186,7 +186,8 @@ IMPORTANT : fermez le fichier dans Excel avant de lancer le robot.
 =====================================================================
  F. CE QUE VOUS POUVEZ M'ENVOYER SANS RISQUE
 =====================================================================
-Pour que je corrige, ceci suffit et ne contient aucune donnee de l'entreprise :
+Pour que je corrige, ceci suffit (relisez quand meme : si une ligne contient un nom
+de plan, de projet, de personne ou une adresse, remplacez-le par XXX) :
  - la ligne d'erreur affichee dans l'invite de commandes (la ligne qui commence
    par X ERREUR, ou le message en francais) ;
  - ou la colonne Message de l'Excel pour la ligne qui a echoue ;

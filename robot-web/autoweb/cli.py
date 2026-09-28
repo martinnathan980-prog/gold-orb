@@ -336,8 +336,11 @@ def cmd_explorer(args: argparse.Namespace) -> int:
     url = _normaliser_url(args.url)
     if not url:
         raise ErreurAutoweb("Indiquez l'adresse du portail : autoweb explorer https://mon-portail/...")
-    # par défaut, la visite guidée (l'utilisateur clique) ; l'exploration automatique sur demande
-    visite = not bool(getattr(args, "auto", False))
+    # par défaut, la visite guidée (l'utilisateur clique) ; l'exploration automatique sur demande.
+    # Sans pause ou navigateur caché, personne ne peut cliquer : c'est forcément l'exploration automatique.
+    visite = not (getattr(args, "auto", False) or getattr(args, "sans_pause", False) or getattr(args, "cache", False))
+    if not visite and not getattr(args, "auto", False):
+        print(f"{S.ATTENTION} --sans-pause ou --cache : personne ne clique, c'est donc l'exploration automatique (--auto).")
     horodatage = f"{dt.datetime.now():%Y%m%d-%H%M%S}"
     dossier = Path(args.sortie) if args.sortie else \
         DOSSIER_PROJET / "explorations" / (f"{horodatage}-visite" if visite else horodatage)
@@ -558,13 +561,25 @@ def _motif_souple(mot: str) -> Optional[str]:
     return r"(?<![^\W\d_])" + "".join(morceaux) + r"(?![^\W\d_])"
 
 
+def _mot_distinctif(mot: str) -> bool:
+    from .explorateur import MOTS_GENERIQUES, VOCABULAIRE_CODE, normaliser
+
+    courants = {"centrale", "centre", "site", "poste", "projet", "pompe", "vanne", "turbine", "batiment", "usine",
+                "ligne", "reseau", "client", "societe", "groupe", "agence", "service", "direction", "secteur"}
+    m = normaliser(re.sub(r"\d+", "", mot))
+    return bool(m) and m not in MOTS_GENERIQUES and m not in VOCABULAIRE_CODE and m not in courants
+
+
 def cacher_mots(texte: str, mots: List[str]) -> Tuple[str, Dict[str, int]]:
     """Remplace chaque mot de la liste par XXX, sans tenir compte des accents, des majuscules ni
     des tirets. Un nom en plusieurs mots cache aussi chacun de ses mots de 4 lettres ou plus
     (« Flamanville 3 » cache « Flamanville # »). Renvoie le texte et le nombre de remplacements."""
     comptes: Dict[str, int] = {}
     for mot in sorted(mots, key=len, reverse=True):
-        formes = [mot] + [m for m in re.split(r"[\s\-_'’.]+", mot) if len(re.sub(r"\d", "", m)) >= 4 and m != mot]
+        # les mots distinctifs d'un nom en plusieurs mots (« Flamanville » dans « Centrale de Flamanville 3 ») ;
+        # jamais les mots courants de l'interface (plan, site, centre, poste...)
+        formes = [mot] + [m for m in re.split(r"[\s\-_'’.]+", mot)
+                          if len(re.sub(r"\d", "", m)) >= 4 and m != mot and _mot_distinctif(m)]
         total = 0
         for forme in formes:
             motif = _motif_souple(re.sub(r"\d+", "", forme).strip() if forme != mot else forme)
@@ -610,12 +625,14 @@ def cmd_rassembler(args: argparse.Namespace) -> int:
     for titre, _ in fichiers:
         print(f"      - {titre}")
     print(f"     {sortie}")
-    trouves = {m: n for m, n in comptes.items() if n}
-    if trouves:
-        print(f"   Remplacé(s) par XXX : {', '.join(f'{m} ({n} fois)' for m, n in trouves.items())}.")
-    absents = [m for m, n in comptes.items() if not n]
-    if absents:
-        print(f"   Pas trouvé(s) dans le fichier : {', '.join(absents)} (vérifiez l'orthographe en relisant).")
+    # les mots eux-mêmes ne sont pas réaffichés ici : ces lignes peuvent être recopiées (partie D)
+    if comptes:
+        total = sum(comptes.values())
+        print(f"   Mots de votre liste : {len(comptes)} ; {total} remplacement(s) par XXX dans le fichier.")
+        absents = [i for i, m in enumerate(mots, start=1) if not comptes.get(m)]
+        if absents:
+            print(f"   Pas trouvé(s) : mot(s) n° {', '.join(str(i) for i in absents)} de votre liste "
+                  f"({FICHIER_MOTS_A_CACHER}) : vérifiez l'orthographe en relisant.")
     print("   1. Il s'ouvre dans le Bloc-notes : RELISEZ-LE, remplacez les mots sensibles par XXX,")
     print("      puis enregistrez (Ctrl+S).")
     print("   2. Si c'est permis chez vous : Ctrl+A (tout sélectionner), Ctrl+C (copier),")

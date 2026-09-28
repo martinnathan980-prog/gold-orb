@@ -31,9 +31,9 @@ from playwright.sync_api import Page
 
 from . import symboles as S
 from .explorateur import (
-    INDICATEURS_CHARGEMENT, JS_ECRAN, JS_OUTILS, METHODES_LECTURE, MOTIF_GARDE, MOTIF_GARDE_SOURCE, Action, Ecran,
-    Explorateur, Limites, _fin_adresse, adresse_dangereuse, classer_requete, decouper, masquer, nom_de_code,
-    nom_technique, normaliser, signature,
+    CLES_ACTION, INDICATEURS_CHARGEMENT, JS_ECRAN, JS_OUTILS, METHODES_LECTURE, MOTIF_GARDE, RADICAUX_GARDE,
+    VERBES_ANGLAIS, VERBES_FORTS, VERBES_FORTS_ONGLETS, Action, Ecran, Explorateur, Limites, _fin_adresse,
+    classer_requete, decouper, masquer, nom_de_code, nom_technique, normaliser, signature,
 )
 from .navigateur import Navigateur, est_onglet_parasite, site_de
 
@@ -105,16 +105,60 @@ JS_VISITE_MODELE = r"""
     try { d = decrire(e); } catch (err) { return; }
     envoyer({ type: 'clic', cible: d });
   };
-  // Filet de sécurité : pendant la visite, les boutons de modification ne partent pas. Actif
-  // seulement sur le portail, une fois la visite commencée (window.__autoweb_garde, posé par le
-  // robot) : jamais sur la page de connexion de l'entreprise (Microsoft, Okta, CAS...).
-  const ACTION = new RegExp("__MOTIF_GARDE__");
-  const sansAccents = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-                                  .replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+  // ---------------------------------------------------------------- filet de sécurité
+  // Pendant la visite : les boutons d'action et les envois de modification ne partent pas.
+  // Actif seulement sur les pages du portail, une fois la visite commencée (window.__autoweb_garde,
+  // posé par le robot) ; jamais sur une page de connexion (Microsoft, Okta, CAS, code MFA...).
+  const MOTS = __VOCABULAIRE__;
+  const echapper = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const motif = liste => new RegExp('^(?:re|de|des|in|un|dis|pre|auto)?(?:' + liste.map(echapper).join('|') + ')');
+  const ACTION = motif(MOTS.radicaux), FORT = motif(MOTS.forts), FORT_ONGLET = motif(MOTS.onglets);
+  const ANGLAIS = new Set(MOTS.anglais);
+  const CLES_ACTION = MOTS.cles;
+  const sansAccents = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  // « deletePlan », « btnSupprimerPlan » : les mots, en minuscules, sans accents
+  const mots = t => sansAccents(String(t || '').replace(/([a-z])([A-Z])/g, '$1 $2')).split(/[^a-z0-9]+/).filter(Boolean);
+  // le verbe doit être le PREMIER mot, à l'infinitif ou à la forme anglaise de base :
+  // « Supprimer », « Delete » oui ; « Supprimés », « Modifications », « Nouveautés » non
+  const verbal = m => ANGLAIS.has(m) || /(er|ir|re)$/.test(m) || ['nouveau', 'nouvelle', 'new'].includes(m);
+  const commencePar = (texte, re) => {
+    const m = mots(texte);
+    if (!m.length) return false;
+    const r = re.exec(m.slice(0, 3).join(' '));
+    if (!r || r.index !== 0) return false;
+    return r[0].includes(' ') || verbal(m[0]);  // « mettre a jour », « check out » : plusieurs mots, déjà un verbe
+  };
+  // « Annuler l'extraction », « Cancel checkout » : annuler QUELQUE CHOSE est une action
+  const annulerQuelqueChose = texte => {
+    const m = mots(texte);
+    return m.length > 1 && /^(annuler|cancel)$/.test(m[0]) &&
+           !/^(la |le |les |l |ma |mes |votre |vos )?(recherche|saisie|filtre|filtres|selection|modification|modifications|edition|changes|search)/.test(m.slice(1).join(' '));
+  };
+  // chercher, filtrer, trier, afficher : de la consultation, même avec un verbe d'action devant
+  const CONSULTATION = /\b(recherche|rechercher|critere|criteres|filtre|filtres|search|filter|filters|affichage|colonne|colonnes|tri|trier|vue|view|liste|list|page)\b/;
   const siteDe = h => {
     h = String(h || '').toLowerCase();
     if (!h || /^[\d.]+$|^\[?[0-9a-f:]+\]?$/.test(h) || !h.includes('.')) return h;
     return h.split('.').slice(-2).join('.');
+  };
+  // adresse de la page ; un cadre about:blank ou blob: rempli par le portail est le portail
+  const hote = () => {
+    if (/^(about|blob|data):/.test(location.protocol)) {
+      try { if (window.parent !== window) return window.parent.location.hostname; } catch (err) {}
+      try { if (window.opener) return window.opener.location.hostname; } catch (err) {}
+      return null;
+    }
+    return location.hostname;
+  };
+  const CONNEXION_CHEMIN = /(^|[\/_.-])(login|logon|signin|sign-in|sso|saml2?|oauth2?|openid|auth|authorize|adfs|mfa|otp|2fa|idp|cas|connexion|authentification|token)([\/_.?-]|$)/i;
+  const CONNEXION_HOTE = /^(login|sso|auth|idp|sts|adfs|mfa|signin|cas|fs)\./i;
+  const pageConnexion = (chemin, h) => CONNEXION_CHEMIN.test(chemin || '') || CONNEXION_HOTE.test(h || '');
+  const gardeActive = () => {
+    const garde = window.__autoweb_garde;
+    if (!garde) return false;
+    const h = hote();
+    if (h === null) return true;  // cadre sans adresse ouvert par le portail
+    return siteDe(h) === garde.site && !pageConnexion(location.pathname, h);
   };
   const PETITS = 'button, a[href], input[type=submit], input[type=button], input[type=image], [role=button], ' +
                  '[role=menuitem], [role=menuitemradio], [role=menuitemcheckbox], [role=link], [role=tab], [role=option], ' +
@@ -122,62 +166,84 @@ JS_VISITE_MODELE = r"""
   const GRANDS = ['TR', 'TBODY', 'THEAD', 'TABLE', 'FORM', 'SECTION', 'MAIN', 'ARTICLE', 'UL', 'OL', 'NAV', 'HEADER',
                   'FOOTER', 'ASIDE', 'BODY', 'HTML', 'FIELDSET'];
   const SAISIES = ['INPUT', 'SELECT', 'TEXTAREA', 'OPTION', 'LABEL'];
-  // l'élément actionné : le plus proche du clic qui ressemble à un bouton (jamais une ligne, un formulaire)
-  const actionneur = ev => {
-    const chemin = ev.composedPath ? ev.composedPath() : [ev.target];
-    for (const n of chemin) {
-      if (!n || n.nodeType !== 1) continue;
-      if (duRobot(n) || GRANDS.includes(n.tagName)) return null;
-      if (SAISIES.includes(n.tagName) && !(n.tagName === 'INPUT' && /^(submit|button|image|reset)$/i.test(n.type || ''))) return null;
-      let oui = false;
-      try {
-        oui = n.matches(PETITS) || n.hasAttribute('tabindex') || n.tagName.includes('-') ||
-              (getComputedStyle(n).cursor === 'pointer' && !(n.parentElement && getComputedStyle(n.parentElement).cursor === 'pointer'));
-      } catch (err) {}
-      if (oui) return n;
-    }
-    return null;
-  };
-  // ce que dit l'élément : son texte s'il est court, ses bulles, ses images, ses icônes
+  const texteVisible = e => (e.innerText || e.textContent || '').replace(/\s+/g, ' ').trim();
+  // ce que dit l'élément : son texte (80 caractères), ses bulles, ses images
   const etiquette = (e, profondeur) => {
-    const morceaux = [e.getAttribute('aria-label'), e.getAttribute('title'), e.getAttribute('alt')];
+    const morceaux = [e.getAttribute('aria-label'), e.getAttribute('title'), e.getAttribute('alt'), e.getAttribute('label')];
     if (e.tagName === 'INPUT') morceaux.push(e.value);
-    const visible = (e.innerText || e.textContent || '').replace(/\s+/g, ' ').trim();
-    if (visible && visible.length <= 40) morceaux.push(visible);
-    Array.from(e.querySelectorAll('img, [title], [aria-label]')).slice(0, 6).forEach(x =>
+    const visible = texteVisible(e);
+    if (visible) morceaux.push(visible.slice(0, 80));
+    Array.from(e.querySelectorAll('img, [title], [aria-label]')).slice(0, 4).forEach(x =>
       morceaux.push(x.getAttribute('alt') || x.getAttribute('title') || x.getAttribute('aria-label')));
-    Array.from(e.querySelectorAll('svg title')).slice(0, 3).forEach(x => morceaux.push(x.textContent));
+    Array.from(e.querySelectorAll('svg title')).slice(0, 2).forEach(x => morceaux.push(x.textContent));
     let texte = morceaux.filter(Boolean).join(' ');
-    if (!visible) {  // icône seule : ses classes et sa ligature parlent (fa-trash, glyphicon-pencil, « delete »)
-      const icones = [e].concat(Array.from(e.querySelectorAll('i, span, svg, use, mat-icon, img')).slice(0, 6)).map(x =>
-        (typeof x.className === 'string' ? x.className : ((x.className && x.className.baseVal) || '')) + ' ' +
-        (x.getAttribute('href') || x.getAttribute('xlink:href') || x.getAttribute('src') || '') + ' ' +
-        (/material|mat-icon/i.test(x.tagName + ' ' + (typeof x.className === 'string' ? x.className : '')) ? x.textContent : '')).join(' ');
-      if (/(trash|delete|remove|suppr|poubelle|corbeille|pencil|crayon|edit|save|floppy|disk|copy|clone|duplicat|content_copy|note_add|add_circle|plus-circle)/i.test(icones)) texte += ' supprimer';
-    }
-    const hote = e.getRootNode && e.getRootNode().host;  // bouton dans un composant web : le texte est sur l'hôte
-    if (!texte.trim() && hote && !profondeur) texte = etiquette(hote, 1);
+    const hoteComposant = e.getRootNode && e.getRootNode().host;  // bouton dans un composant web
+    if (!texte.trim() && hoteComposant && !profondeur) texte = etiquette(hoteComposant, 1);
     return texte;
   };
+  // icône seule (pas de lettres) : ses classes, sa ligature ou son emoji parlent
+  const ICONES = /(trash|delete|remove|suppr|poubelle|corbeille|pencil|crayon|pen-to-square|edit|save|floppy|disk|copy|clone|duplicat|content_copy|note_add|add_circle|plus-circle|paper-plane|send|\block\b|fa-lock|bi-lock|lock_outline|🗑|✏|✎|💾)/i;
+  const iconeAction = e => {
+    if (/[a-z]{2}/i.test(texteVisible(e))) return false;
+    const indices = [e].concat(Array.from(e.querySelectorAll('i, span, svg, use, mat-icon, img')).slice(0, 6)).map(x =>
+      (typeof x.className === 'string' ? x.className : ((x.className && x.className.baseVal) || '')) + ' ' +
+      (x.getAttribute('href') || x.getAttribute('xlink:href') || x.getAttribute('src') || '') + ' ' +
+      (x.getAttribute('data-icon') || '') + ' ' + (x.textContent || '')).join(' ');
+    return ICONES.test(indices);
+  };
+  const methodeCachee = e => /^(delete|put|patch)$/i.test(e.getAttribute('data-method') || e.getAttribute('data-turbo-method') || '');
   const lienSimple = e => {
     if (e.tagName !== 'A') return false;
     const href = (e.getAttribute('href') || '').trim();
     return !!href && !/^(#|javascript:)/i.test(href) && !e.hasAttribute('onclick') && !e.hasAttribute('data-method') &&
-           !e.hasAttribute('data-confirm') && !e.hasAttribute('data-remote');
+           !e.hasAttribute('data-turbo-method') && !e.hasAttribute('data-confirm') && !e.hasAttribute('data-remote');
   };
-  const dangereux = e => {
-    if (!e) return false;
-    const garde = window.__autoweb_garde;
-    if (!garde || siteDe(location.hostname) !== garde.site) return false;
-    // formulaire de connexion (mot de passe visible) : jamais bloqué, même s'il s'appelle « submit »
-    const formulaire = e.closest && e.closest('form');
-    if (formulaire && Array.from(formulaire.querySelectorAll('input[type=password]')).some(x => x.offsetWidth > 0)) return false;
-    if (lienSimple(e)) {
-      // un lien ordinaire ne fait qu'ouvrir une page : bloqué seulement si son adresse est une action
-      // (…/plans/5/delete) ; son texte peut être un nom de plan (« Nouveau poste »)
-      return ACTION.test(sansAccents(decodeURIComponent((e.getAttribute('href') || '').replace(/[\/_.\-?=&]+/g, ' '))));
+  // une adresse d'action : son dernier morceau est un verbe (…/plans/5/delete), ou action=supprimer
+  const adresseAction = url => {
+    let u;
+    try { u = new URL(url, location.href); } catch (err) { return false; }
+    if (pageConnexion(u.pathname, u.hostname)) return false;
+    const dernier = decodeURIComponent(u.pathname.split('/').filter(Boolean).pop() || '').replace(/\.[a-z0-9]{1,5}$/i, '');
+    if (commencePar(dernier, FORT) && !CONSULTATION.test(mots(dernier).join(' '))) return true;
+    for (const [k, v] of u.searchParams) {
+      const cle = k.toLowerCase();
+      if ((CLES_ACTION.includes(cle) && commencePar(v, FORT)) || (cle === '_method' && /^(delete|put|patch)$/i.test(v))) return true;
     }
-    return ACTION.test(sansAccents(etiquette(e, 0)));
+    return false;
+  };
+  const surFormulaireDeConnexion = e => {
+    const f = e.closest && e.closest('form');
+    return !!f && Array.from(f.querySelectorAll('input[type=password]')).some(x => x.offsetWidth > 0) &&
+           /^(envoyer|submit|valider|ok|suivant|next|continuer|continue|se connecter|connexion|sign in|log in|login)$/.test(mots(etiquette(e, 0)).join(' '));
+  };
+  const departCurseur = n => { try { return getComputedStyle(n).cursor === 'pointer' && !(n.parentElement && getComputedStyle(n.parentElement).cursor === 'pointer'); } catch (err) { return false; } };
+  const elementDangereux = n => {
+    if (lienSimple(n)) return adresseAction(n.getAttribute('href'));  // un lien ordinaire : seule son adresse compte
+    if (methodeCachee(n)) return true;
+    if (surFormulaireDeConnexion(n)) return false;
+    const texte = etiquette(n, 0);
+    if (iconeAction(n)) return true;
+    if (CONSULTATION.test(sansAccents(texte))) return false;
+    let bouton = false, onglet = false;
+    try {
+      bouton = n.matches(PETITS) || n.hasAttribute('tabindex') || n.tagName.includes('-') || departCurseur(n);
+      onglet = n.matches('[role=tab], [data-toggle=tab], [data-bs-toggle=tab]') || !!n.closest('.nav-tabs, .nav-pills, [role=tablist]');
+    } catch (err) {}
+    if (onglet) return commencePar(texte, FORT_ONGLET);  // un onglet s'ouvre ; seul « Supprimer » y est bloqué
+    if (bouton) return commencePar(texte, ACTION) || annulerQuelqueChose(texte);
+    // simple texte dans une ligne ou une carte cliquable : seulement un libellé court qui est un verbe
+    return mots(texte).length <= 2 && commencePar(texte, ACTION);
+  };
+  // chaque élément sous le clic, jusqu'à la ligne ou au formulaire qui le contient
+  const cheminDangereux = chemin => {
+    for (const n of chemin) {
+      if (!n || n.nodeType !== 1) continue;
+      if (duRobot(n)) return false;
+      if (GRANDS.includes(n.tagName)) return false;
+      if (SAISIES.includes(n.tagName) && !(n.tagName === 'INPUT' && /^(submit|button|image|reset)$/i.test(n.type || ''))) return false;
+      if (elementDangereux(n)) return true;
+    }
+    return false;
   };
   const avertir = message => {
     try {
@@ -185,56 +251,179 @@ JS_VISITE_MODELE = r"""
       a.setAttribute('data-autoweb', '1');
       a.setAttribute('style', 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:2147483647;' +
         'background:#b45309;color:#fff;font:600 13px/1.4 system-ui,Arial;padding:10px 14px;border-radius:8px;' +
-        'box-shadow:0 2px 12px rgba(0,0,0,.4);max-width:520px;pointer-events:none');
+        'box-shadow:0 2px 12px rgba(0,0,0,.4);max-width:560px;pointer-events:none');
       a.textContent = message;
       (document.body || document.documentElement).appendChild(a);
       setTimeout(() => a.remove(), 6000);
     } catch (err) {}
   };
+  const MESSAGE = "Pendant la visite, le robot bloque ce qui ressemble à une modification, par sécurité : rien n'est parti. " +
+                  "(Si c'était pour vous connecter : menu, choix 10.)";
+  let dernierAvertissement = 0;
+  const signaler = genre => {
+    if (Date.now() - dernierAvertissement > 1500) { avertir(MESSAGE); dernierAvertissement = Date.now(); }
+    envoyer({ type: genre });
+  };
   const bloquer = (ev, compter) => {
     ev.preventDefault(); ev.stopImmediatePropagation();
-    if (compter) {
-      avertir("Pendant la visite, le robot bloque ce bouton, par sécurité : rien n'est parti. " +
-              "Pour le faire vraiment, utilisez votre Chrome habituel.");
-      envoyer({ type: 'bloque' });
-    }
+    if (compter) signaler('bloque');
   };
   const gardeSouris = ev => {
-    const e = actionneur(ev);
-    if (dangereux(e)) bloquer(ev, ev.type === 'click' || ev.type === 'auxclick');
+    if (!gardeActive()) return;
+    if (cheminDangereux(ev.composedPath ? ev.composedPath() : [ev.target])) bloquer(ev, ev.type === 'click' || ev.type === 'auxclick');
   };
+  let toucheBloquee = null;
   const gardeClavier = ev => {
-    const garde = window.__autoweb_garde;
-    if (!garde || siteDe(location.hostname) !== garde.site) return;
-    if ((ev.ctrlKey || ev.metaKey) && (ev.key || '').toLowerCase() === 's') { bloquer(ev, true); return; }  // Ctrl+S
-    if (ev.key !== 'Enter' && ev.key !== ' ') return;
-    let e = ev.composedPath ? ev.composedPath()[0] : ev.target;
-    if (e && e.nodeType === 1 && !SAISIES.includes(e.tagName)) {
-      const x = actionneur({ composedPath: () => (ev.composedPath ? ev.composedPath() : [e]) });
-      if (dangereux(x)) bloquer(ev, true);
+    if (!gardeActive()) return;
+    if (ev.type !== 'keydown') {  // la suite d'une touche déjà bloquée (keyup, keypress) ne part pas non plus
+      if (toucheBloquee && toucheBloquee === ev.key) { ev.preventDefault(); ev.stopImmediatePropagation(); if (ev.type === 'keyup') toucheBloquee = null; }
+      return;
     }
+    const cible = ev.composedPath ? ev.composedPath()[0] : ev.target;
+    const saisie = cible && SAISIES.includes(cible.tagName);
+    if ((ev.ctrlKey || ev.metaKey) && (ev.key || '').toLowerCase() === 's') { toucheBloquee = ev.key; bloquer(ev, true); return; }
+    if (ev.key === 'Delete' && !saisie) { toucheBloquee = ev.key; bloquer(ev, true); return; }  // Suppr sur une ligne de grille
+    if ((ev.key === 'Enter' || ev.key === ' ') && !saisie && cheminDangereux(ev.composedPath ? ev.composedPath() : [ev.target])) {
+      toucheBloquee = ev.key; bloquer(ev, true);
+    }
+  };
+  // ---- seconde barrière, dans la page : les envois de modification ne partent pas
+  const corpsAction = corps => {
+    let texte = '';
+    try {
+      if (typeof corps === 'string') texte = corps;
+      else if (corps instanceof URLSearchParams) texte = corps.toString();
+      else if (typeof FormData !== 'undefined' && corps instanceof FormData) {
+        const p = new URLSearchParams(); for (const [k, v] of corps) if (typeof v === 'string') p.append(k, v); texte = p.toString();
+      } else return false;
+    } catch (err) { return false; }
+    const t = texte.slice(0, 200000).trim();
+    if (t.startsWith('{') || t.startsWith('[')) {
+      let d = null; try { d = JSON.parse(t); } catch (err) {}
+      for (const x of (Array.isArray(d) ? d : [d])) {
+        if (!x || typeof x !== 'object') continue;
+        if (typeof x.query === 'string' && /(^|\n)\s*mutation\b/.test(x.query.replace(/#[^\n]*/g, ''))) return true;
+        for (const cle of CLES_ACTION.concat(['method', 'verb', 'type_action', 'actiontype'])) {
+          if (typeof x[cle] === 'string' && commencePar(x[cle], FORT)) return true;
+        }
+        if (typeof x._method === 'string' && /^(delete|put|patch)$/i.test(x._method)) return true;
+      }
+      return false;
+    }
+    if (t.startsWith('<')) {  // SOAP, Aras : un élément qui n'est pas une lecture
+      for (const m of t.matchAll(/<Item\b[^>]*\baction=["']([\w-]+)["']/g)) {
+        const a = m[1].toLowerCase();
+        if (commencePar(a, FORT) || ['add', 'edit', 'update', 'delete', 'purge', 'merge', 'lock', 'unlock', 'version', 'promoteitem'].includes(a)) return true;
+      }
+      return /<(?:\w+:)?Body[^>]*>\s*<(?:\w+:)?(delete|remove|save|update|create|insert|add|edit)/i.test(t);
+    }
+    let p;
+    try { p = new URLSearchParams(t); } catch (err) { return false; }
+    const bouton = n => n.split(/[$:.]/).pop().replace(/^(btn|lnk|lb|ib|img|cmd|bt|link|button)(?=[A-Z_])/i, '');
+    for (const [k, v] of p) {
+      const cle = k.toLowerCase();
+      if (cle === '_method' && /^(delete|put|patch)$/i.test(v)) return true;
+      if (cle === '__eventtarget' && v && commencePar(bouton(v), FORT)) return true;
+      if (CLES_ACTION.includes(cle) && commencePar(v, FORT)) return true;
+      if (/\$(btn|lnk|lb|ib|cmd)/i.test(k) && commencePar(bouton(k), FORT)) return true;  // bouton ASP.NET qui envoie
+    }
+    return false;
+  };
+  const envoiDangereux = (methode, url, entetes, corps) => {
+    if (!gardeActive()) return false;
+    let u; try { u = new URL(url, location.href); } catch (err) { return false; }
+    if (pageConnexion(u.pathname, u.hostname)) return false;  // jeton de connexion, code MFA
+    methode = String(methode || 'GET').toUpperCase();
+    const cache = (entetes && (entetes['x-http-method-override'] || entetes['x-http-method'])) || '';
+    if (/^(DELETE|PUT|PATCH|MERGE)$/.test(methode) || /^(DELETE|PUT|PATCH|MERGE)$/i.test(cache)) return true;
+    if (adresseAction(u.href)) return true;
+    return methode !== 'GET' && methode !== 'HEAD' && corpsAction(corps);
+  };
+  const bloquerEnvoi = () => signaler('envoi_bloque');
+  const patcher = () => {
+    const w = window;
+    if (w.fetch && !w.fetch.__autoweb) {
+      const origine = w.fetch;
+      const f = function (entree, options) {
+        try {
+          const req = (typeof Request !== 'undefined' && entree instanceof Request) ? entree : null;
+          const methode = (options && options.method) || (req && req.method) || 'GET';
+          const entetes = {};
+          const h = (options && options.headers) || (req && req.headers);
+          if (h) { try { new Headers(h).forEach((v, k) => { entetes[k.toLowerCase()] = v; }); } catch (err) {} }
+          if (envoiDangereux(methode, req ? req.url : String(entree), entetes, options && options.body)) {
+            bloquerEnvoi();
+            return Promise.reject(new TypeError('Envoi bloqué par le robot pendant la visite'));
+          }
+        } catch (err) {}
+        return origine.apply(this, arguments);
+      };
+      f.__autoweb = true;
+      w.fetch = f;
+    }
+    const X = w.XMLHttpRequest && w.XMLHttpRequest.prototype;
+    if (X && !X.__autoweb) {
+      X.__autoweb = true;
+      const ouvrir = X.open, entete = X.setRequestHeader, envoyerXhr = X.send;
+      X.open = function (methode, url) { this.__autoweb_m = methode; this.__autoweb_u = url; this.__autoweb_h = {}; return ouvrir.apply(this, arguments); };
+      X.setRequestHeader = function (k, v) { try { this.__autoweb_h[String(k).toLowerCase()] = v; } catch (err) {} return entete.apply(this, arguments); };
+      X.send = function (corps) {
+        try {
+          if (envoiDangereux(this.__autoweb_m, this.__autoweb_u, this.__autoweb_h, corps)) {
+            bloquerEnvoi();
+            setTimeout(() => { try { this.dispatchEvent(new ProgressEvent('error')); this.dispatchEvent(new ProgressEvent('loadend')); } catch (err) {} }, 0);
+            return;
+          }
+        } catch (err) {}
+        return envoyerXhr.apply(this, arguments);
+      };
+    }
+    if (w.navigator && w.navigator.sendBeacon && !w.navigator.sendBeacon.__autoweb) {
+      const balise = w.navigator.sendBeacon.bind(w.navigator);
+      const b = (url, donnees) => { try { if (envoiDangereux('POST', url, {}, donnees)) { bloquerEnvoi(); return false; } } catch (err) {} return balise(url, donnees); };
+      b.__autoweb = true;
+      w.navigator.sendBeacon = b;
+    }
+    const F = w.HTMLFormElement && w.HTMLFormElement.prototype;
+    if (F && !F.__autoweb) {
+      F.__autoweb = true;
+      const soumettre = F.submit;
+      // form.submit() (ASP.NET __doPostBack...) ne passe pas par l'événement « submit »
+      F.submit = function () {
+        try { if (formulaireDangereux(this, null)) { bloquerEnvoi(); return; } } catch (err) {}
+        return soumettre.apply(this, arguments);
+      };
+    }
+  };
+  const formulaireDangereux = (form, soumetteur) => {
+    if (!gardeActive()) return false;
+    if (soumetteur && surFormulaireDeConnexion(soumetteur)) return false;
+    if (soumetteur && elementDangereux(soumetteur)) return true;
+    let donnees = null;
+    try { donnees = soumetteur ? new FormData(form, soumetteur) : new FormData(form); } catch (err) { try { donnees = new FormData(form); } catch (e2) {} }
+    const methode = ((soumetteur && soumetteur.getAttribute('formmethod')) || form.getAttribute('method') || 'GET').toUpperCase();
+    const action = (soumetteur && soumetteur.getAttribute('formaction')) || form.getAttribute('action') || location.href;
+    if (methode === 'GET') return adresseAction(action) || (donnees ? corpsAction(donnees) : false);
+    return envoiDangereux(methode, action, {}, donnees);
   };
   const gardeEnvoi = ev => {
     const form = ev.target;
     if (!form || form.tagName !== 'FORM') return;
-    const garde = window.__autoweb_garde;
-    if (!garde || siteDe(location.hostname) !== garde.site) return;
-    if (Array.from(form.querySelectorAll('input[type=password]')).some(x => x.offsetWidth > 0)) return;
-    // bouton qui envoie (ou, touche Entrée dans un champ, le premier bouton d'envoi du formulaire)
-    const bouton = ev.submitter || form.querySelector('button:not([type]), button[type=submit], input[type=submit], input[type=image]');
-    if (bouton && dangereux(bouton)) bloquer(ev, true);
+    if (formulaireDangereux(form, ev.submitter || null)) { ev.preventDefault(); ev.stopImmediatePropagation(); bloquerEnvoi(); }
   };
+  patcher();
   const ecoutes = window.__autoweb_ecoutes || [];
   for (const [cible, type, f] of ecoutes) { try { cible.removeEventListener(type, f, true); } catch (err) {} }
   window.__autoweb_ecoutes = [];
   const ecouter = (cible, type, f) => { cible.addEventListener(type, f, true); window.__autoweb_ecoutes.push([cible, type, f]); };
   for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click', 'dblclick', 'auxclick']) ecouter(window, type, gardeSouris);
-  ecouter(window, 'keydown', gardeClavier);
+  for (const type of ['keydown', 'keypress', 'keyup']) ecouter(window, type, gardeClavier);
   ecouter(window, 'submit', gardeEnvoi);
   for (const type of ['click', 'auxclick']) ecouter(document, type, surClic);
   // fenêtre du robot : son titre commence par « ROBOT - », dès l'ouverture (pas la confondre)
   const titrer = () => { if (window === window.top && document.title && !document.title.startsWith('ROBOT - ')) document.title = 'ROBOT - ' + document.title; };
   titrer(); setTimeout(titrer, 800);
+  if (window === window.top) setInterval(titrer, 2000);  // un portail qui change son titre en route
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', titrer);
   if (window === window.top) {
     const poser = () => {
@@ -247,12 +436,18 @@ JS_VISITE_MODELE = r"""
         'box-shadow:0 2px 10px rgba(0,0,0,.35);user-select:none;max-width:430px;opacity:.95');
       const texte = document.createElement('div');
       texte.className = '__autoweb_texte';
-      texte.textContent = "Fenêtre du ROBOT. Connectez-vous si besoin, affichez l'accueil de votre portail, " +
-                          "puis appuyez sur Entrée dans la fenêtre noire.";
+      // avant la visite : se connecter ; pendant : les étapes ; sur une autre page (connexion) : y revenir
+      const g = window.__autoweb_garde, h = hote();
+      const surPortail = !!g && (h === null || siteDe(h) === g.site);
+      texte.textContent = !g ? "Fenêtre du ROBOT. Connectez-vous si besoin, affichez l'accueil de votre portail, " +
+                               "puis appuyez sur Entrée dans la fenêtre noire."
+                        : surPortail ? 'Le robot regarde et note (il ne clique sur rien).'
+                        : "Fenêtre du ROBOT : page hors de votre portail (connexion...). Connectez-vous si besoin, " +
+                          "puis revenez sur votre portail.";
       const boutons = document.createElement('div');
       boutons.className = '__autoweb_boutons';
-      // les boutons n'apparaissent qu'une fois la visite commencée
-      boutons.setAttribute('style', 'margin-top:5px;display:none;gap:6px;flex-wrap:wrap');
+      // les boutons n'apparaissent qu'une fois la visite commencée, sur le portail
+      boutons.setAttribute('style', 'margin-top:5px;gap:6px;flex-wrap:wrap;display:' + (surPortail ? 'flex' : 'none'));
       const bouton = (libelle, type) => {
         const x = document.createElement('span');
         x.textContent = libelle;
@@ -283,8 +478,12 @@ JS_VISITE_MODELE = r"""
 }
 """
 
-# le vocabulaire d'action du filet est le même que côté robot (explorateur.MOTIF_GARDE)
-JS_VISITE = JS_VISITE_MODELE.replace('"__MOTIF_GARDE__"', json.dumps(MOTIF_GARDE_SOURCE))
+# le vocabulaire d'action du filet vient du robot (explorateur.py) : une seule liste à tenir
+VOCABULAIRE_GARDE = {
+    "radicaux": RADICAUX_GARDE, "forts": VERBES_FORTS, "onglets": VERBES_FORTS_ONGLETS, "anglais": VERBES_ANGLAIS,
+    "cles": sorted(CLES_ACTION),
+}
+JS_VISITE = JS_VISITE_MODELE.replace("__VOCABULAIRE__", json.dumps(VOCABULAIRE_GARDE))
 
 
 # Lu à chaque tour : adresse, nombre de changements, état de chargement, type de document,
@@ -313,7 +512,7 @@ JS_ETAT = r"""
     if (document.title && !document.title.startsWith('ROBOT - ')) document.title = 'ROBOT - ' + document.title;
   }
   const vis = e => { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden') return false;
-                     const r = e.getBoundingClientRect(); return r.width * r.height > 400; };
+                     const r = e.getBoundingClientRect(); return r.width * r.height > 0; };  // même une petite roue
   let charge = false;
   try {
     for (const sel of """ + json.dumps(INDICATEURS_CHARGEMENT) + r""") {
@@ -366,7 +565,8 @@ class Visite(Explorateur):
         self.documents = 0
         self.boutons_bloques = 0
         self.envois_bloques: List[str] = []  # envois de modification coupés par le robot
-        self.dialogues = 0
+        self.dialogues_refuses = 0
+        self.dialogues_acceptes = 0
         self.etape = 0
         self.cote = False
         self.ignores: Dict[str, int] = {}  # pages et cadres laissés de côté, et pourquoi
@@ -381,6 +581,7 @@ class Visite(Explorateur):
         self._etats: Dict[Any, tuple] = {}  # cadre -> état vu au tour précédent
         self._lus: Dict[Any, tuple] = {}  # cadre -> état au moment de la dernière lecture
         self._stable: Dict[Any, int] = {}
+        self._charge_lu: Dict[Any, bool] = {}  # l'écran lu la dernière fois affichait-il « chargement » ?
         self._instable: Dict[Any, int] = {}
         self._ecran_du_cadre: Dict[Any, Ecran] = {}
         self._ecran_de_page: Dict[Any, Ecran] = {}
@@ -388,9 +589,8 @@ class Visite(Explorateur):
         self._onglets_cliques: set = set()
         self._telechargements_en_cours: List[Dict[str, Any]] = []
         self._connexion_signalee = False
-        self._signales = {"boutons": 0, "envois": 0, "dialogues": 0}
+        self._signales = {"boutons": 0, "envois": 0, "refuses": 0, "acceptes": 0}
         self._autres: set = set()  # adresses d'autres sites déjà comptées
-        self.garde_reseau = False
 
     # ------------------------------------------------------------------ événements (fil Playwright)
     def _recevoir(self, source: Dict[str, Any], charge: str) -> None:
@@ -415,6 +615,9 @@ class Visite(Explorateur):
             return
         if genre == "bloque":
             self.boutons_bloques += 1
+            return
+        if genre == "envoi_bloque":
+            self.envois_bloques.append("envoi")
             return
         cible = donnees.get("cible")
         page = source.get("page") if source else None
@@ -447,36 +650,6 @@ class Visite(Explorateur):
         except Exception as e:  # noqa: BLE001 - un gestionnaire ne doit jamais lever
             journal.debug("Échange non classé : %s", e)
 
-    def _garde_reseau(self, route: Any) -> None:
-        """Seconde barrière, derrière le filet de la page : un envoi vers le portail qui ressemble à
-        une modification (DELETE, « supprimer », « enregistrer », mutation GraphQL...) est coupé
-        avant de partir. Les lectures, recherches et téléchargements passent."""
-        try:
-            requete = route.request
-            raison = self._envoi_dangereux(requete) if self.garde_reseau else ""
-            if raison:
-                self.envois_bloques.append(raison)
-                journal.debug("Envoi coupé pendant la visite : %s", raison)
-                route.abort()
-            else:
-                route.continue_()
-        except Exception as e:  # noqa: BLE001 - un gestionnaire ne doit jamais lever
-            journal.debug("Garde de la visite : %s", e)
-
-    def _envoi_dangereux(self, requete: Any) -> str:
-        if not self.site or _site_adresse(requete.url) != self.site:
-            return ""  # connexion d'entreprise, autres sites : jamais touchés
-        methode = requete.method.upper()
-        if methode in ("DELETE", "PUT", "PATCH", "MERGE"):
-            return f"{methode} {_fin_adresse(requete.url)}"
-        if methode in METHODES_LECTURE:
-            if requete.is_navigation_request() or requete.resource_type in ("xhr", "fetch", "document"):
-                mot = adresse_dangereuse(requete.url)
-                return f"{methode} {_fin_adresse(requete.url)} (adresse d'action)" if mot else ""
-            return ""
-        nature = classer_requete(requete, MOTIF_GARDE)
-        return nature if "[écriture probable]" in nature else ""
-
     def _suivre(self, page: Page) -> None:
         try:
             ouvreur = page.opener()
@@ -496,10 +669,26 @@ class Visite(Explorateur):
         except Exception:  # noqa: BLE001 - page fermée ou en cours de navigation
             pass
 
-    def _dialogue(self, genre: str) -> None:
-        """Boîte de dialogue du portail pendant la visite : le robot répond « Annuler » (ou la
-        ferme), par sécurité et pour ne jamais rester bloqué sur un onglet caché."""
-        self.dialogues += 1
+    def _decider_dialogue(self, dialogue: Any) -> str:
+        """Boîte de dialogue du portail pendant la visite. Le robot y répond, pour ne jamais rester
+        bloqué (une boîte ouverte fige la page) : « Continuer ? » ou un message : OK ; une question
+        qui parle de modifier ou de supprimer : Annuler, par sécurité."""
+        genre = getattr(dialogue, "type", "")
+        try:
+            message = dialogue.message or ""
+        except Exception:  # noqa: BLE001
+            message = ""
+        if genre == "beforeunload":
+            return "accepter"  # quitter la page
+        if genre == "prompt":
+            self.dialogues_refuses += 1
+            return "refuser"
+        if genre == "confirm" and (MOTIF_GARDE.search(normaliser(message)) or
+                                   re.search(r"valid|confirm|definitiv|irreversible", normaliser(message))):
+            self.dialogues_refuses += 1
+            return "refuser"
+        self.dialogues_acceptes += 1
+        return "accepter"
 
     def _telechargement_vu(self, telechargement: Any) -> None:
         """Fichier téléchargé (un PDF de plan...) : il arrivera dans Téléchargements, comme
@@ -552,6 +741,34 @@ class Visite(Explorateur):
             if not self._telechargements_en_cours or time.monotonic() >= fin:
                 return
             time.sleep(0.5)
+
+    def _finir_telechargements(self) -> None:
+        """Fin de visite : un fichier encore en cours de téléchargement est attendu tant qu'il avance
+        (Entrée pour ne plus attendre) ; sinon, le dire, plutôt que de le perdre en silence."""
+        from .console import touche_entree_disponible
+
+        self._ranger_telechargements()
+        if not self._telechargements_en_cours:
+            return
+        print(f"   {S.PAUSE} Un téléchargement est en cours : le robot attend qu'il finisse "
+              "(Entrée ici pour ne plus attendre).", flush=True)
+        derniere_avancee = time.monotonic()
+        tailles: Dict[int, int] = {}
+        while self._telechargements_en_cours:
+            for entree in self._telechargements_en_cours:
+                provisoire = self._chemin_provisoire(entree["objet"])
+                taille = provisoire.stat().st_size if provisoire is not None and provisoire.is_file() else -1
+                if tailles.get(id(entree)) != taille:
+                    tailles[id(entree)] = taille
+                    derniere_avancee = time.monotonic()
+            if touche_entree_disponible() or time.monotonic() - derniere_avancee > 60:
+                break
+            self._ranger_telechargements()
+            time.sleep(0.5)
+        for entree in self._telechargements_en_cours:
+            print(f"   {S.ATTENTION} Un fichier .{masquer(entree.get('extension', '?'))} n'a pas fini de se télécharger : "
+                  "il n'a pas été gardé.", flush=True)
+        self._telechargements_en_cours = []
 
     def _enregistrer_telechargement(self, telechargement: Any, nom: str, extension: str) -> None:
         propre = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", nom).strip(" .") or "fichier"
@@ -606,7 +823,8 @@ class Visite(Explorateur):
             try:
                 page.goto(url, wait_until="domcontentloaded")
             except Exception as e:  # noqa: BLE001 - lent, ou connexion d'entreprise : l'utilisateur prend la main
-                print(f"{S.ATTENTION} La page met du temps à s'ouvrir ({str(e).splitlines()[0][:80]}).")
+                journal.debug("Ouverture lente : %s", e)
+                print(f"{S.ATTENTION} La page met du temps à s'ouvrir.")
                 print("   Si elle ne s'affiche pas, tapez l'adresse du portail dans la fenêtre du robot.")
             self._verifier_interruption()
             self._attendre(page)
@@ -637,11 +855,10 @@ class Visite(Explorateur):
             self.arret = "visite arrêtée (Ctrl+C)"
         finally:
             self.complet = True
-            self.garde_reseau = False
             try:
                 if self.nav.pages_de_travail() and self.site:
                     self._relever(dernier=True)  # le dernier écran affiché, s'il n'a pas encore été lu
-                    self._ranger_telechargements(attente_max_s=20.0)
+                    self._finir_telechargements()
                 self._techno_cookies()
             except Exception as e:  # noqa: BLE001
                 journal.debug("Dernière lecture impossible : %s", e)
@@ -657,9 +874,7 @@ class Visite(Explorateur):
             for cadre in list(ouverte.frames):
                 if _site_adresse(cadre.url or "") == self.site:
                     self._equiper(cadre)
-        self.garde_reseau = True
-        contexte.route("**/*", self._garde_reseau)
-        self.nav.sur_dialogue = self._dialogue
+        self.nav.decider_dialogue = self._decider_dialogue
 
     def _verifier_interruption(self) -> None:
         if self._interruption:
@@ -673,9 +888,12 @@ class Visite(Explorateur):
         while True:
             vider_clavier()
             lire_ligne(self._pomper)
-            print("   Terminer la visite ? (o/n) [o] : ", end="", flush=True)
+            vider_clavier()  # un second Entrée, tapé en même temps, ne répond pas à la question
+            print()
+            print("   Terminer la visite ? Tapez o puis Entrée (Entrée seule : la visite continue) [n] : ",
+                  end="", flush=True)
             reponse = (lire_ligne(self._pomper) or "").strip().lower()
-            if not reponse.startswith("n"):
+            if reponse.startswith("o"):
                 return
             print("   D'accord, la visite continue.", flush=True)
 
@@ -710,11 +928,13 @@ class Visite(Explorateur):
             self._sauver()
 
     def _signaler(self) -> None:
-        compteurs = {"boutons": self.boutons_bloques, "envois": len(self.envois_bloques), "dialogues": self.dialogues}
+        compteurs = {"boutons": self.boutons_bloques, "envois": len(self.envois_bloques),
+                     "refuses": self.dialogues_refuses, "acceptes": self.dialogues_acceptes}
         messages = {
             "boutons": "Un bouton de modification a été bloqué par le robot : rien n'est parti.",
             "envois": "Un envoi qui ressemblait à une modification a été coupé par le robot : rien n'est parti.",
-            "dialogues": "Le portail a affiché une boîte de dialogue : le robot a répondu « Annuler », par sécurité.",
+            "refuses": "Le portail a demandé de confirmer une modification : le robot a répondu « Annuler », par sécurité.",
+            "acceptes": "Le portail a affiché un message ou une question (« Continuer ? ») : le robot a répondu OK.",
         }
         for cle, nombre in compteurs.items():
             if nombre > self._signales[cle]:
@@ -722,9 +942,15 @@ class Visite(Explorateur):
                 print(f"   {S.ATTENTION} {messages[cle]}", flush=True)
 
     def _sauver(self) -> None:
+        """En cours de visite : seul le fichier à partager (petit) est réécrit ; la carte complète
+        (carte.json, page privée) l'est à la fin, pour ne pas figer la visite."""
         self._a_sauver = False
         self._derniere_sauvegarde = time.monotonic()
-        self.enregistrer()
+        try:
+            self.dossier.mkdir(parents=True, exist_ok=True)
+            (self.dossier / "carte_a_partager.txt").write_text(self._texte_partage(), encoding="utf-8")
+        except OSError as e:
+            journal.debug("Sauvegarde intermédiaire impossible : %s", e)
 
     def _texte_etape(self) -> str:
         return f"Étape {self.etape + 1}/{len(ETAPES)} : affichez {ETAPES[self.etape][1]}."
@@ -768,6 +994,14 @@ class Visite(Explorateur):
 
     def _relever_cadre(self, page: Page, cadre: Any, dernier: bool) -> None:
         url = cadre.url or ""
+        if url.startswith("about:"):
+            # cadre ou fenêtre sans adresse remplis par le portail : le filet de sécurité y est posé
+            parent = cadre.parent_frame
+            ouvreur = self._ouvreurs.get(page)
+            base = parent.url if parent is not None else (ouvreur.url if ouvreur is not None else "")
+            if base and _site_adresse(base) == self.site:
+                self._equiper(cadre)
+            return
         if not url.startswith(("http:", "https:", "file:", "blob:")) or est_onglet_parasite(url):
             return
         if _site_adresse(url) != self.site:
@@ -796,14 +1030,17 @@ class Visite(Explorateur):
         else:
             self._stable[cadre] = 0
             self._instable[cadre] = self._instable.get(cadre, 0) + 1
-        # un écran se lit quand il ne bouge plus depuis un tour (deux s'il affiche « chargement ») ;
-        # une page qui bouge sans cesse (horloge...) est lue quand même, au bout de quelques tours
-        if not dernier and self._stable[cadre] < (2 if charge else 1):
-            if self._instable.get(cadre, 0) < (8 if charge else 3):
+        # un écran se lit quand il ne bouge plus depuis un tour. S'il affiche « chargement » alors que
+        # l'écran lu avant ne l'affichait pas, c'est un chargement en cours : on l'attend (jusqu'à
+        # 7 secondes environ) ; un indicateur toujours là (barre de cycle de vie) ne retarde rien.
+        passager = bool(charge) and not self._charge_lu.get(cadre, False)
+        if not dernier and self._stable[cadre] < (6 if passager else 1):
+            if self._instable.get(cadre, 0) < (8 if passager else 3):
                 return
         self._instable[cadre] = 0
         self._stable[cadre] = 0
         self._lus[cadre] = cle
+        self._charge_lu[cadre] = bool(charge)
         if "pdf" in str(type_document).lower():
             self._document(page)
             return
@@ -827,8 +1064,8 @@ class Visite(Explorateur):
             ouvreur = self._ouvreurs[page]
             origine = self._ecran_de_page.get(ouvreur)
             clic = clic or self._clics.get(ouvreur)
-        if clic and time.monotonic() - clic.get("_quand", 0) > 60:
-            clic = None  # clic trop ancien : ce n'est pas lui qui a mené ici
+        if clic and time.monotonic() - clic.get("_quand", 0) > 10:
+            clic = None  # clic trop ancien (un tri, un « Actualiser ») : ce n'est pas lui qui a mené ici
         return origine, clic
 
     def _consommer(self, page: Any, clic: Dict[str, Any]) -> None:
@@ -917,7 +1154,7 @@ class Visite(Explorateur):
         return (f"Visite guidée : {r['ecrans']} écran(s) notés pendant la visite (c'est l'utilisateur qui a "
                 f"cliqué ; le robot n'a rien fait), {self.documents} document(s) PDF affiché(s), "
                 f"{self.boutons_bloques} bouton(s) et {len(self.envois_bloques)} envoi(s) de modification "
-                f"bloqué(s) par sécurité, {self.dialogues} boîte(s) de dialogue fermée(s).")
+                f"bloqué(s) par sécurité, {self.dialogues_refuses} confirmation(s) refusée(s).")
 
     def resume(self) -> Dict[str, Any]:
         r = super().resume()

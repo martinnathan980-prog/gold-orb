@@ -475,11 +475,43 @@ PIEGES = """<!doctype html><meta charset=utf-8><title>Fiche</title>
 <button id=b3 onclick="envoi('telecharger')">Télécharger le PDF</button>
 <button id=b4 onclick="envoi('fermer')">Fermer</button>
 <x-bouton id=a13 role=button onclick="envoi('composant_web')">Supprimer</x-bouton>
+<button id=a14 onclick="envoi('emoji_trash')"><i class="fa fa-trash"></i>🗑</button>
+<div id=a15 role=button tabindex=0 onkeyup="if(event.key===' ')envoi('keyup')">Supprimer</div>
+<div id=a16 tabindex=0 onkeydown="if(event.key==='Delete')envoi('touche_suppr')">PL-12</div>
+<a id=a17 href="/plans/6" data-turbo-method="delete" onclick="event.preventDefault();envoi('turbo')">Retirer</a>
+<button id=a18 onclick="fetch('/api/plans/5/delete', {method: 'POST', body: '{}'})">Oui</button>
+<button id=a19 onclick="fetch('/api/plans/5', {method: 'POST', headers: {'X-HTTP-Method-Override': 'DELETE'}})">OK</button>
+<button id=a20 onclick="fetch('/api/plans/bulk', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'action=supprimer&ids=5'})">Valider</button>
+<iframe id=cadre_vide width=300 height=80></iframe>
+<script>
+  window.addEventListener('load', () => setTimeout(() => {
+    const d = document.getElementById('cadre_vide').contentDocument;
+    d.body.innerHTML = "<button id=dans_cadre onclick=parent.envoi('cadre_vide_enregistrer')>Enregistrer</button>";
+  }, 300));
+</script>
 """
+
+CONSULTATION = """<!doctype html><meta charset=utf-8><title>Fiche</title>
+<script>const lire = n => fetch('/lecture/' + n);</script>
+<nav><a id=c1 href=/favoris>Favoris</a> <a id=c2 href=/nouveautes>Nouveautés</a>
+<a id=c3 href="/plans?cree_par=moi">Plans créés par moi</a> <a id=c4 href="#" onclick="lire('supprimes')">Documents supprimés</a></nav>
+<div role=tablist><button id=c5 role=tab onclick="lire('historique')">Historique des modifications</button>
+<button id=c6 role=tab onclick="lire('commentaires')">Commentaires</button></div>
+<button id=c7 onclick="lire('filtres')">Appliquer les filtres</button>
+<button id=c8 onclick="lire('nouvelle_recherche')">Nouvelle recherche</button>
+<button id=c9 onclick="lire('modifier_recherche')">Modifier la recherche</button>
+<button id=c10 onclick="lire('reinitialiser')">Réinitialiser</button>
+<button id=c11 onclick="fetch('/api/plans/5/comments').then(() => lire('commentaires_api'))">Voir les commentaires</button>
+<table><thead><tr><th>Titre</th></tr></thead><tbody>
+<tr style="cursor:pointer" onclick="lire('ligne')"><td id=c12>Nouveau poste source</td></tr></tbody></table>
+"""
+CONSULTATION_ATTENDUS = ["supprimes", "historique", "commentaires", "filtres", "nouvelle_recherche", "modifier_recherche",
+                         "reinitialiser", "commentaires_api", "ligne"]
 
 DANGEREUX = ["menuitem_supprimer", "menuitem_dupliquer", "header_supprimer", "aside_enregistrer", "enregistrer_fermer",
              "cancel_checkout", "reviser", "grille", "icone_seule", "img_alt", "lien_onclick", "div_maison", "pointerup",
-             "clavier", "formulaire_enregistrer", "composant_web"]
+             "clavier", "formulaire_enregistrer", "composant_web", "emoji_trash", "keyup", "touche_suppr", "turbo",
+             "cadre_vide_enregistrer", "bulk"]
 PERMIS = ["ligne_publiee", "rechercher", "telecharger", "fermer"]
 
 
@@ -494,7 +526,9 @@ def _serveur_pieges():
             longueur = int(self.headers.get("Content-Length") or 0)
             corps = self.rfile.read(longueur).decode("utf-8", "replace") if longueur else ""
             requetes.append((self.command, urlsplit(self.path).path, corps))
-            donnees = (PIEGES if urlsplit(self.path).path in ("/", "/fiche") else "<!doctype html><title>x</title>ok").encode()
+            chemin = urlsplit(self.path).path
+            page = {"/": PIEGES, "/fiche": PIEGES, "/consultation": CONSULTATION}.get(chemin, "<!doctype html><title>x</title>ok")
+            donnees = page.encode()
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(donnees)))
@@ -522,6 +556,14 @@ def test_filet_de_securite_resiste_aux_pieges(tmp_path, navigateur_ok):
             page.wait_for_timeout(150)
         page.focus("#a9")
         page.keyboard.press("Enter")
+        page.focus("#a15")
+        page.keyboard.press(" ")
+        page.focus("#a16")
+        page.keyboard.press("Delete")
+        for selecteur in ("#a14", "#a17", "#a18", "#a19", "#a20"):
+            page.click(selecteur)
+            page.wait_for_timeout(150)
+        page.frame_locator("#cadre_vide").locator("#dans_cadre").click()
         page.click("#a10", button="middle")
         v.laisser_tourner(1.0)
         page.click("#b1")  # un lien ordinaire dont le texte ressemble à une action : il s'ouvre
@@ -545,6 +587,7 @@ def test_filet_de_securite_resiste_aux_pieges(tmp_path, navigateur_ok):
     for nom in PERMIS:
         assert nom in arrives, nom
     assert not any(m == "DELETE" for m, _, _ in requetes)  # « Mettre à la une » : DELETE coupé par la 2e barrière
+    assert not any(p in ("/api/plans/5/delete", "/api/plans/5", "/api/plans/bulk") for _, p, _ in requetes)
     assert not any("btnSupprimerPlan" in c for _, _, c in requetes)  # envoi ASP.NET de suppression coupé
     assert not any(p == "/plans/5/delete" for _, p, _ in requetes)  # clic molette sur un lien d'action
     assert any(p == "/plans/7" for _, p, _ in requetes)  # « Nouveau poste source » : simple lien, ouvert
@@ -578,3 +621,41 @@ def test_connexion_d_entreprise_jamais_bloquee(tmp_path, navigateur_ok):
         serveur.server_close()
     assert any(m == "POST" and p == "/login" for m, p, _ in requetes)
     assert visite.boutons_bloques == 0
+
+
+
+def test_filet_de_securite_laisse_consulter(tmp_path, navigateur_ok):
+    """Onglets, menus, filtres, recherches, lignes : de la consultation, jamais bloquée, même quand
+    le libellé contient un mot d'action (« Historique des modifications », « Nouveau poste »)."""
+    serveur, requetes = _serveur_pieges()
+    url = f"http://127.0.0.1:{serveur.server_address[1]}/consultation"
+
+    def promenade(v):
+        page = v.nav.page_courante()
+        for selecteur in ("#c4", "#c5", "#c6", "#c7", "#c8", "#c9", "#c10", "#c11", "#c12"):
+            page.click(selecteur)
+            page.wait_for_timeout(200)
+        for lien in ("#c1", "#c2", "#c3"):
+            page.goto(url)
+            page.click(lien)
+            page.wait_for_timeout(300)
+        v.laisser_tourner(1.0)
+
+    try:
+        cfg = ConfigNavigateur(canal="auto", visible=False, profil=str(tmp_path / "profil"), dialogues="ignorer")
+        nav = Navigateur(cfg, tmp_path, visible=False)
+        nav.ouvrir()
+        visite = Visite(nav, tmp_path / "carte", interactif=False, releve_s=0.4)
+        try:
+            visite.visiter(url, promenade=promenade)
+        finally:
+            nav.fermer()
+    finally:
+        serveur.shutdown()
+        serveur.server_close()
+    lectures = {p.rsplit("/", 1)[-1] for _, p, _ in requetes if p.startswith("/lecture/")}
+    for nom in CONSULTATION_ATTENDUS:
+        assert nom in lectures, nom
+    for chemin in ("/favoris", "/nouveautes", "/plans", "/api/plans/5/comments"):
+        assert any(p == chemin for _, p, _ in requetes), chemin
+    assert visite.boutons_bloques == 0 and not visite.envois_bloques

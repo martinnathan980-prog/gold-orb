@@ -335,7 +335,7 @@ Cas deja connus :
  - Le robot ne demande pas le mot de passe et la connexion echoue
        -> repondez « o » a la pause (B13) et connectez-vous a la main en C5.
 
- - « profil deja utilise » ou Chrome du robot qui se ferme tout de suite
+ - « Le Chrome du robot est deja ouvert » ou Chrome du robot qui se ferme tout de suite
        -> un Chrome du robot est encore ouvert quelque part : fermez-le,
           puis relancez (C2).
 
@@ -394,7 +394,7 @@ E5. Revenez dans la fenetre noire et appuyez sur Entree. VOUS VOYEZ :
 
 E6. La visite commence. Le bandeau vert vous guide, UNE ETAPE A LA FOIS :
         Etape 1/7 : affichez la page d'accueil, puis chaque menu principal...
-        [Etape suivante]  [Terminer la visite]  [<->]
+        [Etape suivante]  [Terminer la visite]  [⇆]
     Faites ce qu'il dit, comme d'habitude, en restant 2 ou 3 secondes sur
     chaque ecran, puis cliquez « Etape suivante ». Les etapes :
        1. l'accueil et chaque menu principal ;
@@ -405,15 +405,21 @@ E6. La visite commence. Le bandeau vert vous guide, UNE ETAPE A LA FOIS :
        6. la recherche de composants, la fiche d'un composant et ses onglets ;
        7. tout autre ecran utile a votre travail.
     Une etape qui n'existe pas chez vous : « Etape suivante », simplement.
-    Le bandeau cache un bouton du portail ? Cliquez [<->] : il passe de l'autre cote.
+    Le bandeau cache un bouton du portail ? Cliquez [⇆] (deux fleches) : il
+    passe de l'autre cote.
     La fenetre noire affiche chaque ecran note, par exemple :
-        OK Ecran E4 note : « Fiche plan »  (12 champ(s))
+        OK Ecran E4 note (etape « Fiche plan ») : 12 champ(s), 3 onglet(s)
            Onglets a ouvrir aussi, un par un : Documents ; Revisions
-    Si un bouton est bloque, un message orange le dit : rien n'est parti.
+    Si un bouton ou un envoi est bloque, un message orange le dit : rien n'est
+    parti. Si le portail pose une question (« Continuer ? ») : le robot repond
+    OK ; si elle parle de supprimer ou d'enregistrer : Annuler, par securite.
+    Si le portail vous deconnecte : reconnectez-vous dans la fenetre du robot,
+    puis revenez sur votre portail ; la visite continue.
 
 E7. Quand vous avez fini : « Terminer la visite » dans le bandeau (il demande
-    de cliquer une deuxieme fois, pour etre sur), ou Entree dans la fenetre
-    noire puis [Entree] a « Terminer la visite ? (o/n) [o] ».
+    de cliquer une deuxieme fois, pour etre sur). Ou bien : Entree dans la
+    fenetre noire, puis a la question « Terminer la visite ? », tapez  o  puis
+    Entree (Entree seule : la visite continue).
     La fenetre du robot se ferme. VOUS VOYEZ :
         OK Visite terminee : 23 ecran(s) note(s)...
     et deux fichiers, dans explorations\<date>-visite :
@@ -489,7 +495,8 @@ G2. Il demande :
         OK Tout est rassemble dans UN fichier (3 partie(s)) :
              C:\Users\...\robot\robot-web\A_ENVOYER_A_CLAUDE_<date>.txt
     et le Bloc-notes s'ouvre avec ce fichier. Il contient, l'un apres l'autre :
-    la derniere carte et chaque tache montree au robot (sans vos valeurs).
+    vos cartes (visites guidees de la version 19) et chaque tache montree au
+    robot (sans vos valeurs).
     (Un nouveau fichier a chaque fois : l'ancien n'est jamais ecrase.)
     Seules les cartes faites avec la version 19, d'au moins 2 ecrans, sont
     reprises ; la liste s'affiche dans la fenetre noire.
