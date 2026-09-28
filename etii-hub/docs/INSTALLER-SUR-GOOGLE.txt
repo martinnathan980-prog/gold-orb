@@ -61,6 +61,9 @@ modifications et de tenir le journal.
 
   1. Ouvrez Google Drive (drive.google.com) avec votre compte Airbus.
   2. « Nouveau »  ›  « Importer un fichier »  ›  choisissez etii-hub.html.
+     (Si votre messagerie bloque les .html, je vous l'envoie aussi en
+     etii-hub.txt : importez-le tel quel, le script le lit de la même façon.
+     Il ne doit PAS être ouvert ni converti en Google Docs.)
   3. Clic droit sur le fichier importé  ›  « Partager »  ›  « Copier le lien ».
      Le lien ressemble à :
         https://drive.google.com/file/d/1AbCdEfGh...XyZ/view?usp=sharing
@@ -130,7 +133,7 @@ modifications et de tenir le journal.
      — c'est votre propre script, il ne sort pas de votre compte.
   4. En bas, le « Journal d'exécution » affiche :
         Onglets prêts. Premier éditeur : votre.adresse@airbus.com
-        Fichier du site trouvé : etii-hub.html (6… Ko).
+        Fichier du site trouvé : etii-hub.html (8771 Ko).
   5. Revenez sur la feuille. Les onglets sont prêts, dans cet ordre :
         Éditeurs                          la liste des personnes qui modifient
         Journal complet                   tout ce qui se passe, le plus récent en haut
