@@ -145,12 +145,16 @@ const CONFIG = {
      déclarer : la page les lit.
      ⚠ Une valeur « finie » absente d'ici compte « en cours » : la page le
      signale en haut quand AUCUN plan n'est compté terminé, et le Diagnostic
-     dit, valeur par valeur, comment chacune est comptée. */
-  VALEURS_FINIES: ['Validé'],
+     dit, valeur par valeur, comment chacune est comptée.
+     Les vraies valeurs de GATES (relevées au bureau le 29/09) : VALIDATED
+     est fini ; PWD_IN_PROGRESS, PWD_TO_CONTROL, TO_CONFIRM sont en cours
+     (rien à déclarer : c'est la famille par défaut). */
+  VALEURS_FINIES: ['Validé', 'VALIDATED'],
 
   /* Les valeurs qui veulent dire « pas commencé », même règle. S'ajoutent à
-     « À faire », « A traiter », « Non commencé », 0 %. Vide : aucune de plus. */
-  VALEURS_A_FAIRE: [],
+     « À faire », « A traiter », « Non commencé », 0 %. Dans GATES : TO_TREAT
+     (à traiter) et FWD_TO_SEIZE (FWD à saisir). */
+  VALEURS_A_FAIRE: ['TO_TREAT', 'FWD_TO_SEIZE'],
 
   /*
    * Les colonnes proposées dans « Avancement FWD par… », dans l'ordre du

@@ -356,6 +356,12 @@ function serveurSur(valeurs, proprietes, fichiers) {
     if (obtenu !== attendu) { tousBons = false; mauvais += ' ' + JSON.stringify(valeur) + '→' + obtenu; }
   });
   verifier('les trente cas de classement tombent juste, « Validé » compris', tousBons, mauvais);
+  /* Le vrai vocabulaire de GATES, relevé au bureau (débrief 17). */
+  const vraiesValeurs = { VALIDATED: 'termine', PWD_IN_PROGRESS: 'encours', PWD_TO_CONTROL: 'encours', TO_CONFIRM: 'encours',
+                          FWD_TO_SEIZE: 'afaire', TO_TREAT: 'afaire', EMPTY: 'vide' };
+  const ecartsGates = Object.keys(vraiesValeurs).filter(v => contexte.classerFWD(v) !== vraiesValeurs[v]);
+  verifier('le vocabulaire réel de GATES : VALIDATED fini, TO_TREAT et FWD_TO_SEIZE pas commencés, le reste en cours',
+    !ecartsGates.length, ecartsGates.join(', '));
   /* La page classe exactement comme le serveur : la même table, côté client. */
   const pageClasse = await (async () => {
     const nav0 = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });

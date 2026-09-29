@@ -600,6 +600,14 @@ que « 0 % »). Survoler une case — ou un segment — **éclaire** son segment
 estompe les autres : une valeur de deux plans se retrouve d'un coup d'œil.
 Un clic filtre le tableau, comme avant.
 
+
+**Le vocabulaire réel de GATES** (relevé au bureau le 29 septembre, colonne
+« HDK AA 011 › Avancement Définition Electrique ») : `VALIDATED` est fini ;
+`TO_TREAT` et `FWD_TO_SEIZE` ne sont pas commencés ; `PWD_IN_PROGRESS`,
+`PWD_TO_CONTROL` et `TO_CONFIRM` sont en cours ; une cellule vide ou `EMPTY`
+est « non renseigné ». C'est déclaré dans `Code.gs` (`VALEURS_FINIES`,
+`VALEURS_A_FAIRE`), et les semaines déjà archivées se recomptent avec.
+
 ## 12. Comparaison des bases de données : GATES et SEE
 
 Une autre base suit les mêmes plans sous une autre structure. La seconde base
